@@ -481,8 +481,6 @@ describe('filter-form defaultValues wiring', () => {
             repoId: 'ler_runjs',
             entryId: 'lee_normalize_amount',
             kind: 'runjs',
-            publicationId: 'lep_normalize_amount',
-            versionPolicy: 'pinned',
           },
           settings: { currency: 'USD' },
         },
@@ -500,7 +498,7 @@ describe('filter-form defaultValues wiring', () => {
     expect(values.username_user).toBe('USD:lee_normalize_amount:true');
   });
 
-  it('reports light-extension RunJS filter field value runtime errors with persisted owner locator paths', async () => {
+  it('skips a light-extension RunJS filter default when execution fails', async () => {
     RunJSSourceResolverRegistry.registerResolver({
       sourceMode: 'light-extension',
       resolve: (input) => ({
@@ -526,36 +524,17 @@ describe('filter-form defaultValues wiring', () => {
             repoId: 'ler_runjs',
             entryId: 'lee_normalize_amount',
             kind: 'runjs',
-            publicationId: 'lep_normalize_amount',
-            versionPolicy: 'pinned',
           },
           settings: { currency: 'USD' },
         },
       },
     ]);
-    const reportRuntimeError = vi.fn();
     (model as any).uid = 'filter_form_1';
-    (model.context as any).reportRuntimeError = reportRuntimeError;
     (model.context as any).runjs = async () => ({ success: false, error: new Error('boom') });
 
     await FilterFormBlockModel.prototype.applyFormDefaultValues.call(model as any);
 
     expect(values.username_user).toBeUndefined();
-    expect(reportRuntimeError).toHaveBeenCalledWith(
-      expect.objectContaining({
-        repoId: 'ler_runjs',
-        entryId: 'lee_normalize_amount',
-        publicationId: 'lep_normalize_amount',
-        ownerKind: 'flowModel.runjsHost',
-        path: 'src/client/runjs/normalize-amount/index.ts',
-        ownerLocator: expect.objectContaining({
-          modelUid: 'filter_form_1',
-          use: 'Object',
-          hostPath: ['stepParams', 'formFilterBlockModelSettings', 'defaultValues', 'value', '0', 'value'],
-        }),
-        ownerLocatorHash: expect.stringMatching(/^(sha256|local):/),
-      }),
-    );
   });
 
   it('emits formValuesChange with final values after applying dependent field values', async () => {

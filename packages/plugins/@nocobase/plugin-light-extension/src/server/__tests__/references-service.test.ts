@@ -63,7 +63,6 @@ describe('plugin-light-extension references service', () => {
       }),
       resolvedStatus: 'active',
     });
-    expect(JSON.stringify(repositories.lightExtensionReferences.records[0].toJSON())).not.toContain('publication');
 
     repositories.flowModels.findModelById.mockResolvedValueOnce(
       createJsBlockNode({
@@ -104,6 +103,12 @@ describe('plugin-light-extension references service', () => {
         expected: 'runtime_missing',
       },
       {
+        name: 'runtime compiled from a non-head commit',
+        repo: createRepoRecord({ headCommitId: 'vsc_commit_2' }),
+        entry: createEntryRecord(),
+        expected: 'runtime_missing',
+      },
+      {
         name: 'settings invalid',
         repo: createRepoRecord(),
         entry: createEntryRecord(),
@@ -112,6 +117,12 @@ describe('plugin-light-extension references service', () => {
           region: 'EMEA',
         },
         expected: 'settings_invalid',
+      },
+      {
+        name: 'legacy failed entry does not expose its previous runtime',
+        repo: createRepoRecord(),
+        entry: createEntryRecord({ healthStatus: 'failed' }),
+        expected: 'runtime_missing',
       },
     ];
 
@@ -137,7 +148,7 @@ describe('plugin-light-extension references service', () => {
     }
   });
 
-  it('indexes JS field, action, item, and RunJS host references without publication identity', async () => {
+  it('indexes JS field, action, item, and RunJS host references', async () => {
     const { service, repositories } = createReferenceServiceFixture({
       flowModelTrees: {
         root: {
@@ -182,21 +193,15 @@ describe('plugin-light-extension references service', () => {
       'js-item',
       'runjs',
     ]);
-    expect(
-      JSON.stringify(repositories.lightExtensionReferences.records.map((record) => record.toJSON())),
-    ).not.toContain('publication');
   });
 
-  it('refreshes existing references after an entry loses its current runtime artifact', async () => {
+  it('refreshes existing references after their runtime no longer matches the repo head', async () => {
     const { service, repositories } = createReferenceServiceFixture({
-      repos: [createRepoRecord()],
-      entries: [
-        createEntryRecord({
-          compiledCommitId: null,
-          runtimeArtifact: null,
-          runtimeCodeHash: null,
-        }),
-      ],
+      flowModelTrees: {
+        flow_js_block: createJsBlockNode(),
+      },
+      repos: [createRepoRecord({ headCommitId: 'vsc_commit_2' })],
+      entries: [createEntryRecord()],
       references: [createReferenceRecord()],
     });
 
@@ -204,6 +209,32 @@ describe('plugin-light-extension references service', () => {
 
     expect(repositories.lightExtensionReferences.records[0].toJSON()).toMatchObject({
       resolvedStatus: 'runtime_missing',
+    });
+  });
+
+  it('refreshes references with the owner current settings instead of schema defaults', async () => {
+    const { service, repositories } = createReferenceServiceFixture({
+      flowModelTrees: {
+        flow_js_block: createJsBlockNode({
+          settings: {
+            threshold: 99,
+            region: 'EMEA',
+          },
+        }),
+      },
+      repos: [createRepoRecord()],
+      entries: [createEntryRecord()],
+      references: [createReferenceRecord()],
+    });
+
+    await service.refreshReferencesForRepo('ler_sales');
+
+    expect(repositories.lightExtensionReferences.records[0].toJSON()).toMatchObject({
+      resolvedStatus: 'settings_invalid',
+      settingsHash: stableJsonHash({
+        threshold: 99,
+        region: 'EMEA',
+      }),
     });
   });
 });

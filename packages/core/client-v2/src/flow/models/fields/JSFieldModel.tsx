@@ -24,7 +24,6 @@ import {
   isCurrentJSFieldRuntimeRun,
   resetJSFieldRuntimeElement,
   renderJSFieldRuntimeError,
-  reportJSFieldRuntimeErrorBestEffort,
   resolveJSFieldRuntimeRunJS,
   runResolvedJSFieldCode,
 } from './jsFieldLightExtensionRuntime';
@@ -238,7 +237,6 @@ JSFieldModel.registerFlow({
         // 暴露 element 与 value 到运行上下文
         ctx.onRefReady(ctx.ref, async (element) => {
           const runId = beginJSFieldRuntimeRun(ctx.model);
-          let resolved: Awaited<ReturnType<typeof resolveJSFieldRuntimeRunJS>> | undefined;
           try {
             resetJSFieldRuntimeElement(element);
             ctx.defineProperty('element', {
@@ -257,7 +255,7 @@ JSFieldModel.registerFlow({
               get: () => ctx.model.context.collectionField,
               cache: false,
             });
-            resolved = await resolveJSFieldRuntimeRunJS({
+            const resolved = await resolveJSFieldRuntimeRunJS({
               model: ctx.model,
               params: params || {},
               runJs: inlineRunJs,
@@ -271,7 +269,6 @@ JSFieldModel.registerFlow({
               return;
             }
             renderJSFieldRuntimeError(element, error, 'js-field-runtime-error');
-            await reportJSFieldRuntimeErrorBestEffort({ ctx, error, resolved, params });
           }
         });
       },

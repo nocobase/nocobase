@@ -13,7 +13,7 @@ import {
   VscError,
   buildRunJSOwnerFingerprint,
   type RunJSLegacySource,
-  type RunJSPublishedWriteResult,
+  type RunJSRuntimeWriteResult,
   type RunJSSourceAdapter,
   type RunJSSourceAdapterContext,
   type RunJSSourceLocator,
@@ -55,7 +55,7 @@ export function createWorkflowJavaScriptRunJSSourceAdapter(
     async getFingerprint({ locator, ctx }) {
       return buildWorkflowFingerprint(locator, await loadScriptNode(db, locator, ctx));
     },
-    async writePublished({ locator, artifact, baseOwnerFingerprint, ctx }) {
+    async writeRuntime({ locator, artifact, baseOwnerFingerprint, ctx }) {
       const transaction = requireTransaction(ctx);
       await assertScriptNodePermission(db, ctx, locator.nodeId, ['config']);
       const node = await lockScriptNodeForUpdate(db, locator, transaction);
@@ -77,7 +77,7 @@ export function createWorkflowJavaScriptRunJSSourceAdapter(
 
       return {
         ownerFingerprint: await this.getFingerprint({ locator, ctx }),
-      } satisfies RunJSPublishedWriteResult;
+      } satisfies RunJSRuntimeWriteResult;
     },
   };
 }
@@ -287,8 +287,6 @@ function buildWorkflowFingerprint(locator: WorkflowJavaScriptLocator, node: Mode
     ownerUpdatedAt: {
       nodeId: node.get('id'),
       workflowId: node.get('workflowId'),
-      updatedAt: toISOStringValue(node.get('updatedAt')),
-      config,
     },
     selectedLegacyValue: config.content,
     selectedVersion: 'workflow-js',
@@ -300,7 +298,7 @@ function assertOwnerFingerprintMatches(current: string, expected: string, kind: 
     return;
   }
 
-  throw new VscError('RUNJS_SOURCE_OWNER_OUTDATED', 'RunJS source owner was changed by another writer', {
+  throw new VscError('RUNJS_SOURCE_OWNER_OUTDATED', 'RunJS host code differs from the versioned source', {
     details: {
       expected: current,
       received: expected,
@@ -368,8 +366,4 @@ function cloneRecord(value: JsonRecord): JsonRecord {
 
 function isRecord(value: unknown): value is JsonRecord {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
-
-function toISOStringValue(value: unknown): string | null {
-  return value instanceof Date ? value.toISOString() : null;
 }

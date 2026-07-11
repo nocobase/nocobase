@@ -8,47 +8,24 @@
  */
 
 import { useFlowContext } from '@nocobase/flow-engine';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { NAMESPACE } from '../../constants';
 import type {
   LightExtensionChangeLifecycleInput,
   LightExtensionCommitRecord,
-  LightExtensionCompilePreviewResult,
   LightExtensionCreateRepoInput,
-  LightExtensionEntryRecord,
   LightExtensionFileChange,
-  LightExtensionFileResult,
   LightExtensionPullResult,
-  LightExtensionRepoLifecycleStatus,
   LightExtensionRepoRecord,
   LightExtensionSaveSourceResult,
-  LightExtensionScanResult,
 } from '../../shared/types';
+import { unwrapResourceResponse } from '../api/lightExtensionEntriesRequests';
 
-export const lightExtensionRepoOperations = [
-  'listRepos',
-  'createRepo',
-  'getRepo',
-  'changeLifecycle',
-  'archiveRepo',
-  'deleteRepo',
-  'pull',
-  'pullCommit',
-  'getFile',
-  'saveSource',
-  'compilePreview',
-  'scanEntries',
-  'listEntries',
-  'listCommits',
-] as const;
+export type LightExtensionRepoOperation = keyof OperationInputMap;
 
-export type LightExtensionRepoOperation = (typeof lightExtensionRepoOperations)[number];
-
-export type LightExtensionOperationState<T> = Partial<Record<LightExtensionRepoOperation, T>>;
-
-export interface LightExtensionHookErrorOptions {
+interface LightExtensionHookErrorOptions {
   operation: LightExtensionRepoOperation;
   code?: string;
   status?: number;
@@ -91,12 +68,6 @@ export interface LightExtensionPullCommitInput {
   selectedPaths?: string[];
 }
 
-export interface LightExtensionGetFileInput {
-  repoId: string;
-  ref?: string;
-  path: string;
-}
-
 export interface LightExtensionListCommitsInput {
   repoId: string;
   limit?: number;
@@ -105,32 +76,20 @@ export interface LightExtensionListCommitsInput {
 
 export interface LightExtensionSaveSourceInput {
   repoId: string;
-  baseCommitId?: string | null;
   message: string;
   files: LightExtensionFileChange[];
-  allowEmptyCommit?: boolean;
 }
 
 export interface UseLightExtensionRepoResult {
-  loading: LightExtensionOperationState<boolean>;
-  errors: LightExtensionOperationState<LightExtensionHookError>;
   listRepos(): Promise<LightExtensionRepoRecord[]>;
   createRepo(input: LightExtensionCreateRepoInput): Promise<LightExtensionRepoRecord>;
   getRepo(repoId: string): Promise<LightExtensionRepoRecord>;
   changeLifecycle(input: LightExtensionChangeLifecycleInput): Promise<LightExtensionRepoRecord>;
-  archiveRepo(input: { repoId: string; expectedVersion?: number }): Promise<LightExtensionRepoRecord>;
-  deleteRepo(repoId: string): Promise<{ deleted: boolean; repoId: string }>;
+  deleteRepo(repoId: string): Promise<LightExtensionRepoRecord>;
   pull(input: LightExtensionPullInput): Promise<LightExtensionPullResult>;
   pullCommit(input: LightExtensionPullCommitInput): Promise<LightExtensionPullResult>;
-  getFile(input: LightExtensionGetFileInput): Promise<LightExtensionFileResult>;
   saveSource(input: LightExtensionSaveSourceInput): Promise<LightExtensionSaveSourceResult>;
-  compilePreview(input: { repoId: string; entryIds?: string[] }): Promise<LightExtensionCompilePreviewResult>;
-  scanEntries(repoId: string): Promise<LightExtensionScanResult>;
-  listEntries(repoId: string): Promise<LightExtensionEntryRecord[]>;
   listCommits(input: LightExtensionListCommitsInput): Promise<LightExtensionCommitRecord[]>;
-  isLoading(operation: LightExtensionRepoOperation): boolean;
-  getError(operation: LightExtensionRepoOperation): LightExtensionHookError | null;
-  clearError(operation?: LightExtensionRepoOperation): void;
 }
 
 type ApiRequestOptions = {
@@ -158,15 +117,10 @@ type OperationInputMap = {
   createRepo: LightExtensionCreateRepoInput;
   getRepo: { repoId: string };
   changeLifecycle: LightExtensionChangeLifecycleInput;
-  archiveRepo: { repoId: string; expectedVersion?: number };
   deleteRepo: { repoId: string };
   pull: LightExtensionPullInput;
   pullCommit: LightExtensionPullCommitInput;
-  getFile: LightExtensionGetFileInput;
   saveSource: LightExtensionSaveSourceInput;
-  compilePreview: { repoId: string; entryIds?: string[] };
-  scanEntries: { repoId: string };
-  listEntries: { repoId: string };
   listCommits: LightExtensionListCommitsInput;
 };
 
@@ -175,15 +129,10 @@ type OperationResultMap = {
   createRepo: LightExtensionRepoRecord;
   getRepo: LightExtensionRepoRecord;
   changeLifecycle: LightExtensionRepoRecord;
-  archiveRepo: LightExtensionRepoRecord;
-  deleteRepo: { deleted: boolean; repoId: string };
+  deleteRepo: LightExtensionRepoRecord;
   pull: LightExtensionPullResult;
   pullCommit: LightExtensionPullResult;
-  getFile: LightExtensionFileResult;
   saveSource: LightExtensionSaveSourceResult;
-  compilePreview: LightExtensionCompilePreviewResult;
-  scanEntries: LightExtensionScanResult;
-  listEntries: LightExtensionEntryRecord[];
   listCommits: LightExtensionCommitRecord[];
 };
 
@@ -192,53 +141,22 @@ const operationResourceActions: Record<LightExtensionRepoOperation, string> = {
   createRepo: 'lightExtensionRepos:create',
   getRepo: 'lightExtensionRepos:get',
   changeLifecycle: 'lightExtensionRepos:changeLifecycle',
-  archiveRepo: 'lightExtensionRepos:archive',
   deleteRepo: 'lightExtensionRepos:delete',
   pull: 'lightExtensionFiles:pull',
   pullCommit: 'lightExtensionFiles:pullCommit',
-  getFile: 'lightExtensionFiles:getFile',
   saveSource: 'lightExtensionFiles:saveSource',
-  compilePreview: 'lightExtensions:compilePreview',
-  scanEntries: 'lightExtensionEntries:scan',
-  listEntries: 'lightExtensionEntries:list',
   listCommits: 'lightExtensionFiles:listCommits',
 };
 
 export function useLightExtensionRepo(): UseLightExtensionRepoResult {
   const ctx = useFlowContext() as FlowContextWithApi;
   const { t } = useTranslation(NAMESPACE);
-  const [loadingCounts, setLoadingCounts] = useState<LightExtensionOperationState<number>>({});
-  const [errors, setErrors] = useState<LightExtensionOperationState<LightExtensionHookError>>({});
-
-  const loading = useMemo<LightExtensionOperationState<boolean>>(() => {
-    return Object.fromEntries(
-      lightExtensionRepoOperations.map((operation) => [operation, Boolean(loadingCounts[operation])]),
-    ) as LightExtensionOperationState<boolean>;
-  }, [loadingCounts]);
-
-  const clearError = useCallback((operation?: LightExtensionRepoOperation) => {
-    setErrors((current) => {
-      if (!operation) {
-        return {};
-      }
-
-      const next = { ...current };
-      delete next[operation];
-      return next;
-    });
-  }, []);
 
   const requestOperation = useCallback(
     async <TOperation extends LightExtensionRepoOperation>(
       operation: TOperation,
       input: OperationInputMap[TOperation],
     ): Promise<OperationResultMap[TOperation]> => {
-      setLoadingCounts((current) => ({
-        ...current,
-        [operation]: (current[operation] || 0) + 1,
-      }));
-      clearError(operation);
-
       try {
         const response = await ctx.api.request<ResourceResponse<OperationResultMap[TOperation]>>({
           url: operationResourceActions[operation],
@@ -248,28 +166,10 @@ export function useLightExtensionRepo(): UseLightExtensionRepoResult {
 
         return unwrapResourceResponse(response);
       } catch (error) {
-        const hookError = normalizeLightExtensionError(operation, error, t('Light extension request failed'));
-        setErrors((current) => ({
-          ...current,
-          [operation]: hookError,
-        }));
-        throw hookError;
-      } finally {
-        setLoadingCounts((current) => {
-          const nextCount = Math.max((current[operation] || 0) - 1, 0);
-          const next = { ...current };
-
-          if (nextCount) {
-            next[operation] = nextCount;
-          } else {
-            delete next[operation];
-          }
-
-          return next;
-        });
+        throw normalizeLightExtensionError(operation, error, t('Light extension request failed'));
       }
     },
-    [clearError, ctx.api, t],
+    [ctx.api, t],
   );
 
   const listRepos = useCallback(() => requestOperation('listRepos', undefined), [requestOperation]);
@@ -282,93 +182,39 @@ export function useLightExtensionRepo(): UseLightExtensionRepoResult {
     (input: LightExtensionChangeLifecycleInput) => requestOperation('changeLifecycle', input),
     [requestOperation],
   );
-  const archiveRepo = useCallback(
-    (input: { repoId: string; expectedVersion?: number }) => requestOperation('archiveRepo', input),
-    [requestOperation],
-  );
   const deleteRepo = useCallback((repoId: string) => requestOperation('deleteRepo', { repoId }), [requestOperation]);
   const pull = useCallback((input: LightExtensionPullInput) => requestOperation('pull', input), [requestOperation]);
   const pullCommit = useCallback(
     (input: LightExtensionPullCommitInput) => requestOperation('pullCommit', input),
     [requestOperation],
   );
-  const getFile = useCallback(
-    (input: LightExtensionGetFileInput) => requestOperation('getFile', input),
-    [requestOperation],
-  );
   const saveSource = useCallback(
     (input: LightExtensionSaveSourceInput) => requestOperation('saveSource', input),
     [requestOperation],
   );
-  const compilePreview = useCallback(
-    (input: { repoId: string; entryIds?: string[] }) => requestOperation('compilePreview', input),
-    [requestOperation],
-  );
-  const scanEntries = useCallback((repoId: string) => requestOperation('scanEntries', { repoId }), [requestOperation]);
-  const listEntries = useCallback((repoId: string) => requestOperation('listEntries', { repoId }), [requestOperation]);
   const listCommits = useCallback(
     (input: LightExtensionListCommitsInput) => requestOperation('listCommits', input),
     [requestOperation],
   );
-  const isLoading = useCallback((operation: LightExtensionRepoOperation) => Boolean(loading[operation]), [loading]);
-  const getError = useCallback((operation: LightExtensionRepoOperation) => errors[operation] || null, [errors]);
 
   return useMemo<UseLightExtensionRepoResult>(
     () => ({
-      loading,
-      errors,
       listRepos,
       createRepo,
       getRepo,
       changeLifecycle,
-      archiveRepo,
       deleteRepo,
       pull,
       pullCommit,
-      getFile,
       saveSource,
-      compilePreview,
-      scanEntries,
-      listEntries,
       listCommits,
-      isLoading,
-      getError,
-      clearError,
     }),
-    [
-      archiveRepo,
-      changeLifecycle,
-      clearError,
-      compilePreview,
-      createRepo,
-      deleteRepo,
-      errors,
-      getError,
-      getFile,
-      getRepo,
-      isLoading,
-      listEntries,
-      listCommits,
-      listRepos,
-      loading,
-      pull,
-      pullCommit,
-      saveSource,
-      scanEntries,
-    ],
+    [changeLifecycle, createRepo, deleteRepo, getRepo, listCommits, listRepos, pull, pullCommit, saveSource],
   );
 }
 
-export function isLightExtensionHookError(error: unknown): error is LightExtensionHookError {
+function isLightExtensionHookError(error: unknown): error is LightExtensionHookError {
   return error instanceof LightExtensionHookError;
-}
-
-function unwrapResourceResponse<T>(response: ResourceResponse<T>): T {
-  if (isRecord(response.data) && 'data' in response.data) {
-    return response.data.data as T;
-  }
-
-  return response.data as T;
 }
 
 function normalizeLightExtensionError(
@@ -433,18 +279,6 @@ function toNonEmptyString(value: unknown): string | undefined {
 
 function toNumber(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
-}
-
-export function toLifecycleInput(
-  repo: LightExtensionRepoRecord,
-  lifecycleStatus: LightExtensionRepoLifecycleStatus,
-): LightExtensionChangeLifecycleInput {
-  return {
-    repoId: repo.id,
-    lifecycleStatus,
-    expectedLifecycleStatus: repo.lifecycleStatus,
-    expectedVersion: repo.version,
-  };
 }
 
 export function getLightExtensionErrorDiagnostics(error: unknown) {

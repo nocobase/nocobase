@@ -921,17 +921,17 @@ function normalizeAdvancedSelectorValues(
 ): Record<string, unknown> {
   const next = { ...value };
   for (const [key, childSchema] of Object.entries(schema.properties || {})) {
-    if (normalizeType(childSchema) === 'object' && isRecord(next[key])) {
-      const childValue = next[key] as Record<string, unknown>;
+    const childValue = next[key];
+    if (normalizeType(childSchema) === 'object' && isRecord(childValue)) {
       next[key] = normalizeAdvancedSelectorValues(childSchema, childValue, rootValue, [childValue, ...scopeValues]);
       continue;
     }
-    if (childSchema['x-component'] !== 'CollectionFieldSelect' || typeof next[key] !== 'string') {
+    if (childSchema['x-component'] !== 'CollectionFieldSelect' || typeof childValue !== 'string') {
       continue;
     }
     const selectedCollectionName = resolveCollectionName(childSchema, rootValue, [next, ...scopeValues]);
-    const normalizedFieldName = normalizeCollectionFieldValue(next[key], selectedCollectionName);
-    if (normalizedFieldName !== next[key]) {
+    const normalizedFieldName = normalizeCollectionFieldValue(childValue, selectedCollectionName);
+    if (normalizedFieldName !== childValue) {
       next[key] = normalizedFieldName;
     }
   }

@@ -746,8 +746,6 @@ describe('FormValueRuntime (form assign rules)', () => {
             repoId: 'ler_runjs',
             entryId: 'lee_normalize_amount',
             kind: 'runjs',
-            publicationId: 'lep_normalize_amount',
-            versionPolicy: 'pinned',
           },
           settings: { prefix: 'LE:' },
         },
@@ -760,7 +758,7 @@ describe('FormValueRuntime (form assign rules)', () => {
     await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe('LE:Y'));
   });
 
-  it('reports light-extension RunJSValue errors with persisted assign-rule owner locator paths', async () => {
+  it('keeps the existing form value when light-extension RunJS execution fails', async () => {
     RunJSSourceResolverRegistry.registerResolver({
       sourceMode: 'light-extension',
       resolve: (input) => ({
@@ -786,9 +784,9 @@ describe('FormValueRuntime (form assign rules)', () => {
     const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
     runtime.mount({ sync: true });
 
-    const reportRuntimeError = vi.fn();
     const blockCtx = createFieldContext(runtime);
-    blockCtx.defineProperty('reportRuntimeError', { value: reportRuntimeError });
+    const runjs = vi.fn(async () => ({ success: false, error: new Error('bad') }));
+    blockCtx.defineMethod('runjs', runjs);
     blockModel.context = blockCtx;
 
     runtime.syncAssignRules([
@@ -807,30 +805,14 @@ describe('FormValueRuntime (form assign rules)', () => {
             repoId: 'ler_runjs',
             entryId: 'lee_normalize_amount',
             kind: 'runjs',
-            publicationId: 'lep_normalize_amount',
-            versionPolicy: 'pinned',
           },
           settings: { prefix: 'LE:' },
         },
       },
     ]);
 
-    await waitFor(() => expect(reportRuntimeError).toHaveBeenCalled());
+    await waitFor(() => expect(runjs).toHaveBeenCalled());
     expect(formStub.getFieldValue(['a'])).toBe('INIT');
-    expect(reportRuntimeError).toHaveBeenCalledWith(
-      expect.objectContaining({
-        repoId: 'ler_runjs',
-        entryId: 'lee_normalize_amount',
-        publicationId: 'lep_normalize_amount',
-        ownerKind: 'flowModel.runjsHost',
-        path: 'src/client/runjs/normalize-amount/index.ts',
-        ownerLocator: expect.objectContaining({
-          modelUid: 'form-assign-runjs-le-error',
-          hostPath: ['stepParams', 'formModelSettings', 'assignRules', 'value', '0', 'value'],
-        }),
-        ownerLocatorHash: expect.stringMatching(/^sha256:/),
-      }),
-    );
   });
 
   it('supports RunJSValue and tracks ctx var deps from code', async () => {

@@ -26,7 +26,6 @@ import {
   isCurrentJSFieldRuntimeRun,
   resetJSFieldRuntimeElement,
   renderJSFieldRuntimeError,
-  reportJSFieldRuntimeErrorBestEffort,
   resolveJSFieldRuntimeRunJS,
   runResolvedJSFieldCode,
 } from './jsFieldLightExtensionRuntime';
@@ -401,7 +400,6 @@ JSEditableFieldModel.registerFlow({
 
         ctx.onRefReady(ctx.ref, async (element) => {
           const runId = beginJSFieldRuntimeRun(ctx.model);
-          let resolved: Awaited<ReturnType<typeof resolveJSFieldRuntimeRunJS>> | undefined;
           try {
             resetJSFieldRuntimeElement(element);
             // 暴露容器与读写能力（使用动态 getter 绑定 ref.current，避免容器变更失效）
@@ -446,7 +444,7 @@ JSEditableFieldModel.registerFlow({
               get: () => ctx.model.context.collectionField,
               cache: false,
             });
-            resolved = await resolveJSFieldRuntimeRunJS({
+            const resolved = await resolveJSFieldRuntimeRunJS({
               model: ctx.model,
               params: params || {},
               runJs: inlineRunJs,
@@ -460,7 +458,6 @@ JSEditableFieldModel.registerFlow({
               return;
             }
             renderJSFieldRuntimeError(element, error, 'js-editable-field-runtime-error');
-            await reportJSFieldRuntimeErrorBestEffort({ ctx, error, resolved, params });
           }
         });
       },

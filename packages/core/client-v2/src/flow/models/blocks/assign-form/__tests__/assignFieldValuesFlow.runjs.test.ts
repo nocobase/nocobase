@@ -48,8 +48,6 @@ describe('assignFieldValuesFlow RunJS values', () => {
             repoId: 'ler_runjs',
             entryId: 'lee_normalize_amount',
             kind: 'runjs',
-            publicationId: 'lep_normalize_amount',
-            versionPolicy: 'pinned',
           },
           settings: { currency: 'USD' },
         },
@@ -60,7 +58,7 @@ describe('assignFieldValuesFlow RunJS values', () => {
     expect(message.error).not.toHaveBeenCalled();
   });
 
-  it('reports assignment RunJS runtime errors with persisted step owner locator paths', async () => {
+  it('shows an error and aborts assignment when RunJS fails', async () => {
     RunJSSourceResolverRegistry.registerResolver({
       sourceMode: 'light-extension',
       resolve: (input) => ({
@@ -73,9 +71,7 @@ describe('assignFieldValuesFlow RunJS values', () => {
     });
 
     const ctx: any = new FlowContext();
-    const reportRuntimeError = vi.fn();
     ctx.defineProperty('model', { value: { uid: 'assign_action_1', use: 'UpdateRecordActionModel' } });
-    ctx.defineProperty('reportRuntimeError', { value: reportRuntimeError });
     ctx.defineMethod('runjs', async () => ({ success: false, error: new Error('boom') }));
     const message = { error: vi.fn() };
     ctx.defineProperty('message', { value: message });
@@ -94,8 +90,6 @@ describe('assignFieldValuesFlow RunJS values', () => {
               repoId: 'ler_runjs',
               entryId: 'lee_normalize_amount',
               kind: 'runjs',
-              publicationId: 'lep_normalize_amount',
-              versionPolicy: 'pinned',
             },
             settings: { currency: 'USD' },
           },
@@ -106,21 +100,6 @@ describe('assignFieldValuesFlow RunJS values', () => {
     ).resolves.toBeNull();
 
     expect(message.error).toHaveBeenCalledWith('RunJS execution failed');
-    expect(reportRuntimeError).toHaveBeenCalledWith(
-      expect.objectContaining({
-        repoId: 'ler_runjs',
-        entryId: 'lee_normalize_amount',
-        publicationId: 'lep_normalize_amount',
-        ownerKind: 'flowModel.runjsHost',
-        path: 'src/client/runjs/normalize-amount/index.ts',
-        ownerLocator: expect.objectContaining({
-          modelUid: 'assign_action_1',
-          use: 'UpdateRecordActionModel',
-          hostPath: ['stepParams', 'assignSettings', 'assignFieldValues', 'assignedValues', 'amountText'],
-        }),
-        ownerLocatorHash: expect.stringMatching(/^sha256:/),
-      }),
-    );
   });
 
   it('skips assignment fields when RunJS returns undefined', async () => {

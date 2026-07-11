@@ -58,7 +58,7 @@ describe('vsc-file permission hooks and audit registration', () => {
     await app?.destroy();
   });
 
-  it('keeps logged-in vscFile writes allowed when no permission hook is registered', async () => {
+  it('allows raw vscFile writes for configuration roles', async () => {
     const response = await agent.resource('vscFile').createRepository({
       values: {
         ownerType: 'plugin',
@@ -72,6 +72,59 @@ describe('vsc-file permission hooks and audit registration', () => {
       ownerType: 'plugin',
       ownerId: 'demo',
       name: 'main',
+    });
+  });
+
+  it('denies raw vscFile access to logged-in roles without configuration permission', async () => {
+    const roleName = 'vscFileRestricted';
+    app.acl.define({
+      role: roleName,
+      strategy: {
+        actions: false,
+        allowConfigure: false,
+      },
+    });
+    await app.db.getRepository('roles').create({
+      values: {
+        name: roleName,
+        allowConfigure: false,
+      },
+    });
+    const user = await app.db.getRepository('users').create({
+      values: {
+        nickname: roleName,
+        roles: [roleName],
+      },
+    });
+    const restrictedAgent = (await app.agent().login(user)).set('x-role', roleName);
+
+    const response = await restrictedAgent.resource('vscFile').createRepository({
+      values: {
+        ownerType: 'plugin',
+        ownerId: 'demo',
+        name: 'main',
+      },
+    });
+
+    expect(response.status).toBe(403);
+  });
+
+  it('rejects raw vscFile access for RunJS source repositories', async () => {
+    const response = await agent.resource('vscFile').createRepository({
+      values: {
+        ownerType: 'runjs-source',
+        ownerId: 'runjs:flowModel.step:form_1:source_1',
+        name: 'source',
+      },
+    });
+
+    expect(response.status).toBe(403);
+    expect(response.body.errors[0]).toMatchObject({
+      code: 'PERMISSION_DENIED',
+      details: {
+        ownerType: 'runjs-source',
+        denyReason: 'runjs_source_requires_adapter_resource',
+      },
     });
   });
 
@@ -251,9 +304,8 @@ describe('vsc-file permission hooks and audit registration', () => {
     const updateRefResponse = await agent.resource('vscFile').updateRef({
       values: {
         repoId: repository.id,
-        name: 'published',
+        name: 'head',
         targetCommitId: commitId,
-        basePublishedCommitId: null,
       },
     });
 
@@ -303,7 +355,7 @@ describe('vsc-file permission hooks and audit registration', () => {
       {
         values: {
           repoId: repository.id,
-          name: 'published',
+          name: 'head',
           targetCommitId: commitId,
         },
       },
@@ -315,7 +367,7 @@ describe('vsc-file permission hooks and audit registration', () => {
         ownerType: 'plugin',
         ownerId: 'demo',
         targetCommitId: commitId,
-        refName: 'published',
+        refName: 'head',
       },
     );
 
@@ -326,7 +378,7 @@ describe('vsc-file permission hooks and audit registration', () => {
     expect(JSON.stringify(pushMetadata.response?.body)).not.toContain('Demo');
     expect(updateRefMetadata.request?.body).toMatchObject({
       repoId: repository.id,
-      refName: 'published',
+      refName: 'head',
       targetCommitId: commitId,
     });
   });
@@ -340,14 +392,11 @@ describe('vsc-file permission hooks and audit registration', () => {
       paramPath: ['code'],
     };
     const metadata = await expectRunJSSourceAuditMetadata(
-      'publish',
+      'save',
       {
         values: {
           locator,
           repoId: 'repo_audit',
-          baseCommitId: 'commit_base',
-          basePublishedCommitId: 'commit_base',
-          baseOwnerFingerprint: 'owner:v1',
           message: 'Update JS action',
           files: [
             {
@@ -357,12 +406,6 @@ describe('vsc-file permission hooks and audit registration', () => {
               language: 'typescript',
             },
           ],
-          artifact: {
-            code: 'ctx.render("client artifact secret");',
-            sourceMap: 'source-map-secret',
-            filesHash: 'request-files-hash',
-            runtimeCodeHash: 'request-runtime-hash',
-          },
         },
       },
       {
@@ -377,11 +420,6 @@ describe('vsc-file permission hooks and audit registration', () => {
           commit: {
             id: 'commit_next',
             repoId: 'repo_audit',
-          },
-          publishedRef: {
-            name: 'published',
-            repoId: 'repo_audit',
-            commitId: 'commit_next',
           },
           artifact: {
             entryPath: 'src/main.tsx',
@@ -401,7 +439,7 @@ describe('vsc-file permission hooks and audit registration', () => {
       },
       {
         resource: 'runJSSources',
-        action: 'publish',
+        action: 'save',
         locatorKind: 'flowModel.step',
         repoId: 'repo_audit',
         commitId: 'commit_next',
@@ -414,8 +452,6 @@ describe('vsc-file permission hooks and audit registration', () => {
     expect(metadata.request?.body).toMatchObject({
       locatorKind: 'flowModel.step',
       repoId: 'repo_audit',
-      baseCommitId: 'commit_base',
-      basePublishedCommitId: 'commit_base',
       message: 'Update JS action',
       files: [
         {
@@ -424,20 +460,11 @@ describe('vsc-file permission hooks and audit registration', () => {
           language: 'typescript',
         },
       ],
-      artifact: {
-        filesHash: 'request-files-hash',
-        runtimeCodeHash: 'request-runtime-hash',
-      },
     });
     expect(metadata.response?.body).toMatchObject({
       commit: {
         id: 'commit_next',
         repoId: 'repo_audit',
-      },
-      publishedRef: {
-        name: 'published',
-        repoId: 'repo_audit',
-        commitId: 'commit_next',
       },
       artifact: {
         entryPath: 'src/main.tsx',
@@ -448,10 +475,87 @@ describe('vsc-file permission hooks and audit registration', () => {
       fileCount: 1,
     });
     expect(JSON.stringify(metadata)).not.toContain('request secret');
-    expect(JSON.stringify(metadata)).not.toContain('client artifact secret');
-    expect(JSON.stringify(metadata)).not.toContain('source-map-secret');
     expect(JSON.stringify(metadata)).not.toContain('response artifact secret');
     expect(JSON.stringify(metadata)).not.toContain('response file secret');
+  });
+
+  it('audits RunJS import and recovery without leaking ZIP or source content', async () => {
+    const locator = {
+      kind: 'flowModel.step' as const,
+      modelUid: 'fm_audit',
+      flowKey: 'settings',
+      stepKey: 'runjs',
+      paramPath: ['code'],
+    };
+    const response = {
+      data: {
+        locator,
+        locatorKind: 'flowModel.step',
+        repository: {
+          id: 'repo_audit',
+          ownerType: 'runjs-source',
+          ownerId: 'runjs:flowModel.step:fm_audit:source-path-hash',
+          headCommitId: 'commit_next',
+        },
+        commit: {
+          id: 'commit_next',
+          repoId: 'repo_audit',
+        },
+        artifact: {
+          entryPath: 'src/main.tsx',
+          filesHash: 'response-files-hash',
+          runtimeCodeHash: 'response-runtime-hash',
+          code: 'response source secret',
+        },
+      },
+    };
+
+    const importMetadata = await expectRunJSSourceAuditMetadata(
+      'importZip',
+      {
+        values: {
+          locator,
+          repoId: 'repo_audit',
+          message: 'Import RunJS workspace',
+          zipBase64: 'zip-source-secret',
+        },
+      },
+      response,
+      {
+        resource: 'runJSSources',
+        action: 'importZip',
+        repoId: 'repo_audit',
+        commitId: 'commit_next',
+        message: 'Import RunJS workspace',
+      },
+    );
+    const recoveryResponse = {
+      data: {
+        ...response.data,
+        commit: undefined,
+      },
+    };
+    const recoveryMetadata = await expectRunJSSourceAuditMetadata(
+      'restoreFromCode',
+      {
+        values: {
+          locator,
+          sourceCode: 'request source secret',
+        },
+      },
+      recoveryResponse,
+      {
+        resource: 'runJSSources',
+        action: 'restoreFromCode',
+        repoId: 'repo_audit',
+        commitId: 'commit_next',
+      },
+    );
+
+    expect(JSON.stringify(importMetadata)).not.toContain('zip-source-secret');
+    expect(JSON.stringify(importMetadata)).not.toContain('response source secret');
+    expect(JSON.stringify(recoveryMetadata)).not.toContain('request source secret');
+    expect(JSON.stringify(recoveryMetadata)).not.toContain('response source secret');
   });
 
   function getPlugin(): PluginVscFileServer {

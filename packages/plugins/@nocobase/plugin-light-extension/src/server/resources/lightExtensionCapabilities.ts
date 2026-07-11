@@ -32,7 +32,7 @@ export function createLightExtensionCapabilitiesResource(validator: LightExtensi
   };
 }
 
-export function createLightExtensionCapabilitiesGetAction(validator: LightExtensionValidator): HandlerType {
+function createLightExtensionCapabilitiesGetAction(validator: LightExtensionValidator): HandlerType {
   return async (ctx: Context, next) => {
     const resourceCtx = ctx as LightExtensionCapabilitiesContext;
     if (resourceCtx.state?.lightExtensionCapabilitiesAlias) {

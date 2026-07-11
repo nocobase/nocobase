@@ -259,7 +259,7 @@ function normalizeRepositoryIdInput(input: ResourceActionInput): RepositoryIdInp
 function normalizePullInput(input: ResourceActionInput): PullInput {
   return compactObject({
     repoId: requireString(input, 'repoId'),
-    ref: optionalString(input, 'ref'),
+    ref: optionalRefName(input, 'ref'),
     knownTreeHash: optionalString(input, 'knownTreeHash'),
     includeContent: optionalIncludeContent(input),
     selectedPaths: optionalStringArray(input, 'selectedPaths'),
@@ -269,7 +269,7 @@ function normalizePullInput(input: ResourceActionInput): PullInput {
 function normalizeGetFileInput(input: ResourceActionInput): GetFileInput {
   return compactObject({
     repoId: requireString(input, 'repoId'),
-    ref: optionalString(input, 'ref'),
+    ref: optionalRefName(input, 'ref'),
     path: requireString(input, 'path'),
   });
 }
@@ -343,12 +343,11 @@ function normalizeListRefsInput(input: ResourceActionInput): ListRefsInput {
 }
 
 function normalizeUpdateRefInput(input: ResourceActionInput): UpdateRefInput {
-  return compactObject({
+  return {
     repoId: requireString(input, 'repoId'),
-    name: requireString(input, 'name'),
+    name: requireHeadRefName(input, 'name'),
     targetCommitId: requireString(input, 'targetCommitId'),
-    basePublishedCommitId: optionalNullableString(input, 'basePublishedCommitId'),
-  });
+  };
 }
 
 function normalizeTreeEntryInput(value: unknown, label: string): VscTreeEntryInput {
@@ -414,6 +413,24 @@ function optionalString(input: ResourceActionInput, key: string, label?: string)
   }
 
   return value as string;
+}
+
+function optionalRefName(input: ResourceActionInput, key: string): PullInput['ref'] | undefined {
+  const value = optionalString(input, key);
+  if (value === undefined || value === 'head') {
+    return value;
+  }
+
+  throwBadRequest(`${key} must be head`);
+}
+
+function requireHeadRefName(input: ResourceActionInput, key: string): UpdateRefInput['name'] {
+  const value = requireString(input, key);
+  if (value === 'head') {
+    return value;
+  }
+
+  throwBadRequest(`${key} must be head`);
 }
 
 function requireNullableString(input: ResourceActionInput, key: string, label?: string): string | null {

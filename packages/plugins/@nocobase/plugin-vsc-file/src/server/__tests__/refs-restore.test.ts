@@ -33,7 +33,7 @@ describe('vsc-file refs and restore service', () => {
     await db?.close();
   });
 
-  it('lists the built-in head and published refs', async () => {
+  it('lists the built-in head ref', async () => {
     const { repository, initialCommit } = await service.createRepository({
       ownerType: 'plugin',
       ownerId: 'demo',
@@ -42,51 +42,11 @@ describe('vsc-file refs and restore service', () => {
     });
     const refs = await service.listRefs({ repoId: repository.id });
 
-    expect(refs.map((ref) => ref.name)).toEqual(['head', 'published']);
+    expect(refs.map((ref) => ref.name)).toEqual(['head']);
     expect(refs.find((ref) => ref.name === 'head')).toMatchObject({
       repoId: repository.id,
       commitId: initialCommit?.id,
     });
-    expect(refs.find((ref) => ref.name === 'published')).toMatchObject({
-      repoId: repository.id,
-      commitId: null,
-    });
-  });
-
-  it('publishes a commit and rejects stale published bases', async () => {
-    const history = await createHistory();
-    const published = await service.updateRef({
-      repoId: history.repository.id,
-      name: 'published',
-      targetCommitId: history.first.commit.id,
-      basePublishedCommitId: null,
-    });
-    const publishedRef = await db.getRepository('vscFileRefs').findOne({
-      filter: {
-        repoId: history.repository.id,
-        name: 'published',
-      },
-    });
-
-    expect(published.repository.publishedCommitId).toBe(history.first.commit.id);
-    expect(published.ref.commitId).toBe(history.first.commit.id);
-    expect(publishedRef?.get('commitId')).toBe(history.first.commit.id);
-
-    await expect(
-      service.updateRef({
-        repoId: history.repository.id,
-        name: 'published',
-        targetCommitId: history.second.commit.id,
-        basePublishedCommitId: null,
-      }),
-    ).rejects.toMatchObject<VscError>({
-      code: 'BASE_COMMIT_OUTDATED',
-    });
-
-    const repositoryRecord = await db.getRepository('vscFileRepositories').findOne({
-      filterByTk: history.repository.id,
-    });
-    expect(repositoryRecord?.get('publishedCommitId')).toBe(history.first.commit.id);
   });
 
   it('rejects unsupported ref names', async () => {
@@ -156,9 +116,8 @@ describe('vsc-file refs and restore service', () => {
     await expect(
       service.updateRef({
         repoId: history.repository.id,
-        name: 'published',
+        name: 'head',
         targetCommitId: otherHistory.first.commit.id,
-        basePublishedCommitId: null,
       }),
     ).rejects.toMatchObject<VscError>({
       code: 'COMMIT_NOT_FOUND',

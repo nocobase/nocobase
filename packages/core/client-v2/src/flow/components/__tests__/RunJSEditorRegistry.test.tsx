@@ -86,6 +86,119 @@ describe('RunJSEditorRegistry', () => {
     expect(screen.queryByText('fallback provider')).toBeNull();
   });
 
+  it('uses provider priority before registration order', () => {
+    RunJSEditorRegistry.registerProvider({
+      key: 'specialized-provider',
+      priority: 100,
+      canHandle: (props) => props.locator?.kind === 'flowModel.nestedRunJS',
+      renderEditor: () => <div>specialized provider</div>,
+    });
+    RunJSEditorRegistry.registerProvider({
+      key: 'generic-provider',
+      canHandle: (props) => Boolean(props.locator),
+      renderEditor: () => <div>generic provider</div>,
+    });
+
+    expect(RunJSEditorRegistry.getProviders().map((provider) => provider.key)).toEqual([
+      'specialized-provider',
+      'generic-provider',
+    ]);
+
+    render(
+      <RunJSEditorField
+        locator={{
+          kind: 'flowModel.nestedRunJS',
+          modelUid: 'fm_1',
+          containerFlowKey: 'settings',
+          containerStepKey: 'rules',
+          valuePath: ['value', 'rule_1', 'value'],
+          scene: 'formValue',
+        }}
+        value={{ code: 'return ctx;', version: 'v2' }}
+      />,
+    );
+
+    expect(screen.getByText('specialized provider')).toBeInTheDocument();
+    expect(screen.queryByText('generic provider')).toBeNull();
+  });
+
+  it('lets a specialized provider compose the next matching provider', () => {
+    RunJSEditorRegistry.registerProvider({
+      key: 'wrapper-provider',
+      priority: 100,
+      canHandle: (props) => props.locator?.kind === 'flowModel.nestedRunJS',
+      renderEditor: (props) => (
+        <section aria-label="wrapper provider">
+          <span>wrapper provider</span>
+          {props.renderNext?.()}
+        </section>
+      ),
+    });
+    RunJSEditorRegistry.registerProvider({
+      key: 'workspace-provider',
+      canHandle: (props) => Boolean(props.locator),
+      renderEditor: () => <div>workspace provider</div>,
+    });
+
+    render(
+      <RunJSEditorField
+        locator={{
+          kind: 'flowModel.nestedRunJS',
+          modelUid: 'fm_1',
+          containerFlowKey: 'settings',
+          containerStepKey: 'rules',
+          valuePath: ['value', 'rule_1', 'value'],
+          scene: 'formValue',
+        }}
+        value={{ code: 'return ctx;', version: 'v2' }}
+      />,
+    );
+
+    expect(screen.getByText('wrapper provider')).toBeInTheDocument();
+    expect(screen.getByText('workspace provider')).toBeInTheDocument();
+  });
+
+  it('re-evaluates downstream providers after renderNext overrides', () => {
+    RunJSEditorRegistry.registerProvider({
+      key: 'locator-wrapper',
+      priority: 100,
+      canHandle: (props) => props.locator?.kind === 'flowModel.step',
+      renderEditor: (props) => (
+        <section aria-label="locator wrapper">
+          locator wrapper
+          {props.renderNext?.({
+            locator: {
+              kind: 'chart.option',
+              modelUid: 'chart_1',
+            },
+          })}
+        </section>
+      ),
+    });
+    RunJSEditorRegistry.registerProvider({
+      key: 'step-provider',
+      canHandle: (props) => props.locator?.kind === 'flowModel.step',
+      renderEditor: () => <div>step provider</div>,
+    });
+
+    render(
+      <RunJSEditorField
+        locator={{
+          kind: 'flowModel.step',
+          modelUid: 'fm_1',
+          flowKey: 'settings',
+          stepKey: 'runjs',
+          paramPath: ['code'],
+        }}
+        value={{ code: 'return ctx;', version: 'v2' }}
+      />,
+    );
+
+    expect(screen.getByLabelText('locator wrapper')).toBeInTheDocument();
+    expect(screen.queryByText('step provider')).toBeNull();
+    expect(screen.getByLabelText('// Use return to output value')).toBeInTheDocument();
+  });
+
   it('normalizes sourceLocator and sourceLabel aliases before provider selection', () => {
     RunJSEditorRegistry.registerProvider({
       key: 'source-locator-provider',
@@ -125,7 +238,7 @@ describe('RunJSEditorRegistry', () => {
     expect(screen.getByLabelText('// Use return to output value')).toBeInTheDocument();
   });
 
-  it('generates flowModel.step locators from flow settings context and syncs published values locally', async () => {
+  it('generates flowModel.step locators from flow settings context and syncs saved values locally', async () => {
     const engine = new FlowEngine();
     const model = new FlowModel({ uid: 'fm_1', flowEngine: engine });
     const flowContext = new FlowRuntimeContext(model, 'jsSettings', 'settings');
@@ -182,7 +295,134 @@ describe('RunJSEditorRegistry', () => {
     });
   });
 
-  it('uses current settings form values when a RunJS Studio publish syncs the model', async () => {
+  it('passes sibling light extension binding params to flowModel step editor providers', () => {
+    const engine = new FlowEngine();
+    const model = new FlowModel({ uid: 'fm_1', flowEngine: engine });
+    const flowContext = new FlowRuntimeContext(model, 'jsSettings', 'settings');
+    let capturedValue: unknown;
+
+    RunJSEditorRegistry.registerProvider({
+      key: 'light-extension-provider',
+      canHandle: (props) => props.value.sourceMode === 'light-extension',
+      renderEditor: (props) => {
+        capturedValue = props.value;
+        return <div>light extension workspace</div>;
+      },
+    });
+
+    render(
+      <FlowContextProvider context={flowContext}>
+        <FlowStepContext.Provider
+          value={{
+            params: {
+              code: 'ctx.render(<div />);',
+              version: 'v2',
+              sourceMode: 'light-extension',
+              sourceBinding: {
+                type: 'light-extension-entry',
+                repoId: 'ler_example',
+                entryId: 'lee_example',
+                kind: 'js-block',
+              },
+              settings: { title: 'Example' },
+            },
+            path: 'fm_1_jsSettings_runJs',
+          }}
+        >
+          <RunJSEditorField locatorFactory="flowModel.step" surfaceStyle="render" value="ctx.render(<div />);" />
+        </FlowStepContext.Provider>
+      </FlowContextProvider>,
+    );
+
+    expect(screen.getByText('light extension workspace')).toBeInTheDocument();
+    expect(capturedValue).toMatchObject({
+      sourceMode: 'light-extension',
+      sourceBinding: {
+        repoId: 'ler_example',
+        entryId: 'lee_example',
+      },
+      settings: { title: 'Example' },
+    });
+  });
+
+  it('does not generate or sync unsafe FlowModel step paths', () => {
+    const engine = new FlowEngine();
+    const model = new FlowModel({ uid: 'fm_1', flowEngine: engine });
+    const flowContext = new FlowRuntimeContext(model, 'jsSettings', 'settings');
+    const setStepParams = vi.spyOn(model, 'setStepParams');
+    let capturedLocator: unknown;
+
+    RunJSEditorRegistry.registerProvider({
+      key: 'unsafe-path-provider',
+      renderEditor: (props) => {
+        capturedLocator = props.locator;
+        return (
+          <button type="button" onClick={() => props.onChange?.({ code: 'polluted', version: 'v2' })}>
+            save
+          </button>
+        );
+      },
+    });
+
+    render(
+      <FlowContextProvider context={flowContext}>
+        <FlowStepContext.Provider value={{ params: {}, path: 'fm_1_jsSettings_runJs' }}>
+          <RunJSEditorField
+            locatorFactory="flowModel.step"
+            paramPath={['__proto__', 'polluted']}
+            value={{ code: 'return 1;', version: 'v2' }}
+          />
+        </FlowStepContext.Provider>
+      </FlowContextProvider>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'save' }));
+
+    expect(capturedLocator).toBeUndefined();
+    expect(setStepParams).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['flow key', { flowKey: '__proto__' }],
+    ['step key', { stepKey: 'constructor' }],
+  ] as const)('does not generate locators with an unsafe %s', (_label, unsafeProps) => {
+    const engine = new FlowEngine();
+    const model = new FlowModel({ uid: 'fm_1', flowEngine: engine });
+    const flowContext = new FlowRuntimeContext(model, 'jsSettings', 'settings');
+    const setStepParams = vi.spyOn(model, 'setStepParams');
+    let capturedLocator: unknown;
+
+    RunJSEditorRegistry.registerProvider({
+      key: 'unsafe-flow-step-provider',
+      renderEditor: (props) => {
+        capturedLocator = props.locator;
+        return (
+          <button type="button" onClick={() => props.onChange?.({ code: 'polluted', version: 'v2' })}>
+            save
+          </button>
+        );
+      },
+    });
+
+    render(
+      <FlowContextProvider context={flowContext}>
+        <FlowStepContext.Provider value={{ params: {}, path: 'fm_1_jsSettings_runJs' }}>
+          <RunJSEditorField
+            locatorFactory="flowModel.step"
+            value={{ code: 'return 1;', version: 'v2' }}
+            {...unsafeProps}
+          />
+        </FlowStepContext.Provider>
+      </FlowContextProvider>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'save' }));
+
+    expect(capturedLocator).toBeUndefined();
+    expect(setStepParams).not.toHaveBeenCalled();
+  });
+
+  it('syncs a server-persisted RunJS Studio save locally without saving the FlowModel again', async () => {
     const engine = new FlowEngine();
     const model = new FlowModel({
       uid: 'fm_1',
@@ -206,13 +446,13 @@ describe('RunJSEditorRegistry', () => {
       sourceRef: {
         type: 'vsc-file',
         repoId: 'repo_old',
-        publishedCommitId: 'commit_old',
+        commitId: 'commit_old',
         entry: 'src/client/index.tsx',
       },
       version: 'v2',
     }));
     const saveStepParams = vi.spyOn(model, 'saveStepParams').mockResolvedValue(undefined);
-    vi.spyOn(model, 'rerender').mockResolvedValue(undefined);
+    const rerender = vi.spyOn(model, 'rerender').mockResolvedValue(undefined);
 
     RunJSEditorRegistry.registerProvider({
       key: 'flow-model-step-provider',
@@ -226,15 +466,15 @@ describe('RunJSEditorRegistry', () => {
               sourceRef: {
                 type: 'vsc-file',
                 repoId: 'repo_new',
-                publishedCommitId: 'commit_new',
+                commitId: 'commit_new',
                 entry: 'src/client/index.tsx',
               },
               version: 'v2',
             };
-            props.onChange?.(nextValue);
+            props.onPersistedChange?.(nextValue);
           }}
         >
-          publish
+          save
         </button>
       ),
     });
@@ -250,7 +490,7 @@ describe('RunJSEditorRegistry', () => {
               sourceRef: {
                 type: 'vsc-file',
                 repoId: 'repo_old',
-                publishedCommitId: 'commit_old',
+                commitId: 'commit_old',
                 entry: 'src/client/index.tsx',
               },
               version: 'v2',
@@ -263,7 +503,7 @@ describe('RunJSEditorRegistry', () => {
       </FlowContextProvider>,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'publish' }));
+    fireEvent.click(screen.getByRole('button', { name: 'save' }));
 
     expect(model.getStepParams('jsSettings', 'runJs')).toMatchObject({
       code: 'ctx.render(1111);',
@@ -272,14 +512,15 @@ describe('RunJSEditorRegistry', () => {
       sourceRef: {
         type: 'vsc-file',
         repoId: 'repo_new',
-        publishedCommitId: 'commit_new',
+        commitId: 'commit_new',
         entry: 'src/client/index.tsx',
       },
       version: 'v2',
     });
     await waitFor(() => {
-      expect(saveStepParams).toHaveBeenCalledTimes(1);
+      expect(rerender).toHaveBeenCalledTimes(1);
     });
+    expect(saveStepParams).not.toHaveBeenCalled();
   });
 
   it('keeps inline fallback edits in the form without mutating model params', () => {
@@ -312,7 +553,7 @@ describe('RunJSEditorRegistry', () => {
     expect(setStepParams).not.toHaveBeenCalled();
   });
 
-  it('preserves string-valued code field changes while syncing published model params', () => {
+  it('preserves string-valued code field changes while syncing saved model params', () => {
     const engine = new FlowEngine();
     const model = new FlowModel({
       uid: 'fm_1',

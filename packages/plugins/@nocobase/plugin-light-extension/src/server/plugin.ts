@@ -30,9 +30,8 @@ import {
 } from './resources/lightExtensionReferences';
 import { createLightExtensionsResource, lightExtensionActionNames } from './resources/lightExtensions';
 import { LightExtensionAuditService } from './services/LightExtensionAuditService';
-import { LightExtensionAuthoringInspector } from './services/LightExtensionAuthoringInspector';
 import { LightExtensionCompilePreviewService } from './services/LightExtensionCompilePreviewService';
-import { LightExtensionEntryScanner } from './services/LightExtensionEntryScanner';
+import { LightExtensionEntryService } from './services/LightExtensionEntryService';
 import { LightExtensionFileService } from './services/LightExtensionFileService';
 import { LightExtensionPermissionService } from './services/LightExtensionPermissionService';
 import { LightExtensionRepoService } from './services/LightExtensionRepoService';
@@ -66,6 +65,7 @@ type AppWithPluginEvents = {
     };
   };
   acl?: {
+    allow?: (resource: string, actions: string | string[], condition: string) => void;
     registerSnippet?: (snippet: { name: string; actions: string[] }) => void;
   };
   on?: (eventName: 'afterLoadPlugin', listener: PluginLoadListener) => unknown;
@@ -104,8 +104,6 @@ export class PluginLightExtensionServer extends Plugin {
 
   private validator?: LightExtensionValidator;
 
-  private authoringInspector?: LightExtensionAuthoringInspector;
-
   private workspaceCompilerBridge?: LightExtensionWorkspaceCompilerBridge;
 
   private compilePreviewService?: LightExtensionCompilePreviewService;
@@ -114,21 +112,13 @@ export class PluginLightExtensionServer extends Plugin {
 
   private runtimeCompileService?: LightExtensionRuntimeCompileService;
 
-  private entryScanner?: LightExtensionEntryScanner;
+  private entryService?: LightExtensionEntryService;
 
   private referenceService?: ReferenceService;
 
   private unregisterVscPermissionHook?: () => void;
 
   private pendingVscPluginListener?: PluginLoadListener;
-
-  getWorkspaceCompilerBridge(): LightExtensionWorkspaceCompilerBridge | undefined {
-    return this.workspaceCompilerBridge;
-  }
-
-  getReferenceService(): ReferenceService | undefined {
-    return this.referenceService;
-  }
 
   async syncFlowModelReferencesForNodeTree(
     input: { rootUid: string; action?: string },
@@ -143,8 +133,6 @@ export class PluginLightExtensionServer extends Plugin {
   ) {
     return this.referenceService?.markFlowModelReferencesOwnerMissingForNodeTree(input, ctx);
   }
-
-  async afterAdd() {}
 
   async beforeLoad() {
     const db = this.db;
@@ -166,12 +154,7 @@ export class PluginLightExtensionServer extends Plugin {
     this.auditService = new LightExtensionAuditService(db);
     this.permissionService = new LightExtensionPermissionService(this.auditService);
     this.validator = new LightExtensionValidator();
-    this.authoringInspector = new LightExtensionAuthoringInspector();
-    this.workspaceCompilerBridge = new LightExtensionWorkspaceCompilerBridge(
-      this.auditService,
-      this.permissionService,
-      this.authoringInspector,
-    );
+    this.workspaceCompilerBridge = new LightExtensionWorkspaceCompilerBridge(this.auditService, this.permissionService);
     const sharedVscPermissionHooks = findVscPermissionHookRegistry((this.app as unknown as AppWithPluginEvents).pm);
     this.repoService = new LightExtensionRepoService(
       db,
@@ -188,13 +171,7 @@ export class PluginLightExtensionServer extends Plugin {
       sharedVscPermissionHooks,
       this.validator,
     );
-    this.entryScanner = new LightExtensionEntryScanner(
-      db,
-      this.auditService,
-      this.fileService,
-      this.repoService,
-      this.validator,
-    );
+    this.entryService = new LightExtensionEntryService(db, this.fileService, this.repoService, this.validator);
     this.compilePreviewService = new LightExtensionCompilePreviewService(
       db,
       this.auditService,
@@ -204,11 +181,11 @@ export class PluginLightExtensionServer extends Plugin {
       this.validator,
     );
     this.referenceService = new ReferenceService(db, this.auditService, this.permissionService);
-    this.runtimeResolveService = new RuntimeResolveService(db, this.auditService, this.permissionService);
+    this.runtimeResolveService = new RuntimeResolveService(db);
     this.runtimeCompileService = new LightExtensionRuntimeCompileService(
       db,
       this.fileService,
-      this.entryScanner,
+      this.entryService,
       this.workspaceCompilerBridge,
     );
     this.repoService.useReferenceService(this.referenceService);
@@ -223,13 +200,13 @@ export class PluginLightExtensionServer extends Plugin {
       createLightExtensionReferencesResource(this.referenceService),
     );
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
-      createLightExtensionReposResource(this.repoService, this.entryScanner, this.runtimeCompileService),
+      createLightExtensionReposResource(db, this.repoService, this.runtimeCompileService),
     );
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
       createLightExtensionFilesResource(this.fileService, this.runtimeCompileService),
     );
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
-      createLightExtensionEntriesResource(this.entryScanner, this.runtimeResolveService),
+      createLightExtensionEntriesResource(this.entryService, this.runtimeResolveService),
     );
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
       createLightExtensionCapabilitiesResource(this.validator),
@@ -241,10 +218,6 @@ export class PluginLightExtensionServer extends Plugin {
     this.registerVscPermissionHookWhenAvailable();
   }
 
-  async install() {}
-
-  async afterEnable() {}
-
   async afterDisable() {
     this.unregisterVscPermissionHookWhenNeeded();
   }
@@ -255,12 +228,12 @@ export class PluginLightExtensionServer extends Plugin {
 
   private registerAclActions() {
     const app = this.app as unknown as AppWithPluginEvents;
+    app.acl?.allow?.('lightExtensionRuntime', [...lightExtensionRuntimeActionNames], 'loggedIn');
     app.acl?.registerSnippet?.({
       name: LIGHT_EXTENSION_ACL_SNIPPET,
       actions: [
         ...LIGHT_EXTENSION_ACL_ACTIONS.map((action) => `lightExtension:${action}`),
         ...lightExtensionActionNames.map((action) => `lightExtensions:${action}`),
-        ...lightExtensionRuntimeActionNames.map((action) => `lightExtensionRuntime:${action}`),
         ...lightExtensionReferenceActionNames.map((action) => `lightExtensionReferences:${action}`),
         ...lightExtensionRepoActionNames.map((action) => `lightExtensionRepos:${action}`),
         ...lightExtensionFileActionNames.map((action) => `lightExtensionFiles:${action}`),
@@ -457,7 +430,11 @@ function getDocumentedCompilePreviewRepoId(path: string, resourcePrefix?: string
     return null;
   }
 
-  return decodeURIComponent(match[1]);
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return null;
+  }
 }
 
 function getCapabilitiesResourcePath(resourcePrefix?: string): string {

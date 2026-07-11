@@ -39,12 +39,7 @@ import type {
 import { RefService } from './RefService';
 import { RepositoryService } from './RepositoryService';
 import { TreeService } from './TreeService';
-import type {
-  VscPermissionAction,
-  VscPermissionHook,
-  VscPermissionHookInput,
-  VscPermissionRequestMetadata,
-} from '../permissions';
+import type { VscPermissionAction, VscPermissionHookInput, VscPermissionRequestMetadata } from '../permissions';
 import { VscPermissionHookRegistry } from '../permissions';
 
 export interface VscServiceContext {
@@ -179,10 +174,6 @@ export class VscFileService {
     this.refService = new RefService(db, this.commitService, this.repositoryService, this.treeService);
   }
 
-  registerPermissionHook(hook: VscPermissionHook): () => void {
-    return this.permissionHooks.register(hook);
-  }
-
   async createRepository(input: CreateRepositoryInput, ctx: VscServiceContext = {}): Promise<CreateRepositoryResult> {
     return this.withTransaction(ctx.transaction, async (transaction) => {
       await this.assertPermission(
@@ -267,9 +258,19 @@ export class VscFileService {
     return repository;
   }
 
+  async getRepositoryForUpdate(input: RepositoryIdInput, ctx: VscServiceContext): Promise<VscRepositoryRecord> {
+    if (!ctx.transaction) {
+      throw new VscError('INTERNAL_ERROR', 'A transaction is required to lock a repository');
+    }
+
+    const repository = await this.repositoryService.getRepositoryForUpdate(input.repoId, ctx.transaction);
+    await this.assertPermission({ action: 'getRepository', repository }, ctx);
+    return repository;
+  }
+
   async archiveRepository(input: RepositoryIdInput, ctx: VscServiceContext = {}): Promise<VscRepositoryRecord> {
     return this.withTransaction(ctx.transaction, async (transaction) => {
-      const repository = await this.repositoryService.getRepository(input.repoId, transaction);
+      const repository = await this.repositoryService.getRepositoryForUpdate(input.repoId, transaction);
       await this.assertPermission({ action: 'archiveRepository', repository }, ctx);
       return this.repositoryService.archiveRepository(input.repoId, transaction);
     });
@@ -305,7 +306,7 @@ export class VscFileService {
       ctx,
     );
 
-    const resolved = await this.resolveRef(input.repoId, input.ref, ctx.transaction);
+    const resolved = await this.resolveRef(repository, ctx.transaction);
 
     if (!resolved.commit) {
       return {
@@ -390,7 +391,7 @@ export class VscFileService {
       ctx,
     );
 
-    const resolved = await this.resolveRef(input.repoId, input.ref, ctx.transaction);
+    const resolved = await this.resolveRef(repository, ctx.transaction);
     if (!resolved.commit) {
       throw new VscError('FILE_NOT_FOUND', `File "${input.path}" was not found`);
     }
@@ -406,17 +407,7 @@ export class VscFileService {
   }
 
   async diff(input: DiffCommitsInput, ctx: VscServiceContext = {}): Promise<FileDiffResult> {
-    const repository = await this.repositoryService.getRepository(input.repoId, ctx.transaction);
-    await this.assertPermission(
-      {
-        action: 'diff',
-        repository,
-        sourceCommitId: input.fromCommitId,
-        targetCommitId: input.toCommitId,
-      },
-      ctx,
-    );
-    return this.diffService.diffCommits(input, ctx.transaction);
+    return this.diffCommits(input, ctx);
   }
 
   async diffCommits(input: DiffCommitsInput, ctx: VscServiceContext = {}): Promise<FileDiffResult> {
@@ -527,7 +518,7 @@ export class VscFileService {
       const baseEntries = baseCommit
         ? await this.treeService.loadTreeEntries(baseCommit.treeHash, { transaction })
         : [];
-      const allowedBlobHashes = await this.collectAllowedBlobHashes(input, baseEntries, transaction);
+      const allowedBlobHashes = new Set(baseEntries.map((entry) => entry.blobHash));
       const nextEntries = this.applyFileChanges(baseEntries, input.files, allowedBlobHashes);
       const nextTreeHash = await this.treeService.hashTree(nextEntries, { transaction });
       const baseTreeHash = baseCommit ? baseCommit.treeHash : await this.treeService.hashTree([], { transaction });
@@ -584,15 +575,6 @@ export class VscFileService {
     }
   }
 
-  private async collectAllowedBlobHashes(
-    input: PushInput,
-    baseEntries: VscNormalizedTreeEntry[],
-    transaction: Transaction,
-  ): Promise<Set<string>> {
-    const allowedBlobHashes = new Set(baseEntries.map((entry) => entry.blobHash));
-    return allowedBlobHashes;
-  }
-
   private applyFileChanges(
     baseEntries: VscNormalizedTreeEntry[],
     changes: VscFileChange[],
@@ -640,11 +622,8 @@ export class VscFileService {
     return Array.from(entriesByPath.values());
   }
 
-  private async resolveRef(repoId: string, refName?: VscRefName, transaction?: Transaction): Promise<ResolvedRef> {
-    const repository = await this.repositoryService.getRepository(repoId, transaction);
-    const ref = await this.repositoryService.getRef(repoId, refName || repository.defaultRef, transaction);
-
-    if (!ref.commitId) {
+  private async resolveRef(repository: VscRepositoryRecord, transaction?: Transaction): Promise<ResolvedRef> {
+    if (!repository.headCommitId) {
       return {
         repository,
         commit: null,
@@ -653,7 +632,7 @@ export class VscFileService {
 
     return {
       repository,
-      commit: await this.commitService.getCommit(repoId, ref.commitId, transaction),
+      commit: await this.commitService.getCommit(repository.id, repository.headCommitId, transaction),
     };
   }
 

@@ -25,14 +25,14 @@ import { LightExtensionPermissionService } from '../services/LightExtensionPermi
 import PluginLightExtensionServer from '../plugin';
 
 describe('plugin-light-extension permission service', () => {
-  it('registers light-extension ACL actions through the management snippet without blanket logged-in access', async () => {
+  it('allows logged-in runtime resolution while keeping management actions behind the management snippet', async () => {
     type RegisteredSnippet = { name: string; actions: string[] };
 
-    let registeredSnippet: RegisteredSnippet | null = null;
+    const registeredSnippets: RegisteredSnippet[] = [];
     const acl = {
       allow: vi.fn(),
       registerSnippet: vi.fn((snippet: RegisteredSnippet) => {
-        registeredSnippet = snippet;
+        registeredSnippets.push(snippet);
       }),
     };
     const app = {
@@ -57,14 +57,13 @@ describe('plugin-light-extension permission service', () => {
 
     await plugin.load();
 
-    expect(acl.allow).not.toHaveBeenCalled();
+    expect(acl.allow).toHaveBeenCalledWith('lightExtensionRuntime', [...lightExtensionRuntimeActionNames], 'loggedIn');
     expect(acl.registerSnippet).toHaveBeenCalledTimes(1);
-    expect(registeredSnippet).toEqual({
+    expect(registeredSnippets).toContainEqual({
       name: LIGHT_EXTENSION_ACL_SNIPPET,
       actions: [
         ...LIGHT_EXTENSION_ACL_ACTIONS.map((action) => `lightExtension:${action}`),
         ...lightExtensionActionNames.map((action) => `lightExtensions:${action}`),
-        ...lightExtensionRuntimeActionNames.map((action) => `lightExtensionRuntime:${action}`),
         ...lightExtensionReferenceActionNames.map((action) => `lightExtensionReferences:${action}`),
         ...lightExtensionRepoActionNames.map((action) => `lightExtensionRepos:${action}`),
         ...lightExtensionFileActionNames.map((action) => `lightExtensionFiles:${action}`),
@@ -72,9 +71,13 @@ describe('plugin-light-extension permission service', () => {
         ...lightExtensionCapabilitiesActionNames.map((action) => `lightExtensionCapabilities:${action}`),
       ],
     });
-    expect(registeredSnippet?.actions).toContain('lightExtensionRuntime:resolve');
-    expect(registeredSnippet?.actions).toContain('lightExtensionFiles:saveSource');
-    expect(registeredSnippet?.actions).toContain('lightExtensionCapabilities:get');
+    const managementSnippet = registeredSnippets.find((snippet) => snippet.name === LIGHT_EXTENSION_ACL_SNIPPET);
+    expect(managementSnippet?.actions).not.toContain('lightExtensionRuntime:resolve');
+    expect(managementSnippet?.actions).not.toContain('lightExtension:updateMeta');
+    expect(managementSnippet?.actions).not.toContain('lightExtension:viewLogs');
+    expect(managementSnippet?.actions).not.toContain('lightExtension:sync');
+    expect(managementSnippet?.actions).toContain('lightExtensionFiles:saveSource');
+    expect(managementSnippet?.actions).toContain('lightExtensionCapabilities:get');
   });
 
   it('registers the vsc permission hook after vsc-file becomes available later', async () => {
@@ -155,7 +158,6 @@ describe('plugin-light-extension permission service', () => {
         status: 'active',
         defaultRef: 'head',
         headCommitId: null,
-        publishedCommitId: null,
         headSeq: 0,
       },
       ownerType: 'light-extension',

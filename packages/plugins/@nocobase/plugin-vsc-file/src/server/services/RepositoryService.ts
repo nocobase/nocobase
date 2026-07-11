@@ -71,6 +71,20 @@ export class RepositoryService {
     return repositoryFromRecord(record);
   }
 
+  async getRepositoryForUpdate(repoId: string, transaction: Transaction): Promise<VscRepositoryRecord> {
+    const model = this.db.getModel<Model<VscRepositoryRecord>>('vscFileRepositories');
+    const record = await model.findByPk(repoId, {
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    });
+
+    if (!record) {
+      throw new VscError('REPO_NOT_FOUND', `Repository "${repoId}" was not found`);
+    }
+
+    return repositoryFromRecord(record);
+  }
+
   async archiveRepository(repoId: string, transaction?: Transaction): Promise<VscRepositoryRecord> {
     const repository = await this.getRepository(repoId, transaction);
     if (repository.status === 'archived') {
@@ -86,22 +100,6 @@ export class RepositoryService {
     });
 
     return this.getRepository(repoId, transaction);
-  }
-
-  async findRepositoryByIdentity(
-    input: VscRepositoryIdentity,
-    transaction?: Transaction,
-  ): Promise<VscRepositoryRecord | null> {
-    const record = await this.db.getRepository('vscFileRepositories').findOne({
-      filter: {
-        ownerType: input.ownerType,
-        ownerId: input.ownerId,
-        name: input.name,
-      },
-      transaction,
-    });
-
-    return record ? repositoryFromRecord(record) : null;
   }
 
   async getRef(repoId: string, name: string, transaction?: Transaction): Promise<VscRefRecord> {
@@ -136,12 +134,19 @@ export class RepositoryService {
         where: {
           id: repository.id,
           headCommitId: repository.headCommitId,
+          status: 'active',
         },
         transaction,
       },
     );
 
     if (updatedCount !== 1) {
+      const currentRepository = transaction
+        ? await this.getRepositoryForUpdate(repository.id, transaction)
+        : await this.getRepository(repository.id);
+      if (currentRepository.status === 'archived') {
+        throw new VscError('REPO_ARCHIVED', `Repository "${repository.id}" is archived`);
+      }
       throw new VscError('BASE_COMMIT_OUTDATED', 'Repository head was updated by another writer');
     }
 
@@ -167,21 +172,13 @@ export class RepositoryService {
   }
 
   private async createDefaultRefs(repoId: string, transaction?: Transaction) {
-    await this.db.getRepository('vscFileRefs').createMany({
-      records: [
-        {
-          repoId,
-          name: 'head',
-          type: 'branch',
-          commitId: null,
-        },
-        {
-          repoId,
-          name: 'published',
-          type: 'branch',
-          commitId: null,
-        },
-      ],
+    await this.db.getRepository('vscFileRefs').create({
+      values: {
+        repoId,
+        name: 'head',
+        type: 'branch',
+        commitId: null,
+      },
       transaction,
     });
   }
@@ -195,7 +192,6 @@ function repositoryDefaults(input: VscRepositoryIdentity): Omit<VscRepositoryRec
     status: 'active',
     defaultRef: 'head',
     headCommitId: null,
-    publishedCommitId: null,
     headSeq: 0,
   };
 }
@@ -207,9 +203,8 @@ export function repositoryFromRecord(record: Model): VscRepositoryRecord {
     ownerId: record.get('ownerId') as string,
     name: record.get('name') as string,
     status: record.get('status') as VscRepositoryRecord['status'],
-    defaultRef: record.get('defaultRef') as string,
+    defaultRef: record.get('defaultRef') as VscRepositoryRecord['defaultRef'],
     headCommitId: (record.get('headCommitId') as string | null) || null,
-    publishedCommitId: (record.get('publishedCommitId') as string | null) || null,
     headSeq: record.get('headSeq') as number,
   };
 }
@@ -218,7 +213,7 @@ export function refFromRecord(record: Model): VscRefRecord {
   return {
     id: record.get('id') as string,
     repoId: record.get('repoId') as string,
-    name: record.get('name') as string,
+    name: record.get('name') as VscRefRecord['name'],
     type: record.get('type') as string,
     commitId: (record.get('commitId') as string | null) || null,
   };

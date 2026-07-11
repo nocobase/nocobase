@@ -9,9 +9,12 @@
 
 import { Database, createMockDatabase } from '@nocobase/database';
 import path from 'path';
+import { vi } from 'vitest';
 
 import { VscError } from '../../shared/errors';
 import { BlobService } from '../services/BlobService';
+import { CommitService } from '../services/CommitService';
+import { RepositoryService } from '../services/RepositoryService';
 import { TreeService } from '../services/TreeService';
 import type { PushResult } from '../services/VscFileService';
 import { VscFileService } from '../services/VscFileService';
@@ -36,6 +39,7 @@ describe('vsc-file concurrency behavior', () => {
   });
 
   afterEach(async () => {
+    vi.restoreAllMocks();
     await db?.close();
   });
 
@@ -81,6 +85,127 @@ describe('vsc-file concurrency behavior', () => {
         },
       }),
     ).toBe(2);
+  });
+
+  it('rolls back a push when the repository is archived after the writer reads head', async () => {
+    const { repository, initialCommit } = await service.createRepository({
+      ownerType: 'plugin',
+      ownerId: 'archive-push',
+      name: 'main',
+      initialFiles: [{ path: 'README.md', content: '# Demo\n' }],
+    });
+    if (!initialCommit) {
+      throw new Error('Expected an initial commit');
+    }
+
+    const staleRepository = await service.getRepository({ repoId: repository.id });
+    await service.archiveRepository({ repoId: repository.id });
+    const commitCountBefore = await db.getRepository('vscFileCommits').count({
+      filter: {
+        repoId: repository.id,
+      },
+    });
+
+    const getRepositorySpy = vi
+      .spyOn(RepositoryService.prototype, 'getRepository')
+      .mockResolvedValueOnce(staleRepository);
+    const getRepositoryForUpdateSpy = vi.spyOn(RepositoryService.prototype, 'getRepositoryForUpdate');
+    const createCommitSpy = vi.spyOn(CommitService.prototype, 'createCommit');
+
+    await expect(
+      service.push({
+        repoId: repository.id,
+        baseCommitId: initialCommit.id,
+        message: 'must not commit after archive',
+        files: [{ path: 'src/index.ts', content: 'export const value = 1;\n' }],
+      }),
+    ).rejects.toMatchObject<VscError>({
+      code: 'REPO_ARCHIVED',
+    });
+
+    expect(getRepositorySpy).toHaveBeenCalledTimes(1);
+    expect(getRepositoryForUpdateSpy).toHaveBeenCalledTimes(1);
+    expect(createCommitSpy).toHaveBeenCalledTimes(1);
+    getRepositorySpy.mockRestore();
+    getRepositoryForUpdateSpy.mockRestore();
+    createCommitSpy.mockRestore();
+
+    expect(await service.getRepository({ repoId: repository.id })).toMatchObject({
+      status: 'archived',
+      headCommitId: initialCommit.id,
+      headSeq: 1,
+    });
+    expect((await service.listRefs({ repoId: repository.id }))[0]?.commitId).toBe(initialCommit.id);
+    expect(
+      await db.getRepository('vscFileCommits').count({
+        filter: {
+          repoId: repository.id,
+        },
+      }),
+    ).toBe(commitCountBefore);
+  });
+
+  it('rolls back a restore when the repository is archived after the writer reads head', async () => {
+    const { repository, initialCommit } = await service.createRepository({
+      ownerType: 'plugin',
+      ownerId: 'archive-restore',
+      name: 'main',
+      initialFiles: [{ path: 'README.md', content: '# Version 1\n' }],
+    });
+    if (!initialCommit) {
+      throw new Error('Expected an initial commit');
+    }
+    const second = await service.push({
+      repoId: repository.id,
+      baseCommitId: initialCommit.id,
+      message: 'version 2',
+      files: [{ path: 'README.md', content: '# Version 2\n' }],
+    });
+    const staleRepository = await service.getRepository({ repoId: repository.id });
+    await service.archiveRepository({ repoId: repository.id });
+    const commitCountBefore = await db.getRepository('vscFileCommits').count({
+      filter: {
+        repoId: repository.id,
+      },
+    });
+
+    const getRepositorySpy = vi
+      .spyOn(RepositoryService.prototype, 'getRepository')
+      .mockResolvedValueOnce(staleRepository)
+      .mockResolvedValueOnce(staleRepository);
+    const getRepositoryForUpdateSpy = vi.spyOn(RepositoryService.prototype, 'getRepositoryForUpdate');
+    const createCommitSpy = vi.spyOn(CommitService.prototype, 'createCommit');
+
+    await expect(
+      service.restoreCommit({
+        repoId: repository.id,
+        sourceCommitId: initialCommit.id,
+        message: 'must not restore after archive',
+      }),
+    ).rejects.toMatchObject<VscError>({
+      code: 'REPO_ARCHIVED',
+    });
+
+    expect(getRepositorySpy).toHaveBeenCalledTimes(2);
+    expect(getRepositoryForUpdateSpy).toHaveBeenCalledTimes(1);
+    expect(createCommitSpy).toHaveBeenCalledTimes(1);
+    getRepositorySpy.mockRestore();
+    getRepositoryForUpdateSpy.mockRestore();
+    createCommitSpy.mockRestore();
+
+    expect(await service.getRepository({ repoId: repository.id })).toMatchObject({
+      status: 'archived',
+      headCommitId: second.commit.id,
+      headSeq: 2,
+    });
+    expect((await service.listRefs({ repoId: repository.id }))[0]?.commitId).toBe(second.commit.id);
+    expect(
+      await db.getRepository('vscFileCommits').count({
+        filter: {
+          repoId: repository.id,
+        },
+      }),
+    ).toBe(commitCountBefore);
   });
 
   it('returns existing immutable blobs and trees during duplicate insertion races', async () => {

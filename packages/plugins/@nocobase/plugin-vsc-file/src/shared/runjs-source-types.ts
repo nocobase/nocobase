@@ -12,11 +12,14 @@ import { sha256Hex } from './hash';
 import type { RunJSSourceLocator } from './runjs-source-contracts';
 import type { VscFileChange, VscRepositoryIdentity } from './types';
 
+const unsafePathSegments = new Set(['__proto__', 'constructor', 'prototype']);
+const MAX_RUNJS_PATH_ARRAY_INDEX = 100_000;
+
 export type {
   RunJSCompileDiagnostic,
   RunJSLanguage,
   RunJSLegacySource,
-  RunJSPublishedWriteResult,
+  RunJSRuntimeWriteResult,
   RunJSRuntimeArtifact,
   RunJSSourceAdapter,
   RunJSSourceAdapterContext,
@@ -28,8 +31,8 @@ export type {
   RunJSSourceOpenResult,
   RunJSSourcePermissionCheck,
   RunJSSourcePermissionResult,
-  RunJSSourcePublishInput,
-  RunJSSourcePublishResult,
+  RunJSSourceSaveInput,
+  RunJSSourceSaveResult,
   RunJSSurfaceStyle,
 } from './runjs-source-contracts';
 
@@ -41,8 +44,8 @@ export function normalizeRunJSSourceLocator(value: unknown): RunJSSourceLocator 
     return {
       kind,
       modelUid: requireString(input.modelUid, 'modelUid'),
-      flowKey: requireString(input.flowKey, 'flowKey'),
-      stepKey: requireString(input.stepKey, 'stepKey'),
+      flowKey: requirePathSegment(input.flowKey, 'flowKey'),
+      stepKey: requirePathSegment(input.stepKey, 'stepKey'),
       paramPath: requireStringArray(input.paramPath, 'paramPath'),
       versionPath: optionalStringArray(input.versionPath, 'versionPath'),
     };
@@ -52,8 +55,8 @@ export function normalizeRunJSSourceLocator(value: unknown): RunJSSourceLocator 
     return {
       kind,
       modelUid: requireString(input.modelUid, 'modelUid'),
-      containerFlowKey: requireString(input.containerFlowKey, 'containerFlowKey'),
-      containerStepKey: requireString(input.containerStepKey, 'containerStepKey'),
+      containerFlowKey: requirePathSegment(input.containerFlowKey, 'containerFlowKey'),
+      containerStepKey: requirePathSegment(input.containerStepKey, 'containerStepKey'),
       valuePath: requirePathArray(input.valuePath, 'valuePath'),
       scene: requireString(input.scene, 'scene'),
     };
@@ -63,8 +66,8 @@ export function normalizeRunJSSourceLocator(value: unknown): RunJSSourceLocator 
     return {
       kind,
       modelUid: requireString(input.modelUid, 'modelUid'),
-      flowKey: requireString(input.flowKey, 'flowKey'),
-      stepKey: requireString(input.stepKey, 'stepKey'),
+      flowKey: requirePathSegment(input.flowKey, 'flowKey'),
+      stepKey: requirePathSegment(input.stepKey, 'stepKey'),
       sourcePath: requireStringArray(input.sourcePath, 'sourcePath'),
     };
   }
@@ -215,8 +218,14 @@ function requireString(value: unknown, field: string): string {
   throw new VscError('RUNJS_SOURCE_LOCATOR_INVALID', `RunJS source locator field "${field}" is invalid`);
 }
 
+function requirePathSegment(value: unknown, field: string): string {
+  const segment = requireString(value, field);
+  assertSafePathSegment(segment, field);
+  return segment;
+}
+
 function requireStringOrNumber(value: unknown, field: string): string | number {
-  if ((typeof value === 'string' && value.trim()) || typeof value === 'number') {
+  if ((typeof value === 'string' && value.trim()) || isNonNegativeSafeInteger(value)) {
     return value;
   }
 
@@ -225,7 +234,9 @@ function requireStringOrNumber(value: unknown, field: string): string | number {
 
 function requireStringArray(value: unknown, field: string): string[] {
   if (Array.isArray(value) && value.length > 0 && value.every((item) => typeof item === 'string' && item.trim())) {
-    return [...value] as string[];
+    const path = [...value] as string[];
+    path.forEach((segment, index) => assertSafePathSegment(segment, `${field}[${index}]`));
+    return path;
   }
 
   throw new VscError('RUNJS_SOURCE_LOCATOR_INVALID', `RunJS source locator field "${field}" is invalid`);
@@ -243,10 +254,37 @@ function requirePathArray(value: unknown, field: string): Array<string | number>
   if (
     Array.isArray(value) &&
     value.length > 0 &&
-    value.every((item) => (typeof item === 'string' && item.trim()) || typeof item === 'number')
+    value.every(
+      (item) =>
+        (typeof item === 'string' && item.trim()) ||
+        (isNonNegativeSafeInteger(item) && item <= MAX_RUNJS_PATH_ARRAY_INDEX),
+    )
   ) {
-    return [...value] as Array<string | number>;
+    const path = [...value] as Array<string | number>;
+    path.forEach((segment, index) => {
+      if (typeof segment === 'string') {
+        assertSafePathSegment(segment, `${field}[${index}]`);
+      }
+    });
+    return path;
   }
 
   throw new VscError('RUNJS_SOURCE_LOCATOR_INVALID', `RunJS source locator field "${field}" is invalid`);
+}
+
+function isNonNegativeSafeInteger(value: unknown): value is number {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
+}
+
+function assertSafePathSegment(segment: string, field: string): void {
+  if (!unsafePathSegments.has(segment)) {
+    return;
+  }
+
+  throw new VscError('RUNJS_SOURCE_LOCATOR_INVALID', `RunJS source locator field "${field}" is unsafe`, {
+    details: {
+      field,
+      segment,
+    },
+  });
 }

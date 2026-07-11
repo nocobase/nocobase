@@ -8,5 +8,4 @@
  */
 
 export * from './server';
-export * from './shared/runjs-source-types';
 export { default } from './server';

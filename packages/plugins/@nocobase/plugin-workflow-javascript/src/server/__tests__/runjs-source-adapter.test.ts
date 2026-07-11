@@ -27,7 +27,7 @@ describe('workflow-javascript RunJS source adapter', () => {
     await app.destroy();
   });
 
-  it('publishes workflow JavaScript node content while preserving other config fields', async () => {
+  it('saves workflow JavaScript node content while preserving other config fields', async () => {
     const WorkflowModel = app.db.getCollection('workflows').model;
     const workflow = await WorkflowModel.create({
       enabled: false,
@@ -73,7 +73,7 @@ describe('workflow-javascript RunJS source adapter', () => {
       ctx: adapterCtx,
     });
     await app.db.sequelize.transaction(async (transaction) => {
-      await adapter.writePublished({
+      await adapter.writeRuntime({
         locator,
         artifact: {
           code: 'return score + 2;',
@@ -100,7 +100,130 @@ describe('workflow-javascript RunJS source adapter', () => {
     });
   });
 
-  it('denies publishing a script node after the workflow version has executed', async () => {
+  it('preserves sibling node config changed after the source was opened', async () => {
+    const WorkflowModel = app.db.getCollection('workflows').model;
+    const workflow = await WorkflowModel.create({
+      enabled: false,
+      type: 'asyncTrigger',
+    });
+    const node = await workflow.createNode({
+      title: 'Changing sibling config',
+      type: 'script',
+      config: {
+        arguments: [{ name: 'score', value: 1 }],
+        content: 'return score + 1;',
+        timeout: 1000,
+      },
+    });
+    const locator: RunJSSourceLocator = {
+      kind: 'workflow.javascript',
+      nodeId: node.id,
+    };
+    const adapter = createWorkflowJavaScriptRunJSSourceAdapter(app.db);
+    const adapterCtx = {
+      can: () => ({}),
+    };
+    const legacy = await adapter.readLegacy({ locator, ctx: adapterCtx });
+
+    await node.update({
+      config: {
+        arguments: [{ name: 'score', value: 2 }],
+        content: 'return score + 1;',
+        timeout: 3000,
+      },
+    });
+
+    await app.db.sequelize.transaction(async (transaction) => {
+      await adapter.writeRuntime({
+        locator,
+        artifact: {
+          code: 'return score + 2;',
+          version: 'workflow-js',
+          diagnostics: [],
+          filesHash: 'test-files-hash',
+          entryPath: 'src/main.js',
+        },
+        commitId: 'vscc_test',
+        baseOwnerFingerprint: legacy.ownerFingerprint,
+        ctx: {
+          ...adapterCtx,
+          transaction,
+        },
+      });
+    });
+
+    await node.reload();
+    expect(node.get('config')).toMatchObject({
+      arguments: [{ name: 'score', value: 2 }],
+      content: 'return score + 2;',
+      timeout: 3000,
+    });
+  });
+
+  it('rejects save when workflow JavaScript host code diverges from the versioned source', async () => {
+    const WorkflowModel = app.db.getCollection('workflows').model;
+    const workflow = await WorkflowModel.create({
+      enabled: false,
+      type: 'asyncTrigger',
+    });
+    const node = await workflow.createNode({
+      title: 'Diverged host code',
+      type: 'script',
+      config: {
+        content: 'return 1;',
+        timeout: 1000,
+      },
+    });
+    const locator: RunJSSourceLocator = {
+      kind: 'workflow.javascript',
+      nodeId: node.id,
+    };
+    const adapter = createWorkflowJavaScriptRunJSSourceAdapter(app.db);
+    const adapterCtx = {
+      can: () => ({}),
+    };
+    const legacy = await adapter.readLegacy({ locator, ctx: adapterCtx });
+
+    await node.update({
+      config: {
+        content: 'return 99;',
+        timeout: 1000,
+      },
+    });
+
+    await expect(
+      app.db.sequelize.transaction(async (transaction) => {
+        await adapter.writeRuntime({
+          locator,
+          artifact: {
+            code: 'return 2;',
+            version: 'workflow-js',
+            diagnostics: [],
+            filesHash: 'test-files-hash',
+            entryPath: 'src/main.js',
+          },
+          commitId: 'vscc_test',
+          baseOwnerFingerprint: legacy.ownerFingerprint,
+          ctx: {
+            ...adapterCtx,
+            transaction,
+          },
+        });
+      }),
+    ).rejects.toMatchObject({
+      code: 'RUNJS_SOURCE_OWNER_OUTDATED',
+      message: 'RunJS host code differs from the versioned source',
+      status: 409,
+    });
+
+    await node.reload();
+    expect(node.get('config')).toMatchObject({
+      content: 'return 99;',
+      timeout: 1000,
+    });
+  });
+
+  it('denies saving a script node after the workflow version has executed', async () => {
     const WorkflowModel = app.db.getCollection('workflows').model;
     const workflow = await WorkflowModel.create({
       enabled: false,
@@ -132,7 +255,7 @@ describe('workflow-javascript RunJS source adapter', () => {
 
     await expect(
       app.db.sequelize.transaction(async (transaction) => {
-        await adapter.writePublished({
+        await adapter.writeRuntime({
           locator,
           artifact: {
             code: 'return score + 2;',

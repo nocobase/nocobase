@@ -26,8 +26,6 @@ const LIGHT_EXTENSION_SOURCE_BINDING = {
   repoId: 'repo_sales',
   entryId: 'entry_sales_kpi',
   kind: 'js-block',
-  publicationId: 'publication_sales_kpi_v1',
-  versionPolicy: 'pinned',
 };
 
 type ConfigureJSBlockForTest = {
@@ -74,6 +72,7 @@ describe('flowSurfaces JS block light-extension contract', () => {
         }),
       }),
     );
+    expect(options.sourceBinding?.example).toEqual(LIGHT_EXTENSION_SOURCE_BINDING);
     expect(jsBlockPaths).toEqual(
       expect.arrayContaining(['runJs.sourceRef.*', 'sourceMode', 'sourceBinding', 'settings.*']),
     );
@@ -166,7 +165,7 @@ describe('flowSurfaces JS block light-extension contract', () => {
 
     const nextBinding = {
       ...LIGHT_EXTENSION_SOURCE_BINDING,
-      publicationId: 'publication_sales_kpi_v2',
+      entryId: 'entry_sales_kpi_v2',
     };
     const configureRes = await rootAgent.resource('flowSurfaces').configure({
       values: {
@@ -208,7 +207,7 @@ describe('flowSurfaces JS block light-extension contract', () => {
         stepParams: {
           jsSettings: {
             sourceBinding: {
-              publicationId: 'publication_sales_kpi_v3',
+              entryId: 'entry_sales_kpi_v3',
             },
             settings: {
               currency: 'USD',
@@ -224,7 +223,7 @@ describe('flowSurfaces JS block light-extension contract', () => {
       sourceMode: 'light-extension',
       sourceBinding: {
         ...nextBinding,
-        publicationId: 'publication_sales_kpi_v3',
+        entryId: 'entry_sales_kpi_v3',
       },
       settings: {
         region: 'EMEA',

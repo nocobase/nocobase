@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export type LightExtensionClientTypegenKind = 'js-block' | 'js-field' | 'js-action' | 'js-item' | 'runjs' | 'event';
+export type LightExtensionClientTypegenKind = 'js-block' | 'js-field' | 'js-action' | 'js-item' | 'runjs';
 
 export interface LightExtensionSettingsTypegenSourceFile {
   path: string;
@@ -67,7 +67,6 @@ const clientKindRoots: Array<{ kind: LightExtensionClientTypegenKind; root: stri
   { kind: 'js-action', root: 'src/client/js-actions' },
   { kind: 'js-item', root: 'src/client/js-items' },
   { kind: 'runjs', root: 'src/client/runjs' },
-  { kind: 'event', root: 'src/client/events' },
 ];
 
 const contextTypes: Record<LightExtensionClientTypegenKind, string> = {
@@ -76,7 +75,6 @@ const contextTypes: Record<LightExtensionClientTypegenKind, string> = {
   'js-action': 'JSActionContext',
   'js-item': 'JSItemContext',
   runjs: 'RunJSContext',
-  event: 'EventContext',
 };
 
 export function generateClientSettingsTypes(input: {

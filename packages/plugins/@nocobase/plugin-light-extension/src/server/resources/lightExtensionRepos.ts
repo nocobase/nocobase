@@ -8,16 +8,22 @@
  */
 
 import type { Context } from '@nocobase/actions';
+import type { Database } from '@nocobase/database';
 import type { HandlerType, ResourceOptions } from '@nocobase/resourcer';
 import { isVscError } from '@nocobase/plugin-vsc-file';
 
 import { LightExtensionError, isLightExtensionError } from '../../shared/errors';
-import type { LightExtensionCreateRepoInput, LightExtensionTreeEntryInput } from '../../shared/types';
+import { LIGHT_EXTENSION_REPO_LIFECYCLE_STATUSES } from '../../constants';
+import type {
+  LightExtensionCreateRepoInput,
+  LightExtensionRepoLifecycleStatus,
+  LightExtensionTreeEntryInput,
+} from '../../shared/types';
 import type { LightExtensionServiceContext } from '../services/LightExtensionRepoService';
 import { LightExtensionRepoService } from '../services/LightExtensionRepoService';
-import { LightExtensionEntryScanner } from '../services/LightExtensionEntryScanner';
 import { LightExtensionRuntimeCompileService } from '../services/LightExtensionRuntimeCompileService';
-import { toLightExtensionSourceError } from './errorContract';
+import { parseLightExtensionSourceArchive } from '../services/LightExtensionSourceArchive';
+import { toLightExtensionSourceError } from '../services/errorContract';
 
 export const lightExtensionRepoActionNames = ['create', 'list', 'get', 'changeLifecycle', 'archive', 'delete'] as const;
 
@@ -53,9 +59,9 @@ type ResourceActionRunner = (
 ) => Promise<unknown>;
 
 interface LightExtensionRepoActionServices {
+  db: Database;
   repoService: LightExtensionRepoService;
-  scanner?: LightExtensionEntryScanner;
-  runtimeCompileService?: LightExtensionRuntimeCompileService;
+  runtimeCompileService: LightExtensionRuntimeCompileService;
 }
 
 const resourceActionRunners: Record<LightExtensionRepoActionName, ResourceActionRunner> = {
@@ -66,9 +72,7 @@ const resourceActionRunners: Record<LightExtensionRepoActionName, ResourceAction
     services.repoService.changeLifecycle(
       {
         repoId: requireRepoId(input),
-        lifecycleStatus: requireString(input, 'lifecycleStatus'),
-        expectedLifecycleStatus: optionalString(input, 'expectedLifecycleStatus'),
-        expectedVersion: optionalPositiveInteger(input, 'expectedVersion'),
+        lifecycleStatus: requireLifecycleStatus(input),
       },
       currentUser,
     ),
@@ -76,8 +80,6 @@ const resourceActionRunners: Record<LightExtensionRepoActionName, ResourceAction
     services.repoService.archiveRepo(
       {
         repoId: requireRepoId(input),
-        expectedLifecycleStatus: optionalString(input, 'expectedLifecycleStatus'),
-        expectedVersion: optionalPositiveInteger(input, 'expectedVersion'),
       },
       currentUser,
     ),
@@ -91,13 +93,13 @@ const resourceActionRunners: Record<LightExtensionRepoActionName, ResourceAction
 };
 
 export function createLightExtensionReposResource(
+  db: Database,
   repoService: LightExtensionRepoService,
-  scanner?: LightExtensionEntryScanner,
-  runtimeCompileService?: LightExtensionRuntimeCompileService,
+  runtimeCompileService: LightExtensionRuntimeCompileService,
 ): ResourceOptions {
   const services = {
+    db,
     repoService,
-    scanner,
     runtimeCompileService,
   };
   return {
@@ -142,33 +144,51 @@ async function createRepoAndCompileInitialSource(
   input: ResourceActionInput,
   currentUser: LightExtensionServiceContext,
 ) {
-  const createInput = normalizeCreateInput(input);
-  const repo = await services.repoService.createRepo(createInput, currentUser);
-  if (!createInput.initialFiles?.length || !repo.headCommitId || !services.scanner || !services.runtimeCompileService) {
-    return repo;
-  }
-
-  const scan = await services.scanner.scanRepo(
-    { repoId: repo.id },
-    {
+  const createInput = await normalizeCreateInput(input, services.repoService);
+  return services.db.sequelize.transaction(async (transaction) => {
+    const transactionContext = {
       ...currentUser,
+      transaction,
+    };
+    const repo = await services.repoService.createRepo(createInput, transactionContext);
+    if (!repo.headCommitId) {
+      throw new LightExtensionError(
+        'LIGHT_EXTENSION_SOURCE_ERROR',
+        'Light extension initial source commit is missing',
+        {
+          details: {
+            repoId: repo.id,
+          },
+        },
+      );
+    }
+
+    const compile = await services.runtimeCompileService.compileCurrentRuntime(repo.id, repo.headCommitId, {
+      ...transactionContext,
       requestSource: currentUser.requestSource || 'light-extension-create',
-    },
-  );
-  const compile = await services.runtimeCompileService.compileCurrentRuntime(repo.id, repo.headCommitId, scan, {
-    ...currentUser,
-    requestSource: currentUser.requestSource || 'light-extension-create',
+    });
+    return compile.repo;
   });
-  return compile.repo;
 }
 
-function normalizeCreateInput(input: ResourceActionInput): LightExtensionCreateRepoInput {
+async function normalizeCreateInput(
+  input: ResourceActionInput,
+  repoService: LightExtensionRepoService,
+): Promise<LightExtensionCreateRepoInput> {
+  const zipBase64 = optionalString(input, 'zipBase64');
+  const suppliedInitialFiles = optionalArray(input, 'initialFiles', normalizeTreeEntryInput);
+  const initialFiles = zipBase64
+    ? await parseLightExtensionSourceArchive(zipBase64, repoService.getValidator())
+    : suppliedInitialFiles;
+
   return {
     name: requireString(input, 'name'),
     title: optionalNullableString(input, 'title'),
     description: optionalNullableString(input, 'description'),
-    initialFiles: optionalArray(input, 'initialFiles', normalizeTreeEntryInput),
-    message: optionalString(input, 'message'),
+    initialFiles,
+    message:
+      optionalString(input, 'message') ||
+      (zipBase64 ? 'Import light extension source' : 'Initial light extension source'),
   };
 }
 
@@ -261,6 +281,14 @@ function requireString(input: ResourceActionInput, key: string, label = key): st
   return value.trim();
 }
 
+function requireLifecycleStatus(input: ResourceActionInput): LightExtensionRepoLifecycleStatus {
+  const value = requireString(input, 'lifecycleStatus');
+  if (!(LIGHT_EXTENSION_REPO_LIFECYCLE_STATUSES as readonly string[]).includes(value)) {
+    throw invalidInput('lifecycleStatus is invalid');
+  }
+  return value as LightExtensionRepoLifecycleStatus;
+}
+
 function optionalString(input: ResourceActionInput, key: string, label = key): string | undefined {
   const value = input[key];
   if (typeof value === 'undefined') {
@@ -291,18 +319,6 @@ function optionalNumber(input: ResourceActionInput, key: string, label = key): n
   }
 
   return value;
-}
-
-function optionalPositiveInteger(input: ResourceActionInput, key: string, label = key): number | undefined {
-  const value = input[key];
-  if (typeof value === 'undefined') {
-    return undefined;
-  }
-  if (!Number.isInteger(value) || value < 1) {
-    throw invalidInput(`${label} must be a positive integer`);
-  }
-
-  return value as number;
 }
 
 function optionalArray<T>(

@@ -15,6 +15,7 @@ import {
   useFlowStep,
   type FlowModel,
   type FlowRuntimeContext,
+  type ParamObject,
   type RunJSValue,
 } from '@nocobase/flow-engine';
 
@@ -23,26 +24,35 @@ import { RunJSEditorRegistry } from './RunJSEditorRegistry';
 import type { RunJSEditorFieldProps, RunJSEditorProviderRenderProps, RunJSSourceLocator } from './types';
 
 type FlowModelStepLocator = Extract<RunJSSourceLocator, { kind: 'flowModel.step' }>;
-type StepParams = Record<string, unknown>;
+type StepParams = ParamObject;
 type RunJSSettingsContext = FlowRuntimeContext<FlowModel, 'runtime' | 'settings'> & {
   getStepFormValues?: (flowKey: string, stepKey: string) => unknown;
 };
 type RunJSEditorValueMode = 'code' | 'runjsValue';
-type PublishedRunJSValue = RunJSValue & {
+type SavedRunJSValue = RunJSValue & {
   sourceRef?: unknown;
 };
+
+const UNSAFE_RUNJS_PATH_SEGMENTS = new Set(['__proto__', 'constructor', 'prototype']);
 
 function isRecord(value: unknown): value is StepParams {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
 function cloneRecord(value: unknown): StepParams {
-  return isRecord(value) ? { ...value } : {};
+  if (!isRecord(value)) {
+    return {};
+  }
+  const clone: StepParams = {};
+  for (const [key, item] of Object.entries(value)) {
+    clone[key] = item;
+  }
+  return clone;
 }
 
-function resolveVersionPath(paramPath: string[], versionPath?: string[]): string[] {
+function resolveVersionPath(paramPath: readonly string[], versionPath?: readonly string[]): string[] {
   if (versionPath?.length) {
-    return versionPath;
+    return [...versionPath];
   }
   if (paramPath.length > 1) {
     return [...paramPath.slice(0, -1), 'version'];
@@ -50,17 +60,21 @@ function resolveVersionPath(paramPath: string[], versionPath?: string[]): string
   return ['version'];
 }
 
-function resolveSourceRefPath(paramPath: string[]): string[] {
+function resolveSourceRefPath(paramPath: readonly string[]): string[] {
   if (paramPath.length > 1) {
     return [...paramPath.slice(0, -1), 'sourceRef'];
   }
   return ['sourceRef'];
 }
 
-function getAtPath(root: unknown, path: string[]): unknown {
+function getAtPath(root: unknown, path: readonly string[]): unknown {
   let current = root;
   for (const key of path) {
-    if (!isRecord(current)) {
+    if (
+      !isRecord(current) ||
+      UNSAFE_RUNJS_PATH_SEGMENTS.has(key) ||
+      !Object.prototype.hasOwnProperty.call(current, key)
+    ) {
       return undefined;
     }
     current = current[key];
@@ -68,7 +82,7 @@ function getAtPath(root: unknown, path: string[]): unknown {
   return current;
 }
 
-function resolveFallbackVersion(params: unknown, versionPath: string[]): string {
+function resolveFallbackVersion(params: unknown, versionPath: readonly string[]): string {
   const version = getAtPath(params, versionPath);
   return typeof version === 'string' && version ? version : 'v2';
 }
@@ -81,6 +95,19 @@ function normalizeEditorValue(value: unknown, fallbackVersion: string): RunJSVal
     return { code: value, version: fallbackVersion };
   }
   return { code: '', version: fallbackVersion };
+}
+
+function mergeRunJSValueWithStepParams(value: RunJSValue, stepParams: unknown): RunJSValue {
+  if (!isRecord(stepParams) || stepParams.sourceMode !== 'light-extension') {
+    return value;
+  }
+
+  return {
+    ...value,
+    sourceMode: 'light-extension',
+    ...(isRecord(stepParams.sourceBinding) ? { sourceBinding: cloneRecord(stepParams.sourceBinding) } : {}),
+    settings: isRecord(stepParams.settings) ? cloneRecord(stepParams.settings) : {},
+  };
 }
 
 function resolveValueMode(value: unknown, props: RunJSEditorFieldProps): RunJSEditorValueMode {
@@ -97,8 +124,8 @@ function toFieldChangeValue(valueMode: RunJSEditorValueMode, value: RunJSValue):
   return valueMode === 'code' ? value.code : value;
 }
 
-function setAtPath(root: StepParams, path: string[], value: unknown) {
-  if (!path.length) {
+function setAtPath(root: StepParams, path: readonly string[], value: unknown) {
+  if (!path.length || path.some((segment) => UNSAFE_RUNJS_PATH_SEGMENTS.has(segment))) {
     return;
   }
 
@@ -137,31 +164,43 @@ function createFlowModelStepLocator(
   }
 
   const paramPath = props.paramPath?.length ? props.paramPath : ['code'];
+  const versionPath = resolveVersionPath(paramPath, props.versionPath);
+  if (
+    UNSAFE_RUNJS_PATH_SEGMENTS.has(flowKey) ||
+    UNSAFE_RUNJS_PATH_SEGMENTS.has(stepKey) ||
+    paramPath.some((segment) => UNSAFE_RUNJS_PATH_SEGMENTS.has(segment)) ||
+    versionPath.some((segment) => UNSAFE_RUNJS_PATH_SEGMENTS.has(segment))
+  ) {
+    return undefined;
+  }
   return {
     kind: 'flowModel.step',
     modelUid,
     flowKey,
     stepKey,
     paramPath,
-    versionPath: resolveVersionPath(paramPath, props.versionPath),
+    versionPath,
   };
 }
 
 function syncFlowModelStepValue(
   model: FlowModel | undefined,
   locator: FlowModelStepLocator | undefined,
-  value: PublishedRunJSValue,
+  value: SavedRunJSValue,
   surfaceStyle: RunJSEditorFieldProps['surfaceStyle'],
   stepParams: unknown,
+  persist: boolean,
 ) {
   if (!model || !locator) {
     return;
   }
 
-  const currentStepParams = {
-    ...cloneRecord(model.getStepParams(locator.flowKey, locator.stepKey)),
-    ...cloneRecord(stepParams),
-  };
+  const currentStepParams: StepParams = {};
+  Object.assign(
+    currentStepParams,
+    cloneRecord(model.getStepParams(locator.flowKey, locator.stepKey)),
+    cloneRecord(stepParams),
+  );
   setAtPath(currentStepParams, locator.paramPath, value.code);
   setAtPath(currentStepParams, resolveVersionPath(locator.paramPath, locator.versionPath), value.version);
   if (value.sourceRef !== undefined) {
@@ -171,7 +210,9 @@ function syncFlowModelStepValue(
   model.invalidateFlowCache('beforeRender', true);
 
   const saveAndRefresh = async () => {
-    await model.saveStepParams();
+    if (persist) {
+      await model.saveStepParams();
+    }
     if (surfaceStyle === 'render') {
       await model.rerender();
     }
@@ -179,10 +220,10 @@ function syncFlowModelStepValue(
 
   saveAndRefresh().catch((error) => {
     if (surfaceStyle === 'render') {
-      console.error('RunJSEditorField: failed to refresh published RunJS surface', error);
+      console.error('RunJSEditorField: failed to refresh saved RunJS surface', error);
       return;
     }
-    console.error('RunJSEditorField: failed to save published RunJS source', error);
+    console.error('RunJSEditorField: failed to persist saved RunJS source', error);
   });
 }
 
@@ -218,11 +259,14 @@ export const RunJSEditorField: React.FC<RunJSEditorFieldProps> = (props) => {
   const fieldParamPath = props.paramPath?.length ? props.paramPath : ['code'];
   const fieldVersionPath = resolveVersionPath(fieldParamPath, props.versionPath);
   const valueMode = resolveValueMode(value, props);
-  const current = normalizeEditorValue(value, resolveFallbackVersion(flowStep?.params, fieldVersionPath));
   const generatedLocator = createFlowModelStepLocator(props, flowContext, flowStep?.path);
+  const current = mergeRunJSValueWithStepParams(
+    normalizeEditorValue(value, resolveFallbackVersion(flowStep?.params, fieldVersionPath)),
+    resolveCurrentStepParams(flowContext, generatedLocator, flowStep?.params),
+  );
   const locator = props.sourceLocator ?? props.locator ?? generatedLocator;
   const label = props.sourceLabel ?? props.label;
-  const handleProviderChange = (nextValue: RunJSValue) => {
+  const applyProviderChange = (nextValue: RunJSValue, persist: boolean) => {
     onChange?.(toFieldChangeValue(valueMode, nextValue));
     syncFlowModelStepValue(
       flowContext?.model,
@@ -230,12 +274,20 @@ export const RunJSEditorField: React.FC<RunJSEditorFieldProps> = (props) => {
       nextValue,
       props.surfaceStyle,
       resolveCurrentStepParams(flowContext, generatedLocator, flowStep?.params),
+      persist,
     );
+  };
+  const handleProviderChange = (nextValue: RunJSValue) => {
+    applyProviderChange(nextValue, true);
+  };
+  const handleProviderPersistedChange = (nextValue: RunJSValue) => {
+    applyProviderChange(nextValue, false);
   };
   const providerProps: RunJSEditorProviderRenderProps = {
     ...props,
     value: current,
     onChange: handleProviderChange,
+    onPersistedChange: handleProviderPersistedChange,
     locator,
     label,
     height,
@@ -248,30 +300,59 @@ export const RunJSEditorField: React.FC<RunJSEditorFieldProps> = (props) => {
     disabled,
     containerStyle,
   };
-  const provider = RunJSEditorRegistry.getProvider(providerProps);
+  const providers = RunJSEditorRegistry.getProviders();
+  const renderInlineEditor = (currentProps: RunJSEditorProviderRenderProps) => {
+    const tip = currentProps.t?.('Use return to output value') ?? 'Use return to output value';
+    return (
+      <div style={currentProps.containerStyle}>
+        <CodeEditor
+          value={currentProps.value.code}
+          onChange={(code) => currentProps.onChange?.({ ...currentProps.value, code })}
+          version={currentProps.value.version}
+          height={currentProps.height}
+          minHeight={currentProps.minHeight}
+          theme={currentProps.theme}
+          enableLinter={currentProps.enableLinter}
+          wrapperStyle={currentProps.wrapperStyle}
+          placeholder={`// ${tip}`}
+          scene={currentProps.scene}
+          readonly={currentProps.readOnly || currentProps.disabled}
+        />
+      </div>
+    );
+  };
+  const renderProvider = (index: number, currentProps: RunJSEditorProviderRenderProps): React.ReactNode => {
+    let providerIndex = index;
+    let provider = providers[providerIndex];
+    while (provider && !(provider.canHandle?.(currentProps) ?? true)) {
+      providerIndex += 1;
+      provider = providers[providerIndex];
+    }
+    if (!provider) {
+      return renderInlineEditor(currentProps);
+    }
+    return provider.renderEditor({
+      ...currentProps,
+      renderNext: (overrides = {}) =>
+        renderProvider(providerIndex + 1, {
+          ...currentProps,
+          ...overrides,
+          renderNext: undefined,
+        }),
+    });
+  };
 
-  if (provider) {
-    return <>{provider.renderEditor(providerProps)}</>;
+  if (!providers.some((provider) => provider.canHandle?.(providerProps) ?? true)) {
+    return (
+      <>
+        {renderInlineEditor({
+          ...providerProps,
+          onChange: (nextValue) =>
+            onChange?.(typeof nextValue === 'string' ? nextValue : toFieldChangeValue(valueMode, nextValue)),
+        })}
+      </>
+    );
   }
 
-  const tip = t?.('Use return to output value') ?? 'Use return to output value';
-  const placeholderText = `// ${tip}`;
-
-  return (
-    <div style={containerStyle}>
-      <CodeEditor
-        value={current.code}
-        onChange={(code) => onChange?.(toFieldChangeValue(valueMode, { ...current, code }))}
-        version={current.version}
-        height={height}
-        minHeight={minHeight}
-        theme={theme}
-        enableLinter={enableLinter}
-        wrapperStyle={wrapperStyle}
-        placeholder={placeholderText}
-        scene={scene}
-        readonly={readOnly || disabled}
-      />
-    </div>
-  );
+  return <>{renderProvider(0, providerProps)}</>;
 };

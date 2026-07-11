@@ -14,11 +14,9 @@ import { FlowSurfacesService } from '../flow-surfaces/service';
 
 const JS_ITEM_SOURCE_BINDING = {
   type: 'light-extension-entry',
-  repoId: 'repo_customers',
+  repoId: 'repo_customer_items',
   entryId: 'entry_show_level_label',
   kind: 'js-item',
-  publicationId: 'publication_show_level_label_v1',
-  versionPolicy: 'pinned',
 };
 
 type ConfigureJSItemForTest = {
@@ -74,6 +72,8 @@ describe('flowSurfaces JS item light-extension unit contract', () => {
         }),
       }),
     );
+    expect(jsItemOptions.sourceBinding?.example).toEqual(JS_ITEM_SOURCE_BINDING);
+    expect(jsItemActionOptions.sourceBinding?.example).toEqual(JS_ITEM_SOURCE_BINDING);
     expect(jsItemPaths).toEqual(
       expect.arrayContaining(['sourceBinding', 'settings.*', 'runJs.sourceMode', 'runJs.sourceBinding']),
     );

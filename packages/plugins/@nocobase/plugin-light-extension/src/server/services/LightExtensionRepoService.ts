@@ -18,6 +18,7 @@ import {
   LIGHT_EXTENSION_REPO_LIFECYCLE_STATUSES,
   type LightExtensionAclAction,
 } from '../../constants';
+import { createDefaultLightExtensionTemplate } from '../../shared/default-template';
 import { LightExtensionError } from '../../shared/errors';
 import type {
   LightExtensionChangeLifecycleInput,
@@ -70,6 +71,10 @@ export class LightExtensionRepoService {
     this.referenceService = referenceService;
   }
 
+  getValidator(): LightExtensionValidator {
+    return this.validator;
+  }
+
   async createRepo(
     input: LightExtensionCreateRepoInput,
     ctx: LightExtensionServiceContext = {},
@@ -77,7 +82,7 @@ export class LightExtensionRepoService {
     const requestId = getRequestId(ctx);
     const normalizedName = normalizeRepoName(input.name);
     const repoId = `ler_${uid()}`;
-    const initialFiles = input.initialFiles?.length ? input.initialFiles : undefined;
+    const initialFiles = input.initialFiles?.length ? input.initialFiles : createDefaultLightExtensionTemplate();
     this.assertValidInitialFiles(initialFiles);
 
     return this.withTransaction(ctx.transaction, async (transaction) => {
@@ -139,7 +144,7 @@ export class LightExtensionRepoService {
         transaction,
       });
 
-      if (initialFiles && vscResult.initialCommit) {
+      if (vscResult.initialCommit) {
         await this.auditService.recordFileWrite({
           repoId: repo.id,
           action: 'sourceCreate',
@@ -179,12 +184,37 @@ export class LightExtensionRepoService {
   }
 
   async listRepos(ctx: LightExtensionServiceContext = {}): Promise<LightExtensionRepoRecord[]> {
-    const records = await this.db.getRepository('lightExtensionRepos').find({
-      sort: ['name'],
-      transaction: ctx.transaction,
-    });
+    const [records, entryRecords] = await Promise.all([
+      this.db.getRepository('lightExtensionRepos').find({
+        sort: ['name'],
+        transaction: ctx.transaction,
+      }),
+      this.db.getRepository('lightExtensionEntries').find({
+        transaction: ctx.transaction,
+      }),
+    ]);
+    const entrySummary = new Map<string, { count: number; kinds: Record<string, number> }>();
+    for (const entry of entryRecords) {
+      if (entry.get('healthStatus') === 'missing') {
+        continue;
+      }
+      const repoId = String(entry.get('repoId'));
+      const kind = String(entry.get('kind'));
+      const summary = entrySummary.get(repoId) || { count: 0, kinds: {} };
+      summary.count += 1;
+      summary.kinds[kind] = (summary.kinds[kind] || 0) + 1;
+      entrySummary.set(repoId, summary);
+    }
 
-    return records.map(repoFromModel);
+    return records.map((record) => {
+      const repo = repoFromModel(record);
+      const summary = entrySummary.get(repo.id);
+      return {
+        ...repo,
+        entryCount: summary?.count || 0,
+        entryKinds: summary?.kinds || {},
+      };
+    });
   }
 
   async getRepo(repoId: string, ctx: LightExtensionServiceContext = {}): Promise<LightExtensionRepoRecord> {
@@ -215,56 +245,10 @@ export class LightExtensionRepoService {
     ctx: LightExtensionServiceContext = {},
   ): Promise<LightExtensionRepoRecord> {
     assertLifecycleStatus(input.lifecycleStatus, 'lifecycleStatus');
-    if (input.expectedLifecycleStatus) {
-      assertLifecycleStatus(input.expectedLifecycleStatus, 'expectedLifecycleStatus');
-    }
-    if (typeof input.expectedVersion !== 'undefined') {
-      assertVersion(input.expectedVersion, 'expectedVersion');
-    }
-    if (!input.expectedLifecycleStatus && typeof input.expectedVersion === 'undefined') {
-      throw new LightExtensionError(
-        'LIGHT_EXTENSION_INVALID_INPUT',
-        'expectedLifecycleStatus or expectedVersion is required',
-      );
-    }
     const requestId = getRequestId(ctx);
 
     return this.withTransaction(ctx.transaction, async (transaction) => {
       const current = await this.lockInternalRepoForUpdate(input.repoId, { ...ctx, transaction });
-      const lifecycleMatches =
-        !input.expectedLifecycleStatus || current.lifecycleStatus === input.expectedLifecycleStatus;
-      const versionMatches = typeof input.expectedVersion === 'undefined' || current.version === input.expectedVersion;
-
-      if (!lifecycleMatches || !versionMatches) {
-        await this.recordLifecycleBlocked({
-          repoId: input.repoId,
-          requestId,
-          ctx,
-          fromStatus: current.lifecycleStatus,
-          toStatus: input.lifecycleStatus,
-          reasonCode: lifecycleMatches ? 'version_mismatch' : 'lifecycle_status_mismatch',
-          message: 'Light extension lifecycle change rejected by compare-and-set guard',
-          details: {
-            expectedLifecycleStatus: input.expectedLifecycleStatus,
-            currentLifecycleStatus: current.lifecycleStatus,
-            expectedVersion: input.expectedVersion,
-            currentVersion: current.version,
-          },
-        });
-        throw new LightExtensionError(
-          'LIGHT_EXTENSION_LIFECYCLE_CONFLICT',
-          'Light extension lifecycle status changed, please reload before retrying',
-          {
-            details: {
-              repoId: input.repoId,
-              expectedLifecycleStatus: input.expectedLifecycleStatus,
-              currentLifecycleStatus: current.lifecycleStatus,
-              expectedVersion: input.expectedVersion,
-              currentVersion: current.version,
-            },
-          },
-        );
-      }
 
       if (current.lifecycleStatus === 'archived' && input.lifecycleStatus !== 'archived') {
         await this.recordLifecycleBlocked({
@@ -304,9 +288,6 @@ export class LightExtensionRepoService {
           toStatus: current.lifecycleStatus,
           message: 'Light extension lifecycle status already matches the requested status',
           details: {
-            expectedLifecycleStatus: input.expectedLifecycleStatus,
-            expectedVersion: input.expectedVersion,
-            currentVersion: current.version,
             unchanged: true,
           },
           transaction,
@@ -319,7 +300,6 @@ export class LightExtensionRepoService {
       await repoModel.update(
         {
           lifecycleStatus: input.lifecycleStatus,
-          version: current.version + 1,
         },
         {
           where: {
@@ -363,11 +343,6 @@ export class LightExtensionRepoService {
         fromStatus: current.lifecycleStatus,
         toStatus: next.lifecycleStatus,
         message: 'Light extension lifecycle status changed',
-        details: {
-          expectedLifecycleStatus: input.expectedLifecycleStatus,
-          expectedVersion: input.expectedVersion,
-          version: next.version,
-        },
         transaction,
       });
 
@@ -658,13 +633,9 @@ export function internalRepoFromModel(record: Model): LightExtensionRepoInternal
     normalizedName: record.get('normalizedName') as string,
     title: (record.get('title') as string | null) || null,
     description: (record.get('description') as string | null) || null,
-    version: normalizeRecordNumber(record.get('version'), 1),
     lifecycleStatus: record.get('lifecycleStatus') as LightExtensionRepoLifecycleStatus,
     healthStatus: record.get('healthStatus') as LightExtensionRepoRecord['healthStatus'],
     headCommitId: (record.get('headCommitId') as string | null) || null,
-    lastScannedCommitId: (record.get('lastScannedCommitId') as string | null) || null,
-    lastError: (record.get('lastError') as string | null) || null,
-    lastScannedAt: normalizeRecordDate(record.get('lastScannedAt')),
     lastCompiledAt: normalizeRecordDate(record.get('lastCompiledAt')),
     createdAt: normalizeRecordDate(record.get('createdAt')),
     updatedAt: normalizeRecordDate(record.get('updatedAt')),
@@ -706,7 +677,7 @@ function repoConflictError(name: string, normalizedName: string): LightExtension
 function referenceExistsError(repoId: string, referenceCount: number): LightExtensionError {
   return new LightExtensionError(
     'LIGHT_EXTENSION_REFERENCE_EXISTS',
-    'Light extension repository is referenced; archive it instead of deleting it',
+    'Light extension repository is referenced and cannot be deleted',
     {
       details: {
         repoId,
@@ -735,12 +706,6 @@ function assertLifecycleStatus(value: string, label: string): asserts value is L
   }
 }
 
-function assertVersion(value: number, label: string): void {
-  if (!Number.isInteger(value) || value < 1) {
-    throw new LightExtensionError('LIGHT_EXTENSION_INVALID_INPUT', `${label} must be a positive integer`);
-  }
-}
-
 function summarizeTreeEntries(files: LightExtensionTreeEntryInput[]) {
   return files.map((file) => ({
     path: file.path,
@@ -756,10 +721,6 @@ function normalizeRecordDate(value: unknown): string | null {
   }
 
   return typeof value === 'string' ? value : null;
-}
-
-function normalizeRecordNumber(value: unknown, fallback: number): number {
-  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
 }
 
 function createLocalLightExtensionPermissionRegistry(

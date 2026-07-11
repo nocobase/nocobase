@@ -66,7 +66,7 @@ describe('WorkflowRunJSEditorField', () => {
     expect(onChange).toHaveBeenCalledWith('return fallback;');
   });
 
-  it('passes a workflow.javascript locator to the provider and syncs published code into the form value', () => {
+  it('passes a workflow.javascript locator to the provider and syncs saved code into the form value', () => {
     const onChange = vi.fn();
     let capturedLocator: unknown;
 
@@ -75,7 +75,7 @@ describe('WorkflowRunJSEditorField', () => {
       renderEditor: (props) => {
         capturedLocator = props.locator;
         return (
-          <button type="button" onClick={() => props.onChange?.({ code: 'return published;', version: 'workflow-js' })}>
+          <button type="button" onClick={() => props.onChange?.({ code: 'return saved;', version: 'workflow-js' })}>
             {`${props.label} / ${props.sourceLabel}`}
           </button>
         );
@@ -95,7 +95,7 @@ describe('WorkflowRunJSEditorField', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Workflow JavaScript / Script content' }));
 
-    expect(onChange).toHaveBeenCalledWith('return published;');
+    expect(onChange).toHaveBeenCalledWith('return saved;');
     expect(screen.queryByLabelText('workflow-code-fallback')).toBeNull();
   });
 

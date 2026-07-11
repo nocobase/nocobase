@@ -45,7 +45,6 @@ describe('vsc-file repository and commit services', () => {
       status: 'active',
       defaultRef: 'head',
       headCommitId: null,
-      publishedCommitId: null,
       headSeq: 0,
     });
     expect(pull).toMatchObject({
@@ -253,6 +252,53 @@ describe('vsc-file repository and commit services', () => {
       headSeq: 2,
     });
     expect(headRef?.get('commitId')).toBe(second.commit.id);
+  });
+
+  it('uses the repository head as the pull snapshot when the head ref mirror is stale', async () => {
+    const { repository, initialCommit } = await service.createRepository({
+      ownerType: 'plugin',
+      ownerId: 'stale-head-ref',
+      name: 'main',
+      initialFiles: [{ path: 'README.md', content: '# Version 1\n' }],
+    });
+    if (!initialCommit) {
+      throw new Error('Expected an initial commit');
+    }
+    const second = await service.push({
+      repoId: repository.id,
+      baseCommitId: initialCommit.id,
+      message: 'version 2',
+      files: [{ path: 'README.md', content: '# Version 2\n' }],
+    });
+
+    await db.getRepository('vscFileRefs').update({
+      filter: {
+        repoId: repository.id,
+        name: 'head',
+      },
+      values: {
+        commitId: initialCommit.id,
+      },
+    });
+
+    const pull = await service.pull({
+      repoId: repository.id,
+      includeContent: 'all',
+    });
+    const file = await service.getFile({
+      repoId: repository.id,
+      path: 'README.md',
+    });
+
+    expect(pull.repository).toMatchObject({
+      headCommitId: second.commit.id,
+      headSeq: second.commit.seq,
+    });
+    expect(pull.commit?.id).toBe(second.commit.id);
+    expect(pull.files?.find((entry) => entry.path === 'README.md')).toMatchObject({
+      content: '# Version 2\n',
+    });
+    expect(file.content).toBe('# Version 2\n');
   });
 
   it('applies deletes and allows explicit empty commits', async () => {

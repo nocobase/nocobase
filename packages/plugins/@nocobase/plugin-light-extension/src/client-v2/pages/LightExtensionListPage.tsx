@@ -11,12 +11,9 @@ import {
   CodeOutlined,
   DeleteOutlined,
   DownOutlined,
-  EyeOutlined,
   PlusOutlined,
   ReloadOutlined,
   SaveOutlined,
-  ScanOutlined,
-  ToolOutlined,
   UploadOutlined,
 } from '@ant-design/icons';
 import {
@@ -27,11 +24,11 @@ import {
   type CompiledFilter,
 } from '@nocobase/client-v2';
 import { useFlowEngine, type Collection, type CollectionOptions } from '@nocobase/flow-engine';
+import { getDayRangeByParams } from '@nocobase/utils/client';
 import {
   Alert,
   Button,
   Card,
-  Descriptions,
   Drawer,
   Dropdown,
   Empty,
@@ -39,18 +36,14 @@ import {
   Form,
   Input,
   Modal,
-  Popconfirm,
-  Skeleton,
   Space,
   Switch,
   Tag,
   theme,
-  Tree,
   Typography,
   Upload,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import type { DataNode } from 'antd/es/tree';
 import type { MenuProps } from 'antd';
 import type { RcFile } from 'rc-upload/lib/interface';
 import type { UploadFile } from 'antd/es/upload/interface';
@@ -59,15 +52,9 @@ import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 import { NAMESPACE } from '../../constants';
-import type {
-  LightExtensionEntryRecord,
-  LightExtensionPulledFile,
-  LightExtensionRepoLifecycleStatus,
-  LightExtensionRepoRecord,
-} from '../../shared/types';
-import { toLifecycleInput, useLightExtensionRepo } from '../hooks/useLightExtensionRepo';
+import type { LightExtensionRepoLifecycleStatus, LightExtensionRepoRecord } from '../../shared/types';
+import { useLightExtensionRepo } from '../hooks/useLightExtensionRepo';
 import { useT } from '../locale';
-import { ReferenceContractDiagnosticsPanel } from '../components/ReferenceContractDiagnosticsPanel';
 import LightExtensionWorkspacePage, { type LightExtensionWorkspaceFooterActions } from './LightExtensionWorkspacePage';
 
 interface CreateRepoFormValues {
@@ -76,26 +63,25 @@ interface CreateRepoFormValues {
   description?: string;
 }
 
-type ImportRepoFormValues = CreateRepoFormValues;
-
 type Notice = {
   type: 'success' | 'info' | 'warning' | 'error';
   message: string;
 };
 
-type RepoOverview = {
-  repoId: string;
-  entries: LightExtensionEntryRecord[];
-  files: LightExtensionPulledFile[];
-};
-
 type ToggleLifecycleStatus = 'enabled' | 'disabled';
-type DetailPanel = 'source' | 'overview' | 'reference-diagnostics';
+type DetailPanel = 'source';
 
-const overviewKinds = ['js-block', 'js-action', 'js-field', 'js-item', 'runjs', 'event'] as const;
+const entryKinds = ['js-block', 'js-action', 'js-field', 'js-item', 'runjs'] as const;
 const LIGHT_EXTENSION_REPO_FILTER_COLLECTION = 'lightExtensionRepoFilters';
 const SOURCE_DRAWER_WIDTH = 'min(1280px, calc(100vw - 64px))';
-const lightExtensionRepoFilterCollection: CollectionOptions = {
+export const LIGHT_EXTENSION_REPO_FILTER_FIELD_NAMES = [
+  'name',
+  'description',
+  'updatedAt',
+  'createdAt',
+  'enabled',
+] as const;
+export const lightExtensionRepoFilterCollection: CollectionOptions = {
   name: LIGHT_EXTENSION_REPO_FILTER_COLLECTION,
   filterTargetKey: 'id',
   fields: [
@@ -110,16 +96,6 @@ const lightExtensionRepoFilterCollection: CollectionOptions = {
       },
     },
     {
-      name: 'title',
-      type: 'string',
-      interface: 'input',
-      uiSchema: {
-        type: 'string',
-        title: 'Title',
-        'x-component': 'Input',
-      },
-    },
-    {
       name: 'description',
       type: 'text',
       interface: 'textarea',
@@ -130,31 +106,40 @@ const lightExtensionRepoFilterCollection: CollectionOptions = {
       },
     },
     {
-      name: 'lifecycleStatus',
-      type: 'string',
-      interface: 'select',
+      name: 'updatedAt',
+      type: 'datetime',
+      interface: 'datetime',
       uiSchema: {
-        type: 'string',
-        title: 'Enable status',
-        'x-component': 'Select',
-        enum: [
-          { label: 'Enabled', value: 'enabled' },
-          { label: 'Disabled', value: 'disabled' },
-        ],
+        type: 'datetime',
+        title: 'Updated at',
+        'x-component': 'DatePicker',
+        'x-component-props': { showTime: true },
+      },
+    },
+    {
+      name: 'createdAt',
+      type: 'datetime',
+      interface: 'datetime',
+      uiSchema: {
+        type: 'datetime',
+        title: 'Created at',
+        'x-component': 'DatePicker',
+        'x-component-props': { showTime: true },
+      },
+    },
+    {
+      name: 'enabled',
+      type: 'boolean',
+      interface: 'checkbox',
+      uiSchema: {
+        type: 'boolean',
+        title: 'Enabled',
+        'x-component': 'Checkbox',
       },
     },
   ],
 };
 const lightExtensionRepoFilterCollections = [lightExtensionRepoFilterCollection];
-
-type ImportedLightExtensionPackage = {
-  repo?: {
-    name?: string;
-    title?: string | null;
-    description?: string | null;
-  };
-  files: LightExtensionPulledFile[];
-};
 
 function LightExtensionListPage() {
   return (
@@ -173,32 +158,22 @@ function LightExtensionListPageInner() {
     changeLifecycle: changeLifecycleRequest,
     createRepo: createRepoRequest,
     deleteRepo: deleteRepoRequest,
-    getRepo,
-    listEntries,
     listRepos,
-    pull,
-    scanEntries: scanEntriesRequest,
   } = useLightExtensionRepo();
   const [searchParams, setSearchParams] = useSearchParams();
   const [form] = Form.useForm<CreateRepoFormValues>();
-  const [importForm] = Form.useForm<ImportRepoFormValues>();
   const [repos, setRepos] = useState<LightExtensionRepoRecord[]>([]);
   const [selectedRepoId, setSelectedRepoId] = useState<string | null>(searchParams.get('repoId'));
-  const [overview, setOverview] = useState<RepoOverview | null>(null);
-  const [overviewLoading, setOverviewLoading] = useState(false);
-  const [overviewError, setOverviewError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [scanning, setScanning] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
-  const [importOpen, setImportOpen] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [importing, setImporting] = useState(false);
   const [batchChanging, setBatchChanging] = useState<ToggleLifecycleStatus | null>(null);
   const [changingRepoIds, setChangingRepoIds] = useState<Set<string>>(() => new Set());
   const [removingRepoIds, setRemovingRepoIds] = useState<Set<string>>(() => new Set());
-  const [importFileList, setImportFileList] = useState<UploadFile[]>([]);
-  const [importPackage, setImportPackage] = useState<ImportedLightExtensionPackage | null>(null);
-  const [importError, setImportError] = useState<string | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<LightExtensionRepoRecord | null>(null);
+  const [sourceFileList, setSourceFileList] = useState<UploadFile[]>([]);
+  const [sourceZipBase64, setSourceZipBase64] = useState<string>();
+  const [sourceFileError, setSourceFileError] = useState<string | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [filterPayload, setFilterPayload] = useState<CompiledFilter>();
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
@@ -206,7 +181,7 @@ function LightExtensionListPageInner() {
 
   const urlPanel = parseDetailPanel(searchParams.get('panel'));
   const [activePanel, setActivePanel] = useState<DetailPanel | null>(urlPanel);
-  const detailDrawerOpen = Boolean(activePanel && selectedRepoId);
+  const detailDrawerOpen = activePanel === 'source' && Boolean(selectedRepoId);
 
   const loadRepos = useCallback(async () => {
     setLoading(true);
@@ -248,45 +223,7 @@ function LightExtensionListPageInner() {
     }
   }, [activePanel]);
 
-  const loadSelectedOverview = useCallback(async () => {
-    if (!selectedRepoId || activePanel !== 'overview') {
-      setOverview(null);
-      setOverviewError(null);
-      return;
-    }
-
-    setOverviewLoading(true);
-    setOverviewError(null);
-    try {
-      const [nextRepo, nextEntries, pullResult] = await Promise.all([
-        getRepo(selectedRepoId),
-        listEntries(selectedRepoId),
-        pull({ repoId: selectedRepoId, includeContent: 'none' }).catch(() => null),
-      ]);
-      setRepos((current) => upsertRepo(current, nextRepo));
-      setOverview({
-        repoId: selectedRepoId,
-        entries: nextEntries,
-        files: pullResult?.files || [],
-      });
-    } catch (error) {
-      setOverview({
-        repoId: selectedRepoId,
-        entries: [],
-        files: [],
-      });
-      setOverviewError(error instanceof Error ? error.message : t('Failed to load entries'));
-    } finally {
-      setOverviewLoading(false);
-    }
-  }, [activePanel, getRepo, listEntries, pull, selectedRepoId, t]);
-
-  useEffect(() => {
-    loadSelectedOverview();
-  }, [loadSelectedOverview]);
-
   const selectedRepo = useMemo(() => repos.find((repo) => repo.id === selectedRepoId) || null, [repos, selectedRepoId]);
-  const selectedOverview = overview?.repoId === selectedRepoId ? overview : null;
   const visibleRepos = useMemo(() => repos.filter((repo) => repo.lifecycleStatus !== 'archived'), [repos]);
   const filteredRepos = useMemo(
     () => visibleRepos.filter((repo) => matchesLightExtensionRepoFilter(repo, filterPayload)),
@@ -299,33 +236,24 @@ function LightExtensionListPageInner() {
 
   const closeCreateModal = useCallback(() => {
     setCreateOpen(false);
+    setSourceFileList([]);
+    setSourceZipBase64(undefined);
+    setSourceFileError(null);
+    form.resetFields();
     if (searchParams.has('create')) {
       const nextSearchParams = new URLSearchParams(searchParams);
       nextSearchParams.delete('create');
       setSearchParams(nextSearchParams, { replace: true });
     }
-  }, [searchParams, setSearchParams]);
+  }, [form, searchParams, setSearchParams]);
 
   const openCreateModal = useCallback(() => {
     form.resetFields();
+    setSourceFileList([]);
+    setSourceZipBase64(undefined);
+    setSourceFileError(null);
     setCreateOpen(true);
   }, [form]);
-
-  const closeImportModal = useCallback(() => {
-    setImportOpen(false);
-    setImportFileList([]);
-    setImportPackage(null);
-    setImportError(null);
-    importForm.resetFields();
-  }, [importForm]);
-
-  const openImportModal = useCallback(() => {
-    setImportFileList([]);
-    setImportPackage(null);
-    setImportError(null);
-    importForm.resetFields();
-    setImportOpen(true);
-  }, [importForm]);
 
   const selectRepo = useCallback(
     (repoId: string, options: { panel?: DetailPanel; replace?: boolean } = {}) => {
@@ -357,7 +285,7 @@ function LightExtensionListPageInner() {
         name: values.name,
         title: values.title || null,
         description: values.description || null,
-        initialFiles: [],
+        zipBase64: sourceZipBase64,
       });
       setRepos((current) => [repo, ...current.filter((item) => item.id !== repo.id)]);
       setSelectedRepoId(repo.id);
@@ -365,8 +293,15 @@ function LightExtensionListPageInner() {
       nextSearchParams.delete('create');
       nextSearchParams.set('repoId', repo.id);
       setSearchParams(nextSearchParams, { replace: true });
-      form.resetFields();
       setCreateOpen(false);
+      setSourceFileList([]);
+      setSourceZipBase64(undefined);
+      setSourceFileError(null);
+      form.resetFields();
+      setNotice({
+        type: 'success',
+        message: sourceZipBase64 ? t('Repository imported and compiled') : t('Repository created and compiled'),
+      });
     } catch (error) {
       setNotice({ type: 'error', message: error instanceof Error ? error.message : t('Failed to create repository') });
     } finally {
@@ -374,107 +309,30 @@ function LightExtensionListPageInner() {
     }
   };
 
-  const readImportFile = useCallback(
+  const readSourceZip = useCallback(
     async (file: RcFile) => {
-      setImportError(null);
+      setSourceFileError(null);
       try {
-        const text = await readFileAsText(file);
-        let rawPackage: unknown;
-        try {
-          rawPackage = JSON.parse(text);
-        } catch {
-          throw new Error(t('Invalid import file'));
-        }
-        const parsedPackage = normalizeImportedLightExtensionPackage(rawPackage, t);
-        setImportPackage(parsedPackage);
-        setImportFileList([
+        const zipBase64 = await readFileAsBase64(file, t('Failed to read source ZIP'));
+        setSourceZipBase64(zipBase64);
+        setSourceFileList([
           {
             uid: file.uid,
             name: file.name,
             status: 'done',
           },
         ]);
-        importForm.setFieldsValue({
-          name: toImportRepoName(parsedPackage.repo?.name || file.name.replace(/\.json$/i, '')),
-          title: parsedPackage.repo?.title || undefined,
-          description: parsedPackage.repo?.description || undefined,
-        });
+        if (!form.getFieldValue('name')) {
+          form.setFieldValue('name', toRepoName(file.name.replace(/\.zip$/i, '')));
+        }
       } catch (error) {
-        setImportPackage(null);
-        setImportFileList([]);
-        setImportError(error instanceof Error ? error.message : t('Failed to read import file'));
+        setSourceZipBase64(undefined);
+        setSourceFileList([]);
+        setSourceFileError(error instanceof Error ? error.message : t('Failed to read source ZIP'));
       }
     },
-    [importForm, t],
+    [form, t],
   );
-
-  const importRepo = async () => {
-    const values = await importForm.validateFields();
-    if (!importPackage) {
-      setImportError(t('Import file is required'));
-      return;
-    }
-
-    setImporting(true);
-    try {
-      const repo = await createRepoRequest({
-        name: values.name,
-        title: values.title || null,
-        description: values.description || null,
-        initialFiles: importPackage.files.map((file) => ({
-          path: file.path,
-          content: file.content,
-          size: file.size,
-          language: file.language,
-          mode: file.mode,
-        })),
-        message: t('Import light extension'),
-      });
-      setRepos((current) => [repo, ...current.filter((item) => item.id !== repo.id)]);
-      setSelectedRepoId(repo.id);
-      const nextSearchParams = new URLSearchParams(searchParams);
-      nextSearchParams.set('repoId', repo.id);
-      setSearchParams(nextSearchParams, { replace: true });
-      closeImportModal();
-      setNotice({
-        type: 'success',
-        message: t('Repository imported and compiled'),
-      });
-    } catch (error) {
-      setNotice({ type: 'error', message: error instanceof Error ? error.message : t('Failed to import repository') });
-    } finally {
-      setImporting(false);
-    }
-  };
-
-  const scanSelectedRepo = useCallback(async () => {
-    if (!selectedRepoId) {
-      return;
-    }
-
-    setScanning(true);
-    setNotice(null);
-    try {
-      const result = await scanEntriesRequest(selectedRepoId);
-      setRepos((current) => current.map((item) => (item.id === result.repo.id ? result.repo : item)));
-      setOverview((current) =>
-        current?.repoId === selectedRepoId
-          ? {
-              ...current,
-              entries: result.entries.map((item) => item.entry),
-            }
-          : current,
-      );
-      setNotice({
-        type: result.accepted ? 'success' : 'warning',
-        message: result.accepted ? t('Scan completed') : t('Scan completed with diagnostics'),
-      });
-    } catch (error) {
-      setNotice({ type: 'error', message: error instanceof Error ? error.message : t('Failed to scan entries') });
-    } finally {
-      setScanning(false);
-    }
-  }, [scanEntriesRequest, selectedRepoId, t]);
 
   const batchChangeLifecycle = useCallback(
     async (lifecycleStatus: ToggleLifecycleStatus) => {
@@ -486,7 +344,7 @@ function LightExtensionListPageInner() {
       setNotice(null);
       try {
         const results = await Promise.allSettled(
-          selectedRepos.map((repo) => changeLifecycleRequest(toLifecycleInput(repo, lifecycleStatus))),
+          selectedRepos.map((repo) => changeLifecycleRequest({ repoId: repo.id, lifecycleStatus })),
         );
         const updatedRepos = results
           .filter((result): result is PromiseFulfilledResult<LightExtensionRepoRecord> => result.status === 'fulfilled')
@@ -522,7 +380,7 @@ function LightExtensionListPageInner() {
       setChangingRepoIds((current) => new Set(current).add(repo.id));
       setNotice(null);
       try {
-        const updatedRepo = await changeLifecycleRequest(toLifecycleInput(repo, lifecycleStatus));
+        const updatedRepo = await changeLifecycleRequest({ repoId: repo.id, lifecycleStatus });
         setRepos((current) => current.map((item) => (item.id === updatedRepo.id ? updatedRepo : item)));
         setNotice({ type: 'success', message: t('Repositories updated') });
       } catch (error) {
@@ -539,31 +397,29 @@ function LightExtensionListPageInner() {
   );
 
   const removeRepo = useCallback(
-    async (repo: LightExtensionRepoRecord) => {
+    async (repo: LightExtensionRepoRecord): Promise<boolean> => {
       setRemovingRepoIds((current) => new Set(current).add(repo.id));
       setNotice(null);
       try {
-        const result = await deleteRepoRequest(repo.id);
-        if (!result.deleted) {
-          throw new Error(t('Failed to remove repository'));
-        }
+        await deleteRepoRequest(repo.id);
 
         setRepos((current) => current.filter((item) => item.id !== repo.id));
         setSelectedRowKeys((current) => current.filter((key) => key !== repo.id));
         if (selectedRepoId === repo.id) {
           setSelectedRepoId(null);
-          setOverview(null);
           const nextSearchParams = new URLSearchParams(searchParams);
           nextSearchParams.delete('repoId');
           nextSearchParams.delete('panel');
           setSearchParams(nextSearchParams, { replace: true });
         }
         setNotice({ type: 'success', message: t('Repository removed') });
+        return true;
       } catch (error) {
         setNotice({
           type: 'error',
           message: error instanceof Error ? error.message : t('Failed to remove repository'),
         });
+        return false;
       } finally {
         setRemovingRepoIds((current) => {
           const next = new Set(current);
@@ -575,33 +431,86 @@ function LightExtensionListPageInner() {
     [deleteRepoRequest, searchParams, selectedRepoId, setSearchParams, t],
   );
 
+  const confirmRemoveRepo = useCallback(async () => {
+    if (!removeTarget) {
+      return;
+    }
+
+    const removed = await removeRepo(removeTarget);
+    if (removed) {
+      setRemoveTarget(null);
+    }
+  }, [removeRepo, removeTarget]);
+
   const columns = useMemo<ColumnsType<LightExtensionRepoRecord>>(
     () => [
       {
         title: t('Name'),
         dataIndex: 'name',
-        width: 260,
+        sorter: (left, right) =>
+          compareText(left.title || left.name, right.title || right.name) || compareText(left.name, right.name),
+        width: 220,
         render: (_value, repo) => (
-          <Space direction="vertical" size={0} style={{ maxWidth: 230, minWidth: 0 }}>
-            <Typography.Text ellipsis strong style={{ maxWidth: 230 }}>
+          <Space direction="vertical" size={0} style={{ maxWidth: 200, minWidth: 0 }}>
+            <Typography.Text ellipsis strong style={{ maxWidth: 200 }}>
               {repo.title || repo.name}
             </Typography.Text>
-            <Typography.Text ellipsis style={{ maxWidth: 230 }} type="secondary">
-              {repo.description || repo.name}
+            <Typography.Text code ellipsis style={{ maxWidth: 200 }} type="secondary">
+              {repo.name}
             </Typography.Text>
           </Space>
         ),
       },
       {
+        title: t('Description'),
+        dataIndex: 'description',
+        sorter: (left, right) => compareText(left.description, right.description),
+        render: (value: string | null) => (
+          <Typography.Text ellipsis={{ tooltip: value || '-' }} style={{ maxWidth: 320 }} type="secondary">
+            {value || '-'}
+          </Typography.Text>
+        ),
+      },
+      {
+        title: t('Entries'),
+        key: 'entries',
+        sorter: (left, right) => getRepoEntryCount(left) - getRepoEntryCount(right),
+        width: 250,
+        render: (_value, repo) => {
+          const kinds = entryKinds.filter((kind) => Boolean(repo.entryKinds?.[kind]));
+          return kinds.length ? (
+            <Space size={[4, 4]} wrap>
+              {kinds.map((kind) => (
+                <Tag key={kind}>
+                  {t(kind)} {repo.entryKinds?.[kind]}
+                </Tag>
+              ))}
+            </Space>
+          ) : (
+            <Typography.Text type="secondary">0</Typography.Text>
+          );
+        },
+      },
+      {
         title: t('Updated at'),
         dataIndex: 'updatedAt',
+        sorter: (left, right) => getDateTimestamp(left.updatedAt) - getDateTimestamp(right.updatedAt),
         width: 180,
-        render: (_value, repo) => formatDate(repo.lastCompiledAt || repo.updatedAt || repo.lastScannedAt),
+        render: (_value, repo) => (
+          <Space direction="vertical" size={0}>
+            <Typography.Text>{formatDate(repo.updatedAt)}</Typography.Text>
+            <Typography.Text type="secondary">
+              {t('Created at')}: {formatDate(repo.createdAt)}
+            </Typography.Text>
+          </Space>
+        ),
       },
       {
         title: t('Enabled'),
         dataIndex: 'lifecycleStatus',
         align: 'center',
+        sorter: (left, right) =>
+          Number(left.lifecycleStatus === 'enabled') - Number(right.lifecycleStatus === 'enabled'),
         width: 100,
         render: (_value: LightExtensionRepoLifecycleStatus, repo) => (
           <span onClick={(event) => event.stopPropagation()}>
@@ -620,7 +529,7 @@ function LightExtensionListPageInner() {
       {
         title: t('Actions'),
         key: 'actions',
-        width: 170,
+        width: 90,
         render: (_value, repo) => (
           <Space size={4} onClick={(event) => event.stopPropagation()}>
             <Button
@@ -630,41 +539,20 @@ function LightExtensionListPageInner() {
               size="small"
             />
             <Button
-              aria-label={t('View details')}
-              icon={<EyeOutlined />}
-              onClick={() => selectRepo(repo.id, { panel: 'overview' })}
+              aria-label={t('Remove')}
+              danger
+              icon={<DeleteOutlined />}
+              loading={removingRepoIds.has(repo.id)}
+              onClick={() => setRemoveTarget(repo)}
               size="small"
             />
-            <Button
-              aria-label={t('Reference contract diagnostics')}
-              icon={<ToolOutlined />}
-              onClick={() => selectRepo(repo.id, { panel: 'reference-diagnostics' })}
-              size="small"
-            />
-            <Popconfirm
-              cancelText={t('Cancel')}
-              okButtonProps={{ danger: true }}
-              okText={t('Remove')}
-              onConfirm={() => removeRepo(repo)}
-              title={t('Remove this repository?')}
-            >
-              <Button
-                aria-label={t('Remove')}
-                danger
-                icon={<DeleteOutlined />}
-                loading={removingRepoIds.has(repo.id)}
-                size="small"
-              />
-            </Popconfirm>
           </Space>
         ),
       },
     ],
-    [changeRepoLifecycle, changingRepoIds, removeRepo, removingRepoIds, selectRepo, t],
+    [changeRepoLifecycle, changingRepoIds, removingRepoIds, selectRepo, t],
   );
 
-  const entryStats = useMemo(() => buildEntryStats(selectedOverview?.entries || []), [selectedOverview?.entries]);
-  const treeData = useMemo(() => buildTreeData(selectedOverview?.files || []), [selectedOverview?.files]);
   const batchActionItems: MenuProps['items'] = [
     {
       key: 'enabled',
@@ -675,18 +563,6 @@ function LightExtensionListPageInner() {
       key: 'disabled',
       label: t('Disable selected'),
       onClick: () => batchChangeLifecycle('disabled'),
-    },
-  ];
-  const addNewItems: MenuProps['items'] = [
-    {
-      key: 'empty',
-      label: t('Create empty'),
-      onClick: openCreateModal,
-    },
-    {
-      key: 'import',
-      label: t('Add new from import'),
-      onClick: openImportModal,
     },
   ];
   const renderDrawerContent = () => {
@@ -700,146 +576,7 @@ function LightExtensionListPageInner() {
       );
     }
 
-    if (activePanel === 'reference-diagnostics') {
-      return (
-        <Flex vertical gap={16}>
-          <Space direction="vertical" size={2}>
-            <Typography.Title level={4} style={{ margin: 0 }}>
-              {t('Reference contract diagnostics')}
-            </Typography.Title>
-            <Typography.Text type="secondary">{selectedRepoId}</Typography.Text>
-          </Space>
-          <ReferenceContractDiagnosticsPanel repoId={selectedRepoId} />
-        </Flex>
-      );
-    }
-
-    if (activePanel !== 'overview' || !selectedRepo) {
-      return null;
-    }
-
-    return (
-      <Flex vertical gap={18}>
-        <Flex align="flex-start" justify="space-between" gap={12}>
-          <Space direction="vertical" size={2} style={{ minWidth: 0 }}>
-            <Typography.Text type="secondary">{t('Repository overview')}</Typography.Text>
-            <Space wrap size={8}>
-              <Typography.Title level={4} style={{ margin: 0 }}>
-                {selectedRepo.title || selectedRepo.name}
-              </Typography.Title>
-              <Tag color={selectedRepo.lifecycleStatus === 'enabled' ? 'success' : 'default'}>
-                {t(selectedRepo.lifecycleStatus === 'enabled' ? 'enabled' : 'disabled')}
-              </Tag>
-            </Space>
-            <Typography.Text code ellipsis>
-              {selectedRepo.name}
-            </Typography.Text>
-          </Space>
-        </Flex>
-
-        <section>
-          <Typography.Text strong>{t('Basic information')}</Typography.Text>
-          <Descriptions
-            column={1}
-            items={[
-              { key: 'description', label: t('Description'), children: selectedRepo.description || '-' },
-              { key: 'createdAt', label: t('Created at'), children: formatDate(selectedRepo.createdAt) },
-              { key: 'updatedAt', label: t('Updated at'), children: formatDate(selectedRepo.updatedAt) },
-              { key: 'headCommitId', label: t('Head commit'), children: shortCommit(selectedRepo.headCommitId) },
-            ]}
-            size="small"
-          />
-        </section>
-
-        <section>
-          <Flex align="center" justify="space-between">
-            <Typography.Text strong>{t('Latest scan and compile status')}</Typography.Text>
-            <Button icon={<ScanOutlined />} loading={scanning} onClick={scanSelectedRepo} size="small">
-              {t('Scan')}
-            </Button>
-          </Flex>
-          <Descriptions
-            column={1}
-            items={[
-              { key: 'lastScannedAt', label: t('Last scanned at'), children: formatDate(selectedRepo.lastScannedAt) },
-              {
-                key: 'lastCompiledAt',
-                label: t('Last compiled at'),
-                children: formatDate(selectedRepo.lastCompiledAt),
-              },
-              {
-                key: 'compiledEntries',
-                label: t('Compiled entries'),
-                children: selectedOverview?.entries.filter((entry) => Boolean(entry.runtimeArtifact?.code)).length || 0,
-              },
-            ]}
-            size="small"
-            style={{ marginTop: 10 }}
-          />
-          {selectedRepo.lastError ? <Alert message={selectedRepo.lastError} showIcon type="error" /> : null}
-        </section>
-
-        <section>
-          <Typography.Text strong>{t('Scanned entry counts')}</Typography.Text>
-          {overviewLoading ? (
-            <Skeleton active paragraph={{ rows: 2 }} title={false} />
-          ) : (
-            <div
-              style={{
-                display: 'grid',
-                gap: 8,
-                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-                marginTop: 10,
-              }}
-            >
-              {overviewKinds.map((kind) => (
-                <div
-                  key={kind}
-                  style={{
-                    border: `1px solid ${token.colorBorderSecondary}`,
-                    borderRadius: token.borderRadius,
-                    minWidth: 0,
-                    padding: token.paddingSM,
-                  }}
-                >
-                  <Typography.Text type="secondary">{t(kind)}</Typography.Text>
-                  <Typography.Title level={4} style={{ margin: 0 }}>
-                    {entryStats[kind] || 0}
-                  </Typography.Title>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-
-        <section>
-          <Flex align="center" justify="space-between" gap={8}>
-            <Typography.Text strong>{t('File structure')}</Typography.Text>
-            <Button
-              icon={<CodeOutlined />}
-              onClick={() => selectRepo(selectedRepo.id, { panel: 'source' })}
-              size="small"
-            >
-              {t('Open source')}
-            </Button>
-          </Flex>
-          {overviewError ? <Alert message={overviewError} showIcon style={{ marginTop: 10 }} type="warning" /> : null}
-          {overviewLoading ? (
-            <Skeleton active paragraph={{ rows: 5 }} title={false} />
-          ) : treeData.length ? (
-            <Tree
-              defaultExpandAll
-              key={selectedOverview?.files.map((file) => file.path).join('|')}
-              selectable={false}
-              style={{ marginTop: 10 }}
-              treeData={treeData}
-            />
-          ) : (
-            <Empty description={t('Empty repository')} image={Empty.PRESENTED_IMAGE_SIMPLE} />
-          )}
-        </section>
-      </Flex>
-    );
+    return null;
   };
 
   return (
@@ -858,7 +595,7 @@ function LightExtensionListPageInner() {
       <Flex align="center" justify="space-between" gap={token.marginSM} style={{ marginBottom: token.margin }} wrap>
         <CollectionFilter
           collection={filterCollection}
-          filterableFieldNames={['name', 'title', 'description', 'lifecycleStatus']}
+          filterableFieldNames={[...LIGHT_EXTENSION_REPO_FILTER_FIELD_NAMES]}
           onChange={setFilterPayload}
           t={compileT}
         />
@@ -876,11 +613,9 @@ function LightExtensionListPageInner() {
               {t('Batch actions')} <DownOutlined />
             </Button>
           </Dropdown>
-          <Dropdown menu={{ items: addNewItems }} trigger={['click']}>
-            <Button aria-label={t('Add new')} icon={<PlusOutlined />} type="primary">
-              {t('Add new')} <DownOutlined />
-            </Button>
-          </Dropdown>
+          <Button aria-label={t('Add new')} icon={<PlusOutlined />} onClick={openCreateModal} type="primary">
+            {t('Add new')}
+          </Button>
         </Space>
       </Flex>
 
@@ -897,7 +632,7 @@ function LightExtensionListPageInner() {
           selectedRowKeys,
           onChange: setSelectedRowKeys,
         }}
-        scroll={{ x: 720 }}
+        scroll={{ x: 1030 }}
         showIndex={false}
       />
 
@@ -926,60 +661,54 @@ function LightExtensionListPageInner() {
           <Form.Item label={t('Description')} name="description">
             <Input.TextArea rows={3} />
           </Form.Item>
-        </Form>
-      </Modal>
-
-      <Modal
-        confirmLoading={importing}
-        okText={t('Import')}
-        onCancel={closeImportModal}
-        onOk={importRepo}
-        open={importOpen}
-        title={t('Add new from import')}
-      >
-        <Form form={importForm} layout="vertical">
-          <Form.Item label={t('Import file')} required>
+          <Form.Item label={t('Source ZIP (optional)')}>
             <Upload.Dragger
-              accept=".json,application/json"
-              beforeUpload={(file) => {
-                readImportFile(file);
+              accept=".zip,application/zip,application/x-zip-compressed"
+              beforeUpload={async (file) => {
+                await readSourceZip(file);
                 return false;
               }}
-              fileList={importFileList}
+              fileList={sourceFileList}
               maxCount={1}
               onRemove={() => {
-                setImportFileList([]);
-                setImportPackage(null);
-                setImportError(null);
+                setSourceFileList([]);
+                setSourceZipBase64(undefined);
+                setSourceFileError(null);
                 return true;
               }}
             >
               <p className="ant-upload-drag-icon">
                 <UploadOutlined />
               </p>
-              <p className="ant-upload-text">{t('Click or drag a light extension import file to this area')}</p>
+              <p className="ant-upload-text">{t('Click or drag a source ZIP file to this area')}</p>
             </Upload.Dragger>
-            {importError ? (
-              <Alert message={importError} showIcon style={{ marginTop: token.marginSM }} type="error" />
+            {sourceFileError ? (
+              <Alert message={sourceFileError} showIcon style={{ marginTop: token.marginSM }} type="error" />
             ) : null}
           </Form.Item>
-          <Form.Item
-            label={t('Name')}
-            name="name"
-            rules={[
-              { required: true, message: t('Name is required') },
-              { pattern: /^[a-z0-9][a-z0-9-]*$/, message: t('Name must be a lowercase slug') },
-            ]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item label={t('Title')} name="title">
-            <Input />
-          </Form.Item>
-          <Form.Item label={t('Description')} name="description">
-            <Input.TextArea rows={3} />
-          </Form.Item>
         </Form>
+      </Modal>
+
+      <Modal
+        cancelButtonProps={{ disabled: Boolean(removeTarget && removingRepoIds.has(removeTarget.id)) }}
+        cancelText={t('Cancel')}
+        closable={!removeTarget || !removingRepoIds.has(removeTarget.id)}
+        confirmLoading={Boolean(removeTarget && removingRepoIds.has(removeTarget.id))}
+        maskClosable={false}
+        okButtonProps={{ danger: true }}
+        okText={t('Remove')}
+        onCancel={() => setRemoveTarget(null)}
+        onOk={confirmRemoveRepo}
+        open={Boolean(removeTarget)}
+        title={t('Remove this repository?')}
+      >
+        <Space direction="vertical" size={token.marginSM} style={{ width: '100%' }}>
+          <Typography.Text>
+            {t('Repository to remove')}:{' '}
+            <Typography.Text strong>{removeTarget?.title || removeTarget?.name}</Typography.Text>
+          </Typography.Text>
+          <Alert message={t('This action cannot be undone')} showIcon type="warning" />
+        </Space>
       </Modal>
 
       <Drawer
@@ -987,13 +716,18 @@ function LightExtensionListPageInner() {
         onClose={closeDetailDrawer}
         open={detailDrawerOpen}
         styles={{
-          body: activePanel === 'source' ? { overflow: 'hidden', padding: 16 } : { overflow: 'auto', padding: 24 },
+          body: { overflow: 'hidden', padding: 16 },
         }}
         footer={
           activePanel === 'source' ? (
             <Flex justify="flex-end">
               <Space>
-                <Button onClick={closeDetailDrawer}>{t('Cancel')}</Button>
+                <Button
+                  disabled={sourceFooterActions?.loading}
+                  onClick={sourceFooterActions?.onCancel || closeDetailDrawer}
+                >
+                  {t('Cancel')}
+                </Button>
                 <Button
                   disabled={!sourceFooterActions || sourceFooterActions.disabled}
                   icon={<SaveOutlined />}
@@ -1012,7 +746,7 @@ function LightExtensionListPageInner() {
             ? `${detailPanelTitle(t, activePanel)}: ${selectedRepo.title || selectedRepo.name}`
             : null
         }
-        width={activePanel === 'source' ? SOURCE_DRAWER_WIDTH : 560}
+        width={SOURCE_DRAWER_WIDTH}
       >
         {detailDrawerOpen ? renderDrawerContent() : null}
       </Drawer>
@@ -1059,32 +793,11 @@ function useLightExtensionRepoFilterCollection(): Collection | undefined {
 }
 
 function parseDetailPanel(value: string | null): DetailPanel | null {
-  return value === 'source' || value === 'overview' || value === 'reference-diagnostics' ? value : null;
+  return value === 'source' ? value : null;
 }
 
 function detailPanelTitle(t: (key: string) => string, panel: DetailPanel): string {
-  const titles: Record<DetailPanel, string> = {
-    source: t('Source'),
-    overview: t('Details'),
-    'reference-diagnostics': t('Reference contract diagnostics'),
-  };
-  return titles[panel];
-}
-
-function upsertRepo(repos: LightExtensionRepoRecord[], repo: LightExtensionRepoRecord): LightExtensionRepoRecord[] {
-  if (repos.some((item) => item.id === repo.id)) {
-    return repos.map((item) => (item.id === repo.id ? repo : item));
-  }
-
-  return [repo, ...repos];
-}
-
-function shortCommit(value?: string | null): string {
-  if (!value) {
-    return '-';
-  }
-
-  return value.length > 12 ? value.slice(0, 12) : value;
+  return panel === 'source' ? t('Source') : '';
 }
 
 function formatDate(value?: string | null): string {
@@ -1096,53 +809,25 @@ function formatDate(value?: string | null): string {
   return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
 }
 
-function buildEntryStats(entries: LightExtensionEntryRecord[]): Record<string, number> {
-  return entries.reduce<Record<string, number>>((result, entry) => {
-    result[entry.kind] = (result[entry.kind] || 0) + 1;
-    return result;
-  }, {});
+function compareText(left?: string | null, right?: string | null): number {
+  return String(left || '').localeCompare(String(right || ''), undefined, { numeric: true, sensitivity: 'base' });
 }
 
-function buildTreeData(files: LightExtensionPulledFile[]): DataNode[] {
-  const root: DataNode[] = [];
-  const folderByKey = new Map<string, DataNode>();
+function getRepoEntryCount(repo: LightExtensionRepoRecord): number {
+  if (typeof repo.entryCount === 'number') {
+    return repo.entryCount;
+  }
 
-  files
-    .map((file) => file.path)
-    .sort((left, right) => left.localeCompare(right))
-    .forEach((path) => {
-      const segments = path.split('/').filter(Boolean);
-      let children = root;
-      let currentKey = '';
+  return entryKinds.reduce((total, kind) => total + (repo.entryKinds?.[kind] || 0), 0);
+}
 
-      segments.forEach((segment, index) => {
-        currentKey = currentKey ? `${currentKey}/${segment}` : segment;
-        const isLeaf = index === segments.length - 1;
+function getDateTimestamp(value?: string | null): number {
+  if (!value) {
+    return 0;
+  }
 
-        if (isLeaf) {
-          children.push({
-            key: currentKey,
-            title: segment,
-            isLeaf: true,
-          });
-          return;
-        }
-
-        let folder = folderByKey.get(currentKey);
-        if (!folder) {
-          folder = {
-            key: currentKey,
-            title: segment,
-            children: [],
-          };
-          folderByKey.set(currentKey, folder);
-          children.push(folder);
-        }
-        children = folder.children ||= [];
-      });
-    });
-
-  return root;
+  const timestamp = new Date(value).getTime();
+  return Number.isNaN(timestamp) ? 0 : timestamp;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -1197,7 +882,128 @@ function matchFilterField(candidates: string[], value: unknown): boolean {
   return operatorEntries.every(([operator, operatorValue]) => matchFilterValue(candidates, operator, operatorValue));
 }
 
-function matchesLightExtensionRepoFilter(repo: LightExtensionRepoRecord, filter: CompiledFilter): boolean {
+function matchBooleanFilter(value: boolean, filterValue: unknown): boolean {
+  if (!isRecord(filterValue)) {
+    return value === Boolean(filterValue);
+  }
+
+  return Object.entries(filterValue).every(([operator, operatorValue]) => {
+    if (operator === '$isTruly') {
+      return value;
+    }
+    if (operator === '$isFalsy') {
+      return !value;
+    }
+    if (operator === '$ne') {
+      return value !== Boolean(operatorValue);
+    }
+    if (operator === '$empty') {
+      return false;
+    }
+    if (operator === '$notEmpty') {
+      return true;
+    }
+    return value === Boolean(operatorValue);
+  });
+}
+
+function matchDateFilter(value: string | null | undefined, filterValue: unknown): boolean {
+  if (!isRecord(filterValue)) {
+    return matchDateOperator(value, '$dateOn', filterValue);
+  }
+
+  return Object.entries(filterValue).every(([operator, operatorValue]) =>
+    matchDateOperator(value, operator, operatorValue),
+  );
+}
+
+function matchDateOperator(value: string | null | undefined, operator: string, operatorValue: unknown): boolean {
+  if (operator === '$empty') {
+    return !value;
+  }
+  if (operator === '$notEmpty') {
+    return Boolean(value);
+  }
+  if (!value) {
+    return false;
+  }
+
+  const valueTimestamp = getDateTimestamp(value);
+  const range = resolveDateFilterRange(operatorValue);
+  if (!valueTimestamp || !range) {
+    return false;
+  }
+
+  const [startTimestamp, endTimestamp] = range;
+  switch (operator) {
+    case '$dateNotOn':
+      return valueTimestamp < startTimestamp || valueTimestamp > endTimestamp;
+    case '$dateBefore':
+      return valueTimestamp < startTimestamp;
+    case '$dateAfter':
+      return valueTimestamp > endTimestamp;
+    case '$dateNotBefore':
+      return valueTimestamp >= startTimestamp;
+    case '$dateNotAfter':
+      return valueTimestamp <= endTimestamp;
+    case '$dateBetween':
+    case '$dateOn':
+    default:
+      return valueTimestamp >= startTimestamp && valueTimestamp <= endTimestamp;
+  }
+}
+
+function resolveDateFilterRange(value: unknown): [number, number] | null {
+  if (isDateRangeParams(value)) {
+    try {
+      return toTimestampRange(getDayRangeByParams(value));
+    } catch {
+      return null;
+    }
+  }
+  if (Array.isArray(value)) {
+    return toTimestampRange([String(value[0] || ''), String(value[1] || value[0] || '')]);
+  }
+  if (typeof value !== 'string' || !value) {
+    return null;
+  }
+
+  if (/^\d{4}$/.test(value)) {
+    return toTimestampRange([`${value}-01-01 00:00:00`, `${value}-12-31 23:59:59.999`]);
+  }
+  if (/^\d{4}-\d{2}$/.test(value)) {
+    const start = new Date(`${value}-01T00:00:00`);
+    const end = new Date(start);
+    end.setMonth(end.getMonth() + 1, 0);
+    end.setHours(23, 59, 59, 999);
+    return [start.getTime(), end.getTime()];
+  }
+  if (/^\d{4}Q[1-4]$/.test(value)) {
+    const year = Number(value.slice(0, 4));
+    const quarter = Number(value.slice(5));
+    const start = new Date(year, (quarter - 1) * 3, 1);
+    const end = new Date(year, quarter * 3, 0, 23, 59, 59, 999);
+    return [start.getTime(), end.getTime()];
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return toTimestampRange([`${value} 00:00:00`, `${value} 23:59:59.999`]);
+  }
+
+  const timestamp = getDateTimestamp(value);
+  return timestamp ? [timestamp, timestamp] : null;
+}
+
+function isDateRangeParams(value: unknown): value is Parameters<typeof getDayRangeByParams>[0] {
+  return isRecord(value) && typeof value.type === 'string';
+}
+
+function toTimestampRange(values: [string, string]): [number, number] | null {
+  const start = getDateTimestamp(values[0].replace(' ', 'T'));
+  const end = getDateTimestamp(values[1].replace(' ', 'T'));
+  return start && end ? [start, end] : null;
+}
+
+export function matchesLightExtensionRepoFilter(repo: LightExtensionRepoRecord, filter: CompiledFilter): boolean {
   if (!isRecord(filter)) {
     return true;
   }
@@ -1210,81 +1016,48 @@ function matchesLightExtensionRepoFilter(repo: LightExtensionRepoRecord, filter:
     results.push(filter.$or.some((item) => matchesLightExtensionRepoFilter(repo, item as CompiledFilter)));
   }
   if (Object.prototype.hasOwnProperty.call(filter, 'name')) {
-    results.push(matchFilterField([normalizeSearchText(repo.name)], filter.name));
-  }
-  if (Object.prototype.hasOwnProperty.call(filter, 'title')) {
-    results.push(matchFilterField([normalizeSearchText(repo.title)], filter.title));
+    results.push(matchFilterField([normalizeSearchText(repo.name), normalizeSearchText(repo.title)], filter.name));
   }
   if (Object.prototype.hasOwnProperty.call(filter, 'description')) {
     results.push(matchFilterField([normalizeSearchText(repo.description)], filter.description));
   }
-  if (Object.prototype.hasOwnProperty.call(filter, 'lifecycleStatus')) {
-    results.push(matchFilterField([normalizeSearchText(repo.lifecycleStatus)], filter.lifecycleStatus));
+  if (Object.prototype.hasOwnProperty.call(filter, 'updatedAt')) {
+    results.push(matchDateFilter(repo.updatedAt, filter.updatedAt));
+  }
+  if (Object.prototype.hasOwnProperty.call(filter, 'createdAt')) {
+    results.push(matchDateFilter(repo.createdAt, filter.createdAt));
+  }
+  if (Object.prototype.hasOwnProperty.call(filter, 'enabled')) {
+    results.push(matchBooleanFilter(repo.lifecycleStatus === 'enabled', filter.enabled));
   }
 
   return results.length ? results.every(Boolean) : true;
 }
 
-function readFileAsText(file: Blob): Promise<string> {
+function readFileAsBase64(file: Blob, errorMessage: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result ?? ''));
-    reader.onerror = () => reject(reader.error || new Error('Failed to read file'));
-    reader.readAsText(file);
+    reader.onload = () => {
+      const result = String(reader.result ?? '');
+      const separatorIndex = result.indexOf(',');
+      if (separatorIndex < 0) {
+        reject(new Error(errorMessage));
+        return;
+      }
+      resolve(result.slice(separatorIndex + 1));
+    };
+    reader.onerror = () => reject(new Error(errorMessage));
+    reader.readAsDataURL(file);
   });
 }
 
-function normalizeImportedLightExtensionPackage(
-  value: unknown,
-  t: (key: string, options?: Record<string, unknown>) => string,
-): ImportedLightExtensionPackage {
-  if (!isRecord(value)) {
-    throw new Error(t('Invalid import file'));
-  }
-
-  const repo = isRecord(value.repo) ? value.repo : {};
-  const files = Array.isArray(value.files) ? value.files : [];
-  const normalizedFiles = files
-    .map((file): LightExtensionPulledFile | null => {
-      if (!isRecord(file) || typeof file.path !== 'string' || typeof file.content !== 'string') {
-        return null;
-      }
-
-      return {
-        path: file.path,
-        content: file.content,
-        size: typeof file.size === 'number' ? file.size : file.content.length,
-        language: typeof file.language === 'string' ? file.language : '',
-        mode: typeof file.mode === 'string' ? file.mode : '',
-        blobHash: typeof file.blobHash === 'string' ? file.blobHash : '',
-        pathHash: typeof file.pathHash === 'string' ? file.pathHash : '',
-        pathLowerHash: typeof file.pathLowerHash === 'string' ? file.pathLowerHash : '',
-      };
-    })
-    .filter((file): file is LightExtensionPulledFile => Boolean(file));
-
-  if (!normalizedFiles.length) {
-    throw new Error(t('Import file does not contain files'));
-  }
-
-  return {
-    repo: {
-      name: typeof repo.name === 'string' ? repo.name : undefined,
-      title: typeof repo.title === 'string' ? repo.title : undefined,
-      description: typeof repo.description === 'string' ? repo.description : undefined,
-    },
-    files: normalizedFiles,
-  };
-}
-
-function toImportRepoName(value: string): string {
+function toRepoName(value: string): string {
   const normalized = value
-    .replace(/\.light-extension$/i, '')
     .replace(/[^a-zA-Z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .toLowerCase();
 
-  return `${normalized || 'light-extension'}-import`;
+  return normalized || 'light-extension';
 }
 
 export default LightExtensionListPage;

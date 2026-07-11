@@ -16,23 +16,11 @@ import {
   JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
   JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
 } from '@nocobase/client-v2';
-import {
-  RunJSEditorRegistry,
-  RunJSSourceResolverRegistry,
-  registerBlockGridSelectSceneAddBlockProvider,
-} from '@nocobase/client-v2';
+import { RunJSEditorRegistry, RunJSSourceResolverRegistry } from '@nocobase/client-v2';
 import { afterEach, vi } from 'vitest';
 
 import { LIGHT_EXTENSION_ACL_SNIPPET, LIGHT_EXTENSION_SETTINGS_KEY, NAMESPACE } from '../../constants';
 import PluginLightExtensionClientV2 from '../plugin';
-
-vi.mock('@nocobase/client-v2', async () => {
-  const actual = await vi.importActual<typeof import('@nocobase/client-v2')>('@nocobase/client-v2');
-  return {
-    ...actual,
-    registerBlockGridSelectSceneAddBlockProvider: vi.fn(() => vi.fn()),
-  };
-});
 
 describe('PluginLightExtensionClientV2', () => {
   afterEach(() => {
@@ -86,10 +74,6 @@ describe('PluginLightExtensionClientV2', () => {
     expect(warn.mock.calls.flat().join('\n')).not.toContain('JSBlockLightExtensionSourceField');
     expect(RunJSSourceResolverRegistry.getResolver('light-extension')).toBeTruthy();
     expect(RunJSEditorRegistry.getProviders().map((provider) => provider.key)).toContain('light-extension-runjs-value');
-    expect(registerBlockGridSelectSceneAddBlockProvider).toHaveBeenCalledWith(
-      'light-extension-js-blocks',
-      expect.any(Function),
-    );
   });
 
   it('cleans previous global registrations before loading a new instance', async () => {
@@ -106,7 +90,6 @@ describe('PluginLightExtensionClientV2', () => {
     });
 
     await app.load();
-    const firstProviderDisposer = vi.mocked(registerBlockGridSelectSceneAddBlockProvider).mock.results[0].value;
     const firstResolver = RunJSSourceResolverRegistry.getResolver('light-extension');
 
     const nextApp = createMockClient({
@@ -123,7 +106,6 @@ describe('PluginLightExtensionClientV2', () => {
 
     await nextApp.load();
 
-    expect(firstProviderDisposer).toHaveBeenCalledTimes(1);
     expect(RunJSSourceResolverRegistry.getResolvers()).toHaveLength(1);
     expect(RunJSEditorRegistry.getProviders()).toHaveLength(1);
     expect(RunJSSourceResolverRegistry.getResolver('light-extension')).toBeTruthy();

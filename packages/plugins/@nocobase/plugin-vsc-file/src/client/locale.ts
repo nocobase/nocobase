@@ -8,7 +8,6 @@
  */
 
 import { tExpr as _tExpr, useFlowEngine } from '@nocobase/flow-engine';
-// @ts-ignore
 import pkg from '../../package.json';
 
 export function useT() {

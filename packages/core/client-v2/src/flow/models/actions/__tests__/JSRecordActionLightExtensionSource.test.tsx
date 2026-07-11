@@ -18,7 +18,7 @@ describe('JSRecordActionModel light extension source', () => {
     RunJSSourceResolverRegistry.clear();
   });
 
-  it('resolves JS Action publications with the current record context', async () => {
+  it('resolves JS Action entries with the current record context', async () => {
     const resolve = vi.fn(() => ({
       code: `
 ctx.__testState.recordName = ctx.record.name;

@@ -8,6 +8,7 @@
  */
 
 import { ISchema } from '@formily/json-schema';
+import type { ReactNode } from 'react';
 import { SubModelItem } from './components';
 import type { PropertyOptions } from './flowContext';
 import { FlowContext, FlowModelContext, FlowRuntimeContext, FlowSettingsContext } from './flowContext';
@@ -278,14 +279,51 @@ export type EventDefinition<
   TCtx extends FlowContext = FlowContext,
 > = ActionDefinition<TModel, TCtx>;
 
+export interface StepCascadeMenuContext {
+  model?: FlowModel;
+  flowKey?: string;
+  stepKey?: string;
+  params: ParamObject;
+  t: (key: string, options?: Record<string, unknown>) => string;
+}
+
+export interface StepCascadeMenuLoadContext extends StepCascadeMenuContext {
+  defaultParams: ParamObject;
+}
+
+export interface StepCascadeMenuItem {
+  key: string;
+  label: ReactNode;
+  children?: StepCascadeMenuItem[];
+  disabled?: boolean;
+  searchText?: string;
+  selected?: boolean;
+  onSelect?: (ctx: StepCascadeMenuLoadContext) => ParamObject | void | Promise<ParamObject | void>;
+}
+
+export interface StepCascadeMenuUIMode {
+  type: 'cascadeMenu';
+  key?: string;
+  props?: {
+    loadItems?: (ctx: StepCascadeMenuLoadContext) => StepCascadeMenuItem[] | Promise<StepCascadeMenuItem[]>;
+    getDisplayLabel?: (ctx: StepCascadeMenuContext) => ReactNode;
+    searchPlaceholder?: string;
+    loadingLabel?: string;
+    emptyLabel?: string;
+    errorLabel?: string;
+    showSearch?: boolean;
+  };
+}
+
 export type StepUIMode =
   | 'dialog'
   | 'drawer'
   | 'embed'
   // | 'switch'
   // | 'select'
+  | StepCascadeMenuUIMode
   | {
-      type?: 'dialog' | 'drawer' | 'embed' | 'select' | 'switch' | 'cascadeMenu';
+      type?: 'dialog' | 'drawer' | 'embed' | 'select' | 'switch';
       props?: Record<string, any>;
       key?: string;
     };

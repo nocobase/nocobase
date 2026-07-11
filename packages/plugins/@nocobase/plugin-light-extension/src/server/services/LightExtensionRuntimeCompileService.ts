@@ -12,16 +12,15 @@ import { buildRunJSRuntimeCodeHash, type RunJSRuntimeArtifact } from '@nocobase/
 import { createHash } from 'crypto';
 import { posix as pathPosix } from 'path';
 
-import { LIGHT_EXTENSION_ENABLED_KINDS, type LightExtensionKind } from '../../constants';
+import { LIGHT_EXTENSION_SUPPORTED_KINDS, type LightExtensionKind } from '../../constants';
+import { LightExtensionError } from '../../shared/errors';
 import type {
   LightExtensionDiagnostic,
   LightExtensionEntryRecord,
   LightExtensionSaveSourceInput,
   LightExtensionSaveSourceResult,
-  LightExtensionScanResult,
 } from '../../shared/types';
-import { entryFromModel } from './LightExtensionEntryScanner';
-import { LightExtensionEntryScanner } from './LightExtensionEntryScanner';
+import { entryFromModel, LightExtensionEntryService } from './LightExtensionEntryService';
 import { LightExtensionFileService } from './LightExtensionFileService';
 import type { LightExtensionServiceContext } from './LightExtensionRepoService';
 import { sortDiagnostics } from './LightExtensionValidator';
@@ -37,7 +36,7 @@ export class LightExtensionRuntimeCompileService {
   constructor(
     private readonly db: Database,
     private readonly fileService: LightExtensionFileService,
-    private readonly entryScanner: LightExtensionEntryScanner,
+    private readonly entryService: LightExtensionEntryService,
     private readonly compilerBridge: LightExtensionWorkspaceCompilerBridge,
   ) {}
 
@@ -49,28 +48,34 @@ export class LightExtensionRuntimeCompileService {
     input: LightExtensionSaveSourceInput,
     ctx: LightExtensionServiceContext = {},
   ): Promise<LightExtensionSaveSourceResult> {
+    if (ctx.transaction) {
+      return this.saveSourceInTransaction(input, ctx);
+    }
+
+    return this.db.sequelize.transaction((transaction) =>
+      this.saveSourceInTransaction(input, {
+        ...ctx,
+        transaction,
+      }),
+    );
+  }
+
+  private async saveSourceInTransaction(
+    input: LightExtensionSaveSourceInput,
+    ctx: LightExtensionServiceContext,
+  ): Promise<LightExtensionSaveSourceResult> {
     const push = await this.fileService.push(
       {
         ...input,
-        baseCommitId: input.baseCommitId ?? null,
-        allowEmptyCommit: input.allowEmptyCommit ?? true,
+        allowEmptyCommit: false,
       },
       ctx,
     );
-    const scan = await this.entryScanner.scanRepo(
-      {
-        repoId: input.repoId,
-      },
-      {
-        ...ctx,
-        requestSource: ctx.requestSource || 'light-extension-save-source',
-      },
-    );
-    const compile = await this.compileCurrentRuntime(input.repoId, push.commit.id, scan, ctx);
-    const diagnostics = sortDiagnostics([
-      ...scan.diagnostics,
-      ...compile.entries.flatMap((entry) => entry.diagnostics),
-    ]);
+    const compile = await this.compileCurrentRuntime(input.repoId, push.commit.id, {
+      ...ctx,
+      requestSource: ctx.requestSource || 'light-extension-save-source',
+    });
+    const diagnostics = sortDiagnostics(compile.diagnostics);
 
     await this.referenceService?.refreshReferencesForRepo(input.repoId, ctx);
 
@@ -78,7 +83,6 @@ export class LightExtensionRuntimeCompileService {
       repo: compile.repo,
       commit: push.commit,
       tree: push.tree,
-      scan,
       compile: {
         status: compile.status,
         entries: compile.entries,
@@ -90,13 +94,38 @@ export class LightExtensionRuntimeCompileService {
   async compileCurrentRuntime(
     repoId: string,
     commitId: string,
-    scan: LightExtensionScanResult,
     ctx: LightExtensionServiceContext = {},
   ): Promise<
     Pick<LightExtensionSaveSourceResult['compile'], 'status' | 'entries'> & {
       repo: LightExtensionSaveSourceResult['repo'];
+      diagnostics: LightExtensionDiagnostic[];
     }
   > {
+    if (ctx.transaction) {
+      return this.compileCurrentRuntimeInTransaction(repoId, commitId, ctx);
+    }
+
+    return this.db.sequelize.transaction((transaction) =>
+      this.compileCurrentRuntimeInTransaction(repoId, commitId, { ...ctx, transaction }),
+    );
+  }
+
+  private async compileCurrentRuntimeInTransaction(
+    repoId: string,
+    commitId: string,
+    ctx: LightExtensionServiceContext,
+  ): Promise<
+    Pick<LightExtensionSaveSourceResult['compile'], 'status' | 'entries'> & {
+      repo: LightExtensionSaveSourceResult['repo'];
+      diagnostics: LightExtensionDiagnostic[];
+    }
+  > {
+    const prepared = await this.entryService.prepareEntries(repoId, ctx);
+    if (prepared.commitId !== commitId) {
+      throw new Error(
+        `Light extension repository head changed before compile: expected=${commitId}, actual=${prepared.commitId}`,
+      );
+    }
     const pull = await this.fileService.pullCommit(
       {
         repoId,
@@ -109,15 +138,16 @@ export class LightExtensionRuntimeCompileService {
       },
     );
     const compileEntries: LightExtensionSaveSourceResult['compile']['entries'] = [];
-    const readyEntries = scan.entries
-      .map((item) => item.entry)
-      .filter((entry) => entry.healthStatus === 'ready' && isEnabledKind(entry.kind));
+    const readyEntries = prepared.entries.filter(
+      (entry) => entry.healthStatus === 'ready' && isSupportedKind(entry.kind),
+    );
 
     for (const entry of readyEntries) {
       const compiled = await this.compilerBridge.compileEntry(
         {
           repoId,
           entryId: entry.id,
+          operation: 'runtimeCompile',
           kind: entry.kind as LightExtensionKind,
           entryName: entry.entryName,
           entryPath: entry.entryPath,
@@ -125,13 +155,11 @@ export class LightExtensionRuntimeCompileService {
         },
         {
           ...ctx,
-          can: undefined,
           requestSource: ctx.requestSource || 'light-extension-runtime-compile',
         },
       );
 
       if (!compiled.accepted) {
-        await this.persistFailedCompile(entry, compiled.diagnostics, ctx.transaction);
         compileEntries.push({
           entryId: entry.id,
           entryName: entry.entryName,
@@ -170,34 +198,42 @@ export class LightExtensionRuntimeCompileService {
       });
     }
 
-    if (compileEntries.some((entry) => entry.status === 'success')) {
-      await this.db.getRepository('lightExtensionRepos').update({
-        filterByTk: repoId,
-        values: {
-          lastCompiledAt: new Date(),
+    const successCount = compileEntries.filter((entry) => entry.status === 'success').length;
+    const failedCount = compileEntries.filter((entry) => entry.status === 'failed').length;
+    const diagnostics = sortDiagnostics([
+      ...prepared.diagnostics,
+      ...compileEntries.flatMap((entry) => entry.diagnostics),
+    ]);
+    if (failedCount > 0) {
+      throw new LightExtensionError('LIGHT_EXTENSION_VALIDATION_FAILED', 'Light extension source cannot be compiled', {
+        status: 422,
+        details: {
+          repoId,
+          commitId,
+          diagnostics,
+          entries: compileEntries,
         },
-        transaction: ctx.transaction,
       });
     }
+    await this.db.getRepository('lightExtensionRepos').update({
+      filterByTk: repoId,
+      values: {
+        healthStatus: 'ready',
+        ...(successCount > 0 ? { lastCompiledAt: new Date() } : {}),
+      },
+      transaction: ctx.transaction,
+    });
 
     const repo = await this.db.getRepository('lightExtensionRepos').findOne({
       filterByTk: repoId,
       transaction: ctx.transaction,
     });
 
-    const successCount = compileEntries.filter((entry) => entry.status === 'success').length;
-    const failedCount = compileEntries.filter((entry) => entry.status === 'failed').length;
     return {
-      repo: repo ? repoFromModelLike(repo) : scan.repo,
-      status:
-        compileEntries.length === 0
-          ? 'skipped'
-          : failedCount === 0
-            ? 'success'
-            : successCount > 0
-              ? 'partial_success'
-              : 'failed',
+      repo: withEntrySummary(repo ? repoFromModelLike(repo) : prepared.repo, prepared.entries),
+      status: compileEntries.length === 0 ? 'skipped' : 'success',
       entries: compileEntries,
+      diagnostics,
     };
   }
 
@@ -219,6 +255,7 @@ export class LightExtensionRuntimeCompileService {
       runtimeArtifact: cloneRuntimeArtifact(input.artifact, {
         runtimeCodeHash,
         runtimeContract: 'light-extension.current-runtime.v1',
+        settingsSchema,
       }),
       runtimeVersion: input.artifact.version,
       surfaceStyle: input.surfaceStyle,
@@ -227,6 +264,7 @@ export class LightExtensionRuntimeCompileService {
       settingsDefaultsHash,
       compiledAt: new Date(),
       diagnostics: sortDiagnostics([...input.entry.diagnostics, ...input.diagnostics]),
+      healthStatus: 'ready',
     };
 
     const entry = await this.db.getRepository('lightExtensionEntries').findOne({
@@ -239,35 +277,6 @@ export class LightExtensionRuntimeCompileService {
 
     await entry.update(values, { transaction });
     return entryFromModel(entry);
-  }
-
-  private async persistFailedCompile(
-    entry: LightExtensionEntryRecord,
-    diagnostics: LightExtensionDiagnostic[],
-    transaction?: Transaction,
-  ): Promise<void> {
-    const record = await this.db.getRepository('lightExtensionEntries').findOne({
-      filterByTk: entry.id,
-      transaction,
-    });
-    if (!record) {
-      return;
-    }
-
-    await record.update(
-      {
-        compiledCommitId: null,
-        runtimeArtifact: null,
-        runtimeVersion: null,
-        surfaceStyle: null,
-        runtimeCodeHash: null,
-        filesHash: null,
-        settingsDefaultsHash: null,
-        compiledAt: null,
-        diagnostics: sortDiagnostics([...entry.diagnostics, ...diagnostics]),
-      },
-      { transaction },
-    );
   }
 }
 
@@ -293,8 +302,8 @@ function getEntryRootPath(entryPath: string): string {
   return pathPosix.extname(normalized) ? pathPosix.dirname(normalized) : normalized;
 }
 
-function isEnabledKind(kind: string): boolean {
-  return (LIGHT_EXTENSION_ENABLED_KINDS as readonly string[]).includes(kind);
+function isSupportedKind(kind: string): kind is LightExtensionKind {
+  return (LIGHT_EXTENSION_SUPPORTED_KINDS as readonly string[]).includes(kind);
 }
 
 function cloneRuntimeArtifact(artifact: RunJSRuntimeArtifact, metadata: Record<string, unknown>): RunJSRuntimeArtifact {
@@ -388,13 +397,9 @@ function repoFromModelLike(record: { get: (key: string) => unknown }): LightExte
     normalizedName: String(record.get('normalizedName')),
     title: nullableString(record.get('title')),
     description: nullableString(record.get('description')),
-    version: normalizeNumber(record.get('version'), 1),
     lifecycleStatus: record.get('lifecycleStatus') as LightExtensionSaveSourceResult['repo']['lifecycleStatus'],
     healthStatus: record.get('healthStatus') as LightExtensionSaveSourceResult['repo']['healthStatus'],
     headCommitId: nullableString(record.get('headCommitId')),
-    lastScannedCommitId: nullableString(record.get('lastScannedCommitId')),
-    lastError: nullableString(record.get('lastError')),
-    lastScannedAt: normalizeDate(record.get('lastScannedAt')),
     lastCompiledAt: normalizeDate(record.get('lastCompiledAt')),
     createdAt: normalizeDate(record.get('createdAt')),
     updatedAt: normalizeDate(record.get('updatedAt')),
@@ -412,6 +417,21 @@ function normalizeDate(value: unknown): string | null {
   return typeof value === 'string' ? value : null;
 }
 
-function normalizeNumber(value: unknown, fallback: number): number {
-  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+function withEntrySummary(
+  repo: LightExtensionSaveSourceResult['repo'],
+  entries: LightExtensionEntryRecord[],
+): LightExtensionSaveSourceResult['repo'] {
+  const activeEntries = entries.filter((entry) => entry.healthStatus !== 'missing');
+  const entryKinds: NonNullable<LightExtensionSaveSourceResult['repo']['entryKinds']> = {};
+  for (const entry of activeEntries) {
+    if (!isSupportedKind(entry.kind)) {
+      continue;
+    }
+    entryKinds[entry.kind] = (entryKinds[entry.kind] || 0) + 1;
+  }
+  return {
+    ...repo,
+    entryCount: activeEntries.length,
+    entryKinds,
+  };
 }

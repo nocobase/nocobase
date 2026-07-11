@@ -12,7 +12,6 @@ import type { HandlerType, ResourceOptions } from '@nocobase/resourcer';
 
 import { isLightExtensionError } from '../../shared/errors';
 import type { LightExtensionRuntimeResolveInput } from '../../shared/types';
-import type { LightExtensionCanFunction } from '../services/LightExtensionPermissionService';
 import type { LightExtensionServiceContext } from '../services/LightExtensionRepoService';
 import { RuntimeResolveService } from '../services/RuntimeResolveService';
 
@@ -30,7 +29,6 @@ type LightExtensionResourceContext = Context & {
   auth?: {
     user?: unknown;
   };
-  can?: LightExtensionCanFunction;
   request?: {
     path?: string;
     method?: string;
@@ -106,7 +104,6 @@ function getServiceContext(ctx: LightExtensionResourceContext): LightExtensionSe
     actorUserId: getCurrentUserId(ctx),
     requestId: getHeader(headers, 'x-request-id') || getHeader(headers, 'x-correlation-id'),
     requestSource: getHeader(headers, 'x-request-source'),
-    can: ctx.can,
   };
 }
 

@@ -14,10 +14,6 @@ import { isVscError } from '@nocobase/plugin-vsc-file';
 import { LightExtensionError, isLightExtensionError } from '../../shared/errors';
 import type { LightExtensionFileChange } from '../../shared/types';
 import type {
-  LightExtensionDiffFileEndpoint,
-  LightExtensionDiffFileInput,
-  LightExtensionDiffInput,
-  LightExtensionGetCommitInput,
   LightExtensionGetFileInput,
   LightExtensionListCommitsInput,
   LightExtensionPullCommitInput,
@@ -26,7 +22,7 @@ import type {
 import { LightExtensionFileService } from '../services/LightExtensionFileService';
 import type { LightExtensionServiceContext } from '../services/LightExtensionRepoService';
 import { LightExtensionRuntimeCompileService } from '../services/LightExtensionRuntimeCompileService';
-import { toLightExtensionSourceError } from './errorContract';
+import { toLightExtensionSourceError } from '../services/errorContract';
 
 export const lightExtensionFileActionNames = [
   'pull',
@@ -35,10 +31,6 @@ export const lightExtensionFileActionNames = [
   'readArchivedSource',
   'saveSource',
   'listCommits',
-  'history',
-  'getCommit',
-  'diff',
-  'diffFile',
 ] as const;
 
 type LightExtensionFileActionName = (typeof lightExtensionFileActionNames)[number];
@@ -88,21 +80,13 @@ const resourceActionRunners: Record<LightExtensionFileActionName, ResourceAction
     services.runtimeCompileService.saveSource(
       {
         repoId: requireRepoId(input),
-        baseCommitId: optionalNullableString(input, 'baseCommitId') ?? null,
         message: requireString(input, 'message'),
         files: requireArray(input, 'files', normalizeFileChange),
-        allowEmptyCommit: optionalBoolean(input, 'allowEmptyCommit'),
       },
       currentUser,
     ),
   listCommits: (services, input, currentUser) =>
     services.fileService.listCommits(normalizeListCommitsInput(input), currentUser),
-  history: (services, input, currentUser) =>
-    services.fileService.listCommits(normalizeListCommitsInput(input), currentUser),
-  getCommit: (services, input, currentUser) =>
-    services.fileService.getCommit(normalizeGetCommitInput(input), currentUser),
-  diff: (services, input, currentUser) => services.fileService.diff(normalizeDiffInput(input), currentUser),
-  diffFile: (services, input, currentUser) => services.fileService.diffFile(normalizeDiffFileInput(input), currentUser),
 };
 
 export function createLightExtensionFilesResource(
@@ -185,53 +169,6 @@ function normalizeListCommitsInput(input: ResourceActionInput): LightExtensionLi
     limit: optionalPositiveInteger(input, 'limit'),
     beforeSeq: optionalPositiveInteger(input, 'beforeSeq'),
   });
-}
-
-function normalizeGetCommitInput(input: ResourceActionInput): LightExtensionGetCommitInput {
-  return {
-    repoId: requireRepoId(input),
-    commitId: requireString(input, 'commitId'),
-  };
-}
-
-function normalizeDiffInput(input: ResourceActionInput): LightExtensionDiffInput {
-  return {
-    repoId: requireRepoId(input),
-    fromCommitId: requireString(input, 'fromCommitId'),
-    toCommitId: requireString(input, 'toCommitId'),
-  };
-}
-
-function normalizeDiffFileInput(input: ResourceActionInput): LightExtensionDiffFileInput {
-  return compactObject({
-    repoId: requireRepoId(input),
-    from: normalizeOptionalDiffFileEndpoint(input.from, 'from'),
-    to: normalizeOptionalDiffFileEndpoint(input.to, 'to'),
-  });
-}
-
-function normalizeOptionalDiffFileEndpoint(
-  value: unknown,
-  label: string,
-): LightExtensionDiffFileEndpoint | null | undefined {
-  if (typeof value === 'undefined') {
-    return undefined;
-  }
-  if (value === null) {
-    return null;
-  }
-
-  const record = requireRecord(value, label);
-  const type = requireString(record, 'type', `${label}.type`);
-  if (type !== 'commit') {
-    throw invalidInput(`${label}.type must be commit`);
-  }
-
-  return {
-    type,
-    commitId: requireString(record, 'commitId', `${label}.commitId`),
-    path: requireString(record, 'path', `${label}.path`),
-  };
 }
 
 function normalizeFileChange(value: unknown, label: string): LightExtensionFileChange {
@@ -337,21 +274,6 @@ function optionalString(input: ResourceActionInput, key: string, label = key): s
   return value;
 }
 
-function optionalNullableString(input: ResourceActionInput, key: string, label = key): string | null | undefined {
-  const value = input[key];
-  if (typeof value === 'undefined') {
-    return undefined;
-  }
-  if (value === null) {
-    return null;
-  }
-  if (typeof value !== 'string') {
-    throw invalidInput(`${label} must be a string or null`);
-  }
-
-  return value;
-}
-
 function optionalNumber(input: ResourceActionInput, key: string, label = key): number | undefined {
   const value = input[key];
   if (typeof value === 'undefined') {
@@ -374,18 +296,6 @@ function optionalPositiveInteger(input: ResourceActionInput, key: string, label 
   }
 
   return value as number;
-}
-
-function optionalBoolean(input: ResourceActionInput, key: string, label = key): boolean | undefined {
-  const value = input[key];
-  if (typeof value === 'undefined') {
-    return undefined;
-  }
-  if (typeof value !== 'boolean') {
-    throw invalidInput(`${label} must be a boolean`);
-  }
-
-  return value;
 }
 
 function optionalFileOperation(

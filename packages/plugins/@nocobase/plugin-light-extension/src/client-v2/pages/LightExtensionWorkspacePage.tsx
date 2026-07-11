@@ -13,21 +13,30 @@ import {
   CloseConfirmModal,
   FilesPanel,
   RestoreVersionModal,
+  SaveVersionModal,
   VersionHistoryDock,
+  summarizeWorkspaceChanges,
   type RunJSLineDiffRow,
   type RunJSSourceHistoryItem,
+  type RunJSWorkspacePathAccess,
+  type RunJSWorkspacePathType,
   type RunJSWorkspaceFile,
   useVscFileT,
 } from '@nocobase/plugin-vsc-file/client-v2';
 import { useFullscreenOverlay } from '@nocobase/client-v2';
-import { Alert, Button, Empty, Flex, Space, Spin, Typography, message } from 'antd';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Alert, Button, Empty, Flex, Modal, Space, Spin, Typography, message } from 'antd';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 import { NAMESPACE } from '../../constants';
 import { generateClientSettingsTypes, type LightExtensionSettingsTypegenResult } from '../../sdk/settings-typegen';
+import {
+  DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES,
+  LIGHT_EXTENSION_SDK_SHIM_CONTENT,
+  LIGHT_EXTENSION_SDK_SHIM_PATH,
+} from '../../shared/default-template';
 import type {
   LightExtensionDiagnostic,
   LightExtensionFileChange,
@@ -37,137 +46,70 @@ import type {
 } from '../../shared/types';
 import DiagnosticsPanel from '../components/DiagnosticsPanel';
 import { getLightExtensionErrorDiagnostics, useLightExtensionRepo } from '../hooks/useLightExtensionRepo';
+import {
+  canChangeLightExtensionWorkspacePath,
+  getLightExtensionEntryRoot,
+  getLightExtensionWorkspacePathAccess,
+  normalizeWorkspacePath,
+  type LightExtensionWorkspaceScope,
+} from '../workspace/lightExtensionWorkspaceAccess';
 
 type WorkspaceFile = RunJSWorkspaceFile;
 
-export interface LightExtensionTemplateFile {
-  path: string;
-  content: string;
-  language?: string;
-  mode?: string;
-}
-
 interface LightExtensionWorkspacePageProps {
   embedded?: boolean;
+  repoId?: string;
+  initialPath?: string;
+  workspaceScope?: LightExtensionWorkspaceScope;
   onFooterActionsChange?: (actions: LightExtensionWorkspaceFooterActions | null) => void;
-  onRequestClose?: () => void;
+  onRequestClose?: () => void | Promise<void>;
+  onSaved?: () => void;
 }
 
 export interface LightExtensionWorkspaceFooterActions {
   disabled: boolean;
   loading: boolean;
-  onCancel: () => void;
+  onCancel: () => void | Promise<void>;
   onSave: () => void;
 }
 
 const LIGHT_EXTENSION_SOURCE_ROOT = 'src/client/js-blocks';
 const LIGHT_EXTENSION_SHARED_ROOT = 'src/shared';
-const LIGHT_EXTENSION_SDK_SHIM_PATH = `${LIGHT_EXTENSION_SHARED_ROOT}/light-extension-sdk.d.ts`;
-const LIGHT_EXTENSION_SDK_SHIM_CONTENT = `declare module "@nocobase/light-extension-sdk/client" {
-  export interface LightExtensionSettingsContext<TSettings = unknown> {
-    settings: TSettings;
-  }
-
-  export type LightExtensionRecord = Record<string, unknown>;
-
-  export interface LightExtensionDataContext<TSettings = unknown> extends LightExtensionSettingsContext<TSettings> {
-    record?: LightExtensionRecord | null;
-    records?: LightExtensionRecord[];
-    values?: LightExtensionRecord;
-    collection?: unknown;
-    collectionField?: unknown;
-    dataSource?: unknown;
-  }
-
-  export interface JSBlockContext<TSettings = unknown> extends LightExtensionDataContext<TSettings> {
-    element?: HTMLElement | null;
-    render?: (node: unknown) => void;
-    i18n?: {
-      t: (key: string, options?: Record<string, unknown>) => string;
-    };
-  }
-
-  export interface JSFieldContext<TSettings = unknown, TValue = unknown> extends LightExtensionDataContext<TSettings> {
-    value?: TValue;
-  }
-
-  export interface JSActionContext<TSettings = unknown> extends LightExtensionDataContext<TSettings> {
-    event?: unknown;
-    formValues?: LightExtensionRecord;
-  }
-
-  export interface JSItemContext<TSettings = unknown, TValue = unknown> extends LightExtensionDataContext<TSettings> {
-    value?: TValue;
-  }
-
-  export interface RunJSContext<TSettings = unknown, TInput = unknown> extends LightExtensionDataContext<TSettings> {
-    input?: TInput;
-    event?: unknown;
-    formValues?: LightExtensionRecord;
-  }
-
-  export interface EventContext<TSettings = unknown, TEvent = unknown> extends LightExtensionSettingsContext<TSettings> {
-    event?: TEvent;
-    payload?: unknown;
-  }
-
-  export function defineSettings<TSettings>(settings: TSettings): TSettings;
-  export function assertSettings<TSettings>(settings: TSettings): TSettings;
-}
-
-declare module "@nocobase/light-extension-sdk/shared" {
-  export interface LightExtensionSettingsContext<TSettings = unknown> {
-    settings: TSettings;
-  }
-
-  export type LightExtensionRecord = Record<string, unknown>;
-
-  export interface LightExtensionDataContext<TSettings = unknown> extends LightExtensionSettingsContext<TSettings> {
-    record?: LightExtensionRecord | null;
-    records?: LightExtensionRecord[];
-    values?: LightExtensionRecord;
-    collection?: unknown;
-    collectionField?: unknown;
-    dataSource?: unknown;
-  }
-
-  export function defineSettings<TSettings>(settings: TSettings): TSettings;
-  export function assertSettings<TSettings>(settings: TSettings): TSettings;
-}
-`;
-const LIGHT_EXTENSION_TSCONFIG_CONTENT =
-  '{\n  "compilerOptions": {\n    "baseUrl": ".",\n    "jsx": "react-jsx",\n    "strict": true,\n    "target": "ES2020",\n    "paths": {\n      "@nocobase/light-extension-sdk/client": ["src/shared/light-extension-sdk.d.ts"],\n      "@nocobase/light-extension-sdk/shared": ["src/shared/light-extension-sdk.d.ts"],\n      "light-extension:settings/*": [".light-extension/types/*"]\n    }\n  }\n}\n';
 const LIGHT_EXTENSION_REPO_ROOT_FILE_PATHS = ['README.md', 'light-extension.json', 'tsconfig.json'] as const;
 const LIGHT_EXTENSION_REPO_ROOT_FILES = new Set<string>(LIGHT_EXTENSION_REPO_ROOT_FILE_PATHS);
 const LIGHT_EXTENSION_CLIENT_KIND_TEMPLATE_FILES = [
-  'src/client/js-fields/phone-link/index.tsx',
-  'src/client/js-actions/show-message/index.ts',
-  'src/client/js-items/row-menu-label/index.tsx',
-  'src/client/runjs/normalize-form-values/index.ts',
-  'src/client/events/log-page-open/index.ts',
+  'src/client/js-fields/example/index.tsx',
+  'src/client/js-actions/example/index.ts',
+  'src/client/js-items/example/index.tsx',
+  'src/client/runjs/example/index.ts',
 ] as const;
 const LIGHT_EXTENSION_CLIENT_KIND_ROOTS = [
   'src/client/js-fields',
   'src/client/js-actions',
   'src/client/js-items',
   'src/client/runjs',
-  'src/client/events',
 ] as const;
 const DEFAULT_NEW_FILE_NAME = 'helper';
 const DEFAULT_NEW_FILE_EXTENSION = '.ts';
+const HISTORY_PAGE_SIZE = 20;
+const REPOSITORY_WORKSPACE_SCOPE: LightExtensionWorkspaceScope = { mode: 'repository' };
 
 function LightExtensionWorkspacePage({
   embedded = false,
+  repoId: repoIdProp,
+  initialPath,
+  workspaceScope = REPOSITORY_WORKSPACE_SCOPE,
   onFooterActionsChange,
   onRequestClose,
+  onSaved,
 }: LightExtensionWorkspacePageProps) {
   const { t } = useTranslation(NAMESPACE);
   const studioT = useVscFileT();
   const [searchParams] = useSearchParams();
-  const repoId = searchParams.get('repoId') || '';
+  const repoId = repoIdProp || searchParams.get('repoId') || '';
   const { getRepo, listCommits, pull, pullCommit, saveSource } = useLightExtensionRepo();
   const [repo, setRepo] = useState<LightExtensionRepoRecord | null>(null);
-  const [baseCommitId, setBaseCommitId] = useState<string | null>(null);
+  const [baseCommitSeq, setBaseCommitSeq] = useState<number>();
   const [baseFiles, setBaseFiles] = useState<WorkspaceFile[]>([]);
   const [files, setFiles] = useState<WorkspaceFile[]>([]);
   const [folders, setFolders] = useState<string[]>([]);
@@ -179,7 +121,11 @@ function LightExtensionWorkspacePage({
   const [diagnostics, setDiagnostics] = useState<LightExtensionDiagnostic[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [saveOpen, setSaveOpen] = useState(false);
+  const [versionMessage, setVersionMessage] = useState('');
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyLoadingMore, setHistoryLoadingMore] = useState(false);
+  const [historyNextBeforeSeq, setHistoryNextBeforeSeq] = useState<number | null>(null);
   const [isDiff, setIsDiff] = useState(false);
   const [restoreCommit, setRestoreCommit] = useState<RunJSSourceHistoryItem | null>(null);
   const [restoringVersion, setRestoringVersion] = useState(false);
@@ -188,6 +134,20 @@ function LightExtensionWorkspacePage({
     null,
   );
   const workspaceFullscreen = useFullscreenOverlay();
+  const historyRequestSeqRef = useRef(0);
+  const entryRoot = getLightExtensionEntryRoot(workspaceScope);
+  const entryScoped = workspaceScope.mode === 'entry';
+  const pathRestrictionReason = t('Other light extension entries are read-only here');
+  const resolveWorkspacePathAccess = useCallback(
+    (path: string, pathType: RunJSWorkspacePathType): RunJSWorkspacePathAccess => {
+      const access = getLightExtensionWorkspacePathAccess(workspaceScope, path, pathType);
+      return {
+        ...access,
+        reason: access.canWrite ? undefined : pathRestrictionReason,
+      };
+    },
+    [pathRestrictionReason, workspaceScope],
+  );
 
   const loadWorkspace = useCallback(
     async (options: { resetNotice?: boolean } = {}) => {
@@ -195,6 +155,10 @@ function LightExtensionWorkspacePage({
         return;
       }
 
+      const historyRequestSeq = historyRequestSeqRef.current + 1;
+      historyRequestSeqRef.current = historyRequestSeq;
+      setHistoryLoading(false);
+      setHistoryLoadingMore(false);
       setLoading(true);
       if (options.resetNotice !== false) {
         setNotice(null);
@@ -208,24 +172,29 @@ function LightExtensionWorkspacePage({
           setFolders([]);
           setActivePath(undefined);
           setOpenPaths([]);
-          setBaseCommitId(nextRepo.headCommitId);
+          setBaseCommitSeq(undefined);
           setHistoryItems([]);
+          setHistoryNextBeforeSeq(null);
           setNotice({ type: 'warning', message: t('Archived repositories are read-only') });
           return;
         }
 
         const pullResult = await pull({ repoId, includeContent: 'all' });
         const pulledFiles = normalizeWorkspaceFiles(pullResult.files || []);
-        const nextFiles = pulledFiles.length > 0 ? pulledFiles : buildLightExtensionTemplate([]);
-        const nextActivePath = resolveActivePath(nextFiles, undefined);
-        const commits = await listCommits({ repoId, limit: 20 }).catch(() => []);
-        setBaseCommitId(pullResult.commit?.id || null);
+        const nextFiles = pulledFiles;
+        const nextActivePath = resolveActivePath(nextFiles, initialPath);
+        const commits = await listCommits({ repoId, limit: HISTORY_PAGE_SIZE }).catch(() => []);
+        const nextBaseCommitId = pullResult.commit?.id || null;
+        setBaseCommitSeq(commits.find((commit) => commit.id === nextBaseCommitId)?.seq);
         setBaseFiles(pulledFiles);
         setFiles(nextFiles);
         setFolders(collectWorkspaceFolders(nextFiles));
         setActivePath(nextActivePath);
         setOpenPaths(nextActivePath ? [nextActivePath] : []);
-        setHistoryItems(toRunJSHistoryItems(commits));
+        if (historyRequestSeqRef.current === historyRequestSeq) {
+          setHistoryItems(toRunJSHistoryItems(commits));
+          setHistoryNextBeforeSeq(getNextHistoryCursor(commits, HISTORY_PAGE_SIZE));
+        }
         setDiagnostics([]);
         setIsDiff(false);
       } catch (error) {
@@ -234,7 +203,7 @@ function LightExtensionWorkspacePage({
         setLoading(false);
       }
     },
-    [getRepo, listCommits, pull, repoId, t],
+    [getRepo, initialPath, listCommits, pull, repoId, t],
   );
 
   useEffect(() => {
@@ -249,12 +218,18 @@ function LightExtensionWorkspacePage({
   );
   const filesForSave = useMemo(() => ensurePersistedLightExtensionSdkShim(files), [files]);
   const dirtyChanges = useMemo(() => buildFileChanges(baseFiles, filesForSave), [baseFiles, filesForSave]);
+  const saveSummary = useMemo(() => summarizeWorkspaceChanges(baseFiles, filesForSave), [baseFiles, filesForSave]);
   const diffRows = useMemo(
     () => buildLineDiffRows(baseFiles, filesForSave, activePath),
     [activePath, baseFiles, filesForSave],
   );
   const hasUnsavedLocalChanges = dirtyChanges.length > 0;
   const canWrite = Boolean(repo && repo.lifecycleStatus !== 'archived');
+  const hasBlockedDirtyChanges = dirtyChanges.some(
+    (change) => !canChangeLightExtensionWorkspacePath(workspaceScope, change.path),
+  );
+  const activeFileReadOnly =
+    !canWrite || !activePath || !getLightExtensionWorkspacePathAccess(workspaceScope, activePath, 'file').canWrite;
 
   const openFilePath = useCallback((path?: string) => {
     if (!path) {
@@ -281,7 +256,7 @@ function LightExtensionWorkspacePage({
   );
 
   const createWorkspaceFile = (parentPath = LIGHT_EXTENSION_SOURCE_ROOT): string | undefined => {
-    if (!canWrite) {
+    if (!canWrite || !getLightExtensionWorkspacePathAccess(workspaceScope, parentPath, 'folder').canCreate) {
       return undefined;
     }
 
@@ -301,7 +276,7 @@ function LightExtensionWorkspacePage({
   };
 
   const createWorkspaceFolder = (parentPath = LIGHT_EXTENSION_SOURCE_ROOT): string | undefined => {
-    if (!canWrite) {
+    if (!canWrite || !getLightExtensionWorkspacePathAccess(workspaceScope, parentPath, 'folder').canCreate) {
       return undefined;
     }
 
@@ -311,7 +286,11 @@ function LightExtensionWorkspacePage({
   };
 
   const updateActiveFile = (value: string) => {
-    if (!activePath || !canWrite) {
+    if (
+      !activePath ||
+      !canWrite ||
+      !getLightExtensionWorkspacePathAccess(workspaceScope, activePath, 'file').canWrite
+    ) {
       return;
     }
 
@@ -319,7 +298,7 @@ function LightExtensionWorkspacePage({
   };
 
   const removeFile = (path: string) => {
-    if (!canWrite) {
+    if (!canWrite || !getLightExtensionWorkspacePathAccess(workspaceScope, path, 'file').canDelete) {
       return;
     }
 
@@ -335,13 +314,17 @@ function LightExtensionWorkspacePage({
   };
 
   const renameFile = (path: string, nextPath: string): boolean => {
-    if (!canWrite) {
+    if (!canWrite || !getLightExtensionWorkspacePathAccess(workspaceScope, path, 'file').canRename) {
       return false;
     }
 
     const normalizedNextPath = normalizeWorkspacePath(nextPath);
     if (!isValidWorkspaceFilePath(normalizedNextPath)) {
       message.error(t('Invalid file path'));
+      return false;
+    }
+    if (!getLightExtensionWorkspacePathAccess(workspaceScope, normalizedNextPath, 'file').canWrite) {
+      message.warning(pathRestrictionReason);
       return false;
     }
     if (path !== normalizedNextPath && files.some((file) => file.path === normalizedNextPath)) {
@@ -365,13 +348,17 @@ function LightExtensionWorkspacePage({
   };
 
   const renameFolder = (path: string, nextPath: string): boolean => {
-    if (!canWrite) {
+    if (!canWrite || !getLightExtensionWorkspacePathAccess(workspaceScope, path, 'folder').canRename) {
       return false;
     }
 
     const normalizedNextPath = normalizeWorkspacePath(nextPath);
     if (!isValidWorkspaceFolderPath(normalizedNextPath)) {
       message.error(t('Invalid file path'));
+      return false;
+    }
+    if (!getLightExtensionWorkspacePathAccess(workspaceScope, normalizedNextPath, 'folder').canWrite) {
+      message.warning(pathRestrictionReason);
       return false;
     }
     if (path === normalizedNextPath) {
@@ -404,7 +391,7 @@ function LightExtensionWorkspacePage({
   };
 
   const deleteFolder = (path: string): boolean => {
-    if (!canWrite) {
+    if (!canWrite || !getLightExtensionWorkspacePathAccess(workspaceScope, path, 'folder').canDelete) {
       return false;
     }
     if (
@@ -440,14 +427,57 @@ function LightExtensionWorkspacePage({
       return;
     }
 
+    const requestSeq = historyRequestSeqRef.current + 1;
+    historyRequestSeqRef.current = requestSeq;
+    setHistoryLoadingMore(false);
     setHistoryLoading(true);
     try {
-      const commits = await listCommits({ repoId, limit: 20 });
+      const commits = await listCommits({ repoId, limit: HISTORY_PAGE_SIZE });
+      if (historyRequestSeqRef.current !== requestSeq) {
+        return;
+      }
       setHistoryItems(toRunJSHistoryItems(commits));
+      setHistoryNextBeforeSeq(getNextHistoryCursor(commits, HISTORY_PAGE_SIZE));
     } catch (error) {
-      setNotice({ type: 'error', message: error instanceof Error ? error.message : t('Failed to load history') });
+      if (historyRequestSeqRef.current === requestSeq) {
+        setNotice({ type: 'error', message: error instanceof Error ? error.message : t('Failed to load history') });
+      }
     } finally {
-      setHistoryLoading(false);
+      if (historyRequestSeqRef.current === requestSeq) {
+        setHistoryLoading(false);
+      }
+    }
+  };
+
+  const loadMoreHistory = async () => {
+    if (!repoId || historyNextBeforeSeq === null) {
+      return;
+    }
+
+    const requestSeq = historyRequestSeqRef.current + 1;
+    historyRequestSeqRef.current = requestSeq;
+    const beforeSeq = historyNextBeforeSeq;
+    setHistoryLoadingMore(true);
+    try {
+      const commits = await listCommits({
+        repoId,
+        limit: HISTORY_PAGE_SIZE,
+        beforeSeq,
+      });
+      if (historyRequestSeqRef.current !== requestSeq) {
+        return;
+      }
+      const nextItems = toRunJSHistoryItems(commits);
+      setHistoryItems((current) => mergeHistoryItems(current, nextItems));
+      setHistoryNextBeforeSeq(getNextHistoryCursor(commits, HISTORY_PAGE_SIZE));
+    } catch (error) {
+      if (historyRequestSeqRef.current === requestSeq) {
+        setNotice({ type: 'error', message: error instanceof Error ? error.message : t('Failed to load history') });
+      }
+    } finally {
+      if (historyRequestSeqRef.current === requestSeq) {
+        setHistoryLoadingMore(false);
+      }
     }
   };
 
@@ -459,10 +489,11 @@ function LightExtensionWorkspacePage({
     setRestoringVersion(true);
     try {
       const pullResult = await pullCommit({ repoId, commitId: commit.id, includeContent: 'all' });
-      const nextFiles = normalizeWorkspaceFiles(pullResult.files || []);
+      const restoredFiles = normalizeWorkspaceFiles(pullResult.files || []);
+      const nextFiles = restoreWorkspaceFiles(files, restoredFiles, workspaceScope);
       const nextActivePath = resolveActivePath(nextFiles, activePath);
       setFiles(nextFiles);
-      setFolders((current) => mergeFolders(current, collectWorkspaceFolders(nextFiles)));
+      setFolders(collectWorkspaceFolders(nextFiles));
       setActivePath(nextActivePath);
       setOpenPaths(nextActivePath ? [nextActivePath] : []);
       setIsDiff(false);
@@ -485,67 +516,82 @@ function LightExtensionWorkspacePage({
   };
 
   const saveChanges = useCallback(async () => {
-    if (!repoId) {
+    const commitMessage = versionMessage.trim();
+    if (!repoId || !commitMessage || dirtyChanges.length === 0 || hasBlockedDirtyChanges) {
+      if (hasBlockedDirtyChanges) {
+        setNotice({ type: 'warning', message: pathRestrictionReason });
+      }
       return;
     }
 
+    setSaveOpen(false);
     setSaving(true);
     setNotice(null);
     try {
       const result = await saveSource({
         repoId,
-        baseCommitId,
-        message: t('Update light extension source'),
+        message: commitMessage,
         files: dirtyChanges,
-        allowEmptyCommit: true,
       });
       setDiagnostics(result.diagnostics);
-      setBaseCommitId(result.commit.id);
       setBaseFiles(filesForSave);
-      const saveNotice = getSaveNotice(result.compile.status, t);
-      setNotice({
-        type: saveNotice.type,
-        message: saveNotice.message,
-      });
-      await loadWorkspace({ resetNotice: false });
+      if (onRequestClose) {
+        await onRequestClose();
+      } else {
+        await loadWorkspace();
+      }
+      onSaved?.();
     } catch (error) {
       setDiagnostics(getLightExtensionErrorDiagnostics(error) as LightExtensionDiagnostic[]);
       setNotice({ type: 'error', message: error instanceof Error ? error.message : t('Failed to save source') });
     } finally {
       setSaving(false);
     }
-  }, [baseCommitId, dirtyChanges, filesForSave, loadWorkspace, repoId, saveSource, t]);
+  }, [
+    dirtyChanges,
+    filesForSave,
+    hasBlockedDirtyChanges,
+    loadWorkspace,
+    onSaved,
+    onRequestClose,
+    pathRestrictionReason,
+    repoId,
+    saveSource,
+    t,
+    versionMessage,
+  ]);
 
   const openSaveModal = useCallback(() => {
-    if (!canWrite) {
+    if (!canWrite || !hasUnsavedLocalChanges || hasBlockedDirtyChanges) {
       return;
     }
 
-    saveChanges();
-  }, [canWrite, saveChanges]);
+    setVersionMessage('');
+    setSaveOpen(true);
+  }, [canWrite, hasBlockedDirtyChanges, hasUnsavedLocalChanges]);
 
-  const requestClose = useCallback(() => {
+  const requestClose = useCallback(async () => {
     if (hasUnsavedLocalChanges) {
       setCloseConfirmOpen(true);
       return;
     }
 
-    onRequestClose?.();
+    await onRequestClose?.();
   }, [hasUnsavedLocalChanges, onRequestClose]);
 
-  const discardLocalAndClose = useCallback(() => {
+  const discardLocalAndClose = useCallback(async () => {
     setCloseConfirmOpen(false);
-    onRequestClose?.();
+    await onRequestClose?.();
   }, [onRequestClose]);
 
   const footerActions = useMemo<LightExtensionWorkspaceFooterActions>(
     () => ({
-      disabled: !canWrite || loading,
+      disabled: !canWrite || loading || !hasUnsavedLocalChanges || hasBlockedDirtyChanges,
       loading: saving,
       onCancel: requestClose,
       onSave: openSaveModal,
     }),
-    [canWrite, loading, openSaveModal, requestClose, saving],
+    [canWrite, hasBlockedDirtyChanges, hasUnsavedLocalChanges, loading, openSaveModal, requestClose, saving],
   );
 
   useEffect(() => {
@@ -657,9 +703,12 @@ function LightExtensionWorkspacePage({
                   <FilesPanel
                     activePath={activePath}
                     collapsed={filesCollapsed}
+                    defaultCreateParentPath={entryScoped ? entryRoot || LIGHT_EXTENSION_SOURCE_ROOT : undefined}
                     exporting={false}
                     files={files}
+                    fillAvailableHeight={historyCollapsed}
                     folders={folders}
+                    getPathAccess={resolveWorkspacePathAccess}
                     onCollapseChange={setFilesCollapsed}
                     onCreate={createWorkspaceFile}
                     onCreateFolder={createWorkspaceFolder}
@@ -676,17 +725,19 @@ function LightExtensionWorkspacePage({
                     t={studioT}
                   />
                   <VersionHistoryDock
-                    baseVersion={formatHistoryVersion(historyItems.find((item) => item.id === baseCommitId)?.seq)}
+                    baseVersion={formatHistoryVersion(baseCommitSeq)}
                     collapsed={historyCollapsed}
                     emptyHistoryDescription={t('No source versions yet')}
+                    hasMore={historyNextBeforeSeq !== null}
                     hasUnsavedLocalChanges={hasUnsavedLocalChanges}
                     historyItems={historyItems}
                     loading={historyLoading}
+                    loadingMore={historyLoadingMore}
                     onCollapsedChange={setHistoryCollapsed}
+                    onLoadMore={loadMoreHistory}
                     onRefresh={refreshHistory}
                     onSelect={setRestoreCommit}
                     onViewChanges={() => setIsDiff(true)}
-                    showVersionBadges={false}
                     t={studioT}
                   />
                 </div>
@@ -708,6 +759,9 @@ function LightExtensionWorkspacePage({
                 ) : null}
                 {files.length > 0 ? (
                   <>
+                    {activeFileReadOnly && entryScoped ? (
+                      <Alert message={pathRestrictionReason} showIcon style={{ marginBottom: 8 }} type="info" />
+                    ) : null}
                     <CodeTab
                       activeFile={activeFile}
                       activePath={activePath}
@@ -724,12 +778,9 @@ function LightExtensionWorkspacePage({
                       onDiffToggle={() => setIsDiff((current) => !current)}
                       onFilesCollapsedChange={setFilesCollapsed}
                       onOpenFile={openFilePath}
-                      onRunPreview={() => {}}
                       openPaths={openPaths}
-                      previewing={false}
-                      readOnly={!canWrite}
+                      readOnly={activeFileReadOnly}
                       savedFiles={baseFiles}
-                      scene="render"
                       showRunButton={false}
                       t={studioT}
                       version="v2"
@@ -750,9 +801,43 @@ function LightExtensionWorkspacePage({
         loading={restoringVersion}
         onCancel={() => setRestoreCommit(null)}
         onRestore={confirmLoadVersion}
-        showRestoreSecondaryNote={false}
+        scopeDescription={
+          entryScoped
+            ? t('Only editable files in this workspace will be restored. Read-only files will remain unchanged.')
+            : undefined
+        }
         t={studioT}
       />
+
+      <SaveVersionModal
+        loading={false}
+        onAfterClose={() => undefined}
+        onCancel={() => setSaveOpen(false)}
+        onSave={saveChanges}
+        onVersionMessageChange={setVersionMessage}
+        open={saveOpen}
+        readOnly={!canWrite || hasBlockedDirtyChanges}
+        summary={saveSummary}
+        t={studioT}
+        versionMessage={versionMessage}
+      />
+
+      <Modal
+        closable={false}
+        footer={null}
+        keyboard={false}
+        maskClosable={false}
+        open={saving}
+        title={t('Saving changes')}
+      >
+        <Flex align="center" gap={12}>
+          <Spin />
+          <Space direction="vertical" size={0}>
+            <Typography.Text>{t('Saving source files')}</Typography.Text>
+            <Typography.Text type="secondary">{t('Compiling light extension')}</Typography.Text>
+          </Space>
+        </Flex>
+      </Modal>
 
       <CloseConfirmModal
         intent="close"
@@ -765,28 +850,6 @@ function LightExtensionWorkspacePage({
   );
 }
 
-function getSaveNotice(
-  compileStatus: 'success' | 'partial_success' | 'failed' | 'skipped',
-  t: (key: string) => string,
-): { type: 'success' | 'info' | 'warning'; message: string } {
-  if (compileStatus === 'success') {
-    return {
-      type: 'success',
-      message: t('Source saved and compiled'),
-    };
-  }
-  if (compileStatus === 'skipped') {
-    return {
-      type: 'info',
-      message: t('Source saved'),
-    };
-  }
-  return {
-    type: 'warning',
-    message: t('Source saved, but compile failed'),
-  };
-}
-
 function normalizeWorkspaceFiles(files: Array<LightExtensionPulledFile | WorkspaceFile>): WorkspaceFile[] {
   return files
     .map((file) => ({
@@ -796,6 +859,21 @@ function normalizeWorkspaceFiles(files: Array<LightExtensionPulledFile | Workspa
       mode: file.mode,
     }))
     .sort((left, right) => left.path.localeCompare(right.path));
+}
+
+function restoreWorkspaceFiles(
+  currentFiles: WorkspaceFile[],
+  restoredFiles: WorkspaceFile[],
+  workspaceScope: LightExtensionWorkspaceScope,
+): WorkspaceFile[] {
+  if (workspaceScope.mode === 'repository') {
+    return restoredFiles;
+  }
+
+  return normalizeWorkspaceFiles([
+    ...currentFiles.filter((file) => !canChangeLightExtensionWorkspacePath(workspaceScope, file.path)),
+    ...restoredFiles.filter((file) => canChangeLightExtensionWorkspacePath(workspaceScope, file.path)),
+  ]);
 }
 
 function resolveActivePath(files: WorkspaceFile[], current: string | undefined): string | undefined {
@@ -884,35 +962,7 @@ function buildUniqueWorkspaceFilePath(files: WorkspaceFile[], folder: string): s
 }
 
 function getDefaultWorkspaceFileContent(path: string): string {
-  if (path === 'README.md') {
-    return '# Light extension source\n';
-  }
-  if (path === 'light-extension.json') {
-    return '{\n  "schemaVersion": 1\n}\n';
-  }
-  if (path === 'tsconfig.json') {
-    return LIGHT_EXTENSION_TSCONFIG_CONTENT;
-  }
-  if (path === LIGHT_EXTENSION_SDK_SHIM_PATH) {
-    return LIGHT_EXTENSION_SDK_SHIM_CONTENT;
-  }
-  if (path === 'src/client/js-fields/phone-link/index.tsx') {
-    return 'function PhoneLink() {\n  const value = String(ctx.value ?? "");\n\n  return <a href={"tel:" + value}>{value}</a>;\n}\n\nctx.render(<PhoneLink />);\n';
-  }
-  if (path === 'src/client/js-actions/show-message/index.ts') {
-    return 'export default async function showMessage() {\n  return true;\n}\n';
-  }
-  if (path === 'src/client/js-items/row-menu-label/index.tsx') {
-    return 'ctx.render(<span>Row menu</span>);\n';
-  }
-  if (path === 'src/client/runjs/normalize-form-values/index.ts') {
-    return 'export default async function normalizeFormValues(values: Record<string, unknown>) {\n  return values;\n}\n';
-  }
-  if (path === 'src/client/events/log-page-open/index.ts') {
-    return 'export default function logPageOpen() {\n  return true;\n}\n';
-  }
-
-  return '';
+  return DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES.find((file) => file.path === path)?.content || '';
 }
 
 function getCompanionWorkspaceFiles(path: string, files: WorkspaceFile[]): WorkspaceFile[] {
@@ -962,14 +1012,6 @@ function resolveCreateFolder(parentPath: string): string {
   }
 
   return normalized;
-}
-
-function normalizeWorkspacePath(path: string): string {
-  return path
-    .trim()
-    .replace(/\\/g, '/')
-    .replace(/\/+/g, '/')
-    .replace(/^\/+|\/+$/g, '');
 }
 
 function isValidWorkspaceFilePath(path: string): boolean {
@@ -1066,10 +1108,20 @@ function splitLines(content: string): string[] {
 }
 
 function toRunJSHistoryItems(commits: LightExtensionCommitRecord[]): RunJSSourceHistoryItem[] {
-  return commits.map((commit) => ({
-    ...commit,
-    isPublished: false,
-  }));
+  return commits.map((commit) => ({ ...commit }));
+}
+
+function getNextHistoryCursor(commits: LightExtensionCommitRecord[], pageSize: number): number | null {
+  return commits.length === pageSize ? commits[commits.length - 1]?.seq || null : null;
+}
+
+function mergeHistoryItems(
+  current: RunJSSourceHistoryItem[],
+  next: RunJSSourceHistoryItem[],
+): RunJSSourceHistoryItem[] {
+  const itemsById = new Map(current.map((item) => [item.id, item]));
+  next.forEach((item) => itemsById.set(item.id, item));
+  return Array.from(itemsById.values());
 }
 
 function formatHistoryVersion(seq?: number): string {
@@ -1103,93 +1155,6 @@ function buildFileChanges(baseFiles: WorkspaceFile[], files: WorkspaceFile[]): L
   }
 
   return changes.sort((left, right) => left.path.localeCompare(right.path));
-}
-
-export function buildLightExtensionTemplate(files: Array<{ path: string }>): LightExtensionTemplateFile[] {
-  const existing = new Set(files.map((file) => file.path));
-  const entryName = nextEntryName(existing);
-  const root = `src/client/js-blocks/${entryName}`;
-  const jsFieldRoot = 'src/client/js-fields/phone-link';
-  const jsActionRoot = 'src/client/js-actions/show-message';
-  const jsItemRoot = 'src/client/js-items/row-menu-label';
-  const runjsRoot = 'src/client/runjs/normalize-form-values';
-  const eventRoot = 'src/client/events/log-page-open';
-
-  return [
-    {
-      path: 'README.md',
-      content: '# Light extension source\n',
-      language: 'markdown',
-    },
-    {
-      path: 'light-extension.json',
-      content: '{\n  "schemaVersion": 1\n}\n',
-      language: 'json',
-    },
-    {
-      path: 'tsconfig.json',
-      content: LIGHT_EXTENSION_TSCONFIG_CONTENT,
-      language: 'json',
-    },
-    {
-      path: `${LIGHT_EXTENSION_SHARED_ROOT}/format.ts`,
-      content: 'export function formatValue(value: unknown): string {\n  return String(value ?? "");\n}\n',
-      language: 'typescript',
-    },
-    {
-      path: LIGHT_EXTENSION_SDK_SHIM_PATH,
-      content: LIGHT_EXTENSION_SDK_SHIM_CONTENT,
-      language: 'typescript',
-    },
-    {
-      path: `${root}/index.tsx`,
-      content:
-        'import { formatValue } from "../../../shared/format";\n\nctx.render(<div>{formatValue("Sales KPI")}</div>);\n',
-      language: 'typescript',
-    },
-    {
-      path: `${root}/meta.json`,
-      content:
-        '{\n  "title": "Sales KPI",\n  "description": "Sales KPI block",\n  "category": "sales",\n  "tags": ["sales", "kpi"],\n  "sort": 10\n}\n',
-      language: 'json',
-    },
-    {
-      path: `${root}/settings.json`,
-      content:
-        '{\n  "type": "object",\n  "properties": {\n    "region": {\n      "type": "string",\n      "title": "Region",\n      "x-component": "Input"\n    }\n  }\n}\n',
-      language: 'json',
-    },
-    {
-      path: `${jsFieldRoot}/index.tsx`,
-      content: getDefaultWorkspaceFileContent(`${jsFieldRoot}/index.tsx`),
-      language: 'typescript',
-    },
-    {
-      path: `${jsActionRoot}/index.ts`,
-      content: 'export default async function showMessage() {\n  return true;\n}\n',
-      language: 'typescript',
-    },
-    {
-      path: `${jsItemRoot}/index.tsx`,
-      content: 'ctx.render(<span>Row menu</span>);\n',
-      language: 'typescript',
-    },
-    {
-      path: `${runjsRoot}/index.ts`,
-      content:
-        'export default async function normalizeFormValues(values: Record<string, unknown>) {\n  return values;\n}\n',
-      language: 'typescript',
-    },
-    {
-      path: `${eventRoot}/index.ts`,
-      content: 'export default function logPageOpen() {\n  return true;\n}\n',
-      language: 'typescript',
-    },
-  ];
-}
-
-export function buildJsBlockTemplate(files: Array<{ path: string }>): LightExtensionTemplateFile[] {
-  return buildLightExtensionTemplate(files).filter((file) => file.path.startsWith('src/client/js-blocks/'));
 }
 
 function addLightExtensionSdkShim(files: WorkspaceFile[]): WorkspaceFile[] {
@@ -1244,18 +1209,7 @@ function isCodeFilePath(path: string): boolean {
 }
 
 function isClientSettingsFilePath(path: string): boolean {
-  return /^src\/client\/(?:js-blocks|js-fields|js-actions|js-items|runjs|events)\/[^/]+\/settings\.json$/.test(path);
-}
-
-function nextEntryName(existing: Set<string>): string {
-  let index = 1;
-  let name = 'sales-kpi';
-  while (existing.has(`src/client/js-blocks/${name}/index.tsx`)) {
-    index += 1;
-    name = `sales-kpi-${index}`;
-  }
-
-  return name;
+  return /^src\/client\/(?:js-blocks|js-fields|js-actions|js-items|runjs)\/[^/]+\/settings\.json$/.test(path);
 }
 
 function languageFromPath(path: string): string {

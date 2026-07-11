@@ -340,8 +340,6 @@ describe('flowSurfaces authoring validation unit', () => {
       repoId: 'repo_sales',
       entryId: 'entry_sales_kpi',
       kind: 'js-block',
-      publicationId: 'publication_sales_kpi_v1',
-      versionPolicy: 'pinned',
     };
 
     const repositorySourceErrors = await collectFlowSurfaceAuthoringErrors('applyBlueprint', {
@@ -365,6 +363,7 @@ describe('flowSurfaces authoring validation unit', () => {
       ],
     });
     expect(repositorySourceErrors.map((error) => error.ruleId)).not.toContain('jsBlock-source-required');
+    expect(repositorySourceErrors.map((error) => error.ruleId)).not.toContain('jsBlock-sourceBinding-required-key');
 
     const mixedScriptErrors = await collectFlowSurfaceAuthoringErrors('applyBlueprint', {
       mode: 'create',

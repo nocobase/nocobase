@@ -10,7 +10,6 @@
 import { createHash } from 'crypto';
 
 import type {
-  LightExtensionFlowModelOwnerLocator,
   LightExtensionKind,
   LightExtensionReferenceOwnerAdapterContract,
   LightExtensionReferenceOwnerKind,
@@ -30,30 +29,22 @@ const REFERENCE_OWNER_ADAPTERS: ReferenceOwnerAdapter[] = [
     kind: 'js-block',
     ownerKind: 'flowModel.step',
     title: 'JS Block',
-    status: 'active',
     locatorContract: 'FlowModel JSBlockModel step settings locator',
     modelUse: 'JSBlockModel',
     stepPath: JS_BLOCK_STEP_PATH,
-    message: 'Active adapter scans FlowModel JSBlockModel nodes and rebuilds references from persisted settings.',
-    supportsRebuild: true,
   },
   {
     kind: 'js-field',
     ownerKind: 'flowModel.fieldSettings',
     title: 'JS Field',
-    status: 'active',
     locatorContract: 'Field model settings locator',
     modelUse: 'JSFieldModel',
     modelUses: ['JSFieldModel', 'JSEditableFieldModel', 'JSColumnModel'],
-    implementationTask: '03-task-js-field-entry-end-to-end.md',
-    message: 'Active adapter scans JS field display, editable field, and table column model settings.',
-    supportsRebuild: true,
   },
   {
     kind: 'js-action',
     ownerKind: 'flowModel.actionSettings',
     title: 'JS Action',
-    status: 'active',
     locatorContract: 'Action model click settings locator',
     modelUse: 'JSActionModel',
     modelUses: [
@@ -64,42 +55,20 @@ const REFERENCE_OWNER_ADAPTERS: ReferenceOwnerAdapter[] = [
       'FilterFormJSActionModel',
     ],
     settingsKey: 'clickSettings',
-    implementationTask: '04-task-js-action-entry-end-to-end.md',
-    message:
-      'Active adapter scans JS action button click settings across normal, record, collection, form, and filter form actions.',
-    supportsRebuild: true,
   },
   {
     kind: 'js-item',
     ownerKind: 'flowModel.itemSettings',
     title: 'JS Item',
-    status: 'active',
     locatorContract: 'Item model settings locator',
     modelUse: 'JSItemModel',
     modelUses: ['JSItemModel', 'JSItemActionModel'],
-    implementationTask: '05-task-js-item-entry-end-to-end.md',
-    message: 'Active adapter scans JS item display and action-item model settings.',
-    supportsRebuild: true,
   },
   {
     kind: 'runjs',
     ownerKind: 'flowModel.runjsHost',
     title: 'RunJS',
-    status: 'active',
     locatorContract: 'RunJS value host locator for field linkage, defaults, and assignment forms',
-    implementationTask: '06-task-runjs-entry-end-to-end.md',
-    message: 'Active adapter scans nested RunJSValue hosts and rebuilds references with per-host locators.',
-    supportsRebuild: true,
-  },
-  {
-    kind: 'event',
-    ownerKind: 'flowModel.eventSettings',
-    title: 'Event',
-    status: 'placeholder',
-    locatorContract: 'Lifecycle event settings locator',
-    implementationTask: '07-task-event-entry-end-to-end.md',
-    message: 'Waiting for the Event host task to provide concrete lifecycle event locators and save hooks.',
-    supportsRebuild: true,
   },
 ];
 
@@ -131,7 +100,7 @@ export function collectReferenceOwnerNodes<
     return bucket;
   }
   const adapter = getReferenceOwnerAdapterByUse(typeof node.use === 'string' ? node.use : '');
-  if (adapter?.status === 'active' && node.uid) {
+  if (adapter && node.uid) {
     bucket.push({ adapter, node });
   }
   for (const value of Object.values(node.subModels || {})) {
@@ -152,7 +121,7 @@ export function buildReferenceOwnerLocator(
     return {
       kind: adapter.ownerKind,
       modelUid,
-      use: adapter.modelUse === 'JSBlockModel' ? 'JSBlockModel' : 'JSBlockModel',
+      use: 'JSBlockModel',
       stepPath: adapter.stepPath || JS_BLOCK_STEP_PATH,
     };
   }
@@ -193,12 +162,6 @@ export function normalizeReferenceOwnerLocator(value: unknown): LightExtensionRe
   };
 }
 
-export function isFlowModelStepOwnerLocator(
-  ownerLocator: LightExtensionReferenceOwnerLocator,
-): ownerLocator is LightExtensionFlowModelOwnerLocator {
-  return ownerLocator.kind === 'flowModel.step';
-}
-
 export function getReferenceOwnerModelUid(ownerLocator: LightExtensionReferenceOwnerLocator): string {
   return normalizeString(ownerLocator.modelUid);
 }
@@ -216,12 +179,8 @@ function toPublicOwnerAdapterContract(adapter: ReferenceOwnerAdapter): LightExte
     kind: adapter.kind as LightExtensionKind,
     ownerKind: adapter.ownerKind,
     title: adapter.title,
-    status: adapter.status,
     locatorContract: adapter.locatorContract,
     modelUse: adapter.modelUse,
-    implementationTask: adapter.implementationTask,
-    message: adapter.message,
-    supportsRebuild: adapter.supportsRebuild,
   };
 }
 

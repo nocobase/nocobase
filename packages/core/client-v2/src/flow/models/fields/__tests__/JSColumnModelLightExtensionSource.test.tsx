@@ -21,8 +21,6 @@ const SOURCE_BINDING = {
   entryId: 'entry_phone',
   entryPath: 'src/client/js-fields/phone-link/index.tsx',
   kind: 'js-field',
-  publicationId: 'pub_phone',
-  versionPolicy: 'pinned',
 };
 
 function createColumnModel() {
@@ -83,7 +81,6 @@ describe('JSColumnModel light extension source', () => {
     expect(flow?.steps?.sourceMode?.uiSchema?.sourceMode?.['x-component']).toBe('JSFieldLightExtensionFullSourceField');
     expect(flow?.steps?.sourceMode?.uiSchema?.sourceMode?.['x-component-props']).toMatchObject({
       kind: 'js-field',
-      defaultVersionPolicy: 'follow-active',
     });
     expect(flow?.steps?.sourceMode?.uiSchema?.sourceBinding?.['x-display']).toBe('hidden');
     expect(flow?.steps?.sourceMode?.uiSchema?.settings?.['x-display']).toBe('hidden');
@@ -93,12 +90,11 @@ describe('JSColumnModel light extension source', () => {
     );
     expect(flow?.steps?.sourceBinding?.uiSchema?.sourceBinding?.['x-component-props']).toMatchObject({
       kind: 'js-field',
-      defaultVersionPolicy: 'follow-active',
     });
     expect(flow?.steps?.runJs?.uiSchema?.sourceBinding?.['x-display']).toBe('hidden');
   });
 
-  it('resolves JS Field publications with the current row value and record', async () => {
+  it('resolves JS Field entries with the current row value and record', async () => {
     const getSettingsDescriptor = vi.fn(async () => {
       throw new Error('settings descriptor should not be loaded during cell render');
     });

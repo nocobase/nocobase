@@ -14,6 +14,7 @@ import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
 
+import type { LightExtensionRuntimeSourceBinding } from '../../shared/types';
 import { JSBlockLightExtensionSourceField } from '../components/JSBlockLightExtensionSourceField';
 
 const mocks = vi.hoisted(() => ({
@@ -65,6 +66,13 @@ const entry = {
   diagnostics: [],
 };
 
+type RunJSFormValues = {
+  sourceMode: string;
+  code: string;
+  version: string;
+  sourceBinding?: LightExtensionRuntimeSourceBinding;
+};
+
 function renderSourceField() {
   const engine = new FlowEngine();
   engine.context.defineProperty('api', {
@@ -72,7 +80,7 @@ function renderSourceField() {
       request: mocks.request,
     },
   });
-  const form = createForm({
+  const form = createForm<RunJSFormValues>({
     initialValues: {
       sourceMode: 'inline',
       code: 'ctx.render("inline");',

@@ -52,6 +52,33 @@ describe('JSBlockLightExtensionSourceField source mode errors', () => {
     vi.restoreAllMocks();
   });
 
+  it('keeps inline source mode usable without FlowContext or an API client', async () => {
+    const form = createForm({
+      initialValues: {
+        sourceMode: 'inline',
+      },
+    });
+
+    render(
+      <FormProvider form={form}>
+        <SchemaField
+          schema={{
+            type: 'object',
+            properties: {
+              sourceMode: {
+                type: 'string',
+                'x-component': 'JSBlockLightExtensionSourceField',
+              },
+            },
+          }}
+        />
+      </FormProvider>,
+    );
+
+    expect(await screen.findByRole('combobox', { name: 'Code source' })).toBeInTheDocument();
+    expect(mocks.request).not.toHaveBeenCalled();
+  });
+
   it('sets a settings footer for light-extension mode when the inline editor is hidden', async () => {
     const setFooter = vi.fn();
     const close = vi.fn();
@@ -100,7 +127,7 @@ describe('JSBlockLightExtensionSourceField source mode errors', () => {
     renderSourceField(form);
 
     await waitFor(() => {
-      expect(form.query('sourceMode').take()?.selfErrors).toContain('plan: Must be one of the allowed values');
+      expect(getSelfErrors(form.query('sourceMode').take())).toContain('plan: Must be one of the allowed values');
     });
 
     fireEvent.mouseDown(screen.getByRole('combobox', { name: 'Code source' }));
@@ -109,7 +136,7 @@ describe('JSBlockLightExtensionSourceField source mode errors', () => {
 
     await waitFor(() => {
       expect(form.values.sourceMode).toBe('inline');
-      expect(form.query('sourceMode').take()?.selfErrors).toEqual([]);
+      expect(getSelfErrors(form.query('sourceMode').take())).toEqual([]);
     });
   });
 
@@ -133,26 +160,7 @@ describe('JSBlockLightExtensionSourceField source mode errors', () => {
     renderSourceField(form);
 
     await waitFor(() => {
-      expect(form.query('sourceMode').take()?.selfErrors).toContain('Select a light extension entry');
-    });
-  });
-
-  it('rejects obsolete publication bindings before save', async () => {
-    const form = createForm({
-      initialValues: {
-        sourceMode: 'light-extension',
-        sourceBinding: {
-          ...createSourceBinding(),
-          publicationId: 'pub_sales',
-          versionPolicy: 'pinned',
-        },
-      },
-    });
-
-    renderSourceField(form);
-
-    await waitFor(() => {
-      expect(form.query('sourceMode').take()?.selfErrors).toContain('Select a light extension entry');
+      expect(getSelfErrors(form.query('sourceMode').take())).toContain('Select a light extension entry');
     });
   });
 
@@ -169,7 +177,7 @@ describe('JSBlockLightExtensionSourceField source mode errors', () => {
 
     await waitFor(() => {
       expect(screen.getByText('plan')).toBeTruthy();
-      expect(form.query('sourceMode').take()?.selfErrors || []).not.toContain('Select a light extension entry');
+      expect(getSelfErrors(form.query('sourceMode').take())).not.toContain('Select a light extension entry');
     });
   });
 
@@ -288,4 +296,12 @@ function createSelectableEntry() {
     healthStatus: 'ready',
     diagnostics: [],
   };
+}
+
+function getSelfErrors(field: unknown): string[] {
+  if (!field || typeof field !== 'object' || !('selfErrors' in field)) {
+    return [];
+  }
+  const errors = (field as { selfErrors?: unknown }).selfErrors;
+  return Array.isArray(errors) ? errors.filter((error): error is string => typeof error === 'string') : [];
 }

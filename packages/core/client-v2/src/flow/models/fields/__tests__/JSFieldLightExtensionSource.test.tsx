@@ -27,12 +27,9 @@ const SOURCE_BINDING = {
   entryId: 'entry_phone',
   entryPath: 'src/client/js-fields/phone-link/index.tsx',
   kind: 'js-field',
-  publicationId: 'pub_phone',
-  versionPolicy: 'pinned',
 };
 
 const SETTINGS_DESCRIPTOR: RunJSSourceSettingsDescriptor = {
-  publicationId: 'pub_phone',
   schemaHash: 'schema_phone',
   defaults: {
     prefix: 'tel:',
@@ -123,13 +120,11 @@ describe('JSFieldModel light extension source', () => {
     expect(listSourceMenuItems).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: 'js-field',
-        defaultVersionPolicy: 'follow-active',
       }),
     );
     expect(sourceModeStep?.uiSchema?.sourceMode?.['x-component']).toBe('JSFieldLightExtensionFullSourceField');
     expect(sourceModeStep?.uiSchema?.sourceMode?.['x-component-props']).toMatchObject({
       kind: 'js-field',
-      defaultVersionPolicy: 'follow-active',
     });
     expect(sourceModeStep?.uiSchema?.sourceBinding?.['x-display']).toBe('hidden');
     expect(sourceModeStep?.uiSchema?.settings?.['x-display']).toBe('hidden');
@@ -137,7 +132,6 @@ describe('JSFieldModel light extension source', () => {
     expect(sourceBindingStep?.uiSchema?.sourceBinding?.['x-component']).toBe('JSFieldLightExtensionFullSourceField');
     expect(sourceBindingStep?.uiSchema?.sourceBinding?.['x-component-props']).toMatchObject({
       kind: 'js-field',
-      defaultVersionPolicy: 'follow-active',
     });
     expect(runJsStep?.uiSchema?.sourceMode?.['x-display']).toBe('hidden');
     expect(runJsStep?.uiSchema?.sourceBinding?.['x-display']).toBe('hidden');
@@ -291,8 +285,6 @@ ctx.render(
       sourceMode: 'light-extension',
       sourceBinding: {
         ...SOURCE_BINDING,
-        publicationId: 'pub_phone_legacy',
-        versionPolicy: 'follow-active',
       },
       settings: {
         legacyPlan: 'legacy-value',
@@ -322,12 +314,12 @@ ctx.render(
     );
   });
 
-  it('resolves JS Field publications and injects value, record, collectionField, settings, and source metadata', async () => {
+  it('resolves JS Field entries and injects value, record, collectionField, settings, and source metadata', async () => {
     const resolve = vi.fn((input) => ({
       code: `
 ctx.render(
   <span data-testid="phone-field">
-    {ctx.settings.prefix}:{ctx.value}:{ctx.record.name}:{ctx.collectionField.name}:{ctx.runJsSource.context.lightExtension.publicationId}
+    {ctx.settings.prefix}:{ctx.value}:{ctx.record.name}:{ctx.collectionField.name}:{ctx.runJsSource.context.lightExtension.entryId}
   </span>
 );
       `,
@@ -337,7 +329,7 @@ ctx.render(
       },
       context: {
         lightExtension: {
-          publicationId: 'pub_phone',
+          entryId: 'entry_phone',
         },
       },
     }));
@@ -366,7 +358,7 @@ ctx.render(
     );
 
     await waitFor(() => {
-      expect(screen.getByTestId('phone-field')).toHaveTextContent('tel::5551000:Ada:phone:pub_phone');
+      expect(screen.getByTestId('phone-field')).toHaveTextContent('tel::5551000:Ada:phone:entry_phone');
     });
     expect(screen.queryByTestId('inline-field')).toBeNull();
     expect(resolve).toHaveBeenCalledWith(
@@ -500,13 +492,12 @@ ctx.render(
     });
   });
 
-  it('reports resolve failures with JS Field binding and owner locator metadata', async () => {
-    const reportRuntimeError = vi.fn();
+  it('renders JS Field resolver failures', async () => {
     RunJSSourceResolverRegistry.registerResolver({
       sourceMode: 'light-extension',
       resolve: async () => {
-        throw Object.assign(new Error('publication missing'), {
-          code: 'LIGHT_EXTENSION_PUBLICATION_NOT_FOUND',
+        throw Object.assign(new Error('entry missing'), {
+          code: 'LIGHT_EXTENSION_ENTRY_NOT_FOUND',
           status: 404,
         });
       },
@@ -520,10 +511,6 @@ ctx.render(
       code: 'ctx.render(<span data-testid="inline-field">inline</span>);',
       version: 'v2',
     });
-    model.context.defineProperty('reportRuntimeError', {
-      value: reportRuntimeError,
-    });
-
     render(
       <FlowEngineProvider engine={engine}>
         <ConfigProvider>
@@ -535,40 +522,22 @@ ctx.render(
     );
 
     await waitFor(() => {
-      expect(screen.getByTestId('js-field-runtime-error')).toHaveTextContent('publication missing');
-    });
-    await waitFor(() => {
-      expect(reportRuntimeError).toHaveBeenCalledWith(
-        expect.objectContaining({
-          repoId: 'repo_fields',
-          entryId: 'entry_phone',
-          publicationId: 'pub_phone',
-          ownerKind: 'flowModel.fieldSettings',
-          path: 'src/client/js-fields/phone-link/index.tsx',
-          ownerLocator: expect.objectContaining({
-            kind: 'flowModel.fieldSettings',
-            modelUid: model.uid,
-            use: 'JSFieldModel',
-          }),
-          ownerLocatorHash: expect.stringMatching(/^(sha256|local):/),
-        }),
-      );
+      expect(screen.getByTestId('js-field-runtime-error')).toHaveTextContent('entry missing');
     });
   });
 
-  it('reports runtime failures with the resolved follow-active publication id', async () => {
-    const reportRuntimeError = vi.fn();
+  it('renders JS Field runtime failures', async () => {
     RunJSSourceResolverRegistry.registerResolver({
       sourceMode: 'light-extension',
       resolve: async () => ({
-        code: 'throw new Error("active publication failed");',
+        code: 'throw new Error("active entry failed");',
         version: 'v2',
         sourceMap: {
           entryPath: 'src/client/js-fields/phone-link/index.tsx',
         },
         context: {
           lightExtension: {
-            publicationId: 'pub_phone_active',
+            entryId: 'entry_phone_active',
             entryPath: 'src/client/js-fields/phone-link/index.tsx',
           },
         },
@@ -578,8 +547,6 @@ ctx.render(
       sourceMode: 'light-extension',
       sourceBinding: {
         ...SOURCE_BINDING,
-        publicationId: 'pub_phone_legacy',
-        versionPolicy: 'follow-active',
       },
       settings: {
         prefix: 'tel:',
@@ -587,10 +554,6 @@ ctx.render(
       code: 'ctx.render(<span data-testid="inline-field">inline</span>);',
       version: 'v2',
     });
-    model.context.defineProperty('reportRuntimeError', {
-      value: reportRuntimeError,
-    });
-
     render(
       <FlowEngineProvider engine={engine}>
         <ConfigProvider>
@@ -602,18 +565,7 @@ ctx.render(
     );
 
     await waitFor(() => {
-      expect(screen.getByTestId('js-field-runtime-error')).toHaveTextContent('active publication failed');
-    });
-    await waitFor(() => {
-      expect(reportRuntimeError).toHaveBeenCalledWith(
-        expect.objectContaining({
-          repoId: 'repo_fields',
-          entryId: 'entry_phone',
-          publicationId: 'pub_phone_active',
-          ownerKind: 'flowModel.fieldSettings',
-          path: 'src/client/js-fields/phone-link/index.tsx',
-        }),
-      );
+      expect(screen.getByTestId('js-field-runtime-error')).toHaveTextContent('active entry failed');
     });
   });
 });

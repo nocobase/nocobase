@@ -15,9 +15,10 @@ import { FunctionOutlined, LineChartOutlined } from '@ant-design/icons';
 import { ChartOptionsBuilder } from './ChartOptionsBuilder';
 import { configStore } from './config-store';
 import { observer, useFlowSettingsContext, type RunJSValue } from '@nocobase/flow-engine';
-import type { RunJSSourceLocator } from '@nocobase/plugin-vsc-file';
+import type { RunJSSourceLocator } from '@nocobase/client-v2';
 import { getFieldOptions } from './QueryBuilder.service';
 import { useCompile } from '../utils';
+import { cloneFormValues } from './cloneFormValues';
 
 const flattenFieldOptionMap = (options: any[] = [], prefix: string[] = [], map = new Map<string, any>()) => {
   for (const option of options) {
@@ -45,13 +46,6 @@ const setIn = (target: any, path: string[], value: any) => {
     cursor = cursor[key];
   });
   cursor[path[path.length - 1]] = value;
-};
-
-const cloneFormValues = (values: any) => {
-  if (!values || typeof values !== 'object') {
-    return {};
-  }
-  return JSON.parse(JSON.stringify(values));
 };
 
 export const chartOptionDefaultValue = `return {

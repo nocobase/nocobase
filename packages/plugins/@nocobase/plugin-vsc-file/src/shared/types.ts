@@ -7,14 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { defaultVscFileLimits } from './constants';
-import type { VscErrorCode, VscErrorDetails } from './errors';
-
-export type VscFileLimits = typeof defaultVscFileLimits;
-
 export type VscRepositoryStatus = 'active' | 'archived';
 
-export type VscRefName = 'head' | 'published' | string;
+export type VscRefName = 'head';
 
 export type VscFileOperation = 'upsert' | 'delete';
 
@@ -36,9 +31,8 @@ export interface VscRepositoryIdentity extends VscRepositoryOwner {
 export interface VscRepositoryRecord extends VscRepositoryIdentity {
   id: string;
   status: VscRepositoryStatus;
-  defaultRef: string;
+  defaultRef: VscRefName;
   headCommitId: string | null;
-  publishedCommitId: string | null;
   headSeq: number;
 }
 
@@ -94,21 +88,6 @@ export interface VscStoredTree {
   byteSize: number;
 }
 
-export interface VscCommitInput {
-  repoId: number | string;
-  baseCommitId: number | string | null;
-  message: string;
-  files: VscTreeEntryInput[];
-  allowEmptyCommit?: boolean;
-}
-
 export interface VscFileChange extends VscTreeEntryInput {
   operation?: VscFileOperation;
-}
-
-export interface VscErrorResponseItem {
-  code: VscErrorCode;
-  message: string;
-  status: number;
-  details?: VscErrorDetails;
 }

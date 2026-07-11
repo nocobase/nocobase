@@ -7,38 +7,37 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CopyOutlined, DownloadOutlined, FolderOpenOutlined, ReloadOutlined } from '@ant-design/icons';
+import { CopyOutlined, DownloadOutlined, ReloadOutlined } from '@ant-design/icons';
 import { diagnoseRunJS, useFullscreenOverlay, type RunJSEditorProviderRenderProps } from '@nocobase/client-v2';
 import { useFlowContext, type FlowContext, type FlowEngineContext, type RunJSValue } from '@nocobase/flow-engine';
 import { Alert, Button, Modal, Space, Spin, Typography, message } from 'antd';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
+import { commitHistoryDefaultLimit } from '../../shared/constants';
 import type { RunJSCompileDiagnostic } from './types';
-import { formatVscComponentError } from '../components/utils';
 import { useT } from '../locale';
 import {
   CloseConfirmModal,
   CodeTab,
   ConsolePanel,
   FilesPanel,
-  PublishModal,
   RestoreVersionModal,
   SaveDiagnosticsModal,
+  SaveVersionModal,
   VersionHistoryDock,
 } from './RunJSStudioComponents';
 import type {
   RunJSConsoleEntry,
   RunJSSourceHistoryItem,
+  RunJSSourceLocator,
   RunJSSourceOpenWorkspaceResult,
   RunJSWorkspaceFile,
 } from './types';
 import type {
   ActionErrorState,
   ClosableView,
-  DiffViewState,
   ExportDownloadState,
-  OpenWorkspaceAction,
   PendingDirtyAction,
   PreviewArtifactState,
   WorkspaceLoadResult,
@@ -50,13 +49,14 @@ import {
   buildNewFolderPath,
   buildRunJSExportFileName,
   buildWorkspaceLoadResult,
-  canPublish,
+  canSaveVersion,
   collectRunJSWorkspaceFolders,
   createRunJSWorkspaceObjectUrl,
   defaultConsolePanelHeight,
   defaultEntryPath,
+  defaultRunJSSourceRoot,
   downloadRunJSWorkspaceBlob,
-  findCommit,
+  formatVscComponentError,
   getRunJSBaseName,
   getRunJSDirectory,
   hasCompileErrorDiagnostics,
@@ -69,11 +69,7 @@ import {
   revokeRunJSWorkspaceObjectUrl,
   validateRunJSWorkspaceForSave,
 } from './studioUtils';
-import {
-  RunJSSourceRequestError,
-  formatRunJSSourceRequestTechnicalDetails,
-  useRunJSSourceResource,
-} from './useRunJSSourceResource';
+import { formatRunJSSourceRequestTechnicalDetails, useRunJSSourceResource } from './useRunJSSourceResource';
 import {
   buildLineDiff,
   buildWorkspaceChanges,
@@ -97,32 +93,67 @@ import {
   validateRunJSWorkspacePath,
 } from './workspaceUtils';
 
-type PublishedRunJSValue = RunJSValue & {
+type SavedRunJSValue = RunJSValue & {
   sourceRef?: {
     type: 'vsc-file';
     repoId: string;
-    publishedCommitId: string;
+    commitId: string;
     entry: string;
   };
 };
 
-function withPublishedSourceRef(
+function withSavedSourceRef(
   value: RunJSValue,
   result: { repository: { id: string }; commit: { id: string }; artifact: { entryPath: string | null } },
-): PublishedRunJSValue {
+  locator: RunJSSourceLocator,
+): SavedRunJSValue {
+  if (locator.kind !== 'flowModel.step') {
+    return value;
+  }
+
   return {
     ...value,
     sourceRef: {
       type: 'vsc-file',
       repoId: result.repository.id,
-      publishedCommitId: result.commit.id,
+      commitId: result.commit.id,
       entry: result.artifact.entryPath || defaultEntryPath,
     },
   };
 }
 
-export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) {
-  const { t: hostT, value, onChange, scene = 'formValue', readOnly, disabled, containerStyle } = props;
+function getNextHistoryCursor(
+  items: RunJSSourceHistoryItem[],
+  pageSize: number,
+  nextBeforeSeq?: number | null,
+): number | null {
+  return items.length === pageSize ? nextBeforeSeq ?? items[items.length - 1]?.seq ?? null : null;
+}
+
+function mergeHistoryItems(
+  current: RunJSSourceHistoryItem[],
+  next: RunJSSourceHistoryItem[],
+): RunJSSourceHistoryItem[] {
+  const itemsById = new Map(current.map((item) => [item.id, item]));
+  next.forEach((item) => itemsById.set(item.id, item));
+  return Array.from(itemsById.values());
+}
+
+type RunJSStudioControllerProps = Omit<RunJSEditorProviderRenderProps, 'locator'> & {
+  locator?: RunJSSourceLocator;
+};
+
+export function useRunJSStudioController(props: RunJSStudioControllerProps) {
+  const {
+    t: hostT,
+    value,
+    onChange,
+    onPersistedChange,
+    scene = 'formValue',
+    readOnly,
+    disabled,
+    containerStyle,
+  } = props;
   const pluginT = useT();
   const t = hostT || pluginT;
   const resource = useRunJSSourceResource();
@@ -131,10 +162,14 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
   const locatorKey = useMemo(() => JSON.stringify(props.locator || null), [props.locator]);
   const previousLocatorKeyRef = useRef(locatorKey);
   const requestSeqRef = useRef(0);
+  const historyRequestSeqRef = useRef(0);
   const consoleSeqRef = useRef(0);
   const latestWorkspaceSnapshotRef = useRef('');
   const dialogTriggerRef = useRef<HTMLElement | null>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
+  const studioRootRef = useRef<HTMLDivElement>(null);
+  const hasUnsavedLocalChangesRef = useRef(false);
+  const confirmedCloseRef = useRef(false);
   const [workspace, setWorkspace] = useState<RunJSSourceOpenWorkspaceResult | null>(null);
   const [workspaceError, setWorkspaceError] = useState<unknown>(null);
   const [actionError, setActionError] = useState<ActionErrorState | null>(null);
@@ -149,20 +184,21 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
   const [filesCollapsed, setFilesCollapsed] = useState(true);
   const [historyCollapsed, setHistoryCollapsed] = useState(false);
   const [consoleEntries, setConsoleEntries] = useState<RunJSConsoleEntry[]>([]);
-  const [publishOpen, setPublishOpen] = useState(false);
-  const [commitMessage, setCommitMessage] = useState('');
+  const [saveOpen, setSaveOpen] = useState(false);
+  const [versionMessage, setVersionMessage] = useState('');
   const [previewing, setPreviewing] = useState(false);
-  const [publishing, setPublishing] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [previewDiagnostics, setPreviewDiagnostics] = useState<RunJSCompileDiagnostic[]>([]);
   const [saveDiagnostics, setSaveDiagnostics] = useState<RunJSCompileDiagnostic[]>([]);
   const [saveDiagnosticsOpen, setSaveDiagnosticsOpen] = useState(false);
   const [previewArtifact, setPreviewArtifact] = useState<PreviewArtifactState | null>(null);
-  const [diffView, setDiffView] = useState<DiffViewState | null>(null);
   const [selectedDiffPath, setSelectedDiffPath] = useState<string | undefined>();
   const [notice, setNotice] = useState<{ type: 'success' | 'info' | 'warning' | 'error'; message: string } | null>(
     null,
   );
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyLoadingMore, setHistoryLoadingMore] = useState(false);
+  const [historyNextBeforeSeq, setHistoryNextBeforeSeq] = useState<number | null>(null);
   const [restoreCommit, setRestoreCommit] = useState<RunJSSourceHistoryItem | null>(null);
   const [restoringVersion, setRestoringVersion] = useState(false);
   const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
@@ -170,26 +206,24 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
   const [consoleHeight, setConsoleHeight] = useState(defaultConsolePanelHeight);
   const [exportDownload, setExportDownload] = useState<ExportDownloadState | null>(null);
   const workspaceFullscreen = useFullscreenOverlay();
+  const studioView = flowCtx?.view as ClosableView | undefined;
 
   const workspaceReadOnly = Boolean(readOnly || disabled || (workspace && !workspace.permissions.canWrite));
-  const workspaceEditingDisabled = workspaceReadOnly || publishing;
+  const workspaceEditingDisabled = workspaceReadOnly || saving;
   const hasUnsavedLocalChanges = hasWorkspaceChanges(savedFiles, files);
-  const publishSummary = summarizeWorkspaceChanges(baseFiles, files);
+  const saveSummary = summarizeWorkspaceChanges(baseFiles, files);
   const currentPreviewSnapshotKey = buildWorkspaceSnapshotKey(files, entryPath, value.version);
   const showDiff = activeTab === 'diff';
-  const effectiveDiffBaseFiles = diffView?.baseFiles || baseFiles;
-  const effectiveDiffFiles = diffView?.files || files;
   const activeFile = activePath ? files.find((file) => file.path === activePath) : undefined;
   const historyItems = workspace?.history?.items || [];
-  const baseCommitId = workspace?.repository?.headCommitId ?? workspace?.repository?.publishedCommitId ?? null;
-  const baseCommit = findCommit(historyItems, baseCommitId);
+  const baseVersion = formatVersion(workspace?.repository?.headSeq);
   const lineDiffRows = useMemo(
-    () => buildLineDiff(effectiveDiffBaseFiles, effectiveDiffFiles, selectedDiffPath, false),
-    [effectiveDiffBaseFiles, effectiveDiffFiles, selectedDiffPath],
+    () => buildLineDiff(baseFiles, files, selectedDiffPath, false),
+    [baseFiles, files, selectedDiffPath],
   );
 
   useLayoutEffect(() => {
-    const view = flowCtx?.view as ClosableView | undefined;
+    const view = studioView;
     view?.setFooter?.(null);
     if (props.label) {
       view?.setHeader?.({ title: props.label });
@@ -204,7 +238,37 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
     return () => {
       window.clearTimeout(timer);
     };
-  }, [flowCtx?.view, props.label]);
+  }, [props.label, studioView]);
+
+  useEffect(() => {
+    hasUnsavedLocalChangesRef.current = hasUnsavedLocalChanges;
+  }, [hasUnsavedLocalChanges]);
+
+  useEffect(() => {
+    if (!studioView) {
+      return;
+    }
+
+    const previousBeforeClose = studioView.beforeClose;
+    const beforeClose = async (payload?: unknown) => {
+      if (!confirmedCloseRef.current && hasUnsavedLocalChangesRef.current) {
+        setPendingDirtyAction('close');
+        setCloseConfirmOpen(true);
+        return false;
+      }
+
+      const result = await previousBeforeClose?.(payload);
+      return result !== false;
+    };
+
+    studioView.beforeClose = beforeClose;
+
+    return () => {
+      if (studioView.beforeClose === beforeClose) {
+        studioView.beforeClose = previousBeforeClose;
+      }
+    };
+  }, [studioView]);
 
   useEffect(() => {
     return () => {
@@ -295,7 +359,10 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
 
   const resetWorkspaceState = useCallback(() => {
     requestSeqRef.current += 1;
+    historyRequestSeqRef.current += 1;
     latestWorkspaceSnapshotRef.current = '';
+    hasUnsavedLocalChangesRef.current = false;
+    confirmedCloseRef.current = false;
     setWorkspace(null);
     setWorkspaceError(null);
     setActionError(null);
@@ -308,18 +375,19 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
     setOpenPaths([]);
     setActiveTab('code');
     setConsoleEntries([]);
-    setPublishOpen(false);
-    setCommitMessage('');
+    setSaveOpen(false);
+    setVersionMessage('');
     setPreviewing(false);
-    setPublishing(false);
+    setSaving(false);
     setPreviewDiagnostics([]);
     setSaveDiagnostics([]);
     setSaveDiagnosticsOpen(false);
     setPreviewArtifact(null);
-    setDiffView(null);
     setSelectedDiffPath(undefined);
     setNotice(null);
     setHistoryLoading(false);
+    setHistoryLoadingMore(false);
+    setHistoryNextBeforeSeq(null);
     setRestoreCommit(null);
     setRestoringVersion(false);
     setCloseConfirmOpen(false);
@@ -377,7 +445,12 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
         loaded.currentFiles[0]?.path ||
         loaded.entryPath;
 
+      historyRequestSeqRef.current += 1;
+      hasUnsavedLocalChangesRef.current = false;
       setWorkspace(loaded.opened);
+      setHistoryLoading(false);
+      setHistoryLoadingMore(false);
+      setHistoryNextBeforeSeq(getNextHistoryCursor(loaded.opened.history.items, commitHistoryDefaultLimit));
       setBaseFiles(loaded.baseFiles);
       setSavedFiles(loaded.currentFiles);
       setFiles(loaded.currentFiles);
@@ -389,7 +462,6 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
       );
       setActivePath(nextActivePath);
       setOpenPaths([nextActivePath]);
-      setDiffView(null);
       setSelectedDiffPath(undefined);
       setPreviewDiagnostics([]);
       setPreviewArtifact(null);
@@ -400,62 +472,36 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
     [value.version],
   );
 
-  const openWorkspaceSnapshot = useCallback(
-    async (action: OpenWorkspaceAction = 'open'): Promise<WorkspaceLoadResult | null> => {
-      if (!props.locator) {
-        return null;
-      }
-
-      const opened = await runJSSourceRequest(action, { locator: props.locator });
-      return buildWorkspaceLoadResult(opened);
-    },
-    [props.locator, runJSSourceRequest],
-  );
-
-  const loadWorkspaceByAction = useCallback(
-    async (action: OpenWorkspaceAction): Promise<WorkspaceLoadResult | null> => {
-      if (!props.locator) {
-        return null;
-      }
-
-      const requestSeq = requestSeqRef.current + 1;
-      requestSeqRef.current = requestSeq;
-      setLoadingWorkspace(true);
-      setWorkspaceError(null);
-
-      try {
-        const loaded = await openWorkspaceSnapshot(action);
-        if (requestSeqRef.current !== requestSeq) {
-          return null;
-        }
-        if (!loaded) {
-          return null;
-        }
-
-        applyWorkspaceLoadResult(loaded);
-
-        return loaded;
-      } catch (error) {
-        if (requestSeqRef.current === requestSeq) {
-          setWorkspaceError(error);
-        }
-        return null;
-      } finally {
-        if (requestSeqRef.current === requestSeq) {
-          setLoadingWorkspace(false);
-        }
-      }
-    },
-    [applyWorkspaceLoadResult, openWorkspaceSnapshot, props.locator],
-  );
-
   const loadWorkspace = useCallback(async (): Promise<WorkspaceLoadResult | null> => {
-    return loadWorkspaceByAction('open');
-  }, [loadWorkspaceByAction]);
+    if (!props.locator) {
+      return null;
+    }
 
-  const editLatestSavedVersion = useCallback(async (): Promise<void> => {
-    await loadWorkspaceByAction('openLatest');
-  }, [loadWorkspaceByAction]);
+    const requestSeq = requestSeqRef.current + 1;
+    requestSeqRef.current = requestSeq;
+    setLoadingWorkspace(true);
+    setWorkspaceError(null);
+
+    try {
+      const opened = await runJSSourceRequest('open', { locator: props.locator });
+      const loaded = buildWorkspaceLoadResult(opened);
+      if (requestSeqRef.current !== requestSeq) {
+        return null;
+      }
+
+      applyWorkspaceLoadResult(loaded);
+      return loaded;
+    } catch (error) {
+      if (requestSeqRef.current === requestSeq) {
+        setWorkspaceError(error);
+      }
+      return null;
+    } finally {
+      if (requestSeqRef.current === requestSeq) {
+        setLoadingWorkspace(false);
+      }
+    }
+  }, [applyWorkspaceLoadResult, props.locator, runJSSourceRequest]);
 
   const restoreLatestVersionFromCurrentCode = useCallback(async (): Promise<void> => {
     if (!props.locator) {
@@ -494,6 +540,20 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target instanceof HTMLElement ? event.target : null;
+      const insideStudio = Boolean(
+        target &&
+          (studioRootRef.current?.contains(target) ||
+            (workspaceFullscreen.container instanceof HTMLElement && workspaceFullscreen.container.contains(target))),
+      );
+      const insideCodeEditor = Boolean(target?.closest('[data-runjs-code-editor="true"]'));
+      if (
+        !insideStudio ||
+        (!insideCodeEditor && target?.closest('input, textarea, select, [contenteditable="true"], [role="dialog"]'))
+      ) {
+        return;
+      }
+
       const primary = event.metaKey || event.ctrlKey;
       if (!primary) {
         return;
@@ -501,7 +561,7 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
 
       if (event.key.toLowerCase() === 's') {
         event.preventDefault();
-        openPublishModal();
+        openSaveModal();
         return;
       }
 
@@ -616,16 +676,16 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
     }
   };
 
-  const openPublishModal = async () => {
-    if (workspaceEditingDisabled || !workspace?.permissions.canPublish) {
+  const openSaveModal = async () => {
+    if (workspaceEditingDisabled || !workspace?.permissions.canSave) {
       return;
     }
 
     rememberDialogTrigger();
-    setCommitMessage('');
+    setVersionMessage('');
     setActionError(null);
 
-    if (publishSummary.files === 0) {
+    if (saveSummary.files === 0) {
       message.info(t('No changes to save'));
       return;
     }
@@ -634,14 +694,14 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
     const requestEntryPath = entryPath;
     const requestSnapshotKey = currentPreviewSnapshotKey;
     try {
-      const compiled = await compileForPublish(requestFiles, requestEntryPath, requestSnapshotKey);
+      const compiled = await compileForSave(requestFiles, requestEntryPath, requestSnapshotKey);
       if (!compiled) {
         return;
       }
 
-      setPublishOpen(true);
+      setSaveOpen(true);
     } catch (error) {
-      reportActionError(error, t('Save failed'), openPublishModal);
+      reportActionError(error, t('Save failed'), openSaveModal);
       appendConsole({
         level: 'error',
         message: formatVscComponentError(error, t('Save failed')),
@@ -652,10 +712,10 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
   const showSaveDiagnostics = useCallback((diagnostics: RunJSCompileDiagnostic[]) => {
     setSaveDiagnostics(diagnostics);
     setSaveDiagnosticsOpen(true);
-    setPublishOpen(false);
+    setSaveOpen(false);
   }, []);
 
-  const publish = async () => {
+  const save = async () => {
     if (!workspace || !props.locator || workspaceEditingDisabled) {
       return;
     }
@@ -665,11 +725,11 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
       return;
     }
 
-    if (!canPublish(commitMessage, publishSummary, previewDiagnostics, workspaceEditingDisabled)) {
+    if (!canSaveVersion(versionMessage, saveSummary, previewDiagnostics, workspaceEditingDisabled)) {
       return;
     }
 
-    setPublishing(true);
+    setSaving(true);
     setActionError(null);
     const requestSnapshotKey = currentPreviewSnapshotKey;
     const requestFiles = normalizeWorkspaceFiles(files);
@@ -680,16 +740,16 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
         previewArtifact.snapshotKey === requestSnapshotKey &&
         previewDiagnostics.every((diagnostic) => diagnostic.severity !== 'error')
           ? previewArtifact
-          : await compileForPublish(requestFiles, requestEntryPath, requestSnapshotKey);
+          : await compileForSave(requestFiles, requestEntryPath, requestSnapshotKey);
       if (!compiled) {
         return;
       }
 
-      const result = await runJSSourceRequest('publish', {
+      const result = await runJSSourceRequest('save', {
         locator: props.locator,
         repoId: workspace.repository.repoId,
-        message: commitMessage.trim(),
-        files: buildWorkspaceChanges(baseFiles, requestFiles),
+        message: versionMessage.trim(),
+        files: buildWorkspaceChanges([], requestFiles),
         entryPath: requestEntryPath,
         version: compiled.version,
       });
@@ -700,36 +760,42 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
         });
         return;
       }
-      setPublishOpen(false);
+      setSaveOpen(false);
       appendConsole({
         level: 'info',
         message: t('Saved successfully'),
       });
-      onChange?.(
-        withPublishedSourceRef(
+      (onPersistedChange || onChange)?.(
+        withSavedSourceRef(
           {
             ...value,
             code: compiled.code,
             version: compiled.version,
           },
           result,
+          props.locator,
         ),
       );
       await loadWorkspace();
       setPreviewDiagnostics(result.artifact.diagnostics);
-      await closeEditorView();
+      confirmedCloseRef.current = true;
+      try {
+        await closeEditorView();
+      } finally {
+        confirmedCloseRef.current = false;
+      }
     } catch (error) {
-      reportActionError(error, t('Save failed'), publish);
+      reportActionError(error, t('Save failed'), save);
       appendConsole({
         level: 'error',
         message: formatVscComponentError(error, t('Save failed')),
       });
     } finally {
-      setPublishing(false);
+      setSaving(false);
     }
   };
 
-  const compileForPublish = async (
+  const compileForSave = async (
     requestFiles = files,
     requestEntryPath = entryPath,
     requestSnapshotKey = currentPreviewSnapshotKey,
@@ -782,33 +848,91 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
       return;
     }
 
+    const requestSeq = historyRequestSeqRef.current + 1;
+    historyRequestSeqRef.current = requestSeq;
+    const repoId = workspace.repository.repoId;
+    setHistoryLoadingMore(false);
     setHistoryLoading(true);
     setActionError(null);
     try {
       const result = await runJSSourceRequest('listHistory', {
         locator: props.locator,
-        repoId: workspace.repository.repoId,
+        repoId,
+        limit: commitHistoryDefaultLimit,
       });
+      if (historyRequestSeqRef.current !== requestSeq) {
+        return;
+      }
       setWorkspace((current) =>
-        current
+        current?.repository.repoId === repoId
           ? {
               ...current,
-              repository: result.repository,
               history: {
-                commits: result.commits,
                 items: result.items,
               },
             }
           : current,
       );
+      setHistoryNextBeforeSeq(getNextHistoryCursor(result.items, commitHistoryDefaultLimit, result.nextBeforeSeq));
     } catch (error) {
-      reportActionError(error, t('Failed to load history'), refreshHistory);
-      appendConsole({
-        level: 'error',
-        message: formatVscComponentError(error, t('Failed to load history')),
-      });
+      if (historyRequestSeqRef.current === requestSeq) {
+        reportActionError(error, t('Failed to load history'), refreshHistory);
+        appendConsole({
+          level: 'error',
+          message: formatVscComponentError(error, t('Failed to load history')),
+        });
+      }
     } finally {
-      setHistoryLoading(false);
+      if (historyRequestSeqRef.current === requestSeq) {
+        setHistoryLoading(false);
+      }
+    }
+  };
+
+  const loadMoreHistory = async () => {
+    if (!workspace || !props.locator || historyNextBeforeSeq === null) {
+      return;
+    }
+
+    const requestSeq = historyRequestSeqRef.current + 1;
+    historyRequestSeqRef.current = requestSeq;
+    const repoId = workspace.repository.repoId;
+    const beforeSeq = historyNextBeforeSeq;
+    setHistoryLoadingMore(true);
+    setActionError(null);
+    try {
+      const result = await runJSSourceRequest('listHistory', {
+        locator: props.locator,
+        repoId,
+        limit: commitHistoryDefaultLimit,
+        beforeSeq,
+      });
+      if (historyRequestSeqRef.current !== requestSeq) {
+        return;
+      }
+      setWorkspace((current) =>
+        current?.repository.repoId === repoId
+          ? {
+              ...current,
+              history: {
+                items: mergeHistoryItems(current.history.items, result.items),
+              },
+            }
+          : current,
+      );
+      setHistoryNextBeforeSeq(getNextHistoryCursor(result.items, commitHistoryDefaultLimit, result.nextBeforeSeq));
+    } catch (error) {
+      if (historyRequestSeqRef.current === requestSeq) {
+        reportActionError(error, t('Failed to load history'), loadMoreHistory);
+        appendConsole({
+          level: 'error',
+          message: formatVscComponentError(error, t('Failed to load history')),
+        });
+      }
+    } finally {
+      if (historyRequestSeqRef.current === requestSeq) {
+        setHistoryLoadingMore(false);
+      }
     }
   };
 
@@ -843,7 +967,6 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
       setActivePath(nextActivePath);
       setOpenPaths(nextActivePath ? [nextActivePath] : []);
       setActiveTab('code');
-      setDiffView(null);
       invalidatePreview();
       setNotice({ type: 'info', message: `${t('Restored from')} ${formatVersion(commit.seq)}` });
       appendConsole({
@@ -878,7 +1001,6 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
 
     const nextPath = buildNewFilePath(files, parentPath);
     invalidatePreview();
-    setDiffView(null);
     setFiles((current) => {
       const nextFiles = upsertWorkspaceFile(current, {
         path: nextPath,
@@ -902,7 +1024,6 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
 
     const nextPath = buildNewFolderPath(files, parentPath);
     invalidatePreview();
-    setDiffView(null);
     setFiles((current) => {
       const nextEntryPath = resolveWorkspaceEntryPath(current, entryPath);
       const nextFiles = ensureManifestFolders(
@@ -940,7 +1061,6 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
     }
 
     invalidatePreview();
-    setDiffView(null);
     setFiles((current) => {
       const renamed = replaceWorkspaceFilePath(current, path, normalizedNextPath);
       const nextEntryPath = resolveWorkspaceEntryPath(renamed, entryPath);
@@ -977,7 +1097,6 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
     }
 
     invalidatePreview();
-    setDiffView(null);
     setFiles((current) => {
       const renamed = current.map((file) => ({
         ...file,
@@ -1013,7 +1132,6 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
     }
 
     invalidatePreview();
-    setDiffView(null);
     setFiles((current) => {
       const nextFolders = collectRunJSWorkspaceFolders(current).filter((folder) => folder !== path);
       const nextEntryPath = resolveWorkspaceEntryPath(current, entryPath);
@@ -1046,7 +1164,6 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
     }
 
     invalidatePreview();
-    setDiffView(null);
     setFiles((current) => {
       const renamed = replaceWorkspaceFilePath(current, path, nextPath);
       const nextEntryPath = resolveWorkspaceEntryPath(renamed, entryPath);
@@ -1097,7 +1214,6 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
     }
 
     invalidatePreview();
-    setDiffView(null);
     setFiles((current) => {
       const renamed = normalizeWorkspaceFiles(
         current.map((file) => {
@@ -1134,7 +1250,6 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
     }
 
     invalidatePreview();
-    setDiffView(null);
     setFiles((current) => {
       const nextFiles = removeWorkspaceFile(current, path);
       const nextEntryPath = resolveWorkspaceEntryPath(nextFiles, entryPath);
@@ -1157,7 +1272,6 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
     }
 
     invalidatePreview();
-    setDiffView(null);
     setFiles((current) => {
       const nextFiles = updateWorkspaceFile(current, activePath, (file) => ({
         ...file,
@@ -1244,7 +1358,7 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
   };
 
   const requestImportWorkspace = () => {
-    if (!workspace || !workspace.permissions.canPublish || workspaceEditingDisabled) {
+    if (!workspace || !workspace.permissions.canSave || workspaceEditingDisabled) {
       return;
     }
 
@@ -1258,7 +1372,7 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
       content: (
         <Space direction="vertical" size={4}>
           <Typography.Text>
-            {t('Importing will replace the current workspace and publish it immediately.')}
+            {t('Importing will replace the current workspace and save it as a new version immediately.')}
           </Typography.Text>
           <Typography.Text>{t('Unsaved editor changes will be discarded.')}</Typography.Text>
         </Space>
@@ -1285,10 +1399,6 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
       const result = await runJSSourceRequest('importZip', {
         locator: props.locator,
         repoId: workspace.repository.repoId,
-        baseCommitId,
-        basePublishedCommitId: workspace.repository.publishedCommitId,
-        baseOwnerFingerprint: workspace.ownerFingerprint,
-        basePublishedOwnerFingerprint: workspace.publishedOwnerFingerprint || workspace.ownerFingerprint,
         message: 'Import RunJS workspace',
         zipBase64,
       });
@@ -1298,14 +1408,15 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
       });
       setPreviewDiagnostics(result.artifact.diagnostics);
       const loaded = await loadWorkspace();
-      onChange?.(
-        withPublishedSourceRef(
+      (onPersistedChange || onChange)?.(
+        withSavedSourceRef(
           {
             ...value,
             code: loaded?.opened.legacy.code || value.code,
             version: loaded?.opened.legacy.version || value.version,
           },
           result,
+          props.locator,
         ),
       );
     } catch (error) {
@@ -1318,7 +1429,7 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
   };
 
   const closeEditorView = useCallback(async () => {
-    const view = flowCtx?.view as ClosableView | undefined;
+    const view = studioView;
     if (!view) {
       return;
     }
@@ -1334,7 +1445,7 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
     }
 
     view.destroy?.();
-  }, [flowCtx?.view]);
+  }, [studioView]);
 
   const requestClose = async () => {
     if (hasUnsavedLocalChanges) {
@@ -1357,6 +1468,7 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
   };
 
   const discardLocalAndContinue = async () => {
+    hasUnsavedLocalChangesRef.current = false;
     setFiles(savedFiles);
     setCloseConfirmOpen(false);
     if (pendingDirtyAction === 'refresh') {
@@ -1364,7 +1476,12 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
       return;
     }
 
-    await closeEditorView();
+    confirmedCloseRef.current = true;
+    try {
+      await closeEditorView();
+    } finally {
+      confirmedCloseRef.current = false;
+    }
   };
 
   const copyWorkspaceErrorDetails = async () => {
@@ -1413,7 +1530,7 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
   const ownerOutdatedWorkspaceError = isOwnerOutdatedError(workspaceError);
 
   return (
-    <div data-testid="runjs-studio-editor" style={editorStyle}>
+    <div data-testid="runjs-studio-editor" ref={studioRootRef} style={editorStyle}>
       <div
         style={{
           display: 'flex',
@@ -1428,7 +1545,7 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
               <Space direction="vertical" size={8} style={{ width: '100%' }}>
                 <Typography.Text>
                   {t(
-                    'The code stored in this block differs from the latest saved RunJS source. Choose which version to continue with.',
+                    'The code stored in this block differs from the latest saved RunJS source. Recover the versioned source from the current code before continuing.',
                   )}
                 </Typography.Text>
                 <Space wrap>
@@ -1441,15 +1558,6 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
                     type="primary"
                   >
                     {t('Recover latest version from current code')}
-                  </Button>
-                  <Button
-                    aria-label={t('Edit latest saved version')}
-                    icon={<FolderOpenOutlined />}
-                    loading={resource.isLoading('openLatest')}
-                    onClick={editLatestSavedVersion}
-                    size="small"
-                  >
-                    {t('Edit latest saved version')}
                   </Button>
                   <Button
                     aria-label={t('Copy technical details')}
@@ -1606,6 +1714,7 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
                         collapsed={filesCollapsed}
                         exporting={resource.isLoading('exportZip')}
                         files={files}
+                        fillAvailableHeight={historyCollapsed}
                         onCollapseChange={setFilesCollapsed}
                         onCreate={createFile}
                         onCreateFolder={createFolder}
@@ -1624,16 +1733,18 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
                         t={t}
                       />
                       <VersionHistoryDock
-                        baseVersion={formatVersion(baseCommit?.seq)}
+                        baseVersion={baseVersion}
                         collapsed={historyCollapsed}
+                        hasMore={historyNextBeforeSeq !== null}
                         hasUnsavedLocalChanges={hasUnsavedLocalChanges}
                         historyItems={historyItems}
                         loading={historyLoading}
+                        loadingMore={historyLoadingMore}
                         onCollapsedChange={setHistoryCollapsed}
+                        onLoadMore={loadMoreHistory}
                         onRefresh={refreshHistory}
                         onSelect={setRestoreCommit}
                         onViewChanges={toggleDiff}
-                        publishedCommitId={workspace.repository.publishedCommitId}
                         t={t}
                       />
                     </div>
@@ -1718,11 +1829,9 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
               </Button>
               <Button
                 aria-label={t('Save')}
-                disabled={
-                  !workspace || loadingWorkspace || workspaceEditingDisabled || !workspace.permissions.canPublish
-                }
-                loading={publishing || previewing}
-                onClick={openPublishModal}
+                disabled={!workspace || loadingWorkspace || workspaceEditingDisabled || !workspace.permissions.canSave}
+                loading={saving || previewing}
+                onClick={openSaveModal}
                 style={{ whiteSpace: 'nowrap' }}
                 type="primary"
               >
@@ -1741,22 +1850,30 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
         </>
       ) : null}
 
-      <PublishModal
-        commitMessage={commitMessage}
-        loading={previewing || publishing}
+      <SaveVersionModal
+        loading={previewing || saving}
         onAfterClose={restoreDialogFocus}
-        onCancel={() => setPublishOpen(false)}
-        onCommitMessageChange={setCommitMessage}
-        onPublish={publish}
-        open={publishOpen}
-        readOnly={workspaceEditingDisabled || !workspace?.permissions.canPublish}
-        summary={publishSummary}
+        onCancel={() => setSaveOpen(false)}
+        onSave={save}
+        onVersionMessageChange={setVersionMessage}
+        open={saveOpen}
+        readOnly={workspaceEditingDisabled || !workspace?.permissions.canSave}
+        summary={saveSummary}
         t={t}
+        versionMessage={versionMessage}
       />
 
       <SaveDiagnosticsModal
         diagnostics={saveDiagnostics.length > 0 ? saveDiagnostics : previewDiagnostics}
         onCancel={() => setSaveDiagnosticsOpen(false)}
+        onJump={(diagnostic) => {
+          if (!diagnostic.path) {
+            return;
+          }
+          openFilePath(diagnostic.path);
+          setActiveTab('code');
+          setSaveDiagnosticsOpen(false);
+        }}
         open={saveDiagnosticsOpen}
         t={t}
       />

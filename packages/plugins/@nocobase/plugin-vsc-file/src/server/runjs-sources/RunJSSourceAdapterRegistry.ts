@@ -40,8 +40,4 @@ export class RunJSSourceAdapterRegistry {
 
     return adapter;
   }
-
-  getKinds(): RunJSSourceKind[] {
-    return Array.from(this.adapters.keys());
-  }
 }

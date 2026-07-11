@@ -11,17 +11,13 @@ import type { Context } from '@nocobase/actions';
 import type { HandlerType, ResourceOptions } from '@nocobase/resourcer';
 
 import { LightExtensionError, isLightExtensionError } from '../../shared/errors';
-import type {
-  LightExtensionReferenceContractDiagnosticsInput,
-  LightExtensionReferenceListInput,
-  LightExtensionReferenceRebuildInput,
-} from '../../shared/types';
+import type { LightExtensionReferenceListInput, LightExtensionReferenceRebuildInput } from '../../shared/types';
 import type { LightExtensionCanFunction } from '../services/LightExtensionPermissionService';
 import { ReferenceService } from '../services/ReferenceService';
 import { normalizeReferenceOwnerLocator } from '../services/ReferenceOwnerRegistry';
 import type { LightExtensionServiceContext } from '../services/LightExtensionRepoService';
 
-export const lightExtensionReferenceActionNames = ['readReferences', 'rebuildIndex', 'diagnostics'] as const;
+export const lightExtensionReferenceActionNames = ['readReferences', 'rebuildIndex'] as const;
 
 type LightExtensionReferenceActionName = (typeof lightExtensionReferenceActionNames)[number];
 type ResourceActionInput = Record<string, unknown>;
@@ -61,8 +57,6 @@ const resourceActionRunners: Record<LightExtensionReferenceActionName, ResourceA
     services.referenceService.readReferences(normalizeListInput(input), currentUser),
   rebuildIndex: (services, input, currentUser) =>
     services.referenceService.rebuildIndex(normalizeRebuildInput(input), currentUser),
-  diagnostics: (services, input, currentUser) =>
-    services.referenceService.getContractDiagnostics(normalizeDiagnosticsInput(input), currentUser),
 };
 
 export function createLightExtensionReferencesResource(referenceService: ReferenceService): ResourceOptions {
@@ -150,10 +144,6 @@ function normalizeRebuildInput(input: ResourceActionInput): LightExtensionRefere
     ownerLocator: normalizeOwnerLocator(input.ownerLocator),
     dryRun: optionalBoolean(input, 'dryRun'),
   };
-}
-
-function normalizeDiagnosticsInput(input: ResourceActionInput): LightExtensionReferenceContractDiagnosticsInput {
-  return normalizeRebuildInput(input);
 }
 
 function normalizeOwnerLocator(value: unknown): LightExtensionReferenceListInput['ownerLocator'] {

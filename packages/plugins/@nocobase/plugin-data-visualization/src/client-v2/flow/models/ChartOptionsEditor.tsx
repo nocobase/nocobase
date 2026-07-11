@@ -8,11 +8,10 @@
  */
 
 import React from 'react';
-import { RunJSEditorField } from '@nocobase/client-v2';
+import { RunJSEditorField, type RunJSSourceLocator } from '@nocobase/client-v2';
 import type { RunJSValue } from '@nocobase/flow-engine';
 import { CodeEditor } from '../components/CodeEditor';
 import { CompletionContext } from '@codemirror/autocomplete';
-import type { RunJSSourceLocator } from '@nocobase/plugin-vsc-file';
 
 export const ChartOptionsEditor: React.FC<{
   value?: string;

@@ -12,6 +12,7 @@ import {
   FlowCancelSaveException,
   type FlowModel,
   type FlowRuntimeContext,
+  type RunJSValue,
   type FlowSettingsContext,
   type StepDefinition,
 } from '@nocobase/flow-engine';
@@ -20,7 +21,15 @@ import React from 'react';
 import {
   resolveRuntimeRunJS,
   createRunJSSourceCascadeMenuUIMode,
+  getDescriptorSchemaHash,
+  getRunJSModelUse,
+  getSchemaTitle,
+  getSettingsSchemaProperties,
+  getSettingsSchemaRequired,
+  isSettingValueValid,
+  normalizeSchemaType,
   RunJSSourceResolverRegistry,
+  type JsonSchemaLike,
   type ResolvedRuntimeRunJS,
   type RunJSSourceBinding,
   type RunJSSourceSettings,
@@ -38,22 +47,12 @@ export const JS_ITEM_OWNER_KIND = 'flowModel.itemSettings';
 
 export type JSItemSourceMode = typeof INLINE_SOURCE_MODE | typeof LIGHT_EXTENSION_SOURCE_MODE;
 
-type JSItemRunJSValue = {
-  code?: string;
-  version?: string;
-};
+type JSItemRunJSValue = RunJSValue;
 
 type JSItemSourceModeParams = {
   sourceMode?: string;
   sourceBinding?: unknown;
   settings?: unknown;
-};
-
-type JsonSchemaLike = Record<string, unknown>;
-
-type SettingsValidationError = {
-  label: string;
-  message: string;
 };
 
 type JSItemRuntimeError = {
@@ -104,10 +103,6 @@ type JSItemRuntimeContext = FlowRuntimeContext<JSItemRuntimeModel> & {
 };
 
 type JSItemEventHandler = (...args: unknown[]) => unknown;
-
-type JSItemRuntimeBoundaryHandle = {
-  capture: (error: unknown) => void;
-};
 
 type JSItemRuntimeErrorState = {
   capture?: (error: unknown) => void;
@@ -187,7 +182,6 @@ export function createJSItemSourceModeStep(): StepDefinition {
     title: '{{t("Code source")}}',
     uiMode: createRunJSSourceCascadeMenuUIMode({
       kind: 'js-item',
-      defaultVersionPolicy: 'follow-active',
     }),
     useRawParams: true,
     uiSchema: {
@@ -197,7 +191,6 @@ export function createJSItemSourceModeStep(): StepDefinition {
         'x-component': JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
         'x-component-props': {
           kind: 'js-item',
-          defaultVersionPolicy: 'follow-active',
         },
       },
       sourceBinding: {
@@ -231,7 +224,6 @@ export function createJSItemSourceBindingStep(): StepDefinition {
         'x-component': JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
         'x-component-props': {
           kind: 'js-item',
-          defaultVersionPolicy: 'follow-active',
         },
       },
       settings: {
@@ -354,11 +346,10 @@ export async function resolveJSItemRuntimeRunJS(input: {
 export async function runResolvedJSItemCode(input: {
   ctx: JSItemRuntimeContext;
   resolved: ResolvedRuntimeRunJS;
-  params?: Record<string, unknown>;
   element?: HTMLElement;
   runtimeErrorTestId?: string;
 }): Promise<void> {
-  const { ctx, resolved, params, element, runtimeErrorTestId = 'js-item-runtime-error' } = input;
+  const { ctx, resolved, element, runtimeErrorTestId = 'js-item-runtime-error' } = input;
   ctx.defineProperty('settings', {
     value: resolved.settings,
   });
@@ -379,9 +370,7 @@ export async function runResolvedJSItemCode(input: {
     cache: false,
   });
   const elementTarget = (ctx.ref?.current as HTMLElement | null) || element;
-  const errorState = createJSItemRuntimeErrorState(async (error) => {
-    await reportJSItemRuntimeErrorBestEffort({ ctx, error, resolved, params });
-  }, elementTarget);
+  const errorState = createJSItemRuntimeErrorState(elementTarget);
   if (elementTarget) {
     jsItemRuntimeElementStates.set(elementTarget, errorState);
   }
@@ -427,10 +416,9 @@ export async function runJSItemRuntime(input: {
 }): Promise<void> {
   const { ctx, params, runJs, element, runtimeErrorTestId = 'js-item-runtime-error' } = input;
   const runId = beginJSItemRuntimeRun(ctx.model);
-  let resolved: ResolvedRuntimeRunJS | undefined;
   try {
     resetJSItemRuntimeElement(element);
-    resolved = await resolveJSItemRuntimeRunJS({
+    const resolved = await resolveJSItemRuntimeRunJS({
       model: ctx.model,
       params,
       runJs,
@@ -441,7 +429,6 @@ export async function runJSItemRuntime(input: {
     await runResolvedJSItemCode({
       ctx,
       resolved,
-      params,
       element,
       runtimeErrorTestId,
     });
@@ -450,47 +437,6 @@ export async function runJSItemRuntime(input: {
       return;
     }
     renderJSItemRuntimeError(element, error, runtimeErrorTestId);
-    await reportJSItemRuntimeErrorBestEffort({ ctx, error, resolved, params });
-  }
-}
-
-export async function reportJSItemRuntimeErrorBestEffort(input: {
-  ctx: JSItemRuntimeContext;
-  error: unknown;
-  resolved?: ResolvedRuntimeRunJS;
-  params?: Record<string, unknown>;
-}): Promise<void> {
-  const { ctx, error, resolved, params } = input;
-  const reporter = getRuntimeErrorReporter(ctx);
-  if (!reporter) {
-    return;
-  }
-
-  const ownerLocator = buildJSItemOwnerLocator(ctx.model);
-  const ownerLocatorHash = await hashReferenceOwnerLocatorForRuntime(ownerLocator);
-  const fallbackBinding = isRecord(params?.sourceBinding) ? params.sourceBinding : undefined;
-  const sourceBinding = resolved?.sourceBinding || fallbackBinding;
-  const resolvedPublicationId = getNestedStringProperty(resolved?.context, ['lightExtension', 'publicationId']);
-  try {
-    await reporter({
-      error,
-      sourceMode: resolved?.sourceMode || params?.sourceMode,
-      sourceBinding,
-      sourceMap: resolved?.sourceMap,
-      settings: resolved?.settings,
-      repoId: getStringProperty(sourceBinding, 'repoId'),
-      entryId: getStringProperty(sourceBinding, 'entryId'),
-      publicationId: resolvedPublicationId || getStringProperty(sourceBinding, 'publicationId'),
-      ownerKind: JS_ITEM_OWNER_KIND,
-      ownerLocator,
-      ownerLocatorHash,
-      path:
-        getStringProperty(resolved?.sourceMap, 'entryPath') ||
-        getNestedStringProperty(resolved?.context, ['lightExtension', 'entryPath']) ||
-        getStringProperty(sourceBinding, 'entryPath'),
-    });
-  } catch {
-    // Runtime rendering must not fail because error reporting is unavailable.
   }
 }
 
@@ -519,7 +465,7 @@ export function buildJSItemOwnerLocator(model: JSItemRuntimeModel): Record<strin
   return {
     kind: JS_ITEM_OWNER_KIND,
     modelUid: model.uid,
-    use: getModelUse(model),
+    use: getRunJSModelUse(model),
   };
 }
 
@@ -644,8 +590,7 @@ function createLightExtensionSettingStep(options: {
         };
       },
       beforeParamsSave(ctx: FlowSettingsContext<JSItemRuntimeModel>, params: Record<string, unknown>) {
-        const errors = validateSettingValue(fieldSchema, params?.value, required, title);
-        if (errors.length === 0) {
+        if (isSettingValueValid(fieldSchema, params?.value, required)) {
           syncLightExtensionSettingToRunJs(ctx, fieldName, params?.value);
           return;
         }
@@ -730,176 +675,6 @@ async function resolveLightExtensionBindingTitle(ctx: { model: JSItemRuntimeMode
   }
 }
 
-function normalizeSchemaType(schema: JsonSchemaLike): string | undefined {
-  const schemaType = schema.type;
-  if (Array.isArray(schemaType)) {
-    return schemaType.find((item): item is string => typeof item === 'string' && item !== 'null');
-  }
-  if (typeof schemaType === 'string') {
-    return schemaType;
-  }
-  if (isRecord(schema.properties) || Array.isArray(schema.required)) {
-    return 'object';
-  }
-  if (isRecord(schema.items)) {
-    return 'array';
-  }
-  return undefined;
-}
-
-function getSettingsSchemaProperties(schema: unknown): Record<string, JsonSchemaLike> {
-  if (!isRecord(schema) || !isRecord(schema.properties)) {
-    return {};
-  }
-  return Object.fromEntries(
-    Object.entries(schema.properties).filter(([, childSchema]) => isRecord(childSchema)),
-  ) as Record<string, JsonSchemaLike>;
-}
-
-function getSettingsSchemaRequired(schema: unknown): Set<string> {
-  if (!isRecord(schema) || !Array.isArray(schema.required)) {
-    return new Set();
-  }
-  return new Set(schema.required.filter((item): item is string => typeof item === 'string'));
-}
-
-function getSchemaTitle(schema: JsonSchemaLike, fallback: string): string {
-  return toNonEmptyString(schema.title) || fallback;
-}
-
-function getDescriptorSchemaHash(descriptor: RunJSSourceSettingsDescriptor): string {
-  return toNonEmptyString(descriptor.schemaHash) || shortHash(stableSerialize(descriptor.schema || null));
-}
-
-function validateSettingValue(
-  schema: JsonSchemaLike,
-  value: unknown,
-  required: boolean,
-  label: string,
-): SettingsValidationError[] {
-  const errors: SettingsValidationError[] = [];
-  const type = normalizeSchemaType(schema);
-
-  if (required && value === undefined) {
-    errors.push({ label, message: 'Required' });
-    return errors;
-  }
-
-  if (value === undefined) {
-    return errors;
-  }
-
-  if (type === 'string' && typeof value !== 'string') {
-    errors.push({ label, message: 'Must be a string' });
-  }
-  if ((type === 'number' || type === 'integer') && typeof value !== 'number') {
-    errors.push({ label, message: 'Must be a number' });
-  }
-  if (type === 'integer' && typeof value === 'number' && !Number.isInteger(value)) {
-    errors.push({ label, message: 'Must be an integer' });
-  }
-  if (type === 'boolean' && typeof value !== 'boolean') {
-    errors.push({ label, message: 'Must be a boolean' });
-  }
-  if (type === 'array' && !Array.isArray(value)) {
-    errors.push({ label, message: 'Must be an array' });
-  }
-  if (type === 'object' && !isRecord(value)) {
-    errors.push({ label, message: 'Must be an object' });
-  }
-  if (type === 'object' && isRecord(value)) {
-    errors.push(...validateObjectSettingValue(schema, value, label));
-  }
-
-  const enumValues = Array.isArray(schema.enum) ? schema.enum : null;
-  if (enumValues && !enumValues.some((item) => stableSerialize(item) === stableSerialize(value))) {
-    errors.push({ label, message: 'Must be one of the allowed values' });
-  }
-
-  if (typeof value === 'string') {
-    const minLength = typeof schema.minLength === 'number' ? schema.minLength : undefined;
-    const maxLength = typeof schema.maxLength === 'number' ? schema.maxLength : undefined;
-    if (typeof minLength === 'number' && value.length < minLength) {
-      errors.push({ label, message: 'Too short' });
-    }
-    if (typeof maxLength === 'number' && value.length > maxLength) {
-      errors.push({ label, message: 'Too long' });
-    }
-    if (!isValidSettingStringFormat(toNonEmptyString(schema.format), value)) {
-      errors.push({ label, message: 'Must match the required format' });
-    }
-  }
-
-  if (typeof value === 'number') {
-    const minimum = typeof schema.minimum === 'number' ? schema.minimum : undefined;
-    const maximum = typeof schema.maximum === 'number' ? schema.maximum : undefined;
-    if (typeof minimum === 'number' && value < minimum) {
-      errors.push({ label, message: 'Too small' });
-    }
-    if (typeof maximum === 'number' && value > maximum) {
-      errors.push({ label, message: 'Too large' });
-    }
-  }
-
-  if (Array.isArray(value) && isRecord(schema.items)) {
-    value.forEach((item, index) => {
-      const itemLabel = `${label}[${index}]`;
-      if (normalizeSchemaType(schema.items as JsonSchemaLike) === 'object') {
-        if (!isRecord(item)) {
-          errors.push({ label: itemLabel, message: 'Must be an object' });
-          return;
-        }
-        errors.push(...validateObjectSettingValue(schema.items as JsonSchemaLike, item, itemLabel));
-        return;
-      }
-      errors.push(...validateSettingValue(schema.items as JsonSchemaLike, item, false, itemLabel));
-    });
-  }
-
-  return errors;
-}
-
-function validateObjectSettingValue(
-  schema: JsonSchemaLike,
-  value: Record<string, unknown>,
-  labelPrefix: string,
-): SettingsValidationError[] {
-  const properties = getSettingsSchemaProperties(schema);
-  const requiredFields = getSettingsSchemaRequired(schema);
-  return Object.entries(properties).flatMap(([childName, childSchema]) => {
-    const childLabel = getSchemaTitle(childSchema, `${labelPrefix}.${childName}`);
-    const childValue = Object.prototype.hasOwnProperty.call(value, childName) ? value[childName] : undefined;
-    return validateSettingValue(childSchema, childValue, requiredFields.has(childName), childLabel);
-  });
-}
-
-function isValidSettingStringFormat(format: string | undefined, value: string): boolean {
-  if (!format) {
-    return true;
-  }
-  if (format === 'date') {
-    return /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(`${value}T00:00:00.000Z`));
-  }
-  if (format === 'date-time') {
-    return !Number.isNaN(Date.parse(value));
-  }
-  if (format === 'email') {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-  }
-  if (format === 'time') {
-    return /^([01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d{1,3})?)?$/.test(value);
-  }
-  if (format === 'uri' || format === 'url') {
-    try {
-      const url = new URL(value);
-      return Boolean(url.protocol && url.hostname);
-    } catch {
-      return false;
-    }
-  }
-  return true;
-}
-
 function getFirstServerError(value: unknown): ServerErrorShape | null {
   if (!isRecord(value)) {
     return null;
@@ -953,19 +728,19 @@ function normalizeRuntimeError(error: unknown): JSItemRuntimeError {
   let hint = 'Check the JavaScript item configuration and retry.';
   if (status === 403 || normalizedCode.includes('permission') || normalizedCode.includes('forbidden')) {
     title = 'Light extension access denied';
-    hint = 'Ask an administrator for permission to use this light extension publication.';
-  } else if (status === 404 || normalizedCode.includes('publication_not_found') || normalizedCode.includes('missing')) {
-    title = 'Light extension publication missing';
-    hint = 'Choose an available publication or publish this entry again.';
+    hint = 'Ask an administrator for permission to use this light extension.';
+  } else if (status === 404 || normalizedCode.includes('entry_not_found') || normalizedCode.includes('missing')) {
+    title = 'Light extension entry missing';
+    hint = 'Choose an available entry or restore this entry.';
   } else if (normalizedCode.includes('binding_outdated') || normalizedCode.includes('outdated')) {
     title = 'Light extension binding is outdated';
-    hint = 'Refresh the item settings and choose the current active publication.';
+    hint = 'Refresh the item settings and choose the current entry.';
   } else if (normalizedCode.includes('settings_invalid')) {
     title = 'Light extension settings are invalid';
     hint = 'Open the item settings and fix the light extension settings.';
   } else if (normalizedCode.includes('repo_archived') || normalizedCode.includes('repository_archived')) {
     title = 'Light extension repository is archived';
-    hint = 'Restore the repository or choose a publication from another repository.';
+    hint = 'Restore the repository or choose an entry from another repository.';
   }
 
   return {
@@ -975,15 +750,6 @@ function normalizeRuntimeError(error: unknown): JSItemRuntimeError {
     ...(code ? { code } : {}),
     ...(typeof status === 'number' ? { status } : {}),
   };
-}
-
-function getRuntimeErrorReporter(ctx: JSItemRuntimeContext): ((payload: Record<string, unknown>) => unknown) | null {
-  const directReporter = getCallableProperty(ctx, 'reportRuntimeError');
-  if (directReporter) {
-    return directReporter;
-  }
-  const modelContext = getRecordProperty(ctx.model, 'context');
-  return getCallableProperty(modelContext, 'reportRuntimeError');
 }
 
 function disposeRunJSRootEntry(entry: RunJSRootEntry): void {
@@ -1004,19 +770,6 @@ function disposeRunJSRootEntry(entry: RunJSRootEntry): void {
   }
 }
 
-async function hashReferenceOwnerLocatorForRuntime(ownerLocator: Record<string, unknown>): Promise<string> {
-  const serialized = stableSerialize(ownerLocator);
-  const subtle = globalThis.crypto?.subtle;
-  if (!subtle || typeof TextEncoder === 'undefined') {
-    return `local:${shortHash(serialized)}`;
-  }
-  const bytes = new TextEncoder().encode(serialized);
-  const digest = await subtle.digest('SHA-256', bytes);
-  return `sha256:${Array.from(new Uint8Array(digest))
-    .map((byte) => byte.toString(16).padStart(2, '0'))
-    .join('')}`;
-}
-
 function sanitizeSettingFieldName(fieldName: string): string {
   const sanitized = fieldName
     .replace(/[^a-zA-Z0-9_]/g, '_')
@@ -1029,16 +782,6 @@ function getLightExtensionSettingStepKey(fieldName: string, schemaHash: string):
   return `leSetting__${sanitizeSettingFieldName(fieldName)}__${shortHash(`${fieldName}:${schemaHash}`)}`;
 }
 
-function getModelUse(model: JSItemRuntimeModel): string | undefined {
-  return (
-    toNonEmptyString(getRecordProperty(model, 'use')) ||
-    toNonEmptyString(getRecordProperty(getRecordProperty(model, '_options'), 'use')) ||
-    toNonEmptyString(getRecordProperty(getRecordProperty(model, 'options'), 'use')) ||
-    toNonEmptyString(getRecordProperty(getRecordProperty(model, 'createModelOptions'), 'use')) ||
-    toNonEmptyString(model.constructor?.name)
-  );
-}
-
 function getModelTranslator(model: JSItemRuntimeModel): (text: string) => string {
   const t = model.context?.t;
   return typeof t === 'function' ? t.bind(model.context) : (text: string) => text;
@@ -1048,21 +791,8 @@ function getStringProperty(value: unknown, key: string): string | undefined {
   return toNonEmptyString(getRecordProperty(value, key));
 }
 
-function getNestedStringProperty(value: unknown, path: string[]): string | undefined {
-  let current = value;
-  for (const key of path) {
-    current = getRecordProperty(current, key);
-  }
-  return toNonEmptyString(current);
-}
-
 function getRecordProperty(value: unknown, key: string): unknown {
   return isRecord(value) ? value[key] : undefined;
-}
-
-function getCallableProperty(value: unknown, key: string): ((payload: Record<string, unknown>) => unknown) | null {
-  const property = getRecordProperty(value, key);
-  return typeof property === 'function' ? (property as (payload: Record<string, unknown>) => unknown) : null;
 }
 
 function toNonEmptyString(value: unknown): string | undefined {
@@ -1183,13 +913,9 @@ function wrapJSItemRuntimeVNode(input: {
     return vnode;
   }
 
-  const boundaryRef = React.createRef<JSItemRuntimeBoundaryHandle>();
-  errorState.capture = (error: unknown) => {
-    boundaryRef.current?.capture(error);
-  };
   const wrappedVNode = wrapJSItemEventHandlers(vnode, errorState);
 
-  class JSItemRuntimeBoundary extends React.Component<{ children: React.ReactNode }, { error?: unknown }> {
+  class JSItemRuntimeBoundary extends React.Component<{ children?: React.ReactNode }, { error?: unknown }> {
     state: { error?: unknown } = {};
 
     static getDerivedStateFromError(error: unknown) {
@@ -1212,13 +938,15 @@ function wrapJSItemRuntimeVNode(input: {
     }
   }
 
+  const boundaryRef = React.createRef<JSItemRuntimeBoundary>();
+  errorState.capture = (error: unknown) => {
+    boundaryRef.current?.capture(error);
+  };
+
   return React.createElement(JSItemRuntimeBoundary, { ref: boundaryRef }, wrappedVNode);
 }
 
-function createJSItemRuntimeErrorState(
-  onError: (error: unknown) => void | Promise<void>,
-  scopeRoot?: Node | DocumentFragment | null,
-): JSItemRuntimeErrorState {
+function createJSItemRuntimeErrorState(scopeRoot?: Node | DocumentFragment | null): JSItemRuntimeErrorState {
   const errorState: JSItemRuntimeErrorState = {
     cleanups: new Set<() => void>(),
     disposed: false,
@@ -1228,7 +956,6 @@ function createJSItemRuntimeErrorState(
     scopeRoot,
     handleError(error: unknown) {
       errorState.capture?.(error);
-      reportJSItemVNodeRuntimeError(onError, error);
     },
   };
   return errorState;
@@ -1270,15 +997,6 @@ function registerJSItemRuntimeCleanup(state: JSItemRuntimeErrorState, cleanup: (
   };
   state.cleanups.add(wrapped);
   return wrapped;
-}
-
-function reportJSItemVNodeRuntimeError(onError: (error: unknown) => void | Promise<void>, error: unknown): void {
-  const result = onError(error);
-  if (isPromiseLike(result)) {
-    result.catch(() => {
-      // Runtime rendering must not fail because error reporting is unavailable.
-    });
-  }
 }
 
 function createProtectedJSItemElementProxy(element: HTMLElement, errorState: JSItemRuntimeErrorState): ElementProxy {
@@ -1389,7 +1107,7 @@ function protectJSItemDomEventTarget<T extends EventTarget>(
   }
 
   protectJSItemDomQuerySurface(target, errorState);
-  if (target !== errorState.scopeRoot) {
+  if (target !== (errorState.scopeRoot as EventTarget | null | undefined)) {
     defineProtectedJSItemOwnerDocumentGetter(target, errorState);
   }
   defineProtectedJSItemDomGetter(target, 'parentNode', errorState);
@@ -1456,7 +1174,8 @@ function createJSItemScopedDocumentFacade(
   errorState: JSItemRuntimeErrorState,
   defaultView: Window,
 ): Document {
-  const queryRoot = root || errorState.scopeRoot || globalThis.document.createDocumentFragment();
+  const rootCandidate = root || errorState.scopeRoot || globalThis.document.createDocumentFragment();
+  const queryRoot = isJSItemQueryableNode(rootCandidate) ? rootCandidate : globalThis.document.createDocumentFragment();
   const allowedProperties: Record<string, unknown> = {
     defaultView,
     createElement: (tagName: string, options?: ElementCreationOptions) =>

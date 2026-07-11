@@ -16,6 +16,7 @@ import {
   type CompletionSource,
 } from '@codemirror/autocomplete';
 import { lintGutter } from '@codemirror/lint';
+import { EditorState } from '@codemirror/state';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { basicSetup } from 'codemirror';
 import { EditorView, placeholder as cmPlaceholder, tooltips } from '@codemirror/view';
@@ -109,6 +110,8 @@ export const EditorCore: React.FC<{
 
     const extensions = [
       basicSetup,
+      EditorState.readOnly.of(readonly),
+      EditorView.editable.of(!readonly),
       javascriptWithHtmlTemplates(),
       autocompletion({
         override: [

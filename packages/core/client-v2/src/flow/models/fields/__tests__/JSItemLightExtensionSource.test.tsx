@@ -21,19 +21,15 @@ const SOURCE_BINDING = {
   entryId: 'entry_level_label',
   entryPath: 'src/client/js-items/level-label/index.tsx',
   kind: 'js-item',
-  publicationId: 'pub_level_label',
-  versionPolicy: 'pinned',
 };
 
 const NEXT_SOURCE_BINDING = {
   ...SOURCE_BINDING,
   entryId: 'entry_open_message',
   entryPath: 'src/client/js-items/open-message/index.tsx',
-  publicationId: 'pub_open_message',
 };
 
 const SETTINGS_DESCRIPTOR: RunJSSourceSettingsDescriptor = {
-  publicationId: 'pub_level_label',
   schemaHash: 'schema_level_label',
   defaults: {
     vipColor: '#f5222d',
@@ -123,13 +119,11 @@ describe('JSItemModel light extension source', () => {
     expect(listSourceMenuItems).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: 'js-item',
-        defaultVersionPolicy: 'follow-active',
       }),
     );
     expect(sourceModeStep?.uiSchema?.sourceMode?.['x-component']).toBe('JSItemLightExtensionFullSourceField');
     expect(sourceModeStep?.uiSchema?.sourceMode?.['x-component-props']).toMatchObject({
       kind: 'js-item',
-      defaultVersionPolicy: 'follow-active',
     });
     expect(sourceModeStep?.uiSchema?.sourceBinding?.['x-display']).toBe('hidden');
     expect(sourceModeStep?.uiSchema?.settings?.['x-display']).toBe('hidden');
@@ -137,7 +131,6 @@ describe('JSItemModel light extension source', () => {
     expect(sourceBindingStep?.uiSchema?.sourceBinding?.['x-component']).toBe('JSItemLightExtensionFullSourceField');
     expect(sourceBindingStep?.uiSchema?.sourceBinding?.['x-component-props']).toMatchObject({
       kind: 'js-item',
-      defaultVersionPolicy: 'follow-active',
     });
     expect(runJsStep?.uiSchema?.sourceMode?.['x-display']).toBe('hidden');
     expect(runJsStep?.uiSchema?.sourceBinding?.['x-display']).toBe('hidden');
@@ -196,12 +189,12 @@ describe('JSItemModel light extension source', () => {
     );
   });
 
-  it('resolves JS Item publications and injects item, record, settings, and source metadata', async () => {
+  it('resolves JS Item entries and injects item, record, settings, and source metadata', async () => {
     const resolve = vi.fn(() => ({
       code: `
 ctx.render(
   <span data-testid="level-label" style={{ color: ctx.settings.vipColor }}>
-    {ctx.item.index}:{ctx.record.level}:{ctx.settings.vipColor}:{ctx.runJsSource.context.lightExtension.publicationId}
+    {ctx.item.index}:{ctx.record.level}:{ctx.settings.vipColor}:{ctx.runJsSource.context.lightExtension.entryId}
   </span>
 );
       `,
@@ -211,7 +204,7 @@ ctx.render(
       },
       context: {
         lightExtension: {
-          publicationId: 'pub_level_label',
+          entryId: 'entry_level_label',
         },
       },
     }));
@@ -232,7 +225,7 @@ ctx.render(
     renderModel(engine, model);
 
     await waitFor(() => {
-      expect(screen.getByTestId('level-label')).toHaveTextContent('2:VIP:#f5222d:pub_level_label');
+      expect(screen.getByTestId('level-label')).toHaveTextContent('2:VIP:#f5222d:entry_level_label');
     });
     expect(screen.queryByTestId('inline-item')).toBeNull();
     expect(resolve).toHaveBeenCalledWith(
@@ -293,13 +286,12 @@ ctx.render(
     });
   });
 
-  it('reports resolver failures with JS Item binding and owner locator metadata', async () => {
-    const reportRuntimeError = vi.fn();
+  it('renders JS Item resolver failures', async () => {
     RunJSSourceResolverRegistry.registerResolver({
       sourceMode: 'light-extension',
       resolve: async () => {
-        throw Object.assign(new Error('publication missing'), {
-          code: 'LIGHT_EXTENSION_PUBLICATION_NOT_FOUND',
+        throw Object.assign(new Error('entry missing'), {
+          code: 'LIGHT_EXTENSION_ENTRY_NOT_FOUND',
           status: 404,
         });
       },
@@ -311,36 +303,14 @@ ctx.render(
         vipColor: '#f5222d',
       },
     });
-    model.context.defineProperty('reportRuntimeError', {
-      value: reportRuntimeError,
-    });
-
     renderModel(engine, model);
 
     await waitFor(() => {
-      expect(screen.getByTestId('js-item-runtime-error')).toHaveTextContent('publication missing');
-    });
-    await waitFor(() => {
-      expect(reportRuntimeError).toHaveBeenCalledWith(
-        expect.objectContaining({
-          repoId: 'repo_items',
-          entryId: 'entry_level_label',
-          publicationId: 'pub_level_label',
-          ownerKind: 'flowModel.itemSettings',
-          path: 'src/client/js-items/level-label/index.tsx',
-          ownerLocator: expect.objectContaining({
-            kind: 'flowModel.itemSettings',
-            modelUid: model.uid,
-            use: 'JSItemModel',
-          }),
-          ownerLocatorHash: expect.stringMatching(/^(sha256|local):/),
-        }),
-      );
+      expect(screen.getByTestId('js-item-runtime-error')).toHaveTextContent('entry missing');
     });
   });
 
-  it('isolates component event errors to the current JS Item and reports metadata', async () => {
-    const reportRuntimeError = vi.fn();
+  it('isolates component event errors to the current JS Item', async () => {
     RunJSSourceResolverRegistry.registerResolver({
       sourceMode: 'light-extension',
       resolve: async () => ({
@@ -361,7 +331,7 @@ ctx.render(<JsItem />);
         },
         context: {
           lightExtension: {
-            publicationId: 'pub_level_label',
+            entryId: 'entry_level_label',
             entryPath: 'src/client/js-items/level-label/index.tsx',
           },
         },
@@ -374,10 +344,6 @@ ctx.render(<JsItem />);
         vipColor: '#f5222d',
       },
     });
-    model.context.defineProperty('reportRuntimeError', {
-      value: reportRuntimeError,
-    });
-
     render(
       <FlowEngineProvider engine={engine}>
         <ConfigProvider>
@@ -398,27 +364,9 @@ ctx.render(<JsItem />);
       expect(screen.getByTestId('js-item-runtime-error')).toHaveTextContent('nested click failed');
     });
     expect(screen.getByTestId('sibling-item')).toHaveTextContent('sibling');
-    await waitFor(() => {
-      expect(reportRuntimeError).toHaveBeenCalledWith(
-        expect.objectContaining({
-          repoId: 'repo_items',
-          entryId: 'entry_level_label',
-          publicationId: 'pub_level_label',
-          ownerKind: 'flowModel.itemSettings',
-          path: 'src/client/js-items/level-label/index.tsx',
-          ownerLocator: expect.objectContaining({
-            kind: 'flowModel.itemSettings',
-            modelUid: model.uid,
-            use: 'JSItemModel',
-          }),
-          ownerLocatorHash: expect.stringMatching(/^(sha256|local):/),
-        }),
-      );
-    });
   });
 
-  it('isolates DOM event listener errors to the current JS Item and reports metadata', async () => {
-    const reportRuntimeError = vi.fn();
+  it('isolates DOM event listener errors to the current JS Item', async () => {
     RunJSSourceResolverRegistry.registerResolver({
       sourceMode: 'light-extension',
       resolve: async () => ({
@@ -437,7 +385,7 @@ ctx.render(button);
         },
         context: {
           lightExtension: {
-            publicationId: 'pub_level_label',
+            entryId: 'entry_level_label',
             entryPath: 'src/client/js-items/level-label/index.tsx',
           },
         },
@@ -447,10 +395,6 @@ ctx.render(button);
       sourceMode: 'light-extension',
       sourceBinding: SOURCE_BINDING,
     });
-    model.context.defineProperty('reportRuntimeError', {
-      value: reportRuntimeError,
-    });
-
     render(
       <FlowEngineProvider engine={engine}>
         <ConfigProvider>
@@ -471,22 +415,9 @@ ctx.render(button);
       expect(screen.getByTestId('js-item-runtime-error')).toHaveTextContent('dom click failed');
     });
     expect(screen.getByTestId('sibling-item')).toHaveTextContent('sibling');
-    await waitFor(() => {
-      expect(reportRuntimeError).toHaveBeenCalledWith(
-        expect.objectContaining({
-          repoId: 'repo_items',
-          entryId: 'entry_level_label',
-          publicationId: 'pub_level_label',
-          ownerKind: 'flowModel.itemSettings',
-          path: 'src/client/js-items/level-label/index.tsx',
-          ownerLocatorHash: expect.stringMatching(/^(sha256|local):/),
-        }),
-      );
-    });
   });
 
-  it('isolates bare timer errors to the current JS Item and reports metadata', async () => {
-    const reportRuntimeError = vi.fn();
+  it('isolates bare timer errors to the current JS Item', async () => {
     RunJSSourceResolverRegistry.registerResolver({
       sourceMode: 'light-extension',
       resolve: async () => ({
@@ -502,7 +433,7 @@ setTimeout(() => {
         },
         context: {
           lightExtension: {
-            publicationId: 'pub_level_label',
+            entryId: 'entry_level_label',
             entryPath: 'src/client/js-items/level-label/index.tsx',
           },
         },
@@ -512,31 +443,14 @@ setTimeout(() => {
       sourceMode: 'light-extension',
       sourceBinding: SOURCE_BINDING,
     });
-    model.context.defineProperty('reportRuntimeError', {
-      value: reportRuntimeError,
-    });
-
     renderModel(engine, model);
 
     await waitFor(() => {
       expect(screen.getByTestId('js-item-runtime-error')).toHaveTextContent('timer callback failed');
     });
-    await waitFor(() => {
-      expect(reportRuntimeError).toHaveBeenCalledWith(
-        expect.objectContaining({
-          repoId: 'repo_items',
-          entryId: 'entry_level_label',
-          publicationId: 'pub_level_label',
-          ownerKind: 'flowModel.itemSettings',
-          path: 'src/client/js-items/level-label/index.tsx',
-          ownerLocatorHash: expect.stringMatching(/^(sha256|local):/),
-        }),
-      );
-    });
   });
 
   it('protects event listeners added after querying a React-rendered item node', async () => {
-    const reportRuntimeError = vi.fn();
     RunJSSourceResolverRegistry.registerResolver({
       sourceMode: 'light-extension',
       resolve: async () => ({
@@ -556,7 +470,7 @@ window.setTimeout(() => {
         },
         context: {
           lightExtension: {
-            publicationId: 'pub_level_label',
+            entryId: 'entry_level_label',
             entryPath: 'src/client/js-items/level-label/index.tsx',
           },
         },
@@ -566,10 +480,6 @@ window.setTimeout(() => {
       sourceMode: 'light-extension',
       sourceBinding: SOURCE_BINDING,
     });
-    model.context.defineProperty('reportRuntimeError', {
-      value: reportRuntimeError,
-    });
-
     renderModel(engine, model);
 
     await waitFor(() => {
@@ -579,18 +489,6 @@ window.setTimeout(() => {
 
     await waitFor(() => {
       expect(screen.getByTestId('js-item-runtime-error')).toHaveTextContent('queried react click failed');
-    });
-    await waitFor(() => {
-      expect(reportRuntimeError).toHaveBeenCalledWith(
-        expect.objectContaining({
-          repoId: 'repo_items',
-          entryId: 'entry_level_label',
-          publicationId: 'pub_level_label',
-          ownerKind: 'flowModel.itemSettings',
-          path: 'src/client/js-items/level-label/index.tsx',
-          ownerLocatorHash: expect.stringMatching(/^(sha256|local):/),
-        }),
-      );
     });
   });
 
@@ -709,7 +607,6 @@ ctx.render(<JsItem />);
   });
 
   it('protects event listeners added through live child collections', async () => {
-    const reportRuntimeError = vi.fn();
     RunJSSourceResolverRegistry.registerResolver({
       sourceMode: 'light-extension',
       resolve: async () => ({
@@ -730,7 +627,7 @@ window.setTimeout(() => {
         },
         context: {
           lightExtension: {
-            publicationId: 'pub_level_label',
+            entryId: 'entry_level_label',
             entryPath: 'src/client/js-items/level-label/index.tsx',
           },
         },
@@ -740,10 +637,6 @@ window.setTimeout(() => {
       sourceMode: 'light-extension',
       sourceBinding: SOURCE_BINDING,
     });
-    model.context.defineProperty('reportRuntimeError', {
-      value: reportRuntimeError,
-    });
-
     renderModel(engine, model);
 
     await waitFor(() => {
@@ -756,18 +649,6 @@ window.setTimeout(() => {
 
     await waitFor(() => {
       expect(screen.getByTestId('js-item-runtime-error')).toHaveTextContent('children click failed');
-    });
-    await waitFor(() => {
-      expect(reportRuntimeError).toHaveBeenCalledWith(
-        expect.objectContaining({
-          repoId: 'repo_items',
-          entryId: 'entry_level_label',
-          publicationId: 'pub_level_label',
-          ownerKind: 'flowModel.itemSettings',
-          path: 'src/client/js-items/level-label/index.tsx',
-          ownerLocatorHash: expect.stringMatching(/^(sha256|local):/),
-        }),
-      );
     });
   });
 
@@ -823,6 +704,8 @@ window.setTimeout(() => {
   });
 
   it('cleans stale JS Item listeners and timers before rerunning another entry', async () => {
+    const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout');
+    const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout');
     RunJSSourceResolverRegistry.registerResolver({
       sourceMode: 'light-extension',
       resolve: (input) => ({
@@ -836,7 +719,7 @@ ctx.element.addEventListener('click', () => {
 });
 window.setTimeout(() => {
   ctx.element.setAttribute('data-old-timeout-fired', 'true');
-}, 100);
+}, 60_000);
             `,
         version: 'v2',
       }),
@@ -852,6 +735,9 @@ window.setTimeout(() => {
     await waitFor(() => {
       expect(screen.getByTestId('old-item-content')).toHaveTextContent('old:VIP');
     });
+    const staleTimerCallIndex = setTimeoutSpy.mock.calls.findIndex(([, timeout]) => timeout === 60_000);
+    expect(staleTimerCallIndex).toBeGreaterThanOrEqual(0);
+    const staleTimerId = setTimeoutSpy.mock.results[staleTimerCallIndex]?.value;
 
     await act(async () => {
       sourceBindingStep?.beforeParamsSave?.(
@@ -871,13 +757,13 @@ window.setTimeout(() => {
     });
     fireEvent.click(screen.getByTestId('new-item-content'));
     expect(screen.getByTestId('new-item-content').closest('[data-old-click-fired="true"]')).toBeNull();
-
-    await new Promise((resolve) => setTimeout(resolve, 150));
+    expect(clearTimeoutSpy).toHaveBeenCalledWith(staleTimerId);
     expect(screen.getByTestId('new-item-content').closest('[data-old-timeout-fired="true"]')).toBeNull();
+    clearTimeoutSpy.mockRestore();
+    setTimeoutSpy.mockRestore();
   });
 
   it('scopes safe document queries to the current JS Item subtree', async () => {
-    const reportRuntimeError = vi.fn();
     RunJSSourceResolverRegistry.registerResolver({
       sourceMode: 'light-extension',
       resolve: async () => ({
@@ -903,7 +789,7 @@ window.setTimeout(() => {
         },
         context: {
           lightExtension: {
-            publicationId: 'pub_level_label',
+            entryId: 'entry_level_label',
             entryPath: 'src/client/js-items/level-label/index.tsx',
           },
         },
@@ -913,10 +799,6 @@ window.setTimeout(() => {
       sourceMode: 'light-extension',
       sourceBinding: SOURCE_BINDING,
     });
-    model.context.defineProperty('reportRuntimeError', {
-      value: reportRuntimeError,
-    });
-
     render(
       <FlowEngineProvider engine={engine}>
         <ConfigProvider>
@@ -939,18 +821,6 @@ window.setTimeout(() => {
     fireEvent.click(screen.getByTestId('document-query-owned-item'));
     await waitFor(() => {
       expect(screen.getByTestId('js-item-runtime-error')).toHaveTextContent('document scoped click failed');
-    });
-    await waitFor(() => {
-      expect(reportRuntimeError).toHaveBeenCalledWith(
-        expect.objectContaining({
-          repoId: 'repo_items',
-          entryId: 'entry_level_label',
-          publicationId: 'pub_level_label',
-          ownerKind: 'flowModel.itemSettings',
-          path: 'src/client/js-items/level-label/index.tsx',
-          ownerLocatorHash: expect.stringMatching(/^(sha256|local):/),
-        }),
-      );
     });
   });
 });

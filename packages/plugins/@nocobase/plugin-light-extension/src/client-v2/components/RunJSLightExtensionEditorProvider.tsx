@@ -10,11 +10,17 @@
 import { createForm, type Form } from '@formily/core';
 import { createSchemaField, FormProvider } from '@formily/react';
 import { CodeEditor, type RunJSEditorProvider, type RunJSEditorProviderRenderProps } from '@nocobase/client-v2';
-import type { RunJSValue } from '@nocobase/flow-engine';
-import { Space } from 'antd';
+import { useFlowContext, type FlowEngineContext, type RunJSValue } from '@nocobase/flow-engine';
+import { Alert, Button, Flex, Space } from 'antd';
 import React from 'react';
 
-import type { LightExtensionRuntimeSourceBinding } from '../../shared/types';
+import { LIGHT_EXTENSION_SUPPORTED_KINDS } from '../../constants';
+import type { LightExtensionKind, LightExtensionRuntimeSourceBinding } from '../../shared/types';
+import { isLightExtensionRuntimeSourceBinding } from '../resolvers/LightExtensionRunJSResolver';
+import LightExtensionWorkspacePage, {
+  type LightExtensionWorkspaceFooterActions,
+} from '../pages/LightExtensionWorkspacePage';
+import type { LightExtensionWorkspaceScope } from '../workspace/lightExtensionWorkspaceAccess';
 import { RunJSLightExtensionSourceField } from './JSBlockLightExtensionSourceField';
 
 const INLINE_SOURCE_MODE = 'inline';
@@ -26,6 +32,12 @@ type RunJSValueFormValues = {
   sourceMode?: string;
   sourceBinding?: LightExtensionRuntimeSourceBinding;
   settings?: Record<string, unknown>;
+};
+
+type LightExtensionEditorView = {
+  close?: () => boolean | void | Promise<boolean | void>;
+  destroy?: () => void;
+  setFooter?: (footer: React.ReactNode) => void;
 };
 
 const SchemaField = createSchemaField({
@@ -52,9 +64,7 @@ function normalizeFormValues(value: RunJSValue): RunJSValueFormValues {
     code: String(value.code ?? ''),
     version: String(value.version ?? 'v2'),
     sourceMode,
-    sourceBinding: isRecord(value.sourceBinding)
-      ? (cloneJsonRecord(value.sourceBinding) as LightExtensionRuntimeSourceBinding)
-      : undefined,
+    sourceBinding: isLightExtensionRuntimeSourceBinding(value.sourceBinding) ? { ...value.sourceBinding } : undefined,
     settings: isRecord(value.settings) ? cloneJsonRecord(value.settings) : {},
   };
 }
@@ -75,7 +85,9 @@ function toRunJSValue(values: RunJSValueFormValues): RunJSValue {
     code,
     version,
     sourceMode: LIGHT_EXTENSION_SOURCE_MODE,
-    ...(isRecord(values.sourceBinding) ? { sourceBinding: cloneJsonRecord(values.sourceBinding) } : {}),
+    ...(isLightExtensionRuntimeSourceBinding(values.sourceBinding)
+      ? { sourceBinding: { ...values.sourceBinding } }
+      : {}),
     settings: isRecord(values.settings) ? cloneJsonRecord(values.settings) : {},
   };
 }
@@ -132,10 +144,10 @@ const RunJSLightExtensionEditor: React.FC<RunJSEditorProviderRenderProps> = (pro
 
   React.useEffect(() => {
     const subscriptionId = form.subscribe(() => {
-      rerender();
       if (applyingExternalValueRef.current) {
         return;
       }
+      rerender();
       const nextValue = toRunJSValue(form.values as RunJSValueFormValues);
       lastValueSignatureRef.current = stableSerialize(normalizeFormValues(nextValue));
       onChange?.(nextValue);
@@ -148,6 +160,15 @@ const RunJSLightExtensionEditor: React.FC<RunJSEditorProviderRenderProps> = (pro
   const formValues = form.values as RunJSValueFormValues;
   const sourceMode = normalizeSourceMode(formValues.sourceMode);
   const tip = props.t?.('Use return to output value') ?? 'Use return to output value';
+  const handleInlineEditorChange = React.useCallback(
+    (nextValue: RunJSValue | string) => {
+      const code = typeof nextValue === 'string' ? nextValue : nextValue.code;
+      const version = typeof nextValue === 'string' ? String(formValues.version ?? 'v2') : nextValue.version;
+      form.setValuesIn('code', code);
+      form.setValuesIn('version', version || 'v2');
+    },
+    [form, formValues.version],
+  );
 
   return (
     <Space direction="vertical" size={12} style={{ width: '100%', minWidth: 0 }}>
@@ -167,36 +188,138 @@ const RunJSLightExtensionEditor: React.FC<RunJSEditorProviderRenderProps> = (pro
           }}
         />
       </FormProvider>
-      {sourceMode === INLINE_SOURCE_MODE ? (
-        <div style={props.containerStyle}>
-          <CodeEditor
-            value={String(formValues.code ?? '')}
-            onChange={(code) => form.setValuesIn('code', code)}
-            version={String(formValues.version ?? 'v2')}
-            height={props.height}
-            minHeight={props.minHeight}
-            theme={props.theme}
-            enableLinter={props.enableLinter}
-            wrapperStyle={props.wrapperStyle}
-            placeholder={`// ${tip}`}
-            scene={props.scene}
-            readonly={readonly}
-          />
-        </div>
-      ) : null}
+      {sourceMode === INLINE_SOURCE_MODE
+        ? props.renderNext?.({
+            value: toRunJSValue(formValues),
+            onChange: handleInlineEditorChange,
+          }) || (
+            <div style={props.containerStyle}>
+              <CodeEditor
+                value={String(formValues.code ?? '')}
+                onChange={(code) => form.setValuesIn('code', code)}
+                version={String(formValues.version ?? 'v2')}
+                height={props.height}
+                minHeight={props.minHeight}
+                theme={props.theme}
+                enableLinter={props.enableLinter}
+                wrapperStyle={props.wrapperStyle}
+                placeholder={`// ${tip}`}
+                scene={props.scene}
+                readonly={readonly}
+              />
+            </div>
+          )
+        : null}
     </Space>
+  );
+};
+
+const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderProps> = (props) => {
+  const translate = props.t;
+  const binding = isLightExtensionRuntimeSourceBinding(props.value.sourceBinding) ? props.value.sourceBinding : null;
+  const [footerActions, setFooterActions] = React.useState<LightExtensionWorkspaceFooterActions | null>(null);
+  const flowContext = useFlowContext<FlowEngineContext | null>();
+  const editorView = flowContext?.view as LightExtensionEditorView | undefined;
+  const workspaceScope = binding ? getEntryWorkspaceScope(binding) : null;
+
+  const closeEditorView = React.useCallback(async () => {
+    if (typeof editorView?.close === 'function') {
+      await editorView.close();
+      return;
+    }
+
+    editorView?.destroy?.();
+  }, [editorView]);
+  const handlePersistedChange = React.useCallback(() => {
+    (props.onPersistedChange || props.onChange)?.({ ...props.value });
+  }, [props.onChange, props.onPersistedChange, props.value]);
+
+  React.useEffect(() => {
+    if (typeof editorView?.setFooter !== 'function') {
+      return;
+    }
+
+    if (!footerActions) {
+      editorView.setFooter(null);
+      return;
+    }
+
+    editorView.setFooter(
+      <Space>
+        <Button disabled={footerActions.loading} onClick={footerActions.onCancel}>
+          {translate?.('Cancel') || 'Cancel'}
+        </Button>
+        <Button
+          disabled={footerActions.disabled}
+          loading={footerActions.loading}
+          onClick={footerActions.onSave}
+          type="primary"
+        >
+          {translate?.('Save') || 'Save'}
+        </Button>
+      </Space>,
+    );
+
+    return () => {
+      editorView.setFooter?.(null);
+    };
+  }, [editorView, footerActions, translate]);
+
+  if (!binding || !workspaceScope) {
+    return <Alert message={props.t?.('Selected light extension entry is unavailable')} showIcon type="error" />;
+  }
+
+  return (
+    <Flex vertical style={{ height: props.minHeight || props.height || 'calc(100vh - 96px)', minHeight: 0 }}>
+      <LightExtensionWorkspacePage
+        embedded
+        initialPath={binding.entryPath}
+        onFooterActionsChange={setFooterActions}
+        onRequestClose={closeEditorView}
+        onSaved={handlePersistedChange}
+        repoId={binding.repoId}
+        workspaceScope={workspaceScope}
+      />
+    </Flex>
   );
 };
 
 export function createRunJSLightExtensionEditorProvider(): RunJSEditorProvider {
   return {
     key: 'light-extension-runjs-value',
+    priority: 100,
     canHandle(props) {
       const locator = props.sourceLocator || props.locator;
-      return locator?.kind === 'flowModel.nestedRunJS' && props.surfaceStyle === 'value';
+      if (locator?.kind === 'flowModel.step' && props.value.sourceMode === LIGHT_EXTENSION_SOURCE_MODE) {
+        return true;
+      }
+      if (props.surfaceStyle === 'value') {
+        return !locator || locator.kind === 'flowModel.nestedRunJS';
+      }
+      return props.surfaceStyle === 'action' && locator?.kind === 'flowModel.nestedRunJS';
     },
     renderEditor(props) {
+      const locator = props.sourceLocator || props.locator;
+      if (locator?.kind === 'flowModel.step' && props.value.sourceMode === LIGHT_EXTENSION_SOURCE_MODE) {
+        return <LightExtensionSourceWorkspaceEditor {...props} />;
+      }
       return <RunJSLightExtensionEditor {...props} />;
     },
+  };
+}
+
+function getEntryWorkspaceScope(binding: LightExtensionRuntimeSourceBinding): LightExtensionWorkspaceScope | null {
+  if (
+    typeof binding.entryPath !== 'string' ||
+    !binding.entryPath.trim() ||
+    !(LIGHT_EXTENSION_SUPPORTED_KINDS as readonly string[]).includes(binding.kind)
+  ) {
+    return null;
+  }
+
+  return {
+    mode: 'entry',
+    entryPath: binding.entryPath,
+    kind: binding.kind as LightExtensionKind,
   };
 }

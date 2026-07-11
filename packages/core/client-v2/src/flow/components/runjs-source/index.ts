@@ -10,5 +10,7 @@
 export * from './RunJSSourceResolverRegistry';
 export * from './resolveRuntimeRunJS';
 export * from './runJSRuntime';
+export * from './runtimeSettingsValidation';
+export * from './RunJSSourceModeField';
 export * from './runJSSourceMenu';
 export * from './types';

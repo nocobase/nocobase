@@ -153,8 +153,6 @@ const JS_BLOCK_SOURCE_BINDING = objectOption('Light-extension repository entry b
     repoId: 'repo_sales',
     entryId: 'entry_kpi_cards',
     kind: 'js-block',
-    publicationId: 'publication_sales_kpi_v1',
-    versionPolicy: 'pinned',
   },
 });
 
@@ -170,8 +168,6 @@ const JS_ITEM_SOURCE_BINDING = objectOption('JS item light-extension repository 
     repoId: 'repo_customer_items',
     entryId: 'entry_show_level_label',
     kind: 'js-item',
-    publicationId: 'publication_show_level_label_v1',
-    versionPolicy: 'pinned',
   },
 });
 

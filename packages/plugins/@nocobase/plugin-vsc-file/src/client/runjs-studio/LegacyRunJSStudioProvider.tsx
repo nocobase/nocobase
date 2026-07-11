@@ -41,6 +41,9 @@ function LegacyRunJSStudioEditorEntry(props: LegacyRunJSEditorProviderRenderProp
     onChange: (value) => {
       props.onChange?.(normalizeRunJSValue(value, props.value.version));
     },
+    onPersistedChange: (value) => {
+      props.onChange?.(normalizeRunJSValue(value, props.value.version));
+    },
   };
 
   return (

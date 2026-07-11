@@ -29,12 +29,9 @@ const SOURCE_BINDING = {
   repoId: 'repo_sales',
   entryId: 'entry_sales',
   kind: 'js-block',
-  publicationId: 'pub_sales',
-  versionPolicy: 'pinned',
 };
 
 const SETTINGS_DESCRIPTOR = {
-  publicationId: 'pub_active',
   schemaHash: 'schema_active',
   defaults: {
     message: 'Hello',
@@ -232,7 +229,6 @@ describe('JSBlockModel light extension source', () => {
     expect(listSourceMenuItems).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: 'js-block',
-        defaultVersionPolicy: 'follow-active',
         sourceMode: 'inline',
       }),
     );
@@ -411,7 +407,6 @@ describe('JSBlockModel light extension source', () => {
 
   it('validates nested object settings before saving a runtime settings step', async () => {
     const descriptor: RunJSSourceSettingsDescriptor = {
-      publicationId: 'pub_object_settings',
       schemaHash: 'schema_object_settings',
       defaults: {},
       schema: {
@@ -571,14 +566,14 @@ describe('JSBlockModel light extension source', () => {
 
   it('resolves external source through the RunJS source registry', async () => {
     const resolve = vi.fn(() => ({
-      code: 'ctx.render(<span data-testid="external-js-block">{ctx.settings.title}:{ctx.runJsSource.context.lightExtension.publicationId}</span>);',
+      code: 'ctx.render(<span data-testid="external-js-block">{ctx.settings.title}:{ctx.runJsSource.context.lightExtension.entryId}</span>);',
       version: 'v2',
       settings: {
         title: 'Sales KPI',
       },
       context: {
         lightExtension: {
-          publicationId: 'pub_sales',
+          entryId: 'entry_sales',
         },
       },
     }));
@@ -598,7 +593,7 @@ describe('JSBlockModel light extension source', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByTestId('external-js-block')).toHaveTextContent('Sales KPI:pub_sales');
+      expect(screen.getByTestId('external-js-block')).toHaveTextContent('Sales KPI:entry_sales');
     });
     expect(screen.queryByTestId('inline-js-block')).toBeNull();
     expect(resolve).toHaveBeenCalledWith(
@@ -619,8 +614,8 @@ describe('JSBlockModel light extension source', () => {
             data: {
               errors: [
                 {
-                  code: 'LIGHT_EXTENSION_PUBLICATION_NOT_FOUND',
-                  message: 'Publication missing',
+                  code: 'LIGHT_EXTENSION_ENTRY_NOT_FOUND',
+                  message: 'Entry missing',
                 },
               ],
             },
@@ -637,7 +632,7 @@ describe('JSBlockModel light extension source', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByTestId('js-block-runtime-error')).toHaveTextContent('Publication missing');
+      expect(screen.getByTestId('js-block-runtime-error')).toHaveTextContent('Entry missing');
     });
   });
 
@@ -646,7 +641,7 @@ describe('JSBlockModel light extension source', () => {
       'LIGHT_EXTENSION_BINDING_OUTDATED',
       409,
       'Light extension binding is outdated',
-      'Refresh the block settings and choose the current active publication.',
+      'Refresh the block settings and choose the current entry.',
     ],
     [
       'LIGHT_EXTENSION_SETTINGS_INVALID',
@@ -655,22 +650,22 @@ describe('JSBlockModel light extension source', () => {
       'Open the block settings and fix the light extension settings.',
     ],
     [
-      'LIGHT_EXTENSION_PUBLICATION_NOT_FOUND',
+      'LIGHT_EXTENSION_ENTRY_NOT_FOUND',
       404,
-      'Light extension publication missing',
-      'Choose an available publication or publish this entry again.',
+      'Light extension entry missing',
+      'Choose an available entry or restore this entry.',
     ],
     [
       'LIGHT_EXTENSION_FORBIDDEN',
       403,
       'Light extension access denied',
-      'Ask an administrator for permission to use this light extension publication.',
+      'Ask an administrator for permission to use this light extension.',
     ],
     [
       'LIGHT_EXTENSION_REPO_ARCHIVED',
       409,
       'Light extension repository is archived',
-      'Restore the repository or choose a publication from another repository.',
+      'Restore the repository or choose an entry from another repository.',
     ],
   ])('renders an actionable hint for %s errors', async (code, status, title, hint) => {
     RunJSSourceResolverRegistry.registerResolver({
@@ -707,7 +702,7 @@ describe('JSBlockModel light extension source', () => {
 
   it.each([
     [403, 'Light extension access denied'],
-    [404, 'Light extension publication missing'],
+    [404, 'Light extension entry missing'],
   ])('renders status-only %s resolver failures with light-extension hints', async (status, title) => {
     RunJSSourceResolverRegistry.registerResolver({
       sourceMode: 'light-extension',

@@ -96,9 +96,8 @@ describe('plugin-light-extension raw resource bypass guard', () => {
       await agent.resource('vscFile').updateRef({
         values: {
           repoId,
-          name: 'published',
+          name: 'release',
           targetCommitId: 'commit_raw',
-          basePublishedCommitId: null,
         },
       }),
       await agent.resource('vscFile').archiveRepository({ values: { repoId } }),
@@ -209,7 +208,7 @@ describe('plugin-light-extension raw resource bypass guard', () => {
     expect(JSON.stringify(runjsLog?.toJSON())).not.toContain('header secret');
   });
 
-  it('rejects direct runJSSources preview and publish paths for light-extension repositories', async () => {
+  it('rejects direct runJSSources preview and save paths for light-extension repositories', async () => {
     const locator = createLocator();
     const preview = await agent.resource('runJSSources').compilePreview({
       values: {
@@ -228,19 +227,16 @@ describe('plugin-light-extension raw resource bypass guard', () => {
         version: 'v2',
       },
     });
-    const publish = await agent.resource('runJSSources').publish({
+    const save = await agent.resource('runJSSources').save({
       values: {
         locator,
         repoId,
-        baseCommitId: null,
-        basePublishedCommitId: null,
-        baseOwnerFingerprint: 'owner:v1',
-        message: 'raw publish should fail',
+        message: 'raw save should fail',
         files: [
           {
             path: 'src/client/index.tsx',
             operation: 'upsert',
-            content: 'ctx.render("publish secret");',
+            content: 'ctx.render("save secret");',
             language: 'typescript',
           },
         ],
@@ -250,15 +246,15 @@ describe('plugin-light-extension raw resource bypass guard', () => {
     });
 
     expect(preview.status).toBe(403);
-    expect(publish.status).toBe(403);
+    expect(save.status).toBe(403);
     expect(preview.body.errors[0].details).toMatchObject({
       ownerType: 'light-extension',
       rawResourceAction: 'runJSSources:compilePreview',
       result: 'denied',
     });
-    expect(publish.body.errors[0].details).toMatchObject({
+    expect(save.body.errors[0].details).toMatchObject({
       ownerType: 'light-extension',
-      rawResourceAction: 'runJSSources:publish',
+      rawResourceAction: 'runJSSources:save',
       result: 'denied',
     });
 
@@ -271,10 +267,10 @@ describe('plugin-light-extension raw resource bypass guard', () => {
     const serializedLogs = JSON.stringify(logs.map((log) => log.toJSON()));
 
     expect(logs.map((log) => log.get('rawResourceAction'))).toEqual(
-      expect.arrayContaining(['runJSSources:compilePreview', 'runJSSources:publish']),
+      expect.arrayContaining(['runJSSources:compilePreview', 'runJSSources:save']),
     );
     expect(serializedLogs).not.toContain('preview secret');
-    expect(serializedLogs).not.toContain('publish secret');
+    expect(serializedLogs).not.toContain('save secret');
     expect(serializedLogs).not.toContain(repoId);
   });
 
@@ -359,7 +355,7 @@ describe('plugin-light-extension raw resource bypass guard', () => {
     const adapter: RunJSSourceAdapter<FlowModelStepLocator> = {
       kind: 'flowModel.step',
       readLegacy: () => legacy,
-      writePublished: () => ({
+      writeRuntime: () => ({
         ownerFingerprint: 'owner:v2',
       }),
       getFingerprint: () => legacy.ownerFingerprint,

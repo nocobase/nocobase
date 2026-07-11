@@ -9,6 +9,7 @@
 
 import { describe, expect, it, vi } from 'vitest';
 
+import type { ApiClientLike, ApiRequestOptions } from '../api/lightExtensionEntriesRequests';
 import { createLightExtensionRunJSResolver } from '../resolvers/LightExtensionRunJSResolver';
 
 const selectableEntry = {
@@ -73,7 +74,6 @@ const selectableRepo = {
   normalizedName: 'orders',
   title: 'Orders',
   description: null,
-  version: 1,
   lifecycleStatus: 'enabled',
   healthStatus: 'ready',
   headCommitId: 'commit_latest',
@@ -81,23 +81,22 @@ const selectableRepo = {
 
 describe('light extension source menu items', () => {
   it('shows single-entry repositories directly and writes the current runtime binding', async () => {
-    const api = {
-      request: vi.fn(async (options: { url: string }) => {
-        if (options.url === 'lightExtensionRepos:list') {
-          return {
-            data: {
-              data: [selectableRepo],
-            },
-          };
-        }
-
+    const request = vi.fn(async (options: ApiRequestOptions) => {
+      if (options.url === 'lightExtensionRepos:list') {
         return {
           data: {
-            data: [selectableEntry],
+            data: [selectableRepo],
           },
         };
-      }),
-    };
+      }
+
+      return {
+        data: {
+          data: [selectableEntry],
+        },
+      };
+    });
+    const api = createMockApiClient(request);
     const resolver = createLightExtensionRunJSResolver(api);
 
     const items = await resolver.listSourceMenuItems?.({
@@ -111,7 +110,7 @@ describe('light extension source menu items', () => {
     const lightExtensionItem = items?.[0];
     const entryItem = items?.[1];
 
-    expect(api.request).toHaveBeenCalledWith(
+    expect(request).toHaveBeenCalledWith(
       expect.objectContaining({
         url: 'lightExtensionEntries:listSelectable',
         method: 'post',
@@ -120,7 +119,7 @@ describe('light extension source menu items', () => {
         },
       }),
     );
-    expect(api.request).toHaveBeenCalledWith(
+    expect(request).toHaveBeenCalledWith(
       expect.objectContaining({
         url: 'lightExtensionRepos:list',
         method: 'post',
@@ -168,23 +167,22 @@ describe('light extension source menu items', () => {
   });
 
   it('keeps a repository submenu when a repository has multiple entries', async () => {
-    const api = {
-      request: vi.fn(async (options: { url: string }) => {
-        if (options.url === 'lightExtensionRepos:list') {
-          return {
-            data: {
-              data: [selectableRepo],
-            },
-          };
-        }
-
+    const request = vi.fn(async (options: ApiRequestOptions) => {
+      if (options.url === 'lightExtensionRepos:list') {
         return {
           data: {
-            data: [selectableEntry, chartSelectableEntry],
+            data: [selectableRepo],
           },
         };
-      }),
-    };
+      }
+
+      return {
+        data: {
+          data: [selectableEntry, chartSelectableEntry],
+        },
+      };
+    });
+    const api = createMockApiClient(request);
     const resolver = createLightExtensionRunJSResolver(api);
 
     const items = await resolver.listSourceMenuItems?.({
@@ -200,3 +198,11 @@ describe('light extension source menu items', () => {
     expect(repoItem?.searchText).toContain('Order chart block');
   });
 });
+
+function createMockApiClient(request: (options: ApiRequestOptions) => Promise<unknown>): ApiClientLike {
+  return {
+    request: async <TResponse>(options: ApiRequestOptions): Promise<TResponse> => {
+      return (await request(options)) as TResponse;
+    },
+  };
+}

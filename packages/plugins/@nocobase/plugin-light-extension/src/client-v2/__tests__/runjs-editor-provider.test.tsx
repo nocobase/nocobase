@@ -8,7 +8,8 @@
  */
 
 import React from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { FlowContext, FlowContextProvider } from '@nocobase/flow-engine';
 import { describe, expect, it, vi } from 'vitest';
 
 import { createRunJSLightExtensionEditorProvider } from '../components/RunJSLightExtensionEditorProvider';
@@ -31,8 +32,78 @@ vi.mock('../components/JSBlockLightExtensionSourceField', () => ({
   ),
 }));
 
+vi.mock('../pages/LightExtensionWorkspacePage', () => {
+  const MockLightExtensionWorkspacePage = ({
+    repoId,
+    initialPath,
+    workspaceScope,
+    onFooterActionsChange,
+    onRequestClose,
+    onSaved,
+  }: {
+    repoId?: string;
+    initialPath?: string;
+    workspaceScope?: unknown;
+    onFooterActionsChange?: (
+      actions: {
+        disabled: boolean;
+        loading: boolean;
+        onCancel: () => void;
+        onSave: () => void;
+      } | null,
+    ) => void;
+    onRequestClose?: () => void;
+    onSaved?: () => void;
+  }) => {
+    React.useEffect(() => {
+      onFooterActionsChange?.({
+        disabled: false,
+        loading: false,
+        onCancel: () => onRequestClose?.(),
+        onSave: () => onSaved?.(),
+      });
+      return () => onFooterActionsChange?.(null);
+    }, [onFooterActionsChange, onRequestClose, onSaved]);
+
+    return (
+      <div data-workspace-scope={JSON.stringify(workspaceScope)}>
+        workspace:{repoId}:{initialPath}
+        <button type="button" onClick={onSaved}>
+          save workspace
+        </button>
+      </div>
+    );
+  };
+
+  return {
+    default: MockLightExtensionWorkspacePage,
+  };
+});
+
+function EditorViewHarness(props: { children: React.ReactNode; onClose: () => void }) {
+  const { children, onClose } = props;
+  const [footer, setFooter] = React.useState<React.ReactNode>(null);
+  const context = React.useMemo(() => {
+    const nextContext = new FlowContext();
+    nextContext.defineProperty('view', {
+      value: {
+        close: onClose,
+        setFooter,
+      },
+    });
+    return nextContext;
+  }, [onClose]);
+
+  return (
+    <FlowContextProvider context={context}>
+      {children}
+      <div data-testid="editor-view-footer">{footer}</div>
+    </FlowContextProvider>
+  );
+}
+
 describe('RunJSLightExtensionEditorProvider', () => {
-  it('only handles nested RunJS locators and preserves inline edits', async () => {
+  it('handles nested value/action RunJS editors and preserves inline edits', async () => {
     const provider = createRunJSLightExtensionEditorProvider();
     const onChange = vi.fn();
     const nestedLocator = {
@@ -54,10 +125,16 @@ describe('RunJSLightExtensionEditorProvider', () => {
     expect(
       provider.canHandle?.({
         value: { code: 'return 1;', version: 'v2' },
+        surfaceStyle: 'value',
+      }),
+    ).toBe(true);
+    expect(
+      provider.canHandle?.({
+        value: { code: 'return 1;', version: 'v2' },
         locator: nestedLocator,
         surfaceStyle: 'action',
       }),
-    ).toBe(false);
+    ).toBe(true);
     expect(
       provider.canHandle?.({
         value: { code: 'return 1;', version: 'v2' },
@@ -94,5 +171,133 @@ describe('RunJSLightExtensionEditorProvider', () => {
         sourceMode: 'inline',
       });
     });
+  });
+
+  it('opens the selected light extension workspace for JS block render editors', () => {
+    const provider = createRunJSLightExtensionEditorProvider();
+    const onChange = vi.fn();
+    const onPersistedChange = vi.fn();
+    const props = {
+      value: {
+        code: 'ctx.render(<div />);',
+        version: 'v2',
+        sourceMode: 'light-extension',
+        sourceBinding: {
+          type: 'light-extension-entry',
+          repoId: 'ler_example',
+          entryId: 'lee_example',
+          entryPath: 'src/client/js-blocks/example/index.tsx',
+          kind: 'js-block',
+        },
+      },
+      locator: {
+        kind: 'flowModel.step' as const,
+        modelUid: 'model_1',
+        flowKey: 'jsSettings',
+        stepKey: 'runJs',
+        paramPath: ['code'],
+      },
+      surfaceStyle: 'render' as const,
+      onChange,
+      onPersistedChange,
+    };
+
+    expect(provider.canHandle?.(props)).toBe(true);
+    render(<>{provider.renderEditor(props)}</>);
+
+    expect(screen.getByText('workspace:ler_example:src/client/js-blocks/example/index.tsx')).toHaveAttribute(
+      'data-workspace-scope',
+      JSON.stringify({
+        mode: 'entry',
+        entryPath: 'src/client/js-blocks/example/index.tsx',
+        kind: 'js-block',
+      }),
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'save workspace' }));
+    expect(onPersistedChange).toHaveBeenCalledWith(props.value);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('places cancel and save actions in the editor view footer', async () => {
+    const provider = createRunJSLightExtensionEditorProvider();
+    const onClose = vi.fn();
+    const onPersistedChange = vi.fn();
+    const value = {
+      code: 'ctx.render(<div />);',
+      version: 'v2',
+      sourceMode: 'light-extension',
+      sourceBinding: {
+        type: 'light-extension-entry' as const,
+        repoId: 'ler_example',
+        entryId: 'lee_example',
+        entryPath: 'src/client/js-blocks/example/index.tsx',
+        kind: 'js-block' as const,
+      },
+    };
+
+    render(
+      <EditorViewHarness onClose={onClose}>
+        {provider.renderEditor({
+          value,
+          locator: {
+            kind: 'flowModel.step',
+            modelUid: 'model_1',
+            flowKey: 'jsSettings',
+            stepKey: 'runJs',
+            paramPath: ['code'],
+          },
+          surfaceStyle: 'render',
+          onPersistedChange,
+        })}
+      </EditorViewHarness>,
+    );
+
+    const footer = await screen.findByTestId('editor-view-footer');
+    await waitFor(() => expect(within(footer).getByRole('button', { name: 'Cancel' })).toBeInTheDocument());
+    expect(within(footer).getByRole('button', { name: 'Save' })).toBeInTheDocument();
+
+    fireEvent.click(within(footer).getByRole('button', { name: 'Save' }));
+    expect(onPersistedChange).toHaveBeenCalledWith(value);
+
+    fireEvent.click(within(footer).getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+  });
+
+  it('opens scoped workspaces for flow model JS action entries', () => {
+    const provider = createRunJSLightExtensionEditorProvider();
+    const props = {
+      value: {
+        code: 'ctx.message.success("ok");',
+        version: 'v2',
+        sourceMode: 'light-extension',
+        sourceBinding: {
+          type: 'light-extension-entry',
+          repoId: 'ler_example',
+          entryId: 'lee_action',
+          entryPath: 'src/client/js-actions/approve/index.ts',
+          kind: 'js-action',
+        },
+      },
+      locator: {
+        kind: 'flowModel.step' as const,
+        modelUid: 'action_1',
+        flowKey: 'clickSettings',
+        stepKey: 'runJs',
+        paramPath: ['code'],
+      },
+      surfaceStyle: 'action' as const,
+    };
+
+    expect(provider.canHandle?.(props)).toBe(true);
+    render(<>{provider.renderEditor(props)}</>);
+
+    expect(screen.getByText('workspace:ler_example:src/client/js-actions/approve/index.ts')).toHaveAttribute(
+      'data-workspace-scope',
+      JSON.stringify({
+        mode: 'entry',
+        entryPath: 'src/client/js-actions/approve/index.ts',
+        kind: 'js-action',
+      }),
+    );
   });
 });

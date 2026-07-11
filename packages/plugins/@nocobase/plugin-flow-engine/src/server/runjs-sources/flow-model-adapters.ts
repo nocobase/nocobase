@@ -14,8 +14,8 @@ import {
   buildRunJSOwnerFingerprint,
   type RunJSLanguage,
   type RunJSLegacySource,
-  type RunJSPublishedWriteResult,
   type RunJSRuntimeArtifact,
+  type RunJSRuntimeWriteResult,
   type RunJSSourceAdapter,
   type RunJSSourceAdapterContext,
   type RunJSSourceLocator,
@@ -33,7 +33,6 @@ type JsonRecord = Record<string, unknown>;
 type JsonPath = Array<string | number>;
 type FlowModelNestedStorage = {
   rootKey: 'stepParams' | 'flowRegistry';
-  ownerPath: JsonPath;
   targetPath: JsonPath;
 };
 
@@ -68,6 +67,7 @@ const CHART_EVENTS_DEFAULT_CODE = `// The chart variable is the ECharts instance
 // chart.on('click', (params) => {
 //   ctx.message.info(params.name);
 // });`;
+const UNSAFE_JSON_PATH_SEGMENTS = new Set(['__proto__', 'constructor', 'prototype']);
 
 export function createFlowModelRunJSSourceAdapters(db: Database): RunJSSourceAdapter[] {
   return [
@@ -92,11 +92,7 @@ function createFlowModelStepAdapter(db: Database): RunJSSourceAdapter<FlowModelS
     },
     async readLegacy({ locator, ctx }) {
       const model = await loadFlowModel(db, locator.modelUid, ctx);
-      const stepPath = ['stepParams', locator.flowKey, locator.stepKey];
-      const step = getAtPath(model, stepPath);
-      const codeValue = getAtPath(step, locator.paramPath);
-      const versionPath = resolveVersionPath(locator.paramPath, locator.versionPath);
-      const versionValue = getAtPath(step, versionPath);
+      const { codeValue, versionValue } = readFlowModelStepSource(model, locator);
       const code = typeof codeValue === 'string' ? codeValue : '';
       const version = typeof versionValue === 'string' && versionValue ? versionValue : 'v2';
 
@@ -115,7 +111,7 @@ function createFlowModelStepAdapter(db: Database): RunJSSourceAdapter<FlowModelS
     async getFingerprint({ locator, ctx }) {
       return buildStepFingerprint(locator, await loadFlowModel(db, locator.modelUid, ctx));
     },
-    async writePublished({ locator, artifact, commitId, baseOwnerFingerprint, ctx }) {
+    async writeRuntime({ locator, artifact, commitId, baseOwnerFingerprint, ctx }) {
       const transaction = requireTransaction(ctx);
       await assertFlowModelPermission(db, ctx, locator.modelUid, 'save', ['stepParams']);
       await lockFlowModelForUpdate(db, locator.modelUid, transaction);
@@ -130,7 +126,7 @@ function createFlowModelStepAdapter(db: Database): RunJSSourceAdapter<FlowModelS
       setAtPath(nextStepParams, [locator.flowKey, locator.stepKey, ...resolveSourceRefPath(locator.paramPath)], {
         type: 'vsc-file',
         repoId: readMetadataString(artifact, 'repoId'),
-        publishedCommitId: commitId,
+        commitId,
         entry: artifact.entryPath || 'src/main.tsx',
       });
 
@@ -174,7 +170,7 @@ function createFlowModelNestedRunJSAdapter(db: Database): RunJSSourceAdapter<Flo
     async getFingerprint({ locator, ctx }) {
       return buildNestedFingerprint(locator, await loadFlowModel(db, locator.modelUid, ctx));
     },
-    async writePublished({ locator, artifact, baseOwnerFingerprint, ctx }) {
+    async writeRuntime({ locator, artifact, baseOwnerFingerprint, ctx }) {
       const transaction = requireTransaction(ctx);
       const permission = requireFlowModelPermission(ctx, 'save');
       await assertFlowModelRecordPermission(db, ctx, locator.modelUid, permission);
@@ -228,7 +224,7 @@ function createFlowRegistryRunJSAdapter(db: Database): RunJSSourceAdapter<FlowRe
     async getFingerprint({ locator, ctx }) {
       return buildFlowRegistryRunJSFingerprint(locator, await loadFlowModel(db, locator.modelUid, ctx));
     },
-    async writePublished({ locator, artifact, baseOwnerFingerprint, ctx }) {
+    async writeRuntime({ locator, artifact, baseOwnerFingerprint, ctx }) {
       const transaction = requireTransaction(ctx);
       await assertFlowModelPermission(db, ctx, locator.modelUid, 'save', ['flowRegistry']);
       await lockFlowModelForUpdate(db, locator.modelUid, transaction);
@@ -241,7 +237,12 @@ function createFlowRegistryRunJSAdapter(db: Database): RunJSSourceAdapter<FlowRe
       );
       const nextFlowRegistry = cloneJsonRecord(getAtPath(model, ['flowRegistry']));
       const step = getAtPath(nextFlowRegistry, [locator.flowKey, 'steps', locator.stepKey]);
-      const sourcePath = resolveFlowRegistryRunJSSourcePath(step, locator.sourcePath);
+      const sourcePath = resolveFlowRegistryRunJSSourcePath(step, locator.sourcePath, [
+        'flowRegistry',
+        locator.flowKey,
+        'steps',
+        locator.stepKey,
+      ]);
 
       setAtPath(nextFlowRegistry, [locator.flowKey, 'steps', locator.stepKey, ...sourcePath], artifact.code);
 
@@ -285,7 +286,7 @@ function createChartAdapter(db: Database, kind: ChartLocator['kind']): RunJSSour
     async getFingerprint({ locator, ctx }) {
       return buildChartFingerprint(locator, await loadFlowModel(db, locator.modelUid, ctx));
     },
-    async writePublished({ locator, artifact, baseOwnerFingerprint, ctx }) {
+    async writeRuntime({ locator, artifact, baseOwnerFingerprint, ctx }) {
       const transaction = requireTransaction(ctx);
       await assertChartFlowModelPermission(db, ctx, locator, 'save');
       await lockFlowModelForUpdate(db, locator.modelUid, transaction);
@@ -498,25 +499,6 @@ async function parsePermissionFilter(
   }
 }
 
-function assertPermissionAllowsFields(
-  permission: RunJSSourcePermissionResult,
-  fields: string[],
-  resource: string,
-  action: string,
-): void {
-  if (permissionAllowsFields(permission, fields)) {
-    return;
-  }
-
-  throw new VscError('PERMISSION_DENIED', `RunJS source requires ${resource}:${action} field permission`, {
-    details: {
-      resource,
-      action,
-      fields,
-    },
-  });
-}
-
 function permissionAllowsFields(permission: RunJSSourcePermissionResult, fields: string[]): boolean {
   const whitelist = toStringList(permission.params?.whitelist || permission.params?.fields);
   if (whitelist && fields.some((field) => !whitelist.includes(field))) {
@@ -557,8 +539,7 @@ function toStringList(value: unknown): string[] | null {
 }
 
 function buildStepFingerprint(locator: FlowModelStepLocator, model: JsonRecord): string {
-  const step = getAtPath(model, ['stepParams', locator.flowKey, locator.stepKey]);
-  const versionPath = resolveVersionPath(locator.paramPath, locator.versionPath);
+  const { codeValue, versionPath, versionValue } = readFlowModelStepSource(model, locator);
 
   return buildRunJSOwnerFingerprint({
     locator,
@@ -568,25 +549,30 @@ function buildStepFingerprint(locator: FlowModelStepLocator, model: JsonRecord):
       stepKey: locator.stepKey,
       paramPath: locator.paramPath,
       versionPath,
-      ownerState: buildStepFingerprintOwnerState(step, locator.paramPath),
     },
-    selectedLegacyValue: getAtPath(step, locator.paramPath),
-    selectedVersion: getAtPath(step, versionPath),
+    selectedLegacyValue: codeValue,
+    selectedVersion: versionValue,
   });
 }
 
-function buildStepFingerprintOwnerState(step: unknown, paramPath: JsonPath): unknown {
+function readFlowModelStepSource(model: JsonRecord, locator: FlowModelStepLocator) {
+  const stepPath: JsonPath = ['stepParams', locator.flowKey, locator.stepKey];
+  const step = getAtPath(model, stepPath);
   if (!isRecord(step)) {
-    return step;
+    throwNestedPathNotFound(stepPath);
   }
 
-  const ownerState = cloneJsonRecord(step);
-  delete ownerState.sourceMode;
-  delete ownerState.sourceBinding;
-  delete ownerState.settings;
-  unsetAtPath(ownerState, resolveSourceRefPath(paramPath));
+  const codeValue = getAtPath(step, locator.paramPath);
+  if (typeof codeValue === 'undefined') {
+    throwNestedPathNotFound([...stepPath, ...locator.paramPath]);
+  }
 
-  return ownerState;
+  const versionPath = resolveVersionPath(locator.paramPath, locator.versionPath);
+  return {
+    codeValue,
+    versionPath,
+    versionValue: getAtPath(step, versionPath),
+  };
 }
 
 function buildNestedFingerprint(locator: FlowModelNestedLocator, model: JsonRecord): string {
@@ -597,14 +583,9 @@ function buildNestedFingerprint(locator: FlowModelNestedLocator, model: JsonReco
     locator,
     ownerUpdatedAt: {
       ...getFlowModelFingerprintOwner(model),
-      containerFlowKey: locator.containerFlowKey,
-      containerStepKey: locator.containerStepKey,
-      valuePath: locator.valuePath,
-      scene: locator.scene,
       rootKey: storage.rootKey,
-      ownerState: getAtPath(model, storage.ownerPath),
     },
-    selectedLegacyValue: source.originalValue,
+    selectedLegacyValue: source.code,
     selectedVersion: source.version,
   });
 }
@@ -616,12 +597,9 @@ function buildFlowRegistryRunJSFingerprint(locator: FlowRegistryRunJSLocator, mo
     locator,
     ownerUpdatedAt: {
       ...getFlowModelFingerprintOwner(model),
-      flowKey: locator.flowKey,
-      stepKey: locator.stepKey,
       sourcePath: source.sourcePath,
-      ownerState: getAtPath(model, ['flowRegistry', locator.flowKey, 'steps', locator.stepKey]),
     },
-    selectedLegacyValue: source.originalValue,
+    selectedLegacyValue: source.code,
     selectedVersion: 'v2',
   });
 }
@@ -634,9 +612,7 @@ function buildChartFingerprint(locator: ChartLocator, model: JsonRecord): string
     locator,
     ownerUpdatedAt: {
       ...getFlowModelFingerprintOwner(model),
-      kind: locator.kind,
       rawPath,
-      ownerState: getAtPath(model, rawPath.slice(0, -1)),
     },
     selectedLegacyValue: raw,
     selectedVersion: 'v2',
@@ -648,7 +624,7 @@ function assertOwnerFingerprintMatches(current: string, expected: string, kind: 
     return;
   }
 
-  throw new VscError('RUNJS_SOURCE_OWNER_OUTDATED', 'RunJS source owner was changed by another writer', {
+  throw new VscError('RUNJS_SOURCE_OWNER_OUTDATED', 'RunJS host code differs from the versioned source', {
     details: {
       expected: current,
       received: expected,
@@ -689,7 +665,6 @@ function readFlowRegistryRunJSSource(model: JsonRecord, locator: FlowRegistryRun
 
   return {
     code: value,
-    originalValue: value,
     sourcePath,
   };
 }
@@ -756,7 +731,6 @@ function resolveNestedStorage(model: JsonRecord, locator: FlowModelNestedLocator
       : 'defaultParams';
     return {
       rootKey: 'flowRegistry',
-      ownerPath: flowRegistryStepPath,
       targetPath: [...flowRegistryStepPath, paramsKey, ...locator.valuePath],
     };
   }
@@ -769,7 +743,6 @@ function resolveNestedStorage(model: JsonRecord, locator: FlowModelNestedLocator
 
   return {
     rootKey: 'stepParams',
-    ownerPath: stepParamsOwnerPath,
     targetPath: [...stepParamsOwnerPath, ...locator.valuePath],
   };
 }
@@ -1006,7 +979,7 @@ function readMetadataString(artifact: RunJSRuntimeArtifact, key: string): string
   return typeof value === 'string' ? value : null;
 }
 
-function buildWriteResult(ownerFingerprint: string): RunJSPublishedWriteResult {
+function buildWriteResult(ownerFingerprint: string): RunJSRuntimeWriteResult {
   return {
     ownerFingerprint,
   };
@@ -1061,7 +1034,8 @@ function getChild(parent: unknown, segment: string | number): unknown {
     return parent.find((item) => isRecord(item) && item.key === segment);
   }
   if (isRecord(parent) && typeof segment === 'string') {
-    return parent[segment];
+    assertSafeJsonPathSegment(segment);
+    return Object.prototype.hasOwnProperty.call(parent, segment) ? parent[segment] : undefined;
   }
 
   return undefined;
@@ -1082,38 +1056,21 @@ function setChild(parent: unknown, segment: string | number, value: unknown): vo
     return;
   }
   if (isRecord(parent) && typeof segment === 'string') {
+    assertSafeJsonPathSegment(segment);
     parent[segment] = value;
   }
 }
 
-function unsetAtPath(root: JsonRecord, path: JsonPath): void {
-  if (!path.length) {
+function assertSafeJsonPathSegment(segment: string): void {
+  if (!UNSAFE_JSON_PATH_SEGMENTS.has(segment)) {
     return;
   }
 
-  let current: unknown = root;
-  for (const segment of path.slice(0, -1)) {
-    current = getChild(current, segment);
-    if (typeof current === 'undefined') {
-      return;
-    }
-  }
-
-  const lastSegment = path[path.length - 1];
-  if (Array.isArray(current) && typeof lastSegment === 'number') {
-    current.splice(lastSegment, 1);
-    return;
-  }
-  if (Array.isArray(current) && typeof lastSegment === 'string') {
-    const index = current.findIndex((item) => isRecord(item) && item.key === lastSegment);
-    if (index >= 0) {
-      current.splice(index, 1);
-    }
-    return;
-  }
-  if (isRecord(current) && typeof lastSegment === 'string') {
-    delete current[lastSegment];
-  }
+  throw new VscError('RUNJS_SOURCE_LOCATOR_INVALID', `RunJS source path segment "${segment}" is unsafe`, {
+    details: {
+      segment,
+    },
+  });
 }
 
 function cloneJsonRecord(value: unknown): JsonRecord {

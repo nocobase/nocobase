@@ -11,13 +11,12 @@ import type { Context } from '@nocobase/actions';
 import type { HandlerType, ResourceOptions } from '@nocobase/resourcer';
 
 import { LightExtensionError, isLightExtensionError } from '../../shared/errors';
-import type { LightExtensionScanResult } from '../../shared/types';
-import { LightExtensionEntryScanner } from '../services/LightExtensionEntryScanner';
+import { LightExtensionEntryService } from '../services/LightExtensionEntryService';
 import type { LightExtensionCanFunction } from '../services/LightExtensionPermissionService';
 import type { LightExtensionServiceContext } from '../services/LightExtensionRepoService';
 import { RuntimeResolveService } from '../services/RuntimeResolveService';
 
-export const lightExtensionEntryActionNames = ['scan', 'list', 'get', 'listSelectable'] as const;
+export const lightExtensionEntryActionNames = ['list', 'get', 'listSelectable'] as const;
 
 type LightExtensionEntryActionName = (typeof lightExtensionEntryActionNames)[number];
 type ResourceActionInput = Record<string, unknown>;
@@ -47,21 +46,13 @@ type ResourceActionRunner = (
 ) => Promise<unknown>;
 
 interface LightExtensionEntryActionServices {
-  scanner: LightExtensionEntryScanner;
+  entryService: LightExtensionEntryService;
   runtimeResolveService: RuntimeResolveService;
 }
 
 const resourceActionRunners: Record<LightExtensionEntryActionName, ResourceActionRunner> = {
-  scan: (services, input, currentUser) =>
-    services.scanner.scanRepo(
-      {
-        repoId: requireRepoId(input),
-        ref: optionalString(input, 'ref'),
-      },
-      currentUser,
-    ),
-  list: (services, input, currentUser) => services.scanner.listEntries(requireRepoId(input), currentUser),
-  get: (services, input, currentUser) => services.scanner.getEntry(requireEntryId(input), currentUser),
+  list: (services, input, currentUser) => services.entryService.listEntries(requireRepoId(input), currentUser),
+  get: (services, input, currentUser) => services.entryService.getEntry(requireEntryId(input), currentUser),
   listSelectable: (services, input, currentUser) =>
     services.runtimeResolveService.listSelectableEntries(
       {
@@ -73,11 +64,11 @@ const resourceActionRunners: Record<LightExtensionEntryActionName, ResourceActio
 };
 
 export function createLightExtensionEntriesResource(
-  scanner: LightExtensionEntryScanner,
+  entryService: LightExtensionEntryService,
   runtimeResolveService: RuntimeResolveService,
 ): ResourceOptions {
   const services = {
-    scanner,
+    entryService,
     runtimeResolveService,
   };
 
@@ -103,20 +94,6 @@ function createLightExtensionEntryAction(
 
     try {
       const result = await run(services, input, getServiceContext(resourceCtx));
-      if (isRejectedScanResult(result)) {
-        throw new LightExtensionError(
-          'LIGHT_EXTENSION_VALIDATION_FAILED',
-          'Light extension scan completed with validation errors',
-          {
-            details: {
-              repoId: result.repo.id,
-              commitId: result.commitId,
-              diagnostics: result.diagnostics,
-              entries: result.entries.map((item) => item.entry),
-            },
-          },
-        );
-      }
       resourceCtx.body = result;
       await next();
     } catch (error) {
@@ -130,15 +107,6 @@ function createLightExtensionEntryAction(
       resourceCtx.body = error.toResponseBody();
     }
   };
-}
-
-function isRejectedScanResult(value: unknown): value is LightExtensionScanResult {
-  return (
-    Boolean(value) &&
-    typeof value === 'object' &&
-    (value as { accepted?: unknown }).accepted === false &&
-    Array.isArray((value as { diagnostics?: unknown }).diagnostics)
-  );
 }
 
 function getActionInput(ctx: LightExtensionResourceContext): ResourceActionInput {

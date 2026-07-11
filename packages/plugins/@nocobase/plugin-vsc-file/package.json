@@ -7,9 +7,12 @@
     "typescript": "^5.x"
   },
   "peerDependencies": {
+    "@nocobase/actions": "2.x",
     "@nocobase/client": "2.x",
     "@nocobase/client-v2": "2.x",
     "@nocobase/database": "2.x",
+    "@nocobase/flow-engine": "2.x",
+    "@nocobase/resourcer": "2.x",
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x"
   }

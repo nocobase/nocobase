@@ -8,21 +8,18 @@
  */
 
 import type {
-  LIGHT_EXTENSION_ENABLED_KINDS,
   LIGHT_EXTENSION_ENTRY_HEALTH_STATUSES,
   LIGHT_EXTENSION_REPO_HEALTH_STATUSES,
   LIGHT_EXTENSION_REPO_LIFECYCLE_STATUSES,
   LIGHT_EXTENSION_REFERENCE_RESOLVED_STATUSES,
-  LIGHT_EXTENSION_SUPPORTED_KINDS,
+  LightExtensionKind,
 } from '../constants';
+
+export type { LightExtensionKind } from '../constants';
 
 export type LightExtensionRepoLifecycleStatus = (typeof LIGHT_EXTENSION_REPO_LIFECYCLE_STATUSES)[number];
 
 export type LightExtensionRepoHealthStatus = (typeof LIGHT_EXTENSION_REPO_HEALTH_STATUSES)[number];
-
-export type LightExtensionKind = (typeof LIGHT_EXTENSION_SUPPORTED_KINDS)[number];
-
-export type LightExtensionEnabledKind = (typeof LIGHT_EXTENSION_ENABLED_KINDS)[number];
 
 export type LightExtensionEntryHealthStatus = (typeof LIGHT_EXTENSION_ENTRY_HEALTH_STATUSES)[number];
 
@@ -38,14 +35,12 @@ export interface LightExtensionRepoRecord {
   normalizedName: string;
   title?: string | null;
   description?: string | null;
-  version: number;
   lifecycleStatus: LightExtensionRepoLifecycleStatus;
   healthStatus: LightExtensionRepoHealthStatus;
   headCommitId: string | null;
-  lastScannedCommitId?: string | null;
-  lastError?: string | null;
-  lastScannedAt?: string | null;
   lastCompiledAt?: string | null;
+  entryCount?: number;
+  entryKinds?: Partial<Record<LightExtensionKind, number>>;
   createdAt?: string | null;
   updatedAt?: string | null;
 }
@@ -54,6 +49,7 @@ export interface LightExtensionCreateRepoInput {
   name: string;
   title?: string | null;
   description?: string | null;
+  zipBase64?: string;
   initialFiles?: LightExtensionTreeEntryInput[];
   message?: string;
 }
@@ -61,8 +57,6 @@ export interface LightExtensionCreateRepoInput {
 export interface LightExtensionChangeLifecycleInput {
   repoId: string;
   lifecycleStatus: LightExtensionRepoLifecycleStatus;
-  expectedLifecycleStatus?: LightExtensionRepoLifecycleStatus;
-  expectedVersion?: number;
 }
 
 export interface LightExtensionDeleteRepoInput {
@@ -126,7 +120,6 @@ export interface LightExtensionFileResult extends LightExtensionPulledFile {
 
 export interface LightExtensionPushInput {
   repoId: string;
-  baseCommitId: string | null;
   message: string;
   files: LightExtensionFileChange[];
   allowEmptyCommit?: boolean;
@@ -188,16 +181,11 @@ export interface LightExtensionEntryRecord {
   compiledAt: string | null;
   healthStatus: LightExtensionEntryHealthStatus;
   diagnostics: LightExtensionDiagnostic[];
-  validatorVersion?: string | null;
-  lastScannedCommitId?: string | null;
-  lastScannedAt?: string | null;
   createdAt?: string | null;
   updatedAt?: string | null;
 }
 
-export interface LightExtensionSaveSourceInput extends Omit<LightExtensionPushInput, 'baseCommitId'> {
-  baseCommitId?: string | null;
-}
+export type LightExtensionSaveSourceInput = Omit<LightExtensionPushInput, 'allowEmptyCommit'>;
 
 export type LightExtensionCompileEntryStatus = 'success' | 'failed' | 'skipped';
 
@@ -216,9 +204,8 @@ export interface LightExtensionSaveSourceResult {
   repo: LightExtensionRepoRecord;
   commit: LightExtensionCommitRecord;
   tree: LightExtensionStoredTree;
-  scan: LightExtensionScanResult;
   compile: {
-    status: 'success' | 'partial_success' | 'failed' | 'skipped';
+    status: 'success' | 'skipped';
     entries: LightExtensionSaveSourceCompileEntryResult[];
   };
   diagnostics: LightExtensionDiagnostic[];
@@ -254,23 +241,8 @@ export interface LightExtensionCapabilities {
     allowDeleteExistingInvalidPaths: boolean;
   };
   supportedKinds: LightExtensionKind[];
-  enabledKinds: LightExtensionEnabledKind[];
   validatorVersion: string;
   sdkTemplateVersion: string;
-}
-
-export interface LightExtensionScanEntryResult {
-  entry: LightExtensionEntryRecord;
-  created: boolean;
-}
-
-export interface LightExtensionScanResult {
-  repo: LightExtensionRepoRecord;
-  commitId: string | null;
-  accepted: boolean;
-  diagnostics: LightExtensionDiagnostic[];
-  entries: LightExtensionScanEntryResult[];
-  capabilities: LightExtensionCapabilities;
 }
 
 export interface LightExtensionCompilePreviewArtifactSummary {
@@ -358,8 +330,7 @@ export type LightExtensionReferenceOwnerKind =
   | 'flowModel.fieldSettings'
   | 'flowModel.actionSettings'
   | 'flowModel.itemSettings'
-  | 'flowModel.runjsHost'
-  | 'flowModel.eventSettings';
+  | 'flowModel.runjsHost';
 
 export interface LightExtensionFlowModelOwnerLocator {
   kind: 'flowModel.step';
@@ -368,7 +339,7 @@ export interface LightExtensionFlowModelOwnerLocator {
   stepPath: ['stepParams', 'jsSettings'];
 }
 
-export interface LightExtensionPlaceholderOwnerLocator {
+export interface LightExtensionModelOwnerLocator {
   kind: Exclude<LightExtensionReferenceOwnerKind, 'flowModel.step'>;
   modelUid?: string;
   use?: string;
@@ -377,22 +348,14 @@ export interface LightExtensionPlaceholderOwnerLocator {
   descriptor?: string;
 }
 
-export type LightExtensionReferenceOwnerLocator =
-  | LightExtensionFlowModelOwnerLocator
-  | LightExtensionPlaceholderOwnerLocator;
-
-export type LightExtensionReferenceOwnerAdapterStatus = 'active' | 'placeholder';
+export type LightExtensionReferenceOwnerLocator = LightExtensionFlowModelOwnerLocator | LightExtensionModelOwnerLocator;
 
 export interface LightExtensionReferenceOwnerAdapterContract {
   kind: LightExtensionKind;
   ownerKind: LightExtensionReferenceOwnerKind;
   title: string;
-  status: LightExtensionReferenceOwnerAdapterStatus;
   locatorContract: string;
   modelUse?: string;
-  implementationTask?: string;
-  message: string;
-  supportsRebuild: boolean;
 }
 
 export interface LightExtensionReferenceRecord {
@@ -443,18 +406,4 @@ export interface LightExtensionReferenceRebuildResult {
   ownerMissing: number;
   statusCounts: Partial<Record<LightExtensionReferenceResolvedStatus, number>>;
   items?: LightExtensionReferenceRebuildItem[];
-}
-
-export type LightExtensionReferenceContractDiagnosticsInput = LightExtensionReferenceRebuildInput;
-
-export interface LightExtensionReferenceContractDiagnosticsResult {
-  ownerAdapters: LightExtensionReferenceOwnerAdapterContract[];
-  rebuild?: LightExtensionReferenceRebuildResult;
-}
-
-export interface LightExtensionSettingsValidationIssue {
-  path: string;
-  code: string;
-  message: string;
-  details?: Record<string, unknown>;
 }

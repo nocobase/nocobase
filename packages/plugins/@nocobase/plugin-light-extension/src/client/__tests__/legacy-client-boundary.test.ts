@@ -17,20 +17,12 @@ import {
   JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
   JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
   JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+  RunJSEditorRegistry,
   RunJSSourceResolverRegistry,
-  registerBlockGridSelectSceneAddBlockProvider,
 } from '@nocobase/client-v2';
 
 import LightExtensionListPage from '../../client-v2/pages/LightExtensionListPage';
 import PluginLightExtensionClient from '..';
-
-vi.mock('@nocobase/client-v2', async () => {
-  const actual = await vi.importActual<typeof import('@nocobase/client-v2')>('@nocobase/client-v2');
-  return {
-    ...actual,
-    registerBlockGridSelectSceneAddBlockProvider: vi.fn(() => vi.fn()),
-  };
-});
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -40,12 +32,13 @@ vi.mock('react-i18next', () => ({
 
 describe('plugin-light-extension legacy client boundary', () => {
   afterEach(() => {
+    RunJSEditorRegistry.clear();
     RunJSSourceResolverRegistry.clear();
     vi.restoreAllMocks();
     vi.clearAllMocks();
   });
 
-  it('registers a thin settings bridge, runtime resolver, source editor, and add-block provider without importing the v1 client runtime', async () => {
+  it('registers a thin settings bridge, runtime resolver, and source editor without importing the v1 client runtime', async () => {
     const add = vi.fn();
     const registerComponents = vi.fn();
     const apiClient = {
@@ -82,6 +75,7 @@ describe('plugin-light-extension legacy client boundary', () => {
       }),
     );
     expect(RunJSSourceResolverRegistry.getResolver('light-extension')).toBeTruthy();
+    expect(RunJSEditorRegistry.getProviders().map((provider) => provider.key)).toContain('light-extension-runjs-value');
     expect(registerComponents).toHaveBeenCalledWith(
       expect.objectContaining({
         [JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: expect.any(Function),
@@ -93,14 +87,9 @@ describe('plugin-light-extension legacy client boundary', () => {
         SettingsAutoForm: expect.any(Function),
       }),
     );
-    expect(registerBlockGridSelectSceneAddBlockProvider).toHaveBeenCalledWith(
-      'light-extension-js-blocks',
-      expect.any(Function),
-    );
-
     await expect(plugin.beforeLoad()).resolves.toBeUndefined();
     expect(RunJSSourceResolverRegistry.getResolver('light-extension')).toBeNull();
-    expect(vi.mocked(registerBlockGridSelectSceneAddBlockProvider).mock.results[0].value).toHaveBeenCalledTimes(1);
+    expect(RunJSEditorRegistry.getProviders()).toHaveLength(0);
 
     const source = fs.readFileSync(path.resolve(__dirname, '../index.ts'), 'utf8');
 

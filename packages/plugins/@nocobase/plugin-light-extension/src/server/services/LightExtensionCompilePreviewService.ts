@@ -21,7 +21,7 @@ import type {
   LightExtensionPulledFile,
 } from '../../shared/types';
 import { LightExtensionAuditService } from './LightExtensionAuditService';
-import { entryFromModel } from './LightExtensionEntryScanner';
+import { entryFromModel } from './LightExtensionEntryService';
 import { LightExtensionFileService } from './LightExtensionFileService';
 import { LightExtensionPermissionService } from './LightExtensionPermissionService';
 import type { LightExtensionServiceContext } from './LightExtensionRepoService';

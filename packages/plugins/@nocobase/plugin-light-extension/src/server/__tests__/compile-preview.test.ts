@@ -215,7 +215,7 @@ describe('plugin-light-extension compile preview', () => {
     );
   });
 
-  it('previews JS Item entries after scan enables the js-item kind', async () => {
+  it('previews JS Item entries after entry preparation recognizes the js-item kind', async () => {
     const repo = createRepo();
     const { db } = createDbStub([
       {
@@ -458,7 +458,6 @@ function createRepo(): LightExtensionRepoRecord {
     normalizedName: 'sales',
     title: 'Sales',
     description: null,
-    version: 1,
     lifecycleStatus: 'enabled',
     healthStatus: 'ready',
     headCommitId: 'vsc_commit_1',
@@ -503,9 +502,6 @@ function createEntryRecord(input: {
     compiledAt: input.compiledCommitId ? new Date('2026-07-06T00:00:00.000Z') : null,
     healthStatus: 'ready',
     diagnostics: [],
-    validatorVersion: 'test',
-    lastScannedCommitId: 'vsc_commit_1',
-    lastScannedAt: null,
     createdAt: null,
     updatedAt: null,
   };

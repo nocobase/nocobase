@@ -16,15 +16,13 @@ import {
   RunJSSourceResolverRegistry,
   type RunJSSourceResolverResult,
 } from '../index';
-import { evaluateResolvedRunJSValue } from '../runJSRuntime';
+import { evaluateResolvedRunJSValue, getRunJSModelUse } from '../runJSRuntime';
 
 const LIGHT_EXTENSION_SOURCE_BINDING = {
   type: 'light-extension-entry',
   repoId: 'repo_sales',
   entryId: 'entry_sales_kpi',
   kind: 'js-block',
-  publicationId: 'publication_sales_kpi_v1',
-  versionPolicy: 'pinned',
 };
 
 describe('resolveRuntimeRunJS', () => {
@@ -86,6 +84,14 @@ return {
       navigatorType: 'object',
       sharesDocument: true,
     });
+  });
+
+  it('resolves the model use consistently across runtime model shapes', () => {
+    expect(getRunJSModelUse({ use: 'DirectModel' })).toBe('DirectModel');
+    expect(getRunJSModelUse({ _options: { use: 'PrivateOptionsModel' } })).toBe('PrivateOptionsModel');
+    expect(getRunJSModelUse({ options: { use: 'OptionsModel' } })).toBe('OptionsModel');
+    expect(getRunJSModelUse({ createModelOptions: { use: 'CreateOptionsModel' } })).toBe('CreateOptionsModel');
+    expect(getRunJSModelUse(new (class RuntimeModel {})())).toBe('RuntimeModel');
   });
 
   it('resolves external source bindings through the registry', async () => {

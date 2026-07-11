@@ -8,9 +8,8 @@
  */
 
 import React from 'react';
-import { RunJSEditorField } from '@nocobase/client-v2';
+import { RunJSEditorField, type RunJSSourceLocator } from '@nocobase/client-v2';
 import type { RunJSValue } from '@nocobase/flow-engine';
-import type { RunJSSourceLocator } from '@nocobase/plugin-vsc-file';
 import { CodeEditor } from '../components/CodeEditor';
 
 const EventsEditor: React.FC<{

@@ -23,6 +23,9 @@ import {
   type RunJSRuntimeArtifact,
 } from '../../../shared/runjs-source-types';
 import { normalizeText } from '../../../shared/text';
+import { inspectRunJSSourceWorkspace } from './source-inspection';
+
+export * from './source-inspection';
 
 export type RunJSCompileFailureCode = Extract<
   VscErrorCode,
@@ -96,6 +99,16 @@ interface RunJSTransformedLineMapping {
 interface RunJSTransformedCode {
   code: string;
   mappings: RunJSTransformedLineMapping[];
+}
+
+interface RunJSEmittedLineMapping {
+  generatedLine: number;
+  transformedLine: number;
+}
+
+interface RunJSTranspiledCode {
+  code: string;
+  mappings: RunJSEmittedLineMapping[];
 }
 
 interface RunJSSourceMapPayload {
@@ -226,6 +239,17 @@ export function compileRunJSSourceWorkspace(
 
   visit(entryPath);
   validateImportBindings(modules, diagnostics);
+  if (!hasErrorDiagnostic(diagnostics)) {
+    diagnostics.push(
+      ...inspectRunJSSourceWorkspace({
+        files: input.files,
+        entry: entryPath,
+        surfaceStyle: input.surfaceStyle,
+        locator: input.locator,
+        legacy: input.legacy,
+      }),
+    );
+  }
 
   const filesHash = buildRunJSFilesHash(input.files);
   let code = '';
@@ -747,17 +771,24 @@ function buildRuntimeCode(
     }
     const transformed = transformModuleSource(moduleInfo, modules, path === entryPath);
     const transpiled = transpileRuntimeCode(transformed.code, moduleInfo.file.path, diagnostics);
-    const chunk = transpiled.trim();
+    const chunk = transpiled.code.trim();
     if (!chunk) {
       continue;
     }
     if (chunks.length > 0) {
       nextChunkStartLine += 1;
     }
-    for (const mapping of transformed.mappings) {
+    const transformedMappings = new Map(
+      transformed.mappings.map((mapping) => [mapping.generatedLine, mapping] as const),
+    );
+    for (const emittedMapping of transpiled.mappings) {
+      const mapping = transformedMappings.get(emittedMapping.transformedLine);
+      if (!mapping) {
+        continue;
+      }
       mappings.push({
         ...mapping,
-        generatedLine: nextChunkStartLine + mapping.generatedLine - 1,
+        generatedLine: nextChunkStartLine + emittedMapping.generatedLine - 1,
       });
     }
     chunks.push(chunk);
@@ -1013,11 +1044,16 @@ function createExportAssignments(moduleInfo: RunJSModuleInfo): string {
   return assignments.join('\n');
 }
 
-function transpileRuntimeCode(source: string, path: string, diagnostics: RunJSCompileDiagnostic[]): string {
+function transpileRuntimeCode(
+  source: string,
+  path: string,
+  diagnostics: RunJSCompileDiagnostic[],
+): RunJSTranspiledCode {
   const result = ts.transpileModule(source, {
     compilerOptions: {
       jsx: ts.JsxEmit.Preserve,
       module: ts.ModuleKind.None,
+      sourceMap: true,
       target: ts.ScriptTarget.ES2020,
     },
     fileName: getTranspileFileName(path),
@@ -1030,7 +1066,116 @@ function transpileRuntimeCode(source: string, path: string, diagnostics: RunJSCo
       .map((diagnostic) => tsDiagnosticToRunJSDiagnostic(diagnostic, path)),
   );
 
-  return result.outputText;
+  return {
+    code: removeTranspileSourceMapComment(result.outputText),
+    mappings: parseTranspiledLineMappings(result.sourceMapText),
+  };
+}
+
+function removeTranspileSourceMapComment(code: string): string {
+  return code.replace(/\n?\/\/# sourceMappingURL=[^\n]*\s*$/, '');
+}
+
+function parseTranspiledLineMappings(sourceMapText: string | undefined): RunJSEmittedLineMapping[] {
+  if (!sourceMapText) {
+    return [];
+  }
+
+  let sourceMap: unknown;
+  try {
+    sourceMap = JSON.parse(sourceMapText);
+  } catch {
+    return [];
+  }
+  if (!sourceMap || typeof sourceMap !== 'object' || Array.isArray(sourceMap)) {
+    return [];
+  }
+
+  const mappings = (sourceMap as Record<string, unknown>).mappings;
+  if (typeof mappings !== 'string') {
+    return [];
+  }
+
+  const result: RunJSEmittedLineMapping[] = [];
+  let previousSource = 0;
+  let previousOriginalLine = 0;
+
+  for (const [generatedLineIndex, line] of mappings.split(';').entries()) {
+    let selectedTransformedLine: number | undefined;
+
+    for (const encodedSegment of line.split(',')) {
+      if (!encodedSegment) {
+        continue;
+      }
+      const segment = decodeSourceMapVlqSegment(encodedSegment);
+      if (!segment || segment.length < 4) {
+        continue;
+      }
+
+      previousSource += segment[1];
+      previousOriginalLine += segment[2];
+
+      if (selectedTransformedLine === undefined && previousSource === 0) {
+        selectedTransformedLine = previousOriginalLine + 1;
+      }
+    }
+
+    if (selectedTransformedLine !== undefined) {
+      result.push({
+        generatedLine: generatedLineIndex + 1,
+        transformedLine: selectedTransformedLine,
+      });
+    }
+  }
+
+  return result;
+}
+
+function decodeSourceMapVlqSegment(encoded: string): number[] | null {
+  const values: number[] = [];
+  let value = 0;
+  let shift = 0;
+
+  for (const character of encoded) {
+    const digit = sourceMapBase64Value(character);
+    if (digit < 0) {
+      return null;
+    }
+
+    value += (digit & 31) << shift;
+    if (digit & 32) {
+      shift += 5;
+      continue;
+    }
+
+    const negative = (value & 1) === 1;
+    const decoded = value >> 1;
+    values.push(negative ? -decoded : decoded);
+    value = 0;
+    shift = 0;
+  }
+
+  return shift === 0 ? values : null;
+}
+
+function sourceMapBase64Value(character: string): number {
+  const code = character.charCodeAt(0);
+  if (code >= 65 && code <= 90) {
+    return code - 65;
+  }
+  if (code >= 97 && code <= 122) {
+    return code - 97 + 26;
+  }
+  if (code >= 48 && code <= 57) {
+    return code - 48 + 52;
+  }
+  if (character === '+') {
+    return 62;
+  }
+  if (character === '/') {
+    return 63;
+  }
+  return -1;
 }
 
 function resolveRelativeRunJSImport(

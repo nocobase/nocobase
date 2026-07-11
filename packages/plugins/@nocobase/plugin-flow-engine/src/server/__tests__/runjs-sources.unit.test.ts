@@ -20,7 +20,7 @@ type Registrar = {
 };
 
 describe('flow-engine RunJS source registration', () => {
-  it('skips Flow Surface authoring validation for FlowModel step RunJS sources', () => {
+  it('registers adapters without attaching Flow Surface validation to source saves', () => {
     const registrar = createRegistrar();
     registerFlowModelRunJSSourceAdapters({
       db: {} as Database,
@@ -31,37 +31,27 @@ describe('flow-engine RunJS source registration', () => {
       },
     });
 
-    expect(registrar.inspectors).toHaveLength(1);
-
-    const diagnostics = registrar.inspectors[0]({
-      code: "ctx.request({ url: 'users:list' });\nctx.render('Done');",
-      path: 'src/main.tsx',
-      runtimeVersion: 'v2',
-      surfaceStyle: 'render',
-      locator: {
-        kind: 'flowModel.step',
-        modelUid: 'js-step-user-runjs-model',
-        flowKey: 'jsSettings',
-        stepKey: 'runJs',
-        paramPath: ['code'],
-      },
-      legacy: {
-        version: 'v2',
-        surfaceStyle: 'render',
-        language: 'typescript',
-        metadata: {
-          modelUse: 'JSBlockModel',
-        },
-      },
-    });
-
-    expect(diagnostics).toEqual([]);
+    expect(registrar.adapters.length).toBeGreaterThan(0);
+    expect(registrar.inspectors).toEqual([]);
   });
 
-  it('keeps Flow Engine authoring validation for chart RunJS sources', () => {
+  it('rejects a FlowModel step locator when the persisted step is missing', async () => {
     const registrar = createRegistrar();
+    const db = {
+      getCollection: () => ({
+        repository: {
+          findModelById: async () => ({
+            uid: 'js-step-model',
+            use: 'JSBlockModel',
+            stepParams: {
+              jsSettings: {},
+            },
+          }),
+        },
+      }),
+    } as unknown as Database;
     registerFlowModelRunJSSourceAdapters({
-      db: {} as Database,
+      db,
       app: {
         pm: {
           get: () => registrar,
@@ -69,29 +59,27 @@ describe('flow-engine RunJS source registration', () => {
       },
     });
 
-    const diagnostics = registrar.inspectors[0]({
-      code: 'ctx.render(null);',
-      path: 'src/main.ts',
-      runtimeVersion: 'v2',
-      surfaceStyle: 'value',
-      locator: {
-        kind: 'chart.option',
-        modelUid: 'chart-model',
-      },
-      legacy: {
-        version: 'v2',
-        surfaceStyle: 'value',
-        language: 'typescript',
+    const stepAdapter = registrar.adapters.find((adapter) => adapter.kind === 'flowModel.step');
+    expect(stepAdapter).toBeDefined();
+
+    await expect(
+      stepAdapter?.readLegacy({
+        locator: {
+          kind: 'flowModel.step',
+          modelUid: 'js-step-model',
+          flowKey: 'jsSettings',
+          stepKey: 'runJs',
+          paramPath: ['code'],
+        },
+        ctx: {},
+      }),
+    ).rejects.toMatchObject({
+      code: 'RUNJS_SOURCE_NOT_FOUND',
+      status: 404,
+      details: {
+        path: 'stepParams.jsSettings.runJs',
       },
     });
-
-    expect(diagnostics).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          ruleId: 'runjs-value-render-forbidden',
-        }),
-      ]),
-    );
   });
 });
 

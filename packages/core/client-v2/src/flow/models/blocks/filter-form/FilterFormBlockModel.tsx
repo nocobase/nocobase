@@ -43,9 +43,8 @@ import { normalizeFilterValueByOperator } from './valueNormalization';
 import {
   buildRunJSOwnerLocator,
   evaluateResolvedRunJSValue,
-  reportRunJSRuntimeErrorBestEffort,
+  getRunJSModelUse,
   resolveRuntimeRunJS,
-  type ResolvedRuntimeRunJS,
 } from '../../../components/runjs-source';
 
 const RELATION_FIELD_TYPES = ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany', 'belongsToArray'];
@@ -183,26 +182,6 @@ function setMetaByPath(target: Record<string, PropertyMeta>, path: string, meta:
     }
     cursor = cursor[segment].properties as Record<string, PropertyMeta>;
   });
-}
-
-function getFilterFormModelUse(model: unknown): string | undefined {
-  if (!model || typeof model !== 'object') {
-    return undefined;
-  }
-  const record = model as {
-    use?: unknown;
-    _options?: { use?: unknown };
-    options?: { use?: unknown };
-    createModelOptions?: { use?: unknown };
-    constructor?: { name?: unknown };
-  };
-  const use =
-    record.use ||
-    record._options?.use ||
-    record.options?.use ||
-    record.createModelOptions?.use ||
-    record.constructor?.name;
-  return typeof use === 'string' && use.trim() ? use.trim() : undefined;
 }
 
 function getFilterFormValues(form: any, items: any[]) {
@@ -515,17 +494,16 @@ export class FilterFormBlockModel extends FilterBlockModel<{
     const rules = (params?.value || []) as any[];
     if (!Array.isArray(rules) || rules.length === 0) return appliedValues;
 
-    const resolveValue = async (raw: any, index: number) => {
+    const resolveValue = async (raw: unknown, index: number) => {
       // RunJS support
       if (isRunJSValue(raw)) {
-        let resolved: ResolvedRuntimeRunJS | undefined;
         const ownerLocator = buildRunJSOwnerLocator({
           modelUid: this.uid,
-          use: getFilterFormModelUse(this),
+          use: getRunJSModelUse(this),
           hostPath: ['stepParams', 'formFilterBlockModelSettings', 'defaultValues', 'value', index, 'value'],
         });
         try {
-          resolved = await resolveRuntimeRunJS({
+          const resolved = await resolveRuntimeRunJS({
             runJs: raw,
             context: {
               ownerKind: 'flowModel.runjsHost',
@@ -536,13 +514,7 @@ export class FilterFormBlockModel extends FilterBlockModel<{
             ctx: this.context,
             resolved,
           });
-        } catch (error) {
-          await reportRunJSRuntimeErrorBestEffort({
-            ctx: this.context,
-            error,
-            resolved,
-            ownerLocator,
-          });
+        } catch {
           return undefined;
         }
       }

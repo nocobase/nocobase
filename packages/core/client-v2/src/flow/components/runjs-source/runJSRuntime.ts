@@ -90,45 +90,6 @@ function hasRunJSRuntimeExecutor(value: unknown): value is RunJSRuntimeExecutor 
   return Boolean(value) && typeof value === 'object' && typeof (value as RunJSRuntimeExecutor).runjs === 'function';
 }
 
-export async function reportRunJSRuntimeErrorBestEffort(input: {
-  ctx: unknown;
-  error: unknown;
-  resolved?: ResolvedRuntimeRunJS;
-  ownerLocator?: RunJSOwnerLocator;
-}): Promise<void> {
-  const reporter = getRuntimeErrorReporter(input.ctx);
-  if (!reporter) {
-    return;
-  }
-
-  const ownerLocator = input.ownerLocator || buildRunJSOwnerLocatorFromRuntimeContext(input.ctx);
-  const ownerLocatorHash = await hashReferenceOwnerLocatorForRuntime(ownerLocator);
-  const sourceBinding = input.resolved?.sourceBinding;
-  const resolvedPublicationId = getNestedStringProperty(input.resolved?.context, ['lightExtension', 'publicationId']);
-
-  try {
-    await reporter({
-      error: input.error,
-      sourceMode: input.resolved?.sourceMode,
-      sourceBinding,
-      sourceMap: input.resolved?.sourceMap,
-      settings: input.resolved?.settings,
-      repoId: getStringProperty(sourceBinding, 'repoId'),
-      entryId: getStringProperty(sourceBinding, 'entryId'),
-      publicationId: resolvedPublicationId || getStringProperty(sourceBinding, 'publicationId'),
-      ownerKind: RUNJS_OWNER_KIND,
-      ownerLocator,
-      ownerLocatorHash,
-      path:
-        getStringProperty(input.resolved?.sourceMap, 'entryPath') ||
-        getNestedStringProperty(input.resolved?.context, ['lightExtension', 'entryPath']) ||
-        getStringProperty(sourceBinding, 'entryPath'),
-    });
-  } catch {
-    // RunJS execution must not fail because runtime error reporting is unavailable.
-  }
-}
-
 export function buildRunJSOwnerLocator(input: {
   modelUid?: string;
   use?: string;
@@ -174,43 +135,7 @@ export function getRunJSHostPathFromSourceLocator(locator: RunJSSourceLocator | 
   return [locator.kind];
 }
 
-function buildRunJSOwnerLocatorFromRuntimeContext(ctx: unknown): RunJSOwnerLocator {
-  const model = getRecordProperty(ctx, 'model');
-  return buildRunJSOwnerLocator({
-    modelUid: getStringProperty(model, 'uid'),
-    use: getModelUse(model),
-  });
-}
-
-function getRuntimeErrorReporter(ctx: unknown): ((payload: Record<string, unknown>) => unknown) | null {
-  const directReporter = getCallableProperty(ctx, 'reportRuntimeError');
-  if (directReporter) {
-    return directReporter;
-  }
-  const model = getRecordProperty(ctx, 'model');
-  const modelContext = getRecordProperty(model, 'context');
-  return getCallableProperty(modelContext, 'reportRuntimeError') || null;
-}
-
-async function hashReferenceOwnerLocatorForRuntime(ownerLocator: RunJSOwnerLocator): Promise<string> {
-  const serialized = stableSerialize({
-    kind: ownerLocator.kind,
-    ...(ownerLocator.modelUid ? { modelUid: ownerLocator.modelUid } : {}),
-    ...(ownerLocator.use ? { use: ownerLocator.use } : {}),
-    ...(ownerLocator.hostPath?.length ? { hostPath: ownerLocator.hostPath } : {}),
-  });
-  const subtle = globalThis.crypto?.subtle;
-  if (!subtle || typeof TextEncoder === 'undefined') {
-    return `local:${shortHash(serialized)}`;
-  }
-  const bytes = new TextEncoder().encode(serialized);
-  const digest = await subtle.digest('SHA-256', bytes);
-  return `sha256:${Array.from(new Uint8Array(digest))
-    .map((byte) => byte.toString(16).padStart(2, '0'))
-    .join('')}`;
-}
-
-function getModelUse(model: unknown): string | undefined {
+export function getRunJSModelUse(model: unknown): string | undefined {
   return (
     getStringProperty(model, 'use') ||
     getStringProperty(getRecordProperty(model, '_options'), 'use') ||
@@ -227,17 +152,6 @@ function getStringProperty(value: unknown, key: string): string | undefined {
   return toNonEmptyString(value[key]);
 }
 
-function getNestedStringProperty(value: unknown, path: string[]): string | undefined {
-  let current = value;
-  for (const key of path) {
-    if (!isRecord(current)) {
-      return undefined;
-    }
-    current = current[key];
-  }
-  return toNonEmptyString(current);
-}
-
 function getRecordProperty(value: unknown, key: string): Record<string, unknown> | undefined {
   if (!isRecord(value)) {
     return undefined;
@@ -246,41 +160,10 @@ function getRecordProperty(value: unknown, key: string): Record<string, unknown>
   return isRecord(property) ? property : undefined;
 }
 
-function getCallableProperty(value: unknown, key: string): ((...args: unknown[]) => unknown) | undefined {
-  if (!isRecord(value)) {
-    return undefined;
-  }
-  const property = value[key];
-  return typeof property === 'function' ? (property as (...args: unknown[]) => unknown) : undefined;
-}
-
 function toNonEmptyString(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim() ? value.trim() : undefined;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
-
-function shortHash(value: string): string {
-  let hash = 0;
-  for (let index = 0; index < value.length; index += 1) {
-    hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
-  }
-  return hash.toString(36);
-}
-
-function stableSerialize(value: unknown): string {
-  if (Array.isArray(value)) {
-    return `[${value.map((item) => stableSerialize(item)).join(',')}]`;
-  }
-  if (isRecord(value)) {
-    return `{${Object.keys(value)
-      .sort()
-      .map((key) => `${JSON.stringify(key)}:${stableSerialize(value[key])}`)
-      .join(',')}}`;
-  }
-
-  const serialized = JSON.stringify(value);
-  return typeof serialized === 'undefined' ? 'undefined' : serialized;
 }

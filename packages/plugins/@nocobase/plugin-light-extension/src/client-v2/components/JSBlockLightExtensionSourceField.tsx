@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { ApplicationContext } from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
 import type { Field } from '@formily/core';
 import { useField, useForm } from '@formily/react';
@@ -35,12 +36,16 @@ const LIGHT_EXTENSION_SOURCE_MODE = 'light-extension';
 const INLINE_SOURCE_SELECT_VALUE = INLINE_SOURCE_MODE;
 
 type FlowContextWithApi = {
-  api: ApiClientLike;
+  api?: ApiClientLike;
   view?: {
     close?: () => void;
     setFooter?: (footer: React.ReactNode) => void;
     submit?: () => void | Promise<void>;
   };
+};
+
+type ApplicationWithApi = {
+  apiClient?: ApiClientLike;
 };
 
 type JSBlockRunJSFormValues = {
@@ -80,10 +85,20 @@ function isLightExtensionBinding(
     typeof value.entryId === 'string' &&
     value.entryId.trim().length > 0 &&
     value.kind === expectedKind &&
-    !('publicationId' in value) &&
-    !('versionPolicy' in value)
+    Object.keys(value).every((key) => LIGHT_EXTENSION_SOURCE_BINDING_KEYS.has(key))
   );
 }
+
+const LIGHT_EXTENSION_SOURCE_BINDING_KEYS = new Set([
+  'type',
+  'repoId',
+  'repoTitle',
+  'entryId',
+  'entryTitle',
+  'entryName',
+  'entryPath',
+  'kind',
+]);
 
 function setFieldErrors(field: Field, errors: string[]) {
   const target = field as Field & {
@@ -136,7 +151,9 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
   const { t } = useTranslation(NAMESPACE);
   const form = useForm();
   const field = useField<Field>();
-  const ctx = useFlowContext<FlowContextWithApi>();
+  const ctx = useFlowContext<FlowContextWithApi | null>();
+  const app = React.useContext(ApplicationContext) as ApplicationWithApi | null;
+  const api = ctx?.api || app?.apiClient;
   const [, rerender] = React.useReducer((count: number) => count + 1, 0);
   const [settingsValidation, setSettingsValidation] = React.useState<SettingsValidationResult>({
     value: {},
@@ -200,13 +217,19 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
     if (!rendersSourceModeControl && sourceMode !== LIGHT_EXTENSION_SOURCE_MODE) {
       return;
     }
+    if (!api) {
+      setSourceEntries([]);
+      setSourceEntriesLoading(false);
+      setSourceEntriesError(null);
+      return;
+    }
 
     let mounted = true;
     setSourceEntriesLoading(true);
     setSourceEntriesError(null);
     const loadSourceEntries = async () => {
       try {
-        const entries = await listSelectableLightExtensionEntries(ctx.api, { kind });
+        const entries = await listSelectableLightExtensionEntries(api, { kind });
         if (!mounted) {
           return;
         }
@@ -227,7 +250,7 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
     return () => {
       mounted = false;
     };
-  }, [ctx.api, kind, rendersSourceModeControl, sourceMode, t]);
+  }, [api, kind, rendersSourceModeControl, sourceMode, t]);
 
   React.useEffect(() => {
     if (!rendersSourceModeControl || values.sourceMode) {
@@ -335,15 +358,15 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
   };
 
   const copyLightExtensionToInline = async () => {
-    if (!sourceBinding) {
+    if (!sourceBinding || !api) {
       return;
     }
 
     setCopying(true);
     try {
-      const resolved = await resolveLightExtensionRuntimeSource(ctx.api, {
+      const resolved = await resolveLightExtensionRuntimeSource(api, {
         sourceMode: LIGHT_EXTENSION_SOURCE_MODE,
-        sourceBinding,
+        sourceBinding: { ...sourceBinding },
         settings: values.settings || {},
       });
       form.setValuesIn('code', resolved.code);

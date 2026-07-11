@@ -32,9 +32,6 @@ export default defineCollection({
     {
       fields: ['runtimeCodeHash'],
     },
-    {
-      fields: ['repoId', 'lastScannedCommitId'],
-    },
   ],
   fields: [
     {
@@ -154,18 +151,6 @@ export default defineCollection({
     {
       type: 'json',
       name: 'diagnostics',
-    },
-    {
-      type: 'string',
-      name: 'validatorVersion',
-    },
-    {
-      type: 'string',
-      name: 'lastScannedCommitId',
-    },
-    {
-      type: 'date',
-      name: 'lastScannedAt',
     },
   ],
 });

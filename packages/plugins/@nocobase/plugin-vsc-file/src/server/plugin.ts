@@ -12,14 +12,14 @@ import { resolve } from 'path';
 
 import { createRunJSSourceAuditActions, createVscFileAuditActions } from './audit';
 import type { VscPermissionHook } from './permissions';
-import { VscPermissionHookRegistry } from './permissions';
+import { createRunJSSourcePermissionHook, VscPermissionHookRegistry } from './permissions';
 import { RunJSSourceAuthoringInspectorRegistry } from './runjs-sources/RunJSSourceAuthoringInspectorRegistry';
 import { RunJSSourceAdapterRegistry, createRunJSSourcesResource, runJSSourceActionNames } from './runjs-sources';
 import { createVscFileResource, vscFileActionNames } from './resources/vscFile';
 import type { RunJSSourceAdapter, RunJSSourceAuthoringInspector } from '../shared/runjs-source-types';
 
 export class PluginVscFileServer extends Plugin {
-  private readonly permissionHooks = new VscPermissionHookRegistry();
+  private readonly permissionHooks = createPermissionHookRegistry();
 
   private readonly runJSSourceAdapters = new RunJSSourceAdapterRegistry();
 
@@ -41,8 +41,6 @@ export class PluginVscFileServer extends Plugin {
     return this.runJSSourceAuthoringInspectors.register(inspector);
   }
 
-  async afterAdd() {}
-
   async beforeLoad() {
     if (this.options.packageName || this.db.hasCollection('vscFileRepositories')) {
       return;
@@ -63,19 +61,17 @@ export class PluginVscFileServer extends Plugin {
         this.runJSSourceAuthoringInspectors,
       ),
     );
-    this.app.acl.allow('vscFile', [...vscFileActionNames], 'loggedIn');
+    this.app.acl.allow('vscFile', [...vscFileActionNames], 'allowConfigure');
     this.app.acl.allow('runJSSources', [...runJSSourceActionNames], 'loggedIn');
     this.app.auditManager.registerActions(createVscFileAuditActions(this.db));
     this.app.auditManager.registerActions(createRunJSSourceAuditActions(this.db));
   }
+}
 
-  async install() {}
-
-  async afterEnable() {}
-
-  async afterDisable() {}
-
-  async remove() {}
+function createPermissionHookRegistry(): VscPermissionHookRegistry {
+  const registry = new VscPermissionHookRegistry();
+  registry.register(createRunJSSourcePermissionHook());
+  return registry;
 }
 
 export default PluginVscFileServer;

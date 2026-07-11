@@ -19,7 +19,6 @@ import type { RunJSCompileDiagnostic } from './types';
 import type {
   RunJSChangeSummary,
   RunJSConsoleEntry,
-  RunJSSourceHistoryItem,
   RunJSSourceOpenWorkspaceResult,
   RunJSWorkspaceFile,
 } from './types';
@@ -27,7 +26,6 @@ import { RunJSSourceRequestError } from './useRunJSSourceResource';
 import {
   compareRunJSPaths,
   hasWorkspaceChanges,
-  inferLanguageFromPath,
   normalizeWorkspaceFiles,
   readRunJSManifestFolders,
   runJSManifestPath,
@@ -59,6 +57,19 @@ const runJSFileTypeIconConfigs: Record<
   ts: { background: '#e6f4ff', borderColor: '#91caff', color: '#0958d9', label: 'TS' },
   tsx: { background: '#f9f0ff', borderColor: '#d3adf7', color: '#722ed1', label: 'TSX' },
 };
+
+export function formatVscComponentError(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  if (!error || typeof error !== 'object' || Array.isArray(error)) {
+    return fallback;
+  }
+
+  const message = (error as { message?: unknown }).message;
+  return typeof message === 'string' && message ? message : fallback;
+}
 
 export function buildWorkspaceLoadResult(opened: RunJSSourceOpenWorkspaceResult): WorkspaceLoadResult {
   const nextBaseFiles = normalizeWorkspaceFiles(opened.files || []);
@@ -706,28 +717,17 @@ export function downloadRunJSWorkspaceBlob(value: Blob, fileName: string): boole
   return true;
 }
 
-export function findCommit(
-  items: RunJSSourceHistoryItem[],
-  commitId?: string | null,
-): RunJSSourceHistoryItem | undefined {
-  if (!commitId) {
-    return undefined;
-  }
-
-  return items.find((item) => item.id === commitId);
-}
-
-export function canPublish(
-  commitMessage: string,
+export function canSaveVersion(
+  versionMessage: string,
   summary: RunJSChangeSummary,
   diagnostics: RunJSCompileDiagnostic[],
   readOnly: boolean,
 ): boolean {
-  const length = commitMessage.trim().length;
+  const length = versionMessage.trim().length;
   return (
     !readOnly &&
     summary.files > 0 &&
-    length > 0 &&
+    length >= 3 &&
     length <= 200 &&
     diagnostics.every((item) => item.severity !== 'error')
   );

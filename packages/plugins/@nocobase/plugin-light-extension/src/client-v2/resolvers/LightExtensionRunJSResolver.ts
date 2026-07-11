@@ -7,12 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type {
-  RunJSSourceMenuInput,
-  RunJSSourceMenuItem,
-  RunJSSourceResolver,
-  RunJSSourceResolverInput,
-  RunJSSourceResolverResult,
+import {
+  RunJSSourceResolverError,
+  type RunJSSourceMenuInput,
+  type RunJSSourceMenuItem,
+  type RunJSSourceResolver,
+  type RunJSSourceResolverInput,
+  type RunJSSourceResolverResult,
 } from '@nocobase/client-v2';
 
 import { LIGHT_EXTENSION_SUPPORTED_KINDS } from '../../constants';
@@ -59,7 +60,7 @@ export function createLightExtensionRunJSResolver(api: ApiClientLike): RunJSSour
       } satisfies RunJSSourceResolverResult;
     },
     async getBindingTitle(input) {
-      const binding = input.sourceBinding as unknown as LightExtensionRuntimeSourceBinding | null | undefined;
+      const binding = isLightExtensionRuntimeSourceBinding(input.sourceBinding) ? input.sourceBinding : undefined;
       if (!binding?.repoId || !binding.entryId) {
         return undefined;
       }
@@ -80,7 +81,7 @@ export function createLightExtensionRunJSResolver(api: ApiClientLike): RunJSSour
       return getEntryLabel(entry);
     },
     async getSettingsDescriptor(input) {
-      const binding = input.sourceBinding as unknown as LightExtensionRuntimeSourceBinding | null | undefined;
+      const binding = isLightExtensionRuntimeSourceBinding(input.sourceBinding) ? input.sourceBinding : undefined;
       if (!binding?.repoId || !binding.entryId) {
         return undefined;
       }
@@ -114,9 +115,15 @@ export async function resolveLightExtensionRuntimeSource(
   api: ApiClientLike,
   input: RunJSSourceResolverInput,
 ): Promise<LightExtensionRuntimeResolveResult> {
+  if (!isLightExtensionRuntimeSourceBinding(input.sourceBinding)) {
+    throw new RunJSSourceResolverError("RunJS source 'light-extension' requires a valid sourceBinding", {
+      code: 'RUNJS_SOURCE_BINDING_REQUIRED',
+      sourceMode: 'light-extension',
+    });
+  }
   const payload: LightExtensionRuntimeResolveInput = {
     sourceMode: 'light-extension',
-    sourceBinding: input.sourceBinding as unknown as LightExtensionRuntimeSourceBinding,
+    sourceBinding: input.sourceBinding,
     settings: input.settings || {},
   };
   const response = await api.request<ResourceResponse<LightExtensionRuntimeResolveResult>>({
@@ -147,9 +154,7 @@ async function listLightExtensionSourceMenuItems(
   ]);
   const selectableEntries = entries.filter((entry) => entry.kind === kind && Boolean(entry.runtimeArtifact?.code));
   const t = input.t || ((key: string) => key);
-  const currentBinding = isRecord(input.sourceBinding)
-    ? (input.sourceBinding as LightExtensionRuntimeSourceBinding)
-    : null;
+  const currentBinding = isLightExtensionRuntimeSourceBinding(input.sourceBinding) ? input.sourceBinding : null;
   const repoLabels = new Map(repos.map((repo) => [repo.id, getRepoLabel(repo)]));
   const entriesByRepo = selectableEntries.reduce((groups, entry) => {
     const entriesInRepo = groups.get(entry.repoId);
@@ -295,9 +300,6 @@ function getKindLabel(kind: LightExtensionKind | string, t: (key: string) => str
   if (kind === 'runjs') {
     return t('RunJS');
   }
-  if (kind === 'event') {
-    return t('Event');
-  }
   return String(kind);
 }
 
@@ -312,6 +314,31 @@ function toSupportedKind(value: string | undefined): LightExtensionKind | undefi
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
+
+export function isLightExtensionRuntimeSourceBinding(value: unknown): value is LightExtensionRuntimeSourceBinding {
+  return (
+    isRecord(value) &&
+    value.type === 'light-extension-entry' &&
+    typeof value.repoId === 'string' &&
+    value.repoId.trim().length > 0 &&
+    typeof value.entryId === 'string' &&
+    value.entryId.trim().length > 0 &&
+    typeof value.kind === 'string' &&
+    value.kind.trim().length > 0 &&
+    Object.keys(value).every((key) => LIGHT_EXTENSION_SOURCE_BINDING_KEYS.has(key))
+  );
+}
+
+const LIGHT_EXTENSION_SOURCE_BINDING_KEYS = new Set([
+  'type',
+  'repoId',
+  'repoTitle',
+  'entryId',
+  'entryTitle',
+  'entryName',
+  'entryPath',
+  'kind',
+]);
 
 function cloneRecord(value: Record<string, unknown>): Record<string, unknown> {
   return JSON.parse(JSON.stringify(value)) as Record<string, unknown>;

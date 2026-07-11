@@ -155,4 +155,103 @@ describe('vsc-file shared utilities', () => {
       expect(error).toMatchObject({ code: 'RUNJS_SOURCE_KIND_UNSUPPORTED' });
     }
   });
+
+  it.each([
+    {
+      label: 'flow key',
+      segment: '__proto__',
+      locator: {
+        kind: 'flowModel.step',
+        modelUid: 'fm_1',
+        flowKey: '__proto__',
+        stepKey: 'runjs',
+        paramPath: ['code'],
+      },
+    },
+    {
+      label: 'parameter path',
+      segment: 'constructor',
+      locator: {
+        kind: 'flowModel.step',
+        modelUid: 'fm_1',
+        flowKey: 'settings',
+        stepKey: 'runjs',
+        paramPath: ['constructor'],
+      },
+    },
+    {
+      label: 'nested value path',
+      segment: 'prototype',
+      locator: {
+        kind: 'flowModel.nestedRunJS',
+        modelUid: 'fm_1',
+        containerFlowKey: 'settings',
+        containerStepKey: 'runjs',
+        valuePath: ['prototype'],
+        scene: 'defaultValue',
+      },
+    },
+  ])('rejects unsafe RunJS locator $label segments', ({ locator, segment }) => {
+    expect(() => normalizeRunJSSourceLocator(locator)).toThrowError(VscError);
+
+    try {
+      normalizeRunJSSourceLocator(locator);
+    } catch (error) {
+      expect(error).toMatchObject({
+        code: 'RUNJS_SOURCE_LOCATOR_INVALID',
+        details: {
+          segment,
+        },
+      });
+    }
+  });
+
+  it.each([
+    { label: 'NaN', segment: Number.NaN },
+    { label: 'infinity', segment: Number.POSITIVE_INFINITY },
+    { label: 'negative', segment: -1 },
+    { label: 'fractional', segment: 1.5 },
+    { label: 'over-limit', segment: 100_001 },
+  ])('rejects invalid RunJS locator numeric path segment: $label', ({ segment }) => {
+    expect(() =>
+      normalizeRunJSSourceLocator({
+        kind: 'flowModel.nestedRunJS',
+        modelUid: 'fm_1',
+        containerFlowKey: 'settings',
+        containerStepKey: 'runjs',
+        valuePath: ['items', segment],
+        scene: 'defaultValue',
+      }),
+    ).toThrowError(VscError);
+  });
+
+  it.each([
+    { label: 'NaN', nodeId: Number.NaN },
+    { label: 'infinity', nodeId: Number.POSITIVE_INFINITY },
+    { label: 'negative', nodeId: -1 },
+    { label: 'fractional', nodeId: 1.5 },
+    { label: 'unsafe integer', nodeId: Number.MAX_SAFE_INTEGER + 1 },
+  ])('rejects invalid numeric workflow node id: $label', ({ nodeId }) => {
+    expect(() =>
+      normalizeRunJSSourceLocator({
+        kind: 'workflow.javascript',
+        nodeId,
+      }),
+    ).toThrowError(VscError);
+  });
+
+  it('accepts the maximum supported RunJS locator array index', () => {
+    expect(
+      normalizeRunJSSourceLocator({
+        kind: 'flowModel.nestedRunJS',
+        modelUid: 'fm_1',
+        containerFlowKey: 'settings',
+        containerStepKey: 'runjs',
+        valuePath: ['items', 100_000],
+        scene: 'defaultValue',
+      }),
+    ).toMatchObject({
+      valuePath: ['items', 100_000],
+    });
+  });
 });

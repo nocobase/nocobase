@@ -33,9 +33,6 @@ export default defineCollection({
     {
       fields: ['headCommitId'],
     },
-    {
-      fields: ['lastScannedCommitId'],
-    },
   ],
   fields: [
     {
@@ -68,12 +65,6 @@ export default defineCollection({
       name: 'description',
     },
     {
-      type: 'integer',
-      name: 'version',
-      allowNull: false,
-      defaultValue: 1,
-    },
-    {
       type: 'string',
       name: 'lifecycleStatus',
       allowNull: false,
@@ -83,23 +74,11 @@ export default defineCollection({
       type: 'string',
       name: 'healthStatus',
       allowNull: false,
-      defaultValue: 'draft',
+      defaultValue: 'pending',
     },
     {
       type: 'string',
       name: 'headCommitId',
-    },
-    {
-      type: 'string',
-      name: 'lastScannedCommitId',
-    },
-    {
-      type: 'text',
-      name: 'lastError',
-    },
-    {
-      type: 'date',
-      name: 'lastScannedAt',
     },
     {
       type: 'date',

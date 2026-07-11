@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { LightExtensionDataContext, LightExtensionRecord, LightExtensionSettingsContext } from './shared';
+import type { LightExtensionDataContext, LightExtensionRecord } from './shared';
 
 export type { LightExtensionDataContext, LightExtensionRecord, LightExtensionSettingsContext } from './shared';
 export { assertSettings, defineSettings } from './shared';
@@ -37,9 +37,4 @@ export interface RunJSContext<TSettings = unknown, TInput = unknown> extends Lig
   input?: TInput;
   event?: unknown;
   formValues?: LightExtensionRecord;
-}
-
-export interface EventContext<TSettings = unknown, TEvent = unknown> extends LightExtensionSettingsContext<TSettings> {
-  event?: TEvent;
-  payload?: unknown;
 }

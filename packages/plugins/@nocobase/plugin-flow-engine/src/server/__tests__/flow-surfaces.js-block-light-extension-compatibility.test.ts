@@ -24,8 +24,6 @@ const LIGHT_EXTENSION_SOURCE_BINDING = {
   repoId: 'repo_finance',
   entryId: 'entry_finance_summary',
   kind: 'js-block',
-  publicationId: 'publication_finance_summary_v1',
-  versionPolicy: 'pinned',
 };
 
 const LEGACY_SOURCE_REF = {

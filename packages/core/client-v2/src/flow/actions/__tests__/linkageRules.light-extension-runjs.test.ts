@@ -66,8 +66,6 @@ describe('linkage RunJS light-extension values', () => {
               repoId: 'ler_runjs',
               entryId: 'lee_normalize_amount',
               kind: 'runjs',
-              publicationId: 'lep_normalize_amount',
-              versionPolicy: 'pinned',
             },
             settings: { currency: 'USD' },
           },
@@ -80,7 +78,7 @@ describe('linkage RunJS light-extension values', () => {
     expect(setProps).toHaveBeenCalledWith(fieldModel, { value: 'USD:123.45:true' });
   });
 
-  it('reports linkage RunJS runtime errors with index-based owner locator paths', async () => {
+  it('skips a linkage assignment when RunJS fails', async () => {
     RunJSSourceResolverRegistry.registerResolver({
       sourceMode: 'light-extension',
       resolve: (input) => ({
@@ -92,13 +90,11 @@ describe('linkage RunJS light-extension values', () => {
       }),
     });
 
-    const reportRuntimeError = vi.fn();
     const fieldModel: any = { uid: 'amount-text-field', fieldPath: 'amountText' };
     const ctx: any = new FlowContext();
     ctx.defineProperty('flowKey', { value: 'eventSettings' });
     ctx.defineProperty('currentStep', { value: { key: 'linkageRules' } });
     ctx.defineProperty('formValues', { value: { amount: 123.45 } });
-    ctx.defineProperty('reportRuntimeError', { value: reportRuntimeError });
     ctx.defineProperty('model', {
       value: {
         uid: 'form-block-runjs',
@@ -129,8 +125,6 @@ describe('linkage RunJS light-extension values', () => {
               repoId: 'ler_runjs',
               entryId: 'lee_normalize_amount',
               kind: 'runjs',
-              publicationId: 'lep_normalize_amount',
-              versionPolicy: 'pinned',
             },
             settings: { currency: 'USD' },
           },
@@ -140,32 +134,5 @@ describe('linkage RunJS light-extension values', () => {
     });
 
     expect(setProps).not.toHaveBeenCalled();
-    expect(reportRuntimeError).toHaveBeenCalledWith(
-      expect.objectContaining({
-        repoId: 'ler_runjs',
-        entryId: 'lee_normalize_amount',
-        publicationId: 'lep_normalize_amount',
-        ownerKind: 'flowModel.runjsHost',
-        path: 'src/client/runjs/normalize-amount/index.ts',
-        ownerLocator: expect.objectContaining({
-          modelUid: 'form-block-runjs',
-          use: 'FormBlockModel',
-          hostPath: [
-            'stepParams',
-            'eventSettings',
-            'linkageRules',
-            'value',
-            '0',
-            'actions',
-            '1',
-            'params',
-            'value',
-            '0',
-            'value',
-          ],
-        }),
-        ownerLocatorHash: expect.stringMatching(/^sha256:/),
-      }),
-    );
   });
 });

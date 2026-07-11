@@ -9,16 +9,16 @@
 
 export { PluginLightExtensionServer } from './plugin';
 export * from './services/LightExtensionAuditService';
-export * from './services/LightExtensionAuthoringInspector';
+export * from './services/LightExtensionCompileContract';
 export * from './services/LightExtensionCompilePreviewService';
-export * from './services/LightExtensionEntryScanner';
-export * from './services/LightExtensionFileService';
 export * from './services/LightExtensionPermissionService';
 export * from './services/LightExtensionValidator';
 export * from './services/LightExtensionRuntimeCompileService';
+export * from './services/LightExtensionSourceArchive';
 export * from './services/LightExtensionWorkspaceCompilerBridge';
 export * from './services/RuntimeResolveService';
 export * from './services/errorContract';
 export * from '../shared/errors';
+export * from '../shared/default-template';
 export * from '../shared/types';
 export { default } from './plugin';

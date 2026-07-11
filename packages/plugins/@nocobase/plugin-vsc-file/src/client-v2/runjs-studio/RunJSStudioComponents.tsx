@@ -19,6 +19,7 @@ import {
   FolderOpenOutlined,
   FolderOutlined,
   ImportOutlined,
+  LockOutlined,
   ReloadOutlined,
   RightOutlined,
   UpOutlined,
@@ -26,7 +27,21 @@ import {
   CopyOutlined,
 } from '@ant-design/icons';
 import { CodeEditor, type CodeEditorFullscreenControl } from '@nocobase/client-v2';
-import { Button, Empty, Input, List, Modal, Popconfirm, Space, Tag, Tooltip, Typography, message, Alert } from 'antd';
+import {
+  Alert,
+  Button,
+  Empty,
+  Input,
+  List,
+  Modal,
+  Popconfirm,
+  Space,
+  Tag,
+  Tooltip,
+  Typography,
+  message,
+  theme,
+} from 'antd';
 import type { InputRef } from 'antd/es/input';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
@@ -60,12 +75,26 @@ import {
 } from './studioUtils';
 import { formatChangeSummary, formatVersion, inferLanguageFromPath, runJSManifestPath } from './workspaceUtils';
 
+export type RunJSWorkspacePathType = 'file' | 'folder';
+
+export interface RunJSWorkspacePathAccess {
+  canCreate?: boolean;
+  canDelete?: boolean;
+  canMove?: boolean;
+  canRename?: boolean;
+  canWrite?: boolean;
+  reason?: string;
+}
+
 export function FilesPanel(props: {
   activePath?: string;
   collapsed: boolean;
   exporting: boolean;
   files: RunJSWorkspaceFile[];
+  fillAvailableHeight?: boolean;
   folders?: string[];
+  defaultCreateParentPath?: string;
+  getPathAccess?: (path: string, pathType: RunJSWorkspacePathType) => RunJSWorkspacePathAccess;
   onCollapseChange: (collapsed: boolean) => void;
   onCreate: (parentPath?: string) => string | undefined;
   onCreateFolder: (parentPath?: string) => string | undefined;
@@ -88,7 +117,10 @@ export function FilesPanel(props: {
     collapsed,
     exporting,
     files,
+    fillAvailableHeight = false,
     folders,
+    defaultCreateParentPath = defaultRunJSSourceRoot,
+    getPathAccess,
     onCollapseChange,
     onCreate,
     onCreateFolder,
@@ -106,12 +138,34 @@ export function FilesPanel(props: {
     savedFiles,
     t,
   } = props;
+  const { token } = theme.useToken();
   const [hoveredPath, setHoveredPath] = useState<string | null>(null);
   const [actionFocusedPath, setActionFocusedPath] = useState<string | null>(null);
   const [inlineEdit, setInlineEdit] = useState<InlineEditTarget | null>(null);
   const [collapsedFolderPaths, setCollapsedFolderPaths] = useState<Set<string>>(() => new Set());
   const inlineEditInputRef = useRef<InputRef>(null);
   const inlineEditCancellingRef = useRef(false);
+  const resolvePathAccess = React.useCallback(
+    (
+      path: string,
+      pathType: RunJSWorkspacePathType,
+    ): Required<Omit<RunJSWorkspacePathAccess, 'reason'>> & {
+      reason?: string;
+    } => {
+      const access = getPathAccess?.(path, pathType);
+      const enabled = !readOnly;
+      return {
+        canCreate: enabled && access?.canCreate !== false,
+        canDelete: enabled && access?.canDelete !== false,
+        canMove: enabled && access?.canMove !== false,
+        canRename: enabled && access?.canRename !== false,
+        canWrite: enabled && access?.canWrite !== false,
+        reason: access?.reason,
+      };
+    },
+    [getPathAccess, readOnly],
+  );
+  const defaultCreateAccess = resolvePathAccess(defaultCreateParentPath, 'folder');
   const folderPaths = React.useMemo(() => folders || collectRunJSWorkspaceFolders(files), [files, folders]);
   const treeRows = React.useMemo(
     () => buildFileTreeRows(files, folderPaths, collapsedFolderPaths),
@@ -324,11 +378,11 @@ export function FilesPanel(props: {
       style={{
         background: '#fafafa',
         display: 'flex',
-        flex: '0 1 auto',
+        flex: fillAvailableHeight ? '1 1 0' : '0 1 auto',
         flexDirection: 'column',
         gap: 8,
-        maxHeight: '80%',
-        minHeight: 140,
+        maxHeight: fillAvailableHeight ? undefined : '80%',
+        minHeight: fillAvailableHeight ? 0 : 140,
         overflow: 'hidden',
         padding: 12,
       }}
@@ -363,18 +417,18 @@ export function FilesPanel(props: {
           <Tooltip title={t('New folder')}>
             <Button
               aria-label={t('New folder')}
-              disabled={readOnly}
+              disabled={!defaultCreateAccess.canCreate}
               icon={<FolderAddOutlined />}
-              onClick={() => createFolderInline(defaultRunJSSourceRoot)}
+              onClick={() => createFolderInline(defaultCreateParentPath)}
               size="small"
             />
           </Tooltip>
           <Tooltip title={t('New file')}>
             <Button
               aria-label={t('New file')}
-              disabled={readOnly}
+              disabled={!defaultCreateAccess.canCreate}
               icon={<FileAddOutlined />}
-              onClick={() => createFileInline(defaultRunJSSourceRoot)}
+              onClick={() => createFileInline(defaultCreateParentPath)}
               size="small"
             />
           </Tooltip>
@@ -394,10 +448,10 @@ export function FilesPanel(props: {
                 <Button icon={<ReloadOutlined />} onClick={onRefresh} size="small">
                   {t('Refresh workspace')}
                 </Button>
-                {!readOnly ? (
+                {defaultCreateAccess.canCreate ? (
                   <Button
                     icon={<FileAddOutlined />}
-                    onClick={() => createFileInline(defaultRunJSSourceRoot)}
+                    onClick={() => createFileInline(defaultCreateParentPath)}
                     size="small"
                     type="primary"
                   >
@@ -414,12 +468,17 @@ export function FilesPanel(props: {
         renderItem={(row) => {
           if (row.type === 'folder') {
             const actionsVisible = hoveredPath === row.path || actionFocusedPath === row.path;
-            const canCreateInsideFolder = canCreateRunJSFileInFolder(row.path);
+            const pathAccess = resolvePathAccess(row.path, 'folder');
+            const canCreateInsideFolder = pathAccess.canCreate && canCreateRunJSFileInFolder(row.path);
             const folderCollapsed = collapsedFolderPaths.has(row.path);
             return (
               <List.Item
-                draggable={!readOnly}
+                draggable={pathAccess.canMove}
                 onDragStart={(event) => {
+                  if (!pathAccess.canMove) {
+                    event.preventDefault();
+                    return;
+                  }
                   setRunJSTreeDragPayload(event.dataTransfer, 'folder', row.path);
                   event.dataTransfer.effectAllowed = 'move';
                 }}
@@ -431,7 +490,12 @@ export function FilesPanel(props: {
                   event.preventDefault();
                   event.stopPropagation();
                   const dragPayload = getRunJSTreeDragPayload(event.dataTransfer);
-                  if (!dragPayload) {
+                  if (!dragPayload || !pathAccess.canCreate) {
+                    return;
+                  }
+
+                  const sourceAccess = resolvePathAccess(dragPayload.path, dragPayload.kind);
+                  if (!sourceAccess.canMove) {
                     return;
                   }
 
@@ -466,7 +530,8 @@ export function FilesPanel(props: {
                   style={{
                     alignItems: 'center',
                     borderRadius: 6,
-                    cursor: readOnly ? 'pointer' : 'grab',
+                    color: pathAccess.reason ? token.colorTextDisabled : undefined,
+                    cursor: pathAccess.canMove ? 'grab' : 'pointer',
                     display: 'flex',
                     minHeight: 28,
                     paddingInline: 8,
@@ -477,6 +542,11 @@ export function FilesPanel(props: {
                   <Space size={6} style={{ flex: 1, minWidth: 0 }}>
                     {folderCollapsed ? <RightOutlined /> : <DownOutlined />}
                     {folderCollapsed ? <FolderOutlined /> : <FolderOpenOutlined />}
+                    {pathAccess.reason ? (
+                      <Tooltip title={pathAccess.reason}>
+                        <LockOutlined aria-label={pathAccess.reason} style={{ color: token.colorTextDisabled }} />
+                      </Tooltip>
+                    ) : null}
                     {inlineEdit?.type === 'folder' && inlineEdit.path === row.path ? (
                       <Input
                         aria-label={`${t('Rename')} ${row.path}`}
@@ -503,7 +573,11 @@ export function FilesPanel(props: {
                         value={inlineEdit.value}
                       />
                     ) : (
-                      <Typography.Text ellipsis type="secondary">
+                      <Typography.Text
+                        ellipsis
+                        style={{ color: pathAccess.reason ? token.colorTextDisabled : undefined }}
+                        type={pathAccess.reason ? undefined : 'secondary'}
+                      >
                         {row.name}
                       </Typography.Text>
                     )}
@@ -559,10 +633,15 @@ export function FilesPanel(props: {
           const dirty = isWorkspaceFileDirty(savedFiles, row.file);
           const isActive = activePath === row.path;
           const actionsVisible = hoveredPath === row.path || actionFocusedPath === row.path;
+          const pathAccess = resolvePathAccess(row.path, 'file');
           return (
             <List.Item
-              draggable={!readOnly && row.path !== runJSManifestPath}
+              draggable={pathAccess.canMove && row.path !== runJSManifestPath}
               onDragStart={(event) => {
+                if (!pathAccess.canMove) {
+                  event.preventDefault();
+                  return;
+                }
                 setRunJSTreeDragPayload(event.dataTransfer, 'file', row.path);
                 event.dataTransfer.effectAllowed = 'move';
               }}
@@ -626,7 +705,7 @@ export function FilesPanel(props: {
                   ref={registerFileButton(row.path)}
                   style={{
                     background: isActive ? '#e6f4ff' : undefined,
-                    color: isActive ? '#1677ff' : undefined,
+                    color: pathAccess.reason ? token.colorTextDisabled : isActive ? token.colorPrimary : undefined,
                     justifyContent: 'flex-start',
                     minWidth: 0,
                     paddingInlineEnd: readOnly ? undefined : 76,
@@ -635,14 +714,22 @@ export function FilesPanel(props: {
                 >
                   <Space size={6} style={{ minWidth: 0 }}>
                     <RunJSFileTypeIcon path={row.path} />
-                    <Typography.Text ellipsis style={{ maxWidth: 152 }}>
+                    {pathAccess.reason ? (
+                      <Tooltip title={pathAccess.reason}>
+                        <LockOutlined aria-label={pathAccess.reason} style={{ color: token.colorTextDisabled }} />
+                      </Tooltip>
+                    ) : null}
+                    <Typography.Text
+                      ellipsis
+                      style={{ color: pathAccess.reason ? token.colorTextDisabled : undefined, maxWidth: 152 }}
+                    >
                       {row.name}
                       {dirty ? ' *' : ''}
                     </Typography.Text>
                   </Space>
                 </Button>
               )}
-              {!readOnly ? (
+              {pathAccess.canRename || pathAccess.canDelete ? (
                 <Space
                   size={0}
                   style={{
@@ -657,41 +744,45 @@ export function FilesPanel(props: {
                     transition: 'opacity 120ms ease',
                   }}
                 >
-                  <Tooltip title={t('Rename')} open={actionsVisible ? undefined : false}>
-                    <Button
-                      aria-label={`${t('Rename')} ${row.path}`}
-                      icon={<EditOutlined />}
-                      onBlur={() => setActionFocusedPath((current) => (current === row.path ? null : current))}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        startInlineEdit('file', row.path, false);
-                      }}
-                      onFocus={() => setActionFocusedPath(row.path)}
-                      size="small"
-                      style={{ height: 20, padding: 0, width: 20 }}
-                      tabIndex={actionsVisible ? 0 : -1}
-                      type="text"
-                    />
-                  </Tooltip>
-                  <Popconfirm
-                    cancelText={t('Cancel')}
-                    okText={t('Delete')}
-                    onConfirm={() => onDelete(row.path)}
-                    title={t('Delete this file?')}
-                  >
-                    <Button
-                      aria-label={`${t('Delete')} ${row.path}`}
-                      danger
-                      icon={<DeleteOutlined />}
-                      onBlur={() => setActionFocusedPath((current) => (current === row.path ? null : current))}
-                      onClick={(event) => event.stopPropagation()}
-                      onFocus={() => setActionFocusedPath(row.path)}
-                      size="small"
-                      style={{ height: 20, padding: 0, width: 20 }}
-                      tabIndex={actionsVisible ? 0 : -1}
-                      type="text"
-                    />
-                  </Popconfirm>
+                  {pathAccess.canRename ? (
+                    <Tooltip title={t('Rename')} open={actionsVisible ? undefined : false}>
+                      <Button
+                        aria-label={`${t('Rename')} ${row.path}`}
+                        icon={<EditOutlined />}
+                        onBlur={() => setActionFocusedPath((current) => (current === row.path ? null : current))}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          startInlineEdit('file', row.path, false);
+                        }}
+                        onFocus={() => setActionFocusedPath(row.path)}
+                        size="small"
+                        style={{ height: 20, padding: 0, width: 20 }}
+                        tabIndex={actionsVisible ? 0 : -1}
+                        type="text"
+                      />
+                    </Tooltip>
+                  ) : null}
+                  {pathAccess.canDelete ? (
+                    <Popconfirm
+                      cancelText={t('Cancel')}
+                      okText={t('Delete')}
+                      onConfirm={() => onDelete(row.path)}
+                      title={t('Delete this file?')}
+                    >
+                      <Button
+                        aria-label={`${t('Delete')} ${row.path}`}
+                        danger
+                        icon={<DeleteOutlined />}
+                        onBlur={() => setActionFocusedPath((current) => (current === row.path ? null : current))}
+                        onClick={(event) => event.stopPropagation()}
+                        onFocus={() => setActionFocusedPath(row.path)}
+                        size="small"
+                        style={{ height: 20, padding: 0, width: 20 }}
+                        tabIndex={actionsVisible ? 0 : -1}
+                        type="text"
+                      />
+                    </Popconfirm>
+                  ) : null}
                 </Space>
               ) : null}
             </List.Item>
@@ -714,12 +805,12 @@ export function CodeTab(props: {
   onDiffToggle: () => void;
   onFilesCollapsedChange: (collapsed: boolean) => void;
   onOpenFile: (path: string) => void;
-  onRunPreview: () => void;
+  onRunPreview?: () => void;
   openPaths: string[];
-  previewing: boolean;
+  previewing?: boolean;
   readOnly: boolean;
   savedFiles: RunJSWorkspaceFile[];
-  scene: string;
+  scene?: string;
   showRunButton?: boolean;
   t: (key: string) => string;
   version: string;
@@ -797,7 +888,7 @@ export function CodeTab(props: {
   const runAndDiffActions = (
     <Space.Compact>
       {showRunButton ? (
-        <Button disabled={isDiff} loading={previewing} onClick={onRunPreview} size="small">
+        <Button disabled={isDiff || !onRunPreview} loading={previewing} onClick={onRunPreview} size="small">
           {t('Run')}
         </Button>
       ) : null}
@@ -850,6 +941,7 @@ export function CodeTab(props: {
   return (
     <section
       aria-label={t('Code')}
+      data-runjs-code-editor="true"
       style={{
         display: 'flex',
         flex: 1,
@@ -1202,7 +1294,7 @@ function SideBySideDiffView(props: {
       </div>
       {!hasChanges ? (
         <div style={{ padding: 24 }}>
-          <Empty description={emptyDescription || t('No changes between current editor and published version')} />
+          <Empty description={emptyDescription || t('No changes between current editor and saved version')} />
         </div>
       ) : (
         <div
@@ -1244,36 +1336,42 @@ export function VersionHistoryDock(props: {
   baseVersion: string;
   collapsed: boolean;
   emptyHistoryDescription?: string;
+  hasMore: boolean;
   hasUnsavedLocalChanges: boolean;
   historyItems: RunJSSourceHistoryItem[];
   loading: boolean;
+  loadingMore: boolean;
   onCollapsedChange: (collapsed: boolean) => void;
+  onLoadMore: () => void;
   onRefresh: () => void;
   onSelect: (commit: RunJSSourceHistoryItem) => void;
   onViewChanges: () => void;
-  publishedCommitId?: string | null;
-  showVersionBadges?: boolean;
+  restoreDisabled?: boolean;
+  restoreDisabledReason?: string;
   t: (key: string) => string;
 }) {
   const {
     baseVersion,
     collapsed,
     emptyHistoryDescription,
+    hasMore,
     hasUnsavedLocalChanges,
     historyItems,
     loading,
+    loadingMore,
     onCollapsedChange,
+    onLoadMore,
     onRefresh,
     onSelect,
     onViewChanges,
-    publishedCommitId,
-    showVersionBadges = true,
+    restoreDisabled = false,
+    restoreDisabledReason,
     t,
   } = props;
 
   return (
     <section
-      aria-label={t('Commit history')}
+      aria-label={t('Version history')}
       style={{
         borderTop: '1px solid #f0f0f0',
         display: 'flex',
@@ -1293,7 +1391,13 @@ export function VersionHistoryDock(props: {
         <Typography.Text strong>{t('History')}</Typography.Text>
         <Space size={4}>
           {!collapsed ? (
-            <Button aria-label={t('Refresh history')} icon={<ReloadOutlined />} loading={loading} onClick={onRefresh} />
+            <Button
+              aria-label={t('Refresh history')}
+              disabled={loadingMore}
+              icon={<ReloadOutlined />}
+              loading={loading}
+              onClick={onRefresh}
+            />
           ) : null}
           <Tooltip title={collapsed ? t('Expand history') : t('Collapse history')}>
             <Button
@@ -1321,46 +1425,62 @@ export function VersionHistoryDock(props: {
             </div>
           ) : null}
           <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
-            {historyItems.length === 0 ? (
-              <Empty description={emptyHistoryDescription || t('No published versions yet')} />
-            ) : null}
-            {historyItems.map((commit) => (
-              <button
-                aria-label={`${t('Restore')} ${formatCommitTime(commit)} ${formatVersion(commit.seq)}`}
-                key={commit.id}
-                onClick={() => onSelect(commit)}
-                style={{
-                  background: 'transparent',
-                  border: 0,
-                  borderRadius: 6,
-                  cursor: 'pointer',
-                  display: 'block',
-                  padding: '6px 4px',
-                  textAlign: 'left',
-                  width: '100%',
-                }}
-                type="button"
-              >
-                <Space align="start" style={{ justifyContent: 'space-between', width: '100%' }}>
-                  <Space direction="vertical" size={0} style={{ minWidth: 0 }}>
-                    <Space size={6}>
-                      <Typography.Text strong>{formatCommitTime(commit)}</Typography.Text>
-                      <Typography.Text type="secondary">{formatVersion(commit.seq)}</Typography.Text>
-                      {showVersionBadges && (commit.isPublished || commit.id === publishedCommitId) ? (
-                        <Tag color="green">{t('Published')}</Tag>
-                      ) : null}
+            {historyItems.length === 0 ? <Empty description={emptyHistoryDescription || t('No versions yet')} /> : null}
+            {historyItems.map((commit) => {
+              const restoreButton = (
+                <button
+                  aria-label={`${t('Restore')} ${formatCommitTime(commit)} ${formatVersion(commit.seq)}`}
+                  disabled={restoreDisabled}
+                  key={commit.id}
+                  onClick={() => onSelect(commit)}
+                  style={{
+                    background: 'transparent',
+                    border: 0,
+                    borderRadius: 6,
+                    cursor: restoreDisabled ? 'not-allowed' : 'pointer',
+                    display: 'block',
+                    opacity: restoreDisabled ? 0.55 : 1,
+                    padding: '6px 4px',
+                    textAlign: 'left',
+                    width: '100%',
+                  }}
+                  type="button"
+                >
+                  <Space align="start" style={{ justifyContent: 'space-between', width: '100%' }}>
+                    <Space direction="vertical" size={0} style={{ minWidth: 0 }}>
+                      <Space size={6}>
+                        <Typography.Text strong>{formatCommitTime(commit)}</Typography.Text>
+                        <Typography.Text type="secondary">{formatVersion(commit.seq)}</Typography.Text>
+                      </Space>
+                      <Typography.Text ellipsis type="secondary">
+                        {commit.message}
+                      </Typography.Text>
                     </Space>
-                    <Typography.Text ellipsis type="secondary">
-                      {commit.message}
-                    </Typography.Text>
+                    {restoreDisabled ? (
+                      <LockOutlined aria-hidden="true" style={{ color: '#8c8c8c', flex: '0 0 auto', marginTop: 3 }} />
+                    ) : (
+                      <ImportOutlined
+                        aria-hidden="true"
+                        style={{ color: '#8c8c8c', flex: '0 0 auto', fontSize: 13, marginTop: 3 }}
+                      />
+                    )}
                   </Space>
-                  <ImportOutlined
-                    aria-hidden="true"
-                    style={{ color: '#8c8c8c', flex: '0 0 auto', fontSize: 13, marginTop: 3 }}
-                  />
-                </Space>
-              </button>
-            ))}
+                </button>
+              );
+
+              return restoreDisabled && restoreDisabledReason ? (
+                <Tooltip key={commit.id} title={restoreDisabledReason}>
+                  <span style={{ display: 'block' }}>{restoreButton}</span>
+                </Tooltip>
+              ) : (
+                restoreButton
+              );
+            })}
+            {hasMore ? (
+              <Button block disabled={loading} loading={loadingMore} onClick={onLoadMore} size="small">
+                {t('Load more')}
+              </Button>
+            ) : null}
           </div>
         </>
       ) : null}
@@ -1522,7 +1642,10 @@ export function ConsolePanel(props: {
             }}
             type="button"
           >
-            [{entry.level}] {entry.path ? `${entry.path}${entry.line ? `:${entry.line}` : ''} ` : ''}
+            [{entry.level}]{' '}
+            {entry.path
+              ? `${entry.path}${entry.line ? `:${entry.line}` : ''}${entry.column ? `:${entry.column}` : ''} `
+              : ''}
             {entry.message}
           </button>
         ))}
@@ -1531,32 +1654,32 @@ export function ConsolePanel(props: {
   );
 }
 
-export function PublishModal(props: {
-  commitMessage: string;
+export function SaveVersionModal(props: {
   loading: boolean;
   onAfterClose: () => void;
   onCancel: () => void;
-  onCommitMessageChange: (value: string) => void;
-  onPublish: () => void;
+  onSave: () => void;
+  onVersionMessageChange: (value: string) => void;
   open: boolean;
   readOnly: boolean;
   summary: RunJSChangeSummary;
   t: (key: string) => string;
+  versionMessage: string;
 }) {
   const {
-    commitMessage,
     loading,
     onAfterClose,
     onCancel,
-    onCommitMessageChange,
-    onPublish,
+    onSave,
+    onVersionMessageChange,
     open,
     readOnly,
     summary,
     t,
+    versionMessage,
   } = props;
-  const trimmed = commitMessage.trim();
-  const messageInvalid = trimmed.length === 0 || trimmed.length > 200;
+  const trimmed = versionMessage.trim();
+  const messageInvalid = trimmed.length < 3 || trimmed.length > 200;
   const disabled = readOnly || summary.files === 0 || messageInvalid;
   const inputRef = useRef<InputRef>(null);
 
@@ -1575,23 +1698,23 @@ export function PublishModal(props: {
       okButtonProps={{ disabled }}
       okText={t('Save')}
       onCancel={onCancel}
-      onOk={onPublish}
+      onOk={onSave}
       open={open}
-      title={t('Commit message')}
+      title={t('Save version')}
     >
       <Space direction="vertical" style={{ width: '100%' }}>
         <Typography.Text strong>{t('Changes')}</Typography.Text>
         <Typography.Text>{formatChangeSummary(summary, t)}</Typography.Text>
         {summary.files === 0 ? <Alert message={t('No changes to save')} showIcon type="info" /> : null}
         <Input
-          aria-label={t('Commit message')}
+          aria-label={t('Version message')}
           maxLength={200}
-          onChange={(event) => onCommitMessageChange(event.target.value)}
-          placeholder={t('Describe this change')}
+          onChange={(event) => onVersionMessageChange(event.target.value)}
+          placeholder={t('Describe this version')}
           ref={inputRef}
           showCount
-          status={commitMessage && messageInvalid ? 'error' : undefined}
-          value={commitMessage}
+          status={versionMessage && messageInvalid ? 'error' : undefined}
+          value={versionMessage}
         />
       </Space>
     </Modal>
@@ -1601,10 +1724,11 @@ export function PublishModal(props: {
 export function SaveDiagnosticsModal(props: {
   diagnostics: RunJSCompileDiagnostic[];
   onCancel: () => void;
+  onJump: (diagnostic: RunJSCompileDiagnostic) => void;
   open: boolean;
   t: (key: string) => string;
 }) {
-  const { diagnostics, onCancel, open, t } = props;
+  const { diagnostics, onCancel, onJump, open, t } = props;
   const details = formatCompileDiagnostics(diagnostics) || t('No compile diagnostics');
 
   const copyDiagnostics = async () => {
@@ -1652,7 +1776,44 @@ export function SaveDiagnosticsModal(props: {
             wordBreak: 'break-word',
           }}
         >
-          {details}
+          {diagnostics.length
+            ? diagnostics.map((diagnostic, index) => {
+                const text = formatCompileDiagnostics([diagnostic]);
+                if (!diagnostic.path) {
+                  return (
+                    <span key={`${diagnostic.code || diagnostic.ruleId || 'diagnostic'}-${index}`}>
+                      {text}
+                      {index < diagnostics.length - 1 ? '\n\n' : ''}
+                    </span>
+                  );
+                }
+
+                return (
+                  <button
+                    aria-label={text}
+                    key={`${diagnostic.path}-${diagnostic.line || 0}-${diagnostic.column || 0}-${index}`}
+                    onClick={() => onJump(diagnostic)}
+                    style={{
+                      background: 'transparent',
+                      border: 0,
+                      color: 'inherit',
+                      cursor: 'pointer',
+                      display: 'block',
+                      font: 'inherit',
+                      marginBottom: index < diagnostics.length - 1 ? 12 : 0,
+                      padding: 0,
+                      textAlign: 'left',
+                      whiteSpace: 'pre-wrap',
+                      width: '100%',
+                      wordBreak: 'break-word',
+                    }}
+                    type="button"
+                  >
+                    {text}
+                  </button>
+                );
+              })
+            : details}
         </pre>
       </Space>
     </Modal>
@@ -1695,10 +1856,11 @@ export function RestoreVersionModal(props: {
   loading: boolean;
   onCancel: () => void;
   onRestore: () => void;
+  scopeDescription?: string;
   showRestoreSecondaryNote?: boolean;
   t: (key: string) => string;
 }) {
-  const { commit, loading, onCancel, onRestore, showRestoreSecondaryNote = true, t } = props;
+  const { commit, loading, onCancel, onRestore, scopeDescription, showRestoreSecondaryNote = true, t } = props;
   const version = commit ? formatVersion(commit.seq) : '';
 
   return (
@@ -1716,9 +1878,14 @@ export function RestoreVersionModal(props: {
       title={formatRestoreTitle(version, t)}
     >
       <Space direction="vertical" style={{ width: '100%' }}>
+        <Typography.Text strong>
+          {t('Target version')}: {version}
+        </Typography.Text>
+        {commit?.message ? <Typography.Text type="secondary">{commit.message}</Typography.Text> : null}
         <Typography.Text>{t('This will copy files from this version into the editor.')}</Typography.Text>
+        {scopeDescription ? <Alert message={scopeDescription} showIcon type="info" /> : null}
         {showRestoreSecondaryNote ? (
-          <Typography.Text>{t('It will not change the published version.')}</Typography.Text>
+          <Typography.Text>{t('It will not create a version until you save.')}</Typography.Text>
         ) : null}
         <Typography.Text>{t('You can review and save after restoring.')}</Typography.Text>
       </Space>

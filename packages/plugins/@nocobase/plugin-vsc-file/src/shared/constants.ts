@@ -15,8 +15,6 @@ export const maxCommitMessageLength = 4000;
 export const maxPathLength = 512;
 export const commitHistoryDefaultLimit = 50;
 export const commitHistoryMaxLimit = 200;
-export const normalizeLineEndings = true;
-export const allowCaseOnlyPathConflict = false;
 
 export const defaultVscFileLimits = {
   maxFileSize,
@@ -27,6 +25,4 @@ export const defaultVscFileLimits = {
   maxPathLength,
   commitHistoryDefaultLimit,
   commitHistoryMaxLimit,
-  normalizeLineEndings,
-  allowCaseOnlyPathConflict,
 } as const;

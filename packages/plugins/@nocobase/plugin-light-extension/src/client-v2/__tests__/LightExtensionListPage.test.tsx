@@ -8,7 +8,7 @@
  */
 
 import { render, screen, waitFor, within } from '@testing-library/react';
-import { createMockClient } from '@nocobase/client-v2';
+import { createMockClient, type CompiledFilter } from '@nocobase/client-v2';
 import { FlowEngineProvider } from '@nocobase/flow-engine';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
@@ -16,21 +16,21 @@ import { MemoryRouter } from 'react-router-dom';
 import { vi } from 'vitest';
 
 import type { UseLightExtensionRepoResult } from '../hooks/useLightExtensionRepo';
-import LightExtensionListPage from '../pages/LightExtensionListPage';
+import LightExtensionListPage, {
+  LIGHT_EXTENSION_REPO_FILTER_FIELD_NAMES,
+  lightExtensionRepoFilterCollection,
+  matchesLightExtensionRepoFilter,
+} from '../pages/LightExtensionListPage';
 
 const mocks = vi.hoisted(() => ({
   t: (key: string) => key,
   api: {
     listRepos: vi.fn(),
     createRepo: vi.fn(),
-    getRepo: vi.fn(),
     changeLifecycle: vi.fn(),
-    archiveRepo: vi.fn(),
     deleteRepo: vi.fn(),
-    listEntries: vi.fn(),
     listCommits: vi.fn(),
     pull: vi.fn(),
-    scanEntries: vi.fn(),
   },
 }));
 
@@ -67,17 +67,17 @@ vi.mock('../pages/LightExtensionWorkspacePage', async () => {
     onRequestClose?: () => void;
   };
 
-  const MockLightExtensionWorkspacePage = ({ onFooterActionsChange }: WorkspacePageProps) => {
+  const MockLightExtensionWorkspacePage = ({ onFooterActionsChange, onRequestClose }: WorkspacePageProps) => {
     React.useEffect(() => {
       onFooterActionsChange?.({
         disabled: false,
         loading: false,
-        onCancel: noop,
+        onCancel: () => onRequestClose?.(),
         onSave: noop,
       });
 
       return () => onFooterActionsChange?.(null);
-    }, [onFooterActionsChange]);
+    }, [onFooterActionsChange, onRequestClose]);
 
     return React.createElement('div', null, 'Mock source workspace');
   };
@@ -114,23 +114,10 @@ describe('LightExtensionListPage', () => {
       normalizedName: 'browser-smoke',
       title: 'Browser smoke',
       description: null,
-      version: 1,
       lifecycleStatus: 'enabled',
-      healthStatus: 'draft',
+      healthStatus: 'pending',
       headCommitId: null,
     });
-    mocks.api.getRepo.mockResolvedValue({
-      id: 'ler_browser_smoke',
-      name: 'browser-smoke',
-      normalizedName: 'browser-smoke',
-      title: 'Browser smoke',
-      description: null,
-      version: 1,
-      lifecycleStatus: 'enabled',
-      healthStatus: 'draft',
-      headCommitId: null,
-    });
-    mocks.api.listEntries.mockResolvedValue([]);
     mocks.api.listCommits.mockResolvedValue([]);
     mocks.api.pull.mockResolvedValue({
       repo: { id: 'ler_browser_smoke' },
@@ -139,15 +126,16 @@ describe('LightExtensionListPage', () => {
       unchanged: false,
       files: [],
     });
-    mocks.api.scanEntries.mockResolvedValue({
-      repo: { id: 'ler_browser_smoke' },
-      commitId: null,
-      accepted: true,
-      diagnostics: [],
-      entries: [],
-      capabilities: {},
+    mocks.api.deleteRepo.mockResolvedValue({
+      id: 'ler_browser_smoke',
+      name: 'browser-smoke',
+      normalizedName: 'browser-smoke',
+      title: 'Browser smoke',
+      description: null,
+      lifecycleStatus: 'enabled',
+      healthStatus: 'pending',
+      headCommitId: null,
     });
-    mocks.api.deleteRepo.mockResolvedValue({ deleted: true, repoId: 'ler_browser_smoke' });
   });
 
   it('opens the create dialog from the query parameter', async () => {
@@ -164,13 +152,13 @@ describe('LightExtensionListPage', () => {
         name: 'browser-smoke',
         title: 'Browser smoke',
         description: null,
-        initialFiles: [],
+        zipBase64: undefined,
       }),
     );
-    expect(screen.queryByText('Repository created')).not.toBeInTheDocument();
+    expect(await screen.findByText('Repository created and compiled')).toBeInTheDocument();
   });
 
-  it('shows the standard settings toolbar with filter, refresh, and add-new import actions', async () => {
+  it('shows one add-new button that opens the combined create dialog', async () => {
     renderListPage();
 
     expect(await screen.findByRole('button', { name: /filter/i })).toBeEnabled();
@@ -179,8 +167,11 @@ describe('LightExtensionListPage', () => {
 
     await userEvent.click(screen.getByRole('button', { name: /Add new/ }));
 
-    expect(await screen.findByText('Create empty')).toBeInTheDocument();
-    expect(await screen.findByText('Add new from import')).toBeInTheDocument();
+    const dialog = await screen.findByRole('dialog', { name: 'Create light extension' });
+    expect(within(dialog).getByLabelText('Name')).toBeInTheDocument();
+    expect(within(dialog).getByText('Source ZIP (optional)')).toBeInTheDocument();
+    expect(screen.queryByText('Create empty')).not.toBeInTheDocument();
+    expect(screen.queryByText('Add new from import')).not.toBeInTheDocument();
   });
 
   it('keeps the filter action enabled when rendered through a legacy app shell', async () => {
@@ -193,70 +184,41 @@ describe('LightExtensionListPage', () => {
     expect(await screen.findByRole('button', { name: /filter/i })).toBeEnabled();
   });
 
-  it('imports a JS Block package and relies on create to compile current runtime', async () => {
+  it('uploads an optional source ZIP through the combined create dialog', async () => {
     mocks.api.createRepo.mockResolvedValueOnce({
       id: 'ler_imported',
-      name: 'imported-smoke-import',
-      normalizedName: 'imported-smoke-import',
+      name: 'imported-smoke',
+      normalizedName: 'imported-smoke',
       title: 'Imported smoke',
       description: null,
-      version: 1,
       lifecycleStatus: 'enabled',
-      healthStatus: 'draft',
+      healthStatus: 'pending',
       headCommitId: 'commit-import',
     });
     renderListPage();
 
     await userEvent.click(await screen.findByRole('button', { name: /Add new/ }));
-    await userEvent.click(await screen.findByText('Add new from import'));
-    const dialog = await screen.findByRole('dialog', { name: 'Add new from import' });
+    const dialog = await screen.findByRole('dialog', { name: 'Create light extension' });
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
-    const file = new File(
-      [
-        JSON.stringify({
-          repo: {
-            name: 'imported-smoke',
-            title: 'Imported smoke',
-          },
-          files: [
-            {
-              path: 'src/client/js-blocks/imported-smoke/index.tsx',
-              content: 'ctx.render(<div>Imported smoke block</div>);',
-              language: 'typescript',
-            },
-            {
-              path: 'src/client/js-blocks/imported-smoke/meta.json',
-              content: '{"title":"Imported smoke"}',
-              language: 'json',
-            },
-          ],
-        }),
-      ],
-      'imported-smoke.json',
-      { type: 'application/json' },
-    );
+    const file = new File(['zip-source'], 'imported-smoke.zip', { type: 'application/zip' });
 
     await userEvent.upload(input, file);
-    await waitFor(() => expect(within(dialog).getByLabelText('Name')).toHaveValue('imported-smoke-import'));
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Import' }));
+    await waitFor(() => expect(within(dialog).getByLabelText('Name')).toHaveValue('imported-smoke'));
+    await userEvent.type(within(dialog).getByLabelText('Title'), 'Imported smoke');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Create' }));
 
     await waitFor(() => expect(mocks.api.createRepo).toHaveBeenCalledTimes(1));
     expect(mocks.api.createRepo).toHaveBeenCalledWith(
       expect.objectContaining({
-        name: 'imported-smoke-import',
-        initialFiles: expect.arrayContaining([
-          expect.objectContaining({
-            path: 'src/client/js-blocks/imported-smoke/index.tsx',
-            content: 'ctx.render(<div>Imported smoke block</div>);',
-          }),
-        ]),
+        name: 'imported-smoke',
+        title: 'Imported smoke',
+        zipBase64: 'emlwLXNvdXJjZQ==',
       }),
     );
-    expect(mocks.api.scanEntries).not.toHaveBeenCalledWith('ler_imported');
     expect(await screen.findByText('Repository imported and compiled')).toBeInTheDocument();
   });
 
-  it('opens repository overview in a drawer from the view action', async () => {
+  it('shows repository details directly in the table without detail or diagnostics actions', async () => {
     mocks.api.listRepos.mockResolvedValueOnce([
       {
         id: 'ler_sales',
@@ -264,88 +226,109 @@ describe('LightExtensionListPage', () => {
         normalizedName: 'sales-widgets',
         title: 'Sales widgets',
         description: 'Sales dashboard helpers',
-        version: 1,
         lifecycleStatus: 'enabled',
         healthStatus: 'ready',
         headCommitId: 'commit-1234567890',
+        entryCount: 2,
+        entryKinds: {
+          'js-block': 1,
+          'js-action': 1,
+        },
+        createdAt: '2026-07-08T00:00:00.000Z',
+        updatedAt: '2026-07-09T00:00:00.000Z',
+        lastCompiledAt: '2026-07-09T00:00:00.000Z',
       },
     ]);
-    mocks.api.getRepo.mockResolvedValueOnce({
+    renderListPage();
+
+    expect(await screen.findByText('Sales widgets')).toBeInTheDocument();
+    expect(screen.getByText('Sales dashboard helpers')).toBeInTheDocument();
+    expect(screen.getByText('js-block 1')).toBeInTheDocument();
+    expect(screen.getByText('js-action 1')).toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: 'Status' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'View details' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Reference contract diagnostics' })).not.toBeInTheDocument();
+  });
+
+  it('makes every data column sortable except actions', async () => {
+    mocks.api.listRepos.mockResolvedValueOnce([
+      {
+        id: 'ler_zeta',
+        name: 'zeta-widgets',
+        normalizedName: 'zeta-widgets',
+        title: 'Zeta widgets',
+        description: 'Second description',
+        lifecycleStatus: 'enabled',
+        healthStatus: 'ready',
+        headCommitId: null,
+        entryCount: 2,
+        createdAt: '2026-07-09T00:00:00.000Z',
+        updatedAt: '2026-07-10T00:00:00.000Z',
+      },
+      {
+        id: 'ler_alpha',
+        name: 'alpha-widgets',
+        normalizedName: 'alpha-widgets',
+        title: 'Alpha widgets',
+        description: 'First description',
+        lifecycleStatus: 'disabled',
+        healthStatus: 'ready',
+        headCommitId: null,
+        entryCount: 1,
+        createdAt: '2026-07-08T00:00:00.000Z',
+        updatedAt: '2026-07-09T00:00:00.000Z',
+      },
+    ]);
+    renderListPage();
+
+    expect(await screen.findByText('Zeta widgets')).toBeInTheDocument();
+    expect(document.querySelectorAll('th.ant-table-column-has-sorters')).toHaveLength(5);
+    expect(screen.getByRole('columnheader', { name: 'Actions' })).not.toHaveClass('ant-table-column-has-sorters');
+
+    await userEvent.click(screen.getByText('Name'));
+
+    await waitFor(() => {
+      const dataRows = screen.getAllByRole('row').slice(1);
+      expect(within(dataRows[0]).getByText('Alpha widgets')).toBeInTheDocument();
+    });
+  });
+
+  it('provides the requested repository filters and evaluates their values', () => {
+    expect(LIGHT_EXTENSION_REPO_FILTER_FIELD_NAMES).toEqual([
+      'name',
+      'description',
+      'updatedAt',
+      'createdAt',
+      'enabled',
+    ]);
+    expect(lightExtensionRepoFilterCollection.fields?.map((field) => field.name)).toEqual(
+      LIGHT_EXTENSION_REPO_FILTER_FIELD_NAMES,
+    );
+
+    const repo = {
       id: 'ler_sales',
       name: 'sales-widgets',
       normalizedName: 'sales-widgets',
       title: 'Sales widgets',
       description: 'Sales dashboard helpers',
-      version: 1,
-      lifecycleStatus: 'enabled',
-      healthStatus: 'ready',
-      headCommitId: 'commit-1234567890',
-    });
-    mocks.api.listEntries.mockResolvedValueOnce([
-      {
-        id: 'lee_sales',
-        repoId: 'ler_sales',
-        target: 'client',
-        kind: 'js-block',
-        entryName: 'sales-kpi',
-        entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
-        metaPath: null,
-        settingsPath: null,
-        title: 'Sales KPI',
-        description: null,
-        category: null,
-        icon: null,
-        tags: null,
-        sort: null,
-        settingsSchema: null,
-        compiledCommitId: 'commit-1234567890',
-        runtimeArtifact: {
-          code: 'ctx.render("sales");',
-          version: 'v2',
-          entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
-        },
-        runtimeVersion: 'v2',
-        surfaceStyle: 'render',
-        runtimeCodeHash: 'runtime_hash',
-        filesHash: 'files_hash',
-        settingsDefaultsHash: 'settings_defaults_hash',
-        compiledAt: '2026-07-09T00:00:00.000Z',
-        healthStatus: 'ready',
-        diagnostics: [],
-      },
-    ]);
-    mocks.api.pull.mockResolvedValueOnce({
-      repo: { id: 'ler_sales' },
-      commit: { id: 'commit-1234567890' },
-      tree: { hash: 'tree-1', entryCount: 1, byteSize: 10 },
-      unchanged: false,
-      files: [
-        {
-          path: 'src/client/js-blocks/sales-kpi/index.tsx',
-          language: 'typescript',
-          size: 10,
-          blobHash: 'blob-1',
-          pathHash: 'path-1',
-          pathLowerHash: 'path-lower-1',
-          mode: '',
-        },
+      lifecycleStatus: 'enabled' as const,
+      healthStatus: 'ready' as const,
+      headCommitId: null,
+      createdAt: '2026-07-08T06:00:00.000Z',
+      updatedAt: '2026-07-09T08:00:00.000Z',
+    };
+    const filter: CompiledFilter = {
+      $and: [
+        { name: { $includes: 'sales' } },
+        { description: { $includes: 'dashboard' } },
+        { updatedAt: { $dateOn: '2026-07-09' } },
+        { createdAt: { $dateBefore: '2026-07-09' } },
+        { enabled: { $isTruly: true } },
       ],
-    });
-    renderListPage();
+    };
 
-    expect(await screen.findByRole('button', { name: /Add new/ })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Export' })).not.toBeInTheDocument();
-    expect(screen.queryByText('Light extension repositories')).not.toBeInTheDocument();
-    expect(screen.queryByText('Core settings only')).not.toBeInTheDocument();
-    expect(screen.queryByText('Repository overview')).not.toBeInTheDocument();
-    expect(screen.queryByText('Ready')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Entries' })).not.toBeInTheDocument();
-
-    await userEvent.click(await screen.findByRole('button', { name: 'View details' }));
-
-    expect(await screen.findByText('Repository overview')).toBeInTheDocument();
-    expect(await screen.findAllByText('Sales widgets')).toHaveLength(2);
-    expect(await screen.findByText('src')).toBeInTheDocument();
+    expect(matchesLightExtensionRepoFilter(repo, filter)).toBe(true);
+    expect(matchesLightExtensionRepoFilter(repo, { enabled: { $isFalsy: true } })).toBe(false);
   });
 
   it('opens the source workspace drawer as a large side panel', async () => {
@@ -356,9 +339,8 @@ describe('LightExtensionListPage', () => {
         normalizedName: 'browser-smoke',
         title: 'Browser smoke',
         description: null,
-        version: 1,
         lifecycleStatus: 'enabled',
-        healthStatus: 'draft',
+        healthStatus: 'pending',
         headCommitId: 'commit-1',
       },
     ]);
@@ -405,7 +387,6 @@ describe('LightExtensionListPage', () => {
         normalizedName: 'sales-widgets',
         title: 'Sales widgets',
         description: null,
-        version: 1,
         lifecycleStatus: 'enabled',
         healthStatus: 'ready',
         headCommitId: null,
@@ -416,9 +397,8 @@ describe('LightExtensionListPage', () => {
         normalizedName: 'ops-widgets',
         title: 'Ops widgets',
         description: null,
-        version: 1,
         lifecycleStatus: 'enabled',
-        healthStatus: 'draft',
+        healthStatus: 'pending',
         headCommitId: null,
       },
     ]);
@@ -428,7 +408,6 @@ describe('LightExtensionListPage', () => {
       normalizedName: repoId,
       title: repoId,
       description: null,
-      version: 2,
       lifecycleStatus,
       healthStatus: 'ready',
       headCommitId: null,
@@ -449,12 +428,8 @@ describe('LightExtensionListPage', () => {
     await userEvent.click(await screen.findByText('Disable selected'));
 
     await waitFor(() => expect(mocks.api.changeLifecycle).toHaveBeenCalledTimes(2));
-    expect(mocks.api.changeLifecycle).toHaveBeenCalledWith(
-      expect.objectContaining({ repoId: 'ler_sales', lifecycleStatus: 'disabled' }),
-    );
-    expect(mocks.api.changeLifecycle).toHaveBeenCalledWith(
-      expect.objectContaining({ repoId: 'ler_ops', lifecycleStatus: 'disabled' }),
-    );
+    expect(mocks.api.changeLifecycle).toHaveBeenCalledWith({ repoId: 'ler_sales', lifecycleStatus: 'disabled' });
+    expect(mocks.api.changeLifecycle).toHaveBeenCalledWith({ repoId: 'ler_ops', lifecycleStatus: 'disabled' });
   });
 
   it('changes enablement from the row switch', async () => {
@@ -465,7 +440,6 @@ describe('LightExtensionListPage', () => {
         normalizedName: 'sales-widgets',
         title: 'Sales widgets',
         description: null,
-        version: 1,
         lifecycleStatus: 'disabled',
         healthStatus: 'ready',
         headCommitId: null,
@@ -477,7 +451,6 @@ describe('LightExtensionListPage', () => {
       normalizedName: 'sales-widgets',
       title: 'Sales widgets',
       description: null,
-      version: 2,
       lifecycleStatus: 'enabled',
       healthStatus: 'ready',
       headCommitId: null,
@@ -491,9 +464,7 @@ describe('LightExtensionListPage', () => {
     await userEvent.click(enabledSwitch);
 
     await waitFor(() => expect(mocks.api.changeLifecycle).toHaveBeenCalledTimes(1));
-    expect(mocks.api.changeLifecycle).toHaveBeenCalledWith(
-      expect.objectContaining({ repoId: 'ler_sales', lifecycleStatus: 'enabled' }),
-    );
+    expect(mocks.api.changeLifecycle).toHaveBeenCalledWith({ repoId: 'ler_sales', lifecycleStatus: 'enabled' });
   });
 
   it('removes a repository from the row action', async () => {
@@ -504,24 +475,35 @@ describe('LightExtensionListPage', () => {
         normalizedName: 'sales-widgets',
         title: 'Sales widgets',
         description: null,
-        version: 1,
         lifecycleStatus: 'enabled',
         healthStatus: 'ready',
         headCommitId: null,
       },
     ]);
-    mocks.api.deleteRepo.mockResolvedValueOnce({ deleted: true, repoId: 'ler_sales' });
+    mocks.api.deleteRepo.mockResolvedValueOnce({
+      id: 'ler_sales',
+      name: 'sales-widgets',
+      normalizedName: 'sales-widgets',
+      title: 'Sales widgets',
+      description: null,
+      lifecycleStatus: 'enabled',
+      healthStatus: 'ready',
+      headCommitId: null,
+    });
 
     renderListPage();
 
     expect(await screen.findByText('Sales widgets')).toBeInTheDocument();
     await userEvent.click(await screen.findByRole('button', { name: 'Remove' }));
-    expect(await screen.findByText('Remove this repository?')).toBeInTheDocument();
+    const dialog = await screen.findByRole('dialog', { name: 'Remove this repository?' });
+    expect(dialog).toHaveTextContent('Repository to remove');
+    expect(within(dialog).getByText('Sales widgets')).toBeInTheDocument();
+    expect(within(dialog).getByText('This action cannot be undone')).toBeInTheDocument();
+    expect(mocks.api.deleteRepo).not.toHaveBeenCalled();
 
-    const removeButtons = await screen.findAllByRole('button', { name: 'Remove' });
-    await userEvent.click(removeButtons[removeButtons.length - 1]);
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Remove' }));
 
     await waitFor(() => expect(mocks.api.deleteRepo).toHaveBeenCalledWith('ler_sales'));
-    await waitFor(() => expect(screen.queryByText('Sales widgets')).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText('sales-widgets')).not.toBeInTheDocument());
   });
 });

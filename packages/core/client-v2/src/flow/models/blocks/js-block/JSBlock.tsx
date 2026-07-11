@@ -25,7 +25,14 @@ import { RunJSEditorField } from '../../../components/runjs-studio';
 import {
   resolveRuntimeRunJS,
   createRunJSSourceCascadeMenuUIMode,
+  getDescriptorSchemaHash,
+  getSchemaTitle,
+  getSettingsSchemaProperties,
+  getSettingsSchemaRequired,
+  isSettingValueValid,
+  normalizeSchemaType,
   RunJSSourceResolverRegistry,
+  type JsonSchemaLike,
   type RunJSSourceBinding,
   type RunJSSourceSettings,
   type RunJSSourceSettingsDescriptor,
@@ -62,13 +69,6 @@ type JSBlockRuntimeState = {
   loading: boolean;
   error: JSBlockRuntimeError | null;
   runId: number;
-};
-
-type JsonSchemaLike = Record<string, unknown>;
-
-type SettingsValidationError = {
-  label: string;
-  message: string;
 };
 
 type RunJSExecutionResult = {
@@ -172,178 +172,8 @@ function getLightExtensionSettingStepKey(fieldName: string, schemaHash: string):
   return `leSetting__${sanitizeSettingFieldName(fieldName)}__${shortHash(`${fieldName}:${schemaHash}`)}`;
 }
 
-function normalizeSchemaType(schema: JsonSchemaLike): string | undefined {
-  const schemaType = schema.type;
-  if (Array.isArray(schemaType)) {
-    return schemaType.find((item): item is string => typeof item === 'string' && item !== 'null');
-  }
-  if (typeof schemaType === 'string') {
-    return schemaType;
-  }
-  if (isRecord(schema.properties) || Array.isArray(schema.required)) {
-    return 'object';
-  }
-  if (isRecord(schema.items)) {
-    return 'array';
-  }
-  return undefined;
-}
-
-function getSettingsSchemaProperties(schema: unknown): Record<string, JsonSchemaLike> {
-  if (!isRecord(schema) || !isRecord(schema.properties)) {
-    return {};
-  }
-  return Object.fromEntries(
-    Object.entries(schema.properties).filter(([, childSchema]) => isRecord(childSchema)),
-  ) as Record<string, JsonSchemaLike>;
-}
-
-function getSettingsSchemaRequired(schema: unknown): Set<string> {
-  if (!isRecord(schema) || !Array.isArray(schema.required)) {
-    return new Set();
-  }
-  return new Set(schema.required.filter((item): item is string => typeof item === 'string'));
-}
-
-function getSchemaTitle(schema: JsonSchemaLike, fallback: string): string {
-  return toNonEmptyString(schema.title) || fallback;
-}
-
-function getDescriptorSchemaHash(descriptor: RunJSSourceSettingsDescriptor): string {
-  return toNonEmptyString(descriptor.schemaHash) || shortHash(stableSerialize(descriptor.schema || null));
-}
-
 function cloneRecord(value: unknown): Record<string, unknown> {
   return isRecord(value) ? cloneJsonValue(value) : {};
-}
-
-function validateSettingValue(
-  schema: JsonSchemaLike,
-  value: unknown,
-  required: boolean,
-  label: string,
-): SettingsValidationError[] {
-  const errors: SettingsValidationError[] = [];
-  const type = normalizeSchemaType(schema);
-
-  if (required && value === undefined) {
-    errors.push({ label, message: 'Required' });
-    return errors;
-  }
-
-  if (value === undefined) {
-    return errors;
-  }
-
-  if (type === 'string' && typeof value !== 'string') {
-    errors.push({ label, message: 'Must be a string' });
-  }
-  if ((type === 'number' || type === 'integer') && typeof value !== 'number') {
-    errors.push({ label, message: 'Must be a number' });
-  }
-  if (type === 'integer' && typeof value === 'number' && !Number.isInteger(value)) {
-    errors.push({ label, message: 'Must be an integer' });
-  }
-  if (type === 'boolean' && typeof value !== 'boolean') {
-    errors.push({ label, message: 'Must be a boolean' });
-  }
-  if (type === 'array' && !Array.isArray(value)) {
-    errors.push({ label, message: 'Must be an array' });
-  }
-  if (type === 'object' && !isRecord(value)) {
-    errors.push({ label, message: 'Must be an object' });
-  }
-  if (type === 'object' && isRecord(value)) {
-    errors.push(...validateObjectSettingValue(schema, value, label));
-  }
-
-  const enumValues = Array.isArray(schema.enum) ? schema.enum : null;
-  if (enumValues && !enumValues.some((item) => stableSerialize(item) === stableSerialize(value))) {
-    errors.push({ label, message: 'Must be one of the allowed values' });
-  }
-
-  if (typeof value === 'string') {
-    const minLength = typeof schema.minLength === 'number' ? schema.minLength : undefined;
-    const maxLength = typeof schema.maxLength === 'number' ? schema.maxLength : undefined;
-    if (typeof minLength === 'number' && value.length < minLength) {
-      errors.push({ label, message: 'Too short' });
-    }
-    if (typeof maxLength === 'number' && value.length > maxLength) {
-      errors.push({ label, message: 'Too long' });
-    }
-    if (!isValidSettingStringFormat(toNonEmptyString(schema.format), value)) {
-      errors.push({ label, message: 'Must match the required format' });
-    }
-  }
-
-  if (typeof value === 'number') {
-    const minimum = typeof schema.minimum === 'number' ? schema.minimum : undefined;
-    const maximum = typeof schema.maximum === 'number' ? schema.maximum : undefined;
-    if (typeof minimum === 'number' && value < minimum) {
-      errors.push({ label, message: 'Too small' });
-    }
-    if (typeof maximum === 'number' && value > maximum) {
-      errors.push({ label, message: 'Too large' });
-    }
-  }
-
-  if (Array.isArray(value) && isRecord(schema.items)) {
-    value.forEach((item, index) => {
-      const itemLabel = `${label}[${index}]`;
-      if (normalizeSchemaType(schema.items as JsonSchemaLike) === 'object') {
-        if (!isRecord(item)) {
-          errors.push({ label: itemLabel, message: 'Must be an object' });
-          return;
-        }
-        errors.push(...validateObjectSettingValue(schema.items as JsonSchemaLike, item, itemLabel));
-        return;
-      }
-      errors.push(...validateSettingValue(schema.items as JsonSchemaLike, item, false, itemLabel));
-    });
-  }
-
-  return errors;
-}
-
-function validateObjectSettingValue(
-  schema: JsonSchemaLike,
-  value: Record<string, unknown>,
-  labelPrefix: string,
-): SettingsValidationError[] {
-  const properties = getSettingsSchemaProperties(schema);
-  const requiredFields = getSettingsSchemaRequired(schema);
-  return Object.entries(properties).flatMap(([childName, childSchema]) => {
-    const childLabel = getSchemaTitle(childSchema, `${labelPrefix}.${childName}`);
-    const childValue = Object.prototype.hasOwnProperty.call(value, childName) ? value[childName] : undefined;
-    return validateSettingValue(childSchema, childValue, requiredFields.has(childName), childLabel);
-  });
-}
-
-function isValidSettingStringFormat(format: string | undefined, value: string): boolean {
-  if (!format) {
-    return true;
-  }
-  if (format === 'date') {
-    return /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(`${value}T00:00:00.000Z`));
-  }
-  if (format === 'date-time') {
-    return !Number.isNaN(Date.parse(value));
-  }
-  if (format === 'email') {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-  }
-  if (format === 'time') {
-    return /^([01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d{1,3})?)?$/.test(value);
-  }
-  if (format === 'uri' || format === 'url') {
-    try {
-      const url = new URL(value);
-      return Boolean(url.protocol && url.hostname);
-    } catch {
-      return false;
-    }
-  }
-  return true;
 }
 
 function toNonEmptyString(value: unknown): string | undefined {
@@ -407,19 +237,19 @@ function normalizeRuntimeError(error: unknown): JSBlockRuntimeError {
   let hint = 'Check the JavaScript block configuration and retry.';
   if (status === 403 || normalizedCode.includes('permission') || normalizedCode.includes('forbidden')) {
     title = 'Light extension access denied';
-    hint = 'Ask an administrator for permission to use this light extension publication.';
-  } else if (status === 404 || normalizedCode.includes('publication_not_found') || normalizedCode.includes('missing')) {
-    title = 'Light extension publication missing';
-    hint = 'Choose an available publication or publish this entry again.';
+    hint = 'Ask an administrator for permission to use this light extension.';
+  } else if (status === 404 || normalizedCode.includes('entry_not_found') || normalizedCode.includes('missing')) {
+    title = 'Light extension entry missing';
+    hint = 'Choose an available entry or restore this entry.';
   } else if (normalizedCode.includes('binding_outdated') || normalizedCode.includes('outdated')) {
     title = 'Light extension binding is outdated';
-    hint = 'Refresh the block settings and choose the current active publication.';
+    hint = 'Refresh the block settings and choose the current entry.';
   } else if (normalizedCode.includes('settings_invalid')) {
     title = 'Light extension settings are invalid';
     hint = 'Open the block settings and fix the light extension settings.';
   } else if (normalizedCode.includes('repo_archived') || normalizedCode.includes('repository_archived')) {
     title = 'Light extension repository is archived';
-    hint = 'Restore the repository or choose a publication from another repository.';
+    hint = 'Restore the repository or choose an entry from another repository.';
   }
 
   return {
@@ -836,8 +666,7 @@ function createLightExtensionSettingStep(options: {
         };
       },
       beforeParamsSave(ctx: FlowSettingsContext<JSBlockModel>, params: Record<string, unknown>) {
-        const errors = validateSettingValue(fieldSchema, params?.value, required, title);
-        if (errors.length === 0) {
+        if (isSettingValueValid(fieldSchema, params?.value, required)) {
           return;
         }
         ctx.model.context?.message?.error?.(ctx.model.context.t('Settings validation failed'));
@@ -1030,7 +859,6 @@ JSBlockModel.registerFlow({
       title: tExpr('Code source'),
       uiMode: createRunJSSourceCascadeMenuUIMode({
         kind: 'js-block',
-        defaultVersionPolicy: 'follow-active',
       }),
       useRawParams: true,
       defaultParams: getSourceModeDefaultParams,

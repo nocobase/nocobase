@@ -23,9 +23,7 @@ import { AssignFormModel } from './AssignFormModel';
 import {
   buildRunJSOwnerLocator,
   evaluateResolvedRunJSValue,
-  reportRunJSRuntimeErrorBestEffort,
   resolveRuntimeRunJS,
-  type ResolvedRuntimeRunJS,
 } from '../../../components/runjs-source';
 
 export const ASSIGN_FIELD_VALUES_STEP_KEY = 'assignFieldValues';
@@ -232,31 +230,20 @@ async function resolveAssignRunJSValue(
     if (normalized.sourceMode !== 'light-extension' && !normalized.code.trim()) {
       return SKIP_ASSIGN_VALUE;
     }
-    let resolved: ResolvedRuntimeRunJS | undefined;
     const ownerLocator = buildRunJSOwnerLocator({
       modelUid: ctx.model?.uid,
       use: ctx.model?.use,
       hostPath,
     });
-    try {
-      resolved = await resolveRuntimeRunJS({
-        runJs: value,
-        context: {
-          ownerKind: 'flowModel.runjsHost',
-          ownerLocator,
-        },
-      });
-      const evaluated = await evaluateResolvedRunJSValue({ ctx, resolved });
-      return typeof evaluated === 'undefined' ? SKIP_ASSIGN_VALUE : evaluated;
-    } catch (error) {
-      await reportRunJSRuntimeErrorBestEffort({
-        ctx,
-        error,
-        resolved,
+    const resolved = await resolveRuntimeRunJS({
+      runJs: value,
+      context: {
+        ownerKind: 'flowModel.runjsHost',
         ownerLocator,
-      });
-      throw error;
-    }
+      },
+    });
+    const evaluated = await evaluateResolvedRunJSValue({ ctx, resolved });
+    return typeof evaluated === 'undefined' ? SKIP_ASSIGN_VALUE : evaluated;
   }
 
   return value;

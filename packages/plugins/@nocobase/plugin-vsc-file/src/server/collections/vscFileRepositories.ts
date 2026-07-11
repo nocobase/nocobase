@@ -24,9 +24,6 @@ export default defineCollection({
       fields: ['headCommitId'],
     },
     {
-      fields: ['publishedCommitId'],
-    },
-    {
       fields: ['status'],
     },
   ],
@@ -67,11 +64,6 @@ export default defineCollection({
     {
       type: 'string',
       name: 'headCommitId',
-      allowNull: true,
-    },
-    {
-      type: 'string',
-      name: 'publishedCommitId',
       allowNull: true,
     },
     {

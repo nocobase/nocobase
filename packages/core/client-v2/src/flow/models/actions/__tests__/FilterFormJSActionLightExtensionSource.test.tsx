@@ -18,7 +18,7 @@ describe('FilterFormJSActionModel light extension source', () => {
     RunJSSourceResolverRegistry.clear();
   });
 
-  it('resolves JS Action publications with filter form values', async () => {
+  it('resolves JS Action entries with filter form values', async () => {
     const resolve = vi.fn(() => ({
       code: `
 const values = ctx.form.getFieldsValue();

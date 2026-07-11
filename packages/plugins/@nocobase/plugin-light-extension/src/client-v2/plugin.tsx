@@ -20,11 +20,9 @@ import {
   Plugin,
   RunJSSourceResolverRegistry,
   RunJSEditorRegistry,
-  registerBlockGridSelectSceneAddBlockProvider,
 } from '@nocobase/client-v2';
 
 import { LIGHT_EXTENSION_ACL_SNIPPET, LIGHT_EXTENSION_SETTINGS_KEY } from '../constants';
-import { createLightExtensionJSBlockAddItems } from './add-block/lightExtensionJsBlockItems';
 import {
   JSActionLightExtensionSourceField,
   JSBlockLightExtensionSourceField,
@@ -63,9 +61,6 @@ export class PluginLightExtensionClientV2 extends Plugin<Record<string, never>, 
       RunJSSourceResolverRegistry.registerResolver(createLightExtensionRunJSResolver(this.app.apiClient)),
     );
     this.disposers.push(RunJSEditorRegistry.registerProvider(createRunJSLightExtensionEditorProvider()));
-    this.disposers.push(
-      registerBlockGridSelectSceneAddBlockProvider('light-extension-js-blocks', createLightExtensionJSBlockAddItems),
-    );
     activeLightExtensionClientV2Instance = this;
 
     const title = this.t('Light extensions');

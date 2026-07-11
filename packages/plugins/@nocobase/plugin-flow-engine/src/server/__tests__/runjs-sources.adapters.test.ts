@@ -60,19 +60,74 @@ describe('flow-engine RunJS source adapters', () => {
       language: 'typescript',
     });
 
-    const publish = await publishSource(locator, open.body.data.ownerFingerprint, 'ctx.render("newValue");');
-    expect(publish.status).toBe(200);
+    const save = await saveSource(locator, open.body.data, 'ctx.render("newValue");');
+    expect(save.status).toBe(200);
 
     const updated = await repository.findModelById('js-step-model');
     expect(getAtPath(updated, ['stepParams', 'jsSettings', 'runJs'])).toMatchObject({
-      code: 'ctx.render("newValue");',
+      code: runtimeCode('ctx.render("newValue");'),
       version: 'v2',
       keep: 'preserved',
       sourceRef: {
         type: 'vsc-file',
-        repoId: publish.body.data.repository.id,
-        publishedCommitId: publish.body.data.commit.id,
+        repoId: save.body.data.repository.id,
+        commitId: save.body.data.commit.id,
         entry: 'src/main.tsx',
+      },
+    });
+  });
+
+  it.each([
+    {
+      label: 'flow',
+      flowKey: 'missingSettings',
+      stepKey: 'runJs',
+      paramPath: ['code'],
+      expectedPath: 'stepParams.missingSettings.runJs',
+    },
+    {
+      label: 'step',
+      flowKey: 'jsSettings',
+      stepKey: 'missingRunJs',
+      paramPath: ['code'],
+      expectedPath: 'stepParams.jsSettings.missingRunJs',
+    },
+    {
+      label: 'parameter',
+      flowKey: 'jsSettings',
+      stepKey: 'runJs',
+      paramPath: ['missingCode'],
+      expectedPath: 'stepParams.jsSettings.runJs.missingCode',
+    },
+  ])('rejects FlowModel step locators with a missing $label path', async (input) => {
+    await repository.insertModel({
+      uid: 'js-step-missing-path-model',
+      title: 'JS block',
+      use: 'JSBlockModel',
+      stepParams: {
+        jsSettings: {
+          runJs: {
+            code: 'return oldValue;',
+            version: 'v2',
+          },
+        },
+      },
+    });
+
+    const response = await openSource({
+      kind: 'flowModel.step',
+      modelUid: 'js-step-missing-path-model',
+      flowKey: input.flowKey,
+      stepKey: input.stepKey,
+      paramPath: input.paramPath,
+    });
+
+    expect(response.status).toBe(404);
+    expect(response.body.errors[0]).toMatchObject({
+      code: 'RUNJS_SOURCE_NOT_FOUND',
+      status: 404,
+      details: {
+        path: input.expectedPath,
       },
     });
   });
@@ -102,20 +157,20 @@ describe('flow-engine RunJS source adapters', () => {
     const open = await openSource(locator);
     expect(open.status).toBe(200);
 
-    const publish = await publishSource(
+    const save = await saveSource(
       locator,
-      open.body.data.ownerFingerprint,
+      open.body.data,
       "ctx.request({ url: 'users:list' });\nctx.render('newValue');",
     );
 
-    expect(publish.status).toBe(200);
+    expect(save.status).toBe(200);
     const updated = await repository.findModelById('js-step-user-runjs-model');
-    expect(getAtPath(updated, ['stepParams', 'jsSettings', 'runJs', 'code'])).toBe(
-      "ctx.request({ url: 'users:list' });\nctx.render('newValue');",
+    expect(getAtPath(updated, ['stepParams', 'jsSettings', 'runJs', 'code'])).toEqual(
+      runtimeCode("ctx.request({ url: 'users:list' });\nctx.render('newValue');"),
     );
   });
 
-  it('allows FlowModel publish after light-extension source metadata changes without changing code', async () => {
+  it('allows FlowModel save after light-extension source metadata changes without changing code', async () => {
     await repository.insertModel({
       uid: 'js-step-light-extension-metadata-model',
       title: 'Light extension metadata JS block',
@@ -131,13 +186,11 @@ describe('flow-engine RunJS source adapters', () => {
               repoId: 'repo_old',
               entryId: 'entry_old',
               kind: 'js-block',
-              publicationId: 'pub_old',
-              versionPolicy: 'follow-active',
             },
             sourceRef: {
               type: 'vsc-file',
               repoId: 'repo_old',
-              publishedCommitId: 'commit_old',
+              commitId: 'commit_old',
               entry: 'src/main.tsx',
             },
             settings: {
@@ -172,13 +225,11 @@ describe('flow-engine RunJS source adapters', () => {
               repoId: 'repo_new',
               entryId: 'entry_new',
               kind: 'js-block',
-              publicationId: 'pub_new',
-              versionPolicy: 'follow-active',
             },
             sourceRef: {
               type: 'vsc-file',
               repoId: 'repo_new',
-              publishedCommitId: 'commit_new',
+              commitId: 'commit_new',
               entry: 'src/main.tsx',
             },
             settings: {
@@ -190,12 +241,12 @@ describe('flow-engine RunJS source adapters', () => {
       },
     });
 
-    const publish = await publishSource(locator, open.body.data.ownerFingerprint, 'ctx.render("newValue");');
-    expect(publish.status).toBe(200);
+    const save = await saveSource(locator, open.body.data, 'ctx.render("newValue");');
+    expect(save.status).toBe(200);
 
     const updated = await repository.findModelById('js-step-light-extension-metadata-model');
     expect(getAtPath(updated, ['stepParams', 'jsSettings', 'runJs'])).toMatchObject({
-      code: 'ctx.render("newValue");',
+      code: runtimeCode('ctx.render("newValue");'),
       keep: 'preserved',
       sourceBinding: {
         repoId: 'repo_new',
@@ -206,14 +257,14 @@ describe('flow-engine RunJS source adapters', () => {
       },
       sourceRef: {
         type: 'vsc-file',
-        repoId: publish.body.data.repository.id,
-        publishedCommitId: publish.body.data.commit.id,
+        repoId: save.body.data.repository.id,
+        commitId: save.body.data.commit.id,
         entry: 'src/main.tsx',
       },
     });
   });
 
-  it('rejects FlowModel publish when sibling owner settings changed after open', async () => {
+  it('saves against the current FlowModel state and preserves sibling settings changed after open', async () => {
     await repository.insertModel({
       uid: 'js-step-stale-model',
       title: 'Stale JS block',
@@ -252,24 +303,75 @@ describe('flow-engine RunJS source adapters', () => {
       },
     });
 
-    const commitCountBeforePublish = await app.db.getRepository('vscFileCommits').count();
-    const publish = await publishSource(locator, open.body.data.ownerFingerprint, 'ctx.render("newValue");');
+    const commitCountBeforeSave = await app.db.getRepository('vscFileCommits').count();
+    const save = await saveSource(locator, open.body.data, 'ctx.render("newValue");');
 
-    expect(publish.status).toBe(409);
-    expect(publish.body.errors[0]).toMatchObject({
-      code: 'RUNJS_SOURCE_OWNER_OUTDATED',
-      status: 409,
-    });
-    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforePublish);
+    expect(save.status).toBe(200);
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforeSave + 1);
 
     const updated = await repository.findModelById('js-step-stale-model');
     expect(getAtPath(updated, ['stepParams', 'jsSettings', 'runJs'])).toMatchObject({
-      code: 'return oldValue;',
+      code: runtimeCode('ctx.render("newValue");'),
       keep: 'changed elsewhere',
     });
   });
 
-  it('denies FlowModel publish when the current role cannot save flow models', async () => {
+  it('rejects save when the FlowModel host code diverges from the versioned head', async () => {
+    await repository.insertModel({
+      uid: 'js-step-diverged-host-model',
+      title: 'Diverged host JS block',
+      use: 'JSBlockModel',
+      stepParams: {
+        jsSettings: {
+          runJs: {
+            code: 'ctx.render("oldValue");',
+            version: 'v2',
+            keep: 'preserved',
+          },
+        },
+      },
+    });
+
+    const locator: RunJSSourceLocator = {
+      kind: 'flowModel.step',
+      modelUid: 'js-step-diverged-host-model',
+      flowKey: 'jsSettings',
+      stepKey: 'runJs',
+      paramPath: ['code'],
+    };
+    const open = await openSource(locator);
+    expect(open.status).toBe(200);
+
+    await repository.patch({
+      uid: 'js-step-diverged-host-model',
+      stepParams: {
+        jsSettings: {
+          runJs: {
+            code: 'ctx.render("changed outside Studio");',
+            version: 'v2',
+            keep: 'preserved',
+          },
+        },
+      },
+    });
+
+    const commitCountBeforeSave = await app.db.getRepository('vscFileCommits').count();
+    const save = await saveSource(locator, open.body.data, 'ctx.render("Studio edit");');
+
+    expect(save.status).toBe(409);
+    expect(save.body.errors[0]).toMatchObject({
+      code: 'RUNJS_SOURCE_OWNER_OUTDATED',
+      message: 'RunJS host code differs from the versioned source',
+    });
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforeSave);
+
+    const updated = await repository.findModelById('js-step-diverged-host-model');
+    expect(getAtPath(updated, ['stepParams', 'jsSettings', 'runJs', 'code'])).toBe(
+      'ctx.render("changed outside Studio");',
+    );
+  });
+
+  it('denies FlowModel save when the current role cannot save flow models', async () => {
     await app.db.getRepository('roles').create({
       values: {
         name: 'runjs-reader',
@@ -313,16 +415,11 @@ describe('flow-engine RunJS source adapters', () => {
     const open = await openSource(locator, restrictedAgent);
     expect(open.status).toBe(200);
 
-    const commitCountBeforePublish = await app.db.getRepository('vscFileCommits').count();
-    const publish = await publishSource(
-      locator,
-      open.body.data.ownerFingerprint,
-      'ctx.render("denied");',
-      restrictedAgent,
-    );
+    const commitCountBeforeSave = await app.db.getRepository('vscFileCommits').count();
+    const save = await saveSource(locator, open.body.data, 'ctx.render("denied");', restrictedAgent);
 
-    expect(publish.status).toBe(403);
-    expect(publish.body.errors[0]).toMatchObject({
+    expect(save.status).toBe(403);
+    expect(save.body.errors[0]).toMatchObject({
       code: 'PERMISSION_DENIED',
       status: 403,
       details: {
@@ -330,7 +427,7 @@ describe('flow-engine RunJS source adapters', () => {
         action: 'save',
       },
     });
-    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforePublish);
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforeSave);
   });
 
   it('checks nested FlowModel source permission before loading the owner model', async () => {
@@ -697,15 +794,15 @@ describe('flow-engine RunJS source adapters', () => {
       },
     });
 
-    await publishNested(['values', 0, 'value'], 'defaultValue', 'const nextNested = "nextNested";\nreturn nextNested;');
-    await publishNested(['linkage', 'params', 'value'], 'linkageRunjs', 'ctx.message.info("nextLinkage");');
-    await publishNested(['eventFlow', 'params', 'code'], 'eventFlow', 'ctx.message.info("nextEvent");');
-    await publishNested(
+    await saveNested(['values', 0, 'value'], 'defaultValue', 'const nextNested = "nextNested";\nreturn nextNested;');
+    await saveNested(['linkage', 'params', 'value'], 'linkageRunjs', 'ctx.message.info("nextLinkage");');
+    await saveNested(['eventFlow', 'params', 'code'], 'eventFlow', 'ctx.message.info("nextEvent");');
+    await saveNested(
       ['assignForm', 'fieldSettings', 'assignValue', 'value'],
       'assignForm',
       'const nextAssign = "nextAssign";\nreturn nextAssign;',
     );
-    await publishNested(
+    await saveNested(
       ['filterForm', 'formFilterBlockModelSettings', 'defaultValues', 'value', 0, 'value'],
       'filterFormDefaultValues',
       'const nextFilter = "nextFilter";\nreturn nextFilter;',
@@ -715,22 +812,22 @@ describe('flow-engine RunJS source adapters', () => {
     const configure = getAtPath(updated, ['stepParams', 'rules', 'configure']);
 
     expect(getAtPath(configure, ['values', 0, 'value'])).toMatchObject({
-      code: 'const nextNested = "nextNested";\nreturn nextNested;',
+      code: runtimeCode('const nextNested = "nextNested";\nreturn nextNested;'),
       version: 'v2',
       keep: 'nested',
     });
     expect(getAtPath(configure, ['linkage', 'params', 'value'])).toMatchObject({
-      script: 'ctx.message.info("nextLinkage");',
+      script: runtimeCode('ctx.message.info("nextLinkage");'),
       keep: 'script',
     });
     expect(getAtPath(configure, ['eventFlow', 'params'])).toMatchObject({
-      code: 'ctx.message.info("nextEvent");',
+      code: runtimeCode('ctx.message.info("nextEvent");'),
       keep: 'event',
     });
     expect(getAtPath(configure, ['assignForm', 'fieldSettings', 'assignValue'])).toMatchObject({
       mode: 'dynamic',
       value: {
-        code: 'const nextAssign = "nextAssign";\nreturn nextAssign;',
+        code: runtimeCode('const nextAssign = "nextAssign";\nreturn nextAssign;'),
         version: 'v2',
         keep: 'assign',
       },
@@ -741,13 +838,13 @@ describe('flow-engine RunJS source adapters', () => {
       field: 'status',
       operator: '$eq',
       value: {
-        code: 'const nextFilter = "nextFilter";\nreturn nextFilter;',
+        code: runtimeCode('const nextFilter = "nextFilter";\nreturn nextFilter;'),
         version: 'v2',
         keep: 'filter',
       },
     });
 
-    async function publishNested(valuePath: Array<string | number>, scene: string, code: string) {
+    async function saveNested(valuePath: Array<string | number>, scene: string, code: string) {
       const locator: RunJSSourceLocator = {
         kind: 'flowModel.nestedRunJS',
         modelUid: 'nested-runjs-model',
@@ -759,9 +856,123 @@ describe('flow-engine RunJS source adapters', () => {
       const open = await openSource(locator);
 
       expect(open.status).toBe(200);
-      const publish = await publishSource(locator, open.body.data.ownerFingerprint, code);
-      expect(publish.status).toBe(200);
+      const save = await saveSource(locator, open.body.data, code);
+      expect(save.status).toBe(200);
     }
+  });
+
+  it('preserves nested sibling changes after open but rejects an actual nested code change', async () => {
+    await repository.insertModel({
+      uid: 'nested-runjs-fingerprint-model',
+      use: 'FormModel',
+      stepParams: {
+        eventSettings: {
+          customVariable: {
+            title: 'Original step title',
+            variables: [
+              {
+                key: 'var_total',
+                title: 'Original variable title',
+                type: 'runjs',
+                runjs: {
+                  code: 'return 1;',
+                  version: 'v2',
+                  keep: 'original sibling',
+                },
+              },
+            ],
+          },
+        },
+      },
+    });
+
+    const locator: RunJSSourceLocator = {
+      kind: 'flowModel.nestedRunJS',
+      modelUid: 'nested-runjs-fingerprint-model',
+      containerFlowKey: 'eventSettings',
+      containerStepKey: 'customVariable',
+      valuePath: ['variables', 'var_total', 'runjs'],
+      scene: 'eventFlow',
+    };
+    const open = await openSource(locator);
+    expect(open.status).toBe(200);
+
+    await repository.patch({
+      uid: 'nested-runjs-fingerprint-model',
+      stepParams: {
+        eventSettings: {
+          customVariable: {
+            title: 'Changed elsewhere',
+            variables: [
+              {
+                key: 'var_total',
+                title: 'Changed variable title',
+                type: 'runjs',
+                runjs: {
+                  code: 'return 1;',
+                  version: 'v2',
+                  keep: 'changed elsewhere',
+                },
+              },
+            ],
+          },
+        },
+      },
+    });
+
+    const save = await saveSource(locator, open.body.data, 'return 2;');
+    expect(save.status).toBe(200);
+    const saved = await repository.findModelById('nested-runjs-fingerprint-model');
+    expect(getAtPath(saved, ['stepParams', 'eventSettings', 'customVariable'])).toMatchObject({
+      title: 'Changed elsewhere',
+      variables: [
+        expect.objectContaining({
+          title: 'Changed variable title',
+          runjs: expect.objectContaining({
+            code: runtimeCode('return 2;'),
+            keep: 'changed elsewhere',
+          }),
+        }),
+      ],
+    });
+
+    const reopened = await openSource(locator);
+    expect(reopened.status).toBe(200);
+    await repository.patch({
+      uid: 'nested-runjs-fingerprint-model',
+      stepParams: {
+        eventSettings: {
+          customVariable: {
+            title: 'Changed elsewhere',
+            variables: [
+              {
+                key: 'var_total',
+                title: 'Changed variable title',
+                type: 'runjs',
+                runjs: {
+                  code: 'return 3;',
+                  version: 'v2',
+                  keep: 'changed elsewhere',
+                },
+              },
+            ],
+          },
+        },
+      },
+    });
+
+    const commitCountBeforeRejectedSave = await app.db.getRepository('vscFileCommits').count();
+    const rejected = await saveSource(locator, reopened.body.data, 'return 4;');
+    expect(rejected.status).toBe(409);
+    expect(rejected.body.errors[0]).toMatchObject({
+      code: 'RUNJS_SOURCE_OWNER_OUTDATED',
+      message: 'RunJS host code differs from the versioned source',
+    });
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforeRejectedSave);
+    const diverged = await repository.findModelById('nested-runjs-fingerprint-model');
+    expect(
+      getAtPath(diverged, ['stepParams', 'eventSettings', 'customVariable', 'variables', 0, 'runjs', 'code']),
+    ).toBe('return 3;');
   });
 
   it('reads and writes nested RunJS sources through keyed arrays', async () => {
@@ -824,24 +1035,24 @@ describe('flow-engine RunJS source adapters', () => {
       },
     });
 
-    await publishNested(
+    await saveNested(
       ['value', 'rule_1', 'actions', 'runjs_action', 'params', 'value', 'script'],
       'linkage',
       'ctx.message.info("nextLinkage");',
     );
-    await publishNested(
+    await saveNested(
       ['value', 'rule_1', 'actions', 'assign_action', 'params', 'value', 'assign_rule', 'value'],
       'formValue',
       'return "nextAssign";',
     );
-    await publishNested(['variables', 'var_total', 'runjs'], 'eventFlow', 'return 123;');
+    await saveNested(['variables', 'var_total', 'runjs'], 'eventFlow', 'return 123;');
 
     const updated = await repository.findModelById('nested-keyed-runjs-model');
 
     expect(
       getAtPath(updated, ['stepParams', 'eventSettings', 'linkageRules', 'value', 0, 'actions', 0, 'params', 'value']),
     ).toMatchObject({
-      script: 'ctx.message.info("nextLinkage");',
+      script: runtimeCode('ctx.message.info("nextLinkage");'),
       keep: 'script',
     });
     expect(
@@ -859,19 +1070,19 @@ describe('flow-engine RunJS source adapters', () => {
         'value',
       ]),
     ).toMatchObject({
-      code: 'return "nextAssign";',
+      code: runtimeCode('return "nextAssign";'),
       version: 'v2',
       keep: 'assign',
     });
     expect(
       getAtPath(updated, ['stepParams', 'eventSettings', 'customVariable', 'variables', 0, 'runjs']),
     ).toMatchObject({
-      code: 'return 123;',
+      code: runtimeCode('return 123;'),
       version: 'v2',
       keep: 'variable',
     });
 
-    async function publishNested(valuePath: Array<string | number>, scene: string, code: string) {
+    async function saveNested(valuePath: Array<string | number>, scene: string, code: string) {
       const locator: RunJSSourceLocator = {
         kind: 'flowModel.nestedRunJS',
         modelUid: 'nested-keyed-runjs-model',
@@ -883,8 +1094,8 @@ describe('flow-engine RunJS source adapters', () => {
       const open = await openSource(locator);
 
       expect(open.status).toBe(200);
-      const publish = await publishSource(locator, open.body.data.ownerFingerprint, code);
-      expect(publish.status).toBe(200);
+      const save = await saveSource(locator, open.body.data, code);
+      expect(save.status).toBe(200);
     }
   });
 
@@ -917,17 +1128,17 @@ describe('flow-engine RunJS source adapters', () => {
       },
     });
 
-    const commitCountBeforePublish = await app.db.getRepository('vscFileCommits').count();
-    const publish = await publishSource(locator, 'missing-owner-fingerprint', 'ctx.message.info("draft");');
+    const commitCountBeforeSave = await app.db.getRepository('vscFileCommits').count();
+    const save = await saveSource(locator, 'missing-owner-fingerprint', 'ctx.message.info("edited");');
 
-    expect(publish.status).toBe(404);
-    expect(publish.body.errors[0]).toMatchObject({
+    expect(save.status).toBe(404);
+    expect(save.body.errors[0]).toMatchObject({
       code: 'RUNJS_SOURCE_NOT_FOUND',
       details: {
         key: 'rule_new',
       },
     });
-    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforePublish);
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforeSave);
 
     const updated = await repository.findModelById('nested-missing-keyed-container-model');
     expect(getAtPath(updated, ['stepParams', 'eventSettings', 'linkageRules', 'value'])).toBeUndefined();
@@ -974,17 +1185,17 @@ describe('flow-engine RunJS source adapters', () => {
       },
     });
 
-    const commitCountBeforePublish = await app.db.getRepository('vscFileCommits').count();
-    const publish = await publishSource(locator, 'missing-owner-fingerprint', 'ctx.message.info("draft");');
+    const commitCountBeforeSave = await app.db.getRepository('vscFileCommits').count();
+    const save = await saveSource(locator, 'missing-owner-fingerprint', 'ctx.message.info("edited");');
 
-    expect(publish.status).toBe(404);
-    expect(publish.body.errors[0]).toMatchObject({
+    expect(save.status).toBe(404);
+    expect(save.body.errors[0]).toMatchObject({
       code: 'RUNJS_SOURCE_NOT_FOUND',
       details: {
         path: 'value.rule_1.actions.runjs_action.params.value.script',
       },
     });
-    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforePublish);
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforeSave);
 
     const updated = await repository.findModelById('nested-missing-keyed-target-model');
     expect(
@@ -992,7 +1203,7 @@ describe('flow-engine RunJS source adapters', () => {
     ).toBeUndefined();
   });
 
-  it('creates RunJSValue objects when publishing missing value-surface leaves', async () => {
+  it('creates RunJSValue objects when saving missing value-surface leaves', async () => {
     await repository.insertModel({
       uid: 'nested-empty-value-surface-model',
       use: 'FormModel',
@@ -1025,23 +1236,25 @@ describe('flow-engine RunJS source adapters', () => {
 
     const defaultOpen = await openSource(defaultLocator);
     expect(defaultOpen.status).toBe(200);
-    await expect(
-      publishSource(defaultLocator, defaultOpen.body.data.ownerFingerprint, 'return "default";'),
-    ).resolves.toHaveProperty('status', 200);
+    await expect(saveSource(defaultLocator, defaultOpen.body.data, 'return "default";')).resolves.toHaveProperty(
+      'status',
+      200,
+    );
 
     const assignOpen = await openSource(assignLocator);
     expect(assignOpen.status).toBe(200);
-    await expect(
-      publishSource(assignLocator, assignOpen.body.data.ownerFingerprint, 'return "assigned";'),
-    ).resolves.toHaveProperty('status', 200);
+    await expect(saveSource(assignLocator, assignOpen.body.data, 'return "assigned";')).resolves.toHaveProperty(
+      'status',
+      200,
+    );
 
     const updated = await repository.findModelById('nested-empty-value-surface-model');
     expect(getAtPath(updated, ['stepParams', 'editItemSettings', 'initialValue', 'defaultValue'])).toEqual({
-      code: 'return "default";',
+      code: runtimeCode('return "default";'),
       version: 'v2',
     });
     expect(getAtPath(updated, ['stepParams', 'fieldSettings', 'assignValue', 'value'])).toEqual({
-      code: 'return "assigned";',
+      code: runtimeCode('return "assigned";'),
       version: 'v2',
     });
   });
@@ -1071,17 +1284,17 @@ describe('flow-engine RunJS source adapters', () => {
       },
     });
 
-    const commitCountBeforePublish = await app.db.getRepository('vscFileCommits').count();
-    const publish = await publishSource(locator, 'missing-owner-fingerprint', 'return "created";');
+    const commitCountBeforeSave = await app.db.getRepository('vscFileCommits').count();
+    const save = await saveSource(locator, 'missing-owner-fingerprint', 'return "created";');
 
-    expect(publish.status).toBe(404);
-    expect(publish.body.errors[0]).toMatchObject({
+    expect(save.status).toBe(404);
+    expect(save.body.errors[0]).toMatchObject({
       code: 'RUNJS_SOURCE_NOT_FOUND',
       details: {
         path: 'stepParams.editItemSettings.initialValue',
       },
     });
-    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforePublish);
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforeSave);
 
     const updated = await repository.findModelById('nested-missing-owner-model');
     expect(getAtPath(updated, ['stepParams', 'editItemSettings'])).toBeUndefined();
@@ -1116,17 +1329,17 @@ describe('flow-engine RunJS source adapters', () => {
       },
     });
 
-    const commitCountBeforePublish = await app.db.getRepository('vscFileCommits').count();
-    const publish = await publishSource(locator, 'missing-owner-fingerprint', 'return "created";');
+    const commitCountBeforeSave = await app.db.getRepository('vscFileCommits').count();
+    const save = await saveSource(locator, 'missing-owner-fingerprint', 'return "created";');
 
-    expect(publish.status).toBe(404);
-    expect(publish.body.errors[0]).toMatchObject({
+    expect(save.status).toBe(404);
+    expect(save.body.errors[0]).toMatchObject({
       code: 'RUNJS_SOURCE_NOT_FOUND',
       details: {
         path: 'missingParent',
       },
     });
-    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforePublish);
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforeSave);
 
     const updated = await repository.findModelById('nested-missing-intermediate-model');
     expect(getAtPath(updated, ['stepParams', 'editItemSettings', 'initialValue', 'missingParent'])).toBeUndefined();
@@ -1231,20 +1444,21 @@ describe('flow-engine RunJS source adapters', () => {
     const defaultOpen = await openSource(defaultLocator);
     expect(defaultOpen.body.data.legacy).toMatchObject({ code: 'ctx.oldDefault();', surfaceStyle: 'action' });
     await expect(
-      publishSource(defaultLocator, defaultOpen.body.data.ownerFingerprint, 'ctx.message.info("nextDefault");'),
+      saveSource(defaultLocator, defaultOpen.body.data, 'ctx.message.info("nextDefault");'),
     ).resolves.toHaveProperty('status', 200);
 
     const legacyOpen = await openSource(legacyLocator);
     expect(legacyOpen.body.data.legacy).toMatchObject({ code: 'ctx.oldLegacy();', surfaceStyle: 'action' });
     await expect(
-      publishSource(legacyLocator, legacyOpen.body.data.ownerFingerprint, 'ctx.message.info("nextLegacy");'),
+      saveSource(legacyLocator, legacyOpen.body.data, 'ctx.message.info("nextLegacy");'),
     ).resolves.toHaveProperty('status', 200);
 
     const bothOpen = await openSource(bothLocator);
     expect(bothOpen.body.data.legacy).toMatchObject({ code: 'ctx.oldLegacyInBoth();', surfaceStyle: 'action' });
-    await expect(
-      publishSource(bothLocator, bothOpen.body.data.ownerFingerprint, 'ctx.message.info("nextBoth");'),
-    ).resolves.toHaveProperty('status', 200);
+    await expect(saveSource(bothLocator, bothOpen.body.data, 'ctx.message.info("nextBoth");')).resolves.toHaveProperty(
+      'status',
+      200,
+    );
 
     const variableLocator: RunJSSourceLocator = {
       kind: 'flowModel.nestedRunJS',
@@ -1256,14 +1470,10 @@ describe('flow-engine RunJS source adapters', () => {
     };
     const variableOpen = await openSource(variableLocator);
     expect(variableOpen.body.data.legacy).toMatchObject({ code: 'return oldTotal;', surfaceStyle: 'value' });
-    const commitCountBeforeBadVariablePublish = await app.db.getRepository('vscFileCommits').count();
-    const badVariablePublish = await publishSource(
-      variableLocator,
-      variableOpen.body.data.ownerFingerprint,
-      'ctx.render(null);',
-    );
-    expect(badVariablePublish.status).toBe(400);
-    expect(badVariablePublish.body.errors[0]).toMatchObject({
+    const commitCountBeforeBadVariableSave = await app.db.getRepository('vscFileCommits').count();
+    const badVariableSave = await saveSource(variableLocator, variableOpen.body.data, 'ctx.render(null);');
+    expect(badVariableSave.status).toBe(400);
+    expect(badVariableSave.body.errors[0]).toMatchObject({
       code: 'RUNJS_COMPILE_FAILED',
       details: {
         diagnostics: expect.arrayContaining([
@@ -1273,10 +1483,11 @@ describe('flow-engine RunJS source adapters', () => {
         ]),
       },
     });
-    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforeBadVariablePublish);
-    await expect(
-      publishSource(variableLocator, variableOpen.body.data.ownerFingerprint, 'return 456;'),
-    ).resolves.toHaveProperty('status', 200);
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforeBadVariableSave);
+    await expect(saveSource(variableLocator, variableOpen.body.data, 'return 456;')).resolves.toHaveProperty(
+      'status',
+      200,
+    );
 
     const legacyVariableLocator: RunJSSourceLocator = {
       ...variableLocator,
@@ -1289,7 +1500,7 @@ describe('flow-engine RunJS source adapters', () => {
       surfaceStyle: 'value',
     });
     await expect(
-      publishSource(legacyVariableLocator, legacyVariableOpen.body.data.ownerFingerprint, 'return 654;'),
+      saveSource(legacyVariableLocator, legacyVariableOpen.body.data, 'return 654;'),
     ).resolves.toHaveProperty('status', 200);
 
     const missingVariableLocator: RunJSSourceLocator = {
@@ -1304,16 +1515,16 @@ describe('flow-engine RunJS source adapters', () => {
         key: 'missing_var',
       },
     });
-    const commitCountBeforeMissingPublish = await app.db.getRepository('vscFileCommits').count();
-    const missingPublish = await publishSource(missingVariableLocator, 'missing-owner-fingerprint', 'return 789;');
-    expect(missingPublish.status).toBe(404);
-    expect(missingPublish.body.errors[0]).toMatchObject({
+    const commitCountBeforeMissingSave = await app.db.getRepository('vscFileCommits').count();
+    const missingSave = await saveSource(missingVariableLocator, 'missing-owner-fingerprint', 'return 789;');
+    expect(missingSave.status).toBe(404);
+    expect(missingSave.body.errors[0]).toMatchObject({
       code: 'RUNJS_SOURCE_NOT_FOUND',
       details: {
         key: 'missing_var',
       },
     });
-    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforeMissingPublish);
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforeMissingSave);
 
     const missingVariablesContainerLocator: RunJSSourceLocator = {
       ...variableLocator,
@@ -1328,35 +1539,33 @@ describe('flow-engine RunJS source adapters', () => {
         key: 'var_new',
       },
     });
-    const commitCountBeforeMissingContainerPublish = await app.db.getRepository('vscFileCommits').count();
-    const missingVariablesContainerPublish = await publishSource(
+    const commitCountBeforeMissingContainerSave = await app.db.getRepository('vscFileCommits').count();
+    const missingVariablesContainerSave = await saveSource(
       missingVariablesContainerLocator,
       'missing-owner-fingerprint',
       'return 789;',
     );
-    expect(missingVariablesContainerPublish.status).toBe(404);
-    expect(missingVariablesContainerPublish.body.errors[0]).toMatchObject({
+    expect(missingVariablesContainerSave.status).toBe(404);
+    expect(missingVariablesContainerSave.body.errors[0]).toMatchObject({
       code: 'RUNJS_SOURCE_NOT_FOUND',
       details: {
         key: 'var_new',
       },
     });
-    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(
-      commitCountBeforeMissingContainerPublish,
-    );
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforeMissingContainerSave);
 
     const updated = await repository.findModelById('flow-registry-runjs-model');
 
-    expect(getAtPath(updated, ['flowRegistry', 'submitFlow', 'steps', 'defaultRun', 'defaultParams', 'code'])).toBe(
-      'ctx.message.info("nextDefault");',
+    expect(getAtPath(updated, ['flowRegistry', 'submitFlow', 'steps', 'defaultRun', 'defaultParams', 'code'])).toEqual(
+      runtimeCode('ctx.message.info("nextDefault");'),
     );
     expect(getAtPath(updated, ['flowRegistry', 'submitFlow', 'steps', 'legacyRun', 'params'])).toMatchObject({
-      code: 'ctx.message.info("nextLegacy");',
+      code: runtimeCode('ctx.message.info("nextLegacy");'),
       keep: 'legacy',
     });
     expect(getAtPath(updated, ['flowRegistry', 'submitFlow', 'steps', 'legacyRun', 'defaultParams'])).toBeUndefined();
     expect(getAtPath(updated, ['flowRegistry', 'submitFlow', 'steps', 'bothRun', 'params'])).toMatchObject({
-      code: 'ctx.message.info("nextBoth");',
+      code: runtimeCode('ctx.message.info("nextBoth");'),
       keepLegacy: 'legacy',
     });
     expect(getAtPath(updated, ['flowRegistry', 'submitFlow', 'steps', 'bothRun', 'defaultParams'])).toMatchObject({
@@ -1375,7 +1584,7 @@ describe('flow-engine RunJS source adapters', () => {
         'runjs',
       ]),
     ).toMatchObject({
-      code: 'return 456;',
+      code: runtimeCode('return 456;'),
       version: 'v2',
       keep: 'variable',
     });
@@ -1391,7 +1600,7 @@ describe('flow-engine RunJS source adapters', () => {
         'runjs',
       ]),
     ).toMatchObject({
-      code: 'return 654;',
+      code: runtimeCode('return 654;'),
       version: 'v2',
       keep: 'legacy variable',
     });
@@ -1414,6 +1623,99 @@ describe('flow-engine RunJS source adapters', () => {
       getAtPath(updated, ['flowRegistry', 'submitFlow', 'steps', 'customVariableEmpty', 'defaultParams', 'variables']),
     ).toBeUndefined();
     expect(getAtPath(updated, ['stepParams', 'submitFlow', 'customVariableRun'])).toBeUndefined();
+  });
+
+  it('preserves flowRegistry step siblings after open but rejects an actual source code change', async () => {
+    await repository.insertModel({
+      uid: 'flow-registry-fingerprint-model',
+      use: 'ActionModel',
+      flowRegistry: {
+        submitFlow: {
+          steps: {
+            runStep: {
+              use: 'runjs',
+              title: 'Original title',
+              defaultParams: {
+                code: 'ctx.message.info("one");',
+                keep: 'original sibling',
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const locator: RunJSSourceLocator = {
+      kind: 'flowModel.flowRegistry.runjs',
+      modelUid: 'flow-registry-fingerprint-model',
+      flowKey: 'submitFlow',
+      stepKey: 'runStep',
+      sourcePath: ['defaultParams', 'code'],
+    };
+    const open = await openSource(locator);
+    expect(open.status).toBe(200);
+
+    await repository.patch({
+      uid: 'flow-registry-fingerprint-model',
+      flowRegistry: {
+        submitFlow: {
+          steps: {
+            runStep: {
+              use: 'runjs',
+              title: 'Changed elsewhere',
+              defaultParams: {
+                code: 'ctx.message.info("one");',
+                keep: 'changed elsewhere',
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const save = await saveSource(locator, open.body.data, 'ctx.message.info("two");');
+    expect(save.status).toBe(200);
+    const saved = await repository.findModelById('flow-registry-fingerprint-model');
+    expect(getAtPath(saved, ['flowRegistry', 'submitFlow', 'steps', 'runStep'])).toMatchObject({
+      title: 'Changed elsewhere',
+      defaultParams: {
+        code: runtimeCode('ctx.message.info("two");'),
+        keep: 'changed elsewhere',
+      },
+    });
+
+    const reopened = await openSource(locator);
+    expect(reopened.status).toBe(200);
+    await repository.patch({
+      uid: 'flow-registry-fingerprint-model',
+      flowRegistry: {
+        submitFlow: {
+          steps: {
+            runStep: {
+              use: 'runjs',
+              title: 'Changed elsewhere',
+              defaultParams: {
+                code: 'ctx.message.info("three");',
+                keep: 'changed elsewhere',
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const commitCountBeforeRejectedSave = await app.db.getRepository('vscFileCommits').count();
+    const rejected = await saveSource(locator, reopened.body.data, 'ctx.message.info("four");');
+    expect(rejected.status).toBe(409);
+    expect(rejected.body.errors[0]).toMatchObject({
+      code: 'RUNJS_SOURCE_OWNER_OUTDATED',
+      message: 'RunJS host code differs from the versioned source',
+    });
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforeRejectedSave);
+    const diverged = await repository.findModelById('flow-registry-fingerprint-model');
+    expect(getAtPath(diverged, ['flowRegistry', 'submitFlow', 'steps', 'runStep', 'defaultParams', 'code'])).toBe(
+      'ctx.message.info("three");',
+    );
   });
 
   it('rejects flowRegistry RunJS sources for unsupported paths and non-RunJS steps', async () => {
@@ -1473,16 +1775,16 @@ describe('flow-engine RunJS source adapters', () => {
         },
       });
 
-      const commitCountBeforePublish = await app.db.getRepository('vscFileCommits').count();
-      const publish = await publishSource(locator, 'missing-owner-fingerprint', 'ctx.message.info("blocked");');
-      expect(publish.status).toBe(404);
-      expect(publish.body.errors[0]).toMatchObject({
+      const commitCountBeforeSave = await app.db.getRepository('vscFileCommits').count();
+      const save = await saveSource(locator, 'missing-owner-fingerprint', 'ctx.message.info("blocked");');
+      expect(save.status).toBe(404);
+      expect(save.body.errors[0]).toMatchObject({
         code: 'RUNJS_SOURCE_NOT_FOUND',
         details: {
           path,
         },
       });
-      await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforePublish);
+      await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforeSave);
     }
   });
 
@@ -1514,20 +1816,20 @@ describe('flow-engine RunJS source adapters', () => {
       },
     });
 
-    const commitCountBeforePublish = await app.db.getRepository('vscFileCommits').count();
-    const missingStepPublish = await publishSource(
+    const commitCountBeforeSave = await app.db.getRepository('vscFileCommits').count();
+    const missingStepSave = await saveSource(
       missingStepLocator,
       'missing-owner-fingerprint',
-      'ctx.message.info("draft");',
+      'ctx.message.info("edited");',
     );
-    expect(missingStepPublish.status).toBe(404);
-    expect(missingStepPublish.body.errors[0]).toMatchObject({
+    expect(missingStepSave.status).toBe(404);
+    expect(missingStepSave.body.errors[0]).toMatchObject({
       code: 'RUNJS_SOURCE_NOT_FOUND',
       details: {
         path: 'flowRegistry.submitFlow.steps.missingRun',
       },
     });
-    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforePublish);
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforeSave);
 
     const missingFlowOpen = await openSource({
       ...missingStepLocator,
@@ -1546,7 +1848,7 @@ describe('flow-engine RunJS source adapters', () => {
     expect(getAtPath(updated, ['flowRegistry', 'missingFlow'])).toBeUndefined();
   });
 
-  it('uses value-surface authoring validation for nested reaction RunJS values', async () => {
+  it('uses compiler-owned value-surface validation for nested reaction RunJS values', async () => {
     await repository.insertModel({
       uid: 'reaction-runjs-model',
       use: 'FormModel',
@@ -1574,12 +1876,12 @@ describe('flow-engine RunJS source adapters', () => {
     };
     const open = await openSource(locator);
     expect(open.status).toBe(200);
-    const commitCountBeforePublish = await app.db.getRepository('vscFileCommits').count();
+    const commitCountBeforeSave = await app.db.getRepository('vscFileCommits').count();
 
-    const publish = await publishSource(locator, open.body.data.ownerFingerprint, 'ctx.render(null);');
+    const save = await saveSource(locator, open.body.data, 'ctx.render(null);');
 
-    expect(publish.status).toBe(400);
-    expect(publish.body.errors[0]).toMatchObject({
+    expect(save.status).toBe(400);
+    expect(save.body.errors[0]).toMatchObject({
       code: 'RUNJS_COMPILE_FAILED',
       details: {
         diagnostics: expect.arrayContaining([
@@ -1589,7 +1891,7 @@ describe('flow-engine RunJS source adapters', () => {
         ]),
       },
     });
-    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforePublish);
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforeSave);
     const updated = await repository.findModelById('reaction-runjs-model');
     expect(getAtPath(updated, ['stepParams', 'reactionSettings', 'fieldValues', 'value', 0, 'code'])).toBe(
       'return oldValue;',
@@ -1641,14 +1943,14 @@ describe('flow-engine RunJS source adapters', () => {
     });
 
     await expect(
-      publishSource(
+      saveSource(
         optionLocator,
-        optionOpen.body.data.ownerFingerprint,
+        optionOpen.body.data,
         'const rows = ctx.data.objects || [];\nreturn { dataset: { source: rows } };',
       ),
     ).resolves.toHaveProperty('status', 200);
     await expect(
-      publishSource(eventsLocator, eventsOpen.body.data.ownerFingerprint, 'ctx.message.info("nextClick");'),
+      saveSource(eventsLocator, eventsOpen.body.data, 'ctx.message.info("nextClick");'),
     ).resolves.toHaveProperty('status', 200);
 
     const updated = await repository.findModelById('chart-runjs-model');
@@ -1657,14 +1959,208 @@ describe('flow-engine RunJS source adapters', () => {
       builder: {
         type: 'bar',
       },
-      raw: 'const rows = ctx.data.objects || [];\nreturn { dataset: { source: rows } };',
+      raw: runtimeCode('const rows = ctx.data.objects || [];\nreturn { dataset: { source: rows } };'),
     });
-    expect(getAtPath(updated, ['stepParams', 'chartSettings', 'configure', 'chart', 'events', 'raw'])).toBe(
-      'ctx.message.info("nextClick");',
+    expect(getAtPath(updated, ['stepParams', 'chartSettings', 'configure', 'chart', 'events', 'raw'])).toEqual(
+      runtimeCode('ctx.message.info("nextClick");'),
     );
   });
 
-  it('preserves legacy chart settings paths when publishing option and events sources', async () => {
+  it('preserves chart option siblings after open but rejects an actual raw code change', async () => {
+    await repository.insertModel({
+      uid: 'chart-fingerprint-model',
+      use: 'ChartBlockModel',
+      stepParams: {
+        chartSettings: {
+          configure: {
+            chart: {
+              option: {
+                mode: 'raw',
+                builder: {
+                  type: 'bar',
+                },
+                raw: 'return { series: [] };',
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const locator: RunJSSourceLocator = {
+      kind: 'chart.option',
+      modelUid: 'chart-fingerprint-model',
+    };
+    const open = await openSource(locator);
+    expect(open.status).toBe(200);
+
+    await repository.patch({
+      uid: 'chart-fingerprint-model',
+      stepParams: {
+        chartSettings: {
+          configure: {
+            chart: {
+              option: {
+                mode: 'raw',
+                builder: {
+                  type: 'line',
+                },
+                raw: 'return { series: [] };',
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const save = await saveSource(locator, open.body.data, 'return { dataset: {} };');
+    expect(save.status).toBe(200);
+    const saved = await repository.findModelById('chart-fingerprint-model');
+    expect(getAtPath(saved, ['stepParams', 'chartSettings', 'configure', 'chart', 'option'])).toMatchObject({
+      mode: 'raw',
+      builder: {
+        type: 'line',
+      },
+      raw: runtimeCode('return { dataset: {} };'),
+    });
+
+    const reopened = await openSource(locator);
+    expect(reopened.status).toBe(200);
+    await repository.patch({
+      uid: 'chart-fingerprint-model',
+      stepParams: {
+        chartSettings: {
+          configure: {
+            chart: {
+              option: {
+                mode: 'raw',
+                builder: {
+                  type: 'line',
+                },
+                raw: 'return { changedOutsideStudio: true };',
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const commitCountBeforeRejectedSave = await app.db.getRepository('vscFileCommits').count();
+    const rejected = await saveSource(locator, reopened.body.data, 'return { studio: true };');
+    expect(rejected.status).toBe(409);
+    expect(rejected.body.errors[0]).toMatchObject({
+      code: 'RUNJS_SOURCE_OWNER_OUTDATED',
+      message: 'RunJS host code differs from the versioned source',
+    });
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforeRejectedSave);
+    const diverged = await repository.findModelById('chart-fingerprint-model');
+    expect(getAtPath(diverged, ['stepParams', 'chartSettings', 'configure', 'chart', 'option', 'raw'])).toBe(
+      'return { changedOutsideStudio: true };',
+    );
+  });
+
+  it('preserves chart event siblings after open but rejects an actual raw code change', async () => {
+    await repository.insertModel({
+      uid: 'chart-events-fingerprint-model',
+      use: 'ChartBlockModel',
+      stepParams: {
+        chartSettings: {
+          configure: {
+            chart: {
+              option: {
+                mode: 'raw',
+                raw: 'return { series: [] };',
+              },
+              events: {
+                raw: 'ctx.message.info("one");',
+                keep: 'original sibling',
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const locator: RunJSSourceLocator = {
+      kind: 'chart.events',
+      modelUid: 'chart-events-fingerprint-model',
+    };
+    const open = await openSource(locator);
+    expect(open.status).toBe(200);
+
+    await repository.patch({
+      uid: 'chart-events-fingerprint-model',
+      stepParams: {
+        chartSettings: {
+          configure: {
+            chart: {
+              option: {
+                mode: 'raw',
+                raw: 'return { series: [] };',
+              },
+              events: {
+                raw: 'ctx.message.info("one");',
+                keep: 'changed elsewhere',
+                debounce: 300,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const save = await saveSource(locator, open.body.data, 'ctx.message.info("two");');
+    expect(save.status).toBe(200);
+    const saved = await repository.findModelById('chart-events-fingerprint-model');
+    expect(getAtPath(saved, ['stepParams', 'chartSettings', 'configure', 'chart', 'events'])).toMatchObject({
+      raw: runtimeCode('ctx.message.info("two");'),
+      keep: 'changed elsewhere',
+      debounce: 300,
+    });
+    expect(getAtPath(saved, ['stepParams', 'chartSettings', 'configure', 'chart', 'option', 'raw'])).toBe(
+      'return { series: [] };',
+    );
+
+    const reopened = await openSource(locator);
+    expect(reopened.status).toBe(200);
+    await repository.patch({
+      uid: 'chart-events-fingerprint-model',
+      stepParams: {
+        chartSettings: {
+          configure: {
+            chart: {
+              option: {
+                mode: 'raw',
+                raw: 'return { series: [] };',
+              },
+              events: {
+                raw: 'ctx.message.info("three");',
+                keep: 'changed elsewhere',
+                debounce: 300,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const commitCountBeforeRejectedSave = await app.db.getRepository('vscFileCommits').count();
+    const rejected = await saveSource(locator, reopened.body.data, 'ctx.message.info("four");');
+    expect(rejected.status).toBe(409);
+    expect(rejected.body.errors[0]).toMatchObject({
+      code: 'RUNJS_SOURCE_OWNER_OUTDATED',
+      message: 'RunJS host code differs from the versioned source',
+    });
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforeRejectedSave);
+    const diverged = await repository.findModelById('chart-events-fingerprint-model');
+    expect(getAtPath(diverged, ['stepParams', 'chartSettings', 'configure', 'chart', 'events'])).toMatchObject({
+      raw: 'ctx.message.info("three");',
+      keep: 'changed elsewhere',
+      debounce: 300,
+    });
+  });
+
+  it('preserves legacy chart settings paths when saving option and events sources', async () => {
     await repository.insertModel({
       uid: 'legacy-chart-runjs-model',
       use: 'ChartBlockModel',
@@ -1701,19 +2197,19 @@ describe('flow-engine RunJS source adapters', () => {
     });
 
     await expect(
-      publishSource(optionLocator, optionOpen.body.data.ownerFingerprint, 'return { series: [{ type: "bar" }] };'),
+      saveSource(optionLocator, optionOpen.body.data, 'return { series: [{ type: "bar" }] };'),
     ).resolves.toHaveProperty('status', 200);
     await expect(
-      publishSource(eventsLocator, eventsOpen.body.data.ownerFingerprint, 'chart.on("click", function() {});'),
+      saveSource(eventsLocator, eventsOpen.body.data, 'chart.on("click", function() {});'),
     ).resolves.toHaveProperty('status', 200);
 
     const updated = await repository.findModelById('legacy-chart-runjs-model');
     expect(getAtPath(updated, ['settings', 'visual'])).toMatchObject({
-      raw: 'return { series: [{ type: "bar" }] };',
+      raw: runtimeCode('return { series: [{ type: "bar" }] };'),
       keep: 'visual sibling',
     });
     expect(getAtPath(updated, ['settings', 'events'])).toMatchObject({
-      raw: 'chart.on("click", function () { });',
+      raw: runtimeCode('chart.on("click", function () { });'),
       keep: 'events sibling',
     });
     expect(getAtPath(updated, ['stepParams', 'chartSettings', 'configure', 'chart', 'option', 'raw'])).toBeUndefined();
@@ -1762,18 +2258,18 @@ describe('flow-engine RunJS source adapters', () => {
       entry: 'src/main.ts',
     });
 
-    const publish = await publishSource(optionLocator, optionOpen.body.data.ownerFingerprint, 'return { yAxis: {} };');
-    expect(publish.status).toBe(200);
+    const save = await saveSource(optionLocator, optionOpen.body.data, 'return { yAxis: {} };');
+    expect(save.status).toBe(200);
 
     const updated = await repository.findModelById('new-chart-runjs-model');
     expect(getAtPath(updated, ['stepParams', 'chartSettings', 'configure', 'chart', 'option'])).toMatchObject({
       mode: 'custom',
-      raw: 'return { yAxis: {} };',
+      raw: runtimeCode('return { yAxis: {} };'),
     });
     expect(getAtPath(updated, ['settings', 'visual', 'raw'])).toBeUndefined();
   });
 
-  it('uses Flow Engine authoring inspection before publishing browser RunJS artifacts', async () => {
+  it('uses compiler-owned surface validation before saving browser RunJS artifacts', async () => {
     await repository.insertModel({
       uid: 'chart-runjs-authoring-model',
       use: 'ChartBlockModel',
@@ -1797,32 +2293,30 @@ describe('flow-engine RunJS source adapters', () => {
     };
     const open = await openSource(locator);
     expect(open.status).toBe(200);
-    const commitCountBeforePublish = await app.db.getRepository('vscFileCommits').count();
+    const commitCountBeforeSave = await app.db.getRepository('vscFileCommits').count();
 
-    const publish = await publishSource(locator, open.body.data.ownerFingerprint, 'ctx.render(null);');
+    const save = await saveSource(locator, open.body.data, 'ctx.render(null);');
 
-    expect(publish.status).toBe(400);
-    expect(publish.body.errors[0]).toMatchObject({
+    expect(save.status).toBe(400);
+    expect(save.body.errors[0]).toMatchObject({
       code: 'RUNJS_COMPILE_FAILED',
       details: {
         diagnostics: expect.arrayContaining([
           expect.objectContaining({
             ruleId: 'runjs-value-render-forbidden',
-            details: expect.objectContaining({
-              repairClass: 'value-surface-forbids-render',
-            }),
+            message: 'Value RunJS must return a value and cannot call ctx.render(...).',
           }),
         ]),
       },
     });
-    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforePublish);
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforeSave);
     const updated = await repository.findModelById('chart-runjs-authoring-model');
     expect(getAtPath(updated, ['stepParams', 'chartSettings', 'configure', 'chart', 'option', 'raw'])).toBe(
       'return { xAxis: {} };',
     );
   });
 
-  it('registers adapters and authoring inspection when Flow Engine loads before VSC File', async () => {
+  it('registers adapters while compiler validation remains available when Flow Engine loads first', async () => {
     await app.destroy();
     await resetApp(['flow-engine', PluginVscFileServer]);
 
@@ -1850,10 +2344,10 @@ describe('flow-engine RunJS source adapters', () => {
     const open = await openSource(locator);
     expect(open.status).toBe(200);
 
-    const publish = await publishSource(locator, open.body.data.ownerFingerprint, 'ctx.render(null);');
+    const save = await saveSource(locator, open.body.data, 'ctx.render(null);');
 
-    expect(publish.status).toBe(400);
-    expect(publish.body.errors[0]).toMatchObject({
+    expect(save.status).toBe(400);
+    expect(save.body.errors[0]).toMatchObject({
       code: 'RUNJS_COMPILE_FAILED',
       details: {
         diagnostics: expect.arrayContaining([
@@ -1884,21 +2378,29 @@ describe('flow-engine RunJS source adapters', () => {
     });
   }
 
-  function publishSource(
+  function saveSource(
     locator: RunJSSourceLocator,
-    baseOwnerFingerprint: string,
+    base:
+      | string
+      | {
+          ownerFingerprint: string;
+          repository: {
+            repoId: string;
+            headCommitId: string | null;
+          };
+        },
     code: string,
     requestAgent = agent,
   ) {
-    const entryPath = getRunJSPublishPath(locator);
+    const entryPath = getRunJSSavePath(locator);
+    const opened = typeof base === 'string' ? null : base;
 
-    return requestAgent.resource('runJSSources').publish({
+    return requestAgent.resource('runJSSources').save({
       values: {
         locator,
-        baseCommitId: null,
-        basePublishedCommitId: null,
-        baseOwnerFingerprint,
+        repoId: opened?.repository.repoId,
         message: 'Update RunJS source',
+        entryPath,
         files: [
           {
             path: entryPath,
@@ -1911,7 +2413,7 @@ describe('flow-engine RunJS source adapters', () => {
     });
   }
 
-  function getRunJSPublishPath(locator: RunJSSourceLocator): string {
+  function getRunJSSavePath(locator: RunJSSourceLocator): string {
     return locator.kind === 'chart.option' || locator.kind === 'chart.events' ? 'src/main.ts' : 'src/main.tsx';
   }
 });
@@ -1936,4 +2438,8 @@ function getAtPath(root: unknown, path: Array<string | number>): unknown {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function runtimeCode(source: string) {
+  return expect.stringContaining(source);
 }

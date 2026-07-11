@@ -7,15 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './RunJSStudioProvider';
+export { runJSStudioProvider } from './RunJSStudioProvider';
 export {
   CloseConfirmModal,
   CodeTab,
-  ConsolePanel,
   FilesPanel,
-  PublishModal,
   RestoreVersionModal,
+  SaveVersionModal,
   VersionHistoryDock,
 } from './RunJSStudioComponents';
-export * from './types';
-export * from './useRunJSSourceResource';
+export type { RunJSWorkspacePathAccess, RunJSWorkspacePathType } from './RunJSStudioComponents';
+export { summarizeWorkspaceChanges } from './workspaceUtils';
+export type { RunJSChangeSummary, RunJSLineDiffRow, RunJSSourceHistoryItem, RunJSWorkspaceFile } from './types';

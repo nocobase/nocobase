@@ -10,4 +10,4 @@
 export * from './RunJSSourceAdapterRegistry';
 export * from './RunJSSourceAuthoringInspectorRegistry';
 export * from './compiler';
-export * from './resource';
+export { createRunJSSourcesResource, runJSSourceActionNames } from './resource';

@@ -76,7 +76,6 @@ describe('plugin-light-extension file service resource bridge', () => {
       const pushResponse = await agent.resource('lightExtensionFiles').saveSource({
         values: {
           repoId: repo.id,
-          baseCommitId: null,
           message: 'shared hook commit',
           files: [
             {
@@ -100,17 +99,18 @@ describe('plugin-light-extension file service resource bridge', () => {
         name: 'Zero Byte Initial Source',
         initialFiles: [
           {
-            path: 'src/client/js-blocks/empty-initial/index.tsx',
+            path: 'src/shared/empty-initial.ts',
             content: '',
           },
         ],
       },
     });
+    expect(createResponse.status).toBe(200);
     const initialRepo = createResponse.body.data;
     const initialFileResponse = await agent.resource('lightExtensionFiles').getFile({
       values: {
         repoId: initialRepo.id,
-        path: 'src/client/js-blocks/empty-initial/index.tsx',
+        path: 'src/shared/empty-initial.ts',
       },
     });
     const pushRepoResponse = await agent.resource('lightExtensionRepos').create({
@@ -122,11 +122,10 @@ describe('plugin-light-extension file service resource bridge', () => {
     const pushResponse = await agent.resource('lightExtensionFiles').saveSource({
       values: {
         repoId: pushRepo.id,
-        baseCommitId: null,
         message: 'add empty file',
         files: [
           {
-            path: 'src/client/js-blocks/empty-push/index.tsx',
+            path: 'src/shared/empty-push.ts',
             content: '',
           },
         ],
@@ -135,11 +134,10 @@ describe('plugin-light-extension file service resource bridge', () => {
     const pushedFileResponse = await agent.resource('lightExtensionFiles').getFile({
       values: {
         repoId: pushRepo.id,
-        path: 'src/client/js-blocks/empty-push/index.tsx',
+        path: 'src/shared/empty-push.ts',
       },
     });
 
-    expect(createResponse.status).toBe(200);
     expect(initialFileResponse.status).toBe(200);
     expect(initialFileResponse.body.data.content).toBe('');
     expect(pushResponse.status).toBe(200);
@@ -147,13 +145,14 @@ describe('plugin-light-extension file service resource bridge', () => {
     expect(pushedFileResponse.body.data.content).toBe('');
   });
 
-  it('reads, writes, diffs, and lists history without exposing the underlying vsc repo id', async () => {
+  it('reads, writes, and lists history without exposing the underlying vsc repo id', async () => {
     const createResponse = await agent.resource('lightExtensionRepos').create({
       values: {
         name: 'Source Workflow',
       },
     });
     const repo = createResponse.body.data;
+    const initialCommitId = repo.headCommitId as string;
     const repoRecord = await app.db.getRepository('lightExtensionRepos').findOne({
       filterByTk: repo.id,
     });
@@ -161,7 +160,6 @@ describe('plugin-light-extension file service resource bridge', () => {
     const firstPush = await agent.resource('lightExtensionFiles').saveSource({
       values: {
         repoId: repo.id,
-        baseCommitId: null,
         message: 'first commit',
         files: [
           {
@@ -176,7 +174,6 @@ describe('plugin-light-extension file service resource bridge', () => {
     const secondPush = await agent.resource('lightExtensionFiles').saveSource({
       values: {
         repoId: repo.id,
-        baseCommitId: firstCommit.id,
         message: 'second commit',
         files: [
           {
@@ -186,7 +183,7 @@ describe('plugin-light-extension file service resource bridge', () => {
           },
           {
             path: 'src/client/js-blocks/source-workflow/index.tsx',
-            content: 'export default function demo() { return null; }\n',
+            content: 'ctx.render(<div>Source workflow</div>);\n',
             language: 'typescript',
           },
         ],
@@ -205,31 +202,9 @@ describe('plugin-light-extension file service resource bridge', () => {
         path: 'README.md',
       },
     });
-    const historyResponse = await agent.resource('lightExtensionFiles').history({
+    const historyResponse = await agent.resource('lightExtensionFiles').listCommits({
       values: {
         repoId: repo.id,
-      },
-    });
-    const diffResponse = await agent.resource('lightExtensionFiles').diff({
-      values: {
-        repoId: repo.id,
-        fromCommitId: firstCommit.id,
-        toCommitId: secondCommit.id,
-      },
-    });
-    const diffFileResponse = await agent.resource('lightExtensionFiles').diffFile({
-      values: {
-        repoId: repo.id,
-        from: {
-          type: 'commit',
-          commitId: firstCommit.id,
-          path: 'README.md',
-        },
-        to: {
-          type: 'commit',
-          commitId: secondCommit.id,
-          path: 'README.md',
-        },
       },
     });
     const rawVscResponse = await agent.resource('vscFile').getRepository({
@@ -245,10 +220,11 @@ describe('plugin-light-extension file service resource bridge', () => {
       id: repo.id,
       headCommitId: secondCommit.id,
     });
-    expect(pullResponse.body.data.files.map((file: { path: string }) => file.path)).toEqual([
-      'README.md',
-      'src/client/js-blocks/source-workflow/index.tsx',
-    ]);
+    expect(firstCommit.parentCommitId).toBe(initialCommitId);
+    expect(secondCommit.parentCommitId).toBe(firstCommit.id);
+    expect(pullResponse.body.data.files.map((file: { path: string }) => file.path)).toEqual(
+      expect.arrayContaining(['README.md', 'src/client/js-blocks/source-workflow/index.tsx']),
+    );
     expect(fileResponse.body.data).toMatchObject({
       path: 'README.md',
       content: '# Light extension\n\nUpdated\n',
@@ -256,24 +232,10 @@ describe('plugin-light-extension file service resource bridge', () => {
     expect(historyResponse.body.data.map((commit: { id: string }) => commit.id)).toEqual([
       secondCommit.id,
       firstCommit.id,
+      initialCommitId,
     ]);
     expect(historyResponse.body.data.every((commit: { repoId: string }) => commit.repoId === repo.id)).toBe(true);
-    expect(diffResponse.body.data.summary).toMatchObject({
-      added: 1,
-      modified: 1,
-      deleted: 0,
-    });
-    expect(diffFileResponse.body.data).toMatchObject({
-      additions: 2,
-      deletions: 0,
-      tooLarge: false,
-    });
     expect(rawVscResponse.status).toBe(403);
-    expect(rawVscResponse.body.errors[0].details).toMatchObject({
-      ownerType: 'light-extension',
-      rawResourceAction: 'vscFile:getRepository',
-      result: 'denied',
-    });
     expect(
       JSON.stringify([createResponse.body.data, firstPush.body.data, secondPush.body.data, pullResponse.body.data]),
     ).not.toContain(vscRepoId);
@@ -300,7 +262,6 @@ describe('plugin-light-extension file service resource bridge', () => {
     const response = await agent.resource('lightExtensionFiles').saveSource({
       values: {
         repoId: repo.id,
-        baseCommitId: null,
         message: 'should fail safely',
         files: [
           {
@@ -344,7 +305,6 @@ describe('plugin-light-extension file service resource bridge', () => {
     try {
       await fileService.push({
         repoId: repo.id,
-        baseCommitId: null,
         message: 'should fail safely',
         files: [
           {
@@ -378,7 +338,6 @@ describe('plugin-light-extension file service resource bridge', () => {
     const pushResponse = await agent.resource('lightExtensionFiles').saveSource({
       values: {
         repoId: repo.id,
-        baseCommitId: null,
         message: 'commit generated metadata',
         metadata: {
           code: 'ctx.render("metadata secret")',
@@ -395,7 +354,7 @@ describe('plugin-light-extension file service resource bridge', () => {
         ],
       },
     });
-    const historyResponse = await agent.resource('lightExtensionFiles').history({
+    const historyResponse = await agent.resource('lightExtensionFiles').listCommits({
       values: {
         repoId: repo.id,
       },
@@ -435,7 +394,6 @@ describe('plugin-light-extension file service resource bridge', () => {
     const archiveResponse = await agent.resource('lightExtensionRepos').archive({
       values: {
         repoId: repo.id,
-        expectedLifecycleStatus: 'enabled',
       },
     });
     const ordinaryRead = await agent.resource('lightExtensionFiles').getFile({
@@ -447,7 +405,6 @@ describe('plugin-light-extension file service resource bridge', () => {
     const ordinaryWrite = await agent.resource('lightExtensionFiles').saveSource({
       values: {
         repoId: repo.id,
-        baseCommitId: repo.headCommitId,
         message: 'should fail',
         files: [
           {
@@ -457,7 +414,7 @@ describe('plugin-light-extension file service resource bridge', () => {
         ],
       },
     });
-    const ordinaryHistory = await agent.resource('lightExtensionFiles').history({
+    const ordinaryHistory = await agent.resource('lightExtensionFiles').listCommits({
       values: {
         repoId: repo.id,
       },
@@ -515,7 +472,6 @@ describe('plugin-light-extension file service resource bridge', () => {
     const response = await agent.resource('lightExtensionFiles').saveSource({
       values: {
         repoId: 'ler_missing_for_push',
-        baseCommitId: null,
         message: 'missing repo push',
         files: [
           {
@@ -546,6 +502,7 @@ describe('plugin-light-extension file service resource bridge', () => {
     const repoService = new LightExtensionRepoService(app.db, auditService, permissionService);
     const fileService = new LightExtensionFileService(app.db, auditService, permissionService, repoService);
     const repo = await repoService.createRepo({ name: 'Push Archive Race' }, { requestId: 'req_push_race_create' });
+    const baselineCommitCount = await app.db.getRepository('vscFileCommits').count();
     const transaction = await app.db.sequelize.transaction();
 
     await app.db.getModel('lightExtensionRepos').findByPk(repo.id, {
@@ -555,7 +512,6 @@ describe('plugin-light-extension file service resource bridge', () => {
     const pushPromise = fileService.push(
       {
         repoId: repo.id,
-        baseCommitId: null,
         message: 'should reject after archive',
         files: [
           {
@@ -585,7 +541,7 @@ describe('plugin-light-extension file service resource bridge', () => {
       status: 409,
     });
 
-    expect(await app.db.getRepository('vscFileCommits').count()).toBe(0);
+    expect(await app.db.getRepository('vscFileCommits').count()).toBe(baselineCommitCount);
   });
 
   it('does not hold an exclusive repo lock while reading ordinary source files', async () => {
@@ -648,7 +604,6 @@ describe('plugin-light-extension file service resource bridge', () => {
     await agent.resource('lightExtensionFiles').saveSource({
       values: {
         repoId: repo.id,
-        baseCommitId: null,
         message: 'commit secret source',
         files: [
           {
@@ -680,14 +635,14 @@ describe('plugin-light-extension file service resource bridge', () => {
       },
     });
     const repo = createResponse.body.data;
+    const baselineCommitCount = await app.db.getRepository('vscFileCommits').count();
     const response = await agent.resource('lightExtensionFiles').saveSource({
       values: {
         repoId: repo.id,
-        baseCommitId: null,
         message: 'oversized batch',
         files: Array.from({ length: 101 }, (_, index) => ({
           path: `src/client/js-blocks/batch-${index}/index.tsx`,
-          content: 'export default function BatchEntry() { return null; }\n',
+          content: 'ctx.render(<div>Batch entry</div>);\n',
         })),
       },
     });
@@ -703,7 +658,7 @@ describe('plugin-light-extension file service resource bridge', () => {
         ]),
       },
     });
-    expect(await app.db.getRepository('vscFileCommits').count()).toBe(0);
+    expect(await app.db.getRepository('vscFileCommits').count()).toBe(baselineCommitCount);
   });
 
   it('rejects oversized source content even when callers supply a smaller size', async () => {
@@ -713,15 +668,15 @@ describe('plugin-light-extension file service resource bridge', () => {
       },
     });
     const repo = createResponse.body.data;
+    const baselineCommitCount = await app.db.getRepository('vscFileCommits').count();
     const response = await agent.resource('lightExtensionFiles').saveSource({
       values: {
         repoId: repo.id,
-        baseCommitId: null,
         message: 'spoofed file size',
         files: [
           {
             path: 'src/client/js-blocks/spoofed-size/index.tsx',
-            content: 'x'.repeat(256 * 1024 + 1),
+            content: `ctx.render(null);\n${'x'.repeat(256 * 1024 + 1)}`,
             size: 1,
           },
         ],
@@ -739,7 +694,7 @@ describe('plugin-light-extension file service resource bridge', () => {
         ]),
       },
     });
-    expect(await app.db.getRepository('vscFileCommits').count()).toBe(0);
+    expect(await app.db.getRepository('vscFileCommits').count()).toBe(baselineCommitCount);
   });
 
   it('rejects blob-hash-only source upserts before writing to vsc storage', async () => {
@@ -749,10 +704,10 @@ describe('plugin-light-extension file service resource bridge', () => {
       },
     });
     const repo = createResponse.body.data;
+    const baselineCommitCount = await app.db.getRepository('vscFileCommits').count();
     const response = await agent.resource('lightExtensionFiles').saveSource({
       values: {
         repoId: repo.id,
-        baseCommitId: null,
         message: 'blob hash only source',
         files: [
           {
@@ -776,7 +731,7 @@ describe('plugin-light-extension file service resource bridge', () => {
         ]),
       },
     });
-    expect(await app.db.getRepository('vscFileCommits').count()).toBe(0);
+    expect(await app.db.getRepository('vscFileCommits').count()).toBe(baselineCommitCount);
   });
 
   it('rejects delete changes outside the light-extension source whitelist before writing to vsc storage', async () => {
@@ -786,10 +741,10 @@ describe('plugin-light-extension file service resource bridge', () => {
       },
     });
     const repo = createResponse.body.data;
+    const baselineCommitCount = await app.db.getRepository('vscFileCommits').count();
     const response = await agent.resource('lightExtensionFiles').saveSource({
       values: {
         repoId: repo.id,
-        baseCommitId: null,
         message: 'delete invalid source paths',
         files: [
           {
@@ -828,17 +783,24 @@ describe('plugin-light-extension file service resource bridge', () => {
         ]),
       },
     });
-    expect(await app.db.getRepository('vscFileCommits').count()).toBe(0);
+    expect(await app.db.getRepository('vscFileCommits').count()).toBe(baselineCommitCount);
   });
 
-  it('allows deleting existing invalid source files so failed scans can be repaired', async () => {
+  it('allows deleting existing invalid source files so validation failures can be repaired', async () => {
     const createResponse = await agent.resource('lightExtensionRepos').create({
       values: {
         name: 'Repair Invalid Delete Source',
       },
     });
     const repo = createResponse.body.data;
-    const seeded = await seedRawSourceFiles(app, repo.id, [
+    const baselinePullResponse = await agent.resource('lightExtensionFiles').pull({
+      values: {
+        repoId: repo.id,
+        includeContent: 'all',
+      },
+    });
+    const baselinePaths = baselinePullResponse.body.data.files.map((file: { path: string }) => file.path);
+    await seedRawSourceFiles(app, repo.id, [
       {
         path: 'package.json',
         content: '{"private":true}\n',
@@ -847,7 +809,6 @@ describe('plugin-light-extension file service resource bridge', () => {
     const response = await agent.resource('lightExtensionFiles').saveSource({
       values: {
         repoId: repo.id,
-        baseCommitId: seeded.commit.id,
         message: 'remove invalid legacy file',
         files: [
           {
@@ -865,7 +826,8 @@ describe('plugin-light-extension file service resource bridge', () => {
     });
 
     expect(response.status).toBe(200);
-    expect(pullResponse.body.data.files).toEqual([]);
+    expect(pullResponse.body.data.files.map((file: { path: string }) => file.path)).toEqual(baselinePaths);
+    expect(baselinePaths).not.toContain('package.json');
   });
 
   it('rejects incremental pushes that would exceed the final entry count limit', async () => {
@@ -875,26 +837,25 @@ describe('plugin-light-extension file service resource bridge', () => {
       },
     });
     const repo = createResponse.body.data;
+    const baselineCommitCount = await app.db.getRepository('vscFileCommits').count();
     const firstPushResponse = await agent.resource('lightExtensionFiles').saveSource({
       values: {
         repoId: repo.id,
-        baseCommitId: null,
         message: 'fill entry budget',
-        files: Array.from({ length: 50 }, (_, index) => ({
+        files: Array.from({ length: 45 }, (_, index) => ({
           path: `src/client/js-blocks/entry-${index}/index.tsx`,
-          content: 'export default function Demo() { return null; }\n',
+          content: `ctx.render(<div>Entry ${index}</div>);\n`,
         })),
       },
     });
     const response = await agent.resource('lightExtensionFiles').saveSource({
       values: {
         repoId: repo.id,
-        baseCommitId: firstPushResponse.body.data.commit.id,
         message: 'exceed entry budget',
         files: [
           {
             path: 'src/client/js-blocks/entry-over-limit/index.tsx',
-            content: 'export default function Demo() { return null; }\n',
+            content: 'ctx.render(<div>Entry over limit</div>);\n',
           },
         ],
       },
@@ -912,7 +873,7 @@ describe('plugin-light-extension file service resource bridge', () => {
         ]),
       },
     });
-    expect(await app.db.getRepository('vscFileCommits').count()).toBe(1);
+    expect(await app.db.getRepository('vscFileCommits').count()).toBe(baselineCommitCount + 1);
   });
 
   it('rejects incremental pushes that would exceed the final repository byte budget', async () => {
@@ -932,15 +893,23 @@ describe('plugin-light-extension file service resource bridge', () => {
       undefined,
       validator,
     );
-    const repo = await repoService.createRepo({ name: 'Cumulative Byte Limit Source' });
-    const firstPush = await fileService.push({
+    const repo = await repoService.createRepo({
+      name: 'Cumulative Byte Limit Source',
+      initialFiles: [
+        {
+          path: 'README.md',
+          content: '',
+        },
+      ],
+    });
+    const baselineCommitCount = await app.db.getRepository('vscFileCommits').count();
+    await fileService.push({
       repoId: repo.id,
-      baseCommitId: null,
       message: 'add first source',
       files: [
         {
           path: 'src/client/js-blocks/byte-limit/index.tsx',
-          content: 'export default function Demo() { return null; }\n',
+          content: 'ctx.render(<div>Byte limit</div>);\n',
         },
       ],
     });
@@ -948,7 +917,6 @@ describe('plugin-light-extension file service resource bridge', () => {
     await expect(
       fileService.push({
         repoId: repo.id,
-        baseCommitId: firstPush.commit.id,
         message: 'exceed repo byte budget',
         files: [
           {
@@ -967,7 +935,7 @@ describe('plugin-light-extension file service resource bridge', () => {
         ]),
       },
     });
-    expect(await app.db.getRepository('vscFileCommits').count()).toBe(1);
+    expect(await app.db.getRepository('vscFileCommits').count()).toBe(baselineCommitCount + 1);
   });
 
   it('rejects forbidden source APIs in pushes before writing to vsc storage', async () => {
@@ -977,15 +945,15 @@ describe('plugin-light-extension file service resource bridge', () => {
       },
     });
     const repo = createResponse.body.data;
+    const baselineCommitCount = await app.db.getRepository('vscFileCommits').count();
     const response = await agent.resource('lightExtensionFiles').saveSource({
       values: {
         repoId: repo.id,
-        baseCommitId: null,
         message: 'forbidden api source',
         files: [
           {
             path: 'src/client/js-blocks/forbidden-api/index.tsx',
-            content: 'const fs = require("fs");\nexport default function Demo() { return fs; }\n',
+            content: 'const fs = require("fs");\nctx.render(<div>{String(fs)}</div>);\n',
           },
         ],
       },
@@ -1003,7 +971,7 @@ describe('plugin-light-extension file service resource bridge', () => {
         ]),
       },
     });
-    expect(await app.db.getRepository('vscFileCommits').count()).toBe(0);
+    expect(await app.db.getRepository('vscFileCommits').count()).toBe(baselineCommitCount);
   });
 
   it('rejects invalid initial source before creating the backing vsc repository', async () => {
@@ -1017,7 +985,7 @@ describe('plugin-light-extension file service resource bridge', () => {
           },
           {
             path: 'src/client/js-blocks/invalid-initial/index.tsx',
-            content: 'import fs from "fs";\nexport default function Demo() { return fs; }\n',
+            content: 'import fs from "fs";\nctx.render(<div>{String(fs)}</div>);\n',
           },
           {
             path: 'src/client/js-blocks/blob-hash-initial/index.tsx',
@@ -1068,7 +1036,6 @@ describe('plugin-light-extension file service resource bridge', () => {
     const invalidPushResponse = await agent.resource('lightExtensionFiles').saveSource({
       values: {
         repoId: repo.id,
-        baseCommitId: null,
         message: 'invalid push',
         files: [
           {
@@ -1087,7 +1054,6 @@ describe('plugin-light-extension file service resource bridge', () => {
     const missingPushSourceResponse = await agent.resource('lightExtensionFiles').saveSource({
       values: {
         repoId: repo.id,
-        baseCommitId: null,
         message: 'invalid missing source',
         files: [
           {
@@ -1171,7 +1137,6 @@ async function seedRawSourceFiles(app: MockServer, repoId: string, files: LightE
     filterByTk: repoId,
     values: {
       headCommitId: push.repository.headCommitId || null,
-      version: Number(repo?.get('version') || 0) + 1,
     },
   });
 

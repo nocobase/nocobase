@@ -7,13 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { vi } from 'vitest';
 
+import { DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES } from '../../shared/default-template';
 import type { UseLightExtensionRepoResult } from '../hooks/useLightExtensionRepo';
-import LightExtensionWorkspacePage from '../pages/LightExtensionWorkspacePage';
+import LightExtensionWorkspacePage, {
+  type LightExtensionWorkspaceFooterActions,
+} from '../pages/LightExtensionWorkspacePage';
+import type { LightExtensionWorkspaceScope } from '../workspace/lightExtensionWorkspaceAccess';
 
 const mocks = vi.hoisted(() => ({
   t: (key: string) => key,
@@ -22,8 +26,6 @@ const mocks = vi.hoisted(() => ({
     pull: vi.fn(),
     pullCommit: vi.fn(),
     saveSource: vi.fn(),
-    compilePreview: vi.fn(),
-    scanEntries: vi.fn(),
     listCommits: vi.fn(),
   },
 }));
@@ -56,60 +58,93 @@ vi.mock('@nocobase/plugin-vsc-file/client-v2', () => {
     FilesPanel: ({
       files,
       folders,
+      defaultCreateParentPath,
+      getPathAccess,
       onCreate,
       onCreateFolder,
       onOpen,
     }: {
       files: Array<{ path: string }>;
       folders: string[];
+      defaultCreateParentPath?: string;
+      getPathAccess?: (path: string, pathType: 'file' | 'folder') => { canWrite?: boolean; reason?: string };
       onCreate: (parentPath?: string) => string | undefined;
       onCreateFolder: (parentPath?: string) => string | undefined;
       onOpen: (path: string) => void;
     }) => (
       <div data-testid="runjs-files-panel">
-        <button onClick={() => onCreate('src/client')} type="button">
+        <button onClick={() => onCreate(defaultCreateParentPath || 'src/client')} type="button">
           New default file
         </button>
-        <button onClick={() => onCreateFolder('src/client')} type="button">
+        <button onClick={() => onCreateFolder(defaultCreateParentPath || 'src/client')} type="button">
           New default folder
         </button>
-        {folders.map((folder) => (
-          <span key={folder}>{folder}</span>
-        ))}
+        {folders.map((folder) => {
+          const access = getPathAccess?.(folder, 'folder');
+          return (
+            <span data-can-write={String(access?.canWrite !== false)} data-reason={access?.reason || ''} key={folder}>
+              {folder}
+            </span>
+          );
+        })}
         {files.map((file) => (
-          <button key={file.path} onClick={() => onOpen(file.path)} type="button">
+          <button
+            data-can-write={String(getPathAccess?.(file.path, 'file').canWrite !== false)}
+            key={file.path}
+            onClick={() => onOpen(file.path)}
+            type="button"
+          >
             {file.path.split('/').pop()}
           </button>
         ))}
       </div>
     ),
     VersionHistoryDock: ({
+      hasMore,
       historyItems,
+      onLoadMore,
       onSelect,
+      restoreDisabled,
     }: {
+      hasMore: boolean;
       historyItems: Array<{ id: string; message: string; seq: number }>;
+      onLoadMore: () => void;
       onSelect: (commit: { id: string; message: string; seq: number }) => void;
+      restoreDisabled?: boolean;
     }) => (
       <div data-testid="runjs-history-dock">
         {historyItems.map((commit) => (
-          <button key={commit.id} onClick={() => onSelect(commit)} type="button">
+          <button disabled={restoreDisabled} key={commit.id} onClick={() => onSelect(commit)} type="button">
             Restore v{commit.seq}
           </button>
         ))}
+        {hasMore ? (
+          <button onClick={onLoadMore} type="button">
+            Load more
+          </button>
+        ) : null}
       </div>
     ),
     CodeTab: ({
       activeFile,
       onChange,
+      onRunPreview,
+      scene,
       showRunButton,
+      readOnly,
       workspaceFiles,
     }: {
       activeFile?: { content: string; path: string };
       onChange: (value: string) => void;
+      onRunPreview?: () => void;
+      scene?: string;
       showRunButton?: boolean;
+      readOnly?: boolean;
       workspaceFiles: Array<{ content: string; path: string }>;
     }) => (
       <div
+        data-has-run-preview={String(Boolean(onRunPreview))}
+        data-scene={scene || ''}
         data-show-run-button={String(showRunButton)}
         data-testid="runjs-code-tab"
         data-workspace-file-contents={JSON.stringify(workspaceFiles.map((file) => [file.path, file.content]))}
@@ -119,6 +154,7 @@ vi.mock('@nocobase/plugin-vsc-file/client-v2', () => {
         <textarea
           aria-label="Edit file content"
           onChange={(event) => onChange(event.target.value)}
+          readOnly={readOnly}
           value={activeFile?.content || ''}
         />
       </div>
@@ -127,13 +163,21 @@ vi.mock('@nocobase/plugin-vsc-file/client-v2', () => {
       commit,
       onCancel,
       onRestore,
+      scopeDescription,
+      showRestoreSecondaryNote,
     }: {
-      commit: { seq: number } | null;
+      commit: { message?: string; seq: number } | null;
       onCancel: () => void;
       onRestore: () => void;
+      scopeDescription?: string;
+      showRestoreSecondaryNote?: boolean;
     }) =>
       commit ? (
         <div aria-label={`Restore v${commit.seq}?`} role="dialog">
+          <strong>Target version: v{commit.seq}</strong>
+          {commit.message ? <span>{commit.message}</span> : null}
+          {scopeDescription ? <span>{scopeDescription}</span> : null}
+          {showRestoreSecondaryNote !== false ? <span>It will not create a version until you save.</span> : null}
           <button onClick={onCancel} type="button">
             Cancel
           </button>
@@ -142,6 +186,38 @@ vi.mock('@nocobase/plugin-vsc-file/client-v2', () => {
           </button>
         </div>
       ) : null,
+    SaveVersionModal: ({
+      onCancel,
+      onSave,
+      onVersionMessageChange,
+      open,
+      summary,
+      versionMessage,
+    }: {
+      onCancel: () => void;
+      onSave: () => void;
+      onVersionMessageChange: (value: string) => void;
+      open: boolean;
+      summary: { files: number };
+      versionMessage: string;
+    }) =>
+      open ? (
+        <div aria-label="Save version" role="dialog">
+          <span>{summary.files} changed files</span>
+          <input
+            aria-label="Version message"
+            onChange={(event) => onVersionMessageChange(event.target.value)}
+            value={versionMessage}
+          />
+          <button onClick={onCancel} type="button">
+            Cancel
+          </button>
+          <button disabled={versionMessage.trim().length < 3} onClick={onSave} type="button">
+            Save
+          </button>
+        </div>
+      ) : null,
+    summarizeWorkspaceChanges: () => ({ files: 1, additions: 1, deletions: 1 }),
     CloseConfirmModal: ({
       onCancel,
       onCloseWithoutSaving,
@@ -176,6 +252,27 @@ vi.mock('../hooks/useLightExtensionRepo', async (importOriginal) => {
   };
 });
 
+function createSaveResult() {
+  return {
+    repo: { id: 'ler_sales' },
+    commit: { id: 'commit-2' },
+    tree: { hash: 'tree-2', entryCount: 1, byteSize: 55 },
+    compile: {
+      status: 'success',
+      entries: [],
+    },
+    diagnostics: [],
+  };
+}
+
+async function confirmSaveVersion(message: string) {
+  const saveDialog = await screen.findByRole('dialog', { name: 'Save version' });
+  fireEvent.change(within(saveDialog).getByLabelText('Version message'), {
+    target: { value: message },
+  });
+  fireEvent.click(within(saveDialog).getByRole('button', { name: 'Save' }));
+}
+
 describe('LightExtensionWorkspacePage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -184,9 +281,8 @@ describe('LightExtensionWorkspacePage', () => {
       name: 'sales-widgets',
       normalizedName: 'sales-widgets',
       title: 'Sales widgets',
-      version: 1,
       lifecycleStatus: 'enabled',
-      healthStatus: 'draft',
+      healthStatus: 'pending',
       headCommitId: 'commit-1',
     });
     mocks.api.pull.mockResolvedValue({
@@ -225,74 +321,7 @@ describe('LightExtensionWorkspacePage', () => {
         },
       ],
     });
-    mocks.api.saveSource.mockResolvedValue({
-      repo: { id: 'ler_sales' },
-      commit: { id: 'commit-2' },
-      tree: { hash: 'tree-2', entryCount: 1, byteSize: 55 },
-      scan: {
-        repo: { id: 'ler_sales' },
-        commitId: 'commit-2',
-        accepted: true,
-        diagnostics: [],
-        entries: [],
-        capabilities: {},
-      },
-      compile: {
-        status: 'success',
-        entries: [],
-      },
-      diagnostics: [],
-    });
-    mocks.api.compilePreview.mockResolvedValue({
-      repo: { id: 'ler_sales' },
-      commitId: 'commit-1',
-      accepted: true,
-      diagnostics: [],
-      entries: [],
-    });
-    mocks.api.scanEntries.mockResolvedValue({
-      repo: { id: 'ler_sales' },
-      commitId: 'commit-2',
-      accepted: true,
-      diagnostics: [],
-      entries: [
-        {
-          created: false,
-          entry: {
-            id: 'lee_sales',
-            repoId: 'ler_sales',
-            target: 'client',
-            kind: 'js-block',
-            entryName: 'sales-kpi',
-            entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
-            metaPath: null,
-            settingsPath: null,
-            title: 'Sales KPI',
-            description: null,
-            category: null,
-            icon: null,
-            tags: null,
-            sort: null,
-            settingsSchema: null,
-            compiledCommitId: 'commit-2',
-            runtimeArtifact: {
-              code: 'ctx.render("Sales KPI");',
-              version: 'v2',
-              entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
-            },
-            runtimeVersion: 'v2',
-            surfaceStyle: 'render',
-            runtimeCodeHash: 'runtime_hash',
-            filesHash: 'files_hash',
-            settingsDefaultsHash: 'settings_defaults_hash',
-            compiledAt: '2026-07-09T00:00:00.000Z',
-            healthStatus: 'ready',
-            diagnostics: [],
-          },
-        },
-      ],
-      capabilities: {},
-    });
+    mocks.api.saveSource.mockResolvedValue(createSaveResult());
     mocks.api.listCommits.mockResolvedValue([]);
   });
 
@@ -305,18 +334,19 @@ describe('LightExtensionWorkspacePage', () => {
 
     await screen.findByTestId('runjs-code-tab');
     expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute('data-show-run-button', 'false');
+    expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute('data-has-run-preview', 'false');
+    expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute('data-scene', '');
     fireEvent.change(screen.getByLabelText('Edit file content'), {
       target: { value: 'export default function SalesKpi() { return "ok"; }\n' },
     });
     fireEvent.click(screen.getByRole('button', { name: /Save/ }));
+    await confirmSaveVersion('Update sales KPI');
 
     await waitFor(() => expect(mocks.api.saveSource).toHaveBeenCalledTimes(1));
     expect(mocks.api.saveSource).toHaveBeenCalledWith(
       expect.objectContaining({
         repoId: 'ler_sales',
-        baseCommitId: 'commit-1',
-        message: 'Update light extension source',
-        allowEmptyCommit: true,
+        message: 'Update sales KPI',
         files: [
           expect.objectContaining({
             path: 'src/client/js-blocks/sales-kpi/index.tsx',
@@ -326,7 +356,290 @@ describe('LightExtensionWorkspacePage', () => {
         ],
       }),
     );
-    expect(await screen.findByText('Source saved and compiled')).toBeInTheDocument();
+    const saveInput = mocks.api.saveSource.mock.calls[0][0];
+    expect(saveInput).not.toHaveProperty('baseCommitId');
+    expect(saveInput).not.toHaveProperty('baseOwnerFingerprint');
+    expect(screen.queryByText('Source saved and compiled')).not.toBeInTheDocument();
+  });
+
+  it('shows save progress and closes an embedded workspace after the persisted save completes', async () => {
+    let footerActions: LightExtensionWorkspaceFooterActions | null = null;
+    let resolveSave: ((value: ReturnType<typeof createSaveResult>) => void) | undefined;
+    const pendingSave = new Promise<ReturnType<typeof createSaveResult>>((resolve) => {
+      resolveSave = resolve;
+    });
+    const onRequestClose = vi.fn();
+    const onSaved = vi.fn();
+    mocks.api.saveSource.mockReturnValueOnce(pendingSave);
+
+    render(
+      <MemoryRouter>
+        <LightExtensionWorkspacePage
+          embedded
+          onFooterActionsChange={(actions) => {
+            footerActions = actions;
+          }}
+          onRequestClose={onRequestClose}
+          onSaved={onSaved}
+          repoId="ler_sales"
+        />
+      </MemoryRouter>,
+    );
+
+    await screen.findByTestId('runjs-code-tab');
+    fireEvent.change(screen.getByLabelText('Edit file content'), {
+      target: { value: 'export default function SalesKpi() { return "saved"; }\n' },
+    });
+    await waitFor(() => expect(footerActions?.disabled).toBe(false));
+    act(() => {
+      footerActions?.onSave();
+    });
+
+    const saveDialog = await screen.findByRole('dialog', { name: 'Save version' });
+    fireEvent.change(within(saveDialog).getByLabelText('Version message'), {
+      target: { value: 'Save from JS block' },
+    });
+    fireEvent.click(within(saveDialog).getByRole('button', { name: 'Save' }));
+
+    expect(await screen.findByRole('dialog', { name: 'Saving changes' })).toBeInTheDocument();
+    expect(screen.getByText('Saving source files')).toBeInTheDocument();
+    expect(screen.getByText('Compiling light extension')).toBeInTheDocument();
+    expect(onRequestClose).not.toHaveBeenCalled();
+
+    await act(async () => {
+      resolveSave?.(createSaveResult());
+      await pendingSave;
+    });
+
+    await waitFor(() => expect(onRequestClose).toHaveBeenCalledTimes(1));
+    expect(onSaved).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('dialog', { name: 'Saving changes' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Source saved and compiled')).not.toBeInTheDocument();
+  });
+
+  it('limits embedded entry workspaces to the selected entry and public files', async () => {
+    mocks.api.pull.mockResolvedValueOnce({
+      repo: { id: 'ler_sales' },
+      commit: { id: 'commit-1' },
+      tree: { hash: 'tree-1', entryCount: 4, byteSize: 180 },
+      unchanged: false,
+      files: [
+        {
+          path: 'src/client/js-blocks/sales-kpi/index.tsx',
+          content: 'ctx.render(<div>Sales</div>);\n',
+          language: 'typescript',
+        },
+        {
+          path: 'src/client/js-blocks/other/index.tsx',
+          content: 'ctx.render(<div>Other</div>);\n',
+          language: 'typescript',
+        },
+        {
+          path: 'src/client/js-actions/approve/index.ts',
+          content: 'ctx.message.success("approved");\n',
+          language: 'typescript',
+        },
+        {
+          path: 'src/shared/format.ts',
+          content: 'export const format = String;\n',
+          language: 'typescript',
+        },
+      ],
+    });
+    mocks.api.listCommits.mockResolvedValueOnce([
+      {
+        id: 'commit-1',
+        repoId: 'ler_sales',
+        hash: 'hash-1',
+        seq: 1,
+        parentCommitId: null,
+        treeHash: 'tree-1',
+        message: 'Initial source',
+        authorId: null,
+        metadata: {},
+      },
+    ]);
+    const workspaceScope: LightExtensionWorkspaceScope = {
+      mode: 'entry',
+      entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+      kind: 'js-block',
+    };
+
+    render(
+      <MemoryRouter>
+        <LightExtensionWorkspacePage
+          initialPath={workspaceScope.entryPath}
+          repoId="ler_sales"
+          workspaceScope={workspaceScope}
+        />
+      </MemoryRouter>,
+    );
+
+    const blockEntryButtons = await screen.findAllByRole('button', { name: 'index.tsx' });
+    expect(blockEntryButtons[0]).toHaveAttribute('data-can-write', 'false');
+    expect(blockEntryButtons[1]).toHaveAttribute('data-can-write', 'true');
+    expect(screen.getByRole('button', { name: 'index.ts' })).toHaveAttribute('data-can-write', 'false');
+    expect(screen.getByRole('button', { name: 'format.ts' })).toHaveAttribute('data-can-write', 'true');
+    expect(screen.getByText('src/client/js-blocks/sales-kpi')).toHaveAttribute('data-reason', '');
+    expect(screen.getByText('src/client/js-blocks/other')).toHaveAttribute(
+      'data-reason',
+      'Other light extension entries are read-only here',
+    );
+    expect(screen.getByLabelText('Edit file content')).not.toHaveAttribute('readonly');
+    expect(screen.getByRole('button', { name: 'Restore v1' })).toBeEnabled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'index.ts' }));
+    expect(screen.getByLabelText('Edit file content')).toHaveAttribute('readonly');
+    fireEvent.change(screen.getByLabelText('Edit file content'), {
+      target: { value: 'ctx.message.error("changed");\n' },
+    });
+    expect(screen.getByRole('button', { name: /Save/ })).toBeDisabled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'format.ts' }));
+    expect(screen.getByLabelText('Edit file content')).not.toHaveAttribute('readonly');
+    fireEvent.change(screen.getByLabelText('Edit file content'), {
+      target: { value: 'export const format = (value: unknown) => String(value);\n' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Save/ }));
+    await confirmSaveVersion('Update shared formatter');
+
+    await waitFor(() => expect(mocks.api.saveSource).toHaveBeenCalledTimes(1));
+    expect(mocks.api.saveSource.mock.calls[0][0].files).toEqual([
+      expect.objectContaining({
+        path: 'src/shared/format.ts',
+        operation: 'upsert',
+      }),
+    ]);
+  });
+
+  it('restores only editable entry-scoped files into the unsaved editor state', async () => {
+    mocks.api.pull.mockResolvedValueOnce({
+      repo: { id: 'ler_sales' },
+      commit: { id: 'commit-2' },
+      tree: { hash: 'tree-2', entryCount: 5, byteSize: 240 },
+      unchanged: false,
+      files: [
+        {
+          path: 'src/client/js-blocks/sales-kpi/index.tsx',
+          content: 'ctx.render(<div>Current sales</div>);\n',
+          language: 'typescript',
+        },
+        {
+          path: 'src/client/js-blocks/other/index.tsx',
+          content: 'ctx.render(<div>Current other</div>);\n',
+          language: 'typescript',
+        },
+        {
+          path: 'src/client/js-actions/approve/index.ts',
+          content: 'ctx.message.success("current approval");\n',
+          language: 'typescript',
+        },
+        {
+          path: 'src/shared/format.ts',
+          content: 'export const format = String;\n',
+          language: 'typescript',
+        },
+        {
+          path: 'src/shared/obsolete.ts',
+          content: 'export const obsolete = true;\n',
+          language: 'typescript',
+        },
+      ],
+    });
+    mocks.api.listCommits.mockResolvedValueOnce([
+      {
+        id: 'commit-1',
+        repoId: 'ler_sales',
+        hash: 'hash-1',
+        seq: 1,
+        parentCommitId: null,
+        treeHash: 'tree-1',
+        message: 'Initial source',
+        authorId: null,
+        metadata: {},
+      },
+    ]);
+    mocks.api.pullCommit.mockResolvedValueOnce({
+      repo: { id: 'ler_sales' },
+      commit: { id: 'commit-1' },
+      tree: { hash: 'tree-1', entryCount: 5, byteSize: 220 },
+      unchanged: false,
+      files: [
+        {
+          path: 'src/client/js-blocks/sales-kpi/index.tsx',
+          content: 'ctx.render(<div>Restored sales</div>);\n',
+          language: 'typescript',
+        },
+        {
+          path: 'src/client/js-blocks/other/index.tsx',
+          content: 'ctx.render(<div>Historical other</div>);\n',
+          language: 'typescript',
+        },
+        {
+          path: 'src/client/js-actions/approve/index.ts',
+          content: 'ctx.message.success("historical approval");\n',
+          language: 'typescript',
+        },
+        {
+          path: 'src/shared/format.ts',
+          content: 'export const format = (value: unknown) => String(value);\n',
+          language: 'typescript',
+        },
+        {
+          path: 'src/shared/new-helper.ts',
+          content: 'export const helper = true;\n',
+          language: 'typescript',
+        },
+      ],
+    });
+    const workspaceScope: LightExtensionWorkspaceScope = {
+      mode: 'entry',
+      entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+      kind: 'js-block',
+    };
+
+    render(
+      <MemoryRouter>
+        <LightExtensionWorkspacePage
+          initialPath={workspaceScope.entryPath}
+          repoId="ler_sales"
+          workspaceScope={workspaceScope}
+        />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Restore v1' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Restore v1?' });
+    expect(within(dialog).getByText('Target version: v1')).toBeInTheDocument();
+    expect(within(dialog).getByText('Initial source')).toBeInTheDocument();
+    expect(
+      within(dialog).getByText(
+        'Only editable files in this workspace will be restored. Read-only files will remain unchanged.',
+      ),
+    ).toBeInTheDocument();
+    expect(within(dialog).getByText('It will not create a version until you save.')).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Restore' }));
+
+    await waitFor(() => expect(mocks.api.pullCommit).toHaveBeenCalledTimes(1));
+    const workspaceContents = new Map<string, string>(
+      JSON.parse(screen.getByTestId('runjs-code-tab').getAttribute('data-workspace-file-contents') || '[]'),
+    );
+    expect(workspaceContents.get('src/client/js-blocks/sales-kpi/index.tsx')).toBe(
+      'ctx.render(<div>Restored sales</div>);\n',
+    );
+    expect(workspaceContents.get('src/client/js-blocks/other/index.tsx')).toBe(
+      'ctx.render(<div>Current other</div>);\n',
+    );
+    expect(workspaceContents.get('src/client/js-actions/approve/index.ts')).toBe(
+      'ctx.message.success("current approval");\n',
+    );
+    expect(workspaceContents.get('src/shared/format.ts')).toBe(
+      'export const format = (value: unknown) => String(value);\n',
+    );
+    expect(workspaceContents.get('src/shared/new-helper.ts')).toBe('export const helper = true;\n');
+    expect(workspaceContents.has('src/shared/obsolete.ts')).toBe(false);
+    expect(screen.getByRole('button', { name: /Save/ })).toBeEnabled();
+    expect(mocks.api.saveSource).not.toHaveBeenCalled();
   });
 
   it('does not reload source when hook state updates replace the hook result object', async () => {
@@ -345,7 +658,37 @@ describe('LightExtensionWorkspacePage', () => {
     expect(mocks.api.pull).toHaveBeenCalledTimes(1);
   });
 
-  it('seeds an empty repository with the multi-kind light extension template and saves it as one batch', async () => {
+  it('opens a persisted default first version without local changes', async () => {
+    mocks.api.pull.mockResolvedValueOnce({
+      repo: { id: 'ler_sales' },
+      commit: { id: 'commit-1' },
+      tree: { hash: 'tree-default', entryCount: DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES.length, byteSize: 1024 },
+      unchanged: false,
+      files: DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES.map((file, index) => ({
+        ...file,
+        blobHash: `blob-${index}`,
+        mode: file.mode || '',
+        pathHash: `path-${index}`,
+        pathLowerHash: `path-lower-${index}`,
+        size: file.content?.length || 0,
+      })),
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/admin/settings/light-extension?panel=source&repoId=ler_sales']}>
+        <LightExtensionWorkspacePage />
+      </MemoryRouter>,
+    );
+
+    await screen.findByText('README.md');
+    expect(screen.getByTestId('runjs-code-tab').getAttribute('data-workspace-files')).toContain(
+      'src/client/js-blocks/example/index.tsx',
+    );
+    expect(screen.getByRole('button', { name: /Save/ })).toBeDisabled();
+    expect(mocks.api.saveSource).not.toHaveBeenCalled();
+  });
+
+  it('does not seed or save an empty repository in the client workspace', async () => {
     mocks.api.pull.mockResolvedValueOnce({
       repo: { id: 'ler_sales' },
       commit: { id: 'commit-1' },
@@ -360,45 +703,10 @@ describe('LightExtensionWorkspacePage', () => {
       </MemoryRouter>,
     );
 
-    await waitFor(() => expect(screen.getAllByText('README.md').length).toBeGreaterThan(0));
-    expect(screen.getByTestId('runjs-code-tab').getAttribute('data-workspace-files')).toContain(
-      'src/shared/light-extension-sdk.d.ts',
-    );
-    fireEvent.click(screen.getByRole('button', { name: /Save/ }));
-
-    await waitFor(() => expect(mocks.api.saveSource).toHaveBeenCalledTimes(1));
-    const pushedFiles = mocks.api.saveSource.mock.calls[0][0].files;
-    const pushedPaths = pushedFiles.map((file) => file.path);
-    expect(pushedPaths).toEqual(
-      expect.arrayContaining([
-        'README.md',
-        'light-extension.json',
-        'tsconfig.json',
-        'src/shared/format.ts',
-        'src/shared/light-extension-sdk.d.ts',
-        'src/client/js-blocks/sales-kpi/index.tsx',
-        'src/client/js-fields/phone-link/index.tsx',
-        'src/client/js-actions/show-message/index.ts',
-        'src/client/js-items/row-menu-label/index.tsx',
-        'src/client/runjs/normalize-form-values/index.ts',
-        'src/client/events/log-page-open/index.ts',
-      ]),
-    );
-    expect(pushedFiles).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          path: 'src/client/js-fields/phone-link/index.tsx',
-          content: expect.stringContaining('ctx.render(<PhoneLink />);'),
-        }),
-        expect.objectContaining({
-          path: 'src/client/js-items/row-menu-label/index.tsx',
-          content: 'ctx.render(<span>Row menu</span>);\n',
-        }),
-      ]),
-    );
-    const phoneFieldFile = pushedFiles.find((file) => file.path === 'src/client/js-fields/phone-link/index.tsx');
-    expect(phoneFieldFile?.content).toContain('return <a href={"tel:" + value}>{value}</a>;');
-    expect(phoneFieldFile?.content).not.toContain('ctx.readOnly');
+    expect(await screen.findByText('Empty repository')).toBeInTheDocument();
+    expect(screen.queryByTestId('runjs-code-tab')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Save/ })).toBeDisabled();
+    expect(mocks.api.saveSource).not.toHaveBeenCalled();
   });
 
   it('creates missing repo root files from the reused default new-file entry', async () => {
@@ -423,13 +731,14 @@ describe('LightExtensionWorkspacePage', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: /Save/ }));
+    await confirmSaveVersion('Add repository files');
 
     await waitFor(() => expect(mocks.api.saveSource).toHaveBeenCalledTimes(1));
     expect(mocks.api.saveSource.mock.calls[0][0].files).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           path: 'README.md',
-          content: '# Light extension source\n',
+          content: expect.stringContaining('src/client/js-blocks/<entry-name>/index.tsx'),
           operation: 'upsert',
         }),
         expect.objectContaining({
@@ -494,15 +803,16 @@ describe('LightExtensionWorkspacePage', () => {
 
     await screen.findByTestId('runjs-code-tab');
     fireEvent.click(screen.getByRole('button', { name: 'New default file' }));
-    expect(await screen.findByText('src/client/js-fields/phone-link/index.tsx')).toBeInTheDocument();
+    expect(await screen.findByText('src/client/js-fields/example/index.tsx')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Save/ }));
+    await confirmSaveVersion('Add JS field example');
 
     await waitFor(() => expect(mocks.api.saveSource).toHaveBeenCalledTimes(1));
     expect(mocks.api.saveSource.mock.calls[0][0].files).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          path: 'src/client/js-fields/phone-link/index.tsx',
-          content: expect.stringContaining('ctx.render(<PhoneLink />);'),
+          path: 'src/client/js-fields/example/index.tsx',
+          content: "ctx.render(<span>{String(ctx.value ?? '')}</span>);\n",
           operation: 'upsert',
         }),
       ]),
@@ -651,7 +961,7 @@ describe('LightExtensionWorkspacePage', () => {
 
   it('shows persisted save diagnostics after validation failure', async () => {
     mocks.api.saveSource.mockRejectedValueOnce(
-      Object.assign(new Error('Light extension scan completed with validation errors'), {
+      Object.assign(new Error('Light extension source cannot be compiled'), {
         diagnostics: [
           {
             code: 'import_not_allowed',
@@ -676,6 +986,7 @@ describe('LightExtensionWorkspacePage', () => {
       target: { value: 'import React from "react";\n' },
     });
     fireEvent.click(screen.getByRole('button', { name: /Save/ }));
+    await confirmSaveVersion('Check invalid import');
 
     await screen.findByText('Import "react" is not allowed');
     expect(screen.getByText('import_not_allowed')).toBeInTheDocument();
@@ -710,6 +1021,7 @@ describe('LightExtensionWorkspacePage', () => {
       target: { value: 'import Missing from "./missing";\n' },
     });
     fireEvent.click(screen.getByRole('button', { name: /Save/ }));
+    await confirmSaveVersion('Check missing import');
 
     expect(await screen.findByText('Import target was not found')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Line 1/ }));
@@ -775,5 +1087,49 @@ describe('LightExtensionWorkspacePage', () => {
     expect(screen.getByLabelText('Edit file content')).toHaveValue(
       'export default function Restored() { return null; }\n',
     );
+  });
+
+  it('loads older history pages without duplicating commits', async () => {
+    const initialCommits = Array.from({ length: 20 }, (_, index) => ({
+      id: `commit-${40 - index}`,
+      repoId: 'ler_sales',
+      hash: `hash-${40 - index}`,
+      seq: 40 - index,
+      parentCommitId: index === 19 ? null : `commit-${39 - index}`,
+      treeHash: `tree-${40 - index}`,
+      message: `Source v${40 - index}`,
+      authorId: null,
+      metadata: {},
+      createdAt: '2026-07-07T07:12:00.000Z',
+    }));
+    const olderCommit = {
+      ...initialCommits[19],
+      id: 'commit-20',
+      hash: 'hash-20',
+      seq: 20,
+      treeHash: 'tree-20',
+      message: 'Source v20',
+    };
+    mocks.api.listCommits
+      .mockResolvedValueOnce(initialCommits)
+      .mockResolvedValueOnce([initialCommits[19], olderCommit]);
+
+    render(
+      <MemoryRouter initialEntries={['/admin/settings/light-extension?panel=source&repoId=ler_sales']}>
+        <LightExtensionWorkspacePage />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Load more' }));
+
+    await waitFor(() => expect(mocks.api.listCommits).toHaveBeenCalledTimes(2));
+    expect(mocks.api.listCommits).toHaveBeenNthCalledWith(2, {
+      repoId: 'ler_sales',
+      limit: 20,
+      beforeSeq: 21,
+    });
+    expect(await screen.findByRole('button', { name: 'Restore v20' })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Restore v21' })).toHaveLength(1);
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Load more' })).toBeNull());
   });
 });

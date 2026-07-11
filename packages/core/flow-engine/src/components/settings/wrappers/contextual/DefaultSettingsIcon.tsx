@@ -20,7 +20,13 @@ import { App, Dropdown, Input, Modal, Tooltip, theme } from 'antd';
 import React, { startTransition, useCallback, useEffect, useMemo, useRef, useState, FC } from 'react';
 import { FlowModel } from '../../../../models';
 import type { FlowModelExtraMenuItem } from '../../../../models';
-import type { StepDefinition, StepUIMode } from '../../../../types';
+import type {
+  ParamObject,
+  StepCascadeMenuItem,
+  StepCascadeMenuUIMode,
+  StepDefinition,
+  StepUIMode,
+} from '../../../../types';
 import {
   getT,
   resolveStepUiSchema,
@@ -179,34 +185,19 @@ const componentMap = {
   select: SelectWithTitle,
 };
 
-type CascadeMenuItem = {
-  key: string;
-  label: React.ReactNode;
-  children?: CascadeMenuItem[];
-  disabled?: boolean;
-  searchText?: string;
-  selected?: boolean;
-  onSelect?: (
-    ctx: CascadeMenuSelectContext,
-  ) => Record<string, unknown> | void | Promise<Record<string, unknown> | void>;
-};
-
-type CascadeMenuSelectContext = {
-  model: FlowModel;
-  flowKey: string;
-  stepKey: string;
-  params: Record<string, unknown>;
-  defaultParams: Record<string, unknown>;
-  t: (key: string, options?: Record<string, unknown>) => string;
-};
-
 type CascadeMenuState = {
   loading: boolean;
   loaded: boolean;
   error?: string | null;
-  items: CascadeMenuItem[];
+  items: StepCascadeMenuItem[];
   search: string;
 };
+
+const isCascadeMenuUIMode = (uiMode: StepUIMode | undefined): uiMode is StepCascadeMenuUIMode =>
+  typeof uiMode === 'object' && uiMode?.type === 'cascadeMenu';
+
+const toParamObject = (value: unknown): ParamObject =>
+  value && typeof value === 'object' && !Array.isArray(value) ? (value as ParamObject) : {};
 
 const CASCADE_MENU_SEARCH_KEY = '__flow-cascade-search__';
 const CASCADE_MENU_LEAF_KEY = '__flow-cascade-leaf__';
@@ -220,7 +211,7 @@ const toMenuText = (value: React.ReactNode): string => {
 
 const normalizeSearchText = (value: string) => value.trim().toLowerCase();
 
-const matchesCascadeSearch = (item: CascadeMenuItem, search: string): boolean => {
+const matchesCascadeSearch = (item: StepCascadeMenuItem, search: string): boolean => {
   if (!search) {
     return true;
   }
@@ -228,7 +219,7 @@ const matchesCascadeSearch = (item: CascadeMenuItem, search: string): boolean =>
   return haystack.includes(search);
 };
 
-const filterCascadeMenuItems = (items: CascadeMenuItem[], searchValue: string): CascadeMenuItem[] => {
+const filterCascadeMenuItems = (items: StepCascadeMenuItem[], searchValue: string): StepCascadeMenuItem[] => {
   const search = normalizeSearchText(searchValue);
   if (!search) {
     return items;
@@ -245,7 +236,7 @@ const filterCascadeMenuItems = (items: CascadeMenuItem[], searchValue: string): 
       }
       return null;
     })
-    .filter(Boolean) as CascadeMenuItem[];
+    .filter(Boolean) as StepCascadeMenuItem[];
 };
 
 const getCascadeMenuItemKey = (baseKey: string, path: string[]) =>
@@ -274,7 +265,7 @@ const CascadeMenuLabel = ({ title, displayLabel }: { title: React.ReactNode; dis
   </span>
 );
 
-const CascadeLeafLabel = ({ item }: { item: CascadeMenuItem }) => (
+const CascadeLeafLabel = ({ item }: { item: StepCascadeMenuItem }) => (
   <span
     style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, minWidth: 180 }}
   >
@@ -380,7 +371,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [menuOpenKeys, setMenuOpenKeys] = useState<string[]>([]);
   const [cascadeMenuStates, setCascadeMenuStates] = useState<Record<string, CascadeMenuState>>({});
-  const cascadeMenuLoadersRef = useRef(new Map<string, () => Promise<CascadeMenuItem[]>>());
+  const cascadeMenuLoadersRef = useRef(new Map<string, () => Promise<StepCascadeMenuItem[]>>());
   const cascadeMenuHandlersRef = useRef(new Map<string, () => Promise<void>>());
   const commonExtras = useMemo(
     () => extraMenuItems.filter((it) => it.group === 'common-actions').sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0)),
@@ -638,8 +629,8 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
       flowKey: string;
       stepKey: string;
       step: StepDefinition;
-      params: Record<string, unknown>;
-      previousParams: Record<string, unknown>;
+      params: ParamObject;
+      previousParams: ParamObject;
     }) => {
       const { targetModel, flowKey, stepKey, step, params, previousParams } = input;
       targetModel.setStepParams(flowKey, stepKey, params);
@@ -1027,8 +1018,8 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
       flowKey: string;
       stepKey: string;
       step: StepDefinition;
-      stepParams: Record<string, unknown>;
-      getDefaultParams: () => Promise<Record<string, unknown>>;
+      stepParams: ParamObject;
+      getDefaultParams: () => Promise<ParamObject>;
       showSearch: boolean;
     }): NonNullable<MenuProps['items']> => {
       const {
@@ -1070,7 +1061,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
         return children;
       }
 
-      const convertItems = (sourceItems: CascadeMenuItem[], path: string[] = []): NonNullable<MenuProps['items']> =>
+      const convertItems = (sourceItems: StepCascadeMenuItem[], path: string[] = []): NonNullable<MenuProps['items']> =>
         sourceItems.map((item) => {
           const itemPath = [...path, item.key];
           const menuKey = getCascadeMenuItemKey(baseKey, itemPath);
@@ -1126,6 +1117,89 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
       return children;
     };
 
+    const createCascadeMenuStepItem = (input: {
+      menuKey: string;
+      targetModel: FlowModel;
+      flowKey: string;
+      stepInfo: StepInfo;
+      stepParams: ParamObject;
+      showDisabledReason: boolean;
+    }): NonNullable<MenuProps['items']>[number] | null => {
+      const { menuKey, targetModel, flowKey, stepInfo, stepParams, showDisabledReason } = input;
+      if (!isCascadeMenuUIMode(stepInfo.uiMode)) {
+        return null;
+      }
+
+      const modeProps = stepInfo.uiMode.props || {};
+      const getDefaultParams = async (): Promise<ParamObject> => {
+        let defaultParams = await resolveDefaultParams(stepInfo.step.defaultParams, targetModel.context);
+        if (stepInfo.step.use) {
+          const action = targetModel.getAction?.(stepInfo.step.use);
+          defaultParams = await resolveDefaultParams(action.defaultParams, targetModel.context);
+        }
+        return toParamObject(defaultParams);
+      };
+
+      cascadeMenuLoadersRef.current.set(menuKey, async () => {
+        if (!modeProps.loadItems) {
+          return [];
+        }
+        const defaultParams = await getDefaultParams();
+        return (
+          (await modeProps.loadItems({
+            model: targetModel,
+            flowKey,
+            stepKey: stepInfo.stepKey,
+            params: { ...defaultParams, ...stepParams },
+            defaultParams,
+            t,
+          })) || []
+        );
+      });
+
+      const displayLabel = modeProps.getDisplayLabel?.({
+        model: targetModel,
+        flowKey,
+        stepKey: stepInfo.stepKey,
+        params: stepParams,
+        t,
+      });
+      const label = <CascadeMenuLabel title={stepInfo.title} displayLabel={displayLabel} />;
+
+      return {
+        key: menuKey,
+        label:
+          stepInfo.disabled && showDisabledReason ? (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              {label}
+              <Tooltip title={stepInfo.disabledReason} placement="right" destroyTooltipOnHide>
+                <QuestionCircleOutlined style={{ color: disabledIconColor }} />
+              </Tooltip>
+            </span>
+          ) : (
+            label
+          ),
+        disabled: !!stepInfo.disabled,
+        children: stepInfo.disabled
+          ? undefined
+          : buildCascadeChildren({
+              baseKey: menuKey,
+              state: cascadeMenuStates[menuKey],
+              searchPlaceholder: t(modeProps.searchPlaceholder || 'Search'),
+              loadingLabel: t(modeProps.loadingLabel || 'Loading'),
+              emptyLabel: t(modeProps.emptyLabel || 'No options'),
+              errorLabel: t(modeProps.errorLabel || 'Failed to load options'),
+              targetModel,
+              flowKey,
+              stepKey: stepInfo.stepKey,
+              step: stepInfo.step,
+              stepParams,
+              getDefaultParams,
+              showSearch: modeProps.showSearch !== false,
+            }),
+      };
+    };
+
     // 添加flows和steps配置项
     if (configurableFlowsAndSteps.length > 0) {
       if (flattenSubMenus) {
@@ -1156,7 +1230,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
             const uiMode = stepInfo.uiMode;
             const subModel = stepInfo.modelKey ? findSubModelByKey(model, stepInfo.modelKey) : null;
             const targetModel = subModel || model;
-            const stepParams = targetModel.getStepParams(flow.key, stepInfo.stepKey) || {};
+            const stepParams = toParamObject(targetModel.getStepParams(flow.key, stepInfo.stepKey));
             const getDefaultParams = async () => {
               let defaultParams = await resolveDefaultParams(stepInfo.step.defaultParams, targetModel.context);
               if (stepInfo.step.use) {
@@ -1166,6 +1240,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
               return defaultParams || {};
             };
             const getMergedParams = async () => ({ ...(await getDefaultParams()), ...stepParams });
+            const uiModeConfig = typeof uiMode === 'object' ? uiMode : undefined;
             const itemProps = {
               getDefaultValue: getMergedParams,
               onChange: async (val) => {
@@ -1178,63 +1253,22 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
                   previousParams: stepParams,
                 });
               },
-              ...((uiMode as any)?.props || {}),
-              itemKey: (uiMode as any)?.key,
+              ...(uiModeConfig?.props || {}),
+              itemKey: uiModeConfig?.key,
               disabled: !!stepInfo.disabled,
               disabledReason: stepInfo.disabledReason,
               disabledIconColor,
             };
-            if ((uiMode as any)?.type === 'cascadeMenu') {
-              const modeProps = ((uiMode as any)?.props || {}) as Record<string, any>;
-              cascadeMenuLoadersRef.current.set(uniqueKey, async () => {
-                if (typeof modeProps.loadItems !== 'function') {
-                  return [];
-                }
-                const defaultParams = await getDefaultParams();
-                return (
-                  (await modeProps.loadItems({
-                    model: targetModel,
-                    flowKey: flow.key,
-                    stepKey: stepInfo.stepKey,
-                    params: { ...defaultParams, ...stepParams },
-                    defaultParams,
-                    t,
-                  })) || []
-                );
-              });
-              const displayLabel =
-                typeof modeProps.getDisplayLabel === 'function'
-                  ? modeProps.getDisplayLabel({
-                      model: targetModel,
-                      flowKey: flow.key,
-                      stepKey: stepInfo.stepKey,
-                      params: stepParams,
-                      t,
-                    })
-                  : undefined;
-              const cascadeState = cascadeMenuStates[uniqueKey];
-              items.push({
-                key: uniqueKey,
-                label: <CascadeMenuLabel title={stepInfo.title} displayLabel={displayLabel} />,
-                disabled: !!stepInfo.disabled,
-                children: stepInfo.disabled
-                  ? undefined
-                  : buildCascadeChildren({
-                      baseKey: uniqueKey,
-                      state: cascadeState,
-                      searchPlaceholder: t(modeProps.searchPlaceholder || 'Search'),
-                      loadingLabel: t(modeProps.loadingLabel || 'Loading'),
-                      emptyLabel: t(modeProps.emptyLabel || 'No options'),
-                      errorLabel: t(modeProps.errorLabel || 'Failed to load options'),
-                      targetModel,
-                      flowKey: flow.key,
-                      stepKey: stepInfo.stepKey,
-                      step: stepInfo.step,
-                      stepParams,
-                      getDefaultParams,
-                      showSearch: modeProps.showSearch !== false,
-                    }),
-              });
+            const cascadeMenuItem = createCascadeMenuStepItem({
+              menuKey: uniqueKey,
+              targetModel,
+              flowKey: flow.key,
+              stepInfo,
+              stepParams,
+              showDisabledReason: false,
+            });
+            if (cascadeMenuItem) {
+              items.push(cascadeMenuItem);
               return;
             }
             items.push({
@@ -1279,76 +1313,17 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
 
               steps.forEach((stepInfo: StepInfo) => {
                 const uniqueKey = generateUniqueKey(`${flow.key}:${stepInfo.stepKey}`);
-                const uiMode = stepInfo.uiMode;
-                if ((uiMode as any)?.type === 'cascadeMenu') {
-                  const targetModel = model;
-                  const stepParams = targetModel.getStepParams(flow.key, stepInfo.stepKey) || {};
-                  const modeProps = ((uiMode as any)?.props || {}) as Record<string, any>;
-                  const getDefaultParams = async () => {
-                    let defaultParams = await resolveDefaultParams(stepInfo.step.defaultParams, targetModel.context);
-                    if (stepInfo.step.use) {
-                      const action = targetModel.getAction?.(stepInfo.step.use);
-                      defaultParams = await resolveDefaultParams(action.defaultParams, targetModel.context);
-                    }
-                    return defaultParams || {};
-                  };
-                  cascadeMenuLoadersRef.current.set(uniqueKey, async () => {
-                    if (typeof modeProps.loadItems !== 'function') {
-                      return [];
-                    }
-                    const defaultParams = await getDefaultParams();
-                    return (
-                      (await modeProps.loadItems({
-                        model: targetModel,
-                        flowKey: flow.key,
-                        stepKey: stepInfo.stepKey,
-                        params: { ...defaultParams, ...stepParams },
-                        defaultParams,
-                        t,
-                      })) || []
-                    );
-                  });
-                  const displayLabel =
-                    typeof modeProps.getDisplayLabel === 'function'
-                      ? modeProps.getDisplayLabel({
-                          model: targetModel,
-                          flowKey: flow.key,
-                          stepKey: stepInfo.stepKey,
-                          params: stepParams,
-                          t,
-                        })
-                      : undefined;
-                  items.push({
-                    key: uniqueKey,
-                    label: stepInfo.disabled ? (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                        <CascadeMenuLabel title={stepInfo.title} displayLabel={displayLabel} />
-                        <Tooltip title={stepInfo.disabledReason} placement="right" destroyTooltipOnHide>
-                          <QuestionCircleOutlined style={{ color: disabledIconColor }} />
-                        </Tooltip>
-                      </span>
-                    ) : (
-                      <CascadeMenuLabel title={stepInfo.title} displayLabel={displayLabel} />
-                    ),
-                    disabled: !!stepInfo.disabled,
-                    children: stepInfo.disabled
-                      ? undefined
-                      : buildCascadeChildren({
-                          baseKey: uniqueKey,
-                          state: cascadeMenuStates[uniqueKey],
-                          searchPlaceholder: t(modeProps.searchPlaceholder || 'Search'),
-                          loadingLabel: t(modeProps.loadingLabel || 'Loading'),
-                          emptyLabel: t(modeProps.emptyLabel || 'No options'),
-                          errorLabel: t(modeProps.errorLabel || 'Failed to load options'),
-                          targetModel,
-                          flowKey: flow.key,
-                          stepKey: stepInfo.stepKey,
-                          step: stepInfo.step,
-                          stepParams,
-                          getDefaultParams,
-                          showSearch: modeProps.showSearch !== false,
-                        }),
-                  });
+                const stepParams = toParamObject(model.getStepParams(flow.key, stepInfo.stepKey));
+                const cascadeMenuItem = createCascadeMenuStepItem({
+                  menuKey: uniqueKey,
+                  targetModel: model,
+                  flowKey: flow.key,
+                  stepInfo,
+                  stepParams,
+                  showDisabledReason: true,
+                });
+                if (cascadeMenuItem) {
+                  items.push(cascadeMenuItem);
                   return;
                 }
 
@@ -1371,82 +1346,24 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
           } else {
             // 为子模型创建子菜单
             const subMenuKey = generateUniqueKey(`sub-menu-${modelKey}`);
-            const subMenuChildren: any[] = [];
+            const subMenuChildren: NonNullable<MenuProps['items']> = [];
 
             flows.forEach(({ flow, steps }: FlowInfo) => {
               steps.forEach((stepInfo: StepInfo) => {
                 const uniqueKey = generateUniqueKey(`${modelKey}:${flow.key}:${stepInfo.stepKey}`);
-                const uiMode = stepInfo.uiMode;
-                if ((uiMode as any)?.type === 'cascadeMenu') {
-                  const subModel = findSubModelByKey(model, modelKey);
-                  const targetModel = subModel || model;
-                  const stepParams = targetModel.getStepParams(flow.key, stepInfo.stepKey) || {};
-                  const modeProps = ((uiMode as any)?.props || {}) as Record<string, any>;
-                  const getDefaultParams = async () => {
-                    let defaultParams = await resolveDefaultParams(stepInfo.step.defaultParams, targetModel.context);
-                    if (stepInfo.step.use) {
-                      const action = targetModel.getAction?.(stepInfo.step.use);
-                      defaultParams = await resolveDefaultParams(action.defaultParams, targetModel.context);
-                    }
-                    return defaultParams || {};
-                  };
-                  cascadeMenuLoadersRef.current.set(uniqueKey, async () => {
-                    if (typeof modeProps.loadItems !== 'function') {
-                      return [];
-                    }
-                    const defaultParams = await getDefaultParams();
-                    return (
-                      (await modeProps.loadItems({
-                        model: targetModel,
-                        flowKey: flow.key,
-                        stepKey: stepInfo.stepKey,
-                        params: { ...defaultParams, ...stepParams },
-                        defaultParams,
-                        t,
-                      })) || []
-                    );
-                  });
-                  const displayLabel =
-                    typeof modeProps.getDisplayLabel === 'function'
-                      ? modeProps.getDisplayLabel({
-                          model: targetModel,
-                          flowKey: flow.key,
-                          stepKey: stepInfo.stepKey,
-                          params: stepParams,
-                          t,
-                        })
-                      : undefined;
-                  subMenuChildren.push({
-                    key: uniqueKey,
-                    label: stepInfo.disabled ? (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                        <CascadeMenuLabel title={stepInfo.title} displayLabel={displayLabel} />
-                        <Tooltip title={stepInfo.disabledReason} placement="right" destroyTooltipOnHide>
-                          <QuestionCircleOutlined style={{ color: disabledIconColor }} />
-                        </Tooltip>
-                      </span>
-                    ) : (
-                      <CascadeMenuLabel title={stepInfo.title} displayLabel={displayLabel} />
-                    ),
-                    disabled: !!stepInfo.disabled,
-                    children: stepInfo.disabled
-                      ? undefined
-                      : buildCascadeChildren({
-                          baseKey: uniqueKey,
-                          state: cascadeMenuStates[uniqueKey],
-                          searchPlaceholder: t(modeProps.searchPlaceholder || 'Search'),
-                          loadingLabel: t(modeProps.loadingLabel || 'Loading'),
-                          emptyLabel: t(modeProps.emptyLabel || 'No options'),
-                          errorLabel: t(modeProps.errorLabel || 'Failed to load options'),
-                          targetModel,
-                          flowKey: flow.key,
-                          stepKey: stepInfo.stepKey,
-                          step: stepInfo.step,
-                          stepParams,
-                          getDefaultParams,
-                          showSearch: modeProps.showSearch !== false,
-                        }),
-                  });
+                const subModel = findSubModelByKey(model, modelKey);
+                const targetModel = subModel || model;
+                const stepParams = toParamObject(targetModel.getStepParams(flow.key, stepInfo.stepKey));
+                const cascadeMenuItem = createCascadeMenuStepItem({
+                  menuKey: uniqueKey,
+                  targetModel,
+                  flowKey: flow.key,
+                  stepInfo,
+                  stepParams,
+                  showDisabledReason: true,
+                });
+                if (cascadeMenuItem) {
+                  subMenuChildren.push(cascadeMenuItem);
                   return;
                 }
 

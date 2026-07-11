@@ -103,7 +103,7 @@ describe('BlockGridModel - select scene add block menu', () => {
         sort: 900,
         children: [
           {
-            key: 'light-extension-js-block:entry_sales:pub_sales',
+            key: 'light-extension-js-block:entry_sales',
             label: 'Sales KPI',
             createModelOptions: {
               use: 'JSBlockModel',
@@ -116,8 +116,6 @@ describe('BlockGridModel - select scene add block menu', () => {
                       repoId: 'repo_sales',
                       entryId: 'entry_sales',
                       kind: 'js-block',
-                      publicationId: 'pub_sales',
-                      versionPolicy: 'pinned',
                     },
                     settings: {
                       title: 'Sales',
@@ -156,8 +154,10 @@ describe('BlockGridModel - select scene add block menu', () => {
           runJs: {
             sourceMode: 'light-extension',
             sourceBinding: {
-              publicationId: 'pub_sales',
-              versionPolicy: 'pinned',
+              type: 'light-extension-entry',
+              repoId: 'repo_sales',
+              entryId: 'entry_sales',
+              kind: 'js-block',
             },
             settings: {
               title: 'Sales',
@@ -177,7 +177,7 @@ describe('BlockGridModel - select scene add block menu', () => {
         sort: 900,
         children: [
           {
-            key: 'light-extension-js-block:entry_sales:pub_sales',
+            key: 'light-extension-js-block:entry_sales',
             label: 'Sales KPI',
             createModelOptions: {
               use: 'JSBlockModel',

@@ -11,6 +11,7 @@ import PluginVscFileServer from '@nocobase/plugin-vsc-file';
 import { MockServer, createMockServer } from '@nocobase/test';
 
 import { LightExtensionError } from '../../shared/errors';
+import { DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES } from '../../shared/default-template';
 import PluginLightExtensionServer from '../plugin';
 import { LightExtensionAuditService } from '../services/LightExtensionAuditService';
 import { LightExtensionFileService } from '../services/LightExtensionFileService';
@@ -57,9 +58,8 @@ describe('plugin-light-extension repo service', () => {
       id: expect.stringMatching(/^ler_/),
       name: 'Sales Widgets',
       normalizedName: 'sales-widgets',
-      version: 1,
       lifecycleStatus: 'enabled',
-      healthStatus: 'draft',
+      healthStatus: 'pending',
     });
     expect(repo).not.toHaveProperty('vscRepoId');
     expect(repo.headCommitId).toEqual(expect.stringMatching(/^vscc_/));
@@ -102,7 +102,7 @@ describe('plugin-light-extension repo service', () => {
     });
   });
 
-  it('does not create an initial commit or source audit for an empty initialFiles array', async () => {
+  it('creates the default template as the first commit for an empty initialFiles array', async () => {
     const repo = await service.createRepo(
       {
         name: 'Empty Initial Files',
@@ -120,15 +120,15 @@ describe('plugin-light-extension repo service', () => {
       filterByTk: vscRepoId,
     });
 
-    expect(repo.headCommitId).toBeNull();
-    expect(vscRepo?.get('headCommitId')).toBeNull();
+    expect(repo.headCommitId).toEqual(expect.stringMatching(/^vscc_/));
+    expect(vscRepo?.get('headCommitId')).toBe(repo.headCommitId);
     expect(
       await app.db.getRepository('vscFileCommits').count({
         filter: {
           repoId: vscRepoId,
         },
       }),
-    ).toBe(0);
+    ).toBe(1);
     expect(
       await app.db.getRepository('lightExtensionLogs').count({
         filter: {
@@ -136,17 +136,24 @@ describe('plugin-light-extension repo service', () => {
           action: 'sourceCreate',
         },
       }),
-    ).toBe(0);
+    ).toBe(1);
+
+    const auditService = new LightExtensionAuditService(app.db);
+    const permissionService = new LightExtensionPermissionService(auditService);
+    const fileService = new LightExtensionFileService(app.db, auditService, permissionService, service);
+    const pull = await fileService.pull({ repoId: repo.id, includeContent: 'all' });
+    expect(pull.files?.map((file) => file.path).sort()).toEqual(
+      DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES.map((file) => file.path).sort(),
+    );
   });
 
-  it('uses compare-and-set guards for lifecycle changes and archives the vsc repository', async () => {
+  it('changes lifecycle without client compare-and-set input and archives the vsc repository', async () => {
     const repo = await service.createRepo({ name: 'Lifecycle Demo' }, { requestId: 'req_lifecycle_create' });
 
     const disabled = await service.changeLifecycle(
       {
         repoId: repo.id,
         lifecycleStatus: 'disabled',
-        expectedLifecycleStatus: 'enabled',
       },
       {
         requestId: 'req_lifecycle_disable',
@@ -154,27 +161,29 @@ describe('plugin-light-extension repo service', () => {
     );
 
     expect(disabled.lifecycleStatus).toBe('disabled');
-    expect(disabled.version).toBe(repo.version + 1);
-    await expect(
-      service.changeLifecycle(
-        {
-          repoId: repo.id,
-          lifecycleStatus: 'enabled',
-          expectedLifecycleStatus: 'enabled',
-        },
-        {
-          requestId: 'req_lifecycle_stale',
-        },
-      ),
-    ).rejects.toMatchObject({
-      code: 'LIGHT_EXTENSION_LIFECYCLE_CONFLICT',
-      status: 409,
-    });
+    const enabled = await service.changeLifecycle(
+      {
+        repoId: repo.id,
+        lifecycleStatus: 'enabled',
+      },
+      {
+        requestId: 'req_lifecycle_enable',
+      },
+    );
+    expect(enabled.lifecycleStatus).toBe('enabled');
+    await service.changeLifecycle(
+      {
+        repoId: repo.id,
+        lifecycleStatus: 'disabled',
+      },
+      {
+        requestId: 'req_lifecycle_disable_again',
+      },
+    );
 
     const archived = await service.archiveRepo(
       {
         repoId: repo.id,
-        expectedLifecycleStatus: 'disabled',
       },
       {
         requestId: 'req_lifecycle_archive',
@@ -189,12 +198,10 @@ describe('plugin-light-extension repo service', () => {
     });
 
     expect(archived.lifecycleStatus).toBe('archived');
-    expect(archived.version).toBe(disabled.version + 1);
     expect(vscRepo?.get('status')).toBe('archived');
     const archivedAgain = await service.archiveRepo(
       {
         repoId: repo.id,
-        expectedLifecycleStatus: 'archived',
       },
       {
         requestId: 'req_lifecycle_archive_idempotent',
@@ -202,13 +209,11 @@ describe('plugin-light-extension repo service', () => {
     );
 
     expect(archivedAgain.lifecycleStatus).toBe('archived');
-    expect(archivedAgain.version).toBe(archived.version);
     await expect(
       service.changeLifecycle(
         {
           repoId: repo.id,
           lifecycleStatus: 'enabled',
-          expectedLifecycleStatus: 'archived',
         },
         {
           requestId: 'req_lifecycle_reenable',
@@ -230,97 +235,41 @@ describe('plugin-light-extension repo service', () => {
     expect(archivedBlockedLog).toBeTruthy();
   });
 
-  it('rejects lifecycle changes with a stale repo version after source writes', async () => {
+  it('allows lifecycle changes after source writes without a repo version precondition', async () => {
     const auditService = new LightExtensionAuditService(app.db);
     const permissionService = new LightExtensionPermissionService(auditService);
     const repoService = new LightExtensionRepoService(app.db, auditService, permissionService);
     const fileService = new LightExtensionFileService(app.db, auditService, permissionService, repoService);
-    const repo = await repoService.createRepo({ name: 'Versioned Lifecycle' }, { requestId: 'req_version_create' });
-    const pushResult = await fileService.push(
+    const repo = await repoService.createRepo({ name: 'Source Lifecycle' }, { requestId: 'req_source_create' });
+    await fileService.push(
       {
         repoId: repo.id,
-        baseCommitId: null,
-        message: 'versioned source write',
+        message: 'source write before lifecycle change',
         files: [
           {
             path: 'README.md',
-            content: '# versioned\n',
+            content: '# updated\n',
           },
         ],
       },
       {
-        requestId: 'req_version_push',
+        requestId: 'req_source_push',
       },
     );
 
-    expect(pushResult.repo.version).toBe(repo.version + 1);
-    await expect(
-      repoService.archiveRepo(
-        {
-          repoId: repo.id,
-          expectedVersion: repo.version,
-        },
-        {
-          requestId: 'req_version_archive_stale',
-        },
-      ),
-    ).rejects.toMatchObject({
-      code: 'LIGHT_EXTENSION_LIFECYCLE_CONFLICT',
-      status: 409,
-      details: {
-        expectedVersion: repo.version,
-        currentVersion: pushResult.repo.version,
-      },
-    });
-  });
-
-  it('reports the latest lifecycle status when compare-and-set input is stale', async () => {
-    const repo = await service.createRepo({ name: 'Lifecycle Race' }, { requestId: 'req_lifecycle_race_create' });
-    const disabled = await service.changeLifecycle(
+    const archived = await repoService.archiveRepo(
       {
         repoId: repo.id,
-        lifecycleStatus: 'disabled',
-        expectedLifecycleStatus: 'enabled',
       },
       {
-        requestId: 'req_lifecycle_race_disable',
+        requestId: 'req_source_archive',
       },
     );
 
-    await expect(
-      service.changeLifecycle(
-        {
-          repoId: repo.id,
-          lifecycleStatus: 'archived',
-          expectedLifecycleStatus: 'enabled',
-        },
-        {
-          requestId: 'req_lifecycle_race',
-        },
-      ),
-    ).rejects.toMatchObject({
-      code: 'LIGHT_EXTENSION_LIFECYCLE_CONFLICT',
-      status: 409,
-      details: {
-        currentLifecycleStatus: 'disabled',
-        currentVersion: disabled.version,
-      },
-    });
-
-    const blockedLog = await app.db.getRepository('lightExtensionLogs').findOne({
-      filter: {
-        repoId: repo.id,
-        action: 'repoLifecycleChange',
-        result: 'blocked',
-      },
-    });
-
-    expect(blockedLog?.get('details')).toMatchObject({
-      currentLifecycleStatus: 'disabled',
-    });
+    expect(archived.lifecycleStatus).toBe('archived');
   });
 
-  it('rejects delete when references exist and points callers to archive', async () => {
+  it('rejects delete when references exist without suggesting an unavailable UI action', async () => {
     const repo = await service.createRepo({ name: 'Referenced Repo' }, { requestId: 'req_reference_create' });
     await app.db.getRepository('lightExtensionReferences').create({
       values: {
@@ -340,7 +289,7 @@ describe('plugin-light-extension repo service', () => {
       {
         code: 'LIGHT_EXTENSION_REFERENCE_EXISTS',
         status: 409,
-        message: expect.stringContaining('archive'),
+        message: 'Light extension repository is referenced and cannot be deleted',
       },
     );
 

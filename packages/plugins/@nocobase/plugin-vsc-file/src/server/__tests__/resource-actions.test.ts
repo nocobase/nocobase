@@ -166,12 +166,9 @@ describe('vsc-file resource actions and ACL', () => {
         message: 'restore first commit',
       },
     });
-    const publishResponse = await agent.resource('vscFile').updateRef({
+    const refsResponse = await agent.resource('vscFile').listRefs({
       values: {
         repoId: repository.id,
-        name: 'published',
-        targetCommitId: restoreCommitResponse.body.data.commit.id,
-        basePublishedCommitId: null,
       },
     });
     const archiveResponse = await agent.resource('vscFile').archiveRepository({
@@ -224,15 +221,12 @@ describe('vsc-file resource actions and ACL', () => {
       parentCommitId: restoreFileResponse.body.data.commit.id,
       treeHash: firstCommit.treeHash,
     });
-    expect(publishResponse.body.data).toMatchObject({
-      ref: {
-        name: 'published',
+    expect(refsResponse.body.data).toEqual([
+      expect.objectContaining({
+        name: 'head',
         commitId: restoreCommitResponse.body.data.commit.id,
-      },
-      repository: {
-        publishedCommitId: restoreCommitResponse.body.data.commit.id,
-      },
-    });
+      }),
+    ]);
     expect(archiveResponse.body.data).toMatchObject({
       id: repository.id,
       status: 'archived',

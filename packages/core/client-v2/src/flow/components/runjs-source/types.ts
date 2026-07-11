@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { RunJSValue } from '@nocobase/flow-engine';
+import type { ParamObject, RunJSValue } from '@nocobase/flow-engine';
 
 export const INLINE_RUNJS_SOURCE_MODE = 'inline';
 
@@ -44,7 +44,6 @@ export interface RunJSSourceResolverResult {
 }
 
 export interface RunJSSourceSettingsDescriptor {
-  publicationId?: string;
   schema?: Record<string, unknown> | null;
   defaults?: Record<string, unknown>;
   schemaHash?: string;
@@ -57,20 +56,17 @@ export interface RunJSSourceMenuItem {
   disabled?: boolean;
   searchText?: string;
   selected?: boolean;
-  onSelect?: (
-    input: RunJSSourceMenuSelectInput,
-  ) => Record<string, unknown> | void | Promise<Record<string, unknown> | void>;
+  onSelect?: (input: RunJSSourceMenuSelectInput) => ParamObject | void | Promise<ParamObject | void>;
 }
 
 export interface RunJSSourceMenuInput extends RuntimeRunJSInput {
   kind?: string;
-  defaultVersionPolicy?: string;
   t?: (key: string, options?: Record<string, unknown>) => string;
 }
 
 export interface RunJSSourceMenuSelectInput extends RunJSSourceMenuInput {
-  params: Record<string, unknown>;
-  defaultParams: Record<string, unknown>;
+  params: ParamObject;
+  defaultParams: ParamObject;
 }
 
 export interface ResolvedRuntimeRunJS {

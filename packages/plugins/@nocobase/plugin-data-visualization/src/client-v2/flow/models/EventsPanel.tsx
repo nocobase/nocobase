@@ -13,7 +13,8 @@ import EventsEditor from './EventsEditor';
 import { useT } from '../../locale';
 import { FunctionOutlined } from '@ant-design/icons';
 import { observer, useFlowSettingsContext, type RunJSValue } from '@nocobase/flow-engine';
-import type { RunJSSourceLocator } from '@nocobase/plugin-vsc-file';
+import type { RunJSSourceLocator } from '@nocobase/client-v2';
+import { cloneFormValues } from './cloneFormValues';
 
 const DEFAULT_EVENTS_RAW = `// const handler = function() {
 //   ctx.openView(ctx.model.uid + '-1', {
@@ -35,13 +36,6 @@ const setIn = (target: any, path: string[], value: any) => {
     cursor = cursor[key];
   });
   cursor[path[path.length - 1]] = value;
-};
-
-const cloneFormValues = (values: any) => {
-  if (!values || typeof values !== 'object') {
-    return {};
-  }
-  return JSON.parse(JSON.stringify(values));
 };
 
 const OptionsMode: React.FC<{

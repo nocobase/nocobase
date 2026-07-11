@@ -406,6 +406,7 @@ export function createRepoRecord(input: Record<string, unknown> = {}): Record<st
   return {
     id: 'ler_sales',
     lifecycleStatus: 'enabled',
+    headCommitId: 'vsc_commit_1',
     ...input,
   };
 }

@@ -10,9 +10,9 @@
 import type { Database } from '@nocobase/database';
 import { vi } from 'vitest';
 
-import { LIGHT_EXTENSION_ENABLED_KINDS, LIGHT_EXTENSION_SUPPORTED_KINDS } from '../../constants';
+import { LIGHT_EXTENSION_SUPPORTED_KINDS } from '../../constants';
 import { LightExtensionAuditService } from '../services/LightExtensionAuditService';
-import { LIGHT_EXTENSION_AUTHORING_SURFACES } from '../services/LightExtensionAuthoringInspector';
+import { LIGHT_EXTENSION_AUTHORING_SURFACES } from '../services/LightExtensionCompileContract';
 import { LightExtensionPermissionService } from '../services/LightExtensionPermissionService';
 import { LightExtensionWorkspaceCompilerBridge } from '../services/LightExtensionWorkspaceCompilerBridge';
 
@@ -27,7 +27,7 @@ describe('plugin-light-extension workspace compiler bridge', () => {
     bridge = new LightExtensionWorkspaceCompilerBridge(auditService, permissionService);
   });
 
-  it('compiles a js-block entry into the shared RunJS artifact contract without publication semantics', async () => {
+  it('compiles a js-block entry into the shared RunJS artifact contract', async () => {
     const result = await bridge.compileEntry(
       {
         repoId: 'ler_sales',
@@ -72,8 +72,6 @@ describe('plugin-light-extension workspace compiler bridge', () => {
     expect(result.artifact.code).toContain("const title = 'Sales KPI';");
     expect(result.artifact.code).toContain('ctx.render(<div>{title}</div>);');
     expect(result.artifact.sourceMap).toBeTruthy();
-    expect(JSON.stringify(result.artifact.metadata)).not.toContain('publication');
-    expect(JSON.stringify(result.artifact.metadata)).not.toContain('published');
 
     expect(recordCompileEvent).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -195,14 +193,11 @@ describe('plugin-light-extension workspace compiler bridge', () => {
     });
   });
 
-  it('keeps compiler surface enablement aligned with the light-extension kind contract', () => {
+  it('keeps compiler surfaces aligned with the light-extension kind contract', () => {
     expect(Object.keys(LIGHT_EXTENSION_AUTHORING_SURFACES).sort()).toEqual([...LIGHT_EXTENSION_SUPPORTED_KINDS].sort());
-    expect(
-      Object.values(LIGHT_EXTENSION_AUTHORING_SURFACES)
-        .filter((surface) => surface.enabled)
-        .map((surface) => surface.kind)
-        .sort(),
-    ).toEqual([...LIGHT_EXTENSION_ENABLED_KINDS].sort());
+    expect(Object.values(LIGHT_EXTENSION_AUTHORING_SURFACES).every((surface) => surface.compilerSurfaceStyle)).toBe(
+      true,
+    );
   });
 
   it('compiles JS Field entries through the render surface used by the field runtime', async () => {
@@ -232,7 +227,6 @@ describe('plugin-light-extension workspace compiler bridge', () => {
       kind: 'js-field',
       surfaceStyle: 'render',
       compilerSurfaceStyle: 'render',
-      enabled: true,
       modelUse: 'JSEditableFieldModel',
       surface: 'js-model.render',
     });
@@ -250,7 +244,7 @@ describe('plugin-light-extension workspace compiler bridge', () => {
     });
   });
 
-  it('compiles JS Item render entries through the enabled compiler surface', async () => {
+  it('compiles JS Item render entries through the compiler surface', async () => {
     const result = await bridge.compileEntry(
       {
         repoId: 'ler_sales',
@@ -276,7 +270,6 @@ describe('plugin-light-extension workspace compiler bridge', () => {
     expect(result.surface).toMatchObject({
       kind: 'js-item',
       surfaceStyle: 'render',
-      enabled: true,
       modelUse: 'JSItemActionModel',
       surface: 'js-model.render',
     });
@@ -303,7 +296,7 @@ describe('plugin-light-extension workspace compiler bridge', () => {
     );
   });
 
-  it('compiles RunJS entries through the enabled value compiler surface', async () => {
+  it('compiles RunJS entries through the value compiler surface', async () => {
     const result = await bridge.compileEntry(
       {
         repoId: 'ler_sales',
@@ -331,7 +324,6 @@ describe('plugin-light-extension workspace compiler bridge', () => {
       kind: 'runjs',
       surfaceStyle: 'run',
       compilerSurfaceStyle: 'value',
-      enabled: true,
       modelUse: 'JSItemModel',
       surface: 'reaction.value-runjs',
     });
@@ -350,17 +342,17 @@ describe('plugin-light-extension workspace compiler bridge', () => {
     expect(result.artifact.code).toContain('return await __runjs_default_');
   });
 
-  it('reuses FlowEngine authoring rules for js-block render surfaces', async () => {
+  it('uses compiler-owned runtime global validation for js-block render surfaces', async () => {
     const result = await bridge.compileEntry(
       {
         repoId: 'ler_sales',
         kind: 'js-block',
-        entryName: 'unsafe-process',
-        entryPath: 'src/client/js-blocks/unsafe-process/index.tsx',
+        entryName: 'unknown-global',
+        entryPath: 'src/client/js-blocks/unknown-global/index.tsx',
         files: [
           {
-            path: 'src/client/js-blocks/unsafe-process/index.tsx',
-            content: 'const value = process.env.NODE_ENV;\nctx.render(<div>{value}</div>);\n',
+            path: 'src/client/js-blocks/unknown-global/index.tsx',
+            content: 'ctx.render(<div>Example</div>);\nsdfsdfw21212 + 1212;\n',
           },
         ],
       },
@@ -375,11 +367,17 @@ describe('plugin-light-extension workspace compiler bridge', () => {
       expect.arrayContaining([
         expect.objectContaining({
           code: 'RUNJS_COMPILE_FAILED',
+          path: 'src/client/js-blocks/unknown-global/index.tsx',
+          line: 2,
+          column: 1,
+          message: expect.stringContaining("Cannot find name 'sdfsdfw21212'"),
           details: expect.objectContaining({
-            ruleId: 'runjs-global-blocked',
+            ruleId: 'runjs-global-unknown',
+            global: 'sdfsdfw21212',
           }),
         }),
       ]),
     );
+    expect(result.diagnostics.every((diagnostic) => !diagnostic.message.includes('flowSurfaces authoring'))).toBe(true);
   });
 });

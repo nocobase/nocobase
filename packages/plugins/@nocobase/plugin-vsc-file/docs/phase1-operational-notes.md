@@ -40,28 +40,25 @@ prefer names that track the public service operations and limit rejections:
 ## Future Blob And Tree GC
 
 Blob and tree garbage collection should be mark-and-sweep based. The mark phase
-should start from repository heads, published refs, all retained commits, and
-active drafts. The sweep phase should delete unreachable tree entries, trees,
-and blobs in small batches after a grace period.
+should start from repository heads and all retained commits. The sweep phase
+should delete unreachable tree entries, trees, and blobs in small batches after
+a grace period.
 
 Recommended safeguards:
 
 - Add dry-run mode that reports candidate counts and byte totals.
-- Keep a grace period so recently abandoned transactions or drafts are not
-  removed too early.
+- Keep a grace period so recently abandoned transactions are not removed too
+  early.
 - Delete tree entries before trees, and delete blobs only after checking no tree
-  entries or draft files reference them.
+  entries reference them.
 - Emit per-batch counters and failure logs.
 
 ## Future Cleanup Jobs
 
 Cleanup jobs should be separate from request paths. Candidate jobs include:
 
-- Expire stale active drafts that have not changed for the configured retention
-  window.
 - Compact archived repositories after audit-retention requirements are met.
-- Remove orphaned refs, draft files, tree entries, and blobs after integrity
-  checks.
+- Remove orphaned refs, tree entries, and blobs after integrity checks.
 - Trim old operational audit rows once external audit retention is available.
 
 Run cleanup in bounded batches with explicit locking or idempotent cursors so a

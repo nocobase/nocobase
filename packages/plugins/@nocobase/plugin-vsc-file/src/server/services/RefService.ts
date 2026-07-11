@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { Database, Model, Transaction } from '@nocobase/database';
+import type { Database, Transaction } from '@nocobase/database';
 
 import { VscError } from '../../shared/errors';
 import { normalizePath, pathHash } from '../../shared/path';
@@ -23,8 +23,6 @@ import { CommitService } from './CommitService';
 import { RepositoryService, refFromRecord } from './RepositoryService';
 import { TreeService } from './TreeService';
 
-export type UpdatableRefName = 'head' | 'published';
-
 export interface RefServiceContext {
   transaction?: Transaction;
   authorId?: string | null;
@@ -38,7 +36,6 @@ export interface UpdateRefInput {
   repoId: string;
   name: string;
   targetCommitId: string;
-  basePublishedCommitId?: string | null;
 }
 
 export interface UpdateRefResult {
@@ -93,6 +90,7 @@ export class RefService {
     const records = await this.db.getRepository('vscFileRefs').find({
       filter: {
         repoId: input.repoId,
+        name: 'head',
       },
       sort: ['name'],
       transaction,
@@ -103,18 +101,14 @@ export class RefService {
 
   async updateRef(input: UpdateRefInput, ctx: RefServiceContext = {}): Promise<UpdateRefResult> {
     return this.withTransaction(ctx.transaction, async (transaction) => {
-      if (input.name !== 'head' && input.name !== 'published') {
+      if (input.name !== 'head') {
         throw new VscError('PATH_INVALID', `Unsupported ref "${input.name}"`);
       }
 
       const repository = await this.getWritableRepository(input.repoId, transaction);
       const targetCommit = await this.commitService.getCommit(repository.id, input.targetCommitId, transaction);
 
-      if (input.name === 'head') {
-        return this.updateHeadRef(repository, targetCommit, transaction);
-      }
-
-      return this.updatePublishedRef(repository, targetCommit, input.basePublishedCommitId ?? null, transaction);
+      return this.updateHeadRef(repository, targetCommit, transaction);
     });
   }
 
@@ -194,13 +188,19 @@ export class RefService {
     targetCommit: VscCommitRecord,
     transaction: Transaction,
   ): Promise<UpdateRefResult> {
-    if (targetCommit.id !== repository.headCommitId) {
-      const advancesCurrentHead =
-        targetCommit.parentCommitId === repository.headCommitId && targetCommit.seq === repository.headSeq + 1;
+    if (targetCommit.id === repository.headCommitId) {
+      return {
+        repository,
+        ref: await this.repositoryService.getRef(repository.id, 'head', transaction),
+        commit: targetCommit,
+      };
+    }
 
-      if (!advancesCurrentHead) {
-        throw new VscError('BASE_COMMIT_OUTDATED', 'Head can only advance to the next linear commit');
-      }
+    const advancesCurrentHead =
+      targetCommit.parentCommitId === repository.headCommitId && targetCommit.seq === repository.headSeq + 1;
+
+    if (!advancesCurrentHead) {
+      throw new VscError('BASE_COMMIT_OUTDATED', 'Head can only advance to the next linear commit');
     }
 
     const updatedRepository = await this.repositoryService.updateHead(
@@ -214,60 +214,6 @@ export class RefService {
     return {
       repository: updatedRepository,
       ref,
-      commit: targetCommit,
-    };
-  }
-
-  private async updatePublishedRef(
-    repository: VscRepositoryRecord,
-    targetCommit: VscCommitRecord,
-    basePublishedCommitId: string | null,
-    transaction: Transaction,
-  ): Promise<UpdateRefResult> {
-    const repositoryModel = this.db.getModel<Model<VscRepositoryRecord>>('vscFileRepositories');
-    const [repositoryUpdatedCount] = await repositoryModel.update(
-      {
-        publishedCommitId: targetCommit.id,
-      },
-      {
-        where: {
-          id: repository.id,
-          publishedCommitId: basePublishedCommitId,
-        },
-        transaction,
-      },
-    );
-
-    if (repositoryUpdatedCount !== 1) {
-      throw new VscError('BASE_COMMIT_OUTDATED', 'Published ref was updated by another writer', {
-        details: {
-          expected: repository.publishedCommitId,
-          received: basePublishedCommitId,
-        },
-      });
-    }
-
-    const refModel = this.db.getModel<Model<VscRefRecord>>('vscFileRefs');
-    const [refUpdatedCount] = await refModel.update(
-      {
-        commitId: targetCommit.id,
-      },
-      {
-        where: {
-          repoId: repository.id,
-          name: 'published',
-        },
-        transaction,
-      },
-    );
-
-    if (refUpdatedCount !== 1) {
-      throw new VscError('REF_NOT_FOUND', 'Published ref was not found');
-    }
-
-    return {
-      repository: await this.repositoryService.getRepository(repository.id, transaction),
-      ref: await this.repositoryService.getRef(repository.id, 'published', transaction),
       commit: targetCommit,
     };
   }

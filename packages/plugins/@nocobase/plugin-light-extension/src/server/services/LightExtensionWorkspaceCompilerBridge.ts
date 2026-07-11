@@ -20,15 +20,14 @@ import { posix as pathPosix } from 'path';
 import ts from 'typescript';
 
 import type { LightExtensionKind } from '../../constants';
-import { LightExtensionError, isLightExtensionError } from '../../shared/errors';
+import { isLightExtensionError } from '../../shared/errors';
 import type { LightExtensionDiagnostic } from '../../shared/types';
 import { LightExtensionAuditService } from './LightExtensionAuditService';
 import {
   LIGHT_EXTENSION_AUTHORING_SURFACES,
-  LightExtensionAuthoringInspector,
   type LightExtensionAuthoringSurfaceSpec,
   type LightExtensionSurfaceStyle,
-} from './LightExtensionAuthoringInspector';
+} from './LightExtensionCompileContract';
 import { LightExtensionPermissionService } from './LightExtensionPermissionService';
 import type { LightExtensionServiceContext } from './LightExtensionRepoService';
 import { hasErrorDiagnostic, sortDiagnostics } from './LightExtensionValidator';
@@ -49,6 +48,7 @@ export interface LightExtensionWorkspaceCompileFileInput {
 export interface LightExtensionWorkspaceCompileInput {
   repoId?: string;
   entryId?: string | null;
+  operation?: 'compilePreview' | 'runtimeCompile';
   kind: LightExtensionKind;
   entryName?: string;
   entryPath: string;
@@ -69,7 +69,6 @@ export class LightExtensionWorkspaceCompilerBridge {
   constructor(
     private readonly auditService: LightExtensionAuditService,
     private readonly permissionService: LightExtensionPermissionService,
-    private readonly authoringInspector = new LightExtensionAuthoringInspector(),
   ) {}
 
   async compileEntry(
@@ -79,14 +78,16 @@ export class LightExtensionWorkspaceCompilerBridge {
     const requestId = ctx.requestId || randomUUID();
     const surface = getSurfaceSpec(input.kind);
 
-    try {
-      await this.permissionService.assertActionAllowed({
-        action: 'compilePreview',
-        ctx,
-      });
-    } catch (error) {
-      await this.recordPermissionDenied(input, ctx, requestId, error);
-      throw error;
+    if (getCompileOperation(input) === 'compilePreview') {
+      try {
+        await this.permissionService.assertActionAllowed({
+          action: 'compilePreview',
+          ctx,
+        });
+      } catch (error) {
+        await this.recordPermissionDenied(input, ctx, requestId, error);
+        throw error;
+      }
     }
 
     const preflightDiagnostics = this.validateCompileInput(input, surface);
@@ -96,14 +97,6 @@ export class LightExtensionWorkspaceCompilerBridge {
       return result;
     }
     const compilerSurfaceStyle = surface.compilerSurfaceStyle;
-    if (!compilerSurfaceStyle) {
-      throw new LightExtensionError(
-        'LIGHT_EXTENSION_INVALID_INPUT',
-        `Light extension kind "${input.kind}" cannot be compiled`,
-      );
-    }
-
-    const inspectAuthoring = this.authoringInspector.createRunJSSourceInspector();
     const compiled = compileRunJSSourceWorkspace({
       files: prepareLightExtensionCompileFiles(input.files),
       entry: input.entryPath,
@@ -121,11 +114,6 @@ export class LightExtensionWorkspaceCompilerBridge {
           surface: surface.surface,
         },
       },
-      inspectAuthoring: (inspectionInput) =>
-        inspectAuthoring({
-          ...inspectionInput,
-          code: input.kind === 'runjs' ? wrapRunJSDefaultExportEntry(inspectionInput.code) : inspectionInput.code,
-        }),
     });
     const result = this.buildCompileResult(input, surface, compiled);
     await this.recordCompileAudit(input, ctx, requestId, result, classifyFailureReason(result, compiled.failureCode));
@@ -139,26 +127,6 @@ export class LightExtensionWorkspaceCompilerBridge {
     const diagnostics: LightExtensionDiagnostic[] = [];
     const entryPath = normalizeSourcePath(input.entryPath);
 
-    if (!surface.enabled) {
-      diagnostics.push({
-        code: 'light_extension_kind_disabled',
-        severity: 'error',
-        message: `Light extension kind "${input.kind}" is not enabled for compilation`,
-        path: entryPath,
-        kind: input.kind,
-        entryName: input.entryName || inferEntryName(entryPath),
-      });
-    }
-    if (!surface.compilerSurfaceStyle) {
-      diagnostics.push({
-        code: 'light_extension_surface_not_supported',
-        severity: 'error',
-        message: `Light extension surface "${surface.surfaceStyle}" is not supported by the RunJS compiler bridge`,
-        path: entryPath,
-        kind: input.kind,
-        entryName: input.entryName || inferEntryName(entryPath),
-      });
-    }
     if (input.surfaceStyle && input.surfaceStyle !== surface.surfaceStyle) {
       diagnostics.push({
         code: 'light_extension_surface_mismatch',
@@ -285,7 +253,7 @@ export class LightExtensionWorkspaceCompilerBridge {
         target: 'client',
         kind: input.kind,
         name: input.entryName || inferEntryName(input.entryPath),
-        action: 'compilePreview',
+        action: getCompileOperation(input),
         result: result.accepted ? 'success' : 'blocked',
         requestId,
         actorUserId: ctx.actorUserId,
@@ -312,6 +280,12 @@ export class LightExtensionWorkspaceCompilerBridge {
       // Compile diagnostics must not depend on audit persistence availability.
     }
   }
+}
+
+function getCompileOperation(
+  input: LightExtensionWorkspaceCompileInput,
+): NonNullable<LightExtensionWorkspaceCompileInput['operation']> {
+  return input.operation || 'compilePreview';
 }
 
 function getSurfaceSpec(kind: LightExtensionKind): LightExtensionAuthoringSurfaceSpec {

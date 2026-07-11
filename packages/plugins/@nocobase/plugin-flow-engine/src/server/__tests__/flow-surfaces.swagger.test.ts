@@ -1419,13 +1419,11 @@ describe('flowSurfaces swagger', () => {
     });
     expect(configureRequest.examples.jsBlockSettings.value.changes.showBlockCard).toBe(true);
     expect(configureRequest.examples.jsBlockSettings.value.changes.sourceMode).toBe('light-extension');
-    expect(configureRequest.examples.jsBlockSettings.value.changes.sourceBinding).toMatchObject({
+    expect(configureRequest.examples.jsBlockSettings.value.changes.sourceBinding).toEqual({
       type: 'light-extension-entry',
       repoId: 'repo_users',
       entryId: 'entry_users_hero',
       kind: 'js-block',
-      publicationId: 'publication_users_hero_v1',
-      versionPolicy: 'pinned',
     });
     expect(configureRequest.examples.jsBlockSettings.value.changes.settings).toEqual({
       segment: 'active',
@@ -1559,13 +1557,11 @@ describe('flowSurfaces swagger', () => {
     expect(swaggerDocument.paths['/flowSurfaces:addBlock'].post.description).toContain('`kanban`');
     expect(addBlockRequest.examples.jsBlock.value.type).toBe('jsBlock');
     expect(addBlockRequest.examples.jsBlock.value.settings.sourceMode).toBe('light-extension');
-    expect(addBlockRequest.examples.jsBlock.value.settings.sourceBinding).toMatchObject({
+    expect(addBlockRequest.examples.jsBlock.value.settings.sourceBinding).toEqual({
       type: 'light-extension-entry',
       repoId: 'repo_users',
       entryId: 'entry_users_banner',
       kind: 'js-block',
-      publicationId: 'publication_users_banner_v1',
-      versionPolicy: 'pinned',
     });
     expect(addBlockRequest.examples.jsBlock.value.settings.settings).toEqual({
       segment: 'new-users',

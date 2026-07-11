@@ -89,6 +89,44 @@ describe('plugin-light-extension workspace compiler bridge permissions', () => {
     );
 
     expect(result.accepted).toBe(true);
+    expect(recordCompileEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'compilePreview',
+      }),
+    );
+  });
+
+  it('does not require compilePreview permission for runtime compilation and records the runtime operation', async () => {
+    const can = vi.fn(() => null);
+    const result = await bridge.compileEntry(
+      {
+        repoId: 'ler_runtime',
+        operation: 'runtimeCompile',
+        kind: 'js-block',
+        entryName: 'runtime-block',
+        entryPath: 'src/client/js-blocks/runtime-block/index.tsx',
+        files: [
+          {
+            path: 'src/client/js-blocks/runtime-block/index.tsx',
+            content: 'ctx.render(<div>runtime</div>);\n',
+          },
+        ],
+      },
+      {
+        requestId: 'req_runtime_compile',
+        can,
+      },
+    );
+
+    expect(result.accepted).toBe(true);
+    expect(can).not.toHaveBeenCalled();
+    expect(recordCompileEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'runtimeCompile',
+        result: 'success',
+        requestId: 'req_runtime_compile',
+      }),
+    );
   });
 
   it('keeps permission errors typed as light-extension errors', async () => {

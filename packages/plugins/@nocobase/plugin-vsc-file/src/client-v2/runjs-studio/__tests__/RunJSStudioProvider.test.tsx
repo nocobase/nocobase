@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -20,6 +20,10 @@ const mocks = vi.hoisted(() => ({
   closeView: vi.fn(),
   diagnoseRunJS: vi.fn(),
   request: vi.fn(),
+  view: {} as {
+    beforeClose?: (payload?: unknown) => boolean | void | Promise<boolean | void>;
+    close?: () => boolean | void | Promise<boolean | void>;
+  },
 }));
 
 vi.mock('../../../shared/path', () => ({
@@ -31,9 +35,7 @@ vi.mock('@nocobase/flow-engine', () => ({
     api: {
       request: mocks.request,
     },
-    view: {
-      close: mocks.closeView,
-    },
+    view: mocks.view,
   }),
 }));
 
@@ -129,9 +131,8 @@ const repository = {
   ownerId: 'owner-1',
   name: 'source',
   status: 'active',
-  defaultRef: 'published',
+  defaultRef: 'head',
   headCommitId: 'commit-1',
-  publishedCommitId: 'commit-1',
   headSeq: 1,
 };
 
@@ -146,8 +147,19 @@ const commit = {
   authorId: '1',
   metadata: {},
   createdAt: '2026-07-02T05:50:00.000Z',
-  isPublished: true,
 };
+
+function createHistoryCommit(seq: number) {
+  return {
+    ...commit,
+    id: `commit-${seq}`,
+    hash: `hash-${seq}`,
+    seq,
+    parentCommitId: seq > 1 ? `commit-${seq - 1}` : null,
+    treeHash: `tree-${seq}`,
+    message: `History v${seq}`,
+  };
+}
 
 const previewSourceMap = JSON.stringify({
   version: 1,
@@ -195,10 +207,9 @@ const openResult = {
   permissions: {
     canRead: true,
     canWrite: true,
-    canPublish: true,
+    canSave: true,
   },
   history: {
-    commits: [commit],
     items: [commit],
   },
 };
@@ -242,6 +253,8 @@ function createDataTransfer() {
 
 describe('runJSStudioProvider', () => {
   beforeEach(() => {
+    mocks.view.close = mocks.closeView;
+    Reflect.deleteProperty(mocks.view, 'beforeClose');
     mocks.diagnoseRunJS.mockResolvedValue({
       execution: { finished: true, started: true, timeout: false },
       issues: [],
@@ -276,7 +289,7 @@ describe('runJSStudioProvider', () => {
         });
       }
 
-      if (url === 'runJSSources:publish') {
+      if (url === 'runJSSources:save') {
         return Promise.resolve({
           data: {
             data: {
@@ -285,7 +298,6 @@ describe('runJSStudioProvider', () => {
               repository: {
                 ...repository,
                 headCommitId: 'commit-2',
-                publishedCommitId: 'commit-2',
                 headSeq: 2,
               },
               commit: {
@@ -293,13 +305,6 @@ describe('runJSStudioProvider', () => {
                 id: 'commit-2',
                 seq: 2,
                 message: 'Update code',
-              },
-              publishedRef: {
-                id: 'ref-1',
-                repoId: 'repo-1',
-                name: 'published',
-                type: 'branch',
-                commitId: 'commit-2',
               },
               artifact: {
                 entryPath: 'src/client/index.tsx',
@@ -337,6 +342,20 @@ describe('runJSStudioProvider', () => {
         });
       }
 
+      if (url === 'runJSSources:listHistory') {
+        return Promise.resolve({
+          data: {
+            data: {
+              locator,
+              locatorKind: 'flowModel.step',
+              repository,
+              items: [commit],
+              nextBeforeSeq: null,
+            },
+          },
+        });
+      }
+
       if (url === 'runJSSources:exportZip') {
         return Promise.resolve({
           data: new Blob(['zip'], { type: 'application/zip' }),
@@ -352,7 +371,6 @@ describe('runJSStudioProvider', () => {
               repository: {
                 ...repository,
                 headCommitId: 'commit-2',
-                publishedCommitId: 'commit-2',
                 headSeq: 2,
               },
               commit: {
@@ -360,13 +378,6 @@ describe('runJSStudioProvider', () => {
                 id: 'commit-2',
                 seq: 2,
                 message: 'Import RunJS workspace',
-              },
-              publishedRef: {
-                id: 'ref-1',
-                repoId: 'repo-1',
-                name: 'published',
-                type: 'branch',
-                commitId: 'commit-2',
               },
               artifact: {
                 entryPath: 'src/client/index.tsx',
@@ -408,19 +419,22 @@ describe('runJSStudioProvider', () => {
       'Console logs',
       'Run',
       'Save',
-      'Code saved',
       'Saved successfully',
       'Unsaved changes',
       'Current changes',
+      'Load more',
       'Saved changes',
-      'Commit message',
+      'Save version',
+      'Version message',
+      'Version history',
       'Compile diagnostics',
-      'Describe this change',
+      'Describe this version',
       'Discard changes',
       'Discard changes and refresh',
       'Discard your changes before closing?',
       'Discard your changes before refreshing?',
-      'No changes between current editor and published version',
+      'No changes between current editor and saved version',
+      'No versions yet',
       'Back to editor',
       'Base',
       'Saved',
@@ -428,12 +442,12 @@ describe('runJSStudioProvider', () => {
       'Click to restore',
       'Restore {{version}}?',
       'This will copy files from this version into the editor.',
+      'It will not create a version until you save.',
       'You can review and save after restoring.',
       'RunJS source version is out of sync',
-      'The code stored in this block differs from the latest saved RunJS source. Choose which version to continue with.',
+      'The code stored in this block differs from the latest saved RunJS source. Recover the versioned source from the current code before continuing.',
       'Recover latest version from current code',
       'Recovered latest version from current code',
-      'Edit latest saved version',
       'Import',
       'Import workspace',
       'Import failed',
@@ -443,7 +457,6 @@ describe('runJSStudioProvider', () => {
       'Folder is not empty',
       'Folder path',
       'Folder path must be under src',
-      'Folder path must be under src/client',
       'Fix compile errors before saving.',
       'New folder',
       'No compile diagnostics',
@@ -469,7 +482,6 @@ describe('runJSStudioProvider', () => {
     expect(await screen.findByRole('button', { name: 'Expand files' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'src/client/index.tsx' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Open Studio' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Publish' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Save' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Run' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Diff' })).toBeTruthy();
@@ -506,7 +518,7 @@ describe('runJSStudioProvider', () => {
     fireEvent.mouseEnter(within(filesPanel).getByText('client'));
     expect(within(filesPanel).getByRole('button', { name: 'New file src/client' })).toBeTruthy();
     expect(within(filesPanel).getByRole('button', { name: 'New folder src/client' })).toBeTruthy();
-    const historyPanel = screen.getByLabelText('Commit history');
+    const historyPanel = screen.getByLabelText('Version history');
     expect(historyPanel.style.flex).toBe('1 1 220px');
     expect(historyPanel.style.minHeight).toBe('180px');
     expect(historyPanel.style.maxHeight).toBe('');
@@ -747,7 +759,7 @@ describe('runJSStudioProvider', () => {
     const diagnostics = within(dialog).getByLabelText('Compile diagnostics');
     expect(diagnostics.textContent).toContain('[error] src/client/index.tsx (RUNJS_ENTRY_NOT_FOUND)');
     expect(diagnostics.textContent).toContain('RunJS entry file under src/client was not found');
-    expect(within(dialog).queryByRole('textbox', { name: 'Commit message' })).toBeNull();
+    expect(within(dialog).queryByRole('textbox', { name: 'Version message' })).toBeNull();
   });
 
   it('compiles on Run and appends client-side preview logs', async () => {
@@ -925,10 +937,14 @@ describe('runJSStudioProvider', () => {
     await screen.findByLabelText('Edit file content');
     fireEvent.click(screen.getByRole('button', { name: 'Run' }));
 
-    expect(await screen.findByText(/\[error\] src\/client\/index\.tsx:2 boom/)).toBeTruthy();
+    const location = await screen.findByRole('button', {
+      name: '[error] src/client/index.tsx:2:3 boom',
+    });
+    fireEvent.click(location);
+    expect(screen.getByLabelText('Edit file content')).toBeTruthy();
   });
 
-  it('toggles the editor area into a diff against the published file', async () => {
+  it('toggles the editor area into a diff against the saved file', async () => {
     renderEditor();
     const editor = (await screen.findByLabelText('Edit file content')) as HTMLTextAreaElement;
 
@@ -949,7 +965,7 @@ describe('runJSStudioProvider', () => {
     expect((screen.getByLabelText('Edit file content') as HTMLTextAreaElement).value).toBe('return 2;');
   });
 
-  it('shows compile diagnostics instead of the commit message dialog when Save preflight fails', async () => {
+  it('shows compile diagnostics instead of the version message dialog when Save preflight fails', async () => {
     mocks.request.mockImplementation(({ url }: { url: string }) => {
       if (url === 'runJSSources:open') {
         return Promise.resolve({
@@ -1001,18 +1017,42 @@ describe('runJSStudioProvider', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
     const dialog = await screen.findByRole('dialog', { name: 'Save failed' });
-    expect(within(dialog).queryByRole('textbox', { name: 'Commit message' })).toBeNull();
+    expect(within(dialog).queryByRole('textbox', { name: 'Version message' })).toBeNull();
     expect(within(dialog).getByText('Compile failed')).toBeTruthy();
     expect(within(dialog).getByText(/\[error\] src\/client\/index\.tsx:1:8 \(TS1005\) ';' expected/)).toBeTruthy();
     const diagnostics = within(dialog).getByLabelText('Compile diagnostics');
     expect(diagnostics.style.overflow).toBe('auto');
     expect(diagnostics.style.maxHeight).toBe('min(520px, calc(100vh - 260px))');
     expect(within(dialog).getByRole('button', { name: 'Copy technical details' })).toBeTruthy();
+    fireEvent.click(within(dialog).getByRole('button', { name: /src\/client\/index\.tsx:1:8/ }));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Save failed' })).toBeNull());
+    expect(screen.getByLabelText('Edit file content')).toBeTruthy();
   });
 
-  it('requires a commit message before Save publishes', async () => {
+  it('limits keyboard shortcuts to the active Studio and ignores dialog inputs', async () => {
+    renderEditor();
+    const editor = await screen.findByLabelText('Edit file content');
+
+    fireEvent.change(editor, { target: { value: 'return 2;' } });
+    fireEvent.keyDown(document.body, { key: 's', ctrlKey: true });
+    expect(screen.queryByRole('dialog', { name: 'Save version' })).toBeNull();
+
+    fireEvent.keyDown(editor, { key: 's', ctrlKey: true });
+    const dialog = await screen.findByRole('dialog', { name: 'Save version' });
+    const versionMessage = within(dialog).getByRole('textbox', { name: 'Version message' }) as HTMLInputElement;
+    fireEvent.change(versionMessage, { target: { value: 'Keep this message' } });
+    fireEvent.keyDown(versionMessage, { key: 's', ctrlKey: true });
+
+    expect(versionMessage.value).toBe('Keep this message');
+    expect(mocks.request.mock.calls.filter(([request]) => request.url === 'runJSSources:compilePreview')).toHaveLength(
+      1,
+    );
+  });
+
+  it('requires a version message before saving a version', async () => {
     const onChange = vi.fn();
-    renderEditor(onChange);
+    const onPersistedChange = vi.fn();
+    renderEditor(onChange, { onPersistedChange });
     const editor = await screen.findByLabelText('Edit file content');
 
     fireEvent.change(editor, { target: { value: 'return 2;' } });
@@ -1022,7 +1062,15 @@ describe('runJSStudioProvider', () => {
     const saveButton = within(dialog).getByRole('button', { name: 'Save' });
     expect(saveButton).toBeDisabled();
 
-    fireEvent.change(within(dialog).getByRole('textbox', { name: 'Commit message' }), {
+    const versionMessage = within(dialog).getByRole('textbox', { name: 'Version message' });
+    fireEvent.change(versionMessage, { target: { value: 'a' } });
+    expect(saveButton).toBeDisabled();
+    fireEvent.change(versionMessage, { target: { value: 'ab' } });
+    expect(saveButton).toBeDisabled();
+    fireEvent.change(versionMessage, { target: { value: 'abc' } });
+    expect(saveButton).toBeEnabled();
+
+    fireEvent.change(versionMessage, {
       target: { value: 'Update code' },
     });
     fireEvent.click(saveButton);
@@ -1030,22 +1078,61 @@ describe('runJSStudioProvider', () => {
     await waitFor(() => {
       expect(mocks.request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'runJSSources:publish',
+          url: 'runJSSources:save',
           data: expect.objectContaining({
             message: 'Update code',
           }),
         }),
       );
     });
-    const publishRequest = mocks.request.mock.calls
+    const saveRequest = mocks.request.mock.calls
       .map(([request]) => request as { url: string; data?: Record<string, unknown> })
-      .find((request) => request.url === 'runJSSources:publish');
-    expect(publishRequest?.data).not.toHaveProperty('baseCommitId');
-    expect(publishRequest?.data).not.toHaveProperty('basePublishedCommitId');
-    expect(publishRequest?.data).not.toHaveProperty('baseOwnerFingerprint');
-    expect(publishRequest?.data).not.toHaveProperty('basePublishedOwnerFingerprint');
-    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ code: 'return 2;', version: 'v2' }));
+      .find((request) => request.url === 'runJSSources:save');
+    expect(saveRequest?.data).not.toHaveProperty('baseCommitId');
+    expect(saveRequest?.data).not.toHaveProperty('baseOwnerFingerprint');
+    expect(onPersistedChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        code: 'return 2;',
+        version: 'v2',
+        sourceRef: {
+          type: 'vsc-file',
+          repoId: 'repo-1',
+          commitId: 'commit-2',
+          entry: 'src/client/index.tsx',
+        },
+      }),
+    );
+    expect(onChange).not.toHaveBeenCalled();
     expect(mocks.closeView).toHaveBeenCalled();
+  });
+
+  it('does not add a step sourceRef to nested RunJS values', async () => {
+    const onChange = vi.fn();
+    renderEditor(onChange, {
+      locator: {
+        kind: 'flowModel.nestedRunJS',
+        modelUid: 'fm_1',
+        containerFlowKey: 'settings',
+        containerStepKey: 'runjs',
+        valuePath: ['variables', 0, 'runjs'],
+        scene: 'custom-variable',
+      },
+    });
+    const editor = await screen.findByLabelText('Edit file content');
+
+    fireEvent.change(editor, { target: { value: 'return 3;' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.change(within(dialog).getByRole('textbox', { name: 'Version message' }), {
+      target: { value: 'Update nested code' },
+    });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(onChange).toHaveBeenCalled());
+    const savedValue = onChange.mock.calls.at(-1)?.[0] as Record<string, unknown>;
+    expect(savedValue).toMatchObject({ code: 'return 3;', version: 'v2' });
+    expect(savedValue).not.toHaveProperty('sourceRef');
   });
 
   it('confirms and restores a history version even when the editor is dirty', async () => {
@@ -1059,6 +1146,9 @@ describe('runJSStudioProvider', () => {
     fireEvent.click(historyButton as HTMLButtonElement);
 
     const dialog = await screen.findByRole('dialog', { name: 'Restore v1?' });
+    expect(within(dialog).getByText('Target version: v1')).toBeInTheDocument();
+    expect(within(dialog).getByText('Initial import')).toBeInTheDocument();
+    expect(within(dialog).getByText('It will not create a version until you save.')).toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole('button', { name: 'Restore' }));
 
     await waitFor(() => {
@@ -1072,7 +1162,110 @@ describe('runJSStudioProvider', () => {
     expect(screen.getByText('Restored from v1')).toBeTruthy();
   });
 
-  it('exports the current published workspace as a ZIP', async () => {
+  it('loads older history pages without duplicating commits', async () => {
+    const initialCommits = Array.from({ length: 50 }, (_, index) => createHistoryCommit(100 - index));
+    const olderCommit = createHistoryCommit(50);
+    mocks.request.mockImplementation(({ url }: { url: string }) => {
+      if (url === 'runJSSources:open') {
+        return Promise.resolve({
+          data: {
+            data: {
+              ...openResult,
+              history: {
+                items: initialCommits,
+              },
+            },
+          },
+        });
+      }
+      if (url === 'runJSSources:listHistory') {
+        return Promise.resolve({
+          data: {
+            data: {
+              locator,
+              locatorKind: 'flowModel.step',
+              repository,
+              items: [initialCommits[49], olderCommit],
+              nextBeforeSeq: olderCommit.seq,
+            },
+          },
+        });
+      }
+      return Promise.resolve({ data: { data: {} } });
+    });
+
+    renderEditor();
+    fireEvent.click(await screen.findByRole('button', { name: 'Expand files' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Load more' }));
+
+    await waitFor(() => {
+      expect(mocks.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'runJSSources:listHistory',
+          data: expect.objectContaining({
+            repoId: 'repo-1',
+            limit: 50,
+            beforeSeq: 51,
+          }),
+        }),
+      );
+    });
+    expect(await screen.findByText('History v50')).toBeTruthy();
+    expect(screen.getAllByText('History v51')).toHaveLength(1);
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Load more' })).toBeNull());
+  });
+
+  it('refreshes history without adding an editor version baseline to save requests', async () => {
+    const baseRequest = mocks.request.getMockImplementation();
+    if (!baseRequest) {
+      throw new Error('Expected the default request mock implementation');
+    }
+    mocks.request.mockImplementation((options: { url: string; data?: unknown }) => {
+      if (options.url === 'runJSSources:listHistory') {
+        return Promise.resolve({
+          data: {
+            data: {
+              locator,
+              locatorKind: 'flowModel.step',
+              repository: {
+                ...repository,
+                headCommitId: 'commit-2',
+                headSeq: 2,
+              },
+              items: [createHistoryCommit(2), commit],
+              nextBeforeSeq: null,
+            },
+          },
+        });
+      }
+      return baseRequest(options);
+    });
+
+    renderEditor();
+    fireEvent.click(await screen.findByRole('button', { name: 'Expand files' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh history' }));
+    await waitFor(() =>
+      expect(mocks.request).toHaveBeenCalledWith(expect.objectContaining({ url: 'runJSSources:listHistory' })),
+    );
+
+    fireEvent.change(screen.getByLabelText('Edit file content'), { target: { value: 'return 2;' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.change(within(dialog).getByRole('textbox', { name: 'Version message' }), {
+      target: { value: 'Update after history refresh' },
+    });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => {
+      const saveRequest = mocks.request.mock.calls
+        .map(([request]) => request as { url: string; data?: Record<string, unknown> })
+        .find((request) => request.url === 'runJSSources:save');
+      expect(saveRequest?.data).not.toHaveProperty('baseCommitId');
+      expect(saveRequest?.data).not.toHaveProperty('baseOwnerFingerprint');
+    });
+  });
+
+  it('exports the current saved workspace as a ZIP', async () => {
     Object.defineProperty(URL, 'createObjectURL', {
       configurable: true,
       value: vi.fn(() => 'blob:runjs-workspace'),
@@ -1151,9 +1344,10 @@ describe('runJSStudioProvider', () => {
     expect(anchorClick).not.toHaveBeenCalled();
   });
 
-  it('imports a ZIP and publishes it directly', async () => {
+  it('imports a ZIP and saves it directly', async () => {
     const onChange = vi.fn();
-    renderEditor(onChange);
+    const onPersistedChange = vi.fn();
+    renderEditor(onChange, { onPersistedChange });
 
     await screen.findByLabelText('Edit file content');
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
@@ -1168,8 +1362,6 @@ describe('runJSStudioProvider', () => {
         expect.objectContaining({
           url: 'runJSSources:importZip',
           data: expect.objectContaining({
-            baseCommitId: 'commit-1',
-            baseOwnerFingerprint: 'owner-fingerprint-1',
             message: 'Import RunJS workspace',
             repoId: 'repo-1',
             zipBase64: expect.stringContaining('base64'),
@@ -1177,7 +1369,13 @@ describe('runJSStudioProvider', () => {
         }),
       );
     });
-    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ code: 'return 1;', version: 'v2' }));
+    const importRequest = mocks.request.mock.calls
+      .map(([request]) => request as { url: string; data?: Record<string, unknown> })
+      .find((request) => request.url === 'runJSSources:importZip');
+    expect(importRequest?.data).not.toHaveProperty('baseCommitId');
+    expect(importRequest?.data).not.toHaveProperty('baseOwnerFingerprint');
+    expect(onPersistedChange).toHaveBeenCalledWith(expect.objectContaining({ code: 'return 1;', version: 'v2' }));
+    expect(onChange).not.toHaveBeenCalled();
     expect(await screen.findByText(/\[info\] Workspace imported/)).toBeTruthy();
   });
 
@@ -1193,7 +1391,28 @@ describe('runJSStudioProvider', () => {
     expect(within(dialog).getByRole('button', { name: 'Discard changes' })).toBeTruthy();
   });
 
-  it('offers recovery choices when the RunJS source owner is out of sync', async () => {
+  it('guards title-bar close with the existing dirty confirmation', async () => {
+    mocks.closeView.mockImplementationOnce(async () => mocks.view.beforeClose?.({}));
+    renderEditor();
+    const editor = await screen.findByLabelText('Edit file content');
+
+    fireEvent.change(editor, { target: { value: 'return 2;' } });
+    await waitFor(() => expect(mocks.view.beforeClose).toBeTypeOf('function'));
+    let canClose: boolean | void | undefined;
+    await act(async () => {
+      canClose = await mocks.view.beforeClose?.({});
+    });
+    expect(canClose).toBe(false);
+
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText('Discard your changes before closing?')).toBeTruthy();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Discard changes' }));
+
+    await waitFor(() => expect(mocks.closeView).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  });
+
+  it('only offers recovery from current host code when versioned source diverges', async () => {
     mocks.request.mockImplementation(({ url }: { url: string }) => {
       if (url === 'runJSSources:open') {
         return Promise.reject({
@@ -1203,7 +1422,7 @@ describe('runJSStudioProvider', () => {
               errors: [
                 {
                   code: 'RUNJS_SOURCE_OWNER_OUTDATED',
-                  message: 'RunJS source owner was changed by another writer',
+                  message: 'RunJS host code differs from the versioned source',
                   status: 409,
                 },
               ],
@@ -1212,13 +1431,12 @@ describe('runJSStudioProvider', () => {
         });
       }
 
-      if (url === 'runJSSources:openLatest') {
+      if (url === 'runJSSources:restoreFromCode') {
         return Promise.resolve({
           data: {
             data: {
               ...openResult,
               ownerFingerprint: 'owner-fingerprint-current',
-              publishedOwnerFingerprint: 'owner-fingerprint-1',
             },
           },
         });
@@ -1235,12 +1453,13 @@ describe('runJSStudioProvider', () => {
 
     expect(await screen.findByText('RunJS source version is out of sync')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Recover latest version from current code' })).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Edit latest saved version' }));
+    expect(screen.queryByRole('button', { name: 'Edit latest saved version' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Recover latest version from current code' }));
 
     await waitFor(() => {
       expect(mocks.request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'runJSSources:openLatest',
+          url: 'runJSSources:restoreFromCode',
         }),
       );
     });

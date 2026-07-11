@@ -37,7 +37,6 @@ import {
   isCurrentJSFieldRuntimeRun,
   resetJSFieldRuntimeElement,
   renderJSFieldRuntimeError,
-  reportJSFieldRuntimeErrorBestEffort,
   resolveJSFieldRuntimeRunJS,
   runResolvedJSFieldCode,
 } from '../../fields/jsFieldLightExtensionRuntime';
@@ -306,7 +305,6 @@ JSColumnModel.registerFlow({
 
         ctx.onRefReady(ctx.ref, async (element) => {
           const runId = beginJSFieldRuntimeRun(ctx.model);
-          let resolved: Awaited<ReturnType<typeof resolveJSFieldRuntimeRunJS>> | undefined;
           try {
             resetJSFieldRuntimeElement(element);
             ctx.defineProperty('element', {
@@ -325,7 +323,7 @@ JSColumnModel.registerFlow({
               get: () => ctx.model.context.collectionField,
               cache: false,
             });
-            resolved = await resolveJSFieldRuntimeRunJS({
+            const resolved = await resolveJSFieldRuntimeRunJS({
               model: ctx.model,
               params: params || {},
               runJs: inlineRunJs,
@@ -339,7 +337,6 @@ JSColumnModel.registerFlow({
               return;
             }
             renderJSFieldRuntimeError(element, error, 'js-column-runtime-error');
-            await reportJSFieldRuntimeErrorBestEffort({ ctx, error, resolved, params });
           }
         });
       },

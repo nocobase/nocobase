@@ -976,7 +976,7 @@ export const flowSurfaceExamples = {
     },
     changes: {
       title: 'Users hero',
-      description: 'Rendered from a light-extension publication',
+      description: 'Rendered from a light-extension entry',
       className: 'users-hero',
       showBlockCard: true,
       sourceMode: 'light-extension',
@@ -985,8 +985,6 @@ export const flowSurfaceExamples = {
         repoId: 'repo_users',
         entryId: 'entry_users_hero',
         kind: 'js-block',
-        publicationId: 'publication_users_hero_v1',
-        versionPolicy: 'pinned',
       },
       settings: {
         segment: 'active',
@@ -1341,8 +1339,6 @@ export const flowSurfaceExamples = {
         repoId: 'repo_users',
         entryId: 'entry_users_banner',
         kind: 'js-block',
-        publicationId: 'publication_users_banner_v1',
-        versionPolicy: 'pinned',
       },
       settings: {
         segment: 'new-users',

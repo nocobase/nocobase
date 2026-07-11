@@ -21,12 +21,9 @@ const SOURCE_BINDING = {
   entryId: 'entry_open_message',
   entryPath: 'src/client/js-items/open-message/index.tsx',
   kind: 'js-item',
-  publicationId: 'pub_open_message',
-  versionPolicy: 'pinned',
 };
 
 const SETTINGS_DESCRIPTOR: RunJSSourceSettingsDescriptor = {
-  publicationId: 'pub_open_message',
   schemaHash: 'schema_open_message',
   defaults: {
     successMessage: 'Opened',
@@ -60,7 +57,6 @@ function createJSItemAction(stepParams: Record<string, unknown>) {
     info: vi.fn(),
     warning: vi.fn(),
   };
-  const reportRuntimeError = vi.fn();
   model.context.defineProperty('record', {
     value: {
       name: 'Ada',
@@ -78,10 +74,7 @@ function createJSItemAction(stepParams: Record<string, unknown>) {
   model.context.defineProperty('message', {
     value: message,
   });
-  model.context.defineProperty('reportRuntimeError', {
-    value: reportRuntimeError,
-  });
-  return { engine, model, message, reportRuntimeError };
+  return { engine, model, message };
 }
 
 describe('JSItemActionModel light extension source', () => {
@@ -117,13 +110,11 @@ describe('JSItemActionModel light extension source', () => {
     expect(listSourceMenuItems).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: 'js-item',
-        defaultVersionPolicy: 'follow-active',
       }),
     );
     expect(sourceModeStep?.uiSchema?.sourceMode?.['x-component']).toBe('JSItemLightExtensionFullSourceField');
     expect(sourceModeStep?.uiSchema?.sourceMode?.['x-component-props']).toMatchObject({
       kind: 'js-item',
-      defaultVersionPolicy: 'follow-active',
     });
     expect(sourceModeStep?.uiSchema?.sourceBinding?.['x-display']).toBe('hidden');
     expect(sourceModeStep?.uiSchema?.settings?.['x-display']).toBe('hidden');
@@ -131,7 +122,6 @@ describe('JSItemActionModel light extension source', () => {
     expect(sourceBindingStep?.uiSchema?.sourceBinding?.['x-component']).toBe('JSItemLightExtensionFullSourceField');
     expect(sourceBindingStep?.uiSchema?.sourceBinding?.['x-component-props']).toMatchObject({
       kind: 'js-item',
-      defaultVersionPolicy: 'follow-active',
     });
     expect(runJsStep?.uiSchema?.sourceMode?.['x-display']).toBe('hidden');
     expect(runJsStep?.uiSchema?.sourceBinding?.['x-display']).toBe('hidden');
@@ -213,7 +203,7 @@ ctx.render(
         },
         context: {
           lightExtension: {
-            publicationId: 'pub_open_message',
+            entryId: 'entry_open_message',
           },
         },
       })),
@@ -246,7 +236,7 @@ ctx.render(
     expect(screen.getByTestId('sibling-item')).toHaveTextContent('sibling');
   });
 
-  it('isolates click errors to the current JS Item and reports owner metadata', async () => {
+  it('isolates click errors to the current JS Item', async () => {
     RunJSSourceResolverRegistry.registerResolver({
       sourceMode: 'light-extension',
       resolve: async () => ({
@@ -269,13 +259,13 @@ ctx.render(
         },
         context: {
           lightExtension: {
-            publicationId: 'pub_open_message',
+            entryId: 'entry_open_message',
             entryPath: 'src/client/js-items/open-message/index.tsx',
           },
         },
       }),
     });
-    const { engine, model, reportRuntimeError } = createJSItemAction({
+    const { engine, model } = createJSItemAction({
       sourceMode: 'light-extension',
       sourceBinding: SOURCE_BINDING,
       settings: {
@@ -303,36 +293,19 @@ ctx.render(
       expect(screen.getByTestId('js-item-runtime-error')).toHaveTextContent('click failed');
     });
     expect(screen.getByTestId('sibling-item')).toHaveTextContent('sibling');
-    await waitFor(() => {
-      expect(reportRuntimeError).toHaveBeenCalledWith(
-        expect.objectContaining({
-          repoId: 'repo_items',
-          entryId: 'entry_open_message',
-          publicationId: 'pub_open_message',
-          ownerKind: 'flowModel.itemSettings',
-          path: 'src/client/js-items/open-message/index.tsx',
-          ownerLocator: expect.objectContaining({
-            kind: 'flowModel.itemSettings',
-            modelUid: model.uid,
-            use: 'JSItemActionModel',
-          }),
-          ownerLocatorHash: expect.stringMatching(/^(sha256|local):/),
-        }),
-      );
-    });
   });
 
-  it('reports resolver failures without rejecting neighboring menu items', async () => {
+  it('renders resolver failures without rejecting neighboring menu items', async () => {
     RunJSSourceResolverRegistry.registerResolver({
       sourceMode: 'light-extension',
       resolve: async () => {
-        throw Object.assign(new Error('publication missing'), {
-          code: 'LIGHT_EXTENSION_PUBLICATION_NOT_FOUND',
+        throw Object.assign(new Error('entry missing'), {
+          code: 'LIGHT_EXTENSION_ENTRY_NOT_FOUND',
           status: 404,
         });
       },
     });
-    const { engine, model, reportRuntimeError } = createJSItemAction({
+    const { engine, model } = createJSItemAction({
       sourceMode: 'light-extension',
       sourceBinding: SOURCE_BINDING,
       settings: {
@@ -352,19 +325,8 @@ ctx.render(
     );
 
     await waitFor(() => {
-      expect(screen.getByTestId('js-item-runtime-error')).toHaveTextContent('publication missing');
+      expect(screen.getByTestId('js-item-runtime-error')).toHaveTextContent('entry missing');
     });
     expect(screen.getByTestId('sibling-item')).toHaveTextContent('sibling');
-    await waitFor(() => {
-      expect(reportRuntimeError).toHaveBeenCalledWith(
-        expect.objectContaining({
-          repoId: 'repo_items',
-          entryId: 'entry_open_message',
-          publicationId: 'pub_open_message',
-          ownerKind: 'flowModel.itemSettings',
-          path: 'src/client/js-items/open-message/index.tsx',
-        }),
-      );
-    });
   });
 });

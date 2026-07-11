@@ -10,6 +10,7 @@
 import { MockServer, createMockServer } from '@nocobase/test';
 import JSZip from 'jszip';
 
+import { VscError } from '../../shared/errors';
 import type { RunJSRuntimeArtifact, RunJSSourceAdapterContext } from '../../shared/runjs-source-types';
 import { runJSManifestPath } from '../../shared/runjs-workspace-path';
 import PluginVscFileServer from '../plugin';
@@ -67,9 +68,63 @@ describe('runJSSources resource', () => {
     });
   });
 
-  it('opens, previews, publishes, and reads history from the published workspace', async () => {
+  it('keeps read-only open and export operations free of repository side effects', async () => {
+    const locator = createLocator('fm_read_only');
+    getPlugin().registerRunJSSourceAdapter({
+      kind: 'flowModel.step',
+      assertCanRead: () => {},
+      assertCanWrite: () => {
+        throw new VscError('PERMISSION_DENIED', 'Read only');
+      },
+      getFingerprint: () => 'owner:fm_read_only:v1',
+      readLegacy: () => ({
+        label: 'JS block / Read only',
+        code: 'ctx.render("read only");',
+        version: 'v2',
+        entryPath: 'src/client/index.tsx',
+        ownerFingerprint: 'owner:fm_read_only:v1',
+        surfaceStyle: 'render',
+        language: 'typescript',
+      }),
+      writeRuntime: () => {
+        throw new Error('Unexpected write');
+      },
+    });
+    const repositoryCount = await app.db.getRepository('vscFileRepositories').count();
+    const commitCount = await app.db.getRepository('vscFileCommits').count();
+
+    const opened = await agent.resource('runJSSources').open({
+      values: { locator },
+    });
+    const exported = await agent.resource('runJSSources').exportZip({
+      values: { locator },
+    });
+
+    expect(opened.status).toBe(200);
+    expect(opened.body.data).toMatchObject({
+      repository: {
+        id: '',
+        repoId: '',
+        headCommitId: null,
+      },
+      permissions: {
+        canRead: true,
+        canWrite: false,
+        canSave: false,
+      },
+      history: {
+        items: [],
+      },
+    });
+    expect(exported.status).toBe(200);
+    expect(String(exported.headers['content-type'])).toContain('application/zip');
+    await expect(app.db.getRepository('vscFileRepositories').count()).resolves.toBe(repositoryCount);
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCount);
+  });
+
+  it('opens, previews, saves, and reads history from the head workspace', async () => {
     let capturedContext: RunJSSourceAdapterContext | null = null;
-    const publishedArtifacts: RunJSRuntimeArtifact[] = [];
+    const runtimeArtifacts: RunJSRuntimeArtifact[] = [];
     const locator = createLocator('fm_workspace');
 
     registerFlowModelAdapter({
@@ -79,8 +134,8 @@ describe('runJSSources resource', () => {
       onReadContext: (ctx) => {
         capturedContext = ctx;
       },
-      onPublish: (artifact) => {
-        publishedArtifacts.push(artifact);
+      onSave: (artifact) => {
+        runtimeArtifacts.push(artifact);
       },
     });
 
@@ -99,12 +154,12 @@ describe('runJSSources resource', () => {
       repository: {
         repoId: firstOpen.body.data.repository.id,
         headSeq: 1,
-        headCommitId: firstOpen.body.data.repository.publishedCommitId,
+        headCommitId: expect.any(String),
       },
       permissions: {
         canRead: true,
         canWrite: true,
-        canPublish: true,
+        canSave: true,
       },
     });
     expect(firstOpen.body.data.files).toEqual(
@@ -120,9 +175,8 @@ describe('runJSSources resource', () => {
       ]),
     );
     expect(firstOpen.body.data.history.items[0]).toMatchObject({
-      id: firstOpen.body.data.repository.publishedCommitId,
+      id: firstOpen.body.data.repository.headCommitId,
       createdAt: expect.any(String),
-      isPublished: true,
     });
     expect(capturedContext).toMatchObject({
       userId: currentUserId,
@@ -137,12 +191,12 @@ describe('runJSSources resource', () => {
       values: {
         locator,
         repoId: firstOpen.body.data.repository.id,
-        baseCommitId: firstOpen.body.data.repository.publishedCommitId,
+        baseCommitId: firstOpen.body.data.repository.headCommitId,
         files: [
           {
             path: 'src/client/helper.ts',
             operation: 'upsert',
-            content: 'export const value = "published";',
+            content: 'export const value = "saved";',
             language: 'typescript',
           },
           {
@@ -159,18 +213,18 @@ describe('runJSSources resource', () => {
 
     expect(preview.status).toBe(200);
     expect(preview.body.data.artifact.diagnostics).toEqual([]);
-    expect(preview.body.data.artifact.code).toContain('published');
+    expect(preview.body.data.artifact.code).toContain('saved');
 
-    const publish = await agent.resource('runJSSources').publish({
+    const save = await agent.resource('runJSSources').save({
       values: {
         locator,
         repoId: firstOpen.body.data.repository.id,
-        message: 'Publish workspace files',
+        message: 'Save workspace files',
         files: [
           {
             path: 'src/client/helper.ts',
             operation: 'upsert',
-            content: 'export const value = "published";',
+            content: 'export const value = "saved";',
             language: 'typescript',
           },
           {
@@ -185,14 +239,14 @@ describe('runJSSources resource', () => {
       },
     });
 
-    expect(publish.status).toBe(200);
-    expect(publish.body.data.commit).toMatchObject({
-      message: 'Publish workspace files',
+    expect(save.status).toBe(200);
+    expect(save.body.data.commit).toMatchObject({
+      message: 'Save workspace files',
       seq: 2,
     });
-    expect(publish.body.data.repository.publishedCommitId).toBe(publish.body.data.commit.id);
-    expect(publishedArtifacts).toHaveLength(1);
-    expect(publishedArtifacts[0].code).toContain('published');
+    expect(save.body.data.repository.headCommitId).toBe(save.body.data.commit.id);
+    expect(runtimeArtifacts).toHaveLength(1);
+    expect(runtimeArtifacts[0].code).toContain('saved');
 
     const history = await agent.resource('runJSSources').listHistory({
       values: {
@@ -204,15 +258,14 @@ describe('runJSSources resource', () => {
     expect(history.status).toBe(200);
     expect(history.body.data.items).toHaveLength(2);
     expect(history.body.data.items[0]).toMatchObject({
-      id: publish.body.data.commit.id,
-      isPublished: true,
+      id: save.body.data.commit.id,
     });
 
     const version = await agent.resource('runJSSources').getVersion({
       values: {
         locator,
         repoId: firstOpen.body.data.repository.id,
-        commitId: publish.body.data.commit.id,
+        commitId: save.body.data.commit.id,
         includeFiles: true,
       },
     });
@@ -222,22 +275,58 @@ describe('runJSSources resource', () => {
       expect.arrayContaining([
         expect.objectContaining({
           path: 'src/client/helper.ts',
-          content: 'export const value = "published";',
+          content: 'export const value = "saved";',
         }),
       ]),
     );
   });
 
-  it('publishes stale editor contents by overwriting the latest RunJS source', async () => {
-    const publishedArtifacts: RunJSRuntimeArtifact[] = [];
+  it('returns the RunJS-specific error contract when saving an unchanged workspace', async () => {
+    const locator = createLocator('fm_no_changes');
+    registerFlowModelAdapter({
+      label: 'JS block / No changes',
+      modelUid: 'fm_no_changes',
+      readCode: () => 'ctx.render("legacy");',
+    });
+    const opened = await agent.resource('runJSSources').open({
+      values: { locator },
+    });
+
+    const response = await agent.resource('runJSSources').save({
+      values: {
+        locator,
+        repoId: opened.body.data.repository.id,
+        message: 'Save unchanged workspace',
+        files: [
+          {
+            path: 'src/client/index.tsx',
+            operation: 'upsert',
+            content: 'ctx.render("legacy");',
+            language: 'typescript',
+          },
+        ],
+        entryPath: 'src/client/index.tsx',
+        version: 'v2',
+      },
+    });
+
+    expect(response.status).toBe(409);
+    expect(response.body.errors[0]).toMatchObject({
+      code: 'RUNJS_SAVE_NO_CHANGES',
+      status: 409,
+    });
+  });
+
+  it('saves an independently opened editor snapshot as the next linear version', async () => {
+    const runtimeArtifacts: RunJSRuntimeArtifact[] = [];
     const locator = createLocator('fm_overwrite_stale');
 
     registerFlowModelAdapter({
       label: 'JS block / Overwrite stale',
       modelUid: 'fm_overwrite_stale',
       readCode: () => 'ctx.render("legacy");',
-      onPublish: (artifact) => {
-        publishedArtifacts.push(artifact);
+      onSave: (artifact) => {
+        runtimeArtifacts.push(artifact);
       },
     });
 
@@ -247,11 +336,11 @@ describe('runJSSources resource', () => {
       },
     });
 
-    const firstPublish = await agent.resource('runJSSources').publish({
+    const firstSave = await agent.resource('runJSSources').save({
       values: {
         locator,
         repoId: opened.body.data.repository.id,
-        message: 'Publish first writer',
+        message: 'Save first writer',
         files: [
           {
             path: 'src/client/extra.ts',
@@ -271,18 +360,18 @@ describe('runJSSources resource', () => {
       },
     });
 
-    expect(firstPublish.status).toBe(200);
+    expect(firstSave.status).toBe(200);
 
-    const stalePublish = await agent.resource('runJSSources').publish({
+    const secondEditorSave = await agent.resource('runJSSources').save({
       values: {
         locator,
         repoId: opened.body.data.repository.id,
-        message: 'Overwrite from stale editor',
+        message: 'Save second editor',
         files: [
           {
             path: 'src/client/index.tsx',
             operation: 'upsert',
-            content: 'ctx.render("stale editor wins");',
+            content: 'ctx.render("second editor wins");',
             language: 'typescript',
           },
         ],
@@ -291,37 +380,183 @@ describe('runJSSources resource', () => {
       },
     });
 
-    expect(stalePublish.status).toBe(200);
-    expect(stalePublish.body.data.commit).toMatchObject({
-      message: 'Overwrite from stale editor',
-      seq: 3,
+    expect(secondEditorSave.status).toBe(200);
+    expect(secondEditorSave.body.data.commit).toMatchObject({
+      parentCommitId: firstSave.body.data.commit.id,
+      seq: firstSave.body.data.commit.seq + 1,
     });
-    expect(publishedArtifacts).toHaveLength(2);
-    expect(publishedArtifacts[1].code).toContain('stale editor wins');
+    expect(runtimeArtifacts).toHaveLength(2);
+    expect(runtimeArtifacts[1].code).toContain('second editor wins');
 
     const version = await agent.resource('runJSSources').getVersion({
       values: {
         locator,
         repoId: opened.body.data.repository.id,
-        commitId: stalePublish.body.data.commit.id,
+        commitId: secondEditorSave.body.data.commit.id,
         includeFiles: true,
       },
     });
 
     expect(version.status).toBe(200);
     expect(version.body.data.files.map((file: { path: string }) => file.path)).not.toContain('src/client/extra.ts');
+    expect(version.body.data.files).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: 'src/client/index.tsx',
+          content: 'ctx.render("second editor wins");',
+        }),
+      ]),
+    );
   });
 
-  it('imports a ZIP snapshot as the current published version and exposes sync/export APIs', async () => {
-    const publishedArtifacts: RunJSRuntimeArtifact[] = [];
+  it('rejects save when the host code diverged from the current VSC head', async () => {
+    const locator = createLocator('fm_owner_diverged');
+    let ownerFingerprint = 'owner:fm_owner_diverged:v1';
+    let code = 'ctx.render("legacy");';
+    let runtimeWritten = false;
+
+    getPlugin().registerRunJSSourceAdapter({
+      kind: 'flowModel.step',
+      assertCanRead: () => {},
+      assertCanWrite: () => {},
+      getFingerprint: () => ownerFingerprint,
+      readLegacy: () => ({
+        label: 'JS block / Owner diverged',
+        code,
+        version: 'v2',
+        entryPath: 'src/client/index.tsx',
+        ownerFingerprint,
+        surfaceStyle: 'render',
+        language: 'typescript',
+      }),
+      writeRuntime: () => {
+        runtimeWritten = true;
+        return { ownerFingerprint };
+      },
+    });
+
+    const opened = await agent.resource('runJSSources').open({
+      values: { locator },
+    });
+    const commitCountBeforeSave = await app.db.getRepository('vscFileCommits').count();
+
+    code = 'ctx.render("changed outside Studio");';
+    ownerFingerprint = 'owner:fm_owner_diverged:v2';
+
+    const response = await agent.resource('runJSSources').save({
+      values: {
+        locator,
+        repoId: opened.body.data.repository.id,
+        message: 'Do not overwrite diverged host code',
+        files: [
+          {
+            path: 'src/client/index.tsx',
+            operation: 'upsert',
+            content: 'ctx.render("stale Studio edit");',
+            language: 'typescript',
+          },
+        ],
+        entryPath: 'src/client/index.tsx',
+        version: 'v2',
+      },
+    });
+
+    expect(response.status).toBe(409);
+    expect(response.body.errors[0]).toMatchObject({
+      code: 'RUNJS_SOURCE_OWNER_OUTDATED',
+      status: 409,
+    });
+    expect(runtimeWritten).toBe(false);
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforeSave);
+  });
+
+  it('rejects owner changes that happen after the preflight fingerprint check', async () => {
+    const locator = createLocator('fm_owner_race');
+    const initialFingerprint = 'owner:fm_owner_race:v1';
+    const externalFingerprint = 'owner:fm_owner_race:external';
+    let ownerFingerprint = initialFingerprint;
+    let fingerprintReadCount = 0;
+    let runtimeWritten = false;
+
+    getPlugin().registerRunJSSourceAdapter({
+      kind: 'flowModel.step',
+      assertCanRead: () => {},
+      assertCanWrite: () => {},
+      getFingerprint: () => {
+        fingerprintReadCount += 1;
+        if (fingerprintReadCount === 2) {
+          ownerFingerprint = externalFingerprint;
+        }
+        return ownerFingerprint;
+      },
+      readLegacy: () => ({
+        label: 'JS block / Owner race',
+        code: 'ctx.render("legacy");',
+        version: 'v2',
+        entryPath: 'src/client/index.tsx',
+        ownerFingerprint,
+        surfaceStyle: 'render',
+        language: 'typescript',
+      }),
+      writeRuntime: ({ baseOwnerFingerprint }) => {
+        if (ownerFingerprint === initialFingerprint) {
+          ownerFingerprint = externalFingerprint;
+        }
+        if (baseOwnerFingerprint !== ownerFingerprint) {
+          throw new VscError('RUNJS_SOURCE_OWNER_OUTDATED', 'RunJS host code differs from the versioned source');
+        }
+        runtimeWritten = true;
+        ownerFingerprint = 'owner:fm_owner_race:saved';
+        return {
+          ownerFingerprint,
+        };
+      },
+    });
+
+    const opened = await agent.resource('runJSSources').open({
+      values: {
+        locator,
+      },
+    });
+    const commitCountBeforeSave = await app.db.getRepository('vscFileCommits').count();
+
+    const response = await agent.resource('runJSSources').save({
+      values: {
+        locator,
+        repoId: opened.body.data.repository.id,
+        message: 'Reject owner race',
+        files: [
+          {
+            path: 'src/client/index.tsx',
+            operation: 'upsert',
+            content: 'ctx.render("stale");',
+            language: 'typescript',
+          },
+        ],
+        entryPath: 'src/client/index.tsx',
+        version: 'v2',
+      },
+    });
+
+    expect(response.status).toBe(409);
+    expect(response.body.errors[0]).toMatchObject({
+      code: 'RUNJS_SOURCE_OWNER_OUTDATED',
+      status: 409,
+    });
+    expect(runtimeWritten).toBe(false);
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforeSave);
+  });
+
+  it('imports a ZIP snapshot as the current head version and exposes sync/export APIs', async () => {
+    const runtimeArtifacts: RunJSRuntimeArtifact[] = [];
     const locator = createLocator('fm_import_export');
 
     registerFlowModelAdapter({
       label: 'JS block / Import export',
       modelUid: 'fm_import_export',
       readCode: () => 'ctx.render("legacy");',
-      onPublish: (artifact) => {
-        publishedArtifacts.push(artifact);
+      onSave: (artifact) => {
+        runtimeArtifacts.push(artifact);
       },
     });
 
@@ -350,10 +585,6 @@ describe('runJSSources resource', () => {
       values: {
         locator,
         repoId: opened.body.data.repository.id,
-        baseCommitId: opened.body.data.repository.publishedCommitId,
-        basePublishedCommitId: opened.body.data.repository.publishedCommitId,
-        baseOwnerFingerprint: opened.body.data.ownerFingerprint,
-        basePublishedOwnerFingerprint: opened.body.data.publishedOwnerFingerprint,
         message: 'Import RunJS workspace',
         zipBase64,
       },
@@ -365,12 +596,12 @@ describe('runJSSources resource', () => {
       filesHash: imported.body.data.artifact.filesHash,
     });
     expect(imported.body.data.artifact.entryPath).toBe('src/client/index.tsx');
-    expect(publishedArtifacts).toHaveLength(1);
-    expect(publishedArtifacts[0]).toMatchObject({
+    expect(runtimeArtifacts).toHaveLength(1);
+    expect(runtimeArtifacts[0]).toMatchObject({
       entryPath: 'src/client/index.tsx',
       version: 'v3',
     });
-    expect(publishedArtifacts[0].code).toContain('333');
+    expect(runtimeArtifacts[0].code).toContain('333');
 
     const importedVersion = await agent.resource('runJSSources').getVersion({
       values: {
@@ -386,24 +617,6 @@ describe('runJSSources resource', () => {
     expect(importedManifest.content).toContain('"folders"');
     expect(importedManifest.content).toContain('src/client/widgets');
 
-    const syncStatus = await agent.resource('runJSSources').syncStatus({
-      values: {
-        locator,
-        repoId: opened.body.data.repository.id,
-      },
-    });
-
-    expect(syncStatus.status).toBe(200);
-    expect(syncStatus.body.data).toMatchObject({
-      publishedCommitId: imported.body.data.commit.id,
-      headCommitId: imported.body.data.commit.id,
-      filesHash: imported.body.data.artifact.filesHash,
-      runtimeCodeHash: imported.body.data.artifact.runtimeCodeHash,
-      entry: 'src/client/index.tsx',
-      runtimeVersion: 'v3',
-      ownerFingerprint: imported.body.data.ownerFingerprint,
-    });
-
     const exported = await agent.resource('runJSSources').exportZip({
       values: {
         locator,
@@ -417,15 +630,15 @@ describe('runJSSources resource', () => {
   });
 
   it('honors a manifest entry outside the fixed src/client index when importing old workspaces', async () => {
-    const publishedArtifacts: RunJSRuntimeArtifact[] = [];
+    const runtimeArtifacts: RunJSRuntimeArtifact[] = [];
     const locator = createLocator('fm_import_legacy_entry');
 
     registerFlowModelAdapter({
       label: 'JS block / Import legacy entry',
       modelUid: 'fm_import_legacy_entry',
       readCode: () => 'ctx.render("legacy");',
-      onPublish: (artifact) => {
-        publishedArtifacts.push(artifact);
+      onSave: (artifact) => {
+        runtimeArtifacts.push(artifact);
       },
     });
 
@@ -452,10 +665,6 @@ describe('runJSSources resource', () => {
       values: {
         locator,
         repoId: opened.body.data.repository.id,
-        baseCommitId: opened.body.data.repository.publishedCommitId,
-        basePublishedCommitId: opened.body.data.repository.publishedCommitId,
-        baseOwnerFingerprint: opened.body.data.ownerFingerprint,
-        basePublishedOwnerFingerprint: opened.body.data.publishedOwnerFingerprint,
         message: 'Import legacy RunJS workspace',
         zipBase64,
       },
@@ -463,38 +672,38 @@ describe('runJSSources resource', () => {
 
     expect(imported.status).toBe(200);
     expect(imported.body.data.artifact.entryPath).toBe('src/main.tsx');
-    expect(publishedArtifacts).toHaveLength(1);
-    expect(publishedArtifacts[0]).toMatchObject({
+    expect(runtimeArtifacts).toHaveLength(1);
+    expect(runtimeArtifacts[0]).toMatchObject({
       entryPath: 'src/main.tsx',
       version: 'v2',
     });
-    expect(publishedArtifacts[0].code).toContain('main');
+    expect(runtimeArtifacts[0].code).toContain('main');
   });
 
   it('rejects a supplied repository that does not belong to the RunJS source locator', async () => {
-    const publishedArtifacts: RunJSRuntimeArtifact[] = [];
+    const runtimeArtifacts: RunJSRuntimeArtifact[] = [];
 
     registerFlowModelAdapter({
       label: 'JS block / Repository guard',
       modelUid: 'fm_repo_guard',
       readCode: () => 'return initial;',
-      onPublish: (artifact) => {
-        publishedArtifacts.push(artifact);
+      onSave: (artifact) => {
+        runtimeArtifacts.push(artifact);
       },
     });
 
     const wrongRepositoryResponse = await agent.resource('vscFile').createRepository({
       values: {
-        ownerType: 'runjs-source',
+        ownerType: 'plugin',
         ownerId: 'runjs:flowModel.step:other-model:0000000000000000',
         name: 'source',
       },
     });
-    const commitCountBeforePublish = await app.db.getRepository('vscFileCommits').count();
+    const commitCountBeforeSave = await app.db.getRepository('vscFileCommits').count();
 
     expect(wrongRepositoryResponse.status).toBe(200);
 
-    const response = await agent.resource('runJSSources').publish({
+    const response = await agent.resource('runJSSources').save({
       values: {
         locator: createLocator('fm_repo_guard'),
         repoId: wrongRepositoryResponse.body.data.repository.id,
@@ -519,8 +728,8 @@ describe('runJSSources resource', () => {
         sourceKind: 'flowModel.step',
       },
     });
-    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforePublish);
-    expect(publishedArtifacts).toHaveLength(0);
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforeSave);
+    expect(runtimeArtifacts).toHaveLength(0);
   });
 
   function registerFlowModelAdapter(input: {
@@ -528,7 +737,7 @@ describe('runJSSources resource', () => {
     modelUid: string;
     readCode: () => string;
     onReadContext?: (ctx: RunJSSourceAdapterContext) => void;
-    onPublish?: (artifact: RunJSRuntimeArtifact) => void;
+    onSave?: (artifact: RunJSRuntimeArtifact) => void;
   }) {
     let ownerFingerprint = `owner:${input.modelUid}:v1`;
 
@@ -552,8 +761,8 @@ describe('runJSSources resource', () => {
           language: 'typescript',
         };
       },
-      writePublished: ({ artifact }) => {
-        input.onPublish?.(artifact);
+      writeRuntime: ({ artifact }) => {
+        input.onSave?.(artifact);
         ownerFingerprint = `owner:${input.modelUid}:v2`;
         return {
           ownerFingerprint,

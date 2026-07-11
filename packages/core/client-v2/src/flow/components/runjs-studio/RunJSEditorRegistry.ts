@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { RunJSEditorProvider, RunJSEditorProviderRenderProps } from './types';
+import type { RunJSEditorProvider } from './types';
 
 class RunJSEditorProviderRegistry {
   private readonly providers = new Map<string, RunJSEditorProvider>();
@@ -22,13 +22,15 @@ class RunJSEditorProviderRegistry {
     };
   }
 
-  getProvider(props: RunJSEditorProviderRenderProps): RunJSEditorProvider | null {
-    const providers = Array.from(this.providers.values()).reverse();
-    return providers.find((provider) => provider.canHandle?.(props) ?? true) || null;
-  }
-
   getProviders(): RunJSEditorProvider[] {
-    return Array.from(this.providers.values());
+    return Array.from(this.providers.values())
+      .map((provider, registrationIndex) => ({ provider, registrationIndex }))
+      .sort(
+        (left, right) =>
+          (right.provider.priority ?? 0) - (left.provider.priority ?? 0) ||
+          right.registrationIndex - left.registrationIndex,
+      )
+      .map(({ provider }) => provider);
   }
 
   clear() {

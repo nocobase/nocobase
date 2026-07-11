@@ -10,11 +10,7 @@
 import { posix as pathPosix } from 'path';
 import ts from 'typescript';
 
-import {
-  LIGHT_EXTENSION_ENABLED_KINDS,
-  LIGHT_EXTENSION_SUPPORTED_KINDS,
-  type LightExtensionKind,
-} from '../../constants';
+import { LIGHT_EXTENSION_SUPPORTED_KINDS, type LightExtensionKind } from '../../constants';
 import { isAmbiguousSettingsTypeImport, isNamespacedSettingsTypeImport } from '../../sdk/settings-typegen';
 import type {
   LightExtensionCapabilities,
@@ -182,12 +178,6 @@ const entryFileRules: Record<LightExtensionKind, EntryFileRule> = {
     metadataFiles: ['meta.json', 'settings.json'],
     allowedExtensions: ['.ts', '.tsx', '.js', '.jsx', '.json', '.md'],
   },
-  event: {
-    root: 'src/client/events',
-    indexFiles: ['index.tsx', 'index.ts', 'index.jsx', 'index.js'],
-    metadataFiles: ['meta.json', 'settings.json'],
-    allowedExtensions: ['.ts', '.tsx', '.js', '.jsx', '.json', '.md'],
-  },
 };
 
 const allowedRepoRootFiles = new Set(['README.md', 'light-extension.json', 'tsconfig.json']);
@@ -253,7 +243,6 @@ export class LightExtensionValidator {
       limits: { ...this.capabilities.limits },
       writePolicy: { ...this.capabilities.writePolicy },
       supportedKinds: [...this.capabilities.supportedKinds],
-      enabledKinds: [...this.capabilities.enabledKinds],
     };
   }
 
@@ -306,7 +295,7 @@ export class LightExtensionValidator {
       const path = normalizeSourcePath(file.path);
       const pathKind = classifySourcePath(path);
       const pathTarget =
-        pathKind.status === 'enabled' || pathKind.status === 'kindDisabled'
+        pathKind.status === 'enabled'
           ? {
               kind: pathKind.kind,
               entryName: pathKind.entryName,
@@ -325,7 +314,7 @@ export class LightExtensionValidator {
     );
     for (const file of normalizedFiles) {
       const pathKind = classifySourcePath(file.path);
-      if (pathKind.status !== 'enabled' && pathKind.status !== 'kindDisabled') {
+      if (pathKind.status !== 'enabled') {
         if (pathKind.status === 'shared') {
           diagnostics.push(...this.validateSharedFile(file));
         }
@@ -419,7 +408,7 @@ export class LightExtensionValidator {
 
       const pathKind = classifySourcePath(path);
       const pathTarget =
-        pathKind.status === 'enabled' || pathKind.status === 'kindDisabled'
+        pathKind.status === 'enabled'
           ? {
               kind: pathKind.kind,
               entryName: pathKind.entryName,
@@ -457,7 +446,7 @@ export class LightExtensionValidator {
           }),
         );
       }
-      if ((pathKind.status === 'enabled' || pathKind.status === 'kindDisabled') && !isAllowedEntryFilePath(path)) {
+      if (pathKind.status === 'enabled' && !isAllowedEntryFilePath(path)) {
         diagnostics.push(
           diagnostic(
             'path_extension_not_allowed',
@@ -499,7 +488,7 @@ export class LightExtensionValidator {
 
     for (const file of files) {
       const pathKind = classifySourcePath(file.path);
-      if (pathKind.status !== 'enabled' && pathKind.status !== 'kindDisabled') {
+      if (pathKind.status !== 'enabled') {
         continue;
       }
 
@@ -575,15 +564,6 @@ export class LightExtensionValidator {
     if (!indexFile) {
       diagnostics.push(
         diagnostic('entry_index_missing', 'error', 'Entry must include index.tsx, index.ts, index.jsx, or index.js', {
-          ...target,
-          path: bucket.rootPath,
-        }),
-      );
-    }
-
-    if (!(LIGHT_EXTENSION_ENABLED_KINDS as readonly string[]).includes(bucket.kind)) {
-      diagnostics.push(
-        diagnostic('kind_not_enabled', 'warning', `Entry kind "${bucket.kind}" is not enabled`, {
           ...target,
           path: bucket.rootPath,
         }),
@@ -3271,7 +3251,6 @@ export function buildCapabilities(limits: LightExtensionValidationLimits): Light
         'src/client/js-actions/**',
         'src/client/js-items/**',
         'src/client/runjs/**',
-        'src/client/events/**',
       ],
       entries: buildEntryAllowedPaths(),
     },
@@ -3287,7 +3266,6 @@ export function buildCapabilities(limits: LightExtensionValidationLimits): Light
       allowDeleteExistingInvalidPaths: true,
     },
     supportedKinds: [...LIGHT_EXTENSION_SUPPORTED_KINDS],
-    enabledKinds: [...LIGHT_EXTENSION_ENABLED_KINDS],
     validatorVersion: LIGHT_EXTENSION_VALIDATOR_VERSION,
     sdkTemplateVersion: LIGHT_EXTENSION_SDK_TEMPLATE_VERSION,
   };
@@ -3441,7 +3419,7 @@ function validateDeleteSourcePath(path: string, existingPaths?: ReadonlySet<stri
 
   const pathKind = classifySourcePath(normalizedPath);
   const pathTarget =
-    pathKind.status === 'enabled' || pathKind.status === 'kindDisabled'
+    pathKind.status === 'enabled'
       ? {
           kind: pathKind.kind,
           entryName: pathKind.entryName,
@@ -3461,20 +3439,14 @@ function validateDeleteSourcePath(path: string, existingPaths?: ReadonlySet<stri
         kind: pathKind.kind,
       }),
     );
-  } else if (
-    (pathKind.status === 'enabled' || pathKind.status === 'kindDisabled') &&
-    !isValidEntryName(pathKind.entryName)
-  ) {
+  } else if (pathKind.status === 'enabled' && !isValidEntryName(pathKind.entryName)) {
     diagnostics.push(
       diagnostic('invalid_entry_name', 'error', 'Entry name must be a lowercase slug', {
         path: normalizedPath,
         ...pathTarget,
       }),
     );
-  } else if (
-    (pathKind.status === 'enabled' || pathKind.status === 'kindDisabled') &&
-    !isAllowedEntryFilePath(normalizedPath)
-  ) {
+  } else if (pathKind.status === 'enabled' && !isAllowedEntryFilePath(normalizedPath)) {
     diagnostics.push(
       diagnostic('path_extension_not_allowed', 'error', 'Source file path is not allowed for light-extension entries', {
         path: normalizedPath,
@@ -3492,7 +3464,7 @@ function normalizeSourcePath(path: string): string {
 
 type SourcePathKind =
   | {
-      status: 'enabled' | 'kindDisabled';
+      status: 'enabled';
       kind: LightExtensionKind;
       entryName: string;
     }
@@ -3526,9 +3498,7 @@ function classifySourcePath(path: string): SourcePathKind {
       if (!entryName) {
         return { status: 'missingEntryName', kind };
       }
-      return (LIGHT_EXTENSION_ENABLED_KINDS as readonly string[]).includes(kind)
-        ? { status: 'enabled', kind, entryName }
-        : { status: 'kindDisabled', kind, entryName };
+      return { status: 'enabled', kind, entryName };
     }
   }
 
@@ -3550,7 +3520,7 @@ function isCodeFile(path: string): boolean {
 
 function isAllowedEntryFilePath(path: string): boolean {
   const pathKind = classifySourcePath(path);
-  if (pathKind.status !== 'enabled' && pathKind.status !== 'kindDisabled') {
+  if (pathKind.status !== 'enabled') {
     return false;
   }
   const rule = entryFileRules[pathKind.kind];

@@ -14,8 +14,6 @@ import { randomUUID } from 'crypto';
 
 import type {
   LightExtensionKind,
-  LightExtensionReferenceContractDiagnosticsInput,
-  LightExtensionReferenceContractDiagnosticsResult,
   LightExtensionReferenceOwnerLocator,
   LightExtensionReferenceRebuildItem,
   LightExtensionReferenceRebuildInput,
@@ -29,7 +27,7 @@ import { LightExtensionAuditService } from './LightExtensionAuditService';
 import { LightExtensionPermissionService } from './LightExtensionPermissionService';
 import type { LightExtensionCanFunction } from './LightExtensionPermissionService';
 import type { LightExtensionServiceContext } from './LightExtensionRepoService';
-import { entryFromModel } from './LightExtensionEntryScanner';
+import { entryFromModel } from './LightExtensionEntryService';
 import {
   JS_BLOCK_REFERENCE_OWNER_ADAPTER,
   buildReferenceOwnerLocator,
@@ -45,6 +43,7 @@ import {
   stableJsonHash,
 } from './ReferenceOwnerRegistry';
 import { SettingsResolverService } from './SettingsResolverService';
+import { getRuntimeSettingsSource, hasUsableRuntimeArtifact } from './runtimeArtifact';
 
 type FlowModelRepositoryLike = {
   findModelById?: (
@@ -112,6 +111,8 @@ type ReferenceOwnerSource = {
 };
 
 const EMPTY_SETTINGS_HASH = stableJsonHash({});
+const UNSAFE_REFERENCE_PATH_SEGMENTS = new Set(['__proto__', 'constructor', 'prototype']);
+const MAX_REFERENCE_PATH_ARRAY_INDEX = 100_000;
 
 export class ReferenceService {
   constructor(
@@ -310,7 +311,7 @@ export class ReferenceService {
         continue;
       }
       const adapter = getReferenceOwnerAdapterByUse(node.use || '');
-      const owners: ReferenceOwnerSource[] = adapter && adapter.status === 'active' ? [{ adapter, node }] : [];
+      const owners: ReferenceOwnerSource[] = adapter ? [{ adapter, node }] : [];
       owners.push(...collectRunJSReferenceOwners(node));
       for (const owner of owners) {
         const ownerLocator = buildOwnerLocatorForSource(owner, modelUid);
@@ -394,26 +395,6 @@ export class ReferenceService {
     });
 
     return summaryToResult(summary, dryRun);
-  }
-
-  async getContractDiagnostics(
-    input: LightExtensionReferenceContractDiagnosticsInput = {},
-    ctx: ReferenceServiceContext = {},
-  ): Promise<LightExtensionReferenceContractDiagnosticsResult> {
-    const requestId = ctx.requestId || randomUUID();
-    await this.assertReferenceActionAllowed({
-      permissionAction: 'readReferences',
-      auditAction: 'readReferences',
-      requestId,
-      ctx,
-      repoId: normalizeString(input.repoId),
-      ownerLocatorHash: buildInputOwnerLocatorHash(input),
-    });
-
-    return {
-      ownerAdapters: listReferenceOwnerAdapters(),
-      ...(input.dryRun ? { rebuild: await this.rebuildIndex({ ...input, dryRun: true }, { ...ctx, requestId }) } : {}),
-    };
   }
 
   async readReferences(
@@ -706,30 +687,30 @@ export class ReferenceService {
         conflictReason: 'binding_outdated',
       };
     }
-    if (healthStatus !== 'ready') {
+    if (healthStatus === 'missing') {
       return {
         ...fallback,
         resolvedStatus: 'entry_missing',
-        conflictReason: healthStatus === 'disabled' ? 'entry_disabled' : 'entry_missing',
+        conflictReason: 'entry_missing',
       };
     }
-
-    const runtimeArtifact = entry.get('runtimeArtifact');
-    const runtimeCodeHash = normalizeString(entry.get('runtimeCodeHash'));
-    const compiledCommitId = normalizeString(entry.get('compiledCommitId'));
-    if (!isPlainRecord(runtimeArtifact) || !runtimeCodeHash || !compiledCommitId) {
+    if (healthStatus !== 'ready') {
       return {
         ...fallback,
         resolvedStatus: 'runtime_missing',
         conflictReason: 'runtime_missing',
       };
     }
+
     const runtimeEntry = entryFromModel(entry);
-    const settingsSource = {
-      id: runtimeEntry.id,
-      settingsSchema: runtimeEntry.settingsSchema,
-      settingsDefaultsHash: runtimeEntry.settingsDefaultsHash,
-    };
+    if (!hasUsableRuntimeArtifact(runtimeEntry, normalizeString(repo.get('headCommitId')) || null)) {
+      return {
+        ...fallback,
+        resolvedStatus: 'runtime_missing',
+        conflictReason: 'runtime_missing',
+      };
+    }
+    const settingsSource = getRuntimeSettingsSource(runtimeEntry);
     const sourceSettings = this.settingsResolver.pruneUnknownSettings(settingsSource, settings);
     const settingsForHash = mergeSettingsForReferenceHash(
       this.settingsResolver.getRuntimeDefaults(settingsSource),
@@ -766,41 +747,30 @@ export class ReferenceService {
     settingsHash: string;
     resolvedStatus: LightExtensionReferenceResolvedStatus;
   }> {
-    const entry = await this.db.getRepository('lightExtensionEntries').findOne({
-      filterByTk: reference.entryId,
-      transaction: ctx.transaction,
-    });
-    if (!entry) {
+    const modelUid = getReferenceOwnerModelUid(reference.ownerLocator);
+    const owner = modelUid ? await this.loadFlowModelTree(modelUid, ctx) : null;
+    if (!owner) {
       return {
         settingsHash: reference.settingsHash,
-        resolvedStatus: 'entry_missing',
+        resolvedStatus: 'owner_missing',
       };
     }
-    const repoId = normalizeString(entry.get('repoId'));
-    const kind = normalizeString(entry.get('kind'));
-    if (repoId !== reference.repoId || kind !== reference.kind) {
+    const adapter = getReferenceOwnerAdapterByOwnerKind(reference.ownerKind);
+    const source = readReferenceOwnerSource(owner, adapter, reference.ownerLocator);
+    const binding = source.sourceBinding;
+    if (
+      source.sourceMode !== 'light-extension' ||
+      !binding ||
+      binding.repoId !== reference.repoId ||
+      binding.entryId !== reference.entryId ||
+      binding.kind !== reference.kind
+    ) {
       return {
-        settingsHash: reference.settingsHash,
+        settingsHash: stableJsonHash(source.settings),
         resolvedStatus: 'binding_outdated',
       };
     }
-    const resolution = await this.resolveReferenceFromBinding(
-      {
-        type: 'light-extension-entry',
-        repoId: reference.repoId,
-        entryId: reference.entryId,
-        kind: reference.kind,
-      },
-      {},
-      ctx,
-      reference.kind,
-    );
-    if (resolution.resolvedStatus !== 'settings_invalid') {
-      return {
-        settingsHash: reference.settingsHash,
-        resolvedStatus: resolution.resolvedStatus,
-      };
-    }
+    const resolution = await this.resolveReferenceFromBinding(binding, source.settings, ctx, reference.kind);
     return {
       settingsHash: resolution.settingsHash,
       resolvedStatus: resolution.resolvedStatus,
@@ -1582,7 +1552,7 @@ function collectRunJSReferenceOwners(
   bucket: ReferenceOwnerSource[] = [],
 ): ReferenceOwnerSource[] {
   const adapter = getReferenceOwnerAdapterByKind('runjs');
-  if (!adapter || adapter.status !== 'active' || !node || typeof node !== 'object') {
+  if (!adapter || !node || typeof node !== 'object') {
     return bucket;
   }
 
@@ -1664,13 +1634,17 @@ function getAtPath(root: unknown, path: string[]): unknown {
   for (const key of normalized) {
     if (Array.isArray(current)) {
       const index = Number(key);
-      if (!Number.isInteger(index)) {
+      if (!Number.isSafeInteger(index) || index < 0 || index > MAX_REFERENCE_PATH_ARRAY_INDEX) {
         return undefined;
       }
       current = current[index];
       continue;
     }
-    if (!isPlainRecord(current)) {
+    if (
+      !isPlainRecord(current) ||
+      UNSAFE_REFERENCE_PATH_SEGMENTS.has(key) ||
+      !Object.prototype.hasOwnProperty.call(current, key)
+    ) {
       return undefined;
     }
     current = current[key];
@@ -1895,7 +1869,7 @@ function mergeStatusCounts(
 function buildActiveOwnerLocatorHashes(modelUid: string): string[] {
   return listReferenceOwnerAdapters()
     .map((adapterContract) => getReferenceOwnerAdapterByKind(adapterContract.kind))
-    .filter((adapter): adapter is ReferenceOwnerAdapter => Boolean(adapter && adapter.status === 'active'))
+    .filter((adapter): adapter is ReferenceOwnerAdapter => Boolean(adapter))
     .flatMap((adapter) => {
       const modelUses = adapter.modelUses?.length ? adapter.modelUses : [adapter.modelUse].filter(Boolean);
       return modelUses.map((modelUse) => hashOwnerLocator(buildFlowModelOwnerLocator(adapter, modelUid, modelUse)));
@@ -1920,7 +1894,7 @@ function getRebuildRootUid(ownerLocator: LightExtensionReferenceOwnerLocator | n
     return '';
   }
   const adapter = getReferenceOwnerAdapterByOwnerKind(ownerLocator.kind);
-  if (adapter?.status !== 'active') {
+  if (!adapter) {
     return '';
   }
   return normalizeString(ownerLocator.modelUid);

@@ -84,7 +84,7 @@ function withDynamicStepRunJSSource(
   label?: string,
 ) {
   const persistedStep = model.flowRegistry.getFlow(flow.key)?.getStep(step.key);
-  if (!uiSchema || !model.uid || !persistedStep) return uiSchema;
+  if (!uiSchema || typeof uiSchema === 'function' || !model.uid || !persistedStep) return uiSchema;
   const next = _.cloneDeep(uiSchema);
   const persistedVariables = untracked(() => {
     const variables = getStepSettingsParams(persistedStep).variables;
@@ -99,9 +99,8 @@ function withDynamicStepRunJSSource(
     },
   };
 
-  if ((next as any).code) {
-    (next as any).code['x-component-props'] = {
-      ...((next as any).code['x-component-props'] || {}),
+  if (next.code) {
+    mergeSchemaComponentProps(next.code, {
       sourceLocator: {
         kind: 'flowModel.flowRegistry.runjs',
         modelUid: model.uid,
@@ -110,17 +109,28 @@ function withDynamicStepRunJSSource(
         sourcePath: ['defaultParams', 'code'],
       },
       sourceLabel: label,
-    };
+    });
   }
 
-  if ((next as any).variables) {
-    (next as any).variables['x-component-props'] = {
-      ...((next as any).variables['x-component-props'] || {}),
+  if (next.variables) {
+    mergeSchemaComponentProps(next.variables, {
       ...sourceProps,
-    };
+    });
   }
 
   return next;
+}
+
+function mergeSchemaComponentProps(schema: unknown, props: Record<string, unknown>): void {
+  if (!schema || typeof schema !== 'object' || Array.isArray(schema)) {
+    return;
+  }
+  const record = schema as Record<string, unknown>;
+  const currentProps = record['x-component-props'];
+  record['x-component-props'] = {
+    ...(currentProps && typeof currentProps === 'object' && !Array.isArray(currentProps) ? currentProps : {}),
+    ...props,
+  };
 }
 
 function isFlowOnObject(on: FlowDefinition['on']): on is FlowOnObject {

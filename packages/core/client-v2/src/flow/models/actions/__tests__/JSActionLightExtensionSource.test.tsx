@@ -58,13 +58,11 @@ describe('JSActionModel light extension source', () => {
     expect(listSourceMenuItems).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: 'js-action',
-        defaultVersionPolicy: 'follow-active',
       }),
     );
     expect(sourceModeStep?.uiSchema?.sourceMode?.['x-component']).toBe('JSActionLightExtensionFullSourceField');
     expect(sourceModeStep?.uiSchema?.sourceMode?.['x-component-props']).toMatchObject({
       kind: 'js-action',
-      defaultVersionPolicy: 'follow-active',
     });
     expect(sourceModeStep?.uiSchema?.sourceBinding?.['x-display']).toBe('hidden');
     expect(sourceModeStep?.uiSchema?.settings?.['x-display']).toBe('hidden');
@@ -72,7 +70,6 @@ describe('JSActionModel light extension source', () => {
     expect(sourceBindingStep?.uiSchema?.sourceBinding?.['x-component']).toBe('JSActionLightExtensionFullSourceField');
     expect(sourceBindingStep?.uiSchema?.sourceBinding?.['x-component-props']).toMatchObject({
       kind: 'js-action',
-      defaultVersionPolicy: 'follow-active',
     });
     expect(runJsStep?.uiSchema?.sourceMode?.['x-display']).toBe('hidden');
     expect(runJsStep?.uiSchema?.sourceBinding?.['x-display']).toBe('hidden');
@@ -112,7 +109,7 @@ describe('JSActionModel light extension source', () => {
       code: `
 ctx.__testState.loadingDuringRun = ctx.model.props.loading;
 ctx.__testState.peerLoadingDuringRun = ctx.__peerAction.props.loading === true;
-ctx.message.success(ctx.settings.successMessage + ':' + ctx.runJsSource.context.lightExtension.publicationId);
+ctx.message.success(ctx.settings.successMessage + ':' + ctx.runJsSource.context.lightExtension.entryId);
       `,
       version: 'v2',
       settings: {
@@ -120,7 +117,7 @@ ctx.message.success(ctx.settings.successMessage + ':' + ctx.runJsSource.context.
       },
       context: {
         lightExtension: {
-          publicationId: 'pub_mark_approved',
+          entryId: 'entry_mark_approved',
           entryPath: 'src/client/js-actions/mark-approved/index.ts',
         },
       },
@@ -156,7 +153,7 @@ ctx.message.success(ctx.settings.successMessage + ':' + ctx.runJsSource.context.
     expect(state.peerLoadingDuringRun).toBe(false);
     expect(model.props.loading).toBe(false);
     expect(peerAction.props.loading).toBe(false);
-    expect(message.success).toHaveBeenCalledWith('Approved:pub_mark_approved');
+    expect(message.success).toHaveBeenCalledWith('Approved:entry_mark_approved');
     expect(resolve).toHaveBeenCalledWith(
       expect.objectContaining({
         sourceMode: 'light-extension',
@@ -338,17 +335,17 @@ ctx.message.success(ctx.settings.successMessage + ':' + ctx.runJsSource.context.
     });
   });
 
-  it('reports resolver failures with action owner locator metadata without rejecting the click flow', async () => {
+  it('shows resolver failures without rejecting the click flow', async () => {
     RunJSSourceResolverRegistry.registerResolver({
       sourceMode: 'light-extension',
       resolve: async () => {
-        throw Object.assign(new Error('publication missing'), {
-          code: 'LIGHT_EXTENSION_PUBLICATION_NOT_FOUND',
+        throw Object.assign(new Error('entry missing'), {
+          code: 'LIGHT_EXTENSION_ENTRY_NOT_FOUND',
           status: 404,
         });
       },
     });
-    const { model, message, reportRuntimeError } = createActionModel<JSActionModel>({
+    const { model, message } = createActionModel<JSActionModel>({
       ModelClass: JSActionModel,
       use: 'JSActionModel',
       uid: 'js-action-error',
@@ -356,22 +353,7 @@ ctx.message.success(ctx.settings.successMessage + ':' + ctx.runJsSource.context.
 
     await expect(model.applyFlow('clickSettings')).resolves.toBeTruthy();
 
-    expect(message.error).toHaveBeenCalledWith('publication missing');
+    expect(message.error).toHaveBeenCalledWith('entry missing');
     expect(model.props.loading).toBe(false);
-    expect(reportRuntimeError).toHaveBeenCalledWith(
-      expect.objectContaining({
-        repoId: 'repo_actions',
-        entryId: 'entry_mark_approved',
-        publicationId: 'pub_mark_approved',
-        ownerKind: 'flowModel.actionSettings',
-        path: 'src/client/js-actions/mark-approved/index.ts',
-        ownerLocator: expect.objectContaining({
-          kind: 'flowModel.actionSettings',
-          modelUid: model.uid,
-          use: 'JSActionModel',
-        }),
-        ownerLocatorHash: expect.stringMatching(/^(sha256|local):/),
-      }),
-    );
   });
 });

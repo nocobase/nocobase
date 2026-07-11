@@ -59,7 +59,18 @@ export function DiagnosticsPanel(props: DiagnosticsPanelProps) {
       {sortedDiagnostics.length > 0 ? (
         <List
           dataSource={sortedDiagnostics}
-          rowKey={(item, index) => `${item.severity}:${item.code}:${item.path || ''}:${index}`}
+          rowKey={(item) =>
+            [
+              item.severity,
+              item.code,
+              item.path || '',
+              item.kind || '',
+              item.entryName || '',
+              item.line || '',
+              item.column || '',
+              item.message,
+            ].join(':')
+          }
           size="small"
           renderItem={(item) => (
             <List.Item style={{ paddingInline: 0 }}>

@@ -262,14 +262,7 @@ const JS_BLOCK_LIGHT_EXTENSION_SOURCE_MODE = 'light-extension';
 const JS_BLOCK_INLINE_SOURCE_MODE = 'inline';
 const JS_BLOCK_LIGHT_EXTENSION_BINDING_TYPE = 'light-extension-entry';
 const JS_BLOCK_LIGHT_EXTENSION_BINDING_KIND = 'js-block';
-const JS_BLOCK_LIGHT_EXTENSION_BINDING_REQUIRED_STRING_KEYS = [
-  'type',
-  'repoId',
-  'entryId',
-  'kind',
-  'publicationId',
-  'versionPolicy',
-] as const;
+const JS_BLOCK_LIGHT_EXTENSION_BINDING_REQUIRED_STRING_KEYS = ['type', 'repoId', 'entryId', 'kind'] as const;
 const JS_BLOCK_INTERNAL_AUTHORING_KEYS = ['props', 'decoratorProps', 'flowRegistry', 'stepParams'];
 const JS_BLOCK_REPAIR_HINT =
   'This is a jsBlock payload shape problem. Repair this jsBlock using inline settings.code/settings.version/settings.showBlockCard, light-extension settings.sourceMode/settings.sourceBinding/settings.settings, or applyBlueprint assets.scripts.<key>.code plus block.script with optional settings.showBlockCard. Do not change this block type to table, chart, actionPanel, gridCard, or another block type.';

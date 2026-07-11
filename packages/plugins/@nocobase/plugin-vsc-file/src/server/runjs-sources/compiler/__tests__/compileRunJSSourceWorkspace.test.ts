@@ -42,7 +42,7 @@ describe('compileRunJSSourceWorkspace', () => {
     const result = compileRunJSSourceWorkspace({
       entry: 'src/main.tsx',
       runtimeVersion: 'v2',
-      surfaceStyle: 'render',
+      surfaceStyle: 'action',
       files: [
         {
           path: 'src/main.tsx',
@@ -81,6 +81,39 @@ describe('compileRunJSSourceWorkspace', () => {
     );
     expect(throwMapping).toBeTruthy();
     expect(result.artifact.code.split('\n')[(throwMapping?.generatedLine || 1) - 1]).toContain('throw new Error');
+  });
+
+  it('keeps runtime line mappings aligned after TypeScript-only lines are erased', () => {
+    const result = compileRunJSSourceWorkspace({
+      entry: 'src/main.ts',
+      runtimeVersion: 'v2',
+      surfaceStyle: 'action',
+      files: [
+        {
+          path: 'src/main.ts',
+          content: [
+            'type RuntimeOptions = { enabled: boolean };',
+            'const options: RuntimeOptions = { enabled: true };',
+            'if (options.enabled) {',
+            '  throw new Error("typed boom");',
+            '}',
+          ].join('\n'),
+        },
+      ],
+    });
+
+    expect(result.failureCode).toBeUndefined();
+    const sourceMap = JSON.parse(result.artifact.sourceMap || '{}') as {
+      mappings?: Array<{ source: string; sourceLine: number; generatedLine: number }>;
+    };
+    const throwMapping = sourceMap.mappings?.find(
+      (mapping) => mapping.source === 'src/main.ts' && mapping.sourceLine === 4,
+    );
+
+    expect(throwMapping).toBeTruthy();
+    expect(result.artifact.code.split('\n')[(throwMapping?.generatedLine || 1) - 1]).toContain(
+      'throw new Error("typed boom")',
+    );
   });
 
   it('compiles default exports and default imports', () => {
@@ -550,29 +583,130 @@ describe('compileRunJSSourceWorkspace', () => {
     const result = compileRunJSSourceWorkspace({
       entry: 'src/main.ts',
       runtimeVersion: 'v2',
-      surfaceStyle: 'value',
+      surfaceStyle: 'action',
       inspectAuthoring: () => [
         {
           severity: 'error',
           code: 'RUNJS_COMPILE_FAILED',
-          ruleId: 'value-surface-forbids-render',
+          ruleId: 'custom-authoring-rule',
           path: 'src/main.ts',
           line: 1,
           column: 1,
-          message: 'value RunJS cannot render',
+          message: 'custom authoring validation failed',
         },
       ],
       files: [
         {
           path: 'src/main.ts',
-          content: 'ctx.render(null);',
+          content: 'ctx.message.info("ok");',
         },
       ],
     });
 
     expect(result.failureCode).toBe('RUNJS_COMPILE_FAILED');
     expect(result.artifact.diagnostics[0]).toMatchObject({
-      ruleId: 'value-surface-forbids-render',
+      ruleId: 'custom-authoring-rule',
     });
+  });
+
+  it('rejects unknown runtime globals in the compiler layer', () => {
+    const result = compileRunJSSourceWorkspace({
+      entry: 'src/main.tsx',
+      runtimeVersion: 'v2',
+      surfaceStyle: 'render',
+      files: [
+        {
+          path: 'src/main.tsx',
+          content: 'ctx.render(<div>Example</div>);\nsdfsdfw21212 + 1212;',
+        },
+      ],
+    });
+
+    expect(result.failureCode).toBe('RUNJS_COMPILE_FAILED');
+    expect(result.artifact.code).toBe('');
+    expect(result.artifact.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'RUNJS_COMPILE_FAILED',
+          ruleId: 'runjs-global-unknown',
+          path: 'src/main.tsx',
+          line: 2,
+          column: 1,
+          details: {
+            global: 'sdfsdfw21212',
+          },
+        }),
+      ]),
+    );
+    expect(result.artifact.diagnostics[0].message).toContain("Cannot find name 'sdfsdfw21212'");
+    expect(result.artifact.diagnostics[0].message).not.toContain('flowSurfaces authoring');
+  });
+
+  it('accepts local bindings, imports, type-only names, and chart event globals', () => {
+    const localBindings = compileRunJSSourceWorkspace({
+      entry: 'src/main.tsx',
+      runtimeVersion: 'v2',
+      surfaceStyle: 'render',
+      files: [
+        {
+          path: 'src/main.tsx',
+          content: [
+            "import { label } from './label';",
+            'type Options = Record<string, MissingType>;',
+            'const renderLabel = (suffix: string) => `${label}${suffix}`;',
+            'ctx.render(<div>{renderLabel("!")}</div>);',
+          ].join('\n'),
+        },
+        {
+          path: 'src/label.ts',
+          content: "export const label = 'Ready';",
+        },
+      ],
+    });
+    const chartEvents = compileRunJSSourceWorkspace({
+      entry: 'src/main.ts',
+      runtimeVersion: 'v2',
+      surfaceStyle: 'action',
+      locator: {
+        kind: 'chart.events',
+        modelUid: 'chart-model',
+      },
+      files: [
+        {
+          path: 'src/main.ts',
+          content: "if (params?.name) { chart.off('click'); }",
+        },
+      ],
+    });
+
+    expect(localBindings.failureCode).toBeUndefined();
+    expect(localBindings.artifact.diagnostics).toEqual([]);
+    expect(chartEvents.failureCode).toBeUndefined();
+    expect(chartEvents.artifact.diagnostics).toEqual([]);
+  });
+
+  it('enforces value and render surface contracts without Flow Surface validation', () => {
+    const invalidValue = compileRunJSSourceWorkspace({
+      entry: 'src/main.ts',
+      runtimeVersion: 'v2',
+      surfaceStyle: 'value',
+      files: [{ path: 'src/main.ts', content: 'ctx.render(null);' }],
+    });
+    const invalidRender = compileRunJSSourceWorkspace({
+      entry: 'src/main.tsx',
+      runtimeVersion: 'v2',
+      surfaceStyle: 'render',
+      files: [{ path: 'src/main.tsx', content: 'const value = 1;' }],
+    });
+
+    expect(invalidValue.artifact.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ ruleId: 'runjs-value-render-forbidden' }),
+        expect.objectContaining({ ruleId: 'runjs-value-return-required' }),
+      ]),
+    );
+    expect(invalidRender.artifact.diagnostics).toEqual(
+      expect.arrayContaining([expect.objectContaining({ ruleId: 'runjs-render-required' })]),
+    );
   });
 });

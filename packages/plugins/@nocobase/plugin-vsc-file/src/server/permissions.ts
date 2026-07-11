@@ -10,6 +10,8 @@
 import { VscError } from '../shared/errors';
 import type { VscRepositoryRecord } from '../shared/types';
 
+export const RUNJS_SOURCE_OWNER_TYPE = 'runjs-source';
+
 export type VscPermissionAction =
   | 'createRepository'
   | 'getRepository'
@@ -87,14 +89,6 @@ export class VscPermissionHookRegistry {
     this.hooks.delete(hook);
   }
 
-  clear() {
-    this.hooks.clear();
-  }
-
-  hasHooks(): boolean {
-    return this.hooks.size > 0;
-  }
-
   async assertAllowed(input: VscPermissionHookInput): Promise<void> {
     let protectedOwnerExplicitlyAllowed = false;
 
@@ -127,6 +121,33 @@ export class VscPermissionHookRegistry {
   }
 }
 
+export function createRunJSSourcePermissionHook(): VscPermissionHook {
+  return (input) => {
+    const ownerType = input.repository?.ownerType || input.ownerType;
+    if (ownerType !== RUNJS_SOURCE_OWNER_TYPE) {
+      return;
+    }
+
+    if (input.request?.resourceName === 'runJSSources') {
+      return {
+        allowed: true,
+        ownerType: RUNJS_SOURCE_OWNER_TYPE,
+      };
+    }
+
+    return {
+      allowed: false,
+      reason: 'RunJS source repositories are only accessible through the runJSSources resource',
+      details: {
+        ownerType,
+        rawResourceAction: buildRawResourceAction(input.request, input.action),
+        denyReason: 'runjs_source_requires_adapter_resource',
+        requestId: input.request?.requestId,
+      },
+    };
+  };
+}
+
 function isDenyResult(result: VscPermissionHookResult): result is VscPermissionDenyResult {
   return Boolean(result && typeof result === 'object' && result.allowed === false);
 }
@@ -140,7 +161,8 @@ function isProtectedOwnerAllowResult(result: VscPermissionHookResult, input: Vsc
 }
 
 function isProtectedOwnerType(input: VscPermissionHookInput): boolean {
-  return (input.repository?.ownerType || input.ownerType) === 'light-extension';
+  const ownerType = input.repository?.ownerType || input.ownerType;
+  return ownerType === 'light-extension' || ownerType === RUNJS_SOURCE_OWNER_TYPE;
 }
 
 function buildRawResourceAction(request: VscPermissionRequestMetadata | undefined, fallbackAction: string): string {

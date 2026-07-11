@@ -18,12 +18,9 @@ export const JS_ACTION_SOURCE_BINDING = {
   entryId: 'entry_mark_approved',
   entryPath: 'src/client/js-actions/mark-approved/index.ts',
   kind: 'js-action',
-  publicationId: 'pub_mark_approved',
-  versionPolicy: 'pinned',
 };
 
 export const JS_ACTION_SETTINGS_DESCRIPTOR: RunJSSourceSettingsDescriptor = {
-  publicationId: 'pub_mark_approved',
   schemaHash: 'schema_action',
   defaults: {
     successMessage: 'Approved',
@@ -88,22 +85,16 @@ export function createActionModel<TModel extends FlowModel>(input: {
     info: vi.fn(),
     warning: vi.fn(),
   };
-  const reportRuntimeError = vi.fn();
   model.context.defineProperty('__testState', {
     value: state,
   });
   model.context.defineProperty('message', {
     value: message,
   });
-  model.context.defineProperty('reportRuntimeError', {
-    value: reportRuntimeError,
-  });
-
   return {
     engine,
     model,
     state,
     message,
-    reportRuntimeError,
   };
 }

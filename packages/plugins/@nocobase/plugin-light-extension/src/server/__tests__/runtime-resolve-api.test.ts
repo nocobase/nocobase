@@ -16,8 +16,6 @@ import { NAMESPACE } from '../../constants';
 import type { LightExtensionRuntimeSourceBinding } from '../../shared/types';
 import PluginLightExtensionServer from '../plugin';
 import { createLightExtensionRuntimeResource } from '../resources/lightExtensionRuntime';
-import { LightExtensionAuditService } from '../services/LightExtensionAuditService';
-import { LightExtensionPermissionService } from '../services/LightExtensionPermissionService';
 import { RuntimeResolveService } from '../services/RuntimeResolveService';
 
 type RouteMiddleware = (
@@ -34,7 +32,6 @@ type RouteMiddleware = (
 describe('plugin-light-extension runtime resolve API', () => {
   it('returns runtime code, source map, merged settings, and cache metadata through useRuntime', async () => {
     const { service, entriesRepository } = createRuntimeResolveService();
-    const can = vi.fn(({ action }: { action: string }) => (action === 'useRuntime' ? {} : null));
 
     const result = await service.resolve(
       {
@@ -50,14 +47,9 @@ describe('plugin-light-extension runtime resolve API', () => {
       {
         requestId: 'req_runtime_resolve',
         actorUserId: '7',
-        can,
       },
     );
 
-    expect(can).toHaveBeenCalledWith({
-      resource: 'lightExtension',
-      action: 'useRuntime',
-    });
     expect(entriesRepository.findOne).toHaveBeenCalledWith(
       expect.objectContaining({
         filterByTk: 'lee_sales_kpi',
@@ -85,6 +77,38 @@ describe('plugin-light-extension runtime resolve API', () => {
     });
   });
 
+  it('rejects legacy failed entries instead of running their last successful artifact', async () => {
+    const { service } = createRuntimeResolveService({
+      entryHealthStatus: 'failed',
+      entryPath: 'src/client/js-blocks/sales-kpi-next/index.tsx',
+      artifactEntryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+    });
+
+    await expect(
+      service.resolve(
+        {
+          sourceMode: 'light-extension',
+          sourceBinding: createSourceBinding(),
+          settings: {},
+        },
+        {},
+      ),
+    ).rejects.toMatchObject({
+      code: 'LIGHT_EXTENSION_RUNTIME_UNAVAILABLE',
+      details: {
+        reasonCode: 'runtime_missing',
+      },
+    });
+  });
+
+  it('filters selectable entries whose runtime was compiled from a non-head commit', async () => {
+    const { service } = createRuntimeResolveService({
+      repoHeadCommitId: 'vsc_commit_2',
+    });
+
+    await expect(service.listSelectableEntries()).resolves.toEqual([]);
+  });
+
   it('rejects runtime bindings whose identity does not match the entry current runtime', async () => {
     const { service } = createRuntimeResolveService();
 
@@ -95,9 +119,7 @@ describe('plugin-light-extension runtime resolve API', () => {
           sourceBinding: createSourceBinding({ kind: 'js-field' }),
           settings: {},
         },
-        {
-          can: ({ action }: { action: string }) => (action === 'useRuntime' ? {} : null),
-        },
+        {},
       ),
     ).rejects.toMatchObject({
       code: 'LIGHT_EXTENSION_BINDING_OUTDATED',
@@ -131,7 +153,6 @@ describe('plugin-light-extension runtime resolve API', () => {
     const resource = createLightExtensionRuntimeResource({
       resolve,
     } as unknown as RuntimeResolveService);
-    const can = vi.fn().mockReturnValue({});
     const sourceBinding = createSourceBinding();
     const ctx = {
       action: {
@@ -150,7 +171,6 @@ describe('plugin-light-extension runtime resolve API', () => {
           id: 9,
         },
       },
-      can,
       request: {
         headers: {
           'x-request-id': 'req_resource_runtime',
@@ -173,7 +193,6 @@ describe('plugin-light-extension runtime resolve API', () => {
         actorUserId: '9',
         requestId: 'req_resource_runtime',
         requestSource: 'unit-resource',
-        can,
       }),
     );
     expect((ctx as { body?: unknown }).body).toMatchObject({
@@ -182,11 +201,12 @@ describe('plugin-light-extension runtime resolve API', () => {
     });
   });
 
-  it('registers the documented POST runtime resolve route alias', async () => {
+  it('registers documented route aliases and ignores malformed compile-preview repo ids', async () => {
     const registeredRoutes: Array<{ middleware: RouteMiddleware; options?: { tag?: string } }> = [];
     const app = {
       db: {} as Database,
       acl: {
+        allow: vi.fn(),
         registerSnippet: vi.fn(),
       },
       pm: {
@@ -232,6 +252,42 @@ describe('plugin-light-extension runtime resolve API', () => {
     expect(routedPath).toBe('/api/lightExtensionRuntime:resolve');
     expect(ctx.path).toBe('/api/light-extension-runtime/resolve');
     expect(ctx.request.path).toBe('/api/light-extension-runtime/resolve');
+
+    const compileRoute = registeredRoutes.find((route) => route.options?.tag === 'light-extension-compile-preview');
+    const compileCtx = {
+      method: 'POST',
+      path: '/api/light-extensions/repo%201/compile-preview',
+      request: {
+        path: '/api/light-extensions/repo%201/compile-preview',
+      },
+    };
+    let compileRoutedPath = '';
+
+    await compileRoute?.middleware(compileCtx, async () => {
+      compileRoutedPath = compileCtx.path;
+    });
+
+    expect(compileRoutedPath).toBe('/api/lightExtensions:compilePreview/repo%201');
+    expect(compileCtx.path).toBe('/api/light-extensions/repo%201/compile-preview');
+    expect(compileCtx.request.path).toBe('/api/light-extensions/repo%201/compile-preview');
+
+    const malformedCtx = {
+      method: 'POST',
+      path: '/api/light-extensions/%E0%A4%A/compile-preview',
+      request: {
+        path: '/api/light-extensions/%E0%A4%A/compile-preview',
+      },
+    };
+    let malformedNextPath = '';
+
+    await expect(
+      compileRoute?.middleware(malformedCtx, async () => {
+        malformedNextPath = malformedCtx.path;
+      }),
+    ).resolves.toBeUndefined();
+
+    expect(malformedNextPath).toBe('/api/light-extensions/%E0%A4%A/compile-preview');
+    expect(malformedCtx.request.path).toBe('/api/light-extensions/%E0%A4%A/compile-preview');
   });
 
   it('returns 422 with field-level issues when settings do not match the entry current schema', async () => {
@@ -249,9 +305,7 @@ describe('plugin-light-extension runtime resolve API', () => {
             extraPayload: 'hidden',
           },
         },
-        {
-          can: ({ action }: { action: string }) => (action === 'useRuntime' ? {} : null),
-        },
+        {},
       ),
     ).rejects.toMatchObject({
       code: 'LIGHT_EXTENSION_SETTINGS_INVALID',
@@ -280,7 +334,7 @@ describe('plugin-light-extension runtime resolve API', () => {
     });
   });
 
-  it('blocks runtime code for disabled repos, unhealthy entries, disabled kinds, and missing artifacts', async () => {
+  it('blocks runtime code for unavailable repos, unhealthy entries, unsupported kinds, and missing artifacts', async () => {
     const blockedCases = [
       {
         name: 'disabled repo',
@@ -298,20 +352,20 @@ describe('plugin-light-extension runtime resolve API', () => {
         reasonCode: 'entry_missing',
       },
       {
-        name: 'disabled entry',
-        entryHealthStatus: 'disabled',
-        reasonCode: 'entry_disabled',
-      },
-      {
-        name: 'event kind',
-        entryKind: 'event',
-        sourceKind: 'event',
-        reasonCode: 'kind_disabled',
+        name: 'unsupported persisted kind',
+        entryKind: 'legacy-kind',
+        sourceKind: 'legacy-kind',
+        reasonCode: 'kind_unsupported',
       },
       {
         name: 'missing runtime',
         runtimeArtifact: null,
         compiledCommitId: null,
+        reasonCode: 'runtime_missing',
+      },
+      {
+        name: 'runtime compiled from a non-head commit',
+        repoHeadCommitId: 'vsc_commit_2',
         reasonCode: 'runtime_missing',
       },
     ];
@@ -328,12 +382,10 @@ describe('plugin-light-extension runtime resolve API', () => {
             }),
             settings: {},
           },
-          {
-            can: ({ action }: { action: string }) => (action === 'useRuntime' ? {} : null),
-          },
+          {},
         ),
       ).rejects.toMatchObject({
-        code: 'LIGHT_EXTENSION_LIFECYCLE_CONFLICT',
+        code: 'LIGHT_EXTENSION_RUNTIME_UNAVAILABLE',
         status: 409,
         details: {
           reasonCode: blockedCase.reasonCode,
@@ -353,9 +405,7 @@ describe('plugin-light-extension runtime resolve API', () => {
           sourceBinding: createSourceBinding(),
           settings: {},
         } as never,
-        {
-          can: ({ action }: { action: string }) => (action === 'useRuntime' ? {} : null),
-        },
+        {},
       ),
     ).rejects.toMatchObject({
       code: 'LIGHT_EXTENSION_INVALID_INPUT',
@@ -376,6 +426,9 @@ function createRuntimeResolveService(
     sourceKind?: string;
     runtimeArtifact?: Record<string, unknown> | null;
     compiledCommitId?: string | null;
+    repoHeadCommitId?: string | null;
+    entryPath?: string;
+    artifactEntryPath?: string;
   } = {},
 ) {
   const entryRecord = createEntryRecord(options);
@@ -384,14 +437,13 @@ function createRuntimeResolveService(
       createModel({
         id: 'ler_sales',
         lifecycleStatus: options.repoLifecycleStatus || 'enabled',
+        headCommitId: typeof options.repoHeadCommitId === 'undefined' ? 'vsc_commit_1' : options.repoHeadCommitId,
       }),
     ),
   };
   const entriesRepository = {
+    find: vi.fn().mockResolvedValue([createModel(entryRecord)]),
     findOne: vi.fn().mockResolvedValue(createModel(entryRecord)),
-  };
-  const logsRepository = {
-    create: vi.fn().mockResolvedValue(createModel({})),
   };
   const db = {
     getRepository: (name: string) => {
@@ -401,18 +453,11 @@ function createRuntimeResolveService(
       if (name === 'lightExtensionEntries') {
         return entriesRepository;
       }
-      if (name === 'lightExtensionLogs') {
-        return logsRepository;
-      }
-
       throw new Error(`Unexpected repository ${name}`);
     },
   } as unknown as Database;
-  const auditService = new LightExtensionAuditService(db);
-  const permissionService = new LightExtensionPermissionService(auditService);
-
   return {
-    service: new RuntimeResolveService(db, auditService, permissionService),
+    service: new RuntimeResolveService(db),
     reposRepository,
     entriesRepository,
   };
@@ -436,18 +481,20 @@ function createEntryRecord(
     entryKind?: string;
     runtimeArtifact?: Record<string, unknown> | null;
     compiledCommitId?: string | null;
+    entryPath?: string;
+    artifactEntryPath?: string;
   } = {},
 ): Record<string, unknown> {
   const kind = input.entryKind || 'js-block';
-  const entryPath =
-    kind === 'event' ? 'src/client/events/page-open/index.ts' : 'src/client/js-blocks/sales-kpi/index.tsx';
+  const entryPath = input.entryPath || 'src/client/js-blocks/sales-kpi/index.tsx';
+  const artifactEntryPath = input.artifactEntryPath || entryPath;
   const runtimeArtifact =
     typeof input.runtimeArtifact === 'undefined'
       ? {
           code: "const secret = 'runtime secret';\nctx.render(secret);\n",
           sourceMap: '{"version":3}',
           version: 'v2',
-          entryPath,
+          entryPath: artifactEntryPath,
           filesHash: 'files_hash_1',
           diagnostics: [],
           metadata: {
@@ -516,9 +563,6 @@ function createEntryRecord(
     compiledAt: runtimeArtifact ? '2026-07-06T00:00:00.000Z' : null,
     healthStatus: input.entryHealthStatus || 'ready',
     diagnostics: [],
-    validatorVersion: 'test',
-    lastScannedCommitId: 'vsc_commit_1',
-    lastScannedAt: null,
     createdAt: null,
     updatedAt: null,
   };

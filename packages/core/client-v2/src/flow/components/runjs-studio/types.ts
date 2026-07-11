@@ -16,15 +16,15 @@ export type RunJSSourceLocator =
       modelUid: string;
       flowKey: string;
       stepKey: string;
-      paramPath: string[];
-      versionPath?: string[];
+      paramPath: readonly string[];
+      versionPath?: readonly string[];
     }
   | {
       kind: 'flowModel.nestedRunJS';
       modelUid: string;
       containerFlowKey: string;
       containerStepKey: string;
-      valuePath: Array<string | number>;
+      valuePath: ReadonlyArray<string | number>;
       scene: string;
     }
   | {
@@ -32,7 +32,7 @@ export type RunJSSourceLocator =
       modelUid: string;
       flowKey: string;
       stepKey: string;
-      sourcePath: string[];
+      sourcePath: readonly string[];
     }
   | {
       kind: 'workflow.javascript';
@@ -62,8 +62,8 @@ export interface RunJSEditorFieldProps {
   locatorFactory?: RunJSLocatorFactory;
   flowKey?: string;
   stepKey?: string;
-  paramPath?: string[];
-  versionPath?: string[];
+  paramPath?: readonly string[];
+  versionPath?: readonly string[];
   label?: string;
   sourceLabel?: string;
   onPreview?: (value: RunJSValue) => void | Promise<void>;
@@ -81,10 +81,17 @@ export interface RunJSEditorFieldProps {
 
 export interface RunJSEditorProviderRenderProps extends Omit<RunJSEditorFieldProps, 'value'> {
   value: RunJSValue;
+  /**
+   * Notifies the host after the provider has already persisted the value server-side.
+   * The host should refresh local runtime state without issuing another persistence request.
+   */
+  onPersistedChange?: (value: RunJSValue) => void;
+  renderNext?: (overrides?: Partial<RunJSEditorProviderRenderProps>) => React.ReactNode;
 }
 
 export interface RunJSEditorProvider {
   key: string;
+  priority?: number;
   canHandle?: (props: RunJSEditorProviderRenderProps) => boolean;
   renderEditor: (props: RunJSEditorProviderRenderProps) => React.ReactNode;
 }

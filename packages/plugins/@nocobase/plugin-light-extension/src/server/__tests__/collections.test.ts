@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { Collection, MigrationContext } from '@nocobase/database';
+import type { Collection } from '@nocobase/database';
 import { MockServer, createMockServer } from '@nocobase/test';
 
 import {
@@ -16,7 +16,6 @@ import {
   LIGHT_EXTENSION_REPO_HEALTH_STATUSES,
   LIGHT_EXTENSION_REPO_LIFECYCLE_STATUSES,
 } from '../../constants';
-import AddReferenceRepoForeignKeyMigration from '../migrations/20260706000000-add-reference-repo-fk';
 import PluginLightExtensionServer from '../plugin';
 
 interface ConstraintDescription {
@@ -53,7 +52,6 @@ describe('plugin-light-extension collections', () => {
       'lifecycleStatus',
       'healthStatus',
       'headCommitId',
-      'lastScannedCommitId',
     ]);
     expectCollectionFields('lightExtensionEntries', [
       'id',
@@ -73,10 +71,8 @@ describe('plugin-light-extension collections', () => {
       'compiledAt',
       'healthStatus',
       'diagnostics',
-      'validatorVersion',
-      'lastScannedCommitId',
-      'lastScannedAt',
     ]);
+    expect(app.db.getCollection('lightExtensionEntries')?.getField('validatorVersion')).toBeFalsy();
     expect(app.db.getCollection('lightExtensionEntryPublications')).toBeFalsy();
     expectCollectionFields('lightExtensionReferences', [
       'id',
@@ -101,10 +97,12 @@ describe('plugin-light-extension collections', () => {
       'denyReason',
       'details',
     ]);
+    expect(app.db.getCollection('lightExtensionRepos')?.getField('lastError')).toBeFalsy();
+    expect(app.db.getCollection('lightExtensionLogs')?.getField('stack')).toBeFalsy();
 
     expect(LIGHT_EXTENSION_REPO_LIFECYCLE_STATUSES).toEqual(['enabled', 'disabled', 'archived']);
-    expect(LIGHT_EXTENSION_REPO_HEALTH_STATUSES).toEqual(['draft', 'ready', 'partial_failed', 'scan_failed']);
-    expect(LIGHT_EXTENSION_ENTRY_HEALTH_STATUSES).toEqual(['ready', 'failed', 'missing', 'disabled']);
+    expect(LIGHT_EXTENSION_REPO_HEALTH_STATUSES).toEqual(['pending', 'ready']);
+    expect(LIGHT_EXTENSION_ENTRY_HEALTH_STATUSES).toEqual(['ready', 'missing']);
     expect(LIGHT_EXTENSION_REFERENCE_RESOLVED_STATUSES).toEqual([
       'active',
       'binding_outdated',
@@ -136,7 +134,8 @@ describe('plugin-light-extension collections', () => {
     });
 
     expect(repo.get('lifecycleStatus')).toBe('enabled');
-    expect(repo.get('healthStatus')).toBe('draft');
+    expect(repo.get('healthStatus')).toBe('pending');
+    expect(repo.get('version')).toBeUndefined();
     expect(repo.get('enabled')).toBeUndefined();
     expect(repo.get('archived')).toBeUndefined();
     expect(entry.get('target')).toBe('client');
@@ -175,36 +174,10 @@ describe('plugin-light-extension collections', () => {
     }
   });
 
-  it('installs the repo reference foreign key when upgrading a legacy schema', async () => {
-    await removeReferenceRepoForeignKeyIfExists(app);
-    await app.db.getRepository('lightExtensionReferences').create({
-      values: {
-        repoId: 'repo_orphan',
-        entryId: 'entry_orphan',
-        ownerKind: 'flowModel.step',
-        ownerLocator: {
-          kind: 'flowModel.step',
-          flowModelId: 'flow_orphan',
-          stepId: 'step_orphan',
-        },
-        ownerLocatorHash: 'owner_orphan',
-      },
-    });
-
-    const migration = new AddReferenceRepoForeignKeyMigration({
-      db: app.db,
-      queryInterface: app.db.sequelize.getQueryInterface(),
-      sequelize: app.db.sequelize,
-    } satisfies MigrationContext);
-    await migration.up();
-
+  it('creates the repo reference foreign key from the final collection schema', async () => {
     const repoConstraint = await findReferenceRepoForeignKey(app);
 
     expect(repoConstraint).toBeTruthy();
-    expect(repoConstraint?.constraintName || repoConstraint?.constraint_name).toBe(
-      'light_extension_references_repo_id_fk',
-    );
-    expect(await app.db.getRepository('lightExtensionReferences').count({ filter: { repoId: 'repo_orphan' } })).toBe(0);
     await expect(
       app.db.getRepository('lightExtensionReferences').create({
         values: {
@@ -227,30 +200,6 @@ describe('plugin-light-extension collections', () => {
     expect(collection).toBeTruthy();
     for (const fieldName of fieldNames) {
       expect(collection?.getField(fieldName), `${collectionName}.${fieldName}`).toBeTruthy();
-    }
-  }
-
-  async function removeReferenceRepoForeignKeyIfExists(app: MockServer) {
-    const queryInterface = app.db.sequelize.getQueryInterface();
-    const referencesCollection = app.db.getCollection('lightExtensionReferences') as Collection;
-    const constraints = await queryInterface.getForeignKeyReferencesForTable(
-      referencesCollection.getTableNameWithSchema(),
-    );
-    for (const constraint of constraints as ConstraintDescription[]) {
-      if (!isReferenceRepoForeignKey(app, constraint)) {
-        continue;
-      }
-
-      const constraintName = constraint.constraintName || constraint.constraint_name;
-      if (!constraintName) {
-        continue;
-      }
-
-      try {
-        await queryInterface.removeConstraint(referencesCollection.getTableNameWithSchema(), constraintName);
-      } catch {
-        // The legacy schema being simulated may not contain this constraint name.
-      }
     }
   }
 

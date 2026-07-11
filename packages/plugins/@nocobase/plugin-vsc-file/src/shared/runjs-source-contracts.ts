@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { VscCommitRecord, VscFileChange, VscRefRecord, VscRepositoryIdentity, VscRepositoryRecord } from './types';
+import type { VscCommitRecord, VscFileChange, VscRepositoryIdentity, VscRepositoryRecord } from './types';
 
 export type RunJSSourceLocator =
   | {
@@ -118,7 +118,7 @@ export interface RunJSRuntimeArtifact {
   metadata?: Record<string, unknown>;
 }
 
-export interface RunJSPublishedWriteResult {
+export interface RunJSRuntimeWriteResult {
   ownerFingerprint?: string;
   metadata?: Record<string, unknown>;
 }
@@ -129,13 +129,13 @@ export interface RunJSSourceAdapter<TLocator extends RunJSSourceLocator = RunJSS
     locator: TLocator;
     ctx: RunJSSourceAdapterContext;
   }): Promise<RunJSLegacySource> | RunJSLegacySource;
-  writePublished(input: {
+  writeRuntime(input: {
     locator: TLocator;
     artifact: RunJSRuntimeArtifact;
     commitId: string;
     baseOwnerFingerprint: string;
     ctx: RunJSSourceAdapterContext;
-  }): Promise<RunJSPublishedWriteResult> | RunJSPublishedWriteResult;
+  }): Promise<RunJSRuntimeWriteResult> | RunJSRuntimeWriteResult;
   getFingerprint(input: { locator: TLocator; ctx: RunJSSourceAdapterContext }): Promise<string> | string;
   assertCanRead(input: { locator: TLocator; ctx: RunJSSourceAdapterContext }): Promise<void> | void;
   assertCanWrite(input: { locator: TLocator; ctx: RunJSSourceAdapterContext }): Promise<void> | void;
@@ -158,15 +158,13 @@ export interface RunJSSourceOpenResult {
   repositoryIdentity: VscRepositoryIdentity;
   legacy: RunJSLegacySource;
   ownerFingerprint: string;
-  publishedOwnerFingerprint?: string;
 }
 
-export interface RunJSSourcePublishResult {
+export interface RunJSSourceSaveResult {
   locator: RunJSSourceLocator;
   locatorKind: RunJSSourceKind;
   repository: VscRepositoryRecord;
   commit: VscCommitRecord;
-  publishedRef: VscRefRecord;
   artifact: {
     entryPath: string | null;
     filesHash: string;
@@ -174,15 +172,14 @@ export interface RunJSSourcePublishResult {
     diagnostics: RunJSCompileDiagnostic[];
   };
   ownerFingerprint: string;
-  writeResult: RunJSPublishedWriteResult;
+  writeResult: RunJSRuntimeWriteResult;
 }
 
-export interface RunJSSourcePublishInput {
+export interface RunJSSourceSaveInput {
   locator: RunJSSourceLocator;
   repoId?: string;
   message: string;
   files: VscFileChange[];
-  artifact?: Partial<RunJSRuntimeArtifact>;
   entryPath?: string;
   version?: string;
 }

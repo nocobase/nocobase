@@ -36,9 +36,8 @@ import type { RunJSSourceLocator } from './runjs-studio';
 import {
   buildRunJSOwnerLocatorFromSourceLocator,
   evaluateResolvedRunJSValue,
-  reportRunJSRuntimeErrorBestEffort,
+  getRunJSModelUse,
   resolveRuntimeRunJS,
-  type ResolvedRuntimeRunJS,
 } from './runjs-source';
 
 interface Props {
@@ -254,15 +253,14 @@ export const DefaultValue = connect((props: Props) => {
       let out = rawVal;
       // RunJS default: execute and use the computed result for preview/backfill
       if (isRunJSValue(out)) {
-        let resolved: ResolvedRuntimeRunJS | undefined;
         try {
-          resolved = await resolveRuntimeRunJS({
+          const resolved = await resolveRuntimeRunJS({
             runJs: out,
             context: {
               ownerKind: 'flowModel.runjsHost',
               ownerLocator: buildRunJSOwnerLocatorFromSourceLocator(sourceLocator, {
                 modelUid: model?.uid,
-                use: (model as any)?.use,
+                use: getRunJSModelUse(model),
               }),
             },
           });
@@ -270,16 +268,7 @@ export const DefaultValue = connect((props: Props) => {
             ctx: model?.context,
             resolved,
           });
-        } catch (error) {
-          await reportRunJSRuntimeErrorBestEffort({
-            ctx: model?.context,
-            error,
-            resolved,
-            ownerLocator: buildRunJSOwnerLocatorFromSourceLocator(sourceLocator, {
-              modelUid: model?.uid,
-              use: (model as any)?.use,
-            }),
-          });
+        } catch {
           out = undefined;
         }
         return out;

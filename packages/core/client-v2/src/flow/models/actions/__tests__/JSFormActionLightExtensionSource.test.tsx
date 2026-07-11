@@ -18,7 +18,7 @@ describe('JSFormActionModel light extension source', () => {
     RunJSSourceResolverRegistry.clear();
   });
 
-  it('resolves JS Action publications with form values and refresh method', async () => {
+  it('resolves JS Action entries with form values and refresh method', async () => {
     const resolve = vi.fn(() => ({
       code: `
 const values = ctx.form.getFieldsValue();

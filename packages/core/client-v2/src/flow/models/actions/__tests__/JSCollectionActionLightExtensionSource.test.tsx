@@ -18,7 +18,7 @@ describe('JSCollectionActionModel light extension source', () => {
     RunJSSourceResolverRegistry.clear();
   });
 
-  it('resolves JS Action publications with selected collection rows', async () => {
+  it('resolves JS Action entries with selected collection rows', async () => {
     const resolve = vi.fn(() => ({
       code: `
 const rows = ctx.resource.getSelectedRows();

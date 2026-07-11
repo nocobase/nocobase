@@ -17,12 +17,11 @@ import {
   JS_FIELD_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
   JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
   JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+  RunJSEditorRegistry,
   RunJSSourceResolverRegistry,
-  registerBlockGridSelectSceneAddBlockProvider,
 } from '@nocobase/client-v2';
 
 import { LIGHT_EXTENSION_ACL_SNIPPET, LIGHT_EXTENSION_SETTINGS_KEY, NAMESPACE } from '../constants';
-import { createLightExtensionJSBlockAddItems } from '../client-v2/add-block/lightExtensionJsBlockItems';
 import {
   JSActionLightExtensionSourceField,
   JSBlockLightExtensionSourceField,
@@ -30,6 +29,7 @@ import {
   JSItemLightExtensionSourceField,
 } from '../client-v2/components/JSBlockLightExtensionSourceField';
 import { SettingsAutoForm, SettingsSingleField } from '../client-v2/components/SettingsAutoForm';
+import { createRunJSLightExtensionEditorProvider } from '../client-v2/components/RunJSLightExtensionEditorProvider';
 import LightExtensionListPage from '../client-v2/pages/LightExtensionListPage';
 import { createLightExtensionRunJSResolver } from '../client-v2/resolvers/LightExtensionRunJSResolver';
 
@@ -78,8 +78,9 @@ function translate(app: LegacyApp | undefined, text: string) {
  * behavior.
  */
 export class PluginLightExtensionClient {
+  private unregisterRunJSEditor?: () => void;
+
   private unregisterRunJSResolver?: () => void;
-  private unregisterAddBlockProvider?: () => void;
 
   constructor(
     public readonly options: LightExtensionLegacyClientOptions = {},
@@ -89,10 +90,10 @@ export class PluginLightExtensionClient {
   async afterAdd() {}
 
   async beforeLoad() {
+    this.unregisterRunJSEditor?.();
+    this.unregisterRunJSEditor = undefined;
     this.unregisterRunJSResolver?.();
     this.unregisterRunJSResolver = undefined;
-    this.unregisterAddBlockProvider?.();
-    this.unregisterAddBlockProvider = undefined;
   }
 
   async load() {
@@ -113,11 +114,7 @@ export class PluginLightExtensionClient {
         createLightExtensionRunJSResolver(this.app.apiClient),
       );
     }
-
-    this.unregisterAddBlockProvider = registerBlockGridSelectSceneAddBlockProvider(
-      'light-extension-js-blocks',
-      createLightExtensionJSBlockAddItems,
-    );
+    this.unregisterRunJSEditor = RunJSEditorRegistry.registerProvider(createRunJSLightExtensionEditorProvider());
 
     this.app?.pluginSettingsManager?.add(LIGHT_EXTENSION_SETTINGS_KEY, {
       icon: 'CodeOutlined',

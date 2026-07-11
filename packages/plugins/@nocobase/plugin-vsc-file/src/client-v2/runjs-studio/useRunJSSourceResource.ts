@@ -16,21 +16,16 @@ import type { RunJSSourceActionInput, RunJSSourceActionName, RunJSSourceActionRe
 
 export const runJSSourceActionNames = [
   'open',
-  'openLatest',
   'restoreFromCode',
   'compilePreview',
-  'publish',
+  'save',
   'exportZip',
   'importZip',
-  'syncStatus',
   'listHistory',
   'getVersion',
-  'diffVersion',
 ] as const;
 
 export type RunJSSourceLoadingState = Partial<Record<RunJSSourceActionName, boolean>>;
-
-export type RunJSSourceErrorState = Partial<Record<RunJSSourceActionName, RunJSSourceRequestError>>;
 
 export interface RunJSSourceRequestErrorOptions {
   action: RunJSSourceActionName;
@@ -65,14 +60,11 @@ export class RunJSSourceRequestError extends Error {
 
 export interface UseRunJSSourceResourceResult {
   loading: RunJSSourceLoadingState;
-  errors: RunJSSourceErrorState;
   request<TAction extends RunJSSourceActionName>(
     action: TAction,
     input: RunJSSourceActionInput<TAction>,
   ): Promise<RunJSSourceActionResult<TAction>>;
   isLoading(action: RunJSSourceActionName): boolean;
-  getError(action: RunJSSourceActionName): RunJSSourceRequestError | null;
-  clearError(action?: RunJSSourceActionName): void;
 }
 
 type TFunction = (key: string) => string;
@@ -86,9 +78,7 @@ export function useRunJSSourceResource(): UseRunJSSourceResourceResult {
   const t = useT();
   const api = ctx?.api;
   const tRef = useRef(t);
-  const requestIdsRef = useRef<Partial<Record<RunJSSourceActionName, number>>>({});
   const [loadingCounts, setLoadingCounts] = useState<Partial<Record<RunJSSourceActionName, number>>>({});
-  const [errors, setErrors] = useState<RunJSSourceErrorState>({});
 
   const loading = useMemo<RunJSSourceLoadingState>(() => {
     return Object.fromEntries(
@@ -100,31 +90,15 @@ export function useRunJSSourceResource(): UseRunJSSourceResourceResult {
     tRef.current = t;
   }, [t]);
 
-  const clearError = useCallback((action?: RunJSSourceActionName) => {
-    setErrors((current) => {
-      if (!action) {
-        return {};
-      }
-
-      const next = { ...current };
-      delete next[action];
-      return next;
-    });
-  }, []);
-
   const request = useCallback(
     async <TAction extends RunJSSourceActionName>(
       action: TAction,
       input: RunJSSourceActionInput<TAction>,
     ): Promise<RunJSSourceActionResult<TAction>> => {
-      const requestId = (requestIdsRef.current[action] || 0) + 1;
-      requestIdsRef.current[action] = requestId;
-
       setLoadingCounts((current) => ({
         ...current,
         [action]: (current[action] || 0) + 1,
       }));
-      clearError(action);
 
       try {
         if (!api) {
@@ -147,14 +121,7 @@ export function useRunJSSourceResource(): UseRunJSSourceResourceResult {
 
         return (response.data as ResourceResponse<RunJSSourceActionResult<TAction>>).data;
       } catch (error) {
-        const requestError = normalizeRunJSSourceError(action, error, tRef.current);
-        if (requestIdsRef.current[action] === requestId) {
-          setErrors((current) => ({
-            ...current,
-            [action]: requestError,
-          }));
-        }
-        throw requestError;
+        throw normalizeRunJSSourceError(action, error, tRef.current);
       } finally {
         setLoadingCounts((current) => {
           const nextCount = Math.max((current[action] || 0) - 1, 0);
@@ -170,19 +137,16 @@ export function useRunJSSourceResource(): UseRunJSSourceResourceResult {
         });
       }
     },
-    [api, clearError],
+    [api],
   );
 
   return useMemo<UseRunJSSourceResourceResult>(
     () => ({
       loading,
-      errors,
       request,
       isLoading: (action) => Boolean(loading[action]),
-      getError: (action) => errors[action] || null,
-      clearError,
     }),
-    [clearError, errors, loading, request],
+    [loading, request],
   );
 }
 
@@ -214,8 +178,6 @@ export function formatRunJSSourceRequestErrorMessage(
   t: TFunction,
 ): string {
   switch (code) {
-    case 'BASE_COMMIT_OUTDATED':
-      return t('A newer version was published while you were editing.');
     case 'RUNJS_IMPORT_NOT_ALLOWED':
       return t('Only relative imports inside this workspace are supported.');
     case 'RUNJS_IMPORT_NOT_FOUND':
@@ -238,10 +200,10 @@ export function formatRunJSSourceRequestErrorMessage(
       return t('You can view this JavaScript source, but you do not have permission to edit it');
     case 'RUNJS_COMPILE_FAILED':
       return t('Compile failed');
-    case 'RUNJS_PUBLISH_NO_CHANGES':
-      return t('No changes to publish');
+    case 'RUNJS_SAVE_NO_CHANGES':
+      return t('No changes to save');
     case 'RUNJS_COMMIT_MESSAGE_INVALID':
-      return t('Commit message must be between 3 and 200 characters.');
+      return t('Version message must be between 3 and 200 characters.');
     default:
       return fallbackMessage;
   }

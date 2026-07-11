@@ -9,7 +9,7 @@
 
 import type { ReactNode } from 'react';
 
-import type { RunJSSourceHistoryItem, RunJSSourceOpenWorkspaceResult, RunJSWorkspaceFile } from './types';
+import type { RunJSSourceOpenWorkspaceResult, RunJSWorkspaceFile } from './types';
 
 export type WorkspaceLoadResult = {
   opened: RunJSSourceOpenWorkspaceResult;
@@ -18,8 +18,6 @@ export type WorkspaceLoadResult = {
   entryPath: string;
 };
 
-export type OpenWorkspaceAction = 'open' | 'openLatest';
-
 export type ActionErrorState = {
   error: unknown;
   title: string;
@@ -27,11 +25,6 @@ export type ActionErrorState = {
 };
 
 export type PendingDirtyAction = 'close' | 'refresh';
-
-export type DiffViewState = {
-  baseFiles: RunJSWorkspaceFile[];
-  files: RunJSWorkspaceFile[];
-};
 
 export type ExportDownloadState = {
   fileName: string;
@@ -51,5 +44,3 @@ export type ClosableView = {
   setFooter?: (footer: ReactNode) => void;
   setHeader?: (header: { title?: ReactNode; extra?: ReactNode } | null) => void;
 };
-
-export type RestoreCommitState = RunJSSourceHistoryItem | null;

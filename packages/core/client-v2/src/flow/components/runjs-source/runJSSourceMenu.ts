@@ -7,13 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { StepCascadeMenuUIMode } from '@nocobase/flow-engine';
+
 import type { RunJSSourceBinding, RunJSSourceMenuInput, RunJSSourceMenuItem, RunJSSourceSettings } from './types';
 import { INLINE_RUNJS_SOURCE_MODE } from './types';
 import { RunJSSourceResolverRegistry } from './RunJSSourceResolverRegistry';
 
 export interface RunJSSourceCascadeMenuOptions {
   kind: string;
-  defaultVersionPolicy?: string;
   sourceFlowKey?: string;
 }
 
@@ -70,12 +71,11 @@ function getMenuInput(
     sourceBinding: isRecord(params.sourceBinding) ? (params.sourceBinding as RunJSSourceBinding) : undefined,
     settings: cloneRecord(params.settings) as RunJSSourceSettings,
     kind: options.kind,
-    defaultVersionPolicy: options.defaultVersionPolicy,
     t,
   };
 }
 
-export function createRunJSSourceCascadeMenuUIMode(options: RunJSSourceCascadeMenuOptions) {
+export function createRunJSSourceCascadeMenuUIMode(options: RunJSSourceCascadeMenuOptions): StepCascadeMenuUIMode {
   return {
     type: 'cascadeMenu' as const,
     key: 'sourceMode',
@@ -84,18 +84,8 @@ export function createRunJSSourceCascadeMenuUIMode(options: RunJSSourceCascadeMe
       loadingLabel: 'Loading light extensions',
       emptyLabel: 'No light extension entries',
       errorLabel: 'Failed to load light extensions',
-      getDisplayLabel({
-        model,
-        flowKey,
-        params,
-        t,
-      }: {
-        model?: { getStepParams?: (flowKey: string, stepKey: string) => unknown };
-        flowKey?: string;
-        params: SourceMenuParams;
-        t: (key: string) => string;
-      }) {
-        const runJsParams = model?.getStepParams?.(options.sourceFlowKey || flowKey || '', 'runJs');
+      getDisplayLabel({ model, flowKey, params, t }) {
+        const runJsParams = model?.getStepParams(options.sourceFlowKey || flowKey || '', 'runJs');
         const displayParams = params.sourceMode ? params : isRecord(runJsParams) ? runJsParams : params;
         const sourceMode = normalizeSourceMode(displayParams.sourceMode);
         if (sourceMode === INLINE_RUNJS_SOURCE_MODE) {
@@ -103,15 +93,7 @@ export function createRunJSSourceCascadeMenuUIMode(options: RunJSSourceCascadeMe
         }
         return getSourceBindingLabel(displayParams.sourceBinding) || t('Light extension');
       },
-      async loadItems({
-        params,
-        defaultParams,
-        t,
-      }: {
-        params: SourceMenuParams;
-        defaultParams: Record<string, unknown>;
-        t: (key: string, options?: Record<string, unknown>) => string;
-      }): Promise<RunJSSourceMenuItem[]> {
+      async loadItems({ params, defaultParams, t }): Promise<RunJSSourceMenuItem[]> {
         const input = getMenuInput(params, options, t);
         const inlineSelected = normalizeSourceMode(params.sourceMode) === INLINE_RUNJS_SOURCE_MODE;
         const sourceItems = await Promise.all(

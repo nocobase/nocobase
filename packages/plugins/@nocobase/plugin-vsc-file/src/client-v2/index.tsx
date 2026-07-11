@@ -7,8 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './components';
-export * from './hooks';
 export * from './runjs-studio';
 export { useT as useVscFileT } from './locale';
 export { default } from './plugin';

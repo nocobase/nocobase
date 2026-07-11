@@ -25,7 +25,7 @@ export const vscFileAuditActionNames = [
   'updateRef',
 ] as const;
 
-export const runJSSourceAuditActionNames = ['publish'] as const;
+export const runJSSourceAuditActionNames = ['save', 'importZip', 'restoreFromCode'] as const;
 
 type VscFileAuditActionName = (typeof vscFileAuditActionNames)[number];
 type RunJSSourceAuditActionName = (typeof runJSSourceAuditActionNames)[number];
@@ -119,8 +119,7 @@ async function getRunJSSourceAuditMetadata(db: Database, ctx: Context): Promise<
   const repoId = responseRepository?.id || requestedRepoId;
   const repository = responseRepository || (repoId ? await findRepository(db, repoId) : null);
   const commit = toRecord(response.commit);
-  const publishedRef = toRecord(response.publishedRef);
-  const commitId = toStringValue(commit.id) || toStringValue(publishedRef.commitId);
+  const commitId = toStringValue(commit.id) || toStringValue(responseRepositoryRecord.headCommitId);
 
   return {
     resource: 'runJSSources',
@@ -132,7 +131,7 @@ async function getRunJSSourceAuditMetadata(db: Database, ctx: Context): Promise<
       ownerId: locator ? getRunJSSourceAuditOwnerId(locator) : undefined,
       repositoryOwnerId: repository?.ownerId || (locator ? getRunJSSourceOwnerId(locator) : undefined),
       sourceCommitId: toStringValue(input.sourceCommitId),
-      message: actionName === 'publish' ? toStringValue(input.message) : undefined,
+      message: actionName === 'save' || actionName === 'importZip' ? toStringValue(input.message) : undefined,
     }),
     request: {
       body: sanitizeRunJSSourceRequestBody(actionName, input, locator),
@@ -204,20 +203,15 @@ function sanitizeRunJSSourceRequestBody(
   return compactObject({
     locatorKind: locator?.kind || toStringValue(input.locatorKind),
     repoId: toStringValue(input.repoId),
-    baseCommitId: toNullableStringValue(input.baseCommitId),
-    basePublishedCommitId: toNullableStringValue(input.basePublishedCommitId),
-    basePublishedOwnerFingerprint: toStringValue(input.basePublishedOwnerFingerprint),
     sourceCommitId: toStringValue(input.sourceCommitId),
-    message: actionName === 'publish' ? toStringValue(input.message) : undefined,
+    message: actionName === 'save' || actionName === 'importZip' ? toStringValue(input.message) : undefined,
     files: sanitizeFileList(input.files),
-    artifact: sanitizeRunJSArtifact(toRecord(input.artifact)),
   });
 }
 
 function sanitizeRunJSSourceResponseBody(response: Record<string, unknown>): Record<string, unknown> {
   const repository = getRepositoryFromResponse(response);
   const commit = toRecord(response.commit);
-  const publishedRef = toRecord(response.publishedRef);
 
   return compactObject({
     repository: repository
@@ -228,7 +222,6 @@ function sanitizeRunJSSourceResponseBody(response: Record<string, unknown>): Rec
         }
       : undefined,
     commit: sanitizeCommit(commit),
-    publishedRef: sanitizeRef(publishedRef),
     artifact: sanitizeRunJSArtifact(toRecord(response.artifact)),
     ownerFingerprint: toStringValue(response.ownerFingerprint),
     fileCount: countArray(response.files),

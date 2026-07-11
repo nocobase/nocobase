@@ -339,37 +339,6 @@ function collectDirectDomErrors(
   });
 }
 
-function collectUnknownGlobalErrors(
-  path: string,
-  source: string,
-  scan: RunJsScanResult,
-  modelUse: string,
-  surface: string,
-  errors: FlowSurfaceErrorItemInput[],
-) {
-  scan.unknownBareGlobals.forEach((entry) => {
-    const suggestion = entry.suggestedCapability
-      ? `; use ${entry.suggestedCapability} or assign it to a local variable first`
-      : '; declare or import it before using it';
-    errors.push(
-      buildRunJsAuthoringError({
-        path,
-        repairClass: 'unknown-global-stop',
-        ruleId: 'runjs-global-unknown',
-        message: `flowSurfaces authoring ${path} cannot access unknown RunJS global ${entry.name}${suggestion}`,
-        modelUse,
-        surface,
-        index: entry.index,
-        source,
-        details: {
-          global: entry.name,
-          suggestedCapability: entry.suggestedCapability,
-        },
-      }),
-    );
-  });
-}
-
 function collectReactRuntimeErrors(
   path: string,
   source: string,
@@ -871,14 +840,6 @@ export const RUNJS_INSPECTION_VALIDATORS: RunJsInspectionValidator[] = [
   ),
   createLegacyValidator('dom-global', (runtime, errors) => {
     collectDirectDomErrors(runtime.input.path, runtime.source, runtime.scan, runtime.modelUse, runtime.surface, errors);
-    collectUnknownGlobalErrors(
-      runtime.input.path,
-      runtime.source,
-      runtime.scan,
-      runtime.modelUse,
-      runtime.surface,
-      errors,
-    );
   }),
   createLegacyValidator('react-runtime', (runtime, errors) =>
     collectReactRuntimeErrors(

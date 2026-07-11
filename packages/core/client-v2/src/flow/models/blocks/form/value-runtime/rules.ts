@@ -22,9 +22,8 @@ import { getSubTableRowIdentity } from '../../../fields/AssociationFieldModel/Su
 import {
   buildRunJSOwnerLocator,
   evaluateResolvedRunJSValue,
-  reportRunJSRuntimeErrorBestEffort,
+  getRunJSModelUse,
   resolveRuntimeRunJS,
-  type ResolvedRuntimeRunJS,
   type RunJSOwnerLocator,
 } from '../../../../components/runjs-source';
 
@@ -72,10 +71,6 @@ function normalizeAssignMode(mode: unknown): AssignMode {
   if (mode === 'default') return 'default';
   if (mode === 'override') return 'override';
   return 'assign';
-}
-
-function toNonEmptyString(value: unknown): string | undefined {
-  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
 }
 
 function getSourceByAssignMode(mode: AssignMode): ValueSource {
@@ -503,7 +498,7 @@ export class RuleEngine {
       if (!targetPath) continue;
       const arr = this.assignTemplatesByTargetPath.get(targetPath) || [];
       order += 1;
-      arr.push({ ...(item as any), __key: String(item.key), __order: order, __index: item.__index });
+      arr.push({ ...item, __key: String(item.key), __order: order, __index: item.__index });
       this.assignTemplatesByTargetPath.set(targetPath, arr);
     }
 
@@ -844,7 +839,7 @@ export class RuleEngine {
   private getDefaultRunJSOwnerLocator(model: FlowModel, getPropsInitialValue: () => unknown): RunJSOwnerLocator {
     return buildRunJSOwnerLocator({
       modelUid: model?.uid,
-      use: this.getModelUseForRunJSOwner(model),
+      use: getRunJSModelUse(model),
       hostPath: this.getDefaultRunJSHostPath(model, getPropsInitialValue),
     });
   }
@@ -866,21 +861,6 @@ export class RuleEngine {
       return ['props', 'initialValue'];
     }
     return ['props', 'initialValue'];
-  }
-
-  private getModelUseForRunJSOwner(model: unknown): string | undefined {
-    if (!model || typeof model !== 'object') {
-      return undefined;
-    }
-    const record = model as Record<string, unknown>;
-    const options = record._options as Record<string, unknown> | undefined;
-    const createModelOptions = record.createModelOptions as Record<string, unknown> | undefined;
-    return (
-      toNonEmptyString(record.use) ||
-      toNonEmptyString(options?.use) ||
-      toNonEmptyString(createModelOptions?.use) ||
-      toNonEmptyString((model as { constructor?: { name?: unknown } }).constructor?.name)
-    );
   }
 
   private getDeepestFieldIndexKey(baseCtx: any): string | null {
@@ -1783,10 +1763,9 @@ export class RuleEngine {
     collector: DepCollector,
     rule: RuntimeRule,
   ): Promise<any> {
-    let resolved: ResolvedRuntimeRunJS | undefined;
     try {
       const ownerLocator = rule.getRunJSOwnerLocator?.();
-      resolved = await resolveRuntimeRunJS({
+      const resolved = await resolveRuntimeRunJS({
         runJs: rawValue,
         context: {
           ownerKind: 'flowModel.runjsHost',
@@ -1797,13 +1776,7 @@ export class RuleEngine {
         ctx: evalCtx,
         resolved,
       });
-    } catch (error) {
-      await reportRunJSRuntimeErrorBestEffort({
-        ctx: evalCtx,
-        error,
-        resolved,
-        ownerLocator: rule.getRunJSOwnerLocator?.(),
-      });
+    } catch {
       if (seq !== state.runSeq) return SKIP_RULE_VALUE;
       this.commitRuleDeps(rule, state, collector);
       return SKIP_RULE_VALUE;

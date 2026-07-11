@@ -61,29 +61,6 @@ export interface LightExtensionListCommitsInput {
   beforeSeq?: number;
 }
 
-export interface LightExtensionGetCommitInput {
-  repoId: string;
-  commitId: string;
-}
-
-export interface LightExtensionDiffInput {
-  repoId: string;
-  fromCommitId: string;
-  toCommitId: string;
-}
-
-export interface LightExtensionDiffFileEndpoint {
-  type: 'commit';
-  commitId: string;
-  path: string;
-}
-
-export interface LightExtensionDiffFileInput {
-  repoId: string;
-  from?: LightExtensionDiffFileEndpoint | null;
-  to?: LightExtensionDiffFileEndpoint | null;
-}
-
 export class LightExtensionFileService {
   private readonly repoService: LightExtensionRepoService;
 
@@ -205,7 +182,6 @@ export class LightExtensionFileService {
           filterByTk: repo.id,
           values: {
             headCommitId: result.repository.headCommitId || null,
-            version: repo.version + 1,
           },
           transaction,
         });
@@ -217,7 +193,7 @@ export class LightExtensionFileService {
           result: 'success',
           requestId,
           actorUserId: ctx.actorUserId,
-          baseCommitId: input.baseCommitId,
+          baseCommitId: repo.headCommitId,
           commitId: result.commit.id,
           message: 'Light extension source files committed',
           files: input.files.map(summarizeFileChange),
@@ -304,85 +280,6 @@ export class LightExtensionFileService {
       );
 
       return commits.map((commit) => toPublicCommit(commit, repo.id));
-    });
-  }
-
-  async getCommit(
-    input: LightExtensionGetCommitInput,
-    ctx: LightExtensionServiceContext = {},
-  ): Promise<LightExtensionCommitRecord> {
-    return this.withTransaction(ctx.transaction, async (transaction) => {
-      const repo = await this.repoService.getInternalRepo(input.repoId, { ...ctx, transaction });
-      assertRepoNotArchived(repo, 'read source');
-      const commit = await this.runVsc(repo.id, () =>
-        this.vscFileService.getCommit(
-          {
-            repoId: repo.vscRepoId,
-            commitId: input.commitId,
-          },
-          this.createVscContext({
-            ctx,
-            transaction,
-            requestId: getRequestId(ctx),
-            repoId: repo.id,
-            aclAction: 'readSource',
-            reason: 'read light-extension source commit',
-            allowedActions: ['getCommit'],
-          }),
-        ),
-      );
-
-      return toPublicCommit(commit, repo.id);
-    });
-  }
-
-  async diff(input: LightExtensionDiffInput, ctx: LightExtensionServiceContext = {}) {
-    return this.withTransaction(ctx.transaction, async (transaction) => {
-      const repo = await this.repoService.getInternalRepo(input.repoId, { ...ctx, transaction });
-      assertRepoNotArchived(repo, 'read source');
-      return this.runVsc(repo.id, () =>
-        this.vscFileService.diff(
-          {
-            repoId: repo.vscRepoId,
-            fromCommitId: input.fromCommitId,
-            toCommitId: input.toCommitId,
-          },
-          this.createVscContext({
-            ctx,
-            transaction,
-            requestId: getRequestId(ctx),
-            repoId: repo.id,
-            aclAction: 'readSource',
-            reason: 'diff light-extension source commits',
-            allowedActions: ['diff'],
-          }),
-        ),
-      );
-    });
-  }
-
-  async diffFile(input: LightExtensionDiffFileInput, ctx: LightExtensionServiceContext = {}) {
-    return this.withTransaction(ctx.transaction, async (transaction) => {
-      const repo = await this.repoService.getInternalRepo(input.repoId, { ...ctx, transaction });
-      assertRepoNotArchived(repo, 'read source');
-      return this.runVsc(repo.id, () =>
-        this.vscFileService.diffFile(
-          {
-            repoId: repo.vscRepoId,
-            from: input.from,
-            to: input.to,
-          },
-          this.createVscContext({
-            ctx,
-            transaction,
-            requestId: getRequestId(ctx),
-            repoId: repo.id,
-            aclAction: 'readSource',
-            reason: 'diff light-extension source file',
-            allowedActions: ['diffFile'],
-          }),
-        ),
-      );
     });
   }
 
@@ -548,7 +445,6 @@ export class LightExtensionFileService {
         result: 'blocked',
         requestId,
         actorUserId: ctx.actorUserId,
-        baseCommitId: input.baseCommitId,
         commitId: null,
         reasonCode: getErrorCode(error),
         message: 'Light extension source file write rejected',

@@ -108,10 +108,6 @@ export default defineCollection({
       name: 'message',
     },
     {
-      type: 'text',
-      name: 'stack',
-    },
-    {
       type: 'json',
       name: 'details',
     },
