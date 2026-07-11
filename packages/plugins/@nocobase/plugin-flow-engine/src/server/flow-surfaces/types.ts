@@ -341,6 +341,9 @@ export type FlowSurfaceDynamicCapabilityPublicInput = {
 export type FlowSurfaceDynamicCapabilityCreateActionName =
   | 'addBlock'
   | 'addBlocks'
+  | 'addAction'
+  | 'addRecordAction'
+  | 'addField'
   | 'compose'
   | 'applyBlueprint'
   | 'validateCapabilityCreate';

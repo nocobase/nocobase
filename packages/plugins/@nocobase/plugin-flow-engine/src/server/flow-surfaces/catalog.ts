@@ -3031,7 +3031,7 @@ function normalizeFieldContainerUse(containerUse?: string) {
   return normalizeFieldContainerKind(containerUse);
 }
 
-function getFieldWrapperUseForContainer(containerUse?: string) {
+export function getFieldWrapperUseForContainer(containerUse?: string) {
   const approvalWrapperUse = getApprovalFieldWrapperUse(containerUse);
   if (approvalWrapperUse) {
     return approvalWrapperUse;
@@ -3352,6 +3352,7 @@ export function resolveSupportedFieldCapability(input: {
   enabledPackages?: ReadonlySet<string>;
   dataSourceKey?: string;
   getCollection?: (dataSourceKey: string, collectionName: string) => any;
+  additionalAllowedFieldUses?: ReadonlySet<string>;
 }) {
   const requestedRenderer =
     typeof input.requestedRenderer === 'undefined' ? undefined : String(input.requestedRenderer || '').trim();
@@ -3445,7 +3446,7 @@ export function resolveSupportedFieldCapability(input: {
           getCollection: input.getCollection,
         })
       : getAllowedFieldUseSet(input.containerUse, input.enabledPackages);
-  if (!allowedFieldUses?.has(fieldUse)) {
+  if (!allowedFieldUses?.has(fieldUse) && !input.additionalAllowedFieldUses?.has(fieldUse)) {
     throw new FlowSurfaceBadRequestError(
       `flowSurfaces fieldUse '${fieldUse}' is not allowed under '${input.containerUse}'`,
     );

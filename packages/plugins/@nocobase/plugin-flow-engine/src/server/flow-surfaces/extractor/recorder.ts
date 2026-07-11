@@ -7,7 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { FlowSurfaceCapabilityConfidence, FlowSurfaceCapabilityWarning, FlowSurfaceNodeSpec } from '../types';
+import type {
+  FlowSurfaceCapabilityConfidence,
+  FlowSurfaceCapabilityWarning,
+  FlowSurfaceConfigureOptions,
+  FlowSurfaceNodeSpec,
+  FlowSurfaceSettingBinding,
+} from '../types';
 import { types as nodeUtilTypes } from 'util';
 import { parseFlowSurfaceTranslationExpressionLabel } from './labels';
 import type {
@@ -39,6 +45,7 @@ type FlowSurfaceModelLoaderRecordInput = {
 type FlowSurfaceModelClassRecordInput = {
   modelUse: string;
   modelBaseClass: string;
+  actionScope?: 'collection' | 'record' | 'both';
   source?: string;
   evidenceSource?: FlowSurfaceExtractorEvidenceSource;
   confidence?: FlowSurfaceCapabilityConfidence;
@@ -49,6 +56,8 @@ type FlowSurfaceFlowRecordInput = {
   flowKey?: string;
   title?: string;
   sort?: number;
+  settings?: FlowSurfaceSettingBinding[];
+  configureOptions?: FlowSurfaceConfigureOptions;
   staticStatus?: FlowSurfaceExtractorFlowStaticStatus;
   source?: string;
   evidenceSource?: FlowSurfaceExtractorEvidenceSource;
@@ -63,6 +72,7 @@ type FlowSurfaceMenuItemRecordInput = FlowSurfaceExtractorLabelFields & {
   createModelOptionsUse?: string;
   createModelOptionsSubModels?: FlowSurfaceCreateModelOptionsSubModels;
   createModelOptions?: FlowSurfaceNodeSpec;
+  hidden?: boolean;
   source?: string;
   evidenceSource?: FlowSurfaceExtractorEvidenceSource;
   confidence?: FlowSurfaceCapabilityConfidence;
@@ -149,6 +159,7 @@ export class FlowSurfaceExtractionRecorder {
       type: 'model.classDeclared',
       modelUse,
       modelBaseClass,
+      ...(input.actionScope ? { actionScope: input.actionScope } : {}),
       source: input.source || 'ast',
       evidenceSource: input.evidenceSource || 'ast',
       confidence: input.confidence || 'medium',
@@ -182,6 +193,10 @@ export class FlowSurfaceExtractionRecorder {
       ...(input.flowKey ? { flowKey: input.flowKey } : {}),
       ...(input.title ? { title: input.title } : {}),
       ...(typeof input.sort === 'number' ? { sort: input.sort } : {}),
+      ...(input.settings?.length ? { settings: input.settings } : {}),
+      ...(input.configureOptions && Object.keys(input.configureOptions).length
+        ? { configureOptions: input.configureOptions }
+        : {}),
       staticStatus: input.staticStatus || 'unresolved',
       source: input.source || 'runtime',
       evidenceSource: input.evidenceSource || 'runtime',
@@ -206,6 +221,7 @@ export class FlowSurfaceExtractionRecorder {
         ? { createModelOptionsSubModels: input.createModelOptionsSubModels }
         : {}),
       ...(input.createModelOptions ? { createModelOptions: input.createModelOptions } : {}),
+      ...(typeof input.hidden === 'boolean' ? { hidden: input.hidden } : {}),
       source: input.source || 'runtime',
       evidenceSource: input.evidenceSource || 'runtime',
       confidence: input.confidence || 'medium',

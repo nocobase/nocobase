@@ -2755,7 +2755,7 @@ describe('flowSurfaces capabilities projection', () => {
 
   it('should keep JSON inferred popup hosts with unsupported childSurfaceKey read-only', async () => {
     const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
-    const inferredCapability = autoSnapshot.inferredAuthoring?.capabilities?.[0];
+    const inferredCapability = autoSnapshot.inferredAuthoring?.capabilities.find((item) => item.publicType === 'gantt');
     const addNewPopupHost = inferredCapability?.popupHosts?.find((popupHost) => popupHost.defaultType === 'addNew');
     expect(addNewPopupHost).toBeTruthy();
     if (inferredCapability && addNewPopupHost) {
@@ -2807,7 +2807,7 @@ describe('flowSurfaces capabilities projection', () => {
 
   it('should keep JSON inferred popup hosts with invalid openViewPath read-only', async () => {
     const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
-    const inferredCapability = autoSnapshot.inferredAuthoring?.capabilities?.[0];
+    const inferredCapability = autoSnapshot.inferredAuthoring?.capabilities.find((item) => item.publicType === 'gantt');
     const addNewPopupHost = inferredCapability?.popupHosts?.find((popupHost) => popupHost.defaultType === 'addNew');
     expect(addNewPopupHost).toBeTruthy();
     if (inferredCapability && addNewPopupHost) {
@@ -2941,7 +2941,7 @@ describe('flowSurfaces capabilities projection', () => {
 
   it('should keep medium-confidence JSON inferred snapshots read-only by default', async () => {
     const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
-    const [capability] = autoSnapshot.inferredAuthoring?.capabilities || [];
+    const capability = autoSnapshot.inferredAuthoring?.capabilities.find((item) => item.publicType === 'gantt');
     if (!capability) {
       throw new Error('Expected Gantt inferred authoring capability');
     }
@@ -3018,11 +3018,11 @@ describe('flowSurfaces capabilities projection', () => {
           kind: 'action',
           publicType: 'pluginGantt.filter',
           origin: 'autoSnapshot',
-          supportLevel: 'readback-only',
-          readiness: 'discovered',
+          supportLevel: 'create-only',
+          readiness: 'createEnabled',
           availability: expect.objectContaining({
             create: expect.objectContaining({
-              supported: false,
+              supported: true,
             }),
           }),
         }),
@@ -3055,7 +3055,7 @@ describe('flowSurfaces capabilities projection', () => {
 
   it('should drop unsafe JSON inferred public schemas before projection', async () => {
     const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
-    const [capability] = autoSnapshot.inferredAuthoring?.capabilities || [];
+    const capability = autoSnapshot.inferredAuthoring?.capabilities.find((item) => item.publicType === 'gantt');
     if (!capability) {
       throw new Error('Expected Gantt inferred authoring capability');
     }
@@ -3673,7 +3673,7 @@ describe('flowSurfaces capabilities projection', () => {
     expect(response.data).toEqual([]);
   });
 
-  it('should expose field component auto snapshots as read-only capabilities', async () => {
+  it('should expose inferred field component auto snapshots as create-enabled capabilities', async () => {
     const options = {
       enabledPackages: new Set(['@nocobase/plugin-fields']),
       autoSnapshots: [createInputFieldAutoSnapshot()],
@@ -3695,12 +3695,12 @@ describe('flowSurfaces capabilities projection', () => {
         kind: 'fieldComponent',
         publicType: 'pluginFields.input',
         origin: 'autoSnapshot',
-        supportLevel: 'readback-only',
+        supportLevel: 'create-only',
         identity: {
           capabilityId: '@nocobase/plugin-fields:autoSnapshot:fieldComponent:pluginFields.input',
         },
         availability: expect.objectContaining({
-          create: expect.objectContaining({ supported: false }),
+          create: expect.objectContaining({ supported: true }),
         }),
       }),
     ]);
@@ -3718,7 +3718,7 @@ describe('flowSurfaces capabilities projection', () => {
         data: expect.objectContaining({
           kind: 'fieldComponent',
           publicType: 'pluginFields.input',
-          supportLevel: 'readback-only',
+          supportLevel: 'create-only',
         }),
       }),
     );

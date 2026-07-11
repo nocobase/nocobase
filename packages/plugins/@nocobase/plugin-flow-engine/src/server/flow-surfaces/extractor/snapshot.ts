@@ -618,6 +618,7 @@ function isFlowSurfaceAutoModel(value: unknown): value is FlowSurfaceAutoModel {
     isPlainRecord(value) &&
     typeof value.modelUse === 'string' &&
     hasOptionalStringFields(value, ['className', 'loaderName', 'modelBaseClass']) &&
+    (typeof value.actionScope === 'undefined' || ['collection', 'record', 'both'].includes(value.actionScope)) &&
     isArrayOf(value.sourceRefs, isFlowSurfaceAutoSourceRef) &&
     isFlowSurfaceCapabilityConfidence(value.confidence)
   );
@@ -643,6 +644,7 @@ function isFlowSurfaceAutoMenuItem(value: unknown): value is FlowSurfaceAutoMenu
       (isJsonSafePlainValue(value.createModelOptions) &&
         isPlainRecord(value.createModelOptions) &&
         typeof value.createModelOptions.use === 'string')) &&
+    (typeof value.hidden === 'undefined' || typeof value.hidden === 'boolean') &&
     isArrayOf(value.sourceRefs, isFlowSurfaceAutoSourceRef) &&
     isFlowSurfaceCapabilityConfidence(value.confidence)
   );
@@ -663,6 +665,8 @@ function isFlowSurfaceAutoFlow(value: unknown): value is FlowSurfaceAutoFlow {
     isPlainRecord(value) &&
     hasOptionalStringFields(value, ['modelUse', 'flowKey', 'title']) &&
     (typeof value.sort === 'undefined' || (typeof value.sort === 'number' && Number.isFinite(value.sort))) &&
+    (typeof value.settings === 'undefined' || isJsonSafePlainValue(value.settings)) &&
+    (typeof value.configureOptions === 'undefined' || isJsonSafePlainValue(value.configureOptions)) &&
     isFlowSurfaceExtractorFlowStaticStatus(value.staticStatus) &&
     isArrayOf(value.sourceRefs, isFlowSurfaceAutoSourceRef) &&
     isFlowSurfaceCapabilityConfidence(value.confidence)
@@ -844,10 +848,20 @@ function collectAutoModels(events: FlowSurfaceExtractionEvent[]): FlowSurfaceAut
     }
     const existing = models.get(event.modelUse);
     if (!existing) {
+      models.set(event.modelUse, {
+        modelUse: event.modelUse,
+        modelBaseClass: event.modelBaseClass,
+        ...(event.actionScope ? { actionScope: event.actionScope } : {}),
+        sourceRefs: [buildSourceRef(event.source, event.evidenceSource)],
+        confidence: event.confidence,
+      });
       return;
     }
     if (!existing.modelBaseClass) {
       existing.modelBaseClass = event.modelBaseClass;
+    }
+    if (!existing.actionScope && event.actionScope) {
+      existing.actionScope = event.actionScope;
     }
     existing.sourceRefs = appendSourceRef(existing.sourceRefs, buildSourceRef(event.source, event.evidenceSource));
     existing.confidence = maxConfidence(existing.confidence, event.confidence);
@@ -876,6 +890,7 @@ function collectAutoMenuItems(events: FlowSurfaceExtractionEvent[]): FlowSurface
           ? { createModelOptionsSubModels: event.createModelOptionsSubModels }
           : {}),
         ...(event.createModelOptions ? { createModelOptions: event.createModelOptions } : {}),
+        ...(typeof event.hidden === 'boolean' ? { hidden: event.hidden } : {}),
         sourceRefs: [sourceRef],
         confidence: event.confidence,
       });
@@ -896,6 +911,7 @@ function collectAutoMenuItems(events: FlowSurfaceExtractionEvent[]): FlowSurface
       event.createModelOptionsSubModels,
     );
     existing.createModelOptions = mergeCreateModelOptions(existing.createModelOptions, event.createModelOptions);
+    existing.hidden = existing.hidden === true || event.hidden === true;
     mergeLabelFields(existing, event);
   });
   return Array.from(menuItems.values()).sort((left, right) =>
@@ -947,6 +963,10 @@ function collectAutoFlows(events: FlowSurfaceExtractionEvent[]): FlowSurfaceAuto
         ...(event.flowKey ? { flowKey: event.flowKey } : {}),
         ...(event.title ? { title: event.title } : {}),
         ...(typeof event.sort === 'number' ? { sort: event.sort } : {}),
+        ...(event.settings?.length ? { settings: event.settings } : {}),
+        ...(event.configureOptions && Object.keys(event.configureOptions).length
+          ? { configureOptions: event.configureOptions }
+          : {}),
         staticStatus: event.staticStatus,
         sourceRefs: [sourceRef],
         confidence: event.confidence,
@@ -962,12 +982,26 @@ function collectAutoFlows(events: FlowSurfaceExtractionEvent[]): FlowSurfaceAuto
     if (typeof existing.sort !== 'number' && typeof event.sort === 'number') {
       existing.sort = event.sort;
     }
+    existing.settings = mergeFlowSettings(existing.settings, event.settings);
+    existing.configureOptions = {
+      ...(existing.configureOptions || {}),
+      ...(event.configureOptions || {}),
+    };
   });
   return Array.from(flows.values()).sort((left, right) =>
     [left.modelUse || '', left.flowKey || '']
       .join('::')
       .localeCompare([right.modelUse || '', right.flowKey || ''].join('::')),
   );
+}
+
+function mergeFlowSettings(
+  left: FlowSurfaceAutoFlow['settings'],
+  right: FlowSurfaceAutoFlow['settings'],
+): FlowSurfaceAutoFlow['settings'] {
+  const settings = new Map((left || []).map((item) => [item.key, item]));
+  (right || []).forEach((item) => settings.set(item.key, item));
+  return settings.size ? Array.from(settings.values()) : undefined;
 }
 
 function upsertCandidate(

@@ -163,8 +163,8 @@ export async function resolveDynamicCapabilityCreate(
   input: ResolveDynamicCapabilityCreateOptions,
 ): Promise<FlowSurfaceDynamicCapabilityCreateResponse> {
   const kind = input.kind || 'block';
-  if (kind !== 'block') {
-    throw new FlowSurfaceBadRequestError(`flowSurfaces dynamic create only supports block capabilities in this slice`);
+  if (!['block', 'action', 'fieldComponent'].includes(kind)) {
+    throw new FlowSurfaceBadRequestError(`flowSurfaces dynamic create does not support '${kind}' capabilities`);
   }
   const publicType = normalizeRequiredString(input.publicType);
   if (!publicType) {

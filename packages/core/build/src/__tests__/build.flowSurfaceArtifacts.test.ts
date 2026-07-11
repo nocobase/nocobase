@@ -31,7 +31,7 @@ afterEach(async () => {
   await Promise.all(tempDirs.splice(0).map((dir) => fs.remove(dir)));
 });
 
-describe('flow surface artifact build failures', () => {
+describe('flow surface artifact build lifecycle', () => {
   it('generates artifacts after afterBuild hooks', async () => {
     const location = await fs.mkdtemp(path.join(os.tmpdir(), 'nocobase-build-flow-surface-order-'));
     tempDirs.push(location);
@@ -57,7 +57,7 @@ describe('flow surface artifact build failures', () => {
     expect(buildFlowSurfaceArtifact).toHaveBeenCalledOnce();
   });
 
-  it('fails builds by default and keeps an explicit compatibility escape hatch', async () => {
+  it('does not fail the package build when extraction fails', async () => {
     const location = await fs.mkdtemp(path.join(os.tmpdir(), 'nocobase-build-flow-surface-'));
     tempDirs.push(location);
     await fs.writeJson(path.join(location, 'package.json'), {
@@ -70,11 +70,7 @@ describe('flow surface artifact build failures', () => {
     vi.spyOn(console, 'log').mockImplementation(() => undefined);
     buildFlowSurfaceArtifact.mockResolvedValue({ status: 'failed', error: 'extractor failed' });
 
-    await expect(buildPackages([pkg], 'dist', doBuild)).rejects.toThrow(
-      'Flow surface snapshot artifact generation failed: extractor failed',
-    );
-
-    vi.stubEnv('FLOW_SURFACE_ARTIFACT_OPTIONAL', 'true');
     await expect(buildPackages([pkg], 'dist', doBuild)).resolves.toBeUndefined();
+    expect(buildFlowSurfaceArtifact).toHaveBeenCalledOnce();
   });
 });

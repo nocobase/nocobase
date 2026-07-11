@@ -1269,6 +1269,230 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     });
   });
 
+  it('should create inferred actions and field components with extracted settings', async () => {
+    const autoSnapshot = buildFlowSurfaceAutoSnapshot({
+      plugin: '@nocobase/plugin-demo',
+      generatedAt: '2026-06-04T00:00:00.000Z',
+      sourceHash: 'generic-components-source-hash',
+      extractorVersion: 'test',
+      events: [
+        {
+          type: 'model.classDeclared',
+          modelUse: 'DemoActionModel',
+          modelBaseClass: 'ActionModel',
+          actionScope: 'collection',
+          source: 'DemoActionModel.tsx',
+          evidenceSource: 'ast',
+          confidence: 'medium',
+        },
+        {
+          type: 'model.flowRegistered',
+          modelUse: 'DemoActionModel',
+          flowKey: 'buttonSettings',
+          staticStatus: 'static',
+          settings: [
+            {
+              key: 'buttonSettings.general.title',
+              schema: { type: 'string' },
+              internalLens: { domain: 'props', path: 'title' },
+            },
+          ],
+          source: 'DemoActionModel.tsx',
+          evidenceSource: 'ast',
+          confidence: 'medium',
+        },
+        {
+          type: 'menu.itemRegistered',
+          menuKey: 'demoAction',
+          modelUse: 'DemoActionModel',
+          slot: 'actions',
+          createModelOptionsStatus: 'static',
+          createModelOptionsUse: 'DemoActionModel',
+          source: 'DemoActionModel.tsx',
+          evidenceSource: 'ast',
+          confidence: 'medium',
+        },
+        {
+          type: 'field.bindingRegistered',
+          fieldInterface: 'demo',
+          modelUse: 'DemoFieldModel',
+          role: 'editable',
+          source: 'DemoFieldModel.tsx',
+          evidenceSource: 'ast',
+          confidence: 'medium',
+        },
+        {
+          type: 'model.flowRegistered',
+          modelUse: 'DemoFieldModel',
+          flowKey: 'fieldSettings',
+          staticStatus: 'static',
+          settings: [
+            {
+              key: 'fieldSettings.general.placeholder',
+              schema: { type: 'string' },
+              internalLens: { domain: 'stepParams', path: 'fieldSettings.general.placeholder' },
+            },
+          ],
+          source: 'DemoFieldModel.tsx',
+          evidenceSource: 'ast',
+          confidence: 'medium',
+        },
+      ],
+    });
+    const enabledPackages = new Set(['@nocobase/plugin-demo']);
+
+    await expect(
+      resolveDynamicCapabilityCreate({
+        kind: 'action',
+        publicType: 'pluginDemo.demoAction',
+        settings: { 'buttonSettings.general.title': 'Run demo' },
+        enabledPackages,
+        autoSnapshots: [autoSnapshot],
+      }),
+    ).resolves.toMatchObject({
+      node: { use: 'DemoActionModel', props: { title: 'Run demo' } },
+    });
+    await expect(
+      resolveDynamicCapabilityCreate({
+        kind: 'fieldComponent',
+        publicType: 'pluginDemo.demoFieldComponent',
+        settings: { 'fieldSettings.general.placeholder': 'Enter demo' },
+        enabledPackages,
+        autoSnapshots: [autoSnapshot],
+      }),
+    ).resolves.toMatchObject({
+      node: {
+        use: 'DemoFieldModel',
+        stepParams: { fieldSettings: { general: { placeholder: 'Enter demo' } } },
+      },
+    });
+  });
+
+  it('should catalog and persist inferred top-level actions with extracted settings', async () => {
+    const autoSnapshot = buildFlowSurfaceAutoSnapshot({
+      plugin: '@nocobase/plugin-demo',
+      generatedAt: '2026-06-04T00:00:00.000Z',
+      sourceHash: 'dynamic-action-source-hash',
+      extractorVersion: 'test',
+      events: [
+        {
+          type: 'model.classDeclared',
+          modelUse: 'DemoActionModel',
+          modelBaseClass: 'ActionModel',
+          actionScope: 'collection',
+          source: 'DemoActionModel.tsx',
+          evidenceSource: 'ast',
+          confidence: 'medium',
+        },
+        {
+          type: 'menu.itemRegistered',
+          menuKey: 'demoAction',
+          modelUse: 'DemoActionModel',
+          slot: 'actions',
+          createModelOptionsStatus: 'static',
+          createModelOptionsUse: 'DemoActionModel',
+          source: 'DemoActionModel.tsx',
+          evidenceSource: 'ast',
+          confidence: 'medium',
+        },
+        {
+          type: 'model.flowRegistered',
+          modelUse: 'DemoActionModel',
+          flowKey: 'buttonSettings',
+          staticStatus: 'static',
+          settings: [
+            {
+              key: 'buttonSettings.general.title',
+              schema: { type: 'string' },
+              internalLens: { domain: 'props', path: 'title' },
+            },
+          ],
+          source: 'DemoActionModel.tsx',
+          evidenceSource: 'ast',
+          confidence: 'medium',
+        },
+      ],
+    });
+    const service = new FlowSurfacesService({
+      flowSurfaceAutoSnapshots: [autoSnapshot],
+      flowSurfaceCapabilityProviders: createProviderRegistry([]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const enabledPackages = new Set(['@nocobase/plugin-demo']);
+    const persistedByUid = new Map<string, Record<string, unknown>>();
+    const persistedPayloads: Record<string, unknown>[] = [];
+    const tableNode = { uid: 'table-block', use: 'TableBlockModel', subModels: { actions: [] } };
+
+    vi.spyOn(service as unknown as SurfaceContextGetterHarness, 'surfaceContext', 'get').mockReturnValue({
+      filterBlocksByTarget: () => [],
+      resolveBlockParent: async () => ({ parentUid: 'table-block' }),
+      resolveFieldContainer: async () => null,
+      resolveActionContainer: async () => ({
+        parentUid: 'table-actions',
+        subKey: 'actions',
+        subType: 'array',
+        ownerUse: 'TableBlockModel',
+        ownerUid: 'table-block',
+      }),
+      collectFilterFormTargets: async () => [],
+    });
+    vi.spyOn(service as unknown as LocatorGetterHarness, 'locator', 'get').mockReturnValue({
+      resolve: async () => ({ uid: 'table-block', kind: 'block', target: { uid: 'table-block' }, node: tableNode }),
+      findParentUid: async () => '',
+      resolveCollectionContext: async () => ({
+        resourceInit: { dataSourceKey: 'main', collectionName: 'tasks' },
+      }),
+    });
+    vi.spyOn(service as unknown as RepositoryGetterHarness, 'repository', 'get').mockReturnValue({
+      findModelById: async (uid) => persistedByUid.get(String(uid)) || tableNode,
+      upsertModel: async (payload) => {
+        persistedPayloads.push(payload);
+        persistedByUid.set('created-demo-action', { uid: 'created-demo-action', ...payload });
+        return 'created-demo-action';
+      },
+    });
+    vi.spyOn(service as unknown as CollectionGetterHarness, 'getCollection').mockReturnValue({
+      template: 'collection',
+    });
+    vi.spyOn(service as unknown as AddActionPrivateHarness, 'assertApprovalActionSingleton').mockResolvedValue(
+      undefined,
+    );
+    vi.spyOn(service as unknown as AddActionPrivateHarness, 'syncFlowTemplateUsagesForNodeTree').mockResolvedValue(
+      undefined,
+    );
+    vi.spyOn(service as unknown as AddActionPrivateHarness, 'syncApprovalRuntimeConfigForNode').mockResolvedValue(
+      undefined,
+    );
+    vi.spyOn(service as unknown as AddActionPrivateHarness, 'collectComposeActionKeys').mockResolvedValue({});
+
+    const catalog = await service.catalog(
+      { target: { uid: 'table-block' }, sections: ['actions'], expand: ['item.contracts'] },
+      { enabledPackages },
+    );
+    expect(catalog.actions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          publicType: 'pluginDemo.demo',
+          use: 'pluginDemo.demo',
+          settingsSchema: expect.objectContaining({
+            properties: { 'buttonSettings.general.title': { type: 'string' } },
+          }),
+        }),
+      ]),
+    );
+
+    await expect(
+      service.addAction(
+        {
+          target: { uid: 'table-block' },
+          type: 'pluginDemo.demo',
+          settings: { 'buttonSettings.general.title': 'Run demo' },
+        },
+        { enabledPackages },
+      ),
+    ).resolves.toMatchObject({ uid: 'created-demo-action', scope: 'block' });
+    expect(persistedPayloads[0]).toMatchObject({ use: 'DemoActionModel', props: { title: 'Run demo' } });
+  });
+
   it('should inject collection resource params for discovered data blocks', async () => {
     const autoSnapshot = createGenericBlockAutoSnapshot({
       modelUse: 'CustomDataBlockModel',
@@ -1826,7 +2050,9 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
       mode: 'drawer',
     });
     expect((directResponse.node.subModels as Record<string, any>)?.eventViewAction?.subModels?.page).toBeUndefined();
-    expect(autoSnapshot.inferredAuthoring?.capabilities?.[0]?.popupHosts).toEqual(
+    expect(
+      autoSnapshot.inferredAuthoring?.capabilities.find((item) => item.publicType === 'gantt')?.popupHosts,
+    ).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           modelUse: 'AddNewActionModel',
@@ -1924,7 +2150,9 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     ]);
 
     const mismatchedRecipeSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
-    const [mismatchedCapability] = mismatchedRecipeSnapshot.inferredAuthoring?.capabilities || [];
+    const mismatchedCapability = mismatchedRecipeSnapshot.inferredAuthoring?.capabilities.find(
+      (item) => item.publicType === 'gantt',
+    );
     if (!mismatchedCapability?.createRecipe) {
       throw new Error('Expected Gantt inferred authoring create recipe');
     }
@@ -1991,7 +2219,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
 
   it('should allow validate-only JSON inferred dry-runs below high confidence without enabling writes', async () => {
     const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
-    const [capability] = autoSnapshot.inferredAuthoring?.capabilities || [];
+    const capability = autoSnapshot.inferredAuthoring?.capabilities.find((item) => item.publicType === 'gantt');
     if (!capability) {
       throw new Error('Expected Gantt inferred authoring capability');
     }
@@ -2534,7 +2762,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
 
   it('should honor JSON inferred popup host openViewPath through popup defaults and readback', async () => {
     const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
-    const inferredCapability = autoSnapshot.inferredAuthoring?.capabilities?.[0];
+    const inferredCapability = autoSnapshot.inferredAuthoring?.capabilities.find((item) => item.publicType === 'gantt');
     expect(inferredCapability).toBeTruthy();
     const customOpenViewPath = ['stepParams', 'selectExitRecordSettings', 'openView'];
     const uploadActionUid = 'created-upload-action';
@@ -2621,7 +2849,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
 
   it('should require JSON inferred popup host parent openView mirrors during readback', async () => {
     const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
-    const inferredCapability = autoSnapshot.inferredAuthoring?.capabilities?.[0];
+    const inferredCapability = autoSnapshot.inferredAuthoring?.capabilities.find((item) => item.publicType === 'gantt');
     const response = await resolveDynamicCapabilityCreate({
       publicType: 'gantt',
       initParams: {
@@ -2664,7 +2892,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
 
   it('should fail closed for invalid JSON inferred popup host openViewPath declarations', async () => {
     const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
-    const inferredCapability = autoSnapshot.inferredAuthoring?.capabilities?.[0];
+    const inferredCapability = autoSnapshot.inferredAuthoring?.capabilities.find((item) => item.publicType === 'gantt');
     expect(inferredCapability).toBeTruthy();
     const materializedRoot: Record<string, unknown> = {
       uid: 'created-invalid-popup-host-block',
@@ -2760,7 +2988,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
 
   it('should ignore lower-confidence invalid JSON inferred popup hosts during create', async () => {
     const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
-    const inferredCapability = autoSnapshot.inferredAuthoring?.capabilities?.[0];
+    const inferredCapability = autoSnapshot.inferredAuthoring?.capabilities.find((item) => item.publicType === 'gantt');
     const addNewPopupHost = inferredCapability?.popupHosts?.find((popupHost) => popupHost.defaultType === 'addNew');
     expect(addNewPopupHost).toBeTruthy();
     if (inferredCapability && addNewPopupHost) {
@@ -3153,7 +3381,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
 
   it('should reject JSON inferred popup host paths that are not valid for the action contract', async () => {
     const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
-    const inferredCapability = autoSnapshot.inferredAuthoring?.capabilities?.[0];
+    const inferredCapability = autoSnapshot.inferredAuthoring?.capabilities.find((item) => item.publicType === 'gantt');
     const addNewPopupHost = inferredCapability?.popupHosts?.find((popupHost) => popupHost.defaultType === 'addNew');
     expect(addNewPopupHost).toBeTruthy();
     if (inferredCapability && addNewPopupHost) {
@@ -3197,7 +3425,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
 
   it('should keep JSON inferred popup hosts with unsupported childSurfaceKey from enabling writes', async () => {
     const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
-    const inferredCapability = autoSnapshot.inferredAuthoring?.capabilities?.[0];
+    const inferredCapability = autoSnapshot.inferredAuthoring?.capabilities.find((item) => item.publicType === 'gantt');
     const addNewPopupHost = inferredCapability?.popupHosts?.find((popupHost) => popupHost.defaultType === 'addNew');
     expect(addNewPopupHost).toBeTruthy();
     if (inferredCapability && addNewPopupHost) {
@@ -3236,7 +3464,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
 
   it('should honor fallbackOnly JSON inferred popup hosts without auto-saving templates', async () => {
     const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
-    const inferredCapability = autoSnapshot.inferredAuthoring?.capabilities?.[0];
+    const inferredCapability = autoSnapshot.inferredAuthoring?.capabilities.find((item) => item.publicType === 'gantt');
     const addNewPopupHost = inferredCapability?.popupHosts?.find((popupHost) => popupHost.defaultType === 'addNew');
     expect(addNewPopupHost).toBeTruthy();
     if (inferredCapability && addNewPopupHost) {
@@ -4076,7 +4304,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
 
   it('should prefer static actions over colliding JSON inferred child actions', async () => {
     const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
-    const inferredCapability = autoSnapshot.inferredAuthoring?.capabilities?.[0];
+    const inferredCapability = autoSnapshot.inferredAuthoring?.capabilities.find((item) => item.publicType === 'gantt');
     expect(inferredCapability).toBeTruthy();
     if (inferredCapability) {
       inferredCapability.childSurfaces = (inferredCapability.childSurfaces || []).map((surface) =>
@@ -4605,6 +4833,148 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
       },
     });
     expect(persistedPayloads).toHaveLength(2);
+  });
+
+  it('should catalog and persist inferred field components with extracted settings', async () => {
+    const autoSnapshot = buildFlowSurfaceAutoSnapshot({
+      plugin: '@nocobase/plugin-demo',
+      generatedAt: '2026-06-04T00:00:00.000Z',
+      sourceHash: 'dynamic-field-source-hash',
+      extractorVersion: 'test',
+      events: [
+        {
+          type: 'field.bindingRegistered',
+          fieldInterface: 'input',
+          modelUse: 'DemoDisplayFieldModel',
+          role: 'display',
+          source: 'DemoDisplayFieldModel.tsx',
+          evidenceSource: 'ast',
+          confidence: 'medium',
+        },
+        {
+          type: 'model.flowRegistered',
+          modelUse: 'DemoDisplayFieldModel',
+          flowKey: 'displaySettings',
+          staticStatus: 'static',
+          settings: [
+            {
+              key: 'displaySettings.general.prefix',
+              schema: { type: 'string' },
+              internalLens: { domain: 'props', path: 'prefix' },
+            },
+          ],
+          source: 'DemoDisplayFieldModel.tsx',
+          evidenceSource: 'ast',
+          confidence: 'medium',
+        },
+      ],
+    });
+    const service = new FlowSurfacesService({
+      flowSurfaceAutoSnapshots: [autoSnapshot],
+      flowSurfaceCapabilityProviders: createProviderRegistry([]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const enabledPackages = new Set(['@nocobase/plugin-demo']);
+    const persistedByUid = new Map<string, Record<string, unknown>>();
+    const persistedPayloads: Record<string, unknown>[] = [];
+    const titleField = {
+      name: 'title',
+      type: 'string',
+      interface: 'input',
+      title: 'Title',
+      uiSchema: { title: 'Title', type: 'string' },
+      getComponentProps: () => ({}),
+      isAssociationField: () => false,
+    };
+    const tasksCollection = {
+      name: 'tasks',
+      dataSourceKey: 'main',
+      getFields: () => [titleField],
+      getField: (name: string) => (name === 'title' ? titleField : undefined),
+    };
+    const tableNode = {
+      uid: 'table-block',
+      use: 'TableBlockModel',
+      stepParams: { resourceSettings: { init: { dataSourceKey: 'main', collectionName: 'tasks' } } },
+      subModels: { columns: [] },
+    };
+
+    vi.spyOn(service as unknown as SurfaceContextGetterHarness, 'surfaceContext', 'get').mockReturnValue({
+      filterBlocksByTarget: () => [],
+      resolveBlockParent: async () => ({ parentUid: 'table-block' }),
+      resolveFieldContainer: async () => ({
+        ownerUid: 'table-block',
+        ownerUse: 'TableBlockModel',
+        parentUid: 'table-block',
+        subKey: 'columns',
+        subType: 'array',
+        wrapperUse: 'TableColumnModel',
+      }),
+      resolveActionContainer: async () => {
+        throw new Error('not used');
+      },
+      collectFilterFormTargets: async () => [],
+    });
+    vi.spyOn(service as unknown as LocatorGetterHarness, 'locator', 'get').mockReturnValue({
+      resolve: async () => ({ uid: 'table-block', kind: 'block', target: { uid: 'table-block' }, node: tableNode }),
+      findParentUid: async () => '',
+      resolveCollectionContext: async () => ({
+        resourceInit: { dataSourceKey: 'main', collectionName: 'tasks' },
+      }),
+    });
+    vi.spyOn(service as unknown as RepositoryGetterHarness, 'repository', 'get').mockReturnValue({
+      findModelById: async (uid) => persistedByUid.get(String(uid)) || tableNode,
+      upsertModel: async (payload) => {
+        persistedPayloads.push(payload);
+        persistedByUid.set(String(payload.uid), payload);
+        const field = (payload.subModels as Record<string, Record<string, unknown>> | undefined)?.field;
+        if (field?.uid) {
+          persistedByUid.set(String(field.uid), field);
+        }
+        return String(payload.uid);
+      },
+    });
+    vi.spyOn(service as unknown as CollectionGetterHarness, 'getCollection').mockReturnValue(tasksCollection);
+
+    const catalog = await service.catalog(
+      { target: { uid: 'table-block' }, sections: ['fields'], expand: ['item.contracts'] },
+      { enabledPackages },
+    );
+    expect(catalog.fields).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          key: 'pluginDemo.demoDisplayFieldComponent:title',
+          publicType: 'pluginDemo.demoDisplayFieldComponent',
+          fieldUse: 'DemoDisplayFieldModel',
+          settingsSchema: expect.objectContaining({
+            properties: { 'displaySettings.general.prefix': { type: 'string' } },
+          }),
+        }),
+      ]),
+    );
+
+    await expect(
+      service.addField(
+        {
+          target: { uid: 'table-block' },
+          type: 'pluginDemo.demoDisplayFieldComponent',
+          fieldPath: 'title',
+          settings: { 'displaySettings.general.prefix': 'Demo: ' },
+        },
+        { enabledPackages },
+      ),
+    ).resolves.toMatchObject({ fieldUse: 'DemoDisplayFieldModel', fieldPath: 'title' });
+    expect(persistedPayloads[0]).toMatchObject({
+      use: 'TableColumnModel',
+      subModels: {
+        field: {
+          use: 'DemoDisplayFieldModel',
+          props: { prefix: 'Demo: ' },
+          stepParams: {
+            fieldSettings: { init: { dataSourceKey: 'main', collectionName: 'tasks', fieldPath: 'title' } },
+          },
+        },
+      },
+    });
   });
 
   it('should reject public compose field objects that include internal popup metadata', () => {
@@ -5281,7 +5651,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     );
     expect(
       (customRequestReadback as { subModels: { actions: Array<Record<string, unknown>> } }).subModels.actions[0],
-    ).not.toHaveProperty('type');
+    ).toHaveProperty('type', 'pluginGantt.customRequest');
     const nonTreeExpandReadback = await (
       service as unknown as DynamicReadbackProjector
     ).projectDynamicBlockReadbackTypes(
@@ -5319,7 +5689,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     );
     expect(
       (nonTreeExpandReadback as { subModels: { actions: Array<Record<string, unknown>> } }).subModels.actions[0],
-    ).not.toHaveProperty('type');
+    ).toHaveProperty('type', 'pluginGantt.ganttExpandCollapse');
     const treeExpandReadback = await (service as unknown as DynamicReadbackProjector).projectDynamicBlockReadbackTypes(
       {
         uid: 'gantt-tree-block',

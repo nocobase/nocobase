@@ -287,6 +287,7 @@ function inspectClassDeclaration(
   recorder.recordModelClass({
     modelUse,
     modelBaseClass: baseClass,
+    ...(getStaticActionScope(node) ? { actionScope: getStaticActionScope(node) } : {}),
     source,
     evidenceSource: 'ast',
     confidence: 'medium',
@@ -372,11 +373,13 @@ function collectRegisteredFlow(
   const flow = resolveStaticFlowObjectLiteral(flowNode, node, context);
   const propertyAccess = ts.isPropertyAccessExpression(node.expression) ? node.expression : undefined;
   const modelUse = propertyAccess ? getRegisterFlowModelUse(propertyAccess.expression) : undefined;
+  const flowKey = keyArgument || getStaticString(getObjectPropertyValue(flow, 'key'));
   recorder.recordFlow({
     modelUse,
-    flowKey: keyArgument || getStaticString(getObjectPropertyValue(flow, 'key')),
+    flowKey,
     title: getStaticTitle(getObjectPropertyValue(flow, 'title')),
     sort: getStaticNumber(getObjectPropertyValue(flow, 'sort')),
+    ...(flowKey ? collectStaticFlowSettings(flow, flowKey) : {}),
     staticStatus: flow ? getStaticStatusFromNode(flow) : flowNode ? 'dynamic' : 'unresolved',
     source: context.source,
     evidenceSource: 'ast',
@@ -411,10 +414,137 @@ function collectModelDefinition(
     ...(createModelOptionsUse ? { createModelOptionsUse } : {}),
     ...getCreateModelOptionsSubModels(createModelOptionsObject),
     ...(staticCreateModelOptions ? { createModelOptions: staticCreateModelOptions } : {}),
+    hidden: isModelDefinitionHidden(definition),
     source,
     evidenceSource: 'ast',
     confidence: 'medium',
   });
+}
+
+function getStaticActionScope(node: ts.ClassDeclaration): 'collection' | 'record' | 'both' | undefined {
+  for (const member of node.members) {
+    if (!ts.isPropertyDeclaration(member) || getPropertyNameText(member.name) !== 'scene') {
+      continue;
+    }
+    const isStatic = ts.getModifiers(member)?.some((modifier) => modifier.kind === ts.SyntaxKind.StaticKeyword);
+    if (!isStatic || !member.initializer) {
+      continue;
+    }
+    const value = getStaticString(member.initializer) || getExpressionName(member.initializer);
+    if (value === 'collection' || value === 'record' || value === 'both') {
+      return value;
+    }
+  }
+  return undefined;
+}
+
+function isModelDefinitionHidden(definition: ts.ObjectLiteralExpression) {
+  const hide = getObjectPropertyValue(definition, 'hide');
+  if (!hide) {
+    return false;
+  }
+  return hide.kind !== ts.SyntaxKind.FalseKeyword;
+}
+
+function collectStaticFlowSettings(flow: ts.ObjectLiteralExpression | undefined, flowKey: string) {
+  const settings = [];
+  const configureOptions: Record<
+    string,
+    {
+      type: 'string' | 'number' | 'boolean' | 'object' | 'array';
+      description?: string;
+      enum?: Array<string | number | boolean>;
+      default?: unknown;
+    }
+  > = {};
+  const steps = getObjectLiteral(getObjectPropertyValue(flow, 'steps'));
+  for (const step of getObjectLiteralProperties(steps)) {
+    const stepKey = getPropertyNameText(step.name);
+    const stepDefinition = getObjectLiteral(getPropertyInitializer(step));
+    const uiSchema = getObjectLiteral(getObjectPropertyValue(stepDefinition, 'uiSchema'));
+    const defaultParams = getObjectLiteral(getObjectPropertyValue(stepDefinition, 'defaultParams'));
+    if (!stepKey || !uiSchema) {
+      continue;
+    }
+    for (const field of getObjectLiteralProperties(uiSchema)) {
+      const fieldKey = getPropertyNameText(field.name);
+      const fieldSchema = getObjectLiteral(getPropertyInitializer(field));
+      if (!fieldKey || !fieldSchema) {
+        continue;
+      }
+      const type = getStaticFlowSettingType(fieldSchema, defaultParams, fieldKey);
+      const enumValues = getStaticPrimitiveArray(getObjectPropertyValue(fieldSchema, 'enum'));
+      const defaultNode = getObjectPropertyValue(defaultParams, fieldKey);
+      const defaultValue =
+        defaultNode && isSerializableLiteralNode(defaultNode) ? serializeLiteralNode(defaultNode) : undefined;
+      const key = `${flowKey}.${stepKey}.${fieldKey}`;
+      const schema = {
+        type,
+        ...(enumValues?.length ? { enum: enumValues } : {}),
+        ...(defaultNode && typeof defaultValue !== 'undefined' ? { default: defaultValue } : {}),
+      };
+      const description = getStaticString(getObjectPropertyValue(fieldSchema, 'description'));
+      settings.push({
+        key,
+        title: getStaticTitle(getObjectPropertyValue(fieldSchema, 'title')),
+        ...(description ? { description } : {}),
+        schema,
+        ...(typeof defaultValue !== 'undefined' ? { default: defaultValue } : {}),
+        internalLens: {
+          domain: 'stepParams' as const,
+          path: `${flowKey}.${stepKey}.${fieldKey}`,
+        },
+      });
+      configureOptions[key] = {
+        type,
+        ...(description ? { description } : {}),
+        ...(enumValues?.length ? { enum: enumValues } : {}),
+        ...(typeof defaultValue !== 'undefined' ? { default: defaultValue } : {}),
+      };
+    }
+  }
+  return settings.length ? { settings, configureOptions } : {};
+}
+
+function getStaticFlowSettingType(
+  schema: ts.ObjectLiteralExpression,
+  defaultParams: ts.ObjectLiteralExpression | undefined,
+  fieldKey: string,
+): 'string' | 'number' | 'boolean' | 'object' | 'array' {
+  const declared = getStaticString(getObjectPropertyValue(schema, 'type'));
+  if (
+    declared === 'string' ||
+    declared === 'number' ||
+    declared === 'boolean' ||
+    declared === 'object' ||
+    declared === 'array'
+  ) {
+    return declared;
+  }
+  const defaultNode = getObjectPropertyValue(defaultParams, fieldKey);
+  if (defaultNode?.kind === ts.SyntaxKind.TrueKeyword || defaultNode?.kind === ts.SyntaxKind.FalseKeyword) {
+    return 'boolean';
+  }
+  if (defaultNode && (ts.isNumericLiteral(defaultNode) || ts.isPrefixUnaryExpression(defaultNode))) {
+    return 'number';
+  }
+  if (defaultNode && ts.isArrayLiteralExpression(defaultNode)) {
+    return 'array';
+  }
+  if (defaultNode && ts.isObjectLiteralExpression(defaultNode)) {
+    return 'object';
+  }
+  return 'string';
+}
+
+function getStaticPrimitiveArray(node: ts.Node | undefined) {
+  if (!node || !ts.isArrayLiteralExpression(node) || !node.elements.every((item) => isSerializableLiteralNode(item))) {
+    return undefined;
+  }
+  const values = node.elements.map((item) => serializeLiteralNode(item));
+  return values.every((value) => ['string', 'number', 'boolean'].includes(typeof value))
+    ? (values as Array<string | number | boolean>)
+    : undefined;
 }
 
 function collectFieldBinding(

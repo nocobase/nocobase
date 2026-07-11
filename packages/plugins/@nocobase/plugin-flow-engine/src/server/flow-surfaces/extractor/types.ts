@@ -16,6 +16,7 @@ import type {
   FlowSurfaceJsonSchema,
   FlowSurfaceNodeSpec,
   FlowSurfacePlacementSummary,
+  FlowSurfaceSettingBinding,
 } from '../types';
 
 export const FLOW_SURFACE_AUTO_SNAPSHOT_VERSION = 1;
@@ -55,6 +56,7 @@ export type FlowSurfaceModelClassDeclaredEvent = {
   type: 'model.classDeclared';
   modelUse: string;
   modelBaseClass: string;
+  actionScope?: 'collection' | 'record' | 'both';
   source: string;
   evidenceSource: FlowSurfaceExtractorEvidenceSource;
   confidence: FlowSurfaceCapabilityConfidence;
@@ -75,6 +77,8 @@ export type FlowSurfaceModelFlowRegisteredEvent = {
   flowKey?: string;
   title?: string;
   sort?: number;
+  settings?: FlowSurfaceSettingBinding[];
+  configureOptions?: FlowSurfaceConfigureOptions;
   staticStatus: FlowSurfaceExtractorFlowStaticStatus;
   source: string;
   evidenceSource: FlowSurfaceExtractorEvidenceSource;
@@ -90,6 +94,7 @@ export type FlowSurfaceMenuItemRegisteredEvent = FlowSurfaceExtractorLabelFields
   createModelOptionsUse?: string;
   createModelOptionsSubModels?: FlowSurfaceCreateModelOptionsSubModels;
   createModelOptions?: FlowSurfaceNodeSpec;
+  hidden?: boolean;
   source: string;
   evidenceSource: FlowSurfaceExtractorEvidenceSource;
   confidence: FlowSurfaceCapabilityConfidence;
@@ -126,6 +131,7 @@ export type FlowSurfaceAutoModel = {
   className?: string;
   loaderName?: string;
   modelBaseClass?: string;
+  actionScope?: 'collection' | 'record' | 'both';
   sourceRefs: FlowSurfaceAutoSourceRef[];
   confidence: FlowSurfaceCapabilityConfidence;
 };
@@ -138,6 +144,7 @@ export type FlowSurfaceAutoMenuItem = FlowSurfaceExtractorLabelFields & {
   createModelOptionsUse?: string;
   createModelOptionsSubModels?: FlowSurfaceCreateModelOptionsSubModels;
   createModelOptions?: FlowSurfaceNodeSpec;
+  hidden?: boolean;
   sourceRefs: FlowSurfaceAutoSourceRef[];
   confidence: FlowSurfaceCapabilityConfidence;
 };
@@ -155,6 +162,8 @@ export type FlowSurfaceAutoFlow = {
   flowKey?: string;
   title?: string;
   sort?: number;
+  settings?: FlowSurfaceSettingBinding[];
+  configureOptions?: FlowSurfaceConfigureOptions;
   staticStatus: FlowSurfaceExtractorFlowStaticStatus;
   sourceRefs: FlowSurfaceAutoSourceRef[];
   confidence: FlowSurfaceCapabilityConfidence;

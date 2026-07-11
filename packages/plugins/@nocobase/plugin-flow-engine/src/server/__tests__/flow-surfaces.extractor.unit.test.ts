@@ -269,6 +269,117 @@ describe('flowSurfaces extractor scaffold', () => {
     ]);
   });
 
+  it('should exclude hidden models while keeping explicitly visible models creatable', () => {
+    const events = collectFlowSurfaceExtractorAstEvents({
+      sourceFile: 'packages/plugins/@nocobase/plugin-demo/src/client-v2/models.ts',
+      source: `
+        HiddenBlockModel.define({ hide: true, createModelOptions: { use: 'HiddenBlockModel' } });
+        ConditionalBlockModel.define({ hide: canCreate, createModelOptions: { use: 'ConditionalBlockModel' } });
+        VisibleBlockModel.define({ hide: false, createModelOptions: { use: 'VisibleBlockModel' } });
+      `,
+    });
+    const snapshot = buildFlowSurfaceAutoSnapshot({
+      plugin: '@nocobase/plugin-demo',
+      generatedAt: FLOW_SURFACE_EXTRACTOR_TEST_DATE,
+      sourceHash: 'source-hash',
+      extractorVersion: 'test',
+      events,
+    });
+
+    expect(snapshot.menuItems).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ modelUse: 'HiddenBlockModel', hidden: true }),
+        expect.objectContaining({ modelUse: 'ConditionalBlockModel', hidden: true }),
+        expect.objectContaining({ modelUse: 'VisibleBlockModel', hidden: false }),
+      ]),
+    );
+    expect(snapshot.inferredAuthoring?.capabilities.map((item) => item.modelUse)).toEqual(['VisibleBlockModel']);
+  });
+
+  it('should infer action, field, and static setting authoring contracts', () => {
+    const events = collectFlowSurfaceExtractorAstEvents({
+      sourceFile: 'packages/plugins/@nocobase/plugin-demo/src/client-v2/models.ts',
+      source: `
+        class DemoActionModel extends ActionModel {
+          static scene = ActionSceneEnum.collection;
+        }
+        class DemoRecordActionModel extends ActionModel {
+          static scene = ActionSceneEnum.record;
+        }
+        DemoActionModel.define({ label: 'Demo action', createModelOptions: { use: 'DemoActionModel' } });
+        DemoRecordActionModel.define({
+          label: 'Demo record action',
+          createModelOptions: { use: 'DemoRecordActionModel' },
+        });
+        EditableItemModel.bindModelToInterface('DemoFieldModel', ['demo']);
+        DemoFieldModel.registerFlow({
+          key: 'fieldSettings',
+          steps: {
+            general: {
+              uiSchema: {
+                placeholder: { type: 'string', title: 'Placeholder', description: 'Input placeholder' },
+                required: { type: 'boolean' },
+              },
+              defaultParams: { placeholder: 'Enter value', required: true },
+            },
+          },
+        });
+      `,
+    });
+    const snapshot = buildFlowSurfaceAutoSnapshot({
+      plugin: '@nocobase/plugin-demo',
+      generatedAt: FLOW_SURFACE_EXTRACTOR_TEST_DATE,
+      sourceHash: 'source-hash',
+      extractorVersion: 'test',
+      events,
+    });
+    const action = snapshot.inferredAuthoring?.capabilities.find((item) => item.modelUse === 'DemoActionModel');
+    const recordAction = snapshot.inferredAuthoring?.capabilities.find(
+      (item) => item.modelUse === 'DemoRecordActionModel',
+    );
+    const field = snapshot.inferredAuthoring?.capabilities.find((item) => item.modelUse === 'DemoFieldModel');
+
+    expect(action).toMatchObject({
+      kind: 'action',
+      placement: { scenes: ['actionPanel'], slots: ['actions'] },
+      createRecipe: { nodeTemplate: { use: 'DemoActionModel' } },
+    });
+    expect(recordAction).toMatchObject({
+      kind: 'action',
+      placement: { scenes: ['record'], slots: ['recordActions'] },
+      createRecipe: { nodeTemplate: { use: 'DemoRecordActionModel' } },
+    });
+    expect(field).toMatchObject({
+      kind: 'fieldComponent',
+      placement: expect.objectContaining({ scenes: ['form'], fieldRequired: true }),
+      settingsSchema: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          'fieldSettings.general.placeholder': { type: 'string', default: 'Enter value' },
+          'fieldSettings.general.required': { type: 'boolean', default: true },
+        },
+      },
+      configureOptions: {
+        'fieldSettings.general.placeholder': {
+          type: 'string',
+          description: 'Input placeholder',
+          default: 'Enter value',
+        },
+        'fieldSettings.general.required': { type: 'boolean', default: true },
+      },
+      createRecipe: {
+        nodeTemplate: { use: 'DemoFieldModel' },
+        settings: expect.arrayContaining([
+          expect.objectContaining({
+            key: 'fieldSettings.general.placeholder',
+            internalLens: { domain: 'stepParams', path: 'fieldSettings.general.placeholder' },
+          }),
+        ]),
+      },
+    });
+  });
+
   it('should not inspect referenced AST model loader function bodies', () => {
     const events = collectFlowSurfaceExtractorAstEvents({
       sourceFile: 'packages/plugins/@nocobase/plugin-demo/src/client-v2/plugin.tsx',
@@ -1359,153 +1470,150 @@ describe('flowSurfaces extractor scaffold', () => {
         staticStatus: 'static',
       },
     ]);
-    expect(snapshot.inferredAuthoring?.capabilities).toEqual([
-      expect.objectContaining({
-        kind: 'block',
-        publicType: 'gantt',
-        acceptedAliases: expect.arrayContaining(['pluginGantt.gantt', 'ganttBlock']),
-        ownerPlugin: '@nocobase/plugin-gantt',
-        modelUse: 'GanttBlockModel',
-        confidence: {
-          discovery: 'high',
-          placement: 'high',
-          tree: 'high',
-          settings: 'high',
-          write: 'high',
-        },
-        createRecipe: expect.objectContaining({
-          nodeTemplate: expect.objectContaining({
-            use: 'GanttBlockModel',
-            subModels: expect.objectContaining({
-              actions: expect.arrayContaining([
-                expect.objectContaining({
-                  use: 'FilterActionModel',
-                }),
-                expect.objectContaining({
-                  use: 'GanttTodayActionModel',
-                }),
-                expect.objectContaining({
-                  use: 'RefreshActionModel',
-                }),
-                expect.objectContaining({
-                  use: 'AddNewActionModel',
-                }),
-              ]),
-              columns: expect.arrayContaining([
-                expect.objectContaining({
-                  use: 'TableColumnModel',
-                }),
-                expect.objectContaining({
-                  use: 'TableActionsColumnModel',
-                  subModels: {
-                    actions: expect.arrayContaining([
-                      expect.objectContaining({
-                        use: 'ViewActionModel',
-                        props: expect.objectContaining({
-                          type: 'link',
-                          icon: null,
-                        }),
-                        stepParams: expect.objectContaining({
-                          buttonSettings: expect.objectContaining({
-                            general: expect.objectContaining({
-                              type: 'link',
-                              icon: null,
+    expect(snapshot.inferredAuthoring?.capabilities).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'block',
+          publicType: 'gantt',
+          acceptedAliases: expect.arrayContaining(['pluginGantt.gantt', 'ganttBlock']),
+          ownerPlugin: '@nocobase/plugin-gantt',
+          modelUse: 'GanttBlockModel',
+          confidence: {
+            discovery: 'high',
+            placement: 'high',
+            tree: 'high',
+            settings: 'high',
+            write: 'high',
+          },
+          createRecipe: expect.objectContaining({
+            nodeTemplate: expect.objectContaining({
+              use: 'GanttBlockModel',
+              subModels: expect.objectContaining({
+                actions: expect.arrayContaining([
+                  expect.objectContaining({
+                    use: 'FilterActionModel',
+                  }),
+                  expect.objectContaining({
+                    use: 'GanttTodayActionModel',
+                  }),
+                  expect.objectContaining({
+                    use: 'RefreshActionModel',
+                  }),
+                  expect.objectContaining({
+                    use: 'AddNewActionModel',
+                  }),
+                ]),
+                columns: expect.arrayContaining([
+                  expect.objectContaining({
+                    use: 'TableColumnModel',
+                  }),
+                  expect.objectContaining({
+                    use: 'TableActionsColumnModel',
+                    subModels: {
+                      actions: expect.arrayContaining([
+                        expect.objectContaining({
+                          use: 'ViewActionModel',
+                          props: expect.objectContaining({
+                            type: 'link',
+                            icon: null,
+                          }),
+                          stepParams: expect.objectContaining({
+                            buttonSettings: expect.objectContaining({
+                              general: expect.objectContaining({
+                                type: 'link',
+                                icon: null,
+                              }),
                             }),
                           }),
                         }),
-                      }),
-                      expect.objectContaining({
-                        use: 'EditActionModel',
-                        props: expect.objectContaining({
-                          type: 'link',
-                          icon: null,
-                        }),
-                        stepParams: expect.objectContaining({
-                          buttonSettings: expect.objectContaining({
-                            general: expect.objectContaining({
-                              type: 'link',
-                              icon: null,
+                        expect.objectContaining({
+                          use: 'EditActionModel',
+                          props: expect.objectContaining({
+                            type: 'link',
+                            icon: null,
+                          }),
+                          stepParams: expect.objectContaining({
+                            buttonSettings: expect.objectContaining({
+                              general: expect.objectContaining({
+                                type: 'link',
+                                icon: null,
+                              }),
                             }),
                           }),
                         }),
-                      }),
-                      expect.objectContaining({
-                        use: 'DeleteActionModel',
-                        props: expect.objectContaining({
-                          type: 'link',
-                          icon: null,
-                        }),
-                        stepParams: expect.objectContaining({
-                          buttonSettings: expect.objectContaining({
-                            general: expect.objectContaining({
-                              type: 'link',
-                              icon: null,
+                        expect.objectContaining({
+                          use: 'DeleteActionModel',
+                          props: expect.objectContaining({
+                            type: 'link',
+                            icon: null,
+                          }),
+                          stepParams: expect.objectContaining({
+                            buttonSettings: expect.objectContaining({
+                              general: expect.objectContaining({
+                                type: 'link',
+                                icon: null,
+                              }),
                             }),
                           }),
                         }),
-                      }),
-                    ]),
-                  },
-                }),
-              ]),
+                      ]),
+                    },
+                  }),
+                ]),
+              }),
             }),
           }),
+          popupHosts: expect.arrayContaining([
+            expect.objectContaining({
+              modelUse: 'AddNewActionModel',
+              defaultType: 'addNew',
+            }),
+            expect.objectContaining({
+              modelUse: 'ViewActionModel',
+              defaultType: 'view',
+            }),
+            expect.objectContaining({
+              modelUse: 'EditActionModel',
+              defaultType: 'edit',
+            }),
+          ]),
+          childSurfaces: expect.arrayContaining([
+            expect.objectContaining({
+              subModelKey: 'actions',
+              kind: 'action',
+            }),
+            expect.objectContaining({
+              subModelKey: 'columns',
+              kind: 'fieldComponent',
+              allowedChildren: ['TableColumnModel'],
+            }),
+          ]),
+          allowedChildren: expect.arrayContaining([
+            expect.objectContaining({
+              modelUse: 'GanttTodayActionModel',
+            }),
+            expect.objectContaining({
+              modelUse: 'GanttExpandCollapseActionModel',
+            }),
+            expect.objectContaining({
+              modelUse: 'FilterActionModel',
+            }),
+            expect.objectContaining({
+              modelUse: 'AddNewActionModel',
+            }),
+            expect.objectContaining({
+              modelUse: 'PopupCollectionActionModel',
+            }),
+            expect.objectContaining({
+              modelUse: 'RefreshActionModel',
+            }),
+          ]),
         }),
-        popupHosts: expect.arrayContaining([
-          expect.objectContaining({
-            modelUse: 'AddNewActionModel',
-            defaultType: 'addNew',
-          }),
-          expect.objectContaining({
-            modelUse: 'ViewActionModel',
-            defaultType: 'view',
-          }),
-          expect.objectContaining({
-            modelUse: 'EditActionModel',
-            defaultType: 'edit',
-          }),
-        ]),
-        childSurfaces: expect.arrayContaining([
-          expect.objectContaining({
-            subModelKey: 'actions',
-            kind: 'action',
-          }),
-          expect.objectContaining({
-            subModelKey: 'columns',
-            kind: 'fieldComponent',
-            allowedChildren: ['TableColumnModel'],
-          }),
-        ]),
-        allowedChildren: expect.arrayContaining([
-          expect.objectContaining({
-            modelUse: 'GanttTodayActionModel',
-          }),
-          expect.objectContaining({
-            modelUse: 'GanttExpandCollapseActionModel',
-          }),
-          expect.objectContaining({
-            modelUse: 'FilterActionModel',
-          }),
-          expect.objectContaining({
-            modelUse: 'AddNewActionModel',
-          }),
-          expect.objectContaining({
-            modelUse: 'PopupCollectionActionModel',
-          }),
-          expect.objectContaining({
-            modelUse: 'RefreshActionModel',
-          }),
-        ]),
-      }),
-    ]);
-    expect(snapshot.inferredAuthoring?.capabilities[0].childSurfaces?.[0].allowedChildren).toEqual(
-      ganttAllowedActionModelUses,
+      ]),
     );
-    expect(
-      snapshot.inferredAuthoring?.capabilities[0].createRecipe?.nodeTemplate?.subModels?.actions?.map(
-        (action: any) => action?.use,
-      ),
-    ).toEqual([
+    const inferredGantt = snapshot.inferredAuthoring?.capabilities.find((item) => item.publicType === 'gantt');
+    expect(inferredGantt?.childSurfaces?.[0].allowedChildren).toEqual(ganttAllowedActionModelUses);
+    expect(inferredGantt?.createRecipe?.nodeTemplate?.subModels?.actions?.map((action: any) => action?.use)).toEqual([
       'FilterActionModel',
       'GanttTodayActionModel',
       'RefreshActionModel',
@@ -1513,11 +1621,9 @@ describe('flowSurfaces extractor scaffold', () => {
       'AddNewActionModel',
     ]);
     expect(
-      snapshot.inferredAuthoring?.capabilities[0].allowedChildren
-        ?.filter((item) => item.kind === 'action')
-        .map((item) => item.modelUse),
+      inferredGantt?.allowedChildren?.filter((item) => item.kind === 'action').map((item) => item.modelUse),
     ).toEqual([...ganttAllowedActionModelUses, 'ViewActionModel', 'EditActionModel', 'DeleteActionModel']);
-    expect(snapshot.inferredAuthoring?.capabilities[0].allowedChildren).toEqual(
+    expect(inferredGantt?.allowedChildren).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           kind: 'fieldComponent',
@@ -1618,7 +1724,9 @@ describe('flowSurfaces extractor scaffold', () => {
       });
 
     const expectGenericFallback = (menuEvent: FlowSurfaceExtractionEvent) =>
-      expect(buildSnapshot(menuEvent).inferredAuthoring?.capabilities[0]).toMatchObject({
+      expect(
+        buildSnapshot(menuEvent).inferredAuthoring?.capabilities.find((item) => item.modelUse === 'GanttBlockModel'),
+      ).toMatchObject({
         publicType: 'pluginGantt.gantt',
         confidence: {
           tree: 'high',
@@ -1710,7 +1818,7 @@ describe('flowSurfaces extractor scaffold', () => {
           confidence: 'medium',
         },
         fullEvidenceEvents,
-      ).inferredAuthoring?.capabilities[0],
+      ).inferredAuthoring?.capabilities.find((item) => item.publicType === 'gantt'),
     ).toMatchObject({
       publicType: 'gantt',
       confidence: {
@@ -1739,7 +1847,7 @@ describe('flowSurfaces extractor scaffold', () => {
         fullEvidenceEvents.filter(
           (event) => event.type !== 'menu.itemRegistered' || event.modelUse !== 'RefreshActionModel',
         ),
-      ).inferredAuthoring?.capabilities[0],
+      ).inferredAuthoring?.capabilities.find((item) => item.publicType === 'gantt'),
     ).toMatchObject({
       publicType: 'gantt',
       confidence: {
@@ -3111,27 +3219,30 @@ describe('flowSurfaces extractor scaffold', () => {
           }),
         ]),
       );
-      expect(snapshot.inferredAuthoring?.capabilities).toEqual([
-        expect.objectContaining({
-          publicType: 'gantt',
-          modelUse: 'GanttBlockModel',
-          confidence: expect.objectContaining({
-            tree: 'high',
-            write: 'high',
-          }),
-          createRecipe: expect.objectContaining({
-            nodeTemplate: expect.objectContaining({
-              use: 'GanttBlockModel',
+      expect(snapshot.inferredAuthoring?.capabilities).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            publicType: 'gantt',
+            modelUse: 'GanttBlockModel',
+            confidence: expect.objectContaining({
+              tree: 'high',
+              write: 'high',
+            }),
+            createRecipe: expect.objectContaining({
+              nodeTemplate: expect.objectContaining({
+                use: 'GanttBlockModel',
+              }),
             }),
           }),
-        }),
-      ]);
+        ]),
+      );
       expect(
         snapshot.menuItems
           .filter((item) => item.slot === 'actions' && item.createModelOptionsStatus === 'static')
           .map((item) => item.modelUse),
       ).toEqual(ganttAllowedActionModelUses);
-      expect(snapshot.inferredAuthoring?.capabilities[0].childSurfaces).toEqual(
+      const inferredGantt = snapshot.inferredAuthoring?.capabilities.find((item) => item.publicType === 'gantt');
+      expect(inferredGantt?.childSurfaces).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
             kind: 'action',
@@ -3150,7 +3261,7 @@ describe('flowSurfaces extractor scaffold', () => {
           }),
         ]),
       );
-      expect(snapshot.inferredAuthoring?.capabilities[0].allowedChildren).toEqual(
+      expect(inferredGantt?.allowedChildren).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
             kind: 'action',

@@ -75,7 +75,9 @@ const CORE_CLIENT_V2_PACKAGE = '@nocobase/client-v2';
 const DEFAULT_FLOW_SURFACE_ARTIFACT_GENERATED_AT = new Date(0).toISOString();
 const FLOW_SURFACE_ARTIFACT_SIGNAL_PATTERNS = [
   /\bFlowModel\b/,
-  /\bModel\s*\.\s*define\s*\(/,
+  /\b[A-Za-z_$][\w$]*Model\s*\.\s*define\s*\(/,
+  /\bclass\s+[A-Za-z_$][\w$]*Model\b[^\n{]*\bextends\b/,
+  /\bALLOWED_[A-Z0-9_]+_ACTIONS\b/,
   /\bbindModelToInterface\s*\(/,
   /\bregisterModels\s*\(/,
   /\bregisterModelLoaders\s*\(/,
@@ -212,6 +214,9 @@ function loadFlowSurfaceExtractorRunner(cwd: string): FlowSurfaceExtractorRunner
 
 function getFlowSurfaceExtractorRunnerCandidates(cwd: string) {
   const packageRoots = new Set<string>();
+  const monorepoPackageRoot = path.join(ROOT_PATH, 'packages/plugins/@nocobase/plugin-flow-engine');
+  const relativeToRoot = path.relative(ROOT_PATH, cwd);
+  const isMonorepoPackage = relativeToRoot !== '' && !relativeToRoot.startsWith('..') && !path.isAbsolute(relativeToRoot);
   try {
     if (getPackageJson(cwd).name === '@nocobase/plugin-flow-engine') {
       packageRoots.add(cwd);
@@ -219,12 +224,15 @@ function getFlowSurfaceExtractorRunnerCandidates(cwd: string) {
   } catch {
     // Continue with installed and monorepo package resolution.
   }
+  if (isMonorepoPackage) {
+    packageRoots.add(monorepoPackageRoot);
+  }
   try {
     packageRoots.add(path.dirname(require.resolve('@nocobase/plugin-flow-engine/package.json', { paths: [cwd] })));
   } catch {
     // The monorepo source fallback below remains available during bootstrap builds.
   }
-  packageRoots.add(path.join(ROOT_PATH, 'packages/plugins/@nocobase/plugin-flow-engine'));
+  packageRoots.add(monorepoPackageRoot);
   return Array.from(packageRoots).flatMap((packageRoot) => [
     path.join(packageRoot, 'src/server/flow-surfaces/extractor/cli.ts'),
     path.join(packageRoot, 'dist/server/flow-surfaces/extractor/cli.js'),

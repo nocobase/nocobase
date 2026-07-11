@@ -11,7 +11,11 @@ import fs from 'fs-extra';
 import os from 'os';
 import path from 'path';
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import { buildFlowSurfaceArtifact, getFlowSurfaceArtifactDir } from '../flowSurfaceArtifacts';
+import {
+  buildFlowSurfaceArtifact,
+  getFlowSurfaceArtifactDir,
+  hasFlowSurfaceArtifactSignals,
+} from '../flowSurfaceArtifacts';
 
 const tempDirs: string[] = [];
 const captureLog =
@@ -145,6 +149,17 @@ describe('flow surface build artifacts', () => {
 
     expect(result.status).toBe('skipped-no-signals');
     expect(called).toBe(false);
+  });
+
+  test.each([
+    ['model definition', 'DemoBlockModel.define({});'],
+    ['model class', 'class DemoBlockModel extends BaseBlockModel {}'],
+    ['allowed action list', "const ALLOWED_TABLE_ACTIONS = ['refresh'];"],
+  ])('detects %s signals', async (_label, source) => {
+    const cwd = await createTempPackageDir();
+    await fs.outputFile(path.join(cwd, 'src/client-v2/index.ts'), source);
+
+    await expect(hasFlowSurfaceArtifactSignals(cwd)).resolves.toBe(true);
   });
 
   test('generates deterministic core client-v2 artifacts from its source root', async () => {
