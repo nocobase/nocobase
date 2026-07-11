@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { mkdir, mkdtemp, rm, writeFile } from 'fs/promises';
+import { mkdir, mkdtemp, rm, symlink, writeFile } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -139,5 +139,27 @@ describe('flow surface extractor source selection', () => {
     expect(extraction.snapshot.resolvedEntry).toBe('src/index.ts');
     expect(extraction.snapshot.models.map((model) => model.modelUse)).toEqual(['CoreBlockModel']);
     expect(extraction.candidateCount).toBe(1);
+  });
+
+  it('ignores reachable source symlinks that resolve outside the package root', async () => {
+    const packageRoot = await createPackage('@example/plugin-source-symlink');
+    const externalRoot = await mkdtemp(join(tmpdir(), 'flow-surfaces-source-external-'));
+    tempDirs.push(externalRoot);
+    const sourceRoot = join(packageRoot, 'src/client-v2');
+    await mkdir(sourceRoot, { recursive: true });
+    await writeFile(
+      join(sourceRoot, 'index.ts'),
+      `import './outside';\n${blockModelSource('InsideBlockModel')}`,
+      'utf8',
+    );
+    await writeFile(join(externalRoot, 'outside.ts'), blockModelSource('OutsideBlockModel'), 'utf8');
+    await symlink(join(externalRoot, 'outside.ts'), join(sourceRoot, 'outside.ts'));
+
+    const extraction = await extractFlowSurfacePluginCapabilities(
+      { plugin: '@example/plugin-source-symlink', packageRoot },
+      { generatedAt, extractorVersion: 'test' },
+    );
+
+    expect(extraction.snapshot.models.map((model) => model.modelUse)).toEqual(['InsideBlockModel']);
   });
 });

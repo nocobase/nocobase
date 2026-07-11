@@ -21,6 +21,7 @@ const captureLog =
   };
 
 afterEach(async () => {
+  vi.restoreAllMocks();
   vi.unstubAllEnvs();
   await Promise.all(tempDirs.map((dir) => fs.remove(dir)));
   tempDirs.length = 0;
@@ -255,6 +256,22 @@ describe('flow surface build artifacts', () => {
       summary: {
         results: [{ plugin: '@nocobase/plugin-flow-engine', eventCount: 1, candidateCount: 1 }],
       },
+    });
+  });
+
+  test('explains the published extractor dependency when it is unavailable', async () => {
+    const cwd = await createTempPackageDir();
+    await fs.outputFile(path.join(cwd, 'src/client-v2/index.ts'), 'registerFlow("demoSettings", {});');
+    vi.spyOn(fs, 'existsSync').mockImplementation(
+      (candidate) => !String(candidate).includes('flow-surfaces/extractor/cli'),
+    );
+
+    const result = await buildFlowSurfaceArtifact(cwd, captureLog([]));
+
+    expect(result).toEqual({
+      status: 'failed',
+      error:
+        'Flow surface extractor runner is not available. Install @nocobase/plugin-flow-engine@2.x alongside @nocobase/build',
     });
   });
 

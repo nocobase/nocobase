@@ -519,7 +519,7 @@ function resolveJsonInferredAutoSnapshotDynamicCreate(input: {
   try {
     assertJsonInferredCreatedNodeUse(publicItem.publicType, input.capability.inferredAuthoring.modelUse, node);
     validateFlowSurfacePayloadShape(input.actionName, node, 'node');
-    new FlowSurfaceContractGuard().validateNodeTreeAgainstContract(node);
+    new FlowSurfaceContractGuard().validateNodeTreeAgainstContract(node, { allowUnknownUses: true });
   } catch (error) {
     const message = sanitizeProviderPublicMessage(
       error instanceof Error ? error.message : '',
@@ -1040,6 +1040,14 @@ function validateJsonObjectSchema(
           message: `${path}.${key} is not supported`,
         });
       });
+  } else if (_.isPlainObject(schema.additionalProperties)) {
+    Object.entries(value)
+      .filter(([key]) => !properties[key])
+      .forEach(([key, propertyValue]) => {
+        errors.push(
+          ...validateJsonValue(schema.additionalProperties as FlowSurfaceJsonSchema, propertyValue, `${path}.${key}`),
+        );
+      });
   }
   Object.entries(properties).forEach(([key, propertySchema]) => {
     if (_.isUndefined(value[key])) {
@@ -1074,34 +1082,37 @@ function validateJsonValue(
   if (type === 'array' && !Array.isArray(value)) {
     return invalidType(path, 'array');
   }
-  if (Array.isArray(schema.enum) && !schema.enum.includes(value)) {
-    return [
-      {
-        path,
-        code: 'invalid-enum',
-        message: `${path} must be one of: ${schema.enum.join(', ')}`,
-      },
-    ];
+  const errors: FlowSurfaceCapabilityValidationError[] = [];
+  if (type === 'object') {
+    errors.push(...validateJsonObjectSchema(schema, value as Record<string, unknown>, path));
+  }
+  if (type === 'array' && _.isPlainObject(schema.items)) {
+    (value as unknown[]).forEach((item, index) => {
+      errors.push(...validateJsonValue(schema.items as FlowSurfaceJsonSchema, item, `${path}[${index}]`));
+    });
+  }
+  if (Array.isArray(schema.enum) && !schema.enum.some((item) => _.isEqual(item, value))) {
+    errors.push({
+      path,
+      code: 'invalid-enum',
+      message: `${path} must be one of: ${schema.enum.join(', ')}`,
+    });
   }
   if (typeof value === 'number' && typeof schema.minimum === 'number' && value < schema.minimum) {
-    return [
-      {
-        path,
-        code: 'invalid-type',
-        message: `${path} must be >= ${schema.minimum}`,
-      },
-    ];
+    errors.push({
+      path,
+      code: 'invalid-type',
+      message: `${path} must be >= ${schema.minimum}`,
+    });
   }
   if (typeof value === 'number' && typeof schema.maximum === 'number' && value > schema.maximum) {
-    return [
-      {
-        path,
-        code: 'invalid-type',
-        message: `${path} must be <= ${schema.maximum}`,
-      },
-    ];
+    errors.push({
+      path,
+      code: 'invalid-type',
+      message: `${path} must be <= ${schema.maximum}`,
+    });
   }
-  return [];
+  return errors;
 }
 
 function invalidType(path: string, expected: string): FlowSurfaceCapabilityValidationError[] {

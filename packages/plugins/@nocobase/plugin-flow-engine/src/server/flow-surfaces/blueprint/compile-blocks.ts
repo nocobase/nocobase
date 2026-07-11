@@ -2313,6 +2313,7 @@ function compileAction(
     dataSourceKey: options.popupOptions?.dataSourceKey,
     surfaceCollectionName: options.popupOptions?.surfaceCollectionName,
     associationName: options.popupOptions?.associationName,
+    dynamicBlockTypes: options.popupOptions?.dynamicBlockTypes,
   });
   settings = resolvePopupTitleSettings(settings, popupResult.popupTitle);
   const popup = shouldAttachDefaultPopupMetadata(input.popup, type)
@@ -2669,6 +2670,7 @@ function compileBlocks(
           dataSourceKey: blockResourceContext.dataSourceKey,
           surfaceCollectionName: blockResourceContext.surfaceCollectionName,
           associationName: blockResourceContext.associationName,
+          dynamicBlockTypes: options.dynamicBlockTypes,
         },
       ),
     );

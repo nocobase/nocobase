@@ -135,6 +135,140 @@ describe('flowSurfaces extractor scaffold', () => {
     );
   });
 
+  it('should make discovered blocks create-only and preserve static create options', () => {
+    const events = collectFlowSurfaceExtractorAstEvents({
+      sourceFile: 'packages/plugins/@nocobase/plugin-demo/src/client-v2/plugin.tsx',
+      source: `
+        class CustomBlockModel extends CollectionBlockModel {}
+
+        flowEngine.registerModels({ CustomBlockModel });
+        CustomBlockModel.define({
+          label: tExpr('Custom block'),
+          createModelOptions: {
+            use: 'CustomBlockModel',
+            props: {
+              title: t('Custom title', { ns: 'demo' }),
+              count: -2,
+              enabled: true,
+            },
+            subModels: {
+              item: {
+                use: 'CustomItemModel',
+              },
+            },
+          },
+        });
+
+        const menu = <AddSubModelButton key="custom" modelUse="CustomBlockModel" subModelKey="blocks" />;
+      `,
+    });
+    const snapshot = buildFlowSurfaceAutoSnapshot({
+      plugin: '@nocobase/plugin-demo',
+      generatedAt: FLOW_SURFACE_EXTRACTOR_TEST_DATE,
+      sourceHash: 'source-hash',
+      extractorVersion: 'test',
+      events,
+    });
+    const capabilities = collectAutoSnapshotPublicCapabilities({
+      autoSnapshots: [snapshot],
+      enabledPackages: new Set(['@nocobase/plugin-demo']),
+    });
+    const capability = capabilities.find((item) => item.publicType === 'pluginDemo.custom');
+
+    expect(snapshot.models).toEqual([
+      expect.objectContaining({
+        modelUse: 'CustomBlockModel',
+        modelBaseClass: 'CollectionBlockModel',
+      }),
+    ]);
+    expect(snapshot.menuItems).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          modelUse: 'CustomBlockModel',
+          createModelOptions: {
+            use: 'CustomBlockModel',
+            props: {
+              title: '{{t("Custom title", {"ns":"demo"})}}',
+              count: -2,
+              enabled: true,
+            },
+            subModels: {
+              item: {
+                use: 'CustomItemModel',
+              },
+            },
+          },
+        }),
+      ]),
+    );
+    expect(snapshot.inferredAuthoring?.capabilities).toEqual([
+      expect.objectContaining({
+        kind: 'block',
+        publicType: 'pluginDemo.custom',
+        acceptedAliases: ['custom'],
+        modelUse: 'CustomBlockModel',
+        placement: expect.objectContaining({
+          collectionRequired: true,
+        }),
+        initParamsSchema: expect.objectContaining({
+          required: ['collectionName'],
+        }),
+        settingsSchema: {
+          type: 'object',
+          additionalProperties: false,
+          properties: {},
+        },
+        createRecipe: expect.objectContaining({
+          nodeTemplate: expect.objectContaining({
+            use: 'CustomBlockModel',
+            props: expect.objectContaining({
+              title: '{{t("Custom title", {"ns":"demo"})}}',
+            }),
+          }),
+        }),
+      }),
+    ]);
+    expect(capability).toMatchObject({
+      availability: {
+        create: {
+          supported: true,
+          acceptsInitParams: true,
+          acceptsSettings: false,
+        },
+      },
+      supportLevel: 'create-only',
+    });
+    expect(capabilities.filter((item) => item.publicType === 'pluginDemo.custom')).toHaveLength(1);
+  });
+
+  it('should infer a minimal create recipe for a discovered block without static options', () => {
+    const recorder = createFlowSurfaceExtractionRecorder();
+    recorder.recordModel({
+      modelUse: 'SimpleBlockModel',
+      source: 'runtime',
+      confidence: 'medium',
+    });
+    const snapshot = buildFlowSurfaceAutoSnapshot({
+      plugin: '@nocobase/plugin-demo',
+      generatedAt: FLOW_SURFACE_EXTRACTOR_TEST_DATE,
+      sourceHash: 'source-hash',
+      extractorVersion: 'test',
+      events: recorder.getEvents(),
+    });
+
+    expect(snapshot.inferredAuthoring?.capabilities).toEqual([
+      expect.objectContaining({
+        publicType: 'pluginDemo.simple',
+        modelUse: 'SimpleBlockModel',
+        createRecipe: expect.objectContaining({
+          nodeTemplate: {
+            use: 'SimpleBlockModel',
+          },
+        }),
+      }),
+    ]);
+  });
+
   it('should not inspect referenced AST model loader function bodies', () => {
     const events = collectFlowSurfaceExtractorAstEvents({
       sourceFile: 'packages/plugins/@nocobase/plugin-demo/src/client-v2/plugin.tsx',
@@ -1423,7 +1557,7 @@ describe('flowSurfaces extractor scaffold', () => {
     );
   });
 
-  it('should require static Gantt createModelOptions use before inferred authoring is generated', () => {
+  it('should keep generic Gantt create support until the specialized contract is available', () => {
     const baseEvents: FlowSurfaceExtractionEvent[] = [
       {
         type: 'model.registered',
@@ -1483,47 +1617,55 @@ describe('flowSurfaces extractor scaffold', () => {
         events: [...baseEvents, menuEvent, ...extraEvents],
       });
 
-    expect(
-      buildSnapshot({
-        type: 'menu.itemRegistered',
-        menuKey: 'gantt',
-        label: 'Gantt',
-        modelUse: 'GanttBlockModel',
-        slot: 'blocks',
-        createModelOptionsStatus: 'dynamic',
-        createModelOptionsUse: 'GanttBlockModel',
-        source: 'packages/plugins/@nocobase/plugin-gantt/src/client-v2/models/GanttBlockModel.settings.tsx',
-        evidenceSource: 'ast',
-        confidence: 'medium',
-      }).inferredAuthoring,
-    ).toBeUndefined();
-    expect(
-      buildSnapshot({
-        type: 'menu.itemRegistered',
-        menuKey: 'gantt',
-        label: 'Gantt',
-        modelUse: 'GanttBlockModel',
-        slot: 'blocks',
-        createModelOptionsStatus: 'static',
-        source: 'packages/plugins/@nocobase/plugin-gantt/src/client-v2/models/GanttBlockModel.settings.tsx',
-        evidenceSource: 'ast',
-        confidence: 'medium',
-      }).inferredAuthoring,
-    ).toBeUndefined();
-    expect(
-      buildSnapshot({
-        type: 'menu.itemRegistered',
-        menuKey: 'gantt',
-        label: 'Gantt',
-        modelUse: 'GanttBlockModel',
-        slot: 'blocks',
-        createModelOptionsStatus: 'static',
-        createModelOptionsUse: 'TableBlockModel',
-        source: 'packages/plugins/@nocobase/plugin-gantt/src/client-v2/models/GanttBlockModel.settings.tsx',
-        evidenceSource: 'ast',
-        confidence: 'medium',
-      }).inferredAuthoring,
-    ).toBeUndefined();
+    const expectGenericFallback = (menuEvent: FlowSurfaceExtractionEvent) =>
+      expect(buildSnapshot(menuEvent).inferredAuthoring?.capabilities[0]).toMatchObject({
+        publicType: 'pluginGantt.gantt',
+        confidence: {
+          tree: 'high',
+          write: 'high',
+        },
+        createRecipe: {
+          nodeTemplate: {
+            use: 'GanttBlockModel',
+          },
+        },
+      });
+
+    expectGenericFallback({
+      type: 'menu.itemRegistered',
+      menuKey: 'gantt',
+      label: 'Gantt',
+      modelUse: 'GanttBlockModel',
+      slot: 'blocks',
+      createModelOptionsStatus: 'dynamic',
+      createModelOptionsUse: 'GanttBlockModel',
+      source: 'packages/plugins/@nocobase/plugin-gantt/src/client-v2/models/GanttBlockModel.settings.tsx',
+      evidenceSource: 'ast',
+      confidence: 'medium',
+    });
+    expectGenericFallback({
+      type: 'menu.itemRegistered',
+      menuKey: 'gantt',
+      label: 'Gantt',
+      modelUse: 'GanttBlockModel',
+      slot: 'blocks',
+      createModelOptionsStatus: 'static',
+      source: 'packages/plugins/@nocobase/plugin-gantt/src/client-v2/models/GanttBlockModel.settings.tsx',
+      evidenceSource: 'ast',
+      confidence: 'medium',
+    });
+    expectGenericFallback({
+      type: 'menu.itemRegistered',
+      menuKey: 'gantt',
+      label: 'Gantt',
+      modelUse: 'GanttBlockModel',
+      slot: 'blocks',
+      createModelOptionsStatus: 'static',
+      createModelOptionsUse: 'TableBlockModel',
+      source: 'packages/plugins/@nocobase/plugin-gantt/src/client-v2/models/GanttBlockModel.settings.tsx',
+      evidenceSource: 'ast',
+      confidence: 'medium',
+    });
     expect(
       buildSnapshot({
         type: 'menu.itemRegistered',

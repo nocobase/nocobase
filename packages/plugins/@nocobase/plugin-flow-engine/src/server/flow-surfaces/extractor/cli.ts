@@ -8,7 +8,7 @@
  */
 
 import { createHash } from 'crypto';
-import { readdir, readFile, stat } from 'fs/promises';
+import { readdir, readFile, realpath, stat } from 'fs/promises';
 import { dirname, extname, isAbsolute, join, relative, resolve, sep } from 'path';
 import type { Application } from '@nocobase/server';
 import {
@@ -228,6 +228,7 @@ async function collectReachableFlowSurfaceSources(packageRoot: string, selectedE
   const sources = new Map<string, string>();
   const pending = [selectedEntry];
   const seen = new Set<string>();
+  const realPackageRoot = await realpath(packageRoot);
 
   while (pending.length) {
     const filePath = pending.shift();
@@ -241,7 +242,7 @@ async function collectReachableFlowSurfaceSources(packageRoot: string, selectedE
     const source = await readFile(filePath, 'utf8');
     sources.set(filePath, source);
     for (const specifier of collectFlowSurfaceExtractorModuleSpecifiers({ source, sourceFile: filePath })) {
-      const dependency = await resolveFlowSurfaceExtractorModulePath(packageRoot, filePath, specifier);
+      const dependency = await resolveFlowSurfaceExtractorModulePath(packageRoot, realPackageRoot, filePath, specifier);
       if (dependency && !seen.has(dependency)) {
         pending.push(dependency);
       }
@@ -251,7 +252,12 @@ async function collectReachableFlowSurfaceSources(packageRoot: string, selectedE
   return sources;
 }
 
-async function resolveFlowSurfaceExtractorModulePath(packageRoot: string, importer: string, specifier: string) {
+async function resolveFlowSurfaceExtractorModulePath(
+  packageRoot: string,
+  realPackageRoot: string,
+  importer: string,
+  specifier: string,
+) {
   const cleanSpecifier = specifier.split(/[?#]/, 1)[0];
   if (!cleanSpecifier.startsWith('.')) {
     return undefined;
@@ -268,6 +274,9 @@ async function resolveFlowSurfaceExtractorModulePath(packageRoot: string, import
       ];
   for (const candidate of candidates) {
     if (!isFlowSurfaceExtractorProductionSourceFile(candidate, packageRoot) || !(await isFile(candidate))) {
+      continue;
+    }
+    if (!isPathInside(realPackageRoot, await realpath(candidate))) {
       continue;
     }
     return candidate;

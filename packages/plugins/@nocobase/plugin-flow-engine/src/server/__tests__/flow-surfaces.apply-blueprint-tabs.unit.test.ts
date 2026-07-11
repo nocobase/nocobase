@@ -208,4 +208,52 @@ describe('flowSurfaces applyBlueprint tab normalization', () => {
       },
     });
   });
+
+  it('should compile dynamic block types inside field and action popups', () => {
+    const document = prepareFlowSurfaceApplyBlueprintDocument({
+      version: '1',
+      mode: 'create',
+      page: {
+        title: 'Nested dynamic blocks',
+      },
+      tabs: [
+        {
+          title: 'Overview',
+          blocks: [
+            {
+              key: 'tasks',
+              type: 'table',
+              collection: 'tasks',
+              fields: [
+                {
+                  field: 'owner',
+                  popup: {
+                    tryTemplate: false,
+                    blocks: [{ key: 'fieldDynamic', type: 'dryRun' }],
+                  },
+                },
+              ],
+              recordActions: [
+                {
+                  type: 'view',
+                  popup: {
+                    tryTemplate: false,
+                    blocks: [{ key: 'actionDynamic', type: 'dryRun' }],
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    const program = compileFlowSurfaceApplyBlueprintRequest(document, {
+      dynamicBlockTypes: new Set(['dryRun']),
+    });
+    const block = program.steps.find((step) => step.action === 'compose')?.values?.blocks?.[0];
+
+    expect([block?.fields?.[0]?.popup?.blocks?.[0]?.type, block?.recordActions?.[0]?.popup?.blocks?.[0]?.type]).toEqual(
+      ['dryRun', 'dryRun'],
+    );
+  });
 });

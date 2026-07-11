@@ -957,6 +957,7 @@ describe('flowSurfaces capabilities projection', () => {
 
     expect(recorder.calls[0]).toEqual({
       sections: ['blocks', 'actions', 'recordActions'],
+      expand: ['item.identity'],
     });
     expect(response.meta).toMatchObject({
       version: 1,
@@ -3638,7 +3639,7 @@ describe('flowSurfaces capabilities projection', () => {
         label: 'pluginUnsafe.unsafe',
         semantic: {
           title: 'pluginUnsafe.unsafe',
-          aliases: ['pluginUnsafe.unsafe'],
+          aliases: ['pluginUnsafe.unsafe', 'unsafe'],
         },
         warnings: expect.arrayContaining([
           {
@@ -3649,9 +3650,6 @@ describe('flowSurfaces capabilities projection', () => {
             code: 'snapshot-stale',
             message: 'Capability metadata was partially sanitized.',
           },
-          expect.objectContaining({
-            code: 'auto-discovered-readonly',
-          }),
         ]),
       });
     });
@@ -4645,7 +4643,7 @@ describe('flowSurfaces capabilities projection', () => {
     ).toEqual([]);
   });
 
-  it('should keep non-Gantt auto snapshots read-only even with verifiedAuto admission evidence', async () => {
+  it('should suppress generic auto duplicates for statically known blocks', async () => {
     const autoSnapshot = createCalendarAutoSnapshot();
     const admissionReports = [createCalendarVerifiedAutoAdmissionReport()];
     const capabilityPolicyConfig = {
@@ -4681,22 +4679,7 @@ describe('flowSurfaces capabilities projection', () => {
       },
     );
 
-    expect(response.data).toEqual([
-      expect.objectContaining({
-        publicType: 'pluginCalendar.calendar',
-        ownerPlugin: '@nocobase/plugin-calendar',
-        origin: 'autoSnapshot',
-        supportLevel: 'readback-only',
-        readiness: 'discovered',
-        availability: expect.objectContaining({
-          create: expect.objectContaining({
-            supported: false,
-            reasonCode: 'contract-not-verified',
-            reasonSource: 'registry',
-          }),
-        }),
-      }),
-    ]);
+    expect(response.data).toEqual([]);
     expect(JSON.stringify(response.data)).not.toContain('CalendarBlockModel');
     expect(JSON.stringify(response.data)).not.toContain('calendar-source-hash');
   });
@@ -4803,6 +4786,63 @@ describe('flowSurfaces capabilities projection', () => {
         providerItems: providerCatalogItems,
       }),
     ).toEqual([]);
+  });
+
+  it('should not duplicate static blocks with namespaced generic auto capabilities', async () => {
+    const autoSnapshot = buildFlowSurfaceAutoSnapshot({
+      plugin: '@nocobase/plugin-demo',
+      generatedAt: '2026-06-04T00:00:00.000Z',
+      sourceHash: 'source-hash',
+      extractorVersion: 'test',
+      events: [
+        {
+          type: 'model.registered',
+          modelUse: 'TableBlockModel',
+          className: 'TableBlockModel',
+          source: 'packages/plugins/@nocobase/plugin-demo/src/client-v2/plugin.tsx',
+          evidenceSource: 'ast',
+          confidence: 'medium',
+        },
+      ],
+    });
+    const staticTable: FlowSurfaceCatalogItem = {
+      key: 'table',
+      label: 'Table',
+      use: 'TableBlockModel',
+      kind: 'block',
+      publicType: 'table',
+      createSupported: true,
+    };
+    const autoCatalogItems = collectJsonInferredAutoSnapshotCatalogItems({
+      autoSnapshots: [autoSnapshot],
+      enabledPackages: new Set(['@nocobase/plugin-demo']),
+    });
+
+    expect(autoCatalogItems).toHaveLength(1);
+    expect(
+      filterProviderCatalogItemsForCatalog({
+        existingItems: [staticTable],
+        providerItems: autoCatalogItems,
+      }),
+    ).toEqual([]);
+
+    const response = await buildFlowSurfaceCapabilitiesResponse(
+      {},
+      {
+        enabledPackages: new Set(['@nocobase/plugin-demo']),
+        autoSnapshots: [autoSnapshot],
+        catalog: async () => ({
+          target: null,
+          scenario: {
+            surfaceKind: 'global',
+          },
+          selectedSections: ['blocks'],
+          blocks: [staticTable],
+        }),
+      },
+    );
+
+    expect(response.data.map((item) => item.publicType)).toEqual(['table']);
   });
 
   it('should ignore non-block provider capabilities until catalog placement is implemented', async () => {

@@ -217,10 +217,15 @@ export function collectAutoSnapshotPublicCapabilities(
     if (!ownerPlugin || !options.enabledPackages.has(ownerPlugin)) {
       return [];
     }
-    return [
-      ...collectInferredAuthoringPublicCapabilities(snapshot, ownerPlugin),
-      ...collectRawAutoSnapshotPublicCapabilities(snapshot, ownerPlugin),
-    ];
+    const inferred = collectInferredAuthoringPublicCapabilities(snapshot, ownerPlugin);
+    const inferredKeys = new Set(
+      inferred.map((item) => [item.kind, item.publicType, ...getFlowSurfacePublicCapabilityModelUses(item)].join('::')),
+    );
+    const raw = collectRawAutoSnapshotPublicCapabilities(snapshot, ownerPlugin).filter(
+      (item) =>
+        !inferredKeys.has([item.kind, item.publicType, ...getFlowSurfacePublicCapabilityModelUses(item)].join('::')),
+    );
+    return [...inferred, ...raw];
   });
 }
 
@@ -344,7 +349,7 @@ function toInferredAuthoringPublicCapability(
     highConfidenceWrite,
     stale: hasSnapshotStaleWarning(publicWarnings),
     acceptsInitParams: !!initParamsSchema,
-    acceptsSettings: !!settingsSchema,
+    acceptsSettings: !!settingsSchema && !!capability.createRecipe?.settings?.length,
   });
   const supportLevel = resolveSupportLevel(availability);
   const capabilityId = [ownerPlugin, 'autoSnapshot', capability.kind, publicType].join(':');
@@ -519,12 +524,15 @@ export function filterProviderCatalogItemsForCatalog(input: {
   existingItems: FlowSurfaceCatalogItem[];
 }) {
   const seen = new Set(input.existingItems.map((item) => getCatalogPublicTypeConflictKey(item)).filter(Boolean));
+  const seenModelUses = new Set(input.existingItems.flatMap((item) => getCatalogModelUseConflictKeys(item)));
   return input.providerItems.filter((item) => {
     const key = getCatalogPublicTypeConflictKey(item);
-    if (!key || seen.has(key)) {
+    const modelUseKeys = getCatalogModelUseConflictKeys(item);
+    if (!key || seen.has(key) || modelUseKeys.some((modelUseKey) => seenModelUses.has(modelUseKey))) {
       return false;
     }
     seen.add(key);
+    modelUseKeys.forEach((modelUseKey) => seenModelUses.add(modelUseKey));
     return true;
   });
 }
@@ -982,6 +990,14 @@ function getCatalogPublicTypeConflictKey(item: FlowSurfaceCatalogItem) {
     return '';
   }
   return [toCapabilityKind(item.kind), publicType].join('::');
+}
+
+function getCatalogModelUseConflictKeys(item: FlowSurfaceCatalogItem) {
+  const modelUses = getFlowSurfaceCatalogCapabilityModelUses(item);
+  return (modelUses.length ? modelUses : [item.use])
+    .map((use) => String(use || '').trim())
+    .filter(Boolean)
+    .map((use) => [toCapabilityKind(item.kind), use].join('::'));
 }
 
 function toCapabilityKind(kind: FlowSurfaceCatalogItem['kind']): FlowSurfaceCapabilityKind {

@@ -52,6 +52,10 @@ type FlowSurfaceExtractorRunner = (
   },
 ) => Promise<FlowSurfaceExtractorSummary>;
 
+type FlowSurfaceExtractorModule = {
+  runFlowSurfaceExtractorCli?: unknown;
+};
+
 type BuildFlowSurfaceArtifactOptions = {
   runExtractor?: FlowSurfaceExtractorRunner;
 };
@@ -188,19 +192,22 @@ function loadFlowSurfaceExtractorRunner(cwd: string): FlowSurfaceExtractorRunner
     if (!fs.existsSync(candidate)) {
       continue;
     }
-    let loaded: any;
+    let loaded: unknown;
     try {
       loaded = requireFlowSurfaceExtractor(candidate);
     } catch (error) {
       lastError = error;
       continue;
     }
-    if (isFlowSurfaceExtractorRunner(loaded?.runFlowSurfaceExtractorCli)) {
-      return loaded.runFlowSurfaceExtractorCli;
+    const runner = (loaded as FlowSurfaceExtractorModule | undefined)?.runFlowSurfaceExtractorCli;
+    if (isFlowSurfaceExtractorRunner(runner)) {
+      return runner;
     }
   }
   const detail = lastError instanceof Error ? `: ${lastError.message}` : '';
-  throw new Error(`Flow surface extractor runner is not available${detail}`);
+  throw new Error(
+    `Flow surface extractor runner is not available. Install @nocobase/plugin-flow-engine@2.x alongside @nocobase/build${detail}`,
+  );
 }
 
 function getFlowSurfaceExtractorRunnerCandidates(cwd: string) {
@@ -237,7 +244,7 @@ function getFlowSurfaceArtifactGeneratedAt() {
   return Number.isNaN(generatedAt.getTime()) ? DEFAULT_FLOW_SURFACE_ARTIFACT_GENERATED_AT : generatedAt.toISOString();
 }
 
-function requireFlowSurfaceExtractor(filePath: string) {
+function requireFlowSurfaceExtractor(filePath: string): unknown {
   if (!filePath.endsWith('.ts')) {
     return require(filePath);
   }

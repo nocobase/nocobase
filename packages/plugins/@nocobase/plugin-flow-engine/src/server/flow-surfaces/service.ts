@@ -3216,6 +3216,7 @@ export class FlowSurfacesService {
       {
         target: input.target,
         sections: ['blocks'],
+        expand: ['item.identity'],
       },
       {
         transaction: input.transaction,
@@ -3283,6 +3284,7 @@ export class FlowSurfacesService {
       {
         target: input.target,
         sections: ['actions'],
+        expand: ['item.identity'],
       },
       {
         transaction: input.transaction,
@@ -4182,8 +4184,8 @@ export class FlowSurfacesService {
     return items.filter((item) => {
       const publicType = String(item.publicType || item.type || item.key || '').trim();
       const use = String(item.use || '').trim();
-      const key = [publicType, use].join(':');
-      if (!key.trim() || seen.has(key)) {
+      const key = publicType || use;
+      if (!key || seen.has(key)) {
         return false;
       }
       seen.add(key);
@@ -11778,7 +11780,10 @@ export class FlowSurfacesService {
         node: tree,
       });
     }
-    this.contractGuard.validateNodeTreeAgainstContract(tree);
+    this.contractGuard.validateNodeTreeAgainstContract(
+      tree,
+      dynamicCreate.capability.origin === 'autoSnapshot' ? { allowUnknownUses: true } : undefined,
+    );
     const initialGrid = input.options.deferAutoLayout
       ? null
       : await this.repository.findModelById(input.parentUid, {
@@ -13486,20 +13491,34 @@ export class FlowSurfacesService {
         `flowSurfaces addAction target '${container.ownerUse}' is a record action surface, use addRecordAction`,
       );
     }
-    const jsonInferredActionOwnerNode = await this.loadJsonInferredActionOwnerNode(
-      container.ownerUid,
-      options.transaction,
-    );
-    const jsonInferredActionCatalogItem = this.resolveJsonInferredAddActionCatalogItem(
+    const staticActionCatalogItem = this.tryResolveActionCatalogItem(
       {
         type: values.type,
         use: values.use,
         containerUse: container.ownerUse,
-        targetNode: jsonInferredActionOwnerNode,
       },
-      enabledPackages,
+      {
+        context: 'addAction',
+        enabledPackages,
+        requireCreateSupported: true,
+      },
     );
+    const jsonInferredActionOwnerNode = staticActionCatalogItem
+      ? null
+      : await this.loadJsonInferredActionOwnerNode(container.ownerUid, options.transaction);
+    const jsonInferredActionCatalogItem = staticActionCatalogItem
+      ? null
+      : this.resolveJsonInferredAddActionCatalogItem(
+          {
+            type: values.type,
+            use: values.use,
+            containerUse: container.ownerUse,
+            targetNode: jsonInferredActionOwnerNode,
+          },
+          enabledPackages,
+        );
     const actionCatalogItem =
+      staticActionCatalogItem ||
       jsonInferredActionCatalogItem ||
       this.resolveAddActionCatalogItem(
         {

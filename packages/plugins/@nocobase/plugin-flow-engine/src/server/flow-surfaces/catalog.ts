@@ -4447,6 +4447,10 @@ export function resolveSupportedActionCatalogItem(
   return item;
 }
 
+export function hasNodeContract(use?: string) {
+  return !!use && (nodeContracts.has(use) || nodeContracts.has(normalizeApprovalSemanticUse(use)));
+}
+
 export function getNodeContract(use?: string): FlowSurfaceNodeContract {
   if (use) {
     const contract = nodeContracts.get(use) || nodeContracts.get(normalizeApprovalSemanticUse(use));

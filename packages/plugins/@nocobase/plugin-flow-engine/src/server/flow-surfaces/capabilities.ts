@@ -34,7 +34,9 @@ import {
   type FlowSurfaceCollectedProviderCapability,
 } from './capability-registry';
 import { resolveFlowSurfaceCapabilityReadiness } from './capability-readiness';
+import { BLOCK_KEY_BY_USE } from './catalog';
 import { FlowSurfaceBadRequestError } from './errors';
+import { buildAutoNamespacedPublicType } from './extractor/snapshot';
 import type { FlowSurfaceCapabilityAdmissionReport } from './admission-report';
 import type { FlowSurfaceAutoSnapshot } from './extractor/types';
 import type {
@@ -191,7 +193,7 @@ export async function buildFlowSurfaceCapabilitiesResponse(
     : collectAutoSnapshotPublicCapabilities({
         autoSnapshots: options.autoSnapshots,
         enabledPackages: options.enabledPackages,
-      });
+      }).filter((item) => !isStaticCoveredGenericAutoSnapshotCapability(item));
   const projectedItems = [
     ...collectCatalogCapabilityItems(catalog)
       .map((item) => projectCatalogCapabilityItem(item, request))
@@ -220,6 +222,15 @@ export async function buildFlowSurfaceCapabilitiesResponse(
       targetHintUsed: request.targetHintUsed,
     },
   };
+}
+
+function isStaticCoveredGenericAutoSnapshotCapability(item: FlowSurfacePublicCapabilityItem) {
+  const inferredAuthoring = getFlowSurfacePublicCapabilityInferredAuthoring(item);
+  return (
+    !!inferredAuthoring &&
+    BLOCK_KEY_BY_USE.has(inferredAuthoring.modelUse) &&
+    item.publicType === buildAutoNamespacedPublicType(item.ownerPlugin, inferredAuthoring.modelUse)
+  );
 }
 
 export async function buildFlowSurfaceDescribeCapabilityResponse(
@@ -862,7 +873,7 @@ function normalizeCapabilitiesRequest(
           ? ['item.configureOptions', 'item.contracts']
           : ['item.configureOptions']) as FlowSurfaceCatalogValues['expand'])
       : []),
-    ...(expand.has('item.identity') ? (['item.identity'] as const) : []),
+    'item.identity' as const,
   ];
   const catalogValues: FlowSurfaceCatalogValues = {
     ...(catalogTargetUid ? { target: { uid: catalogTargetUid } } : {}),

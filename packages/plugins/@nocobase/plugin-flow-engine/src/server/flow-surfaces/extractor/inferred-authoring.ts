@@ -9,6 +9,7 @@
 
 import {
   FLOW_SURFACE_INFERRED_AUTHORING_CONTRACT_VERSION,
+  type FlowSurfaceAutoCapabilityCandidate,
   type FlowSurfaceAutoInferredAuthoring,
   type FlowSurfaceAutoInferredAuthoringCapability,
   type FlowSurfaceAutoMenuItem,
@@ -56,16 +57,121 @@ const BUTTON_GENERAL_PROP_KEYS = ['title', 'tooltip', 'icon', 'type', 'danger', 
 
 export function inferFlowSurfaceAutoSnapshotAuthoring(
   snapshot: FlowSurfaceAutoSnapshot,
+  candidates: FlowSurfaceAutoCapabilityCandidate[],
 ): FlowSurfaceAutoInferredAuthoring | undefined {
-  const capabilities = [inferGanttAuthoringCapability(snapshot)].filter(
-    (item): item is NonNullable<ReturnType<typeof inferGanttAuthoringCapability>> => !!item,
-  );
+  const genericCapabilities = candidates
+    .filter((candidate) => candidate.kind === 'block')
+    .map((candidate) => inferGenericBlockAuthoringCapability(snapshot, candidate));
+  const ganttCapability = inferGanttAuthoringCapability(snapshot);
+  const capabilities = ganttCapability
+    ? genericCapabilities.map((capability) =>
+        capability.modelUse === ganttCapability.modelUse ? ganttCapability : capability,
+      )
+    : genericCapabilities;
   return capabilities.length
     ? {
         contractVersion: FLOW_SURFACE_INFERRED_AUTHORING_CONTRACT_VERSION,
         capabilities,
       }
     : undefined;
+}
+
+function inferGenericBlockAuthoringCapability(
+  snapshot: FlowSurfaceAutoSnapshot,
+  candidate: FlowSurfaceAutoCapabilityCandidate,
+): FlowSurfaceAutoInferredAuthoringCapability {
+  const collectionRequired = isCollectionBackedBlock(snapshot, candidate.modelUse);
+  const staticNodeTemplate = snapshot.menuItems.find(
+    (item) => item.modelUse === candidate.modelUse && item.createModelOptions?.use === candidate.modelUse,
+  )?.createModelOptions;
+  const acceptedAliases = Array.from(
+    new Set(
+      snapshot.menuItems
+        .filter((item) => item.modelUse === candidate.modelUse)
+        .map((item) => item.menuKey)
+        .filter((value): value is string => !!value && value !== candidate.publicType),
+    ),
+  );
+  const initParams = [
+    {
+      name: 'dataSourceKey',
+      required: false,
+      schema: {
+        type: 'string',
+      },
+      internalLens: {
+        domain: 'stepParams' as const,
+        path: 'resourceSettings.init.dataSourceKey',
+      },
+    },
+    {
+      name: 'collectionName',
+      required: collectionRequired,
+      schema: {
+        type: 'string',
+      },
+      internalLens: {
+        domain: 'stepParams' as const,
+        path: 'resourceSettings.init.collectionName',
+      },
+    },
+  ];
+
+  return {
+    kind: 'block',
+    publicType: candidate.publicType,
+    ...(acceptedAliases.length ? { acceptedAliases } : {}),
+    ownerPlugin: snapshot.plugin,
+    modelUse: candidate.modelUse,
+    label: candidate.label,
+    placement: {
+      scenes: ['page', 'tab', 'popup'],
+      slots: ['blocks'],
+      ...(collectionRequired ? { collectionRequired: true } : {}),
+    },
+    confidence: {
+      discovery: 'high',
+      placement: 'high',
+      tree: 'high',
+      settings: 'high',
+      write: 'high',
+    },
+    initParamsSchema: {
+      type: 'object',
+      additionalProperties: false,
+      ...(collectionRequired ? { required: ['collectionName'] } : {}),
+      properties: {
+        dataSourceKey: {
+          type: 'string',
+          default: 'main',
+        },
+        collectionName: {
+          type: 'string',
+        },
+      },
+    },
+    settingsSchema: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {},
+    },
+    createRecipe: {
+      nodeTemplate: staticNodeTemplate || { use: candidate.modelUse },
+      initParams,
+    },
+    evidence: candidate.evidence,
+  };
+}
+
+function isCollectionBackedBlock(snapshot: FlowSurfaceAutoSnapshot, modelUse: string) {
+  const baseClass = snapshot.models.find((model) => model.modelUse === modelUse)?.modelBaseClass;
+  return (
+    baseClass === 'CollectionBlockModel' ||
+    baseClass === 'DataBlockModel' ||
+    snapshot.flows.some(
+      (flow) => flow.modelUse === modelUse && String(flow.flowKey || '').startsWith('resourceSettings'),
+    )
+  );
 }
 
 function inferGanttAuthoringCapability(

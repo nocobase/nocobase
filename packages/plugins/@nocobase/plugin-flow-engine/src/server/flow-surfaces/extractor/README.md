@@ -1,20 +1,22 @@
 # Flow Surfaces Extractor
 
 The extractor records FlowModel registration facts from plugin client-v2 code and writes an auto snapshot for
-capability discovery. Raw facts remain read-only, but a snapshot may also contain `inferredAuthoring`: a static,
-JSON-safe authoring contract derived from the artifact and optional core templates. High-confidence inferred contracts
-can make a capability writable without a plugin server provider.
+capability discovery. Every discovered block also receives a namespaced, create-only `inferredAuthoring` contract. A
+serializable static `createModelOptions` object becomes its node template; otherwise the template is the minimal
+`{ use }` node. Plugins therefore get basic block creation without a server provider, while specialized inferred
+contracts such as Gantt can still provide richer defaults and settings.
 
 ## Contract Boundary
 
 Auto snapshots have two layers:
 
 - Raw discovery can say "this plugin registered `GanttBlockModel`" or "this menu item points at a block slot".
-- Raw discovery cannot make `create` or `configure` supported.
-- `inferredAuthoring` can make `create` supported only when every write confidence segment is high and the contract is
-  JSON-safe.
-- A static `createModelOptions` object only proves that the extractor saw a serializable shape. It does not prove that
-  the shape is safe, stable, target-compatible, or sufficient for public writes.
+- Discovered blocks get a JSON-safe create-only contract with page, tab, and popup block placement. This does not make
+  configure supported.
+- Static `createModelOptions` is accepted only when it is a serializable literal. Dynamic functions are not executed;
+  their discovered block falls back to `{ use }`.
+- Collection and data block evidence adds public `dataSourceKey` and `collectionName` resource parameters and requires
+  `collectionName` where appropriate.
 - Public writes still require public payload schemas, validation, placement, target catalog confirmation, contract
   guards, and readback expectations. Those requirements can come from a provider or from high-confidence
   `inferredAuthoring`.
@@ -26,8 +28,8 @@ Builder payloads just because they were visible to the extractor.
 ## Snapshot Output
 
 Generated snapshots are stored under `storage/flow-surfaces-capabilities/<plugin-package-name>.json` by default. The
-storage location is a cache for discovery evidence. Publishing raw snapshot facts is not enough to make a capability
-writable; write projection requires a complete `inferredAuthoring` contract or an explicit provider/manifest contract.
+storage location is a cache for discovery evidence. Snapshot loading rebuilds the generic create-only contracts, while
+provider and manifest contracts can replace them with richer settings or custom server-side behavior.
 
 ## CLI Output
 
@@ -51,13 +53,13 @@ The extractor supports deterministic evidence:
 
 ## What Requires A Contract
 
-These patterns are not enough for auto write support and must be represented by a provider/manifest or by
-high-confidence `inferredAuthoring`:
+These patterns are not inferred beyond the generic create-only contract and require a provider/manifest or a
+specialized high-confidence `inferredAuthoring` contract:
 
 - Dynamic menu factories and function-based `createModelOptions`.
 - Runtime `uiSchema`, `defaultParams`, `hide`, and action handlers.
 - Target-scoped placement rules, permission checks, collection requirements, and field-interface constraints.
-- Public `initParams`, public `settings`, configure options, and validation errors.
+- Public settings, configure options, and plugin-specific validation errors.
 - Readback parity between created FlowModel nodes and public capability types.
 - Any create/configure admission decision.
 

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { FlowSurfaceCapabilityConfidence, FlowSurfaceCapabilityWarning } from '../types';
+import type { FlowSurfaceCapabilityConfidence, FlowSurfaceCapabilityWarning, FlowSurfaceNodeSpec } from '../types';
 import { types as nodeUtilTypes } from 'util';
 import { parseFlowSurfaceTranslationExpressionLabel } from './labels';
 import type {
@@ -36,6 +36,14 @@ type FlowSurfaceModelLoaderRecordInput = {
   confidence?: FlowSurfaceCapabilityConfidence;
 };
 
+type FlowSurfaceModelClassRecordInput = {
+  modelUse: string;
+  modelBaseClass: string;
+  source?: string;
+  evidenceSource?: FlowSurfaceExtractorEvidenceSource;
+  confidence?: FlowSurfaceCapabilityConfidence;
+};
+
 type FlowSurfaceFlowRecordInput = {
   modelUse?: string;
   flowKey?: string;
@@ -54,6 +62,7 @@ type FlowSurfaceMenuItemRecordInput = FlowSurfaceExtractorLabelFields & {
   createModelOptionsStatus?: FlowSurfaceExtractorCreateModelOptionsStatus;
   createModelOptionsUse?: string;
   createModelOptionsSubModels?: FlowSurfaceCreateModelOptionsSubModels;
+  createModelOptions?: FlowSurfaceNodeSpec;
   source?: string;
   evidenceSource?: FlowSurfaceExtractorEvidenceSource;
   confidence?: FlowSurfaceCapabilityConfidence;
@@ -130,6 +139,22 @@ export class FlowSurfaceExtractionRecorder {
     });
   }
 
+  recordModelClass(input: FlowSurfaceModelClassRecordInput) {
+    const modelUse = normalizeString(input.modelUse);
+    const modelBaseClass = normalizeString(input.modelBaseClass);
+    if (!modelUse || !modelBaseClass) {
+      return;
+    }
+    this.events.push({
+      type: 'model.classDeclared',
+      modelUse,
+      modelBaseClass,
+      source: input.source || 'ast',
+      evidenceSource: input.evidenceSource || 'ast',
+      confidence: input.confidence || 'medium',
+    });
+  }
+
   recordModelLoaders(
     loaders: Record<string, unknown>,
     source = 'runtime',
@@ -180,6 +205,7 @@ export class FlowSurfaceExtractionRecorder {
       ...(hasCreateModelOptionsSubModels(input.createModelOptionsSubModels)
         ? { createModelOptionsSubModels: input.createModelOptionsSubModels }
         : {}),
+      ...(input.createModelOptions ? { createModelOptions: input.createModelOptions } : {}),
       source: input.source || 'runtime',
       evidenceSource: input.evidenceSource || 'runtime',
       confidence: input.confidence || 'medium',

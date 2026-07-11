@@ -28,15 +28,7 @@ const LIGHT_CATALOG_ITEM_KEYS = [
   'use',
   'kind',
   'publicType',
-  'acceptedAliases',
-  'semantic',
   'ownerPlugin',
-  'origin',
-  'supportLevel',
-  'confidence',
-  'placement',
-  'availability',
-  'warnings',
   'scope',
   'scene',
   'fieldUse',
@@ -48,6 +40,17 @@ const LIGHT_CATALOG_ITEM_KEYS = [
   'createSupported',
   'renderer',
   'type',
+] as const;
+
+const CAPABILITY_CATALOG_ITEM_KEYS = [
+  'acceptedAliases',
+  'semantic',
+  'origin',
+  'supportLevel',
+  'confidence',
+  'placement',
+  'availability',
+  'warnings',
 ] as const;
 
 function resolveCatalogPublicType(item: FlowSurfaceCatalogProjectableItem) {
@@ -130,26 +133,6 @@ function resolveCatalogIdentity(item: FlowSurfaceCatalogProjectableItem, publicT
 
 function pickLightCatalogItem(item: FlowSurfaceCatalogProjectableItem): FlowSurfaceCatalogProjectedItem {
   const projected = _.pick(item, LIGHT_CATALOG_ITEM_KEYS) as FlowSurfaceCatalogProjectedItem;
-  const publicType = resolveCatalogPublicType(item);
-
-  if (publicType && !projected.publicType) {
-    projected.publicType = publicType;
-  }
-  if (!projected.semantic) {
-    projected.semantic = resolveCatalogSemantic(item, publicType);
-  }
-  if (!projected.origin) {
-    projected.origin = 'builtInStatic';
-  }
-  if (!projected.supportLevel) {
-    projected.supportLevel = resolveCatalogSupportLevel(item);
-  }
-  if (!projected.confidence) {
-    projected.confidence = 'high';
-  }
-  if (!projected.availability) {
-    projected.availability = resolveCatalogAvailability(item);
-  }
 
   if (item.resourceBindings?.length) {
     projected.resourceBindings = item.resourceBindings;
@@ -218,6 +201,16 @@ export function projectCatalogItem(
   }
 
   if (expand.includeItemIdentity) {
+    Object.assign(projected, _.pick(item, CAPABILITY_CATALOG_ITEM_KEYS));
+    const publicType = resolveCatalogPublicType(item);
+    if (publicType) {
+      projected.publicType = publicType;
+    }
+    projected.semantic = projected.semantic || resolveCatalogSemantic(item, publicType);
+    projected.origin = projected.origin || 'builtInStatic';
+    projected.supportLevel = projected.supportLevel || resolveCatalogSupportLevel(item);
+    projected.confidence = projected.confidence || 'high';
+    projected.availability = projected.availability || resolveCatalogAvailability(item);
     projected.identity = item.identity || resolveCatalogIdentity(item, projected.publicType || item.key);
   }
 
@@ -254,7 +247,7 @@ export function expandFieldCatalogCandidate(
   expand: FlowSurfaceCatalogExpandFlags,
   options: FlowSurfaceCatalogProjectItemOptions,
 ): FlowSurfaceCatalogProjectedItem {
-  return projectCatalogItem(buildFieldCatalogLightCandidate(item), expand, options);
+  return projectCatalogItem({ ...item, kind: 'field' }, expand, options);
 }
 export function projectCatalogNode(
   node: any,

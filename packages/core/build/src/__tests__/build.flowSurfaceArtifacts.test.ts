@@ -32,6 +32,31 @@ afterEach(async () => {
 });
 
 describe('flow surface artifact build failures', () => {
+  it('generates artifacts after afterBuild hooks', async () => {
+    const location = await fs.mkdtemp(path.join(os.tmpdir(), 'nocobase-build-flow-surface-order-'));
+    tempDirs.push(location);
+    await fs.writeJson(path.join(location, 'package.json'), {
+      name: '@example/plugin-flow-surface-order',
+      version: '1.0.0',
+    });
+    await fs.outputFile(
+      path.join(location, 'build.config.js'),
+      `module.exports = { afterBuild: async () => require('fs/promises').writeFile(${JSON.stringify(
+        path.join(location, 'after-build'),
+      )}, '') };`,
+    );
+    const pkg = { name: '@example/plugin-flow-surface-order', location } as Package;
+    process.argv.push('--no-dts');
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    buildFlowSurfaceArtifact.mockImplementation(async () => {
+      await expect(fs.pathExists(path.join(location, 'after-build'))).resolves.toBe(true);
+      return { status: 'generated' };
+    });
+
+    await expect(buildPackages([pkg], 'dist', async () => undefined)).resolves.toBeUndefined();
+    expect(buildFlowSurfaceArtifact).toHaveBeenCalledOnce();
+  });
+
   it('fails builds by default and keeps an explicit compatibility escape hatch', async () => {
     const location = await fs.mkdtemp(path.join(os.tmpdir(), 'nocobase-build-flow-surface-'));
     tempDirs.push(location);

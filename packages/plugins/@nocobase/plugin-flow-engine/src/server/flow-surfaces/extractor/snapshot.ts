@@ -101,7 +101,10 @@ export function buildFlowSurfaceAutoSnapshot(input: BuildFlowSurfaceAutoSnapshot
       ...input.events.flatMap((event) => (event.type === 'warning' ? [event.warning] : [])),
     ]),
   };
-  const inferredAuthoring = inferFlowSurfaceAutoSnapshotAuthoring(snapshot);
+  const inferredAuthoring = inferFlowSurfaceAutoSnapshotAuthoring(
+    snapshot,
+    deriveFlowSurfaceAutoCapabilityCandidates(snapshot),
+  );
   if (inferredAuthoring) {
     snapshot.inferredAuthoring = inferredAuthoring;
   }
@@ -111,7 +114,10 @@ export function buildFlowSurfaceAutoSnapshot(input: BuildFlowSurfaceAutoSnapshot
 export function refreshFlowSurfaceAutoSnapshotInferredAuthoring(
   snapshot: FlowSurfaceAutoSnapshot,
 ): FlowSurfaceAutoSnapshot {
-  const inferredAuthoring = inferFlowSurfaceAutoSnapshotAuthoring(snapshot);
+  const inferredAuthoring = inferFlowSurfaceAutoSnapshotAuthoring(
+    snapshot,
+    deriveFlowSurfaceAutoCapabilityCandidates(snapshot),
+  );
   if (!inferredAuthoring) {
     return snapshot;
   }
@@ -611,7 +617,7 @@ function isFlowSurfaceAutoModel(value: unknown): value is FlowSurfaceAutoModel {
   return (
     isPlainRecord(value) &&
     typeof value.modelUse === 'string' &&
-    hasOptionalStringFields(value, ['className', 'loaderName']) &&
+    hasOptionalStringFields(value, ['className', 'loaderName', 'modelBaseClass']) &&
     isArrayOf(value.sourceRefs, isFlowSurfaceAutoSourceRef) &&
     isFlowSurfaceCapabilityConfidence(value.confidence)
   );
@@ -633,6 +639,10 @@ function isFlowSurfaceAutoMenuItem(value: unknown): value is FlowSurfaceAutoMenu
     isFlowSurfaceExtractorCreateModelOptionsStatus(value.createModelOptionsStatus) &&
     (typeof value.createModelOptionsSubModels === 'undefined' ||
       isFlowSurfaceCreateModelOptionsSubModels(value.createModelOptionsSubModels)) &&
+    (typeof value.createModelOptions === 'undefined' ||
+      (isJsonSafePlainValue(value.createModelOptions) &&
+        isPlainRecord(value.createModelOptions) &&
+        typeof value.createModelOptions.use === 'string')) &&
     isArrayOf(value.sourceRefs, isFlowSurfaceAutoSourceRef) &&
     isFlowSurfaceCapabilityConfidence(value.confidence)
   );
@@ -828,6 +838,20 @@ function collectAutoModels(events: FlowSurfaceExtractionEvent[]): FlowSurfaceAut
     existing.sourceRefs = appendSourceRef(existing.sourceRefs, sourceRef);
     existing.confidence = maxConfidence(existing.confidence, event.confidence);
   });
+  events.forEach((event) => {
+    if (event.type !== 'model.classDeclared') {
+      return;
+    }
+    const existing = models.get(event.modelUse);
+    if (!existing) {
+      return;
+    }
+    if (!existing.modelBaseClass) {
+      existing.modelBaseClass = event.modelBaseClass;
+    }
+    existing.sourceRefs = appendSourceRef(existing.sourceRefs, buildSourceRef(event.source, event.evidenceSource));
+    existing.confidence = maxConfidence(existing.confidence, event.confidence);
+  });
   return Array.from(models.values()).sort((left, right) => left.modelUse.localeCompare(right.modelUse));
 }
 
@@ -851,6 +875,7 @@ function collectAutoMenuItems(events: FlowSurfaceExtractionEvent[]): FlowSurface
         ...(hasCreateModelOptionsSubModels(event.createModelOptionsSubModels)
           ? { createModelOptionsSubModels: event.createModelOptionsSubModels }
           : {}),
+        ...(event.createModelOptions ? { createModelOptions: event.createModelOptions } : {}),
         sourceRefs: [sourceRef],
         confidence: event.confidence,
       });
@@ -870,6 +895,7 @@ function collectAutoMenuItems(events: FlowSurfaceExtractionEvent[]): FlowSurface
       existing.createModelOptionsSubModels,
       event.createModelOptionsSubModels,
     );
+    existing.createModelOptions = mergeCreateModelOptions(existing.createModelOptions, event.createModelOptions);
     mergeLabelFields(existing, event);
   });
   return Array.from(menuItems.values()).sort((left, right) =>
@@ -1230,6 +1256,19 @@ function mergeCreateModelOptionsSubModels(
     }
   });
   return hasCreateModelOptionsSubModels(merged) ? merged : undefined;
+}
+
+function mergeCreateModelOptions(
+  left: FlowSurfaceAutoMenuItem['createModelOptions'],
+  right: FlowSurfaceAutoMenuItem['createModelOptions'],
+) {
+  if (!left) {
+    return right;
+  }
+  if (!right || _.isEqual(left, right)) {
+    return left;
+  }
+  return undefined;
 }
 
 function mergeStaticStatus(left: FlowSurfaceAutoFlow['staticStatus'], right: FlowSurfaceAutoFlow['staticStatus']) {

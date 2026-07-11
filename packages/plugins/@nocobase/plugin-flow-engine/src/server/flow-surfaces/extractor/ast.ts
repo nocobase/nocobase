@@ -12,6 +12,7 @@ import { dirname, resolve as resolvePath } from 'path';
 import * as ts from 'typescript';
 import { parseFlowSurfaceTranslationExpressionLabel } from './labels';
 import { createFlowSurfaceExtractionRecorder } from './recorder';
+import type { FlowSurfaceNodeSpec } from '../types';
 import type {
   FlowSurfaceExtractionEvent,
   FlowSurfaceExtractorFlowStaticStatus,
@@ -41,7 +42,7 @@ const SLOT_BY_MODEL_USE = new Map<string, string>([
   ['FilterFormItemModel', 'fields'],
   ['FilterFormCustomItemModel', 'fields'],
 ]);
-const STATIC_TRANSLATION_HELPER_NAMES = new Set(['tExpr']);
+const STATIC_TRANSLATION_HELPER_NAMES = new Set(['t', 'tExpr']);
 
 export type FlowSurfaceAstExtractionInput = {
   source: string;
@@ -102,6 +103,9 @@ export function collectFlowSurfaceExtractorAstEvents(
     }
     if (ts.isVariableStatement(node)) {
       inspectVariableStatement(node, recorder, context.source);
+    }
+    if (ts.isClassDeclaration(node)) {
+      inspectClassDeclaration(node, recorder, context.source);
     }
     ts.forEachChild(node, visit);
   }
@@ -242,6 +246,7 @@ function inspectJsxElement(
       slot,
       createModelOptionsStatus: item.createModelOptionsStatus,
       ...(item.createModelOptionsUse ? { createModelOptionsUse: item.createModelOptionsUse } : {}),
+      ...(item.createModelOptions ? { createModelOptions: item.createModelOptions } : {}),
       source,
       evidenceSource: 'ast',
       confidence: item.modelUse || attributes.modelUse ? 'medium' : 'low',
@@ -260,6 +265,31 @@ function inspectJsxElement(
     source,
     evidenceSource: 'ast',
     confidence: attributes.modelUse ? 'medium' : 'low',
+  });
+}
+
+function inspectClassDeclaration(
+  node: ts.ClassDeclaration,
+  recorder: ReturnType<typeof createFlowSurfaceExtractionRecorder>,
+  source: string,
+) {
+  const modelUse = node.name?.text;
+  if (!modelUse || !/Model$/.test(modelUse)) {
+    return;
+  }
+  const baseClass = node.heritageClauses
+    ?.find((clause) => clause.token === ts.SyntaxKind.ExtendsKeyword)
+    ?.types.map((type) => getExpressionName(type.expression))
+    .find(Boolean);
+  if (!baseClass) {
+    return;
+  }
+  recorder.recordModelClass({
+    modelUse,
+    modelBaseClass: baseClass,
+    source,
+    evidenceSource: 'ast',
+    confidence: 'medium',
   });
 }
 
@@ -368,6 +398,7 @@ function collectModelDefinition(
   const createModelOptions = getObjectPropertyValue(definition, 'createModelOptions');
   const createModelOptionsObject = getObjectLiteral(createModelOptions);
   const createModelOptionsUse = getStaticString(getObjectPropertyValue(createModelOptionsObject, 'use'));
+  const staticCreateModelOptions = getStaticCreateModelOptions(createModelOptions);
   const labelFields = firstLabelFields(
     getStaticLabel(getObjectPropertyValue(definition, 'label')),
     getStaticLabel(getObjectPropertyValue(definition, 'title')),
@@ -379,6 +410,7 @@ function collectModelDefinition(
     createModelOptionsStatus: getCreateModelOptionsStaticStatus(createModelOptions),
     ...(createModelOptionsUse ? { createModelOptionsUse } : {}),
     ...getCreateModelOptionsSubModels(createModelOptionsObject),
+    ...(staticCreateModelOptions ? { createModelOptions: staticCreateModelOptions } : {}),
     source,
     evidenceSource: 'ast',
     confidence: 'medium',
@@ -1024,6 +1056,59 @@ function isSerializableLiteralNode(node: ts.Node | undefined): boolean {
   return false;
 }
 
+function getStaticCreateModelOptions(node: ts.Node | undefined): FlowSurfaceNodeSpec | undefined {
+  if (!isSerializableLiteralNode(node)) {
+    return undefined;
+  }
+  const value = serializeLiteralNode(node);
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return undefined;
+  }
+  const record = value as Record<string, unknown>;
+  if (typeof record.use !== 'string') {
+    return undefined;
+  }
+  return value as FlowSurfaceNodeSpec;
+}
+
+function serializeLiteralNode(node: ts.Node): unknown {
+  if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
+    return node.text;
+  }
+  if (ts.isNumericLiteral(node)) {
+    return Number(node.text);
+  }
+  if (node.kind === ts.SyntaxKind.TrueKeyword) {
+    return true;
+  }
+  if (node.kind === ts.SyntaxKind.FalseKeyword) {
+    return false;
+  }
+  if (node.kind === ts.SyntaxKind.NullKeyword) {
+    return null;
+  }
+  if (ts.isPrefixUnaryExpression(node) && ts.isNumericLiteral(node.operand)) {
+    const value = Number(node.operand.text);
+    return node.operator === ts.SyntaxKind.MinusToken ? -value : value;
+  }
+  if (ts.isArrayLiteralExpression(node)) {
+    return node.elements.map((element) => serializeLiteralNode(element));
+  }
+  if (ts.isCallExpression(node) && isStaticTranslationHelperCall(node)) {
+    const args = node.arguments.map((argument) => serializeLiteralNode(argument));
+    return `{{t(${args.map((argument) => JSON.stringify(argument)).join(', ')})}}`;
+  }
+  if (ts.isObjectLiteralExpression(node)) {
+    return Object.fromEntries(
+      node.properties.map((property) => {
+        const assignment = property as ts.PropertyAssignment;
+        return [getPropertyNameText(assignment.name) || '', serializeLiteralNode(assignment.initializer)];
+      }),
+    );
+  }
+  return undefined;
+}
+
 function isStaticTranslationHelperCall(node: ts.CallExpression) {
   return STATIC_TRANSLATION_HELPER_NAMES.has(getExpressionName(node.expression) || '');
 }
@@ -1147,6 +1232,7 @@ function getStaticJsxItemTree(item: ts.Node | undefined): Array<{
   modelUse?: string;
   createModelOptionsStatus: ReturnType<typeof getCreateModelOptionsStaticStatus>;
   createModelOptionsUse?: string;
+  createModelOptions?: FlowSurfaceNodeSpec;
 }> {
   if (!item || !ts.isObjectLiteralExpression(item)) {
     return [];
@@ -1154,6 +1240,7 @@ function getStaticJsxItemTree(item: ts.Node | undefined): Array<{
   const createModelOptions = getObjectPropertyValue(item, 'createModelOptions');
   const createModelOptionsObject = getObjectLiteral(createModelOptions);
   const createModelOptionsUse = getStaticString(getObjectPropertyValue(createModelOptionsObject, 'use'));
+  const staticCreateModelOptions = getStaticCreateModelOptions(createModelOptions);
   const children = getStaticJsxItemChildren(item);
   return [
     {
@@ -1165,6 +1252,7 @@ function getStaticJsxItemTree(item: ts.Node | undefined): Array<{
         createModelOptionsUse,
       createModelOptionsStatus: getCreateModelOptionsStaticStatus(createModelOptions),
       ...(createModelOptionsUse ? { createModelOptionsUse } : {}),
+      ...(staticCreateModelOptions ? { createModelOptions: staticCreateModelOptions } : {}),
     },
     ...children,
   ];

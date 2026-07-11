@@ -14,6 +14,7 @@ import { resolveDynamicCapabilityCreate } from '../flow-surfaces/capability-reso
 import { FLOW_SURFACE_INTERNAL_AUTO_SAVE_DEFAULT_POPUP_TEMPLATE_KEY } from '../flow-surfaces/default-block-actions';
 import { FlowSurfaceAggregateError, FlowSurfaceBadRequestError } from '../flow-surfaces/errors';
 import { buildFlowSurfaceAutoSnapshot } from '../flow-surfaces/extractor';
+import type { FlowSurfaceExtractionEvent } from '../flow-surfaces/extractor/types';
 import { FlowSurfacesService } from '../flow-surfaces/service';
 import { normalizeComposeFieldSpec } from '../flow-surfaces/service-utils';
 import type { FlowSurfaceCapabilityAdmissionReport } from '../flow-surfaces/admission-report';
@@ -23,6 +24,7 @@ import type {
   FlowSurfaceCatalogItem,
   FlowSurfaceDynamicCapabilityCreateActionName,
   FlowSurfaceJsonCreateRecipe,
+  FlowSurfaceNodeSpec,
   FlowSurfaceWriteTarget,
 } from '../flow-surfaces/types';
 
@@ -158,6 +160,12 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
   };
 
   type AddActionPrivateHarness = {
+    assertJsonInferredActionCreatePayload(input: {
+      publicType: string;
+      values: Record<string, unknown>;
+      inlineSettings?: Record<string, unknown>;
+      inlinePopup?: Record<string, unknown>;
+    }): void;
     assertApprovalActionSingleton(parentUid: string, actionUse: string, transaction?: unknown): Promise<void>;
     syncFlowTemplateUsagesForNodeTree(rootUid: string, transaction?: unknown): Promise<void>;
     syncApprovalRuntimeConfigForNode(uid: string, transaction?: unknown): Promise<void>;
@@ -461,6 +469,63 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
       delete snapshot.inferredAuthoring;
     }
     return snapshot;
+  }
+
+  function createGenericBlockAutoSnapshot(
+    input: {
+      modelUse?: string;
+      modelBaseClass?: string;
+      createModelOptions?: FlowSurfaceNodeSpec;
+    } = {},
+  ) {
+    const modelUse = input.modelUse || 'CustomBlockModel';
+    const events: FlowSurfaceExtractionEvent[] = [
+      {
+        type: 'model.registered',
+        modelUse,
+        className: modelUse,
+        source: 'packages/plugins/@nocobase/plugin-demo/src/client-v2/plugin.tsx',
+        evidenceSource: 'ast',
+        confidence: 'medium',
+      },
+      ...(input.modelBaseClass
+        ? [
+            {
+              type: 'model.classDeclared' as const,
+              modelUse,
+              modelBaseClass: input.modelBaseClass,
+              source: `packages/plugins/@nocobase/plugin-demo/src/client-v2/${modelUse}.tsx`,
+              evidenceSource: 'ast' as const,
+              confidence: 'medium' as const,
+            },
+          ]
+        : []),
+      {
+        type: 'menu.itemRegistered',
+        menuKey: 'custom',
+        label: 'Custom block',
+        modelUse,
+        slot: 'blocks',
+        createModelOptionsStatus: input.createModelOptions ? 'static' : 'dynamic',
+        ...(input.createModelOptions
+          ? {
+              createModelOptionsUse: input.createModelOptions.use,
+              createModelOptions: input.createModelOptions,
+            }
+          : {}),
+        source: `packages/plugins/@nocobase/plugin-demo/src/client-v2/${modelUse}.tsx`,
+        evidenceSource: 'ast',
+        confidence: 'medium',
+      },
+    ];
+    return buildFlowSurfaceAutoSnapshot({
+      plugin: '@nocobase/plugin-demo',
+      pluginVersion: '1.0.0',
+      generatedAt: '2026-06-04T00:00:00.000Z',
+      sourceHash: 'generic-snapshot-source-hash',
+      extractorVersion: 'test',
+      events,
+    });
   }
 
   function cloneJsonRecord<T>(value: T): T {
@@ -772,6 +837,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
       acceptedAliases?: string[];
       modelUse?: string;
       placement?: FlowSurfaceCapabilityManifestItem['placement'];
+      settingsSchema?: FlowSurfaceCapabilityManifestItem['settingsSchema'];
     } = {},
   ): FlowSurfaceCapabilitiesProvider {
     const modelUse = input.modelUse || 'TableBlockModel';
@@ -806,24 +872,26 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
               },
             },
           },
-          settingsSchema: {
-            type: 'object',
-            additionalProperties: false,
-            required: ['pageSize'],
-            properties: {
-              pageSize: {
-                type: 'number',
-                minimum: 1,
-                maximum: 200,
+          settingsSchema:
+            input.settingsSchema ||
+            ({
+              type: 'object',
+              additionalProperties: false,
+              required: ['pageSize'],
+              properties: {
+                pageSize: {
+                  type: 'number',
+                  minimum: 1,
+                  maximum: 200,
+                },
+                filter: {
+                  type: 'object',
+                },
+                displaySettings: {
+                  type: 'object',
+                },
               },
-              filter: {
-                type: 'object',
-              },
-              displaySettings: {
-                type: 'object',
-              },
-            },
-          },
+            } satisfies FlowSurfaceCapabilityManifestItem['settingsSchema']),
           ...(input.createRecipe ? { createRecipe: input.createRecipe } : {}),
         },
       ],
@@ -1160,6 +1228,196 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
       },
     });
     expect(repositoryGetter).not.toHaveBeenCalled();
+  });
+
+  it('should create an unknown discovered block from its generic JSON recipe', async () => {
+    const autoSnapshot = createGenericBlockAutoSnapshot({
+      createModelOptions: {
+        use: 'CustomBlockModel',
+        props: {
+          title: 'Custom block',
+        },
+      },
+    });
+
+    const response = await resolveDynamicCapabilityCreate({
+      publicType: 'pluginDemo.custom',
+      settings: {},
+      enabledPackages: new Set(['@nocobase/plugin-demo']),
+      autoSnapshots: [autoSnapshot],
+    });
+
+    expect(response).toMatchObject({
+      capability: {
+        publicType: 'pluginDemo.custom',
+        origin: 'autoSnapshot',
+        supportLevel: 'create-only',
+        availability: {
+          create: {
+            supported: true,
+            acceptsInitParams: true,
+            acceptsSettings: false,
+          },
+        },
+      },
+      node: {
+        use: 'CustomBlockModel',
+        props: {
+          title: 'Custom block',
+        },
+      },
+    });
+  });
+
+  it('should inject collection resource params for discovered data blocks', async () => {
+    const autoSnapshot = createGenericBlockAutoSnapshot({
+      modelUse: 'CustomDataBlockModel',
+      modelBaseClass: 'DataBlockModel',
+    });
+
+    await expect(
+      resolveDynamicCapabilityCreate({
+        publicType: 'pluginDemo.customData',
+        enabledPackages: new Set(['@nocobase/plugin-demo']),
+        autoSnapshots: [autoSnapshot],
+      }),
+    ).rejects.toMatchObject({
+      errors: expect.arrayContaining([
+        expect.objectContaining({ path: 'initParams.collectionName', ruleId: 'required' }),
+      ]),
+    });
+
+    const response = await resolveDynamicCapabilityCreate({
+      publicType: 'pluginDemo.customData',
+      initParams: {
+        dataSourceKey: 'main',
+        collectionName: 'tasks',
+      },
+      enabledPackages: new Set(['@nocobase/plugin-demo']),
+      autoSnapshots: [autoSnapshot],
+    });
+
+    expect(response.node).toEqual({
+      use: 'CustomDataBlockModel',
+      stepParams: {
+        resourceSettings: {
+          init: {
+            dataSourceKey: 'main',
+            collectionName: 'tasks',
+          },
+        },
+      },
+    });
+  });
+
+  it('should persist unknown discovered data blocks through the service write guard', async () => {
+    const autoSnapshot = createGenericBlockAutoSnapshot({
+      modelUse: 'CustomDataBlockModel',
+      modelBaseClass: 'DataBlockModel',
+    });
+    const service = new FlowSurfacesService({
+      flowSurfaceAutoSnapshots: [autoSnapshot],
+      flowSurfaceCapabilityProviders: createProviderRegistry([]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const harness = service as unknown as DynamicBlockWriteGateHarness;
+    const enabledPackages = new Set(['@nocobase/plugin-demo']);
+    const persistedPayloads: Record<string, unknown>[] = [];
+    let materializedRoot: Record<string, unknown> | null = null;
+    harness.catalog = async () => ({
+      blocks: [
+        {
+          key: 'pluginDemo.customData',
+          label: 'Custom block',
+          use: 'pluginDemo.customData',
+          kind: 'block',
+          publicType: 'pluginDemo.customData',
+          ownerPlugin: '@nocobase/plugin-demo',
+          origin: 'autoSnapshot',
+          createSupported: true,
+          availability: {
+            create: {
+              supported: true,
+            },
+          },
+        },
+      ],
+    });
+    vi.spyOn(service as unknown as RepositoryGetterHarness, 'repository', 'get').mockReturnValue({
+      upsertModel: async (payload) => {
+        persistedPayloads.push(payload);
+        materializedRoot = materializePersistedRoot(payload, 'created-custom-data-block');
+        return 'created-custom-data-block';
+      },
+      findModelById: async (uid) => findFlowNodeByUid(materializedRoot, uid) || materializedRoot,
+    });
+
+    const result = await harness.tryAddDynamicBlock({
+      values: {
+        type: 'pluginDemo.customData',
+        initParams: {
+          dataSourceKey: 'main',
+          collectionName: 'tasks',
+        },
+      },
+      options: {
+        deferAutoLayout: true,
+        dynamicCapabilityActionName: 'addBlock',
+      },
+      enabledPackages,
+      blockType: 'pluginDemo.customData',
+      target: {
+        uid: 'target-grid',
+      },
+      parentUid: 'parent-grid',
+      subKey: 'items',
+      subType: 'array',
+      popupProfile: null,
+    });
+
+    expect(result).toMatchObject({
+      uid: 'created-custom-data-block',
+      parentUid: 'parent-grid',
+      subKey: 'items',
+    });
+    expect(persistedPayloads).toEqual([
+      expect.objectContaining({
+        use: 'CustomDataBlockModel',
+        stepParams: {
+          resourceSettings: {
+            init: {
+              dataSourceKey: 'main',
+              collectionName: 'tasks',
+            },
+          },
+        },
+      }),
+    ]);
+  });
+
+  it('should still validate known children inside an unknown discovered block', async () => {
+    const autoSnapshot = createGenericBlockAutoSnapshot({
+      createModelOptions: {
+        use: 'CustomBlockModel',
+        subModels: {
+          child: {
+            use: 'TableBlockModel',
+            props: {
+              unsupported: true,
+            },
+          },
+        },
+      },
+    });
+
+    await expect(
+      resolveDynamicCapabilityCreate({
+        publicType: 'pluginDemo.custom',
+        enabledPackages: new Set(['@nocobase/plugin-demo']),
+        autoSnapshots: [autoSnapshot],
+      }),
+    ).rejects.toMatchObject({
+      errors: expect.arrayContaining([expect.objectContaining({ ruleId: 'contract-guard-failed' })]),
+    });
   });
 
   it('should map a verified auto snapshot Gantt payload into a guarded internal node when inferred authoring coexists', async () => {
@@ -3794,30 +4052,128 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
         expect.objectContaining({
           publicType: 'ganttTodayAction',
           ownerPlugin: '@nocobase/plugin-gantt',
-          origin: 'autoSnapshot',
           createSupported: true,
         }),
         expect.objectContaining({
           publicType: 'ganttExpandCollapseAction',
           ownerPlugin: '@nocobase/plugin-gantt',
-          origin: 'autoSnapshot',
           createSupported: true,
         }),
         expect.objectContaining({
           publicType: 'filter',
           ownerPlugin: '@nocobase/plugin-gantt',
-          origin: 'autoSnapshot',
         }),
         expect.objectContaining({
           publicType: 'addNew',
           ownerPlugin: '@nocobase/plugin-gantt',
-          origin: 'autoSnapshot',
         }),
       ]),
     );
     const serialized = JSON.stringify(catalog.actions);
     expect(serialized).not.toContain('GanttTodayActionModel');
     expect(serialized).not.toContain('GanttExpandCollapseActionModel');
+  });
+
+  it('should prefer static actions over colliding JSON inferred child actions', async () => {
+    const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
+    const inferredCapability = autoSnapshot.inferredAuthoring?.capabilities?.[0];
+    expect(inferredCapability).toBeTruthy();
+    if (inferredCapability) {
+      inferredCapability.childSurfaces = (inferredCapability.childSurfaces || []).map((surface) =>
+        surface.kind === 'action' ? { ...surface, parentModelUse: 'TableBlockModel' } : surface,
+      );
+    }
+
+    const service = new FlowSurfacesService({
+      flowSurfaceAutoSnapshots: [autoSnapshot],
+      flowSurfaceCapabilityProviders: createProviderRegistry([]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const enabledPackages = new Set(['@nocobase/plugin-gantt']);
+    const persistedPayloads: Record<string, unknown>[] = [];
+    const tableNode = {
+      uid: 'table-block',
+      use: 'TableBlockModel',
+      subModels: {
+        actions: [],
+      },
+    };
+
+    vi.spyOn(service as unknown as SurfaceContextGetterHarness, 'surfaceContext', 'get').mockReturnValue({
+      filterBlocksByTarget: () => [],
+      resolveBlockParent: async () => ({ parentUid: 'table-block' }),
+      resolveFieldContainer: async () => null,
+      resolveActionContainer: async () => ({
+        parentUid: 'table-actions',
+        subKey: 'actions',
+        subType: 'array',
+        ownerUse: 'TableBlockModel',
+        ownerUid: 'table-block',
+      }),
+      collectFilterFormTargets: async () => [],
+    });
+    vi.spyOn(service as unknown as LocatorGetterHarness, 'locator', 'get').mockReturnValue({
+      resolve: async () => ({
+        uid: 'table-block',
+        kind: 'block',
+        target: { uid: 'table-block' },
+        node: tableNode,
+      }),
+      findParentUid: async () => '',
+      resolveCollectionContext: async () => ({
+        resourceInit: {
+          dataSourceKey: 'main',
+          collectionName: 'tasks',
+        },
+      }),
+    });
+    vi.spyOn(service as unknown as RepositoryGetterHarness, 'repository', 'get').mockReturnValue({
+      findModelById: async () => tableNode,
+      upsertModel: async (payload) => {
+        persistedPayloads.push(payload);
+        return 'created-filter-action';
+      },
+    });
+    const privateHarness = service as unknown as AddActionPrivateHarness;
+    const inferredPayloadGuard = vi.spyOn(privateHarness, 'assertJsonInferredActionCreatePayload');
+    vi.spyOn(privateHarness, 'assertApprovalActionSingleton').mockResolvedValue(undefined);
+    vi.spyOn(privateHarness, 'syncFlowTemplateUsagesForNodeTree').mockResolvedValue(undefined);
+    vi.spyOn(privateHarness, 'syncApprovalRuntimeConfigForNode').mockResolvedValue(undefined);
+    vi.spyOn(privateHarness, 'collectComposeActionKeys').mockResolvedValue({});
+
+    const catalog = await service.catalog(
+      {
+        target: { uid: 'table-block' },
+        sections: ['actions'],
+        expand: ['item.identity'],
+      },
+      { enabledPackages },
+    );
+    const filterActions = (catalog.actions || []).filter((item) => item.publicType === 'filter');
+    expect(filterActions).toEqual([
+      expect.objectContaining({
+        use: 'FilterActionModel',
+        origin: 'builtInStatic',
+      }),
+    ]);
+
+    await expect(
+      service.addAction(
+        {
+          target: { uid: 'table-block' },
+          type: 'filter',
+        },
+        { enabledPackages },
+      ),
+    ).resolves.toMatchObject({
+      uid: 'created-filter-action',
+      scope: 'block',
+    });
+    expect(inferredPayloadGuard).not.toHaveBeenCalled();
+    expect(persistedPayloads).toEqual([
+      expect.objectContaining({
+        use: 'FilterActionModel',
+      }),
+    ]);
   });
 
   it('should add existing collection fields through JSON inferred Gantt column surfaces without server providers', async () => {
@@ -3939,6 +4295,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
           uid: 'gantt-block',
         },
         sections: ['fields'],
+        expand: ['item.identity'],
       },
       {
         enabledPackages,
@@ -4741,7 +5098,6 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
         expect.objectContaining({
           publicType: 'ganttTodayAction',
           ownerPlugin: '@nocobase/plugin-gantt',
-          origin: 'autoSnapshot',
           createSupported: true,
         }),
       ]),
@@ -8266,6 +8622,73 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
         }),
       ],
     });
+  });
+
+  it('should recursively validate nested object and array schemas before calling providers', async () => {
+    const resolveCreate = vi.fn();
+
+    await expect(
+      resolveDynamicCapabilityCreate({
+        publicType: 'dryRun',
+        initParams: {
+          collectionName: 'tasks',
+        },
+        settings: {
+          sections: [
+            {
+              options: {
+                mode: 'grid',
+                extra: true,
+              },
+              extra: true,
+            },
+          ],
+        },
+        enabledPackages: new Set(['@nocobase/plugin-dry-run']),
+        providerRegistry: createProviderRegistry([
+          createDryRunProvider({
+            resolveCreate,
+            settingsSchema: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['sections'],
+              properties: {
+                sections: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    additionalProperties: false,
+                    required: ['name'],
+                    properties: {
+                      name: {
+                        type: 'string',
+                      },
+                      options: {
+                        type: 'object',
+                        additionalProperties: false,
+                        required: ['mode'],
+                        properties: {
+                          mode: {
+                            type: 'string',
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          }),
+        ]),
+      }),
+    ).rejects.toMatchObject({
+      errors: expect.arrayContaining([
+        expect.objectContaining({ path: 'settings.sections[0].name', ruleId: 'required' }),
+        expect.objectContaining({ path: 'settings.sections[0].extra', ruleId: 'unknown-field' }),
+        expect.objectContaining({ path: 'settings.sections[0].options.extra', ruleId: 'unknown-field' }),
+      ]),
+    });
+    expect(resolveCreate).not.toHaveBeenCalled();
   });
 
   it('should require explicit dry-run override for create-disabled capabilities', async () => {

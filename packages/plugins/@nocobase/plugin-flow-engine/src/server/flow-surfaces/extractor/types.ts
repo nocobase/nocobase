@@ -14,6 +14,7 @@ import type {
   FlowSurfaceCapabilityWarning,
   FlowSurfaceJsonCreateRecipe,
   FlowSurfaceJsonSchema,
+  FlowSurfaceNodeSpec,
   FlowSurfacePlacementSummary,
 } from '../types';
 
@@ -50,6 +51,15 @@ export type FlowSurfaceModelRegisteredEvent = {
   confidence: FlowSurfaceCapabilityConfidence;
 };
 
+export type FlowSurfaceModelClassDeclaredEvent = {
+  type: 'model.classDeclared';
+  modelUse: string;
+  modelBaseClass: string;
+  source: string;
+  evidenceSource: FlowSurfaceExtractorEvidenceSource;
+  confidence: FlowSurfaceCapabilityConfidence;
+};
+
 export type FlowSurfaceModelLoaderRegisteredEvent = {
   type: 'model.loaderRegistered';
   modelUse: string;
@@ -79,6 +89,7 @@ export type FlowSurfaceMenuItemRegisteredEvent = FlowSurfaceExtractorLabelFields
   createModelOptionsStatus: FlowSurfaceExtractorCreateModelOptionsStatus;
   createModelOptionsUse?: string;
   createModelOptionsSubModels?: FlowSurfaceCreateModelOptionsSubModels;
+  createModelOptions?: FlowSurfaceNodeSpec;
   source: string;
   evidenceSource: FlowSurfaceExtractorEvidenceSource;
   confidence: FlowSurfaceCapabilityConfidence;
@@ -103,6 +114,7 @@ export type FlowSurfaceExtractorWarningEvent = {
 
 export type FlowSurfaceExtractionEvent =
   | FlowSurfaceModelRegisteredEvent
+  | FlowSurfaceModelClassDeclaredEvent
   | FlowSurfaceModelLoaderRegisteredEvent
   | FlowSurfaceModelFlowRegisteredEvent
   | FlowSurfaceMenuItemRegisteredEvent
@@ -113,6 +125,7 @@ export type FlowSurfaceAutoModel = {
   modelUse: string;
   className?: string;
   loaderName?: string;
+  modelBaseClass?: string;
   sourceRefs: FlowSurfaceAutoSourceRef[];
   confidence: FlowSurfaceCapabilityConfidence;
 };
@@ -124,6 +137,7 @@ export type FlowSurfaceAutoMenuItem = FlowSurfaceExtractorLabelFields & {
   createModelOptionsStatus: FlowSurfaceExtractorCreateModelOptionsStatus;
   createModelOptionsUse?: string;
   createModelOptionsSubModels?: FlowSurfaceCreateModelOptionsSubModels;
+  createModelOptions?: FlowSurfaceNodeSpec;
   sourceRefs: FlowSurfaceAutoSourceRef[];
   confidence: FlowSurfaceCapabilityConfidence;
 };
