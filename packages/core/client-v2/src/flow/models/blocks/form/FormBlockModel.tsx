@@ -83,6 +83,32 @@ export class FormBlockModel<
     return this.context.form as FormInstance;
   }
 
+  submitFromRunJs() {
+    const model = this as any;
+    if (model.hasAvailableData?.() === false) {
+      return;
+    }
+
+    const submitAction = this.mapSubModels('actions', (action) => action).find((action) =>
+      action.getFlow('submitSettings'),
+    );
+    if (submitAction) {
+      return submitAction.onClick(undefined);
+    }
+
+    const isCoreForm = ['CreateFormModel', 'EditFormModel'].some(
+      (modelName) => this.constructor === this.flowEngine.getModelClass(modelName),
+    );
+    if (this.context.publicFormRuntime || !isCoreForm) {
+      return;
+    }
+
+    model.submit().catch((error: unknown) => {
+      this.context.message.error(this.context.t('Save failed'));
+      console.error('Form submission error:', error);
+    });
+  }
+
   _defaultCustomModelClasses = {
     FormActionGroupModel: 'FormActionGroupModel',
     FormItemModel: 'FormItemModel',
