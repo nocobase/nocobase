@@ -10,6 +10,7 @@
 import { Context } from '@nocobase/actions';
 import { Auth, AuthManager } from '@nocobase/auth';
 import { Model } from '@nocobase/database';
+import { vi } from 'vitest';
 
 class MockStorer {
   elements: Map<string, any> = new Map();
@@ -25,12 +26,22 @@ class MockStorer {
 class BasicAuth extends Auth {
   public user: Model;
 
+  async skipCheck() {
+    return true;
+  }
+
   async check() {
     return null;
   }
 
   async getIdentity() {
     return null;
+  }
+}
+
+class NoUserAuth extends BasicAuth {
+  async skipCheck() {
+    return false;
   }
 }
 
@@ -93,5 +104,92 @@ describe('auth-manager', () => {
   it('should get auth config', () => {
     authManager.registerTypes('basic', { auth: BasicAuth, title: 'Basic' });
     expect(authManager.getAuthConfig('basic')).toEqual({ auth: BasicAuth, title: 'Basic' });
+  });
+
+  it('middleware should record the resolved authenticator name', async () => {
+    authManager.registerTypes('basic', { auth: BasicAuth });
+    const next = vi.fn(async () => {});
+    const ctx = {
+      app: { authManager },
+      get: () => 'basic-test',
+      logger: { warn: vi.fn() },
+      state: {},
+    };
+
+    await authManager.middleware()(ctx as never, next);
+
+    expect(ctx.state.currentAuthenticator).toBe('basic-test');
+    expect(next).toHaveBeenCalledOnce();
+  });
+
+  it('middleware should fail closed when forced authentication cannot resolve an authenticator', async () => {
+    const forceAuthCheckError = { code: 'INVALID_TEMPORARY_ACCESS_CODE' };
+    const next = vi.fn(async () => {});
+    const ctx = {
+      app: { authManager },
+      get: () => 'not-exists',
+      logger: { warn: vi.fn() },
+      state: {
+        forceAuthCheck: true,
+        forceAuthCheckError,
+      },
+      throw: (status: number, error: Record<string, unknown>) => {
+        throw Object.assign(new Error(String(status)), { status, ...error });
+      },
+    };
+
+    await expect(authManager.middleware()(ctx as never, next)).rejects.toMatchObject({
+      code: 'INVALID_TEMPORARY_ACCESS_CODE',
+      status: 401,
+    });
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('middleware should not honor a custom skipCheck result when authentication is forced', async () => {
+    authManager.registerTypes('basic', { auth: BasicAuth });
+    const forceAuthCheckError = { code: 'INVALID_TEMPORARY_ACCESS_CODE' };
+    const next = vi.fn(async () => {});
+    const ctx = {
+      app: { authManager },
+      get: () => 'basic-test',
+      logger: { warn: vi.fn() },
+      state: {
+        forceAuthCheck: true,
+        forceAuthCheckError,
+      },
+      throw: (status: number, error: Record<string, unknown>) => {
+        throw Object.assign(new Error(String(status)), { status, ...error });
+      },
+    };
+
+    await expect(authManager.middleware()(ctx as never, next)).rejects.toMatchObject({
+      code: 'INVALID_TEMPORARY_ACCESS_CODE',
+      status: 401,
+    });
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('middleware should fail closed when forced authentication returns no user', async () => {
+    authManager.registerTypes('basic', { auth: NoUserAuth });
+    const forceAuthCheckError = { code: 'INVALID_TEMPORARY_ACCESS_CODE' };
+    const next = vi.fn(async () => {});
+    const ctx = {
+      app: { authManager },
+      get: () => 'basic-test',
+      logger: { warn: vi.fn() },
+      state: {
+        forceAuthCheck: true,
+        forceAuthCheckError,
+      },
+      throw: (status: number, error: Record<string, unknown>) => {
+        throw Object.assign(new Error(String(status)), { status, ...error });
+      },
+    };
+
+    await expect(authManager.middleware()(ctx as never, next)).rejects.toMatchObject({
+      code: 'INVALID_TEMPORARY_ACCESS_CODE',
+      status: 401,
+    });
+    expect(next).not.toHaveBeenCalled();
   });
 });

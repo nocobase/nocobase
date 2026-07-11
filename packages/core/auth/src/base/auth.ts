@@ -171,6 +171,16 @@ export class BaseAuth extends Auth {
     }
 
     if (tokenStatus === 'expired') {
+      if (this.ctx.state?.disableTokenRenewal === true) {
+        this.ctx.throw(
+          401,
+          this.ctx.state.forceAuthCheckError || {
+            message: this.ctx.t('Your session has expired. Please sign in again.', { ns: localeNamespace }),
+            code: AuthErrorCode.SKIP_TOKEN_RENEW,
+          },
+        );
+      }
+
       if (tokenPolicy.expiredTokenRenewLimit > 0 && Date.now() - exp * 1000 > tokenPolicy.expiredTokenRenewLimit) {
         this.ctx.throw(401, {
           message: this.ctx.t('Your session has expired. Please sign in again.', { ns: localeNamespace }),

@@ -11,6 +11,66 @@
 import { Context, Next } from '@nocobase/actions';
 import { PasswordField } from '@nocobase/database';
 import { namespace } from '../../preset';
+import { InvalidTemporaryAccessTargetError, TemporaryAccessCodeService } from '../temporary-access-code';
+
+const CREATE_ACCESS_CODE_SESSION_REQUIRED = 'CREATE_ACCESS_CODE_SESSION_REQUIRED';
+
+function rejectAccessCodeIssuer(ctx: Context) {
+  ctx.throw(403, {
+    code: CREATE_ACCESS_CODE_SESSION_REQUIRED,
+    message: ctx.t('Temporary access codes can only be created with a user session.', { ns: namespace }),
+  });
+}
+
+export function createAccessCodeAction(service: TemporaryAccessCodeService) {
+  return async (ctx: Context, next: Next) => {
+    ctx.set('Cache-Control', 'private, no-store');
+
+    if (ctx.method !== 'POST') {
+      ctx.throw(405);
+    }
+
+    if (ctx.state.authenticatedByAccessCode) {
+      return rejectAccessCodeIssuer(ctx);
+    }
+
+    const renewedToken = ctx.res.getHeader('x-new-token');
+    const accessToken = typeof renewedToken === 'string' ? renewedToken : ctx.getBearerToken();
+    const authenticator = ctx.state.currentAuthenticator;
+    if (!accessToken || typeof authenticator !== 'string' || !authenticator) {
+      return rejectAccessCodeIssuer(ctx);
+    }
+
+    try {
+      const payload = await ctx.app.authManager.jwt.decode(accessToken);
+      if (payload.temp !== true || typeof payload.jti !== 'string') {
+        return rejectAccessCodeIssuer(ctx);
+      }
+    } catch {
+      return rejectAccessCodeIssuer(ctx);
+    }
+
+    const target = ctx.action.params.values?.target;
+    try {
+      ctx.body = await service.create({
+        accessToken,
+        authenticator,
+        roleName: typeof ctx.state.currentRole === 'string' ? ctx.state.currentRole : undefined,
+        target,
+      });
+    } catch (error) {
+      if (error instanceof InvalidTemporaryAccessTargetError) {
+        ctx.throw(400, {
+          code: 'INVALID_TEMPORARY_ACCESS_TARGET',
+          message: ctx.t('Invalid temporary access target.', { ns: namespace }),
+        });
+      }
+      throw error;
+    }
+
+    await next();
+  };
+}
 
 export default {
   lostPassword: async (ctx: Context, next: Next) => {

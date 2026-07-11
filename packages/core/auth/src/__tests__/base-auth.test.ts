@@ -12,6 +12,20 @@ import { BaseAuth } from '../base/auth';
 import { AuthErrorCode } from '../auth';
 
 describe('base-auth', () => {
+  it('skipCheck: should not skip when authentication is forced', async () => {
+    const auth = new BaseAuth({
+      ctx: {
+        skipAuthCheck: true,
+        state: {
+          forceAuthCheck: true,
+        },
+      },
+      userCollection: {},
+    } as never);
+
+    expect(await auth.skipCheck()).toBe(false);
+  });
+
   it('should validate username', () => {
     const auth = new BaseAuth({
       userCollection: {},
@@ -128,6 +142,69 @@ describe('base-auth', () => {
       },
     } as any);
     expect(await auth.check()).toEqual({ id: 1 });
+  });
+
+  it('check: should not renew an expired token when renewal is disabled', async () => {
+    const renew = vi.fn();
+    const forceAuthCheckError = { code: 'INVALID_TEMPORARY_ACCESS_CODE' };
+    const ctx = {
+      t: (message: string) => message,
+      getBearerToken: () => 'token',
+      headers: {},
+      logger: {
+        error: vi.fn(),
+        info: vi.fn(),
+      },
+      state: {
+        disableTokenRenewal: true,
+        forceAuthCheckError,
+      },
+      app: {
+        authManager: {
+          jwt: {
+            decode: () => ({
+              exp: Math.floor(Date.now() / 1000) + 3600,
+              iat: 1,
+              jti: 'session-jti',
+              signInTime: Date.now(),
+              temp: true,
+              userId: 1,
+            }),
+            blacklist: {
+              has: () => false,
+            },
+          },
+          tokenController: {
+            getConfig: async () => ({
+              expiredTokenRenewLimit: 15 * 60 * 1000,
+              sessionExpirationTime: 24 * 60 * 60 * 1000,
+              tokenExpirationTime: 1,
+            }),
+            renew,
+          },
+        },
+      },
+      cache: {
+        wrap: async (_key: string, callback: () => Promise<unknown>) => callback(),
+      },
+      throw: (status: number, error: Record<string, unknown>) => {
+        throw Object.assign(new Error(String(status)), { status, ...error });
+      },
+    };
+    const auth = new BaseAuth({
+      ctx,
+      userCollection: {
+        repository: {
+          findOne: () => ({ id: 1 }),
+        },
+      },
+    } as never);
+
+    await expect(auth.check()).rejects.toMatchObject({
+      code: 'INVALID_TEMPORARY_ACCESS_CODE',
+      status: 401,
+    });
+    expect(renew).not.toHaveBeenCalled();
   });
 
   it('signIn: should throw 401', async () => {
