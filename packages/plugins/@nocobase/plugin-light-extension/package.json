@@ -4,7 +4,7 @@
   "displayName.zh-CN": "轻插件",
   "description": "Organize and reuse multi-file RunJS entries from light extension repositories.",
   "description.zh-CN": "组织并复用轻插件仓库中的多文件 RunJS Entry。",
-  "version": "2.2.0-beta.10",
+  "version": "2.2.0-beta.11",
   "license": "Apache-2.0",
   "main": "./dist/server/index.js",
   "exports": {

@@ -529,60 +529,6 @@ export function createReferenceRecord(input: Record<string, unknown> = {}): Reco
   };
 }
 
-export function createJsFieldReferenceRecord(input: Record<string, unknown> = {}): Record<string, unknown> {
-  const modelUid = typeof input.modelUid === 'string' ? input.modelUid : 'flow_js_field';
-  const use = typeof input.use === 'string' ? input.use : 'JSFieldModel';
-  const ownerLocator = isPlainRecord(input.ownerLocator)
-    ? (input.ownerLocator as LightExtensionReferenceOwnerLocator)
-    : createOwnerLocator(modelUid, { kind: 'js-field', use });
-  return createReferenceRecord({
-    id: `lef_${modelUid}`,
-    repoId: 'ler_fields',
-    entryId: 'lee_phone_link',
-    kind: 'js-field',
-    ownerKind: 'flowModel.fieldSettings',
-    ownerLocator,
-    ownerLocatorHash: hashOwnerLocator(ownerLocator),
-    ...input,
-  });
-}
-
-export function createJsActionReferenceRecord(input: Record<string, unknown> = {}): Record<string, unknown> {
-  const modelUid = typeof input.modelUid === 'string' ? input.modelUid : 'flow_js_action';
-  const use = typeof input.use === 'string' ? input.use : 'JSActionModel';
-  const ownerLocator = isPlainRecord(input.ownerLocator)
-    ? (input.ownerLocator as LightExtensionReferenceOwnerLocator)
-    : createOwnerLocator(modelUid, { kind: 'js-action', use });
-  return createReferenceRecord({
-    id: `lef_${modelUid}`,
-    repoId: 'ler_actions',
-    entryId: 'lee_mark_approved',
-    kind: 'js-action',
-    ownerKind: 'flowModel.actionSettings',
-    ownerLocator,
-    ownerLocatorHash: hashOwnerLocator(ownerLocator),
-    ...input,
-  });
-}
-
-export function createJsItemReferenceRecord(input: Record<string, unknown> = {}): Record<string, unknown> {
-  const modelUid = typeof input.modelUid === 'string' ? input.modelUid : 'flow_js_item';
-  const use = typeof input.use === 'string' ? input.use : 'JSItemModel';
-  const ownerLocator = isPlainRecord(input.ownerLocator)
-    ? (input.ownerLocator as LightExtensionReferenceOwnerLocator)
-    : createOwnerLocator(modelUid, { kind: 'js-item', use });
-  return createReferenceRecord({
-    id: `lef_${modelUid}`,
-    repoId: 'ler_items',
-    entryId: 'lee_level_label',
-    kind: 'js-item',
-    ownerKind: 'flowModel.itemSettings',
-    ownerLocator,
-    ownerLocatorHash: hashOwnerLocator(ownerLocator),
-    ...input,
-  });
-}
-
 function kindToFolder(kind: string): string {
   if (kind === 'js-field') {
     return 'js-fields';

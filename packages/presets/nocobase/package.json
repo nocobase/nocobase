@@ -107,8 +107,8 @@
     "@nocobase/server": "2.2.0-beta.11",
     "cronstrue": "^2.11.0",
     "fs-extra": "^11.1.1",
-    "@nocobase/plugin-light-extension": "2.2.0-beta.10",
-    "@nocobase/plugin-vsc-file": "2.2.0-beta.10"
+    "@nocobase/plugin-light-extension": "2.2.0-beta.11",
+    "@nocobase/plugin-vsc-file": "2.2.0-beta.11"
   },
   "deprecated": [
     "@nocobase/plugin-audit-logs",

@@ -39,7 +39,7 @@ const ActionBarContext = React.createContext<ActionBarContextValue>({
   container: null,
 });
 
-export const ActionBarProvider: React.FC<ActionBarContextValue> = ({ children, ...props }) => {
+export const ActionBarProvider: React.FC<React.PropsWithChildren<ActionBarContextValue>> = ({ children, ...props }) => {
   return <ActionBarContext.Provider value={props}>{children}</ActionBarContext.Provider>;
 };
 
@@ -47,7 +47,7 @@ export const useActionBarContext = () => {
   return useContext(ActionBarContext);
 };
 
-const Portal: React.FC = (props) => {
+const Portal: React.FC<React.PropsWithChildren> = (props) => {
   const filedSchema = useFieldSchema();
   const { container, parentComponents = ['BlockItem', 'CardItem'] } = useActionBarContext();
   return (

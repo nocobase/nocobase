@@ -3271,10 +3271,6 @@ export function buildCapabilities(limits: LightExtensionValidationLimits): Light
   };
 }
 
-export function entryHasErrors(entry: LightExtensionEntryValidationResult): boolean {
-  return hasErrorDiagnostic(entry.diagnostics);
-}
-
 export function hasErrorDiagnostic(diagnostics: LightExtensionDiagnostic[]): boolean {
   return diagnostics.some((item) => item.severity === 'error');
 }

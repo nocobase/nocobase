@@ -284,7 +284,7 @@ export const Form: React.FC<FormProps> & {
   ReadPrettyDesigner?: any;
   Templates?: any;
 } = withDynamicSchemaProps(
-  observer((props) => {
+  observer((props: FormProps) => {
     const field = useField<Field>();
     const { token } = useToken();
 

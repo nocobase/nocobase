@@ -8,6 +8,7 @@
  */
 
 import 'react';
+import type * as React from 'react';
 
 declare module 'react' {
   /**
@@ -16,6 +17,15 @@ declare module 'react' {
    * components are migrated to explicit PropsWithChildren types.
    */
   interface FunctionComponent<P = {}> {
-    (props: 'children' extends keyof P ? P : PropsWithChildren<P>, deprecatedLegacyContext?: unknown): ReactNode;
+    (
+      props: 'children' extends keyof P ? P : React.PropsWithChildren<P>,
+      deprecatedLegacyContext?: unknown,
+    ): React.ReactNode;
+  }
+}
+
+declare module 'react-drag-listview' {
+  interface DragListViewProps {
+    children?: React.ReactNode;
   }
 }

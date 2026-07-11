@@ -715,8 +715,9 @@ const displayNone = { display: 'none' };
 const BodyCellComponent = React.memo<BodyCellComponentProps>((props) => {
   const { designable } = useDesignable();
   const style = designable ? columnOpacityStyle : columnHiddenStyle;
+  const { columnHidden, ...cellProps } = props;
 
-  if (props.columnHidden) {
+  if (columnHidden) {
     return (
       <FlagProvider isInTableCell>
         <td style={{ overflow: 'hidden', ...style }}>
@@ -726,7 +727,7 @@ const BodyCellComponent = React.memo<BodyCellComponentProps>((props) => {
     );
   }
 
-  return <InternalBodyCellComponent {..._.omit(props, 'columnHidden')} />;
+  return <InternalBodyCellComponent {...cellProps} />;
 });
 
 BodyCellComponent.displayName = 'BodyCellComponent';

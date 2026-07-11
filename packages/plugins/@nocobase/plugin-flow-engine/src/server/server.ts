@@ -8,6 +8,7 @@
  */
 
 import { MagicAttributeModel } from '@nocobase/database';
+import type { Transaction } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { tval, uid } from '@nocobase/utils';
 import path, { resolve } from 'path';
@@ -156,15 +157,18 @@ export class PluginUISchemaStorageServer extends Plugin {
         duplicate: async (ctx, next) => {
           const { uid } = ctx.action.params;
           const repository = ctx.db.getRepository('flowModels') as FlowModelRepository;
-          const duplicated = await repository.duplicate(uid);
-          await syncLightExtensionReferencesForNodeTree(
-            this,
-            {
-              rootUid: duplicated?.uid,
-              action: 'flowModels.duplicate',
-            },
-            getLightExtensionReferenceContext(ctx),
-          );
+          const duplicated = await ctx.db.sequelize.transaction(async (transaction) => {
+            const duplicated = await repository.duplicate(uid, { transaction });
+            await syncLightExtensionReferencesForNodeTree(
+              this,
+              {
+                rootUid: duplicated?.uid,
+                action: 'flowModels.duplicate',
+              },
+              getLightExtensionReferenceContext(ctx, transaction),
+            );
+            return duplicated;
+          });
           ctx.body = duplicated;
           await next();
         },
@@ -190,15 +194,18 @@ export class PluginUISchemaStorageServer extends Plugin {
         save: async (ctx, next) => {
           const { values } = ctx.action.params;
           const repository = ctx.db.getRepository('flowModels') as FlowModelRepository;
-          const uid = await repository.upsertModel(values);
-          await syncLightExtensionReferencesForNodeTree(
-            this,
-            {
-              rootUid: uid,
-              action: 'flowModels.save',
-            },
-            getLightExtensionReferenceContext(ctx),
-          );
+          const uid = await ctx.db.sequelize.transaction(async (transaction) => {
+            const uid = await repository.upsertModel(values, { transaction });
+            await syncLightExtensionReferencesForNodeTree(
+              this,
+              {
+                rootUid: uid,
+                action: 'flowModels.save',
+              },
+              getLightExtensionReferenceContext(ctx, transaction),
+            );
+            return uid;
+          });
           ctx.body = uid;
           // ctx.body = await repository.findModelById(uid);
           await next();
@@ -206,14 +213,6 @@ export class PluginUISchemaStorageServer extends Plugin {
         destroy: async (ctx, next) => {
           const { filterByTk } = ctx.action.params;
           const repository = ctx.db.getRepository('flowModels') as FlowModelRepository;
-          await markLightExtensionReferencesOwnerMissingForNodeTree(
-            this,
-            {
-              rootUid: filterByTk,
-              action: 'flowModels.destroy',
-            },
-            getLightExtensionReferenceContext(ctx),
-          );
           await repository.remove(filterByTk);
           ctx.body = 'ok';
           await next();
@@ -254,7 +253,7 @@ export class PluginUISchemaStorageServer extends Plugin {
   }
 }
 
-function getLightExtensionReferenceContext(ctx: LightExtensionReferenceActionContext) {
+function getLightExtensionReferenceContext(ctx: LightExtensionReferenceActionContext, transaction?: Transaction) {
   const headers = ctx.request?.headers || ctx.request?.header || {};
   return {
     can: ctx.can,
@@ -264,6 +263,7 @@ function getLightExtensionReferenceContext(ctx: LightExtensionReferenceActionCon
     currentUser: ctx.auth?.user,
     state: ctx.state,
     timezone: ctx.timezone,
+    transaction,
   };
 }
 

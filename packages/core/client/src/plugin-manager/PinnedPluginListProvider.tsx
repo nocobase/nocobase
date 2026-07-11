@@ -11,13 +11,13 @@ import { css } from '@emotion/css';
 import { SchemaOptionsContext } from '@formily/react';
 import { ConfigProvider, Divider } from 'antd';
 import get from 'lodash/get';
-import React, { useContext } from 'react';
+import React, { PropsWithChildren, useContext } from 'react';
 import { useACLRoleContext } from '../acl/ACLProvider';
 import { UserCenter } from '../route-switch/antd/admin-layout/UserCenterButton';
 import { Help } from '../user/Help';
 import { getPinnedPluginListKeys, PinnedPluginListContext, type PinnedPluginListItems } from './context';
 
-export const PinnedPluginListProvider: React.FC<{ items: PinnedPluginListItems }> = (props) => {
+export const PinnedPluginListProvider: React.FC<PropsWithChildren<{ items: PinnedPluginListItems }>> = (props) => {
   const { children, items } = props;
   const ctx = useContext(PinnedPluginListContext);
 

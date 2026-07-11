@@ -22,8 +22,8 @@ ActionContext.displayName = 'ActionContext';
 export const ActionContextProvider: React.FC<ActionContextProps & { value?: ActionContextProps }> = React.memo(
   (props) => {
     const [submitted, setSubmitted] = useState(false); //是否有提交记录
-    const { visible } = { ...props, ...props.value };
-    const { setSubmitted: setParentSubmitted } = { ...props, ...props.value };
+    const { visible = undefined } = { ...props, ...props.value };
+    const { setSubmitted: setParentSubmitted = undefined } = { ...props, ...props.value };
     const service = useBlockServiceInActionButton();
     const { isSubPageClosedByPageMenu, reset } = useIsSubPageClosedByPageMenu(useFieldSchema());
 

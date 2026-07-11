@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import React, { FC } from 'react';
 
 import { InheritanceCollectionMixin } from '../../../collection-manager';
@@ -24,9 +33,10 @@ export const AssociationCollectionFields: FC<AssociationCollectionFieldsProps> =
   const children = associationFields
     .map((associationField) => {
       // 获取关联表
-      const associationCollection = collectionManager.getCollection<InheritanceCollectionMixin>(
-        associationField.target!,
-      )!;
+      if (!associationField.target) return null;
+      const associationCollection = collectionManager.getCollection(associationField.target) as
+        | InheritanceCollectionMixin
+        | undefined;
       if (!associationCollection) return null;
       // 获取父表
       const associationCollectionFields = associationCollection?.getAllFields();
