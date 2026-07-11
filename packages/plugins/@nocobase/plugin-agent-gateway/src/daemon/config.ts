@@ -10,6 +10,7 @@
 import { promises as fs } from 'fs';
 import { homedir } from 'os';
 import path from 'path';
+import { randomUUID } from 'crypto';
 
 import { DaemonConfig, JsonRecord } from './types';
 
@@ -27,6 +28,7 @@ function isDaemonConfig(value: unknown): value is DaemonConfig {
     typeof record.nodeId === 'string' &&
     typeof record.nodeKey === 'string' &&
     typeof record.nodeToken === 'string' &&
+    (record.installationId === undefined || typeof record.installationId === 'string') &&
     typeof record.savedAt === 'string'
   );
 }
@@ -37,16 +39,33 @@ export async function readDaemonConfig(configPath = getDefaultConfigPath()): Pro
   if (!isDaemonConfig(parsed)) {
     throw new Error(`Invalid Agent Gateway daemon config: ${configPath}`);
   }
-  return parsed;
+  if (parsed.installationId) {
+    return parsed;
+  }
+  const config = {
+    ...parsed,
+    installationId: randomUUID(),
+  };
+  await writeDaemonConfig(config, configPath);
+  return config;
 }
 
 export async function writeDaemonConfig(config: DaemonConfig, configPath = getDefaultConfigPath()) {
-  await fs.mkdir(path.dirname(configPath), { recursive: true });
-  await fs.writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`, {
-    encoding: 'utf8',
-    mode: 0o600,
-  });
-  await fs.chmod(configPath, 0o600);
+  const configDir = path.dirname(configPath);
+  const tempPath = path.join(configDir, `.${path.basename(configPath)}.${process.pid}.${randomUUID()}.tmp`);
+  await fs.mkdir(configDir, { recursive: true });
+  try {
+    await fs.writeFile(tempPath, `${JSON.stringify(config, null, 2)}\n`, {
+      encoding: 'utf8',
+      mode: 0o600,
+    });
+    await fs.rename(tempPath, configPath);
+    await fs.chmod(configPath, 0o600);
+  } finally {
+    await fs.rm(tempPath, { force: true }).catch(() => {
+      // The atomic rename already removed the temporary path on success.
+    });
+  }
 }
 
 export function serializeSafeConfig(config: DaemonConfig) {
@@ -54,6 +73,7 @@ export function serializeSafeConfig(config: DaemonConfig) {
     serverUrl: config.serverUrl,
     nodeId: config.nodeId,
     nodeKey: config.nodeKey,
+    installationId: config.installationId,
     tokenLast4: config.tokenLast4 || config.nodeToken.slice(-4),
     heartbeatIntervalSeconds: config.heartbeatIntervalSeconds,
     claimIntervalSeconds: config.claimIntervalSeconds,

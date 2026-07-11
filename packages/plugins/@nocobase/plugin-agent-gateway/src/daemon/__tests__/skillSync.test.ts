@@ -87,6 +87,57 @@ async function createAuthenticatedArchiveServer(content: Buffer, expectedAuthori
   };
 }
 
+async function createStalledArchiveServer() {
+  let resolveRequestStarted: () => void = () => {};
+  let resolveResponseClosed: () => void = () => {};
+  const requestStarted = new Promise<void>((resolve) => {
+    resolveRequestStarted = resolve;
+  });
+  const responseClosed = new Promise<void>((resolve) => {
+    resolveResponseClosed = resolve;
+  });
+  const server = http.createServer((_request, response) => {
+    resolveRequestStarted();
+    response.once('close', resolveResponseClosed);
+    response.writeHead(200, {
+      'Content-Type': 'application/zip',
+    });
+    response.write('partial archive');
+  });
+  await new Promise<void>((resolve) => {
+    server.listen(0, '127.0.0.1', resolve);
+  });
+  const address = server.address() as AddressInfo;
+  return {
+    url: `http://127.0.0.1:${address.port}/stalled.zip`,
+    requestStarted,
+    responseClosed,
+    close: async () =>
+      await new Promise<void>((resolve, reject) => {
+        server.close((error) => {
+          if (error) {
+            reject(error);
+            return;
+          }
+          resolve();
+        });
+      }),
+  };
+}
+
+async function waitForFile(filePath: string, timeoutMs = 1000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    try {
+      await fs.access(filePath);
+      return;
+    } catch {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+  }
+  throw new Error(`Timed out waiting for file: ${filePath}`);
+}
+
 describe('agent gateway daemon skill version sync', () => {
   let tempDir: string;
 
@@ -241,6 +292,114 @@ describe('agent gateway daemon skill version sync', () => {
       expect(await fs.readFile(path.join(result.installPath, 'SKILL.md'), 'utf8')).toContain('Redirected Skill');
     } finally {
       await server.close();
+    }
+  });
+
+  it('destroys an in-flight archive download when synchronization is aborted', async () => {
+    const server = await createStalledArchiveServer();
+    const controller = new AbortController();
+    try {
+      const syncPromise = syncNodeSkillVersion({
+        nodeId: 'node-1',
+        skillsRoot: path.join(tempDir, 'skills'),
+        cacheRoot: path.join(tempDir, 'cache'),
+        skillVersion: {
+          skillVersionId: '77777777-7777-4777-8777-777777777777',
+          versionLabel: 'v1',
+          source: {
+            type: 'zip',
+            archiveUrl: server.url,
+            sha256: 'unused-while-download-is-stalled',
+          },
+        },
+        signal: controller.signal,
+        extractArchive: async () => {
+          throw new Error('aborted download should not extract');
+        },
+      });
+      const rejected = expect(syncPromise).rejects.toThrow('daemon stopping');
+
+      await server.requestStarted;
+      controller.abort(new Error('daemon stopping'));
+
+      await rejected;
+      await server.responseClosed;
+    } finally {
+      controller.abort();
+      await server.close();
+    }
+  });
+
+  it('terminates archive validation child processes when synchronization is aborted', async () => {
+    if (process.platform === 'win32') {
+      return;
+    }
+    const archiveContent = Buffer.from('fake archive');
+    const archivePath = path.join(tempDir, 'skill.zip');
+    const binDir = path.join(tempDir, 'bin');
+    const startedPath = path.join(tempDir, 'zipinfo-started');
+    const terminatedPath = path.join(tempDir, 'zipinfo-terminated');
+    const fakeZipinfoPath = path.join(binDir, 'zipinfo');
+    await fs.mkdir(binDir, { recursive: true });
+    await fs.writeFile(archivePath, archiveContent);
+    await fs.writeFile(
+      fakeZipinfoPath,
+      [
+        `#!${process.execPath}`,
+        "const fs = require('fs');",
+        "fs.writeFileSync(process.env.AG_SKILL_SYNC_CHILD_STARTED, 'started');",
+        "process.on('SIGTERM', () => {",
+        "  fs.writeFileSync(process.env.AG_SKILL_SYNC_CHILD_TERMINATED, 'terminated');",
+        '  process.exit(0);',
+        '});',
+        'setInterval(() => {}, 1000);',
+        '',
+      ].join('\n'),
+      { mode: 0o755 },
+    );
+
+    const previousPath = process.env.PATH;
+    const previousStartedPath = process.env.AG_SKILL_SYNC_CHILD_STARTED;
+    const previousTerminatedPath = process.env.AG_SKILL_SYNC_CHILD_TERMINATED;
+    const controller = new AbortController();
+    process.env.PATH = `${binDir}${path.delimiter}${previousPath || ''}`;
+    process.env.AG_SKILL_SYNC_CHILD_STARTED = startedPath;
+    process.env.AG_SKILL_SYNC_CHILD_TERMINATED = terminatedPath;
+    try {
+      const syncPromise = syncNodeSkillVersion({
+        nodeId: 'node-1',
+        skillsRoot: path.join(tempDir, 'skills'),
+        skillVersion: {
+          skillVersionId: '88888888-8888-4888-8888-888888888888',
+          versionLabel: 'v1',
+          source: {
+            type: 'zip',
+            archivePath,
+            sha256: sha256(archiveContent),
+          },
+        },
+        signal: controller.signal,
+      });
+      const rejected = expect(syncPromise).rejects.toThrow('daemon stopping');
+
+      await waitForFile(startedPath);
+      controller.abort(new Error('daemon stopping'));
+
+      await rejected;
+      await waitForFile(terminatedPath);
+    } finally {
+      controller.abort();
+      process.env.PATH = previousPath;
+      if (previousStartedPath === undefined) {
+        delete process.env.AG_SKILL_SYNC_CHILD_STARTED;
+      } else {
+        process.env.AG_SKILL_SYNC_CHILD_STARTED = previousStartedPath;
+      }
+      if (previousTerminatedPath === undefined) {
+        delete process.env.AG_SKILL_SYNC_CHILD_TERMINATED;
+      } else {
+        process.env.AG_SKILL_SYNC_CHILD_TERMINATED = previousTerminatedPath;
+      }
     }
   });
 

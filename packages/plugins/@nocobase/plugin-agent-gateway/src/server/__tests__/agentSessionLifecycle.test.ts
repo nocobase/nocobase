@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { randomUUID } from 'crypto';
+
 import { MockServer, createMockServer } from '@nocobase/test';
 
 import PluginAgentGatewayServer from '../plugin';
@@ -166,6 +168,21 @@ describe('agent gateway agent session lifecycle APIs', () => {
       agentProfileId: runner.profileId,
     });
     const claim = await claimRun(runner, run.id);
+    const earlyEvent = await app.db.sequelize.transaction(async (transaction) => {
+      return await app.db.getRepository('agAgentConversationEvents').create({
+        values: {
+          id: randomUUID(),
+          runId: run.id,
+          sessionId: null,
+          source: 'codex',
+          sequence: 1,
+          eventType: 'agent.message',
+          providerEventId: 'message-before-session-upsert',
+          contentText: 'message before provider session detection',
+        },
+        transaction,
+      });
+    });
 
     const result = await upsertSession(runner, claim, 'codex-thread-1');
 
@@ -189,8 +206,14 @@ describe('agent gateway agent session lifecycle APIs', () => {
     });
     expect(session.get('provider')).toBe('codex');
     expect(session.get('providerSessionId')).toBe('codex-thread-1');
+    expect(session.get('nodeId')).toBe(runner.nodeId);
     expect(session.get('rootRunId')).toBe(run.id);
     expect(session.get('latestRunId')).toBe(run.id);
+    const backfilledEvent = await app.db.getRepository('agAgentConversationEvents').findOne({
+      filterByTk: earlyEvent.get('id'),
+    });
+    expect(backfilledEvent.get('sessionId')).toBe(session.get('id'));
+    expect(Number(backfilledEvent.get('sessionIngestId'))).toBeGreaterThan(0);
 
     const apiLogs = await app.db.getRepository('agApiCallLogs').find({
       filter: {
@@ -205,6 +228,45 @@ describe('agent gateway agent session lifecycle APIs', () => {
     expect(upsertLog?.get('statusCode')).toBe(200);
     expect((upsertLog?.get('requestSummaryJson') as Record<string, unknown>).action).toBe('agent-session:upsert');
     expect(JSON.stringify(upsertLog?.toJSON())).not.toContain(String(claim.claimToken));
+  });
+
+  it('accepts provider session reports that race with newer run heartbeats', async () => {
+    const runner = await createRunner();
+    const run = await createRun('session-run-heartbeat-race', {
+      nodeId: runner.nodeId,
+      agentProfileId: runner.profileId,
+    });
+    const claim = await claimRun(runner, run.id);
+    const nodeAgent = app.agent();
+
+    const firstHeartbeatResponse = await nodeAgent
+      .post(`/api/agent-gateway/nodes/${runner.nodeId}/runs/${run.id}/heartbeat`)
+      .set('Authorization', `Bearer ${runner.nodeToken}`)
+      .send({
+        claimToken: claim.claimToken,
+        claimAttempt: claim.claimAttempt,
+        leaseVersion: claim.leaseVersion,
+        status: 'running',
+      });
+    expect(firstHeartbeatResponse.status).toBe(200);
+    const firstHeartbeat = getData(firstHeartbeatResponse);
+    const secondHeartbeatResponse = await nodeAgent
+      .post(`/api/agent-gateway/nodes/${runner.nodeId}/runs/${run.id}/heartbeat`)
+      .set('Authorization', `Bearer ${runner.nodeToken}`)
+      .send({
+        claimToken: claim.claimToken,
+        claimAttempt: claim.claimAttempt,
+        leaseVersion: firstHeartbeat.leaseVersion,
+        status: 'running',
+      });
+    expect(secondHeartbeatResponse.status).toBe(200);
+
+    const result = await upsertSession(runner, claim, 'codex-thread-heartbeat-race');
+
+    expect(result).toMatchObject({
+      runId: run.id,
+      providerSessionId: 'codex-thread-heartbeat-race',
+    });
   });
 
   it('keeps session upsert idempotent and advances latestRunId for continuation runs', async () => {
@@ -400,5 +462,35 @@ describe('agent gateway agent session lifecycle APIs', () => {
     });
     expect(session.get('rootRunId')).toBe(firstRun.id);
     expect(session.get('latestRunId')).toBe(firstRun.id);
+  });
+
+  it('keeps equal provider session ids separate across nodes', async () => {
+    const firstRunner = await createRunner('codex-node-a');
+    const secondRunner = await createRunner('codex-node-b');
+    const firstRun = await createRun('session-node-scope-a', {
+      nodeId: firstRunner.nodeId,
+      agentProfileId: firstRunner.profileId,
+    });
+    const secondRun = await createRun('session-node-scope-b', {
+      nodeId: secondRunner.nodeId,
+      agentProfileId: secondRunner.profileId,
+    });
+
+    const firstClaim = await claimRun(firstRunner, firstRun.id);
+    const secondClaim = await claimRun(secondRunner, secondRun.id);
+    const firstResult = await upsertSession(firstRunner, firstClaim, 'shared-local-session-id');
+    const secondResult = await upsertSession(secondRunner, secondClaim, 'shared-local-session-id');
+
+    expect((firstResult.session as Record<string, unknown>).id).not.toBe(
+      (secondResult.session as Record<string, unknown>).id,
+    );
+    expect(
+      await app.db.getRepository('agAgentSessions').count({
+        filter: {
+          provider: 'codex',
+          providerSessionId: 'shared-local-session-id',
+        },
+      }),
+    ).toBe(2);
   });
 });

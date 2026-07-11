@@ -467,21 +467,24 @@ describe('agent gateway provider capability enforcement', () => {
 
   it('returns unsupported states for generic artifacts and raw logs without leaking data', async () => {
     const generic = await seedProviderRun('generic-cli');
-    await app.db.getRepository('agRunEvents').create({
-      values: {
-        id: randomUUID(),
-        runId: generic.runId,
-        claimAttempt: 1,
-        source: 'agent',
-        sequence: 1,
-        level: 'info',
-        eventType: 'agent.output',
-        message: 'must-not-leak',
-        payloadJson: {
-          secret: 'RAW_EVENT_SECRET',
+    await app.db.sequelize.transaction(async (transaction) => {
+      await app.db.getRepository('agRunEvents').create({
+        values: {
+          id: randomUUID(),
+          runId: generic.runId,
+          claimAttempt: 1,
+          source: 'agent',
+          sequence: 1,
+          level: 'info',
+          eventType: 'agent.output',
+          message: 'must-not-leak',
+          payloadJson: {
+            secret: 'RAW_EVENT_SECRET',
+          },
+          emittedAt: new Date(),
         },
-        emittedAt: new Date(),
-      },
+        transaction,
+      });
     });
     await app.db.getRepository('agRunArtifacts').create({
       values: {
@@ -540,21 +543,24 @@ describe('agent gateway provider capability enforcement', () => {
         finishedAt: now,
       },
     });
-    await app.db.getRepository('agRunEvents').create({
-      values: {
-        id: randomUUID(),
-        runId,
-        claimAttempt: 1,
-        source: 'agent',
-        sequence: 1,
-        level: 'info',
-        eventType: 'agent.output',
-        message: 'must-not-leak-fallback',
-        payloadJson: {
-          secret: 'FALLBACK_RAW_EVENT_SECRET',
+    await app.db.sequelize.transaction(async (transaction) => {
+      await app.db.getRepository('agRunEvents').create({
+        values: {
+          id: randomUUID(),
+          runId,
+          claimAttempt: 1,
+          source: 'agent',
+          sequence: 1,
+          level: 'info',
+          eventType: 'agent.output',
+          message: 'must-not-leak-fallback',
+          payloadJson: {
+            secret: 'FALLBACK_RAW_EVENT_SECRET',
+          },
+          emittedAt: now,
         },
-        emittedAt: now,
-      },
+        transaction,
+      });
     });
     await app.db.getRepository('agRunArtifacts').create({
       values: {
@@ -646,21 +652,24 @@ describe('agent gateway provider capability enforcement', () => {
         agentProfileId: profile.get('id'),
       },
     });
-    await app.db.getRepository('agRunEvents').create({
-      values: {
-        id: randomUUID(),
-        runId,
-        claimAttempt: 1,
-        source: 'agent',
-        sequence: 1,
-        level: 'info',
-        eventType: 'agent.output',
-        message: 'must-not-leak-profile-key',
-        payloadJson: {
-          secret: 'PROFILE_KEY_RAW_EVENT_SECRET',
+    await app.db.sequelize.transaction(async (transaction) => {
+      await app.db.getRepository('agRunEvents').create({
+        values: {
+          id: randomUUID(),
+          runId,
+          claimAttempt: 1,
+          source: 'agent',
+          sequence: 1,
+          level: 'info',
+          eventType: 'agent.output',
+          message: 'must-not-leak-profile-key',
+          payloadJson: {
+            secret: 'PROFILE_KEY_RAW_EVENT_SECRET',
+          },
+          emittedAt: now,
         },
-        emittedAt: now,
-      },
+        transaction,
+      });
     });
     await app.db.getRepository('agRunArtifacts').create({
       values: {
@@ -792,21 +801,24 @@ describe('agent gateway provider capability enforcement', () => {
         finishedAt: now,
       },
     });
-    await app.db.getRepository('agRunEvents').create({
-      values: {
-        id: randomUUID(),
-        runId,
-        claimAttempt: 1,
-        source: 'agent',
-        sequence: 1,
-        level: 'info',
-        eventType: 'agent.output',
-        message: 'must-not-leak-explicit-generic',
-        payloadJson: {
-          secret: 'EXPLICIT_GENERIC_RAW_EVENT_SECRET',
+    await app.db.sequelize.transaction(async (transaction) => {
+      await app.db.getRepository('agRunEvents').create({
+        values: {
+          id: randomUUID(),
+          runId,
+          claimAttempt: 1,
+          source: 'agent',
+          sequence: 1,
+          level: 'info',
+          eventType: 'agent.output',
+          message: 'must-not-leak-explicit-generic',
+          payloadJson: {
+            secret: 'EXPLICIT_GENERIC_RAW_EVENT_SECRET',
+          },
+          emittedAt: now,
         },
-        emittedAt: now,
-      },
+        transaction,
+      });
     });
     await app.db.getRepository('agRunArtifacts').create({
       values: {

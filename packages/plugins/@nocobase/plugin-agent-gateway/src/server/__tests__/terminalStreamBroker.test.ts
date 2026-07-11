@@ -58,6 +58,30 @@ function waitForNoFrame(ws: WebSocket, predicate: (frame: TerminalFrame) => bool
   });
 }
 
+function waitForFrames(ws: WebSocket, predicate: (frame: TerminalFrame) => boolean, count: number) {
+  return new Promise<TerminalFrame[]>((resolve, reject) => {
+    const frames: TerminalFrame[] = [];
+    const timer = setTimeout(() => {
+      ws.off('message', onMessage);
+      reject(new Error('Terminal stream frames timed out'));
+    }, 5000);
+    const onMessage = (data: WebSocket.RawData) => {
+      const frame = JSON.parse(data.toString()) as TerminalFrame;
+      if (!predicate(frame)) {
+        return;
+      }
+      frames.push(frame);
+      if (frames.length < count) {
+        return;
+      }
+      clearTimeout(timer);
+      ws.off('message', onMessage);
+      resolve(frames);
+    };
+    ws.on('message', onMessage);
+  });
+}
+
 function waitForClose(ws: WebSocket) {
   if (ws.readyState === WebSocket.CLOSED) {
     return Promise.resolve();
@@ -530,6 +554,11 @@ describe('terminal stream broker', () => {
       );
       const snapshotRequest = await waitForFrame(daemon, (frame) => frame.type === 'daemon.snapshotRequest');
 
+      const terminalFramesPromise = waitForFrames(
+        browser,
+        (frame) => frame.type === 'terminal.snapshot' || frame.type === 'terminal.end',
+        2,
+      );
       sendFrame(daemon, {
         type: 'terminal.snapshot',
         protocol: TERMINAL_PROTOCOL,
@@ -550,14 +579,7 @@ describe('terminal stream broker', () => {
         reason: 'completed',
       });
 
-      const first = await waitForFrame(
-        browser,
-        (frame) => frame.type === 'terminal.snapshot' || frame.type === 'terminal.end',
-      );
-      const second = await waitForFrame(
-        browser,
-        (frame) => frame.type === 'terminal.snapshot' || frame.type === 'terminal.end',
-      );
+      const [first, second] = await terminalFramesPromise;
       expect(first.type).toBe('terminal.snapshot');
       expect(second.type).toBe('terminal.end');
       expect(Object.prototype.hasOwnProperty.call(first, 'sessionName')).toBe(false);

@@ -44,12 +44,17 @@ import {
 } from '../../shared/providerCapabilities';
 import { COMMAND_CONTENT_JSON_LIMIT_CHARS } from '../../shared/conversationLimits';
 import { getRunProviderCapabilitySummary, isRunCapabilitySupported } from './capabilityUtils';
+import { findCursorPage, getBoundedPositiveIntegerQuery } from './cursorPagination';
 
 const MAX_EVENT_MESSAGE_LENGTH = 4000;
 const MAX_EVENT_PAYLOAD_CHARS = 16000;
 const MAX_ARTIFACT_TEXT_BYTES = COMMAND_CONTENT_JSON_LIMIT_CHARS;
 const MAX_METADATA_JSON_CHARS = 16 * 1024;
 const MAX_SNAPSHOT_JSON_CHARS = 64 * 1024;
+const DEFAULT_EVENT_PAGE_SIZE = 100;
+const MAX_EVENT_PAGE_SIZE = 500;
+const DEFAULT_DETAIL_PAGE_SIZE = 20;
+const MAX_DETAIL_PAGE_SIZE = 100;
 const SUPPORTED_SNAPSHOT_TYPES = new Set(['node', 'agent', 'skill', 'nocobase', 'workspace', 'custom']);
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const STANDARD_OBSERVABILITY_COLLECTIONS = [
@@ -66,6 +71,34 @@ interface ArtifactGroupDeclaration {
   glob?: string;
   groupKey?: string;
   groupLabel?: string;
+}
+
+function getDetailPagination(ctx: Context) {
+  const page = getBoundedPositiveIntegerQuery(ctx, 'page', 1, Number.MAX_SAFE_INTEGER);
+  const pageSize = getBoundedPositiveIntegerQuery(
+    ctx,
+    'pageSize',
+    DEFAULT_DETAIL_PAGE_SIZE,
+    MAX_DETAIL_PAGE_SIZE,
+    'limit',
+  );
+  return {
+    page,
+    pageSize,
+    offset: (page - 1) * pageSize,
+  };
+}
+
+function findRunEventPage(ctx: Context, runId: string) {
+  return findCursorPage({
+    ctx,
+    filter: { runId },
+    scope: `observability:events:${runId}`,
+    cursorField: 'ingestId',
+    defaultPageSize: DEFAULT_EVENT_PAGE_SIZE,
+    maxPageSize: MAX_EVENT_PAGE_SIZE,
+    findRows: (options) => ctx.db.getRepository('agRunEvents').find(options) as Promise<ModelRecord[]>,
+  });
 }
 
 export interface CreateRunArtifactOptions {
@@ -558,14 +591,15 @@ async function listRunEvents(ctx: Context, runId: string) {
   const run = await assertRunVisible(ctx, runId, 'get');
   await assertObservationCapability(ctx, run, 'structuredEvents');
 
-  const events = (await ctx.db.getRepository('agRunEvents').find({
-    filter: {
-      runId,
-    },
-    sort: ['claimAttempt', 'source', 'sequence', 'createdAt'],
-  })) as ModelRecord[];
-
-  ctx.body = events.map(serializeModel);
+  const page = await findRunEventPage(ctx, runId);
+  ctx.body = {
+    rows: page.rows.map(serializeModel),
+    pageSize: page.pageSize,
+    beforeCursor: page.beforeCursor,
+    afterCursor: page.afterCursor,
+    hasMoreBefore: page.hasMoreBefore,
+    hasMoreAfter: page.hasMoreAfter,
+  };
 }
 
 async function listRunArtifacts(ctx: Context, runId: string) {
@@ -577,14 +611,56 @@ async function listRunArtifacts(ctx: Context, runId: string) {
   const run = await assertRunVisible(ctx, runId, 'get');
   await assertObservationCapability(ctx, run, 'artifacts');
 
-  const artifacts = (await ctx.db.getRepository('agRunArtifacts').find({
+  const { page, pageSize, offset } = getDetailPagination(ctx);
+  const repository = ctx.db.getRepository('agRunArtifacts');
+  const [artifacts, count] = await Promise.all([
+    repository.find({
+      filter: {
+        runId,
+      },
+      sort: ['-createdAt', '-id'],
+      offset,
+      limit: pageSize,
+      except: ['contentText'],
+    }) as Promise<ModelRecord[]>,
+    repository.count({
+      filter: {
+        runId,
+      },
+    }),
+  ]);
+
+  ctx.body = {
+    rows: applyDeclaredArtifactGroups(artifacts.map(serializeModel), run),
+    count,
+    page,
+    pageSize,
+    totalPage: Math.ceil(count / pageSize),
+  };
+}
+
+async function getRunArtifactContent(ctx: Context, runId: string, artifactId: string) {
+  await requireObservabilityRead(
+    ctx,
+    AGENT_GATEWAY_ACTIONS.readArtifacts,
+    'Agent Gateway artifact read permission required',
+  );
+  const run = await assertRunVisible(ctx, runId, 'get');
+  await assertObservationCapability(ctx, run, 'artifacts');
+
+  const artifact = (await ctx.db.getRepository('agRunArtifacts').findOne({
     filter: {
+      id: artifactId,
       runId,
     },
-    sort: ['claimAttempt', 'artifactKey', 'createdAt'],
-  })) as ModelRecord[];
-
-  ctx.body = applyDeclaredArtifactGroups(artifacts.map(serializeModel), run);
+  })) as ModelRecord | null;
+  if (!artifact) {
+    ctx.throw(404, 'Artifact not found');
+  }
+  ctx.body = {
+    id: artifactId,
+    contentText: artifact.get('contentText') ?? null,
+  };
 }
 
 async function listRunSnapshots(ctx: Context, runId: string) {
@@ -596,14 +672,31 @@ async function listRunSnapshots(ctx: Context, runId: string) {
   const run = await assertRunVisible(ctx, runId, 'get');
   await assertObservationCapability(ctx, run, 'artifacts');
 
-  const snapshots = (await ctx.db.getRepository('agRunSnapshots').find({
-    filter: {
-      runId,
-    },
-    sort: ['capturedAt', 'createdAt'],
-  })) as ModelRecord[];
+  const { page, pageSize, offset } = getDetailPagination(ctx);
+  const repository = ctx.db.getRepository('agRunSnapshots');
+  const [snapshots, count] = await Promise.all([
+    repository.find({
+      filter: {
+        runId,
+      },
+      sort: ['-capturedAt', '-createdAt', '-id'],
+      offset,
+      limit: pageSize,
+    }) as Promise<ModelRecord[]>,
+    repository.count({
+      filter: {
+        runId,
+      },
+    }),
+  ]);
 
-  ctx.body = snapshots.map(serializeModel);
+  ctx.body = {
+    rows: snapshots.map(serializeModel),
+    count,
+    page,
+    pageSize,
+    totalPage: Math.ceil(count / pageSize),
+  };
 }
 
 async function listRunApiCallLogs(ctx: Context, runId: string) {
@@ -615,14 +708,31 @@ async function listRunApiCallLogs(ctx: Context, runId: string) {
   const run = await assertRunVisible(ctx, runId, 'get');
   await assertObservationCapability(ctx, run, 'structuredEvents');
 
-  const apiCallLogs = (await ctx.db.getRepository('agApiCallLogs').find({
-    filter: {
-      runId,
-    },
-    sort: ['createdAt'],
-  })) as ModelRecord[];
+  const { page, pageSize, offset } = getDetailPagination(ctx);
+  const repository = ctx.db.getRepository('agApiCallLogs');
+  const [apiCallLogs, count] = await Promise.all([
+    repository.find({
+      filter: {
+        runId,
+      },
+      sort: ['-createdAt', '-id'],
+      offset,
+      limit: pageSize,
+    }) as Promise<ModelRecord[]>,
+    repository.count({
+      filter: {
+        runId,
+      },
+    }),
+  ]);
 
-  ctx.body = apiCallLogs.map(serializeModel);
+  ctx.body = {
+    rows: apiCallLogs.map(serializeModel),
+    count,
+    page,
+    pageSize,
+    totalPage: Math.ceil(count / pageSize),
+  };
 }
 
 export function registerRunObservabilityRoutes(plugin: Plugin) {
@@ -650,6 +760,18 @@ export function registerRunObservabilityRoutes(plugin: Plugin) {
       const observationReadMatch = routePath.match(
         /^\/runs\/([^/]+)\/(events:list|artifacts:list|snapshots:list|api-call-logs:list)$/,
       );
+      const artifactContentMatch = routePath.match(/^\/runs\/([^/]+)\/artifacts\/([^/]+):content$/);
+      if (ctx.method === 'GET' && artifactContentMatch) {
+        const [, runId, artifactId] = artifactContentMatch;
+        if (!UUID_PATTERN.test(runId)) {
+          ctx.throw(400, 'runId must be a valid UUID');
+        }
+        if (!UUID_PATTERN.test(artifactId)) {
+          ctx.throw(400, 'artifactId must be a valid UUID');
+        }
+        await getRunArtifactContent(ctx, runId, artifactId);
+        return;
+      }
       if (ctx.method === 'GET' && observationReadMatch) {
         const [, runId, action] = observationReadMatch;
         if (!UUID_PATTERN.test(runId)) {

@@ -11,6 +11,8 @@ export type AgentTranscriptJsonRecord = Record<string, unknown>;
 
 export interface AgentTranscriptEvent {
   id: string;
+  runId?: string;
+  ingestId?: number | string;
   sequence?: number;
   eventType?: string;
   source?: string;
@@ -477,16 +479,39 @@ function getEventTime(event: AgentTranscriptEvent) {
   return event.createdAt || event.emittedAt;
 }
 
+function compareIngestIds(first: number | string, second: number | string) {
+  const firstValue = String(first).replace(/^0+(?=\d)/, '');
+  const secondValue = String(second).replace(/^0+(?=\d)/, '');
+  if (!/^\d+$/.test(firstValue) || !/^\d+$/.test(secondValue) || firstValue === secondValue) {
+    return 0;
+  }
+  return firstValue.length - secondValue.length || firstValue.localeCompare(secondValue);
+}
+
 function compareEvents(first: AgentTranscriptEvent, second: AgentTranscriptEvent) {
-  if (typeof first.sequence === 'number' && typeof second.sequence === 'number' && first.sequence !== second.sequence) {
+  const sameRun = !first.runId || !second.runId || first.runId === second.runId;
+  if (sameRun && first.ingestId !== undefined && second.ingestId !== undefined) {
+    const ingestDifference = compareIngestIds(first.ingestId, second.ingestId);
+    if (ingestDifference) {
+      return ingestDifference;
+    }
+  }
+  const sameSource = first.source === second.source;
+  if (
+    sameRun &&
+    sameSource &&
+    typeof first.sequence === 'number' &&
+    typeof second.sequence === 'number' &&
+    first.sequence !== second.sequence
+  ) {
     return first.sequence - second.sequence;
   }
   const firstTime = getEventTime(first);
   const secondTime = getEventTime(second);
-  if (firstTime && secondTime && firstTime !== secondTime) {
+  if ((!sameRun || sameSource) && firstTime && secondTime && firstTime !== secondTime) {
     return firstTime.localeCompare(secondTime);
   }
-  return (first.sequence ?? 0) - (second.sequence ?? 0);
+  return 0;
 }
 
 function uniqueAppend(values: string[], value?: string) {

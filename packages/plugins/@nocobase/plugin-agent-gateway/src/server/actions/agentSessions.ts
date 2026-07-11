@@ -38,12 +38,14 @@ import {
   getUnsupportedCapabilityMessage,
   normalizeAgentProviderCapabilities,
 } from '../../shared/providerCapabilities';
+import { CLAIMABLE_RUN_STATUS, LEASE_OWNING_RUN_STATUSES, TERMINAL_RUN_STATUSES } from '../../shared/runState';
 import { getRunProviderCapabilitySummary, isRunCapabilitySupported } from './capabilityUtils';
+import { getConversationSessionIngestScope, reserveEventIngestRange } from '../services/eventIngestCursor';
 
 const AGENT_SESSION_STATUSES = new Set(['active', 'idle', 'ended', 'unknown']);
 const AGENT_SESSION_PROVIDERS = new Set(['codex', 'opencode', 'claude-code', 'generic-cli']);
-const TERMINAL_RUN_STATUSES = new Set(['succeeded', 'failed', 'canceled', 'timeout', 'abandoned']);
-const ACTIVE_CONTINUATION_RUN_STATUSES = new Set(['queued', 'claimed', 'syncing_skills', 'running', 'canceling']);
+const TERMINAL_RUN_STATUS_SET = new Set<string>(TERMINAL_RUN_STATUSES);
+const ACTIVE_CONTINUATION_RUN_STATUSES = new Set<string>([CLAIMABLE_RUN_STATUS, ...LEASE_OWNING_RUN_STATUSES]);
 const STANDARD_AGENT_SESSION_COLLECTIONS = ['agAgentSessions'] as const;
 const ROOT_RUN_RESOLUTION_MAX_DEPTH = 50;
 const MAX_RESUME_MESSAGE_LENGTH = 16_000;
@@ -86,6 +88,44 @@ function getRequiredIdempotencyKey(ctx: Context, value: unknown) {
 
 function hashText(value: string) {
   return createHash('sha256').update(value).digest('hex');
+}
+
+async function linkRunConversationEventsToSession(
+  ctx: Context,
+  runId: string,
+  sessionId: string,
+  transaction: Transaction,
+) {
+  const repository = ctx.db.getRepository('agAgentConversationEvents');
+  const events = (await repository.find({
+    filter: {
+      runId,
+      sessionId: null,
+    },
+    sort: ['ingestId'],
+    transaction,
+    lock: transaction.LOCK.UPDATE,
+  })) as ModelRecord[];
+  if (!events.length) {
+    return;
+  }
+
+  const range = await reserveEventIngestRange(
+    ctx.db,
+    getConversationSessionIngestScope(sessionId),
+    events.length,
+    transaction,
+  );
+  for (const [index, event] of events.entries()) {
+    await repository.update({
+      filterByTk: getModelTargetKey(event, 'id'),
+      values: {
+        sessionId,
+        sessionIngestId: (range.start + BigInt(index)).toString(),
+      },
+      transaction,
+    });
+  }
 }
 
 function getResumeMessageFields(message: string) {
@@ -221,7 +261,7 @@ async function getRunForResume(ctx: Context, runId: string, sessionId: string, t
   }
 
   const status = getModelString(run, 'status');
-  if (!TERMINAL_RUN_STATUSES.has(status)) {
+  if (!TERMINAL_RUN_STATUS_SET.has(status)) {
     ctx.throw(409, 'Agent session can only be resumed from an ended run');
   }
 
@@ -376,6 +416,7 @@ function assertIdempotentContinuationRequestMatches(
 
 async function findExistingSession(
   ctx: Context,
+  nodeId: string,
   provider: string,
   providerSessionId: string,
   transaction: Transaction,
@@ -386,6 +427,7 @@ async function findExistingSession(
 
   return (await ctx.db.getRepository('agAgentSessions').findOne({
     filter: {
+      nodeId,
       provider,
       providerSessionId,
     },
@@ -518,7 +560,9 @@ async function assertExistingSessionLineage(
 async function upsertAgentSession(ctx: Context, nodeId: string, runId: string) {
   const values = getBodyValues(ctx);
   const result = await ctx.db.sequelize.transaction(async (transaction) => {
-    const lease = await validateRunLease(ctx, nodeId, runId, values, transaction);
+    const lease = await validateRunLease(ctx, nodeId, runId, values, transaction, {
+      allowStaleLeaseVersion: true,
+    });
     if (!lease) {
       return null;
     }
@@ -531,11 +575,12 @@ async function upsertAgentSession(ctx: Context, nodeId: string, runId: string) {
 
     const now = new Date();
     const sessionRepo = ctx.db.getRepository('agAgentSessions');
-    const existingSession = await findExistingSession(ctx, provider, providerSessionId, transaction);
+    const existingSession = await findExistingSession(ctx, nodeId, provider, providerSessionId, transaction);
     await assertExistingSessionLineage(ctx, existingSession, runId, transaction);
     const resolvedRootRunId = await resolveRunRootId(ctx, lease.run, runId, transaction);
     const latestRunId = await resolveLatestRunId(ctx, existingSession, runId, transaction);
     const sessionValues = {
+      nodeId,
       provider,
       providerSessionId,
       rootRunId: existingSession
@@ -581,6 +626,7 @@ async function upsertAgentSession(ctx: Context, nodeId: string, runId: string) {
       },
       transaction,
     });
+    await linkRunConversationEventsToSession(ctx, runId, String(getModelTargetKey(session, 'id')), transaction);
 
     return {
       session: serializeModel(session),

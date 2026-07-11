@@ -319,6 +319,21 @@ describe('AgentGatewayDispatchActionModel', () => {
       }),
     ).toBeNull();
     expect(ctx.message.error).toHaveBeenCalledWith('Record ID is required');
+
+    const missingCollectionContext = {
+      ...createContext(request),
+      blockModel: {
+        resource: {
+          refresh: vi.fn(async () => null),
+        },
+      },
+    };
+    expect(
+      await dispatchAgentGatewayRun(missingCollectionContext, {
+        bindingIdentifier: 'binding-id-1',
+      }),
+    ).toBeNull();
+    expect(missingCollectionContext.message.error).toHaveBeenCalledWith('Record collection is required');
     expect(request).not.toHaveBeenCalled();
   });
 
@@ -356,5 +371,16 @@ describe('AgentGatewayDispatchActionModel', () => {
         value: 'ticket-dispatch',
       },
     ]);
+    expect(
+      getDispatchBindingOptions([
+        {
+          id: 'binding-id-1',
+          bindingKey: 'ticket-dispatch',
+          collectionName: 'agDispatchTickets',
+          enabled: true,
+          status: 'active',
+        },
+      ]),
+    ).toEqual([]);
   });
 });

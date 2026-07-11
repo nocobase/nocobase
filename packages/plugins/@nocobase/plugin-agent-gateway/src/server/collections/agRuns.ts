@@ -16,6 +16,20 @@ export default defineCollection({
   migrationRules: ['schema-only'],
   autoGenId: false,
   titleField: 'runCode',
+  indexes: [
+    {
+      fields: ['status', 'claimExpiresAt'],
+    },
+    {
+      fields: ['nodeId', 'status', 'claimExpiresAt'],
+    },
+    {
+      fields: ['agentProfileId', 'status', 'claimExpiresAt'],
+    },
+    {
+      fields: ['status', 'updatedAt', 'id'],
+    },
+  ],
   fields: [
     {
       type: 'uuid',
@@ -98,6 +112,11 @@ export default defineCollection({
     {
       type: 'jsonb',
       name: 'resultSummaryJson',
+    },
+    {
+      type: 'jsonb',
+      name: 'observabilityRollupJson',
+      hidden: true,
     },
     {
       type: 'text',

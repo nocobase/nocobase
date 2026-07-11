@@ -14,7 +14,6 @@ import { Plugin } from '@nocobase/server';
 import { UniqueConstraintError } from 'sequelize';
 import type { Transaction } from 'sequelize';
 
-import { captureTmuxSession, isManagedTmuxSessionName } from '../../daemon/tmuxTerminal';
 import { AGENT_GATEWAY_ACTIONS, redactEventPayload, redactObservabilityText } from '../security';
 import {
   API_PREFIX,
@@ -36,18 +35,24 @@ import {
 } from './utils';
 import { cancelRun, validateRunLease } from './runLifecycle';
 import {
+  AGENT_PROVIDER_KEYS,
   AGENT_GATEWAY_ACTION_UNSUPPORTED_CODE,
+  getExplicitAgentProviderKey,
   getUnsupportedCapabilityMessage,
 } from '../../shared/providerCapabilities';
+import { HEARTBEAT_RUN_STATUSES, STALLED_RUN_STATUS, TERMINAL_CONTROL_RUN_STATUSES } from '../../shared/runState';
+import { isManagedTmuxSessionName } from '../../shared/terminalSession';
 import { getRunProviderCapabilitySummary, isRunCapabilitySupported } from './capabilityUtils';
 
 const DEFAULT_CAPTURE_LINES = 2000;
 const MAX_CAPTURE_LINES = 5000;
+const MIN_TERMINAL_SNAPSHOT_EVENT_LIMIT = 100;
+const MAX_TERMINAL_SNAPSHOT_EVENT_LIMIT = 5000;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const TERMINAL_BACKENDS = new Set(['tmux']);
 const TERMINAL_STATUSES = new Set(['active', 'closed', 'unavailable']);
-const TERMINAL_CONTROL_RUN_STATUSES = new Set(['claimed', 'syncing_skills', 'running']);
-const TERMINAL_UPDATE_RUN_STATUSES = ['claimed', 'syncing_skills', 'running', 'finalizing', 'stalled'] as const;
+const TERMINAL_CONTROL_RUN_STATUS_SET = new Set<string>(TERMINAL_CONTROL_RUN_STATUSES);
+const TERMINAL_UPDATE_RUN_STATUSES = [...HEARTBEAT_RUN_STATUSES, STALLED_RUN_STATUS] as const;
 const CONTROL_REQUEST_STATUSES = new Set(['accepted', 'delivered', 'succeeded', 'failed']);
 const MAX_CONTROL_REASON_CHARS = 1000;
 const MAX_CONTROL_IDEMPOTENCY_KEY_CHARS = 200;
@@ -126,15 +131,8 @@ async function findRunVisible(ctx: Context, runId: string) {
   return await assertRunVisible(ctx, runId, 'get');
 }
 
-function getTerminalSessionName(ctx: Context, run: ModelRecord) {
-  const sessionName = getModelString(run, 'terminalSessionName');
-  if (!sessionName) {
-    return '';
-  }
-  if (!isManagedTmuxSessionName(sessionName)) {
-    ctx.throw(409, 'Run terminal session is not managed by Agent Gateway');
-  }
-  return sessionName;
+function getTerminalSessionName(run: ModelRecord) {
+  return getModelString(run, 'terminalSessionName');
 }
 
 function getTerminalSnapshotBody(run: ModelRecord, snapshot: TerminalSnapshotData | null) {
@@ -150,8 +148,36 @@ function getTerminalSnapshotBody(run: ModelRecord, snapshot: TerminalSnapshotDat
 }
 
 function getTailLines(value: string, maxLines: number) {
-  const lines = value.replace(/\r/g, '\n').split('\n');
+  const lines = value.replace(/\r\n?/g, '\n').split('\n');
   return lines.slice(Math.max(0, lines.length - maxLines)).join('\n');
+}
+
+function getTerminalSnapshotEventLimit(lines: number) {
+  return Math.min(MAX_TERMINAL_SNAPSHOT_EVENT_LIMIT, Math.max(MIN_TERMINAL_SNAPSHOT_EVENT_LIMIT, lines * 2));
+}
+
+function getTerminalSnapshotEventText(event: ModelRecord) {
+  const source = getModelString(event, 'source');
+  const contentText = getModelValue(event, 'contentText');
+  if (source === 'terminal-live' && typeof contentText === 'string') {
+    return contentText;
+  }
+
+  const contentJson = getRecord(getModelValue(event, 'contentJson'));
+  const rawLineValue =
+    typeof contentJson.rawLine === 'string'
+      ? contentJson.rawLine
+      : typeof contentJson.rawLinePreview === 'string'
+        ? contentJson.rawLinePreview
+        : '';
+  const rawLine = rawLineValue.replace(/[\r\n]+$/, '');
+  if (rawLine) {
+    return `${rawLine}\n`;
+  }
+  if (getExplicitAgentProviderKey(source) && typeof contentText === 'string' && contentText) {
+    return `${contentText}\n`;
+  }
+  return '';
 }
 
 async function getTerminalLiveSnapshotFallback(
@@ -162,17 +188,15 @@ async function getTerminalLiveSnapshotFallback(
   const events = (await ctx.db.getRepository('agAgentConversationEvents').find({
     filter: {
       runId,
-      source: 'terminal-live',
+      source: {
+        $in: ['terminal-live', ...AGENT_PROVIDER_KEYS],
+      },
     },
-    sort: ['sequence'],
+    sort: ['-createdAt', '-sequence'],
+    limit: getTerminalSnapshotEventLimit(lines),
   })) as ModelRecord[];
   const output = getTailLines(
-    events
-      .map((event) => {
-        const contentText = getModelValue(event, 'contentText');
-        return typeof contentText === 'string' ? redactObservabilityText(contentText) : '';
-      })
-      .join(''),
+    redactObservabilityText(events.reverse().map(getTerminalSnapshotEventText).join('')),
     lines,
   );
   if (!output) {
@@ -241,7 +265,7 @@ async function appendTerminalControlEvent(
 async function snapshotTerminal(ctx: Context, runId: string) {
   await requireTerminalRead(ctx, runId);
   const run = await findRunVisible(ctx, runId);
-  const sessionName = getTerminalSessionName(ctx, run);
+  const sessionName = getTerminalSessionName(run);
   const lines = getCaptureLines(ctx);
   const capabilitySummary = await getRunProviderCapabilitySummary(ctx, run);
   if (!isRunCapabilitySupported(capabilitySummary, 'terminalOutput')) {
@@ -255,8 +279,7 @@ async function snapshotTerminal(ctx: Context, runId: string) {
     return;
   }
 
-  const tmuxSnapshot = await captureTmuxSession(sessionName, lines);
-  const snapshot = tmuxSnapshot.available ? tmuxSnapshot : await getTerminalLiveSnapshotFallback(ctx, runId, lines);
+  const snapshot = await getTerminalLiveSnapshotFallback(ctx, runId, lines);
   ctx.body = getTerminalSnapshotBody(run, snapshot);
 }
 
@@ -442,11 +465,11 @@ async function getRunnerControlCapabilityDecision(ctx: Context, run: ModelRecord
 
 async function assertControlSupported(ctx: Context, run: ModelRecord, action: 'interrupt' | 'terminate') {
   const status = getModelString(run, 'status');
-  if (!TERMINAL_CONTROL_RUN_STATUSES.has(status)) {
+  if (!TERMINAL_CONTROL_RUN_STATUS_SET.has(status)) {
     ctx.throw(409, CONTROL_ERROR_CODES.runNotActive);
   }
 
-  const sessionName = getTerminalSessionName(ctx, run);
+  const sessionName = getTerminalSessionName(run);
   if (getModelString(run, 'terminalBackend') !== 'tmux' || getModelString(run, 'terminalStatus') !== 'active') {
     ctx.throw(409, CONTROL_ERROR_CODES.runNotActive);
   }

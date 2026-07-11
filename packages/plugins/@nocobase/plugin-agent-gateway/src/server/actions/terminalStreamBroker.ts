@@ -58,10 +58,13 @@ import {
 } from './utils';
 import { validateRunLease } from './runLifecycle';
 import { TerminalStreamTicketError, consumeTerminalStreamTicket } from './terminalStreamTickets';
+import { ACTIVE_RUN_STATUSES } from '../../shared/runState';
 
 const MAX_TERMINAL_WEBSOCKET_BUFFERED_BYTES = 1024 * 1024;
 const TERMINAL_ACTIVITY_TOUCH_MIN_INTERVAL_MS = 2000;
-const ACTIVE_TERMINAL_STREAM_RUN_STATUSES = new Set(['claimed', 'syncing_skills', 'running', 'canceling']);
+const TERMINAL_LEASE_REVALIDATION_INTERVAL_MS = 2000;
+const TERMINAL_SNAPSHOT_REQUEST_TIMEOUT_MS = 10_000;
+const ACTIVE_TERMINAL_STREAM_RUN_STATUSES = new Set<string>(ACTIVE_RUN_STATUSES);
 const TERMINALIZED_RUN_END_REASONS = new Map<string, TerminalEnd['reason']>([
   ['succeeded', 'completed'],
   ['failed', 'failed'],
@@ -89,6 +92,8 @@ interface BoundRunStream {
   claimToken: string;
   claimAttempt: number;
   leaseVersion: number;
+  leaseExpiresAtMs: number;
+  lastLeaseValidationAtMs: number;
 }
 
 interface PendingSnapshotRequest {
@@ -97,6 +102,7 @@ interface PendingSnapshotRequest {
   runId: string;
   subscribeOnSuccess?: boolean;
   reservationId?: string;
+  timeout: ReturnType<typeof setTimeout>;
 }
 
 interface PendingBrowserSubscriptionReservation {
@@ -476,7 +482,7 @@ export class TerminalStreamBroker {
     this.connections.clear();
     this.boundRuns.clear();
     this.browserSubscriptions.clear();
-    this.pendingSnapshotRequests.clear();
+    this.clearPendingSnapshotRequests();
     this.pendingBrowserSubscriptionReservations.clear();
   }
 
@@ -673,6 +679,8 @@ export class TerminalStreamBroker {
         claimToken: frame.claimToken,
         claimAttempt: frame.claimAttempt,
         leaseVersion: frame.leaseVersion,
+        leaseExpiresAtMs: getDateFromModel(lease.run, 'claimExpiresAt')?.getTime() || 0,
+        lastLeaseValidationAtMs: Date.now(),
       });
       this.send(connection.ws, createTerminalAck(frame.requestId));
     } catch (error) {
@@ -718,7 +726,7 @@ export class TerminalStreamBroker {
 
   private async handleTerminalData(connection: TerminalStreamConnection, frame: TerminalData) {
     if (!(await this.validateDaemonFrameBinding(connection, frame.runId))) {
-      this.sendError(connection.ws, 'TERMINAL_RUN_NOT_BOUND', 'Run is not bound to this daemon');
+      this.sendError(connection.ws, 'TERMINAL_RUN_NOT_BOUND', 'Run is not bound to this daemon', frame.requestId);
       return;
     }
     const payloadError = this.validatePayloadOffsets(frame);
@@ -728,6 +736,9 @@ export class TerminalStreamBroker {
     }
     await this.touchRunTerminalActivity(frame.runId);
     this.broadcastToRun(frame.runId, frame);
+    if (frame.requestId) {
+      this.send(connection.ws, createTerminalAck(frame.requestId));
+    }
   }
 
   private async handleTerminalSnapshot(connection: TerminalStreamConnection, frame: TerminalSnapshot) {
@@ -741,8 +752,11 @@ export class TerminalStreamBroker {
       if (!pending || pending.runId !== frame.runId || pending.daemon !== connection.ws) {
         return;
       }
-      this.pendingSnapshotRequests.delete(frame.requestId);
-      const validation = await this.validateBoundRun(frame.runId, connection.ws);
+      this.takePendingSnapshotRequest(frame.requestId);
+      const validation = await this.validateBoundRun(frame.runId, {
+        expectedWs: connection.ws,
+        forceRefresh: true,
+      });
       if (validation.ok === false) {
         this.releaseBrowserSubscriptionReservation(pending.reservationId);
         this.sendError(
@@ -762,12 +776,16 @@ export class TerminalStreamBroker {
   }
 
   private async handleTerminalEnd(connection: TerminalStreamConnection, frame: TerminalEnd) {
-    const validation = await this.validateBoundRun(frame.runId, connection.ws);
+    const validation = await this.validateBoundRun(frame.runId, {
+      expectedWs: connection.ws,
+      forceRefresh: true,
+    });
     if (validation.ok === false) {
       this.sendError(
         connection.ws,
         validation.reason === 'leaseLost' ? 'TERMINAL_LEASE_LOST' : 'TERMINAL_RUN_NOT_BOUND',
         'Run stream is no longer bound to this daemon',
+        frame.requestId,
       );
       return;
     }
@@ -775,6 +793,9 @@ export class TerminalStreamBroker {
     this.boundRuns.delete(frame.runId);
     this.terminalActivityTouchedAt.delete(frame.runId);
     this.broadcastToRun(frame.runId, frame);
+    if (frame.requestId) {
+      this.send(connection.ws, createTerminalAck(frame.requestId));
+    }
   }
 
   private async touchRunTerminalActivity(runId: string) {
@@ -804,7 +825,7 @@ export class TerminalStreamBroker {
       if (pending.runId !== frame.runId || pending.daemon !== daemon) {
         continue;
       }
-      this.pendingSnapshotRequests.delete(requestId);
+      this.takePendingSnapshotRequest(requestId);
       this.releaseBrowserSubscriptionReservation(pending.reservationId);
       this.send(pending.browser, frame);
     }
@@ -817,9 +838,12 @@ export class TerminalStreamBroker {
         if (pending.daemon !== connection.ws) {
           return;
         }
-        this.pendingSnapshotRequests.delete(frame.requestId);
+        this.takePendingSnapshotRequest(frame.requestId);
         this.releaseBrowserSubscriptionReservation(pending.reservationId);
-        const validation = await this.validateBoundRun(pending.runId, connection.ws);
+        const validation = await this.validateBoundRun(pending.runId, {
+          expectedWs: connection.ws,
+          forceRefresh: true,
+        });
         if (validation.ok === false) {
           this.sendError(
             pending.browser,
@@ -907,7 +931,7 @@ export class TerminalStreamBroker {
     fromOffset: number,
     options: { subscribeOnSuccess?: boolean; reservationId?: string } = {},
   ) {
-    const validation = await this.validateBoundRun(runId);
+    const validation = await this.validateBoundRun(runId, { forceRefresh: true });
     if (validation.ok === false) {
       if (validation.reason === 'missing') {
         const completedRunEnd = await this.createTerminalEndForCompletedRun(runId, fromOffset);
@@ -931,12 +955,26 @@ export class TerminalStreamBroker {
     const { bound } = validation;
 
     const requestId = `snapshot:${Date.now()}:${Math.random().toString(16).slice(2)}`;
+    const timeout = setTimeout(() => {
+      const pending = this.takePendingSnapshotRequest(requestId);
+      if (!pending) {
+        return;
+      }
+      this.releaseBrowserSubscriptionReservation(pending.reservationId);
+      this.sendError(
+        pending.browser,
+        'TERMINAL_SNAPSHOT_TIMEOUT',
+        'Daemon did not return a terminal snapshot before the request timed out',
+      );
+    }, TERMINAL_SNAPSHOT_REQUEST_TIMEOUT_MS);
+    timeout.unref?.();
     this.pendingSnapshotRequests.set(requestId, {
       browser,
       daemon: bound.ws,
       runId,
       subscribeOnSuccess: options.subscribeOnSuccess,
       reservationId: options.reservationId,
+      timeout,
     });
     this.send(bound.ws, {
       type: 'daemon.snapshotRequest',
@@ -970,13 +1008,16 @@ export class TerminalStreamBroker {
   }
 
   private async validateDaemonFrameBinding(connection: TerminalStreamConnection, runId: string) {
-    const validation = await this.validateBoundRun(runId, connection.ws);
+    const validation = await this.validateBoundRun(runId, { expectedWs: connection.ws });
     return validation.ok && validation.bound.nodeId === connection.nodeId;
   }
 
-  private async validateBoundRun(runId: string, expectedWs?: WebSocket): Promise<BoundRunValidationResult> {
+  private async validateBoundRun(
+    runId: string,
+    options: { expectedWs?: WebSocket; forceRefresh?: boolean } = {},
+  ): Promise<BoundRunValidationResult> {
     const bound = this.boundRuns.get(runId);
-    if (!bound || (expectedWs && bound.ws !== expectedWs)) {
+    if (!bound || (options.expectedWs && bound.ws !== options.expectedWs)) {
       return {
         ok: false,
         reason: 'missing',
@@ -988,6 +1029,17 @@ export class TerminalStreamBroker {
       return {
         ok: false,
         reason: 'missing',
+      };
+    }
+    const nowMs = Date.now();
+    if (
+      !options.forceRefresh &&
+      nowMs < bound.leaseExpiresAtMs &&
+      nowMs - bound.lastLeaseValidationAtMs < TERMINAL_LEASE_REVALIDATION_INTERVAL_MS
+    ) {
+      return {
+        ok: true,
+        bound,
       };
     }
     try {
@@ -1015,45 +1067,34 @@ export class TerminalStreamBroker {
     if (!connection.nodeId) {
       return false;
     }
-    const ctx = createAuthContext(this.app, connection.request);
-    const auth = await authenticateNodeToken(ctx);
-    if (String(auth.subject.nodeId) !== bound.nodeId) {
+    const run = (await this.app.db.getRepository('agRuns').findOne({
+      filterByTk: runId,
+    })) as ModelRecord | null;
+    if (!run || String(getModelTargetKey(run, 'nodeId')) !== bound.nodeId) {
+      return false;
+    }
+    if (getModelNumber(run, 'claimAttempt') !== bound.claimAttempt) {
+      return false;
+    }
+    if (!verifyClaimToken(bound.claimToken, getModelString(run, 'claimTokenHash'))) {
+      return false;
+    }
+    if (!ACTIVE_TERMINAL_STREAM_RUN_STATUSES.has(getModelString(run, 'status'))) {
+      return false;
+    }
+    const claimExpiresAt = getDateFromModel(run, 'claimExpiresAt');
+    if (!claimExpiresAt || claimExpiresAt.getTime() <= Date.now()) {
       return false;
     }
 
-    return await this.app.db.sequelize.transaction(async (transaction: Transaction) => {
-      const run = (await this.app.db.getRepository('agRuns').findOne({
-        filterByTk: runId,
-        transaction,
-        lock: transaction.LOCK.UPDATE,
-      })) as ModelRecord | null;
-      if (!run) {
-        return false;
-      }
-      if (String(getModelTargetKey(run, 'nodeId')) !== bound.nodeId) {
-        return false;
-      }
-      if (getModelNumber(run, 'claimAttempt') !== bound.claimAttempt) {
-        return false;
-      }
-      if (!verifyClaimToken(bound.claimToken, getModelString(run, 'claimTokenHash'))) {
-        return false;
-      }
-      if (!ACTIVE_TERMINAL_STREAM_RUN_STATUSES.has(getModelString(run, 'status'))) {
-        return false;
-      }
-      const claimExpiresAt = getDateFromModel(run, 'claimExpiresAt');
-      if (!claimExpiresAt || claimExpiresAt.getTime() <= Date.now()) {
-        return false;
-      }
-
-      const currentLeaseVersion = getModelNumber(run, 'leaseVersion');
-      if (currentLeaseVersion < bound.leaseVersion) {
-        return false;
-      }
-      bound.leaseVersion = currentLeaseVersion;
-      return true;
-    });
+    const currentLeaseVersion = getModelNumber(run, 'leaseVersion');
+    if (currentLeaseVersion < bound.leaseVersion) {
+      return false;
+    }
+    bound.leaseVersion = currentLeaseVersion;
+    bound.leaseExpiresAtMs = claimExpiresAt.getTime();
+    bound.lastLeaseValidationAtMs = Date.now();
+    return true;
   }
 
   private unbindRunForLeaseLoss(runId: string) {
@@ -1084,6 +1125,7 @@ export class TerminalStreamBroker {
     const byteLength = getTerminalPayloadByteLength(frame.payload);
     if (byteLength > TERMINAL_SERVER_MAX_DECODED_PAYLOAD_BYTES) {
       return createTerminalError('TERMINAL_FRAME_TOO_LARGE', 'Terminal stream payload is too large', {
+        requestId: frame.requestId,
         details: {
           maxDecodedPayloadBytes: TERMINAL_SERVER_MAX_DECODED_PAYLOAD_BYTES,
           decodedPayloadBytes: byteLength,
@@ -1091,7 +1133,9 @@ export class TerminalStreamBroker {
       });
     }
     if (frame.offsetEnd - frame.offsetStart !== byteLength) {
-      return createTerminalError('TERMINAL_PROTOCOL_ERROR', 'Terminal payload byte length does not match offsets');
+      return createTerminalError('TERMINAL_PROTOCOL_ERROR', 'Terminal payload byte length does not match offsets', {
+        requestId: frame.requestId,
+      });
     }
     return null;
   }
@@ -1232,10 +1276,10 @@ export class TerminalStreamBroker {
 
     for (const [requestId, pending] of Array.from(this.pendingSnapshotRequests.entries())) {
       if (pending.browser === ws) {
-        this.pendingSnapshotRequests.delete(requestId);
+        this.takePendingSnapshotRequest(requestId);
         this.releaseBrowserSubscriptionReservation(pending.reservationId);
       } else if (pending.daemon === ws) {
-        this.pendingSnapshotRequests.delete(requestId);
+        this.takePendingSnapshotRequest(requestId);
         this.releaseBrowserSubscriptionReservation(pending.reservationId);
         pending.browser.close();
       }
@@ -1245,6 +1289,23 @@ export class TerminalStreamBroker {
         this.pendingBrowserSubscriptionReservations.delete(reservationId);
       }
     }
+  }
+
+  private takePendingSnapshotRequest(requestId: string) {
+    const pending = this.pendingSnapshotRequests.get(requestId);
+    if (!pending) {
+      return undefined;
+    }
+    this.pendingSnapshotRequests.delete(requestId);
+    clearTimeout(pending.timeout);
+    return pending;
+  }
+
+  private clearPendingSnapshotRequests() {
+    for (const pending of this.pendingSnapshotRequests.values()) {
+      clearTimeout(pending.timeout);
+    }
+    this.pendingSnapshotRequests.clear();
   }
 
   private sendError(
@@ -1345,9 +1406,9 @@ export class TerminalStreamBroker {
 type TerminalServerFrameForSend = Exclude<TerminalFrame, TerminalClientSubscribe | TerminalDaemonBindRun>;
 
 type BrowserTerminalPayloadFrame =
-  | Omit<TerminalData, 'sessionName'>
+  | Omit<TerminalData, 'sessionName' | 'requestId'>
   | Omit<TerminalSnapshot, 'sessionName'>
-  | Omit<TerminalEnd, 'sessionName'>;
+  | Omit<TerminalEnd, 'sessionName' | 'requestId'>;
 
 type BrowserTerminalFrameForSend =
   | BrowserTerminalPayloadFrame
@@ -1357,6 +1418,9 @@ function sanitizeBrowserTerminalFrame(frame: TerminalServerFrameForSend): Browse
   if (frame.type === 'terminal.data' || frame.type === 'terminal.snapshot' || frame.type === 'terminal.end') {
     const browserFrame: Record<string, unknown> = { ...frame };
     delete browserFrame.sessionName;
+    if (frame.type === 'terminal.data' || frame.type === 'terminal.end') {
+      delete browserFrame.requestId;
+    }
     return browserFrame as BrowserTerminalPayloadFrame;
   }
   return frame;

@@ -337,7 +337,7 @@ describe('agent gateway daemon control requests', () => {
       terminalStreamClientFactory: () => ({
         start: async () => undefined,
         appendText: async () => undefined,
-        end: async () => undefined,
+        end: async () => true,
         close: () => undefined,
       }),
       detectOptions: {
@@ -434,7 +434,7 @@ describe('agent gateway daemon control requests', () => {
       terminalStreamClientFactory: () => ({
         start: async () => undefined,
         appendText: async () => undefined,
-        end: async () => undefined,
+        end: async () => true,
         close: () => undefined,
       }),
       detectOptions: {

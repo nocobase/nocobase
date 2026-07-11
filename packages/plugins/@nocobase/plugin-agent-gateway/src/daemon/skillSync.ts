@@ -60,11 +60,12 @@ export interface SyncNodeSkillVersionOptions {
   skillsRoot: string;
   skillVersion: SkillVersionInstallRecord;
   cacheRoot?: string;
-  extractArchive?: (archivePath: string, destination: string) => Promise<void>;
+  extractArchive?: (archivePath: string, destination: string, signal?: AbortSignal) => Promise<void>;
   writeInstallStatus?: (payload: NodeSkillInstallPayload) => Promise<void>;
   downloadTimeoutMs?: number;
   downloadHeaders?: Record<string, string>;
   trustedArchiveServerUrl?: string;
+  signal?: AbortSignal;
 }
 
 export interface SyncNodeSkillVersionResult {
@@ -84,6 +85,22 @@ interface InstallMarker {
 const GITHUB_COMMIT_PATTERN = /^[0-9a-f]{40}$/i;
 const ZIPINFO_MODE_PATTERN = /^([bcdlps-])[rwxstST-]{9}\s+/;
 const DEFAULT_DOWNLOAD_TIMEOUT_MS = 30_000;
+const PROCESS_TERMINATE_GRACE_MS = 2000;
+
+function getAbortError(signal?: AbortSignal) {
+  if (signal?.reason instanceof Error) {
+    return signal.reason;
+  }
+  const error = new Error('Skill synchronization aborted');
+  error.name = 'AbortError';
+  return error;
+}
+
+function throwIfAborted(signal?: AbortSignal) {
+  if (signal?.aborted) {
+    throw getAbortError(signal);
+  }
+}
 
 function normalizeRepoUrl(repoUrl: string) {
   return repoUrl.replace(/\/$/, '').replace(/\.git$/, '');
@@ -120,16 +137,19 @@ function getInstallPath(skillsRoot: string, skillVersionId: string) {
   return path.join(skillsRoot, skillVersionId);
 }
 
-async function sha256File(filePath: string) {
+async function sha256File(filePath: string, signal?: AbortSignal) {
+  throwIfAborted(signal);
   const hash = createHash('sha256');
   const file = await fs.open(filePath, 'r');
   try {
     for await (const chunk of file.createReadStream()) {
+      throwIfAborted(signal);
       hash.update(chunk);
     }
   } finally {
     await file.close();
   }
+  throwIfAborted(signal);
   return hash.digest('hex');
 }
 
@@ -227,49 +247,95 @@ async function downloadArchive(
   timeoutMs: number,
   headers: Record<string, string> = {},
   redirectCount = 0,
+  signal?: AbortSignal,
 ) {
+  throwIfAborted(signal);
   if (redirectCount > 5) {
     throw new Error('Too many redirects while downloading Skill archive');
   }
   const url = new URL(archiveUrl);
   const transport = url.protocol === 'https:' ? https : http;
   await fs.mkdir(path.dirname(destination), { recursive: true });
+  throwIfAborted(signal);
   await new Promise<void>((resolve, reject) => {
+    let settled = false;
+    let responseStream: http.IncomingMessage | null = null;
+    let output: ReturnType<typeof createWriteStream> | null = null;
+    const cleanup = () => {
+      signal?.removeEventListener('abort', abort);
+    };
+    const finish = (error?: Error) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      cleanup();
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve();
+    };
+    const fail = (error: Error) => {
+      if (settled) {
+        return;
+      }
+      responseStream?.destroy();
+      output?.destroy();
+      finish(error);
+    };
     const request = transport.get(url, { headers }, (response) => {
+      responseStream = response;
       const statusCode = response.statusCode || 0;
       const location = response.headers.location;
       if (statusCode >= 300 && statusCode < 400 && location) {
         response.resume();
         const redirectedUrl = new URL(location, url).toString();
         const redirectedHeaders = new URL(redirectedUrl).origin === url.origin ? headers : {};
-        downloadArchive(redirectedUrl, destination, timeoutMs, redirectedHeaders, redirectCount + 1)
-          .then(resolve)
-          .catch(reject);
+        downloadArchive(redirectedUrl, destination, timeoutMs, redirectedHeaders, redirectCount + 1, signal)
+          .then(() => finish())
+          .catch((error) => fail(error instanceof Error ? error : new Error(String(error))));
         return;
       }
       if (statusCode < 200 || statusCode >= 300) {
-        reject(new Error(`Failed to download Skill archive: HTTP ${statusCode}`));
+        finish(new Error(`Failed to download Skill archive: HTTP ${statusCode}`));
         response.resume();
         return;
       }
-      const output = createWriteStream(destination, {
+      const destinationStream = createWriteStream(destination, {
         mode: 0o600,
       });
-      response.pipe(output);
-      output.on('finish', () => {
-        output.close();
-        resolve();
+      output = destinationStream;
+      response.pipe(destinationStream);
+      destinationStream.on('finish', () => {
+        destinationStream.close();
+        finish();
       });
-      output.on('error', reject);
+      destinationStream.on('error', fail);
+      response.on('error', fail);
+      response.on('aborted', () => fail(new Error(`Skill archive download was interrupted: ${archiveUrl}`)));
     });
+    const abort = () => {
+      const error = getAbortError(signal);
+      responseStream?.destroy();
+      output?.destroy();
+      request.destroy(error);
+      finish(error);
+    };
     request.setTimeout(timeoutMs, () => {
       request.destroy(new Error(`Skill archive download timed out: ${archiveUrl}`));
     });
-    request.on('error', reject);
+    request.on('error', (error) => fail(error));
+    signal?.addEventListener('abort', abort, { once: true });
+    if (signal?.aborted) {
+      abort();
+    }
   });
+  throwIfAborted(signal);
 }
 
-async function runProcessOutput(command: string, args: string[]) {
+async function runProcessOutput(command: string, args: string[], signal?: AbortSignal) {
+  throwIfAborted(signal);
   return await new Promise<string>((resolve, reject) => {
     const child = spawn(command, args, {
       shell: false,
@@ -277,25 +343,57 @@ async function runProcessOutput(command: string, args: string[]) {
     });
     let stdout = '';
     let stderr = '';
+    let abortError: Error | null = null;
+    let forceKillTimer: ReturnType<typeof setTimeout> | null = null;
+    const cleanup = () => {
+      signal?.removeEventListener('abort', abort);
+      if (forceKillTimer) {
+        clearTimeout(forceKillTimer);
+        forceKillTimer = null;
+      }
+    };
+    const abort = () => {
+      if (abortError) {
+        return;
+      }
+      abortError = getAbortError(signal);
+      child.kill('SIGTERM');
+      forceKillTimer = setTimeout(() => {
+        child.kill('SIGKILL');
+      }, PROCESS_TERMINATE_GRACE_MS);
+    };
     child.stdout.on('data', (chunk) => {
       stdout += String(chunk);
     });
     child.stderr.on('data', (chunk) => {
       stderr += String(chunk);
     });
-    child.on('error', reject);
+    child.on('error', (error) => {
+      cleanup();
+      reject(abortError || error);
+    });
     child.on('close', (code) => {
+      cleanup();
+      if (abortError) {
+        reject(abortError);
+        return;
+      }
       if (code === 0) {
         resolve(stdout);
         return;
       }
       reject(new Error(stderr.trim() || `${command} exited with code ${code}`));
     });
+    signal?.addEventListener('abort', abort, { once: true });
+    if (signal?.aborted) {
+      abort();
+    }
   });
 }
 
-async function validateZipEntries(archivePath: string) {
-  const names = (await runProcessOutput('zipinfo', ['-1', archivePath]))
+async function validateZipEntries(archivePath: string, signal?: AbortSignal) {
+  throwIfAborted(signal);
+  const names = (await runProcessOutput('zipinfo', ['-1', archivePath], signal))
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
@@ -303,13 +401,15 @@ async function validateZipEntries(archivePath: string) {
     throw new Error('Skill archive is empty');
   }
   for (const name of names) {
+    throwIfAborted(signal);
     if (!isSafeZipEntryName(name)) {
       throw new Error(`Unsafe Skill archive entry path: ${name}`);
     }
   }
 
-  const listing = await runProcessOutput('zipinfo', ['-l', archivePath]);
+  const listing = await runProcessOutput('zipinfo', ['-l', archivePath], signal);
   for (const line of listing.split(/\r?\n/)) {
+    throwIfAborted(signal);
     const match = line.match(ZIPINFO_MODE_PATTERN);
     if (!match) {
       continue;
@@ -320,9 +420,11 @@ async function validateZipEntries(archivePath: string) {
   }
 }
 
-async function validateExtractedTree(root: string) {
+async function validateExtractedTree(root: string, signal?: AbortSignal) {
+  throwIfAborted(signal);
   const realRoot = await fs.realpath(root);
   async function visit(currentPath: string) {
+    throwIfAborted(signal);
     const stat = await fs.lstat(currentPath);
     if (stat.isSymbolicLink()) {
       throw new Error('Skill archive may not contain symbolic links');
@@ -337,26 +439,31 @@ async function validateExtractedTree(root: string) {
     if (stat.isDirectory()) {
       const entries = await fs.readdir(currentPath);
       for (const entry of entries) {
+        throwIfAborted(signal);
         await visit(path.join(currentPath, entry));
       }
     }
   }
   await visit(realRoot);
+  throwIfAborted(signal);
 }
 
-async function extractZipWithSystemUnzip(archivePath: string, destination: string) {
-  await validateZipEntries(archivePath);
+async function extractZipWithSystemUnzip(archivePath: string, destination: string, signal?: AbortSignal) {
+  await validateZipEntries(archivePath, signal);
+  throwIfAborted(signal);
   await fs.mkdir(destination, { recursive: true });
-  await runProcessOutput('unzip', ['-q', archivePath, '-d', destination]);
-  await validateExtractedTree(destination);
+  throwIfAborted(signal);
+  await runProcessOutput('unzip', ['-q', archivePath, '-d', destination], signal);
+  await validateExtractedTree(destination, signal);
 }
 
-export async function validateSkillZipArchive(archivePath: string) {
+export async function validateSkillZipArchive(archivePath: string, signal?: AbortSignal) {
+  throwIfAborted(signal);
   const validationPath = path.join(path.dirname(archivePath), `.agent-gateway-validate-${randomUUID()}`);
   await fs.rm(validationPath, { recursive: true, force: true });
   try {
-    await extractZipWithSystemUnzip(archivePath, validationPath);
-    const skillMdPath = await findSkillMd(validationPath);
+    await extractZipWithSystemUnzip(archivePath, validationPath, signal);
+    const skillMdPath = await findSkillMd(validationPath, signal);
     if (!skillMdPath) {
       throw new Error('Skill archive must contain a standard Agent Skills SKILL.md file');
     }
@@ -365,9 +472,11 @@ export async function validateSkillZipArchive(archivePath: string) {
   }
 }
 
-async function findSkillMd(root: string): Promise<string | null> {
+async function findSkillMd(root: string, signal?: AbortSignal): Promise<string | null> {
+  throwIfAborted(signal);
   const realRoot = await fs.realpath(root);
   const validateSkillFile = async (candidate: string) => {
+    throwIfAborted(signal);
     const stat = await fs.lstat(candidate);
     if (!stat.isFile()) {
       return null;
@@ -382,11 +491,13 @@ async function findSkillMd(root: string): Promise<string | null> {
       return skillMdPath;
     }
   } catch {
+    throwIfAborted(signal);
     // Continue scanning one-level archive wrappers.
   }
 
   const entries = await fs.readdir(root, { withFileTypes: true });
   for (const entry of entries) {
+    throwIfAborted(signal);
     if (entry.isDirectory()) {
       const nested = path.join(root, entry.name, 'SKILL.md');
       try {
@@ -395,6 +506,7 @@ async function findSkillMd(root: string): Promise<string | null> {
           return skillMdPath;
         }
       } catch {
+        throwIfAborted(signal);
         // Continue scanning one-level archive wrappers.
       }
     }
@@ -430,7 +542,9 @@ async function getArchivePath(
   timeoutMs: number,
   downloadHeaders: Record<string, string> = {},
   trustedArchiveServerUrl?: string,
+  signal?: AbortSignal,
 ) {
+  throwIfAborted(signal);
   if (source.type === 'zip' && source.archivePath) {
     return source.archivePath;
   }
@@ -443,7 +557,7 @@ async function getArchivePath(
     source.type === 'zip' && source.auth === 'node-token'
       ? getAuthenticatedArchiveHeaders(archiveUrl, trustedArchiveServerUrl, downloadHeaders)
       : {};
-  await downloadArchive(archiveUrl, archivePath, timeoutMs, archiveHeaders);
+  await downloadArchive(archiveUrl, archivePath, timeoutMs, archiveHeaders, 0, signal);
   return archivePath;
 }
 
@@ -492,18 +606,21 @@ function buildInstallPayload(options: {
 }
 
 export async function syncNodeSkillVersion(options: SyncNodeSkillVersionOptions): Promise<SyncNodeSkillVersionResult> {
+  throwIfAborted(options.signal);
   const source = normalizeSkillVersionSource(options.skillVersion.source);
   const sourceDigest = getSourceDigest(source);
   const installPath = getInstallPath(options.skillsRoot, options.skillVersion.skillVersionId);
   const markerPath = path.join(installPath, '.agent-gateway-install.json');
   const existingMarker = await readMarker(markerPath);
-  const existingSkillMd = existingMarker ? await findSkillMd(installPath) : null;
+  throwIfAborted(options.signal);
+  const existingSkillMd = existingMarker ? await findSkillMd(installPath, options.signal) : null;
 
   if (
     existingMarker?.skillVersionId === options.skillVersion.skillVersionId &&
     existingMarker.sourceDigest === sourceDigest &&
     existingSkillMd
   ) {
+    throwIfAborted(options.signal);
     await options.writeInstallStatus?.(
       buildInstallPayload({
         nodeId: options.nodeId,
@@ -513,6 +630,7 @@ export async function syncNodeSkillVersion(options: SyncNodeSkillVersionOptions)
         installedAt: existingMarker.installedAt,
       }),
     );
+    throwIfAborted(options.signal);
     return {
       skillVersionId: options.skillVersion.skillVersionId,
       installPath,
@@ -530,35 +648,43 @@ export async function syncNodeSkillVersion(options: SyncNodeSkillVersionOptions)
     options.downloadTimeoutMs || DEFAULT_DOWNLOAD_TIMEOUT_MS,
     options.downloadHeaders,
     options.trustedArchiveServerUrl,
+    options.signal,
   );
+  throwIfAborted(options.signal);
   if (source.sha256) {
-    const actualDigest = await sha256File(archivePath);
+    const actualDigest = await sha256File(archivePath, options.signal);
     if (actualDigest !== source.sha256) {
       throw new Error('Skill archive sha256 does not match the solidified source');
     }
   }
 
   const tempInstallPath = `${installPath}.tmp-${randomUUID()}`;
+  throwIfAborted(options.signal);
   await fs.rm(tempInstallPath, { recursive: true, force: true });
+  throwIfAborted(options.signal);
   await fs.mkdir(tempInstallPath, { recursive: true });
   try {
-    await (options.extractArchive || extractZipWithSystemUnzip)(archivePath, tempInstallPath);
-    await validateExtractedTree(tempInstallPath);
-    const tempSkillMdPath = await findSkillMd(tempInstallPath);
+    throwIfAborted(options.signal);
+    await (options.extractArchive || extractZipWithSystemUnzip)(archivePath, tempInstallPath, options.signal);
+    await validateExtractedTree(tempInstallPath, options.signal);
+    const tempSkillMdPath = await findSkillMd(tempInstallPath, options.signal);
     if (!tempSkillMdPath) {
       throw new Error('Skill archive must contain a standard Agent Skills SKILL.md file');
     }
+    throwIfAborted(options.signal);
     await fs.rm(installPath, { recursive: true, force: true });
     await fs.rename(tempInstallPath, installPath);
   } catch (error) {
     await fs.rm(tempInstallPath, { recursive: true, force: true });
     throw error;
   }
-  const skillMdPath = await findSkillMd(installPath);
+  throwIfAborted(options.signal);
+  const skillMdPath = await findSkillMd(installPath, options.signal);
   if (!skillMdPath) {
     throw new Error('Skill archive must contain a standard Agent Skills SKILL.md file');
   }
 
+  throwIfAborted(options.signal);
   const installedAt = new Date().toISOString();
   const marker: InstallMarker = {
     skillVersionId: options.skillVersion.skillVersionId,
@@ -566,6 +692,7 @@ export async function syncNodeSkillVersion(options: SyncNodeSkillVersionOptions)
     installedAt,
   };
   await fs.writeFile(markerPath, `${JSON.stringify(marker, null, 2)}\n`, 'utf8');
+  throwIfAborted(options.signal);
   await options.writeInstallStatus?.(
     buildInstallPayload({
       nodeId: options.nodeId,
@@ -575,6 +702,7 @@ export async function syncNodeSkillVersion(options: SyncNodeSkillVersionOptions)
       installedAt,
     }),
   );
+  throwIfAborted(options.signal);
 
   return {
     skillVersionId: options.skillVersion.skillVersionId,

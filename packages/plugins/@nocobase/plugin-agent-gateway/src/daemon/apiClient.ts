@@ -12,10 +12,36 @@ import https from 'https';
 
 import { GatewayRequestOptions, GatewayRequester, JsonRecord } from './types';
 
+export class AgentGatewayHttpError extends Error {
+  readonly code?: string;
+
+  constructor(
+    message: string,
+    readonly statusCode: number,
+    readonly responseData: JsonRecord = {},
+  ) {
+    super(message);
+    this.name = 'AgentGatewayHttpError';
+    this.code = typeof responseData.code === 'string' ? responseData.code : undefined;
+  }
+}
+
+export function isAgentGatewayLeaseLostError(error: unknown): error is AgentGatewayHttpError {
+  return error instanceof AgentGatewayHttpError && error.statusCode === 409 && error.code === 'lease_lost';
+}
+
+export function isAgentGatewayRetryableError(error: unknown) {
+  if (!(error instanceof AgentGatewayHttpError)) {
+    return true;
+  }
+  return error.statusCode === 408 || error.statusCode === 429 || error.statusCode >= 500;
+}
+
 export class AgentGatewayApiClient implements GatewayRequester {
   constructor(
     private readonly serverUrl: string,
     private readonly defaultTimeoutMs = 30_000,
+    private readonly defaultSignal?: AbortSignal,
   ) {}
 
   async request<T extends JsonRecord = JsonRecord>(options: GatewayRequestOptions): Promise<T> {
@@ -42,6 +68,7 @@ export class AgentGatewayApiClient implements GatewayRequester {
                 }
               : {}),
           },
+          signal: options.signal || this.defaultSignal,
         },
         (response) => {
           let body = '';
@@ -55,6 +82,10 @@ export class AgentGatewayApiClient implements GatewayRequester {
             try {
               parsed = body ? (JSON.parse(body) as JsonRecord) : {};
             } catch {
+              if (statusCode < 200 || statusCode >= 300) {
+                reject(new AgentGatewayHttpError(`HTTP ${statusCode}`, statusCode));
+                return;
+              }
               reject(new Error(`Invalid JSON response from Agent Gateway: HTTP ${statusCode}`));
               return;
             }
@@ -67,7 +98,7 @@ export class AgentGatewayApiClient implements GatewayRequester {
                   : typeof parsed.message === 'string'
                     ? parsed.message
                     : `HTTP ${statusCode}`;
-              reject(new Error(message));
+              reject(new AgentGatewayHttpError(message, statusCode, responseData));
               return;
             }
             resolve((parsed.data && typeof parsed.data === 'object' ? parsed.data : parsed) as T);

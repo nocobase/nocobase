@@ -32,6 +32,7 @@ import {
   Input,
   List,
   Modal,
+  Pagination,
   Select,
   Space,
   Spin,
@@ -42,7 +43,7 @@ import {
   Typography,
   Upload,
 } from 'antd';
-import type { PaginationProps, TableProps, UploadProps } from 'antd';
+import type { TableProps, UploadProps } from 'antd';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import type { CSSMotionProps } from 'rc-motion';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -51,10 +52,29 @@ import {
   isAgentCapabilitySupported,
   normalizeAgentProviderCapabilities,
 } from '../../shared/providerCapabilities';
+import {
+  ACTIVE_RUN_STATUSES as ACTIVE_RUN_STATUS_VALUES,
+  CLAIMABLE_RUN_STATUS,
+  HEARTBEAT_RUN_STATUSES,
+  IMPORTING_RUN_STATUS,
+  LEASE_OWNING_RUN_STATUSES,
+  STALLED_RUN_STATUS,
+  TERMINAL_CONTROL_RUN_STATUSES as TERMINAL_CONTROL_RUN_STATUS_VALUES,
+} from '../../shared/runState';
 import { AgentTimeline, AgentTimelineEventRecord } from '../components/AgentTimeline';
 import { AgentSessionResumeBox, AgentSessionResumeInput } from '../components/AgentSessionResumeBox';
 import { ReadonlyXtermOutput } from '../components/ReadonlyXtermOutput';
 import { TerminalStreamSmokePanel, isTerminalStreamSmokeEnabled } from '../components/TerminalStreamSmokePanel';
+import {
+  ApiCallLogRecord,
+  ArtifactContentEntry,
+  DetailPageMeta,
+  RunArtifactRecord,
+  RunEventRecord,
+  RunSnapshotRecord,
+  createDetailPageMeta,
+  useRunObservabilityDetails,
+} from '../hooks/useRunObservabilityDetails';
 import { useTerminalStream, UseTerminalStreamState } from '../hooks/useTerminalStream';
 import { useT } from '../locale';
 import {
@@ -74,7 +94,6 @@ import {
 } from './AgentGatewayTaskParameterFormItems';
 import {
   AgentGatewayContext,
-  AgentGatewayApiResponse,
   JsonPreview,
   JsonRecord,
   formatDateTime,
@@ -187,52 +206,6 @@ interface TokenUsageRecord extends JsonRecord {
   totalTokens?: number | string | null;
 }
 
-interface RunEventRecord {
-  id: string;
-  source?: string;
-  sequence?: number;
-  level?: string;
-  eventType?: string;
-  message?: string | null;
-  payloadJson?: JsonRecord;
-  emittedAt?: string;
-}
-
-interface RunArtifactRecord {
-  id: string;
-  artifactKey?: string | null;
-  artifactType?: string;
-  mimeType?: string | null;
-  sizeBytes?: number | string | null;
-  originalSizeBytes?: number | string | null;
-  previewBytes?: number | string | null;
-  truncated?: boolean | null;
-  storageMode?: string | null;
-  contentSha256?: string | null;
-  contentText?: string | null;
-  metadataJson?: JsonRecord;
-}
-
-interface RunSnapshotRecord {
-  id: string;
-  snapshotType?: string;
-  snapshotJson?: JsonRecord;
-  metadataJson?: JsonRecord;
-  capturedAt?: string;
-}
-
-interface ApiCallLogRecord {
-  id: string;
-  method?: string;
-  path?: string;
-  statusCode?: number;
-  durationMs?: number;
-  requestSummaryJson?: JsonRecord;
-  responseSummaryJson?: JsonRecord;
-  errorSummary?: string | null;
-  createdAt?: string;
-}
-
 interface TerminalSnapshot {
   backend?: string | null;
   terminalStatus?: string | null;
@@ -269,25 +242,6 @@ interface RunDetailsWarnings {
   apiCallLogs?: string;
 }
 
-interface RunEventsDetailsState {
-  runId: string;
-  events: RunEventRecord[];
-  warning?: string;
-}
-
-interface RunArtifactsDetailsState {
-  runId: string;
-  artifacts: RunArtifactRecord[];
-  snapshots: RunSnapshotRecord[];
-  warnings: Pick<RunDetailsWarnings, 'artifacts' | 'snapshots'>;
-}
-
-interface RunApiLogsDetailsState {
-  runId: string;
-  apiCallLogs: ApiCallLogRecord[];
-  warning?: string;
-}
-
 type RunActionPermissionKey = keyof NonNullable<RunRecord['agentGatewayActionPermissionsJson']>;
 
 interface ResumeAgentSessionResult {
@@ -303,12 +257,6 @@ interface ControlRequestResult {
   runId?: string;
   controlRequestId?: string;
   controlRequestStatus?: 'accepted' | 'delivered' | 'succeeded' | 'failed';
-}
-
-interface ConversationEventsState {
-  runId: string;
-  events: AgentTimelineEventRecord[];
-  warning?: string;
 }
 
 interface ControlRequestState {
@@ -397,7 +345,7 @@ interface ExternalRunImportFormValues {
   title?: string;
   instruction?: string;
   status?: string;
-  externalRunKey?: string;
+  externalRunKey: string;
   providerSessionId?: string;
   sourceCollection?: string;
   sourceRecordId?: string;
@@ -442,6 +390,7 @@ const RUN_STATUS_OPTIONS = [
   'claimed',
   'syncing_skills',
   'running',
+  IMPORTING_RUN_STATUS,
   'finalizing',
   'canceling',
   'stalled',
@@ -452,32 +401,24 @@ const RUN_STATUS_OPTIONS = [
   'abandoned',
 ];
 
-const CANCELABLE_STATUSES = new Set(['queued', 'claimed', 'syncing_skills', 'running', 'finalizing', 'stalled']);
-const TERMINAL_CONTROL_RUN_STATUSES = new Set(['claimed', 'syncing_skills', 'running']);
-const LEGACY_TIMELINE_FALLBACK_STATUSES = new Set(['succeeded']);
-const LIVE_RUN_STATUSES = new Set([
-  'queued',
-  'claimed',
-  'syncing_skills',
-  'running',
-  'finalizing',
-  'canceling',
-  'stalled',
+const CANCELABLE_STATUSES = new Set<string>([
+  CLAIMABLE_RUN_STATUS,
+  IMPORTING_RUN_STATUS,
+  ...HEARTBEAT_RUN_STATUSES,
+  STALLED_RUN_STATUS,
 ]);
-const DANGLING_TOOL_LIVE_RUN_STATUSES = new Set([
-  'queued',
-  'claimed',
-  'syncing_skills',
-  'running',
-  'finalizing',
-  'canceling',
+const TERMINAL_CONTROL_RUN_STATUSES = new Set<string>(TERMINAL_CONTROL_RUN_STATUS_VALUES);
+const LEGACY_TIMELINE_FALLBACK_STATUSES = new Set(['succeeded']);
+const LIVE_RUN_STATUSES = new Set<string>([CLAIMABLE_RUN_STATUS, IMPORTING_RUN_STATUS, ...LEASE_OWNING_RUN_STATUSES]);
+const DANGLING_TOOL_LIVE_RUN_STATUSES = new Set<string>([
+  CLAIMABLE_RUN_STATUS,
+  IMPORTING_RUN_STATUS,
+  ...ACTIVE_RUN_STATUS_VALUES,
 ]);
 const RUN_DETAIL_QUERY_PARAM = 'runId';
 const TASK_TEMPLATE_DETAIL_QUERY_PARAM = 'templateId';
 const SKILL_VERSION_DETAIL_QUERY_PARAM = 'skillVersionId';
 const DEFAULT_RUNS_PAGE_SIZE = 20;
-const DEFAULT_DETAIL_TABLE_PAGE_SIZE = 20;
-const DEFAULT_DETAIL_LIST_PAGE_SIZE = 10;
 const DETAIL_PAGE_SIZE_OPTIONS = ['10', '20', '50', '100'];
 const TASK_RUN_DRAWER_WIDTH = 1040;
 const SKILL_DETAIL_DRAWER_WIDTH = 720;
@@ -490,6 +431,7 @@ const DEFAULT_EXTERNAL_RUN_IMPORT_FORM_VALUES: ExternalRunImportFormValues = {
   provider: 'codex',
   format: 'codex-jsonl',
   status: 'succeeded',
+  externalRunKey: '',
 };
 const RUNS_FILTER_FIELD_NAMES = ['taskTemplateId', 'status', 'nodeId', 'agentProfileId', 'createdAt'];
 const RUN_SORT_FALLBACK = '-createdAt';
@@ -724,19 +666,6 @@ function canUseTerminalControl(run: RunRecord | undefined, snapshot: TerminalSna
   return backend === 'tmux' && terminalStatus === 'active' && (outputUnsupported || snapshot?.available !== false);
 }
 
-function mergeConversationEventsState(
-  previous: ConversationEventsState | null,
-  next: ConversationEventsState,
-): ConversationEventsState {
-  if (previous?.runId !== next.runId) {
-    return next;
-  }
-  if (previous.events.length > next.events.length) {
-    return previous;
-  }
-  return next;
-}
-
 function createControlIdempotencyKey(action: 'interrupt' | 'terminate', runId: string) {
   const randomValue = globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2);
   return `ag_control:${action}:${runId}:${randomValue}`;
@@ -835,24 +764,6 @@ function getRunColumnSortOrder(runSort: string | undefined, columnKey: string) {
 
 function EmptyInline({ description }: { description: string }) {
   return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={description} />;
-}
-
-function getDetailPagination(t: TFunction, pageSize = DEFAULT_DETAIL_TABLE_PAGE_SIZE): TablePaginationConfig {
-  return {
-    pageSize,
-    showSizeChanger: true,
-    pageSizeOptions: DETAIL_PAGE_SIZE_OPTIONS,
-    showTotal: (total) => `${t('Total')}: ${total}`,
-  };
-}
-
-function getDetailListPagination(t: TFunction, pageSize = DEFAULT_DETAIL_LIST_PAGE_SIZE): PaginationProps {
-  return {
-    pageSize,
-    showSizeChanger: true,
-    pageSizeOptions: DETAIL_PAGE_SIZE_OPTIONS,
-    showTotal: (total) => `${t('Total')}: ${total}`,
-  };
 }
 
 function getRunIdFromLocationSearch() {
@@ -1472,11 +1383,6 @@ function AgentSessionPanel({
   );
 }
 
-function getDetailWarning(error: unknown, fallback: string) {
-  const detail = getApiErrorMessage(error, '');
-  return detail ? `${fallback}: ${detail}` : fallback;
-}
-
 function getTextFingerprint(text: string) {
   const sample = text.length > 1024 ? `${text.slice(0, 256)}:${text.slice(-768)}` : text;
   let hash = 2166136261;
@@ -1563,24 +1469,6 @@ function getControlRequestStatusText(t: TFunction, status: ControlRequestState['
       return t('Control request failed');
     default:
       return t('Control request accepted');
-  }
-}
-
-async function getOptionalDetails<T>(options: {
-  request: Promise<AgentGatewayApiResponse<T>>;
-  fallback: T;
-  fallbackMessage: string;
-}) {
-  try {
-    const response = await options.request;
-    return {
-      data: getResponseData(response, options.fallback),
-    };
-  } catch (error) {
-    return {
-      data: options.fallback,
-      warning: getDetailWarning(error, options.fallbackMessage),
-    };
   }
 }
 
@@ -1809,13 +1697,17 @@ function LogsPanel({
   run,
   events,
   eventsWarning,
+  hasMoreBefore,
   loading,
+  onLoadOlder,
 }: {
   t: TFunction;
   run: RunRecord;
   events: RunEventRecord[];
   eventsWarning?: string;
+  hasMoreBefore?: boolean;
   loading?: boolean;
+  onLoadOlder(): void;
 }) {
   const displayEvents = events.length ? events : createRunLifecycleEvents(run, t);
   const heartbeatEvents = displayEvents.filter(isHeartbeatRunEvent);
@@ -1896,7 +1788,7 @@ function LogsPanel({
           dataSource={visibleEvents}
           rowKey="id"
           loading={loading}
-          pagination={getDetailPagination(t)}
+          pagination={false}
           size="small"
         />
       ) : (
@@ -1924,13 +1816,18 @@ function LogsPanel({
                   }}
                   dataSource={heartbeatEvents}
                   rowKey="id"
-                  pagination={getDetailPagination(t)}
+                  pagination={false}
                   size="small"
                 />
               ),
             },
           ]}
         />
+      ) : null}
+      {hasMoreBefore ? (
+        <Button loading={loading} onClick={onLoadOlder}>
+          {t('Load older events')}
+        </Button>
       ) : null}
     </Space>
   );
@@ -1976,13 +1873,17 @@ function getHeartbeatApiLogSummary(apiCallLogs: ApiCallLogRecord[]) {
 function ApiLogsPanel({
   t,
   apiCallLogs,
+  meta,
   apiCallLogsWarning,
   loading,
+  onPageChange,
 }: {
   t: TFunction;
   apiCallLogs: ApiCallLogRecord[];
+  meta: DetailPageMeta;
   apiCallLogsWarning?: string;
   loading?: boolean;
+  onPageChange(page: number, pageSize: number): void;
 }) {
   const heartbeatLogs = apiCallLogs.filter(isHeartbeatApiCallLog);
   const visibleLogs = apiCallLogs.filter((log) => !isHeartbeatApiCallLog(log));
@@ -2052,7 +1953,7 @@ function ApiLogsPanel({
           dataSource={visibleLogs}
           rowKey="id"
           loading={loading}
-          pagination={getDetailPagination(t)}
+          pagination={false}
           size="small"
         />
       ) : (
@@ -2080,12 +1981,23 @@ function ApiLogsPanel({
                   }}
                   dataSource={heartbeatLogs}
                   rowKey="id"
-                  pagination={getDetailPagination(t)}
+                  pagination={false}
                   size="small"
                 />
               ),
             },
           ]}
+        />
+      ) : null}
+      {meta.count > meta.pageSize ? (
+        <Pagination
+          current={meta.page}
+          pageSize={meta.pageSize}
+          total={meta.count}
+          showSizeChanger
+          pageSizeOptions={DETAIL_PAGE_SIZE_OPTIONS}
+          showTotal={(total) => `${t('Total')}: ${total}`}
+          onChange={onPageChange}
         />
       ) : null}
     </Space>
@@ -2323,10 +2235,18 @@ function ArtifactPreviewText({ text }: { text: string }) {
   );
 }
 
-function ArtifactContentPreview({ artifact, t }: { artifact: RunArtifactRecord; t: TFunction }) {
-  const contentText = artifact.contentText || '';
-  const preview = useMemo(() => buildReadableArtifactPreview(contentText, t), [contentText, t]);
-  if (!contentText) {
+function ArtifactContentPreview({
+  artifact,
+  contentText,
+  t,
+}: {
+  artifact: RunArtifactRecord;
+  contentText: string | null | undefined;
+  t: TFunction;
+}) {
+  const normalizedContentText = contentText || '';
+  const preview = useMemo(() => buildReadableArtifactPreview(normalizedContentText, t), [normalizedContentText, t]);
+  if (!normalizedContentText) {
     return <Typography.Text type="secondary">{t('No inline artifact text')}</Typography.Text>;
   }
 
@@ -2336,7 +2256,7 @@ function ArtifactContentPreview({ artifact, t }: { artifact: RunArtifactRecord; 
         <Typography.Text type="secondary">{t('HTML artifact preview')}</Typography.Text>
         <iframe
           sandbox=""
-          srcDoc={contentText}
+          srcDoc={normalizedContentText}
           title={artifact.artifactKey || artifact.id}
           style={{
             background: '#fff',
@@ -2360,13 +2280,13 @@ function ArtifactContentPreview({ artifact, t }: { artifact: RunArtifactRecord; 
     );
   }
 
-  if ((artifact.mimeType || '').startsWith('image/') && contentText.startsWith('data:image/')) {
+  if ((artifact.mimeType || '').startsWith('image/') && normalizedContentText.startsWith('data:image/')) {
     return (
       <Space direction="vertical" size={8} style={{ width: '100%' }}>
         <Typography.Text type="secondary">{t('Image artifact preview')}</Typography.Text>
         <img
           alt={artifact.artifactKey || artifact.id}
-          src={contentText}
+          src={normalizedContentText}
           style={{
             border: '1px solid #edf0f2',
             borderRadius: 6,
@@ -2410,6 +2330,54 @@ function ArtifactContentPreview({ artifact, t }: { artifact: RunArtifactRecord; 
         ]}
       />
     </Space>
+  );
+}
+
+function ArtifactLazyPreview({
+  artifact,
+  entry,
+  t,
+  onLoad,
+}: {
+  artifact: RunArtifactRecord;
+  entry?: ArtifactContentEntry;
+  t: TFunction;
+  onLoad(artifact: RunArtifactRecord, force?: boolean): Promise<void>;
+}) {
+  const inlineContentAvailable = artifact.contentText !== undefined;
+  const loaded = entry?.loaded || inlineContentAvailable;
+  const contentText = entry?.loaded ? entry.contentText : artifact.contentText;
+  const handleChange = async (activeKeys: string | string[]) => {
+    const keys = Array.isArray(activeKeys) ? activeKeys : [activeKeys];
+    if (keys.includes('preview') && !loaded && !entry?.loading) {
+      await onLoad(artifact);
+    }
+  };
+  return (
+    <Collapse
+      size="small"
+      onChange={handleChange}
+      items={[
+        {
+          key: 'preview',
+          label: t('Preview'),
+          children: entry?.loading ? (
+            <Spin size="small" />
+          ) : entry?.warning ? (
+            <Space direction="vertical" size={8} style={{ width: '100%' }}>
+              <Alert type="warning" showIcon message={entry.warning} />
+              <Button size="small" onClick={async () => await onLoad(artifact, true)}>
+                {t('Retry')}
+              </Button>
+            </Space>
+          ) : loaded ? (
+            <ArtifactContentPreview artifact={artifact} contentText={contentText} t={t} />
+          ) : (
+            <Spin size="small" />
+          ),
+        },
+      ]}
+    />
   );
 }
 
@@ -2497,12 +2465,23 @@ function getArtifactOverviewCounts(artifacts: RunArtifactRecord[]) {
   };
 }
 
-function ArtifactList({ t, artifacts, loading }: { t: TFunction; artifacts: RunArtifactRecord[]; loading?: boolean }) {
+function ArtifactList({
+  t,
+  artifacts,
+  loading,
+  contentEntries,
+  onLoadContent,
+}: {
+  t: TFunction;
+  artifacts: RunArtifactRecord[];
+  loading?: boolean;
+  contentEntries: Record<string, ArtifactContentEntry>;
+  onLoadContent(artifact: RunArtifactRecord, force?: boolean): Promise<void>;
+}) {
   return (
     <List
       dataSource={artifacts}
       loading={loading}
-      pagination={getDetailListPagination(t)}
       renderItem={(artifact) => (
         <List.Item>
           <Space direction="vertical" size={8} style={{ width: '100%' }}>
@@ -2524,7 +2503,7 @@ function ArtifactList({ t, artifacts, loading }: { t: TFunction; artifacts: RunA
                 </Tag>
               ) : null}
             </Space>
-            <ArtifactContentPreview artifact={artifact} t={t} />
+            <ArtifactLazyPreview artifact={artifact} entry={contentEntries[artifact.id]} t={t} onLoad={onLoadContent} />
             <JsonPreview value={redactExternalUrlPreviewJson(artifact.metadataJson)} />
           </Space>
         </List.Item>
@@ -2541,16 +2520,30 @@ function ArtifactsPanel({
   t,
   artifacts,
   snapshots,
+  artifactMeta,
+  snapshotMeta,
+  artifactContentEntries,
   artifactsWarning,
   snapshotsWarning,
-  loading,
+  artifactsLoading,
+  snapshotsLoading,
+  onArtifactPageChange,
+  onSnapshotPageChange,
+  onLoadArtifactContent,
 }: {
   t: TFunction;
   artifacts: RunArtifactRecord[];
   snapshots: RunSnapshotRecord[];
+  artifactMeta: DetailPageMeta;
+  snapshotMeta: DetailPageMeta;
+  artifactContentEntries: Record<string, ArtifactContentEntry>;
   artifactsWarning?: string;
   snapshotsWarning?: string;
-  loading?: boolean;
+  artifactsLoading?: boolean;
+  snapshotsLoading?: boolean;
+  onArtifactPageChange(page: number, pageSize: number): void;
+  onSnapshotPageChange(page: number, pageSize: number): void;
+  onLoadArtifactContent(artifact: RunArtifactRecord, force?: boolean): Promise<void>;
 }) {
   const displayArtifacts = useMemo(() => [...artifacts].sort(compareArtifactsForDisplay), [artifacts]);
   const artifactGroups = useMemo(() => groupArtifactsForDisplay(displayArtifacts, t), [displayArtifacts, t]);
@@ -2562,7 +2555,7 @@ function ArtifactsPanel({
       {displayArtifacts.length ? (
         <Space size={[8, 8]} wrap>
           <Tag>
-            {t('Artifacts')}: {overviewCounts.total}
+            {t('Artifacts')}: {artifactMeta.count}
           </Tag>
           <Tag color={overviewCounts.htmlReports ? 'blue' : undefined}>
             {t('HTML reports')}: {overviewCounts.htmlReports}
@@ -2578,32 +2571,56 @@ function ArtifactsPanel({
           </Tag>
         </Space>
       ) : null}
-      {displayArtifacts.length || loading ? (
+      {displayArtifacts.length || artifactsLoading ? (
         artifactGroups.length > 1 ? (
           <Tabs
             destroyInactiveTabPane
             items={artifactGroups.map((group) => ({
               key: group.key,
               label: `${group.label} (${group.artifacts.length})`,
-              children: <ArtifactList t={t} artifacts={group.artifacts} loading={loading} />,
+              children: (
+                <ArtifactList
+                  t={t}
+                  artifacts={group.artifacts}
+                  loading={artifactsLoading}
+                  contentEntries={artifactContentEntries}
+                  onLoadContent={onLoadArtifactContent}
+                />
+              ),
             }))}
           />
         ) : (
-          <ArtifactList t={t} artifacts={displayArtifacts} loading={loading} />
+          <ArtifactList
+            t={t}
+            artifacts={displayArtifacts}
+            loading={artifactsLoading}
+            contentEntries={artifactContentEntries}
+            onLoadContent={onLoadArtifactContent}
+          />
         )
       ) : (
         <EmptyInline description={t('No artifacts yet')} />
       )}
+      {artifactMeta.count > artifactMeta.pageSize ? (
+        <Pagination
+          current={artifactMeta.page}
+          pageSize={artifactMeta.pageSize}
+          total={artifactMeta.count}
+          showSizeChanger
+          pageSizeOptions={DETAIL_PAGE_SIZE_OPTIONS}
+          showTotal={(total) => `${t('Total')}: ${total}`}
+          onChange={onArtifactPageChange}
+        />
+      ) : null}
 
       <Typography.Title level={5} style={{ margin: 0 }}>
         {t('Snapshots')}
       </Typography.Title>
       {snapshotsWarning ? <Alert type="warning" showIcon message={snapshotsWarning} /> : null}
-      {snapshots.length || loading ? (
+      {snapshots.length || snapshotsLoading ? (
         <List
           dataSource={snapshots}
-          loading={loading}
-          pagination={getDetailListPagination(t)}
+          loading={snapshotsLoading}
           renderItem={(snapshot) => (
             <List.Item>
               <Space direction="vertical" size={8} style={{ width: '100%' }}>
@@ -2618,6 +2635,17 @@ function ArtifactsPanel({
       ) : (
         <EmptyInline description={t('No snapshots yet')} />
       )}
+      {snapshotMeta.count > snapshotMeta.pageSize ? (
+        <Pagination
+          current={snapshotMeta.page}
+          pageSize={snapshotMeta.pageSize}
+          total={snapshotMeta.count}
+          showSizeChanger
+          pageSizeOptions={DETAIL_PAGE_SIZE_OPTIONS}
+          showTotal={(total) => `${t('Total')}: ${total}`}
+          onChange={onSnapshotPageChange}
+        />
+      ) : null}
     </Space>
   );
 }
@@ -2654,16 +2682,12 @@ export default function AgentGatewayRunsPage() {
   const [skillDetailsError, setSkillDetailsError] = useState<string>();
   const [activeDetailTab, setActiveDetailTab] = useState<RunDetailTabKey>('summary');
   const [terminalSnapshotState, setTerminalSnapshotState] = useState<TerminalSnapshotState | null>(null);
-  const [conversationEventsState, setConversationEventsState] = useState<ConversationEventsState | null>(null);
-  const [conversationEventsWarning, setConversationEventsWarning] = useState<string>();
-  const [runEventsDetailsState, setRunEventsDetailsState] = useState<RunEventsDetailsState | null>(null);
-  const [runArtifactsDetailsState, setRunArtifactsDetailsState] = useState<RunArtifactsDetailsState | null>(null);
-  const [runApiLogsDetailsState, setRunApiLogsDetailsState] = useState<RunApiLogsDetailsState | null>(null);
   const [controlRequestState, setControlRequestState] = useState<ControlRequestState | null>(null);
   const controlIdempotencyKeysRef = useRef<Partial<Record<'interrupt' | 'terminate', { runId: string; key: string }>>>(
     {},
   );
   const selectedRunIdRef = useRef<string | undefined>(initialRunId);
+  const terminalSnapshotRequestKeyRef = useRef<string>();
 
   const syncRunDetailFromLocation = useCallback(() => {
     const runId = getRunIdFromLocationSearch();
@@ -2673,11 +2697,6 @@ export default function AgentGatewayRunsPage() {
       setRunDetailsError(undefined);
       setActiveDetailTab('summary');
       setTerminalSnapshotState(null);
-      setConversationEventsState(null);
-      setConversationEventsWarning(undefined);
-      setRunEventsDetailsState(null);
-      setRunArtifactsDetailsState(null);
-      setRunApiLogsDetailsState(null);
       setControlRequestState(null);
       return;
     }
@@ -2685,11 +2704,6 @@ export default function AgentGatewayRunsPage() {
     setRunDetailsError(undefined);
     setActiveDetailTab('summary');
     setTerminalSnapshotState(null);
-    setConversationEventsState(null);
-    setConversationEventsWarning(undefined);
-    setRunEventsDetailsState(null);
-    setRunArtifactsDetailsState(null);
-    setRunApiLogsDetailsState(null);
     setDetailOpen(true);
   }, []);
 
@@ -2846,11 +2860,6 @@ export default function AgentGatewayRunsPage() {
         setBuildTaskOpen(false);
         if (nextRunId) {
           setTerminalSnapshotState(null);
-          setConversationEventsState(null);
-          setConversationEventsWarning(undefined);
-          setRunEventsDetailsState(null);
-          setRunArtifactsDetailsState(null);
-          setRunApiLogsDetailsState(null);
           setRunDetailsError(undefined);
           setActiveDetailTab('summary');
           setSelectedRunId(nextRunId);
@@ -2903,11 +2912,6 @@ export default function AgentGatewayRunsPage() {
         setExternalRunImportOpen(false);
         if (nextRunId) {
           setTerminalSnapshotState(null);
-          setConversationEventsState(null);
-          setConversationEventsWarning(undefined);
-          setRunEventsDetailsState(null);
-          setRunArtifactsDetailsState(null);
-          setRunApiLogsDetailsState(null);
           setRunDetailsError(undefined);
           setActiveDetailTab('summary');
           setSelectedRunId(nextRunId);
@@ -2952,26 +2956,6 @@ export default function AgentGatewayRunsPage() {
     },
   );
 
-  const loadConversationEventsForRun = useCallback(
-    async (run: RunRecord) => {
-      const runResponse = await ctx.api.request<AgentTimelineEventRecord[]>({
-        url: `agent-gateway/runs/${encodeURIComponent(run.id)}/conversation-events:list`,
-        method: 'get',
-      });
-      const runEvents = getResponseData(runResponse, []);
-      if (runEvents.length || !run.agentSessionId) {
-        return runEvents;
-      }
-
-      const sessionResponse = await ctx.api.request<AgentTimelineEventRecord[]>({
-        url: `agent-gateway/agent-sessions/${encodeURIComponent(run.agentSessionId)}/conversation-events:list`,
-        method: 'get',
-      });
-      return getResponseData(sessionResponse, []);
-    },
-    [ctx.api],
-  );
-
   const runDetailsRequest = useRequest(
     async (): Promise<RunDetails | null> => {
       if (!selectedRunId || !detailOpen) {
@@ -3004,36 +2988,47 @@ export default function AgentGatewayRunsPage() {
         if (!isRunActionAllowed(data.run.agentGatewayActionPermissionsJson, 'readTerminal')) {
           setTerminalSnapshotState(null);
         }
-        if (!isRunActionAllowed(data.run.agentGatewayActionPermissionsJson, 'readSessionMessages')) {
-          setConversationEventsState(null);
-          setConversationEventsWarning(t('Agent Gateway session message read permission required'));
-        }
-        if (!isRunActionAllowed(data.run.agentGatewayActionPermissionsJson, 'readRawLogs')) {
-          setRunEventsDetailsState(null);
-          setRunApiLogsDetailsState(null);
-        }
-        if (!isRunActionAllowed(data.run.agentGatewayActionPermissionsJson, 'readArtifacts')) {
-          setRunArtifactsDetailsState(null);
-        }
       },
       onError(error) {
         const message = getApiErrorMessage(error, t('Failed to load run details'));
         setRunDetailsError(message);
         setTerminalSnapshotState(null);
-        setConversationEventsState(null);
-        setConversationEventsWarning(undefined);
-        setRunEventsDetailsState(null);
-        setRunArtifactsDetailsState(null);
-        setRunApiLogsDetailsState(null);
         ctx.message?.error(message);
       },
     },
   );
   const { refresh: refreshRunDetails } = runDetailsRequest;
+  const observabilityRun =
+    !runDetailsError && selectedRunId && runDetailsRequest.data?.run?.id === selectedRunId
+      ? runDetailsRequest.data.run
+      : undefined;
+  const rawLogDetailsWarning = getRawLogDetailsWarning(observabilityRun, t);
+  const artifactDetailsWarning = getArtifactDetailsWarning(observabilityRun, t);
+  const observability = useRunObservabilityDetails({
+    api: ctx.api,
+    t,
+    selectedRunId,
+    run: observabilityRun,
+    enabled: detailOpen && !runDetailsError,
+    activeTab: activeDetailTab,
+    conversationEnabled: Boolean(
+      observabilityRun && isRunActionAllowed(observabilityRun.agentGatewayActionPermissionsJson, 'readSessionMessages'),
+    ),
+    conversationDisabledWarning: t('Agent Gateway session message read permission required'),
+    rawLogsWarning: rawLogDetailsWarning,
+    artifactsWarning: artifactDetailsWarning,
+  });
+  const resetObservability = observability.reset;
+  const refreshConversationEvents = observability.conversation.refresh;
 
   const terminalSnapshotRequest = useRequest(
-    async () => {
-      if (!selectedRunId || !detailOpen || runDetailsError || runDetailsRequest.data?.run?.id !== selectedRunId) {
+    async (requestRunId: string) => {
+      if (
+        requestRunId !== selectedRunIdRef.current ||
+        !detailOpen ||
+        runDetailsError ||
+        runDetailsRequest.data?.run?.id !== requestRunId
+      ) {
         return null;
       }
       const run = runDetailsRequest.data.run;
@@ -3046,13 +3041,12 @@ export default function AgentGatewayRunsPage() {
           snapshot: createUnsupportedTerminalSnapshot(run),
         } satisfies TerminalSnapshotState;
       }
-      const runId = selectedRunId;
       const response = await ctx.api.request<TerminalSnapshot | null>({
-        url: `agent-gateway/runs/${encodeURIComponent(runId)}/terminal:snapshot`,
+        url: `agent-gateway/runs/${encodeURIComponent(requestRunId)}/terminal:snapshot`,
         method: 'get',
       });
       return {
-        runId,
+        runId: requestRunId,
         snapshot: getResponseData(response, null),
       } satisfies TerminalSnapshotState;
     },
@@ -3064,179 +3058,22 @@ export default function AgentGatewayRunsPage() {
         }
         setTerminalSnapshotState(data);
       },
-      onError(error) {
+      onError(error, [requestRunId]) {
+        if (requestRunId !== selectedRunIdRef.current) {
+          return;
+        }
         setTerminalSnapshotState(null);
         ctx.message?.error(getApiErrorMessage(error, t('Failed to load terminal')));
       },
     },
   );
-  const { run: refreshTerminalSnapshot } = terminalSnapshotRequest;
-
-  const conversationEventsRequest = useRequest(
-    async () => {
-      if (!selectedRunId || !detailOpen || runDetailsError || runDetailsRequest.data?.run?.id !== selectedRunId) {
-        return null;
-      }
-      const currentRun = runDetailsRequest.data?.run;
-      if (!currentRun) {
-        return null;
-      }
-      return {
-        runId: selectedRunId,
-        events: await loadConversationEventsForRun(currentRun),
-      } satisfies ConversationEventsState;
-    },
-    {
-      manual: true,
-      onSuccess(data) {
-        if (!data || data.runId !== selectedRunId) {
-          return;
-        }
-        setConversationEventsState((previous) => mergeConversationEventsState(previous, data));
-        setConversationEventsWarning(undefined);
-      },
-      onError(error) {
-        setConversationEventsState((previous) => (previous?.runId === selectedRunId ? previous : null));
-        setConversationEventsWarning(getDetailWarning(error, t('Agent timeline unavailable')));
-      },
-    },
-  );
-  const { run: refreshConversationEvents } = conversationEventsRequest;
-
-  const runEventsDetailsRequest = useRequest(
-    async () => {
-      if (!selectedRunId || !detailOpen || runDetailsError || runDetailsRequest.data?.run?.id !== selectedRunId) {
-        return null;
-      }
-      const run = runDetailsRequest.data.run;
-      const warning = getRawLogDetailsWarning(run, t);
-      if (warning) {
-        return {
-          runId: run.id,
-          events: [],
-          warning,
-        } satisfies RunEventsDetailsState;
-      }
-      const result = await getOptionalDetails<RunEventRecord[]>({
-        request: ctx.api.request<RunEventRecord[]>({
-          url: `agent-gateway/runs/${encodeURIComponent(run.id)}/events:list`,
-          method: 'get',
-        }),
-        fallback: [],
-        fallbackMessage: t('Events unavailable'),
-      });
-      return {
-        runId: run.id,
-        events: result.data,
-        warning: result.warning,
-      } satisfies RunEventsDetailsState;
-    },
-    {
-      manual: true,
-      onSuccess(data) {
-        if (!data || data.runId !== selectedRunIdRef.current) {
-          return;
-        }
-        setRunEventsDetailsState(data);
-      },
-    },
-  );
-
-  const runArtifactsDetailsRequest = useRequest(
-    async () => {
-      if (!selectedRunId || !detailOpen || runDetailsError || runDetailsRequest.data?.run?.id !== selectedRunId) {
-        return null;
-      }
-      const run = runDetailsRequest.data.run;
-      const warning = getArtifactDetailsWarning(run, t);
-      if (warning) {
-        return {
-          runId: run.id,
-          artifacts: [],
-          snapshots: [],
-          warnings: {
-            artifacts: warning,
-            snapshots: warning,
-          },
-        } satisfies RunArtifactsDetailsState;
-      }
-      const [artifactsResult, snapshotsResult] = await Promise.all([
-        getOptionalDetails<RunArtifactRecord[]>({
-          request: ctx.api.request<RunArtifactRecord[]>({
-            url: `agent-gateway/runs/${encodeURIComponent(run.id)}/artifacts:list`,
-            method: 'get',
-          }),
-          fallback: [],
-          fallbackMessage: t('Artifacts unavailable'),
-        }),
-        getOptionalDetails<RunSnapshotRecord[]>({
-          request: ctx.api.request<RunSnapshotRecord[]>({
-            url: `agent-gateway/runs/${encodeURIComponent(run.id)}/snapshots:list`,
-            method: 'get',
-          }),
-          fallback: [],
-          fallbackMessage: t('Snapshots unavailable'),
-        }),
-      ]);
-      return {
-        runId: run.id,
-        artifacts: artifactsResult.data,
-        snapshots: snapshotsResult.data,
-        warnings: {
-          artifacts: artifactsResult.warning,
-          snapshots: snapshotsResult.warning,
-        },
-      } satisfies RunArtifactsDetailsState;
-    },
-    {
-      manual: true,
-      onSuccess(data) {
-        if (!data || data.runId !== selectedRunIdRef.current) {
-          return;
-        }
-        setRunArtifactsDetailsState(data);
-      },
-    },
-  );
-
-  const runApiLogsDetailsRequest = useRequest(
-    async () => {
-      if (!selectedRunId || !detailOpen || runDetailsError || runDetailsRequest.data?.run?.id !== selectedRunId) {
-        return null;
-      }
-      const run = runDetailsRequest.data.run;
-      const warning = getRawLogDetailsWarning(run, t);
-      if (warning) {
-        return {
-          runId: run.id,
-          apiCallLogs: [],
-          warning,
-        } satisfies RunApiLogsDetailsState;
-      }
-      const result = await getOptionalDetails<ApiCallLogRecord[]>({
-        request: ctx.api.request<ApiCallLogRecord[]>({
-          url: `agent-gateway/runs/${encodeURIComponent(run.id)}/api-call-logs:list`,
-          method: 'get',
-        }),
-        fallback: [],
-        fallbackMessage: t('API logs unavailable'),
-      });
-      return {
-        runId: run.id,
-        apiCallLogs: result.data,
-        warning: result.warning,
-      } satisfies RunApiLogsDetailsState;
-    },
-    {
-      manual: true,
-      onSuccess(data) {
-        if (!data || data.runId !== selectedRunIdRef.current) {
-          return;
-        }
-        setRunApiLogsDetailsState(data);
-      },
-    },
-  );
+  const runTerminalSnapshotRequest = terminalSnapshotRequest.run;
+  const refreshTerminalSnapshot = useCallback(() => {
+    const runId = selectedRunIdRef.current;
+    if (runId) {
+      runTerminalSnapshotRequest(runId);
+    }
+  }, [runTerminalSnapshotRequest]);
 
   const getControlIdempotencyKey = useCallback((action: 'interrupt' | 'terminate', runId: string) => {
     if (!runId) {
@@ -3426,11 +3263,7 @@ export default function AgentGatewayRunsPage() {
       onSuccess(result) {
         const nextRunId = String(result.runId);
         setTerminalSnapshotState(null);
-        setConversationEventsState(null);
-        setConversationEventsWarning(undefined);
-        setRunEventsDetailsState(null);
-        setRunArtifactsDetailsState(null);
-        setRunApiLogsDetailsState(null);
+        resetObservability();
         setActiveDetailTab('summary');
         setSelectedRunId(nextRunId);
         setDetailOpen(true);
@@ -3449,129 +3282,18 @@ export default function AgentGatewayRunsPage() {
 
   const pollingRun = runDetailsRequest.data?.run;
 
-  useEffect(() => {
-    if (!detailOpen || !selectedRunId || runDetailsError) {
-      return;
-    }
-    if (pollingRun?.id !== selectedRunId) {
-      return;
-    }
-    const run = pollingRun;
-    const pollActionPermissions = selectedRunActionPermissions || {};
-    const canPollTerminal =
-      activeDetailTab === 'agent-sessions' && isRunActionAllowed(pollActionPermissions, 'readTerminal');
-    const terminalOutputSupported = getRunCapability(run, 'terminalOutput');
-    const canPollSessionMessages =
-      activeDetailTab === 'summary' && isRunActionAllowed(pollActionPermissions, 'readSessionMessages');
-
-    if (canPollTerminal && terminalOutputSupported) {
-      refreshTerminalSnapshot();
-    } else if (canPollTerminal) {
-      setTerminalSnapshotState((previous) => {
-        if (previous?.runId === run.id && previous.snapshot?.unsupportedCapability === 'terminalOutput') {
-          return previous;
-        }
-        return {
-          runId: run.id,
-          snapshot: createUnsupportedTerminalSnapshot(run),
-        };
-      });
-    }
-    if (canPollSessionMessages) {
-      refreshConversationEvents();
-    }
-    if (!isLiveRunStatus(run.status)) {
-      return;
-    }
-    const realtimeTimer = window.setInterval(() => {
-      if (canPollTerminal && terminalOutputSupported) {
-        refreshTerminalSnapshot();
-      }
-      if (canPollSessionMessages) {
-        refreshConversationEvents();
-      }
-    }, 2000);
-    const summaryTimer = window.setInterval(() => {
-      refreshRuns();
-      refreshRunDetails();
-    }, 5000);
-    return () => {
-      window.clearInterval(realtimeTimer);
-      window.clearInterval(summaryTimer);
-    };
-  }, [
-    activeDetailTab,
-    detailOpen,
-    refreshConversationEvents,
-    refreshRunDetails,
-    refreshRuns,
-    refreshTerminalSnapshot,
-    runDetailsError,
-    pollingRun,
-    selectedRunId,
-    selectedRunActionPermissions,
-  ]);
-
-  useEffect(() => {
-    if (!detailOpen || !selectedRunId || runDetailsError) {
-      return;
-    }
-    const runDetailsData = runDetailsRequest.data;
-    const activeRun = runDetailsData?.run?.id === selectedRunId ? runDetailsData.run : null;
-    if (!activeRun) {
-      return;
-    }
-    if (
-      activeDetailTab === 'logs' &&
-      runEventsDetailsState?.runId !== selectedRunId &&
-      !runEventsDetailsRequest.loading
-    ) {
-      runEventsDetailsRequest.run();
-    }
-    if (
-      activeDetailTab === 'artifacts' &&
-      runArtifactsDetailsState?.runId !== selectedRunId &&
-      !runArtifactsDetailsRequest.loading
-    ) {
-      runArtifactsDetailsRequest.run();
-    }
-    if (
-      activeDetailTab === 'api-logs' &&
-      runApiLogsDetailsState?.runId !== selectedRunId &&
-      !runApiLogsDetailsRequest.loading
-    ) {
-      runApiLogsDetailsRequest.run();
-    }
-  }, [
-    activeDetailTab,
-    detailOpen,
-    runApiLogsDetailsRequest,
-    runApiLogsDetailsRequest.loading,
-    runApiLogsDetailsState?.runId,
-    runArtifactsDetailsRequest,
-    runArtifactsDetailsRequest.loading,
-    runArtifactsDetailsState?.runId,
-    runDetailsRequest.data,
-    runDetailsError,
-    runEventsDetailsRequest,
-    runEventsDetailsRequest.loading,
-    runEventsDetailsState?.runId,
-    selectedRunId,
-  ]);
-
-  const openRunDetails = useCallback((run: RunRecord) => {
-    setRunDetailsError(undefined);
-    setActiveDetailTab('summary');
-    setTerminalSnapshotState(null);
-    setConversationEventsState(null);
-    setConversationEventsWarning(undefined);
-    setRunEventsDetailsState(null);
-    setRunArtifactsDetailsState(null);
-    setRunApiLogsDetailsState(null);
-    setSelectedRunId(run.id);
-    setDetailOpen(true);
-    replaceRunIdInLocationSearch(run.id);
-  }, []);
+  const openRunDetails = useCallback(
+    (run: RunRecord) => {
+      setRunDetailsError(undefined);
+      setActiveDetailTab('summary');
+      setTerminalSnapshotState(null);
+      resetObservability();
+      setSelectedRunId(run.id);
+      setDetailOpen(true);
+      replaceRunIdInLocationSearch(run.id);
+    },
+    [resetObservability],
+  );
 
   const openTaskTemplateDetails = useCallback((templateId: string) => {
     setSelectedTaskTemplateId(templateId);
@@ -3613,13 +3335,9 @@ export default function AgentGatewayRunsPage() {
     setRunDetailsError(undefined);
     setActiveDetailTab('summary');
     setTerminalSnapshotState(null);
-    setConversationEventsState(null);
-    setConversationEventsWarning(undefined);
-    setRunEventsDetailsState(null);
-    setRunArtifactsDetailsState(null);
-    setRunApiLogsDetailsState(null);
+    resetObservability();
     replaceRunIdInLocationSearch();
-  }, []);
+  }, [resetObservability]);
 
   const handleRunFilterChange = useCallback((filter: CompiledFilter) => {
     setRunPagination((current) => ({
@@ -3879,9 +3597,9 @@ export default function AgentGatewayRunsPage() {
     !runDetailsError && selectedRunId && runDetailsRequest.data?.run?.id === selectedRunId
       ? runDetailsRequest.data
       : null;
-  const activeRunEventsDetails = runEventsDetailsState?.runId === selectedRunId ? runEventsDetailsState : null;
-  const activeRunArtifactsDetails = runArtifactsDetailsState?.runId === selectedRunId ? runArtifactsDetailsState : null;
-  const activeRunApiLogsDetails = runApiLogsDetailsState?.runId === selectedRunId ? runApiLogsDetailsState : null;
+  const activeRunEventsDetails = observability.events.state;
+  const activeRunArtifactsDetails = observability.artifacts.state;
+  const activeRunApiLogsDetails = observability.apiLogs.state;
   const runListData = useMemo<RunListData>(() => runsRequest.data || { runs: [], meta: {} }, [runsRequest.data]);
   const runListTotal = runListData.meta.count ?? runListData.runs.length;
   const runTaskTemplateFilterOptions = useMemo(() => getRunTaskTemplateFilterOptions(runListData), [runListData]);
@@ -3937,12 +3655,13 @@ export default function AgentGatewayRunsPage() {
       : null;
   const controlActions = activeRunDetails?.run.agentGatewayControlActionsJson || {};
   const terminalControlAvailable = canUseTerminalControl(activeRunDetails?.run, terminalSnapshot);
-  const latestConversationEvents = conversationEventsState?.runId === selectedRunId ? conversationEventsState : null;
+  const latestConversationEvents = observability.conversation.state;
   const timelineEvents = latestConversationEvents?.events || activeRunDetails?.conversationEvents || [];
   const timelineWarning =
-    conversationEventsWarning || (latestConversationEvents ? undefined : activeRunDetails?.warnings.conversationEvents);
+    observability.conversation.warning ||
+    (latestConversationEvents ? undefined : activeRunDetails?.warnings.conversationEvents);
   const timelineLoading =
-    conversationEventsRequest.loading ||
+    observability.conversation.loading ||
     Boolean(
       activeRunDetails &&
         activeDetailTab === 'summary' &&
@@ -3951,15 +3670,17 @@ export default function AgentGatewayRunsPage() {
         !timelineEvents.length &&
         !timelineWarning,
     );
-  const rawLogDetailsWarning = getRawLogDetailsWarning(activeRunDetails?.run, t);
-  const artifactDetailsWarning = getArtifactDetailsWarning(activeRunDetails?.run, t);
   const logEvents = activeRunEventsDetails?.events || [];
   const logEventsWarning = activeRunEventsDetails?.warning || rawLogDetailsWarning;
   const displayArtifacts = activeRunArtifactsDetails?.artifacts || [];
   const displaySnapshots = activeRunArtifactsDetails?.snapshots || [];
+  const artifactMeta = activeRunArtifactsDetails?.artifactMeta || createDetailPageMeta();
+  const snapshotMeta = activeRunArtifactsDetails?.snapshotMeta || createDetailPageMeta();
+  const artifactContentEntries = observability.artifacts.contentEntries;
   const artifactsWarning = activeRunArtifactsDetails?.warnings.artifacts || artifactDetailsWarning;
   const snapshotsWarning = activeRunArtifactsDetails?.warnings.snapshots || artifactDetailsWarning;
   const apiCallLogs = activeRunApiLogsDetails?.apiCallLogs || [];
+  const apiCallLogsMeta = activeRunApiLogsDetails?.meta || createDetailPageMeta();
   const apiCallLogsWarning = activeRunApiLogsDetails?.warning || rawLogDetailsWarning;
   const useLegacyTimelineFallback = canUseLegacyTimelineFallback(
     activeRunDetails?.run,
@@ -3991,6 +3712,84 @@ export default function AgentGatewayRunsPage() {
     enabled: detailOpen && canStreamTerminal && Boolean(activeRunDetails?.run.id === selectedRunId),
     createStreamTicket,
   });
+  const terminalStreamFallbackActive =
+    canStreamTerminal && (terminalStream.connectionState !== 'live' || Boolean(terminalStream.lastErrorCode));
+
+  useEffect(() => {
+    if (!detailOpen || !selectedRunId || runDetailsError || pollingRun?.id !== selectedRunId) {
+      terminalSnapshotRequestKeyRef.current = undefined;
+      return;
+    }
+    const run = pollingRun;
+    const pollActionPermissions = selectedRunActionPermissions || {};
+    const canPollTerminal =
+      activeDetailTab === 'agent-sessions' && isRunActionAllowed(pollActionPermissions, 'readTerminal');
+    const terminalOutputSupported = getRunCapability(run, 'terminalOutput');
+    const canPollSessionMessages =
+      activeDetailTab === 'summary' && isRunActionAllowed(pollActionPermissions, 'readSessionMessages');
+
+    if (!canPollTerminal) {
+      terminalSnapshotRequestKeyRef.current = undefined;
+    } else if (!terminalOutputSupported) {
+      terminalSnapshotRequestKeyRef.current = `${run.id}:unsupported`;
+      setTerminalSnapshotState((previous) => {
+        if (previous?.runId === run.id && previous.snapshot?.unsupportedCapability === 'terminalOutput') {
+          return previous;
+        }
+        return {
+          runId: run.id,
+          snapshot: createUnsupportedTerminalSnapshot(run),
+        };
+      });
+    } else {
+      const snapshotRequestKey = `${run.id}:${isLiveRunStatus(run.status) ? 'live' : 'settled'}`;
+      const needsInitialSnapshot = terminalSnapshotRequestKeyRef.current !== snapshotRequestKey;
+      terminalSnapshotRequestKeyRef.current = snapshotRequestKey;
+      if (needsInitialSnapshot || terminalStreamFallbackActive) {
+        refreshTerminalSnapshot();
+      }
+    }
+    if (canPollSessionMessages) {
+      refreshConversationEvents();
+    }
+    if (!isLiveRunStatus(run.status)) {
+      return;
+    }
+
+    const realtimeTimer =
+      terminalStreamFallbackActive || canPollSessionMessages
+        ? window.setInterval(() => {
+            if (terminalStreamFallbackActive) {
+              refreshTerminalSnapshot();
+            }
+            if (canPollSessionMessages) {
+              refreshConversationEvents();
+            }
+          }, 2000)
+        : undefined;
+    const summaryTimer = window.setInterval(() => {
+      refreshRuns();
+      refreshRunDetails();
+    }, 5000);
+    return () => {
+      if (realtimeTimer !== undefined) {
+        window.clearInterval(realtimeTimer);
+      }
+      window.clearInterval(summaryTimer);
+    };
+  }, [
+    activeDetailTab,
+    detailOpen,
+    pollingRun,
+    refreshConversationEvents,
+    refreshRunDetails,
+    refreshRuns,
+    refreshTerminalSnapshot,
+    runDetailsError,
+    selectedRunActionPermissions,
+    selectedRunId,
+    terminalStreamFallbackActive,
+  ]);
 
   useEffect(() => {
     selectedRunIdRef.current = selectedRunId;
@@ -4175,6 +3974,14 @@ export default function AgentGatewayRunsPage() {
                 children: (
                   <Space direction="vertical" size={16} style={{ width: '100%' }}>
                     <RunnerQueueAlert run={activeRunDetails.run} t={t} />
+                    {latestConversationEvents?.hasMoreBefore ? (
+                      <Button
+                        loading={observability.conversation.loading}
+                        onClick={observability.conversation.loadOlder}
+                      >
+                        {t('Load older messages')}
+                      </Button>
+                    ) : null}
                     <AgentTimeline
                       t={t}
                       events={timelineEvents}
@@ -4249,7 +4056,9 @@ export default function AgentGatewayRunsPage() {
                     run={activeRunDetails.run}
                     events={logEvents}
                     eventsWarning={logEventsWarning}
-                    loading={runEventsDetailsRequest.loading}
+                    hasMoreBefore={activeRunEventsDetails?.hasMoreBefore}
+                    loading={observability.events.loading}
+                    onLoadOlder={observability.events.loadOlder}
                   />
                 ),
               },
@@ -4261,9 +4070,16 @@ export default function AgentGatewayRunsPage() {
                     t={t}
                     artifacts={displayArtifacts}
                     snapshots={displaySnapshots}
+                    artifactMeta={artifactMeta}
+                    snapshotMeta={snapshotMeta}
+                    artifactContentEntries={artifactContentEntries}
                     artifactsWarning={artifactsWarning}
                     snapshotsWarning={snapshotsWarning}
-                    loading={runArtifactsDetailsRequest.loading}
+                    artifactsLoading={observability.artifacts.artifactLoading}
+                    snapshotsLoading={observability.artifacts.snapshotLoading}
+                    onArtifactPageChange={observability.artifacts.changeArtifactPage}
+                    onSnapshotPageChange={observability.artifacts.changeSnapshotPage}
+                    onLoadArtifactContent={observability.artifacts.loadContent}
                   />
                 ),
               },
@@ -4274,8 +4090,10 @@ export default function AgentGatewayRunsPage() {
                   <ApiLogsPanel
                     t={t}
                     apiCallLogs={apiCallLogs}
+                    meta={apiCallLogsMeta}
                     apiCallLogsWarning={apiCallLogsWarning}
-                    loading={runApiLogsDetailsRequest.loading}
+                    loading={observability.apiLogs.loading}
+                    onPageChange={observability.apiLogs.changePage}
                   />
                 ),
               },
@@ -4452,6 +4270,13 @@ export default function AgentGatewayRunsPage() {
               }))}
             />
           </Form.Item>
+          <Form.Item
+            label={t('External run key')}
+            name="externalRunKey"
+            rules={[{ required: true, whitespace: true, message: t('External run key is required') }]}
+          >
+            <Input />
+          </Form.Item>
           <Form.Item label={t('Log file')}>
             <Upload
               accept=".jsonl,.ndjson,.json,.log,.txt,text/plain,application/json,application/x-ndjson"
@@ -4480,9 +4305,6 @@ export default function AgentGatewayRunsPage() {
                 label: t('Advanced'),
                 children: (
                   <Space direction="vertical" size={16} style={{ width: '100%' }}>
-                    <Form.Item label={t('External run key')} name="externalRunKey">
-                      <Input />
-                    </Form.Item>
                     <Form.Item label={t('Provider session ID')} name="providerSessionId">
                       <Input />
                     </Form.Item>

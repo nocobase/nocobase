@@ -99,12 +99,16 @@
   "Cancel run": "Cancel run",
   "Failed to load run details": "Failed to load run details",
   "Agent timeline unavailable": "Agent timeline unavailable",
+  "Load older messages": "Load older messages",
   "Agent Gateway session message read permission required": "Agent Gateway session message read permission required",
   "Agent Gateway terminal read permission required": "Agent Gateway terminal read permission required",
   "Agent Gateway artifact read permission required": "Agent Gateway artifact read permission required",
   "Agent Gateway raw log read permission required": "Agent Gateway raw log read permission required",
   "Events unavailable": "Events unavailable",
+  "Load older events": "Load older events",
   "Artifacts unavailable": "Artifacts unavailable",
+  "Artifact content unavailable": "Artifact content unavailable",
+  "Retry": "Retry",
   "Snapshots unavailable": "Snapshots unavailable",
   "API logs unavailable": "API logs unavailable",
   "Failed to cancel run": "Failed to cancel run",
@@ -350,6 +354,7 @@
   "Raw log": "Raw log",
   "Failed to read log file": "Failed to read log file",
   "External run key": "External run key",
+  "External run key is required": "External run key is required",
   "Provider session ID": "Provider session ID",
   "Source collection": "Source collection",
   "Source record ID": "Source record ID",
@@ -446,5 +451,6 @@
   "Live stream": "Live stream",
   "Snapshot fallback": "Snapshot fallback",
   "Waiting for output": "Waiting for output",
-  "Live stream unavailable; showing terminal snapshots": "Live stream unavailable; showing terminal snapshots"
+  "Live stream unavailable; showing terminal snapshots": "Live stream unavailable; showing terminal snapshots",
+  "Record collection is required": "Record collection is required"
 }

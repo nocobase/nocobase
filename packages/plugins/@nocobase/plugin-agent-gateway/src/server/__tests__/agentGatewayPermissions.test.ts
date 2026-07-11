@@ -161,28 +161,32 @@ describe('agent gateway permission matrix', () => {
         agentSessionProviderId: session.get('providerSessionId'),
       },
     });
-    await app.db.getRepository('agAgentConversationEvents').create({
-      values: {
-        id: randomUUID(),
-        sessionId: session.get('id'),
-        runId: run.get('id'),
-        sequence: 1,
-        eventType: 'agent.message',
-        source: 'codex',
-        contentText: 'visible session message',
-      },
-    });
-    await app.db.getRepository('agRunEvents').create({
-      values: {
-        id: randomUUID(),
-        runId: run.get('id'),
-        claimAttempt: 1,
-        source: 'runner',
-        sequence: 1,
-        level: 'info',
-        eventType: 'log',
-        message: 'raw log',
-      },
+    await app.db.sequelize.transaction(async (transaction) => {
+      await app.db.getRepository('agAgentConversationEvents').create({
+        values: {
+          id: randomUUID(),
+          sessionId: session.get('id'),
+          runId: run.get('id'),
+          sequence: 1,
+          eventType: 'agent.message',
+          source: 'codex',
+          contentText: 'visible session message',
+        },
+        transaction,
+      });
+      await app.db.getRepository('agRunEvents').create({
+        values: {
+          id: randomUUID(),
+          runId: run.get('id'),
+          claimAttempt: 1,
+          source: 'runner',
+          sequence: 1,
+          level: 'info',
+          eventType: 'log',
+          message: 'raw log',
+        },
+        transaction,
+      });
     });
     await app.db.getRepository('agRunArtifacts').create({
       values: {

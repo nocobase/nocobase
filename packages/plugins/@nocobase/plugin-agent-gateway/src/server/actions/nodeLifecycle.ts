@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { randomUUID } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 import { execFile } from 'child_process';
 import { mkdtemp, readFile, rm } from 'fs/promises';
 import { tmpdir } from 'os';
@@ -16,7 +16,7 @@ import { promisify } from 'util';
 
 import { Context, Next } from '@nocobase/actions';
 import { Plugin } from '@nocobase/server';
-import { Transaction } from 'sequelize';
+import { Transaction, UniqueConstraintError } from 'sequelize';
 
 import {
   authenticateNodeToken,
@@ -52,8 +52,14 @@ const NODE_ONLINE_THRESHOLD_MS = 120_000;
 const PLUGIN_PACKAGE_ROOT = resolve(__dirname, '../../..');
 const BOOTSTRAP_SCRIPT_PATH = resolve(__dirname, '../../../scripts/install-agent-gateway-daemon.sh');
 const RAW_PROFILE_CONFIG_KEYS = new Set(['command', 'commandPath', 'cwd', 'env']);
-const SAME_HOST_NODE_SUPERSEDED_REASON = 'same-host-node-replaced';
 const execFileAsync = promisify(execFile);
+
+interface DaemonPackageArtifact {
+  content: Buffer;
+  sha256: string;
+}
+
+let daemonPackagePromise: Promise<DaemonPackageArtifact> | null = null;
 
 function getServerUrl(ctx: Context, values: JsonRecord = {}) {
   const providedServerUrl = getString(values.serverUrl).replace(/\/$/, '');
@@ -192,22 +198,6 @@ function serializeNode(node: ModelRecord, now = new Date()) {
   };
 }
 
-function getHostIdentity(metadataJson: JsonRecord) {
-  const hostInfo = getRecord(metadataJson.hostInfo);
-  const hostname = getString(hostInfo.hostname).toLowerCase();
-  const hostPlatform = getString(hostInfo.platform).toLowerCase();
-  const hostArch = getString(hostInfo.arch).toLowerCase();
-  if (!hostname || !hostPlatform || !hostArch) {
-    return '';
-  }
-  return [hostname, hostPlatform, hostArch].join('/');
-}
-
-function isSupersededNode(node: ModelRecord) {
-  const metadataJson = getRecord(getModelValue(node, 'metadataJson'));
-  return getString(metadataJson.supersededReason) === SAME_HOST_NODE_SUPERSEDED_REASON;
-}
-
 function serializeProfile(profile: ModelRecord) {
   const json = getModelJson(profile);
   delete json.trustedConfigJson;
@@ -273,7 +263,7 @@ async function serveBootstrapScript(ctx: Context) {
   ctx.body = await readFile(BOOTSTRAP_SCRIPT_PATH, 'utf8');
 }
 
-async function createDaemonPackage() {
+async function createDaemonPackage(): Promise<DaemonPackageArtifact> {
   const tempDir = await mkdtemp(resolve(tmpdir(), 'agent-gateway-daemon-package-'));
   try {
     const { stdout } = await execFileAsync(
@@ -289,18 +279,35 @@ async function createDaemonPackage() {
     if (!filename) {
       throw new Error('npm pack did not return an Agent Gateway daemon package filename');
     }
-    return await readFile(resolve(tempDir, filename));
+    const content = await readFile(resolve(tempDir, filename));
+    return {
+      content,
+      sha256: createHash('sha256').update(content).digest('hex'),
+    };
   } finally {
     await rm(tempDir, { recursive: true, force: true });
   }
 }
 
+async function getDaemonPackage() {
+  if (!daemonPackagePromise) {
+    daemonPackagePromise = createDaemonPackage().catch((error) => {
+      daemonPackagePromise = null;
+      throw error;
+    });
+  }
+  return await daemonPackagePromise;
+}
+
 async function serveDaemonPackage(ctx: Context) {
+  const daemonPackage = await getDaemonPackage();
   ctx.withoutDataWrapping = true;
   ctx.type = 'application/gzip';
-  ctx.set('Cache-Control', 'no-store');
+  ctx.set('Cache-Control', 'private, max-age=3600');
   ctx.set('Content-Disposition', 'attachment; filename="agent-gateway-daemon.tgz"');
-  ctx.body = await createDaemonPackage();
+  ctx.set('ETag', `"sha256-${daemonPackage.sha256}"`);
+  ctx.set('X-Content-SHA256', daemonPackage.sha256);
+  ctx.body = daemonPackage.content;
 }
 
 async function validateInvitation(ctx: Context, inviteToken: string, nodeKey: string, transaction: Transaction) {
@@ -347,272 +354,140 @@ async function validateInvitation(ctx: Context, inviteToken: string, nodeKey: st
   return invitation;
 }
 
-async function findReusableSameHostNode(ctx: Context, metadataJson: JsonRecord, transaction: Transaction) {
-  const hostIdentity = getHostIdentity(metadataJson);
-  if (!hostIdentity) {
+async function findNodeByInstallationId(ctx: Context, installationId: string, transaction: Transaction) {
+  if (!installationId) {
     return null;
   }
-
-  const nodes = (await ctx.db.getRepository('agNodes').find({
+  return (await ctx.db.getRepository('agNodes').findOne({
     filter: {
-      status: 'active',
+      installationId,
     },
     transaction,
     lock: transaction.LOCK.UPDATE,
-  })) as ModelRecord[];
-  return nodes.find((node) => getHostIdentity(getRecord(getModelValue(node, 'metadataJson'))) === hostIdentity) || null;
-}
-
-async function markSameHostNodesSuperseded(
-  ctx: Context,
-  currentNodeId: unknown,
-  metadataJson: JsonRecord,
-  transaction?: Transaction,
-) {
-  const hostIdentity = getHostIdentity(metadataJson);
-  if (!hostIdentity) {
-    return;
-  }
-
-  const nodes = (await ctx.db.getRepository('agNodes').find({
-    transaction,
-    lock: transaction ? transaction.LOCK.UPDATE : undefined,
-  })) as ModelRecord[];
-  const now = new Date();
-  for (const node of nodes) {
-    const nodeId = getModelTargetKey(node, 'id');
-    if (String(nodeId) === String(currentNodeId)) {
-      continue;
-    }
-    const nodeMetadataJson = getRecord(getModelValue(node, 'metadataJson'));
-    const sameHost = getHostIdentity(nodeMetadataJson) === hostIdentity;
-    const supersededByCurrentNode =
-      getString(nodeMetadataJson.supersededReason) === SAME_HOST_NODE_SUPERSEDED_REASON &&
-      getString(nodeMetadataJson.supersededByNodeId) === String(currentNodeId);
-    const activeSameHostNode = getModelString(node, 'status') === 'active' && sameHost;
-    if (!activeSameHostNode && !supersededByCurrentNode) {
-      continue;
-    }
-
-    if (activeSameHostNode) {
-      await ctx.db.getRepository('agNodes').update({
-        filterByTk: nodeId,
-        values: {
-          status: 'disabled',
-          disabledAt: now,
-          metadataJson: {
-            ...nodeMetadataJson,
-            supersededAt: now.toISOString(),
-            supersededByNodeId: String(currentNodeId),
-            supersededReason: SAME_HOST_NODE_SUPERSEDED_REASON,
-          },
-        },
-        transaction,
-      });
-    }
-
-    await rerouteQueuedRunsFromSupersededNode(ctx, {
-      fromNodeId: String(nodeId),
-      toNodeId: String(currentNodeId),
-      transaction,
-    });
-  }
-}
-
-async function appendRunReroutedEvent(
-  ctx: Context,
-  options: {
-    run: ModelRecord;
-    fromNodeId: string;
-    toNodeId: string;
-    fromProfileId: string;
-    toProfileId: string;
-    transaction?: Transaction;
-  },
-) {
-  const runId = String(getModelTargetKey(options.run, 'id'));
-  const latestEvent = (await ctx.db.getRepository('agRunEvents').findOne({
-    filter: {
-      runId,
-      source: 'agent-gateway',
-    },
-    sort: ['-sequence'],
-    transaction: options.transaction,
-    lock: options.transaction ? options.transaction.LOCK.UPDATE : undefined,
   })) as ModelRecord | null;
-  await ctx.db.getRepository('agRunEvents').create({
-    values: {
-      id: randomUUID(),
-      runId,
-      claimAttempt: getModelNumber(options.run, 'claimAttempt'),
-      source: 'agent-gateway',
-      sequence: (latestEvent ? getModelNumber(latestEvent, 'sequence') : 0) + 1,
-      level: 'info',
-      eventType: 'run.rerouted',
-      message: 'Run rerouted to replacement same-host node',
-      payloadJson: {
-        fromNodeId: options.fromNodeId,
-        toNodeId: options.toNodeId,
-        fromProfileId: options.fromProfileId,
-        toProfileId: options.toProfileId,
-        reason: SAME_HOST_NODE_SUPERSEDED_REASON,
-      },
-      emittedAt: new Date(),
-    },
-    transaction: options.transaction,
-  });
 }
 
-async function rerouteQueuedRunsFromSupersededNode(
-  ctx: Context,
-  options: {
-    fromNodeId: string;
-    toNodeId: string;
-    transaction?: Transaction;
-  },
-) {
-  const queuedRuns = (await ctx.db.getRepository('agRuns').find({
-    filter: {
-      nodeId: options.fromNodeId,
-      status: 'queued',
-    },
-    transaction: options.transaction,
-    lock: options.transaction ? options.transaction.LOCK.UPDATE : undefined,
-  })) as ModelRecord[];
-
-  for (const run of queuedRuns) {
-    const oldProfileId = getModelTargetKey(run, 'agentProfileId');
-    if (!oldProfileId) {
-      continue;
-    }
-
-    const oldProfile = (await ctx.db.getRepository('agAgentProfiles').findOne({
-      filterByTk: oldProfileId,
-      transaction: options.transaction,
-    })) as ModelRecord | null;
-    if (!oldProfile) {
-      continue;
-    }
-
-    const newProfile = (await ctx.db.getRepository('agAgentProfiles').findOne({
-      filter: {
-        nodeId: options.toNodeId,
-        profileKey: getModelString(oldProfile, 'profileKey'),
-        provider: getModelString(oldProfile, 'provider'),
-        status: 'active',
-      },
-      transaction: options.transaction,
-    })) as ModelRecord | null;
-    if (!newProfile) {
-      continue;
-    }
-
-    const newProfileId = String(getModelTargetKey(newProfile, 'id'));
-    await ctx.db.getRepository('agRuns').update({
-      filterByTk: getModelTargetKey(run, 'id'),
-      values: {
-        nodeId: options.toNodeId,
-        agentProfileId: newProfileId,
-      },
-      transaction: options.transaction,
-    });
-    await appendRunReroutedEvent(ctx, {
-      run,
-      fromNodeId: options.fromNodeId,
-      toNodeId: options.toNodeId,
-      fromProfileId: String(oldProfileId),
-      toProfileId: newProfileId,
-      transaction: options.transaction,
-    });
-  }
+function isUniqueConstraintError(error: unknown) {
+  return (
+    error instanceof UniqueConstraintError ||
+    (error instanceof Error && error.name === 'SequelizeUniqueConstraintError')
+  );
 }
 
 async function registerNode(ctx: Context) {
   const values = getBodyValues(ctx);
   const inviteToken = getString(values.inviteToken || values.invitationToken);
   const nodeKey = getString(values.nodeKey);
+  const installationId = getString(values.installationId);
 
   if (!inviteToken || !nodeKey) {
     ctx.throw(400, 'Invitation token and node key are required');
   }
 
-  const { node, nodeToken } = await ctx.db.sequelize.transaction(async (transaction) => {
-    const invitation = await validateInvitation(ctx, inviteToken, nodeKey, transaction);
-    const nodeToken = createNodeToken();
-    const now = new Date();
-    const metadataJson = {
-      daemonVersion: getString(values.daemonVersion) || null,
-      hostInfo: getRecord(values.hostInfo),
-    };
-    const nodeValues = {
-      nodeKey,
-      displayName: getString(values.displayName) || nodeKey,
-      status: 'active',
-      endpointUrl: getString(values.endpointUrl) || null,
-      authMode: 'node-token',
-      ...toStoredTokenFields(nodeToken, 'nodeTokenHash', 'tokenLast4'),
-      capabilitiesJson: getRecord(values.capabilitiesJson || values.capabilities),
-      metadataJson,
-      lastHeartbeatAt: now,
-      disabledAt: null,
-    };
-    const existingNodeByKey = (await ctx.db.getRepository('agNodes').findOne({
-      filter: {
+  let registration: { node: ModelRecord; nodeToken: ReturnType<typeof createNodeToken> };
+  try {
+    registration = await ctx.db.sequelize.transaction(async (transaction) => {
+      const invitation = await validateInvitation(ctx, inviteToken, nodeKey, transaction);
+      const nodeToken = createNodeToken();
+      const now = new Date();
+      const metadataJson = {
+        daemonVersion: getString(values.daemonVersion) || null,
+        hostInfo: getRecord(values.hostInfo),
+      };
+      const nodeValues = {
         nodeKey,
-      },
-      transaction,
-      lock: transaction.LOCK.UPDATE,
-    })) as ModelRecord | null;
-    const existingNode = existingNodeByKey || (await findReusableSameHostNode(ctx, metadataJson, transaction));
-    let node: ModelRecord;
-    if (existingNode) {
-      const nodeId = getModelTargetKey(existingNode, 'id');
-      await ctx.db.getRepository('agNodes').update({
-        filterByTk: nodeId,
-        values: nodeValues,
-        transaction,
-      });
-      const updatedNode = (await ctx.db.getRepository('agNodes').findOne({
-        filterByTk: nodeId,
+        installationId: installationId || null,
+        displayName: getString(values.displayName) || nodeKey,
+        status: 'active',
+        endpointUrl: getString(values.endpointUrl) || null,
+        authMode: 'node-token',
+        ...toStoredTokenFields(nodeToken, 'nodeTokenHash', 'tokenLast4'),
+        capabilitiesJson: getRecord(values.capabilitiesJson || values.capabilities),
+        metadataJson,
+        lastHeartbeatAt: now,
+        disabledAt: null,
+      };
+      const existingNodeByKey = (await ctx.db.getRepository('agNodes').findOne({
+        filter: {
+          nodeKey,
+        },
         transaction,
         lock: transaction.LOCK.UPDATE,
       })) as ModelRecord | null;
-      if (!updatedNode) {
-        ctx.throw(404, 'Node not found');
+      const existingNodeByInstallation = await findNodeByInstallationId(ctx, installationId, transaction);
+      if (
+        existingNodeByKey &&
+        installationId &&
+        getModelString(existingNodeByKey, 'installationId') &&
+        getModelString(existingNodeByKey, 'installationId') !== installationId
+      ) {
+        ctx.throw(409, 'Node key belongs to another installation');
       }
-      node = updatedNode;
-    } else {
-      node = (await ctx.db.getRepository('agNodes').create({
+      if (
+        existingNodeByKey &&
+        existingNodeByInstallation &&
+        String(getModelTargetKey(existingNodeByKey, 'id')) !==
+          String(getModelTargetKey(existingNodeByInstallation, 'id'))
+      ) {
+        ctx.throw(409, 'Node key and installation ID belong to different nodes');
+      }
+      const existingNode = existingNodeByKey || existingNodeByInstallation;
+      let node: ModelRecord;
+      if (existingNode) {
+        const nodeId = getModelTargetKey(existingNode, 'id');
+        await ctx.db.getRepository('agNodes').update({
+          filterByTk: nodeId,
+          values: nodeValues,
+          transaction,
+        });
+        const updatedNode = (await ctx.db.getRepository('agNodes').findOne({
+          filterByTk: nodeId,
+          transaction,
+          lock: transaction.LOCK.UPDATE,
+        })) as ModelRecord | null;
+        if (!updatedNode) {
+          ctx.throw(404, 'Node not found');
+        }
+        node = updatedNode;
+      } else {
+        node = (await ctx.db.getRepository('agNodes').create({
+          values: {
+            ...nodeValues,
+            registeredAt: now,
+          },
+          transaction,
+        })) as ModelRecord;
+      }
+
+      await ctx.db.getRepository('agNodeInvitations').update({
+        filterByTk: getModelTargetKey(invitation, 'id'),
         values: {
-          ...nodeValues,
-          registeredAt: now,
+          status: 'accepted',
+          usedCount: Number(getModelValue(invitation, 'usedCount') || 0) + 1,
+          acceptedAt: now,
+          nodeId: getModelTargetKey(node, 'id'),
         },
         transaction,
-      })) as ModelRecord;
-    }
+      });
 
-    await markSameHostNodesSuperseded(ctx, getModelTargetKey(node, 'id'), metadataJson, transaction);
-
-    await ctx.db.getRepository('agNodeInvitations').update({
-      filterByTk: getModelTargetKey(invitation, 'id'),
-      values: {
-        status: 'accepted',
-        usedCount: Number(getModelValue(invitation, 'usedCount') || 0) + 1,
-        acceptedAt: now,
-        nodeId: getModelTargetKey(node, 'id'),
-      },
-      transaction,
+      return {
+        node,
+        nodeToken,
+      };
     });
+  } catch (error) {
+    if (isUniqueConstraintError(error)) {
+      ctx.throw(409, 'Node key or installation ID is already registered');
+    }
+    throw error;
+  }
 
-    return {
-      node,
-      nodeToken,
-    };
-  });
+  const { node, nodeToken } = registration;
 
   ctx.body = {
     nodeId: getModelValue(node, 'id'),
     nodeKey,
+    installationId: getModelValue(node, 'installationId') || null,
     nodeToken: nodeToken.token,
     tokenLast4: nodeToken.tokenLast4,
     heartbeatIntervalSeconds: DEFAULT_HEARTBEAT_INTERVAL_SECONDS,
@@ -620,7 +495,7 @@ async function registerNode(ctx: Context) {
   };
 }
 
-async function syncProfiles(ctx: Context, nodeId: unknown, profiles: unknown[], now: Date) {
+async function syncProfiles(ctx: Context, nodeId: unknown, profiles: unknown[], now: Date, transaction: Transaction) {
   const profileRepo = ctx.db.getRepository('agAgentProfiles');
   const reportedProfileKeys = new Set<string>();
 
@@ -637,6 +512,8 @@ async function syncProfiles(ctx: Context, nodeId: unknown, profiles: unknown[], 
         nodeId,
         profileKey,
       },
+      transaction,
+      lock: transaction.LOCK.UPDATE,
     })) as ModelRecord | null;
     const reportedCapabilities = getRecord(profile.capabilitiesJson || profile.capabilities);
     const explicitProvider =
@@ -668,12 +545,14 @@ async function syncProfiles(ctx: Context, nodeId: unknown, profiles: unknown[], 
       await profileRepo.update({
         filterByTk: getModelTargetKey(existingProfile, 'id'),
         values: profileValues,
+        transaction,
       });
       continue;
     }
 
     await profileRepo.create({
       values: profileValues,
+      transaction,
     });
   }
 
@@ -681,6 +560,8 @@ async function syncProfiles(ctx: Context, nodeId: unknown, profiles: unknown[], 
     filter: {
       nodeId,
     },
+    transaction,
+    lock: transaction.LOCK.UPDATE,
   })) as ModelRecord[];
 
   for (const profile of existingProfiles) {
@@ -691,6 +572,7 @@ async function syncProfiles(ctx: Context, nodeId: unknown, profiles: unknown[], 
         values: {
           status: 'inactive',
         },
+        transaction,
       });
     }
   }
@@ -707,6 +589,11 @@ async function heartbeat(ctx: Context, nodeId: string) {
   const currentMetadata = getRecord(auth.node.get('metadataJson'));
   const currentConcurrency = values.currentConcurrency;
   const profilesProvided = Object.prototype.hasOwnProperty.call(values, 'profiles');
+  const currentInstallationId = getModelString(auth.node, 'installationId');
+  const heartbeatInstallationId = getString(values.installationId);
+  if (currentInstallationId && heartbeatInstallationId && currentInstallationId !== heartbeatInstallationId) {
+    ctx.throw(409, 'Heartbeat installation ID does not match the registered node');
+  }
   const metadataJson = {
     ...currentMetadata,
     currentConcurrency: typeof currentConcurrency === 'number' ? currentConcurrency : null,
@@ -717,19 +604,22 @@ async function heartbeat(ctx: Context, nodeId: string) {
     heartbeatAt: now.toISOString(),
   };
 
-  await ctx.db.getRepository('agNodes').update({
-    filterByTk: nodeId,
-    values: {
-      status: 'active',
-      lastHeartbeatAt: now,
-      capabilitiesJson: getRecord(values.capabilitiesJson || values.capabilities),
-      metadataJson,
-    },
+  await ctx.db.sequelize.transaction(async (transaction) => {
+    await ctx.db.getRepository('agNodes').update({
+      filterByTk: nodeId,
+      values: {
+        status: 'active',
+        installationId: currentInstallationId || heartbeatInstallationId || null,
+        lastHeartbeatAt: now,
+        capabilitiesJson: getRecord(values.capabilitiesJson || values.capabilities),
+        metadataJson,
+      },
+      transaction,
+    });
+    if (profilesProvided) {
+      await syncProfiles(ctx, nodeId, getArray(values.profiles), now, transaction);
+    }
   });
-  if (profilesProvided) {
-    await syncProfiles(ctx, nodeId, getArray(values.profiles), now);
-  }
-  await markSameHostNodesSuperseded(ctx, nodeId, metadataJson);
 
   ctx.body = {
     nodeId,
@@ -748,7 +638,7 @@ async function listNodes(ctx: Context) {
     sort: ['-createdAt'],
   })) as ModelRecord[];
 
-  ctx.body = nodes.filter((node) => !isSupersededNode(node)).map((node) => serializeNode(node, now));
+  ctx.body = nodes.map((node) => serializeNode(node, now));
 }
 
 async function getNode(ctx: Context, nodeId: string) {

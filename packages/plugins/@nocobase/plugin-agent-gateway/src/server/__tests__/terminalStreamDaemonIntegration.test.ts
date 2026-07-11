@@ -116,9 +116,10 @@ describe('terminal stream daemon integration', () => {
       });
       await waitForFrame(browser, (frame) => frame.type === 'ack' && frame.requestId === 'subscribe-real-daemon');
       await stream.start();
+      const dataPromise = waitForFrame(browser, (frame) => frame.type === 'terminal.data');
       await stream.appendText('AGENT_GATEWAY_STREAM_REAL_DAEMON_1\n');
 
-      const data = await waitForFrame(browser, (frame) => frame.type === 'terminal.data');
+      const data = await dataPromise;
       expect(data).toMatchObject({
         runId,
         offsetStart: 0,
@@ -127,8 +128,9 @@ describe('terminal stream daemon integration', () => {
         'AGENT_GATEWAY_STREAM_REAL_DAEMON_1',
       );
 
+      const endPromise = waitForFrame(browser, (frame) => frame.type === 'terminal.end');
       await stream.end('completed');
-      expect(await waitForFrame(browser, (frame) => frame.type === 'terminal.end')).toMatchObject({
+      expect(await endPromise).toMatchObject({
         runId,
         reason: 'completed',
       });
@@ -196,20 +198,23 @@ describe('terminal stream daemon integration', () => {
       });
       await waitForFrame(browser, (frame) => frame.type === 'ack' && frame.requestId === 'subscribe-reconnect');
       await stream.start();
+      const beforeReconnectPromise = waitForFrame(browser, (frame) => frame.type === 'terminal.data');
       await stream.appendText('AGENT_GATEWAY_STREAM_BEFORE_RECONNECT\n');
-      await waitForFrame(browser, (frame) => frame.type === 'terminal.data');
+      await beforeReconnectPromise;
 
       daemonSockets[0].close();
       await reconnecting;
       expect(await waitForNoFrame(browser, (frame) => frame.type === 'terminal.end', 100)).toBe(false);
+      const replayedPromise = waitForFrame(browser, (frame) => frame.type === 'terminal.data');
       await stream.appendText('AGENT_GATEWAY_STREAM_DURING_RECONNECT\n');
       await rebound;
-      const replayed = await waitForFrame(browser, (frame) => frame.type === 'terminal.data');
+      const replayed = await replayedPromise;
       expect(decodeTerminalPayload(replayed.type === 'terminal.data' ? replayed.payload : '')).toContain(
         'AGENT_GATEWAY_STREAM_DURING_RECONNECT',
       );
+      const dataAfterReconnectPromise = waitForFrame(browser, (frame) => frame.type === 'terminal.data');
       await stream.appendText('AGENT_GATEWAY_STREAM_AFTER_RECONNECT\n');
-      const dataAfterReconnect = await waitForFrame(browser, (frame) => frame.type === 'terminal.data');
+      const dataAfterReconnect = await dataAfterReconnectPromise;
       expect(
         decodeTerminalPayload(dataAfterReconnect.type === 'terminal.data' ? dataAfterReconnect.payload : ''),
       ).toContain('AGENT_GATEWAY_STREAM_AFTER_RECONNECT');

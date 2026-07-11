@@ -13,6 +13,7 @@ import { Select } from 'antd';
 import React, { useMemo } from 'react';
 
 import { useT } from '../locale';
+import { CollectionContextLike, getCollectionNameFromContext } from '../utils/collectionContext';
 
 export interface DispatchBindingRecord {
   id: string;
@@ -21,26 +22,6 @@ export interface DispatchBindingRecord {
   sourceCollection?: string;
   enabled?: boolean;
   status?: string;
-}
-
-interface CollectionLike {
-  name?: string;
-}
-
-interface FlowSettingsLike {
-  model?: {
-    collection?: CollectionLike;
-    context?: {
-      collection?: CollectionLike;
-      blockModel?: {
-        collection?: CollectionLike;
-      };
-    };
-  };
-  blockModel?: {
-    collection?: CollectionLike;
-  };
-  collection?: CollectionLike;
 }
 
 interface AgentGatewayApiResponse<T> {
@@ -67,26 +48,13 @@ function getResponseData<T>(response: AgentGatewayApiResponse<T>, fallback: T) {
   return response.data?.data ?? fallback;
 }
 
-function getCollectionNameFromFlowSettings(ctx: FlowSettingsLike | undefined) {
-  return (
-    ctx?.blockModel?.collection?.name ||
-    ctx?.model?.context?.blockModel?.collection?.name ||
-    ctx?.model?.context?.collection?.name ||
-    ctx?.model?.collection?.name ||
-    ctx?.collection?.name ||
-    ''
-  );
-}
-
 export function getDispatchBindingOptions(bindings: DispatchBindingRecord[], collectionName?: string) {
+  if (!collectionName) {
+    return [];
+  }
   return bindings
     .filter((binding) => binding.enabled !== false && (binding.status || 'active') === 'active')
-    .filter((binding) => {
-      if (!collectionName) {
-        return true;
-      }
-      return (binding.collectionName || binding.sourceCollection) === collectionName;
-    })
+    .filter((binding) => (binding.collectionName || binding.sourceCollection) === collectionName)
     .map((binding) => {
       const bindingCollectionName = binding.collectionName || binding.sourceCollection || '-';
       return {
@@ -99,8 +67,8 @@ export function getDispatchBindingOptions(bindings: DispatchBindingRecord[], col
 export function AgentGatewayDispatchBindingSelect(props: AgentGatewayDispatchBindingSelectProps) {
   const t = useT();
   const ctx = useFlowContext() as unknown as AgentGatewayContext;
-  const flowSettingsCtx = useFlowSettingsContext() as unknown as FlowSettingsLike | undefined;
-  const collectionName = getCollectionNameFromFlowSettings(flowSettingsCtx);
+  const flowSettingsCtx = useFlowSettingsContext() as unknown as CollectionContextLike | undefined;
+  const collectionName = getCollectionNameFromContext(flowSettingsCtx);
   const bindingsRequest = useRequest(async () => {
     const response = await ctx.api.request<DispatchBindingRecord[]>({
       url: 'agent-gateway/dispatch-bindings:list',

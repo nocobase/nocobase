@@ -11,6 +11,7 @@ import { spawn } from 'child_process';
 import { createWriteStream, WriteStream } from 'fs';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { StringDecoder } from 'string_decoder';
 
 export type ExecTerminalStatus = 'succeeded' | 'failed' | 'timeout' | 'canceled' | 'lease_lost';
 
@@ -35,6 +36,7 @@ export interface ExecuteCommandOptions {
   leaseLostSignal?: AbortSignal;
   artifactDir?: string;
   maxInlineLogBytes?: number;
+  maxOutputSpoolBytes?: number;
 }
 
 export interface ExecuteAllowlistedCommandOptions extends Omit<ExecuteCommandOptions, 'definition'> {
@@ -42,9 +44,19 @@ export interface ExecuteAllowlistedCommandOptions extends Omit<ExecuteCommandOpt
   allowlist: ExecCommandAllowlist;
 }
 
+export interface PreparedCommandExecution {
+  executable: string;
+  args: string[];
+  cwd: string;
+  env: Record<string, string>;
+  timeoutMs: number;
+}
+
 export interface ExecOutputRecord {
   text: string | null;
   sizeBytes: number;
+  capturedBytes?: number;
+  truncated?: boolean;
   artifactPath?: string;
 }
 
@@ -58,6 +70,7 @@ export interface ExecDriverResult {
 
 export const DEFAULT_EXEC_TIMEOUT_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_MAX_INLINE_LOG_BYTES = 64 * 1024;
+export const MAX_RUN_OUTPUT_SPOOL_BYTES = 256 * 1024 * 1024;
 const INHERITED_ENV_KEYS = ['PATH', 'HOME', 'TMPDIR', 'TEMP', 'TMP', 'SystemRoot', 'WINDIR'];
 
 export function prependWorkspaceNodeBinToPath(cwd: string, basePath = '') {
@@ -66,12 +79,35 @@ export function prependWorkspaceNodeBinToPath(cwd: string, basePath = '') {
   return [localBin, ...entries].join(path.delimiter);
 }
 
+class OutputSpoolBudget {
+  private capturedBytes = 0;
+  private stopped = false;
+
+  constructor(private readonly maxBytes: number) {}
+
+  capture(chunk: Buffer) {
+    if (this.stopped) {
+      return chunk.subarray(0, 0);
+    }
+    const remainingBytes = Math.max(0, this.maxBytes - this.capturedBytes);
+    const captured = chunk.subarray(0, remainingBytes);
+    this.capturedBytes += captured.byteLength;
+    return captured;
+  }
+
+  stop() {
+    this.stopped = true;
+  }
+}
+
 class OutputCollector {
-  private inlineChunks: string[] = [];
+  private inlineChunks: Buffer[] = [];
   private artifactPath?: string;
   private writeStream?: WriteStream;
   private writeError: Error | null = null;
   private sizeBytes = 0;
+  private capturedBytes = 0;
+  private truncated = false;
   private droppedInline = false;
 
   constructor(
@@ -80,8 +116,18 @@ class OutputCollector {
       streamName: 'stdout' | 'stderr';
       artifactDir?: string;
       maxInlineLogBytes: number;
+      spoolBudget: OutputSpoolBudget;
+      onWriteError(error: Error): void;
     },
   ) {}
+
+  private failWrite(error: Error) {
+    if (this.writeError) {
+      return;
+    }
+    this.writeError = error;
+    this.options.onWriteError(error);
+  }
 
   private ensureArtifactStream() {
     if (this.writeStream || !this.options.artifactDir) {
@@ -94,36 +140,47 @@ class OutputCollector {
     this.writeStream = createWriteStream(this.artifactPath, {
       flags: 'w',
     });
-    this.writeStream.on('error', (error) => {
-      this.writeError = error;
-    });
-    if (this.inlineChunks.length) {
-      this.writeStream.write(this.inlineChunks.join(''));
-      this.inlineChunks = [];
+    this.writeStream.on('error', (error) => this.failWrite(error));
+    for (const chunk of this.inlineChunks) {
+      this.writeStream.write(chunk);
     }
+    this.inlineChunks = [];
     return this.writeStream;
   }
 
   write(rawChunk: unknown, pause?: () => void, resume?: () => void) {
-    const text = String(rawChunk);
-    const nextSizeBytes = this.sizeBytes + Buffer.byteLength(text);
-    const shouldInline = !this.writeStream && nextSizeBytes <= this.options.maxInlineLogBytes;
+    const chunk = Buffer.isBuffer(rawChunk) ? rawChunk : Buffer.from(String(rawChunk));
+    this.sizeBytes += chunk.byteLength;
+    if (this.writeError) {
+      return;
+    }
+    const capturedChunk = this.options.spoolBudget.capture(chunk);
+    if (capturedChunk.byteLength < chunk.byteLength) {
+      this.truncated = true;
+    }
+    if (!capturedChunk.length) {
+      return;
+    }
+    const shouldInline =
+      !this.writeStream && this.capturedBytes + capturedChunk.byteLength <= this.options.maxInlineLogBytes;
 
     if (shouldInline) {
-      this.inlineChunks.push(text);
-      this.sizeBytes = nextSizeBytes;
+      this.inlineChunks.push(Buffer.from(capturedChunk));
+      this.capturedBytes += capturedChunk.byteLength;
       return;
     }
 
     const stream = this.ensureArtifactStream();
-    this.sizeBytes = nextSizeBytes;
     if (!stream) {
       this.inlineChunks = [];
+      this.capturedBytes = 0;
       this.droppedInline = true;
+      this.truncated = true;
       return;
     }
 
-    const canContinue = stream.write(text);
+    this.capturedBytes += capturedChunk.byteLength;
+    const canContinue = stream.write(capturedChunk);
     if (!canContinue && pause && resume) {
       pause();
       stream.once('drain', resume);
@@ -132,10 +189,34 @@ class OutputCollector {
 
   async finish(): Promise<ExecOutputRecord> {
     if (this.writeStream) {
+      if (this.writeError) {
+        throw this.writeError;
+      }
       await new Promise<void>((resolve, reject) => {
-        this.writeStream?.once('finish', resolve);
-        this.writeStream?.once('error', reject);
-        this.writeStream?.end();
+        const stream = this.writeStream;
+        if (!stream) {
+          resolve();
+          return;
+        }
+        const cleanup = () => {
+          stream.removeListener('finish', onFinish);
+          stream.removeListener('error', onError);
+        };
+        const onFinish = () => {
+          cleanup();
+          resolve();
+        };
+        const onError = (error: Error) => {
+          cleanup();
+          reject(error);
+        };
+        stream.once('finish', onFinish);
+        stream.once('error', onError);
+        if (this.writeError) {
+          onError(this.writeError);
+          return;
+        }
+        stream.end();
       });
     }
     if (this.writeError) {
@@ -145,6 +226,8 @@ class OutputCollector {
       return {
         text: null,
         sizeBytes: this.sizeBytes,
+        capturedBytes: this.capturedBytes,
+        truncated: this.truncated || this.capturedBytes < this.sizeBytes,
         artifactPath: this.artifactPath,
       };
     }
@@ -152,12 +235,26 @@ class OutputCollector {
       return {
         text: null,
         sizeBytes: this.sizeBytes,
+        capturedBytes: 0,
+        truncated: true,
       };
     }
+    const decoder = new StringDecoder('utf8');
     return {
-      text: this.inlineChunks.join(''),
+      text: `${this.inlineChunks.map((chunk) => decoder.write(chunk)).join('')}${decoder.end()}`,
       sizeBytes: this.sizeBytes,
+      capturedBytes: this.capturedBytes,
+      truncated: this.truncated || this.capturedBytes < this.sizeBytes,
     };
+  }
+
+  async cleanup() {
+    this.writeStream?.destroy();
+    if (this.artifactPath) {
+      await fs.unlink(this.artifactPath).catch(() => {
+        // Failed command output is not owned by the caller.
+      });
+    }
   }
 }
 
@@ -177,7 +274,7 @@ async function resolveGuardedCwd(workspaceRoot: string, cwd: string) {
 
 function buildEnv(definition: ExecCommandDefinition, cwd: string, providedEnv: Record<string, string> = {}) {
   const allowedProvidedKeys = new Set(definition.allowedEnvKeys || []);
-  const env: NodeJS.ProcessEnv = {};
+  const env: Record<string, string> = {};
   for (const key of INHERITED_ENV_KEYS) {
     if (process.env[key]) {
       env[key] = process.env[key];
@@ -192,6 +289,19 @@ function buildEnv(definition: ExecCommandDefinition, cwd: string, providedEnv: R
   }
   env.PATH = prependWorkspaceNodeBinToPath(cwd, env.PATH);
   return env;
+}
+
+export async function prepareCommandExecution(
+  options: Pick<ExecuteCommandOptions, 'definition' | 'args' | 'cwd' | 'workspaceRoot' | 'env' | 'timeoutMs'>,
+): Promise<PreparedCommandExecution> {
+  const cwd = await resolveGuardedCwd(options.workspaceRoot, options.cwd);
+  return {
+    executable: options.definition.executable,
+    args: [...(options.definition.baseArgs || []), ...(options.args || [])],
+    cwd,
+    env: buildEnv(options.definition, cwd, options.env),
+    timeoutMs: options.timeoutMs || options.definition.defaultTimeoutMs || DEFAULT_EXEC_TIMEOUT_MS,
+  };
 }
 
 function killProcess(child: ReturnType<typeof spawn>) {
@@ -243,63 +353,79 @@ export function getAllowlistedDefinition(allowlist: ExecCommandAllowlist, comman
 }
 
 export async function executeCommand(options: ExecuteCommandOptions): Promise<ExecDriverResult> {
-  const cwd = await resolveGuardedCwd(options.workspaceRoot, options.cwd);
-  const env = buildEnv(options.definition, cwd, options.env);
-  const timeoutMs = options.timeoutMs || options.definition.defaultTimeoutMs || DEFAULT_EXEC_TIMEOUT_MS;
+  const prepared = await prepareCommandExecution(options);
   const maxInlineLogBytes = options.maxInlineLogBytes || DEFAULT_MAX_INLINE_LOG_BYTES;
+  const maxOutputSpoolBytes = Math.min(
+    MAX_RUN_OUTPUT_SPOOL_BYTES,
+    Math.max(1, options.maxOutputSpoolBytes || MAX_RUN_OUTPUT_SPOOL_BYTES),
+  );
   if (options.artifactDir) {
     await fs.mkdir(options.artifactDir, { recursive: true });
   }
+  const spoolBudget = new OutputSpoolBudget(maxOutputSpoolBytes);
+  let child: ReturnType<typeof spawn> | null = null;
+  let outputWriteError: Error | null = null;
+  const handleOutputWriteError = (error: Error) => {
+    if (outputWriteError) {
+      return;
+    }
+    outputWriteError = error;
+    spoolBudget.stop();
+    if (child && child.exitCode === null && child.signalCode === null) {
+      killProcess(child);
+    }
+  };
   const stdoutCollector = new OutputCollector({
     commandKey: options.definition.commandKey,
     streamName: 'stdout',
     artifactDir: options.artifactDir,
     maxInlineLogBytes,
+    spoolBudget,
+    onWriteError: handleOutputWriteError,
   });
   const stderrCollector = new OutputCollector({
     commandKey: options.definition.commandKey,
     streamName: 'stderr',
     artifactDir: options.artifactDir,
     maxInlineLogBytes,
+    spoolBudget,
+    onWriteError: handleOutputWriteError,
   });
   let terminalStatus: ExecTerminalStatus | null = null;
   let timeoutTimer: ReturnType<typeof setTimeout> | null = null;
 
-  const child = spawn(
-    options.definition.executable,
-    [...(options.definition.baseArgs || []), ...(options.args || [])],
-    {
-      cwd,
-      env,
-      detached: process.platform !== 'win32',
-      shell: false,
-      stdio: ['ignore', 'pipe', 'pipe'],
-    },
-  );
+  const spawnedChild = spawn(prepared.executable, prepared.args, {
+    cwd: prepared.cwd,
+    env: prepared.env,
+    detached: process.platform !== 'win32',
+    shell: false,
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  child = spawnedChild;
 
   const closeResultPromise = new Promise<{ exitCode: number | null; signal: NodeJS.Signals | null }>(
     (resolve, reject) => {
       timeoutTimer = setTimeout(() => {
         terminalStatus = terminalStatus || 'timeout';
-        killProcess(child);
-      }, timeoutMs);
+        killProcess(spawnedChild);
+      }, prepared.timeoutMs);
 
-      child.stdout.on('data', (chunk) => {
+      spawnedChild.stdout.on('data', (chunk) => {
         stdoutCollector.write(
           chunk,
-          () => child.stdout.pause(),
-          () => child.stdout.resume(),
+          () => spawnedChild.stdout.pause(),
+          () => spawnedChild.stdout.resume(),
         );
       });
-      child.stderr.on('data', (chunk) => {
+      spawnedChild.stderr.on('data', (chunk) => {
         stderrCollector.write(
           chunk,
-          () => child.stderr.pause(),
-          () => child.stderr.resume(),
+          () => spawnedChild.stderr.pause(),
+          () => spawnedChild.stderr.resume(),
         );
       });
-      child.on('error', reject);
-      child.on('close', (exitCode, signal) => {
+      spawnedChild.on('error', reject);
+      spawnedChild.on('close', (exitCode, signal) => {
         resolve({
           exitCode,
           signal,
@@ -309,11 +435,11 @@ export async function executeCommand(options: ExecuteCommandOptions): Promise<Ex
   );
   const cancelHandler = () => {
     terminalStatus = terminalStatus || 'canceled';
-    killProcess(child);
+    killProcess(spawnedChild);
   };
   const leaseLostHandler = () => {
     terminalStatus = terminalStatus || 'lease_lost';
-    killProcess(child);
+    killProcess(spawnedChild);
   };
   options.cancelSignal?.addEventListener('abort', cancelHandler, { once: true });
   options.leaseLostSignal?.addEventListener('abort', leaseLostHandler, { once: true });
@@ -327,6 +453,10 @@ export async function executeCommand(options: ExecuteCommandOptions): Promise<Ex
   let closeResult: { exitCode: number | null; signal: NodeJS.Signals | null };
   try {
     closeResult = await closeResultPromise;
+  } catch (error) {
+    await stdoutCollector.cleanup();
+    await stderrCollector.cleanup();
+    throw error;
   } finally {
     if (timeoutTimer) {
       clearTimeout(timeoutTimer);
@@ -336,8 +466,16 @@ export async function executeCommand(options: ExecuteCommandOptions): Promise<Ex
   }
 
   const status: ExecTerminalStatus = terminalStatus || (closeResult.exitCode === 0 ? 'succeeded' : 'failed');
-  const stdout = await stdoutCollector.finish();
-  const stderr = await stderrCollector.finish();
+  let stdout: ExecOutputRecord;
+  let stderr: ExecOutputRecord;
+  try {
+    stdout = await stdoutCollector.finish();
+    stderr = await stderrCollector.finish();
+  } catch (error) {
+    await stdoutCollector.cleanup();
+    await stderrCollector.cleanup();
+    throw error;
+  }
 
   return {
     status,

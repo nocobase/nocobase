@@ -15,6 +15,14 @@ export default defineCollection({
   dataCategory: 'business',
   migrationRules: ['schema-only'],
   autoGenId: false,
+  indexes: [
+    {
+      fields: ['runId', 'createdAt'],
+    },
+    {
+      fields: ['createdAt'],
+    },
+  ],
   fields: [
     {
       type: 'uuid',

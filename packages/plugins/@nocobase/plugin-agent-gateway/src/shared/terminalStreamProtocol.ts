@@ -93,6 +93,7 @@ export type TerminalSnapshotRequest = {
 export type TerminalData = {
   type: 'terminal.data';
   protocol: TerminalProtocol;
+  requestId?: string;
   runId: string;
   sessionName: string;
   offsetStart: number;
@@ -116,6 +117,7 @@ export type TerminalSnapshot = {
 export type TerminalEnd = {
   type: 'terminal.end';
   protocol: TerminalProtocol;
+  requestId?: string;
   runId: string;
   sessionName: string;
   offsetEnd: number;
@@ -140,6 +142,7 @@ export type TerminalErrorCode =
   | 'TERMINAL_OFFSET_GAP'
   | 'TERMINAL_FRAME_TOO_LARGE'
   | 'TERMINAL_SUBSCRIPTION_LIMIT'
+  | 'TERMINAL_SNAPSHOT_TIMEOUT'
   | 'TERMINAL_RAW_WRITE_DISABLED';
 
 export type TerminalError = {
@@ -213,6 +216,7 @@ const TERMINAL_ERROR_CODES = new Set<TerminalErrorCode>([
   'TERMINAL_OFFSET_GAP',
   'TERMINAL_FRAME_TOO_LARGE',
   'TERMINAL_SUBSCRIPTION_LIMIT',
+  'TERMINAL_SNAPSHOT_TIMEOUT',
   'TERMINAL_RAW_WRITE_DISABLED',
 ]);
 
@@ -358,6 +362,7 @@ function normalizeTerminalFrame(record: JsonRecord): TerminalFrame {
     return {
       type: 'terminal.data',
       protocol: TERMINAL_PROTOCOL,
+      requestId: record.requestId === undefined ? undefined : getString(record.requestId),
       runId: getString(record.runId),
       sessionName: getString(record.sessionName),
       offsetStart: Number(record.offsetStart),
@@ -383,6 +388,7 @@ function normalizeTerminalFrame(record: JsonRecord): TerminalFrame {
     return {
       type: 'terminal.end',
       protocol: TERMINAL_PROTOCOL,
+      requestId: record.requestId === undefined ? undefined : getString(record.requestId),
       runId: getString(record.runId),
       sessionName: getString(record.sessionName),
       offsetEnd: Number(record.offsetEnd),

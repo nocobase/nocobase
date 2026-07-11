@@ -28,6 +28,13 @@ export default defineCollection({
       allowNull: false,
     },
     {
+      type: 'uuid',
+      name: 'installationId',
+      autoFill: false,
+      unique: true,
+      index: true,
+    },
+    {
       type: 'string',
       name: 'displayName',
     },

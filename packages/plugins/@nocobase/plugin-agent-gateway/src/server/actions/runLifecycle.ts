@@ -57,29 +57,44 @@ import {
   TaskTemplateDefaults,
 } from './taskTemplates';
 import { AGENT_GATEWAY_TERMINATE_CONTROL_CANCEL_REASON } from '../../shared/runControl';
+import { EXTERNAL_IMPORT_USER_CANCELED_ERROR_SUMMARY } from '../../shared/externalRunImport';
+import {
+  ACTIVE_RUN_STATUSES,
+  ActiveRunStatus,
+  CLAIMABLE_RUN_STATUS,
+  HEARTBEAT_RUN_STATUSES,
+  HeartbeatRunStatus,
+  IMPORTING_RUN_STATUS,
+  LEASE_OWNING_RUN_STATUSES,
+  STALLED_RUN_STATUS,
+  TERMINAL_CONTROL_RUN_STATUSES,
+  TERMINAL_RUN_STATUSES,
+  TerminalRunStatus,
+  isActiveRunStatus,
+  isHeartbeatRunStatus,
+  isTerminalRunStatus,
+} from '../../shared/runState';
 import { getRunProviderCapabilitySummary, isRunCapabilitySupported } from './capabilityUtils';
+import { getRunTokenUsageSummary, TokenUsageSummary } from '../services/observationRollup';
 
 const DEFAULT_CLAIM_LEASE_SECONDS = 60;
+const DEFAULT_CLAIM_LEASE_TTL_MS = DEFAULT_CLAIM_LEASE_SECONDS * 1000;
 const DEFAULT_MAX_CONCURRENCY = 1;
-const CLAIM_CANDIDATE_PAGE_SIZE = 50;
 const DEFAULT_RUN_LIST_PAGE_SIZE = 50;
 const MAX_RUN_LIST_PAGE_SIZE = 100;
 const DEFAULT_TASK_RUN_PROFILE_KEY = 'codex';
 const UI_BUILD_SOURCE_TYPE = 'ui-build';
 const TASK_RUN_SOURCE_TYPE = 'task-run';
-const SAME_HOST_NODE_SUPERSEDED_REASON = 'same-host-node-replaced';
 const UI_BUILD_REROUTE_SOURCE_TYPES = new Set([UI_BUILD_SOURCE_TYPE, 'manual-ui-build']);
 const RUNNER_ONLINE_THRESHOLD_MS = 120_000;
 const TASK_RUN_INITIAL_EVENT_SOURCE = 'agent-gateway-task';
 const LEASE_RECOVERY_BATCH_LIMIT = 100;
 const LEASE_RECOVERY_STALLED_GRACE_MS = 5 * 60 * 1000;
+const TOKEN_USAGE_EVENT_BATCH_SIZE = 100;
+const TERMINAL_TOKEN_TAIL_ROW_LIMIT = 32;
+const TERMINAL_TOKEN_TAIL_BYTE_LIMIT = 64 * 1024;
 
-const ACTIVE_RUN_STATUSES = ['claimed', 'syncing_skills', 'running', 'finalizing', 'canceling'] as const;
-const STALLED_RUN_STATUS = 'stalled';
-const CLAIMABLE_RUN_STATUS = 'queued';
-const CONTROL_RUN_STATUSES = new Set(['claimed', 'syncing_skills', 'running']);
-const TERMINAL_RUN_STATUSES = ['succeeded', 'failed', 'canceled', 'timeout', 'abandoned'] as const;
-const HEARTBEAT_RUN_STATUSES = ['claimed', 'syncing_skills', 'running', 'finalizing'] as const;
+const CONTROL_RUN_STATUSES = new Set<string>(TERMINAL_CONTROL_RUN_STATUSES);
 const NODE_OWNED_INLINE_SKILL_SOURCE_TYPES = new Set(['opencode-smoke']);
 const RUN_LIST_SORT_FIELD_MAP: Record<string, string> = {
   runCode: 'runCode',
@@ -94,14 +109,11 @@ const RUN_LIST_SORT_FIELD_MAP: Record<string, string> = {
   updatedAt: 'updatedAt',
 };
 
-type ActiveRunStatus = (typeof ACTIVE_RUN_STATUSES)[number];
-type TerminalRunStatus = (typeof TERMINAL_RUN_STATUSES)[number];
-type HeartbeatRunStatus = (typeof HEARTBEAT_RUN_STATUSES)[number];
-
 export interface RunLease {
   run: ModelRecord;
   claimAttempt: number;
   leaseVersion: number;
+  requestedLeaseVersion: number;
 }
 
 interface ClaimCandidate {
@@ -169,14 +181,6 @@ interface MutableModelRecord extends ModelRecord {
 
 interface HookOptions {
   transaction?: Transaction;
-}
-
-interface TokenUsageSummary extends JsonRecord {
-  inputTokens?: number;
-  cachedInputTokens?: number;
-  outputTokens?: number;
-  reasoningOutputTokens?: number;
-  totalTokens?: number;
 }
 
 function getOptionalTargetKey(model: ModelRecord, key: string) {
@@ -282,18 +286,6 @@ function getLeaseExpiresAt(now: Date) {
   return new Date(now.getTime() + DEFAULT_CLAIM_LEASE_SECONDS * 1000);
 }
 
-function isActiveRunStatus(status: string): status is ActiveRunStatus {
-  return ACTIVE_RUN_STATUSES.includes(status as ActiveRunStatus);
-}
-
-function isTerminalRunStatus(status: string): status is TerminalRunStatus {
-  return TERMINAL_RUN_STATUSES.includes(status as TerminalRunStatus);
-}
-
-function isHeartbeatRunStatus(status: string): status is HeartbeatRunStatus {
-  return HEARTBEAT_RUN_STATUSES.includes(status as HeartbeatRunStatus);
-}
-
 function getMaxConcurrency(capabilities: JsonRecord, fallback = DEFAULT_MAX_CONCURRENCY) {
   const rawValue = capabilities.maxConcurrency;
   const numberValue = typeof rawValue === 'number' ? rawValue : Number(rawValue);
@@ -309,6 +301,7 @@ function serializeRun(run: ModelRecord) {
   delete json.claimTokenHash;
   delete json.promptSnapshot;
   delete json.executionPayloadJson;
+  delete json.observabilityRollupJson;
   return json;
 }
 
@@ -356,153 +349,6 @@ function mergeTerminalResultSummary(run: ModelRecord, value: unknown) {
     resultSummary.title = existingTitle;
   }
   return resultSummary;
-}
-
-function getFiniteTokenNumber(value: unknown) {
-  const numberValue = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : Number.NaN;
-  if (!Number.isFinite(numberValue) || numberValue < 0) {
-    return null;
-  }
-  return numberValue;
-}
-
-function getTokenNumber(record: JsonRecord, keys: string[]) {
-  for (const key of keys) {
-    const numberValue = getFiniteTokenNumber(record[key]);
-    if (numberValue !== null) {
-      return numberValue;
-    }
-  }
-  return null;
-}
-
-function extractTokenUsageSummary(value: unknown): TokenUsageSummary | null {
-  const record = getRecord(value);
-  if (!isRecordWithValues(record)) {
-    return null;
-  }
-
-  const inputTokens = getTokenNumber(record, ['inputTokens', 'input_tokens', 'promptTokens', 'prompt_tokens']);
-  const cachedInputTokens = getTokenNumber(record, ['cachedInputTokens', 'cached_input_tokens']);
-  const outputTokens = getTokenNumber(record, [
-    'outputTokens',
-    'output_tokens',
-    'completionTokens',
-    'completion_tokens',
-  ]);
-  const reasoningOutputTokens = getTokenNumber(record, ['reasoningOutputTokens', 'reasoning_output_tokens']);
-  const totalTokens = getTokenNumber(record, ['totalTokens', 'total_tokens']);
-  const computedTotal =
-    totalTokens ?? (inputTokens !== null || outputTokens !== null ? (inputTokens ?? 0) + (outputTokens ?? 0) : null);
-
-  const summary: TokenUsageSummary = {};
-  if (inputTokens !== null) {
-    summary.inputTokens = inputTokens;
-  }
-  if (cachedInputTokens !== null) {
-    summary.cachedInputTokens = cachedInputTokens;
-  }
-  if (outputTokens !== null) {
-    summary.outputTokens = outputTokens;
-  }
-  if (reasoningOutputTokens !== null) {
-    summary.reasoningOutputTokens = reasoningOutputTokens;
-  }
-  if (computedTotal !== null) {
-    summary.totalTokens = computedTotal;
-  }
-
-  return isRecordWithValues(summary) ? summary : null;
-}
-
-function getTokenUsageSummaryFromRecord(record: JsonRecord) {
-  const candidates = [record.tokenUsageJson, record.tokenUsage, record.usage, record.tokens, record];
-  for (const candidate of candidates) {
-    const summary = extractTokenUsageSummary(candidate);
-    if (summary) {
-      return summary;
-    }
-  }
-  return null;
-}
-
-function mergeTokenUsageSummary(total: TokenUsageSummary, next: TokenUsageSummary) {
-  for (const key of [
-    'inputTokens',
-    'cachedInputTokens',
-    'outputTokens',
-    'reasoningOutputTokens',
-    'totalTokens',
-  ] as const) {
-    const value = next[key];
-    if (typeof value === 'number') {
-      const currentValue = typeof total[key] === 'number' ? total[key] : 0;
-      total[key] = currentValue + value;
-    }
-  }
-}
-
-function stripAnsiControlSequences(value: string) {
-  const escapeCharacter = String.fromCharCode(27);
-  return value.replace(new RegExp(`${escapeCharacter}\\[[0-?]*[ -/]*[@-~]`, 'g'), '');
-}
-
-function extractCodexTerminalTokenUsageSummary(value: string): TokenUsageSummary | null {
-  const normalizedText = stripAnsiControlSequences(value).replace(/\r/g, '\n');
-  const matches = Array.from(normalizedText.matchAll(/tokens\s+used\s*\n+\s*([0-9][0-9,\s]*)/gi));
-  if (!matches.length) {
-    return null;
-  }
-
-  const tokenText = matches[matches.length - 1]?.[1]?.replace(/[,\s]/g, '') || '';
-  const totalTokens = getFiniteTokenNumber(tokenText);
-  return totalTokens === null ? null : { totalTokens };
-}
-
-async function getRunTerminalTokenUsageSummary(ctx: Context, runId: string) {
-  const events = (await ctx.db.getRepository('agAgentConversationEvents').find({
-    filter: {
-      runId,
-      eventType: 'agent.message',
-      source: 'terminal-live',
-    },
-    sort: ['sequence'],
-  })) as ModelRecord[];
-  const terminalText = events.map((event) => getModelString(event, 'contentText')).join('\n');
-  return extractCodexTerminalTokenUsageSummary(terminalText);
-}
-
-async function getRunTokenUsageSummary(ctx: Context, run: ModelRecord) {
-  const resultSummary = getTokenUsageSummaryFromRecord(getRecord(getModelValue(run, 'resultSummaryJson')));
-  if (resultSummary) {
-    return resultSummary;
-  }
-
-  const runId = getOptionalTargetKey(run, 'id');
-  if (!runId) {
-    return null;
-  }
-
-  const events = (await ctx.db.getRepository('agAgentConversationEvents').find({
-    filter: {
-      runId,
-      eventType: 'agent.turn.completed',
-    },
-    sort: ['sequence'],
-  })) as ModelRecord[];
-  const total: TokenUsageSummary = {};
-  for (const event of events) {
-    const summary = getTokenUsageSummaryFromRecord(getRecord(getModelValue(event, 'contentJson')));
-    if (summary) {
-      mergeTokenUsageSummary(total, summary);
-    }
-  }
-
-  if (isRecordWithValues(total)) {
-    return total;
-  }
-
-  return getRunTerminalTokenUsageSummary(ctx, runId);
 }
 
 function getTaskRunSkillVersionIds(values: JsonRecord) {
@@ -611,11 +457,6 @@ function serializeBuildRunnerNode(node: ModelRecord, profiles: ModelRecord[], no
   };
 }
 
-function isSupersededNode(node: ModelRecord) {
-  const metadataJson = getRecord(getModelValue(node, 'metadataJson'));
-  return getString(metadataJson.supersededReason) === SAME_HOST_NODE_SUPERSEDED_REASON;
-}
-
 function compareBuildRunnerCandidates(
   first: BuildRunnerCandidate,
   second: BuildRunnerCandidate,
@@ -705,53 +546,17 @@ function serializeRunTaskTemplateFilterOption(template: ModelRecord) {
   };
 }
 
-async function getTaskTemplateSkills(ctx: Context, skillVersionIds: string[]): Promise<TaskRunSkillVersionOption[]> {
-  const uniqueSkillVersionIds = [...new Set(skillVersionIds)];
-  if (!uniqueSkillVersionIds.length) {
-    return [];
-  }
-  const skillVersions = (await ctx.db.getRepository('agSkillVersions').find({
-    filter: {
-      id: {
-        $in: uniqueSkillVersionIds,
-      },
-    },
-    appends: ['skill'],
-  })) as ModelRecord[];
-  const skillVersionsById = new Map<string, TaskRunSkillVersionOption>();
-  for (const skillVersion of skillVersions) {
-    const serialized = serializeTaskRunSkillVersion(skillVersion);
-    if (serialized) {
-      skillVersionsById.set(serialized.id, serialized);
-    }
-  }
-  return skillVersionIds
-    .map((skillVersionId) => skillVersionsById.get(skillVersionId))
-    .filter((skillVersion): skillVersion is TaskRunSkillVersionOption => Boolean(skillVersion));
-}
-
-async function getRunTaskTemplateSummary(ctx: Context, run: ModelRecord): Promise<RunTaskTemplateSummary | null> {
-  const taskTemplateId = getOptionalTargetKey(run, 'taskTemplateId');
-  if (!taskTemplateId) {
-    return null;
-  }
-  const taskTemplate = (await ctx.db.getRepository('agTaskTemplates').findOne({
-    filterByTk: taskTemplateId,
-  })) as ModelRecord | null;
-  if (!taskTemplate) {
-    return {
-      id: taskTemplateId,
-      templateKey: taskTemplateId,
-      displayName: taskTemplateId,
-      skillVersionIds: [],
-      skills: [],
-    };
-  }
+function serializeRunTaskTemplateSummary(
+  taskTemplate: ModelRecord,
+  skillsById: Map<string, TaskRunSkillVersionOption>,
+): RunTaskTemplateSummary {
   const skillVersionIds = getStringList(getModelValue(taskTemplate, 'skillVersionIdsJson'));
   return {
     ...serializeRunTaskTemplateFilterOption(taskTemplate),
     skillVersionIds,
-    skills: await getTaskTemplateSkills(ctx, skillVersionIds),
+    skills: skillVersionIds
+      .map((skillVersionId) => skillsById.get(skillVersionId))
+      .filter((skillVersion): skillVersion is TaskRunSkillVersionOption => Boolean(skillVersion)),
   };
 }
 
@@ -807,7 +612,6 @@ async function listBuildRunOptions(ctx: Context) {
   }
 
   const serializedNodes = nodes
-    .filter((node) => !isSupersededNode(node))
     .map((node) => serializeBuildRunnerNode(node, profilesByNodeId.get(getModelString(node, 'id')) || [], now))
     .sort(compareBuildRunnerNodes);
 
@@ -1296,32 +1100,32 @@ function hasActiveTmuxControlSurface(run: ModelRecord) {
   );
 }
 
-async function getRunnerControlCapabilityDecision(ctx: Context, run: ModelRecord, action: 'interrupt' | 'terminate') {
+function getRunnerControlCapabilityDecisionFromModels(
+  node: ModelRecord | null,
+  profile: ModelRecord | null,
+  action: 'interrupt' | 'terminate',
+) {
   const decisions: Array<boolean | null> = [];
-  const nodeId = getOptionalTargetKey(run, 'nodeId');
-  if (nodeId) {
-    const node = (await ctx.db.getRepository('agNodes').findOne({
-      filterByTk: nodeId,
-    })) as ModelRecord | null;
-    if (node) {
-      decisions.push(getControlCapabilityDecision(getRecord(getModelValue(node, 'capabilitiesJson')), action));
-    }
+  if (node) {
+    decisions.push(getControlCapabilityDecision(getRecord(getModelValue(node, 'capabilitiesJson')), action));
   }
-
-  const agentProfileId = getOptionalTargetKey(run, 'agentProfileId');
-  if (agentProfileId) {
-    const profile = (await ctx.db.getRepository('agAgentProfiles').findOne({
-      filterByTk: agentProfileId,
-    })) as ModelRecord | null;
-    if (profile) {
-      decisions.push(getControlCapabilityDecision(getRecord(getModelValue(profile, 'capabilitiesJson')), action));
-    }
+  if (profile) {
+    decisions.push(getControlCapabilityDecision(getRecord(getModelValue(profile, 'capabilitiesJson')), action));
   }
-
   if (decisions.includes(false)) {
     return false;
   }
   return decisions.includes(true) ? true : null;
+}
+
+async function getRunnerControlCapabilityDecision(ctx: Context, run: ModelRecord, action: 'interrupt' | 'terminate') {
+  const nodeId = getOptionalTargetKey(run, 'nodeId');
+  const agentProfileId = getOptionalTargetKey(run, 'agentProfileId');
+  const [node, profile] = (await Promise.all([
+    nodeId ? ctx.db.getRepository('agNodes').findOne({ filterByTk: nodeId }) : null,
+    agentProfileId ? ctx.db.getRepository('agAgentProfiles').findOne({ filterByTk: agentProfileId }) : null,
+  ])) as [ModelRecord | null, ModelRecord | null];
+  return getRunnerControlCapabilityDecisionFromModels(node, profile, action);
 }
 
 async function getRunControlCapability(
@@ -1329,13 +1133,20 @@ async function getRunControlCapability(
   run: ModelRecord,
   session: ModelRecord | null,
   action: 'interrupt' | 'terminate',
+  preloaded?: {
+    node: ModelRecord | null;
+    profile: ModelRecord | null;
+    capabilitySummary: Awaited<ReturnType<typeof getRunProviderCapabilitySummary>>;
+  },
 ) {
   if (!hasActiveTmuxControlSurface(run)) {
     return false;
   }
-  const capabilitySummary = await getRunProviderCapabilitySummary(ctx, run, session);
+  const capabilitySummary = preloaded?.capabilitySummary || (await getRunProviderCapabilitySummary(ctx, run, session));
   if (capabilitySummary.providerSource === 'fallback') {
-    const runnerCapabilityDecision = await getRunnerControlCapabilityDecision(ctx, run, action);
+    const runnerCapabilityDecision = preloaded
+      ? getRunnerControlCapabilityDecisionFromModels(preloaded.node, preloaded.profile, action)
+      : await getRunnerControlCapabilityDecision(ctx, run, action);
     if (runnerCapabilityDecision !== null) {
       return runnerCapabilityDecision;
     }
@@ -1347,24 +1158,26 @@ async function getRunControlCapability(
   if (session) {
     return true;
   }
-  return (await getRunnerControlCapabilityDecision(ctx, run, action)) === true;
+  return (
+    (preloaded
+      ? getRunnerControlCapabilityDecisionFromModels(preloaded.node, preloaded.profile, action)
+      : await getRunnerControlCapabilityDecision(ctx, run, action)) === true
+  );
 }
 
-async function getRunRunnerStatus(ctx: Context, run: ModelRecord) {
+async function getRunRunnerStatus(
+  ctx: Context,
+  run: ModelRecord,
+  preloaded?: { node: ModelRecord | null; profile: ModelRecord | null },
+) {
   const nodeId = getOptionalTargetKey(run, 'nodeId');
   const profileId = getOptionalTargetKey(run, 'agentProfileId');
-  const [node, profile] = (await Promise.all([
-    nodeId
-      ? ctx.db.getRepository('agNodes').findOne({
-          filterByTk: nodeId,
-        })
-      : null,
-    profileId
-      ? ctx.db.getRepository('agAgentProfiles').findOne({
-          filterByTk: profileId,
-        })
-      : null,
-  ])) as [ModelRecord | null, ModelRecord | null];
+  const [node, profile] = preloaded
+    ? [preloaded.node, preloaded.profile]
+    : ((await Promise.all([
+        nodeId ? ctx.db.getRepository('agNodes').findOne({ filterByTk: nodeId }) : null,
+        profileId ? ctx.db.getRepository('agAgentProfiles').findOne({ filterByTk: profileId }) : null,
+      ])) as [ModelRecord | null, ModelRecord | null]);
   const state = getRunnerOnlineState(node, profile);
   const lastHeartbeatAt = node ? getDateFromModel(node, 'lastHeartbeatAt') : null;
   return {
@@ -1380,24 +1193,187 @@ async function getRunRunnerStatus(ctx: Context, run: ModelRecord) {
   };
 }
 
-export async function serializeRunForManagement(ctx: Context, run: ModelRecord) {
+interface RunManagementSerializationContext {
+  actionPermissions: Awaited<ReturnType<typeof getAgentGatewayActionPermissions>>;
+  sessionsById: Map<string, ModelRecord>;
+  profilesById: Map<string, ModelRecord>;
+  nodesById: Map<string, ModelRecord>;
+  taskTemplatesById: Map<string, ModelRecord>;
+  skillsById: Map<string, TaskRunSkillVersionOption>;
+  tokenUsageByRunId: Map<string, TokenUsageSummary | null>;
+}
+
+interface PrepareRunManagementSerializationContextOptions {
+  includeTokenEventFallback?: boolean;
+}
+
+function indexModelsById(models: ModelRecord[]) {
+  const result = new Map<string, ModelRecord>();
+  for (const model of models) {
+    const id = getOptionalTargetKey(model, 'id');
+    if (id) {
+      result.set(id, model);
+    }
+  }
+  return result;
+}
+
+function getMappedModel(models: Map<string, ModelRecord>, id: string) {
+  return id ? models.get(id) || null : null;
+}
+
+async function findModelsByIds(ctx: Context, collectionName: string, ids: Set<string>) {
+  if (!ids.size) {
+    return [] as ModelRecord[];
+  }
+  return (await ctx.db.getRepository(collectionName).find({
+    filter: {
+      id: {
+        $in: [...ids],
+      },
+    },
+  })) as ModelRecord[];
+}
+
+async function prepareRunManagementSerializationContext(
+  ctx: Context,
+  runs: ModelRecord[],
+  options: PrepareRunManagementSerializationContextOptions = {},
+): Promise<RunManagementSerializationContext> {
+  const sessionIds = new Set<string>();
+  const profileIds = new Set<string>();
+  const nodeIds = new Set<string>();
+  const taskTemplateIds = new Set<string>();
+  for (const run of runs) {
+    const sessionId = getOptionalTargetKey(run, 'agentSessionId');
+    if (sessionId) {
+      sessionIds.add(sessionId);
+    }
+    const profileId = getOptionalTargetKey(run, 'agentProfileId');
+    if (profileId) {
+      profileIds.add(profileId);
+    }
+    const nodeId = getOptionalTargetKey(run, 'nodeId');
+    if (nodeId) {
+      nodeIds.add(nodeId);
+    }
+    const taskTemplateId = getOptionalTargetKey(run, 'taskTemplateId');
+    if (taskTemplateId) {
+      taskTemplateIds.add(taskTemplateId);
+    }
+  }
+
+  const tokenUsageByRunId = new Map<string, TokenUsageSummary | null>();
+  const tokenFallbackRunIds: string[] = [];
+  for (const run of runs) {
+    const runId = getOptionalTargetKey(run, 'id');
+    if (!runId) {
+      continue;
+    }
+    const persistedSummary = getRunTokenUsageSummary(run, []);
+    tokenUsageByRunId.set(runId, persistedSummary);
+    if (options.includeTokenEventFallback !== false && !persistedSummary) {
+      tokenFallbackRunIds.push(runId);
+    }
+  }
+
+  const [actionPermissions, sessions, profiles, nodes, taskTemplates, tokenFallbackSummaries] = await Promise.all([
+    getAgentGatewayActionPermissions(ctx),
+    findModelsByIds(ctx, 'agAgentSessions', sessionIds),
+    findModelsByIds(ctx, 'agAgentProfiles', profileIds),
+    findModelsByIds(ctx, 'agNodes', nodeIds),
+    findModelsByIds(ctx, 'agTaskTemplates', taskTemplateIds),
+    Promise.all(
+      tokenFallbackRunIds.map(async (runId) => [runId, await getBoundedRunTokenUsageSummary(ctx, runId)] as const),
+    ),
+  ]);
+
+  const skillVersionIds = new Set<string>();
+  for (const template of taskTemplates) {
+    for (const skillVersionId of getStringList(getModelValue(template, 'skillVersionIdsJson'))) {
+      skillVersionIds.add(skillVersionId);
+    }
+  }
+  const skillVersions = skillVersionIds.size
+    ? ((await ctx.db.getRepository('agSkillVersions').find({
+        filter: {
+          id: {
+            $in: [...skillVersionIds],
+          },
+        },
+        appends: ['skill'],
+      })) as ModelRecord[])
+    : [];
+  const skillsById = new Map<string, TaskRunSkillVersionOption>();
+  for (const skillVersion of skillVersions) {
+    const serialized = serializeTaskRunSkillVersion(skillVersion);
+    if (serialized) {
+      skillsById.set(serialized.id, serialized);
+    }
+  }
+
+  for (const [runId, summary] of tokenFallbackSummaries) {
+    tokenUsageByRunId.set(runId, summary);
+  }
+
+  return {
+    actionPermissions,
+    sessionsById: indexModelsById(sessions),
+    profilesById: indexModelsById(profiles),
+    nodesById: indexModelsById(nodes),
+    taskTemplatesById: indexModelsById(taskTemplates),
+    skillsById,
+    tokenUsageByRunId,
+  };
+}
+
+function getRunTaskTemplateSummaryFromContext(run: ModelRecord, context: RunManagementSerializationContext) {
+  const taskTemplateId = getOptionalTargetKey(run, 'taskTemplateId');
+  if (!taskTemplateId) {
+    return null;
+  }
+  const taskTemplate = context.taskTemplatesById.get(taskTemplateId);
+  if (!taskTemplate) {
+    return {
+      id: taskTemplateId,
+      templateKey: taskTemplateId,
+      displayName: taskTemplateId,
+      skillVersionIds: [],
+      skills: [],
+    };
+  }
+  return serializeRunTaskTemplateSummary(taskTemplate, context.skillsById);
+}
+
+export async function serializeRunForManagement(
+  ctx: Context,
+  run: ModelRecord,
+  suppliedContext?: RunManagementSerializationContext,
+) {
+  const context = suppliedContext || (await prepareRunManagementSerializationContext(ctx, [run]));
   const json = serializeRunForUser(run);
   const agentSessionId = getOptionalTargetKey(run, 'agentSessionId');
-  const session = agentSessionId
-    ? ((await ctx.db.getRepository('agAgentSessions').findOne({
-        filterByTk: agentSessionId,
-      })) as ModelRecord | null)
-    : null;
-  const taskTemplateJson = await getRunTaskTemplateSummary(ctx, run);
-  const capabilitySummary = await getRunProviderCapabilitySummary(ctx, run, session);
-  const actionPermissions = await getAgentGatewayActionPermissions(ctx);
-  const interruptCapable = await getRunControlCapability(ctx, run, session, 'interrupt');
-  const terminateCapable = await getRunControlCapability(ctx, run, session, 'terminate');
+  const agentProfileId = getOptionalTargetKey(run, 'agentProfileId');
+  const nodeId = getOptionalTargetKey(run, 'nodeId');
+  const runId = getOptionalTargetKey(run, 'id');
+  const session = getMappedModel(context.sessionsById, agentSessionId);
+  const profile = getMappedModel(context.profilesById, agentProfileId);
+  const node = getMappedModel(context.nodesById, nodeId);
+  const taskTemplateJson = getRunTaskTemplateSummaryFromContext(run, context);
+  const capabilitySummary = await getRunProviderCapabilitySummary(ctx, run, session, profile);
+  const preloadedControlContext = {
+    node,
+    profile,
+    capabilitySummary,
+  };
+  const interruptCapable = await getRunControlCapability(ctx, run, session, 'interrupt', preloadedControlContext);
+  const terminateCapable = await getRunControlCapability(ctx, run, session, 'terminate', preloadedControlContext);
+  const actionPermissions = context.actionPermissions;
   return {
     ...json,
     taskTitle: getRunTaskTitle(run) || null,
     taskTemplateJson,
-    tokenUsageJson: await getRunTokenUsageSummary(ctx, run),
+    tokenUsageJson: runId ? context.tokenUsageByRunId.get(runId) || null : null,
     ...(session
       ? {
           agentSessionCapabilitiesJson: capabilitySummary.capabilities,
@@ -1420,8 +1396,15 @@ export async function serializeRunForManagement(ctx: Context, run: ModelRecord) 
       interruptRun: actionPermissions.interruptRun && interruptCapable,
       terminateRun: actionPermissions.terminateRun && terminateCapable,
     },
-    runnerStatusJson: await getRunRunnerStatus(ctx, run),
+    runnerStatusJson: await getRunRunnerStatus(ctx, run, { node, profile }),
   };
+}
+
+async function serializeRunsForManagement(ctx: Context, runs: ModelRecord[]) {
+  const context = await prepareRunManagementSerializationContext(ctx, runs, {
+    includeTokenEventFallback: false,
+  });
+  return await Promise.all(runs.map((run) => serializeRunForManagement(ctx, run, context)));
 }
 
 function isRecordWithValues(value: JsonRecord) {
@@ -1536,6 +1519,8 @@ async function serializeRunForNodeClaim(ctx: Context, run: ModelRecord, transact
     : stripInlineSkillVersionSources(executionPayloadJson);
   return {
     ...json,
+    claimAttempt: getModelNumber(run, 'claimAttempt'),
+    leaseVersion: getModelNumber(run, 'leaseVersion'),
     promptSnapshot: getRecord(getModelValue(run, 'promptSnapshot')),
     executionPayloadJson: skillVersions.length
       ? {
@@ -1935,7 +1920,7 @@ async function listRuns(ctx: Context) {
   ]);
 
   ctx.body = {
-    rows: await Promise.all(runs.map((run) => serializeRunForManagement(ctx, run))),
+    rows: await serializeRunsForManagement(ctx, runs),
     count,
     page,
     pageSize,
@@ -2066,7 +2051,7 @@ async function countActiveRuns(ctx: Context, filter: JsonRecord, transaction: Tr
     filter: {
       ...filter,
       status: {
-        $in: [...ACTIVE_RUN_STATUSES],
+        $in: [...LEASE_OWNING_RUN_STATUSES],
       },
       claimExpiresAt: {
         $gt: new Date(),
@@ -2181,58 +2166,58 @@ async function findClaimableCandidate(
   transaction: Transaction,
   runId?: string,
 ) {
-  const profileIds = profiles.map((profile) => String(getModelTargetKey(profile, 'id')));
-  const profileById = new Map(profiles.map((profile) => [String(getModelTargetKey(profile, 'id')), profile]));
   const capacityCache = new Map<string, boolean>();
-  const filter = getClaimableRunFilter(nodeId, profileIds, runId);
-  let offset = 0;
-  let profileConcurrencyBlocked = false;
-  let hasMoreCandidates = true;
-
-  while (hasMoreCandidates) {
-    const candidates = (await ctx.db.getRepository('agRuns').find({
-      filter,
-      sort: ['queuedAt', 'createdAt', 'id'],
-      limit: CLAIM_CANDIDATE_PAGE_SIZE,
-      offset,
-      transaction,
-      lock: transaction.LOCK.UPDATE,
-    })) as ModelRecord[];
-    if (!candidates.length) {
-      break;
+  const availableProfiles: ModelRecord[] = [];
+  for (const profile of profiles) {
+    if (await hasProfileCapacity(ctx, profile, nodeMaxConcurrency, transaction, capacityCache)) {
+      availableProfiles.push(profile);
     }
+  }
+  if (!availableProfiles.length) {
+    return {
+      candidate: null,
+      reason: 'profile_concurrency_full',
+    };
+  }
 
-    for (const run of candidates) {
-      const profile = await pickCandidateProfile(
-        ctx,
+  const profileIds = availableProfiles.map((profile) => String(getModelTargetKey(profile, 'id')));
+  const profileById = new Map(availableProfiles.map((profile) => [String(getModelTargetKey(profile, 'id')), profile]));
+  const candidates = (await ctx.db.getRepository('agRuns').find({
+    filter: getClaimableRunFilter(nodeId, profileIds, runId),
+    sort: ['queuedAt', 'createdAt', 'id'],
+    limit: 1,
+    transaction,
+    lock: transaction.LOCK.UPDATE,
+    skipLocked: true,
+  })) as ModelRecord[];
+  const run = candidates[0];
+  if (!run) {
+    return {
+      candidate: null,
+      reason: 'no_claimable_run',
+    };
+  }
+  const profile = await pickCandidateProfile(
+    ctx,
+    run,
+    availableProfiles,
+    profileById,
+    nodeMaxConcurrency,
+    transaction,
+    capacityCache,
+  );
+  if (profile) {
+    return {
+      candidate: {
         run,
-        profiles,
-        profileById,
-        nodeMaxConcurrency,
-        transaction,
-        capacityCache,
-      );
-      if (profile) {
-        return {
-          candidate: {
-            run,
-            profile,
-          } as ClaimCandidate,
-        };
-      }
-      profileConcurrencyBlocked = true;
-    }
-
-    if (candidates.length < CLAIM_CANDIDATE_PAGE_SIZE) {
-      hasMoreCandidates = false;
-    } else {
-      offset += CLAIM_CANDIDATE_PAGE_SIZE;
-    }
+        profile,
+      } as ClaimCandidate,
+    };
   }
 
   return {
     candidate: null,
-    reason: profileConcurrencyBlocked ? 'profile_concurrency_full' : 'no_claimable_run',
+    reason: 'profile_concurrency_full',
   };
 }
 
@@ -2290,6 +2275,12 @@ async function claimRun(ctx: Context, nodeId: string) {
       transaction,
     });
 
+    const claimedRun = (await ctx.db.getRepository('agRuns').findOne({
+      filterByTk: getModelTargetKey(candidate.run, 'id'),
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    })) as ModelRecord;
+
     return {
       claimed: true,
       runId: getModelTargetKey(candidate.run, 'id'),
@@ -2300,6 +2291,8 @@ async function claimRun(ctx: Context, nodeId: string) {
       claimAttempt,
       leaseVersion,
       claimExpiresAt: claimExpiresAt.toISOString(),
+      leaseTtlMs: DEFAULT_CLAIM_LEASE_TTL_MS,
+      serverTime: now.toISOString(),
       claimToken: claimToken.token,
       tokenLast4: claimToken.tokenLast4,
       heartbeatIntervalSeconds: Math.min(DEFAULT_CLAIM_LEASE_SECONDS, 30),
@@ -2307,7 +2300,7 @@ async function claimRun(ctx: Context, nodeId: string) {
       profileProvider: getModelString(candidate.profile, 'provider') || undefined,
       nodeCapabilities: getRecord(getModelValue(node, 'capabilitiesJson')),
       profileCapabilities: getRecord(getModelValue(candidate.profile, 'capabilitiesJson')),
-      run: await serializeRunForNodeClaim(ctx, candidate.run, transaction),
+      run: await serializeRunForNodeClaim(ctx, claimedRun, transaction),
     };
   });
 
@@ -2380,6 +2373,7 @@ export async function validateRunLease(
     allowExpiredLease?: boolean;
     allowExpiredLeaseStatuses?: readonly string[];
     allowStaleLeaseVersion?: boolean;
+    allowPreviousLeaseVersion?: boolean;
     allowedStatuses?: readonly string[];
   } = {},
 ): Promise<RunLease | null> {
@@ -2407,7 +2401,10 @@ export async function validateRunLease(
     return respondLeaseLost(ctx, 'Claim attempt is stale');
   }
   const currentLeaseVersion = getModelNumber(run, 'leaseVersion');
-  if (options.allowStaleLeaseVersion ? currentLeaseVersion < leaseVersion : currentLeaseVersion !== leaseVersion) {
+  const leaseVersionMatches = currentLeaseVersion === leaseVersion;
+  const staleLeaseVersionAllowed = options.allowStaleLeaseVersion && leaseVersion < currentLeaseVersion;
+  const previousLeaseVersionAllowed = options.allowPreviousLeaseVersion && leaseVersion === currentLeaseVersion - 1;
+  if (!leaseVersionMatches && !staleLeaseVersionAllowed && !previousLeaseVersionAllowed) {
     return respondLeaseLost(ctx, 'Lease version is stale');
   }
   if (!verifyClaimToken(claimToken, getModelString(run, 'claimTokenHash'))) {
@@ -2430,10 +2427,20 @@ export async function validateRunLease(
     run,
     claimAttempt,
     leaseVersion: currentLeaseVersion,
+    requestedLeaseVersion: leaseVersion,
   };
 }
 
 function getHeartbeatStatus(ctx: Context, currentStatus: string, requestedStatus: string) {
+  if (currentStatus === STALLED_RUN_STATUS) {
+    if (!requestedStatus) {
+      return 'running';
+    }
+    if (!isHeartbeatRunStatus(requestedStatus)) {
+      ctx.throw(400, 'Unsupported heartbeat status');
+    }
+    return requestedStatus;
+  }
   if (!requestedStatus) {
     return currentStatus;
   }
@@ -2461,34 +2468,47 @@ function getHeartbeatStatus(ctx: Context, currentStatus: string, requestedStatus
 async function runHeartbeat(ctx: Context, nodeId: string, runId: string) {
   const values = getBodyValues(ctx);
   const result = await ctx.db.sequelize.transaction(async (transaction) => {
-    const lease = await validateRunLease(ctx, nodeId, runId, values, transaction);
+    const lease = await validateRunLease(ctx, nodeId, runId, values, transaction, {
+      allowedStatuses: [STALLED_RUN_STATUS],
+      allowPreviousLeaseVersion: true,
+    });
     if (!lease) {
       return null;
     }
 
     const now = new Date();
-    const nextLeaseVersion = lease.leaseVersion + 1;
-    const status = getHeartbeatStatus(ctx, getModelString(lease.run, 'status'), getString(values.status));
-    const claimExpiresAt = getLeaseExpiresAt(now);
-    await ctx.db.getRepository('agRuns').update({
-      filterByTk: runId,
-      values: {
-        status,
-        leaseVersion: nextLeaseVersion,
-        claimExpiresAt,
-        lastRunHeartbeatAt: now,
-        startedAt:
-          status === 'running' && !getModelValue(lease.run, 'startedAt') ? now : getModelValue(lease.run, 'startedAt'),
-      },
-      transaction,
-    });
-    await ctx.db.getRepository('agNodes').update({
-      filterByTk: nodeId,
-      values: {
-        lastHeartbeatAt: now,
-      },
-      transaction,
-    });
+    const heartbeatRetry = lease.requestedLeaseVersion !== lease.leaseVersion;
+    const nextLeaseVersion = heartbeatRetry ? lease.leaseVersion : lease.leaseVersion + 1;
+    const status = heartbeatRetry
+      ? getModelString(lease.run, 'status')
+      : getHeartbeatStatus(ctx, getModelString(lease.run, 'status'), getString(values.status));
+    const claimExpiresAt = heartbeatRetry ? getDateFromModel(lease.run, 'claimExpiresAt') : getLeaseExpiresAt(now);
+    if (!claimExpiresAt) {
+      return respondLeaseLost(ctx, 'Run lease has expired');
+    }
+    if (!heartbeatRetry) {
+      await ctx.db.getRepository('agRuns').update({
+        filterByTk: runId,
+        values: {
+          status,
+          leaseVersion: nextLeaseVersion,
+          claimExpiresAt,
+          lastRunHeartbeatAt: now,
+          startedAt:
+            status === 'running' && !getModelValue(lease.run, 'startedAt')
+              ? now
+              : getModelValue(lease.run, 'startedAt'),
+        },
+        transaction,
+      });
+      await ctx.db.getRepository('agNodes').update({
+        filterByTk: nodeId,
+        values: {
+          lastHeartbeatAt: now,
+        },
+        transaction,
+      });
+    }
     const cancelRequested = getBoolean(getModelValue(lease.run, 'cancelRequested')) || status === 'canceling';
     const activeTerminateControl = cancelRequested
       ? ((await ctx.db.getRepository('agRunControlRequests').findOne({
@@ -2507,6 +2527,8 @@ async function runHeartbeat(ctx: Context, nodeId: string, runId: string) {
       claimAttempt: lease.claimAttempt,
       leaseVersion: nextLeaseVersion,
       claimExpiresAt: claimExpiresAt.toISOString(),
+      leaseTtlMs: Math.max(0, claimExpiresAt.getTime() - now.getTime()),
+      serverTime: now.toISOString(),
       cancelRequested,
       ...(activeTerminateControl ? { cancelReason: AGENT_GATEWAY_TERMINATE_CONTROL_CANCEL_REASON } : {}),
     };
@@ -2619,6 +2641,155 @@ async function failOpenControlRequestsForFinishedRun(options: {
   }
 }
 
+const EMPTY_TOKEN_USAGE_RUN: ModelRecord = {
+  get() {
+    return undefined;
+  },
+};
+
+function mergeTokenUsageSummary(target: TokenUsageSummary, next: TokenUsageSummary) {
+  for (const key of [
+    'inputTokens',
+    'cachedInputTokens',
+    'outputTokens',
+    'reasoningOutputTokens',
+    'totalTokens',
+  ] as const) {
+    const value = next[key];
+    if (typeof value === 'number') {
+      target[key] = (target[key] || 0) + value;
+    }
+  }
+}
+
+function projectModelValues(model: ModelRecord, values: JsonRecord): ModelRecord {
+  return {
+    get(key) {
+      return Object.prototype.hasOwnProperty.call(values, key) ? values[key] : model.get(key);
+    },
+  };
+}
+
+function getUtf8Tail(value: string, maxBytes: number) {
+  const bytes = Buffer.from(value, 'utf8');
+  if (bytes.length <= maxBytes) {
+    return value;
+  }
+  let start = bytes.length - maxBytes;
+  while (start < bytes.length && (bytes[start] & 0xc0) === 0x80) {
+    start += 1;
+  }
+  return bytes.subarray(start).toString('utf8');
+}
+
+function getBoundedTerminalTokenEvents(eventsNewestFirst: ModelRecord[]) {
+  const selectedNewestFirst: ModelRecord[] = [];
+  let remainingBytes = TERMINAL_TOKEN_TAIL_BYTE_LIMIT;
+  for (const event of eventsNewestFirst) {
+    const separatorBytes = selectedNewestFirst.length ? 1 : 0;
+    if (remainingBytes <= separatorBytes) {
+      break;
+    }
+    remainingBytes -= separatorBytes;
+    const contentText = getModelString(event, 'contentText');
+    const boundedText = getUtf8Tail(contentText, remainingBytes);
+    remainingBytes -= Buffer.byteLength(boundedText, 'utf8');
+    selectedNewestFirst.push(projectModelValues(event, { contentText: boundedText }));
+    if (remainingBytes <= 0) {
+      break;
+    }
+  }
+  return selectedNewestFirst.reverse();
+}
+
+async function getStructuredTokenUsageSummary(
+  ctx: Context,
+  runId: string,
+  transaction?: Transaction,
+): Promise<TokenUsageSummary | null> {
+  const total: TokenUsageSummary = {};
+  let offset = 0;
+  let hasMore = true;
+  while (hasMore) {
+    const events = (await ctx.db.getRepository('agAgentConversationEvents').find({
+      filter: {
+        runId,
+        eventType: 'agent.turn.completed',
+      },
+      fields: ['id', 'eventType', 'contentJson', 'sequence'],
+      sort: ['sequence', 'id'],
+      limit: TOKEN_USAGE_EVENT_BATCH_SIZE,
+      offset,
+      transaction,
+    })) as ModelRecord[];
+    const pageSummary = getRunTokenUsageSummary(EMPTY_TOKEN_USAGE_RUN, events);
+    if (pageSummary) {
+      mergeTokenUsageSummary(total, pageSummary);
+    }
+    hasMore = events.length === TOKEN_USAGE_EVENT_BATCH_SIZE;
+    offset += events.length;
+  }
+  return Object.keys(total).length ? total : null;
+}
+
+async function getTerminalTokenUsageSummary(ctx: Context, runId: string, transaction?: Transaction) {
+  const terminalEvents = (await ctx.db.getRepository('agAgentConversationEvents').find({
+    filter: {
+      runId,
+      eventType: 'agent.message',
+      source: 'terminal-live',
+    },
+    fields: ['id', 'eventType', 'source', 'contentText', 'sequence'],
+    sort: ['-sequence', '-id'],
+    limit: TERMINAL_TOKEN_TAIL_ROW_LIMIT,
+    transaction,
+  })) as ModelRecord[];
+  return getRunTokenUsageSummary(EMPTY_TOKEN_USAGE_RUN, getBoundedTerminalTokenEvents(terminalEvents));
+}
+
+async function getBoundedRunTokenUsageSummary(ctx: Context, runId: string, transaction?: Transaction) {
+  const structuredSummary = await getStructuredTokenUsageSummary(ctx, runId, transaction);
+  if (structuredSummary) {
+    return structuredSummary;
+  }
+  return await getTerminalTokenUsageSummary(ctx, runId, transaction);
+}
+
+async function getTerminalizedRunTokenUsageSummary(options: {
+  ctx: Context;
+  run: ModelRecord;
+  runId: string;
+  values: JsonRecord;
+  transaction: Transaction;
+}) {
+  const projectedRun = projectModelValues(options.run, options.values);
+  const existingSummary = getRunTokenUsageSummary(projectedRun, []);
+  if (existingSummary) {
+    return existingSummary;
+  }
+  return await getBoundedRunTokenUsageSummary(options.ctx, options.runId, options.transaction);
+}
+
+async function addTerminalTokenUsageToRunValues(options: {
+  ctx: Context;
+  run: ModelRecord;
+  runId: string;
+  values: JsonRecord;
+  transaction: Transaction;
+}) {
+  const tokenUsageJson = await getTerminalizedRunTokenUsageSummary(options);
+  if (!tokenUsageJson) {
+    return options.values;
+  }
+  return {
+    ...options.values,
+    resultSummaryJson: {
+      ...getRecord(options.values.resultSummaryJson || getModelValue(options.run, 'resultSummaryJson')),
+      tokenUsageJson,
+    },
+  };
+}
+
 async function finishRun(
   ctx: Context,
   nodeId: string,
@@ -2647,6 +2818,13 @@ async function finishRun(
 
     const now = new Date();
     const nextLeaseVersion = lease.leaseVersion + 1;
+    const nextRunValues = await addTerminalTokenUsageToRunValues({
+      ctx,
+      run: lease.run,
+      runId,
+      values: terminalValues(values, now, lease.run),
+      transaction,
+    });
     await ctx.db.getRepository('agRuns').update({
       filterByTk: runId,
       values: {
@@ -2654,7 +2832,7 @@ async function finishRun(
         leaseVersion: nextLeaseVersion,
         claimExpiresAt: null,
         finishedAt: now,
-        ...terminalValues(values, now, lease.run),
+        ...nextRunValues,
       },
       transaction,
     });
@@ -2834,12 +3012,22 @@ export async function cancelRun(ctx: Context, runId: string, options: { requireP
       cancelRequested: true,
       cancelRequestedAt: getModelValue(run, 'cancelRequestedAt') || now,
     };
-    if (status === CLAIMABLE_RUN_STATUS) {
+    if (status === CLAIMABLE_RUN_STATUS || status === IMPORTING_RUN_STATUS) {
       values.status = 'canceled';
       values.canceledAt = now;
       values.finishedAt = now;
       values.claimExpiresAt = null;
-    } else if (isActiveRunStatus(status)) {
+      Object.assign(
+        values,
+        await addTerminalTokenUsageToRunValues({
+          ctx,
+          run,
+          runId,
+          values,
+          transaction,
+        }),
+      );
+    } else if (isActiveRunStatus(status) || status === STALLED_RUN_STATUS) {
       values.status = 'canceling';
     } else {
       ctx.throw(409, `Run cannot be canceled from ${status}`);
@@ -2850,6 +3038,23 @@ export async function cancelRun(ctx: Context, runId: string, options: { requireP
       values,
       transaction,
     });
+    if (status === IMPORTING_RUN_STATUS) {
+      await ctx.db.getRepository('agExternalImportBatches').update({
+        filter: {
+          runId,
+          status: {
+            $in: ['processing', 'failed'],
+          },
+        },
+        values: {
+          status: 'failed',
+          errorSummary: EXTERNAL_IMPORT_USER_CANCELED_ERROR_SUMMARY,
+          completedAt: null,
+          lastAttemptAt: now,
+        },
+        transaction,
+      });
+    }
 
     return (await ctx.db.getRepository('agRuns').findOne({
       filterByTk: runId,
@@ -2880,7 +3085,7 @@ async function appendRunLeaseRecoveryEvent(options: {
   run: ModelRecord;
   now: Date;
   reason: string;
-  eventType: 'run.lease.stalled' | 'run.lease.failed';
+  eventType: 'run.lease.stalled' | 'run.lease.failed' | 'run.lease.canceled';
   message: string;
   nextStatus: string;
   transaction: Transaction;
@@ -2942,6 +3147,7 @@ async function reconcileExpiredRunLeases(
 
   let stalledCount = 0;
   let failedCount = 0;
+  let canceledCount = 0;
   for (const run of expiredRuns) {
     const recoveryResult = await ctx.db.sequelize.transaction(async (transaction) => {
       const lockedRun = (await ctx.db.getRepository('agRuns').findOne({
@@ -2957,6 +3163,48 @@ async function reconcileExpiredRunLeases(
       const claimExpiresAt = getDateFromModel(lockedRun, 'claimExpiresAt');
       if (!claimExpiresAt || claimExpiresAt.getTime() > now.getTime()) {
         return null;
+      }
+
+      if (currentStatus === 'canceling' || getBoolean(getModelValue(lockedRun, 'cancelRequested'))) {
+        const terminalValues = await addTerminalTokenUsageToRunValues({
+          ctx,
+          run: lockedRun,
+          runId: String(getModelTargetKey(lockedRun, 'id')),
+          values: {
+            status: 'canceled',
+            cancelRequested: true,
+            cancelRequestedAt: getModelValue(lockedRun, 'cancelRequestedAt') || now,
+            claimExpiresAt: null,
+            canceledAt: now,
+            finishedAt: now,
+            terminalEndedAt: now,
+          },
+          transaction,
+        });
+        await ctx.db.getRepository('agRuns').update({
+          filterByTk: getModelTargetKey(lockedRun, 'id'),
+          values: terminalValues,
+          transaction,
+        });
+        await appendRunLeaseRecoveryEvent({
+          ctx,
+          run: lockedRun,
+          now,
+          reason: options.recoveryReason || 'lease-expired',
+          eventType: 'run.lease.canceled',
+          message: 'Run lease expired after cancellation was requested and the run was marked canceled',
+          nextStatus: 'canceled',
+          transaction,
+        });
+        await failOpenControlRequestsForFinishedRun({
+          ctx,
+          run: lockedRun,
+          runId: String(getModelTargetKey(lockedRun, 'id')),
+          terminalStatus: 'canceled',
+          now,
+          transaction,
+        });
+        return 'canceled' as const;
       }
 
       if (currentStatus !== STALLED_RUN_STATUS) {
@@ -2982,8 +3230,10 @@ async function reconcileExpiredRunLeases(
         return 'stalled' as const;
       }
 
-      await ctx.db.getRepository('agRuns').update({
-        filterByTk: getModelTargetKey(lockedRun, 'id'),
+      const terminalValues = await addTerminalTokenUsageToRunValues({
+        ctx,
+        run: lockedRun,
+        runId: String(getModelTargetKey(lockedRun, 'id')),
         values: {
           status: 'failed',
           claimExpiresAt: null,
@@ -2992,6 +3242,11 @@ async function reconcileExpiredRunLeases(
           terminalEndedAt: now,
           errorSummary: redactRunErrorSummary('Runner lost after lease stalled grace period'),
         },
+        transaction,
+      });
+      await ctx.db.getRepository('agRuns').update({
+        filterByTk: getModelTargetKey(lockedRun, 'id'),
+        values: terminalValues,
         transaction,
       });
       await appendRunLeaseRecoveryEvent({
@@ -3021,11 +3276,15 @@ async function reconcileExpiredRunLeases(
     if (recoveryResult === 'failed') {
       failedCount += 1;
     }
+    if (recoveryResult === 'canceled') {
+      canceledCount += 1;
+    }
   }
 
   return {
     stalledCount,
     failedCount,
+    canceledCount,
     scannedAt: now.toISOString(),
   };
 }

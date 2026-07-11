@@ -12,15 +12,20 @@ import { createHash, randomUUID } from 'crypto';
 import { NoPermissionError, checkFilterParams, createUserProvider, parseJsonTemplate } from '@nocobase/acl';
 import { Context, Next } from '@nocobase/actions';
 import { Plugin } from '@nocobase/server';
-import { Transaction } from 'sequelize';
+import { Transaction, UniqueConstraintError } from 'sequelize';
 
 import { AgentProviderKey, getAgentProviderKey, isAgentProviderKey } from '../../shared/providerCapabilities';
 import {
+  EXTERNAL_IMPORT_OPERATION_PLAN_VERSION,
   EXTERNAL_IMPORT_CAPABILITIES,
+  EXTERNAL_IMPORT_LIMITS,
   EXTERNAL_IMPORT_SOURCE_TYPE,
+  EXTERNAL_IMPORT_USER_CANCELED_ERROR_SUMMARY,
   EXTERNAL_LOG_FORMATS,
   ExternalLogFormat,
 } from '../../shared/externalRunImport';
+import { IMPORTING_RUN_STATUS, isTerminalRunStatus } from '../../shared/runState';
+import { COMMAND_CONTENT_JSON_LIMIT_CHARS, COMMAND_DETAIL_STRING_LIMIT_CHARS } from '../../shared/conversationLimits';
 import { claudeCodeAdapter } from '../../daemon/adapters/claudeCode';
 import { codexAdapter } from '../../daemon/adapters/codex';
 import { opencodeAdapter } from '../../daemon/adapters/opencode';
@@ -55,14 +60,29 @@ import {
 import { createConversationEvent } from './conversationEvents';
 import { serializeRunForManagement } from './runLifecycle';
 import { createRunArtifact } from './runObservability';
+import {
+  OBSERVABILITY_ROLLUP_EVENT_FILTER,
+  buildRunObservabilityRollup,
+  getRunObservabilityRollup,
+  getTokenUsageSummaryFromRecord,
+  mergeRunObservabilityRollup,
+} from '../services/observationRollup';
 
 const MAX_EVENT_MESSAGE_LENGTH = 4000;
 const MAX_EVENT_PAYLOAD_CHARS = 16000;
+const MAX_CONVERSATION_CONTENT_TEXT_LENGTH = 8000;
+const MAX_CONVERSATION_CONTENT_JSON_CHARS = 32 * 1024;
+const MAX_ARTIFACT_METADATA_JSON_CHARS = 16 * 1024;
+const MAX_DATABASE_STRING_LENGTH = 255;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const IMPORTED_RUN_STATUSES = new Set(['running', 'succeeded', 'failed', 'canceled', 'timeout', 'abandoned']);
 const TERMINAL_IMPORTED_RUN_STATUSES = new Set(['succeeded', 'failed', 'canceled', 'timeout', 'abandoned']);
 const DEFAULT_IMPORT_BATCH_KEY = 'initial';
 const EXTERNAL_INITIAL_EVENT_SOURCE = 'external-import-task';
+const MAX_BATCH_KEY_LENGTH = 200;
+const EXTERNAL_IDENTITY_COLLECTION = 'agExternalRunIdentities';
+const EXTERNAL_BATCH_COLLECTION = 'agExternalImportBatches';
+const MAX_FOUNDATION_ATTEMPTS = 3;
 
 interface FieldLike {
   options?: JsonRecord;
@@ -103,6 +123,86 @@ interface ObservationWriteResult {
   artifacts: number;
 }
 
+interface ExternalIdentityDescriptor {
+  identityKey: string;
+  identityType: 'external-run-key' | 'run-code';
+  externalRunKey: string | null;
+  explicitRunCode: string | null;
+  runCode: string;
+}
+
+interface PreparedLogEntry {
+  log: JsonRecord;
+  format: ExternalLogFormat;
+  contentText: string;
+  normalizedEvents: NormalizedAgentEvent[];
+  index: number;
+}
+
+interface PreparedObservationBatch {
+  logs: PreparedLogEntry[];
+  artifacts: JsonRecord[];
+  payloadSha256: string;
+}
+
+interface PreparedObservationPlan {
+  version: number;
+  operations: ObservationOperation[];
+  operationPlanSha256: string;
+}
+
+interface PreparedImportFoundation {
+  run: ModelRecord;
+  batch: ModelRecord;
+  observationPlan: PreparedObservationPlan;
+  finalizationPlan: PreparedImportFinalizationPlan;
+  deduped: boolean;
+}
+
+interface SourceRecordRelationPlan {
+  sourceCollection: string;
+  sourceRecordId: string;
+  outputAgentRunField: string;
+}
+
+interface ImportFinalizationPlan {
+  expectedRunStatus: string;
+  runUpdateValues: JsonRecord | null;
+  sourceRecordRelation: SourceRecordRelationPlan | null;
+}
+
+interface PreparedImportFinalizationPlan extends ImportFinalizationPlan {
+  version: number;
+  finalizationSha256: string;
+}
+
+interface ObservationBatchProcessingResult {
+  observations: ObservationWriteResult;
+  relationUpdated: boolean;
+}
+
+type ObservationOperation =
+  | {
+      type: 'initial-conversation';
+      values: JsonRecord;
+    }
+  | {
+      type: 'run-event';
+      source: string;
+      sequence: number;
+      eventType: string;
+      message: string;
+      payload: JsonRecord;
+    }
+  | {
+      type: 'artifact';
+      values: JsonRecord;
+    }
+  | {
+      type: 'conversation-event';
+      values: JsonRecord;
+    };
+
 const PROVIDER_ADAPTERS: Partial<Record<AgentProviderKey, AgentAdapter>> = {
   codex: codexAdapter,
   opencode: opencodeAdapter,
@@ -111,14 +211,6 @@ const PROVIDER_ADAPTERS: Partial<Record<AgentProviderKey, AgentAdapter>> = {
 
 function isRecord(value: unknown): value is JsonRecord {
   return Object.prototype.toString.call(value) === '[object Object]';
-}
-
-function getRequiredString(ctx: Context, value: unknown, name: string) {
-  const stringValue = getString(value);
-  if (!stringValue) {
-    ctx.throw(400, `${name} is required`);
-  }
-  return stringValue;
 }
 
 function getIdentifierString(value: unknown) {
@@ -159,6 +251,16 @@ function getImportStatus(ctx: Context, values: JsonRecord, existingStatus?: stri
   return getString(values.errorSummary) ? 'failed' : 'succeeded';
 }
 
+function assertImportedRunStatusTransition(ctx: Context, currentStatus: string, nextStatus: string) {
+  if (currentStatus === nextStatus || currentStatus === 'running') {
+    return;
+  }
+  if (TERMINAL_IMPORTED_RUN_STATUSES.has(currentStatus)) {
+    ctx.throw(409, `Imported run status cannot transition from ${currentStatus} to ${nextStatus}`);
+  }
+  ctx.throw(409, `Imported run status cannot transition from ${currentStatus} to ${nextStatus}`);
+}
+
 function sanitizeKeyPart(value: string, maxLength = 96) {
   return value
     .trim()
@@ -171,7 +273,7 @@ function getHash(value: string) {
   return createHash('sha256').update(value).digest('hex');
 }
 
-function getExternalRunCode(values: JsonRecord) {
+function getExternalRunCode(values: JsonRecord, provider: AgentProviderKey) {
   const explicitRunCode = getString(values.runCode);
   if (explicitRunCode) {
     return explicitRunCode;
@@ -179,10 +281,85 @@ function getExternalRunCode(values: JsonRecord) {
   const externalRunKey = getString(values.externalRunKey);
   if (externalRunKey) {
     const suffix = sanitizeKeyPart(externalRunKey, 48);
-    const hash = getHash(externalRunKey).slice(0, 16);
+    const hash = getHash(`${provider}\0${externalRunKey}`).slice(0, 16);
     return suffix ? `external_${hash}_${suffix}` : `external_${hash}`;
   }
-  return `external_${randomUUID()}`;
+  return '';
+}
+
+function getExternalIdentityDescriptor(
+  ctx: Context,
+  values: JsonRecord,
+  provider: AgentProviderKey,
+): ExternalIdentityDescriptor {
+  const externalRunKey = getString(values.externalRunKey) || null;
+  const explicitRunCode = getString(values.runCode);
+  const runCode = getExternalRunCode(values, provider);
+  if (explicitRunCode.length > MAX_DATABASE_STRING_LENGTH) {
+    ctx.throw(413, `runCode must not exceed ${MAX_DATABASE_STRING_LENGTH} characters`);
+  }
+  if (externalRunKey) {
+    return {
+      identityKey: `external-run-key:${getHash(`${provider}\0${externalRunKey}`)}`,
+      identityType: 'external-run-key',
+      externalRunKey,
+      explicitRunCode: explicitRunCode || null,
+      runCode,
+    };
+  }
+  if (explicitRunCode) {
+    return {
+      identityKey: `run-code:${getHash(explicitRunCode)}`,
+      identityType: 'run-code',
+      externalRunKey: null,
+      explicitRunCode,
+      runCode,
+    };
+  }
+  ctx.throw(400, 'externalRunKey or runCode is required');
+}
+
+function getBatchKey(ctx: Context, value: unknown, required: boolean) {
+  const batchKey = getString(value) || (required ? '' : DEFAULT_IMPORT_BATCH_KEY);
+  if (!batchKey) {
+    ctx.throw(400, 'batchKey is required');
+  }
+  if (batchKey.length > MAX_BATCH_KEY_LENGTH) {
+    ctx.throw(400, `batchKey must not exceed ${MAX_BATCH_KEY_LENGTH} characters`);
+  }
+  return batchKey;
+}
+
+function getCanonicalValue(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map((entry) => getCanonicalValue(entry));
+  }
+  if (isRecord(value)) {
+    return Object.keys(value)
+      .sort()
+      .reduce<JsonRecord>((result, key) => {
+        const entry = value[key];
+        if (entry !== undefined) {
+          result[key] = getCanonicalValue(entry);
+        }
+        return result;
+      }, {});
+  }
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+  return value;
+}
+
+function getCanonicalJson(value: unknown) {
+  return JSON.stringify(getCanonicalValue(value));
+}
+
+function isUniqueConstraintError(error: unknown) {
+  return (
+    error instanceof UniqueConstraintError ||
+    (error instanceof Error && error.name === 'SequelizeUniqueConstraintError')
+  );
 }
 
 function getObjectLike(value: unknown): JsonRecord {
@@ -371,6 +548,7 @@ function getImportedRunTimestamps(values: JsonRecord, status: string, now: Date,
     getDate(values.finishedAt) ||
     getDate(values.completedAt) ||
     getDate(values.failedAt) ||
+    (existingJson.finishedAt ? getDate(existingJson.finishedAt) : null) ||
     (TERMINAL_IMPORTED_RUN_STATUSES.has(status) ? now : null);
 
   return {
@@ -461,14 +639,22 @@ function getImportedRunPromptSnapshot(values: JsonRecord, existing?: ModelRecord
 function getImportedRunResultSummary(values: JsonRecord, provider: AgentProviderKey, existing?: ModelRecord) {
   const existingResultSummary = getRecord(existing ? getModelValue(existing, 'resultSummaryJson') : undefined);
   const title = getString(values.title) || getString(existingResultSummary.title);
-  return redactRunResultSummary({
+  const resultSummary = {
     ...existingResultSummary,
     ...getRecord(values.resultSummary || values.resultSummaryJson),
     ...(title ? { title } : {}),
     requestedFrom: 'external-import',
     provider,
     externalRunKey: getString(values.externalRunKey) || getString(existingResultSummary.externalRunKey) || null,
-  });
+  };
+  const redactedResultSummary = getRecord(redactRunResultSummary(resultSummary));
+  const tokenUsageJson = getTokenUsageSummaryFromRecord(resultSummary);
+  return tokenUsageJson
+    ? {
+        ...redactedResultSummary,
+        tokenUsageJson,
+      }
+    : redactedResultSummary;
 }
 
 function getRunUpdateValues(
@@ -513,6 +699,51 @@ function getRunUpdateValues(
     agentSessionProviderId:
       providerSessionId || (existing ? getModelString(existing, 'agentSessionProviderId') : '') || null,
     ...getImportedRunTimestamps(values, status, now, existing),
+  };
+}
+
+function getNewImportingRunValues(finalRunValues: JsonRecord) {
+  const provisionalValues = { ...finalRunValues };
+  delete provisionalValues.resultSummaryJson;
+  return {
+    ...provisionalValues,
+    status: IMPORTING_RUN_STATUS,
+    cancelRequested: false,
+    completedAt: null,
+    failedAt: null,
+    canceledAt: null,
+    finishedAt: null,
+    errorSummary: null,
+  };
+}
+
+function getSourceRecordRelationPlan(values: JsonRecord): SourceRecordRelationPlan | null {
+  const sourceCollection = getString(values.sourceCollection);
+  const sourceRecordId = getIdentifierString(values.sourceRecordId);
+  const outputAgentRunField = getString(values.outputAgentRunField);
+  if (!sourceCollection || !sourceRecordId || !outputAgentRunField) {
+    return null;
+  }
+  return {
+    sourceCollection,
+    sourceRecordId,
+    outputAgentRunField,
+  };
+}
+
+function prepareImportFinalizationPlan(plan: ImportFinalizationPlan): PreparedImportFinalizationPlan {
+  const version = EXTERNAL_IMPORT_OPERATION_PLAN_VERSION;
+  return {
+    ...plan,
+    version,
+    finalizationSha256: getHash(
+      getCanonicalJson({
+        version,
+        expectedRunStatus: plan.expectedRunStatus,
+        runUpdateValues: plan.runUpdateValues,
+        sourceRecordRelation: plan.sourceRecordRelation,
+      }),
+    ),
   };
 }
 
@@ -579,37 +810,114 @@ async function appendRunEvent(
 }
 
 function getSourceKey(...parts: string[]) {
-  return sanitizeKeyPart(parts.filter(Boolean).join(':'), 180) || 'external-import';
+  const source = parts.filter(Boolean).join(':');
+  const hash = getHash(source).slice(0, 16);
+  const prefix = sanitizeKeyPart(source, 163) || 'external-import';
+  return `${prefix}:${hash}`;
 }
 
-function getTextLogEvents(contentText: string): NormalizedAgentEvent[] {
-  return contentText
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => ({
-      eventType: 'agent.progress',
-      level: 'info' as const,
-      message: line,
-      payloadJson: {
-        textKind: 'progress',
-      },
-    }));
+function getTextLogEvent(line: string): NormalizedAgentEvent {
+  return {
+    eventType: 'agent.progress',
+    level: 'info',
+    message: line,
+    payloadJson: {
+      textKind: 'progress',
+    },
+  };
 }
 
-function normalizeLogEvents(provider: AgentProviderKey, format: ExternalLogFormat, contentText: string) {
-  if (format === 'text') {
-    return getTextLogEvents(contentText);
-  }
+function normalizeLogEvents(
+  provider: AgentProviderKey,
+  format: ExternalLogFormat,
+  contentText: string,
+  maxEvents: number,
+) {
   const adapter = PROVIDER_ADAPTERS[provider];
-  if (!adapter) {
-    return getTextLogEvents(contentText);
+  const events: NormalizedAgentEvent[] = [];
+  for (const rawLine of contentText.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line) {
+      continue;
+    }
+    const lineEvents =
+      format === 'text' || !adapter ? [getTextLogEvent(line)] : adapter.normalizeEvent({ rawLine: line });
+    if (events.length + lineEvents.length > maxEvents) {
+      return {
+        events: [],
+        limitExceeded: true,
+      };
+    }
+    events.push(...lineEvents);
   }
-  return contentText
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .flatMap((line) => adapter.normalizeEvent({ rawLine: line }));
+  return {
+    events,
+    limitExceeded: false,
+  };
+}
+
+function prepareObservationBatch(
+  ctx: Context,
+  values: JsonRecord,
+  provider: AgentProviderKey,
+  batchKey: string,
+): PreparedObservationBatch {
+  const canonicalPayload =
+    getCanonicalJson({
+      ...values,
+      provider,
+      batchKey,
+    }) || '';
+  if (Buffer.byteLength(canonicalPayload) > EXTERNAL_IMPORT_LIMITS.maxPayloadBytes) {
+    ctx.throw(413, `External import payload must not exceed ${EXTERNAL_IMPORT_LIMITS.maxPayloadBytes} bytes`);
+  }
+
+  const logEntries = getLogEntries(values);
+  if (logEntries.length > EXTERNAL_IMPORT_LIMITS.maxLogs) {
+    ctx.throw(413, `External import supports at most ${EXTERNAL_IMPORT_LIMITS.maxLogs} logs per batch`);
+  }
+  const artifacts = getArtifactEntries(values);
+  if (artifacts.length > EXTERNAL_IMPORT_LIMITS.maxArtifacts) {
+    ctx.throw(413, `External import supports at most ${EXTERNAL_IMPORT_LIMITS.maxArtifacts} artifacts per batch`);
+  }
+
+  let normalizedEventCount = 0;
+  const logs = logEntries.flatMap((log, index): PreparedLogEntry[] => {
+    const contentText = getString(log.contentText || log.text || log.content);
+    if (!contentText) {
+      return [];
+    }
+    const format = getLogFormat(provider, log.format || values.format);
+    const normalized = normalizeLogEvents(
+      provider,
+      format,
+      contentText,
+      EXTERNAL_IMPORT_LIMITS.maxNormalizedEvents - normalizedEventCount,
+    );
+    if (normalized.limitExceeded) {
+      ctx.throw(
+        413,
+        `External import supports at most ${EXTERNAL_IMPORT_LIMITS.maxNormalizedEvents} normalized events per batch`,
+      );
+    }
+    const normalizedEvents = normalized.events;
+    normalizedEventCount += normalizedEvents.length;
+    return [
+      {
+        log,
+        format,
+        contentText,
+        normalizedEvents,
+        index,
+      },
+    ];
+  });
+
+  return {
+    logs,
+    artifacts,
+    payloadSha256: getHash(canonicalPayload),
+  };
 }
 
 function getRawLogArtifactValues(options: {
@@ -665,117 +973,67 @@ function getExternalArtifactValues(artifactValues: JsonRecord, batchKey: string,
   };
 }
 
-async function writeInitialConversationEvent(
-  ctx: Context,
-  options: {
-    run: ModelRecord;
-    runId: string;
-    values: JsonRecord;
-    transaction: Transaction;
-  },
-) {
-  const instruction = getString(options.values.instruction || options.values.prompt);
-  if (!instruction) {
-    return false;
-  }
-  const event = await createConversationEvent(
-    ctx,
-    options.run,
-    options.runId,
-    {
-      source: EXTERNAL_INITIAL_EVENT_SOURCE,
-      sequence: 0,
-      eventType: 'agent.user.message',
-      providerEventId: 'initial-task',
-      confidence: 1,
-      contentText: instruction,
-      contentJson: {
-        participant: {
-          id: 'user:requester',
-          type: 'user',
-          name: 'You',
-        },
-        title: getString(options.values.title) || null,
-      },
-    },
-    options.transaction,
-  );
-  return event.idempotent !== true;
-}
-
-async function writeObservationBatch(
-  ctx: Context,
-  options: {
-    run: ModelRecord;
-    values: JsonRecord;
-    provider: AgentProviderKey;
-    batchKey: string;
-    transaction: Transaction;
-  },
-): Promise<ObservationWriteResult> {
-  const runId = String(getModelTargetKey(options.run, 'id'));
-  const claimAttempt = getModelNumber(options.run, 'claimAttempt');
+function getObservationOperations(options: {
+  values: JsonRecord;
+  preparedBatch: PreparedObservationBatch;
+  provider: AgentProviderKey;
+  batchKey: string;
+  includeInitialConversation: boolean;
+}) {
   const sequenceBySource = new Map<string, number>();
-  const result: ObservationWriteResult = {
-    conversationEvents: 0,
-    runEvents: 0,
-    artifacts: 0,
-  };
-  const runEventSource = getSourceKey('external-import', options.batchKey);
-
-  if (
-    await appendRunEvent(ctx, {
-      runId,
-      claimAttempt,
-      source: runEventSource,
-      sequence: 1,
-      eventType: 'external.import.batch.received',
-      message: 'External import batch received',
-      payload: {
-        batchKey: options.batchKey,
-        provider: options.provider,
+  const operations: ObservationOperation[] = [];
+  const instruction = getString(options.values.instruction || options.values.prompt);
+  if (options.includeInitialConversation && instruction) {
+    operations.push({
+      type: 'initial-conversation',
+      values: {
+        source: EXTERNAL_INITIAL_EVENT_SOURCE,
+        sequence: 0,
+        eventType: 'agent.user.message',
+        providerEventId: 'initial-task',
+        confidence: 1,
+        contentText: instruction,
+        contentJson: {
+          participant: {
+            id: 'user:requester',
+            type: 'user',
+            name: 'You',
+          },
+          title: getString(options.values.title) || null,
+        },
       },
-      transaction: options.transaction,
-    })
-  ) {
-    result.runEvents += 1;
+    });
   }
 
-  const logs = getLogEntries(options.values);
-  for (let index = 0; index < logs.length; index += 1) {
-    const log = logs[index];
-    const contentText = getString(log.contentText || log.text || log.content);
-    if (!contentText) {
-      continue;
-    }
-    const format = getLogFormat(options.provider, log.format || options.values.format);
-    const rawLogArtifact = await createRunArtifact(ctx, {
-      runId,
-      claimAttempt,
-      values: getRawLogArtifactValues({
-        log,
-        provider: options.provider,
-        format,
-        batchKey: options.batchKey,
-        index,
-        contentText,
-      }),
-      transaction: options.transaction,
-    });
-    if (rawLogArtifact.idempotent !== true) {
-      result.artifacts += 1;
-    }
+  const runEventSource = getSourceKey('external-import', options.batchKey);
+  const batchEventIndex = operations.length;
 
-    const source = getSourceKey('external', options.provider, format, options.batchKey, String(index));
-    const normalizedEvents = normalizeLogEvents(options.provider, format, contentText);
-    for (const normalizedEvent of normalizedEvents) {
+  for (const preparedLog of options.preparedBatch.logs) {
+    operations.push({
+      type: 'artifact',
+      values: getRawLogArtifactValues({
+        log: preparedLog.log,
+        provider: options.provider,
+        format: preparedLog.format,
+        batchKey: options.batchKey,
+        index: preparedLog.index,
+        contentText: preparedLog.contentText,
+      }),
+    });
+
+    const source = getSourceKey(
+      'external',
+      options.provider,
+      preparedLog.format,
+      options.batchKey,
+      String(preparedLog.index),
+    );
+    for (const normalizedEvent of preparedLog.normalizedEvents) {
       const sequence = (sequenceBySource.get(source) || 0) + 1;
       sequenceBySource.set(source, sequence);
-      const event = await createConversationEvent(
-        ctx,
-        options.run,
-        runId,
-        {
+      operations.push({
+        type: 'conversation-event',
+        values: {
           source,
           sequence,
           eventType: normalizedEvent.eventType,
@@ -789,38 +1047,614 @@ async function writeObservationBatch(
             ...(normalizedEvent.rawLine ? { rawLine: normalizedEvent.rawLine } : {}),
           },
         },
-        options.transaction,
-      );
-      if (event.idempotent !== true) {
-        result.conversationEvents += 1;
-      }
+      });
     }
   }
 
-  const artifacts = getArtifactEntries(options.values);
-  for (let index = 0; index < artifacts.length; index += 1) {
-    const artifactValues = artifacts[index];
+  for (let index = 0; index < options.preparedBatch.artifacts.length; index += 1) {
+    operations.push({
+      type: 'artifact',
+      values: getExternalArtifactValues(options.preparedBatch.artifacts[index], options.batchKey, index),
+    });
+  }
+  if (operations.length) {
+    operations.splice(batchEventIndex, 0, {
+      type: 'run-event',
+      source: runEventSource,
+      sequence: 1,
+      eventType: 'external.import.batch.received',
+      message: 'External import batch received',
+      payload: {
+        batchKey: options.batchKey,
+        provider: options.provider,
+      },
+    });
+  }
+  return operations;
+}
+
+function getAliasedValue(values: JsonRecord, canonicalKey: string, aliasKey: string) {
+  return Object.prototype.hasOwnProperty.call(values, canonicalKey) ? values[canonicalKey] : values[aliasKey];
+}
+
+function assertRequiredObservationString(ctx: Context, value: unknown, name: string) {
+  const stringValue = getString(value);
+  if (!stringValue) {
+    ctx.throw(400, `${name} is required`);
+  }
+  if (stringValue.length > MAX_DATABASE_STRING_LENGTH) {
+    ctx.throw(413, `${name} must not exceed ${MAX_DATABASE_STRING_LENGTH} characters`);
+  }
+  return stringValue;
+}
+
+function assertOptionalObservationString(ctx: Context, value: unknown, name: string) {
+  const stringValue = getString(value);
+  if (stringValue.length > MAX_DATABASE_STRING_LENGTH) {
+    ctx.throw(413, `${name} must not exceed ${MAX_DATABASE_STRING_LENGTH} characters`);
+  }
+  return stringValue;
+}
+
+function assertOptionalNonNegativeInteger(ctx: Context, value: unknown, name: string) {
+  if (value === undefined || value === null || value === '') {
+    return;
+  }
+  const numberValue = typeof value === 'number' ? value : Number(value);
+  if (!Number.isInteger(numberValue) || numberValue < 0) {
+    ctx.throw(400, `${name} must be a non-negative integer`);
+  }
+}
+
+function isDetailedConversationEvent(eventType: string) {
+  return eventType.startsWith('agent.command.') || eventType.startsWith('agent.tool.');
+}
+
+function isVerboseConversationEvent(eventType: string) {
+  return (
+    eventType === 'agent.message' ||
+    eventType === 'agent.reasoning' ||
+    eventType === 'agent.progress' ||
+    eventType === 'agent.raw'
+  );
+}
+
+function truncateConversationDetailValue(value: unknown): unknown {
+  if (typeof value === 'string') {
+    return value.slice(0, COMMAND_DETAIL_STRING_LIMIT_CHARS);
+  }
+  if (Array.isArray(value)) {
+    return value.map((entry) => truncateConversationDetailValue(entry));
+  }
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+  return Object.entries(value).reduce<JsonRecord>((result, [key, entry]) => {
+    result[key] = truncateConversationDetailValue(entry);
+    if (typeof entry === 'string' && entry.length > COMMAND_DETAIL_STRING_LIMIT_CHARS) {
+      result[`${key}Truncated`] = true;
+      result[`${key}OriginalLength`] = entry.length;
+    }
+    return result;
+  }, {});
+}
+
+function validateConversationOperation(ctx: Context, values: JsonRecord) {
+  const source = assertRequiredObservationString(ctx, values.source, 'source');
+  const eventType = assertRequiredObservationString(ctx, values.eventType || values.type, 'eventType');
+  assertOptionalObservationString(ctx, values.providerEventId, 'providerEventId');
+  assertOptionalObservationString(ctx, values.correlationId, 'correlationId');
+
+  const sequence = typeof values.sequence === 'number' ? values.sequence : Number(values.sequence);
+  if (!Number.isInteger(sequence) || sequence < 0) {
+    ctx.throw(400, 'sequence is required');
+  }
+  if (values.confidence !== undefined && values.confidence !== null && values.confidence !== '') {
+    const confidence = typeof values.confidence === 'number' ? values.confidence : Number(values.confidence);
+    if (!Number.isFinite(confidence) || confidence < 0 || confidence > 1) {
+      ctx.throw(400, 'confidence must be a number between 0 and 1');
+    }
+  }
+
+  const contentJsonValue = values.contentJson || values.payloadJson || values.payload || {};
+  if (isDetailedConversationEvent(eventType) || isVerboseConversationEvent(eventType)) {
+    const storedContentJson = truncateConversationDetailValue(getRecord(contentJsonValue));
+    if ((JSON.stringify(storedContentJson) || '').length > COMMAND_CONTENT_JSON_LIMIT_CHARS) {
+      ctx.throw(413, 'Conversation event tool details are too large');
+    }
+  } else if ((JSON.stringify(contentJsonValue) || '').length > MAX_CONVERSATION_CONTENT_JSON_CHARS) {
+    ctx.throw(413, 'Conversation event contentJson is too large');
+  }
+
+  const contentText =
+    typeof (values.contentText || values.message) === 'string' ? values.contentText || values.message : '';
+  const maxContentTextLength = isVerboseConversationEvent(eventType)
+    ? COMMAND_DETAIL_STRING_LIMIT_CHARS
+    : MAX_CONVERSATION_CONTENT_TEXT_LENGTH;
+  if (String(contentText).length > maxContentTextLength) {
+    ctx.throw(413, 'Conversation event contentText is too large');
+  }
+  return {
+    source,
+    sequence,
+    providerEventId: getString(values.providerEventId),
+  };
+}
+
+function validateArtifactOperation(ctx: Context, values: JsonRecord) {
+  const artifactKey = assertOptionalObservationString(ctx, values.artifactKey, 'artifactKey');
+  assertRequiredObservationString(ctx, values.artifactType || values.type, 'artifactType');
+  const mimeType = assertOptionalObservationString(ctx, values.mimeType, 'mimeType') || 'text/plain';
+  const contentText = typeof values.contentText === 'string' ? values.contentText : '';
+  if (Buffer.byteLength(contentText) > COMMAND_CONTENT_JSON_LIMIT_CHARS) {
+    ctx.throw(413, 'Artifact text is too large for plugin-hosted P0 storage');
+  }
+
+  const rawMetadata = getRecord(getAliasedValue(values, 'metadataJson', 'metadata'));
+  assertOptionalNonNegativeInteger(ctx, values.sizeBytes, 'sizeBytes');
+  assertOptionalNonNegativeInteger(ctx, rawMetadata.originalSizeBytes, 'metadata.originalSizeBytes');
+  assertOptionalNonNegativeInteger(ctx, rawMetadata.uploadedBytes, 'metadata.uploadedBytes');
+  assertOptionalObservationString(ctx, rawMetadata.storageMode, 'metadata.storageMode');
+  assertOptionalObservationString(ctx, rawMetadata.sha256, 'metadata.sha256');
+
+  const storedMetadata = {
+    ...rawMetadata,
+    ...(contentText && mimeType.includes('json')
+      ? {
+          jsonValid: (() => {
+            try {
+              JSON.parse(contentText);
+              return true;
+            } catch {
+              return false;
+            }
+          })(),
+        }
+      : {}),
+  };
+  if ((JSON.stringify(storedMetadata) || '').length > MAX_ARTIFACT_METADATA_JSON_CHARS) {
+    ctx.throw(413, 'Artifact metadata is too large');
+  }
+  return artifactKey;
+}
+
+function prepareObservationPlan(ctx: Context, operations: ObservationOperation[]): PreparedObservationPlan {
+  const artifactKeys = new Set<string>();
+  const conversationSequences = new Set<string>();
+  const conversationProviderEvents = new Set<string>();
+  for (const operation of operations) {
+    if (operation.type === 'run-event') {
+      assertRequiredObservationString(ctx, operation.source, 'source');
+      assertRequiredObservationString(ctx, operation.eventType, 'eventType');
+      getEventMessage(ctx, operation.message);
+      getEventPayload(ctx, operation.payload);
+      continue;
+    }
+    if (operation.type === 'artifact') {
+      const artifactKey = validateArtifactOperation(ctx, operation.values);
+      if (artifactKey && artifactKeys.has(artifactKey)) {
+        ctx.throw(409, `Duplicate artifactKey in external import batch: ${artifactKey}`);
+      }
+      if (artifactKey) {
+        artifactKeys.add(artifactKey);
+      }
+      continue;
+    }
+
+    const identity = validateConversationOperation(ctx, operation.values);
+    const sequenceKey = `${identity.source}\0${identity.sequence}`;
+    if (conversationSequences.has(sequenceKey)) {
+      ctx.throw(409, 'Duplicate conversation event source and sequence in external import batch');
+    }
+    conversationSequences.add(sequenceKey);
+    if (identity.providerEventId) {
+      const providerEventKey = `${identity.source}\0${identity.providerEventId}`;
+      if (conversationProviderEvents.has(providerEventKey)) {
+        ctx.throw(409, 'Duplicate conversation event providerEventId in external import batch');
+      }
+      conversationProviderEvents.add(providerEventKey);
+    }
+  }
+
+  return {
+    version: EXTERNAL_IMPORT_OPERATION_PLAN_VERSION,
+    operations,
+    operationPlanSha256: getHash(
+      getCanonicalJson({
+        version: EXTERNAL_IMPORT_OPERATION_PLAN_VERSION,
+        operations,
+      }),
+    ),
+  };
+}
+
+function parseStoredObservationOperation(ctx: Context, value: unknown): ObservationOperation {
+  const record = getRecord(value);
+  const type = getString(record.type);
+  if (type === 'artifact' || type === 'conversation-event' || type === 'initial-conversation') {
+    return {
+      type,
+      values: getRecord(record.values),
+    };
+  }
+  if (type === 'run-event') {
+    const sequence = typeof record.sequence === 'number' ? record.sequence : Number(record.sequence);
+    const source = getString(record.source);
+    const eventType = getString(record.eventType);
+    if (!source || !eventType || !Number.isInteger(sequence) || sequence < 0) {
+      ctx.throw(409, 'Stored external import operation plan is invalid');
+    }
+    return {
+      type,
+      source,
+      sequence,
+      eventType,
+      message: getString(record.message),
+      payload: getRecord(record.payload),
+    };
+  }
+  ctx.throw(409, 'Stored external import operation plan is invalid');
+}
+
+function getStoredObservationPlan(ctx: Context, batch: ModelRecord): PreparedObservationPlan {
+  const stored = getRecord(getModelValue(batch, 'operationPlanJson'));
+  const version = typeof stored.version === 'number' ? stored.version : Number(stored.version);
+  const hasStoredOperations = Array.isArray(stored.operations);
+  const rawOperations = getArray(stored.operations);
+  if (version !== EXTERNAL_IMPORT_OPERATION_PLAN_VERSION || !hasStoredOperations) {
+    ctx.throw(409, 'Stored external import operation plan is unavailable');
+  }
+  const operations = rawOperations.map((operation) => parseStoredObservationOperation(ctx, operation));
+  const operationPlanSha256 = getHash(
+    getCanonicalJson({
+      version,
+      operations,
+    }),
+  );
+  if (
+    operationPlanSha256 !== getModelString(batch, 'operationPlanSha256') ||
+    operations.length !== getModelNumber(batch, 'operationCount')
+  ) {
+    ctx.throw(409, 'Stored external import operation plan is invalid');
+  }
+  return {
+    version,
+    operations,
+    operationPlanSha256,
+  };
+}
+
+function parseStoredSourceRecordRelation(ctx: Context, value: unknown): SourceRecordRelationPlan | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  if (!isRecord(value)) {
+    ctx.throw(409, 'Stored external import finalization plan is invalid');
+  }
+  const sourceCollection = getString(value.sourceCollection);
+  const sourceRecordId = getIdentifierString(value.sourceRecordId);
+  const outputAgentRunField = getString(value.outputAgentRunField);
+  if (!sourceCollection || !sourceRecordId || !outputAgentRunField) {
+    ctx.throw(409, 'Stored external import finalization plan is invalid');
+  }
+  return {
+    sourceCollection,
+    sourceRecordId,
+    outputAgentRunField,
+  };
+}
+
+function getStoredImportFinalizationPlan(ctx: Context, batch: ModelRecord): PreparedImportFinalizationPlan {
+  const storedValue = getModelValue(batch, 'finalizationJson');
+  if (!isRecord(storedValue)) {
+    ctx.throw(409, 'Stored external import finalization plan is unavailable');
+  }
+  const version = typeof storedValue.version === 'number' ? storedValue.version : Number(storedValue.version);
+  const expectedRunStatus = getString(storedValue.expectedRunStatus);
+  const rawRunUpdateValues = storedValue.runUpdateValues;
+  if (
+    version !== EXTERNAL_IMPORT_OPERATION_PLAN_VERSION ||
+    !expectedRunStatus ||
+    (rawRunUpdateValues !== null && !isRecord(rawRunUpdateValues))
+  ) {
+    ctx.throw(409, 'Stored external import finalization plan is invalid');
+  }
+  const runUpdateValues = rawRunUpdateValues === null ? null : getRecord(rawRunUpdateValues);
+  const sourceRecordRelation = parseStoredSourceRecordRelation(ctx, storedValue.sourceRecordRelation);
+  const finalizationSha256 = getHash(
+    getCanonicalJson({
+      version,
+      expectedRunStatus,
+      runUpdateValues,
+      sourceRecordRelation,
+    }),
+  );
+  if (finalizationSha256 !== getModelString(batch, 'finalizationSha256')) {
+    ctx.throw(409, 'Stored external import finalization plan is invalid');
+  }
+  return {
+    version,
+    expectedRunStatus,
+    runUpdateValues,
+    sourceRecordRelation,
+    finalizationSha256,
+  };
+}
+
+function getObservationWriteResult(value: unknown): ObservationWriteResult {
+  const counts = getRecord(value);
+  const getCount = (entry: unknown) => {
+    const numberValue = typeof entry === 'number' ? entry : Number(entry);
+    return Number.isInteger(numberValue) && numberValue >= 0 ? numberValue : 0;
+  };
+  return {
+    conversationEvents: getCount(counts.conversationEvents),
+    runEvents: getCount(counts.runEvents),
+    artifacts: getCount(counts.artifacts),
+  };
+}
+
+function addObservationWriteResults(left: ObservationWriteResult, right: ObservationWriteResult) {
+  return {
+    conversationEvents: left.conversationEvents + right.conversationEvents,
+    runEvents: left.runEvents + right.runEvents,
+    artifacts: left.artifacts + right.artifacts,
+  };
+}
+
+async function writeObservationOperation(
+  ctx: Context,
+  options: {
+    run: ModelRecord;
+    runId: string;
+    claimAttempt: number;
+    operation: ObservationOperation;
+    transaction: Transaction;
+  },
+): Promise<ObservationWriteResult> {
+  const result: ObservationWriteResult = {
+    conversationEvents: 0,
+    runEvents: 0,
+    artifacts: 0,
+  };
+  if (options.operation.type === 'run-event') {
+    if (
+      await appendRunEvent(ctx, {
+        runId: options.runId,
+        claimAttempt: options.claimAttempt,
+        source: options.operation.source,
+        sequence: options.operation.sequence,
+        eventType: options.operation.eventType,
+        message: options.operation.message,
+        payload: options.operation.payload,
+        transaction: options.transaction,
+      })
+    ) {
+      result.runEvents = 1;
+    }
+    return result;
+  }
+  if (options.operation.type === 'artifact') {
     const artifact = await createRunArtifact(ctx, {
-      runId,
-      claimAttempt,
-      values: getExternalArtifactValues(artifactValues, options.batchKey, index),
+      runId: options.runId,
+      claimAttempt: options.claimAttempt,
+      values: options.operation.values,
       transaction: options.transaction,
     });
     if (artifact.idempotent !== true) {
-      result.artifacts += 1;
+      result.artifacts = 1;
     }
+    return result;
   }
 
+  const event = await createConversationEvent(
+    ctx,
+    options.run,
+    options.runId,
+    options.operation.values,
+    options.transaction,
+  );
+  if (event.idempotent !== true) {
+    result.conversationEvents = 1;
+  }
   return result;
 }
 
-async function updateSourceRecordRelation(
+async function markImportBatchFailed(ctx: Context, batchId: string | number, error: unknown) {
+  await ctx.db.sequelize.transaction(async (transaction) => {
+    const batch = (await ctx.db.getRepository(EXTERNAL_BATCH_COLLECTION).findOne({
+      filterByTk: batchId,
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    })) as ModelRecord | null;
+    if (
+      !batch ||
+      getModelString(batch, 'status') === 'completed' ||
+      (getModelString(batch, 'status') === 'failed' &&
+        getModelString(batch, 'errorSummary') === EXTERNAL_IMPORT_USER_CANCELED_ERROR_SUMMARY)
+    ) {
+      return;
+    }
+    const errorSummary = error instanceof Error ? error.message : String(error);
+    await ctx.db.getRepository(EXTERNAL_BATCH_COLLECTION).update({
+      filterByTk: batchId,
+      values: {
+        status: 'failed',
+        errorSummary: redactObservabilityText(errorSummary).slice(0, 4000),
+        completedAt: null,
+        lastAttemptAt: new Date(),
+      },
+      transaction,
+    });
+  });
+}
+
+async function processObservationBatch(
+  ctx: Context,
+  options: {
+    run: ModelRecord;
+    batch: ModelRecord;
+    preparedBatch: PreparedObservationBatch;
+    observationPlan: PreparedObservationPlan;
+    finalizationPlan: PreparedImportFinalizationPlan;
+  },
+): Promise<ObservationBatchProcessingResult> {
+  const runId = String(getModelTargetKey(options.run, 'id'));
+  const batchId = getModelTargetKey(options.batch, 'id');
+  const operations = options.observationPlan.operations;
+
+  try {
+    let completedResult: ObservationBatchProcessingResult | null = null;
+    while (!completedResult) {
+      const result = await ctx.db.sequelize.transaction(async (transaction) => {
+        const run = (await ctx.db.getRepository('agRuns').findOne({
+          filterByTk: runId,
+          transaction,
+          lock: transaction.LOCK.UPDATE,
+        })) as ModelRecord | null;
+        if (!run) {
+          ctx.throw(404, 'Run not found');
+        }
+        const batch = (await ctx.db.getRepository(EXTERNAL_BATCH_COLLECTION).findOne({
+          filterByTk: batchId,
+          transaction,
+          lock: transaction.LOCK.UPDATE,
+        })) as ModelRecord | null;
+        if (!batch) {
+          ctx.throw(404, 'External import batch not found');
+        }
+        if (getModelString(batch, 'payloadSha256') !== options.preparedBatch.payloadSha256) {
+          ctx.throw(409, 'batchKey already belongs to a different external import payload');
+        }
+
+        const storedCounts = getObservationWriteResult(getModelValue(batch, 'observationCountsJson'));
+        if (getModelString(batch, 'status') === 'completed') {
+          return {
+            observations: storedCounts,
+            completed: true,
+            relationUpdated: getModelValue(batch, 'relationUpdated') === true,
+          };
+        }
+        assertMatchingBatchOperationPlan(ctx, batch, options.observationPlan);
+        assertMatchingBatchFinalizationPlan(ctx, batch, options.finalizationPlan);
+        const batchStatus = getModelString(batch, 'status');
+        if (batchStatus !== 'processing') {
+          if (
+            batchStatus === 'failed' &&
+            getModelString(batch, 'errorSummary') === EXTERNAL_IMPORT_USER_CANCELED_ERROR_SUMMARY
+          ) {
+            ctx.throw(409, 'Canceled external imports cannot be resumed');
+          }
+          ctx.throw(409, `External import batch cannot continue from ${batchStatus}`);
+        }
+        const runStatus = getModelString(run, 'status');
+        if (runStatus !== options.finalizationPlan.expectedRunStatus) {
+          ctx.throw(409, `Imported run changed from ${options.finalizationPlan.expectedRunStatus} to ${runStatus}`);
+        }
+
+        const processedOperations = getModelNumber(batch, 'processedOperations');
+        if (processedOperations < 0 || processedOperations > operations.length) {
+          ctx.throw(409, 'External import batch progress is invalid');
+        }
+        const chunk = operations.slice(
+          processedOperations,
+          processedOperations + EXTERNAL_IMPORT_LIMITS.observationChunkSize,
+        );
+        let chunkCounts: ObservationWriteResult = {
+          conversationEvents: 0,
+          runEvents: 0,
+          artifacts: 0,
+        };
+        for (const operation of chunk) {
+          const operationCounts = await writeObservationOperation(ctx, {
+            run,
+            runId,
+            claimAttempt: getModelNumber(run, 'claimAttempt'),
+            operation,
+            transaction,
+          });
+          chunkCounts = addObservationWriteResults(chunkCounts, operationCounts);
+        }
+
+        const nextProcessedOperations = Math.min(processedOperations + chunk.length, operations.length);
+        const observations = addObservationWriteResults(storedCounts, chunkCounts);
+        const completed = nextProcessedOperations >= operations.length;
+        const finalRunUpdateValues = options.finalizationPlan.runUpdateValues;
+        const finalStatus = completed ? getString(finalRunUpdateValues?.status) || runStatus : runStatus;
+        const resultSummaryJson =
+          completed && isTerminalRunStatus(finalStatus)
+            ? finalRunUpdateValues?.resultSummaryJson ?? getModelValue(run, 'resultSummaryJson')
+            : null;
+        const observabilityRollupJson = await mergeExternalImportObservabilityRollup(ctx, {
+          run,
+          runId,
+          batchId: String(batchId),
+          operations: chunk,
+          finalStatus,
+          resultSummaryJson,
+          transaction,
+        });
+        if (observabilityRollupJson) {
+          await ctx.db.getRepository('agRuns').update({
+            filterByTk: runId,
+            values: {
+              observabilityRollupJson,
+            },
+            transaction,
+          });
+        }
+        const relationUpdated = completed
+          ? await finalizeExternalImport(ctx, {
+              run,
+              runId,
+              finalizationPlan: options.finalizationPlan,
+              transaction,
+            })
+          : false;
+        await ctx.db.getRepository(EXTERNAL_BATCH_COLLECTION).update({
+          filterByTk: batchId,
+          values: {
+            processedOperations: nextProcessedOperations,
+            observationCountsJson: observations,
+            status: completed ? 'completed' : 'processing',
+            errorSummary: null,
+            completedAt: completed ? new Date() : null,
+            lastAttemptAt: new Date(),
+            relationUpdated,
+            ...(completed ? { operationPlanJson: null } : {}),
+          },
+          transaction,
+        });
+        return {
+          observations,
+          completed,
+          relationUpdated,
+        };
+      });
+      if (result.completed) {
+        completedResult = {
+          observations: result.observations,
+          relationUpdated: result.relationUpdated,
+        };
+      }
+    }
+    return completedResult;
+  } catch (error) {
+    try {
+      await markImportBatchFailed(ctx, batchId, error);
+    } catch {
+      // Keep the original observation write error when failure bookkeeping also fails.
+    }
+    throw error;
+  }
+}
+
+async function assertSourceRecordRelationWritable(
   ctx: Context,
   options: {
     sourceCollection: string;
     sourceRecordId: string;
     outputAgentRunField: string;
-    runId: string;
     transaction: Transaction;
   },
 ) {
@@ -839,6 +1673,20 @@ async function updateSourceRecordRelation(
   if (!record) {
     ctx.throw(404, 'Source record not found');
   }
+  return {
+    output,
+    repo,
+  };
+}
+
+async function updateSourceRecordRelation(
+  ctx: Context,
+  options: SourceRecordRelationPlan & {
+    runId: string;
+    transaction: Transaction;
+  },
+) {
+  const { output, repo } = await assertSourceRecordRelationWritable(ctx, options);
   await repo.update({
     filterByTk: options.sourceRecordId,
     values: {
@@ -849,85 +1697,618 @@ async function updateSourceRecordRelation(
   return true;
 }
 
-async function createOrUpdateImportedRun(
+async function finalizeExternalImport(
   ctx: Context,
-  values: JsonRecord,
-  provider: AgentProviderKey,
-  transaction: Transaction,
-): Promise<{ run: ModelRecord; deduped: boolean }> {
-  const runCode = getExternalRunCode(values);
-  const now = new Date();
-  const existing = (await ctx.db.getRepository('agRuns').findOne({
+  options: {
+    run: ModelRecord;
+    runId: string;
+    finalizationPlan: PreparedImportFinalizationPlan;
+    transaction: Transaction;
+  },
+) {
+  const currentStatus = getModelString(options.run, 'status');
+  if (currentStatus !== options.finalizationPlan.expectedRunStatus) {
+    ctx.throw(409, `Imported run changed from ${options.finalizationPlan.expectedRunStatus} to ${currentStatus}`);
+  }
+  const runUpdateValues: JsonRecord = options.finalizationPlan.runUpdateValues
+    ? { ...options.finalizationPlan.runUpdateValues }
+    : {};
+  if (Object.keys(runUpdateValues).length) {
+    await ctx.db.getRepository('agRuns').update({
+      filterByTk: options.runId,
+      values: runUpdateValues,
+      transaction: options.transaction,
+    });
+  }
+  if (!options.finalizationPlan.sourceRecordRelation) {
+    return false;
+  }
+  return await updateSourceRecordRelation(ctx, {
+    ...options.finalizationPlan.sourceRecordRelation,
+    runId: options.runId,
+    transaction: options.transaction,
+  });
+}
+
+async function mergeExternalImportObservabilityRollup(
+  ctx: Context,
+  options: {
+    run: ModelRecord;
+    runId: string;
+    batchId: string;
+    operations: ObservationOperation[];
+    finalStatus: string;
+    resultSummaryJson: unknown;
+    transaction: Transaction;
+  },
+) {
+  const existingRollup = getRunObservabilityRollup(options.run);
+  const identityFilter = existingRollup ? getObservationOperationsConversationEventFilter(options.operations) : null;
+  const events =
+    existingRollup && !identityFilter
+      ? []
+      : ((await ctx.db.getRepository('agAgentConversationEvents').find({
+          filter: {
+            $and: [
+              {
+                runId: options.runId,
+              },
+              OBSERVABILITY_ROLLUP_EVENT_FILTER,
+              ...(identityFilter ? [identityFilter] : []),
+            ],
+          },
+          sort: ['createdAt', 'sequence', 'id'],
+          transaction: options.transaction,
+        })) as ModelRecord[]);
+  return existingRollup
+    ? mergeRunObservabilityRollup(options.run, events, new Date(), {
+        externalImportBatchId: options.batchId,
+        closeDanglingToolCalls: isTerminalRunStatus(options.finalStatus),
+        resultSummaryJson: options.resultSummaryJson,
+      })
+    : buildRunObservabilityRollup(options.run, events, new Date(), {
+        closeDanglingToolCalls: isTerminalRunStatus(options.finalStatus),
+        resultSummaryJson: options.resultSummaryJson,
+      });
+}
+
+function getObservationOperationsConversationEventFilter(operations: ObservationOperation[]): JsonRecord | null {
+  const identitiesBySource = new Map<
+    string,
+    {
+      providerEventIds: Set<string>;
+      sequences: Set<number>;
+    }
+  >();
+  for (const operation of operations) {
+    if (operation.type !== 'conversation-event' && operation.type !== 'initial-conversation') {
+      continue;
+    }
+    const source = getString(operation.values.source);
+    const sequence = Number(operation.values.sequence);
+    if (!source || !Number.isInteger(sequence) || sequence < 0) {
+      continue;
+    }
+    const identities = identitiesBySource.get(source) || {
+      providerEventIds: new Set<string>(),
+      sequences: new Set<number>(),
+    };
+    const providerEventId = getString(operation.values.providerEventId);
+    if (providerEventId) {
+      identities.providerEventIds.add(providerEventId);
+    } else {
+      identities.sequences.add(sequence);
+    }
+    identitiesBySource.set(source, identities);
+  }
+
+  const filters: JsonRecord[] = [];
+  for (const [source, identities] of identitiesBySource) {
+    if (identities.providerEventIds.size) {
+      filters.push({
+        source,
+        providerEventId: {
+          $in: [...identities.providerEventIds],
+        },
+      });
+    }
+    if (identities.sequences.size) {
+      filters.push({
+        source,
+        sequence: {
+          $in: [...identities.sequences],
+        },
+      });
+    }
+  }
+  return filters.length
+    ? {
+        $or: filters,
+      }
+    : null;
+}
+
+function getBatchIdentityKey(identityId: unknown, batchKey: string) {
+  return `external-import-batch:${getHash(`${String(identityId)}\0${batchKey}`)}`;
+}
+
+function assertMatchingBatchPayload(ctx: Context, batch: ModelRecord, payloadSha256: string) {
+  if (getModelString(batch, 'payloadSha256') !== payloadSha256) {
+    ctx.throw(409, 'batchKey already belongs to a different external import payload');
+  }
+}
+
+function assertMatchingBatchOperationPlan(ctx: Context, batch: ModelRecord, observationPlan: PreparedObservationPlan) {
+  if (
+    getModelString(batch, 'operationPlanSha256') !== observationPlan.operationPlanSha256 ||
+    getModelNumber(batch, 'operationCount') !== observationPlan.operations.length
+  ) {
+    ctx.throw(409, 'External import operation plan changed; retry with a new batchKey');
+  }
+}
+
+function assertMatchingBatchFinalizationPlan(
+  ctx: Context,
+  batch: ModelRecord,
+  finalizationPlan: PreparedImportFinalizationPlan,
+) {
+  if (getModelString(batch, 'finalizationSha256') !== finalizationPlan.finalizationSha256) {
+    ctx.throw(409, 'External import finalization plan changed; retry with a new batchKey');
+  }
+}
+
+async function startImportBatchAttempt(ctx: Context, batch: ModelRecord, run: ModelRecord, transaction: Transaction) {
+  if (getModelString(batch, 'status') === 'completed') {
+    return null;
+  }
+  const observationPlan = getStoredObservationPlan(ctx, batch);
+  const finalizationPlan = getStoredImportFinalizationPlan(ctx, batch);
+  const currentRunStatus = getModelString(run, 'status');
+  if (currentRunStatus !== finalizationPlan.expectedRunStatus) {
+    const canResumeRecoveredImport =
+      finalizationPlan.expectedRunStatus === IMPORTING_RUN_STATUS &&
+      (currentRunStatus === 'abandoned' || currentRunStatus === 'failed');
+    if (!canResumeRecoveredImport) {
+      if (
+        currentRunStatus === 'canceled' &&
+        getModelString(batch, 'errorSummary') === EXTERNAL_IMPORT_USER_CANCELED_ERROR_SUMMARY
+      ) {
+        ctx.throw(409, 'Canceled external imports cannot be resumed');
+      }
+      ctx.throw(409, `Imported run changed from ${finalizationPlan.expectedRunStatus} to ${currentRunStatus}`);
+    }
+    await ctx.db.getRepository('agRuns').update({
+      filterByTk: getModelTargetKey(run, 'id'),
+      values: {
+        status: IMPORTING_RUN_STATUS,
+        cancelRequested: false,
+        cancelRequestedAt: null,
+        cancelAckAt: null,
+        completedAt: null,
+        failedAt: null,
+        canceledAt: null,
+        finishedAt: null,
+        errorSummary: null,
+      },
+      transaction,
+    });
+  }
+  await ctx.db.getRepository(EXTERNAL_BATCH_COLLECTION).update({
+    filterByTk: getModelTargetKey(batch, 'id'),
+    values: {
+      status: 'processing',
+      attemptCount: getModelNumber(batch, 'attemptCount') + 1,
+      lastAttemptAt: new Date(),
+      errorSummary: null,
+      completedAt: null,
+    },
+    transaction,
+  });
+  return {
+    observationPlan,
+    finalizationPlan,
+  };
+}
+
+async function assertNoIncompleteImportBatch(ctx: Context, runId: string, transaction: Transaction) {
+  const incompleteBatch = (await ctx.db.getRepository(EXTERNAL_BATCH_COLLECTION).findOne({
     filter: {
-      runCode,
+      runId,
+      status: {
+        $in: ['processing', 'failed'],
+      },
+    },
+    sort: ['-lastAttemptAt', '-createdAt'],
+    transaction,
+    lock: transaction.LOCK.UPDATE,
+  })) as ModelRecord | null;
+  if (incompleteBatch) {
+    ctx.throw(
+      409,
+      `External import batch ${getModelString(
+        incompleteBatch,
+        'batchKey',
+      )} must be retried or canceled before starting another batch`,
+    );
+  }
+}
+
+async function findImportBatch(
+  ctx: Context,
+  runId: string,
+  batchKey: string,
+  transaction: Transaction,
+): Promise<ModelRecord | null> {
+  return (await ctx.db.getRepository(EXTERNAL_BATCH_COLLECTION).findOne({
+    filter: {
+      runId,
+      batchKey,
     },
     transaction,
     lock: transaction.LOCK.UPDATE,
   })) as ModelRecord | null;
-  const status = getImportStatus(ctx, values, existing ? getModelString(existing, 'status') : undefined);
-  if (existing) {
-    if (getModelString(existing, 'sourceType') !== EXTERNAL_IMPORT_SOURCE_TYPE) {
-      ctx.throw(409, 'runCode already belongs to a non-imported Agent Gateway run');
-    }
-    const visibleFilter = await getVisibleRunFilter(
-      ctx,
-      {
-        id: String(getModelTargetKey(existing, 'id')),
-      },
-      'get',
-    );
-    const visibleRun = (await ctx.db.getRepository('agRuns').findOne({
-      filter: visibleFilter,
-      transaction,
-    })) as ModelRecord | null;
-    if (!visibleRun) {
-      ctx.throw(404, 'Run not found');
-    }
-    await ctx.db.getRepository('agRuns').update({
-      filterByTk: getModelTargetKey(existing, 'id'),
-      values: {
-        ...getRunUpdateValuesWithUser(ctx, values, status, provider, now, existing),
-        runCode,
-      },
-      transaction,
-    });
-    const updated = (await ctx.db.getRepository('agRuns').findOne({
-      filterByTk: getModelTargetKey(existing, 'id'),
-      transaction,
-      lock: transaction.LOCK.UPDATE,
-    })) as ModelRecord;
-    return {
-      run: updated,
-      deduped: true,
-    };
-  }
-
-  const run = (await ctx.db.getRepository('agRuns').create({
-    values: {
-      runCode,
-      ...getRunUpdateValuesWithUser(ctx, values, status, provider, now),
-    },
-    transaction,
-  })) as ModelRecord;
-  return {
-    run,
-    deduped: false,
-  };
 }
 
-function getRunUpdateValuesWithUser(
+async function createImportBatch(
   ctx: Context,
-  values: JsonRecord,
-  status: string,
-  provider: AgentProviderKey,
-  now: Date,
-  existing?: ModelRecord,
+  options: {
+    identityId: unknown;
+    runId: string;
+    batchKey: string;
+    payloadSha256: string;
+    observationPlan: PreparedObservationPlan;
+    finalizationPlan: PreparedImportFinalizationPlan;
+    transaction: Transaction;
+  },
 ) {
-  const updateValues = getRunUpdateValues(values, status, provider, now, existing);
-  return {
-    ...updateValues,
-    requestedById: getCurrentUserId(ctx) || null,
-  };
+  return (await ctx.db.getRepository(EXTERNAL_BATCH_COLLECTION).create({
+    values: {
+      id: randomUUID(),
+      batchIdentityKey: getBatchIdentityKey(options.identityId, options.batchKey),
+      identityId: options.identityId,
+      runId: options.runId,
+      batchKey: options.batchKey,
+      payloadSha256: options.payloadSha256,
+      operationPlanSha256: options.observationPlan.operationPlanSha256,
+      operationCount: options.observationPlan.operations.length,
+      operationPlanJson: {
+        version: options.observationPlan.version,
+        operations: options.observationPlan.operations,
+      },
+      finalizationSha256: options.finalizationPlan.finalizationSha256,
+      finalizationJson: {
+        version: options.finalizationPlan.version,
+        expectedRunStatus: options.finalizationPlan.expectedRunStatus,
+        runUpdateValues: options.finalizationPlan.runUpdateValues,
+        sourceRecordRelation: options.finalizationPlan.sourceRecordRelation,
+      },
+      status: 'processing',
+      processedOperations: 0,
+      attemptCount: 1,
+      lastAttemptAt: new Date(),
+      observationCountsJson: getObservationWriteResult(null),
+      relationUpdated: false,
+      createdById: getCurrentUserId(ctx) || null,
+    },
+    transaction: options.transaction,
+  })) as ModelRecord;
+}
+
+async function assertExistingImportedRunVisible(ctx: Context, runId: string, transaction: Transaction) {
+  const visibleFilter = await getVisibleRunFilter(ctx, { id: runId }, 'get');
+  const visibleRun = (await ctx.db.getRepository('agRuns').findOne({
+    filter: visibleFilter,
+    transaction,
+  })) as ModelRecord | null;
+  if (!visibleRun) {
+    ctx.throw(404, 'Run not found');
+  }
+}
+
+function assertIdentityMatchesDescriptor(
+  ctx: Context,
+  identity: ModelRecord,
+  descriptor: ExternalIdentityDescriptor,
+  provider: AgentProviderKey,
+) {
+  if (
+    getModelString(identity, 'identityType') !== descriptor.identityType ||
+    getModelString(identity, 'provider') !== provider ||
+    (getModelString(identity, 'externalRunKey') || null) !== descriptor.externalRunKey ||
+    (descriptor.explicitRunCode && getModelString(identity, 'runCode') !== descriptor.explicitRunCode)
+  ) {
+    ctx.throw(409, 'External run identity conflicts with the requested provider, externalRunKey, or runCode');
+  }
+}
+
+async function prepareImportFoundationOnce(
+  ctx: Context,
+  options: {
+    values: JsonRecord;
+    provider: AgentProviderKey;
+    descriptor: ExternalIdentityDescriptor;
+    preparedBatch: PreparedObservationBatch;
+    observationPlan: PreparedObservationPlan;
+    batchKey: string;
+  },
+): Promise<PreparedImportFoundation> {
+  return await ctx.db.sequelize.transaction(async (transaction) => {
+    const identityRepo = ctx.db.getRepository(EXTERNAL_IDENTITY_COLLECTION);
+    const runRepo = ctx.db.getRepository('agRuns');
+    const existingIdentity = (await identityRepo.findOne({
+      filter: {
+        identityKey: options.descriptor.identityKey,
+      },
+      transaction,
+    })) as ModelRecord | null;
+
+    if (existingIdentity) {
+      assertIdentityMatchesDescriptor(ctx, existingIdentity, options.descriptor, options.provider);
+      const runId = String(getModelValue(existingIdentity, 'runId'));
+      let run = (await runRepo.findOne({
+        filterByTk: runId,
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      })) as ModelRecord | null;
+      if (!run) {
+        ctx.throw(409, 'External run identity points to a missing run');
+      }
+      if (
+        getModelString(run, 'sourceType') !== EXTERNAL_IMPORT_SOURCE_TYPE ||
+        getModelString(run, 'runCode') !== getModelString(existingIdentity, 'runCode')
+      ) {
+        ctx.throw(409, 'External run identity conflicts with its Agent Gateway run');
+      }
+      await assertExistingImportedRunVisible(ctx, runId, transaction);
+
+      const existingBatch = await findImportBatch(ctx, runId, options.batchKey, transaction);
+      if (existingBatch) {
+        assertMatchingBatchPayload(ctx, existingBatch, options.preparedBatch.payloadSha256);
+        const storedAttempt = await startImportBatchAttempt(ctx, existingBatch, run, transaction);
+        return {
+          run,
+          batch: existingBatch,
+          observationPlan: storedAttempt?.observationPlan || options.observationPlan,
+          finalizationPlan: storedAttempt?.finalizationPlan || getStoredImportFinalizationPlan(ctx, existingBatch),
+          deduped: true,
+        };
+      }
+
+      await assertNoIncompleteImportBatch(ctx, runId, transaction);
+      const currentStatus = getModelString(run, 'status');
+      if (currentStatus === IMPORTING_RUN_STATUS) {
+        ctx.throw(409, 'Imported run has an incomplete batch; retry that batchKey before starting another import');
+      }
+      const status = getImportStatus(ctx, options.values, currentStatus);
+      assertImportedRunStatusTransition(ctx, currentStatus, status);
+      const finalRunValues = getRunUpdateValues(options.values, status, options.provider, new Date(), run);
+      const sourceRecordRelation = getSourceRecordRelationPlan(options.values);
+      if (sourceRecordRelation) {
+        await assertSourceRecordRelationWritable(ctx, {
+          ...sourceRecordRelation,
+          transaction,
+        });
+      }
+      const shouldStageImport = currentStatus !== status && TERMINAL_IMPORTED_RUN_STATUSES.has(status);
+      if (shouldStageImport) {
+        await runRepo.update({
+          filterByTk: runId,
+          values: {
+            status: IMPORTING_RUN_STATUS,
+          },
+          transaction,
+        });
+        run = (await runRepo.findOne({
+          filterByTk: runId,
+          transaction,
+          lock: transaction.LOCK.UPDATE,
+        })) as ModelRecord;
+      }
+      const finalizationPlan = prepareImportFinalizationPlan({
+        expectedRunStatus: shouldStageImport ? IMPORTING_RUN_STATUS : currentStatus,
+        runUpdateValues: finalRunValues,
+        sourceRecordRelation,
+      });
+      const batch = await createImportBatch(ctx, {
+        identityId: getModelTargetKey(existingIdentity, 'id'),
+        runId,
+        batchKey: options.batchKey,
+        payloadSha256: options.preparedBatch.payloadSha256,
+        observationPlan: options.observationPlan,
+        finalizationPlan,
+        transaction,
+      });
+      return {
+        run,
+        batch,
+        observationPlan: options.observationPlan,
+        finalizationPlan,
+        deduped: true,
+      };
+    }
+
+    const conflictingRun = (await runRepo.findOne({
+      filter: {
+        runCode: options.descriptor.runCode,
+      },
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    })) as ModelRecord | null;
+    if (conflictingRun) {
+      ctx.throw(409, 'runCode already belongs to another Agent Gateway run');
+    }
+
+    const status = getImportStatus(ctx, options.values);
+    const finalRunValues = getRunUpdateValues(options.values, status, options.provider, new Date());
+    const sourceRecordRelation = getSourceRecordRelationPlan(options.values);
+    if (sourceRecordRelation) {
+      await assertSourceRecordRelationWritable(ctx, {
+        ...sourceRecordRelation,
+        transaction,
+      });
+    }
+    const run = (await runRepo.create({
+      values: {
+        runCode: options.descriptor.runCode,
+        ...getNewImportingRunValues(finalRunValues),
+        requestedById: getCurrentUserId(ctx) || null,
+      },
+      transaction,
+    })) as ModelRecord;
+    const identity = (await identityRepo.create({
+      values: {
+        id: randomUUID(),
+        identityKey: options.descriptor.identityKey,
+        identityType: options.descriptor.identityType,
+        provider: options.provider,
+        externalRunKey: options.descriptor.externalRunKey,
+        runCode: options.descriptor.runCode,
+        runId: getModelTargetKey(run, 'id'),
+        createdById: getCurrentUserId(ctx) || null,
+        metadataJson: getRecord(options.values.metadata || options.values.metadataJson),
+      },
+      transaction,
+    })) as ModelRecord;
+    const runId = String(getModelTargetKey(run, 'id'));
+    const finalizationPlan = prepareImportFinalizationPlan({
+      expectedRunStatus: IMPORTING_RUN_STATUS,
+      runUpdateValues: finalRunValues,
+      sourceRecordRelation,
+    });
+    const batch = await createImportBatch(ctx, {
+      identityId: getModelTargetKey(identity, 'id'),
+      runId,
+      batchKey: options.batchKey,
+      payloadSha256: options.preparedBatch.payloadSha256,
+      observationPlan: options.observationPlan,
+      finalizationPlan,
+      transaction,
+    });
+    return {
+      run,
+      batch,
+      observationPlan: options.observationPlan,
+      finalizationPlan,
+      deduped: false,
+    };
+  });
+}
+
+async function retryImportFoundation<T>(operation: () => Promise<T>) {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < MAX_FOUNDATION_ATTEMPTS; attempt += 1) {
+    try {
+      return await operation();
+    } catch (error) {
+      if (!isUniqueConstraintError(error)) {
+        throw error;
+      }
+      lastError = error;
+    }
+  }
+  throw lastError;
+}
+
+async function prepareAppendFoundationOnce(
+  ctx: Context,
+  options: {
+    runId: string;
+    values: JsonRecord;
+    provider: AgentProviderKey;
+    preparedBatch: PreparedObservationBatch;
+    observationPlan: PreparedObservationPlan;
+    batchKey: string;
+  },
+): Promise<PreparedImportFoundation> {
+  return await ctx.db.sequelize.transaction(async (transaction) => {
+    const runRepo = ctx.db.getRepository('agRuns');
+    let run = (await runRepo.findOne({
+      filterByTk: options.runId,
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    })) as ModelRecord | null;
+    if (!run) {
+      ctx.throw(404, 'Run not found');
+    }
+    if (getModelString(run, 'sourceType') !== EXTERNAL_IMPORT_SOURCE_TYPE) {
+      ctx.throw(409, 'Only imported external runs can receive external observations');
+    }
+    const identity = (await ctx.db.getRepository(EXTERNAL_IDENTITY_COLLECTION).findOne({
+      filter: {
+        runId: options.runId,
+      },
+      transaction,
+    })) as ModelRecord | null;
+    if (!identity) {
+      ctx.throw(409, 'Imported external run does not have an external identity');
+    }
+    if (getModelString(identity, 'provider') !== options.provider) {
+      ctx.throw(409, 'provider must match the imported external run identity');
+    }
+
+    const existingBatch = await findImportBatch(ctx, options.runId, options.batchKey, transaction);
+    if (existingBatch) {
+      assertMatchingBatchPayload(ctx, existingBatch, options.preparedBatch.payloadSha256);
+      const storedAttempt = await startImportBatchAttempt(ctx, existingBatch, run, transaction);
+      return {
+        run,
+        batch: existingBatch,
+        observationPlan: storedAttempt?.observationPlan || options.observationPlan,
+        finalizationPlan: storedAttempt?.finalizationPlan || getStoredImportFinalizationPlan(ctx, existingBatch),
+        deduped: true,
+      };
+    }
+
+    await assertNoIncompleteImportBatch(ctx, options.runId, transaction);
+    const currentStatus = getModelString(run, 'status');
+    if (currentStatus === IMPORTING_RUN_STATUS) {
+      ctx.throw(409, 'Imported run has an incomplete batch; retry that batchKey before appending another batch');
+    }
+    let finalRunValues: JsonRecord | null = null;
+    let expectedRunStatus = currentStatus;
+    if (getString(options.values.status)) {
+      const status = getImportStatus(ctx, options.values, currentStatus);
+      assertImportedRunStatusTransition(ctx, currentStatus, status);
+      finalRunValues = getRunUpdateValues(options.values, status, options.provider, new Date(), run);
+      if (currentStatus !== status && TERMINAL_IMPORTED_RUN_STATUSES.has(status)) {
+        expectedRunStatus = IMPORTING_RUN_STATUS;
+        await runRepo.update({
+          filterByTk: options.runId,
+          values: {
+            status: IMPORTING_RUN_STATUS,
+          },
+          transaction,
+        });
+        run = (await runRepo.findOne({
+          filterByTk: options.runId,
+          transaction,
+          lock: transaction.LOCK.UPDATE,
+        })) as ModelRecord;
+      }
+    }
+
+    const finalizationPlan = prepareImportFinalizationPlan({
+      expectedRunStatus,
+      runUpdateValues: finalRunValues,
+      sourceRecordRelation: null,
+    });
+    const batch = await createImportBatch(ctx, {
+      identityId: getModelTargetKey(identity, 'id'),
+      runId: options.runId,
+      batchKey: options.batchKey,
+      payloadSha256: options.preparedBatch.payloadSha256,
+      observationPlan: options.observationPlan,
+      finalizationPlan,
+      transaction,
+    });
+    return {
+      run,
+      batch,
+      observationPlan: options.observationPlan,
+      finalizationPlan,
+      deduped: false,
+    };
+  });
 }
 
 async function importExternalRun(ctx: Context) {
@@ -939,51 +2320,48 @@ async function importExternalRun(ctx: Context) {
 
   const values = getBodyValues(ctx);
   const provider = getProvider(ctx, values.provider);
-  const batchKey = getString(values.batchKey) || DEFAULT_IMPORT_BATCH_KEY;
-  const result = await ctx.db.sequelize.transaction(async (transaction): Promise<ExternalImportResult> => {
-    const { run, deduped } = await createOrUpdateImportedRun(ctx, values, provider, transaction);
-    const runId = String(getModelTargetKey(run, 'id'));
-    let relationUpdated = false;
-
-    const sourceCollection = getString(values.sourceCollection);
-    const sourceRecordId = getIdentifierString(values.sourceRecordId);
-    const outputAgentRunField = getString(values.outputAgentRunField);
-    if (sourceCollection && sourceRecordId && outputAgentRunField) {
-      relationUpdated = await updateSourceRecordRelation(ctx, {
-        sourceCollection,
-        sourceRecordId,
-        outputAgentRunField,
-        runId,
-        transaction,
-      });
-    }
-
-    const observations: ObservationWriteResult = {
-      conversationEvents: 0,
-      runEvents: 0,
-      artifacts: 0,
-    };
-    if (await writeInitialConversationEvent(ctx, { run, runId, values, transaction })) {
-      observations.conversationEvents += 1;
-    }
-    const batchObservations = await writeObservationBatch(ctx, {
-      run,
+  const batchKey = getBatchKey(ctx, values.batchKey, false);
+  const descriptor = getExternalIdentityDescriptor(ctx, values, provider);
+  const preparedBatch = prepareObservationBatch(ctx, values, provider, batchKey);
+  const observationPlan = prepareObservationPlan(
+    ctx,
+    getObservationOperations({
       values,
+      preparedBatch,
       provider,
       batchKey,
-      transaction,
+      includeInitialConversation: true,
+    }),
+  );
+  const foundation = await retryImportFoundation(() => {
+    return prepareImportFoundationOnce(ctx, {
+      values,
+      provider,
+      descriptor,
+      preparedBatch,
+      observationPlan,
+      batchKey,
     });
-    observations.conversationEvents += batchObservations.conversationEvents;
-    observations.runEvents += batchObservations.runEvents;
-    observations.artifacts += batchObservations.artifacts;
-
-    return {
-      run,
-      deduped,
-      observations,
-      relationUpdated,
-    };
   });
+  const processedBatch = await processObservationBatch(ctx, {
+    run: foundation.run,
+    batch: foundation.batch,
+    preparedBatch,
+    observationPlan: foundation.observationPlan,
+    finalizationPlan: foundation.finalizationPlan,
+  });
+  const completedRun = (await ctx.db.getRepository('agRuns').findOne({
+    filterByTk: getModelTargetKey(foundation.run, 'id'),
+  })) as ModelRecord | null;
+  if (!completedRun) {
+    ctx.throw(404, 'Run not found');
+  }
+  const result: ExternalImportResult = {
+    run: completedRun,
+    deduped: foundation.deduped,
+    relationUpdated: processedBatch.relationUpdated,
+    observations: processedBatch.observations,
+  };
 
   ctx.body = {
     runId: getModelTargetKey(result.run, 'id'),
@@ -1001,59 +2379,52 @@ async function appendExternalRunObservations(ctx: Context, runId: string) {
     AGENT_GATEWAY_ACTIONS.importExternalRuns,
     'Agent Gateway external run import permission required',
   );
-  await assertRunVisible(ctx, runId, 'get');
-
   const values = getBodyValues(ctx);
-  const batchKey = getRequiredString(ctx, values.batchKey, 'batchKey');
-  const result = await ctx.db.sequelize.transaction(async (transaction) => {
-    const run = (await ctx.db.getRepository('agRuns').findOne({
-      filterByTk: runId,
-      transaction,
-      lock: transaction.LOCK.UPDATE,
-    })) as ModelRecord | null;
-    if (!run) {
-      ctx.throw(404, 'Run not found');
-    }
-    if (getModelString(run, 'sourceType') !== EXTERNAL_IMPORT_SOURCE_TYPE) {
-      ctx.throw(409, 'Only imported external runs can receive external observations');
-    }
-
-    const provider = getProvider(ctx, values.provider || getModelValue(run, 'agentSessionProvider'));
-    const status = getString(values.status)
-      ? getImportStatus(ctx, values, getModelString(run, 'status'))
-      : getModelString(run, 'status');
-    if (getString(values.status)) {
-      await ctx.db.getRepository('agRuns').update({
-        filterByTk: runId,
-        values: getRunUpdateValuesWithUser(ctx, values, status, provider, new Date(), run),
-        transaction,
-      });
-    }
-    const updatedRun = getString(values.status)
-      ? ((await ctx.db.getRepository('agRuns').findOne({
-          filterByTk: runId,
-          transaction,
-          lock: transaction.LOCK.UPDATE,
-        })) as ModelRecord)
-      : run;
-    const observations = await writeObservationBatch(ctx, {
-      run: updatedRun,
+  const visibleRun = await assertRunVisible(ctx, runId, 'get');
+  if (getModelString(visibleRun, 'sourceType') !== EXTERNAL_IMPORT_SOURCE_TYPE) {
+    ctx.throw(409, 'Only imported external runs can receive external observations');
+  }
+  const batchKey = getBatchKey(ctx, values.batchKey, true);
+  const provider = getProvider(ctx, values.provider || getModelValue(visibleRun, 'agentSessionProvider'));
+  const preparedBatch = prepareObservationBatch(ctx, values, provider, batchKey);
+  const observationPlan = prepareObservationPlan(
+    ctx,
+    getObservationOperations({
       values,
+      preparedBatch,
       provider,
       batchKey,
-      transaction,
+      includeInitialConversation: false,
+    }),
+  );
+  const foundation = await retryImportFoundation(() => {
+    return prepareAppendFoundationOnce(ctx, {
+      runId,
+      values,
+      provider,
+      preparedBatch,
+      observationPlan,
+      batchKey,
     });
-
-    return {
-      run: updatedRun,
-      observations,
-    };
   });
+  const processedBatch = await processObservationBatch(ctx, {
+    run: foundation.run,
+    batch: foundation.batch,
+    preparedBatch,
+    observationPlan: foundation.observationPlan,
+    finalizationPlan: foundation.finalizationPlan,
+  });
+  const completedRun = (await ctx.db.getRepository('agRuns').findOne({
+    filterByTk: runId,
+  })) as ModelRecord | null;
+  if (!completedRun) {
+    ctx.throw(404, 'Run not found');
+  }
 
   ctx.body = {
     runId,
-    run: await serializeRunForManagement(ctx, result.run),
-    observations: result.observations,
+    run: await serializeRunForManagement(ctx, completedRun),
+    observations: processedBatch.observations,
   };
 }
 

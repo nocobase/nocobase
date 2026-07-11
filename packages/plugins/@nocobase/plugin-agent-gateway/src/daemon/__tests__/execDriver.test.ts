@@ -216,4 +216,94 @@ describe('agent gateway daemon exec driver', () => {
     expect(await fs.readFile(String(result.stdout.artifactPath), 'utf8')).toHaveLength(logSize);
     expect(await fs.readFile(String(result.stderr.artifactPath), 'utf8')).toHaveLength(logSize);
   });
+
+  it('preserves UTF-8 sequences split across process output chunks', async () => {
+    const artifactDir = path.join(tempDir, 'artifacts');
+    const script = [
+      'const value = Buffer.from("\u4f60");',
+      'process.stdout.write(value.subarray(0, 1));',
+      'setTimeout(() => process.stdout.end(value.subarray(1)), 20);',
+    ].join('');
+
+    const inlineResult = await executeCommand({
+      definition,
+      args: ['-e', script],
+      cwd: workspace,
+      workspaceRoot: workspace,
+    });
+    expect(inlineResult.stdout).toMatchObject({
+      text: '\u4f60',
+      sizeBytes: 3,
+    });
+
+    const artifactResult = await executeCommand({
+      definition,
+      args: ['-e', script],
+      cwd: workspace,
+      workspaceRoot: workspace,
+      artifactDir,
+      maxInlineLogBytes: 1,
+    });
+    expect(artifactResult.stdout.text).toBeNull();
+    expect(await fs.readFile(String(artifactResult.stdout.artifactPath))).toEqual(Buffer.from('\u4f60'));
+  });
+
+  it('caps the combined output spool and records truncation', async () => {
+    const artifactDir = path.join(tempDir, 'artifacts');
+    const result = await executeCommand({
+      definition,
+      args: ['-e', 'process.stdout.write("x".repeat(4096));'],
+      cwd: workspace,
+      workspaceRoot: workspace,
+      artifactDir,
+      maxInlineLogBytes: 1,
+      maxOutputSpoolBytes: 1024,
+    });
+
+    expect(result.status).toBe('succeeded');
+    expect(result.stdout).toMatchObject({
+      sizeBytes: 4096,
+      capturedBytes: 1024,
+      truncated: true,
+    });
+    expect((await fs.stat(String(result.stdout.artifactPath))).size).toBe(1024);
+  });
+
+  it('terminates the child and rejects promptly when the output spool write fails', async () => {
+    const hasDevFull = await fs
+      .access('/dev/full')
+      .then(() => true)
+      .catch(() => false);
+    if (!hasDevFull) {
+      return;
+    }
+    const artifactDir = path.join(tempDir, 'artifacts');
+    const markerPath = path.join(tempDir, 'write-error-child-survived.txt');
+    await fs.mkdir(artifactDir, { recursive: true });
+    const stdoutPath = path.join(artifactDir, 'node-stdout.log');
+    await fs.symlink('/dev/full', stdoutPath);
+    const startedAt = Date.now();
+
+    await expect(
+      executeCommand({
+        definition,
+        args: [
+          '-e',
+          [
+            'setInterval(() => process.stdout.write("x".repeat(4096)), 1);',
+            `setTimeout(() => require("fs").writeFileSync(${JSON.stringify(markerPath)}, "survived"), 500);`,
+          ].join(''),
+        ],
+        cwd: workspace,
+        workspaceRoot: workspace,
+        artifactDir,
+        maxInlineLogBytes: 1,
+      }),
+    ).rejects.toThrow();
+
+    expect(Date.now() - startedAt).toBeLessThan(2000);
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    await expect(fs.access(markerPath)).rejects.toThrow();
+    await expect(fs.access(stdoutPath)).rejects.toThrow();
+  });
 });

@@ -32,21 +32,18 @@ function execTmux(args: string[]) {
   });
 }
 
-function execTmuxOutput(args: string[]) {
-  return new Promise<string>((resolve, reject) => {
-    execFile('tmux', args, (error, stdout) => {
-      if (error) {
-        reject(error);
-        return;
-      }
-      resolve(stdout);
-    });
-  });
-}
-
 async function hasTmux() {
   try {
     await execTmux(['-V']);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function tmuxSessionExists(sessionName: string) {
+  try {
+    await execTmux(['has-session', '-t', sessionName]);
     return true;
   } catch {
     return false;
@@ -67,6 +64,26 @@ describe('agent gateway tmux terminal driver', () => {
 
   afterEach(async () => {
     await fs.rm(tempDir, { recursive: true, force: true });
+  });
+
+  it('rejects environment variables that are not allowlisted', async () => {
+    await expect(
+      executeTmuxCommand({
+        runId: `tmux-env-rejected-${Date.now()}`,
+        definition: {
+          commandKey: 'node',
+          executable: process.execPath,
+          allowedEnvKeys: [],
+        },
+        args: ['-e', 'process.exit(0)'],
+        cwd: tempDir,
+        workspaceRoot: tempDir,
+        env: {
+          NOT_ALLOWED: 'secret',
+        },
+        timeoutMs: 5000,
+      }),
+    ).rejects.toThrow('Environment variable is not allowlisted: NOT_ALLOWED');
   });
 
   it('returns failed status and the process exit code for non-zero commands', async () => {
@@ -187,23 +204,119 @@ describe('agent gateway tmux terminal driver', () => {
     }
   });
 
+  it('caps tmux pipe-pane output before copying the persistent artifact', async () => {
+    if (!tmuxReady) {
+      return;
+    }
+
+    const runId = `tmux-spool-limit-${Date.now()}`;
+    const sessionName = getManagedTmuxSessionName(runId);
+    try {
+      const result = await executeTmuxCommand({
+        runId,
+        definition: {
+          commandKey: 'node',
+          executable: process.execPath,
+        },
+        args: ['-e', 'process.stdout.write("x".repeat(16 * 1024));'],
+        cwd: process.cwd(),
+        workspaceRoot: process.cwd(),
+        timeoutMs: 5000,
+        artifactDir: tempDir,
+        maxOutputSpoolBytes: 1024,
+      });
+
+      expect(result.status).toBe('succeeded');
+      expect(result.stdout).toMatchObject({
+        capturedBytes: 1024,
+        truncated: true,
+      });
+      expect((await fs.stat(String(result.stdout.artifactPath))).size).toBe(1024);
+    } finally {
+      await terminateTmuxSession(sessionName).catch(() => {
+        // The completed session may already have been cleaned up by the test environment.
+      });
+    }
+  });
+
   it('copies terminal artifact files without content redaction', async () => {
     const sourcePath = path.join(tempDir, 'raw-terminal.log');
     const longSecret = `ARBITRARY_TERMINAL_SECRET_${'x'.repeat(70 * 1024)}_TAIL`;
     await fs.writeFile(sourcePath, `before boundary\n${longSecret}\nafter boundary\n`);
 
-    const artifactPath = await writeTerminalArtifactFromFile({
+    const artifact = await writeTerminalArtifactFromFile({
       sourcePath,
       artifactDir: tempDir,
       fileName: 'terminal.log',
     });
-    const artifactText = await fs.readFile(artifactPath, 'utf8');
+    const artifactText = await fs.readFile(artifact.artifactPath, 'utf8');
 
     expect(artifactText).toContain('before boundary');
     expect(artifactText).toContain('ARBITRARY_TERMINAL_SECRET_');
     expect(artifactText).toContain('_TAIL');
     expect(artifactText).toContain('after boundary');
     expect(artifactText).toContain('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
+  });
+
+  it('caps terminal artifact copies and reports truncation', async () => {
+    const sourcePath = path.join(tempDir, 'bounded-terminal.log');
+    await fs.writeFile(sourcePath, 'x'.repeat(4096));
+
+    const artifact = await writeTerminalArtifactFromFile({
+      sourcePath,
+      artifactDir: tempDir,
+      fileName: 'bounded-copy.log',
+      maxBytes: 1024,
+    });
+
+    expect(artifact).toMatchObject({
+      sizeBytes: 1024,
+      truncated: true,
+    });
+    expect((await fs.stat(artifact.artifactPath)).size).toBe(1024);
+  });
+
+  it('does not report truncation when a terminal artifact exactly matches the limit', async () => {
+    const sourcePath = path.join(tempDir, 'exact-terminal.log');
+    await fs.writeFile(sourcePath, 'x'.repeat(1024));
+
+    const artifact = await writeTerminalArtifactFromFile({
+      sourcePath,
+      artifactDir: tempDir,
+      fileName: 'exact-copy.log',
+      maxBytes: 1024,
+    });
+
+    expect(artifact).toMatchObject({
+      sizeBytes: 1024,
+      truncated: false,
+    });
+  });
+
+  it('rejects promptly when the terminal artifact copy cannot be written', async () => {
+    const hasDevFull = await fs
+      .access('/dev/full')
+      .then(() => true)
+      .catch(() => false);
+    if (!hasDevFull) {
+      return;
+    }
+    const sourcePath = path.join(tempDir, 'copy-error-source.log');
+    const artifactPath = path.join(tempDir, 'copy-error.log');
+    await fs.writeFile(sourcePath, 'x'.repeat(4096));
+    await fs.symlink('/dev/full', artifactPath);
+    const startedAt = Date.now();
+
+    await expect(
+      writeTerminalArtifactFromFile({
+        sourcePath,
+        artifactDir: tempDir,
+        fileName: 'copy-error.log',
+      }),
+    ).rejects.toThrow();
+
+    expect(Date.now() - startedAt).toBeLessThan(2000);
+    await expect(fs.access(artifactPath)).rejects.toThrow();
   });
 
   it('emits complete live output chunks before the tmux command exits', async () => {
@@ -436,7 +549,7 @@ describe('agent gateway tmux terminal driver', () => {
     }
   });
 
-  it('does not leave a live interactive shell after the tmux command completes', async () => {
+  it('removes the managed tmux session after the command completes', async () => {
     if (!tmuxReady) {
       return;
     }
@@ -458,19 +571,40 @@ describe('agent gateway tmux terminal driver', () => {
       });
 
       expect(result.status).toBe('succeeded');
-      const paneState = await execTmuxOutput([
-        'list-panes',
-        '-t',
-        sessionName,
-        '-F',
-        '#{pane_dead}:#{pane_current_command}',
-      ]);
-      expect(paneState.trim()).toMatch(/^1:/);
+      expect(await tmuxSessionExists(sessionName)).toBe(false);
     } finally {
       await terminateTmuxSession(sessionName).catch(() => {
         // The completed session may already have been removed.
       });
     }
+  });
+
+  it('removes the managed tmux session when onSessionStarted fails', async () => {
+    if (!tmuxReady) {
+      return;
+    }
+
+    const runId = `tmux-start-callback-failure-${Date.now()}`;
+    const sessionName = getManagedTmuxSessionName(runId);
+    await expect(
+      executeTmuxCommand({
+        runId,
+        definition: {
+          commandKey: 'sh',
+          executable: 'sh',
+        },
+        args: ['-lc', 'sleep 30'],
+        cwd: process.cwd(),
+        workspaceRoot: process.cwd(),
+        timeoutMs: 5000,
+        artifactDir: tempDir,
+        onSessionStarted: async () => {
+          throw new Error('session metadata update failed');
+        },
+      }),
+    ).rejects.toThrow('session metadata update failed');
+
+    expect(await tmuxSessionExists(sessionName)).toBe(false);
   });
 
   it('direct terminate cancellation does not send Ctrl-C before killing the tmux session', async () => {
@@ -489,6 +623,7 @@ describe('agent gateway tmux terminal driver', () => {
         definition: {
           commandKey: 'sh',
           executable: 'sh',
+          allowedEnvKeys: ['AGW_START_MARKER', 'AGW_INT_MARKER'],
         },
         args: [
           '-lc',

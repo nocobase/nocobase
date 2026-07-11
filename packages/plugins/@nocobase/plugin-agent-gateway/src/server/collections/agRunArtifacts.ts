@@ -26,6 +26,12 @@ export default defineCollection({
       unique: true,
       fields: ['runId', 'claimAttempt', 'artifactKey'],
     },
+    {
+      fields: ['runId', 'createdAt'],
+    },
+    {
+      fields: ['createdAt'],
+    },
   ],
   fields: [
     {

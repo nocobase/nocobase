@@ -1509,6 +1509,9 @@ describe('PluginAgentGatewayClientV2', () => {
     fireEvent.change(screen.getByLabelText('Prompt'), {
       target: { value: 'Import a build task that was started outside Agent Gateway' },
     });
+    fireEvent.change(screen.getByLabelText('External run key'), {
+      target: { value: 'codex-thread-imported' },
+    });
     fireEvent.change(screen.getByLabelText('Raw log'), {
       target: {
         value: [
@@ -1530,6 +1533,7 @@ describe('PluginAgentGatewayClientV2', () => {
             title: 'Imported Codex log',
             instruction: 'Import a build task that was started outside Agent Gateway',
             status: 'succeeded',
+            externalRunKey: 'codex-thread-imported',
             logs: [
               expect.objectContaining({
                 format: 'codex-jsonl',
@@ -2288,7 +2292,7 @@ describe('PluginAgentGatewayClientV2', () => {
               {
                 id: 'run-id-1',
                 runCode: 'run-build-1',
-                status: 'running',
+                status: 'importing',
                 nodeId: 'node-id-1',
                 agentProfileId: 'profile-id-1',
                 runnerStatusJson: {
@@ -2521,7 +2525,6 @@ describe('PluginAgentGatewayClientV2', () => {
                 artifactKey: 'stdout',
                 artifactType: 'log',
                 mimeType: 'text/plain',
-                contentText: 'inline artifact text',
                 metadataJson: {
                   artifactGroupLabel: 'Logs',
                   externalUrl: 'https://daemon.example/artifact',
@@ -2532,14 +2535,41 @@ describe('PluginAgentGatewayClientV2', () => {
                 artifactKey: 'browser-screenshot',
                 artifactType: 'image',
                 mimeType: 'image/png',
-                contentText:
-                  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=',
                 metadataJson: {
                   artifactGroupLabel: 'Screenshots',
                   relativePath: 'runs/nb-opencode-ui-batch/run-1/browser-screenshots/overview.png',
                 },
               },
             ],
+            meta: {
+              count: 2,
+              page: 1,
+              pageSize: 20,
+              totalPage: 1,
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/artifacts/artifact-id-1:content') {
+        return {
+          data: {
+            data: {
+              id: 'artifact-id-1',
+              contentText: 'inline artifact text',
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/artifacts/artifact-id-2:content') {
+        return {
+          data: {
+            data: {
+              id: 'artifact-id-2',
+              contentText:
+                'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=',
+            },
           },
         };
       }
@@ -2622,6 +2652,7 @@ describe('PluginAgentGatewayClientV2', () => {
     renderAgentGatewayPage(AgentGatewayRunsPage, request);
 
     expect(await screen.findByText('Build calendar page')).toBeTruthy();
+    expect(await screen.findByText('importing')).toBeTruthy();
     expect(await screen.findByText('Completed import task')).toBeTruthy();
     expect(await screen.findAllByText('Total: 40.1K')).not.toHaveLength(0);
     expect(await screen.findAllByText('Input: 40.0K / Output: 144 / Cached: 18.2K / Reasoning: 77')).not.toHaveLength(
@@ -2704,6 +2735,12 @@ describe('PluginAgentGatewayClientV2', () => {
     fireEvent.click(await screen.findByRole('tab', { name: 'Logs' }));
     expect(await screen.findByText('build started')).toBeTruthy();
     expect(getRequestedUrls()).toContain('agent-gateway/runs/run-id-1/events:list');
+    expect(request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: 'agent-gateway/runs/run-id-1/events:list',
+        params: expect.objectContaining({ pageSize: 100 }),
+      }),
+    );
     expect(await screen.findByText('Harness stages')).toBeTruthy();
     expect(await screen.findByText('render_run / started')).toBeTruthy();
     expect(await screen.findAllByText('rerendering report')).not.toHaveLength(0);
@@ -2715,15 +2752,43 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(await screen.findByRole('tab', { name: 'Screenshots (1)' })).toBeTruthy();
     expect(getRequestedUrls()).toContain('agent-gateway/runs/run-id-1/artifacts:list');
     expect(getRequestedUrls()).toContain('agent-gateway/runs/run-id-1/snapshots:list');
+    expect(request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: 'agent-gateway/runs/run-id-1/artifacts:list',
+        params: { page: 1, pageSize: 20 },
+      }),
+    );
+    expect(request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: 'agent-gateway/runs/run-id-1/snapshots:list',
+        params: { page: 1, pageSize: 20 },
+      }),
+    );
+    expect(getRequestedUrls()).not.toContain('agent-gateway/runs/run-id-1/artifacts/artifact-id-2:content');
+    fireEvent.click(await screen.findByText('Preview'));
     expect(await screen.findByText('Image artifact preview')).toBeTruthy();
+    expect(getRequestedUrls()).toContain('agent-gateway/runs/run-id-1/artifacts/artifact-id-2:content');
     expect(screen.getByAltText('browser-screenshot').getAttribute('src')).toContain('data:image/png;base64,');
+    fireEvent.click(await screen.findByText('Preview'));
+    fireEvent.click(await screen.findByText('Preview'));
+    await screen.findByText('Image artifact preview');
+    expect(
+      getRequestedUrls().filter((url) => url === 'agent-gateway/runs/run-id-1/artifacts/artifact-id-2:content'),
+    ).toHaveLength(1);
     fireEvent.click(await screen.findByRole('tab', { name: 'Logs (1)' }));
+    fireEvent.click(await screen.findByText('Preview'));
     expect(await screen.findByText('inline artifact text')).toBeTruthy();
     expect(await screen.findByText(/"files":/)).toBeTruthy();
 
     fireEvent.click(await screen.findByRole('tab', { name: 'API Logs' }));
     expect(await screen.findByText('/api/agent-gateway/runs/run-id-1/events:append')).toBeTruthy();
     expect(getRequestedUrls()).toContain('agent-gateway/runs/run-id-1/api-call-logs:list');
+    expect(request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: 'agent-gateway/runs/run-id-1/api-call-logs:list',
+        params: { page: 1, pageSize: 20 },
+      }),
+    );
     expect(await screen.findByText('Heartbeat summary')).toBeTruthy();
     expect(await screen.findByText('Heartbeat calls: 2')).toBeTruthy();
     expect(screen.queryByText('/api/agent-gateway/nodes/node-id-1/runs/run-id-1/heartbeat')).toBeNull();
@@ -2735,6 +2800,86 @@ describe('PluginAgentGatewayClientV2', () => {
     await waitFor(() => {
       expect(new URLSearchParams(window.location.search).get('runId')).toBeNull();
     });
+  });
+
+  it('loads artifact pages from the server when detail pagination changes', async () => {
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/runs:list') {
+        return {
+          data: {
+            data: [{ id: 'run-id-1', runCode: 'run-artifact-pages', status: 'succeeded' }],
+          },
+        };
+      }
+      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+        return {
+          data: {
+            data: {
+              id: 'run-id-1',
+              runCode: 'run-artifact-pages',
+              status: 'succeeded',
+              agentGatewayActionPermissionsJson: {
+                readArtifacts: true,
+              },
+            },
+          },
+        };
+      }
+      if (config.url === 'agent-gateway/runs/run-id-1/artifacts:list') {
+        const page = Number(config.params?.page || 1);
+        return {
+          data: {
+            data: [
+              {
+                id: `artifact-page-${page}`,
+                artifactKey: `artifact-page-${page}`,
+                artifactType: 'log',
+                mimeType: 'text/plain',
+              },
+            ],
+            meta: {
+              count: 21,
+              page,
+              pageSize: 20,
+              totalPage: 2,
+            },
+          },
+        };
+      }
+      if (config.url === 'agent-gateway/runs/run-id-1/snapshots:list') {
+        return {
+          data: {
+            data: [],
+            meta: {
+              count: 0,
+              page: 1,
+              pageSize: 20,
+              totalPage: 0,
+            },
+          },
+        };
+      }
+      return { data: { data: [] } };
+    });
+
+    renderAgentGatewayPage(AgentGatewayRunsPage, request);
+    fireEvent.click((await screen.findAllByLabelText('View run details'))[0]);
+    fireEvent.click(await screen.findByRole('tab', { name: 'Artifacts' }));
+    expect(await screen.findByText(/artifact-page-1 \/ log \/ text\/plain/)).toBeTruthy();
+
+    const enabledNextButton = [...document.querySelectorAll<HTMLButtonElement>('.ant-pagination-next button')].find(
+      (button) => !button.closest('.ant-pagination-disabled'),
+    );
+    expect(enabledNextButton).toBeTruthy();
+    fireEvent.click(enabledNextButton as HTMLButtonElement);
+
+    expect(await screen.findByText(/artifact-page-2 \/ log \/ text\/plain/)).toBeTruthy();
+    expect(request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: 'agent-gateway/runs/run-id-1/artifacts:list',
+        params: { page: 2, pageSize: 20 },
+      }),
+    );
   });
 
   it('sends terminal control requests with stable idempotency keys and shows final ack state', async () => {
@@ -4417,8 +4562,9 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(screen.getByText(/fresh run two snapshot/)).toBeTruthy();
   });
 
-  it('falls back to the latest terminal snapshot after a live stream error', async () => {
+  it('stops terminal snapshot polling while the stream is live and restores it after a stream error', async () => {
     vi.stubGlobal('WebSocket', FakeBrowserWebSocket);
+    const intervalCallbacks = spyOnPageIntervals();
     let terminalSnapshotCallCount = 0;
     const request = vi.fn(async (config: RequestConfig) => {
       if (config.url === 'agent-gateway/runs:list') {
@@ -4563,6 +4709,15 @@ describe('PluginAgentGatewayClientV2', () => {
     });
 
     expect(await screen.findByText('stream first')).toBeTruthy();
+    const snapshotCallsWhileLive = terminalSnapshotCallCount;
+    expect(snapshotCallsWhileLive).toBe(1);
+
+    await act(async () => {
+      for (const callback of intervalCallbacks.values()) {
+        callback();
+      }
+    });
+    expect(terminalSnapshotCallCount).toBe(snapshotCallsWhileLive);
 
     act(() => {
       webSocket.dispatch('message', {
@@ -4578,9 +4733,8 @@ describe('PluginAgentGatewayClientV2', () => {
     expect((await screen.findByTestId('agent-gateway-xterm-stream-error')).textContent).toBe(
       'TERMINAL_DAEMON_UNAVAILABLE',
     );
-    fireEvent.click(screen.getByLabelText('Refresh terminal'));
     await waitFor(() => {
-      expect(terminalSnapshotCallCount).toBeGreaterThan(1);
+      expect(terminalSnapshotCallCount).toBeGreaterThan(snapshotCallsWhileLive);
     });
 
     expect(await screen.findByText('snapshot after stream failure')).toBeTruthy();
@@ -5568,6 +5722,133 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(await screen.findByText('stable normalized event after empty poll')).toBeTruthy();
     await waitFor(() => expect(conversationEventCallCount).toBeGreaterThan(1));
     expect(await screen.findByText('stable normalized event after empty poll')).toBeTruthy();
+  });
+
+  it('polls conversation deltas by cursor and prepends older messages without duplicates', async () => {
+    const intervalCallbacks = spyOnPageIntervals();
+    const conversationRequests: RequestConfig[] = [];
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/runs:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'run-id-1',
+                runCode: 'run-cursor-timeline',
+                status: 'running',
+              },
+            ],
+          },
+        };
+      }
+      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+        return {
+          data: {
+            data: {
+              id: 'run-id-1',
+              runCode: 'run-cursor-timeline',
+              status: 'running',
+              agentGatewayActionPermissionsJson: {
+                readSessionMessages: true,
+              },
+            },
+          },
+        };
+      }
+      if (config.url === 'agent-gateway/runs/run-id-1/conversation-events:list') {
+        conversationRequests.push(config);
+        if (config.params?.beforeCursor === 'before-1') {
+          return {
+            data: {
+              data: [
+                {
+                  id: 'event-older',
+                  source: 'codex',
+                  sequence: 1,
+                  eventType: 'agent.message',
+                  contentText: 'older cursor message',
+                  createdAt: '2026-06-30T10:00:00.000Z',
+                },
+              ],
+              meta: {
+                pageSize: 100,
+                hasMoreBefore: false,
+                hasMoreAfter: true,
+              },
+            },
+          };
+        }
+        if (config.params?.afterCursor === 'after-1') {
+          return {
+            data: {
+              data: [
+                {
+                  id: 'event-current',
+                  source: 'codex',
+                  sequence: 2,
+                  eventType: 'agent.message',
+                  contentText: 'current cursor message',
+                  createdAt: '2026-06-30T10:00:01.000Z',
+                },
+                {
+                  id: 'event-delta',
+                  source: 'cloud-code',
+                  sequence: 0,
+                  eventType: 'agent.message',
+                  contentText: 'delta cursor message',
+                  createdAt: '2026-06-30T10:00:02.000Z',
+                },
+              ],
+              meta: {
+                pageSize: 100,
+                afterCursor: 'after-2',
+                hasMoreBefore: true,
+                hasMoreAfter: false,
+              },
+            },
+          };
+        }
+        return {
+          data: {
+            data: [
+              {
+                id: 'event-current',
+                source: 'codex',
+                sequence: 2,
+                eventType: 'agent.message',
+                contentText: 'current cursor message',
+                createdAt: '2026-06-30T10:00:01.000Z',
+              },
+            ],
+            meta: {
+              pageSize: 100,
+              beforeCursor: 'before-1',
+              afterCursor: 'after-1',
+              hasMoreBefore: true,
+              hasMoreAfter: false,
+            },
+          },
+        };
+      }
+      return { data: { data: [] } };
+    });
+
+    renderAgentGatewayPage(AgentGatewayRunsPage, request);
+    fireEvent.click((await screen.findAllByLabelText('View run details'))[0]);
+    expect(await screen.findByText('current cursor message')).toBeTruthy();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Load older messages' }));
+    expect(await screen.findByText('older cursor message')).toBeTruthy();
+    expect(conversationRequests.some((config) => config.params?.beforeCursor === 'before-1')).toBe(true);
+
+    await act(async () => {
+      for (const callback of intervalCallbacks.values()) {
+        callback();
+      }
+    });
+    expect(await screen.findByText('delta cursor message')).toBeTruthy();
+    expect(conversationRequests.some((config) => config.params?.afterCursor === 'after-1')).toBe(true);
+    expect(screen.getAllByText('current cursor message')).toHaveLength(1);
   });
 
   it('keeps the last successful normalized timeline when polling temporarily fails', async () => {

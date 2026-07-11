@@ -17,10 +17,21 @@ export default defineCollection({
   autoGenId: false,
   indexes: [
     {
+      fields: ['createdAt'],
+    },
+    {
       fields: ['runId', 'createdAt', 'sequence'],
     },
     {
+      unique: true,
+      fields: ['runId', 'ingestId'],
+    },
+    {
       fields: ['sessionId', 'createdAt', 'sequence'],
+    },
+    {
+      unique: true,
+      fields: ['sessionId', 'sessionIngestId'],
     },
     {
       unique: true,
@@ -36,6 +47,18 @@ export default defineCollection({
       type: 'uuid',
       name: 'id',
       primaryKey: true,
+    },
+    {
+      type: 'bigInt',
+      name: 'ingestId',
+      allowNull: false,
+      hidden: true,
+    },
+    {
+      type: 'bigInt',
+      name: 'sessionIngestId',
+      allowNull: true,
+      hidden: true,
     },
     {
       type: 'uuid',

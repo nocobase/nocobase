@@ -12,6 +12,7 @@ import { promises as fs } from 'fs';
 import os from 'os';
 import path from 'path';
 
+import { AgentGatewayHttpError } from '../apiClient';
 import { AgentGatewayDaemonNodeClient } from '../gateway';
 import { runDaemonLoop, runDaemonOnce } from '../runner';
 import { terminateTmuxSession } from '../tmuxTerminal';
@@ -70,6 +71,25 @@ async function waitUntil(predicate: () => boolean, timeoutMs = 500) {
   throw new Error('Timed out waiting for condition');
 }
 
+async function waitForAbort(signal: AbortSignal | undefined, timeoutMs = 1000) {
+  if (signal?.aborted) {
+    return;
+  }
+  await new Promise<void>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error('Timed out waiting for abort signal'));
+    }, timeoutMs);
+    signal?.addEventListener(
+      'abort',
+      () => {
+        clearTimeout(timer);
+        resolve();
+      },
+      { once: true },
+    );
+  });
+}
+
 class RunnerRequester implements GatewayRequester {
   calls: GatewayRequestOptions[] = [];
   private leaseVersion = 1;
@@ -86,12 +106,29 @@ class RunnerRequester implements GatewayRequester {
       failNodeHeartbeatOnce?: boolean;
       failCompleteOnce?: boolean;
       failAgentSessionUpsertOnce?: boolean;
+      enforceAgentSessionLeaseVersion?: boolean;
+      enforceArtifactLeaseVersion?: boolean;
+      artifactResponseDelayMs?: number;
       failArtifactKeys?: string[];
+      failConversationAppends?: boolean;
+      runHeartbeatFailures?: Record<number, 'transient' | 'lease_lost' | 'permanent'>;
+      transientRunHeartbeatStatusFailures?: Partial<Record<'syncing_skills' | 'running' | 'finalizing', number>>;
+      failRunHeartbeatsFromCall?: number;
+      leaseExpiresAt?: string;
+      leaseTtlMs?: number;
+      serverTime?: string;
     } = {},
   ) {
     this.failCompleteOnce = Boolean(options.failCompleteOnce);
     this.failAgentSessionUpsertOnce = Boolean(options.failAgentSessionUpsertOnce);
+    this.transientRunHeartbeatStatusFailures = {
+      ...options.transientRunHeartbeatStatusFailures,
+    };
   }
+
+  private readonly transientRunHeartbeatStatusFailures: Partial<
+    Record<'syncing_skills' | 'running' | 'finalizing', number>
+  >;
 
   private getDefaultClaimPayload() {
     return {
@@ -100,6 +137,9 @@ class RunnerRequester implements GatewayRequester {
       claimToken: 'ag_claim_CLAIM_TOKEN_SECRET',
       claimAttempt: 1,
       leaseVersion: 1,
+      claimExpiresAt: this.options.leaseExpiresAt || new Date(Date.now() + 60_000).toISOString(),
+      ...(this.options.leaseTtlMs !== undefined ? { leaseTtlMs: this.options.leaseTtlMs } : {}),
+      ...(this.options.serverTime ? { serverTime: this.options.serverTime } : {}),
       run: {
         id: 'run-1',
         executionPayloadJson: {
@@ -122,12 +162,40 @@ class RunnerRequester implements GatewayRequester {
         await new Promise((resolve) => setTimeout(resolve, this.options.heartbeatDelayMs));
       }
       this.runHeartbeatCount += 1;
+      const requestedStatus = (options.body as JsonRecord | undefined)?.status;
+      if (requestedStatus === 'syncing_skills' || requestedStatus === 'running' || requestedStatus === 'finalizing') {
+        const failuresRemaining = this.transientRunHeartbeatStatusFailures[requestedStatus] || 0;
+        if (failuresRemaining > 0) {
+          this.transientRunHeartbeatStatusFailures[requestedStatus] = failuresRemaining - 1;
+          throw new Error('connect ECONNRESET');
+        }
+      }
+      const failure = this.options.runHeartbeatFailures?.[this.runHeartbeatCount];
+      if (failure === 'lease_lost') {
+        throw new AgentGatewayHttpError('Run lease has expired', 409, {
+          code: 'lease_lost',
+          message: 'Run lease has expired',
+        });
+      }
+      if (failure === 'permanent') {
+        throw new AgentGatewayHttpError('Invalid heartbeat payload', 400);
+      }
+      if (
+        failure === 'transient' ||
+        (this.options.failRunHeartbeatsFromCall !== undefined &&
+          this.runHeartbeatCount >= this.options.failRunHeartbeatsFromCall)
+      ) {
+        throw new Error('connect ECONNRESET');
+      }
       this.leaseVersion += 1;
       return {
         runId: 'run-1',
         claimToken: 'ag_claim_CLAIM_TOKEN_SECRET',
         claimAttempt: 1,
         leaseVersion: this.leaseVersion,
+        claimExpiresAt: this.options.leaseExpiresAt || new Date(Date.now() + 60_000).toISOString(),
+        ...(this.options.leaseTtlMs !== undefined ? { leaseTtlMs: this.options.leaseTtlMs } : {}),
+        ...(this.options.serverTime ? { serverTime: this.options.serverTime } : {}),
         cancelRequested: this.options.cancelOnRunHeartbeatCall === this.runHeartbeatCount,
       } as T;
     }
@@ -142,11 +210,26 @@ class RunnerRequester implements GatewayRequester {
       this.failAgentSessionUpsertOnce = false;
       throw new Error('transient session upsert failure');
     }
-    if (
-      options.path.endsWith('/artifacts:register') &&
-      this.options.failArtifactKeys?.includes(String((options.body as JsonRecord | undefined)?.artifactKey || ''))
-    ) {
-      throw new Error('HTTP 413');
+    if (this.options.enforceAgentSessionLeaseVersion && options.path.endsWith('/agent-session:upsert')) {
+      const body = (options.body || {}) as JsonRecord;
+      if (body.leaseVersion !== this.leaseVersion) {
+        throw new Error(`stale agent session lease version: ${String(body.leaseVersion)} !== ${this.leaseVersion}`);
+      }
+    }
+    if (options.path.endsWith('/artifacts:register')) {
+      const body = (options.body || {}) as JsonRecord;
+      if (this.options.enforceArtifactLeaseVersion && body.leaseVersion !== this.leaseVersion) {
+        throw new Error(`stale artifact lease version: ${String(body.leaseVersion)} !== ${this.leaseVersion}`);
+      }
+      if (this.options.artifactResponseDelayMs) {
+        await new Promise((resolve) => setTimeout(resolve, this.options.artifactResponseDelayMs));
+      }
+      if (this.options.failArtifactKeys?.includes(String(body.artifactKey || ''))) {
+        throw new Error('HTTP 413');
+      }
+    }
+    if (this.options.failConversationAppends && options.path.endsWith('/conversation-events:append')) {
+      throw new Error('connect ECONNRESET timeline append');
     }
     if (this.options.enforceTerminalLeaseVersion && /\/(complete|fail|timeout|cancel-ack)$/.test(options.path)) {
       const body = (options.body || {}) as JsonRecord;
@@ -158,6 +241,47 @@ class RunnerRequester implements GatewayRequester {
       ok: true,
     } as T;
   }
+}
+
+async function runHeartbeatScenario(
+  tempDir: string,
+  requesterOptions: ConstructorParameters<typeof RunnerRequester>[0],
+  executeCommand: NonNullable<Parameters<typeof runDaemonOnce>[0]['executeCommand']>,
+) {
+  const workspace = path.join(tempDir, 'workspace');
+  await fs.mkdir(workspace, { recursive: true });
+  const requester = new RunnerRequester(requesterOptions);
+  const gateway = new AgentGatewayDaemonNodeClient(requester, {
+    serverUrl: 'https://nocobase.example.test',
+    nodeId: 'node-1',
+    nodeKey: 'node-1',
+    nodeToken: 'ag_node_NODE_TOKEN_SECRET',
+    savedAt: new Date().toISOString(),
+  });
+  const result = await runDaemonOnce({
+    gateway,
+    allowlist: {
+      node: {
+        commandKey: 'node',
+        executable: process.execPath,
+        defaultTimeoutMs: 5000,
+      },
+    },
+    workspaceRoot: workspace,
+    skillsRoot: path.join(tempDir, 'skills'),
+    artifactDir: path.join(tempDir, 'artifacts'),
+    runHeartbeatIntervalMs: 5,
+    executeCommand,
+    detectOptions: {
+      probeCommand: async () => ({
+        available: false,
+      }),
+    },
+  });
+  return {
+    requester,
+    result,
+  };
 }
 
 describe('agent gateway daemon runner', () => {
@@ -188,6 +312,7 @@ describe('agent gateway daemon runner', () => {
       savedAt: new Date().toISOString(),
     });
     const errors: string[] = [];
+    let profileProbeCalls = 0;
     const stopController = new AbortController();
     const loop = runDaemonLoop({
       gateway,
@@ -200,9 +325,12 @@ describe('agent gateway daemon runner', () => {
       retryMaxDelayMs: 2,
       stopSignal: stopController.signal,
       detectOptions: {
-        probeCommand: async () => ({
-          available: false,
-        }),
+        probeCommand: async () => {
+          profileProbeCalls += 1;
+          return {
+            available: false,
+          };
+        },
       },
       onLoopError: (error) => {
         errors.push(error instanceof Error ? error.message : String(error));
@@ -220,7 +348,216 @@ describe('agent gateway daemon runner', () => {
       (call) => call.path === '/api/agent-gateway/nodes/node-1/heartbeat',
     );
     expect(nodeHeartbeatCalls.length).toBeGreaterThanOrEqual(2);
+    expect(profileProbeCalls).toBe(3);
     expect(errors).toEqual(['connect ECONNREFUSED 127.0.0.1:23001']);
+  });
+
+  it('claims the next run immediately after completing work', async () => {
+    const workspace = path.join(tempDir, 'workspace');
+    await fs.mkdir(workspace, { recursive: true });
+    const requester = new RunnerRequester();
+    const gateway = new AgentGatewayDaemonNodeClient(requester, {
+      serverUrl: 'https://nocobase.example.test',
+      nodeId: 'node-1',
+      nodeKey: 'node-1',
+      nodeToken: 'ag_node_NODE_TOKEN_SECRET',
+      savedAt: new Date().toISOString(),
+    });
+    const executionStartedAt: number[] = [];
+    const stopController = new AbortController();
+    const loop = runDaemonLoop({
+      gateway,
+      allowlist: {
+        node: {
+          commandKey: 'node',
+          executable: process.execPath,
+          defaultTimeoutMs: 5000,
+        },
+      },
+      workspaceRoot: workspace,
+      skillsRoot: path.join(tempDir, 'skills'),
+      artifactDir: path.join(tempDir, 'artifacts'),
+      pollIntervalMs: 1000,
+      runHeartbeatIntervalMs: 60_000,
+      stopSignal: stopController.signal,
+      executeCommand: async () => {
+        executionStartedAt.push(Date.now());
+        if (executionStartedAt.length === 2) {
+          stopController.abort();
+        }
+        return {
+          status: 'succeeded',
+          exitCode: 0,
+          signal: null,
+          stdout: {
+            text: '',
+            sizeBytes: 0,
+          },
+          stderr: {
+            text: null,
+            sizeBytes: 0,
+          },
+        };
+      },
+      detectOptions: {
+        probeCommand: async () => ({
+          available: false,
+        }),
+      },
+    });
+
+    try {
+      await waitUntil(() => executionStartedAt.length >= 2, 500);
+    } finally {
+      stopController.abort();
+      await loop;
+    }
+
+    expect(executionStartedAt[1] - executionStartedAt[0]).toBeLessThan(500);
+  });
+
+  it('stops the active claimed run when the daemon loop is aborted', async () => {
+    const workspace = path.join(tempDir, 'workspace');
+    await fs.mkdir(workspace, { recursive: true });
+    const requester = new RunnerRequester();
+    const gateway = new AgentGatewayDaemonNodeClient(requester, {
+      serverUrl: 'https://nocobase.example.test',
+      nodeId: 'node-1',
+      nodeKey: 'node-1',
+      nodeToken: 'ag_node_NODE_TOKEN_SECRET',
+      savedAt: new Date().toISOString(),
+    });
+    const stopController = new AbortController();
+    let executionStarted = false;
+    let executionStopped = false;
+    const loop = runDaemonLoop({
+      gateway,
+      allowlist: {
+        node: {
+          commandKey: 'node',
+          executable: process.execPath,
+          defaultTimeoutMs: 60_000,
+        },
+      },
+      workspaceRoot: workspace,
+      skillsRoot: path.join(tempDir, 'skills'),
+      artifactDir: path.join(tempDir, 'artifacts'),
+      runHeartbeatIntervalMs: 60_000,
+      stopSignal: stopController.signal,
+      executeCommand: async ({ leaseLostSignal }) => {
+        executionStarted = true;
+        await waitForAbort(leaseLostSignal);
+        executionStopped = true;
+        return {
+          status: 'lease_lost',
+          exitCode: null,
+          signal: 'SIGTERM',
+          stdout: {
+            text: '',
+            sizeBytes: 0,
+          },
+          stderr: {
+            text: null,
+            sizeBytes: 0,
+          },
+        };
+      },
+      detectOptions: {
+        probeCommand: async () => ({
+          available: false,
+        }),
+      },
+    });
+
+    await waitUntil(() => executionStarted);
+    stopController.abort(new Error('daemon stopping'));
+    await loop;
+
+    expect(executionStopped).toBe(true);
+    expect(requester.calls.some((call) => /\/(complete|fail|timeout|cancel-ack)$/.test(call.path))).toBe(false);
+  });
+
+  it('aborts active Skill synchronization when the daemon loop is stopped', async () => {
+    const workspace = path.join(tempDir, 'workspace');
+    await fs.mkdir(workspace, { recursive: true });
+    const requester = new RunnerRequester({
+      claimPayload: {
+        claimed: true,
+        runId: 'run-1',
+        claimToken: 'ag_claim_CLAIM_TOKEN_SECRET',
+        claimAttempt: 1,
+        leaseVersion: 1,
+        claimExpiresAt: new Date(Date.now() + 60_000).toISOString(),
+        run: {
+          id: 'run-1',
+          executionPayloadJson: {
+            commandKey: 'node',
+            args: ['-e', 'process.stdout.write("should not execute")'],
+            cwd: '.',
+            skillVersions: [
+              {
+                skillVersionId: '99999999-9999-4999-8999-999999999999',
+                versionLabel: 'v1',
+                source: {
+                  type: 'zip',
+                  archivePath: '/skills/stop-signal.zip',
+                  sha256: 'solidified-sha256',
+                },
+              },
+            ],
+          },
+        },
+      },
+    });
+    const gateway = new AgentGatewayDaemonNodeClient(requester, {
+      serverUrl: 'https://nocobase.example.test',
+      nodeId: 'node-1',
+      nodeKey: 'node-1',
+      nodeToken: 'ag_node_NODE_TOKEN_SECRET',
+      savedAt: new Date().toISOString(),
+    });
+    const stopController = new AbortController();
+    let syncStarted = false;
+    let syncStopped = false;
+    let executionStarted = false;
+    const loop = runDaemonLoop({
+      gateway,
+      allowlist: {
+        node: {
+          commandKey: 'node',
+          executable: process.execPath,
+          defaultTimeoutMs: 60_000,
+        },
+      },
+      workspaceRoot: workspace,
+      skillsRoot: path.join(tempDir, 'skills'),
+      artifactDir: path.join(tempDir, 'artifacts'),
+      runHeartbeatIntervalMs: 60_000,
+      stopSignal: stopController.signal,
+      syncSkillVersion: async (options) => {
+        syncStarted = true;
+        await waitForAbort(options.signal);
+        syncStopped = true;
+        throw options.signal?.reason instanceof Error ? options.signal.reason : new Error('Skill sync aborted');
+      },
+      executeCommand: async () => {
+        executionStarted = true;
+        throw new Error('stopped Skill synchronization should not execute a command');
+      },
+      detectOptions: {
+        probeCommand: async () => ({
+          available: false,
+        }),
+      },
+    });
+
+    await waitUntil(() => syncStarted);
+    stopController.abort(new Error('daemon stopping'));
+    await loop;
+
+    expect(syncStopped).toBe(true);
+    expect(executionStarted).toBe(false);
+    expect(requester.calls.some((call) => /\/(complete|fail|timeout|cancel-ack)$/.test(call.path))).toBe(false);
   });
 
   it('claims, executes through allowlist, and terminalizes the run', async () => {
@@ -319,6 +656,73 @@ describe('agent gateway daemon runner', () => {
           body.source === 'stdout' && typeof body.message === 'string' && body.message.includes('RUNNER_TOKEN_SECRET'),
       ),
     ).toBe(true);
+  });
+
+  it('removes default exec spool files after upload, parsing, and terminalization', async () => {
+    const workspace = path.join(tempDir, 'workspace');
+    const artifactDir = path.join(tempDir, 'artifacts');
+    await fs.mkdir(workspace, { recursive: true });
+    const requester = new RunnerRequester({
+      claimPayload: {
+        claimed: true,
+        runId: 'run-exec-cleanup',
+        claimToken: 'ag_claim_CLAIM_TOKEN_SECRET',
+        claimAttempt: 1,
+        leaseVersion: 1,
+        run: {
+          id: 'run-exec-cleanup',
+          executionPayloadJson: {
+            commandKey: 'node',
+            args: ['-e', 'process.stdout.write("x".repeat(128 * 1024));'],
+            cwd: '.',
+          },
+        },
+      },
+    });
+    const gateway = new AgentGatewayDaemonNodeClient(requester, {
+      serverUrl: 'https://nocobase.example.test',
+      nodeId: 'node-1',
+      nodeKey: 'node-1',
+      nodeToken: 'ag_node_NODE_TOKEN_SECRET',
+      savedAt: new Date().toISOString(),
+    });
+
+    const result = await runDaemonOnce({
+      gateway,
+      allowlist: {
+        node: {
+          commandKey: 'node',
+          executable: process.execPath,
+          defaultTimeoutMs: 5000,
+        },
+      },
+      workspaceRoot: workspace,
+      skillsRoot: path.join(tempDir, 'skills'),
+      artifactDir,
+      maxOutputSpoolBytes: 80 * 1024,
+      runHeartbeatIntervalMs: 60_000,
+      detectOptions: {
+        probeCommand: async () => ({
+          available: false,
+        }),
+      },
+    });
+
+    expect(result.status).toBe('succeeded');
+    const stdoutArtifactCall = requester.calls.find(
+      (call) => call.path.endsWith('/artifacts:register') && call.body?.artifactKey === 'stdout-main',
+    );
+    expect(stdoutArtifactCall?.body).toMatchObject({
+      sizeBytes: 128 * 1024,
+      metadata: {
+        capturedBytes: 80 * 1024,
+        spoolTruncated: true,
+        truncated: true,
+      },
+    });
+    const completeCall = requester.calls.find((call) => call.path.endsWith('/complete'));
+    expect(JSON.stringify(completeCall?.body)).toContain(`stdout spool truncated after ${80 * 1024} captured bytes`);
+    await expect(fs.access(path.join(artifactDir, 'node-stdout.log'))).rejects.toThrow();
   });
 
   it('installs project Skills without modifying the agent prompt and registers declared artifacts', async () => {
@@ -884,6 +1288,84 @@ describe('agent gateway daemon runner', () => {
               failed: 1,
             },
           },
+        },
+      },
+    });
+  });
+
+  it('uses the latest lease while sequential declared artifact uploads are in progress', async () => {
+    const workspace = path.join(tempDir, 'workspace');
+    await fs.mkdir(workspace, { recursive: true });
+    await fs.writeFile(path.join(workspace, 'first.txt'), 'first');
+    await fs.writeFile(path.join(workspace, 'second.txt'), 'second');
+    const requester = new RunnerRequester({
+      enforceArtifactLeaseVersion: true,
+      artifactResponseDelayMs: 20,
+      claimPayload: {
+        claimed: true,
+        runId: 'run-artifacts',
+        claimToken: 'ag_claim_CLAIM_TOKEN_SECRET',
+        claimAttempt: 1,
+        leaseVersion: 1,
+        run: {
+          id: 'run-artifacts',
+          executionPayloadJson: {
+            commandKey: 'node',
+            cwd: '.',
+            artifactPaths: ['first.txt', 'second.txt'],
+          },
+        },
+      },
+    });
+    const gateway = new AgentGatewayDaemonNodeClient(requester, {
+      serverUrl: 'https://nocobase.example.test',
+      nodeId: 'node-1',
+      nodeKey: 'node-1',
+      nodeToken: 'ag_node_NODE_TOKEN_SECRET',
+      savedAt: new Date().toISOString(),
+    });
+
+    const result = await runDaemonOnce({
+      gateway,
+      allowlist: {
+        node: {
+          commandKey: 'node',
+          executable: process.execPath,
+          defaultTimeoutMs: 5000,
+        },
+      },
+      workspaceRoot: workspace,
+      skillsRoot: path.join(tempDir, 'skills'),
+      artifactDir: path.join(tempDir, 'artifacts'),
+      runHeartbeatIntervalMs: 5,
+      executeCommand: async () => ({
+        status: 'succeeded',
+        exitCode: 0,
+        signal: null,
+        stdout: {
+          text: '',
+          sizeBytes: 0,
+        },
+        stderr: {
+          text: null,
+          sizeBytes: 0,
+        },
+      }),
+      detectOptions: {
+        probeCommand: async () => ({
+          available: false,
+        }),
+      },
+    });
+
+    expect(result.status).toBe('succeeded');
+    const artifactCalls = requester.calls.filter((call) => call.path.endsWith('/artifacts:register'));
+    expect(new Set(artifactCalls.map((call) => (call.body as JsonRecord).leaseVersion)).size).toBeGreaterThan(1);
+    const completeCall = requester.calls.find((call) => call.path.endsWith('/complete'));
+    expect(completeCall?.body).toMatchObject({
+      resultSummary: {
+        declaredArtifacts: {
+          declaredArtifactFailedCount: 0,
         },
       },
     });
@@ -1623,6 +2105,7 @@ describe('agent gateway daemon runner', () => {
     await fs.mkdir(workspace, { recursive: true });
     const requester = new RunnerRequester({
       failAgentSessionUpsertOnce: true,
+      enforceAgentSessionLeaseVersion: true,
       claimPayload: {
         claimed: true,
         runId: 'run-1',
@@ -1659,7 +2142,7 @@ describe('agent gateway daemon runner', () => {
       workspaceRoot: workspace,
       skillsRoot: path.join(tempDir, 'skills'),
       artifactDir: path.join(tempDir, 'artifacts'),
-      runHeartbeatIntervalMs: 60_000,
+      runHeartbeatIntervalMs: 5,
       executeCommand: async () => ({
         status: 'succeeded',
         exitCode: 0,
@@ -1685,6 +2168,9 @@ describe('agent gateway daemon runner', () => {
     expect(result.status).toBe('succeeded');
     const upsertCalls = requester.calls.filter((call) => call.path.endsWith('/agent-session:upsert'));
     expect(upsertCalls).toHaveLength(2);
+    expect(Number((upsertCalls[1]?.body as JsonRecord).leaseVersion)).toBeGreaterThan(
+      Number((upsertCalls[0]?.body as JsonRecord).leaseVersion),
+    );
     expect(upsertCalls[1]?.body).toMatchObject({
       provider: 'codex',
       providerSessionId: '019f1ea4-0ea4-7ef4-a911-f9f986f377e5',
@@ -1773,6 +2259,7 @@ describe('agent gateway daemon runner', () => {
       provider: 'codex',
       providerSessionId: '019f1e94-8f39-7dc0-b035-61fb2a364d30',
     });
+    await expect(fs.access(stdoutArtifactPath)).resolves.toBeUndefined();
   });
 
   it('normalizes Codex timeline events from the full artifact output', async () => {
@@ -1984,6 +2471,80 @@ describe('agent gateway daemon runner', () => {
     expect(JSON.stringify(contentJson)).not.toContain(`rawLine":"${rawLine.slice(0, 120)}`);
   });
 
+  it('bounds oversized provider lines and records normalization truncation', async () => {
+    const workspace = path.join(tempDir, 'workspace');
+    const oversizedOutputPath = path.join(tempDir, 'oversized-provider-line.log');
+    await fs.mkdir(workspace, { recursive: true });
+    await fs.writeFile(oversizedOutputPath, Buffer.alloc(11 * 1024 * 1024, 'x'));
+    const requester = new RunnerRequester({
+      claimPayload: {
+        claimed: true,
+        runId: 'run-oversized-provider-line',
+        claimToken: 'ag_claim_CLAIM_TOKEN_SECRET',
+        claimAttempt: 1,
+        leaseVersion: 1,
+        run: {
+          id: 'run-oversized-provider-line',
+          executionPayloadJson: {
+            commandKey: 'codex',
+            args: ['exec', '--json', 'oversized line'],
+            cwd: '.',
+          },
+        },
+      },
+    });
+    const gateway = new AgentGatewayDaemonNodeClient(requester, {
+      serverUrl: 'https://nocobase.example.test',
+      nodeId: 'node-1',
+      nodeKey: 'node-1',
+      nodeToken: 'ag_node_NODE_TOKEN_SECRET',
+      savedAt: new Date().toISOString(),
+    });
+
+    const result = await runDaemonOnce({
+      gateway,
+      allowlist: {
+        codex: {
+          commandKey: 'codex',
+          executable: process.execPath,
+          defaultTimeoutMs: 5000,
+        },
+      },
+      workspaceRoot: workspace,
+      skillsRoot: path.join(tempDir, 'skills'),
+      artifactDir: path.join(tempDir, 'artifacts'),
+      runHeartbeatIntervalMs: 60_000,
+      executeCommand: async () => ({
+        status: 'succeeded',
+        exitCode: 0,
+        signal: null,
+        stdout: {
+          text: null,
+          sizeBytes: 11 * 1024 * 1024,
+          artifactPath: oversizedOutputPath,
+        },
+        stderr: {
+          text: null,
+          sizeBytes: 0,
+        },
+      }),
+      detectOptions: {
+        probeCommand: async (candidates) => ({
+          available: candidates.includes('codex'),
+          command: candidates[0],
+          version: 'codex 1.0.0',
+        }),
+      },
+    });
+
+    expect(result.status).toBe('succeeded');
+    const completeCall = requester.calls.find((call) => call.path.endsWith('/complete'));
+    expect(JSON.stringify(completeCall?.body)).toMatch(
+      /Agent timeline normalization truncated: truncatedLines=1, droppedBytes=[1-9][0-9]*/,
+    );
+    await expect(fs.access(oversizedOutputPath)).resolves.toBeUndefined();
+  });
+
   it('chunks Codex timeline appends to stay within the server batch limit', async () => {
     const workspace = path.join(tempDir, 'workspace');
     await fs.mkdir(workspace, { recursive: true });
@@ -2126,6 +2687,7 @@ describe('agent gateway daemon runner', () => {
       });
 
       expect(result.status).toBe('succeeded');
+      await expect(fs.access(path.join(tempDir, 'artifacts', 'ag-run-run-1-terminal.log'))).rejects.toThrow();
       const upsertCall = requester.calls.find((call) => call.path.endsWith('/agent-session:upsert'));
       expect(upsertCall?.body).toMatchObject({
         provider: 'codex',
@@ -2152,6 +2714,172 @@ describe('agent gateway daemon runner', () => {
       });
     } finally {
       await terminateTmuxSession('ag-run-run-1').catch(() => {
+        // The completed session may already have been removed.
+      });
+    }
+  });
+
+  it('bounds failed live timeline retries and records dropped fallback bytes', async () => {
+    if (!(await hasTmux())) {
+      return;
+    }
+
+    const workspace = path.join(tempDir, 'workspace');
+    await fs.mkdir(workspace, { recursive: true });
+    const requester = new RunnerRequester({
+      failConversationAppends: true,
+      claimPayload: {
+        claimed: true,
+        runId: 'run-live-buffer',
+        claimToken: 'ag_claim_CLAIM_TOKEN_SECRET',
+        claimAttempt: 1,
+        leaseVersion: 1,
+        run: {
+          id: 'run-live-buffer',
+          executionPayloadJson: {
+            commandKey: 'codex',
+            args: [
+              '-e',
+              [
+                'for (let index = 0; index < 500; index += 1) {',
+                '  process.stdout.write(JSON.stringify({ type: "item.completed", item: { id: `item-${index}`, type: "agent_message", text: `message ${index}` } }) + "\\n");',
+                '}',
+                'process.stdout.write("x".repeat(512 * 1024) + "\\n");',
+              ].join(''),
+            ],
+            cwd: '.',
+          },
+        },
+      },
+    });
+    const gateway = new AgentGatewayDaemonNodeClient(requester, {
+      serverUrl: 'https://nocobase.example.test',
+      nodeId: 'node-1',
+      nodeKey: 'node-1',
+      nodeToken: 'ag_node_NODE_TOKEN_SECRET',
+      savedAt: new Date().toISOString(),
+    });
+
+    try {
+      const result = await runDaemonOnce({
+        gateway,
+        allowlist: {
+          codex: {
+            commandKey: 'codex',
+            executable: process.execPath,
+            defaultTimeoutMs: 5000,
+          },
+        },
+        workspaceRoot: workspace,
+        skillsRoot: path.join(tempDir, 'skills'),
+        artifactDir: path.join(tempDir, 'artifacts'),
+        terminalBackend: 'tmux',
+        runHeartbeatIntervalMs: 60_000,
+        detectOptions: {
+          probeCommand: async (candidates) => ({
+            available: candidates.includes('codex'),
+            command: candidates[0],
+            version: 'codex 1.0.0',
+          }),
+        },
+      });
+
+      expect(result.status).toBe('succeeded');
+      const completeCall = requester.calls.find((call) => call.path.endsWith('/complete'));
+      expect(JSON.stringify(completeCall?.body)).toMatch(
+        /Live timeline truncated: droppedStructuredEvents=[1-9][0-9]*, .*droppedFallbackBytes=[1-9][0-9]*/,
+      );
+    } finally {
+      await terminateTmuxSession('ag-run-run-live-buffer').catch(() => {
+        // The completed session may already have been removed.
+      });
+    }
+  });
+
+  it('keeps final provider sequences authoritative after an oversized live line', async () => {
+    if (!(await hasTmux())) {
+      return;
+    }
+
+    const workspace = path.join(tempDir, 'workspace');
+    await fs.mkdir(workspace, { recursive: true });
+    const requester = new RunnerRequester({
+      claimPayload: {
+        claimed: true,
+        runId: 'run-live-sequence',
+        claimToken: 'ag_claim_CLAIM_TOKEN_SECRET',
+        claimAttempt: 1,
+        leaseVersion: 1,
+        run: {
+          id: 'run-live-sequence',
+          executionPayloadJson: {
+            commandKey: 'codex',
+            args: [
+              '-e',
+              [
+                'process.stdout.write(JSON.stringify({ type: "thread.started", thread_id: "019f4eab-1cf4-75d2-b8b6-5b9af93477af" }) + "\\n");',
+                'const oversized = { type: "item.completed", item: { id: "item-oversized", type: "agent_message", text: "x".repeat(300 * 1024) } };',
+                'const following = { type: "item.completed", item: { id: "item-following", type: "agent_message", text: "after oversized" } };',
+                'process.stdout.write(`${JSON.stringify(oversized)}\\n${JSON.stringify(following)}\\n`);',
+              ].join(''),
+            ],
+            cwd: '.',
+          },
+        },
+      },
+    });
+    const gateway = new AgentGatewayDaemonNodeClient(requester, {
+      serverUrl: 'https://nocobase.example.test',
+      nodeId: 'node-1',
+      nodeKey: 'node-1',
+      nodeToken: 'ag_node_NODE_TOKEN_SECRET',
+      savedAt: new Date().toISOString(),
+    });
+
+    try {
+      const result = await runDaemonOnce({
+        gateway,
+        allowlist: {
+          codex: {
+            commandKey: 'codex',
+            executable: process.execPath,
+            defaultTimeoutMs: 5000,
+          },
+        },
+        workspaceRoot: workspace,
+        skillsRoot: path.join(tempDir, 'skills'),
+        artifactDir: path.join(tempDir, 'artifacts'),
+        terminalBackend: 'tmux',
+        runHeartbeatIntervalMs: 60_000,
+        detectOptions: {
+          probeCommand: async (candidates) => ({
+            available: candidates.includes('codex'),
+            command: candidates[0],
+            version: 'codex 1.0.0',
+          }),
+        },
+      });
+
+      expect(result.status).toBe('succeeded');
+      const sessionUpsertCallIndex = requester.calls.findIndex((call) => call.path.endsWith('/agent-session:upsert'));
+      expect(sessionUpsertCallIndex).toBeGreaterThanOrEqual(0);
+      expect(
+        requester.calls
+          .slice(0, sessionUpsertCallIndex)
+          .some((call) =>
+            getRequestEvents(call).some(
+              (event) => event.source === 'codex' && event.providerEventId === 'item.completed:item-following',
+            ),
+          ),
+      ).toBe(false);
+      const finalProviderEvents = requester.calls
+        .slice(sessionUpsertCallIndex + 1)
+        .flatMap((call) => getRequestEvents(call))
+        .filter((event) => event.source === 'codex');
+      expect(finalProviderEvents.some((event) => event.providerEventId === 'item.completed:item-oversized')).toBe(true);
+      expect(finalProviderEvents.some((event) => event.providerEventId === 'item.completed:item-following')).toBe(true);
+    } finally {
+      await terminateTmuxSession('ag-run-run-live-sequence').catch(() => {
         // The completed session may already have been removed.
       });
     }
@@ -2405,6 +3133,186 @@ describe('agent gateway daemon runner', () => {
     expect(result.status).toBe('succeeded');
     const completeCall = requester.calls.find((call) => call.path.endsWith('/complete'));
     expect(completeCall).toBeTruthy();
+  });
+
+  it('keeps a run active after a transient periodic heartbeat failure before the lease deadline', async () => {
+    const { requester, result } = await runHeartbeatScenario(
+      tempDir,
+      {
+        runHeartbeatFailures: {
+          3: 'transient',
+        },
+      },
+      async () => {
+        await new Promise((resolve) => setTimeout(resolve, 40));
+        return {
+          status: 'succeeded',
+          exitCode: 0,
+          signal: null,
+          stdout: {
+            text: 'done',
+            sizeBytes: 4,
+          },
+          stderr: {
+            text: null,
+            sizeBytes: 0,
+          },
+        };
+      },
+    );
+
+    expect(result.status).toBe('succeeded');
+    expect(
+      requester.calls.filter((call) => call.path.includes('/runs/') && call.path.endsWith('/heartbeat')).length,
+    ).toBeGreaterThan(3);
+  });
+
+  it('retries transient syncing and running phase heartbeats before the lease deadline', async () => {
+    const { requester, result } = await runHeartbeatScenario(
+      tempDir,
+      {
+        transientRunHeartbeatStatusFailures: {
+          syncing_skills: 1,
+          running: 1,
+        },
+      },
+      async () => ({
+        status: 'succeeded',
+        exitCode: 0,
+        signal: null,
+        stdout: {
+          text: 'done',
+          sizeBytes: 4,
+        },
+        stderr: {
+          text: null,
+          sizeBytes: 0,
+        },
+      }),
+    );
+
+    expect(result.status).toBe('succeeded');
+    const heartbeatStatuses = requester.calls
+      .filter((call) => call.path.includes('/runs/') && call.path.endsWith('/heartbeat'))
+      .map((call) => (call.body as JsonRecord | undefined)?.status);
+    expect(heartbeatStatuses.filter((status) => status === 'syncing_skills')).toHaveLength(2);
+    expect(heartbeatStatuses.filter((status) => status === 'running').length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('does not retry a permanent heartbeat response until the lease expires', async () => {
+    const { requester, result } = await runHeartbeatScenario(
+      tempDir,
+      {
+        runHeartbeatFailures: {
+          1: 'permanent',
+        },
+      },
+      async () => {
+        throw new Error('command should not execute');
+      },
+    );
+
+    expect(result).toMatchObject({
+      status: 'lease_lost',
+      reason: 'skill_sync_heartbeat_failed',
+    });
+    expect(
+      requester.calls.filter((call) => call.path.includes('/runs/') && call.path.endsWith('/heartbeat')),
+    ).toHaveLength(1);
+  });
+
+  it('aborts a run immediately after an authoritative lease-lost heartbeat response', async () => {
+    const { result } = await runHeartbeatScenario(
+      tempDir,
+      {
+        runHeartbeatFailures: {
+          3: 'lease_lost',
+        },
+      },
+      async (options) => {
+        await waitForAbort(options.leaseLostSignal);
+        return {
+          status: 'lease_lost',
+          exitCode: null,
+          signal: null,
+          stdout: {
+            text: null,
+            sizeBytes: 0,
+          },
+          stderr: {
+            text: null,
+            sizeBytes: 0,
+          },
+        };
+      },
+    );
+
+    expect(result).toMatchObject({
+      status: 'lease_lost',
+      runId: 'run-1',
+    });
+  });
+
+  it('uses the server lease TTL instead of aborting early when the daemon clock is ahead', async () => {
+    const { result } = await runHeartbeatScenario(
+      tempDir,
+      {
+        serverTime: '2000-01-01T00:00:00.000Z',
+        leaseExpiresAt: '2000-01-01T00:00:00.500Z',
+        leaseTtlMs: 500,
+      },
+      async () => {
+        await new Promise((resolve) => setTimeout(resolve, 30));
+        return {
+          status: 'succeeded',
+          exitCode: 0,
+          signal: null,
+          stdout: {
+            text: 'done',
+            sizeBytes: 4,
+          },
+          stderr: {
+            text: null,
+            sizeBytes: 0,
+          },
+        };
+      },
+    );
+
+    expect(result.status).toBe('succeeded');
+  });
+
+  it('aborts after transient heartbeat failures exhaust the server-relative lease TTL', async () => {
+    const { result } = await runHeartbeatScenario(
+      tempDir,
+      {
+        serverTime: '2100-01-01T00:00:00.000Z',
+        leaseExpiresAt: '2100-01-01T00:00:00.100Z',
+        leaseTtlMs: 100,
+        failRunHeartbeatsFromCall: 3,
+      },
+      async (options) => {
+        await waitForAbort(options.leaseLostSignal);
+        return {
+          status: 'lease_lost',
+          exitCode: null,
+          signal: null,
+          stdout: {
+            text: null,
+            sizeBytes: 0,
+          },
+          stderr: {
+            text: null,
+            sizeBytes: 0,
+          },
+        };
+      },
+    );
+
+    expect(result).toMatchObject({
+      status: 'lease_lost',
+      runId: 'run-1',
+    });
   });
 
   it('acknowledges cancellation observed after command exit before terminal completion', async () => {

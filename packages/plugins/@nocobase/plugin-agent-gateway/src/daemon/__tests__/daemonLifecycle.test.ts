@@ -14,6 +14,7 @@ import path from 'path';
 import { promisify } from 'util';
 
 import { readDaemonConfig } from '../config';
+import { AgentGatewayDaemonNodeClient } from '../gateway';
 import { heartbeatDaemonNode, registerDaemonNode } from '../registration';
 import { GatewayRequestOptions, GatewayRequester, JsonRecord } from '../types';
 
@@ -42,13 +43,13 @@ class FakeRequester implements GatewayRequester {
   }
 }
 
-function getExpectedDefaultNodeKey() {
+function getExpectedDefaultNodeKey(installationId: string) {
   const normalizedHostname = os
     .hostname()
     .trim()
     .replace(/[^a-zA-Z0-9_.-]/g, '-')
     .replace(/-+/g, '-');
-  return `${normalizedHostname || 'local'}-agent-gateway-daemon`;
+  return `${normalizedHostname || 'local'}-agent-gateway-${installationId.slice(0, 8)}`;
 }
 
 describe('agent gateway daemon lifecycle client', () => {
@@ -78,10 +79,12 @@ describe('agent gateway daemon lifecycle client', () => {
       nodeKey: 'node-key-1',
       tokenLast4: 'CRET',
     });
+    expect(registerResult.installationId).toMatch(/^[0-9a-f-]{36}$/);
     expect(JSON.stringify(registerResult)).not.toContain('NODE_TOKEN_SECRET');
 
     const config = await readDaemonConfig(configPath);
     expect(config.nodeToken).toBe('ag_node_NODE_TOKEN_SECRET');
+    expect(config.installationId).toBe(registerResult.installationId);
     const storedConfig = await fs.readFile(configPath, 'utf8');
     expect(storedConfig).toContain('ag_node_NODE_TOKEN_SECRET');
 
@@ -108,15 +111,17 @@ describe('agent gateway daemon lifecycle client', () => {
       path: '/api/agent-gateway/nodes:register',
     });
     expect((requester.calls[0].body as JsonRecord).inviteToken).toBe('ag_inv_INVITE_TOKEN_SECRET');
+    expect((requester.calls[0].body as JsonRecord).installationId).toBe(config.installationId);
     expect(requester.calls[1]).toMatchObject({
       method: 'POST',
       path: '/api/agent-gateway/nodes/node-1/heartbeat',
       nodeToken: 'ag_node_NODE_TOKEN_SECRET',
     });
+    expect((requester.calls[1].body as JsonRecord).installationId).toBe(config.installationId);
     expect(JSON.stringify(requester.calls[1].body)).toContain('opencode');
   });
 
-  it('uses a stable host-level node key when registering without an explicit key', async () => {
+  it('uses an installation-scoped node key when registering without an explicit key', async () => {
     const requester = new FakeRequester();
     const configPath = path.join(tempDir, 'config.json');
     await registerDaemonNode({
@@ -126,7 +131,64 @@ describe('agent gateway daemon lifecycle client', () => {
       configPath,
     });
 
-    expect((requester.calls[0].body as JsonRecord).nodeKey).toBe(getExpectedDefaultNodeKey());
+    const installationId = String((requester.calls[0].body as JsonRecord).installationId);
+    expect((requester.calls[0].body as JsonRecord).nodeKey).toBe(getExpectedDefaultNodeKey(installationId));
+  });
+
+  it('preserves a supplied installation id when registering again', async () => {
+    const requester = new FakeRequester();
+    const configPath = path.join(tempDir, 'config.json');
+    const installationId = '11111111-2222-4333-8444-555555555555';
+
+    const result = await registerDaemonNode({
+      requester,
+      serverUrl: 'https://nocobase.example.test',
+      inviteToken: 'ag_inv_INVITE_TOKEN_SECRET',
+      configPath,
+      installationId,
+    });
+
+    expect(result.installationId).toBe(installationId);
+    expect((requester.calls[0].body as JsonRecord).installationId).toBe(installationId);
+    expect((await readDaemonConfig(configPath)).installationId).toBe(installationId);
+  });
+
+  it('includes the installation id in daemon node client heartbeats', async () => {
+    const requester = new FakeRequester();
+    const gateway = new AgentGatewayDaemonNodeClient(requester, {
+      serverUrl: 'https://nocobase.example.test',
+      nodeId: 'node-1',
+      nodeKey: 'node-key-1',
+      nodeToken: 'ag_node_NODE_TOKEN_SECRET',
+      installationId: '11111111-2222-4333-8444-555555555555',
+      savedAt: '2026-07-01T00:00:00.000Z',
+    });
+
+    await gateway.heartbeatNode({ profiles: [] });
+
+    expect((requester.calls[0].body as JsonRecord).installationId).toBe('11111111-2222-4333-8444-555555555555');
+  });
+
+  it('backfills a legacy config with one persistent installation id', async () => {
+    const configPath = path.join(tempDir, 'legacy-config.json');
+    await fs.writeFile(
+      configPath,
+      JSON.stringify({
+        serverUrl: 'https://nocobase.example.test',
+        nodeId: 'node-1',
+        nodeKey: 'node-key-1',
+        nodeToken: 'ag_node_NODE_TOKEN_SECRET',
+        savedAt: '2026-07-01T00:00:00.000Z',
+      }),
+    );
+
+    const first = await readDaemonConfig(configPath);
+    const storedAfterBackfill = await fs.readFile(configPath, 'utf8');
+    const second = await readDaemonConfig(configPath);
+
+    expect(first.installationId).toMatch(/^[0-9a-f-]{36}$/);
+    expect(second.installationId).toBe(first.installationId);
+    expect(await fs.readFile(configPath, 'utf8')).toBe(storedAfterBackfill);
   });
 
   it('keeps install script token input separate from script download and URL arguments', async () => {

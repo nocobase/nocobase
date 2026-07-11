@@ -11,9 +11,14 @@ import path from 'path';
 import { createHash } from 'crypto';
 import { createReadStream } from 'fs';
 import { promises as fs } from 'fs';
-import { createInterface } from 'readline';
+import { StringDecoder } from 'string_decoder';
 
-import { buildTextArtifactUpload, collectDeclaredArtifactCollection } from './artifactUpload';
+import {
+  buildDeclaredArtifactManifestUpload,
+  buildTextArtifactUpload,
+  processDeclaredArtifactUploads,
+} from './artifactUpload';
+import { isAgentGatewayLeaseLostError, isAgentGatewayRetryableError } from './apiClient';
 import { getAgentAdapter, type AgentAdapter, type NormalizedAgentEvent } from './adapters';
 import { AgentGatewayDaemonNodeClient } from './gateway';
 import { TerminalEnd } from '../shared/terminalStreamProtocol';
@@ -24,7 +29,12 @@ import {
   executeAllowlistedCommand,
   getAllowlistedDefinition,
 } from './execDriver';
-import { detectAgentProfiles, DetectAgentProfilesOptions } from './profileDetection';
+import {
+  AgentProfileDetector,
+  createCachedProfileDetector,
+  detectAgentProfiles,
+  DetectAgentProfilesOptions,
+} from './profileDetection';
 import {
   SkillVersionInstallRecord,
   SkillVersionSource,
@@ -40,6 +50,7 @@ import {
   ProjectSkillRunState,
 } from './projectSkills';
 import { JsonRecord, PendingControlRequest, RunLease } from './types';
+import { getLocalRunLeaseDeadlineMonotonicMs, getMonotonicTimeMs } from './leaseDeadline';
 import { TerminalRingBuffer } from './terminalRingBuffer';
 import { DaemonTerminalStreamClient, DaemonTerminalStreamClientOptions } from './terminalStreamClient';
 import { COMMAND_CONTENT_JSON_LIMIT_CHARS } from '../shared/conversationLimits';
@@ -66,20 +77,23 @@ export interface RunDaemonOnceOptions {
   artifactDir: string;
   terminalBackend?: 'exec' | 'tmux';
   detectOptions?: DetectAgentProfilesOptions;
+  detectProfiles?: AgentProfileDetector;
   claimProfileKey?: string;
   claimRunId?: string;
   runHeartbeatIntervalMs?: number;
   syncSkillVersion?: typeof syncNodeSkillVersion;
   executeCommand?: typeof executeAllowlistedCommand;
+  maxOutputSpoolBytes?: number;
   terminalRingBufferMaxBytes?: number;
   terminalStreamClientFactory?: (options: DaemonTerminalStreamClientOptions) => TerminalStreamHandle;
+  stopSignal?: AbortSignal;
 }
 
 export interface DaemonRunLoopOptions extends RunDaemonOnceOptions {
   pollIntervalMs?: number;
+  profileRefreshIntervalMs?: number;
   retryInitialDelayMs?: number;
   retryMaxDelayMs?: number;
-  stopSignal?: AbortSignal;
   onLoopError?: (error: unknown, state: { failureCount: number; retryDelayMs: number }) => void;
 }
 
@@ -94,24 +108,50 @@ const MAX_PROVIDER_SESSION_SCAN_BYTES = 256 * 1024;
 const PROVIDER_SESSION_UPSERT_MAX_ATTEMPTS = 3;
 const PROVIDER_SESSION_UPSERT_RETRY_DELAY_MS = 250;
 const MAX_CONVERSATION_EVENTS_PER_APPEND = 100;
+const MAX_CONVERSATION_EVENT_BATCH_BYTES = 8 * 1024 * 1024;
+const MAX_PROVIDER_NORMALIZATION_LINE_BYTES = COMMAND_CONTENT_JSON_LIMIT_CHARS + 256 * 1024;
 const LIVE_TIMELINE_SOURCE = 'terminal-live';
 const DAEMON_PROGRESS_SOURCE = 'agent-gateway-daemon';
 const HARNESS_PROGRESS_SOURCE = 'harness';
 const PROGRESS_MARKER_PREFIX = 'AGW_PROGRESS';
 const LIVE_TIMELINE_FLUSH_INTERVAL_MS = 2000;
 const LIVE_TIMELINE_MAX_CHARS_PER_EVENT = 4000;
+const LIVE_TIMELINE_MAX_PENDING_EVENTS = 200;
+const LIVE_TIMELINE_MAX_PENDING_BYTES = 2 * 1024 * 1024;
+const LIVE_TIMELINE_MAX_FALLBACK_BYTES = 256 * 1024;
+const LIVE_TIMELINE_MAX_LINE_BYTES = 256 * 1024;
+const LIVE_TIMELINE_MAX_WARNINGS = 20;
 const CONVERSATION_CONTENT_JSON_BUDGET_CHARS = COMMAND_CONTENT_JSON_LIMIT_CHARS - 4096;
 const RAW_PROVIDER_PREVIEW_CHARS = 4000;
 const PROGRESS_EVENT_PAYLOAD_BUDGET_CHARS = 14 * 1024;
 const PROGRESS_EVENT_PAYLOAD_PREVIEW_CHARS = 2000;
+const HARNESS_PROGRESS_MAX_LINE_BYTES = 256 * 1024;
+const PROGRESS_MAX_WARNINGS = 20;
 const SUMMARY_ARRAY_SAMPLE_LIMIT = 20;
 const DEFAULT_LOOP_RETRY_INITIAL_DELAY_MS = 1000;
 const DEFAULT_LOOP_RETRY_MAX_DELAY_MS = 30_000;
+const DEFAULT_RUN_HEARTBEAT_RETRY_DELAY_MS = 250;
+
+function takeUtf8Prefix(text: string, maxBytes: number) {
+  const content = Buffer.from(text);
+  if (content.byteLength <= maxBytes) {
+    return {
+      text,
+      bytes: content.byteLength,
+    };
+  }
+  const decoder = new StringDecoder('utf8');
+  const prefix = decoder.write(content.subarray(0, Math.max(0, maxBytes)));
+  return {
+    text: prefix,
+    bytes: Buffer.byteLength(prefix),
+  };
+}
 
 interface TerminalStreamHandle {
   start(): Promise<void>;
   appendText(text: string): Promise<void>;
-  end(reason: TerminalEnd['reason']): Promise<void>;
+  end(reason: TerminalEnd['reason']): Promise<boolean>;
   close(): void;
 }
 
@@ -543,17 +583,19 @@ async function registerOutputArtifact(options: {
   streamName: 'stdout' | 'stderr';
   output: ExecDriverResult['stdout'];
 }) {
-  if (options.output.text) {
+  if (options.output.text !== null && (options.output.text || options.output.truncated)) {
     await options.gateway.registerArtifact(options.lease, {
       artifactKey: `${options.streamName}-main`,
       artifactType: options.streamName,
       mimeType: 'text/plain',
-      sizeBytes: Buffer.byteLength(options.output.text),
+      sizeBytes: options.output.sizeBytes,
       contentText: options.output.text,
       metadata: {
-        originalSizeBytes: Buffer.byteLength(options.output.text),
+        originalSizeBytes: options.output.sizeBytes,
         uploadedBytes: Buffer.byteLength(options.output.text),
-        truncated: false,
+        truncated: options.output.truncated === true,
+        ...(options.output.capturedBytes !== undefined ? { capturedBytes: options.output.capturedBytes } : {}),
+        ...(options.output.truncated ? { spoolTruncated: true } : {}),
         sha256: hashText(options.output.text),
         storageMode: 'inline',
       },
@@ -568,7 +610,11 @@ async function registerOutputArtifact(options: {
       mimeType: 'text/plain',
       sizeBytes: options.output.sizeBytes,
       contentText: artifactUpload.contentText,
-      metadata: artifactUpload.metadata,
+      metadata: {
+        ...artifactUpload.metadata,
+        ...(options.output.capturedBytes !== undefined ? { capturedBytes: options.output.capturedBytes } : {}),
+        ...(options.output.truncated ? { truncated: true, spoolTruncated: true } : {}),
+      },
     });
   }
 }
@@ -600,34 +646,30 @@ async function reportExecOutputs(gateway: AgentGatewayDaemonNodeClient, lease: R
 
 async function reportDeclaredArtifacts(options: {
   gateway: AgentGatewayDaemonNodeClient;
-  lease: RunLease;
+  getLease(): RunLease;
   payload: JsonRecord;
   cwd: string;
-  workspaceRoot: string;
 }) {
-  const collection = await collectDeclaredArtifactCollection({
-    payload: options.payload,
-    cwd: options.cwd,
-    workspaceRoot: options.workspaceRoot,
-    modifiedSinceMs: getDeclaredArtifactModifiedSinceMs(options.lease, options.payload),
-  });
-  const manifestUpload = collection.uploads.find((upload) => upload.artifactType === 'artifact-manifest');
-  const artifactUploads = collection.uploads.filter((upload) => upload !== manifestUpload);
   const uploadedArtifactKeys: string[] = [];
   const uploadFailures: JsonRecord[] = [];
-  for (const upload of artifactUploads) {
-    try {
-      await options.gateway.registerArtifact(options.lease, upload);
-      uploadedArtifactKeys.push(upload.artifactKey);
-    } catch (error) {
-      uploadFailures.push({
-        artifactKey: upload.artifactKey,
-        artifactType: upload.artifactType,
-        message: error instanceof Error ? error.message : String(error),
-      });
-    }
-  }
-  const artifactManifest = {
+  const collection = await processDeclaredArtifactUploads({
+    payload: options.payload,
+    cwd: options.cwd,
+    modifiedSinceMs: getDeclaredArtifactModifiedSinceMs(options.getLease(), options.payload),
+    onUpload: async (upload) => {
+      try {
+        await options.gateway.registerArtifact(options.getLease(), upload);
+        uploadedArtifactKeys.push(upload.artifactKey);
+      } catch (error) {
+        uploadFailures.push({
+          artifactKey: upload.artifactKey,
+          artifactType: upload.artifactType,
+          message: error instanceof Error ? error.message : String(error),
+        });
+      }
+    },
+  });
+  const finalManifest = {
     ...collection.manifest,
     counts: {
       ...getRecord(collection.manifest.counts),
@@ -636,32 +678,16 @@ async function reportDeclaredArtifacts(options: {
     },
     ...(uploadFailures.length ? { uploadFailures } : {}),
   };
-  if (manifestUpload) {
-    const contentText = JSON.stringify(artifactManifest, null, 2);
-    const contentBytes = Buffer.byteLength(contentText);
-    const upload = {
-      ...manifestUpload,
-      sizeBytes: contentBytes,
-      contentText,
-      metadata: {
-        ...manifestUpload.metadata,
-        originalSizeBytes: contentBytes,
-        uploadedBytes: contentBytes,
-        truncated: false,
-        storageMode: 'inline',
-        sha256: hashText(contentText),
-      },
-    };
-    try {
-      await options.gateway.registerArtifact(options.lease, upload);
-      uploadedArtifactKeys.push(upload.artifactKey);
-    } catch (error) {
-      uploadFailures.push({
-        artifactKey: upload.artifactKey,
-        artifactType: upload.artifactType,
-        message: error instanceof Error ? error.message : String(error),
-      });
-    }
+  const manifestUpload = buildDeclaredArtifactManifestUpload(finalManifest);
+  try {
+    await options.gateway.registerArtifact(options.getLease(), manifestUpload.upload);
+    uploadedArtifactKeys.push(manifestUpload.upload.artifactKey);
+  } catch (error) {
+    uploadFailures.push({
+      artifactKey: manifestUpload.upload.artifactKey,
+      artifactType: manifestUpload.upload.artifactType,
+      message: error instanceof Error ? error.message : String(error),
+    });
   }
 
   return {
@@ -669,7 +695,7 @@ async function reportDeclaredArtifacts(options: {
     declaredArtifactKeys: uploadedArtifactKeys,
     declaredArtifactFailedCount: uploadFailures.length,
     ...(uploadFailures.length ? { declaredArtifactFailures: uploadFailures } : {}),
-    artifactManifest,
+    artifactManifest: manifestUpload.manifest,
   };
 }
 
@@ -693,26 +719,72 @@ async function readOutputForProviderSessionDetection(output: ExecDriverResult['s
   }
 }
 
-async function* readOutputLinesForProviderEvents(output: ExecDriverResult['stdout']) {
-  if (output.text) {
-    for (const rawLine of output.text.split(/\r?\n/)) {
-      yield rawLine;
-    }
-    return;
-  }
-  if (!output.artifactPath) {
-    return;
-  }
+async function processOutputLinesForProviderEvents(
+  output: ExecDriverResult['stdout'],
+  onLine: (rawLine: string) => Promise<void>,
+) {
+  let lineBuffer = '';
+  let lineTruncated = false;
+  let truncatedLines = 0;
+  let droppedBytes = 0;
 
-  const lines = createInterface({
-    input: createReadStream(output.artifactPath, {
-      encoding: 'utf8',
-    }),
-    crlfDelay: Infinity,
-  });
-  for await (const rawLine of lines) {
-    yield rawLine;
+  const appendSegment = (segment: string) => {
+    if (lineTruncated || !segment) {
+      droppedBytes += lineTruncated ? Buffer.byteLength(segment) : 0;
+      return;
+    }
+    const remainingBytes = MAX_PROVIDER_NORMALIZATION_LINE_BYTES - Buffer.byteLength(lineBuffer);
+    const captured = takeUtf8Prefix(segment, remainingBytes);
+    lineBuffer += captured.text;
+    const segmentBytes = Buffer.byteLength(segment);
+    if (captured.bytes < segmentBytes) {
+      lineTruncated = true;
+      droppedBytes += segmentBytes - captured.bytes;
+    }
+  };
+
+  const emitLine = async () => {
+    if (lineTruncated) {
+      truncatedLines += 1;
+    }
+    await onLine(lineBuffer);
+    lineBuffer = '';
+    lineTruncated = false;
+  };
+
+  const processText = async (text: string) => {
+    let offset = 0;
+    while (offset < text.length) {
+      const newlineIndex = text.indexOf('\n', offset);
+      if (newlineIndex < 0) {
+        appendSegment(text.slice(offset));
+        return;
+      }
+      const lineEnd = newlineIndex > offset && text[newlineIndex - 1] === '\r' ? newlineIndex - 1 : newlineIndex;
+      appendSegment(text.slice(offset, lineEnd));
+      await emitLine();
+      offset = newlineIndex + 1;
+    }
+  };
+
+  if (output.text) {
+    await processText(output.text);
+  } else if (output.artifactPath) {
+    const decoder = new StringDecoder('utf8');
+    const reader = createReadStream(output.artifactPath);
+    for await (const rawChunk of reader) {
+      const chunk = Buffer.isBuffer(rawChunk) ? rawChunk : Buffer.from(String(rawChunk));
+      await processText(decoder.write(chunk));
+    }
+    await processText(decoder.end());
   }
+  if (lineBuffer || lineTruncated) {
+    await emitLine();
+  }
+  return {
+    truncatedLines,
+    droppedBytes,
+  };
 }
 
 async function detectProviderSessionId(provider: string | undefined, result: ExecDriverResult) {
@@ -743,24 +815,60 @@ async function detectProviderSessionId(provider: string | undefined, result: Exe
   return null;
 }
 
-async function collectProviderConversationEvents(provider: string | undefined, result: ExecDriverResult) {
-  const adapter = provider ? getAgentAdapter(provider) : null;
+async function reportProviderConversationEvents(options: {
+  gateway: AgentGatewayDaemonNodeClient;
+  getLease(): RunLease;
+  provider?: string;
+  result: ExecDriverResult;
+}) {
+  const adapter = options.provider ? getAgentAdapter(options.provider) : null;
   if (!adapter?.capabilities.structuredEvents) {
-    return [];
+    return;
   }
 
   let sequence = 1;
+  let batchBytes = 0;
+  let truncatedLines = 0;
+  let droppedBytes = 0;
   const events: JsonRecord[] = [];
-  for (const outputRecord of [result.stdout, result.stderr]) {
-    for await (const rawLine of readOutputLinesForProviderEvents(outputRecord)) {
-      for (const event of adapter.normalizeEvent({ rawLine, source: provider })) {
-        events.push(buildConversationEventRecord(adapter.provider, sequence, event, rawLine));
-        sequence += 1;
-      }
+  const flush = async () => {
+    if (!events.length) {
+      return;
     }
+    const batch = events.splice(0, events.length);
+    batchBytes = 0;
+    await options.gateway.appendConversationEvents(options.getLease(), {
+      events: batch,
+    });
+  };
+  for (const outputRecord of [options.result.stdout, options.result.stderr]) {
+    const lineStats = await processOutputLinesForProviderEvents(outputRecord, async (rawLine) => {
+      for (const event of adapter.normalizeEvent({ rawLine, source: options.provider })) {
+        const record = buildConversationEventRecord(adapter.provider, sequence, event, rawLine);
+        const recordBytes = Buffer.byteLength(JSON.stringify(record));
+        if (
+          events.length &&
+          (events.length >= MAX_CONVERSATION_EVENTS_PER_APPEND ||
+            batchBytes + recordBytes > MAX_CONVERSATION_EVENT_BATCH_BYTES)
+        ) {
+          await flush();
+        }
+        events.push(record);
+        batchBytes += recordBytes;
+        sequence += 1;
+        if (events.length >= MAX_CONVERSATION_EVENTS_PER_APPEND || batchBytes >= MAX_CONVERSATION_EVENT_BATCH_BYTES) {
+          await flush();
+        }
+      }
+    });
+    truncatedLines += lineStats.truncatedLines;
+    droppedBytes += lineStats.droppedBytes;
   }
-
-  return events;
+  await flush();
+  return {
+    truncatedLines,
+    droppedBytes,
+  };
 }
 
 function tryParseJsonRecord(value: string) {
@@ -887,7 +995,7 @@ function buildConversationEventRecord(
 
 async function reportProviderSessionIfDetected(options: {
   gateway: AgentGatewayDaemonNodeClient;
-  lease: RunLease;
+  getLease(): RunLease;
   provider?: string;
   result: ExecDriverResult;
 }) {
@@ -897,12 +1005,13 @@ async function reportProviderSessionIfDetected(options: {
   }
 
   let lastError: unknown;
-  const capabilities = hasAgentCapabilitySignal(options.lease.profileCapabilities)
-    ? normalizeAgentProviderCapabilities(detected.adapter.provider, options.lease.profileCapabilities)
+  const profileCapabilities = options.getLease().profileCapabilities;
+  const capabilities = hasAgentCapabilitySignal(profileCapabilities)
+    ? normalizeAgentProviderCapabilities(detected.adapter.provider, profileCapabilities)
     : detected.adapter.capabilities;
   for (let attempt = 1; attempt <= PROVIDER_SESSION_UPSERT_MAX_ATTEMPTS; attempt += 1) {
     try {
-      await options.gateway.upsertAgentSession(options.lease, {
+      await options.gateway.upsertAgentSession(options.getLease(), {
         provider: detected.adapter.provider,
         providerSessionId: detected.providerSessionId,
         status: 'active',
@@ -927,7 +1036,7 @@ async function reportProviderSessionIfDetected(options: {
 
 async function reportProviderSessionAndCollectWarnings(options: {
   gateway: AgentGatewayDaemonNodeClient;
-  lease: RunLease;
+  getLease(): RunLease;
   provider?: string;
   result: ExecDriverResult;
 }) {
@@ -938,11 +1047,11 @@ async function reportProviderSessionAndCollectWarnings(options: {
     warnings.push(`Agent session upsert failed: ${error instanceof Error ? error.message : String(error)}`);
   }
   try {
-    const events = await collectProviderConversationEvents(options.provider, options.result);
-    for (let index = 0; index < events.length; index += MAX_CONVERSATION_EVENTS_PER_APPEND) {
-      await options.gateway.appendConversationEvents(options.lease, {
-        events: events.slice(index, index + MAX_CONVERSATION_EVENTS_PER_APPEND),
-      });
+    const normalizationStats = await reportProviderConversationEvents(options);
+    if (normalizationStats?.truncatedLines || normalizationStats?.droppedBytes) {
+      warnings.push(
+        `Agent timeline normalization truncated: truncatedLines=${normalizationStats.truncatedLines}, droppedBytes=${normalizationStats.droppedBytes}`,
+      );
     }
   } catch (error) {
     warnings.push(`Agent timeline append failed: ${error instanceof Error ? error.message : String(error)}`);
@@ -962,6 +1071,15 @@ function createLiveTimelineReporter(options: {
   let fallbackSequence = 0;
   let structuredSequence = 0;
   const pendingStructuredEvents: JsonRecord[] = [];
+  let pendingStructuredBytes = 0;
+  let droppingOversizedLine = false;
+  let structuredSequenceReliable = true;
+  let droppedStructuredEvents = 0;
+  let droppedStructuredBytes = 0;
+  let droppedFallbackBytes = 0;
+  let truncatedLines = 0;
+  let droppedLineBytes = 0;
+  let suppressedWarnings = 0;
   let lastFlushAt = 0;
   const warnings: string[] = [];
 
@@ -972,17 +1090,46 @@ function createLiveTimelineReporter(options: {
 
   const appendWarning = (error: unknown) => {
     const message = error instanceof Error ? error.message : String(error);
-    warnings.push(`Live timeline append failed: ${message}`);
+    if (warnings.length < LIVE_TIMELINE_MAX_WARNINGS) {
+      warnings.push(`Live timeline append failed: ${message}`);
+    } else {
+      suppressedWarnings += 1;
+    }
   };
+
+  const getRecordBytes = (record: JsonRecord) => Buffer.byteLength(JSON.stringify(record));
 
   const queueFallbackText = (text: string) => {
     if (!text) {
       return;
     }
-    fallbackBuffer += fallbackBuffer ? `\n${text}` : text;
+    const addition = fallbackBuffer ? `\n${text}` : text;
+    const additionBytes = Buffer.byteLength(addition);
+    const remainingBytes = Math.max(0, LIVE_TIMELINE_MAX_FALLBACK_BYTES - Buffer.byteLength(fallbackBuffer));
+    const captured = takeUtf8Prefix(addition, remainingBytes);
+    fallbackBuffer += captured.text;
+    droppedFallbackBytes += additionBytes - captured.bytes;
+  };
+
+  const queueStructuredEvent = (record: JsonRecord) => {
+    const recordBytes = getRecordBytes(record);
+    if (
+      pendingStructuredEvents.length >= LIVE_TIMELINE_MAX_PENDING_EVENTS ||
+      pendingStructuredBytes + recordBytes > LIVE_TIMELINE_MAX_PENDING_BYTES
+    ) {
+      droppedStructuredEvents += 1;
+      droppedStructuredBytes += recordBytes;
+      return;
+    }
+    pendingStructuredEvents.push(record);
+    pendingStructuredBytes += recordBytes;
   };
 
   const queueStructuredLine = (line: string) => {
+    if (!structuredSequenceReliable) {
+      queueFallbackText(line);
+      return;
+    }
     const normalizedEvents =
       structuredAdapter?.normalizeEvent({ rawLine: line, source: structuredAdapter.provider }) || [];
     if (!normalizedEvents.length) {
@@ -991,10 +1138,17 @@ function createLiveTimelineReporter(options: {
     }
     for (const event of normalizedEvents) {
       structuredSequence += 1;
-      pendingStructuredEvents.push(
-        buildConversationEventRecord(structuredAdapter.provider, structuredSequence, event, line),
-      );
+      queueStructuredEvent(buildConversationEventRecord(structuredAdapter.provider, structuredSequence, event, line));
     }
+  };
+
+  const queueOversizedLine = (line: string) => {
+    const lineBytes = Buffer.byteLength(line);
+    const captured = takeUtf8Prefix(line, LIVE_TIMELINE_MAX_LINE_BYTES);
+    queueFallbackText(captured.text);
+    structuredSequenceReliable = false;
+    truncatedLines += 1;
+    droppedLineBytes += lineBytes - captured.bytes;
   };
 
   const processCompleteLines = (text: string) => {
@@ -1006,11 +1160,33 @@ function createLiveTimelineReporter(options: {
       return;
     }
 
-    lineBuffer += text;
+    let remainingText = text;
+    if (droppingOversizedLine) {
+      const newlineIndex = remainingText.search(/\r?\n/);
+      if (newlineIndex < 0) {
+        droppedLineBytes += Buffer.byteLength(remainingText);
+        return;
+      }
+      const newlineLength = remainingText[newlineIndex] === '\r' ? 2 : 1;
+      droppedLineBytes += Buffer.byteLength(remainingText.slice(0, newlineIndex + newlineLength));
+      remainingText = remainingText.slice(newlineIndex + newlineLength);
+      droppingOversizedLine = false;
+    }
+
+    lineBuffer += remainingText;
     const lines = lineBuffer.split(/\r?\n/);
     lineBuffer = lines.pop() || '';
     for (const line of lines) {
-      queueStructuredLine(line);
+      if (Buffer.byteLength(line) > LIVE_TIMELINE_MAX_LINE_BYTES) {
+        queueOversizedLine(line);
+      } else {
+        queueStructuredLine(line);
+      }
+    }
+    if (Buffer.byteLength(lineBuffer) > LIVE_TIMELINE_MAX_LINE_BYTES) {
+      queueOversizedLine(lineBuffer);
+      lineBuffer = '';
+      droppingOversizedLine = true;
     }
   };
 
@@ -1020,7 +1196,11 @@ function createLiveTimelineReporter(options: {
     }
     const line = lineBuffer;
     lineBuffer = '';
-    queueStructuredLine(line);
+    if (Buffer.byteLength(line) > LIVE_TIMELINE_MAX_LINE_BYTES) {
+      queueOversizedLine(line);
+    } else {
+      queueStructuredLine(line);
+    }
   };
 
   const flushQueuedEvents = async (events: JsonRecord[]) => {
@@ -1042,6 +1222,7 @@ function createLiveTimelineReporter(options: {
       return;
     }
     const structuredEvents = pendingStructuredEvents.splice(0, pendingStructuredEvents.length);
+    pendingStructuredBytes = 0;
     const fallbackText = fallbackBuffer;
     fallbackBuffer = '';
     const fallbackEvents: JsonRecord[] = [];
@@ -1068,12 +1249,14 @@ function createLiveTimelineReporter(options: {
       await flushQueuedEvents([...structuredEvents, ...fallbackEvents]);
     } catch (error) {
       if (!isPayloadTooLargeError(error)) {
-        pendingStructuredEvents.unshift(...structuredEvents);
-        fallbackBuffer = fallbackText
-          ? fallbackBuffer
-            ? `${fallbackText}\n${fallbackBuffer}`
-            : fallbackText
-          : fallbackBuffer;
+        for (const event of structuredEvents) {
+          queueStructuredEvent(event);
+        }
+        queueFallbackText(fallbackText);
+      } else {
+        droppedStructuredEvents += structuredEvents.length;
+        droppedStructuredBytes += structuredEvents.reduce((total, event) => total + getRecordBytes(event), 0);
+        droppedFallbackBytes += Buffer.byteLength(fallbackText);
       }
       appendWarning(error);
     } finally {
@@ -1088,15 +1271,27 @@ function createLiveTimelineReporter(options: {
       }
       processCompleteLines(text);
       const shouldFlush =
-        fallbackBuffer.length >= LIVE_TIMELINE_MAX_CHARS_PER_EVENT ||
+        Buffer.byteLength(fallbackBuffer) >= LIVE_TIMELINE_MAX_CHARS_PER_EVENT ||
         pendingStructuredEvents.length >= MAX_CONVERSATION_EVENTS_PER_APPEND ||
+        pendingStructuredBytes >= MAX_CONVERSATION_EVENT_BATCH_BYTES ||
         Date.now() - lastFlushAt >= LIVE_TIMELINE_FLUSH_INTERVAL_MS;
       if (shouldFlush) {
         await flush(false);
       }
     },
     flush: async () => flush(true),
-    getWarnings: () => [...warnings],
+    getWarnings: () => {
+      const truncationWarning =
+        droppedStructuredEvents || droppedStructuredBytes || droppedFallbackBytes || truncatedLines || droppedLineBytes
+          ? [
+              `Live timeline truncated: droppedStructuredEvents=${droppedStructuredEvents}, droppedStructuredBytes=${droppedStructuredBytes}, droppedFallbackBytes=${droppedFallbackBytes}, truncatedLines=${truncatedLines}, droppedLineBytes=${droppedLineBytes}`,
+            ]
+          : [];
+      const suppressionWarning = suppressedWarnings
+        ? [`Live timeline append warnings suppressed: count=${suppressedWarnings}`]
+        : [];
+      return [...warnings, ...truncationWarning, ...suppressionWarning];
+    },
   };
 }
 
@@ -1199,10 +1394,17 @@ function createRunProgressReporter(options: {
   const sequenceBySource = new Map<string, number>();
   const warnings: string[] = [];
   let harnessLineBuffer = '';
+  let droppingOversizedHarnessLine = false;
+  let droppedHarnessBytes = 0;
+  let suppressedWarnings = 0;
 
   const appendWarning = (error: unknown) => {
     const message = error instanceof Error ? error.message : String(error);
-    warnings.push(`Progress event append failed: ${message}`);
+    if (warnings.length < PROGRESS_MAX_WARNINGS) {
+      warnings.push(`Progress event append failed: ${message}`);
+    } else {
+      suppressedWarnings += 1;
+    }
   };
 
   const getNextSequence = (source: string) => {
@@ -1244,10 +1446,26 @@ function createRunProgressReporter(options: {
       if (!text) {
         return;
       }
-      harnessLineBuffer += text;
+      let remainingText = text;
+      if (droppingOversizedHarnessLine) {
+        const newlineIndex = remainingText.search(/\r?\n/);
+        if (newlineIndex < 0) {
+          droppedHarnessBytes += Buffer.byteLength(remainingText);
+          return;
+        }
+        const newlineLength = remainingText[newlineIndex] === '\r' ? 2 : 1;
+        droppedHarnessBytes += Buffer.byteLength(remainingText.slice(0, newlineIndex + newlineLength));
+        remainingText = remainingText.slice(newlineIndex + newlineLength);
+        droppingOversizedHarnessLine = false;
+      }
+      harnessLineBuffer += remainingText;
       const rawLines = harnessLineBuffer.split(/\r?\n/);
       harnessLineBuffer = rawLines.pop() || '';
       for (const rawLine of rawLines) {
+        if (Buffer.byteLength(rawLine) > HARNESS_PROGRESS_MAX_LINE_BYTES) {
+          droppedHarnessBytes += Buffer.byteLength(rawLine);
+          continue;
+        }
         for (const markerLine of extractHarnessProgressMarkerLines(rawLine)) {
           const event = parseHarnessProgressMarker(markerLine);
           if (event) {
@@ -1255,8 +1473,17 @@ function createRunProgressReporter(options: {
           }
         }
       }
+      if (Buffer.byteLength(harnessLineBuffer) > HARNESS_PROGRESS_MAX_LINE_BYTES) {
+        droppedHarnessBytes += Buffer.byteLength(harnessLineBuffer);
+        harnessLineBuffer = '';
+        droppingOversizedHarnessLine = true;
+      }
     },
-    getWarnings: () => [...warnings],
+    getWarnings: () => [
+      ...warnings,
+      ...(droppedHarnessBytes ? [`Harness progress parsing truncated: droppedBytes=${droppedHarnessBytes}`] : []),
+      ...(suppressedWarnings ? [`Progress event append warnings suppressed: count=${suppressedWarnings}`] : []),
+    ],
   };
 }
 
@@ -1278,15 +1505,46 @@ function abortForRunCancel(cancelController: AbortController, lease: RunLease) {
   );
 }
 
+function forwardAbortSignal(signal: AbortSignal | undefined, controller: AbortController) {
+  if (!signal) {
+    return () => {};
+  }
+  const abort = () => {
+    controller.abort(signal.reason);
+  };
+  if (signal.aborted) {
+    abort();
+    return () => {};
+  }
+  signal.addEventListener('abort', abort, { once: true });
+  return () => {
+    signal.removeEventListener('abort', abort);
+  };
+}
+
+function throwIfSignalAborted(signal?: AbortSignal) {
+  if (!signal?.aborted) {
+    return;
+  }
+  if (signal.reason instanceof Error) {
+    throw signal.reason;
+  }
+  const error = new Error('Run phase aborted');
+  error.name = 'AbortError';
+  throw error;
+}
+
 async function syncSkillsForRun(
   options: RunDaemonOnceOptions,
   lease: RunLease,
   skillsRoot = options.skillsRoot,
+  signal?: AbortSignal,
 ): Promise<SyncNodeSkillVersionResult[]> {
   const payload = getPayload(lease);
   const skillVersions = dedupeSkillVersions(getSkillVersions(payload));
   const results: SyncNodeSkillVersionResult[] = [];
   for (const skillVersion of skillVersions) {
+    throwIfSignalAborted(signal);
     results.push(
       await (options.syncSkillVersion || syncNodeSkillVersion)({
         nodeId: options.gateway.nodeId,
@@ -1294,12 +1552,14 @@ async function syncSkillsForRun(
         skillVersion,
         downloadHeaders: options.gateway.getNodeAuthHeaders(),
         trustedArchiveServerUrl: options.gateway.serverUrl,
+        signal,
         writeInstallStatus: async (installPayload) => {
           await options.gateway.upsertSkillInstall(installPayload);
         },
       }),
     );
   }
+  throwIfSignalAborted(signal);
   return results;
 }
 
@@ -1358,6 +1618,27 @@ async function markProjectSkillsRemoved(options: {
   }
 }
 
+async function heartbeatRunWithRetry(
+  gateway: AgentGatewayDaemonNodeClient,
+  lease: RunLease,
+  status: RunHeartbeatStatus,
+  signal?: AbortSignal,
+) {
+  const leaseDeadlineMs = getLocalRunLeaseDeadlineMonotonicMs(lease);
+  for (;;) {
+    throwIfSignalAborted(signal);
+    try {
+      return await gateway.heartbeatRun(lease, status);
+    } catch (error) {
+      const remainingMs = leaseDeadlineMs - getMonotonicTimeMs();
+      if (isAgentGatewayLeaseLostError(error) || !isAgentGatewayRetryableError(error) || remainingMs <= 0) {
+        throw error;
+      }
+      await delay(Math.min(DEFAULT_RUN_HEARTBEAT_RETRY_DELAY_MS, remainingMs), signal);
+    }
+  }
+}
+
 function heartbeatWhileRunPhase(options: {
   gateway: AgentGatewayDaemonNodeClient;
   getLease(): RunLease;
@@ -1368,23 +1649,54 @@ function heartbeatWhileRunPhase(options: {
   intervalMs: number;
 }) {
   let inFlight: Promise<void> | null = null;
+  let stopped = false;
+  let leaseDeadlineMs = getLocalRunLeaseDeadlineMonotonicMs(options.getLease());
+  let leaseDeadlineTimer: ReturnType<typeof setTimeout> | null = null;
+  const abortForLeaseLoss = () => {
+    if (!options.leaseLostController.signal.aborted) {
+      options.leaseLostController.abort();
+    }
+  };
+  const scheduleLeaseDeadline = (lease: RunLease) => {
+    leaseDeadlineMs = getLocalRunLeaseDeadlineMonotonicMs(lease);
+    if (leaseDeadlineTimer) {
+      clearTimeout(leaseDeadlineTimer);
+    }
+    const remainingMs = leaseDeadlineMs - getMonotonicTimeMs();
+    if (remainingMs <= 0) {
+      abortForLeaseLoss();
+      return;
+    }
+    leaseDeadlineTimer = setTimeout(abortForLeaseLoss, remainingMs);
+  };
+  scheduleLeaseDeadline(options.getLease());
   const sendHeartbeat = () => {
-    if (inFlight) {
+    if (stopped || inFlight || options.leaseLostController.signal.aborted) {
       return;
     }
     inFlight = options.gateway
       .heartbeatRun(options.getLease(), typeof options.status === 'function' ? options.status() : options.status)
       .then((lease) => {
-        options.setLease({
+        const nextLease = {
           ...options.getLease(),
           ...lease,
-        });
+        };
+        options.setLease(nextLease);
+        if (!stopped) {
+          scheduleLeaseDeadline(nextLease);
+        }
         if (lease.cancelRequested) {
           abortForRunCancel(options.cancelController, lease);
         }
       })
-      .catch(() => {
-        options.leaseLostController.abort();
+      .catch((error) => {
+        if (
+          isAgentGatewayLeaseLostError(error) ||
+          !isAgentGatewayRetryableError(error) ||
+          getMonotonicTimeMs() >= leaseDeadlineMs
+        ) {
+          abortForLeaseLoss();
+        }
       })
       .finally(() => {
         inFlight = null;
@@ -1394,8 +1706,13 @@ function heartbeatWhileRunPhase(options: {
     sendHeartbeat();
   }, options.intervalMs);
   return async () => {
+    stopped = true;
     clearInterval(timer);
     await inFlight;
+    if (leaseDeadlineTimer) {
+      clearTimeout(leaseDeadlineTimer);
+      leaseDeadlineTimer = null;
+    }
   };
 }
 
@@ -1569,20 +1886,27 @@ async function refreshRunLeaseBeforeTerminal(options: {
   cancelController: AbortController;
   leaseLostController: AbortController;
 }) {
-  try {
-    const refreshedLease = await options.gateway.heartbeatRun(options.getLease(), 'running');
-    options.setLease({
-      ...options.getLease(),
-      ...refreshedLease,
-    });
-    if (refreshedLease.cancelRequested) {
-      abortForRunCancel(options.cancelController, refreshedLease);
-      return 'cancel_requested';
+  const leaseDeadlineMs = getLocalRunLeaseDeadlineMonotonicMs(options.getLease());
+  for (;;) {
+    try {
+      const refreshedLease = await options.gateway.heartbeatRun(options.getLease(), 'running');
+      options.setLease({
+        ...options.getLease(),
+        ...refreshedLease,
+      });
+      if (refreshedLease.cancelRequested) {
+        abortForRunCancel(options.cancelController, refreshedLease);
+        return 'cancel_requested';
+      }
+      return 'active';
+    } catch (error) {
+      const remainingMs = leaseDeadlineMs - getMonotonicTimeMs();
+      if (isAgentGatewayLeaseLostError(error) || !isAgentGatewayRetryableError(error) || remainingMs <= 0) {
+        options.leaseLostController.abort();
+        return 'lease_lost';
+      }
+      await delay(Math.min(DEFAULT_RUN_HEARTBEAT_RETRY_DELAY_MS, remainingMs));
     }
-    return 'active';
-  } catch {
-    options.leaseLostController.abort();
-    return 'lease_lost';
   }
 }
 
@@ -1734,7 +2058,7 @@ function createTerminalStreamHandle(options: DaemonTerminalStreamClientOptions):
       await client.appendText(text);
     },
     end: async (reason) => {
-      await client.end(reason);
+      return await client.end(reason);
     },
     close: () => {
       client.close();
@@ -1779,7 +2103,23 @@ export async function executeClaimedRun(
   options: RunDaemonOnceOptions,
   claimedLease: RunLease,
 ): Promise<DaemonRunOnceResult> {
-  let lease = await options.gateway.heartbeatRun(claimedLease, 'syncing_skills');
+  if (options.stopSignal?.aborted) {
+    return {
+      status: 'lease_lost',
+      runId: claimedLease.runId,
+      reason: 'daemon_stopped',
+    };
+  }
+  let lease: RunLease;
+  try {
+    lease = await heartbeatRunWithRetry(options.gateway, claimedLease, 'syncing_skills', options.stopSignal);
+  } catch {
+    return {
+      status: 'lease_lost',
+      runId: claimedLease.runId,
+      reason: 'skill_sync_heartbeat_failed',
+    };
+  }
   let executionLeaseBase = claimedLease;
   const activeLease = () => ({
     ...executionLeaseBase,
@@ -1843,6 +2183,7 @@ export async function executeClaimedRun(
       runId: claimedLease.runId,
     };
   }
+  const stopForwardingSyncAbort = forwardAbortSignal(options.stopSignal, syncLeaseLostController);
   let stopSyncHeartbeat: (() => Promise<void>) | null = heartbeatWhileRunPhase({
     gateway: options.gateway,
     getLease: activeLease,
@@ -1865,7 +2206,12 @@ export async function executeClaimedRun(
       status: 'started',
       message: 'Skill sync started',
     });
-    const syncResults = await syncSkillsForRun(options, activeLease(), projectSkillState?.stagingRoot);
+    const syncResults = await syncSkillsForRun(
+      options,
+      activeLease(),
+      projectSkillState?.stagingRoot,
+      syncLeaseLostController.signal,
+    );
     if (!syncLeaseLostController.signal.aborted && !syncCancelController.signal.aborted) {
       if (syncResults.length && !projectSkillState) {
         projectSkillState = createProjectSkillRunState(cwd, claimedLease.runId);
@@ -1908,11 +2254,13 @@ export async function executeClaimedRun(
       },
     });
   } catch (error) {
-    await progressReporter.append({
-      phase: 'skill.sync',
-      status: 'failed',
-      message: error instanceof Error ? error.message : String(error),
-    });
+    if (!syncLeaseLostController.signal.aborted) {
+      await progressReporter.append({
+        phase: 'skill.sync',
+        status: 'failed',
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
     if (stopSyncHeartbeat) {
       await stopSyncHeartbeat();
       stopSyncHeartbeat = null;
@@ -1948,6 +2296,7 @@ export async function executeClaimedRun(
       reason: 'skill_sync_failed',
     };
   } finally {
+    stopForwardingSyncAbort();
     if (stopSyncHeartbeat) {
       await stopSyncHeartbeat();
     }
@@ -1970,7 +2319,16 @@ export async function executeClaimedRun(
     };
   }
 
-  lease = await options.gateway.heartbeatRun(activeLease(), 'running');
+  try {
+    lease = await heartbeatRunWithRetry(options.gateway, activeLease(), 'running', options.stopSignal);
+  } catch {
+    await cleanupProjectSkills();
+    return {
+      status: 'lease_lost',
+      runId: claimedLease.runId,
+      reason: 'execution_heartbeat_failed',
+    };
+  }
   if (lease.cancelRequested) {
     await options.gateway.cancelAckRun(activeLease());
     return {
@@ -1991,9 +2349,11 @@ export async function executeClaimedRun(
   let liveTimelineReporter: LiveTimelineReporter | null = null;
   const cancelController = new AbortController();
   const leaseLostController = new AbortController();
+  const stopForwardingExecutionAbort = forwardAbortSignal(options.stopSignal, leaseLostController);
   let stopHeartbeat: (() => Promise<void>) | null = null;
   let stopControlRequests: (() => Promise<void>) | null = null;
   let runHeartbeatStatus: RunHeartbeatStatus = 'running';
+  const managedOutputArtifactPaths = new Set<string>();
 
   try {
     const commandSpec = getExecutionCommandSpec(activeLease(), cwd, commandOutputMode);
@@ -2005,6 +2365,17 @@ export async function executeClaimedRun(
         commandKey: commandSpec.commandKey,
         terminalBackend,
       },
+    });
+    stopHeartbeat = heartbeatWhileRunPhase({
+      gateway: options.gateway,
+      getLease: activeLease,
+      setLease: (nextLease) => {
+        lease = nextLease;
+      },
+      status: () => runHeartbeatStatus,
+      cancelController,
+      leaseLostController,
+      intervalMs: options.runHeartbeatIntervalMs || DEFAULT_RUN_HEARTBEAT_INTERVAL_MS,
     });
     if (usesManagedTmux) {
       liveTimelineReporter = createLiveTimelineReporter({
@@ -2040,17 +2411,6 @@ export async function executeClaimedRun(
         });
       }
     };
-    stopHeartbeat = heartbeatWhileRunPhase({
-      gateway: options.gateway,
-      getLease: activeLease,
-      setLease: (nextLease) => {
-        lease = nextLease;
-      },
-      status: () => runHeartbeatStatus,
-      cancelController,
-      leaseLostController,
-      intervalMs: options.runHeartbeatIntervalMs || DEFAULT_RUN_HEARTBEAT_INTERVAL_MS,
-    });
 
     const result = usesManagedTmux
       ? await executeTmuxCommand({
@@ -2064,6 +2424,7 @@ export async function executeClaimedRun(
           cancelSignal: cancelController.signal,
           leaseLostSignal: leaseLostController.signal,
           artifactDir: options.artifactDir,
+          maxOutputSpoolBytes: options.maxOutputSpoolBytes,
           outputMode: commandOutputMode,
           onOutputChunk: async (chunk) => {
             await terminalStream?.appendText(chunk);
@@ -2085,7 +2446,15 @@ export async function executeClaimedRun(
           cancelSignal: cancelController.signal,
           leaseLostSignal: leaseLostController.signal,
           artifactDir: options.artifactDir,
+          maxOutputSpoolBytes: options.maxOutputSpoolBytes,
         });
+    if (!options.executeCommand) {
+      for (const output of [result.stdout, result.stderr]) {
+        if (output.artifactPath) {
+          managedOutputArtifactPaths.add(output.artifactPath);
+        }
+      }
+    }
     if (!usesManagedTmux) {
       await progressReporter.appendHarnessMarkers(result.stdout.text || '');
       await progressReporter.appendHarnessMarkers(result.stderr.text || '');
@@ -2111,8 +2480,13 @@ export async function executeClaimedRun(
       if (finalizingLease.cancelRequested) {
         abortForRunCancel(cancelController, finalizingLease);
       }
-    } catch {
-      leaseLostController.abort();
+    } catch (error) {
+      if (
+        isAgentGatewayLeaseLostError(error) ||
+        getMonotonicTimeMs() >= getLocalRunLeaseDeadlineMonotonicMs(activeLease())
+      ) {
+        leaseLostController.abort();
+      }
     }
     if (stopControlRequests) {
       await stopControlRequests();
@@ -2128,15 +2502,29 @@ export async function executeClaimedRun(
         runId: claimedLease.runId,
       };
     }
+    let terminalEndDelivered = true;
     if (usesManagedTmux) {
       await closeTmuxTerminalQuietly(options, activeLease(), claimedLease.runId, result.exitCode);
-      await terminalStream?.end(toTerminalEndReason(result.status));
+      terminalEndDelivered = (await terminalStream?.end(toTerminalEndReason(result.status))) ?? false;
     }
     const sessionObservationWarnings = liveTimelineReporter?.getWarnings() || [];
+    if (!terminalEndDelivered) {
+      sessionObservationWarnings.push('Terminal stream final frame was not acknowledged before run finalization');
+    }
+    for (const [streamName, output] of [
+      ['stdout', result.stdout],
+      ['stderr', result.stderr],
+    ] as const) {
+      if (output.truncated) {
+        sessionObservationWarnings.push(
+          `${streamName} spool truncated after ${output.capturedBytes ?? output.sizeBytes} captured bytes`,
+        );
+      }
+    }
     sessionObservationWarnings.push(
       ...(await reportProviderSessionAndCollectWarnings({
         gateway: options.gateway,
-        lease: activeLease(),
+        getLease: activeLease,
         provider: commandSpec.provider,
         result,
       })),
@@ -2150,10 +2538,9 @@ export async function executeClaimedRun(
     try {
       declaredArtifactSummary = await reportDeclaredArtifacts({
         gateway: options.gateway,
-        lease: activeLease(),
+        getLease: activeLease,
         payload,
         cwd: commandSpec.cwd,
-        workspaceRoot: options.workspaceRoot,
       });
       await progressReporter.append({
         phase: 'artifacts.collect',
@@ -2286,6 +2673,7 @@ export async function executeClaimedRun(
       runId: claimedLease.runId,
     };
   } finally {
+    stopForwardingExecutionAbort();
     if (stopHeartbeat) {
       await stopHeartbeat();
     }
@@ -2294,11 +2682,18 @@ export async function executeClaimedRun(
     }
     await cleanupProjectSkills(false);
     terminalStream?.close();
+    for (const artifactPath of managedOutputArtifactPaths) {
+      await fs.unlink(artifactPath).catch(() => {
+        // The runner owns logs created by its default exec and tmux backends.
+      });
+    }
   }
 }
 
 export async function runDaemonOnce(options: RunDaemonOnceOptions): Promise<DaemonRunOnceResult> {
-  const profiles = await detectAgentProfiles(options.detectOptions);
+  const profiles = options.detectProfiles
+    ? await options.detectProfiles(options.stopSignal)
+    : await detectAgentProfiles({ ...options.detectOptions, signal: options.stopSignal });
   await options.gateway.heartbeatNode({
     profiles,
   });
@@ -2320,15 +2715,25 @@ export async function runDaemonOnce(options: RunDaemonOnceOptions): Promise<Daem
 
 function delay(ms: number, signal?: AbortSignal) {
   return new Promise<void>((resolve) => {
-    const timer = setTimeout(resolve, ms);
-    signal?.addEventListener(
-      'abort',
-      () => {
+    let settled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const finish = () => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      if (timer) {
         clearTimeout(timer);
-        resolve();
-      },
-      { once: true },
-    );
+      }
+      signal?.removeEventListener('abort', finish);
+      resolve();
+    };
+    timer = setTimeout(finish, ms);
+    if (signal?.aborted) {
+      finish();
+      return;
+    }
+    signal?.addEventListener('abort', finish, { once: true });
   });
 }
 
@@ -2336,12 +2741,23 @@ export async function runDaemonLoop(options: DaemonRunLoopOptions) {
   const pollIntervalMs = options.pollIntervalMs || 10_000;
   const retryInitialDelayMs = options.retryInitialDelayMs || DEFAULT_LOOP_RETRY_INITIAL_DELAY_MS;
   const retryMaxDelayMs = options.retryMaxDelayMs || DEFAULT_LOOP_RETRY_MAX_DELAY_MS;
+  const detectProfiles =
+    options.detectProfiles ||
+    createCachedProfileDetector({
+      ...options.detectOptions,
+      refreshIntervalMs: options.profileRefreshIntervalMs,
+    });
   let failureCount = 0;
   while (!options.stopSignal?.aborted) {
     try {
-      await runDaemonOnce(options);
+      const result = await runDaemonOnce({
+        ...options,
+        detectProfiles,
+      });
       failureCount = 0;
-      await delay(pollIntervalMs, options.stopSignal);
+      if (result.status === 'idle') {
+        await delay(pollIntervalMs, options.stopSignal);
+      }
     } catch (error) {
       failureCount += 1;
       const retryDelayMs = Math.min(retryMaxDelayMs, retryInitialDelayMs * 2 ** Math.max(0, failureCount - 1));

@@ -35,14 +35,14 @@ import {
   requireManagePermission,
 } from './utils';
 import { renderPromptTemplate } from './promptTemplates';
+import { CLAIMABLE_RUN_STATUS, LEASE_OWNING_RUN_STATUSES, TERMINAL_RUN_STATUSES } from '../../shared/runState';
 
 const BINDING_KEY_PATTERN = /^[A-Za-z][A-Za-z0-9_.:-]*$/;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const ACTIVE_BINDING_STATUS = 'active';
 const DISABLED_BINDING_STATUSES = new Set(['disabled', 'inactive']);
-const CLAIMABLE_RUN_STATUS = 'queued';
-const NON_TERMINAL_RUN_STATUSES = new Set(['queued', 'claimed', 'syncing_skills', 'running', 'canceling']);
-const TERMINAL_RUN_STATUSES = new Set(['succeeded', 'failed', 'canceled', 'timeout', 'abandoned']);
+const NON_TERMINAL_RUN_STATUSES = new Set<string>([CLAIMABLE_RUN_STATUS, ...LEASE_OWNING_RUN_STATUSES]);
+const TERMINAL_RUN_STATUS_SET = new Set<string>(TERMINAL_RUN_STATUSES);
 const RELATION_FIELD_TYPES = new Set(['belongsTo', 'hasOne', 'hasMany', 'belongsToMany']);
 const SKILL_SELECTION_TARGETS = new Set(['agSkillVersions', 'agNodeSkillInstalls']);
 
@@ -1224,7 +1224,7 @@ function getExistingRunResult(
   if (NON_TERMINAL_RUN_STATUSES.has(status)) {
     ctx.throw(409, 'A non-terminal Agent Gateway run already exists for this record');
   }
-  if (TERMINAL_RUN_STATUSES.has(status)) {
+  if (TERMINAL_RUN_STATUS_SET.has(status)) {
     ctx.throw(409, 'Retry for existing Agent Gateway dispatch runs is not implemented');
   }
 
@@ -1490,7 +1490,10 @@ async function dispatchBinding(ctx: Context, identifier: string) {
   const values = getBodyValues(ctx);
   const recordId = getRequiredTargetKey(ctx, values.sourceRecordId ?? values.recordId, 'sourceRecordId');
   const idempotencyKey = getString(values.idempotencyKey);
-  const expectedCollectionName = getString(values.sourceCollection) || getString(values.expectedCollectionName);
+  const expectedCollectionName = getString(values.sourceCollection);
+  if (!expectedCollectionName) {
+    ctx.throw(400, 'sourceCollection is required');
+  }
 
   const result = await ctx.db.sequelize.transaction(async (transaction) => {
     const binding = await findBindingByIdentifier(ctx, identifier, transaction, { lock: true });
@@ -1502,7 +1505,7 @@ async function dispatchBinding(ctx: Context, identifier: string) {
     }
 
     const collectionName = getBindingCollectionName(binding);
-    if (expectedCollectionName && expectedCollectionName !== collectionName) {
+    if (expectedCollectionName !== collectionName) {
       ctx.throw(409, 'Dispatch binding does not match the current record collection');
     }
 

@@ -27,8 +27,12 @@ import { registerSkillVersionRoutes } from './actions/skillVersions';
 import { registerTaskTemplateRoutes } from './actions/taskTemplates';
 import { TerminalStreamBroker, registerTerminalStreamBroker } from './actions/terminalStreamBroker';
 import { registerAgentGatewayAcl } from './security/permissions';
+import { cleanupAgentGatewayRetention } from './services/retention';
+import { registerEventIngestCursorHooks } from './services/eventIngestCursor';
 
 const LEASE_RECOVERY_COLLECTIONS = ['agRuns', 'agRunEvents', 'agRunControlRequests'];
+const RETENTION_INTERVAL_MS = 6 * 60 * 60 * 1000;
+const RETENTION_CONTINUATION_DELAY_MS = 1000;
 
 function unrefTimer(timer: ReturnType<typeof setInterval>) {
   if (!timer || typeof timer !== 'object' || !('unref' in timer)) {
@@ -44,12 +48,18 @@ export class PluginAgentGatewayServer extends Plugin {
   private terminalStreamBroker?: TerminalStreamBroker;
   private leaseRecoveryTimer?: ReturnType<typeof setInterval>;
   private leaseRecoveryQueue = Promise.resolve();
+  private leaseRecoveryActive = false;
+  private retentionTimer?: ReturnType<typeof setInterval>;
+  private retentionContinuationTimer?: ReturnType<typeof setTimeout>;
+  private retentionQueue = Promise.resolve();
+  private retentionActive = false;
   private appLifecycleListenersRegistered = false;
-  private readonly handleAppStarted = async () => {
-    await this.startLeaseRecovery();
+  private readonly handleAppStarted = () => {
+    this.startLeaseRecovery();
+    this.startRetention();
   };
-  private readonly handleAppStopping = () => {
-    this.stopLeaseRecovery();
+  private readonly handleAppStopping = async () => {
+    await this.stopBackgroundMaintenance();
   };
 
   async afterAdd() {}
@@ -66,6 +76,7 @@ export class PluginAgentGatewayServer extends Plugin {
     registerAgentGatewayAcl(this.app.acl);
     registerDispatchBindingValidationHooks(this);
     registerRunLifecycleHooks(this);
+    registerEventIngestCursorHooks(this.db);
   }
 
   async load() {
@@ -92,23 +103,25 @@ export class PluginAgentGatewayServer extends Plugin {
   async afterEnable() {}
 
   async afterDisable() {
-    this.stopLeaseRecovery();
+    await this.stopBackgroundMaintenance();
     this.terminalStreamBroker?.unregister();
     this.terminalStreamBroker = undefined;
   }
 
   async remove() {}
 
-  private async startLeaseRecovery() {
+  private startLeaseRecovery() {
     this.stopLeaseRecovery();
+    this.leaseRecoveryActive = true;
     this.leaseRecoveryTimer = setInterval(() => {
       this.scheduleLeaseRecovery('server-periodic');
     }, 30_000);
     unrefTimer(this.leaseRecoveryTimer);
-    await this.scheduleLeaseRecovery('server-startup');
+    this.scheduleLeaseRecovery('server-startup');
   }
 
   private stopLeaseRecovery() {
+    this.leaseRecoveryActive = false;
     if (!this.leaseRecoveryTimer) {
       return;
     }
@@ -116,18 +129,98 @@ export class PluginAgentGatewayServer extends Plugin {
     this.leaseRecoveryTimer = undefined;
   }
 
+  private startRetention() {
+    this.stopRetention();
+    this.retentionActive = true;
+    this.retentionTimer = setInterval(() => {
+      this.scheduleRetention('server-periodic');
+    }, RETENTION_INTERVAL_MS);
+    unrefTimer(this.retentionTimer);
+    this.scheduleRetention('server-startup');
+  }
+
+  private stopRetention() {
+    this.retentionActive = false;
+    if (this.retentionTimer) {
+      clearInterval(this.retentionTimer);
+      this.retentionTimer = undefined;
+    }
+    if (this.retentionContinuationTimer) {
+      clearTimeout(this.retentionContinuationTimer);
+      this.retentionContinuationTimer = undefined;
+    }
+  }
+
+  private async stopBackgroundMaintenance() {
+    this.stopLeaseRecovery();
+    this.stopRetention();
+    await Promise.all([this.leaseRecoveryQueue, this.retentionQueue]);
+  }
+
+  private scheduleRetentionContinuation() {
+    if (!this.retentionActive || this.retentionContinuationTimer) {
+      return;
+    }
+    this.retentionContinuationTimer = setTimeout(() => {
+      this.retentionContinuationTimer = undefined;
+      this.scheduleRetention('server-backlog-continuation');
+    }, RETENTION_CONTINUATION_DELAY_MS);
+    unrefTimer(this.retentionContinuationTimer);
+  }
+
+  private scheduleRetention(reason: string) {
+    if (!this.retentionActive) {
+      return this.retentionQueue;
+    }
+    this.retentionQueue = this.retentionQueue
+      .then(async () => {
+        if (!this.retentionActive) {
+          return;
+        }
+        const result = await cleanupAgentGatewayRetention(this);
+        if (result.deletedTotal > 0 || result.recoveredImportBatches > 0 || result.abandonedImportRuns > 0) {
+          this.app.logger?.info?.('Agent Gateway retention cleanup completed', {
+            reason,
+            deletedTotal: result.deletedTotal,
+            deletedByCollection: result.deletedByCollection,
+            recoveredImportBatches: result.recoveredImportBatches,
+            abandonedImportRuns: result.abandonedImportRuns,
+            hasMore: result.hasMore,
+            cleanedAt: result.cleanedAt,
+          });
+        }
+        if (this.retentionActive && result.hasMore) {
+          this.scheduleRetentionContinuation();
+        }
+      })
+      .catch((error) => {
+        this.app.logger?.warn?.('Agent Gateway retention cleanup failed', {
+          reason,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      });
+    return this.retentionQueue;
+  }
+
   private scheduleLeaseRecovery(reason: string) {
+    if (!this.leaseRecoveryActive) {
+      return this.leaseRecoveryQueue;
+    }
     this.leaseRecoveryQueue = this.leaseRecoveryQueue
       .then(async () => {
+        if (!this.leaseRecoveryActive) {
+          return;
+        }
         if (!(await this.isLeaseRecoveryStorageReady(reason))) {
           return;
         }
         const result = await recoverExpiredRunLeases(this, reason);
-        if (result.stalledCount > 0 || result.failedCount > 0) {
+        if (result.stalledCount > 0 || result.failedCount > 0 || result.canceledCount > 0) {
           this.app.logger?.info?.('Agent Gateway recovered expired run leases', {
             reason,
             stalledCount: result.stalledCount,
             failedCount: result.failedCount,
+            canceledCount: result.canceledCount,
             scannedAt: result.scannedAt,
           });
         }

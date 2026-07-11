@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { execFile } from 'child_process';
 import { randomUUID } from 'crypto';
 
 import { MockServer, createMockServer } from '@nocobase/test';
@@ -32,35 +31,9 @@ function getData(response: ResponseLike) {
   return response.body.data || response.body || {};
 }
 
-function execTmux(args: string[]) {
-  return new Promise<void>((resolve, reject) => {
-    execFile('tmux', args, (error) => {
-      if (error) {
-        reject(error);
-        return;
-      }
-      resolve();
-    });
-  });
-}
-
-async function tmuxAvailable() {
-  try {
-    await execTmux(['-V']);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 describe('agent gateway run terminal APIs', () => {
   let app: MockServer;
   let rootAgent: ReturnType<MockServer['agent']>;
-  let tmuxReady = false;
-
-  beforeAll(async () => {
-    tmuxReady = await tmuxAvailable();
-  });
 
   beforeEach(async () => {
     app = await createMockServer({
@@ -281,34 +254,53 @@ describe('agent gateway run terminal APIs', () => {
         }),
       );
 
-    await app.db.getRepository('agAgentConversationEvents').create({
-      values: {
-        id: randomUUID(),
-        runId: run.id,
-        source: 'terminal-live',
-        sequence: 1,
-        eventType: 'agent.message',
-        contentText: 'old remote output\n',
-        contentJson: {
-          live: true,
+    await app.db.sequelize.transaction(async (transaction) => {
+      const repository = app.db.getRepository('agAgentConversationEvents');
+      await repository.create({
+        values: {
+          id: randomUUID(),
+          runId: run.id,
+          source: 'terminal-live',
+          sequence: 1,
+          eventType: 'agent.message',
+          contentText: 'old remote output\n',
+          contentJson: {
+            live: true,
+          },
         },
-      },
-    });
-    await app.db.getRepository('agAgentConversationEvents').create({
-      values: {
-        id: randomUUID(),
-        runId: run.id,
-        source: 'terminal-live',
-        sequence: 2,
-        eventType: 'agent.message',
-        contentText: 'latest remote output\n[agent-gateway] process exited with code 0',
-        contentJson: {
-          live: true,
+        transaction,
+      });
+      await repository.create({
+        values: {
+          id: randomUUID(),
+          runId: run.id,
+          source: 'codex',
+          sequence: 1,
+          eventType: 'agent.tool.call',
+          contentText: 'shell',
+          contentJson: {
+            rawLine: '{"type":"item.started","item":{"type":"command_execution","command":"yarn test"}}',
+          },
         },
-      },
+        transaction,
+      });
+      await repository.create({
+        values: {
+          id: randomUUID(),
+          runId: run.id,
+          source: 'terminal-live',
+          sequence: 2,
+          eventType: 'agent.message',
+          contentText: 'latest remote output\n[agent-gateway] process exited with code 0',
+          contentJson: {
+            live: true,
+          },
+        },
+        transaction,
+      });
     });
 
-    const snapshotResponse = await rootAgent.get(`/api/agent-gateway/runs/${run.id}/terminal:snapshot?lines=2`);
+    const snapshotResponse = await rootAgent.get(`/api/agent-gateway/runs/${run.id}/terminal:snapshot?lines=3`);
     expect(snapshotResponse.status).toBe(200);
     const snapshot = getData(snapshotResponse);
     expect(snapshot).toMatchObject({
@@ -318,6 +310,8 @@ describe('agent gateway run terminal APIs', () => {
       inputEnabled: false,
     });
     expect(String(snapshot.output)).not.toContain('old remote output');
+    expect(String(snapshot.output)).toContain('"type":"command_execution"');
+    expect(String(snapshot.output)).toContain('"command":"[REDACTED]"');
     expect(String(snapshot.output)).toContain('latest remote output');
     expect(String(snapshot.output)).toContain('[agent-gateway] process exited with code 0');
   });
@@ -379,84 +373,73 @@ describe('agent gateway run terminal APIs', () => {
     expect(terminateResponse.status).toBe(409);
   });
 
-  it('controls a managed tmux terminal session for an active run', async () => {
-    if (!tmuxReady) {
-      return;
-    }
-
+  it('controls a remote managed tmux run without reading a server-local tmux session', async () => {
     const runner = await createRunner();
     const { run, claim } = await createAndClaimRun(runner);
     const sessionName = getSessionName(run.id);
     await attachAgentSession(run.id);
 
-    await execTmux(['new-session', '-d', '-s', sessionName, '--', 'sh', '-lc', 'printf ready; sleep 60']);
-    try {
-      await app
-        .agent()
-        .post(`/api/agent-gateway/nodes/${runner.nodeId}/runs/${run.id}/terminal:update`)
-        .set('Authorization', `Bearer ${runner.nodeToken}`)
-        .send(
-          leaseValues(claim, {
-            terminalBackend: 'tmux',
-            terminalSessionName: sessionName,
-            terminalStatus: 'active',
-          }),
-        );
+    await app
+      .agent()
+      .post(`/api/agent-gateway/nodes/${runner.nodeId}/runs/${run.id}/terminal:update`)
+      .set('Authorization', `Bearer ${runner.nodeToken}`)
+      .send(
+        leaseValues(claim, {
+          terminalBackend: 'tmux',
+          terminalSessionName: sessionName,
+          terminalStatus: 'active',
+        }),
+      );
 
-      const snapshotResponse = await rootAgent.get(`/api/agent-gateway/runs/${run.id}/terminal:snapshot`);
-      expect(snapshotResponse.status).toBe(200);
-      const snapshot = getData(snapshotResponse);
-      expect(snapshot.available).toBe(true);
-      expect(String(snapshot.output)).toContain('ready');
-      expect(snapshot.inputEnabled).toBe(false);
+    const snapshotResponse = await rootAgent.get(`/api/agent-gateway/runs/${run.id}/terminal:snapshot`);
+    expect(snapshotResponse.status).toBe(200);
+    const snapshot = getData(snapshotResponse);
+    expect(snapshot.available).toBe(false);
+    expect(snapshot.output).toBe('');
+    expect(snapshot.inputEnabled).toBe(false);
 
-      const sendResponse = await rootAgent.post(`/api/agent-gateway/runs/${run.id}/terminal:send`).send({
-        input: 'hello',
-        appendEnter: true,
-      });
-      expect(sendResponse.status).toBe(403);
-      expect(JSON.stringify(sendResponse.body)).toContain('TERMINAL_RAW_WRITE_DISABLED');
+    const sendResponse = await rootAgent.post(`/api/agent-gateway/runs/${run.id}/terminal:send`).send({
+      input: 'hello',
+      appendEnter: true,
+    });
+    expect(sendResponse.status).toBe(403);
+    expect(JSON.stringify(sendResponse.body)).toContain('TERMINAL_RAW_WRITE_DISABLED');
 
-      const legacyWriteResponse = await rootAgent.post(`/api/agent-gateway/runs/${run.id}/terminal:write`).send({
-        input: 'legacy-write',
-      });
-      expect(legacyWriteResponse.status).toBe(403);
-      expect(JSON.stringify(legacyWriteResponse.body)).toContain('TERMINAL_RAW_WRITE_DISABLED');
+    const legacyWriteResponse = await rootAgent.post(`/api/agent-gateway/runs/${run.id}/terminal:write`).send({
+      input: 'legacy-write',
+    });
+    expect(legacyWriteResponse.status).toBe(403);
+    expect(JSON.stringify(legacyWriteResponse.body)).toContain('TERMINAL_RAW_WRITE_DISABLED');
 
-      const malformedResponse = await rootAgent.post(`/api/agent-gateway/runs/${run.id}/terminal:send`).send({
-        input: {
-          nested: 'must-not-render',
-        },
-      });
-      expect(malformedResponse.status).toBe(403);
-      expect(JSON.stringify(malformedResponse.body)).toContain('TERMINAL_RAW_WRITE_DISABLED');
+    const malformedResponse = await rootAgent.post(`/api/agent-gateway/runs/${run.id}/terminal:send`).send({
+      input: {
+        nested: 'must-not-render',
+      },
+    });
+    expect(malformedResponse.status).toBe(403);
+    expect(JSON.stringify(malformedResponse.body)).toContain('TERMINAL_RAW_WRITE_DISABLED');
 
-      const oversizedResponse = await rootAgent.post(`/api/agent-gateway/runs/${run.id}/terminal:send`).send({
-        input: 'x'.repeat(4001),
-      });
-      expect(oversizedResponse.status).toBe(403);
-      expect(JSON.stringify(oversizedResponse.body)).toContain('TERMINAL_RAW_WRITE_DISABLED');
+    const oversizedResponse = await rootAgent.post(`/api/agent-gateway/runs/${run.id}/terminal:send`).send({
+      input: 'x'.repeat(4001),
+    });
+    expect(oversizedResponse.status).toBe(403);
+    expect(JSON.stringify(oversizedResponse.body)).toContain('TERMINAL_RAW_WRITE_DISABLED');
 
-      const terminateResponse = await rootAgent.post(`/api/agent-gateway/runs/${run.id}/terminal:terminate`).send({
-        idempotencyKey: 'tmux-terminate-click',
-      });
-      expect(terminateResponse.status).toBe(200);
-      expect(getData(terminateResponse)).toMatchObject({
-        success: true,
-        terminalTerminationRequested: true,
-        controlRequestStatus: 'accepted',
-      });
+    const terminateResponse = await rootAgent.post(`/api/agent-gateway/runs/${run.id}/terminal:terminate`).send({
+      idempotencyKey: 'tmux-terminate-click',
+    });
+    expect(terminateResponse.status).toBe(200);
+    expect(getData(terminateResponse)).toMatchObject({
+      success: true,
+      terminalTerminationRequested: true,
+      controlRequestStatus: 'accepted',
+    });
 
-      const storedRun = await app.db.getRepository('agRuns').findOne({
-        filterByTk: run.id,
-      });
-      expect(storedRun.get('cancelRequested')).toBe(true);
-      expect(storedRun.get('status')).toBe('canceling');
-      expect(await app.db.getRepository('agRunControlRequests').count({ filter: { runId: run.id } })).toBe(1);
-    } finally {
-      await execTmux(['kill-session', '-t', sessionName]).catch(() => {
-        // The test cleanup may race with process exit.
-      });
-    }
+    const storedRun = await app.db.getRepository('agRuns').findOne({
+      filterByTk: run.id,
+    });
+    expect(storedRun.get('cancelRequested')).toBe(true);
+    expect(storedRun.get('status')).toBe('canceling');
+    expect(await app.db.getRepository('agRunControlRequests').count({ filter: { runId: run.id } })).toBe(1);
   });
 });

@@ -40,6 +40,8 @@ export interface DaemonTerminalStreamClientOptions {
   initialReconnectDelayMs?: number;
   maxReconnectDelayMs?: number;
   maxReconnectAttempts?: number;
+  ackTimeoutMs?: number;
+  sendTimeoutMs?: number;
   createWebSocket?: (url: string, headers: Record<string, string>) => TerminalStreamSocket;
   onStateChange?: (state: DaemonTerminalStreamState, detail?: string) => void;
 }
@@ -61,11 +63,14 @@ export interface TerminalStreamSocket {
 interface PendingAck {
   resolve(): void;
   reject(error: Error): void;
+  timer: ReturnType<typeof setTimeout>;
 }
 
 const DEFAULT_INITIAL_RECONNECT_DELAY_MS = TERMINAL_RECONNECT_INITIAL_DELAY_MS;
 const DEFAULT_MAX_RECONNECT_DELAY_MS = TERMINAL_RECONNECT_MAX_DELAY_MS;
 const DEFAULT_FINAL_END_WAIT_MS = 5000;
+const DEFAULT_ACK_TIMEOUT_MS = 5000;
+const DEFAULT_SEND_TIMEOUT_MS = 5000;
 const MAX_REPLAY_DATA_FRAME_BYTES = TERMINAL_DAEMON_TARGET_CHUNK_BYTES;
 
 function buildWebSocketUrl(serverUrl: string) {
@@ -120,6 +125,7 @@ export class DaemonTerminalStreamClient {
   private terminalEndSent = false;
   private streamReplayOffsetStart?: number;
   private sentTerminalEnd?: TerminalEnd;
+  private pendingEndSendPromise?: Promise<void>;
   private readonly pendingEndWaiters = new Set<(sent: boolean) => void>();
   private readonly pendingAcks = new Map<string, PendingAck>();
 
@@ -144,23 +150,25 @@ export class DaemonTerminalStreamClient {
     await this.drainRetainedData();
   }
 
-  async end(reason: TerminalEnd['reason']) {
+  async end(reason: TerminalEnd['reason']): Promise<boolean> {
     if (this.terminalEndSent) {
-      return;
+      return true;
     }
     if (this.pendingEnd) {
-      await this.flushPendingEnd(DEFAULT_FINAL_END_WAIT_MS);
-      return;
+      this.reconnectForFinalFlush();
+      return await this.flushPendingEnd(this.getFinalEndWaitMs());
     }
     this.pendingEnd = {
       type: 'terminal.end',
       protocol: TERMINAL_PROTOCOL,
+      requestId: createRequestId('terminal-end'),
       runId: this.options.runId,
       sessionName: this.options.sessionName,
       offsetEnd: this.options.ringBuffer.currentOffset,
       reason,
     };
-    await this.flushPendingEnd(DEFAULT_FINAL_END_WAIT_MS);
+    this.reconnectForFinalFlush();
+    return await this.flushPendingEnd(this.getFinalEndWaitMs());
   }
 
   close() {
@@ -168,7 +176,25 @@ export class DaemonTerminalStreamClient {
     this.clearReconnectTimer();
     this.rejectPendingAcks(new Error('Terminal stream client closed'));
     this.detachSocket(true);
+    this.resolvePendingEndWaiters(false);
     this.setState('closed');
+  }
+
+  private getFinalEndWaitMs() {
+    const reconnectDelayMs = this.options.maxReconnectDelayMs ?? DEFAULT_MAX_RECONNECT_DELAY_MS;
+    const ackTimeoutMs = this.options.ackTimeoutMs ?? DEFAULT_ACK_TIMEOUT_MS;
+    const sendTimeoutMs = this.options.sendTimeoutMs ?? DEFAULT_SEND_TIMEOUT_MS;
+    return Math.max(DEFAULT_FINAL_END_WAIT_MS, reconnectDelayMs + ackTimeoutMs * 2 + sendTimeoutMs);
+  }
+
+  private reconnectForFinalFlush() {
+    if (!this.active || this.state === 'bound') {
+      return;
+    }
+    this.clearReconnectTimer();
+    this.connect().catch(() => {
+      // connect() owns state and reconnect scheduling.
+    });
   }
 
   private async connect() {
@@ -178,6 +204,10 @@ export class DaemonTerminalStreamClient {
     }
     this.connectPromise = this.connectOnce()
       .catch((error) => {
+        this.detachSocket(true);
+        if (!this.active) {
+          return;
+        }
         this.setState('error', error instanceof Error ? error.message : String(error));
         this.scheduleReconnect();
       })
@@ -202,6 +232,9 @@ export class DaemonTerminalStreamClient {
     await this.waitForOpen(ws);
     await this.registerDaemon();
     await this.bindRun();
+    if (!this.active || this.ws !== ws) {
+      return;
+    }
     this.reconnectAttempts = 0;
     this.streamReplayOffsetStart = undefined;
     this.sentTerminalEnd = undefined;
@@ -227,6 +260,10 @@ export class DaemonTerminalStreamClient {
       return Promise.resolve();
     }
     return new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(() => {
+        cleanup();
+        reject(new Error('Terminal stream WebSocket open timed out'));
+      }, this.options.ackTimeoutMs ?? DEFAULT_ACK_TIMEOUT_MS);
       const onOpen = () => {
         cleanup();
         resolve();
@@ -240,6 +277,7 @@ export class DaemonTerminalStreamClient {
         reject(new Error('Terminal stream WebSocket closed before open'));
       };
       const cleanup = () => {
+        clearTimeout(timer);
         ws.off('open', onOpen);
         ws.off('error', onError);
         ws.off('close', onClose);
@@ -285,13 +323,25 @@ export class DaemonTerminalStreamClient {
     }
     const requestId = frame.requestId;
     const ackPromise = new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(() => {
+        const pending = this.pendingAcks.get(requestId);
+        if (!pending) {
+          return;
+        }
+        this.pendingAcks.delete(requestId);
+        pending.reject(new Error(`Terminal stream ACK timed out: ${requestId}`));
+      }, this.options.ackTimeoutMs ?? DEFAULT_ACK_TIMEOUT_MS);
       this.pendingAcks.set(requestId, {
         resolve,
         reject,
+        timer,
       });
     });
-    await this.sendFrame(frame);
-    await ackPromise;
+    const sendPromise = this.sendFrame(frame).catch((error) => {
+      this.rejectPendingAck(requestId, error instanceof Error ? error : new Error(String(error)));
+      throw error;
+    });
+    await Promise.race([ackPromise, sendPromise.then(() => ackPromise)]);
   }
 
   private async drainRetainedData() {
@@ -323,9 +373,13 @@ export class DaemonTerminalStreamClient {
         return;
       }
       try {
-        await this.sendFrame(replay.frame);
-        this.recordSentStreamData(replay.frame.offsetStart);
-        this.nextSendOffset = replay.frame.offsetEnd;
+        const frame = {
+          ...replay.frame,
+          requestId: createRequestId('terminal-data'),
+        };
+        await this.sendWithAck(frame);
+        this.recordSentStreamData(frame.offsetStart);
+        this.nextSendOffset = frame.offsetEnd;
       } catch (error) {
         this.setState('error', error instanceof Error ? error.message : String(error));
         this.scheduleReconnect();
@@ -353,19 +407,49 @@ export class DaemonTerminalStreamClient {
     }
   }
 
+  private async sendWithAckIfBound(frame: TerminalFrame) {
+    if (this.state !== 'bound') {
+      return false;
+    }
+    try {
+      await this.sendWithAck(frame);
+      return true;
+    } catch (error) {
+      this.setState('error', error instanceof Error ? error.message : String(error));
+      this.scheduleReconnect();
+      return false;
+    }
+  }
+
   private async sendFrame(frame: TerminalFrame | TerminalServerFrame) {
     const ws = this.ws;
     if (!ws || ws.readyState !== WebSocket.OPEN) {
       throw new Error('Terminal stream WebSocket is not open');
     }
     await new Promise<void>((resolve, reject) => {
-      ws.send(JSON.stringify(frame), (error?: Error) => {
+      let settled = false;
+      const finish = (error?: Error) => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        clearTimeout(timer);
         if (error) {
           reject(error);
           return;
         }
         resolve();
-      });
+      };
+      const timer = setTimeout(() => {
+        finish(new Error(`Terminal stream send timed out: ${frame.type}`));
+      }, this.options.sendTimeoutMs ?? DEFAULT_SEND_TIMEOUT_MS);
+      try {
+        ws.send(JSON.stringify(frame), (error?: Error) => {
+          finish(error);
+        });
+      } catch (error) {
+        finish(error instanceof Error ? error : new Error(String(error)));
+      }
     });
   }
 
@@ -408,11 +492,13 @@ export class DaemonTerminalStreamClient {
     for (const [requestId, pending] of this.pendingAcks) {
       if (isAck(frame, requestId)) {
         this.pendingAcks.delete(requestId);
+        clearTimeout(pending.timer);
         pending.resolve();
         return;
       }
       if (isErrorForRequest(frame, requestId)) {
         this.pendingAcks.delete(requestId);
+        clearTimeout(pending.timer);
         pending.reject(new Error(`${frame.code}: ${frame.message}`));
         return;
       }
@@ -428,29 +514,43 @@ export class DaemonTerminalStreamClient {
 
   private async flushPendingEnd(waitMs: number) {
     if (!this.pendingEnd) {
-      return;
+      return this.terminalEndSent;
     }
     if (this.state === 'bound') {
       await this.sendPendingEnd();
     }
     if (!this.pendingEnd || waitMs <= 0) {
-      return;
+      return this.terminalEndSent;
     }
-    await new Promise<void>((resolve) => {
-      const waiter = () => {
+    if (!this.active || this.state === 'closed') {
+      return false;
+    }
+    return await new Promise<boolean>((resolve) => {
+      const waiter = (sent: boolean) => {
         clearTimeout(timer);
         this.pendingEndWaiters.delete(waiter);
-        resolve();
+        resolve(sent);
       };
       const timer = setTimeout(() => {
         this.pendingEndWaiters.delete(waiter);
-        resolve();
+        resolve(false);
       }, waitMs);
       this.pendingEndWaiters.add(waiter);
     });
   }
 
   private async sendPendingEnd() {
+    if (this.pendingEndSendPromise) {
+      await this.pendingEndSendPromise;
+      return;
+    }
+    this.pendingEndSendPromise = this.sendPendingEndOnce().finally(() => {
+      this.pendingEndSendPromise = undefined;
+    });
+    await this.pendingEndSendPromise;
+  }
+
+  private async sendPendingEndOnce() {
     if (!this.pendingEnd || this.state !== 'bound') {
       return;
     }
@@ -462,17 +562,14 @@ export class DaemonTerminalStreamClient {
       ...this.pendingEnd,
       offsetEnd: this.options.ringBuffer.currentOffset,
     };
-    const sent = await this.sendIfBound(frame);
+    const sent = await this.sendWithAckIfBound(frame);
     if (!sent) {
       return;
     }
     this.sentTerminalEnd = frame;
     this.pendingEnd = undefined;
     this.terminalEndSent = true;
-    for (const waiter of this.pendingEndWaiters) {
-      waiter(true);
-    }
-    this.pendingEndWaiters.clear();
+    this.resolvePendingEndWaiters(true);
   }
 
   private readonly handleClose = () => {
@@ -489,6 +586,8 @@ export class DaemonTerminalStreamClient {
     this.setState('error', error.message);
   };
 
+  private readonly ignoreDetachedSocketError = () => undefined;
+
   private scheduleReconnect() {
     if (!this.active || this.reconnectTimer) {
       return;
@@ -496,6 +595,7 @@ export class DaemonTerminalStreamClient {
     const maxAttempts = this.options.maxReconnectAttempts;
     if (typeof maxAttempts === 'number' && this.reconnectAttempts >= maxAttempts) {
       this.setState('closed', 'terminal stream reconnect attempts exhausted');
+      this.resolvePendingEndWaiters(false);
       return;
     }
     this.reconnectAttempts += 1;
@@ -527,15 +627,27 @@ export class DaemonTerminalStreamClient {
     ws.off('error', this.handleError);
     this.ws = undefined;
     if (closeSocket && ws.readyState !== WebSocket.CLOSED && ws.readyState !== WebSocket.CLOSING) {
+      ws.on('error', this.ignoreDetachedSocketError);
       ws.close();
     }
   }
 
   private rejectPendingAcks(error: Error) {
     for (const pending of this.pendingAcks.values()) {
+      clearTimeout(pending.timer);
       pending.reject(error);
     }
     this.pendingAcks.clear();
+  }
+
+  private rejectPendingAck(requestId: string, error: Error) {
+    const pending = this.pendingAcks.get(requestId);
+    if (!pending) {
+      return;
+    }
+    this.pendingAcks.delete(requestId);
+    clearTimeout(pending.timer);
+    pending.reject(error);
   }
 
   private clearReconnectTimer() {
@@ -544,6 +656,13 @@ export class DaemonTerminalStreamClient {
     }
     clearTimeout(this.reconnectTimer);
     this.reconnectTimer = undefined;
+  }
+
+  private resolvePendingEndWaiters(sent: boolean) {
+    for (const waiter of this.pendingEndWaiters) {
+      waiter(sent);
+    }
+    this.pendingEndWaiters.clear();
   }
 
   private setState(state: DaemonTerminalStreamState, detail?: string) {

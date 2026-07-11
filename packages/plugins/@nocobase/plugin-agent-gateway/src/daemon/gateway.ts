@@ -16,6 +16,7 @@ import {
   RunLease,
 } from './types';
 import { NodeSkillInstallPayload } from './skillSync';
+import { attachLocalRunLeaseDeadline } from './leaseDeadline';
 
 export class AgentGatewayDaemonNodeClient {
   constructor(
@@ -47,6 +48,7 @@ export class AgentGatewayDaemonNodeClient {
       path: `/api/agent-gateway/nodes/${this.config.nodeId}/heartbeat`,
       nodeToken: this.config.nodeToken,
       body: {
+        installationId: this.config.installationId,
         currentConcurrency: options.currentConcurrency || 0,
         capabilities: {
           maxConcurrency: 1,
@@ -91,11 +93,11 @@ export class AgentGatewayDaemonNodeClient {
       nodeToken: this.config.nodeToken,
       body,
     });
-    return response;
+    return response.claimed === false ? response : attachLocalRunLeaseDeadline(response);
   }
 
   async heartbeatRun(lease: RunLease, status: 'claimed' | 'syncing_skills' | 'running' | 'finalizing') {
-    return await this.requester.request<RunLease>({
+    const response = await this.requester.request<RunLease>({
       method: 'POST',
       path: `/api/agent-gateway/nodes/${this.config.nodeId}/runs/${lease.runId}/heartbeat`,
       nodeToken: this.config.nodeToken,
@@ -106,6 +108,7 @@ export class AgentGatewayDaemonNodeClient {
         status,
       },
     });
+    return attachLocalRunLeaseDeadline(response);
   }
 
   async updateRunTerminal(lease: RunLease, values: JsonRecord) {

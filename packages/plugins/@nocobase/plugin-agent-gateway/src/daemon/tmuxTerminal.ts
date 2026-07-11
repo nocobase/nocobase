@@ -13,14 +13,19 @@ import { promises as fs } from 'fs';
 import os from 'os';
 import path from 'path';
 import { StringDecoder } from 'string_decoder';
+import { pipeline } from 'stream/promises';
 
 import { AGENT_GATEWAY_TERMINATE_CONTROL_CANCEL_REASON } from '../shared/runControl';
+import { isManagedTmuxSessionName } from '../shared/terminalSession';
 import {
   ExecCommandDefinition,
   ExecDriverResult,
   ExecTerminalStatus,
-  prependWorkspaceNodeBinToPath,
+  MAX_RUN_OUTPUT_SPOOL_BYTES,
+  prepareCommandExecution,
 } from './execDriver';
+
+export { isManagedTmuxSessionName } from '../shared/terminalSession';
 
 export interface TmuxCommandOptions {
   runId: string;
@@ -34,6 +39,7 @@ export interface TmuxCommandOptions {
   cancelSignal?: AbortSignal;
   leaseLostSignal?: AbortSignal;
   liveOutputPollIntervalMs?: number;
+  maxOutputSpoolBytes?: number;
   outputMode?: 'terminal' | 'structured';
   onOutputChunk?(chunk: string): Promise<void> | void;
   onSessionStarted?(metadata: TmuxSessionMetadata): Promise<void> | void;
@@ -63,7 +69,6 @@ export const TMUX_TERMINATE_CANCEL_REASON = AGENT_GATEWAY_TERMINATE_CONTROL_CANC
 
 const TERMINAL_CAPTURE_LIMIT = 64 * 1024;
 const DEFAULT_CAPTURE_LINES = 2000;
-const TMUX_SESSION_PATTERN = /^ag-run-[a-z0-9-]{1,80}$/i;
 const SHELL_ENV_KEY_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
 const TERMINAL_STREAM_HIGH_WATER_MARK = 16 * 1024;
 const DEFAULT_LIVE_OUTPUT_POLL_INTERVAL_MS = 100;
@@ -104,20 +109,6 @@ function getExitCode(rawValue: string) {
   return Number.isInteger(parsed) ? parsed : null;
 }
 
-function isWithin(parent: string, child: string) {
-  const relative = path.relative(parent, child);
-  return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
-}
-
-async function resolveGuardedCwd(workspaceRoot: string, cwd: string) {
-  const realRoot = await fs.realpath(workspaceRoot);
-  const realCwd = await fs.realpath(cwd);
-  if (!isWithin(realRoot, realCwd)) {
-    throw new Error('cwd must stay inside the configured workspace root');
-  }
-  return realCwd;
-}
-
 export function getManagedTmuxSessionName(runId: string) {
   const normalized = runId
     .toLowerCase()
@@ -136,29 +127,16 @@ function assertManagedSessionName(sessionName: string) {
   }
 }
 
-export function isManagedTmuxSessionName(sessionName: string) {
-  return TMUX_SESSION_PATTERN.test(sessionName);
-}
-
 function buildShellCommand(options: {
-  definition: ExecCommandDefinition;
-  args?: string[];
-  env?: Record<string, string>;
-  cwd: string;
+  executable: string;
+  args: string[];
+  env: Record<string, string>;
   exitCodePath: string;
   outputFifoPath?: string;
   doneSignalName: string;
 }) {
-  const commandParts = [
-    shellQuote(options.definition.executable),
-    ...(options.definition.baseArgs || []).map(shellQuote),
-    ...(options.args || []).map(shellQuote),
-  ];
-  const env = {
-    ...(options.env || {}),
-    PATH: prependWorkspaceNodeBinToPath(options.cwd, options.env?.PATH || process.env.PATH),
-  };
-  const envLines = Object.entries(env)
+  const commandParts = [shellQuote(options.executable), ...options.args.map(shellQuote)];
+  const envLines = Object.entries(options.env)
     .filter(([key]) => SHELL_ENV_KEY_PATTERN.test(key))
     .map(([key, value]) => `export ${key}=${shellQuote(value)};`);
   const outputFifoPath = options.outputFifoPath;
@@ -305,8 +283,12 @@ async function killTmuxSessionIfExists(sessionName: string) {
   }
 }
 
-async function startPaneCapture(sessionName: string, paneCapturePath: string) {
-  await execTmux(['pipe-pane', '-o', '-t', sessionName, `cat >> ${shellQuote(paneCapturePath)}`]);
+function getOutputSpoolLimit(requestedBytes?: number) {
+  return Math.min(MAX_RUN_OUTPUT_SPOOL_BYTES, Math.max(1, requestedBytes || MAX_RUN_OUTPUT_SPOOL_BYTES));
+}
+
+async function startPaneCapture(sessionName: string, paneCapturePath: string, maxBytes: number) {
+  await execTmux(['pipe-pane', '-o', '-t', sessionName, `head -c ${maxBytes + 1} >> ${shellQuote(paneCapturePath)}`]);
 }
 
 async function stopPaneCapture(sessionName: string) {
@@ -346,14 +328,19 @@ function findTextOverlap(left: string, right: string) {
   return 0;
 }
 
-async function appendFallbackOutputIfMissing(paneCapturePath: string, fallbackOutput: string) {
+async function appendFallbackOutputIfMissing(paneCapturePath: string, fallbackOutput: string, maxBytes: number) {
   if (!fallbackOutput) {
     return;
   }
 
   const stat = await fs.stat(paneCapturePath).catch(() => null);
   if (!stat?.size) {
-    await fs.writeFile(paneCapturePath, fallbackOutput);
+    const content = Buffer.from(fallbackOutput).subarray(0, maxBytes);
+    await fs.writeFile(paneCapturePath, content);
+    return;
+  }
+
+  if (stat.size >= maxBytes) {
     return;
   }
 
@@ -372,8 +359,8 @@ async function appendFallbackOutputIfMissing(paneCapturePath: string, fallbackOu
       return;
     }
     const overlap = findTextOverlap(tail, fallbackOutput);
-    const missingSuffix = fallbackOutput.slice(overlap);
-    if (missingSuffix) {
+    const missingSuffix = Buffer.from(fallbackOutput.slice(overlap)).subarray(0, maxBytes - stat.size);
+    if (missingSuffix.length) {
       await fs.appendFile(paneCapturePath, missingSuffix);
     }
   } finally {
@@ -381,38 +368,19 @@ async function appendFallbackOutputIfMissing(paneCapturePath: string, fallbackOu
   }
 }
 
-async function writeTextArtifact(artifactDir: string | undefined, fileName: string, content: string) {
+async function writeTextArtifact(artifactDir: string | undefined, fileName: string, content: string, maxBytes: number) {
   if (!artifactDir) {
     return undefined;
   }
   await fs.mkdir(artifactDir, { recursive: true });
   const artifactPath = path.join(artifactDir, fileName);
-  await fs.writeFile(artifactPath, content);
+  await fs.writeFile(artifactPath, Buffer.from(content).subarray(0, maxBytes));
   return artifactPath;
 }
 
-async function writeArtifactChunk(writer: ReturnType<typeof createWriteStream>, content: string | Buffer) {
-  if (!content) {
-    return;
-  }
-
-  await new Promise<void>((resolve, reject) => {
-    writer.write(content, (error) => {
-      if (error) {
-        reject(error);
-        return;
-      }
-      resolve();
-    });
-  });
-}
-
-async function closeArtifactWriter(writer: ReturnType<typeof createWriteStream>) {
-  await new Promise<void>((resolve, reject) => {
-    writer.once('finish', resolve);
-    writer.once('error', reject);
-    writer.end();
-  });
+function decodeUtf8Prefix(value: string, maxBytes: number) {
+  const decoder = new StringDecoder('utf8');
+  return decoder.write(Buffer.from(value).subarray(0, maxBytes));
 }
 
 function createLiveOutputTailer(options: {
@@ -487,25 +455,34 @@ export async function writeTerminalArtifactFromFile(options: {
   sourcePath: string;
   artifactDir: string;
   fileName: string;
+  maxBytes?: number;
 }) {
   await fs.mkdir(options.artifactDir, { recursive: true });
   const artifactPath = path.join(options.artifactDir, options.fileName);
+  const maxBytes = getOutputSpoolLimit(options.maxBytes);
   const reader = createReadStream(options.sourcePath, {
     highWaterMark: TERMINAL_STREAM_HIGH_WATER_MARK,
+    start: 0,
+    end: maxBytes - 1,
   });
   const writer = createWriteStream(artifactPath, {
     flags: 'w',
   });
-
   try {
-    for await (const chunk of reader) {
-      const chunkBuffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk));
-      await writeArtifactChunk(writer, chunkBuffer);
-    }
-  } finally {
-    await closeArtifactWriter(writer);
+    await pipeline(reader, writer);
+  } catch (error) {
+    await fs.unlink(artifactPath).catch(() => {
+      // A failed copy does not produce an artifact owned by the caller.
+    });
+    throw error;
   }
-  return artifactPath;
+  const artifactStat = await fs.stat(artifactPath);
+  const sourceStat = await fs.stat(options.sourcePath).catch(() => null);
+  return {
+    artifactPath,
+    sizeBytes: artifactStat.size,
+    truncated: Boolean(sourceStat && sourceStat.size > artifactStat.size),
+  };
 }
 
 async function buildTmuxStdoutOutput(options: {
@@ -513,20 +490,23 @@ async function buildTmuxStdoutOutput(options: {
   sessionName: string;
   paneCapturePath: string;
   fallbackOutput: string;
+  maxBytes: number;
 }): Promise<ExecDriverResult['stdout']> {
   const rawPaneStat = await fs.stat(options.paneCapturePath).catch(() => null);
   if (rawPaneStat?.size) {
     if (options.artifactDir) {
-      const artifactPath = await writeTerminalArtifactFromFile({
+      const artifact = await writeTerminalArtifactFromFile({
         sourcePath: options.paneCapturePath,
         artifactDir: options.artifactDir,
         fileName: `${options.sessionName}-terminal.log`,
+        maxBytes: options.maxBytes,
       });
-      const artifactStat = await fs.stat(artifactPath);
       return {
         text: null,
-        sizeBytes: artifactStat.size,
-        artifactPath,
+        sizeBytes: artifact.sizeBytes,
+        capturedBytes: artifact.sizeBytes,
+        truncated: artifact.truncated || rawPaneStat.size > options.maxBytes,
+        artifactPath: artifact.artifactPath,
       };
     }
     const file = await fs.open(options.paneCapturePath, 'r');
@@ -536,6 +516,8 @@ async function buildTmuxStdoutOutput(options: {
       return {
         text: buffer.subarray(0, bytesRead).toString('utf8'),
         sizeBytes: bytesRead,
+        capturedBytes: bytesRead,
+        truncated: rawPaneStat.size > bytesRead,
       };
     } finally {
       await file.close();
@@ -543,10 +525,19 @@ async function buildTmuxStdoutOutput(options: {
   }
 
   const stdoutText = options.fallbackOutput;
-  const artifactPath = await writeTextArtifact(options.artifactDir, `${options.sessionName}-terminal.log`, stdoutText);
+  const artifactPath = await writeTextArtifact(
+    options.artifactDir,
+    `${options.sessionName}-terminal.log`,
+    stdoutText,
+    options.maxBytes,
+  );
+  const capturedText = decodeUtf8Prefix(stdoutText, options.maxBytes);
+  const capturedBytes = Buffer.byteLength(capturedText);
   return {
-    text: artifactPath ? null : stdoutText,
+    text: artifactPath ? null : capturedText,
     sizeBytes: Buffer.byteLength(stdoutText),
+    capturedBytes,
+    truncated: capturedBytes < Buffer.byteLength(stdoutText),
     artifactPath,
   };
 }
@@ -602,6 +593,14 @@ export async function terminateTmuxSession(sessionName: string) {
 }
 
 export async function executeTmuxCommand(options: TmuxCommandOptions): Promise<ExecDriverResult> {
+  const prepared = await prepareCommandExecution({
+    definition: options.definition,
+    args: options.args,
+    cwd: options.cwd,
+    workspaceRoot: options.workspaceRoot,
+    env: options.env,
+    timeoutMs: options.timeoutMs,
+  });
   const sessionName = getManagedTmuxSessionName(options.runId);
   const startedAt = new Date().toISOString();
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), `${sessionName}-`));
@@ -610,18 +609,23 @@ export async function executeTmuxCommand(options: TmuxCommandOptions): Promise<E
   const commandScriptPath = path.join(tempDir, 'command.sh');
   const outputFifoPath = options.outputMode === 'structured' ? path.join(tempDir, 'command-output.fifo') : undefined;
   const doneSignalName = getDoneSignalName(sessionName);
-  const guardedCwd = await resolveGuardedCwd(options.workspaceRoot, options.cwd);
+  const maxOutputSpoolBytes = getOutputSpoolLimit(options.maxOutputSpoolBytes);
   let terminalStatus: ExecTerminalStatus | null = null;
   let forceKillTimer: ReturnType<typeof setTimeout> | null = null;
   let stopLiveOutputTailer: (() => Promise<void>) | null = null;
+  let cancelHandler: (() => void) | null = null;
+  let leaseLostHandler: (() => void) | null = null;
+  let ownsSessionName = false;
+  let persistentArtifactPath: string | undefined;
+  let artifactOwnedByCaller = false;
 
   try {
     await killTmuxSessionIfExists(sessionName);
+    ownsSessionName = true;
     const shellCommand = buildShellCommand({
-      definition: options.definition,
-      args: options.args,
-      env: options.env,
-      cwd: guardedCwd,
+      executable: prepared.executable,
+      args: prepared.args,
+      env: prepared.env,
       exitCodePath,
       outputFifoPath,
       doneSignalName,
@@ -633,7 +637,7 @@ export async function executeTmuxCommand(options: TmuxCommandOptions): Promise<E
       '-s',
       sessionName,
       '-c',
-      guardedCwd,
+      prepared.cwd,
       '--',
       'sh',
       '-lc',
@@ -642,7 +646,7 @@ export async function executeTmuxCommand(options: TmuxCommandOptions): Promise<E
     await execTmux(['set-option', '-t', sessionName, 'remain-on-exit', 'on']).catch(() => {
       // Older tmux versions may reject this after a very short-lived process exits.
     });
-    await startPaneCapture(sessionName, paneCapturePath);
+    await startPaneCapture(sessionName, paneCapturePath, maxOutputSpoolBytes);
     if (options.onOutputChunk) {
       stopLiveOutputTailer = createLiveOutputTailer({
         sourcePath: paneCapturePath,
@@ -650,7 +654,7 @@ export async function executeTmuxCommand(options: TmuxCommandOptions): Promise<E
         onChunk: options.onOutputChunk,
       });
     }
-    const cancelHandler = () => {
+    cancelHandler = () => {
       terminalStatus = terminalStatus || 'canceled';
       if (isTerminateCancelReason(options.cancelSignal?.reason)) {
         return;
@@ -664,7 +668,7 @@ export async function executeTmuxCommand(options: TmuxCommandOptions): Promise<E
         });
       }, 2000);
     };
-    const leaseLostHandler = () => {
+    leaseLostHandler = () => {
       terminalStatus = terminalStatus || 'lease_lost';
       terminateTmuxSession(sessionName).catch(() => {
         // The session may have already ended.
@@ -687,18 +691,10 @@ export async function executeTmuxCommand(options: TmuxCommandOptions): Promise<E
     });
 
     let waitResult: TmuxWaitResult = 'timeout';
-    try {
-      waitResult = await waitForSignalOrPaneEnd(sessionName, doneSignalName, options.timeoutMs);
-      if (waitResult === 'timeout') {
-        terminalStatus = terminalStatus || 'timeout';
-        await terminateTmuxSession(sessionName);
-      }
-    } finally {
-      if (forceKillTimer) {
-        clearTimeout(forceKillTimer);
-      }
-      options.cancelSignal?.removeEventListener('abort', cancelHandler);
-      options.leaseLostSignal?.removeEventListener('abort', leaseLostHandler);
+    waitResult = await waitForSignalOrPaneEnd(sessionName, doneSignalName, prepared.timeoutMs);
+    if (waitResult === 'timeout') {
+      terminalStatus = terminalStatus || 'timeout';
+      await terminateTmuxSession(sessionName);
     }
     await waitForPaneCaptureToSettle(paneCapturePath);
     await stopPaneCapture(sessionName);
@@ -719,13 +715,15 @@ export async function executeTmuxCommand(options: TmuxCommandOptions): Promise<E
       sessionName,
       capturedAt: new Date().toISOString(),
     }));
-    await appendFallbackOutputIfMissing(paneCapturePath, snapshot.output);
+    await appendFallbackOutputIfMissing(paneCapturePath, snapshot.output, maxOutputSpoolBytes);
     const stdout = await buildTmuxStdoutOutput({
       artifactDir: options.artifactDir,
       sessionName,
       paneCapturePath,
       fallbackOutput: snapshot.output,
+      maxBytes: maxOutputSpoolBytes,
     });
+    persistentArtifactPath = stdout.artifactPath;
     const endedAt = new Date().toISOString();
     await options.onSessionEnded?.({
       backend: 'tmux',
@@ -736,6 +734,7 @@ export async function executeTmuxCommand(options: TmuxCommandOptions): Promise<E
       terminalStatus: status,
     });
 
+    artifactOwnedByCaller = true;
     return {
       status,
       exitCode,
@@ -747,15 +746,33 @@ export async function executeTmuxCommand(options: TmuxCommandOptions): Promise<E
       },
     };
   } finally {
+    if (forceKillTimer) {
+      clearTimeout(forceKillTimer);
+    }
+    if (cancelHandler) {
+      options.cancelSignal?.removeEventListener('abort', cancelHandler);
+    }
+    if (leaseLostHandler) {
+      options.leaseLostSignal?.removeEventListener('abort', leaseLostHandler);
+    }
+    if (ownsSessionName) {
+      await terminateTmuxSession(sessionName).catch(() => {
+        // Cleanup must not replace the command result or the original error.
+      });
+    }
     await stopPaneCapture(sessionName);
     if (stopLiveOutputTailer) {
-      await stopLiveOutputTailer();
+      await stopLiveOutputTailer().catch(() => {
+        // Final artifact capture is authoritative when live tailing cleanup fails.
+      });
+    }
+    if (persistentArtifactPath && !artifactOwnedByCaller) {
+      await fs.unlink(persistentArtifactPath).catch(() => {
+        // A failed execution cannot hand this artifact to the runner for cleanup.
+      });
     }
     await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {
       // The temp directory only contains raw pane capture and exit-code helpers.
     });
-    if (forceKillTimer) {
-      clearTimeout(forceKillTimer);
-    }
   }
 }

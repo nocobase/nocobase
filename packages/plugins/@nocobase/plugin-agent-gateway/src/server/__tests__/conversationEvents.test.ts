@@ -13,11 +13,13 @@ import { MockServer, createMockServer } from '@nocobase/test';
 
 import PluginAgentGatewayServer from '../plugin';
 import { createNodeToken, toStoredTokenFields } from '../security';
+import { buildRunObservabilityRollup } from '../services/observationRollup';
 
 interface ResponseLike {
   status: number;
   body: {
     data?: Record<string, unknown>;
+    meta?: Record<string, unknown>;
   };
 }
 
@@ -350,6 +352,166 @@ describe('agent gateway conversation event APIs', () => {
       `/api/agent-gateway/agent-sessions/${String(orphanSession.get('id'))}/conversation-events:list`,
     );
     expect(orphanSessionListResponse.status).toBe(404);
+  });
+
+  it('returns bounded latest pages, older cursors, and later same-timestamp ingests with lower UUIDs', async () => {
+    const runner = await createRunner('cursor');
+    const run = await createRun(runner, 'conversation-run-cursor');
+    const runId = expectString(run.id);
+    const session = await app.db.getRepository('agAgentSessions').create({
+      values: {
+        id: randomUUID(),
+        nodeId: runner.nodeId,
+        provider: 'codex',
+        providerSessionId: `cursor-session-${runId}`,
+        rootRunId: runId,
+        latestRunId: runId,
+        status: 'active',
+      },
+    });
+    const sessionId = expectString(session.get('id'));
+    await app.db.getRepository('agRuns').update({
+      filterByTk: runId,
+      values: {
+        agentSessionId: sessionId,
+        agentSessionProvider: 'codex',
+        agentSessionProviderId: `cursor-session-${runId}`,
+      },
+    });
+    const repository = app.db.getRepository('agAgentConversationEvents');
+    const timestamps = [
+      new Date('2026-07-11T01:00:00.000Z'),
+      new Date('2026-07-11T01:00:01.000Z'),
+      new Date('2026-07-11T01:00:02.000Z'),
+      new Date('2026-07-11T01:00:03.000Z'),
+    ];
+    const eventIds = [
+      '80000000-0000-4000-8000-000000000001',
+      '80000000-0000-4000-8000-000000000002',
+      '80000000-0000-4000-8000-000000000003',
+      '80000000-0000-4000-8000-000000000004',
+    ];
+    const createdIds: string[] = [];
+    for (let index = 0; index < timestamps.length; index += 1) {
+      const event = await app.db.sequelize.transaction(async (transaction) => {
+        return await repository.create({
+          values: {
+            id: eventIds[index],
+            sessionId,
+            runId,
+            source: index % 2 === 0 ? 'codex' : 'opencode',
+            sequence: Math.floor(index / 2) + 1,
+            eventType: 'agent.message',
+            contentText: `cursor-event-${index + 1}`,
+            contentJson: {},
+          },
+          transaction,
+        });
+      });
+      const eventId = expectString(event.get('id'));
+      createdIds.push(eventId);
+      await app.db
+        .getCollection('agAgentConversationEvents')
+        .model.update({ createdAt: timestamps[index] }, { where: { id: eventId }, hooks: false });
+    }
+
+    const latestResponse = await rootAgent
+      .get(`/api/agent-gateway/runs/${runId}/conversation-events:list`)
+      .query({ pageSize: 2 });
+    expect(latestResponse.status).toBe(200);
+    expect((latestResponse.body.data as Array<Record<string, unknown>>).map((event) => event.contentText)).toEqual([
+      'cursor-event-3',
+      'cursor-event-4',
+    ]);
+    expect(latestResponse.body.meta).toMatchObject({
+      pageSize: 2,
+      hasMoreBefore: true,
+      hasMoreAfter: false,
+    });
+    const beforeCursor = expectString(latestResponse.body.meta?.beforeCursor);
+    const afterCursor = expectString(latestResponse.body.meta?.afterCursor);
+    const latestSessionResponse = await rootAgent
+      .get(`/api/agent-gateway/agent-sessions/${sessionId}/conversation-events:list`)
+      .query({ pageSize: 2 });
+    expect(latestSessionResponse.status).toBe(200);
+    expect(
+      (latestSessionResponse.body.data as Array<Record<string, unknown>>).map((event) => event.contentText),
+    ).toEqual(['cursor-event-3', 'cursor-event-4']);
+    const sessionAfterCursor = expectString(latestSessionResponse.body.meta?.afterCursor);
+
+    const olderResponse = await rootAgent
+      .get(`/api/agent-gateway/runs/${runId}/conversation-events:list`)
+      .query({ pageSize: 2, beforeCursor });
+    expect(olderResponse.status).toBe(200);
+    expect((olderResponse.body.data as Array<Record<string, unknown>>).map((event) => event.contentText)).toEqual([
+      'cursor-event-1',
+      'cursor-event-2',
+    ]);
+    expect(olderResponse.body.meta).toMatchObject({
+      pageSize: 2,
+      hasMoreBefore: false,
+    });
+
+    const deltaIds: string[] = [];
+    for (const [id, source, sequence] of [
+      ['00000000-0000-4000-8000-000000000001', 'cloud-code', 0],
+      ['00000000-0000-4000-8000-000000000002', 'codex', 3],
+    ] as const) {
+      const event = await app.db.sequelize.transaction(async (transaction) => {
+        return await repository.create({
+          values: {
+            id,
+            sessionId,
+            runId,
+            source,
+            sequence,
+            eventType: 'agent.message',
+            contentText: `delta-${source}`,
+            contentJson: {},
+          },
+          transaction,
+        });
+      });
+      const eventId = expectString(event.get('id'));
+      deltaIds.push(eventId);
+      await app.db
+        .getCollection('agAgentConversationEvents')
+        .model.update({ createdAt: timestamps[3] }, { where: { id: eventId }, hooks: false });
+    }
+
+    const deltaResponse = await rootAgent
+      .get(`/api/agent-gateway/runs/${runId}/conversation-events:list`)
+      .query({ pageSize: 10, afterCursor });
+    expect(deltaResponse.status).toBe(200);
+    const deltaEvents = deltaResponse.body.data as Array<Record<string, unknown>>;
+    expect(deltaEvents.map((event) => event.id).sort()).toEqual([...deltaIds].sort());
+    expect(deltaEvents.map((event) => event.contentText).sort()).toEqual(['delta-cloud-code', 'delta-codex']);
+    expect(deltaResponse.body.meta).toMatchObject({
+      hasMoreAfter: false,
+    });
+
+    const sessionDeltaResponse = await rootAgent
+      .get(`/api/agent-gateway/agent-sessions/${sessionId}/conversation-events:list`)
+      .query({ pageSize: 10, afterCursor: sessionAfterCursor });
+    expect(sessionDeltaResponse.status).toBe(200);
+    expect((sessionDeltaResponse.body.data as Array<Record<string, unknown>>).map((event) => event.id).sort()).toEqual(
+      [...deltaIds].sort(),
+    );
+
+    expect(
+      (await rootAgent.get(`/api/agent-gateway/runs/${runId}/conversation-events:list`).query({ pageSize: 0 })).status,
+    ).toBe(400);
+    expect(
+      (await rootAgent.get(`/api/agent-gateway/runs/${runId}/conversation-events:list`).query({ afterCursor: 'bad' }))
+        .status,
+    ).toBe(400);
+    expect(
+      (
+        await rootAgent
+          .get(`/api/agent-gateway/runs/${runId}/conversation-events:list`)
+          .query({ beforeCursor, afterCursor })
+      ).status,
+    ).toBe(400);
   });
 
   it('keeps command events semantic in timeline text while preserving command details', async () => {
@@ -828,6 +990,142 @@ describe('agent gateway conversation event APIs', () => {
     });
   });
 
+  it('reads persisted tool stats without querying conversation events', async () => {
+    const runner = await createRunner();
+    const run = await createRun(runner, 'conversation-run-persisted-tool-stats');
+    const claim = await claimRun(runner, run.id);
+    const appendResponse = await appendConversationEvents(
+      runner,
+      run.id,
+      leaseValues(claim, {
+        source: 'codex',
+        sequence: 1,
+        eventType: 'agent.command.completed',
+        correlationId: 'persisted-tool-call',
+        contentJson: {
+          command: 'echo persisted',
+          status: 'succeeded',
+          exitCode: 0,
+        },
+      }),
+    );
+    expect(appendResponse.status).toBe(200);
+
+    const conversationRepository = app.db.getRepository('agAgentConversationEvents');
+    const persistedRun = await app.db.getRepository('agRuns').findOne({ filterByTk: run.id });
+    const events = await conversationRepository.find({
+      filter: {
+        runId: run.id,
+      },
+      sort: ['createdAt', 'sequence'],
+    });
+    await app.db.getRepository('agRuns').update({
+      filterByTk: run.id,
+      values: {
+        observabilityRollupJson: buildRunObservabilityRollup(persistedRun, events, new Date()),
+      },
+    });
+
+    const eventFindSpy = vi.spyOn(conversationRepository, 'find');
+    const statsResponse = await rootAgent.get('/api/agent-gateway/tool-calls:stats').query({ limit: 1 });
+
+    expect(statsResponse.status).toBe(200);
+    expect(eventFindSpy).not.toHaveBeenCalled();
+    eventFindSpy.mockRestore();
+    expect(getData(statsResponse)).toMatchObject({
+      toolCallCount: 1,
+      stats: {
+        total: 1,
+        succeeded: 1,
+      },
+      toolCalls: [],
+      meta: {
+        runLimit: 1,
+        fallbackRunCount: 0,
+        fallbackEventLimit: 100,
+        fallbackEventCount: 0,
+        fallbackEventsTruncated: false,
+      },
+    });
+  });
+
+  it('bounds legacy event fallback when persisted tool stats are unavailable', async () => {
+    const runner = await createRunner();
+    const run = await createRun(runner, 'conversation-run-bounded-tool-stats');
+    const claim = await claimRun(runner, run.id);
+    const appendResponse = await appendConversationEvents(
+      runner,
+      run.id,
+      leaseValues(claim, {
+        events: [
+          {
+            source: 'codex',
+            sequence: 1,
+            eventType: 'agent.command.completed',
+            correlationId: 'bounded-tool-call-1',
+            contentJson: {
+              command: 'echo first',
+              status: 'succeeded',
+              exitCode: 0,
+            },
+          },
+          {
+            source: 'codex',
+            sequence: 2,
+            eventType: 'agent.command.failed',
+            correlationId: 'bounded-tool-call-2',
+            contentJson: {
+              command: 'echo second',
+              status: 'failed',
+              exitCode: 1,
+            },
+          },
+        ],
+      }),
+    );
+    expect(appendResponse.status).toBe(200);
+
+    const toolCallsResponse = await rootAgent
+      .get(`/api/agent-gateway/runs/${run.id}/tool-calls:list`)
+      .query({ eventLimit: 1 });
+    expect(toolCallsResponse.status).toBe(200);
+    expect(getData(toolCallsResponse)).toMatchObject({
+      toolCalls: [
+        expect.objectContaining({
+          id: 'event-tool-bounded-tool-call-2',
+          status: 'failed',
+        }),
+      ],
+      meta: {
+        eventLimit: 1,
+        eventCount: 1,
+        eventsTruncated: true,
+      },
+    });
+
+    const conversationRepository = app.db.getRepository('agAgentConversationEvents');
+    const eventFindSpy = vi.spyOn(conversationRepository, 'find');
+    const statsResponse = await rootAgent.get('/api/agent-gateway/tool-calls:stats').query({ limit: 1, eventLimit: 1 });
+
+    expect(statsResponse.status).toBe(200);
+    expect(eventFindSpy).toHaveBeenCalledTimes(1);
+    expect(eventFindSpy.mock.calls[0]?.[0]).toMatchObject({
+      limit: 2,
+    });
+    eventFindSpy.mockRestore();
+    expect(getData(statsResponse)).toMatchObject({
+      runCount: 1,
+      toolCallCount: 1,
+      meta: {
+        runLimit: 1,
+        fallbackRunCount: 1,
+        fallbackEventLimit: 1,
+        fallbackEventCount: 1,
+        fallbackEventsTruncated: true,
+      },
+    });
+  });
+
   it('applies scoped run visibility to session-level conversation reads', async () => {
     const runner = await createRunner();
     const run = await createRun(runner, 'conversation-run-scoped-hidden');
@@ -934,18 +1232,21 @@ describe('agent gateway conversation event APIs', () => {
         agentSessionProviderId: 'codex-conversation-thread-partial-scope',
       },
     });
-    await app.db.getRepository('agAgentConversationEvents').create({
-      values: {
-        id: randomUUID(),
-        sessionId,
-        runId: hiddenRun.get('id'),
-        source: 'codex',
-        sequence: 1,
-        eventType: 'agent.message',
-        providerEventId: `hidden:${hiddenRun.get('id')}`,
-        contentText: 'hidden scoped session message',
-        contentJson: {},
-      },
+    await app.db.sequelize.transaction(async (transaction) => {
+      await app.db.getRepository('agAgentConversationEvents').create({
+        values: {
+          id: randomUUID(),
+          sessionId,
+          runId: hiddenRun.get('id'),
+          source: 'codex',
+          sequence: 1,
+          eventType: 'agent.message',
+          providerEventId: `hidden:${hiddenRun.get('id')}`,
+          contentText: 'hidden scoped session message',
+          contentJson: {},
+        },
+        transaction,
+      });
     });
 
     const readDetailsSnippet = registerTestSnippet('agentGateway.test.readDetailsOnlyPartialScope', [

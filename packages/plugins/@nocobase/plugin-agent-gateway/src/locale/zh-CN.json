@@ -99,12 +99,16 @@
   "Cancel run": "取消运行",
   "Failed to load run details": "加载运行详情失败",
   "Agent timeline unavailable": "Agent 时间线不可用",
+  "Load older messages": "加载更早消息",
   "Agent Gateway session message read permission required": "需要 Agent 网关会话消息读取权限",
   "Agent Gateway terminal read permission required": "需要 Agent 网关终端读取权限",
   "Agent Gateway artifact read permission required": "需要 Agent 网关产物读取权限",
   "Agent Gateway raw log read permission required": "需要 Agent 网关原始日志读取权限",
   "Events unavailable": "事件不可用",
+  "Load older events": "加载更早事件",
   "Artifacts unavailable": "产物不可用",
+  "Artifact content unavailable": "产物内容不可用",
+  "Retry": "重试",
   "Snapshots unavailable": "快照不可用",
   "API logs unavailable": "API 日志不可用",
   "Failed to cancel run": "取消运行失败",
@@ -350,6 +354,7 @@
   "Raw log": "原始日志",
   "Failed to read log file": "读取日志文件失败",
   "External run key": "外部运行标识",
+  "External run key is required": "请输入外部运行标识",
   "Provider session ID": "Provider 会话 ID",
   "Source collection": "来源数据表",
   "Source record ID": "来源记录 ID",
@@ -446,5 +451,6 @@
   "Live stream": "实时流",
   "Snapshot fallback": "快照模式",
   "Waiting for output": "等待输出",
-  "Live stream unavailable; showing terminal snapshots": "实时流不可用，正在显示终端快照"
+  "Live stream unavailable; showing terminal snapshots": "实时流不可用，正在显示终端快照",
+  "Record collection is required": "无法确定当前记录所属的数据表"
 }

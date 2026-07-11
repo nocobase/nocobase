@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { randomUUID } from 'crypto';
+
 import { MockServer, createMockServer } from '@nocobase/test';
 
 import PluginAgentGatewayServer from '../plugin';
@@ -15,6 +17,7 @@ interface ResponseLike {
   status: number;
   body: {
     data?: Record<string, unknown>;
+    meta?: Record<string, unknown>;
   };
 }
 
@@ -675,6 +678,227 @@ describe('agent gateway run observability APIs', () => {
     expect(serializedLogs).toContain('[REDACTED]');
   });
 
+  it('paginates run events and returns later same-timestamp ingests with lower UUIDs', async () => {
+    const runner = await registerRunner();
+    const { run } = await createAndClaimRun(runner);
+    const runId = expectString(run.id);
+    const repository = app.db.getRepository('agRunEvents');
+    const timestamps = [
+      new Date('2026-07-11T02:00:00.000Z'),
+      new Date('2026-07-11T02:00:01.000Z'),
+      new Date('2026-07-11T02:00:02.000Z'),
+      new Date('2026-07-11T02:00:03.000Z'),
+    ];
+    const eventIds = [
+      '80000000-0000-4000-8000-000000000001',
+      '80000000-0000-4000-8000-000000000002',
+      '80000000-0000-4000-8000-000000000003',
+      '80000000-0000-4000-8000-000000000004',
+    ];
+    for (let index = 0; index < timestamps.length; index += 1) {
+      const event = await app.db.sequelize.transaction(async (transaction) => {
+        return await repository.create({
+          values: {
+            id: eventIds[index],
+            runId,
+            claimAttempt: index < 2 ? 1 : 2,
+            source: index % 2 === 0 ? 'stdout' : 'harness',
+            sequence: Math.floor(index / 2) + 1,
+            eventType: `cursor.event.${index + 1}`,
+            message: `cursor message ${index + 1}`,
+            emittedAt: timestamps[index],
+          },
+          transaction,
+        });
+      });
+      await app.db
+        .getCollection('agRunEvents')
+        .model.update({ createdAt: timestamps[index] }, { where: { id: event.get('id') }, hooks: false });
+    }
+
+    const latestResponse = await rootAgent.get(`/api/agent-gateway/runs/${runId}/events:list`).query({ pageSize: 2 });
+    expect(latestResponse.status).toBe(200);
+    expect((latestResponse.body.data as Array<Record<string, unknown>>).map((event) => event.eventType)).toEqual([
+      'cursor.event.3',
+      'cursor.event.4',
+    ]);
+    expect(latestResponse.body.meta).toMatchObject({
+      pageSize: 2,
+      hasMoreBefore: true,
+      hasMoreAfter: false,
+    });
+    const beforeCursor = expectString(latestResponse.body.meta?.beforeCursor);
+    const afterCursor = expectString(latestResponse.body.meta?.afterCursor);
+
+    const olderResponse = await rootAgent
+      .get(`/api/agent-gateway/runs/${runId}/events:list`)
+      .query({ pageSize: 2, beforeCursor });
+    expect(olderResponse.status).toBe(200);
+    expect((olderResponse.body.data as Array<Record<string, unknown>>).map((event) => event.eventType)).toEqual([
+      'cursor.event.1',
+      'cursor.event.2',
+    ]);
+    expect(olderResponse.body.meta).toMatchObject({
+      hasMoreBefore: false,
+    });
+
+    const deltaIds: string[] = [];
+    for (const values of [
+      {
+        id: '00000000-0000-4000-8000-000000000001',
+        claimAttempt: 3,
+        source: 'stdout',
+        sequence: 0,
+        eventType: 'cursor.delta.attempt',
+      },
+      {
+        id: '00000000-0000-4000-8000-000000000002',
+        claimAttempt: 2,
+        source: 'cloud-code',
+        sequence: 0,
+        eventType: 'cursor.delta.source',
+      },
+    ]) {
+      const event = await app.db.sequelize.transaction(async (transaction) => {
+        return await repository.create({
+          values: {
+            runId,
+            ...values,
+            message: values.eventType,
+            emittedAt: timestamps[3],
+          },
+          transaction,
+        });
+      });
+      deltaIds.push(expectString(event.get('id')));
+      await app.db
+        .getCollection('agRunEvents')
+        .model.update({ createdAt: timestamps[3] }, { where: { id: event.get('id') }, hooks: false });
+    }
+
+    const deltaResponse = await rootAgent
+      .get(`/api/agent-gateway/runs/${runId}/events:list`)
+      .query({ pageSize: 10, afterCursor });
+    expect(deltaResponse.status).toBe(200);
+    const deltaEvents = deltaResponse.body.data as Array<Record<string, unknown>>;
+    expect(deltaEvents.map((event) => event.id).sort()).toEqual([...deltaIds].sort());
+    expect(deltaEvents.map((event) => event.eventType).sort()).toEqual(['cursor.delta.attempt', 'cursor.delta.source']);
+
+    expect((await rootAgent.get(`/api/agent-gateway/runs/${runId}/events:list`).query({ pageSize: 501 })).status).toBe(
+      400,
+    );
+    expect(
+      (await rootAgent.get(`/api/agent-gateway/runs/${runId}/events:list`).query({ beforeCursor: 'bad' })).status,
+    ).toBe(400);
+  });
+
+  it('paginates artifact, snapshot, and API log metadata and guards lazy artifact content ownership', async () => {
+    const runner = await registerRunner();
+    const { run, claim } = await createAndClaimRun(runner);
+    const runId = expectString(run.id);
+    const artifactIds: string[] = [];
+    for (const artifactKey of ['artifact-page-1', 'artifact-page-2']) {
+      const response = await daemonRunPost(
+        runner,
+        runId,
+        'artifacts:register',
+        leaseValues(claim, {
+          artifactKey,
+          artifactType: 'log',
+          mimeType: 'text/plain',
+          contentText: `content-${artifactKey}`,
+        }),
+      );
+      expect(response.status).toBe(200);
+      artifactIds.push(expectString(getData(response).id));
+    }
+    for (const snapshotType of ['workspace', 'custom']) {
+      const response = await daemonRunPost(
+        runner,
+        runId,
+        'snapshots:register',
+        leaseValues(claim, {
+          snapshotType,
+          snapshot: {
+            snapshotType,
+          },
+        }),
+      );
+      expect(response.status).toBe(200);
+    }
+    for (let index = 0; index < 2; index += 1) {
+      await app.db.getRepository('agApiCallLogs').create({
+        values: {
+          id: randomUUID(),
+          runId,
+          direction: 'daemon_to_server',
+          method: 'GET',
+          path: `/cursor-api-log-${index + 1}`,
+          statusCode: 200,
+        },
+      });
+    }
+
+    const artifactsResponse = await rootAgent
+      .get(`/api/agent-gateway/runs/${runId}/artifacts:list`)
+      .query({ page: 2, pageSize: 1 });
+    expect(artifactsResponse.status).toBe(200);
+    expect(artifactsResponse.body.data).toHaveLength(1);
+    expect((artifactsResponse.body.data as Array<Record<string, unknown>>)[0]).not.toHaveProperty('contentText');
+    expect(artifactsResponse.body.meta).toMatchObject({
+      count: 2,
+      page: 2,
+      pageSize: 1,
+      totalPage: 2,
+    });
+
+    const snapshotsResponse = await rootAgent
+      .get(`/api/agent-gateway/runs/${runId}/snapshots:list`)
+      .query({ page: 2, pageSize: 1 });
+    expect(snapshotsResponse.status).toBe(200);
+    expect(snapshotsResponse.body.data).toHaveLength(1);
+    expect(snapshotsResponse.body.meta).toMatchObject({
+      count: 2,
+      page: 2,
+      pageSize: 1,
+      totalPage: 2,
+    });
+
+    const apiLogsResponse = await rootAgent
+      .get(`/api/agent-gateway/runs/${runId}/api-call-logs:list`)
+      .query({ page: 2, pageSize: 1 });
+    expect(apiLogsResponse.status).toBe(200);
+    expect(apiLogsResponse.body.data).toHaveLength(1);
+    expect(apiLogsResponse.body.meta).toMatchObject({
+      page: 2,
+      pageSize: 1,
+    });
+    expect(Number(apiLogsResponse.body.meta?.count)).toBeGreaterThanOrEqual(2);
+    expect(Number(apiLogsResponse.body.meta?.totalPage)).toBe(Number(apiLogsResponse.body.meta?.count));
+
+    const contentResponse = await rootAgent.get(`/api/agent-gateway/runs/${runId}/artifacts/${artifactIds[0]}:content`);
+    expect(contentResponse.status).toBe(200);
+    expect(getData(contentResponse)).toMatchObject({
+      id: artifactIds[0],
+      contentText: 'content-artifact-page-1',
+    });
+
+    const otherRunResponse = await rootAgent.post('/api/agent-gateway/runs:create').send({
+      runCode: `run-observe-other-${Date.now()}-${Math.random()}`,
+      sourceType: 'test',
+      agentProfileId: runner.profileId,
+    });
+    expect(otherRunResponse.status).toBe(200);
+    const otherRun = getData(otherRunResponse);
+    const wrongRunResponse = await rootAgent.get(
+      `/api/agent-gateway/runs/${expectString(otherRun.id)}/artifacts/${artifactIds[0]}:content`,
+    );
+    expect(wrongRunResponse.status).toBe(404);
+    expect(
+      (await rootAgent.get(`/api/agent-gateway/runs/${runId}/artifacts:list`).query({ pageSize: 101 })).status,
+    ).toBe(400);
+  });
+
   it('lists runs and observation details through read-only management APIs', async () => {
     const runner = await registerRunner();
     const { run, claim } = await createAndClaimRun(runner);
@@ -723,10 +947,13 @@ describe('agent gateway run observability APIs', () => {
       }),
     );
 
+    const conversationEventFindSpy = vi.spyOn(app.db.getRepository('agAgentConversationEvents'), 'find');
     const listResponse = await rootAgent.get(
       `/api/agent-gateway/runs:list?status=claimed&nodeId=${runner.nodeId}&agentProfileId=${runner.profileId}`,
     );
     expect(listResponse.status).toBe(200);
+    expect(conversationEventFindSpy).not.toHaveBeenCalled();
+    conversationEventFindSpy.mockRestore();
     const runs = listResponse.body.data as Array<Record<string, unknown>>;
     expect(runs).toHaveLength(1);
     expect(runs[0].id).toBe(runId);
@@ -754,11 +981,25 @@ describe('agent gateway run observability APIs', () => {
     const artifactsResponse = await rootAgent.get(`/api/agent-gateway/runs/${runId}/artifacts:list`);
     expect(artifactsResponse.status).toBe(200);
     const artifacts = artifactsResponse.body.data as Array<Record<string, unknown>>;
-    expect(artifacts[0].contentText).toBe('inline artifact');
+    expect(artifacts[0]).not.toHaveProperty('contentText');
     expect(artifacts[0].metadataJson).toMatchObject({
       externalUrl: 'https://daemon.example/artifacts/stdout',
     });
     expect(JSON.stringify(artifacts[0])).toContain('https://daemon.example/artifacts/stdout');
+    expect(artifactsResponse.body.meta).toMatchObject({
+      count: 1,
+      page: 1,
+      pageSize: 20,
+      totalPage: 1,
+    });
+    const artifactContentResponse = await rootAgent.get(
+      `/api/agent-gateway/runs/${runId}/artifacts/${expectString(artifacts[0].id)}:content`,
+    );
+    expect(artifactContentResponse.status).toBe(200);
+    expect(getData(artifactContentResponse)).toMatchObject({
+      id: artifacts[0].id,
+      contentText: 'inline artifact',
+    });
 
     const snapshotsResponse = await rootAgent.get(`/api/agent-gateway/runs/${runId}/snapshots:list`);
     expect(snapshotsResponse.status).toBe(200);
@@ -857,6 +1098,13 @@ describe('agent gateway run observability APIs', () => {
 
     const readArtifactsAgent = await createUserAgent('agent-gateway-artifacts-reader', ['agentGateway.readArtifacts']);
     expect((await readArtifactsAgent.get(`/api/agent-gateway/runs/${runId}/artifacts:list`)).status).toBe(200);
+    expect(
+      (
+        await readArtifactsAgent.get(
+          `/api/agent-gateway/runs/${runId}/artifacts/${expectString(artifacts[0].id)}:content`,
+        )
+      ).status,
+    ).toBe(200);
     expect((await readArtifactsAgent.get(`/api/agent-gateway/runs/${runId}/snapshots:list`)).status).toBe(200);
     expect((await readArtifactsAgent.get(`/api/agent-gateway/runs/${runId}/events:list`)).status).toBe(403);
     expect((await readArtifactsAgent.get(`/api/agent-gateway/runs/${runId}/api-call-logs:list`)).status).toBe(403);
@@ -865,6 +1113,13 @@ describe('agent gateway run observability APIs', () => {
     expect((await readRawLogsAgent.get(`/api/agent-gateway/runs/${runId}/events:list`)).status).toBe(200);
     expect((await readRawLogsAgent.get(`/api/agent-gateway/runs/${runId}/api-call-logs:list`)).status).toBe(200);
     expect((await readRawLogsAgent.get(`/api/agent-gateway/runs/${runId}/artifacts:list`)).status).toBe(403);
+    expect(
+      (
+        await readRawLogsAgent.get(
+          `/api/agent-gateway/runs/${runId}/artifacts/${expectString(artifacts[0].id)}:content`,
+        )
+      ).status,
+    ).toBe(403);
     expect((await readRawLogsAgent.get(`/api/agent-gateway/runs/${runId}/snapshots:list`)).status).toBe(403);
 
     const managerAgent = await createUserAgent('agent-gateway-observer-manager', ['agentGateway.manage']);

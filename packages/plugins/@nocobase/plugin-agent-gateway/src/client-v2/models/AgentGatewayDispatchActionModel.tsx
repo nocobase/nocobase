@@ -11,6 +11,7 @@ import { ActionModel, ActionSceneEnum } from '@nocobase/client-v2';
 import { ButtonProps } from 'antd';
 
 import { NAMESPACE, tExpr } from '../locale';
+import { FlowCollectionLike, getCollectionFromContext, getCollectionNameFromContext } from '../utils/collectionContext';
 
 interface DispatchActionParams {
   bindingIdentifier?: string;
@@ -60,12 +61,6 @@ interface RefreshableResource {
   refresh(): Promise<unknown> | unknown;
 }
 
-interface CollectionLike {
-  name?: string;
-  filterTargetKey?: string | string[];
-  getFilterByTK?(record: Record<string, unknown>): unknown;
-}
-
 interface DispatchActionContext {
   api: AgentGatewayApi;
   message?: AgentGatewayMessage;
@@ -74,18 +69,18 @@ interface DispatchActionContext {
   model?: {
     context?: {
       record?: Record<string, unknown>;
-      collection?: CollectionLike;
+      collection?: FlowCollectionLike;
       blockModel?: {
-        collection?: CollectionLike;
+        collection?: FlowCollectionLike;
       };
     };
-    collection?: CollectionLike;
+    collection?: FlowCollectionLike;
   };
   blockModel?: {
-    collection?: CollectionLike;
+    collection?: FlowCollectionLike;
     resource?: RefreshableResource;
   };
-  collection?: CollectionLike;
+  collection?: FlowCollectionLike;
   t?: (key: string, options?: Record<string, unknown>) => string;
 }
 
@@ -128,23 +123,11 @@ function getPendingKey(bindingIdentifier: string, recordId: string) {
 }
 
 function getRuntimeCollectionName(ctx: DispatchActionContext) {
-  return getString(
-    ctx.blockModel?.collection?.name ||
-      ctx.model?.context?.blockModel?.collection?.name ||
-      ctx.model?.context?.collection?.name ||
-      ctx.model?.collection?.name ||
-      ctx.collection?.name,
-  );
+  return getCollectionNameFromContext(ctx);
 }
 
 function getRuntimeCollection(ctx: DispatchActionContext) {
-  return (
-    ctx.collection ||
-    ctx.blockModel?.collection ||
-    ctx.model?.context?.blockModel?.collection ||
-    ctx.model?.context?.collection ||
-    ctx.model?.collection
-  );
+  return getCollectionFromContext(ctx);
 }
 
 function getRuntimeRecord(ctx: DispatchActionContext) {
@@ -208,6 +191,10 @@ export async function dispatchAgentGatewayRun(ctx: DispatchActionContext, params
 
   const pendingKey = getPendingKey(bindingIdentifier, recordId);
   const sourceCollection = getRuntimeCollectionName(ctx);
+  if (!sourceCollection) {
+    ctx.message?.error(t(ctx, 'Record collection is required'));
+    return null;
+  }
   if (pendingDispatches.has(pendingKey)) {
     ctx.message?.warning?.(t(ctx, 'Agent Gateway dispatch is already running'));
     return null;
@@ -221,7 +208,7 @@ export async function dispatchAgentGatewayRun(ctx: DispatchActionContext, params
       data: {
         sourceRecordId: recordId,
         idempotencyKey: createIdempotencyKey(bindingIdentifier, recordId),
-        ...(sourceCollection ? { sourceCollection } : {}),
+        sourceCollection,
       },
     });
 

@@ -31,6 +31,7 @@ export interface DaemonConfig {
   nodeId: string;
   nodeKey: string;
   nodeToken: string;
+  installationId?: string;
   tokenLast4?: string;
   heartbeatIntervalSeconds?: number;
   claimIntervalSeconds?: number;
@@ -44,6 +45,7 @@ export interface GatewayRequestOptions {
   nodeToken?: string;
   authToken?: string;
   timeoutMs?: number;
+  signal?: AbortSignal;
 }
 
 export interface GatewayRequester {
@@ -55,6 +57,10 @@ export interface RunLease extends JsonRecord {
   claimToken: string;
   claimAttempt: number;
   leaseVersion: number;
+  claimExpiresAt?: string;
+  leaseTtlMs?: number;
+  serverTime?: string;
+  localLeaseDeadlineMonotonicMs?: number;
   claimed?: boolean;
   run?: JsonRecord;
   profileKey?: string;

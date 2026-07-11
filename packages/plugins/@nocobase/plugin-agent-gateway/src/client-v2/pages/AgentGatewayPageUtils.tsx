@@ -204,6 +204,7 @@ export function statusTag(value?: string) {
     claimed: 'cyan',
     syncing_skills: 'geekblue',
     running: 'processing',
+    importing: 'processing',
     finalizing: 'purple',
     canceling: 'orange',
     stalled: 'orange',

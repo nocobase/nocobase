@@ -15,6 +15,9 @@ import agAgentProfiles from '../collections/agAgentProfiles';
 import agAgentSessions, { AG_AGENT_SESSION_PROVIDER_ID_UNIQUE_CONSTRAINT_NOTE } from '../collections/agAgentSessions';
 import agApiCallLogs from '../collections/agApiCallLogs';
 import agDispatchBindings from '../collections/agDispatchBindings';
+import agExternalImportBatches from '../collections/agExternalImportBatches';
+import agExternalRunIdentities from '../collections/agExternalRunIdentities';
+import agEventIngestSequences from '../collections/agEventIngestSequences';
 import agNodeInvitations from '../collections/agNodeInvitations';
 import agNodeSkillInstalls from '../collections/agNodeSkillInstalls';
 import agNodes from '../collections/agNodes';
@@ -29,18 +32,22 @@ import agRunSnapshots from '../collections/agRunSnapshots';
 import agSkills from '../collections/agSkills';
 import agSkillVersions from '../collections/agSkillVersions';
 import agTerminalStreamTickets from '../collections/agTerminalStreamTickets';
+import { registerEventIngestCursorHooks } from '../services/eventIngestCursor';
 
 const collections = [
   agNodes,
   agNodeInvitations,
   agAgentProfiles,
   agAgentSessions,
+  agEventIngestSequences,
   agAgentConversationEvents,
   agSkills,
   agSkillVersions,
   agNodeSkillInstalls,
   agPromptTemplates,
   agDispatchBindings,
+  agExternalRunIdentities,
+  agExternalImportBatches,
   agRuns,
   agRunControlRequests,
   agRunEvents,
@@ -57,12 +64,15 @@ const requiredCollectionNames = [
   'agNodeInvitations',
   'agAgentProfiles',
   'agAgentSessions',
+  'agEventIngestSequences',
   'agAgentConversationEvents',
   'agSkills',
   'agSkillVersions',
   'agNodeSkillInstalls',
   'agPromptTemplates',
   'agDispatchBindings',
+  'agExternalRunIdentities',
+  'agExternalImportBatches',
   'agRuns',
   'agRunControlRequests',
   'agRunEvents',
@@ -105,6 +115,11 @@ const hasUniqueIndex = (collectionName: string, fields: string[]) =>
     ?.indexes?.some((index) => index.unique === true && JSON.stringify(index.fields) === JSON.stringify(fields)) ===
   true;
 
+const hasIndex = (collectionName: string, fields: string[]) =>
+  collectionByName
+    .get(collectionName)
+    ?.indexes?.some((index) => JSON.stringify(index.fields) === JSON.stringify(fields)) === true;
+
 const syncIt = process.env.DB_DIALECT && process.env.DB_DIALECT !== 'sqlite' ? it : it.skip;
 
 describe('agent gateway collections', () => {
@@ -121,16 +136,23 @@ describe('agent gateway collections', () => {
   it('defines required unique constraints', () => {
     expect(getField('agNodes', 'nodeKey')?.unique).toBe(true);
     expect(hasUniqueIndex('agAgentProfiles', ['nodeId', 'profileKey'])).toBe(true);
-    expect(hasUniqueIndex('agAgentSessions', ['provider', 'providerSessionId'])).toBe(true);
+    expect(hasUniqueIndex('agAgentSessions', ['nodeId', 'provider', 'providerSessionId'])).toBe(true);
     expect(hasUniqueIndex('agAgentConversationEvents', ['runId', 'source', 'providerEventId'])).toBe(true);
     expect(hasUniqueIndex('agAgentConversationEvents', ['runId', 'source', 'sequence'])).toBe(true);
+    expect(hasUniqueIndex('agAgentConversationEvents', ['runId', 'ingestId'])).toBe(true);
+    expect(hasUniqueIndex('agAgentConversationEvents', ['sessionId', 'sessionIngestId'])).toBe(true);
     expect(hasUniqueIndex('agSkillVersions', ['skillId', 'versionLabel'])).toBe(true);
     expect(hasUniqueIndex('agNodeSkillInstalls', ['nodeId', 'skillVersionId'])).toBe(true);
     expect(getField('agPromptTemplates', 'templateKey')?.unique).toBe(true);
+    expect(hasUniqueIndex('agExternalRunIdentities', ['identityKey'])).toBe(true);
+    expect(hasUniqueIndex('agExternalRunIdentities', ['runId'])).toBe(true);
+    expect(hasUniqueIndex('agExternalImportBatches', ['batchIdentityKey'])).toBe(true);
+    expect(hasUniqueIndex('agExternalImportBatches', ['runId', 'batchKey'])).toBe(true);
     expect(getField('agRuns', 'runCode')?.unique).toBe(true);
     expect(getField('agRuns', 'continuationRequestKey')?.unique).toBe(true);
     expect(getField('agRunControlRequests', 'requestKey')?.unique).toBe(true);
     expect(hasUniqueIndex('agRunEvents', ['runId', 'claimAttempt', 'source', 'sequence'])).toBe(true);
+    expect(hasUniqueIndex('agRunEvents', ['runId', 'ingestId'])).toBe(true);
     expect(hasUniqueIndex('agRunArtifacts', ['runId', 'claimAttempt', 'artifactKey'])).toBe(true);
     expect(hasUniqueIndex('agTerminalStreamTickets', ['ticketHash'])).toBe(true);
     expect(AG_RUN_ARTIFACT_UNIQUE_CONSTRAINT_NOTE).toContain('artifactKey is present');
@@ -138,13 +160,22 @@ describe('agent gateway collections', () => {
     expect(AG_RUN_CONTROL_REQUEST_UNIQUE_CONSTRAINT_NOTE).toContain('requestKey is present');
   });
 
+  it('defines compound indexes for recovery and retention scans', () => {
+    expect(hasIndex('agExternalImportBatches', ['status', 'lastAttemptAt', 'id'])).toBe(true);
+    expect(hasIndex('agRuns', ['status', 'updatedAt', 'id'])).toBe(true);
+  });
+
   it('marks required relation keys and claim attempts as non-nullable', () => {
     expectRequiredForeignKey('agAgentProfiles', 'nodeId');
     expectRequiredForeignKey('agSkillVersions', 'skillId');
     expectRequiredForeignKey('agNodeSkillInstalls', 'nodeId');
     expectRequiredForeignKey('agNodeSkillInstalls', 'skillVersionId');
+    expectRequiredForeignKey('agExternalRunIdentities', 'runId');
+    expectRequiredForeignKey('agExternalImportBatches', 'identityId');
+    expectRequiredForeignKey('agExternalImportBatches', 'runId');
     expectRequiredForeignKey('agRunEvents', 'runId');
     expectRequiredField('agRunEvents', 'claimAttempt');
+    expectRequiredField('agRunEvents', 'ingestId');
     expectRequiredForeignKey('agRunArtifacts', 'runId');
     expectRequiredField('agRunArtifacts', 'claimAttempt');
     expectRequiredForeignKey('agRunSnapshots', 'runId');
@@ -159,8 +190,10 @@ describe('agent gateway collections', () => {
     expectNullableForeignKey('agRunControlRequests', 'agentSessionId');
     expectNullableForeignKey('agAgentSessions', 'rootRunId');
     expectNullableForeignKey('agAgentSessions', 'latestRunId');
+    expectNullableForeignKey('agAgentSessions', 'nodeId');
     expectRequiredForeignKey('agAgentConversationEvents', 'runId');
     expectRequiredField('agAgentConversationEvents', 'sequence');
+    expectRequiredField('agAgentConversationEvents', 'ingestId');
     expectNullableForeignKey('agAgentConversationEvents', 'sessionId');
     expectRequiredForeignKey('agTerminalStreamTickets', 'runId');
     expectRequiredField('agTerminalStreamTickets', 'userId');
@@ -200,6 +233,7 @@ describe('agent gateway collections', () => {
         'promptSnapshot',
         'executionPayloadJson',
         'resultSummaryJson',
+        'observabilityRollupJson',
         'errorSummary',
         'requestedById',
         'requestedBy',
@@ -253,6 +287,7 @@ describe('agent gateway collections', () => {
       expect.arrayContaining([
         'provider',
         'providerSessionId',
+        'nodeId',
         'rootRunId',
         'latestRunId',
         'status',
@@ -265,6 +300,8 @@ describe('agent gateway collections', () => {
       expect.arrayContaining([
         'sessionId',
         'runId',
+        'ingestId',
+        'sessionIngestId',
         'sequence',
         'eventType',
         'source',
@@ -274,6 +311,16 @@ describe('agent gateway collections', () => {
         'contentText',
         'contentJson',
         'createdById',
+      ]),
+    );
+    expect(fieldNamesOf('agExternalImportBatches')).toEqual(
+      expect.arrayContaining([
+        'operationPlanSha256',
+        'operationPlanJson',
+        'finalizationSha256',
+        'finalizationJson',
+        'processedOperations',
+        'relationUpdated',
       ]),
     );
     expectRequiredField('agAgentSessions', 'provider');
@@ -300,6 +347,7 @@ describe('agent gateway collections', () => {
     expect(getField('agTerminalStreamTickets', 'authProofHash')?.defaultValue).toBe('');
     expect(getField('agRuns', 'promptSnapshot')?.hidden).toBe(true);
     expect(getField('agRuns', 'executionPayloadJson')?.hidden).toBe(true);
+    expect(getField('agRuns', 'observabilityRollupJson')?.hidden).toBe(true);
 
     for (const collectionName of ['agNodeInvitations', 'agNodes', 'agRuns', 'agTerminalStreamTickets']) {
       expect(fieldNamesOf(collectionName)).not.toEqual(
@@ -314,6 +362,7 @@ describe('agent gateway collections', () => {
       apiCallLogs: 30,
       artifacts: 90,
       snapshots: 90,
+      externalImportBatches: 90,
     });
   });
 
@@ -327,6 +376,7 @@ describe('agent gateway collections', () => {
       for (const collection of collections) {
         db.collection(collection);
       }
+      registerEventIngestCursorHooks(db);
 
       await db.sync();
 
@@ -337,6 +387,8 @@ describe('agent gateway collections', () => {
         ['agNodeSkillInstalls', 'skillVersionId'],
         ['agRunEvents', 'runId'],
         ['agRunEvents', 'claimAttempt'],
+        ['agRunEvents', 'ingestId'],
+        ['agAgentConversationEvents', 'ingestId'],
         ['agRunArtifacts', 'runId'],
         ['agRunArtifacts', 'claimAttempt'],
         ['agRunSnapshots', 'runId'],
@@ -423,6 +475,7 @@ describe('agent gateway collections', () => {
       expect(run.get('parentRunId')).toBeFalsy();
       expect(run.get('resumedFromRunId')).toBeFalsy();
       const agentSession = await db.getCollection('agAgentSessions').model.create({
+        nodeId,
         provider: 'codex',
         providerSessionId: 'thread-1',
         rootRunId: runId,
@@ -430,6 +483,7 @@ describe('agent gateway collections', () => {
       });
       await expect(
         db.getCollection('agAgentSessions').model.create({
+          nodeId,
           provider: 'codex',
           providerSessionId: 'thread-1',
         }),
@@ -454,19 +508,59 @@ describe('agent gateway collections', () => {
         }),
       ).rejects.toThrow();
 
-      await db.getCollection('agRunEvents').model.create({
-        runId,
-        claimAttempt: 0,
-        source: 'runner',
-        sequence: 1,
-        eventType: 'log',
-      });
-      await expect(
-        db.getCollection('agRunEvents').model.create({
+      await db.getRepository('agRunEvents').create({
+        values: {
+          runId,
           claimAttempt: 0,
           source: 'runner',
-          sequence: 2,
+          sequence: 1,
           eventType: 'log',
+        },
+      });
+      const storedRunEvent = await db.getCollection('agRunEvents').model.findOne({
+        where: {
+          runId,
+          source: 'runner',
+          sequence: 1,
+        },
+      });
+      expect(Number(storedRunEvent?.get('ingestId'))).toBeGreaterThan(0);
+      await db.getCollection('agRunEvents').model.update(
+        {
+          message: 'updated without reallocating the ingest cursor',
+        },
+        {
+          where: {
+            id: storedRunEvent?.get('id'),
+          },
+        },
+      );
+      const updatedRunEvent = await db.getCollection('agRunEvents').model.findOne({
+        where: {
+          id: storedRunEvent?.get('id'),
+        },
+      });
+      expect(updatedRunEvent?.get('message')).toBe('updated without reallocating the ingest cursor');
+      expect(updatedRunEvent?.get('ingestId')).toBe(storedRunEvent?.get('ingestId'));
+      await expect(
+        db.getRepository('agRunEvents').create({
+          values: {
+            claimAttempt: 0,
+            source: 'runner',
+            sequence: 2,
+            eventType: 'log',
+          },
+        }),
+      ).rejects.toThrow();
+      await expect(
+        db.getRepository('agRunEvents').create({
+          values: {
+            runId,
+            claimAttempt: 0,
+            source: 'runner',
+            sequence: 1,
+            eventType: 'log',
+          },
         }),
       ).rejects.toThrow();
       await expect(
@@ -474,10 +568,10 @@ describe('agent gateway collections', () => {
           runId,
           claimAttempt: 0,
           source: 'runner',
-          sequence: 1,
+          sequence: 2,
           eventType: 'log',
         }),
-      ).rejects.toThrow();
+      ).rejects.toThrow('requires a transaction');
 
       await db.getCollection('agRunArtifacts').model.create({
         runId,

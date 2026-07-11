@@ -498,8 +498,8 @@ describe('agent gateway dispatch binding APIs', () => {
 
     const dispatchResponse = await rootAgent.post(`/api/agent-gateway/dispatch-bindings/${binding.id}:dispatch`).send({
       recordId: 'code-ticket-1',
+      sourceCollection: 'agDispatchCodeTickets',
       idempotencyKey: 'code-ticket-click',
-      expectedCollectionName: 'agDispatchCodeTickets',
     });
     expect(dispatchResponse.status).toBe(200);
     const dispatch = getData(dispatchResponse as ResponseLike<DispatchResponse>);
@@ -516,10 +516,21 @@ describe('agent gateway dispatch binding APIs', () => {
     const binding = await createBinding();
     const ticket = await createTicket();
 
+    const missingCollectionResponse = await rootAgent
+      .post(`/api/agent-gateway/dispatch-bindings/${binding.bindingKey}:dispatch`)
+      .send({
+        recordId: ticket.get('id'),
+        idempotencyKey: 'missing-collection',
+      });
+    expect(missingCollectionResponse.status).toBe(400);
+    expect(getErrorMessage(missingCollectionResponse as ResponseLike<unknown>)).toContain(
+      'sourceCollection is required',
+    );
+
     const response = await rootAgent.post(`/api/agent-gateway/dispatch-bindings/${binding.bindingKey}:dispatch`).send({
       recordId: ticket.get('id'),
+      sourceCollection: 'agDispatchOtherTickets',
       idempotencyKey: 'wrong-collection',
-      expectedCollectionName: 'agDispatchOtherTickets',
     });
     expect(response.status).toBe(409);
     expect(getErrorMessage(response as ResponseLike<unknown>)).toContain(
@@ -538,6 +549,7 @@ describe('agent gateway dispatch binding APIs', () => {
       .post(`/api/agent-gateway/dispatch-bindings/${binding.bindingKey}:dispatch`)
       .send({
         recordId: ticket.get('id'),
+        sourceCollection: 'agDispatchTickets',
         idempotencyKey: 'same-click',
       });
     expect(firstResponse.status).toBe(200);
@@ -558,6 +570,7 @@ describe('agent gateway dispatch binding APIs', () => {
       .post(`/api/agent-gateway/dispatch-bindings/${binding.bindingKey}:dispatch`)
       .send({
         recordId: ticket.get('id'),
+        sourceCollection: 'agDispatchTickets',
         idempotencyKey: 'same-click',
       });
     expect(sameKeyResponse.status).toBe(200);
@@ -590,6 +603,7 @@ describe('agent gateway dispatch binding APIs', () => {
       .post(`/api/agent-gateway/dispatch-bindings/${binding.bindingKey}:dispatch`)
       .send({
         recordId: ticket.get('id'),
+        sourceCollection: 'agDispatchTickets',
         idempotencyKey: 'second-click',
       });
     expect(differentKeyResponse.status).toBe(409);
@@ -609,6 +623,7 @@ describe('agent gateway dispatch binding APIs', () => {
       .post(`/api/agent-gateway/dispatch-bindings/${binding.bindingKey}:dispatch`)
       .send({
         recordId: ticket.get('id'),
+        sourceCollection: 'agDispatchTickets',
         idempotencyKey: 'hidden-existing-click',
       });
     expect(firstResponse.status).toBe(200);
@@ -640,6 +655,7 @@ describe('agent gateway dispatch binding APIs', () => {
       .post(`/api/agent-gateway/dispatch-bindings/${binding.bindingKey}:dispatch`)
       .send({
         recordId: ticket.get('id'),
+        sourceCollection: 'agDispatchTickets',
         idempotencyKey: 'hidden-existing-click',
       });
     expect(hiddenExistingResponse.status).toBe(404);
@@ -657,13 +673,13 @@ describe('agent gateway dispatch binding APIs', () => {
     const responses = await Promise.all([
       rootAgent.post(`/api/agent-gateway/dispatch-bindings/${binding.bindingKey}:dispatch`).send({
         recordId: ticket.get('id'),
+        sourceCollection: 'agDispatchTickets',
         idempotencyKey: 'concurrent-click',
-        expectedCollectionName: 'agDispatchTickets',
       }),
       rootAgent.post(`/api/agent-gateway/dispatch-bindings/${binding.bindingKey}:dispatch`).send({
         recordId: ticket.get('id'),
+        sourceCollection: 'agDispatchTickets',
         idempotencyKey: 'concurrent-click',
-        expectedCollectionName: 'agDispatchTickets',
       }),
     ]);
 
@@ -702,6 +718,7 @@ describe('agent gateway dispatch binding APIs', () => {
 
     const response = await rootAgent.post(`/api/agent-gateway/dispatch-bindings/${binding.bindingKey}:dispatch`).send({
       recordId: ticket.get('id'),
+      sourceCollection: 'agDispatchTickets',
       idempotencyKey: 'retry-click',
     });
     expect(response.status).toBe(409);
@@ -722,6 +739,7 @@ describe('agent gateway dispatch binding APIs', () => {
 
     const response = await rootAgent.post(`/api/agent-gateway/dispatch-bindings/${binding.bindingKey}:dispatch`).send({
       recordId: ticket.get('id'),
+      sourceCollection: 'agDispatchTickets',
       idempotencyKey: 'rollback-click',
     });
     expect(response.status).toBe(500);
@@ -761,6 +779,7 @@ describe('agent gateway dispatch binding APIs', () => {
       .post(`/api/agent-gateway/dispatch-bindings/${binding.bindingKey}:dispatch`)
       .send({
         recordId: ticket.get('id'),
+        sourceCollection: 'agDispatchTickets',
         idempotencyKey: 'no-business-permission',
       });
     expect(response.status).toBe(403);
@@ -966,6 +985,7 @@ describe('agent gateway dispatch binding APIs', () => {
       .post(`/api/agent-gateway/dispatch-bindings/${binding.bindingKey}:dispatch`)
       .send({
         recordId: ticket.get('id'),
+        sourceCollection: 'agDispatchTickets',
         idempotencyKey: 'no-profile-permission',
       });
     expect(noProfileAccessResponse.status).toBe(403);
@@ -978,6 +998,7 @@ describe('agent gateway dispatch binding APIs', () => {
       .post(`/api/agent-gateway/dispatch-bindings/${binding.bindingKey}:dispatch`)
       .send({
         recordId: ticket.get('id'),
+        sourceCollection: 'agDispatchTickets',
         idempotencyKey: 'no-node-permission',
       });
     expect(noNodeAccessResponse.status).toBe(403);
@@ -990,6 +1011,7 @@ describe('agent gateway dispatch binding APIs', () => {
       .post(`/api/agent-gateway/dispatch-bindings/${binding.bindingKey}:dispatch`)
       .send({
         recordId: ticket.get('id'),
+        sourceCollection: 'agDispatchTickets',
         idempotencyKey: 'no-skill-version-permission-after-node',
       });
     expect(noSkillVersionAccessAfterNodeResponse.status).toBe(403);
@@ -1035,6 +1057,7 @@ describe('agent gateway dispatch binding APIs', () => {
       .post(`/api/agent-gateway/dispatch-bindings/${binding.bindingKey}:dispatch`)
       .send({
         recordId: ticket.get('id'),
+        sourceCollection: 'agDispatchTickets',
         idempotencyKey: 'static-no-profile-permission',
       });
     expect(noProfileAccessResponse.status).toBe(403);
@@ -1047,6 +1070,7 @@ describe('agent gateway dispatch binding APIs', () => {
       .post(`/api/agent-gateway/dispatch-bindings/${binding.bindingKey}:dispatch`)
       .send({
         recordId: ticket.get('id'),
+        sourceCollection: 'agDispatchTickets',
         idempotencyKey: 'static-no-node-permission',
       });
     expect(noNodeAccessResponse.status).toBe(403);

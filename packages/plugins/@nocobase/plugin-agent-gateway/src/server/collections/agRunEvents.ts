@@ -20,12 +20,28 @@ export default defineCollection({
       unique: true,
       fields: ['runId', 'claimAttempt', 'source', 'sequence'],
     },
+    {
+      fields: ['runId', 'createdAt'],
+    },
+    {
+      unique: true,
+      fields: ['runId', 'ingestId'],
+    },
+    {
+      fields: ['createdAt'],
+    },
   ],
   fields: [
     {
       type: 'uuid',
       name: 'id',
       primaryKey: true,
+    },
+    {
+      type: 'bigInt',
+      name: 'ingestId',
+      allowNull: false,
+      hidden: true,
     },
     {
       type: 'uuid',

@@ -29,6 +29,8 @@ const LONG_TEXT_PREVIEW_CHARS = 6000;
 
 export interface AgentTimelineEventRecord {
   id: string;
+  runId?: string;
+  ingestId?: number | string;
   sequence?: number;
   eventType?: string;
   source?: string;

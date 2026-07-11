@@ -12,4 +12,5 @@ export const AGENT_GATEWAY_RETENTION_DEFAULTS_DAYS = {
   apiCallLogs: 30,
   artifacts: 90,
   snapshots: 90,
+  externalImportBatches: 90,
 } as const;

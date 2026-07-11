@@ -11,10 +11,17 @@ import { promises as fs } from 'fs';
 import { stdin } from 'process';
 import path from 'path';
 
+import {
+  EXTERNAL_IMPORTED_RUN_STATUSES,
+  EXTERNAL_LOG_FORMATS,
+  ExternalImportedRunStatus,
+  ExternalLogFormat,
+} from '../shared/externalRunImport';
 import { AgentGatewayApiClient } from './apiClient';
 import { getDefaultConfigPath, readDaemonConfig } from './config';
 import { AgentGatewayDaemonNodeClient } from './gateway';
 import { DEFAULT_EXEC_TIMEOUT_MS, ExecCommandAllowlist, executeAllowlistedCommand } from './execDriver';
+import { uploadExternalRun } from './externalRunUploader';
 import { runOpenCodeSmoke } from './openCodeSmoke';
 import { detectAgentProfiles } from './profileDetection';
 import { heartbeatDaemonNode, registerDaemonNode } from './registration';
@@ -82,17 +89,18 @@ function getFlagNumber(flags: Record<string, string | boolean | string[]>, key: 
   return Number.isFinite(numberValue) && numberValue > 0 ? numberValue : fallback;
 }
 
-async function getRegisterNodeKey(flags: Record<string, string | boolean | string[]>) {
+async function getRegisterIdentity(flags: Record<string, string | boolean | string[]>) {
   const explicitNodeKey = getFlagString(flags, 'node-key');
-  if (explicitNodeKey) {
-    return explicitNodeKey;
-  }
-
   try {
     const config = await readDaemonConfig(getFlagString(flags, 'config') || undefined);
-    return config.nodeKey;
+    return {
+      nodeKey: explicitNodeKey || config.nodeKey,
+      installationId: config.installationId,
+    };
   } catch {
-    return undefined;
+    return {
+      nodeKey: explicitNodeKey || undefined,
+    };
   }
 }
 
@@ -196,53 +204,23 @@ function getDefaultExternalLogFormat(provider: string) {
   return 'text';
 }
 
-function getFileMimeType(filePath: string) {
-  const extension = path.extname(filePath).toLowerCase();
-  const mimeTypes: Record<string, string> = {
-    '.html': 'text/html',
-    '.htm': 'text/html',
-    '.json': 'application/json',
-    '.jsonl': 'application/x-ndjson',
-    '.ndjson': 'application/x-ndjson',
-    '.log': 'text/plain',
-    '.md': 'text/markdown',
-    '.png': 'image/png',
-    '.jpg': 'image/jpeg',
-    '.jpeg': 'image/jpeg',
-    '.gif': 'image/gif',
-    '.webp': 'image/webp',
-    '.svg': 'image/svg+xml',
-    '.txt': 'text/plain',
-    '.csv': 'text/csv',
-  };
-  return mimeTypes[extension] || 'text/plain';
+function getExternalLogFormat(flags: Record<string, string | boolean | string[]>, provider: string): ExternalLogFormat {
+  const format = getFlagString(flags, 'format') || getDefaultExternalLogFormat(provider);
+  if (!EXTERNAL_LOG_FORMATS.includes(format as ExternalLogFormat)) {
+    throw new Error(`--format must be one of: ${EXTERNAL_LOG_FORMATS.join(', ')}`);
+  }
+  return format as ExternalLogFormat;
 }
 
-function getFileArtifactType(filePath: string) {
-  const mimeType = getFileMimeType(filePath);
-  if (mimeType === 'text/html') {
-    return 'html-report';
+function getExternalRunStatus(flags: Record<string, string | boolean | string[]>) {
+  const status = getFlagString(flags, 'status');
+  if (!status) {
+    return undefined;
   }
-  if (mimeType.includes('json')) {
-    return 'json-report';
+  if (!EXTERNAL_IMPORTED_RUN_STATUSES.includes(status as ExternalImportedRunStatus)) {
+    throw new Error(`--status must be one of: ${EXTERNAL_IMPORTED_RUN_STATUSES.join(', ')}`);
   }
-  if (mimeType === 'text/markdown') {
-    return 'markdown-report';
-  }
-  if (mimeType.startsWith('image/')) {
-    return 'image';
-  }
-  if (mimeType === 'text/plain' && path.extname(filePath).toLowerCase() === '.log') {
-    return 'log';
-  }
-  return 'file';
-}
-
-function getArtifactKeyFromFile(filePath: string) {
-  return `external:${path.basename(filePath)}`
-    .replace(/[^A-Za-z0-9_.:/-]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 240);
+  return status as ExternalImportedRunStatus;
 }
 
 async function getSkillSource(flags: Record<string, string | boolean | string[]>) {
@@ -271,12 +249,14 @@ async function handleRegister(flags: Record<string, string | boolean | string[]>
 
   const requester = new AgentGatewayApiClient(serverUrl);
   const configPath = getFlagString(flags, 'config') || undefined;
+  const identity = await getRegisterIdentity(flags);
   const result = await registerDaemonNode({
     requester,
     serverUrl,
     inviteToken,
     configPath,
-    nodeKey: await getRegisterNodeKey(flags),
+    nodeKey: identity.nodeKey,
+    installationId: identity.installationId,
   });
   printJson(result);
 }
@@ -304,7 +284,12 @@ async function handleRun(flags: Record<string, string | boolean | string[]>) {
       ? getFlagString(flags, 'node-token').slice(-4)
       : baseConfig.tokenLast4,
   };
-  const requester = new AgentGatewayApiClient(config.serverUrl, getFlagNumber(flags, 'request-timeout-ms', 30_000));
+  const stopController = new AbortController();
+  const requester = new AgentGatewayApiClient(
+    config.serverUrl,
+    getFlagNumber(flags, 'request-timeout-ms', 30_000),
+    stopController.signal,
+  );
   const gateway = new AgentGatewayDaemonNodeClient(requester, config);
   const runOptions = {
     gateway,
@@ -327,7 +312,6 @@ async function handleRun(flags: Record<string, string | boolean | string[]>) {
     return;
   }
 
-  const stopController = new AbortController();
   const stop = () => {
     stopController.abort();
   };
@@ -410,53 +394,25 @@ async function getExternalImportServerUrl(flags: Record<string, string | boolean
   return config.serverUrl;
 }
 
-async function readExternalLogContent(flags: Record<string, string | boolean | string[]>) {
-  if (flags['log-stdin'] === true) {
-    return await readStdin();
-  }
-  const logFile = getFlagString(flags, 'log-file');
-  if (!logFile) {
-    return '';
-  }
-  return await fs.readFile(logFile, 'utf8');
-}
-
-async function readExternalArtifacts(flags: Record<string, string | boolean | string[]>) {
-  const artifacts = [];
-  for (const filePath of getFlagStrings(flags, 'artifact-file')) {
-    const absolutePath = path.resolve(filePath);
-    const mimeType = getFileMimeType(absolutePath);
-    const content =
-      mimeType.startsWith('image/') && mimeType !== 'image/svg+xml'
-        ? await fs.readFile(absolutePath)
-        : await fs.readFile(absolutePath, 'utf8');
-    const contentText = Buffer.isBuffer(content) ? `data:${mimeType};base64,${content.toString('base64')}` : content;
-    artifacts.push({
-      artifactKey: getArtifactKeyFromFile(absolutePath),
-      artifactType: getFileArtifactType(absolutePath),
-      mimeType,
-      ...(Buffer.isBuffer(content) ? { sizeBytes: content.byteLength } : {}),
-      contentText,
-      metadata: {
-        fileName: path.basename(absolutePath),
-        sourcePath: absolutePath,
-        ...(Buffer.isBuffer(content) ? { originalSizeBytes: content.byteLength } : {}),
-      },
-    });
-  }
-  return artifacts;
-}
-
 async function handleImportExternalRun(flags: Record<string, string | boolean | string[]>) {
   const apiToken = getFlagString(flags, 'api-token');
   if (!apiToken) {
     throw new Error('--api-token is required');
   }
+  const externalRunKey = getFlagString(flags, 'external-run-key');
+  const runCode = getFlagString(flags, 'run-code');
+  if (!externalRunKey && !runCode) {
+    throw new Error('--external-run-key or --run-code is required');
+  }
   const provider = getFlagString(flags, 'provider') || 'generic-cli';
-  const logContent = await readExternalLogContent(flags);
-  const artifacts = await readExternalArtifacts(flags);
-  if (!logContent && !artifacts.length) {
+  const logFile = getFlagString(flags, 'log-file');
+  const logFromStdin = flags['log-stdin'] === true;
+  const artifactPaths = getFlagStrings(flags, 'artifact-file');
+  if (!logFile && !logFromStdin && !artifactPaths.length) {
     throw new Error('--log-file, --log-stdin, or --artifact-file is required');
+  }
+  if (logFile && logFromStdin) {
+    throw new Error('--log-file and --log-stdin cannot be used together');
   }
 
   const resultSummary = getFlagString(flags, 'result-summary-json')
@@ -465,35 +421,36 @@ async function handleImportExternalRun(flags: Record<string, string | boolean | 
   const metadata = getFlagString(flags, 'metadata-json')
     ? parseJsonRecord(getFlagString(flags, 'metadata-json'), '--metadata-json')
     : {};
-  const requester = new AgentGatewayApiClient(await getExternalImportServerUrl(flags));
-  const response = await requester.request({
-    method: 'POST',
-    path: '/api/agent-gateway/external-runs:import',
+  const canonicalProvider = provider === 'claude' ? 'claude-code' : provider;
+  const requester = new AgentGatewayApiClient(
+    await getExternalImportServerUrl(flags),
+    getFlagNumber(flags, 'request-timeout-ms', 30_000),
+  );
+  const response = await uploadExternalRun({
+    requester,
     authToken: apiToken,
-    body: {
-      provider: provider === 'claude' ? 'claude-code' : provider,
-      title: getFlagString(flags, 'title') || undefined,
-      instruction: getFlagString(flags, 'instruction') || getFlagString(flags, 'prompt') || undefined,
-      status: getFlagString(flags, 'status') || undefined,
-      externalRunKey: getFlagString(flags, 'external-run-key') || undefined,
-      sourceCollection: getFlagString(flags, 'source-collection') || undefined,
-      sourceRecordId: getFlagString(flags, 'source-record-id') || undefined,
-      outputAgentRunField: getFlagString(flags, 'output-agent-run-field') || undefined,
-      providerSessionId: getFlagString(flags, 'provider-session-id') || undefined,
-      resultSummary,
-      metadata,
-      errorSummary: getFlagString(flags, 'error-summary') || undefined,
-      logs: logContent
-        ? [
-            {
-              format: getFlagString(flags, 'format') || getDefaultExternalLogFormat(provider),
-              artifactKey: getFlagString(flags, 'log-artifact-key') || undefined,
-              contentText: logContent,
-            },
-          ]
-        : [],
-      artifacts,
-    },
+    provider: canonicalProvider,
+    title: getFlagString(flags, 'title') || undefined,
+    instruction: getFlagString(flags, 'instruction') || getFlagString(flags, 'prompt') || undefined,
+    status: getExternalRunStatus(flags),
+    externalRunKey: externalRunKey || undefined,
+    runCode: runCode || undefined,
+    sourceCollection: getFlagString(flags, 'source-collection') || undefined,
+    sourceRecordId: getFlagString(flags, 'source-record-id') || undefined,
+    outputAgentRunField: getFlagString(flags, 'output-agent-run-field') || undefined,
+    providerSessionId: getFlagString(flags, 'provider-session-id') || undefined,
+    resultSummary,
+    metadata,
+    errorSummary: getFlagString(flags, 'error-summary') || undefined,
+    log:
+      logFile || logFromStdin
+        ? {
+            format: getExternalLogFormat(flags, provider),
+            artifactKey: getFlagString(flags, 'log-artifact-key') || undefined,
+            ...(logFile ? { filePath: logFile } : { stream: stdin }),
+          }
+        : undefined,
+    artifactPaths,
   });
   printJson(response);
 }
@@ -515,7 +472,7 @@ function printHelp() {
       '      [--once] [--profile-key <key>] [--run-id <id>] [--workspace-root <path>]',
       '      [--terminal-backend tmux|exec]',
       '  smoke-opencode --skill-version-id <id> --skill-source-json <json> [--workspace-root <path>]',
-      '  import-external-run --server-url <url> --api-token <token> --provider <provider> --log-file <path>',
+      '  import-external-run --server-url <url> --api-token <token> --external-run-key <key> --provider <provider> --log-file <path>',
       '  detect-profiles',
       '',
     ].join('\n'),

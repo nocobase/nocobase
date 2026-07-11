@@ -77,9 +77,10 @@ export async function getRunProviderCapabilitySummary(
   ctx: Context,
   run: ModelRecord,
   session?: ModelRecord | null,
+  suppliedProfile?: ModelRecord | null,
 ): Promise<RunProviderCapabilitySummary> {
   const runProvider = getExplicitAgentProviderKey(getString(getModelValue(run, 'agentSessionProvider')));
-  const profile = await getProfile(ctx, run);
+  const profile = suppliedProfile === undefined ? await getProfile(ctx, run) : suppliedProfile;
   const profileProvider = profile ? getExplicitAgentProviderKey(getString(getModelValue(profile, 'provider'))) : null;
   const profileCapabilities = profile ? getRecord(getModelValue(profile, 'capabilitiesJson')) : {};
   const payloadProvider = getExecutionPayloadProvider(run);

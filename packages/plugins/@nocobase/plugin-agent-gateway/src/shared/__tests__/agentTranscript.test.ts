@@ -10,6 +10,31 @@
 import { buildAgentTranscript } from '../agentTranscript';
 
 describe('agent transcript parser', () => {
+  it('does not compare provider-local sequences across different sources', () => {
+    const transcript = buildAgentTranscript([
+      {
+        id: 'user-event',
+        runId: 'run-1',
+        source: 'agent-gateway-task',
+        sequence: 100,
+        eventType: 'agent.user.message',
+        contentText: 'start task',
+        createdAt: '2026-01-01T00:00:00.000Z',
+      },
+      {
+        id: 'agent-event',
+        runId: 'run-1',
+        source: 'codex',
+        sequence: 1,
+        eventType: 'agent.message',
+        contentText: 'working',
+        createdAt: '2026-01-01T00:00:01.000Z',
+      },
+    ]);
+
+    expect(transcript.messages.map((message) => message.text)).toEqual(['start task', 'working']);
+  });
+
   it('merges terminal-live chunks into one agent turn and folds parsed tool calls', () => {
     const transcript = buildAgentTranscript([
       {

@@ -1037,6 +1037,9 @@ describe('agent gateway run lifecycle APIs', () => {
     expect(String(claim.claimToken)).toMatch(/^ag_claim_/);
     expect(claim.claimAttempt).toBe(1);
     expect(claim.leaseVersion).toBe(1);
+    expect(claim.leaseTtlMs).toBe(60_000);
+    expect(Date.parse(String(claim.serverTime))).toBeGreaterThan(0);
+    expect(Date.parse(String(claim.claimExpiresAt)) - Date.parse(String(claim.serverTime))).toBe(claim.leaseTtlMs);
     expect(claim.nodeCapabilities).toMatchObject({
       maxConcurrency: 1,
     });
@@ -1046,6 +1049,11 @@ describe('agent gateway run lifecycle APIs', () => {
     expect(claim.profileKey).toBe(runner.profileKey);
     expect(claim.run).toMatchObject({
       id: firstRun.id,
+      status: 'claimed',
+      nodeId: runner.nodeId,
+      agentProfileId: runner.profileId,
+      claimAttempt: 1,
+      leaseVersion: 1,
       promptSnapshot: {
         text: 'Prompt for run-claim-1',
       },
@@ -1073,7 +1081,7 @@ describe('agent gateway run lifecycle APIs', () => {
     });
   });
 
-  it('recovers expired leased runs before claiming new queued work', async () => {
+  it('keeps stalled leases in concurrency and lets the same daemon resume before claiming new work', async () => {
     const runner = await createRunner();
     const expiredRun = await createRun('run-claim-recovery-expired', {
       agentProfileId: runner.profileId,
@@ -1093,8 +1101,10 @@ describe('agent gateway run lifecycle APIs', () => {
       agentProfileId: runner.profileId,
     });
     const secondClaim = getData(await claimRun(runner));
-    expect(secondClaim.claimed).toBe(true);
-    expect(secondClaim.runId).toBe(queuedRun.id);
+    expect(secondClaim).toMatchObject({
+      claimed: false,
+      reason: 'node_concurrency_full',
+    });
 
     const recoveredRun = await app.db.getRepository('agRuns').findOne({
       filterByTk: expiredRun.id,
@@ -1115,6 +1125,33 @@ describe('agent gateway run lifecycle APIs', () => {
       previousStatus: 'claimed',
       nextStatus: 'stalled',
     });
+
+    const resumedHeartbeatResponse = await runDaemonAction(runner, expiredRun.id, 'heartbeat', {
+      claimToken: firstClaim.claimToken,
+      claimAttempt: firstClaim.claimAttempt,
+      leaseVersion: firstClaim.leaseVersion,
+      status: 'running',
+    });
+    const resumedHeartbeat = getData(resumedHeartbeatResponse);
+    expect(resumedHeartbeatResponse.status).toBe(200);
+    expect(resumedHeartbeat).toMatchObject({
+      status: 'running',
+      leaseVersion: 2,
+    });
+
+    const completeResponse = await runDaemonAction(runner, expiredRun.id, 'complete', {
+      claimToken: firstClaim.claimToken,
+      claimAttempt: firstClaim.claimAttempt,
+      leaseVersion: resumedHeartbeat.leaseVersion,
+      resultSummary: {
+        recovered: true,
+      },
+    });
+    expect(completeResponse.status).toBe(200);
+
+    const thirdClaim = getData(await claimRun(runner));
+    expect(thirdClaim.claimed).toBe(true);
+    expect(thirdClaim.runId).toBe(queuedRun.id);
   });
 
   it('returns canonical provider separately from a custom profile key during claim', async () => {
@@ -1572,7 +1609,7 @@ describe('agent gateway run lifecycle APIs', () => {
     expect(blocked.get('status')).toBe('queued');
   });
 
-  it('extends leases on heartbeat and rejects stale writers without mutation', async () => {
+  it('extends leases, deduplicates a retried heartbeat, and rejects older writers', async () => {
     const staleNodeHeartbeatAt = new Date(Date.now() - 10 * 60 * 1000);
     const runner = await createRunner({
       lastHeartbeatAt: staleNodeHeartbeatAt,
@@ -1593,17 +1630,35 @@ describe('agent gateway run lifecycle APIs', () => {
     expect(heartbeat.status).toBe('running');
     expect(heartbeat.leaseVersion).toBe(2);
     expect(heartbeat.cancelRequested).toBe(false);
+    expect(heartbeat.leaseTtlMs).toBe(60_000);
+    expect(Date.parse(String(heartbeat.claimExpiresAt)) - Date.parse(String(heartbeat.serverTime))).toBe(
+      heartbeat.leaseTtlMs,
+    );
+    const runAfterHeartbeat = await app.db.getRepository('agRuns').findOne({
+      filterByTk: run.id,
+    });
+    const firstHeartbeatAt = getTime(runAfterHeartbeat.get('lastRunHeartbeatAt'));
 
-    const staleResponse = await runDaemonAction(runner, run.id, 'heartbeat', {
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    const retriedResponse = await runDaemonAction(runner, run.id, 'heartbeat', {
       claimToken: claim.claimToken,
       claimAttempt: claim.claimAttempt,
       leaseVersion: claim.leaseVersion,
       status: 'running',
     });
-    expect(staleResponse.status).toBe(409);
-    expect(getData(staleResponse)).toMatchObject({
-      code: 'lease_lost',
+    expect(retriedResponse.status).toBe(200);
+    expect(getData(retriedResponse)).toMatchObject({
+      status: 'running',
+      leaseVersion: heartbeat.leaseVersion,
+      claimExpiresAt: heartbeat.claimExpiresAt,
     });
+    const retriedHeartbeat = getData(retriedResponse);
+    expect(Number(retriedHeartbeat.leaseTtlMs)).toBeLessThan(Number(heartbeat.leaseTtlMs));
+    const runAfterRetry = await app.db.getRepository('agRuns').findOne({
+      filterByTk: run.id,
+    });
+    expect(getTime(runAfterRetry.get('lastRunHeartbeatAt'))).toBe(firstHeartbeatAt);
 
     const wrongTokenResponse = await runDaemonAction(runner, run.id, 'heartbeat', {
       claimToken: 'wrong-claim-token',
@@ -1623,6 +1678,17 @@ describe('agent gateway run lifecycle APIs', () => {
     expect(downgradeResponse.status).toBe(200);
     expect(downgrade.status).toBe('running');
     expect(downgrade.leaseVersion).toBe(3);
+
+    const staleResponse = await runDaemonAction(runner, run.id, 'heartbeat', {
+      claimToken: claim.claimToken,
+      claimAttempt: claim.claimAttempt,
+      leaseVersion: claim.leaseVersion,
+      status: 'running',
+    });
+    expect(staleResponse.status).toBe(409);
+    expect(getData(staleResponse)).toMatchObject({
+      code: 'lease_lost',
+    });
 
     const storedRun = await app.db.getRepository('agRuns').findOne({
       filterByTk: run.id,
@@ -1745,24 +1811,27 @@ describe('agent gateway run lifecycle APIs', () => {
       },
     });
 
-    await app.db.getRepository('agAgentConversationEvents').create({
-      values: {
-        id: randomUUID(),
-        runId: String(createResult.runId),
-        sequence: 1,
-        eventType: 'agent.turn.completed',
-        source: 'codex',
-        providerEventId: 'turn-usage-1',
-        contentJson: {
-          type: 'turn.completed',
-          usage: {
-            input_tokens: 39968,
-            cached_input_tokens: 18176,
-            output_tokens: 144,
-            reasoning_output_tokens: 77,
+    await app.db.sequelize.transaction(async (transaction) => {
+      await app.db.getRepository('agAgentConversationEvents').create({
+        values: {
+          id: randomUUID(),
+          runId: String(createResult.runId),
+          sequence: 1,
+          eventType: 'agent.turn.completed',
+          source: 'codex',
+          providerEventId: 'turn-usage-1',
+          contentJson: {
+            type: 'turn.completed',
+            usage: {
+              input_tokens: 39968,
+              cached_input_tokens: 18176,
+              output_tokens: 144,
+              reasoning_output_tokens: 77,
+            },
           },
         },
-      },
+        transaction,
+      });
     });
 
     const claim = getData(await claimRun(runner));
@@ -1790,6 +1859,19 @@ describe('agent gateway run lifecycle APIs', () => {
     expect(completedRun.get('resultSummaryJson')).toMatchObject({
       title: 'Search gold price',
       status: 'succeeded',
+      tokenUsageJson: {
+        inputTokens: 39968,
+        cachedInputTokens: 18176,
+        outputTokens: 144,
+        reasoningOutputTokens: 77,
+        totalTokens: 40112,
+      },
+    });
+
+    await app.db.getRepository('agAgentConversationEvents').destroy({
+      filter: {
+        runId: String(createResult.runId),
+      },
     });
 
     const completedReadResponse = await rootAgent.get(`/api/agent-gateway/runs:get/${createResult.runId}`);
@@ -1822,32 +1904,69 @@ describe('agent gateway run lifecycle APIs', () => {
     );
   });
 
-  it('reports Codex token usage from terminal transcript when structured usage is absent', async () => {
+  it('persists Codex token usage from a bounded terminal tail when structured usage is absent', async () => {
+    const runner = await createRunner({
+      profileProvider: 'codex',
+    });
     const run = await createRun('run-codex-terminal-token-fallback', {
-      status: 'succeeded',
-      resultSummaryJson: {
+      agentProfileId: runner.profileId,
+    });
+    const claim = getData(await claimRun(runner));
+    const heartbeat = getData(
+      await runDaemonAction(runner, run.id, 'heartbeat', {
+        claimToken: claim.claimToken,
+        claimAttempt: claim.claimAttempt,
+        leaseVersion: claim.leaseVersion,
+        status: 'running',
+      }),
+    );
+
+    await app.db.sequelize.transaction(async (transaction) => {
+      await app.db.getRepository('agAgentConversationEvents').create({
+        values: {
+          id: randomUUID(),
+          runId: String(run.id),
+          sequence: 1,
+          eventType: 'agent.message',
+          source: 'terminal-live',
+          contentText: [
+            'old terminal output\n'.repeat(5000),
+            'OpenAI Codex v0.142.5\r',
+            'Task completed\r',
+            '\u001b[2mtokens used\u001b[0m\r',
+            '11,126\r',
+            '[agent-gateway] process exited with code 0\r',
+          ].join('\n'),
+          contentJson: {
+            live: true,
+            stream: 'terminal',
+          },
+        },
+        transaction,
+      });
+    });
+
+    const completeResponse = await runDaemonAction(runner, run.id, 'complete', {
+      claimToken: claim.claimToken,
+      claimAttempt: claim.claimAttempt,
+      leaseVersion: heartbeat.leaseVersion,
+      resultSummary: {
         title: 'Terminal token fallback',
       },
     });
+    expect(completeResponse.status).toBe(200);
+    const storedRun = await app.db.getRepository('agRuns').findOne({
+      filterByTk: String(run.id),
+    });
+    expect(storedRun.get('resultSummaryJson')).toMatchObject({
+      tokenUsageJson: {
+        totalTokens: 11126,
+      },
+    });
 
-    await app.db.getRepository('agAgentConversationEvents').create({
-      values: {
-        id: randomUUID(),
+    await app.db.getRepository('agAgentConversationEvents').destroy({
+      filter: {
         runId: String(run.id),
-        sequence: 1,
-        eventType: 'agent.message',
-        source: 'terminal-live',
-        contentText: [
-          'OpenAI Codex v0.142.5\r',
-          'Task completed\r',
-          '\u001b[2mtokens used\u001b[0m\r',
-          '11,126\r',
-          '[agent-gateway] process exited with code 0\r',
-        ].join('\n'),
-        contentJson: {
-          live: true,
-          stream: 'terminal',
-        },
       },
     });
 
@@ -1981,6 +2100,92 @@ describe('agent gateway run lifecycle APIs', () => {
       claimed: false,
       reason: 'no_claimable_run',
     });
+  });
+
+  it('finishes expired canceling or cancel-requested leases as canceled', async () => {
+    const cancelingRunner = await createRunner({
+      nodeKey: 'node-expired-canceling',
+    });
+    const cancelingRun = await createRun('run-expired-canceling', {
+      agentProfileId: cancelingRunner.profileId,
+    });
+    await claimRun(cancelingRunner);
+    const cancelResponse = await rootAgent.post(`/api/agent-gateway/runs/${cancelingRun.id}/cancel`).send({});
+    expect(cancelResponse.status).toBe(200);
+    expect(getData(cancelResponse).status).toBe('canceling');
+    await app.db.getRepository('agRuns').update({
+      filterByTk: cancelingRun.id,
+      values: {
+        claimExpiresAt: new Date(Date.now() - 1000),
+      },
+    });
+
+    const requestedRunner = await createRunner({
+      nodeKey: 'node-expired-cancel-requested',
+    });
+    const requestedRun = await createRun('run-expired-cancel-requested', {
+      agentProfileId: requestedRunner.profileId,
+    });
+    const requestedClaimResponse = await claimRun(requestedRunner);
+    expect(requestedClaimResponse.status).toBe(200);
+    const requestedClaim = getData(requestedClaimResponse);
+    expect(requestedClaim.claimed).toBe(true);
+    const requestedHeartbeatResponse = await runDaemonAction(requestedRunner, requestedRun.id, 'heartbeat', {
+      claimToken: requestedClaim.claimToken,
+      claimAttempt: requestedClaim.claimAttempt,
+      leaseVersion: requestedClaim.leaseVersion,
+      status: 'running',
+    });
+    expect(requestedHeartbeatResponse.status).toBe(200);
+    await app.db.getRepository('agRuns').update({
+      filterByTk: requestedRun.id,
+      values: {
+        cancelRequested: true,
+        cancelRequestedAt: new Date(),
+        claimExpiresAt: new Date(Date.now() - 1000),
+      },
+    });
+
+    const runsBeforeManualRecovery = await app.db.getRepository('agRuns').find({
+      filterByTk: [cancelingRun.id, requestedRun.id],
+    });
+    const alreadyCanceledCount = runsBeforeManualRecovery.filter((run) => run.get('status') === 'canceled').length;
+    for (const run of runsBeforeManualRecovery) {
+      expect(run.get('cancelRequested')).toBe(true);
+    }
+
+    const expireResponse = await rootAgent.post('/api/agent-gateway/runs:expire-leases').send({});
+    expect(expireResponse.status).toBe(200);
+    expect(getData(expireResponse)).toMatchObject({
+      stalledCount: 0,
+      failedCount: 0,
+      canceledCount: 2 - alreadyCanceledCount,
+    });
+
+    for (const runId of [cancelingRun.id, requestedRun.id]) {
+      const canceledRun = await app.db.getRepository('agRuns').findOne({
+        filterByTk: runId,
+      });
+      expect(canceledRun.toJSON()).toMatchObject({
+        status: 'canceled',
+        cancelRequested: true,
+        canceledAt: expect.anything(),
+        finishedAt: expect.anything(),
+        terminalEndedAt: expect.anything(),
+      });
+      expect(canceledRun.get('failedAt')).toBeFalsy();
+      expect(canceledRun.get('errorSummary')).toBeFalsy();
+    }
+    expect(
+      await app.db.getRepository('agRunEvents').count({
+        filter: {
+          runId: {
+            $in: [cancelingRun.id, requestedRun.id],
+          },
+          eventType: 'run.lease.canceled',
+        },
+      }),
+    ).toBe(2);
   });
 
   it('marks expired leases stalled before failing them and allows daemon-confirmed process timeout only from active leases', async () => {

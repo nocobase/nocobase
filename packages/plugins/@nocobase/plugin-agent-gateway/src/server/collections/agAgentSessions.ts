@@ -10,10 +10,10 @@
 import { defineCollection } from '@nocobase/database';
 
 // Portable collection indexes do not expose partial unique indexes. Nullable
-// providerSessionId keeps the identity unique when the provider gives us one,
-// while still allowing transitional rows without a provider-owned id.
+// providerSessionId keeps the identity unique per node when the provider gives
+// us one, while still allowing transitional rows without a provider-owned id.
 export const AG_AGENT_SESSION_PROVIDER_ID_UNIQUE_CONSTRAINT_NOTE =
-  'Unique by provider and providerSessionId when providerSessionId is present; transitional sessions may leave it null.';
+  'Unique by node, provider, and providerSessionId when providerSessionId is present; transitional sessions may leave it null.';
 
 export default defineCollection({
   name: 'agAgentSessions',
@@ -24,7 +24,7 @@ export default defineCollection({
   indexes: [
     {
       unique: true,
-      fields: ['provider', 'providerSessionId'],
+      fields: ['nodeId', 'provider', 'providerSessionId'],
     },
   ],
   fields: [
@@ -42,6 +42,19 @@ export default defineCollection({
     {
       type: 'string',
       name: 'providerSessionId',
+    },
+    {
+      type: 'uuid',
+      name: 'nodeId',
+      autoFill: false,
+      index: true,
+    },
+    {
+      type: 'belongsTo',
+      name: 'node',
+      target: 'agNodes',
+      foreignKey: 'nodeId',
+      onDelete: 'SET NULL',
     },
     {
       type: 'uuid',

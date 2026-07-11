@@ -15,8 +15,14 @@ import { Plugin } from '@nocobase/server';
 import { Transaction, UniqueConstraintError } from 'sequelize';
 
 import { AGENT_GATEWAY_ACTIONS, authenticateNodeToken } from '../security';
-import { AgentTranscriptEvent, buildAgentTranscript, getAgentTranscriptToolStats } from '../../shared/agentTranscript';
+import { AgentTranscriptEvent, buildAgentTranscript } from '../../shared/agentTranscript';
 import { COMMAND_CONTENT_JSON_LIMIT_CHARS, COMMAND_DETAIL_STRING_LIMIT_CHARS } from '../../shared/conversationLimits';
+import {
+  OBSERVABILITY_ROLLUP_EVENT_FILTER,
+  createEmptyToolStats,
+  getRunObservabilityRollup,
+  mergeToolStats,
+} from '../services/observationRollup';
 import {
   API_PREFIX,
   JsonRecord,
@@ -36,6 +42,7 @@ import {
   requireManagePermission,
 } from './utils';
 import { validateRunLease } from './runLifecycle';
+import { CursorField, findCursorPage } from './cursorPagination';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_CONVERSATION_EVENTS_PER_BATCH = 100;
@@ -43,6 +50,10 @@ const MAX_CONTENT_TEXT_LENGTH = 8000;
 const MAX_CONTENT_JSON_CHARS = 32 * 1024;
 const TOOL_CALL_STATS_DEFAULT_RUN_LIMIT = 100;
 const TOOL_CALL_STATS_MAX_RUN_LIMIT = 500;
+const TOOL_CALL_STATS_DEFAULT_EVENT_LIMIT = 100;
+const TOOL_CALL_STATS_MAX_EVENT_LIMIT = 100;
+const DEFAULT_CONVERSATION_EVENT_PAGE_SIZE = 100;
+const MAX_CONVERSATION_EVENT_PAGE_SIZE = 500;
 const STANDARD_CONVERSATION_COLLECTIONS = ['agAgentConversationEvents'] as const;
 const CONVERSATION_WRITE_RUN_STATUSES = ['claimed', 'syncing_skills', 'running', 'finalizing', 'stalled'] as const;
 const ACTIVE_RUN_STATUSES = new Set([
@@ -72,6 +83,18 @@ interface DatabaseWithCollections {
   getCollection?(name: string): CollectionLike | undefined;
 }
 
+function findConversationEventPage(ctx: Context, filter: JsonRecord, scope: string, cursorField: CursorField) {
+  return findCursorPage({
+    ctx,
+    filter,
+    scope,
+    cursorField,
+    defaultPageSize: DEFAULT_CONVERSATION_EVENT_PAGE_SIZE,
+    maxPageSize: MAX_CONVERSATION_EVENT_PAGE_SIZE,
+    findRows: (options) => ctx.db.getRepository('agAgentConversationEvents').find(options) as Promise<ModelRecord[]>,
+  });
+}
+
 function serializeModel(model: ModelRecord): JsonRecord {
   const event = getModelJson(model);
   const eventType = getString(event.eventType);
@@ -92,6 +115,8 @@ function toTranscriptEvent(event: JsonRecord): AgentTranscriptEvent {
   const sequence = getOptionalInteger(event.sequence);
   return {
     id: getString(event.id),
+    runId: getString(event.runId) || undefined,
+    ingestId: getString(event.ingestId) || undefined,
     source: getString(event.source) || undefined,
     sequence: sequence ?? undefined,
     eventType: getString(event.eventType) || undefined,
@@ -389,6 +414,15 @@ function getToolCallStatsRunLimit(ctx: Context) {
   return Math.min(limit, TOOL_CALL_STATS_MAX_RUN_LIMIT);
 }
 
+function getToolCallEventLimit(ctx: Context) {
+  const rawLimit = getString(getRecord(ctx.query).eventLimit);
+  const limit = rawLimit ? Number(rawLimit) : TOOL_CALL_STATS_DEFAULT_EVENT_LIMIT;
+  if (!Number.isInteger(limit) || limit <= 0) {
+    ctx.throw(400, 'eventLimit must be a positive integer');
+  }
+  return Math.min(limit, TOOL_CALL_STATS_MAX_EVENT_LIMIT);
+}
+
 function getCollection(ctx: Context, collectionName: string) {
   const collection = (ctx.db as unknown as DatabaseWithCollections).getCollection?.(collectionName);
   if (!collection) {
@@ -598,40 +632,52 @@ async function listRunConversationEvents(ctx: Context, runId: string) {
   await requireConversationRead(ctx);
   await assertRunReadable(ctx, runId);
 
-  const events = (await ctx.db.getRepository('agAgentConversationEvents').find({
-    filter: {
-      runId,
-    },
-    sort: ['createdAt', 'sequence'],
-  })) as ModelRecord[];
-
-  ctx.body = events.map(serializeModel);
+  const page = await findConversationEventPage(ctx, { runId }, `conversation:run:${runId}`, 'ingestId');
+  ctx.body = {
+    rows: page.rows.map(serializeModel),
+    pageSize: page.pageSize,
+    beforeCursor: page.beforeCursor,
+    afterCursor: page.afterCursor,
+    hasMoreBefore: page.hasMoreBefore,
+    hasMoreAfter: page.hasMoreAfter,
+  };
 }
 
 async function listRunToolCalls(ctx: Context, runId: string) {
   await requireConversationRead(ctx);
   const run = await assertRunReadable(ctx, runId);
+  const eventLimit = getToolCallEventLimit(ctx);
 
-  const events = (await ctx.db.getRepository('agAgentConversationEvents').find({
+  const eventRows = (await ctx.db.getRepository('agAgentConversationEvents').find({
     filter: {
-      runId,
+      $and: [{ runId }, OBSERVABILITY_ROLLUP_EVENT_FILTER],
     },
-    sort: ['createdAt', 'sequence'],
+    sort: ['-createdAt', '-sequence', '-id'],
+    limit: eventLimit + 1,
   })) as ModelRecord[];
+  const eventsTruncated = eventRows.length > eventLimit;
+  const events = eventRows.slice(0, eventLimit).reverse();
   const serializedEvents = events.map(serializeModel);
   const transcript = buildAgentTranscript(toTranscriptEvents(serializedEvents), {
     closeDanglingToolCalls: shouldCloseDanglingToolCalls(run),
   });
+  const rollup = getRunObservabilityRollup(run);
 
   ctx.body = {
     toolCalls: transcript.toolCalls,
-    stats: transcript.stats,
+    stats: rollup?.toolStatsJson || transcript.stats,
+    meta: {
+      eventLimit,
+      eventCount: events.length,
+      eventsTruncated,
+    },
   };
 }
 
 async function listToolCallStats(ctx: Context) {
   await requireConversationRead(ctx);
   const limit = getToolCallStatsRunLimit(ctx);
+  const eventLimit = getToolCallEventLimit(ctx);
   const visibilityFilter = await getRunVisibilityFilter(ctx);
 
   const runs = (await ctx.db.getRepository('agRuns').find({
@@ -646,18 +692,40 @@ async function listToolCallStats(ctx: Context) {
       toolCallCount: 0,
       stats: buildAgentTranscript([]).stats,
       runs: [],
+      toolCalls: [],
+      meta: {
+        runLimit: limit,
+        fallbackRunCount: 0,
+        fallbackEventLimit: eventLimit,
+        fallbackEventCount: 0,
+        fallbackEventsTruncated: false,
+      },
     };
     return;
   }
 
-  const events = (await ctx.db.getRepository('agAgentConversationEvents').find({
-    filter: {
-      runId: {
-        $in: runIds,
-      },
-    },
-    sort: ['runId', 'createdAt', 'sequence'],
-  })) as ModelRecord[];
+  const rollupsByRunId = new Map(
+    runs.map((run) => [String(getModelTargetKey(run, 'id')), getRunObservabilityRollup(run)] as const),
+  );
+  const fallbackRunIds = runIds.filter((runId) => !rollupsByRunId.get(runId));
+  const fallbackEventRows = fallbackRunIds.length
+    ? ((await ctx.db.getRepository('agAgentConversationEvents').find({
+        filter: {
+          $and: [
+            {
+              runId: {
+                $in: fallbackRunIds,
+              },
+            },
+            OBSERVABILITY_ROLLUP_EVENT_FILTER,
+          ],
+        },
+        sort: ['-createdAt', '-sequence', '-id'],
+        limit: eventLimit + 1,
+      })) as ModelRecord[])
+    : [];
+  const fallbackEventsTruncated = fallbackEventRows.length > eventLimit;
+  const events = fallbackEventRows.slice(0, eventLimit);
   const eventsByRunId = new Map<string, JsonRecord[]>();
   const serializedEvents = events.map(serializeModel);
   for (const event of serializedEvents) {
@@ -669,40 +737,54 @@ async function listToolCallStats(ctx: Context) {
     runEvents.push(event);
     eventsByRunId.set(eventRunId, runEvents);
   }
+  for (const runEvents of eventsByRunId.values()) {
+    runEvents.reverse();
+  }
 
-  const runSummaries = runs.map((run) => {
+  const runContexts = runs.map((run) => {
     const runId = String(getModelTargetKey(run, 'id'));
     const transcript = buildAgentTranscript(toTranscriptEvents(eventsByRunId.get(runId) || []), {
       closeDanglingToolCalls: shouldCloseDanglingToolCalls(run),
     });
+    const rollup = rollupsByRunId.get(runId);
+    const stats = rollup?.toolStatsJson || transcript.stats;
     return {
-      runId,
-      runCode: getModelString(run, 'runCode'),
-      status: getModelString(run, 'status'),
-      toolCallCount: transcript.toolCalls.length,
-      stats: transcript.stats,
+      summary: {
+        runId,
+        runCode: getModelString(run, 'runCode'),
+        status: getModelString(run, 'status'),
+        toolCallCount: stats.total,
+        stats,
+      },
+      toolCalls: transcript.toolCalls,
     };
   });
-  const allToolCalls = runSummaries.flatMap((summary) =>
-    (eventsByRunId.get(summary.runId)
-      ? buildAgentTranscript(toTranscriptEvents(eventsByRunId.get(summary.runId) || []), {
-          closeDanglingToolCalls: !DANGLING_TOOL_LIVE_RUN_STATUSES.has(summary.status),
-        }).toolCalls
-      : []
-    ).map((toolCall) => ({
+  const runSummaries = runContexts.map((context) => context.summary);
+  const allToolCalls = runContexts.flatMap((context) =>
+    context.toolCalls.map((toolCall) => ({
       ...toolCall,
-      runId: summary.runId,
-      runCode: summary.runCode,
+      runId: context.summary.runId,
+      runCode: context.summary.runCode,
     })),
   );
-  const aggregateStats = getAgentTranscriptToolStats(allToolCalls);
+  const aggregateStats = runSummaries.reduce(
+    (stats, summary) => mergeToolStats(stats, summary.stats),
+    createEmptyToolStats(),
+  );
 
   ctx.body = {
     runCount: runs.length,
-    toolCallCount: allToolCalls.length,
+    toolCallCount: aggregateStats.total,
     stats: aggregateStats,
     runs: runSummaries,
     toolCalls: allToolCalls,
+    meta: {
+      runLimit: limit,
+      fallbackRunCount: fallbackRunIds.length,
+      fallbackEventLimit: eventLimit,
+      fallbackEventCount: events.length,
+      fallbackEventsTruncated,
+    },
   };
 }
 
@@ -711,17 +793,25 @@ async function listSessionConversationEvents(ctx: Context, sessionId: string) {
   await assertSessionExists(ctx, sessionId);
   const readableRunIds = await findReadableSessionRunIds(ctx, sessionId);
 
-  const events = (await ctx.db.getRepository('agAgentConversationEvents').find({
-    filter: {
+  const page = await findConversationEventPage(
+    ctx,
+    {
       sessionId,
       runId: {
         $in: readableRunIds,
       },
     },
-    sort: ['createdAt', 'sequence'],
-  })) as ModelRecord[];
-
-  ctx.body = events.map(serializeModel);
+    `conversation:session:${sessionId}`,
+    'sessionIngestId',
+  );
+  ctx.body = {
+    rows: page.rows.map(serializeModel),
+    pageSize: page.pageSize,
+    beforeCursor: page.beforeCursor,
+    afterCursor: page.afterCursor,
+    hasMoreBefore: page.hasMoreBefore,
+    hasMoreAfter: page.hasMoreAfter,
+  };
 }
 
 export function registerConversationEventRoutes(plugin: Plugin) {
