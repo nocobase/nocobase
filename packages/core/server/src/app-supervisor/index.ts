@@ -75,6 +75,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   private commandAdapterName: string;
   private appDbCreator = new ConditionalRegistry<AppDbCreatorOptions, void>();
   private appConditions = new Map<string, AppCondition>();
+  private appManifests = new Map<string, Map<string, unknown>>();
   private appSsoIssuer?: string;
   public appOptionsFactory: AppOptionsFactory = appOptionsFactory;
 
@@ -364,6 +365,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     await this.processAdapter.removeAllApps();
     await this.discoveryAdapter.dispose?.();
     await this.commandAdapter?.dispose?.();
+    this.appManifests.clear();
     if (this.environmentHeartbeatTimer) {
       this.environmentHeartbeatTimer = null;
     }
@@ -539,31 +541,32 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   }
 
   async setAppManifestItem(appName: string, namespace: string, itemKey: string, item: unknown) {
-    if (typeof this.discoveryAdapter.setAppManifestItem !== 'function') {
-      return;
+    if (typeof this.discoveryAdapter.setAppManifestItem === 'function') {
+      return this.discoveryAdapter.setAppManifestItem(appName, namespace, itemKey, item);
     }
-    return this.discoveryAdapter.setAppManifestItem(appName, namespace, itemKey, item);
+    const manifest = this.getOrCreateAppManifest(appName, namespace);
+    manifest.set(itemKey, item);
   }
 
   async removeAppManifestItem(appName: string, namespace: string, itemKey: string) {
-    if (typeof this.discoveryAdapter.removeAppManifestItem !== 'function') {
-      return;
+    if (typeof this.discoveryAdapter.removeAppManifestItem === 'function') {
+      return this.discoveryAdapter.removeAppManifestItem(appName, namespace, itemKey);
     }
-    return this.discoveryAdapter.removeAppManifestItem(appName, namespace, itemKey);
+    this.appManifests.get(this.getAppManifestKey(appName, namespace))?.delete(itemKey);
   }
 
   async removeAppManifest(appName: string, namespace: string) {
-    if (typeof this.discoveryAdapter.removeAppManifest !== 'function') {
-      return;
+    if (typeof this.discoveryAdapter.removeAppManifest === 'function') {
+      return this.discoveryAdapter.removeAppManifest(appName, namespace);
     }
-    return this.discoveryAdapter.removeAppManifest(appName, namespace);
+    this.appManifests.delete(this.getAppManifestKey(appName, namespace));
   }
 
   async getAppManifestItems<T = unknown>(appName: string, namespace: string) {
-    if (typeof this.discoveryAdapter.getAppManifestItems !== 'function') {
-      return [] as T[];
+    if (typeof this.discoveryAdapter.getAppManifestItems === 'function') {
+      return this.discoveryAdapter.getAppManifestItems<T>(appName, namespace);
     }
-    return this.discoveryAdapter.getAppManifestItems<T>(appName, namespace);
+    return Array.from(this.appManifests.get(this.getAppManifestKey(appName, namespace))?.values() || []) as T[];
   }
 
   async getAppManifests<T = unknown>(namespace: string, appNames: string[]) {
@@ -581,6 +584,21 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
       }),
     );
     return result;
+  }
+
+  private getAppManifestKey(appName: string, namespace: string) {
+    return `${namespace}:${appName}`;
+  }
+
+  private getOrCreateAppManifest(appName: string, namespace: string) {
+    const key = this.getAppManifestKey(appName, namespace);
+    const manifest = this.appManifests.get(key);
+    if (manifest) {
+      return manifest;
+    }
+    const nextManifest = new Map<string, unknown>();
+    this.appManifests.set(key, nextManifest);
+    return nextManifest;
   }
 
   registerAppCondition(name: string, condition: AppCondition) {
