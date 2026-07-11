@@ -21,6 +21,7 @@ import {
 import { DrawerFormLayout } from '@nocobase/client-v2';
 import { useFlowContext as useFlowEngineContext } from '@nocobase/flow-engine';
 import {
+  FlowContext,
   useFlowContext as useCanvasFlowContext,
   useWorkflowCanvasExecuted,
   CurrentWorkflowContext,
@@ -145,48 +146,50 @@ function TriggerConfigForm({
   `;
 
   return (
-    <CurrentWorkflowContext.Provider value={workflow}>
-      <DrawerFormLayout
-        title={t('Trigger')}
-        onSubmit={onSubmit}
-        submitting={submitting}
-        submitText={t('Submit')}
-        cancelText={t('Cancel')}
-        footer={executed ? <span /> : undefined}
-      >
-        <div style={{ paddingBottom: 48 }}>
-          <Form
-            className={formClassName}
-            form={form}
-            layout="vertical"
-            disabled={executed}
-            requiredMark={(label, { required }) =>
-              required ? (
-                <>
-                  <span style={{ color: token.colorError }}>*</span>
-                  {label}
-                </>
+    <FlowContext.Provider value={{ workflow, refresh: onSubmitted }}>
+      <CurrentWorkflowContext.Provider value={workflow}>
+        <DrawerFormLayout
+          title={t('Trigger')}
+          onSubmit={onSubmit}
+          submitting={submitting}
+          submitText={t('Submit')}
+          cancelText={t('Cancel')}
+          footer={executed ? <span /> : undefined}
+        >
+          <div style={{ paddingBottom: 48 }}>
+            <Form
+              className={formClassName}
+              form={form}
+              layout="vertical"
+              disabled={executed}
+              requiredMark={(label, { required }) =>
+                required ? (
+                  <>
+                    <span style={{ color: token.colorError }}>*</span>
+                    {label}
+                  </>
+                ) : (
+                  label
+                )
+              }
+            >
+              {trigger ? <TriggerTypeDescription trigger={trigger} t={t} /> : null}
+              {Fieldset ? (
+                <Suspense fallback={<Skeleton active paragraph={{ rows: 4 }} />}>
+                  <Fieldset />
+                </Suspense>
               ) : (
-                label
-              )
-            }
-          >
-            {trigger ? <TriggerTypeDescription trigger={trigger} t={t} /> : null}
-            {Fieldset ? (
-              <Suspense fallback={<Skeleton active paragraph={{ rows: 4 }} />}>
-                <Fieldset />
-              </Suspense>
-            ) : (
-              <Typography.Paragraph type="secondary">
-                {trigger
-                  ? t("This trigger's configuration has not been migrated to the new canvas yet.")
-                  : t('This trigger type is not available in the new canvas yet.')}
-              </Typography.Paragraph>
-            )}
-          </Form>
-        </div>
-      </DrawerFormLayout>
-    </CurrentWorkflowContext.Provider>
+                <Typography.Paragraph type="secondary">
+                  {trigger
+                    ? t("This trigger's configuration has not been migrated to the new canvas yet.")
+                    : t('This trigger type is not available in the new canvas yet.')}
+                </Typography.Paragraph>
+              )}
+            </Form>
+          </div>
+        </DrawerFormLayout>
+      </CurrentWorkflowContext.Provider>
+    </FlowContext.Provider>
   );
 }
 
