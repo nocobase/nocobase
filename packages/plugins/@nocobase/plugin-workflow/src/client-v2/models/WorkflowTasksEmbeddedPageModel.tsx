@@ -21,6 +21,11 @@ function WorkflowTasksEmbeddedPage() {
 }
 
 export class WorkflowTasksEmbeddedPageModel extends ChildPageModel {
+  onInit(options: Parameters<ChildPageModel['onInit']>[0]) {
+    super.onInit(options);
+    this.setProps('showFlowSettings', false);
+  }
+
   render() {
     return <WorkflowTasksEmbeddedPage />;
   }

@@ -93,6 +93,15 @@ describe('PluginWorkflowClientV2 task type registry', () => {
         provider: expect.any(Function),
       }),
     );
+    const provider = app.entryActionManager.register.mock.calls.find(
+      ([name]) => name === 'workflow:tasks:action-panel',
+    )?.[1].provider;
+    const items = await provider({});
+    expect(items[0].createModelOptions.stepParams.popupSettings.openView).toEqual({
+      mode: 'embed',
+      pageModelClass: 'WorkflowTasksEmbeddedPageModel',
+      showFlowSettings: false,
+    });
 
     const modelLoaders = app.flowEngine.registerModelLoaders.mock.calls[0][0];
     await expect(modelLoaders.WorkflowTasksTopbarActionModel.loader()).resolves.toHaveProperty(

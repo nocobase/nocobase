@@ -89,6 +89,7 @@ export class WorkflowTasksEntryActionModel extends ActionModel {
           event,
           isMobileLayout: true,
           pageModelClass: WORKFLOW_TASKS_EMBEDDED_PAGE_MODEL,
+          showFlowSettings: false,
         },
         {
           debounce: true,
@@ -106,6 +107,7 @@ export class WorkflowTasksEntryActionModel extends ActionModel {
       ...params,
       mode: 'embed',
       pageModelClass: WORKFLOW_TASKS_EMBEDDED_PAGE_MODEL,
+      showFlowSettings: false,
     });
   }
 

@@ -206,11 +206,31 @@ describe('WorkflowTasksEntryActionModel', () => {
       expect.objectContaining({
         isMobileLayout: true,
         pageModelClass: 'WorkflowTasksEmbeddedPageModel',
+        showFlowSettings: false,
       }),
       expect.objectContaining({
         debounce: true,
       }),
     );
+  });
+
+  it('syncs embedded open view step params without flow settings toolbar', async () => {
+    const model = new WorkflowTasksEntryActionModel();
+    holder.stepParams = {
+      popupSettings: {
+        openView: {
+          mode: 'drawer',
+        },
+      },
+    };
+
+    await model.afterAddAsSubModel();
+
+    expect(holder.stepParams.popupSettings.openView).toEqual({
+      mode: 'embed',
+      pageModelClass: 'WorkflowTasksEmbeddedPageModel',
+      showFlowSettings: false,
+    });
   });
 
   it('updates the action panel badge from initial counts and websocket events', async () => {

@@ -26,6 +26,17 @@ vi.mock('../../pages/WorkflowTasksPage', async () => {
 });
 
 describe('WorkflowTasksEmbeddedPageModel', () => {
+  it('disables flow settings toolbar from page model props', () => {
+    const model = Object.create(WorkflowTasksEmbeddedPageModel.prototype) as WorkflowTasksEmbeddedPageModel & {
+      setProps: ReturnType<typeof vi.fn>;
+    };
+    model.setProps = vi.fn();
+
+    model.onInit({});
+
+    expect(model.setProps).toHaveBeenCalledWith('showFlowSettings', false);
+  });
+
   it('renders workflow tasks content directly instead of the default child page tabs', () => {
     const model = Object.create(WorkflowTasksEmbeddedPageModel.prototype) as WorkflowTasksEmbeddedPageModel & {
       renderTabs: ReturnType<typeof vi.fn>;

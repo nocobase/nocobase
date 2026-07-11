@@ -284,6 +284,7 @@ export class PluginWorkflowClientV2 extends Plugin {
                 openView: {
                   mode: 'embed',
                   pageModelClass: 'WorkflowTasksEmbeddedPageModel',
+                  showFlowSettings: false,
                 },
               },
             },
