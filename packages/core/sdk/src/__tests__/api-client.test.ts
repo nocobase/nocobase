@@ -9,9 +9,9 @@
 
 import { AxiosResponse } from 'axios';
 import MockAdapter from 'axios-mock-adapter';
+import { getAuthCookieName } from '@nocobase/utils/client';
 import { APIClient } from '../APIClient';
 import { Auth } from '../Auth';
-import { getAuthCookieName } from '../auth-cookie';
 
 describe('api-client', () => {
   let storage: Map<string, string>;

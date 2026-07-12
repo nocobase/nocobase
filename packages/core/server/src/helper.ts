@@ -150,7 +150,7 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
         ctx.state.pendingAuthTokenSource = 'query';
         return ctx.query.token;
       }
-      const cookieToken = ctx.cookies.get(getAuthCookieName('authToken', ctx.app.name));
+      const cookieToken = ctx.cookies.get(getAuthCookieName('authToken', app.name));
       ctx.state.pendingAuthTokenSource = cookieToken ? 'cookie' : undefined;
       return cookieToken;
     };
