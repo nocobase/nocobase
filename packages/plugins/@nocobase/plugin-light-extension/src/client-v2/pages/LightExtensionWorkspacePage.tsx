@@ -15,8 +15,10 @@ import {
   RestoreVersionModal,
   SaveVersionModal,
   VersionHistoryDock,
+  buildLineDiff,
+  inferLanguageFromPath,
+  mergeHistoryItems,
   summarizeWorkspaceChanges,
-  type RunJSLineDiffRow,
   type RunJSSourceHistoryItem,
   type RunJSWorkspacePathAccess,
   type RunJSWorkspacePathType,
@@ -222,7 +224,7 @@ function LightExtensionWorkspacePage({
   const dirtyChanges = useMemo(() => buildFileChanges(baseFiles, filesForSave), [baseFiles, filesForSave]);
   const saveSummary = useMemo(() => summarizeWorkspaceChanges(baseFiles, filesForSave), [baseFiles, filesForSave]);
   const diffRows = useMemo(
-    () => buildLineDiffRows(baseFiles, filesForSave, activePath),
+    () => buildLineDiff(baseFiles, filesForSave, activePath, false),
     [activePath, baseFiles, filesForSave],
   );
   const hasUnsavedLocalChanges = dirtyChanges.length > 0;
@@ -267,7 +269,7 @@ function LightExtensionWorkspacePage({
       {
         path: nextPath,
         content: getDefaultWorkspaceFileContent(nextPath),
-        language: languageFromPath(nextPath),
+        language: inferLightExtensionLanguageFromPath(nextPath),
       },
       ...getCompanionWorkspaceFiles(nextPath, files),
     ]);
@@ -338,7 +340,9 @@ function LightExtensionWorkspacePage({
     }
 
     const nextFiles = files.map((file) =>
-      file.path === path ? { ...file, language: languageFromPath(normalizedNextPath), path: normalizedNextPath } : file,
+      file.path === path
+        ? { ...file, language: inferLightExtensionLanguageFromPath(normalizedNextPath), path: normalizedNextPath }
+        : file,
     );
     setFiles(normalizeWorkspaceFiles(nextFiles));
     setFolders((current) => mergeFolders(current, collectWorkspaceFolders(nextFiles)));
@@ -375,7 +379,7 @@ function LightExtensionWorkspacePage({
     const nextFiles = normalizeWorkspaceFiles(
       filesWithEntryKey.map((file) => ({
         ...file,
-        language: languageFromPath(replacePathPrefix(file.path, path, normalizedNextPath)),
+        language: inferLightExtensionLanguageFromPath(replacePathPrefix(file.path, path, normalizedNextPath)),
         path: replacePathPrefix(file.path, path, normalizedNextPath),
       })),
     );
@@ -880,7 +884,7 @@ function normalizeWorkspaceFiles(files: Array<LightExtensionPulledFile | Workspa
     .map((file) => ({
       path: normalizeWorkspacePath(file.path),
       content: file.content || '',
-      language: file.language || languageFromPath(file.path),
+      language: file.language || inferLightExtensionLanguageFromPath(file.path),
       mode: file.mode,
     }))
     .sort((left, right) => left.path.localeCompare(right.path));
@@ -913,7 +917,7 @@ function mergeFiles(current: WorkspaceFile[], nextFiles: WorkspaceFile[]): Works
   const byPath = new Map(current.map((file) => [file.path, file]));
   for (const file of nextFiles) {
     const path = normalizeWorkspacePath(file.path);
-    byPath.set(path, { ...file, language: file.language || languageFromPath(path), path });
+    byPath.set(path, { ...file, language: file.language || inferLightExtensionLanguageFromPath(path), path });
   }
 
   return [...byPath.values()].sort((left, right) => left.path.localeCompare(right.path));
@@ -1088,65 +1092,12 @@ function isPathInsideFolder(path: string, folderPath: string): boolean {
   return path === folderPath || path.startsWith(`${folderPath}/`);
 }
 
-function buildLineDiffRows(baseFiles: WorkspaceFile[], files: WorkspaceFile[], path?: string): RunJSLineDiffRow[] {
-  if (!path) {
-    return [];
-  }
-
-  const baseLines = splitLines(baseFiles.find((file) => file.path === path)?.content || '');
-  const nextLines = splitLines(files.find((file) => file.path === path)?.content || '');
-  const maxLength = Math.max(baseLines.length, nextLines.length);
-  const rows: RunJSLineDiffRow[] = [];
-
-  for (let index = 0; index < maxLength; index += 1) {
-    const oldLine = baseLines[index];
-    const newLine = nextLines[index];
-    if (oldLine === undefined && newLine !== undefined) {
-      rows.push({ key: `insert:${index}`, type: 'insert', content: newLine, newLineNumber: index + 1 });
-      continue;
-    }
-    if (oldLine !== undefined && newLine === undefined) {
-      rows.push({ key: `delete:${index}`, type: 'delete', content: oldLine, oldLineNumber: index + 1 });
-      continue;
-    }
-    if (oldLine !== newLine && oldLine !== undefined && newLine !== undefined) {
-      rows.push({ key: `delete:${index}`, type: 'delete', content: oldLine, oldLineNumber: index + 1 });
-      rows.push({ key: `insert:${index}`, type: 'insert', content: newLine, newLineNumber: index + 1 });
-      continue;
-    }
-    if (oldLine !== undefined) {
-      rows.push({
-        key: `context:${index}`,
-        type: 'context',
-        content: oldLine,
-        oldLineNumber: index + 1,
-        newLineNumber: index + 1,
-      });
-    }
-  }
-
-  return rows;
-}
-
-function splitLines(content: string): string[] {
-  return content.replace(/\r\n/g, '\n').split('\n');
-}
-
 function toRunJSHistoryItems(commits: LightExtensionCommitRecord[]): RunJSSourceHistoryItem[] {
   return commits.map((commit) => ({ ...commit }));
 }
 
 function getNextHistoryCursor(commits: LightExtensionCommitRecord[], pageSize: number): number | null {
   return commits.length === pageSize ? commits[commits.length - 1]?.seq || null : null;
-}
-
-function mergeHistoryItems(
-  current: RunJSSourceHistoryItem[],
-  next: RunJSSourceHistoryItem[],
-): RunJSSourceHistoryItem[] {
-  const itemsById = new Map(current.map((item) => [item.id, item]));
-  next.forEach((item) => itemsById.set(item.id, item));
-  return Array.from(itemsById.values());
 }
 
 function formatHistoryVersion(seq?: number): string {
@@ -1164,7 +1115,7 @@ function buildFileChanges(baseFiles: WorkspaceFile[], files: WorkspaceFile[]): L
       changes.push({
         path: file.path,
         content: file.content,
-        language: file.language || languageFromPath(file.path),
+        language: file.language || inferLightExtensionLanguageFromPath(file.path),
         operation: 'upsert',
       });
     }
@@ -1276,21 +1227,8 @@ function isClientSettingsFilePath(path: string): boolean {
   return /^src\/client\/(?:js-blocks|js-fields|js-actions|js-items|runjs)\/[^/]+\/settings\.json$/.test(path);
 }
 
-function languageFromPath(path: string): string {
-  if (path.endsWith('.tsx') || path.endsWith('.ts')) {
-    return 'typescript';
-  }
-  if (path.endsWith('.jsx') || path.endsWith('.js')) {
-    return 'javascript';
-  }
-  if (path.endsWith('.json')) {
-    return 'json';
-  }
-  if (path.endsWith('.md')) {
-    return 'markdown';
-  }
-
-  return 'text';
+function inferLightExtensionLanguageFromPath(path: string): string {
+  return inferLanguageFromPath(path, { cssLanguage: 'text', jsxLanguage: 'language-family' });
 }
 
 export default LightExtensionWorkspacePage;

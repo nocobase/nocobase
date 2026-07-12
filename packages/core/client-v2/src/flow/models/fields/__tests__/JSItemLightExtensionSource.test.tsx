@@ -13,6 +13,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '@nocobase/test/client';
 import { FlowEngine, FlowEngineProvider, FlowModelRenderer, type FlowSettingsContext } from '@nocobase/flow-engine';
 import { RunJSSourceResolverRegistry, type RunJSSourceSettingsDescriptor } from '../../../components/runjs-source';
+import { assertJSItemLightExtensionSourceContract } from '../../utils/__tests__/jsItemLightExtensionSourceContract';
 import { JSItemModel } from '../JSItemModel';
 
 const SOURCE_BINDING = {
@@ -93,71 +94,8 @@ describe('JSItemModel light extension source', () => {
 
   it('adds JS Item source mode, binding, and hidden RunJS source fields', async () => {
     const { model } = createJSItem({});
-    const flow = model.getFlow('jsSettings');
-    const sourceModeStep = flow?.steps?.sourceMode;
-    const sourceBindingStep = flow?.steps?.sourceBinding;
-    const runJsStep = flow?.steps?.runJs;
-
-    expect(sourceModeStep?.useRawParams).toBe(true);
-    const listSourceMenuItems = vi.fn(async () => []);
-    RunJSSourceResolverRegistry.registerResolver({
-      sourceMode: 'light-extension',
-      resolve: () => ({
-        code: '',
-      }),
-      listSourceMenuItems,
-    });
-    await (
-      sourceModeStep?.uiMode as { props?: { loadItems?: (input: unknown) => Promise<unknown> } }
-    )?.props?.loadItems?.({
-      params: {
-        sourceMode: 'inline',
-      },
-      defaultParams: {},
-      t: (key: string) => key,
-    });
-    expect(listSourceMenuItems).toHaveBeenCalledWith(
-      expect.objectContaining({
-        kind: 'js-item',
-      }),
-    );
-    expect(sourceModeStep?.uiSchema?.sourceMode?.['x-component']).toBe('JSItemLightExtensionFullSourceField');
-    expect(sourceModeStep?.uiSchema?.sourceMode?.['x-component-props']).toMatchObject({
-      kind: 'js-item',
-    });
-    expect(sourceModeStep?.uiSchema?.sourceBinding?.['x-display']).toBe('hidden');
-    expect(sourceModeStep?.uiSchema?.settings?.['x-display']).toBe('hidden');
-    expect(sourceBindingStep?.hideInSettings).toBe(true);
-    expect(sourceBindingStep?.uiSchema?.sourceBinding?.['x-component']).toBe('JSItemLightExtensionFullSourceField');
-    expect(sourceBindingStep?.uiSchema?.sourceBinding?.['x-component-props']).toMatchObject({
-      kind: 'js-item',
-    });
-    expect(runJsStep?.uiSchema?.sourceMode?.['x-display']).toBe('hidden');
-    expect(runJsStep?.uiSchema?.sourceBinding?.['x-display']).toBe('hidden');
-    expect(runJsStep?.uiSchema?.settings?.['x-display']).toBe('hidden');
-
-    expect(sourceModeStep?.defaultParams?.(model.context as FlowSettingsContext<JSItemModel>)).toEqual({
-      sourceMode: 'inline',
-      sourceBinding: undefined,
-      settings: {},
-    });
-    expect(() => sourceModeStep?.beforeParamsSave?.(model.context, { sourceMode: 'light-extension' }, {})).toThrow(
-      'Light extension source binding is required.',
-    );
-
-    sourceModeStep?.beforeParamsSave?.(
-      model.context as FlowSettingsContext<JSItemModel>,
-      {
-        sourceMode: 'light-extension',
-        sourceBinding: SOURCE_BINDING,
-        settings: {
-          vipColor: '#f5222d',
-        },
-      },
-      {},
-    );
-    expect(model.getStepParams('jsSettings', 'runJs')).toMatchObject({
-      sourceMode: 'light-extension',
+    await assertJSItemLightExtensionSourceContract({
+      model,
       sourceBinding: SOURCE_BINDING,
       settings: {
         vipColor: '#f5222d',

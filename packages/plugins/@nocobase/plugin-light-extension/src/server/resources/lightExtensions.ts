@@ -7,49 +7,27 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { Context } from '@nocobase/actions';
 import { normalizeRunJSSourceLocator, type RunJSSourcePermissionResult } from '@nocobase/plugin-vsc-file';
 import type { HandlerType, ResourceOptions } from '@nocobase/resourcer';
 
-import { LightExtensionError, isLightExtensionError } from '../../shared/errors';
+import { LightExtensionError } from '../../shared/errors';
 import type { LightExtensionMoveSourceInput } from '../../shared/types';
 import {
   type LightExtensionCompilePreviewInput,
   LightExtensionCompilePreviewService,
 } from '../services/LightExtensionCompilePreviewService';
-import type { LightExtensionCanFunction } from '../services/LightExtensionPermissionService';
-import type { LightExtensionServiceContext } from '../services/LightExtensionRepoService';
 import { MoveSourceService, type MoveSourceServiceContext } from '../services/MoveSourceService';
+import {
+  createTypedResourceAction,
+  getRequestMetadata,
+  toRecord,
+  type LightExtensionResourceContext,
+  type ResourceActionInput,
+} from './resourceAction';
 
 export const lightExtensionActionNames = ['compilePreview', 'moveSource'] as const;
 
 type LightExtensionActionName = (typeof lightExtensionActionNames)[number];
-type ResourceActionInput = Record<string, unknown>;
-
-type LightExtensionResourceContext = Context & {
-  action?: {
-    params?: unknown;
-    resourceName?: string;
-    actionName?: string;
-  };
-  auth?: {
-    user?: unknown;
-  };
-  can?: LightExtensionCanFunction;
-  request?: {
-    path?: string;
-    method?: string;
-    header?: Record<string, string | string[] | undefined>;
-    headers?: Record<string, string | string[] | undefined>;
-  };
-  withoutDataWrapping?: boolean;
-  type?: string;
-  status?: number;
-  body?: unknown;
-  state?: Record<string, unknown>;
-  timezone?: string;
-};
-
 type ResourceActionRunner = (
   service: LightExtensionActionServices,
   input: ResourceActionInput,
@@ -94,29 +72,12 @@ export function createLightExtensionsResource(
 }
 
 function createLightExtensionAction(services: LightExtensionActionServices, run: ResourceActionRunner): HandlerType {
-  return async (ctx: Context, next) => {
-    const resourceCtx = ctx as LightExtensionResourceContext;
-    const input = getActionInput(resourceCtx);
-
-    try {
-      const result = await run(services, input, getServiceContext(resourceCtx));
-      resourceCtx.body = result;
-      const httpStatus = readHttpStatus(result);
-      if (httpStatus) {
-        resourceCtx.status = httpStatus;
-      }
-      await next();
-    } catch (error) {
-      if (!isLightExtensionError(error)) {
-        throw error;
-      }
-
-      resourceCtx.withoutDataWrapping = true;
-      resourceCtx.type = 'application/json';
-      resourceCtx.status = error.status;
-      resourceCtx.body = error.toResponseBody();
-    }
-  };
+  return createTypedResourceAction({
+    services,
+    run,
+    getServiceContext: getMoveSourceServiceContext,
+    getHttpStatus: readHttpStatus,
+  });
 }
 
 function normalizeCompilePreviewInput(input: ResourceActionInput): LightExtensionCompilePreviewInput {
@@ -141,30 +102,19 @@ function normalizeMoveSourceInput(input: ResourceActionInput): LightExtensionMov
   };
 }
 
-function getActionInput(ctx: LightExtensionResourceContext): ResourceActionInput {
-  const params = toRecord(ctx.action?.params);
-  const values = toRecord(params.values);
-  const { values: _values, ...queryParams } = params;
-
-  return {
-    ...queryParams,
-    ...values,
-  };
-}
-
-function getServiceContext(ctx: LightExtensionResourceContext): MoveSourceServiceContext {
-  const headers = ctx.request?.headers || ctx.request?.header || {};
+function getMoveSourceServiceContext(ctx: LightExtensionResourceContext): MoveSourceServiceContext {
+  const metadata = getRequestMetadata(ctx);
 
   const serviceContext: MoveSourceServiceContext = {
-    actorUserId: getCurrentUserId(ctx),
-    requestId: getHeader(headers, 'x-request-id') || getHeader(headers, 'x-correlation-id'),
-    requestSource: getHeader(headers, 'x-request-source'),
+    actorUserId: metadata.actorUserId,
+    requestId: metadata.requestId,
+    requestSource: metadata.requestSource,
     can: ctx.can,
     adapterContext: {
-      userId: getCurrentUserId(ctx),
+      userId: metadata.actorUserId,
       request: {
-        requestId: getHeader(headers, 'x-request-id') || getHeader(headers, 'x-correlation-id'),
-        requestSource: getHeader(headers, 'x-request-source'),
+        requestId: metadata.requestId,
+        requestSource: metadata.requestSource,
       },
       state: ctx.state,
       currentUser: ctx.auth?.user,
@@ -173,35 +123,6 @@ function getServiceContext(ctx: LightExtensionResourceContext): MoveSourceServic
     },
   };
   return serviceContext;
-}
-
-function getCurrentUserId(ctx: LightExtensionResourceContext): string | null {
-  const user = ctx.auth?.user;
-  if (!user || typeof user !== 'object') {
-    return null;
-  }
-
-  const userWithId = user as { id?: unknown };
-  if (typeof userWithId.id === 'string' || typeof userWithId.id === 'number') {
-    return String(userWithId.id);
-  }
-
-  const get = (user as { get?: (key: string) => unknown }).get;
-  if (typeof get !== 'function') {
-    return null;
-  }
-
-  const id = get('id');
-  return typeof id === 'string' || typeof id === 'number' ? String(id) : null;
-}
-
-function getHeader(headers: Record<string, string | string[] | undefined>, name: string): string | undefined {
-  const value = headers[name] || headers[name.toLowerCase()];
-  if (Array.isArray(value)) {
-    return value[0];
-  }
-
-  return value;
 }
 
 function requireRepoId(input: ResourceActionInput): string {
@@ -307,10 +228,6 @@ function optionalStringArray(input: ResourceActionInput, key: string): string[] 
   }
 
   return value.map((item) => item.trim());
-}
-
-function toRecord(value: unknown): ResourceActionInput {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value) ? (value as ResourceActionInput) : {};
 }
 
 function invalidInput(message: string): LightExtensionError {

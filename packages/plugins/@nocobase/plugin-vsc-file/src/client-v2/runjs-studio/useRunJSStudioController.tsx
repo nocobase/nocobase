@@ -80,6 +80,7 @@ import {
   formatVersion,
   hasWorkspaceChanges,
   inferLanguageFromPath,
+  mergeHistoryItems,
   normalizeRunJSWorkspaceFolderPath,
   normalizeRunJSWorkspacePath,
   normalizeWorkspaceFiles,
@@ -129,15 +130,6 @@ function getNextHistoryCursor(
   nextBeforeSeq?: number | null,
 ): number | null {
   return items.length === pageSize ? nextBeforeSeq ?? items[items.length - 1]?.seq ?? null : null;
-}
-
-function mergeHistoryItems(
-  current: RunJSSourceHistoryItem[],
-  next: RunJSSourceHistoryItem[],
-): RunJSSourceHistoryItem[] {
-  const itemsById = new Map(current.map((item) => [item.id, item]));
-  next.forEach((item) => itemsById.set(item.id, item));
-  return Array.from(itemsById.values());
 }
 
 type RunJSStudioControllerProps = Omit<RunJSEditorProviderRenderProps, 'locator'> & {

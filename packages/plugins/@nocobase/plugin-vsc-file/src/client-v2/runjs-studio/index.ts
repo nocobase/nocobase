@@ -24,5 +24,5 @@ export {
   VersionHistoryDock,
 } from './RunJSStudioComponents';
 export type { RunJSWorkspacePathAccess, RunJSWorkspacePathType } from './RunJSStudioComponents';
-export { summarizeWorkspaceChanges } from './workspaceUtils';
+export { buildLineDiff, inferLanguageFromPath, mergeHistoryItems, summarizeWorkspaceChanges } from './workspaceUtils';
 export type { RunJSChangeSummary, RunJSLineDiffRow, RunJSSourceHistoryItem, RunJSWorkspaceFile } from './types';

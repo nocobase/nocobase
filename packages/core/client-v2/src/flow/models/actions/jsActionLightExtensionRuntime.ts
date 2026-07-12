@@ -22,51 +22,51 @@ import {
   createRunJSSourceCascadeMenuUIMode,
   getDescriptorSchemaHash,
   getRunJSModelUse,
-  getSchemaTitle,
   getSettingsSchemaProperties,
   getSettingsSchemaRequired,
-  isSettingValueValid,
-  normalizeSchemaType,
-  RunJSSourceResolverRegistry,
   type JsonSchemaLike,
   type ResolvedRuntimeRunJS,
   type RunJSSourceBinding,
   type RunJSSourceSettings,
-  type RunJSSourceSettingsDescriptor,
 } from '../../components/runjs-source';
-import { RunJSEditorField } from '../../components/runjs-studio';
+import {
+  cloneJsonValue,
+  cloneRecord,
+  createLightExtensionRunJsUISchema,
+  createLightExtensionSettingStep as createSharedLightExtensionSettingStep,
+  createLightExtensionSourceBindingStep,
+  createLightExtensionSourceModeStep,
+  createRuntimeRunTracker,
+  getLightExtensionFallbackBindingTitle,
+  getLightExtensionSettingDefaultValue,
+  getLightExtensionSettingsDescriptor as getSharedLightExtensionSettingsDescriptor,
+  getLightExtensionStoredBindingTitle,
+  getModelTranslator,
+  getRecordProperty,
+  INLINE_SOURCE_MODE,
+  isRecord,
+  LIGHT_EXTENSION_SOURCE_MODE,
+  normalizeLightExtensionRuntimeError,
+  normalizeLightExtensionSourceMode,
+  type LightExtensionSourceMode,
+  type LightExtensionSourceModeParams,
+  type RuntimeErrorInfo,
+} from '../utils/runjsSourceRuntimeCommon';
 import {
   JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
   JS_ACTION_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
 } from './JSActionSourceModeField';
 
-export const INLINE_SOURCE_MODE = 'inline';
-export const LIGHT_EXTENSION_SOURCE_MODE = 'light-extension';
+export { INLINE_SOURCE_MODE, LIGHT_EXTENSION_SOURCE_MODE };
 export const JS_ACTION_OWNER_KIND = 'flowModel.actionSettings';
 
-export type JSActionSourceMode = typeof INLINE_SOURCE_MODE | typeof LIGHT_EXTENSION_SOURCE_MODE;
+export type JSActionSourceMode = LightExtensionSourceMode;
 
 type JSActionRunJSValue = RunJSValue;
 
-type JSActionSourceModeParams = {
-  sourceMode?: string;
-  sourceBinding?: unknown;
-  settings?: unknown;
-};
+type JSActionSourceModeParams = LightExtensionSourceModeParams;
 
-type JSActionRuntimeError = {
-  title: string;
-  hint: string;
-  message: string;
-  code?: string;
-  status?: number;
-};
-
-type ServerErrorShape = {
-  code?: string;
-  status?: number;
-  message?: string;
-};
+type JSActionRuntimeError = RuntimeErrorInfo;
 
 type RunJSExecutionResult = {
   success?: boolean;
@@ -83,10 +83,10 @@ type JSActionRuntimeContext = FlowRuntimeContext<JSActionRuntimeModel> & {
   runjs: (code: string, globals?: Record<string, unknown>, options?: { version: string }) => Promise<unknown>;
 };
 
-const jsActionRuntimeRunIds = new WeakMap<object, number>();
+const jsActionRuntimeRunTracker = createRuntimeRunTracker();
 
 export function normalizeJSActionSourceMode(value: unknown): JSActionSourceMode {
-  return value === LIGHT_EXTENSION_SOURCE_MODE ? LIGHT_EXTENSION_SOURCE_MODE : INLINE_SOURCE_MODE;
+  return normalizeLightExtensionSourceMode(value);
 }
 
 export function getJSActionRunJsStepParams(model: JSActionRuntimeModel): Record<string, unknown> {
@@ -95,108 +95,45 @@ export function getJSActionRunJsStepParams(model: JSActionRuntimeModel): Record<
 }
 
 export function beginJSActionRuntimeRun(model: JSActionRuntimeModel): number {
-  const runId = (jsActionRuntimeRunIds.get(model) || 0) + 1;
-  jsActionRuntimeRunIds.set(model, runId);
-  return runId;
+  return jsActionRuntimeRunTracker.begin(model);
 }
 
 export function isCurrentJSActionRuntimeRun(model: JSActionRuntimeModel, runId: number): boolean {
-  return jsActionRuntimeRunIds.get(model) === runId;
+  return jsActionRuntimeRunTracker.isCurrent(model, runId);
 }
 
 export function createJSActionSourceModeStep(): StepDefinition {
-  return {
-    title: '{{t("Code source")}}',
-    uiMode: createRunJSSourceCascadeMenuUIMode({
-      kind: 'js-action',
-    }),
-    useRawParams: true,
-    uiSchema: {
-      sourceMode: {
-        type: 'string',
-        'x-decorator': 'FormItem',
-        'x-component': JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
-        'x-component-props': {
-          kind: 'js-action',
-        },
-      },
-      sourceBinding: {
-        type: 'object',
-        'x-display': 'hidden',
-      },
-      settings: {
-        type: 'object',
-        'x-display': 'hidden',
-      },
+  return createLightExtensionSourceModeStep({
+    kind: 'js-action',
+    component: JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
+    createMenuUIMode: createRunJSSourceCascadeMenuUIMode,
+    hooks: {
+      defaultParams: getJSActionSourceDefaultParams,
+      beforeParamsSave: syncJSActionSourceToRunJs,
+      afterParamsSave: refreshJSActionAfterSettingsSave,
     },
-    defaultParams: getJSActionSourceDefaultParams,
-    beforeParamsSave: syncJSActionSourceToRunJs,
-    afterParamsSave: refreshJSActionAfterSettingsSave,
-  };
+  });
 }
 
 export function createJSActionSourceBindingStep(): StepDefinition {
-  return {
-    title: '{{t("Light extension source")}}',
-    hideInSettings: true,
-    useRawParams: true,
-    uiSchema: {
-      sourceMode: {
-        type: 'string',
-        'x-display': 'hidden',
-      },
-      sourceBinding: {
-        type: 'object',
-        'x-decorator': 'FormItem',
-        'x-component': JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
-        'x-component-props': {
-          kind: 'js-action',
-        },
-      },
-      settings: {
-        type: 'object',
-        'x-display': 'hidden',
-      },
+  return createLightExtensionSourceBindingStep({
+    kind: 'js-action',
+    component: JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
+    hooks: {
+      defaultParams: getJSActionSourceDefaultParams,
+      beforeParamsSave: syncJSActionSourceToRunJs,
+      afterParamsSave: refreshJSActionAfterSettingsSave,
     },
-    defaultParams: getJSActionSourceDefaultParams,
-    beforeParamsSave: syncJSActionSourceToRunJs,
-    afterParamsSave: refreshJSActionAfterSettingsSave,
-  };
+  });
 }
 
 export function createJSActionRunJsUISchema(options: { minHeight?: string } = {}) {
-  return {
-    sourceMode: {
-      type: 'string',
-      'x-display': 'hidden',
-    },
-    sourceBinding: {
-      type: 'object',
-      'x-display': 'hidden',
-    },
-    settings: {
-      type: 'object',
-      'x-display': 'hidden',
-    },
-    code: {
-      type: 'string',
-      'x-component': RunJSEditorField,
-      'x-component-props': {
-        locatorFactory: 'flowModel.step',
-        surfaceStyle: 'action',
-        scene: 'eventFlow',
-        height: '100%',
-        minHeight: options.minHeight || '320px',
-        theme: 'light',
-        enableLinter: true,
-        containerStyle: {
-          height: '100%',
-          minHeight: 0,
-          minWidth: 0,
-        },
-      },
-    },
-  };
+  return createLightExtensionRunJsUISchema({
+    scene: 'eventFlow',
+    surfaceStyle: 'action',
+    minHeight: options.minHeight,
+    decorateCode: false,
+  });
 }
 
 export function createJSActionEmbeddedEditorUIMode(ctx: { model: JSActionRuntimeModel }) {
@@ -369,38 +306,13 @@ async function refreshJSActionAfterSettingsSave(ctx: FlowSettingsContext<JSActio
   await ctx.model.rerender();
 }
 
-async function getLightExtensionSettingsDescriptor(
-  model: JSActionRuntimeModel,
-  params: Record<string, unknown>,
-): Promise<RunJSSourceSettingsDescriptor | null> {
-  if (
-    normalizeJSActionSourceMode(params.sourceMode) !== LIGHT_EXTENSION_SOURCE_MODE ||
-    !isRecord(params.sourceBinding)
-  ) {
-    return null;
-  }
-
-  const resolver = RunJSSourceResolverRegistry.getResolver(LIGHT_EXTENSION_SOURCE_MODE);
-  if (typeof resolver?.getSettingsDescriptor !== 'function') {
-    return null;
-  }
-
-  const descriptor = await resolver.getSettingsDescriptor({
-    sourceMode: LIGHT_EXTENSION_SOURCE_MODE,
-    sourceBinding: params.sourceBinding as RunJSSourceBinding,
-    settings: isRecord(params.settings) ? (params.settings as RunJSSourceSettings) : undefined,
-    context: {
-      modelUid: model.uid,
-      ownerKind: JS_ACTION_OWNER_KIND,
-      ownerLocator: buildJSActionOwnerLocator(model),
-    },
+async function getLightExtensionSettingsDescriptor(model: JSActionRuntimeModel, params: Record<string, unknown>) {
+  return getSharedLightExtensionSettingsDescriptor({
+    modelUid: model.uid,
+    ownerKind: JS_ACTION_OWNER_KIND,
+    ownerLocator: buildJSActionOwnerLocator(model),
+    params,
   });
-
-  if (!descriptor || !isRecord(descriptor)) {
-    return null;
-  }
-
-  return descriptor;
 }
 
 function createLightExtensionSettingStep(options: {
@@ -413,44 +325,17 @@ function createLightExtensionSettingStep(options: {
 }): [string, StepDefinition] {
   const { fieldName, fieldSchema, required, schemaHash, defaultValue, sort } = options;
   const stepKey = getLightExtensionSettingStepKey(fieldName, schemaHash);
-  const title = getSchemaTitle(fieldSchema, fieldName);
-  const fieldType = normalizeSchemaType(fieldSchema);
-
-  return [
+  return createSharedLightExtensionSettingStep<JSActionRuntimeModel>({
+    fieldName,
+    fieldSchema,
+    required,
     stepKey,
-    {
-      key: stepKey,
-      title,
-      sort,
-      uiSchema: {
-        value: {
-          type: fieldType || 'string',
-          title,
-          'x-decorator': 'FormItem',
-          'x-component': JS_ACTION_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
-          'x-component-props': {
-            fieldName,
-            fieldSchema,
-            required,
-          },
-        },
-      },
-      defaultParams() {
-        return {
-          value: cloneJsonValue(defaultValue),
-        };
-      },
-      beforeParamsSave(ctx: FlowSettingsContext<JSActionRuntimeModel>, params: Record<string, unknown>) {
-        if (isSettingValueValid(fieldSchema, params?.value, required)) {
-          syncLightExtensionSettingToRunJs(ctx, fieldName, params?.value);
-          return;
-        }
-        ctx.model.context?.message?.error?.(ctx.model.context.t('Settings validation failed'));
-        throw new FlowCancelSaveException('Light extension settings validation failed.');
-      },
-      afterParamsSave: refreshJSActionAfterSettingsSave,
-    },
-  ];
+    defaultValue,
+    sort,
+    component: JS_ACTION_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+    syncValue: syncLightExtensionSettingToRunJs,
+    afterParamsSave: refreshJSActionAfterSettingsSave,
+  });
 }
 
 function syncLightExtensionSettingToRunJs(
@@ -496,24 +381,6 @@ function getJSActionRunJsEditorTitle(ctx: { model: JSActionRuntimeModel }): stri
     : `${baseTitle} (${translate('Light extension')})`;
 }
 
-function getLightExtensionSettingDefaultValue(
-  fieldName: string,
-  fieldSchema: JsonSchemaLike,
-  descriptorDefaults: Record<string, unknown>,
-  legacySettings: Record<string, unknown>,
-): unknown {
-  if (Object.prototype.hasOwnProperty.call(legacySettings, fieldName)) {
-    return cloneJsonValue(legacySettings[fieldName]);
-  }
-  if (Object.prototype.hasOwnProperty.call(descriptorDefaults, fieldName)) {
-    return cloneJsonValue(descriptorDefaults[fieldName]);
-  }
-  if (Object.prototype.hasOwnProperty.call(fieldSchema, 'default')) {
-    return cloneJsonValue(fieldSchema.default);
-  }
-  return undefined;
-}
-
 function showJSActionRuntimeError(ctx: JSActionRuntimeContext, error: unknown) {
   const normalized = normalizeRuntimeError(error);
   const message = getRecordProperty(ctx, 'message');
@@ -524,81 +391,14 @@ function showJSActionRuntimeError(ctx: JSActionRuntimeContext, error: unknown) {
   showError?.(normalized.message || fallbackMessage);
 }
 
-function getFirstServerError(value: unknown): ServerErrorShape | null {
-  if (!isRecord(value)) {
-    return null;
-  }
-
-  if (Array.isArray(value.errors)) {
-    const first = value.errors.find((item) => isRecord(item));
-    return isRecord(first) ? first : null;
-  }
-
-  return isRecord(value.error) ? value.error : null;
-}
-
-function getRuntimeErrorSource(error: unknown): ServerErrorShape {
-  if (isRecord(error)) {
-    const response = isRecord(error.response) ? error.response : null;
-    const serverError = getFirstServerError(response?.data) || getFirstServerError(error);
-    if (serverError) {
-      return {
-        code: toNonEmptyString(serverError.code),
-        status: toNumber(serverError.status) ?? toNumber(response?.status),
-        message: toNonEmptyString(serverError.message),
-      };
-    }
-
-    return {
-      code: toNonEmptyString(error.code),
-      status: toNumber(error.status) ?? toNumber(response?.status),
-      message: toNonEmptyString(error.message),
-    };
-  }
-
-  if (error instanceof Error) {
-    return {
-      message: error.message,
-    };
-  }
-
-  return {
-    message: typeof error === 'string' ? error : undefined,
-  };
-}
-
 function normalizeRuntimeError(error: unknown): JSActionRuntimeError {
-  const source = getRuntimeErrorSource(error);
-  const code = source.code;
-  const normalizedCode = code?.toLowerCase() || '';
-  const status = source.status;
-
-  let title = 'JavaScript action runtime error';
-  let hint = 'Check the JavaScript action configuration and retry.';
-  if (status === 403 || normalizedCode.includes('permission') || normalizedCode.includes('forbidden')) {
-    title = 'Light extension access denied';
-    hint = 'Ask an administrator for permission to use this light extension.';
-  } else if (status === 404 || normalizedCode.includes('entry_not_found') || normalizedCode.includes('missing')) {
-    title = 'Light extension entry missing';
-    hint = 'Choose an available entry or restore this entry.';
-  } else if (normalizedCode.includes('binding_outdated') || normalizedCode.includes('outdated')) {
-    title = 'Light extension binding is outdated';
-    hint = 'Refresh the action settings and choose the current entry.';
-  } else if (normalizedCode.includes('settings_invalid')) {
-    title = 'Light extension settings are invalid';
-    hint = 'Open the action settings and fix the light extension settings.';
-  } else if (normalizedCode.includes('repo_archived') || normalizedCode.includes('repository_archived')) {
-    title = 'Light extension repository is archived';
-    hint = 'Restore the repository or choose an entry from another repository.';
-  }
-
-  return {
-    title,
-    hint,
-    message: source.message || 'Failed to run JavaScript action',
-    ...(code ? { code } : {}),
-    ...(typeof status === 'number' ? { status } : {}),
-  };
+  return normalizeLightExtensionRuntimeError(error, {
+    defaultTitle: 'JavaScript action runtime error',
+    defaultHint: 'Check the JavaScript action configuration and retry.',
+    defaultMessage: 'Failed to run JavaScript action',
+    outdatedHint: 'Refresh the action settings and choose the current entry.',
+    invalidSettingsHint: 'Open the action settings and fix the light extension settings.',
+  });
 }
 
 function sanitizeSettingFieldName(fieldName: string): string {
@@ -613,87 +413,12 @@ function getLightExtensionSettingStepKey(fieldName: string, schemaHash: string):
   return `leSetting__${sanitizeSettingFieldName(fieldName)}__${shortHash(`${fieldName}:${schemaHash}`)}`;
 }
 
-function getModelTranslator(model: JSActionRuntimeModel): (text: string) => string {
-  const t = model.context?.t;
-  return typeof t === 'function' ? t.bind(model.context) : (text: string) => text;
-}
-
-function getLightExtensionStoredBindingTitle(binding: unknown): string | undefined {
-  if (!isRecord(binding)) {
-    return undefined;
-  }
-
-  return (
-    toNonEmptyString(binding.entryTitle) || toNonEmptyString(binding.entryName) || toNonEmptyString(binding.repoTitle)
-  );
-}
-
-function getLightExtensionFallbackBindingTitle(binding: unknown): string | undefined {
-  if (!isRecord(binding)) {
-    return undefined;
-  }
-
-  return toNonEmptyString(binding.entryId) || toNonEmptyString(binding.repoId);
-}
-
-function getStringProperty(value: unknown, key: string): string | undefined {
-  if (!isRecord(value)) {
-    return undefined;
-  }
-  return toNonEmptyString(value[key]);
-}
-
-function getRecordProperty(value: unknown, key: string): Record<string, unknown> | undefined {
-  if (!isRecord(value)) {
-    return undefined;
-  }
-  const property = value[key];
-  return isRecord(property) ? property : undefined;
-}
-
-function getBooleanProperty(value: unknown, key: string): boolean {
-  if (!isRecord(value)) {
-    return false;
-  }
-  return value[key] === true;
-}
-
 function getCallableProperty(value: unknown, key: string): ((...args: unknown[]) => unknown) | undefined {
   if (!isRecord(value)) {
     return undefined;
   }
   const property = value[key];
   return typeof property === 'function' ? (property as (...args: unknown[]) => unknown) : undefined;
-}
-
-function toNumber(value: unknown): number | undefined {
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return value;
-  }
-  if (typeof value === 'string' && value.trim()) {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : undefined;
-  }
-  return undefined;
-}
-
-function toNonEmptyString(value: unknown): string | undefined {
-  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
-}
-
-function cloneRecord(value: unknown): Record<string, unknown> {
-  return isRecord(value) ? (cloneJsonValue(value) as Record<string, unknown>) : {};
-}
-
-function cloneJsonValue<T>(value: T): T {
-  if (typeof value === 'undefined') {
-    return value;
-  }
-  return JSON.parse(JSON.stringify(value)) as T;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
 function toParamObject(value: unknown): ParamObject {
@@ -706,19 +431,4 @@ function shortHash(value: string): string {
     hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
   }
   return hash.toString(36);
-}
-
-function stableSerialize(value: unknown): string {
-  if (Array.isArray(value)) {
-    return `[${value.map((item) => stableSerialize(item)).join(',')}]`;
-  }
-  if (isRecord(value)) {
-    return `{${Object.keys(value)
-      .sort()
-      .map((key) => `${JSON.stringify(key)}:${stableSerialize(value[key])}`)
-      .join(',')}}`;
-  }
-
-  const serialized = JSON.stringify(value);
-  return typeof serialized === 'undefined' ? 'undefined' : serialized;
 }

@@ -7,45 +7,27 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { Context } from '@nocobase/actions';
 import type { HandlerType, ResourceOptions } from '@nocobase/resourcer';
 
-import { LightExtensionError, isLightExtensionError } from '../../shared/errors';
+import { LightExtensionError } from '../../shared/errors';
 import type { LightExtensionReferenceListInput, LightExtensionReferenceRebuildInput } from '../../shared/types';
-import type { LightExtensionCanFunction } from '../services/LightExtensionPermissionService';
 import { ReferenceService } from '../services/ReferenceService';
 import { normalizeReferenceOwnerLocator } from '../services/ReferenceOwnerRegistry';
 import type { LightExtensionServiceContext } from '../services/LightExtensionRepoService';
+import {
+  createTypedResourceAction,
+  getServiceContext,
+  type LightExtensionResourceContext,
+  type ResourceActionInput,
+} from './resourceAction';
 
 export const lightExtensionReferenceActionNames = ['readReferences', 'rebuildIndex'] as const;
 
 type LightExtensionReferenceActionName = (typeof lightExtensionReferenceActionNames)[number];
-type ResourceActionInput = Record<string, unknown>;
-
-type LightExtensionResourceContext = Context & {
-  action?: {
-    params?: unknown;
-  };
-  auth?: {
-    user?: unknown;
-  };
-  can?: LightExtensionCanFunction;
-  request?: {
-    header?: Record<string, string | string[] | undefined>;
-    headers?: Record<string, string | string[] | undefined>;
-  };
-  state?: Record<string, unknown>;
-  timezone?: string;
-  withoutDataWrapping?: boolean;
-  type?: string;
-  status?: number;
-  body?: unknown;
-};
-
 type ResourceActionRunner = (
   services: LightExtensionReferenceActionServices,
   input: ResourceActionInput,
-  currentUser: ReturnType<typeof getServiceContext>,
+  currentUser: ReturnType<typeof getReferenceServiceContext>,
 ) => Promise<unknown>;
 
 interface LightExtensionReferenceActionServices {
@@ -80,48 +62,20 @@ function createLightExtensionReferenceAction(
   services: LightExtensionReferenceActionServices,
   run: ResourceActionRunner,
 ): HandlerType {
-  return async (ctx: Context, next) => {
-    const resourceCtx = ctx as LightExtensionResourceContext;
-    const input = getActionInput(resourceCtx);
-
-    try {
-      resourceCtx.body = await run(services, input, getServiceContext(resourceCtx));
-      await next();
-    } catch (error) {
-      if (!isLightExtensionError(error)) {
-        throw error;
-      }
-
-      resourceCtx.withoutDataWrapping = true;
-      resourceCtx.type = 'application/json';
-      resourceCtx.status = error.status;
-      resourceCtx.body = error.toResponseBody();
-    }
-  };
+  return createTypedResourceAction({
+    services,
+    run,
+    getServiceContext: getReferenceServiceContext,
+  });
 }
 
-function getActionInput(ctx: LightExtensionResourceContext): ResourceActionInput {
-  const params = toRecord(ctx.action?.params);
-  const values = toRecord(params.values);
-  const { values: _values, ...queryParams } = params;
-
-  return {
-    ...queryParams,
-    ...values,
-  };
-}
-
-function getServiceContext(ctx: LightExtensionResourceContext): LightExtensionServiceContext & {
+function getReferenceServiceContext(ctx: LightExtensionResourceContext): LightExtensionServiceContext & {
   currentUser?: unknown;
   state?: Record<string, unknown>;
   timezone?: string;
 } {
-  const headers = ctx.request?.headers || ctx.request?.header || {};
-
   return {
-    actorUserId: getCurrentUserId(ctx),
-    requestId: getHeader(headers, 'x-request-id') || getHeader(headers, 'x-correlation-id'),
-    requestSource: getHeader(headers, 'x-request-source'),
+    ...getServiceContext(ctx),
     can: ctx.can,
     currentUser: ctx.auth?.user,
     state: ctx.state,
@@ -158,26 +112,6 @@ function normalizeOwnerLocator(value: unknown): LightExtensionReferenceListInput
   return modelUid ? { modelUid } : undefined;
 }
 
-function getCurrentUserId(ctx: LightExtensionResourceContext): string | null {
-  const user = ctx.auth?.user;
-  if (!user || typeof user !== 'object') {
-    return null;
-  }
-
-  const userWithId = user as { id?: unknown };
-  if (typeof userWithId.id === 'string' || typeof userWithId.id === 'number') {
-    return String(userWithId.id);
-  }
-
-  const get = (user as { get?: (key: string) => unknown }).get;
-  if (typeof get !== 'function') {
-    return null;
-  }
-
-  const id = get('id');
-  return typeof id === 'string' || typeof id === 'number' ? String(id) : null;
-}
-
 function optionalString(input: ResourceActionInput, key: string): string | undefined {
   const value = input[key];
   if (typeof value === 'undefined' || value === null || value === '') {
@@ -198,19 +132,6 @@ function optionalBoolean(input: ResourceActionInput, key: string): boolean | und
     throw invalidInput(`${key} must be a boolean`);
   }
   return value;
-}
-
-function getHeader(headers: Record<string, string | string[] | undefined>, name: string): string | undefined {
-  const value = headers[name] || headers[name.toLowerCase()];
-  if (Array.isArray(value)) {
-    return value[0];
-  }
-
-  return value;
-}
-
-function toRecord(value: unknown): ResourceActionInput {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value) ? (value as ResourceActionInput) : {};
 }
 
 function invalidInput(message: string): LightExtensionError {

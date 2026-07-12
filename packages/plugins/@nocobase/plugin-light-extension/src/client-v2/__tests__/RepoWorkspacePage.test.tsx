@@ -54,6 +54,16 @@ vi.mock('@nocobase/client-v2', () => ({
 
 vi.mock('@nocobase/plugin-vsc-file/client-v2', () => {
   return {
+    buildLineDiff: () => [],
+    inferLanguageFromPath: (path: string) => {
+      const extension = path.split('.').pop();
+      return extension === 'ts' || extension === 'tsx' ? 'typescript' : extension || 'text';
+    },
+    mergeHistoryItems: <T extends { id: string }>(current: T[], next: T[]) => {
+      const itemsById = new Map(current.map((item) => [item.id, item]));
+      next.forEach((item) => itemsById.set(item.id, item));
+      return Array.from(itemsById.values());
+    },
     useVscFileT: () => mocks.t,
     FilesPanel: ({
       files,

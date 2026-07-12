@@ -7,11 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { Context } from '@nocobase/actions';
-import type { HandlerType, ResourceOptions } from '@nocobase/resourcer';
 import { isVscError } from '@nocobase/plugin-vsc-file';
+import type { HandlerType, ResourceOptions } from '@nocobase/resourcer';
 
-import { LightExtensionError, isLightExtensionError } from '../../shared/errors';
+import { LightExtensionError } from '../../shared/errors';
 import type { LightExtensionFileChange } from '../../shared/types';
 import type {
   LightExtensionGetFileInput,
@@ -23,6 +22,7 @@ import { LightExtensionFileService } from '../services/LightExtensionFileService
 import type { LightExtensionServiceContext } from '../services/LightExtensionRepoService';
 import { LightExtensionRuntimeCompileService } from '../services/LightExtensionRuntimeCompileService';
 import { toLightExtensionSourceError } from '../services/errorContract';
+import { createTypedResourceAction, getServiceContext, toRecord, type ResourceActionInput } from './resourceAction';
 
 export const lightExtensionFileActionNames = [
   'pull',
@@ -34,29 +34,6 @@ export const lightExtensionFileActionNames = [
 ] as const;
 
 type LightExtensionFileActionName = (typeof lightExtensionFileActionNames)[number];
-
-type ResourceActionInput = Record<string, unknown>;
-
-type LightExtensionResourceContext = Context & {
-  action?: {
-    params?: unknown;
-    resourceName?: string;
-    actionName?: string;
-  };
-  auth?: {
-    user?: unknown;
-  };
-  request?: {
-    path?: string;
-    method?: string;
-    header?: Record<string, string | string[] | undefined>;
-    headers?: Record<string, string | string[] | undefined>;
-  };
-  withoutDataWrapping?: boolean;
-  type?: string;
-  status?: number;
-  body?: unknown;
-};
 
 type ResourceActionRunner = (
   services: LightExtensionFileActionServices,
@@ -114,25 +91,13 @@ function createLightExtensionFileAction(
   services: LightExtensionFileActionServices,
   run: ResourceActionRunner,
 ): HandlerType {
-  return async (ctx: Context, next) => {
-    const resourceCtx = ctx as LightExtensionResourceContext;
-    const input = getActionInput(resourceCtx);
-
-    try {
-      resourceCtx.body = await run(services, input, getServiceContext(resourceCtx));
-      await next();
-    } catch (error) {
-      const safeError = isVscError(error) ? toLightExtensionSourceError(error, getOptionalRepoId(input)) : error;
-      if (!isLightExtensionError(safeError)) {
-        throw error;
-      }
-
-      resourceCtx.withoutDataWrapping = true;
-      resourceCtx.type = 'application/json';
-      resourceCtx.status = safeError.status;
-      resourceCtx.body = safeError.toResponseBody();
-    }
-  };
+  return createTypedResourceAction({
+    services,
+    run,
+    getServiceContext,
+    transformError: (error, input) =>
+      isVscError(error) ? toLightExtensionSourceError(error, getOptionalRepoId(input)) : error,
+  });
 }
 
 function normalizePullInput(input: ResourceActionInput): LightExtensionPullInput {
@@ -187,56 +152,6 @@ function normalizeFileChange(value: unknown, label: string): LightExtensionFileC
   assertFileChangeSource(normalized, label);
 
   return normalized;
-}
-
-function getActionInput(ctx: LightExtensionResourceContext): ResourceActionInput {
-  const params = toRecord(ctx.action?.params);
-  const values = toRecord(params.values);
-  const { values: _values, ...queryParams } = params;
-
-  return {
-    ...queryParams,
-    ...values,
-  };
-}
-
-function getServiceContext(ctx: LightExtensionResourceContext): LightExtensionServiceContext {
-  const headers = ctx.request?.headers || ctx.request?.header || {};
-
-  return {
-    actorUserId: getCurrentUserId(ctx),
-    requestId: getHeader(headers, 'x-request-id') || getHeader(headers, 'x-correlation-id'),
-    requestSource: getHeader(headers, 'x-request-source'),
-  };
-}
-
-function getCurrentUserId(ctx: LightExtensionResourceContext): string | null {
-  const user = ctx.auth?.user;
-  if (!user || typeof user !== 'object') {
-    return null;
-  }
-
-  const userWithId = user as { id?: unknown };
-  if (typeof userWithId.id === 'string' || typeof userWithId.id === 'number') {
-    return String(userWithId.id);
-  }
-
-  const get = (user as { get?: (key: string) => unknown }).get;
-  if (typeof get !== 'function') {
-    return null;
-  }
-
-  const id = get('id');
-  return typeof id === 'string' || typeof id === 'number' ? String(id) : null;
-}
-
-function getHeader(headers: Record<string, string | string[] | undefined>, name: string): string | undefined {
-  const value = headers[name] || headers[name.toLowerCase()];
-  if (Array.isArray(value)) {
-    return value[0];
-  }
-
-  return value;
 }
 
 function requireRepoId(input: ResourceActionInput): string {
@@ -366,14 +281,6 @@ function requireArray<T>(
 function requireRecord(value: unknown, label: string): ResourceActionInput {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw invalidInput(`${label} must be an object`);
-  }
-
-  return value as ResourceActionInput;
-}
-
-function toRecord(value: unknown): ResourceActionInput {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return {};
   }
 
   return value as ResourceActionInput;

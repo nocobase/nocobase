@@ -18,7 +18,13 @@ import {
   type RunJSWorkspacePathValidationReason,
 } from '../../shared/runjs-workspace-path';
 import type { VscFileChange } from '../../shared/types';
-import type { RunJSChangeSummary, RunJSLineDiffRow, RunJSPathValidationResult, RunJSWorkspaceFile } from './types';
+import type {
+  RunJSChangeSummary,
+  RunJSLineDiffRow,
+  RunJSPathValidationResult,
+  RunJSSourceHistoryItem,
+  RunJSWorkspaceFile,
+} from './types';
 
 export { defaultRunJSEntryPath, defaultRunJSSourceRoot, runJSManifestPath };
 
@@ -197,15 +203,27 @@ export function buildLineDiff(
   return rows;
 }
 
-export function inferLanguageFromPath(path: string): string {
+export function mergeHistoryItems(
+  current: RunJSSourceHistoryItem[],
+  next: RunJSSourceHistoryItem[],
+): RunJSSourceHistoryItem[] {
+  const itemsById = new Map(current.map((item) => [item.id, item]));
+  next.forEach((item) => itemsById.set(item.id, item));
+  return Array.from(itemsById.values());
+}
+
+export function inferLanguageFromPath(
+  path: string,
+  options: { cssLanguage?: 'css' | 'text'; jsxLanguage?: 'extension' | 'language-family' } = {},
+): string {
   if (path.endsWith('.tsx')) {
-    return 'tsx';
+    return options.jsxLanguage === 'language-family' ? 'typescript' : 'tsx';
   }
   if (path.endsWith('.ts')) {
     return 'typescript';
   }
   if (path.endsWith('.jsx')) {
-    return 'jsx';
+    return options.jsxLanguage === 'language-family' ? 'javascript' : 'jsx';
   }
   if (path.endsWith('.js')) {
     return 'javascript';
@@ -214,7 +232,7 @@ export function inferLanguageFromPath(path: string): string {
     return 'json';
   }
   if (path.endsWith('.css')) {
-    return 'css';
+    return options.cssLanguage || 'css';
   }
   if (path.endsWith('.md')) {
     return 'markdown';
