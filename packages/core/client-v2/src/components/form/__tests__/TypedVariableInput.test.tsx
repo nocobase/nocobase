@@ -81,6 +81,27 @@ describe('TypedVariableInput - constant rendering', () => {
     expect(screen.getByRole('button', { name: 'variable-switcher' }).className).not.toContain('ant-btn-primary');
   });
 
+  it('keeps the number editor usable when value=null and nullable=false', async () => {
+    const ctx = createContextWithEnv();
+    const handleChange = vi.fn();
+    renderWithCtx(
+      ctx,
+      <TypedVariableInput
+        value={null}
+        types={[['number', { min: 1 }]]}
+        namespaces={['$env']}
+        nullable={false}
+        onChange={handleChange}
+      />,
+    );
+
+    const numberInput = await screen.findByRole('spinbutton');
+    expect(screen.queryByPlaceholderText('<Null>')).toBeNull();
+    fireEvent.change(numberInput, { target: { value: '2' } });
+    fireEvent.blur(numberInput);
+    expect(handleChange).toHaveBeenCalledWith(2);
+  });
+
   it('defaults undefined to the first constant type', async () => {
     const ctx = createContextWithEnv();
     const handleChange = vi.fn();
@@ -99,6 +120,26 @@ describe('TypedVariableInput - constant rendering', () => {
     expect(screen.getByRole('textbox')).toBeInTheDocument();
     await waitFor(() => {
       expect(handleChange).toHaveBeenCalledWith('');
+    });
+  });
+
+  it('uses a positive numeric minimum as the default value', async () => {
+    const ctx = createContextWithEnv();
+    const handleChange = vi.fn();
+    renderWithCtx(
+      ctx,
+      <TypedVariableInput
+        value={undefined}
+        types={[['number', { min: 1 }]]}
+        namespaces={['$env']}
+        nullable={false}
+        onChange={handleChange}
+      />,
+    );
+
+    expect(await screen.findByDisplayValue('1')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(handleChange).toHaveBeenCalledWith(1);
     });
   });
 
@@ -183,14 +224,14 @@ describe('TypedVariableInput - variable rendering', () => {
     expect(handleChange).toHaveBeenCalledWith(0);
   });
 
-  it('clears back to default-of-first-type when nullable=false', async () => {
+  it('clears back to the valid minimum of the first type when nullable=false', async () => {
     const ctx = createContextWithEnv();
     const handleChange = vi.fn();
     const { container } = renderWithCtx(
       ctx,
       <TypedVariableInput
         value="{{$env.SMTP_PORT}}"
-        types={['number']}
+        types={[['number', { min: 1 }]]}
         namespaces={['$env']}
         nullable={false}
         onChange={handleChange}
@@ -199,7 +240,7 @@ describe('TypedVariableInput - variable rendering', () => {
     const clear = container.querySelector('button.clear-button') as HTMLButtonElement | null;
     expect(clear).not.toBeNull();
     fireEvent.click(clear as HTMLButtonElement);
-    expect(handleChange).toHaveBeenCalledWith(0);
+    expect(handleChange).toHaveBeenCalledWith(1);
   });
 
   it('treats types=[] as variable-only mode with a readonly placeholder before selection', async () => {
