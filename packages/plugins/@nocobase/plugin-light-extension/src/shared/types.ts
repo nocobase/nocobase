@@ -293,7 +293,7 @@ export interface LightExtensionSelectableEntriesInput {
   kind?: LightExtensionKind;
 }
 
-export interface LightExtensionRuntimeSourceBinding {
+export interface LightExtensionRuntimeSourceBinding extends Record<string, unknown> {
   type: 'light-extension-entry';
   repoId: string;
   repoTitle?: string | null;

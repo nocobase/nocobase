@@ -45,21 +45,9 @@ describe('plugin-light-extension workspace compiler import/security denials', ()
       expectedReason: 'unsafe_import_denied',
     },
     {
-      name: 'process global',
+      name: 'unknown process global',
       source: 'const value = process.env.NODE_ENV;\nctx.render(<div>{value}</div>);\n',
-      expectedRuleId: 'runjs-global-blocked',
-      expectedReason: 'compile_failed',
-    },
-    {
-      name: 'Function constructor',
-      source: 'const value = Function("return 1")();\nctx.render(<div>{value}</div>);\n',
-      expectedRuleId: 'runjs-global-blocked',
-      expectedReason: 'compile_failed',
-    },
-    {
-      name: 'eval call',
-      source: 'const value = eval("1");\nctx.render(<div>{value}</div>);\n',
-      expectedRuleId: 'runjs-global-blocked',
+      expectedRuleId: 'runjs-global-unknown',
       expectedReason: 'compile_failed',
     },
   ])('rejects $name without storing source in audit logs', async (caseItem) => {
@@ -119,5 +107,45 @@ describe('plugin-light-extension workspace compiler import/security denials', ()
     expect(JSON.stringify(auditPayload)).not.toContain('secret-code');
     expect(JSON.stringify(auditPayload)).not.toContain('secret-settings');
     expect(JSON.stringify(auditPayload)).not.toContain('sourceMap');
+  });
+
+  it.each([
+    {
+      name: 'Function constructor',
+      source: 'const value = Function("return 1")();\nctx.render(<div>{value}</div>);\n',
+    },
+    {
+      name: 'eval call',
+      source: 'const value = eval("1");\nctx.render(<div>{value}</div>);\n',
+    },
+  ])('allows $name as a normal RunJS global', async (caseItem) => {
+    const requestId = `req_allow_${caseItem.name.replace(/\s+/g, '_')}`;
+    const result = await bridge.compileEntry(
+      {
+        repoId: 'ler_security',
+        kind: 'js-block',
+        entryName: 'security-allowed',
+        entryPath: 'src/client/js-blocks/security-allowed/index.tsx',
+        files: [
+          {
+            path: 'src/client/js-blocks/security-allowed/index.tsx',
+            content: caseItem.source,
+          },
+        ],
+      },
+      {
+        requestId,
+      },
+    );
+
+    expect(result.accepted).toBe(true);
+    expect(result.diagnostics).toEqual([]);
+    expect(recordCompileEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        result: 'success',
+        reasonCode: undefined,
+        requestId,
+      }),
+    );
   });
 });

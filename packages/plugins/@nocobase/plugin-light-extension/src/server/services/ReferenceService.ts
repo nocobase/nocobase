@@ -8,12 +8,13 @@
  */
 
 import { NoPermissionError, checkFilterParams, createUserProvider, parseJsonTemplate } from '@nocobase/acl';
-import type { Database, Model } from '@nocobase/database';
+import type { Database, Filter, Model } from '@nocobase/database';
 import { uid } from '@nocobase/utils';
 import { randomUUID } from 'crypto';
 
 import type {
   LightExtensionKind,
+  LightExtensionModelOwnerLocator,
   LightExtensionReferenceOwnerLocator,
   LightExtensionReferenceRebuildItem,
   LightExtensionReferenceRebuildInput,
@@ -1340,13 +1341,13 @@ export class ReferenceService {
     resource: string,
     filter: unknown,
     ctx: ReferenceServiceContext,
-  ): Promise<unknown> {
+  ): Promise<Filter | undefined> {
     if (!filter) {
       return undefined;
     }
     try {
       checkFilterParams(this.db.getCollection(resource), filter);
-      return (
+      const parsedFilter =
         (await parseJsonTemplate(filter, {
           state: ctx.state || {},
           timezone: ctx.timezone,
@@ -1354,8 +1355,8 @@ export class ReferenceService {
             db: this.db,
             currentUser: ctx.currentUser,
           }),
-        })) ?? filter
-      );
+        })) ?? filter;
+      return parsedFilter as Filter;
     } catch (error) {
       if (error instanceof NoPermissionError) {
         return { id: '__light_extension_reference_owner_not_visible__' };
@@ -1514,7 +1515,8 @@ function normalizeRouteId(route: unknown): string {
 
 function readRunJsSource(node: FlowModelNode, adapter?: ReferenceOwnerAdapter): NormalizedJsBlockSource {
   const settingsKey = adapter?.settingsKey || 'jsSettings';
-  const settings = isPlainRecord(node.stepParams?.[settingsKey]) ? node.stepParams[settingsKey] : {};
+  const rawSettings = node.stepParams?.[settingsKey];
+  const settings = isPlainRecord(rawSettings) ? rawSettings : {};
   const runJs = isPlainRecord(settings.runJs) ? settings.runJs : {};
   const sourceModeStep = isPlainRecord(settings.sourceMode) ? settings.sourceMode : {};
   const sourceBindingStep = isPlainRecord(settings.sourceBinding) ? settings.sourceBinding : {};
@@ -1541,7 +1543,7 @@ function readReferenceOwnerSource(
   adapter: ReferenceOwnerAdapter | undefined,
   ownerLocator: LightExtensionReferenceOwnerLocator,
 ): NormalizedJsBlockSource {
-  if (adapter?.ownerKind === 'flowModel.runjsHost' && ownerLocator.hostPath?.length) {
+  if (adapter?.ownerKind === 'flowModel.runjsHost' && hasHostPath(ownerLocator)) {
     return readNestedRunJSHostSource(node, ownerLocator.hostPath);
   }
   return readRunJsSource(node, adapter);
@@ -1577,6 +1579,12 @@ function collectRunJSReferenceOwners(
     }
   }
   return bucket;
+}
+
+function hasHostPath(
+  ownerLocator: LightExtensionReferenceOwnerLocator,
+): ownerLocator is LightExtensionModelOwnerLocator & { hostPath: string[] } {
+  return 'hostPath' in ownerLocator && Array.isArray(ownerLocator.hostPath) && ownerLocator.hostPath.length > 0;
 }
 
 function collectNestedRunJSHosts(

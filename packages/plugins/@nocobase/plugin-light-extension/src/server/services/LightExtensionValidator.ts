@@ -144,6 +144,7 @@ interface ParsedMeta {
 
 type DiagnosticTarget = Pick<LightExtensionDiagnostic, 'path' | 'kind' | 'entryName'>;
 type ForbiddenStoredDiagnostic = { code: 'require_not_allowed' | 'blocked_global_api'; message: string };
+type SourceFileWithParseDiagnostics = ts.SourceFile & { parseDiagnostics?: readonly ts.Diagnostic[] };
 
 interface EntryFileRule {
   root: string;
@@ -259,8 +260,11 @@ export class LightExtensionValidator {
     diagnostics.push(...validateUniqueEntryKeys(entries));
     diagnostics.push(...this.validateSharedFiles(normalizedFiles));
     attachDiagnosticsToEntries(diagnostics, entries);
+    removeBlockedGlobalDiagnosticsFromEntries(entries);
     const allDiagnostics = sortDiagnostics(
-      uniqueDiagnostics([...diagnostics, ...entries.flatMap((entry) => entry.diagnostics)]),
+      removeBlockedGlobalDiagnostics(
+        uniqueDiagnostics([...diagnostics, ...entries.flatMap((entry) => entry.diagnostics)]),
+      ),
     );
 
     return {
@@ -340,7 +344,7 @@ export class LightExtensionValidator {
       }
     }
 
-    return sortDiagnostics(uniqueDiagnostics(diagnostics));
+    return sortDiagnostics(removeBlockedGlobalDiagnostics(uniqueDiagnostics(diagnostics)));
   }
 
   validateInitialFiles(input: { files: LightExtensionSourceFileInput[] }): LightExtensionDiagnostic[] {
@@ -1027,7 +1031,8 @@ export class LightExtensionValidator {
       true,
       scriptKind(file.path),
     );
-    const diagnostics: LightExtensionDiagnostic[] = sourceFile.parseDiagnostics.map((item) =>
+    const parseDiagnostics = (sourceFile as SourceFileWithParseDiagnostics).parseDiagnostics || [];
+    const diagnostics: LightExtensionDiagnostic[] = parseDiagnostics.map((item) =>
       diagnosticAt(
         sourceFile,
         item.start || 0,
@@ -3202,10 +3207,12 @@ export class LightExtensionValidator {
         });
       } else if (
         ts.isBinaryExpression(assignmentTarget) &&
-        isAliasAssignmentOperator(assignmentTarget.operatorToken.kind) &&
-        ts.isIdentifier(stripParentheses(assignmentTarget.left))
+        isAliasAssignmentOperator(assignmentTarget.operatorToken.kind)
       ) {
         const aliasTarget = stripParentheses(assignmentTarget.left);
+        if (!ts.isIdentifier(aliasTarget)) {
+          return;
+        }
         if (initializerExpression) {
           this.recordForbiddenAlias({
             name: aliasTarget.text,
@@ -3362,6 +3369,16 @@ function uniqueDiagnostics(diagnostics: LightExtensionDiagnostic[]): LightExtens
   }
 
   return result;
+}
+
+function removeBlockedGlobalDiagnostics(diagnostics: LightExtensionDiagnostic[]): LightExtensionDiagnostic[] {
+  return diagnostics.filter((item) => item.code !== 'blocked_global_api');
+}
+
+function removeBlockedGlobalDiagnosticsFromEntries(entries: LightExtensionEntryValidationResult[]): void {
+  for (const entry of entries) {
+    entry.diagnostics = removeBlockedGlobalDiagnostics(entry.diagnostics);
+  }
 }
 
 function diagnosticSortKey(item: LightExtensionDiagnostic): string {
@@ -3772,7 +3789,7 @@ function isRelativeImportOutsideCurrentEntry(
   target: Omit<DiagnosticTarget, 'path'>,
   entryRootPath?: string,
 ): boolean {
-  if (!specifier.startsWith('.') || !target.kind || !target.entryName) {
+  if (!specifier.startsWith('.') || !target.kind || !target.entryName || !isLightExtensionKind(target.kind)) {
     return false;
   }
 
@@ -5056,8 +5073,9 @@ function recordLocalForbiddenAliases(node: ts.Node, context: ForbiddenAliasConte
       recordLocalObjectAssignmentAliases(target, node.right, context);
       return;
     }
-    if (ts.isArrayLiteralExpression(target) && ts.isArrayLiteralExpression(stripParentheses(node.right))) {
-      recordLocalArrayAssignmentAliases(target, stripParentheses(node.right), context);
+    const assignmentValue = stripParentheses(node.right);
+    if (ts.isArrayLiteralExpression(target) && ts.isArrayLiteralExpression(assignmentValue)) {
+      recordLocalArrayAssignmentAliases(target, assignmentValue, context);
     }
   }
 }
@@ -6517,11 +6535,11 @@ function stripParentheses<T extends ts.Node | undefined>(node: T): T {
   let current = node;
   while (current) {
     if (ts.isParenthesizedExpression(current)) {
-      current = current.expression as T;
+      current = current.expression as unknown as T;
       continue;
     }
     if (ts.isBinaryExpression(current) && current.operatorToken.kind === ts.SyntaxKind.CommaToken) {
-      current = current.right as T;
+      current = current.right as unknown as T;
       continue;
     }
     break;
@@ -6782,11 +6800,15 @@ function optionalIntegerField(
   if (typeof value === 'undefined' || value === null) {
     return null;
   }
-  if (!Number.isInteger(value)) {
+  if (typeof value !== 'number' || !Number.isInteger(value)) {
     diagnostics.push(diagnostic('meta_field_invalid', 'error', `meta.json field "${key}" must be an integer`, target));
     return null;
   }
   return value;
+}
+
+function isLightExtensionKind(value: string): value is LightExtensionKind {
+  return (LIGHT_EXTENSION_SUPPORTED_KINDS as readonly string[]).includes(value);
 }
 
 function validateOptionalString(

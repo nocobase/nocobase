@@ -8,7 +8,7 @@
  */
 
 import type { Database, Transaction } from '@nocobase/database';
-import type { VscCommitRecord, VscFileChange, VscPermissionAction } from '@nocobase/plugin-vsc-file';
+import type { VscCommitRecord, VscFileChange, VscPermissionAction, VscRefName } from '@nocobase/plugin-vsc-file';
 import { isVscError } from '@nocobase/plugin-vsc-file';
 import { VscFileService, VscPermissionHookRegistry } from '@nocobase/plugin-vsc-file';
 import { randomUUID } from 'crypto';
@@ -35,7 +35,7 @@ import { normalizeVscBridgeError } from './errorContract';
 
 export interface LightExtensionPullInput {
   repoId: string;
-  ref?: string;
+  ref?: VscRefName;
   knownTreeHash?: string;
   includeContent?: LightExtensionIncludeContentMode;
   selectedPaths?: string[];
@@ -51,7 +51,7 @@ export interface LightExtensionPullCommitInput {
 
 export interface LightExtensionGetFileInput {
   repoId: string;
-  ref?: string;
+  ref?: VscRefName;
   path: string;
 }
 

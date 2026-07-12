@@ -49,12 +49,11 @@ export class RuntimeResolveService {
       sort: ['kind', 'entryName'],
       transaction: ctx.transaction,
     });
-    const runtimeEntries = records.map((record) => entryFromModel(record as Model));
+    const runtimeEntries: LightExtensionEntryRecord[] = records.map((record) => entryFromModel(record as Model));
+    const repoIds = [...new Set(runtimeEntries.map((entry) => entry.repoId))];
     const repoHeadCommitIds = new Map(
       await Promise.all(
-        [...new Set(runtimeEntries.map((entry) => entry.repoId))].map(
-          async (repoId) => [repoId, await this.loadEnabledRepoHeadCommitId(repoId, ctx)] as const,
-        ),
+        repoIds.map(async (repoId) => [repoId, await this.loadEnabledRepoHeadCommitId(repoId, ctx)] as const),
       ),
     );
     const entries: LightExtensionSelectableEntryRecord[] = [];

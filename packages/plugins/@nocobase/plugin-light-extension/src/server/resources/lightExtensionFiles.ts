@@ -138,7 +138,7 @@ function createLightExtensionFileAction(
 function normalizePullInput(input: ResourceActionInput): LightExtensionPullInput {
   return compactObject({
     repoId: requireRepoId(input),
-    ref: optionalString(input, 'ref'),
+    ref: optionalVscRef(input, 'ref'),
     knownTreeHash: optionalString(input, 'knownTreeHash'),
     includeContent: optionalIncludeContent(input),
     selectedPaths: optionalStringArray(input, 'selectedPaths'),
@@ -158,7 +158,7 @@ function normalizePullCommitInput(input: ResourceActionInput): LightExtensionPul
 function normalizeGetFileInput(input: ResourceActionInput): LightExtensionGetFileInput {
   return compactObject({
     repoId: requireRepoId(input),
-    ref: optionalString(input, 'ref'),
+    ref: optionalVscRef(input, 'ref'),
     path: requireString(input, 'path'),
   });
 }
@@ -291,11 +291,23 @@ function optionalPositiveInteger(input: ResourceActionInput, key: string, label 
   if (typeof value === 'undefined') {
     return undefined;
   }
-  if (!Number.isInteger(value) || value < 1) {
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 1) {
     throw invalidInput(`${label} must be a positive integer`);
   }
 
-  return value as number;
+  return value;
+}
+
+function optionalVscRef(input: ResourceActionInput, key: string, label = key): LightExtensionPullInput['ref'] {
+  const value = optionalString(input, key, label);
+  if (typeof value === 'undefined') {
+    return undefined;
+  }
+  if (value !== 'head') {
+    throw invalidInput(`${label} must be head`);
+  }
+
+  return value;
 }
 
 function optionalFileOperation(

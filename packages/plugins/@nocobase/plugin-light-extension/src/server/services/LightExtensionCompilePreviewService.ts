@@ -148,7 +148,9 @@ export class LightExtensionCompilePreviewService {
         accepted: compiled.accepted,
         diagnostics: sortDiagnostics([...target.diagnostics, ...compiled.diagnostics]),
         failureCode: compiled.failureCode,
-        artifact: compiled.accepted ? summarizeArtifact(compiled.artifact) : undefined,
+        artifact: compiled.accepted
+          ? summarizeArtifact(compiled.artifact, target.validationEntry.entryPath)
+          : undefined,
       });
     }
 
@@ -448,15 +450,18 @@ function getEntryRootPath(entry: LightExtensionEntryValidationResult): string {
   return pathPosix.extname(normalized) ? pathPosix.dirname(normalized) : normalized;
 }
 
-function summarizeArtifact(input: {
-  version: string;
-  entryPath: string;
-  filesHash?: string;
-  metadata?: Record<string, unknown>;
-}): LightExtensionCompilePreviewArtifactSummary {
+function summarizeArtifact(
+  input: {
+    version: string;
+    entryPath?: string;
+    filesHash?: string;
+    metadata?: Record<string, unknown>;
+  },
+  fallbackEntryPath: string,
+): LightExtensionCompilePreviewArtifactSummary {
   return {
     version: input.version,
-    entryPath: input.entryPath,
+    entryPath: input.entryPath || fallbackEntryPath,
     filesHash: input.filesHash,
     metadata: input.metadata,
   };
