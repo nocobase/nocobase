@@ -52,7 +52,6 @@ export class APIClient {
   axios: AxiosInstance;
   auth: Auth;
   storage: BaseStorage;
-  appName?: string;
   storagePrefix = 'NOCOBASE_';
   baseStoragePrefix = 'NOCOBASE_';
   shareToken = false;
@@ -99,10 +98,6 @@ export class APIClient {
     return headers;
   }
 
-  getAppName() {
-    return this.appName;
-  }
-
   constructor(options?: APIClientOptions) {
     this.options = options;
     if (typeof options === 'function') {
@@ -117,7 +112,6 @@ export class APIClient {
         shareToken = false,
         ...others
       } = options || {};
-      this.appName = appName;
       this.shareToken = shareToken;
       this.baseStoragePrefix = storagePrefix;
       this.storagePrefix = appName ? `${storagePrefix}${appName.toUpperCase()}_` : storagePrefix;

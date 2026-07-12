@@ -306,7 +306,11 @@ export class Auth {
     });
     const query = new URLSearchParams({ accessCode: response.data.data.code });
 
-    const appName = this.api.getAppName();
+    const headers = this.api.getHeaders() as Record<string, unknown>;
+    const headerAppName = headers['X-App'];
+    const apiOptions = this.api.options;
+    const configuredAppName = apiOptions && typeof apiOptions !== 'function' ? apiOptions.appName : undefined;
+    const appName = typeof headerAppName === 'string' && headerAppName ? headerAppName : configuredAppName;
     if (appName && appName !== 'main') {
       query.set('__appName', appName);
     }

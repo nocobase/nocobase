@@ -307,7 +307,6 @@ export function resolveTemporaryAccessCode(service: TemporaryAccessCodeService) 
         delete ctx.headers['x-role'];
       }
       ctx.state.authenticatedByAccessCode = true;
-      ctx.state.disableTokenRenewal = true;
 
       await next();
     } finally {

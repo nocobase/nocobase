@@ -130,56 +130,6 @@ describe('base-auth', () => {
     expect(await auth.check()).toEqual({ id: 1 });
   });
 
-  it('check: should not renew an expired token when renewal is disabled', async () => {
-    const renew = vi.fn();
-    const ctx = {
-      t: (message: string) => message,
-      getBearerToken: () => 'token',
-      headers: {},
-      state: {
-        disableTokenRenewal: true,
-      },
-      app: {
-        authManager: {
-          jwt: {
-            decode: () => ({
-              iat: 1,
-              signInTime: Date.now(),
-              temp: true,
-              userId: 1,
-            }),
-            blacklist: {
-              has: () => false,
-            },
-          },
-          tokenController: {
-            getConfig: async () => ({
-              sessionExpirationTime: Infinity,
-              tokenExpirationTime: 0,
-            }),
-            renew,
-          },
-        },
-      },
-      cache: {
-        wrap: (_key: string, callback: () => Promise<unknown>) => callback(),
-      },
-      throw: (status: number, error: Record<string, unknown>) => {
-        throw Object.assign(new Error(), { status, ...error });
-      },
-    };
-    const auth = new BaseAuth({
-      ctx,
-      userCollection: { repository: { findOne: () => ({ id: 1 }) } },
-    } as never);
-
-    await expect(auth.check()).rejects.toMatchObject({
-      code: AuthErrorCode.SKIP_TOKEN_RENEW,
-      status: 401,
-    });
-    expect(renew).not.toHaveBeenCalled();
-  });
-
   it('signIn: should throw 401', async () => {
     const ctx = {
       t: (s) => s,

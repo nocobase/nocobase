@@ -100,13 +100,9 @@ export class APIClient extends APIClientSDK {
     return window?.location?.hostname;
   }
 
-  getAppName() {
-    return this.app?.getName() || super.getAppName();
-  }
-
   getHeaders() {
     const headers = super.getHeaders();
-    const appName = this.getAppName();
+    const appName = this.app?.getName();
     if (appName) {
       headers['X-App'] = appName;
     }

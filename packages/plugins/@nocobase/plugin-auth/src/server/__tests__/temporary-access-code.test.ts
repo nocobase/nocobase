@@ -140,7 +140,7 @@ function createContext(options: { body?: unknown; method?: string; querystring: 
 }
 
 describe('temporary access code middleware', () => {
-  it('restores authentication and prevents renewal or caching', async () => {
+  it('restores authentication and prevents token exposure or caching', async () => {
     const { service } = createService();
     const code = await issueCode(service, 'admin');
 
@@ -151,10 +151,7 @@ describe('temporary access code middleware', () => {
 
     expect(ctx.querystring).toBe('file=a.txt&__appName=main');
     expect(ctx.headers).toMatchObject({ 'x-authenticator': 'basic', 'x-role': 'admin' });
-    expect(ctx.state).toMatchObject({
-      authenticatedByAccessCode: true,
-      disableTokenRenewal: true,
-    });
+    expect(ctx.state).toMatchObject({ authenticatedByAccessCode: true });
     expect((ctx as typeof ctx & { getBearerToken: () => string }).getBearerToken()).toBe('session-token');
     expect(ctx.responseHeaders).toMatchObject({ 'cache-control': 'private, no-store' });
     expect(ctx.responseHeaders['x-new-token']).toBeUndefined();
