@@ -537,7 +537,7 @@ export class PluginPublicFormsServer extends Plugin {
     const formKey = ctx.PublicForm.formKey;
     const existingCookie = await this.readPublicFormCookie(ctx, formKey);
     const files = normalizeFiles(existingCookie?.files);
-    const dataSourceKey = ctx.dataSource?.key || ctx.action.params?.dataSourceKey || 'main';
+    const dataSourceKey = ctx.dataSource?.name || ctx.action.params?.dataSourceKey || 'main';
     const fileKey = `${dataSourceKey}/${collection.name}`;
     const ids = files[fileKey] || [];
     if (!ids.some((existingId) => String(existingId) === String(id))) {

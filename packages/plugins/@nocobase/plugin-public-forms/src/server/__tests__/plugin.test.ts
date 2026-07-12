@@ -598,7 +598,7 @@ describe('PluginPublicFormsServer', () => {
         params: {},
       },
       dataSource: {
-        key: 'main',
+        name: 'external',
         collectionManager: {
           getCollection: vi.fn(() => ({
             name: 'attachments',
@@ -629,7 +629,7 @@ describe('PluginPublicFormsServer', () => {
         collectionName: 'orders',
         targetCollections: [],
         files: {
-          'main/attachments': [123],
+          'external/attachments': [123],
         },
       },
       expect.objectContaining({
