@@ -282,6 +282,7 @@
   "Workflow title": "Workflow title",
   "Workflow canvas editor is being migrated to the new UI.": "Workflow canvas editor is being migrated to the new UI.",
   "Workflow executed, the result status is <1>{{statusText}}</1><2>View the execution</2>": "Workflow executed, the result status is <1>{{statusText}}</1><2>View the execution</2>",
+  "Workflow was not triggered because the current request did not meet the trigger requirements.": "Workflow was not triggered because the current request did not meet the trigger requirements.",
   "Workflow of execution is not existed": "Workflow of execution is not existed",
   "Workflow tasks": "Workflow tasks",
   "Workflow todos": "Workflow todos",
