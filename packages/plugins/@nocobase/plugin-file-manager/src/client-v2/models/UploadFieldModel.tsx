@@ -19,9 +19,9 @@ import { FieldModel, RecordPickerContent } from '@nocobase/client-v2';
 import {
   FilePreviewRenderer,
   getDownloadFileName,
-  getFileFetchCredentials,
   rememberLocalPreviewUrl,
   revokeLocalPreviewUrls,
+  triggerFileDownload,
 } from '../previewer/filePreviewTypes';
 import {
   getUploadFieldPreviewIndex,
@@ -47,6 +47,7 @@ export const CardUpload = (props) => {
     onSelectExitRecordClick,
     quickUpload = true,
     showFileName,
+    fileCollection,
   } = props;
   const [fileList, setFileList] = useState(() => normalizeUploadFieldFileList(castArray(value || [])));
   const fileListRef = useRef(fileList);
@@ -104,22 +105,7 @@ export const CardUpload = (props) => {
     if (!url) {
       return;
     }
-    const filename = getDownloadFileName(target, url);
-    // eslint-disable-next-line promise/catch-or-return
-    fetch(url, {
-      credentials: getFileFetchCredentials(url),
-    })
-      .then((response) => response.blob())
-      .then((blob) => {
-        const blobUrl = URL.createObjectURL(new Blob([blob]));
-        const link = document.createElement('a');
-        link.href = blobUrl;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        URL.revokeObjectURL(blobUrl);
-        link.remove();
-      });
+    triggerFileDownload(url, getDownloadFileName(target, url));
   };
 
   return (
@@ -220,6 +206,7 @@ export const CardUpload = (props) => {
             open={previewOpen}
             file={previewImage}
             list={fileList}
+            fileCollection={fileCollection}
             index={currentImageIndex}
             onOpenChange={setPreviewOpen}
             onClose={() => setPreviewImage(null)}
@@ -283,7 +270,13 @@ export class UploadFieldModel extends FieldModel {
     this.props.onChange(this.selectedRows.value);
   }
   render() {
-    return <CardUpload {...this.props} />;
+    const targetCollection = this.context.collectionField?.targetCollection;
+    const currentCollection = this.context.collection;
+    const fileCollection = targetCollection || (currentCollection?.template === 'file' ? currentCollection : null);
+    const fileCollectionReference = fileCollection
+      ? { dataSourceKey: fileCollection.dataSourceKey, collectionName: fileCollection.name }
+      : undefined;
+    return <CardUpload {...this.props} fileCollection={fileCollectionReference} />;
   }
 }
 

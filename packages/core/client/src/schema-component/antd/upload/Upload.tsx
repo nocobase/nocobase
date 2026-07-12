@@ -429,17 +429,17 @@ function AttachmentListItem(props) {
   );
 }
 
-function Previewer({ index, onSwitchIndex, list }) {
+function Previewer({ index, onSwitchIndex, list, fileCollection }) {
   if (index == null) {
     return null;
   }
   const file = list[index];
   const { Previewer: Component = IframePreviewer } = attachmentFileTypes.getTypeByFile(file) ?? {};
-  return <Component index={index} list={list} onSwitchIndex={onSwitchIndex} />;
+  return <Component index={index} list={list} fileCollection={fileCollection} onSwitchIndex={onSwitchIndex} />;
 }
 
 export function AttachmentList(props) {
-  const { disabled, multiple, value, onChange, readPretty, showFileName } = props;
+  const { disabled, multiple, value, onChange, readPretty, showFileName, fileCollection } = props;
   const [fileList, setFileList] = useState<any[]>([]);
   const fileListRef = useRef<any[]>([]);
   const [preview, setPreview] = useState<number>(null);
@@ -497,7 +497,7 @@ export function AttachmentList(props) {
           showFileName={showFileName}
         />
       ))}
-      <Previewer index={preview} onSwitchIndex={setPreview} list={fileList} />
+      <Previewer index={preview} onSwitchIndex={setPreview} list={fileList} fileCollection={fileCollection} />
     </>
   );
 }
@@ -648,12 +648,13 @@ export function Uploader({ rules, ...props }: UploadProps) {
 }
 
 function Attachment(props: UploadProps) {
+  const { fileCollection, ...uploadProps } = props;
   const { wrapSSR, hashId, componentCls: prefixCls } = useStyles();
   return wrapSSR(
     <div className={cls(`${prefixCls}-wrapper`, `${prefixCls}-picture-card-wrapper`, 'nb-upload', hashId)}>
       <div className={cls(`${prefixCls}-list`, `${prefixCls}-list-picture-card`)}>
-        <AttachmentList {...props} />
-        <Uploader {...props} />
+        <AttachmentList {...props} fileCollection={fileCollection} />
+        <Uploader {...uploadProps} />
       </div>
     </div>,
   );

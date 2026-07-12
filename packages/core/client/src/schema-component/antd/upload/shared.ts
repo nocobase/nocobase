@@ -15,12 +15,13 @@ import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
 import { UNKNOWN_FILE_ICON, UPLOAD_PLACEHOLDER } from './placeholder';
-import type { IUploadProps, UploadProps } from './type';
+import type { FileCollectionReference, IUploadProps, UploadProps } from './type';
 
 export const FILE_SIZE_LIMIT_DEFAULT = 1024 * 1024 * 20;
 
 export interface FileModel {
   id: number;
+  storageId?: string | number;
   filename: string;
   path: string;
   title: string;
@@ -33,6 +34,7 @@ export interface FileModel {
 export interface PreviewerProps {
   index: number;
   list: FileModel[];
+  fileCollection?: FileCollectionReference;
   onSwitchIndex(index): void;
 }
 

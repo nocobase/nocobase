@@ -20,7 +20,7 @@ import { STORAGE_TYPE_ALI_OSS, STORAGE_TYPE_LOCAL, STORAGE_TYPE_S3, STORAGE_TYPE
 import initActions from './actions';
 import { createFileAccessMiddleware } from './file-access';
 import { AttachmentInterface } from './interfaces/attachment-interface';
-import { AttachmentModel, GetFileStreamOptions, StorageClassType, StorageModel } from './storages';
+import { AttachmentModel, GetFileStreamOptions, GetFileURLOptions, StorageClassType, StorageModel } from './storages';
 import StorageTypeAliOss from './storages/ali-oss';
 import StorageTypeLocal, { validateLocalStorageConfig } from './storages/local';
 import StorageTypeS3 from './storages/s3';
@@ -29,11 +29,13 @@ import {
   encodeURL,
   getFilePlainObject,
   getFilePublicBasePath,
+  getFileAccessPathSegment,
   getRecordCollectionName,
   isPermanentFileAccessURL,
   resolveStoragePath,
 } from './utils';
 import { registerRepairFilenamesCommand } from './commands/repair-filenames';
+import { getTemporaryFileAccessExpiresIn } from './temporary-access';
 
 export type * from './storages';
 
@@ -247,6 +249,7 @@ export class PluginFileManagerServer extends Plugin {
   }
 
   async beforeLoad() {
+    getTemporaryFileAccessExpiresIn();
     this.db.registerModels({ FileModel: Model });
     this.db.on('beforeDefineCollection', (options) => {
       if (options.template === 'file') {
@@ -262,10 +265,18 @@ export class PluginFileManagerServer extends Plugin {
         idField.options.deletable = false;
         idField.options.updatable = false;
       }
+      const extnameField = collection.getField('extname');
+      if (extnameField) {
+        extnameField.options.updatable = false;
+      }
       collection.model.afterCreate(async (model) => {
         await this.setFileResponseURLs(model, collection.name);
       });
       collection.model.beforeUpdate((model) => {
+        if (model.changed('extname')) {
+          model.set('extname', model.previous('extname'));
+          model.changed('extname', false);
+        }
         if (!model.changed('url') || !model.changed('preview')) {
           return;
         }
@@ -414,14 +425,14 @@ export class PluginFileManagerServer extends Plugin {
     const appName = this.app.name || DEFAULT_APP_NAME;
     const dataSourceKey = options.dataSourceKey || DEFAULT_DATA_SOURCE_KEY;
     const collectionName = options.collectionName || getRecordCollectionName(file);
-    const id = file.id;
+    const id = getFileAccessPathSegment(file.id, file.extname);
     const url = `${publicPath}/files/${encodeURIComponent(String(appName))}/${encodeURIComponent(
       String(dataSourceKey),
-    )}/${encodeURIComponent(String(collectionName))}/${encodeURIComponent(String(id))}`;
-    return preview ? `${url}/preview` : url;
+    )}/${encodeURIComponent(String(collectionName))}/${id}`;
+    return preview ? `${url}?preview=1` : url;
   }
 
-  async getFileURL(file: AttachmentModel, preview = false) {
+  async getFileURL(file: AttachmentModel, preview = false, options: GetFileURLOptions = {}) {
     if (!file.storageId) {
       return encodeURL(file.url);
     }
@@ -442,6 +453,7 @@ export class PluginFileManagerServer extends Plugin {
       Boolean(
         storageFile.mimetype && match(storageFile.mimetype, 'image/*') && preview && storage.options.thumbnailRule,
       ),
+      options,
     );
   }
 

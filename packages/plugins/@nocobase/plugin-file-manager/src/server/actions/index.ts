@@ -12,12 +12,14 @@ import { createMiddleware } from './attachments';
 import { registerGetFileAccess } from './get-file';
 import { validateStorageMiddleware } from './storage-validation';
 import * as storageActions from './storages';
+import { registerTemporaryFileAccess } from '../temporary-access';
 
 export default function (plugin) {
   const { app } = plugin;
 
   app.dataSourceManager.afterAddDataSource((dataSource) => {
-    registerGetFileAccess(dataSource, plugin);
+    registerGetFileAccess(dataSource);
+    registerTemporaryFileAccess(dataSource);
   });
 
   app.resourcer.define({

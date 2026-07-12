@@ -114,6 +114,24 @@ export function getFilePublicBasePath() {
   return trimPublicPath(process.env.APP_PUBLIC_PATH);
 }
 
+export function normalizeFileAccessExtname(value: unknown) {
+  if (
+    typeof value !== 'string' ||
+    value.length < 2 ||
+    !value.startsWith('.') ||
+    value.slice(1).includes('.') ||
+    value.includes('/') ||
+    value.includes('\\')
+  ) {
+    return '';
+  }
+  return value;
+}
+
+export function getFileAccessPathSegment(id: string | number, extname: unknown) {
+  return `${encodeURIComponent(String(id))}${encodeURIComponent(normalizeFileAccessExtname(extname))}`;
+}
+
 export function getRecordCollectionName(file: AttachmentModel) {
   const modelName = (file as unknown as Model)?.constructor?.name;
   return modelName && modelName !== 'Object' ? modelName : 'attachments';
@@ -135,16 +153,13 @@ export function isPermanentFileAccessURL(value: unknown, file: AttachmentModel, 
     const segments = url.pathname.split('/').filter(Boolean);
     const filesIndex = segments.indexOf('files');
     const filePathSegments = segments.length - filesIndex;
-    if (filesIndex === -1 || (filePathSegments !== 5 && filePathSegments !== 6)) {
+    if (filesIndex === -1 || filePathSegments !== 5) {
       return false;
     }
-    if (filePathSegments === 6 && segments[filesIndex + 5] !== 'preview') {
-      return false;
-    }
-    return (
-      decodeURIComponent(segments[filesIndex + 1]) === appName &&
-      decodeURIComponent(segments[filesIndex + 4]) === String(file.id)
-    );
+    const fileIdSegment = decodeURIComponent(segments[filesIndex + 4]);
+    const extname = normalizeFileAccessExtname(file.extname);
+    const id = extname && fileIdSegment.endsWith(extname) ? fileIdSegment.slice(0, -extname.length) : fileIdSegment;
+    return decodeURIComponent(segments[filesIndex + 1]) === appName && id === String(file.id);
   } catch (error) {
     return false;
   }

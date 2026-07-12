@@ -21,14 +21,17 @@ describe('AttachmentURLFieldModel', () => {
 
     expect(file).toMatchObject({
       url: '/files/main/main/t_n6fvrknhqjr/24',
-      thumbUrl: '/files/main/main/t_n6fvrknhqjr/24/preview',
+      thumbUrl: '/files/main/main/t_n6fvrknhqjr/24?preview=1',
     });
     expect(isAttachmentURLImage(file)).toBe(true);
   });
 
-  it('keeps existing preview URLs unchanged', () => {
-    expect(getPermanentFilePreviewUrl('/files/main/main/t_n6fvrknhqjr/24/preview')).toBe(
-      '/files/main/main/t_n6fvrknhqjr/24/preview',
+  it('uses the preview query parameter', () => {
+    expect(getPermanentFilePreviewUrl('/files/main/main/t_n6fvrknhqjr/24?preview=1')).toBe(
+      '/files/main/main/t_n6fvrknhqjr/24?preview=1',
+    );
+    expect(getPermanentFilePreviewUrl('/files/main/main/t_n6fvrknhqjr/24.docx')).toBe(
+      '/files/main/main/t_n6fvrknhqjr/24.docx?preview=1',
     );
   });
 
@@ -44,7 +47,7 @@ describe('AttachmentURLFieldModel', () => {
         mimetype: 'image/jpeg',
         path: 'a/b b/c',
         url: '/files/main/main/t_n6fvrknhqjr/24',
-        preview: '/files/main/main/t_n6fvrknhqjr/24/preview',
+        preview: '/files/main/main/t_n6fvrknhqjr/24?preview=1',
         meta: {},
         id: 24,
         storageId: 1,
@@ -58,8 +61,8 @@ describe('AttachmentURLFieldModel', () => {
       mimetype: 'image/jpeg',
       type: 'image/jpeg',
       url: '/files/main/main/t_n6fvrknhqjr/24',
-      preview: '/files/main/main/t_n6fvrknhqjr/24/preview',
-      thumbUrl: '/files/main/main/t_n6fvrknhqjr/24/preview',
+      preview: '/files/main/main/t_n6fvrknhqjr/24?preview=1',
+      thumbUrl: '/files/main/main/t_n6fvrknhqjr/24?preview=1',
     });
     expect(isAttachmentURLImage(file)).toBe(true);
   });
@@ -77,7 +80,7 @@ describe('AttachmentURLFieldModel', () => {
           mimetype: 'image/jpeg',
           path: 'a/b b/c',
           url: '/files/main/main/t_n6fvrknhqjr/24',
-          preview: '/files/main/main/t_n6fvrknhqjr/24/preview',
+          preview: '/files/main/main/t_n6fvrknhqjr/24?preview=1',
           meta: {},
           id: 24,
           storageId: 1,
@@ -94,8 +97,8 @@ describe('AttachmentURLFieldModel', () => {
       mimetype: 'image/jpeg',
       type: 'image/jpeg',
       url: '/files/main/main/t_n6fvrknhqjr/24',
-      preview: '/files/main/main/t_n6fvrknhqjr/24/preview',
-      thumbUrl: '/files/main/main/t_n6fvrknhqjr/24/preview',
+      preview: '/files/main/main/t_n6fvrknhqjr/24?preview=1',
+      thumbUrl: '/files/main/main/t_n6fvrknhqjr/24?preview=1',
     });
     expect(isAttachmentURLImage(file)).toBe(true);
   });
@@ -111,7 +114,7 @@ describe('AttachmentURLFieldModel', () => {
               filename: 'avatar.jpg',
               mimetype: 'image/jpeg',
               url: '/files/main/main/t_n6fvrknhqjr/25',
-              preview: '/files/main/main/t_n6fvrknhqjr/25/preview',
+              preview: '/files/main/main/t_n6fvrknhqjr/25?preview=1',
             },
           },
         },
@@ -119,7 +122,7 @@ describe('AttachmentURLFieldModel', () => {
     ).toMatchObject({
       id: 25,
       url: '/files/main/main/t_n6fvrknhqjr/25',
-      thumbUrl: '/files/main/main/t_n6fvrknhqjr/25/preview',
+      thumbUrl: '/files/main/main/t_n6fvrknhqjr/25?preview=1',
     });
   });
 });

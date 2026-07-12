@@ -9,9 +9,8 @@
 
 import type { Context, Next } from '@nocobase/actions';
 import type { DataSource } from '@nocobase/data-source-manager';
-import { ensureGetFileAction } from './actions/get-file';
 import type { PluginFileManagerServer } from './server';
-import { trimPublicPath } from './utils';
+import { normalizeFileAccessExtname, trimPublicPath } from './utils';
 
 const DEFAULT_APP_NAME = 'main';
 const IDENTIFIER_PATTERN = /^[A-Za-z0-9_][A-Za-z0-9_-]*$/;
@@ -30,19 +29,19 @@ function parseFileAccessPath(path: string) {
   if (segments[0] !== 'files') {
     return null;
   }
-  if (segments.length !== 5 && segments.length !== 6) {
-    throw Object.assign(new Error('Invalid file URL'), { status: 404 });
-  }
-  if (segments.length === 6 && segments[5] !== 'preview') {
+  if (segments.length !== 5) {
     throw Object.assign(new Error('Invalid file URL'), { status: 404 });
   }
   try {
+    const fileIdSegment = decodeURIComponent(segments[4]);
+    const extnameIndex = fileIdSegment.lastIndexOf('.');
+    const extname = extnameIndex > 0 ? normalizeFileAccessExtname(fileIdSegment.slice(extnameIndex)) : '';
     const params = {
       appName: decodeURIComponent(segments[1]),
       dataSourceKey: decodeURIComponent(segments[2]),
       collectionName: decodeURIComponent(segments[3]),
-      id: decodeURIComponent(segments[4]),
-      preview: segments.length === 6,
+      id: extname ? fileIdSegment.slice(0, extnameIndex) : fileIdSegment,
+      extname: extname || undefined,
     };
     if (
       !IDENTIFIER_PATTERN.test(params.appName) ||
@@ -63,12 +62,23 @@ function getApiBasePath(dataSource: DataSource) {
 
 export function createFileAccessMiddleware(plugin: PluginFileManagerServer) {
   return async function handleFileAccess(ctx: Context, next: Next) {
-    const params = parseFileAccessPath(ctx.path);
-    if (!params) {
+    const pathParams = parseFileAccessPath(ctx.path);
+    if (!pathParams) {
       return next();
     }
     if (!['GET', 'HEAD'].includes(ctx.method)) {
       return ctx.throw(405);
+    }
+
+    const temporaryAccessToken = ctx.query['temporary-access-token'];
+    const params = {
+      ...pathParams,
+      preview: ctx.query.preview === '1',
+      temporaryAccess: typeof temporaryAccessToken === 'string',
+      temporaryAccessToken: typeof temporaryAccessToken === 'string' ? temporaryAccessToken : undefined,
+    };
+    if (params.preview && params.temporaryAccess) {
+      return ctx.throw(404);
     }
 
     if (params.appName !== (plugin.app.name || DEFAULT_APP_NAME)) {
@@ -85,15 +95,16 @@ export function createFileAccessMiddleware(plugin: PluginFileManagerServer) {
     const originalDb = ctx.db;
     const originalOptionalAuth = ctx.state.optionalAuth;
     const originalFileAccess = ctx.state.fileAccess;
+    const originalSkipAuthCheck = ctx.skipAuthCheck;
 
     try {
-      ensureGetFileAction(dataSource, params.collectionName, plugin);
       ctx.path = `${getApiBasePath(dataSource)}/${encodeURIComponent(
         params.collectionName,
       )}:getFile/${encodeURIComponent(params.id)}`;
       ctx.req.headers['x-data-source'] = params.dataSourceKey;
       ctx.db = plugin.app.db;
-      ctx.state.optionalAuth = true;
+      ctx.state.optionalAuth = !params.temporaryAccess;
+      ctx.skipAuthCheck = params.temporaryAccess ? true : originalSkipAuthCheck;
       ctx.state.fileAccess = params;
       await plugin.app.dataSourceManager.middleware()(ctx, async () => {});
     } finally {
@@ -106,6 +117,7 @@ export function createFileAccessMiddleware(plugin: PluginFileManagerServer) {
       ctx.db = originalDb;
       ctx.state.optionalAuth = originalOptionalAuth;
       ctx.state.fileAccess = originalFileAccess;
+      ctx.skipAuthCheck = originalSkipAuthCheck;
     }
   };
 }

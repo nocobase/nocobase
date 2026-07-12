@@ -17,8 +17,8 @@ describe('attachment url hook helpers', () => {
       id: '/files/main/main/t_n6fvrknhqjr/24',
       url: '/files/main/main/t_n6fvrknhqjr/24',
       type: 'image/*',
-      preview: '/files/main/main/t_n6fvrknhqjr/24/preview',
-      thumbUrl: '/files/main/main/t_n6fvrknhqjr/24/preview',
+      preview: '/files/main/main/t_n6fvrknhqjr/24?preview=1',
+      thumbUrl: '/files/main/main/t_n6fvrknhqjr/24?preview=1',
     });
   });
 
@@ -29,7 +29,7 @@ describe('attachment url hook helpers', () => {
       filename: 'icon-alexa-108-le2a0x.jpg',
       mimetype: 'image/jpeg',
       url: '/files/main/main/t_n6fvrknhqjr/24',
-      preview: '/files/main/main/t_n6fvrknhqjr/24/preview',
+      preview: '/files/main/main/t_n6fvrknhqjr/24?preview=1',
     });
 
     expect(normalizeAttachmentUrlValue('/files/main/main/t_n6fvrknhqjr/24', fileMetaByUrl)).toMatchObject({
@@ -38,14 +38,17 @@ describe('attachment url hook helpers', () => {
       mimetype: 'image/jpeg',
       type: 'image/jpeg',
       url: '/files/main/main/t_n6fvrknhqjr/24',
-      preview: '/files/main/main/t_n6fvrknhqjr/24/preview',
-      thumbUrl: '/files/main/main/t_n6fvrknhqjr/24/preview',
+      preview: '/files/main/main/t_n6fvrknhqjr/24?preview=1',
+      thumbUrl: '/files/main/main/t_n6fvrknhqjr/24?preview=1',
     });
   });
 
-  it('keeps preview URLs unchanged', () => {
-    expect(getPermanentFilePreviewUrl('/files/main/main/t_n6fvrknhqjr/24/preview')).toBe(
-      '/files/main/main/t_n6fvrknhqjr/24/preview',
+  it('uses the preview query parameter', () => {
+    expect(getPermanentFilePreviewUrl('/files/main/main/t_n6fvrknhqjr/24?preview=1')).toBe(
+      '/files/main/main/t_n6fvrknhqjr/24?preview=1',
+    );
+    expect(getPermanentFilePreviewUrl('/files/main/main/t_n6fvrknhqjr/24.docx')).toBe(
+      '/files/main/main/t_n6fvrknhqjr/24.docx?preview=1',
     );
   });
 
@@ -56,7 +59,7 @@ describe('attachment url hook helpers', () => {
         filename: 'icon-alexa-108-le2a0x.jpg',
         mimetype: 'image/jpeg',
         url: '/files/main/main/t_n6fvrknhqjr/24',
-        preview: '/files/main/main/t_n6fvrknhqjr/24/preview',
+        preview: '/files/main/main/t_n6fvrknhqjr/24?preview=1',
       }),
     ).toBe('/files/main/main/t_n6fvrknhqjr/24');
   });
@@ -69,7 +72,7 @@ describe('attachment url hook helpers', () => {
           filename: 'avatar.jpg',
           mimetype: 'image/jpeg',
           url: '/files/main/main/t_n6fvrknhqjr/25',
-          preview: '/files/main/main/t_n6fvrknhqjr/25/preview',
+          preview: '/files/main/main/t_n6fvrknhqjr/25?preview=1',
         },
       }),
     ).toBe('/files/main/main/t_n6fvrknhqjr/25');

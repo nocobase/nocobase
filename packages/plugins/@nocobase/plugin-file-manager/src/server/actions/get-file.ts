@@ -11,98 +11,119 @@ import type { Context, Next } from '@nocobase/actions';
 import type { DataSource } from '@nocobase/data-source-manager';
 import type { Collection } from '@nocobase/database';
 import type { PluginFileManagerServer } from '../server';
+import { verifyTemporaryFileAccessToken } from '../temporary-access';
 
 const GET_FILE_ACTION = 'getFile';
-const registeredDataSources = new WeakSet<DataSource>();
 
 function hasStandardIdAttribute(collection: Collection) {
   return Boolean(collection.model?.rawAttributes?.id || collection.model?.getAttributes?.().id);
 }
 
-export function createGetFileAction(plugin: PluginFileManagerServer) {
-  return async function getFile(ctx: Context, next: Next) {
-    const collection = ctx.dataSource.collectionManager.getCollection(ctx.action.resourceName);
-    if (!collection || (collection.name !== 'attachments' && collection.options?.template !== 'file')) {
-      return ctx.throw(404);
-    }
-    if (!hasStandardIdAttribute(collection)) {
-      ctx.logger.error('file collection is missing standard id field', {
-        method: 'file-manager.getFile',
-        collection: collection.name,
-      });
-      return ctx.throw(500);
-    }
-
-    const id = ctx.state.fileAccess?.id ?? ctx.action.params.filterByTk;
-    const fileAccessParams = ctx.state.fileAccess
-      ? {
-          appName: ctx.state.fileAccess.appName,
-          dataSourceKey: ctx.state.fileAccess.dataSourceKey,
-          collectionName: collection.name,
-          id: String(id),
-          preview: Boolean(ctx.state.fileAccess.preview),
-        }
-      : null;
-    const authorizedByExtension = fileAccessParams ? await plugin.authorizeFileAccess(ctx, fileAccessParams) : false;
-
-    let filter = { id };
-    if (
-      !authorizedByExtension &&
-      ctx.app.options.acl !== false &&
-      ctx.dataSource.options?.useACL !== false &&
-      ctx.dataSource.options?.acl !== false
-    ) {
-      const permission = await ctx.dataSource.acl.checkAction({
-        context: ctx,
-        resource: collection.name,
-        action: 'get',
-        params: {
-          filter,
-        },
-      });
-      filter = permission.mergedParams?.filter || filter;
-    }
-
-    const file = await ctx.getCurrentRepository().findOne({
-      filter,
-      fields: ['id', 'storageId', 'path', 'filename', 'mimetype', 'url', 'meta'],
-      context: ctx,
+export async function getFile(ctx: Context, next: Next) {
+  const collection = ctx.dataSource.collectionManager.getCollection(ctx.action.resourceName);
+  if (!collection || (collection.name !== 'attachments' && collection.options?.template !== 'file')) {
+    return ctx.throw(404);
+  }
+  if (!hasStandardIdAttribute(collection)) {
+    ctx.logger.error('file collection is missing standard id field', {
+      method: 'file-manager.getFile',
+      collection: collection.name,
     });
+    return ctx.throw(500);
+  }
 
-    if (!file || !file.get('storageId')) {
-      return ctx.throw(404);
+  const plugin = ctx.app.pm.get('file-manager') as PluginFileManagerServer;
+  const id = ctx.state.fileAccess?.id ?? ctx.action.params.filterByTk;
+  const temporaryAccess = Boolean(ctx.state.fileAccess?.temporaryAccess);
+  let temporaryAccessPayload;
+  if (temporaryAccess) {
+    ctx.set('Cache-Control', 'private, no-store');
+    ctx.set('Referrer-Policy', 'no-referrer');
+    const token = ctx.state.fileAccess?.temporaryAccessToken;
+    if (typeof token !== 'string' || !token) {
+      return ctx.throw(403);
     }
+    try {
+      temporaryAccessPayload = verifyTemporaryFileAccessToken(plugin, token);
+    } catch (error) {
+      return ctx.throw(403);
+    }
+    const expectedResource = {
+      app: ctx.state.fileAccess.appName,
+      dataSource: ctx.state.fileAccess.dataSourceKey,
+      collection: collection.name,
+      id: String(id),
+    };
+    if (
+      temporaryAccessPayload.app !== expectedResource.app ||
+      temporaryAccessPayload.dataSource !== expectedResource.dataSource ||
+      temporaryAccessPayload.collection !== expectedResource.collection ||
+      String(temporaryAccessPayload.id) !== expectedResource.id
+    ) {
+      return ctx.throw(403);
+    }
+  }
+  const fileAccessParams = ctx.state.fileAccess
+    ? {
+        appName: ctx.state.fileAccess.appName,
+        dataSourceKey: ctx.state.fileAccess.dataSourceKey,
+        collectionName: collection.name,
+        id: String(id),
+        preview: Boolean(ctx.state.fileAccess.preview),
+      }
+    : null;
+  const authorizedByExtension =
+    fileAccessParams && !temporaryAccess ? await plugin.authorizeFileAccess(ctx, fileAccessParams) : false;
 
-    const finalUrl = await plugin.getFileURL(file, Boolean(ctx.state.fileAccess?.preview));
-    ctx.status = 302;
-    ctx.redirect(finalUrl);
-    await next();
-  };
-}
-
-export function registerGetFileAccess(dataSource: DataSource, plugin: PluginFileManagerServer) {
-  if (registeredDataSources.has(dataSource)) {
-    return;
+  let filter = { id };
+  if (
+    !temporaryAccess &&
+    !authorizedByExtension &&
+    ctx.app.options.acl !== false &&
+    ctx.dataSource.options?.useACL !== false &&
+    ctx.dataSource.options?.acl !== false
+  ) {
+    const permission = await ctx.dataSource.acl.checkAction({
+      context: ctx,
+      resource: collection.name,
+      action: 'get',
+      params: {
+        filter,
+      },
+    });
+    filter = permission.mergedParams?.filter || filter;
   }
 
-  dataSource.resourceManager.registerActionHandler(GET_FILE_ACTION, createGetFileAction(plugin));
+  const file = await ctx.getCurrentRepository().findOne({
+    filter,
+    fields: ['id', 'storageId', 'path', 'filename', 'extname', 'mimetype', 'url', 'meta'],
+    context: ctx,
+  });
+
+  if (!file || !file.get('storageId')) {
+    return ctx.throw(404);
+  }
+  if (temporaryAccessPayload && String(temporaryAccessPayload.storageId) !== String(file.get('storageId'))) {
+    return ctx.throw(403);
+  }
+  if (ctx.state.fileAccess?.extname && ctx.state.fileAccess.extname !== file.get('extname')) {
+    return ctx.throw(404);
+  }
+
+  const download = !temporaryAccess && ctx.method === 'GET' && ctx.query.download === '1';
+  const finalUrl = await plugin.getFileURL(
+    file,
+    download ? false : temporaryAccess ? false : Boolean(ctx.state.fileAccess?.preview),
+    { download },
+  );
+  ctx.status = 302;
+  ctx.redirect(finalUrl);
+  await next();
+}
+
+export function registerGetFileAccess(dataSource: DataSource) {
+  dataSource.resourceManager.registerActionHandler(GET_FILE_ACTION, getFile);
   dataSource.acl.use(skipGetFileAcl, { tag: 'skipGetFileAcl', before: 'core' });
-  registeredDataSources.add(dataSource);
-}
-
-export function ensureGetFileAction(dataSource: DataSource, collectionName: string, plugin: PluginFileManagerServer) {
-  registerGetFileAccess(dataSource, plugin);
-
-  if (!dataSource.resourceManager.isDefined(collectionName)) {
-    return;
-  }
-
-  const resource = dataSource.resourceManager.getResource(collectionName);
-  try {
-    resource.getAction(GET_FILE_ACTION);
-  } catch (error) {
-    resource.addAction(GET_FILE_ACTION, createGetFileAction(plugin));
-  }
 }
 
 export async function skipGetFileAcl(ctx: Context, next: Next) {

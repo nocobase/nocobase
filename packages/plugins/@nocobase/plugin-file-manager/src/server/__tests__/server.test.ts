@@ -15,10 +15,16 @@ import { getConfigByEnv } from '@nocobase/database';
 import { SequelizeCollectionManager, SequelizeDataSource } from '@nocobase/data-source-manager';
 import { MockServer, sleep } from '@nocobase/test';
 import { getAuthCookieName, uid } from '@nocobase/utils';
+import jwt from 'jsonwebtoken';
 import { getApp } from '.';
 import PluginFileManagerServer from '../server';
+import {
+  deriveTemporaryFileAccessSecret,
+  TEMPORARY_FILE_ACCESS_AUDIENCE,
+  type TemporaryFileAccessPayload,
+} from '../temporary-access';
 
-import { FILE_FIELD_NAME, STORAGE_TYPE_LOCAL } from '../../constants';
+import { FILE_FIELD_NAME, STORAGE_TYPE_LOCAL, STORAGE_TYPE_S3 } from '../../constants';
 
 const { LOCAL_STORAGE_BASE_URL, LOCAL_STORAGE_DEST = 'storage/uploads', APP_PORT = '13000' } = process.env;
 const DEFAULT_LOCAL_BASE_URL = LOCAL_STORAGE_BASE_URL || `/storage/uploads`;
@@ -358,8 +364,10 @@ describe('file manager > server', () => {
             [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
           });
 
-          expect(body.data.url).toBe(`/nocobase/files/main/main/attachments/${body.data.id}`);
-          expect(body.data.preview).toBe(`/nocobase/files/main/main/attachments/${body.data.id}/preview`);
+          expect(body.data.url).toBe(`/nocobase/files/main/main/attachments/${body.data.id}${body.data.extname}`);
+          expect(body.data.preview).toBe(
+            `/nocobase/files/main/main/attachments/${body.data.id}${body.data.extname}?preview=1`,
+          );
 
           const storageUrl = await plugin.getFileURL(body.data);
           const response = await loggedAgent.get(body.data.url);
@@ -388,8 +396,8 @@ describe('file manager > server', () => {
           },
         });
 
-        expect(body.data.url).toBe(`/files/main/main/attachments/${body.data.id}`);
-        expect(body.data.preview).toBe(`/files/main/main/attachments/${body.data.id}/preview`);
+        expect(body.data.url).toBe(`/files/main/main/attachments/${body.data.id}${body.data.extname}`);
+        expect(body.data.preview).toBe(`/files/main/main/attachments/${body.data.id}${body.data.extname}?preview=1`);
       });
 
       it('local (default with base url) attachment with env', async () => {
@@ -403,7 +411,7 @@ describe('file manager > server', () => {
 
           const url = await plugin.getFileURL(body.data);
           expect(url).toBe(`${process.env.APP_PUBLIC_PATH}/storage/uploads/${body.data.filename}`);
-          expect(body.data.url).toBe(`/app/files/main/main/attachments/${body.data.id}`);
+          expect(body.data.url).toBe(`/app/files/main/main/attachments/${body.data.id}${body.data.extname}`);
 
           const storageUrl = await plugin.getFileURL(body.data);
           expect(url).toBe(storageUrl);
@@ -434,7 +442,7 @@ describe('file manager > server', () => {
 
           const url = await plugin.getFileURL(body.data);
           expect(url).toBe(`/nocobase/${body.data.filename}`);
-          expect(body.data.url).toBe(`/nocobase/files/main/main/attachments/${body.data.id}`);
+          expect(body.data.url).toBe(`/nocobase/files/main/main/attachments/${body.data.id}${body.data.extname}`);
 
           const storageUrl = await plugin.getFileURL(body.data);
           expect(url).toBe(storageUrl);
@@ -464,7 +472,7 @@ describe('file manager > server', () => {
 
         const url = await plugin.getFileURL(body.data, true);
         expect(url).toBe(`${process.env.APP_PUBLIC_PATH?.replace(/\/$/g, '') || ''}/${body.data.filename}?small`);
-        expect(body.data.preview).toBe(`/files/main/main/attachments/${body.data.id}/preview`);
+        expect(body.data.preview).toBe(`/files/main/main/attachments/${body.data.id}${body.data.extname}?preview=1`);
 
         const storageUrl = await plugin.getFileURL(body.data, true);
         expect(url).toBe(storageUrl);
@@ -491,7 +499,7 @@ describe('file manager > server', () => {
 
         const url = await plugin.getFileURL(body.data, true);
         expect(url).toBe(`${process.env.APP_PUBLIC_PATH?.replace(/\/$/g, '') || ''}/${body.data.filename}`);
-        expect(body.data.preview).toBe(`/files/main/main/attachments/${body.data.id}/preview`);
+        expect(body.data.preview).toBe(`/files/main/main/attachments/${body.data.id}${body.data.extname}?preview=1`);
 
         const storageUrl = await plugin.getFileURL(body.data, true);
         expect(url).toBe(storageUrl);
@@ -529,7 +537,9 @@ describe('file manager > server', () => {
         expect(file.mimetype).toBeNull();
         const url = await plugin.getFileURL(file, true);
         expect(url).toBe(`${process.env.APP_PUBLIC_PATH?.replace(/\/$/g, '') || ''}/${file.filename}`);
-        expect(plugin.getPermanentFileURL(file, true)).toBe(`/files/main/main/attachments/${file.id}/preview`);
+        expect(plugin.getPermanentFileURL(file, true)).toBe(
+          `/files/main/main/attachments/${file.id}${file.extname}?preview=1`,
+        );
 
         const storageUrl = await plugin.getFileURL(file, true);
         expect(url).toBe(storageUrl);
@@ -537,6 +547,176 @@ describe('file manager > server', () => {
     });
 
     describe('file access URL', () => {
+      it('creates and consumes a temporary file access URL', async () => {
+        const admin = await db.getRepository('users').findOne();
+        const loggedAgent = await app.agent().login(admin);
+        const { body } = await agent.resource('attachments').create({
+          [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
+        });
+        enableFileAccessACL(app);
+        const mainAcl = app.dataSourceManager.get('main').acl;
+        mainAcl.define({ role: 'temporary-viewer' }).grantAction('attachments:get', {});
+        app.resourcer.use(
+          async (ctx, next) => {
+            ctx.state.currentRole = 'temporary-viewer';
+            ctx.state.currentRoles = ['temporary-viewer'];
+            await next();
+          },
+          { tag: 'setTemporaryViewerRole', after: 'auth', before: 'acl' },
+        );
+
+        const createResponse = await loggedAgent.post(`/attachments:createTemporaryURL/${body.data.id}`);
+
+        expect(createResponse.status).toBe(200);
+        expect(createResponse.headers['cache-control']).toBe('no-store');
+        expect(createResponse.body.data.url).toMatch(
+          new RegExp(`/files/main/main/attachments/${body.data.id}${body.data.extname}\\?temporary-access-token=`),
+        );
+        expect(createResponse.body.data.url.length).toBeLessThan(2048);
+
+        const response = await app.agent().get(createResponse.body.data.url);
+        expect(response.status).toBe(302);
+        expect(response.headers.location).toBe(await plugin.getFileURL(body.data));
+        expect(response.headers['cache-control']).toBe('private, no-store');
+        expect(response.headers['referrer-policy']).toBe('no-referrer');
+
+        const headResponse = await app.agent().head(createResponse.body.data.url);
+        expect(headResponse.status).toBe(302);
+        expect(headResponse.headers.location).toBe(await plugin.getFileURL(body.data));
+        expect(headResponse.text || '').toBe('');
+
+        const postResponse = await app.agent().post(createResponse.body.data.url);
+        expect(postResponse.status).toBe(405);
+      });
+
+      it('creates temporary URLs for file template collections and another data source', async () => {
+        await app.destroy();
+        app = await getApp({ plugins: ['data-source-manager'] });
+        agent = app.agent();
+        db = app.db;
+        plugin = app.pm.get(PluginFileManagerServer) as PluginFileManagerServer;
+
+        const anotherFiles = await createAnotherFileCollection(app);
+        const fileData = await plugin.uploadFile({
+          filePath: path.resolve(__dirname, './files/text.txt'),
+        });
+        const file = await anotherFiles.repository.create({ values: fileData });
+        const admin = await db.getRepository('users').findOne();
+        const loggedAgent = (await app.agent().login(admin)).set('X-Data-Source', 'another');
+
+        const createResponse = await loggedAgent.post(`/api/files:createTemporaryURL/${file.id}`);
+
+        expect(createResponse.status).toBe(200);
+        expect(createResponse.body.data.url).toContain(
+          `/files/main/another/files/${file.id}${file.extname}?temporary-access-token=`,
+        );
+        const response = await app.agent().get(createResponse.body.data.url);
+        expect(response.status).toBe(302);
+        expect(response.headers.location).toBe(await plugin.getFileURL(file));
+      });
+
+      it('requires login and file get permission to create a temporary URL', async () => {
+        const { body } = await agent.resource('attachments').create({
+          [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
+        });
+        enableFileAccessACL(app);
+
+        const anonymousResponse = await app.agent().post(`/attachments:createTemporaryURL/${body.data.id}`);
+        expect([401, 403]).toContain(anonymousResponse.status);
+
+        app.acl.define({ role: 'file-denied' });
+        const admin = await db.getRepository('users').findOne();
+        const deniedAgent = (await app.agent().login(admin)).set('X-Role', 'file-denied');
+        const deniedResponse = await deniedAgent.post(`/attachments:createTemporaryURL/${body.data.id}`);
+        expect(deniedResponse.status).toBe(403);
+      });
+
+      it('rejects missing, expired, forged, and resource-mismatched temporary tokens', async () => {
+        const admin = await db.getRepository('users').findOne();
+        const loggedAgent = await app.agent().login(admin);
+        const { body } = await agent.resource('attachments').create({
+          [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
+        });
+        const createResponse = await loggedAgent.post(`/attachments:createTemporaryURL/${body.data.id}`);
+        const temporaryUrl = new URL(createResponse.body.data.url, 'http://localhost');
+        const token = temporaryUrl.searchParams.get('temporary-access-token');
+        const payload = jwt.decode(token) as TemporaryFileAccessPayload;
+        const pathWithoutQuery = temporaryUrl.pathname;
+
+        expect((await app.agent().get(`${pathWithoutQuery}?temporary-access-token=invalid`)).status).toBe(403);
+
+        const expiredToken = jwt.sign(
+          {
+            app: payload.app,
+            dataSource: payload.dataSource,
+            collection: payload.collection,
+            id: payload.id,
+            storageId: payload.storageId,
+          },
+          deriveTemporaryFileAccessSecret(plugin),
+          { algorithm: 'HS256', audience: TEMPORARY_FILE_ACCESS_AUDIENCE, expiresIn: -1 },
+        );
+        expect((await app.agent().get(`${pathWithoutQuery}?temporary-access-token=${expiredToken}`)).status).toBe(403);
+
+        const loginSecretToken = jwt.sign(
+          {
+            app: payload.app,
+            dataSource: payload.dataSource,
+            collection: payload.collection,
+            id: payload.id,
+            storageId: payload.storageId,
+          },
+          app.authManager.jwt.getSecret(),
+          { algorithm: 'HS256', audience: TEMPORARY_FILE_ACCESS_AUDIENCE, expiresIn: '10m' },
+        );
+        expect((await app.agent().get(`${pathWithoutQuery}?temporary-access-token=${loginSecretToken}`)).status).toBe(
+          403,
+        );
+
+        await AttachmentRepo.update({
+          filter: { id: body.data.id },
+          values: { storageId: defaultStorage.id + 1000 },
+        });
+        expect((await app.agent().get(`${pathWithoutQuery}?temporary-access-token=${token}`)).status).toBe(403);
+      });
+
+      it('ignores invalid login cookies when a temporary token is valid', async () => {
+        const admin = await db.getRepository('users').findOne();
+        const loggedAgent = await app.agent().login(admin);
+        const { body } = await agent.resource('attachments').create({
+          [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
+        });
+        const createResponse = await loggedAgent.post(`/attachments:createTemporaryURL/${body.data.id}`);
+
+        const response = await app
+          .agent()
+          .get(createResponse.body.data.url)
+          .set('Cookie', [
+            `${getAuthCookieName('authToken', app.name)}=expired-or-invalid`,
+            `${getAuthCookieName('authenticator', app.name)}=basic`,
+          ]);
+
+        expect(response.status).toBe(302);
+        expect(response.headers.location).toBe(await plugin.getFileURL(body.data));
+      });
+
+      it('does not create temporary URLs for non-file collections or external URL records', async () => {
+        const admin = await db.getRepository('users').findOne();
+        const loggedAgent = await app.agent().login(admin);
+        const nonFileResponse = await loggedAgent.post('/users:createTemporaryURL/1');
+        expect(nonFileResponse.status).toBe(404);
+
+        const external = await AttachmentRepo.create({
+          values: {
+            title: 'external',
+            filename: 'external.docx',
+            url: 'https://example.com/external.docx',
+          },
+        });
+        const externalResponse = await loggedAgent.post(`/attachments:createTemporaryURL/${external.id}`);
+        expect(externalResponse.status).toBe(404);
+      });
+
       it('redirects permanent URL to storage URL for logged in users', async () => {
         const admin = await db.getRepository('users').findOne();
         const loggedAgent = await app.agent().login(admin);
@@ -549,6 +729,139 @@ describe('file manager > server', () => {
 
         expect(response.status).toBe(302);
         expect(response.headers.location).toBe(storageUrl);
+      });
+
+      it('keeps permanent URLs without extname compatible', async () => {
+        const admin = await db.getRepository('users').findOne();
+        const loggedAgent = await app.agent().login(admin);
+        const { body } = await agent.resource('attachments').create({
+          [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
+        });
+        const legacyUrl = `/files/main/main/attachments/${body.data.id}`;
+
+        const response = await loggedAgent.get(legacyUrl);
+
+        expect(response.status).toBe(302);
+        expect(response.headers.location).toBe(await plugin.getFileURL(body.data));
+      });
+
+      it('rejects path-based preview and temporary access modifiers', async () => {
+        const admin = await db.getRepository('users').findOne();
+        const loggedAgent = await app.agent().login(admin);
+        const { body } = await agent.resource('attachments').create({
+          [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
+        });
+
+        expect((await loggedAgent.get(`${body.data.url}/preview`)).status).toBe(404);
+        expect((await loggedAgent.get(`${body.data.url}/temporary-access/${body.data.filename}`)).status).toBe(404);
+      });
+
+      it('rejects combining preview and temporary access', async () => {
+        const admin = await db.getRepository('users').findOne();
+        const loggedAgent = await app.agent().login(admin);
+        const { body } = await agent.resource('attachments').create({
+          [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
+        });
+        const createResponse = await loggedAgent.post(`/attachments:createTemporaryURL/${body.data.id}`);
+        const temporaryUrl = new URL(createResponse.body.data.url, 'http://localhost');
+        temporaryUrl.searchParams.set('preview', '1');
+
+        expect((await app.agent().get(`${temporaryUrl.pathname}${temporaryUrl.search}`)).status).toBe(404);
+      });
+
+      it('rejects a permanent URL with an extname that does not match the file record', async () => {
+        const admin = await db.getRepository('users').findOne();
+        const loggedAgent = await app.agent().login(admin);
+        const { body } = await agent.resource('attachments').create({
+          [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
+        });
+
+        const response = await loggedAgent.get(`/files/main/main/attachments/${body.data.id}.docx`);
+
+        expect(response.status).toBe(404);
+      });
+
+      it('does not append an extname when the file record has none', async () => {
+        const file = await AttachmentRepo.create({
+          values: {
+            title: 'extensionless',
+            filename: 'extensionless',
+            extname: '',
+            path: '',
+            size: 12,
+            url: 'https://bucket.example.com/extensionless',
+            mimetype: 'application/octet-stream',
+            storageId: defaultStorage.id,
+            meta: {},
+          },
+        });
+
+        expect(plugin.getPermanentFileURL(file)).toBe(`/files/main/main/attachments/${file.id}`);
+      });
+
+      it('does not allow extname to be changed after creation', async () => {
+        const { body } = await agent.resource('attachments').create({
+          [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
+        });
+
+        await AttachmentRepo.update({
+          filterByTk: body.data.id,
+          values: { extname: '.docx' },
+        });
+        const file = await AttachmentRepo.findOne({ filterByTk: body.data.id });
+
+        expect(file.extname).toBe('.txt');
+        expect(plugin.getPermanentFileURL(file)).toBe(`/files/main/main/attachments/${file.id}.txt`);
+      });
+
+      it('redirects permanent URL downloads without proxying the file stream', async () => {
+        const admin = await db.getRepository('users').findOne();
+        const loggedAgent = await app.agent().login(admin);
+        const { body } = await agent.resource('attachments').create({
+          [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
+        });
+
+        const response = await loggedAgent.get(`${body.data.url}?download=1`);
+
+        expect(response.status).toBe(302);
+        expect(response.headers.location).toBe(await plugin.getFileURL(body.data, false, { download: true }));
+      });
+
+      it('redirects external storage downloads to a signed attachment URL', async () => {
+        const admin = await db.getRepository('users').findOne();
+        const loggedAgent = await app.agent().login(admin);
+        const storage = await StorageRepo.create({
+          values: {
+            name: `download-s3-${uid(6)}`,
+            title: 'Download S3',
+            type: STORAGE_TYPE_S3,
+            baseUrl: 'https://bucket.example.com',
+            options: {
+              region: 'us-east-1',
+              endpoint: 'https://s3.example.com',
+              accessKeyId: 'access-key',
+              secretAccessKey: 'secret-key',
+              bucket: 'bucket',
+            },
+          },
+        });
+        const file = await AttachmentRepo.create({
+          values: {
+            title: 'report',
+            filename: 'report.pdf',
+            extname: '.pdf',
+            mimetype: 'application/pdf',
+            path: '',
+            storageId: storage.id,
+          },
+        });
+
+        const response = await loggedAgent.get(`${file.url}?download=1`);
+        const location = new URL(response.headers.location);
+
+        expect(response.status).toBe(302);
+        expect(location.searchParams.get('response-content-disposition')).toContain('attachment');
+        expect(location.searchParams.get('X-Amz-Signature')).toBeTruthy();
       });
 
       it('supports HEAD redirects without a response body', async () => {
@@ -631,8 +944,8 @@ describe('file manager > server', () => {
           filterByTk: file.id,
         });
 
-        expect(found.url).toBe(`/files/main/main/files/${file.id}`);
-        expect(found.preview).toBe(`/files/main/main/files/${file.id}/preview`);
+        expect(found.url).toBe(`/files/main/main/files/${file.id}${file.extname}`);
+        expect(found.preview).toBe(`/files/main/main/files/${file.id}${file.extname}?preview=1`);
         expect(found.get('local')).toBe(true);
 
         const response = await loggedAgent.get(found.url);
@@ -652,7 +965,7 @@ describe('file manager > server', () => {
             [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
           });
 
-          expect(body.data.url).toBe(`/files/subapp/main/attachments/${body.data.id}`);
+          expect(body.data.url).toBe(`/files/subapp/main/attachments/${body.data.id}${body.data.extname}`);
 
           const response = await loggedAgent.get(body.data.url);
           expect(response.status).toBe(302);
@@ -682,7 +995,7 @@ describe('file manager > server', () => {
           collectionName: 'files',
         });
 
-        expect(url).toBe(`/files/main/another/files/${file.id}`);
+        expect(url).toBe(`/files/main/another/files/${file.id}${file.extname}`);
 
         const admin = await db.getRepository('users').findOne();
         const loggedAgent = await app.agent().login(admin);
@@ -835,7 +1148,7 @@ describe('file manager > server', () => {
             [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
           });
 
-          expect(body.data.url).toBe(`/nocobase/files/main/main/attachments/${body.data.id}`);
+          expect(body.data.url).toBe(`/nocobase/files/main/main/attachments/${body.data.id}${body.data.extname}`);
 
           const response = await loggedAgent.get(body.data.url);
 
@@ -866,7 +1179,7 @@ describe('file manager > server', () => {
           const { body } = await agent.resource('attachments').create({
             [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
           });
-          expect(body.data.url).toBe(`/nocobase/files/main/main/attachments/${body.data.id}`);
+          expect(body.data.url).toBe(`/nocobase/files/main/main/attachments/${body.data.id}${body.data.extname}`);
 
           const fileResponse = await app.agent().get(body.data.url).set('Cookie', cookieHeader);
           expect(fileResponse.status).toBe(302);
@@ -895,7 +1208,7 @@ describe('file manager > server', () => {
           const { body } = await agent.resource('attachments').create({
             [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
           });
-          expect(body.data.url).toBe(`/nocobase/files/subapp/main/attachments/${body.data.id}`);
+          expect(body.data.url).toBe(`/nocobase/files/subapp/main/attachments/${body.data.id}${body.data.extname}`);
 
           const response = await app.agent().get(body.data.url).set('Cookie', cookieHeader);
           expect(response.status).toBe(302);

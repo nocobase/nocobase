@@ -18,7 +18,7 @@ describe('FilePreview', () => {
         file={{
           filename: 'missing.png',
           mimetype: 'image/png',
-          preview: '/nocobase/files/main/main/attachments/1/preview',
+          preview: '/nocobase/files/main/main/attachments/1.png?preview=1',
           url: '/nocobase/files/main/main/attachments/1',
         }}
         size={100}
@@ -29,11 +29,11 @@ describe('FilePreview', () => {
     const image = container.querySelector('img');
     expect(image).not.toBeNull();
     expect(container.querySelector('.ant-image')).toBeNull();
-    expect(image?.getAttribute('src')).toBe('/nocobase/files/main/main/attachments/1/preview');
+    expect(image?.getAttribute('src')).toBe('/nocobase/files/main/main/attachments/1.png?preview=1');
 
     fireEvent.error(image as HTMLImageElement);
 
-    expect(image?.getAttribute('src')).toBe('/nocobase/files/main/main/attachments/1/preview');
+    expect(image?.getAttribute('src')).toBe('/nocobase/files/main/main/attachments/1.png?preview=1');
   });
 
   it('continues to use the file type icon for non-image files', () => {

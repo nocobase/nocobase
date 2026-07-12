@@ -23,6 +23,7 @@ import {
   rememberLocalPreviewUrl,
   revokeLocalPreviewUrl,
   shouldUsePdfJsPreview,
+  triggerFileDownload,
 } from '../filePreviewTypes';
 
 const originalCreateObjectURL = URL.createObjectURL;
@@ -123,9 +124,9 @@ describe('getDownloadFileName', () => {
       getPreviewThumbnailUrl({
         filename: 'avatar.png',
         url: '/files/main/main/attachments/1',
-        preview: '/files/main/main/attachments/1/preview',
+        preview: '/files/main/main/attachments/1?preview=1',
       }),
-    ).toBe('/files/main/main/attachments/1/preview');
+    ).toBe('/files/main/main/attachments/1?preview=1');
   });
 
   it('上传项应根据 response 中的文件元数据生成图片缩略图', () => {
@@ -138,11 +139,11 @@ describe('getDownloadFileName', () => {
           id: 22,
           local: true,
           mimetype: 'image/jpeg',
-          preview: '/files/main/main/t_n6fvrknhqjr/22/preview',
+          preview: '/files/main/main/t_n6fvrknhqjr/22?preview=1',
           url: '/files/main/main/t_n6fvrknhqjr/22',
         },
       }),
-    ).toBe('/files/main/main/t_n6fvrknhqjr/22/preview');
+    ).toBe('/files/main/main/t_n6fvrknhqjr/22?preview=1');
   });
 
   it('上传项应兼容 response.data 包裹的文件元数据', () => {
@@ -156,12 +157,12 @@ describe('getDownloadFileName', () => {
             id: 23,
             local: true,
             mimetype: 'image/jpeg',
-            preview: '/files/main/main/t_n6fvrknhqjr/23/preview',
+            preview: '/files/main/main/t_n6fvrknhqjr/23?preview=1',
             url: '/files/main/main/t_n6fvrknhqjr/23',
           },
         },
       }),
-    ).toBe('/files/main/main/t_n6fvrknhqjr/23/preview');
+    ).toBe('/files/main/main/t_n6fvrknhqjr/23?preview=1');
   });
 
   it('永久文件地址应根据记录元数据推断非图片占位图', () => {
@@ -169,14 +170,14 @@ describe('getDownloadFileName', () => {
       getPreviewThumbnailUrl({
         filename: 'report.pdf',
         url: '/files/main/main/attachments/2',
-        preview: '/files/main/main/attachments/2/preview',
+        preview: '/files/main/main/attachments/2?preview=1',
       }),
     ).toBe('/file-placeholder/pdf-200-200.png');
 
     expect(
       getPreviewThumbnailUrl({
         extname: '.xlsx',
-        url: '/files/main/main/attachments/3/preview',
+        url: '/files/main/main/attachments/3.xlsx?preview=1',
       }),
     ).toBe('/file-placeholder/xlsx-200-200.png');
   });
@@ -193,7 +194,7 @@ describe('getDownloadFileName', () => {
       originFileObj,
       type: 'image/png',
       url: '/files/main/main/attachments/1',
-      preview: '/files/main/main/attachments/1/preview',
+      preview: '/files/main/main/attachments/1?preview=1',
     };
 
     expect(getPreviewFileUrl(file)).toBe('blob:nocobase-local-preview');
@@ -215,7 +216,7 @@ describe('getDownloadFileName', () => {
       id: 2,
       mimetype: 'image/png',
       url: '/files/main/main/attachments/2',
-      preview: '/files/main/main/attachments/2/preview',
+      preview: '/files/main/main/attachments/2?preview=1',
     };
 
     rememberLocalPreviewUrl(record, {
@@ -264,6 +265,20 @@ describe('getDownloadFileName', () => {
       'same-origin',
     );
     expect(getFileFetchCredentials('https://files.example.com/files/main/main/1')).toBe('same-origin');
+  });
+
+  it('应通过浏览器原生链接下载永久文件 URL', () => {
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+
+    triggerFileDownload('/files/main/main/attachments/1', 'report.pdf');
+
+    expect(click).toHaveBeenCalledOnce();
+    const link = click.mock.instances[0];
+    expect(link.getAttribute('href')).toBe('/files/main/main/attachments/1?download=1');
+    expect(link.download).toBe('report.pdf');
+    expect(link.rel).toBe('noopener noreferrer');
+    expect(document.body.contains(link)).toBe(false);
+    click.mockRestore();
   });
 
   it('应为 PDF.js 预览资源生成插件静态目录地址', () => {

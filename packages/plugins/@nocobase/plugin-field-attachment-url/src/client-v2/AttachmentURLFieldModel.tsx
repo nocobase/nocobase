@@ -44,13 +44,16 @@ export const getPermanentFilePreviewUrl = (value?: string) => {
       return '';
     }
     const filePathSegments = segments.length - filesIndex;
-    if (filePathSegments === 6) {
-      return segments[filesIndex + 5] === 'preview' ? value : '';
-    }
     if (filePathSegments !== 5) {
       return '';
     }
-    return `${value.replace(/\/+$/g, '')}/preview`;
+    if (url.searchParams.has('temporary-access-token')) {
+      return '';
+    }
+    url.searchParams.set('preview', '1');
+    return value.startsWith('http://') || value.startsWith('https://')
+      ? url.href
+      : `${url.pathname}${url.search}${url.hash}`;
   } catch (error) {
     return '';
   }

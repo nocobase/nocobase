@@ -42,10 +42,16 @@ const withPublicPath = (path: string) => {
   return `${publicPath.replace(/\/+$/g, '')}/${path.replace(/^\//, '')}`;
 };
 
+export interface FileCollectionReference {
+  dataSourceKey: string;
+  collectionName: string;
+}
+
 export interface FilePreviewerProps {
   file: any;
   index: number;
   list: any[];
+  fileCollection?: FileCollectionReference;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   onSwitchIndex?: (index: number) => void;
@@ -428,13 +434,10 @@ const getPermanentFilePreviewUrl = (value?: string) => {
     const segments = url.pathname.split('/').filter(Boolean);
     const filesIndex = segments.indexOf('files');
     const filePathSegments = segments.length - filesIndex;
-    if (filesIndex === -1 || (filePathSegments !== 5 && filePathSegments !== 6)) {
+    if (filesIndex === -1 || filePathSegments !== 5 || url.searchParams.has('temporary-access-token')) {
       return '';
     }
-    if (filePathSegments === 6) {
-      return segments[filesIndex + 5] === 'preview' ? value : '';
-    }
-    url.pathname = `${url.pathname.replace(/\/+$/g, '')}/preview`;
+    url.searchParams.set('preview', '1');
     return url.toString();
   } catch (error) {
     return '';
@@ -459,6 +462,28 @@ export const getFileFetchCredentials = (url: string | URL): RequestCredentials =
   }
 
   return 'same-origin';
+};
+
+export const triggerFileDownload = (url: string, filename: string) => {
+  let downloadUrl = url;
+  try {
+    const target = new URL(url, window.location.href);
+    if (isPermanentFileUrl(target)) {
+      target.searchParams.set('download', '1');
+      downloadUrl = /^[a-z][a-z\d+.-]*:/i.test(url)
+        ? target.toString()
+        : `${target.pathname}${target.search}${target.hash}`;
+    }
+  } catch (error) {
+    downloadUrl = url;
+  }
+  const link = document.createElement('a');
+  link.href = downloadUrl;
+  link.download = filename;
+  link.rel = 'noopener noreferrer';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
 };
 
 const getLocalStorageFlag = (file: any) => {
