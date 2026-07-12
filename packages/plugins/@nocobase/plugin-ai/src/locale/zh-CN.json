@@ -467,5 +467,14 @@
   "When enabled, URL and headers can use current user variables and NocoBase request variables. Stdio transport is not supported.": "启用后，可在 URL 和请求头中使用当前用户变量和 NocoBase 请求变量。Stdio 传输方式不支持。",
   "Connection test failed": "连接测试失败",
   "The MCP server uses current user variables and the connection test failed. Do you want to save it anyway?": "该 MCP 服务使用当前用户变量，且连接测试失败。是否仍然保存？",
-  "Save anyway": "仍然保存"
+  "Save anyway": "仍然保存",
+  "Thinking mode": "思考模式",
+  "Thinking mode description": "控制 MiniMax-M3 是否输出思考内容。留空时使用模型默认设置。",
+  "Service tier": "服务等级",
+  "Service tier description": "选择请求准入等级。留空时使用标准等级。",
+  "Adaptive": "自适应",
+  "Disabled": "关闭",
+  "Standard": "标准",
+  "Priority": "优先",
+  "Use model default": "使用模型默认设置"
 }

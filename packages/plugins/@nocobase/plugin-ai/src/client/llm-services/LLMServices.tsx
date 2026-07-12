@@ -149,6 +149,7 @@ const providerDescriptions: Record<string, string> = {
   xai: 'Grok models by xAI',
   ollama: 'Local models',
   mimo: 'Xiaomi MIMO',
+  minimax: 'MiniMax',
   mistral: 'Mistral models',
   orcarouter: 'OrcaRouter (model routing gateway)',
 };

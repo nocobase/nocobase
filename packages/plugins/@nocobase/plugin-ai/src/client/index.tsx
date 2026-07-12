@@ -59,6 +59,7 @@ import { setupAICoding } from './ai-employees/ai-coding/setup';
 import { setupDataModeling } from './ai-employees/data-modeling/setup';
 import { AIEmployeeInstruction } from './workflow/nodes/employee';
 import { mimoProviderOptions } from './llm-providers/mimo';
+import { minimaxProviderOptions } from './llm-providers/minimax';
 import { mistralProviderOptions } from './llm-providers/mistral';
 import { orcarouterProviderOptions } from './llm-providers/orcarouter';
 const { AIEmployeesProvider } = lazy(() => import('./ai-employees/AIEmployeesProvider'), 'AIEmployeesProvider');
@@ -170,6 +171,7 @@ export class PluginAIClient extends Plugin {
     this.aiManager.registerLLMProvider('kimi', kimiProviderOptions);
     this.aiManager.registerLLMProvider('xai', xaiProviderOptions);
     this.aiManager.registerLLMProvider('mimo', mimoProviderOptions);
+    this.aiManager.registerLLMProvider('minimax', minimaxProviderOptions);
     this.aiManager.registerLLMProvider('mistral', mistralProviderOptions);
     this.aiManager.registerLLMProvider('orcarouter', orcarouterProviderOptions);
     this.aiManager.chatSettings.set('messages', {
