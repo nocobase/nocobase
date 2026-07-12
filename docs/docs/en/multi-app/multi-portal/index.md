@@ -192,4 +192,4 @@ Unauthorized portals do not appear in the portal switcher list, and users cannot
 
 ## Related links
 
-For the differences and combination patterns among Multi-portal, Multi-app, and Multi-space, see: [Multi-portal, Multi-app, and Multi-space](/multi-app/multi-app-vs-multi-portal-vs-multi-space/).
+For the differences and combination patterns among Multi-portal, Multi-app, and Multi-space, see: [Multi-portal, Multi-app, and Multi-space](../multi-app-vs-multi-portal-vs-multi-space.md).
