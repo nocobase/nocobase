@@ -41,6 +41,7 @@ import {
 } from '../../shared/default-template';
 import type {
   LightExtensionDiagnostic,
+  LightExtensionEntryRuntimeArtifact,
   LightExtensionFileChange,
   LightExtensionPulledFile,
   LightExtensionRepoRecord,
@@ -64,6 +65,8 @@ interface LightExtensionWorkspacePageProps {
   repoId?: string;
   initialPath?: string;
   workspaceScope?: LightExtensionWorkspaceScope;
+  entryId?: string | null;
+  onPreview?: (artifact: LightExtensionEntryRuntimeArtifact) => void | Promise<void>;
   onFooterActionsChange?: (actions: LightExtensionWorkspaceFooterActions | null) => void;
   onRequestClose?: () => void | Promise<void>;
   onSaved?: () => void;
@@ -105,6 +108,8 @@ function LightExtensionWorkspacePage({
   repoId: repoIdProp,
   initialPath,
   workspaceScope = REPOSITORY_WORKSPACE_SCOPE,
+  entryId,
+  onPreview,
   onFooterActionsChange,
   onRequestClose,
   onSaved,
@@ -114,7 +119,7 @@ function LightExtensionWorkspacePage({
   const studioT = useVscFileT();
   const [searchParams] = useSearchParams();
   const repoId = repoIdProp || searchParams.get('repoId') || '';
-  const { getRepo, listCommits, pull, pullCommit, saveSource } = useLightExtensionRepo();
+  const { compileWorkspacePreview, getRepo, listCommits, pull, pullCommit, saveSource } = useLightExtensionRepo();
   const [repo, setRepo] = useState<LightExtensionRepoRecord | null>(null);
   const [baseCommitSeq, setBaseCommitSeq] = useState<number>();
   const [baseFiles, setBaseFiles] = useState<WorkspaceFile[]>([]);
@@ -129,6 +134,7 @@ function LightExtensionWorkspacePage({
   const [loading, setLoading] = useState(false);
   const [initializedRepoId, setInitializedRepoId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [previewing, setPreviewing] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
   const [versionMessage, setVersionMessage] = useState('');
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -148,6 +154,7 @@ function LightExtensionWorkspacePage({
   } | null>(null);
   const embeddedSavePromiseRef = useRef<Promise<EmbeddedRunJSEditorSaveResult> | null>(null);
   const historyRequestSeqRef = useRef(0);
+  const latestPreviewSnapshotRef = useRef('');
   const entryRoot = getLightExtensionEntryRoot(workspaceScope);
   const entryScoped = workspaceScope.mode === 'entry';
   const pathRestrictionReason = t('Other light extension entries are read-only here');
@@ -244,6 +251,12 @@ function LightExtensionWorkspacePage({
   );
   const activeFileReadOnly =
     !canWrite || !activePath || !getLightExtensionWorkspacePathAccess(workspaceScope, activePath, 'file').canWrite;
+  const previewSnapshotKey = useMemo(
+    () => buildWorkspacePreviewSnapshot(files, workspaceScope),
+    [files, workspaceScope],
+  );
+  latestPreviewSnapshotRef.current = previewSnapshotKey;
+  const canPreview = entryScoped && Boolean(onPreview);
 
   const openFilePath = useCallback((path?: string) => {
     if (!path) {
@@ -681,6 +694,49 @@ function LightExtensionWorkspacePage({
     [files, openFilePath, t],
   );
 
+  const runPreview = useCallback(async () => {
+    if (!canPreview || workspaceScope.mode !== 'entry' || !onPreview) {
+      return;
+    }
+
+    const requestSnapshotKey = previewSnapshotKey;
+    setPreviewing(true);
+    setNotice(null);
+    try {
+      const result = await compileWorkspacePreview({
+        repoId,
+        entryId,
+        kind: workspaceScope.kind,
+        entryPath: workspaceScope.entryPath,
+        runtimeVersion: 'v2',
+        files: files.map((file) => ({
+          path: file.path,
+          content: file.content,
+          language: file.language,
+          mode: file.mode,
+        })),
+      });
+      if (latestPreviewSnapshotRef.current !== requestSnapshotKey) {
+        setNotice({ type: 'info', message: t('Source changed while preview was compiling. Run again.') });
+        return;
+      }
+
+      setDiagnostics(result.diagnostics);
+      if (!result.accepted || !result.artifact) {
+        setNotice({ type: 'error', message: t('Preview failed') });
+        return;
+      }
+
+      await onPreview(result.artifact);
+      setNotice({ type: 'success', message: t('Preview updated') });
+    } catch (error) {
+      setDiagnostics(getLightExtensionErrorDiagnostics(error) as LightExtensionDiagnostic[]);
+      setNotice({ type: 'error', message: error instanceof Error ? error.message : t('Preview failed') });
+    } finally {
+      setPreviewing(false);
+    }
+  }, [canPreview, compileWorkspacePreview, entryId, files, onPreview, previewSnapshotKey, repoId, t, workspaceScope]);
+
   if (!repoId) {
     return (
       <Flex vertical gap={16} style={{ padding: embedded ? 0 : 24 }}>
@@ -873,10 +929,12 @@ function LightExtensionWorkspacePage({
                         onDiffToggle={() => setIsDiff((current) => !current)}
                         onFilesCollapsedChange={setFilesCollapsed}
                         onOpenFile={openFilePath}
+                        onRunPreview={canPreview ? runPreview : undefined}
                         openPaths={openPaths}
+                        previewing={previewing}
                         readOnly={activeFileReadOnly}
                         savedFiles={baseFiles}
-                        showRunButton={false}
+                        showRunButton={canPreview}
                         t={studioT}
                         version="v2"
                         workspaceFiles={authoringFiles}
@@ -1314,6 +1372,13 @@ function isClientSettingsFilePath(path: string): boolean {
 
 function inferLightExtensionLanguageFromPath(path: string): string {
   return inferLanguageFromPath(path, { cssLanguage: 'text', jsxLanguage: 'language-family' });
+}
+
+function buildWorkspacePreviewSnapshot(files: WorkspaceFile[], workspaceScope: LightExtensionWorkspaceScope): string {
+  return JSON.stringify({
+    workspaceScope,
+    files: files.map((file) => [file.path, file.content, file.language || '', file.mode || '']),
+  });
 }
 
 export default LightExtensionWorkspacePage;

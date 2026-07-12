@@ -26,6 +26,7 @@ const mocks = vi.hoisted(() => ({
     pull: vi.fn(),
     pullCommit: vi.fn(),
     saveSource: vi.fn(),
+    compileWorkspacePreview: vi.fn(),
     listCommits: vi.fn(),
   },
 }));
@@ -150,6 +151,7 @@ vi.mock('@nocobase/plugin-vsc-file/client-v2', () => {
       onRunPreview,
       scene,
       showRunButton,
+      previewing,
       readOnly,
       workspaceFiles,
       onFilesCollapsedChange,
@@ -160,6 +162,7 @@ vi.mock('@nocobase/plugin-vsc-file/client-v2', () => {
       onRunPreview?: () => void;
       scene?: string;
       showRunButton?: boolean;
+      previewing?: boolean;
       readOnly?: boolean;
       workspaceFiles: Array<{ content: string; path: string }>;
       onFilesCollapsedChange: (collapsed: boolean) => void;
@@ -176,6 +179,11 @@ vi.mock('@nocobase/plugin-vsc-file/client-v2', () => {
         <button onClick={() => onFilesCollapsedChange(!filesCollapsed)} type="button">
           {filesCollapsed ? 'Expand files' : 'Collapse files'}
         </button>
+        {showRunButton ? (
+          <button disabled={!onRunPreview} onClick={onRunPreview} type="button">
+            {previewing ? 'Running' : 'Run'}
+          </button>
+        ) : null}
         {activeFile ? <span>{activeFile.path}</span> : null}
         <textarea
           aria-label="Edit file content"
@@ -348,6 +356,15 @@ describe('LightExtensionWorkspacePage', () => {
       ],
     });
     mocks.api.saveSource.mockResolvedValue(createSaveResult());
+    mocks.api.compileWorkspacePreview.mockResolvedValue({
+      accepted: true,
+      diagnostics: [],
+      artifact: {
+        code: 'ctx.render(<div>preview</div>);',
+        version: 'v2',
+        entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+      },
+    });
     mocks.api.listCommits.mockResolvedValue([]);
   });
 
@@ -439,6 +456,60 @@ describe('LightExtensionWorkspacePage', () => {
     expect(saveInput).not.toHaveProperty('baseCommitId');
     expect(saveInput).not.toHaveProperty('baseOwnerFingerprint');
     expect(screen.queryByText('Source saved and compiled')).not.toBeInTheDocument();
+  });
+
+  it('compiles and previews the current unsaved entry workspace without saving it', async () => {
+    const onPreview = vi.fn();
+    const workspaceScope: LightExtensionWorkspaceScope = {
+      mode: 'entry',
+      entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+      kind: 'js-block',
+    };
+
+    render(
+      <MemoryRouter>
+        <LightExtensionWorkspacePage
+          embedded
+          entryId="lee_sales_kpi"
+          onPreview={onPreview}
+          repoId="ler_sales"
+          workspaceScope={workspaceScope}
+        />
+      </MemoryRouter>,
+    );
+
+    await screen.findByTestId('runjs-code-tab');
+    expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute('data-show-run-button', 'true');
+    expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute('data-has-run-preview', 'true');
+    fireEvent.change(screen.getByLabelText('Edit file content'), {
+      target: { value: 'ctx.render(<div>unsaved preview</div>);\n' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
+
+    await waitFor(() => expect(mocks.api.compileWorkspacePreview).toHaveBeenCalledTimes(1));
+    expect(mocks.api.compileWorkspacePreview).toHaveBeenCalledWith({
+      repoId: 'ler_sales',
+      entryId: 'lee_sales_kpi',
+      kind: 'js-block',
+      entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+      runtimeVersion: 'v2',
+      files: [
+        expect.objectContaining({
+          path: 'src/client/js-blocks/sales-kpi/index.tsx',
+          content: 'ctx.render(<div>unsaved preview</div>);\n',
+        }),
+      ],
+    });
+    await waitFor(() =>
+      expect(onPreview).toHaveBeenCalledWith(
+        expect.objectContaining({
+          code: 'ctx.render(<div>preview</div>);',
+          version: 'v2',
+        }),
+      ),
+    );
+    expect(mocks.api.saveSource).not.toHaveBeenCalled();
+    expect(screen.getByText('Preview updated')).toBeInTheDocument();
   });
 
   it('adds a stable meta key before renaming a legacy entry directory', async () => {

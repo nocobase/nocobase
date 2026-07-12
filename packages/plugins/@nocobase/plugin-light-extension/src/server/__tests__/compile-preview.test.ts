@@ -110,6 +110,91 @@ describe('plugin-light-extension compile preview', () => {
     expect(JSON.stringify(recordCompileEvent.mock.calls)).not.toContain('sourceMap');
   });
 
+  it('compiles an unsaved workspace into a temporary preview artifact without pulling or persisting source', async () => {
+    const repo = createRepo();
+    const { db, entriesRepository } = createDbStub([]);
+    const fileService = createFileServiceStub(repo, validSalesKpiFiles());
+    const { service } = createPreviewService(db, fileService);
+
+    const result = await service.compileWorkspacePreview(
+      {
+        repoId: repo.id,
+        entryId: 'lee_sales_kpi',
+        kind: 'js-block',
+        entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+        runtimeVersion: 'v2',
+        files: [
+          {
+            path: 'src/client/js-blocks/sales-kpi/index.tsx',
+            content: "const title = 'Unsaved preview';\nctx.render(<div>{title}</div>);\n",
+            language: 'typescript',
+          },
+          {
+            path: 'src/client/js-blocks/sales-kpi/meta.json',
+            content: JSON.stringify({ title: 'Sales KPI' }),
+            language: 'json',
+          },
+        ],
+      },
+      {
+        requestId: 'req_workspace_preview',
+      },
+    );
+
+    expect(result).toMatchObject({
+      accepted: true,
+      diagnostics: [],
+      artifact: {
+        version: 'v2',
+        entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+        metadata: expect.objectContaining({
+          repoId: repo.id,
+          entryId: 'lee_sales_kpi',
+          kind: 'js-block',
+        }),
+      },
+    });
+    expect(result.artifact?.code).toContain('Unsaved preview');
+    expect(fileService.pull).not.toHaveBeenCalled();
+    expect(entriesRepository.create).not.toHaveBeenCalled();
+    expect(entriesRepository.update).not.toHaveBeenCalled();
+  });
+
+  it('rejects invalid unsaved workspace paths before compiling the preview', async () => {
+    const repo = createRepo();
+    const { db } = createDbStub([]);
+    const fileService = createFileServiceStub(repo, []);
+    const { service } = createPreviewService(db, fileService);
+
+    const result = await service.compileWorkspacePreview({
+      repoId: repo.id,
+      kind: 'js-block',
+      entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+      files: [
+        {
+          path: 'src/client/js-blocks/sales-kpi/index.tsx',
+          content: 'ctx.render(<div />);\n',
+        },
+        {
+          path: 'src/client/not-allowed.ts',
+          content: 'export const secret = true;\n',
+        },
+      ],
+    });
+
+    expect(result).toMatchObject({
+      accepted: false,
+      failureCode: 'LIGHT_EXTENSION_VALIDATION_FAILED',
+      diagnostics: [
+        expect.objectContaining({
+          code: 'path_not_allowed',
+          path: 'src/client/not-allowed.ts',
+        }),
+      ],
+    });
+    expect(result.artifact).toBeUndefined();
+  });
+
   it('blocks compile preview entries when workspace validator failures are present', async () => {
     const repo = createRepo();
     const { db } = createDbStub([createEntryRecord({ id: 'lee_sales_kpi', repoId: repo.id, entryName: 'sales-kpi' })]);
@@ -384,6 +469,54 @@ describe('plugin-light-extension compile preview', () => {
       }),
     );
     expect((ctx as { body?: unknown }).body).toEqual({ ok: true });
+  });
+
+  it('normalizes the unsaved workspace preview resource input', async () => {
+    const compileWorkspacePreview = vi.fn().mockResolvedValue({ accepted: true, diagnostics: [] });
+    const resource = createLightExtensionsResource({
+      compileWorkspacePreview,
+    } as unknown as LightExtensionCompilePreviewService);
+    const ctx = {
+      action: {
+        params: {
+          values: {
+            repoId: 'ler_sales',
+            entryId: 'lee_sales_kpi',
+            kind: 'js-block',
+            entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+            runtimeVersion: 'v2',
+            files: [
+              {
+                path: 'src/client/js-blocks/sales-kpi/index.tsx',
+                content: 'ctx.render(<div />);',
+                language: 'typescript',
+              },
+            ],
+          },
+        },
+      },
+    } as unknown as Context;
+
+    await resource.actions?.compileWorkspacePreview?.(ctx, async () => {});
+
+    expect(compileWorkspacePreview).toHaveBeenCalledWith(
+      {
+        repoId: 'ler_sales',
+        entryId: 'lee_sales_kpi',
+        kind: 'js-block',
+        entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+        runtimeVersion: 'v2',
+        files: [
+          {
+            path: 'src/client/js-blocks/sales-kpi/index.tsx',
+            content: 'ctx.render(<div />);',
+            language: 'typescript',
+            mode: undefined,
+          },
+        ],
+      },
+      expect.any(Object),
+    );
   });
 });
 

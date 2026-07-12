@@ -8,7 +8,7 @@
  */
 
 import { ApplicationContext, type EmbeddedRunJSEditorController } from '@nocobase/client-v2';
-import { useFlowContext } from '@nocobase/flow-engine';
+import { useFlowContext, type RunJSValue } from '@nocobase/flow-engine';
 import type { Field } from '@formily/core';
 import { useField, useForm } from '@formily/react';
 import { Alert, Button, Modal, Select, Space, Typography } from 'antd';
@@ -18,6 +18,7 @@ import { useTranslation } from 'react-i18next';
 import { NAMESPACE } from '../../constants';
 import type {
   LightExtensionKind,
+  LightExtensionEntryRuntimeArtifact,
   LightExtensionRuntimeSourceBinding,
   LightExtensionSelectableEntrySummary,
 } from '../../shared/types';
@@ -73,6 +74,7 @@ export interface JSBlockLightExtensionSourceFieldProps {
   kind?: LightExtensionKind;
   showEntryWorkspace?: boolean;
   onEmbeddedEditorControllerChange?: (controller: EmbeddedRunJSEditorController | null) => void;
+  onPreview?: (value: RunJSValue) => void | Promise<void>;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -162,6 +164,7 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
   kind = 'js-block',
   showEntryWorkspace = false,
   onEmbeddedEditorControllerChange,
+  onPreview,
 }) => {
   const { t } = useTranslation(NAMESPACE);
   const form = useForm();
@@ -424,6 +427,22 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
     }
   };
 
+  const handleWorkspacePreview = React.useCallback(
+    async (artifact: LightExtensionEntryRuntimeArtifact) => {
+      if (!onPreview) {
+        return;
+      }
+      await onPreview({
+        code: artifact.code,
+        version: artifact.version,
+        sourceMode: INLINE_SOURCE_MODE,
+        ...(sourceBinding ? { sourceBinding: { ...sourceBinding } } : {}),
+        settings: isRecord(values.settings) ? { ...values.settings } : {},
+      });
+    },
+    [onPreview, sourceBinding, values.settings],
+  );
+
   const sourceSelectValue =
     sourceMode === LIGHT_EXTENSION_SOURCE_MODE && sourceBinding
       ? getBindingSelectValue(sourceBinding)
@@ -497,8 +516,10 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
           <LightExtensionWorkspacePage
             defaultFilesCollapsed
             embedded
+            entryId={sourceBinding.entryId}
             initialPath={workspaceEntryPath || undefined}
             onFooterActionsChange={setWorkspaceFooterActions}
+            onPreview={onPreview ? handleWorkspacePreview : undefined}
             repoId={sourceBinding.repoId}
             workspaceScope={entryWorkspaceScope}
           />

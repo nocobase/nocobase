@@ -278,6 +278,29 @@ export interface LightExtensionCompilePreviewResult {
   entries: LightExtensionCompilePreviewEntryResult[];
 }
 
+export interface LightExtensionWorkspacePreviewFile {
+  path: string;
+  content: string;
+  language?: string;
+  mode?: string;
+}
+
+export interface LightExtensionWorkspacePreviewInput {
+  repoId: string;
+  entryId?: string | null;
+  kind: LightExtensionKind;
+  entryPath: string;
+  runtimeVersion?: string;
+  files: LightExtensionWorkspacePreviewFile[];
+}
+
+export interface LightExtensionWorkspacePreviewResult {
+  accepted: boolean;
+  diagnostics: LightExtensionDiagnostic[];
+  failureCode?: string;
+  artifact?: LightExtensionEntryRuntimeArtifact;
+}
+
 export interface LightExtensionSelectableEntrySummary {
   id: string;
   repoId: string;

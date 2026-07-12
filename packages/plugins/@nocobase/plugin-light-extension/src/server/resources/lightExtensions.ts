@@ -10,8 +10,9 @@
 import { normalizeRunJSSourceLocator, type RunJSSourcePermissionResult } from '@nocobase/plugin-vsc-file';
 import type { HandlerType, ResourceOptions } from '@nocobase/resourcer';
 
+import { LIGHT_EXTENSION_SUPPORTED_KINDS, type LightExtensionKind } from '../../constants';
 import { LightExtensionError } from '../../shared/errors';
-import type { LightExtensionMoveSourceInput } from '../../shared/types';
+import type { LightExtensionMoveSourceInput, LightExtensionWorkspacePreviewInput } from '../../shared/types';
 import {
   type LightExtensionCompilePreviewInput,
   LightExtensionCompilePreviewService,
@@ -25,7 +26,7 @@ import {
   type ResourceActionInput,
 } from './resourceAction';
 
-export const lightExtensionActionNames = ['compilePreview', 'moveSource'] as const;
+export const lightExtensionActionNames = ['compilePreview', 'compileWorkspacePreview', 'moveSource'] as const;
 
 type LightExtensionActionName = (typeof lightExtensionActionNames)[number];
 type ResourceActionRunner = (
@@ -42,6 +43,8 @@ interface LightExtensionActionServices {
 const resourceActionRunners: Record<LightExtensionActionName, ResourceActionRunner> = {
   compilePreview: (services, input, currentUser) =>
     services.compilePreviewService.compilePreview(normalizeCompilePreviewInput(input), currentUser),
+  compileWorkspacePreview: (services, input, currentUser) =>
+    services.compilePreviewService.compileWorkspacePreview(normalizeWorkspacePreviewInput(input), currentUser),
   moveSource: (services, input, currentUser) => {
     if (!services.moveSourceService) {
       throw new LightExtensionError('LIGHT_EXTENSION_RUNTIME_UNAVAILABLE', 'Move source service is unavailable');
@@ -84,6 +87,17 @@ function normalizeCompilePreviewInput(input: ResourceActionInput): LightExtensio
   return {
     repoId: requireRepoId(input),
     entryIds: optionalStringArray(input, 'entryIds'),
+  };
+}
+
+function normalizeWorkspacePreviewInput(input: ResourceActionInput): LightExtensionWorkspacePreviewInput {
+  return {
+    repoId: requireRepoId(input),
+    entryId: optionalNullableString(input, 'entryId'),
+    kind: requireLightExtensionKind(input, 'kind'),
+    entryPath: requireString(input, 'entryPath'),
+    runtimeVersion: optionalString(input, 'runtimeVersion', 'runtimeVersion'),
+    files: requireArray(input, 'files', normalizeWorkspacePreviewFile),
   };
 }
 
@@ -177,6 +191,27 @@ function normalizeMoveSourceFile(value: unknown, index: number): LightExtensionM
     language: optionalString(file, 'language', `files[${index}].language`),
     mode: optionalString(file, 'mode', `files[${index}].mode`),
   };
+}
+
+function normalizeWorkspacePreviewFile(
+  value: unknown,
+  index: number,
+): LightExtensionWorkspacePreviewInput['files'][number] {
+  const file = toRecord(value);
+  return {
+    path: requireString(file, 'path', `files[${index}].path`),
+    content: requireStringValue(file, 'content', `files[${index}].content`),
+    language: optionalString(file, 'language', `files[${index}].language`),
+    mode: optionalString(file, 'mode', `files[${index}].mode`),
+  };
+}
+
+function requireLightExtensionKind(input: ResourceActionInput, key: string): LightExtensionKind {
+  const value = requireString(input, key);
+  if (!(LIGHT_EXTENSION_SUPPORTED_KINDS as readonly string[]).includes(value)) {
+    throw invalidInput(`${key} must be a supported light extension kind`);
+  }
+  return value as LightExtensionKind;
 }
 
 function normalizeMoveSourceDestination(value: unknown): LightExtensionMoveSourceInput['destination'] {

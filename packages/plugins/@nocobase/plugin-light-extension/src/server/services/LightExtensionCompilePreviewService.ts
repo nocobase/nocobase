@@ -19,6 +19,8 @@ import type {
   LightExtensionDiagnostic,
   LightExtensionEntryRecord,
   LightExtensionPulledFile,
+  LightExtensionWorkspacePreviewInput,
+  LightExtensionWorkspacePreviewResult,
 } from '../../shared/types';
 import { LightExtensionAuditService } from './LightExtensionAuditService';
 import { entryFromModel } from './LightExtensionEntryService';
@@ -165,6 +167,106 @@ export class LightExtensionCompilePreviewService {
       accepted: !hasErrorDiagnostic(diagnostics) && entries.every((entry) => entry.accepted),
       diagnostics,
       entries,
+    };
+  }
+
+  async compileWorkspacePreview(
+    input: LightExtensionWorkspacePreviewInput,
+    ctx: LightExtensionServiceContext = {},
+  ): Promise<LightExtensionWorkspacePreviewResult> {
+    const requestId = ctx.requestId || randomUUID();
+    const previewContext = {
+      ...ctx,
+      requestId,
+      requestSource: ctx.requestSource || 'light-extension-workspace-preview',
+    };
+
+    try {
+      await this.permissionService.assertActionAllowed({
+        action: 'compilePreview',
+        ctx: previewContext,
+      });
+    } catch (error) {
+      await this.recordPreviewPermissionDenied(input.repoId, previewContext, error);
+      throw error;
+    }
+
+    const validation = this.validator.validateWorkspace({
+      files: input.files.map((file) => ({ ...file })),
+    });
+    const workspaceDiagnostics = getWorkspaceLevelDiagnostics(validation.diagnostics);
+    const normalizedEntryPath = normalizeSourcePath(input.entryPath);
+    const validationEntry = validation.entries.find(
+      (entry) => entry.kind === input.kind && normalizeSourcePath(entry.entryPath) === normalizedEntryPath,
+    );
+    const entryDiagnostics = validationEntry
+      ? validationEntry.diagnostics
+      : [
+          {
+            code: 'entry_not_found',
+            severity: 'error',
+            message: `Light extension entry source "${normalizedEntryPath}" was not found`,
+            path: normalizedEntryPath,
+            kind: input.kind,
+            entryName: inferEntryName(normalizedEntryPath),
+          } satisfies LightExtensionDiagnostic,
+        ];
+    const validationDiagnostics = sortUniqueDiagnostics([...workspaceDiagnostics, ...entryDiagnostics]);
+
+    if (!validationEntry || hasErrorDiagnostic(validationDiagnostics)) {
+      await this.recordCompileAuditBestEffort({
+        repoId: input.repoId,
+        entryId: input.entryId,
+        target: 'client',
+        kind: input.kind,
+        name: validationEntry?.entryName || inferEntryName(normalizedEntryPath),
+        entryPath: normalizedEntryPath,
+        ctx: previewContext,
+        result: 'blocked',
+        reasonCode: validationEntry ? 'validation_failed' : 'entry_not_found',
+        diagnostics: validationDiagnostics,
+        message: 'Light extension workspace preview validation failed',
+        details: {
+          requestSource: previewContext.requestSource,
+        },
+      });
+      return {
+        accepted: false,
+        diagnostics: validationDiagnostics,
+        failureCode: 'LIGHT_EXTENSION_VALIDATION_FAILED',
+      };
+    }
+
+    const compiled = await this.compilerBridge.compileEntry(
+      {
+        repoId: input.repoId,
+        entryId: input.entryId,
+        operation: 'compilePreview',
+        kind: validationEntry.kind,
+        entryName: validationEntry.entryName,
+        entryPath: validationEntry.entryPath,
+        runtimeVersion: input.runtimeVersion,
+        files: getEntryCompileFiles(input.files, validationEntry),
+      },
+      previewContext,
+    );
+    const diagnostics = sortUniqueDiagnostics([...validationDiagnostics, ...compiled.diagnostics]);
+
+    return {
+      accepted: compiled.accepted && !hasErrorDiagnostic(diagnostics),
+      diagnostics,
+      failureCode: compiled.failureCode,
+      artifact: compiled.accepted
+        ? {
+            code: compiled.artifact.code,
+            sourceMap: compiled.artifact.sourceMap,
+            version: compiled.artifact.version,
+            entryPath: compiled.artifact.entryPath || validationEntry.entryPath,
+            filesHash: compiled.artifact.filesHash,
+            diagnostics,
+            metadata: compiled.artifact.metadata,
+          }
+        : undefined,
     };
   }
 
@@ -431,7 +533,10 @@ function buildWorkspaceBlockedEntryResult(
   };
 }
 
-function getEntryCompileFiles(files: LightExtensionPulledFile[], entry: LightExtensionEntryValidationResult) {
+function getEntryCompileFiles(
+  files: Array<Pick<LightExtensionPulledFile, 'content' | 'language' | 'path'>>,
+  entry: LightExtensionEntryValidationResult,
+) {
   const rootPath = getEntryRootPath(entry);
 
   return files
@@ -494,4 +599,10 @@ function diagnosticKey(input: LightExtensionDiagnostic): string {
 
 function normalizeSourcePath(path: string): string {
   return pathPosix.normalize(path.trim()).replace(/^\.\/+/, '');
+}
+
+function inferEntryName(path: string): string {
+  const normalized = normalizeSourcePath(path);
+  const segments = normalized.split('/');
+  return segments.length >= 2 ? segments[segments.length - 2] : normalized;
 }

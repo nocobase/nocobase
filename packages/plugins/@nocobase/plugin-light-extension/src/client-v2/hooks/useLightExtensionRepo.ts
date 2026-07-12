@@ -20,6 +20,8 @@ import type {
   LightExtensionPullResult,
   LightExtensionRepoRecord,
   LightExtensionSaveSourceResult,
+  LightExtensionWorkspacePreviewInput,
+  LightExtensionWorkspacePreviewResult,
 } from '../../shared/types';
 import { unwrapResourceResponse } from '../api/lightExtensionEntriesRequests';
 
@@ -89,6 +91,7 @@ export interface UseLightExtensionRepoResult {
   pull(input: LightExtensionPullInput): Promise<LightExtensionPullResult>;
   pullCommit(input: LightExtensionPullCommitInput): Promise<LightExtensionPullResult>;
   saveSource(input: LightExtensionSaveSourceInput): Promise<LightExtensionSaveSourceResult>;
+  compileWorkspacePreview(input: LightExtensionWorkspacePreviewInput): Promise<LightExtensionWorkspacePreviewResult>;
   listCommits(input: LightExtensionListCommitsInput): Promise<LightExtensionCommitRecord[]>;
 }
 
@@ -121,6 +124,7 @@ type OperationInputMap = {
   pull: LightExtensionPullInput;
   pullCommit: LightExtensionPullCommitInput;
   saveSource: LightExtensionSaveSourceInput;
+  compileWorkspacePreview: LightExtensionWorkspacePreviewInput;
   listCommits: LightExtensionListCommitsInput;
 };
 
@@ -133,6 +137,7 @@ type OperationResultMap = {
   pull: LightExtensionPullResult;
   pullCommit: LightExtensionPullResult;
   saveSource: LightExtensionSaveSourceResult;
+  compileWorkspacePreview: LightExtensionWorkspacePreviewResult;
   listCommits: LightExtensionCommitRecord[];
 };
 
@@ -145,6 +150,7 @@ const operationResourceActions: Record<LightExtensionRepoOperation, string> = {
   pull: 'lightExtensionFiles:pull',
   pullCommit: 'lightExtensionFiles:pullCommit',
   saveSource: 'lightExtensionFiles:saveSource',
+  compileWorkspacePreview: 'lightExtensions:compileWorkspacePreview',
   listCommits: 'lightExtensionFiles:listCommits',
 };
 
@@ -192,6 +198,10 @@ export function useLightExtensionRepo(): UseLightExtensionRepoResult {
     (input: LightExtensionSaveSourceInput) => requestOperation('saveSource', input),
     [requestOperation],
   );
+  const compileWorkspacePreview = useCallback(
+    (input: LightExtensionWorkspacePreviewInput) => requestOperation('compileWorkspacePreview', input),
+    [requestOperation],
+  );
   const listCommits = useCallback(
     (input: LightExtensionListCommitsInput) => requestOperation('listCommits', input),
     [requestOperation],
@@ -207,9 +217,21 @@ export function useLightExtensionRepo(): UseLightExtensionRepoResult {
       pull,
       pullCommit,
       saveSource,
+      compileWorkspacePreview,
       listCommits,
     }),
-    [changeLifecycle, createRepo, deleteRepo, getRepo, listCommits, listRepos, pull, pullCommit, saveSource],
+    [
+      changeLifecycle,
+      compileWorkspacePreview,
+      createRepo,
+      deleteRepo,
+      getRepo,
+      listCommits,
+      listRepos,
+      pull,
+      pullCommit,
+      saveSource,
+    ],
   );
 }
 

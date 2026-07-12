@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { FlowContext, FlowContextProvider } from '@nocobase/flow-engine';
+import { FlowContext, FlowContextProvider, FlowEngine, FlowModel } from '@nocobase/flow-engine';
 import { describe, expect, it, vi } from 'vitest';
 
 import { createRunJSLightExtensionEditorProvider } from '../components/RunJSLightExtensionEditorProvider';
@@ -37,6 +37,8 @@ vi.mock('../pages/LightExtensionWorkspacePage', () => {
     initialPath,
     workspaceScope,
     defaultFilesCollapsed,
+    entryId,
+    onPreview,
     onFooterActionsChange,
     onRequestClose,
     onSaved,
@@ -45,6 +47,8 @@ vi.mock('../pages/LightExtensionWorkspacePage', () => {
     initialPath?: string;
     workspaceScope?: unknown;
     defaultFilesCollapsed?: boolean;
+    entryId?: string | null;
+    onPreview?: (artifact: { code: string; version: string; entryPath: string }) => void | Promise<void>;
     onFooterActionsChange?: (
       actions: {
         dirty: boolean;
@@ -76,9 +80,24 @@ vi.mock('../pages/LightExtensionWorkspacePage', () => {
     return (
       <div
         data-default-files-collapsed={String(Boolean(defaultFilesCollapsed))}
+        data-entry-id={entryId || ''}
         data-workspace-scope={JSON.stringify(workspaceScope)}
       >
         workspace:{repoId}:{initialPath}
+        {onPreview ? (
+          <button
+            type="button"
+            onClick={() =>
+              onPreview({
+                code: 'ctx.render(<div>workspace preview</div>);',
+                version: 'v2',
+                entryPath: initialPath || '',
+              })
+            }
+          >
+            preview workspace
+          </button>
+        ) : null}
         <button type="button" onClick={onSaved}>
           save workspace
         </button>
@@ -91,8 +110,13 @@ vi.mock('../pages/LightExtensionWorkspacePage', () => {
   };
 });
 
-function EditorViewHarness(props: { api?: ApiClientLike; children: React.ReactNode; onClose: () => void }) {
-  const { api, children, onClose } = props;
+function EditorViewHarness(props: {
+  api?: ApiClientLike;
+  children: React.ReactNode;
+  model?: FlowModel;
+  onClose: () => void;
+}) {
+  const { api, children, model, onClose } = props;
   const [footer, setFooter] = React.useState<React.ReactNode>(null);
   const context = React.useMemo(() => {
     const nextContext = new FlowContext();
@@ -105,8 +129,11 @@ function EditorViewHarness(props: { api?: ApiClientLike; children: React.ReactNo
     if (api) {
       nextContext.defineProperty('api', { value: api });
     }
+    if (model) {
+      nextContext.defineProperty('model', { value: model });
+    }
     return nextContext;
-  }, [api, onClose]);
+  }, [api, model, onClose]);
 
   return (
     <FlowContextProvider context={context}>
@@ -200,6 +227,7 @@ describe('RunJSLightExtensionEditorProvider', () => {
     const provider = createRunJSLightExtensionEditorProvider();
     const onChange = vi.fn();
     const onPersistedChange = vi.fn();
+    const onPreview = vi.fn();
     const props = {
       value: {
         code: 'ctx.render(<div />);',
@@ -225,6 +253,7 @@ describe('RunJSLightExtensionEditorProvider', () => {
       minHeight: '320px',
       onChange,
       onPersistedChange,
+      onPreview,
     };
 
     expect(provider.canHandle?.(props)).toBe(true);
@@ -248,9 +277,79 @@ describe('RunJSLightExtensionEditorProvider', () => {
       'data-default-files-collapsed',
       'true',
     );
+    expect(screen.getByText('workspace:ler_example:src/client/js-blocks/example/index.tsx')).toHaveAttribute(
+      'data-entry-id',
+      'lee_example',
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'preview workspace' }));
+    expect(onPreview).toHaveBeenCalledWith({
+      ...props.value,
+      code: 'ctx.render(<div>workspace preview</div>);',
+      version: 'v2',
+      sourceMode: 'inline',
+    });
     fireEvent.click(screen.getByRole('button', { name: 'save workspace' }));
     expect(onPersistedChange).toHaveBeenCalledWith(props.value);
     expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('temporarily previews JS block workspace code and restores the persisted binding on cancel', async () => {
+    const provider = createRunJSLightExtensionEditorProvider();
+    const engine = new FlowEngine();
+    const value = {
+      code: 'ctx.render(<div>persisted</div>);',
+      version: 'v2',
+      sourceMode: 'light-extension',
+      sourceBinding: {
+        type: 'light-extension-entry' as const,
+        repoId: 'ler_example',
+        entryId: 'lee_example',
+        entryPath: 'src/client/js-blocks/example/index.tsx',
+        kind: 'js-block' as const,
+      },
+    };
+    const model = new FlowModel({
+      uid: 'model_1',
+      flowEngine: engine,
+      stepParams: {
+        jsSettings: {
+          runJs: value,
+        },
+      },
+    });
+    const rerender = vi.spyOn(model, 'rerender').mockResolvedValue(undefined);
+    const onClose = vi.fn();
+
+    render(
+      <EditorViewHarness model={model} onClose={onClose}>
+        {provider.renderEditor({
+          value,
+          locator: {
+            kind: 'flowModel.step',
+            modelUid: 'model_1',
+            flowKey: 'jsSettings',
+            stepKey: 'runJs',
+            paramPath: ['code'],
+          },
+          surfaceStyle: 'render',
+        })}
+      </EditorViewHarness>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'preview workspace' }));
+    await waitFor(() =>
+      expect(model.getStepParams('jsSettings', 'runJs')).toMatchObject({
+        code: 'ctx.render(<div>workspace preview</div>);',
+        sourceMode: 'inline',
+        sourceBinding: value.sourceBinding,
+      }),
+    );
+
+    const footer = await screen.findByTestId('editor-view-footer');
+    fireEvent.click(within(footer).getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    expect(model.getStepParams('jsSettings', 'runJs')).toMatchObject(value);
+    expect(rerender).toHaveBeenCalledTimes(2);
   });
 
   it('refreshes the entry path by entryId before applying workspace access after a directory rename', async () => {

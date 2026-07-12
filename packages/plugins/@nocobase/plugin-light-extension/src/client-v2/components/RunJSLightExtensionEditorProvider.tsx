@@ -9,13 +9,22 @@
 
 import { createForm, type Form } from '@formily/core';
 import { createSchemaField, FormProvider } from '@formily/react';
-import { CodeEditor, type RunJSEditorProvider, type RunJSEditorProviderRenderProps } from '@nocobase/client-v2';
-import { useFlowContext, type FlowEngineContext, type RunJSValue } from '@nocobase/flow-engine';
+import {
+  CodeEditor,
+  type RunJSEditorProvider,
+  type RunJSEditorProviderRenderProps,
+  type RunJSSourceLocator,
+} from '@nocobase/client-v2';
+import { useFlowContext, type FlowEngineContext, type FlowModel, type RunJSValue } from '@nocobase/flow-engine';
 import { Alert, Button, Flex, Space } from 'antd';
 import React from 'react';
 
 import { LIGHT_EXTENSION_SUPPORTED_KINDS } from '../../constants';
-import type { LightExtensionKind, LightExtensionRuntimeSourceBinding } from '../../shared/types';
+import type {
+  LightExtensionEntryRuntimeArtifact,
+  LightExtensionKind,
+  LightExtensionRuntimeSourceBinding,
+} from '../../shared/types';
 import { getLightExtensionEntry, type ApiClientLike } from '../api/lightExtensionEntriesRequests';
 import { isLightExtensionRuntimeSourceBinding } from '../resolvers/LightExtensionRunJSResolver';
 import LightExtensionWorkspacePage, {
@@ -43,7 +52,12 @@ type LightExtensionEditorView = {
 
 type LightExtensionEditorFlowContext = FlowEngineContext & {
   api?: ApiClientLike;
+  model?: FlowModel;
 };
+
+type FlowModelStepLocator = Extract<RunJSSourceLocator, { kind: 'flowModel.step' }>;
+
+const UNSAFE_RUNJS_PATH_SEGMENTS = new Set(['__proto__', 'constructor', 'prototype']);
 
 const SchemaField = createSchemaField({
   components: {
@@ -120,6 +134,7 @@ function setFormValues(form: Form, values: RunJSValueFormValues) {
 }
 
 const RunJSLightExtensionEditor: React.FC<RunJSEditorProviderRenderProps> = (props) => {
+  const { onPreview } = props;
   const initialValuesRef = React.useRef(normalizeFormValues(props.value));
   const form = React.useMemo(() => createForm({ initialValues: initialValuesRef.current }), []);
   const [, rerender] = React.useReducer((count: number) => count + 1, 0);
@@ -174,6 +189,20 @@ const RunJSLightExtensionEditor: React.FC<RunJSEditorProviderRenderProps> = (pro
     },
     [form, formValues.version],
   );
+  const handleLightExtensionPreview = React.useCallback(
+    async (artifact: LightExtensionEntryRuntimeArtifact) => {
+      if (!onPreview) {
+        return;
+      }
+      await onPreview({
+        ...toRunJSValue(form.values as RunJSValueFormValues),
+        code: artifact.code,
+        version: artifact.version,
+        sourceMode: INLINE_SOURCE_MODE,
+      });
+    },
+    [form, onPreview],
+  );
 
   return (
     <Space direction="vertical" size={12} style={{ width: '100%', minWidth: 0 }}>
@@ -189,6 +218,7 @@ const RunJSLightExtensionEditor: React.FC<RunJSEditorProviderRenderProps> = (pro
                   disabled: readonly,
                   showEntryWorkspace: sourceMode === LIGHT_EXTENSION_SOURCE_MODE,
                   onEmbeddedEditorControllerChange: props.onEmbeddedEditorControllerChange,
+                  onPreview: onPreview ? handleLightExtensionPreview : undefined,
                 },
               },
             },
@@ -222,6 +252,7 @@ const RunJSLightExtensionEditor: React.FC<RunJSEditorProviderRenderProps> = (pro
 };
 
 const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderProps> = (props) => {
+  const { locator, onPreview, sourceLocator, surfaceStyle, value } = props;
   const translate = props.t;
   const binding = isLightExtensionRuntimeSourceBinding(props.value.sourceBinding) ? props.value.sourceBinding : null;
   const [currentBinding, setCurrentBinding] = React.useState(binding);
@@ -229,6 +260,9 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
   const flowContext = useFlowContext<LightExtensionEditorFlowContext | null>();
   const editorView = flowContext?.view as LightExtensionEditorView | undefined;
   const workspaceScope = currentBinding ? getEntryWorkspaceScope(currentBinding) : null;
+  const previewAppliedRef = React.useRef(false);
+  const persistedPreviewValueRef = React.useRef(value);
+  const previewValueApplierRef = React.useRef<(value: RunJSValue) => Promise<boolean>>(async () => false);
 
   React.useEffect(() => {
     setCurrentBinding(binding);
@@ -258,14 +292,70 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
     };
   }, [binding, flowContext?.api]);
 
+  React.useEffect(() => {
+    if (!previewAppliedRef.current) {
+      persistedPreviewValueRef.current = value;
+    }
+  }, [value]);
+
+  const applyPreviewValue = React.useCallback(
+    async (value: RunJSValue): Promise<boolean> => {
+      if (onPreview) {
+        await onPreview(value);
+        return true;
+      }
+
+      return applyFlowModelStepPreview(flowContext, sourceLocator || locator, surfaceStyle, value);
+    },
+    [flowContext, locator, onPreview, sourceLocator, surfaceStyle],
+  );
+  previewValueApplierRef.current = applyPreviewValue;
+
+  const canPreview =
+    Boolean(onPreview) || canApplyFlowModelStepPreview(flowContext, sourceLocator || locator, surfaceStyle);
+
+  const restoreWorkspacePreview = React.useCallback(async () => {
+    if (!previewAppliedRef.current) {
+      return;
+    }
+    previewAppliedRef.current = false;
+    await previewValueApplierRef.current(persistedPreviewValueRef.current);
+  }, []);
+
+  React.useEffect(() => {
+    return () => {
+      if (!previewAppliedRef.current) {
+        return;
+      }
+      previewAppliedRef.current = false;
+      previewValueApplierRef
+        .current(persistedPreviewValueRef.current)
+        .catch((error) => console.error('Failed to restore light extension workspace preview', error));
+    };
+  }, []);
+
+  const handleWorkspacePreview = React.useCallback(
+    async (artifact: LightExtensionEntryRuntimeArtifact) => {
+      const applied = await applyPreviewValue({
+        ...value,
+        code: artifact.code,
+        version: artifact.version,
+        sourceMode: INLINE_SOURCE_MODE,
+      });
+      previewAppliedRef.current = applied;
+    },
+    [applyPreviewValue, value],
+  );
+
   const closeEditorView = React.useCallback(async () => {
+    await restoreWorkspacePreview();
     if (typeof editorView?.close === 'function') {
       await editorView.close();
       return;
     }
 
     editorView?.destroy?.();
-  }, [editorView]);
+  }, [editorView, restoreWorkspacePreview]);
   const handlePersistedChange = React.useCallback(() => {
     (props.onPersistedChange || props.onChange)?.({
       ...props.value,
@@ -317,8 +407,10 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
       <LightExtensionWorkspacePage
         defaultFilesCollapsed
         embedded
+        entryId={currentBinding.entryId}
         initialPath={currentBinding.entryPath}
         onFooterActionsChange={setFooterActions}
+        onPreview={canPreview ? handleWorkspacePreview : undefined}
         onRequestClose={closeEditorView}
         onSaved={handlePersistedChange}
         repoId={currentBinding.repoId}
@@ -369,4 +461,69 @@ function getEntryWorkspaceScope(binding: LightExtensionRuntimeSourceBinding): Li
     entryPath: binding.entryPath,
     kind: binding.kind as LightExtensionKind,
   };
+}
+
+function canApplyFlowModelStepPreview(
+  flowContext: LightExtensionEditorFlowContext | null,
+  locator: RunJSSourceLocator | undefined,
+  surfaceStyle: RunJSEditorProviderRenderProps['surfaceStyle'],
+): locator is FlowModelStepLocator {
+  return Boolean(flowContext?.model && locator?.kind === 'flowModel.step' && surfaceStyle === 'render');
+}
+
+async function applyFlowModelStepPreview(
+  flowContext: LightExtensionEditorFlowContext | null,
+  locator: RunJSSourceLocator | undefined,
+  surfaceStyle: RunJSEditorProviderRenderProps['surfaceStyle'],
+  value: RunJSValue,
+): Promise<boolean> {
+  if (!canApplyFlowModelStepPreview(flowContext, locator, surfaceStyle)) {
+    return false;
+  }
+
+  const model = flowContext.model;
+  if (!model) {
+    return false;
+  }
+  const currentParams = cloneJsonRecordValue(model.getStepParams(locator.flowKey, locator.stepKey));
+  setPreviewValueAtPath(currentParams, locator.paramPath, value.code);
+  setPreviewValueAtPath(
+    currentParams,
+    locator.versionPath?.length ? locator.versionPath : resolvePreviewVersionPath(locator.paramPath),
+    value.version,
+  );
+  const sourceConfigPath = locator.paramPath.slice(0, -1);
+  setPreviewValueAtPath(currentParams, [...sourceConfigPath, 'sourceMode'], value.sourceMode);
+  if (Object.prototype.hasOwnProperty.call(value, 'sourceBinding')) {
+    setPreviewValueAtPath(currentParams, [...sourceConfigPath, 'sourceBinding'], value.sourceBinding);
+  }
+  if (Object.prototype.hasOwnProperty.call(value, 'settings')) {
+    setPreviewValueAtPath(currentParams, [...sourceConfigPath, 'settings'], value.settings);
+  }
+  model.setStepParams(locator.flowKey, locator.stepKey, currentParams);
+  model.invalidateFlowCache('beforeRender', true);
+  await model.rerender();
+  return true;
+}
+
+function cloneJsonRecordValue(value: unknown): Record<string, unknown> {
+  return isRecord(value) ? cloneJsonRecord(value) : {};
+}
+
+function resolvePreviewVersionPath(paramPath: readonly string[]): string[] {
+  return paramPath.length > 1 ? [...paramPath.slice(0, -1), 'version'] : ['version'];
+}
+
+function setPreviewValueAtPath(root: Record<string, unknown>, path: readonly string[], value: unknown): void {
+  if (!path.length || path.some((segment) => UNSAFE_RUNJS_PATH_SEGMENTS.has(segment))) {
+    return;
+  }
+
+  let target = root;
+  for (const segment of path.slice(0, -1)) {
+    const next = cloneJsonRecordValue(target[segment]);
+    target[segment] = next;
+    target = next;
+  }
+  target[path[path.length - 1]] = value;
 }
