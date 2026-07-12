@@ -79,6 +79,7 @@
   "Failed to dispatch Agent Gateway run": "派发 Agent 网关运行失败",
   "Save": "保存",
   "Agent Gateway Nodes": "Agent 网关节点",
+  "Agent Gateway Skills": "Agent 网关技能",
   "Failed to update node status": "更新节点状态失败",
   "Toggle node status": "切换节点状态",
   "Disabled at": "禁用时间",

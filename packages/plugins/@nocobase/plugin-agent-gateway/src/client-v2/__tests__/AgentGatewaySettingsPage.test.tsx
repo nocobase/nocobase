@@ -28,6 +28,7 @@ import AgentGatewayProviderCapabilitiesPage from '../pages/AgentGatewayProviderC
 import AgentGatewayPromptTemplatesPage from '../pages/AgentGatewayPromptTemplatesPage';
 import AgentGatewayRunsPage from '../pages/AgentGatewayRunsPage';
 import AgentGatewaySettingsPage from '../pages/AgentGatewaySettingsPage';
+import AgentGatewaySkillsPage from '../pages/AgentGatewaySkillsPage';
 import AgentGatewayTaskTemplatesPage from '../pages/AgentGatewayTaskTemplatesPage';
 import PluginAgentGatewayClientV2 from '../plugin';
 import { TerminalStreamWebSocketEvent } from '../utils/terminalStreamClient';
@@ -200,6 +201,10 @@ function renderSettingsPage(request: (config: RequestConfig) => Promise<unknown>
   renderAgentGatewayPage(AgentGatewaySettingsPage, request);
 }
 
+function renderSkillsPage(request: (config: RequestConfig) => Promise<unknown>) {
+  renderAgentGatewayPage(AgentGatewaySkillsPage, request);
+}
+
 function getTaskTemplateSelectInput() {
   const input = screen
     .getAllByLabelText('Task template')
@@ -307,6 +312,13 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(addPageTabItem).toHaveBeenCalledWith(
       expect.objectContaining({
         menuKey: 'agent-gateway',
+        key: 'skills',
+        sort: 15,
+      }),
+    );
+    expect(addPageTabItem).toHaveBeenCalledWith(
+      expect.objectContaining({
+        menuKey: 'agent-gateway',
         key: 'runs',
         sort: 20,
       }),
@@ -341,6 +353,7 @@ describe('PluginAgentGatewayClientV2', () => {
       }),
     );
     expect(app.pluginSettingsManager.getRoutePath('agent-gateway.nodes')).toBe('/admin/settings/agent-gateway/nodes');
+    expect(app.pluginSettingsManager.getRoutePath('agent-gateway.skills')).toBe('/admin/settings/agent-gateway/skills');
   });
 
   it('renders nodes and per-node profiles without raw execution configuration', async () => {
@@ -438,6 +451,9 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(screen.getByText('Local fake runner')).toBeTruthy();
     expect(screen.getAllByText('Enabled state').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Connection').length).toBeGreaterThan(0);
+    expect(screen.queryByText('Current concurrency')).toBeNull();
+    expect(screen.queryByRole('tab', { name: 'Nodes' })).toBeNull();
+    expect(screen.queryByRole('tab', { name: 'Skills' })).toBeNull();
     expect(screen.getAllByText('Online').length).toBeGreaterThan(0);
     expect(screen.getByText('Offline - stale heartbeat')).toBeTruthy();
     expect(screen.getByText('fake-daemon/1.0.0')).toBeTruthy();
@@ -475,7 +491,7 @@ describe('PluginAgentGatewayClientV2', () => {
   it('opens skill upload with NB OpenCode UI Batch defaults', async () => {
     const request = vi.fn(async () => ({ data: { data: [] } }));
 
-    renderSettingsPage(request);
+    renderSkillsPage(request);
 
     fireEvent.click(await screen.findByText('Upload skill'));
 
@@ -484,7 +500,7 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(screen.getByLabelText('Version label')).toHaveValue('local');
   });
 
-  it('shows uploaded skill versions in the settings Skills tab', async () => {
+  it('shows uploaded skill versions in the settings Skills page', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
       if (config.url === 'agent-gateway/skill-versions:list') {
         return {
@@ -508,10 +524,9 @@ describe('PluginAgentGatewayClientV2', () => {
       return { data: { data: [] } };
     });
 
-    renderSettingsPage(request);
+    renderSkillsPage(request);
 
-    fireEvent.click(await screen.findByRole('tab', { name: 'Skills' }));
-
+    expect(await screen.findByRole('region', { name: 'Agent Gateway Skills' })).toBeTruthy();
     expect(await screen.findByText('NB OpenCode UI Batch')).toBeTruthy();
     expect(await screen.findByText('nb-opencode-ui-batch')).toBeTruthy();
     expect(await screen.findByText('local')).toBeTruthy();
@@ -529,7 +544,7 @@ describe('PluginAgentGatewayClientV2', () => {
   });
 
   it('opens skill details from the skillVersionId query parameter', async () => {
-    window.history.pushState({}, '', '/admin/settings/agent-gateway/nodes?skillVersionId=skill-version-id-1');
+    window.history.pushState({}, '', '/admin/settings/agent-gateway/skills?skillVersionId=skill-version-id-1');
     const request = vi.fn(async (config: RequestConfig) => {
       if (config.url === 'agent-gateway/skill-versions:list') {
         return {
@@ -557,9 +572,9 @@ describe('PluginAgentGatewayClientV2', () => {
       return { data: { data: [] } };
     });
 
-    renderSettingsPage(request);
+    renderSkillsPage(request);
 
-    expect(await screen.findByRole('tab', { name: 'Skills', selected: true })).toBeTruthy();
+    expect(await screen.findByRole('region', { name: 'Agent Gateway Skills' })).toBeTruthy();
     expect(await screen.findByText('Skill version ID')).toBeTruthy();
     expect(await screen.findByText('skill-version-id-1')).toBeTruthy();
     expect(await screen.findByText('skill-id-1')).toBeTruthy();

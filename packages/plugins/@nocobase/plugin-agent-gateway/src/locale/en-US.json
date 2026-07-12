@@ -79,6 +79,7 @@
   "Failed to dispatch Agent Gateway run": "Failed to dispatch Agent Gateway run",
   "Save": "Save",
   "Agent Gateway Nodes": "Agent Gateway Nodes",
+  "Agent Gateway Skills": "Agent Gateway Skills",
   "Failed to update node status": "Failed to update node status",
   "Toggle node status": "Toggle node status",
   "Disabled at": "Disabled at",

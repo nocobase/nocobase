@@ -39,6 +39,14 @@ export class PluginAgentGatewayClientV2 extends Plugin {
 
     this.pluginSettingsManager.addPageTabItem({
       menuKey: NAMESPACE,
+      key: 'skills',
+      title: this.t('Skills'),
+      componentLoader: () => import('./pages/AgentGatewaySkillsPage'),
+      sort: 15,
+    });
+
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: NAMESPACE,
       key: 'runs',
       title: this.t('Runs'),
       componentLoader: () => import('./pages/AgentGatewayRunsPage'),
