@@ -15,6 +15,8 @@ keywords: "本地存储,Local Storage,服务器硬盘,存储路径,文件存储,
 
 如果需要保存合同、证件、内部资料等不应公开的文件，请使用支持私有访问的 [S3 Pro](./s3-pro) 存储引擎。已有历史文件时，可参考[迁移到 S3 Pro](./migrate-to-s3-pro.md)。
 
+如果你没有使用 Docker 或官方 nginx 配置，而是通过自定义 proxy 访问本地上传文件，请确认 `/storage/uploads/` 路径配置了 `X-Content-Type-Options: nosniff`，并让 `html`、`svg`、`xhtml`、`pdf` 等主动内容文件以附件方式下载。详细说明见[安全指南：文件存储](../../security/guide.md#文件存储)。
+
 :::
 
 ## 配置参数

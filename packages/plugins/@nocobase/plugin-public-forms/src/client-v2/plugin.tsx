@@ -14,29 +14,15 @@ import {
   PUBLIC_FORM_LAYOUT_UID,
   PUBLIC_FORM_PAGE_MODEL,
   PUBLIC_FORM_ROUTE_NAME,
-  PUBLIC_FORM_SUBMIT_ACTION_MODEL,
   PUBLIC_FORMS_NAMESPACE,
-  PUBLIC_FORMS_SETTINGS_LAYOUT_MODEL,
 } from './constants';
+import { registerPublicFormV2ModelLoaders } from './modelLoaders';
 
 export class PluginPublicFormsClientV2 extends Plugin<Record<string, never>, Application> {
   async load() {
     const title = this.app.i18n.t('Public forms', { ns: PUBLIC_FORMS_NAMESPACE });
 
-    this.flowEngine.registerModelLoaders({
-      [PUBLIC_FORMS_SETTINGS_LAYOUT_MODEL]: {
-        loader: () => import('./models/PublicFormsSettingsLayoutModel'),
-      },
-      [PUBLIC_FORM_LAYOUT_MODEL]: {
-        loader: () => import('./models/PublicFormLayoutModel'),
-      },
-      [PUBLIC_FORM_PAGE_MODEL]: {
-        loader: () => import('./models/PublicFormPageModel'),
-      },
-      [PUBLIC_FORM_SUBMIT_ACTION_MODEL]: {
-        loader: () => import('./models/PublicFormSubmitActionModel'),
-      },
-    });
+    registerPublicFormV2ModelLoaders(this.flowEngine);
 
     this.pluginSettingsManager.addMenuItem({
       key: PUBLIC_FORMS_NAMESPACE,

@@ -277,12 +277,14 @@ export function FilterDynamicComponent({
   collection,
   value,
   onChange,
+  disabled = false,
   rightAsVariable = true,
   maxAssociationFieldDepth = 2,
 }: {
   collection?: string;
   value?: Record<string, unknown> | null;
   onChange?: (value: Record<string, unknown> | null) => void;
+  disabled?: boolean;
   /**
    * Controls whether the filter row's right-hand value editor allows workflow variables.
    * - `true`: render the RHS as a variable-aware input (constant or workflow variable)
@@ -381,6 +383,7 @@ export function FilterDynamicComponent({
         <VariableFilterItem
           value={value}
           model={filterModel}
+          disabled={disabled}
           rightAsVariable={rightAsVariable}
           rightMetaTree={rightMetaTree}
           maxAssociationFieldDepth={maxAssociationFieldDepth}
@@ -389,9 +392,9 @@ export function FilterDynamicComponent({
     );
     Component.displayName = 'WorkflowVariableFilterItem';
     return Component;
-  }, [filterModel, maxAssociationFieldDepth, rightAsVariable, rightMetaTree]);
+  }, [disabled, filterModel, maxAssociationFieldDepth, rightAsVariable, rightMetaTree]);
 
-  return <FilterGroup value={filterRef.current} FilterItem={FilterItemComponent ?? undefined} />;
+  return <FilterGroup value={filterRef.current} FilterItem={FilterItemComponent ?? undefined} disabled={disabled} />;
 }
 
 export const ConditionField = FilterDynamicComponent;

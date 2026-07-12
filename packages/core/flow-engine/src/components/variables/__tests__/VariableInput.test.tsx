@@ -101,6 +101,81 @@ describe('VariableInput', () => {
     );
   });
 
+  it('renders a variable tag when custom converters resolve a non-ctx workflow variable format', async () => {
+    const flowContext = createTestFlowContext();
+    const workflowMetaTree = [
+      {
+        name: '$context',
+        title: 'Trigger variables',
+        type: 'object',
+        paths: ['$context'],
+        children: [
+          {
+            name: 'data',
+            title: 'Trigger data',
+            type: 'object',
+            paths: ['$context', 'data'],
+            children: [
+              {
+                name: 'updatedAt',
+                title: 'Last updated at',
+                type: 'string',
+                paths: ['$context', 'data', 'updatedAt'],
+              },
+            ],
+          },
+        ],
+      },
+    ];
+
+    render(
+      <TestFlowContextWrapper context={flowContext}>
+        <VariableInput
+          value="{{$context.data.updatedAt}}"
+          metaTree={workflowMetaTree}
+          converters={{
+            resolvePathFromValue: (currentValue) =>
+              currentValue === '{{$context.data.updatedAt}}' ? ['$context', 'data', 'updatedAt'] : undefined,
+            resolveValueFromPath: () => undefined,
+          }}
+        />
+      </TestFlowContextWrapper>,
+    );
+
+    await waitFor(
+      () => {
+        const variableTag = screen.getByText('Trigger variables/Trigger data/Last updated at');
+        expect(variableTag).toBeInTheDocument();
+        expect(variableTag.closest('.ant-tag')).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
+
+    const selectorButton = screen.getByRole('button');
+    expect(selectorButton.className).toContain('ant-btn-primary');
+  });
+
+  it('disables custom tag input when rendering a selected variable', async () => {
+    const flowContext = createTestFlowContext();
+    const { container } = render(
+      <TestFlowContextWrapper context={flowContext}>
+        <VariableInput value="{{ ctx.user.name }}" metaTree={() => flowContext.getPropertyMetaTree()} />
+      </TestFlowContextWrapper>,
+    );
+
+    await waitFor(
+      () => {
+        expect(screen.getByText('User/Name')).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
+
+    const selectElement = container.querySelector('.ant-select.variable');
+    expect(selectElement).toBeInTheDocument();
+    expect(selectElement).not.toHaveClass('ant-select-show-search');
+    expect(container.querySelector('.ant-select-selection-search-input')).toHaveAttribute('readonly');
+  });
+
   it('should render FlowContextSelector button', async () => {
     const flowContext = createTestFlowContext();
     render(
@@ -334,7 +409,24 @@ describe('VariableInput', () => {
     expect(input).toHaveClass('custom-class');
 
     // Note: The disabled prop might not be correctly passed through in the current implementation
-    // This is a known limitation of the current component design
+    expect(input).toBeDisabled();
+  });
+
+  it('disables the rendered variable tag when the input is disabled', async () => {
+    const flowContext = createTestFlowContext();
+    const { container } = render(
+      <TestFlowContextWrapper context={flowContext}>
+        <VariableInput value="{{ ctx.user.name }}" metaTree={() => flowContext.getPropertyMetaTree()} disabled />
+      </TestFlowContextWrapper>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('User/Name')).toBeInTheDocument();
+    });
+
+    const selectElement = container.querySelector('.ant-select.variable');
+    expect(selectElement).toHaveClass('ant-select-disabled');
+    expect(container.querySelector('.ant-select-clear')).not.toBeInTheDocument();
   });
 
   it('should handle empty metaTree', async () => {

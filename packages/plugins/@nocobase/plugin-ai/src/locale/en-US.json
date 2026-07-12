@@ -133,6 +133,7 @@
   "Fields": "Fields",
   "Files": "Files",
   "Files storage": "Files storage",
+  "Fill form fields with the given content. This tool only writes values into the form UI; it does not submit or save the form.": "Fill form fields with the given content. This tool only writes values into the form UI; it does not submit or save the form.",
   "Fill the form with the given content": "Fill the form with the given content",
   "Filter": "Filter",
   "Filter group": "Filter group",

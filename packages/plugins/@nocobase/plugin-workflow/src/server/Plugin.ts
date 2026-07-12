@@ -506,7 +506,7 @@ export default class PluginWorkflowServer extends Plugin {
     workflow: WorkflowModel,
     context: object,
     options: EventOptions = {},
-  ): void | Promise<Processor | null> {
+  ): void | Promise<Processor | null | void> {
     return this.dispatcher.trigger(workflow, context, options);
   }
 

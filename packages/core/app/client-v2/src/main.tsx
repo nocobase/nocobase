@@ -10,6 +10,7 @@
 import { Application, getModernClientPrefix } from '@nocobase/client-v2';
 import devDynamicImport from './.plugins';
 import { NocoBaseClientPresetPluginV2 } from '@nocobase/preset-nocobase/client-v2';
+import { resolveRuntimeAssetPublicPath } from './runtimePublicPath';
 
 declare global {
   interface Window {
@@ -113,9 +114,7 @@ function getBuildAssetDir() {
 declare let __webpack_public_path__: string;
 const cdnBase = window.__webpack_public_path__;
 // eslint-disable-next-line prefer-const
-__webpack_public_path__ = cdnBase
-  ? ensureSlash(`${cdnBase.replace(/\/$/, '')}/${getBuildAssetDir()}/`, '/')
-  : v2PublicPath;
+__webpack_public_path__ = resolveRuntimeAssetPublicPath(cdnBase, v2PublicPath, getBuildAssetDir());
 
 const app = new Application({
   publicPath: v2PublicPath,

@@ -7,7 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DeleteOutlined, PlusOutlined, ReloadOutlined, SyncOutlined } from '@ant-design/icons';
+import {
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+  DeleteOutlined,
+  ExclamationCircleOutlined,
+  InfoCircleOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+  SyncOutlined,
+} from '@ant-design/icons';
 import {
   CollectionFilter,
   type CompiledFilter,
@@ -21,13 +30,14 @@ import { useFlowContext } from '@nocobase/flow-engine';
 import { useMemoizedFn, useRequest } from 'ahooks';
 import { App, Button, Flex, Form, Input, Space, Switch, Tag, Tooltip, theme } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import workflowCollection from '../../common/collections/workflows';
 import { defaultWorkflowFilter } from '../../common/defaultWorkflowFilter';
 import { SyncModeTag } from '../components/SyncModeTag';
 import { useWorkflowRuntimePaths } from '../hooks/useWorkflowRuntimePaths';
 import { useT, useWorkflowTranslation } from '../locale';
 import PluginWorkflowClientV2 from '../plugin';
+import type { WorkflowNotice } from '../plugin';
 import { ExecutionHistoryDrawer } from './ExecutionHistoryDrawer';
 import { ALL_CATEGORY_KEY, WorkflowCategoryTabs, WorkflowCategory } from './WorkflowCategoryTabs';
 import { WorkflowFormDrawer, WorkflowRecord } from './WorkflowFormDrawer';
@@ -42,6 +52,80 @@ function normalizeListResponse(response: any) {
   const records: WorkflowRecord[] = Array.isArray(payload) ? payload : Array.isArray(payload?.data) ? payload.data : [];
   const meta = body?.meta || payload?.meta || {};
   return { records, total: meta.count || meta.total || records.length };
+}
+
+function WorkflowNoticeTags({ notices }: { notices: WorkflowNotice[] }) {
+  if (!notices.length) {
+    return null;
+  }
+
+  const getNoticeIcon = (type: WorkflowNotice['type']) => {
+    switch (type) {
+      case 'error':
+        return <CloseCircleOutlined />;
+      case 'info':
+        return <InfoCircleOutlined />;
+      case 'success':
+        return <CheckCircleOutlined />;
+      case 'warning':
+      default:
+        return <ExclamationCircleOutlined />;
+    }
+  };
+  const getNoticeColor = (type: WorkflowNotice['type']) => {
+    switch (type) {
+      case 'error':
+      case 'success':
+      case 'warning':
+        return type;
+      case 'info':
+        return 'blue';
+      default:
+        return 'warning';
+    }
+  };
+
+  return (
+    <>
+      {notices.map((notice, index) => (
+        <Tooltip key={`${notice.key}-${index}`} title={notice.description}>
+          <Tag color={getNoticeColor(notice.type)} icon={getNoticeIcon(notice.type || 'warning')}>
+            {notice.message}
+          </Tag>
+        </Tooltip>
+      ))}
+    </>
+  );
+}
+
+function WorkflowTitleCell({
+  maxWidth,
+  notices,
+  title,
+}: {
+  maxWidth: number;
+  notices: WorkflowNotice[];
+  title?: React.ReactNode;
+}) {
+  return (
+    <span
+      style={{
+        display: 'inline-block',
+        width: 'max-content',
+        maxWidth,
+        overflowWrap: 'anywhere',
+        whiteSpace: 'normal',
+        wordBreak: 'break-word',
+      }}
+    >
+      {title}
+      {notices.length ? (
+        <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: '4px 8px', marginInlineStart: 8 }}>
+          <WorkflowNoticeTags notices={notices} />
+        </span>
+      ) : null}
+    </span>
+  );
 }
 
 function WorkflowEnabledSwitch({
@@ -127,6 +211,8 @@ function WorkflowPaneInner() {
   const ctx = useFlowContext();
   const { getWorkflowCanvasPath } = useWorkflowRuntimePaths();
   const { token } = theme.useToken();
+  const workflowTitleMaxWidth = token.screenXS - token.paddingXL * 3;
+  const workflowTitleColumnMaxWidth = workflowTitleMaxWidth + token.padding * 2;
   const { modal, message } = App.useApp();
   const resource = ctx.api.resource('workflows');
   const plugin = ctx.app.pm.get(PluginWorkflowClientV2);
@@ -166,6 +252,7 @@ function WorkflowPaneInner() {
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [filterPayload, setFilterPayload] = useState<Record<string, any> | undefined>(undefined);
+  const [workflowListNotices, setWorkflowListNotices] = useState<Record<string, WorkflowNotice[]>>({});
 
   const handleFilterChange = useMemoizedFn((filter: CompiledFilter) => {
     setFilterPayload(filter);
@@ -195,14 +282,46 @@ function WorkflowPaneInner() {
         page,
         pageSize,
         sort: ['-createdAt'],
-        except: ['config'],
         appends: ['categories', 'stats'],
+        except: ['config'],
         filter,
       });
       return normalizeListResponse(response);
     },
     { refreshDeps: [page, pageSize, activeCategory, filterPayload] },
   );
+  const records = useMemo(() => data?.records || [], [data?.records]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadWorkflowListNotices() {
+      if (!records.length) {
+        setWorkflowListNotices({});
+        return;
+      }
+
+      setWorkflowListNotices({});
+      const notices = await plugin.loadWorkflowListNotices({
+        api: ctx.api,
+        surface: 'workflow-list-row',
+        workflows: records as Array<Record<string, unknown>>,
+      });
+      if (!cancelled) {
+        setWorkflowListNotices(notices);
+      }
+    }
+
+    loadWorkflowListNotices().catch(() => {
+      if (!cancelled) {
+        setWorkflowListNotices({});
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [ctx.api, plugin, records]);
 
   const handlePaginationChange = useMemoizedFn((nextPage: number, nextPageSize: number) => {
     if (nextPageSize !== pageSize) {
@@ -277,7 +396,32 @@ function WorkflowPaneInner() {
 
   const columns = useMemo<ColumnsType<WorkflowRecord>>(
     () => [
-      { title: t('Title'), dataIndex: 'title' },
+      {
+        title: t('Title'),
+        dataIndex: 'title',
+        width: 1,
+        onHeaderCell: () => ({
+          style: {
+            maxWidth: workflowTitleColumnMaxWidth,
+            whiteSpace: 'nowrap',
+          },
+        }),
+        onCell: () => ({
+          style: {
+            maxWidth: workflowTitleColumnMaxWidth,
+            overflowWrap: 'anywhere',
+            whiteSpace: 'normal',
+            wordBreak: 'break-word',
+          },
+        }),
+        render: (value, record) => {
+          const syncNotices = plugin.getWorkflowNotices({ surface: 'workflow-list-row', workflow: record });
+          const asyncNotices = workflowListNotices[String(record.id)] || [];
+          const notices = [...syncNotices, ...asyncNotices];
+
+          return <WorkflowTitleCell title={value} notices={notices} maxWidth={workflowTitleMaxWidth} />;
+        },
+      },
       {
         title: t('Category'),
         dataIndex: 'categories',
@@ -332,7 +476,21 @@ function WorkflowPaneInner() {
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [handleDelete, openConfigure, openDuplicate, openExecutions, openForm, refresh, resource, t, triggerLabel],
+    [
+      handleDelete,
+      openConfigure,
+      openDuplicate,
+      openExecutions,
+      openForm,
+      plugin,
+      refresh,
+      resource,
+      t,
+      triggerLabel,
+      workflowTitleColumnMaxWidth,
+      workflowTitleMaxWidth,
+      workflowListNotices,
+    ],
   );
 
   return (
@@ -386,6 +544,7 @@ function WorkflowPaneInner() {
           dataSource={data?.records || []}
           rowSelection={{ selectedRowKeys, onChange: setSelectedRowKeys }}
           pagination={{ current: page, pageSize, total: data?.total || 0, onChange: handlePaginationChange }}
+          tableLayout="auto"
         />
       </div>
     </div>

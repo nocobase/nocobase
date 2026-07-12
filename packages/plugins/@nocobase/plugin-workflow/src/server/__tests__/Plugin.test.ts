@@ -10,6 +10,7 @@
 import { MockServer } from '@nocobase/test';
 import Database, { Transaction } from '@nocobase/database';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
+import { vi } from 'vitest';
 
 import Plugin, { Processor } from '..';
 import { EXECUTION_STATUS } from '../constants';
@@ -350,6 +351,53 @@ describe('workflow > Plugin', () => {
       await e1.reload();
       expect(e1.dispatched).toBe(false);
       expect(e1.status).toBe(EXECUTION_STATUS.QUEUEING);
+    });
+
+    it('should notify trigger failure callback when async execution creation fails', async () => {
+      type SavingDispatcher = {
+        saving: Promise<unknown> | null;
+      };
+      const dispatcher = (plugin as unknown as { dispatcher: SavingDispatcher }).dispatcher;
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+      const error = new Error('duplicate execution id');
+      const createExecution = vi.spyOn(workflow, 'createExecution').mockRejectedValueOnce(error);
+      const onTriggerFail = vi.fn(async () => {
+        await sleep(10);
+      });
+
+      plugin.trigger(workflow, { data: true }, { eventKey: 'failed-event', onTriggerFail });
+
+      await dispatcher.saving?.catch(() => null);
+
+      expect(createExecution).toHaveBeenCalledTimes(1);
+      expect(onTriggerFail).toHaveBeenCalledTimes(1);
+      expect(onTriggerFail.mock.calls[0]).toEqual([
+        workflow,
+        { data: true },
+        { eventKey: 'failed-event', onTriggerFail },
+        error,
+      ]);
+    });
+
+    it('should notify trigger failure callback when async event context is null', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+      const onTriggerFail = vi.fn(async () => {
+        await sleep(10);
+      });
+
+      await plugin.trigger(workflow, null as unknown as object, { eventKey: 'invalid-context-event', onTriggerFail });
+
+      expect(onTriggerFail).toHaveBeenCalledTimes(1);
+      expect(onTriggerFail.mock.calls[0][0]).toBe(workflow);
+      expect(onTriggerFail.mock.calls[0][1]).toBeNull();
+      expect(onTriggerFail.mock.calls[0][2]).toEqual({ eventKey: 'invalid-context-event', onTriggerFail });
+      expect(onTriggerFail.mock.calls[0][3]).toBeInstanceOf(Error);
     });
 
     it('should recover after unexpected dispatch error before cleanup', async () => {

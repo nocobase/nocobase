@@ -46,6 +46,28 @@ const operatorWidthClassName = css`
   }
 `;
 
+// `TypedVariableInput` is full-width by default (`<div style={{ width: '100%' }}>` +
+// `Space.Compact style={{ display: 'flex', width: '100%' }}`), which works for
+// form rows but not for the v1-style calculation builder. Here we locally
+// restore the old intrinsic-width behavior so the row stays on one line by
+// default, yet can wrap when a selected variable path becomes too long.
+const operandClassName = css`
+  flex: 0 1 auto;
+  min-width: 12em;
+  max-width: 100%;
+
+  > div {
+    width: auto !important;
+    max-width: 100%;
+  }
+
+  > div > .ant-space-compact {
+    display: inline-flex !important;
+    width: auto !important;
+    max-width: 100%;
+  }
+`;
+
 interface Calculator {
   name: string;
   type: 'boolean' | 'number' | 'string' | 'date' | 'unknown' | 'null' | 'array';
@@ -61,23 +83,12 @@ calculators.register('gte', { name: '≥', type: 'boolean', group: 'boolean' });
 calculators.register('lt', { name: '<', type: 'boolean', group: 'boolean' });
 calculators.register('lte', { name: '≤', type: 'boolean', group: 'boolean' });
 
-calculators.register('add', { name: '+', type: 'number', group: 'number' });
-calculators.register('minus', { name: '-', type: 'number', group: 'number' });
-calculators.register('multiple', { name: '*', type: 'number', group: 'number' });
-calculators.register('divide', { name: '/', type: 'number', group: 'number' });
-calculators.register('mod', { name: '%', type: 'number', group: 'number' });
-
 calculators.register('includes', { name: '{{t("contains")}}', type: 'boolean', group: 'string' });
 calculators.register('notIncludes', { name: '{{t("does not contain")}}', type: 'boolean', group: 'string' });
 calculators.register('startsWith', { name: '{{t("starts with")}}', type: 'boolean', group: 'string' });
 calculators.register('notStartsWith', { name: '{{t("not starts with")}}', type: 'boolean', group: 'string' });
 calculators.register('endsWith', { name: '{{t("ends with")}}', type: 'boolean', group: 'string' });
 calculators.register('notEndsWith', { name: '{{t("not ends with")}}', type: 'boolean', group: 'string' });
-calculators.register('concat', {
-  name: `{{t("Concatenate", { ns: "${NAMESPACE}" })}}`,
-  type: 'string',
-  group: 'string',
-});
 
 const calculatorGroups = [
   { value: 'boolean', title: '{{t("Comparision")}}' },
@@ -121,22 +132,20 @@ function Calculation({ calculator, operands = [], onChange }: any) {
         display: flex;
         gap: 0.5em;
         align-items: center;
-        flex-wrap: nowrap;
+        flex-wrap: wrap;
         margin: 0;
         padding: 0;
         border: none;
-        min-width: 0;
       `}
     >
-      {/* Operands flex to fill; the operator select stays narrow (auto-width) —
-          matches v1's single-row [operand · operator · operand] layout. */}
-      <TypedVariableInput
-        types={OPERAND_TYPES}
-        metaTree={leftMetaTree}
-        value={operands[0]}
-        onChange={leftOperandOnChange}
-        style={{ flex: 1, minWidth: 0 }}
-      />
+      <div className={operandClassName} data-testid="calculation-operand">
+        <TypedVariableInput
+          types={OPERAND_TYPES}
+          metaTree={leftMetaTree}
+          value={operands[0]}
+          onChange={leftOperandOnChange}
+        />
+      </div>
       <Select
         // antd's Select prop type doesn't surface DOM passthrough props (`role`), though it forwards them — same as the
         // core `CollectionSelectorFieldModel`.
@@ -161,13 +170,14 @@ function Calculation({ calculator, operands = [], onChange }: any) {
             </Select.OptGroup>
           ))}
       </Select>
-      <TypedVariableInput
-        types={OPERAND_TYPES}
-        metaTree={rightMetaTree}
-        value={operands[1]}
-        onChange={rightOperandOnChange}
-        style={{ flex: 1, minWidth: 0 }}
-      />
+      <div className={operandClassName} data-testid="calculation-operand">
+        <TypedVariableInput
+          types={OPERAND_TYPES}
+          metaTree={rightMetaTree}
+          value={operands[1]}
+          onChange={rightOperandOnChange}
+        />
+      </div>
     </fieldset>
   );
 }

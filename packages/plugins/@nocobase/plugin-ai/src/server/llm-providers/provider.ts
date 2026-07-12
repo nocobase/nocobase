@@ -36,6 +36,14 @@ export type LLMProviderInvokeOptions = {
   [key: string]: any;
 };
 
+export type ReasoningMode = 'default' | 'off' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh';
+
+export type ReasoningOptions = {
+  mode: ReasoningMode;
+};
+
+export type ResolvedReasoningOptions = Pick<LLMProviderInvokeOptions, 'modelKwargs' | 'modelRequestParams'>;
+
 export type LLMModelRequestBuilderResult = {
   context: AIChatContext;
   options?: LLMProviderInvokeOptions;
@@ -95,6 +103,7 @@ export abstract class LLMProvider {
   serviceOptions: Record<string, any>;
   modelOptions: Record<string, any> | undefined;
   chatModel: any;
+  protected modelReasoningOptions: ReasoningOptions | undefined;
 
   abstract createModel(): BaseChatModel | any;
 
@@ -107,13 +116,19 @@ export abstract class LLMProvider {
     this.app = app;
     this.serviceOptions = resolveServiceOptions(serviceOptions, app);
     if (modelOptions) {
-      this.modelOptions = modelOptions;
+      const { _reasoning, ...restModelOptions } = modelOptions;
+      this.modelReasoningOptions = _reasoning;
+      this.modelOptions = restModelOptions;
       this.chatModel = this.createModel();
     }
   }
 
   protected getModelRequestBuilder(_model?: string): LLMModelRequestBuilder | null {
     return null;
+  }
+
+  protected resolveReasoningOptions(_reasoning?: ReasoningOptions): ResolvedReasoningOptions {
+    return {};
   }
 
   prepareChain(context: AIChatContext) {
