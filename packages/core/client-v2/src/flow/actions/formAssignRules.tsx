@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction, observer, tExpr, useFlowContext } from '@nocobase/flow-engine';
+import { defineAction, isRunJSValue, observer, tExpr, useFlowContext } from '@nocobase/flow-engine';
 import { isEqual } from 'lodash';
 import React from 'react';
 import { FieldAssignRulesEditor } from '../components/FieldAssignRulesEditor';
@@ -81,17 +81,24 @@ const FormAssignRulesUI = observer(
 
     const getValueInputProps = React.useCallback(
       (_item: FieldAssignRuleItem, index: number) => {
+        const storageModel = ctx.model?.subModels?.grid || ctx.model;
+        const persistedRules = ctx.model?.getStepParams?.('formModelSettings', 'assignRules')?.value;
+        const persistedItem = Array.isArray(persistedRules)
+          ? persistedRules.find((item) => item?.key === _item.key) || persistedRules[index]
+          : undefined;
+        const hasPersistedRunJSValue = isRunJSValue(persistedItem?.value);
         return {
-          sourceLocator: ctx.model?.uid
-            ? {
-                kind: 'flowModel.nestedRunJS' as const,
-                modelUid: ctx.model.uid,
-                containerFlowKey: 'formModelSettings',
-                containerStepKey: 'assignRules',
-                valuePath: ['value', index, 'value'],
-                scene: 'formValue',
-              }
-            : undefined,
+          sourceLocator:
+            storageModel?.uid && hasPersistedRunJSValue
+              ? {
+                  kind: 'flowModel.nestedRunJS' as const,
+                  modelUid: storageModel.uid,
+                  containerFlowKey: 'formModelSettings',
+                  containerStepKey: 'assignRules',
+                  valuePath: ['value', index, 'value'],
+                  scene: 'formValue',
+                }
+              : undefined,
           sourceLabel: `${t('Field values')} / ${t('RunJS')}`,
           surfaceStyle: 'value' as const,
         };

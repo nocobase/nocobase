@@ -26,10 +26,8 @@ vi.mock('@nocobase/client-v2', async () => {
 });
 
 vi.mock('../components/JSBlockLightExtensionSourceField', () => ({
-  RunJSLightExtensionSourceField: ({ value, onChange }: { value?: string; onChange?: (value: string) => void }) => (
-    <button type="button" onClick={() => onChange?.('light-extension')}>
-      source:{value || 'inline'}
-    </button>
+  RunJSLightExtensionSourceField: ({ value }: { value?: string | { entryId?: string } }) => (
+    <div>source:{typeof value === 'string' ? value : value?.entryId || 'inline'}</div>
   ),
 }));
 
@@ -107,9 +105,8 @@ function EditorViewHarness(props: { api?: ApiClientLike; children: React.ReactNo
 }
 
 describe('RunJSLightExtensionEditorProvider', () => {
-  it('handles nested value/action RunJS editors and preserves inline edits', async () => {
+  it('only handles nested values after a light extension is selected', () => {
     const provider = createRunJSLightExtensionEditorProvider();
-    const onChange = vi.fn();
     const nestedLocator = {
       kind: 'flowModel.nestedRunJS' as const,
       modelUid: 'form_1',
@@ -125,20 +122,20 @@ describe('RunJSLightExtensionEditorProvider', () => {
         locator: nestedLocator,
         surfaceStyle: 'value',
       }),
-    ).toBe(true);
+    ).toBe(false);
     expect(
       provider.canHandle?.({
         value: { code: 'return 1;', version: 'v2' },
         surfaceStyle: 'value',
       }),
-    ).toBe(true);
+    ).toBe(false);
     expect(
       provider.canHandle?.({
         value: { code: 'return 1;', version: 'v2' },
         locator: nestedLocator,
         surfaceStyle: 'action',
       }),
-    ).toBe(true);
+    ).toBe(false);
     expect(
       provider.canHandle?.({
         value: { code: 'return 1;', version: 'v2' },
@@ -153,28 +150,38 @@ describe('RunJSLightExtensionEditorProvider', () => {
       }),
     ).toBe(false);
 
+    const lightExtensionValue = {
+      code: '',
+      version: 'v2',
+      sourceMode: 'light-extension',
+      sourceBinding: {
+        type: 'light-extension-entry',
+        repoId: 'repo_1',
+        entryId: 'entry_1',
+        entryPath: 'src/client/runjs/example/index.ts',
+        kind: 'runjs',
+      },
+    };
+    expect(
+      provider.canHandle?.({
+        value: lightExtensionValue,
+        locator: nestedLocator,
+        surfaceStyle: 'value',
+      }),
+    ).toBe(true);
+
     render(
       <>
         {provider.renderEditor({
-          value: { code: 'return 1;', version: 'v2' },
+          value: lightExtensionValue,
           locator: nestedLocator,
           surfaceStyle: 'value',
-          onChange,
         })}
       </>,
     );
 
-    fireEvent.change(screen.getByLabelText('runjs-code'), {
-      target: { value: 'return 2;' },
-    });
-
-    await waitFor(() => {
-      expect(onChange).toHaveBeenLastCalledWith({
-        code: 'return 2;',
-        version: 'v2',
-        sourceMode: 'inline',
-      });
-    });
+    expect(screen.getByText('source:entry_1')).toBeInTheDocument();
+    expect(screen.queryByLabelText('runjs-code')).not.toBeInTheDocument();
   });
 
   it('opens the selected light extension workspace for JS block render editors', () => {

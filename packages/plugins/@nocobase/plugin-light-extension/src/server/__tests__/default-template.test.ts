@@ -29,7 +29,6 @@ describe('plugin-light-extension default source template', () => {
 
     expect(paths).toEqual([
       'README.md',
-      'light-extension.json',
       'tsconfig.json',
       'src/shared/light-extension-sdk.d.ts',
       'src/client/js-blocks/example/index.tsx',
@@ -56,7 +55,7 @@ describe('plugin-light-extension default source template', () => {
     expect(files.filter((file) => file.path.endsWith('/meta.json')).every((file) => file.language === 'json')).toBe(
       true,
     );
-    expect(DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES).toHaveLength(14);
+    expect(DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES).toHaveLength(13);
   });
 
   it('returns a fresh file array for each repository', () => {

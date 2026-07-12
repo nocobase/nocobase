@@ -14,6 +14,38 @@ import { describe, expect, it, vi } from 'vitest';
 import { FilesPanel } from '../RunJSStudioComponents';
 
 describe('FilesPanel path access', () => {
+  it('hides the internal RunJS manifest from the file tree', () => {
+    render(
+      <FilesPanel
+        collapsed={false}
+        exporting={false}
+        files={[
+          { path: '.nocobase/runjs-source.json', content: '{}', language: 'json' },
+          { path: 'src/index.ts', content: '', language: 'typescript' },
+        ]}
+        folders={['.nocobase', 'src']}
+        onCollapseChange={vi.fn()}
+        onCreate={vi.fn()}
+        onCreateFolder={vi.fn()}
+        onDelete={vi.fn()}
+        onDeleteFolder={vi.fn()}
+        onMoveFile={vi.fn()}
+        onMoveFolder={vi.fn()}
+        onOpen={vi.fn()}
+        onRefresh={vi.fn()}
+        onRename={vi.fn()}
+        onRenameFolder={vi.fn()}
+        readOnly={false}
+        savedFiles={[]}
+        t={(key) => key}
+      />,
+    );
+
+    expect(screen.queryByText('runjs-source.json')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '.nocobase' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'src/index.ts' })).toBeInTheDocument();
+  });
+
   it('fills the available sidebar height when history is collapsed', () => {
     render(
       <FilesPanel

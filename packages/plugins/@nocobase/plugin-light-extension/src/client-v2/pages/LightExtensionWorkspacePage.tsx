@@ -77,7 +77,7 @@ export interface LightExtensionWorkspaceFooterActions {
 
 const LIGHT_EXTENSION_SOURCE_ROOT = 'src/client/js-blocks';
 const LIGHT_EXTENSION_SHARED_ROOT = 'src/shared';
-const LIGHT_EXTENSION_REPO_ROOT_FILE_PATHS = ['README.md', 'light-extension.json', 'tsconfig.json'] as const;
+const LIGHT_EXTENSION_REPO_ROOT_FILE_PATHS = ['README.md', 'tsconfig.json'] as const;
 const LIGHT_EXTENSION_REPO_ROOT_FILES = new Set<string>(LIGHT_EXTENSION_REPO_ROOT_FILE_PATHS);
 const LIGHT_EXTENSION_CLIENT_KIND_TEMPLATE_FILES = [
   'src/client/js-fields/example/index.tsx',

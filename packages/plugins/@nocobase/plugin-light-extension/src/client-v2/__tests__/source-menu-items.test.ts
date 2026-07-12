@@ -80,7 +80,7 @@ const selectableRepo = {
 };
 
 describe('light extension source menu items', () => {
-  it('shows single-entry repositories directly and writes the current runtime binding', async () => {
+  it('groups single-entry repositories before writing the current runtime binding', async () => {
     const request = vi.fn(async (options: ApiRequestOptions) => {
       if (options.url === 'lightExtensionRepos:list') {
         return {
@@ -108,7 +108,8 @@ describe('light extension source menu items', () => {
       t: (key) => key,
     });
     const lightExtensionItem = items?.[0];
-    const entryItem = items?.[1];
+    const repoItem = items?.[1];
+    const entryItem = repoItem?.children?.[0];
 
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -128,8 +129,9 @@ describe('light extension source menu items', () => {
     expect(lightExtensionItem?.label).toBe('Light extensions');
     expect(lightExtensionItem?.disabled).toBe(true);
     expect(lightExtensionItem?.children).toBeUndefined();
-    expect(entryItem?.label).toBe('Orders');
-    expect(entryItem?.children).toBeUndefined();
+    expect(repoItem?.label).toBe('Orders');
+    expect(repoItem?.children).toHaveLength(1);
+    expect(entryItem?.label).toBe('Order total calculator');
     expect(entryItem?.searchText).toContain('Orders');
     expect(entryItem?.searchText).toContain('Order total calculator');
 

@@ -182,11 +182,12 @@ const RunJSLightExtensionEditor: React.FC<RunJSEditorProviderRenderProps> = (pro
           schema={{
             type: 'object',
             properties: {
-              sourceMode: {
-                type: 'string',
+              [sourceMode === LIGHT_EXTENSION_SOURCE_MODE ? 'sourceBinding' : 'sourceMode']: {
+                type: sourceMode === LIGHT_EXTENSION_SOURCE_MODE ? 'object' : 'string',
                 'x-component': 'RunJSLightExtensionSourceField',
                 'x-component-props': {
                   disabled: readonly,
+                  showEntryWorkspace: sourceMode === LIGHT_EXTENSION_SOURCE_MODE,
                 },
               },
             },
@@ -333,6 +334,9 @@ export function createRunJSLightExtensionEditorProvider(): RunJSEditorProvider {
       const locator = props.sourceLocator || props.locator;
       if (locator?.kind === 'flowModel.step' && props.value.sourceMode === LIGHT_EXTENSION_SOURCE_MODE) {
         return true;
+      }
+      if (props.value.sourceMode !== LIGHT_EXTENSION_SOURCE_MODE) {
+        return false;
       }
       if (props.surfaceStyle === 'value') {
         return !locator || locator.kind === 'flowModel.nestedRunJS';

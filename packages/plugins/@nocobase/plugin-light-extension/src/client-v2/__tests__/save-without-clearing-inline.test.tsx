@@ -27,6 +27,45 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
+vi.mock('../pages/LightExtensionWorkspacePage', () => {
+  const MockLightExtensionWorkspacePage = ({
+    repoId,
+    initialPath,
+    workspaceScope,
+    onFooterActionsChange,
+  }: {
+    repoId?: string;
+    initialPath?: string;
+    workspaceScope?: unknown;
+    onFooterActionsChange?: (actions: {
+      disabled: boolean;
+      loading: boolean;
+      onCancel: () => void;
+      onSave: () => void;
+    }) => void;
+  }) => {
+    React.useEffect(() => {
+      onFooterActionsChange?.({
+        disabled: true,
+        loading: false,
+        onCancel: () => undefined,
+        onSave: () => undefined,
+      });
+    }, [onFooterActionsChange]);
+
+    return (
+      <div
+        data-initial-path={initialPath}
+        data-repo-id={repoId}
+        data-testid="entry-workspace"
+        data-workspace-scope={JSON.stringify(workspaceScope)}
+      />
+    );
+  };
+
+  return { default: MockLightExtensionWorkspacePage };
+});
+
 const SchemaField = createSchemaField({
   components: {
     JSBlockLightExtensionSourceField,
@@ -93,6 +132,51 @@ describe('JSBlockLightExtensionSourceField save behavior', () => {
     expect(form.values.code).toBe('ctx.render("keep inline");');
     expect(form.values.version).toBe('v2');
   });
+
+  it('shows the light extension hierarchy and embeds the selected RunJS entry workspace', async () => {
+    const sourceBinding = {
+      type: 'light-extension-entry',
+      repoId: 'repo_sales',
+      repoTitle: 'Sales tools',
+      entryId: 'entry_sales_runjs',
+      entryTitle: 'Calculate total',
+      entryName: 'calculate-total',
+      entryPath: 'src/client/runjs/calculate-total/index.ts',
+      kind: 'runjs',
+    };
+    mocks.request.mockImplementation((options: { url: string }) => {
+      if (options.url === 'lightExtensionEntries:listSelectable') {
+        return Promise.resolve({
+          data: {
+            data: [createSelectableRunJSEntry()],
+          },
+        });
+      }
+      return Promise.reject(new Error(`Unexpected request: ${options.url}`));
+    });
+    const form = createForm({
+      initialValues: {
+        sourceMode: 'light-extension',
+        sourceBinding,
+        settings: {},
+        code: '',
+        version: 'v2',
+      },
+    });
+
+    renderSourceBindingField(form, { kind: 'runjs', showEntryWorkspace: true });
+
+    expect(await screen.findByText('Light extension / Sales tools / Calculate total')).toBeTruthy();
+    const workspace = await screen.findByTestId('entry-workspace');
+    expect(workspace.getAttribute('data-repo-id')).toBe('repo_sales');
+    expect(workspace.getAttribute('data-initial-path')).toBe('src/client/runjs/calculate-total/index.ts');
+    expect(JSON.parse(workspace.getAttribute('data-workspace-scope') || '{}')).toEqual({
+      mode: 'entry',
+      entryPath: 'src/client/runjs/calculate-total/index.ts',
+      kind: 'runjs',
+    });
+    expect(screen.queryByText('No settings')).toBeNull();
+  });
 });
 
 function renderSourceField(form: ReturnType<typeof createForm>) {
@@ -112,7 +196,7 @@ function renderSourceField(form: ReturnType<typeof createForm>) {
   );
 }
 
-function renderSourceBindingField(form: ReturnType<typeof createForm>) {
+function renderSourceBindingField(form: ReturnType<typeof createForm>, componentProps: Record<string, unknown> = {}) {
   return renderWithEngine(
     form,
     <SchemaField
@@ -126,6 +210,7 @@ function renderSourceBindingField(form: ReturnType<typeof createForm>) {
           sourceBinding: {
             type: 'object',
             'x-component': 'JSBlockLightExtensionSourceField',
+            'x-component-props': componentProps,
           },
         },
       }}
@@ -196,5 +281,23 @@ function createSelectableEntry() {
     compiledAt: '2026-07-09T00:00:00.000Z',
     healthStatus: 'ready',
     diagnostics: [],
+  };
+}
+
+function createSelectableRunJSEntry() {
+  return {
+    ...createSelectableEntry(),
+    id: 'entry_sales_runjs',
+    kind: 'runjs',
+    entryName: 'calculate-total',
+    entryPath: 'src/client/runjs/calculate-total/index.ts',
+    title: 'Calculate total',
+    settingsSchema: null,
+    runtimeArtifact: {
+      code: 'export default function calculateTotal() { return 1; }',
+      version: 'v2',
+      entryPath: 'src/client/runjs/calculate-total/index.ts',
+    },
+    surfaceStyle: 'value',
   };
 }

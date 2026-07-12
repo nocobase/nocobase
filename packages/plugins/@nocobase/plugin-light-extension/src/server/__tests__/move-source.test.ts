@@ -261,7 +261,7 @@ describe('MoveSourceService', () => {
     const createInput = createRepo.mock.calls[0][0];
     const initialPaths = createInput.initialFiles.map((file: { path: string }) => file.path);
     expect(initialPaths).toContain('src/client/js-blocks/sales-kpi/index.tsx');
-    expect(initialPaths).toContain('light-extension.json');
+    expect(initialPaths).not.toContain('light-extension.json');
     expect(initialPaths).not.toContain('src/client/js-blocks/example/index.tsx');
     expect(initialPaths).not.toContain('src/client/js-actions/example/index.ts');
     expect(compileCurrentRuntime).toHaveBeenCalledWith(

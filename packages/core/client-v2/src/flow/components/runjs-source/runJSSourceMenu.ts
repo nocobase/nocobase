@@ -75,6 +75,16 @@ function getMenuInput(
   };
 }
 
+export async function loadRunJSSourceMenuItems(input: RunJSSourceMenuInput): Promise<RunJSSourceMenuItem[]> {
+  const sourceItems = await Promise.all(
+    RunJSSourceResolverRegistry.getResolvers()
+      .filter((resolver) => typeof resolver.listSourceMenuItems === 'function')
+      .map((resolver) => resolver.listSourceMenuItems?.(input) || []),
+  );
+
+  return sourceItems.flat();
+}
+
 export function createRunJSSourceCascadeMenuUIMode(options: RunJSSourceCascadeMenuOptions): StepCascadeMenuUIMode {
   return {
     type: 'cascadeMenu' as const,
@@ -96,11 +106,7 @@ export function createRunJSSourceCascadeMenuUIMode(options: RunJSSourceCascadeMe
       async loadItems({ params, defaultParams, t }): Promise<RunJSSourceMenuItem[]> {
         const input = getMenuInput(params, options, t);
         const inlineSelected = normalizeSourceMode(params.sourceMode) === INLINE_RUNJS_SOURCE_MODE;
-        const sourceItems = await Promise.all(
-          RunJSSourceResolverRegistry.getResolvers()
-            .filter((resolver) => typeof resolver.listSourceMenuItems === 'function')
-            .map((resolver) => resolver.listSourceMenuItems?.(input) || []),
-        );
+        const sourceItems = await loadRunJSSourceMenuItems(input);
 
         return [
           {
@@ -118,7 +124,7 @@ export function createRunJSSourceCascadeMenuUIMode(options: RunJSSourceCascadeMe
               };
             },
           },
-          ...sourceItems.flat(),
+          ...sourceItems,
         ];
       },
     },

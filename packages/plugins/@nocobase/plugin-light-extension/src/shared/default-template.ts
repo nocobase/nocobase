@@ -103,11 +103,6 @@ export const BASE_LIGHT_EXTENSION_TEMPLATE_FILES: readonly LightExtensionTreeEnt
     language: 'markdown',
   },
   {
-    path: 'light-extension.json',
-    content: '{\n  "schemaVersion": 1\n}\n',
-    language: 'json',
-  },
-  {
     path: 'tsconfig.json',
     content: LIGHT_EXTENSION_TSCONFIG_CONTENT,
     language: 'json',

@@ -790,7 +790,7 @@ describe('LightExtensionWorkspacePage', () => {
       </MemoryRouter>,
     );
 
-    await screen.findByText('README.md');
+    await screen.findAllByText('README.md');
     expect(screen.getByTestId('runjs-code-tab').getAttribute('data-workspace-files')).toContain(
       'src/client/js-blocks/example/index.tsx',
     );
@@ -831,9 +831,8 @@ describe('LightExtensionWorkspacePage', () => {
     fireEvent.click(defaultFileButton);
     await waitFor(() => expect(screen.getAllByText('README.md').length).toBeGreaterThan(0));
     fireEvent.click(defaultFileButton);
-    await waitFor(() => expect(screen.getAllByText('light-extension.json').length).toBeGreaterThan(0));
-    fireEvent.click(defaultFileButton);
     await waitFor(() => expect(screen.getAllByText('tsconfig.json').length).toBeGreaterThan(0));
+    fireEvent.click(defaultFileButton);
     await waitFor(() =>
       expect(screen.getByTestId('runjs-code-tab').getAttribute('data-workspace-files')).toContain(
         'src/shared/light-extension-sdk.d.ts',
@@ -849,11 +848,6 @@ describe('LightExtensionWorkspacePage', () => {
         expect.objectContaining({
           path: 'README.md',
           content: expect.stringContaining('src/client/js-blocks/<entry-name>/index.tsx'),
-          operation: 'upsert',
-        }),
-        expect.objectContaining({
-          path: 'light-extension.json',
-          content: '{\n  "schemaVersion": 1\n}\n',
           operation: 'upsert',
         }),
         expect.objectContaining({

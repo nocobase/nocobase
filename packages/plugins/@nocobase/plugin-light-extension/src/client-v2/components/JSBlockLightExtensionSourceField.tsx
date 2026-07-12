@@ -24,6 +24,10 @@ import type {
 import type { ApiClientLike } from '../api/lightExtensionEntriesRequests';
 import { listSelectableLightExtensionEntries } from '../api/lightExtensionEntriesRequests';
 import { resolveLightExtensionRuntimeSource } from '../resolvers/LightExtensionRunJSResolver';
+import LightExtensionWorkspacePage, {
+  type LightExtensionWorkspaceFooterActions,
+} from '../pages/LightExtensionWorkspacePage';
+import type { LightExtensionWorkspaceScope } from '../workspace/lightExtensionWorkspaceAccess';
 import {
   formatSettingsValidationErrors,
   normalizeSettingsForSchema,
@@ -67,6 +71,7 @@ export interface JSBlockLightExtensionSourceFieldProps {
   onChange?: (value: string | LightExtensionRuntimeSourceBinding | undefined) => void;
   disabled?: boolean;
   kind?: LightExtensionKind;
+  showEntryWorkspace?: boolean;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -128,6 +133,13 @@ function getBindingLabel(binding: LightExtensionRuntimeSourceBinding): string {
   return binding.entryTitle || binding.entryName || binding.entryId || binding.repoTitle || binding.repoId;
 }
 
+function getBindingDisplayLabel(binding: LightExtensionRuntimeSourceBinding, sourceLabel: string): string {
+  const repoLabel = binding.repoTitle || binding.repoId;
+  const entryLabel = getBindingLabel(binding);
+  const bindingLabel = repoLabel && entryLabel !== repoLabel ? `${repoLabel} / ${entryLabel}` : entryLabel;
+  return `${sourceLabel} / ${bindingLabel}`;
+}
+
 function getErrorMessage(error: unknown): string | undefined {
   if (isRecord(error)) {
     if (typeof error.message === 'string') {
@@ -147,6 +159,7 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
   onChange,
   disabled,
   kind = 'js-block',
+  showEntryWorkspace = false,
 }) => {
   const { t } = useTranslation(NAMESPACE);
   const form = useForm();
@@ -163,6 +176,8 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
   const [sourceEntries, setSourceEntries] = React.useState<LightExtensionSelectableEntryRecord[]>([]);
   const [sourceEntriesLoading, setSourceEntriesLoading] = React.useState(false);
   const [sourceEntriesError, setSourceEntriesError] = React.useState<string | null>(null);
+  const [workspaceFooterActions, setWorkspaceFooterActions] =
+    React.useState<LightExtensionWorkspaceFooterActions | null>(null);
 
   const values = form.values as JSBlockRunJSFormValues;
   const rendersSourceModeControl = typeof value === 'string' || getFieldPath(field) === 'sourceMode';
@@ -184,6 +199,18 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
         : null,
     [sourceBinding, sourceEntries],
   );
+  const workspaceEntryPath = selectedEntry?.entryPath || sourceBinding?.entryPath || null;
+  const entryWorkspaceScope = React.useMemo<LightExtensionWorkspaceScope | null>(() => {
+    if (!showEntryWorkspace || !workspaceEntryPath || sourceBinding?.kind !== 'runjs') {
+      return null;
+    }
+    return {
+      mode: 'entry',
+      entryPath: workspaceEntryPath,
+      kind: 'runjs',
+    };
+  }, [showEntryWorkspace, sourceBinding?.kind, workspaceEntryPath]);
+  const hasSettings = Boolean(selectedEntry && getSettingsSchemaPropertyNames(selectedEntry.settingsSchema)?.size);
 
   React.useEffect(() => {
     if (sourceMode !== LIGHT_EXTENSION_SOURCE_MODE || typeof ctx?.view?.setFooter !== 'function') {
@@ -419,13 +446,31 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
 
   const lightExtensionBinding = (
     <Space direction="vertical" style={{ width: '100%' }} size={16}>
+      {sourceBinding ? (
+        <Space align="center" style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+          <Typography.Text strong>{getBindingDisplayLabel(sourceBinding, t('Light extension'))}</Typography.Text>
+          {entryWorkspaceScope ? (
+            <Button
+              disabled={disabled || workspaceFooterActions?.disabled !== false}
+              loading={workspaceFooterActions?.loading}
+              onClick={workspaceFooterActions?.onSave}
+              size="small"
+              type="primary"
+            >
+              {t('Save')}
+            </Button>
+          ) : null}
+        </Space>
+      ) : null}
       {sourceBinding && selectedEntry ? (
-        <SettingsAutoForm
-          schema={selectedEntry.settingsSchema}
-          value={values.settings}
-          disabled={disabled}
-          onChange={handleSettingsChange}
-        />
+        hasSettings || !entryWorkspaceScope ? (
+          <SettingsAutoForm
+            schema={selectedEntry.settingsSchema}
+            value={values.settings}
+            disabled={disabled}
+            onChange={handleSettingsChange}
+          />
+        ) : null
       ) : sourceBinding ? (
         <Alert
           type={sourceEntriesLoading ? 'info' : 'warning'}
@@ -439,6 +484,17 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
       ) : (
         <Alert type="info" showIcon message={t('Select a light extension entry to configure settings')} />
       )}
+      {sourceBinding && entryWorkspaceScope ? (
+        <div style={{ height: 480, minHeight: 360, minWidth: 0, overflow: 'hidden' }}>
+          <LightExtensionWorkspacePage
+            embedded
+            initialPath={workspaceEntryPath || undefined}
+            onFooterActionsChange={setWorkspaceFooterActions}
+            repoId={sourceBinding.repoId}
+            workspaceScope={entryWorkspaceScope}
+          />
+        </div>
+      ) : null}
       {copying ? <Typography.Text type="secondary">{t('Copying light extension code')}</Typography.Text> : null}
     </Space>
   );
