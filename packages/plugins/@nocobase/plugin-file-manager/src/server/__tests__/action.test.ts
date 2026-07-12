@@ -178,7 +178,7 @@ describe('action', () => {
         expect(body.data).toMatchObject(matcher);
         // 文件的 url 是否正常生成
         expect(body.data.url).toBe(`/files/main/main/attachments/${body.data.id}`);
-        const storageUrl = await plugin.getStorageFileURL(body.data);
+        const storageUrl = await plugin.getFileURL(body.data);
         expect(storageUrl).toBe(`${DEFAULT_LOCAL_BASE_URL}/${body.data.filename}`);
 
         const Attachment = db.getModel('attachments');
@@ -230,7 +230,7 @@ describe('action', () => {
         // 文件的 url 是否正常生成
         expect(body.data.url).toBe(`/files/main/main/attachments/${body.data.id}`);
         const encodedFilename = querystring.escape(rawText);
-        expect(await plugin.getStorageFileURL(body.data)).toContain(`${DEFAULT_LOCAL_BASE_URL}/${encodedFilename}`);
+        expect(await plugin.getFileURL(body.data)).toContain(`${DEFAULT_LOCAL_BASE_URL}/${encodedFilename}`);
 
         // 文件的 url 是否正常访问
         // TODO: mock-server is not start within gateway, static url can not be accessed
@@ -479,7 +479,7 @@ describe('action', () => {
 
         // 文件的 url 是否正常生成
         expect(body.data.url).toBe(`/files/main/main/attachments/${body.data.id}`);
-        expect(await plugin.getStorageFileURL(body.data)).toBe(`${BASE_URL}/${urlPath}/${body.data.filename}`);
+        expect(await plugin.getFileURL(body.data)).toBe(`${BASE_URL}/${urlPath}/${body.data.filename}`);
         const destPath = getStorageDestPath(storage);
         const content = await fs.readFile(path.join(destPath, body.data.filename), 'utf8');
         expect(content.includes('Hello world!')).toBe(true);
@@ -524,7 +524,7 @@ describe('action', () => {
 
         // 文件的 url 是否正常生成
         expect(body.data.url).toBe(`/files/main/main/attachments/${body.data.id}`);
-        expect(await plugin.getStorageFileURL(body.data)).toBe(`${BASE_URL}/${urlPath}/${body.data.filename}`);
+        expect(await plugin.getFileURL(body.data)).toBe(`${BASE_URL}/${urlPath}/${body.data.filename}`);
         const destPath = getStorageDestPath(storage);
         const content = await fs.readFile(path.join(destPath, body.data.filename), 'utf8');
         expect(content.includes('Hello world!')).toBe(true);
@@ -570,7 +570,7 @@ describe('action', () => {
 
         // 文件的 url 是否正常生成
         expect(body.data.url).toBe(`/files/main/main/attachments/${body.data.id}`);
-        expect(await plugin.getStorageFileURL(body.data)).toBe(`${BASE_URL}/${urlPath}/${body.data.filename}`);
+        expect(await plugin.getFileURL(body.data)).toBe(`${BASE_URL}/${urlPath}/${body.data.filename}`);
         const destPath = getStorageDestPath(storage);
         const content = await fs.readFile(path.join(destPath, body.data.filename), 'utf8');
         expect(content.includes('Hello world!')).toBe(true);

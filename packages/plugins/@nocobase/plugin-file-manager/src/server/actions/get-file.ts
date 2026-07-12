@@ -73,7 +73,7 @@ export function createGetFileAction(plugin: PluginFileManagerServer) {
       return ctx.throw(404);
     }
 
-    const finalUrl = await plugin.getStorageFileURL(file, Boolean(ctx.state.fileAccess?.preview));
+    const finalUrl = await plugin.getFileURL(file, Boolean(ctx.state.fileAccess?.preview));
     ctx.status = 302;
     ctx.redirect(finalUrl);
     await next();

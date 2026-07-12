@@ -422,10 +422,6 @@ export class PluginFileManagerServer extends Plugin {
   }
 
   async getFileURL(file: AttachmentModel, preview = false) {
-    return this.getStorageFileURL(file, preview);
-  }
-
-  async getStorageFileURL(file: AttachmentModel, preview = false) {
     if (!file.storageId) {
       return encodeURL(file.url);
     }

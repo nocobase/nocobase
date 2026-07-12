@@ -71,14 +71,14 @@ describe('storage:tx-cos', () => {
       expect(body.data).toMatchObject(matcher);
       // 文件的 url 是否正常生成
       expect(body.data.url).toBe(`/files/main/main/attachments/${body.data.id}`);
-      expect(await plugin.getStorageFileURL(body.data)).toBe(
+      expect(await plugin.getFileURL(body.data)).toBe(
         `${attachment.storage.baseUrl}/${body.data.path}/${body.data.filename}`,
       );
       // 文件的数据是否正常保存
       expect(attachment).toMatchObject(matcher);
 
       // 通过 url 是否能正确访问
-      const content = await requestFile(await plugin.getStorageFileURL(attachment), agent);
+      const content = await requestFile(await plugin.getFileURL(attachment), agent);
 
       expect(content.text).toBe('Hello world!\n');
     });

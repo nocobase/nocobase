@@ -75,14 +75,14 @@ describe('storage:ali-oss', () => {
       expect(body.data).toMatchObject(matcher);
       // 文件的 url 是否正常生成
       expect(body.data.url).toBe(`/files/main/main/attachments/${body.data.id}`);
-      expect(await plugin.getStorageFileURL(body.data)).toBe(
+      expect(await plugin.getFileURL(body.data)).toBe(
         `${attachment.storage.baseUrl}/${body.data.path}/${body.data.filename}`,
       );
       // 文件的数据是否正常保存
       expect(attachment).toMatchObject(matcher);
 
       // 通过 url 是否能正确访问
-      const content = await requestFile(await plugin.getStorageFileURL(attachment), agent);
+      const content = await requestFile(await plugin.getFileURL(attachment), agent);
 
       expect(content.text).toBe('Hello world!\n');
     });
@@ -93,7 +93,7 @@ describe('storage:ali-oss', () => {
       const { body } = await agent.resource('attachments').create({
         [FILE_FIELD_NAME]: path.resolve(__dirname, '../files/text.txt'),
       });
-      const storageUrl = await plugin.getStorageFileURL(body.data);
+      const storageUrl = await plugin.getFileURL(body.data);
       // 通过 url 是否能正确访问
       const content1 = await requestFile(storageUrl, agent);
       expect(content1.text).toBe('Hello world!\n');
@@ -124,7 +124,7 @@ describe('storage:ali-oss', () => {
       const { body } = await agent.resource('attachments').create({
         [FILE_FIELD_NAME]: path.resolve(__dirname, '../files/text.txt'),
       });
-      const storageUrl = await plugin.getStorageFileURL(body.data);
+      const storageUrl = await plugin.getFileURL(body.data);
       // 通过 url 是否能正确访问
       const content1 = await requestFile(storageUrl, agent);
       expect(content1.text).toBe('Hello world!\n');
@@ -159,7 +159,7 @@ describe('storage:ali-oss', () => {
       });
 
       const url = await plugin.getFileURL(body.data);
-      expect(url).toBe(await plugin.getStorageFileURL(body.data));
+      expect(url).toBe(await plugin.getFileURL(body.data));
       expect(body.data.url).toBe(`/files/main/main/attachments/${body.data.id}`);
 
       // 通过 url 是否能正确访问

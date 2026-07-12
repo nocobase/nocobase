@@ -292,7 +292,7 @@ describe('file manager > server', () => {
         expect(data).toMatchObject(matcher);
 
         const url = await plugin.getFileURL(data);
-        expect(url).toBe(await plugin.getStorageFileURL(data));
+        expect(url).toBe(await plugin.getFileURL(data));
         expect(url).not.toContain('/files/main/main/attachments/undefined');
       });
 
@@ -341,7 +341,7 @@ describe('file manager > server', () => {
         });
 
         const url = await plugin.getFileURL(body.data);
-        expect(url).toBe(await plugin.getStorageFileURL(body.data));
+        expect(url).toBe(await plugin.getFileURL(body.data));
         expect(url).not.toBe(body.data.url);
       });
 
@@ -361,7 +361,7 @@ describe('file manager > server', () => {
           expect(body.data.url).toBe(`/nocobase/files/main/main/attachments/${body.data.id}`);
           expect(body.data.preview).toBe(`/nocobase/files/main/main/attachments/${body.data.id}/preview`);
 
-          const storageUrl = await plugin.getStorageFileURL(body.data);
+          const storageUrl = await plugin.getFileURL(body.data);
           const response = await loggedAgent.get(body.data.url);
 
           expect(response.status).toBe(302);
@@ -405,7 +405,7 @@ describe('file manager > server', () => {
           expect(url).toBe(`${process.env.APP_PUBLIC_PATH}/storage/uploads/${body.data.filename}`);
           expect(body.data.url).toBe(`/app/files/main/main/attachments/${body.data.id}`);
 
-          const storageUrl = await plugin.getStorageFileURL(body.data);
+          const storageUrl = await plugin.getFileURL(body.data);
           expect(url).toBe(storageUrl);
         } finally {
           restoreEnv('APP_PUBLIC_PATH', originalPath);
@@ -436,7 +436,7 @@ describe('file manager > server', () => {
           expect(url).toBe(`/nocobase/${body.data.filename}`);
           expect(body.data.url).toBe(`/nocobase/files/main/main/attachments/${body.data.id}`);
 
-          const storageUrl = await plugin.getStorageFileURL(body.data);
+          const storageUrl = await plugin.getFileURL(body.data);
           expect(url).toBe(storageUrl);
         } finally {
           restoreEnv('APP_PUBLIC_PATH', originalPath);
@@ -466,7 +466,7 @@ describe('file manager > server', () => {
         expect(url).toBe(`${process.env.APP_PUBLIC_PATH?.replace(/\/$/g, '') || ''}/${body.data.filename}?small`);
         expect(body.data.preview).toBe(`/files/main/main/attachments/${body.data.id}/preview`);
 
-        const storageUrl = await plugin.getStorageFileURL(body.data, true);
+        const storageUrl = await plugin.getFileURL(body.data, true);
         expect(url).toBe(storageUrl);
       });
 
@@ -493,7 +493,7 @@ describe('file manager > server', () => {
         expect(url).toBe(`${process.env.APP_PUBLIC_PATH?.replace(/\/$/g, '') || ''}/${body.data.filename}`);
         expect(body.data.preview).toBe(`/files/main/main/attachments/${body.data.id}/preview`);
 
-        const storageUrl = await plugin.getStorageFileURL(body.data, true);
+        const storageUrl = await plugin.getFileURL(body.data, true);
         expect(url).toBe(storageUrl);
       });
 
@@ -531,7 +531,7 @@ describe('file manager > server', () => {
         expect(url).toBe(`${process.env.APP_PUBLIC_PATH?.replace(/\/$/g, '') || ''}/${file.filename}`);
         expect(plugin.getPermanentFileURL(file, true)).toBe(`/files/main/main/attachments/${file.id}/preview`);
 
-        const storageUrl = await plugin.getStorageFileURL(file, true);
+        const storageUrl = await plugin.getFileURL(file, true);
         expect(url).toBe(storageUrl);
       });
     });
@@ -544,7 +544,7 @@ describe('file manager > server', () => {
           [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
         });
 
-        const storageUrl = await plugin.getStorageFileURL(body.data);
+        const storageUrl = await plugin.getFileURL(body.data);
         const response = await loggedAgent.get(body.data.url);
 
         expect(response.status).toBe(302);
@@ -561,7 +561,7 @@ describe('file manager > server', () => {
         const response = await loggedAgent.head(body.data.url);
 
         expect(response.status).toBe(302);
-        expect(response.headers.location).toBe(await plugin.getStorageFileURL(body.data));
+        expect(response.headers.location).toBe(await plugin.getFileURL(body.data));
         expect(response.text || '').toBe('');
       });
 
@@ -592,7 +592,7 @@ describe('file manager > server', () => {
           const response = await loggedAgent.get(body.data.url);
 
           expect(response.status).toBe(302);
-          expect(response.headers.location).toBe(await plugin.getStorageFileURL(body.data));
+          expect(response.headers.location).toBe(await plugin.getFileURL(body.data));
         } finally {
           collection.options.filterTargetKey = originalFilterTargetKey;
         }
@@ -616,7 +616,7 @@ describe('file manager > server', () => {
           ]);
 
         expect(response.status).toBe(302);
-        expect(response.headers.location).toBe(await plugin.getStorageFileURL(body.data));
+        expect(response.headers.location).toBe(await plugin.getFileURL(body.data));
         expect(response.headers['set-cookie']).toBeUndefined();
       });
 
@@ -638,7 +638,7 @@ describe('file manager > server', () => {
         const response = await loggedAgent.get(found.url);
 
         expect(response.status).toBe(302);
-        expect(response.headers.location).toBe(await plugin.getStorageFileURL(found));
+        expect(response.headers.location).toBe(await plugin.getFileURL(found));
       });
 
       it('uses current app name in permanent URL and rejects other app names', async () => {
@@ -656,7 +656,7 @@ describe('file manager > server', () => {
 
           const response = await loggedAgent.get(body.data.url);
           expect(response.status).toBe(302);
-          expect(response.headers.location).toBe(await plugin.getStorageFileURL(body.data));
+          expect(response.headers.location).toBe(await plugin.getFileURL(body.data));
 
           const wrongAppResponse = await loggedAgent.get(`/files/main/main/attachments/${body.data.id}`);
           expect(wrongAppResponse.status).toBe(404);
@@ -689,7 +689,7 @@ describe('file manager > server', () => {
         const response = await loggedAgent.get(url);
 
         expect(response.status).toBe(302);
-        expect(response.headers.location).toBe(await plugin.getStorageFileURL(file));
+        expect(response.headers.location).toBe(await plugin.getFileURL(file));
 
         const wrongDataSourceResponse = await loggedAgent.get(`/files/main/main/files/${file.id}`);
         expect(wrongDataSourceResponse.status).toBe(404);
@@ -712,7 +712,7 @@ describe('file manager > server', () => {
 
         const response = await loggedAgent.get(body.data.url);
         expect(response.status).toBe(302);
-        expect(response.headers.location).toBe(await plugin.getStorageFileURL(body.data));
+        expect(response.headers.location).toBe(await plugin.getFileURL(body.data));
       });
 
       it('redirects permanent preview URL to storage preview URL', async () => {
@@ -735,7 +735,7 @@ describe('file manager > server', () => {
           [FILE_FIELD_NAME]: path.resolve(__dirname, './files/image.png'),
         });
 
-        const storageUrl = await plugin.getStorageFileURL(body.data, true);
+        const storageUrl = await plugin.getFileURL(body.data, true);
         const response = await loggedAgent.get(body.data.preview);
 
         expect(response.status).toBe(302);
@@ -763,7 +763,7 @@ describe('file manager > server', () => {
         const response = await app.agent().get(body.data.url);
 
         expect(response.status).toBe(302);
-        expect(response.headers.location).toBe(await plugin.getStorageFileURL(body.data));
+        expect(response.headers.location).toBe(await plugin.getFileURL(body.data));
       });
 
       it('redirects when a file access authorizer allows the file', async () => {
@@ -780,7 +780,7 @@ describe('file manager > server', () => {
         const response = await app.agent().get(body.data.url);
 
         expect(response.status).toBe(302);
-        expect(response.headers.location).toBe(await plugin.getStorageFileURL(body.data));
+        expect(response.headers.location).toBe(await plugin.getFileURL(body.data));
       });
 
       it('returns 401 with an invalid cookie token', async () => {
@@ -840,7 +840,7 @@ describe('file manager > server', () => {
           const response = await loggedAgent.get(body.data.url);
 
           expect(response.status).toBe(302);
-          expect(response.headers.location).toBe(await plugin.getStorageFileURL(body.data));
+          expect(response.headers.location).toBe(await plugin.getFileURL(body.data));
         } finally {
           restoreEnv('APP_PUBLIC_PATH', originalPath);
         }
@@ -870,7 +870,7 @@ describe('file manager > server', () => {
 
           const fileResponse = await app.agent().get(body.data.url).set('Cookie', cookieHeader);
           expect(fileResponse.status).toBe(302);
-          expect(fileResponse.headers.location).toBe(await plugin.getStorageFileURL(body.data));
+          expect(fileResponse.headers.location).toBe(await plugin.getFileURL(body.data));
         } finally {
           restoreEnv('APP_PUBLIC_PATH', originalPath);
         }
@@ -899,7 +899,7 @@ describe('file manager > server', () => {
 
           const response = await app.agent().get(body.data.url).set('Cookie', cookieHeader);
           expect(response.status).toBe(302);
-          expect(response.headers.location).toBe(await plugin.getStorageFileURL(body.data));
+          expect(response.headers.location).toBe(await plugin.getFileURL(body.data));
         } finally {
           app.options.name = originalName;
           restoreEnv('APP_PUBLIC_PATH', originalPath);
