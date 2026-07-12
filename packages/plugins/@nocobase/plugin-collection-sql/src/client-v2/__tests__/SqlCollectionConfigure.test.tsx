@@ -501,7 +501,7 @@ describe('SqlStatementConfigureItem', () => {
     fireEvent.click(screen.getByText('t:Execute'));
 
     await waitFor(() =>
-      expect(execute).toHaveBeenCalledWith({
+      expect(execute.mock.calls[0]?.[0]).toEqual({
         values: {
           sql: 'select id, title from orders',
         },
@@ -583,7 +583,7 @@ describe('SqlStatementConfigureItem', () => {
     fireEvent.click(screen.getByText('t:Confirm'));
 
     await waitFor(() =>
-      expect(execute).toHaveBeenCalledWith({
+      expect(execute.mock.calls[0]?.[0]).toEqual({
         values: {
           sql: 'select id from orders',
         },
@@ -633,7 +633,7 @@ describe('SqlStatementConfigureItem', () => {
     });
 
     await waitFor(() =>
-      expect(execute).toHaveBeenCalledWith({
+      expect(execute.mock.calls[0]?.[0]).toEqual({
         values: {
           sql: 'select id from orders',
         },
@@ -1072,7 +1072,7 @@ describe('SqlSyncFieldsDrawer', () => {
     fireEvent.click(screen.getByText('t:Submit'));
 
     await waitFor(() =>
-      expect(setFields).toHaveBeenCalledWith({
+      expect(setFields.mock.calls[0]?.[0]).toEqual({
         filterByTk: 'orders_view',
         values: {
           fields: expect.arrayContaining([
