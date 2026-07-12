@@ -1,0 +1,17 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Automatisation de la recherche sur les entreprises",
+    "link": "/ai-employees/scenarios/company-background-research"
+  },
+  {
+    "type": "custom-link",
+    "label": "Générer des rapports d'analyse métier",
+    "link": "/ai-employees/scenarios/business-report"
+  },
+  {
+    "type": "custom-link",
+    "label": "Lina : Traduction de localisation",
+    "link": "/ai-employees/scenarios/localization-hy-mt"
+  }
+]
