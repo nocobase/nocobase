@@ -403,7 +403,7 @@ export abstract class BaseApplication<
       this.favicon = favicon || '';
     }
 
-    const iconHref = this.favicon || '/favicon/favicon.ico';
+    const iconHref = this.favicon || this.getCdnUrl() + 'favicon/favicon.ico';
 
     if (faviconLinkElement) {
       faviconLinkElement.href = iconHref;
