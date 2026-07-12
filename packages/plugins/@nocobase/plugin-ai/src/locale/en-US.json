@@ -457,5 +457,14 @@
   "When enabled, URL and headers can use current user variables and NocoBase request variables. Stdio transport is not supported.": "When enabled, URL and headers can use current user variables and NocoBase request variables. Stdio transport is not supported.",
   "Connection test failed": "Connection test failed",
   "The MCP server uses current user variables and the connection test failed. Do you want to save it anyway?": "The MCP server uses current user variables and the connection test failed. Do you want to save it anyway?",
-  "Save anyway": "Save anyway"
+  "Save anyway": "Save anyway",
+  "Thinking mode": "Thinking mode",
+  "Thinking mode description": "Controls whether MiniMax-M3 emits thinking content. Leave empty to use the model default.",
+  "Service tier": "Service tier",
+  "Service tier description": "Select the request admission tier. Leave empty to use the standard tier.",
+  "Adaptive": "Adaptive",
+  "Disabled": "Disabled",
+  "Standard": "Standard",
+  "Priority": "Priority",
+  "Use model default": "Use model default"
 }

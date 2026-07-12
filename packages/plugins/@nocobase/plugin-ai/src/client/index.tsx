@@ -59,7 +59,7 @@ import { setupAICoding } from './ai-employees/ai-coding/setup';
 import { setupDataModeling } from './ai-employees/data-modeling/setup';
 import { AIEmployeeInstruction } from './workflow/nodes/employee';
 import { mimoProviderOptions } from './llm-providers/mimo';
-import { minimaxProviderOptions } from './llm-providers/MiniMax';
+import { minimaxProviderOptions } from './llm-providers/minimax';
 import { mistralProviderOptions } from './llm-providers/mistral';
 const { AIEmployeesProvider } = lazy(() => import('./ai-employees/AIEmployeesProvider'), 'AIEmployeesProvider');
 const { Employees } = lazy(() => import('./ai-employees/admin/Employees'), 'Employees');

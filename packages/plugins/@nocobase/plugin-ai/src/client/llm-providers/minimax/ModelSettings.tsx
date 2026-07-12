@@ -12,9 +12,7 @@ import { SchemaComponent } from '@nocobase/client';
 import { tval } from '@nocobase/utils/client';
 import { namespace, useT } from '../../locale';
 import { Collapse } from 'antd';
-import { WorkflowVariableRawTextArea } from '@nocobase/plugin-workflow/client';
 import { ModelSelect } from '../components/ModelSelect';
-import { Switch } from 'antd';
 
 const Options: React.FC = () => {
   const t = useT();
@@ -38,19 +36,6 @@ const Options: React.FC = () => {
                   type: 'void',
                   name: 'minimax',
                   properties: {
-                    frequencyPenalty: {
-                      title: tval('Frequency penalty', { ns: namespace }),
-                      description: tval('Frequency penalty description', { ns: namespace }),
-                      type: 'number',
-                      'x-decorator': 'FormItem',
-                      'x-component': 'InputNumber',
-                      default: 0.0,
-                      'x-component-props': {
-                        step: 0.1,
-                        min: -2.0,
-                        max: 2.0,
-                      },
-                    },
                     maxCompletionTokens: {
                       title: tval('Max completion tokens', { ns: namespace }),
                       description: tval('Max completion tokens description', { ns: namespace }),
@@ -58,19 +43,6 @@ const Options: React.FC = () => {
                       'x-decorator': 'FormItem',
                       'x-component': 'InputNumber',
                       default: -1,
-                    },
-                    presencePenalty: {
-                      title: tval('Presence penalty', { ns: namespace }),
-                      description: tval('Presence penalty description', { ns: namespace }),
-                      type: 'number',
-                      'x-decorator': 'FormItem',
-                      'x-component': 'InputNumber',
-                      default: 0.0,
-                      'x-component-props': {
-                        step: 0.1,
-                        min: -2.0,
-                        max: 2.0,
-                      },
                     },
                     temperature: {
                       title: tval('Temperature', { ns: namespace }),
@@ -82,7 +54,7 @@ const Options: React.FC = () => {
                       'x-component-props': {
                         step: 0.1,
                         min: 0.0,
-                        max: 1.0,
+                        max: 2.0,
                       },
                     },
                     topP: {
@@ -91,34 +63,69 @@ const Options: React.FC = () => {
                       type: 'number',
                       'x-decorator': 'FormItem',
                       'x-component': 'InputNumber',
-                      default: 1.0,
                       'x-component-props': {
-                        step: 0.5,
+                        step: 0.1,
                         min: 0.0,
                         max: 1.0,
                       },
                     },
-                    responseFormat: {
-                      title: tval('Response format', { ns: namespace }),
-                      description: tval('Response format description', { ns: namespace }),
+                    thinking: {
+                      title: tval('Thinking mode', { ns: namespace }),
+                      description: tval('Thinking mode description', { ns: namespace }),
                       type: 'string',
                       'x-decorator': 'FormItem',
                       'x-component': 'Select',
                       enum: [
                         {
-                          label: t('Text'),
-                          value: 'text',
+                          label: t('Adaptive'),
+                          value: 'adaptive',
                         },
                         {
-                          label: t('JSON'),
-                          value: 'json_object',
-                        },
-                        {
-                          label: t('JSON Schema'),
-                          value: 'json_schema',
+                          label: t('Disabled'),
+                          value: 'disabled',
                         },
                       ],
-                      default: 'text',
+                      'x-component-props': {
+                        allowClear: true,
+                        placeholder: t('Use model default'),
+                      },
+                      'x-reactions': {
+                        dependencies: ['.model'],
+                        fulfill: {
+                          state: {
+                            visible: '{{$deps[0] === "MiniMax-M3"}}',
+                          },
+                        },
+                      },
+                    },
+                    serviceTier: {
+                      title: tval('Service tier', { ns: namespace }),
+                      description: tval('Service tier description', { ns: namespace }),
+                      type: 'string',
+                      'x-decorator': 'FormItem',
+                      'x-component': 'Select',
+                      enum: [
+                        {
+                          label: t('Standard'),
+                          value: 'standard',
+                        },
+                        {
+                          label: t('Priority'),
+                          value: 'priority',
+                        },
+                      ],
+                      'x-component-props': {
+                        allowClear: true,
+                        placeholder: t('Use model default'),
+                      },
+                      'x-reactions': {
+                        dependencies: ['.model'],
+                        fulfill: {
+                          state: {
+                            visible: '{{$deps[0] === "MiniMax-M3"}}',
+                          },
+                        },
+                      },
                     },
                     timeout: {
                       title: tval('Timeout (ms)', { ns: namespace }),
@@ -148,7 +155,7 @@ const Options: React.FC = () => {
 export const ModelSettingsForm: React.FC = () => {
   return (
     <SchemaComponent
-      components={{ Options, WorkflowVariableRawTextArea, ModelSelect, Switch }}
+      components={{ Options, ModelSelect }}
       schema={{
         type: 'void',
         properties: {
