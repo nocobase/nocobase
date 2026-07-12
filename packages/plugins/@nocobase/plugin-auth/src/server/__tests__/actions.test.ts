@@ -526,7 +526,7 @@ describe('actions', () => {
       }
     });
 
-    it('restores authentication and ACL only for the signed target', async () => {
+    it('restores authentication and ACL for URL-bound query and header codes', async () => {
       const signIn = await agent.post('/api/auth:signIn').set('X-Authenticator', 'basic').send({
         account: process.env.INIT_ROOT_EMAIL,
         password: process.env.INIT_ROOT_PASSWORD,
@@ -536,22 +536,29 @@ describe('actions', () => {
         'X-Authenticator': 'basic',
         'X-Role': 'root',
       };
-      const issued = await agent
+      const issuedForList = await agent
         .post('/api/auth:createAccessCode')
         .set(authHeaders)
-        .send({ target: 'users:list?pageSize=1' });
-      expect(issued.statusCode).toBe(200);
-      const code = issued.body.data.code;
+        .send({ url: 'users:list?pageSize=*' });
+      expect(issuedForList.statusCode).toBe(200);
+      const listCode = issuedForList.body.data.code;
 
-      for (let index = 0; index < 2; index++) {
-        const response = await agent.get(`/api/users:list?pageSize=1&accessCode=${code}`);
-        expect(response.statusCode).toBe(200);
-        expect(response.body.data).toHaveLength(1);
-      }
+      const firstPage = await agent.get(`/api/users:list?pageSize=1&_code=${listCode}`);
+      expect(firstPage.statusCode).toBe(200);
+      expect(firstPage.body.data).toHaveLength(1);
+      expect((await agent.get(`/api/users:list?pageSize=2&_code=${listCode}`)).statusCode).toBe(200);
 
-      expect((await agent.get(`/api/users:list?pageSize=2&accessCode=${code}`)).statusCode).toBe(401);
+      const issuedForCheck = await agent
+        .post('/api/auth:createAccessCode')
+        .set(authHeaders)
+        .send({ url: 'auth:check' });
+      expect(issuedForCheck.statusCode).toBe(200);
+      const checkCode = issuedForCheck.body.data.code;
+      expect((await agent.post('/api/auth:check').set('X-Temp-Code', checkCode).send()).statusCode).toBe(200);
+
+      expect((await agent.get(`/api/users:list?pageSize=1&_code=${checkCode}`)).statusCode).toBe(401);
       expect((await agent.post('/api/auth:signOut').set(authHeaders)).statusCode).toBe(200);
-      expect((await agent.get(`/api/users:list?pageSize=1&accessCode=${code}`)).statusCode).toBe(401);
+      expect((await agent.get(`/api/users:list?pageSize=1&_code=${listCode}`)).statusCode).toBe(401);
     });
   });
 });

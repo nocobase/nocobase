@@ -19,7 +19,6 @@ import { BasicAuth } from './basic-auth';
 import { AuthModel } from './model/authenticator';
 import { Storer } from './storer';
 import {
-  captureTemporaryAccessRequestMethod,
   createTemporaryAccessCodeCache,
   resolveTemporaryAccessCode,
   TemporaryAccessCodeService,
@@ -78,10 +77,6 @@ export class PluginAuthServer extends Plugin {
 
     const temporaryAccessCodeCache = await createTemporaryAccessCodeCache(this.app.cacheManager);
     this.temporaryAccessCodeService = new TemporaryAccessCodeService(temporaryAccessCodeCache, this.app.name);
-    this.app.use(captureTemporaryAccessRequestMethod, {
-      tag: 'temporaryAccessRequestMethod',
-      before: 'bodyParser',
-    });
     this.app.use(resolveTemporaryAccessCode(this.temporaryAccessCodeService), {
       tag: 'temporaryAccessCode',
       after: 'dataWrapping',

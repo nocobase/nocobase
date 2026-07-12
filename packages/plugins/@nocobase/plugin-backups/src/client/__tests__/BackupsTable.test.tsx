@@ -75,8 +75,10 @@ describe('BackupsTable', () => {
   });
 
   test('should handle download action', async () => {
-    const temporaryUrl = '/api/backups:download?filterByTk=backup_20240818_182301_9056.nbdata&accessCode=test-code';
-    const createTemporaryUrlSpy = vi.spyOn(apiClient.auth, 'createTemporaryUrl').mockResolvedValue(temporaryUrl);
+    const temporaryUrl =
+      '/api/backups:download?filterByTk=backup_20240818_182301_9056.nbdata&_code=test-code&__appName=sub1';
+    const createAccessCodeSpy = vi.spyOn(apiClient.auth, 'createAccessCode').mockResolvedValue('test-code');
+    vi.spyOn(apiClient, 'getHeaders').mockReturnValue({ 'X-App': 'sub1' });
     const anchorClickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
     const user = userEvent.setup();
     render(<MockedTable />, { wrapper: Wrapper });
@@ -85,12 +87,9 @@ describe('BackupsTable', () => {
     await user.click(downloadButton);
 
     await waitFor(() => {
-      expect(createTemporaryUrlSpy).toHaveBeenCalledTimes(1);
-      expect(createTemporaryUrlSpy).toHaveBeenCalledWith({
-        url: 'backups:download',
-        params: {
-          filterByTk: 'backup_20240818_182301_9056.nbdata',
-        },
+      expect(createAccessCodeSpy).toHaveBeenCalledTimes(1);
+      expect(createAccessCodeSpy).toHaveBeenCalledWith({
+        url: 'backups:download?filterByTk=backup_20240818_182301_9056.nbdata',
       });
       expect(anchorClickSpy).toHaveBeenCalledTimes(1);
     });

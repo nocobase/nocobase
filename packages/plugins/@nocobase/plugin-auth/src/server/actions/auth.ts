@@ -11,7 +11,7 @@
 import { Context, Next } from '@nocobase/actions';
 import { PasswordField } from '@nocobase/database';
 import { namespace } from '../../preset';
-import { InvalidTemporaryAccessTargetError, TemporaryAccessCodeService } from '../temporary-access-code';
+import { InvalidTemporaryAccessUrlError, TemporaryAccessCodeService } from '../temporary-access-code';
 
 const CREATE_ACCESS_CODE_SESSION_REQUIRED = 'CREATE_ACCESS_CODE_SESSION_REQUIRED';
 
@@ -50,19 +50,19 @@ export function createAccessCodeAction(service: TemporaryAccessCodeService) {
       return rejectAccessCodeIssuer(ctx);
     }
 
-    const target = ctx.action.params.values?.target;
+    const url = ctx.action.params.values?.url;
     try {
       ctx.body = await service.create({
         accessToken,
         authenticator,
         roleName: typeof ctx.state.currentRole === 'string' ? ctx.state.currentRole : undefined,
-        target,
+        url,
       });
     } catch (error) {
-      if (error instanceof InvalidTemporaryAccessTargetError) {
+      if (error instanceof InvalidTemporaryAccessUrlError) {
         ctx.throw(400, {
-          code: 'INVALID_TEMPORARY_ACCESS_TARGET',
-          message: ctx.t('Invalid temporary access target.', { ns: namespace }),
+          code: 'INVALID_TEMPORARY_ACCESS_URL',
+          message: ctx.t('Invalid temporary access URL.', { ns: namespace }),
         });
       }
       throw error;

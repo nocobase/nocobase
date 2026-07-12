@@ -170,7 +170,8 @@ export default {
     },
     '/auth:createAccessCode': {
       post: {
-        description: 'Create a short-lived access code bound to one app-local GET URL',
+        description:
+          'Create a reusable 30-second access code bound to an app-local URL pattern. Use it with X-Temp-Code or the _code query parameter.',
         tags: ['Auth'],
         requestBody: {
           required: true,
@@ -178,11 +179,12 @@ export default {
             'application/json': {
               schema: {
                 type: 'object',
-                required: ['target'],
+                required: ['url'],
                 properties: {
-                  target: {
+                  url: {
                     type: 'string',
-                    example: 'backups:download?filterByTk=backup.nbdata',
+                    description: 'API base-relative URL. The * character matches any sequence of characters.',
+                    example: 'backups:download?filterByTk=*',
                   },
                 },
               },
@@ -211,7 +213,7 @@ export default {
             },
           },
           400: {
-            description: 'Invalid target URL',
+            description: 'Invalid URL pattern',
           },
           401: {
             description: 'Unauthorized',

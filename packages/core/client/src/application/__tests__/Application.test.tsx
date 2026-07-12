@@ -14,7 +14,6 @@ import MockAdapter from 'axios-mock-adapter';
 import React, { Component } from 'react';
 import { Link, Outlet } from 'react-router-dom';
 import { describe } from 'vitest';
-import { APIClient } from '../../api-client/APIClient';
 import { CollectionFieldInterface } from '../../data-source';
 import { Application } from '../Application';
 import { Plugin } from '../Plugin';
@@ -57,32 +56,6 @@ describe('Application', () => {
   });
 
   describe('getApiUrl', () => {
-    it('uses the runtime app name with an injected API client when creating temporary URLs', async () => {
-      const originalUrl = window.location.href;
-      window.history.replaceState({}, '', '/apps/sub1/admin');
-      const apiClient = new APIClient({
-        baseURL: '/api',
-        storageType: 'memory',
-      });
-      const mock = new MockAdapter(apiClient.axios);
-
-      try {
-        mock.onPost('auth:createAccessCode').reply(200, {
-          data: {
-            code: 'temporary-code',
-          },
-        });
-        const app = new Application({ apiClient });
-        const url = await app.apiClient.auth.createTemporaryUrl({ url: 'files:download' });
-
-        expect(app.apiClient).toBe(apiClient);
-        expect(new URL(url).searchParams.get('__appName')).toBe('sub1');
-      } finally {
-        mock.restore();
-        window.history.replaceState({}, '', originalUrl);
-      }
-    });
-
     it('api path', () => {
       const app = new Application({
         apiClient: {

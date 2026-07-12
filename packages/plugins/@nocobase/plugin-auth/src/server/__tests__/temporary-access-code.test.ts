@@ -11,12 +11,12 @@ import { Cache, CacheManager } from '@nocobase/cache';
 import { vi } from 'vitest';
 import { createAccessCodeAction } from '../actions/auth';
 import {
-  captureTemporaryAccessRequestMethod,
   createTemporaryAccessCodeCache,
   INVALID_TEMPORARY_ACCESS_CODE,
-  InvalidTemporaryAccessTargetError,
-  normalizeTemporaryAccessTarget,
+  InvalidTemporaryAccessUrlError,
+  normalizeTemporaryAccessUrl,
   resolveTemporaryAccessCode,
+  TEMPORARY_ACCESS_CODE_HEADER,
   TemporaryAccessCodeRecord,
   TemporaryAccessCodeService,
 } from '../temporary-access-code';
@@ -59,67 +59,84 @@ describe('TemporaryAccessCodeService', () => {
     'backups/../backups:download',
     'backups/%252e%252e/backups:download',
     'backups:download#fragment',
-    ...['accessCode', 'token', '__appName'].map((name) => `backups:download?${name}=value`),
+    ...['_code', 'token', '__appName'].map((name) => `backups:download?${name}=value`),
     '/api/backups:download',
-  ])('rejects an external, unsafe, or reserved target: %s', (target) => {
-    expect(() => normalizeTemporaryAccessTarget(target)).toThrow(InvalidTemporaryAccessTargetError);
+  ])('rejects an external, unsafe, or reserved URL pattern: %s', (url) => {
+    expect(() => normalizeTemporaryAccessUrl(url)).toThrow(InvalidTemporaryAccessUrlError);
   });
 
-  it('stores the code directly with a 30 second TTL and binds it to app, path, query, and GET/HEAD', async () => {
+  it('stores the code with a 30 second TTL and matches exact or wildcard URL patterns within the app', async () => {
     const { cache, service } = createService();
     const result = await service.create({
       accessToken: 'session-token',
       authenticator: 'basic',
       roleName: 'admin',
-      target: 'files:download?flag&file=a.txt&tag=one&tag=two',
+      url: 'files:download?tag=one&file=a.txt&flag',
     });
 
     expect(result.code).toMatch(/^[A-Za-z0-9_-]{43}$/);
     expect(cache.set).toHaveBeenCalledWith(
       `temporary-access-code:${result.code}`,
-      expect.objectContaining({ appName: 'main', target: '/files:download?flag=&file=a.txt&tag=one&tag=two' }),
+      expect.objectContaining({ appName: 'main', urlPattern: '/files:download?file=a.txt&flag=&tag=one' }),
       30_000,
     );
 
     const record = (await service.get(result.code)) as TemporaryAccessCodeRecord;
     const request = {
       appName: 'main',
-      method: 'GET',
       path: '/api/files:download',
-      querystring: `flag=&file=a.txt&tag=one&accessCode=${result.code}&__appName=main&tag=two`,
+      querystring: `tag=one&_code=${result.code}&flag&__appName=main&file=a.txt`,
     };
     expect(service.matches(record, request)).toBe(true);
-    expect(service.matches(record, { ...request, method: 'HEAD' })).toBe(true);
     expect(service.matches(record, { ...request, appName: 'sub-app' })).toBe(false);
-    expect(service.matches(record, { ...request, method: 'POST' })).toBe(false);
     expect(service.matches(record, { ...request, path: '/api/files:other' })).toBe(false);
-    expect(service.matches(record, { ...request, path: '/files:download' })).toBe(false);
-    expect(service.matches(record, { ...request, querystring: `file=changed.txt&accessCode=${result.code}` })).toBe(
-      false,
-    );
+    expect(service.matches(record, { ...request, querystring: 'file=changed.txt&flag&tag=one' })).toBe(false);
+
+    const wildcard = await service.create({
+      accessToken: 'session-token',
+      authenticator: 'basic',
+      url: 'files:*?file=*',
+    });
+    const wildcardRecord = (await service.get(wildcard.code)) as TemporaryAccessCodeRecord;
+    expect(
+      service.matches(wildcardRecord, {
+        appName: 'main',
+        path: '/api/files:download',
+        querystring: 'file=another.txt',
+      }),
+    ).toBe(true);
   });
 });
 
-async function issueCode(service: TemporaryAccessCodeService, roleName?: string) {
+async function issueCode(service: TemporaryAccessCodeService, roleName?: string, url = 'files:download?file=a.txt') {
   return (
     await service.create({
       accessToken: 'session-token',
       authenticator: 'basic',
       roleName,
-      target: 'files:download?file=a.txt',
+      url,
     })
   ).code;
 }
 
-function createContext(options: { body?: unknown; method?: string; querystring: string }) {
+function createContext(options: {
+  body?: unknown;
+  headers?: Record<string, string>;
+  method?: string;
+  path?: string;
+  querystring: string;
+}) {
   const method = options.method || 'GET';
-  const path = '/api/files:download';
+  const path = options.path || '/api/files:download';
   const originalUrl = `${path}?${options.querystring}`;
+  const headers = Object.fromEntries(
+    Object.entries(options.headers || {}).map(([name, value]) => [name.toLowerCase(), value]),
+  );
   const responseHeaders: Record<string, string> = {};
   return {
     app: { name: 'main' },
-    get: () => '',
-    headers: {},
+    get: (name: string) => headers[name.toLowerCase()] || '',
+    headers,
     method,
     originalUrl,
     path,
@@ -144,12 +161,15 @@ describe('temporary access code middleware', () => {
     const { service } = createService();
     const code = await issueCode(service, 'admin');
 
-    const ctx = createContext({ querystring: `file=a.txt&accessCode=${code}&__appName=main` });
+    const ctx = createContext({ querystring: `file=a.txt&_code=${code}&__appName=main` });
     const next = vi.fn(async () => ctx.set('X-New-Token', 'renewed-token'));
 
     await resolveTemporaryAccessCode(service)(ctx as never, next);
 
-    expect(ctx.querystring).toBe('file=a.txt&__appName=main');
+    expect(ctx.querystring).toBe('file=a.txt');
+    expect(ctx.originalUrl).toBe('/api/files:download?file=a.txt');
+    expect(ctx.request.originalUrl).toBe(ctx.originalUrl);
+    expect(ctx.req.originalUrl).toBe(ctx.originalUrl);
     expect(ctx.headers).toMatchObject({ 'x-authenticator': 'basic', 'x-role': 'admin' });
     expect(ctx.state).toMatchObject({ authenticatedByAccessCode: true });
     expect((ctx as typeof ctx & { getBearerToken: () => string }).getBearerToken()).toBe('session-token');
@@ -157,39 +177,50 @@ describe('temporary access code middleware', () => {
     expect(ctx.responseHeaders['x-new-token']).toBeUndefined();
   });
 
-  it('rejects a POST rewritten to GET by method override middleware', async () => {
+  it('accepts a POST body through the header code and gives the header precedence over the query code', async () => {
     const { service } = createService();
-    const code = await issueCode(service);
-    const ctx = createContext({ method: 'POST', querystring: `file=a.txt&accessCode=${code}` });
-
-    await captureTemporaryAccessRequestMethod(ctx as never, async () => {
-      ctx.method = 'GET';
-      ctx.req.method = 'GET';
-      await expect(resolveTemporaryAccessCode(service)(ctx as never, vi.fn())).rejects.toMatchObject({
-        code: INVALID_TEMPORARY_ACCESS_CODE,
-        status: 401,
-      });
+    const code = await issueCode(service, undefined, 'files:download?file=*');
+    const body = { value: 'unchanged' };
+    const ctx = createContext({
+      body,
+      headers: { [TEMPORARY_ACCESS_CODE_HEADER]: code },
+      method: 'POST',
+      querystring: 'file=b.txt&_code=invalid',
     });
+    const next = vi.fn();
+
+    await resolveTemporaryAccessCode(service)(ctx as never, next);
+
+    expect(ctx.request.body).toBe(body);
+    expect(ctx.get(TEMPORARY_ACCESS_CODE_HEADER)).toBe('');
+    expect(ctx.querystring).toBe('file=b.txt');
+    expect(next).toHaveBeenCalledOnce();
   });
 
-  it.each([
-    [
-      'a body',
-      (code: string) => createContext({ body: { unexpected: true }, querystring: `file=a.txt&accessCode=${code}` }),
-    ],
-    [
-      'duplicate codes',
-      (code: string) => createContext({ querystring: `file=a.txt&accessCode=${code}&accessCode=${code}` }),
-    ],
-  ])('rejects a GET request with %s', async (_case, createInvalidContext) => {
+  it('rejects duplicate query codes', async () => {
     const { service } = createService();
     const code = await issueCode(service);
-    const ctx = createInvalidContext(code);
+    const ctx = createContext({ querystring: `file=a.txt&_code=${code}&_code=${code}` });
 
     await expect(resolveTemporaryAccessCode(service)(ctx as never, vi.fn())).rejects.toMatchObject({
       code: INVALID_TEMPORARY_ACCESS_CODE,
       status: 401,
     });
+  });
+
+  it('keeps Authorization precedence while removing temporary credentials', async () => {
+    const { service } = createService();
+    const ctx = createContext({
+      headers: { Authorization: 'Bearer token', [TEMPORARY_ACCESS_CODE_HEADER]: 'invalid' },
+      querystring: '_code=invalid&__appName=main&file=a.txt',
+    });
+    const next = vi.fn();
+
+    await resolveTemporaryAccessCode(service)(ctx as never, next);
+
+    expect(ctx.querystring).toBe('file=a.txt');
+    expect(ctx.get(TEMPORARY_ACCESS_CODE_HEADER)).toBe('');
+    expect(next).toHaveBeenCalledOnce();
   });
 });
 
@@ -202,7 +233,7 @@ function createActionContext(
 ) {
   const responseHeaders: Record<string, string> = {};
   return {
-    action: { params: { values: { target: 'files:download?file=a.txt' } } },
+    action: { params: { values: { url: 'files:download?file=*' } } },
     app: {
       authManager: {
         jwt: { decode: vi.fn(async () => options.decoded || { jti: 'session-jti', temp: true }) },
@@ -232,7 +263,7 @@ describe('createAccessCodeAction', () => {
       accessToken: 'renewed-session-token',
       authenticator: 'basic',
       roleName: 'admin',
-      target: 'files:download?file=a.txt',
+      url: 'files:download?file=*',
     });
     expect(ctx.body).toEqual({ code: 'opaque-code' });
     expect(ctx.responseHeaders['cache-control']).toBe('private, no-store');
@@ -251,13 +282,13 @@ describe('createAccessCodeAction', () => {
     expect(service.create).not.toHaveBeenCalled();
   });
 
-  it('maps invalid targets to a stable error', async () => {
+  it('maps invalid URLs to a stable error', async () => {
     const service = {
-      create: vi.fn().mockRejectedValue(new InvalidTemporaryAccessTargetError()),
+      create: vi.fn().mockRejectedValue(new InvalidTemporaryAccessUrlError()),
     } as unknown as TemporaryAccessCodeService;
 
     await expect(createAccessCodeAction(service)(createActionContext() as never, vi.fn())).rejects.toMatchObject({
-      code: 'INVALID_TEMPORARY_ACCESS_TARGET',
+      code: 'INVALID_TEMPORARY_ACCESS_URL',
       status: 400,
     });
   });

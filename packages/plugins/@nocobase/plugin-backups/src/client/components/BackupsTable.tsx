@@ -53,10 +53,19 @@ export const BackupsTable = () => {
     setDownloadingFileName(fileData.name);
 
     try {
-      const url = await api.auth.createTemporaryUrl({
-        url: 'backups:download',
+      const targetParams = new URLSearchParams({ filterByTk: fileData.name });
+      const code = await api.auth.createAccessCode({
+        url: `backups:download?${targetParams}`,
+      });
+      const appName = api.getHeaders()['X-App'];
+      const baseURL = api.axios.defaults.baseURL?.replace(/\/+$/, '') || '/api';
+      const url = api.axios.getUri({
+        baseURL: '',
+        url: `${baseURL}/backups:download`,
         params: {
           filterByTk: fileData.name,
+          _code: code,
+          ...(appName && appName !== 'main' ? { __appName: appName } : {}),
         },
       });
       const link = document.createElement('a');

@@ -79,10 +79,19 @@ export const BackupsTable = () => {
       setDownloadingFileName(fileData.name);
 
       try {
-        const url = await ctx.api.auth.createTemporaryUrl({
-          url: 'backups:download',
+        const targetParams = new URLSearchParams({ filterByTk: fileData.name });
+        const code = await ctx.api.auth.createAccessCode({
+          url: `backups:download?${targetParams}`,
+        });
+        const appName = ctx.api.getHeaders()['X-App'];
+        const baseURL = ctx.api.axios.defaults.baseURL?.replace(/\/+$/, '') || '/api';
+        const url = ctx.api.axios.getUri({
+          baseURL: '',
+          url: `${baseURL}/backups:download`,
           params: {
             filterByTk: fileData.name,
+            _code: code,
+            ...(appName && appName !== 'main' ? { __appName: appName } : {}),
           },
         });
         const link = document.createElement('a');

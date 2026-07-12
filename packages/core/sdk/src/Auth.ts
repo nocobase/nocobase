@@ -8,62 +8,12 @@
  */
 
 import { AxiosRequestConfig, AxiosResponse } from 'axios';
-import qs from 'qs';
 import { APIClient } from './APIClient';
 import { hasHeaderValue } from './headers';
 
-export interface CreateTemporaryUrlOptions {
+export interface CreateAccessCodeOptions {
   url: string;
-  params?: Record<string, unknown>;
 }
-
-const RESERVED_TEMPORARY_URL_PARAMS = ['accessCode', '__appName', 'token'];
-
-const stringifyQuery = (params: Record<string, unknown>) =>
-  qs.stringify(params, {
-    strictNullHandling: true,
-    arrayFormat: 'brackets',
-  });
-
-const buildTemporaryUrlTarget = ({ url, params = {} }: CreateTemporaryUrlOptions, baseURL?: string) => {
-  if (/^[a-z][a-z\d+.-]*:\/\//i.test(url) || url.startsWith('//')) {
-    throw new TypeError('Temporary URLs must target an app-local URL');
-  }
-  if (url.includes('#')) {
-    throw new TypeError('Temporary URL targets cannot contain a fragment');
-  }
-
-  if (
-    url
-      .split('?', 1)[0]
-      .split('/')
-      .some((segment) => /^\.{1,2}$/.test(decodeURIComponent(segment)))
-  ) {
-    throw new TypeError('Temporary URL targets cannot contain dot path segments');
-  }
-
-  const parsedUrl = new URL(`/${url.replace(/^\/+/, '')}`, 'http://localhost');
-  const pathname = parsedUrl.pathname.replace(/^\/+/, '');
-  const baseUrlPathname = baseURL ? new URL(baseURL, 'http://localhost').pathname.replace(/^\/+|\/+$/g, '') : '';
-  if (baseUrlPathname && (pathname === baseUrlPathname || pathname.startsWith(`${baseUrlPathname}/`))) {
-    throw new TypeError('Temporary URL targets must not include the API baseURL pathname');
-  }
-
-  const queryParams = {
-    ...(qs.parse(parsedUrl.search.slice(1), { strictNullHandling: true }) as Record<string, unknown>),
-    ...params,
-  };
-  const queryString = stringifyQuery(queryParams);
-  const searchParams = new URLSearchParams(queryString);
-
-  for (const name of RESERVED_TEMPORARY_URL_PARAMS) {
-    if (searchParams.has(name)) {
-      throw new TypeError(`Temporary URL targets cannot contain the ${name} parameter`);
-    }
-  }
-
-  return queryString ? `${pathname}?${queryString}` : pathname;
-};
 
 export class Auth {
   protected api: APIClient;
@@ -293,36 +243,12 @@ export class Auth {
     return response;
   }
 
-  /**
-   * Creates an app-local URL authenticated by a short-lived access code.
-   * The server limits the URL to GET/HEAD and keeps the current app, authenticator, role, and ACL context.
-   */
-  async createTemporaryUrl(options: CreateTemporaryUrlOptions): Promise<string> {
-    const target = buildTemporaryUrlTarget(options, this.api.axios.defaults.baseURL);
+  async createAccessCode(options: CreateAccessCodeOptions): Promise<string> {
     const response = await this.api.request<{ data: { code: string } }>({
       method: 'post',
       url: 'auth:createAccessCode',
-      data: { target },
+      data: options,
     });
-    const query = new URLSearchParams({ accessCode: response.data.data.code });
-
-    const headers = this.api.getHeaders() as Record<string, unknown>;
-    const headerAppName = headers['X-App'];
-    const apiOptions = this.api.options;
-    const configuredAppName = apiOptions && typeof apiOptions !== 'function' ? apiOptions.appName : undefined;
-    const appName = typeof headerAppName === 'string' && headerAppName ? headerAppName : configuredAppName;
-    if (appName && appName !== 'main') {
-      query.set('__appName', appName);
-    }
-
-    const path = `${target}${target.includes('?') ? '&' : '?'}${query}`;
-    const baseURL = this.api.axios.defaults.baseURL?.replace(/\/+$/, '') || '';
-    const combinedUrl = baseURL ? `${baseURL}/${path}` : `/${path}`;
-    const url =
-      /^[a-z][a-z\d+.-]*:\/\//i.test(combinedUrl) || typeof window === 'undefined'
-        ? combinedUrl
-        : new URL(combinedUrl, window.location.origin).toString();
-
-    return url;
+    return response.data.data.code;
   }
 }

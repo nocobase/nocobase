@@ -14,20 +14,30 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { BackupsTable } from '../components/BackupsTable';
 import { BackupsContext } from '../contexts';
 
-const createTemporaryUrl = vi.hoisted(() => vi.fn());
+const { createAccessCode, getHeaders, getUri } = vi.hoisted(() => ({
+  createAccessCode: vi.fn(),
+  getHeaders: vi.fn(),
+  getUri: vi.fn(),
+}));
 
 vi.mock('@nocobase/flow-engine', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@nocobase/flow-engine')>();
   return {
     ...actual,
-    useFlowContext: () => ({ api: { auth: { createTemporaryUrl } } }),
+    useFlowContext: () => ({
+      api: {
+        auth: { createAccessCode },
+        axios: { defaults: { baseURL: '/api' }, getUri },
+        getHeaders,
+      },
+    }),
   };
 });
 
 vi.mock('../locale', () => ({ useT: () => (key: string) => key }));
 vi.mock('../components/RestoreFromBackup', () => ({ RestoreFromBackup: () => <button type="button">Restore</button> }));
 
-const temporaryUrl = '/api/backups:download?filterByTk=backup.nbdata&accessCode=test-code';
+const temporaryUrl = '/api/backups:download?filterByTk=backup.nbdata&_code=test-code&__appName=sub1';
 const backup = {
   name: 'backup.nbdata',
   fileSize: '500 MB',
@@ -53,13 +63,15 @@ const renderTable = () =>
 describe('BackupsTable client-v2', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    getHeaders.mockReturnValue({ 'X-App': 'sub1' });
+    getUri.mockReturnValue(temporaryUrl);
   });
 
-  it('downloads from a temporary URL', async () => {
-    let resolveTemporaryUrl!: (url: string) => void;
-    createTemporaryUrl.mockReturnValue(
+  it('downloads with a URL-bound access code', async () => {
+    let resolveAccessCode!: (code: string) => void;
+    createAccessCode.mockReturnValue(
       new Promise((resolve) => {
-        resolveTemporaryUrl = resolve;
+        resolveAccessCode = resolve;
       }),
     );
     const anchorClickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
@@ -71,12 +83,20 @@ describe('BackupsTable client-v2', () => {
     await user.click(downloadButton);
     expect(downloadButton).toHaveAttribute('aria-busy', 'true');
     expect(downloadButton).toBeDisabled();
-    resolveTemporaryUrl(temporaryUrl);
+    resolveAccessCode('test-code');
 
     await waitFor(() => {
-      expect(createTemporaryUrl).toHaveBeenCalledWith({
-        url: 'backups:download',
-        params: { filterByTk: 'backup.nbdata' },
+      expect(createAccessCode).toHaveBeenCalledWith({
+        url: 'backups:download?filterByTk=backup.nbdata',
+      });
+      expect(getUri).toHaveBeenCalledWith({
+        baseURL: '',
+        url: '/api/backups:download',
+        params: {
+          filterByTk: 'backup.nbdata',
+          _code: 'test-code',
+          __appName: 'sub1',
+        },
       });
       expect(anchorClickSpy).toHaveBeenCalledTimes(1);
     });
@@ -88,8 +108,8 @@ describe('BackupsTable client-v2', () => {
     anchorClickSpy.mockRestore();
   });
 
-  it('shows an error when temporary URL creation fails', async () => {
-    createTemporaryUrl.mockRejectedValue(new Error('temporary URL failed'));
+  it('shows an error when access code creation fails', async () => {
+    createAccessCode.mockRejectedValue(new Error('access code failed'));
     const user = userEvent.setup();
 
     renderTable();
