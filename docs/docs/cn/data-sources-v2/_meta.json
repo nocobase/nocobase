@@ -492,5 +492,10 @@
         ]
       }
     ]
+  },
+  {
+    "type": "custom-link",
+    "label": "扩展开发",
+    "link": "/development/"
   }
 ]

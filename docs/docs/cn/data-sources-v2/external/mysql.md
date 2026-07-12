@@ -105,7 +105,6 @@ NocoBase 会根据 MySQL 字段类型，自动映射到合适的 Field type 和 
 | `TIMESTAMP` | `datetimeTz`、`date` | Date、Time、Created at、Updated at。 |
 | `YEAR` | `string`、`integer` | Input、Integer、Date。 |
 | `JSON` | `json`、`array` | JSON。 |
-| `ENUM` | `string` | Select、Radio group。 |
 
 :::warning 注意
 

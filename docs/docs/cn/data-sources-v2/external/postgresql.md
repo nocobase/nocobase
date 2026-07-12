@@ -106,7 +106,6 @@ NocoBase 会根据 PostgreSQL 字段类型，自动映射到合适的 Field type
 | `DATE` | `dateOnly` | Date。 |
 | `TIME` | `time` | Time。 |
 | `POINT`、`LINESTRING`、`POLYGON`、`CIRCLE` | `point`、`lineString`、`polygon`、`circle` | Point、Line string、Polygon、Circle、JSON。 |
-| `ENUM` | `enum` | Select、Radio group。 |
 | `ARRAY` | `array` | Multiple select、Checkbox group。 |
 
 :::warning 注意
