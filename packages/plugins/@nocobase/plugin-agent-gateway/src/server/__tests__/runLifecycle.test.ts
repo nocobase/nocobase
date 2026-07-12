@@ -126,7 +126,7 @@ describe('agent gateway run lifecycle APIs', () => {
   }
 
   async function createRun(runCode: string, values: Record<string, unknown> = {}) {
-    const response = await rootAgent.post('/api/agent-gateway/runs:create').send({
+    const response = await rootAgent.post('/agentGatewayApi:createRun').send({
       runCode,
       sourceType: 'test',
       promptSnapshot: {
@@ -186,7 +186,7 @@ describe('agent gateway run lifecycle APIs', () => {
   async function claimRun(runner: TestRunner, values: Record<string, unknown> = {}) {
     return await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${runner.nodeId}/runs:claim`)
+      .post(`/agentGatewayApi:claimRun/${runner.nodeId}`)
       .set('Authorization', `Bearer ${runner.nodeToken}`)
       .send({
         profileKey: 'fake-success',
@@ -198,9 +198,16 @@ describe('agent gateway run lifecycle APIs', () => {
   }
 
   async function runDaemonAction(runner: TestRunner, runId: unknown, action: string, values: Record<string, unknown>) {
+    const resourceActionByLegacyAction: Record<string, string> = {
+      heartbeat: 'heartbeatRun',
+      complete: 'completeRun',
+      fail: 'failRun',
+      timeout: 'timeoutRun',
+      'cancel-ack': 'ackCancelRun',
+    };
     return await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${runner.nodeId}/runs/${runId}/${action}`)
+      .post(`/agentGatewayApi:${resourceActionByLegacyAction[action]}/${runId}`)
       .set('Authorization', `Bearer ${runner.nodeToken}`)
       .send(values);
   }
@@ -317,7 +324,7 @@ describe('agent gateway run lifecycle APIs', () => {
       profileProvider: 'codex',
     });
 
-    const optionsResponse = await rootAgent.get('/api/agent-gateway/build-runs:options');
+    const optionsResponse = await rootAgent.get('/agentGatewayApi:listRunOptions');
     expect(optionsResponse.status).toBe(200);
     const options = getData(optionsResponse);
     const nodes = Array.isArray(options.nodes) ? options.nodes : [];
@@ -344,7 +351,7 @@ describe('agent gateway run lifecycle APIs', () => {
       ]),
     );
 
-    const createResponse = await rootAgent.post('/api/agent-gateway/build-runs:create').send({
+    const createResponse = await rootAgent.post('/agentGatewayApi:createTaskRun').send({
       title: 'Calendar build',
       prompt: '搭建一个日历测试页面',
       cwd: '/root/work/nocobase',
@@ -393,7 +400,7 @@ describe('agent gateway run lifecycle APIs', () => {
       title: 'Calendar build',
     });
 
-    const reroutedResponse = await rootAgent.post('/api/agent-gateway/build-runs:create').send({
+    const reroutedResponse = await rootAgent.post('/agentGatewayApi:createTaskRun').send({
       title: 'Calendar build from stale runner',
       prompt: '搭建另一个日历测试页面',
       nodeId: offlineRunner.nodeId,
@@ -441,7 +448,7 @@ describe('agent gateway run lifecycle APIs', () => {
       lastHeartbeatAt: new Date(Date.now() - 10 * 60 * 1000),
     });
 
-    const createResponse = await rootAgent.post('/api/agent-gateway/task-runs:create').send({
+    const createResponse = await rootAgent.post('/agentGatewayApi:createTaskRun').send({
       title: 'Queued forever prevention',
       prompt: 'This should not be queued when the daemon is offline',
       nodeId: offlineRunner.nodeId,
@@ -452,7 +459,7 @@ describe('agent gateway run lifecycle APIs', () => {
     expect(JSON.stringify(createResponse.body)).toContain('Selected Agent Gateway runner is offline');
     expect(await app.db.getRepository('agRuns').count()).toBe(0);
 
-    const implicitCreateResponse = await rootAgent.post('/api/agent-gateway/task-runs:create').send({
+    const implicitCreateResponse = await rootAgent.post('/agentGatewayApi:createTaskRun').send({
       title: 'Implicit runner also blocked',
       prompt: 'This should also fail without an online runner',
     });
@@ -469,7 +476,7 @@ describe('agent gateway run lifecycle APIs', () => {
       profileProvider: 'codex',
     });
 
-    const optionsResponse = await rootAgent.get('/api/agent-gateway/task-runs:options');
+    const optionsResponse = await rootAgent.get('/agentGatewayApi:listRunOptions');
     expect(optionsResponse.status).toBe(200);
     const options = getData(optionsResponse);
     const taskTemplates = Array.isArray(options.taskTemplates) ? options.taskTemplates : [];
@@ -487,7 +494,7 @@ describe('agent gateway run lifecycle APIs', () => {
       ]),
     );
 
-    const createTemplateResponse = await rootAgent.post('/api/agent-gateway/task-templates:create').send({
+    const createTemplateResponse = await rootAgent.post('/agentGatewayApi:createTaskTemplate').send({
       templateKey: 'build-on-187',
       displayName: 'Build on 187',
       description: 'Browser validation build template',
@@ -513,7 +520,7 @@ describe('agent gateway run lifecycle APIs', () => {
       agentProfileId: runner.profileId,
     });
 
-    const listResponse = await rootAgent.get('/api/agent-gateway/task-templates:list?includeDisabled=true');
+    const listResponse = await rootAgent.get('/agentGatewayApi:listTaskTemplates?includeDisabled=true');
     expect(listResponse.status).toBe(200);
     const listedTemplates = Array.isArray(listResponse.body.data) ? listResponse.body.data : [];
     expect(listedTemplates).toEqual(
@@ -524,7 +531,7 @@ describe('agent gateway run lifecycle APIs', () => {
       ]),
     );
 
-    const createRunResponse = await rootAgent.post('/api/agent-gateway/task-runs:create').send({
+    const createRunResponse = await rootAgent.post('/agentGatewayApi:createTaskRun').send({
       taskTemplateId: createdTemplate.id,
     });
     expect(createRunResponse.status).toBe(200);
@@ -568,7 +575,7 @@ describe('agent gateway run lifecycle APIs', () => {
     });
 
     const updateTemplateResponse = await rootAgent
-      .post(`/api/agent-gateway/task-templates:update/${createdTemplate.id}`)
+      .post(`/agentGatewayApi:updateTaskTemplate/${createdTemplate.id}`)
       .send({
         status: 'disabled',
       });
@@ -577,7 +584,7 @@ describe('agent gateway run lifecycle APIs', () => {
       status: 'disabled',
     });
 
-    const disabledCreateResponse = await rootAgent.post('/api/agent-gateway/task-runs:create').send({
+    const disabledCreateResponse = await rootAgent.post('/agentGatewayApi:createTaskRun').send({
       taskTemplateKey: 'build-on-187',
     });
     expect(disabledCreateResponse.status).toBe(409);
@@ -651,7 +658,7 @@ describe('agent gateway run lifecycle APIs', () => {
       },
     });
 
-    const optionsResponse = await rootAgent.get('/api/agent-gateway/task-runs:options');
+    const optionsResponse = await rootAgent.get('/agentGatewayApi:listRunOptions');
     expect(optionsResponse.status).toBe(200);
     const options = getData(optionsResponse);
     expect(options).toMatchObject({
@@ -668,7 +675,7 @@ describe('agent gateway run lifecycle APIs', () => {
     });
     expect(JSON.stringify(options)).not.toContain(String(inactiveSkillVersion.get('id')));
 
-    const inactiveSkillResponse = await rootAgent.post('/api/agent-gateway/task-runs:create').send({
+    const inactiveSkillResponse = await rootAgent.post('/agentGatewayApi:createTaskRun').send({
       title: 'Inactive skill evaluation',
       prompt: '运行 nb-opencode-ui-batch harness 并汇总结果',
       skillVersionId: inactiveSkillVersion.get('id'),
@@ -678,7 +685,7 @@ describe('agent gateway run lifecycle APIs', () => {
     });
     expect(inactiveSkillResponse.status).toBe(409);
 
-    const createResponse = await rootAgent.post('/api/agent-gateway/task-runs:create').send({
+    const createResponse = await rootAgent.post('/agentGatewayApi:createTaskRun').send({
       title: 'Batch evaluation',
       prompt: '运行 nb-opencode-ui-batch harness 并汇总结果',
       skillVersionIds: [otherSkillVersion.get('id'), activeSkillVersion.get('id'), activeSkillVersion.get('id')],
@@ -800,7 +807,7 @@ describe('agent gateway run lifecycle APIs', () => {
       },
     });
 
-    const listResponse = await rootAgent.get('/api/agent-gateway/runs:list');
+    const listResponse = await rootAgent.get('/agentGatewayApi:listRuns');
     expect(listResponse.status).toBe(200);
     const listedRun = (listResponse.body.data as Array<Record<string, unknown>>).find(
       (item) => item.id === run.get('id'),
@@ -812,7 +819,7 @@ describe('agent gateway run lifecycle APIs', () => {
       },
     });
 
-    const detailResponse = await rootAgent.get(`/api/agent-gateway/runs:get/${run.get('id')}`);
+    const detailResponse = await rootAgent.get(`/agentGatewayApi:getRun/${run.get('id')}`);
     expect(detailResponse.status).toBe(200);
     expect(getData(detailResponse)).toMatchObject({
       agentSessionCapabilitiesJson: {
@@ -833,7 +840,7 @@ describe('agent gateway run lifecycle APIs', () => {
       createdAt: new Date('2026-07-01T00:00:03.000Z'),
     });
 
-    const listResponse = await rootAgent.get('/api/agent-gateway/runs:list?page=2&pageSize=2');
+    const listResponse = await rootAgent.get('/agentGatewayApi:listRuns?page=2&pageSize=2');
 
     expect(listResponse.status).toBe(200);
     expect((listResponse.body.data as Array<Record<string, unknown>>).map((run) => run.runCode)).toEqual([
@@ -856,7 +863,7 @@ describe('agent gateway run lifecycle APIs', () => {
       createdAt: new Date('2026-07-01T00:00:02.000Z'),
     });
 
-    const listResponse = await rootAgent.get('/api/agent-gateway/runs:list').query({
+    const listResponse = await rootAgent.get('/agentGatewayApi:listRuns').query({
       filter: JSON.stringify({
         $and: [
           {
@@ -940,7 +947,7 @@ describe('agent gateway run lifecycle APIs', () => {
       createdAt: new Date('2026-07-01T00:00:03.000Z'),
     });
 
-    const listResponse = await rootAgent.get('/api/agent-gateway/runs:list').query({
+    const listResponse = await rootAgent.get('/agentGatewayApi:listRuns').query({
       filter: JSON.stringify({
         taskTemplateId: {
           $eq: template.get('id'),
@@ -1337,9 +1344,7 @@ describe('agent gateway run lifecycle APIs', () => {
         skillVersionId: skillVersion.get('id'),
         source: expect.objectContaining({
           type: 'zip',
-          archiveUrl: expect.stringContaining(
-            `/api/agent-gateway/skill-versions/${skillVersion.get('id')}/archive:download`,
-          ),
+          archiveUrl: expect.stringContaining(`/agentGatewayApi:downloadSkillVersion/${skillVersion.get('id')}`),
           auth: 'node-token',
           sha256: 'uploaded-zip-sha256',
           sizeBytes: 1024,
@@ -1378,7 +1383,7 @@ describe('agent gateway run lifecycle APIs', () => {
 
     const forbiddenResponse = await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${runner.nodeId}/skill-installs:upsert`)
+      .post(`/agentGatewayApi:upsertNodeSkillInstall/${runner.nodeId}`)
       .set('Authorization', `Bearer ${otherRunner.nodeToken}`)
       .send({
         skillVersionId: skillVersion.get('id'),
@@ -1388,7 +1393,7 @@ describe('agent gateway run lifecycle APIs', () => {
 
     const installResponse = await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${runner.nodeId}/skill-installs:upsert`)
+      .post(`/agentGatewayApi:upsertNodeSkillInstall/${runner.nodeId}`)
       .set('Authorization', `Bearer ${runner.nodeToken}`)
       .send({
         skillVersionId: skillVersion.get('id'),
@@ -1411,7 +1416,7 @@ describe('agent gateway run lifecycle APIs', () => {
 
     const updateResponse = await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${runner.nodeId}/skill-installs:upsert`)
+      .post(`/agentGatewayApi:upsertNodeSkillInstall/${runner.nodeId}`)
       .set('Authorization', `Bearer ${runner.nodeToken}`)
       .send({
         skillVersionId: skillVersion.get('id'),
@@ -1436,7 +1441,7 @@ describe('agent gateway run lifecycle APIs', () => {
 
     const smokeCreateResponse = await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${runner.nodeId}/smoke-runs:create`)
+      .post(`/agentGatewayApi:createSmokeRun/${runner.nodeId}`)
       .set('Authorization', `Bearer ${runner.nodeToken}`)
       .send({
         profileKey: 'fake-success',
@@ -1477,7 +1482,7 @@ describe('agent gateway run lifecycle APIs', () => {
 
     const skipCreateResponse = await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${runner.nodeId}/smoke-runs:create`)
+      .post(`/agentGatewayApi:createSmokeRun/${runner.nodeId}`)
       .set('Authorization', `Bearer ${runner.nodeToken}`)
       .send({
         profileKey: 'fake-success',
@@ -1491,7 +1496,7 @@ describe('agent gateway run lifecycle APIs', () => {
     const skipRun = getData(skipCreateResponse);
     const skipResponse = await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${runner.nodeId}/runs/${skipRun.runId}/skip`)
+      .post(`/agentGatewayApi:skipRun/${skipRun.runId}`)
       .set('Authorization', `Bearer ${runner.nodeToken}`)
       .send({
         reason: 'missing_dependency token=SMOKE_SKIP_SECRET',
@@ -1523,7 +1528,7 @@ describe('agent gateway run lifecycle APIs', () => {
     });
     const forbiddenSkipResponse = await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${runner.nodeId}/runs/${normalRun.get('id')}/skip`)
+      .post(`/agentGatewayApi:skipRun/${normalRun.get('id')}`)
       .set('Authorization', `Bearer ${runner.nodeToken}`)
       .send({
         reason: 'must not skip normal runs',
@@ -1752,7 +1757,7 @@ describe('agent gateway run lifecycle APIs', () => {
       safe: 'visible summary',
     });
 
-    const completedReadResponse = await rootAgent.get(`/api/agent-gateway/runs:get/${run.id}`);
+    const completedReadResponse = await rootAgent.get(`/agentGatewayApi:getRun/${run.id}`);
     expect(JSON.stringify(getData(completedReadResponse))).not.toContain('must-not-render');
     expect(JSON.stringify(getData(completedReadResponse))).not.toContain('RESULT_TOKEN_SECRET');
 
@@ -1778,7 +1783,7 @@ describe('agent gateway run lifecycle APIs', () => {
     });
     expect(failResponse.status).toBe(200);
 
-    const failedReadResponse = await rootAgent.get(`/api/agent-gateway/runs:get/${failedRun.id}`);
+    const failedReadResponse = await rootAgent.get(`/agentGatewayApi:getRun/${failedRun.id}`);
     const failedRead = getData(failedReadResponse);
     expect(JSON.stringify(failedRead)).not.toContain('must-not-render');
     expect(JSON.stringify(failedRead)).not.toContain('FAIL_SECRET');
@@ -1796,7 +1801,7 @@ describe('agent gateway run lifecycle APIs', () => {
     const runner = await createRunner({
       profileProvider: 'codex',
     });
-    const createResponse = await rootAgent.post('/api/agent-gateway/task-runs:create').send({
+    const createResponse = await rootAgent.post('/agentGatewayApi:createTaskRun').send({
       title: 'Search gold price',
       prompt: 'Search today gold price',
       nodeId: runner.nodeId,
@@ -1874,7 +1879,7 @@ describe('agent gateway run lifecycle APIs', () => {
       },
     });
 
-    const completedReadResponse = await rootAgent.get(`/api/agent-gateway/runs:get/${createResult.runId}`);
+    const completedReadResponse = await rootAgent.get(`/agentGatewayApi:getRun/${createResult.runId}`);
     expect(completedReadResponse.status).toBe(200);
     expect(getData(completedReadResponse)).toMatchObject({
       taskTitle: 'Search gold price',
@@ -1887,7 +1892,7 @@ describe('agent gateway run lifecycle APIs', () => {
       },
     });
 
-    const listResponse = await rootAgent.get('/api/agent-gateway/runs:list');
+    const listResponse = await rootAgent.get('/agentGatewayApi:listRuns');
     expect(listResponse.status).toBe(200);
     const runs = getData(listResponse);
     expect(Array.isArray(runs)).toBe(true);
@@ -1970,7 +1975,7 @@ describe('agent gateway run lifecycle APIs', () => {
       },
     });
 
-    const readResponse = await rootAgent.get(`/api/agent-gateway/runs:get/${run.id}`);
+    const readResponse = await rootAgent.get(`/agentGatewayApi:getRun/${run.id}`);
     expect(readResponse.status).toBe(200);
     expect(getData(readResponse)).toMatchObject({
       tokenUsageJson: {
@@ -1995,9 +2000,9 @@ describe('agent gateway run lifecycle APIs', () => {
     );
 
     const readOnlyAgent = await createUserAgent('agent-gateway-cancel-read-only', ['agentGateway.readRuns']);
-    expect((await readOnlyAgent.post(`/api/agent-gateway/runs/${run.id}/cancel`).send({})).status).toBe(403);
+    expect((await readOnlyAgent.post(`/agentGatewayApi:cancelRun/${run.id}`).send({})).status).toBe(403);
 
-    const cancelResponse = await rootAgent.post(`/api/agent-gateway/runs/${run.id}/cancel`).send({});
+    const cancelResponse = await rootAgent.post(`/agentGatewayApi:cancelRun/${run.id}`).send({});
     const cancel = getData(cancelResponse);
     expect(cancelResponse.status).toBe(200);
     expect(cancel.status).toBe('canceling');
@@ -2087,7 +2092,7 @@ describe('agent gateway run lifecycle APIs', () => {
       agentProfileId: runner.profileId,
     });
 
-    const cancelResponse = await rootAgent.post(`/api/agent-gateway/runs/${run.id}/cancel`).send({});
+    const cancelResponse = await rootAgent.post(`/agentGatewayApi:cancelRun/${run.id}`).send({});
     const cancel = getData(cancelResponse);
     expect(cancelResponse.status).toBe(200);
     expect(cancel.status).toBe('canceled');
@@ -2110,7 +2115,7 @@ describe('agent gateway run lifecycle APIs', () => {
       agentProfileId: cancelingRunner.profileId,
     });
     await claimRun(cancelingRunner);
-    const cancelResponse = await rootAgent.post(`/api/agent-gateway/runs/${cancelingRun.id}/cancel`).send({});
+    const cancelResponse = await rootAgent.post(`/agentGatewayApi:cancelRun/${cancelingRun.id}`).send({});
     expect(cancelResponse.status).toBe(200);
     expect(getData(cancelResponse).status).toBe('canceling');
     await app.db.getRepository('agRuns').update({
@@ -2154,7 +2159,7 @@ describe('agent gateway run lifecycle APIs', () => {
       expect(run.get('cancelRequested')).toBe(true);
     }
 
-    const expireResponse = await rootAgent.post('/api/agent-gateway/runs:expire-leases').send({});
+    const expireResponse = await rootAgent.post('/agentGatewayApi:expireRunLeases').send({});
     expect(expireResponse.status).toBe(200);
     expect(getData(expireResponse)).toMatchObject({
       stalledCount: 0,
@@ -2201,7 +2206,7 @@ describe('agent gateway run lifecycle APIs', () => {
       },
     });
 
-    const expireResponse = await rootAgent.post('/api/agent-gateway/runs:expire-leases').send({});
+    const expireResponse = await rootAgent.post('/agentGatewayApi:expireRunLeases').send({});
     const expire = getData(expireResponse);
     expect(expireResponse.status).toBe(200);
     expect(expire.stalledCount).toBe(1);
@@ -2220,7 +2225,7 @@ describe('agent gateway run lifecycle APIs', () => {
       },
     });
 
-    const failExpiredResponse = await rootAgent.post('/api/agent-gateway/runs:expire-leases').send({});
+    const failExpiredResponse = await rootAgent.post('/agentGatewayApi:expireRunLeases').send({});
     const failExpired = getData(failExpiredResponse);
     expect(failExpiredResponse.status).toBe(200);
     expect(failExpired.stalledCount).toBe(0);

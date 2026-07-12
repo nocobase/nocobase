@@ -88,7 +88,7 @@ describe('agent gateway prompt template APIs', () => {
   });
 
   async function createTemplate(values: Record<string, unknown> = {}) {
-    const response = await rootAgent.post('/api/agent-gateway/prompt-templates:create').send({
+    const response = await rootAgent.post('/agentGatewayApi:createPromptTemplate').send({
       templateKey: 'ticket-summary',
       displayName: 'Ticket summary',
       templateText: 'Summarize {{record.title}}',
@@ -216,7 +216,7 @@ describe('agent gateway prompt template APIs', () => {
     expect(template.templateKey).toBe('ticket-summary');
     expect(template.status).toBe('active');
 
-    const duplicateResponse = await rootAgent.post('/api/agent-gateway/prompt-templates:create').send({
+    const duplicateResponse = await rootAgent.post('/agentGatewayApi:createPromptTemplate').send({
       templateKey: 'ticket-summary',
       displayName: 'Duplicate',
       templateText: 'Duplicate',
@@ -224,14 +224,14 @@ describe('agent gateway prompt template APIs', () => {
     expect(duplicateResponse.status).toBe(409);
     expect(getErrorMessage(duplicateResponse as ResponseLike<unknown>)).toContain('templateKey already exists');
 
-    const listResponse = await rootAgent.get('/api/agent-gateway/prompt-templates:list');
+    const listResponse = await rootAgent.get('/agentGatewayApi:listPromptTemplates');
     const templates = getData(listResponse as ResponseLike<PromptTemplateRecord[]>);
     expect(templates.map((record) => record.templateKey)).toEqual(['ticket-summary']);
 
-    const getResponse = await rootAgent.get('/api/agent-gateway/prompt-templates:get/ticket-summary');
+    const getResponse = await rootAgent.get('/agentGatewayApi:getPromptTemplate/ticket-summary');
     expect(getData(getResponse as ResponseLike<PromptTemplateRecord>).id).toBe(template.id);
 
-    const updateResponse = await rootAgent.post('/api/agent-gateway/prompt-templates:update/ticket-summary').send({
+    const updateResponse = await rootAgent.post('/agentGatewayApi:updatePromptTemplate/ticket-summary').send({
       displayName: 'Updated ticket summary',
       status: 'disabled',
       templateText: 'Updated {{record.title}}',
@@ -241,10 +241,10 @@ describe('agent gateway prompt template APIs', () => {
     expect(updatedTemplate.status).toBe('disabled');
     expect(updatedTemplate.templateText).toBe('Updated {{record.title}}');
 
-    const destroyResponse = await rootAgent.post(`/api/agent-gateway/prompt-templates:destroy/${template.id}`);
+    const destroyResponse = await rootAgent.post(`/agentGatewayApi:destroyPromptTemplate/${template.id}`);
     expect(destroyResponse.status).toBe(200);
 
-    const emptyListResponse = await rootAgent.get('/api/agent-gateway/prompt-templates:list');
+    const emptyListResponse = await rootAgent.get('/agentGatewayApi:listPromptTemplates');
     expect(getData(emptyListResponse as ResponseLike<PromptTemplateRecord[]>)).toHaveLength(0);
   });
 
@@ -255,7 +255,7 @@ describe('agent gateway prompt template APIs', () => {
         'Ticket {{record.title}} for {{record.customer.name}} by {{user.id}} at {{now}}. Codes: {{record.internalCode}} / {{record.customer.secretCode}}.',
     });
 
-    const previewResponse = await rootAgent.post('/api/agent-gateway/prompt-templates:preview').send({
+    const previewResponse = await rootAgent.post('/agentGatewayApi:previewPromptTemplate').send({
       templateId: template.id,
       collectionName: 'agPromptTickets',
       recordId: ticketId,
@@ -283,7 +283,7 @@ describe('agent gateway prompt template APIs', () => {
   it('rejects unknown variables and unsupported executable syntax with clear preview errors', async () => {
     const { ticketId } = await seedPreviewCollections();
 
-    const unknownResponse = await rootAgent.post('/api/agent-gateway/prompt-templates:preview').send({
+    const unknownResponse = await rootAgent.post('/agentGatewayApi:previewPromptTemplate').send({
       templateText: 'Unknown {{record.missingField}}',
       collectionName: 'agPromptTickets',
       recordId: ticketId,
@@ -293,7 +293,7 @@ describe('agent gateway prompt template APIs', () => {
       'Unknown template variable: record.missingField',
     );
 
-    const executableResponse = await rootAgent.post('/api/agent-gateway/prompt-templates:preview').send({
+    const executableResponse = await rootAgent.post('/agentGatewayApi:previewPromptTemplate').send({
       templateText: 'No code {{record.title.toString()}} and {{process.env.SECRET}}',
       collectionName: 'agPromptTickets',
       recordId: ticketId,
@@ -311,7 +311,7 @@ describe('agent gateway prompt template APIs', () => {
       ['Stray }} delimiter', 'stray closing delimiter'],
       ['Nested {{record.{{title}}}}', 'Unsupported template variable syntax'],
     ] as const) {
-      const response = await rootAgent.post('/api/agent-gateway/prompt-templates:preview').send({
+      const response = await rootAgent.post('/agentGatewayApi:previewPromptTemplate').send({
         templateText,
       });
 
@@ -325,7 +325,7 @@ describe('agent gateway prompt template APIs', () => {
     const roleName = 'agentGatewayPromptManager';
     const managerAgent = await createManagerAgent(roleName);
 
-    const noCollectionPermissionResponse = await managerAgent.post('/api/agent-gateway/prompt-templates:preview').send({
+    const noCollectionPermissionResponse = await managerAgent.post('/agentGatewayApi:previewPromptTemplate').send({
       templateText: 'Ticket {{record.title}}',
       collectionName: 'agPromptTickets',
       recordId: ticketId,
@@ -339,7 +339,7 @@ describe('agent gateway prompt template APIs', () => {
       fields: ['title', 'customer'],
     });
 
-    const titleResponse = await managerAgent.post('/api/agent-gateway/prompt-templates:preview').send({
+    const titleResponse = await managerAgent.post('/agentGatewayApi:previewPromptTemplate').send({
       templateText: 'Ticket {{record.title}}',
       collectionName: 'agPromptTickets',
       recordId: ticketId,
@@ -347,7 +347,7 @@ describe('agent gateway prompt template APIs', () => {
     expect(titleResponse.status).toBe(200);
     expect(getData(titleResponse as ResponseLike<PreviewResponse>).renderedPrompt).toBe('Ticket Login is broken');
 
-    const disallowedFieldResponse = await managerAgent.post('/api/agent-gateway/prompt-templates:preview').send({
+    const disallowedFieldResponse = await managerAgent.post('/agentGatewayApi:previewPromptTemplate').send({
       templateText: 'Secret {{record.internalCode}}',
       collectionName: 'agPromptTickets',
       recordId: ticketId,
@@ -357,7 +357,7 @@ describe('agent gateway prompt template APIs', () => {
       'No permission to preview template variable: record.internalCode',
     );
 
-    const noRelationPermissionResponse = await managerAgent.post('/api/agent-gateway/prompt-templates:preview').send({
+    const noRelationPermissionResponse = await managerAgent.post('/agentGatewayApi:previewPromptTemplate').send({
       templateText: 'Customer {{record.customer.name}}',
       collectionName: 'agPromptTickets',
       recordId: ticketId,
@@ -375,7 +375,7 @@ describe('agent gateway prompt template APIs', () => {
       scopeId: customerScope.id,
     });
 
-    const relationResponse = await managerAgent.post('/api/agent-gateway/prompt-templates:preview').send({
+    const relationResponse = await managerAgent.post('/agentGatewayApi:previewPromptTemplate').send({
       templateText: 'Customer {{record.customer.name}}',
       collectionName: 'agPromptTickets',
       recordId: ticketId,
@@ -383,7 +383,7 @@ describe('agent gateway prompt template APIs', () => {
     expect(relationResponse.status).toBe(200);
     expect(getData(relationResponse as ResponseLike<PreviewResponse>).renderedPrompt).toBe('Customer Acme');
 
-    const noUserPermissionResponse = await managerAgent.post('/api/agent-gateway/prompt-templates:preview').send({
+    const noUserPermissionResponse = await managerAgent.post('/agentGatewayApi:previewPromptTemplate').send({
       templateText: 'User {{user.id}}',
     });
     expect(noUserPermissionResponse.status).toBe(403);
@@ -395,13 +395,13 @@ describe('agent gateway prompt template APIs', () => {
       fields: ['id'],
     });
 
-    const userAllowedResponse = await managerAgent.post('/api/agent-gateway/prompt-templates:preview').send({
+    const userAllowedResponse = await managerAgent.post('/agentGatewayApi:previewPromptTemplate').send({
       templateText: 'User {{user.id}}',
     });
     expect(userAllowedResponse.status).toBe(200);
     expect(getData(userAllowedResponse as ResponseLike<PreviewResponse>).renderedPrompt).toMatch(/^User \d+$/);
 
-    const disallowedUserFieldResponse = await managerAgent.post('/api/agent-gateway/prompt-templates:preview').send({
+    const disallowedUserFieldResponse = await managerAgent.post('/agentGatewayApi:previewPromptTemplate').send({
       templateText: 'User {{user.username}}',
     });
     expect(disallowedUserFieldResponse.status).toBe(403);
@@ -419,11 +419,9 @@ describe('agent gateway prompt template APIs', () => {
       scopeId: userScope.id,
     });
 
-    const scopedUserDeniedResponse = await scopedUserManagerAgent
-      .post('/api/agent-gateway/prompt-templates:preview')
-      .send({
-        templateText: 'User {{user.id}}',
-      });
+    const scopedUserDeniedResponse = await scopedUserManagerAgent.post('/agentGatewayApi:previewPromptTemplate').send({
+      templateText: 'User {{user.id}}',
+    });
     expect(scopedUserDeniedResponse.status).toBe(403);
     expect(getErrorMessage(scopedUserDeniedResponse as ResponseLike<unknown>)).toContain(
       'No permission to preview template variable: user',
@@ -448,7 +446,7 @@ describe('agent gateway prompt template APIs', () => {
       title: 'Login is broken',
     });
 
-    const scopedAllowedResponse = await scopedManagerAgent.post('/api/agent-gateway/prompt-templates:preview').send({
+    const scopedAllowedResponse = await scopedManagerAgent.post('/agentGatewayApi:previewPromptTemplate').send({
       templateText: 'Ticket {{record.title}}',
       collectionName: 'agPromptTickets',
       recordId: ticketId,
@@ -458,7 +456,7 @@ describe('agent gateway prompt template APIs', () => {
       'Ticket Login is broken',
     );
 
-    const scopedDeniedResponse = await scopedManagerAgent.post('/api/agent-gateway/prompt-templates:preview').send({
+    const scopedDeniedResponse = await scopedManagerAgent.post('/agentGatewayApi:previewPromptTemplate').send({
       templateText: 'Ticket {{record.title}}',
       collectionName: 'agPromptTickets',
       recordId: hiddenTicketId,
@@ -470,7 +468,7 @@ describe('agent gateway prompt template APIs', () => {
   it('does not write full preview prompts or secrets into API call logs', async () => {
     const { ticketId } = await seedPreviewCollections();
 
-    const previewResponse = await rootAgent.post('/api/agent-gateway/prompt-templates:preview').send({
+    const previewResponse = await rootAgent.post('/agentGatewayApi:previewPromptTemplate').send({
       templateText: 'Prompt secret={{record.customer.secretCode}}',
       collectionName: 'agPromptTickets',
       recordId: ticketId,

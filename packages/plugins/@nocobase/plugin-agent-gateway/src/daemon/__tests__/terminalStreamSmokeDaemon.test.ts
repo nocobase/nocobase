@@ -38,7 +38,7 @@ async function waitForFrameCount(frames: TerminalFrame[], count: number) {
 async function createSmokeServer() {
   const frames: TerminalFrame[] = [];
   const server = http.createServer((request, response) => {
-    if (request.method === 'POST' && request.url === '/api/agent-gateway/nodes/node-1/runs:claim') {
+    if (request.method === 'POST' && request.url === '/api/agentGatewayApi:claimRun/node-1') {
       response.setHeader('Content-Type', 'application/json');
       response.end(
         JSON.stringify({
@@ -105,7 +105,7 @@ async function createSmokeServer() {
 async function createSnapshotSmokeServer() {
   const frames: TerminalFrame[] = [];
   const server = http.createServer((request, response) => {
-    if (request.method === 'POST' && request.url === '/api/agent-gateway/nodes/node-1/runs:claim') {
+    if (request.method === 'POST' && request.url === '/api/agentGatewayApi:claimRun/node-1') {
       response.setHeader('Content-Type', 'application/json');
       response.end(
         JSON.stringify({

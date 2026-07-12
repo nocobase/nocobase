@@ -18,6 +18,7 @@ import agDispatchBindings from '../collections/agDispatchBindings';
 import agExternalImportBatches from '../collections/agExternalImportBatches';
 import agExternalRunIdentities from '../collections/agExternalRunIdentities';
 import agEventIngestSequences from '../collections/agEventIngestSequences';
+import agFileUploads from '../collections/agFileUploads';
 import agNodeInvitations from '../collections/agNodeInvitations';
 import agNodeSkillInstalls from '../collections/agNodeSkillInstalls';
 import agNodes from '../collections/agNodes';
@@ -48,6 +49,7 @@ const collections = [
   agDispatchBindings,
   agExternalRunIdentities,
   agExternalImportBatches,
+  agFileUploads,
   agRuns,
   agRunControlRequests,
   agRunEvents,
@@ -73,6 +75,7 @@ const requiredCollectionNames = [
   'agDispatchBindings',
   'agExternalRunIdentities',
   'agExternalImportBatches',
+  'agFileUploads',
   'agRuns',
   'agRunControlRequests',
   'agRunEvents',
@@ -211,10 +214,23 @@ describe('agent gateway collections', () => {
         'driver',
         'capabilitiesJson',
         'runtimeSnapshotJson',
-        'trustedConfigJson',
       ]),
     );
-    expect(profileFields).not.toEqual(expect.arrayContaining(['command', 'commandPath', 'cwd', 'env']));
+    expect(profileFields).not.toEqual(
+      expect.arrayContaining(['command', 'commandPath', 'cwd', 'env', 'trustedConfigJson']),
+    );
+  });
+
+  it('defines bounded file upload tracking fields', () => {
+    expect(fieldNamesOf('agFileUploads')).toEqual(
+      expect.arrayContaining(['id', 'purpose', 'status', 'expectedBytes', 'receivedBytes', 'storagePath', 'expiresAt']),
+    );
+    expectRequiredField('agFileUploads', 'purpose');
+    expectRequiredField('agFileUploads', 'status');
+    expectRequiredField('agFileUploads', 'expectedBytes');
+    expectRequiredField('agFileUploads', 'receivedBytes');
+    expectRequiredField('agFileUploads', 'storagePath');
+    expectRequiredField('agFileUploads', 'expiresAt');
   });
 
   it('defines required run and artifact fields', () => {

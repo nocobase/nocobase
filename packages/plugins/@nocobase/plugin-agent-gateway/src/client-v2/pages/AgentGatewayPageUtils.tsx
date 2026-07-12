@@ -39,6 +39,80 @@ export interface AgentGatewayContext {
 
 export type JsonRecord = Record<string, unknown>;
 
+const FILE_UPLOAD_CHUNK_BYTES = 1024 * 1024;
+
+function arrayBufferToBase64(buffer: ArrayBuffer) {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  for (let offset = 0; offset < bytes.length; offset += 32 * 1024) {
+    binary += String.fromCharCode(...bytes.subarray(offset, Math.min(offset + 32 * 1024, bytes.length)));
+  }
+  return btoa(binary);
+}
+
+async function readBlobAsArrayBuffer(blob: Blob) {
+  if (typeof blob.arrayBuffer === 'function') {
+    return await blob.arrayBuffer();
+  }
+  return await new Promise<ArrayBuffer>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(reader.error || new Error('Failed to read upload chunk'));
+    reader.onload = () => {
+      if (reader.result instanceof ArrayBuffer) {
+        resolve(reader.result);
+        return;
+      }
+      reject(new Error('Failed to read upload chunk'));
+    };
+    reader.readAsArrayBuffer(blob);
+  });
+}
+
+export async function uploadAgentGatewayFile(
+  api: AgentGatewayApi,
+  file: File,
+  purpose: 'skill-version' | 'run-artifact',
+) {
+  const initResponse = await api.request<{ id: string; chunkSize?: number }>({
+    url: 'agentGatewayApi:initFileUpload',
+    method: 'post',
+    data: {
+      purpose,
+      fileName: file.name,
+      mimeType: file.type || 'application/octet-stream',
+      sizeBytes: file.size,
+    },
+  });
+  const initialized = getRequiredResponseData(initResponse, 'Failed to initialize file upload');
+  const chunkSize = initialized.chunkSize || FILE_UPLOAD_CHUNK_BYTES;
+  try {
+    for (let offset = 0; offset < file.size; offset += chunkSize) {
+      const chunk = await readBlobAsArrayBuffer(file.slice(offset, Math.min(offset + chunkSize, file.size)));
+      await api.request({
+        url: `agentGatewayApi:appendFileUpload/${encodeURIComponent(initialized.id)}`,
+        method: 'post',
+        data: {
+          offset,
+          contentBase64: arrayBufferToBase64(chunk),
+        },
+      });
+    }
+    await api.request({
+      url: `agentGatewayApi:completeFileUpload/${encodeURIComponent(initialized.id)}`,
+      method: 'post',
+    });
+    return initialized.id;
+  } catch (error) {
+    await api
+      .request({
+        url: `agentGatewayApi:abortFileUpload/${encodeURIComponent(initialized.id)}`,
+        method: 'post',
+      })
+      .catch(() => undefined);
+    throw error;
+  }
+}
+
 const REDACTED_VALUE = '[REDACTED]';
 const AGENT_GATEWAY_TOKEN_PATTERN = /\bag_(?:inv|node|claim|stream)_[A-Za-z0-9._~+/-]+=*/gi;
 const EXTERNAL_URL_PATTERN = /\bhttps?:\/\/[^\s"'<>]+/gi;

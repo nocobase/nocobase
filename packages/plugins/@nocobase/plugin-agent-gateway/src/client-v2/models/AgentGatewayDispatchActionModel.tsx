@@ -203,7 +203,7 @@ export async function dispatchAgentGatewayRun(ctx: DispatchActionContext, params
   pendingDispatches.add(pendingKey);
   try {
     const response = await ctx.api.request<DispatchApiResponse>({
-      url: `agent-gateway/dispatch-bindings/${encodeURIComponent(bindingIdentifier)}/dispatch`,
+      url: `agentGatewayApi:dispatchBinding/${encodeURIComponent(bindingIdentifier)}`,
       method: 'post',
       data: {
         sourceRecordId: recordId,

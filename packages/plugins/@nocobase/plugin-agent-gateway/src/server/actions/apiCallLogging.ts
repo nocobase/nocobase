@@ -11,13 +11,14 @@ import { Context, Next } from '@nocobase/actions';
 import { Plugin } from '@nocobase/server';
 
 import { createApiCallLogSummary, redactDaemonErrorSummary, redactText } from '../security';
-import { API_PREFIX, getRecord, getString } from './utils';
+import { AGENT_GATEWAY_API_RESOURCE, API_PREFIX, getRecord, getString } from './utils';
 
 const DAEMON_API_DIRECTION = 'daemon_to_nocobase';
 const USER_API_DIRECTION = 'user_to_nocobase';
 const API_LOG_PATH_MAX_CHARS = 240;
 const API_LOG_FIELD_SUMMARY_MAX_CHARS = 1000;
 const API_LOG_STRUCTURED_VALUE_MAX_CHARS = 4000;
+const RESOURCE_API_PREFIXES = [`/api/${AGENT_GATEWAY_API_RESOURCE}:`, `/${AGENT_GATEWAY_API_RESOURCE}:`];
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const API_LOG_OMITTED_KEY_FRAGMENTS = ['content', 'metadata', 'payload', 'prompt', 'snapshot'];
 
@@ -140,8 +141,62 @@ function getUuidForeignKey(value: unknown) {
   return UUID_PATTERN.test(stringValue) ? stringValue : '';
 }
 
+function matchResourceApiRoute(pathname: string): MatchedApiRoute | null {
+  const resourcePrefix = RESOURCE_API_PREFIXES.find((prefix) => pathname.startsWith(prefix));
+  if (!resourcePrefix) {
+    return null;
+  }
+
+  const actionPath = pathname.slice(resourcePrefix.length);
+  if (actionPath === 'registerNode') {
+    return { action: 'register' };
+  }
+
+  const nodeActionMatch = actionPath.match(/^(heartbeatNode|claimRun|createSmokeRun|upsertNodeSkillInstall)\/([^/]+)$/);
+  if (nodeActionMatch) {
+    const actionByResourceName: Record<string, string> = {
+      heartbeatNode: 'node-heartbeat',
+      claimRun: 'claim',
+      createSmokeRun: 'smoke-runs:create',
+      upsertNodeSkillInstall: 'skill-installs:upsert',
+    };
+    return {
+      action: actionByResourceName[nodeActionMatch[1]],
+      nodeId: nodeActionMatch[2],
+    };
+  }
+
+  const runActionMatch = actionPath.match(
+    /^(heartbeatRun|completeRun|failRun|timeoutRun|ackCancelRun|skipRun)\/([^/]+)$/,
+  );
+  if (runActionMatch) {
+    const actionByResourceName: Record<string, string> = {
+      heartbeatRun: 'run-heartbeat',
+      completeRun: 'run-complete',
+      failRun: 'run-fail',
+      timeoutRun: 'run-timeout',
+      ackCancelRun: 'run-cancel-ack',
+      skipRun: 'run-skip',
+    };
+    return {
+      action: actionByResourceName[runActionMatch[1]],
+      runId: runActionMatch[2],
+    };
+  }
+
+  return null;
+}
+
 function matchApiRoute(ctx: Context): MatchedApiRoute | null {
-  if (ctx.method !== 'POST' || !ctx.path.startsWith(API_PREFIX)) {
+  if (ctx.method !== 'POST') {
+    return null;
+  }
+
+  const resourceRoute = matchResourceApiRoute(ctx.path);
+  if (resourceRoute) {
+    return resourceRoute;
+  }
+  if (!ctx.path.startsWith(API_PREFIX)) {
     return null;
   }
 

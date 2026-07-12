@@ -209,7 +209,7 @@ describe('agent gateway permission matrix', () => {
     const dispatchAgent = await createUserAgent('agent-gateway-dispatch-no-direct-create', [
       'agentGateway.dispatchRun',
     ]);
-    const deniedResponse = await dispatchAgent.post('/api/agent-gateway/runs:create').send({
+    const deniedResponse = await dispatchAgent.post('/agentGatewayApi:createRun').send({
       runCode: 'dispatch-direct-create-denied',
       sourceType: 'manual',
       promptSnapshot: {
@@ -224,7 +224,7 @@ describe('agent gateway permission matrix', () => {
     expect(await app.db.getRepository('agRuns').count({})).toBe(0);
 
     const managerAgent = await createUserAgent('agent-gateway-manage-direct-create', ['agentGateway.manage']);
-    const allowedResponse = await managerAgent.post('/api/agent-gateway/runs:create').send({
+    const allowedResponse = await managerAgent.post('/agentGatewayApi:createRun').send({
       runCode: 'manage-direct-create-allowed',
       sourceType: 'manual',
       promptSnapshot: {
@@ -241,14 +241,14 @@ describe('agent gateway permission matrix', () => {
   it('enforces list-only and detail-only restricted roles', async () => {
     const { runId } = await seedRun();
     const listOnlyAgent = await createUserAgent('agent-gateway-list-only', ['agentGateway.readRuns']);
-    expect((await listOnlyAgent.get('/api/agent-gateway/runs:list')).status).toBe(200);
-    expect((await listOnlyAgent.get(`/api/agent-gateway/runs:get/${runId}`)).status).toBe(403);
+    expect((await listOnlyAgent.get('/agentGatewayApi:listRuns')).status).toBe(200);
+    expect((await listOnlyAgent.get(`/agentGatewayApi:getRun/${runId}`)).status).toBe(403);
 
     const detailOnlyAgent = await createUserAgent('agent-gateway-detail-only', [
       'agentGateway.readRuns',
       'agentGateway.readRunDetails',
     ]);
-    const detailResponse = await detailOnlyAgent.get(`/api/agent-gateway/runs:get/${runId}`);
+    const detailResponse = await detailOnlyAgent.get(`/agentGatewayApi:getRun/${runId}`);
     expect(detailResponse.status).toBe(200);
     expect(getData(detailResponse)).toMatchObject({
       agentGatewayActionPermissionsJson: {
@@ -308,7 +308,7 @@ describe('agent gateway permission matrix', () => {
       runCode: visible.runCode,
     });
 
-    const listResponse = await cancelAgent.get('/api/agent-gateway/runs:list');
+    const listResponse = await cancelAgent.get('/agentGatewayApi:listRuns');
     expect(listResponse.status).toBe(200);
     expect(JSON.stringify(listResponse.body)).toContain(visible.runId);
     expect(JSON.stringify(listResponse.body)).not.toContain(hidden.runId);
@@ -316,14 +316,14 @@ describe('agent gateway permission matrix', () => {
     expect(JSON.stringify(listResponse.body)).toContain('"interruptRun":false');
     expect(JSON.stringify(listResponse.body)).toContain('"terminateRun":false');
 
-    const cancelResponse = await cancelAgent.post(`/api/agent-gateway/runs/${visible.runId}/cancel`).send({});
+    const cancelResponse = await cancelAgent.post(`/agentGatewayApi:cancelRun/${visible.runId}`).send({});
     expect(cancelResponse.status).toBe(200);
     expect(getData(cancelResponse)).toMatchObject({
       status: 'canceling',
       cancelRequested: true,
     });
 
-    const hiddenCancelResponse = await cancelAgent.post(`/api/agent-gateway/runs/${hidden.runId}/cancel`).send({});
+    const hiddenCancelResponse = await cancelAgent.post(`/agentGatewayApi:cancelRun/${hidden.runId}`).send({});
     expect(hiddenCancelResponse.status).toBe(404);
     expect(JSON.stringify(hiddenCancelResponse.body)).toContain('AGENT_GATEWAY_RESOURCE_NOT_VISIBLE');
   });
@@ -444,7 +444,7 @@ describe('agent gateway permission matrix', () => {
       runCode: visible.runCode,
     });
 
-    const listResponse = await scopedAgent.get('/api/agent-gateway/runs:list');
+    const listResponse = await scopedAgent.get('/agentGatewayApi:listRuns');
     expect(listResponse.status).toBe(200);
     expect(JSON.stringify(listResponse.body)).toContain(visible.runId);
     expect(JSON.stringify(listResponse.body)).not.toContain(hidden.runId);
@@ -453,8 +453,8 @@ describe('agent gateway permission matrix', () => {
     expect(JSON.stringify(standardScopedListResponse.body)).toContain(visible.runId);
     expect(JSON.stringify(standardScopedListResponse.body)).not.toContain(hidden.runId);
 
-    expect((await scopedAgent.get(`/api/agent-gateway/runs:get/${visible.runId}`)).status).toBe(200);
-    expect((await scopedAgent.get(`/api/agent-gateway/runs:get/${hidden.runId}`)).status).toBe(404);
+    expect((await scopedAgent.get(`/agentGatewayApi:getRun/${visible.runId}`)).status).toBe(200);
+    expect((await scopedAgent.get(`/agentGatewayApi:getRun/${hidden.runId}`)).status).toBe(404);
     expect((await scopedAgent.get(`/agRuns:get/${visible.runId}`)).status).toBe(200);
     expect((await scopedAgent.get(`/agRuns:get/${hidden.runId}`)).status).toBe(404);
     expect((await scopedAgent.get(`/api/agent-gateway/runs/${hidden.runId}/terminal:snapshot`)).status).toBe(404);
@@ -520,7 +520,7 @@ describe('agent gateway permission matrix', () => {
         },
       }),
     ).toBe(hiddenStreamTicketCountBefore);
-    const hiddenCancelResponse = await scopedAgent.post(`/api/agent-gateway/runs/${hidden.runId}/cancel`).send({});
+    const hiddenCancelResponse = await scopedAgent.post(`/agentGatewayApi:cancelRun/${hidden.runId}`).send({});
     expect(hiddenCancelResponse.status).toBe(404);
     expect(JSON.stringify(hiddenCancelResponse.body)).toContain('AGENT_GATEWAY_RESOURCE_NOT_VISIBLE');
     const hiddenRunAfterCancel = await app.db.getRepository('agRuns').findOne({

@@ -236,7 +236,7 @@ describe('agent gateway no-code business trigger smoke', () => {
 
   async function createInvitation() {
     const nodeKey = nextCode('ui-build-node');
-    const response = await rootAgent.post('/api/agent-gateway/node-invitations:create').send({
+    const response = await rootAgent.post('/agentGatewayApi:createNodeInvitation').send({
       invitationKey: nextCode('ui-build-invite'),
       serverUrl: 'http://127.0.0.1:13000',
       expiresInSeconds: 3600,
@@ -253,7 +253,7 @@ describe('agent gateway no-code business trigger smoke', () => {
     const invitation = await createInvitation();
     const registerResponse = await app
       .agent()
-      .post('/api/agent-gateway/nodes:register')
+      .post('/agentGatewayApi:registerNode')
       .send({
         inviteToken: extractInviteToken(invitation.registerCommand),
         nodeKey: invitation.nodeKey,
@@ -273,7 +273,7 @@ describe('agent gateway no-code business trigger smoke', () => {
 
     const heartbeatResponse = await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${nodeId}/heartbeat`)
+      .post(`/agentGatewayApi:heartbeatNode/${nodeId}`)
       .set('Authorization', `Bearer ${nodeToken}`)
       .send({
         currentConcurrency: 0,
@@ -349,7 +349,7 @@ describe('agent gateway no-code business trigger smoke', () => {
   }
 
   async function createPromptTemplate() {
-    const response = await rootAgent.post('/api/agent-gateway/prompt-templates:create').send({
+    const response = await rootAgent.post('/agentGatewayApi:createPromptTemplate').send({
       templateKey: nextCode('ui.build.template'),
       displayName: 'NocoBase UI Build smoke template',
       templateText: UI_BUILD_PROMPT_TEMPLATE,
@@ -363,7 +363,7 @@ describe('agent gateway no-code business trigger smoke', () => {
   }
 
   async function createDispatchBinding(promptTemplateId: unknown) {
-    const response = await rootAgent.post('/api/agent-gateway/dispatch-bindings:create').send({
+    const response = await rootAgent.post('/agentGatewayApi:createDispatchBinding').send({
       bindingKey: nextCode('ui.build.dispatch'),
       collectionName: 'build_runs',
       promptTemplateId,
@@ -520,7 +520,7 @@ describe('agent gateway no-code business trigger smoke', () => {
   async function claimRun(daemon: FakeDaemonRegistration) {
     return await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${daemon.nodeId}/runs:claim`)
+      .post(`/agentGatewayApi:claimRun/${daemon.nodeId}`)
       .set('Authorization', `Bearer ${daemon.nodeToken}`)
       .send({
         profileKey: 'fake-success',
@@ -570,13 +570,11 @@ describe('agent gateway no-code business trigger smoke', () => {
     const buildRun = await createBusinessBuildRun(businessAgent, daemon, skill.skillVersionId);
     const buildRunId = buildRun.id;
 
-    const dispatchResponse = await businessAgent
-      .post(`/api/agent-gateway/dispatch-bindings/${binding.id}:dispatch`)
-      .send({
-        sourceRecordId: buildRunId,
-        sourceCollection: 'build_runs',
-        idempotencyKey: 'ui-build-smoke-click',
-      });
+    const dispatchResponse = await businessAgent.post(`/agentGatewayApi:dispatchBinding/${binding.id}`).send({
+      sourceRecordId: buildRunId,
+      sourceCollection: 'build_runs',
+      idempotencyKey: 'ui-build-smoke-click',
+    });
     expect(dispatchResponse.status).toBe(200);
     const dispatch = getRecordData(dispatchResponse);
     expect(dispatch).toMatchObject({
@@ -721,7 +719,7 @@ describe('agent gateway no-code business trigger smoke', () => {
       status: 'succeeded',
     });
 
-    const runResponse = await businessAgent.get(`/api/agent-gateway/runs:get/${runId}`);
+    const runResponse = await businessAgent.get(`/agentGatewayApi:getRun/${runId}`);
     const eventsResponse = await businessAgent.get(`/api/agent-gateway/runs/${runId}/events:list`);
     const artifactsResponse = await businessAgent.get(`/api/agent-gateway/runs/${runId}/artifacts:list`);
     const snapshotsResponse = await businessAgent.get(`/api/agent-gateway/runs/${runId}/snapshots:list`);

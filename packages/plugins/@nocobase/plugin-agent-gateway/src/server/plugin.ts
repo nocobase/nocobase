@@ -7,8 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { resolve } from 'path';
-
 import { Plugin } from '@nocobase/server';
 
 import { registerApiCallLogMiddleware } from './actions/apiCallLogging';
@@ -16,6 +14,7 @@ import { registerAgentSessionRoutes } from './actions/agentSessions';
 import { registerConversationEventRoutes } from './actions/conversationEvents';
 import { registerDispatchBindingRoutes, registerDispatchBindingValidationHooks } from './actions/dispatchBindings';
 import { registerExternalRunImportRoutes } from './actions/externalRunImports';
+import { cleanupExpiredFileUploads, registerFileUploadActions } from './actions/fileUploads';
 import { registerNodeLifecycleRoutes } from './actions/nodeLifecycle';
 import { registerPromptTemplateRoutes } from './actions/promptTemplates';
 import { recoverExpiredRunLeases, registerRunLifecycleHooks, registerRunLifecycleRoutes } from './actions/runLifecycle';
@@ -25,6 +24,7 @@ import { registerRunTerminalRoutes } from './actions/runTerminal';
 import { registerSkillInstallRoutes } from './actions/skillInstalls';
 import { registerSkillVersionRoutes } from './actions/skillVersions';
 import { registerTaskTemplateRoutes } from './actions/taskTemplates';
+import { AGENT_GATEWAY_API_RESOURCE } from './actions/utils';
 import { TerminalStreamBroker, registerTerminalStreamBroker } from './actions/terminalStreamBroker';
 import { registerAgentGatewayAcl } from './security/permissions';
 import { cleanupAgentGatewayRetention } from './services/retention';
@@ -65,14 +65,6 @@ export class PluginAgentGatewayServer extends Plugin {
   async afterAdd() {}
 
   async beforeLoad() {
-    this.db.addMigrations({
-      namespace: this.name,
-      directory: resolve(__dirname, './migrations'),
-      context: {
-        plugin: this,
-      },
-    });
-
     registerAgentGatewayAcl(this.app.acl);
     registerDispatchBindingValidationHooks(this);
     registerRunLifecycleHooks(this);
@@ -80,7 +72,9 @@ export class PluginAgentGatewayServer extends Plugin {
   }
 
   async load() {
+    this.app.acl.allow('agentGatewayApi', '*', 'public');
     registerApiCallLogMiddleware(this);
+    registerFileUploadActions(this);
     registerNodeLifecycleRoutes(this);
     registerSkillInstallRoutes(this);
     registerSkillVersionRoutes(this);
@@ -94,6 +88,7 @@ export class PluginAgentGatewayServer extends Plugin {
     registerTaskTemplateRoutes(this);
     registerPromptTemplateRoutes(this);
     registerDispatchBindingRoutes(this);
+    this.app.resourceManager.define({ name: AGENT_GATEWAY_API_RESOURCE });
     this.terminalStreamBroker = registerTerminalStreamBroker(this);
     this.registerAppLifecycleListeners();
   }
@@ -177,10 +172,17 @@ export class PluginAgentGatewayServer extends Plugin {
         if (!this.retentionActive) {
           return;
         }
+        const expiredUploadCount = await cleanupExpiredFileUploads(this);
         const result = await cleanupAgentGatewayRetention(this);
-        if (result.deletedTotal > 0 || result.recoveredImportBatches > 0 || result.abandonedImportRuns > 0) {
+        if (
+          expiredUploadCount > 0 ||
+          result.deletedTotal > 0 ||
+          result.recoveredImportBatches > 0 ||
+          result.abandonedImportRuns > 0
+        ) {
           this.app.logger?.info?.('Agent Gateway retention cleanup completed', {
             reason,
+            expiredUploadCount,
             deletedTotal: result.deletedTotal,
             deletedByCollection: result.deletedByCollection,
             recoveredImportBatches: result.recoveredImportBatches,

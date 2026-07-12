@@ -284,7 +284,7 @@ describe('agent gateway run control requests', () => {
 
     const completeResponse = await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${runner.nodeId}/runs/${runId}/complete`)
+      .post(`/agentGatewayApi:completeRun/${runId}`)
       .set('Authorization', `Bearer ${runner.nodeToken}`)
       .send(
         leaseBody(claim, {
@@ -341,7 +341,7 @@ describe('agent gateway run control requests', () => {
       },
     });
 
-    const expireResponse = await rootAgent.post('/api/agent-gateway/runs:expire-leases').send({});
+    const expireResponse = await rootAgent.post('/agentGatewayApi:expireRunLeases').send({});
     expect(expireResponse.status).toBe(200);
     expect(getData(expireResponse)).toMatchObject({
       stalledCount: 1,
@@ -355,7 +355,7 @@ describe('agent gateway run control requests', () => {
       },
     });
 
-    const failExpiredResponse = await rootAgent.post('/api/agent-gateway/runs:expire-leases').send({});
+    const failExpiredResponse = await rootAgent.post('/agentGatewayApi:expireRunLeases').send({});
     expect(failExpiredResponse.status).toBe(200);
     expect(getData(failExpiredResponse)).toMatchObject({
       stalledCount: 0,
@@ -387,7 +387,7 @@ describe('agent gateway run control requests', () => {
   it('does not expose lease token or tmux session internals in management run responses', async () => {
     const { runId } = await seedActiveRun();
 
-    const detailResponse = await rootAgent.get(`/api/agent-gateway/runs:get/${runId}`);
+    const detailResponse = await rootAgent.get(`/agentGatewayApi:getRun/${runId}`);
     expect(detailResponse.status).toBe(200);
     const detailRun = getData(detailResponse);
     expect(detailRun).toMatchObject({
@@ -406,7 +406,7 @@ describe('agent gateway run control requests', () => {
       expect(detailRun).not.toHaveProperty(internalField);
     }
 
-    const listResponse = await rootAgent.get('/api/agent-gateway/runs:list');
+    const listResponse = await rootAgent.get('/agentGatewayApi:listRuns');
     expect(listResponse.status).toBe(200);
     const listData = listResponse.body.data;
     expect(Array.isArray(listData)).toBe(true);
@@ -526,7 +526,7 @@ describe('agent gateway run control requests', () => {
 
   it('exposes and accepts controls for active tmux runs before an agent session is detected', async () => {
     const { runId } = await seedActiveRun({ withSession: false });
-    const detailResponse = await rootAgent.get(`/api/agent-gateway/runs:get/${runId}`);
+    const detailResponse = await rootAgent.get(`/agentGatewayApi:getRun/${runId}`);
     expect(detailResponse.status).toBe(200);
     expect(getData(detailResponse)).toMatchObject({
       agentGatewayControlActionsJson: {
@@ -566,7 +566,7 @@ describe('agent gateway run control requests', () => {
       },
     });
 
-    const detailResponse = await rootAgent.get(`/api/agent-gateway/runs:get/${runId}`);
+    const detailResponse = await rootAgent.get(`/agentGatewayApi:getRun/${runId}`);
     expect(detailResponse.status).toBe(200);
     expect(getData(detailResponse)).toMatchObject({
       agentProviderCapabilitySource: 'fallback',
@@ -589,7 +589,7 @@ describe('agent gateway run control requests', () => {
 
   it('does not expose or accept controls when the runner terminal capability disables them', async () => {
     const { runId } = await seedActiveRun({ withSession: false, terminalControl: false });
-    const detailResponse = await rootAgent.get(`/api/agent-gateway/runs:get/${runId}`);
+    const detailResponse = await rootAgent.get(`/agentGatewayApi:getRun/${runId}`);
     expect(detailResponse.status).toBe(200);
     expect(getData(detailResponse)).toMatchObject({
       agentGatewayControlActionsJson: {
@@ -621,7 +621,7 @@ describe('agent gateway run control requests', () => {
 
     const heartbeatResponse = await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${runner.nodeId}/runs/${runId}/heartbeat`)
+      .post(`/agentGatewayApi:heartbeatRun/${runId}`)
       .set('Authorization', `Bearer ${runner.nodeToken}`)
       .send(leaseBody(claim, { status: 'running' }));
     expect(heartbeatResponse.status).toBe(200);

@@ -372,7 +372,7 @@ function buildAttempt(action: DenialAction, args: DenialArgs) {
       );
     }
     return {
-      route: `/api/agent-gateway/dispatch-bindings/${encodeURIComponent(args.dispatchBindingId)}/dispatch`,
+      route: `/api/agentGatewayApi:dispatchBinding/${encodeURIComponent(args.dispatchBindingId)}`,
       method: 'POST' as const,
       body: {
         recordId: args.dispatchRecordId,
@@ -411,7 +411,7 @@ function buildAttempt(action: DenialAction, args: DenialArgs) {
   }
   if (action === 'cancel') {
     return {
-      route: `/api/agent-gateway/runs/${encodeURIComponent(args.runId)}/cancel`,
+      route: `/api/agentGatewayApi:cancelRun/${encodeURIComponent(args.runId)}`,
       method: 'POST' as const,
     };
   }
@@ -465,12 +465,12 @@ function buildAttempt(action: DenialAction, args: DenialArgs) {
   }
   if (action === 'run-details') {
     return {
-      route: `/api/agent-gateway/runs:get/${encodeURIComponent(args.runId)}`,
+      route: `/api/agentGatewayApi:getRun/${encodeURIComponent(args.runId)}`,
       method: 'GET' as const,
     };
   }
   return {
-    route: `/api/agent-gateway/runs:get/${encodeURIComponent(args.hiddenRunId)}`,
+    route: `/api/agentGatewayApi:getRun/${encodeURIComponent(args.hiddenRunId)}`,
     method: 'GET' as const,
   };
 }

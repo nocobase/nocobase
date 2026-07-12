@@ -110,7 +110,7 @@ describe('agent gateway conversation event APIs', () => {
   }
 
   async function createRun(runner: Awaited<ReturnType<typeof createRunner>>, runCode: string) {
-    const response = await rootAgent.post('/api/agent-gateway/runs:create').send({
+    const response = await rootAgent.post('/agentGatewayApi:createRun').send({
       runCode,
       sourceType: 'test',
       nodeId: runner.nodeId,
@@ -130,7 +130,7 @@ describe('agent gateway conversation event APIs', () => {
   async function claimRun(runner: Awaited<ReturnType<typeof createRunner>>, runId: unknown) {
     const response = await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${runner.nodeId}/runs:claim`)
+      .post(`/agentGatewayApi:claimRun/${runner.nodeId}`)
       .set('Authorization', `Bearer ${runner.nodeToken}`)
       .send({
         profileKey: runner.profileKey,
@@ -1396,7 +1396,7 @@ describe('agent gateway conversation event APIs', () => {
     );
 
     const listOnlyAgent = await createUserAgent('conversation-list-only', ['agentGateway.readRuns']);
-    expect((await listOnlyAgent.get('/api/agent-gateway/runs:list')).status).toBe(200);
+    expect((await listOnlyAgent.get('/agentGatewayApi:listRuns')).status).toBe(200);
     expect((await listOnlyAgent.get(`/api/agent-gateway/runs/${run.id}/conversation-events:list`)).status).toBe(403);
 
     const messageReader = await createUserAgent('conversation-message-reader', ['agentGateway.readSessionMessages']);

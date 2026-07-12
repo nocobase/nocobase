@@ -14,6 +14,15 @@ import { AGENT_GATEWAY_ACTIONS, AGENT_GATEWAY_RESOURCE } from '../security';
 
 export const API_PREFIX = '/api/agent-gateway';
 export const NOCOBASE_API_PREFIX = '/api';
+export const AGENT_GATEWAY_API_RESOURCE = 'agentGatewayApi';
+
+export function asActionContext(value: unknown) {
+  return value as Context;
+}
+
+export function getActionTargetKey(ctx: Context) {
+  return getString(ctx.action.params.filterByTk);
+}
 
 const UNION_ROLE_KEY = '__union__';
 const SYSTEM_ROLE_MODE_DEFAULT = 'default';

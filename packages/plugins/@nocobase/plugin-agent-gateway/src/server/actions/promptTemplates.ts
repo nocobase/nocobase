@@ -16,10 +16,12 @@ import { Transaction } from 'sequelize';
 
 import { REDACTED_VALUE, redactText, shouldRedactKey } from '../security';
 import {
-  API_PREFIX,
+  AGENT_GATEWAY_API_RESOURCE,
   JsonRecord,
   ModelRecord,
   getBodyValues,
+  asActionContext,
+  getActionTargetKey,
   getCurrentRoleNames,
   getModelJson,
   getModelString,
@@ -911,54 +913,33 @@ async function previewTemplate(ctx: Context) {
 }
 
 export function registerPromptTemplateRoutes(plugin: Plugin) {
-  plugin.app.use(
-    async (ctx: Context, next: Next) => {
-      if (!ctx.path.startsWith(API_PREFIX)) {
-        await next();
-        return;
-      }
-
-      const routePath = ctx.path.slice(API_PREFIX.length);
-      const getTemplateMatch = routePath.match(/^\/prompt-templates:get\/([^/]+)$/);
-      const updateTemplateMatch = routePath.match(/^\/prompt-templates:update\/([^/]+)$/);
-      const destroyTemplateMatch = routePath.match(/^\/prompt-templates:destroy\/([^/]+)$/);
-
-      if (ctx.method === 'GET' && routePath === '/prompt-templates:list') {
-        await listTemplates(ctx);
-        return;
-      }
-
-      if (ctx.method === 'GET' && getTemplateMatch) {
-        await getTemplate(ctx, getTemplateMatch[1]);
-        return;
-      }
-
-      if (ctx.method === 'POST' && routePath === '/prompt-templates:create') {
-        await createTemplate(ctx);
-        return;
-      }
-
-      if (ctx.method === 'POST' && updateTemplateMatch) {
-        await updateTemplate(ctx, updateTemplateMatch[1]);
-        return;
-      }
-
-      if (ctx.method === 'POST' && destroyTemplateMatch) {
-        await destroyTemplate(ctx, destroyTemplateMatch[1]);
-        return;
-      }
-
-      if (ctx.method === 'POST' && routePath === '/prompt-templates:preview') {
-        await previewTemplate(ctx);
-        return;
-      }
-
+  plugin.app.resourceManager.registerActionHandlers({
+    [`${AGENT_GATEWAY_API_RESOURCE}:listPromptTemplates`]: async (ctx, next) => {
+      await listTemplates(asActionContext(ctx));
       await next();
     },
-    {
-      tag: 'agentGatewayPromptTemplateRoutes',
-      after: 'agentGatewayRunObservabilityRoutes',
-      before: 'dataSource',
+    [`${AGENT_GATEWAY_API_RESOURCE}:getPromptTemplate`]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      await getTemplate(actionCtx, getActionTargetKey(actionCtx));
+      await next();
     },
-  );
+    [`${AGENT_GATEWAY_API_RESOURCE}:createPromptTemplate`]: async (ctx, next) => {
+      await createTemplate(asActionContext(ctx));
+      await next();
+    },
+    [`${AGENT_GATEWAY_API_RESOURCE}:updatePromptTemplate`]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      await updateTemplate(actionCtx, getActionTargetKey(actionCtx));
+      await next();
+    },
+    [`${AGENT_GATEWAY_API_RESOURCE}:destroyPromptTemplate`]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      await destroyTemplate(actionCtx, getActionTargetKey(actionCtx));
+      await next();
+    },
+    [`${AGENT_GATEWAY_API_RESOURCE}:previewPromptTemplate`]: async (ctx, next) => {
+      await previewTemplate(asActionContext(ctx));
+      await next();
+    },
+  });
 }

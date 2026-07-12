@@ -107,7 +107,7 @@ describe('agent gateway fake daemon E2E', () => {
   }
 
   async function createInvitation(values: Record<string, unknown> = {}) {
-    const response = await rootAgent.post('/api/agent-gateway/node-invitations:create').send({
+    const response = await rootAgent.post('/agentGatewayApi:createNodeInvitation').send({
       invitationKey: nextCode('fake-daemon-invite'),
       serverUrl: 'http://127.0.0.1:13000',
       expiresInSeconds: 3600,
@@ -121,7 +121,7 @@ describe('agent gateway fake daemon E2E', () => {
   async function registerNode(inviteToken: string, values: Record<string, unknown> = {}) {
     return await app
       .agent()
-      .post('/api/agent-gateway/nodes:register')
+      .post('/agentGatewayApi:registerNode')
       .send({
         inviteToken,
         nodeKey: 'fake-daemon-node',
@@ -157,7 +157,7 @@ describe('agent gateway fake daemon E2E', () => {
 
     const heartbeatResponse = await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${nodeId}/heartbeat`)
+      .post(`/agentGatewayApi:heartbeatNode/${nodeId}`)
       .set('Authorization', `Bearer ${nodeToken}`)
       .send({
         currentConcurrency: 0,
@@ -209,7 +209,7 @@ describe('agent gateway fake daemon E2E', () => {
   }
 
   async function createPromptTemplate(values: Record<string, unknown> = {}) {
-    const response = await rootAgent.post('/api/agent-gateway/prompt-templates:create').send({
+    const response = await rootAgent.post('/agentGatewayApi:createPromptTemplate').send({
       templateKey: nextCode('fake.daemon.template'),
       displayName: 'Fake daemon E2E template',
       templateText: 'Build a fake daemon task at {{ now }}.',
@@ -228,7 +228,7 @@ describe('agent gateway fake daemon E2E', () => {
     daemon: FakeDaemonRegistration,
     values: Record<string, unknown> = {},
   ): Promise<Record<string, unknown>> {
-    const response = await rootAgent.post('/api/agent-gateway/runs:create').send({
+    const response = await rootAgent.post('/agentGatewayApi:createRun').send({
       runCode: nextCode('fake-daemon-run'),
       sourceType: 'test',
       agentProfileId: daemon.profileId,
@@ -252,7 +252,7 @@ describe('agent gateway fake daemon E2E', () => {
   async function claimRun(daemon: FakeDaemonRegistration) {
     return await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${daemon.nodeId}/runs:claim`)
+      .post(`/agentGatewayApi:claimRun/${daemon.nodeId}`)
       .set('Authorization', `Bearer ${daemon.nodeToken}`)
       .send({
         profileKey: 'fake-success',
@@ -415,7 +415,7 @@ describe('agent gateway fake daemon E2E', () => {
       code: 'lease_lost',
     });
 
-    const runResponse = await rootAgent.get(`/api/agent-gateway/runs:get/${runId}`);
+    const runResponse = await rootAgent.get(`/agentGatewayApi:getRun/${runId}`);
     expect(runResponse.status).toBe(200);
     const readableRun = getRecordData(runResponse);
     expect(readableRun.status).toBe('succeeded');
@@ -425,7 +425,7 @@ describe('agent gateway fake daemon E2E', () => {
     expect(readableRun).not.toHaveProperty('promptSnapshot');
     expect(readableRun).not.toHaveProperty('executionPayloadJson');
 
-    const runListResponse = await rootAgent.get('/api/agent-gateway/runs:list?status=succeeded');
+    const runListResponse = await rootAgent.get('/agentGatewayApi:listRuns?status=succeeded');
     expect(runListResponse.status).toBe(200);
     const runList = getListData(runListResponse);
     expect(runList.some((item) => item.id === runId && item.status === 'succeeded')).toBe(true);
@@ -529,7 +529,7 @@ describe('agent gateway fake daemon E2E', () => {
 
     const heartbeatResponse = await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${daemon.nodeId}/heartbeat`)
+      .post(`/agentGatewayApi:heartbeatNode/${daemon.nodeId}`)
       .set('Authorization', 'Bearer ag_node_invalid_token')
       .send({});
     expect(heartbeatResponse.status).toBe(401);
@@ -539,7 +539,7 @@ describe('agent gateway fake daemon E2E', () => {
     const daemon = await registerFakeDaemon();
     await createRun(daemon);
 
-    const disableResponse = await rootAgent.post(`/api/agent-gateway/nodes:update/${daemon.nodeId}`).send({
+    const disableResponse = await rootAgent.post(`/agentGatewayApi:updateNode/${daemon.nodeId}`).send({
       status: 'disabled',
     });
     expect(disableResponse.status).toBe(200);
@@ -579,7 +579,7 @@ describe('agent gateway fake daemon E2E', () => {
       },
     });
 
-    const expireResponse = await rootAgent.post('/api/agent-gateway/runs:expire-leases').send({});
+    const expireResponse = await rootAgent.post('/agentGatewayApi:expireRunLeases').send({});
     expect(expireResponse.status).toBe(200);
     expect(getRecordData(expireResponse)).toMatchObject({
       stalledCount: 1,
@@ -599,7 +599,7 @@ describe('agent gateway fake daemon E2E', () => {
       },
     });
 
-    const failExpiredResponse = await rootAgent.post('/api/agent-gateway/runs:expire-leases').send({});
+    const failExpiredResponse = await rootAgent.post('/agentGatewayApi:expireRunLeases').send({});
     expect(failExpiredResponse.status).toBe(200);
     expect(getRecordData(failExpiredResponse)).toMatchObject({
       stalledCount: 0,
@@ -630,7 +630,7 @@ describe('agent gateway fake daemon E2E', () => {
       leaseVersion: heartbeat.leaseVersion,
     });
 
-    const cancelResponse = await rootAgent.post(`/api/agent-gateway/runs/${run.id}/cancel`).send({});
+    const cancelResponse = await rootAgent.post(`/agentGatewayApi:cancelRun/${run.id}`).send({});
     expect(cancelResponse.status).toBe(200);
     const cancel = getRecordData(cancelResponse);
     expect(cancel.status).toBe('canceling');

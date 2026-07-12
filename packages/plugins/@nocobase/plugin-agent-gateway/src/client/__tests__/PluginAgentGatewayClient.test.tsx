@@ -46,6 +46,13 @@ describe('PluginAgentGatewayClient', () => {
       }),
     );
     expect(addSetting).toHaveBeenCalledWith(
+      'agent-gateway.skills',
+      expect.objectContaining({
+        aclSnippet: 'pm.agent-gateway.skills',
+        componentLoader: expect.any(Function),
+      }),
+    );
+    expect(addSetting).toHaveBeenCalledWith(
       'agent-gateway.runs',
       expect.objectContaining({
         aclSnippet: 'pm.agent-gateway.runs',
@@ -62,7 +69,7 @@ describe('PluginAgentGatewayClient', () => {
     expect(addSetting).toHaveBeenCalledWith(
       'agent-gateway.task-templates',
       expect.objectContaining({
-        aclSnippet: 'pm.agent-gateway',
+        aclSnippet: 'pm.agent-gateway.task-templates',
         componentLoader: expect.any(Function),
       }),
     );
@@ -82,6 +89,7 @@ describe('PluginAgentGatewayClient', () => {
     );
 
     expect(app.pluginSettingsManager.getRoutePath('agent-gateway.nodes')).toBe('/admin/settings/agent-gateway/nodes');
+    expect(app.pluginSettingsManager.getRoutePath('agent-gateway.skills')).toBe('/admin/settings/agent-gateway/skills');
     expect(app.pluginSettingsManager.getRoutePath('agent-gateway.runs')).toBe('/admin/settings/agent-gateway/runs');
     expect(app.pluginSettingsManager.getRoutePath('agent-gateway.provider-capabilities')).toBe(
       '/admin/settings/agent-gateway/provider-capabilities',
@@ -97,6 +105,7 @@ describe('PluginAgentGatewayClient', () => {
     );
     expect(app.pluginSettingsManager.get('agent-gateway')?.children?.map((item) => item.name)).toEqual([
       'agent-gateway.nodes',
+      'agent-gateway.skills',
       'agent-gateway.runs',
       'agent-gateway.provider-capabilities',
       'agent-gateway.task-templates',

@@ -46,14 +46,6 @@ export default defineCollection({
     },
     {
       type: 'string',
-      name: 'endpointUrl',
-    },
-    {
-      type: 'string',
-      name: 'authMode',
-    },
-    {
-      type: 'string',
       name: 'nodeTokenHash',
       hidden: true,
     },

@@ -145,7 +145,7 @@ export default function AgentGatewaySettingsPage() {
   const nodesRequest = useRequest(
     async () => {
       const response = await ctx.api.request<NodeRecord[]>({
-        url: 'agent-gateway/nodes:list',
+        url: 'agentGatewayApi:listNodes',
         method: 'get',
       });
       return getResponseData(response, []);
@@ -171,7 +171,7 @@ export default function AgentGatewaySettingsPage() {
       }
 
       const response = await ctx.api.request<AgentProfileRecord[]>({
-        url: `agent-gateway/nodes/${selectedNodeId}/profiles:list`,
+        url: `agentGatewayApi:listNodeProfiles/${selectedNodeId}`,
         method: 'get',
       });
       return getResponseData(response, []);
@@ -184,7 +184,7 @@ export default function AgentGatewaySettingsPage() {
   const createInvitationRequest = useRequest(
     async (values: InvitationFormValues) => {
       const response = await ctx.api.request<InvitationResult>({
-        url: 'agent-gateway/node-invitations:create',
+        url: 'agentGatewayApi:createNodeInvitation',
         method: 'post',
         data: values as Record<string, unknown>,
       });
@@ -205,7 +205,7 @@ export default function AgentGatewaySettingsPage() {
   const updateNodeStatusRequest = useRequest(
     async (node: NodeRecord, enabled: boolean) => {
       const response = await ctx.api.request<NodeRecord>({
-        url: `agent-gateway/nodes:update/${encodeURIComponent(node.id)}`,
+        url: `agentGatewayApi:updateNode/${encodeURIComponent(node.id)}`,
         method: 'post',
         data: {
           status: enabled ? 'active' : 'disabled',

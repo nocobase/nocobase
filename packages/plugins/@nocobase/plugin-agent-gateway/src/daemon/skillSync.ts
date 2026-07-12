@@ -573,7 +573,7 @@ function getAuthenticatedArchiveHeaders(
   const trustedServer = new URL(trustedArchiveServerUrl);
   if (
     archive.origin !== trustedServer.origin ||
-    !/^\/api\/agent-gateway\/skill-versions\/[^/]+\/archive:download$/.test(archive.pathname)
+    !/^\/api\/agentGatewayApi:downloadSkillVersion\/[^/]+$/.test(archive.pathname)
   ) {
     throw new Error('Authenticated Skill ZIP archive URL must point to the configured NocoBase archive endpoint');
   }

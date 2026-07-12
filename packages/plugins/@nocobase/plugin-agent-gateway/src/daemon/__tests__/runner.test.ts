@@ -52,6 +52,23 @@ function getRequestEvents(call: GatewayRequestOptions | undefined) {
   return Array.isArray(events) ? events.filter(isJsonRecord) : [];
 }
 
+const RUN_ACTION_PATHS = {
+  claim: '/api/agentGatewayApi:claimRun/',
+  heartbeat: '/api/agentGatewayApi:heartbeatRun/',
+  complete: '/api/agentGatewayApi:completeRun/',
+  fail: '/api/agentGatewayApi:failRun/',
+  timeout: '/api/agentGatewayApi:timeoutRun/',
+  cancelAck: '/api/agentGatewayApi:ackCancelRun/',
+} as const;
+
+function isRunActionCall(call: GatewayRequestOptions, action: keyof typeof RUN_ACTION_PATHS) {
+  return call.path.includes(RUN_ACTION_PATHS[action]);
+}
+
+function isTerminalRunActionCall(call: GatewayRequestOptions) {
+  return (['complete', 'fail', 'timeout', 'cancelAck'] as const).some((action) => isRunActionCall(call, action));
+}
+
 async function writeSkillFixture(skillPath: string, skillName = 'agent-gateway-test-skill') {
   await fs.mkdir(skillPath, { recursive: true });
   await fs.writeFile(
@@ -153,11 +170,11 @@ class RunnerRequester implements GatewayRequester {
 
   async request<T extends JsonRecord = JsonRecord>(options: GatewayRequestOptions): Promise<T> {
     this.calls.push(options);
-    if (this.options.failNodeHeartbeatOnce && options.path === '/api/agent-gateway/nodes/node-1/heartbeat') {
+    if (this.options.failNodeHeartbeatOnce && options.path === '/api/agentGatewayApi:heartbeatNode/node-1') {
       this.options.failNodeHeartbeatOnce = false;
       throw new Error('connect ECONNREFUSED 127.0.0.1:23001');
     }
-    if (options.path.endsWith('/heartbeat') && options.path.includes('/runs/')) {
+    if (isRunActionCall(options, 'heartbeat')) {
       if (this.options.heartbeatDelayMs) {
         await new Promise((resolve) => setTimeout(resolve, this.options.heartbeatDelayMs));
       }
@@ -199,10 +216,10 @@ class RunnerRequester implements GatewayRequester {
         cancelRequested: this.options.cancelOnRunHeartbeatCall === this.runHeartbeatCount,
       } as T;
     }
-    if (options.path.endsWith('/runs:claim')) {
+    if (isRunActionCall(options, 'claim')) {
       return (this.options.claimPayload || this.getDefaultClaimPayload()) as T;
     }
-    if (this.failCompleteOnce && options.path.endsWith('/complete')) {
+    if (this.failCompleteOnce && isRunActionCall(options, 'complete')) {
       this.failCompleteOnce = false;
       throw new Error('Run is canceling');
     }
@@ -231,7 +248,7 @@ class RunnerRequester implements GatewayRequester {
     if (this.options.failConversationAppends && options.path.endsWith('/conversation-events:append')) {
       throw new Error('connect ECONNRESET timeline append');
     }
-    if (this.options.enforceTerminalLeaseVersion && /\/(complete|fail|timeout|cancel-ack)$/.test(options.path)) {
+    if (this.options.enforceTerminalLeaseVersion && isTerminalRunActionCall(options)) {
       const body = (options.body || {}) as JsonRecord;
       if (body.leaseVersion !== this.leaseVersion) {
         throw new Error(`stale lease version: ${String(body.leaseVersion)} !== ${this.leaseVersion}`);
@@ -338,14 +355,14 @@ describe('agent gateway daemon runner', () => {
     });
 
     try {
-      await waitUntil(() => requester.calls.some((call) => call.path.endsWith('/runs:claim')));
+      await waitUntil(() => requester.calls.some((call) => isRunActionCall(call, 'claim')));
     } finally {
       stopController.abort();
       await loop;
     }
 
     const nodeHeartbeatCalls = requester.calls.filter(
-      (call) => call.path === '/api/agent-gateway/nodes/node-1/heartbeat',
+      (call) => call.path === '/api/agentGatewayApi:heartbeatNode/node-1',
     );
     expect(nodeHeartbeatCalls.length).toBeGreaterThanOrEqual(2);
     expect(profileProbeCalls).toBe(3);
@@ -474,7 +491,7 @@ describe('agent gateway daemon runner', () => {
     await loop;
 
     expect(executionStopped).toBe(true);
-    expect(requester.calls.some((call) => /\/(complete|fail|timeout|cancel-ack)$/.test(call.path))).toBe(false);
+    expect(requester.calls.some(isTerminalRunActionCall)).toBe(false);
   });
 
   it('aborts active Skill synchronization when the daemon loop is stopped', async () => {
@@ -557,7 +574,7 @@ describe('agent gateway daemon runner', () => {
 
     expect(syncStopped).toBe(true);
     expect(executionStarted).toBe(false);
-    expect(requester.calls.some((call) => /\/(complete|fail|timeout|cancel-ack)$/.test(call.path))).toBe(false);
+    expect(requester.calls.some(isTerminalRunActionCall)).toBe(false);
   });
 
   it('claims, executes through allowlist, and terminalizes the run', async () => {
@@ -624,11 +641,11 @@ describe('agent gateway daemon runner', () => {
     const paths = requester.calls.map((call) => call.path);
     expect(paths).toEqual(
       expect.arrayContaining([
-        '/api/agent-gateway/nodes/node-1/heartbeat',
-        '/api/agent-gateway/nodes/node-1/runs:claim',
+        '/api/agentGatewayApi:heartbeatNode/node-1',
+        '/api/agentGatewayApi:claimRun/node-1',
         '/api/agent-gateway/runs/run-1/events:append',
         '/api/agent-gateway/runs/run-1/snapshots:register',
-        '/api/agent-gateway/nodes/node-1/runs/run-1/complete',
+        '/api/agentGatewayApi:completeRun/run-1',
       ]),
     );
     const runEventBodies = requester.calls
@@ -720,7 +737,7 @@ describe('agent gateway daemon runner', () => {
         truncated: true,
       },
     });
-    const completeCall = requester.calls.find((call) => call.path.endsWith('/complete'));
+    const completeCall = requester.calls.find((call) => isRunActionCall(call, 'complete'));
     expect(JSON.stringify(completeCall?.body)).toContain(`stdout spool truncated after ${80 * 1024} captured bytes`);
     await expect(fs.access(path.join(artifactDir, 'node-stdout.log'))).rejects.toThrow();
   });
@@ -963,7 +980,7 @@ describe('agent gateway daemon runner', () => {
         status: 'started',
       },
     });
-    const completeCall = requester.calls.find((call) => call.path.endsWith('/complete'));
+    const completeCall = requester.calls.find((call) => isRunActionCall(call, 'complete'));
     expect(completeCall?.body).toMatchObject({
       resultSummary: {
         declaredArtifacts: {
@@ -1061,7 +1078,7 @@ describe('agent gateway daemon runner', () => {
         }),
       ]),
     );
-    const completeCall = requester.calls.find((call) => call.path.endsWith('/complete'));
+    const completeCall = requester.calls.find((call) => isRunActionCall(call, 'complete'));
     expect(completeCall?.body).toMatchObject({
       resultSummary: {
         declaredArtifacts: {
@@ -1271,7 +1288,7 @@ describe('agent gateway daemon runner', () => {
         'declared:artifact-manifest.json',
       ]),
     );
-    const completeCall = requester.calls.find((call) => call.path.endsWith('/complete'));
+    const completeCall = requester.calls.find((call) => isRunActionCall(call, 'complete'));
     expect(completeCall?.body).toMatchObject({
       resultSummary: {
         declaredArtifacts: {
@@ -1361,7 +1378,7 @@ describe('agent gateway daemon runner', () => {
     expect(result.status).toBe('succeeded');
     const artifactCalls = requester.calls.filter((call) => call.path.endsWith('/artifacts:register'));
     expect(new Set(artifactCalls.map((call) => (call.body as JsonRecord).leaseVersion)).size).toBeGreaterThan(1);
-    const completeCall = requester.calls.find((call) => call.path.endsWith('/complete'));
+    const completeCall = requester.calls.find((call) => isRunActionCall(call, 'complete'));
     expect(completeCall?.body).toMatchObject({
       resultSummary: {
         declaredArtifacts: {
@@ -1602,7 +1619,7 @@ describe('agent gateway daemon runner', () => {
       status: 'idle',
       reason: 'no_claimable_run',
     });
-    const claimCall = requester.calls.find((call) => call.path.endsWith('/runs:claim'));
+    const claimCall = requester.calls.find((call) => isRunActionCall(call, 'claim'));
     expect(claimCall?.body).toMatchObject({
       profileKey: 'codex',
       runId: 'target-run',
@@ -2094,7 +2111,7 @@ describe('agent gateway daemon runner', () => {
       runId: 'run-1',
     });
     expect(commandExecuted).toBe(false);
-    const failCall = requester.calls.find((call) => call.path.endsWith('/fail'));
+    const failCall = requester.calls.find((call) => isRunActionCall(call, 'fail'));
     expect(failCall?.body).toMatchObject({
       errorSummary: 'providerSessionId is required for resume runs',
     });
@@ -2178,7 +2195,7 @@ describe('agent gateway daemon runner', () => {
         upsertAttempt: 2,
       },
     });
-    expect(requester.calls.some((call) => call.path.endsWith('/complete'))).toBe(true);
+    expect(requester.calls.some((call) => isRunActionCall(call, 'complete'))).toBe(true);
   });
 
   it('reports detected Codex provider session ids from artifact-only output', async () => {
@@ -2538,7 +2555,7 @@ describe('agent gateway daemon runner', () => {
     });
 
     expect(result.status).toBe('succeeded');
-    const completeCall = requester.calls.find((call) => call.path.endsWith('/complete'));
+    const completeCall = requester.calls.find((call) => isRunActionCall(call, 'complete'));
     expect(JSON.stringify(completeCall?.body)).toMatch(
       /Agent timeline normalization truncated: truncatedLines=1, droppedBytes=[1-9][0-9]*/,
     );
@@ -2696,7 +2713,7 @@ describe('agent gateway daemon runner', () => {
       const liveConversationCallIndex = requester.calls.findIndex((call) =>
         getRequestEvents(call).some((event) => event.source === 'terminal-live' && event.eventType === 'agent.message'),
       );
-      const completeCallIndex = requester.calls.findIndex((call) => call.path.endsWith('/complete'));
+      const completeCallIndex = requester.calls.findIndex((call) => isRunActionCall(call, 'complete'));
       expect(liveConversationCallIndex).toBeGreaterThanOrEqual(0);
       expect(completeCallIndex).toBeGreaterThan(liveConversationCallIndex);
       const codexConversationCall = requester.calls.find((call) =>
@@ -2785,7 +2802,7 @@ describe('agent gateway daemon runner', () => {
       });
 
       expect(result.status).toBe('succeeded');
-      const completeCall = requester.calls.find((call) => call.path.endsWith('/complete'));
+      const completeCall = requester.calls.find((call) => isRunActionCall(call, 'complete'));
       expect(JSON.stringify(completeCall?.body)).toMatch(
         /Live timeline truncated: droppedStructuredEvents=[1-9][0-9]*, .*droppedFallbackBytes=[1-9][0-9]*/,
       );
@@ -3075,7 +3092,7 @@ describe('agent gateway daemon runner', () => {
       truncated: true,
     });
     expect(artifactBody.metadata?.uploadedBytes).toBe(Buffer.byteLength(String(artifactBody.contentText)));
-    expect(requester.calls.some((call) => call.path.endsWith('/complete'))).toBe(true);
+    expect(requester.calls.some((call) => isRunActionCall(call, 'complete'))).toBe(true);
   });
 
   it('drains in-flight run heartbeats before terminalizing with the latest lease version', async () => {
@@ -3131,7 +3148,7 @@ describe('agent gateway daemon runner', () => {
     });
 
     expect(result.status).toBe('succeeded');
-    const completeCall = requester.calls.find((call) => call.path.endsWith('/complete'));
+    const completeCall = requester.calls.find((call) => isRunActionCall(call, 'complete'));
     expect(completeCall).toBeTruthy();
   });
 
@@ -3162,9 +3179,7 @@ describe('agent gateway daemon runner', () => {
     );
 
     expect(result.status).toBe('succeeded');
-    expect(
-      requester.calls.filter((call) => call.path.includes('/runs/') && call.path.endsWith('/heartbeat')).length,
-    ).toBeGreaterThan(3);
+    expect(requester.calls.filter((call) => isRunActionCall(call, 'heartbeat')).length).toBeGreaterThan(3);
   });
 
   it('retries transient syncing and running phase heartbeats before the lease deadline', async () => {
@@ -3193,7 +3208,7 @@ describe('agent gateway daemon runner', () => {
 
     expect(result.status).toBe('succeeded');
     const heartbeatStatuses = requester.calls
-      .filter((call) => call.path.includes('/runs/') && call.path.endsWith('/heartbeat'))
+      .filter((call) => isRunActionCall(call, 'heartbeat'))
       .map((call) => (call.body as JsonRecord | undefined)?.status);
     expect(heartbeatStatuses.filter((status) => status === 'syncing_skills')).toHaveLength(2);
     expect(heartbeatStatuses.filter((status) => status === 'running').length).toBeGreaterThanOrEqual(2);
@@ -3216,9 +3231,7 @@ describe('agent gateway daemon runner', () => {
       status: 'lease_lost',
       reason: 'skill_sync_heartbeat_failed',
     });
-    expect(
-      requester.calls.filter((call) => call.path.includes('/runs/') && call.path.endsWith('/heartbeat')),
-    ).toHaveLength(1);
+    expect(requester.calls.filter((call) => isRunActionCall(call, 'heartbeat'))).toHaveLength(1);
   });
 
   it('aborts a run immediately after an authoritative lease-lost heartbeat response', async () => {
@@ -3370,8 +3383,8 @@ describe('agent gateway daemon runner', () => {
       status: 'canceled',
       runId: 'run-1',
     });
-    expect(requester.calls.some((call) => call.path.endsWith('/cancel-ack'))).toBe(true);
-    expect(requester.calls.some((call) => call.path.endsWith('/complete'))).toBe(false);
+    expect(requester.calls.some((call) => isRunActionCall(call, 'cancelAck'))).toBe(true);
+    expect(requester.calls.some((call) => isRunActionCall(call, 'complete'))).toBe(false);
   });
 
   it('reports detected Codex provider session ids before acknowledging cancellation after command exit', async () => {
@@ -3443,7 +3456,7 @@ describe('agent gateway daemon runner', () => {
       runId: 'run-1',
     });
     const upsertIndex = requester.calls.findIndex((call) => call.path.endsWith('/agent-session:upsert'));
-    const cancelAckIndex = requester.calls.findIndex((call) => call.path.endsWith('/cancel-ack'));
+    const cancelAckIndex = requester.calls.findIndex((call) => isRunActionCall(call, 'cancelAck'));
     expect(upsertIndex).toBeGreaterThanOrEqual(0);
     expect(cancelAckIndex).toBeGreaterThan(upsertIndex);
     expect(requester.calls[upsertIndex]?.body).toMatchObject({
@@ -3541,7 +3554,7 @@ describe('agent gateway daemon runner', () => {
     expect(result.status).toBe('succeeded');
     const syncHeartbeats = requester.calls.filter((call) => {
       const body = (call.body || {}) as JsonRecord;
-      return call.path.endsWith('/heartbeat') && body.status === 'syncing_skills';
+      return isRunActionCall(call, 'heartbeat') && body.status === 'syncing_skills';
     });
     expect(syncHeartbeats.length).toBeGreaterThan(1);
   });
@@ -3626,8 +3639,8 @@ describe('agent gateway daemon runner', () => {
       runId: 'run-1',
       reason: 'skill_sync_canceled',
     });
-    expect(requester.calls.some((call) => call.path.endsWith('/cancel-ack'))).toBe(true);
-    expect(requester.calls.some((call) => call.path.endsWith('/complete'))).toBe(false);
+    expect(requester.calls.some((call) => isRunActionCall(call, 'cancelAck'))).toBe(true);
+    expect(requester.calls.some((call) => isRunActionCall(call, 'complete'))).toBe(false);
   });
 
   it('acknowledges cancellation that arrives after final refresh before terminal completion', async () => {
@@ -3686,7 +3699,7 @@ describe('agent gateway daemon runner', () => {
       status: 'canceled',
       runId: 'run-1',
     });
-    expect(requester.calls.some((call) => call.path.endsWith('/complete'))).toBe(true);
-    expect(requester.calls.some((call) => call.path.endsWith('/cancel-ack'))).toBe(true);
+    expect(requester.calls.some((call) => isRunActionCall(call, 'complete'))).toBe(true);
+    expect(requester.calls.some((call) => isRunActionCall(call, 'cancelAck'))).toBe(true);
   });
 });

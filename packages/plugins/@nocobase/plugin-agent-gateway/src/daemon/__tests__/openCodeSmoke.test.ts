@@ -267,9 +267,9 @@ describe('agent gateway OpenCode smoke runner', () => {
     });
 
     expect(requester.calls.map((call) => call.path)).toEqual([
-      '/api/agent-gateway/nodes/node-1/smoke-runs:create',
-      '/api/agent-gateway/nodes/node-1/runs:claim',
-      '/api/agent-gateway/nodes/node-1/runs/run-1/skip',
+      '/api/agentGatewayApi:createSmokeRun/node-1',
+      '/api/agentGatewayApi:claimRun/node-1',
+      '/api/agentGatewayApi:skipRun/run-1',
     ]);
     expect(requester.calls[1].body).toMatchObject({
       profileKey: 'opencode',

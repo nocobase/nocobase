@@ -103,7 +103,7 @@ describe('agent gateway run terminal APIs', () => {
   }
 
   async function createAndClaimRun(runner: TestRunner) {
-    const runResponse = await rootAgent.post('/api/agent-gateway/runs:create').send({
+    const runResponse = await rootAgent.post('/agentGatewayApi:createRun').send({
       runCode: `run-terminal-${Date.now()}`,
       sourceType: 'test',
       agentProfileId: runner.profileId,
@@ -119,7 +119,7 @@ describe('agent gateway run terminal APIs', () => {
 
     const claimResponse = await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${runner.nodeId}/runs:claim`)
+      .post(`/agentGatewayApi:claimRun/${runner.nodeId}`)
       .set('Authorization', `Bearer ${runner.nodeToken}`)
       .send({
         profileKey: 'fake-terminal',

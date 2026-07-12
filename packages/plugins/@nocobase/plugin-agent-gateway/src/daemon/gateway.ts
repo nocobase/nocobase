@@ -45,7 +45,7 @@ export class AgentGatewayDaemonNodeClient {
   async heartbeatNode(options: { profiles: DetectedAgentProfile[]; currentConcurrency?: number }) {
     return await this.requester.request({
       method: 'POST',
-      path: `/api/agent-gateway/nodes/${this.config.nodeId}/heartbeat`,
+      path: `/api/agentGatewayApi:heartbeatNode/${this.config.nodeId}`,
       nodeToken: this.config.nodeToken,
       body: {
         installationId: this.config.installationId,
@@ -71,7 +71,7 @@ export class AgentGatewayDaemonNodeClient {
   async createRun(values: JsonRecord): Promise<{ runId: string }> {
     return await this.requester.request<{ runId: string }>({
       method: 'POST',
-      path: `/api/agent-gateway/nodes/${this.config.nodeId}/smoke-runs:create`,
+      path: `/api/agentGatewayApi:createSmokeRun/${this.config.nodeId}`,
       nodeToken: this.config.nodeToken,
       body: values,
     });
@@ -89,7 +89,7 @@ export class AgentGatewayDaemonNodeClient {
           };
     const response = await this.requester.request<RunLease>({
       method: 'POST',
-      path: `/api/agent-gateway/nodes/${this.config.nodeId}/runs:claim`,
+      path: `/api/agentGatewayApi:claimRun/${this.config.nodeId}`,
       nodeToken: this.config.nodeToken,
       body,
     });
@@ -99,9 +99,10 @@ export class AgentGatewayDaemonNodeClient {
   async heartbeatRun(lease: RunLease, status: 'claimed' | 'syncing_skills' | 'running' | 'finalizing') {
     const response = await this.requester.request<RunLease>({
       method: 'POST',
-      path: `/api/agent-gateway/nodes/${this.config.nodeId}/runs/${lease.runId}/heartbeat`,
+      path: `/api/agentGatewayApi:heartbeatRun/${lease.runId}`,
       nodeToken: this.config.nodeToken,
       body: {
+        nodeId: this.config.nodeId,
         claimToken: lease.claimToken,
         claimAttempt: lease.claimAttempt,
         leaseVersion: lease.leaseVersion,
@@ -198,9 +199,10 @@ export class AgentGatewayDaemonNodeClient {
   async completeRun(lease: RunLease, resultSummary: JsonRecord) {
     await this.requester.request({
       method: 'POST',
-      path: `/api/agent-gateway/nodes/${this.config.nodeId}/runs/${lease.runId}/complete`,
+      path: `/api/agentGatewayApi:completeRun/${lease.runId}`,
       nodeToken: this.config.nodeToken,
       body: {
+        nodeId: this.config.nodeId,
         claimToken: lease.claimToken,
         claimAttempt: lease.claimAttempt,
         leaseVersion: lease.leaseVersion,
@@ -212,9 +214,10 @@ export class AgentGatewayDaemonNodeClient {
   async failRun(lease: RunLease, errorSummary: string, resultSummary: JsonRecord = {}) {
     await this.requester.request({
       method: 'POST',
-      path: `/api/agent-gateway/nodes/${this.config.nodeId}/runs/${lease.runId}/fail`,
+      path: `/api/agentGatewayApi:failRun/${lease.runId}`,
       nodeToken: this.config.nodeToken,
       body: {
+        nodeId: this.config.nodeId,
         claimToken: lease.claimToken,
         claimAttempt: lease.claimAttempt,
         leaseVersion: lease.leaseVersion,
@@ -227,9 +230,10 @@ export class AgentGatewayDaemonNodeClient {
   async timeoutRun(lease: RunLease, errorSummary: string) {
     await this.requester.request({
       method: 'POST',
-      path: `/api/agent-gateway/nodes/${this.config.nodeId}/runs/${lease.runId}/timeout`,
+      path: `/api/agentGatewayApi:timeoutRun/${lease.runId}`,
       nodeToken: this.config.nodeToken,
       body: {
+        nodeId: this.config.nodeId,
         claimToken: lease.claimToken,
         claimAttempt: lease.claimAttempt,
         leaseVersion: lease.leaseVersion,
@@ -241,9 +245,10 @@ export class AgentGatewayDaemonNodeClient {
   async cancelAckRun(lease: RunLease) {
     await this.requester.request({
       method: 'POST',
-      path: `/api/agent-gateway/nodes/${this.config.nodeId}/runs/${lease.runId}/cancel-ack`,
+      path: `/api/agentGatewayApi:ackCancelRun/${lease.runId}`,
       nodeToken: this.config.nodeToken,
       body: {
+        nodeId: this.config.nodeId,
         claimToken: lease.claimToken,
         claimAttempt: lease.claimAttempt,
         leaseVersion: lease.leaseVersion,
@@ -287,9 +292,10 @@ export class AgentGatewayDaemonNodeClient {
   async skipRun(runId: string, reason: string, resultSummary: JsonRecord = {}) {
     await this.requester.request({
       method: 'POST',
-      path: `/api/agent-gateway/nodes/${this.config.nodeId}/runs/${runId}/skip`,
+      path: `/api/agentGatewayApi:skipRun/${runId}`,
       nodeToken: this.config.nodeToken,
       body: {
+        nodeId: this.config.nodeId,
         reason,
         resultSummary,
       },
@@ -299,7 +305,7 @@ export class AgentGatewayDaemonNodeClient {
   async upsertSkillInstall(payload: NodeSkillInstallPayload) {
     await this.requester.request({
       method: 'POST',
-      path: `/api/agent-gateway/nodes/${this.config.nodeId}/skill-installs:upsert`,
+      path: `/api/agentGatewayApi:upsertNodeSkillInstall/${this.config.nodeId}`,
       nodeToken: this.config.nodeToken,
       body: payload,
     });

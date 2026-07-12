@@ -36,6 +36,7 @@ import {
   getRequiredResponseData,
   getResponseData,
   statusTag,
+  uploadAgentGatewayFile,
 } from './AgentGatewayPageUtils';
 
 interface SkillUploadFormValues {
@@ -79,20 +80,6 @@ const DEFAULT_SKILL_UPLOAD_FORM_VALUES: SkillUploadFormValues = {
 const SKILL_VERSION_DETAIL_QUERY_PARAM = 'skillVersionId';
 const SKILL_DETAIL_DRAWER_WIDTH = 720;
 
-function readFileAsBase64(file: File) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = typeof reader.result === 'string' ? reader.result : '';
-      resolve(result.includes(',') ? result.split(',').pop() || '' : result);
-    };
-    reader.onerror = () => {
-      reject(reader.error || new Error('Failed to read file'));
-    };
-    reader.readAsDataURL(file);
-  });
-}
-
 function getSkillVersionIdFromLocationSearch() {
   if (typeof window === 'undefined') {
     return undefined;
@@ -133,12 +120,12 @@ export default function AgentGatewaySkillsPage() {
   );
   const [skillDetailOpen, setSkillDetailOpen] = useState(() => Boolean(getSkillVersionIdFromLocationSearch()));
   const [skillUploadOpen, setSkillUploadOpen] = useState(false);
-  const [skillZipContentBase64, setSkillZipContentBase64] = useState('');
+  const [skillZipFile, setSkillZipFile] = useState<File | null>(null);
   const [skillUploadResult, setSkillUploadResult] = useState<SkillUploadResult | null>(null);
 
   const skillVersionsRequest = useRequest(async () => {
     const response = await ctx.api.request<SkillVersionRecord[]>({
-      url: 'agent-gateway/skill-versions:list',
+      url: 'agentGatewayApi:listSkillVersions',
       method: 'get',
     });
     return getResponseData(response, []);
@@ -154,11 +141,12 @@ export default function AgentGatewaySkillsPage() {
   );
 
   const uploadSkillVersionRequest = useRequest(
-    async (values: SkillUploadFormValues & { contentBase64: string }) => {
+    async (values: SkillUploadFormValues & { file: File }) => {
+      const uploadId = await uploadAgentGatewayFile(ctx.api, values.file, 'skill-version');
       const response = await ctx.api.request<SkillUploadResult>({
-        url: 'agent-gateway/skill-versions:upload-zip',
+        url: 'agentGatewayApi:createSkillVersionFromUpload',
         method: 'post',
-        data: { ...values },
+        data: { ...values, file: undefined, uploadId },
       });
       return getRequiredResponseData(response, t('Failed to upload skill'));
     },
@@ -177,13 +165,13 @@ export default function AgentGatewaySkillsPage() {
 
   const closeSkillUploadModal = useCallback(() => {
     setSkillUploadOpen(false);
-    setSkillZipContentBase64('');
+    setSkillZipFile(null);
     setSkillUploadResult(null);
     skillUploadForm.resetFields();
   }, [skillUploadForm]);
 
   const openSkillUploadModal = useCallback(() => {
-    setSkillZipContentBase64('');
+    setSkillZipFile(null);
     setSkillUploadResult(null);
     skillUploadForm.setFieldsValue(DEFAULT_SKILL_UPLOAD_FORM_VALUES);
     setSkillUploadOpen(true);
@@ -210,35 +198,27 @@ export default function AgentGatewaySkillsPage() {
 
   const submitSkillUpload = useCallback(async () => {
     const values = await skillUploadForm.validateFields();
-    if (!skillZipContentBase64) {
+    if (!skillZipFile) {
       ctx.message?.error(t('Skill ZIP file is required'));
       return;
     }
     uploadSkillVersionRequest.run({
       ...values,
-      contentBase64: skillZipContentBase64,
+      file: skillZipFile,
     });
-  }, [ctx.message, skillUploadForm, skillZipContentBase64, t, uploadSkillVersionRequest]);
+  }, [ctx.message, skillUploadForm, skillZipFile, t, uploadSkillVersionRequest]);
 
-  const handleSkillZipBeforeUpload = useCallback<NonNullable<UploadProps['beforeUpload']>>(
-    async (file) => {
-      if (!file) {
-        setSkillZipContentBase64('');
-        return false;
-      }
-      try {
-        setSkillZipContentBase64(await readFileAsBase64(file));
-      } catch {
-        setSkillZipContentBase64('');
-        ctx.message?.error(t('Failed to read skill ZIP file'));
-      }
+  const handleSkillZipBeforeUpload = useCallback<NonNullable<UploadProps['beforeUpload']>>(async (file) => {
+    if (!file) {
+      setSkillZipFile(null);
       return false;
-    },
-    [ctx.message, t],
-  );
+    }
+    setSkillZipFile(file);
+    return false;
+  }, []);
 
   const handleSkillZipRemove = useCallback(() => {
-    setSkillZipContentBase64('');
+    setSkillZipFile(null);
     return true;
   }, []);
 

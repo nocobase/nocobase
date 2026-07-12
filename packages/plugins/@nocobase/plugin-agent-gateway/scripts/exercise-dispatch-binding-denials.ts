@@ -468,15 +468,11 @@ async function dispatch(
   bindingIdentifier: string,
   body: JsonRecord,
 ): Promise<RawResult> {
-  return await requestRaw(
-    baseUrl,
-    `/api/agent-gateway/dispatch-bindings/${encodeURIComponent(bindingIdentifier)}/dispatch`,
-    {
-      method: 'POST',
-      token,
-      body,
-    },
-  );
+  return await requestRaw(baseUrl, `/api/agentGatewayApi:dispatchBinding/${encodeURIComponent(bindingIdentifier)}`, {
+    method: 'POST',
+    token,
+    body,
+  });
 }
 
 async function createRestrictedUser(
@@ -584,7 +580,7 @@ async function main() {
       name: 'mismatched-output-field-config',
       expectedStatus: 400,
       execute: () =>
-        requestRaw(args.baseUrl, '/api/agent-gateway/dispatch-bindings:create', {
+        requestRaw(args.baseUrl, '/api/agentGatewayApi:createDispatchBinding', {
           method: 'POST',
           token: adminToken,
           body: {

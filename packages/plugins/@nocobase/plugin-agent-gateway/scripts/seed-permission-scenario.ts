@@ -431,7 +431,7 @@ async function upsertPromptTemplate(baseUrl: string, token: string) {
     const templateId = getResponseId(existing);
     await requestJson<JsonRecord>(
       baseUrl,
-      `/api/agent-gateway/prompt-templates:update/${encodeURIComponent(templateId)}`,
+      `/api/agentGatewayApi:updatePromptTemplate/${encodeURIComponent(templateId)}`,
       {
         method: 'POST',
         token,
@@ -441,7 +441,7 @@ async function upsertPromptTemplate(baseUrl: string, token: string) {
     return templateId;
   }
 
-  const created = await requestJson<JsonRecord>(baseUrl, '/api/agent-gateway/prompt-templates:create', {
+  const created = await requestJson<JsonRecord>(baseUrl, '/api/agentGatewayApi:createPromptTemplate', {
     method: 'POST',
     token,
     body: values,
@@ -473,7 +473,7 @@ async function upsertDispatchBinding(baseUrl: string, token: string, promptTempl
     const bindingId = getResponseId(existing);
     await requestJson<JsonRecord>(
       baseUrl,
-      `/api/agent-gateway/dispatch-bindings:update/${encodeURIComponent(bindingId)}`,
+      `/api/agentGatewayApi:updateDispatchBinding/${encodeURIComponent(bindingId)}`,
       {
         method: 'POST',
         token,
@@ -483,7 +483,7 @@ async function upsertDispatchBinding(baseUrl: string, token: string, promptTempl
     return bindingId;
   }
 
-  const created = await requestJson<JsonRecord>(baseUrl, '/api/agent-gateway/dispatch-bindings:create', {
+  const created = await requestJson<JsonRecord>(baseUrl, '/api/agentGatewayApi:createDispatchBinding', {
     method: 'POST',
     token,
     body: values,

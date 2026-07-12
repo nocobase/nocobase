@@ -17,10 +17,12 @@ import { Transaction } from 'sequelize';
 import { AGENT_GATEWAY_ACTIONS, redactText } from '../security';
 import {
   AGENT_GATEWAY_ERROR_CODES,
-  API_PREFIX,
+  AGENT_GATEWAY_API_RESOURCE,
   JsonRecord,
   ModelRecord,
   getBodyValues,
+  asActionContext,
+  getActionTargetKey,
   getCurrentUserId,
   getCurrentRoleNames,
   getModelJson,
@@ -1597,57 +1599,34 @@ export function registerDispatchBindingValidationHooks(plugin: Plugin) {
 }
 
 export function registerDispatchBindingRoutes(plugin: Plugin) {
-  plugin.app.use(
-    async (ctx: Context, next: Next) => {
-      if (!ctx.path.startsWith(API_PREFIX)) {
-        await next();
-        return;
-      }
-
-      const routePath = ctx.path.slice(API_PREFIX.length);
-      const getBindingMatch = routePath.match(/^\/dispatch-bindings:get\/([^/]+)$/);
-      const updateBindingMatch = routePath.match(/^\/dispatch-bindings:update\/([^/]+)$/);
-      const destroyBindingMatch = routePath.match(/^\/dispatch-bindings:destroy\/([^/]+)$/);
-      const dispatchMatch =
-        routePath.match(/^\/dispatch-bindings\/([^/]+)\/dispatch$/) ||
-        routePath.match(/^\/dispatch-bindings\/([^/]+):dispatch$/);
-
-      if (ctx.method === 'GET' && routePath === '/dispatch-bindings:list') {
-        await listBindings(ctx);
-        return;
-      }
-
-      if (ctx.method === 'GET' && getBindingMatch) {
-        await getBinding(ctx, getBindingMatch[1]);
-        return;
-      }
-
-      if (ctx.method === 'POST' && routePath === '/dispatch-bindings:create') {
-        await createBinding(ctx);
-        return;
-      }
-
-      if (ctx.method === 'POST' && updateBindingMatch) {
-        await updateBinding(ctx, updateBindingMatch[1]);
-        return;
-      }
-
-      if (ctx.method === 'POST' && destroyBindingMatch) {
-        await destroyBinding(ctx, destroyBindingMatch[1]);
-        return;
-      }
-
-      if (ctx.method === 'POST' && dispatchMatch) {
-        await dispatchBinding(ctx, dispatchMatch[1]);
-        return;
-      }
-
+  plugin.app.resourceManager.registerActionHandlers({
+    [`${AGENT_GATEWAY_API_RESOURCE}:listDispatchBindings`]: async (ctx, next) => {
+      await listBindings(asActionContext(ctx));
       await next();
     },
-    {
-      tag: 'agentGatewayDispatchBindingRoutes',
-      after: 'agentGatewayPromptTemplateRoutes',
-      before: 'dataSource',
+    [`${AGENT_GATEWAY_API_RESOURCE}:getDispatchBinding`]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      await getBinding(actionCtx, getActionTargetKey(actionCtx));
+      await next();
     },
-  );
+    [`${AGENT_GATEWAY_API_RESOURCE}:createDispatchBinding`]: async (ctx, next) => {
+      await createBinding(asActionContext(ctx));
+      await next();
+    },
+    [`${AGENT_GATEWAY_API_RESOURCE}:updateDispatchBinding`]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      await updateBinding(actionCtx, getActionTargetKey(actionCtx));
+      await next();
+    },
+    [`${AGENT_GATEWAY_API_RESOURCE}:destroyDispatchBinding`]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      await destroyBinding(actionCtx, getActionTargetKey(actionCtx));
+      await next();
+    },
+    [`${AGENT_GATEWAY_API_RESOURCE}:dispatchBinding`]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      await dispatchBinding(actionCtx, getActionTargetKey(actionCtx));
+      await next();
+    },
+  });
 }

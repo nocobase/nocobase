@@ -281,14 +281,14 @@ export default function AgentGatewayProviderCapabilitiesPage() {
 
   const matrixRequest = useRequest(async () => {
     const nodeResponse = await ctx.api.request<NodeRecord[]>({
-      url: 'agent-gateway/nodes:list',
+      url: 'agentGatewayApi:listNodes',
       method: 'get',
     });
     const nodes = getResponseData(nodeResponse, []);
     const profileGroups = await Promise.all(
       nodes.map(async (node) => {
         const profileResponse = await ctx.api.request<AgentProfileRecord[]>({
-          url: `agent-gateway/nodes/${encodeURIComponent(node.id)}/profiles:list`,
+          url: `agentGatewayApi:listNodeProfiles/${encodeURIComponent(node.id)}`,
           method: 'get',
         });
         return {
@@ -298,7 +298,7 @@ export default function AgentGatewayProviderCapabilitiesPage() {
       }),
     );
     const runResponse = await ctx.api.request<RunRecord[]>({
-      url: 'agent-gateway/runs:list',
+      url: 'agentGatewayApi:listRuns',
       method: 'get',
     });
     const runs = getResponseData(runResponse, []);

@@ -772,7 +772,7 @@ describe('terminal stream broker', () => {
 
       const heartbeatResponse = await app
         .agent()
-        .post(`/api/agent-gateway/nodes/${runner.nodeId}/runs/${runId}/heartbeat`)
+        .post(`/agentGatewayApi:heartbeatRun/${runId}`)
         .set('Authorization', `Bearer ${runner.nodeToken}`)
         .send({
           claimToken: lease.claimToken,

@@ -242,7 +242,7 @@ async function createRun(args: SeedArgs, token: string, nodeId: string, profileI
     prompt: args.prompt,
     cwd: '.',
   });
-  return await requestJson<JsonRecord>(args, '/api/agent-gateway/runs:create', {
+  return await requestJson<JsonRecord>(args, '/api/agentGatewayApi:createRun', {
     method: 'POST',
     token,
     body: {

@@ -15,10 +15,12 @@ import { Transaction } from 'sequelize';
 
 import { authenticateNodeToken } from '../security';
 import {
-  API_PREFIX,
+  AGENT_GATEWAY_API_RESOURCE,
   JsonRecord,
   ModelRecord,
   getBodyValues,
+  asActionContext,
+  getActionTargetKey,
   getDate,
   getModelJson,
   getModelString,
@@ -130,26 +132,11 @@ async function upsertNodeSkillInstall(ctx: Context, nodeId: string) {
 }
 
 export function registerSkillInstallRoutes(plugin: Plugin) {
-  plugin.app.use(
-    async (ctx: Context, next: Next) => {
-      if (!ctx.path.startsWith(API_PREFIX)) {
-        await next();
-        return;
-      }
-
-      const routePath = ctx.path.slice(API_PREFIX.length);
-      const upsertMatch = routePath.match(/^\/nodes\/([^/]+)\/skill-installs:upsert$/);
-      if (ctx.method === 'POST' && upsertMatch) {
-        await upsertNodeSkillInstall(ctx, upsertMatch[1]);
-        return;
-      }
-
+  plugin.app.resourceManager.registerActionHandlers({
+    [`${AGENT_GATEWAY_API_RESOURCE}:upsertNodeSkillInstall`]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      await upsertNodeSkillInstall(actionCtx, getActionTargetKey(actionCtx));
       await next();
     },
-    {
-      tag: 'agentGatewaySkillInstallRoutes',
-      after: 'agentGatewayNodeLifecycleRoutes',
-      before: 'agentGatewayRunLifecycleRoutes',
-    },
-  );
+  });
 }

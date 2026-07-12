@@ -8,6 +8,7 @@
  */
 
 import { Plugin } from '@nocobase/client-v2';
+import { AGENT_GATEWAY_SETTINGS_PAGES } from '../client-shared/settings';
 import { NAMESPACE } from './locale';
 import { AgentGatewayDispatchBindingSelect } from './components/AgentGatewayDispatchBindingSelect';
 
@@ -29,65 +30,17 @@ export class PluginAgentGatewayClientV2 extends Plugin {
       icon: 'ApiOutlined',
     });
 
-    this.pluginSettingsManager.addPageTabItem({
-      menuKey: NAMESPACE,
-      key: 'nodes',
-      title: this.t('Nodes'),
-      componentLoader: () => import('./pages/AgentGatewaySettingsPage'),
-      sort: 10,
-    });
-
-    this.pluginSettingsManager.addPageTabItem({
-      menuKey: NAMESPACE,
-      key: 'skills',
-      title: this.t('Skills'),
-      componentLoader: () => import('./pages/AgentGatewaySkillsPage'),
-      sort: 15,
-    });
-
-    this.pluginSettingsManager.addPageTabItem({
-      menuKey: NAMESPACE,
-      key: 'runs',
-      title: this.t('Runs'),
-      componentLoader: () => import('./pages/AgentGatewayRunsPage'),
-      sort: 20,
-    });
-
-    this.pluginSettingsManager.addPageTabItem({
-      menuKey: NAMESPACE,
-      key: 'provider-capabilities',
-      title: this.t('Provider Capabilities'),
-      aclSnippet: 'pm.agent-gateway.nodes',
-      hidden: true,
-      componentLoader: () => import('./pages/AgentGatewayProviderCapabilitiesPage'),
-      sort: 24,
-    });
-
-    this.pluginSettingsManager.addPageTabItem({
-      menuKey: NAMESPACE,
-      key: 'task-templates',
-      title: this.t('Task Templates'),
-      componentLoader: () => import('./pages/AgentGatewayTaskTemplatesPage'),
-      sort: 30,
-    });
-
-    this.pluginSettingsManager.addPageTabItem({
-      menuKey: NAMESPACE,
-      key: 'prompt-templates',
-      title: this.t('Prompt Templates'),
-      hidden: true,
-      componentLoader: () => import('./pages/AgentGatewayPromptTemplatesPage'),
-      sort: 40,
-    });
-
-    this.pluginSettingsManager.addPageTabItem({
-      menuKey: NAMESPACE,
-      key: 'dispatch-bindings',
-      title: this.t('Dispatch Bindings'),
-      hidden: true,
-      componentLoader: () => import('./pages/AgentGatewayDispatchBindingsPage'),
-      sort: 50,
-    });
+    for (const page of AGENT_GATEWAY_SETTINGS_PAGES) {
+      this.pluginSettingsManager.addPageTabItem({
+        menuKey: NAMESPACE,
+        key: page.key,
+        title: this.t(page.title),
+        aclSnippet: page.aclSnippet,
+        hidden: page.hidden,
+        componentLoader: page.componentLoader,
+        sort: page.sort,
+      });
+    }
   }
 }
 

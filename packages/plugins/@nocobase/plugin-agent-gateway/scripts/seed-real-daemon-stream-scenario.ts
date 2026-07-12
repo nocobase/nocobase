@@ -194,7 +194,7 @@ async function createRun(args: SeedRealDaemonArgs, nodeId: string, nodeToken: st
   const runCode = `agw_real_daemon_stream_${args.scenarioKey}_${Date.now()}_${randomUUID().slice(0, 8)}`;
   const data = await requestJson<JsonRecord>(
     args.baseUrl,
-    `/api/agent-gateway/nodes/${encodeURIComponent(nodeId)}/smoke-runs:create`,
+    `/api/agentGatewayApi:createSmokeRun/${encodeURIComponent(nodeId)}`,
     {
       method: 'POST',
       nodeToken,

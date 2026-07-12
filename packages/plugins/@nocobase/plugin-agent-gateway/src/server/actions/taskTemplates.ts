@@ -15,11 +15,13 @@ import { Transaction } from 'sequelize';
 
 import { AGENT_GATEWAY_ACTIONS } from '../security';
 import {
-  API_PREFIX,
+  AGENT_GATEWAY_API_RESOURCE,
   JsonRecord,
   ModelRecord,
   getArray,
   getBodyValues,
+  asActionContext,
+  getActionTargetKey,
   getModelJson,
   getModelString,
   getModelTargetKey,
@@ -387,43 +389,24 @@ async function updateTaskTemplate(ctx: Context, identifier: string) {
 }
 
 export function registerTaskTemplateRoutes(plugin: Plugin) {
-  plugin.app.use(
-    async (ctx: Context, next: Next) => {
-      if (!ctx.path.startsWith(API_PREFIX)) {
-        await next();
-        return;
-      }
-
-      const routePath = ctx.path.slice(API_PREFIX.length);
-      const getTemplateMatch = routePath.match(/^\/task-templates:get\/([^/]+)$/);
-      const updateTemplateMatch = routePath.match(/^\/task-templates:update\/([^/]+)$/);
-
-      if (ctx.method === 'GET' && routePath === '/task-templates:list') {
-        await listTaskTemplates(ctx);
-        return;
-      }
-
-      if (ctx.method === 'GET' && getTemplateMatch) {
-        await getTaskTemplate(ctx, getTemplateMatch[1]);
-        return;
-      }
-
-      if (ctx.method === 'POST' && routePath === '/task-templates:create') {
-        await createTaskTemplate(ctx);
-        return;
-      }
-
-      if (ctx.method === 'POST' && updateTemplateMatch) {
-        await updateTaskTemplate(ctx, updateTemplateMatch[1]);
-        return;
-      }
-
+  plugin.app.resourceManager.registerActionHandlers({
+    [`${AGENT_GATEWAY_API_RESOURCE}:listTaskTemplates`]: async (ctx, next) => {
+      await listTaskTemplates(asActionContext(ctx));
       await next();
     },
-    {
-      tag: 'agentGatewayTaskTemplateRoutes',
-      after: 'agentGatewayRunObservabilityRoutes',
-      before: 'dataSource',
+    [`${AGENT_GATEWAY_API_RESOURCE}:getTaskTemplate`]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      await getTaskTemplate(actionCtx, getActionTargetKey(actionCtx));
+      await next();
     },
-  );
+    [`${AGENT_GATEWAY_API_RESOURCE}:createTaskTemplate`]: async (ctx, next) => {
+      await createTaskTemplate(asActionContext(ctx));
+      await next();
+    },
+    [`${AGENT_GATEWAY_API_RESOURCE}:updateTaskTemplate`]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      await updateTaskTemplate(actionCtx, getActionTargetKey(actionCtx));
+      await next();
+    },
+  });
 }

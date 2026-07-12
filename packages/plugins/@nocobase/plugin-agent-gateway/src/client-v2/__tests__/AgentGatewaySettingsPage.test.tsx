@@ -358,7 +358,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
   it('renders nodes and per-node profiles without raw execution configuration', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/nodes:list') {
+      if (config.url === 'agentGatewayApi:listNodes') {
         return {
           data: {
             data: [
@@ -395,7 +395,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/nodes/node-id-1/profiles:list') {
+      if (config.url === 'agentGatewayApi:listNodeProfiles/node-id-1') {
         return {
           data: {
             data: [
@@ -426,7 +426,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/nodes:update/node-id-1') {
+      if (config.url === 'agentGatewayApi:updateNode/node-id-1') {
         return {
           data: {
             data: {
@@ -463,13 +463,13 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(screen.queryByText('must-not-render')).toBeNull();
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'agent-gateway/nodes:list',
+        url: 'agentGatewayApi:listNodes',
         method: 'get',
       }),
     );
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'agent-gateway/nodes/node-id-1/profiles:list',
+        url: 'agentGatewayApi:listNodeProfiles/node-id-1',
         method: 'get',
       }),
     );
@@ -478,7 +478,7 @@ describe('PluginAgentGatewayClientV2', () => {
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'agent-gateway/nodes:update/node-id-1',
+          url: 'agentGatewayApi:updateNode/node-id-1',
           method: 'post',
           data: {
             status: 'disabled',
@@ -502,7 +502,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
   it('shows uploaded skill versions in the settings Skills page', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/skill-versions:list') {
+      if (config.url === 'agentGatewayApi:listSkillVersions') {
         return {
           data: {
             data: [
@@ -537,7 +537,7 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(await screen.findByText('skill-version-id-1')).toBeTruthy();
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'agent-gateway/skill-versions:list',
+        url: 'agentGatewayApi:listSkillVersions',
         method: 'get',
       }),
     );
@@ -546,7 +546,7 @@ describe('PluginAgentGatewayClientV2', () => {
   it('opens skill details from the skillVersionId query parameter', async () => {
     window.history.pushState({}, '', '/admin/settings/agent-gateway/skills?skillVersionId=skill-version-id-1');
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/skill-versions:list') {
+      if (config.url === 'agentGatewayApi:listSkillVersions') {
         return {
           data: {
             data: [
@@ -582,7 +582,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
   it('renders a compact provider capability matrix', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/nodes:list') {
+      if (config.url === 'agentGatewayApi:listNodes') {
         return {
           data: {
             data: [
@@ -594,7 +594,7 @@ describe('PluginAgentGatewayClientV2', () => {
           },
         };
       }
-      if (config.url === 'agent-gateway/nodes/node-id-1/profiles:list') {
+      if (config.url === 'agentGatewayApi:listNodeProfiles/node-id-1') {
         return {
           data: {
             data: [
@@ -620,7 +620,7 @@ describe('PluginAgentGatewayClientV2', () => {
           },
         };
       }
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [
@@ -712,7 +712,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
   it('renders provider capability matrix controls with current user permissions', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/nodes:list') {
+      if (config.url === 'agentGatewayApi:listNodes') {
         return {
           data: {
             data: [
@@ -724,7 +724,7 @@ describe('PluginAgentGatewayClientV2', () => {
           },
         };
       }
-      if (config.url === 'agent-gateway/nodes/node-id-1/profiles:list') {
+      if (config.url === 'agentGatewayApi:listNodeProfiles/node-id-1') {
         return {
           data: {
             data: [
@@ -747,7 +747,7 @@ describe('PluginAgentGatewayClientV2', () => {
           },
         };
       }
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [
@@ -799,7 +799,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
   it('creates an invitation and clears the one-time register command when the modal closes', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/node-invitations:create') {
+      if (config.url === 'agentGatewayApi:createNodeInvitation') {
         return {
           data: {
             data: {
@@ -831,7 +831,7 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(await screen.findByText(/AGENT_GATEWAY_NODE_KEY='remote-196'/)).toBeTruthy();
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'agent-gateway/node-invitations:create',
+        url: 'agentGatewayApi:createNodeInvitation',
         method: 'post',
         data: expect.objectContaining({
           expectedNodeKey: 'remote-196',
@@ -857,7 +857,7 @@ describe('PluginAgentGatewayClientV2', () => {
       },
     ];
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/prompt-templates:list') {
+      if (config.url === 'agentGatewayApi:listPromptTemplates') {
         return {
           data: {
             data: templates,
@@ -865,7 +865,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/prompt-templates:create') {
+      if (config.url === 'agentGatewayApi:createPromptTemplate') {
         templates.push({
           id: 'template-id-2',
           templateKey: String(config.data?.templateKey),
@@ -880,7 +880,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/prompt-templates:preview') {
+      if (config.url === 'agentGatewayApi:previewPromptTemplate') {
         return {
           data: {
             data: {
@@ -916,7 +916,7 @@ describe('PluginAgentGatewayClientV2', () => {
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'agent-gateway/prompt-templates:create',
+          url: 'agentGatewayApi:createPromptTemplate',
           method: 'post',
           data: expect.objectContaining({
             templateKey: 'new-template',
@@ -940,7 +940,7 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(await screen.findByText('Rendered task prompt')).toBeTruthy();
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'agent-gateway/prompt-templates:preview',
+        url: 'agentGatewayApi:previewPromptTemplate',
         method: 'post',
         data: expect.objectContaining({
           templateId: 'template-id-1',
@@ -964,7 +964,7 @@ describe('PluginAgentGatewayClientV2', () => {
       },
     ];
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/task-templates:list') {
+      if (config.url === 'agentGatewayApi:listTaskTemplates') {
         return {
           data: {
             data: templates,
@@ -972,7 +972,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/task-runs:options') {
+      if (config.url === 'agentGatewayApi:listRunOptions') {
         return {
           data: {
             data: {
@@ -1002,7 +1002,40 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/skill-versions:upload-zip') {
+      if (config.url === 'agentGatewayApi:initFileUpload') {
+        return {
+          data: {
+            data: {
+              id: 'upload-template-skill',
+              chunkSize: 1024 * 1024,
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agentGatewayApi:appendFileUpload/upload-template-skill') {
+        return {
+          data: {
+            data: {
+              uploadId: 'upload-template-skill',
+              receivedBytes: 14,
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agentGatewayApi:completeFileUpload/upload-template-skill') {
+        return {
+          data: {
+            data: {
+              id: 'upload-template-skill',
+              status: 'completed',
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agentGatewayApi:createSkillVersionFromUpload') {
         return {
           data: {
             data: {
@@ -1015,7 +1048,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/task-templates:create') {
+      if (config.url === 'agentGatewayApi:createTaskTemplate') {
         templates.push({
           id: 'template-id-2',
           templateKey: String(config.data?.templateKey),
@@ -1077,12 +1110,33 @@ describe('PluginAgentGatewayClientV2', () => {
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'agent-gateway/skill-versions:upload-zip',
+          url: 'agentGatewayApi:initFileUpload',
           method: 'post',
           data: expect.objectContaining({
+            purpose: 'skill-version',
+            fileName: 'template-skill.zip',
+            sizeBytes: 14,
+          }),
+        }),
+      );
+      expect(request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'agentGatewayApi:appendFileUpload/upload-template-skill',
+          method: 'post',
+          data: expect.objectContaining({
+            offset: 0,
+            contentBase64: expect.any(String),
+          }),
+        }),
+      );
+      expect(request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'agentGatewayApi:createSkillVersionFromUpload',
+          method: 'post',
+          data: expect.objectContaining({
+            uploadId: 'upload-template-skill',
             skillKey: 'template-skill',
             versionLabel: 'local',
-            contentBase64: expect.any(String),
           }),
         }),
       );
@@ -1093,7 +1147,7 @@ describe('PluginAgentGatewayClientV2', () => {
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'agent-gateway/task-templates:create',
+          url: 'agentGatewayApi:createTaskTemplate',
           method: 'post',
           data: expect.objectContaining({
             templateKey: 'build-on-187',
@@ -1107,14 +1161,14 @@ describe('PluginAgentGatewayClientV2', () => {
         }),
       );
     });
-    const createCall = request.mock.calls.find(([config]) => config.url === 'agent-gateway/task-templates:create');
+    const createCall = request.mock.calls.find(([config]) => config.url === 'agentGatewayApi:createTaskTemplate');
     expect(createCall?.[0].data).not.toHaveProperty('sort');
   });
 
   it('opens task template details from the templateId query parameter', async () => {
     window.history.pushState({}, '', '/admin/settings/agent-gateway/task-templates?templateId=template-id-1');
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/task-templates:list') {
+      if (config.url === 'agentGatewayApi:listTaskTemplates') {
         return {
           data: {
             data: [
@@ -1132,7 +1186,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/task-runs:options') {
+      if (config.url === 'agentGatewayApi:listRunOptions') {
         return {
           data: {
             data: {
@@ -1158,7 +1212,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
   it('opens associated task template and skill details from the runs table links', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [
@@ -1189,7 +1243,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:get/run-id-link') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-link') {
         return {
           data: {
             data: {
@@ -1203,7 +1257,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/task-templates:get/template-id-link') {
+      if (config.url === 'agentGatewayApi:getTaskTemplate/template-id-link') {
         return {
           data: {
             data: {
@@ -1222,7 +1276,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/skill-versions:list') {
+      if (config.url === 'agentGatewayApi:listSkillVersions') {
         return {
           data: {
             data: [
@@ -1256,7 +1310,7 @@ describe('PluginAgentGatewayClientV2', () => {
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'agent-gateway/task-templates:get/template-id-link',
+          url: 'agentGatewayApi:getTaskTemplate/template-id-link',
           method: 'get',
         }),
       );
@@ -1273,7 +1327,7 @@ describe('PluginAgentGatewayClientV2', () => {
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'agent-gateway/skill-versions:list',
+          url: 'agentGatewayApi:listSkillVersions',
           method: 'get',
         }),
       );
@@ -1289,7 +1343,7 @@ describe('PluginAgentGatewayClientV2', () => {
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'agent-gateway/runs:get/run-id-link',
+          url: 'agentGatewayApi:getRun/run-id-link',
           method: 'get',
         }),
       );
@@ -1298,7 +1352,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
   it('creates a task run from the runs page and opens the run details', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/task-runs:options') {
+      if (config.url === 'agentGatewayApi:listRunOptions') {
         return {
           data: {
             data: {
@@ -1372,7 +1426,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [],
@@ -1380,7 +1434,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/task-runs:create') {
+      if (config.url === 'agentGatewayApi:createTaskRun') {
         return {
           data: {
             data: {
@@ -1399,7 +1453,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:get/run-id-created') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-created') {
         return {
           data: {
             data: {
@@ -1442,7 +1496,7 @@ describe('PluginAgentGatewayClientV2', () => {
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'agent-gateway/task-runs:create',
+          url: 'agentGatewayApi:createTaskRun',
           method: 'post',
           data: expect.objectContaining({
             taskTemplateId: 'task-template-opencode',
@@ -1470,7 +1524,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
   it('imports an external run from pasted agent logs and opens the run details', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [],
@@ -1497,7 +1551,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:get/run-id-imported') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-imported') {
         return {
           data: {
             data: {
@@ -1564,7 +1618,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
   it('paginates the runs table through the run list API', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         const page = Number(config.params?.page || 1);
         const pageSize = Number(config.params?.pageSize || 20);
         return {
@@ -1611,7 +1665,7 @@ describe('PluginAgentGatewayClientV2', () => {
           },
         };
       }
-      if (config.url === 'agent-gateway/runs:get/run-page-1') {
+      if (config.url === 'agentGatewayApi:getRun/run-page-1') {
         return {
           data: {
             data: {
@@ -1655,7 +1709,7 @@ describe('PluginAgentGatewayClientV2', () => {
     await waitFor(() => {
       expect(request).toHaveBeenLastCalledWith(
         expect.objectContaining({
-          url: 'agent-gateway/runs:list',
+          url: 'agentGatewayApi:listRuns',
           params: expect.objectContaining({
             page: 1,
             pageSize: 20,
@@ -1669,7 +1723,7 @@ describe('PluginAgentGatewayClientV2', () => {
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'agent-gateway/runs:list',
+          url: 'agentGatewayApi:listRuns',
           params: expect.objectContaining({
             sort: 'status',
           }),
@@ -1681,7 +1735,7 @@ describe('PluginAgentGatewayClientV2', () => {
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'agent-gateway/runs:get/run-page-1',
+          url: 'agentGatewayApi:getRun/run-page-1',
         }),
       );
     });
@@ -1692,7 +1746,7 @@ describe('PluginAgentGatewayClientV2', () => {
     await waitFor(() => {
       expect(request).toHaveBeenLastCalledWith(
         expect.objectContaining({
-          url: 'agent-gateway/runs:list',
+          url: 'agentGatewayApi:listRuns',
           params: expect.objectContaining({
             page: 2,
             pageSize: 20,
@@ -1704,7 +1758,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
   it('uploads a skill while creating a task run and submits the selected skill version ids', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/task-runs:options') {
+      if (config.url === 'agentGatewayApi:listRunOptions') {
         return {
           data: {
             data: {
@@ -1735,7 +1789,40 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/skill-versions:upload-zip') {
+      if (config.url === 'agentGatewayApi:initFileUpload') {
+        return {
+          data: {
+            data: {
+              id: 'upload-custom-skill',
+              chunkSize: 1024 * 1024,
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agentGatewayApi:appendFileUpload/upload-custom-skill') {
+        return {
+          data: {
+            data: {
+              uploadId: 'upload-custom-skill',
+              receivedBytes: 14,
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agentGatewayApi:completeFileUpload/upload-custom-skill') {
+        return {
+          data: {
+            data: {
+              id: 'upload-custom-skill',
+              status: 'completed',
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agentGatewayApi:createSkillVersionFromUpload') {
         return {
           data: {
             data: {
@@ -1748,7 +1835,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/task-runs:create') {
+      if (config.url === 'agentGatewayApi:createTaskRun') {
         return {
           data: {
             data: {
@@ -1765,7 +1852,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:get/run-id-created') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-created') {
         return {
           data: {
             data: {
@@ -1779,7 +1866,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return { data: { data: [] } };
       }
 
@@ -1814,12 +1901,33 @@ describe('PluginAgentGatewayClientV2', () => {
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'agent-gateway/skill-versions:upload-zip',
+          url: 'agentGatewayApi:initFileUpload',
           method: 'post',
           data: expect.objectContaining({
+            purpose: 'skill-version',
+            fileName: 'custom-skill.zip',
+            sizeBytes: 14,
+          }),
+        }),
+      );
+      expect(request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'agentGatewayApi:appendFileUpload/upload-custom-skill',
+          method: 'post',
+          data: expect.objectContaining({
+            offset: 0,
+            contentBase64: expect.any(String),
+          }),
+        }),
+      );
+      expect(request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'agentGatewayApi:createSkillVersionFromUpload',
+          method: 'post',
+          data: expect.objectContaining({
+            uploadId: 'upload-custom-skill',
             skillKey: 'custom-skill',
             versionLabel: 'local',
-            contentBase64: expect.any(String),
           }),
         }),
       );
@@ -1830,7 +1938,7 @@ describe('PluginAgentGatewayClientV2', () => {
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'agent-gateway/task-runs:create',
+          url: 'agentGatewayApi:createTaskRun',
           method: 'post',
           data: expect.objectContaining({
             title: 'Uploaded skill task',
@@ -1844,7 +1952,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
   it('does not allow creating a task run when all runners are offline', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/task-runs:options') {
+      if (config.url === 'agentGatewayApi:listRunOptions') {
         return {
           data: {
             data: {
@@ -1875,7 +1983,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [],
@@ -1896,14 +2004,14 @@ describe('PluginAgentGatewayClientV2', () => {
     fireEvent.click(createButton);
     expect(request).not.toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'agent-gateway/task-runs:create',
+        url: 'agentGatewayApi:createTaskRun',
       }),
     );
   });
 
   it('creates a task run from a template without a skill version requirement', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/task-runs:options') {
+      if (config.url === 'agentGatewayApi:listRunOptions') {
         return {
           data: {
             data: {
@@ -1945,7 +2053,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [],
@@ -1953,7 +2061,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/task-runs:create') {
+      if (config.url === 'agentGatewayApi:createTaskRun') {
         return {
           data: {
             data: {
@@ -1969,7 +2077,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:get/run-id-no-skill-template') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-no-skill-template') {
         return {
           data: {
             data: {
@@ -1998,7 +2106,7 @@ describe('PluginAgentGatewayClientV2', () => {
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'agent-gateway/task-runs:create',
+          url: 'agentGatewayApi:createTaskRun',
           method: 'post',
           data: expect.objectContaining({
             taskTemplateId: 'task-template-opencode',
@@ -2018,7 +2126,7 @@ describe('PluginAgentGatewayClientV2', () => {
       resolveConversationEvents = resolve;
     });
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [
@@ -2036,7 +2144,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:get/run-id-empty') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-empty') {
         return {
           data: {
             data: {
@@ -2095,7 +2203,7 @@ describe('PluginAgentGatewayClientV2', () => {
     const intervalCallbacks = spyOnPageIntervals();
     let conversationEventsCallCount = 0;
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [
@@ -2113,7 +2221,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:get/run-id-live') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-live') {
         return {
           data: {
             data: {
@@ -2211,7 +2319,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
   it('shows run-scoped task events before falling back to an empty session timeline', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [
@@ -2230,7 +2338,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:get/run-id-task') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-task') {
         return {
           data: {
             data: {
@@ -2300,7 +2408,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
   it('lists runs, shows observation details, and requests cancel for active runs', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [
@@ -2353,7 +2461,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/cancel') {
+      if (config.url === 'agentGatewayApi:cancelRun/run-id-1') {
         return {
           data: {
             data: {
@@ -2365,7 +2473,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
         return {
           data: {
             data: {
@@ -2693,7 +2801,7 @@ describe('PluginAgentGatewayClientV2', () => {
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'agent-gateway/runs/run-id-1/cancel',
+          url: 'agentGatewayApi:cancelRun/run-id-1',
           method: 'post',
         }),
       );
@@ -2819,14 +2927,14 @@ describe('PluginAgentGatewayClientV2', () => {
 
   it('loads artifact pages from the server when detail pagination changes', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [{ id: 'run-id-1', runCode: 'run-artifact-pages', status: 'succeeded' }],
           },
         };
       }
-      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
         return {
           data: {
             data: {
@@ -2901,7 +3009,7 @@ describe('PluginAgentGatewayClientV2', () => {
     let controlAccepted = false;
     let controlStatusPollCount = 0;
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [
@@ -2915,7 +3023,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
         return {
           data: {
             data: {
@@ -3040,7 +3148,7 @@ describe('PluginAgentGatewayClientV2', () => {
         }) => void)
       | undefined;
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [
@@ -3059,7 +3167,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:get/run-id-1' || config.url === 'agent-gateway/runs:get/run-id-2') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-1' || config.url === 'agentGatewayApi:getRun/run-id-2') {
         const runId = config.url.endsWith('run-id-1') ? 'run-id-1' : 'run-id-2';
         return {
           data: {
@@ -3157,7 +3265,7 @@ describe('PluginAgentGatewayClientV2', () => {
     let terminateAttempts = 0;
     let controlStatusPollCount = 0;
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [
@@ -3171,7 +3279,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
         return {
           data: {
             data: {
@@ -3260,7 +3368,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
   it('disables terminal controls without server-provided control action permission and capability', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [
@@ -3274,7 +3382,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
         return {
           data: {
             data: {
@@ -3329,7 +3437,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
   it('hides terminal controls for completed runs even when control actions are present', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [
@@ -3343,7 +3451,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
         return {
           data: {
             data: {
@@ -3400,7 +3508,7 @@ describe('PluginAgentGatewayClientV2', () => {
       .mockReturnValueOnce('control-retry-key-2' as `${string}-${string}-${string}-${string}-${string}`);
     let interruptAttempts = 0;
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [
@@ -3414,7 +3522,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
         return {
           data: {
             data: {
@@ -3498,7 +3606,7 @@ describe('PluginAgentGatewayClientV2', () => {
       .mockReturnValueOnce('control-validation-key-2' as `${string}-${string}-${string}-${string}-${string}`);
     let interruptAttempts = 0;
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [
@@ -3512,7 +3620,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
         return {
           data: {
             data: {
@@ -3597,7 +3705,7 @@ describe('PluginAgentGatewayClientV2', () => {
       .mockReturnValueOnce('control-final-key-2' as `${string}-${string}-${string}-${string}-${string}`);
     let interruptAttempts = 0;
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [
@@ -3611,7 +3719,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
         return {
           data: {
             data: {
@@ -3689,7 +3797,7 @@ describe('PluginAgentGatewayClientV2', () => {
   it('opens run details from the runId query and preserves unrelated query parameters on close', async () => {
     window.history.pushState({}, '', '/admin/settings/agent-gateway/runs?terminalStreamSmoke=1&runId=run-id-1');
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [
@@ -3703,7 +3811,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
         return {
           data: {
             data: {
@@ -3752,7 +3860,7 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(await screen.findByText(/opened from query/)).toBeTruthy();
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'agent-gateway/runs:get/run-id-1',
+        url: 'agentGatewayApi:getRun/run-id-1',
         method: 'get',
       }),
     );
@@ -3770,7 +3878,7 @@ describe('PluginAgentGatewayClientV2', () => {
   it('does not render the terminal stream smoke panel without terminal read permission', async () => {
     window.history.pushState({}, '', '/admin/settings/agent-gateway/runs?terminalStreamSmoke=1&runId=run-id-1');
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [
@@ -3784,7 +3892,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
         return {
           data: {
             data: {
@@ -3819,7 +3927,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
   it('shows a stable detail access error without polling sensitive endpoints', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [
@@ -3833,7 +3941,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
         throw Object.assign(new Error('Run details are not allowed'), {
           response: {
             data: {
@@ -3861,14 +3969,14 @@ describe('PluginAgentGatewayClientV2', () => {
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'agent-gateway/runs:get/run-id-1',
+          url: 'agentGatewayApi:getRun/run-id-1',
           method: 'get',
         }),
       );
     });
 
     const requestedUrls = request.mock.calls.map(([config]) => config.url);
-    expect(requestedUrls.filter((url) => url === 'agent-gateway/runs:get/run-id-1')).toHaveLength(1);
+    expect(requestedUrls.filter((url) => url === 'agentGatewayApi:getRun/run-id-1')).toHaveLength(1);
     expect(requestedUrls.some((url) => url?.includes('terminal:snapshot'))).toBe(false);
     expect(requestedUrls.some((url) => url?.includes('conversation-events:list'))).toBe(false);
     expect(requestedUrls.some((url) => url?.includes('events:list'))).toBe(false);
@@ -3885,7 +3993,7 @@ describe('PluginAgentGatewayClientV2', () => {
     const requestCounts = new Map<string, number>();
     const request = vi.fn(async (config: RequestConfig) => {
       requestCounts.set(config.url, (requestCounts.get(config.url) || 0) + 1);
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [
@@ -3901,7 +4009,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
         detailCallCount += 1;
         if (detailCallCount > 1) {
           throw Object.assign(new Error('Run details were revoked'), {
@@ -4032,7 +4140,7 @@ describe('PluginAgentGatewayClientV2', () => {
     const request = vi.fn(async (config: RequestConfig) => {
       requestCounts.set(config.url, (requestCounts.get(config.url) || 0) + 1);
 
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [
@@ -4048,7 +4156,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
         detailCallCount += 1;
         return {
           data: {
@@ -4181,7 +4289,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
   it('hides detail controls and skips sensitive polling when run affordances deny access', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [
@@ -4198,7 +4306,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
         return {
           data: {
             data: {
@@ -4246,7 +4354,7 @@ describe('PluginAgentGatewayClientV2', () => {
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'agent-gateway/runs:get/run-id-1',
+          url: 'agentGatewayApi:getRun/run-id-1',
           method: 'get',
         }),
       );
@@ -4268,7 +4376,7 @@ describe('PluginAgentGatewayClientV2', () => {
     const requestedUrls: string[] = [];
     const request = vi.fn(async (config: RequestConfig) => {
       requestedUrls.push(config.url);
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [
@@ -4284,7 +4392,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
         return {
           data: {
             data: {
@@ -4335,7 +4443,7 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(await screen.findByText('Terminal output is not supported by this provider')).toBeTruthy();
     expect(await screen.findByLabelText('Interrupt')).toBeTruthy();
     expect(await screen.findByLabelText('Terminate')).toBeTruthy();
-    await waitFor(() => expect(requestedUrls).toContain('agent-gateway/runs:get/run-id-1'));
+    await waitFor(() => expect(requestedUrls).toContain('agentGatewayApi:getRun/run-id-1'));
     expect(requestedUrls.some((url) => url.includes('terminal:snapshot'))).toBe(false);
     expect(requestedUrls.some((url) => url.includes('terminal-stream-tickets:create'))).toBe(false);
     expect(FakeBrowserWebSocket.instances).toHaveLength(0);
@@ -4343,7 +4451,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
   it('hides cancel actions when the run affordance denies cancel permission', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [
@@ -4360,7 +4468,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
         return {
           data: {
             data: {
@@ -4401,7 +4509,7 @@ describe('PluginAgentGatewayClientV2', () => {
   it('opens run details when the v route receives a runId after mount', async () => {
     window.history.pushState({}, '', '/v/admin/settings/agent-gateway/runs');
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [
@@ -4415,7 +4523,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
         return {
           data: {
             data: {
@@ -4476,7 +4584,7 @@ describe('PluginAgentGatewayClientV2', () => {
   it('ignores a stale terminal snapshot response after switching run details', async () => {
     let resolveRunOneSnapshot: ((value: { data: { data: Record<string, unknown> } }) => void) | undefined;
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [
@@ -4495,7 +4603,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:get/run-id-1' || config.url === 'agent-gateway/runs:get/run-id-2') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-1' || config.url === 'agentGatewayApi:getRun/run-id-2') {
         const runId = config.url.endsWith('run-id-1') ? 'run-id-1' : 'run-id-2';
         return {
           data: {
@@ -4582,7 +4690,7 @@ describe('PluginAgentGatewayClientV2', () => {
     const intervalCallbacks = spyOnPageIntervals();
     let terminalSnapshotCallCount = 0;
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [
@@ -4596,7 +4704,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
         return {
           data: {
             data: {
@@ -4761,7 +4869,7 @@ describe('PluginAgentGatewayClientV2', () => {
     window.sessionStorage.setItem('agentGatewayTerminalOffset:run-id-1', '12');
     vi.stubGlobal('WebSocket', FakeBrowserWebSocket);
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [
@@ -4775,7 +4883,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
         return {
           data: {
             data: {
@@ -4910,7 +5018,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
   it('keeps run details visible when optional observation streams are forbidden', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [
@@ -4927,7 +5035,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
         return {
           data: {
             data: {
@@ -5016,7 +5124,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
   it('does not promote legacy run events into the primary timeline while a normalized run is active', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [
@@ -5032,7 +5140,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
         return {
           data: {
             data: {
@@ -5102,7 +5210,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
   it('does not promote legacy run events into the primary timeline for a new failed run without a session', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [
@@ -5119,7 +5227,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
         return {
           data: {
             data: {
@@ -5175,7 +5283,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
   it('marks failed normalized command events as failed in the primary timeline', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [
@@ -5192,7 +5300,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
         return {
           data: {
             data: {
@@ -5667,7 +5775,7 @@ describe('PluginAgentGatewayClientV2', () => {
   it('does not clear the normalized timeline when a later poll returns an empty older snapshot', async () => {
     let conversationEventCallCount = 0;
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [
@@ -5684,7 +5792,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
         return {
           data: {
             data: {
@@ -5743,7 +5851,7 @@ describe('PluginAgentGatewayClientV2', () => {
     const intervalCallbacks = spyOnPageIntervals();
     const conversationRequests: RequestConfig[] = [];
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [
@@ -5756,7 +5864,7 @@ describe('PluginAgentGatewayClientV2', () => {
           },
         };
       }
-      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
         return {
           data: {
             data: {
@@ -5871,7 +5979,7 @@ describe('PluginAgentGatewayClientV2', () => {
     const intervalCallbacks = spyOnPageIntervals();
 
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [
@@ -5888,7 +5996,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
         return {
           data: {
             data: {
@@ -5995,7 +6103,7 @@ describe('PluginAgentGatewayClientV2', () => {
     const intervalCallbacks = spyOnPageIntervals();
 
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [
@@ -6012,7 +6120,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
         runDetailsCallCount += 1;
         const completed = runDetailsCallCount > 1;
         return {
@@ -6089,7 +6197,7 @@ describe('PluginAgentGatewayClientV2', () => {
     const intervalCallbacks = spyOnPageIntervals();
 
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         runsListCallCount += 1;
         if (runsListCallCount > 1) {
           return await secondRunsList;
@@ -6107,7 +6215,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
         runDetailsCallCount += 1;
         if (runDetailsCallCount > 1) {
           return await secondRunDetails;
@@ -6183,7 +6291,7 @@ describe('PluginAgentGatewayClientV2', () => {
     let terminalSnapshotCallCount = 0;
     let conversationEventsCallCount = 0;
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [
@@ -6198,7 +6306,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
         return {
           data: {
             data: {
@@ -6304,7 +6412,7 @@ describe('PluginAgentGatewayClientV2', () => {
       .mockReturnValueOnce('resume-key-1' as `${string}-${string}-${string}-${string}-${string}`)
       .mockReturnValueOnce('resume-key-2' as `${string}-${string}-${string}-${string}-${string}`);
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [
@@ -6331,7 +6439,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
         return {
           data: {
             data: {
@@ -6352,7 +6460,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:get/run-id-2') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-2') {
         return {
           data: {
             data: {
@@ -6465,7 +6573,7 @@ describe('PluginAgentGatewayClientV2', () => {
     let sessionOneTimelineRequests = 0;
     let runTwoTimelineRequests = 0;
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [
@@ -6490,7 +6598,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
         return {
           data: {
             data: {
@@ -6510,7 +6618,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:get/run-id-2') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-2') {
         return await new Promise((resolve) => {
           resolveRunTwoDetails = resolve;
         });
@@ -6625,7 +6733,7 @@ describe('PluginAgentGatewayClientV2', () => {
       .mockReturnValueOnce('retry-key-2' as `${string}-${string}-${string}-${string}-${string}`);
     let resumeAttempts = 0;
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [
@@ -6641,7 +6749,7 @@ describe('PluginAgentGatewayClientV2', () => {
           },
         };
       }
-      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
         return {
           data: {
             data: {
@@ -6707,7 +6815,7 @@ describe('PluginAgentGatewayClientV2', () => {
       .mockReturnValueOnce('retry-change-key-3' as `${string}-${string}-${string}-${string}-${string}`);
     let resumeAttempts = 0;
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [
@@ -6723,7 +6831,7 @@ describe('PluginAgentGatewayClientV2', () => {
           },
         };
       }
-      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
         return {
           data: {
             data: {
@@ -6799,7 +6907,7 @@ describe('PluginAgentGatewayClientV2', () => {
       .mockReturnValueOnce('validation-key-3' as `${string}-${string}-${string}-${string}-${string}`);
     let resumeAttempts = 0;
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [
@@ -6815,7 +6923,7 @@ describe('PluginAgentGatewayClientV2', () => {
           },
         };
       }
-      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
         return {
           data: {
             data: {
@@ -6892,7 +7000,7 @@ describe('PluginAgentGatewayClientV2', () => {
       artifacts: false,
     };
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [
@@ -6913,7 +7021,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
         return {
           data: {
             data: {
@@ -6951,7 +7059,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
   it('disables resume when the agent session does not support resume with message', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [
@@ -6973,7 +7081,7 @@ describe('PluginAgentGatewayClientV2', () => {
           },
         };
       }
-      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
         return {
           data: {
             data: {
@@ -7024,7 +7132,7 @@ describe('PluginAgentGatewayClientV2', () => {
       },
     ];
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/dispatch-bindings:list') {
+      if (config.url === 'agentGatewayApi:listDispatchBindings') {
         return {
           data: {
             data: bindings,
@@ -7032,7 +7140,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/prompt-templates:list') {
+      if (config.url === 'agentGatewayApi:listPromptTemplates') {
         return {
           data: {
             data: [
@@ -7046,7 +7154,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/dispatch-bindings:create') {
+      if (config.url === 'agentGatewayApi:createDispatchBinding') {
         const createdBinding = {
           id: 'binding-id-2',
           bindingKey: String(config.data?.bindingKey),
@@ -7064,7 +7172,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/dispatch-bindings:update/binding-id-1') {
+      if (config.url === 'agentGatewayApi:updateDispatchBinding/binding-id-1') {
         return {
           data: {
             data: {
@@ -7099,7 +7207,7 @@ describe('PluginAgentGatewayClientV2', () => {
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'agent-gateway/dispatch-bindings:create',
+          url: 'agentGatewayApi:createDispatchBinding',
           method: 'post',
           data: expect.objectContaining({
             bindingKey: 'new-ticket-dispatch',
@@ -7115,7 +7223,7 @@ describe('PluginAgentGatewayClientV2', () => {
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'agent-gateway/dispatch-bindings:update/binding-id-1',
+          url: 'agentGatewayApi:updateDispatchBinding/binding-id-1',
           method: 'post',
           data: {
             enabled: false,

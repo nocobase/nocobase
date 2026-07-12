@@ -16,6 +16,7 @@ import { Transaction } from 'sequelize';
 import {
   AGENT_GATEWAY_ACTIONS,
   AGENT_GATEWAY_RESOURCE,
+  authenticateNodeToken,
   createClaimToken,
   extractNodeToken,
   redactEventPayload,
@@ -27,11 +28,13 @@ import {
 } from '../security';
 import {
   AGENT_GATEWAY_STANDARD_COLLECTIONS,
-  API_PREFIX,
+  AGENT_GATEWAY_API_RESOURCE,
   AGENT_GATEWAY_ERROR_CODES,
   JsonRecord,
   ModelRecord,
+  asActionContext,
   getBodyValues,
+  getActionTargetKey,
   getCurrentUserId,
   getDate,
   getModelJson,
@@ -3326,6 +3329,85 @@ export function registerRunLifecycleHooks(plugin: Plugin) {
 }
 
 export function registerRunLifecycleRoutes(plugin: Plugin) {
+  plugin.app.resourceManager.registerActionHandlers({
+    [`${AGENT_GATEWAY_API_RESOURCE}:listRunOptions`]: async (ctx, next) => {
+      await listBuildRunOptions(asActionContext(ctx));
+      await next();
+    },
+    [`${AGENT_GATEWAY_API_RESOURCE}:createTaskRun`]: async (ctx, next) => {
+      await createTaskRun(asActionContext(ctx));
+      await next();
+    },
+    [`${AGENT_GATEWAY_API_RESOURCE}:listRuns`]: async (ctx, next) => {
+      await listRuns(asActionContext(ctx));
+      await next();
+    },
+    [`${AGENT_GATEWAY_API_RESOURCE}:getRun`]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      await getRun(actionCtx, getActionTargetKey(actionCtx));
+      await next();
+    },
+    [`${AGENT_GATEWAY_API_RESOURCE}:createRun`]: async (ctx, next) => {
+      await createRun(asActionContext(ctx));
+      await next();
+    },
+    [`${AGENT_GATEWAY_API_RESOURCE}:createSmokeRun`]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      await createSmokeRun(actionCtx, getActionTargetKey(actionCtx));
+      await next();
+    },
+    [`${AGENT_GATEWAY_API_RESOURCE}:claimRun`]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      await claimRun(actionCtx, getActionTargetKey(actionCtx));
+      await next();
+    },
+    [`${AGENT_GATEWAY_API_RESOURCE}:heartbeatRun`]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      const auth = await authenticateNodeToken(actionCtx);
+      await runHeartbeat(actionCtx, String(auth.subject.nodeId), getActionTargetKey(actionCtx));
+      await next();
+    },
+    [`${AGENT_GATEWAY_API_RESOURCE}:completeRun`]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      const auth = await authenticateNodeToken(actionCtx);
+      await completeRun(actionCtx, String(auth.subject.nodeId), getActionTargetKey(actionCtx));
+      await next();
+    },
+    [`${AGENT_GATEWAY_API_RESOURCE}:failRun`]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      const auth = await authenticateNodeToken(actionCtx);
+      await failRun(actionCtx, String(auth.subject.nodeId), getActionTargetKey(actionCtx));
+      await next();
+    },
+    [`${AGENT_GATEWAY_API_RESOURCE}:timeoutRun`]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      const auth = await authenticateNodeToken(actionCtx);
+      await timeoutRun(actionCtx, String(auth.subject.nodeId), getActionTargetKey(actionCtx));
+      await next();
+    },
+    [`${AGENT_GATEWAY_API_RESOURCE}:ackCancelRun`]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      const auth = await authenticateNodeToken(actionCtx);
+      await ackCancelRun(actionCtx, String(auth.subject.nodeId), getActionTargetKey(actionCtx));
+      await next();
+    },
+    [`${AGENT_GATEWAY_API_RESOURCE}:skipRun`]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      const auth = await authenticateNodeToken(actionCtx);
+      await skipSmokeRun(actionCtx, String(auth.subject.nodeId), getActionTargetKey(actionCtx));
+      await next();
+    },
+    [`${AGENT_GATEWAY_API_RESOURCE}:cancelRun`]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      await cancelRun(actionCtx, getActionTargetKey(actionCtx));
+      await next();
+    },
+    [`${AGENT_GATEWAY_API_RESOURCE}:expireRunLeases`]: async (ctx, next) => {
+      await expireLeases(asActionContext(ctx));
+      await next();
+    },
+  });
+
   plugin.app.use(
     async (ctx: Context, next: Next) => {
       const standardCollectionAction = matchStandardCollectionAction(ctx.path, AGENT_GATEWAY_STANDARD_COLLECTIONS);
@@ -3341,100 +3423,6 @@ export function registerRunLifecycleRoutes(plugin: Plugin) {
         }
       } else if (standardCollectionAction) {
         await requireManagePermission(ctx);
-      }
-
-      if (!ctx.path.startsWith(API_PREFIX)) {
-        await next();
-        return;
-      }
-
-      const routePath = ctx.path.slice(API_PREFIX.length);
-      const smokeCreateMatch = routePath.match(/^\/nodes\/([^/]+)\/smoke-runs:create$/);
-      const claimMatch = routePath.match(/^\/nodes\/([^/]+)\/runs:claim$/);
-      const runNodeActionMatch = routePath.match(
-        /^\/nodes\/([^/]+)\/runs\/([^/]+)\/(heartbeat|complete|fail|timeout|cancel-ack)$/,
-      );
-      const runSkipMatch = routePath.match(/^\/nodes\/([^/]+)\/runs\/([^/]+)\/skip$/);
-      const cancelMatch = routePath.match(/^\/runs\/([^/]+)\/cancel$/);
-      const getRunMatch = routePath.match(/^\/runs:get\/([^/]+)$/);
-
-      if (ctx.method === 'GET' && (routePath === '/task-runs:options' || routePath === '/build-runs:options')) {
-        await listBuildRunOptions(ctx);
-        return;
-      }
-
-      if (ctx.method === 'POST' && routePath === '/task-runs:create') {
-        await createTaskRun(ctx);
-        return;
-      }
-
-      if (ctx.method === 'POST' && routePath === '/build-runs:create') {
-        await createTaskRun(ctx);
-        return;
-      }
-
-      if (ctx.method === 'GET' && routePath === '/runs:list') {
-        await listRuns(ctx);
-        return;
-      }
-
-      if (ctx.method === 'GET' && getRunMatch) {
-        await getRun(ctx, getRunMatch[1]);
-        return;
-      }
-
-      if (ctx.method === 'POST' && routePath === '/runs:create') {
-        await createRun(ctx);
-        return;
-      }
-
-      if (ctx.method === 'POST' && smokeCreateMatch) {
-        await createSmokeRun(ctx, smokeCreateMatch[1]);
-        return;
-      }
-
-      if (ctx.method === 'POST' && claimMatch) {
-        await claimRun(ctx, claimMatch[1]);
-        return;
-      }
-
-      if (ctx.method === 'POST' && runNodeActionMatch) {
-        const [, nodeId, runId, action] = runNodeActionMatch;
-        if (action === 'heartbeat') {
-          await runHeartbeat(ctx, nodeId, runId);
-          return;
-        }
-        if (action === 'complete') {
-          await completeRun(ctx, nodeId, runId);
-          return;
-        }
-        if (action === 'fail') {
-          await failRun(ctx, nodeId, runId);
-          return;
-        }
-        if (action === 'timeout') {
-          await timeoutRun(ctx, nodeId, runId);
-          return;
-        }
-        if (action === 'cancel-ack') {
-          await ackCancelRun(ctx, nodeId, runId);
-          return;
-        }
-      }
-
-      if (ctx.method === 'POST' && runSkipMatch) {
-        await skipSmokeRun(ctx, runSkipMatch[1], runSkipMatch[2]);
-        return;
-      }
-
-      if (ctx.method === 'POST' && cancelMatch) {
-        await cancelRun(ctx, cancelMatch[1]);
-        return;
-      }
-
-      if (ctx.method === 'POST' && routePath === '/runs:expire-leases') {
-        await expireLeases(ctx);
-        return;
       }
 
       await next();

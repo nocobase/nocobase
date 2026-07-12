@@ -824,7 +824,7 @@ describe('agent gateway external run imports', () => {
       succeeded: 1,
       unknown: 0,
     });
-    const runsResponse = await rootAgent.get('/api/agent-gateway/runs:list');
+    const runsResponse = await rootAgent.get('/agentGatewayApi:listRuns');
     expect(runsResponse.status).toBe(200);
     expect(runsResponse.body.data).toEqual(
       expect.arrayContaining([
@@ -891,7 +891,7 @@ describe('agent gateway external run imports', () => {
         totalTokens: 200,
       },
     });
-    const runsResponse = await rootAgent.get('/api/agent-gateway/runs:list');
+    const runsResponse = await rootAgent.get('/agentGatewayApi:listRuns');
     expect(runsResponse.status).toBe(200);
     expect(runsResponse.body.data).toEqual(
       expect.arrayContaining([
@@ -1300,7 +1300,7 @@ describe('agent gateway external run imports', () => {
     conversationWriteSpy.mockRestore();
     expect(failedResponse.status).toBe(500);
 
-    const cancelResponse = await rootAgent.post(`/api/agent-gateway/runs/${runId}/cancel`).send({});
+    const cancelResponse = await rootAgent.post(`/agentGatewayApi:cancelRun/${runId}`).send({});
     expect(cancelResponse.status).toBe(200);
     expect(getData<{ status: string }>(cancelResponse).status).toBe('canceled');
     const batch = await app.db.getRepository('agExternalImportBatches').findOne({
@@ -1529,7 +1529,7 @@ describe('agent gateway external run imports', () => {
     const runEventsResponse = await rootAgent.get(`/api/agent-gateway/runs/${runId}/events:list`);
     expect(runEventsResponse.status).toBe(200);
 
-    const managedRunResponse = await rootAgent.post('/api/agent-gateway/runs:create').send({
+    const managedRunResponse = await rootAgent.post('/agentGatewayApi:createRun').send({
       runCode: `managed-${randomUUID()}`,
       sourceType: 'manual',
       promptSnapshot: {

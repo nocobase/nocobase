@@ -63,7 +63,7 @@ import {
 } from '../../shared/runState';
 import { AgentTimeline, AgentTimelineEventRecord } from '../components/AgentTimeline';
 import { AgentSessionResumeBox, AgentSessionResumeInput } from '../components/AgentSessionResumeBox';
-import { ReadonlyXtermOutput } from '../components/ReadonlyXtermOutput';
+import { LazyReadonlyXtermOutput } from '../components/LazyReadonlyXtermOutput';
 import { TerminalStreamSmokePanel, isTerminalStreamSmokeEnabled } from '../components/TerminalStreamSmokePanel';
 import {
   ApiCallLogRecord,
@@ -104,6 +104,7 @@ import {
   redactExternalUrlPreviewJson,
   redactPreviewText,
   statusTag,
+  uploadAgentGatewayFile,
 } from './AgentGatewayPageUtils';
 
 interface RunRecord {
@@ -501,20 +502,6 @@ function getRunsFilterCollectionOptions(
       },
     ],
   };
-}
-
-function readFileAsBase64(file: File) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = typeof reader.result === 'string' ? reader.result : '';
-      resolve(result.includes(',') ? result.split(',').pop() || '' : result);
-    };
-    reader.onerror = () => {
-      reject(reader.error || new Error('Failed to read file'));
-    };
-    reader.readAsDataURL(file);
-  });
 }
 
 function readFileAsText(file: File) {
@@ -1615,7 +1602,7 @@ function TerminalPanel({
         />
       ) : null}
       {canReadTerminal && terminalOutputSupported ? (
-        <ReadonlyXtermOutput
+        <LazyReadonlyXtermOutput
           ariaLabel={t('Readonly live terminal output')}
           chunks={useStreamOutput ? stream.chunks : []}
           emptyText={t('No terminal output yet')}
@@ -2669,7 +2656,7 @@ export default function AgentGatewayRunsPage() {
   const [externalRunImportOpen, setExternalRunImportOpen] = useState(false);
   const [externalRunLogContent, setExternalRunLogContent] = useState('');
   const [skillUploadOpen, setSkillUploadOpen] = useState(false);
-  const [skillZipContentBase64, setSkillZipContentBase64] = useState('');
+  const [skillZipFile, setSkillZipFile] = useState<File | null>(null);
   const [skillUploadResult, setSkillUploadResult] = useState<SkillUploadResult | null>(null);
   const [detailOpen, setDetailOpen] = useState(Boolean(initialRunId));
   const [selectedRunId, setSelectedRunId] = useState<string | undefined>(initialRunId);
@@ -2721,7 +2708,7 @@ export default function AgentGatewayRunsPage() {
   const runsRequest = useRequest(
     async () => {
       const response = await ctx.api.request<RunRecord[]>({
-        url: 'agent-gateway/runs:list',
+        url: 'agentGatewayApi:listRuns',
         method: 'get',
         params: {
           ...(runFilters ? { filter: JSON.stringify(runFilters) } : {}),
@@ -2747,7 +2734,7 @@ export default function AgentGatewayRunsPage() {
         return null;
       }
       const response = await ctx.api.request<TaskTemplateDetailRecord>({
-        url: `agent-gateway/task-templates:get/${encodeURIComponent(selectedTaskTemplateId)}`,
+        url: `agentGatewayApi:getTaskTemplate/${encodeURIComponent(selectedTaskTemplateId)}`,
         method: 'get',
       });
       return getRequiredResponseData(response, t('Failed to load task template detail'));
@@ -2771,7 +2758,7 @@ export default function AgentGatewayRunsPage() {
         return null;
       }
       const response = await ctx.api.request<SkillVersionDetailRecord[]>({
-        url: 'agent-gateway/skill-versions:list',
+        url: 'agentGatewayApi:listSkillVersions',
         method: 'get',
       });
       const skillVersions = getResponseData(response, []);
@@ -2798,7 +2785,7 @@ export default function AgentGatewayRunsPage() {
   const buildRunOptionsRequest = useRequest(
     async () => {
       const response = await ctx.api.request<BuildRunOptions>({
-        url: 'agent-gateway/task-runs:options',
+        url: 'agentGatewayApi:listRunOptions',
         method: 'get',
       });
       return getResponseData(response, {});
@@ -2836,7 +2823,7 @@ export default function AgentGatewayRunsPage() {
       const artifacts = getTaskArtifactDeclarations(values.artifactDeclarations);
       const artifactRoot = getOptionalFormString(values.artifactRoot);
       const response = await ctx.api.request<CreateBuildRunResult>({
-        url: 'agent-gateway/task-runs:create',
+        url: 'agentGatewayApi:createTaskRun',
         method: 'post',
         data: {
           taskTemplateId: values.taskTemplateId,
@@ -2928,11 +2915,12 @@ export default function AgentGatewayRunsPage() {
   );
 
   const uploadSkillVersionRequest = useRequest(
-    async (values: SkillUploadFormValues & { contentBase64: string }) => {
+    async (values: SkillUploadFormValues & { file: File }) => {
+      const uploadId = await uploadAgentGatewayFile(ctx.api, values.file, 'skill-version');
       const response = await ctx.api.request<SkillUploadResult>({
-        url: 'agent-gateway/skill-versions:upload-zip',
+        url: 'agentGatewayApi:createSkillVersionFromUpload',
         method: 'post',
-        data: { ...values },
+        data: { ...values, file: undefined, uploadId },
       });
       return getRequiredResponseData(response, t('Failed to upload skill'));
     },
@@ -2944,7 +2932,7 @@ export default function AgentGatewayRunsPage() {
           ...new Set([...currentSkillVersionIds, result.skillVersionId]),
         ]);
         setSkillUploadResult(result);
-        setSkillZipContentBase64('');
+        setSkillZipFile(null);
         skillUploadForm.resetFields();
         setSkillUploadOpen(false);
         buildRunOptionsRequest.run();
@@ -2963,7 +2951,7 @@ export default function AgentGatewayRunsPage() {
       }
 
       const runResponse = await ctx.api.request<RunRecord>({
-        url: `agent-gateway/runs:get/${encodeURIComponent(selectedRunId)}`,
+        url: `agentGatewayApi:getRun/${encodeURIComponent(selectedRunId)}`,
         method: 'get',
       });
       const run = getRequiredResponseData(runResponse, t('Failed to load run details'));
@@ -3098,7 +3086,7 @@ export default function AgentGatewayRunsPage() {
   const cancelRunRequest = useRequest(
     async (run: RunRecord) => {
       const response = await ctx.api.request<RunRecord>({
-        url: `agent-gateway/runs/${encodeURIComponent(run.id)}/cancel`,
+        url: `agentGatewayApi:cancelRun/${encodeURIComponent(run.id)}`,
         method: 'post',
       });
       return getRequiredResponseData(response, t('Failed to cancel run'));
@@ -3385,7 +3373,7 @@ export default function AgentGatewayRunsPage() {
   }, [externalRunImportForm]);
 
   const openSkillUploadModal = useCallback(() => {
-    setSkillZipContentBase64('');
+    setSkillZipFile(null);
     setSkillUploadResult(null);
     skillUploadForm.setFieldsValue(DEFAULT_SKILL_UPLOAD_FORM_VALUES);
     setSkillUploadOpen(true);
@@ -3393,7 +3381,7 @@ export default function AgentGatewayRunsPage() {
 
   const closeSkillUploadModal = useCallback(() => {
     setSkillUploadOpen(false);
-    setSkillZipContentBase64('');
+    setSkillZipFile(null);
     setSkillUploadResult(null);
     skillUploadForm.resetFields();
   }, [skillUploadForm]);
@@ -3419,27 +3407,27 @@ export default function AgentGatewayRunsPage() {
   const submitSkillUpload = useCallback(async () => {
     try {
       const values = await skillUploadForm.validateFields();
-      if (!skillZipContentBase64) {
+      if (!skillZipFile) {
         ctx.message?.error(t('Skill ZIP file is required'));
         return;
       }
       uploadSkillVersionRequest.run({
         ...values,
-        contentBase64: skillZipContentBase64,
+        file: skillZipFile,
       });
     } catch (error) {
       if (!isFormValidationError(error)) {
         ctx.message?.error(t('Failed to upload skill'));
       }
     }
-  }, [ctx.message, skillUploadForm, skillZipContentBase64, t, uploadSkillVersionRequest]);
+  }, [ctx.message, skillUploadForm, skillZipFile, t, uploadSkillVersionRequest]);
 
   const handleSkillZipBeforeUpload = useCallback<NonNullable<UploadProps['beforeUpload']>>(
     async (file) => {
       try {
-        setSkillZipContentBase64(await readFileAsBase64(file));
+        setSkillZipFile(file);
       } catch {
-        setSkillZipContentBase64('');
+        setSkillZipFile(null);
         ctx.message?.error(t('Failed to read skill ZIP file'));
       }
       return false;
@@ -3448,7 +3436,7 @@ export default function AgentGatewayRunsPage() {
   );
 
   const handleSkillZipRemove = useCallback<NonNullable<UploadProps['onRemove']>>(() => {
-    setSkillZipContentBase64('');
+    setSkillZipFile(null);
     return true;
   }, []);
 

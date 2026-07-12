@@ -66,7 +66,7 @@ export default function AgentGatewayPromptTemplatesPage() {
 
   const templatesRequest = useRequest(async () => {
     const response = await ctx.api.request<PromptTemplateRecord[]>({
-      url: 'agent-gateway/prompt-templates:list',
+      url: 'agentGatewayApi:listPromptTemplates',
       method: 'get',
     });
     return getResponseData(response, []);
@@ -84,7 +84,7 @@ export default function AgentGatewayPromptTemplatesPage() {
 
       if (editingTemplate) {
         const response = await ctx.api.request<PromptTemplateRecord>({
-          url: `agent-gateway/prompt-templates:update/${encodeURIComponent(editingTemplate.id)}`,
+          url: `agentGatewayApi:updatePromptTemplate/${encodeURIComponent(editingTemplate.id)}`,
           method: 'post',
           data: payload,
         });
@@ -92,7 +92,7 @@ export default function AgentGatewayPromptTemplatesPage() {
       }
 
       const response = await ctx.api.request<PromptTemplateRecord>({
-        url: 'agent-gateway/prompt-templates:create',
+        url: 'agentGatewayApi:createPromptTemplate',
         method: 'post',
         data: payload,
       });
@@ -116,7 +116,7 @@ export default function AgentGatewayPromptTemplatesPage() {
   const updateTemplateStatusRequest = useRequest(
     async (template: PromptTemplateRecord, enabled: boolean) => {
       const response = await ctx.api.request<PromptTemplateRecord>({
-        url: `agent-gateway/prompt-templates:update/${encodeURIComponent(template.id)}`,
+        url: `agentGatewayApi:updatePromptTemplate/${encodeURIComponent(template.id)}`,
         method: 'post',
         data: {
           status: enabled ? 'active' : 'disabled',
@@ -142,7 +142,7 @@ export default function AgentGatewayPromptTemplatesPage() {
       }
 
       const response = await ctx.api.request<PromptPreviewResult>({
-        url: 'agent-gateway/prompt-templates:preview',
+        url: 'agentGatewayApi:previewPromptTemplate',
         method: 'post',
         data: {
           templateId: previewTemplate.id,

@@ -310,7 +310,7 @@ describe('agent gateway retention', () => {
       toolCalls: [],
     });
 
-    const runsResponse = await rootAgent.get('/api/agent-gateway/runs:list');
+    const runsResponse = await rootAgent.get('/agentGatewayApi:listRuns');
     expect(runsResponse.status).toBe(200);
     expect(runsResponse.body.data[0]).not.toHaveProperty('observabilityRollupJson');
     expect(runsResponse.body.data).toEqual(
@@ -603,7 +603,7 @@ describe('agent gateway retention', () => {
         },
       ],
     });
-    const runsResponse = await rootAgent.get('/api/agent-gateway/runs:list');
+    const runsResponse = await rootAgent.get('/agentGatewayApi:listRuns');
     expect(runsResponse.status).toBe(200);
     expect(runsResponse.body.data).toEqual(
       expect.arrayContaining([

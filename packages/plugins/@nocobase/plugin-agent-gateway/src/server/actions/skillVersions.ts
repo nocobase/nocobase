@@ -17,13 +17,16 @@ import { Plugin } from '@nocobase/server';
 import { storagePathJoin } from '@nocobase/utils';
 import { Transaction } from 'sequelize';
 
-import { persistSkillZipUpload } from '../../daemon/skillSync';
+import { persistSkillZipUpload, validateSkillZipArchive } from '../../daemon/skillSync';
 import { authenticateNodeToken } from '../security';
+import { consumeCompletedUpload } from './fileUploads';
 import {
-  API_PREFIX,
+  AGENT_GATEWAY_API_RESOURCE,
   JsonRecord,
   ModelRecord,
   getBodyValues,
+  asActionContext,
+  getActionTargetKey,
   getModelString,
   getModelTargetKey,
   getModelValue,
@@ -120,9 +123,9 @@ function getRequestOrigin(ctx: Context) {
 function getArchiveDownloadUrl(ctx: Context, skillVersionId: string, source: JsonRecord) {
   const sha256 = getString(source.sha256);
   const query = sha256 ? `?sha256=${encodeURIComponent(sha256)}` : '';
-  return `${getRequestOrigin(ctx)}${API_PREFIX}/skill-versions/${encodeURIComponent(
+  return `${getRequestOrigin(ctx)}/api/${AGENT_GATEWAY_API_RESOURCE}:downloadSkillVersion/${encodeURIComponent(
     skillVersionId,
-  )}/archive:download${query}`;
+  )}${query}`;
 }
 
 export function serializeSkillVersionSourceForNode(ctx: Context, skillVersionId: string, source: JsonRecord) {
@@ -332,6 +335,42 @@ async function uploadSkillVersionZip(ctx: Context) {
   });
 }
 
+async function createSkillVersionFromUpload(ctx: Context) {
+  await requireManagePermission(ctx);
+  const values = getBodyValues(ctx);
+  const uploadId = getRequiredString(ctx, values.uploadId, 'uploadId');
+  const completedUpload = await consumeCompletedUpload(ctx, uploadId, 'skill-version');
+  try {
+    await validateSkillZipArchive(completedUpload.storagePath);
+  } catch {
+    ctx.throw(400, 'Invalid Skill ZIP archive');
+  }
+
+  const uploadDir = storagePathJoin('agent-gateway', 'skill-uploads');
+  await fs.mkdir(uploadDir, { recursive: true });
+  const archivePath = path.join(uploadDir, `${completedUpload.sha256}.zip`);
+  await fs.copyFile(completedUpload.storagePath, archivePath);
+  await fs.chmod(archivePath, 0o600);
+  const source: JsonRecord = {
+    type: 'zip',
+    archivePath,
+    sha256: completedUpload.sha256,
+    sizeBytes: completedUpload.sizeBytes,
+    uploadedAt: new Date().toISOString(),
+  };
+
+  ctx.body = await ctx.db.sequelize.transaction(async (transaction) => {
+    const result = await upsertSkillVersion(ctx, values, source, transaction);
+    await ctx.db.getRepository('agFileUploads').update({
+      filterByTk: uploadId,
+      values: { status: 'consumed' },
+      transaction,
+    });
+    return result;
+  });
+  await fs.rm(completedUpload.storagePath, { force: true });
+}
+
 function getDateISOString(value: unknown) {
   if (value instanceof Date) {
     return value.toISOString();
@@ -446,34 +485,23 @@ async function downloadSkillVersionArchive(ctx: Context, skillVersionId: string)
 }
 
 export function registerSkillVersionRoutes(plugin: Plugin) {
-  plugin.app.use(
-    async (ctx: Context, next: Next) => {
-      if (!ctx.path.startsWith(API_PREFIX)) {
-        await next();
-        return;
-      }
-
-      const routePath = ctx.path.slice(API_PREFIX.length);
-      if (ctx.method === 'POST' && routePath === '/skill-versions:upload-zip') {
-        await uploadSkillVersionZip(ctx);
-        return;
-      }
-      if (ctx.method === 'GET' && routePath === '/skill-versions:list') {
-        await listSkillVersions(ctx);
-        return;
-      }
-      const downloadMatch = routePath.match(/^\/skill-versions\/([^/]+)\/archive:download$/);
-      if (ctx.method === 'GET' && downloadMatch) {
-        await downloadSkillVersionArchive(ctx, decodeURIComponent(downloadMatch[1]));
-        return;
-      }
-
+  plugin.app.resourceManager.registerActionHandlers({
+    [`${AGENT_GATEWAY_API_RESOURCE}:uploadSkillVersion`]: async (ctx, next) => {
+      await uploadSkillVersionZip(asActionContext(ctx));
       await next();
     },
-    {
-      tag: 'agentGatewaySkillVersionRoutes',
-      after: 'agentGatewaySkillInstallRoutes',
-      before: 'agentGatewayRunLifecycleRoutes',
+    [`${AGENT_GATEWAY_API_RESOURCE}:createSkillVersionFromUpload`]: async (ctx, next) => {
+      await createSkillVersionFromUpload(asActionContext(ctx));
+      await next();
     },
-  );
+    [`${AGENT_GATEWAY_API_RESOURCE}:listSkillVersions`]: async (ctx, next) => {
+      await listSkillVersions(asActionContext(ctx));
+      await next();
+    },
+    [`${AGENT_GATEWAY_API_RESOURCE}:downloadSkillVersion`]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      await downloadSkillVersionArchive(actionCtx, getActionTargetKey(actionCtx));
+      await next();
+    },
+  });
 }

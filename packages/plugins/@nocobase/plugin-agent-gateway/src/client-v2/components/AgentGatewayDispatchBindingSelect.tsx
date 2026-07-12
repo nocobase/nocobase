@@ -71,7 +71,7 @@ export function AgentGatewayDispatchBindingSelect(props: AgentGatewayDispatchBin
   const collectionName = getCollectionNameFromContext(flowSettingsCtx);
   const bindingsRequest = useRequest(async () => {
     const response = await ctx.api.request<DispatchBindingRecord[]>({
-      url: 'agent-gateway/dispatch-bindings:list',
+      url: 'agentGatewayApi:listDispatchBindings',
       method: 'get',
     });
     return getResponseData(response, []);

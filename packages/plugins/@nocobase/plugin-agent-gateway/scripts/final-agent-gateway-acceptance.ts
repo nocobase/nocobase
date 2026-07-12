@@ -475,7 +475,7 @@ async function requestRaw(
 async function runNodeManagementSmoke(args: FinalAcceptanceArgs, token: string) {
   const scenarioId = `agw-final-node-${Date.now()}`;
   const nodeKey = `${scenarioId}-node`;
-  const invitation = await requestJson<JsonRecord>(args.baseUrl, '/api/agent-gateway/node-invitations:create', {
+  const invitation = await requestJson<JsonRecord>(args.baseUrl, '/api/agentGatewayApi:createNodeInvitation', {
     method: 'POST',
     token,
     body: {
@@ -490,7 +490,7 @@ async function runNodeManagementSmoke(args: FinalAcceptanceArgs, token: string) 
     },
   });
   const inviteToken = extractInviteToken(getString(invitation.registerCommand));
-  const registered = await requestJson<JsonRecord>(args.baseUrl, '/api/agent-gateway/nodes:register', {
+  const registered = await requestJson<JsonRecord>(args.baseUrl, '/api/agentGatewayApi:registerNode', {
     method: 'POST',
     body: {
       inviteToken,
@@ -514,7 +514,7 @@ async function runNodeManagementSmoke(args: FinalAcceptanceArgs, token: string) 
 
   const heartbeat = await requestJson<JsonRecord>(
     args.baseUrl,
-    `/api/agent-gateway/nodes/${encodeURIComponent(nodeId)}/heartbeat`,
+    `/api/agentGatewayApi:heartbeatNode/${encodeURIComponent(nodeId)}`,
     {
       method: 'POST',
       nodeToken,
@@ -543,7 +543,7 @@ async function runNodeManagementSmoke(args: FinalAcceptanceArgs, token: string) 
   );
   const profiles = await requestJson<unknown>(
     args.baseUrl,
-    `/api/agent-gateway/nodes/${encodeURIComponent(nodeId)}/profiles:list`,
+    `/api/agentGatewayApi:listNodeProfiles/${encodeURIComponent(nodeId)}`,
     {
       token,
     },
@@ -553,23 +553,19 @@ async function runNodeManagementSmoke(args: FinalAcceptanceArgs, token: string) 
   )
     ? 'available'
     : 'missing';
-  await requestJson<JsonRecord>(args.baseUrl, `/api/agent-gateway/nodes:update/${encodeURIComponent(nodeId)}`, {
+  await requestJson<JsonRecord>(args.baseUrl, `/api/agentGatewayApi:updateNode/${encodeURIComponent(nodeId)}`, {
     method: 'POST',
     token,
     body: {
       status: 'disabled',
     },
   });
-  const disabledClaim = await requestRaw(
-    args.baseUrl,
-    `/api/agent-gateway/nodes/${encodeURIComponent(nodeId)}/runs:claim`,
-    {
-      method: 'POST',
-      nodeToken,
-      body: {},
-    },
-  );
-  await requestJson<JsonRecord>(args.baseUrl, `/api/agent-gateway/nodes:update/${encodeURIComponent(nodeId)}`, {
+  const disabledClaim = await requestRaw(args.baseUrl, `/api/agentGatewayApi:claimRun/${encodeURIComponent(nodeId)}`, {
+    method: 'POST',
+    nodeToken,
+    body: {},
+  });
+  await requestJson<JsonRecord>(args.baseUrl, `/api/agentGatewayApi:updateNode/${encodeURIComponent(nodeId)}`, {
     method: 'POST',
     token,
     body: {

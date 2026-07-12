@@ -208,7 +208,7 @@ async function createAndClaimRun(args: DaemonBindingStressArgs, nodeId: string, 
   const runCode = `agw_terminal_binding_${args.scenarioKey}_${index}_${Date.now()}_${randomUUID().slice(0, 8)}`;
   const created = await requestJson<JsonRecord>(
     args.baseUrl,
-    `/api/agent-gateway/nodes/${encodeURIComponent(nodeId)}/smoke-runs:create`,
+    `/api/agentGatewayApi:createSmokeRun/${encodeURIComponent(nodeId)}`,
     {
       method: 'POST',
       nodeToken,
@@ -229,7 +229,7 @@ async function createAndClaimRun(args: DaemonBindingStressArgs, nodeId: string, 
   const runId = getString(created.runId);
   const claimed = await requestJson<JsonRecord>(
     args.baseUrl,
-    `/api/agent-gateway/nodes/${encodeURIComponent(nodeId)}/runs:claim`,
+    `/api/agentGatewayApi:claimRun/${encodeURIComponent(nodeId)}`,
     {
       method: 'POST',
       nodeToken,

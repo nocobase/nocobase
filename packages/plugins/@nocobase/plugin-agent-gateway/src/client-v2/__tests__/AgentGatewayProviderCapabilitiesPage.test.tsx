@@ -68,7 +68,7 @@ describe('AgentGatewayProviderCapabilitiesPage', () => {
 
   it('renders provider capability and degradation states from profiles and runs', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/nodes:list') {
+      if (config.url === 'agentGatewayApi:listNodes') {
         return {
           data: {
             data: [{ id: 'node-1', nodeKey: 'local-node' }],
@@ -76,7 +76,7 @@ describe('AgentGatewayProviderCapabilitiesPage', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/nodes/node-1/profiles:list') {
+      if (config.url === 'agentGatewayApi:listNodeProfiles/node-1') {
         return {
           data: {
             data: [
@@ -110,7 +110,7 @@ describe('AgentGatewayProviderCapabilitiesPage', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs:list') {
+      if (config.url === 'agentGatewayApi:listRuns') {
         return {
           data: {
             data: [
@@ -203,7 +203,7 @@ describe('AgentGatewayProviderCapabilitiesPage', () => {
     expect(within(genericRow).getByText('Terminate: Allowed')).toBeInTheDocument();
 
     expect(request).toHaveBeenCalledWith({
-      url: 'agent-gateway/nodes:list',
+      url: 'agentGatewayApi:listNodes',
       method: 'get',
     });
   });

@@ -103,7 +103,7 @@ export default function AgentGatewayDispatchBindingsPage() {
 
   const bindingsRequest = useRequest(async () => {
     const response = await ctx.api.request<DispatchBindingRecord[]>({
-      url: 'agent-gateway/dispatch-bindings:list',
+      url: 'agentGatewayApi:listDispatchBindings',
       method: 'get',
     });
     return getResponseData(response, []);
@@ -111,7 +111,7 @@ export default function AgentGatewayDispatchBindingsPage() {
 
   const templatesRequest = useRequest(async () => {
     const response = await ctx.api.request<PromptTemplateOption[]>({
-      url: 'agent-gateway/prompt-templates:list',
+      url: 'agentGatewayApi:listPromptTemplates',
       method: 'get',
     });
     return getResponseData(response, []);
@@ -137,7 +137,7 @@ export default function AgentGatewayDispatchBindingsPage() {
 
       if (editingBinding) {
         const response = await ctx.api.request<DispatchBindingRecord>({
-          url: `agent-gateway/dispatch-bindings:update/${encodeURIComponent(editingBinding.id)}`,
+          url: `agentGatewayApi:updateDispatchBinding/${encodeURIComponent(editingBinding.id)}`,
           method: 'post',
           data: payload,
         });
@@ -145,7 +145,7 @@ export default function AgentGatewayDispatchBindingsPage() {
       }
 
       const response = await ctx.api.request<DispatchBindingRecord>({
-        url: 'agent-gateway/dispatch-bindings:create',
+        url: 'agentGatewayApi:createDispatchBinding',
         method: 'post',
         data: payload,
       });
@@ -169,7 +169,7 @@ export default function AgentGatewayDispatchBindingsPage() {
   const updateBindingStatusRequest = useRequest(
     async (binding: DispatchBindingRecord, enabled: boolean) => {
       const response = await ctx.api.request<DispatchBindingRecord>({
-        url: `agent-gateway/dispatch-bindings:update/${encodeURIComponent(binding.id)}`,
+        url: `agentGatewayApi:updateDispatchBinding/${encodeURIComponent(binding.id)}`,
         method: 'post',
         data: {
           enabled,

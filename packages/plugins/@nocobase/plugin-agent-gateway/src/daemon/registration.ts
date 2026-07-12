@@ -58,7 +58,7 @@ export async function registerDaemonNode(options: RegisterDaemonOptions) {
     claimIntervalSeconds?: number;
   }>({
     method: 'POST',
-    path: '/api/agent-gateway/nodes:register',
+    path: '/api/agentGatewayApi:registerNode',
     body: {
       inviteToken: options.inviteToken,
       nodeKey,
@@ -95,7 +95,7 @@ export async function registerDaemonNode(options: RegisterDaemonOptions) {
 export async function heartbeatDaemonNode(options: HeartbeatDaemonOptions) {
   return await options.requester.request({
     method: 'POST',
-    path: `/api/agent-gateway/nodes/${options.config.nodeId}/heartbeat`,
+    path: `/api/agentGatewayApi:heartbeatNode/${options.config.nodeId}`,
     nodeToken: options.config.nodeToken,
     body: {
       installationId: options.config.installationId,

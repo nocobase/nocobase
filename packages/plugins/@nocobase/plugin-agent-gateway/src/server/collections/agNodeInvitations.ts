@@ -48,26 +48,12 @@ export default defineCollection({
       name: 'expectedNodeKey',
     },
     {
-      type: 'integer',
-      name: 'maxUses',
-      defaultValue: 1,
-    },
-    {
-      type: 'integer',
-      name: 'usedCount',
-      defaultValue: 0,
-    },
-    {
       type: 'date',
       name: 'expiresAt',
     },
     {
       type: 'date',
       name: 'acceptedAt',
-    },
-    {
-      type: 'jsonb',
-      name: 'scopesJson',
     },
     {
       type: 'jsonb',

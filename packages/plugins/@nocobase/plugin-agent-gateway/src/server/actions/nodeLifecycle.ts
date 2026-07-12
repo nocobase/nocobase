@@ -28,9 +28,12 @@ import {
 } from '../security';
 import {
   API_PREFIX,
+  AGENT_GATEWAY_API_RESOURCE,
   JsonRecord,
   ModelRecord,
   getArray,
+  asActionContext,
+  getActionTargetKey,
   getBodyValues,
   getDate,
   getModelJson,
@@ -200,7 +203,6 @@ function serializeNode(node: ModelRecord, now = new Date()) {
 
 function serializeProfile(profile: ModelRecord) {
   const json = getModelJson(profile);
-  delete json.trustedConfigJson;
   return json;
 }
 
@@ -233,10 +235,7 @@ async function createInvitation(ctx: Context) {
       tokenHash: invitationToken.tokenHash,
       tokenLast4: invitationToken.tokenLast4,
       expectedNodeKey: expectedNodeKey || null,
-      maxUses: 1,
-      usedCount: 0,
       expiresAt,
-      scopesJson: getRecord(values.scopesJson || values.scopes),
       metadataJson: getRecord(values.metadataJson || values.metadata),
     },
   })) as ModelRecord;
@@ -340,12 +339,6 @@ async function validateInvitation(ctx: Context, inviteToken: string, nodeKey: st
     ctx.throw(403, 'Invitation has expired');
   }
 
-  const usedCount = Number(getModelValue(invitation, 'usedCount') || 0);
-  const maxUses = Number(getModelValue(invitation, 'maxUses') || 1);
-  if (usedCount >= maxUses) {
-    ctx.throw(403, 'Invitation has already been used');
-  }
-
   const expectedNodeKey = getModelString(invitation, 'expectedNodeKey');
   if (expectedNodeKey && expectedNodeKey !== nodeKey) {
     ctx.throw(403, 'Invitation is not valid for this node');
@@ -399,8 +392,6 @@ async function registerNode(ctx: Context) {
         installationId: installationId || null,
         displayName: getString(values.displayName) || nodeKey,
         status: 'active',
-        endpointUrl: getString(values.endpointUrl) || null,
-        authMode: 'node-token',
         ...toStoredTokenFields(nodeToken, 'nodeTokenHash', 'tokenLast4'),
         capabilitiesJson: getRecord(values.capabilitiesJson || values.capabilities),
         metadataJson,
@@ -463,7 +454,6 @@ async function registerNode(ctx: Context) {
         filterByTk: getModelTargetKey(invitation, 'id'),
         values: {
           status: 'accepted',
-          usedCount: Number(getModelValue(invitation, 'usedCount') || 0) + 1,
           acceptedAt: now,
           nodeId: getModelTargetKey(node, 'id'),
         },
@@ -698,6 +688,41 @@ async function listProfiles(ctx: Context, nodeId: string) {
 }
 
 export function registerNodeLifecycleRoutes(plugin: Plugin) {
+  plugin.app.resourceManager.registerActionHandlers({
+    [`${AGENT_GATEWAY_API_RESOURCE}:createNodeInvitation`]: async (ctx, next) => {
+      await createInvitation(asActionContext(ctx));
+      await next();
+    },
+    [`${AGENT_GATEWAY_API_RESOURCE}:registerNode`]: async (ctx, next) => {
+      await registerNode(asActionContext(ctx));
+      await next();
+    },
+    [`${AGENT_GATEWAY_API_RESOURCE}:heartbeatNode`]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      await heartbeat(actionCtx, getActionTargetKey(actionCtx));
+      await next();
+    },
+    [`${AGENT_GATEWAY_API_RESOURCE}:listNodes`]: async (ctx, next) => {
+      await listNodes(asActionContext(ctx));
+      await next();
+    },
+    [`${AGENT_GATEWAY_API_RESOURCE}:getNode`]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      await getNode(actionCtx, getActionTargetKey(actionCtx));
+      await next();
+    },
+    [`${AGENT_GATEWAY_API_RESOURCE}:updateNode`]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      await updateNode(actionCtx, getActionTargetKey(actionCtx));
+      await next();
+    },
+    [`${AGENT_GATEWAY_API_RESOURCE}:listNodeProfiles`]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      await listProfiles(actionCtx, getActionTargetKey(actionCtx));
+      await next();
+    },
+  });
+
   plugin.app.use(
     async (ctx: Context, next: Next) => {
       if (!ctx.path.startsWith(API_PREFIX)) {
@@ -706,16 +731,6 @@ export function registerNodeLifecycleRoutes(plugin: Plugin) {
       }
 
       const routePath = ctx.path.slice(API_PREFIX.length);
-      const heartbeatMatch = routePath.match(/^\/nodes\/([^/]+)\/heartbeat$/);
-      const getNodeMatch = routePath.match(/^\/nodes:get\/([^/]+)$/);
-      const updateNodeMatch = routePath.match(/^\/nodes:update\/([^/]+)$/);
-      const listProfilesMatch = routePath.match(/^\/nodes\/([^/]+)\/profiles:list$/);
-
-      if (ctx.method === 'POST' && routePath === '/node-invitations:create') {
-        await createInvitation(ctx);
-        return;
-      }
-
       if (ctx.method === 'GET' && routePath === '/bootstrap.sh') {
         await serveBootstrapScript(ctx);
         return;
@@ -723,36 +738,6 @@ export function registerNodeLifecycleRoutes(plugin: Plugin) {
 
       if (ctx.method === 'GET' && routePath === '/daemon-package.tgz') {
         await serveDaemonPackage(ctx);
-        return;
-      }
-
-      if (ctx.method === 'POST' && routePath === '/nodes:register') {
-        await registerNode(ctx);
-        return;
-      }
-
-      if (ctx.method === 'POST' && heartbeatMatch) {
-        await heartbeat(ctx, heartbeatMatch[1]);
-        return;
-      }
-
-      if (ctx.method === 'GET' && routePath === '/nodes:list') {
-        await listNodes(ctx);
-        return;
-      }
-
-      if (ctx.method === 'GET' && getNodeMatch) {
-        await getNode(ctx, getNodeMatch[1]);
-        return;
-      }
-
-      if (ctx.method === 'POST' && updateNodeMatch) {
-        await updateNode(ctx, updateNodeMatch[1]);
-        return;
-      }
-
-      if (ctx.method === 'GET' && listProfilesMatch) {
-        await listProfiles(ctx, listProfilesMatch[1]);
         return;
       }
 

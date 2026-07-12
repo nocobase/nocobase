@@ -98,7 +98,7 @@ describe('agent gateway agent session lifecycle APIs', () => {
   }
 
   async function createRun(runCode: string, values: Record<string, unknown>) {
-    const response = await rootAgent.post('/api/agent-gateway/runs:create').send({
+    const response = await rootAgent.post('/agentGatewayApi:createRun').send({
       runCode,
       sourceType: 'test',
       promptSnapshot: {
@@ -117,7 +117,7 @@ describe('agent gateway agent session lifecycle APIs', () => {
   async function claimRun(runner: Awaited<ReturnType<typeof createRunner>>, runId: unknown) {
     const response = await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${runner.nodeId}/runs:claim`)
+      .post(`/agentGatewayApi:claimRun/${runner.nodeId}`)
       .set('Authorization', `Bearer ${runner.nodeToken}`)
       .send({
         profileKey: runner.profileKey,
@@ -240,7 +240,7 @@ describe('agent gateway agent session lifecycle APIs', () => {
     const nodeAgent = app.agent();
 
     const firstHeartbeatResponse = await nodeAgent
-      .post(`/api/agent-gateway/nodes/${runner.nodeId}/runs/${run.id}/heartbeat`)
+      .post(`/agentGatewayApi:heartbeatRun/${run.id}`)
       .set('Authorization', `Bearer ${runner.nodeToken}`)
       .send({
         claimToken: claim.claimToken,
@@ -251,7 +251,7 @@ describe('agent gateway agent session lifecycle APIs', () => {
     expect(firstHeartbeatResponse.status).toBe(200);
     const firstHeartbeat = getData(firstHeartbeatResponse);
     const secondHeartbeatResponse = await nodeAgent
-      .post(`/api/agent-gateway/nodes/${runner.nodeId}/runs/${run.id}/heartbeat`)
+      .post(`/agentGatewayApi:heartbeatRun/${run.id}`)
       .set('Authorization', `Bearer ${runner.nodeToken}`)
       .send({
         claimToken: claim.claimToken,

@@ -179,7 +179,6 @@ describe('agent gateway Skill version upload APIs', () => {
         nodeKey: 'skill-version-download-node',
         displayName: 'Skill version download node',
         status: 'active',
-        authMode: 'node-token',
         ...toStoredTokenFields(nodeToken, 'nodeTokenHash', 'tokenLast4'),
         capabilitiesJson: {
           maxConcurrency: 1,
@@ -198,7 +197,7 @@ describe('agent gateway Skill version upload APIs', () => {
     const firstContent = createStoredZip({
       'SKILL.md': '# Test Skill v1\n',
     });
-    const firstResponse = await rootAgent.post('/api/agent-gateway/skill-versions:upload-zip').send({
+    const firstResponse = await rootAgent.post('/agentGatewayApi:uploadSkillVersion').send({
       skillKey: 'nb-opencode-ui-batch',
       displayName: 'NocoBase OpenCode UI Batch',
       description: 'Builds NocoBase UI pages through OpenCode.',
@@ -230,9 +229,7 @@ describe('agent gateway Skill version upload APIs', () => {
 
     const source = firstUpload.source as Record<string, unknown>;
     expect(source.archivePath).toBeUndefined();
-    expect(String(source.archiveUrl)).toContain(
-      `/api/agent-gateway/skill-versions/${firstUpload.skillVersionId}/archive:download`,
-    );
+    expect(String(source.archiveUrl)).toContain(`/agentGatewayApi:downloadSkillVersion/${firstUpload.skillVersionId}`);
 
     const skillVersion = await app.db.getRepository('agSkillVersions').findOne({
       filterByTk: firstUpload.skillVersionId,
@@ -253,12 +250,13 @@ describe('agent gateway Skill version upload APIs', () => {
 
     const runner = await createRunner();
     const archiveUrl = new URL(String(source.archiveUrl));
-    const forbiddenDownloadResponse = await app.agent().get(`${archiveUrl.pathname}${archiveUrl.search}`);
+    const archiveRequestPath = `${archiveUrl.pathname.replace(/^\/api/, '')}${archiveUrl.search}`;
+    const forbiddenDownloadResponse = await app.agent().get(archiveRequestPath);
     expect(forbiddenDownloadResponse.status).toBe(401);
 
     const downloadResponse = await app
       .agent()
-      .get(`${archiveUrl.pathname}${archiveUrl.search}`)
+      .get(archiveRequestPath)
       .set('Authorization', `Bearer ${runner.nodeToken}`)
       .buffer(true)
       .parse(binaryParser);
@@ -268,7 +266,7 @@ describe('agent gateway Skill version upload APIs', () => {
     const secondContent = createStoredZip({
       'SKILL.md': '# Test Skill v2\n',
     });
-    const secondResponse = await rootAgent.post('/api/agent-gateway/skill-versions:upload-zip').send({
+    const secondResponse = await rootAgent.post('/agentGatewayApi:uploadSkillVersion').send({
       skillKey: 'nb-opencode-ui-batch',
       versionLabel: '2026-07-01',
       contentBase64: secondContent.toString('base64'),
@@ -298,7 +296,7 @@ describe('agent gateway Skill version upload APIs', () => {
       },
     });
 
-    const listResponse = await rootAgent.get('/api/agent-gateway/skill-versions:list');
+    const listResponse = await rootAgent.get('/agentGatewayApi:listSkillVersions');
     expect(listResponse.status).toBe(200);
     const listedSkillVersions = listResponse.body.data as Array<Record<string, unknown>>;
     expect(listedSkillVersions).toEqual(
@@ -319,6 +317,67 @@ describe('agent gateway Skill version upload APIs', () => {
     );
   });
 
+  it('uploads Skill ZIP files in bounded chunks before creating the version', async () => {
+    const content = createStoredZip({
+      'SKILL.md': '# Chunked Skill\n',
+    });
+    const initResponse = await rootAgent.post('/agentGatewayApi:initFileUpload').send({
+      purpose: 'skill-version',
+      fileName: 'chunked-skill.zip',
+      mimeType: 'application/zip',
+      sizeBytes: content.byteLength,
+    });
+    expect(initResponse.status).toBe(200);
+    const upload = getData(initResponse);
+    const uploadId = String(upload.id);
+    expect(upload.chunkSize).toBe(1024 * 1024);
+
+    const midpoint = Math.floor(content.byteLength / 2);
+    const firstChunk = content.subarray(0, midpoint);
+    const secondChunk = content.subarray(midpoint);
+    const firstAppendResponse = await rootAgent.post(`/agentGatewayApi:appendFileUpload/${uploadId}`).send({
+      offset: 0,
+      contentBase64: firstChunk.toString('base64'),
+    });
+    expect(firstAppendResponse.status).toBe(200);
+    const retryResponse = await rootAgent.post(`/agentGatewayApi:appendFileUpload/${uploadId}`).send({
+      offset: 0,
+      contentBase64: firstChunk.toString('base64'),
+    });
+    expect(retryResponse.status).toBe(200);
+    expect(getData(retryResponse)).toMatchObject({ idempotent: true, receivedBytes: firstChunk.byteLength });
+    const secondAppendResponse = await rootAgent.post(`/agentGatewayApi:appendFileUpload/${uploadId}`).send({
+      offset: firstChunk.byteLength,
+      contentBase64: secondChunk.toString('base64'),
+    });
+    expect(secondAppendResponse.status).toBe(200);
+
+    const completeResponse = await rootAgent.post(`/agentGatewayApi:completeFileUpload/${uploadId}`).send({});
+    expect(completeResponse.status).toBe(200);
+    expect(getData(completeResponse)).toMatchObject({
+      id: uploadId,
+      status: 'completed',
+      sha256: sha256(content),
+    });
+
+    const createResponse = await rootAgent.post('/agentGatewayApi:createSkillVersionFromUpload').send({
+      uploadId,
+      skillKey: 'chunked-skill',
+      displayName: 'Chunked Skill',
+      versionLabel: 'v1',
+    });
+    expect(createResponse.status).toBe(200);
+    expect(getData(createResponse)).toMatchObject({
+      skillKey: 'chunked-skill',
+      versionLabel: 'v1',
+      status: 'active',
+    });
+
+    const storedUpload = await app.db.getRepository('agFileUploads').findOne({ filterByTk: uploadId });
+    expect(storedUpload?.get('status')).toBe('consumed');
+    await expect(fs.stat(String(storedUpload?.get('storagePath')))).rejects.toThrow();
+  });
+
   it('rejects ZIP uploads without Agent Gateway management permission', async () => {
     const memberUser = await app.db.getRepository('users').create({
       values: {
@@ -328,14 +387,14 @@ describe('agent gateway Skill version upload APIs', () => {
     });
     const memberAgent = await app.agent().login(memberUser);
 
-    const response = await memberAgent.post('/api/agent-gateway/skill-versions:upload-zip').send({
+    const response = await memberAgent.post('/agentGatewayApi:uploadSkillVersion').send({
       skillKey: 'blocked-skill',
       versionLabel: 'v1',
       contentBase64: Buffer.from('fake skill zip bytes').toString('base64'),
     });
 
     expect(response.status).toBe(403);
-    expect((await memberAgent.get('/api/agent-gateway/skill-versions:list')).status).toBe(403);
+    expect((await memberAgent.get('/agentGatewayApi:listSkillVersions')).status).toBe(403);
     expect(await app.db.getRepository('agSkillVersions').count()).toBe(0);
   });
 
@@ -343,7 +402,7 @@ describe('agent gateway Skill version upload APIs', () => {
     const archiveContent = createStoredZip({
       'SKILL.md': '# Secure Skill\n',
     });
-    const uploadResponse = await rootAgent.post('/api/agent-gateway/skill-versions:upload-zip').send({
+    const uploadResponse = await rootAgent.post('/agentGatewayApi:uploadSkillVersion').send({
       skillKey: 'secure-download-skill',
       versionLabel: 'v1',
       contentBase64: archiveContent.toString('base64'),
@@ -374,7 +433,7 @@ describe('agent gateway Skill version upload APIs', () => {
     });
     const outsideResponse = await app
       .agent()
-      .get(`${archiveUrl.pathname}${archiveUrl.search}`)
+      .get(`${archiveUrl.pathname.replace(/^\/api/, '')}${archiveUrl.search}`)
       .set('Authorization', `Bearer ${runner.nodeToken}`);
     expect(outsideResponse.status).toBe(404);
     expect(JSON.stringify(outsideResponse.body)).not.toContain(storageDir);
@@ -391,14 +450,14 @@ describe('agent gateway Skill version upload APIs', () => {
     await fs.writeFile(String(originalSource.archivePath), createStoredZip({ 'SKILL.md': '# Tampered Skill\n' }));
     const tamperedResponse = await app
       .agent()
-      .get(`${archiveUrl.pathname}${archiveUrl.search}`)
+      .get(`${archiveUrl.pathname.replace(/^\/api/, '')}${archiveUrl.search}`)
       .set('Authorization', `Bearer ${runner.nodeToken}`);
     expect(tamperedResponse.status).toBe(404);
     expect(JSON.stringify(tamperedResponse.body)).not.toContain(String(originalSource.archivePath));
   });
 
   it('rejects invalid ZIP uploads before creating Skill versions', async () => {
-    const response = await rootAgent.post('/api/agent-gateway/skill-versions:upload-zip').send({
+    const response = await rootAgent.post('/agentGatewayApi:uploadSkillVersion').send({
       skillKey: 'invalid-skill',
       versionLabel: 'v1',
       contentBase64: Buffer.from('fake skill zip bytes').toString('base64'),

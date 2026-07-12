@@ -148,7 +148,7 @@ async function createFreshRun(args: SeedSmokeArgs, nodeId: string, nodeToken: st
   const runCode = `agw_terminal_stream_smoke_${args.scenarioKey}_${Date.now()}_${randomUUID().slice(0, 8)}`;
   const data = await requestJson<JsonRecord>(
     args.baseUrl,
-    `/api/agent-gateway/nodes/${encodeURIComponent(nodeId)}/smoke-runs:create`,
+    `/api/agentGatewayApi:createSmokeRun/${encodeURIComponent(nodeId)}`,
     {
       method: 'POST',
       nodeToken,

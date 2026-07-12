@@ -72,7 +72,7 @@ async function createAuthenticatedArchiveServer(content: Buffer, expectedAuthori
   });
   const address = server.address() as AddressInfo;
   return {
-    url: `http://127.0.0.1:${address.port}/api/agent-gateway/skill-versions/55555555-5555-4555-8555-555555555555/archive:download`,
+    url: `http://127.0.0.1:${address.port}/api/agentGatewayApi:downloadSkillVersion/55555555-5555-4555-8555-555555555555`,
     requests,
     close: async () =>
       await new Promise<void>((resolve, reject) => {

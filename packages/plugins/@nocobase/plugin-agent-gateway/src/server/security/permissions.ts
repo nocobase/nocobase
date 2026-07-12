@@ -51,6 +51,35 @@ export const AGENT_GATEWAY_ACTIONS = {
   cancelRun: 'cancelRun',
 } as const;
 
+export const AGENT_GATEWAY_INTERNAL_COLLECTIONS = [
+  'agNodes',
+  'agNodeInvitations',
+  'agAgentProfiles',
+  'agAgentSessions',
+  'agAgentConversationEvents',
+  'agSkills',
+  'agSkillVersions',
+  'agNodeSkillInstalls',
+  'agTaskTemplates',
+  'agPromptTemplates',
+  'agDispatchBindings',
+  'agRuns',
+  'agRunEvents',
+  'agRunArtifacts',
+  'agRunSnapshots',
+  'agApiCallLogs',
+  'agRunControlRequests',
+  'agTerminalStreamTickets',
+  'agEventIngestSequences',
+  'agExternalRunIdentities',
+  'agExternalImportBatches',
+  'agFileUploads',
+] as const;
+
+const AGENT_GATEWAY_INTERNAL_COLLECTION_ACTIONS = AGENT_GATEWAY_INTERNAL_COLLECTIONS.map(
+  (collectionName) => `${collectionName}:*`,
+);
+
 const RUN_DETAIL_READ_ACTIONS = [
   `${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.readRun}`,
   `${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.readRuns}`,
@@ -83,19 +112,7 @@ export const AGENT_GATEWAY_PERMISSION_DEFINITIONS = [
       `${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.resumeAgentSession}`,
       `${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.messageAgentSession}`,
       ...RUN_CONTROL_ACTIONS,
-      'agNodes:*',
-      'agNodeInvitations:*',
-      'agAgentProfiles:*',
-      'agAgentSessions:*',
-      'agAgentConversationEvents:*',
-      'agSkills:*',
-      'agSkillVersions:*',
-      'agNodeSkillInstalls:*',
-      'agTaskTemplates:*',
-      'agPromptTemplates:*',
-      'agDispatchBindings:*',
-      'agRunControlRequests:*',
-      'agTerminalStreamTickets:*',
+      ...AGENT_GATEWAY_INTERNAL_COLLECTION_ACTIONS,
     ],
   },
   {
@@ -166,6 +183,45 @@ export const AGENT_GATEWAY_PERMISSION_DEFINITIONS = [
   {
     name: AGENT_GATEWAY_PERMISSIONS.cancelRun,
     actions: RUN_CANCEL_ACTIONS,
+  },
+  {
+    name: 'pm.agent-gateway.nodes',
+    actions: [
+      `${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.manage}`,
+      'agNodes:*',
+      'agNodeInvitations:*',
+      'agAgentProfiles:*',
+    ],
+  },
+  {
+    name: 'pm.agent-gateway.skills',
+    actions: [
+      `${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.manage}`,
+      'agSkills:*',
+      'agSkillVersions:*',
+      'agNodeSkillInstalls:*',
+    ],
+  },
+  {
+    name: 'pm.agent-gateway.runs',
+    actions: [
+      `${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.readRuns}`,
+      `${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.readRun}`,
+      'agRuns:list',
+      'agRuns:get',
+    ],
+  },
+  {
+    name: 'pm.agent-gateway.task-templates',
+    actions: [`${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.manage}`, 'agTaskTemplates:*'],
+  },
+  {
+    name: 'pm.agent-gateway.prompt-templates',
+    actions: [`${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.manage}`, 'agPromptTemplates:*'],
+  },
+  {
+    name: 'pm.agent-gateway.dispatch-bindings',
+    actions: [`${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.manage}`, 'agDispatchBindings:*'],
   },
 ] as const;
 

@@ -72,7 +72,7 @@ describe('agent gateway run observability APIs', () => {
   async function registerRunner(): Promise<RegisteredRunner & { inviteToken: string }> {
     nodeCounter += 1;
     const nodeKey = `node-observe-${nodeCounter}`;
-    const invitationResponse = await rootAgent.post('/api/agent-gateway/node-invitations:create').send({
+    const invitationResponse = await rootAgent.post('/agentGatewayApi:createNodeInvitation').send({
       invitationKey: `invite-observe-${nodeCounter}`,
       serverUrl: 'http://127.0.0.1:13000',
       expectedNodeKey: nodeKey,
@@ -86,7 +86,7 @@ describe('agent gateway run observability APIs', () => {
 
     const registerResponse = await app
       .agent()
-      .post('/api/agent-gateway/nodes:register')
+      .post('/agentGatewayApi:registerNode')
       .send({
         inviteToken,
         nodeKey,
@@ -102,7 +102,7 @@ describe('agent gateway run observability APIs', () => {
 
     const heartbeatResponse = await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${nodeId}/heartbeat`)
+      .post(`/agentGatewayApi:heartbeatNode/${nodeId}`)
       .set('Authorization', `Bearer ${nodeToken}`)
       .send({
         capabilities: {
@@ -144,7 +144,7 @@ describe('agent gateway run observability APIs', () => {
   }
 
   async function createAndClaimRun(runner: RegisteredRunner, executionPayload?: Record<string, unknown>) {
-    const runResponse = await rootAgent.post('/api/agent-gateway/runs:create').send({
+    const runResponse = await rootAgent.post('/agentGatewayApi:createRun').send({
       runCode: `run-observe-${Date.now()}-${Math.random()}`,
       sourceType: 'test',
       agentProfileId: runner.profileId,
@@ -166,7 +166,7 @@ describe('agent gateway run observability APIs', () => {
 
     const claimResponse = await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${runner.nodeId}/runs:claim`)
+      .post(`/agentGatewayApi:claimRun/${runner.nodeId}`)
       .set('Authorization', `Bearer ${runner.nodeToken}`)
       .send({
         profileKey: 'fake-observer',
@@ -662,7 +662,7 @@ describe('agent gateway run observability APIs', () => {
     });
     expect(logs.length).toBeGreaterThanOrEqual(4);
 
-    const registerLog = logs.find((log) => log.get('path') === '/api/agent-gateway/nodes:register');
+    const registerLog = logs.find((log) => log.get('path') === '/agentGatewayApi:registerNode');
     expect(registerLog).toBeTruthy();
     expect(registerLog?.get('runId')).toBeFalsy();
 
@@ -883,7 +883,7 @@ describe('agent gateway run observability APIs', () => {
       contentText: 'content-artifact-page-1',
     });
 
-    const otherRunResponse = await rootAgent.post('/api/agent-gateway/runs:create').send({
+    const otherRunResponse = await rootAgent.post('/agentGatewayApi:createRun').send({
       runCode: `run-observe-other-${Date.now()}-${Math.random()}`,
       sourceType: 'test',
       agentProfileId: runner.profileId,
@@ -949,7 +949,7 @@ describe('agent gateway run observability APIs', () => {
 
     const conversationEventFindSpy = vi.spyOn(app.db.getRepository('agAgentConversationEvents'), 'find');
     const listResponse = await rootAgent.get(
-      `/api/agent-gateway/runs:list?status=claimed&nodeId=${runner.nodeId}&agentProfileId=${runner.profileId}`,
+      `/agentGatewayApi:listRuns?status=claimed&nodeId=${runner.nodeId}&agentProfileId=${runner.profileId}`,
     );
     expect(listResponse.status).toBe(200);
     expect(conversationEventFindSpy).not.toHaveBeenCalled();
@@ -962,7 +962,7 @@ describe('agent gateway run observability APIs', () => {
     expect(runs[0]).not.toHaveProperty('executionPayloadJson');
     expect(JSON.stringify(runs[0])).not.toContain('must-not-render');
 
-    const getResponse = await rootAgent.get(`/api/agent-gateway/runs:get/${runId}`);
+    const getResponse = await rootAgent.get(`/agentGatewayApi:getRun/${runId}`);
     expect(getResponse.status).toBe(200);
     expect(getData(getResponse).id).toBe(runId);
     expect(getData(getResponse)).not.toHaveProperty('claimTokenHash');
@@ -1015,7 +1015,7 @@ describe('agent gateway run observability APIs', () => {
     expect(JSON.stringify(apiLogs)).not.toContain('EVENT_READ_SECRET');
 
     const readRunAgent = await createUserAgent('agent-gateway-run-reader', ['agentGateway.readRun']);
-    expect((await readRunAgent.get('/api/agent-gateway/runs:list')).status).toBe(200);
+    expect((await readRunAgent.get('/agentGatewayApi:listRuns')).status).toBe(200);
     const standardRunListResponse = await readRunAgent.get('/agRuns:list');
     expect(standardRunListResponse.status).toBe(200);
     const standardRuns = standardRunListResponse.body.data as Array<Record<string, unknown>>;
@@ -1031,8 +1031,8 @@ describe('agent gateway run observability APIs', () => {
     expect((await readRunAgent.get(`/api/agent-gateway/runs/${runId}/events:list`)).status).toBe(403);
 
     const readRunsAgent = await createUserAgent('agent-gateway-runs-list-reader', ['agentGateway.readRuns']);
-    expect((await readRunsAgent.get('/api/agent-gateway/runs:list')).status).toBe(200);
-    expect((await readRunsAgent.get(`/api/agent-gateway/runs:get/${runId}`)).status).toBe(403);
+    expect((await readRunsAgent.get('/agentGatewayApi:listRuns')).status).toBe(200);
+    expect((await readRunsAgent.get(`/agentGatewayApi:getRun/${runId}`)).status).toBe(403);
     expect((await readRunsAgent.get(`/agRuns:get/${runId}`)).status).toBe(403);
 
     const rawRunsSnippet = registerTestSnippet('agentGateway.test.rawRunsCollection', ['agRuns:list', 'agRuns:get']);
@@ -1136,6 +1136,6 @@ describe('agent gateway run observability APIs', () => {
       },
     });
     const memberAgent = await app.agent().login(memberUser);
-    expect((await memberAgent.get('/api/agent-gateway/runs:list')).status).toBe(403);
+    expect((await memberAgent.get('/agentGatewayApi:listRuns')).status).toBe(403);
   });
 });

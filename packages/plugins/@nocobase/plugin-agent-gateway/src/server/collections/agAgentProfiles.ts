@@ -80,11 +80,6 @@ export default defineCollection({
     },
     {
       type: 'jsonb',
-      name: 'trustedConfigJson',
-      hidden: true,
-    },
-    {
-      type: 'jsonb',
       name: 'metadataJson',
     },
   ],

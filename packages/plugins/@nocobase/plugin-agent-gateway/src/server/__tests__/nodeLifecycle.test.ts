@@ -63,7 +63,7 @@ describe('agent gateway node lifecycle APIs', () => {
   });
 
   async function createInvitation(values: Record<string, unknown> = {}) {
-    const response = await rootAgent.post('/api/agent-gateway/node-invitations:create').send({
+    const response = await rootAgent.post('/agentGatewayApi:createNodeInvitation').send({
       serverUrl: 'https://nocobase.example.test',
       expiresInSeconds: 3600,
       expectedNodeKey: 'node-1',
@@ -77,7 +77,7 @@ describe('agent gateway node lifecycle APIs', () => {
   async function registerNode(inviteToken: string, values: Record<string, unknown> = {}) {
     return await app
       .agent()
-      .post('/api/agent-gateway/nodes:register')
+      .post('/agentGatewayApi:registerNode')
       .send({
         inviteToken,
         nodeKey: 'node-1',
@@ -174,7 +174,6 @@ describe('agent gateway node lifecycle APIs', () => {
       filterByTk: invitation.invitationId,
     });
     expect(acceptedInvitation.get('status')).toBe('accepted');
-    expect(acceptedInvitation.get('usedCount')).toBe(1);
 
     const reusedResponse = await registerNode(inviteToken, {
       nodeKey: 'node-2',
@@ -271,14 +270,14 @@ describe('agent gateway node lifecycle APIs', () => {
 
     const oldTokenHeartbeatResponse = await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${nodeId}/heartbeat`)
+      .post(`/agentGatewayApi:heartbeatNode/${nodeId}`)
       .set('Authorization', `Bearer ${firstNodeToken}`)
       .send({});
     expect(oldTokenHeartbeatResponse.status).toBe(401);
 
     const newTokenHeartbeatResponse = await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${nodeId}/heartbeat`)
+      .post(`/agentGatewayApi:heartbeatNode/${nodeId}`)
       .set('Authorization', `Bearer ${secondNodeToken}`)
       .send({});
     expect(newTokenHeartbeatResponse.status).toBe(200);
@@ -362,7 +361,7 @@ describe('agent gateway node lifecycle APIs', () => {
     expect(secondResponse.status).toBe(200);
     expect(secondRegistration.nodeId).not.toBe(firstRegistration.nodeId);
 
-    const listResponse = await rootAgent.get('/api/agent-gateway/nodes:list');
+    const listResponse = await rootAgent.get('/agentGatewayApi:listNodes');
     expect(listResponse.status).toBe(200);
     const nodes = listResponse.body.data as Array<Record<string, unknown>>;
     expect(nodes).toHaveLength(2);
@@ -418,7 +417,6 @@ describe('agent gateway node lifecycle APIs', () => {
         filterByTk: invitation.invitationId,
       });
       expect(storedInvitation.get('status')).toBe('pending');
-      expect(storedInvitation.get('usedCount')).toBe(0);
     } finally {
       createSpy.mockRestore();
     }
@@ -433,14 +431,14 @@ describe('agent gateway node lifecycle APIs', () => {
 
     const invalidResponse = await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${nodeId}/heartbeat`)
+      .post(`/agentGatewayApi:heartbeatNode/${nodeId}`)
       .set('Authorization', 'Bearer invalid-token')
       .send({});
     expect(invalidResponse.status).toBe(401);
 
     const heartbeatResponse = await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${nodeId}/heartbeat`)
+      .post(`/agentGatewayApi:heartbeatNode/${nodeId}`)
       .set('Authorization', `Bearer ${nodeToken}`)
       .send({
         installationId: '33333333-3333-4333-8333-333333333333',
@@ -530,7 +528,7 @@ describe('agent gateway node lifecycle APIs', () => {
 
     const emptyProfilesResponse = await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${nodeId}/heartbeat`)
+      .post(`/agentGatewayApi:heartbeatNode/${nodeId}`)
       .set('Authorization', `Bearer ${nodeToken}`)
       .send({
         profiles: [],
@@ -553,7 +551,7 @@ describe('agent gateway node lifecycle APIs', () => {
     });
     const disabledResponse = await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${nodeId}/heartbeat`)
+      .post(`/agentGatewayApi:heartbeatNode/${nodeId}`)
       .set('Authorization', `Bearer ${nodeToken}`)
       .send({});
     expect(disabledResponse.status).toBe(403);
@@ -567,7 +565,7 @@ describe('agent gateway node lifecycle APIs', () => {
 
     await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${nodeId}/heartbeat`)
+      .post(`/agentGatewayApi:heartbeatNode/${nodeId}`)
       .set('Authorization', `Bearer ${registration.nodeToken}`)
       .send({
         profiles: [
@@ -581,13 +579,13 @@ describe('agent gateway node lifecycle APIs', () => {
         ],
       });
 
-    const listResponse = await rootAgent.get('/api/agent-gateway/nodes:list');
+    const listResponse = await rootAgent.get('/agentGatewayApi:listNodes');
     expect(listResponse.status).toBe(200);
     const nodes = listResponse.body.data as Array<Record<string, unknown>>;
     expect(nodes[0].id).toBe(nodeId);
     expect(nodes[0]).not.toHaveProperty('nodeTokenHash');
 
-    const profilesResponse = await rootAgent.get(`/api/agent-gateway/nodes/${nodeId}/profiles:list`);
+    const profilesResponse = await rootAgent.get(`/agentGatewayApi:listNodeProfiles/${nodeId}`);
     expect(profilesResponse.status).toBe(200);
     const profiles = profilesResponse.body.data as Array<Record<string, unknown>>;
     expect(profiles[0].profileKey).toBe('fake-success');
@@ -604,7 +602,7 @@ describe('agent gateway node lifecycle APIs', () => {
     const nodeId = String(registration.nodeId);
     const nodeToken = String(registration.nodeToken);
 
-    const disableResponse = await rootAgent.post(`/api/agent-gateway/nodes:update/${nodeId}`).send({
+    const disableResponse = await rootAgent.post(`/agentGatewayApi:updateNode/${nodeId}`).send({
       status: 'disabled',
     });
     const disabledNode = getData(disableResponse);
@@ -615,12 +613,12 @@ describe('agent gateway node lifecycle APIs', () => {
 
     const disabledHeartbeatResponse = await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${nodeId}/heartbeat`)
+      .post(`/agentGatewayApi:heartbeatNode/${nodeId}`)
       .set('Authorization', `Bearer ${nodeToken}`)
       .send({});
     expect(disabledHeartbeatResponse.status).toBe(403);
 
-    const enableResponse = await rootAgent.post(`/api/agent-gateway/nodes:update/${nodeId}`).send({
+    const enableResponse = await rootAgent.post(`/agentGatewayApi:updateNode/${nodeId}`).send({
       status: 'active',
     });
     const enabledNode = getData(enableResponse);
@@ -628,7 +626,7 @@ describe('agent gateway node lifecycle APIs', () => {
     expect(enabledNode.status).toBe('active');
     expect(enabledNode.disabledAt).toBeFalsy();
 
-    const invalidStatusResponse = await rootAgent.post(`/api/agent-gateway/nodes:update/${nodeId}`).send({
+    const invalidStatusResponse = await rootAgent.post(`/agentGatewayApi:updateNode/${nodeId}`).send({
       status: 'pending',
     });
     expect(invalidStatusResponse.status).toBe(400);
@@ -642,7 +640,7 @@ describe('agent gateway node lifecycle APIs', () => {
 
     await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${nodeId}/heartbeat`)
+      .post(`/agentGatewayApi:heartbeatNode/${nodeId}`)
       .set('Authorization', `Bearer ${registration.nodeToken}`)
       .send({
         profiles: [
@@ -666,7 +664,7 @@ describe('agent gateway node lifecycle APIs', () => {
     });
     const managerAgent = await app.agent().login(managerUser);
 
-    const managerListResponse = await managerAgent.get('/api/agent-gateway/nodes:list');
+    const managerListResponse = await managerAgent.get('/agentGatewayApi:listNodes');
     expect(managerListResponse.status).toBe(200);
 
     const dualRoleUser = await app.db.getRepository('users').create({
@@ -694,11 +692,11 @@ describe('agent gateway node lifecycle APIs', () => {
     });
 
     const dualRoleDefaultAgent = await app.agent().login(dualRoleUser);
-    const dualRoleDefaultResponse = await dualRoleDefaultAgent.get('/api/agent-gateway/nodes:list');
+    const dualRoleDefaultResponse = await dualRoleDefaultAgent.get('/agentGatewayApi:listNodes');
     expect(dualRoleDefaultResponse.status).toBe(403);
 
     const dualRoleManagerAgent = await app.agent().login(dualRoleUser, 'agentGatewayManager');
-    const dualRoleManagerResponse = await dualRoleManagerAgent.get('/api/agent-gateway/nodes:list');
+    const dualRoleManagerResponse = await dualRoleManagerAgent.get('/agentGatewayApi:listNodes');
     expect(dualRoleManagerResponse.status).toBe(200);
 
     await app.db.getRepository('roles').create({
@@ -731,11 +729,11 @@ describe('agent gateway node lifecycle APIs', () => {
     });
 
     const departmentDefaultAgent = await app.agent().login(departmentUser);
-    const departmentDefaultResponse = await departmentDefaultAgent.get('/api/agent-gateway/nodes:list');
+    const departmentDefaultResponse = await departmentDefaultAgent.get('/agentGatewayApi:listNodes');
     expect(departmentDefaultResponse.status).toBe(403);
 
     const departmentManagerAgent = await app.agent().login(departmentUser, 'agentGatewayDepartmentManager');
-    const departmentManagerResponse = await departmentManagerAgent.get('/api/agent-gateway/nodes:list');
+    const departmentManagerResponse = await departmentManagerAgent.get('/agentGatewayApi:listNodes');
     expect(departmentManagerResponse.status).toBe(200);
 
     const memberUser = await app.db.getRepository('users').create({
@@ -746,23 +744,23 @@ describe('agent gateway node lifecycle APIs', () => {
     });
     const memberAgent = await app.agent().login(memberUser);
 
-    const invitationResponse = await memberAgent.post('/api/agent-gateway/node-invitations:create').send({
+    const invitationResponse = await memberAgent.post('/agentGatewayApi:createNodeInvitation').send({
       serverUrl: 'https://nocobase.example.test',
     });
     expect(invitationResponse.status).toBe(403);
 
-    const listNodesResponse = await memberAgent.get('/api/agent-gateway/nodes:list');
+    const listNodesResponse = await memberAgent.get('/agentGatewayApi:listNodes');
     expect(listNodesResponse.status).toBe(403);
 
-    const getNodeResponse = await memberAgent.get(`/api/agent-gateway/nodes:get/${nodeId}`);
+    const getNodeResponse = await memberAgent.get(`/agentGatewayApi:getNode/${nodeId}`);
     expect(getNodeResponse.status).toBe(403);
 
-    const updateNodeResponse = await memberAgent.post(`/api/agent-gateway/nodes:update/${nodeId}`).send({
+    const updateNodeResponse = await memberAgent.post(`/agentGatewayApi:updateNode/${nodeId}`).send({
       status: 'disabled',
     });
     expect(updateNodeResponse.status).toBe(403);
 
-    const profilesResponse = await memberAgent.get(`/api/agent-gateway/nodes/${nodeId}/profiles:list`);
+    const profilesResponse = await memberAgent.get(`/agentGatewayApi:listNodeProfiles/${nodeId}`);
     expect(profilesResponse.status).toBe(403);
   });
 });
