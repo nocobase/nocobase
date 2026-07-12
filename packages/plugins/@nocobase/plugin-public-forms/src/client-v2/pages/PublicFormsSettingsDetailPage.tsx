@@ -90,10 +90,8 @@ function PublicFormPageRenderer(props: { model: FlowModel }) {
   );
 }
 
-export default function PublicFormsSettingsDetailPage() {
-  const params = useParams<{ name?: string }>();
-  const pageUid = params.name;
-
+export function PublicFormsSettingsDetailContent(props: { pageUid?: string }) {
+  const { pageUid } = props;
   return (
     <PublicFormsSettingsDetailView pageUid={pageUid}>
       {(routeModel) => {
@@ -107,4 +105,10 @@ export default function PublicFormsSettingsDetailPage() {
       }}
     </PublicFormsSettingsDetailView>
   );
+}
+
+export default function PublicFormsSettingsDetailPage() {
+  const params = useParams<{ name?: string }>();
+
+  return <PublicFormsSettingsDetailContent pageUid={params.name} />;
 }

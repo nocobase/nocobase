@@ -88,7 +88,7 @@ export const convertAIMessage = ({
   if (aiMessage.response_metadata) {
     values.metadata.response_metadata = aiMessage.response_metadata;
   }
-  const additionalKwargs = sanitizeAdditionalKwargsForToolCalls(aiMessage.additional_kwargs, toolCalls, {
+  const sanitizedToolCalls = sanitizeAdditionalKwargsForToolCalls(aiMessage.additional_kwargs, toolCalls, {
     onDiscard: (info) => {
       aiEmployee.logger?.warn('Discard malformed raw tool calls from AI message', {
         phase: 'convertAIMessage',
@@ -97,9 +97,15 @@ export const convertAIMessage = ({
         ...info,
       });
     },
-  }).additionalKwargs;
+  });
+  const additionalKwargs = sanitizedToolCalls.additionalKwargs;
   if (additionalKwargs) {
     values.metadata.additional_kwargs = additionalKwargs;
+  }
+  if (sanitizedToolCalls.malformedToolCalls?.length) {
+    values.metadata.diagnostics = {
+      malformedToolCalls: sanitizedToolCalls.malformedToolCalls,
+    };
   }
 
   providerInstance.reshapeAIMessage({ aiMessage, values });

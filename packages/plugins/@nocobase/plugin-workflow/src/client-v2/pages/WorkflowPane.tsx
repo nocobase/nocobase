@@ -98,9 +98,26 @@ function WorkflowNoticeTags({ notices }: { notices: WorkflowNotice[] }) {
   );
 }
 
-function WorkflowTitleCell({ notices, title }: { notices: WorkflowNotice[]; title?: React.ReactNode }) {
+function WorkflowTitleCell({
+  maxWidth,
+  notices,
+  title,
+}: {
+  maxWidth: number;
+  notices: WorkflowNotice[];
+  title?: React.ReactNode;
+}) {
   return (
-    <span style={{ overflowWrap: 'anywhere', whiteSpace: 'normal', wordBreak: 'break-word' }}>
+    <span
+      style={{
+        display: 'inline-block',
+        width: 'max-content',
+        maxWidth,
+        overflowWrap: 'anywhere',
+        whiteSpace: 'normal',
+        wordBreak: 'break-word',
+      }}
+    >
       {title}
       {notices.length ? (
         <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: '4px 8px', marginInlineStart: 8 }}>
@@ -194,6 +211,8 @@ function WorkflowPaneInner() {
   const ctx = useFlowContext();
   const { getWorkflowCanvasPath } = useWorkflowRuntimePaths();
   const { token } = theme.useToken();
+  const workflowTitleMaxWidth = token.screenXS - token.paddingXL * 3;
+  const workflowTitleColumnMaxWidth = workflowTitleMaxWidth + token.padding * 2;
   const { modal, message } = App.useApp();
   const resource = ctx.api.resource('workflows');
   const plugin = ctx.app.pm.get(PluginWorkflowClientV2);
@@ -380,9 +399,16 @@ function WorkflowPaneInner() {
       {
         title: t('Title'),
         dataIndex: 'title',
-        width: 520,
+        width: 1,
+        onHeaderCell: () => ({
+          style: {
+            maxWidth: workflowTitleColumnMaxWidth,
+            whiteSpace: 'nowrap',
+          },
+        }),
         onCell: () => ({
           style: {
+            maxWidth: workflowTitleColumnMaxWidth,
             overflowWrap: 'anywhere',
             whiteSpace: 'normal',
             wordBreak: 'break-word',
@@ -393,7 +419,7 @@ function WorkflowPaneInner() {
           const asyncNotices = workflowListNotices[String(record.id)] || [];
           const notices = [...syncNotices, ...asyncNotices];
 
-          return <WorkflowTitleCell title={value} notices={notices} />;
+          return <WorkflowTitleCell title={value} notices={notices} maxWidth={workflowTitleMaxWidth} />;
         },
       },
       {
@@ -461,6 +487,8 @@ function WorkflowPaneInner() {
       resource,
       t,
       triggerLabel,
+      workflowTitleColumnMaxWidth,
+      workflowTitleMaxWidth,
       workflowListNotices,
     ],
   );
@@ -516,7 +544,7 @@ function WorkflowPaneInner() {
           dataSource={data?.records || []}
           rowSelection={{ selectedRowKeys, onChange: setSelectedRowKeys }}
           pagination={{ current: page, pageSize, total: data?.total || 0, onChange: handlePaginationChange }}
-          tableLayout="fixed"
+          tableLayout="auto"
         />
       </div>
     </div>

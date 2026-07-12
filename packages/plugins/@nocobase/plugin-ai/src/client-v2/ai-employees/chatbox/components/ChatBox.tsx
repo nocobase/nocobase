@@ -8,7 +8,7 @@
  */
 
 import React, { useEffect, useRef } from 'react';
-import { Button, Divider, Layout, theme, Tooltip, Typography } from 'antd';
+import { Badge, Button, Divider, Layout, theme, Tooltip, Typography } from 'antd';
 import {
   BugOutlined,
   CloseOutlined,
@@ -25,6 +25,8 @@ import { Sender } from './Sender';
 import { UserPrompt } from './UserPrompt';
 import { useChatBoxActions } from '../hooks/useChatBoxActions';
 import { useChatBoxEffect } from '../hooks/useChatBoxEffect';
+import { useChatConversationActions } from '../hooks/useChatConversationActions';
+import { useWorkflowTasks } from '../hooks/useWorkflowTasks';
 import { useChatBoxStore } from '../stores/chat-box';
 
 const { Header, Footer, Sider } = Layout;
@@ -45,6 +47,9 @@ export const ChatBox: React.FC<{
   const showDebugPanel = useChatBoxStore.use.showDebugPanel();
   const setShowDebugPanel = useChatBoxStore.use.setShowDebugPanel();
   const { startNewConversation } = useChatBoxActions();
+  const { unreadCount: unreadConversationCount } = useChatConversationActions();
+  const { unreadCount: unreadWorkflowTaskCount } = useWorkflowTasks();
+  const unreadCount = unreadConversationCount + unreadWorkflowTaskCount;
   useChatBoxEffect();
 
   useEffect(() => {
@@ -126,15 +131,17 @@ export const ChatBox: React.FC<{
         >
           <div>
             <Tooltip title={t('Conversation list')}>
-              <Button
-                aria-label={t('Conversation list')}
-                icon={showConversations ? <MenuFoldOutlined /> : <MenuUnfoldOutlined />}
-                type="text"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  setShowConversations(!showConversations);
-                }}
-              />
+              <Badge dot={unreadCount > 0} offset={[-4, 4]}>
+                <Button
+                  aria-label={t('Conversation list')}
+                  icon={showConversations ? <MenuFoldOutlined /> : <MenuUnfoldOutlined />}
+                  type="text"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setShowConversations(!showConversations);
+                  }}
+                />
+              </Badge>
             </Tooltip>
           </div>
           <div>

@@ -9,9 +9,9 @@
 
 import { useForm } from '@formily/react';
 import { uid } from '@formily/shared';
+import { useFlowEngine } from '@nocobase/flow-engine';
 import {
   useActionContext,
-  useAPIClient,
   useBlockRequestContext,
   useCollection,
   useDataBlockResource,
@@ -19,42 +19,7 @@ import {
 } from '@nocobase/client';
 import { App as AntdApp } from 'antd';
 import PluginPublicFormsClient from '..';
-
-const initialSchema = (values, formSchema, t) => {
-  return {
-    type: 'void',
-    name: uid(),
-    'x-decorator': 'PublicFormMessageProvider',
-    properties: {
-      form: formSchema,
-      promptMessage: {
-        type: 'void',
-        'x-component': 'h3',
-        'x-component-props': {
-          style: { margin: '10px 0px 10px' },
-          children: '{{ t("Prompt after successful submission",{ns:"public-forms"})}}',
-        },
-      },
-      success: {
-        type: 'void',
-        'x-editable': false,
-        'x-toolbar-props': {
-          draggable: false,
-        },
-        'x-settings': 'blockSettings:publicMarkdown',
-        'x-component': 'Markdown.Void',
-        'x-decorator': 'CardItem',
-        'x-component-props': {
-          content: t('# Submitted successfully!\nThis is a demo text, **supports Markdown syntax**.'),
-        },
-        'x-decorator-props': {
-          name: 'markdown',
-          engine: 'handlebars',
-        },
-      },
-    },
-  };
-};
+import { ensurePublicFormFlowModel } from '../../client-v2/modelTree';
 
 export const useSubmitActionProps = () => {
   const { setVisible } = useActionContext();
@@ -62,8 +27,8 @@ export const useSubmitActionProps = () => {
   const form = useForm();
   const resource = useDataBlockResource();
   const collection = useCollection();
-  const api = useAPIClient();
   const plugin = usePlugin(PluginPublicFormsClient);
+  const flowEngine = useFlowEngine();
   const { service } = useBlockRequestContext();
 
   return {
@@ -75,33 +40,22 @@ export const useSubmitActionProps = () => {
         await resource.update({
           values: {
             ...values,
-            version: 'v1',
+            version: values.version || 'v1',
           },
           filterByTk: values[collection.filterTargetKey],
         });
       } else {
         const key = uid();
-        const uiSchemaCallback = plugin.getFormSchemaByType(values.type);
-        const keys = values.collection.split(':');
-        const collection = keys.pop();
-        const dataSource = keys.pop() || 'main';
-        const schema = initialSchema(
-          values,
-          uiSchemaCallback({
-            collection,
-            dataSource,
-          }),
-          plugin.t.bind(plugin),
-        );
-        schema['x-uid'] = key;
+        const nextRecord = {
+          ...values,
+          key,
+          type: values.type || 'form',
+          version: 'v2',
+        };
         await resource.create({
-          values: {
-            ...values,
-            key,
-            version: 'v1',
-          },
+          values: nextRecord,
         });
-        await api.resource('uiSchemas').insert({ values: schema });
+        await ensurePublicFormFlowModel(flowEngine, nextRecord, plugin.t.bind(plugin));
       }
       form.reset();
       await service.refresh();

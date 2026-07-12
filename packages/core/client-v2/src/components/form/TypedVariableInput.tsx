@@ -121,12 +121,15 @@ function normalizeTypes(types: TypedConstantSpec[]): NormalizedType[] {
   );
 }
 
-function defaultValueFor(type: TypedConstantType): unknown {
+function defaultValueFor(type: TypedConstantType, typedProps: Record<string, unknown> = {}): unknown {
   switch (type) {
     case 'string':
       return '';
-    case 'number':
+    case 'number': {
+      const min = typeof typedProps.min === 'number' ? typedProps.min : undefined;
+      if (min !== undefined && min > 0) return min;
       return 0;
+    }
     case 'boolean':
       return false;
     case 'date': {
@@ -433,7 +436,7 @@ export function TypedVariableInput(props: TypedVariableInputProps) {
       return undefined;
     }
     const firstType = normalizedTypes[0];
-    return firstType ? defaultValueFor(firstType.type) : undefined;
+    return firstType ? defaultValueFor(firstType.type, firstType.props) : undefined;
   }, [defaultToFirstConstantTypeWhenUndefined, normalizedTypes, value, variableOnly]);
   const effectiveValue = value === undefined && defaultedValue !== undefined ? defaultedValue : value;
   const detected = useMemo(() => detectMode(effectiveValue, parseVariablePath), [effectiveValue, parseVariablePath]);
@@ -529,7 +532,8 @@ export function TypedVariableInput(props: TypedVariableInputProps) {
         const targetType = (path[1] as TypedConstantType | undefined) ?? normalizedTypes[0]?.type;
         if (!targetType) return;
         if (detected.mode === targetType) return;
-        onChange?.(defaultValueFor(targetType));
+        const target = normalizedTypes.find(({ type }) => type === targetType);
+        onChange?.(defaultValueFor(targetType, target?.props));
         return;
       }
       const leaf = selectedOptions?.[selectedOptions.length - 1] as SwitcherOption | undefined;
@@ -548,7 +552,7 @@ export function TypedVariableInput(props: TypedVariableInputProps) {
     }
     const first = normalizedTypes[0];
     if (first) {
-      onChange?.(defaultValueFor(first.type));
+      onChange?.(defaultValueFor(first.type, first.props));
       return;
     }
     if (nullable) {
@@ -585,11 +589,11 @@ export function TypedVariableInput(props: TypedVariableInputProps) {
     if (variableOnly) {
       return undefined;
     }
-    if (isNull) {
+    if (isNull && nullable) {
       return [NULL_KEY];
     }
     return [CONST_KEY, constantTypeForRendering];
-  }, [constantTypeForRendering, detected.variablePath, isNull, isVariable, variableOnly]);
+  }, [constantTypeForRendering, detected.variablePath, isNull, isVariable, nullable, variableOnly]);
 
   // Preload a saved variable's label path across lazy levels. `resolveVariableLabels` can only read already-loaded
   // `children`; when a saved reference points below a node whose children are still a lazy thunk (e.g. a relation field
@@ -734,7 +738,7 @@ export function TypedVariableInput(props: TypedVariableInputProps) {
             </div>
           ) : variableOnly ? (
             <Input placeholder={placeholder} readOnly disabled={disabled} style={{ width: '100%' }} />
-          ) : isNull ? (
+          ) : isNull && nullable ? (
             // v1 used the `placeholder` slot (not `value`) so the antd default placeholder colour applies — keeps the
             // field looking visibly empty/inactive rather than holding a real text value.
             <Input placeholder={`<${t('Null')}>`} readOnly disabled={disabled} style={{ width: '100%' }} />

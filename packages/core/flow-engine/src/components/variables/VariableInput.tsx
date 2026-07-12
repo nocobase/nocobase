@@ -329,6 +329,7 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
         ...baseProps,
         onClear: handleClear,
         disabled,
+        allowCustomTagInput: false,
         metaTreeNode: resolvedMetaTreeNode,
         metaTree,
         style: stableProps.style,

@@ -11,9 +11,9 @@ import { describe, expect, it } from 'vitest';
 import { publicFormsSchema } from '../schemas/publicForms';
 
 describe('publicFormsSchema', () => {
-  it('lists v1 public forms and historical unversioned records', () => {
+  it('lists v1, v2, and historical unversioned public forms', () => {
     expect(publicFormsSchema['x-decorator-props']?.params?.filter).toEqual({
-      $or: [{ version: 'v1' }, { 'version.$empty': true }],
+      $or: [{ version: 'v1' }, { version: 'v2' }, { 'version.$empty': true }],
     });
   });
 });

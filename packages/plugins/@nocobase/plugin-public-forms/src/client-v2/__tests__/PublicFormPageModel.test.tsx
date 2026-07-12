@@ -64,4 +64,20 @@ describe('PublicFormPageModel', () => {
 
     expect(model.props.showFlowSettings).toBe(false);
   });
+
+  it('uses the injected public form data source manager outside the v2 layout route', () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ PublicFormPageModel });
+    const model = engine.createModel<PublicFormPageModel>({
+      uid: 'public-form-page',
+      use: 'PublicFormPageModel',
+    });
+    const publicFormDataSourceManager = { key: 'public-form-data-source-manager' };
+
+    model.context.defineProperty('publicFormDataSourceManager', {
+      value: publicFormDataSourceManager,
+    });
+
+    expect(model.context.dataSourceManager).toBe(publicFormDataSourceManager);
+  });
 });

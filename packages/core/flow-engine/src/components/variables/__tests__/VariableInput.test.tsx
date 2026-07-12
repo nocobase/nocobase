@@ -155,6 +155,27 @@ describe('VariableInput', () => {
     expect(selectorButton.className).toContain('ant-btn-primary');
   });
 
+  it('disables custom tag input when rendering a selected variable', async () => {
+    const flowContext = createTestFlowContext();
+    const { container } = render(
+      <TestFlowContextWrapper context={flowContext}>
+        <VariableInput value="{{ ctx.user.name }}" metaTree={() => flowContext.getPropertyMetaTree()} />
+      </TestFlowContextWrapper>,
+    );
+
+    await waitFor(
+      () => {
+        expect(screen.getByText('User/Name')).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
+
+    const selectElement = container.querySelector('.ant-select.variable');
+    expect(selectElement).toBeInTheDocument();
+    expect(selectElement).not.toHaveClass('ant-select-show-search');
+    expect(container.querySelector('.ant-select-selection-search-input')).toHaveAttribute('readonly');
+  });
+
   it('should render FlowContextSelector button', async () => {
     const flowContext = createTestFlowContext();
     render(
