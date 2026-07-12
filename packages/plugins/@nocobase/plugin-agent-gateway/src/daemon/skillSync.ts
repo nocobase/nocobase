@@ -16,6 +16,7 @@ import path from 'path';
 import { spawn } from 'child_process';
 
 import { JsonRecord } from './types';
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiPath } from '../shared/apiContract';
 
 export interface UploadedZipSource {
   type: 'zip';
@@ -571,9 +572,13 @@ function getAuthenticatedArchiveHeaders(
   }
   const archive = new URL(archiveUrl);
   const trustedServer = new URL(trustedArchiveServerUrl);
+  const archivePathPrefix = `${getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.downloadSkillVersion)}/`;
+  const archiveTarget = archive.pathname.slice(archivePathPrefix.length);
   if (
     archive.origin !== trustedServer.origin ||
-    !/^\/api\/agentGatewayApi:downloadSkillVersion\/[^/]+$/.test(archive.pathname)
+    !archive.pathname.startsWith(archivePathPrefix) ||
+    !archiveTarget ||
+    archiveTarget.includes('/')
   ) {
     throw new Error('Authenticated Skill ZIP archive URL must point to the configured NocoBase archive endpoint');
   }

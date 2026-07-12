@@ -203,7 +203,7 @@ describe('agent gateway run terminal APIs', () => {
 
     const updateResponse = await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${runner.nodeId}/runs/${run.id}/terminal:update`)
+      .post(`/agentGatewayApi:updateRunTerminal/${run.id}`)
       .set('Authorization', `Bearer ${runner.nodeToken}`)
       .send(
         leaseValues(claim, {
@@ -223,7 +223,7 @@ describe('agent gateway run terminal APIs', () => {
     });
     expect(storedRun?.get('terminalSessionName')).toBe(sessionName);
 
-    const snapshotResponse = await rootAgent.get(`/api/agent-gateway/runs/${run.id}/terminal:snapshot`);
+    const snapshotResponse = await rootAgent.get(`/agentGatewayApi:getTerminalSnapshot/${run.id}`);
     expect(snapshotResponse.status).toBe(200);
     const snapshot = getData(snapshotResponse);
     expect(snapshot).toMatchObject({
@@ -242,7 +242,7 @@ describe('agent gateway run terminal APIs', () => {
 
     await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${runner.nodeId}/runs/${run.id}/terminal:update`)
+      .post(`/agentGatewayApi:updateRunTerminal/${run.id}`)
       .set('Authorization', `Bearer ${runner.nodeToken}`)
       .send(
         leaseValues(claim, {
@@ -300,7 +300,7 @@ describe('agent gateway run terminal APIs', () => {
       });
     });
 
-    const snapshotResponse = await rootAgent.get(`/api/agent-gateway/runs/${run.id}/terminal:snapshot?lines=3`);
+    const snapshotResponse = await rootAgent.get(`/agentGatewayApi:getTerminalSnapshot/${run.id}?lines=3`);
     expect(snapshotResponse.status).toBe(200);
     const snapshot = getData(snapshotResponse);
     expect(snapshot).toMatchObject({
@@ -329,47 +329,41 @@ describe('agent gateway run terminal APIs', () => {
 
     expect(
       (
-        await cancelOnlyAgent.post(`/api/agent-gateway/runs/${runId}/terminal:send`).send({
+        await cancelOnlyAgent.post(`/agentGatewayApi:sendTerminalInput/${runId}`).send({
           input: 'must-not-write',
         })
       ).status,
     ).toBe(403);
     expect(
       (
-        await rawSnippetAgent.post(`/api/agent-gateway/runs/${runId}/terminal:send`).send({
+        await rawSnippetAgent.post(`/agentGatewayApi:sendTerminalInput/${runId}`).send({
           input: 'must-not-write',
         })
       ).status,
     ).toBe(403);
     expect(
       (
-        await managerAgent.post(`/api/agent-gateway/runs/${runId}/terminal:send`).send({
+        await managerAgent.post(`/agentGatewayApi:sendTerminalInput/${runId}`).send({
           input: 'must-not-write',
         })
       ).status,
     ).toBe(403);
-    expect((await readRunsOnlyAgent.get(`/api/agent-gateway/runs/${runId}/terminal:snapshot`)).status).toBe(403);
-    expect((await readRunsOnlyAgent.post(`/api/agent-gateway/runs/${runId}/terminal:interrupt`).send({})).status).toBe(
-      403,
-    );
-    expect((await readRunsOnlyAgent.post(`/api/agent-gateway/runs/${runId}/terminal:terminate`).send({})).status).toBe(
-      403,
-    );
+    expect((await readRunsOnlyAgent.get(`/agentGatewayApi:getTerminalSnapshot/${runId}`)).status).toBe(403);
+    expect((await readRunsOnlyAgent.post(`/agentGatewayApi:interruptTerminal/${runId}`).send({})).status).toBe(403);
+    expect((await readRunsOnlyAgent.post(`/agentGatewayApi:terminateTerminal/${runId}`).send({})).status).toBe(403);
 
     const runner = await createRunner();
     const { run: controlRun } = await createAndClaimRun(runner);
     expect(
       (
-        await interruptAgent.post(`/api/agent-gateway/runs/${controlRun.id}/terminal:interrupt`).send({
+        await interruptAgent.post(`/agentGatewayApi:interruptTerminal/${controlRun.id}`).send({
           idempotencyKey: 'inactive-interrupt-click',
         })
       ).status,
     ).toBe(409);
-    const terminateResponse = await terminateAgent
-      .post(`/api/agent-gateway/runs/${controlRun.id}/terminal:terminate`)
-      .send({
-        idempotencyKey: 'inactive-terminate-click',
-      });
+    const terminateResponse = await terminateAgent.post(`/agentGatewayApi:terminateTerminal/${controlRun.id}`).send({
+      idempotencyKey: 'inactive-terminate-click',
+    });
     expect(terminateResponse.status).toBe(409);
   });
 
@@ -381,7 +375,7 @@ describe('agent gateway run terminal APIs', () => {
 
     await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${runner.nodeId}/runs/${run.id}/terminal:update`)
+      .post(`/agentGatewayApi:updateRunTerminal/${run.id}`)
       .set('Authorization', `Bearer ${runner.nodeToken}`)
       .send(
         leaseValues(claim, {
@@ -391,27 +385,27 @@ describe('agent gateway run terminal APIs', () => {
         }),
       );
 
-    const snapshotResponse = await rootAgent.get(`/api/agent-gateway/runs/${run.id}/terminal:snapshot`);
+    const snapshotResponse = await rootAgent.get(`/agentGatewayApi:getTerminalSnapshot/${run.id}`);
     expect(snapshotResponse.status).toBe(200);
     const snapshot = getData(snapshotResponse);
     expect(snapshot.available).toBe(false);
     expect(snapshot.output).toBe('');
     expect(snapshot.inputEnabled).toBe(false);
 
-    const sendResponse = await rootAgent.post(`/api/agent-gateway/runs/${run.id}/terminal:send`).send({
+    const sendResponse = await rootAgent.post(`/agentGatewayApi:sendTerminalInput/${run.id}`).send({
       input: 'hello',
       appendEnter: true,
     });
     expect(sendResponse.status).toBe(403);
     expect(JSON.stringify(sendResponse.body)).toContain('TERMINAL_RAW_WRITE_DISABLED');
 
-    const legacyWriteResponse = await rootAgent.post(`/api/agent-gateway/runs/${run.id}/terminal:write`).send({
+    const legacyWriteResponse = await rootAgent.post(`/agentGatewayApi:sendTerminalInput/${run.id}`).send({
       input: 'legacy-write',
     });
     expect(legacyWriteResponse.status).toBe(403);
     expect(JSON.stringify(legacyWriteResponse.body)).toContain('TERMINAL_RAW_WRITE_DISABLED');
 
-    const malformedResponse = await rootAgent.post(`/api/agent-gateway/runs/${run.id}/terminal:send`).send({
+    const malformedResponse = await rootAgent.post(`/agentGatewayApi:sendTerminalInput/${run.id}`).send({
       input: {
         nested: 'must-not-render',
       },
@@ -419,13 +413,13 @@ describe('agent gateway run terminal APIs', () => {
     expect(malformedResponse.status).toBe(403);
     expect(JSON.stringify(malformedResponse.body)).toContain('TERMINAL_RAW_WRITE_DISABLED');
 
-    const oversizedResponse = await rootAgent.post(`/api/agent-gateway/runs/${run.id}/terminal:send`).send({
+    const oversizedResponse = await rootAgent.post(`/agentGatewayApi:sendTerminalInput/${run.id}`).send({
       input: 'x'.repeat(4001),
     });
     expect(oversizedResponse.status).toBe(403);
     expect(JSON.stringify(oversizedResponse.body)).toContain('TERMINAL_RAW_WRITE_DISABLED');
 
-    const terminateResponse = await rootAgent.post(`/api/agent-gateway/runs/${run.id}/terminal:terminate`).send({
+    const terminateResponse = await rootAgent.post(`/agentGatewayApi:terminateTerminal/${run.id}`).send({
       idempotencyKey: 'tmux-terminate-click',
     });
     expect(terminateResponse.status).toBe(200);

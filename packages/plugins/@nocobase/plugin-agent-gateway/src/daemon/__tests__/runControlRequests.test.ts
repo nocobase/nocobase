@@ -16,6 +16,7 @@ import { AgentGatewayDaemonNodeClient } from '../gateway';
 import { runDaemonOnce } from '../runner';
 import { ExecDriverResult } from '../execDriver';
 import { GatewayRequestOptions, GatewayRequester, JsonRecord } from '../types';
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiPath } from '../../shared/apiContract';
 import { AGENT_GATEWAY_TERMINATE_CONTROL_CANCEL_REASON } from '../../shared/runControl';
 import type { TmuxCommandOptions } from '../tmuxTerminal';
 
@@ -61,6 +62,18 @@ function getRequestEvents(call: GatewayRequestOptions | undefined) {
   }
   const events = call.body.events;
   return Array.isArray(events) ? events.filter(isJsonRecord) : [];
+}
+
+const ACTION_PATHS = {
+  claimRun: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.claimRun, ''),
+  heartbeatRun: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatRun, ''),
+  completeRun: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.completeRun, ''),
+  listPendingControlRequests: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.listPendingControlRequests, ''),
+  ackControlRequest: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.ackControlRequest, ''),
+} as const;
+
+function isActionCall(call: GatewayRequestOptions, action: keyof typeof ACTION_PATHS) {
+  return call.path.includes(ACTION_PATHS[action]);
 }
 
 const tmuxMocks = vi.hoisted(() => {
@@ -127,7 +140,7 @@ class ControlRequester implements GatewayRequester {
 
   async request<T extends JsonRecord = JsonRecord>(options: GatewayRequestOptions): Promise<T> {
     this.calls.push(options);
-    if (options.path.endsWith('/runs:claim')) {
+    if (isActionCall(options, 'claimRun')) {
       return {
         claimed: true,
         runId: 'run-control-1',
@@ -145,7 +158,7 @@ class ControlRequester implements GatewayRequester {
         },
       } as T;
     }
-    if (options.path.includes('/control-requests:pending')) {
+    if (isActionCall(options, 'listPendingControlRequests')) {
       expect(options.path).not.toContain('claimToken=');
       if (this.finalAckSucceeded || this.options.disablePendingRequests) {
         return {
@@ -164,7 +177,7 @@ class ControlRequester implements GatewayRequester {
         ],
       } as T;
     }
-    if (options.path.includes('/control-requests/') && options.path.endsWith(':ack')) {
+    if (isActionCall(options, 'ackControlRequest')) {
       const body = options.body as JsonRecord;
       if (body.status === 'delivered') {
         this.deliveredAckAttempts += 1;
@@ -182,7 +195,7 @@ class ControlRequester implements GatewayRequester {
         this.finalAckSucceeded = true;
       }
     }
-    if (options.path.includes('/heartbeat') && options.path.includes('/runs/')) {
+    if (isActionCall(options, 'heartbeatRun')) {
       this.heartbeatAttempts += 1;
       const cancelAfterAttempt = this.options.heartbeatCancelAfterAttempt || 1;
       const cancelRequested =
@@ -277,7 +290,7 @@ describe('agent gateway daemon control requests', () => {
       calls,
       async request<T extends JsonRecord = JsonRecord>(options: GatewayRequestOptions): Promise<T> {
         calls.push(options);
-        if (options.path.endsWith('/runs:claim')) {
+        if (isActionCall(options, 'claimRun')) {
           return {
             claimed: true,
             runId: 'run-terminal-codex-1',
@@ -298,7 +311,7 @@ describe('agent gateway daemon control requests', () => {
             },
           } as T;
         }
-        if (options.path.includes('/heartbeat') && options.path.includes('/runs/')) {
+        if (isActionCall(options, 'heartbeatRun')) {
           return {
             runId: 'run-terminal-codex-1',
             claimToken: 'ag_claim_TERMINAL',
@@ -374,7 +387,7 @@ describe('agent gateway daemon control requests', () => {
       calls,
       async request<T extends JsonRecord = JsonRecord>(options: GatewayRequestOptions): Promise<T> {
         calls.push(options);
-        if (options.path.endsWith('/runs:claim')) {
+        if (isActionCall(options, 'claimRun')) {
           return {
             claimed: true,
             runId: 'run-task-live-1',
@@ -396,7 +409,7 @@ describe('agent gateway daemon control requests', () => {
             },
           } as T;
         }
-        if (options.path.includes('/heartbeat') && options.path.includes('/runs/')) {
+        if (isActionCall(options, 'heartbeatRun')) {
           return {
             runId: 'run-task-live-1',
             claimToken: 'ag_claim_TASK_LIVE',
@@ -456,7 +469,7 @@ describe('agent gateway daemon control requests', () => {
           event.contentText === 'live task output before completion',
       ),
     );
-    const completeCallIndex = requester.calls.findIndex((call) => call.path.endsWith('/complete'));
+    const completeCallIndex = requester.calls.findIndex((call) => isActionCall(call, 'completeRun'));
     expect(liveConversationCallIndex).toBeGreaterThanOrEqual(0);
     expect(completeCallIndex).toBeGreaterThan(liveConversationCallIndex);
   });
@@ -466,7 +479,11 @@ describe('agent gateway daemon control requests', () => {
     expect(result.status).toBe('succeeded');
     expect(tmuxMocks.interruptTmuxSession).toHaveBeenCalledWith('ag-run-run-control-1');
     const ackBodies = requester.calls
-      .filter((call) => call.path.includes('/control-requests/control-interrupt-1:ack'))
+      .filter(
+        (call) =>
+          isActionCall(call, 'ackControlRequest') &&
+          (call.body as JsonRecord | undefined)?.requestId === 'control-interrupt-1',
+      )
       .map((call) => call.body as JsonRecord);
     expect(ackBodies.map((body) => body.status)).toEqual(['delivered', 'succeeded']);
   });
@@ -476,7 +493,11 @@ describe('agent gateway daemon control requests', () => {
     expect(tmuxMocks.interruptTmuxSession).not.toHaveBeenCalled();
     expect(tmuxMocks.terminateTmuxSession).toHaveBeenCalledWith('ag-run-run-control-1');
     const ackBodies = requester.calls
-      .filter((call) => call.path.includes('/control-requests/control-terminate-1:ack'))
+      .filter(
+        (call) =>
+          isActionCall(call, 'ackControlRequest') &&
+          (call.body as JsonRecord | undefined)?.requestId === 'control-terminate-1',
+      )
       .map((call) => call.body as JsonRecord);
     expect(ackBodies.map((body) => body.status)).toEqual(['delivered', 'succeeded']);
   });
@@ -488,14 +509,18 @@ describe('agent gateway daemon control requests', () => {
     });
     const { requester } = await runWithControl('interrupt');
     expect(tmuxMocks.interruptTmuxSession).not.toHaveBeenCalled();
-    expect(requester.calls.some((call) => call.path.includes('/control-requests:pending'))).toBe(false);
+    expect(requester.calls.some((call) => isActionCall(call, 'listPendingControlRequests'))).toBe(false);
   });
 
   it('retries a delivered ack failure before marking the request handled', async () => {
     const { requester } = await runWithControl('interrupt', { failFirstDeliveredAck: true });
     expect(tmuxMocks.interruptTmuxSession).toHaveBeenCalledTimes(1);
     const ackBodies = requester.calls
-      .filter((call) => call.path.includes('/control-requests/control-interrupt-1:ack'))
+      .filter(
+        (call) =>
+          isActionCall(call, 'ackControlRequest') &&
+          (call.body as JsonRecord | undefined)?.requestId === 'control-interrupt-1',
+      )
       .map((call) => call.body as JsonRecord);
     expect(ackBodies.map((body) => body.status)).toEqual(['delivered', 'delivered', 'succeeded']);
   });
@@ -504,7 +529,11 @@ describe('agent gateway daemon control requests', () => {
     const { requester } = await runWithControl('interrupt', { failFirstFinalAck: true });
     expect(tmuxMocks.interruptTmuxSession).toHaveBeenCalledTimes(1);
     const ackBodies = requester.calls
-      .filter((call) => call.path.includes('/control-requests/control-interrupt-1:ack'))
+      .filter(
+        (call) =>
+          isActionCall(call, 'ackControlRequest') &&
+          (call.body as JsonRecord | undefined)?.requestId === 'control-interrupt-1',
+      )
       .map((call) => call.body as JsonRecord);
     expect(ackBodies.map((body) => body.status)).toEqual(['delivered', 'succeeded', 'succeeded']);
   });
@@ -521,7 +550,11 @@ describe('agent gateway daemon control requests', () => {
     const { requester } = await runWithControl('interrupt', { failFinalAckTimes: 2 });
     expect(tmuxMocks.interruptTmuxSession).toHaveBeenCalledTimes(1);
     const ackBodies = requester.calls
-      .filter((call) => call.path.includes('/control-requests/control-interrupt-1:ack'))
+      .filter(
+        (call) =>
+          isActionCall(call, 'ackControlRequest') &&
+          (call.body as JsonRecord | undefined)?.requestId === 'control-interrupt-1',
+      )
       .map((call) => call.body as JsonRecord);
     expect(ackBodies.map((body) => body.status)).toEqual(['delivered', 'succeeded', 'succeeded', 'succeeded']);
   });
@@ -530,7 +563,11 @@ describe('agent gateway daemon control requests', () => {
     const { requester } = await runWithControl('interrupt', { initialStatus: 'delivered' });
     expect(tmuxMocks.interruptTmuxSession).not.toHaveBeenCalled();
     const ackBodies = requester.calls
-      .filter((call) => call.path.includes('/control-requests/control-interrupt-1:ack'))
+      .filter(
+        (call) =>
+          isActionCall(call, 'ackControlRequest') &&
+          (call.body as JsonRecord | undefined)?.requestId === 'control-interrupt-1',
+      )
       .map((call) => call.body as JsonRecord);
     expect(ackBodies).toHaveLength(1);
     expect(ackBodies[0]).toMatchObject({

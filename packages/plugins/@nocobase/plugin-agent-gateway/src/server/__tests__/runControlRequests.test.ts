@@ -96,7 +96,7 @@ describe('agent gateway run control requests', () => {
       .slice(0, 32)}`;
     const updateResponse = await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${runner.nodeId}/runs/${runId}/terminal:update`)
+      .post(`/agentGatewayApi:updateRunTerminal/${runId}`)
       .set('Authorization', `Bearer ${runner.nodeToken}`)
       .send(
         leaseBody(claim, {
@@ -149,7 +149,7 @@ describe('agent gateway run control requests', () => {
   async function pending(runner: TestRunner, runId: string, claim: Record<string, unknown>) {
     return await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${runner.nodeId}/runs/${runId}/control-requests:pending`)
+      .post(`/agentGatewayApi:listPendingControlRequests/${runId}`)
       .set('Authorization', `Bearer ${runner.nodeToken}`)
       .send(leaseBody(claim, {}));
   }
@@ -158,7 +158,7 @@ describe('agent gateway run control requests', () => {
     const { runner, runId, claim } = await seedActiveRun();
     const interruptAgent = await loginWithSnippets('agent-gateway-interrupt-user', ['agentGateway.interruptRun']);
 
-    const response = await interruptAgent.post(`/api/agent-gateway/runs/${runId}/terminal:interrupt`).send({
+    const response = await interruptAgent.post(`/agentGatewayApi:interruptTerminal/${runId}`).send({
       reason: 'stop politely',
       idempotencyKey: 'interrupt-click-1',
     });
@@ -182,16 +182,16 @@ describe('agent gateway run control requests', () => {
 
     const earlySucceededResponse = await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${runner.nodeId}/runs/${runId}/control-requests/${request.id}:ack`)
+      .post(`/agentGatewayApi:ackControlRequest/${runId}`)
       .set('Authorization', `Bearer ${runner.nodeToken}`)
-      .send(leaseBody(claim, { status: 'succeeded' }));
+      .send(leaseBody(claim, { requestId: request.id, status: 'succeeded' }));
     expect(earlySucceededResponse.status).toBe(409);
 
     const deliveredResponse = await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${runner.nodeId}/runs/${runId}/control-requests/${request.id}:ack`)
+      .post(`/agentGatewayApi:ackControlRequest/${runId}`)
       .set('Authorization', `Bearer ${runner.nodeToken}`)
-      .send(leaseBody(claim, { status: 'delivered' }));
+      .send(leaseBody(claim, { requestId: request.id, status: 'delivered' }));
     expect(deliveredResponse.status).toBe(200);
     expect(getData(deliveredResponse)).toMatchObject({
       status: 'delivered',
@@ -206,9 +206,9 @@ describe('agent gateway run control requests', () => {
     expect(deliveredEvent).toBeTruthy();
     const duplicateDeliveredResponse = await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${runner.nodeId}/runs/${runId}/control-requests/${request.id}:ack`)
+      .post(`/agentGatewayApi:ackControlRequest/${runId}`)
       .set('Authorization', `Bearer ${runner.nodeToken}`)
-      .send(leaseBody(claim, { status: 'delivered' }));
+      .send(leaseBody(claim, { requestId: request.id, status: 'delivered' }));
     expect(duplicateDeliveredResponse.status).toBe(200);
     expect(
       await app.db.getRepository('agRunEvents').count({
@@ -228,28 +228,28 @@ describe('agent gateway run control requests', () => {
 
     const succeededResponse = await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${runner.nodeId}/runs/${runId}/control-requests/${request.id}:ack`)
+      .post(`/agentGatewayApi:ackControlRequest/${runId}`)
       .set('Authorization', `Bearer ${runner.nodeToken}`)
-      .send(leaseBody(claim, { status: 'succeeded', resultMessage: 'sent C-c' }));
+      .send(leaseBody(claim, { requestId: request.id, status: 'succeeded', resultMessage: 'sent C-c' }));
     expect(succeededResponse.status).toBe(200);
     expect(getData(succeededResponse)).toMatchObject({
       status: 'succeeded',
     });
     const acceptedAfterFinalResponse = await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${runner.nodeId}/runs/${runId}/control-requests/${request.id}:ack`)
+      .post(`/agentGatewayApi:ackControlRequest/${runId}`)
       .set('Authorization', `Bearer ${runner.nodeToken}`)
-      .send(leaseBody(claim, { status: 'accepted' }));
+      .send(leaseBody(claim, { requestId: request.id, status: 'accepted' }));
     expect(acceptedAfterFinalResponse.status).toBe(400);
     const duplicateSucceededResponse = await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${runner.nodeId}/runs/${runId}/control-requests/${request.id}:ack`)
+      .post(`/agentGatewayApi:ackControlRequest/${runId}`)
       .set('Authorization', `Bearer ${runner.nodeToken}`)
-      .send(leaseBody(claim, { status: 'succeeded' }));
+      .send(leaseBody(claim, { requestId: request.id, status: 'succeeded' }));
     expect(duplicateSucceededResponse.status).toBe(200);
 
     const statusResponse = await interruptAgent.get(
-      `/api/agent-gateway/runs/${runId}/control-requests/${request.id}:get`,
+      `/agentGatewayApi:getControlRequestStatus/${runId}?requestId=${request.id}`,
     );
     expect(statusResponse.status).toBe(200);
     expect(getData(statusResponse)).toMatchObject({
@@ -261,7 +261,8 @@ describe('agent gateway run control requests', () => {
       'agentGateway.interruptRun',
     ]);
     expect(
-      (await otherInterruptAgent.get(`/api/agent-gateway/runs/${runId}/control-requests/${request.id}:get`)).status,
+      (await otherInterruptAgent.get(`/agentGatewayApi:getControlRequestStatus/${runId}?requestId=${request.id}`))
+        .status,
     ).toBe(404);
   });
 
@@ -269,7 +270,7 @@ describe('agent gateway run control requests', () => {
     const { runner, runId, claim } = await seedActiveRun();
     const interruptAgent = await loginWithSnippets('agent-gateway-interrupt-finished', ['agentGateway.interruptRun']);
 
-    const controlResponse = await interruptAgent.post(`/api/agent-gateway/runs/${runId}/terminal:interrupt`).send({
+    const controlResponse = await interruptAgent.post(`/agentGatewayApi:interruptTerminal/${runId}`).send({
       idempotencyKey: 'interrupt-before-finish',
     });
     expect(controlResponse.status).toBe(200);
@@ -321,7 +322,7 @@ describe('agent gateway run control requests', () => {
     const { runner, runId, claim } = await seedActiveRun();
     const interruptAgent = await loginWithSnippets('agent-gateway-interrupt-expired', ['agentGateway.interruptRun']);
 
-    const controlResponse = await interruptAgent.post(`/api/agent-gateway/runs/${runId}/terminal:interrupt`).send({
+    const controlResponse = await interruptAgent.post(`/agentGatewayApi:interruptTerminal/${runId}`).send({
       idempotencyKey: 'interrupt-before-expire',
     });
     expect(controlResponse.status).toBe(200);
@@ -329,9 +330,9 @@ describe('agent gateway run control requests', () => {
 
     const deliveredResponse = await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${runner.nodeId}/runs/${runId}/control-requests/${controlRequestId}:ack`)
+      .post(`/agentGatewayApi:ackControlRequest/${runId}`)
       .set('Authorization', `Bearer ${runner.nodeToken}`)
-      .send(leaseBody(claim, { status: 'delivered' }));
+      .send(leaseBody(claim, { requestId: controlRequestId, status: 'delivered' }));
     expect(deliveredResponse.status).toBe(200);
 
     await app.db.getRepository('agRuns').update({
@@ -427,10 +428,10 @@ describe('agent gateway run control requests', () => {
     const { runId } = await seedActiveRun();
     const interruptAgent = await loginWithSnippets('agent-gateway-interrupt-dedupe', ['agentGateway.interruptRun']);
 
-    const first = await interruptAgent.post(`/api/agent-gateway/runs/${runId}/terminal:interrupt`).send({
+    const first = await interruptAgent.post(`/agentGatewayApi:interruptTerminal/${runId}`).send({
       idempotencyKey: 'same-interrupt',
     });
-    const second = await interruptAgent.post(`/api/agent-gateway/runs/${runId}/terminal:interrupt`).send({
+    const second = await interruptAgent.post(`/agentGatewayApi:interruptTerminal/${runId}`).send({
       idempotencyKey: 'same-interrupt',
     });
     expect(first.status).toBe(200);
@@ -456,7 +457,7 @@ describe('agent gateway run control requests', () => {
       },
     });
 
-    const response = await interruptAgent.post(`/api/agent-gateway/runs/${runId}/terminal:interrupt`).send({
+    const response = await interruptAgent.post(`/agentGatewayApi:interruptTerminal/${runId}`).send({
       idempotencyKey: 'fresh-inactive-interrupt',
     });
     expect(response.status).toBe(409);
@@ -472,12 +473,8 @@ describe('agent gateway run control requests', () => {
       'agentGateway.terminateRun',
     ]);
 
-    expect((await interruptAgent.post(`/api/agent-gateway/runs/${runId}/terminal:interrupt`).send({})).status).toBe(
-      400,
-    );
-    expect((await terminateAgent.post(`/api/agent-gateway/runs/${runId}/terminal:terminate`).send({})).status).toBe(
-      400,
-    );
+    expect((await interruptAgent.post(`/agentGatewayApi:interruptTerminal/${runId}`).send({})).status).toBe(400);
+    expect((await terminateAgent.post(`/agentGatewayApi:terminateTerminal/${runId}`).send({})).status).toBe(400);
     expect(await app.db.getRepository('agRunControlRequests').count({ filter: { runId } })).toBe(0);
   });
 
@@ -485,7 +482,7 @@ describe('agent gateway run control requests', () => {
     const { runId } = await seedActiveRun();
     const interruptAgent = await loginWithSnippets('agent-gateway-interrupt-large-key', ['agentGateway.interruptRun']);
 
-    const response = await interruptAgent.post(`/api/agent-gateway/runs/${runId}/terminal:interrupt`).send({
+    const response = await interruptAgent.post(`/agentGatewayApi:interruptTerminal/${runId}`).send({
       idempotencyKey: 'x'.repeat(201),
     });
 
@@ -501,16 +498,14 @@ describe('agent gateway run control requests', () => {
       },
     });
     const listOnlyAgent = await loginWithSnippets('agent-gateway-list-only-control', ['agentGateway.readRuns']);
-    const unauthorizedResponse = await listOnlyAgent
-      .post(`/api/agent-gateway/runs/${runId}/terminal:interrupt`)
-      .send({});
+    const unauthorizedResponse = await listOnlyAgent.post(`/agentGatewayApi:interruptTerminal/${runId}`).send({});
     expect(unauthorizedResponse.status).toBe(403);
     expect(JSON.stringify(unauthorizedResponse.body)).toContain('AGENT_GATEWAY_PERMISSION_DENIED');
 
     const interruptAgent = await loginWithSnippets('agent-gateway-interrupt-disabled', ['agentGateway.interruptRun']);
     expect(
       (
-        await interruptAgent.post(`/api/agent-gateway/runs/${runId}/terminal:interrupt`).send({
+        await interruptAgent.post(`/agentGatewayApi:interruptTerminal/${runId}`).send({
           idempotencyKey: 'disabled-interrupt-click',
         })
       ).status,
@@ -536,7 +531,7 @@ describe('agent gateway run control requests', () => {
     });
 
     const terminateAgent = await loginWithSnippets('agent-gateway-terminate-no-session', ['agentGateway.terminateRun']);
-    const response = await terminateAgent.post(`/api/agent-gateway/runs/${runId}/terminal:terminate`).send({
+    const response = await terminateAgent.post(`/agentGatewayApi:terminateTerminal/${runId}`).send({
       idempotencyKey: 'no-session-terminate',
     });
     expect(response.status).toBe(200);
@@ -579,7 +574,7 @@ describe('agent gateway run control requests', () => {
     const terminateAgent = await loginWithSnippets('agent-gateway-terminate-unspecified-runner', [
       'agentGateway.terminateRun',
     ]);
-    const response = await terminateAgent.post(`/api/agent-gateway/runs/${runId}/terminal:terminate`).send({
+    const response = await terminateAgent.post(`/agentGatewayApi:terminateTerminal/${runId}`).send({
       idempotencyKey: 'unspecified-runner-terminate',
     });
     expect(response.status).toBe(409);
@@ -601,7 +596,7 @@ describe('agent gateway run control requests', () => {
     const terminateAgent = await loginWithSnippets('agent-gateway-terminate-runner-disabled', [
       'agentGateway.terminateRun',
     ]);
-    const response = await terminateAgent.post(`/api/agent-gateway/runs/${runId}/terminal:terminate`).send({
+    const response = await terminateAgent.post(`/agentGatewayApi:terminateTerminal/${runId}`).send({
       idempotencyKey: 'runner-disabled-terminate',
     });
     expect(response.status).toBe(409);
@@ -614,7 +609,7 @@ describe('agent gateway run control requests', () => {
       'agentGateway.terminateRun',
     ]);
 
-    const response = await terminateAgent.post(`/api/agent-gateway/runs/${runId}/terminal:terminate`).send({
+    const response = await terminateAgent.post(`/agentGatewayApi:terminateTerminal/${runId}`).send({
       idempotencyKey: 'terminate-heartbeat-race',
     });
     expect(response.status).toBe(200);
@@ -634,7 +629,7 @@ describe('agent gateway run control requests', () => {
   it('enqueues terminate, marks the run canceling, and accepts daemon ack from a canceling lease', async () => {
     const { runner, runId, claim } = await seedActiveRun();
     const terminateAgent = await loginWithSnippets('agent-gateway-terminate-user', ['agentGateway.terminateRun']);
-    const response = await terminateAgent.post(`/api/agent-gateway/runs/${runId}/terminal:terminate`).send({
+    const response = await terminateAgent.post(`/agentGatewayApi:terminateTerminal/${runId}`).send({
       idempotencyKey: 'terminate-click-1',
     });
     expect(response.status).toBe(200);
@@ -652,7 +647,7 @@ describe('agent gateway run control requests', () => {
     expect(run.get('cancelRequested')).toBe(true);
     expect(run.get('status')).toBe('canceling');
 
-    const duplicate = await terminateAgent.post(`/api/agent-gateway/runs/${runId}/terminal:terminate`).send({
+    const duplicate = await terminateAgent.post(`/agentGatewayApi:terminateTerminal/${runId}`).send({
       idempotencyKey: 'terminate-click-1',
     });
     expect(duplicate.status).toBe(200);
@@ -676,16 +671,16 @@ describe('agent gateway run control requests', () => {
 
     const deliveredResponse = await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${runner.nodeId}/runs/${runId}/control-requests/${request.id}:ack`)
+      .post(`/agentGatewayApi:ackControlRequest/${runId}`)
       .set('Authorization', `Bearer ${runner.nodeToken}`)
-      .send(leaseBody(claim, { status: 'delivered' }));
+      .send(leaseBody(claim, { requestId: request.id, status: 'delivered' }));
     expect(deliveredResponse.status).toBe(200);
 
     const ackResponse = await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${runner.nodeId}/runs/${runId}/control-requests/${request.id}:ack`)
+      .post(`/agentGatewayApi:ackControlRequest/${runId}`)
       .set('Authorization', `Bearer ${runner.nodeToken}`)
-      .send(leaseBody(claim, { status: 'failed', resultMessage: 'tmux missing' }));
+      .send(leaseBody(claim, { requestId: request.id, status: 'failed', resultMessage: 'tmux missing' }));
     expect(ackResponse.status).toBe(200);
     expect(getData(ackResponse)).toMatchObject({
       status: 'failed',
@@ -697,7 +692,7 @@ describe('agent gateway run control requests', () => {
     const interruptAgent = await loginWithSnippets('agent-gateway-interrupt-lease-check', [
       'agentGateway.interruptRun',
     ]);
-    const controlResponse = await interruptAgent.post(`/api/agent-gateway/runs/${runId}/terminal:interrupt`).send({
+    const controlResponse = await interruptAgent.post(`/agentGatewayApi:interruptTerminal/${runId}`).send({
       idempotencyKey: 'lease-check-interrupt',
     });
     expect(controlResponse.status).toBe(200);
@@ -706,18 +701,14 @@ describe('agent gateway run control requests', () => {
     const request = (getData(pendingResponse).requests as Record<string, unknown>[])[0];
 
     expect(
-      (
-        await app
-          .agent()
-          .post(`/api/agent-gateway/nodes/${runner.nodeId}/runs/${runId}/control-requests:pending`)
-          .send(leaseBody(claim, {}))
-      ).status,
+      (await app.agent().post(`/agentGatewayApi:listPendingControlRequests/${runId}`).send(leaseBody(claim, {})))
+        .status,
     ).toBe(401);
     expect(
       (
         await app
           .agent()
-          .post(`/api/agent-gateway/nodes/${runner.nodeId}/runs/${runId}/control-requests:pending`)
+          .post(`/agentGatewayApi:listPendingControlRequests/${runId}`)
           .set('Authorization', `Bearer ${runner.nodeToken}`)
           .send(leaseBody({ ...claim, leaseVersion: 999 }, {}))
       ).status,
@@ -726,9 +717,9 @@ describe('agent gateway run control requests', () => {
       (
         await app
           .agent()
-          .post(`/api/agent-gateway/nodes/${runner.nodeId}/runs/${runId}/control-requests/${request.id}:ack`)
+          .post(`/agentGatewayApi:ackControlRequest/${runId}`)
           .set('Authorization', `Bearer ${runner.nodeToken}`)
-          .send(leaseBody({ ...claim, leaseVersion: 999 }, { status: 'delivered' }))
+          .send(leaseBody({ ...claim, leaseVersion: 999 }, { requestId: request.id, status: 'delivered' }))
       ).status,
     ).toBe(409);
   });

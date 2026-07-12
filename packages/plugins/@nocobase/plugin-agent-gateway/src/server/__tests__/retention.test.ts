@@ -292,7 +292,7 @@ describe('agent gateway retention', () => {
       },
     });
 
-    const statsResponse = await rootAgent.get('/api/agent-gateway/tool-calls:stats').query({ limit: 10 });
+    const statsResponse = await rootAgent.get('/agentGatewayApi:listToolCallStats').query({ limit: 10 });
     expect(statsResponse.status).toBe(200);
     expect(statsResponse.body.data).toMatchObject({
       runCount: 1,
@@ -408,7 +408,7 @@ describe('agent gateway retention', () => {
     const appendBatchKey = 'incremental';
     const appendSource = getExternalConversationSource('codex', 'codex-jsonl', appendBatchKey, 0);
     const externalRunKey = `retention-incremental-${randomUUID()}`;
-    const initialResponse = await rootAgent.post('/api/agent-gateway/external-runs:import').send({
+    const initialResponse = await rootAgent.post('/agentGatewayApi:importExternalRun').send({
       externalRunKey,
       provider: 'codex',
       status: 'succeeded',
@@ -522,7 +522,7 @@ describe('agent gateway retention', () => {
       event.set('createdAt', sharedEventDate);
     });
 
-    const appendResponse = await rootAgent.post(`/api/agent-gateway/external-runs/${runId}/observations:append`).send({
+    const appendResponse = await rootAgent.post(`/agentGatewayApi:appendExternalRunObservations/${runId}`).send({
       batchKey: appendBatchKey,
       provider: 'codex',
       logs: [
@@ -588,7 +588,7 @@ describe('agent gateway retention', () => {
     ]);
     expect(appendedEventIds.every((eventId) => eventId < historicalEventId)).toBe(true);
 
-    const statsResponse = await rootAgent.get('/api/agent-gateway/tool-calls:stats').query({ limit: 10 });
+    const statsResponse = await rootAgent.get('/agentGatewayApi:listToolCallStats').query({ limit: 10 });
     expect(statsResponse.status).toBe(200);
     expect(statsResponse.body.data).toMatchObject({
       toolCallCount: 2,
@@ -652,7 +652,7 @@ describe('agent gateway retention', () => {
     const now = new Date('2026-07-11T23:00:00.000Z');
     const oldDate = new Date('2025-01-01T00:00:00.000Z');
     const externalRunKey = `retention-cross-batch-tool-${randomUUID()}`;
-    const initialResponse = await rootAgent.post('/api/agent-gateway/external-runs:import').send({
+    const initialResponse = await rootAgent.post('/agentGatewayApi:importExternalRun').send({
       externalRunKey,
       provider: 'codex',
       status: 'succeeded',
@@ -705,7 +705,7 @@ describe('agent gateway retention', () => {
     const retention = await cleanupAgentGatewayRetention({ db: app.db }, { now });
     expect(retention.deletedByCollection.agAgentConversationEvents).toBe(events.length);
 
-    const appendResponse = await rootAgent.post(`/api/agent-gateway/external-runs/${runId}/observations:append`).send({
+    const appendResponse = await rootAgent.post(`/agentGatewayApi:appendExternalRunObservations/${runId}`).send({
       batchKey: 'complete-after-retention',
       provider: 'codex',
       status: 'succeeded',

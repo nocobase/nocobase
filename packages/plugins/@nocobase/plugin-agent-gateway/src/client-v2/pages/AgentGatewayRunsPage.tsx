@@ -47,6 +47,7 @@ import type { TableProps, UploadProps } from 'antd';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import type { CSSMotionProps } from 'rc-motion';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiUrl } from '../../shared/apiContract';
 import {
   type AgentCapabilityKey,
   isAgentCapabilitySupported,
@@ -145,6 +146,17 @@ import {
   RunTokenUsageSummary,
 } from './runs/RunSummaryPanels';
 import { formatRunDuration, getRunTaskTitle, isLiveRunStatus } from './runs/runFormatters';
+import {
+  getRunIdFromLocationSearch,
+  getSkillVersionIdFromLocationSearch,
+  getTaskTemplateIdFromLocationSearch,
+  replaceRunIdInLocationSearch,
+  replaceSkillVersionIdInLocationSearch,
+  replaceTaskTemplateIdInLocationSearch,
+  useInitialRunDetailQuery,
+  useInitialSkillVersionDetailQuery,
+  useInitialTaskTemplateDetailQuery,
+} from './runs/runLocation';
 
 const RUN_STATUS_OPTIONS = [
   'queued',
@@ -175,9 +187,6 @@ const DANGLING_TOOL_LIVE_RUN_STATUSES = new Set<string>([
   IMPORTING_RUN_STATUS,
   ...ACTIVE_RUN_STATUS_VALUES,
 ]);
-const RUN_DETAIL_QUERY_PARAM = 'runId';
-const TASK_TEMPLATE_DETAIL_QUERY_PARAM = 'templateId';
-const SKILL_VERSION_DETAIL_QUERY_PARAM = 'skillVersionId';
 const DEFAULT_RUNS_PAGE_SIZE = 20;
 const DETAIL_PAGE_SIZE_OPTIONS = ['10', '20', '50', '100'];
 const TASK_RUN_DRAWER_WIDTH = 1040;
@@ -415,86 +424,6 @@ function getRunColumnSortOrder(runSort: string | undefined, columnKey: string) {
 
 function EmptyInline({ description }: { description: string }) {
   return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={description} />;
-}
-
-function getRunIdFromLocationSearch() {
-  if (typeof window === 'undefined') {
-    return undefined;
-  }
-  return new URLSearchParams(window.location.search).get(RUN_DETAIL_QUERY_PARAM) || undefined;
-}
-
-function replaceRunIdInLocationSearch(runId?: string) {
-  if (typeof window === 'undefined') {
-    return;
-  }
-  const params = new URLSearchParams(window.location.search);
-  if (runId) {
-    params.set(RUN_DETAIL_QUERY_PARAM, runId);
-  } else {
-    params.delete(RUN_DETAIL_QUERY_PARAM);
-  }
-  const search = params.toString();
-  const nextUrl = `${window.location.pathname}${search ? `?${search}` : ''}${window.location.hash}`;
-  window.history.replaceState(window.history.state, '', nextUrl);
-}
-
-function getTaskTemplateIdFromLocationSearch() {
-  if (typeof window === 'undefined') {
-    return undefined;
-  }
-  return new URLSearchParams(window.location.search).get(TASK_TEMPLATE_DETAIL_QUERY_PARAM) || undefined;
-}
-
-function replaceTaskTemplateIdInLocationSearch(templateId?: string) {
-  if (typeof window === 'undefined') {
-    return;
-  }
-  const params = new URLSearchParams(window.location.search);
-  if (templateId) {
-    params.set(TASK_TEMPLATE_DETAIL_QUERY_PARAM, templateId);
-    params.delete(SKILL_VERSION_DETAIL_QUERY_PARAM);
-  } else {
-    params.delete(TASK_TEMPLATE_DETAIL_QUERY_PARAM);
-  }
-  const search = params.toString();
-  const nextUrl = `${window.location.pathname}${search ? `?${search}` : ''}${window.location.hash}`;
-  window.history.replaceState(window.history.state, '', nextUrl);
-}
-
-function getSkillVersionIdFromLocationSearch() {
-  if (typeof window === 'undefined') {
-    return undefined;
-  }
-  return new URLSearchParams(window.location.search).get(SKILL_VERSION_DETAIL_QUERY_PARAM) || undefined;
-}
-
-function replaceSkillVersionIdInLocationSearch(skillVersionId?: string) {
-  if (typeof window === 'undefined') {
-    return;
-  }
-  const params = new URLSearchParams(window.location.search);
-  if (skillVersionId) {
-    params.set(SKILL_VERSION_DETAIL_QUERY_PARAM, skillVersionId);
-    params.delete(TASK_TEMPLATE_DETAIL_QUERY_PARAM);
-  } else {
-    params.delete(SKILL_VERSION_DETAIL_QUERY_PARAM);
-  }
-  const search = params.toString();
-  const nextUrl = `${window.location.pathname}${search ? `?${search}` : ''}${window.location.hash}`;
-  window.history.replaceState(window.history.state, '', nextUrl);
-}
-
-function useInitialRunDetailQuery() {
-  return useState(() => getRunIdFromLocationSearch())[0];
-}
-
-function useInitialTaskTemplateDetailQuery() {
-  return useState(() => getTaskTemplateIdFromLocationSearch())[0];
-}
-
-function useInitialSkillVersionDetailQuery() {
-  return useState(() => getSkillVersionIdFromLocationSearch())[0];
 }
 
 function getBuildTaskTemplateSelectOptions(options: BuildRunOptions | undefined) {
@@ -2119,7 +2048,7 @@ export default function AgentGatewayRunsPage() {
   const runsRequest = useRequest(
     async () => {
       const response = await ctx.api.request<RunRecord[]>({
-        url: 'agentGatewayApi:listRuns',
+        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns),
         method: 'get',
         params: {
           ...(runFilters ? { filter: JSON.stringify(runFilters) } : {}),
@@ -2145,7 +2074,7 @@ export default function AgentGatewayRunsPage() {
         return null;
       }
       const response = await ctx.api.request<TaskTemplateDetailRecord>({
-        url: `agentGatewayApi:getTaskTemplate/${encodeURIComponent(selectedTaskTemplateId)}`,
+        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.getTaskTemplate, selectedTaskTemplateId),
         method: 'get',
       });
       return getRequiredResponseData(response, t('Failed to load task template detail'));
@@ -2169,7 +2098,7 @@ export default function AgentGatewayRunsPage() {
         return null;
       }
       const response = await ctx.api.request<SkillVersionDetailRecord[]>({
-        url: 'agentGatewayApi:listSkillVersions',
+        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.listSkillVersions),
         method: 'get',
       });
       const skillVersions = getResponseData(response, []);
@@ -2196,7 +2125,7 @@ export default function AgentGatewayRunsPage() {
   const buildRunOptionsRequest = useRequest(
     async () => {
       const response = await ctx.api.request<BuildRunOptions>({
-        url: 'agentGatewayApi:listRunOptions',
+        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.listRunOptions),
         method: 'get',
       });
       return getResponseData(response, {});
@@ -2234,7 +2163,7 @@ export default function AgentGatewayRunsPage() {
       const artifacts = getTaskArtifactDeclarations(values.artifactDeclarations);
       const artifactRoot = getOptionalFormString(values.artifactRoot);
       const response = await ctx.api.request<CreateBuildRunResult>({
-        url: 'agentGatewayApi:createTaskRun',
+        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.createTaskRun),
         method: 'post',
         data: {
           taskTemplateId: values.taskTemplateId,
@@ -2276,7 +2205,7 @@ export default function AgentGatewayRunsPage() {
   const importExternalRunRequest = useRequest(
     async (values: ExternalRunImportFormValues & { logContent: string }) => {
       const response = await ctx.api.request<ExternalRunImportResult>({
-        url: 'agent-gateway/external-runs:import',
+        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.importExternalRun),
         method: 'post',
         data: {
           provider: values.provider || 'codex',
@@ -2329,7 +2258,7 @@ export default function AgentGatewayRunsPage() {
     async (values: SkillUploadFormValues & { file: File }) => {
       const uploadId = await uploadAgentGatewayFile(ctx.api, values.file, 'skill-version');
       const response = await ctx.api.request<SkillUploadResult>({
-        url: 'agentGatewayApi:createSkillVersionFromUpload',
+        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.createSkillVersionFromUpload),
         method: 'post',
         data: { ...values, file: undefined, uploadId },
       });
@@ -2362,7 +2291,7 @@ export default function AgentGatewayRunsPage() {
       }
 
       const runResponse = await ctx.api.request<RunRecord>({
-        url: `agentGatewayApi:getRun/${encodeURIComponent(selectedRunId)}`,
+        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, selectedRunId),
         method: 'get',
       });
       const run = getRequiredResponseData(runResponse, t('Failed to load run details'));
@@ -2441,7 +2370,7 @@ export default function AgentGatewayRunsPage() {
         } satisfies TerminalSnapshotState;
       }
       const response = await ctx.api.request<TerminalSnapshot | null>({
-        url: `agent-gateway/runs/${encodeURIComponent(requestRunId)}/terminal:snapshot`,
+        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.getTerminalSnapshot, requestRunId),
         method: 'get',
       });
       return {
@@ -2497,7 +2426,7 @@ export default function AgentGatewayRunsPage() {
   const cancelRunRequest = useRequest(
     async (run: RunRecord) => {
       const response = await ctx.api.request<RunRecord>({
-        url: `agentGatewayApi:cancelRun/${encodeURIComponent(run.id)}`,
+        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.cancelRun, run.id),
         method: 'post',
       });
       return getRequiredResponseData(response, t('Failed to cancel run'));
@@ -2521,7 +2450,7 @@ export default function AgentGatewayRunsPage() {
         return null;
       }
       const response = await ctx.api.request<ControlRequestResult>({
-        url: `agent-gateway/runs/${encodeURIComponent(runId)}/terminal:interrupt`,
+        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.interruptTerminal, runId),
         method: 'post',
         data: {
           idempotencyKey: getControlIdempotencyKey('interrupt', runId),
@@ -2568,7 +2497,7 @@ export default function AgentGatewayRunsPage() {
         return null;
       }
       const response = await ctx.api.request<ControlRequestResult>({
-        url: `agent-gateway/runs/${encodeURIComponent(runId)}/terminal:terminate`,
+        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.terminateTerminal, runId),
         method: 'post',
         data: {
           idempotencyKey: getControlIdempotencyKey('terminate', runId),
@@ -2613,10 +2542,11 @@ export default function AgentGatewayRunsPage() {
   const refreshControlRequestStatus = useCallback(
     async (poll: ControlRequestStatusPoll) => {
       const response = await ctx.api.request<ControlRequestResult>({
-        url: `agent-gateway/runs/${encodeURIComponent(poll.runId)}/control-requests/${encodeURIComponent(
-          poll.controlRequestId,
-        )}:get`,
+        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.getControlRequestStatus, poll.runId),
         method: 'get',
+        params: {
+          requestId: poll.controlRequestId,
+        },
       });
       const result = getResponseData(response, {});
       if (!result.controlRequestId || result.controlRequestId !== poll.controlRequestId) {
@@ -2647,7 +2577,7 @@ export default function AgentGatewayRunsPage() {
         throw new Error(t('No agent session'));
       }
       const response = await ctx.api.request<ResumeAgentSessionResult>({
-        url: `agent-gateway/agent-sessions/${encodeURIComponent(options.run.agentSessionId)}/resume`,
+        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.resumeAgentSession, options.run.agentSessionId),
         method: 'post',
         data: {
           message: options.message,
@@ -3094,7 +3024,7 @@ export default function AgentGatewayRunsPage() {
         protocols?: string[];
         expiresAt?: string;
       }>({
-        url: `agent-gateway/runs/${encodeURIComponent(runId)}/terminal-stream-tickets:create`,
+        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.createTerminalStreamTicket, runId),
         method: 'post',
       });
       return getRequiredResponseData(response, t('Failed to create terminal stream ticket'));

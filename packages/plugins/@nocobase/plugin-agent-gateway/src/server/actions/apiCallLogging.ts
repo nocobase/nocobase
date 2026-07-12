@@ -11,7 +11,13 @@ import { Context, Next } from '@nocobase/actions';
 import { Plugin } from '@nocobase/server';
 
 import { createApiCallLogSummary, redactDaemonErrorSummary, redactText } from '../security';
-import { AGENT_GATEWAY_API_RESOURCE, API_PREFIX, getRecord, getString } from './utils';
+import {
+  AGENT_GATEWAY_API_ACTIONS,
+  AGENT_GATEWAY_API_RESOURCE,
+  AGENT_GATEWAY_MACHINE_API_ACTIONS,
+  AgentGatewayApiAction,
+} from '../../shared/apiContract';
+import { getRecord, getString } from './utils';
 
 const DAEMON_API_DIRECTION = 'daemon_to_nocobase';
 const USER_API_DIRECTION = 'user_to_nocobase';
@@ -21,6 +27,28 @@ const API_LOG_STRUCTURED_VALUE_MAX_CHARS = 4000;
 const RESOURCE_API_PREFIXES = [`/api/${AGENT_GATEWAY_API_RESOURCE}:`, `/${AGENT_GATEWAY_API_RESOURCE}:`];
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const API_LOG_OMITTED_KEY_FRAGMENTS = ['content', 'metadata', 'payload', 'prompt', 'snapshot'];
+const LOGGED_API_ACTIONS = new Set<AgentGatewayApiAction>([
+  ...AGENT_GATEWAY_MACHINE_API_ACTIONS,
+  AGENT_GATEWAY_API_ACTIONS.resumeAgentSession,
+  AGENT_GATEWAY_API_ACTIONS.messageAgentSession,
+  AGENT_GATEWAY_API_ACTIONS.importExternalRun,
+  AGENT_GATEWAY_API_ACTIONS.appendExternalRunObservations,
+]);
+const NODE_TARGET_API_ACTIONS = new Set<AgentGatewayApiAction>([
+  AGENT_GATEWAY_API_ACTIONS.heartbeatNode,
+  AGENT_GATEWAY_API_ACTIONS.claimRun,
+  AGENT_GATEWAY_API_ACTIONS.createSmokeRun,
+  AGENT_GATEWAY_API_ACTIONS.upsertNodeSkillInstall,
+]);
+const SESSION_TARGET_API_ACTIONS = new Set<AgentGatewayApiAction>([
+  AGENT_GATEWAY_API_ACTIONS.resumeAgentSession,
+  AGENT_GATEWAY_API_ACTIONS.messageAgentSession,
+]);
+const USER_API_ACTIONS = new Set<AgentGatewayApiAction>([
+  ...SESSION_TARGET_API_ACTIONS,
+  AGENT_GATEWAY_API_ACTIONS.importExternalRun,
+  AGENT_GATEWAY_API_ACTIONS.appendExternalRunObservations,
+]);
 
 interface MatchedApiRoute {
   action: string;
@@ -147,44 +175,21 @@ function matchResourceApiRoute(pathname: string): MatchedApiRoute | null {
     return null;
   }
 
-  const actionPath = pathname.slice(resourcePrefix.length);
-  if (actionPath === 'registerNode') {
-    return { action: 'register' };
+  const [rawAction, rawTarget] = pathname.slice(resourcePrefix.length).split('/');
+  const action = rawAction as AgentGatewayApiAction;
+  if (!LOGGED_API_ACTIONS.has(action)) {
+    return null;
   }
-
-  const nodeActionMatch = actionPath.match(/^(heartbeatNode|claimRun|createSmokeRun|upsertNodeSkillInstall)\/([^/]+)$/);
-  if (nodeActionMatch) {
-    const actionByResourceName: Record<string, string> = {
-      heartbeatNode: 'node-heartbeat',
-      claimRun: 'claim',
-      createSmokeRun: 'smoke-runs:create',
-      upsertNodeSkillInstall: 'skill-installs:upsert',
-    };
-    return {
-      action: actionByResourceName[nodeActionMatch[1]],
-      nodeId: nodeActionMatch[2],
-    };
-  }
-
-  const runActionMatch = actionPath.match(
-    /^(heartbeatRun|completeRun|failRun|timeoutRun|ackCancelRun|skipRun)\/([^/]+)$/,
-  );
-  if (runActionMatch) {
-    const actionByResourceName: Record<string, string> = {
-      heartbeatRun: 'run-heartbeat',
-      completeRun: 'run-complete',
-      failRun: 'run-fail',
-      timeoutRun: 'run-timeout',
-      ackCancelRun: 'run-cancel-ack',
-      skipRun: 'run-skip',
-    };
-    return {
-      action: actionByResourceName[runActionMatch[1]],
-      runId: runActionMatch[2],
-    };
-  }
-
-  return null;
+  const target = rawTarget ? decodeURIComponent(rawTarget) : undefined;
+  return {
+    action,
+    direction: USER_API_ACTIONS.has(action) ? USER_API_DIRECTION : DAEMON_API_DIRECTION,
+    ...(target && NODE_TARGET_API_ACTIONS.has(action) ? { nodeId: target } : {}),
+    ...(target && SESSION_TARGET_API_ACTIONS.has(action) ? { sessionId: target } : {}),
+    ...(target && !NODE_TARGET_API_ACTIONS.has(action) && !SESSION_TARGET_API_ACTIONS.has(action)
+      ? { runId: target }
+      : {}),
+  };
 }
 
 function matchApiRoute(ctx: Context): MatchedApiRoute | null {
@@ -192,102 +197,7 @@ function matchApiRoute(ctx: Context): MatchedApiRoute | null {
     return null;
   }
 
-  const resourceRoute = matchResourceApiRoute(ctx.path);
-  if (resourceRoute) {
-    return resourceRoute;
-  }
-  if (!ctx.path.startsWith(API_PREFIX)) {
-    return null;
-  }
-
-  const routePath = ctx.path.slice(API_PREFIX.length);
-  if (routePath === '/nodes:register') {
-    return {
-      action: 'register',
-    };
-  }
-
-  const nodeHeartbeatMatch = routePath.match(/^\/nodes\/([^/]+)\/heartbeat$/);
-  if (nodeHeartbeatMatch) {
-    return {
-      action: 'node-heartbeat',
-      nodeId: nodeHeartbeatMatch[1],
-    };
-  }
-
-  const claimMatch = routePath.match(/^\/nodes\/([^/]+)\/runs:claim$/);
-  if (claimMatch) {
-    return {
-      action: 'claim',
-      nodeId: claimMatch[1],
-    };
-  }
-
-  const smokeCreateMatch = routePath.match(/^\/nodes\/([^/]+)\/smoke-runs:create$/);
-  if (smokeCreateMatch) {
-    return {
-      action: 'smoke-runs:create',
-      nodeId: smokeCreateMatch[1],
-    };
-  }
-
-  const skillInstallMatch = routePath.match(/^\/nodes\/([^/]+)\/skill-installs:upsert$/);
-  if (skillInstallMatch) {
-    return {
-      action: 'skill-installs:upsert',
-      nodeId: skillInstallMatch[1],
-    };
-  }
-
-  const agentSessionUpsertMatch = routePath.match(/^\/nodes\/([^/]+)\/runs\/([^/]+)\/agent-session:upsert$/);
-  if (agentSessionUpsertMatch) {
-    return {
-      action: 'agent-session:upsert',
-      nodeId: agentSessionUpsertMatch[1],
-      runId: agentSessionUpsertMatch[2],
-    };
-  }
-
-  const runNodeActionMatch = routePath.match(
-    /^\/nodes\/([^/]+)\/runs\/([^/]+)\/(heartbeat|complete|fail|timeout|cancel-ack)$/,
-  );
-  if (runNodeActionMatch) {
-    return {
-      action: `run-${runNodeActionMatch[3]}`,
-      nodeId: runNodeActionMatch[1],
-      runId: runNodeActionMatch[2],
-    };
-  }
-
-  const runSkipMatch = routePath.match(/^\/nodes\/([^/]+)\/runs\/([^/]+)\/skip$/);
-  if (runSkipMatch) {
-    return {
-      action: 'run-skip',
-      nodeId: runSkipMatch[1],
-      runId: runSkipMatch[2],
-    };
-  }
-
-  const runObservationMatch = routePath.match(
-    /^\/runs\/([^/]+)\/(events:append|artifacts:register|snapshots:register)$/,
-  );
-  if (runObservationMatch) {
-    return {
-      action: runObservationMatch[2],
-      runId: runObservationMatch[1],
-    };
-  }
-
-  const agentSessionResumeMatch = routePath.match(/^\/agent-sessions\/([^/]+)\/resume$/);
-  if (agentSessionResumeMatch) {
-    return {
-      action: 'agent-session:resume',
-      direction: USER_API_DIRECTION,
-      sessionId: agentSessionResumeMatch[1],
-    };
-  }
-
-  return null;
+  return matchResourceApiRoute(ctx.path);
 }
 
 function getBodyRecordValue(body: unknown, key: string) {

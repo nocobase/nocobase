@@ -11,6 +11,7 @@ import { Alert, Descriptions, Typography } from 'antd';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useFlowContext } from '@nocobase/flow-engine';
 
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiUrl } from '../../shared/apiContract';
 import { useT } from '../locale';
 import { AgentGatewayContext, getRequiredResponseData } from '../pages/AgentGatewayPageUtils';
 import { TerminalStreamClient, TerminalStreamClientState } from '../utils/terminalStreamClient';
@@ -37,7 +38,7 @@ export function TerminalStreamSmokePanel({ runId }: { runId: string }) {
         protocols?: string[];
         expiresAt?: string;
       }>({
-        url: `agent-gateway/runs/${encodeURIComponent(currentRunId)}/terminal-stream-tickets:create`,
+        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.createTerminalStreamTicket, currentRunId),
         method: 'post',
       });
       return getRequiredResponseData(response, t('Failed to create terminal stream ticket'));

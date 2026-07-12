@@ -281,10 +281,10 @@ describe('agent gateway permission matrix', () => {
       expect(JSON.stringify(standardListResponse.body)).not.toContain(`"${internalField}"`);
       expect(JSON.stringify(standardGetResponse.body)).not.toContain(`"${internalField}"`);
     }
-    expect((await detailOnlyAgent.get(`/api/agent-gateway/runs/${runId}/conversation-events:list`)).status).toBe(403);
-    expect((await detailOnlyAgent.get(`/api/agent-gateway/runs/${runId}/terminal:snapshot`)).status).toBe(403);
-    expect((await detailOnlyAgent.get(`/api/agent-gateway/runs/${runId}/artifacts:list`)).status).toBe(403);
-    expect((await detailOnlyAgent.get(`/api/agent-gateway/runs/${runId}/events:list`)).status).toBe(403);
+    expect((await detailOnlyAgent.get(`/agentGatewayApi:listRunConversationEvents/${runId}`)).status).toBe(403);
+    expect((await detailOnlyAgent.get(`/agentGatewayApi:getTerminalSnapshot/${runId}`)).status).toBe(403);
+    expect((await detailOnlyAgent.get(`/agentGatewayApi:listRunArtifacts/${runId}`)).status).toBe(403);
+    expect((await detailOnlyAgent.get(`/agentGatewayApi:listRunEvents/${runId}`)).status).toBe(403);
   });
 
   it('keeps cancel-only action permissions executable for visible runs', async () => {
@@ -331,29 +331,27 @@ describe('agent gateway permission matrix', () => {
   it('allows only the matching read snippets for session, terminal, artifacts, and raw logs', async () => {
     const { runId, sessionId } = await seedRun();
     const sessionAgent = await createUserAgent('agent-gateway-session-reader', ['agentGateway.readSessionMessages']);
-    expect((await sessionAgent.get(`/api/agent-gateway/runs/${runId}/conversation-events:list`)).status).toBe(200);
-    expect(
-      (await sessionAgent.get(`/api/agent-gateway/agent-sessions/${sessionId}/conversation-events:list`)).status,
-    ).toBe(200);
-    expect((await sessionAgent.get(`/api/agent-gateway/runs/${runId}/terminal:snapshot`)).status).toBe(403);
+    expect((await sessionAgent.get(`/agentGatewayApi:listRunConversationEvents/${runId}`)).status).toBe(200);
+    expect((await sessionAgent.get(`/agentGatewayApi:listSessionConversationEvents/${sessionId}`)).status).toBe(200);
+    expect((await sessionAgent.get(`/agentGatewayApi:getTerminalSnapshot/${runId}`)).status).toBe(403);
 
     const terminalAgent = await createUserAgent('agent-gateway-terminal-reader', ['agentGateway.readTerminal']);
-    expect((await terminalAgent.get(`/api/agent-gateway/runs/${runId}/terminal:snapshot`)).status).toBe(200);
-    expect((await terminalAgent.get(`/api/agent-gateway/runs/${runId}/artifacts:list`)).status).toBe(403);
+    expect((await terminalAgent.get(`/agentGatewayApi:getTerminalSnapshot/${runId}`)).status).toBe(200);
+    expect((await terminalAgent.get(`/agentGatewayApi:listRunArtifacts/${runId}`)).status).toBe(403);
 
     const artifactsAgent = await createUserAgent('agent-gateway-artifact-reader', ['agentGateway.readArtifacts']);
-    expect((await artifactsAgent.get(`/api/agent-gateway/runs/${runId}/artifacts:list`)).status).toBe(200);
-    expect((await artifactsAgent.get(`/api/agent-gateway/runs/${runId}/events:list`)).status).toBe(403);
+    expect((await artifactsAgent.get(`/agentGatewayApi:listRunArtifacts/${runId}`)).status).toBe(200);
+    expect((await artifactsAgent.get(`/agentGatewayApi:listRunEvents/${runId}`)).status).toBe(403);
 
     const rawLogsAgent = await createUserAgent('agent-gateway-raw-reader', ['agentGateway.readRawLogs']);
-    expect((await rawLogsAgent.get(`/api/agent-gateway/runs/${runId}/events:list`)).status).toBe(200);
-    expect((await rawLogsAgent.get(`/api/agent-gateway/runs/${runId}/artifacts:list`)).status).toBe(403);
+    expect((await rawLogsAgent.get(`/agentGatewayApi:listRunEvents/${runId}`)).status).toBe(200);
+    expect((await rawLogsAgent.get(`/agentGatewayApi:listRunArtifacts/${runId}`)).status).toBe(403);
   });
 
   it('enforces resume, semantic message, interrupt, terminate, and raw-write permissions', async () => {
     const ended = await seedRun();
     const resumeAgent = await createUserAgent('agent-gateway-resume-user', ['agentGateway.resumeAgentSession']);
-    const resumeResponse = await resumeAgent.post(`/api/agent-gateway/agent-sessions/${ended.sessionId}/resume`).send({
+    const resumeResponse = await resumeAgent.post(`/agentGatewayApi:resumeAgentSession/${ended.sessionId}`).send({
       message: 'continue',
       idempotencyKey: 'permission-resume',
     });
@@ -363,11 +361,9 @@ describe('agent gateway permission matrix', () => {
     });
 
     const messageAgent = await createUserAgent('agent-gateway-message-user', ['agentGateway.messageAgentSession']);
-    const messageResponse = await messageAgent
-      .post(`/api/agent-gateway/agent-sessions/${ended.sessionId}/message`)
-      .send({
-        message: 'live message',
-      });
+    const messageResponse = await messageAgent.post(`/agentGatewayApi:messageAgentSession/${ended.sessionId}`).send({
+      message: 'live message',
+    });
     expect(messageResponse.status).toBe(409);
     expect(JSON.stringify(messageResponse.body)).toContain('AGENT_GATEWAY_ACTION_UNSUPPORTED');
 
@@ -375,7 +371,7 @@ describe('agent gateway permission matrix', () => {
     const interruptAgent = await createUserAgent('agent-gateway-interrupt-matrix', ['agentGateway.interruptRun']);
     expect(
       (
-        await interruptAgent.post(`/api/agent-gateway/runs/${active.runId}/terminal:interrupt`).send({
+        await interruptAgent.post(`/agentGatewayApi:interruptTerminal/${active.runId}`).send({
           idempotencyKey: 'permission-interrupt',
         })
       ).status,
@@ -383,14 +379,14 @@ describe('agent gateway permission matrix', () => {
     const terminateAgent = await createUserAgent('agent-gateway-terminate-matrix', ['agentGateway.terminateRun']);
     expect(
       (
-        await terminateAgent.post(`/api/agent-gateway/runs/${active.runId}/terminal:terminate`).send({
+        await terminateAgent.post(`/agentGatewayApi:terminateTerminal/${active.runId}`).send({
           idempotencyKey: 'permission-terminate',
         })
       ).status,
     ).toBe(200);
 
     const rawAgent = await createUserAgent('agent-gateway-raw-matrix', ['agentGateway.writeTerminalRaw']);
-    const rawResponse = await rawAgent.post(`/api/agent-gateway/runs/${active.runId}/terminal:send`).send({
+    const rawResponse = await rawAgent.post(`/agentGatewayApi:sendTerminalInput/${active.runId}`).send({
       input: 'must-not-write',
     });
     expect(rawResponse.status).toBe(403);
@@ -457,28 +453,25 @@ describe('agent gateway permission matrix', () => {
     expect((await scopedAgent.get(`/agentGatewayApi:getRun/${hidden.runId}`)).status).toBe(404);
     expect((await scopedAgent.get(`/agRuns:get/${visible.runId}`)).status).toBe(200);
     expect((await scopedAgent.get(`/agRuns:get/${hidden.runId}`)).status).toBe(404);
-    expect((await scopedAgent.get(`/api/agent-gateway/runs/${hidden.runId}/terminal:snapshot`)).status).toBe(404);
-    const visibleStats = await scopedAgent.get(`/api/agent-gateway/terminal-stream:stats?runId=${visible.runId}`);
+    expect((await scopedAgent.get(`/agentGatewayApi:getTerminalSnapshot/${hidden.runId}`)).status).toBe(404);
+    const visibleStats = await scopedAgent.get(`/agentGatewayApi:getTerminalStreamStats?runId=${visible.runId}`);
     expect(visibleStats.status).toBe(200);
     expect(getData(visibleStats)).toMatchObject({
       activeBrowserSubscriptionsForRun: 0,
     });
-    expect((await scopedAgent.get(`/api/agent-gateway/terminal-stream:stats?runId=${hidden.runId}`)).status).toBe(404);
-    expect((await scopedAgent.get('/api/agent-gateway/terminal-stream:stats')).status).toBe(400);
+    expect((await scopedAgent.get(`/agentGatewayApi:getTerminalStreamStats?runId=${hidden.runId}`)).status).toBe(404);
+    expect((await scopedAgent.get('/agentGatewayApi:getTerminalStreamStats')).status).toBe(400);
     expect(
-      (
-        await scopedAgent.get(
-          `/api/agent-gateway/terminal-stream:stats?runId=${visible.runId}&nodeId=hidden-node-probe`,
-        )
-      ).status,
+      (await scopedAgent.get(`/agentGatewayApi:getTerminalStreamStats?runId=${visible.runId}&nodeId=hidden-node-probe`))
+        .status,
     ).toBe(403);
-    const rootStats = await rootAgent.get('/api/agent-gateway/terminal-stream:stats?nodeId=hidden-node-probe');
+    const rootStats = await rootAgent.get('/agentGatewayApi:getTerminalStreamStats?nodeId=hidden-node-probe');
     expect(rootStats.status).toBe(200);
     expect(getData(rootStats)).toHaveProperty('activeConnections');
-    expect((await scopedAgent.get(`/api/agent-gateway/runs/${hidden.runId}/artifacts:list`)).status).toBe(404);
-    expect((await scopedAgent.get(`/api/agent-gateway/runs/${hidden.runId}/events:list`)).status).toBe(404);
+    expect((await scopedAgent.get(`/agentGatewayApi:listRunArtifacts/${hidden.runId}`)).status).toBe(404);
+    expect((await scopedAgent.get(`/agentGatewayApi:listRunEvents/${hidden.runId}`)).status).toBe(404);
     const hiddenResumeResponse = await scopedAgent
-      .post(`/api/agent-gateway/agent-sessions/${hiddenEnded.sessionId}/resume`)
+      .post(`/agentGatewayApi:resumeAgentSession/${hiddenEnded.sessionId}`)
       .send({
         message: 'resume hidden source',
         idempotencyKey: 'hidden-source-resume',
@@ -487,14 +480,14 @@ describe('agent gateway permission matrix', () => {
     expect(hiddenResumeResponse.status).toBe(404);
     expect(JSON.stringify(hiddenResumeResponse.body)).toContain('AGENT_GATEWAY_RESOURCE_NOT_VISIBLE');
     const hiddenMessageResponse = await scopedAgent
-      .post(`/api/agent-gateway/agent-sessions/${hidden.sessionId}/message`)
+      .post(`/agentGatewayApi:messageAgentSession/${hidden.sessionId}`)
       .send({
         message: 'message hidden latest run',
       });
     expect(hiddenMessageResponse.status).toBe(404);
     expect(JSON.stringify(hiddenMessageResponse.body)).toContain('AGENT_GATEWAY_RESOURCE_NOT_VISIBLE');
     const hiddenNoLatestMessageResponse = await scopedAgent
-      .post(`/api/agent-gateway/agent-sessions/${hiddenWithoutLatestRun.sessionId}/message`)
+      .post(`/agentGatewayApi:messageAgentSession/${hiddenWithoutLatestRun.sessionId}`)
       .send({
         message: 'message hidden session without latest run',
       });
@@ -510,7 +503,7 @@ describe('agent gateway permission matrix', () => {
       },
     });
     const hiddenStreamTicketResponse = await scopedAgent
-      .post(`/api/agent-gateway/runs/${hidden.runId}/terminal-stream-tickets:create`)
+      .post(`/agentGatewayApi:createTerminalStreamTicket/${hidden.runId}`)
       .send({});
     expect(hiddenStreamTicketResponse.status).toBe(404);
     expect(
@@ -529,28 +522,26 @@ describe('agent gateway permission matrix', () => {
     expect(hiddenRunAfterCancel?.get('status')).toBe('running');
     expect(hiddenRunAfterCancel?.get('cancelRequested')).toBe(false);
     expect(hiddenRunAfterCancel?.get('cancelRequestedAt')).toBeFalsy();
-    expect(
-      (await scopedAgent.get(`/api/agent-gateway/agent-sessions/${hidden.sessionId}/conversation-events:list`)).status,
-    ).toBe(404);
+    expect((await scopedAgent.get(`/agentGatewayApi:listSessionConversationEvents/${hidden.sessionId}`)).status).toBe(
+      404,
+    );
     expect(
       (
-        await scopedAgent.post(`/api/agent-gateway/runs/${hidden.runId}/terminal:interrupt`).send({
+        await scopedAgent.post(`/agentGatewayApi:interruptTerminal/${hidden.runId}`).send({
           idempotencyKey: 'hidden-interrupt',
         })
       ).status,
     ).toBe(404);
     expect(
       (
-        await scopedAgent.post(`/api/agent-gateway/runs/${hidden.runId}/terminal:terminate`).send({
+        await scopedAgent.post(`/agentGatewayApi:terminateTerminal/${hidden.runId}`).send({
           idempotencyKey: 'hidden-terminate',
         })
       ).status,
     ).toBe(404);
-    const hiddenRawWriteResponse = await scopedAgent
-      .post(`/api/agent-gateway/runs/${hidden.runId}/terminal:send`)
-      .send({
-        input: 'must-not-link-hidden-run',
-      });
+    const hiddenRawWriteResponse = await scopedAgent.post(`/agentGatewayApi:sendTerminalInput/${hidden.runId}`).send({
+      input: 'must-not-link-hidden-run',
+    });
     expect(hiddenRawWriteResponse.status).toBe(403);
     expect(JSON.stringify(hiddenRawWriteResponse.body)).toContain('TERMINAL_RAW_WRITE_DISABLED');
     expect(
@@ -568,14 +559,14 @@ describe('agent gateway permission matrix', () => {
 
     expect(
       (
-        await readOnlyAgent.post(`/api/agent-gateway/runs/${active.runId}/terminal:interrupt`).send({
+        await readOnlyAgent.post(`/agentGatewayApi:interruptTerminal/${active.runId}`).send({
           idempotencyKey: 'denied-interrupt',
         })
       ).status,
     ).toBe(403);
     expect(
       (
-        await readOnlyAgent.post(`/api/agent-gateway/runs/${active.runId}/terminal:terminate`).send({
+        await readOnlyAgent.post(`/agentGatewayApi:terminateTerminal/${active.runId}`).send({
           idempotencyKey: 'denied-terminate',
         })
       ).status,

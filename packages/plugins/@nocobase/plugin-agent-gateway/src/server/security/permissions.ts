@@ -7,6 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import {
+  AGENT_GATEWAY_API_ACTIONS,
+  AGENT_GATEWAY_MANAGE_API_ACTIONS,
+  getAgentGatewayApiActionName,
+} from '../../shared/apiContract';
+
 export const AGENT_GATEWAY_RESOURCE = 'agentGateway';
 
 export const AGENT_GATEWAY_PERMISSIONS = {
@@ -92,6 +98,29 @@ const RUN_CONTROL_ACTIONS = [
 
 const RUN_CANCEL_ACTIONS = [`${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.cancelRun}`, 'agRuns:get'] as const;
 
+const MANAGE_API_ACTIONS = AGENT_GATEWAY_MANAGE_API_ACTIONS.map(getAgentGatewayApiActionName);
+const apiAction = getAgentGatewayApiActionName;
+const MANAGE_DELEGATED_API_ACTIONS = [
+  AGENT_GATEWAY_API_ACTIONS.listRunConversationEvents,
+  AGENT_GATEWAY_API_ACTIONS.listRunToolCalls,
+  AGENT_GATEWAY_API_ACTIONS.listToolCallStats,
+  AGENT_GATEWAY_API_ACTIONS.listSessionConversationEvents,
+  AGENT_GATEWAY_API_ACTIONS.getTerminalSnapshot,
+  AGENT_GATEWAY_API_ACTIONS.createTerminalStreamTicket,
+  AGENT_GATEWAY_API_ACTIONS.resumeAgentSession,
+  AGENT_GATEWAY_API_ACTIONS.messageAgentSession,
+  AGENT_GATEWAY_API_ACTIONS.interruptTerminal,
+  AGENT_GATEWAY_API_ACTIONS.terminateTerminal,
+  AGENT_GATEWAY_API_ACTIONS.getControlRequestStatus,
+  AGENT_GATEWAY_API_ACTIONS.listRunEvents,
+  AGENT_GATEWAY_API_ACTIONS.listRunArtifacts,
+  AGENT_GATEWAY_API_ACTIONS.listRunSnapshots,
+  AGENT_GATEWAY_API_ACTIONS.listRunApiCallLogs,
+  AGENT_GATEWAY_API_ACTIONS.getRunArtifactContent,
+  AGENT_GATEWAY_API_ACTIONS.importExternalRun,
+  AGENT_GATEWAY_API_ACTIONS.appendExternalRunObservations,
+].map(apiAction);
+
 export const AGENT_GATEWAY_PERMISSION_DEFINITIONS = [
   {
     name: AGENT_GATEWAY_PERMISSIONS.manage,
@@ -108,22 +137,36 @@ export const AGENT_GATEWAY_PERMISSION_DEFINITIONS = [
       `${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.resumeAgentSession}`,
       `${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.messageAgentSession}`,
       ...RUN_CONTROL_ACTIONS,
+      ...MANAGE_API_ACTIONS,
+      ...MANAGE_DELEGATED_API_ACTIONS,
       ...AGENT_GATEWAY_INTERNAL_COLLECTION_ACTIONS,
     ],
   },
   {
     name: AGENT_GATEWAY_PERMISSIONS.dispatch,
-    actions: [`${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.dispatch}`],
+    actions: [
+      `${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.dispatch}`,
+      getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.listRunOptions),
+      getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.createTaskRun),
+      getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.listTaskTemplates),
+      getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.dispatchBinding),
+    ],
   },
   {
     name: AGENT_GATEWAY_PERMISSIONS.readRuns,
-    actions: [`${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.readRuns}`, 'agRuns:list'],
+    actions: [
+      `${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.readRuns}`,
+      getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.listRuns),
+      'agRuns:list',
+    ],
   },
   {
     name: AGENT_GATEWAY_PERMISSIONS.readRun,
     actions: [
       `${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.readRun}`,
       `${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.readRuns}`,
+      getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.listRuns),
+      getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.getRun),
       'agRuns:list',
       'agRuns:get',
     ],
@@ -134,52 +177,103 @@ export const AGENT_GATEWAY_PERMISSION_DEFINITIONS = [
   },
   {
     name: AGENT_GATEWAY_PERMISSIONS.readSessionMessages,
-    actions: [`${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.readSessionMessages}`, 'agRuns:get'],
+    actions: [
+      `${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.readSessionMessages}`,
+      apiAction(AGENT_GATEWAY_API_ACTIONS.listRunConversationEvents),
+      apiAction(AGENT_GATEWAY_API_ACTIONS.listRunToolCalls),
+      apiAction(AGENT_GATEWAY_API_ACTIONS.listToolCallStats),
+      apiAction(AGENT_GATEWAY_API_ACTIONS.listSessionConversationEvents),
+      'agRuns:get',
+    ],
   },
   {
     name: AGENT_GATEWAY_PERMISSIONS.readTerminal,
-    actions: [`${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.readTerminal}`, 'agRuns:get'],
+    actions: [
+      `${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.readTerminal}`,
+      apiAction(AGENT_GATEWAY_API_ACTIONS.getTerminalSnapshot),
+      apiAction(AGENT_GATEWAY_API_ACTIONS.createTerminalStreamTicket),
+      apiAction(AGENT_GATEWAY_API_ACTIONS.getTerminalStreamStats),
+      'agRuns:get',
+    ],
   },
   {
     name: AGENT_GATEWAY_PERMISSIONS.resumeAgentSession,
-    actions: [`${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.resumeAgentSession}`, 'agRuns:get'],
+    actions: [
+      `${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.resumeAgentSession}`,
+      apiAction(AGENT_GATEWAY_API_ACTIONS.resumeAgentSession),
+      'agRuns:get',
+    ],
   },
   {
     name: AGENT_GATEWAY_PERMISSIONS.messageAgentSession,
-    actions: [`${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.messageAgentSession}`, 'agRuns:get'],
+    actions: [
+      `${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.messageAgentSession}`,
+      apiAction(AGENT_GATEWAY_API_ACTIONS.messageAgentSession),
+      'agRuns:get',
+    ],
   },
   {
     name: AGENT_GATEWAY_PERMISSIONS.interruptRun,
-    actions: [`${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.interruptRun}`, 'agRuns:get'],
+    actions: [
+      `${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.interruptRun}`,
+      apiAction(AGENT_GATEWAY_API_ACTIONS.interruptTerminal),
+      apiAction(AGENT_GATEWAY_API_ACTIONS.getControlRequestStatus),
+      'agRuns:get',
+    ],
   },
   {
     name: AGENT_GATEWAY_PERMISSIONS.terminateRun,
-    actions: [`${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.terminateRun}`, 'agRuns:get'],
+    actions: [
+      `${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.terminateRun}`,
+      apiAction(AGENT_GATEWAY_API_ACTIONS.terminateTerminal),
+      apiAction(AGENT_GATEWAY_API_ACTIONS.getControlRequestStatus),
+      'agRuns:get',
+    ],
   },
   {
     name: AGENT_GATEWAY_PERMISSIONS.readArtifacts,
-    actions: [`${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.readArtifacts}`, 'agRuns:get'],
+    actions: [
+      `${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.readArtifacts}`,
+      apiAction(AGENT_GATEWAY_API_ACTIONS.listRunArtifacts),
+      apiAction(AGENT_GATEWAY_API_ACTIONS.getRunArtifactContent),
+      'agRuns:get',
+    ],
   },
   {
     name: AGENT_GATEWAY_PERMISSIONS.readRawLogs,
-    actions: [`${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.readRawLogs}`, 'agRuns:get'],
+    actions: [
+      `${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.readRawLogs}`,
+      apiAction(AGENT_GATEWAY_API_ACTIONS.listRunEvents),
+      apiAction(AGENT_GATEWAY_API_ACTIONS.listRunSnapshots),
+      apiAction(AGENT_GATEWAY_API_ACTIONS.listRunApiCallLogs),
+      'agRuns:get',
+    ],
   },
   {
     name: AGENT_GATEWAY_PERMISSIONS.importExternalRuns,
-    actions: [`${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.importExternalRuns}`],
+    actions: [
+      `${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.importExternalRuns}`,
+      apiAction(AGENT_GATEWAY_API_ACTIONS.importExternalRun),
+      apiAction(AGENT_GATEWAY_API_ACTIONS.appendExternalRunObservations),
+    ],
   },
   {
     name: AGENT_GATEWAY_PERMISSIONS.writeTerminalRaw,
-    actions: [],
+    actions: [apiAction(AGENT_GATEWAY_API_ACTIONS.sendTerminalInput)],
   },
   {
     name: AGENT_GATEWAY_PERMISSIONS.cancelRun,
-    actions: RUN_CANCEL_ACTIONS,
+    actions: [...RUN_CANCEL_ACTIONS, getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.cancelRun)],
   },
   {
     name: 'pm.agent-gateway.nodes',
     actions: [
       `${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.manage}`,
+      getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.createNodeInvitation),
+      getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.listNodes),
+      getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.getNode),
+      getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.updateNode),
+      getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.listNodeProfiles),
       'agNodes:*',
       'agNodeInvitations:*',
       'agAgentProfiles:*',
@@ -189,6 +283,9 @@ export const AGENT_GATEWAY_PERMISSION_DEFINITIONS = [
     name: 'pm.agent-gateway.skills',
     actions: [
       `${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.manage}`,
+      getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.uploadSkillVersion),
+      getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.createSkillVersionFromUpload),
+      getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.listSkillVersions),
       'agSkills:*',
       'agSkillVersions:*',
       'agNodeSkillInstalls:*',
@@ -199,21 +296,47 @@ export const AGENT_GATEWAY_PERMISSION_DEFINITIONS = [
     actions: [
       `${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.readRuns}`,
       `${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.readRun}`,
+      getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.listRuns),
+      getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.getRun),
       'agRuns:list',
       'agRuns:get',
     ],
   },
   {
     name: 'pm.agent-gateway.task-templates',
-    actions: [`${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.manage}`, 'agTaskTemplates:*'],
+    actions: [
+      `${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.manage}`,
+      getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.listTaskTemplates),
+      getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.getTaskTemplate),
+      getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.createTaskTemplate),
+      getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.updateTaskTemplate),
+      'agTaskTemplates:*',
+    ],
   },
   {
     name: 'pm.agent-gateway.prompt-templates',
-    actions: [`${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.manage}`, 'agPromptTemplates:*'],
+    actions: [
+      `${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.manage}`,
+      getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.listPromptTemplates),
+      getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.getPromptTemplate),
+      getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.createPromptTemplate),
+      getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.updatePromptTemplate),
+      getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.destroyPromptTemplate),
+      getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.previewPromptTemplate),
+      'agPromptTemplates:*',
+    ],
   },
   {
     name: 'pm.agent-gateway.dispatch-bindings',
-    actions: [`${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.manage}`, 'agDispatchBindings:*'],
+    actions: [
+      `${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.manage}`,
+      getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.listDispatchBindings),
+      getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.getDispatchBinding),
+      getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.createDispatchBinding),
+      getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.updateDispatchBinding),
+      getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.destroyDispatchBinding),
+      'agDispatchBindings:*',
+    ],
   },
 ] as const;
 

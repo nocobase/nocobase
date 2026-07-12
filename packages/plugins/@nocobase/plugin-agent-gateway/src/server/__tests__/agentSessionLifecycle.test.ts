@@ -11,6 +11,7 @@ import { randomUUID } from 'crypto';
 
 import { MockServer, createMockServer } from '@nocobase/test';
 
+import { AGENT_GATEWAY_API_ACTIONS } from '../../shared/apiContract';
 import PluginAgentGatewayServer from '../plugin';
 import { createNodeToken, toStoredTokenFields } from '../security';
 
@@ -144,7 +145,7 @@ describe('agent gateway agent session lifecycle APIs', () => {
   ) {
     return await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${runner.nodeId}/runs/${claim.runId}/agent-session:upsert`)
+      .post(`/agentGatewayApi:upsertAgentSession/${claim.runId}`)
       .set('Authorization', `Bearer ${runner.nodeToken}`)
       .send({
         claimToken: claim.claimToken,
@@ -220,13 +221,13 @@ describe('agent gateway agent session lifecycle APIs', () => {
         runId: run.id,
       },
     });
-    const upsertLog = apiLogs.find(
-      (log) => log.get('path') === `/api/agent-gateway/nodes/${runner.nodeId}/runs/${run.id}/agent-session:upsert`,
-    );
+    const upsertLog = apiLogs.find((log) => log.get('path') === `/agentGatewayApi:upsertAgentSession/${run.id}`);
     expect(upsertLog).toBeTruthy();
     expect(upsertLog?.get('nodeId')).toBe(runner.nodeId);
     expect(upsertLog?.get('statusCode')).toBe(200);
-    expect((upsertLog?.get('requestSummaryJson') as Record<string, unknown>).action).toBe('agent-session:upsert');
+    expect((upsertLog?.get('requestSummaryJson') as Record<string, unknown>).action).toBe(
+      AGENT_GATEWAY_API_ACTIONS.upsertAgentSession,
+    );
     expect(JSON.stringify(upsertLog?.toJSON())).not.toContain(String(claim.claimToken));
   });
 

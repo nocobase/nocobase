@@ -8,14 +8,14 @@
  */
 
 import { tExpr as _tExpr, useFlowEngine } from '@nocobase/flow-engine';
-// @ts-ignore
-import pkg from '../../package.json';
+
+const PACKAGE_NAMESPACE = '@nocobase/plugin-agent-gateway';
 
 export function useT() {
   const engine = useFlowEngine();
-  return (str: string) => engine.context.t(str, { ns: [pkg.name, 'client'] });
+  return (str: string) => engine.context.t(str, { ns: [PACKAGE_NAMESPACE, 'client'] });
 }
 
 export function tExpr(key: string) {
-  return _tExpr(key, { ns: [pkg.name, 'client'] });
+  return _tExpr(key, { ns: [PACKAGE_NAMESPACE, 'client'] });
 }

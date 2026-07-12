@@ -19,6 +19,7 @@ import {
   ExternalImportedRunStatus,
   ExternalLogFormat,
 } from '../shared/externalRunImport';
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiPath } from '../shared/apiContract';
 import { GatewayRequester, JsonRecord } from './types';
 
 const DEFAULT_LOG_BATCH_BYTES = 6 * 1024 * 1024;
@@ -385,8 +386,8 @@ export async function uploadExternalRun(options: ExternalRunUploadOptions) {
       method: 'POST',
       path:
         batchIndex === 1
-          ? '/api/agent-gateway/external-runs:import'
-          : `/api/agent-gateway/external-runs/${runId}/observations:append`,
+          ? getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.importExternalRun)
+          : getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.appendExternalRunObservations, runId),
       authToken: options.authToken,
       body,
     });
@@ -405,7 +406,7 @@ export async function uploadExternalRun(options: ExternalRunUploadOptions) {
   assertPayloadSize(finalBody);
   return await options.requester.request({
     method: 'POST',
-    path: `/api/agent-gateway/external-runs/${runId}/observations:append`,
+    path: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.appendExternalRunObservations, runId),
     authToken: options.authToken,
     body: finalBody,
   });

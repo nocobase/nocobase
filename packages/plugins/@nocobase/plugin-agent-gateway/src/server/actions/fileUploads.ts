@@ -16,8 +16,8 @@ import { Plugin } from '@nocobase/server';
 import { Transaction } from 'sequelize';
 import { storagePathJoin } from '@nocobase/utils';
 
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiActionName } from '../../shared/apiContract';
 import {
-  AGENT_GATEWAY_API_RESOURCE,
   JsonRecord,
   ModelRecord,
   asActionContext,
@@ -236,21 +236,21 @@ export async function cleanupExpiredFileUploads(plugin: Pick<Plugin, 'db'>, now 
 
 export function registerFileUploadActions(plugin: Plugin) {
   plugin.app.resourceManager.registerActionHandlers({
-    [`${AGENT_GATEWAY_API_RESOURCE}:initFileUpload`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.initFileUpload)]: async (ctx, next) => {
       await initUpload(asActionContext(ctx));
       await next();
     },
-    [`${AGENT_GATEWAY_API_RESOURCE}:appendFileUpload`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.appendFileUpload)]: async (ctx, next) => {
       const actionCtx = asActionContext(ctx);
       await appendUpload(actionCtx, getActionTargetKey(actionCtx));
       await next();
     },
-    [`${AGENT_GATEWAY_API_RESOURCE}:completeFileUpload`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.completeFileUpload)]: async (ctx, next) => {
       const actionCtx = asActionContext(ctx);
       await completeUpload(actionCtx, getActionTargetKey(actionCtx));
       await next();
     },
-    [`${AGENT_GATEWAY_API_RESOURCE}:abortFileUpload`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.abortFileUpload)]: async (ctx, next) => {
       const actionCtx = asActionContext(ctx);
       await abortUpload(actionCtx, getActionTargetKey(actionCtx));
       await next();

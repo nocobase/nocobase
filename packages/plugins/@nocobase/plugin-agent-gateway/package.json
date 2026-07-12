@@ -10,10 +10,23 @@
   "bin": {
     "agent-gateway-daemon": "./daemon.js"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "client.js",
+    "client.d.ts",
+    "client-v2.js",
+    "client-v2.d.ts",
+    "server.js",
+    "server.d.ts",
+    "daemon.js"
+  ],
   "dependencies": {
-    "@xterm/addon-fit": "^0.11.0",
-    "@xterm/xterm": "^6.0.0",
     "ws": "^8.13.0"
+  },
+  "devDependencies": {
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/xterm": "^6.0.0"
   },
   "peerDependencies": {
     "@nocobase/acl": "2.x",

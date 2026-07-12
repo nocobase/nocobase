@@ -10,7 +10,7 @@
 import { randomUUID } from 'crypto';
 
 import { NoPermissionError, checkFilterParams, createUserProvider, parseJsonTemplate } from '@nocobase/acl';
-import { Context, Next } from '@nocobase/actions';
+import { Context } from '@nocobase/actions';
 import { Plugin } from '@nocobase/server';
 import { Transaction, UniqueConstraintError } from 'sequelize';
 
@@ -25,6 +25,7 @@ import {
 } from '../../shared/externalRunImport';
 import { IMPORTING_RUN_STATUS, isTerminalRunStatus } from '../../shared/runState';
 import { COMMAND_CONTENT_JSON_LIMIT_CHARS, COMMAND_DETAIL_STRING_LIMIT_CHARS } from '../../shared/conversationLimits';
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiActionName } from '../../shared/apiContract';
 import {
   AGENT_GATEWAY_ACTIONS,
   redactEventPayload,
@@ -33,9 +34,9 @@ import {
   redactRunResultSummary,
 } from '../security';
 import {
-  API_PREFIX,
   JsonRecord,
   ModelRecord,
+  asActionContext,
   assertRunVisible,
   getArray,
   getBodyValues,
@@ -48,6 +49,7 @@ import {
   getModelValue,
   getRecord,
   getString,
+  getActionTargetKey,
   getCurrentRoleNames,
   getVisibleRunFilter,
   requireAgentGatewayPermission,
@@ -2234,35 +2236,19 @@ async function appendExternalRunObservations(ctx: Context, runId: string) {
 }
 
 export function registerExternalRunImportRoutes(plugin: Plugin) {
-  plugin.app.use(
-    async (ctx: Context, next: Next) => {
-      if (!ctx.path.startsWith(API_PREFIX)) {
-        await next();
-        return;
-      }
-
-      const routePath = ctx.path.slice(API_PREFIX.length);
-      const appendMatch = routePath.match(/^\/external-runs\/([^/]+)\/observations:append$/);
-      if (ctx.method === 'POST' && routePath === '/external-runs:import') {
-        await importExternalRun(ctx);
-        return;
-      }
-
-      if (ctx.method === 'POST' && appendMatch) {
-        const [, runId] = appendMatch;
-        if (!UUID_PATTERN.test(runId)) {
-          ctx.throw(400, 'runId must be a valid UUID');
-        }
-        await appendExternalRunObservations(ctx, runId);
-        return;
-      }
-
+  plugin.app.resourceManager.registerActionHandlers({
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.importExternalRun)]: async (ctx, next) => {
+      await importExternalRun(asActionContext(ctx));
       await next();
     },
-    {
-      tag: 'agentGatewayExternalRunImportRoutes',
-      after: 'agentGatewayRunObservabilityRoutes',
-      before: 'dataSource',
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.appendExternalRunObservations)]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      const runId = getActionTargetKey(actionCtx);
+      if (!UUID_PATTERN.test(runId)) {
+        actionCtx.throw(400, 'runId must be a valid UUID');
+      }
+      await appendExternalRunObservations(actionCtx, runId);
+      await next();
     },
-  );
+  });
 }

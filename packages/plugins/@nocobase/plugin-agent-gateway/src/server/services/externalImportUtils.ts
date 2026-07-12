@@ -9,10 +9,10 @@
 
 import { createHash } from 'crypto';
 
-import { JsonRecord } from '../actions/utils';
+import { JsonRecord, isJsonRecord } from '../../shared/json';
 
 function isRecord(value: unknown): value is JsonRecord {
-  return Object.prototype.toString.call(value) === '[object Object]';
+  return isJsonRecord(value);
 }
 
 export function sanitizeExternalImportKeyPart(value: string, maxLength = 96) {

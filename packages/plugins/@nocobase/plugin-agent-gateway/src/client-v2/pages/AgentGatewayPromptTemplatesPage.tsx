@@ -13,6 +13,7 @@ import { useRequest } from 'ahooks';
 import { Alert, Button, Card, Empty, Flex, Form, Input, Modal, Space, Switch, Table, Tooltip, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useCallback, useMemo, useState } from 'react';
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiUrl } from '../../shared/apiContract';
 import { useT } from '../locale';
 import {
   AgentGatewayContext,
@@ -66,7 +67,7 @@ export default function AgentGatewayPromptTemplatesPage() {
 
   const templatesRequest = useRequest(async () => {
     const response = await ctx.api.request<PromptTemplateRecord[]>({
-      url: 'agentGatewayApi:listPromptTemplates',
+      url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.listPromptTemplates),
       method: 'get',
     });
     return getResponseData(response, []);
@@ -84,7 +85,7 @@ export default function AgentGatewayPromptTemplatesPage() {
 
       if (editingTemplate) {
         const response = await ctx.api.request<PromptTemplateRecord>({
-          url: `agentGatewayApi:updatePromptTemplate/${encodeURIComponent(editingTemplate.id)}`,
+          url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.updatePromptTemplate, editingTemplate.id),
           method: 'post',
           data: payload,
         });
@@ -92,7 +93,7 @@ export default function AgentGatewayPromptTemplatesPage() {
       }
 
       const response = await ctx.api.request<PromptTemplateRecord>({
-        url: 'agentGatewayApi:createPromptTemplate',
+        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.createPromptTemplate),
         method: 'post',
         data: payload,
       });
@@ -116,7 +117,7 @@ export default function AgentGatewayPromptTemplatesPage() {
   const updateTemplateStatusRequest = useRequest(
     async (template: PromptTemplateRecord, enabled: boolean) => {
       const response = await ctx.api.request<PromptTemplateRecord>({
-        url: `agentGatewayApi:updatePromptTemplate/${encodeURIComponent(template.id)}`,
+        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.updatePromptTemplate, template.id),
         method: 'post',
         data: {
           status: enabled ? 'active' : 'disabled',
@@ -142,7 +143,7 @@ export default function AgentGatewayPromptTemplatesPage() {
       }
 
       const response = await ctx.api.request<PromptPreviewResult>({
-        url: 'agentGatewayApi:previewPromptTemplate',
+        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.previewPromptTemplate),
         method: 'post',
         data: {
           templateId: previewTemplate.id,

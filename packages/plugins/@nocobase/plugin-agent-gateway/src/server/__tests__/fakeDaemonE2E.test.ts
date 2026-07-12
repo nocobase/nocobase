@@ -265,9 +265,19 @@ describe('agent gateway fake daemon E2E', () => {
     action: string,
     values: Record<string, unknown>,
   ) {
+    const actionName = {
+      heartbeat: 'heartbeatRun',
+      complete: 'completeRun',
+      fail: 'failRun',
+      timeout: 'timeoutRun',
+      'cancel-ack': 'ackCancelRun',
+    }[action];
+    if (!actionName) {
+      throw new Error(`Unsupported daemon action: ${action}`);
+    }
     return await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${daemon.nodeId}/runs/${runId}/${action}`)
+      .post(`/agentGatewayApi:${actionName}/${runId}`)
       .set('Authorization', `Bearer ${daemon.nodeToken}`)
       .send(values);
   }
@@ -278,9 +288,17 @@ describe('agent gateway fake daemon E2E', () => {
     action: string,
     values: Record<string, unknown>,
   ) {
+    const actionName = {
+      'events:append': 'appendRunEvents',
+      'artifacts:register': 'registerRunArtifact',
+      'snapshots:register': 'registerRunSnapshot',
+    }[action];
+    if (!actionName) {
+      throw new Error(`Unsupported observation action: ${action}`);
+    }
     return await app
       .agent()
-      .post(`/api/agent-gateway/runs/${runId}/${action}`)
+      .post(`/agentGatewayApi:${actionName}/${runId}`)
       .set('Authorization', `Bearer ${daemon.nodeToken}`)
       .send(values);
   }
@@ -430,10 +448,10 @@ describe('agent gateway fake daemon E2E', () => {
     const runList = getListData(runListResponse);
     expect(runList.some((item) => item.id === runId && item.status === 'succeeded')).toBe(true);
 
-    const eventsResponse = await rootAgent.get(`/api/agent-gateway/runs/${runId}/events:list`);
-    const artifactsResponse = await rootAgent.get(`/api/agent-gateway/runs/${runId}/artifacts:list`);
-    const snapshotsResponse = await rootAgent.get(`/api/agent-gateway/runs/${runId}/snapshots:list`);
-    const apiLogsResponse = await rootAgent.get(`/api/agent-gateway/runs/${runId}/api-call-logs:list`);
+    const eventsResponse = await rootAgent.get(`/agentGatewayApi:listRunEvents/${runId}`);
+    const artifactsResponse = await rootAgent.get(`/agentGatewayApi:listRunArtifacts/${runId}`);
+    const snapshotsResponse = await rootAgent.get(`/agentGatewayApi:listRunSnapshots/${runId}`);
+    const apiLogsResponse = await rootAgent.get(`/agentGatewayApi:listRunApiCallLogs/${runId}`);
     expect(eventsResponse.status).toBe(200);
     expect(artifactsResponse.status).toBe(200);
     expect(snapshotsResponse.status).toBe(200);

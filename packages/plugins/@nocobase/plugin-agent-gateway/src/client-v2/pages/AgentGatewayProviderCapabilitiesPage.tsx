@@ -13,6 +13,7 @@ import { useRequest } from 'ahooks';
 import { Button, Card, Empty, Flex, Space, Table, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useMemo } from 'react';
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiUrl } from '../../shared/apiContract';
 import {
   AGENT_CAPABILITY_KEYS,
   AgentCapabilityKey,
@@ -281,14 +282,14 @@ export default function AgentGatewayProviderCapabilitiesPage() {
 
   const matrixRequest = useRequest(async () => {
     const nodeResponse = await ctx.api.request<NodeRecord[]>({
-      url: 'agentGatewayApi:listNodes',
+      url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.listNodes),
       method: 'get',
     });
     const nodes = getResponseData(nodeResponse, []);
     const profileGroups = await Promise.all(
       nodes.map(async (node) => {
         const profileResponse = await ctx.api.request<AgentProfileRecord[]>({
-          url: `agentGatewayApi:listNodeProfiles/${encodeURIComponent(node.id)}`,
+          url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.listNodeProfiles, node.id),
           method: 'get',
         });
         return {
@@ -298,7 +299,7 @@ export default function AgentGatewayProviderCapabilitiesPage() {
       }),
     );
     const runResponse = await ctx.api.request<RunRecord[]>({
-      url: 'agentGatewayApi:listRuns',
+      url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns),
       method: 'get',
     });
     const runs = getResponseData(runResponse, []);

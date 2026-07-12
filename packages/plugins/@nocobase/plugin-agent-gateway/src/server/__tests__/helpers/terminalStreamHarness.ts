@@ -178,9 +178,7 @@ export async function createBrowserStreamTicket(
     .agent()
     .auth(browserAuthProof.authToken, { type: 'bearer' })
     .set('X-Authenticator', browserAuthProof.authenticator);
-  let request = agent.post(
-    `/api/agent-gateway/runs/${encodeURIComponent(options.runId)}/terminal-stream-tickets:create`,
-  );
+  let request = agent.post(`/agentGatewayApi:createTerminalStreamTicket/${encodeURIComponent(options.runId)}`);
   if (options.roleName) {
     request = request.set('X-Role', options.roleName);
   }
@@ -464,7 +462,7 @@ export async function createQueuedRun(app: MockServer, runner: TestRunner, runCo
 export async function claimRun(app: MockServer, runner: TestRunner, runId: string): Promise<ClaimedRun> {
   const response = await app
     .agent()
-    .post(`/api/agent-gateway/nodes/${runner.nodeId}/runs:claim`)
+    .post(`/agentGatewayApi:claimRun/${runner.nodeId}`)
     .set('Authorization', `Bearer ${runner.nodeToken}`)
     .send({
       runId,

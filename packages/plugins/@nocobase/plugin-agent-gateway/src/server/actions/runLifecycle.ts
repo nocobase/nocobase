@@ -13,6 +13,7 @@ import { Context, Next } from '@nocobase/actions';
 import { Plugin } from '@nocobase/server';
 import { Transaction } from 'sequelize';
 
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiActionName } from '../../shared/apiContract';
 import {
   AGENT_GATEWAY_ACTIONS,
   AGENT_GATEWAY_RESOURCE,
@@ -28,7 +29,6 @@ import {
 } from '../security';
 import {
   AGENT_GATEWAY_STANDARD_COLLECTIONS,
-  AGENT_GATEWAY_API_RESOURCE,
   AGENT_GATEWAY_ERROR_CODES,
   JsonRecord,
   ModelRecord,
@@ -3110,79 +3110,79 @@ export function registerRunLifecycleHooks(plugin: Plugin) {
 
 export function registerRunLifecycleRoutes(plugin: Plugin) {
   plugin.app.resourceManager.registerActionHandlers({
-    [`${AGENT_GATEWAY_API_RESOURCE}:listRunOptions`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.listRunOptions)]: async (ctx, next) => {
       await listBuildRunOptions(asActionContext(ctx));
       await next();
     },
-    [`${AGENT_GATEWAY_API_RESOURCE}:createTaskRun`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.createTaskRun)]: async (ctx, next) => {
       await createTaskRun(asActionContext(ctx));
       await next();
     },
-    [`${AGENT_GATEWAY_API_RESOURCE}:listRuns`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.listRuns)]: async (ctx, next) => {
       await listRuns(asActionContext(ctx));
       await next();
     },
-    [`${AGENT_GATEWAY_API_RESOURCE}:getRun`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.getRun)]: async (ctx, next) => {
       const actionCtx = asActionContext(ctx);
       await getRun(actionCtx, getActionTargetKey(actionCtx));
       await next();
     },
-    [`${AGENT_GATEWAY_API_RESOURCE}:createRun`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.createRun)]: async (ctx, next) => {
       await createRun(asActionContext(ctx));
       await next();
     },
-    [`${AGENT_GATEWAY_API_RESOURCE}:createSmokeRun`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.createSmokeRun)]: async (ctx, next) => {
       const actionCtx = asActionContext(ctx);
       await createSmokeRun(actionCtx, getActionTargetKey(actionCtx));
       await next();
     },
-    [`${AGENT_GATEWAY_API_RESOURCE}:claimRun`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.claimRun)]: async (ctx, next) => {
       const actionCtx = asActionContext(ctx);
       await claimRun(actionCtx, getActionTargetKey(actionCtx));
       await next();
     },
-    [`${AGENT_GATEWAY_API_RESOURCE}:heartbeatRun`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.heartbeatRun)]: async (ctx, next) => {
       const actionCtx = asActionContext(ctx);
       const auth = await authenticateNodeToken(actionCtx);
       await runHeartbeat(actionCtx, String(auth.subject.nodeId), getActionTargetKey(actionCtx));
       await next();
     },
-    [`${AGENT_GATEWAY_API_RESOURCE}:completeRun`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.completeRun)]: async (ctx, next) => {
       const actionCtx = asActionContext(ctx);
       const auth = await authenticateNodeToken(actionCtx);
       await completeRun(actionCtx, String(auth.subject.nodeId), getActionTargetKey(actionCtx));
       await next();
     },
-    [`${AGENT_GATEWAY_API_RESOURCE}:failRun`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.failRun)]: async (ctx, next) => {
       const actionCtx = asActionContext(ctx);
       const auth = await authenticateNodeToken(actionCtx);
       await failRun(actionCtx, String(auth.subject.nodeId), getActionTargetKey(actionCtx));
       await next();
     },
-    [`${AGENT_GATEWAY_API_RESOURCE}:timeoutRun`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.timeoutRun)]: async (ctx, next) => {
       const actionCtx = asActionContext(ctx);
       const auth = await authenticateNodeToken(actionCtx);
       await timeoutRun(actionCtx, String(auth.subject.nodeId), getActionTargetKey(actionCtx));
       await next();
     },
-    [`${AGENT_GATEWAY_API_RESOURCE}:ackCancelRun`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.ackCancelRun)]: async (ctx, next) => {
       const actionCtx = asActionContext(ctx);
       const auth = await authenticateNodeToken(actionCtx);
       await ackCancelRun(actionCtx, String(auth.subject.nodeId), getActionTargetKey(actionCtx));
       await next();
     },
-    [`${AGENT_GATEWAY_API_RESOURCE}:skipRun`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.skipRun)]: async (ctx, next) => {
       const actionCtx = asActionContext(ctx);
       const auth = await authenticateNodeToken(actionCtx);
       await skipSmokeRun(actionCtx, String(auth.subject.nodeId), getActionTargetKey(actionCtx));
       await next();
     },
-    [`${AGENT_GATEWAY_API_RESOURCE}:cancelRun`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.cancelRun)]: async (ctx, next) => {
       const actionCtx = asActionContext(ctx);
       await cancelRun(actionCtx, getActionTargetKey(actionCtx));
       await next();
     },
-    [`${AGENT_GATEWAY_API_RESOURCE}:expireRunLeases`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.expireRunLeases)]: async (ctx, next) => {
       await expireLeases(asActionContext(ctx));
       await next();
     },

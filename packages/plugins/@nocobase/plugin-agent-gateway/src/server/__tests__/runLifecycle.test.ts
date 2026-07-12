@@ -1761,7 +1761,7 @@ describe('agent gateway run lifecycle APIs', () => {
     expect(JSON.stringify(getData(completedReadResponse))).not.toContain('must-not-render');
     expect(JSON.stringify(getData(completedReadResponse))).not.toContain('RESULT_TOKEN_SECRET');
 
-    const completedApiLogsResponse = await rootAgent.get(`/api/agent-gateway/runs/${run.id}/api-call-logs:list`);
+    const completedApiLogsResponse = await rootAgent.get(`/agentGatewayApi:listRunApiCallLogs/${run.id}`);
     expect(completedApiLogsResponse.status).toBe(200);
     const completedApiLogs = JSON.stringify(completedApiLogsResponse.body.data);
     expect(completedApiLogs).not.toContain('must-not-render');
@@ -1789,7 +1789,7 @@ describe('agent gateway run lifecycle APIs', () => {
     expect(JSON.stringify(failedRead)).not.toContain('FAIL_SECRET');
     expect(String(failedRead.errorSummary)).toContain('[REDACTED]');
 
-    const failedApiLogsResponse = await rootAgent.get(`/api/agent-gateway/runs/${failedRun.id}/api-call-logs:list`);
+    const failedApiLogsResponse = await rootAgent.get(`/agentGatewayApi:listRunApiCallLogs/${failedRun.id}`);
     expect(failedApiLogsResponse.status).toBe(200);
     const failedApiLogs = JSON.stringify(failedApiLogsResponse.body.data);
     expect(failedApiLogs).not.toContain('must-not-render');

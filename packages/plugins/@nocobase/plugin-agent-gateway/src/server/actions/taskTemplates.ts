@@ -13,9 +13,9 @@ import { Context, Next } from '@nocobase/actions';
 import { Plugin } from '@nocobase/server';
 import { Transaction } from 'sequelize';
 
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiActionName } from '../../shared/apiContract';
 import { AGENT_GATEWAY_ACTIONS } from '../security';
 import {
-  AGENT_GATEWAY_API_RESOURCE,
   JsonRecord,
   ModelRecord,
   getArray,
@@ -390,20 +390,20 @@ async function updateTaskTemplate(ctx: Context, identifier: string) {
 
 export function registerTaskTemplateRoutes(plugin: Plugin) {
   plugin.app.resourceManager.registerActionHandlers({
-    [`${AGENT_GATEWAY_API_RESOURCE}:listTaskTemplates`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.listTaskTemplates)]: async (ctx, next) => {
       await listTaskTemplates(asActionContext(ctx));
       await next();
     },
-    [`${AGENT_GATEWAY_API_RESOURCE}:getTaskTemplate`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.getTaskTemplate)]: async (ctx, next) => {
       const actionCtx = asActionContext(ctx);
       await getTaskTemplate(actionCtx, getActionTargetKey(actionCtx));
       await next();
     },
-    [`${AGENT_GATEWAY_API_RESOURCE}:createTaskTemplate`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.createTaskTemplate)]: async (ctx, next) => {
       await createTaskTemplate(asActionContext(ctx));
       await next();
     },
-    [`${AGENT_GATEWAY_API_RESOURCE}:updateTaskTemplate`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.updateTaskTemplate)]: async (ctx, next) => {
       const actionCtx = asActionContext(ctx);
       await updateTaskTemplate(actionCtx, getActionTargetKey(actionCtx));
       await next();

@@ -10,11 +10,13 @@
 import { NoPermissionError, checkFilterParams, createUserProvider, parseJsonTemplate } from '@nocobase/acl';
 import { Context } from '@nocobase/actions';
 
+import { AGENT_GATEWAY_API_RESOURCE } from '../../shared/apiContract';
+import { JsonRecord, getJsonArray, getJsonRecord, getJsonString, isJsonRecord } from '../../shared/json';
 import { AGENT_GATEWAY_ACTIONS, AGENT_GATEWAY_RESOURCE } from '../security';
 
 export const API_PREFIX = '/api/agent-gateway';
 export const NOCOBASE_API_PREFIX = '/api';
-export const AGENT_GATEWAY_API_RESOURCE = 'agentGatewayApi';
+export { AGENT_GATEWAY_API_RESOURCE };
 
 export function asActionContext(value: unknown) {
   return value as Context;
@@ -33,7 +35,7 @@ export const AGENT_GATEWAY_ERROR_CODES = {
   resourceNotVisible: 'AGENT_GATEWAY_RESOURCE_NOT_VISIBLE',
 } as const;
 
-export type JsonRecord = Record<string, unknown>;
+export type { JsonRecord } from '../../shared/json';
 
 export const AGENT_GATEWAY_STANDARD_COLLECTIONS = [
   'agAgentConversationEvents',
@@ -92,7 +94,7 @@ interface AuthenticatedContext extends Context {
 }
 
 export function isRecord(value: unknown): value is JsonRecord {
-  return Object.prototype.toString.call(value) === '[object Object]';
+  return isJsonRecord(value);
 }
 
 export function getBodyValues(ctx: Context): JsonRecord {
@@ -101,7 +103,7 @@ export function getBodyValues(ctx: Context): JsonRecord {
 }
 
 export function getString(value: unknown) {
-  return typeof value === 'string' ? value.trim() : '';
+  return getJsonString(value);
 }
 
 export function normalizeNocoBaseApiPath(pathname: string) {
@@ -147,11 +149,11 @@ export function getDate(value: unknown) {
 }
 
 export function getRecord(value: unknown): JsonRecord {
-  return isRecord(value) ? value : {};
+  return getJsonRecord(value);
 }
 
 export function getArray(value: unknown): unknown[] {
-  return Array.isArray(value) ? value : [];
+  return getJsonArray(value);
 }
 
 export function hasModelGetter(value: unknown): value is ModelRecord {

@@ -17,11 +17,15 @@ import { Plugin } from '@nocobase/server';
 import { storagePathJoin } from '@nocobase/utils';
 import { Transaction } from 'sequelize';
 
+import {
+  AGENT_GATEWAY_API_ACTIONS,
+  getAgentGatewayApiActionName,
+  getAgentGatewayApiPath,
+} from '../../shared/apiContract';
 import { persistSkillZipUpload, validateSkillZipArchive } from '../../daemon/skillSync';
 import { authenticateNodeToken } from '../security';
 import { consumeCompletedUpload } from './fileUploads';
 import {
-  AGENT_GATEWAY_API_RESOURCE,
   JsonRecord,
   ModelRecord,
   getBodyValues,
@@ -123,7 +127,8 @@ function getRequestOrigin(ctx: Context) {
 function getArchiveDownloadUrl(ctx: Context, skillVersionId: string, source: JsonRecord) {
   const sha256 = getString(source.sha256);
   const query = sha256 ? `?sha256=${encodeURIComponent(sha256)}` : '';
-  return `${getRequestOrigin(ctx)}/api/${AGENT_GATEWAY_API_RESOURCE}:downloadSkillVersion/${encodeURIComponent(
+  return `${getRequestOrigin(ctx)}${getAgentGatewayApiPath(
+    AGENT_GATEWAY_API_ACTIONS.downloadSkillVersion,
     skillVersionId,
   )}${query}`;
 }
@@ -486,19 +491,19 @@ async function downloadSkillVersionArchive(ctx: Context, skillVersionId: string)
 
 export function registerSkillVersionRoutes(plugin: Plugin) {
   plugin.app.resourceManager.registerActionHandlers({
-    [`${AGENT_GATEWAY_API_RESOURCE}:uploadSkillVersion`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.uploadSkillVersion)]: async (ctx, next) => {
       await uploadSkillVersionZip(asActionContext(ctx));
       await next();
     },
-    [`${AGENT_GATEWAY_API_RESOURCE}:createSkillVersionFromUpload`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.createSkillVersionFromUpload)]: async (ctx, next) => {
       await createSkillVersionFromUpload(asActionContext(ctx));
       await next();
     },
-    [`${AGENT_GATEWAY_API_RESOURCE}:listSkillVersions`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.listSkillVersions)]: async (ctx, next) => {
       await listSkillVersions(asActionContext(ctx));
       await next();
     },
-    [`${AGENT_GATEWAY_API_RESOURCE}:downloadSkillVersion`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.downloadSkillVersion)]: async (ctx, next) => {
       const actionCtx = asActionContext(ctx);
       await downloadSkillVersionArchive(actionCtx, getActionTargetKey(actionCtx));
       await next();

@@ -8,6 +8,11 @@
  */
 
 import { AGENT_GATEWAY_ACTIONS, AGENT_GATEWAY_PERMISSION_DEFINITIONS, AGENT_GATEWAY_PERMISSIONS } from '../security';
+import {
+  AGENT_GATEWAY_API_ACTIONS,
+  AGENT_GATEWAY_MACHINE_API_ACTIONS,
+  getAgentGatewayApiActionName,
+} from '../../shared/apiContract';
 
 describe('agent gateway permission foundation', () => {
   it('defines stable permission snippets and resource actions for session control phases', () => {
@@ -40,7 +45,7 @@ describe('agent gateway permission foundation', () => {
     );
   });
 
-  it('keeps legacy read and cancel snippets compatible without granting raw terminal write', () => {
+  it('keeps granular read and cancel snippets isolated from raw terminal write', () => {
     const manage = AGENT_GATEWAY_PERMISSION_DEFINITIONS.find(
       (definition) => definition.name === AGENT_GATEWAY_PERMISSIONS.manage,
     );
@@ -84,9 +89,21 @@ describe('agent gateway permission foundation', () => {
     expect(manage?.actions).toEqual(
       expect.arrayContaining(['agentGateway:cancelRun', 'agentGateway:interruptRun', 'agentGateway:terminateRun']),
     );
-    expect(cancelRun?.actions).toEqual(['agentGateway:cancelRun', 'agRuns:get']);
+    expect(cancelRun?.actions).toEqual(['agentGateway:cancelRun', 'agRuns:get', 'agentGatewayApi:cancelRun']);
     expect(cancelRun?.actions).not.toContain('agentGateway:interruptRun');
     expect(cancelRun?.actions).not.toContain('agentGateway:terminateRun');
-    expect(rawWrite?.actions).toEqual([]);
+    expect(rawWrite?.actions).toEqual(['agentGatewayApi:sendTerminalInput']);
+  });
+
+  it('assigns every API action to machine authentication or an ACL snippet', () => {
+    const machineActions = new Set(AGENT_GATEWAY_MACHINE_API_ACTIONS);
+    const aclActions = new Set(AGENT_GATEWAY_PERMISSION_DEFINITIONS.flatMap((definition) => definition.actions));
+    const unassignedActions = Object.values(AGENT_GATEWAY_API_ACTIONS).filter(
+      (action) =>
+        !machineActions.has(action as (typeof AGENT_GATEWAY_MACHINE_API_ACTIONS)[number]) &&
+        !aclActions.has(getAgentGatewayApiActionName(action)),
+    );
+
+    expect(unassignedActions).toEqual([]);
   });
 });

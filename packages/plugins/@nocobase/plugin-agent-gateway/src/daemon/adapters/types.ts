@@ -7,8 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { JsonRecord } from '../types';
 import { AgentProviderCapabilities, AgentProviderKey } from '../../shared/providerCapabilities';
+import { NormalizedAgentEvent, ProviderEventInput } from '../../shared/providerEvents';
+
+export type { NormalizedAgentEvent, ProviderEventInput } from '../../shared/providerEvents';
 
 export type AgentCapabilities = AgentProviderCapabilities;
 
@@ -35,24 +37,6 @@ export interface BuildResumeCommandInput {
   extraArgs?: string[];
   timeoutMs?: number;
   outputMode?: 'structured' | 'terminal';
-}
-
-export interface ProviderEventInput {
-  rawLine?: string;
-  event?: unknown;
-  source?: string;
-}
-
-export interface NormalizedAgentEvent {
-  eventType: string;
-  level: 'debug' | 'info' | 'warn' | 'error';
-  providerEventId?: string | null;
-  correlationId?: string | null;
-  confidence?: number | null;
-  message?: string | null;
-  payloadJson?: JsonRecord;
-  rawLine?: string | null;
-  rawEvent?: JsonRecord | null;
 }
 
 export interface AgentAdapter {

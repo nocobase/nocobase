@@ -9,6 +9,7 @@
 
 import { Tag, Typography } from 'antd';
 import React from 'react';
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiUrl } from '../../shared/apiContract';
 
 export interface AgentGatewayApiResponse<T> {
   data?: {
@@ -74,7 +75,7 @@ export async function uploadAgentGatewayFile(
   purpose: 'skill-version' | 'run-artifact',
 ) {
   const initResponse = await api.request<{ id: string; chunkSize?: number }>({
-    url: 'agentGatewayApi:initFileUpload',
+    url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.initFileUpload),
     method: 'post',
     data: {
       purpose,
@@ -89,7 +90,7 @@ export async function uploadAgentGatewayFile(
     for (let offset = 0; offset < file.size; offset += chunkSize) {
       const chunk = await readBlobAsArrayBuffer(file.slice(offset, Math.min(offset + chunkSize, file.size)));
       await api.request({
-        url: `agentGatewayApi:appendFileUpload/${encodeURIComponent(initialized.id)}`,
+        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.appendFileUpload, initialized.id),
         method: 'post',
         data: {
           offset,
@@ -98,14 +99,14 @@ export async function uploadAgentGatewayFile(
       });
     }
     await api.request({
-      url: `agentGatewayApi:completeFileUpload/${encodeURIComponent(initialized.id)}`,
+      url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.completeFileUpload, initialized.id),
       method: 'post',
     });
     return initialized.id;
   } catch (error) {
     await api
       .request({
-        url: `agentGatewayApi:abortFileUpload/${encodeURIComponent(initialized.id)}`,
+        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.abortFileUpload, initialized.id),
         method: 'post',
       })
       .catch(() => undefined);

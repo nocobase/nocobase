@@ -9,16 +9,17 @@
 
 import { createHash, randomUUID } from 'crypto';
 
-import { Context, Next } from '@nocobase/actions';
+import { Context } from '@nocobase/actions';
 import { Plugin } from '@nocobase/server';
 import { UniqueConstraintError } from 'sequelize';
 import type { Transaction } from 'sequelize';
 
-import { AGENT_GATEWAY_ACTIONS, redactEventPayload, redactObservabilityText } from '../security';
+import { AGENT_GATEWAY_ACTIONS, authenticateNodeToken, redactEventPayload, redactObservabilityText } from '../security';
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiActionName } from '../../shared/apiContract';
 import {
-  API_PREFIX,
   JsonRecord,
   ModelRecord,
+  asActionContext,
   assertRunVisible,
   getBodyValues,
   getCurrentUserId,
@@ -30,6 +31,7 @@ import {
   getModelValue,
   getRecord,
   getString,
+  getActionTargetKey,
   requireAgentGatewayPermission,
   requireLoggedIn,
 } from './utils';
@@ -894,79 +896,60 @@ async function updateRunTerminal(ctx: Context, nodeId: string, runId: string) {
 }
 
 export function registerRunTerminalRoutes(plugin: Plugin) {
-  plugin.app.use(
-    async (ctx: Context, next: Next) => {
-      if (!ctx.path.startsWith(API_PREFIX)) {
-        await next();
-        return;
-      }
-
-      const routePath = ctx.path.slice(API_PREFIX.length);
-      const terminalSnapshotMatch = routePath.match(/^\/runs\/([^/]+)\/terminal:snapshot$/);
-      const terminalActionMatch = routePath.match(/^\/runs\/([^/]+)\/terminal:(send|write|interrupt|terminate)$/);
-      const terminalUpdateMatch = routePath.match(/^\/nodes\/([^/]+)\/runs\/([^/]+)\/terminal:update$/);
-      const controlStatusMatch = routePath.match(/^\/runs\/([^/]+)\/control-requests\/([^/]+):get$/);
-      const controlPendingMatch = routePath.match(/^\/nodes\/([^/]+)\/runs\/([^/]+)\/control-requests:pending$/);
-      const controlAckMatch = routePath.match(/^\/nodes\/([^/]+)\/runs\/([^/]+)\/control-requests\/([^/]+):ack$/);
-
-      if (ctx.method === 'GET' && terminalSnapshotMatch) {
-        const runId = terminalSnapshotMatch[1];
-        assertRunId(ctx, runId);
-        await snapshotTerminal(ctx, runId);
-        return;
-      }
-
-      if (ctx.method === 'POST' && terminalActionMatch) {
-        const [, runId, action] = terminalActionMatch;
-        assertRunId(ctx, runId);
-        if (action === 'send' || action === 'write') {
-          await sendTerminalInput(ctx);
-          return;
-        }
-        if (action === 'interrupt') {
-          await interruptTerminal(ctx, runId);
-          return;
-        }
-        if (action === 'terminate') {
-          await terminateTerminal(ctx, runId);
-          return;
-        }
-      }
-
-      if (ctx.method === 'POST' && terminalUpdateMatch) {
-        const [, nodeId, runId] = terminalUpdateMatch;
-        assertRunId(ctx, runId);
-        await updateRunTerminal(ctx, nodeId, runId);
-        return;
-      }
-
-      if (ctx.method === 'GET' && controlStatusMatch) {
-        const [, runId, requestId] = controlStatusMatch;
-        assertRunId(ctx, runId);
-        await getControlRequestStatus(ctx, runId, requestId);
-        return;
-      }
-
-      if (ctx.method === 'POST' && controlPendingMatch) {
-        const [, nodeId, runId] = controlPendingMatch;
-        assertRunId(ctx, runId);
-        await listPendingControlRequests(ctx, nodeId, runId);
-        return;
-      }
-
-      if (ctx.method === 'POST' && controlAckMatch) {
-        const [, nodeId, runId, requestId] = controlAckMatch;
-        assertRunId(ctx, runId);
-        await ackControlRequest(ctx, nodeId, runId, requestId);
-        return;
-      }
-
+  const getRunId = (ctx: Context) => {
+    const runId = getActionTargetKey(ctx);
+    assertRunId(ctx, runId);
+    return runId;
+  };
+  const getRequestId = (ctx: Context) => {
+    const requestId = getString(getBodyValues(ctx).requestId || getRecord(ctx.query).requestId);
+    if (!UUID_PATTERN.test(requestId)) {
+      ctx.throw(400, 'requestId must be a valid UUID');
+    }
+    return requestId;
+  };
+  plugin.app.resourceManager.registerActionHandlers({
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.getTerminalSnapshot)]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      await snapshotTerminal(actionCtx, getRunId(actionCtx));
       await next();
     },
-    {
-      tag: 'agentGatewayRunTerminalRoutes',
-      after: 'agentGatewayRunLifecycleRoutes',
-      before: 'agentGatewayRunObservabilityRoutes',
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.sendTerminalInput)]: async (ctx, next) => {
+      await sendTerminalInput(asActionContext(ctx));
+      await next();
     },
-  );
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.interruptTerminal)]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      await interruptTerminal(actionCtx, getRunId(actionCtx));
+      await next();
+    },
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.terminateTerminal)]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      await terminateTerminal(actionCtx, getRunId(actionCtx));
+      await next();
+    },
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.updateRunTerminal)]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      const auth = await authenticateNodeToken(actionCtx);
+      await updateRunTerminal(actionCtx, String(auth.subject.nodeId), getRunId(actionCtx));
+      await next();
+    },
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.getControlRequestStatus)]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      await getControlRequestStatus(actionCtx, getRunId(actionCtx), getRequestId(actionCtx));
+      await next();
+    },
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.listPendingControlRequests)]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      const auth = await authenticateNodeToken(actionCtx);
+      await listPendingControlRequests(actionCtx, String(auth.subject.nodeId), getRunId(actionCtx));
+      await next();
+    },
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.ackControlRequest)]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      const auth = await authenticateNodeToken(actionCtx);
+      await ackControlRequest(actionCtx, String(auth.subject.nodeId), getRunId(actionCtx), getRequestId(actionCtx));
+      await next();
+    },
+  });
 }

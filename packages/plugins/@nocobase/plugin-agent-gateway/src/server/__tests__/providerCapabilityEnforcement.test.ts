@@ -283,21 +283,17 @@ describe('agent gateway provider capability enforcement', () => {
       session: true,
     });
 
-    const resumeResponse = await rootAgent
-      .post(`/api/agent-gateway/agent-sessions/${genericEnded.sessionId}/resume`)
-      .send({
-        message: 'Continue generic',
-        idempotencyKey: 'generic-resume',
-      });
+    const resumeResponse = await rootAgent.post(`/agentGatewayApi:resumeAgentSession/${genericEnded.sessionId}`).send({
+      message: 'Continue generic',
+      idempotencyKey: 'generic-resume',
+    });
     expect(resumeResponse.status).toBe(409);
     expect(JSON.stringify(resumeResponse.body)).toContain('AGENT_GATEWAY_ACTION_UNSUPPORTED');
 
-    const codexResumeResponse = await rootAgent
-      .post(`/api/agent-gateway/agent-sessions/${codex.sessionId}/resume`)
-      .send({
-        message: 'Continue codex',
-        idempotencyKey: 'codex-resume',
-      });
+    const codexResumeResponse = await rootAgent.post(`/agentGatewayApi:resumeAgentSession/${codex.sessionId}`).send({
+      message: 'Continue codex',
+      idempotencyKey: 'codex-resume',
+    });
     expect(codexResumeResponse.status).toBe(200);
 
     const opencodeRunResponse = await rootAgent.get(`/agentGatewayApi:getRun/${opencodeResumeOnly.runId}`);
@@ -308,7 +304,7 @@ describe('agent gateway provider capability enforcement', () => {
     });
 
     const opencodeResumeResponse = await rootAgent
-      .post(`/api/agent-gateway/agent-sessions/${opencodeResumeOnly.sessionId}/resume`)
+      .post(`/agentGatewayApi:resumeAgentSession/${opencodeResumeOnly.sessionId}`)
       .send({
         message: 'Continue opencode',
         idempotencyKey: 'opencode-resume-only',
@@ -330,7 +326,7 @@ describe('agent gateway provider capability enforcement', () => {
         resumeWithMessage: false,
       });
       const response = await rootAgent
-        .post(`/api/agent-gateway/agent-sessions/${rawResumeWithMessage.sessionId}/resume`)
+        .post(`/agentGatewayApi:resumeAgentSession/${rawResumeWithMessage.sessionId}`)
         .send({
           message: `Continue ${provider}`,
           idempotencyKey: `${provider}-resume-with-message-raw`,
@@ -339,19 +335,15 @@ describe('agent gateway provider capability enforcement', () => {
       expect(JSON.stringify(response.body)).toContain('AGENT_GATEWAY_ACTION_UNSUPPORTED');
     }
 
-    const interruptResponse = await rootAgent
-      .post(`/api/agent-gateway/runs/${genericRunning.runId}/terminal:interrupt`)
-      .send({
-        idempotencyKey: 'generic-interrupt',
-      });
+    const interruptResponse = await rootAgent.post(`/agentGatewayApi:interruptTerminal/${genericRunning.runId}`).send({
+      idempotencyKey: 'generic-interrupt',
+    });
     expect(interruptResponse.status).toBe(409);
     expect(JSON.stringify(interruptResponse.body)).toContain('AGENT_GATEWAY_ACTION_UNSUPPORTED');
 
-    const terminateResponse = await rootAgent
-      .post(`/api/agent-gateway/runs/${genericRunning.runId}/terminal:terminate`)
-      .send({
-        idempotencyKey: 'generic-terminate',
-      });
+    const terminateResponse = await rootAgent.post(`/agentGatewayApi:terminateTerminal/${genericRunning.runId}`).send({
+      idempotencyKey: 'generic-terminate',
+    });
     expect(terminateResponse.status).toBe(200);
   });
 
@@ -377,7 +369,7 @@ describe('agent gateway provider capability enforcement', () => {
     });
 
     const resumeResponse = await rootAgent
-      .post(`/api/agent-gateway/agent-sessions/${profileDisabledResume.sessionId}/resume`)
+      .post(`/agentGatewayApi:resumeAgentSession/${profileDisabledResume.sessionId}`)
       .send({
         message: 'Continue codex with profile-disabled resume',
         idempotencyKey: 'codex-profile-disabled-resume',
@@ -401,7 +393,7 @@ describe('agent gateway provider capability enforcement', () => {
     });
     const idempotencyKey = 'codex-profile-rechecked-resume';
     const firstResponse = await rootAgent
-      .post(`/api/agent-gateway/agent-sessions/${profileBackedResume.sessionId}/resume`)
+      .post(`/agentGatewayApi:resumeAgentSession/${profileBackedResume.sessionId}`)
       .send({
         message: 'Continue codex once',
         idempotencyKey,
@@ -434,7 +426,7 @@ describe('agent gateway provider capability enforcement', () => {
     });
 
     const replayResponse = await rootAgent
-      .post(`/api/agent-gateway/agent-sessions/${profileBackedResume.sessionId}/resume`)
+      .post(`/agentGatewayApi:resumeAgentSession/${profileBackedResume.sessionId}`)
       .send({
         message: 'Continue codex once',
         idempotencyKey,
@@ -458,7 +450,7 @@ describe('agent gateway provider capability enforcement', () => {
       session: true,
     });
     const readOnlyAgent = await createUserAgent('provider-capability-read-only', ['agentGateway.readRuns']);
-    const response = await readOnlyAgent.post(`/api/agent-gateway/runs/${generic.runId}/terminal:terminate`).send({
+    const response = await readOnlyAgent.post(`/agentGatewayApi:terminateTerminal/${generic.runId}`).send({
       idempotencyKey: 'generic-terminate-no-permission',
     });
 
@@ -500,12 +492,12 @@ describe('agent gateway provider capability enforcement', () => {
       },
     });
 
-    const eventsResponse = await rootAgent.get(`/api/agent-gateway/runs/${generic.runId}/events:list`);
+    const eventsResponse = await rootAgent.get(`/agentGatewayApi:listRunEvents/${generic.runId}`);
     expect(eventsResponse.status).toBe(409);
     expect(JSON.stringify(eventsResponse.body)).toContain('AGENT_GATEWAY_ACTION_UNSUPPORTED');
     expect(JSON.stringify(eventsResponse.body)).not.toContain('RAW_EVENT_SECRET');
 
-    const artifactsResponse = await rootAgent.get(`/api/agent-gateway/runs/${generic.runId}/artifacts:list`);
+    const artifactsResponse = await rootAgent.get(`/agentGatewayApi:listRunArtifacts/${generic.runId}`);
     expect(artifactsResponse.status).toBe(409);
     expect(JSON.stringify(artifactsResponse.body)).toContain('AGENT_GATEWAY_ACTION_UNSUPPORTED');
     expect(JSON.stringify(artifactsResponse.body)).not.toContain('ARTIFACT_SECRET');
@@ -587,12 +579,12 @@ describe('agent gateway provider capability enforcement', () => {
       },
     });
 
-    const eventsResponse = await rootAgent.get(`/api/agent-gateway/runs/${runId}/events:list`);
+    const eventsResponse = await rootAgent.get(`/agentGatewayApi:listRunEvents/${runId}`);
     expect(eventsResponse.status).toBe(409);
     expect(JSON.stringify(eventsResponse.body)).toContain('AGENT_GATEWAY_ACTION_UNSUPPORTED');
     expect(JSON.stringify(eventsResponse.body)).not.toContain('FALLBACK_RAW_EVENT_SECRET');
 
-    const artifactsResponse = await rootAgent.get(`/api/agent-gateway/runs/${runId}/artifacts:list`);
+    const artifactsResponse = await rootAgent.get(`/agentGatewayApi:listRunArtifacts/${runId}`);
     expect(artifactsResponse.status).toBe(409);
     expect(JSON.stringify(artifactsResponse.body)).toContain('AGENT_GATEWAY_ACTION_UNSUPPORTED');
     expect(JSON.stringify(artifactsResponse.body)).not.toContain('FALLBACK_ARTIFACT_SECRET');
@@ -696,12 +688,12 @@ describe('agent gateway provider capability enforcement', () => {
       },
     });
 
-    const eventsResponse = await rootAgent.get(`/api/agent-gateway/runs/${runId}/events:list`);
+    const eventsResponse = await rootAgent.get(`/agentGatewayApi:listRunEvents/${runId}`);
     expect(eventsResponse.status).toBe(409);
     expect(JSON.stringify(eventsResponse.body)).toContain('AGENT_GATEWAY_ACTION_UNSUPPORTED');
     expect(JSON.stringify(eventsResponse.body)).not.toContain('PROFILE_KEY_RAW_EVENT_SECRET');
 
-    const artifactsResponse = await rootAgent.get(`/api/agent-gateway/runs/${runId}/artifacts:list`);
+    const artifactsResponse = await rootAgent.get(`/agentGatewayApi:listRunArtifacts/${runId}`);
     expect(artifactsResponse.status).toBe(409);
     expect(JSON.stringify(artifactsResponse.body)).toContain('AGENT_GATEWAY_ACTION_UNSUPPORTED');
     expect(JSON.stringify(artifactsResponse.body)).not.toContain('PROFILE_KEY_ARTIFACT_SECRET');
@@ -845,12 +837,12 @@ describe('agent gateway provider capability enforcement', () => {
       },
     });
 
-    const eventsResponse = await rootAgent.get(`/api/agent-gateway/runs/${runId}/events:list`);
+    const eventsResponse = await rootAgent.get(`/agentGatewayApi:listRunEvents/${runId}`);
     expect(eventsResponse.status).toBe(409);
     expect(JSON.stringify(eventsResponse.body)).toContain('AGENT_GATEWAY_ACTION_UNSUPPORTED');
     expect(JSON.stringify(eventsResponse.body)).not.toContain('EXPLICIT_GENERIC_RAW_EVENT_SECRET');
 
-    const artifactsResponse = await rootAgent.get(`/api/agent-gateway/runs/${runId}/artifacts:list`);
+    const artifactsResponse = await rootAgent.get(`/agentGatewayApi:listRunArtifacts/${runId}`);
     expect(artifactsResponse.status).toBe(409);
     expect(JSON.stringify(artifactsResponse.body)).toContain('AGENT_GATEWAY_ACTION_UNSUPPORTED');
     expect(JSON.stringify(artifactsResponse.body)).not.toContain('EXPLICIT_GENERIC_ARTIFACT_SECRET');
@@ -862,7 +854,7 @@ describe('agent gateway provider capability enforcement', () => {
       terminal: true,
     });
     const idempotencyKey = 'codex-interrupt-recheck';
-    const firstResponse = await rootAgent.post(`/api/agent-gateway/runs/${codex.runId}/terminal:interrupt`).send({
+    const firstResponse = await rootAgent.post(`/agentGatewayApi:interruptTerminal/${codex.runId}`).send({
       idempotencyKey,
     });
     expect(firstResponse.status).toBe(200);
@@ -876,7 +868,7 @@ describe('agent gateway provider capability enforcement', () => {
       },
     });
 
-    const replayResponse = await rootAgent.post(`/api/agent-gateway/runs/${codex.runId}/terminal:interrupt`).send({
+    const replayResponse = await rootAgent.post(`/agentGatewayApi:interruptTerminal/${codex.runId}`).send({
       idempotencyKey,
     });
     expect(replayResponse.status).toBe(409);
@@ -913,7 +905,7 @@ describe('agent gateway provider capability enforcement', () => {
       artifacts: false,
     });
 
-    const artifactsResponse = await rootAgent.get(`/api/agent-gateway/runs/${profileOverride.runId}/artifacts:list`);
+    const artifactsResponse = await rootAgent.get(`/agentGatewayApi:listRunArtifacts/${profileOverride.runId}`);
     expect(artifactsResponse.status).toBe(409);
     expect(JSON.stringify(artifactsResponse.body)).toContain('AGENT_GATEWAY_ACTION_UNSUPPORTED');
     expect(JSON.stringify(artifactsResponse.body)).not.toContain('PROFILE_OVERRIDE_SECRET');
@@ -942,13 +934,13 @@ describe('agent gateway provider capability enforcement', () => {
       },
     });
 
-    const terminalResponse = await rootAgent.get(`/api/agent-gateway/runs/${sessionOverride.runId}/terminal:snapshot`);
+    const terminalResponse = await rootAgent.get(`/agentGatewayApi:getTerminalSnapshot/${sessionOverride.runId}`);
     expect(terminalResponse.status).toBe(409);
     expect(JSON.stringify(terminalResponse.body)).toContain('AGENT_GATEWAY_ACTION_UNSUPPORTED');
     expect(JSON.stringify(terminalResponse.body)).not.toContain(getManagedSessionName(sessionOverride.runId));
 
     const streamTicketResponse = await rootAgent.post(
-      `/api/agent-gateway/runs/${sessionOverride.runId}/terminal-stream-tickets:create`,
+      `/agentGatewayApi:createTerminalStreamTicket/${sessionOverride.runId}`,
     );
     expect(streamTicketResponse.status).toBe(409);
     expect(JSON.stringify(streamTicketResponse.body)).toContain('AGENT_GATEWAY_ACTION_UNSUPPORTED');
@@ -994,7 +986,7 @@ describe('agent gateway provider capability enforcement', () => {
       artifacts: false,
     });
     const profileAliasArtifactsResponse = await rootAgent.get(
-      `/api/agent-gateway/runs/${profileAliasOverride.runId}/artifacts:list`,
+      `/agentGatewayApi:listRunArtifacts/${profileAliasOverride.runId}`,
     );
     expect(profileAliasArtifactsResponse.status).toBe(409);
     expect(JSON.stringify(profileAliasArtifactsResponse.body)).toContain('AGENT_GATEWAY_ACTION_UNSUPPORTED');
@@ -1024,13 +1016,13 @@ describe('agent gateway provider capability enforcement', () => {
     });
 
     const nestedTerminalResponse = await rootAgent.get(
-      `/api/agent-gateway/runs/${nestedSessionOverride.runId}/terminal:snapshot`,
+      `/agentGatewayApi:getTerminalSnapshot/${nestedSessionOverride.runId}`,
     );
     expect(nestedTerminalResponse.status).toBe(409);
     expect(JSON.stringify(nestedTerminalResponse.body)).toContain('AGENT_GATEWAY_ACTION_UNSUPPORTED');
 
     const nestedInterruptResponse = await rootAgent
-      .post(`/api/agent-gateway/runs/${nestedSessionOverride.runId}/terminal:interrupt`)
+      .post(`/agentGatewayApi:interruptTerminal/${nestedSessionOverride.runId}`)
       .send({
         idempotencyKey: 'nested-session-interrupt',
       });
@@ -1038,7 +1030,7 @@ describe('agent gateway provider capability enforcement', () => {
     expect(JSON.stringify(nestedInterruptResponse.body)).toContain('AGENT_GATEWAY_ACTION_UNSUPPORTED');
 
     const nestedTerminateResponse = await rootAgent
-      .post(`/api/agent-gateway/runs/${nestedSessionOverride.runId}/terminal:terminate`)
+      .post(`/agentGatewayApi:terminateTerminal/${nestedSessionOverride.runId}`)
       .send({
         idempotencyKey: 'nested-session-terminate',
       });

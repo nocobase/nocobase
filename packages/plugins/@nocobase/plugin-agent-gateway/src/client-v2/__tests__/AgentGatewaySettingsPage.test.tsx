@@ -1532,7 +1532,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/external-runs:import') {
+      if (config.url === 'agentGatewayApi:importExternalRun') {
         return {
           data: {
             data: {
@@ -1594,7 +1594,7 @@ describe('PluginAgentGatewayClientV2', () => {
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'agent-gateway/external-runs:import',
+          url: 'agentGatewayApi:importExternalRun',
           method: 'post',
           data: expect.objectContaining({
             provider: 'codex',
@@ -2168,7 +2168,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-empty/conversation-events:list') {
+      if (config.url === 'agentGatewayApi:listRunConversationEvents/run-id-empty') {
         return conversationEventsResponse;
       }
 
@@ -2245,7 +2245,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-live/conversation-events:list') {
+      if (config.url === 'agentGatewayApi:listRunConversationEvents/run-id-live') {
         conversationEventsCallCount += 1;
         if (conversationEventsCallCount < 3) {
           return {
@@ -2363,7 +2363,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-task/conversation-events:list') {
+      if (config.url === 'agentGatewayApi:listRunConversationEvents/run-id-task') {
         return {
           data: {
             data: [
@@ -2380,7 +2380,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/agent-sessions/session-id-empty/conversation-events:list') {
+      if (config.url === 'agentGatewayApi:listSessionConversationEvents/session-id-empty') {
         return {
           data: {
             data: [],
@@ -2400,7 +2400,7 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(screen.queryByText('Waiting for live task updates from the agent')).toBeNull();
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'agent-gateway/runs/run-id-task/conversation-events:list',
+        url: 'agentGatewayApi:listRunConversationEvents/run-id-task',
         method: 'get',
       }),
     );
@@ -2532,7 +2532,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/events:list') {
+      if (config.url === 'agentGatewayApi:listRunEvents/run-id-1') {
         return {
           data: {
             data: [
@@ -2573,7 +2573,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/agent-sessions/session-id-1/conversation-events:list') {
+      if (config.url === 'agentGatewayApi:listSessionConversationEvents/session-id-1') {
         return {
           data: {
             data: [
@@ -2639,7 +2639,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/artifacts:list') {
+      if (config.url === 'agentGatewayApi:listRunArtifacts/run-id-1') {
         return {
           data: {
             data: [
@@ -2674,7 +2674,10 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/artifacts/artifact-id-1:content') {
+      if (
+        config.url === 'agentGatewayApi:getRunArtifactContent/run-id-1' &&
+        config.params?.artifactId === 'artifact-id-1'
+      ) {
         return {
           data: {
             data: {
@@ -2685,7 +2688,10 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/artifacts/artifact-id-2:content') {
+      if (
+        config.url === 'agentGatewayApi:getRunArtifactContent/run-id-1' &&
+        config.params?.artifactId === 'artifact-id-2'
+      ) {
         return {
           data: {
             data: {
@@ -2697,7 +2703,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/snapshots:list') {
+      if (config.url === 'agentGatewayApi:listRunSnapshots/run-id-1') {
         return {
           data: {
             data: [
@@ -2713,7 +2719,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/api-call-logs:list') {
+      if (config.url === 'agentGatewayApi:listRunApiCallLogs/run-id-1') {
         return {
           data: {
             data: [
@@ -2752,7 +2758,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/terminal:snapshot') {
+      if (config.url === 'agentGatewayApi:getTerminalSnapshot/run-id-1') {
         return {
           data: {
             data: {
@@ -2833,10 +2839,10 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(screen.queryByText('Command completed')).toBeNull();
 
     const getRequestedUrls = () => request.mock.calls.map(([config]) => config.url);
-    expect(getRequestedUrls()).not.toContain('agent-gateway/runs/run-id-1/events:list');
-    expect(getRequestedUrls()).not.toContain('agent-gateway/runs/run-id-1/artifacts:list');
-    expect(getRequestedUrls()).not.toContain('agent-gateway/runs/run-id-1/snapshots:list');
-    expect(getRequestedUrls()).not.toContain('agent-gateway/runs/run-id-1/api-call-logs:list');
+    expect(getRequestedUrls()).not.toContain('agentGatewayApi:listRunEvents/run-id-1');
+    expect(getRequestedUrls()).not.toContain('agentGatewayApi:listRunArtifacts/run-id-1');
+    expect(getRequestedUrls()).not.toContain('agentGatewayApi:listRunSnapshots/run-id-1');
+    expect(getRequestedUrls()).not.toContain('agentGatewayApi:listRunApiCallLogs/run-id-1');
 
     fireEvent.click(await screen.findByRole('tab', { name: 'Agent Sessions' }));
     expect(await screen.findByText('Live CLI Output')).toBeTruthy();
@@ -2857,10 +2863,10 @@ describe('PluginAgentGatewayClientV2', () => {
 
     fireEvent.click(await screen.findByRole('tab', { name: 'Logs' }));
     expect(await screen.findByText('build started')).toBeTruthy();
-    expect(getRequestedUrls()).toContain('agent-gateway/runs/run-id-1/events:list');
+    expect(getRequestedUrls()).toContain('agentGatewayApi:listRunEvents/run-id-1');
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'agent-gateway/runs/run-id-1/events:list',
+        url: 'agentGatewayApi:listRunEvents/run-id-1',
         params: expect.objectContaining({ pageSize: 100 }),
       }),
     );
@@ -2873,31 +2879,31 @@ describe('PluginAgentGatewayClientV2', () => {
 
     fireEvent.click(await screen.findByRole('tab', { name: 'Artifacts' }));
     expect(await screen.findByRole('tab', { name: 'Screenshots (1)' })).toBeTruthy();
-    expect(getRequestedUrls()).toContain('agent-gateway/runs/run-id-1/artifacts:list');
-    expect(getRequestedUrls()).toContain('agent-gateway/runs/run-id-1/snapshots:list');
+    expect(getRequestedUrls()).toContain('agentGatewayApi:listRunArtifacts/run-id-1');
+    expect(getRequestedUrls()).toContain('agentGatewayApi:listRunSnapshots/run-id-1');
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'agent-gateway/runs/run-id-1/artifacts:list',
+        url: 'agentGatewayApi:listRunArtifacts/run-id-1',
         params: { page: 1, pageSize: 20 },
       }),
     );
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'agent-gateway/runs/run-id-1/snapshots:list',
+        url: 'agentGatewayApi:listRunSnapshots/run-id-1',
         params: { page: 1, pageSize: 20 },
       }),
     );
-    expect(getRequestedUrls()).not.toContain('agent-gateway/runs/run-id-1/artifacts/artifact-id-2:content');
+    expect(getRequestedUrls()).not.toContain('agentGatewayApi:getRunArtifactContent/run-id-1');
     fireEvent.click(await screen.findByText('Preview'));
     expect(await screen.findByText('Image artifact preview')).toBeTruthy();
-    expect(getRequestedUrls()).toContain('agent-gateway/runs/run-id-1/artifacts/artifact-id-2:content');
+    expect(getRequestedUrls()).toContain('agentGatewayApi:getRunArtifactContent/run-id-1');
     expect(screen.getByAltText('browser-screenshot').getAttribute('src')).toContain('data:image/png;base64,');
     fireEvent.click(await screen.findByText('Preview'));
     fireEvent.click(await screen.findByText('Preview'));
     await screen.findByText('Image artifact preview');
-    expect(
-      getRequestedUrls().filter((url) => url === 'agent-gateway/runs/run-id-1/artifacts/artifact-id-2:content'),
-    ).toHaveLength(1);
+    expect(getRequestedUrls().filter((url) => url === 'agentGatewayApi:getRunArtifactContent/run-id-1')).toHaveLength(
+      1,
+    );
     fireEvent.click(await screen.findByRole('tab', { name: 'Logs (1)' }));
     fireEvent.click(await screen.findByText('Preview'));
     expect(await screen.findByText('inline artifact text')).toBeTruthy();
@@ -2905,10 +2911,10 @@ describe('PluginAgentGatewayClientV2', () => {
 
     fireEvent.click(await screen.findByRole('tab', { name: 'API Logs' }));
     expect(await screen.findByText('/api/agent-gateway/runs/run-id-1/events:append')).toBeTruthy();
-    expect(getRequestedUrls()).toContain('agent-gateway/runs/run-id-1/api-call-logs:list');
+    expect(getRequestedUrls()).toContain('agentGatewayApi:listRunApiCallLogs/run-id-1');
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'agent-gateway/runs/run-id-1/api-call-logs:list',
+        url: 'agentGatewayApi:listRunApiCallLogs/run-id-1',
         params: { page: 1, pageSize: 20 },
       }),
     );
@@ -2948,7 +2954,7 @@ describe('PluginAgentGatewayClientV2', () => {
           },
         };
       }
-      if (config.url === 'agent-gateway/runs/run-id-1/artifacts:list') {
+      if (config.url === 'agentGatewayApi:listRunArtifacts/run-id-1') {
         const page = Number(config.params?.page || 1);
         return {
           data: {
@@ -2969,7 +2975,7 @@ describe('PluginAgentGatewayClientV2', () => {
           },
         };
       }
-      if (config.url === 'agent-gateway/runs/run-id-1/snapshots:list') {
+      if (config.url === 'agentGatewayApi:listRunSnapshots/run-id-1') {
         return {
           data: {
             data: [],
@@ -2999,7 +3005,7 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(await screen.findByText(/artifact-page-2 \/ log \/ text\/plain/)).toBeTruthy();
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'agent-gateway/runs/run-id-1/artifacts:list',
+        url: 'agentGatewayApi:listRunArtifacts/run-id-1',
         params: { page: 2, pageSize: 20 },
       }),
     );
@@ -3043,13 +3049,16 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/events:list') {
+      if (config.url === 'agentGatewayApi:listRunEvents/run-id-1') {
         const error = new Error('events forbidden') as Error & { response?: { status: number } };
         error.response = { status: 403 };
         throw error;
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/control-requests/control-request-1:get') {
+      if (
+        config.url === 'agentGatewayApi:getControlRequestStatus/run-id-1' &&
+        config.params?.requestId === 'control-request-1'
+      ) {
         if (controlAccepted) {
           controlStatusPollCount += 1;
         }
@@ -3065,7 +3074,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/terminal:snapshot') {
+      if (config.url === 'agentGatewayApi:getTerminalSnapshot/run-id-1') {
         return {
           data: {
             data: {
@@ -3082,7 +3091,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/terminal:interrupt') {
+      if (config.url === 'agentGatewayApi:interruptTerminal/run-id-1') {
         controlAccepted = true;
         return {
           data: {
@@ -3112,12 +3121,12 @@ describe('PluginAgentGatewayClientV2', () => {
     await waitFor(() => {
       interruptCall = request.mock.calls
         .map(([config]) => config)
-        .find((config) => config.url === 'agent-gateway/runs/run-id-1/terminal:interrupt');
+        .find((config) => config.url === 'agentGatewayApi:interruptTerminal/run-id-1');
       expect(interruptCall).toBeTruthy();
     });
     expect(interruptCall).toEqual(
       expect.objectContaining({
-        url: 'agent-gateway/runs/run-id-1/terminal:interrupt',
+        url: 'agentGatewayApi:interruptTerminal/run-id-1',
         method: 'post',
         data: expect.objectContaining({
           idempotencyKey: expect.stringMatching(/^ag_control:interrupt:run-id-1:.+/),
@@ -3131,7 +3140,7 @@ describe('PluginAgentGatewayClientV2', () => {
       expect(
         request.mock.calls
           .map(([config]) => config.url)
-          .filter((url) => url === 'agent-gateway/runs/run-id-1/control-requests/control-request-1:get'),
+          .filter((url) => url === 'agentGatewayApi:getControlRequestStatus/run-id-1'),
       ).not.toHaveLength(0);
     });
     expect(await screen.findByText('Control request accepted')).toBeTruthy();
@@ -3189,15 +3198,15 @@ describe('PluginAgentGatewayClientV2', () => {
       }
 
       if (
-        config.url === 'agent-gateway/runs/run-id-1/events:list' ||
-        config.url === 'agent-gateway/runs/run-id-2/events:list'
+        config.url === 'agentGatewayApi:listRunEvents/run-id-1' ||
+        config.url === 'agentGatewayApi:listRunEvents/run-id-2'
       ) {
         return { data: { data: [] } };
       }
 
       if (
-        config.url === 'agent-gateway/runs/run-id-1/terminal:snapshot' ||
-        config.url === 'agent-gateway/runs/run-id-2/terminal:snapshot'
+        config.url === 'agentGatewayApi:getTerminalSnapshot/run-id-1' ||
+        config.url === 'agentGatewayApi:getTerminalSnapshot/run-id-2'
       ) {
         const runId = config.url.includes('run-id-1') ? 'run-id-1' : 'run-id-2';
         return {
@@ -3215,7 +3224,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/terminal:interrupt') {
+      if (config.url === 'agentGatewayApi:interruptTerminal/run-id-1') {
         return await new Promise<{ data: { data: Record<string, unknown> } }>((resolve) => {
           resolveInterrupt = resolve;
         });
@@ -3254,7 +3263,7 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(
       request.mock.calls
         .map(([config]) => config.url)
-        .filter((url) => url === 'agent-gateway/runs/run-id-2/control-requests/control-request-switch-1:get'),
+        .filter((url) => url === 'agentGatewayApi:getControlRequestStatus/run-id-2'),
     ).toHaveLength(0);
   });
 
@@ -3299,7 +3308,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/terminal:snapshot') {
+      if (config.url === 'agentGatewayApi:getTerminalSnapshot/run-id-1') {
         return {
           data: {
             data: {
@@ -3316,7 +3325,10 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/control-requests/control-request-terminate:get') {
+      if (
+        config.url === 'agentGatewayApi:getControlRequestStatus/run-id-1' &&
+        config.params?.requestId === 'control-request-terminate'
+      ) {
         controlStatusPollCount += 1;
         return {
           data: {
@@ -3329,7 +3341,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/terminal:terminate') {
+      if (config.url === 'agentGatewayApi:terminateTerminal/run-id-1') {
         terminateAttempts += 1;
         return {
           data: {
@@ -3358,7 +3370,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
     const terminateCalls = request.mock.calls
       .map(([config]) => config)
-      .filter((config) => config.url === 'agent-gateway/runs/run-id-1/terminal:terminate');
+      .filter((config) => config.url === 'agentGatewayApi:terminateTerminal/run-id-1');
     const idempotencyKeys = terminateCalls.map((config) => config.data?.idempotencyKey);
     expect(idempotencyKeys).toHaveLength(2);
     expect(idempotencyKeys[0]).toBe(idempotencyKeys[1]);
@@ -3402,7 +3414,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/terminal:snapshot') {
+      if (config.url === 'agentGatewayApi:getTerminalSnapshot/run-id-1') {
         return {
           data: {
             data: {
@@ -3472,7 +3484,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/terminal:snapshot') {
+      if (config.url === 'agentGatewayApi:getTerminalSnapshot/run-id-1') {
         return {
           data: {
             data: {
@@ -3542,7 +3554,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/terminal:snapshot') {
+      if (config.url === 'agentGatewayApi:getTerminalSnapshot/run-id-1') {
         return {
           data: {
             data: {
@@ -3559,7 +3571,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/terminal:interrupt') {
+      if (config.url === 'agentGatewayApi:interruptTerminal/run-id-1') {
         interruptAttempts += 1;
         if (interruptAttempts === 1) {
           const error = new Error('temporary interrupt failure') as Error & { response?: { status: number } };
@@ -3593,7 +3605,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
     const interruptCalls = request.mock.calls
       .map(([config]) => config)
-      .filter((config) => config.url === 'agent-gateway/runs/run-id-1/terminal:interrupt');
+      .filter((config) => config.url === 'agentGatewayApi:interruptTerminal/run-id-1');
     const idempotencyKeys = interruptCalls.map((config) => config.data?.idempotencyKey);
     expect(idempotencyKeys).toHaveLength(2);
     expect(idempotencyKeys[0]).toBe(idempotencyKeys[1]);
@@ -3640,7 +3652,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/terminal:snapshot') {
+      if (config.url === 'agentGatewayApi:getTerminalSnapshot/run-id-1') {
         return {
           data: {
             data: {
@@ -3657,7 +3669,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/terminal:interrupt') {
+      if (config.url === 'agentGatewayApi:interruptTerminal/run-id-1') {
         interruptAttempts += 1;
         if (interruptAttempts === 1) {
           const error = new Error('invalid control request') as Error & { response?: { status: number } };
@@ -3691,7 +3703,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
     const idempotencyKeys = request.mock.calls
       .map(([config]) => config)
-      .filter((config) => config.url === 'agent-gateway/runs/run-id-1/terminal:interrupt')
+      .filter((config) => config.url === 'agentGatewayApi:interruptTerminal/run-id-1')
       .map((config) => config.data?.idempotencyKey);
     expect(idempotencyKeys).toHaveLength(2);
     expect(idempotencyKeys[0]).toMatch(/^ag_control:interrupt:run-id-1:/);
@@ -3739,7 +3751,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/terminal:snapshot') {
+      if (config.url === 'agentGatewayApi:getTerminalSnapshot/run-id-1') {
         return {
           data: {
             data: {
@@ -3756,7 +3768,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/terminal:interrupt') {
+      if (config.url === 'agentGatewayApi:interruptTerminal/run-id-1') {
         interruptAttempts += 1;
         return {
           data: {
@@ -3786,7 +3798,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
     const idempotencyKeys = request.mock.calls
       .map(([config]) => config)
-      .filter((config) => config.url === 'agent-gateway/runs/run-id-1/terminal:interrupt')
+      .filter((config) => config.url === 'agentGatewayApi:interruptTerminal/run-id-1')
       .map((config) => config.data?.idempotencyKey);
     expect(idempotencyKeys).toHaveLength(2);
     expect(idempotencyKeys[0]).toMatch(/^ag_control:interrupt:run-id-1:/);
@@ -3834,7 +3846,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/terminal:snapshot') {
+      if (config.url === 'agentGatewayApi:getTerminalSnapshot/run-id-1') {
         return {
           data: {
             data: {
@@ -3920,7 +3932,7 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(screen.queryByTestId('agent-gateway-terminal-stream-smoke-panel')).toBeNull();
     expect(request).not.toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'agent-gateway/runs/run-id-1/terminal-stream-tickets:create',
+        url: 'agentGatewayApi:createTerminalStreamTicket/run-id-1',
       }),
     );
   });
@@ -3989,6 +4001,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
   it('stops sensitive polling and streaming after an already-open detail refresh is denied', async () => {
     vi.stubGlobal('WebSocket', FakeBrowserWebSocket);
+    const intervalCallbacks = spyOnPageIntervals();
     let detailCallCount = 0;
     const requestCounts = new Map<string, number>();
     const request = vi.fn(async (config: RequestConfig) => {
@@ -4046,7 +4059,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/terminal:snapshot') {
+      if (config.url === 'agentGatewayApi:getTerminalSnapshot/run-id-1') {
         return {
           data: {
             data: {
@@ -4062,7 +4075,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/terminal-stream-tickets:create') {
+      if (config.url === 'agentGatewayApi:createTerminalStreamTicket/run-id-1') {
         return {
           data: {
             data: {
@@ -4076,12 +4089,12 @@ describe('PluginAgentGatewayClientV2', () => {
       }
 
       if (
-        config.url === 'agent-gateway/agent-sessions/session-id-1/conversation-events:list' ||
-        config.url === 'agent-gateway/runs/run-id-1/conversation-events:list' ||
-        config.url === 'agent-gateway/runs/run-id-1/events:list' ||
-        config.url === 'agent-gateway/runs/run-id-1/artifacts:list' ||
-        config.url === 'agent-gateway/runs/run-id-1/snapshots:list' ||
-        config.url === 'agent-gateway/runs/run-id-1/api-call-logs:list'
+        config.url === 'agentGatewayApi:listSessionConversationEvents/session-id-1' ||
+        config.url === 'agentGatewayApi:listRunConversationEvents/run-id-1' ||
+        config.url === 'agentGatewayApi:listRunEvents/run-id-1' ||
+        config.url === 'agentGatewayApi:listRunArtifacts/run-id-1' ||
+        config.url === 'agentGatewayApi:listRunSnapshots/run-id-1' ||
+        config.url === 'agentGatewayApi:listRunApiCallLogs/run-id-1'
       ) {
         return { data: { data: [] } };
       }
@@ -4105,8 +4118,10 @@ describe('PluginAgentGatewayClientV2', () => {
       expect(FakeBrowserWebSocket.instances).toHaveLength(1);
     });
 
-    await new Promise((resolve) => {
-      window.setTimeout(resolve, 5200);
+    await act(async () => {
+      for (const callback of [...intervalCallbacks.values()]) {
+        callback();
+      }
     });
 
     expect(await screen.findByText('Run details unavailable')).toBeTruthy();
@@ -4115,21 +4130,23 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(screen.queryByText('stale snapshot before denial')).toBeNull();
 
     const sensitiveUrls = [
-      'agent-gateway/runs/run-id-1/terminal:snapshot',
-      'agent-gateway/agent-sessions/session-id-1/conversation-events:list',
-      'agent-gateway/runs/run-id-1/terminal-stream-tickets:create',
+      'agentGatewayApi:getTerminalSnapshot/run-id-1',
+      'agentGatewayApi:listSessionConversationEvents/session-id-1',
+      'agentGatewayApi:createTerminalStreamTicket/run-id-1',
     ];
     const countsAfterDenial = Object.fromEntries(sensitiveUrls.map((url) => [url, requestCounts.get(url) || 0]));
 
-    await new Promise((resolve) => {
-      window.setTimeout(resolve, 2300);
+    await act(async () => {
+      for (const callback of [...intervalCallbacks.values()]) {
+        callback();
+      }
     });
 
     for (const url of sensitiveUrls) {
       expect(requestCounts.get(url) || 0).toBe(countsAfterDenial[url]);
     }
     expect(FakeBrowserWebSocket.instances[0].readyState).toBe(3);
-  }, 15000);
+  });
 
   it('clears stale terminal output and session timeline when run affordances are revoked by detail refresh', async () => {
     vi.stubGlobal('WebSocket', FakeBrowserWebSocket);
@@ -4187,7 +4204,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/terminal:snapshot') {
+      if (config.url === 'agentGatewayApi:getTerminalSnapshot/run-id-1') {
         return {
           data: {
             data: {
@@ -4203,7 +4220,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/terminal-stream-tickets:create') {
+      if (config.url === 'agentGatewayApi:createTerminalStreamTicket/run-id-1') {
         return {
           data: {
             data: {
@@ -4217,8 +4234,8 @@ describe('PluginAgentGatewayClientV2', () => {
       }
 
       if (
-        config.url === 'agent-gateway/agent-sessions/session-id-1/conversation-events:list' ||
-        config.url === 'agent-gateway/runs/run-id-1/conversation-events:list'
+        config.url === 'agentGatewayApi:listSessionConversationEvents/session-id-1' ||
+        config.url === 'agentGatewayApi:listRunConversationEvents/run-id-1'
       ) {
         return {
           data: {
@@ -4269,9 +4286,9 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(screen.queryByText('stale session event after affordance revoked')).toBeNull();
 
     const sensitiveUrls = [
-      'agent-gateway/runs/run-id-1/terminal:snapshot',
-      'agent-gateway/agent-sessions/session-id-1/conversation-events:list',
-      'agent-gateway/runs/run-id-1/terminal-stream-tickets:create',
+      'agentGatewayApi:getTerminalSnapshot/run-id-1',
+      'agentGatewayApi:listSessionConversationEvents/session-id-1',
+      'agentGatewayApi:createTerminalStreamTicket/run-id-1',
     ];
     const countsAfterRevocation = Object.fromEntries(sensitiveUrls.map((url) => [url, requestCounts.get(url) || 0]));
 
@@ -4540,7 +4557,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/terminal:snapshot') {
+      if (config.url === 'agentGatewayApi:getTerminalSnapshot/run-id-1') {
         return {
           data: {
             data: {
@@ -4627,13 +4644,13 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/terminal:snapshot') {
+      if (config.url === 'agentGatewayApi:getTerminalSnapshot/run-id-1') {
         return await new Promise<{ data: { data: Record<string, unknown> } }>((resolve) => {
           resolveRunOneSnapshot = resolve;
         });
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-2/terminal:snapshot') {
+      if (config.url === 'agentGatewayApi:getTerminalSnapshot/run-id-2') {
         return {
           data: {
             data: {
@@ -4721,7 +4738,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/terminal:snapshot') {
+      if (config.url === 'agentGatewayApi:getTerminalSnapshot/run-id-1') {
         terminalSnapshotCallCount += 1;
         return {
           data: {
@@ -4739,7 +4756,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/terminal-stream-tickets:create') {
+      if (config.url === 'agentGatewayApi:createTerminalStreamTicket/run-id-1') {
         return {
           data: {
             data: {
@@ -4900,7 +4917,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/terminal:snapshot') {
+      if (config.url === 'agentGatewayApi:getTerminalSnapshot/run-id-1') {
         return {
           data: {
             data: {
@@ -4917,7 +4934,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/terminal-stream-tickets:create') {
+      if (config.url === 'agentGatewayApi:createTerminalStreamTicket/run-id-1') {
         return {
           data: {
             data: {
@@ -5058,15 +5075,15 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/events:list') {
+      if (config.url === 'agentGatewayApi:listRunEvents/run-id-1') {
         throw new Error('403 Forbidden');
       }
 
-      if (config.url === 'agent-gateway/agent-sessions/session-id-1/conversation-events:list') {
+      if (config.url === 'agentGatewayApi:listSessionConversationEvents/session-id-1') {
         throw new Error('403 Forbidden');
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/artifacts:list') {
+      if (config.url === 'agentGatewayApi:listRunArtifacts/run-id-1') {
         return {
           data: {
             data: [],
@@ -5074,7 +5091,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/snapshots:list') {
+      if (config.url === 'agentGatewayApi:listRunSnapshots/run-id-1') {
         return {
           data: {
             data: [],
@@ -5082,11 +5099,11 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/api-call-logs:list') {
+      if (config.url === 'agentGatewayApi:listRunApiCallLogs/run-id-1') {
         throw new Error('403 Forbidden');
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/terminal:snapshot') {
+      if (config.url === 'agentGatewayApi:getTerminalSnapshot/run-id-1') {
         return {
           data: {
             data: {
@@ -5158,7 +5175,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/events:list') {
+      if (config.url === 'agentGatewayApi:listRunEvents/run-id-1') {
         return {
           data: {
             data: [
@@ -5176,7 +5193,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/terminal:snapshot') {
+      if (config.url === 'agentGatewayApi:getTerminalSnapshot/run-id-1') {
         return {
           data: {
             data: {
@@ -5246,7 +5263,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/events:list') {
+      if (config.url === 'agentGatewayApi:listRunEvents/run-id-1') {
         return {
           data: {
             data: [
@@ -5321,7 +5338,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/agent-sessions/session-id-1/conversation-events:list') {
+      if (config.url === 'agentGatewayApi:listSessionConversationEvents/session-id-1') {
         return {
           data: {
             data: [
@@ -5798,7 +5815,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/agent-sessions/session-id-1/conversation-events:list') {
+      if (config.url === 'agentGatewayApi:listSessionConversationEvents/session-id-1') {
         conversationEventCallCount += 1;
         if (conversationEventCallCount > 1) {
           return { data: { data: [] } };
@@ -5864,7 +5881,7 @@ describe('PluginAgentGatewayClientV2', () => {
           },
         };
       }
-      if (config.url === 'agent-gateway/runs/run-id-1/conversation-events:list') {
+      if (config.url === 'agentGatewayApi:listRunConversationEvents/run-id-1') {
         conversationRequests.push(config);
         if (config.params?.beforeCursor === 'before-1') {
           return {
@@ -6003,7 +6020,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/agent-sessions/session-id-1/conversation-events:list') {
+      if (config.url === 'agentGatewayApi:listSessionConversationEvents/session-id-1') {
         conversationEventCallCount += 1;
         if (conversationEventCallCount > 1) {
           throw new Error('temporary timeline outage');
@@ -6024,7 +6041,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/events:list') {
+      if (config.url === 'agentGatewayApi:listRunEvents/run-id-1') {
         return {
           data: {
             data: [
@@ -6042,7 +6059,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/terminal:snapshot') {
+      if (config.url === 'agentGatewayApi:getTerminalSnapshot/run-id-1') {
         return {
           data: {
             data: {
@@ -6127,7 +6144,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/terminal:snapshot') {
+      if (config.url === 'agentGatewayApi:getTerminalSnapshot/run-id-1') {
         return {
           data: {
             data: {
@@ -6314,7 +6331,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/terminal:snapshot') {
+      if (config.url === 'agentGatewayApi:getTerminalSnapshot/run-id-1') {
         terminalSnapshotCallCount += 1;
         return {
           data: {
@@ -6332,7 +6349,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/agent-sessions/session-id-1/conversation-events:list') {
+      if (config.url === 'agentGatewayApi:listSessionConversationEvents/session-id-1') {
         conversationEventsCallCount += 1;
         return {
           data: {
@@ -6468,7 +6485,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/agent-sessions/session-id-1/conversation-events:list') {
+      if (config.url === 'agentGatewayApi:listSessionConversationEvents/session-id-1') {
         return {
           data: {
             data: [
@@ -6493,7 +6510,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/agent-sessions/session-id-1/resume') {
+      if (config.url === 'agentGatewayApi:resumeAgentSession/session-id-1') {
         return {
           data: {
             data: {
@@ -6537,7 +6554,7 @@ describe('PluginAgentGatewayClientV2', () => {
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'agent-gateway/agent-sessions/session-id-1/resume',
+          url: 'agentGatewayApi:resumeAgentSession/session-id-1',
           method: 'post',
           data: {
             message: 'Continue this session',
@@ -6610,7 +6627,7 @@ describe('PluginAgentGatewayClientV2', () => {
         });
       }
 
-      if (config.url === 'agent-gateway/agent-sessions/session-id-1/conversation-events:list') {
+      if (config.url === 'agentGatewayApi:listSessionConversationEvents/session-id-1') {
         sessionOneTimelineRequests += 1;
         return {
           data: {
@@ -6629,8 +6646,8 @@ describe('PluginAgentGatewayClientV2', () => {
       }
 
       if (
-        config.url === 'agent-gateway/runs/run-id-2/conversation-events:list' ||
-        config.url === 'agent-gateway/agent-sessions/session-id-2/conversation-events:list'
+        config.url === 'agentGatewayApi:listRunConversationEvents/run-id-2' ||
+        config.url === 'agentGatewayApi:listSessionConversationEvents/session-id-2'
       ) {
         runTwoTimelineRequests += 1;
         return {
@@ -6753,7 +6770,7 @@ describe('PluginAgentGatewayClientV2', () => {
           },
         };
       }
-      if (config.url === 'agent-gateway/agent-sessions/session-id-1/resume') {
+      if (config.url === 'agentGatewayApi:resumeAgentSession/session-id-1') {
         resumeAttempts += 1;
         if (resumeAttempts === 1) {
           const error = new Error('temporary resume failure') as Error & { response?: { status: number } };
@@ -6790,7 +6807,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
     const resumeCalls = request.mock.calls
       .map(([config]) => config)
-      .filter((config) => config.url === 'agent-gateway/agent-sessions/session-id-1/resume');
+      .filter((config) => config.url === 'agentGatewayApi:resumeAgentSession/session-id-1');
     expect(resumeCalls.map((config) => config.data?.idempotencyKey)).toEqual(['retry-key-1', 'retry-key-1']);
   });
 
@@ -6835,7 +6852,7 @@ describe('PluginAgentGatewayClientV2', () => {
           },
         };
       }
-      if (config.url === 'agent-gateway/agent-sessions/session-id-1/resume') {
+      if (config.url === 'agentGatewayApi:resumeAgentSession/session-id-1') {
         resumeAttempts += 1;
         if (resumeAttempts === 1) {
           const error = new Error('temporary resume failure') as Error & { response?: { status: number } };
@@ -6878,7 +6895,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
     const resumeCalls = request.mock.calls
       .map(([config]) => config)
-      .filter((config) => config.url === 'agent-gateway/agent-sessions/session-id-1/resume');
+      .filter((config) => config.url === 'agentGatewayApi:resumeAgentSession/session-id-1');
     expect(resumeCalls.map((config) => config.data?.idempotencyKey)).toEqual([
       'retry-change-key-1',
       'retry-change-key-2',
@@ -6927,7 +6944,7 @@ describe('PluginAgentGatewayClientV2', () => {
           },
         };
       }
-      if (config.url === 'agent-gateway/agent-sessions/session-id-1/resume') {
+      if (config.url === 'agentGatewayApi:resumeAgentSession/session-id-1') {
         resumeAttempts += 1;
         if (resumeAttempts === 1) {
           const error = new Error('message is required') as Error & { response?: { status: number } };
@@ -6970,7 +6987,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
     const resumeCalls = request.mock.calls
       .map(([config]) => config)
-      .filter((config) => config.url === 'agent-gateway/agent-sessions/session-id-1/resume');
+      .filter((config) => config.url === 'agentGatewayApi:resumeAgentSession/session-id-1');
     expect(resumeCalls.map((config) => config.data?.idempotencyKey)).toEqual(['validation-key-1', 'validation-key-2']);
   });
 

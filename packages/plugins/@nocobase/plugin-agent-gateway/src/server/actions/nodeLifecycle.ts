@@ -18,6 +18,7 @@ import { Context, Next } from '@nocobase/actions';
 import { Plugin } from '@nocobase/server';
 import { Transaction, UniqueConstraintError } from 'sequelize';
 
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiActionName } from '../../shared/apiContract';
 import {
   authenticateNodeToken,
   createInvitationToken,
@@ -28,7 +29,6 @@ import {
 } from '../security';
 import {
   API_PREFIX,
-  AGENT_GATEWAY_API_RESOURCE,
   JsonRecord,
   ModelRecord,
   getArray,
@@ -689,34 +689,34 @@ async function listProfiles(ctx: Context, nodeId: string) {
 
 export function registerNodeLifecycleRoutes(plugin: Plugin) {
   plugin.app.resourceManager.registerActionHandlers({
-    [`${AGENT_GATEWAY_API_RESOURCE}:createNodeInvitation`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.createNodeInvitation)]: async (ctx, next) => {
       await createInvitation(asActionContext(ctx));
       await next();
     },
-    [`${AGENT_GATEWAY_API_RESOURCE}:registerNode`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.registerNode)]: async (ctx, next) => {
       await registerNode(asActionContext(ctx));
       await next();
     },
-    [`${AGENT_GATEWAY_API_RESOURCE}:heartbeatNode`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.heartbeatNode)]: async (ctx, next) => {
       const actionCtx = asActionContext(ctx);
       await heartbeat(actionCtx, getActionTargetKey(actionCtx));
       await next();
     },
-    [`${AGENT_GATEWAY_API_RESOURCE}:listNodes`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.listNodes)]: async (ctx, next) => {
       await listNodes(asActionContext(ctx));
       await next();
     },
-    [`${AGENT_GATEWAY_API_RESOURCE}:getNode`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.getNode)]: async (ctx, next) => {
       const actionCtx = asActionContext(ctx);
       await getNode(actionCtx, getActionTargetKey(actionCtx));
       await next();
     },
-    [`${AGENT_GATEWAY_API_RESOURCE}:updateNode`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.updateNode)]: async (ctx, next) => {
       const actionCtx = asActionContext(ctx);
       await updateNode(actionCtx, getActionTargetKey(actionCtx));
       await next();
     },
-    [`${AGENT_GATEWAY_API_RESOURCE}:listNodeProfiles`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.listNodeProfiles)]: async (ctx, next) => {
       const actionCtx = asActionContext(ctx);
       await listProfiles(actionCtx, getActionTargetKey(actionCtx));
       await next();

@@ -9,7 +9,7 @@
 
 import { randomUUID } from 'crypto';
 
-import { Context, Next } from '@nocobase/actions';
+import { Context } from '@nocobase/actions';
 import { Application, Plugin } from '@nocobase/server';
 import type { Transaction } from 'sequelize';
 
@@ -21,10 +21,11 @@ import {
   TERMINAL_STREAM_BROWSER_TICKET_PROOF_PROTOCOL_PREFIX,
   TERMINAL_STREAM_BROWSER_TICKET_PROTOCOL_PREFIX,
 } from '../../shared/terminalStreamProtocol';
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiActionName } from '../../shared/apiContract';
 import { AGENT_GATEWAY_ACTIONS, createStreamToken, hashStreamToken, verifyStreamToken } from '../security';
 import {
-  API_PREFIX,
   ModelRecord,
+  asActionContext,
   assertRunVisible,
   getCurrentUserId,
   getModelString,
@@ -32,6 +33,7 @@ import {
   getModelValue,
   getRecord,
   getString,
+  getActionTargetKey,
   requireAgentGatewayPermission,
 } from './utils';
 import { getRunProviderCapabilitySummary, isRunCapabilitySupported } from './capabilityUtils';
@@ -397,29 +399,15 @@ export async function consumeTerminalStreamTicket(options: {
 }
 
 export function registerTerminalStreamTicketRoutes(plugin: Plugin) {
-  plugin.app.use(
-    async (ctx: Context, next: Next) => {
-      if (!ctx.path.startsWith(API_PREFIX)) {
-        await next();
-        return;
+  plugin.app.resourceManager.registerActionHandlers({
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.createTerminalStreamTicket)]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      const runId = getActionTargetKey(actionCtx);
+      if (!UUID_PATTERN.test(runId)) {
+        actionCtx.throw(400, 'runId must be a valid UUID');
       }
-      const routePath = ctx.path.slice(API_PREFIX.length);
-      const ticketCreateMatch = routePath.match(/^\/runs\/([^/]+)\/terminal-stream-tickets:create$/);
-
-      if (ctx.method === 'POST' && ticketCreateMatch) {
-        if (!UUID_PATTERN.test(ticketCreateMatch[1])) {
-          ctx.throw(400, 'runId must be a valid UUID');
-        }
-        await createTerminalStreamTicket(ctx, ticketCreateMatch[1]);
-        return;
-      }
-
+      await createTerminalStreamTicket(actionCtx, runId);
       await next();
     },
-    {
-      tag: 'agentGatewayTerminalStreamTicketRoutes',
-      after: 'agentGatewayRunTerminalRoutes',
-      before: 'agentGatewayRunObservabilityRoutes',
-    },
-  );
+  });
 }

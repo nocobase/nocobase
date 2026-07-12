@@ -13,9 +13,9 @@ import { Context, Next } from '@nocobase/actions';
 import { Plugin } from '@nocobase/server';
 import { Transaction } from 'sequelize';
 
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiActionName } from '../../shared/apiContract';
 import { authenticateNodeToken } from '../security';
 import {
-  AGENT_GATEWAY_API_RESOURCE,
   JsonRecord,
   ModelRecord,
   getBodyValues,
@@ -133,7 +133,7 @@ async function upsertNodeSkillInstall(ctx: Context, nodeId: string) {
 
 export function registerSkillInstallRoutes(plugin: Plugin) {
   plugin.app.resourceManager.registerActionHandlers({
-    [`${AGENT_GATEWAY_API_RESOURCE}:upsertNodeSkillInstall`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.upsertNodeSkillInstall)]: async (ctx, next) => {
       const actionCtx = asActionContext(ctx);
       await upsertNodeSkillInstall(actionCtx, getActionTargetKey(actionCtx));
       await next();

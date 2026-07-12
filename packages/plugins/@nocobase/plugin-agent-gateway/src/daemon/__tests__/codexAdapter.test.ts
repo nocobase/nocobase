@@ -126,7 +126,10 @@ describe('Codex agent adapter', () => {
   });
 
   it('detects session ids from the real captured local Codex JSONL sample', async () => {
-    const fixture = await readFile(path.join(__dirname, '../__fixtures__/codex-real-exec-jsonl.sample.jsonl'), 'utf8');
+    const fixture = await readFile(
+      path.join(__dirname, '../../../test-fixtures/codex-real-exec-jsonl.sample.jsonl'),
+      'utf8',
+    );
     const providerSessionIds = fixture
       .split(/\r?\n/)
       .map((rawLine) => codexAdapter.detectSessionId({ rawLine }))

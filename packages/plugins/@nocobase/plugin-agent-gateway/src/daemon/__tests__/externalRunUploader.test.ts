@@ -75,10 +75,10 @@ describe('external run uploader', () => {
 
     expect(firstRequester.calls).toHaveLength(4);
     expect(firstRequester.calls.map((call) => call.path)).toEqual([
-      '/api/agent-gateway/external-runs:import',
-      '/api/agent-gateway/external-runs/run-1/observations:append',
-      '/api/agent-gateway/external-runs/run-1/observations:append',
-      '/api/agent-gateway/external-runs/run-1/observations:append',
+      '/api/agentGatewayApi:importExternalRun',
+      '/api/agentGatewayApi:appendExternalRunObservations/run-1',
+      '/api/agentGatewayApi:appendExternalRunObservations/run-1',
+      '/api/agentGatewayApi:appendExternalRunObservations/run-1',
     ]);
     expect(firstRequester.calls.map((call) => getBody(call).batchKey)).toEqual(
       secondRequester.calls.map((call) => getBody(call).batchKey),

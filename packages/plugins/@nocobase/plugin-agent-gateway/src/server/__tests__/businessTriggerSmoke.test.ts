@@ -533,9 +533,19 @@ describe('agent gateway no-code business trigger smoke', () => {
     action: string,
     values: Record<string, unknown>,
   ) {
+    const actionName = {
+      heartbeat: 'heartbeatRun',
+      complete: 'completeRun',
+      fail: 'failRun',
+      timeout: 'timeoutRun',
+      'cancel-ack': 'ackCancelRun',
+    }[action];
+    if (!actionName) {
+      throw new Error(`Unsupported daemon action: ${action}`);
+    }
     return await app
       .agent()
-      .post(`/api/agent-gateway/nodes/${daemon.nodeId}/runs/${runId}/${action}`)
+      .post(`/agentGatewayApi:${actionName}/${runId}`)
       .set('Authorization', `Bearer ${daemon.nodeToken}`)
       .send(values);
   }
@@ -546,9 +556,17 @@ describe('agent gateway no-code business trigger smoke', () => {
     action: string,
     values: Record<string, unknown>,
   ) {
+    const actionName = {
+      'events:append': 'appendRunEvents',
+      'artifacts:register': 'registerRunArtifact',
+      'snapshots:register': 'registerRunSnapshot',
+    }[action];
+    if (!actionName) {
+      throw new Error(`Unsupported observation action: ${action}`);
+    }
     return await app
       .agent()
-      .post(`/api/agent-gateway/runs/${runId}/${action}`)
+      .post(`/agentGatewayApi:${actionName}/${runId}`)
       .set('Authorization', `Bearer ${daemon.nodeToken}`)
       .send(values);
   }
@@ -720,9 +738,9 @@ describe('agent gateway no-code business trigger smoke', () => {
     });
 
     const runResponse = await businessAgent.get(`/agentGatewayApi:getRun/${runId}`);
-    const eventsResponse = await businessAgent.get(`/api/agent-gateway/runs/${runId}/events:list`);
-    const artifactsResponse = await businessAgent.get(`/api/agent-gateway/runs/${runId}/artifacts:list`);
-    const snapshotsResponse = await businessAgent.get(`/api/agent-gateway/runs/${runId}/snapshots:list`);
+    const eventsResponse = await businessAgent.get(`/agentGatewayApi:listRunEvents/${runId}`);
+    const artifactsResponse = await businessAgent.get(`/agentGatewayApi:listRunArtifacts/${runId}`);
+    const snapshotsResponse = await businessAgent.get(`/agentGatewayApi:listRunSnapshots/${runId}`);
     expect(runResponse.status).toBe(200);
     expect(eventsResponse.status).toBe(200);
     expect(artifactsResponse.status).toBe(200);

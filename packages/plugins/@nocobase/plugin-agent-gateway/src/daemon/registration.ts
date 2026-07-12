@@ -12,6 +12,7 @@ import { randomUUID } from 'crypto';
 
 import { writeDaemonConfig, serializeSafeConfig } from './config';
 import { DaemonConfig, DetectedAgentProfile, GatewayRequester, JsonRecord } from './types';
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiPath } from '../shared/apiContract';
 
 export interface RegisterDaemonOptions {
   requester: GatewayRequester;
@@ -58,7 +59,7 @@ export async function registerDaemonNode(options: RegisterDaemonOptions) {
     claimIntervalSeconds?: number;
   }>({
     method: 'POST',
-    path: '/api/agentGatewayApi:registerNode',
+    path: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.registerNode),
     body: {
       inviteToken: options.inviteToken,
       nodeKey,
@@ -95,7 +96,7 @@ export async function registerDaemonNode(options: RegisterDaemonOptions) {
 export async function heartbeatDaemonNode(options: HeartbeatDaemonOptions) {
   return await options.requester.request({
     method: 'POST',
-    path: `/api/agentGatewayApi:heartbeatNode/${options.config.nodeId}`,
+    path: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatNode, options.config.nodeId),
     nodeToken: options.config.nodeToken,
     body: {
       installationId: options.config.installationId,

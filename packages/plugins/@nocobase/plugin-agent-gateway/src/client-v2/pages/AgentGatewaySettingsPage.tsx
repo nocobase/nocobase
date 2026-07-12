@@ -28,6 +28,7 @@ import {
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useCallback, useMemo, useState } from 'react';
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiUrl } from '../../shared/apiContract';
 import { useT } from '../locale';
 import {
   AgentGatewayContext,
@@ -145,7 +146,7 @@ export default function AgentGatewaySettingsPage() {
   const nodesRequest = useRequest(
     async () => {
       const response = await ctx.api.request<NodeRecord[]>({
-        url: 'agentGatewayApi:listNodes',
+        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.listNodes),
         method: 'get',
       });
       return getResponseData(response, []);
@@ -171,7 +172,7 @@ export default function AgentGatewaySettingsPage() {
       }
 
       const response = await ctx.api.request<AgentProfileRecord[]>({
-        url: `agentGatewayApi:listNodeProfiles/${selectedNodeId}`,
+        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.listNodeProfiles, selectedNodeId),
         method: 'get',
       });
       return getResponseData(response, []);
@@ -184,7 +185,7 @@ export default function AgentGatewaySettingsPage() {
   const createInvitationRequest = useRequest(
     async (values: InvitationFormValues) => {
       const response = await ctx.api.request<InvitationResult>({
-        url: 'agentGatewayApi:createNodeInvitation',
+        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.createNodeInvitation),
         method: 'post',
         data: values as Record<string, unknown>,
       });
@@ -205,7 +206,7 @@ export default function AgentGatewaySettingsPage() {
   const updateNodeStatusRequest = useRequest(
     async (node: NodeRecord, enabled: boolean) => {
       const response = await ctx.api.request<NodeRecord>({
-        url: `agentGatewayApi:updateNode/${encodeURIComponent(node.id)}`,
+        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.updateNode, node.id),
         method: 'post',
         data: {
           status: enabled ? 'active' : 'disabled',

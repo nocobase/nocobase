@@ -14,9 +14,9 @@ import { Context, Next } from '@nocobase/actions';
 import { Plugin } from '@nocobase/server';
 import { Transaction } from 'sequelize';
 
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiActionName } from '../../shared/apiContract';
 import { REDACTED_VALUE, redactText, shouldRedactKey } from '../security';
 import {
-  AGENT_GATEWAY_API_RESOURCE,
   JsonRecord,
   ModelRecord,
   getBodyValues,
@@ -914,30 +914,30 @@ async function previewTemplate(ctx: Context) {
 
 export function registerPromptTemplateRoutes(plugin: Plugin) {
   plugin.app.resourceManager.registerActionHandlers({
-    [`${AGENT_GATEWAY_API_RESOURCE}:listPromptTemplates`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.listPromptTemplates)]: async (ctx, next) => {
       await listTemplates(asActionContext(ctx));
       await next();
     },
-    [`${AGENT_GATEWAY_API_RESOURCE}:getPromptTemplate`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.getPromptTemplate)]: async (ctx, next) => {
       const actionCtx = asActionContext(ctx);
       await getTemplate(actionCtx, getActionTargetKey(actionCtx));
       await next();
     },
-    [`${AGENT_GATEWAY_API_RESOURCE}:createPromptTemplate`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.createPromptTemplate)]: async (ctx, next) => {
       await createTemplate(asActionContext(ctx));
       await next();
     },
-    [`${AGENT_GATEWAY_API_RESOURCE}:updatePromptTemplate`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.updatePromptTemplate)]: async (ctx, next) => {
       const actionCtx = asActionContext(ctx);
       await updateTemplate(actionCtx, getActionTargetKey(actionCtx));
       await next();
     },
-    [`${AGENT_GATEWAY_API_RESOURCE}:destroyPromptTemplate`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.destroyPromptTemplate)]: async (ctx, next) => {
       const actionCtx = asActionContext(ctx);
       await destroyTemplate(actionCtx, getActionTargetKey(actionCtx));
       await next();
     },
-    [`${AGENT_GATEWAY_API_RESOURCE}:previewPromptTemplate`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.previewPromptTemplate)]: async (ctx, next) => {
       await previewTemplate(asActionContext(ctx));
       await next();
     },

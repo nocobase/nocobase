@@ -11,7 +11,7 @@ import { IncomingMessage } from 'http';
 import { Duplex } from 'stream';
 import { parse } from 'url';
 
-import { Context, Next } from '@nocobase/actions';
+import { Context } from '@nocobase/actions';
 import { Application, Gateway, Plugin } from '@nocobase/server';
 import type { Transaction } from 'sequelize';
 import WebSocket, { RawData, WebSocketServer } from 'ws';
@@ -40,11 +40,12 @@ import {
   parseTerminalFrame,
   parseTerminalFrameJson,
 } from '../../shared/terminalStreamProtocol';
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiActionName } from '../../shared/apiContract';
 import { AGENT_GATEWAY_ACTIONS, authenticateNodeToken, verifyClaimToken } from '../security';
 import {
   JsonRecord,
   ModelRecord,
-  API_PREFIX,
+  asActionContext,
   assertRunVisible,
   getCurrentUserId,
   getModelNumber,
@@ -1427,50 +1428,38 @@ function sanitizeBrowserTerminalFrame(frame: TerminalServerFrameForSend): Browse
 }
 
 function registerTerminalStreamStatsRoute(plugin: Plugin, broker: TerminalStreamBroker) {
-  plugin.app.use(
-    async (ctx: Context, next: Next) => {
-      if (!ctx.path.startsWith(API_PREFIX)) {
-        await next();
-        return;
-      }
-      const routePath = ctx.path.slice(API_PREFIX.length);
-      if (ctx.method !== 'GET' || routePath !== '/terminal-stream:stats') {
-        await next();
-        return;
-      }
+  plugin.app.resourceManager.registerActionHandlers({
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.getTerminalStreamStats)]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
       await requireAgentGatewayPermission(
-        ctx,
+        actionCtx,
         AGENT_GATEWAY_ACTIONS.readTerminal,
         'Agent Gateway terminal read permission required',
       );
-      const query = getRecord(ctx.query);
-      const currentUserId = getCurrentUserId(ctx);
+      const query = getRecord(actionCtx.query);
+      const currentUserId = getCurrentUserId(actionCtx);
       const runId = getString(query.runId);
       const nodeId = getString(query.nodeId);
-      const canManage = await hasAgentGatewayPermission(ctx, AGENT_GATEWAY_ACTIONS.manage);
+      const canManage = await hasAgentGatewayPermission(actionCtx, AGENT_GATEWAY_ACTIONS.manage);
       if (!canManage && !runId) {
-        ctx.throw(400, 'Agent Gateway terminal stream stats require a runId');
+        actionCtx.throw(400, 'Agent Gateway terminal stream stats require a runId');
       }
       if (!canManage && nodeId) {
-        ctx.throw(403, 'Agent Gateway management permission required for node stream stats');
+        actionCtx.throw(403, 'Agent Gateway management permission required for node stream stats');
       }
       if (runId) {
-        await assertRunVisible(ctx, runId, 'get');
+        await assertRunVisible(actionCtx, runId, 'get');
       }
-      ctx.body = broker.getStats({
+      actionCtx.body = broker.getStats({
         runId,
         userId: currentUserId === null ? undefined : String(currentUserId),
         nodeId,
         includeGlobalStats: canManage,
         includeNodeStats: canManage,
       });
+      await next();
     },
-    {
-      tag: 'agentGatewayTerminalStreamStatsRoutes',
-      after: 'agentGatewayRunTerminalRoutes',
-      before: 'agentGatewayRunObservabilityRoutes',
-    },
-  );
+  });
 }
 
 export function registerTerminalStreamBroker(plugin: Plugin) {

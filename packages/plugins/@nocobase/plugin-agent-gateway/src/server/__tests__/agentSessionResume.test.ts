@@ -170,7 +170,7 @@ describe('agent gateway agent session resume API', () => {
   }
 
   async function resumeSession(sessionId: unknown, body: Record<string, unknown>) {
-    return await rootAgent.post(`/api/agent-gateway/agent-sessions/${sessionId}/resume`).send(body);
+    return await rootAgent.post(`/agentGatewayApi:resumeAgentSession/${sessionId}`).send(body);
   }
 
   async function createEndedSessionRun(sessionId: unknown) {
@@ -305,14 +305,14 @@ describe('agent gateway agent session resume API', () => {
       runCode: run.get('runCode'),
     });
 
-    const first = await scopedAgent.post(`/api/agent-gateway/agent-sessions/${session.get('id')}/resume`).send({
+    const first = await scopedAgent.post(`/agentGatewayApi:resumeAgentSession/${session.get('id')}`).send({
       message: 'Continue hidden once',
       idempotencyKey: 'same-hidden-resume-click',
     });
     expect(first.status).toBe(200);
     const firstResult = getData(first);
 
-    const hiddenReplay = await scopedAgent.post(`/api/agent-gateway/agent-sessions/${session.get('id')}/resume`).send({
+    const hiddenReplay = await scopedAgent.post(`/agentGatewayApi:resumeAgentSession/${session.get('id')}`).send({
       message: 'Continue hidden once',
       idempotencyKey: 'same-hidden-resume-click',
     });
@@ -478,7 +478,7 @@ describe('agent gateway agent session resume API', () => {
     });
 
     const response = await scopedAgent
-      .post(`/api/agent-gateway/agent-sessions/${hiddenUnsupported.session.get('id')}/resume`)
+      .post(`/agentGatewayApi:resumeAgentSession/${hiddenUnsupported.session.get('id')}`)
       .send({
         message: 'Continue hidden unsupported session',
         idempotencyKey: 'hidden-unsupported-resume',
@@ -504,13 +504,11 @@ describe('agent gateway agent session resume API', () => {
       runCode: visible.run.get('runCode'),
     });
 
-    const response = await scopedAgent
-      .post(`/api/agent-gateway/agent-sessions/${hidden.session.get('id')}/resume`)
-      .send({
-        message: 'Continue with visible run against hidden session',
-        resumedFromRunId: visible.run.get('id'),
-        idempotencyKey: 'hidden-session-visible-source-mismatch',
-      });
+    const response = await scopedAgent.post(`/agentGatewayApi:resumeAgentSession/${hidden.session.get('id')}`).send({
+      message: 'Continue with visible run against hidden session',
+      resumedFromRunId: visible.run.get('id'),
+      idempotencyKey: 'hidden-session-visible-source-mismatch',
+    });
 
     expect(response.status).toBe(404);
     const responseBody = JSON.stringify(response.body);

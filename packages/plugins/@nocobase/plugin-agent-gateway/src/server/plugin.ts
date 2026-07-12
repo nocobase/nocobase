@@ -24,8 +24,8 @@ import { registerRunTerminalRoutes } from './actions/runTerminal';
 import { registerSkillInstallRoutes } from './actions/skillInstalls';
 import { registerSkillVersionRoutes } from './actions/skillVersions';
 import { registerTaskTemplateRoutes } from './actions/taskTemplates';
-import { AGENT_GATEWAY_API_RESOURCE } from './actions/utils';
 import { TerminalStreamBroker, registerTerminalStreamBroker } from './actions/terminalStreamBroker';
+import { AGENT_GATEWAY_API_RESOURCE, AGENT_GATEWAY_MACHINE_API_ACTIONS } from '../shared/apiContract';
 import { registerAgentGatewayAcl } from './security/permissions';
 import { cleanupAgentGatewayRetention } from './services/retention';
 import { registerEventIngestCursorHooks } from './services/eventIngestCursor';
@@ -72,7 +72,7 @@ export class PluginAgentGatewayServer extends Plugin {
   }
 
   async load() {
-    this.app.acl.allow('agentGatewayApi', '*', 'public');
+    this.app.acl.allow(AGENT_GATEWAY_API_RESOURCE, [...AGENT_GATEWAY_MACHINE_API_ACTIONS], 'public');
     registerApiCallLogMiddleware(this);
     registerFileUploadActions(this);
     registerNodeLifecycleRoutes(this);
@@ -88,8 +88,8 @@ export class PluginAgentGatewayServer extends Plugin {
     registerTaskTemplateRoutes(this);
     registerPromptTemplateRoutes(this);
     registerDispatchBindingRoutes(this);
-    this.app.resourceManager.define({ name: AGENT_GATEWAY_API_RESOURCE });
     this.terminalStreamBroker = registerTerminalStreamBroker(this);
+    this.app.resourceManager.define({ name: AGENT_GATEWAY_API_RESOURCE });
     this.registerAppLifecycleListeners();
   }
 

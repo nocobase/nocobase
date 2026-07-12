@@ -14,10 +14,10 @@ import { Context, Next } from '@nocobase/actions';
 import { Plugin } from '@nocobase/server';
 import { Transaction } from 'sequelize';
 
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiActionName } from '../../shared/apiContract';
 import { AGENT_GATEWAY_ACTIONS, redactText } from '../security';
 import {
   AGENT_GATEWAY_ERROR_CODES,
-  AGENT_GATEWAY_API_RESOURCE,
   JsonRecord,
   ModelRecord,
   getBodyValues,
@@ -1600,30 +1600,30 @@ export function registerDispatchBindingValidationHooks(plugin: Plugin) {
 
 export function registerDispatchBindingRoutes(plugin: Plugin) {
   plugin.app.resourceManager.registerActionHandlers({
-    [`${AGENT_GATEWAY_API_RESOURCE}:listDispatchBindings`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.listDispatchBindings)]: async (ctx, next) => {
       await listBindings(asActionContext(ctx));
       await next();
     },
-    [`${AGENT_GATEWAY_API_RESOURCE}:getDispatchBinding`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.getDispatchBinding)]: async (ctx, next) => {
       const actionCtx = asActionContext(ctx);
       await getBinding(actionCtx, getActionTargetKey(actionCtx));
       await next();
     },
-    [`${AGENT_GATEWAY_API_RESOURCE}:createDispatchBinding`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.createDispatchBinding)]: async (ctx, next) => {
       await createBinding(asActionContext(ctx));
       await next();
     },
-    [`${AGENT_GATEWAY_API_RESOURCE}:updateDispatchBinding`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.updateDispatchBinding)]: async (ctx, next) => {
       const actionCtx = asActionContext(ctx);
       await updateBinding(actionCtx, getActionTargetKey(actionCtx));
       await next();
     },
-    [`${AGENT_GATEWAY_API_RESOURCE}:destroyDispatchBinding`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.destroyDispatchBinding)]: async (ctx, next) => {
       const actionCtx = asActionContext(ctx);
       await destroyBinding(actionCtx, getActionTargetKey(actionCtx));
       await next();
     },
-    [`${AGENT_GATEWAY_API_RESOURCE}:dispatchBinding`]: async (ctx, next) => {
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.dispatchBinding)]: async (ctx, next) => {
       const actionCtx = asActionContext(ctx);
       await dispatchBinding(actionCtx, getActionTargetKey(actionCtx));
       await next();

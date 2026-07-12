@@ -15,6 +15,7 @@ import { Plugin } from '@nocobase/server';
 import { Transaction, UniqueConstraintError } from 'sequelize';
 
 import { AGENT_GATEWAY_ACTIONS, authenticateNodeToken } from '../security';
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiActionName } from '../../shared/apiContract';
 import { AgentTranscriptEvent, buildAgentTranscript } from '../../shared/agentTranscript';
 import { COMMAND_CONTENT_JSON_LIMIT_CHARS, COMMAND_DETAIL_STRING_LIMIT_CHARS } from '../../shared/conversationLimits';
 import {
@@ -24,12 +25,13 @@ import {
   mergeToolStats,
 } from '../services/observationRollup';
 import {
-  API_PREFIX,
   JsonRecord,
   ModelRecord,
+  asActionContext,
   getArray,
   getBodyValues,
   getCurrentUserId,
+  getActionTargetKey,
   getModelJson,
   getModelString,
   getModelTargetKey,
@@ -65,6 +67,14 @@ const ACTIVE_RUN_STATUSES = new Set([
   'canceling',
   'stalled',
 ]);
+
+function getUuidActionTarget(ctx: Context, name: 'runId' | 'sessionId') {
+  const value = getActionTargetKey(ctx);
+  if (!UUID_PATTERN.test(value)) {
+    ctx.throw(400, `${name} must be a valid UUID`);
+  }
+  return value;
+}
 const DANGLING_TOOL_LIVE_RUN_STATUSES = new Set([
   'queued',
   'claimed',
@@ -815,63 +825,38 @@ async function listSessionConversationEvents(ctx: Context, sessionId: string) {
 }
 
 export function registerConversationEventRoutes(plugin: Plugin) {
+  plugin.app.resourceManager.registerActionHandlers({
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.appendConversationEvents)]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      await appendConversationEvents(actionCtx, getUuidActionTarget(actionCtx, 'runId'));
+      await next();
+    },
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.listRunConversationEvents)]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      await listRunConversationEvents(actionCtx, getUuidActionTarget(actionCtx, 'runId'));
+      await next();
+    },
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.listRunToolCalls)]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      await listRunToolCalls(actionCtx, getUuidActionTarget(actionCtx, 'runId'));
+      await next();
+    },
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.listToolCallStats)]: async (ctx, next) => {
+      await listToolCallStats(asActionContext(ctx));
+      await next();
+    },
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.listSessionConversationEvents)]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      await listSessionConversationEvents(actionCtx, getUuidActionTarget(actionCtx, 'sessionId'));
+      await next();
+    },
+  });
+
   plugin.app.use(
     async (ctx: Context, next: Next) => {
       if (matchStandardCollectionAction(ctx.path, STANDARD_CONVERSATION_COLLECTIONS)) {
         await requireManagePermission(ctx);
         await next();
-        return;
-      }
-
-      if (!ctx.path.startsWith(API_PREFIX)) {
-        await next();
-        return;
-      }
-
-      const routePath = ctx.path.slice(API_PREFIX.length);
-      const appendMatch = routePath.match(/^\/runs\/([^/]+)\/conversation-events:append$/);
-      const runListMatch = routePath.match(/^\/runs\/([^/]+)\/conversation-events:list$/);
-      const runToolCallsMatch = routePath.match(/^\/runs\/([^/]+)\/tool-calls:list$/);
-      const sessionListMatch = routePath.match(/^\/agent-sessions\/([^/]+)\/conversation-events:list$/);
-
-      if (ctx.method === 'POST' && appendMatch) {
-        const [, runId] = appendMatch;
-        if (!UUID_PATTERN.test(runId)) {
-          ctx.throw(400, 'runId must be a valid UUID');
-        }
-        await appendConversationEvents(ctx, runId);
-        return;
-      }
-
-      if (ctx.method === 'GET' && runListMatch) {
-        const [, runId] = runListMatch;
-        if (!UUID_PATTERN.test(runId)) {
-          ctx.throw(400, 'runId must be a valid UUID');
-        }
-        await listRunConversationEvents(ctx, runId);
-        return;
-      }
-
-      if (ctx.method === 'GET' && runToolCallsMatch) {
-        const [, runId] = runToolCallsMatch;
-        if (!UUID_PATTERN.test(runId)) {
-          ctx.throw(400, 'runId must be a valid UUID');
-        }
-        await listRunToolCalls(ctx, runId);
-        return;
-      }
-
-      if (ctx.method === 'GET' && routePath === '/tool-calls:stats') {
-        await listToolCallStats(ctx);
-        return;
-      }
-
-      if (ctx.method === 'GET' && sessionListMatch) {
-        const [, sessionId] = sessionListMatch;
-        if (!UUID_PATTERN.test(sessionId)) {
-          ctx.throw(400, 'sessionId must be a valid UUID');
-        }
-        await listSessionConversationEvents(ctx, sessionId);
         return;
       }
 

@@ -29,6 +29,7 @@ import {
 import type { UploadProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiUrl } from '../../shared/apiContract';
 import { useT } from '../locale';
 import {
   AgentGatewayContext,
@@ -125,7 +126,7 @@ export default function AgentGatewaySkillsPage() {
 
   const skillVersionsRequest = useRequest(async () => {
     const response = await ctx.api.request<SkillVersionRecord[]>({
-      url: 'agentGatewayApi:listSkillVersions',
+      url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.listSkillVersions),
       method: 'get',
     });
     return getResponseData(response, []);
@@ -144,7 +145,7 @@ export default function AgentGatewaySkillsPage() {
     async (values: SkillUploadFormValues & { file: File }) => {
       const uploadId = await uploadAgentGatewayFile(ctx.api, values.file, 'skill-version');
       const response = await ctx.api.request<SkillUploadResult>({
-        url: 'agentGatewayApi:createSkillVersionFromUpload',
+        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.createSkillVersionFromUpload),
         method: 'post',
         data: { ...values, file: undefined, uploadId },
       });

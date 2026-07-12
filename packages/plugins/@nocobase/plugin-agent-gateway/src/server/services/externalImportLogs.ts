@@ -9,13 +9,11 @@
 
 import { Context } from '@nocobase/actions';
 
-import { claudeCodeAdapter } from '../../daemon/adapters/claudeCode';
-import { codexAdapter } from '../../daemon/adapters/codex';
-import { opencodeAdapter } from '../../daemon/adapters/opencode';
-import { AgentAdapter, NormalizedAgentEvent } from '../../daemon/adapters/types';
 import { AgentProviderKey } from '../../shared/providerCapabilities';
 import { EXTERNAL_IMPORT_LIMITS, EXTERNAL_LOG_FORMATS, ExternalLogFormat } from '../../shared/externalRunImport';
-import { JsonRecord, getArray, getRecord, getString } from '../actions/utils';
+import { JsonRecord, getJsonArray, getJsonRecord, getJsonString } from '../../shared/json';
+import { NormalizedAgentEvent } from '../../shared/providerEvents';
+import { hasProviderLogNormalizer, normalizeProviderLogEvent } from '../../shared/providerLogNormalizers';
 import { getCanonicalExternalImportJson, hashExternalImportValue } from './externalImportUtils';
 
 export interface PreparedExternalImportLog {
@@ -32,14 +30,8 @@ export interface PreparedExternalObservationBatch {
   payloadSha256: string;
 }
 
-const PROVIDER_ADAPTERS: Partial<Record<AgentProviderKey, AgentAdapter>> = {
-  codex: codexAdapter,
-  opencode: opencodeAdapter,
-  'claude-code': claudeCodeAdapter,
-};
-
 function getLogFormat(provider: AgentProviderKey, value: unknown): ExternalLogFormat {
-  const format = getString(value);
+  const format = getJsonString(value);
   if (EXTERNAL_LOG_FORMATS.includes(format as ExternalLogFormat)) {
     return format as ExternalLogFormat;
   }
@@ -56,11 +48,11 @@ function getLogFormat(provider: AgentProviderKey, value: unknown): ExternalLogFo
 }
 
 function getLogEntries(values: JsonRecord) {
-  const logs = getArray(values.logs).map((entry) => getRecord(entry));
+  const logs = getJsonArray(values.logs).map((entry) => getJsonRecord(entry));
   if (logs.length) {
     return logs;
   }
-  const contentText = getString(values.contentText || values.log || values.logsText);
+  const contentText = getJsonString(values.contentText || values.log || values.logsText);
   return contentText
     ? [
         {
@@ -89,7 +81,6 @@ function normalizeLogEvents(
   contentText: string,
   maxEvents: number,
 ) {
-  const adapter = PROVIDER_ADAPTERS[provider];
   const events: NormalizedAgentEvent[] = [];
   for (const rawLine of contentText.split(/\r?\n/)) {
     const line = rawLine.trim();
@@ -97,7 +88,9 @@ function normalizeLogEvents(
       continue;
     }
     const lineEvents =
-      format === 'text' || !adapter ? [getTextLogEvent(line)] : adapter.normalizeEvent({ rawLine: line });
+      format === 'text' || !hasProviderLogNormalizer(provider)
+        ? [getTextLogEvent(line)]
+        : normalizeProviderLogEvent(provider, { rawLine: line });
     if (events.length + lineEvents.length > maxEvents) {
       return { events: [], limitExceeded: true };
     }
@@ -121,14 +114,14 @@ export function prepareExternalObservationBatch(
   if (logEntries.length > EXTERNAL_IMPORT_LIMITS.maxLogs) {
     ctx.throw(413, `External import supports at most ${EXTERNAL_IMPORT_LIMITS.maxLogs} logs per batch`);
   }
-  const artifacts = getArray(values.artifacts).map((entry) => getRecord(entry));
+  const artifacts = getJsonArray(values.artifacts).map((entry) => getJsonRecord(entry));
   if (artifacts.length > EXTERNAL_IMPORT_LIMITS.maxArtifacts) {
     ctx.throw(413, `External import supports at most ${EXTERNAL_IMPORT_LIMITS.maxArtifacts} artifacts per batch`);
   }
 
   let normalizedEventCount = 0;
   const logs = logEntries.flatMap((log, index): PreparedExternalImportLog[] => {
-    const contentText = getString(log.contentText || log.text || log.content);
+    const contentText = getJsonString(log.contentText || log.text || log.content);
     if (!contentText) {
       return [];
     }

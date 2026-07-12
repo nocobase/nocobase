@@ -83,7 +83,7 @@ function renderSmokePanel() {
       role: 'root',
     },
     request: vi.fn(async (config: { url: string; method: 'get' | 'post' }) => {
-      if (config.url === 'agent-gateway/runs/run-id-1/terminal-stream-tickets:create') {
+      if (config.url === 'agentGatewayApi:createTerminalStreamTicket/run-id-1') {
         return {
           data: {
             data: {

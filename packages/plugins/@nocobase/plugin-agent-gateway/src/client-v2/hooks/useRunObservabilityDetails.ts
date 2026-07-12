@@ -10,6 +10,7 @@
 import { useRequest } from 'ahooks';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiUrl } from '../../shared/apiContract';
 import { AgentTimelineEventRecord } from '../components/AgentTimeline';
 import {
   AgentGatewayApi,
@@ -403,8 +404,8 @@ export function useRunObservabilityDetails({
         const response = await api.request<AgentTimelineEventRecord[]>({
           url:
             scope === 'session'
-              ? `agent-gateway/agent-sessions/${encodeURIComponent(targetId)}/conversation-events:list`
-              : `agent-gateway/runs/${encodeURIComponent(targetId)}/conversation-events:list`,
+              ? getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.listSessionConversationEvents, targetId)
+              : getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.listRunConversationEvents, targetId),
           method: 'get',
           params,
         });
@@ -487,7 +488,7 @@ export function useRunObservabilityDetails({
         };
       }
       const response = await api.request<RunEventRecord[]>({
-        url: `agent-gateway/runs/${encodeURIComponent(request.runId)}/events:list`,
+        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.listRunEvents, request.runId),
         method: 'get',
         params: {
           pageSize: DEFAULT_CURSOR_PAGE_SIZE,
@@ -568,7 +569,7 @@ export function useRunObservabilityDetails({
         };
       }
       const response = await api.request<RunArtifactRecord[]>({
-        url: `agent-gateway/runs/${encodeURIComponent(request.runId)}/artifacts:list`,
+        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.listRunArtifacts, request.runId),
         method: 'get',
         params: {
           page: request.current,
@@ -650,7 +651,7 @@ export function useRunObservabilityDetails({
         };
       }
       const response = await api.request<RunSnapshotRecord[]>({
-        url: `agent-gateway/runs/${encodeURIComponent(request.runId)}/snapshots:list`,
+        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.listRunSnapshots, request.runId),
         method: 'get',
         params: {
           page: request.current,
@@ -732,7 +733,7 @@ export function useRunObservabilityDetails({
         } satisfies RunApiLogsDetailsState;
       }
       const response = await api.request<ApiCallLogRecord[]>({
-        url: `agent-gateway/runs/${encodeURIComponent(request.runId)}/api-call-logs:list`,
+        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.listRunApiCallLogs, request.runId),
         method: 'get',
         params: {
           page: request.current,
@@ -836,8 +837,11 @@ export function useRunObservabilityDetails({
       }));
       try {
         const response = await api.request<ArtifactContentResponse>({
-          url: `agent-gateway/runs/${encodeURIComponent(runId)}/artifacts/${encodeURIComponent(artifact.id)}:content`,
+          url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.getRunArtifactContent, runId),
           method: 'get',
+          params: {
+            artifactId: artifact.id,
+          },
         });
         const content = getRequiredResponseData(response, t('Artifact content unavailable'));
         if (!isCurrentRequest(request) || content.id !== artifact.id) {

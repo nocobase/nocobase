@@ -29,6 +29,7 @@ import {
 import type { UploadProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiUrl } from '../../shared/apiContract';
 import { useT } from '../locale';
 import {
   AgentGatewayTaskParameterFormItems,
@@ -142,7 +143,7 @@ export default function AgentGatewayTaskTemplatesPage() {
 
   const templatesRequest = useRequest(async () => {
     const response = await ctx.api.request<TaskTemplateRecord[]>({
-      url: 'agentGatewayApi:listTaskTemplates',
+      url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.listTaskTemplates),
       method: 'get',
       params: {
         includeDisabled: true,
@@ -153,7 +154,7 @@ export default function AgentGatewayTaskTemplatesPage() {
 
   const optionsRequest = useRequest(async () => {
     const response = await ctx.api.request<BuildRunOptions>({
-      url: 'agentGatewayApi:listRunOptions',
+      url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.listRunOptions),
       method: 'get',
     });
     return getResponseData(response, {});
@@ -183,7 +184,7 @@ export default function AgentGatewayTaskTemplatesPage() {
 
       if (editingTemplate) {
         const response = await ctx.api.request<TaskTemplateRecord>({
-          url: `agentGatewayApi:updateTaskTemplate/${encodeURIComponent(editingTemplate.id)}`,
+          url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.updateTaskTemplate, editingTemplate.id),
           method: 'post',
           data: payload,
         });
@@ -191,7 +192,7 @@ export default function AgentGatewayTaskTemplatesPage() {
       }
 
       const response = await ctx.api.request<TaskTemplateRecord>({
-        url: 'agentGatewayApi:createTaskTemplate',
+        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.createTaskTemplate),
         method: 'post',
         data: payload,
       });
@@ -219,7 +220,7 @@ export default function AgentGatewayTaskTemplatesPage() {
     async (values: SkillUploadFormValues & { file: File }) => {
       const uploadId = await uploadAgentGatewayFile(ctx.api, values.file, 'skill-version');
       const response = await ctx.api.request<SkillUploadResult>({
-        url: 'agentGatewayApi:createSkillVersionFromUpload',
+        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.createSkillVersionFromUpload),
         method: 'post',
         data: { ...values, file: undefined, uploadId },
       });
@@ -246,7 +247,7 @@ export default function AgentGatewayTaskTemplatesPage() {
   const updateTemplateStatusRequest = useRequest(
     async (template: TaskTemplateRecord, enabled: boolean) => {
       const response = await ctx.api.request<TaskTemplateRecord>({
-        url: `agentGatewayApi:updateTaskTemplate/${encodeURIComponent(template.id)}`,
+        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.updateTaskTemplate, template.id),
         method: 'post',
         data: {
           status: enabled ? 'active' : 'disabled',

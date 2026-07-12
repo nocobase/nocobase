@@ -8,8 +8,9 @@
  */
 
 import { AgentProviderKey } from '../shared/providerCapabilities';
+import type { JsonRecord } from '../shared/json';
 
-export type JsonRecord = Record<string, unknown>;
+export type { JsonRecord } from '../shared/json';
 
 export type AgentGatewayProfileKey = string;
 

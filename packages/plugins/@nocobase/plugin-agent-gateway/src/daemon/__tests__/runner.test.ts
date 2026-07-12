@@ -17,6 +17,7 @@ import { AgentGatewayDaemonNodeClient } from '../gateway';
 import { runDaemonLoop, runDaemonOnce } from '../runner';
 import { terminateTmuxSession } from '../tmuxTerminal';
 import { GatewayRequestOptions, GatewayRequester, JsonRecord } from '../types';
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiPath } from '../../shared/apiContract';
 import { COMMAND_OUTPUT_PAYLOAD_LIMIT_CHARS } from '../../shared/conversationLimits';
 
 function execTmux(args: string[]) {
@@ -53,13 +54,25 @@ function getRequestEvents(call: GatewayRequestOptions | undefined) {
 }
 
 const RUN_ACTION_PATHS = {
-  claim: '/api/agentGatewayApi:claimRun/',
-  heartbeat: '/api/agentGatewayApi:heartbeatRun/',
-  complete: '/api/agentGatewayApi:completeRun/',
-  fail: '/api/agentGatewayApi:failRun/',
-  timeout: '/api/agentGatewayApi:timeoutRun/',
-  cancelAck: '/api/agentGatewayApi:ackCancelRun/',
+  claim: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.claimRun, ''),
+  heartbeat: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatRun, ''),
+  complete: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.completeRun, ''),
+  fail: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.failRun, ''),
+  timeout: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.timeoutRun, ''),
+  cancelAck: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.ackCancelRun, ''),
 } as const;
+
+const OBSERVABILITY_ACTION_PATHS = {
+  appendEvents: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.appendRunEvents, ''),
+  registerArtifact: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.registerRunArtifact, ''),
+  registerSnapshot: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.registerRunSnapshot, ''),
+  upsertAgentSession: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.upsertAgentSession, ''),
+  appendConversationEvents: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.appendConversationEvents, ''),
+} as const;
+
+function isObservabilityActionCall(call: GatewayRequestOptions, action: keyof typeof OBSERVABILITY_ACTION_PATHS) {
+  return call.path.includes(OBSERVABILITY_ACTION_PATHS[action]);
+}
 
 function isRunActionCall(call: GatewayRequestOptions, action: keyof typeof RUN_ACTION_PATHS) {
   return call.path.includes(RUN_ACTION_PATHS[action]);
@@ -223,17 +236,17 @@ class RunnerRequester implements GatewayRequester {
       this.failCompleteOnce = false;
       throw new Error('Run is canceling');
     }
-    if (this.failAgentSessionUpsertOnce && options.path.endsWith('/agent-session:upsert')) {
+    if (this.failAgentSessionUpsertOnce && isObservabilityActionCall(options, 'upsertAgentSession')) {
       this.failAgentSessionUpsertOnce = false;
       throw new Error('transient session upsert failure');
     }
-    if (this.options.enforceAgentSessionLeaseVersion && options.path.endsWith('/agent-session:upsert')) {
+    if (this.options.enforceAgentSessionLeaseVersion && isObservabilityActionCall(options, 'upsertAgentSession')) {
       const body = (options.body || {}) as JsonRecord;
       if (body.leaseVersion !== this.leaseVersion) {
         throw new Error(`stale agent session lease version: ${String(body.leaseVersion)} !== ${this.leaseVersion}`);
       }
     }
-    if (options.path.endsWith('/artifacts:register')) {
+    if (isObservabilityActionCall(options, 'registerArtifact')) {
       const body = (options.body || {}) as JsonRecord;
       if (this.options.enforceArtifactLeaseVersion && body.leaseVersion !== this.leaseVersion) {
         throw new Error(`stale artifact lease version: ${String(body.leaseVersion)} !== ${this.leaseVersion}`);
@@ -245,7 +258,7 @@ class RunnerRequester implements GatewayRequester {
         throw new Error('HTTP 413');
       }
     }
-    if (this.options.failConversationAppends && options.path.endsWith('/conversation-events:append')) {
+    if (this.options.failConversationAppends && isObservabilityActionCall(options, 'appendConversationEvents')) {
       throw new Error('connect ECONNRESET timeline append');
     }
     if (this.options.enforceTerminalLeaseVersion && isTerminalRunActionCall(options)) {
@@ -643,13 +656,13 @@ describe('agent gateway daemon runner', () => {
       expect.arrayContaining([
         '/api/agentGatewayApi:heartbeatNode/node-1',
         '/api/agentGatewayApi:claimRun/node-1',
-        '/api/agent-gateway/runs/run-1/events:append',
-        '/api/agent-gateway/runs/run-1/snapshots:register',
+        '/api/agentGatewayApi:appendRunEvents/run-1',
+        '/api/agentGatewayApi:registerRunSnapshot/run-1',
         '/api/agentGatewayApi:completeRun/run-1',
       ]),
     );
     const runEventBodies = requester.calls
-      .filter((call) => call.path.endsWith('/events:append') && isJsonRecord(call.body))
+      .filter((call) => isObservabilityActionCall(call, 'appendEvents') && isJsonRecord(call.body))
       .map((call) => call.body as JsonRecord);
     expect(runEventBodies).toEqual(
       expect.arrayContaining([
@@ -727,7 +740,7 @@ describe('agent gateway daemon runner', () => {
 
     expect(result.status).toBe('succeeded');
     const stdoutArtifactCall = requester.calls.find(
-      (call) => call.path.endsWith('/artifacts:register') && call.body?.artifactKey === 'stdout-main',
+      (call) => isObservabilityActionCall(call, 'registerArtifact') && call.body?.artifactKey === 'stdout-main',
     );
     expect(stdoutArtifactCall?.body).toMatchObject({
       sizeBytes: 128 * 1024,
@@ -886,7 +899,7 @@ describe('agent gateway daemon runner', () => {
     expect(executedArgs[0].join('\n')).not.toContain(path.join(installedSkillPath, 'SKILL.md'));
     expect(executedArgs[0].join('\n')).not.toContain('Custom Agent Gateway skills installed for this run');
     await expect(fs.access(path.join(workspace, '.agents', 'skills', 'agent-gateway-test-skill'))).rejects.toThrow();
-    const artifactCalls = requester.calls.filter((call) => call.path.endsWith('/artifacts:register'));
+    const artifactCalls = requester.calls.filter((call) => isObservabilityActionCall(call, 'registerArtifact'));
     expect(artifactCalls).toHaveLength(8);
     expect(artifactCalls.map((call) => call.body?.artifactKey)).not.toEqual(
       expect.arrayContaining([
@@ -967,7 +980,7 @@ describe('agent gateway daemon runner', () => {
     });
     const harnessProgressCall = requester.calls.find(
       (call) =>
-        call.path.endsWith('/events:append') &&
+        isObservabilityActionCall(call, 'appendEvents') &&
         isJsonRecord(call.body) &&
         call.body.source === 'harness' &&
         call.body.eventType === 'render_run.started',
@@ -1063,7 +1076,7 @@ describe('agent gateway daemon runner', () => {
     });
 
     expect(result.status).toBe('succeeded');
-    const artifactCalls = requester.calls.filter((call) => call.path.endsWith('/artifacts:register'));
+    const artifactCalls = requester.calls.filter((call) => isObservabilityActionCall(call, 'registerArtifact'));
     expect(artifactCalls.map((call) => call.body)).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -1176,7 +1189,7 @@ describe('agent gateway daemon runner', () => {
     });
 
     expect(result.status).toBe('succeeded');
-    const artifactCalls = requester.calls.filter((call) => call.path.endsWith('/artifacts:register'));
+    const artifactCalls = requester.calls.filter((call) => isObservabilityActionCall(call, 'registerArtifact'));
     expect(artifactCalls.map((call) => call.body)).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -1281,7 +1294,7 @@ describe('agent gateway daemon runner', () => {
     });
 
     expect(result.status).toBe('succeeded');
-    const artifactCalls = requester.calls.filter((call) => call.path.endsWith('/artifacts:register'));
+    const artifactCalls = requester.calls.filter((call) => isObservabilityActionCall(call, 'registerArtifact'));
     expect(artifactCalls.map((call) => call.body?.artifactKey)).toEqual(
       expect.arrayContaining([
         'declared:runs/nb-opencode-ui-batch/run-2/report.html',
@@ -1376,7 +1389,7 @@ describe('agent gateway daemon runner', () => {
     });
 
     expect(result.status).toBe('succeeded');
-    const artifactCalls = requester.calls.filter((call) => call.path.endsWith('/artifacts:register'));
+    const artifactCalls = requester.calls.filter((call) => isObservabilityActionCall(call, 'registerArtifact'));
     expect(new Set(artifactCalls.map((call) => (call.body as JsonRecord).leaseVersion)).size).toBeGreaterThan(1);
     const completeCall = requester.calls.find((call) => isRunActionCall(call, 'complete'));
     expect(completeCall?.body).toMatchObject({
@@ -1480,7 +1493,7 @@ describe('agent gateway daemon runner', () => {
     });
 
     expect(result.status).toBe('succeeded');
-    const artifactCalls = requester.calls.filter((call) => call.path.endsWith('/artifacts:register'));
+    const artifactCalls = requester.calls.filter((call) => isObservabilityActionCall(call, 'registerArtifact'));
     expect(artifactCalls.map((call) => String(call.body?.artifactKey))).not.toEqual(
       expect.arrayContaining(['declared:runs/nb-opencode-ui-batch/run-1/report.html']),
     );
@@ -1693,7 +1706,7 @@ describe('agent gateway daemon runner', () => {
     });
 
     expect(result.status).toBe('succeeded');
-    const upsertCall = requester.calls.find((call) => call.path.endsWith('/agent-session:upsert'));
+    const upsertCall = requester.calls.find((call) => isObservabilityActionCall(call, 'upsertAgentSession'));
     expect(upsertCall).toBeTruthy();
     expect(upsertCall?.body).toMatchObject({
       provider: 'codex',
@@ -1703,7 +1716,9 @@ describe('agent gateway daemon runner', () => {
         resumeWithMessage: true,
       },
     });
-    const conversationCall = requester.calls.find((call) => call.path.endsWith('/conversation-events:append'));
+    const conversationCall = requester.calls.find((call) =>
+      isObservabilityActionCall(call, 'appendConversationEvents'),
+    );
     expect(conversationCall?.body).toMatchObject({
       events: expect.arrayContaining([
         expect.objectContaining({
@@ -1805,7 +1820,7 @@ describe('agent gateway daemon runner', () => {
       commandKey: 'codex',
       args: ['exec', '--skip-git-repo-check', '--json', 'Build with custom profile'],
     });
-    const upsertCall = requester.calls.find((call) => call.path.endsWith('/agent-session:upsert'));
+    const upsertCall = requester.calls.find((call) => isObservabilityActionCall(call, 'upsertAgentSession'));
     expect(upsertCall?.body).toMatchObject({
       provider: 'codex',
       providerSessionId: '019f1e72-d75c-7c61-a9ba-cc99c653e0a2',
@@ -1891,8 +1906,8 @@ describe('agent gateway daemon runner', () => {
       commandKey: 'node',
       args: ['-e', 'process.stdout.write("legacy command complete")'],
     });
-    expect(requester.calls.some((call) => call.path.endsWith('/agent-session:upsert'))).toBe(false);
-    expect(requester.calls.some((call) => call.path.endsWith('/conversation-events:append'))).toBe(false);
+    expect(requester.calls.some((call) => isObservabilityActionCall(call, 'upsertAgentSession'))).toBe(false);
+    expect(requester.calls.some((call) => isObservabilityActionCall(call, 'appendConversationEvents'))).toBe(false);
   });
 
   it('does not treat a canonical-looking profile key as the provider for explicit commands', async () => {
@@ -1969,8 +1984,8 @@ describe('agent gateway daemon runner', () => {
       commandKey: 'node',
       args: ['-e', 'process.stdout.write("legacy command complete")'],
     });
-    expect(requester.calls.some((call) => call.path.endsWith('/agent-session:upsert'))).toBe(false);
-    expect(requester.calls.some((call) => call.path.endsWith('/conversation-events:append'))).toBe(false);
+    expect(requester.calls.some((call) => isObservabilityActionCall(call, 'upsertAgentSession'))).toBe(false);
+    expect(requester.calls.some((call) => isObservabilityActionCall(call, 'appendConversationEvents'))).toBe(false);
   });
 
   it('builds continuation runs through the Codex resume command builder', async () => {
@@ -2183,7 +2198,7 @@ describe('agent gateway daemon runner', () => {
     });
 
     expect(result.status).toBe('succeeded');
-    const upsertCalls = requester.calls.filter((call) => call.path.endsWith('/agent-session:upsert'));
+    const upsertCalls = requester.calls.filter((call) => isObservabilityActionCall(call, 'upsertAgentSession'));
     expect(upsertCalls).toHaveLength(2);
     expect(Number((upsertCalls[1]?.body as JsonRecord).leaseVersion)).toBeGreaterThan(
       Number((upsertCalls[0]?.body as JsonRecord).leaseVersion),
@@ -2271,7 +2286,7 @@ describe('agent gateway daemon runner', () => {
     });
 
     expect(result.status).toBe('succeeded');
-    const upsertCall = requester.calls.find((call) => call.path.endsWith('/agent-session:upsert'));
+    const upsertCall = requester.calls.find((call) => isObservabilityActionCall(call, 'upsertAgentSession'));
     expect(upsertCall?.body).toMatchObject({
       provider: 'codex',
       providerSessionId: '019f1e94-8f39-7dc0-b035-61fb2a364d30',
@@ -2352,7 +2367,9 @@ describe('agent gateway daemon runner', () => {
     });
 
     expect(result.status).toBe('succeeded');
-    const conversationCall = requester.calls.find((call) => call.path.endsWith('/conversation-events:append'));
+    const conversationCall = requester.calls.find((call) =>
+      isObservabilityActionCall(call, 'appendConversationEvents'),
+    );
     expect(conversationCall?.body).toMatchObject({
       events: expect.arrayContaining([
         expect.objectContaining({
@@ -2474,7 +2491,9 @@ describe('agent gateway daemon runner', () => {
     });
 
     expect(result.status).toBe('succeeded');
-    const conversationCall = requester.calls.find((call) => call.path.endsWith('/conversation-events:append'));
+    const conversationCall = requester.calls.find((call) =>
+      isObservabilityActionCall(call, 'appendConversationEvents'),
+    );
     const commandEvent = getRequestEvents(conversationCall).find(
       (event) => event.providerEventId === 'item.completed:item-large-command',
     );
@@ -2634,7 +2653,9 @@ describe('agent gateway daemon runner', () => {
     });
 
     expect(result.status).toBe('succeeded');
-    const conversationCalls = requester.calls.filter((call) => call.path.endsWith('/conversation-events:append'));
+    const conversationCalls = requester.calls.filter((call) =>
+      isObservabilityActionCall(call, 'appendConversationEvents'),
+    );
     expect(conversationCalls).toHaveLength(2);
     expect((conversationCalls[0].body?.events as unknown[] | undefined)?.length).toBe(100);
     expect((conversationCalls[1].body?.events as unknown[] | undefined)?.length).toBe(6);
@@ -2705,7 +2726,7 @@ describe('agent gateway daemon runner', () => {
 
       expect(result.status).toBe('succeeded');
       await expect(fs.access(path.join(tempDir, 'artifacts', 'ag-run-run-1-terminal.log'))).rejects.toThrow();
-      const upsertCall = requester.calls.find((call) => call.path.endsWith('/agent-session:upsert'));
+      const upsertCall = requester.calls.find((call) => isObservabilityActionCall(call, 'upsertAgentSession'));
       expect(upsertCall?.body).toMatchObject({
         provider: 'codex',
         providerSessionId: '019f1eb9-2c3a-7f77-9004-8c81f7abf7b1',
@@ -2878,7 +2899,9 @@ describe('agent gateway daemon runner', () => {
       });
 
       expect(result.status).toBe('succeeded');
-      const sessionUpsertCallIndex = requester.calls.findIndex((call) => call.path.endsWith('/agent-session:upsert'));
+      const sessionUpsertCallIndex = requester.calls.findIndex((call) =>
+        isObservabilityActionCall(call, 'upsertAgentSession'),
+      );
       expect(sessionUpsertCallIndex).toBeGreaterThanOrEqual(0);
       expect(
         requester.calls
@@ -3081,7 +3104,7 @@ describe('agent gateway daemon runner', () => {
 
     expect(result.status).toBe('succeeded');
     const artifactCall = requester.calls.find(
-      (call) => call.path.endsWith('/artifacts:register') && call.body?.artifactKey === 'stdout-main',
+      (call) => isObservabilityActionCall(call, 'registerArtifact') && call.body?.artifactKey === 'stdout-main',
     );
     expect(artifactCall).toBeTruthy();
     const artifactBody = (artifactCall?.body || {}) as JsonRecord;
@@ -3455,7 +3478,7 @@ describe('agent gateway daemon runner', () => {
       status: 'canceled',
       runId: 'run-1',
     });
-    const upsertIndex = requester.calls.findIndex((call) => call.path.endsWith('/agent-session:upsert'));
+    const upsertIndex = requester.calls.findIndex((call) => isObservabilityActionCall(call, 'upsertAgentSession'));
     const cancelAckIndex = requester.calls.findIndex((call) => isRunActionCall(call, 'cancelAck'));
     expect(upsertIndex).toBeGreaterThanOrEqual(0);
     expect(cancelAckIndex).toBeGreaterThan(upsertIndex);

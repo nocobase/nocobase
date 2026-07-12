@@ -12,6 +12,7 @@ import { useRequest } from 'ahooks';
 import { Select } from 'antd';
 import React, { useMemo } from 'react';
 
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiUrl } from '../../shared/apiContract';
 import { useT } from '../locale';
 import { CollectionContextLike, getCollectionNameFromContext } from '../utils/collectionContext';
 
@@ -71,7 +72,7 @@ export function AgentGatewayDispatchBindingSelect(props: AgentGatewayDispatchBin
   const collectionName = getCollectionNameFromContext(flowSettingsCtx);
   const bindingsRequest = useRequest(async () => {
     const response = await ctx.api.request<DispatchBindingRecord[]>({
-      url: 'agentGatewayApi:listDispatchBindings',
+      url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.listDispatchBindings),
       method: 'get',
     });
     return getResponseData(response, []);

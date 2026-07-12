@@ -13,12 +13,13 @@ import { Context, Next } from '@nocobase/actions';
 import { Plugin } from '@nocobase/server';
 import { Transaction, UniqueConstraintError } from 'sequelize';
 
-import { AGENT_GATEWAY_ACTIONS, redactObservabilityText } from '../security';
+import { AGENT_GATEWAY_ACTIONS, authenticateNodeToken, redactObservabilityText } from '../security';
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiActionName } from '../../shared/apiContract';
 import {
   AGENT_GATEWAY_ERROR_CODES,
-  API_PREFIX,
   JsonRecord,
   ModelRecord,
+  asActionContext,
   getBodyValues,
   getCurrentUserId,
   getModelJson,
@@ -27,6 +28,7 @@ import {
   getModelValue,
   getRecord,
   getString,
+  getActionTargetKey,
   getVisibleRunFilter,
   matchStandardCollectionAction,
   requireAgentGatewayPermission,
@@ -965,37 +967,30 @@ async function messageAgentSession(ctx: Context, sessionId: string) {
 }
 
 export function registerAgentSessionRoutes(plugin: Plugin) {
+  plugin.app.resourceManager.registerActionHandlers({
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.upsertAgentSession)]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      const auth = await authenticateNodeToken(actionCtx);
+      await upsertAgentSession(actionCtx, String(auth.subject.nodeId), getActionTargetKey(actionCtx));
+      await next();
+    },
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.resumeAgentSession)]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      await resumeAgentSession(actionCtx, getActionTargetKey(actionCtx));
+      await next();
+    },
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.messageAgentSession)]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      await messageAgentSession(actionCtx, getActionTargetKey(actionCtx));
+      await next();
+    },
+  });
+
   plugin.app.use(
     async (ctx: Context, next: Next) => {
       if (matchStandardCollectionAction(ctx.path, STANDARD_AGENT_SESSION_COLLECTIONS)) {
         await requireManagePermission(ctx);
       }
-
-      if (!ctx.path.startsWith(API_PREFIX)) {
-        await next();
-        return;
-      }
-
-      const routePath = ctx.path.slice(API_PREFIX.length);
-      const upsertMatch = routePath.match(/^\/nodes\/([^/]+)\/runs\/([^/]+)\/agent-session:upsert$/);
-      const resumeMatch = routePath.match(/^\/agent-sessions\/([^/]+)\/resume$/);
-      const messageMatch = routePath.match(/^\/agent-sessions\/([^/]+)\/message$/);
-
-      if (ctx.method === 'POST' && upsertMatch) {
-        await upsertAgentSession(ctx, upsertMatch[1], upsertMatch[2]);
-        return;
-      }
-
-      if (ctx.method === 'POST' && resumeMatch) {
-        await resumeAgentSession(ctx, resumeMatch[1]);
-        return;
-      }
-
-      if (ctx.method === 'POST' && messageMatch) {
-        await messageAgentSession(ctx, messageMatch[1]);
-        return;
-      }
-
       await next();
     },
     {

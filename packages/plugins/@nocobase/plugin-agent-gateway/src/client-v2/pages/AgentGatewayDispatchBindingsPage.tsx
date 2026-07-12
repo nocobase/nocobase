@@ -28,6 +28,7 @@ import {
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useCallback, useMemo, useState } from 'react';
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiUrl } from '../../shared/apiContract';
 import { useT } from '../locale';
 import {
   AgentGatewayContext,
@@ -103,7 +104,7 @@ export default function AgentGatewayDispatchBindingsPage() {
 
   const bindingsRequest = useRequest(async () => {
     const response = await ctx.api.request<DispatchBindingRecord[]>({
-      url: 'agentGatewayApi:listDispatchBindings',
+      url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.listDispatchBindings),
       method: 'get',
     });
     return getResponseData(response, []);
@@ -111,7 +112,7 @@ export default function AgentGatewayDispatchBindingsPage() {
 
   const templatesRequest = useRequest(async () => {
     const response = await ctx.api.request<PromptTemplateOption[]>({
-      url: 'agentGatewayApi:listPromptTemplates',
+      url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.listPromptTemplates),
       method: 'get',
     });
     return getResponseData(response, []);
@@ -137,7 +138,7 @@ export default function AgentGatewayDispatchBindingsPage() {
 
       if (editingBinding) {
         const response = await ctx.api.request<DispatchBindingRecord>({
-          url: `agentGatewayApi:updateDispatchBinding/${encodeURIComponent(editingBinding.id)}`,
+          url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.updateDispatchBinding, editingBinding.id),
           method: 'post',
           data: payload,
         });
@@ -145,7 +146,7 @@ export default function AgentGatewayDispatchBindingsPage() {
       }
 
       const response = await ctx.api.request<DispatchBindingRecord>({
-        url: 'agentGatewayApi:createDispatchBinding',
+        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.createDispatchBinding),
         method: 'post',
         data: payload,
       });
@@ -169,7 +170,7 @@ export default function AgentGatewayDispatchBindingsPage() {
   const updateBindingStatusRequest = useRequest(
     async (binding: DispatchBindingRecord, enabled: boolean) => {
       const response = await ctx.api.request<DispatchBindingRecord>({
-        url: `agentGatewayApi:updateDispatchBinding/${encodeURIComponent(binding.id)}`,
+        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.updateDispatchBinding, binding.id),
         method: 'post',
         data: {
           enabled,

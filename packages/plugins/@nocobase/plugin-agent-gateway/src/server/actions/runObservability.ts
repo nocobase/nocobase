@@ -20,10 +20,11 @@ import {
   redactObservabilityText,
   redactSnapshotJson,
 } from '../security';
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiActionName } from '../../shared/apiContract';
 import {
-  API_PREFIX,
   JsonRecord,
   ModelRecord,
+  asActionContext,
   getBodyValues,
   getDate,
   getModelJson,
@@ -31,6 +32,7 @@ import {
   getModelNumber,
   getRecord,
   getString,
+  getActionTargetKey,
   assertRunVisible,
   matchStandardCollectionAction,
   requireAgentGatewayPermission,
@@ -736,6 +738,61 @@ async function listRunApiCallLogs(ctx: Context, runId: string) {
 }
 
 export function registerRunObservabilityRoutes(plugin: Plugin) {
+  const getRunId = (ctx: Context) => {
+    const runId = getActionTargetKey(ctx);
+    if (!UUID_PATTERN.test(runId)) {
+      ctx.throw(400, 'runId must be a valid UUID');
+    }
+    return runId;
+  };
+  plugin.app.resourceManager.registerActionHandlers({
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.appendRunEvents)]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      await appendEvent(actionCtx, getRunId(actionCtx));
+      await next();
+    },
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.registerRunArtifact)]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      await registerArtifact(actionCtx, getRunId(actionCtx));
+      await next();
+    },
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.registerRunSnapshot)]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      await registerSnapshot(actionCtx, getRunId(actionCtx));
+      await next();
+    },
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.listRunEvents)]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      await listRunEvents(actionCtx, getRunId(actionCtx));
+      await next();
+    },
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.listRunArtifacts)]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      await listRunArtifacts(actionCtx, getRunId(actionCtx));
+      await next();
+    },
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.listRunSnapshots)]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      await listRunSnapshots(actionCtx, getRunId(actionCtx));
+      await next();
+    },
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.listRunApiCallLogs)]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      await listRunApiCallLogs(actionCtx, getRunId(actionCtx));
+      await next();
+    },
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.getRunArtifactContent)]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      const runId = getRunId(actionCtx);
+      const artifactId = getString(getRecord(actionCtx.query).artifactId);
+      if (!UUID_PATTERN.test(artifactId)) {
+        actionCtx.throw(400, 'artifactId must be a valid UUID');
+      }
+      await getRunArtifactContent(actionCtx, runId, artifactId);
+      await next();
+    },
+  });
+
   plugin.app.use(
     async (ctx: Context, next: Next) => {
       const standardCollectionAction = matchStandardCollectionAction(ctx.path, STANDARD_OBSERVABILITY_COLLECTIONS);
@@ -746,72 +803,6 @@ export function registerRunObservabilityRoutes(plugin: Plugin) {
         await requireManagePermission(ctx);
         await next();
         return;
-      }
-
-      if (!ctx.path.startsWith(API_PREFIX)) {
-        await next();
-        return;
-      }
-
-      const routePath = ctx.path.slice(API_PREFIX.length);
-      const observationMatch = routePath.match(
-        /^\/runs\/([^/]+)\/(events:append|artifacts:register|snapshots:register)$/,
-      );
-      const observationReadMatch = routePath.match(
-        /^\/runs\/([^/]+)\/(events:list|artifacts:list|snapshots:list|api-call-logs:list)$/,
-      );
-      const artifactContentMatch = routePath.match(/^\/runs\/([^/]+)\/artifacts\/([^/]+):content$/);
-      if (ctx.method === 'GET' && artifactContentMatch) {
-        const [, runId, artifactId] = artifactContentMatch;
-        if (!UUID_PATTERN.test(runId)) {
-          ctx.throw(400, 'runId must be a valid UUID');
-        }
-        if (!UUID_PATTERN.test(artifactId)) {
-          ctx.throw(400, 'artifactId must be a valid UUID');
-        }
-        await getRunArtifactContent(ctx, runId, artifactId);
-        return;
-      }
-      if (ctx.method === 'GET' && observationReadMatch) {
-        const [, runId, action] = observationReadMatch;
-        if (!UUID_PATTERN.test(runId)) {
-          ctx.throw(400, 'runId must be a valid UUID');
-        }
-        if (action === 'events:list') {
-          await listRunEvents(ctx, runId);
-          return;
-        }
-        if (action === 'artifacts:list') {
-          await listRunArtifacts(ctx, runId);
-          return;
-        }
-        if (action === 'snapshots:list') {
-          await listRunSnapshots(ctx, runId);
-          return;
-        }
-        if (action === 'api-call-logs:list') {
-          await listRunApiCallLogs(ctx, runId);
-          return;
-        }
-      }
-
-      if (ctx.method === 'POST' && observationMatch) {
-        const [, runId, action] = observationMatch;
-        if (!UUID_PATTERN.test(runId)) {
-          ctx.throw(400, 'runId must be a valid UUID');
-        }
-        if (action === 'events:append') {
-          await appendEvent(ctx, runId);
-          return;
-        }
-        if (action === 'artifacts:register') {
-          await registerArtifact(ctx, runId);
-          return;
-        }
-        if (action === 'snapshots:register') {
-          await registerSnapshot(ctx, runId);
-          return;
-        }
       }
 
       await next();

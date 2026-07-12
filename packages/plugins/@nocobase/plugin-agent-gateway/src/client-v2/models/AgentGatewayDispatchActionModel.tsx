@@ -10,6 +10,7 @@
 import { ActionModel, ActionSceneEnum } from '@nocobase/client-v2';
 import { ButtonProps } from 'antd';
 
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiUrl } from '../../shared/apiContract';
 import { NAMESPACE, tExpr } from '../locale';
 import { FlowCollectionLike, getCollectionFromContext, getCollectionNameFromContext } from '../utils/collectionContext';
 
@@ -203,7 +204,7 @@ export async function dispatchAgentGatewayRun(ctx: DispatchActionContext, params
   pendingDispatches.add(pendingKey);
   try {
     const response = await ctx.api.request<DispatchApiResponse>({
-      url: `agentGatewayApi:dispatchBinding/${encodeURIComponent(bindingIdentifier)}`,
+      url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.dispatchBinding, bindingIdentifier),
       method: 'post',
       data: {
         sourceRecordId: recordId,
