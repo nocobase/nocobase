@@ -192,4 +192,4 @@ pkg: "@nocobase/plugin-multi-portal"
 
 ## 関連リンク
 
-マルチポータル、マルチアプリ、マルチスペースの違いと組み合わせ方については、[マルチアプリ vs マルチポータル vs マルチスペース](/multi-app/multi-app-vs-multi-portal-vs-multi-space/) を参照してください。
+マルチポータル、マルチアプリ、マルチスペースの違いと組み合わせ方については、[マルチアプリ vs マルチポータル vs マルチスペース](../multi-app-vs-multi-portal-vs-multi-space.md) を参照してください。
