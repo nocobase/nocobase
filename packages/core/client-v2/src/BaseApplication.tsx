@@ -35,6 +35,7 @@ import { SystemSettingsSource } from './flow/system-settings';
 import { LayoutManager } from './layout-manager/LayoutManager';
 import type { PluginClass, PluginManager, PluginType } from './PluginManager';
 import { RouteRepository } from './RouteRepository';
+import { stripModernClientPrefix } from './authRedirect';
 import type {
   ComponentTypeAndString,
   RenderableComponentType,
@@ -402,7 +403,7 @@ export abstract class BaseApplication<
       this.favicon = favicon || '';
     }
 
-    const iconHref = this.favicon || '/favicon/favicon.ico';
+    const iconHref = this.favicon || this.getCdnUrl() + 'favicon/favicon.ico';
 
     if (faviconLinkElement) {
       faviconLinkElement.href = iconHref;
@@ -438,7 +439,7 @@ export abstract class BaseApplication<
   }
 
   getCdnUrl() {
-    return ensureTrailingSlash(window['__webpack_public_path__'] || this.getPublicPath());
+    return ensureTrailingSlash(window['__webpack_public_path__'] || stripModernClientPrefix(this.getPublicPath()));
   }
 
   getPublicPath() {

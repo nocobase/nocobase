@@ -76,7 +76,8 @@ const CardUpload = (props) => {
           fileList={fileList}
           onChange={handleChange}
           itemRender={(originNode, file: any) => {
-            const fileName = file.name || decodeURIComponent(file.url.split('/').pop());
+            const fileUrl = file.url || file.response?.url || '';
+            const fileName = file.name || (fileUrl ? decodeURIComponent(fileUrl.split('/').pop()) : '');
             return (
               <>
                 {originNode}

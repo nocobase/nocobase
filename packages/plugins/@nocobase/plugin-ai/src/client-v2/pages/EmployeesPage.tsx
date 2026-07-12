@@ -438,8 +438,34 @@ const toModelValue = (model: { llmService?: string; model?: string }) =>
 const normalizeModelSettings = (value: unknown): EmployeeModelSettings =>
   isRecord(value) ? (value as EmployeeModelSettings) : {};
 
-const normalizeSkillSettings = (value: unknown): EmployeeSkillSettings =>
-  isRecord(value) ? (value as EmployeeSkillSettings) : {};
+const normalizeToolSetting = (value: unknown): EmployeeToolSetting | undefined => {
+  if (typeof value === 'string') {
+    return { name: value, autoCall: false };
+  }
+  if (!isRecord(value) || typeof value.name !== 'string') {
+    return undefined;
+  }
+  return {
+    name: value.name,
+    autoCall: value.autoCall === true,
+  };
+};
+
+export const normalizeSkillSettings = (value: unknown): EmployeeSkillSettings => {
+  if (!isRecord(value)) {
+    return {};
+  }
+  const skills = Array.isArray(value.skills)
+    ? value.skills.filter((skill): skill is string => typeof skill === 'string')
+    : [];
+  const tools = Array.isArray(value.tools)
+    ? value.tools.map(normalizeToolSetting).filter((tool): tool is EmployeeToolSetting => !!tool)
+    : [];
+  return {
+    skills,
+    tools,
+  };
+};
 
 const useLLMServices = () => {
   const repo = useAIConfigRepository();
@@ -600,7 +626,7 @@ const SkillSettings: React.FC<{ builtIn?: boolean }> = observer(({ builtIn }) =>
   const translateText = useTranslatedText();
   const repo = useAIConfigRepository();
   const form = Form.useFormInstance<EmployeeFormValues>();
-  const skillSettings = Form.useWatch('skillSettings', form) ?? {};
+  const skillSettings = Form.useWatch('skillSettings', { form, preserve: true }) ?? {};
   const selectedSkills = Array.isArray(skillSettings.skills) ? skillSettings.skills : [];
 
   useEffect(() => {
@@ -654,7 +680,7 @@ const ToolSettings: React.FC<{ builtIn?: boolean }> = observer(({ builtIn }) => 
   const translateText = useTranslatedText();
   const repo = useAIConfigRepository();
   const form = Form.useFormInstance<EmployeeFormValues>();
-  const watchedSkillSettings = Form.useWatch('skillSettings', form);
+  const watchedSkillSettings = Form.useWatch('skillSettings', { form, preserve: true });
   const [skillSettings, setSkillSettingsState] = useState<EmployeeSkillSettings>(() =>
     normalizeSkillSettings(form.getFieldValue('skillSettings')),
   );
@@ -669,7 +695,7 @@ const ToolSettings: React.FC<{ builtIn?: boolean }> = observer(({ builtIn }) => 
   ];
 
   useEffect(() => {
-    repo.getAITools().catch((error: unknown) => {
+    repo.refreshAITools().catch((error: unknown) => {
       console.error(error);
     });
   }, [repo]);
@@ -696,7 +722,10 @@ const ToolSettings: React.FC<{ builtIn?: boolean }> = observer(({ builtIn }) => 
     const tool = toolsByName.get(item.name);
     return tool && tool.scope !== 'GENERAL' && tool.scope !== 'CUSTOM';
   });
-  const customTools = selectedTools.filter((item) => toolsByName.get(item.name)?.scope === 'CUSTOM');
+  const customTools = selectedTools.filter((item) => {
+    const tool = toolsByName.get(item.name);
+    return !tool || tool.scope === 'CUSTOM';
+  });
 
   useEffect(() => {
     const wasEmpty = previousCustomToolsLength.current === 0;
@@ -768,9 +797,10 @@ const ToolSettings: React.FC<{ builtIn?: boolean }> = observer(({ builtIn }) => 
   };
   const renderCustomTool = (item: EmployeeToolSetting) => {
     const tool = toolsByName.get(item.name);
-    if (!tool) {
-      return null;
-    }
+    const title = tool
+      ? translateText(tool.introduction?.title ?? tool.definition.name, tool.definition.name)
+      : item.name;
+    const description = tool ? translateText(tool.introduction?.about ?? tool.definition.description) : null;
     return (
       <List.Item
         key={item.name}
@@ -780,7 +810,7 @@ const ToolSettings: React.FC<{ builtIn?: boolean }> = observer(({ builtIn }) => 
             <Segmented
               size="small"
               options={permissionOptions}
-              value={getPermissionValue(tool, item)}
+              value={tool ? getPermissionValue(tool, item) : item.autoCall ? 'ALLOW' : 'ASK'}
               onChange={(value) => {
                 setTools(
                   selectedTools.map((toolItem) =>
@@ -800,10 +830,8 @@ const ToolSettings: React.FC<{ builtIn?: boolean }> = observer(({ builtIn }) => 
           </Space>
         }
       >
-        <div>{translateText(tool.introduction?.title ?? tool.definition.name, tool.definition.name)}</div>
-        <Typography.Text type="secondary">
-          {translateText(tool.introduction?.about ?? tool.definition.description)}
-        </Typography.Text>
+        <div>{title}</div>
+        {description ? <Typography.Text type="secondary">{description}</Typography.Text> : null}
       </List.Item>
     );
   };
@@ -1329,10 +1357,15 @@ const AIEmployeeDrawerContent: React.FC<{
   const handleFinish = async (values: EmployeeFormValues) => {
     setSaving(true);
     try {
+      const allValues = form.getFieldsValue(true);
+      const submitValues = {
+        ...values,
+        skillSettings: normalizeSkillSettings(allValues.skillSettings),
+      };
       if (editingRecord) {
-        await updateAIEmployee(app.apiClient, values);
+        await updateAIEmployee(app.apiClient, submitValues);
       } else {
-        await createAIEmployee(app.apiClient, values);
+        await createAIEmployee(app.apiClient, submitValues);
       }
       message.success(t('Saved successfully'));
       await onSubmitted();

@@ -16,6 +16,7 @@ import {
   listAIEmployees,
   listKnowledgeBases,
   moveAIEmployee,
+  normalizeSkillSettings,
   updateAIEmployee,
   updateAIEmployeeEnabled,
 } from '../pages/EmployeesPage';
@@ -112,6 +113,47 @@ describe('EmployeesPage request helpers', () => {
         builtIn: true,
         about: 'custom prompt',
       },
+    });
+  });
+
+  it('keeps selected tools when updating an employee', async () => {
+    const update = vi.fn().mockResolvedValue({});
+    const apiClient = {
+      resource: () => ({ update }),
+    };
+
+    await updateAIEmployee(apiClient, {
+      username: 'atlas',
+      builtIn: false,
+      skillSettings: {
+        tools: [{ name: 'external_lookup', autoCall: true }],
+      },
+    });
+
+    expect(update).toHaveBeenCalledWith({
+      filterByTk: 'atlas',
+      values: {
+        username: 'atlas',
+        builtIn: false,
+        skillSettings: {
+          tools: [{ name: 'external_lookup', autoCall: true }],
+        },
+      },
+    });
+  });
+
+  it('normalizes saved tool settings for display and submit', () => {
+    expect(
+      normalizeSkillSettings({
+        skills: ['summarize', 123],
+        tools: ['external_lookup', { name: 'notify_user', autoCall: true }, { autoCall: true }],
+      }),
+    ).toEqual({
+      skills: ['summarize'],
+      tools: [
+        { name: 'external_lookup', autoCall: false },
+        { name: 'notify_user', autoCall: true },
+      ],
     });
   });
 

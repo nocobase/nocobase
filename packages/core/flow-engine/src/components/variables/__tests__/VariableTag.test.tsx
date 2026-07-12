@@ -54,6 +54,44 @@ describe('VariableTag', () => {
     expect(onClear).toBeInstanceOf(Function);
   });
 
+  it('keeps custom tag input enabled by default', async () => {
+    const onClear = vi.fn();
+    const { container } = renderWithCtx(<VariableTag value="{{ ctx.User.Email }}" onClear={onClear} />);
+
+    await waitFor(
+      () => {
+        expect(screen.getByText('User/Email')).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
+
+    const selectElement = container.querySelector('.ant-select.variable');
+    expect(selectElement).toBeInTheDocument();
+    expect(selectElement).toHaveClass('ant-select-show-search');
+    expect(container.querySelector('.ant-select-selection-search-input')).not.toHaveAttribute('readonly');
+  });
+
+  it('can disable custom tag input while keeping clear enabled', async () => {
+    const onClear = vi.fn();
+    const { container } = renderWithCtx(
+      <VariableTag value="{{ ctx.User.Email }}" onClear={onClear} allowCustomTagInput={false} />,
+    );
+
+    await waitFor(
+      () => {
+        expect(screen.getByText('User/Email')).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
+
+    const selectElement = container.querySelector('.ant-select.variable');
+    expect(selectElement).toBeInTheDocument();
+    expect(selectElement).not.toHaveClass('ant-select-disabled');
+    expect(selectElement).not.toHaveClass('ant-select-show-search');
+    expect(container.querySelector('.ant-select-clear')).toBeInTheDocument();
+    expect(container.querySelector('.ant-select-selection-search-input')).toHaveAttribute('readonly');
+  });
+
   it('should not show close button when onClear is not provided', async () => {
     const { container } = renderWithCtx(<VariableTag value="{{ ctx.User.Name }}" />);
 

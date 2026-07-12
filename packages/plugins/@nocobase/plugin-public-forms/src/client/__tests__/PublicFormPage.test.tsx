@@ -12,6 +12,10 @@ import { render, screen } from '@nocobase/test/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PublicFormPage } from '../components/PublicFormPage';
 
+type MockFlowContext = {
+  defineProperty: ReturnType<typeof vi.fn>;
+};
+
 const mocks = vi.hoisted(() => {
   const requestInterceptorUse = vi.fn(() => 1);
   const requestInterceptorEject = vi.fn();
@@ -23,6 +27,22 @@ const mocks = vi.hoisted(() => {
     },
     requestInterceptorEject,
     requestInterceptorUse,
+    flowEngine: {
+      createModelAsync: vi.fn(),
+      getModel: vi.fn(),
+      modelRepository: {},
+      resolveModelTree: vi.fn(),
+      setModelRepository: vi.fn(),
+      context: {
+        dataSourceManager: {
+          collectionFieldInterfaceManager: {},
+          requester: {},
+        },
+      },
+    },
+    flowModelRendererModel: null as { uid?: string } | null,
+    flowViewContext: null as MockFlowContext | null,
+    publicFormFlowModelRepository: vi.fn(),
     useRequest: vi.fn(() => ({
       data: {
         data: {
@@ -76,8 +96,60 @@ vi.mock('../components/components/MobilePicker', () => ({
   MobilePicker: () => <div data-testid="mobile-picker" />,
 }));
 
+vi.mock('../components/UnEnabledFormPlaceholder', () => ({
+  UnEnabledFormPlaceholder: () => <div data-testid="public-form-disabled" />,
+  UnFoundFormPlaceholder: () => <div data-testid="public-form-not-found" />,
+}));
+
 vi.mock('../hooks', () => ({
   usePublicSubmitActionProps: vi.fn(),
+}));
+
+vi.mock('../locale', () => ({
+  usePublicFormTranslation: () => ({
+    t: (key: string) => key,
+  }),
+}));
+
+vi.mock('@nocobase/flow-engine', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@nocobase/flow-engine')>();
+
+  class FlowContext {
+    addDelegate = vi.fn();
+    defineMethod = vi.fn();
+    defineProperty = vi.fn();
+    removeDelegate = vi.fn();
+  }
+
+  class DataSourceManager {
+    setCollectionFieldInterfaceManager = vi.fn();
+    setFlowEngine = vi.fn();
+    setRequester = vi.fn();
+    upsertDataSource = vi.fn();
+    getDataSource = vi.fn(() => ({
+      setCollections: vi.fn(),
+    }));
+  }
+
+  return {
+    ...actual,
+    DataSourceManager,
+    FlowContext,
+    FlowModelRenderer: ({ model }: { model?: { uid?: string } }) => {
+      mocks.flowModelRendererModel = model || null;
+      return <div data-testid="public-form-flow-model">{model?.uid}</div>;
+    },
+    FlowViewContextProvider: ({ children, context }: React.PropsWithChildren<{ context?: MockFlowContext }>) => {
+      mocks.flowViewContext = context || null;
+      return <>{children}</>;
+    },
+    useFlowEngine: () => mocks.flowEngine,
+  };
+});
+
+vi.mock('../../client-v2/publicFormFlowModelRepository', () => ({
+  PublicFormFlowModelRepository: mocks.publicFormFlowModelRepository,
+  isPublicFormFlowModelRepository: () => false,
 }));
 
 vi.mock('@nocobase/client', () => {
@@ -167,6 +239,41 @@ describe('PublicFormPage', () => {
   beforeEach(() => {
     mocks.device.isDesktop = false;
     mocks.device.isMobile = true;
+    mocks.flowEngine.createModelAsync.mockReset();
+    mocks.flowEngine.createModelAsync.mockResolvedValue({
+      subModels: {
+        page: {
+          context: {
+            addDelegate: vi.fn(),
+            removeDelegate: vi.fn(),
+          },
+          setProps: vi.fn(),
+          uid: 'public-form-page-model',
+        },
+      },
+      uid: 'public-form-1',
+    });
+    mocks.flowEngine.getModel.mockReset();
+    mocks.flowEngine.getModel.mockReturnValue(null);
+    mocks.flowEngine.resolveModelTree.mockReset();
+    mocks.flowEngine.setModelRepository.mockReset();
+    mocks.flowModelRendererModel = null;
+    mocks.flowViewContext = null;
+    mocks.publicFormFlowModelRepository.mockClear();
+    mocks.useRequest.mockClear();
+    mocks.useRequest.mockReturnValue({
+      data: {
+        data: {
+          dataSource: { key: 'main' },
+          schema: {},
+          title: 'Public form',
+          token: 'form-token',
+        },
+      },
+      error: null,
+      loading: false,
+      run: vi.fn(),
+    });
     vi.stubGlobal('CSS', {
       supports: vi.fn(() => true),
     });
@@ -220,5 +327,102 @@ describe('PublicFormPage', () => {
     expect(publicFormContainer?.style.height).toBe('100%');
     expect(publicFormContainer?.style.overflow).toBe('auto');
     expect(publicFormContainer?.style.overflowX).toBe('');
+  });
+
+  it('renders the v2 FlowModel runtime when public form meta contains a flowModel', async () => {
+    mocks.useRequest.mockReturnValue({
+      data: {
+        data: {
+          dataSource: { key: 'main', collections: [] },
+          flowModel: {
+            uid: 'public-form-1',
+            subModels: {
+              page: {
+                uid: 'public-form-page-model',
+              },
+            },
+          },
+          title: 'V2 public form',
+          token: 'form-token',
+        },
+      },
+      error: null,
+      loading: false,
+      run: vi.fn(),
+    });
+
+    render(<PublicFormPage />);
+
+    expect(await screen.findByTestId('public-form-flow-model')).toHaveTextContent('public-form-page-model');
+    expect(screen.queryByTestId('public-form-schema')).toBeNull();
+    expect(mocks.flowEngine.resolveModelTree).toHaveBeenCalledWith(
+      expect.objectContaining({
+        uid: 'public-form-1',
+      }),
+    );
+    expect(mocks.flowEngine.createModelAsync).toHaveBeenCalledWith(
+      expect.objectContaining({
+        uid: 'public-form-1',
+      }),
+      {
+        delegate: mocks.flowViewContext,
+      },
+    );
+    expect(mocks.flowViewContext?.defineProperty).toHaveBeenCalledWith(
+      'view',
+      expect.objectContaining({
+        value: expect.objectContaining({
+          type: 'embed',
+        }),
+      }),
+    );
+    expect(mocks.flowViewContext?.defineProperty).toHaveBeenCalledWith(
+      'dataSourceManager',
+      expect.objectContaining({
+        get: expect.any(Function),
+        cache: false,
+      }),
+    );
+  });
+
+  it('shows the not-found state when the v2 FlowModel runtime fails to load', async () => {
+    mocks.useRequest.mockReturnValue({
+      data: {
+        data: {
+          dataSource: { key: 'main', collections: [] },
+          flowModel: {
+            uid: 'public-form-1',
+          },
+          title: 'V2 public form',
+          token: 'form-token',
+        },
+      },
+      error: null,
+      loading: false,
+      run: vi.fn(),
+    });
+    mocks.flowEngine.resolveModelTree.mockRejectedValueOnce(new Error('Failed to resolve public form model'));
+
+    render(<PublicFormPage />);
+
+    expect(await screen.findByTestId('public-form-not-found')).toBeInTheDocument();
+    expect(screen.queryByText('Loading')).toBeNull();
+  });
+
+  it('renders the public form password error inline', async () => {
+    mocks.useRequest.mockReturnValue({
+      data: null,
+      error: {
+        response: {
+          status: 401,
+        },
+      },
+      loading: false,
+      run: vi.fn(),
+    });
+
+    render(<PublicFormPage />);
+
+    expect(await screen.findByText('Incorrect password')).toBeInTheDocument();
   });
 });

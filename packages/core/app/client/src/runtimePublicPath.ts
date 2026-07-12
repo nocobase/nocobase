@@ -9,6 +9,7 @@
 
 declare global {
   interface Window {
+    __nocobase_public_path__?: string;
     __webpack_public_path__?: string;
   }
 }
@@ -22,10 +23,14 @@ function normalizePublicPath(value: string | undefined, fallback = '/') {
 }
 
 export function resolveRuntimeAssetPublicPath(
-  windowPublicPath: string | undefined,
+  cdnPublicPath: string | undefined,
+  appPublicPath: string | undefined,
   runtimePublicPath: string | undefined,
 ) {
-  return normalizePublicPath(windowPublicPath, normalizePublicPath(runtimePublicPath, '/'));
+  return normalizePublicPath(
+    cdnPublicPath,
+    normalizePublicPath(appPublicPath, normalizePublicPath(runtimePublicPath, '/')),
+  );
 }
 
 // `__webpack_public_path__` is a webpack magic global that must be assigned
@@ -36,5 +41,9 @@ const runtimePublicPath = typeof __webpack_public_path__ === 'string' ? __webpac
 
 if (typeof window !== 'undefined' && typeof __webpack_public_path__ !== 'undefined') {
   // eslint-disable-next-line prefer-const
-  __webpack_public_path__ = resolveRuntimeAssetPublicPath(window.__webpack_public_path__, runtimePublicPath);
+  __webpack_public_path__ = resolveRuntimeAssetPublicPath(
+    window.__webpack_public_path__,
+    window.__nocobase_public_path__,
+    runtimePublicPath,
+  );
 }

@@ -422,12 +422,16 @@ describe('WorkflowPane (request layer)', () => {
     const { container } = renderWithApp(<WorkflowPane />);
 
     const titleElement = await screen.findByText(title);
-    expect(container.querySelector('table')).toHaveStyle({ tableLayout: 'fixed' });
+    expect(container.querySelector('table')).toHaveStyle({ tableLayout: 'auto' });
     expect(titleElement.closest('td')).toHaveStyle({
       overflowWrap: 'anywhere',
       whiteSpace: 'normal',
       wordBreak: 'break-word',
-      width: '520px',
+      width: '1px',
+    });
+    expect(titleElement).toHaveStyle({
+      display: 'inline-block',
+      maxWidth: '384px',
     });
     expect(await screen.findByText('Approval interface needs reconfiguration')).toBeInTheDocument();
     expect(mockPlugin.getWorkflowNotices).toHaveBeenCalledWith(
