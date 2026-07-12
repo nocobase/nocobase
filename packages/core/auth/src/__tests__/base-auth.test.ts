@@ -132,14 +132,12 @@ describe('base-auth', () => {
 
   it('check: should not renew an expired token when renewal is disabled', async () => {
     const renew = vi.fn();
-    const forceAuthCheckError = { code: 'INVALID_TEMPORARY_ACCESS_CODE' };
     const ctx = {
       t: (message: string) => message,
       getBearerToken: () => 'token',
       headers: {},
       state: {
         disableTokenRenewal: true,
-        forceAuthCheckError,
       },
       app: {
         authManager: {
@@ -176,7 +174,7 @@ describe('base-auth', () => {
     } as never);
 
     await expect(auth.check()).rejects.toMatchObject({
-      code: 'INVALID_TEMPORARY_ACCESS_CODE',
+      code: AuthErrorCode.SKIP_TOKEN_RENEW,
       status: 401,
     });
     expect(renew).not.toHaveBeenCalled();

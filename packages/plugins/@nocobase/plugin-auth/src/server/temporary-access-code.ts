@@ -308,8 +308,6 @@ export function resolveTemporaryAccessCode(service: TemporaryAccessCodeService) 
       }
       ctx.state.authenticatedByAccessCode = true;
       ctx.state.disableTokenRenewal = true;
-      ctx.state.forceAuthCheck = true;
-      ctx.state.forceAuthCheckError = invalidAccessCodeError(ctx);
 
       await next();
     } finally {

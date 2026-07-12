@@ -154,7 +154,6 @@ describe('temporary access code middleware', () => {
     expect(ctx.state).toMatchObject({
       authenticatedByAccessCode: true,
       disableTokenRenewal: true,
-      forceAuthCheck: true,
     });
     expect((ctx as typeof ctx & { getBearerToken: () => string }).getBearerToken()).toBe('session-token');
     expect(ctx.responseHeaders).toMatchObject({ 'cache-control': 'private, no-store' });

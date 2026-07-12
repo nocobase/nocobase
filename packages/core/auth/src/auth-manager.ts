@@ -171,9 +171,6 @@ export class AuthManager {
       } catch (err) {
         ctx.auth = {} as Auth;
         ctx.logger.warn(err.message, { method: 'check', authenticator: name });
-        if (ctx.state?.forceAuthCheck === true) {
-          ctx.throw(401, ctx.state.forceAuthCheckError);
-        }
         return next();
       }
 
@@ -182,16 +179,10 @@ export class AuthManager {
       }
 
       if (await ctx.auth.skipCheck()) {
-        if (ctx.state?.forceAuthCheck === true) {
-          ctx.throw(401, ctx.state.forceAuthCheckError);
-        }
         return next();
       }
 
       const user = await ctx.auth.check();
-      if (!user && ctx.state?.forceAuthCheck === true) {
-        ctx.throw(401, ctx.state.forceAuthCheckError);
-      }
       if (user) {
         ctx.auth.user = user;
       }
