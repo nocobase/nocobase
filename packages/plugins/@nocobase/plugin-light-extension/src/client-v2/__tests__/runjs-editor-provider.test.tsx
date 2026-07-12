@@ -36,6 +36,7 @@ vi.mock('../pages/LightExtensionWorkspacePage', () => {
     repoId,
     initialPath,
     workspaceScope,
+    defaultFilesCollapsed,
     onFooterActionsChange,
     onRequestClose,
     onSaved,
@@ -43,12 +44,15 @@ vi.mock('../pages/LightExtensionWorkspacePage', () => {
     repoId?: string;
     initialPath?: string;
     workspaceScope?: unknown;
+    defaultFilesCollapsed?: boolean;
     onFooterActionsChange?: (
       actions: {
+        dirty: boolean;
         disabled: boolean;
         loading: boolean;
         onCancel: () => void;
         onSave: () => void;
+        requestSave: () => Promise<'saved'>;
       } | null,
     ) => void;
     onRequestClose?: () => void;
@@ -56,16 +60,24 @@ vi.mock('../pages/LightExtensionWorkspacePage', () => {
   }) => {
     React.useEffect(() => {
       onFooterActionsChange?.({
+        dirty: true,
         disabled: false,
         loading: false,
         onCancel: () => onRequestClose?.(),
         onSave: () => onSaved?.(),
+        requestSave: async () => {
+          onSaved?.();
+          return 'saved';
+        },
       });
       return () => onFooterActionsChange?.(null);
     }, [onFooterActionsChange, onRequestClose, onSaved]);
 
     return (
-      <div data-workspace-scope={JSON.stringify(workspaceScope)}>
+      <div
+        data-default-files-collapsed={String(Boolean(defaultFilesCollapsed))}
+        data-workspace-scope={JSON.stringify(workspaceScope)}
+      >
         workspace:{repoId}:{initialPath}
         <button type="button" onClick={onSaved}>
           save workspace
@@ -231,6 +243,10 @@ describe('RunJSLightExtensionEditorProvider', () => {
         entryPath: 'src/client/js-blocks/example/index.tsx',
         kind: 'js-block',
       }),
+    );
+    expect(screen.getByText('workspace:ler_example:src/client/js-blocks/example/index.tsx')).toHaveAttribute(
+      'data-default-files-collapsed',
+      'true',
     );
     fireEvent.click(screen.getByRole('button', { name: 'save workspace' }));
     expect(onPersistedChange).toHaveBeenCalledWith(props.value);

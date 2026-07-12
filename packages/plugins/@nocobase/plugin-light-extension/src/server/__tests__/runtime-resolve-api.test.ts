@@ -30,7 +30,7 @@ type RouteMiddleware = (
 ) => Promise<void>;
 
 describe('plugin-light-extension runtime resolve API', () => {
-  it('returns runtime code, source map, merged settings, and cache metadata through useRuntime', async () => {
+  it('returns an immutable artifact pointer and merged settings without runtime code', async () => {
     const { service, entriesRepository } = createRuntimeResolveService();
 
     const result = await service.resolve(
@@ -58,10 +58,10 @@ describe('plugin-light-extension runtime resolve API', () => {
     expect(result).toMatchObject({
       entryId: 'lee_sales_kpi',
       entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+      artifactHash: 'a'.repeat(64),
+      artifactUrl: `/api/light-extension-runtime/artifacts/${'a'.repeat(64)}`,
       runtimeCodeHash: 'runtime_hash_1',
-      code: expect.stringContaining('runtime secret'),
       version: 'v2',
-      sourceMap: '{"version":3}',
       settings: {
         threshold: 5,
         region: 'EMEA',
@@ -70,11 +70,10 @@ describe('plugin-light-extension runtime resolve API', () => {
           label: 'Revenue',
         },
       },
-      cache: {
-        immutable: false,
-        etag: expect.stringMatching(/^"[a-f0-9]{64}"$/),
-      },
+      settingsHash: expect.stringMatching(/^[a-f0-9]{64}$/),
     });
+    expect(result).not.toHaveProperty('code');
+    expect(result).not.toHaveProperty('sourceMap');
   });
 
   it('rejects legacy failed entries instead of running their last successful artifact', async () => {
@@ -141,14 +140,12 @@ describe('plugin-light-extension runtime resolve API', () => {
     const resolve = vi.fn().mockResolvedValue({
       entryId: 'lee_sales_kpi',
       entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+      artifactHash: 'a'.repeat(64),
+      artifactUrl: `/api/light-extension-runtime/artifacts/${'a'.repeat(64)}`,
       runtimeCodeHash: 'runtime_hash_1',
-      code: 'ctx.render("ok");',
       version: 'v2',
       settings: {},
-      cache: {
-        etag: '"etag"',
-        immutable: false,
-      },
+      settingsHash: 'settings_hash',
     });
     const resource = createLightExtensionRuntimeResource({
       resolve,
@@ -197,7 +194,7 @@ describe('plugin-light-extension runtime resolve API', () => {
     );
     expect((ctx as { body?: unknown }).body).toMatchObject({
       entryId: 'lee_sales_kpi',
-      code: 'ctx.render("ok");',
+      artifactHash: 'a'.repeat(64),
     });
   });
 
@@ -252,6 +249,24 @@ describe('plugin-light-extension runtime resolve API', () => {
     expect(routedPath).toBe('/api/lightExtensionRuntime:resolve');
     expect(ctx.path).toBe('/api/light-extension-runtime/resolve');
     expect(ctx.request.path).toBe('/api/light-extension-runtime/resolve');
+
+    const artifactRoute = registeredRoutes.find((route) => route.options?.tag === 'light-extension-runtime-artifact');
+    const artifactHash = 'a'.repeat(64);
+    const artifactCtx = {
+      method: 'GET',
+      path: `/api/light-extension-runtime/artifacts/${artifactHash}`,
+      request: {
+        path: `/api/light-extension-runtime/artifacts/${artifactHash}`,
+      },
+    };
+    let artifactRoutedPath = '';
+
+    await artifactRoute?.middleware(artifactCtx, async () => {
+      artifactRoutedPath = artifactCtx.path;
+    });
+
+    expect(artifactRoutedPath).toBe(`/api/lightExtensionRuntime:getArtifact/${artifactHash}`);
+    expect(artifactCtx.path).toBe(`/api/light-extension-runtime/artifacts/${artifactHash}`);
 
     const compileRoute = registeredRoutes.find((route) => route.options?.tag === 'light-extension-compile-preview');
     const compileCtx = {
@@ -558,6 +573,7 @@ function createEntryRecord(
     runtimeVersion: runtimeArtifact ? 'v2' : null,
     surfaceStyle: runtimeArtifact ? 'render' : null,
     runtimeCodeHash: runtimeArtifact ? 'runtime_hash_1' : null,
+    artifactHash: runtimeArtifact ? 'a'.repeat(64) : null,
     filesHash: runtimeArtifact ? 'files_hash_1' : null,
     settingsDefaultsHash: runtimeArtifact ? 'defaults_hash_1' : null,
     compiledAt: runtimeArtifact ? '2026-07-06T00:00:00.000Z' : null,

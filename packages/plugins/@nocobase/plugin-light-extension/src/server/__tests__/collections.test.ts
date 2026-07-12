@@ -66,11 +66,22 @@ describe('plugin-light-extension collections', () => {
       'runtimeVersion',
       'surfaceStyle',
       'runtimeCodeHash',
+      'artifactHash',
       'filesHash',
       'settingsDefaultsHash',
       'compiledAt',
       'healthStatus',
       'diagnostics',
+    ]);
+    expectCollectionFields('lightExtensionRuntimeArtifacts', [
+      'artifactHash',
+      'runtimeCodeHash',
+      'code',
+      'sourceMap',
+      'version',
+      'entryPath',
+      'runtimeContract',
+      'byteSize',
     ]);
     expect(app.db.getCollection('lightExtensionEntries')?.getField('validatorVersion')).toBeFalsy();
     expect(app.db.getCollection('lightExtensionEntryPublications')).toBeFalsy();

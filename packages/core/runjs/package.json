@@ -1,0 +1,23 @@
+{
+  "name": "@nocobase/runjs",
+  "version": "2.2.0-beta.13",
+  "main": "lib/index.js",
+  "types": "./lib/index.d.ts",
+  "license": "Apache-2.0",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "import": "./lib/index.js",
+      "require": "./lib/index.js"
+    },
+    "./compiler": {
+      "types": "./lib/compiler/index.d.ts",
+      "import": "./lib/compiler/index.js",
+      "require": "./lib/compiler/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "typescript": "5.1.3"
+  }
+}

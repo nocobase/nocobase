@@ -188,6 +188,7 @@ const RunJSLightExtensionEditor: React.FC<RunJSEditorProviderRenderProps> = (pro
                 'x-component-props': {
                   disabled: readonly,
                   showEntryWorkspace: sourceMode === LIGHT_EXTENSION_SOURCE_MODE,
+                  onEmbeddedEditorControllerChange: props.onEmbeddedEditorControllerChange,
                 },
               },
             },
@@ -314,6 +315,7 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
       style={{ height: 'calc(100vh - 96px)', minHeight: 0, minWidth: 0, overflow: 'hidden' }}
     >
       <LightExtensionWorkspacePage
+        defaultFilesCollapsed
         embedded
         initialPath={currentBinding.entryPath}
         onFooterActionsChange={setFooterActions}

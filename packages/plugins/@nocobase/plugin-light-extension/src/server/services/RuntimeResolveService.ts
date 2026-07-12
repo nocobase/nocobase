@@ -14,9 +14,10 @@ import { LIGHT_EXTENSION_SUPPORTED_KINDS, type LightExtensionKind } from '../../
 import { LightExtensionError } from '../../shared/errors';
 import type {
   LightExtensionEntryRecord,
+  LightExtensionRuntimeArtifactRecord,
   LightExtensionRuntimeResolveInput,
   LightExtensionRuntimeResolveResult,
-  LightExtensionSelectableEntryRecord,
+  LightExtensionSelectableEntrySummary,
 } from '../../shared/types';
 import { entryFromModel } from './LightExtensionEntryService';
 import type { LightExtensionServiceContext } from './LightExtensionRepoService';
@@ -32,7 +33,7 @@ export class RuntimeResolveService {
   async listSelectableEntries(
     input: { repoId?: string; kind?: string } = {},
     ctx: LightExtensionServiceContext = {},
-  ): Promise<LightExtensionSelectableEntryRecord[]> {
+  ): Promise<LightExtensionSelectableEntrySummary[]> {
     const filter: Record<string, unknown> = {
       healthStatus: 'ready',
     };
@@ -46,24 +47,42 @@ export class RuntimeResolveService {
 
     const records = await this.db.getRepository('lightExtensionEntries').find({
       filter,
+      fields: [
+        'id',
+        'repoId',
+        'kind',
+        'entryName',
+        'entryPath',
+        'title',
+        'settingsSchema',
+        'compiledCommitId',
+        'runtimeVersion',
+        'surfaceStyle',
+        'runtimeCodeHash',
+        'artifactHash',
+        'filesHash',
+        'settingsDefaultsHash',
+        'compiledAt',
+        'healthStatus',
+      ],
       sort: ['kind', 'entryName'],
       transaction: ctx.transaction,
     });
-    const runtimeEntries: LightExtensionEntryRecord[] = records.map((record) => entryFromModel(record as Model));
-    const repoIds = [...new Set(runtimeEntries.map((entry) => entry.repoId))];
+    const runtimeEntries = records.map((record) => selectableEntryFromModel(record as Model));
+    const repoIds: string[] = [...new Set<string>(runtimeEntries.map((entry) => entry.repoId))];
     const repoHeadCommitIds = new Map(
       await Promise.all(
         repoIds.map(async (repoId) => [repoId, await this.loadEnabledRepoHeadCommitId(repoId, ctx)] as const),
       ),
     );
-    const entries: LightExtensionSelectableEntryRecord[] = [];
+    const entries: LightExtensionSelectableEntrySummary[] = [];
 
     for (const entry of runtimeEntries) {
       const repoHeadCommitId = repoHeadCommitIds.get(entry.repoId) || null;
       if (!isSelectableRuntimeEntry(entry, repoHeadCommitId)) {
         continue;
       }
-      entries.push(entry);
+      entries.push(toSelectableEntrySummary(entry));
     }
 
     return entries;
@@ -81,8 +100,7 @@ export class RuntimeResolveService {
     await this.assertRuntimeStateAllowsEntry(entry, ctx);
     const settingsSource = getRuntimeSettingsSource(entry);
     const settings = this.settingsResolver.resolveRuntimeSettings(settingsSource, input.settings);
-    const artifact = entry.runtimeArtifact;
-    if (!artifact?.code) {
+    if (!entry.artifactHash || !entry.runtimeCodeHash || !entry.runtimeVersion) {
       throw runtimeUnavailableError('Light extension entry has no compiled runtime artifact', {
         reasonCode: 'runtime_missing',
         repoId: entry.repoId,
@@ -92,13 +110,49 @@ export class RuntimeResolveService {
 
     return {
       entryId: entry.id,
-      entryPath: artifact.entryPath || entry.entryPath,
-      runtimeCodeHash: entry.runtimeCodeHash || stableJsonHash(artifact.code),
-      code: artifact.code,
-      version: entry.runtimeVersion || artifact.version,
-      ...(artifact.sourceMap ? { sourceMap: artifact.sourceMap } : {}),
+      entryPath: entry.entryPath,
+      artifactHash: entry.artifactHash,
+      artifactUrl: `/api/light-extension-runtime/artifacts/${encodeURIComponent(entry.artifactHash)}`,
+      runtimeCodeHash: entry.runtimeCodeHash,
+      version: entry.runtimeVersion,
       settings,
-      cache: buildRuntimeCacheMetadata(entry, settings),
+      settingsHash: stableJsonHash(settings),
+    };
+  }
+
+  async getArtifact(
+    artifactHash: string,
+    ctx: LightExtensionServiceContext = {},
+  ): Promise<LightExtensionRuntimeArtifactRecord> {
+    if (typeof artifactHash !== 'string' || !/^[a-f0-9]{64}$/u.test(artifactHash)) {
+      throw invalidInput('artifactHash must be a SHA-256 hash');
+    }
+    const record = await this.db.getRepository('lightExtensionRuntimeArtifacts').findOne({
+      filterByTk: artifactHash,
+      transaction: ctx.transaction,
+    });
+    if (!record) {
+      throw new LightExtensionError(
+        'LIGHT_EXTENSION_ARTIFACT_NOT_FOUND',
+        `Light extension runtime artifact "${artifactHash}" was not found`,
+        {
+          details: {
+            reasonCode: 'artifact_missing',
+            artifactHash,
+          },
+        },
+      );
+    }
+
+    return {
+      artifactHash: String(record.get('artifactHash')),
+      runtimeCodeHash: String(record.get('runtimeCodeHash')),
+      code: String(record.get('code')),
+      ...(typeof record.get('sourceMap') === 'string' ? { sourceMap: String(record.get('sourceMap')) } : {}),
+      version: String(record.get('version')),
+      entryPath: String(record.get('entryPath')),
+      runtimeContract: String(record.get('runtimeContract')),
+      byteSize: Number(record.get('byteSize')),
     };
   }
 
@@ -108,6 +162,7 @@ export class RuntimeResolveService {
   ): Promise<LightExtensionEntryRecord> {
     const record = await this.db.getRepository('lightExtensionEntries').findOne({
       filterByTk: entryId,
+      except: ['runtimeArtifact', 'diagnostics'],
       transaction: ctx.transaction,
     });
     if (!record) {
@@ -290,18 +345,82 @@ function assertSupportedKind(kind: string): LightExtensionKind {
   throw invalidInput(`kind must be one of: ${LIGHT_EXTENSION_SUPPORTED_KINDS.join(', ')}`);
 }
 
-function isSelectableRuntimeEntry(
-  entry: LightExtensionEntryRecord,
-  repoHeadCommitId: string | null,
-): entry is LightExtensionSelectableEntryRecord {
+function isSelectableRuntimeEntry(entry: SelectableEntryProjection, repoHeadCommitId: string | null): boolean {
   return (
     entry.healthStatus === 'ready' &&
     isSupportedKind(entry.kind) &&
-    hasUsableRuntimeArtifact(entry, repoHeadCommitId) &&
+    entry.compiledCommitId === repoHeadCommitId &&
     Boolean(
-      entry.runtimeVersion && entry.surfaceStyle && entry.filesHash && entry.settingsDefaultsHash && entry.compiledAt,
+      entry.runtimeCodeHash &&
+        entry.artifactHash &&
+        entry.runtimeVersion &&
+        entry.surfaceStyle &&
+        entry.filesHash &&
+        entry.settingsDefaultsHash,
     )
   );
+}
+
+interface SelectableEntryProjection {
+  id: string;
+  repoId: string;
+  kind: string;
+  entryName: string;
+  entryPath: string;
+  title: string | null;
+  settingsSchema: Record<string, unknown> | null;
+  compiledCommitId: string | null;
+  runtimeVersion: string | null;
+  surfaceStyle: string | null;
+  runtimeCodeHash: string | null;
+  artifactHash: string | null;
+  filesHash: string | null;
+  settingsDefaultsHash: string | null;
+  healthStatus: string;
+}
+
+function selectableEntryFromModel(record: Model): SelectableEntryProjection {
+  return {
+    id: String(record.get('id')),
+    repoId: String(record.get('repoId')),
+    kind: String(record.get('kind')),
+    entryName: String(record.get('entryName')),
+    entryPath: String(record.get('entryPath')),
+    title: nullableString(record.get('title')),
+    settingsSchema: nullableRecord(record.get('settingsSchema')),
+    compiledCommitId: nullableString(record.get('compiledCommitId')),
+    runtimeVersion: nullableString(record.get('runtimeVersion')),
+    surfaceStyle: nullableString(record.get('surfaceStyle')),
+    runtimeCodeHash: nullableString(record.get('runtimeCodeHash')),
+    artifactHash: nullableString(record.get('artifactHash')),
+    filesHash: nullableString(record.get('filesHash')),
+    settingsDefaultsHash: nullableString(record.get('settingsDefaultsHash')),
+    healthStatus: String(record.get('healthStatus')),
+  };
+}
+
+function toSelectableEntrySummary(entry: SelectableEntryProjection): LightExtensionSelectableEntrySummary {
+  return {
+    id: entry.id,
+    repoId: entry.repoId,
+    kind: entry.kind,
+    entryName: entry.entryName,
+    entryPath: entry.entryPath,
+    title: entry.title,
+    settingsSchema: entry.settingsSchema,
+    settingsDefaultsHash: entry.settingsDefaultsHash || '',
+    ...(entry.artifactHash ? { artifactHash: entry.artifactHash } : {}),
+    runtimeCodeHash: entry.runtimeCodeHash || '',
+    runtimeAvailable: true,
+  };
+}
+
+function nullableString(value: unknown): string | null {
+  return typeof value === 'string' ? value : null;
+}
+
+function nullableRecord(value: unknown): Record<string, unknown> | null {
+  return isPlainRecord(value) ? value : null;
 }
 
 function isSupportedKind(kind: string): boolean {
@@ -310,22 +429,6 @@ function isSupportedKind(kind: string): boolean {
 
 function normalizeCommitId(value: unknown): string | null {
   return typeof value === 'string' && value.trim() ? value : null;
-}
-
-function buildRuntimeCacheMetadata(
-  entry: LightExtensionEntryRecord,
-  settings: Record<string, unknown>,
-): LightExtensionRuntimeResolveResult['cache'] {
-  return {
-    etag: `"${stableJsonHash({
-      entryId: entry.id,
-      compiledCommitId: entry.compiledCommitId,
-      runtimeCodeHash: entry.runtimeCodeHash,
-      settingsDefaultsHash: entry.settingsDefaultsHash,
-      settings,
-    })}"`,
-    immutable: false,
-  };
 }
 
 function stableJsonHash(value: unknown): string {

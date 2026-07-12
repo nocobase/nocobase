@@ -7,14 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { HandlerType, ResourceOptions } from '@nocobase/resourcer';
+import type { HandlerType, ResourcerContext, ResourceOptions } from '@nocobase/resourcer';
 
 import type { LightExtensionRuntimeResolveInput } from '../../shared/types';
 import type { LightExtensionServiceContext } from '../services/LightExtensionRepoService';
 import { RuntimeResolveService } from '../services/RuntimeResolveService';
 import { createTypedResourceAction, getServiceContext, type ResourceActionInput } from './resourceAction';
 
-export const lightExtensionRuntimeActionNames = ['resolve'] as const;
+export const lightExtensionRuntimeActionNames = ['resolve', 'getArtifact'] as const;
 
 type LightExtensionRuntimeActionName = (typeof lightExtensionRuntimeActionNames)[number];
 type ResourceActionRunner = (
@@ -26,6 +26,7 @@ type ResourceActionRunner = (
 const resourceActionRunners: Record<LightExtensionRuntimeActionName, ResourceActionRunner> = {
   resolve: (service, input, currentUser) =>
     service.resolve(input as unknown as LightExtensionRuntimeResolveInput, currentUser),
+  getArtifact: (service, input, currentUser) => service.getArtifact(requireArtifactHash(input), currentUser),
 };
 
 export function createLightExtensionRuntimeResource(service: RuntimeResolveService): ResourceOptions {
@@ -35,16 +36,68 @@ export function createLightExtensionRuntimeResource(service: RuntimeResolveServi
     actions: Object.fromEntries(
       lightExtensionRuntimeActionNames.map((actionName) => [
         actionName,
-        createLightExtensionRuntimeAction(service, resourceActionRunners[actionName]),
+        actionName === 'getArtifact'
+          ? createLightExtensionArtifactAction(service, resourceActionRunners[actionName])
+          : createLightExtensionRuntimeAction(service, resourceActionRunners[actionName]),
       ]),
     ) as Record<LightExtensionRuntimeActionName, HandlerType>,
   };
 }
 
 function createLightExtensionRuntimeAction(service: RuntimeResolveService, run: ResourceActionRunner): HandlerType {
-  return createTypedResourceAction({
+  const action = createTypedResourceAction({
     services: service,
     run,
     getServiceContext,
   });
+  return async (ctx, next) => {
+    await action(ctx, async () => undefined);
+    setHeaders(ctx, { 'Cache-Control': 'no-store' });
+    await next();
+  };
+}
+
+function createLightExtensionArtifactAction(service: RuntimeResolveService, run: ResourceActionRunner): HandlerType {
+  const action = createTypedResourceAction({
+    services: service,
+    run,
+    getServiceContext,
+  });
+  return async (ctx, next) => {
+    await action(ctx, async () => undefined);
+    const response = ctx as RuntimeResponseContext;
+    if (response.status < 400 && isArtifactBody(response.body)) {
+      response.withoutDataWrapping = true;
+      setHeaders(response, {
+        ETag: `"${response.body.artifactHash}"`,
+        'Cache-Control': 'private, max-age=31536000, immutable',
+      });
+    }
+    await next();
+  };
+}
+
+function requireArtifactHash(input: ResourceActionInput): string {
+  const value = input.artifactHash || input.filterByTk;
+  return typeof value === 'string' ? value : '';
+}
+
+function isArtifactBody(value: unknown): value is { artifactHash: string } {
+  return (
+    Boolean(value) &&
+    typeof value === 'object' &&
+    typeof (value as { artifactHash?: unknown }).artifactHash === 'string'
+  );
+}
+
+interface RuntimeResponseContext extends ResourcerContext {
+  body: unknown;
+  status: number;
+  withoutDataWrapping?: boolean;
+  set?: (headers: Record<string, string>) => void;
+}
+
+function setHeaders(ctx: ResourcerContext, headers: Record<string, string>): void {
+  const set = (ctx as ResourcerContext & { set?: (headers: Record<string, string>) => void }).set;
+  set?.call(ctx, headers);
 }

@@ -20,10 +20,11 @@ import { LIGHT_EXTENSION_SUPPORTED_KINDS } from '../../constants';
 import type {
   LightExtensionKind,
   LightExtensionRepoRecord,
+  LightExtensionRuntimeArtifactRecord,
   LightExtensionRuntimeResolveInput,
   LightExtensionRuntimeResolveResult,
   LightExtensionRuntimeSourceBinding,
-  LightExtensionSelectableEntryRecord,
+  LightExtensionSelectableEntrySummary,
 } from '../../shared/types';
 import type { ApiClientLike } from '../api/lightExtensionEntriesRequests';
 import {
@@ -39,10 +40,12 @@ type ResourceResponse<T> = {
 };
 
 export function createLightExtensionRunJSResolver(api: ApiClientLike): RunJSSourceResolver {
+  const runtimeCache = new LightExtensionRuntimeCache();
+
   return {
     sourceMode: 'light-extension',
     async resolve(input) {
-      const runtime = await resolveLightExtensionRuntimeSource(api, input);
+      const runtime = await resolveLightExtensionRuntimeSource(api, input, runtimeCache);
       return {
         code: runtime.code,
         version: runtime.version,
@@ -53,8 +56,8 @@ export function createLightExtensionRunJSResolver(api: ApiClientLike): RunJSSour
           lightExtension: {
             entryId: runtime.entryId,
             entryPath: runtime.entryPath,
+            artifactHash: runtime.artifactHash,
             runtimeCodeHash: runtime.runtimeCodeHash,
-            cache: runtime.cache,
           },
         },
       } satisfies RunJSSourceResolverResult;
@@ -111,19 +114,94 @@ export function createLightExtensionRunJSResolver(api: ApiClientLike): RunJSSour
   };
 }
 
+interface ResolvedLightExtensionRuntimeSource extends LightExtensionRuntimeArtifactRecord {
+  entryId: string;
+  settings: Record<string, unknown>;
+}
+
+export class LightExtensionRuntimeCache {
+  private readonly artifacts = new Map<string, LightExtensionRuntimeArtifactRecord>();
+  private readonly inFlight = new Map<string, Promise<LightExtensionRuntimeArtifactRecord>>();
+
+  resolve(
+    api: ApiClientLike,
+    input: RunJSSourceResolverInput,
+    sourceBinding: LightExtensionRuntimeSourceBinding,
+  ): Promise<ResolvedLightExtensionRuntimeSource> {
+    return this.resolveUncached(api, input, sourceBinding);
+  }
+
+  clear(): void {
+    this.artifacts.clear();
+    this.inFlight.clear();
+  }
+
+  private async resolveUncached(
+    api: ApiClientLike,
+    input: RunJSSourceResolverInput,
+    sourceBinding: LightExtensionRuntimeSourceBinding,
+  ): Promise<ResolvedLightExtensionRuntimeSource> {
+    const response = await requestRuntimeResolve(api, input, sourceBinding);
+    try {
+      const artifact = await this.getArtifact(api, response);
+      return toResolvedRuntime(response, artifact);
+    } catch (error) {
+      if (!isArtifactNotFoundError(error)) {
+        throw error;
+      }
+    }
+    const retryResponse = await requestRuntimeResolve(api, input, sourceBinding);
+    const retryArtifact = await this.getArtifact(api, retryResponse);
+    return toResolvedRuntime(retryResponse, retryArtifact);
+  }
+
+  private getArtifact(
+    api: ApiClientLike,
+    response: LightExtensionRuntimeResolveResult,
+  ): Promise<LightExtensionRuntimeArtifactRecord> {
+    const cached = this.artifacts.get(response.artifactHash);
+    if (cached) {
+      return Promise.resolve(cached);
+    }
+    const existing = this.inFlight.get(response.artifactHash);
+    if (existing) {
+      return existing;
+    }
+    const request = requestRuntimeArtifact(api, response).then((artifact) => {
+      this.artifacts.set(response.artifactHash, artifact);
+      return artifact;
+    });
+    this.inFlight.set(response.artifactHash, request);
+    return request.finally(() => {
+      if (this.inFlight.get(response.artifactHash) === request) {
+        this.inFlight.delete(response.artifactHash);
+      }
+    });
+  }
+}
+
 export async function resolveLightExtensionRuntimeSource(
   api: ApiClientLike,
   input: RunJSSourceResolverInput,
-): Promise<LightExtensionRuntimeResolveResult> {
+  runtimeCache = new LightExtensionRuntimeCache(),
+): Promise<ResolvedLightExtensionRuntimeSource> {
   if (!isLightExtensionRuntimeSourceBinding(input.sourceBinding)) {
     throw new RunJSSourceResolverError("RunJS source 'light-extension' requires a valid sourceBinding", {
       code: 'RUNJS_SOURCE_BINDING_REQUIRED',
       sourceMode: 'light-extension',
     });
   }
+  return runtimeCache.resolve(api, input, input.sourceBinding);
+}
+
+async function requestRuntimeResolve(
+  api: ApiClientLike,
+  input: RunJSSourceResolverInput,
+  sourceBinding: LightExtensionRuntimeSourceBinding,
+): Promise<LightExtensionRuntimeResolveResult> {
   const payload: LightExtensionRuntimeResolveInput = {
     sourceMode: 'light-extension',
-    sourceBinding: input.sourceBinding,
+    sourceBinding,
     settings: input.settings || {},
   };
   const response = await api.request<ResourceResponse<LightExtensionRuntimeResolveResult>>({
@@ -135,7 +213,51 @@ export async function resolveLightExtensionRuntimeSource(
   return unwrapResourceResponse(response);
 }
 
-function getEntryLabel(entry: LightExtensionSelectableEntryRecord): string {
+async function requestRuntimeArtifact(
+  api: ApiClientLike,
+  response: LightExtensionRuntimeResolveResult,
+): Promise<LightExtensionRuntimeArtifactRecord> {
+  const artifactResponse = await api.request<ResourceResponse<LightExtensionRuntimeArtifactRecord>>({
+    url: normalizeApiRequestUrl(response.artifactUrl),
+    method: 'get',
+  });
+  const artifact = unwrapResourceResponse(artifactResponse);
+  if (!artifact?.code || artifact.artifactHash !== response.artifactHash) {
+    throw new RunJSSourceResolverError(`Light extension artifact '${response.artifactHash}' is invalid`, {
+      code: 'RUNJS_SOURCE_CODE_REQUIRED',
+      sourceMode: 'light-extension',
+    });
+  }
+  return artifact;
+}
+
+function normalizeApiRequestUrl(url: string): string {
+  return url.startsWith('/api/') ? url.slice('/api'.length) : url;
+}
+
+function toResolvedRuntime(
+  response: LightExtensionRuntimeResolveResult,
+  artifact: LightExtensionRuntimeArtifactRecord,
+): ResolvedLightExtensionRuntimeSource {
+  return {
+    ...artifact,
+    entryId: response.entryId,
+    entryPath: response.entryPath || artifact.entryPath,
+    runtimeCodeHash: response.runtimeCodeHash,
+    version: response.version || artifact.version,
+    settings: response.settings,
+  };
+}
+
+function isArtifactNotFoundError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+  const candidate = error as { status?: unknown; response?: { status?: unknown } };
+  return candidate.status === 404 || candidate.response?.status === 404;
+}
+
+function getEntryLabel(entry: LightExtensionSelectableEntrySummary): string {
   return entry.title || entry.entryName || entry.id;
 }
 
@@ -152,7 +274,7 @@ async function listLightExtensionSourceMenuItems(
     listSelectableLightExtensionEntries(api, { kind }),
     listLightExtensionRepos(api).catch(() => [] as LightExtensionRepoRecord[]),
   ]);
-  const selectableEntries = entries.filter((entry) => entry.kind === kind && Boolean(entry.runtimeArtifact?.code));
+  const selectableEntries = entries.filter((entry) => entry.kind === kind && entry.runtimeAvailable === true);
   const t = input.t || ((key: string) => key);
   const currentBinding = isLightExtensionRuntimeSourceBinding(input.sourceBinding) ? input.sourceBinding : null;
   const repoLabels = new Map(repos.map((repo) => [repo.id, getRepoLabel(repo)]));
@@ -164,7 +286,7 @@ async function listLightExtensionSourceMenuItems(
       groups.set(entry.repoId, [entry]);
     }
     return groups;
-  }, new Map<string, LightExtensionSelectableEntryRecord[]>());
+  }, new Map<string, LightExtensionSelectableEntrySummary[]>());
   const sourceItems = Array.from(entriesByRepo.entries()).map(([repoId, entriesInRepo]) => {
     const repoLabel = repoLabels.get(repoId) || repoId;
     const entryItems = entriesInRepo.map((entry) => createEntryMenuItem(entry, currentBinding, input, t, repoLabel));
@@ -188,7 +310,7 @@ async function listLightExtensionSourceMenuItems(
 }
 
 function createEntryMenuItem(
-  entry: LightExtensionSelectableEntryRecord,
+  entry: LightExtensionSelectableEntrySummary,
   currentBinding: LightExtensionRuntimeSourceBinding | null,
   input: RunJSSourceMenuInput,
   t: (key: string, options?: Record<string, unknown>) => string,
@@ -232,7 +354,7 @@ function createEntryMenuItem(
 }
 
 function createRuntimeSourceBinding(
-  entry: LightExtensionSelectableEntryRecord,
+  entry: LightExtensionSelectableEntrySummary,
   repoLabel: string,
 ): LightExtensionRuntimeSourceBinding {
   return {

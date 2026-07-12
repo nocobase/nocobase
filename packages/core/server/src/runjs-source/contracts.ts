@@ -7,48 +7,25 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export type RunJSSourceLocator =
-  | {
-      kind: 'flowModel.step';
-      modelUid: string;
-      flowKey: string;
-      stepKey: string;
-      paramPath: string[];
-      versionPath?: string[];
-    }
-  | {
-      kind: 'flowModel.nestedRunJS';
-      modelUid: string;
-      containerFlowKey: string;
-      containerStepKey: string;
-      valuePath: Array<string | number>;
-      scene: string;
-    }
-  | {
-      kind: 'flowModel.flowRegistry.runjs';
-      modelUid: string;
-      flowKey: string;
-      stepKey: string;
-      sourcePath: string[];
-    }
-  | {
-      kind: 'workflow.javascript';
-      nodeId: string | number;
-    }
-  | {
-      kind: 'chart.option';
-      modelUid: string;
-    }
-  | {
-      kind: 'chart.events';
-      modelUid: string;
-    };
+import type {
+  RunJSCompileDiagnostic,
+  RunJSLanguage,
+  RunJSRuntimeArtifact,
+  RunJSSourceAuthoringInspectionInput,
+  RunJSSourceLocator,
+  RunJSSurfaceStyle,
+} from '@nocobase/runjs';
 
-export type RunJSSourceKind = RunJSSourceLocator['kind'];
-
-export type RunJSSurfaceStyle = 'render' | 'action' | 'value' | 'workflow';
-
-export type RunJSLanguage = 'typescript' | 'javascript' | 'tsx' | 'jsx';
+export type {
+  RunJSCompileDiagnostic,
+  RunJSLanguage,
+  RunJSRuntimeArtifact,
+  RunJSSourceAuthoringInspectionInput,
+  RunJSSourceAuthoringLegacyInfo,
+  RunJSSourceKind,
+  RunJSSourceLocator,
+  RunJSSurfaceStyle,
+} from '@nocobase/runjs';
 
 export interface RunJSSourcePermissionCheck {
   resource: string;
@@ -89,34 +66,6 @@ export interface RunJSLegacySource {
   metadata?: Record<string, unknown>;
 }
 
-export interface RunJSCompileDiagnostic {
-  message: string;
-  severity?: 'error' | 'warning' | 'info';
-  code?: string;
-  ruleId?: string;
-  path?: string;
-  line?: number;
-  column?: number;
-  details?: Record<string, unknown>;
-}
-
-export interface RunJSSourceAuthoringLegacyInfo {
-  version: string;
-  surfaceStyle: RunJSSurfaceStyle;
-  language: RunJSLanguage;
-  metadata?: Record<string, unknown>;
-}
-
-export interface RunJSRuntimeArtifact {
-  code: string;
-  version: string;
-  sourceMap?: string;
-  diagnostics: RunJSCompileDiagnostic[];
-  filesHash: string;
-  entryPath?: string;
-  metadata?: Record<string, unknown>;
-}
-
 export interface RunJSRuntimeWriteResult {
   ownerFingerprint?: string;
   metadata?: Record<string, unknown>;
@@ -149,15 +98,6 @@ export interface RunJSSourceAdapter<TLocator extends RunJSSourceLocator = RunJSS
   getFingerprint(input: { locator: TLocator; ctx: RunJSSourceAdapterContext }): Promise<string> | string;
   assertCanRead(input: { locator: TLocator; ctx: RunJSSourceAdapterContext }): Promise<void> | void;
   assertCanWrite(input: { locator: TLocator; ctx: RunJSSourceAdapterContext }): Promise<void> | void;
-}
-
-export interface RunJSSourceAuthoringInspectionInput {
-  code: string;
-  path: string;
-  runtimeVersion: string;
-  surfaceStyle: Exclude<RunJSSurfaceStyle, 'workflow'>;
-  locator?: RunJSSourceLocator;
-  legacy?: RunJSSourceAuthoringLegacyInfo;
 }
 
 export type RunJSSourceAuthoringInspector = (input: RunJSSourceAuthoringInspectionInput) => RunJSCompileDiagnostic[];

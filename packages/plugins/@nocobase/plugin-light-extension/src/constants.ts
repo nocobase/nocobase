@@ -8,6 +8,7 @@
  */
 
 export const NAMESPACE = '@nocobase/plugin-light-extension';
+export const LIGHT_EXTENSION_RUNTIME_ARTIFACT_CONTRACT = 'light-extension.runtime-artifact.v1';
 export const LIGHT_EXTENSION_SETTINGS_KEY = 'light-extension';
 export const LIGHT_EXTENSION_ACL_SNIPPET = 'pm.light-extension';
 

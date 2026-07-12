@@ -66,6 +66,7 @@ vi.mock('@nocobase/plugin-vsc-file/client-v2', () => {
     },
     useVscFileT: () => mocks.t,
     FilesPanel: ({
+      collapsed,
       files,
       folders,
       defaultCreateParentPath,
@@ -75,6 +76,7 @@ vi.mock('@nocobase/plugin-vsc-file/client-v2', () => {
       onOpen,
       onRenameFolder,
     }: {
+      collapsed: boolean;
       files: Array<{ path: string }>;
       folders: string[];
       defaultCreateParentPath?: string;
@@ -84,7 +86,7 @@ vi.mock('@nocobase/plugin-vsc-file/client-v2', () => {
       onOpen: (path: string) => void;
       onRenameFolder: (path: string, nextPath: string) => boolean;
     }) => (
-      <div data-testid="runjs-files-panel">
+      <div data-collapsed={String(collapsed)} data-testid="runjs-files-panel">
         <button onClick={() => onCreate(defaultCreateParentPath || 'src/client')} type="button">
           New default file
         </button>
@@ -150,6 +152,8 @@ vi.mock('@nocobase/plugin-vsc-file/client-v2', () => {
       showRunButton,
       readOnly,
       workspaceFiles,
+      onFilesCollapsedChange,
+      filesCollapsed,
     }: {
       activeFile?: { content: string; path: string };
       onChange: (value: string) => void;
@@ -158,6 +162,8 @@ vi.mock('@nocobase/plugin-vsc-file/client-v2', () => {
       showRunButton?: boolean;
       readOnly?: boolean;
       workspaceFiles: Array<{ content: string; path: string }>;
+      onFilesCollapsedChange: (collapsed: boolean) => void;
+      filesCollapsed: boolean;
     }) => (
       <div
         data-has-run-preview={String(Boolean(onRunPreview))}
@@ -167,6 +173,9 @@ vi.mock('@nocobase/plugin-vsc-file/client-v2', () => {
         data-workspace-file-contents={JSON.stringify(workspaceFiles.map((file) => [file.path, file.content]))}
         data-workspace-files={workspaceFiles.map((file) => file.path).join(',')}
       >
+        <button onClick={() => onFilesCollapsedChange(!filesCollapsed)} type="button">
+          {filesCollapsed ? 'Expand files' : 'Collapse files'}
+        </button>
         {activeFile ? <span>{activeFile.path}</span> : null}
         <textarea
           aria-label="Edit file content"
@@ -377,6 +386,24 @@ describe('LightExtensionWorkspacePage', () => {
     expect(await screen.findByTestId('runjs-code-tab')).toBeInTheDocument();
   });
 
+  it('starts embedded field-value workspaces with files collapsed and keeps diagnostics inside the workspace shell', async () => {
+    render(
+      <MemoryRouter>
+        <LightExtensionWorkspacePage defaultFilesCollapsed embedded repoId="ler_sales" />
+      </MemoryRouter>,
+    );
+
+    const workspace = await screen.findByTestId('light-extension-runjs-studio-workspace');
+    expect(screen.queryByTestId('runjs-files-panel')).not.toBeInTheDocument();
+    expect(within(workspace).getByTestId('light-extension-workspace-diagnostics')).toHaveStyle({
+      overflowY: 'hidden',
+    });
+    expect(within(workspace).getByTestId('light-extension-workspace-diagnostics')).toHaveTextContent('Diagnostics');
+
+    fireEvent.click(within(workspace).getByRole('button', { name: 'Expand files' }));
+    expect(await screen.findByTestId('runjs-files-panel')).toHaveAttribute('data-collapsed', 'false');
+  });
+
   it('loads files and saves edited source through the light extension API', async () => {
     render(
       <MemoryRouter initialEntries={['/admin/settings/light-extension?panel=source&repoId=ler_sales']}>
@@ -501,9 +528,7 @@ describe('LightExtensionWorkspacePage', () => {
       target: { value: 'export default function SalesKpi() { return "saved"; }\n' },
     });
     await waitFor(() => expect(footerActions?.disabled).toBe(false));
-    act(() => {
-      footerActions?.onSave();
-    });
+    const hostSavePromise = footerActions?.requestSave();
 
     const saveDialog = await screen.findByRole('dialog', { name: 'Save version' });
     fireEvent.change(within(saveDialog).getByLabelText('Version message'), {
@@ -522,6 +547,7 @@ describe('LightExtensionWorkspacePage', () => {
     });
 
     await waitFor(() => expect(onRequestClose).toHaveBeenCalledTimes(1));
+    await expect(hostSavePromise).resolves.toBe('saved');
     expect(onSaved).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole('dialog', { name: 'Saving changes' })).not.toBeInTheDocument();
     expect(screen.queryByText('Source saved and compiled')).not.toBeInTheDocument();
@@ -1094,6 +1120,7 @@ describe('LightExtensionWorkspacePage', () => {
 
     await screen.findByText('Import "react" is not allowed');
     expect(screen.getByText('import_not_allowed')).toBeInTheDocument();
+    expect(screen.getByTestId('light-extension-workspace-diagnostics')).toHaveStyle({ overflowY: 'auto' });
   });
 
   it('opens diagnostic source locations after save validation failure', async () => {

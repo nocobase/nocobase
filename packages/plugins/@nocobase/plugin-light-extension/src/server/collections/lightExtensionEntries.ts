@@ -32,6 +32,9 @@ export default defineCollection({
     {
       fields: ['runtimeCodeHash'],
     },
+    {
+      fields: ['artifactHash'],
+    },
   ],
   fields: [
     {
@@ -129,6 +132,10 @@ export default defineCollection({
     {
       type: 'string',
       name: 'runtimeCodeHash',
+    },
+    {
+      type: 'string',
+      name: 'artifactHash',
     },
     {
       type: 'string',

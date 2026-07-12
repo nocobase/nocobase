@@ -57,10 +57,12 @@ vi.mock('../pages/LightExtensionWorkspacePage', async () => {
   const noop = () => undefined;
 
   type FooterActions = {
+    dirty: boolean;
     disabled: boolean;
     loading: boolean;
     onCancel: () => void;
     onSave: () => void;
+    requestSave: () => Promise<'saved'>;
   };
   type WorkspacePageProps = {
     onFooterActionsChange?: (actions: FooterActions | null) => void;
@@ -70,10 +72,12 @@ vi.mock('../pages/LightExtensionWorkspacePage', async () => {
   const MockLightExtensionWorkspacePage = ({ onFooterActionsChange, onRequestClose }: WorkspacePageProps) => {
     React.useEffect(() => {
       onFooterActionsChange?.({
+        dirty: true,
         disabled: false,
         loading: false,
         onCancel: () => onRequestClose?.(),
         onSave: noop,
+        requestSave: async () => 'saved',
       });
 
       return () => onFooterActionsChange?.(null);

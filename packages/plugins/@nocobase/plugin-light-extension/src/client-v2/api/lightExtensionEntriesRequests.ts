@@ -12,7 +12,7 @@ import type {
   LightExtensionRepoRecord,
   LightExtensionMoveSourceInput,
   LightExtensionMoveSourceResult,
-  LightExtensionSelectableEntryRecord,
+  LightExtensionSelectableEntrySummary,
   LightExtensionSelectableEntriesInput,
 } from '../../shared/types';
 
@@ -35,8 +35,8 @@ type ResourceResponse<T> = {
 export async function listSelectableLightExtensionEntries(
   api: ApiClientLike,
   input?: LightExtensionSelectableEntriesInput,
-): Promise<LightExtensionSelectableEntryRecord[]> {
-  const response = await api.request<ResourceResponse<LightExtensionSelectableEntryRecord[]>>({
+): Promise<LightExtensionSelectableEntrySummary[]> {
+  const response = await api.request<ResourceResponse<LightExtensionSelectableEntrySummary[]>>({
     url: 'lightExtensionEntries:listSelectable',
     method: 'post',
     data: input,

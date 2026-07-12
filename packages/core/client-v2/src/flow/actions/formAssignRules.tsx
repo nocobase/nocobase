@@ -7,9 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction, isRunJSValue, observer, tExpr, useFlowContext } from '@nocobase/flow-engine';
+import {
+  defineAction,
+  FlowCancelSaveException,
+  isRunJSValue,
+  observer,
+  tExpr,
+  useFlowContext,
+} from '@nocobase/flow-engine';
 import { isEqual } from 'lodash';
 import React from 'react';
+import { useForm } from '@formily/react';
 import { FieldAssignRulesEditor } from '../components/FieldAssignRulesEditor';
 import type { FieldAssignRuleItem } from '../components/FieldAssignRulesEditor';
 import { collectFieldAssignCascaderOptions } from '../components/fieldAssignOptions';
@@ -20,14 +28,17 @@ import {
   mergeAssignRulesWithLegacyDefaults,
 } from '../models/blocks/form/legacyDefaultValueMigration';
 import { hasPersistedAssignRulesValue } from '../models/blocks/shared/legacyDefaultValueMigrationBase';
+import type { EmbeddedRunJSEditorController } from '../components/runjs-studio';
 
 const FormAssignRulesUI = observer(
   (props: { value?: FieldAssignRuleItem[]; onChange?: (value: FieldAssignRuleItem[]) => void }) => {
     const { value: propValue, onChange } = props;
+    const form = useForm();
     const ctx = useFlowContext();
     const t = ctx.model.translate.bind(ctx.model);
     const { isTitleFieldCandidate, onSyncAssociationTitleField } = useAssociationTitleFieldSync(t);
     const canEdit = typeof onChange === 'function';
+    const embeddedEditorControllersRef = React.useRef(new Map<string, EmbeddedRunJSEditorController>());
 
     const fieldOptions = React.useMemo(() => {
       return collectFieldAssignCascaderOptions({ formBlockModel: ctx.model, t });
@@ -70,6 +81,26 @@ const FormAssignRulesUI = observer(
       return normalizedValue;
     }, [canEdit, hasInitializedMerge, legacyAwareValue, normalizedValue]);
 
+    const saveEmbeddedRunJSEditors = React.useCallback(async (): Promise<FieldAssignRuleItem[]> => {
+      for (let index = 0; index < value.length; index += 1) {
+        const item = value[index];
+        const controller = embeddedEditorControllersRef.current.get(item?.key || String(index));
+        if (!controller?.dirty) {
+          continue;
+        }
+        const result = await controller.requestSave();
+        if (result === 'cancelled') {
+          throw new FlowCancelSaveException();
+        }
+      }
+      const latestValue = form?.values?.value;
+      return Array.isArray(latestValue) ? latestValue : value;
+    }, [form, value]);
+
+    React.useEffect(() => {
+      ctx.defineMethod('saveEmbeddedRunJSEditors', saveEmbeddedRunJSEditors);
+    }, [ctx, saveEmbeddedRunJSEditors]);
+
     const handleChange = React.useCallback(
       (next: FieldAssignRuleItem[]) => {
         if (!canEdit) return;
@@ -101,6 +132,14 @@ const FormAssignRulesUI = observer(
               : undefined,
           sourceLabel: `${t('Field values')} / ${t('RunJS')}`,
           surfaceStyle: 'value' as const,
+          onEmbeddedEditorControllerChange: (controller: EmbeddedRunJSEditorController | null) => {
+            const key = _item.key || String(index);
+            if (controller) {
+              embeddedEditorControllersRef.current.set(key, controller);
+              return;
+            }
+            embeddedEditorControllersRef.current.delete(key);
+          },
         };
       },
       [ctx.model, t],

@@ -177,6 +177,7 @@ export interface LightExtensionEntryRecord {
   runtimeVersion: string | null;
   surfaceStyle: string | null;
   runtimeCodeHash: string | null;
+  artifactHash: string | null;
   filesHash: string | null;
   settingsDefaultsHash: string | null;
   compiledAt: string | null;
@@ -277,16 +278,21 @@ export interface LightExtensionCompilePreviewResult {
   entries: LightExtensionCompilePreviewEntryResult[];
 }
 
-export interface LightExtensionSelectableEntryRecord extends LightExtensionEntryRecord {
-  compiledCommitId: string;
-  runtimeArtifact: LightExtensionEntryRuntimeArtifact;
-  runtimeVersion: string;
-  surfaceStyle: string;
-  runtimeCodeHash: string;
-  filesHash: string;
+export interface LightExtensionSelectableEntrySummary {
+  id: string;
+  repoId: string;
+  kind: string;
+  entryName: string;
+  entryPath: string;
+  title: string | null;
+  settingsSchema: Record<string, unknown> | null;
   settingsDefaultsHash: string;
-  compiledAt: string;
+  artifactHash?: string;
+  runtimeCodeHash: string;
+  runtimeAvailable: true;
 }
+
+export type LightExtensionSelectableEntryRecord = LightExtensionSelectableEntrySummary;
 
 export interface LightExtensionSelectableEntriesInput {
   repoId?: string;
@@ -357,12 +363,23 @@ export interface LightExtensionRuntimeCacheMetadata {
 export interface LightExtensionRuntimeResolveResult {
   entryId: string;
   entryPath: string;
+  artifactHash: string;
+  artifactUrl: string;
+  runtimeCodeHash: string;
+  version: string;
+  settings: Record<string, unknown>;
+  settingsHash: string;
+}
+
+export interface LightExtensionRuntimeArtifactRecord {
+  artifactHash: string;
   runtimeCodeHash: string;
   code: string;
-  version: string;
   sourceMap?: string;
-  settings: Record<string, unknown>;
-  cache: LightExtensionRuntimeCacheMetadata;
+  version: string;
+  entryPath: string;
+  runtimeContract: string;
+  byteSize: number;
 }
 
 export type LightExtensionReferenceOwnerKind =

@@ -83,6 +83,7 @@ describe('plugin-light-extension saveSource runtime compile', () => {
         region: 'EMEA',
       },
     });
+    const runtimeArtifact = await runtimeResolveService.getArtifact(runtime.artifactHash);
 
     expect(result.compile.status).toBe('success');
     expect(result.diagnostics).toEqual([]);
@@ -98,11 +99,10 @@ describe('plugin-light-extension saveSource runtime compile', () => {
       settings: {
         region: 'EMEA',
       },
-      cache: {
-        immutable: false,
-      },
+      artifactHash: expect.stringMatching(/^[a-f0-9]{64}$/u),
     });
-    expect(runtime.code).toContain('Sales KPI');
+    expect(runtime).not.toHaveProperty('code');
+    expect(runtimeArtifact.code).toContain('Sales KPI');
   });
 
   it('preserves entryId and runtime bindings when an entry directory is renamed', async () => {
@@ -158,20 +158,22 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     expect(entries).toHaveLength(1);
     expect(entries[0].get('id')).toBe(originalEntryId);
     expect(entries[0].get('healthStatus')).toBe('ready');
-    await expect(
-      runtimeResolveService.resolve({
-        sourceMode: 'light-extension',
-        sourceBinding: {
-          type: 'light-extension-entry',
-          repoId: repo.id,
-          entryId: originalEntryId,
-          kind: 'js-block',
-        },
-      }),
-    ).resolves.toMatchObject({
+    const renamedRuntime = await runtimeResolveService.resolve({
+      sourceMode: 'light-extension',
+      sourceBinding: {
+        type: 'light-extension-entry',
+        repoId: repo.id,
+        entryId: originalEntryId,
+        kind: 'js-block',
+      },
+    });
+    await expect(runtimeResolveService.getArtifact(renamedRuntime.artifactHash)).resolves.toMatchObject({
+      artifactHash: renamedRuntime.artifactHash,
+      code: expect.stringContaining('Renamed Sales KPI'),
+    });
+    expect(renamedRuntime).toMatchObject({
       entryId: originalEntryId,
       entryPath: 'src/client/js-blocks/renamed-sales/index.tsx',
-      code: expect.stringContaining('Renamed Sales KPI'),
     });
   });
 
@@ -256,17 +258,16 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     expect(entry?.get('runtimeArtifact')).toMatchObject({
       code: expect.stringContaining('Sales KPI'),
     });
-    await expect(
-      runtimeResolveService.resolve({
-        sourceMode: 'light-extension',
-        sourceBinding: {
-          type: 'light-extension-entry',
-          repoId: repo.id,
-          entryId: first.compile.entries[0].entryId,
-          kind: 'js-block',
-        },
-      }),
-    ).resolves.toMatchObject({
+    const currentRuntime = await runtimeResolveService.resolve({
+      sourceMode: 'light-extension',
+      sourceBinding: {
+        type: 'light-extension-entry',
+        repoId: repo.id,
+        entryId: first.compile.entries[0].entryId,
+        kind: 'js-block',
+      },
+    });
+    await expect(runtimeResolveService.getArtifact(currentRuntime.artifactHash)).resolves.toMatchObject({
       code: expect.stringContaining('Sales KPI'),
     });
     await expect(repoService.getRepo(repo.id)).resolves.toMatchObject({

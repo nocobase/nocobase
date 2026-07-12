@@ -25,8 +25,8 @@ import {
   type RunJSWorkspaceFile,
   useVscFileT,
 } from '@nocobase/plugin-vsc-file/client-v2';
-import { useFullscreenOverlay } from '@nocobase/client-v2';
-import { Alert, Button, Empty, Flex, Modal, Space, Spin, Typography, message } from 'antd';
+import { type EmbeddedRunJSEditorSaveResult, useFullscreenOverlay } from '@nocobase/client-v2';
+import { Alert, Button, Empty, Flex, Modal, Space, Spin, Typography, message, theme } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
@@ -60,6 +60,7 @@ type WorkspaceFile = RunJSWorkspaceFile;
 
 interface LightExtensionWorkspacePageProps {
   embedded?: boolean;
+  defaultFilesCollapsed?: boolean;
   repoId?: string;
   initialPath?: string;
   workspaceScope?: LightExtensionWorkspaceScope;
@@ -69,10 +70,12 @@ interface LightExtensionWorkspacePageProps {
 }
 
 export interface LightExtensionWorkspaceFooterActions {
+  dirty: boolean;
   disabled: boolean;
   loading: boolean;
   onCancel: () => void | Promise<void>;
   onSave: () => void;
+  requestSave: () => Promise<EmbeddedRunJSEditorSaveResult>;
 }
 
 const LIGHT_EXTENSION_SOURCE_ROOT = 'src/client/js-blocks';
@@ -98,6 +101,7 @@ const REPOSITORY_WORKSPACE_SCOPE: LightExtensionWorkspaceScope = { mode: 'reposi
 
 function LightExtensionWorkspacePage({
   embedded = false,
+  defaultFilesCollapsed = false,
   repoId: repoIdProp,
   initialPath,
   workspaceScope = REPOSITORY_WORKSPACE_SCOPE,
@@ -106,6 +110,7 @@ function LightExtensionWorkspacePage({
   onSaved,
 }: LightExtensionWorkspacePageProps) {
   const { t } = useTranslation(NAMESPACE);
+  const { token } = theme.useToken();
   const studioT = useVscFileT();
   const [searchParams] = useSearchParams();
   const repoId = repoIdProp || searchParams.get('repoId') || '';
@@ -117,7 +122,7 @@ function LightExtensionWorkspacePage({
   const [folders, setFolders] = useState<string[]>([]);
   const [activePath, setActivePath] = useState<string | undefined>();
   const [openPaths, setOpenPaths] = useState<string[]>([]);
-  const [filesCollapsed, setFilesCollapsed] = useState(false);
+  const [filesCollapsed, setFilesCollapsed] = useState(defaultFilesCollapsed);
   const [historyCollapsed, setHistoryCollapsed] = useState(true);
   const [historyItems, setHistoryItems] = useState<RunJSSourceHistoryItem[]>([]);
   const [diagnostics, setDiagnostics] = useState<LightExtensionDiagnostic[]>([]);
@@ -137,6 +142,11 @@ function LightExtensionWorkspacePage({
     null,
   );
   const workspaceFullscreen = useFullscreenOverlay();
+  const embeddedSaveRequestRef = useRef<{
+    resolve: (result: EmbeddedRunJSEditorSaveResult) => void;
+    reject: (error: unknown) => void;
+  } | null>(null);
+  const embeddedSavePromiseRef = useRef<Promise<EmbeddedRunJSEditorSaveResult> | null>(null);
   const historyRequestSeqRef = useRef(0);
   const entryRoot = getLightExtensionEntryRoot(workspaceScope);
   const entryScoped = workspaceScope.mode === 'entry';
@@ -548,7 +558,15 @@ function LightExtensionWorkspacePage({
         await loadWorkspace();
       }
       onSaved?.();
+      const request = embeddedSaveRequestRef.current;
+      embeddedSaveRequestRef.current = null;
+      embeddedSavePromiseRef.current = null;
+      request?.resolve('saved');
     } catch (error) {
+      const request = embeddedSaveRequestRef.current;
+      embeddedSaveRequestRef.current = null;
+      embeddedSavePromiseRef.current = null;
+      request?.reject(error);
       setDiagnostics(getLightExtensionErrorDiagnostics(error) as LightExtensionDiagnostic[]);
       setNotice({ type: 'error', message: error instanceof Error ? error.message : t('Failed to save source') });
     } finally {
@@ -568,14 +586,35 @@ function LightExtensionWorkspacePage({
     versionMessage,
   ]);
 
-  const openSaveModal = useCallback(() => {
+  const openSaveModal = useCallback((): boolean => {
     if (!canWrite || !hasUnsavedLocalChanges || hasBlockedDirtyChanges) {
-      return;
+      return false;
     }
 
     setVersionMessage('');
     setSaveOpen(true);
+    return true;
   }, [canWrite, hasBlockedDirtyChanges, hasUnsavedLocalChanges]);
+
+  const requestSave = useCallback(async (): Promise<EmbeddedRunJSEditorSaveResult> => {
+    if (!hasUnsavedLocalChanges) {
+      return 'unchanged';
+    }
+    if (embeddedSavePromiseRef.current) {
+      return embeddedSavePromiseRef.current;
+    }
+
+    const promise = new Promise<EmbeddedRunJSEditorSaveResult>((resolve, reject) => {
+      embeddedSaveRequestRef.current = { resolve, reject };
+    });
+    embeddedSavePromiseRef.current = promise;
+    if (!openSaveModal()) {
+      embeddedSaveRequestRef.current = null;
+      embeddedSavePromiseRef.current = null;
+      return 'cancelled';
+    }
+    return promise;
+  }, [hasUnsavedLocalChanges, openSaveModal]);
 
   const requestClose = useCallback(async () => {
     if (hasUnsavedLocalChanges) {
@@ -593,12 +632,23 @@ function LightExtensionWorkspacePage({
 
   const footerActions = useMemo<LightExtensionWorkspaceFooterActions>(
     () => ({
+      dirty: hasUnsavedLocalChanges,
       disabled: !canWrite || loading || !hasUnsavedLocalChanges || hasBlockedDirtyChanges,
       loading: saving,
       onCancel: requestClose,
       onSave: openSaveModal,
+      requestSave,
     }),
-    [canWrite, hasBlockedDirtyChanges, hasUnsavedLocalChanges, loading, openSaveModal, requestClose, saving],
+    [
+      canWrite,
+      hasBlockedDirtyChanges,
+      hasUnsavedLocalChanges,
+      loading,
+      openSaveModal,
+      requestClose,
+      requestSave,
+      saving,
+    ],
   );
 
   useEffect(() => {
@@ -608,6 +658,10 @@ function LightExtensionWorkspacePage({
   useEffect(() => {
     return () => {
       onFooterActionsChange?.(null);
+      const request = embeddedSaveRequestRef.current;
+      embeddedSaveRequestRef.current = null;
+      embeddedSavePromiseRef.current = null;
+      request?.resolve('cancelled');
     };
   }, [onFooterActionsChange]);
 
@@ -706,10 +760,12 @@ function LightExtensionWorkspacePage({
             <div
               data-testid="light-extension-runjs-studio-workspace"
               style={{
-                background: '#fff',
-                display: 'grid',
+                background: token.colorBgContainer,
+                border: `1px solid ${token.colorBorderSecondary}`,
+                borderRadius: token.borderRadiusLG,
+                display: 'flex',
                 flex: embedded || workspaceFullscreen.isFullscreen ? '1 1 0' : undefined,
-                gridTemplateColumns: filesCollapsed ? 'minmax(0, 1fr)' : 'minmax(220px, 260px) minmax(0, 1fr)',
+                flexDirection: 'column',
                 height: workspaceFullscreen.isFullscreen ? '100%' : undefined,
                 minHeight: embedded || workspaceFullscreen.isFullscreen ? 0 : 520,
                 minWidth: 0,
@@ -717,113 +773,136 @@ function LightExtensionWorkspacePage({
                 width: workspaceFullscreen.isFullscreen ? '100%' : undefined,
               }}
             >
-              {!filesCollapsed ? (
-                <div
+              <div
+                style={{
+                  display: 'grid',
+                  flex: '1 1 0',
+                  gridTemplateColumns: filesCollapsed ? 'minmax(0, 1fr)' : 'minmax(220px, 260px) minmax(0, 1fr)',
+                  minHeight: 0,
+                  minWidth: 0,
+                  overflow: 'hidden',
+                }}
+              >
+                {!filesCollapsed ? (
+                  <div
+                    style={{
+                      background: token.colorFillAlter,
+                      borderRight: `1px solid ${token.colorBorderSecondary}`,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      minHeight: 0,
+                      minWidth: 0,
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <FilesPanel
+                      activePath={activePath}
+                      collapsed={filesCollapsed}
+                      defaultCreateParentPath={entryScoped ? entryRoot || LIGHT_EXTENSION_SOURCE_ROOT : undefined}
+                      exporting={false}
+                      files={files}
+                      fillAvailableHeight={historyCollapsed}
+                      folders={folders}
+                      getPathAccess={resolveWorkspacePathAccess}
+                      onCollapseChange={setFilesCollapsed}
+                      onCreate={createWorkspaceFile}
+                      onCreateFolder={createWorkspaceFolder}
+                      onDelete={removeFile}
+                      onDeleteFolder={deleteFolder}
+                      onMoveFile={moveFileToFolder}
+                      onMoveFolder={moveFolderToFolder}
+                      onOpen={openFilePath}
+                      onRefresh={loadWorkspace}
+                      onRename={renameFile}
+                      onRenameFolder={renameFolder}
+                      readOnly={!canWrite}
+                      savedFiles={baseFiles}
+                      t={studioT}
+                    />
+                    <VersionHistoryDock
+                      baseVersion={formatHistoryVersion(baseCommitSeq)}
+                      collapsed={historyCollapsed}
+                      emptyHistoryDescription={t('No source versions yet')}
+                      hasMore={historyNextBeforeSeq !== null}
+                      hasUnsavedLocalChanges={hasUnsavedLocalChanges}
+                      historyItems={historyItems}
+                      loading={historyLoading}
+                      loadingMore={historyLoadingMore}
+                      onCollapsedChange={setHistoryCollapsed}
+                      onLoadMore={loadMoreHistory}
+                      onRefresh={refreshHistory}
+                      onSelect={setRestoreCommit}
+                      onViewChanges={() => setIsDiff(true)}
+                      t={studioT}
+                    />
+                  </div>
+                ) : null}
+
+                <main
                   style={{
-                    background: '#fafafa',
-                    borderRight: '1px solid #f0f0f0',
                     display: 'flex',
+                    flex: '1 1 0',
                     flexDirection: 'column',
                     minHeight: 0,
                     minWidth: 0,
                     overflow: 'hidden',
+                    padding: 12,
                   }}
                 >
-                  <FilesPanel
-                    activePath={activePath}
-                    collapsed={filesCollapsed}
-                    defaultCreateParentPath={entryScoped ? entryRoot || LIGHT_EXTENSION_SOURCE_ROOT : undefined}
-                    exporting={false}
-                    files={files}
-                    fillAvailableHeight={historyCollapsed}
-                    folders={folders}
-                    getPathAccess={resolveWorkspacePathAccess}
-                    onCollapseChange={setFilesCollapsed}
-                    onCreate={createWorkspaceFile}
-                    onCreateFolder={createWorkspaceFolder}
-                    onDelete={removeFile}
-                    onDeleteFolder={deleteFolder}
-                    onMoveFile={moveFileToFolder}
-                    onMoveFolder={moveFolderToFolder}
-                    onOpen={openFilePath}
-                    onRefresh={loadWorkspace}
-                    onRename={renameFile}
-                    onRenameFolder={renameFolder}
-                    readOnly={!canWrite}
-                    savedFiles={baseFiles}
-                    t={studioT}
-                  />
-                  <VersionHistoryDock
-                    baseVersion={formatHistoryVersion(baseCommitSeq)}
-                    collapsed={historyCollapsed}
-                    emptyHistoryDescription={t('No source versions yet')}
-                    hasMore={historyNextBeforeSeq !== null}
-                    hasUnsavedLocalChanges={hasUnsavedLocalChanges}
-                    historyItems={historyItems}
-                    loading={historyLoading}
-                    loadingMore={historyLoadingMore}
-                    onCollapsedChange={setHistoryCollapsed}
-                    onLoadMore={loadMoreHistory}
-                    onRefresh={refreshHistory}
-                    onSelect={setRestoreCommit}
-                    onViewChanges={() => setIsDiff(true)}
-                    t={studioT}
-                  />
-                </div>
-              ) : null}
-
-              <main
+                  {files.length === 0 ? (
+                    <Empty description={t('Empty repository')} image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                  ) : null}
+                  {files.length > 0 ? (
+                    <>
+                      {activeFileReadOnly && entryScoped ? (
+                        <Alert message={pathRestrictionReason} showIcon style={{ marginBottom: 8 }} type="info" />
+                      ) : null}
+                      <CodeTab
+                        activeFile={activeFile}
+                        activePath={activePath}
+                        diffRows={diffRows}
+                        emptyDiffDescription={t('No changes between current editor and saved source')}
+                        filesCollapsed={filesCollapsed}
+                        fullscreenControl={{
+                          isFullscreen: workspaceFullscreen.isFullscreen,
+                          toggleFullscreen: workspaceFullscreen.toggleFullscreen,
+                        }}
+                        isDiff={isDiff}
+                        onChange={updateActiveFile}
+                        onCloseFile={closeOpenFile}
+                        onDiffToggle={() => setIsDiff((current) => !current)}
+                        onFilesCollapsedChange={setFilesCollapsed}
+                        onOpenFile={openFilePath}
+                        openPaths={openPaths}
+                        readOnly={activeFileReadOnly}
+                        savedFiles={baseFiles}
+                        showRunButton={false}
+                        t={studioT}
+                        version="v2"
+                        workspaceFiles={authoringFiles}
+                      />
+                    </>
+                  ) : null}
+                </main>
+              </div>
+              <div
+                data-testid="light-extension-workspace-diagnostics"
                 style={{
-                  display: 'flex',
-                  flex: '1 1 0',
-                  flexDirection: 'column',
-                  minHeight: 0,
-                  minWidth: 0,
-                  overflow: 'hidden',
+                  borderTop: `1px solid ${token.colorBorderSecondary}`,
+                  flex: '0 0 auto',
+                  maxHeight: workspaceFullscreen.isFullscreen ? '32%' : 160,
+                  minHeight: 96,
+                  overflowX: 'hidden',
+                  overflowY: diagnostics.length > 0 ? 'auto' : 'hidden',
                   padding: 12,
                 }}
               >
-                {files.length === 0 ? (
-                  <Empty description={t('Empty repository')} image={Empty.PRESENTED_IMAGE_SIMPLE} />
-                ) : null}
-                {files.length > 0 ? (
-                  <>
-                    {activeFileReadOnly && entryScoped ? (
-                      <Alert message={pathRestrictionReason} showIcon style={{ marginBottom: 8 }} type="info" />
-                    ) : null}
-                    <CodeTab
-                      activeFile={activeFile}
-                      activePath={activePath}
-                      diffRows={diffRows}
-                      emptyDiffDescription={t('No changes between current editor and saved source')}
-                      filesCollapsed={filesCollapsed}
-                      fullscreenControl={{
-                        isFullscreen: workspaceFullscreen.isFullscreen,
-                        toggleFullscreen: workspaceFullscreen.toggleFullscreen,
-                      }}
-                      isDiff={isDiff}
-                      onChange={updateActiveFile}
-                      onCloseFile={closeOpenFile}
-                      onDiffToggle={() => setIsDiff((current) => !current)}
-                      onFilesCollapsedChange={setFilesCollapsed}
-                      onOpenFile={openFilePath}
-                      openPaths={openPaths}
-                      readOnly={activeFileReadOnly}
-                      savedFiles={baseFiles}
-                      showRunButton={false}
-                      t={studioT}
-                      version="v2"
-                      workspaceFiles={authoringFiles}
-                    />
-                  </>
-                ) : null}
-              </main>
+                <DiagnosticsPanel diagnostics={diagnostics} onOpenDiagnostic={openDiagnosticSource} />
+              </div>
             </div>,
             workspaceFullscreen.container,
           )
         : null}
-
-      <DiagnosticsPanel diagnostics={diagnostics} onOpenDiagnostic={openDiagnosticSource} />
 
       <RestoreVersionModal
         commit={restoreCommit}
@@ -841,7 +920,13 @@ function LightExtensionWorkspacePage({
       <SaveVersionModal
         loading={false}
         onAfterClose={() => undefined}
-        onCancel={() => setSaveOpen(false)}
+        onCancel={() => {
+          setSaveOpen(false);
+          const request = embeddedSaveRequestRef.current;
+          embeddedSaveRequestRef.current = null;
+          embeddedSavePromiseRef.current = null;
+          request?.resolve('cancelled');
+        }}
         onSave={saveChanges}
         onVersionMessageChange={setVersionMessage}
         open={saveOpen}

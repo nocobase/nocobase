@@ -213,7 +213,7 @@ describe('flow-engine RunJS source adapters', () => {
     expect(open.body.data.files).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          path: 'src/main.tsx',
+          path: 'src/client/index.tsx',
           content: initialCode,
         }),
       ]),

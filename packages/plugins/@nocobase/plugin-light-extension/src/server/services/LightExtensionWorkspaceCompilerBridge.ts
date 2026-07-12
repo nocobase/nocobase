@@ -8,13 +8,8 @@
  */
 
 import type { Transaction } from '@nocobase/database';
-import {
-  buildRunJSFilesHash,
-  compileRunJSSourceWorkspace,
-  type CompileRunJSSourceWorkspaceResult,
-  type RunJSCompileDiagnostic,
-  type RunJSRuntimeArtifact,
-} from '@nocobase/plugin-vsc-file';
+import { buildRunJSFilesHash, type RunJSCompileDiagnostic, type RunJSRuntimeArtifact } from '@nocobase/runjs';
+import { compileRunJSSourceWorkspace, type CompileRunJSSourceWorkspaceResult } from '@nocobase/runjs/compiler';
 import { randomUUID } from 'crypto';
 import { posix as pathPosix } from 'path';
 import ts from 'typescript';

@@ -39,7 +39,7 @@ import {
 } from '../internal/utils/modelUtils';
 import { RunJSValueEditor } from './RunJSValueEditor';
 import { RunJSSourceResolverRegistry, type RunJSSourceMenuItem } from './runjs-source';
-import type { RunJSSourceLocator, RunJSSurfaceStyle } from './runjs-studio';
+import type { EmbeddedRunJSEditorController, RunJSSourceLocator, RunJSSurfaceStyle } from './runjs-studio';
 import { pickOperatorStyle as pickStyle, resolveOperatorComponent } from '../internal/utils/operatorSchemaHelper';
 import { InputFieldModel } from '../models/fields/InputFieldModel';
 import { normalizeFilterValueByOperator } from '../models/blocks/filter-form/valueNormalization';
@@ -349,6 +349,7 @@ interface Props {
   sourceLocator?: RunJSSourceLocator;
   sourceLabel?: string;
   surfaceStyle?: RunJSSurfaceStyle;
+  onEmbeddedEditorControllerChange?: (controller: EmbeddedRunJSEditorController | null) => void;
 }
 
 type ResolvedFieldContext = {
@@ -843,6 +844,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
   sourceLocator,
   sourceLabel,
   surfaceStyle,
+  onEmbeddedEditorControllerChange,
 }) => {
   const flowCtx = useFlowContext<FlowModelContext>();
   const normalizeEventValue = React.useCallback((eventOrValue: unknown) => {
@@ -1537,10 +1539,12 @@ export const FieldAssignValueInput: React.FC<Props> = ({
         sourceLocator={sourceLocator}
         sourceLabel={sourceLabel}
         surfaceStyle={surfaceStyle || 'value'}
+        editorChrome="embedded"
+        onEmbeddedEditorControllerChange={onEmbeddedEditorControllerChange}
       />
     );
     return C;
-  }, [flowCtx, sourceLabel, sourceLocator, surfaceStyle]);
+  }, [flowCtx, onEmbeddedEditorControllerChange, sourceLabel, sourceLocator, surfaceStyle]);
 
   const ConstantEditor = useDateVariableConstant ? DateVariableConstantEditor : ConstantValueEditor;
 

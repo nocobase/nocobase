@@ -51,6 +51,14 @@ export type RunJSSourceKind = RunJSSourceLocator['kind'];
 
 export type RunJSSurfaceStyle = 'render' | 'action' | 'value' | 'workflow';
 
+export type EmbeddedRunJSEditorSaveResult = 'saved' | 'unchanged' | 'cancelled';
+
+export interface EmbeddedRunJSEditorController {
+  dirty: boolean;
+  saving: boolean;
+  requestSave: () => Promise<EmbeddedRunJSEditorSaveResult>;
+}
+
 export type RunJSLocatorFactory = 'flowModel.step';
 
 export interface RunJSEditorFieldProps {
@@ -77,6 +85,8 @@ export interface RunJSEditorFieldProps {
   readOnly?: boolean;
   disabled?: boolean;
   containerStyle?: React.CSSProperties;
+  editorChrome?: 'standalone' | 'embedded';
+  onEmbeddedEditorControllerChange?: (controller: EmbeddedRunJSEditorController | null) => void;
 }
 
 export interface RunJSEditorProviderRenderProps extends Omit<RunJSEditorFieldProps, 'value'> {

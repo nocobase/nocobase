@@ -15,18 +15,10 @@ import { createLightExtensionRunJSResolver } from '../resolvers/LightExtensionRu
 const selectableEntry = {
   id: 'entry_order_total',
   repoId: 'repo_orders',
-  target: 'client',
   kind: 'js-block',
   entryName: 'order-total',
   entryPath: 'src/client/js-blocks/order-total/index.tsx',
-  metaPath: null,
-  settingsPath: null,
   title: 'Order total calculator',
-  description: null,
-  category: null,
-  icon: null,
-  tags: null,
-  sort: null,
   settingsSchema: {
     type: 'object',
     properties: {
@@ -36,20 +28,9 @@ const selectableEntry = {
       },
     },
   },
-  compiledCommitId: 'commit_latest',
-  runtimeArtifact: {
-    code: 'ctx.render("orders");',
-    version: 'v2',
-    entryPath: 'src/client/js-blocks/order-total/index.tsx',
-  },
-  runtimeVersion: 'v2',
-  surfaceStyle: 'render',
   runtimeCodeHash: 'runtime_hash',
-  filesHash: 'files_hash',
   settingsDefaultsHash: 'defaults_hash',
-  compiledAt: '2026-07-09T00:00:00.000Z',
-  healthStatus: 'ready',
-  diagnostics: [],
+  runtimeAvailable: true,
 };
 
 const chartSelectableEntry = {
@@ -58,13 +39,8 @@ const chartSelectableEntry = {
   entryName: 'order-chart',
   entryPath: 'src/client/js-blocks/order-chart/index.tsx',
   title: 'Order chart block',
-  runtimeArtifact: {
-    ...selectableEntry.runtimeArtifact,
-    entryPath: 'src/client/js-blocks/order-chart/index.tsx',
-  },
   settingsSchema: null,
   settingsDefaultsHash: 'defaults_hash_chart',
-  filesHash: 'files_hash_chart',
   runtimeCodeHash: 'runtime_hash_chart',
 };
 

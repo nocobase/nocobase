@@ -97,6 +97,7 @@ const VSC_FILE_PLUGIN_ALIASES = ['@nocobase/plugin-vsc-file', 'vsc-file', 'plugi
 const DOCUMENTED_CAPABILITIES_ROUTE = '/light-extensions/capabilities';
 const DOCUMENTED_COMPILE_PREVIEW_ROUTE = /^\/light-extensions\/([^/]+)\/compile-preview$/;
 const DOCUMENTED_RUNTIME_RESOLVE_ROUTE = '/light-extension-runtime/resolve';
+const DOCUMENTED_RUNTIME_ARTIFACT_ROUTE = /^\/light-extension-runtime\/artifacts\/([^/]+)$/;
 
 export class PluginLightExtensionServer extends Plugin {
   private auditService?: LightExtensionAuditService;
@@ -230,6 +231,7 @@ export class PluginLightExtensionServer extends Plugin {
     this.registerCapabilitiesHttpRoute();
     this.registerCompilePreviewHttpRoute();
     this.registerRuntimeResolveHttpRoute();
+    this.registerRuntimeArtifactHttpRoute();
     this.registerAclActions();
     this.registerVscPermissionHookWhenAvailable();
   }
@@ -322,6 +324,39 @@ export class PluginLightExtensionServer extends Plugin {
       },
       {
         tag: 'light-extension-runtime-resolve',
+        before: 'dataSource',
+      },
+    );
+  }
+
+  private registerRuntimeArtifactHttpRoute() {
+    const app = this.app as unknown as AppWithPluginEvents;
+    app.use?.(
+      async (ctx, next) => {
+        const artifactHash = getDocumentedRuntimeArtifactHash(ctx.path, app.resourceManager?.options?.prefix);
+        if (ctx.method !== 'GET' || !artifactHash) {
+          await next();
+          return;
+        }
+
+        const resourcePath = getRuntimeArtifactResourcePath(artifactHash, app.resourceManager?.options?.prefix);
+        const originalPath = ctx.path;
+        const originalRequestPath = ctx.request?.path;
+        try {
+          ctx.path = resourcePath;
+          if (ctx.request) {
+            ctx.request.path = resourcePath;
+          }
+          await next();
+        } finally {
+          ctx.path = originalPath;
+          if (ctx.request && originalRequestPath) {
+            ctx.request.path = originalRequestPath;
+          }
+        }
+      },
+      {
+        tag: 'light-extension-runtime-artifact',
         before: 'dataSource',
       },
     );
@@ -434,6 +469,22 @@ function getDocumentedRuntimeResolvePath(resourcePrefix?: string): string {
   )}${DOCUMENTED_RUNTIME_RESOLVE_ROUTE}`;
 }
 
+function getDocumentedRuntimeArtifactHash(path: string, resourcePrefix?: string): string | null {
+  const basePath = normalizeBasePath(resourcePrefix ?? process.env.API_BASE_PATH ?? '/api');
+  if (!path.startsWith(`${basePath}/`)) {
+    return null;
+  }
+  const match = DOCUMENTED_RUNTIME_ARTIFACT_ROUTE.exec(path.slice(basePath.length));
+  if (!match?.[1]) {
+    return null;
+  }
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return null;
+  }
+}
+
 function getDocumentedCompilePreviewRepoId(path: string, resourcePrefix?: string): string | null {
   const basePath = normalizeBasePath(resourcePrefix ?? process.env.API_BASE_PATH ?? '/api');
   if (!path.startsWith(`${basePath}/`)) {
@@ -463,6 +514,12 @@ function getCompilePreviewResourcePath(repoId: string, resourcePrefix?: string):
 
 function getRuntimeResolveResourcePath(resourcePrefix?: string): string {
   return `${normalizeBasePath(resourcePrefix ?? '')}/lightExtensionRuntime:resolve`;
+}
+
+function getRuntimeArtifactResourcePath(artifactHash: string, resourcePrefix?: string): string {
+  return `${normalizeBasePath(resourcePrefix ?? '')}/lightExtensionRuntime:getArtifact/${encodeURIComponent(
+    artifactHash,
+  )}`;
 }
 
 function normalizeBasePath(path: string): string {

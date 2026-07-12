@@ -161,6 +161,27 @@ describe('Field values legacy default migration', () => {
     });
   });
 
+  it('waits for dirty embedded RunJS editors before saving field values', async () => {
+    const model = createModel('editItemSettings');
+    const rule = { key: 'rule-1', targetPath: 'title', value: { code: 'return "title";', version: 'v2' } };
+    model.setStepParams('formModelSettings', 'assignRules', { value: [rule] });
+    renderAction(formAssignRules, model, [rule]);
+
+    await waitFor(() => {
+      expect(mockState.editorProps.length).toBeGreaterThan(0);
+    });
+
+    const requestSave = vi.fn().mockResolvedValue('saved');
+    mockState.editorProps.at(-1)?.getValueInputProps(rule, 0)?.onEmbeddedEditorControllerChange({
+      dirty: true,
+      saving: false,
+      requestSave,
+    });
+
+    await expect(model.context.saveEmbeddedRunJSEditors()).resolves.toEqual([rule]);
+    expect(requestSave).toHaveBeenCalledTimes(1);
+  });
+
   it('does not re-import form legacy defaults after an empty form-level value is persisted', async () => {
     const model = createModel('editItemSettings');
     model.setStepParams('formModelSettings', 'assignRules', { value: [] });

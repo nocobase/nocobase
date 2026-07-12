@@ -12,10 +12,7 @@ import type { LightExtensionRuntimeSettingsSource } from './SettingsResolverServ
 
 export function hasUsableRuntimeArtifact(entry: LightExtensionEntryRecord, repoHeadCommitId: string | null): boolean {
   return Boolean(
-    repoHeadCommitId &&
-      entry.compiledCommitId === repoHeadCommitId &&
-      entry.runtimeArtifact?.code &&
-      entry.runtimeCodeHash,
+    repoHeadCommitId && entry.compiledCommitId === repoHeadCommitId && entry.artifactHash && entry.runtimeCodeHash,
   );
 }
 
@@ -28,11 +25,6 @@ export function getRuntimeSettingsSource(entry: LightExtensionEntryRecord): Ligh
 }
 
 function getRuntimeSettingsSchema(entry: LightExtensionEntryRecord): Record<string, unknown> | null {
-  const metadata = entry.runtimeArtifact?.metadata;
-  if (metadata && Object.prototype.hasOwnProperty.call(metadata, 'settingsSchema')) {
-    return cloneRecordOrNull(metadata.settingsSchema);
-  }
-
   return cloneRecordOrNull(entry.settingsSchema);
 }
 

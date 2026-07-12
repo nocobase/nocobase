@@ -8,11 +8,15 @@
  */
 
 import type { Database, Transaction } from '@nocobase/database';
-import { buildRunJSRuntimeCodeHash, type RunJSRuntimeArtifact } from '@nocobase/plugin-vsc-file';
+import { buildRunJSArtifactHash, buildRunJSRuntimeCodeHash, type RunJSRuntimeArtifact } from '@nocobase/runjs';
 import { createHash } from 'crypto';
 import { posix as pathPosix } from 'path';
 
-import { LIGHT_EXTENSION_SUPPORTED_KINDS, type LightExtensionKind } from '../../constants';
+import {
+  LIGHT_EXTENSION_RUNTIME_ARTIFACT_CONTRACT,
+  LIGHT_EXTENSION_SUPPORTED_KINDS,
+  type LightExtensionKind,
+} from '../../constants';
 import { LightExtensionError } from '../../shared/errors';
 import type {
   LightExtensionDiagnostic,
@@ -250,16 +254,41 @@ export class LightExtensionRuntimeCompileService {
     const settingsSchema = cloneRecordOrNull(input.entry.settingsSchema);
     const settingsDefaultsHash = stableJsonHash(extractSettingsDefaults(settingsSchema));
     const runtimeCodeHash = buildRunJSRuntimeCodeHash(input.artifact.code);
+    const entryPath = input.artifact.entryPath || input.entry.entryPath;
+    const artifactHash = buildRunJSArtifactHash({
+      code: input.artifact.code,
+      sourceMap: input.artifact.sourceMap,
+      version: input.artifact.version,
+      entryPath,
+      runtimeContract: LIGHT_EXTENSION_RUNTIME_ARTIFACT_CONTRACT,
+    });
+    await this.db.getRepository('lightExtensionRuntimeArtifacts').updateOrCreate({
+      filterKeys: ['artifactHash'],
+      values: {
+        artifactHash,
+        runtimeCodeHash,
+        code: input.artifact.code,
+        sourceMap: input.artifact.sourceMap || null,
+        version: input.artifact.version,
+        entryPath,
+        runtimeContract: LIGHT_EXTENSION_RUNTIME_ARTIFACT_CONTRACT,
+        byteSize:
+          Buffer.byteLength(input.artifact.code, 'utf8') + Buffer.byteLength(input.artifact.sourceMap || '', 'utf8'),
+      },
+      transaction,
+    });
     const values = {
       compiledCommitId: input.commitId,
       runtimeArtifact: cloneRuntimeArtifact(input.artifact, {
         runtimeCodeHash,
-        runtimeContract: 'light-extension.current-runtime.v1',
+        artifactHash,
+        runtimeContract: LIGHT_EXTENSION_RUNTIME_ARTIFACT_CONTRACT,
         settingsSchema,
       }),
       runtimeVersion: input.artifact.version,
       surfaceStyle: input.surfaceStyle,
       runtimeCodeHash,
+      artifactHash,
       filesHash: input.artifact.filesHash || '',
       settingsDefaultsHash,
       compiledAt: new Date(),

@@ -57,6 +57,7 @@
     "@nocobase/flow-engine": "2.x",
     "@nocobase/plugin-vsc-file": "2.x",
     "@nocobase/resourcer": "2.x",
+    "@nocobase/runjs": "2.x",
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x",
     "@nocobase/utils": "2.x",

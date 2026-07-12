@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { RunJSSurfaceStyle } from '@nocobase/plugin-vsc-file';
+import type { RunJSSurfaceStyle } from '@nocobase/runjs';
 
 import type { LightExtensionKind } from '../../constants';
 

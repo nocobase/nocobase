@@ -10,8 +10,9 @@
 import { VscError } from './errors';
 import { sha256Hex } from './hash';
 export { buildRunJSOwnerFingerprint } from '@nocobase/server';
+export { buildRunJSArtifactHash, buildRunJSFilesHash, buildRunJSRuntimeCodeHash } from '@nocobase/runjs';
 import type { RunJSSourceLocator } from './runjs-source-contracts';
-import type { VscFileChange, VscRepositoryIdentity } from './types';
+import type { VscRepositoryIdentity } from './types';
 
 const unsafePathSegments = new Set(['__proto__', 'constructor', 'prototype']);
 const MAX_RUNJS_PATH_ARRAY_INDEX = 100_000;
@@ -121,14 +122,6 @@ export function getRunJSSourceOwnerId(locator: RunJSSourceLocator): string {
   return `runjs:${locator.kind}:${stableOwnerId}:${sourcePathHash}`;
 }
 
-export function buildRunJSFilesHash(files: VscFileChange[]): string {
-  return sha256Hex(stableSerialize(files));
-}
-
-export function buildRunJSRuntimeCodeHash(code: string): string {
-  return sha256Hex(code);
-}
-
 function getStableOwnerId(locator: RunJSSourceLocator): string {
   if (locator.kind === 'workflow.javascript') {
     return `node_${locator.nodeId}`;
@@ -171,21 +164,6 @@ function toTypedPathSegments(
     type: typeof value === 'number' ? 'number' : 'string',
     value,
   }));
-}
-
-function stableSerialize(value: unknown): string {
-  if (Array.isArray(value)) {
-    return `[${value.map((item) => stableSerialize(item)).join(',')}]`;
-  }
-  if (value && typeof value === 'object') {
-    const record = value as Record<string, unknown>;
-    return `{${Object.keys(record)
-      .sort()
-      .map((key) => `${JSON.stringify(key)}:${stableSerialize(record[key])}`)
-      .join(',')}}`;
-  }
-
-  return JSON.stringify(value);
 }
 
 function toRecord(value: unknown): Record<string, unknown> {

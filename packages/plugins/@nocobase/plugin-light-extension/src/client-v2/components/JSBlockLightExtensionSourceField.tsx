@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ApplicationContext } from '@nocobase/client-v2';
+import { ApplicationContext, type EmbeddedRunJSEditorController } from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
 import type { Field } from '@formily/core';
 import { useField, useForm } from '@formily/react';
@@ -19,7 +19,7 @@ import { NAMESPACE } from '../../constants';
 import type {
   LightExtensionKind,
   LightExtensionRuntimeSourceBinding,
-  LightExtensionSelectableEntryRecord,
+  LightExtensionSelectableEntrySummary,
 } from '../../shared/types';
 import type { ApiClientLike } from '../api/lightExtensionEntriesRequests';
 import { listSelectableLightExtensionEntries } from '../api/lightExtensionEntriesRequests';
@@ -72,6 +72,7 @@ export interface JSBlockLightExtensionSourceFieldProps {
   disabled?: boolean;
   kind?: LightExtensionKind;
   showEntryWorkspace?: boolean;
+  onEmbeddedEditorControllerChange?: (controller: EmbeddedRunJSEditorController | null) => void;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -121,7 +122,7 @@ function getFieldPath(field: Field): string {
   return field.path?.toString() || '';
 }
 
-function getEntrySelectValue(entry: Pick<LightExtensionSelectableEntryRecord, 'id' | 'repoId'>): string {
+function getEntrySelectValue(entry: Pick<LightExtensionSelectableEntrySummary, 'id' | 'repoId'>): string {
   return `${LIGHT_EXTENSION_SOURCE_MODE}:${entry.repoId}:${entry.id}`;
 }
 
@@ -160,6 +161,7 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
   disabled,
   kind = 'js-block',
   showEntryWorkspace = false,
+  onEmbeddedEditorControllerChange,
 }) => {
   const { t } = useTranslation(NAMESPACE);
   const form = useForm();
@@ -173,7 +175,7 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
     errors: [],
   });
   const [copying, setCopying] = React.useState(false);
-  const [sourceEntries, setSourceEntries] = React.useState<LightExtensionSelectableEntryRecord[]>([]);
+  const [sourceEntries, setSourceEntries] = React.useState<LightExtensionSelectableEntrySummary[]>([]);
   const [sourceEntriesLoading, setSourceEntriesLoading] = React.useState(false);
   const [sourceEntriesError, setSourceEntriesError] = React.useState<string | null>(null);
   const [workspaceFooterActions, setWorkspaceFooterActions] =
@@ -213,7 +215,11 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
   const hasSettings = Boolean(selectedEntry && getSettingsSchemaPropertyNames(selectedEntry.settingsSchema)?.size);
 
   React.useEffect(() => {
-    if (sourceMode !== LIGHT_EXTENSION_SOURCE_MODE || typeof ctx?.view?.setFooter !== 'function') {
+    if (
+      showEntryWorkspace ||
+      sourceMode !== LIGHT_EXTENSION_SOURCE_MODE ||
+      typeof ctx?.view?.setFooter !== 'function'
+    ) {
       return;
     }
 
@@ -229,7 +235,22 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
     return () => {
       ctx.view?.setFooter?.(null);
     };
-  }, [ctx?.view, sourceMode, t]);
+  }, [ctx?.view, showEntryWorkspace, sourceMode, t]);
+
+  React.useEffect(() => {
+    if (!showEntryWorkspace || !workspaceFooterActions) {
+      onEmbeddedEditorControllerChange?.(null);
+      return;
+    }
+    onEmbeddedEditorControllerChange?.({
+      dirty: workspaceFooterActions.dirty,
+      saving: workspaceFooterActions.loading,
+      requestSave: workspaceFooterActions.requestSave,
+    });
+    return () => {
+      onEmbeddedEditorControllerChange?.(null);
+    };
+  }, [onEmbeddedEditorControllerChange, showEntryWorkspace, workspaceFooterActions]);
 
   React.useEffect(() => {
     const subscriptionId = form.subscribe(() => {
@@ -260,7 +281,7 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
         if (!mounted) {
           return;
         }
-        setSourceEntries(entries.filter((entry) => entry.kind === kind && Boolean(entry.runtimeArtifact?.code)));
+        setSourceEntries(entries.filter((entry) => entry.kind === kind && entry.runtimeAvailable === true));
       } catch (requestError) {
         if (!mounted) {
           return;
@@ -357,7 +378,7 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
     });
   };
 
-  const handleSourceEntrySelect = (entry: LightExtensionSelectableEntryRecord) => {
+  const handleSourceEntrySelect = (entry: LightExtensionSelectableEntrySummary) => {
     const nextBinding = createLightExtensionRuntimeSourceBinding(entry);
     const defaults = extractSettingsDefaults(entry.settingsSchema);
     form.setValuesIn('sourceMode', LIGHT_EXTENSION_SOURCE_MODE);
@@ -447,20 +468,7 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
   const lightExtensionBinding = (
     <Space direction="vertical" style={{ width: '100%' }} size={16}>
       {sourceBinding ? (
-        <Space align="center" style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-          <Typography.Text strong>{getBindingDisplayLabel(sourceBinding, t('Light extension'))}</Typography.Text>
-          {entryWorkspaceScope ? (
-            <Button
-              disabled={disabled || workspaceFooterActions?.disabled !== false}
-              loading={workspaceFooterActions?.loading}
-              onClick={workspaceFooterActions?.onSave}
-              size="small"
-              type="primary"
-            >
-              {t('Save')}
-            </Button>
-          ) : null}
-        </Space>
+        <Typography.Text strong>{getBindingDisplayLabel(sourceBinding, t('Light extension'))}</Typography.Text>
       ) : null}
       {sourceBinding && selectedEntry ? (
         hasSettings || !entryWorkspaceScope ? (
@@ -487,6 +495,7 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
       {sourceBinding && entryWorkspaceScope ? (
         <div style={{ height: 480, minHeight: 360, minWidth: 0, overflow: 'hidden' }}>
           <LightExtensionWorkspacePage
+            defaultFilesCollapsed
             embedded
             initialPath={workspaceEntryPath || undefined}
             onFooterActionsChange={setWorkspaceFooterActions}
@@ -578,7 +587,7 @@ function getSettingsSchemaPropertyNames(schema: unknown): Set<string> | null {
 }
 
 function createLightExtensionRuntimeSourceBinding(
-  entry: LightExtensionSelectableEntryRecord,
+  entry: LightExtensionSelectableEntrySummary,
 ): LightExtensionRuntimeSourceBinding {
   return {
     type: 'light-extension-entry',
@@ -591,7 +600,7 @@ function createLightExtensionRuntimeSourceBinding(
   };
 }
 
-function getLightExtensionEntryLabel(entry: LightExtensionSelectableEntryRecord): string {
+function getLightExtensionEntryLabel(entry: LightExtensionSelectableEntrySummary): string {
   return entry.title || entry.entryName || entry.id;
 }
 

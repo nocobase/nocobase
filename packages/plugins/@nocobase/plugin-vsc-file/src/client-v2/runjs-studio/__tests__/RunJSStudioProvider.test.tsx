@@ -559,6 +559,30 @@ describe('runJSStudioProvider', () => {
     expect(within(historyPanel).getByRole('button', { name: 'Expand history' })).toBeTruthy();
   });
 
+  it('delegates save to the host without rendering or clearing a local footer in embedded mode', async () => {
+    const onEmbeddedEditorControllerChange = vi.fn();
+    renderEditor(vi.fn(), {
+      editorChrome: 'embedded',
+      onEmbeddedEditorControllerChange,
+    });
+
+    expect(await screen.findByTestId('runjs-studio-workspace')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'Edit file content' }), {
+      target: { value: 'return 2;' },
+    });
+
+    await waitFor(() => {
+      expect(onEmbeddedEditorControllerChange).toHaveBeenLastCalledWith(
+        expect.objectContaining({ dirty: true, saving: false }),
+      );
+    });
+
+    expect(mocks.closeView).not.toHaveBeenCalled();
+  });
+
   it('uses the drawer viewport height instead of the legacy compact editor height', async () => {
     renderEditor(vi.fn(), {
       height: '200px',

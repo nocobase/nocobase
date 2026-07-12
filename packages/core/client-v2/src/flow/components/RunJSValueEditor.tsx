@@ -9,7 +9,12 @@
 
 import React from 'react';
 import type { RunJSValue } from '@nocobase/flow-engine';
-import { RunJSEditorField, type RunJSSourceLocator, type RunJSSurfaceStyle } from './runjs-studio';
+import {
+  RunJSEditorField,
+  type EmbeddedRunJSEditorController,
+  type RunJSSourceLocator,
+  type RunJSSurfaceStyle,
+} from './runjs-studio';
 
 export interface RunJSValueEditorProps {
   t?: (key: string) => string;
@@ -22,6 +27,8 @@ export interface RunJSValueEditorProps {
   sourceLabel?: string;
   surfaceStyle?: RunJSSurfaceStyle;
   containerStyle?: React.CSSProperties;
+  editorChrome?: 'standalone' | 'embedded';
+  onEmbeddedEditorControllerChange?: (controller: EmbeddedRunJSEditorController | null) => void;
 }
 
 export const RunJSValueEditor: React.FC<RunJSValueEditorProps> = (props) => {
@@ -50,6 +57,8 @@ export const RunJSValueEditor: React.FC<RunJSValueEditorProps> = (props) => {
       sourceLabel={props.sourceLabel}
       surfaceStyle={props.surfaceStyle}
       containerStyle={containerStyle}
+      editorChrome={props.editorChrome}
+      onEmbeddedEditorControllerChange={props.onEmbeddedEditorControllerChange}
     />
   );
 };

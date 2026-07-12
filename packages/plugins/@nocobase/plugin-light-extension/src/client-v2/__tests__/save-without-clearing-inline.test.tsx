@@ -38,18 +38,22 @@ vi.mock('../pages/LightExtensionWorkspacePage', () => {
     initialPath?: string;
     workspaceScope?: unknown;
     onFooterActionsChange?: (actions: {
+      dirty: boolean;
       disabled: boolean;
       loading: boolean;
       onCancel: () => void;
       onSave: () => void;
+      requestSave: () => Promise<'unchanged'>;
     }) => void;
   }) => {
     React.useEffect(() => {
       onFooterActionsChange?.({
+        dirty: false,
         disabled: true,
         loading: false,
         onCancel: () => undefined,
         onSave: () => undefined,
+        requestSave: async () => 'unchanged',
       });
     }, [onFooterActionsChange]);
 
@@ -268,11 +272,7 @@ function createSelectableEntry() {
       },
     },
     compiledCommitId: 'commit_sales',
-    runtimeArtifact: {
-      code: 'ctx.render("sales");',
-      version: 'v2',
-      entryPath: 'src/client/js-blocks/sales/index.tsx',
-    },
+    runtimeAvailable: true,
     runtimeVersion: 'v2',
     surfaceStyle: 'render',
     runtimeCodeHash: 'runtime_hash',
@@ -293,11 +293,6 @@ function createSelectableRunJSEntry() {
     entryPath: 'src/client/runjs/calculate-total/index.ts',
     title: 'Calculate total',
     settingsSchema: null,
-    runtimeArtifact: {
-      code: 'export default function calculateTotal() { return 1; }',
-      version: 'v2',
-      entryPath: 'src/client/runjs/calculate-total/index.ts',
-    },
     surfaceStyle: 'value',
   };
 }

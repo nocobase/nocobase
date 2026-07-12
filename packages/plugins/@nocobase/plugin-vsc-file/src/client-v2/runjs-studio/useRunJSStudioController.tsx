@@ -8,7 +8,12 @@
  */
 
 import { CopyOutlined, DownloadOutlined, ReloadOutlined } from '@ant-design/icons';
-import { diagnoseRunJS, useFullscreenOverlay, type RunJSEditorProviderRenderProps } from '@nocobase/client-v2';
+import {
+  diagnoseRunJS,
+  useFullscreenOverlay,
+  type EmbeddedRunJSEditorSaveResult,
+  type RunJSEditorProviderRenderProps,
+} from '@nocobase/client-v2';
 import { useFlowContext, type FlowContext, type FlowEngineContext, type RunJSValue } from '@nocobase/flow-engine';
 import { Alert, Button, Modal, Space, Spin, Typography, message } from 'antd';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -146,6 +151,8 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     readOnly,
     disabled,
     containerStyle,
+    editorChrome = 'standalone',
+    onEmbeddedEditorControllerChange,
   } = props;
   const pluginT = useT();
   const t = hostT || pluginT;
@@ -162,6 +169,11 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
   const importInputRef = useRef<HTMLInputElement>(null);
   const studioRootRef = useRef<HTMLDivElement>(null);
   const hasUnsavedLocalChangesRef = useRef(false);
+  const embeddedSaveRequestRef = useRef<{
+    resolve: (result: EmbeddedRunJSEditorSaveResult) => void;
+    reject: (error: unknown) => void;
+  } | null>(null);
+  const embeddedSavePromiseRef = useRef<Promise<EmbeddedRunJSEditorSaveResult> | null>(null);
   const confirmedCloseRef = useRef(false);
   const [workspace, setWorkspace] = useState<RunJSSourceOpenWorkspaceResult | null>(null);
   const [workspaceError, setWorkspaceError] = useState<unknown>(null);
@@ -200,6 +212,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
   const [exportDownload, setExportDownload] = useState<ExportDownloadState | null>(null);
   const workspaceFullscreen = useFullscreenOverlay();
   const studioView = flowCtx?.view as ClosableView | undefined;
+  const embedded = editorChrome === 'embedded';
 
   const workspaceReadOnly = Boolean(readOnly || disabled || (workspace && !workspace.permissions.canWrite));
   const workspaceEditingDisabled = workspaceReadOnly || saving;
@@ -218,6 +231,9 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
   );
 
   useLayoutEffect(() => {
+    if (embedded) {
+      return;
+    }
     const view = studioView;
     view?.setFooter?.(null);
     if (props.label) {
@@ -233,7 +249,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     return () => {
       window.clearTimeout(timer);
     };
-  }, [props.label, studioView]);
+  }, [embedded, props.label, studioView]);
 
   useEffect(() => {
     hasUnsavedLocalChangesRef.current = hasUnsavedLocalChanges;
@@ -677,9 +693,23 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     }
   };
 
-  const openSaveModal = async () => {
+  const finishEmbeddedSaveRequest = (result: EmbeddedRunJSEditorSaveResult) => {
+    const request = embeddedSaveRequestRef.current;
+    embeddedSaveRequestRef.current = null;
+    embeddedSavePromiseRef.current = null;
+    request?.resolve(result);
+  };
+
+  const failEmbeddedSaveRequest = (error: unknown) => {
+    const request = embeddedSaveRequestRef.current;
+    embeddedSaveRequestRef.current = null;
+    embeddedSavePromiseRef.current = null;
+    request?.reject(error);
+  };
+
+  const openSaveModal = async (): Promise<boolean> => {
     if (workspaceEditingDisabled || !workspace?.permissions.canSave) {
-      return;
+      return false;
     }
 
     rememberDialogTrigger();
@@ -688,7 +718,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
 
     if (saveSummary.files === 0) {
       message.info(t('No changes to save'));
-      return;
+      return false;
     }
 
     const requestFiles = normalizeWorkspaceFiles(files);
@@ -697,16 +727,18 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     try {
       const compiled = await compileForSave(requestFiles, requestEntryPath, requestSnapshotKey);
       if (!compiled) {
-        return;
+        return false;
       }
 
       setSaveOpen(true);
+      return true;
     } catch (error) {
       reportActionError(error, t('Save failed'), openSaveModal);
       appendConsole({
         level: 'error',
         message: formatVscComponentError(error, t('Save failed')),
       });
+      return false;
     }
   };
 
@@ -743,6 +775,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
           ? previewArtifact
           : await compileForSave(requestFiles, requestEntryPath, requestSnapshotKey);
       if (!compiled) {
+        finishEmbeddedSaveRequest('cancelled');
         return;
       }
 
@@ -759,6 +792,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
           level: 'info',
           message: t('Saved successfully'),
         });
+        finishEmbeddedSaveRequest('saved');
         return;
       }
       setSaveOpen(false);
@@ -779,13 +813,17 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
       );
       await loadWorkspace();
       setPreviewDiagnostics(result.artifact.diagnostics);
-      confirmedCloseRef.current = true;
-      try {
-        await closeEditorView();
-      } finally {
-        confirmedCloseRef.current = false;
+      finishEmbeddedSaveRequest('saved');
+      if (!embedded) {
+        confirmedCloseRef.current = true;
+        try {
+          await closeEditorView();
+        } finally {
+          confirmedCloseRef.current = false;
+        }
       }
     } catch (error) {
+      failEmbeddedSaveRequest(error);
       reportActionError(error, t('Save failed'), save);
       appendConsole({
         level: 'error',
@@ -843,6 +881,27 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
       setPreviewing(false);
     }
   };
+
+  const requestEmbeddedSave = async (): Promise<EmbeddedRunJSEditorSaveResult> => {
+    if (!hasUnsavedLocalChanges) {
+      return 'unchanged';
+    }
+    if (embeddedSavePromiseRef.current) {
+      return embeddedSavePromiseRef.current;
+    }
+
+    const promise = new Promise<EmbeddedRunJSEditorSaveResult>((resolve, reject) => {
+      embeddedSaveRequestRef.current = { resolve, reject };
+    });
+    embeddedSavePromiseRef.current = promise;
+    const opened = await openSaveModal();
+    if (!opened && embeddedSavePromiseRef.current === promise) {
+      finishEmbeddedSaveRequest('cancelled');
+    }
+    return promise;
+  };
+  const requestEmbeddedSaveRef = useRef(requestEmbeddedSave);
+  requestEmbeddedSaveRef.current = requestEmbeddedSave;
 
   const refreshHistory = async () => {
     if (!workspace || !props.locator) {
@@ -1564,6 +1623,29 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
       })
     : null;
 
+  useEffect(() => {
+    if (!embedded || !onEmbeddedEditorControllerChange) {
+      return;
+    }
+    onEmbeddedEditorControllerChange({
+      dirty: hasUnsavedLocalChanges,
+      saving: saving || previewing,
+      requestSave: () => requestEmbeddedSaveRef.current(),
+    });
+    return () => {
+      onEmbeddedEditorControllerChange(null);
+    };
+  }, [embedded, hasUnsavedLocalChanges, onEmbeddedEditorControllerChange, previewing, saving]);
+
+  useEffect(() => {
+    return () => {
+      const request = embeddedSaveRequestRef.current;
+      embeddedSaveRequestRef.current = null;
+      embeddedSavePromiseRef.current = null;
+      request?.resolve('cancelled');
+    };
+  }, []);
+
   return (
     <div data-testid="runjs-studio-editor" ref={studioRootRef} style={editorStyle}>
       <div
@@ -1847,35 +1929,39 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
               )
             : null}
 
-          <footer
-            style={{
-              alignItems: 'center',
-              background: '#fff',
-              borderTop: '1px solid #f0f0f0',
-              display: 'flex',
-              flexShrink: 0,
-              flexWrap: 'wrap',
-              gap: 8,
-              justifyContent: 'flex-end',
-              padding: '10px 16px',
-            }}
-          >
-            <Space wrap>
-              <Button style={{ whiteSpace: 'nowrap' }} onClick={requestClose}>
-                {t('Cancel')}
-              </Button>
-              <Button
-                aria-label={t('Save')}
-                disabled={!workspace || loadingWorkspace || workspaceEditingDisabled || !workspace.permissions.canSave}
-                loading={saving || previewing}
-                onClick={openSaveModal}
-                style={{ whiteSpace: 'nowrap' }}
-                type="primary"
-              >
-                {t('Save')}
-              </Button>
-            </Space>
-          </footer>
+          {!embedded ? (
+            <footer
+              style={{
+                alignItems: 'center',
+                background: '#fff',
+                borderTop: '1px solid #f0f0f0',
+                display: 'flex',
+                flexShrink: 0,
+                flexWrap: 'wrap',
+                gap: 8,
+                justifyContent: 'flex-end',
+                padding: '10px 16px',
+              }}
+            >
+              <Space wrap>
+                <Button style={{ whiteSpace: 'nowrap' }} onClick={requestClose}>
+                  {t('Cancel')}
+                </Button>
+                <Button
+                  aria-label={t('Save')}
+                  disabled={
+                    !workspace || loadingWorkspace || workspaceEditingDisabled || !workspace.permissions.canSave
+                  }
+                  loading={saving || previewing}
+                  onClick={openSaveModal}
+                  style={{ whiteSpace: 'nowrap' }}
+                  type="primary"
+                >
+                  {t('Save')}
+                </Button>
+              </Space>
+            </footer>
+          ) : null}
           <input
             accept=".zip,application/zip,application/x-zip-compressed"
             aria-label={t('Import workspace')}
@@ -1890,7 +1976,10 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
       <SaveVersionModal
         loading={previewing || saving}
         onAfterClose={restoreDialogFocus}
-        onCancel={() => setSaveOpen(false)}
+        onCancel={() => {
+          setSaveOpen(false);
+          finishEmbeddedSaveRequest('cancelled');
+        }}
         onSave={save}
         onVersionMessageChange={setVersionMessage}
         open={saveOpen}

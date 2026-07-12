@@ -13,6 +13,7 @@
     "@nocobase/database": "2.x",
     "@nocobase/flow-engine": "2.x",
     "@nocobase/resourcer": "2.x",
+    "@nocobase/runjs": "2.x",
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x"
   }

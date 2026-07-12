@@ -22,6 +22,8 @@ const mocks = vi.hoisted(() => ({
   t: vi.fn((key: string) => key),
 }));
 
+const artifactHash = 'a'.repeat(64);
+
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: mocks.t,
@@ -75,15 +77,28 @@ describe('JSBlockLightExtensionSourceField copyback', () => {
             data: {
               entryId: 'entry_sales',
               entryPath: 'src/client/js-blocks/sales/index.tsx',
+              artifactHash,
+              artifactUrl: `/api/light-extension-runtime/artifacts/${artifactHash}`,
               runtimeCodeHash: 'runtime_hash',
-              code: 'ctx.render("copied runtime");',
               version: 'v2',
               settings: {},
-              cache: {
-                etag: 'etag',
-                immutable: false,
-              },
+              settingsHash: 'settings_hash',
             },
+          },
+        });
+      }
+
+      if (options.url === `/light-extension-runtime/artifacts/${artifactHash}`) {
+        return Promise.resolve({
+          data: {
+            artifactHash,
+            runtimeCodeHash: 'runtime_hash',
+            code: 'ctx.render("copied runtime");',
+            sourceMap: null,
+            version: 'v2',
+            entryPath: 'src/client/js-blocks/sales/index.tsx',
+            runtimeContract: 'light-extension.runtime-artifact.v1',
+            byteSize: 64,
           },
         });
       }
