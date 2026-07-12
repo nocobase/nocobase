@@ -107,8 +107,14 @@ export interface FlowSurfaceAuthoringValidationContext {
   applyBlueprintScriptAssets?: Record<string, any>;
   getCollection?: (dataSourceKey: string, collectionName: string) => any;
   getDefaultFieldGroups?: (dataSourceKey: string, collectionName: string) => any;
-  findMenuGroupRoutesByTitle?: (title: string, transaction?: any, layoutUid?: string | string[]) => Promise<any[]>;
+  findMenuGroupRoutesByTitle?: (
+    title: string,
+    transaction?: any,
+    layoutUid?: string | string[],
+    portalUid?: string,
+  ) => Promise<any[]>;
   getUiLayoutTypeByUid?: (layoutUid: string, transaction?: any) => Promise<string | undefined>;
+  getPortalLayoutTypeByUid?: (portalUid: string, transaction?: any) => Promise<string | undefined>;
   transaction?: any;
   hostBlockType?: string;
   hostCollectionName?: string;
@@ -675,7 +681,8 @@ async function collectNavigationGroupErrors(
     return;
   }
   const layoutUid = String(values?.navigation?.layoutUid || '').trim() || undefined;
-  const matchedRoutes = await context.findMenuGroupRoutesByTitle(groupTitle, context.transaction, layoutUid);
+  const portalUid = String(values?.navigation?.portalUid || '').trim() || undefined;
+  const matchedRoutes = await context.findMenuGroupRoutesByTitle(groupTitle, context.transaction, layoutUid, portalUid);
   const rootMatchedRoutes = filterRootMenuGroupRoutes(matchedRoutes);
   if (rootMatchedRoutes.length <= 1) {
     return;
@@ -705,9 +712,10 @@ async function collectNavigationIconErrors(
   const group = _.isPlainObject(values?.navigation?.group) ? values.navigation.group : null;
   const groupRouteId = String(group?.routeId || '').trim();
   const layoutUid = String(values?.navigation?.layoutUid || '').trim() || undefined;
+  const portalUid = String(values?.navigation?.portalUid || '').trim() || undefined;
   if (!isMobileCreateNavigation && group && !groupRouteId && group.hideInMenu !== true) {
     const groupIcon = String(group.icon || '').trim();
-    if (!groupIcon && (await shouldRequireNewNavigationGroupIcon(group, context, layoutUid))) {
+    if (!groupIcon && (await shouldRequireNewNavigationGroupIcon(group, context, layoutUid, portalUid))) {
       pushAuthoringError(errors, {
         path: '$.navigation.group.icon',
         ruleId: 'navigation-icon-required',
@@ -770,6 +778,10 @@ async function collectNavigationIconErrors(
 }
 
 async function isApplyBlueprintMobileCreateNavigation(values: any, context: FlowSurfaceAuthoringValidationContext) {
+  const portalUid = String(values?.navigation?.portalUid || '').trim();
+  if (portalUid && context.getPortalLayoutTypeByUid) {
+    return (await context.getPortalLayoutTypeByUid(portalUid, context.transaction)) === 'mobile';
+  }
   const layoutUid = String(values?.navigation?.layoutUid || '').trim();
   if (!layoutUid || !context.getUiLayoutTypeByUid) {
     return false;
@@ -781,12 +793,13 @@ async function shouldRequireNewNavigationGroupIcon(
   group: any,
   context: FlowSurfaceAuthoringValidationContext,
   layoutUid?: string,
+  portalUid?: string,
 ) {
   const groupTitle = String(group?.title || '').trim();
   if (!groupTitle || !context.findMenuGroupRoutesByTitle) {
     return true;
   }
-  const matchedRoutes = await context.findMenuGroupRoutesByTitle(groupTitle, context.transaction, layoutUid);
+  const matchedRoutes = await context.findMenuGroupRoutesByTitle(groupTitle, context.transaction, layoutUid, portalUid);
   return filterRootMenuGroupRoutes(matchedRoutes).length === 0;
 }
 
