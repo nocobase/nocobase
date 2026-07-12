@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import { Form } from 'antd';
 import { DelayFieldset } from '../components/DelayFieldset';
 
@@ -62,6 +62,16 @@ function renderWithForm(initialValues?: Record<string, unknown>) {
   return () => formRef;
 }
 
+type TestForm = ReturnType<typeof Form.useForm>[0];
+
+function requireForm(getForm: () => TestForm | undefined): TestForm {
+  const form = getForm();
+  if (!form) {
+    throw new Error('Expected the test form to be rendered');
+  }
+  return form;
+}
+
 describe('DelayFieldset', () => {
   it('binds the duration input to config.duration and preserves the typed-variable options', () => {
     renderWithForm({
@@ -82,6 +92,67 @@ describe('DelayFieldset', () => {
     await waitFor(() => {
       expect(getForm()?.getFieldValue(['config', 'unit'])).toBe(60_000);
       expect(getForm()?.getFieldValue(['config', 'endStatus'])).toBe(1);
+    });
+  });
+
+  it('rejects an empty duration', async () => {
+    const form = requireForm(renderWithForm());
+    let validationError: unknown;
+
+    await act(async () => {
+      form.setFieldValue(['config', 'duration'], null);
+      try {
+        await form.validateFields();
+      } catch (error) {
+        validationError = error;
+      }
+    });
+
+    expect(validationError).toMatchObject({
+      errorFields: [
+        expect.objectContaining({
+          name: ['config', 'duration'],
+        }),
+      ],
+    });
+  });
+
+  it('rejects a numeric duration below the minimum', async () => {
+    const form = requireForm(renderWithForm());
+    let validationError: unknown;
+
+    await act(async () => {
+      form.setFieldValue(['config', 'duration'], 0);
+      try {
+        await form.validateFields();
+      } catch (error) {
+        validationError = error;
+      }
+    });
+
+    expect(validationError).toMatchObject({
+      errorFields: [
+        expect.objectContaining({
+          name: ['config', 'duration'],
+          errors: ['Duration must be at least 1'],
+        }),
+      ],
+    });
+  });
+
+  it('accepts a workflow variable duration', async () => {
+    const form = requireForm(renderWithForm());
+    let values: Record<string, unknown> | undefined;
+
+    await act(async () => {
+      form.setFieldValue(['config', 'duration'], '{{$context.data.duration}}');
+      values = await form.validateFields();
+    });
+
+    expect(values).toMatchObject({
+      config: {
+        duration: '{{$context.data.duration}}',
+      },
     });
   });
 });
