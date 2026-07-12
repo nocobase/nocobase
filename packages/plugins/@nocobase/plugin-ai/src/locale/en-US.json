@@ -461,5 +461,22 @@
   "When enabled, URL and headers can use current user variables and NocoBase request variables. Stdio transport is not supported.": "When enabled, URL and headers can use current user variables and NocoBase request variables. Stdio transport is not supported.",
   "Connection test failed": "Connection test failed",
   "The MCP server uses current user variables and the connection test failed. Do you want to save it anyway?": "The MCP server uses current user variables and the connection test failed. Do you want to save it anyway?",
-  "Save anyway": "Save anyway"
+  "Save anyway": "Save anyway",
+  "MiniMax (OpenAI-compatible; Anthropic via Anthropic provider)": "MiniMax (OpenAI-compatible; Anthropic via Anthropic provider)",
+  "MiniMax endpoint configuration": "MiniMax endpoint configuration",
+  "The MiniMax provider uses the OpenAI-compatible API.": "The MiniMax provider uses the OpenAI-compatible API.",
+  "Global Base URL": "Global Base URL",
+  "China Base URL": "China Base URL",
+  "For the Anthropic-compatible API, create an Anthropic service, use the matching Base URL below, and add MiniMax-M3 and MiniMax-M2.7 with Manual input.": "For the Anthropic-compatible API, create an Anthropic service, use the matching Base URL below, and add MiniMax-M3 and MiniMax-M2.7 with Manual input.",
+  "Global Anthropic Base URL": "Global Anthropic Base URL",
+  "China Anthropic Base URL": "China Anthropic Base URL",
+  "Thinking mode": "Thinking mode",
+  "Thinking mode description": "Controls whether MiniMax-M3 emits thinking content. Leave empty to use the model default.",
+  "Service tier": "Service tier",
+  "Service tier description": "Select the request admission tier. Leave empty to use the standard tier.",
+  "Adaptive": "Adaptive",
+  "Disabled": "Disabled",
+  "Standard": "Standard",
+  "Priority": "Priority",
+  "Use model default": "Use model default"
 }
