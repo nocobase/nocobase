@@ -8,7 +8,7 @@
  */
 
 import { Context, Next } from '@nocobase/actions';
-import { Cache } from '@nocobase/cache';
+import { Cache, CacheManager } from '@nocobase/cache';
 import { randomBytes } from 'crypto';
 import { namespace } from '../preset';
 
@@ -49,6 +49,12 @@ interface TemporaryAccessRequest {
 }
 
 export class InvalidTemporaryAccessTargetError extends Error {}
+
+export function createTemporaryAccessCodeCache(cacheManager: CacheManager) {
+  return cacheManager.createCache({
+    name: 'auth-temporary-access-code',
+  });
+}
 
 function apiBasePath() {
   const path = (process.env.API_BASE_PATH || '/api').replace(/\/+$/, '');

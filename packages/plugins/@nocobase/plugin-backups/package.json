@@ -18,7 +18,6 @@
     "@koa/multer": "^3.0.2",
     "@types/ali-oss": "^6.16.11",
     "@types/archiver": "^5.3.1",
-    "@types/file-saver": "^2.0.7",
     "@types/yauzl": "^2.10.3",
     "antd": "5.x",
     "archiver": "^5.3.1",

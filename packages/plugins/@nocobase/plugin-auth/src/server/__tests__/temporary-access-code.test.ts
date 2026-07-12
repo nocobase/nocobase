@@ -7,11 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Cache } from '@nocobase/cache';
+import { Cache, CacheManager } from '@nocobase/cache';
 import { vi } from 'vitest';
 import { createAccessCodeAction } from '../actions/auth';
 import {
   captureTemporaryAccessRequestMethod,
+  createTemporaryAccessCodeCache,
   INVALID_TEMPORARY_ACCESS_CODE,
   InvalidTemporaryAccessTargetError,
   normalizeTemporaryAccessTarget,
@@ -32,6 +33,26 @@ function createService() {
 }
 
 describe('TemporaryAccessCodeService', () => {
+  it('uses the configured default cache store', async () => {
+    const cacheManager = new CacheManager({
+      defaultStore: 'shared-memory',
+      stores: {
+        'shared-memory': {
+          store: 'memory',
+        },
+      },
+    });
+
+    try {
+      const defaultCache = await cacheManager.createCache({ name: 'default' });
+      const temporaryAccessCodeCache = await createTemporaryAccessCodeCache(cacheManager);
+
+      expect(temporaryAccessCodeCache.store).toBe(defaultCache.store);
+    } finally {
+      await cacheManager.close();
+    }
+  });
+
   it.each([
     'https://example.com/api/backups:download',
     '//example.com/api/backups:download',
