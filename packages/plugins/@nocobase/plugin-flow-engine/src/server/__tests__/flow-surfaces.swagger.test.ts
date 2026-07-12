@@ -136,6 +136,10 @@ describe('flowSurfaces swagger', () => {
       'FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReview',
       'FlowSurfaceApplyBlueprintDefaultCollection',
       'FlowSurfaceApplyBlueprintDefaults',
+      'FlowSurfaceListNavigationTargetsRequest',
+      'FlowSurfaceNavigationTargetCapabilities',
+      'FlowSurfaceNavigationTarget',
+      'FlowSurfaceListNavigationTargetsResult',
       'FlowSurfaceApplyBlueprintRequest',
       'FlowSurfaceApplyBlueprintResponse',
       'FlowSurfaceApprovalBlueprintSurface',
@@ -851,6 +855,12 @@ describe('flowSurfaces swagger', () => {
     );
     expect(schemas.FlowSurfaceApplyBlueprintNavigation.properties.layoutUid.description).toContain(
       'create a root-level tab page',
+    );
+    expect(schemas.FlowSurfaceApplyBlueprintNavigation.properties.portalUid.description).toContain(
+      'Mutually exclusive with layoutUid',
+    );
+    expect(schemas.FlowSurfaceApplyBlueprintNavigation.properties.portalUid.description).toContain(
+      'duplicate-page identity',
     );
     expect(schemas.FlowSurfaceApplyBlueprintRequest.description).toContain('`navigation.layoutUid`');
     expect(schemas.FlowSurfaceApplyBlueprintRequest.description).toContain('target layout');
@@ -1989,6 +1999,15 @@ describe('flowSurfaces swagger', () => {
       swaggerDocument.paths['/flowSurfaces:createPage'].post.requestBody.content['application/json'];
     expect(createPageRequest.example.menuRouteId).toBe(1002);
 
+    const listNavigationTargets = swaggerDocument.paths['/flowSurfaces:listNavigationTargets'].post;
+    expect(listNavigationTargets.description).toContain('capabilities.multiPortal=false');
+    expect(listNavigationTargets.requestBody.content['application/json'].schema.$ref).toBe(
+      '#/components/schemas/FlowSurfaceListNavigationTargetsRequest',
+    );
+    expect(listNavigationTargets.responses[200].content['application/json'].schema.properties.data.$ref).toBe(
+      '#/components/schemas/FlowSurfaceListNavigationTargetsResult',
+    );
+
     const addTabRequest = swaggerDocument.paths['/flowSurfaces:addTab'].post.requestBody.content['application/json'];
     expect(addTabRequest.example.target.uid).toBe('employees-page-uid');
     expect(addTabRequest.example.target.pageSchemaUid).toBeUndefined();
@@ -2059,6 +2078,7 @@ describe('flowSurfaces swagger', () => {
     for (const actionName of [
       'catalog',
       'context',
+      'listNavigationTargets',
       'listTemplates',
       'getTemplate',
       'compose',
@@ -2139,8 +2159,11 @@ describe('flowSurfaces swagger', () => {
     expect(swaggerDocument.components?.schemas?.FlowSurfaceCreateMenuRequest.required).toEqual(['title']);
     expect(swaggerDocument.components?.schemas?.FlowSurfaceUpdateMenuRequest.required).toEqual(['menuRouteId']);
     expect(schemas.FlowSurfaceCreateMenuRequest.properties.layoutUid.description).toContain('mobile-layout-model');
+    expect(schemas.FlowSurfaceCreateMenuRequest.properties.portalUid.description).toContain('Mutually exclusive');
+    expect(schemas.FlowSurfaceUpdateMenuRequest.properties.portalUid.description).toContain('workspace');
     expect(schemas.FlowSurfaceCreateMenuRequest.properties.pageUid).toBeUndefined();
     expect(schemas.FlowSurfaceCreatePageRequest.properties.layoutUid.description).toContain('existing route');
+    expect(schemas.FlowSurfaceCreatePageRequest.properties.portalUid.description).toContain('Mutually exclusive');
     expect(schemas.FlowSurfaceCreatePageRequest.properties.menuRouteId).toBeTruthy();
   });
 });
