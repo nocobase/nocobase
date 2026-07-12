@@ -192,4 +192,4 @@ Nicht autorisierte Portale erscheinen nicht in der Liste des Portalwechslers, un
 
 ## Verwandte Links
 
-Zu den Unterschieden und Kombinationsmöglichkeiten von Multi-Portal, Multi-App und Multi-Space siehe: [Multi-App vs. Multi-Portal vs. Multi-Space](/multi-app/multi-app-vs-multi-portal-vs-multi-space/).
+Zu den Unterschieden und Kombinationsmöglichkeiten von Multi-Portal, Multi-App und Multi-Space siehe: [Multi-App vs. Multi-Portal vs. Multi-Space](../multi-app-vs-multi-portal-vs-multi-space.md).

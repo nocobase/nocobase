@@ -192,4 +192,4 @@ Portal yang tidak diizinkan tidak akan muncul di daftar portal switcher, dan pen
 
 ## Tautan terkait
 
-Untuk perbedaan dan pola kombinasi antara Multi-portal, Multi-app, dan Multi-space, lihat: [Multi-app vs Multi-portal vs Multi-space](/multi-app/multi-app-vs-multi-portal-vs-multi-space/).
+Untuk perbedaan dan pola kombinasi antara Multi-portal, Multi-app, dan Multi-space, lihat: [Multi-app vs Multi-portal vs Multi-space](../multi-app-vs-multi-portal-vs-multi-space.md).

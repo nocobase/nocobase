@@ -192,4 +192,4 @@ Les portails non autorisés n'apparaissent pas dans la liste du sélecteur de po
 
 ## Liens associés
 
-Pour les différences et les façons de combiner Multi-portail, Multi-app et Multi-space, voir : [Multi-app vs Multi-portail vs Multi-space](/multi-app/multi-app-vs-multi-portal-vs-multi-space/).
+Pour les différences et les façons de combiner Multi-portail, Multi-app et Multi-space, voir : [Multi-app vs Multi-portail vs Multi-space](../multi-app-vs-multi-portal-vs-multi-space.md).

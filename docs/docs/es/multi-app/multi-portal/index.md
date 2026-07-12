@@ -192,4 +192,4 @@ Los portales no autorizados no aparecen en la lista del selector de portales y l
 
 ## Enlaces relacionados
 
-Para ver las diferencias y las formas de combinación entre Multiportal, Multiaplicación y Multiespacio, consulte: [Multiaplicación vs Multiportal vs Multiespacio](/multi-app/multi-app-vs-multi-portal-vs-multi-space/).
+Para ver las diferencias y las formas de combinación entre Multiportal, Multiaplicación y Multiespacio, consulte: [Multiaplicación vs Multiportal vs Multiespacio](../multi-app-vs-multi-portal-vs-multi-space.md).

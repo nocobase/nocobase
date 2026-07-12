@@ -192,4 +192,4 @@ pkg: "@nocobase/plugin-multi-portal"
 
 ## 相关链接
 
-关于多工作区、多应用与多空间的区别与组合方式，可参见：[多工作区、多应用与多空间](/cn/multi-app/multi-app-vs-multi-portal-vs-multi-space/)。
+关于多工作区、多应用与多空间的区别与组合方式，可参见：[多工作区、多应用与多空间](../multi-app-vs-multi-portal-vs-multi-space.md)。
