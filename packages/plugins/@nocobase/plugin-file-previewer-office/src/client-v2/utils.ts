@@ -99,7 +99,7 @@ export const parsePermanentFileUrl = (file: OfficePreviewFile): PermanentFileAcc
   if (url.origin !== location.origin) {
     return null;
   }
-  if (url.searchParams.has('temporary-access-token')) {
+  if (url.searchParams.has('temporaryAccessToken')) {
     return null;
   }
 

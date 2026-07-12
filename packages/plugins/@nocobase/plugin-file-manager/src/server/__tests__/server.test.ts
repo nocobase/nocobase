@@ -570,7 +570,7 @@ describe('file manager > server', () => {
         expect(createResponse.status).toBe(200);
         expect(createResponse.headers['cache-control']).toBe('no-store');
         expect(createResponse.body.data.url).toMatch(
-          new RegExp(`/files/main/main/attachments/${body.data.id}${body.data.extname}\\?temporary-access-token=`),
+          new RegExp(`/files/main/main/attachments/${body.data.id}${body.data.extname}\\?temporaryAccessToken=`),
         );
         expect(createResponse.body.data.url.length).toBeLessThan(2048);
 
@@ -608,7 +608,7 @@ describe('file manager > server', () => {
 
         expect(createResponse.status).toBe(200);
         expect(createResponse.body.data.url).toContain(
-          `/files/main/another/files/${file.id}${file.extname}?temporary-access-token=`,
+          `/files/main/another/files/${file.id}${file.extname}?temporaryAccessToken=`,
         );
         const response = await app.agent().get(createResponse.body.data.url);
         expect(response.status).toBe(302);
@@ -639,11 +639,11 @@ describe('file manager > server', () => {
         });
         const createResponse = await loggedAgent.post(`/attachments:createTemporaryURL/${body.data.id}`);
         const temporaryUrl = new URL(createResponse.body.data.url, 'http://localhost');
-        const token = temporaryUrl.searchParams.get('temporary-access-token');
+        const token = temporaryUrl.searchParams.get('temporaryAccessToken');
         const payload = jwt.decode(token) as TemporaryFileAccessPayload;
         const pathWithoutQuery = temporaryUrl.pathname;
 
-        expect((await app.agent().get(`${pathWithoutQuery}?temporary-access-token=invalid`)).status).toBe(403);
+        expect((await app.agent().get(`${pathWithoutQuery}?temporaryAccessToken=invalid`)).status).toBe(403);
 
         const expiredToken = jwt.sign(
           {
@@ -656,7 +656,7 @@ describe('file manager > server', () => {
           deriveTemporaryFileAccessSecret(plugin),
           { algorithm: 'HS256', audience: TEMPORARY_FILE_ACCESS_AUDIENCE, expiresIn: -1 },
         );
-        expect((await app.agent().get(`${pathWithoutQuery}?temporary-access-token=${expiredToken}`)).status).toBe(403);
+        expect((await app.agent().get(`${pathWithoutQuery}?temporaryAccessToken=${expiredToken}`)).status).toBe(403);
 
         const loginSecretToken = jwt.sign(
           {
@@ -669,7 +669,7 @@ describe('file manager > server', () => {
           app.authManager.jwt.getSecret(),
           { algorithm: 'HS256', audience: TEMPORARY_FILE_ACCESS_AUDIENCE, expiresIn: '10m' },
         );
-        expect((await app.agent().get(`${pathWithoutQuery}?temporary-access-token=${loginSecretToken}`)).status).toBe(
+        expect((await app.agent().get(`${pathWithoutQuery}?temporaryAccessToken=${loginSecretToken}`)).status).toBe(
           403,
         );
 
@@ -677,7 +677,7 @@ describe('file manager > server', () => {
           filter: { id: body.data.id },
           values: { storageId: defaultStorage.id + 1000 },
         });
-        expect((await app.agent().get(`${pathWithoutQuery}?temporary-access-token=${token}`)).status).toBe(403);
+        expect((await app.agent().get(`${pathWithoutQuery}?temporaryAccessToken=${token}`)).status).toBe(403);
       });
 
       it('ignores invalid login cookies when a temporary token is valid', async () => {

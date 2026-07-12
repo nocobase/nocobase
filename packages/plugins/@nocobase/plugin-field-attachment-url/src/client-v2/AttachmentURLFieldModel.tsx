@@ -47,7 +47,7 @@ export const getPermanentFilePreviewUrl = (value?: string) => {
     if (filePathSegments !== 5) {
       return '';
     }
-    if (url.searchParams.has('temporary-access-token')) {
+    if (url.searchParams.has('temporaryAccessToken')) {
       return '';
     }
     url.searchParams.set('preview', '1');

@@ -130,7 +130,7 @@ describe('parsePermanentFileUrl', () => {
 
   it('rejects external, temporary, and malformed file URLs', () => {
     expect(parsePermanentFileUrl('https://files.example.com/files/main/main/attachments/1')).toBeNull();
-    expect(parsePermanentFileUrl('/files/main/main/attachments/1?temporary-access-token=x')).toBeNull();
+    expect(parsePermanentFileUrl('/files/main/main/attachments/1?temporaryAccessToken=x')).toBeNull();
     expect(parsePermanentFileUrl('/files/main/main/attachments/1/preview')).toBeNull();
     expect(parsePermanentFileUrl('/files/main/main/attachments')).toBeNull();
   });
@@ -141,7 +141,7 @@ describe('resolveTemporaryOfficeFileUrl', () => {
     const request = vi.fn().mockResolvedValue({
       data: {
         data: {
-          url: '/files/subapp/another/reports/42.xlsx?temporary-access-token=signed',
+          url: '/files/subapp/another/reports/42.xlsx?temporaryAccessToken=signed',
         },
       },
     });
@@ -156,7 +156,7 @@ describe('resolveTemporaryOfficeFileUrl', () => {
         },
         { dataSourceKey: 'another', collectionName: 'reports' },
       ),
-    ).resolves.toBe(`${window.location.origin}/files/subapp/another/reports/42.xlsx?temporary-access-token=signed`);
+    ).resolves.toBe(`${window.location.origin}/files/subapp/another/reports/42.xlsx?temporaryAccessToken=signed`);
     expect(request).toHaveBeenCalledWith({
       url: 'reports:createTemporaryURL/42',
       method: 'post',
@@ -181,12 +181,12 @@ describe('resolveTemporaryOfficeFileUrl', () => {
 
   it('falls back to permanent URL metadata when collection context is unavailable', async () => {
     const request = vi.fn().mockResolvedValue({
-      data: { url: '/files/main/main/attachments/42.xlsx?temporary-access-token=signed' },
+      data: { url: '/files/main/main/attachments/42.xlsx?temporaryAccessToken=signed' },
     });
 
     await expect(
       resolveTemporaryOfficeFileUrl({ request }, { id: 42, storageId: 1, url: '/files/main/main/attachments/42' }),
-    ).resolves.toBe(`${window.location.origin}/files/main/main/attachments/42.xlsx?temporary-access-token=signed`);
+    ).resolves.toBe(`${window.location.origin}/files/main/main/attachments/42.xlsx?temporaryAccessToken=signed`);
     expect(request).toHaveBeenCalledWith({
       url: 'attachments:createTemporaryURL/42',
       method: 'post',
@@ -199,13 +199,13 @@ describe('resolveTemporaryOfficeFileUrl', () => {
 
   it('uses attachment URL metadata only when the configured collection matches the URL', async () => {
     const request = vi.fn().mockResolvedValue({
-      data: { url: '/files/main/main/attachments/42.xlsx?temporary-access-token=signed' },
+      data: { url: '/files/main/main/attachments/42.xlsx?temporaryAccessToken=signed' },
     });
     const file = '/files/main/main/attachments/42';
 
     await expect(
       resolveTemporaryOfficeFileUrl({ request }, file, { dataSourceKey: 'main', collectionName: 'attachments' }),
-    ).resolves.toContain('/42.xlsx?temporary-access-token=signed');
+    ).resolves.toContain('/42.xlsx?temporaryAccessToken=signed');
     expect(request).toHaveBeenCalledWith({
       url: 'attachments:createTemporaryURL/42',
       method: 'post',
@@ -224,7 +224,7 @@ describe('resolveTemporaryOfficeFileUrl', () => {
 
   it('uses the record id from a permanent URL containing extname', async () => {
     const request = vi.fn().mockResolvedValue({
-      data: { url: '/files/main/main/attachments/42.docx?temporary-access-token=signed' },
+      data: { url: '/files/main/main/attachments/42.docx?temporaryAccessToken=signed' },
     });
 
     await expect(
@@ -232,7 +232,7 @@ describe('resolveTemporaryOfficeFileUrl', () => {
         dataSourceKey: 'main',
         collectionName: 'attachments',
       }),
-    ).resolves.toContain('/42.docx?temporary-access-token=signed');
+    ).resolves.toContain('/42.docx?temporaryAccessToken=signed');
     expect(request).toHaveBeenCalledWith({
       url: 'attachments:createTemporaryURL/42',
       method: 'post',

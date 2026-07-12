@@ -50,6 +50,7 @@ describe('attachment url hook helpers', () => {
     expect(getPermanentFilePreviewUrl('/files/main/main/t_n6fvrknhqjr/24.docx')).toBe(
       '/files/main/main/t_n6fvrknhqjr/24.docx?preview=1',
     );
+    expect(getPermanentFilePreviewUrl('/files/main/main/t_n6fvrknhqjr/24?temporaryAccessToken=signed')).toBe('');
   });
 
   it('keeps Attachment URL saved value as a string after upload', () => {

@@ -434,7 +434,7 @@ const getPermanentFilePreviewUrl = (value?: string) => {
     const segments = url.pathname.split('/').filter(Boolean);
     const filesIndex = segments.indexOf('files');
     const filePathSegments = segments.length - filesIndex;
-    if (filesIndex === -1 || filePathSegments !== 5 || url.searchParams.has('temporary-access-token')) {
+    if (filesIndex === -1 || filePathSegments !== 5 || url.searchParams.has('temporaryAccessToken')) {
       return '';
     }
     url.searchParams.set('preview', '1');

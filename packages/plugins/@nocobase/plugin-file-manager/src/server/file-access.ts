@@ -70,7 +70,7 @@ export function createFileAccessMiddleware(plugin: PluginFileManagerServer) {
       return ctx.throw(405);
     }
 
-    const temporaryAccessToken = ctx.query['temporary-access-token'];
+    const temporaryAccessToken = ctx.query['temporaryAccessToken'];
     const params = {
       ...pathParams,
       preview: ctx.query.preview === '1',

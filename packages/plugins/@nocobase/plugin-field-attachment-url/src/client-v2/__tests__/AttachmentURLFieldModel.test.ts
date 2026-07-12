@@ -33,6 +33,7 @@ describe('AttachmentURLFieldModel', () => {
     expect(getPermanentFilePreviewUrl('/files/main/main/t_n6fvrknhqjr/24.docx')).toBe(
       '/files/main/main/t_n6fvrknhqjr/24.docx?preview=1',
     );
+    expect(getPermanentFilePreviewUrl('/files/main/main/t_n6fvrknhqjr/24?temporaryAccessToken=signed')).toBe('');
   });
 
   it('merges uploaded response metadata into the Upload file item', () => {

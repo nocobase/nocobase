@@ -152,7 +152,7 @@ export async function createTemporaryURLAction(ctx: Context, next: Next) {
   const basePath = getFilePublicBasePath();
   const url = `${basePath}/files/${encodeURIComponent(appName)}/${encodeURIComponent(
     dataSourceName,
-  )}/${encodeURIComponent(collection.name)}/${fileId}?temporary-access-token=${encodeURIComponent(token)}`;
+  )}/${encodeURIComponent(collection.name)}/${fileId}?temporaryAccessToken=${encodeURIComponent(token)}`;
 
   ctx.set('Cache-Control', 'no-store');
   ctx.body = { url };
