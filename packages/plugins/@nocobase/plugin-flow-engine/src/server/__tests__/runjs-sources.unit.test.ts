@@ -8,21 +8,19 @@
  */
 
 import type { Database } from '@nocobase/database';
-import type { RunJSSourceAdapter, RunJSSourceAuthoringInspector } from '@nocobase/plugin-vsc-file';
+import type { RunJSSourceAdapter } from '@nocobase/server';
 
 import { registerFlowModelRunJSSourceAdapters } from '../runjs-sources';
 
 type Registrar = {
   adapters: RunJSSourceAdapter[];
-  inspectors: RunJSSourceAuthoringInspector[];
   registerRunJSSourceAdapter: (adapter: RunJSSourceAdapter) => () => void;
-  registerRunJSSourceAuthoringInspector: (inspector: RunJSSourceAuthoringInspector) => () => void;
 };
 
 describe('flow-engine RunJS source registration', () => {
-  it('registers adapters without attaching Flow Surface validation to source saves', () => {
+  it('registers FlowModel source adapters', () => {
     const registrar = createRegistrar();
-    registerFlowModelRunJSSourceAdapters({
+    const cleanup = registerFlowModelRunJSSourceAdapters({
       db: {} as Database,
       app: {
         pm: {
@@ -32,7 +30,35 @@ describe('flow-engine RunJS source registration', () => {
     });
 
     expect(registrar.adapters.length).toBeGreaterThan(0);
-    expect(registrar.inspectors).toEqual([]);
+    cleanup();
+    expect(registrar.adapters).toEqual([]);
+  });
+
+  it('registers after the optional VSC plugin loads and removes the pending listener on cleanup', () => {
+    const registrar = createRegistrar();
+    const listeners = new Set<(plugin: unknown) => void>();
+    let loaded = false;
+    const cleanup = registerFlowModelRunJSSourceAdapters({
+      db: {} as Database,
+      app: {
+        pm: {
+          get: () => (loaded ? registrar : null),
+        },
+        on: (_eventName, listener) => listeners.add(listener),
+        off: (_eventName, listener) => listeners.delete(listener),
+      },
+    });
+
+    expect(listeners.size).toBe(1);
+    loaded = true;
+    for (const listener of listeners) {
+      listener(registrar);
+    }
+    expect(registrar.adapters.length).toBeGreaterThan(0);
+    expect(listeners.size).toBe(0);
+
+    cleanup();
+    expect(registrar.adapters).toEqual([]);
   });
 
   it('treats a recognized FlowModel RunJS step as uninitialized when its params are not persisted yet', async () => {
@@ -132,17 +158,10 @@ describe('flow-engine RunJS source registration', () => {
 function createRegistrar(): Registrar {
   const registrar: Registrar = {
     adapters: [],
-    inspectors: [],
     registerRunJSSourceAdapter(adapter) {
       registrar.adapters.push(adapter);
       return () => {
         registrar.adapters = registrar.adapters.filter((item) => item !== adapter);
-      };
-    },
-    registerRunJSSourceAuthoringInspector(inspector) {
-      registrar.inspectors.push(inspector);
-      return () => {
-        registrar.inspectors = registrar.inspectors.filter((item) => item !== inspector);
       };
     },
   };

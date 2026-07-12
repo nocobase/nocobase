@@ -523,6 +523,83 @@ describe('RunJSEditorRegistry', () => {
     expect(saveStepParams).not.toHaveBeenCalled();
   });
 
+  it('syncs a server-persisted external binding into FlowModel step params', async () => {
+    const engine = new FlowEngine();
+    const model = new FlowModel({
+      uid: 'fm_move_source',
+      flowEngine: engine,
+      stepParams: {
+        jsSettings: {
+          runJs: {
+            code: 'ctx.render("inline fallback");',
+            version: 'v2',
+          },
+        },
+      },
+    });
+    const flowContext = new FlowRuntimeContext(model, 'jsSettings', 'settings');
+    flowContext.defineMethod('getStepFormValues', () => ({
+      code: 'ctx.render(1111);',
+      version: 'v2',
+    }));
+    const saveStepParams = vi.spyOn(model, 'saveStepParams').mockResolvedValue(undefined);
+
+    RunJSEditorRegistry.registerProvider({
+      key: 'external-binding-provider',
+      canHandle: (props) => props.locator?.kind === 'flowModel.step',
+      renderEditor: (props) => (
+        <button
+          type="button"
+          onClick={() =>
+            props.onPersistedChange?.({
+              ...props.value,
+              sourceMode: 'light-extension',
+              sourceBinding: {
+                type: 'light-extension-entry',
+                repoId: 'ler_1',
+                entryId: 'lee_1',
+              },
+              settings: { color: 'blue' },
+            })
+          }
+        >
+          move
+        </button>
+      ),
+    });
+
+    render(
+      <FlowContextProvider context={flowContext}>
+        <FlowStepContext.Provider
+          value={{
+            params: {
+              code: 'ctx.render("inline fallback");',
+              version: 'v2',
+            },
+            path: 'fm_move_source_jsSettings_runJs',
+          }}
+        >
+          <RunJSEditorField locatorFactory="flowModel.step" surfaceStyle="render" value="ctx.render(1111);" />
+        </FlowStepContext.Provider>
+      </FlowContextProvider>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'move' }));
+
+    expect(model.getStepParams('jsSettings', 'runJs')).toMatchObject({
+      code: 'ctx.render(1111);',
+      version: 'v2',
+      sourceMode: 'light-extension',
+      sourceBinding: {
+        type: 'light-extension-entry',
+        repoId: 'ler_1',
+        entryId: 'lee_1',
+      },
+      settings: { color: 'blue' },
+    });
+    expect(saveStepParams).not.toHaveBeenCalled();
+  });
+
   it('keeps inline fallback edits in the form without mutating model params', () => {
     const engine = new FlowEngine();
     const model = new FlowModel({ uid: 'fm_1', flowEngine: engine });

@@ -14,6 +14,7 @@ import type {
   LIGHT_EXTENSION_REFERENCE_RESOLVED_STATUSES,
   LightExtensionKind,
 } from '../constants';
+import type { RunJSSourceLocator } from '@nocobase/plugin-vsc-file';
 
 export type { LightExtensionKind } from '../constants';
 
@@ -301,6 +302,45 @@ export interface LightExtensionRuntimeSourceBinding {
   entryName?: string | null;
   entryPath?: string | null;
   kind: string;
+}
+
+export interface LightExtensionMoveSourceWorkspaceFile {
+  path: string;
+  content: string;
+  language?: string;
+  mode?: string;
+}
+
+export type LightExtensionMoveSourceDestination =
+  | {
+      type: 'existing';
+      repoId: string;
+    }
+  | {
+      type: 'new';
+      name: string;
+      title?: string | null;
+      description?: string | null;
+    };
+
+export interface LightExtensionMoveSourceInput {
+  locator: RunJSSourceLocator;
+  expectedOwnerFingerprint: string;
+  sourceRepoId: string;
+  sourceHeadCommitId: string | null;
+  entryPath: string;
+  version: string;
+  files: LightExtensionMoveSourceWorkspaceFile[];
+  destination: LightExtensionMoveSourceDestination;
+  entryName: string;
+  entryTitle?: string | null;
+}
+
+export interface LightExtensionMoveSourceResult {
+  repo: LightExtensionRepoRecord;
+  entry: LightExtensionEntryRecord;
+  binding: LightExtensionRuntimeSourceBinding;
+  ownerFingerprint: string;
 }
 
 export interface LightExtensionRuntimeResolveInput {

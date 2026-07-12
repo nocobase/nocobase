@@ -33,10 +33,15 @@ describe('plugin-light-extension default source template', () => {
       'tsconfig.json',
       'src/shared/light-extension-sdk.d.ts',
       'src/client/js-blocks/example/index.tsx',
+      'src/client/js-blocks/example/meta.json',
       'src/client/js-actions/example/index.ts',
+      'src/client/js-actions/example/meta.json',
       'src/client/js-fields/example/index.tsx',
+      'src/client/js-fields/example/meta.json',
       'src/client/js-items/example/index.tsx',
+      'src/client/js-items/example/meta.json',
       'src/client/runjs/example/index.ts',
+      'src/client/runjs/example/meta.json',
     ]);
     expect(diagnostics).toEqual([]);
     expect(DEFAULT_LIGHT_EXTENSION_README).toContain('src/client/js-blocks/<entry-name>/index.tsx');
@@ -44,10 +49,14 @@ describe('plugin-light-extension default source template', () => {
     expect(DEFAULT_LIGHT_EXTENSION_README).toContain('src/client/js-fields/<entry-name>/index.tsx');
     expect(DEFAULT_LIGHT_EXTENSION_README).toContain('src/client/js-items/<entry-name>/index.tsx');
     expect(DEFAULT_LIGHT_EXTENSION_README).toContain('src/client/runjs/<entry-name>/index.ts');
+    expect(DEFAULT_LIGHT_EXTENSION_README).toContain('meta.json.key');
     expect(
-      files.filter((file) => file.path.startsWith('src/client/')).every((file) => file.language === 'typescript'),
+      files.filter((file) => file.path.endsWith('/index.tsx')).every((file) => file.language === 'typescript'),
     ).toBe(true);
-    expect(DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES).toHaveLength(9);
+    expect(files.filter((file) => file.path.endsWith('/meta.json')).every((file) => file.language === 'json')).toBe(
+      true,
+    );
+    expect(DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES).toHaveLength(14);
   });
 
   it('returns a fresh file array for each repository', () => {

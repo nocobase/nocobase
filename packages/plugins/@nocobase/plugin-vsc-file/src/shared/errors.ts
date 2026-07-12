@@ -104,5 +104,22 @@ export class VscError extends Error {
 }
 
 export function isVscError(error: unknown): error is VscError {
-  return error instanceof VscError;
+  if (error instanceof VscError) {
+    return true;
+  }
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+  const candidate = error as {
+    name?: unknown;
+    code?: unknown;
+    status?: unknown;
+    toResponseBody?: unknown;
+  };
+  return (
+    candidate.name === 'RunJSSourceError' &&
+    typeof candidate.code === 'string' &&
+    typeof candidate.status === 'number' &&
+    typeof candidate.toResponseBody === 'function'
+  );
 }

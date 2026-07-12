@@ -203,6 +203,16 @@ function syncFlowModelStepValue(
   );
   setAtPath(currentStepParams, locator.paramPath, value.code);
   setAtPath(currentStepParams, resolveVersionPath(locator.paramPath, locator.versionPath), value.version);
+  const sourceConfigPath = locator.paramPath.slice(0, -1);
+  if (value.sourceMode !== undefined) {
+    setAtPath(currentStepParams, [...sourceConfigPath, 'sourceMode'], value.sourceMode);
+  }
+  if (Object.prototype.hasOwnProperty.call(value, 'sourceBinding')) {
+    setAtPath(currentStepParams, [...sourceConfigPath, 'sourceBinding'], value.sourceBinding);
+  }
+  if (Object.prototype.hasOwnProperty.call(value, 'settings')) {
+    setAtPath(currentStepParams, [...sourceConfigPath, 'settings'], value.settings);
+  }
   if (value.sourceRef !== undefined) {
     setAtPath(currentStepParams, resolveSourceRefPath(locator.paramPath), value.sourceRef);
   }

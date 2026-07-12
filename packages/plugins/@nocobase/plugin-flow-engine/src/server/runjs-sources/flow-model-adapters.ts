@@ -8,12 +8,13 @@
  */
 
 import { NoPermissionError, checkFilterParams, createUserProvider, parseJsonTemplate } from '@nocobase/acl';
-import type { Database, Transaction } from '@nocobase/database';
+import type { Database, Filter, Transaction } from '@nocobase/database';
 import {
-  VscError,
   buildRunJSOwnerFingerprint,
+  RunJSSourceError,
   type RunJSLanguage,
   type RunJSLegacySource,
+  type RunJSExternalSourceBinding,
   type RunJSRuntimeArtifact,
   type RunJSRuntimeWriteResult,
   type RunJSSourceAdapter,
@@ -21,7 +22,7 @@ import {
   type RunJSSourceLocator,
   type RunJSSourcePermissionResult,
   type RunJSSurfaceStyle,
-} from '@nocobase/plugin-vsc-file';
+} from '@nocobase/server';
 
 import FlowModelRepository from '../repository';
 
@@ -140,6 +141,24 @@ function createFlowModelStepAdapter(db: Database): RunJSSourceAdapter<FlowModelS
 
       return buildWriteResult(await this.getFingerprint({ locator, ctx }));
     },
+    async writeExternalBinding({ locator, binding, baseOwnerFingerprint, ctx }) {
+      const transaction = requireTransaction(ctx);
+      await assertFlowModelPermission(db, ctx, locator.modelUid, 'save', ['stepParams']);
+      await lockFlowModelForUpdate(db, locator.modelUid, transaction);
+      await assertFlowModelPermission(db, ctx, locator.modelUid, 'save', ['stepParams']);
+      const model = await loadFlowModel(db, locator.modelUid, ctx);
+      assertOwnerFingerprintMatches(buildStepFingerprint(locator, model), baseOwnerFingerprint, locator.kind);
+      const nextStepParams = cloneJsonRecord(getAtPath(model, ['stepParams']));
+      const bindingRootPath = [locator.flowKey, locator.stepKey, ...locator.paramPath.slice(0, -1)];
+      assertSourceCanMoveToExternalBinding(getAtPath(nextStepParams, bindingRootPath), locator.kind);
+
+      setAtPath(nextStepParams, [...bindingRootPath, 'sourceMode'], binding.sourceMode);
+      setAtPath(nextStepParams, [...bindingRootPath, 'sourceBinding'], cloneJsonRecord(binding.sourceBinding));
+
+      await getFlowModelRepository(db).patch({ uid: locator.modelUid, stepParams: nextStepParams }, { transaction });
+
+      return buildWriteResult(await this.getFingerprint({ locator, ctx }));
+    },
   };
 }
 
@@ -198,6 +217,27 @@ function createFlowModelNestedRunJSAdapter(db: Database): RunJSSourceAdapter<Flo
 
       return buildWriteResult(await this.getFingerprint({ locator, ctx }));
     },
+    async writeExternalBinding({ locator, binding, baseOwnerFingerprint, ctx }) {
+      const transaction = requireTransaction(ctx);
+      const permission = requireFlowModelPermission(ctx, 'save');
+      await assertFlowModelRecordPermission(db, ctx, locator.modelUid, permission);
+      const initialModel = await loadFlowModelForNestedSource(db, locator.modelUid, ctx, permission, 'save');
+      assertFlowModelPermissionFields(permission, 'save', [resolveNestedStorage(initialModel, locator).rootKey]);
+      await lockFlowModelForUpdate(db, locator.modelUid, transaction);
+      await assertFlowModelRecordPermission(db, ctx, locator.modelUid, permission);
+      const model = await loadFlowModel(db, locator.modelUid, ctx);
+      const storage = resolveNestedStorage(model, locator);
+      assertFlowModelPermissionFields(permission, 'save', [storage.rootKey]);
+      assertOwnerFingerprintMatches(buildNestedFingerprint(locator, model), baseOwnerFingerprint, locator.kind);
+      const nextRoot = cloneJsonRecord(getAtPath(model, [storage.rootKey]));
+      const targetPath = storage.targetPath.slice(1);
+
+      writeNestedRunJSBinding(nextRoot, targetPath, locator, binding);
+
+      await getFlowModelRepository(db).patch({ uid: locator.modelUid, [storage.rootKey]: nextRoot }, { transaction });
+
+      return buildWriteResult(await this.getFingerprint({ locator, ctx }));
+    },
   };
 }
 
@@ -243,6 +283,9 @@ function createFlowRegistryRunJSAdapter(db: Database): RunJSSourceAdapter<FlowRe
       );
       const nextFlowRegistry = cloneJsonRecord(getAtPath(model, ['flowRegistry']));
       const step = getAtPath(nextFlowRegistry, [locator.flowKey, 'steps', locator.stepKey]);
+      if (!isRecord(step)) {
+        throwNestedPathNotFound(['flowRegistry', locator.flowKey, 'steps', locator.stepKey]);
+      }
       const sourcePath = resolveFlowRegistryRunJSSourcePath(step, locator.sourcePath, [
         'flowRegistry',
         locator.flowKey,
@@ -331,7 +374,7 @@ async function loadFlowModel(db: Database, modelUid: string, ctx: RunJSSourceAda
   });
 
   if (!isRecord(model)) {
-    throw new VscError('RUNJS_SOURCE_NOT_FOUND', `FlowModel "${modelUid}" was not found`, {
+    throw new RunJSSourceError('RUNJS_SOURCE_NOT_FOUND', `FlowModel "${modelUid}" was not found`, {
       details: {
         modelUid,
       },
@@ -414,7 +457,7 @@ async function loadFlowModelForNestedSource(
     return await loadFlowModel(db, modelUid, ctx);
   } catch (error) {
     if (
-      error instanceof VscError &&
+      error instanceof RunJSSourceError &&
       error.code === 'RUNJS_SOURCE_NOT_FOUND' &&
       !permissionAllowsAllNestedRoots(permission)
     ) {
@@ -434,7 +477,7 @@ function requireSourcePermission(
     return permission;
   }
 
-  throw new VscError('PERMISSION_DENIED', `RunJS source requires ${resource}:${action} permission`, {
+  throw new RunJSSourceError('PERMISSION_DENIED', `RunJS source requires ${resource}:${action} permission`, {
     details: {
       resource,
       action,
@@ -463,7 +506,7 @@ async function assertRecordMatchesPermissionFilter(
     return;
   }
 
-  throw new VscError('PERMISSION_DENIED', `RunJS source owner is outside ${resource} permission scope`, {
+  throw new RunJSSourceError('PERMISSION_DENIED', `RunJS source owner is outside ${resource} permission scope`, {
     details: {
       resource,
       filterByTk,
@@ -476,26 +519,24 @@ async function parsePermissionFilter(
   ctx: RunJSSourceAdapterContext,
   resource: string,
   filter: unknown,
-): Promise<unknown> {
+): Promise<Filter | undefined> {
   if (!filter) {
     return undefined;
   }
 
   try {
     checkFilterParams(db.getCollection(resource), filter);
-    return (
-      (await parseJsonTemplate(filter, {
-        state: ctx.state || {},
-        timezone: ctx.timezone,
-        userProvider: createUserProvider({
-          db,
-          currentUser: ctx.currentUser,
-        }),
-      })) ?? filter
-    );
+    return ((await parseJsonTemplate(filter, {
+      state: ctx.state || {},
+      timezone: ctx.timezone,
+      userProvider: createUserProvider({
+        db,
+        currentUser: ctx.currentUser,
+      }),
+    })) ?? filter) as Filter;
   } catch (error) {
     if (error instanceof NoPermissionError) {
-      throw new VscError('PERMISSION_DENIED', `RunJS source requires ${resource} permission scope`, {
+      throw new RunJSSourceError('PERMISSION_DENIED', `RunJS source requires ${resource} permission scope`, {
         details: {
           resource,
         },
@@ -524,7 +565,7 @@ function permissionAllowsAllNestedRoots(permission: RunJSSourcePermissionResult)
 }
 
 function throwFlowModelFieldPermissionDenied(action: string, fields: string[]): never {
-  throw new VscError('PERMISSION_DENIED', `RunJS source requires flowModels:${action} field permission`, {
+  throw new RunJSSourceError('PERMISSION_DENIED', `RunJS source requires flowModels:${action} field permission`, {
     details: {
       resource: 'flowModels',
       action,
@@ -655,7 +696,7 @@ function assertOwnerFingerprintMatches(current: string, expected: string, kind: 
     return;
   }
 
-  throw new VscError('RUNJS_SOURCE_OWNER_OUTDATED', 'RunJS host code differs from the versioned source', {
+  throw new RunJSSourceError('RUNJS_SOURCE_OWNER_OUTDATED', 'RunJS host code differs from the versioned source', {
     details: {
       expected: current,
       received: expected,
@@ -857,7 +898,7 @@ function assertNestedTargetExists(value: unknown, locator: FlowModelNestedLocato
 }
 
 function throwNestedPathNotFound(path: JsonPath): never {
-  throw new VscError('RUNJS_SOURCE_NOT_FOUND', `RunJS source path "${formatPath(path)}" was not found`, {
+  throw new RunJSSourceError('RUNJS_SOURCE_NOT_FOUND', `RunJS source path "${formatPath(path)}" was not found`, {
     details: {
       path: formatPath(path),
     },
@@ -905,6 +946,59 @@ function replaceNestedRunJSValue(
   }
 
   return artifact.code;
+}
+
+function writeNestedRunJSBinding(
+  root: JsonRecord,
+  targetPath: JsonPath,
+  locator: FlowModelNestedLocator,
+  binding: RunJSExternalSourceBinding,
+): void {
+  const currentValue = getAtPath(root, targetPath);
+  if (isRecord(currentValue)) {
+    assertSourceCanMoveToExternalBinding(currentValue, locator.kind);
+    setAtPath(root, targetPath, {
+      ...currentValue,
+      sourceMode: binding.sourceMode,
+      sourceBinding: cloneJsonRecord(binding.sourceBinding),
+    });
+    return;
+  }
+
+  if (!isNestedRunJSValuePath(locator)) {
+    const parentPath = targetPath.slice(0, -1);
+    const parentValue = getAtPath(root, parentPath);
+    if (!isRecord(parentValue)) {
+      throwNestedPathNotFound(parentPath);
+    }
+    assertSourceCanMoveToExternalBinding(parentValue, locator.kind);
+    setAtPath(root, parentPath, {
+      ...parentValue,
+      sourceMode: binding.sourceMode,
+      sourceBinding: cloneJsonRecord(binding.sourceBinding),
+    });
+    return;
+  }
+
+  setAtPath(root, targetPath, {
+    code: typeof currentValue === 'string' ? currentValue : '',
+    version: 'v2',
+    sourceMode: binding.sourceMode,
+    sourceBinding: cloneJsonRecord(binding.sourceBinding),
+  });
+}
+
+function assertSourceCanMoveToExternalBinding(value: unknown, kind: string): void {
+  if (!isRecord(value)) {
+    return;
+  }
+  const sourceMode = typeof value.sourceMode === 'string' ? value.sourceMode : '';
+  if (!sourceMode || sourceMode === 'inline') {
+    return;
+  }
+  throw new RunJSSourceError('RUNJS_SOURCE_OWNER_OUTDATED', 'RunJS source binding changed before the move completed', {
+    details: { kind, sourceMode },
+  });
 }
 
 function isNestedRunJSValuePath(locator: FlowModelNestedLocator): boolean {
@@ -1018,7 +1112,7 @@ function buildWriteResult(ownerFingerprint: string): RunJSRuntimeWriteResult {
 
 function requireTransaction(ctx: RunJSSourceAdapterContext): Transaction {
   if (!ctx.transaction) {
-    throw new VscError('INTERNAL_ERROR', 'RunJS source adapter writes require a transaction');
+    throw new RunJSSourceError('INTERNAL_ERROR', 'RunJS source adapter writes require a transaction');
   }
 
   return ctx.transaction as Transaction;
@@ -1097,7 +1191,7 @@ function assertSafeJsonPathSegment(segment: string): void {
     return;
   }
 
-  throw new VscError('RUNJS_SOURCE_LOCATOR_INVALID', `RunJS source path segment "${segment}" is unsafe`, {
+  throw new RunJSSourceError('RUNJS_SOURCE_LOCATOR_INVALID', `RunJS source path segment "${segment}" is unsafe`, {
     details: {
       segment,
     },
@@ -1131,7 +1225,7 @@ function getExistingNestedValue(root: unknown, path: JsonPath): unknown {
 }
 
 function throwKeyedArrayItemNotFound(key: string): never {
-  throw new VscError('RUNJS_SOURCE_NOT_FOUND', `RunJS source keyed item "${key}" was not found`, {
+  throw new RunJSSourceError('RUNJS_SOURCE_NOT_FOUND', `RunJS source keyed item "${key}" was not found`, {
     details: {
       key,
     },

@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { LIGHT_EXTENSION_ENTRY_KEY_PATTERN } from '../constants';
+
 export type LightExtensionClientTypegenKind = 'js-block' | 'js-field' | 'js-action' | 'js-item' | 'runjs';
 
 export interface LightExtensionSettingsTypegenSourceFile {
@@ -133,19 +135,21 @@ function collectClientSettingsEntries(
     if (!parsed) {
       continue;
     }
-    const schema = parseSettingsSchema(file, parsed, diagnostics);
+    const entryName = resolveClientSettingsEntryName(files, parsed);
+    const identity = { kind: parsed.kind, entryName };
+    const schema = parseSettingsSchema(file, identity, diagnostics);
     if (!schema) {
       continue;
     }
-    const entryKey = `client/${parsed.kind}/${parsed.entryName}`;
+    const entryKey = `client/${parsed.kind}/${entryName}`;
     entries.push({
       target: 'client',
       kind: parsed.kind,
-      entryName: parsed.entryName,
+      entryName,
       entryKey,
       settingsPath: file.path,
       virtualImport: `${VIRTUAL_SETTINGS_PREFIX}${entryKey}`,
-      outputPath: `${GENERATED_TYPES_ROOT}/client/${parsed.kind}/${parsed.entryName}.d.ts`,
+      outputPath: `${GENERATED_TYPES_ROOT}/client/${parsed.kind}/${entryName}.d.ts`,
       schema,
       schemaHash: shortHash(stableSerialize(schema)),
     });
@@ -441,7 +445,9 @@ function getSettingsImportSpecifiers(content: string): string[] {
   return Array.from(specifiers);
 }
 
-function parseClientSettingsPath(path: string): { kind: LightExtensionClientTypegenKind; entryName: string } | null {
+function parseClientSettingsPath(
+  path: string,
+): { kind: LightExtensionClientTypegenKind; directoryName: string; root: string } | null {
   for (const item of clientKindRoots) {
     const prefix = `${item.root}/`;
     if (!path.startsWith(prefix) || !path.endsWith('/settings.json')) {
@@ -452,12 +458,35 @@ function parseClientSettingsPath(path: string): { kind: LightExtensionClientType
     if (segments.length === 2 && segments[1] === 'settings.json' && isValidEntryName(segments[0])) {
       return {
         kind: item.kind,
-        entryName: segments[0],
+        directoryName: segments[0],
+        root: item.root,
       };
     }
   }
 
   return null;
+}
+
+function resolveClientSettingsEntryName(
+  files: Array<Required<LightExtensionSettingsTypegenSourceFile>>,
+  parsed: { directoryName: string; root: string },
+): string {
+  const metaPath = `${parsed.root}/${parsed.directoryName}/meta.json`;
+  const metaFile = files.find((file) => file.path === metaPath);
+  if (!metaFile) {
+    return parsed.directoryName;
+  }
+
+  try {
+    const meta = JSON.parse(metaFile.content) as unknown;
+    if (isRecord(meta) && typeof meta.key === 'string' && isValidEntryName(meta.key)) {
+      return meta.key;
+    }
+  } catch {
+    return parsed.directoryName;
+  }
+
+  return parsed.directoryName;
 }
 
 function parseNamespacedSettingsImport(
@@ -508,7 +537,7 @@ function isCodeFilePath(path: string): boolean {
 }
 
 function isValidEntryName(value: string): boolean {
-  return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value);
+  return LIGHT_EXTENSION_ENTRY_KEY_PATTERN.test(value);
 }
 
 function isString(value: unknown): value is string {

@@ -7,9 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import {
+  LegacyRunJSEditorRegistry,
+  type LegacyRunJSEditorProviderRenderProps,
+  type RunJSSourceLocator,
+} from '@nocobase/client';
 import { useNodeContext } from '@nocobase/plugin-workflow/client';
-import { LegacyRunJSEditorRegistry } from '@nocobase/plugin-vsc-file/client';
-import type { LegacyRunJSEditorProviderRenderProps, RunJSSourceLocator } from '@nocobase/plugin-vsc-file/client';
 import React from 'react';
 
 import { usePluginTranslation } from '../locale';

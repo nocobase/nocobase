@@ -7,11 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { CompletionSource } from '@codemirror/autocomplete';
 import { EditorView } from '@codemirror/view';
 import { render } from '@testing-library/react';
 import React from 'react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
+import { CodeEditor } from '..';
 import { EditorCore } from '../core/EditorCore';
 
 describe('EditorCore', () => {
@@ -26,5 +28,56 @@ describe('EditorCore', () => {
 
     expect(container.querySelector('.cm-content')).toHaveAttribute('contenteditable', 'true');
     expect(viewRef.current?.state.readOnly).toBe(false);
+  });
+
+  it('preserves editor identity and focus when the completion source changes', () => {
+    const viewRef = { current: null } as React.MutableRefObject<EditorView | null>;
+    const firstCompletionSource: CompletionSource = () => null;
+    const secondCompletionSource: CompletionSource = () => null;
+    const { container, rerender } = render(
+      <EditorCore completionSource={firstCompletionSource} value="{}" viewRef={viewRef} />,
+    );
+    const originalContent = container.querySelector<HTMLElement>('.cm-content');
+
+    originalContent?.focus();
+    expect(document.activeElement).toBe(originalContent);
+
+    rerender(<EditorCore completionSource={secondCompletionSource} value="{}" viewRef={viewRef} />);
+
+    const nextContent = container.querySelector<HTMLElement>('.cm-content');
+    expect(nextContent).toBe(originalContent);
+    expect(document.activeElement).toBe(nextContent);
+  });
+
+  it('keeps focus when workspace module completions change', () => {
+    const fullscreenControl = { isFullscreen: false, toggleFullscreen: vi.fn() };
+    const { container, rerender } = render(
+      <CodeEditor
+        fullscreenControl={fullscreenControl}
+        moduleImportCompletions={[{ detail: 'src/shared/first.ts', exports: [], specifier: './first' }]}
+        showLogs={false}
+        value="{}"
+      />,
+    );
+    const originalContent = container.querySelector<HTMLElement>('.cm-content');
+
+    originalContent?.focus();
+    expect(document.activeElement).toBe(originalContent);
+
+    rerender(
+      <CodeEditor
+        fullscreenControl={fullscreenControl}
+        moduleImportCompletions={[
+          { detail: 'src/shared/first.ts', exports: [], specifier: './first' },
+          { detail: '.light-extension/types/settings.d.ts', exports: [], specifier: './settings' },
+        ]}
+        showLogs={false}
+        value="{}"
+      />,
+    );
+
+    const nextContent = container.querySelector<HTMLElement>('.cm-content');
+    expect(nextContent).toBe(originalContent);
+    expect(document.activeElement).toBe(nextContent);
   });
 });

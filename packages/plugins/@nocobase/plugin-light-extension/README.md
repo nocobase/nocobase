@@ -38,8 +38,114 @@ The primary assertion coverage lives in `src/server/__tests__/save-source-runtim
 yarn test packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__/save-source-runtime.test.ts --run
 ```
 
+## Entry Identity Contract
+
+An entry has separate source, database, path, and display identities:
+
+| Field | Contract |
+| --- | --- |
+| `meta.json.key` | Stable source identity. It must be a lowercase slug, remain unchanged when the entry directory moves, and be unique within one repository target and kind. |
+| `lightExtensionEntries.id` / `entryId` | Local database identity used by runtime bindings, reference rows, logs, caches, and compiled artifacts. |
+| `entryPath` | Mutable physical source location. Directory renames update this field without replacing `entryId`. |
+| `title` | Mutable display label. It does not participate in identity matching. |
+
+Workspace validation derives `entryName` from `meta.json.key`; legacy entries without a key temporarily fall back to the directory slug. Entry reconciliation matches `repoId + target + kind + entryName`, so a stable key preserves the existing database `entryId` while `entryPath` changes. Duplicate keys fail validation with `duplicate_entry_key`.
+
+Repository workspace folder renames backfill a missing key with the pre-rename directory slug before moving an entry root. **Move to light extension** always writes the generated technical entry name to `meta.json.key`; the user only supplies the display title. Settings type generation also uses the key, so `light-extension:settings/client/<kind>/<key>` imports remain stable after directory renames.
+
+Changing `meta.json.key` is an explicit identity replacement and may orphan existing bindings. Renaming only the directory is identity-preserving. Internal relative imports remain scoped to the physical entry root, and cross-entry sharing must continue through `src/shared`.
+
+Compatibility cases:
+
+| Case | Result |
+| --- | --- |
+| Legacy entry, unchanged directory, no key | Uses the current directory slug as the source identity. |
+| Legacy entry renamed in the repository workspace | Writes the old directory slug to `meta.json.key`, then moves the files. |
+| Keyed entry renamed | Reuses the existing `entryId`, updates `entryPath`, recompiles, and keeps runtime bindings active. |
+| Duplicate key in two directories of the same kind | Save is rejected with validation diagnostics. |
+
+Entries that were already split into stale and replacement database records before this contract was introduced are not automatically repaired or merged. The stable-key guarantee applies to moves and renames performed after this behavior is available.
+
+Primary assertion coverage:
+
+```bash
+yarn test packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__/meta-validator.test.ts --run --reporter=verbose
+yarn test packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__/entry-service-identity.test.ts --run --reporter=verbose
+yarn test packages/plugins/@nocobase/plugin-light-extension/src/client-v2/__tests__/RepoWorkspacePage.test.tsx --run --reporter=verbose
+```
+
 ## UI Integration Contract
 
 Light extensions are selected from the code-source settings of existing JS Block, JS Item, JS Field, and JS Action surfaces. The plugin must not inject light-extension entries into Add Block, Add Field, or Add Action menus. When an existing surface opens **Write JavaScript** with a light-extension binding, the editor opens that repository workspace at the bound `entryPath`.
 
 An entry-bound workspace can edit the selected entry directory and files outside all managed entry roots, such as shared helpers and repository metadata. Other entries under `js-blocks`, `js-actions`, `js-items`, `js-fields`, and `runjs` remain viewable but read-only. Repository management opens the same workspace without this entry scope and retains full authoring access.
+
+## Move RunJS Source Contract
+
+The RunJS Studio toolbar registry in `@nocobase/plugin-vsc-file` allows this plugin to contribute **Move to light extension** without coupling the editor package to light-extension UI or APIs. The registry is a `globalThis` singleton so legacy and client-v2 bundles share the same contributions. Both the canonical client-v2 plugin and the legacy admin-shell bridge register the action; lifecycle cleanup remains identity-safe. The action is registered only when the host adapter supports `writeExternalBinding`.
+
+The client calls `POST lightExtensions:moveSource` with the following payload:
+
+```ts
+interface LightExtensionMoveSourceInput {
+  locator: RunJSSourceLocator;
+  expectedOwnerFingerprint: string;
+  sourceRepoId: string;
+  sourceHeadCommitId: string | null;
+  entryPath: string;
+  version: string;
+  files: Array<{ path: string; content: string; language?: string; mode?: string }>;
+  destination:
+    | { type: 'existing'; repoId: string }
+    | { type: 'new'; name: string; title?: string | null; description?: string | null };
+  entryName: string;
+  entryTitle?: string | null;
+}
+```
+
+`files` is the complete current editor workspace, including unsaved content. `.nocobase/runjs-source.json` is excluded during relocation. The selected `entryPath` becomes `src/client/<kind-root>/<entryName>/index.ts|tsx|js|jsx`; other files are relocated under the same entry, and relative imports between moved files are rewritten. Existing entry directories are never overwritten.
+
+The move dialog exposes one human-readable name for the light extension and one kind-specific name for the moved JS surface. Repository and entry `title` values use those names directly. Stable lowercase repository and entry `name` values are derived internally for identifiers and source paths, so users do not need to manage separate name/title fields or slug rules.
+
+The server executes these operations in one database transaction:
+
+1. Resolve the trusted RunJS source adapter, check host write permission, read the current owner, and compare `expectedOwnerFingerprint`.
+2. Derive the light-extension kind from the trusted owner metadata, relocate the workspace, and either create a repository or save into an existing repository.
+3. Validate and compile the destination source, require the new entry to be healthy, and write `{ sourceMode: 'light-extension', sourceBinding }` back to the host through `writeExternalBinding`.
+4. Rebuild the FlowModel reference index and return the repository, entry, binding, and new owner fingerprint.
+
+If any step fails, destination source, compiled artifacts, host binding, and reference indexes roll back together. The host keeps its previous inline `code`, `version`, and `sourceRef` fields as a compatibility fallback after the external binding is written.
+
+### Supported hosts
+
+| RunJS locator | Derived light-extension kind | Move action |
+| --- | --- | --- |
+| `flowModel.step` with `JSBlockModel` | `js-block` | Supported |
+| `flowModel.step` with JS Field/Action/Item owner metadata | `js-field`, `js-action`, or `js-item` | Supported |
+| `flowModel.nestedRunJS` | `runjs` | Supported |
+| Workflow JavaScript, chart option/events, or FlowRegistry RunJS | N/A | Not exposed; adapter has no external-binding writer |
+
+### Validation and errors
+
+| Condition | Error | HTTP status |
+| --- | --- | --- |
+| Invalid locator, path, entry slug, entry file, or destination payload | `LIGHT_EXTENSION_INVALID_INPUT` | 400 |
+| Owner fingerprint changed before or during the move | `LIGHT_EXTENSION_BINDING_OUTDATED` | 409 |
+| Target entry name/path already exists | `LIGHT_EXTENSION_ENTRY_CONFLICT` | 409 |
+| Host write permission is denied | `LIGHT_EXTENSION_PERMISSION_DENIED` | 403 |
+| Relocated workspace does not validate or compile | `LIGHT_EXTENSION_VALIDATION_FAILED` | 422 |
+| RunJS/VSC service or source operation fails | `LIGHT_EXTENSION_RUNTIME_UNAVAILABLE` or `LIGHT_EXTENSION_SOURCE_ERROR` | 409 or source-derived status |
+
+### Required cases
+
+- Good: move a multi-file workspace with unsaved changes into a new repository; compile it and update the host binding.
+- Base: move into an existing repository with an unused entry slug; preserve unrelated repository files and entries.
+- Bad: reject stale fingerprints, missing permission, unsupported hosts, invalid workspaces, and entry conflicts without changing destination or host state.
+
+Primary assertion coverage:
+
+```bash
+yarn test packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__/move-source.test.ts --run --reporter=verbose
+yarn test packages/plugins/@nocobase/plugin-light-extension/src/client-v2/__tests__/move-source.test.tsx --run --reporter=verbose
+yarn test packages/plugins/@nocobase/plugin-vsc-file/src/client-v2/runjs-studio/__tests__/RunJSStudioToolbarRegistry.test.tsx --run --reporter=verbose
+```

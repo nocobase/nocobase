@@ -8,8 +8,9 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { RunJSSourceError } from '@nocobase/server';
 import { maxPathLength } from '../../shared/constants';
-import { VscError } from '../../shared/errors';
+import { isVscError, VscError } from '../../shared/errors';
 import { sha256Hex } from '../../shared/hash';
 import { normalizePath, pathHash, pathLowerHash } from '../../shared/path';
 import { buildRunJSSourceRepositoryIdentity, normalizeRunJSSourceLocator } from '../../shared/runjs-source-types';
@@ -59,6 +60,16 @@ describe('vsc-file shared utilities', () => {
 
   it('computes SHA-256 hex digests', () => {
     expect(sha256Hex('abc')).toBe('ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad');
+  });
+
+  it('preserves RunJS adapter errors for resource responses', () => {
+    const error = new RunJSSourceError('RUNJS_SOURCE_NOT_FOUND', 'Source not found');
+
+    expect(isVscError(error)).toBe(true);
+    expect(error.toResponseBody().errors[0]).toMatchObject({
+      code: 'RUNJS_SOURCE_NOT_FOUND',
+      status: 404,
+    });
   });
 
   it('normalizes RunJS source locators and derives stable repository identity', () => {

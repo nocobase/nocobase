@@ -8,7 +8,8 @@
  */
 
 import type { MockServer } from '@nocobase/test';
-import PluginVscFileServer, { type RunJSSourceLocator } from '@nocobase/plugin-vsc-file';
+import PluginVscFileServer from '@nocobase/plugin-vsc-file';
+import type { RunJSSourceLocator } from '@nocobase/server';
 import { getApp } from '@nocobase/plugin-workflow-test';
 
 import PluginWorkflowJavaScriptServer from '..';

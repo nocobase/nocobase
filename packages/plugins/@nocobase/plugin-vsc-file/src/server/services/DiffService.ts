@@ -385,7 +385,7 @@ export class DiffService {
       return this.resolveTreeContent(commit.treeHash, normalizedPath, transaction);
     }
 
-    throw new VscError('PATH_INVALID', `Unsupported diff endpoint type "${endpoint.type}"`);
+    throw new VscError('PATH_INVALID', 'Unsupported diff endpoint type');
   }
 
   private async resolveTreeContent(

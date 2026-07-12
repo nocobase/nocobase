@@ -9,6 +9,13 @@
 
 export { runJSStudioProvider } from './RunJSStudioProvider';
 export {
+  runJSStudioToolbarRegistry,
+  RunJSStudioToolbarRegistry,
+  type RunJSStudioToolbarContext,
+  type RunJSStudioToolbarContribution,
+  type RunJSStudioToolbarContributionProps,
+} from './RunJSStudioToolbarRegistry';
+export {
   CloseConfirmModal,
   CodeTab,
   FilesPanel,

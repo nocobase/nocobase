@@ -27,6 +27,7 @@ import {
   SaveVersionModal,
   VersionHistoryDock,
 } from './RunJSStudioComponents';
+import { runJSStudioToolbarRegistry, type RunJSStudioToolbarContext } from './RunJSStudioToolbarRegistry';
 import type {
   RunJSConsoleEntry,
   RunJSSourceHistoryItem,
@@ -1455,6 +1456,22 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     view.destroy?.();
   }, [studioView]);
 
+  const handleExternalBindingPersisted = useCallback(
+    async (nextSource: Pick<RunJSValue, 'sourceMode' | 'sourceBinding'>) => {
+      (onPersistedChange || onChange)?.({
+        ...value,
+        ...nextSource,
+      });
+      confirmedCloseRef.current = true;
+      try {
+        await closeEditorView();
+      } finally {
+        confirmedCloseRef.current = false;
+      }
+    },
+    [closeEditorView, onChange, onPersistedChange, value],
+  );
+
   const requestClose = async () => {
     if (hasUnsavedLocalChanges) {
       setPendingDirtyAction('close');
@@ -1536,6 +1553,24 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
   };
   const workspaceGridColumns = filesCollapsed ? 'minmax(0, 1fr)' : 'minmax(220px, 260px) minmax(0, 1fr)';
   const ownerOutdatedWorkspaceError = isOwnerOutdatedError(workspaceError);
+  const toolbarContext: RunJSStudioToolbarContext | null =
+    workspace && props.locator
+      ? {
+          locator: props.locator,
+          workspace,
+          files,
+          entryPath,
+          version: value.version || 'v2',
+          readOnly: workspaceEditingDisabled || !workspace.permissions.canSave,
+          onExternalBindingPersisted: handleExternalBindingPersisted,
+        }
+      : null;
+  const toolbarActions = toolbarContext
+    ? runJSStudioToolbarRegistry.list(toolbarContext).map((contribution) => {
+        const Contribution = contribution.component;
+        return <Contribution context={toolbarContext} key={contribution.key} />;
+      })
+    : null;
 
   return (
     <div data-testid="runjs-studio-editor" ref={studioRootRef} style={editorStyle}>
@@ -1792,6 +1827,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
                         savedFiles={savedFiles}
                         scene={scene}
                         t={t}
+                        toolbarActions={toolbarActions}
                         version={value.version}
                         workspaceFiles={files}
                       />

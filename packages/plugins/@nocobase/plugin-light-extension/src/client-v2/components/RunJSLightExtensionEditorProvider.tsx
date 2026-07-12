@@ -16,6 +16,7 @@ import React from 'react';
 
 import { LIGHT_EXTENSION_SUPPORTED_KINDS } from '../../constants';
 import type { LightExtensionKind, LightExtensionRuntimeSourceBinding } from '../../shared/types';
+import { getLightExtensionEntry, type ApiClientLike } from '../api/lightExtensionEntriesRequests';
 import { isLightExtensionRuntimeSourceBinding } from '../resolvers/LightExtensionRunJSResolver';
 import LightExtensionWorkspacePage, {
   type LightExtensionWorkspaceFooterActions,
@@ -38,6 +39,10 @@ type LightExtensionEditorView = {
   close?: () => boolean | void | Promise<boolean | void>;
   destroy?: () => void;
   setFooter?: (footer: React.ReactNode) => void;
+};
+
+type LightExtensionEditorFlowContext = FlowEngineContext & {
+  api?: ApiClientLike;
 };
 
 const SchemaField = createSchemaField({
@@ -217,10 +222,39 @@ const RunJSLightExtensionEditor: React.FC<RunJSEditorProviderRenderProps> = (pro
 const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderProps> = (props) => {
   const translate = props.t;
   const binding = isLightExtensionRuntimeSourceBinding(props.value.sourceBinding) ? props.value.sourceBinding : null;
+  const [currentBinding, setCurrentBinding] = React.useState(binding);
   const [footerActions, setFooterActions] = React.useState<LightExtensionWorkspaceFooterActions | null>(null);
-  const flowContext = useFlowContext<FlowEngineContext | null>();
+  const flowContext = useFlowContext<LightExtensionEditorFlowContext | null>();
   const editorView = flowContext?.view as LightExtensionEditorView | undefined;
-  const workspaceScope = binding ? getEntryWorkspaceScope(binding) : null;
+  const workspaceScope = currentBinding ? getEntryWorkspaceScope(currentBinding) : null;
+
+  React.useEffect(() => {
+    setCurrentBinding(binding);
+    if (!binding || !flowContext?.api) {
+      return;
+    }
+
+    let active = true;
+    getLightExtensionEntry(flowContext.api, binding.entryId)
+      .then((entry) => {
+        if (!active || entry.id !== binding.entryId || entry.repoId !== binding.repoId || entry.kind !== binding.kind) {
+          return;
+        }
+        setCurrentBinding({
+          ...binding,
+          entryName: entry.entryName,
+          entryPath: entry.entryPath,
+          entryTitle: entry.title || binding.entryTitle,
+        });
+      })
+      .catch(() => {
+        // Keep the persisted binding as a fallback when the current entry cannot be refreshed.
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [binding, flowContext?.api]);
 
   const closeEditorView = React.useCallback(async () => {
     if (typeof editorView?.close === 'function') {
@@ -231,8 +265,11 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
     editorView?.destroy?.();
   }, [editorView]);
   const handlePersistedChange = React.useCallback(() => {
-    (props.onPersistedChange || props.onChange)?.({ ...props.value });
-  }, [props.onChange, props.onPersistedChange, props.value]);
+    (props.onPersistedChange || props.onChange)?.({
+      ...props.value,
+      ...(currentBinding ? { sourceBinding: currentBinding } : {}),
+    });
+  }, [currentBinding, props.onChange, props.onPersistedChange, props.value]);
 
   React.useEffect(() => {
     if (typeof editorView?.setFooter !== 'function') {
@@ -265,7 +302,7 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
     };
   }, [editorView, footerActions, translate]);
 
-  if (!binding || !workspaceScope) {
+  if (!currentBinding || !workspaceScope) {
     return <Alert message={props.t?.('Selected light extension entry is unavailable')} showIcon type="error" />;
   }
 
@@ -277,11 +314,11 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
     >
       <LightExtensionWorkspacePage
         embedded
-        initialPath={binding.entryPath}
+        initialPath={currentBinding.entryPath}
         onFooterActionsChange={setFooterActions}
         onRequestClose={closeEditorView}
         onSaved={handlePersistedChange}
-        repoId={binding.repoId}
+        repoId={currentBinding.repoId}
         workspaceScope={workspaceScope}
       />
     </Flex>

@@ -8,9 +8,11 @@
  */
 
 import { createMockServer, type MockServer } from '@nocobase/test';
-import PluginVscFileServer, { type RunJSSourceLocator } from '@nocobase/plugin-vsc-file';
+import PluginVscFileServer from '@nocobase/plugin-vsc-file';
+import type { RunJSSourceLocator } from '@nocobase/server';
 
 import FlowModelRepository from '../repository';
+import { createFlowModelRunJSSourceAdapters } from '../runjs-sources/flow-model-adapters';
 
 const basePlugins = ['field-sort', 'system-settings', 'users', 'auth', 'acl', 'data-source-manager'];
 
@@ -77,6 +79,103 @@ describe('flow-engine RunJS source adapters', () => {
         commitId: save.body.data.commit.id,
         entry: 'src/main.tsx',
       },
+    });
+  });
+
+  it('writes external bindings for FlowModel step and nested RunJS values without removing inline fallback', async () => {
+    await repository.insertModel({
+      uid: 'external-binding-model',
+      title: 'External binding model',
+      use: 'JSBlockModel',
+      stepParams: {
+        jsSettings: {
+          runJs: {
+            code: 'ctx.render("inline fallback");',
+            version: 'v2',
+            sourceRef: { type: 'vsc-file', repoId: 'runjs_repo', commitId: 'runjs_commit' },
+          },
+        },
+        eventSettings: {
+          customVariable: {
+            variables: [
+              {
+                key: 'var_total',
+                type: 'runjs',
+                runjs: {
+                  code: 'return 1;',
+                  version: 'v2',
+                },
+              },
+            ],
+          },
+        },
+      },
+    });
+
+    const adapters = createFlowModelRunJSSourceAdapters(app.db);
+    const stepAdapter = adapters.find((adapter) => adapter.kind === 'flowModel.step');
+    const nestedAdapter = adapters.find((adapter) => adapter.kind === 'flowModel.nestedRunJS');
+    if (!stepAdapter?.writeExternalBinding || !nestedAdapter?.writeExternalBinding) {
+      throw new Error('FlowModel external binding adapters are unavailable');
+    }
+    const stepLocator: RunJSSourceLocator = {
+      kind: 'flowModel.step',
+      modelUid: 'external-binding-model',
+      flowKey: 'jsSettings',
+      stepKey: 'runJs',
+      paramPath: ['code'],
+    };
+    const nestedLocator: RunJSSourceLocator = {
+      kind: 'flowModel.nestedRunJS',
+      modelUid: 'external-binding-model',
+      containerFlowKey: 'eventSettings',
+      containerStepKey: 'customVariable',
+      valuePath: ['variables', 'var_total', 'runjs'],
+      scene: 'eventFlow',
+    };
+    const can = () => ({});
+
+    await app.db.sequelize.transaction(async (transaction) => {
+      const stepCtx = { transaction, can };
+      const stepFingerprint = await stepAdapter.getFingerprint({ locator: stepLocator, ctx: stepCtx });
+      await stepAdapter.writeExternalBinding?.({
+        locator: stepLocator,
+        binding: {
+          sourceMode: 'light-extension',
+          sourceBinding: { type: 'light-extension-entry', repoId: 'ler_1', entryId: 'lee_block' },
+        },
+        baseOwnerFingerprint: stepFingerprint,
+        ctx: stepCtx,
+      });
+
+      const nestedCtx = { transaction, can };
+      const nestedFingerprint = await nestedAdapter.getFingerprint({ locator: nestedLocator, ctx: nestedCtx });
+      await nestedAdapter.writeExternalBinding?.({
+        locator: nestedLocator,
+        binding: {
+          sourceMode: 'light-extension',
+          sourceBinding: { type: 'light-extension-entry', repoId: 'ler_1', entryId: 'lee_runjs' },
+        },
+        baseOwnerFingerprint: nestedFingerprint,
+        ctx: nestedCtx,
+      });
+    });
+
+    const updated = await repository.findModelById('external-binding-model');
+    expect(getAtPath(updated, ['stepParams', 'jsSettings', 'runJs'])).toMatchObject({
+      code: 'ctx.render("inline fallback");',
+      version: 'v2',
+      sourceRef: { type: 'vsc-file', repoId: 'runjs_repo', commitId: 'runjs_commit' },
+      sourceMode: 'light-extension',
+      sourceBinding: { type: 'light-extension-entry', repoId: 'ler_1', entryId: 'lee_block' },
+    });
+    expect(
+      getAtPath(updated, ['stepParams', 'eventSettings', 'customVariable', 'variables', 0, 'runjs']),
+    ).toMatchObject({
+      code: 'return 1;',
+      version: 'v2',
+      sourceMode: 'light-extension',
+      sourceBinding: { type: 'light-extension-entry', repoId: 'ler_1', entryId: 'lee_runjs' },
     });
   });
 

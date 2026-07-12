@@ -20,6 +20,7 @@ import {
   RunJSEditorRegistry,
   RunJSSourceResolverRegistry,
 } from '@nocobase/client-v2';
+import { runJSStudioToolbarRegistry } from '@nocobase/plugin-vsc-file/client-v2';
 
 import { LIGHT_EXTENSION_ACL_SNIPPET, LIGHT_EXTENSION_SETTINGS_KEY, NAMESPACE } from '../constants';
 import {
@@ -30,6 +31,7 @@ import {
 } from '../client-v2/components/JSBlockLightExtensionSourceField';
 import { SettingsAutoForm, SettingsSingleField } from '../client-v2/components/SettingsAutoForm';
 import { createRunJSLightExtensionEditorProvider } from '../client-v2/components/RunJSLightExtensionEditorProvider';
+import { createMoveSourceToLightExtensionContribution } from '../client-v2/components/MoveSourceToLightExtension';
 import LightExtensionListPage from '../client-v2/pages/LightExtensionListPage';
 import { createLightExtensionRunJSResolver } from '../client-v2/resolvers/LightExtensionRunJSResolver';
 
@@ -82,6 +84,8 @@ export class PluginLightExtensionClient {
 
   private unregisterRunJSResolver?: () => void;
 
+  private unregisterRunJSToolbar?: () => void;
+
   constructor(
     public readonly options: LightExtensionLegacyClientOptions = {},
     protected readonly app?: LegacyApp,
@@ -94,6 +98,8 @@ export class PluginLightExtensionClient {
     this.unregisterRunJSEditor = undefined;
     this.unregisterRunJSResolver?.();
     this.unregisterRunJSResolver = undefined;
+    this.unregisterRunJSToolbar?.();
+    this.unregisterRunJSToolbar = undefined;
   }
 
   async load() {
@@ -112,6 +118,9 @@ export class PluginLightExtensionClient {
     if (this.app?.apiClient) {
       this.unregisterRunJSResolver = RunJSSourceResolverRegistry.registerResolver(
         createLightExtensionRunJSResolver(this.app.apiClient),
+      );
+      this.unregisterRunJSToolbar = runJSStudioToolbarRegistry.register(
+        createMoveSourceToLightExtensionContribution(this.app.apiClient),
       );
     }
     this.unregisterRunJSEditor = RunJSEditorRegistry.registerProvider(createRunJSLightExtensionEditorProvider());

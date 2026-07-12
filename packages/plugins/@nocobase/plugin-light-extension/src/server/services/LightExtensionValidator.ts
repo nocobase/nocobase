@@ -10,7 +10,11 @@
 import { posix as pathPosix } from 'path';
 import ts from 'typescript';
 
-import { LIGHT_EXTENSION_SUPPORTED_KINDS, type LightExtensionKind } from '../../constants';
+import {
+  LIGHT_EXTENSION_ENTRY_KEY_PATTERN,
+  LIGHT_EXTENSION_SUPPORTED_KINDS,
+  type LightExtensionKind,
+} from '../../constants';
 import { isAmbiguousSettingsTypeImport, isNamespacedSettingsTypeImport } from '../../sdk/settings-typegen';
 import type {
   LightExtensionCapabilities,
@@ -20,8 +24,8 @@ import type {
   LightExtensionValidationLimits,
 } from '../../shared/types';
 
-export const LIGHT_EXTENSION_VALIDATOR_VERSION = 'light-extension-validator-v1';
-export const LIGHT_EXTENSION_SDK_TEMPLATE_VERSION = 'light-extension-sdk-template-v1';
+export const LIGHT_EXTENSION_VALIDATOR_VERSION = 'light-extension-validator-v2';
+export const LIGHT_EXTENSION_SDK_TEMPLATE_VERSION = 'light-extension-sdk-template-v2';
 
 export const LIGHT_EXTENSION_VALIDATION_LIMITS: LightExtensionValidationLimits = {
   maxRepoFiles: 200,
@@ -129,6 +133,7 @@ interface EntryBucket {
 }
 
 interface ParsedMeta {
+  key: string | null;
   title: string | null;
   description: string | null;
   category: string | null;
@@ -251,6 +256,7 @@ export class LightExtensionValidator {
     const normalizedFiles = this.normalizeFiles(input.files, diagnostics);
     const entryBuckets = this.collectEntryBuckets(normalizedFiles, diagnostics);
     const entries = entryBuckets.map((bucket) => this.validateEntry(bucket));
+    diagnostics.push(...validateUniqueEntryKeys(entries));
     diagnostics.push(...this.validateSharedFiles(normalizedFiles));
     attachDiagnosticsToEntries(diagnostics, entries);
     const allDiagnostics = sortDiagnostics(
@@ -535,7 +541,7 @@ export class LightExtensionValidator {
   }
 
   private validateEntry(bucket: EntryBucket): LightExtensionEntryValidationResult {
-    const target = {
+    const folderTarget = {
       kind: bucket.kind,
       entryName: bucket.entryName,
     };
@@ -545,7 +551,19 @@ export class LightExtensionValidator {
     const indexFile = findEntryIndexFile(bucket);
     const metaFile = bucket.files.find((file) => file.path === metaPath);
     const settingsFile = bucket.files.find((file) => file.path === settingsPath);
-    const meta = this.validateMetaFile(metaFile, diagnostics, target);
+    const metaDiagnostics: LightExtensionDiagnostic[] = [];
+    const meta = this.validateMetaFile(metaFile, metaDiagnostics, folderTarget);
+    const entryName = meta.key || bucket.entryName;
+    const target = {
+      kind: bucket.kind,
+      entryName,
+    };
+    diagnostics.push(
+      ...metaDiagnostics.map((item) => ({
+        ...item,
+        entryName,
+      })),
+    );
     const settingsSchema = this.validateSettingsFile(settingsFile, diagnostics, target);
     const codeFiles = bucket.files.filter((file) => isCodeFile(file.path));
 
@@ -571,17 +589,17 @@ export class LightExtensionValidator {
     }
 
     for (const file of codeFiles) {
-      diagnostics.push(...this.validateCodeFile(file, target));
+      diagnostics.push(...this.validateCodeFile(file, target, 'entry', bucket.rootPath));
     }
 
     return {
       target: 'client',
       kind: bucket.kind,
-      entryName: bucket.entryName,
+      entryName,
       entryPath: indexFile?.path || bucket.rootPath,
       metaPath: metaFile ? metaPath : null,
       settingsPath: settingsFile ? settingsPath : null,
-      title: meta.title || bucket.entryName,
+      title: meta.title || entryName,
       description: meta.description,
       category: meta.category,
       icon: meta.icon,
@@ -612,6 +630,7 @@ export class LightExtensionValidator {
     target: Omit<DiagnosticTarget, 'path'>,
   ): ParsedMeta {
     const emptyMeta: ParsedMeta = {
+      key: null,
       title: null,
       description: null,
       category: null,
@@ -638,7 +657,7 @@ export class LightExtensionValidator {
       return emptyMeta;
     }
 
-    const allowedKeys = new Set(['title', 'description', 'category', 'icon', 'tags', 'sort']);
+    const allowedKeys = new Set(['key', 'title', 'description', 'category', 'icon', 'tags', 'sort']);
     for (const key of Object.keys(json)) {
       if (!allowedKeys.has(key)) {
         diagnostics.push(
@@ -651,6 +670,7 @@ export class LightExtensionValidator {
     }
 
     return {
+      key: optionalSlugField(json, 'key', diagnostics, { ...target, path: file.path }),
       title: optionalStringField(json, 'title', diagnostics, { ...target, path: file.path }, 120),
       description: optionalStringField(json, 'description', diagnostics, { ...target, path: file.path }, 1000),
       category: optionalSlugField(json, 'category', diagnostics, { ...target, path: file.path }),
@@ -998,6 +1018,7 @@ export class LightExtensionValidator {
     file: NormalizedSourceFile,
     target: Omit<DiagnosticTarget, 'path'>,
     boundary: 'entry' | 'shared' = 'entry',
+    entryRootPath?: string,
   ): LightExtensionDiagnostic[] {
     const sourceFile = ts.createSourceFile(
       file.path,
@@ -1037,7 +1058,7 @@ export class LightExtensionValidator {
           specifier &&
           (boundary === 'shared'
             ? isRelativeImportOutsideSharedRoot(file.path, specifier)
-            : isRelativeImportOutsideCurrentEntry(file.path, specifier, target))
+            : isRelativeImportOutsideCurrentEntry(file.path, specifier, target, entryRootPath))
         ) {
           diagnostics.push(
             diagnosticAt(
@@ -1078,7 +1099,7 @@ export class LightExtensionValidator {
           specifier &&
           (boundary === 'shared'
             ? isRelativeImportOutsideSharedRoot(file.path, specifier)
-            : isRelativeImportOutsideCurrentEntry(file.path, specifier, target))
+            : isRelativeImportOutsideCurrentEntry(file.path, specifier, target, entryRootPath))
         ) {
           diagnostics.push(
             diagnosticAt(
@@ -3279,6 +3300,28 @@ export function getWorkspaceLevelDiagnostics(diagnostics: LightExtensionDiagnost
   return diagnostics.filter((item) => !item.kind || !item.entryName);
 }
 
+function validateUniqueEntryKeys(entries: LightExtensionEntryValidationResult[]): LightExtensionDiagnostic[] {
+  const entryGroups = new Map<string, LightExtensionEntryValidationResult[]>();
+  for (const entry of entries) {
+    const key = `${entry.target}:${entry.kind}:${entry.entryName}`;
+    const group = entryGroups.get(key) || [];
+    group.push(entry);
+    entryGroups.set(key, group);
+  }
+
+  return [...entryGroups.values()]
+    .filter((group) => group.length > 1)
+    .flatMap((group) =>
+      group.map((entry) =>
+        diagnostic('duplicate_entry_key', 'error', `Entry key "${entry.entryName}" must be unique for ${entry.kind}`, {
+          path: entry.metaPath || entry.entryPath,
+          kind: entry.kind,
+          entryName: entry.entryName,
+        }),
+      ),
+    );
+}
+
 function attachDiagnosticsToEntries(
   diagnostics: LightExtensionDiagnostic[],
   entries: LightExtensionEntryValidationResult[],
@@ -3727,6 +3770,7 @@ function isRelativeImportOutsideCurrentEntry(
   filePath: string,
   specifier: string,
   target: Omit<DiagnosticTarget, 'path'>,
+  entryRootPath?: string,
 ): boolean {
   if (!specifier.startsWith('.') || !target.kind || !target.entryName) {
     return false;
@@ -3736,7 +3780,7 @@ function isRelativeImportOutsideCurrentEntry(
   if (resolvedPath === sharedSourceRoot || resolvedPath.startsWith(`${sharedSourceRoot}/`)) {
     return false;
   }
-  const rootPath = getEntryRootPath(target.kind, target.entryName);
+  const rootPath = entryRootPath || getEntryRootPath(target.kind, target.entryName);
   return resolvedPath !== rootPath && !resolvedPath.startsWith(`${rootPath}/`);
 }
 
@@ -6772,7 +6816,7 @@ function validateOptionalNumber(
 }
 
 function isValidEntryName(value: string): boolean {
-  return /^[a-z0-9][a-z0-9-]{0,62}$/.test(value);
+  return LIGHT_EXTENSION_ENTRY_KEY_PATTERN.test(value);
 }
 
 function isValidSettingsPropertyName(value: string): boolean {

@@ -7,12 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type React from 'react';
+import type { RunJSSourceLocator, RunJSSurfaceStyle } from '@nocobase/client-v2';
 import type { RunJSValue } from '@nocobase/flow-engine';
+import type React from 'react';
 
-import type { RunJSSourceLocator, RunJSSurfaceStyle } from '../../shared/runjs-source-contracts';
-
-export type { RunJSSourceLocator, RunJSSurfaceStyle } from '../../shared/runjs-source-contracts';
+export type { RunJSSourceLocator, RunJSSurfaceStyle } from '@nocobase/client-v2';
 
 export interface LegacyRunJSEditorProviderRenderProps {
   t?: (key: string) => string;

@@ -28,6 +28,24 @@ const EXCLUDE_PATTERNS = [
   '.umi{,-production,-test}{,/**}',
 ];
 
+const LEGACY_REACT_CHILDREN_COMPAT_SOURCE = `
+import 'react';
+import 'react-drag-listview';
+import type { PropsWithChildren, ReactNode } from 'react';
+
+declare module 'react' {
+  interface FunctionComponent<P = {}> {
+    (props: 'children' extends keyof P ? P : PropsWithChildren<P>, deprecatedLegacyContext?: unknown): ReactNode;
+  }
+}
+
+declare module 'react-drag-listview' {
+  interface DragListViewProps {
+    children?: ReactNode;
+  }
+}
+`;
+
 const diagnosticHost: ts.FormatDiagnosticsHost = {
   getCurrentDirectory: () => process.cwd(),
   getCanonicalFileName: (fileName) => (ts.sys.useCaseSensitiveFileNames ? fileName : fileName.toLowerCase()),
@@ -89,6 +107,21 @@ export const buildDeclaration = async (cwd: string, targetDir: string) => {
   } satisfies ts.CompilerOptions;
 
   const host = ts.createCompilerHost(compilerOptions);
+  const legacyReactChildrenCompatPath = path.join(srcPath, '.nocobase-react-children-compat.d.ts');
+  const isCoreClient = path.resolve(cwd) === path.join(ROOT_PATH, 'packages/core/client');
+  const hasLegacyClientLane = ts.sys.directoryExists(path.join(srcPath, 'client'));
+  const needsLegacyReactChildrenCompat = isCoreClient || hasLegacyClientLane;
+  const rootNames = needsLegacyReactChildrenCompat ? [...files, legacyReactChildrenCompatPath] : files;
+  const originalGetSourceFile = host.getSourceFile.bind(host);
+  const originalFileExists = host.fileExists.bind(host);
+  host.fileExists = (fileName) =>
+    (needsLegacyReactChildrenCompat && fileName === legacyReactChildrenCompatPath) || originalFileExists(fileName);
+  host.getSourceFile = (fileName, languageVersionOrOptions, onError, shouldCreateNewSourceFile) => {
+    if (needsLegacyReactChildrenCompat && fileName === legacyReactChildrenCompatPath) {
+      return ts.createSourceFile(fileName, LEGACY_REACT_CHILDREN_COMPAT_SOURCE, languageVersionOrOptions, true);
+    }
+    return originalGetSourceFile(fileName, languageVersionOrOptions, onError, shouldCreateNewSourceFile);
+  };
   const originalDirectoryExists = host.directoryExists?.bind(host);
   const rootPrefix = ROOT_PATH.endsWith(path.sep) ? ROOT_PATH : ROOT_PATH + path.sep;
   host.directoryExists = (dirPath: string) => {
@@ -100,7 +133,7 @@ export const buildDeclaration = async (cwd: string, targetDir: string) => {
     return originalDirectoryExists ? originalDirectoryExists(dirPath) : ts.sys.directoryExists(dirPath);
   };
 
-  const program = ts.createProgram(files, compilerOptions, host);
+  const program = ts.createProgram(rootNames, compilerOptions, host);
   const emitResult = program.emit(undefined, undefined, undefined, true);
   const diagnostics = ts.getPreEmitDiagnostics(program).concat(emitResult.diagnostics);
 

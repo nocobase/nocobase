@@ -26,3 +26,4 @@ export const defaultVscFileLimits = {
   commitHistoryDefaultLimit,
   commitHistoryMaxLimit,
 } as const;
+export const VSC_FILE_NAMESPACE = '@nocobase/plugin-vsc-file';

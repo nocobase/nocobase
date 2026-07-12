@@ -20,6 +20,8 @@ Put each reusable entry in its own directory:
 - RunJS: \`src/client/runjs/<entry-name>/index.ts\`
 
 An entry can use \`index.ts\`, \`index.tsx\`, \`index.js\`, or \`index.jsx\`. Keep entry-specific modules in the same entry directory. Put modules shared by multiple entries in \`src/shared/\`.
+
+Use \`meta.json.key\` as the stable technical identity of an entry. The key stays unchanged when the entry directory is renamed.
 `;
 
 export const LIGHT_EXTENSION_SDK_SHIM_PATH = 'src/shared/light-extension-sdk.d.ts';
@@ -94,7 +96,7 @@ declare module "@nocobase/light-extension-sdk/shared" {
 export const LIGHT_EXTENSION_TSCONFIG_CONTENT =
   '{\n  "compilerOptions": {\n    "baseUrl": ".",\n    "jsx": "react-jsx",\n    "strict": true,\n    "target": "ES2020",\n    "paths": {\n      "@nocobase/light-extension-sdk/client": ["src/shared/light-extension-sdk.d.ts"],\n      "@nocobase/light-extension-sdk/shared": ["src/shared/light-extension-sdk.d.ts"],\n      "light-extension:settings/*": [".light-extension/types/*"]\n    }\n  }\n}\n';
 
-export const DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES: readonly LightExtensionTreeEntryInput[] = [
+export const BASE_LIGHT_EXTENSION_TEMPLATE_FILES: readonly LightExtensionTreeEntryInput[] = [
   {
     path: 'README.md',
     content: DEFAULT_LIGHT_EXTENSION_README,
@@ -115,10 +117,19 @@ export const DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES: readonly LightExtensionTree
     content: LIGHT_EXTENSION_SDK_SHIM_CONTENT,
     language: 'typescript',
   },
+];
+
+export const DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES: readonly LightExtensionTreeEntryInput[] = [
+  ...BASE_LIGHT_EXTENSION_TEMPLATE_FILES,
   {
     path: 'src/client/js-blocks/example/index.tsx',
     content: 'ctx.render(<div>Example block</div>);\n',
     language: 'typescript',
+  },
+  {
+    path: 'src/client/js-blocks/example/meta.json',
+    content: '{\n  "key": "example"\n}\n',
+    language: 'json',
   },
   {
     path: 'src/client/js-actions/example/index.ts',
@@ -126,9 +137,19 @@ export const DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES: readonly LightExtensionTree
     language: 'typescript',
   },
   {
+    path: 'src/client/js-actions/example/meta.json',
+    content: '{\n  "key": "example"\n}\n',
+    language: 'json',
+  },
+  {
     path: 'src/client/js-fields/example/index.tsx',
     content: "ctx.render(<span>{String(ctx.value ?? '')}</span>);\n",
     language: 'typescript',
+  },
+  {
+    path: 'src/client/js-fields/example/meta.json',
+    content: '{\n  "key": "example"\n}\n',
+    language: 'json',
   },
   {
     path: 'src/client/js-items/example/index.tsx',
@@ -136,11 +157,25 @@ export const DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES: readonly LightExtensionTree
     language: 'typescript',
   },
   {
+    path: 'src/client/js-items/example/meta.json',
+    content: '{\n  "key": "example"\n}\n',
+    language: 'json',
+  },
+  {
     path: 'src/client/runjs/example/index.ts',
     content: 'export default async function run() {\n  return true;\n}\n',
     language: 'typescript',
   },
+  {
+    path: 'src/client/runjs/example/meta.json',
+    content: '{\n  "key": "example"\n}\n',
+    language: 'json',
+  },
 ];
+
+export function createLightExtensionBaseTemplate(): LightExtensionTreeEntryInput[] {
+  return BASE_LIGHT_EXTENSION_TEMPLATE_FILES.map((file) => ({ ...file }));
+}
 
 export function createDefaultLightExtensionTemplate(): LightExtensionTreeEntryInput[] {
   return DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES.map((file) => ({ ...file }));

@@ -9,6 +9,7 @@
 
 import { VscError } from './errors';
 import { sha256Hex } from './hash';
+export { buildRunJSOwnerFingerprint } from '@nocobase/server';
 import type { RunJSSourceLocator } from './runjs-source-contracts';
 import type { VscFileChange, VscRepositoryIdentity } from './types';
 
@@ -118,22 +119,6 @@ export function getRunJSSourceOwnerId(locator: RunJSSourceLocator): string {
   const sourcePathHash = sha256Hex(JSON.stringify(getSourcePathSegments(locator))).slice(0, 16);
 
   return `runjs:${locator.kind}:${stableOwnerId}:${sourcePathHash}`;
-}
-
-export function buildRunJSOwnerFingerprint(input: {
-  locator: RunJSSourceLocator;
-  ownerUpdatedAt?: unknown;
-  selectedLegacyValue: unknown;
-  selectedVersion: unknown;
-}): string {
-  return sha256Hex(
-    stableSerialize({
-      locator: input.locator,
-      ownerUpdatedAt: input.ownerUpdatedAt ?? null,
-      selectedLegacyValue: input.selectedLegacyValue ?? null,
-      selectedVersion: input.selectedVersion ?? null,
-    }),
-  );
 }
 
 export function buildRunJSFilesHash(files: VscFileChange[]): string {

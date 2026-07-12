@@ -15,6 +15,7 @@ describe('plugin-light-extension meta validator', () => {
     const result = validator.validateWorkspace({
       files: entryFiles({
         'meta.json': JSON.stringify({
+          key: 'sales-overview',
           title: 'Sales KPI',
           description: 'Shows sales KPIs',
           category: 'sales',
@@ -27,6 +28,8 @@ describe('plugin-light-extension meta validator', () => {
 
     expect(result.accepted).toBe(true);
     expect(result.entries[0]).toMatchObject({
+      entryName: 'sales-overview',
+      entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
       title: 'Sales KPI',
       description: 'Shows sales KPIs',
       category: 'sales',
@@ -34,6 +37,47 @@ describe('plugin-light-extension meta validator', () => {
       tags: ['sales', 'kpi'],
       sort: 10,
     });
+  });
+
+  it('keeps internal imports scoped to the physical directory when meta key differs from it', () => {
+    const validator = new LightExtensionValidator();
+    const result = validator.validateWorkspace({
+      files: [
+        ...entryFiles({
+          'meta.json': JSON.stringify({ key: 'stable-sales-kpi' }),
+          'index.tsx': "import { title } from './title';\nctx.render(<div>{title}</div>);\n",
+        }),
+        {
+          path: 'src/client/js-blocks/sales-kpi/title.ts',
+          content: 'export const title = "Sales KPI";\n',
+        },
+      ],
+    });
+
+    expect(result.accepted).toBe(true);
+    expect(result.entries[0]).toMatchObject({
+      entryName: 'stable-sales-kpi',
+      entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+    });
+  });
+
+  it('rejects duplicate stable keys within the same entry kind', () => {
+    const validator = new LightExtensionValidator();
+    const result = validator.validateWorkspace({
+      files: ['first-folder', 'second-folder'].flatMap((folder) => [
+        {
+          path: `src/client/js-blocks/${folder}/index.tsx`,
+          content: 'ctx.render(<div />);\n',
+        },
+        {
+          path: `src/client/js-blocks/${folder}/meta.json`,
+          content: JSON.stringify({ key: 'shared-key' }),
+        },
+      ]),
+    });
+
+    expect(result.accepted).toBe(false);
+    expect(result.diagnostics.filter((item) => item.code === 'duplicate_entry_key')).toHaveLength(2);
   });
 
   it('rejects invalid meta JSON and unsupported field shapes with file diagnostics', () => {
@@ -78,7 +122,7 @@ function entryFiles(overrides: Record<string, string> = {}) {
   return [
     {
       path: `${root}/index.tsx`,
-      content: 'export default function SalesKpi() { return null; }\n',
+      content: overrides['index.tsx'] || 'export default function SalesKpi() { return null; }\n',
     },
     {
       path: `${root}/meta.json`,

@@ -13,6 +13,7 @@ import { FlowContext, FlowContextProvider } from '@nocobase/flow-engine';
 import { describe, expect, it, vi } from 'vitest';
 
 import { createRunJSLightExtensionEditorProvider } from '../components/RunJSLightExtensionEditorProvider';
+import type { ApiClientLike } from '../api/lightExtensionEntriesRequests';
 
 vi.mock('@nocobase/client-v2', async () => {
   const actual = await vi.importActual<typeof import('@nocobase/client-v2')>('@nocobase/client-v2');
@@ -80,8 +81,8 @@ vi.mock('../pages/LightExtensionWorkspacePage', () => {
   };
 });
 
-function EditorViewHarness(props: { children: React.ReactNode; onClose: () => void }) {
-  const { children, onClose } = props;
+function EditorViewHarness(props: { api?: ApiClientLike; children: React.ReactNode; onClose: () => void }) {
+  const { api, children, onClose } = props;
   const [footer, setFooter] = React.useState<React.ReactNode>(null);
   const context = React.useMemo(() => {
     const nextContext = new FlowContext();
@@ -91,8 +92,11 @@ function EditorViewHarness(props: { children: React.ReactNode; onClose: () => vo
         setFooter,
       },
     });
+    if (api) {
+      nextContext.defineProperty('api', { value: api });
+    }
     return nextContext;
-  }, [onClose]);
+  }, [api, onClose]);
 
   return (
     <FlowContextProvider context={context}>
@@ -224,6 +228,76 @@ describe('RunJSLightExtensionEditorProvider', () => {
     fireEvent.click(screen.getByRole('button', { name: 'save workspace' }));
     expect(onPersistedChange).toHaveBeenCalledWith(props.value);
     expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('refreshes the entry path by entryId before applying workspace access after a directory rename', async () => {
+    const provider = createRunJSLightExtensionEditorProvider();
+    const onPersistedChange = vi.fn();
+    const api: ApiClientLike = {
+      request: vi.fn(async () => ({
+        data: {
+          data: {
+            id: 'lee_example',
+            repoId: 'ler_example',
+            entryName: 'stable-example',
+            entryPath: 'src/client/js-blocks/renamed-example/index.tsx',
+            kind: 'js-block',
+            title: 'Example',
+          },
+        },
+      })),
+    };
+    const value = {
+      code: 'ctx.render(<div />);',
+      version: 'v2',
+      sourceMode: 'light-extension',
+      sourceBinding: {
+        type: 'light-extension-entry' as const,
+        repoId: 'ler_example',
+        entryId: 'lee_example',
+        entryName: 'stable-example',
+        entryPath: 'src/client/js-blocks/old-example/index.tsx',
+        kind: 'js-block' as const,
+      },
+    };
+
+    render(
+      <EditorViewHarness api={api} onClose={vi.fn()}>
+        {provider.renderEditor({
+          value,
+          locator: {
+            kind: 'flowModel.step',
+            modelUid: 'model_1',
+            flowKey: 'jsSettings',
+            stepKey: 'runJs',
+            paramPath: ['code'],
+          },
+          surfaceStyle: 'render',
+          onPersistedChange,
+        })}
+      </EditorViewHarness>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('workspace:ler_example:src/client/js-blocks/renamed-example/index.tsx')).toHaveAttribute(
+        'data-workspace-scope',
+        JSON.stringify({
+          mode: 'entry',
+          entryPath: 'src/client/js-blocks/renamed-example/index.tsx',
+          kind: 'js-block',
+        }),
+      );
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'save workspace' }));
+    expect(onPersistedChange).toHaveBeenCalledWith({
+      ...value,
+      sourceBinding: {
+        ...value.sourceBinding,
+        entryPath: 'src/client/js-blocks/renamed-example/index.tsx',
+        entryTitle: 'Example',
+      },
+    });
   });
 
   it('places cancel and save actions in the editor view footer', async () => {

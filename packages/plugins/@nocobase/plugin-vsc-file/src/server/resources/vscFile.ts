@@ -417,8 +417,11 @@ function optionalString(input: ResourceActionInput, key: string, label?: string)
 
 function optionalRefName(input: ResourceActionInput, key: string): PullInput['ref'] | undefined {
   const value = optionalString(input, key);
-  if (value === undefined || value === 'head') {
-    return value;
+  if (value === undefined) {
+    return undefined;
+  }
+  if (value === 'head') {
+    return 'head';
   }
 
   throwBadRequest(`${key} must be head`);

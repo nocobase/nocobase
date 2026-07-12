@@ -8,7 +8,7 @@
  */
 
 import type { Database } from '@nocobase/database';
-import type { RunJSSourceAdapter } from '@nocobase/plugin-vsc-file';
+import type { RunJSSourceAdapter } from '@nocobase/server';
 
 import { createWorkflowJavaScriptRunJSSourceAdapter } from './workflow-javascript-adapter';
 
@@ -16,8 +16,13 @@ type PluginWithApp = {
   db: Database;
   app: {
     pm: PluginManagerLike;
+    on?: (eventName: 'afterLoadPlugin', listener: PluginLoadListener) => unknown;
+    off?: (eventName: 'afterLoadPlugin', listener: PluginLoadListener) => unknown;
+    removeListener?: (eventName: 'afterLoadPlugin', listener: PluginLoadListener) => unknown;
   };
 };
+
+type PluginLoadListener = (plugin: unknown, options?: unknown) => void;
 
 type PluginManagerLike = {
   get?: (name: string) => unknown;
@@ -30,13 +35,50 @@ type RunJSSourceAdapterRegistrar = {
 
 const VSC_FILE_PLUGIN_ALIASES = ['@nocobase/plugin-vsc-file', 'vsc-file', 'plugin-vsc-file'];
 
-export function registerWorkflowJavaScriptRunJSSourceAdapter(plugin: PluginWithApp): void {
-  const registrar = findRunJSSourceAdapterRegistrar(plugin.app.pm);
-  if (!registrar) {
-    return;
+export function registerWorkflowJavaScriptRunJSSourceAdapter(plugin: PluginWithApp): () => void {
+  let unregisterAdapter: (() => void) | undefined;
+  let listening = false;
+
+  const tryRegister = (): boolean => {
+    if (unregisterAdapter) {
+      return true;
+    }
+    const registrar = findRunJSSourceAdapterRegistrar(plugin.app.pm);
+    if (!registrar) {
+      return false;
+    }
+    unregisterAdapter = registrar.registerRunJSSourceAdapter(createWorkflowJavaScriptRunJSSourceAdapter(plugin.db));
+    return true;
+  };
+
+  const onAfterLoadPlugin: PluginLoadListener = () => {
+    if (tryRegister()) {
+      removeAfterLoadPluginListener(plugin, onAfterLoadPlugin);
+      listening = false;
+    }
+  };
+
+  if (!tryRegister()) {
+    plugin.app.on?.('afterLoadPlugin', onAfterLoadPlugin);
+    listening = true;
   }
 
-  registrar.registerRunJSSourceAdapter(createWorkflowJavaScriptRunJSSourceAdapter(plugin.db));
+  return () => {
+    unregisterAdapter?.();
+    unregisterAdapter = undefined;
+    if (listening) {
+      removeAfterLoadPluginListener(plugin, onAfterLoadPlugin);
+      listening = false;
+    }
+  };
+}
+
+function removeAfterLoadPluginListener(plugin: PluginWithApp, listener: PluginLoadListener): void {
+  if (plugin.app.off) {
+    plugin.app.off('afterLoadPlugin', listener);
+    return;
+  }
+  plugin.app.removeListener?.('afterLoadPlugin', listener);
 }
 
 function findRunJSSourceAdapterRegistrar(pm: PluginManagerLike): RunJSSourceAdapterRegistrar | null {

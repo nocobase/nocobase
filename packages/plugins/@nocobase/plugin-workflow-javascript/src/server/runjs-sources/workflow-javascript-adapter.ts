@@ -8,17 +8,17 @@
  */
 
 import { NoPermissionError, checkFilterParams, createUserProvider, parseJsonTemplate } from '@nocobase/acl';
-import type { Database, Model, Transaction } from '@nocobase/database';
+import type { Database, Filter, Model, Transaction } from '@nocobase/database';
 import {
-  VscError,
   buildRunJSOwnerFingerprint,
+  RunJSSourceError,
   type RunJSLegacySource,
   type RunJSRuntimeWriteResult,
   type RunJSSourceAdapter,
   type RunJSSourceAdapterContext,
   type RunJSSourceLocator,
   type RunJSSourcePermissionResult,
-} from '@nocobase/plugin-vsc-file';
+} from '@nocobase/server';
 
 type WorkflowJavaScriptLocator = Extract<RunJSSourceLocator, { kind: 'workflow.javascript' }>;
 type JsonRecord = Record<string, unknown>;
@@ -93,7 +93,7 @@ async function lockScriptNodeForUpdate(
   });
 
   if (!node || node.get('type') !== 'script') {
-    throw new VscError('RUNJS_SOURCE_NOT_FOUND', `Workflow JavaScript node "${locator.nodeId}" was not found`, {
+    throw new RunJSSourceError('RUNJS_SOURCE_NOT_FOUND', `Workflow JavaScript node "${locator.nodeId}" was not found`, {
       details: {
         nodeId: locator.nodeId,
       },
@@ -114,7 +114,7 @@ async function loadScriptNode(
   });
 
   if (!node || node.get('type') !== 'script') {
-    throw new VscError('RUNJS_SOURCE_NOT_FOUND', `Workflow JavaScript node "${locator.nodeId}" was not found`, {
+    throw new RunJSSourceError('RUNJS_SOURCE_NOT_FOUND', `Workflow JavaScript node "${locator.nodeId}" was not found`, {
       details: {
         nodeId: locator.nodeId,
       },
@@ -138,7 +138,7 @@ async function assertWorkflowNodeCanWrite(db: Database, node: Model, ctx: RunJSS
   const versionStats = workflow?.get('versionStats');
 
   if (isExecutedVersionStats(versionStats)) {
-    throw new VscError('RUNJS_SOURCE_READONLY', 'Nodes in executed workflow could not be reconfigured', {
+    throw new RunJSSourceError('RUNJS_SOURCE_READONLY', 'Nodes in executed workflow could not be reconfigured', {
       details: {
         workflowId,
         nodeId: node.get('id'),
@@ -168,7 +168,7 @@ function requireSourcePermission(
     return permission;
   }
 
-  throw new VscError('PERMISSION_DENIED', `RunJS source requires ${resource}:${action} permission`, {
+  throw new RunJSSourceError('PERMISSION_DENIED', `RunJS source requires ${resource}:${action} permission`, {
     details: {
       resource,
       action,
@@ -197,7 +197,7 @@ async function assertRecordMatchesPermissionFilter(
     return;
   }
 
-  throw new VscError('PERMISSION_DENIED', `RunJS source owner is outside ${resource} permission scope`, {
+  throw new RunJSSourceError('PERMISSION_DENIED', `RunJS source owner is outside ${resource} permission scope`, {
     details: {
       resource,
       filterByTk,
@@ -210,26 +210,24 @@ async function parsePermissionFilter(
   ctx: RunJSSourceAdapterContext,
   resource: string,
   filter: unknown,
-): Promise<unknown> {
+): Promise<Filter | undefined> {
   if (!filter) {
     return undefined;
   }
 
   try {
     checkFilterParams(db.getCollection(resource), filter);
-    return (
-      (await parseJsonTemplate(filter, {
-        state: ctx.state || {},
-        timezone: ctx.timezone,
-        userProvider: createUserProvider({
-          db,
-          currentUser: ctx.currentUser,
-        }),
-      })) ?? filter
-    );
+    return ((await parseJsonTemplate(filter, {
+      state: ctx.state || {},
+      timezone: ctx.timezone,
+      userProvider: createUserProvider({
+        db,
+        currentUser: ctx.currentUser,
+      }),
+    })) ?? filter) as Filter;
   } catch (error) {
     if (error instanceof NoPermissionError) {
-      throw new VscError('PERMISSION_DENIED', `RunJS source requires ${resource} permission scope`, {
+      throw new RunJSSourceError('PERMISSION_DENIED', `RunJS source requires ${resource} permission scope`, {
         details: {
           resource,
         },
@@ -247,7 +245,7 @@ function assertPermissionAllowsFields(
 ): void {
   const whitelist = toStringList(permission.params?.whitelist || permission.params?.fields);
   if (whitelist && fields.some((field) => !whitelist.includes(field))) {
-    throw new VscError('PERMISSION_DENIED', `RunJS source requires ${resource}:${action} field permission`, {
+    throw new RunJSSourceError('PERMISSION_DENIED', `RunJS source requires ${resource}:${action} field permission`, {
       details: {
         resource,
         action,
@@ -258,7 +256,7 @@ function assertPermissionAllowsFields(
 
   const blacklist = toStringList(permission.params?.blacklist);
   if (blacklist && fields.some((field) => blacklist.includes(field))) {
-    throw new VscError('PERMISSION_DENIED', `RunJS source requires ${resource}:${action} field permission`, {
+    throw new RunJSSourceError('PERMISSION_DENIED', `RunJS source requires ${resource}:${action} field permission`, {
       details: {
         resource,
         action,
@@ -298,7 +296,7 @@ function assertOwnerFingerprintMatches(current: string, expected: string, kind: 
     return;
   }
 
-  throw new VscError('RUNJS_SOURCE_OWNER_OUTDATED', 'RunJS host code differs from the versioned source', {
+  throw new RunJSSourceError('RUNJS_SOURCE_OWNER_OUTDATED', 'RunJS host code differs from the versioned source', {
     details: {
       expected: current,
       received: expected,
@@ -354,7 +352,7 @@ async function touchWorkflow(db: Database, node: Model, transaction: Transaction
 
 function requireTransaction(ctx: RunJSSourceAdapterContext): Transaction {
   if (!ctx.transaction) {
-    throw new VscError('INTERNAL_ERROR', 'RunJS source adapter writes require a transaction');
+    throw new RunJSSourceError('INTERNAL_ERROR', 'RunJS source adapter writes require a transaction');
   }
 
   return ctx.transaction as Transaction;

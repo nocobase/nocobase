@@ -17,12 +17,12 @@
     "@nocobase/acl": "2.x",
     "@nocobase/client": "2.x",
     "@nocobase/database": "2.x",
-    "@nocobase/plugin-vsc-file": "2.x",
     "@nocobase/plugin-workflow": "2.x",
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x"
   },
   "devDependencies": {
+    "@nocobase/plugin-vsc-file": "2.2.0-beta.11",
     "@codemirror/lang-javascript": "^6.2.2",
     "@codemirror/lint": "^6.8.3",
     "@codemirror/state": "^6.4.1",

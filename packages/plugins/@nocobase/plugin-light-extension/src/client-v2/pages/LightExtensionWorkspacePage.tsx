@@ -30,7 +30,7 @@ import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
-import { NAMESPACE } from '../../constants';
+import { LIGHT_EXTENSION_ENTRY_KEY_PATTERN, NAMESPACE } from '../../constants';
 import { generateClientSettingsTypes, type LightExtensionSettingsTypegenResult } from '../../sdk/settings-typegen';
 import {
   DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES,
@@ -120,6 +120,7 @@ function LightExtensionWorkspacePage({
   const [historyItems, setHistoryItems] = useState<RunJSSourceHistoryItem[]>([]);
   const [diagnostics, setDiagnostics] = useState<LightExtensionDiagnostic[]>([]);
   const [loading, setLoading] = useState(false);
+  const [initializedRepoId, setInitializedRepoId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
   const [versionMessage, setVersionMessage] = useState('');
@@ -201,6 +202,7 @@ function LightExtensionWorkspacePage({
         setNotice({ type: 'error', message: error instanceof Error ? error.message : t('Failed to load source') });
       } finally {
         setLoading(false);
+        setInitializedRepoId(repoId);
       }
     },
     [getRepo, initialPath, listCommits, pull, repoId, t],
@@ -369,8 +371,9 @@ function LightExtensionWorkspacePage({
       return false;
     }
 
+    const filesWithEntryKey = ensureEntryKeyBeforeRootFolderRename(files, path);
     const nextFiles = normalizeWorkspaceFiles(
-      files.map((file) => ({
+      filesWithEntryKey.map((file) => ({
         ...file,
         language: languageFromPath(replacePathPrefix(file.path, path, normalizedNextPath)),
         path: replacePathPrefix(file.path, path, normalizedNextPath),
@@ -629,6 +632,28 @@ function LightExtensionWorkspacePage({
           </Typography.Title>
         ) : null}
         <Empty description={t('Select a repository from the light extension list')} />
+      </Flex>
+    );
+  }
+
+  if (initializedRepoId !== repoId) {
+    return (
+      <Flex
+        align="center"
+        aria-live="polite"
+        gap={12}
+        justify="center"
+        role="status"
+        style={{
+          flex: embedded ? '1 1 0' : undefined,
+          height: embedded ? '100%' : 520,
+          minHeight: embedded ? 320 : 520,
+          padding: 24,
+        }}
+        vertical
+      >
+        <Spin size="large" />
+        <Typography.Text>{t('Loading source')}</Typography.Text>
       </Flex>
     );
   }
@@ -1174,6 +1199,45 @@ function addSettingsTypeFiles(
       language: 'typescript',
     })),
   );
+}
+
+function ensureEntryKeyBeforeRootFolderRename(files: WorkspaceFile[], folderPath: string): WorkspaceFile[] {
+  const match = folderPath.match(/^src\/client\/(?:js-blocks|js-fields|js-actions|js-items|runjs)\/([^/]+)$/);
+  const entryKey = match?.[1];
+  if (!entryKey || !LIGHT_EXTENSION_ENTRY_KEY_PATTERN.test(entryKey)) {
+    return files;
+  }
+
+  const metaPath = `${folderPath}/meta.json`;
+  const metaFile = files.find((file) => file.path === metaPath);
+  if (!metaFile) {
+    return mergeFiles(files, [
+      {
+        path: metaPath,
+        content: `${JSON.stringify({ key: entryKey }, null, 2)}\n`,
+        language: 'json',
+      },
+    ]);
+  }
+
+  try {
+    const meta = JSON.parse(metaFile.content) as unknown;
+    if (!meta || typeof meta !== 'object' || Array.isArray(meta) || Object.prototype.hasOwnProperty.call(meta, 'key')) {
+      return files;
+    }
+
+    return files.map((file) =>
+      file.path === metaPath
+        ? {
+            ...file,
+            content: `${JSON.stringify({ key: entryKey, ...(meta as Record<string, unknown>) }, null, 2)}\n`,
+            language: 'json',
+          }
+        : file,
+    );
+  } catch {
+    return files;
+  }
 }
 
 function ensurePersistedLightExtensionSdkShim(files: WorkspaceFile[]): WorkspaceFile[] {

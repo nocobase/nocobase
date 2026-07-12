@@ -63,6 +63,7 @@ vi.mock('@nocobase/plugin-vsc-file/client-v2', () => {
       onCreate,
       onCreateFolder,
       onOpen,
+      onRenameFolder,
     }: {
       files: Array<{ path: string }>;
       folders: string[];
@@ -71,6 +72,7 @@ vi.mock('@nocobase/plugin-vsc-file/client-v2', () => {
       onCreate: (parentPath?: string) => string | undefined;
       onCreateFolder: (parentPath?: string) => string | undefined;
       onOpen: (path: string) => void;
+      onRenameFolder: (path: string, nextPath: string) => boolean;
     }) => (
       <div data-testid="runjs-files-panel">
         <button onClick={() => onCreate(defaultCreateParentPath || 'src/client')} type="button">
@@ -82,9 +84,14 @@ vi.mock('@nocobase/plugin-vsc-file/client-v2', () => {
         {folders.map((folder) => {
           const access = getPathAccess?.(folder, 'folder');
           return (
-            <span data-can-write={String(access?.canWrite !== false)} data-reason={access?.reason || ''} key={folder}>
-              {folder}
-            </span>
+            <div key={folder}>
+              <span data-can-write={String(access?.canWrite !== false)} data-reason={access?.reason || ''}>
+                {folder}
+              </span>
+              <button onClick={() => onRenameFolder(folder, `${folder}-renamed`)} type="button">
+                Rename folder {folder}
+              </button>
+            </div>
           );
         })}
         {files.map((file) => (
@@ -325,6 +332,41 @@ describe('LightExtensionWorkspacePage', () => {
     mocks.api.listCommits.mockResolvedValue([]);
   });
 
+  it('shows only a global loading state while the initial workspace is loading', async () => {
+    let resolveRepo: ((value: unknown) => void) | undefined;
+    mocks.api.getRepo.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveRepo = resolve;
+        }),
+    );
+
+    render(
+      <MemoryRouter initialEntries={['/admin/settings/light-extension?panel=source&repoId=ler_sales']}>
+        <LightExtensionWorkspacePage embedded />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Loading source');
+    expect(screen.queryByTestId('runjs-files-panel')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('runjs-history-dock')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('runjs-code-tab')).not.toBeInTheDocument();
+
+    await act(async () => {
+      resolveRepo?.({
+        id: 'ler_sales',
+        name: 'sales-widgets',
+        normalizedName: 'sales-widgets',
+        title: 'Sales widgets',
+        lifecycleStatus: 'enabled',
+        healthStatus: 'pending',
+        headCommitId: 'commit-1',
+      });
+    });
+
+    expect(await screen.findByTestId('runjs-code-tab')).toBeInTheDocument();
+  });
+
   it('loads files and saves edited source through the light extension API', async () => {
     render(
       <MemoryRouter initialEntries={['/admin/settings/light-extension?panel=source&repoId=ler_sales']}>
@@ -360,6 +402,64 @@ describe('LightExtensionWorkspacePage', () => {
     expect(saveInput).not.toHaveProperty('baseCommitId');
     expect(saveInput).not.toHaveProperty('baseOwnerFingerprint');
     expect(screen.queryByText('Source saved and compiled')).not.toBeInTheDocument();
+  });
+
+  it('adds a stable meta key before renaming a legacy entry directory', async () => {
+    mocks.api.pull.mockResolvedValueOnce({
+      repo: { id: 'ler_sales' },
+      commit: { id: 'commit-1' },
+      tree: { hash: 'tree-1', entryCount: 2, byteSize: 90 },
+      unchanged: false,
+      files: [
+        {
+          path: 'src/client/js-blocks/sales-kpi/index.tsx',
+          content: 'ctx.render(<div>Sales KPI</div>);\n',
+          language: 'typescript',
+        },
+        {
+          path: 'src/client/js-blocks/sales-kpi/meta.json',
+          content: '{\n  "title": "Sales KPI"\n}\n',
+          language: 'json',
+        },
+      ],
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/admin/settings/light-extension?panel=source&repoId=ler_sales']}>
+        <LightExtensionWorkspacePage />
+      </MemoryRouter>,
+    );
+
+    await screen.findByTestId('runjs-code-tab');
+    fireEvent.click(screen.getByRole('button', { name: 'Rename folder src/client/js-blocks/sales-kpi', exact: true }));
+    const workspaceContents = new Map<string, string>(
+      JSON.parse(screen.getByTestId('runjs-code-tab').getAttribute('data-workspace-file-contents') || '[]'),
+    );
+    expect(workspaceContents.get('src/client/js-blocks/sales-kpi-renamed/meta.json')).toBe(
+      '{\n  "key": "sales-kpi",\n  "title": "Sales KPI"\n}\n',
+    );
+    expect(workspaceContents.get('src/client/js-blocks/sales-kpi-renamed/index.tsx')).toBe(
+      'ctx.render(<div>Sales KPI</div>);\n',
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Save/ }));
+    await confirmSaveVersion('Rename sales KPI directory');
+    await waitFor(() => expect(mocks.api.saveSource).toHaveBeenCalledTimes(1));
+    expect(mocks.api.saveSource.mock.calls[0][0].files).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ path: 'src/client/js-blocks/sales-kpi/index.tsx', operation: 'delete' }),
+        expect.objectContaining({ path: 'src/client/js-blocks/sales-kpi/meta.json', operation: 'delete' }),
+        expect.objectContaining({
+          path: 'src/client/js-blocks/sales-kpi-renamed/index.tsx',
+          operation: 'upsert',
+        }),
+        expect.objectContaining({
+          path: 'src/client/js-blocks/sales-kpi-renamed/meta.json',
+          content: expect.stringContaining('"key": "sales-kpi"'),
+          operation: 'upsert',
+        }),
+      ]),
+    );
   });
 
   it('shows save progress and closes an embedded workspace after the persisted save completes', async () => {

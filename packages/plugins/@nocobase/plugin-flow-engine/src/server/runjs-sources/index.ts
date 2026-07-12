@@ -8,7 +8,7 @@
  */
 
 import type { Database } from '@nocobase/database';
-import type { RunJSSourceAdapter } from '@nocobase/plugin-vsc-file';
+import type { RunJSSourceAdapter } from '@nocobase/server';
 
 import { createFlowModelRunJSSourceAdapters } from './flow-model-adapters';
 
@@ -35,11 +35,12 @@ type RunJSSourceAdapterRegistrar = {
 
 const VSC_FILE_PLUGIN_ALIASES = ['@nocobase/plugin-vsc-file', 'vsc-file', 'plugin-vsc-file'];
 
-export function registerFlowModelRunJSSourceAdapters(plugin: PluginWithApp): void {
-  let registered = false;
+export function registerFlowModelRunJSSourceAdapters(plugin: PluginWithApp): () => void {
+  let unregisterAdapters: Array<() => void> = [];
+  let listening = false;
 
   const tryRegister = (): boolean => {
-    if (registered) {
+    if (unregisterAdapters.length) {
       return true;
     }
     const registrar = findRunJSSourceAdapterRegistrar(plugin.app.pm);
@@ -47,24 +48,33 @@ export function registerFlowModelRunJSSourceAdapters(plugin: PluginWithApp): voi
       return false;
     }
 
-    registered = true;
-    for (const adapter of createFlowModelRunJSSourceAdapters(plugin.db)) {
-      registrar.registerRunJSSourceAdapter(adapter);
-    }
+    unregisterAdapters = createFlowModelRunJSSourceAdapters(plugin.db).map((adapter) =>
+      registrar.registerRunJSSourceAdapter(adapter),
+    );
 
     return true;
   };
 
-  if (tryRegister()) {
-    return;
-  }
-
   const onAfterLoadPlugin: PluginLoadListener = () => {
     if (tryRegister()) {
       removeAfterLoadPluginListener(plugin, onAfterLoadPlugin);
+      listening = false;
     }
   };
-  plugin.app.on?.('afterLoadPlugin', onAfterLoadPlugin);
+
+  if (!tryRegister()) {
+    plugin.app.on?.('afterLoadPlugin', onAfterLoadPlugin);
+    listening = true;
+  }
+
+  return () => {
+    unregisterAdapters.forEach((unregister) => unregister());
+    unregisterAdapters = [];
+    if (listening) {
+      removeAfterLoadPluginListener(plugin, onAfterLoadPlugin);
+      listening = false;
+    }
+  };
 }
 
 function removeAfterLoadPluginListener(plugin: PluginWithApp, listener: PluginLoadListener): void {

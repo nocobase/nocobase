@@ -582,7 +582,7 @@ export function FilesPanel(props: {
                       </Typography.Text>
                     )}
                   </Space>
-                  {!readOnly && canCreateInsideFolder ? (
+                  {!readOnly && (canCreateInsideFolder || pathAccess.canRename) ? (
                     <Space
                       size={0}
                       style={{
@@ -591,38 +591,60 @@ export function FilesPanel(props: {
                         transition: 'opacity 120ms ease',
                       }}
                     >
-                      <Tooltip title={t('New file')} open={actionsVisible ? undefined : false}>
-                        <Button
-                          aria-label={`${t('New file')} ${row.path}`}
-                          icon={<FileAddOutlined />}
-                          onBlur={() => setActionFocusedPath((current) => (current === row.path ? null : current))}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            createFileInline(row.path);
-                          }}
-                          onFocus={() => setActionFocusedPath(row.path)}
-                          size="small"
-                          style={{ height: 20, padding: 0, width: 20 }}
-                          tabIndex={actionsVisible ? 0 : -1}
-                          type="text"
-                        />
-                      </Tooltip>
-                      <Tooltip title={t('New folder')} open={actionsVisible ? undefined : false}>
-                        <Button
-                          aria-label={`${t('New folder')} ${row.path}`}
-                          icon={<FolderAddOutlined />}
-                          onBlur={() => setActionFocusedPath((current) => (current === row.path ? null : current))}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            createFolderInline(row.path);
-                          }}
-                          onFocus={() => setActionFocusedPath(row.path)}
-                          size="small"
-                          style={{ height: 20, padding: 0, width: 20 }}
-                          tabIndex={actionsVisible ? 0 : -1}
-                          type="text"
-                        />
-                      </Tooltip>
+                      {canCreateInsideFolder ? (
+                        <>
+                          <Tooltip title={t('New file')} open={actionsVisible ? undefined : false}>
+                            <Button
+                              aria-label={`${t('New file')} ${row.path}`}
+                              icon={<FileAddOutlined />}
+                              onBlur={() => setActionFocusedPath((current) => (current === row.path ? null : current))}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                createFileInline(row.path);
+                              }}
+                              onFocus={() => setActionFocusedPath(row.path)}
+                              size="small"
+                              style={{ height: 20, padding: 0, width: 20 }}
+                              tabIndex={actionsVisible ? 0 : -1}
+                              type="text"
+                            />
+                          </Tooltip>
+                          <Tooltip title={t('New folder')} open={actionsVisible ? undefined : false}>
+                            <Button
+                              aria-label={`${t('New folder')} ${row.path}`}
+                              icon={<FolderAddOutlined />}
+                              onBlur={() => setActionFocusedPath((current) => (current === row.path ? null : current))}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                createFolderInline(row.path);
+                              }}
+                              onFocus={() => setActionFocusedPath(row.path)}
+                              size="small"
+                              style={{ height: 20, padding: 0, width: 20 }}
+                              tabIndex={actionsVisible ? 0 : -1}
+                              type="text"
+                            />
+                          </Tooltip>
+                        </>
+                      ) : null}
+                      {pathAccess.canRename ? (
+                        <Tooltip title={t('Rename')} open={actionsVisible ? undefined : false}>
+                          <Button
+                            aria-label={`${t('Rename')} ${row.path}`}
+                            icon={<EditOutlined />}
+                            onBlur={() => setActionFocusedPath((current) => (current === row.path ? null : current))}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              startInlineEdit('folder', row.path, false);
+                            }}
+                            onFocus={() => setActionFocusedPath(row.path)}
+                            size="small"
+                            style={{ height: 20, padding: 0, width: 20 }}
+                            tabIndex={actionsVisible ? 0 : -1}
+                            type="text"
+                          />
+                        </Tooltip>
+                      ) : null}
                     </Space>
                   ) : null}
                 </div>
@@ -814,6 +836,7 @@ export function CodeTab(props: {
   scene?: string;
   showRunButton?: boolean;
   t: (key: string) => string;
+  toolbarActions?: React.ReactNode;
   version: string;
   workspaceFiles: RunJSWorkspaceFile[];
   fullscreenControl?: CodeEditorFullscreenControl;
@@ -839,6 +862,7 @@ export function CodeTab(props: {
     scene,
     showRunButton = true,
     t,
+    toolbarActions,
     version,
     workspaceFiles,
     fullscreenControl,
@@ -888,22 +912,25 @@ export function CodeTab(props: {
     </div>
   );
   const runAndDiffActions = (
-    <Space.Compact>
-      {showRunButton ? (
-        <Button disabled={isDiff || !onRunPreview} loading={previewing} onClick={onRunPreview} size="small">
-          {t('Run')}
-        </Button>
-      ) : null}
-      <Tooltip title={t('Diff')}>
-        <Button
-          aria-label={t('Diff')}
-          icon={<DiffOutlined />}
-          onClick={onDiffToggle}
-          size="small"
-          type={isDiff ? 'primary' : 'default'}
-        />
-      </Tooltip>
-    </Space.Compact>
+    <Space size={8}>
+      {toolbarActions}
+      <Space.Compact>
+        {showRunButton ? (
+          <Button disabled={isDiff || !onRunPreview} loading={previewing} onClick={onRunPreview} size="small">
+            {t('Run')}
+          </Button>
+        ) : null}
+        <Tooltip title={t('Diff')}>
+          <Button
+            aria-label={t('Diff')}
+            icon={<DiffOutlined />}
+            onClick={onDiffToggle}
+            size="small"
+            type={isDiff ? 'primary' : 'default'}
+          />
+        </Tooltip>
+      </Space.Compact>
+    </Space>
   );
 
   if (isDiff) {

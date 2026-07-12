@@ -17,6 +17,8 @@ import { JSONValue } from './template/resolver';
 import { resolveVariablesBatch, resolveVariablesTemplate } from './variables/resolve';
 
 export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
+  private unregisterRunJSSourceAdapters?: () => void;
+
   async afterAdd() {}
 
   async beforeLoad() {
@@ -51,7 +53,8 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
   async load() {
     await super.load();
     registerFlowSurfacesResource(this);
-    registerFlowModelRunJSSourceAdapters(this);
+    this.unregisterRunJSSourceAdapters?.();
+    this.unregisterRunJSSourceAdapters = registerFlowModelRunJSSourceAdapters(this);
     this.app.auditManager.registerAction('flowSql:save');
     this.app.auditManager.registerAction('flowModels:save');
     this.app.auditManager.registerAction('flowModels:duplicate');
@@ -155,13 +158,19 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
     });
   }
 
+  async afterDisable() {
+    this.unregisterRunJSSourceAdapters?.();
+    this.unregisterRunJSSourceAdapters = undefined;
+  }
+
+  async remove() {
+    this.unregisterRunJSSourceAdapters?.();
+    this.unregisterRunJSSourceAdapters = undefined;
+  }
+
   async install() {}
 
   async afterEnable() {}
-
-  async afterDisable() {}
-
-  async remove() {}
 }
 
 export default PluginFlowEngineServer;

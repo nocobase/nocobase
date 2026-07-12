@@ -89,6 +89,29 @@ describe('light extension settings typegen', () => {
     expect(diagnostics).toEqual([]);
   });
 
+  it('uses meta key instead of the physical directory for generated settings identities', () => {
+    const result = generateClientSettingsTypes({
+      files: [
+        {
+          path: 'src/client/js-blocks/renamed-directory/meta.json',
+          content: '{"key":"stable-product-list","title":"Products"}',
+        },
+        {
+          path: 'src/client/js-blocks/renamed-directory/settings.json',
+          content: '{"type":"object","properties":{"title":{"type":"string"}}}',
+        },
+      ],
+    });
+
+    expect(result.entries[0]).toMatchObject({
+      entryName: 'stable-product-list',
+      entryKey: 'client/js-block/stable-product-list',
+      settingsPath: 'src/client/js-blocks/renamed-directory/settings.json',
+      virtualImport: 'light-extension:settings/client/js-block/stable-product-list',
+      outputPath: '.light-extension/types/client/js-block/stable-product-list.d.ts',
+    });
+  });
+
   it('reports ambiguous and stale settings type paths in preview diagnostics', () => {
     const result = generateClientSettingsTypes({
       files: [

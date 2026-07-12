@@ -9,7 +9,26 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+const { legacyProviders, legacyRunJSEditorRegistry } = vi.hoisted(() => {
+  const providers: unknown[] = [];
+  return {
+    legacyProviders: providers,
+    legacyRunJSEditorRegistry: {
+      registerProvider(provider: unknown) {
+        providers.push(provider);
+        return () => {
+          const index = providers.indexOf(provider);
+          if (index >= 0) providers.splice(index, 1);
+        };
+      },
+      getProviders: () => [...providers],
+      clear: () => providers.splice(0),
+    },
+  };
+});
+
 vi.mock('@nocobase/client', () => ({
+  LegacyRunJSEditorRegistry: legacyRunJSEditorRegistry,
   Plugin: class {
     async afterAdd() {}
 
@@ -59,5 +78,6 @@ describe('PluginVscFileClient', () => {
 
     expect(RunJSEditorRegistry.getProviders()).toContain(runJSStudioProvider);
     expect(LegacyRunJSEditorRegistry.getProviders()).toContain(legacyRunJSStudioProvider);
+    expect(legacyProviders).toContain(legacyRunJSStudioProvider);
   });
 });

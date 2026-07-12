@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { VscPermissionHook } from '@nocobase/plugin-vsc-file';
+import type { RunJSSourceAdapterRegistry, VscPermissionHook } from '@nocobase/plugin-vsc-file';
 import { VscPermissionHookRegistry } from '@nocobase/plugin-vsc-file';
 import { Plugin } from '@nocobase/server';
 import { resolve } from 'path';
@@ -40,6 +40,7 @@ import { LightExtensionValidator } from './services/LightExtensionValidator';
 import { LightExtensionWorkspaceCompilerBridge } from './services/LightExtensionWorkspaceCompilerBridge';
 import { RuntimeResolveService } from './services/RuntimeResolveService';
 import { ReferenceService } from './services/ReferenceService';
+import { MoveSourceService } from './services/MoveSourceService';
 
 type VscPermissionHookRegistrar = {
   registerPermissionHook: (hook: VscPermissionHook) => () => void;
@@ -47,6 +48,10 @@ type VscPermissionHookRegistrar = {
 
 type VscPermissionHookRegistryProvider = {
   getPermissionHookRegistry: () => VscPermissionHookRegistry;
+};
+
+type RunJSSourceAdapterRegistryProvider = {
+  getRunJSSourceAdapterRegistry: () => RunJSSourceAdapterRegistry;
 };
 
 type PluginManagerLike = {
@@ -115,6 +120,8 @@ export class PluginLightExtensionServer extends Plugin {
   private entryService?: LightExtensionEntryService;
 
   private referenceService?: ReferenceService;
+
+  private moveSourceService?: MoveSourceService;
 
   private unregisterVscPermissionHook?: () => void;
 
@@ -190,8 +197,17 @@ export class PluginLightExtensionServer extends Plugin {
     );
     this.repoService.useReferenceService(this.referenceService);
     this.runtimeCompileService.useReferenceService(this.referenceService);
+    this.moveSourceService = new MoveSourceService(
+      db,
+      this.repoService,
+      this.fileService,
+      this.entryService,
+      this.runtimeCompileService,
+      this.referenceService,
+      () => findRunJSSourceAdapterRegistry((this.app as unknown as AppWithPluginEvents).pm),
+    );
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
-      createLightExtensionsResource(this.compilePreviewService),
+      createLightExtensionsResource(this.compilePreviewService, this.moveSourceService),
     );
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
       createLightExtensionRuntimeResource(this.runtimeResolveService),
@@ -506,6 +522,32 @@ function findVscPermissionHookRegistry(pm?: PluginManagerLike): VscPermissionHoo
   return undefined;
 }
 
+function findRunJSSourceAdapterRegistry(pm?: PluginManagerLike): RunJSSourceAdapterRegistry | null {
+  if (!pm) {
+    return null;
+  }
+
+  for (const alias of VSC_FILE_PLUGIN_ALIASES) {
+    const plugin = pm.get?.(alias);
+    if (isRunJSSourceAdapterRegistryProvider(plugin)) {
+      return plugin.getRunJSSourceAdapterRegistry();
+    }
+  }
+
+  const plugins = pm.getPlugins?.();
+  if (!plugins) {
+    return null;
+  }
+
+  for (const plugin of plugins.values()) {
+    if (isRunJSSourceAdapterRegistryProvider(plugin)) {
+      return plugin.getRunJSSourceAdapterRegistry();
+    }
+  }
+
+  return null;
+}
+
 function isVscPermissionHookRegistrar(value: unknown): value is VscPermissionHookRegistrar {
   return (
     Boolean(value) &&
@@ -519,6 +561,14 @@ function isVscPermissionHookRegistryProvider(value: unknown): value is VscPermis
     Boolean(value) &&
     typeof value === 'object' &&
     typeof (value as { getPermissionHookRegistry?: unknown }).getPermissionHookRegistry === 'function'
+  );
+}
+
+function isRunJSSourceAdapterRegistryProvider(value: unknown): value is RunJSSourceAdapterRegistryProvider {
+  return (
+    Boolean(value) &&
+    typeof value === 'object' &&
+    typeof (value as { getRunJSSourceAdapterRegistry?: unknown }).getRunJSSourceAdapterRegistry === 'function'
   );
 }
 

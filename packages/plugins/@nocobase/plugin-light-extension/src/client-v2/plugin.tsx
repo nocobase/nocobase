@@ -8,6 +8,7 @@
  */
 
 import type { Application } from '@nocobase/client-v2';
+import { runJSStudioToolbarRegistry } from '@nocobase/plugin-vsc-file/client-v2';
 import {
   JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
   JS_ACTION_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
@@ -31,6 +32,7 @@ import {
   RunJSLightExtensionSourceField,
 } from './components/JSBlockLightExtensionSourceField';
 import { createRunJSLightExtensionEditorProvider } from './components/RunJSLightExtensionEditorProvider';
+import { createMoveSourceToLightExtensionContribution } from './components/MoveSourceToLightExtension';
 import { SettingsAutoForm, SettingsSingleField } from './components/SettingsAutoForm';
 import { createLightExtensionRunJSResolver } from './resolvers/LightExtensionRunJSResolver';
 
@@ -61,6 +63,9 @@ export class PluginLightExtensionClientV2 extends Plugin<Record<string, never>, 
       RunJSSourceResolverRegistry.registerResolver(createLightExtensionRunJSResolver(this.app.apiClient)),
     );
     this.disposers.push(RunJSEditorRegistry.registerProvider(createRunJSLightExtensionEditorProvider()));
+    this.disposers.push(
+      runJSStudioToolbarRegistry.register(createMoveSourceToLightExtensionContribution(this.app.apiClient)),
+    );
     activeLightExtensionClientV2Instance = this;
 
     const title = this.t('Light extensions');

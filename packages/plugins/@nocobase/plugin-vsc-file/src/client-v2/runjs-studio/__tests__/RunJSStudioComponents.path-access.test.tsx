@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -105,5 +105,39 @@ describe('FilesPanel path access', () => {
     expect(screen.getByRole('button', { name: `Delete ${editablePath}` })).toBeInTheDocument();
     expect(lockedFileButton.closest('li')).toHaveAttribute('draggable', 'false');
     expect(screen.getByRole('button', { name: editablePath }).closest('li')).toHaveAttribute('draggable', 'true');
+  });
+
+  it('renames an existing folder from its row action', () => {
+    const folderPath = 'src/client/js-blocks/js-block12';
+    const onRenameFolder = vi.fn(() => true);
+
+    render(
+      <FilesPanel
+        collapsed={false}
+        exporting={false}
+        files={[{ path: `${folderPath}/index.tsx`, content: '', language: 'typescript' }]}
+        onCollapseChange={vi.fn()}
+        onCreate={vi.fn()}
+        onCreateFolder={vi.fn()}
+        onDelete={vi.fn()}
+        onDeleteFolder={vi.fn()}
+        onMoveFile={vi.fn()}
+        onMoveFolder={vi.fn()}
+        onOpen={vi.fn()}
+        onRefresh={vi.fn()}
+        onRename={vi.fn()}
+        onRenameFolder={onRenameFolder}
+        readOnly={false}
+        savedFiles={[]}
+        t={(key) => key}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: `Rename ${folderPath}` }));
+    const input = screen.getByRole('textbox', { name: `Rename ${folderPath}` });
+    fireEvent.change(input, { target: { value: 'js-block13' } });
+    fireEvent.blur(input);
+
+    expect(onRenameFolder).toHaveBeenCalledWith(folderPath, 'src/client/js-blocks/js-block13');
   });
 });

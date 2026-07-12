@@ -20,6 +20,7 @@ import {
   RunJSEditorRegistry,
   RunJSSourceResolverRegistry,
 } from '@nocobase/client-v2';
+import { runJSStudioToolbarRegistry } from '@nocobase/plugin-vsc-file/client-v2';
 
 import LightExtensionListPage from '../../client-v2/pages/LightExtensionListPage';
 import PluginLightExtensionClient from '..';
@@ -41,6 +42,8 @@ describe('plugin-light-extension legacy client boundary', () => {
   it('registers a thin settings bridge, runtime resolver, and source editor without importing the v1 client runtime', async () => {
     const add = vi.fn();
     const registerComponents = vi.fn();
+    const unregisterToolbar = vi.fn();
+    const registerToolbar = vi.spyOn(runJSStudioToolbarRegistry, 'register').mockReturnValue(unregisterToolbar);
     const apiClient = {
       request: vi.fn(),
     };
@@ -76,6 +79,9 @@ describe('plugin-light-extension legacy client boundary', () => {
     );
     expect(RunJSSourceResolverRegistry.getResolver('light-extension')).toBeTruthy();
     expect(RunJSEditorRegistry.getProviders().map((provider) => provider.key)).toContain('light-extension-runjs-value');
+    expect(registerToolbar).toHaveBeenCalledWith(
+      expect.objectContaining({ key: '@nocobase/plugin-light-extension/move-source' }),
+    );
     expect(registerComponents).toHaveBeenCalledWith(
       expect.objectContaining({
         [JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: expect.any(Function),
@@ -90,6 +96,7 @@ describe('plugin-light-extension legacy client boundary', () => {
     await expect(plugin.beforeLoad()).resolves.toBeUndefined();
     expect(RunJSSourceResolverRegistry.getResolver('light-extension')).toBeNull();
     expect(RunJSEditorRegistry.getProviders()).toHaveLength(0);
+    expect(unregisterToolbar).toHaveBeenCalledTimes(1);
 
     const source = fs.readFileSync(path.resolve(__dirname, '../index.ts'), 'utf8');
 

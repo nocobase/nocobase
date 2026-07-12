@@ -8,13 +8,7 @@
  */
 
 import React, { useEffect, useMemo, useRef } from 'react';
-import {
-  autocompletion,
-  type Completion,
-  type CompletionContext,
-  type CompletionResult,
-  type CompletionSource,
-} from '@codemirror/autocomplete';
+import { autocompletion, type Completion, type CompletionSource } from '@codemirror/autocomplete';
 import { lintGutter } from '@codemirror/lint';
 import { EditorState } from '@codemirror/state';
 import { oneDark } from '@codemirror/theme-one-dark';
@@ -63,6 +57,32 @@ export const EditorCore: React.FC<{
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const onChangeRef = useRef<typeof onChange>();
+  const completionSourceRef = useRef(completionSource);
+  const extraCompletionsRef = useRef(extraCompletions);
+  completionSourceRef.current = completionSource;
+  extraCompletionsRef.current = extraCompletions;
+  const dynamicCompletionSource = useMemo<CompletionSource>(() => {
+    return (context) => {
+      if (completionSourceRef.current) {
+        return completionSourceRef.current(context);
+      }
+
+      const options = extraCompletionsRef.current;
+      if (!options?.length) {
+        return null;
+      }
+
+      const word = context.matchBefore(/[$_\p{Letter}][$_\p{Letter}\p{Number}.-]*/u);
+      if (!word) {
+        return context.explicit ? { from: context.pos, to: context.pos, options } : null;
+      }
+      if (word.from === word.to && !context.explicit) {
+        return null;
+      }
+
+      return { from: word.from, to: word.to, options };
+    };
+  }, []);
   const typeScriptCompletionSource = useMemo(
     () => createTypeScriptCompletionSource({ projectRef: typescriptProjectRef }),
     [typescriptProjectRef],
@@ -82,21 +102,6 @@ export const EditorCore: React.FC<{
 
   useEffect(() => {
     if (!editorRef.current) return;
-    const staticCompletionSource = (options: Completion[]) => {
-      const source = (context: CompletionContext): CompletionResult | null => {
-        const word = context.matchBefore(/[$_\p{Letter}][$_\p{Letter}\p{Number}.-]*/u);
-        if (!word) {
-          if (context.explicit) {
-            return { from: context.pos, to: context.pos, options };
-          }
-          return null;
-        }
-        if (word.from === word.to && !context.explicit) return null;
-        return { from: word.from, to: word.to, options };
-      };
-      return source;
-    };
-
     const cmMinHeight =
       typeof minHeight === 'undefined' ? undefined : typeof minHeight === 'string' ? minHeight : `${minHeight}px`;
     const gutterTheme =
@@ -117,11 +122,7 @@ export const EditorCore: React.FC<{
         override: [
           createHtmlCompletion(),
           createJsxCompletion(),
-          ...(typeof completionSource === 'function'
-            ? [completionSource]
-            : Array.isArray(extraCompletions) && extraCompletions.length
-              ? [staticCompletionSource(extraCompletions)]
-              : []),
+          dynamicCompletionSource,
           ...(typescriptProjectRef ? [typeScriptCompletionSource] : []),
         ],
         closeOnBlur: false,
@@ -225,8 +226,7 @@ export const EditorCore: React.FC<{
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    completionSource,
-    extraCompletions,
+    dynamicCompletionSource,
     enableLinter,
     height,
     minHeight,

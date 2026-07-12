@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { Context } from '@nocobase/actions';
 import { MagicAttributeModel } from '@nocobase/database';
 import type { Transaction } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
@@ -224,7 +225,7 @@ export class PluginUISchemaStorageServer extends Plugin {
   }
 
   async load() {
-    const getSourceAndTargetForRemoveAction = async (ctx: any) => {
+    const getSourceAndTargetForRemoveAction = async (ctx: Context) => {
       const { filterByTk } = ctx.action.params;
       return {
         targetCollection: 'flowModels',
@@ -232,17 +233,20 @@ export class PluginUISchemaStorageServer extends Plugin {
       };
     };
 
-    const getSourceAndTargetForInsertAdjacentAction = async (ctx: any) => {
+    const getSourceAndTargetForInsertAdjacentAction = async (ctx: Context) => {
+      const body = toRecord(ctx.request.body);
+      const options = toRecord(body.options);
       return {
         targetCollection: 'flowModels',
-        targetRecordUK: ctx.request.body?.options?.['uid'],
+        targetRecordUK: options.uid,
       };
     };
 
-    const getSourceAndTargetForPatchAction = async (ctx: any) => {
+    const getSourceAndTargetForPatchAction = async (ctx: Context) => {
+      const body = toRecord(ctx.request.body);
       return {
         targetCollection: 'flowModels',
-        targetRecordUK: ctx.request.body?.['uid'],
+        targetRecordUK: body.uid,
       };
     };
     this.app.auditManager.registerActions([
@@ -253,16 +257,18 @@ export class PluginUISchemaStorageServer extends Plugin {
   }
 }
 
-function getLightExtensionReferenceContext(ctx: LightExtensionReferenceActionContext, transaction?: Transaction) {
-  const headers = ctx.request?.headers || ctx.request?.header || {};
+function getLightExtensionReferenceContext(ctx: unknown, transaction?: Transaction) {
+  const actionCtx: LightExtensionReferenceActionContext =
+    ctx && typeof ctx === 'object' ? (ctx as LightExtensionReferenceActionContext) : {};
+  const headers = actionCtx.request?.headers || actionCtx.request?.header || {};
   return {
-    can: ctx.can,
-    actorUserId: getCurrentUserId(ctx),
+    can: actionCtx.can,
+    actorUserId: getCurrentUserId(actionCtx),
     requestId: getHeader(headers, 'x-request-id') || getHeader(headers, 'x-correlation-id'),
     requestSource: getHeader(headers, 'x-request-source') || 'flowModels',
-    currentUser: ctx.auth?.user,
-    state: ctx.state,
-    timezone: ctx.timezone,
+    currentUser: actionCtx.auth?.user,
+    state: actionCtx.state,
+    timezone: actionCtx.timezone,
     transaction,
   };
 }
@@ -289,6 +295,10 @@ function getHeader(headers: Record<string, string | string[] | undefined>, name:
     return value[0];
   }
   return value;
+}
+
+function toRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
 }
 
 export default PluginUISchemaStorageServer;

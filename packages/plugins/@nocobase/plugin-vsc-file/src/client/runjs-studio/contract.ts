@@ -7,5 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './LegacyRunJSEditorRegistry';
-export * from './types';
+export {
+  LegacyRunJSEditorRegistry,
+  type LegacyRunJSEditorProvider,
+  type LegacyRunJSEditorProviderRenderProps,
+  type RunJSSourceLocator,
+  type RunJSSurfaceStyle,
+} from '@nocobase/client';

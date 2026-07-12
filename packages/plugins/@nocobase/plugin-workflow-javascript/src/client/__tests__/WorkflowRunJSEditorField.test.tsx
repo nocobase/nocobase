@@ -9,7 +9,7 @@
 
 import { fireEvent, render, screen } from '@testing-library/react';
 import { NodeContext } from '@nocobase/plugin-workflow/client';
-import { LegacyRunJSEditorRegistry } from '@nocobase/plugin-vsc-file/client';
+import { LegacyRunJSEditorRegistry } from '@nocobase/client';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 

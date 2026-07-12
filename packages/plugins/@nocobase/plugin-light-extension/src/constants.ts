@@ -14,6 +14,7 @@ export const LIGHT_EXTENSION_ACL_SNIPPET = 'pm.light-extension';
 export const LIGHT_EXTENSION_OWNER_TYPE = 'light-extension';
 
 export const LIGHT_EXTENSION_SUPPORTED_KINDS = ['js-block', 'js-field', 'js-action', 'js-item', 'runjs'] as const;
+export const LIGHT_EXTENSION_ENTRY_KEY_PATTERN = /^[a-z0-9][a-z0-9-]{0,62}$/;
 
 export const LIGHT_EXTENSION_ACL_ACTIONS = [
   'list',

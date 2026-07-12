@@ -105,6 +105,76 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     expect(runtime.code).toContain('Sales KPI');
   });
 
+  it('preserves entryId and runtime bindings when an entry directory is renamed', async () => {
+    const repo = await repoService.createRepo({
+      name: 'Stable Entry Directory Rename',
+      initialFiles: [
+        ...baselineSalesKpiFiles(),
+        {
+          path: 'src/client/js-blocks/sales-kpi/meta.json',
+          content: JSON.stringify({ key: 'stable-sales-kpi', title: 'Sales KPI' }),
+          language: 'json',
+        },
+      ],
+    });
+    const first = await runtimeCompileService.saveSource({
+      repoId: repo.id,
+      message: 'compile stable entry',
+      files: validSalesKpiFiles(),
+    });
+    const originalEntryId = first.compile.entries[0].entryId;
+
+    const renamed = await runtimeCompileService.saveSource({
+      repoId: repo.id,
+      message: 'rename stable entry directory',
+      files: [
+        { path: 'src/client/js-blocks/sales-kpi/index.tsx', operation: 'delete' },
+        { path: 'src/client/js-blocks/sales-kpi/meta.json', operation: 'delete' },
+        { path: 'src/client/js-blocks/sales-kpi/settings.json', operation: 'delete' },
+        {
+          path: 'src/client/js-blocks/renamed-sales/index.tsx',
+          content: 'const title = "Renamed Sales KPI";\nctx.render(<div>{title}</div>);\n',
+          language: 'typescript',
+        },
+        {
+          path: 'src/client/js-blocks/renamed-sales/meta.json',
+          content: JSON.stringify({ key: 'stable-sales-kpi', title: 'Sales KPI' }),
+          language: 'json',
+        },
+        {
+          path: 'src/client/js-blocks/renamed-sales/settings.json',
+          content: JSON.stringify({ type: 'object', properties: {} }),
+          language: 'json',
+        },
+      ],
+    });
+    const entries = await app.db.getRepository('lightExtensionEntries').find({ filter: { repoId: repo.id } });
+
+    expect(renamed.compile.entries[0]).toMatchObject({
+      entryId: originalEntryId,
+      entryName: 'stable-sales-kpi',
+      entryPath: 'src/client/js-blocks/renamed-sales/index.tsx',
+    });
+    expect(entries).toHaveLength(1);
+    expect(entries[0].get('id')).toBe(originalEntryId);
+    expect(entries[0].get('healthStatus')).toBe('ready');
+    await expect(
+      runtimeResolveService.resolve({
+        sourceMode: 'light-extension',
+        sourceBinding: {
+          type: 'light-extension-entry',
+          repoId: repo.id,
+          entryId: originalEntryId,
+          kind: 'js-block',
+        },
+      }),
+    ).resolves.toMatchObject({
+      entryId: originalEntryId,
+      entryPath: 'src/client/js-blocks/renamed-sales/index.tsx',
+      code: expect.stringContaining('Renamed Sales KPI'),
+    });
+  });
+
   it('rejects no-change saves and blocks archived repositories', async () => {
     const repo = await repoService.createRepo({ name: 'No Change Save', initialFiles: baselineSalesKpiFiles() });
     const first = await runtimeCompileService.saveSource({

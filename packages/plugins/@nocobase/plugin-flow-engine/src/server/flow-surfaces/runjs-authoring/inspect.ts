@@ -8,7 +8,7 @@
  */
 
 import type { FlowSurfaceErrorItemInput } from '../errors';
-import { inspectRunJSSourceCode } from '@nocobase/plugin-vsc-file';
+import { runJSSourceCodeInspectorRegistry } from '@nocobase/server';
 import type { RunJsAuthoringInspectionInput } from './types';
 import type { RunJsAuthoringContext, RunJsSourceBudget } from './internal-types';
 import {
@@ -160,12 +160,13 @@ function collectCompilerUnknownGlobalErrors(
   surfaceStyle: 'render' | 'value' | 'action',
 ): FlowSurfaceErrorItemInput[] {
   const additionalAllowedGlobals = modelUse === 'ChartEventsModel' ? ['chart', 'params'] : undefined;
-  return inspectRunJSSourceCode({
-    code: source,
-    path: input.path,
-    surfaceStyle,
-    additionalAllowedGlobals,
-  })
+  return runJSSourceCodeInspectorRegistry
+    .inspect({
+      code: source,
+      path: input.path,
+      surfaceStyle,
+      additionalAllowedGlobals,
+    })
     .filter((diagnostic) => diagnostic.ruleId === 'runjs-global-unknown')
     .map((diagnostic) => {
       const globalName = typeof diagnostic.details?.global === 'string' ? diagnostic.details.global : '';

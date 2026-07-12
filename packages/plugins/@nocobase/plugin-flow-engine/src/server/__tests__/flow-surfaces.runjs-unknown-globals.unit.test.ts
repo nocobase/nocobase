@@ -8,6 +8,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import './runjs-source-inspector.setup';
 import {
   collectFlowRegistryRunJsAuthoringErrors,
   collectRunJsAuthoringErrors,

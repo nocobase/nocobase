@@ -11,6 +11,7 @@ import type { Context } from '@nocobase/actions';
 import type { Database } from '@nocobase/database';
 import type { HandlerType, ResourceOptions } from '@nocobase/resourcer';
 import JSZip, { type JSZipObject } from 'jszip';
+import type { Readable } from 'stream';
 
 import { VscError, isVscError } from '../../shared/errors';
 import { sha256Hex } from '../../shared/hash';
@@ -825,7 +826,7 @@ async function readRunJSZipEntryText(
   let limitError: VscError | null = null;
 
   try {
-    const stream = entry.nodeStream('nodebuffer');
+    const stream = entry.nodeStream('nodebuffer') as Readable;
     await new Promise<void>((resolve, reject) => {
       let settled = false;
       const cleanup = () => {
@@ -2171,7 +2172,7 @@ function normalizeFileChange(value: unknown, label: string): VscFileChange {
     size: optionalNumber(input, 'size'),
     language: optionalString(input, 'language'),
     mode: optionalString(input, 'mode'),
-  }) as VscFileChange;
+  }) as unknown as VscFileChange;
 }
 
 function normalizeRunJSFileChange(value: unknown, label: string): VscFileChange {

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin } from '@nocobase/server';
+import { Plugin, runJSSourceCodeInspectorRegistry } from '@nocobase/server';
 import { resolve } from 'path';
 
 import { createRunJSSourceAuditActions, createVscFileAuditActions } from './audit';
@@ -15,10 +15,13 @@ import type { VscPermissionHook } from './permissions';
 import { createRunJSSourcePermissionHook, VscPermissionHookRegistry } from './permissions';
 import { RunJSSourceAuthoringInspectorRegistry } from './runjs-sources/RunJSSourceAuthoringInspectorRegistry';
 import { RunJSSourceAdapterRegistry, createRunJSSourcesResource, runJSSourceActionNames } from './runjs-sources';
+import { inspectRunJSSourceCode } from './runjs-sources/compiler/source-inspection';
 import { createVscFileResource, vscFileActionNames } from './resources/vscFile';
 import type { RunJSSourceAdapter, RunJSSourceAuthoringInspector } from '../shared/runjs-source-types';
 
 export class PluginVscFileServer extends Plugin {
+  private unregisterSourceCodeInspector?: () => void;
+
   private readonly permissionHooks = createPermissionHookRegistry();
 
   private readonly runJSSourceAdapters = new RunJSSourceAdapterRegistry();
@@ -37,6 +40,10 @@ export class PluginVscFileServer extends Plugin {
     return this.runJSSourceAdapters.register(adapter);
   }
 
+  getRunJSSourceAdapterRegistry(): RunJSSourceAdapterRegistry {
+    return this.runJSSourceAdapters;
+  }
+
   registerRunJSSourceAuthoringInspector(inspector: RunJSSourceAuthoringInspector): () => void {
     return this.runJSSourceAuthoringInspectors.register(inspector);
   }
@@ -52,6 +59,8 @@ export class PluginVscFileServer extends Plugin {
   }
 
   async load() {
+    this.unregisterSourceCodeInspector?.();
+    this.unregisterSourceCodeInspector = runJSSourceCodeInspectorRegistry.register(inspectRunJSSourceCode);
     this.app.resourceManager.define(createVscFileResource(this.db, this.permissionHooks));
     this.app.resourceManager.define(
       createRunJSSourcesResource(
@@ -65,6 +74,16 @@ export class PluginVscFileServer extends Plugin {
     this.app.acl.allow('runJSSources', [...runJSSourceActionNames], 'loggedIn');
     this.app.auditManager.registerActions(createVscFileAuditActions(this.db));
     this.app.auditManager.registerActions(createRunJSSourceAuditActions(this.db));
+  }
+
+  async afterDisable() {
+    this.unregisterSourceCodeInspector?.();
+    this.unregisterSourceCodeInspector = undefined;
+  }
+
+  async remove() {
+    this.unregisterSourceCodeInspector?.();
+    this.unregisterSourceCodeInspector = undefined;
   }
 }
 
