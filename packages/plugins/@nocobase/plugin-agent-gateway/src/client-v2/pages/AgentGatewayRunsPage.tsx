@@ -16,7 +16,7 @@ import {
   StopOutlined,
   UploadOutlined,
 } from '@ant-design/icons';
-import { Collection, type CollectionOptions, type DataSource, useFlowContext } from '@nocobase/flow-engine';
+import { Collection, type CollectionOptions, useFlowContext } from '@nocobase/flow-engine';
 import { CollectionFilter, type CompiledFilter } from '@nocobase/client-v2';
 import { useRequest } from 'ahooks';
 import {
@@ -48,7 +48,7 @@ import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import type { CSSMotionProps } from 'rc-motion';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  AgentCapabilityKey,
+  type AgentCapabilityKey,
   isAgentCapabilitySupported,
   normalizeAgentProviderCapabilities,
 } from '../../shared/providerCapabilities';
@@ -106,285 +106,45 @@ import {
   statusTag,
   uploadAgentGatewayFile,
 } from './AgentGatewayPageUtils';
-
-interface RunRecord {
-  id: string;
-  runCode: string;
-  taskTitle?: string | null;
-  status: string;
-  nodeId?: string | null;
-  agentProfileId?: string | null;
-  sourceType?: string | null;
-  sourceCollection?: string | null;
-  sourceRecordId?: string | null;
-  taskTemplateId?: string | null;
-  taskTemplateJson?: RunTaskTemplateSummary | null;
-  cancelRequested?: boolean;
-  resultSummaryJson?: JsonRecord;
-  tokenUsageJson?: TokenUsageRecord | null;
-  errorSummary?: string | null;
-  terminalBackend?: string | null;
-  terminalStatus?: string | null;
-  terminalStartedAt?: string;
-  terminalEndedAt?: string;
-  terminalLastActivityAt?: string;
-  terminalExitCode?: number | null;
-  agentSessionId?: string | null;
-  parentRunId?: string | null;
-  resumedFromRunId?: string | null;
-  continuationReason?: string | null;
-  agentSessionProvider?: string | null;
-  agentSessionProviderId?: string | null;
-  agentProvider?: string | null;
-  agentProviderCapabilitySource?: string | null;
-  agentProviderCapabilitiesJson?: JsonRecord;
-  agentSessionCapabilitiesJson?: JsonRecord;
-  agentGatewayActionPermissionsJson?: {
-    resumeAgentSession?: boolean;
-    readSessionMessages?: boolean;
-    readTerminal?: boolean;
-    readArtifacts?: boolean;
-    readRawLogs?: boolean;
-    cancelRun?: boolean;
-  };
-  agentGatewayControlActionsJson?: {
-    interruptRun?: boolean;
-    terminateRun?: boolean;
-  };
-  runnerStatusJson?: RunnerStatusRecord;
-  requestedAt?: string;
-  queuedAt?: string;
-  claimedAt?: string;
-  startedAt?: string;
-  finishedAt?: string;
-  createdAt?: string;
-}
-
-interface RunTaskTemplateSummary {
-  id: string;
-  templateKey: string;
-  displayName?: string;
-  skillVersionIds?: string[];
-  skills?: BuildSkillVersionOption[];
-}
-
-interface TaskTemplateDetailRecord {
-  id: string;
-  templateKey: string;
-  displayName?: string | null;
-  description?: string | null;
-  status?: string | null;
-  defaultTitle?: string | null;
-  defaultPrompt?: string | null;
-  cwd?: string | null;
-  skillVersionIdsJson?: string[];
-  artifactRoot?: string | null;
-  artifactsJson?: JsonRecord[];
-}
-
-interface SkillVersionDetailRecord {
-  id: string;
-  skillVersionId?: string;
-  skillId?: string | null;
-  skillKey?: string | null;
-  displayName?: string | null;
-  skillStatus?: string | null;
-  versionLabel?: string;
-  status?: string;
-  sourceType?: string | null;
-  sourceSha256?: string | null;
-  sourceSizeBytes?: number | null;
-  sourceUploadedAt?: string | null;
-  createdAt?: string | null;
-  updatedAt?: string | null;
-}
-
-interface TokenUsageRecord extends JsonRecord {
-  inputTokens?: number | string | null;
-  cachedInputTokens?: number | string | null;
-  outputTokens?: number | string | null;
-  reasoningOutputTokens?: number | string | null;
-  totalTokens?: number | string | null;
-}
-
-interface TerminalSnapshot {
-  backend?: string | null;
-  terminalStatus?: string | null;
-  runStatus?: string;
-  available: boolean;
-  output: string;
-  capturedAt: string;
-  inputEnabled: boolean;
-  unsupported?: boolean;
-  unsupportedCapability?: AgentCapabilityKey;
-  message?: string;
-}
-
-interface TerminalSnapshotState {
-  runId: string;
-  snapshot: TerminalSnapshot | null;
-}
-
-interface RunDetails {
-  run: RunRecord;
-  conversationEvents: AgentTimelineEventRecord[];
-  events: RunEventRecord[];
-  artifacts: RunArtifactRecord[];
-  snapshots: RunSnapshotRecord[];
-  apiCallLogs: ApiCallLogRecord[];
-  warnings: RunDetailsWarnings;
-}
-
-interface RunDetailsWarnings {
-  conversationEvents?: string;
-  events?: string;
-  artifacts?: string;
-  snapshots?: string;
-  apiCallLogs?: string;
-}
-
-type RunActionPermissionKey = keyof NonNullable<RunRecord['agentGatewayActionPermissionsJson']>;
-
-interface ResumeAgentSessionResult {
-  runId: string;
-  runCode?: string;
-  agentSessionId: string;
-  parentRunId?: string;
-  resumedFromRunId?: string;
-  deduped: boolean;
-}
-
-interface ControlRequestResult {
-  runId?: string;
-  controlRequestId?: string;
-  controlRequestStatus?: 'accepted' | 'delivered' | 'succeeded' | 'failed';
-}
-
-interface ControlRequestState {
-  action: 'interrupt' | 'terminate';
-  runId: string;
-  status: 'accepted' | 'delivered' | 'succeeded' | 'failed';
-  controlRequestId?: string;
-}
-
-interface ControlRequestStatusPoll {
-  action: 'interrupt' | 'terminate';
-  runId: string;
-  controlRequestId: string;
-}
-
-interface RunnerStatusRecord {
-  online?: boolean;
-  reason?: string;
-  nodeId?: string | null;
-  nodeKey?: string | null;
-  nodeStatus?: string | null;
-  lastHeartbeatAt?: string | null;
-  agentProfileId?: string | null;
-  profileKey?: string | null;
-  profileProvider?: string | null;
-  profileStatus?: string | null;
-}
-
-interface RunListMeta {
-  count?: number;
-  page?: number;
-  pageSize?: number;
-  totalPage?: number;
-  taskTemplates?: RunTaskTemplateFilterOption[];
-}
-
-interface RunListData {
-  runs: RunRecord[];
-  meta: RunListMeta;
-}
-
-interface RunTaskTemplateFilterOption {
-  id: string;
-  templateKey?: string;
-  displayName?: string;
-}
-
-type RunDetailTabKey = 'summary' | 'agent-sessions' | 'logs' | 'artifacts' | 'api-logs';
-
-interface BuildTaskFormValues {
-  taskTemplateId?: string;
-  title?: string;
-  prompt?: string;
-  skillVersionIds?: string[];
-  runner?: string;
-  cwd?: string;
-  artifactRoot?: string;
-  artifactDeclarations?: BuildTaskArtifactDeclarationFormValue[];
-}
-
-interface SkillUploadFormValues {
-  skillKey?: string;
-  displayName?: string;
-  versionLabel?: string;
-}
-
-interface SkillUploadResult {
-  skillId?: string;
-  skillKey?: string;
-  skillVersionId: string;
-  versionLabel?: string;
-  status?: string;
-  idempotent?: boolean;
-}
-
-interface CreateBuildRunResult {
-  runId: string;
-  runCode?: string;
-  run?: RunRecord;
-  runnerStatus?: RunnerStatusRecord;
-}
-
-interface ExternalRunImportFormValues {
-  provider?: string;
-  format?: string;
-  title?: string;
-  instruction?: string;
-  status?: string;
-  externalRunKey: string;
-  providerSessionId?: string;
-  sourceCollection?: string;
-  sourceRecordId?: string;
-  outputAgentRunField?: string;
-}
-
-interface ExternalRunImportResult {
-  runId?: string;
-  runCode?: string;
-  run?: RunRecord;
-  deduped?: boolean;
-}
-
-type ReadableArtifactItemKind = 'message' | 'tool' | 'error' | 'event';
-
-interface ReadableArtifactItem {
-  key: string;
-  kind: ReadableArtifactItemKind;
-  label: string;
-  text: string;
-  defaultOpen: boolean;
-}
-
-interface ReadableArtifactPreview {
-  mode: 'jsonl' | 'json' | 'text';
-  summary: string;
-  items: ReadableArtifactItem[];
-  text: string;
-  rawPreview: string;
-  rawTruncated: boolean;
-}
-
-type TFunction = (key: string, options?: Record<string, unknown>) => string;
-type AgentGatewayPageContext = AgentGatewayContext & {
-  dataSourceManager?: {
-    getDataSource(key: string): DataSource | undefined;
-  };
-};
+import {
+  AgentGatewayPageContext,
+  BuildTaskFormValues,
+  ControlRequestResult,
+  ControlRequestState,
+  ControlRequestStatusPoll,
+  CreateBuildRunResult,
+  ExternalRunImportFormValues,
+  ExternalRunImportResult,
+  ReadableArtifactItem,
+  ReadableArtifactItemKind,
+  ReadableArtifactPreview,
+  ResumeAgentSessionResult,
+  RunActionPermissionKey,
+  RunDetailTabKey,
+  RunDetails,
+  RunListData,
+  RunListMeta,
+  RunRecord,
+  RunnerStatusRecord,
+  RunTaskTemplateFilterOption,
+  RunTaskTemplateSummary,
+  SkillUploadFormValues,
+  SkillUploadResult,
+  SkillVersionDetailRecord,
+  TaskTemplateDetailRecord,
+  TerminalSnapshot,
+  TerminalSnapshotState,
+  TFunction,
+  TokenUsageRecord,
+} from './runs/types';
+import {
+  AgentSessionPanel,
+  RunnerQueueAlert,
+  RunRunnerSummary,
+  RunSummaryPanel,
+  RunTokenUsageSummary,
+} from './runs/RunSummaryPanels';
+import { formatRunDuration, getRunTaskTitle, isLiveRunStatus } from './runs/runFormatters';
 
 const RUN_STATUS_OPTIONS = [
   'queued',
@@ -409,7 +169,6 @@ const CANCELABLE_STATUSES = new Set<string>([
   STALLED_RUN_STATUS,
 ]);
 const TERMINAL_CONTROL_RUN_STATUSES = new Set<string>(TERMINAL_CONTROL_RUN_STATUS_VALUES);
-const LEGACY_TIMELINE_FALLBACK_STATUSES = new Set(['succeeded']);
 const LIVE_RUN_STATUSES = new Set<string>([CLAIMABLE_RUN_STATUS, IMPORTING_RUN_STATUS, ...LEASE_OWNING_RUN_STATUSES]);
 const DANGLING_TOOL_LIVE_RUN_STATUSES = new Set<string>([
   CLAIMABLE_RUN_STATUS,
@@ -537,110 +296,15 @@ function isCancelableRun(run: RunRecord) {
   return CANCELABLE_STATUSES.has(run.status);
 }
 
-function isLiveRunStatus(status?: string) {
-  return Boolean(status && LIVE_RUN_STATUSES.has(status));
-}
-
-function shouldCloseDanglingToolCalls(status?: string) {
-  return !status || !DANGLING_TOOL_LIVE_RUN_STATUSES.has(status);
-}
-
-function getTimestampMs(value?: string | null) {
-  if (!value) {
-    return null;
-  }
-  const timestamp = new Date(value).getTime();
-  return Number.isNaN(timestamp) ? null : timestamp;
-}
-
-function getRunDurationStart(run: RunRecord) {
-  return run.startedAt || run.claimedAt || run.queuedAt || run.requestedAt || run.createdAt;
-}
-
-function formatCompactDuration(durationMs: number) {
-  const totalSeconds = Math.max(0, Math.floor(durationMs / 1000));
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-
-  if (hours > 0) {
-    return `${hours}h ${String(minutes).padStart(2, '0')}m`;
-  }
-  if (minutes > 0) {
-    return `${minutes}m ${String(seconds).padStart(2, '0')}s`;
-  }
-  return `${seconds}s`;
-}
-
-function formatRunDuration(run: RunRecord, nowMs = Date.now()) {
-  const startMs = getTimestampMs(getRunDurationStart(run));
-  if (startMs === null) {
-    return '-';
-  }
-  const finishedMs = getTimestampMs(run.finishedAt);
-  const endMs = finishedMs ?? (isLiveRunStatus(run.status) ? nowMs : null);
-  if (endMs === null) {
-    return '-';
-  }
-  return formatCompactDuration(endMs - startMs);
-}
-
-function getTokenUsageNumber(value: unknown) {
-  const numberValue = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : Number.NaN;
-  return Number.isFinite(numberValue) && numberValue >= 0 ? numberValue : null;
-}
-
-function formatTokenCount(value: unknown) {
-  const numberValue = getTokenUsageNumber(value);
-  if (numberValue === null) {
-    return '-';
-  }
-  if (numberValue >= 1_000_000) {
-    return `${(numberValue / 1_000_000).toFixed(1)}M`;
-  }
-  if (numberValue >= 1_000) {
-    return `${(numberValue / 1_000).toFixed(1)}K`;
-  }
-  return String(Math.round(numberValue));
-}
-
-function getTokenUsageTotal(usage?: TokenUsageRecord | null) {
-  if (!usage) {
-    return null;
-  }
-  const totalTokens = getTokenUsageNumber(usage.totalTokens);
-  if (totalTokens !== null) {
-    return totalTokens;
-  }
-  const inputTokens = getTokenUsageNumber(usage.inputTokens);
-  const outputTokens = getTokenUsageNumber(usage.outputTokens);
-  if (inputTokens !== null || outputTokens !== null) {
-    return (inputTokens || 0) + (outputTokens || 0);
-  }
-  return null;
-}
-
-function hasTokenUsage(usage?: TokenUsageRecord | null) {
-  return getTokenUsageTotal(usage) !== null || getTokenUsageNumber(usage?.cachedInputTokens) !== null;
-}
-
-function canUseLegacyTimelineFallback(run: RunRecord | undefined, eventCount: number, hasWarning: boolean) {
-  if (!run || eventCount > 0 || hasWarning) {
-    return false;
-  }
-  return (
-    LEGACY_TIMELINE_FALLBACK_STATUSES.has(run.status) &&
-    !run.agentSessionId &&
-    !run.agentSessionProvider &&
-    !run.agentSessionProviderId
-  );
-}
-
 function getTimelineEmptyDescription(run: RunRecord | undefined, t: TFunction) {
   if (isLiveRunStatus(run?.status)) {
     return t('Waiting for live task updates from the agent');
   }
   return t('No task messages yet');
+}
+
+function shouldCloseDanglingToolCalls(status?: string) {
+  return !status || !DANGLING_TOOL_LIVE_RUN_STATUSES.has(status);
 }
 
 function canUseTerminalControl(run: RunRecord | undefined, snapshot: TerminalSnapshot | null | undefined) {
@@ -890,29 +554,11 @@ function shouldUseDefaultBuildRunner(
   return currentRunner.node.online === false && defaultRunner?.node.online === true;
 }
 
-function getRunnerReasonMessage(t: TFunction, reason?: string) {
-  const messages: Record<string, string> = {
-    ready: t('Runner is ready'),
-    'missing-node': t('Runner node is not selected or no longer exists'),
-    'node-inactive': t('Runner node is disabled'),
-    'missing-profile': t('Runner profile is not selected or no longer exists'),
-    'profile-inactive': t('Runner profile is disabled'),
-    'heartbeat-stale': t('Runner heartbeat is stale; start or reconnect the daemon'),
-  };
-  return messages[reason || ''] || t('Waiting for runner');
-}
-
 function isRunActionAllowed(
   permissions: RunRecord['agentGatewayActionPermissionsJson'] | undefined,
   action: RunActionPermissionKey,
 ) {
   return permissions?.[action] === true;
-}
-
-function getRunTaskTitle(run: RunRecord, t: TFunction) {
-  const title =
-    getStringValue(run.taskTitle).trim() || getStringValue(getObjectRecord(run.resultSummaryJson).title).trim();
-  return title || run.runCode || t('Untitled task');
 }
 
 function RunTaskTitle({ run, t, onOpen }: { run: RunRecord; t: TFunction; onOpen?: (run: RunRecord) => void }) {
@@ -1132,241 +778,6 @@ function SkillDetailDrawerContent({
         {formatDateTime(skillVersion.updatedAt || undefined)}
       </Descriptions.Item>
     </Descriptions>
-  );
-}
-
-function RunTokenUsageSummary({ usage, t }: { usage?: TokenUsageRecord | null; t: TFunction }) {
-  if (!hasTokenUsage(usage)) {
-    return <Typography.Text type="secondary">-</Typography.Text>;
-  }
-
-  const inputTokens = getTokenUsageNumber(usage?.inputTokens);
-  const outputTokens = getTokenUsageNumber(usage?.outputTokens);
-  const cachedInputTokens = getTokenUsageNumber(usage?.cachedInputTokens);
-  const reasoningOutputTokens = getTokenUsageNumber(usage?.reasoningOutputTokens);
-  const secondaryParts = [
-    inputTokens !== null ? `${t('Input')}: ${formatTokenCount(inputTokens)}` : '',
-    outputTokens !== null ? `${t('Output')}: ${formatTokenCount(outputTokens)}` : '',
-    cachedInputTokens !== null ? `${t('Cached')}: ${formatTokenCount(cachedInputTokens)}` : '',
-    reasoningOutputTokens !== null ? `${t('Reasoning')}: ${formatTokenCount(reasoningOutputTokens)}` : '',
-  ].filter(Boolean);
-
-  return (
-    <Space direction="vertical" size={0}>
-      <Typography.Text>{`${t('Total')}: ${formatTokenCount(getTokenUsageTotal(usage))}`}</Typography.Text>
-      {secondaryParts.length ? <Typography.Text type="secondary">{secondaryParts.join(' / ')}</Typography.Text> : null}
-    </Space>
-  );
-}
-
-function RunRunnerSummary({ run, t }: { run: RunRecord; t: TFunction }) {
-  const runnerStatus = run.runnerStatusJson;
-  const nodeLabel = runnerStatus?.nodeKey || runnerStatus?.nodeId || run.nodeId;
-  const profileLabel = runnerStatus?.profileKey || runnerStatus?.agentProfileId || run.agentProfileId;
-  const profileProvider =
-    runnerStatus?.profileProvider && runnerStatus.profileProvider !== profileLabel
-      ? runnerStatus.profileProvider
-      : null;
-  const profileSummary = [profileLabel, profileProvider].filter(Boolean).join(' / ');
-
-  if (nodeLabel || profileSummary) {
-    return (
-      <Space direction="vertical" size={0}>
-        <Typography.Text>{nodeLabel || t('Waiting for runner')}</Typography.Text>
-        {profileSummary ? <Typography.Text type="secondary">{profileSummary}</Typography.Text> : null}
-      </Space>
-    );
-  }
-
-  return (
-    <Typography.Text type="secondary">{isLiveRunStatus(run.status) ? t('Waiting for runner') : '-'}</Typography.Text>
-  );
-}
-
-function RunSessionSummary({ run, t }: { run: RunRecord; t: TFunction }) {
-  const providerSummary = [run.agentSessionProvider, run.agentSessionProviderId].filter(Boolean).join(' / ');
-  if (providerSummary || run.agentSessionId) {
-    return (
-      <Space direction="vertical" size={0}>
-        <Typography.Text>{providerSummary || t('Agent session')}</Typography.Text>
-        {run.agentSessionId ? <Typography.Text type="secondary">{run.agentSessionId}</Typography.Text> : null}
-      </Space>
-    );
-  }
-
-  return <Typography.Text type="secondary">{t('No agent session')}</Typography.Text>;
-}
-
-function RunnerQueueAlert({ run, t }: { run: RunRecord; t: TFunction }) {
-  const runnerStatus = run.runnerStatusJson;
-  if (!runnerStatus || (run.status !== 'queued' && runnerStatus.online !== false)) {
-    return null;
-  }
-  const details = [
-    runnerStatus.nodeKey || runnerStatus.nodeId,
-    runnerStatus.profileKey || runnerStatus.agentProfileId,
-    runnerStatus.lastHeartbeatAt ? `${t('Last heartbeat')}: ${formatDateTime(runnerStatus.lastHeartbeatAt)}` : '',
-  ]
-    .filter(Boolean)
-    .join(' / ');
-  return (
-    <Alert
-      type={runnerStatus.online === false ? 'warning' : 'info'}
-      showIcon
-      message={run.status === 'queued' ? t('Queued: waiting for runner') : t('Runner status')}
-      description={[getRunnerReasonMessage(t, runnerStatus.reason), details].filter(Boolean).join('\n')}
-      style={{ whiteSpace: 'pre-line' }}
-    />
-  );
-}
-
-function RunSummaryPanel({ run, t }: { run: RunRecord; t: TFunction }) {
-  return (
-    <Space direction="vertical" size={16} style={{ width: '100%' }}>
-      <Descriptions bordered size="small" column={2} title={t('Run summary')}>
-        <Descriptions.Item label={t('Task')} span={2}>
-          <RunTaskTitle run={run} t={t} />
-        </Descriptions.Item>
-        <Descriptions.Item label={t('Status')}>{statusTag(run.status)}</Descriptions.Item>
-        <Descriptions.Item label={t('Runner')}>
-          <RunRunnerSummary run={run} t={t} />
-        </Descriptions.Item>
-        <Descriptions.Item label={t('Requested at')}>{formatDateTime(run.requestedAt)}</Descriptions.Item>
-        <Descriptions.Item label={t('Started at')}>{formatDateTime(run.startedAt)}</Descriptions.Item>
-        <Descriptions.Item label={t('Time')}>{formatRunDuration(run)}</Descriptions.Item>
-        <Descriptions.Item label={t('Tokens')}>
-          <RunTokenUsageSummary usage={run.tokenUsageJson} t={t} />
-        </Descriptions.Item>
-        <Descriptions.Item label={t('Terminal status')}>
-          {run.terminalStatus ? statusTag(run.terminalStatus) : '-'}
-        </Descriptions.Item>
-        <Descriptions.Item label={t('Last terminal activity')}>
-          {formatDateTime(run.terminalLastActivityAt)}
-        </Descriptions.Item>
-        <Descriptions.Item label={t('Provider capabilities')} span={2}>
-          <Space wrap>
-            {Object.entries(
-              normalizeAgentProviderCapabilities(run.agentProvider || 'generic-cli', run.agentProviderCapabilitiesJson),
-            )
-              .filter(([key]) =>
-                [
-                  'structuredEvents',
-                  'terminalOutput',
-                  'resumeSession',
-                  'liveSemanticMessage',
-                  'stdinMessage',
-                  'interrupt',
-                  'terminate',
-                  'artifacts',
-                ].includes(key),
-              )
-              .map(([key, value]) => (
-                <Typography.Text key={key} type={value === true ? undefined : 'secondary'}>
-                  {t(key)}: {value === true ? t('Yes') : t('No')}
-                </Typography.Text>
-              ))}
-          </Space>
-        </Descriptions.Item>
-        <Descriptions.Item label={t('Continuation')} span={2}>
-          {[run.continuationReason, run.parentRunId].filter(Boolean).join(' / ') || '-'}
-        </Descriptions.Item>
-        <Descriptions.Item label={t('Error summary')} span={2}>
-          {redactPreviewText(run.errorSummary) || '-'}
-        </Descriptions.Item>
-        <Descriptions.Item label={t('Result summary')} span={2}>
-          <ResultSummaryPreview t={t} value={run.resultSummaryJson} />
-        </Descriptions.Item>
-      </Descriptions>
-    </Space>
-  );
-}
-
-function getResultSummaryStatus(value: JsonRecord) {
-  const status = value.status;
-  return typeof status === 'string' && status ? status : '';
-}
-
-function getResultSummaryExitCode(value: JsonRecord) {
-  const exitCode = value.exitCode;
-  return typeof exitCode === 'number' && Number.isFinite(exitCode) ? exitCode : null;
-}
-
-function getDeclaredArtifactCount(value: JsonRecord) {
-  const declaredArtifacts = getObjectRecord(value.declaredArtifacts);
-  const count = declaredArtifacts.declaredArtifactCount;
-  if (typeof count === 'number' && Number.isFinite(count)) {
-    return count;
-  }
-
-  const keys = declaredArtifacts.declaredArtifactKeys;
-  return Array.isArray(keys) ? keys.length : null;
-}
-
-function ResultSummaryPreview({ t, value }: { t: TFunction; value?: JsonRecord }) {
-  const summary = getObjectRecord(value);
-  const status = getResultSummaryStatus(summary);
-  const exitCode = getResultSummaryExitCode(summary);
-  const declaredArtifactCount = getDeclaredArtifactCount(summary);
-  const hasSummary = status || exitCode !== null || declaredArtifactCount !== null;
-
-  if (!hasSummary) {
-    return <Typography.Text type="secondary">{t('No result summary')}</Typography.Text>;
-  }
-
-  return (
-    <Space wrap size={6}>
-      {status ? (
-        <Space size={4}>
-          <Typography.Text type="secondary">{t('Status')}:</Typography.Text>
-          {statusTag(status)}
-        </Space>
-      ) : null}
-      {exitCode !== null ? (
-        <Tag>
-          {t('Exit code')}: {exitCode}
-        </Tag>
-      ) : null}
-      {declaredArtifactCount !== null ? (
-        <Tag>
-          {t('Artifacts')}: {declaredArtifactCount}
-        </Tag>
-      ) : null}
-    </Space>
-  );
-}
-
-function AgentSessionPanel({
-  run,
-  t,
-  canResumeAgentSession,
-  resumeLoading,
-  onResume,
-}: {
-  run: RunRecord;
-  t: TFunction;
-  canResumeAgentSession: boolean;
-  resumeLoading: boolean;
-  onResume(input: AgentSessionResumeInput): Promise<void>;
-}) {
-  return (
-    <Space direction="vertical" size={16} style={{ width: '100%' }}>
-      <Descriptions bordered size="small" column={1} title={t('Agent Sessions')}>
-        <Descriptions.Item label={t('Session')}>
-          <RunSessionSummary run={run} t={t} />
-          {!run.agentSessionId && !run.agentSessionProvider && !run.agentSessionProviderId ? (
-            <Typography.Text type="secondary" style={{ display: 'block' }}>
-              {t('No agent session')}
-            </Typography.Text>
-          ) : null}
-        </Descriptions.Item>
-        <Descriptions.Item label={t('Continuation')}>
-          {[run.continuationReason, run.parentRunId].filter(Boolean).join(' / ') || '-'}
-        </Descriptions.Item>
-      </Descriptions>
-      {canResumeAgentSession ? (
-        <AgentSessionResumeBox run={run} t={t} loading={resumeLoading} onResume={onResume} />
-      ) : null}
-    </Space>
   );
 }
 
@@ -3670,11 +3081,6 @@ export default function AgentGatewayRunsPage() {
   const apiCallLogs = activeRunApiLogsDetails?.apiCallLogs || [];
   const apiCallLogsMeta = activeRunApiLogsDetails?.meta || createDetailPageMeta();
   const apiCallLogsWarning = activeRunApiLogsDetails?.warning || rawLogDetailsWarning;
-  const useLegacyTimelineFallback = canUseLegacyTimelineFallback(
-    activeRunDetails?.run,
-    timelineEvents.length,
-    Boolean(timelineWarning),
-  );
   const showTerminalStreamSmoke = isTerminalStreamSmokeEnabled();
   const createStreamTicket = useCallback(
     async (runId: string) => {
@@ -3973,8 +3379,6 @@ export default function AgentGatewayRunsPage() {
                     <AgentTimeline
                       t={t}
                       events={timelineEvents}
-                      legacyEvents={activeRunDetails.events}
-                      useLegacyFallback={useLegacyTimelineFallback}
                       closeDanglingToolCalls={shouldCloseDanglingToolCalls(activeRunDetails.run.status)}
                       warning={timelineWarning}
                       emptyDescription={getTimelineEmptyDescription(activeRunDetails.run, t)}

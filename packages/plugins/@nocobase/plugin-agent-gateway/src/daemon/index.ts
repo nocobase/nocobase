@@ -12,6 +12,7 @@ export * from './adapters';
 export * from './cli';
 export * from './config';
 export * from './execDriver';
+export * from './executionCommand';
 export * from './gateway';
 export * from './openCodeSmoke';
 export * from './profileDetection';

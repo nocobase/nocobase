@@ -8,7 +8,6 @@
  */
 
 import {
-  AGENT_GATEWAY_LEGACY_PERMISSIONS,
   AGENT_GATEWAY_NODE_TOKEN_HEADER,
   AGENT_GATEWAY_PERMISSION_DEFINITIONS,
   AGENT_GATEWAY_PERMISSIONS,
@@ -226,7 +225,7 @@ describe('agent gateway ACL registration', () => {
     registerAgentGatewayAcl(acl);
 
     expect(snippets.map((snippet) => snippet.name).sort()).toEqual(
-      [...Object.values(AGENT_GATEWAY_PERMISSIONS), ...Object.values(AGENT_GATEWAY_LEGACY_PERMISSIONS)].sort(),
+      AGENT_GATEWAY_PERMISSION_DEFINITIONS.map((definition) => definition.name).sort(),
     );
     expect(snippets).toHaveLength(AGENT_GATEWAY_PERMISSION_DEFINITIONS.length);
     expect(snippets.find((snippet) => snippet.name === AGENT_GATEWAY_PERMISSIONS.manage)?.actions).toEqual(
@@ -241,9 +240,6 @@ describe('agent gateway ACL registration', () => {
       ]),
     );
     expect(snippets.find((snippet) => snippet.name === AGENT_GATEWAY_PERMISSIONS.dispatch)?.actions).toEqual([
-      'agentGateway:dispatch',
-    ]);
-    expect(snippets.find((snippet) => snippet.name === AGENT_GATEWAY_LEGACY_PERMISSIONS.dispatch)?.actions).toEqual([
       'agentGateway:dispatch',
     ]);
     expect(snippets.find((snippet) => snippet.name === AGENT_GATEWAY_PERMISSIONS.readRuns)?.actions).toEqual(

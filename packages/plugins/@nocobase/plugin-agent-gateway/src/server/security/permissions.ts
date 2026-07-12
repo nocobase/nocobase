@@ -28,10 +28,6 @@ export const AGENT_GATEWAY_PERMISSIONS = {
   cancelRun: 'agentGateway.cancelRun',
 } as const;
 
-export const AGENT_GATEWAY_LEGACY_PERMISSIONS = {
-  dispatch: 'agentGateway.dispatch',
-} as const;
-
 export const AGENT_GATEWAY_ACTIONS = {
   manage: 'manage',
   dispatch: 'dispatch',
@@ -117,10 +113,6 @@ export const AGENT_GATEWAY_PERMISSION_DEFINITIONS = [
   },
   {
     name: AGENT_GATEWAY_PERMISSIONS.dispatch,
-    actions: [`${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.dispatch}`],
-  },
-  {
-    name: AGENT_GATEWAY_LEGACY_PERMISSIONS.dispatch,
     actions: [`${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.dispatch}`],
   },
   {

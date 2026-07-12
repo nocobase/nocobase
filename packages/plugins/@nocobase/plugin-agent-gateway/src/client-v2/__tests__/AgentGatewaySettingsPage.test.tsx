@@ -5376,7 +5376,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
     render(
       <AntdApp>
-        <AgentTimeline t={(key) => key} events={events} legacyEvents={[]} useLegacyFallback={false} />
+        <AgentTimeline t={(key) => key} events={events} />
       </AntdApp>,
     );
 
@@ -5412,8 +5412,6 @@ describe('PluginAgentGatewayClientV2', () => {
               createdAt: '2026-06-30T10:00:00.000Z',
             },
           ]}
-          legacyEvents={[]}
-          useLegacyFallback={false}
           closeDanglingToolCalls
         />
       </AntdApp>,
@@ -5470,8 +5468,6 @@ describe('PluginAgentGatewayClientV2', () => {
               createdAt: '2026-06-30T10:00:02.000Z',
             },
           ]}
-          legacyEvents={[]}
-          useLegacyFallback={false}
         />
       </AntdApp>,
     );
@@ -5513,8 +5509,6 @@ describe('PluginAgentGatewayClientV2', () => {
               createdAt: '2026-06-30T10:00:02.000Z',
             },
           ]}
-          legacyEvents={[]}
-          useLegacyFallback={false}
         />
       </AntdApp>,
     );
@@ -5562,8 +5556,6 @@ describe('PluginAgentGatewayClientV2', () => {
               createdAt: '2026-06-30T10:00:03.000Z',
             },
           ]}
-          legacyEvents={[]}
-          useLegacyFallback={false}
         />
       </AntdApp>,
     );
@@ -5617,8 +5609,6 @@ describe('PluginAgentGatewayClientV2', () => {
               createdAt: '2026-06-30T10:00:03.000Z',
             },
           ]}
-          legacyEvents={[]}
-          useLegacyFallback={false}
         />
       </AntdApp>,
     );
@@ -5704,8 +5694,6 @@ describe('PluginAgentGatewayClientV2', () => {
               createdAt: '2026-06-30T10:00:03.000Z',
             },
           ]}
-          legacyEvents={[]}
-          useLegacyFallback={false}
         />
       </AntdApp>,
     );
@@ -5756,8 +5744,6 @@ describe('PluginAgentGatewayClientV2', () => {
               createdAt: '2026-06-30T10:00:01.000Z',
             },
           ]}
-          legacyEvents={[]}
-          useLegacyFallback={false}
         />
       </AntdApp>,
     );

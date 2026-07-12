@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createHash, randomUUID } from 'crypto';
+import { randomUUID } from 'crypto';
 
 import { NoPermissionError, checkFilterParams, createUserProvider, parseJsonTemplate } from '@nocobase/acl';
 import { Context, Next } from '@nocobase/actions';
@@ -21,15 +21,10 @@ import {
   EXTERNAL_IMPORT_LIMITS,
   EXTERNAL_IMPORT_SOURCE_TYPE,
   EXTERNAL_IMPORT_USER_CANCELED_ERROR_SUMMARY,
-  EXTERNAL_LOG_FORMATS,
   ExternalLogFormat,
 } from '../../shared/externalRunImport';
 import { IMPORTING_RUN_STATUS, isTerminalRunStatus } from '../../shared/runState';
 import { COMMAND_CONTENT_JSON_LIMIT_CHARS, COMMAND_DETAIL_STRING_LIMIT_CHARS } from '../../shared/conversationLimits';
-import { claudeCodeAdapter } from '../../daemon/adapters/claudeCode';
-import { codexAdapter } from '../../daemon/adapters/codex';
-import { opencodeAdapter } from '../../daemon/adapters/opencode';
-import { AgentAdapter, NormalizedAgentEvent } from '../../daemon/adapters/types';
 import {
   AGENT_GATEWAY_ACTIONS,
   redactEventPayload,
@@ -67,6 +62,16 @@ import {
   getTokenUsageSummaryFromRecord,
   mergeRunObservabilityRollup,
 } from '../services/observationRollup';
+import {
+  PreparedExternalImportLog as PreparedLogEntry,
+  PreparedExternalObservationBatch as PreparedObservationBatch,
+  prepareExternalObservationBatch as prepareObservationBatch,
+} from '../services/externalImportLogs';
+import {
+  getCanonicalExternalImportJson as getCanonicalJson,
+  hashExternalImportValue as getHash,
+  sanitizeExternalImportKeyPart as sanitizeKeyPart,
+} from '../services/externalImportUtils';
 
 const MAX_EVENT_MESSAGE_LENGTH = 4000;
 const MAX_EVENT_PAYLOAD_CHARS = 16000;
@@ -131,20 +136,6 @@ interface ExternalIdentityDescriptor {
   runCode: string;
 }
 
-interface PreparedLogEntry {
-  log: JsonRecord;
-  format: ExternalLogFormat;
-  contentText: string;
-  normalizedEvents: NormalizedAgentEvent[];
-  index: number;
-}
-
-interface PreparedObservationBatch {
-  logs: PreparedLogEntry[];
-  artifacts: JsonRecord[];
-  payloadSha256: string;
-}
-
 interface PreparedObservationPlan {
   version: number;
   operations: ObservationOperation[];
@@ -203,12 +194,6 @@ type ObservationOperation =
       values: JsonRecord;
     };
 
-const PROVIDER_ADAPTERS: Partial<Record<AgentProviderKey, AgentAdapter>> = {
-  codex: codexAdapter,
-  opencode: opencodeAdapter,
-  'claude-code': claudeCodeAdapter,
-};
-
 function isRecord(value: unknown): value is JsonRecord {
   return Object.prototype.toString.call(value) === '[object Object]';
 }
@@ -259,18 +244,6 @@ function assertImportedRunStatusTransition(ctx: Context, currentStatus: string, 
     ctx.throw(409, `Imported run status cannot transition from ${currentStatus} to ${nextStatus}`);
   }
   ctx.throw(409, `Imported run status cannot transition from ${currentStatus} to ${nextStatus}`);
-}
-
-function sanitizeKeyPart(value: string, maxLength = 96) {
-  return value
-    .trim()
-    .replace(/[^A-Za-z0-9_.:/-]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, maxLength);
-}
-
-function getHash(value: string) {
-  return createHash('sha256').update(value).digest('hex');
 }
 
 function getExternalRunCode(values: JsonRecord, provider: AgentProviderKey) {
@@ -328,31 +301,6 @@ function getBatchKey(ctx: Context, value: unknown, required: boolean) {
     ctx.throw(400, `batchKey must not exceed ${MAX_BATCH_KEY_LENGTH} characters`);
   }
   return batchKey;
-}
-
-function getCanonicalValue(value: unknown): unknown {
-  if (Array.isArray(value)) {
-    return value.map((entry) => getCanonicalValue(entry));
-  }
-  if (isRecord(value)) {
-    return Object.keys(value)
-      .sort()
-      .reduce<JsonRecord>((result, key) => {
-        const entry = value[key];
-        if (entry !== undefined) {
-          result[key] = getCanonicalValue(entry);
-        }
-        return result;
-      }, {});
-  }
-  if (value instanceof Date) {
-    return value.toISOString();
-  }
-  return value;
-}
-
-function getCanonicalJson(value: unknown) {
-  return JSON.stringify(getCanonicalValue(value));
 }
 
 function isUniqueConstraintError(error: unknown) {
@@ -494,45 +442,6 @@ async function getCollectionActionAccess(
     readFields: action === 'view' ? getReadableFields(parsedParams) : null,
     writeFields: action === 'update' ? getWritableFields(parsedParams) : null,
   };
-}
-
-function getLogFormat(provider: AgentProviderKey, value: unknown): ExternalLogFormat {
-  const format = getString(value);
-  if (EXTERNAL_LOG_FORMATS.includes(format as ExternalLogFormat)) {
-    return format as ExternalLogFormat;
-  }
-  if (provider === 'codex') {
-    return 'codex-jsonl';
-  }
-  if (provider === 'opencode') {
-    return 'opencode-jsonl';
-  }
-  if (provider === 'claude-code') {
-    return 'claude-code-jsonl';
-  }
-  return 'text';
-}
-
-function getLogEntries(values: JsonRecord) {
-  const logs = getArray(values.logs).map((entry) => getRecord(entry));
-  if (logs.length) {
-    return logs;
-  }
-  const contentText = getString(values.contentText || values.log || values.logsText);
-  if (!contentText) {
-    return [];
-  }
-  return [
-    {
-      contentText,
-      format: values.format,
-      artifactKey: values.artifactKey,
-    },
-  ];
-}
-
-function getArtifactEntries(values: JsonRecord) {
-  return getArray(values.artifacts).map((entry) => getRecord(entry));
 }
 
 function getImportedRunTimestamps(values: JsonRecord, status: string, now: Date, existing?: ModelRecord) {
@@ -814,110 +723,6 @@ function getSourceKey(...parts: string[]) {
   const hash = getHash(source).slice(0, 16);
   const prefix = sanitizeKeyPart(source, 163) || 'external-import';
   return `${prefix}:${hash}`;
-}
-
-function getTextLogEvent(line: string): NormalizedAgentEvent {
-  return {
-    eventType: 'agent.progress',
-    level: 'info',
-    message: line,
-    payloadJson: {
-      textKind: 'progress',
-    },
-  };
-}
-
-function normalizeLogEvents(
-  provider: AgentProviderKey,
-  format: ExternalLogFormat,
-  contentText: string,
-  maxEvents: number,
-) {
-  const adapter = PROVIDER_ADAPTERS[provider];
-  const events: NormalizedAgentEvent[] = [];
-  for (const rawLine of contentText.split(/\r?\n/)) {
-    const line = rawLine.trim();
-    if (!line) {
-      continue;
-    }
-    const lineEvents =
-      format === 'text' || !adapter ? [getTextLogEvent(line)] : adapter.normalizeEvent({ rawLine: line });
-    if (events.length + lineEvents.length > maxEvents) {
-      return {
-        events: [],
-        limitExceeded: true,
-      };
-    }
-    events.push(...lineEvents);
-  }
-  return {
-    events,
-    limitExceeded: false,
-  };
-}
-
-function prepareObservationBatch(
-  ctx: Context,
-  values: JsonRecord,
-  provider: AgentProviderKey,
-  batchKey: string,
-): PreparedObservationBatch {
-  const canonicalPayload =
-    getCanonicalJson({
-      ...values,
-      provider,
-      batchKey,
-    }) || '';
-  if (Buffer.byteLength(canonicalPayload) > EXTERNAL_IMPORT_LIMITS.maxPayloadBytes) {
-    ctx.throw(413, `External import payload must not exceed ${EXTERNAL_IMPORT_LIMITS.maxPayloadBytes} bytes`);
-  }
-
-  const logEntries = getLogEntries(values);
-  if (logEntries.length > EXTERNAL_IMPORT_LIMITS.maxLogs) {
-    ctx.throw(413, `External import supports at most ${EXTERNAL_IMPORT_LIMITS.maxLogs} logs per batch`);
-  }
-  const artifacts = getArtifactEntries(values);
-  if (artifacts.length > EXTERNAL_IMPORT_LIMITS.maxArtifacts) {
-    ctx.throw(413, `External import supports at most ${EXTERNAL_IMPORT_LIMITS.maxArtifacts} artifacts per batch`);
-  }
-
-  let normalizedEventCount = 0;
-  const logs = logEntries.flatMap((log, index): PreparedLogEntry[] => {
-    const contentText = getString(log.contentText || log.text || log.content);
-    if (!contentText) {
-      return [];
-    }
-    const format = getLogFormat(provider, log.format || values.format);
-    const normalized = normalizeLogEvents(
-      provider,
-      format,
-      contentText,
-      EXTERNAL_IMPORT_LIMITS.maxNormalizedEvents - normalizedEventCount,
-    );
-    if (normalized.limitExceeded) {
-      ctx.throw(
-        413,
-        `External import supports at most ${EXTERNAL_IMPORT_LIMITS.maxNormalizedEvents} normalized events per batch`,
-      );
-    }
-    const normalizedEvents = normalized.events;
-    normalizedEventCount += normalizedEvents.length;
-    return [
-      {
-        log,
-        format,
-        contentText,
-        normalizedEvents,
-        index,
-      },
-    ];
-  });
-
-  return {
-    logs,
-    artifacts,
-    payloadSha256: getHash(canonicalPayload),
-  };
 }
 
 function getRawLogArtifactValues(options: {

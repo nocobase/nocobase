@@ -678,7 +678,7 @@ describe('agent gateway run lifecycle APIs', () => {
     const inactiveSkillResponse = await rootAgent.post('/agentGatewayApi:createTaskRun').send({
       title: 'Inactive skill evaluation',
       prompt: '运行 nb-opencode-ui-batch harness 并汇总结果',
-      skillVersionId: inactiveSkillVersion.get('id'),
+      skillVersionIds: [inactiveSkillVersion.get('id')],
       cwd: 'myskills/skills/nb-opencode-ui-batch',
       nodeId: runner.nodeId,
       agentProfileId: runner.profileId,

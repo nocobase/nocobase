@@ -42,29 +42,6 @@ export interface AgentTimelineEventRecord {
   createdAt?: string;
 }
 
-export interface LegacyRunEventRecord {
-  id: string;
-  source?: string;
-  sequence?: number;
-  level?: string;
-  eventType?: string;
-  message?: string | null;
-  payloadJson?: JsonRecord;
-  emittedAt?: string;
-}
-
-function getLegacyTimelineEvents(events: LegacyRunEventRecord[]): AgentTimelineEventRecord[] {
-  return events.map((event) => ({
-    id: event.id,
-    source: event.source,
-    sequence: event.sequence,
-    eventType: event.eventType,
-    contentText: event.message,
-    contentJson: event.payloadJson,
-    createdAt: event.emittedAt,
-  }));
-}
-
 function getToolStatusColor(status: AgentTranscriptToolStatus) {
   if (status === 'failed') {
     return 'red';
@@ -419,8 +396,6 @@ function MessageContent({ t, message }: { t: TFunction; message: AgentTranscript
 export function AgentTimeline({
   t,
   events,
-  legacyEvents,
-  useLegacyFallback,
   closeDanglingToolCalls,
   warning,
   emptyDescription,
@@ -428,21 +403,17 @@ export function AgentTimeline({
 }: {
   t: TFunction;
   events: AgentTimelineEventRecord[];
-  legacyEvents: LegacyRunEventRecord[];
-  useLegacyFallback: boolean;
   closeDanglingToolCalls?: boolean;
   warning?: string;
   emptyDescription?: React.ReactNode;
   loading?: boolean;
 }) {
-  const usingLegacyFallback = useLegacyFallback && !events.length && legacyEvents.length > 0;
-  const transcriptEvents = usingLegacyFallback ? getLegacyTimelineEvents(legacyEvents) : events;
   const transcript = useMemo(
-    () => buildAgentTranscript(transcriptEvents, { closeDanglingToolCalls }),
-    [closeDanglingToolCalls, transcriptEvents],
+    () => buildAgentTranscript(events, { closeDanglingToolCalls }),
+    [closeDanglingToolCalls, events],
   );
   const [visibleMessageCount, setVisibleMessageCount] = React.useState(DEFAULT_VISIBLE_MESSAGE_COUNT);
-  const timelineResetKey = `${usingLegacyFallback ? 'legacy' : 'events'}:${transcriptEvents[0]?.id || 'empty'}`;
+  const timelineResetKey = events[0]?.id || 'empty';
   React.useEffect(() => {
     setVisibleMessageCount(DEFAULT_VISIBLE_MESSAGE_COUNT);
   }, [timelineResetKey]);
@@ -461,11 +432,7 @@ export function AgentTimeline({
           <Typography.Title level={5} style={{ margin: 0 }}>
             {t('Task')}
           </Typography.Title>
-          <Typography.Text type="secondary">
-            {usingLegacyFallback
-              ? t('Showing available conversation messages from legacy events')
-              : t('Task conversation')}
-          </Typography.Text>
+          <Typography.Text type="secondary">{t('Task conversation')}</Typography.Text>
         </Space>
         {warning ? <Alert type="warning" showIcon message={warning} /> : null}
         {timelineItems.length ? (
