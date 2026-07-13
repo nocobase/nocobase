@@ -98,7 +98,7 @@ describe('FormBlockModel.submitFromRunJs', () => {
     expect(submit).toHaveBeenCalledOnce();
   });
 
-  it('does not use the core fallback for specialized form subclasses', () => {
+  it('uses the core fallback for specialized form subclasses', () => {
     class SpecializedCreateFormModel extends CreateFormModel {}
 
     const submit = vi.fn().mockResolvedValue(undefined);
@@ -111,7 +111,7 @@ describe('FormBlockModel.submitFromRunJs', () => {
 
     blockModel.submitFromRunJs();
 
-    expect(submit).not.toHaveBeenCalled();
+    expect(submit).toHaveBeenCalledOnce();
   });
 
   it('does not use the core fallback for public forms without a submit action', () => {
