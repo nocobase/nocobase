@@ -126,6 +126,12 @@ describe('agent gateway run lifecycle APIs', () => {
   }
 
   async function createRun(runCode: string, values: Record<string, unknown> = {}) {
+    const profile = values.agentProfileId
+      ? await app.db.getRepository('agAgentProfiles').findOne({
+          filterByTk: values.agentProfileId,
+        })
+      : null;
+    const executionPolicyKey = profile ? String(profile.get('profileKey')) : 'fake-success';
     const response = await rootAgent.post('/agentGatewayApi:createRun').send({
       runCode,
       sourceType: 'test',
@@ -133,12 +139,10 @@ describe('agent gateway run lifecycle APIs', () => {
         text: `Prompt for ${runCode}`,
       },
       executionPayload: {
+        executionPolicyKey,
         task: runCode,
-        command: 'must-not-render',
-        cwd: '/tmp/must-not-render',
-        env: {
-          SECRET: 'must-not-render',
-        },
+        prompt: `Prompt for ${runCode}`,
+        cwd: '.',
       },
       ...values,
     });
@@ -189,7 +193,7 @@ describe('agent gateway run lifecycle APIs', () => {
       .post(`/agentGatewayApi:claimRun/${runner.nodeId}`)
       .set('Authorization', `Bearer ${runner.nodeToken}`)
       .send({
-        profileKey: 'fake-success',
+        profileKey: runner.profileKey,
         capabilities: {
           maxConcurrency: 999,
         },
@@ -250,14 +254,35 @@ describe('agent gateway run lifecycle APIs', () => {
       text: 'Prompt for run-create-1',
     });
     expect(storedRun.get('executionPayloadJson')).toMatchObject({
+      executionPolicyKey: 'fake-success',
       task: 'run-create-1',
-      command: 'must-not-render',
-      cwd: '/tmp/must-not-render',
-      env: {
-        SECRET: 'must-not-render',
-      },
+      prompt: 'Prompt for run-create-1',
+      cwd: '.',
     });
     expect(storedRun.get('queuedAt')).toBeTruthy();
+  });
+
+  it.each([
+    ['extraArgs', ['--add-dir', '/tmp']],
+    ['args', ['--sandbox', 'danger-full-access']],
+    ['env', { UNDECLARED_SECRET: 'secret' }],
+    ['commandKey', 'codex'],
+    ['cwd', '/tmp'],
+  ])('rejects unsafe remote execution field %s without creating a run', async (field, value) => {
+    const before = await app.db.getRepository('agRuns').count();
+    const response = await rootAgent.post('/agentGatewayApi:createRun').send({
+      runCode: `run-reject-${field}`,
+      sourceType: 'test',
+      executionPayload: {
+        executionPolicyKey: 'codex',
+        prompt: 'Safe prompt',
+        cwd: '.',
+        [field]: value,
+      },
+    });
+
+    expect(response.status).toBe(400);
+    expect(await app.db.getRepository('agRuns').count()).toBe(before);
   });
 
   it('reroutes manual UI build runs from stale runners to an online matching Codex runner', async () => {
@@ -305,9 +330,7 @@ describe('agent gateway run lifecycle APIs', () => {
     expect(storedRun.get('executionPayloadJson')).toMatchObject({
       prompt: 'Build a NocoBase page',
       cwd: '.',
-      profileKey: 'codex',
-      commandKey: 'codex',
-      provider: 'codex',
+      executionPolicyKey: 'codex',
     });
   });
 
@@ -354,7 +377,7 @@ describe('agent gateway run lifecycle APIs', () => {
     const createResponse = await rootAgent.post('/agentGatewayApi:createTaskRun').send({
       title: 'Calendar build',
       prompt: '搭建一个日历测试页面',
-      cwd: '/root/work/nocobase',
+      cwd: '.',
     });
     expect(createResponse.status).toBe(200);
     const createResult = getData(createResponse);
@@ -381,10 +404,8 @@ describe('agent gateway run lifecycle APIs', () => {
     });
     expect(storedRun.get('executionPayloadJson')).toMatchObject({
       prompt: expect.stringContaining('搭建一个日历测试页面'),
-      profileKey: 'codex',
-      commandKey: 'codex',
-      provider: 'codex',
-      cwd: '/root/work/nocobase',
+      executionPolicyKey: 'codex',
+      cwd: '.',
     });
     const initialConversationEvents = await app.db.getRepository('agAgentConversationEvents').find({
       filter: {
@@ -728,9 +749,7 @@ describe('agent gateway run lifecycle APIs', () => {
     expect(storedRun.get('executionPayloadJson')).toMatchObject({
       prompt: '运行 nb-opencode-ui-batch harness 并汇总结果',
       instruction: '运行 nb-opencode-ui-batch harness 并汇总结果',
-      profileKey: 'codex',
-      commandKey: 'codex',
-      provider: 'codex',
+      executionPolicyKey: 'codex',
       cwd: 'myskills/skills/nb-opencode-ui-batch',
       artifactRoot: '../..',
       artifacts: [
@@ -1047,13 +1066,9 @@ describe('agent gateway run lifecycle APIs', () => {
     expect(claim.leaseTtlMs).toBe(60_000);
     expect(Date.parse(String(claim.serverTime))).toBeGreaterThan(0);
     expect(Date.parse(String(claim.claimExpiresAt)) - Date.parse(String(claim.serverTime))).toBe(claim.leaseTtlMs);
-    expect(claim.nodeCapabilities).toMatchObject({
-      maxConcurrency: 1,
-    });
-    expect(claim.profileCapabilities).toMatchObject({
-      maxConcurrency: 1,
-    });
-    expect(claim.profileKey).toBe(runner.profileKey);
+    expect(claim).not.toHaveProperty('nodeCapabilities');
+    expect(claim.profileCapabilities).toEqual({});
+    expect(claim.executionPolicyKey).toBe(runner.profileKey);
     expect(claim.run).toMatchObject({
       id: firstRun.id,
       status: 'claimed',
@@ -1065,10 +1080,11 @@ describe('agent gateway run lifecycle APIs', () => {
         text: 'Prompt for run-claim-1',
       },
       executionPayloadJson: {
+        executionPolicyKey: 'fake-success',
         task: 'run-claim-1',
       },
     });
-    expect(String(JSON.stringify(claim.run))).toContain('must-not-render');
+    expect(String(JSON.stringify(claim))).not.toContain('must-not-render');
 
     const claimedRun = await app.db.getRepository('agRuns').findOne({
       filterByTk: firstRun.id,
@@ -1161,13 +1177,18 @@ describe('agent gateway run lifecycle APIs', () => {
     expect(thirdClaim.runId).toBe(queuedRun.id);
   });
 
-  it('returns canonical provider separately from a custom profile key during claim', async () => {
+  it('returns only the custom execution policy key and capability summary during claim', async () => {
     const runner = await createRunner({
       profileKey: 'custom-codex',
       profileProvider: 'codex',
     });
     const run = await createRun('run-custom-provider', {
       agentProfileId: runner.profileId,
+      executionPayload: {
+        executionPolicyKey: 'custom-codex',
+        prompt: 'Prompt for run-custom-provider',
+        cwd: '.',
+      },
     });
 
     const claimResponse = await claimRun(runner, {
@@ -1179,13 +1200,15 @@ describe('agent gateway run lifecycle APIs', () => {
     expect(claim).toMatchObject({
       claimed: true,
       runId: run.id,
-      profileKey: 'custom-codex',
-      profileProvider: 'codex',
+      executionPolicyKey: 'custom-codex',
+      profileCapabilities: {},
     });
+    expect(claim).not.toHaveProperty('profileProvider');
   });
 
   it('enriches dispatch resolved Skill selections with solidified sources for node claims', async () => {
     const runner = await createRunner({
+      profileKey: 'opencode',
       profileProvider: 'codex',
     });
     const skill = await app.db.getRepository('agSkills').create({
@@ -1217,7 +1240,7 @@ describe('agent gateway run lifecycle APIs', () => {
       nodeId: runner.nodeId,
       agentProfileId: runner.profileId,
       executionPayloadJson: {
-        commandKey: 'opencode',
+        executionPolicyKey: 'opencode',
         skillVersion: {
           skillVersionId: skillVersion.get('id'),
           versionLabel: 'evil-inline',
@@ -1271,7 +1294,7 @@ describe('agent gateway run lifecycle APIs', () => {
     expect(claim.runId).toBe(run.get('id'));
     expect(claim.run).toMatchObject({
       executionPayloadJson: {
-        commandKey: 'opencode',
+        executionPolicyKey: 'opencode',
         skillVersions: [
           {
             skillVersionId: skillVersion.get('id'),
@@ -1282,6 +1305,11 @@ describe('agent gateway run lifecycle APIs', () => {
               repoUrl: 'https://github.com/example/skills',
               archiveUrl: 'https://github.com/example/skills/archive/0123456789abcdef0123456789abcdef01234567.zip',
               sha256: 'solidified-archive-sha256',
+              capabilityToken: expect.stringMatching(/^ag_skill_/),
+              capabilityExpiresAt: claim.claimExpiresAt,
+              capabilityReplayPolicy: 'active-claim-lifetime',
+              runId: claim.runId,
+              claimAttempt: 1,
             },
           },
         ],
@@ -1292,8 +1320,10 @@ describe('agent gateway run lifecycle APIs', () => {
     expect(claim.run.executionPayloadJson.resolvedSkills.selectedSkill[0].source).toBeUndefined();
   });
 
-  it('serializes uploaded ZIP Skill sources as node-token archive URLs for claims', async () => {
-    const runner = await createRunner();
+  it('issues hash-only claim-scoped capabilities for uploaded ZIP Skill sources', async () => {
+    const runner = await createRunner({
+      profileKey: 'opencode',
+    });
     const skill = await app.db.getRepository('agSkills').create({
       values: {
         id: randomUUID(),
@@ -1323,7 +1353,7 @@ describe('agent gateway run lifecycle APIs', () => {
       nodeId: runner.nodeId,
       agentProfileId: runner.profileId,
       executionPayloadJson: {
-        commandKey: 'opencode',
+        executionPolicyKey: 'opencode',
         resolvedSkills: {
           selectedSkill: [
             {
@@ -1345,16 +1375,56 @@ describe('agent gateway run lifecycle APIs', () => {
         source: expect.objectContaining({
           type: 'zip',
           archiveUrl: expect.stringContaining(`/agentGatewayApi:downloadSkillVersion/${skillVersion.get('id')}`),
-          auth: 'node-token',
+          auth: 'skill-capability',
+          capabilityToken: expect.stringMatching(/^ag_skill_/),
+          capabilityExpiresAt: claim.claimExpiresAt,
+          capabilityReplayPolicy: 'active-claim-lifetime',
+          runId: claim.runId,
+          claimAttempt: 1,
           sha256: 'uploaded-zip-sha256',
           sizeBytes: 1024,
         }),
       }),
     ]);
     expect(JSON.stringify(claim.run)).not.toContain('/server-only/agent-gateway/uploaded.zip');
+    const source = claim.run.executionPayloadJson.skillVersions[0].source;
+    const archiveUrl = new URL(String(source.archiveUrl));
+    expect(archiveUrl.searchParams.get('runId')).toBe(String(claim.runId));
+    expect(archiveUrl.searchParams.get('claimAttempt')).toBe('1');
+    const capability = await app.db.getRepository('agSkillDownloadCapabilities').findOne({
+      filter: {
+        runId: claim.runId,
+      },
+    });
+    expect(capability).toBeTruthy();
+    expect(capability.get('nodeId')).toBe(runner.nodeId);
+    expect(capability.get('claimAttempt')).toBe(1);
+    expect(capability.get('skillVersionId')).toBe(skillVersion.get('id'));
+    expect(capability.get('sha256')).toBe('uploaded-zip-sha256');
+    expect(capability.get('tokenHash')).not.toBe(source.capabilityToken);
+    expect(JSON.stringify(capability.toJSON())).not.toContain(String(source.capabilityToken));
+
+    const cancelResponse = await rootAgent.post(`/agentGatewayApi:cancelRun/${claim.runId}`).send({});
+    expect(cancelResponse.status).toBe(200);
+    expect(await app.db.getRepository('agSkillDownloadCapabilities').count()).toBe(0);
+
+    await app.db.getRepository('agRuns').update({
+      filterByTk: claim.runId,
+      values: {
+        status: 'queued',
+        cancelRequested: false,
+        cancelRequestedAt: null,
+        claimExpiresAt: null,
+      },
+    });
+    const reclaimed = getData(await claimRun(runner, { runId: claim.runId }));
+    const reclaimedSource = reclaimed.run.executionPayloadJson.skillVersions[0].source;
+    expect(reclaimed.claimAttempt).toBe(2);
+    expect(reclaimedSource.capabilityToken).not.toBe(source.capabilityToken);
+    expect(await app.db.getRepository('agSkillDownloadCapabilities').count()).toBe(1);
   });
 
-  it('lets the matching node token upsert Skill install status without allowing node impersonation', async () => {
+  it('requires a current assignment capability for the first Skill install status report', async () => {
     const runner = await createRunner();
     const otherRunner = await createRunner({
       nodeKey: 'node-skill-other',
@@ -1376,10 +1446,22 @@ describe('agent gateway run lifecycle APIs', () => {
         metadataJson: {
           source: {
             type: 'zip',
+            archivePath: '/server-only/agent-gateway/skill-sync-test.zip',
+            sha256: 'a'.repeat(64),
           },
         },
       },
     });
+    await seedQueuedRun('run-skill-install-assignment', {
+      nodeId: runner.nodeId,
+      agentProfileId: runner.profileId,
+      executionPayloadJson: {
+        executionPolicyKey: runner.profileKey,
+        resolvedSkills: [{ skillVersionId: skillVersion.get('id') }],
+      },
+    });
+    const claim = getData(await claimRun(runner));
+    const source = claim.run.executionPayloadJson.skillVersions[0].source;
 
     const forbiddenResponse = await app
       .agent()
@@ -1391,6 +1473,35 @@ describe('agent gateway run lifecycle APIs', () => {
       });
     expect(forbiddenResponse.status).toBe(403);
 
+    const unassignedSkillVersion = await app.db.getRepository('agSkillVersions').create({
+      values: {
+        id: randomUUID(),
+        skillId: skill.get('id'),
+        versionLabel: 'v2',
+        status: 'active',
+        metadataJson: {
+          source: {
+            type: 'zip',
+            archivePath: '/server-only/agent-gateway/skill-sync-test-v2.zip',
+            sha256: 'b'.repeat(64),
+          },
+        },
+      },
+    });
+    const forgedResponse = await app
+      .agent()
+      .post(`/agentGatewayApi:upsertNodeSkillInstall/${runner.nodeId}`)
+      .set('Authorization', `Bearer ${runner.nodeToken}`)
+      .send({
+        skillVersionId: unassignedSkillVersion.get('id'),
+        status: 'installed',
+        capabilityToken: source.capabilityToken,
+        runId: claim.runId,
+        claimAttempt: claim.claimAttempt,
+        sourceSha256: 'b'.repeat(64),
+      });
+    expect(forgedResponse.status).toBe(404);
+
     const installResponse = await app
       .agent()
       .post(`/agentGatewayApi:upsertNodeSkillInstall/${runner.nodeId}`)
@@ -1398,6 +1509,10 @@ describe('agent gateway run lifecycle APIs', () => {
       .send({
         skillVersionId: skillVersion.get('id'),
         status: 'installed',
+        capabilityToken: source.capabilityToken,
+        runId: claim.runId,
+        claimAttempt: claim.claimAttempt,
+        sourceSha256: source.sha256,
         capabilitiesSnapshot: {
           skillRootPath: '/workspace/skills/v1',
         },
@@ -1412,6 +1527,8 @@ describe('agent gateway run lifecycle APIs', () => {
       skillVersionId: skillVersion.get('id'),
       status: 'installed',
       idempotent: false,
+      assignedRunId: claim.runId,
+      assignedClaimAttempt: claim.claimAttempt,
     });
 
     const updateResponse = await app
@@ -1441,10 +1558,16 @@ describe('agent gateway run lifecycle APIs', () => {
       await seedQueuedRun(`run-other-node-${index}`, {
         nodeId: otherRunner.nodeId,
         agentProfileId: otherRunner.profileId,
+        executionPayloadJson: {
+          executionPolicyKey: otherRunner.profileKey,
+        },
       });
     }
     const claimableRun = await seedQueuedRun('run-target-after-global-page', {
       agentProfileId: runner.profileId,
+      executionPayloadJson: {
+        executionPolicyKey: runner.profileKey,
+      },
     });
 
     const claimResponse = await claimRun(runner);
@@ -1487,9 +1610,15 @@ describe('agent gateway run lifecycle APIs', () => {
     });
     const blockedRun = await seedQueuedRun('run-profile-primary-blocked', {
       agentProfileId: runner.profileId,
+      executionPayloadJson: {
+        executionPolicyKey: runner.profileKey,
+      },
     });
     const claimableRun = await seedQueuedRun('run-profile-secondary-claimable', {
       agentProfileId: String(secondaryProfile.get('id')),
+      executionPayloadJson: {
+        executionPolicyKey: 'fake-secondary',
+      },
     });
 
     const claimResponse = await claimRun(runner, {

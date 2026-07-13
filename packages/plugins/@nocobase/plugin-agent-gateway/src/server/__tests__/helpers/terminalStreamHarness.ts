@@ -16,11 +16,7 @@ import WebSocket from 'ws';
 
 import {
   TERMINAL_PROTOCOL,
-  TERMINAL_STREAM_BROWSER_AUTHENTICATOR_PROTOCOL_PREFIX,
-  TERMINAL_STREAM_BROWSER_AUTH_PROOF_PROTOCOL_PREFIX,
-  TERMINAL_STREAM_BROWSER_ROLE_PROTOCOL_PREFIX,
   TERMINAL_STREAM_BROWSER_SUBPROTOCOL,
-  TERMINAL_STREAM_BROWSER_TICKET_PROOF_PROTOCOL_PREFIX,
   TERMINAL_STREAM_BROWSER_TICKET_PROTOCOL_PREFIX,
   TERMINAL_STREAM_WS_PATH,
   TerminalFrame,
@@ -42,7 +38,7 @@ export interface ClaimedRun {
   leaseVersion: number;
 }
 
-export interface TestBrowserAuthProof {
+export interface TestBrowserAuthSession {
   authToken: string;
   authenticator: string;
   role?: string;
@@ -94,10 +90,10 @@ function getTestAuthManager(app: MockServer) {
   return app.authManager as unknown as TestAuthManager;
 }
 
-export async function createBrowserAuthProof(
+export async function createBrowserAuthSession(
   app: MockServer,
   options: { userId: string | number; roleName?: string },
-): Promise<TestBrowserAuthProof> {
+): Promise<TestBrowserAuthSession> {
   const authManager = getTestAuthManager(app);
   const tokenInfo = await authManager.tokenController.add({ userId: options.userId });
   const config = await authManager.tokenController.getConfig();
@@ -128,40 +124,12 @@ function encodeWebSocketProtocolValue(value?: string) {
   return Buffer.from(value, 'utf8').toString('base64url');
 }
 
-function buildBrowserStreamProtocols(streamTicket?: {
-  ticket: string;
-  ticketProof: string;
-  authProof?: string;
-  authenticator?: string;
-  role?: string | null;
-}) {
+function buildBrowserStreamProtocols(streamTicket?: { ticket: string }) {
   const protocols = [TERMINAL_STREAM_BROWSER_SUBPROTOCOL];
   if (streamTicket?.ticket) {
     protocols.push(
       `${TERMINAL_STREAM_BROWSER_TICKET_PROTOCOL_PREFIX}${encodeWebSocketProtocolValue(streamTicket.ticket)}`,
     );
-  }
-  if (streamTicket?.ticketProof) {
-    protocols.push(
-      `${TERMINAL_STREAM_BROWSER_TICKET_PROOF_PROTOCOL_PREFIX}${encodeWebSocketProtocolValue(
-        streamTicket.ticketProof,
-      )}`,
-    );
-  }
-  if (streamTicket?.authProof) {
-    protocols.push(
-      `${TERMINAL_STREAM_BROWSER_AUTH_PROOF_PROTOCOL_PREFIX}${encodeWebSocketProtocolValue(streamTicket.authProof)}`,
-    );
-  }
-  if (streamTicket) {
-    protocols.push(
-      `${TERMINAL_STREAM_BROWSER_AUTHENTICATOR_PROTOCOL_PREFIX}${encodeWebSocketProtocolValue(
-        streamTicket.authenticator || 'basic',
-      )}`,
-    );
-  }
-  if (streamTicket?.role) {
-    protocols.push(`${TERMINAL_STREAM_BROWSER_ROLE_PROTOCOL_PREFIX}${encodeWebSocketProtocolValue(streamTicket.role)}`);
   }
   return protocols;
 }
@@ -170,14 +138,14 @@ export async function createBrowserStreamTicket(
   app: MockServer,
   options: { userId: string | number; runId: string; roleName?: string },
 ) {
-  const browserAuthProof = await createBrowserAuthProof(app, {
+  const browserAuthSession = await createBrowserAuthSession(app, {
     userId: options.userId,
     roleName: options.roleName,
   });
   const agent = app
     .agent()
-    .auth(browserAuthProof.authToken, { type: 'bearer' })
-    .set('X-Authenticator', browserAuthProof.authenticator);
+    .auth(browserAuthSession.authToken, { type: 'bearer' })
+    .set('X-Authenticator', browserAuthSession.authenticator);
   let request = agent.post(`/agentGatewayApi:createTerminalStreamTicket/${encodeURIComponent(options.runId)}`);
   if (options.roleName) {
     request = request.set('X-Role', options.roleName);
@@ -188,20 +156,12 @@ export async function createBrowserStreamTicket(
   }
   const data = getRecord(getResponseData(response));
   const ticket = getString(data.ticket);
-  const ticketProof = getString(data.ticketProof);
-  const authProof = getString(data.authProof);
-  const authenticator = getString(data.authenticator) || 'basic';
-  const role = getString(data.role) || undefined;
-  if (!ticket || !ticketProof) {
+  if (!ticket) {
     throw new Error(`Stream ticket create response is invalid: ${JSON.stringify(response.body)}`);
   }
   return {
     ticket,
-    ticketProof,
-    authProof,
-    authenticator,
-    role,
-    browserAuthProof,
+    browserAuthSession,
   };
 }
 
@@ -247,7 +207,7 @@ export async function createBrowserWebSocketWithTicket(
 
 export function sendBrowserSubscribeFrame(
   ws: WebSocket,
-  ticket: Awaited<ReturnType<typeof createBrowserStreamTicket>>,
+  _ticket: Awaited<ReturnType<typeof createBrowserStreamTicket>>,
   options: {
     runId: string;
     requestId: string;
@@ -293,8 +253,8 @@ export function createWebSocket(
   url: string,
   options: {
     nodeToken?: string;
-    authProof?: TestBrowserAuthProof;
-    streamTicket?: { ticket: string; ticketProof: string; authProof?: string; authenticator?: string; role?: string };
+    authSession?: TestBrowserAuthSession;
+    streamTicket?: { ticket: string };
     origin?: string;
     forwardedHost?: string;
     forwardedPort?: string;
@@ -324,11 +284,11 @@ export function createWebSocket(
   }
   if (options.streamTicket) {
     protocols = buildBrowserStreamProtocols(options.streamTicket);
-  } else if (options.authProof) {
-    headers.Authorization = `Bearer ${options.authProof.authToken}`;
-    headers['X-Authenticator'] = options.authProof.authenticator;
-    if (options.authProof.role) {
-      headers['X-Role'] = options.authProof.role;
+  } else if (options.authSession) {
+    headers.Authorization = `Bearer ${options.authSession.authToken}`;
+    headers['X-Authenticator'] = options.authSession.authenticator;
+    if (options.authSession.role) {
+      headers['X-Role'] = options.authSession.role;
     }
   }
   const wsOptions = {
@@ -447,6 +407,7 @@ export async function createQueuedRun(app: MockServer, runner: TestRunner, runCo
         text: `Prompt for ${runCode}`,
       },
       executionPayloadJson: {
+        executionPolicyKey: 'fake-success',
         mode: 'fake-success',
       },
       sourceType: 'test',

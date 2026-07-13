@@ -12,7 +12,7 @@ import { defineCollection } from '@nocobase/database';
 export default defineCollection({
   name: 'agTerminalStreamTickets',
   tableName: 'ag_terminal_stream_tickets',
-  dataCategory: 'business',
+  dataCategory: 'system',
   migrationRules: ['schema-only'],
   autoGenId: false,
   indexes: [
@@ -45,19 +45,6 @@ export default defineCollection({
       name: 'ticketLast4',
     },
     {
-      type: 'string',
-      name: 'ticketProofHash',
-      allowNull: false,
-      hidden: true,
-    },
-    {
-      type: 'string',
-      name: 'authProofHash',
-      allowNull: false,
-      defaultValue: '',
-      hidden: true,
-    },
-    {
       type: 'uuid',
       name: 'runId',
       autoFill: false,
@@ -86,7 +73,19 @@ export default defineCollection({
     },
     {
       type: 'string',
-      name: 'roleName',
+      name: 'authenticator',
+      allowNull: false,
+    },
+    {
+      type: 'string',
+      name: 'currentRole',
+      allowNull: false,
+    },
+    {
+      type: 'jsonb',
+      name: 'currentRoles',
+      allowNull: false,
+      defaultValue: [],
     },
     {
       type: 'date',
@@ -97,10 +96,6 @@ export default defineCollection({
     {
       type: 'date',
       name: 'usedAt',
-    },
-    {
-      type: 'jsonb',
-      name: 'metadataJson',
     },
   ],
 });

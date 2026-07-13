@@ -13,10 +13,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   TERMINAL_PAYLOAD_ENCODING,
   TERMINAL_PROTOCOL,
-  TERMINAL_STREAM_BROWSER_AUTHENTICATOR_PROTOCOL_PREFIX,
-  TERMINAL_STREAM_BROWSER_AUTH_PROTOCOL_PREFIX,
-  TERMINAL_STREAM_BROWSER_ROLE_PROTOCOL_PREFIX,
   TERMINAL_STREAM_BROWSER_SUBPROTOCOL,
+  TERMINAL_STREAM_BROWSER_TICKET_PROTOCOL_PREFIX,
   encodeTerminalPayload,
 } from '../../shared/terminalStreamProtocol';
 import { TerminalStreamWebSocket, TerminalStreamWebSocketEvent } from '../utils/terminalStreamClient';
@@ -62,10 +60,6 @@ class FakeWebSocket implements TerminalStreamWebSocket {
 function createStreamTicketFactory() {
   return vi.fn(async () => ({
     ticket: 'ag_stream_ticket',
-    ticketProof: 'ag_stream_proof',
-    authProof: 'ag_stream_auth',
-    authenticator: 'basic',
-    role: 'root',
   }));
 }
 
@@ -115,29 +109,18 @@ describe('useTerminalStream', () => {
       lastOffset: 0,
     });
     expect(JSON.stringify(subscribeFrame)).not.toContain('ag_stream_ticket');
-    expect(JSON.stringify(subscribeFrame)).not.toContain('ag_stream_proof');
-    expect(JSON.stringify(subscribeFrame)).not.toContain('ag_stream_auth');
     expect(JSON.stringify(subscribeFrame)).not.toContain('browser-token');
     expect(subscribeFrame).not.toHaveProperty('browserAuth');
     expect(subscribeFrame).not.toHaveProperty('ticket');
-    expect(subscribeFrame).not.toHaveProperty('ticketProof');
-    expect(subscribeFrame).not.toHaveProperty('authProof');
     expect(subscribeFrame).not.toHaveProperty('authToken');
     expect(subscribeFrame).not.toHaveProperty('authenticator');
     expect(subscribeFrame).not.toHaveProperty('role');
     expect(webSocketUrls[0]).not.toContain('browser-token');
     expect(protocolsBySocket[0][0]).toBe(TERMINAL_STREAM_BROWSER_SUBPROTOCOL);
     expect(
-      protocolsBySocket[0].some((protocol) => protocol.startsWith(TERMINAL_STREAM_BROWSER_AUTH_PROTOCOL_PREFIX)),
-    ).toBe(false);
-    expect(
-      protocolsBySocket[0].some((protocol) =>
-        protocol.startsWith(TERMINAL_STREAM_BROWSER_AUTHENTICATOR_PROTOCOL_PREFIX),
-      ),
+      protocolsBySocket[0].some((protocol) => protocol.startsWith(TERMINAL_STREAM_BROWSER_TICKET_PROTOCOL_PREFIX)),
     ).toBe(true);
-    expect(
-      protocolsBySocket[0].some((protocol) => protocol.startsWith(TERMINAL_STREAM_BROWSER_ROLE_PROTOCOL_PREFIX)),
-    ).toBe(true);
+    expect(protocolsBySocket[0]).toHaveLength(2);
     expect(protocolsBySocket[0].join(',')).not.toContain('browser-token');
     act(() => {
       webSocket.dispatch('message', {

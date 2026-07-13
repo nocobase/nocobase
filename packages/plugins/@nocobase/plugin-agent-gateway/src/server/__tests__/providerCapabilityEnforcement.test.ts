@@ -94,26 +94,21 @@ describe('agent gateway provider capability enforcement', () => {
 
   async function createStoredStreamTicket(runId: string) {
     const ticket = createStreamToken();
-    const proof = createStreamToken();
-    const authProof = createStreamToken();
     await app.db.getRepository('agTerminalStreamTickets').create({
       values: {
         id: randomUUID(),
         ticketHash: ticket.tokenHash,
         ticketLast4: ticket.tokenLast4,
-        ticketProofHash: proof.tokenHash,
-        authProofHash: authProof.tokenHash,
         runId,
         userId: rootUserId,
-        roleName: 'root',
+        authenticator: 'basic',
+        currentRole: 'root',
+        currentRoles: ['root'],
         expiresAt: new Date(Date.now() + 60_000),
-        metadataJson: {},
       },
     });
     return {
       ticket: ticket.token,
-      ticketProof: proof.token,
-      authProof: authProof.token,
     };
   }
 
@@ -590,7 +585,7 @@ describe('agent gateway provider capability enforcement', () => {
     expect(JSON.stringify(artifactsResponse.body)).not.toContain('FALLBACK_ARTIFACT_SECRET');
   });
 
-  it('does not infer provider identity from a canonical-looking profile when command key is explicit legacy CLI', async () => {
+  it('ignores legacy command keys when an explicit profile provider is stored', async () => {
     const now = new Date();
     const node = await app.db.getRepository('agNodes').create({
       values: {
@@ -680,22 +675,20 @@ describe('agent gateway provider capability enforcement', () => {
     const runResponse = await rootAgent.get(`/agentGatewayApi:getRun/${runId}`);
     expect(runResponse.status).toBe(200);
     expect(getData(runResponse)).toMatchObject({
-      agentProvider: 'generic-cli',
-      agentProviderCapabilitySource: 'payload',
+      agentProvider: 'codex',
+      agentProviderCapabilitySource: 'profile',
       agentProviderCapabilitiesJson: {
-        structuredEvents: false,
-        artifacts: false,
+        structuredEvents: true,
+        artifacts: true,
       },
     });
 
     const eventsResponse = await rootAgent.get(`/agentGatewayApi:listRunEvents/${runId}`);
-    expect(eventsResponse.status).toBe(409);
-    expect(JSON.stringify(eventsResponse.body)).toContain('AGENT_GATEWAY_ACTION_UNSUPPORTED');
-    expect(JSON.stringify(eventsResponse.body)).not.toContain('PROFILE_KEY_RAW_EVENT_SECRET');
+    expect(eventsResponse.status).toBe(200);
+    expect(JSON.stringify(eventsResponse.body)).toContain('PROFILE_KEY_RAW_EVENT_SECRET');
 
     const artifactsResponse = await rootAgent.get(`/agentGatewayApi:listRunArtifacts/${runId}`);
-    expect(artifactsResponse.status).toBe(409);
-    expect(JSON.stringify(artifactsResponse.body)).toContain('AGENT_GATEWAY_ACTION_UNSUPPORTED');
+    expect(artifactsResponse.status).toBe(200);
     expect(JSON.stringify(artifactsResponse.body)).not.toContain('PROFILE_KEY_ARTIFACT_SECRET');
   });
 
@@ -951,8 +944,6 @@ describe('agent gateway provider capability enforcement', () => {
         app,
         runId: sessionOverride.runId,
         ticket: storedTicket.ticket,
-        ticketProof: storedTicket.ticketProof,
-        authProof: storedTicket.authProof,
       }),
     ).rejects.toMatchObject({
       terminalCode: 'TERMINAL_PERMISSION_DENIED',

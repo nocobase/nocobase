@@ -15,6 +15,14 @@ import os from 'os';
 import path from 'path';
 
 import {
+  downloadSkillArchive,
+  extractSkillZipArchive,
+  SKILL_ARCHIVE_ERROR_CODES,
+  SKILL_ARCHIVE_LIMITS,
+} from '../../node/skillArchive';
+import { createSkillZipFixture, createValidSkillZipFixture } from '../../node/__tests__/skillArchiveFixtures';
+import { AGENT_GATEWAY_SKILL_CAPABILITY_HEADER } from '../../shared/skillCapability';
+import {
   NodeSkillInstallPayload,
   persistSkillZipUpload,
   solidifyGitHubSkillSource,
@@ -55,11 +63,17 @@ async function createRedirectArchiveServer(content: Buffer) {
   };
 }
 
-async function createAuthenticatedArchiveServer(content: Buffer, expectedAuthorization: string) {
-  const requests: string[] = [];
+async function createAuthenticatedArchiveServer(
+  content: Buffer,
+  expectedAuthorization: string,
+  expectedCapability: string,
+) {
+  const requests: Array<{ authorization: string; capability: string }> = [];
   const server = http.createServer((request, response) => {
-    requests.push(request.headers.authorization || '');
-    if (request.headers.authorization !== expectedAuthorization) {
+    const capabilityHeader = request.headers[AGENT_GATEWAY_SKILL_CAPABILITY_HEADER];
+    const capability = Array.isArray(capabilityHeader) ? capabilityHeader[0] : capabilityHeader || '';
+    requests.push({ authorization: request.headers.authorization || '', capability });
+    if (request.headers.authorization !== expectedAuthorization || capability !== expectedCapability) {
       response.statusCode = 401;
       response.end('unauthorized');
       return;
@@ -72,7 +86,11 @@ async function createAuthenticatedArchiveServer(content: Buffer, expectedAuthori
   });
   const address = server.address() as AddressInfo;
   return {
-    url: `http://127.0.0.1:${address.port}/api/agentGatewayApi:downloadSkillVersion/55555555-5555-4555-8555-555555555555`,
+    url: `http://127.0.0.1:${
+      address.port
+    }/api/agentGatewayApi:downloadSkillVersion/55555555-5555-4555-8555-555555555555?sha256=${sha256(
+      content,
+    )}&runId=run-1&claimAttempt=1`,
     requests,
     close: async () =>
       await new Promise<void>((resolve, reject) => {
@@ -125,17 +143,37 @@ async function createStalledArchiveServer() {
   };
 }
 
-async function waitForFile(filePath: string, timeoutMs = 1000) {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    try {
-      await fs.access(filePath);
+async function createChunkedOversizedArchiveServer(content: Buffer, redirect = false) {
+  const server = http.createServer((request, response) => {
+    if (redirect && request.url === '/start.zip') {
+      response.statusCode = 302;
+      response.setHeader('Location', '/oversized.zip');
+      response.end();
       return;
-    } catch {
-      await new Promise((resolve) => setTimeout(resolve, 10));
     }
-  }
-  throw new Error(`Timed out waiting for file: ${filePath}`);
+    response.writeHead(200, { 'Content-Type': 'application/zip' });
+    for (let offset = 0; offset < content.length; offset += 7) {
+      response.write(content.subarray(offset, offset + 7));
+    }
+    response.end();
+  });
+  await new Promise<void>((resolve) => {
+    server.listen(0, '127.0.0.1', resolve);
+  });
+  const address = server.address() as AddressInfo;
+  return {
+    url: `http://127.0.0.1:${address.port}/${redirect ? 'start.zip' : 'oversized.zip'}`,
+    close: async () =>
+      await new Promise<void>((resolve, reject) => {
+        server.close((error) => {
+          if (error) {
+            reject(error);
+            return;
+          }
+          resolve();
+        });
+      }),
+  };
 }
 
 describe('agent gateway daemon skill version sync', () => {
@@ -221,6 +259,9 @@ describe('agent gateway daemon skill version sync', () => {
         type: 'zip' as const,
         archivePath,
         sha256: sha256(archiveContent),
+        capabilityToken: 'ag_skill_INSTALL_CAPABILITY_SECRET',
+        runId: 'run-1',
+        claimAttempt: 1,
       },
     };
 
@@ -256,12 +297,17 @@ describe('agent gateway daemon skill version sync', () => {
       nodeId: 'node-1',
       skillVersionId: skillVersion.skillVersionId,
       status: 'installed',
+      capabilityToken: 'ag_skill_INSTALL_CAPABILITY_SECRET',
+      runId: 'run-1',
+      claimAttempt: 1,
+      sourceSha256: sha256(archiveContent),
     });
     expect(installPayloads[1]).toMatchObject({
       nodeId: 'node-1',
       skillVersionId: skillVersion.skillVersionId,
       status: 'installed',
     });
+    expect(JSON.stringify(installPayloads[0].settingsSnapshotJson)).not.toContain('INSTALL_CAPABILITY_SECRET');
     expect(JSON.stringify(installPayloads)).not.toContain('main');
   });
 
@@ -324,49 +370,100 @@ describe('agent gateway daemon skill version sync', () => {
 
       await rejected;
       await server.responseClosed;
+      expect(await fs.readdir(path.join(tempDir, 'cache')).catch(() => [])).toEqual([]);
     } finally {
       controller.abort();
       await server.close();
     }
   });
 
-  it('terminates archive validation child processes when synchronization is aborted', async () => {
-    if (process.platform === 'win32') {
-      return;
+  it.each([
+    ['chunked response without Content-Length', false],
+    ['redirected response', true],
+  ])('stops an oversized %s and removes its partial download', async (_label, redirect) => {
+    const server = await createChunkedOversizedArchiveServer(Buffer.alloc(129, 1), redirect);
+    const destination = path.join(tempDir, redirect ? 'redirected.zip' : 'chunked.zip');
+    try {
+      await expect(
+        downloadSkillArchive({
+          archiveUrl: server.url,
+          destination,
+          timeoutMs: 5000,
+          maxBytes: 64,
+        }),
+      ).rejects.toThrow(SKILL_ARCHIVE_ERROR_CODES.downloadSize);
+      await expect(fs.stat(destination)).rejects.toThrow();
+      expect((await fs.readdir(tempDir)).filter((name) => name.endsWith('.partial'))).toEqual([]);
+    } finally {
+      await server.close();
     }
-    const archiveContent = Buffer.from('fake archive');
-    const archivePath = path.join(tempDir, 'skill.zip');
-    const binDir = path.join(tempDir, 'bin');
-    const startedPath = path.join(tempDir, 'zipinfo-started');
-    const terminatedPath = path.join(tempDir, 'zipinfo-terminated');
-    const fakeZipinfoPath = path.join(binDir, 'zipinfo');
-    await fs.mkdir(binDir, { recursive: true });
-    await fs.writeFile(archivePath, archiveContent);
+  });
+
+  it('rejects central-directory limits before creating an extraction destination', async () => {
+    const archivePath = path.join(tempDir, 'declared-large.zip');
+    const destination = path.join(tempDir, 'must-not-extract');
     await fs.writeFile(
-      fakeZipinfoPath,
-      [
-        `#!${process.execPath}`,
-        "const fs = require('fs');",
-        "fs.writeFileSync(process.env.AG_SKILL_SYNC_CHILD_STARTED, 'started');",
-        "process.on('SIGTERM', () => {",
-        "  fs.writeFileSync(process.env.AG_SKILL_SYNC_CHILD_TERMINATED, 'terminated');",
-        '  process.exit(0);',
-        '});',
-        'setInterval(() => {}, 1000);',
-        '',
-      ].join('\n'),
-      { mode: 0o755 },
+      archivePath,
+      createSkillZipFixture([
+        { name: 'SKILL.md', content: '# Declared Large\n' },
+        {
+          name: 'large.bin',
+          content: 'x',
+          compression: 'deflated',
+          declaredCompressedSize: 1024 * 1024,
+          declaredUncompressedSize: SKILL_ARCHIVE_LIMITS.maxEntryUncompressedBytes + 1,
+        },
+      ]),
     );
 
+    await expect(extractSkillZipArchive(archivePath, destination)).rejects.toThrow(SKILL_ARCHIVE_ERROR_CODES.entrySize);
+    await expect(fs.stat(destination)).rejects.toThrow();
+  });
+
+  it('rejects an archive file beyond the total compressed limit without reading its sparse body', async () => {
+    const archivePath = path.join(tempDir, 'oversized-sparse.zip');
+    const destination = path.join(tempDir, 'oversized-destination');
+    await fs.writeFile(archivePath, Buffer.alloc(0));
+    await fs.truncate(archivePath, SKILL_ARCHIVE_LIMITS.maxTotalCompressedBytes + 1);
+
+    await expect(extractSkillZipArchive(archivePath, destination)).rejects.toThrow(
+      SKILL_ARCHIVE_ERROR_CODES.totalCompressedSize,
+    );
+    await expect(fs.stat(destination)).rejects.toThrow();
+  });
+
+  it('removes temporary install directories after rejecting an unsafe archive', async () => {
+    const archiveContent = createSkillZipFixture([{ name: '../SKILL.md', content: '# Unsafe\n' }]);
+    const archivePath = path.join(tempDir, 'unsafe.zip');
+    const skillsRoot = path.join(tempDir, 'skills');
+    await fs.writeFile(archivePath, archiveContent);
+
+    await expect(
+      syncNodeSkillVersion({
+        nodeId: 'node-1',
+        skillsRoot,
+        skillVersion: {
+          skillVersionId: '99999999-9999-4999-8999-999999999999',
+          versionLabel: 'v1',
+          source: {
+            type: 'zip',
+            archivePath,
+            sha256: sha256(archiveContent),
+          },
+        },
+      }),
+    ).rejects.toThrow(SKILL_ARCHIVE_ERROR_CODES.unsafePath);
+    expect(await fs.readdir(skillsRoot)).toEqual([]);
+  });
+
+  it('extracts archives without invoking system zipinfo or unzip executables', async () => {
+    const archiveContent = createValidSkillZipFixture('# Node ZIP Skill\n');
+    const archivePath = path.join(tempDir, 'skill.zip');
+    await fs.writeFile(archivePath, archiveContent);
     const previousPath = process.env.PATH;
-    const previousStartedPath = process.env.AG_SKILL_SYNC_CHILD_STARTED;
-    const previousTerminatedPath = process.env.AG_SKILL_SYNC_CHILD_TERMINATED;
-    const controller = new AbortController();
-    process.env.PATH = `${binDir}${path.delimiter}${previousPath || ''}`;
-    process.env.AG_SKILL_SYNC_CHILD_STARTED = startedPath;
-    process.env.AG_SKILL_SYNC_CHILD_TERMINATED = terminatedPath;
+    process.env.PATH = '';
     try {
-      const syncPromise = syncNodeSkillVersion({
+      const result = await syncNodeSkillVersion({
         nodeId: 'node-1',
         skillsRoot: path.join(tempDir, 'skills'),
         skillVersion: {
@@ -378,34 +475,21 @@ describe('agent gateway daemon skill version sync', () => {
             sha256: sha256(archiveContent),
           },
         },
-        signal: controller.signal,
       });
-      const rejected = expect(syncPromise).rejects.toThrow('daemon stopping');
-
-      await waitForFile(startedPath);
-      controller.abort(new Error('daemon stopping'));
-
-      await rejected;
-      await waitForFile(terminatedPath);
+      expect(await fs.readFile(path.join(result.installPath, 'SKILL.md'), 'utf8')).toContain('Node ZIP Skill');
     } finally {
-      controller.abort();
       process.env.PATH = previousPath;
-      if (previousStartedPath === undefined) {
-        delete process.env.AG_SKILL_SYNC_CHILD_STARTED;
-      } else {
-        process.env.AG_SKILL_SYNC_CHILD_STARTED = previousStartedPath;
-      }
-      if (previousTerminatedPath === undefined) {
-        delete process.env.AG_SKILL_SYNC_CHILD_TERMINATED;
-      } else {
-        process.env.AG_SKILL_SYNC_CHILD_TERMINATED = previousTerminatedPath;
-      }
     }
   });
 
-  it('sends node-token download headers only for trusted authenticated ZIP archive URLs', async () => {
+  it('sends node and claim capability headers only for trusted authenticated ZIP archive URLs', async () => {
     const archiveContent = Buffer.from('authenticated archive');
-    const server = await createAuthenticatedArchiveServer(archiveContent, 'Bearer ag_node_NODE_TOKEN_SECRET');
+    const capabilityToken = 'ag_skill_SKILL_CAPABILITY_SECRET';
+    const server = await createAuthenticatedArchiveServer(
+      archiveContent,
+      'Bearer ag_node_NODE_TOKEN_SECRET',
+      capabilityToken,
+    );
     try {
       await expect(
         syncNodeSkillVersion({
@@ -418,7 +502,10 @@ describe('agent gateway daemon skill version sync', () => {
             source: {
               type: 'zip',
               archiveUrl: server.url,
-              auth: 'node-token',
+              auth: 'skill-capability',
+              capabilityToken,
+              runId: 'run-1',
+              claimAttempt: 1,
               sha256: sha256(archiveContent),
             },
           },
@@ -426,7 +513,7 @@ describe('agent gateway daemon skill version sync', () => {
             throw new Error('unauthorized download should not extract');
           },
         }),
-      ).rejects.toThrow(/trusted server URL/);
+      ).rejects.toThrow(SKILL_ARCHIVE_ERROR_CODES.downloadTrustedServer);
       expect(server.requests).toHaveLength(0);
 
       await expect(
@@ -440,7 +527,10 @@ describe('agent gateway daemon skill version sync', () => {
             source: {
               type: 'zip',
               archiveUrl: server.url,
-              auth: 'node-token',
+              auth: 'skill-capability',
+              capabilityToken,
+              runId: 'run-1',
+              claimAttempt: 1,
               sha256: sha256(archiveContent),
             },
           },
@@ -452,7 +542,7 @@ describe('agent gateway daemon skill version sync', () => {
             throw new Error('foreign authenticated download should not extract');
           },
         }),
-      ).rejects.toThrow(/configured NocoBase archive endpoint/);
+      ).rejects.toThrow(SKILL_ARCHIVE_ERROR_CODES.downloadTrustedEndpoint);
       expect(server.requests).toHaveLength(0);
 
       const result = await syncNodeSkillVersion({
@@ -465,7 +555,10 @@ describe('agent gateway daemon skill version sync', () => {
           source: {
             type: 'zip',
             archiveUrl: server.url,
-            auth: 'node-token',
+            auth: 'skill-capability',
+            capabilityToken,
+            runId: 'run-1',
+            claimAttempt: 1,
             sha256: sha256(archiveContent),
           },
         },
@@ -480,7 +573,12 @@ describe('agent gateway daemon skill version sync', () => {
       });
 
       expect(result.status).toBe('installed');
-      expect(server.requests).toEqual(['Bearer ag_node_NODE_TOKEN_SECRET']);
+      expect(server.requests).toEqual([
+        {
+          authorization: 'Bearer ag_node_NODE_TOKEN_SECRET',
+          capability: capabilityToken,
+        },
+      ]);
     } finally {
       await server.close();
     }

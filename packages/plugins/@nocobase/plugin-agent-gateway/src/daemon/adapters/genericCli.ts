@@ -13,10 +13,13 @@ import { AgentAdapter, BuildResumeCommandInput, BuildStartCommandInput } from '.
 export const genericCliAdapter: AgentAdapter = {
   provider: 'generic-cli',
   capabilities: normalizeAgentProviderCapabilities('generic-cli'),
+  validatePolicyArgs() {
+    // A generic CLI is available only through an explicit local policy. Its fixed
+    // arguments never come from the claimed run.
+  },
   buildStartCommand(input: BuildStartCommandInput) {
     return {
-      commandKey: 'generic-cli',
-      args: [...(input.extraArgs || []), input.prompt],
+      args: [input.prompt],
       cwd: input.cwd,
       timeoutMs: input.timeoutMs,
     };

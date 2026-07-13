@@ -12,7 +12,7 @@ import { defineCollection } from '@nocobase/database';
 export default defineCollection({
   name: 'agNodeInvitations',
   tableName: 'ag_node_invitations',
-  dataCategory: 'business',
+  dataCategory: 'system',
   migrationRules: ['schema-only'],
   autoGenId: false,
   fields: [

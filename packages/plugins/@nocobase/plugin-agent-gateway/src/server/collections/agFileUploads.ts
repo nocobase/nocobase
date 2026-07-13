@@ -12,7 +12,7 @@ import { defineCollection } from '@nocobase/database';
 export default defineCollection({
   name: 'agFileUploads',
   tableName: 'ag_file_uploads',
-  dataCategory: 'business',
+  dataCategory: 'system',
   migrationRules: ['schema-only'],
   autoGenId: false,
   indexes: [{ fields: ['status', 'expiresAt'] }],

@@ -12,7 +12,7 @@ import { defineCollection } from '@nocobase/database';
 export default defineCollection({
   name: 'agApiCallLogs',
   tableName: 'ag_api_call_logs',
-  dataCategory: 'business',
+  dataCategory: 'system',
   migrationRules: ['schema-only'],
   autoGenId: false,
   indexes: [

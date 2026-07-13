@@ -17,11 +17,7 @@ import WebSocket from 'ws';
 
 import {
   TERMINAL_PROTOCOL,
-  TERMINAL_STREAM_BROWSER_AUTHENTICATOR_PROTOCOL_PREFIX,
-  TERMINAL_STREAM_BROWSER_AUTH_PROOF_PROTOCOL_PREFIX,
-  TERMINAL_STREAM_BROWSER_ROLE_PROTOCOL_PREFIX,
   TERMINAL_STREAM_BROWSER_SUBPROTOCOL,
-  TERMINAL_STREAM_BROWSER_TICKET_PROOF_PROTOCOL_PREFIX,
   TERMINAL_STREAM_BROWSER_TICKET_PROTOCOL_PREFIX,
   TERMINAL_STREAM_WS_PATH,
 } from '../src/shared/terminalStreamProtocol';
@@ -77,10 +73,6 @@ interface WsAttemptExpectation {
 
 interface BrowserStreamTicket {
   ticket: string;
-  ticketProof: string;
-  authProof?: string;
-  authenticator?: string;
-  role?: string;
 }
 
 interface PrivateFileModeEvidence {
@@ -124,23 +116,10 @@ function encodeWebSocketProtocolValue(value: string) {
 }
 
 function buildBrowserStreamProtocols(ticket: BrowserStreamTicket) {
-  const protocols = [
+  return [
     TERMINAL_STREAM_BROWSER_SUBPROTOCOL,
     `${TERMINAL_STREAM_BROWSER_TICKET_PROTOCOL_PREFIX}${encodeWebSocketProtocolValue(ticket.ticket)}`,
-    `${TERMINAL_STREAM_BROWSER_TICKET_PROOF_PROTOCOL_PREFIX}${encodeWebSocketProtocolValue(ticket.ticketProof)}`,
-    `${TERMINAL_STREAM_BROWSER_AUTHENTICATOR_PROTOCOL_PREFIX}${encodeWebSocketProtocolValue(
-      ticket.authenticator || 'basic',
-    )}`,
   ];
-  if (ticket.authProof) {
-    protocols.push(
-      `${TERMINAL_STREAM_BROWSER_AUTH_PROOF_PROTOCOL_PREFIX}${encodeWebSocketProtocolValue(ticket.authProof)}`,
-    );
-  }
-  if (ticket.role) {
-    protocols.push(`${TERMINAL_STREAM_BROWSER_ROLE_PROTOCOL_PREFIX}${encodeWebSocketProtocolValue(ticket.role)}`);
-  }
-  return protocols;
 }
 
 function getResponseId(record: JsonRecord | null | undefined) {
@@ -744,23 +723,17 @@ async function createBrowserStreamTicket(args: FinalAcceptanceArgs, token: strin
     },
   );
   const ticketValue = getString(ticket.ticket);
-  const ticketProof = getString(ticket.ticketProof);
-  if (!ticketValue || !ticketProof) {
+  if (!ticketValue) {
     throw new Error(`Stream ticket create response is invalid for run ${runId}`);
   }
   return {
     ticket: ticketValue,
-    ticketProof,
-    authProof: getString(ticket.authProof) || undefined,
-    authenticator: getString(ticket.authenticator) || 'basic',
-    role: getString(ticket.role) || undefined,
   };
 }
 
 async function collectWebSocketRejectionEvidence(args: FinalAcceptanceArgs, token: string, runId: string) {
   const wsUrl = getWebSocketUrl(args.baseUrl);
   const fakeTicket = encodeWebSocketProtocolValue('invalid-ticket');
-  const fakeProof = encodeWebSocketProtocolValue('invalid-proof');
   const validTicket = await createBrowserStreamTicket(args, token, runId);
   const attempts = await Promise.all([
     attemptWebSocket(wsUrl, {
@@ -785,7 +758,6 @@ async function collectWebSocketRejectionEvidence(args: FinalAcceptanceArgs, toke
       protocols: [
         TERMINAL_STREAM_BROWSER_SUBPROTOCOL,
         `${TERMINAL_STREAM_BROWSER_TICKET_PROTOCOL_PREFIX}${fakeTicket}`,
-        `${TERMINAL_STREAM_BROWSER_TICKET_PROOF_PROTOCOL_PREFIX}${fakeProof}`,
       ],
       expectation: {
         frameCode: 'TERMINAL_STREAM_TICKET_SCOPE_MISMATCH',

@@ -9,11 +9,11 @@
 
 import { randomUUID } from 'crypto';
 
+import { SystemRoleMode, UNION_ROLE_KEY } from '@nocobase/plugin-acl';
 import { MockServer, createMockServer } from '@nocobase/test';
 
 import { TERMINAL_PROTOCOL, TerminalFrame } from '../../shared/terminalStreamProtocol';
 import PluginAgentGatewayServer from '../plugin';
-import { createStreamToken } from '../security';
 import {
   createBrowserStreamTicket,
   createQueuedRun,
@@ -28,8 +28,6 @@ import {
 
 interface StreamTicket {
   ticket: string;
-  ticketProof: string;
-  authProof?: string;
 }
 
 async function getRootUserId(app: MockServer) {
@@ -61,6 +59,29 @@ async function createApp() {
 async function createRun(app: MockServer, runCode: string) {
   const runner = await createRunner(app, { nodeKey: `${runCode}-node` });
   return await createQueuedRun(app, runner, runCode);
+}
+
+async function createUserWithRoles(
+  app: MockServer,
+  username: string,
+  roleDefinitions: Array<{ name: string; snippets: string[] }>,
+) {
+  for (const role of roleDefinitions) {
+    await app.db.getRepository('roles').create({
+      values: role,
+    });
+  }
+  const user = await app.db.getRepository('users').create({
+    values: {
+      username,
+      roles: roleDefinitions.map((role) => role.name),
+    },
+  });
+  return {
+    user,
+    userId: user.get('id') as string | number,
+    roleNames: roleDefinitions.map((role) => role.name),
+  };
 }
 
 async function subscribe(options: { serverUrl: string; runId: string; ticket: StreamTicket; requestId: string }) {
@@ -96,10 +117,6 @@ async function expireTicket(app: MockServer, ticket: StreamTicket) {
 function expectNoTicketMaterial(frame: TerminalFrame, ticket: StreamTicket) {
   const serialized = JSON.stringify(frame);
   expect(serialized).not.toContain(ticket.ticket);
-  expect(serialized).not.toContain(ticket.ticketProof);
-  if (ticket.authProof) {
-    expect(serialized).not.toContain(ticket.authProof);
-  }
 }
 
 async function createStaleTicketRecord(
@@ -112,60 +129,79 @@ async function createStaleTicketRecord(
       id,
       ticketHash: `stale-ticket-hash-${id}`,
       ticketLast4: id.slice(-4),
-      ticketProofHash: `stale-ticket-proof-hash-${id}`,
-      authProofHash: `stale-auth-proof-hash-${id}`,
       runId: values.runId,
       userId: values.userId,
+      authenticator: 'basic',
+      currentRole: 'root',
+      currentRoles: ['root'],
       expiresAt: values.used ? new Date(Date.now() + 60 * 1000) : new Date(Date.now() - 1000),
       usedAt: values.used ? new Date() : null,
-      metadataJson: {
-        fixture: true,
-      },
     },
   });
   return id;
 }
 
-async function createLegacyDefaultAuthProofTicketRecord(
-  app: MockServer,
-  values: { runId: string; userId: string | number },
-): Promise<StreamTicket> {
-  const id = randomUUID();
-  const ticket = createStreamToken();
-  const proof = createStreamToken();
-  const authProof = createStreamToken();
-  await app.db.getRepository('agTerminalStreamTickets').create({
-    values: {
-      id,
-      ticketHash: ticket.tokenHash,
-      ticketLast4: ticket.tokenLast4,
-      ticketProofHash: proof.tokenHash,
-      authProofHash: '',
-      runId: values.runId,
-      userId: values.userId,
-      expiresAt: new Date(Date.now() + 60 * 1000),
-      metadataJson: {
-        fixture: 'legacy-default-auth-proof',
-      },
-    },
-  });
-  return {
-    ticket: ticket.token,
-    ticketProof: proof.token,
-    authProof: authProof.token,
-  };
-}
-
 describe('terminal stream browser ticket auth', () => {
   let app: MockServer;
+  let rootAgent: ReturnType<MockServer['agent']>;
 
   beforeEach(async () => {
     app = await createApp();
+    const rootUser = await app.db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
+      },
+    });
+    expect(rootUser).toBeTruthy();
+    rootAgent = await app.agent().login(rootUser);
   });
 
   afterEach(async () => {
     await app?.destroy();
   });
+
+  async function setSystemRoleMode(roleMode: string) {
+    const response = await rootAgent.resource('roles').setSystemRoleMode({
+      values: {
+        roleMode,
+      },
+    });
+    expect(response.status).toBe(200);
+  }
+
+  async function grantRunScope(roleName: string, scopeName: string, runCode: string) {
+    const scopeResponse = await rootAgent.resource('dataSourcesRolesResourcesScopes').create({
+      values: {
+        resourceName: 'agRuns',
+        name: scopeName,
+        scope: {
+          runCode,
+        },
+      },
+    });
+    expect(scopeResponse.status).toBe(200);
+    const roleResourceResponse = await rootAgent.resource('roles.resources', roleName).create({
+      values: {
+        name: 'agRuns',
+        usingActionsConfig: true,
+        actions: [
+          {
+            name: 'view',
+            scope: scopeResponse.body.data.id,
+          },
+        ],
+      },
+    });
+    expect(roleResourceResponse.status).toBe(200);
+  }
+
+  async function getStoredTicket(ticket: StreamTicket) {
+    return await app.db.getRepository('agTerminalStreamTickets').findOne({
+      filter: {
+        ticketLast4: ticket.ticket.slice(-4),
+      },
+    });
+  }
 
   it('accepts a valid single-use stream ticket and rejects reuse', async () => {
     const runId = await createRun(app, 'terminal-stream-auth-valid');
@@ -198,6 +234,145 @@ describe('terminal stream browser ticket auth', () => {
         code: 'TERMINAL_STREAM_TICKET_SCOPE_MISMATCH',
       });
       expectNoTicketMaterial(reuseFrame, ticket);
+    } finally {
+      await server.close();
+    }
+  });
+
+  it('stores and restores a normal role with only the ticket token exposed', async () => {
+    const runId = await createRun(app, 'terminal-stream-auth-normal-role');
+    const roleName = 'terminal-stream-normal-role';
+    const user = await createUserWithRoles(app, 'terminal-stream-normal-user', [
+      {
+        name: roleName,
+        snippets: ['agentGateway.readTerminal'],
+      },
+    ]);
+    const ticket = await createBrowserStreamTicket(app, {
+      userId: user.userId,
+      runId,
+      roleName,
+    });
+    const storedTicket = await getStoredTicket(ticket);
+    expect(storedTicket?.get('ticketHash')).toBeTruthy();
+    expect(storedTicket?.get('ticketLast4')).toBe(ticket.ticket.slice(-4));
+    expect(storedTicket?.get('authenticator')).toBe('basic');
+    expect(storedTicket?.get('currentRole')).toBe(roleName);
+    expect(storedTicket?.get('currentRoles')).toEqual([roleName]);
+    expect(JSON.stringify(storedTicket?.toJSON())).not.toContain(ticket.ticket);
+
+    const server = await createTerminalStreamServer(app);
+    try {
+      expect(
+        await subscribe({
+          serverUrl: server.wsUrl,
+          runId,
+          ticket,
+          requestId: 'subscribe-normal-role',
+        }),
+      ).toMatchObject({
+        type: 'ack',
+        requestId: 'subscribe-normal-role',
+      });
+    } finally {
+      await server.close();
+    }
+  });
+
+  it('preserves allow-use-union role scope across HTTP detail and terminal subscribe', async () => {
+    await setSystemRoleMode(SystemRoleMode.allowUseUnion);
+    const firstRunCode = 'terminal-stream-union-visible-first';
+    const secondRunCode = 'terminal-stream-union-visible-second';
+    const firstRunId = await createRun(app, firstRunCode);
+    const secondRunId = await createRun(app, secondRunCode);
+    const roleNames = ['terminal-stream-union-role-a', 'terminal-stream-union-role-b'];
+    const user = await createUserWithRoles(app, 'terminal-stream-union-user', [
+      {
+        name: roleNames[0],
+        snippets: ['agentGateway.readRun', 'agentGateway.readRunDetails', 'agentGateway.readTerminal'],
+      },
+      {
+        name: roleNames[1],
+        snippets: ['agentGateway.readRun', 'agentGateway.readRunDetails', 'agentGateway.readTerminal'],
+      },
+    ]);
+    await grantRunScope(roleNames[0], 'terminal-stream-union-scope-a', firstRunCode);
+    await grantRunScope(roleNames[1], 'terminal-stream-union-scope-b', secondRunCode);
+
+    const firstRoleAgent = await app.agent().login(user.user, roleNames[0]);
+    const firstRoleSecondRunDetail = await firstRoleAgent.get(`/agentGatewayApi:getRun/${secondRunId}`);
+    expect(firstRoleSecondRunDetail.status).toBe(404);
+
+    const unionAgent = await app.agent().login(user.user, UNION_ROLE_KEY);
+    const unionSecondRunDetail = await unionAgent.get(`/agentGatewayApi:getRun/${secondRunId}`);
+    expect(unionSecondRunDetail.status).toBe(200);
+    expect(JSON.stringify(unionSecondRunDetail.body)).toContain(secondRunId);
+
+    const ticket = await createBrowserStreamTicket(app, {
+      userId: user.userId,
+      runId: secondRunId,
+      roleName: UNION_ROLE_KEY,
+    });
+    const storedTicket = await getStoredTicket(ticket);
+    expect(storedTicket?.get('currentRole')).toBe(UNION_ROLE_KEY);
+    expect(storedTicket?.get('currentRoles')).toEqual(expect.arrayContaining(roleNames));
+    expect(storedTicket?.get('currentRoles')).toHaveLength(roleNames.length);
+
+    const server = await createTerminalStreamServer(app);
+    try {
+      expect(
+        await subscribe({
+          serverUrl: server.wsUrl,
+          runId: secondRunId,
+          ticket,
+          requestId: 'subscribe-union-role',
+        }),
+      ).toMatchObject({
+        type: 'ack',
+        requestId: 'subscribe-union-role',
+      });
+    } finally {
+      await server.close();
+    }
+
+    expect(firstRunId).not.toBe(secondRunId);
+  });
+
+  it('preserves only-use-union role context without a client-supplied role', async () => {
+    await setSystemRoleMode(SystemRoleMode.onlyUseUnion);
+    const runId = await createRun(app, 'terminal-stream-only-union');
+    const roleNames = ['terminal-stream-only-union-role-a', 'terminal-stream-only-union-role-b'];
+    const user = await createUserWithRoles(app, 'terminal-stream-only-union-user', [
+      {
+        name: roleNames[0],
+        snippets: ['agentGateway.readTerminal'],
+      },
+      {
+        name: roleNames[1],
+        snippets: ['agentGateway.readTerminal'],
+      },
+    ]);
+    const ticket = await createBrowserStreamTicket(app, {
+      userId: user.userId,
+      runId,
+    });
+    const storedTicket = await getStoredTicket(ticket);
+    expect(storedTicket?.get('currentRole')).toBe(UNION_ROLE_KEY);
+    expect(storedTicket?.get('currentRoles')).toEqual(expect.arrayContaining(roleNames));
+
+    const server = await createTerminalStreamServer(app);
+    try {
+      expect(
+        await subscribe({
+          serverUrl: server.wsUrl,
+          runId,
+          ticket,
+          requestId: 'subscribe-only-union-role',
+        }),
+      ).toMatchObject({
+        type: 'ack',
+        requestId: 'subscribe-only-union-role',
+      });
     } finally {
       await server.close();
     }
@@ -422,117 +597,6 @@ describe('terminal stream browser ticket auth', () => {
     }
   });
 
-  it('accepts a task04-compatible browser subscribe without the additive stream auth proof', async () => {
-    const runId = await createRun(app, 'terminal-stream-auth-missing-proof');
-    const server = await createTerminalStreamServer(app);
-    const ticket = await createBrowserStreamTicket(app, {
-      userId: await getRootUserId(app),
-      runId,
-    });
-
-    try {
-      const frame = await subscribe({
-        serverUrl: server.wsUrl,
-        runId,
-        ticket: {
-          ...ticket,
-          authProof: '',
-        },
-        requestId: 'subscribe-missing-auth-proof',
-      });
-      expect(frame).toMatchObject({
-        type: 'ack',
-        requestId: 'subscribe-missing-auth-proof',
-      });
-      expectNoTicketMaterial(frame, ticket);
-    } finally {
-      await server.close();
-    }
-  });
-
-  it('accepts a task04-compatible browser subscribe without auth proof even when the websocket is authenticated', async () => {
-    const runId = await createRun(app, 'terminal-stream-auth-missing-proof-with-header');
-    const server = await createTerminalStreamServer(app);
-    const ticket = await createBrowserStreamTicket(app, {
-      userId: await getRootUserId(app),
-      runId,
-    });
-
-    try {
-      const frame = await subscribe({
-        serverUrl: server.wsUrl,
-        runId,
-        ticket: {
-          ...ticket,
-          authProof: '',
-        },
-        requestId: 'subscribe-missing-auth-proof-with-header',
-      });
-      expect(frame).toMatchObject({
-        type: 'ack',
-        requestId: 'subscribe-missing-auth-proof-with-header',
-      });
-      expectNoTicketMaterial(frame, ticket);
-    } finally {
-      await server.close();
-    }
-  });
-
-  it('accepts upgraded legacy ticket records with the default empty auth proof hash', async () => {
-    const runId = await createRun(app, 'terminal-stream-auth-legacy-empty-proof-hash');
-    const userId = await getRootUserId(app);
-    const server = await createTerminalStreamServer(app);
-    const ticket = await createLegacyDefaultAuthProofTicketRecord(app, { runId, userId });
-
-    try {
-      const frame = await subscribe({
-        serverUrl: server.wsUrl,
-        runId,
-        ticket: {
-          ...ticket,
-          authProof: '',
-        },
-        requestId: 'subscribe-legacy-empty-auth-proof-hash',
-      });
-      expect(frame).toMatchObject({
-        type: 'ack',
-        requestId: 'subscribe-legacy-empty-auth-proof-hash',
-      });
-      expectNoTicketMaterial(frame, ticket);
-      const storedTicket = await app.db.getRepository('agTerminalStreamTickets').findOne({
-        filter: {
-          ticketLast4: ticket.ticket.slice(-4),
-        },
-      });
-      expect(storedTicket?.get('usedAt')).toBeTruthy();
-    } finally {
-      await server.close();
-    }
-  });
-
-  it('rejects upgraded legacy ticket records when a non-empty auth proof cannot be verified', async () => {
-    const runId = await createRun(app, 'terminal-stream-auth-legacy-empty-proof-hash-with-proof');
-    const userId = await getRootUserId(app);
-    const server = await createTerminalStreamServer(app);
-    const ticket = await createLegacyDefaultAuthProofTicketRecord(app, { runId, userId });
-
-    try {
-      const frame = await subscribe({
-        serverUrl: server.wsUrl,
-        runId,
-        ticket,
-        requestId: 'subscribe-legacy-empty-auth-proof-hash-with-proof',
-      });
-      expect(frame).toMatchObject({
-        type: 'error',
-        code: 'TERMINAL_STREAM_TICKET_SCOPE_MISMATCH',
-      });
-      expectNoTicketMaterial(frame, ticket);
-    } finally {
-      await server.close();
-    }
-  });
-
   it('rejects expired tickets with the frozen error code', async () => {
     const runId = await createRun(app, 'terminal-stream-auth-expired');
     const server = await createTerminalStreamServer(app);
@@ -585,30 +649,30 @@ describe('terminal stream browser ticket auth', () => {
     }
   });
 
-  it('rejects tickets with the wrong proof', async () => {
-    const runId = await createRun(app, 'terminal-stream-auth-wrong-proof');
+  it('rejects forged tickets', async () => {
+    const runId = await createRun(app, 'terminal-stream-auth-forged-ticket');
     const server = await createTerminalStreamServer(app);
     const ticket = await createBrowserStreamTicket(app, {
       userId: await getRootUserId(app),
       runId,
     });
-    const wrongProofTicket = {
+    const forgedTicket = {
       ...ticket,
-      ticketProof: 'ag_stream_wrong_proof',
+      ticket: `${ticket.ticket}-forged`,
     };
 
     try {
       const frame = await subscribe({
         serverUrl: server.wsUrl,
         runId,
-        ticket: wrongProofTicket,
-        requestId: 'subscribe-wrong-proof',
+        ticket: forgedTicket,
+        requestId: 'subscribe-forged-ticket',
       });
       expect(frame).toMatchObject({
         type: 'error',
         code: 'TERMINAL_STREAM_TICKET_SCOPE_MISMATCH',
       });
-      expectNoTicketMaterial(frame, wrongProofTicket);
+      expectNoTicketMaterial(frame, forgedTicket);
     } finally {
       await server.close();
     }
@@ -629,7 +693,7 @@ describe('terminal stream browser ticket auth', () => {
 
     try {
       const browser = createWebSocket(server.wsUrl, {
-        authProof: {
+        authSession: {
           authToken: 'unrelated-browser-token',
           authenticator: 'basic',
           role: otherUser.roleName,
@@ -681,6 +745,45 @@ describe('terminal stream browser ticket auth', () => {
       expect(frame).toMatchObject({
         type: 'error',
         code: 'TERMINAL_PERMISSION_DENIED',
+      });
+      expectNoTicketMaterial(frame, ticket);
+    } finally {
+      await server.close();
+    }
+  });
+
+  it('rejects a ticket after the user is disabled', async () => {
+    app.db.getCollection('users').addField('enabled', {
+      type: 'boolean',
+      allowNull: false,
+      defaultValue: true,
+    });
+    await app.db.sync({ alter: true });
+    const runId = await createRun(app, 'terminal-stream-auth-disabled-user');
+    const user = await createUserWithSnippets(app, 'terminal-stream-auth-disabled-user', ['agentGateway.readTerminal']);
+    const ticket = await createBrowserStreamTicket(app, {
+      userId: user.userId,
+      runId,
+      roleName: user.roleName,
+    });
+    await app.db.getRepository('users').update({
+      filterByTk: user.userId,
+      values: {
+        enabled: false,
+      },
+    });
+    const server = await createTerminalStreamServer(app);
+
+    try {
+      const frame = await subscribe({
+        serverUrl: server.wsUrl,
+        runId,
+        ticket,
+        requestId: 'subscribe-disabled-user',
+      });
+      expect(frame).toMatchObject({
+        type: 'error',
+        code: 'TERMINAL_STREAM_TICKET_SCOPE_MISMATCH',
       });
       expectNoTicketMaterial(frame, ticket);
     } finally {

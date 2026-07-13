@@ -10,19 +10,17 @@
 import { randomUUID } from 'crypto';
 
 import { Context } from '@nocobase/actions';
+import { Model } from '@nocobase/database';
+import { setCurrentRole } from '@nocobase/plugin-acl';
 import { Application, Plugin } from '@nocobase/server';
 import type { Transaction } from 'sequelize';
 
 import {
-  TERMINAL_STREAM_BROWSER_AUTHENTICATOR_PROTOCOL_PREFIX,
-  TERMINAL_STREAM_BROWSER_AUTH_PROOF_PROTOCOL_PREFIX,
-  TERMINAL_STREAM_BROWSER_ROLE_PROTOCOL_PREFIX,
   TERMINAL_STREAM_BROWSER_SUBPROTOCOL,
-  TERMINAL_STREAM_BROWSER_TICKET_PROOF_PROTOCOL_PREFIX,
   TERMINAL_STREAM_BROWSER_TICKET_PROTOCOL_PREFIX,
 } from '../../shared/terminalStreamProtocol';
 import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiActionName } from '../../shared/apiContract';
-import { AGENT_GATEWAY_ACTIONS, createStreamToken, hashStreamToken, verifyStreamToken } from '../security';
+import { AGENT_GATEWAY_ACTIONS, createStreamToken, hashStreamToken } from '../security';
 import {
   ModelRecord,
   asActionContext,
@@ -31,7 +29,6 @@ import {
   getModelString,
   getModelTargetKey,
   getModelValue,
-  getRecord,
   getString,
   getActionTargetKey,
   requireAgentGatewayPermission,
@@ -72,7 +69,7 @@ interface MinimalActionContext {
   headers: Record<string, string>;
   state: Record<string, unknown>;
   auth: {
-    user?: unknown;
+    user?: Model;
   };
   req: {
     headers: Record<string, string>;
@@ -88,14 +85,15 @@ interface MinimalActionContext {
 
 function createTerminalStreamActionContext(options: {
   app: Application;
-  user: unknown;
-  roleName?: string;
+  user: Model;
+  authenticator: string;
+  currentRole: string;
   originalUrl?: string;
 }) {
-  const headers: Record<string, string> = {};
-  if (options.roleName) {
-    headers['x-role'] = options.roleName;
-  }
+  const headers: Record<string, string> = {
+    'x-authenticator': options.authenticator,
+    'x-role': options.currentRole,
+  };
   const ctx: MinimalActionContext = {
     app: options.app,
     db: options.app.db,
@@ -146,27 +144,75 @@ function getDateFromModel(model: ModelRecord, key: string) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-function getCurrentRoleName(ctx: Context) {
-  const roleName = getString(ctx.state.currentRole);
-  if (roleName && roleName !== '__union__') {
-    return roleName;
-  }
-  return '';
+function getRoleNames(value: unknown) {
+  return Array.isArray(value)
+    ? Array.from(new Set(value.filter((role): role is string => typeof role === 'string' && Boolean(role))))
+    : [];
 }
 
 function getAuthenticatorName(ctx: Context) {
   return getString(ctx.get('X-Authenticator')) || 'basic';
 }
 
-function getRedactedBrowserStreamProtocols(roleName?: string | null) {
+function getRedactedBrowserStreamProtocols() {
   return [
     TERMINAL_STREAM_BROWSER_SUBPROTOCOL,
     `${TERMINAL_STREAM_BROWSER_TICKET_PROTOCOL_PREFIX}${REDACTED_PROTOCOL_VALUE}`,
-    `${TERMINAL_STREAM_BROWSER_TICKET_PROOF_PROTOCOL_PREFIX}${REDACTED_PROTOCOL_VALUE}`,
-    `${TERMINAL_STREAM_BROWSER_AUTH_PROOF_PROTOCOL_PREFIX}${REDACTED_PROTOCOL_VALUE}`,
-    `${TERMINAL_STREAM_BROWSER_AUTHENTICATOR_PROTOCOL_PREFIX}${REDACTED_PROTOCOL_VALUE}`,
-    ...(roleName ? [`${TERMINAL_STREAM_BROWSER_ROLE_PROTOCOL_PREFIX}${REDACTED_PROTOCOL_VALUE}`] : []),
   ];
+}
+
+function isDisabledUser(user: ModelRecord) {
+  const enabled = getModelValue(user, 'enabled');
+  const status = getModelString(user, 'status').toLowerCase();
+  return (
+    enabled === false ||
+    Boolean(getModelValue(user, 'disabledAt')) ||
+    ['blocked', 'disabled', 'inactive', 'suspended'].includes(status)
+  );
+}
+
+async function restoreTerminalStreamTicketContext(options: {
+  app: Application;
+  user: Model;
+  authenticator: string;
+  currentRole: string;
+  currentRoles: string[];
+}) {
+  const ctx = createTerminalStreamActionContext(options);
+  const builtInAuthenticator = options.app.authManager.getBuiltInAuthenticator(options.authenticator);
+  if (!builtInAuthenticator) {
+    const storedAuthenticator = (await options.app.db.getRepository('authenticators').findOne({
+      filter: {
+        name: options.authenticator,
+        enabled: true,
+      },
+    })) as ModelRecord | null;
+    if (!storedAuthenticator) {
+      throw new TerminalStreamTicketError('TERMINAL_PERMISSION_DENIED', 'Terminal stream authenticator is disabled');
+    }
+  }
+
+  const auth = await options.app.authManager.get(options.authenticator, ctx);
+  auth.user = options.user;
+  (ctx as Context & { auth: typeof auth }).auth = auth;
+  await setCurrentRole(ctx, async () => {});
+
+  const restoredCurrentRole = getString(ctx.state.currentRole);
+  const restoredCurrentRoles = getRoleNames(ctx.state.currentRoles);
+  if (
+    restoredCurrentRole !== options.currentRole ||
+    !options.currentRoles.length ||
+    options.currentRoles.some((role) => !restoredCurrentRoles.includes(role))
+  ) {
+    throw new TerminalStreamTicketError(
+      'TERMINAL_PERMISSION_DENIED',
+      'Terminal stream ticket role context is no longer available',
+    );
+  }
+
+  ctx.state.currentRole = options.currentRole;
+  ctx.state.currentRoles = options.currentRoles;
+  return ctx;
 }
 
 async function requireTerminalStreamTicketPermission(ctx: Context) {
@@ -228,9 +274,11 @@ export async function createTerminalStreamTicket(ctx: Context, runId: string) {
   await cleanupTerminalStreamTickets(ctx.app);
 
   const ticket = createStreamToken();
-  const proof = createStreamToken();
-  const authProof = createStreamToken();
-  const roleName = getCurrentRoleName(ctx) || null;
+  const currentRole = getString(ctx.state.currentRole);
+  const currentRoles = getRoleNames(ctx.state.currentRoles);
+  if (!currentRole || !currentRoles.length) {
+    ctx.throw(401, 'The current user has no roles');
+  }
   const authenticator = getAuthenticatorName(ctx);
   const expiresAt = new Date(Date.now() + DEFAULT_TERMINAL_STREAM_TICKET_TTL_MS);
   await ctx.db.getRepository('agTerminalStreamTickets').create({
@@ -238,27 +286,20 @@ export async function createTerminalStreamTicket(ctx: Context, runId: string) {
       id: randomUUID(),
       ticketHash: ticket.tokenHash,
       ticketLast4: ticket.tokenLast4,
-      ticketProofHash: proof.tokenHash,
-      authProofHash: authProof.tokenHash,
       runId,
       userId,
-      roleName,
+      authenticator,
+      currentRole,
+      currentRoles,
       expiresAt,
-      metadataJson: {
-        ttlMs: DEFAULT_TERMINAL_STREAM_TICKET_TTL_MS,
-      },
     },
   });
 
   ctx.body = {
     ticket: ticket.token,
-    ticketProof: proof.token,
-    authProof: authProof.token,
-    authenticator,
-    role: roleName,
     expiresAt: expiresAt.toISOString(),
     runId,
-    protocols: getRedactedBrowserStreamProtocols(roleName),
+    protocols: getRedactedBrowserStreamProtocols(),
   };
 }
 
@@ -272,10 +313,7 @@ async function findTicketForUpdate(app: Application, ticket: string, transaction
   })) as ModelRecord | null;
 }
 
-function assertTicketScope(
-  ticketRecord: ModelRecord,
-  options: { runId: string; ticketProof: string; authProof?: string },
-) {
+function assertTicketScope(ticketRecord: ModelRecord, options: { runId: string }) {
   if (getModelString(ticketRecord, 'runId') !== options.runId) {
     throw new TerminalStreamTicketError(
       'TERMINAL_STREAM_TICKET_SCOPE_MISMATCH',
@@ -288,37 +326,15 @@ function assertTicketScope(
       'Terminal stream ticket has already been used',
     );
   }
-  if (!verifyStreamToken(options.ticketProof, getModelString(ticketRecord, 'ticketProofHash'))) {
-    throw new TerminalStreamTicketError(
-      'TERMINAL_STREAM_TICKET_SCOPE_MISMATCH',
-      'Terminal stream ticket proof is invalid',
-    );
-  }
   const expiresAt = getDateFromModel(ticketRecord, 'expiresAt');
   if (!expiresAt || expiresAt.getTime() <= Date.now()) {
     throw new TerminalStreamTicketError('TERMINAL_STREAM_TICKET_EXPIRED', 'Terminal stream ticket has expired', 401);
   }
-  const authProofHash = getModelString(ticketRecord, 'authProofHash');
-  const authProof = getString(options.authProof);
-  if (authProof && (!authProofHash || !verifyStreamToken(authProof, authProofHash))) {
-    throw new TerminalStreamTicketError(
-      'TERMINAL_STREAM_TICKET_SCOPE_MISMATCH',
-      'Terminal stream auth proof is invalid',
-      401,
-    );
-  }
 }
 
-export async function consumeTerminalStreamTicket(options: {
-  app: Application;
-  runId: string;
-  ticket?: string;
-  ticketProof?: string;
-  authProof?: string;
-}) {
+export async function consumeTerminalStreamTicket(options: { app: Application; runId: string; ticket?: string }) {
   const ticket = getString(options.ticket);
-  const ticketProof = getString(options.ticketProof);
-  if (!ticket || !ticketProof) {
+  if (!ticket) {
     throw new TerminalStreamTicketError(
       'TERMINAL_STREAM_TICKET_SCOPE_MISMATCH',
       'Terminal stream ticket is required',
@@ -336,11 +352,7 @@ export async function consumeTerminalStreamTicket(options: {
         401,
       );
     }
-    assertTicketScope(ticketRecord, {
-      runId: options.runId,
-      ticketProof,
-      authProof: options.authProof,
-    });
+    assertTicketScope(ticketRecord, { runId: options.runId });
     await options.app.db.getRepository('agTerminalStreamTickets').update({
       filterByTk: getModelTargetKey(ticketRecord, 'id'),
       values: {
@@ -360,8 +372,8 @@ export async function consumeTerminalStreamTicket(options: {
   const userId = getModelTargetKey(ticketRecord, 'userId');
   const user = (await options.app.db.getRepository('users').findOne({
     filterByTk: userId,
-  })) as ModelRecord | null;
-  if (!user) {
+  })) as Model | null;
+  if (!user || isDisabledUser(user)) {
     throw new TerminalStreamTicketError(
       'TERMINAL_STREAM_TICKET_SCOPE_MISMATCH',
       'Terminal stream ticket user is invalid',
@@ -369,12 +381,17 @@ export async function consumeTerminalStreamTicket(options: {
     );
   }
 
-  const ctx = createTerminalStreamActionContext({
-    app: options.app,
-    user,
-    roleName: getModelString(ticketRecord, 'roleName') || undefined,
-  });
+  const authenticator = getModelString(ticketRecord, 'authenticator');
+  const currentRole = getModelString(ticketRecord, 'currentRole');
+  const currentRoles = getRoleNames(getModelValue(ticketRecord, 'currentRoles'));
   try {
+    const ctx = await restoreTerminalStreamTicketContext({
+      app: options.app,
+      user,
+      authenticator,
+      currentRole,
+      currentRoles,
+    });
     await requireAgentGatewayPermission(
       ctx,
       AGENT_GATEWAY_ACTIONS.readTerminal,
@@ -382,6 +399,10 @@ export async function consumeTerminalStreamTicket(options: {
     );
     const run = await assertRunVisible(ctx, options.runId, 'get');
     await requireTerminalOutputCapability(ctx, run, 'stream-subscribe');
+    return {
+      ctx,
+      userId,
+    };
   } catch (error) {
     if (error instanceof TerminalStreamTicketError) {
       throw error;
@@ -391,11 +412,6 @@ export async function consumeTerminalStreamTicket(options: {
       'Agent Gateway terminal read permission required',
     );
   }
-
-  return {
-    ctx,
-    userId,
-  };
 }
 
 export function registerTerminalStreamTicketRoutes(plugin: Plugin) {

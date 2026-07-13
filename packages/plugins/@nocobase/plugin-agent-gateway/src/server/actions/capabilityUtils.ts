@@ -34,14 +34,10 @@ function getModelTargetString(model: ModelRecord, key: string) {
 
 function getExecutionPayloadProvider(run: ModelRecord) {
   const payload = getRecord(getModelValue(run, 'executionPayloadJson'));
-  const commandKey = getString(payload.commandKey);
   const explicitCapabilities = getRecord(payload.capabilities || payload.agentProviderCapabilities);
   const sourceType = getString(getModelValue(run, 'sourceType'));
   return {
-    provider:
-      getExplicitAgentProviderKey(payload.provider) ||
-      getExplicitAgentProviderKey(payload.agentProvider) ||
-      getExplicitAgentProviderKey(commandKey),
+    provider: getExplicitAgentProviderKey(payload.provider) || getExplicitAgentProviderKey(payload.agentProvider),
     capabilities:
       hasAgentCapabilitySignal(explicitCapabilities) || sourceType === EXTERNAL_IMPORT_SOURCE_TYPE
         ? {
@@ -49,7 +45,6 @@ function getExecutionPayloadProvider(run: ModelRecord) {
             ...explicitCapabilities,
           }
         : {},
-    hasExplicitLegacyCommand: Boolean(commandKey && !getExplicitAgentProviderKey(commandKey)),
   };
 }
 
@@ -145,14 +140,6 @@ export async function getRunProviderCapabilitySummary(
   }
 
   if (profile) {
-    if (payloadProvider.hasExplicitLegacyCommand) {
-      return {
-        provider: 'generic-cli',
-        providerSource: 'payload',
-        capabilities: normalizeAgentProviderCapabilities('generic-cli', {}),
-        enforceCapabilities: true,
-      };
-    }
     if (profileProvider) {
       return {
         provider: profileProvider,
@@ -177,15 +164,6 @@ export async function getRunProviderCapabilitySummary(
         enforceCapabilities: true,
       };
     }
-  }
-
-  if (payloadProvider.hasExplicitLegacyCommand) {
-    return {
-      provider: 'generic-cli',
-      providerSource: 'payload',
-      capabilities: normalizeAgentProviderCapabilities('generic-cli', {}),
-      enforceCapabilities: true,
-    };
   }
 
   if (payloadProvider.provider) {

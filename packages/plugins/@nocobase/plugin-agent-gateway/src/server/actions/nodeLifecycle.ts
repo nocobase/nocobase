@@ -53,7 +53,7 @@ const DEFAULT_HEARTBEAT_INTERVAL_SECONDS = 30;
 const DEFAULT_CLAIM_INTERVAL_SECONDS = 10;
 const NODE_ONLINE_THRESHOLD_MS = 120_000;
 const PLUGIN_PACKAGE_ROOT = resolve(__dirname, '../../..');
-const BOOTSTRAP_SCRIPT_PATH = resolve(__dirname, '../../../scripts/install-agent-gateway-daemon.sh');
+const BOOTSTRAP_SCRIPT_PATH = resolve(__dirname, '../assets/install-agent-gateway-daemon.sh');
 const RAW_PROFILE_CONFIG_KEYS = new Set(['command', 'commandPath', 'cwd', 'env']);
 const execFileAsync = promisify(execFile);
 
@@ -255,11 +255,17 @@ async function createInvitation(ctx: Context) {
   };
 }
 
+export async function readBootstrapScriptAsset() {
+  return await readFile(BOOTSTRAP_SCRIPT_PATH, 'utf8');
+}
+
 async function serveBootstrapScript(ctx: Context) {
   ctx.withoutDataWrapping = true;
   ctx.type = 'application/x-sh';
   ctx.set('Cache-Control', 'no-store');
-  ctx.body = await readFile(BOOTSTRAP_SCRIPT_PATH, 'utf8');
+  ctx.set('Content-Disposition', 'attachment; filename="install-agent-gateway-daemon.sh"');
+  ctx.set('X-Content-Type-Options', 'nosniff');
+  ctx.body = await readBootstrapScriptAsset();
 }
 
 async function createDaemonPackage(): Promise<DaemonPackageArtifact> {
@@ -505,15 +511,25 @@ async function syncProfiles(ctx: Context, nodeId: unknown, profiles: unknown[], 
       transaction,
       lock: transaction.LOCK.UPDATE,
     })) as ModelRecord | null;
-    const reportedCapabilities = getRecord(profile.capabilitiesJson || profile.capabilities);
+    const reportedCapabilities = {
+      ...getRecord(profile.capabilitiesJson || profile.capabilities),
+    };
+    delete reportedCapabilities.commandKey;
+    delete reportedCapabilities.detectedCommand;
+    const executionPolicyKey = getString(reportedCapabilities.executionPolicyKey);
+    if (!executionPolicyKey || executionPolicyKey !== profileKey) {
+      ctx.throw(400, 'Profile executionPolicyKey must match profileKey');
+    }
     const explicitProvider =
       getString(profile.provider) || getString(profile.providerKey) || getString(reportedCapabilities.provider);
     const profileProvider = getExplicitAgentProviderKey(explicitProvider);
     if (explicitProvider && !profileProvider) {
       ctx.throw(400, 'Provider is not supported');
     }
-    const commandProvider = getExplicitAgentProviderKey(reportedCapabilities.commandKey);
-    const provider = profileProvider || commandProvider || 'generic-cli';
+    if (!profileProvider) {
+      ctx.throw(400, 'Provider is required');
+    }
+    const provider = profileProvider;
     const capabilitiesJson = normalizeAgentProviderCapabilities(provider, reportedCapabilities);
     const profileValues = {
       nodeId,
@@ -579,37 +595,75 @@ async function heartbeat(ctx: Context, nodeId: string) {
   const currentMetadata = getRecord(auth.node.get('metadataJson'));
   const currentConcurrency = values.currentConcurrency;
   const profilesProvided = Object.prototype.hasOwnProperty.call(values, 'profiles');
+  const profilesHash = getString(values.profilesHash);
+  const profilesChanged =
+    profilesProvided && (!profilesHash || profilesHash !== getString(currentMetadata.profilesHash));
   const currentInstallationId = getModelString(auth.node, 'installationId');
   const heartbeatInstallationId = getString(values.installationId);
   if (currentInstallationId && heartbeatInstallationId && currentInstallationId !== heartbeatInstallationId) {
     ctx.throw(409, 'Heartbeat installation ID does not match the registered node');
   }
-  const metadataJson = {
+  const heartbeatCapabilities = getRecord(values.capabilitiesJson || values.capabilities);
+  const capabilitiesProvided =
+    Object.prototype.hasOwnProperty.call(values, 'capabilitiesJson') ||
+    Object.prototype.hasOwnProperty.call(values, 'capabilities');
+  const capabilitiesChanged =
+    capabilitiesProvided &&
+    JSON.stringify(heartbeatCapabilities) !== JSON.stringify(getRecord(auth.node.get('capabilitiesJson')));
+  const heartbeatHostInfo = getRecord(values.hostInfo);
+  const hostInfoProvided = Object.prototype.hasOwnProperty.call(values, 'hostInfo');
+  const daemonVersion = getString(values.daemonVersion);
+  const nextMetadata: JsonRecord = {
     ...currentMetadata,
-    currentConcurrency: typeof currentConcurrency === 'number' ? currentConcurrency : null,
-    daemonVersion: getString(values.daemonVersion) || currentMetadata.daemonVersion || null,
-    hostInfo: Object.keys(getRecord(values.hostInfo)).length
-      ? getRecord(values.hostInfo)
-      : currentMetadata.hostInfo || {},
-    heartbeatAt: now.toISOString(),
   };
+  let metadataChanged = false;
+  if (typeof currentConcurrency === 'number' && currentConcurrency !== currentMetadata.currentConcurrency) {
+    nextMetadata.currentConcurrency = currentConcurrency;
+    metadataChanged = true;
+  }
+  if (daemonVersion && daemonVersion !== getString(currentMetadata.daemonVersion)) {
+    nextMetadata.daemonVersion = daemonVersion;
+    metadataChanged = true;
+  }
+  if (hostInfoProvided && JSON.stringify(heartbeatHostInfo) !== JSON.stringify(getRecord(currentMetadata.hostInfo))) {
+    nextMetadata.hostInfo = heartbeatHostInfo;
+    metadataChanged = true;
+  }
+  if (profilesChanged && profilesHash) {
+    nextMetadata.profilesHash = profilesHash;
+    metadataChanged = true;
+  }
 
   await ctx.db.sequelize.transaction(async (transaction) => {
+    const nodeValues: JsonRecord = {
+      status: 'active',
+      lastHeartbeatAt: now,
+    };
+    if (!currentInstallationId && heartbeatInstallationId) {
+      nodeValues.installationId = heartbeatInstallationId;
+    }
+    if (capabilitiesChanged) {
+      nodeValues.capabilitiesJson = heartbeatCapabilities;
+    }
+    if (metadataChanged) {
+      nodeValues.metadataJson = nextMetadata;
+    }
     await ctx.db.getRepository('agNodes').update({
       filterByTk: nodeId,
-      values: {
-        status: 'active',
-        installationId: currentInstallationId || heartbeatInstallationId || null,
-        lastHeartbeatAt: now,
-        capabilitiesJson: getRecord(values.capabilitiesJson || values.capabilities),
-        metadataJson,
-      },
+      values: nodeValues,
       transaction,
     });
-    if (profilesProvided) {
+    if (profilesChanged) {
       await syncProfiles(ctx, nodeId, getArray(values.profiles), now, transaction);
     }
   });
+
+  ctx.state.agentGatewayApiStateChanged =
+    getModelString(auth.node, 'status') !== 'active' ||
+    (!currentInstallationId && Boolean(heartbeatInstallationId)) ||
+    capabilitiesChanged ||
+    metadataChanged ||
+    profilesChanged;
 
   ctx.body = {
     nodeId,

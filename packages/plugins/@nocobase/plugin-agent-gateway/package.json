@@ -22,9 +22,11 @@
     "daemon.js"
   ],
   "dependencies": {
-    "ws": "^8.13.0"
+    "ws": "^8.13.0",
+    "yauzl": "^3.2.0"
   },
   "devDependencies": {
+    "@types/yauzl": "^2.10.3",
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/xterm": "^6.0.0"
   },
@@ -33,6 +35,7 @@
     "@nocobase/client": "2.x",
     "@nocobase/client-v2": "2.x",
     "@nocobase/database": "2.x",
+    "@nocobase/plugin-acl": "2.x",
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x"
   },

@@ -18,9 +18,8 @@ import {
   ExternalLogFormat,
 } from '../shared/externalRunImport';
 import { AgentGatewayApiClient } from './apiClient';
-import { getDefaultConfigPath, readDaemonConfig } from './config';
+import { createDefaultExecutionPolicies, getDefaultConfigPath, readDaemonConfig } from './config';
 import { AgentGatewayDaemonNodeClient } from './gateway';
-import { DEFAULT_EXEC_TIMEOUT_MS, ExecCommandAllowlist } from './execDriver';
 import { uploadExternalRun } from './externalRunUploader';
 import { detectAgentProfiles } from './profileDetection';
 import { heartbeatDaemonNode, registerDaemonNode } from './registration';
@@ -106,29 +105,6 @@ function getDaemonDataPath(...segments: string[]) {
   return path.join(path.dirname(getDefaultConfigPath()), ...segments);
 }
 
-function getDefaultAllowlist(): ExecCommandAllowlist {
-  return {
-    opencode: {
-      commandKey: 'opencode',
-      executable: 'opencode',
-      allowedEnvKeys: ['NOCOBASE_API_BASE_URL', 'NOCOBASE_ADMIN_URL', 'NOCOBASE_API_TOKEN'],
-      defaultTimeoutMs: DEFAULT_EXEC_TIMEOUT_MS,
-    },
-    codex: {
-      commandKey: 'codex',
-      executable: 'codex',
-      allowedEnvKeys: [],
-      defaultTimeoutMs: DEFAULT_EXEC_TIMEOUT_MS,
-    },
-    'claude-code': {
-      commandKey: 'claude-code',
-      executable: 'claude',
-      allowedEnvKeys: [],
-      defaultTimeoutMs: DEFAULT_EXEC_TIMEOUT_MS,
-    },
-  };
-}
-
 async function readStdin() {
   const chunks: Buffer[] = [];
   for await (const chunk of stdin) {
@@ -209,6 +185,9 @@ async function handleRegister(flags: Record<string, string | boolean | string[]>
     configPath,
     nodeKey: identity.nodeKey,
     installationId: identity.installationId,
+    executionPolicies: createDefaultExecutionPolicies(
+      path.resolve(getFlagString(flags, 'workspace-root') || process.cwd()),
+    ),
   });
   printJson(result);
 }
@@ -216,7 +195,9 @@ async function handleRegister(flags: Record<string, string | boolean | string[]>
 async function handleHeartbeat(flags: Record<string, string | boolean | string[]>) {
   const config = await readDaemonConfig(getFlagString(flags, 'config') || undefined);
   const requester = new AgentGatewayApiClient(config.serverUrl);
-  const profiles = await detectAgentProfiles();
+  const profiles = await detectAgentProfiles({
+    executionPolicies: config.executionPolicies,
+  });
   const result = await heartbeatDaemonNode({
     requester,
     config,
@@ -245,17 +226,24 @@ async function handleRun(flags: Record<string, string | boolean | string[]>) {
   const gateway = new AgentGatewayDaemonNodeClient(requester, config);
   const runOptions = {
     gateway,
-    allowlist: getDefaultAllowlist(),
-    workspaceRoot: path.resolve(getFlagString(flags, 'workspace-root') || process.cwd()),
+    executionPolicies: config.executionPolicies,
     skillsRoot: path.resolve(getFlagString(flags, 'skills-root') || getDaemonDataPath('skills')),
     artifactDir: path.resolve(getFlagString(flags, 'artifact-dir') || getDaemonDataPath('artifacts')),
     terminalBackend: getFlagString(flags, 'terminal-backend') === 'exec' ? ('exec' as const) : ('tmux' as const),
+    detectOptions: {
+      executionPolicies: config.executionPolicies,
+    },
     claimProfileKey: getFlagString(flags, 'profile-key') || undefined,
     claimRunId: getFlagString(flags, 'run-id') || undefined,
     pollIntervalMs: getFlagNumber(
       flags,
       'poll-interval-ms',
       config.claimIntervalSeconds ? config.claimIntervalSeconds * 1000 : 10_000,
+    ),
+    nodeHeartbeatIntervalMs: getFlagNumber(
+      flags,
+      'node-heartbeat-interval-ms',
+      config.heartbeatIntervalSeconds ? config.heartbeatIntervalSeconds * 1000 : 30_000,
     ),
     runHeartbeatIntervalMs: getFlagNumber(flags, 'run-heartbeat-interval-ms', 10_000),
   };
@@ -277,6 +265,7 @@ async function handleRun(flags: Record<string, string | boolean | string[]>) {
         [
           new Date().toISOString(),
           'Agent Gateway daemon loop error; retrying',
+          `source=${state.source}`,
           `failureCount=${state.failureCount}`,
           `retryDelayMs=${state.retryDelayMs}`,
           `error=${getErrorMessage(error)}`,
@@ -367,11 +356,11 @@ function printHelp() {
       'Usage: agent-gateway-daemon <command> [options]',
       '',
       'Commands:',
-      '  register --server-url <url> --invite-token <token>',
-      '  register --server-url <url> --invite-token-stdin',
+      '  register --server-url <url> --invite-token <token> [--workspace-root <path>]',
+      '  register --server-url <url> --invite-token-stdin [--workspace-root <path>]',
       '  heartbeat [--config <path>]',
       '  run [--config <path>] [--server-url <url>] [--node-id <id>] [--node-token <token>]',
-      '      [--once] [--profile-key <key>] [--run-id <id>] [--workspace-root <path>]',
+      '      [--once] [--profile-key <key>] [--run-id <id>]',
       '      [--terminal-backend tmux|exec]',
       '  import-external-run --server-url <url> --api-token <token> --external-run-key <key> --provider <provider> --log-file <path>',
       '  detect-profiles',

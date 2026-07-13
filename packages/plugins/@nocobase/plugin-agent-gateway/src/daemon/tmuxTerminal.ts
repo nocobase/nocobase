@@ -18,22 +18,20 @@ import { pipeline } from 'stream/promises';
 import { AGENT_GATEWAY_TERMINATE_CONTROL_CANCEL_REASON } from '../shared/runControl';
 import { isManagedTmuxSessionName } from '../shared/terminalSession';
 import {
-  ExecCommandDefinition,
   ExecDriverResult,
   ExecTerminalStatus,
   MAX_RUN_OUTPUT_SPOOL_BYTES,
   prepareCommandExecution,
 } from './execDriver';
+import { ExecutionPolicyDefinition } from './types';
 
 export { isManagedTmuxSessionName } from '../shared/terminalSession';
 
 export interface TmuxCommandOptions {
   runId: string;
-  definition: ExecCommandDefinition;
+  policy: ExecutionPolicyDefinition;
   args?: string[];
   cwd: string;
-  workspaceRoot: string;
-  env?: Record<string, string>;
   timeoutMs: number;
   artifactDir?: string;
   cancelSignal?: AbortSignal;
@@ -594,11 +592,9 @@ export async function terminateTmuxSession(sessionName: string) {
 
 export async function executeTmuxCommand(options: TmuxCommandOptions): Promise<ExecDriverResult> {
   const prepared = await prepareCommandExecution({
-    definition: options.definition,
+    policy: options.policy,
     args: options.args,
     cwd: options.cwd,
-    workspaceRoot: options.workspaceRoot,
-    env: options.env,
     timeoutMs: options.timeoutMs,
   });
   const sessionName = getManagedTmuxSessionName(options.runId);

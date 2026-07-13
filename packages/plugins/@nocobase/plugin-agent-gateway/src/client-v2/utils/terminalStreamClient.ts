@@ -13,11 +13,7 @@ import {
   TERMINAL_RECONNECT_INITIAL_DELAY_MS,
   TERMINAL_RECONNECT_JITTER_RATIO,
   TERMINAL_RECONNECT_MAX_DELAY_MS,
-  TERMINAL_STREAM_BROWSER_AUTHENTICATOR_PROTOCOL_PREFIX,
-  TERMINAL_STREAM_BROWSER_AUTH_PROOF_PROTOCOL_PREFIX,
-  TERMINAL_STREAM_BROWSER_ROLE_PROTOCOL_PREFIX,
   TERMINAL_STREAM_BROWSER_SUBPROTOCOL,
-  TERMINAL_STREAM_BROWSER_TICKET_PROOF_PROTOCOL_PREFIX,
   TERMINAL_STREAM_BROWSER_TICKET_PROTOCOL_PREFIX,
   TERMINAL_STREAM_WS_PATH,
   TerminalErrorCode,
@@ -44,10 +40,6 @@ export interface TerminalStreamChunk {
 
 export interface TerminalStreamTicket {
   ticket: string;
-  ticketProof: string;
-  authProof?: string;
-  authenticator?: string;
-  role?: string | null;
   expiresAt?: string;
   runId?: string;
   protocols?: string[];
@@ -115,22 +107,6 @@ export function buildTerminalStreamProtocols(ticket?: TerminalStreamTicket) {
   const streamTicket = encodeWebSocketProtocolValue(ticket?.ticket);
   if (streamTicket) {
     protocols.push(`${TERMINAL_STREAM_BROWSER_TICKET_PROTOCOL_PREFIX}${streamTicket}`);
-  }
-  const ticketProof = encodeWebSocketProtocolValue(ticket?.ticketProof);
-  if (ticketProof) {
-    protocols.push(`${TERMINAL_STREAM_BROWSER_TICKET_PROOF_PROTOCOL_PREFIX}${ticketProof}`);
-  }
-  const authProof = encodeWebSocketProtocolValue(ticket?.authProof);
-  if (authProof) {
-    protocols.push(`${TERMINAL_STREAM_BROWSER_AUTH_PROOF_PROTOCOL_PREFIX}${authProof}`);
-  }
-  const authenticator = encodeWebSocketProtocolValue(ticket?.authenticator || 'basic');
-  if (authenticator) {
-    protocols.push(`${TERMINAL_STREAM_BROWSER_AUTHENTICATOR_PROTOCOL_PREFIX}${authenticator}`);
-  }
-  const role = encodeWebSocketProtocolValue(ticket?.role || undefined);
-  if (role) {
-    protocols.push(`${TERMINAL_STREAM_BROWSER_ROLE_PROTOCOL_PREFIX}${role}`);
   }
   return protocols;
 }
@@ -253,7 +229,7 @@ export class TerminalStreamClient {
         if (this.closedByClient || this.terminalEnded || this.ticketRequestId !== ticketRequestId) {
           return;
         }
-        if (!ticket.ticket || !ticket.ticketProof) {
+        if (!ticket.ticket) {
           this.updateState({
             connectionState: 'error',
             lastErrorCode: 'TERMINAL_AUTH_FAILED',

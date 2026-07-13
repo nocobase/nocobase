@@ -15,6 +15,7 @@ import {
   PendingControlRequest,
   RunLease,
 } from './types';
+import { arch, hostname, platform } from 'os';
 import { NodeSkillInstallPayload } from './skillSync';
 import { attachLocalRunLeaseDeadline } from './leaseDeadline';
 import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiPath } from '../shared/apiContract';
@@ -43,7 +44,12 @@ export class AgentGatewayDaemonNodeClient {
     };
   }
 
-  async heartbeatNode(options: { profiles: DetectedAgentProfile[]; currentConcurrency?: number }) {
+  async heartbeatNode(options: {
+    profiles?: DetectedAgentProfile[];
+    profilesHash?: string;
+    currentConcurrency?: number;
+    includeNodeSnapshot?: boolean;
+  }) {
     return await this.requester.request({
       method: 'POST',
       path: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatNode, this.config.nodeId),
@@ -51,20 +57,30 @@ export class AgentGatewayDaemonNodeClient {
       body: {
         installationId: this.config.installationId,
         currentConcurrency: options.currentConcurrency || 0,
-        capabilities: {
-          maxConcurrency: 1,
-          supportsExecDriver: true,
-          supportsArtifacts: true,
-          supportsSnapshots: true,
-          terminal: {
-            backend: 'tmux',
-            attach: true,
-            input: true,
-            interrupt: true,
-            terminate: true,
-          },
-        },
-        profiles: options.profiles,
+        ...(options.includeNodeSnapshot
+          ? {
+              daemonVersion: 'agent-gateway-daemon/0.1.0',
+              hostInfo: {
+                hostname: hostname(),
+                platform: platform(),
+                arch: arch(),
+              },
+              capabilities: {
+                maxConcurrency: 1,
+                supportsExecDriver: true,
+                supportsArtifacts: true,
+                supportsSnapshots: true,
+                terminal: {
+                  backend: 'tmux',
+                  attach: true,
+                  input: true,
+                  interrupt: true,
+                  terminate: true,
+                },
+              },
+            }
+          : {}),
+        ...(options.profiles ? { profiles: options.profiles, profilesHash: options.profilesHash } : {}),
       },
     });
   }

@@ -10,11 +10,6 @@
 export const TERMINAL_PROTOCOL = 'agent-gateway.terminal.v1' as const;
 export const TERMINAL_STREAM_BROWSER_SUBPROTOCOL = 'agent-gateway-terminal-v1' as const;
 export const TERMINAL_STREAM_BROWSER_TICKET_PROTOCOL_PREFIX = 'agw-ticket.' as const;
-export const TERMINAL_STREAM_BROWSER_TICKET_PROOF_PROTOCOL_PREFIX = 'agw-proof.' as const;
-export const TERMINAL_STREAM_BROWSER_AUTH_PROOF_PROTOCOL_PREFIX = 'agw-auth-proof.' as const;
-export const TERMINAL_STREAM_BROWSER_AUTH_PROTOCOL_PREFIX = 'agw-auth.' as const;
-export const TERMINAL_STREAM_BROWSER_AUTHENTICATOR_PROTOCOL_PREFIX = 'agw-authenticator.' as const;
-export const TERMINAL_STREAM_BROWSER_ROLE_PROTOCOL_PREFIX = 'agw-role.' as const;
 export const TERMINAL_PAYLOAD_ENCODING = 'base64-utf8' as const;
 export const TERMINAL_STREAM_WS_PATH = '/ws/agent-gateway/terminal' as const;
 export const TERMINAL_DAEMON_TARGET_CHUNK_BYTES = 32 * 1024;
@@ -32,22 +27,7 @@ export const TERMINAL_RECONNECT_INITIAL_DELAY_MS = 500;
 export const TERMINAL_RECONNECT_MAX_DELAY_MS = 10 * 1000;
 export const TERMINAL_RECONNECT_JITTER_RATIO = 0.2;
 
-const BROWSER_SUBSCRIBE_FORBIDDEN_AUTH_FIELDS = [
-  'ticket',
-  'ticketProof',
-  'authProof',
-  'browserAuth',
-  'token',
-  'authToken',
-  'bearerToken',
-  'authorization',
-  'authenticator',
-  'role',
-  'xAuthenticator',
-  'x-authenticator',
-  'xRole',
-  'x-role',
-] as const;
+const BROWSER_SUBSCRIBE_ALLOWED_FIELDS = new Set(['type', 'protocol', 'requestId', 'runId', 'lastOffset']);
 
 export type TerminalProtocol = typeof TERMINAL_PROTOCOL;
 export type TerminalPayloadEncoding = typeof TERMINAL_PAYLOAD_ENCODING;
@@ -412,12 +392,10 @@ function normalizeTerminalFrame(record: JsonRecord): TerminalFrame {
   };
 }
 
-function validateBrowserSubscribeAuthFields(record: JsonRecord) {
-  const forbiddenField = BROWSER_SUBSCRIBE_FORBIDDEN_AUTH_FIELDS.find((field) =>
-    Object.prototype.hasOwnProperty.call(record, field),
-  );
-  return forbiddenField
-    ? protocolError('browser.subscribe auth material must use websocket subprotocols', getString(record.requestId))
+function validateBrowserSubscribeFields(record: JsonRecord) {
+  const unsupportedField = Object.keys(record).find((field) => !BROWSER_SUBSCRIBE_ALLOWED_FIELDS.has(field));
+  return unsupportedField
+    ? protocolError('browser.subscribe contains unsupported fields', getString(record.requestId))
     : null;
 }
 
@@ -442,7 +420,7 @@ export function parseTerminalFrame(input: unknown, options: TerminalParseOptions
     record.type === 'browser.subscribe'
       ? validateRequestId(record) ||
         validateRunId(record) ||
-        validateBrowserSubscribeAuthFields(record) ||
+        validateBrowserSubscribeFields(record) ||
         (record.lastOffset === undefined || isNonNegativeInteger(record.lastOffset)
           ? null
           : protocolError('lastOffset must be a non-negative integer', getString(record.requestId)))

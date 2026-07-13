@@ -8,14 +8,22 @@
  */
 
 import { spawn } from 'child_process';
+import { createHash } from 'crypto';
 import { StringDecoder } from 'string_decoder';
 
 import { getAgentAdapter } from './adapters';
-import { getAgentProviderKey, normalizeAgentProviderCapabilities } from '../shared/providerCapabilities';
-import { AgentGatewayProfileKey, AgentGatewayProfileStatus, DetectedAgentProfile, JsonRecord } from './types';
+import { normalizeAgentProviderCapabilities } from '../shared/providerCapabilities';
+import {
+  AgentGatewayProfileKey,
+  AgentGatewayProfileStatus,
+  DetectedAgentProfile,
+  ExecutionPolicyDefinition,
+  JsonRecord,
+} from './types';
 
 interface ProfileProbeDefinition {
   profileKey: AgentGatewayProfileKey;
+  provider: ExecutionPolicyDefinition['provider'];
   displayName: string;
   commandCandidates: string[];
 }
@@ -33,6 +41,7 @@ export type CommandProbe = (commandCandidates: string[], signal?: AbortSignal) =
 export interface DetectAgentProfilesOptions {
   probeCommand?: CommandProbe;
   signal?: AbortSignal;
+  executionPolicies?: ExecutionPolicyDefinition[];
 }
 
 export interface CachedProfileDetectorOptions extends DetectAgentProfilesOptions {
@@ -57,20 +66,44 @@ const DEFAULT_PROFILE_PROBE_FORCE_KILL_DELAY_MS = 500;
 const PROFILE_DEFINITIONS: ProfileProbeDefinition[] = [
   {
     profileKey: 'opencode',
+    provider: 'opencode',
     displayName: 'OpenCode',
     commandCandidates: ['opencode'],
   },
   {
     profileKey: 'codex',
+    provider: 'codex',
     displayName: 'Codex',
     commandCandidates: ['codex'],
   },
   {
     profileKey: 'claude-code',
+    provider: 'claude-code',
     displayName: 'Claude Code',
     commandCandidates: ['claude', 'claude-code'],
   },
 ];
+
+function sortForStableHash(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map((item) => sortForStableHash(item));
+  }
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+  return Object.fromEntries(
+    Object.entries(value as JsonRecord)
+      .sort(([firstKey], [secondKey]) => firstKey.localeCompare(secondKey))
+      .map(([key, entryValue]) => [key, sortForStableHash(entryValue)]),
+  );
+}
+
+export function getDetectedProfilesHash(profiles: DetectedAgentProfile[]) {
+  const sortedProfiles = [...profiles].sort((first, second) => first.profileKey.localeCompare(second.profileKey));
+  return createHash('sha256')
+    .update(JSON.stringify(sortForStableHash(sortedProfiles)))
+    .digest('hex');
+}
 
 function normalizeVersion(rawOutput: string) {
   return rawOutput
@@ -249,12 +282,10 @@ function buildProfileStatus(result: CommandProbeResult): AgentGatewayProfileStat
 }
 
 function buildCapabilities(definition: ProfileProbeDefinition, result: CommandProbeResult): JsonRecord {
-  const provider = getAgentProviderKey(definition.profileKey);
-  const adapter = getAgentAdapter(provider);
+  const adapter = getAgentAdapter(definition.provider);
   return {
-    ...normalizeAgentProviderCapabilities(provider, adapter?.capabilities || {}),
-    commandKey: definition.profileKey,
-    detectedCommand: result.command || null,
+    ...normalizeAgentProviderCapabilities(definition.provider, adapter?.capabilities || {}),
+    executionPolicyKey: definition.profileKey,
     version: result.version || null,
     authStatus: result.authStatus || 'unknown',
     supportsExecDriver: result.available,
@@ -265,12 +296,20 @@ export async function detectAgentProfiles(options: DetectAgentProfilesOptions = 
   const probeCommand = options.probeCommand || defaultCommandProbe;
   const profiles: DetectedAgentProfile[] = [];
 
-  for (const definition of PROFILE_DEFINITIONS) {
+  const definitions = options.executionPolicies?.length
+    ? options.executionPolicies.map((policy) => ({
+        profileKey: policy.executionPolicyKey,
+        provider: policy.provider,
+        displayName: `${policy.provider} (${policy.executionPolicyKey})`,
+        commandCandidates: [policy.executable],
+      }))
+    : PROFILE_DEFINITIONS;
+
+  for (const definition of definitions) {
     const result = await probeCommand(definition.commandCandidates, options.signal);
-    const provider = getAgentProviderKey(definition.profileKey);
     profiles.push({
       profileKey: definition.profileKey,
-      provider,
+      provider: definition.provider,
       displayName: definition.displayName,
       agentType: 'code',
       driver: 'exec',
@@ -303,6 +342,7 @@ export function createCachedProfileDetector(options: CachedProfileDetectorOption
 
     inFlight = detectAgentProfiles({
       probeCommand: options.probeCommand,
+      executionPolicies: options.executionPolicies,
       signal,
     })
       .then((profiles) => {

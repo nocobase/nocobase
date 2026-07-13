@@ -13,15 +13,34 @@ import { AgentAdapter, BuildResumeCommandInput, BuildStartCommandInput } from '.
 
 export { parseOpenCodeJsonLine } from '../../shared/providerLogNormalizers/opencode';
 
+const FORBIDDEN_OPENCODE_ARGS = new Set([
+  '--cwd',
+  '--directory',
+  '--config',
+  '--config-file',
+  '--permission',
+  '--permission-mode',
+]);
+
+function validateOpenCodePolicyArgs(args: string[]) {
+  const forbidden = args.find(
+    (arg) =>
+      FORBIDDEN_OPENCODE_ARGS.has(arg) || [...FORBIDDEN_OPENCODE_ARGS].some((flag) => arg.startsWith(`${flag}=`)),
+  );
+  if (forbidden) {
+    throw new Error(`OpenCode execution policy contains a forbidden argument: ${forbidden}`);
+  }
+}
+
 export const opencodeAdapter: AgentAdapter = {
   provider: 'opencode',
   capabilities: normalizeAgentProviderCapabilities('opencode'),
   projectSkillTargetDirs: ['.agents/skills'],
+  validatePolicyArgs: validateOpenCodePolicyArgs,
   buildStartCommand(input: BuildStartCommandInput) {
     const structuredArgs = input.outputMode === 'terminal' ? [] : ['--format', 'json'];
     return {
-      commandKey: 'opencode',
-      args: ['run', ...structuredArgs, ...(input.extraArgs || []), input.prompt],
+      args: ['run', ...structuredArgs, input.prompt],
       cwd: input.cwd,
       timeoutMs: input.timeoutMs,
     };

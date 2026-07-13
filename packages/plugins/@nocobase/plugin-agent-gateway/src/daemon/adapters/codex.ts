@@ -20,33 +20,47 @@ function getStructuredOutputArgs(outputMode?: 'structured' | 'terminal') {
   return outputMode === 'terminal' ? [] : STRUCTURED_OUTPUT_ARGS;
 }
 
+const FORBIDDEN_CODEX_ARGS = new Set([
+  '-C',
+  '--cd',
+  '--add-dir',
+  '--sandbox',
+  '--dangerously-bypass-approvals-and-sandbox',
+  '-c',
+  '--config',
+]);
+
+function validateCodexPolicyArgs(args: string[]) {
+  const forbidden = args.find(
+    (arg) =>
+      FORBIDDEN_CODEX_ARGS.has(arg) ||
+      [...FORBIDDEN_CODEX_ARGS].some((flag) => arg.startsWith(`${flag}=`)) ||
+      (arg.startsWith('-C') && arg !== '-C'),
+  );
+  if (forbidden) {
+    throw new Error(`Codex execution policy contains a forbidden argument: ${forbidden}`);
+  }
+}
+
 export const codexAdapter: AgentAdapter = {
   provider: 'codex',
   capabilities: normalizeAgentProviderCapabilities('codex'),
   projectSkillTargetDirs: ['.agents/skills'],
+  validatePolicyArgs: validateCodexPolicyArgs,
   buildStartCommand(input: BuildStartCommandInput) {
     return {
-      commandKey: 'codex',
-      args: [
-        'exec',
-        ...UNATTENDED_EXEC_ARGS,
-        ...getStructuredOutputArgs(input.outputMode),
-        ...(input.extraArgs || []),
-        input.prompt,
-      ],
+      args: ['exec', ...UNATTENDED_EXEC_ARGS, ...getStructuredOutputArgs(input.outputMode), input.prompt],
       cwd: input.cwd,
       timeoutMs: input.timeoutMs,
     };
   },
   buildResumeCommand(input: BuildResumeCommandInput) {
     return {
-      commandKey: 'codex',
       args: [
         'exec',
         'resume',
         ...UNATTENDED_EXEC_ARGS,
         ...getStructuredOutputArgs(input.outputMode),
-        ...(input.extraArgs || []),
         input.providerSessionId,
         input.message,
       ],

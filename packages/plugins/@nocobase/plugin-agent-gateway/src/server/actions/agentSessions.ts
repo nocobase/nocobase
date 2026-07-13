@@ -314,15 +314,10 @@ function buildResumePayload(options: {
   const timeoutMs = sourcePayload.timeoutMs;
   return {
     mode: 'agent-session-resume',
-    commandKey: options.provider,
-    profileKey: getString(sourcePayload.profileKey) || options.provider,
+    executionPolicyKey: getString(sourcePayload.executionPolicyKey),
     providerSessionId: options.providerSessionId,
     message: options.message,
     messageHash: options.messageHash,
-    args:
-      options.provider === 'codex'
-        ? ['exec', 'resume', '--json', options.providerSessionId, options.message]
-        : getRecord(sourcePayload).args,
     cwd,
     ...(typeof timeoutMs === 'number' ? { timeoutMs } : {}),
   };

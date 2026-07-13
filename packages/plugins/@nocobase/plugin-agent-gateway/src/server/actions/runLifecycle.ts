@@ -14,6 +14,7 @@ import { Plugin } from '@nocobase/server';
 import { Transaction } from 'sequelize';
 
 import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiActionName } from '../../shared/apiContract';
+import { getAgentGatewayCollectionRegistration } from '../collectionRegistry';
 import {
   AGENT_GATEWAY_ACTIONS,
   AGENT_GATEWAY_RESOURCE,
@@ -51,7 +52,8 @@ import {
   requireAgentGatewayPermission,
   requireManagePermission,
 } from './utils';
-import { serializeSkillVersionSourceForNode } from './skillVersions';
+import { serializeSkillVersionSourceForNode, SkillVersionSourceAccess } from './skillVersions';
+import { issueSkillDownloadCapability, revokeSkillDownloadCapabilitiesForRun } from './skillCapabilities';
 import {
   ensureDefaultTaskTemplates,
   findActiveTaskTemplateForRun,
@@ -107,8 +109,69 @@ const LEASE_RECOVERY_STALLED_GRACE_MS = 5 * 60 * 1000;
 const TOKEN_USAGE_EVENT_BATCH_SIZE = 100;
 const TERMINAL_TOKEN_TAIL_ROW_LIMIT = 32;
 const TERMINAL_TOKEN_TAIL_BYTE_LIMIT = 64 * 1024;
+const MAX_REMOTE_EXECUTION_TIMEOUT_MS = 24 * 60 * 60 * 1000;
+const FORBIDDEN_REMOTE_EXECUTION_FIELDS = new Set([
+  'args',
+  'extraArgs',
+  'env',
+  'executable',
+  'command',
+  'commandKey',
+  'profileKey',
+  'provider',
+  'agentProvider',
+  'workspaceRoot',
+  'additionalWritableDirs',
+  'config',
+  'hooks',
+  'permissionMode',
+  'terminalBackend',
+]);
+const CLAIM_PROFILE_CAPABILITY_KEYS = [
+  'structuredEvents',
+  'terminalOutput',
+  'resumeSession',
+  'detectSessionId',
+  'resumeWithMessage',
+  'liveSemanticMessage',
+  'stdinMessage',
+  'interrupt',
+  'terminate',
+  'artifacts',
+  'supportsExecDriver',
+] as const;
 
 const CONTROL_RUN_STATUSES = new Set<string>(TERMINAL_CONTROL_RUN_STATUSES);
+
+function assertSafeRemoteExecutionPayload(ctx: Context, payload: JsonRecord) {
+  const forbiddenField = Object.keys(payload).find((field) => FORBIDDEN_REMOTE_EXECUTION_FIELDS.has(field));
+  if (forbiddenField) {
+    ctx.throw(400, `Execution field is not allowed: ${forbiddenField}`);
+  }
+  if (!getString(payload.executionPolicyKey)) {
+    ctx.throw(400, 'executionPolicyKey is required');
+  }
+  const cwd = getString(payload.cwd);
+  if (cwd.startsWith('/') || /^[a-zA-Z]:[\\/]/.test(cwd)) {
+    ctx.throw(400, 'cwd must be relative to the execution policy workspace');
+  }
+  const timeoutMs = Number(payload.timeoutMs);
+  if (
+    payload.timeoutMs !== undefined &&
+    (!Number.isFinite(timeoutMs) || timeoutMs <= 0 || timeoutMs > MAX_REMOTE_EXECUTION_TIMEOUT_MS)
+  ) {
+    ctx.throw(400, `timeoutMs must be between 1 and ${MAX_REMOTE_EXECUTION_TIMEOUT_MS}`);
+  }
+}
+
+function serializeClaimProfileCapabilities(value: unknown) {
+  const capabilities = getRecord(value);
+  return Object.fromEntries(
+    CLAIM_PROFILE_CAPABILITY_KEYS.flatMap((key) =>
+      typeof capabilities[key] === 'boolean' ? [[key, capabilities[key]]] : [],
+    ),
+  );
+}
 
 export interface RunLease {
   run: ModelRecord;
@@ -587,8 +650,7 @@ async function findActiveProfile(ctx: Context, profileId: string, transaction: T
 function getBuildRunProfileKeyFromRun(run: ModelRecord, profile: ModelRecord | null) {
   const payload = getRecord(getModelValue(run, 'executionPayloadJson'));
   return (
-    getString(payload.profileKey) ||
-    getString(payload.commandKey) ||
+    getString(payload.executionPolicyKey) ||
     (profile ? getModelString(profile, 'profileKey') : '') ||
     DEFAULT_TASK_RUN_PROFILE_KEY
   );
@@ -723,15 +785,12 @@ async function findFallbackForQueuedBuildRun(
 
 function applyBuildRunnerFallbackToRun(run: MutableModelRecord, fallback: BuildRunnerSelection) {
   const profileKey = getModelString(fallback.profile, 'profileKey');
-  const provider = getModelString(fallback.profile, 'provider');
   const payload = getRecord(getModelValue(run, 'executionPayloadJson'));
   run.set('nodeId', getModelTargetKey(fallback.node, 'id'));
   run.set('agentProfileId', getModelTargetKey(fallback.profile, 'id'));
   run.set('executionPayloadJson', {
     ...payload,
-    profileKey: getString(payload.profileKey) || profileKey,
-    commandKey: getString(payload.commandKey) || profileKey,
-    ...(provider ? { provider } : {}),
+    executionPolicyKey: getString(payload.executionPolicyKey) || profileKey,
   });
 }
 
@@ -937,8 +996,12 @@ function getTaskRunResolvedSkills(values: JsonRecord) {
   return skillVersionIds.map((skillVersionId) => ({ skillVersionId }));
 }
 
-function getTaskRunTimeoutMs(values: JsonRecord) {
-  return getPositiveNumber(values.timeoutMs);
+function getTaskRunTimeoutMs(ctx: Context, values: JsonRecord) {
+  const timeoutMs = getPositiveNumber(values.timeoutMs);
+  if (values.timeoutMs !== undefined && (!timeoutMs || timeoutMs > MAX_REMOTE_EXECUTION_TIMEOUT_MS)) {
+    ctx.throw(400, `timeoutMs must be between 1 and ${MAX_REMOTE_EXECUTION_TIMEOUT_MS}`);
+  }
+  return timeoutMs;
 }
 
 async function createInitialTaskConversationEvent(
@@ -1372,10 +1435,14 @@ function collectResolvedSkillVersionIds(value: unknown, result = new Set<string>
   return result;
 }
 
-function serializeSkillVersionPayload(ctx: Context, skillVersion: ModelRecord): SkillVersionPayload | null {
+function serializeSkillVersionPayload(
+  ctx: Context,
+  skillVersion: ModelRecord,
+  access?: SkillVersionSourceAccess,
+): SkillVersionPayload | null {
   const metadata = getRecord(getModelValue(skillVersion, 'metadataJson'));
   const skillVersionId = String(getModelTargetKey(skillVersion, 'id'));
-  const source = serializeSkillVersionSourceForNode(ctx, skillVersionId, getRecord(metadata.source));
+  const source = serializeSkillVersionSourceForNode(ctx, skillVersionId, getRecord(metadata.source), access);
   if (!source || !isRecordWithValues(source)) {
     return null;
   }
@@ -1389,7 +1456,12 @@ function serializeSkillVersionPayload(ctx: Context, skillVersion: ModelRecord): 
   };
 }
 
-async function getClaimSkillVersionPayloads(ctx: Context, payload: JsonRecord, transaction: Transaction) {
+async function getClaimSkillVersionPayloads(
+  ctx: Context,
+  run: ModelRecord,
+  payload: JsonRecord,
+  transaction: Transaction,
+) {
   const skillVersionIds = Array.from(collectResolvedSkillVersionIds(payload.resolvedSkills));
   if (!skillVersionIds.length) {
     return [];
@@ -1404,9 +1476,35 @@ async function getClaimSkillVersionPayloads(ctx: Context, payload: JsonRecord, t
     transaction,
   })) as ModelRecord[];
 
-  return skillVersions
-    .map((skillVersion) => serializeSkillVersionPayload(ctx, skillVersion))
-    .filter((skillVersion): skillVersion is SkillVersionPayload => Boolean(skillVersion));
+  const runId = String(getModelTargetKey(run, 'id'));
+  const nodeId = getOptionalTargetKey(run, 'nodeId');
+  const claimAttempt = getModelNumber(run, 'claimAttempt');
+  const expiresAt = getDateFromModel(run, 'claimExpiresAt');
+  const payloads: SkillVersionPayload[] = [];
+  for (const skillVersion of skillVersions) {
+    const source = getRecord(getRecord(getModelValue(skillVersion, 'metadataJson')).source);
+    const sha256 = getString(source.sha256);
+    const access =
+      nodeId && claimAttempt > 0 && expiresAt && sha256
+        ? await issueSkillDownloadCapability(
+            ctx,
+            {
+              nodeId,
+              runId,
+              claimAttempt,
+              skillVersionId: String(getModelTargetKey(skillVersion, 'id')),
+              sha256,
+              expiresAt,
+            },
+            transaction,
+          )
+        : undefined;
+    const serialized = serializeSkillVersionPayload(ctx, skillVersion, access);
+    if (serialized) {
+      payloads.push(serialized);
+    }
+  }
+  return payloads;
 }
 
 function stripInlineSkillVersionSources(payload: JsonRecord) {
@@ -1447,8 +1545,12 @@ function stripResolvedSkillSources(value: unknown): unknown {
 async function serializeRunForNodeClaim(ctx: Context, run: ModelRecord, transaction: Transaction) {
   const json = serializeRun(run);
   const executionPayloadJson = getRecord(getModelValue(run, 'executionPayloadJson'));
-  const skillVersions = await getClaimSkillVersionPayloads(ctx, executionPayloadJson, transaction);
+  await revokeSkillDownloadCapabilitiesForRun(ctx, String(getModelTargetKey(run, 'id')), transaction);
+  const skillVersions = await getClaimSkillVersionPayloads(ctx, run, executionPayloadJson, transaction);
   const baseExecutionPayloadJson = stripInlineSkillVersionSources(executionPayloadJson);
+  for (const field of FORBIDDEN_REMOTE_EXECUTION_FIELDS) {
+    delete baseExecutionPayloadJson[field];
+  }
   return {
     ...json,
     claimAttempt: getModelNumber(run, 'claimAttempt'),
@@ -1526,6 +1628,7 @@ async function createRun(ctx: Context) {
   const now = new Date();
   const promptSnapshot = getRecord(values.promptSnapshot);
   const rawExecutionPayload = getRecord(values.executionPayloadJson || values.executionPayload);
+  assertSafeRemoteExecutionPayload(ctx, rawExecutionPayload);
   const hasExecutionPrompt = Boolean(getString(rawExecutionPayload.prompt) || getString(rawExecutionPayload.message));
   const renderedPrompt = hasExecutionPrompt ? '' : getString(promptSnapshot.renderedPrompt);
   const executionPayloadJson = renderedPrompt
@@ -1567,6 +1670,15 @@ async function createTaskRun(ctx: Context) {
   );
 
   const bodyValues = getBodyValues(ctx);
+  for (const field of FORBIDDEN_REMOTE_EXECUTION_FIELDS) {
+    if (bodyValues[field] !== undefined) {
+      ctx.throw(400, `Execution field is not allowed: ${field}`);
+    }
+  }
+  const requestedCwd = getString(bodyValues.cwd);
+  if (requestedCwd.startsWith('/') || /^[a-zA-Z]:[\\/]/.test(requestedCwd)) {
+    ctx.throw(400, 'cwd must be relative to the execution policy workspace');
+  }
 
   const result = await ctx.db.sequelize.transaction(async (transaction) => {
     const { values, taskTemplate } = await getTaskRunValuesWithTemplateDefaults(ctx, bodyValues, transaction);
@@ -1578,12 +1690,11 @@ async function createTaskRun(ctx: Context) {
     const nodeId = String(getModelTargetKey(selection.node, 'id'));
     const agentProfileId = String(getModelTargetKey(selection.profile, 'id'));
     const profileKey = getModelString(selection.profile, 'profileKey');
-    const provider = getModelString(selection.profile, 'provider') || undefined;
     const cwd = getString(values.cwd) || '.';
     const now = new Date();
     const artifactPayload = getTaskRunArtifactPayload(values);
     const resolvedSkills = getTaskRunResolvedSkills(values);
-    const timeoutMs = getTaskRunTimeoutMs(values);
+    const timeoutMs = getTaskRunTimeoutMs(ctx, values);
     if (resolvedSkills) {
       for (const skillSelection of resolvedSkills) {
         await assertTaskRunSkillVersionActive(ctx, skillSelection.skillVersionId, transaction);
@@ -1594,11 +1705,8 @@ async function createTaskRun(ctx: Context) {
       title: getString(values.title) || null,
       prompt: renderedPrompt,
       instruction: getTaskInstruction(values),
-      profileKey,
-      commandKey: getString(values.commandKey) || profileKey,
-      ...(provider ? { provider } : {}),
+      executionPolicyKey: profileKey,
       cwd,
-      terminalBackend: 'tmux',
       ...(timeoutMs ? { timeoutMs } : {}),
       ...artifactPayload,
       ...(resolvedSkills ? { resolvedSkills } : {}),
@@ -1913,16 +2021,24 @@ async function pickCandidateProfile(
   transaction: Transaction,
   capacityCache: Map<string, boolean>,
 ) {
+  const executionPolicyKey = getString(getRecord(getModelValue(run, 'executionPayloadJson')).executionPolicyKey);
   const targetProfileId = getOptionalTargetKey(run, 'agentProfileId');
   if (targetProfileId) {
     const profile = profileById.get(targetProfileId);
-    if (profile && (await hasProfileCapacity(ctx, profile, nodeMaxConcurrency, transaction, capacityCache))) {
+    if (
+      profile &&
+      getModelString(profile, 'profileKey') === executionPolicyKey &&
+      (await hasProfileCapacity(ctx, profile, nodeMaxConcurrency, transaction, capacityCache))
+    ) {
       return profile;
     }
     return null;
   }
 
   for (const profile of profiles) {
+    if (getModelString(profile, 'profileKey') !== executionPolicyKey) {
+      continue;
+    }
     if (await hasProfileCapacity(ctx, profile, nodeMaxConcurrency, transaction, capacityCache)) {
       return profile;
     }
@@ -2069,10 +2185,8 @@ async function claimRun(ctx: Context, nodeId: string) {
       claimToken: claimToken.token,
       tokenLast4: claimToken.tokenLast4,
       heartbeatIntervalSeconds: Math.min(DEFAULT_CLAIM_LEASE_SECONDS, 30),
-      profileKey: getModelString(candidate.profile, 'profileKey'),
-      profileProvider: getModelString(candidate.profile, 'provider') || undefined,
-      nodeCapabilities: getRecord(getModelValue(node, 'capabilitiesJson')),
-      profileCapabilities: getRecord(getModelValue(candidate.profile, 'capabilitiesJson')),
+      executionPolicyKey: getString(getRecord(getModelValue(claimedRun, 'executionPayloadJson')).executionPolicyKey),
+      profileCapabilities: serializeClaimProfileCapabilities(getModelValue(candidate.profile, 'capabilitiesJson')),
       run: await serializeRunForNodeClaim(ctx, claimedRun, transaction),
     };
   });
@@ -2184,6 +2298,7 @@ function getHeartbeatStatus(ctx: Context, currentStatus: string, requestedStatus
 
 async function runHeartbeat(ctx: Context, nodeId: string, runId: string) {
   const values = getBodyValues(ctx);
+  let stateChanged = false;
   const result = await ctx.db.sequelize.transaction(async (transaction) => {
     const lease = await validateRunLease(ctx, nodeId, runId, values, transaction, {
       allowedStatuses: [STALLED_RUN_STATUS],
@@ -2196,9 +2311,9 @@ async function runHeartbeat(ctx: Context, nodeId: string, runId: string) {
     const now = new Date();
     const heartbeatRetry = lease.requestedLeaseVersion !== lease.leaseVersion;
     const nextLeaseVersion = heartbeatRetry ? lease.leaseVersion : lease.leaseVersion + 1;
-    const status = heartbeatRetry
-      ? getModelString(lease.run, 'status')
-      : getHeartbeatStatus(ctx, getModelString(lease.run, 'status'), getString(values.status));
+    const currentStatus = getModelString(lease.run, 'status');
+    const status = heartbeatRetry ? currentStatus : getHeartbeatStatus(ctx, currentStatus, getString(values.status));
+    stateChanged = !heartbeatRetry && status !== currentStatus;
     const claimExpiresAt = heartbeatRetry ? getDateFromModel(lease.run, 'claimExpiresAt') : getLeaseExpiresAt(now);
     if (!claimExpiresAt) {
       return respondLeaseLost(ctx, 'Run lease has expired');
@@ -2252,6 +2367,7 @@ async function runHeartbeat(ctx: Context, nodeId: string, runId: string) {
   });
 
   if (result) {
+    ctx.state.agentGatewayApiStateChanged = stateChanged;
     ctx.body = result;
   }
 }
@@ -2553,6 +2669,7 @@ async function finishRun(
       },
       transaction,
     });
+    await revokeSkillDownloadCapabilitiesForRun(ctx, runId, transaction);
     await failOpenControlRequestsForFinishedRun({
       ctx,
       run: lease.run,
@@ -2700,6 +2817,7 @@ export async function cancelRun(ctx: Context, runId: string, options: { requireP
       values,
       transaction,
     });
+    await revokeSkillDownloadCapabilitiesForRun(ctx, runId, transaction);
     if (status === IMPORTING_RUN_STATUS) {
       await ctx.db.getRepository('agExternalImportBatches').update({
         filter: {
@@ -2826,6 +2944,7 @@ async function reconcileExpiredRunLeases(
       if (!claimExpiresAt || claimExpiresAt.getTime() > now.getTime()) {
         return null;
       }
+      await revokeSkillDownloadCapabilitiesForRun(ctx, String(getModelTargetKey(lockedRun, 'id')), transaction);
 
       if (currentStatus === 'canceling' || getBoolean(getModelValue(lockedRun, 'cancelRequested'))) {
         const terminalValues = await addTerminalTokenUsageToRunValues({
@@ -3059,7 +3178,10 @@ export function registerRunLifecycleRoutes(plugin: Plugin) {
   plugin.app.use(
     async (ctx: Context, next: Next) => {
       const standardCollectionAction = matchStandardCollectionAction(ctx.path, AGENT_GATEWAY_STANDARD_COLLECTIONS);
-      if (standardCollectionAction?.collectionName === 'agRuns') {
+      const collectionRegistration = standardCollectionAction
+        ? getAgentGatewayCollectionRegistration(standardCollectionAction.collectionName)
+        : undefined;
+      if (standardCollectionAction && collectionRegistration?.directCrudPolicy === 'scoped-read') {
         if (ctx.method === 'GET' && standardCollectionAction.action === 'list') {
           await listStandardRuns(ctx);
           return;

@@ -12,7 +12,7 @@ import { defineCollection } from '@nocobase/database';
 export default defineCollection({
   name: 'agNodeSkillInstalls',
   tableName: 'ag_node_skill_installs',
-  dataCategory: 'business',
+  dataCategory: 'system',
   migrationRules: ['schema-only'],
   autoGenId: false,
   indexes: [
@@ -45,6 +45,22 @@ export default defineCollection({
       target: 'agNodes',
       foreignKey: 'nodeId',
       onDelete: 'CASCADE',
+    },
+    {
+      type: 'uuid',
+      name: 'assignedRunId',
+      autoFill: false,
+    },
+    {
+      type: 'belongsTo',
+      name: 'assignedRun',
+      target: 'agRuns',
+      foreignKey: 'assignedRunId',
+      onDelete: 'SET NULL',
+    },
+    {
+      type: 'integer',
+      name: 'assignedClaimAttempt',
     },
     {
       type: 'belongsTo',

@@ -61,6 +61,7 @@ interface RunnerRequesterOptions {
   enforceTerminalLeaseVersion?: boolean;
   cancelOnRunHeartbeatCall?: number;
   failNodeHeartbeatOnce?: boolean;
+  failClaimCount?: number;
   failCompleteOnce?: boolean;
   failAgentSessionUpsertOnce?: boolean;
   enforceAgentSessionLeaseVersion?: boolean;
@@ -107,8 +108,8 @@ export class RunnerRequester implements GatewayRequester {
       run: {
         id: 'run-1',
         executionPayloadJson: {
-          commandKey: 'node',
-          args: ['-e', 'process.stdout.write("runner complete token=RUNNER_TOKEN_SECRET")'],
+          executionPolicyKey: 'node',
+          prompt: 'process.stdout.write("runner complete token=RUNNER_TOKEN_SECRET")',
           cwd: '.',
         },
       },
@@ -164,6 +165,10 @@ export class RunnerRequester implements GatewayRequester {
       } as T;
     }
     if (isRunActionCall(options, 'claim')) {
+      if (this.options.failClaimCount && this.options.failClaimCount > 0) {
+        this.options.failClaimCount -= 1;
+        throw new Error('connect ECONNRESET claim');
+      }
       return (this.options.claimPayload || this.getDefaultClaimPayload()) as T;
     }
     if (this.failCompleteOnce && isRunActionCall(options, 'complete')) {

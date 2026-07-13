@@ -23,9 +23,11 @@ import {
   getAgentGatewayApiActionName,
   getAgentGatewayApiPath,
 } from '../../shared/apiContract';
-import { persistSkillZipUpload, validateSkillZipArchive } from '../../daemon/skillSync';
+import { getSkillArchiveErrorCode, persistSkillZipUpload, validateSkillZipArchive } from '../../node/skillArchive';
+import { AGENT_GATEWAY_SKILL_CAPABILITY_HEADER, SKILL_CAPABILITY_REPLAY_POLICY } from '../../shared/skillCapability';
 import { authenticateNodeToken } from '../security';
 import { consumeCompletedUpload } from './fileUploads';
+import { validateSkillDownloadCapability } from './skillCapabilities';
 import {
   JsonRecord,
   ModelRecord,
@@ -59,8 +61,9 @@ function isWithinPath(parent: string, child: string) {
 
 async function sha256File(filePath: string) {
   const hash = createHash('sha256');
-  const content = await fs.readFile(filePath);
-  hash.update(content);
+  for await (const chunk of createReadStream(filePath)) {
+    hash.update(chunk);
+  }
   return hash.digest('hex');
 }
 
@@ -127,18 +130,53 @@ function getRequestOrigin(ctx: Context) {
   return `${protocol}://${host}`.replace(/\/$/, '');
 }
 
-function getArchiveDownloadUrl(ctx: Context, skillVersionId: string, source: JsonRecord) {
+export interface SkillVersionSourceAccess {
+  capabilityToken: string;
+  runId: string;
+  claimAttempt: number;
+  expiresAt: Date;
+}
+
+function getArchiveDownloadUrl(
+  ctx: Context,
+  skillVersionId: string,
+  source: JsonRecord,
+  access?: SkillVersionSourceAccess,
+) {
   const sha256 = getString(source.sha256);
-  const query = sha256 ? `?sha256=${encodeURIComponent(sha256)}` : '';
+  const query = new URLSearchParams();
+  if (sha256) {
+    query.set('sha256', sha256);
+  }
+  if (access) {
+    query.set('runId', access.runId);
+    query.set('claimAttempt', String(access.claimAttempt));
+  }
+  const serializedQuery = query.toString();
+  const queryString = serializedQuery ? `?${serializedQuery}` : '';
   return `${getRequestOrigin(ctx)}${getAgentGatewayApiPath(
     AGENT_GATEWAY_API_ACTIONS.downloadSkillVersion,
     skillVersionId,
-  )}${query}`;
+  )}${queryString}`;
 }
 
-export function serializeSkillVersionSourceForNode(ctx: Context, skillVersionId: string, source: JsonRecord) {
+export function serializeSkillVersionSourceForNode(
+  ctx: Context,
+  skillVersionId: string,
+  source: JsonRecord,
+  access?: SkillVersionSourceAccess,
+) {
   if (source.type === 'github') {
-    return source;
+    return access
+      ? {
+          ...source,
+          capabilityToken: access.capabilityToken,
+          capabilityExpiresAt: access.expiresAt.toISOString(),
+          capabilityReplayPolicy: SKILL_CAPABILITY_REPLAY_POLICY,
+          runId: access.runId,
+          claimAttempt: access.claimAttempt,
+        }
+      : source;
   }
   if (source.type !== 'zip') {
     return null;
@@ -160,9 +198,18 @@ export function serializeSkillVersionSourceForNode(ctx: Context, skillVersionId:
   if (uploadedAt) {
     publicSource.uploadedAt = uploadedAt;
   }
+  if (access) {
+    publicSource.capabilityToken = access.capabilityToken;
+    publicSource.capabilityExpiresAt = access.expiresAt.toISOString();
+    publicSource.capabilityReplayPolicy = SKILL_CAPABILITY_REPLAY_POLICY;
+    publicSource.runId = access.runId;
+    publicSource.claimAttempt = access.claimAttempt;
+  }
   if (getString(source.archivePath)) {
-    publicSource.archiveUrl = getArchiveDownloadUrl(ctx, skillVersionId, source);
-    publicSource.auth = 'node-token';
+    publicSource.archiveUrl = getArchiveDownloadUrl(ctx, skillVersionId, source, access);
+    if (access) {
+      publicSource.auth = 'skill-capability';
+    }
     return publicSource;
   }
 
@@ -323,9 +370,10 @@ async function persistValidatedSkillZipUpload(ctx: Context, content: Buffer) {
       uploadDir: storagePathJoin('agent-gateway', 'skill-uploads'),
       validateArchive: true,
     });
-  } catch {
-    ctx.throw(400, 'Invalid Skill ZIP archive');
-    throw new Error('Invalid Skill ZIP archive');
+  } catch (error) {
+    const errorCode = getSkillArchiveErrorCode(error);
+    ctx.throw(400, errorCode);
+    throw new Error(errorCode);
   }
 }
 
@@ -350,8 +398,8 @@ async function createSkillVersionFromUpload(ctx: Context) {
   const completedUpload = await consumeCompletedUpload(ctx, uploadId, 'skill-version');
   try {
     await validateSkillZipArchive(completedUpload.storagePath);
-  } catch {
-    ctx.throw(400, 'Invalid Skill ZIP archive');
+  } catch (error) {
+    ctx.throw(400, getSkillArchiveErrorCode(error));
   }
 
   const uploadDir = storagePathJoin('agent-gateway', 'skill-uploads');
@@ -472,12 +520,36 @@ async function getSkillVersion(ctx: Context, skillVersionId: string) {
 }
 
 async function downloadSkillVersionArchive(ctx: Context, skillVersionId: string) {
-  await authenticateNodeToken(ctx);
+  const auth = await authenticateNodeToken(ctx);
+  const requested = getRecord(ctx.query);
+  const capabilityToken = getString(ctx.get(AGENT_GATEWAY_SKILL_CAPABILITY_HEADER));
+  const runId = getString(requested.runId);
+  const claimAttempt = Number(requested.claimAttempt);
+  const requestedSha256 = getString(requested.sha256);
+  const notFound = () => ctx.throw(404, 'Skill version archive not found');
+  if (!capabilityToken || !runId || !Number.isInteger(claimAttempt) || claimAttempt <= 0 || !requestedSha256) {
+    notFound();
+    return;
+  }
+
+  const authorized = await validateSkillDownloadCapability(ctx, {
+    capabilityToken,
+    nodeId: String(auth.subject.nodeId),
+    runId,
+    claimAttempt,
+    skillVersionId,
+    sha256: requestedSha256,
+  });
+  if (!authorized) {
+    notFound();
+    return;
+  }
+
   const skillVersion = (await ctx.db.getRepository('agSkillVersions').findOne({
     filterByTk: skillVersionId,
   })) as ModelRecord | null;
   if (!skillVersion) {
-    ctx.throw(404, 'Skill version not found');
+    notFound();
     return;
   }
 
@@ -490,9 +562,8 @@ async function downloadSkillVersionArchive(ctx: Context, skillVersionId: string)
 
   const archivePath = getString(source.archivePath);
   const sha256 = getString(source.sha256);
-  const requestedSha256 = getString(getRecord(ctx.query).sha256);
-  if (!archivePath || !SHA256_PATTERN.test(sha256) || (requestedSha256 && requestedSha256 !== sha256)) {
-    ctx.throw(404, 'Skill version archive not found');
+  if (!archivePath || !SHA256_PATTERN.test(sha256) || requestedSha256 !== sha256) {
+    notFound();
     return;
   }
 
@@ -502,19 +573,19 @@ async function downloadSkillVersionArchive(ctx: Context, skillVersionId: string)
     fs.realpath(archivePath).catch(() => null),
   ]);
   if (!realUploadDir || !realArchivePath || !isWithinPath(realUploadDir, realArchivePath)) {
-    ctx.throw(404, 'Skill version archive not found');
+    notFound();
     return;
   }
 
   const stat = await fs.stat(realArchivePath).catch(() => null);
   if (!stat?.isFile()) {
-    ctx.throw(404, 'Skill version archive not found');
+    notFound();
     return;
   }
 
   const actualSha256 = await sha256File(realArchivePath).catch(() => null);
   if (actualSha256 !== sha256) {
-    ctx.throw(404, 'Skill version archive not found');
+    notFound();
     return;
   }
 

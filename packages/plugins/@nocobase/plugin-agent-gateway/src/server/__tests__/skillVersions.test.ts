@@ -14,6 +14,9 @@ import path from 'path';
 
 import { MockServer, createMockServer } from '@nocobase/test';
 
+import { SKILL_ARCHIVE_ERROR_CODES, SKILL_ARCHIVE_LIMITS } from '../../node/skillArchive';
+import { createSkillZipFixture } from '../../node/__tests__/skillArchiveFixtures';
+import { AGENT_GATEWAY_SKILL_CAPABILITY_HEADER } from '../../shared/skillCapability';
 import PluginAgentGatewayServer from '../plugin';
 import { createNodeToken, toStoredTokenFields } from '../security';
 
@@ -32,87 +35,13 @@ function sha256(content: Buffer) {
   return createHash('sha256').update(content).digest('hex');
 }
 
-function crc32(content: Buffer) {
-  let crc = 0xffffffff;
-  for (const byte of content) {
-    crc ^= byte;
-    for (let index = 0; index < 8; index += 1) {
-      crc = crc & 1 ? (crc >>> 1) ^ 0xedb88320 : crc >>> 1;
-    }
-  }
-  return (crc ^ 0xffffffff) >>> 0;
-}
-
-function getDosDateTime() {
-  const year = 2026;
-  const month = 7;
-  const day = 1;
-  const hour = 0;
-  const minute = 0;
-  const second = 0;
-  return {
-    dosTime: (hour << 11) | (minute << 5) | Math.floor(second / 2),
-    dosDate: ((year - 1980) << 9) | (month << 5) | day,
-  };
-}
-
 function createStoredZip(entries: Record<string, string>) {
-  const localFileParts: Buffer[] = [];
-  const centralDirectoryParts: Buffer[] = [];
-  let offset = 0;
-  const { dosDate, dosTime } = getDosDateTime();
-
-  for (const [entryName, entryText] of Object.entries(entries)) {
-    const name = Buffer.from(entryName);
-    const content = Buffer.from(entryText);
-    const crc = crc32(content);
-    const localHeader = Buffer.alloc(30);
-    localHeader.writeUInt32LE(0x04034b50, 0);
-    localHeader.writeUInt16LE(10, 4);
-    localHeader.writeUInt16LE(0, 6);
-    localHeader.writeUInt16LE(0, 8);
-    localHeader.writeUInt16LE(dosTime, 10);
-    localHeader.writeUInt16LE(dosDate, 12);
-    localHeader.writeUInt32LE(crc, 14);
-    localHeader.writeUInt32LE(content.length, 18);
-    localHeader.writeUInt32LE(content.length, 22);
-    localHeader.writeUInt16LE(name.length, 26);
-    localHeader.writeUInt16LE(0, 28);
-    localFileParts.push(localHeader, name, content);
-
-    const centralHeader = Buffer.alloc(46);
-    centralHeader.writeUInt32LE(0x02014b50, 0);
-    centralHeader.writeUInt16LE(20, 4);
-    centralHeader.writeUInt16LE(10, 6);
-    centralHeader.writeUInt16LE(0, 8);
-    centralHeader.writeUInt16LE(0, 10);
-    centralHeader.writeUInt16LE(dosTime, 12);
-    centralHeader.writeUInt16LE(dosDate, 14);
-    centralHeader.writeUInt32LE(crc, 16);
-    centralHeader.writeUInt32LE(content.length, 20);
-    centralHeader.writeUInt32LE(content.length, 24);
-    centralHeader.writeUInt16LE(name.length, 28);
-    centralHeader.writeUInt16LE(0, 30);
-    centralHeader.writeUInt16LE(0, 32);
-    centralHeader.writeUInt16LE(0, 34);
-    centralHeader.writeUInt16LE(0, 36);
-    centralHeader.writeUInt32LE(0, 38);
-    centralHeader.writeUInt32LE(offset, 42);
-    centralDirectoryParts.push(centralHeader, name);
-    offset += localHeader.length + name.length + content.length;
-  }
-
-  const centralDirectory = Buffer.concat(centralDirectoryParts);
-  const endOfCentralDirectory = Buffer.alloc(22);
-  endOfCentralDirectory.writeUInt32LE(0x06054b50, 0);
-  endOfCentralDirectory.writeUInt16LE(0, 4);
-  endOfCentralDirectory.writeUInt16LE(0, 6);
-  endOfCentralDirectory.writeUInt16LE(Object.keys(entries).length, 8);
-  endOfCentralDirectory.writeUInt16LE(Object.keys(entries).length, 10);
-  endOfCentralDirectory.writeUInt32LE(centralDirectory.length, 12);
-  endOfCentralDirectory.writeUInt32LE(offset, 16);
-  endOfCentralDirectory.writeUInt16LE(0, 20);
-  return Buffer.concat([...localFileParts, centralDirectory, endOfCentralDirectory]);
+  return createSkillZipFixture(
+    Object.entries(entries).map(([name, content]) => ({
+      name,
+      content,
+    })),
+  );
 }
 
 function binaryParser(response: NodeJS.ReadableStream, callback: (error: Error | null, body?: Buffer) => void) {
@@ -171,25 +100,79 @@ describe('agent gateway Skill version upload APIs', () => {
     await fs.rm(storageDir, { recursive: true, force: true });
   });
 
-  async function createRunner() {
+  async function createRunner(options: { nodeKey?: string; maxConcurrency?: number } = {}) {
     const nodeToken = createNodeToken();
     const now = new Date();
+    const nodeKey = options.nodeKey || 'skill-version-download-node';
     const node = await app.db.getRepository('agNodes').create({
       values: {
-        nodeKey: 'skill-version-download-node',
-        displayName: 'Skill version download node',
+        nodeKey,
+        displayName: nodeKey,
         status: 'active',
         ...toStoredTokenFields(nodeToken, 'nodeTokenHash', 'tokenLast4'),
         capabilitiesJson: {
-          maxConcurrency: 1,
+          maxConcurrency: options.maxConcurrency || 1,
         },
         registeredAt: now,
         lastHeartbeatAt: now,
       },
     });
+    const nodeId = String(node.get('id'));
+    const profile = await app.db.getRepository('agAgentProfiles').create({
+      values: {
+        nodeId,
+        profileKey: 'skill-test',
+        displayName: 'Skill test',
+        agentType: 'code',
+        driver: 'fake',
+        status: 'active',
+        capabilitiesJson: {
+          maxConcurrency: options.maxConcurrency || 1,
+        },
+      },
+    });
     return {
-      nodeId: String(node.get('id')),
+      nodeId,
       nodeToken: nodeToken.token,
+      profileId: String(profile.get('id')),
+    };
+  }
+
+  async function claimSkill(runner: Awaited<ReturnType<typeof createRunner>>, skillVersionId: string, runCode: string) {
+    const now = new Date();
+    const run = await app.db.getRepository('agRuns').create({
+      values: {
+        runCode,
+        status: 'queued',
+        claimAttempt: 0,
+        leaseVersion: 0,
+        cancelRequested: false,
+        nodeId: runner.nodeId,
+        agentProfileId: runner.profileId,
+        requestedAt: now,
+        queuedAt: now,
+        executionPayloadJson: {
+          commandKey: 'skill-test',
+          executionPolicyKey: 'skill-test',
+          resolvedSkills: [{ skillVersionId }],
+        },
+      },
+    });
+    const response = await app
+      .agent()
+      .post(`/agentGatewayApi:claimRun/${runner.nodeId}`)
+      .set('Authorization', `Bearer ${runner.nodeToken}`)
+      .send({ runId: run.get('id'), profileKey: 'skill-test' });
+    expect(response.status).toBe(200);
+    const claim = getData(response);
+    expect(claim.claimed).toBe(true);
+    const claimedRun = claim.run as Record<string, unknown>;
+    const executionPayload = claimedRun.executionPayloadJson as Record<string, unknown>;
+    const skillVersions = executionPayload.skillVersions as Array<Record<string, unknown>>;
+    return {
+      run,
+      claim,
+      source: skillVersions[0].source as Record<string, unknown>,
     };
   }
 
@@ -222,7 +205,6 @@ describe('agent gateway Skill version upload APIs', () => {
         type: 'zip',
         sha256: sha256(firstContent),
         sizeBytes: firstContent.byteLength,
-        auth: 'node-token',
       },
     });
     expect(JSON.stringify(firstUpload)).not.toContain(firstContent.toString('base64'));
@@ -248,20 +230,19 @@ describe('agent gateway Skill version upload APIs', () => {
     expect(archivePath.startsWith(path.join(storageDir, 'agent-gateway', 'skill-uploads'))).toBe(true);
     expect(await fs.readFile(archivePath)).toEqual(firstContent);
 
-    const runner = await createRunner();
     const archiveUrl = new URL(String(source.archiveUrl));
     const archiveRequestPath = `${archiveUrl.pathname.replace(/^\/api/, '')}${archiveUrl.search}`;
     const forbiddenDownloadResponse = await app.agent().get(archiveRequestPath);
     expect(forbiddenDownloadResponse.status).toBe(401);
 
-    const downloadResponse = await app
+    const runner = await createRunner();
+    const genericNodeDownloadResponse = await app
       .agent()
       .get(archiveRequestPath)
       .set('Authorization', `Bearer ${runner.nodeToken}`)
       .buffer(true)
       .parse(binaryParser);
-    expect(downloadResponse.status).toBe(200);
-    expect(downloadResponse.body).toEqual(firstContent);
+    expect(genericNodeDownloadResponse.status).toBe(404);
 
     const secondContent = createStoredZip({
       'SKILL.md': '# Test Skill v2\n',
@@ -403,6 +384,124 @@ describe('agent gateway Skill version upload APIs', () => {
     await expect(fs.stat(String(storedUpload?.get('storagePath')))).rejects.toThrow();
   });
 
+  it('authorizes archive downloads only for the bound node, run, claim attempt, digest, and expiry', async () => {
+    const content = createStoredZip({
+      'SKILL.md': '# Capability Skill\n',
+    });
+    const uploadResponse = await rootAgent.post('/agentGatewayApi:uploadSkillVersion').send({
+      skillKey: 'capability-skill',
+      versionLabel: 'v1',
+      contentBase64: content.toString('base64'),
+    });
+    const upload = getData(uploadResponse);
+    const runnerA = await createRunner({ nodeKey: 'skill-node-a', maxConcurrency: 2 });
+    const runnerB = await createRunner({ nodeKey: 'skill-node-b' });
+    const firstClaim = await claimSkill(runnerA, String(upload.skillVersionId), 'skill-capability-run-a');
+    const firstUrl = new URL(String(firstClaim.source.archiveUrl));
+    const firstPath = `${firstUrl.pathname.replace(/^\/api/, '')}${firstUrl.search}`;
+    const firstCapabilityToken = String(firstClaim.source.capabilityToken);
+
+    expect(firstClaim.source).toMatchObject({
+      auth: 'skill-capability',
+      runId: firstClaim.run.get('id'),
+      claimAttempt: 1,
+      sha256: sha256(content),
+    });
+    expect(firstCapabilityToken).toMatch(/^ag_skill_/);
+
+    const authorized = await app
+      .agent()
+      .get(firstPath)
+      .set('Authorization', `Bearer ${runnerA.nodeToken}`)
+      .set(AGENT_GATEWAY_SKILL_CAPABILITY_HEADER, firstCapabilityToken)
+      .buffer(true)
+      .parse(binaryParser);
+    expect(authorized.status).toBe(200);
+    expect(authorized.body).toEqual(content);
+
+    const nodeTokenOnly = await app.agent().get(firstPath).set('Authorization', `Bearer ${runnerA.nodeToken}`);
+    expect(nodeTokenOnly.status).toBe(404);
+    const wrongNode = await app
+      .agent()
+      .get(firstPath)
+      .set('Authorization', `Bearer ${runnerB.nodeToken}`)
+      .set(AGENT_GATEWAY_SKILL_CAPABILITY_HEADER, firstCapabilityToken);
+    expect(wrongNode.status).toBe(404);
+
+    const secondClaim = await claimSkill(runnerA, String(upload.skillVersionId), 'skill-capability-run-b');
+    const secondCapabilityToken = String(secondClaim.source.capabilityToken);
+    const wrongRunCapability = await app
+      .agent()
+      .get(firstPath)
+      .set('Authorization', `Bearer ${runnerA.nodeToken}`)
+      .set(AGENT_GATEWAY_SKILL_CAPABILITY_HEADER, secondCapabilityToken);
+    expect(wrongRunCapability.status).toBe(404);
+
+    const wrongAttemptUrl = new URL(firstUrl);
+    wrongAttemptUrl.searchParams.set('claimAttempt', '2');
+    const wrongAttempt = await app
+      .agent()
+      .get(`${wrongAttemptUrl.pathname.replace(/^\/api/, '')}${wrongAttemptUrl.search}`)
+      .set('Authorization', `Bearer ${runnerA.nodeToken}`)
+      .set(AGENT_GATEWAY_SKILL_CAPABILITY_HEADER, firstCapabilityToken);
+    expect(wrongAttempt.status).toBe(404);
+
+    const wrongShaUrl = new URL(firstUrl);
+    wrongShaUrl.searchParams.set('sha256', '0'.repeat(64));
+    const wrongSha = await app
+      .agent()
+      .get(`${wrongShaUrl.pathname.replace(/^\/api/, '')}${wrongShaUrl.search}`)
+      .set('Authorization', `Bearer ${runnerA.nodeToken}`)
+      .set(AGENT_GATEWAY_SKILL_CAPABILITY_HEADER, firstCapabilityToken);
+    expect(wrongSha.status).toBe(404);
+
+    const firstCapability = await app.db.getRepository('agSkillDownloadCapabilities').findOne({
+      filter: {
+        runId: firstClaim.run.get('id'),
+      },
+    });
+    expect(firstCapability).toBeTruthy();
+    expect(firstCapability.get('tokenHash')).not.toBe(firstCapabilityToken);
+    expect(JSON.stringify(firstCapability.toJSON())).not.toContain(firstCapabilityToken);
+    await app.db.getRepository('agSkillDownloadCapabilities').update({
+      filterByTk: firstCapability.get('id'),
+      values: {
+        expiresAt: new Date(Date.now() - 1000),
+      },
+    });
+    const expired = await app
+      .agent()
+      .get(firstPath)
+      .set('Authorization', `Bearer ${runnerA.nodeToken}`)
+      .set(AGENT_GATEWAY_SKILL_CAPABILITY_HEADER, firstCapabilityToken);
+    expect(expired.status).toBe(404);
+
+    await app.db.getRepository('agRuns').update({
+      filterByTk: secondClaim.run.get('id'),
+      values: {
+        status: 'succeeded',
+        claimExpiresAt: null,
+      },
+    });
+    const secondUrl = new URL(String(secondClaim.source.archiveUrl));
+    const terminalRun = await app
+      .agent()
+      .get(`${secondUrl.pathname.replace(/^\/api/, '')}${secondUrl.search}`)
+      .set('Authorization', `Bearer ${runnerA.nodeToken}`)
+      .set(AGENT_GATEWAY_SKILL_CAPABILITY_HEADER, secondCapabilityToken);
+    expect(terminalRun.status).toBe(404);
+
+    const apiLogs = await app.db.getRepository('agApiCallLogs').find({
+      filter: {
+        path: {
+          $includes: '/agentGatewayApi:claimRun/',
+        },
+      },
+    });
+    expect(JSON.stringify(apiLogs.map((log) => log.toJSON()))).not.toContain(firstCapabilityToken);
+    expect(JSON.stringify(apiLogs.map((log) => log.toJSON()))).not.toContain(secondCapabilityToken);
+  });
+
   it('rejects ZIP uploads without Agent Gateway management permission', async () => {
     const memberUser = await app.db.getRepository('users').create({
       values: {
@@ -440,8 +539,10 @@ describe('agent gateway Skill version upload APIs', () => {
     });
     const metadata = skillVersion.get('metadataJson') as Record<string, Record<string, unknown>>;
     const originalSource = metadata.source;
-    const archiveUrl = new URL(String((upload.source as Record<string, unknown>).archiveUrl));
     const runner = await createRunner();
+    const claimed = await claimSkill(runner, String(upload.skillVersionId), 'secure-download-run');
+    const archiveUrl = new URL(String(claimed.source.archiveUrl));
+    const capabilityToken = String(claimed.source.capabilityToken);
 
     const outsideArchivePath = path.join(storageDir, 'outside-skill.zip');
     await fs.writeFile(outsideArchivePath, archiveContent);
@@ -460,7 +561,8 @@ describe('agent gateway Skill version upload APIs', () => {
     const outsideResponse = await app
       .agent()
       .get(`${archiveUrl.pathname.replace(/^\/api/, '')}${archiveUrl.search}`)
-      .set('Authorization', `Bearer ${runner.nodeToken}`);
+      .set('Authorization', `Bearer ${runner.nodeToken}`)
+      .set(AGENT_GATEWAY_SKILL_CAPABILITY_HEADER, capabilityToken);
     expect(outsideResponse.status).toBe(404);
     expect(JSON.stringify(outsideResponse.body)).not.toContain(storageDir);
 
@@ -477,7 +579,8 @@ describe('agent gateway Skill version upload APIs', () => {
     const tamperedResponse = await app
       .agent()
       .get(`${archiveUrl.pathname.replace(/^\/api/, '')}${archiveUrl.search}`)
-      .set('Authorization', `Bearer ${runner.nodeToken}`);
+      .set('Authorization', `Bearer ${runner.nodeToken}`)
+      .set(AGENT_GATEWAY_SKILL_CAPABILITY_HEADER, capabilityToken);
     expect(tamperedResponse.status).toBe(404);
     expect(JSON.stringify(tamperedResponse.body)).not.toContain(String(originalSource.archivePath));
   });
@@ -491,9 +594,147 @@ describe('agent gateway Skill version upload APIs', () => {
 
     expect(response.status).toBe(400);
     const message = String(response.body.errors?.[0]?.message || '');
-    expect(message).toBe('Invalid Skill ZIP archive');
+    expect(message).toBe(SKILL_ARCHIVE_ERROR_CODES.invalidZip);
     expect(JSON.stringify(response.body)).not.toContain(storageDir);
     expect(JSON.stringify(response.body)).not.toContain('zipinfo');
     expect(await app.db.getRepository('agSkillVersions').count()).toBe(0);
+  });
+
+  it('rejects bounded malicious ZIP fixtures with stable 4xx error codes and no persisted versions', async () => {
+    expect(SKILL_ARCHIVE_LIMITS).toEqual({
+      maxDownloadBytes: 50 * 1024 * 1024,
+      maxEntryCount: 1000,
+      maxEntryUncompressedBytes: 25 * 1024 * 1024,
+      maxTotalUncompressedBytes: 100 * 1024 * 1024,
+      maxTotalCompressedBytes: 50 * 1024 * 1024,
+      maxCompressionRatio: 100,
+      maxPathBytes: 1024,
+      maxDirectoryDepth: 20,
+      maxFileNameBytes: 255,
+      maxRedirects: 5,
+    });
+
+    const fixtures: Array<{ name: string; archive: Buffer; code: string }> = [
+      {
+        name: 'entry-count',
+        archive: createSkillZipFixture([
+          { name: 'SKILL.md', content: '# Entry Count\n' },
+          ...Array.from({ length: SKILL_ARCHIVE_LIMITS.maxEntryCount }, (_, index) => ({
+            name: `dir-${index}/`,
+          })),
+        ]),
+        code: SKILL_ARCHIVE_ERROR_CODES.entryCount,
+      },
+      {
+        name: 'single-entry-size',
+        archive: createSkillZipFixture([
+          { name: 'SKILL.md', content: '# Entry Size\n' },
+          {
+            name: 'large.bin',
+            content: 'x',
+            compression: 'deflated',
+            declaredCompressedSize: 1024 * 1024,
+            declaredUncompressedSize: SKILL_ARCHIVE_LIMITS.maxEntryUncompressedBytes + 1,
+          },
+        ]),
+        code: SKILL_ARCHIVE_ERROR_CODES.entrySize,
+      },
+      {
+        name: 'total-uncompressed-size',
+        archive: createSkillZipFixture([
+          { name: 'SKILL.md', content: '# Total Size\n' },
+          ...Array.from({ length: 4 }, (_, index) => ({
+            name: `large-${index}.bin`,
+            content: 'x',
+            compression: 'deflated' as const,
+            declaredCompressedSize: 256 * 1024,
+            declaredUncompressedSize: SKILL_ARCHIVE_LIMITS.maxEntryUncompressedBytes,
+          })),
+        ]),
+        code: SKILL_ARCHIVE_ERROR_CODES.totalUncompressedSize,
+      },
+      {
+        name: 'compression-ratio',
+        archive: createSkillZipFixture([
+          { name: 'SKILL.md', content: '# ZIP Bomb\n' },
+          { name: 'bomb.bin', content: Buffer.alloc(1024 * 1024), compression: 'deflated' },
+        ]),
+        code: SKILL_ARCHIVE_ERROR_CODES.compressionRatio,
+      },
+      {
+        name: 'path-traversal',
+        archive: createSkillZipFixture([{ name: '../SKILL.md', content: '# Traversal\n' }]),
+        code: SKILL_ARCHIVE_ERROR_CODES.unsafePath,
+      },
+      {
+        name: 'absolute-path',
+        archive: createSkillZipFixture([{ name: '/SKILL.md', content: '# Absolute\n' }]),
+        code: SKILL_ARCHIVE_ERROR_CODES.unsafePath,
+      },
+      {
+        name: 'path-length',
+        archive: createSkillZipFixture([
+          { name: `${Array.from({ length: 5 }, () => 'a'.repeat(210)).join('/')}/SKILL.md`, content: '# Long\n' },
+        ]),
+        code: SKILL_ARCHIVE_ERROR_CODES.pathLength,
+      },
+      {
+        name: 'path-depth',
+        archive: createSkillZipFixture([
+          { name: `${Array.from({ length: 22 }, () => 'd').join('/')}/SKILL.md`, content: '# Deep\n' },
+        ]),
+        code: SKILL_ARCHIVE_ERROR_CODES.pathDepth,
+      },
+      {
+        name: 'file-name-length',
+        archive: createSkillZipFixture([
+          { name: 'SKILL.md', content: '# Long Name\n' },
+          { name: 'n'.repeat(256), content: 'x' },
+        ]),
+        code: SKILL_ARCHIVE_ERROR_CODES.fileNameLength,
+      },
+      {
+        name: 'symlink',
+        archive: createSkillZipFixture([{ name: 'SKILL.md', content: 'target', unixMode: 0o120777 }]),
+        code: SKILL_ARCHIVE_ERROR_CODES.unsupportedEntryType,
+      },
+      {
+        name: 'device',
+        archive: createSkillZipFixture([{ name: 'SKILL.md', unixMode: 0o020666 }]),
+        code: SKILL_ARCHIVE_ERROR_CODES.unsupportedEntryType,
+      },
+      {
+        name: 'case-conflict',
+        archive: createSkillZipFixture([
+          { name: 'SKILL.md', content: '# Duplicate\n' },
+          { name: 'skill.md', content: '# Case Conflict\n' },
+        ]),
+        code: SKILL_ARCHIVE_ERROR_CODES.duplicatePath,
+      },
+      {
+        name: 'hardlink-offset',
+        archive: createSkillZipFixture([
+          { name: 'SKILL.md', content: '# Hardlink\n' },
+          { name: 'README.md', content: 'alias', localHeaderOffset: 0 },
+        ]),
+        code: SKILL_ARCHIVE_ERROR_CODES.hardlink,
+      },
+    ];
+
+    for (const fixture of fixtures) {
+      const response = await rootAgent.post('/agentGatewayApi:uploadSkillVersion').send({
+        skillKey: `malicious-${fixture.name}`,
+        versionLabel: 'v1',
+        contentBase64: fixture.archive.toString('base64'),
+      });
+      expect(response.status, fixture.name).toBe(400);
+      expect(String(response.body.errors?.[0]?.message || ''), fixture.name).toBe(fixture.code);
+      expect(JSON.stringify(response.body), fixture.name).not.toContain(storageDir);
+      expect(await app.db.getRepository('agSkillVersions').count(), fixture.name).toBe(0);
+    }
+
+    const uploadDir = path.join(storageDir, 'agent-gateway', 'skill-uploads');
+    const uploadFiles = await fs.readdir(uploadDir).catch(() => []);
+    expect(uploadFiles).toEqual([]);
   });
 });

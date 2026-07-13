@@ -18,7 +18,7 @@ export const AG_AGENT_SESSION_PROVIDER_ID_UNIQUE_CONSTRAINT_NOTE =
 export default defineCollection({
   name: 'agAgentSessions',
   tableName: 'ag_agent_sessions',
-  dataCategory: 'business',
+  dataCategory: 'system',
   migrationRules: ['schema-only'],
   autoGenId: false,
   indexes: [

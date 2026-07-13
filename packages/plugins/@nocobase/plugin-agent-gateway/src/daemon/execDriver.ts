@@ -13,24 +13,14 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { StringDecoder } from 'string_decoder';
 
+import { ExecutionPolicyDefinition, ExecutionPolicyOptionRule, ExecutionPolicySet } from './types';
+
 export type ExecTerminalStatus = 'succeeded' | 'failed' | 'timeout' | 'canceled' | 'lease_lost';
 
-export interface ExecCommandDefinition {
-  commandKey: string;
-  executable: string;
-  baseArgs?: string[];
-  allowedEnvKeys?: string[];
-  defaultTimeoutMs?: number;
-}
-
-export type ExecCommandAllowlist = Record<string, ExecCommandDefinition> | ExecCommandDefinition[];
-
 export interface ExecuteCommandOptions {
-  definition: ExecCommandDefinition;
+  policy: ExecutionPolicyDefinition;
   args?: string[];
   cwd: string;
-  workspaceRoot: string;
-  env?: Record<string, string>;
   timeoutMs?: number;
   cancelSignal?: AbortSignal;
   leaseLostSignal?: AbortSignal;
@@ -39,9 +29,9 @@ export interface ExecuteCommandOptions {
   maxOutputSpoolBytes?: number;
 }
 
-export interface ExecuteAllowlistedCommandOptions extends Omit<ExecuteCommandOptions, 'definition'> {
-  commandKey: string;
-  allowlist: ExecCommandAllowlist;
+export interface ExecutePolicyCommandOptions extends Omit<ExecuteCommandOptions, 'policy'> {
+  executionPolicyKey: string;
+  executionPolicies: ExecutionPolicySet;
 }
 
 export interface PreparedCommandExecution {
@@ -112,7 +102,7 @@ class OutputCollector {
 
   constructor(
     private readonly options: {
-      commandKey: string;
+      executionPolicyKey: string;
       streamName: 'stdout' | 'stderr';
       artifactDir?: string;
       maxInlineLogBytes: number;
@@ -135,7 +125,7 @@ class OutputCollector {
     }
     this.artifactPath = path.join(
       this.options.artifactDir,
-      `${this.options.commandKey}-${this.options.streamName}.log`,
+      `${this.options.executionPolicyKey}-${this.options.streamName}.log`,
     );
     this.writeStream = createWriteStream(this.artifactPath, {
       flags: 'w',
@@ -272,8 +262,7 @@ async function resolveGuardedCwd(workspaceRoot: string, cwd: string) {
   return realCwd;
 }
 
-function buildEnv(definition: ExecCommandDefinition, cwd: string, providedEnv: Record<string, string> = {}) {
-  const allowedProvidedKeys = new Set(definition.allowedEnvKeys || []);
+function buildEnv(policy: ExecutionPolicyDefinition, cwd: string) {
   const env: Record<string, string> = {};
   for (const key of INHERITED_ENV_KEYS) {
     if (process.env[key]) {
@@ -281,27 +270,69 @@ function buildEnv(definition: ExecCommandDefinition, cwd: string, providedEnv: R
     }
   }
 
-  for (const [key, value] of Object.entries(providedEnv)) {
-    if (!allowedProvidedKeys.has(key)) {
-      throw new Error(`Environment variable is not allowlisted: ${key}`);
+  for (const key of policy.envKeys || []) {
+    const value = process.env[key];
+    if (value !== undefined) {
+      env[key] = value;
     }
-    env[key] = value;
   }
   env.PATH = prependWorkspaceNodeBinToPath(cwd, env.PATH);
   return env;
 }
 
 export async function prepareCommandExecution(
-  options: Pick<ExecuteCommandOptions, 'definition' | 'args' | 'cwd' | 'workspaceRoot' | 'env' | 'timeoutMs'>,
+  options: Pick<ExecuteCommandOptions, 'policy' | 'args' | 'cwd' | 'timeoutMs'>,
 ): Promise<PreparedCommandExecution> {
-  const cwd = await resolveGuardedCwd(options.workspaceRoot, options.cwd);
+  const cwd = await resolveGuardedCwd(options.policy.workspaceRoot, options.cwd);
+  const timeoutMs = options.timeoutMs ?? options.policy.defaultTimeoutMs ?? DEFAULT_EXEC_TIMEOUT_MS;
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0 || timeoutMs > options.policy.maxTimeoutMs) {
+    throw new Error(`timeoutMs exceeds execution policy maximum: ${options.policy.maxTimeoutMs}`);
+  }
   return {
-    executable: options.definition.executable,
-    args: [...(options.definition.baseArgs || []), ...(options.args || [])],
+    executable: options.policy.executable,
+    args: [...getExecutionPolicyArgs(options.policy), ...(options.args || [])],
     cwd,
-    env: buildEnv(options.definition, cwd, options.env),
-    timeoutMs: options.timeoutMs || options.definition.defaultTimeoutMs || DEFAULT_EXEC_TIMEOUT_MS,
+    env: buildEnv(options.policy, cwd),
+    timeoutMs,
   };
+}
+
+function renderPolicyOption(optionName: string, rule: ExecutionPolicyOptionRule, value: boolean | number | string) {
+  if (!rule.flag.startsWith('-')) {
+    throw new Error(`Execution policy option flag must start with "-": ${optionName}`);
+  }
+  if (rule.type === 'boolean') {
+    if (typeof value !== 'boolean') {
+      throw new Error(`Execution policy option must be boolean: ${optionName}`);
+    }
+    return value ? [rule.flag] : [];
+  }
+  if (rule.type === 'enum') {
+    if (typeof value !== 'string' || !rule.allowedValues?.includes(value)) {
+      throw new Error(`Execution policy option is outside its allowed values: ${optionName}`);
+    }
+    return [rule.flag, value];
+  }
+  if (typeof value !== 'number' || !Number.isInteger(value)) {
+    throw new Error(`Execution policy option must be an integer: ${optionName}`);
+  }
+  if ((rule.min !== undefined && value < rule.min) || (rule.max !== undefined && value > rule.max)) {
+    throw new Error(`Execution policy option is outside its allowed range: ${optionName}`);
+  }
+  return [rule.flag, String(value)];
+}
+
+export function getExecutionPolicyArgs(policy: ExecutionPolicyDefinition) {
+  const args = [...(policy.baseArgs || [])];
+  const rules = policy.allowedOptions || {};
+  for (const [optionName, value] of Object.entries(policy.options || {})) {
+    const rule = rules[optionName];
+    if (!rule) {
+      throw new Error(`Execution policy option is not declared: ${optionName}`);
+    }
+    args.push(...renderPolicyOption(optionName, rule, value));
+  }
+  return args;
 }
 
 function killProcess(child: ReturnType<typeof spawn>) {
@@ -342,14 +373,14 @@ function killProcess(child: ReturnType<typeof spawn>) {
   });
 }
 
-export function getAllowlistedDefinition(allowlist: ExecCommandAllowlist, commandKey: string) {
-  const definition = Array.isArray(allowlist)
-    ? allowlist.find((item) => item.commandKey === commandKey)
-    : allowlist[commandKey];
-  if (!definition || definition.commandKey !== commandKey) {
-    throw new Error(`Command is not allowlisted: ${commandKey}`);
+export function getExecutionPolicy(executionPolicies: ExecutionPolicySet, executionPolicyKey: string) {
+  const policy = Array.isArray(executionPolicies)
+    ? executionPolicies.find((item) => item.executionPolicyKey === executionPolicyKey)
+    : executionPolicies[executionPolicyKey];
+  if (!policy || policy.executionPolicyKey !== executionPolicyKey) {
+    throw new Error(`Execution policy is not configured: ${executionPolicyKey}`);
   }
-  return definition;
+  return policy;
 }
 
 export async function executeCommand(options: ExecuteCommandOptions): Promise<ExecDriverResult> {
@@ -376,7 +407,7 @@ export async function executeCommand(options: ExecuteCommandOptions): Promise<Ex
     }
   };
   const stdoutCollector = new OutputCollector({
-    commandKey: options.definition.commandKey,
+    executionPolicyKey: options.policy.executionPolicyKey,
     streamName: 'stdout',
     artifactDir: options.artifactDir,
     maxInlineLogBytes,
@@ -384,7 +415,7 @@ export async function executeCommand(options: ExecuteCommandOptions): Promise<Ex
     onWriteError: handleOutputWriteError,
   });
   const stderrCollector = new OutputCollector({
-    commandKey: options.definition.commandKey,
+    executionPolicyKey: options.policy.executionPolicyKey,
     streamName: 'stderr',
     artifactDir: options.artifactDir,
     maxInlineLogBytes,
@@ -486,10 +517,10 @@ export async function executeCommand(options: ExecuteCommandOptions): Promise<Ex
   };
 }
 
-export async function executeAllowlistedCommand(options: ExecuteAllowlistedCommandOptions): Promise<ExecDriverResult> {
-  const definition = getAllowlistedDefinition(options.allowlist, options.commandKey);
+export async function executePolicyCommand(options: ExecutePolicyCommandOptions): Promise<ExecDriverResult> {
+  const policy = getExecutionPolicy(options.executionPolicies, options.executionPolicyKey);
   return await executeCommand({
     ...options,
-    definition,
+    policy,
   });
 }

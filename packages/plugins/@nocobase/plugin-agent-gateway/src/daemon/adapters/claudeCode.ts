@@ -13,15 +13,36 @@ import { AgentAdapter, BuildResumeCommandInput, BuildStartCommandInput } from '.
 
 export { parseClaudeCodeJsonLine } from '../../shared/providerLogNormalizers/claudeCode';
 
+const FORBIDDEN_CLAUDE_CODE_ARGS = new Set([
+  '--permission-mode',
+  '--add-dir',
+  '--additional-dir',
+  '--dangerously-skip-permissions',
+  '--settings',
+  '--setting-sources',
+  '--plugin-dir',
+  '--mcp-config',
+]);
+
+function validateClaudeCodePolicyArgs(args: string[]) {
+  const forbidden = args.find(
+    (arg) =>
+      FORBIDDEN_CLAUDE_CODE_ARGS.has(arg) || [...FORBIDDEN_CLAUDE_CODE_ARGS].some((flag) => arg.startsWith(`${flag}=`)),
+  );
+  if (forbidden) {
+    throw new Error(`Claude Code execution policy contains a forbidden argument: ${forbidden}`);
+  }
+}
+
 export const claudeCodeAdapter: AgentAdapter = {
   provider: 'claude-code',
   capabilities: normalizeAgentProviderCapabilities('claude-code'),
   projectSkillTargetDirs: ['.claude/skills'],
+  validatePolicyArgs: validateClaudeCodePolicyArgs,
   buildStartCommand(input: BuildStartCommandInput) {
     const structuredArgs = input.outputMode === 'terminal' ? [] : ['--output-format', 'stream-json'];
     return {
-      commandKey: 'claude-code',
-      args: ['-p', input.prompt, ...structuredArgs, ...(input.extraArgs || [])],
+      args: ['-p', input.prompt, ...structuredArgs],
       cwd: input.cwd,
       timeoutMs: input.timeoutMs,
     };

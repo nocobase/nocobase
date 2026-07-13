@@ -12,6 +12,7 @@ import { Context } from '@nocobase/actions';
 
 import { AGENT_GATEWAY_API_RESOURCE } from '../../shared/apiContract';
 import { JsonRecord, getJsonArray, getJsonRecord, getJsonString, isJsonRecord } from '../../shared/json';
+import { AGENT_GATEWAY_COLLECTION_REGISTRY } from '../collectionRegistry';
 import { AGENT_GATEWAY_ACTIONS, AGENT_GATEWAY_RESOURCE } from '../security';
 
 export const API_PREFIX = '/api/agent-gateway';
@@ -33,30 +34,14 @@ const SYSTEM_ROLE_MODE_ONLY_USE_UNION = 'only-use-union';
 export const AGENT_GATEWAY_ERROR_CODES = {
   permissionDenied: 'AGENT_GATEWAY_PERMISSION_DENIED',
   resourceNotVisible: 'AGENT_GATEWAY_RESOURCE_NOT_VISIBLE',
+  unsafeFileUploadStorageLocator: 'AGENT_GATEWAY_UNSAFE_FILE_UPLOAD_STORAGE_LOCATOR',
 } as const;
 
 export type { JsonRecord } from '../../shared/json';
 
-export const AGENT_GATEWAY_STANDARD_COLLECTIONS = [
-  'agAgentConversationEvents',
-  'agAgentProfiles',
-  'agAgentSessions',
-  'agApiCallLogs',
-  'agDispatchBindings',
-  'agNodeInvitations',
-  'agNodeSkillInstalls',
-  'agNodes',
-  'agPromptTemplates',
-  'agRunArtifacts',
-  'agRunControlRequests',
-  'agRunEvents',
-  'agRunSnapshots',
-  'agRuns',
-  'agTaskTemplates',
-  'agTerminalStreamTickets',
-  'agSkillVersions',
-  'agSkills',
-] as const;
+export const AGENT_GATEWAY_STANDARD_COLLECTIONS = AGENT_GATEWAY_COLLECTION_REGISTRY.map(
+  (registration) => registration.name,
+);
 
 export interface ModelRecord {
   get(key: string): unknown;

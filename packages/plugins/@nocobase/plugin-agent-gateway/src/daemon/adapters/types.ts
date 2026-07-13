@@ -15,17 +15,14 @@ export type { NormalizedAgentEvent, ProviderEventInput } from '../../shared/prov
 export type AgentCapabilities = AgentProviderCapabilities;
 
 export interface CommandSpec {
-  commandKey: AgentProviderKey;
   args: string[];
   cwd?: string;
-  env?: Record<string, string>;
   timeoutMs?: number;
 }
 
 export interface BuildStartCommandInput {
   prompt: string;
   cwd?: string;
-  extraArgs?: string[];
   timeoutMs?: number;
   outputMode?: 'structured' | 'terminal';
 }
@@ -34,7 +31,6 @@ export interface BuildResumeCommandInput {
   providerSessionId: string;
   message: string;
   cwd?: string;
-  extraArgs?: string[];
   timeoutMs?: number;
   outputMode?: 'structured' | 'terminal';
 }
@@ -43,6 +39,7 @@ export interface AgentAdapter {
   provider: AgentProviderKey;
   capabilities: AgentCapabilities;
   projectSkillTargetDirs?: string[];
+  validatePolicyArgs(args: string[]): void;
   buildStartCommand(input: BuildStartCommandInput): CommandSpec;
   buildResumeCommand(input: BuildResumeCommandInput): CommandSpec;
   detectSessionId(input: ProviderEventInput): string | null;

@@ -9,7 +9,7 @@
 
 import { createHash, randomBytes, timingSafeEqual } from 'crypto';
 
-export type AgentGatewayTokenPurpose = 'invitation' | 'node' | 'claim' | 'stream';
+export type AgentGatewayTokenPurpose = 'invitation' | 'node' | 'claim' | 'stream' | 'skill';
 
 export interface OneTimeToken {
   token: string;
@@ -23,6 +23,7 @@ const TOKEN_PREFIXES: Record<AgentGatewayTokenPurpose, string> = {
   node: 'ag_node',
   claim: 'ag_claim',
   stream: 'ag_stream',
+  skill: 'ag_skill',
 };
 
 const HASH_PREFIX = 'agent-gateway-token-v1';
@@ -82,6 +83,10 @@ export function createStreamToken() {
   return createOneTimeToken('stream');
 }
 
+export function createSkillCapabilityToken() {
+  return createOneTimeToken('skill');
+}
+
 export function hashInvitationToken(token: string) {
   return hashToken(token, 'invitation');
 }
@@ -98,6 +103,10 @@ export function hashStreamToken(token: string) {
   return hashToken(token, 'stream');
 }
 
+export function hashSkillCapabilityToken(token: string) {
+  return hashToken(token, 'skill');
+}
+
 export function verifyInvitationToken(token: string, tokenHash: string | null | undefined) {
   return verifyTokenHash(token, tokenHash, 'invitation');
 }
@@ -112,6 +121,10 @@ export function verifyClaimToken(token: string, tokenHash: string | null | undef
 
 export function verifyStreamToken(token: string, tokenHash: string | null | undefined) {
   return verifyTokenHash(token, tokenHash, 'stream');
+}
+
+export function verifySkillCapabilityToken(token: string, tokenHash: string | null | undefined) {
+  return verifyTokenHash(token, tokenHash, 'skill');
 }
 
 export function toStoredTokenFields<THashField extends string, TLast4Field extends string>(

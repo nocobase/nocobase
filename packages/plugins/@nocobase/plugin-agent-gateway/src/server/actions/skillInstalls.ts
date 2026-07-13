@@ -14,7 +14,8 @@ import { Plugin } from '@nocobase/server';
 import { Transaction } from 'sequelize';
 
 import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiActionName } from '../../shared/apiContract';
-import { authenticateNodeToken } from '../security';
+import { authenticateNodeToken, redactJson } from '../security';
+import { validateSkillDownloadCapability } from './skillCapabilities';
 import {
   JsonRecord,
   ModelRecord,
@@ -53,32 +54,35 @@ async function authenticateNodeId(ctx: Context, nodeId: string) {
   return auth;
 }
 
-async function assertSkillVersionExists(ctx: Context, skillVersionId: string, transaction: Transaction) {
-  const skillVersion = (await ctx.db.getRepository('agSkillVersions').findOne({
-    filterByTk: skillVersionId,
-    transaction,
-    lock: transaction.LOCK.UPDATE,
-  })) as ModelRecord | null;
-  if (!skillVersion) {
-    ctx.throw(404, 'Skill version not found');
-  }
-}
-
 function serializeInstall(install: ModelRecord) {
   return getModelJson(install);
 }
 
-function getInstallValues(ctx: Context, nodeId: string, skillVersionId: string, values: JsonRecord) {
+function getInstallValues(
+  ctx: Context,
+  nodeId: string,
+  skillVersionId: string,
+  values: JsonRecord,
+  assignment?: { runId: string; claimAttempt: number },
+) {
   const status = getInstallStatus(ctx, values.status);
   const now = new Date();
   return {
     nodeId,
     skillVersionId,
+    ...(assignment
+      ? {
+          assignedRunId: assignment.runId,
+          assignedClaimAttempt: assignment.claimAttempt,
+        }
+      : {}),
     status,
     installedAt: getDate(values.installedAt) || (status === 'installed' ? now : null),
     lastSeenAt: getDate(values.lastSeenAt) || now,
-    capabilitiesSnapshotJson: getRecord(values.capabilitiesSnapshotJson || values.capabilitiesSnapshot),
-    settingsSnapshotJson: getRecord(values.settingsSnapshotJson || values.settingsSnapshot),
+    capabilitiesSnapshotJson: getRecord(
+      redactJson(getRecord(values.capabilitiesSnapshotJson || values.capabilitiesSnapshot)),
+    ),
+    settingsSnapshotJson: getRecord(redactJson(getRecord(values.settingsSnapshotJson || values.settingsSnapshot))),
   };
 }
 
@@ -87,7 +91,6 @@ async function upsertNodeSkillInstall(ctx: Context, nodeId: string) {
   const values = getBodyValues(ctx);
   const skillVersionId = getRequiredString(ctx, values.skillVersionId, 'skillVersionId');
   const result = await ctx.db.sequelize.transaction(async (transaction) => {
-    await assertSkillVersionExists(ctx, skillVersionId, transaction);
     const repo = ctx.db.getRepository('agNodeSkillInstalls');
     const existing = (await repo.findOne({
       filter: {
@@ -97,8 +100,34 @@ async function upsertNodeSkillInstall(ctx: Context, nodeId: string) {
       transaction,
       lock: transaction.LOCK.UPDATE,
     })) as ModelRecord | null;
+    let assignment: { runId: string; claimAttempt: number } | undefined;
+    if (!existing) {
+      const runId = getString(values.runId);
+      const claimAttempt = Number(values.claimAttempt);
+      const capabilityToken = getString(values.capabilityToken);
+      const sourceSha256 = getString(values.sourceSha256);
+      const authorized =
+        runId && Number.isInteger(claimAttempt) && claimAttempt > 0 && capabilityToken && sourceSha256
+          ? await validateSkillDownloadCapability(ctx, {
+              capabilityToken,
+              nodeId,
+              runId,
+              claimAttempt,
+              skillVersionId,
+              sha256: sourceSha256,
+              transaction,
+            })
+          : null;
+      if (!authorized) {
+        ctx.throw(404, 'Skill assignment not found');
+      }
+      assignment = {
+        runId,
+        claimAttempt,
+      };
+    }
 
-    const installValues = getInstallValues(ctx, nodeId, skillVersionId, values);
+    const installValues = getInstallValues(ctx, nodeId, skillVersionId, values, assignment);
     if (existing) {
       await repo.update({
         filterByTk: getModelTargetKey(existing, 'id'),

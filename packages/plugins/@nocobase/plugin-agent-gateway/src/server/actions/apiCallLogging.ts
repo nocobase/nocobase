@@ -24,6 +24,7 @@ const USER_API_DIRECTION = 'user_to_nocobase';
 const API_LOG_PATH_MAX_CHARS = 240;
 const API_LOG_FIELD_SUMMARY_MAX_CHARS = 1000;
 const API_LOG_STRUCTURED_VALUE_MAX_CHARS = 4000;
+const API_LOG_SLOW_REQUEST_MS = 1000;
 const RESOURCE_API_PREFIXES = [`/api/${AGENT_GATEWAY_API_RESOURCE}:`, `/${AGENT_GATEWAY_API_RESOURCE}:`];
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const API_LOG_OMITTED_KEY_FRAGMENTS = ['content', 'metadata', 'payload', 'prompt', 'snapshot'];
@@ -200,9 +201,27 @@ function matchApiRoute(ctx: Context): MatchedApiRoute | null {
 }
 
 function getBodyRecordValue(body: unknown, key: string) {
-  const bodyRecord = getRecord(body);
-  const value = bodyRecord[key];
-  return typeof value === 'string' || typeof value === 'number' ? String(value) : '';
+  const responseRecord = getRecord(body);
+  const bodyRecord = getRecord(responseRecord.data);
+  const source = Object.keys(bodyRecord).length ? bodyRecord : responseRecord;
+  const value = source[key];
+  return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean' ? String(value) : '';
+}
+
+function shouldPersistApiCallLog(ctx: Context, route: MatchedApiRoute, startedAt: number, error?: unknown) {
+  if (error || Date.now() - startedAt >= API_LOG_SLOW_REQUEST_MS || ctx.status >= 400) {
+    return true;
+  }
+  if (
+    route.action === AGENT_GATEWAY_API_ACTIONS.heartbeatNode ||
+    route.action === AGENT_GATEWAY_API_ACTIONS.heartbeatRun
+  ) {
+    return ctx.state.agentGatewayApiStateChanged === true;
+  }
+  if (route.action === AGENT_GATEWAY_API_ACTIONS.claimRun) {
+    return getBodyRecordValue(ctx.body, 'claimed') !== 'false';
+  }
+  return true;
 }
 
 function getStateNodeId(ctx: Context) {
@@ -301,11 +320,15 @@ export function registerApiCallLogMiddleware(plugin: Plugin) {
       try {
         await next();
       } catch (error) {
-        await safelyWriteApiCallLog(ctx, route, startedAt, error);
+        if (shouldPersistApiCallLog(ctx, route, startedAt, error)) {
+          await safelyWriteApiCallLog(ctx, route, startedAt, error);
+        }
         throw error;
       }
 
-      await safelyWriteApiCallLog(ctx, route, startedAt);
+      if (shouldPersistApiCallLog(ctx, route, startedAt)) {
+        await safelyWriteApiCallLog(ctx, route, startedAt);
+      }
     },
     {
       tag: 'agentGatewayApiCallLogMiddleware',

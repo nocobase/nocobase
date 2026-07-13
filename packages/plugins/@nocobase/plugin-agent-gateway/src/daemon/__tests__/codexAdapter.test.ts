@@ -36,7 +36,6 @@ describe('Codex agent adapter', () => {
         cwd: '/workspace',
       }),
     ).toMatchObject({
-      commandKey: 'codex',
       args: ['exec', '--skip-git-repo-check', '--json', 'Build a page'],
       cwd: '/workspace',
     });
@@ -46,7 +45,6 @@ describe('Codex agent adapter', () => {
         message: 'Continue',
       }),
     ).toMatchObject({
-      commandKey: 'codex',
       args: ['exec', 'resume', '--skip-git-repo-check', '--json', '019f1e72-d75c-7c61-a9ba-cc99c653e0a2', 'Continue'],
     });
   });
@@ -59,7 +57,6 @@ describe('Codex agent adapter', () => {
         outputMode: 'terminal',
       }),
     ).toMatchObject({
-      commandKey: 'codex',
       args: ['exec', '--skip-git-repo-check', 'Build a page'],
       cwd: '/workspace',
     });
@@ -70,9 +67,17 @@ describe('Codex agent adapter', () => {
         outputMode: 'terminal',
       }),
     ).toMatchObject({
-      commandKey: 'codex',
       args: ['exec', 'resume', '--skip-git-repo-check', '019f1e72-d75c-7c61-a9ba-cc99c653e0a2', 'Continue'],
     });
+  });
+
+  it.each([
+    ['-C', '/tmp'],
+    ['--add-dir', '/tmp'],
+    ['--sandbox', 'danger-full-access'],
+    ['--dangerously-bypass-approvals-and-sandbox'],
+  ])('rejects permission-expanding local policy args before launch: %s', (...args) => {
+    expect(() => codexAdapter.validatePolicyArgs(args)).toThrow(/forbidden argument/);
   });
 
   it('keeps spaces, quotes, and newlines as one resume message argv element', () => {

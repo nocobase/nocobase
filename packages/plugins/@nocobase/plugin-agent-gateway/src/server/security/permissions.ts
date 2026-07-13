@@ -12,6 +12,11 @@ import {
   AGENT_GATEWAY_MANAGE_API_ACTIONS,
   getAgentGatewayApiActionName,
 } from '../../shared/apiContract';
+import {
+  AGENT_GATEWAY_COLLECTION_REGISTRY,
+  AgentGatewayCollectionName,
+  getAgentGatewayDirectCollectionActions,
+} from '../collectionRegistry';
 
 export const AGENT_GATEWAY_RESOURCE = 'agentGateway';
 
@@ -53,35 +58,16 @@ export const AGENT_GATEWAY_ACTIONS = {
   cancelRun: 'cancelRun',
 } as const;
 
-export const AGENT_GATEWAY_INTERNAL_COLLECTIONS = [
-  'agNodes',
-  'agNodeInvitations',
-  'agAgentProfiles',
-  'agAgentSessions',
-  'agAgentConversationEvents',
-  'agSkills',
-  'agSkillVersions',
-  'agNodeSkillInstalls',
-  'agTaskTemplates',
-  'agPromptTemplates',
-  'agDispatchBindings',
-  'agRuns',
-  'agRunEvents',
-  'agRunArtifacts',
-  'agRunSnapshots',
-  'agApiCallLogs',
-  'agRunControlRequests',
-  'agTerminalStreamTickets',
-  'agEventIngestSequences',
-  'agExternalRunIdentities',
-  'agExternalImportBatches',
-  'agFileUploads',
-  'agMaintenanceLeases',
-] as const;
-
-const AGENT_GATEWAY_INTERNAL_COLLECTION_ACTIONS = AGENT_GATEWAY_INTERNAL_COLLECTIONS.map(
-  (collectionName) => `${collectionName}:*`,
+export const AGENT_GATEWAY_INTERNAL_COLLECTIONS = AGENT_GATEWAY_COLLECTION_REGISTRY.map(
+  (registration) => registration.name,
 );
+
+const AGENT_GATEWAY_INTERNAL_COLLECTION_ACTIONS = getAgentGatewayDirectCollectionActions(
+  AGENT_GATEWAY_INTERNAL_COLLECTIONS,
+);
+
+const directCollectionActions = (...collectionNames: AgentGatewayCollectionName[]) =>
+  getAgentGatewayDirectCollectionActions(collectionNames);
 
 const RUN_DETAIL_READ_ACTIONS = [
   `${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.readRun}`,
@@ -275,9 +261,7 @@ export const AGENT_GATEWAY_PERMISSION_DEFINITIONS = [
       getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.getNode),
       getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.updateNode),
       getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.listNodeProfiles),
-      'agNodes:*',
-      'agNodeInvitations:*',
-      'agAgentProfiles:*',
+      ...directCollectionActions('agNodes', 'agNodeInvitations', 'agAgentProfiles'),
     ],
   },
   {
@@ -288,9 +272,7 @@ export const AGENT_GATEWAY_PERMISSION_DEFINITIONS = [
       getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.createSkillVersionFromUpload),
       getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.listSkillVersions),
       getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.getSkillVersion),
-      'agSkills:*',
-      'agSkillVersions:*',
-      'agNodeSkillInstalls:*',
+      ...directCollectionActions('agSkills', 'agSkillVersions', 'agNodeSkillInstalls'),
     ],
   },
   {
@@ -312,7 +294,7 @@ export const AGENT_GATEWAY_PERMISSION_DEFINITIONS = [
       getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.getTaskTemplate),
       getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.createTaskTemplate),
       getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.updateTaskTemplate),
-      'agTaskTemplates:*',
+      ...directCollectionActions('agTaskTemplates'),
     ],
   },
   {
@@ -325,7 +307,7 @@ export const AGENT_GATEWAY_PERMISSION_DEFINITIONS = [
       getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.updatePromptTemplate),
       getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.destroyPromptTemplate),
       getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.previewPromptTemplate),
-      'agPromptTemplates:*',
+      ...directCollectionActions('agPromptTemplates'),
     ],
   },
   {
@@ -337,7 +319,7 @@ export const AGENT_GATEWAY_PERMISSION_DEFINITIONS = [
       getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.createDispatchBinding),
       getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.updateDispatchBinding),
       getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.destroyDispatchBinding),
-      'agDispatchBindings:*',
+      ...directCollectionActions('agDispatchBindings'),
     ],
   },
 ] as const;

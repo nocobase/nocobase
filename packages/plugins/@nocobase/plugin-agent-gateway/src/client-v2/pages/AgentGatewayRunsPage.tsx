@@ -279,6 +279,50 @@ function getSkillVersionIds(value: unknown) {
 const ARTIFACT_PREVIEW_MAX_ITEMS = 80;
 const ARTIFACT_ITEM_TEXT_MAX_CHARS = 4000;
 const ARTIFACT_RAW_PREVIEW_MAX_CHARS = 24 * 1024;
+const HTML_ARTIFACT_PREVIEW_CSP = [
+  "default-src 'none'",
+  'img-src data:',
+  'font-src data:',
+  "style-src 'unsafe-inline'",
+  "base-uri 'none'",
+  "form-action 'none'",
+  "frame-src 'none'",
+  "object-src 'none'",
+  "connect-src 'none'",
+  "media-src 'none'",
+  "manifest-src 'none'",
+  "worker-src 'none'",
+].join('; ');
+const HTML_ARTIFACT_REMOVED_ELEMENTS = [
+  'base',
+  'embed',
+  'form',
+  'frame',
+  'frameset',
+  'iframe',
+  'link',
+  'meta',
+  'object',
+  'portal',
+  'script',
+  'template',
+].join(',');
+const HTML_ARTIFACT_URL_ATTRIBUTES = new Set([
+  'action',
+  'archive',
+  'background',
+  'cite',
+  'codebase',
+  'data',
+  'formaction',
+  'href',
+  'manifest',
+  'ping',
+  'poster',
+  'src',
+  'srcset',
+  'xlink:href',
+]);
 const NO_COLLAPSE_MOTION: CSSMotionProps = {
   motionName: '',
   motionAppear: false,
@@ -1355,6 +1399,74 @@ function getArtifactRawPreview(contentText: string) {
   };
 }
 
+function isAllowedHtmlArtifactDataUrl(value: string) {
+  const normalizedValue = value.trim().toLowerCase();
+  return (
+    /^data:image\/(?:avif|bmp|gif|jpe?g|png|webp|x-icon)(?:;|,)/.test(normalizedValue) ||
+    /^data:font\/[a-z0-9.+-]+(?:;|,)/.test(normalizedValue) ||
+    /^data:application\/(?:font-[a-z0-9.+-]+|vnd\.ms-fontobject|x-font-[a-z0-9.+-]+)(?:;|,)/.test(normalizedValue)
+  );
+}
+
+function sanitizeHtmlArtifactCss(cssText: string) {
+  return cssText
+    .replace(/@import\s+(?:url\s*\([^)]*\)|["'][^"']*["'])[^;]*(?:;|$)/gi, '')
+    .replace(/url\s*\(\s*(["']?)(.*?)\1\s*\)/gis, (_match, _quote: string, value: string) => {
+      return isAllowedHtmlArtifactDataUrl(value) ? `url("${value.trim().replace(/"/g, '%22')}")` : 'none';
+    })
+    .replace(/(["'])(?:(?:https?:)?\/\/)[^"']*\1/gi, 'none')
+    .replace(/(?:https?:)?\/\/[^\s);}"']+/gi, '');
+}
+
+function escapeHtmlArtifactText(value: string) {
+  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+export function sanitizeHtmlArtifactPreview(contentText: string) {
+  if (typeof DOMParser === 'undefined') {
+    return `<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="${escapeHtmlArtifactText(
+      HTML_ARTIFACT_PREVIEW_CSP,
+    )}"></head><body><pre>${escapeHtmlArtifactText(contentText)}</pre></body></html>`;
+  }
+
+  const document = new DOMParser().parseFromString(contentText, 'text/html');
+  document.querySelectorAll(HTML_ARTIFACT_REMOVED_ELEMENTS).forEach((element) => element.remove());
+  document.querySelectorAll('*').forEach((element) => {
+    for (const attribute of Array.from(element.attributes)) {
+      const attributeName = attribute.name.toLowerCase();
+      if (attributeName.startsWith('on') || HTML_ARTIFACT_URL_ATTRIBUTES.has(attributeName)) {
+        if (
+          element.tagName.toLowerCase() === 'img' &&
+          attributeName === 'src' &&
+          isAllowedHtmlArtifactDataUrl(attribute.value)
+        ) {
+          continue;
+        }
+        element.removeAttribute(attribute.name);
+      }
+    }
+
+    if (element.hasAttribute('style')) {
+      const sanitizedStyle = sanitizeHtmlArtifactCss(element.getAttribute('style') || '').trim();
+      if (sanitizedStyle) {
+        element.setAttribute('style', sanitizedStyle);
+      } else {
+        element.removeAttribute('style');
+      }
+    }
+
+    if (element.tagName.toLowerCase() === 'style') {
+      element.textContent = sanitizeHtmlArtifactCss(element.textContent || '');
+    }
+  });
+
+  const csp = document.createElement('meta');
+  csp.setAttribute('http-equiv', 'Content-Security-Policy');
+  csp.setAttribute('content', HTML_ARTIFACT_PREVIEW_CSP);
+  document.head.prepend(csp);
+  return `<!doctype html>\n${document.documentElement.outerHTML}`;
+}
+
 function getJsonPreviewText(value: unknown) {
   return normalizeArtifactReadableText(JSON.stringify(redactExternalUrlPreviewJson(value), null, 2));
 }
@@ -1550,7 +1662,7 @@ function ArtifactPreviewText({ text }: { text: string }) {
   );
 }
 
-function ArtifactContentPreview({
+export function ArtifactContentPreview({
   artifact,
   contentText,
   t,
@@ -1566,13 +1678,20 @@ function ArtifactContentPreview({
   }
 
   if (artifact.mimeType === 'text/html') {
+    const sanitizedHtmlPreview = sanitizeHtmlArtifactPreview(preview.rawPreview);
     return (
       <Space direction="vertical" size={8} style={{ width: '100%' }}>
-        <Typography.Text type="secondary">{t('HTML artifact preview')}</Typography.Text>
+        <Alert
+          type="info"
+          showIcon
+          message={t('Restricted HTML artifact preview')}
+          description={t('Scripts, forms, navigation, and external network requests are disabled.')}
+        />
         <iframe
           sandbox=""
-          srcDoc={normalizedContentText}
-          title={artifact.artifactKey || artifact.id}
+          referrerPolicy="no-referrer"
+          srcDoc={sanitizedHtmlPreview}
+          title={`${artifact.artifactKey || artifact.id}: ${t('Restricted HTML artifact preview')}`}
           style={{
             background: '#fff',
             border: '1px solid #edf0f2',
@@ -1586,7 +1705,7 @@ function ArtifactContentPreview({
           items={[
             {
               key: 'raw',
-              label: t('Raw artifact text'),
+              label: preview.rawTruncated ? t('Raw artifact text (truncated)') : t('Raw artifact text'),
               children: <ArtifactPreviewText text={preview.rawPreview} />,
             },
           ]}
@@ -2997,10 +3116,6 @@ export default function AgentGatewayRunsPage() {
     async (runId: string) => {
       const response = await ctx.api.request<{
         ticket: string;
-        ticketProof: string;
-        authProof?: string;
-        authenticator?: string;
-        role?: string | null;
         runId?: string;
         protocols?: string[];
         expiresAt?: string;

@@ -20,9 +20,7 @@ import {
   TERMINAL_MAX_BROWSER_SUBSCRIPTIONS_PER_RUN,
   TERMINAL_MAX_BROWSER_SUBSCRIPTIONS_PER_USER,
   TERMINAL_MAX_DAEMON_STREAM_BINDINGS_PER_NODE,
-  TERMINAL_STREAM_BROWSER_AUTH_PROOF_PROTOCOL_PREFIX,
   TERMINAL_STREAM_BROWSER_SUBPROTOCOL,
-  TERMINAL_STREAM_BROWSER_TICKET_PROOF_PROTOCOL_PREFIX,
   TERMINAL_STREAM_BROWSER_TICKET_PROTOCOL_PREFIX,
   TERMINAL_STREAM_WS_PATH,
   TERMINAL_SERVER_MAX_RAW_FRAME_BYTES,
@@ -304,14 +302,6 @@ function getPrefixedWebSocketProtocolValue(request: IncomingMessage, prefix: str
 
 function getBrowserStreamTicketFromProtocol(request: IncomingMessage) {
   return getPrefixedWebSocketProtocolValue(request, TERMINAL_STREAM_BROWSER_TICKET_PROTOCOL_PREFIX);
-}
-
-function getBrowserStreamTicketProofFromProtocol(request: IncomingMessage) {
-  return getPrefixedWebSocketProtocolValue(request, TERMINAL_STREAM_BROWSER_TICKET_PROOF_PROTOCOL_PREFIX);
-}
-
-function getBrowserStreamAuthProofFromProtocol(request: IncomingMessage) {
-  return getPrefixedWebSocketProtocolValue(request, TERMINAL_STREAM_BROWSER_AUTH_PROOF_PROTOCOL_PREFIX);
 }
 
 function getAuthenticatorFromRequest(request: IncomingMessage) {
@@ -696,8 +686,6 @@ export class TerminalStreamBroker {
         app: this.app,
         runId: frame.runId,
         ticket: getBrowserStreamTicketFromProtocol(connection.request),
-        ticketProof: getBrowserStreamTicketProofFromProtocol(connection.request),
-        authProof: getBrowserStreamAuthProofFromProtocol(connection.request),
       });
       connection.kind = 'browser';
       connection.userId = auth.userId;

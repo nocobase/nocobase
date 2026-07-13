@@ -11,9 +11,57 @@ import { promises as fs } from 'fs';
 import os from 'os';
 import path from 'path';
 
-import { createCachedProfileDetector, detectAgentProfiles, probeOneCommand } from '../profileDetection';
+import {
+  createCachedProfileDetector,
+  detectAgentProfiles,
+  getDetectedProfilesHash,
+  probeOneCommand,
+} from '../profileDetection';
 
 describe('agent gateway daemon profile detection', () => {
+  it('computes a stable profile hash independent of object key and profile order', () => {
+    const first = [
+      {
+        profileKey: 'codex',
+        provider: 'codex' as const,
+        displayName: 'Codex',
+        agentType: 'code' as const,
+        driver: 'exec' as const,
+        status: 'active' as const,
+        capabilities: { version: '1', structuredEvents: true },
+        metadata: { detector: 'daemon' },
+      },
+      {
+        profileKey: 'opencode',
+        provider: 'opencode' as const,
+        displayName: 'OpenCode',
+        agentType: 'code' as const,
+        driver: 'exec' as const,
+        status: 'active' as const,
+        capabilities: { structuredEvents: true },
+        metadata: {},
+      },
+    ];
+    const second = [
+      first[1],
+      {
+        ...first[0],
+        capabilities: { structuredEvents: true, version: '1' },
+      },
+    ];
+
+    expect(getDetectedProfilesHash(first)).toBe(getDetectedProfilesHash(second));
+    expect(
+      getDetectedProfilesHash([
+        {
+          ...first[0],
+          capabilities: { version: '2', structuredEvents: true },
+        },
+        first[1],
+      ]),
+    ).not.toBe(getDetectedProfilesHash(first));
+  });
+
   it('reports opencode, codex, and claude-code without exposing raw execution config', async () => {
     const profiles = await detectAgentProfiles({
       probeCommand: async (candidates) => {
@@ -39,8 +87,7 @@ describe('agent gateway daemon profile detection', () => {
       status: 'active',
       driver: 'exec',
       capabilities: {
-        commandKey: 'opencode',
-        detectedCommand: 'opencode',
+        executionPolicyKey: 'opencode',
         version: 'opencode 1.2.3',
         structuredEvents: true,
         terminalOutput: true,
@@ -51,6 +98,7 @@ describe('agent gateway daemon profile detection', () => {
     expect(profiles.find((profile) => profile.profileKey === 'codex')?.status).toBe('missing');
     expect(profiles.find((profile) => profile.profileKey === 'claude-code')?.status).toBe('missing');
     expect(JSON.stringify(profiles)).not.toContain('commandPath');
+    expect(JSON.stringify(profiles)).not.toContain('detectedCommand');
     expect(JSON.stringify(profiles)).not.toContain('"cwd"');
     expect(JSON.stringify(profiles)).not.toContain('"env"');
   });

@@ -124,6 +124,10 @@ describe('agent gateway node lifecycle APIs', () => {
     const response = await app.agent().get('/api/agent-gateway/bootstrap.sh');
 
     expect(response.status).toBe(200);
+    expect(response.header['content-type']).toContain('application/x-sh');
+    expect(response.header['cache-control']).toBe('no-store');
+    expect(response.header['content-disposition']).toBe('attachment; filename="install-agent-gateway-daemon.sh"');
+    expect(response.header['x-content-type-options']).toBe('nosniff');
     expect(response.text).toMatch(/^#!\/usr\/bin\/env bash/);
     expect(response.text).toContain('AGENT_GATEWAY_NODE_KEY');
     expect(response.text).toContain('AGENT_GATEWAY_SERVICE_SCOPE');
@@ -447,6 +451,7 @@ describe('agent gateway node lifecycle APIs', () => {
           maxConcurrency: 3,
           supportsArtifacts: true,
         },
+        profilesHash: 'profiles-v1',
         profiles: [
           {
             profileKey: 'fake-success',
@@ -455,6 +460,7 @@ describe('agent gateway node lifecycle APIs', () => {
             agentType: 'code',
             driver: 'fake',
             capabilities: {
+              executionPolicyKey: 'fake-success',
               mode: 'success',
             },
             metadata: {
@@ -468,11 +474,12 @@ describe('agent gateway node lifecycle APIs', () => {
           },
           {
             profileKey: 'local-node',
+            provider: 'generic-cli',
             displayName: 'Local Node',
             agentType: 'code',
             driver: 'exec',
             capabilities: {
-              commandKey: 'node',
+              executionPolicyKey: 'local-node',
               mode: 'success',
             },
           },
@@ -521,9 +528,40 @@ describe('agent gateway node lifecycle APIs', () => {
     expect(commandProfile).toBeTruthy();
     expect(commandProfile.get('provider')).toBe('generic-cli');
     expect(commandProfile.get('capabilitiesJson')).toMatchObject({
-      commandKey: 'node',
+      executionPolicyKey: 'local-node',
       mode: 'success',
       structuredEvents: false,
+    });
+
+    const profileRepository = app.db.getRepository('agAgentProfiles');
+    const profileUpdateSpy = vi.spyOn(profileRepository, 'update');
+    const unchangedHeartbeatResponse = await app
+      .agent()
+      .post(`/agentGatewayApi:heartbeatNode/${nodeId}`)
+      .set('Authorization', `Bearer ${nodeToken}`)
+      .send({
+        installationId: '33333333-3333-4333-8333-333333333333',
+        currentConcurrency: 1,
+        profilesHash: 'profiles-v1',
+        profiles: [],
+      });
+    expect(unchangedHeartbeatResponse.status).toBe(200);
+    expect(profileUpdateSpy).not.toHaveBeenCalled();
+    profileUpdateSpy.mockRestore();
+
+    const unchangedNode = await app.db.getRepository('agNodes').findOne({
+      filterByTk: nodeId,
+    });
+    expect(unchangedNode.get('capabilitiesJson')).toMatchObject({
+      maxConcurrency: 3,
+      supportsArtifacts: true,
+    });
+    expect(unchangedNode.get('metadataJson')).toMatchObject({
+      currentConcurrency: 1,
+      profilesHash: 'profiles-v1',
+      hostInfo: {
+        hostname: 'agent-host',
+      },
     });
 
     const emptyProfilesResponse = await app
@@ -531,6 +569,7 @@ describe('agent gateway node lifecycle APIs', () => {
       .post(`/agentGatewayApi:heartbeatNode/${nodeId}`)
       .set('Authorization', `Bearer ${nodeToken}`)
       .send({
+        profilesHash: 'profiles-empty',
         profiles: [],
       });
     expect(emptyProfilesResponse.status).toBe(200);
@@ -571,6 +610,10 @@ describe('agent gateway node lifecycle APIs', () => {
         profiles: [
           {
             profileKey: 'fake-success',
+            provider: 'generic-cli',
+            capabilities: {
+              executionPolicyKey: 'fake-success',
+            },
             metadata: {
               command: 'hidden',
               label: 'visible',
@@ -646,6 +689,10 @@ describe('agent gateway node lifecycle APIs', () => {
         profiles: [
           {
             profileKey: 'fake-success',
+            provider: 'generic-cli',
+            capabilities: {
+              executionPolicyKey: 'fake-success',
+            },
           },
         ],
       });

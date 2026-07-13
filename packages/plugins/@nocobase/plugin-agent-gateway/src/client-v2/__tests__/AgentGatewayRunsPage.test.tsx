@@ -16,15 +16,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   TERMINAL_PAYLOAD_ENCODING,
   TERMINAL_PROTOCOL,
-  TERMINAL_STREAM_BROWSER_AUTHENTICATOR_PROTOCOL_PREFIX,
-  TERMINAL_STREAM_BROWSER_AUTH_PROTOCOL_PREFIX,
-  TERMINAL_STREAM_BROWSER_ROLE_PROTOCOL_PREFIX,
   TERMINAL_STREAM_BROWSER_SUBPROTOCOL,
+  TERMINAL_STREAM_BROWSER_TICKET_PROTOCOL_PREFIX,
   encodeTerminalPayload,
 } from '../../shared/terminalStreamProtocol';
 import { AgentTimeline } from '../components/AgentTimeline';
 import AgentGatewayDispatchBindingsPage from '../pages/AgentGatewayDispatchBindingsPage';
-import AgentGatewayRunsPage from '../pages/AgentGatewayRunsPage';
+import AgentGatewayRunsPage, {
+  ArtifactContentPreview,
+  sanitizeHtmlArtifactPreview,
+} from '../pages/AgentGatewayRunsPage';
 import { TerminalStreamWebSocketEvent } from '../utils/terminalStreamClient';
 
 interface FlowContextWithDefineProperty {
@@ -271,6 +272,134 @@ describe('PluginAgentGatewayClientV2', () => {
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
     FakeBrowserWebSocket.instances = [];
+  });
+
+  it('removes executable and network-capable content from HTML artifact previews', () => {
+    const unsafeHtml = `<!doctype html>
+      <html>
+        <head>
+          <base href="https://example.invalid/root/">
+          <meta http-equiv="refresh" content="0;url=http://127.0.0.1/private">
+          <link rel="stylesheet" href="http://127.0.0.1/private.css">
+          <style>
+            @import "https://example.invalid/import.css";
+            @font-face { font-family: safe; src: url(data:font/woff2;base64,d09GRg==); }
+            .remote { background-image: url(https://example.invalid/background.png); }
+            .safe { color: red; background-image: url(data:image/png;base64,iVBORw0KGgo=); }
+          </style>
+        </head>
+        <body onload="document.body.dataset.scriptMarker = 'executed'">
+          <script>fetch('https://example.invalid/beacon'); parent.location = 'https://example.invalid/escape';</script>
+          <form action="http://127.0.0.1/submit"><button formaction="https://example.invalid/form">Send</button></form>
+          <iframe src="https://example.invalid/frame"></iframe>
+          <object data="https://example.invalid/object"></object>
+          <embed src="https://example.invalid/embed">
+          <img id="remote-image" src="https://example.invalid/image.png" srcset="https://example.invalid/2x.png 2x">
+          <img id="data-image" src="data:image/png;base64,iVBORw0KGgo=">
+          <div id="safe-style" style="color: blue; background: url(data:image/png;base64,iVBORw0KGgo=)">safe</div>
+          <div id="remote-style" style="background: url(http://127.0.0.1/pixel)">remote</div>
+          <a href="https://example.invalid/navigation" ping="https://example.invalid/ping">link</a>
+        </body>
+      </html>`;
+
+    const sanitizedHtml = sanitizeHtmlArtifactPreview(unsafeHtml);
+    const document = new DOMParser().parseFromString(sanitizedHtml, 'text/html');
+    const csp = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+
+    expect(csp?.getAttribute('content')).toContain("default-src 'none'");
+    expect(csp?.getAttribute('content')).toContain('img-src data:');
+    expect(csp?.getAttribute('content')).toContain('font-src data:');
+    expect(csp?.getAttribute('content')).toContain("style-src 'unsafe-inline'");
+    expect(document.querySelector('script, base, form, iframe, object, embed, link')).toBeNull();
+    expect(document.body.hasAttribute('onload')).toBe(false);
+    expect(document.querySelector('#remote-image')?.hasAttribute('src')).toBe(false);
+    expect(document.querySelector('#remote-image')?.hasAttribute('srcset')).toBe(false);
+    expect(document.querySelector('#data-image')?.getAttribute('src')).toContain('data:image/png;base64,');
+    expect(document.querySelector('#safe-style')?.getAttribute('style')).toContain('color: blue');
+    expect(document.querySelector('#safe-style')?.getAttribute('style')).toContain('data:image/png;base64,');
+    expect(document.querySelector('style')?.textContent).toContain('data:font/woff2;base64,');
+    expect(document.querySelector('style')?.textContent).toContain('color: red');
+    expect(document.querySelector('#remote-style')?.getAttribute('style')).not.toContain('127.0.0.1');
+    expect(sanitizedHtml).not.toContain('example.invalid');
+    expect(sanitizedHtml).not.toContain('127.0.0.1');
+  });
+
+  it('renders HTML artifacts in a restricted iframe and keeps raw text auditable', async () => {
+    const unsafeHtml = `<meta http-equiv="refresh" content="0;url=https://example.invalid/next">
+      <script>document.body.textContent = 'script-executed-marker'</script>
+      <img src="https://example.invalid/image.png">
+      <p style="color: green">raw-audit-marker</p>`;
+
+    render(
+      <ArtifactContentPreview
+        artifact={{ id: 'html-artifact-id', artifactKey: 'report.html', mimeType: 'text/html' }}
+        contentText={unsafeHtml}
+        t={(key) => key}
+      />,
+    );
+
+    expect(screen.getByText('Restricted HTML artifact preview')).toBeTruthy();
+    expect(screen.getByText('Scripts, forms, navigation, and external network requests are disabled.')).toBeTruthy();
+    const frame = screen.getByTitle('report.html: Restricted HTML artifact preview');
+    expect(frame.getAttribute('sandbox')).toBe('');
+    expect(frame.getAttribute('referrerpolicy')).toBe('no-referrer');
+    expect(frame.getAttribute('srcdoc')).not.toContain('example.invalid');
+    expect(frame.getAttribute('srcdoc')).not.toContain('<script');
+    expect(screen.getByText('Raw artifact text')).toBeTruthy();
+
+    fireEvent.click(screen.getByText('Raw artifact text'));
+    expect(await screen.findByText(/raw-audit-marker/)).toBeTruthy();
+    expect(await screen.findByText(/script-executed-marker/)).toBeTruthy();
+  });
+
+  it('keeps HTML size limits and ordinary text, JSON, and data-image previews working', () => {
+    const oversizedHtml = `<p>visible-start</p>${'x'.repeat(25 * 1024)}<p>must-not-reach-preview</p>`;
+    const t = (key: string) => key;
+
+    const { unmount } = render(
+      <ArtifactContentPreview
+        artifact={{ id: 'large-html', artifactKey: 'large.html', mimeType: 'text/html' }}
+        contentText={oversizedHtml}
+        t={t}
+      />,
+    );
+    expect(screen.getByText('Raw artifact text (truncated)')).toBeTruthy();
+    expect(screen.getByTitle('large.html: Restricted HTML artifact preview').getAttribute('srcdoc')).not.toContain(
+      'must-not-reach-preview',
+    );
+
+    unmount();
+    const textPreview = render(
+      <ArtifactContentPreview
+        artifact={{ id: 'text-artifact', mimeType: 'text/plain' }}
+        contentText="plain artifact text"
+        t={t}
+      />,
+    );
+    expect(screen.getByText('Readable text preview')).toBeTruthy();
+    expect(screen.getByText('plain artifact text')).toBeTruthy();
+
+    textPreview.unmount();
+    const jsonPreview = render(
+      <ArtifactContentPreview
+        artifact={{ id: 'json-artifact', mimeType: 'application/json' }}
+        contentText={'{"safe":true}'}
+        t={t}
+      />,
+    );
+    expect(screen.getByText('Readable JSON preview')).toBeTruthy();
+    expect(screen.getByText(/"safe": true/)).toBeTruthy();
+
+    jsonPreview.unmount();
+    render(
+      <ArtifactContentPreview
+        artifact={{ id: 'image-artifact', artifactKey: 'preview.png', mimeType: 'image/png' }}
+        contentText="data:image/png;base64,iVBORw0KGgo="
+        t={t}
+      />,
+    );
+    expect(screen.getByText('Image artifact preview')).toBeTruthy();
+    expect(screen.getByAltText('preview.png').getAttribute('src')).toContain('data:image/png;base64,');
   });
 
   it('opens associated task template and skill details from the runs table links', async () => {
@@ -3091,8 +3220,6 @@ describe('PluginAgentGatewayClientV2', () => {
           data: {
             data: {
               ticket: 'ag_stream_revoked_ticket',
-              ticketProof: 'ag_stream_revoked_proof',
-              authProof: 'ag_stream_revoked_auth',
               expiresAt: '2026-06-30T10:02:00.000Z',
             },
           },
@@ -3236,8 +3363,6 @@ describe('PluginAgentGatewayClientV2', () => {
           data: {
             data: {
               ticket: 'ag_stream_affordance_ticket',
-              ticketProof: 'ag_stream_affordance_proof',
-              authProof: 'ag_stream_affordance_auth',
               expiresAt: '2026-06-30T10:02:00.000Z',
             },
           },
@@ -3772,10 +3897,6 @@ describe('PluginAgentGatewayClientV2', () => {
           data: {
             data: {
               ticket: 'ag_stream_page_ticket',
-              ticketProof: 'ag_stream_page_proof',
-              authProof: 'ag_stream_page_auth',
-              authenticator: 'basic',
-              role: 'root',
               expiresAt: '2026-06-30T10:02:00.000Z',
             },
           },
@@ -3806,16 +3927,9 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(webSocket.url).not.toContain('token=');
     expect(webSocket.protocols?.[0]).toBe(TERMINAL_STREAM_BROWSER_SUBPROTOCOL);
     expect(
-      webSocket.protocols?.some((protocol) => protocol.startsWith(TERMINAL_STREAM_BROWSER_AUTH_PROTOCOL_PREFIX)),
-    ).toBe(false);
-    expect(
-      webSocket.protocols?.some((protocol) =>
-        protocol.startsWith(TERMINAL_STREAM_BROWSER_AUTHENTICATOR_PROTOCOL_PREFIX),
-      ),
+      webSocket.protocols?.some((protocol) => protocol.startsWith(TERMINAL_STREAM_BROWSER_TICKET_PROTOCOL_PREFIX)),
     ).toBe(true);
-    expect(
-      webSocket.protocols?.some((protocol) => protocol.startsWith(TERMINAL_STREAM_BROWSER_ROLE_PROTOCOL_PREFIX)),
-    ).toBe(true);
+    expect(webSocket.protocols).toHaveLength(2);
     expect(webSocket.protocols?.join(',')).not.toContain('browser-token');
     act(() => {
       webSocket.dispatch('open');
@@ -3827,13 +3941,9 @@ describe('PluginAgentGatewayClientV2', () => {
       lastOffset: 0,
     });
     expect(JSON.stringify(subscribeFrame)).not.toContain('ag_stream_page_ticket');
-    expect(JSON.stringify(subscribeFrame)).not.toContain('ag_stream_page_proof');
-    expect(JSON.stringify(subscribeFrame)).not.toContain('ag_stream_page_auth');
     expect(JSON.stringify(subscribeFrame)).not.toContain('browser-token');
     expect(subscribeFrame).not.toHaveProperty('browserAuth');
     expect(subscribeFrame).not.toHaveProperty('ticket');
-    expect(subscribeFrame).not.toHaveProperty('ticketProof');
-    expect(subscribeFrame).not.toHaveProperty('authProof');
     expect(subscribeFrame).not.toHaveProperty('authToken');
     expect(subscribeFrame).not.toHaveProperty('authenticator');
     expect(subscribeFrame).not.toHaveProperty('role');
@@ -3950,10 +4060,6 @@ describe('PluginAgentGatewayClientV2', () => {
           data: {
             data: {
               ticket: 'ag_stream_page_ticket',
-              ticketProof: 'ag_stream_page_proof',
-              authProof: 'ag_stream_page_auth',
-              authenticator: 'basic',
-              role: 'root',
               expiresAt: '2026-06-30T10:02:00.000Z',
             },
           },
@@ -3984,16 +4090,9 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(webSocket.url).not.toContain('token=');
     expect(webSocket.protocols?.[0]).toBe(TERMINAL_STREAM_BROWSER_SUBPROTOCOL);
     expect(
-      webSocket.protocols?.some((protocol) => protocol.startsWith(TERMINAL_STREAM_BROWSER_AUTH_PROTOCOL_PREFIX)),
-    ).toBe(false);
-    expect(
-      webSocket.protocols?.some((protocol) =>
-        protocol.startsWith(TERMINAL_STREAM_BROWSER_AUTHENTICATOR_PROTOCOL_PREFIX),
-      ),
+      webSocket.protocols?.some((protocol) => protocol.startsWith(TERMINAL_STREAM_BROWSER_TICKET_PROTOCOL_PREFIX)),
     ).toBe(true);
-    expect(
-      webSocket.protocols?.some((protocol) => protocol.startsWith(TERMINAL_STREAM_BROWSER_ROLE_PROTOCOL_PREFIX)),
-    ).toBe(true);
+    expect(webSocket.protocols).toHaveLength(2);
     expect(webSocket.protocols?.join(',')).not.toContain('browser-token');
     act(() => {
       webSocket.dispatch('open');
@@ -4005,13 +4104,9 @@ describe('PluginAgentGatewayClientV2', () => {
       lastOffset: 12,
     });
     expect(JSON.stringify(subscribeFrame)).not.toContain('ag_stream_page_ticket');
-    expect(JSON.stringify(subscribeFrame)).not.toContain('ag_stream_page_proof');
-    expect(JSON.stringify(subscribeFrame)).not.toContain('ag_stream_page_auth');
     expect(JSON.stringify(subscribeFrame)).not.toContain('browser-token');
     expect(subscribeFrame).not.toHaveProperty('browserAuth');
     expect(subscribeFrame).not.toHaveProperty('ticket');
-    expect(subscribeFrame).not.toHaveProperty('ticketProof');
-    expect(subscribeFrame).not.toHaveProperty('authProof');
     expect(subscribeFrame).not.toHaveProperty('authToken');
     expect(subscribeFrame).not.toHaveProperty('authenticator');
     expect(subscribeFrame).not.toHaveProperty('role');

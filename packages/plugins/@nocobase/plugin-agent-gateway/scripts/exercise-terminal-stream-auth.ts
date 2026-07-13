@@ -13,11 +13,7 @@ import WebSocket from 'ws';
 
 import {
   TERMINAL_PROTOCOL,
-  TERMINAL_STREAM_BROWSER_AUTHENTICATOR_PROTOCOL_PREFIX,
-  TERMINAL_STREAM_BROWSER_AUTH_PROOF_PROTOCOL_PREFIX,
-  TERMINAL_STREAM_BROWSER_ROLE_PROTOCOL_PREFIX,
   TERMINAL_STREAM_BROWSER_SUBPROTOCOL,
-  TERMINAL_STREAM_BROWSER_TICKET_PROOF_PROTOCOL_PREFIX,
   TERMINAL_STREAM_BROWSER_TICKET_PROTOCOL_PREFIX,
   TERMINAL_STREAM_WS_PATH,
 } from '../src/shared/terminalStreamProtocol';
@@ -50,10 +46,6 @@ interface StreamAuthArgs {
 
 interface StreamTicket {
   ticket: string;
-  ticketProof: string;
-  authProof?: string;
-  authenticator?: string;
-  role?: string;
   ticketCreatedAt: string;
   expiresAt: string;
 }
@@ -89,27 +81,10 @@ function encodeWebSocketProtocolValue(value?: string) {
 }
 
 function buildBrowserStreamProtocols(options: { ticket: StreamTicket }) {
-  const protocols = [
+  return [
     TERMINAL_STREAM_BROWSER_SUBPROTOCOL,
     `${TERMINAL_STREAM_BROWSER_TICKET_PROTOCOL_PREFIX}${encodeWebSocketProtocolValue(options.ticket.ticket)}`,
-    `${TERMINAL_STREAM_BROWSER_TICKET_PROOF_PROTOCOL_PREFIX}${encodeWebSocketProtocolValue(
-      options.ticket.ticketProof,
-    )}`,
-    `${TERMINAL_STREAM_BROWSER_AUTHENTICATOR_PROTOCOL_PREFIX}${encodeWebSocketProtocolValue(
-      options.ticket.authenticator || 'basic',
-    )}`,
   ];
-  if (options.ticket.authProof) {
-    protocols.push(
-      `${TERMINAL_STREAM_BROWSER_AUTH_PROOF_PROTOCOL_PREFIX}${encodeWebSocketProtocolValue(options.ticket.authProof)}`,
-    );
-  }
-  if (options.ticket.role) {
-    protocols.push(
-      `${TERMINAL_STREAM_BROWSER_ROLE_PROTOCOL_PREFIX}${encodeWebSocketProtocolValue(options.ticket.role)}`,
-    );
-  }
-  return protocols;
 }
 
 interface RolePermissionState {
@@ -479,20 +454,12 @@ async function createTicket(baseUrl: string, token: string, runId: string): Prom
     },
   );
   const ticket = getString(data.ticket);
-  const ticketProof = getString(data.ticketProof);
-  const authProof = getString(data.authProof);
-  const authenticator = getString(data.authenticator) || 'basic';
-  const role = getString(data.role) || undefined;
   const expiresAt = getString(data.expiresAt);
-  if (!ticket || !ticketProof || !expiresAt) {
+  if (!ticket || !expiresAt) {
     throw new Error('Stream ticket create response is invalid');
   }
   return {
     ticket,
-    ticketProof,
-    authProof,
-    authenticator,
-    role,
     ticketCreatedAt,
     expiresAt,
   };
@@ -632,11 +599,7 @@ function summarizeFrame(frame: TerminalFrame | { type: 'timeout' | 'socket-error
 
 function assertNoTicketMaterialInValue(scenario: StreamAuthScenario, value: unknown, ticket: StreamTicket) {
   const serialized = JSON.stringify(value);
-  if (
-    serialized.includes(ticket.ticket) ||
-    serialized.includes(ticket.ticketProof) ||
-    (ticket.authProof && serialized.includes(ticket.authProof))
-  ) {
+  if (serialized.includes(ticket.ticket)) {
     throw new Error(`${scenario} output exposed stream ticket material`);
   }
 }

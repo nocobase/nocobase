@@ -16,18 +16,13 @@ import { isAgentGatewayLeaseLostError, isAgentGatewayRetryableError } from './ap
 import { getAgentAdapter, type AgentAdapter, type NormalizedAgentEvent } from './adapters';
 import { AgentGatewayDaemonNodeClient } from './gateway';
 import { TerminalEnd } from '../shared/terminalStreamProtocol';
-import {
-  ExecCommandAllowlist,
-  ExecDriverResult,
-  ExecTerminalStatus,
-  executeAllowlistedCommand,
-  getAllowlistedDefinition,
-} from './execDriver';
+import { ExecDriverResult, ExecTerminalStatus, executePolicyCommand, getExecutionPolicy } from './execDriver';
 import {
   AgentProfileDetector,
   createCachedProfileDetector,
   detectAgentProfiles,
   DetectAgentProfilesOptions,
+  getDetectedProfilesHash,
 } from './profileDetection';
 import {
   SkillVersionInstallRecord,
@@ -43,7 +38,7 @@ import {
   ProjectSkillCleanupResult,
   ProjectSkillRunState,
 } from './projectSkills';
-import { JsonRecord, PendingControlRequest, RunLease } from './types';
+import { ExecutionPolicyDefinition, ExecutionPolicySet, JsonRecord, PendingControlRequest, RunLease } from './types';
 import { getLocalRunLeaseDeadlineMonotonicMs, getMonotonicTimeMs } from './leaseDeadline';
 import { TerminalRingBuffer } from './terminalRingBuffer';
 import { DaemonTerminalStreamClient, DaemonTerminalStreamClientOptions } from './terminalStreamClient';
@@ -52,9 +47,10 @@ import { AGENT_GATEWAY_TERMINATE_CONTROL_CANCEL_REASON } from '../shared/runCont
 import { hasAgentCapabilitySignal, normalizeAgentProviderCapabilities } from '../shared/providerCapabilities';
 import {
   AgentCommandOutputMode,
-  getCanonicalProvider,
+  assertRemoteExecutionPayloadIsSafe,
   getExecutionCommandSpec,
   getPayload,
+  getRequestedExecutionPolicyKey,
   getRequestedTerminalBackend,
 } from './executionCommand';
 import { compactDeclaredArtifactSummary, hashText, reportDeclaredArtifacts, reportExecOutputs } from './runArtifacts';
@@ -68,8 +64,7 @@ import {
 
 export interface RunDaemonOnceOptions {
   gateway: AgentGatewayDaemonNodeClient;
-  allowlist: ExecCommandAllowlist;
-  workspaceRoot: string;
+  executionPolicies: ExecutionPolicySet;
   skillsRoot: string;
   artifactDir: string;
   terminalBackend?: 'exec' | 'tmux';
@@ -79,7 +74,7 @@ export interface RunDaemonOnceOptions {
   claimRunId?: string;
   runHeartbeatIntervalMs?: number;
   syncSkillVersion?: typeof syncNodeSkillVersion;
-  executeCommand?: typeof executeAllowlistedCommand;
+  executeCommand?: typeof executePolicyCommand;
   maxOutputSpoolBytes?: number;
   terminalRingBufferMaxBytes?: number;
   terminalStreamClientFactory?: (options: DaemonTerminalStreamClientOptions) => TerminalStreamHandle;
@@ -88,10 +83,14 @@ export interface RunDaemonOnceOptions {
 
 export interface DaemonRunLoopOptions extends RunDaemonOnceOptions {
   pollIntervalMs?: number;
+  nodeHeartbeatIntervalMs?: number;
   profileRefreshIntervalMs?: number;
   retryInitialDelayMs?: number;
   retryMaxDelayMs?: number;
-  onLoopError?: (error: unknown, state: { failureCount: number; retryDelayMs: number }) => void;
+  onLoopError?: (
+    error: unknown,
+    state: { source: 'claim' | 'node-heartbeat'; failureCount: number; retryDelayMs: number },
+  ) => void;
 }
 
 export interface DaemonRunOnceResult {
@@ -191,6 +190,9 @@ function isWithin(parent: string, child: string) {
 }
 
 async function resolveWorkspaceCwd(workspaceRoot: string, cwd: string) {
+  if (path.isAbsolute(cwd)) {
+    throw new Error('cwd must be relative to the configured workspace root');
+  }
   const requestedCwd = path.resolve(workspaceRoot, cwd || '.');
   const [realWorkspaceRoot, realCwd] = await Promise.all([fs.realpath(workspaceRoot), fs.realpath(requestedCwd)]);
   if (!isWithin(realWorkspaceRoot, realCwd)) {
@@ -1746,6 +1748,7 @@ export async function executeClaimedRun(
     getLease: activeLease,
   });
   let cwd = '';
+  let executionPolicy: ExecutionPolicyDefinition | null = null;
   let projectSkillState: ProjectSkillRunState | null = null;
   let projectSkillCleanupDone = false;
   const cleanupProjectSkills = async (reportProgress = true) => {
@@ -1813,7 +1816,10 @@ export async function executeClaimedRun(
   });
   try {
     const syncPayload = getPayload(activeLease());
-    cwd = await resolveWorkspaceCwd(options.workspaceRoot, getString(syncPayload.cwd) || '.');
+    assertRemoteExecutionPayloadIsSafe(syncPayload);
+    const executionPolicyKey = getRequestedExecutionPolicyKey(activeLease(), syncPayload);
+    executionPolicy = getExecutionPolicy(options.executionPolicies, executionPolicyKey);
+    cwd = await resolveWorkspaceCwd(executionPolicy.workspaceRoot, getString(syncPayload.cwd) || '.');
     if (getSkillVersions(syncPayload).length) {
       projectSkillState = createProjectSkillRunState(cwd, claimedLease.runId);
     }
@@ -1833,8 +1839,8 @@ export async function executeClaimedRun(
         projectSkillState = createProjectSkillRunState(cwd, claimedLease.runId);
       }
       if (projectSkillState) {
-        const provider = getCanonicalProvider(activeLease(), syncPayload);
-        const adapter = provider ? getAgentAdapter(provider) : null;
+        const provider = executionPolicy.provider;
+        const adapter = getAgentAdapter(provider);
         const projectSkillTargetDirs = adapter?.projectSkillTargetDirs || [];
         if (projectSkillTargetDirs.length) {
           const janitorResult = await cleanupStaleProjectSkills({
@@ -1954,11 +1960,13 @@ export async function executeClaimedRun(
   }
 
   const payload = getPayload(activeLease());
-  const terminalBackend = getRequestedTerminalBackend(payload, options.terminalBackend);
+  const terminalBackend = getRequestedTerminalBackend(options.terminalBackend);
   const tmuxSessionName = getManagedTmuxSessionName(claimedLease.runId);
   const usesManagedTmux = terminalBackend === 'tmux' && !options.executeCommand;
-  const requestedProvider = getCanonicalProvider(activeLease(), payload);
-  const requestedAdapter = requestedProvider ? getAgentAdapter(requestedProvider) : null;
+  if (!executionPolicy) {
+    throw new Error('Execution policy was not resolved before command execution');
+  }
+  const requestedAdapter = getAgentAdapter(executionPolicy.provider);
   const commandOutputMode: AgentCommandOutputMode =
     !usesManagedTmux || requestedAdapter?.capabilities.structuredEvents ? 'structured' : 'terminal';
   let terminalStream: TerminalStreamHandle | null = null;
@@ -1972,13 +1980,13 @@ export async function executeClaimedRun(
   const managedOutputArtifactPaths = new Set<string>();
 
   try {
-    const commandSpec = getExecutionCommandSpec(activeLease(), cwd, commandOutputMode);
+    const commandSpec = getExecutionCommandSpec(activeLease(), executionPolicy, cwd, commandOutputMode);
     await progressReporter.append({
       phase: 'agent.process',
       status: 'started',
       message: 'Agent process started',
       payloadJson: {
-        commandKey: commandSpec.commandKey,
+        executionPolicyKey: commandSpec.executionPolicyKey,
         terminalBackend,
       },
     });
@@ -2031,11 +2039,9 @@ export async function executeClaimedRun(
     const result = usesManagedTmux
       ? await executeTmuxCommand({
           runId: claimedLease.runId,
-          definition: getAllowlistedDefinition(options.allowlist, commandSpec.commandKey),
+          policy: executionPolicy,
           args: commandSpec.args,
           cwd: commandSpec.cwd,
-          workspaceRoot: options.workspaceRoot,
-          env: commandSpec.env,
           timeoutMs: commandSpec.timeoutMs || DEFAULT_RUN_HEARTBEAT_INTERVAL_MS * 180,
           cancelSignal: cancelController.signal,
           leaseLostSignal: leaseLostController.signal,
@@ -2051,13 +2057,11 @@ export async function executeClaimedRun(
             await startManagedTmuxControls(metadata.startedAt);
           },
         })
-      : await (options.executeCommand || executeAllowlistedCommand)({
-          commandKey: commandSpec.commandKey,
-          allowlist: options.allowlist,
+      : await (options.executeCommand || executePolicyCommand)({
+          executionPolicyKey: commandSpec.executionPolicyKey,
+          executionPolicies: options.executionPolicies,
           args: commandSpec.args,
           cwd: commandSpec.cwd,
-          workspaceRoot: options.workspaceRoot,
-          env: commandSpec.env,
           timeoutMs: commandSpec.timeoutMs,
           cancelSignal: cancelController.signal,
           leaseLostSignal: leaseLostController.signal,
@@ -2312,7 +2316,16 @@ export async function runDaemonOnce(options: RunDaemonOnceOptions): Promise<Daem
     : await detectAgentProfiles({ ...options.detectOptions, signal: options.stopSignal });
   await options.gateway.heartbeatNode({
     profiles,
+    profilesHash: getDetectedProfilesHash(profiles),
+    includeNodeSnapshot: true,
   });
+  return await claimAndExecuteOnce(options);
+}
+
+async function claimAndExecuteOnce(
+  options: RunDaemonOnceOptions,
+  onActiveRunChange?: (active: boolean) => void,
+): Promise<DaemonRunOnceResult> {
   const claim = await options.gateway.claimRun({
     profileKey: options.claimProfileKey,
     runId: options.claimRunId,
@@ -2323,10 +2336,15 @@ export async function runDaemonOnce(options: RunDaemonOnceOptions): Promise<Daem
       reason: 'no_claimable_run',
     };
   }
-  return await executeClaimedRun(options, {
-    ...claim,
-    claimed: true,
-  });
+  onActiveRunChange?.(true);
+  try {
+    return await executeClaimedRun(options, {
+      ...claim,
+      claimed: true,
+    });
+  } finally {
+    onActiveRunChange?.(false);
+  }
 }
 
 function delay(ms: number, signal?: AbortSignal) {
@@ -2355,6 +2373,7 @@ function delay(ms: number, signal?: AbortSignal) {
 
 export async function runDaemonLoop(options: DaemonRunLoopOptions) {
   const pollIntervalMs = options.pollIntervalMs || 10_000;
+  const nodeHeartbeatIntervalMs = options.nodeHeartbeatIntervalMs || 30_000;
   const retryInitialDelayMs = options.retryInitialDelayMs || DEFAULT_LOOP_RETRY_INITIAL_DELAY_MS;
   const retryMaxDelayMs = options.retryMaxDelayMs || DEFAULT_LOOP_RETRY_MAX_DELAY_MS;
   const detectProfiles =
@@ -2363,25 +2382,87 @@ export async function runDaemonLoop(options: DaemonRunLoopOptions) {
       ...options.detectOptions,
       refreshIntervalMs: options.profileRefreshIntervalMs,
     });
-  let failureCount = 0;
-  while (!options.stopSignal?.aborted) {
-    try {
-      const result = await runDaemonOnce({
-        ...options,
-        detectProfiles,
-      });
-      failureCount = 0;
-      if (result.status === 'idle') {
-        await delay(pollIntervalMs, options.stopSignal);
+  let currentConcurrency = 0;
+  let lastProfilesHash = '';
+  let nodeSnapshotSent = false;
+  let nodeHeartbeatFailureCount = 0;
+  const sendNodeHeartbeat = async () => {
+    const profiles = await detectProfiles(options.stopSignal);
+    const profilesHash = getDetectedProfilesHash(profiles);
+    const profilesChanged = profilesHash !== lastProfilesHash;
+    await options.gateway.heartbeatNode({
+      currentConcurrency,
+      includeNodeSnapshot: !nodeSnapshotSent,
+      ...(profilesChanged ? { profiles, profilesHash } : {}),
+    });
+    lastProfilesHash = profilesHash;
+    nodeSnapshotSent = true;
+  };
+  const nodeHeartbeatLoop = async () => {
+    while (!options.stopSignal?.aborted) {
+      await delay(nodeHeartbeatIntervalMs, options.stopSignal);
+      if (options.stopSignal?.aborted) {
+        break;
       }
-    } catch (error) {
-      failureCount += 1;
-      const retryDelayMs = Math.min(retryMaxDelayMs, retryInitialDelayMs * 2 ** Math.max(0, failureCount - 1));
-      options.onLoopError?.(error, {
-        failureCount,
-        retryDelayMs,
-      });
-      await delay(retryDelayMs, options.stopSignal);
+      try {
+        await sendNodeHeartbeat();
+        nodeHeartbeatFailureCount = 0;
+      } catch (error) {
+        nodeHeartbeatFailureCount += 1;
+        const retryDelayMs = Math.min(
+          retryMaxDelayMs,
+          retryInitialDelayMs * 2 ** Math.max(0, nodeHeartbeatFailureCount - 1),
+        );
+        options.onLoopError?.(error, {
+          source: 'node-heartbeat',
+          failureCount: nodeHeartbeatFailureCount,
+          retryDelayMs,
+        });
+        await delay(Math.min(nodeHeartbeatIntervalMs, retryDelayMs), options.stopSignal);
+      }
     }
+  };
+
+  try {
+    await sendNodeHeartbeat();
+  } catch (error) {
+    nodeHeartbeatFailureCount = 1;
+    options.onLoopError?.(error, {
+      source: 'node-heartbeat',
+      failureCount: nodeHeartbeatFailureCount,
+      retryDelayMs: retryInitialDelayMs,
+    });
+  }
+  const nodeHeartbeatPromise = nodeHeartbeatLoop();
+  let claimFailureCount = 0;
+  try {
+    while (!options.stopSignal?.aborted) {
+      try {
+        const result = await claimAndExecuteOnce(
+          {
+            ...options,
+            detectProfiles,
+          },
+          (active) => {
+            currentConcurrency = active ? 1 : 0;
+          },
+        );
+        claimFailureCount = 0;
+        if (result.status === 'idle') {
+          await delay(pollIntervalMs, options.stopSignal);
+        }
+      } catch (error) {
+        claimFailureCount += 1;
+        const retryDelayMs = Math.min(retryMaxDelayMs, retryInitialDelayMs * 2 ** Math.max(0, claimFailureCount - 1));
+        options.onLoopError?.(error, {
+          source: 'claim',
+          failureCount: claimFailureCount,
+          retryDelayMs,
+        });
+        await delay(retryDelayMs, options.stopSignal);
+      }
+    }
+  } finally {
+    await nodeHeartbeatPromise;
   }
 }

@@ -8,16 +8,20 @@
  */
 
 import { createHash, randomUUID } from 'crypto';
-import { createReadStream, promises as fs } from 'fs';
-import path from 'path';
+import { constants, promises as fs } from 'fs';
 
 import { Context } from '@nocobase/actions';
 import { Plugin } from '@nocobase/server';
 import { Transaction } from 'sequelize';
-import { storagePathJoin } from '@nocobase/utils';
 
 import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiActionName } from '../../shared/apiContract';
 import {
+  UnsafeFileUploadStoragePathError,
+  createFileUploadStorageFile,
+  resolveFileUploadStoragePath,
+} from '../services/fileUploadStorage';
+import {
+  AGENT_GATEWAY_ERROR_CODES,
   JsonRecord,
   ModelRecord,
   asActionContext,
@@ -40,10 +44,36 @@ const PURPOSES = new Set(['skill-version', 'run-artifact']);
 
 async function hashFile(filePath: string) {
   const hash = createHash('sha256');
-  for await (const chunk of createReadStream(filePath)) {
-    hash.update(chunk);
+  const handle = await fs.open(filePath, constants.O_RDONLY | constants.O_NOFOLLOW);
+  try {
+    const buffer = Buffer.allocUnsafe(64 * 1024);
+    let position = 0;
+    let bytesRead = 0;
+    do {
+      ({ bytesRead } = await handle.read(buffer, 0, buffer.byteLength, position));
+      hash.update(buffer.subarray(0, bytesRead));
+      position += bytesRead;
+    } while (bytesRead > 0);
+  } finally {
+    await handle.close();
   }
   return hash.digest('hex');
+}
+
+async function getSafeUploadStoragePath(ctx: Context, upload: ModelRecord) {
+  try {
+    return await resolveFileUploadStoragePath(getModelString(upload, 'storagePath'));
+  } catch (error) {
+    if (error instanceof UnsafeFileUploadStoragePathError || (error as NodeJS.ErrnoException).code === 'ENOENT') {
+      ctx.throw(409, {
+        code: AGENT_GATEWAY_ERROR_CODES.unsafeFileUploadStorageLocator,
+        message: ctx.t('Upload storage locator is invalid', {
+          ns: '@nocobase/plugin-agent-gateway',
+        }),
+      });
+    }
+    throw error;
+  }
 }
 
 async function getUpload(ctx: Context, uploadId: string, transaction?: Transaction) {
@@ -84,24 +114,27 @@ async function initUpload(ctx: Context) {
     ctx.throw(413, `Upload size must be between 1 and ${MAX_UPLOAD_BYTES} bytes`);
   }
   const id = randomUUID();
-  const uploadDir = storagePathJoin('agent-gateway', 'file-uploads');
-  const storagePath = path.join(uploadDir, `${id}.part`);
-  await fs.mkdir(uploadDir, { recursive: true });
-  await fs.writeFile(storagePath, Buffer.alloc(0), { mode: 0o600 });
-  const upload = (await ctx.db.getRepository('agFileUploads').create({
-    values: {
-      id,
-      purpose,
-      status: 'pending',
-      fileName: getString(values.fileName) || null,
-      mimeType: getString(values.mimeType) || null,
-      expectedBytes,
-      receivedBytes: 0,
-      storagePath,
-      expiresAt: new Date(Date.now() + UPLOAD_TTL_MS),
-      metadataJson: getRecord(values.metadata),
-    },
-  })) as ModelRecord;
+  const storagePath = await createFileUploadStorageFile(id);
+  let upload: ModelRecord;
+  try {
+    upload = (await ctx.db.getRepository('agFileUploads').create({
+      values: {
+        id,
+        purpose,
+        status: 'pending',
+        fileName: getString(values.fileName) || null,
+        mimeType: getString(values.mimeType) || null,
+        expectedBytes,
+        receivedBytes: 0,
+        storagePath,
+        expiresAt: new Date(Date.now() + UPLOAD_TTL_MS),
+        metadataJson: getRecord(values.metadata),
+      },
+    })) as ModelRecord;
+  } catch (error) {
+    await fs.rm(storagePath, { force: true });
+    throw error;
+  }
   ctx.body = { ...serializeUpload(upload), chunkSize: MAX_CHUNK_BYTES };
 }
 
@@ -124,8 +157,9 @@ async function appendUpload(ctx: Context, uploadId: string) {
     }
     const receivedBytes = getModelNumber(upload, 'receivedBytes');
     const expectedBytes = getModelNumber(upload, 'expectedBytes');
+    const storagePath = await getSafeUploadStoragePath(ctx, upload);
     if (offset < receivedBytes && offset + content.byteLength <= receivedBytes) {
-      const handle = await fs.open(getModelString(upload, 'storagePath'), 'r');
+      const handle = await fs.open(storagePath, constants.O_RDONLY | constants.O_NOFOLLOW);
       try {
         const existing = Buffer.allocUnsafe(content.byteLength);
         await handle.read(existing, 0, existing.byteLength, offset);
@@ -142,8 +176,7 @@ async function appendUpload(ctx: Context, uploadId: string) {
     if (receivedBytes + content.byteLength > expectedBytes) {
       ctx.throw(413, 'Upload exceeds the declared size');
     }
-    const storagePath = getModelString(upload, 'storagePath');
-    const handle = await fs.open(storagePath, 'r+');
+    const handle = await fs.open(storagePath, constants.O_RDWR | constants.O_NOFOLLOW);
     try {
       await handle.write(content, 0, content.byteLength, offset);
       await handle.sync();
@@ -158,7 +191,12 @@ async function appendUpload(ctx: Context, uploadId: string) {
         transaction,
       });
     } catch (error) {
-      await fs.truncate(storagePath, receivedBytes);
+      const truncateHandle = await fs.open(storagePath, constants.O_WRONLY | constants.O_NOFOLLOW);
+      try {
+        await truncateHandle.truncate(receivedBytes);
+      } finally {
+        await truncateHandle.close();
+      }
       throw error;
     }
     return { uploadId, receivedBytes: nextReceivedBytes, idempotent: false };
@@ -174,7 +212,8 @@ async function completeUpload(ctx: Context, uploadId: string) {
   if (getModelNumber(upload, 'receivedBytes') !== getModelNumber(upload, 'expectedBytes')) {
     ctx.throw(409, 'Upload is incomplete');
   }
-  const sha256 = await hashFile(getModelString(upload, 'storagePath'));
+  const storagePath = await getSafeUploadStoragePath(ctx, upload);
+  const sha256 = await hashFile(storagePath);
   await ctx.db.getRepository('agFileUploads').update({
     filterByTk: uploadId,
     values: { status: 'completed', sha256 },
@@ -185,7 +224,8 @@ async function completeUpload(ctx: Context, uploadId: string) {
 async function abortUpload(ctx: Context, uploadId: string) {
   await requireManagePermission(ctx);
   const upload = await getUpload(ctx, uploadId);
-  await fs.rm(getModelString(upload, 'storagePath'), { force: true });
+  const storagePath = await getSafeUploadStoragePath(ctx, upload);
+  await fs.rm(storagePath, { force: true });
   await ctx.db.getRepository('agFileUploads').destroy({ filterByTk: uploadId });
   ctx.body = { uploadId, aborted: true };
 }
@@ -195,15 +235,16 @@ export async function consumeCompletedUpload(ctx: Context, uploadId: string, pur
   if (getModelString(upload, 'status') !== 'completed' || getModelString(upload, 'purpose') !== purpose) {
     ctx.throw(409, 'Upload is not ready for this operation');
   }
+  const storagePath = await getSafeUploadStoragePath(ctx, upload);
   return {
     upload,
-    storagePath: getModelString(upload, 'storagePath'),
+    storagePath,
     sha256: getModelString(upload, 'sha256'),
     sizeBytes: getModelNumber(upload, 'expectedBytes'),
   };
 }
 
-export async function cleanupExpiredFileUploads(plugin: Pick<Plugin, 'db'>, now = new Date()) {
+export async function cleanupExpiredFileUploads(plugin: Pick<Plugin, 'app' | 'db'>, now = new Date()) {
   if (!plugin.db.hasCollection('agFileUploads') || !(await plugin.db.collectionExistsInDb('agFileUploads'))) {
     return 0;
   }
@@ -219,7 +260,15 @@ export async function cleanupExpiredFileUploads(plugin: Pick<Plugin, 'db'>, now 
     limit: 1000,
   })) as ModelRecord[];
   for (const upload of uploads) {
-    await fs.rm(getModelString(upload, 'storagePath'), { force: true });
+    try {
+      const storagePath = await resolveFileUploadStoragePath(getModelString(upload, 'storagePath'));
+      await fs.rm(storagePath, { force: true });
+    } catch (error) {
+      plugin.app.logger?.warn?.('Agent Gateway skipped unsafe file upload cleanup locator', {
+        uploadId: getModelTargetKey(upload, 'id'),
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
   }
   const uploadIds = uploads.map((upload) => getModelTargetKey(upload, 'id')).filter(Boolean);
   if (uploadIds.length) {

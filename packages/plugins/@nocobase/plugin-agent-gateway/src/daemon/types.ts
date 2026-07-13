@@ -36,8 +36,32 @@ export interface DaemonConfig {
   tokenLast4?: string;
   heartbeatIntervalSeconds?: number;
   claimIntervalSeconds?: number;
+  executionPolicies: ExecutionPolicyDefinition[];
   savedAt: string;
 }
+
+export interface ExecutionPolicyOptionRule {
+  flag: string;
+  type: 'boolean' | 'enum' | 'integer';
+  allowedValues?: string[];
+  min?: number;
+  max?: number;
+}
+
+export interface ExecutionPolicyDefinition {
+  executionPolicyKey: string;
+  provider: AgentProviderKey;
+  executable: string;
+  baseArgs?: string[];
+  allowedOptions?: Record<string, ExecutionPolicyOptionRule>;
+  options?: Record<string, boolean | number | string>;
+  workspaceRoot: string;
+  envKeys?: string[];
+  defaultTimeoutMs?: number;
+  maxTimeoutMs: number;
+}
+
+export type ExecutionPolicySet = Record<string, ExecutionPolicyDefinition> | ExecutionPolicyDefinition[];
 
 export interface GatewayRequestOptions {
   method: 'GET' | 'POST';
@@ -65,7 +89,7 @@ export interface RunLease extends JsonRecord {
   claimed?: boolean;
   run?: JsonRecord;
   profileKey?: string;
-  profileProvider?: AgentProviderKey;
+  executionPolicyKey?: string;
   profileCapabilities?: JsonRecord;
   cancelRequested?: boolean;
   cancelReason?: string;

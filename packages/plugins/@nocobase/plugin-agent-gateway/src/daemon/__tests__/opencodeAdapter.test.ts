@@ -32,7 +32,6 @@ describe('OpenCode agent adapter', () => {
         cwd: '/workspace',
       }),
     ).toMatchObject({
-      commandKey: 'opencode',
       args: ['run', '--format', 'json', 'Build a page'],
       cwd: '/workspace',
     });
@@ -52,10 +51,16 @@ describe('OpenCode agent adapter', () => {
         outputMode: 'terminal',
       }),
     ).toMatchObject({
-      commandKey: 'opencode',
       args: ['run', 'Build a page'],
       cwd: '/workspace',
     });
+  });
+
+  it.each([
+    ['--cwd', '/tmp'],
+    ['--config', '/tmp/opencode.json'],
+  ])('rejects working-directory or config overrides before launch: %s', (...args) => {
+    expect(() => opencodeAdapter.validatePolicyArgs(args)).toThrow(/forbidden argument/);
   });
 
   it('normalizes simple JSON events and ignores malformed lines', () => {

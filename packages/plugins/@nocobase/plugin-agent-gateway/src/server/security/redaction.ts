@@ -28,7 +28,7 @@ const API_CALL_LOG_EXTRA_REDACTED_KEYS = ['prompt'];
 const API_CALL_LOG_PROMPT_KEYS = ['message', 'messages', 'content', 'input', 'instructions'];
 const EXECUTION_CONFIG_REDACTED_KEYS = ['command', 'commandPath', 'cwd', 'env'];
 const ARTIFACT_METADATA_URL_KEYS = ['externalUrl', 'artifactUrl', 'downloadUrl', 'url', 'href'];
-const AGENT_GATEWAY_TOKEN_PATTERN = /\bag_(?:inv|node|claim|stream)_[A-Za-z0-9._~+/-]+=*/gi;
+const AGENT_GATEWAY_TOKEN_PATTERN = /\bag_(?:inv|node|claim|stream|skill)_[A-Za-z0-9._~+/-]+=*/gi;
 const EXTERNAL_URL_PATTERN = /\bhttps?:\/\/[^\s"'<>]+/gi;
 
 export interface RedactionOptions {

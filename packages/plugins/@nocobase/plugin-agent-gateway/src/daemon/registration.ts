@@ -10,9 +10,10 @@
 import { hostname, platform, arch } from 'os';
 import { randomUUID } from 'crypto';
 
-import { writeDaemonConfig, serializeSafeConfig } from './config';
-import { DaemonConfig, DetectedAgentProfile, GatewayRequester, JsonRecord } from './types';
+import { createDefaultExecutionPolicies, writeDaemonConfig, serializeSafeConfig } from './config';
+import { DaemonConfig, DetectedAgentProfile, ExecutionPolicyDefinition, GatewayRequester, JsonRecord } from './types';
 import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiPath } from '../shared/apiContract';
+import { getDetectedProfilesHash } from './profileDetection';
 
 export interface RegisterDaemonOptions {
   requester: GatewayRequester;
@@ -24,6 +25,8 @@ export interface RegisterDaemonOptions {
   displayName?: string;
   daemonVersion?: string;
   capabilities?: JsonRecord;
+  executionPolicies?: ExecutionPolicyDefinition[];
+  workspaceRoot?: string;
 }
 
 export interface HeartbeatDaemonOptions {
@@ -87,6 +90,8 @@ export async function registerDaemonNode(options: RegisterDaemonOptions) {
     tokenLast4: registerResponse.tokenLast4 || registerResponse.nodeToken.slice(-4),
     heartbeatIntervalSeconds: registerResponse.heartbeatIntervalSeconds,
     claimIntervalSeconds: registerResponse.claimIntervalSeconds,
+    executionPolicies:
+      options.executionPolicies || createDefaultExecutionPolicies(options.workspaceRoot || process.cwd()),
     savedAt: new Date().toISOString(),
   };
   await writeDaemonConfig(config, options.configPath);
@@ -114,6 +119,7 @@ export async function heartbeatDaemonNode(options: HeartbeatDaemonOptions) {
         supportsSnapshots: true,
       },
       profiles: options.profiles,
+      profilesHash: getDetectedProfilesHash(options.profiles),
     },
   });
 }

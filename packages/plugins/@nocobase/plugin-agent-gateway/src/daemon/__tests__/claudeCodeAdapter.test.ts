@@ -32,7 +32,6 @@ describe('Claude-style agent adapter', () => {
         cwd: '/workspace',
       }),
     ).toMatchObject({
-      commandKey: 'claude-code',
       args: ['-p', 'Build a page', '--output-format', 'stream-json'],
       cwd: '/workspace',
     });
@@ -52,10 +51,16 @@ describe('Claude-style agent adapter', () => {
         outputMode: 'terminal',
       }),
     ).toMatchObject({
-      commandKey: 'claude-code',
       args: ['-p', 'Build a page'],
       cwd: '/workspace',
     });
+  });
+
+  it.each([
+    ['--permission-mode', 'bypassPermissions'],
+    ['--add-dir', '/tmp'],
+  ])('rejects permission-expanding local policy args before launch: %s', (...args) => {
+    expect(() => claudeCodeAdapter.validatePolicyArgs(args)).toThrow(/forbidden argument/);
   });
 
   it('normalizes simple JSON events and ignores malformed lines', () => {

@@ -13,11 +13,7 @@ import WebSocket from 'ws';
 
 import {
   TERMINAL_PROTOCOL,
-  TERMINAL_STREAM_BROWSER_AUTHENTICATOR_PROTOCOL_PREFIX,
-  TERMINAL_STREAM_BROWSER_AUTH_PROOF_PROTOCOL_PREFIX,
-  TERMINAL_STREAM_BROWSER_ROLE_PROTOCOL_PREFIX,
   TERMINAL_STREAM_BROWSER_SUBPROTOCOL,
-  TERMINAL_STREAM_BROWSER_TICKET_PROOF_PROTOCOL_PREFIX,
   TERMINAL_STREAM_BROWSER_TICKET_PROTOCOL_PREFIX,
   TERMINAL_STREAM_WS_PATH,
 } from '../src/shared/terminalStreamProtocol';
@@ -118,30 +114,11 @@ function encodeWebSocketProtocolValue(value?: string) {
   return Buffer.from(value, 'utf8').toString('base64url');
 }
 
-function buildBrowserStreamProtocols(options: {
-  ticket: string;
-  ticketProof: string;
-  authProof?: string;
-  authenticator?: string;
-  role?: string;
-}) {
-  const protocols = [
+function buildBrowserStreamProtocols(options: { ticket: string }) {
+  return [
     TERMINAL_STREAM_BROWSER_SUBPROTOCOL,
     `${TERMINAL_STREAM_BROWSER_TICKET_PROTOCOL_PREFIX}${encodeWebSocketProtocolValue(options.ticket)}`,
-    `${TERMINAL_STREAM_BROWSER_TICKET_PROOF_PROTOCOL_PREFIX}${encodeWebSocketProtocolValue(options.ticketProof)}`,
-    `${TERMINAL_STREAM_BROWSER_AUTHENTICATOR_PROTOCOL_PREFIX}${encodeWebSocketProtocolValue(
-      options.authenticator || 'basic',
-    )}`,
   ];
-  if (options.authProof) {
-    protocols.push(
-      `${TERMINAL_STREAM_BROWSER_AUTH_PROOF_PROTOCOL_PREFIX}${encodeWebSocketProtocolValue(options.authProof)}`,
-    );
-  }
-  if (options.role) {
-    protocols.push(`${TERMINAL_STREAM_BROWSER_ROLE_PROTOCOL_PREFIX}${encodeWebSocketProtocolValue(options.role)}`);
-  }
-  return protocols;
 }
 
 function splitCsv(value: string) {
@@ -490,11 +467,7 @@ async function requestWsRawWriteAliases(args: DenialArgs, token: string): Promis
   }
   const ticketBody = getRecord(getRecord(ticketResponse.body).data) || getRecord(ticketResponse.body);
   const ticket = getString(ticketBody.ticket);
-  const ticketProof = getString(ticketBody.ticketProof);
-  const authProof = getString(ticketBody.authProof);
-  const authenticator = getString(ticketBody.authenticator) || 'basic';
-  const role = getString(ticketBody.role);
-  if (!ticket || !ticketProof) {
+  if (!ticket) {
     return {
       status: 500,
       body: {
@@ -511,10 +484,6 @@ async function requestWsRawWriteAliases(args: DenialArgs, token: string): Promis
       wsUrl,
       buildBrowserStreamProtocols({
         ticket,
-        ticketProof,
-        authProof,
-        authenticator,
-        role,
       }),
     );
     const results: JsonRecord[] = [];
@@ -584,7 +553,7 @@ async function requestWsRawWriteAliases(args: DenialArgs, token: string): Promis
         ]);
         return;
       }
-      assertNoValueLeak('raw-write-ws-aliases', frame, [ticket, ticketProof, authProof, token]);
+      assertNoValueLeak('raw-write-ws-aliases', frame, [ticket, token]);
       const record = getRecord(frame);
       const requestId = getString(record.requestId);
       if (requestId === `${requestIdPrefix}-subscribe`) {

@@ -99,7 +99,7 @@ describe('agent gateway daemon lifecycle client', () => {
           driver: 'exec',
           status: 'active',
           capabilities: {
-            commandKey: 'opencode',
+            executionPolicyKey: 'opencode',
           },
           metadata: {},
         },
@@ -164,12 +164,29 @@ describe('agent gateway daemon lifecycle client', () => {
       savedAt: '2026-07-01T00:00:00.000Z',
     });
 
-    await gateway.heartbeatNode({ profiles: [] });
+    await gateway.heartbeatNode({
+      profiles: [],
+      profilesHash: 'profiles-hash-1',
+      includeNodeSnapshot: true,
+    });
+    await gateway.heartbeatNode({
+      currentConcurrency: 1,
+    });
 
     expect((requester.calls[0].body as JsonRecord).installationId).toBe('11111111-2222-4333-8444-555555555555');
+    expect(requester.calls[0].body).toMatchObject({
+      profiles: [],
+      profilesHash: 'profiles-hash-1',
+      capabilities: expect.any(Object),
+      hostInfo: expect.any(Object),
+    });
+    expect(requester.calls[1].body).toEqual({
+      installationId: '11111111-2222-4333-8444-555555555555',
+      currentConcurrency: 1,
+    });
   });
 
-  it('backfills a legacy config with one persistent installation id', async () => {
+  it('rejects configs that do not declare local execution policies', async () => {
     const configPath = path.join(tempDir, 'legacy-config.json');
     await fs.writeFile(
       configPath,
@@ -182,17 +199,11 @@ describe('agent gateway daemon lifecycle client', () => {
       }),
     );
 
-    const first = await readDaemonConfig(configPath);
-    const storedAfterBackfill = await fs.readFile(configPath, 'utf8');
-    const second = await readDaemonConfig(configPath);
-
-    expect(first.installationId).toMatch(/^[0-9a-f-]{36}$/);
-    expect(second.installationId).toBe(first.installationId);
-    expect(await fs.readFile(configPath, 'utf8')).toBe(storedAfterBackfill);
+    await expect(readDaemonConfig(configPath)).rejects.toThrow(/Invalid Agent Gateway daemon config/);
   });
 
   it('keeps install script token input separate from script download and URL arguments', async () => {
-    const scriptPath = path.resolve(__dirname, '../../../scripts/install-agent-gateway-daemon.sh');
+    const scriptPath = path.resolve(__dirname, '../../server/assets/install-agent-gateway-daemon.sh');
     const script = await fs.readFile(scriptPath, 'utf8');
 
     await expect(execFileAsync('bash', ['-n', scriptPath])).resolves.toBeTruthy();

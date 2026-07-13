@@ -15,7 +15,7 @@ export const AG_RUN_CONTROL_REQUEST_UNIQUE_CONSTRAINT_NOTE =
 export default defineCollection({
   name: 'agRunControlRequests',
   tableName: 'ag_run_control_requests',
-  dataCategory: 'business',
+  dataCategory: 'system',
   migrationRules: ['schema-only'],
   autoGenId: false,
   indexes: [

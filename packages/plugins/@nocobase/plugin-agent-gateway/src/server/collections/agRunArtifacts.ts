@@ -18,7 +18,7 @@ export const AG_RUN_ARTIFACT_UNIQUE_CONSTRAINT_NOTE =
 export default defineCollection({
   name: 'agRunArtifacts',
   tableName: 'ag_run_artifacts',
-  dataCategory: 'business',
+  dataCategory: 'system',
   migrationRules: ['schema-only'],
   autoGenId: false,
   indexes: [

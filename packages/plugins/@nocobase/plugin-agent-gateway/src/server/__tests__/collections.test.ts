@@ -8,8 +8,11 @@
  */
 
 import { CollectionOptions, createMockDatabase, Database } from '@nocobase/database';
+import { readdirSync } from 'fs';
+import path from 'path';
 
 import { AGENT_GATEWAY_RETENTION_DEFAULTS_DAYS } from '../constants';
+import { AGENT_GATEWAY_STANDARD_COLLECTIONS } from '../actions/utils';
 import agAgentConversationEvents from '../collections/agAgentConversationEvents';
 import agAgentProfiles from '../collections/agAgentProfiles';
 import agAgentSessions, { AG_AGENT_SESSION_PROVIDER_ID_UNIQUE_CONSTRAINT_NOTE } from '../collections/agAgentSessions';
@@ -32,8 +35,11 @@ import agRunEvents from '../collections/agRunEvents';
 import agRuns from '../collections/agRuns';
 import agRunSnapshots from '../collections/agRunSnapshots';
 import agSkills from '../collections/agSkills';
+import agSkillDownloadCapabilities from '../collections/agSkillDownloadCapabilities';
 import agSkillVersions from '../collections/agSkillVersions';
+import agTaskTemplates from '../collections/agTaskTemplates';
 import agTerminalStreamTickets from '../collections/agTerminalStreamTickets';
+import { AGENT_GATEWAY_COLLECTION_REGISTRY } from '../collectionRegistry';
 import { registerEventIngestCursorHooks } from '../services/eventIngestCursor';
 
 const collections = [
@@ -46,6 +52,8 @@ const collections = [
   agSkills,
   agSkillVersions,
   agNodeSkillInstalls,
+  agSkillDownloadCapabilities,
+  agTaskTemplates,
   agPromptTemplates,
   agDispatchBindings,
   agExternalRunIdentities,
@@ -63,30 +71,7 @@ const collections = [
 
 const collectionByName = new Map(collections.map((collection) => [collection.name, collection]));
 
-const requiredCollectionNames = [
-  'agNodes',
-  'agNodeInvitations',
-  'agAgentProfiles',
-  'agAgentSessions',
-  'agEventIngestSequences',
-  'agAgentConversationEvents',
-  'agSkills',
-  'agSkillVersions',
-  'agNodeSkillInstalls',
-  'agPromptTemplates',
-  'agDispatchBindings',
-  'agExternalRunIdentities',
-  'agExternalImportBatches',
-  'agFileUploads',
-  'agMaintenanceLeases',
-  'agRuns',
-  'agRunControlRequests',
-  'agRunEvents',
-  'agRunArtifacts',
-  'agRunSnapshots',
-  'agApiCallLogs',
-  'agTerminalStreamTickets',
-];
+const requiredCollectionNames = AGENT_GATEWAY_COLLECTION_REGISTRY.map((registration) => registration.name);
 
 const fieldNamesOf = (collectionName: string) =>
   (collectionByName.get(collectionName)?.fields || []).map((field) => field.name);
@@ -130,12 +115,35 @@ const syncIt = process.env.DB_DIALECT && process.env.DB_DIALECT !== 'sqlite' ? i
 
 describe('agent gateway collections', () => {
   it('defines the required collections with ag-prefixed physical tables', () => {
-    expect(collections.map((collection) => collection.name)).toEqual(requiredCollectionNames);
+    const collectionSourceNames = readdirSync(path.resolve(__dirname, '../collections'))
+      .filter((fileName) => fileName.endsWith('.ts'))
+      .map((fileName) => fileName.slice(0, -3))
+      .sort();
+
+    expect(collectionSourceNames).toEqual([...requiredCollectionNames].sort());
+    expect(collections.map((collection) => collection.name).sort()).toEqual([...requiredCollectionNames].sort());
+    expect([...AGENT_GATEWAY_STANDARD_COLLECTIONS].sort()).toEqual([...requiredCollectionNames].sort());
 
     for (const collection of collections) {
       expect(collection.tableName).toMatch(/^ag_/);
       expect(collection.autoGenId).toBe(false);
       expect(collection.migrationRules).toContain('schema-only');
+    }
+  });
+
+  it('keeps collection exposure and registry metadata aligned', () => {
+    expect(collections).toHaveLength(AGENT_GATEWAY_COLLECTION_REGISTRY.length);
+
+    for (const registration of AGENT_GATEWAY_COLLECTION_REGISTRY) {
+      const collection = collectionByName.get(registration.name);
+      expect(collection, registration.name).toBeTruthy();
+      expect(collection?.dataCategory, registration.name).toBe(registration.exposure);
+      if (registration.exposure === 'system') {
+        expect(registration.allowBusinessRelation, registration.name).toBe(false);
+      }
+      if (registration.containsStorageLocator) {
+        expect(registration.name === 'agFileUploads' || registration.name === 'agSkillVersions').toBe(true);
+      }
     }
   });
 
@@ -203,6 +211,9 @@ describe('agent gateway collections', () => {
     expectNullableForeignKey('agAgentConversationEvents', 'sessionId');
     expectRequiredForeignKey('agTerminalStreamTickets', 'runId');
     expectRequiredField('agTerminalStreamTickets', 'userId');
+    expectRequiredField('agTerminalStreamTickets', 'authenticator');
+    expectRequiredField('agTerminalStreamTickets', 'currentRole');
+    expectRequiredField('agTerminalStreamTickets', 'currentRoles');
     expectRequiredField('agTerminalStreamTickets', 'expiresAt');
   });
 
@@ -368,16 +379,27 @@ describe('agent gateway collections', () => {
     expect(getField('agRuns', 'claimExpiresAt')?.hidden).toBe(true);
     expect(getField('agRuns', 'terminalSessionName')?.hidden).toBe(true);
     expect(getField('agTerminalStreamTickets', 'ticketHash')?.hidden).toBe(true);
-    expect(getField('agTerminalStreamTickets', 'ticketProofHash')?.hidden).toBe(true);
-    expect(getField('agTerminalStreamTickets', 'authProofHash')?.hidden).toBe(true);
-    expect(getField('agTerminalStreamTickets', 'authProofHash')?.defaultValue).toBe('');
+    expect(fieldNamesOf('agTerminalStreamTickets')).toEqual([
+      'id',
+      'ticketHash',
+      'ticketLast4',
+      'runId',
+      'run',
+      'userId',
+      'user',
+      'authenticator',
+      'currentRole',
+      'currentRoles',
+      'expiresAt',
+      'usedAt',
+    ]);
     expect(getField('agRuns', 'promptSnapshot')?.hidden).toBe(true);
     expect(getField('agRuns', 'executionPayloadJson')?.hidden).toBe(true);
     expect(getField('agRuns', 'observabilityRollupJson')?.hidden).toBe(true);
 
     for (const collectionName of ['agNodeInvitations', 'agNodes', 'agRuns', 'agTerminalStreamTickets']) {
       expect(fieldNamesOf(collectionName)).not.toEqual(
-        expect.arrayContaining(['token', 'nodeToken', 'claimToken', 'ticket', 'ticketProof', 'authProof']),
+        expect.arrayContaining(['token', 'nodeToken', 'claimToken', 'ticket']),
       );
     }
   });
@@ -421,6 +443,9 @@ describe('agent gateway collections', () => {
         ['agRunSnapshots', 'claimAttempt'],
         ['agTerminalStreamTickets', 'runId'],
         ['agTerminalStreamTickets', 'userId'],
+        ['agTerminalStreamTickets', 'authenticator'],
+        ['agTerminalStreamTickets', 'currentRole'],
+        ['agTerminalStreamTickets', 'currentRoles'],
         ['agTerminalStreamTickets', 'expiresAt'],
       ]) {
         expect(db.getCollection(collectionName).model.rawAttributes[fieldName].allowNull).toBe(false);

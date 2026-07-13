@@ -85,8 +85,6 @@ describe('terminal stream protocol contract', () => {
   it('rejects browser subscribe frames carrying auth material aliases', () => {
     for (const field of [
       'ticket',
-      'ticketProof',
-      'authProof',
       'browserAuth',
       'token',
       'authToken',
@@ -111,7 +109,7 @@ describe('terminal stream protocol contract', () => {
         ok: false,
         error: {
           code: 'TERMINAL_PROTOCOL_ERROR',
-          message: 'browser.subscribe auth material must use websocket subprotocols',
+          message: 'browser.subscribe contains unsupported fields',
         },
       });
     }

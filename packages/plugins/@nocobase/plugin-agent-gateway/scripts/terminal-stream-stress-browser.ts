@@ -13,11 +13,7 @@ import { chromium, Page } from 'playwright';
 
 import {
   TERMINAL_PROTOCOL,
-  TERMINAL_STREAM_BROWSER_AUTHENTICATOR_PROTOCOL_PREFIX,
-  TERMINAL_STREAM_BROWSER_AUTH_PROOF_PROTOCOL_PREFIX,
-  TERMINAL_STREAM_BROWSER_ROLE_PROTOCOL_PREFIX,
   TERMINAL_STREAM_BROWSER_SUBPROTOCOL,
-  TERMINAL_STREAM_BROWSER_TICKET_PROOF_PROTOCOL_PREFIX,
   TERMINAL_STREAM_BROWSER_TICKET_PROTOCOL_PREFIX,
   TERMINAL_STREAM_WS_PATH,
 } from '../src/shared/terminalStreamProtocol';
@@ -91,10 +87,6 @@ function parseArgs(argv: string[]): StressBrowserArgs {
 
 interface StreamTicket {
   ticket: string;
-  ticketProof: string;
-  authProof?: string;
-  authenticator?: string;
-  role?: string;
 }
 
 function buildWsUrl(serverUrl: string) {
@@ -307,24 +299,11 @@ async function createStreamTickets(serverUrl: string, token: string, runId: stri
         },
       );
       const ticketValue = getString(ticket.ticket);
-      const ticketProof = getString(ticket.ticketProof);
-      const authProof = getString(ticket.authProof);
-      const authenticator = getString(ticket.authenticator) || 'basic';
-      const role = getString(ticket.role) || undefined;
-      if (!ticketValue || !ticketProof) {
-        const missingFields = [ticketValue ? '' : 'ticket', ticketProof ? '' : 'ticketProof'].filter(Boolean);
-        throw new Error(
-          `Stream ticket create response is invalid for run ${runId} at index ${index}: missing ${missingFields.join(
-            ', ',
-          )}`,
-        );
+      if (!ticketValue) {
+        throw new Error(`Stream ticket create response is invalid for run ${runId} at index ${index}: missing ticket`);
       }
       return {
         ticket: ticketValue,
-        ticketProof,
-        authProof,
-        authenticator,
-        role,
       };
     }),
   );
@@ -332,18 +311,7 @@ async function createStreamTickets(serverUrl: string, token: string, runId: stri
 
 async function openSubscriptions(page: Page, options: { wsUrl: string; runId: string; tickets: StreamTicket[] }) {
   return await page.evaluate(
-    async ({
-      browserAuthenticatorProtocolPrefix,
-      browserAuthProofProtocolPrefix,
-      browserRoleProtocolPrefix,
-      browserSubprotocol,
-      browserTicketProofProtocolPrefix,
-      browserTicketProtocolPrefix,
-      protocol,
-      wsUrl,
-      runId,
-      tickets,
-    }) => {
+    async ({ browserSubprotocol, browserTicketProtocolPrefix, protocol, wsUrl, runId, tickets }) => {
       type StoredSocketWindow = Window & {
         __agentGatewayStressSockets?: WebSocket[];
       };
@@ -363,15 +331,7 @@ async function openSubscriptions(page: Page, options: { wsUrl: string; runId: st
             const protocols = [
               browserSubprotocol,
               `${browserTicketProtocolPrefix}${encodeProtocolValue(ticket.ticket)}`,
-              `${browserTicketProofProtocolPrefix}${encodeProtocolValue(ticket.ticketProof)}`,
-              `${browserAuthenticatorProtocolPrefix}${encodeProtocolValue(ticket.authenticator || 'basic')}`,
             ];
-            if (ticket.authProof) {
-              protocols.push(`${browserAuthProofProtocolPrefix}${encodeProtocolValue(ticket.authProof)}`);
-            }
-            if (ticket.role) {
-              protocols.push(`${browserRoleProtocolPrefix}${encodeProtocolValue(ticket.role)}`);
-            }
             const socket = new WebSocket(wsUrl, protocols);
             storedWindow.__agentGatewayStressSockets?.push(socket);
             const requestId = `stress-subscribe-${Date.now()}-${Math.random().toString(16).slice(2)}-${index}`;
@@ -420,11 +380,7 @@ async function openSubscriptions(page: Page, options: { wsUrl: string; runId: st
       };
     },
     {
-      browserAuthenticatorProtocolPrefix: TERMINAL_STREAM_BROWSER_AUTHENTICATOR_PROTOCOL_PREFIX,
-      browserAuthProofProtocolPrefix: TERMINAL_STREAM_BROWSER_AUTH_PROOF_PROTOCOL_PREFIX,
-      browserRoleProtocolPrefix: TERMINAL_STREAM_BROWSER_ROLE_PROTOCOL_PREFIX,
       browserTicketProtocolPrefix: TERMINAL_STREAM_BROWSER_TICKET_PROTOCOL_PREFIX,
-      browserTicketProofProtocolPrefix: TERMINAL_STREAM_BROWSER_TICKET_PROOF_PROTOCOL_PREFIX,
       browserSubprotocol: TERMINAL_STREAM_BROWSER_SUBPROTOCOL,
       protocol: TERMINAL_PROTOCOL,
       wsUrl: options.wsUrl,

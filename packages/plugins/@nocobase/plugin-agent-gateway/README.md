@@ -12,11 +12,13 @@ Agent Gateway connects Codex, Claude Code, OpenCode, and compatible command-line
 
 Create a one-time node invitation from **Settings > Agent Gateway > Nodes**, then run the generated bootstrap command on the target machine. The daemon stores its node token in `~/.agent-gateway-daemon/config.json` with mode `0600`.
 
-The daemon workspace root limits all task working directories. Provider commands are selected from the daemon's registered profiles; arbitrary executables and environment variables are not accepted from NocoBase tasks.
+Each daemon keeps node-local execution policies in that config file. A policy owns its `executionPolicyKey`, provider, executable, fixed base arguments, validated optional values, workspace root, referenced local environment keys, and timeout ceiling. The generated Codex, Claude Code, and OpenCode policies can be edited by the node administrator before the service starts.
+
+NocoBase runs may send only the policy key, prompt or continuation message, a relative working directory inside the policy workspace, a bounded timeout, and Skill version IDs. Remote `args`, `extraArgs`, `env`, executable overrides, absolute working directories, and legacy `commandKey` fallbacks are rejected. `generic-cli` is available only when the node administrator adds an explicit local policy for it.
 
 ## Dispatch and observation
 
-Runs may be created from the Runs page, task templates, dispatch bindings, or the `agentGatewayApi` resource actions. A daemon claims a run using a short lease. Every state-changing report carries the claim token, `claimAttempt`, and `leaseVersion`, preventing stale daemons from writing to a reassigned run.
+Runs may be created from the Runs page, task templates, dispatch bindings, or the `agentGatewayApi` resource actions. A daemon claims a run using a short lease. The claim exposes the selected execution policy key and a bounded capability summary, never the executable, local workspace path, secret values, or raw environment. Every state-changing report carries the claim token, `claimAttempt`, and `leaseVersion`, preventing stale daemons from writing to a reassigned run.
 
 Observation data is stored separately as conversation events, run events, artifacts, snapshots, terminal output, and bounded API-call summaries. Sensitive tokens, command configuration, working directories, environment values, and artifact URLs are redacted before user-facing persistence.
 

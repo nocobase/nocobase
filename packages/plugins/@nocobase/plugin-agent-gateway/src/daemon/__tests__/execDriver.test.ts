@@ -11,22 +11,26 @@ import { promises as fs } from 'fs';
 import os from 'os';
 import path from 'path';
 
-import { ExecCommandDefinition, executeAllowlistedCommand, executeCommand } from '../execDriver';
+import { executePolicyCommand, executeCommand, prepareCommandExecution } from '../execDriver';
+import { ExecutionPolicyDefinition } from '../types';
 
 describe('agent gateway daemon exec driver', () => {
   let tempDir: string;
   let workspace: string;
-  let definition: ExecCommandDefinition;
+  let policy: ExecutionPolicyDefinition;
 
   beforeEach(async () => {
     tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ag-exec-driver-'));
     workspace = path.join(tempDir, 'workspace');
     await fs.mkdir(workspace, { recursive: true });
-    definition = {
-      commandKey: 'node',
+    policy = {
+      executionPolicyKey: 'node',
+      provider: 'generic-cli',
       executable: process.execPath,
-      allowedEnvKeys: ['ALLOWED_ENV'],
+      workspaceRoot: workspace,
+      envKeys: ['ALLOWED_ENV'],
       defaultTimeoutMs: 5000,
+      maxTimeoutMs: 5000,
     };
   });
 
@@ -34,11 +38,11 @@ describe('agent gateway daemon exec driver', () => {
     await fs.rm(tempDir, { recursive: true, force: true });
   });
 
-  it('runs an allowlisted command with spawn args and preserves stdout/stderr', async () => {
-    const result = await executeAllowlistedCommand({
-      commandKey: 'node',
-      allowlist: {
-        node: definition,
+  it('runs a locally configured policy with adapter args and preserves stdout/stderr', async () => {
+    const result = await executePolicyCommand({
+      executionPolicyKey: 'node',
+      executionPolicies: {
+        node: policy,
       },
       args: [
         '-e',
@@ -48,10 +52,6 @@ describe('agent gateway daemon exec driver', () => {
         ].join(''),
       ],
       cwd: workspace,
-      workspaceRoot: workspace,
-      env: {
-        ALLOWED_ENV: 'safe',
-      },
     });
 
     expect(result.status).toBe('succeeded');
@@ -59,39 +59,93 @@ describe('agent gateway daemon exec driver', () => {
     expect(result.stderr.text).toContain('error password=STDERR_PASSWORD_SECRET');
 
     await expect(
-      executeAllowlistedCommand({
-        commandKey: 'not-allowed',
-        allowlist: {
-          node: definition,
+      executePolicyCommand({
+        executionPolicyKey: 'not-allowed',
+        executionPolicies: {
+          node: policy,
         },
         args: ['-e', 'console.log("blocked")'],
         cwd: workspace,
-        workspaceRoot: workspace,
       }),
-    ).rejects.toThrow(/not allowlisted/);
+    ).rejects.toThrow(/not configured/);
   });
 
-  it('rejects cwd outside workspace and non-allowlisted env vars', async () => {
+  it('rejects cwd outside the policy workspace and only reads declared local env keys', async () => {
     await expect(
       executeCommand({
-        definition,
+        policy,
         args: ['-e', 'console.log("outside")'],
         cwd: tempDir,
-        workspaceRoot: workspace,
       }),
     ).rejects.toThrow(/cwd must stay inside/);
 
+    process.env.ALLOWED_ENV = 'safe';
+    process.env.SECRET_ENV = 'secret';
+    const prepared = await prepareCommandExecution({
+      policy,
+      args: ['-e', 'console.log("env")'],
+      cwd: workspace,
+    });
+    expect(prepared.env.ALLOWED_ENV).toBe('safe');
+    expect(prepared.env.SECRET_ENV).toBeUndefined();
+    delete process.env.ALLOWED_ENV;
+    delete process.env.SECRET_ENV;
+  });
+
+  it('rejects a cwd symlink that escapes the policy workspace', async () => {
+    const outside = path.join(tempDir, 'outside');
+    const escapedLink = path.join(workspace, 'escaped');
+    await fs.mkdir(outside);
+    await fs.symlink(outside, escapedLink);
+
     await expect(
       executeCommand({
-        definition,
-        args: ['-e', 'console.log("env")'],
-        cwd: workspace,
-        workspaceRoot: workspace,
-        env: {
-          SECRET_ENV: 'secret',
-        },
+        policy,
+        args: ['-e', 'console.log("outside")'],
+        cwd: escapedLink,
       }),
-    ).rejects.toThrow(/not allowlisted/);
+    ).rejects.toThrow(/cwd must stay inside/);
+  });
+
+  it('validates local optional values and caps requested timeouts', async () => {
+    const configuredPolicy: ExecutionPolicyDefinition = {
+      ...policy,
+      allowedOptions: {
+        retries: {
+          flag: '--retries',
+          type: 'integer',
+          min: 1,
+          max: 3,
+        },
+      },
+      options: {
+        retries: 2,
+      },
+    };
+    const prepared = await prepareCommandExecution({
+      policy: configuredPolicy,
+      cwd: workspace,
+    });
+    expect(prepared.args).toEqual(['--retries', '2']);
+
+    await expect(
+      prepareCommandExecution({
+        policy: configuredPolicy,
+        cwd: workspace,
+        timeoutMs: configuredPolicy.maxTimeoutMs + 1,
+      }),
+    ).rejects.toThrow(/exceeds execution policy maximum/);
+    await expect(
+      prepareCommandExecution({
+        policy: {
+          ...configuredPolicy,
+          options: {
+            retries: 4,
+          },
+        },
+        cwd: workspace,
+      }),
+    ).rejects.toThrow(/outside its allowed range/);
   });
 
   it('prepends the cwd node_modules bin directory to PATH', async () => {
@@ -101,14 +155,16 @@ describe('agent gateway daemon exec driver', () => {
     await fs.writeFile(localTool, '#!/bin/sh\nprintf "AG_LOCAL_TOOL_OK:%s" "$PATH"\n', { mode: 0o755 });
 
     const result = await executeCommand({
-      definition: {
-        commandKey: 'ag-local-tool',
+      policy: {
+        executionPolicyKey: 'ag-local-tool',
+        provider: 'generic-cli',
         executable: 'ag-local-tool',
-        allowedEnvKeys: [],
+        workspaceRoot: workspace,
+        envKeys: [],
         defaultTimeoutMs: 5000,
+        maxTimeoutMs: 5000,
       },
       cwd: workspace,
-      workspaceRoot: workspace,
     });
 
     expect(result.status).toBe('succeeded');
@@ -120,19 +176,19 @@ describe('agent gateway daemon exec driver', () => {
     const cancelController = new AbortController();
     setTimeout(() => cancelController.abort(), 50);
     const canceled = await executeCommand({
-      definition,
+      policy,
       args: ['-e', 'setInterval(() => {}, 1000);'],
       cwd: workspace,
-      workspaceRoot: workspace,
+
       cancelSignal: cancelController.signal,
     });
     expect(canceled.status).toBe('canceled');
 
     const timeout = await executeCommand({
-      definition,
+      policy,
       args: ['-e', 'process.on("SIGTERM", () => {}); setInterval(() => {}, 1000);'],
       cwd: workspace,
-      workspaceRoot: workspace,
+
       timeoutMs: 50,
     });
     expect(timeout.status).toBe('timeout');
@@ -140,10 +196,10 @@ describe('agent gateway daemon exec driver', () => {
     const leaseLostController = new AbortController();
     setTimeout(() => leaseLostController.abort(), 50);
     const leaseLost = await executeCommand({
-      definition,
+      policy,
       args: ['-e', 'setInterval(() => {}, 1000);'],
       cwd: workspace,
-      workspaceRoot: workspace,
+
       leaseLostSignal: leaseLostController.signal,
     });
     expect(leaseLost.status).toBe('lease_lost');
@@ -153,13 +209,13 @@ describe('agent gateway daemon exec driver', () => {
     const startedAt = Date.now();
     await expect(
       executeCommand({
-        definition: {
-          ...definition,
+        policy: {
+          ...policy,
           executable: path.join(workspace, 'missing-node-binary'),
         },
         args: ['-e', 'console.log("missing")'],
         cwd: workspace,
-        workspaceRoot: workspace,
+
         timeoutMs: 5000,
       }),
     ).rejects.toThrow();
@@ -181,10 +237,10 @@ describe('agent gateway daemon exec driver', () => {
       'setInterval(() => {}, 1000);',
     ].join('');
     const timeout = await executeCommand({
-      definition,
+      policy,
       args: ['-e', script],
       cwd: workspace,
-      workspaceRoot: workspace,
+
       timeoutMs: 50,
     });
     expect(timeout.status).toBe('timeout');
@@ -197,13 +253,13 @@ describe('agent gateway daemon exec driver', () => {
     const artifactDir = path.join(tempDir, 'artifacts');
     const logSize = 16 * 1024;
     const result = await executeCommand({
-      definition,
+      policy,
       args: [
         '-e',
         [`process.stdout.write("x".repeat(${logSize}));`, `process.stderr.write("y".repeat(${logSize}));`].join(''),
       ],
       cwd: workspace,
-      workspaceRoot: workspace,
+
       artifactDir,
       maxInlineLogBytes: 64,
     });
@@ -226,10 +282,9 @@ describe('agent gateway daemon exec driver', () => {
     ].join('');
 
     const inlineResult = await executeCommand({
-      definition,
+      policy,
       args: ['-e', script],
       cwd: workspace,
-      workspaceRoot: workspace,
     });
     expect(inlineResult.stdout).toMatchObject({
       text: '\u4f60',
@@ -237,10 +292,10 @@ describe('agent gateway daemon exec driver', () => {
     });
 
     const artifactResult = await executeCommand({
-      definition,
+      policy,
       args: ['-e', script],
       cwd: workspace,
-      workspaceRoot: workspace,
+
       artifactDir,
       maxInlineLogBytes: 1,
     });
@@ -251,10 +306,10 @@ describe('agent gateway daemon exec driver', () => {
   it('caps the combined output spool and records truncation', async () => {
     const artifactDir = path.join(tempDir, 'artifacts');
     const result = await executeCommand({
-      definition,
+      policy,
       args: ['-e', 'process.stdout.write("x".repeat(4096));'],
       cwd: workspace,
-      workspaceRoot: workspace,
+
       artifactDir,
       maxInlineLogBytes: 1,
       maxOutputSpoolBytes: 1024,
@@ -286,7 +341,7 @@ describe('agent gateway daemon exec driver', () => {
 
     await expect(
       executeCommand({
-        definition,
+        policy,
         args: [
           '-e',
           [
@@ -295,7 +350,7 @@ describe('agent gateway daemon exec driver', () => {
           ].join(''),
         ],
         cwd: workspace,
-        workspaceRoot: workspace,
+
         artifactDir,
         maxInlineLogBytes: 1,
       }),

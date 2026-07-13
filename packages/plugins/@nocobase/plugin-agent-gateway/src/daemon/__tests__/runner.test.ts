@@ -102,14 +102,17 @@ async function runHeartbeatScenario(
   });
   const result = await runDaemonOnce({
     gateway,
-    allowlist: {
+    executionPolicies: {
       node: {
-        commandKey: 'node',
+        executionPolicyKey: 'node',
+        provider: 'generic-cli',
         executable: process.execPath,
+        baseArgs: ['-e'],
+        workspaceRoot: workspace,
         defaultTimeoutMs: 5000,
+        maxTimeoutMs: 5000,
       },
     },
-    workspaceRoot: workspace,
     skillsRoot: path.join(tempDir, 'skills'),
     artifactDir: path.join(tempDir, 'artifacts'),
     runHeartbeatIntervalMs: 5,
@@ -158,11 +161,11 @@ describe('agent gateway daemon runner', () => {
     const stopController = new AbortController();
     const loop = runDaemonLoop({
       gateway,
-      allowlist: {},
-      workspaceRoot: workspace,
+      executionPolicies: {},
       skillsRoot: path.join(tempDir, 'skills'),
       artifactDir: path.join(tempDir, 'artifacts'),
       pollIntervalMs: 1,
+      nodeHeartbeatIntervalMs: 1,
       retryInitialDelayMs: 1,
       retryMaxDelayMs: 2,
       stopSignal: stopController.signal,
@@ -180,7 +183,11 @@ describe('agent gateway daemon runner', () => {
     });
 
     try {
-      await waitUntil(() => requester.calls.some((call) => isRunActionCall(call, 'claim')));
+      await waitUntil(
+        () =>
+          requester.calls.some((call) => isRunActionCall(call, 'claim')) &&
+          requester.calls.filter((call) => call.path === '/api/agentGatewayApi:heartbeatNode/node-1').length >= 2,
+      );
     } finally {
       stopController.abort();
       await loop;
@@ -192,6 +199,129 @@ describe('agent gateway daemon runner', () => {
     expect(nodeHeartbeatCalls.length).toBeGreaterThanOrEqual(2);
     expect(profileProbeCalls).toBe(3);
     expect(errors).toEqual(['connect ECONNREFUSED 127.0.0.1:23001']);
+  });
+
+  it('keeps node heartbeats independent during a long-running claimed run and stops them on abort', async () => {
+    const workspace = path.join(tempDir, 'workspace-long-run');
+    await fs.mkdir(workspace, { recursive: true });
+    const requester = new RunnerRequester();
+    const gateway = new AgentGatewayDaemonNodeClient(requester, {
+      serverUrl: 'https://nocobase.example.test',
+      nodeId: 'node-1',
+      nodeKey: 'node-1',
+      nodeToken: 'ag_node_NODE_TOKEN_SECRET',
+      savedAt: new Date().toISOString(),
+    });
+    const stopController = new AbortController();
+    let executionStarted = false;
+    const loop = runDaemonLoop({
+      gateway,
+      executionPolicies: {
+        node: {
+          executionPolicyKey: 'node',
+          provider: 'generic-cli',
+          executable: process.execPath,
+          baseArgs: ['-e'],
+          workspaceRoot: workspace,
+          defaultTimeoutMs: 5000,
+          maxTimeoutMs: 5000,
+        },
+      },
+      skillsRoot: path.join(tempDir, 'skills'),
+      artifactDir: path.join(tempDir, 'artifacts'),
+      nodeHeartbeatIntervalMs: 5,
+      runHeartbeatIntervalMs: 5,
+      stopSignal: stopController.signal,
+      executeCommand: async ({ leaseLostSignal }) => {
+        executionStarted = true;
+        await waitForAbort(leaseLostSignal);
+        return {
+          status: 'lease_lost',
+          exitCode: null,
+          signal: 'SIGTERM',
+          stdout: { text: '', sizeBytes: 0 },
+          stderr: { text: null, sizeBytes: 0 },
+        };
+      },
+      detectOptions: {
+        probeCommand: async () => ({
+          available: false,
+        }),
+      },
+    });
+
+    await waitUntil(
+      () =>
+        executionStarted &&
+        requester.calls.filter((call) => call.path === '/api/agentGatewayApi:heartbeatNode/node-1').length >= 4,
+      1000,
+    );
+    const nodeHeartbeatCalls = requester.calls.filter(
+      (call) => call.path === '/api/agentGatewayApi:heartbeatNode/node-1',
+    );
+    expect(nodeHeartbeatCalls[0].body).toMatchObject({
+      currentConcurrency: 0,
+      profiles: expect.any(Array),
+      profilesHash: expect.any(String),
+      capabilities: expect.any(Object),
+      hostInfo: expect.any(Object),
+    });
+    expect(nodeHeartbeatCalls.slice(1).some((call) => (call.body as JsonRecord).currentConcurrency === 1)).toBe(true);
+    expect(nodeHeartbeatCalls.slice(1).every((call) => !('profiles' in (call.body as JsonRecord)))).toBe(true);
+    expect(nodeHeartbeatCalls.slice(1).every((call) => !('capabilities' in (call.body as JsonRecord)))).toBe(true);
+    expect(requester.calls.some((call) => isRunActionCall(call, 'heartbeat'))).toBe(true);
+
+    stopController.abort();
+    await loop;
+    const callCountAfterAbort = requester.calls.length;
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(requester.calls).toHaveLength(callCountAfterAbort);
+  });
+
+  it('keeps node heartbeats running while claim polling retries', async () => {
+    const workspace = path.join(tempDir, 'workspace-claim-retry');
+    await fs.mkdir(workspace, { recursive: true });
+    const requester = new RunnerRequester({
+      claimPayload: { claimed: false },
+      failClaimCount: 3,
+    });
+    const gateway = new AgentGatewayDaemonNodeClient(requester, {
+      serverUrl: 'https://nocobase.example.test',
+      nodeId: 'node-1',
+      nodeKey: 'node-1',
+      nodeToken: 'ag_node_NODE_TOKEN_SECRET',
+      savedAt: new Date().toISOString(),
+    });
+    const stopController = new AbortController();
+    const errorSources: string[] = [];
+    const loop = runDaemonLoop({
+      gateway,
+      executionPolicies: {},
+      skillsRoot: path.join(tempDir, 'skills'),
+      artifactDir: path.join(tempDir, 'artifacts'),
+      pollIntervalMs: 1,
+      nodeHeartbeatIntervalMs: 2,
+      retryInitialDelayMs: 2,
+      retryMaxDelayMs: 4,
+      stopSignal: stopController.signal,
+      detectOptions: {
+        probeCommand: async () => ({ available: false }),
+      },
+      onLoopError: (_error, state) => {
+        errorSources.push(state.source);
+      },
+    });
+
+    await waitUntil(
+      () =>
+        requester.calls.filter((call) => isRunActionCall(call, 'claim')).length >= 4 &&
+        requester.calls.filter((call) => call.path === '/api/agentGatewayApi:heartbeatNode/node-1').length >= 3,
+      1000,
+    );
+    stopController.abort();
+    await loop;
+
+    expect(errorSources).toEqual(['claim', 'claim', 'claim']);
   });
 
   it('claims the next run immediately after completing work', async () => {
@@ -209,14 +339,17 @@ describe('agent gateway daemon runner', () => {
     const stopController = new AbortController();
     const loop = runDaemonLoop({
       gateway,
-      allowlist: {
+      executionPolicies: {
         node: {
-          commandKey: 'node',
+          executionPolicyKey: 'node',
+          provider: 'generic-cli',
           executable: process.execPath,
+          baseArgs: ['-e'],
+          workspaceRoot: workspace,
           defaultTimeoutMs: 5000,
+          maxTimeoutMs: 5000,
         },
       },
-      workspaceRoot: workspace,
       skillsRoot: path.join(tempDir, 'skills'),
       artifactDir: path.join(tempDir, 'artifacts'),
       pollIntervalMs: 1000,
@@ -274,14 +407,17 @@ describe('agent gateway daemon runner', () => {
     let executionStopped = false;
     const loop = runDaemonLoop({
       gateway,
-      allowlist: {
+      executionPolicies: {
         node: {
-          commandKey: 'node',
+          executionPolicyKey: 'node',
+          provider: 'generic-cli',
           executable: process.execPath,
+          baseArgs: ['-e'],
+          workspaceRoot: workspace,
           defaultTimeoutMs: 60_000,
+          maxTimeoutMs: 60_000,
         },
       },
-      workspaceRoot: workspace,
       skillsRoot: path.join(tempDir, 'skills'),
       artifactDir: path.join(tempDir, 'artifacts'),
       runHeartbeatIntervalMs: 60_000,
@@ -333,8 +469,8 @@ describe('agent gateway daemon runner', () => {
         run: {
           id: 'run-1',
           executionPayloadJson: {
-            commandKey: 'node',
-            args: ['-e', 'process.stdout.write("should not execute")'],
+            executionPolicyKey: 'node',
+            prompt: 'process.stdout.write("should not execute")',
             cwd: '.',
             skillVersions: [
               {
@@ -364,14 +500,17 @@ describe('agent gateway daemon runner', () => {
     let executionStarted = false;
     const loop = runDaemonLoop({
       gateway,
-      allowlist: {
+      executionPolicies: {
         node: {
-          commandKey: 'node',
+          executionPolicyKey: 'node',
+          provider: 'generic-cli',
           executable: process.execPath,
+          baseArgs: ['-e'],
+          workspaceRoot: workspace,
           defaultTimeoutMs: 60_000,
+          maxTimeoutMs: 60_000,
         },
       },
-      workspaceRoot: workspace,
       skillsRoot: path.join(tempDir, 'skills'),
       artifactDir: path.join(tempDir, 'artifacts'),
       runHeartbeatIntervalMs: 60_000,
@@ -416,14 +555,17 @@ describe('agent gateway daemon runner', () => {
 
     const result = await runDaemonOnce({
       gateway,
-      allowlist: {
+      executionPolicies: {
         node: {
-          commandKey: 'node',
+          executionPolicyKey: 'node',
+          provider: 'generic-cli',
           executable: process.execPath,
+          baseArgs: ['-e'],
+          workspaceRoot: workspace,
           defaultTimeoutMs: 5000,
+          maxTimeoutMs: 5000,
         },
       },
-      workspaceRoot: workspace,
       skillsRoot: path.join(tempDir, 'skills'),
       artifactDir: path.join(tempDir, 'artifacts'),
       claimProfileKey: 'opencode',
@@ -500,6 +642,69 @@ describe('agent gateway daemon runner', () => {
     ).toBe(true);
   });
 
+  it.each([
+    ['args', ['--sandbox', 'danger-full-access']],
+    ['extraArgs', ['--add-dir', '/tmp']],
+    ['env', { UNDECLARED_SECRET: 'secret' }],
+    ['cwd', '__absolute__'],
+  ])('rejects remote %s overrides before command execution', async (field, value) => {
+    const workspace = path.join(tempDir, `workspace-${field}`);
+    await fs.mkdir(workspace, { recursive: true });
+    const requester = new RunnerRequester({
+      claimPayload: {
+        claimed: true,
+        runId: `run-reject-${field}`,
+        claimToken: 'ag_claim_CLAIM_TOKEN_SECRET',
+        claimAttempt: 1,
+        leaseVersion: 1,
+        run: {
+          id: `run-reject-${field}`,
+          executionPayloadJson: {
+            executionPolicyKey: 'codex',
+            prompt: 'Safe prompt',
+            cwd: field === 'cwd' ? workspace : '.',
+            ...(field === 'cwd' ? {} : { [field]: value }),
+          },
+        },
+      },
+    });
+    const gateway = new AgentGatewayDaemonNodeClient(requester, {
+      serverUrl: 'https://nocobase.example.test',
+      nodeId: 'node-1',
+      nodeKey: 'node-1',
+      nodeToken: 'ag_node_NODE_TOKEN_SECRET',
+      savedAt: new Date().toISOString(),
+    });
+    let executed = false;
+
+    const result = await runDaemonOnce({
+      gateway,
+      executionPolicies: {
+        codex: {
+          executionPolicyKey: 'codex',
+          provider: 'codex',
+          executable: process.execPath,
+          workspaceRoot: workspace,
+          defaultTimeoutMs: 5000,
+          maxTimeoutMs: 5000,
+        },
+      },
+      skillsRoot: path.join(tempDir, 'skills'),
+      artifactDir: path.join(tempDir, 'artifacts'),
+      executeCommand: async () => {
+        executed = true;
+        throw new Error('must not execute');
+      },
+    });
+
+    expect(result).toMatchObject({
+      status: 'failed',
+      reason: 'skill_sync_failed',
+    });
+    expect(executed).toBe(false);
+    expect(requester.calls.some((call) => isRunActionCall(call, 'fail'))).toBe(true);
+  });
+
   it('removes default exec spool files after upload, parsing, and terminalization', async () => {
     const workspace = path.join(tempDir, 'workspace');
     const artifactDir = path.join(tempDir, 'artifacts');
@@ -514,8 +719,8 @@ describe('agent gateway daemon runner', () => {
         run: {
           id: 'run-exec-cleanup',
           executionPayloadJson: {
-            commandKey: 'node',
-            args: ['-e', 'process.stdout.write("x".repeat(128 * 1024));'],
+            executionPolicyKey: 'node',
+            prompt: 'process.stdout.write("x".repeat(128 * 1024));',
             cwd: '.',
           },
         },
@@ -531,14 +736,17 @@ describe('agent gateway daemon runner', () => {
 
     const result = await runDaemonOnce({
       gateway,
-      allowlist: {
+      executionPolicies: {
         node: {
-          commandKey: 'node',
+          executionPolicyKey: 'node',
+          provider: 'generic-cli',
           executable: process.execPath,
+          baseArgs: ['-e'],
+          workspaceRoot: workspace,
           defaultTimeoutMs: 5000,
+          maxTimeoutMs: 5000,
         },
       },
-      workspaceRoot: workspace,
       skillsRoot: path.join(tempDir, 'skills'),
       artifactDir,
       maxOutputSpoolBytes: 80 * 1024,
@@ -625,7 +833,7 @@ describe('agent gateway daemon runner', () => {
           id: 'run-1',
           requestedAt,
           executionPayloadJson: {
-            commandKey: 'codex',
+            executionPolicyKey: 'codex',
             prompt: 'Run the local batch harness',
             cwd: '.',
             artifactRoot: tempDir,
@@ -645,6 +853,12 @@ describe('agent gateway daemon runner', () => {
                   type: 'zip',
                   archivePath: '/skills/opencode.zip',
                   sha256: 'solidified-sha256',
+                  auth: 'skill-capability',
+                  capabilityToken: 'ag_skill_SKILL_CAPABILITY_SECRET',
+                  capabilityExpiresAt: new Date(Date.now() + 60_000).toISOString(),
+                  capabilityReplayPolicy: 'active-claim-lifetime',
+                  runId: 'run-1',
+                  claimAttempt: 1,
                 },
               },
             ],
@@ -660,27 +874,33 @@ describe('agent gateway daemon runner', () => {
       savedAt: new Date().toISOString(),
     });
     const executedArgs: string[][] = [];
+    let syncedSkillSource: JsonRecord | undefined;
 
     const result = await runDaemonOnce({
       gateway,
-      allowlist: {
+      executionPolicies: {
         codex: {
-          commandKey: 'codex',
+          executionPolicyKey: 'codex',
+          provider: 'codex',
           executable: process.execPath,
+          workspaceRoot: workspace,
           defaultTimeoutMs: 5000,
+          maxTimeoutMs: 5000,
         },
       },
-      workspaceRoot: workspace,
       skillsRoot: path.join(tempDir, 'skills'),
       artifactDir: path.join(tempDir, 'artifacts'),
       runHeartbeatIntervalMs: 60_000,
-      syncSkillVersion: async (options) => ({
-        skillVersionId: options.skillVersion.skillVersionId,
-        installPath: installedSkillPath,
-        idempotent: false,
-        status: 'installed',
-        sourceDigest: 'solidified-sha256',
-      }),
+      syncSkillVersion: async (options) => {
+        syncedSkillSource = options.skillVersion.source;
+        return {
+          skillVersionId: options.skillVersion.skillVersionId,
+          installPath: installedSkillPath,
+          idempotent: false,
+          status: 'installed',
+          sourceDigest: 'solidified-sha256',
+        };
+      },
       executeCommand: async (options) => {
         executedArgs.push(options.args || []);
         await fs.access(path.join(workspace, '.agents', 'skills', 'agent-gateway-test-skill', 'SKILL.md'));
@@ -708,6 +928,13 @@ describe('agent gateway daemon runner', () => {
     });
 
     expect(result.status).toBe('succeeded');
+    expect(syncedSkillSource).toMatchObject({
+      auth: 'skill-capability',
+      capabilityToken: 'ag_skill_SKILL_CAPABILITY_SECRET',
+      capabilityReplayPolicy: 'active-claim-lifetime',
+      runId: 'run-1',
+      claimAttempt: 1,
+    });
     expect(executedArgs[0].join('\n')).not.toContain(path.join(installedSkillPath, 'SKILL.md'));
     expect(executedArgs[0].join('\n')).not.toContain('Custom Agent Gateway skills installed for this run');
     await expect(fs.access(path.join(workspace, '.agents', 'skills', 'agent-gateway-test-skill'))).rejects.toThrow();
@@ -835,7 +1062,7 @@ describe('agent gateway daemon runner', () => {
           id: 'run-2',
           requestedAt: new Date(Date.now() - 1000).toISOString(),
           executionPayloadJson: {
-            commandKey: 'codex',
+            executionPolicyKey: 'codex',
             prompt: 'Run the local batch harness from cwd',
             cwd: 'myskills/skills/nb-opencode-ui-batch',
             artifactRoot: '../..',
@@ -854,14 +1081,16 @@ describe('agent gateway daemon runner', () => {
 
     const result = await runDaemonOnce({
       gateway,
-      allowlist: {
+      executionPolicies: {
         codex: {
-          commandKey: 'codex',
+          executionPolicyKey: 'codex',
+          provider: 'codex',
           executable: process.execPath,
+          workspaceRoot: workspace,
           defaultTimeoutMs: 5000,
+          maxTimeoutMs: 5000,
         },
       },
-      workspaceRoot: workspace,
       skillsRoot: path.join(tempDir, 'skills'),
       artifactDir: path.join(tempDir, 'artifacts'),
       runHeartbeatIntervalMs: 60_000,
@@ -940,7 +1169,7 @@ describe('agent gateway daemon runner', () => {
           id: 'run-absolute',
           requestedAt: new Date(Date.now() - 1000).toISOString(),
           executionPayloadJson: {
-            commandKey: 'codex',
+            executionPolicyKey: 'codex',
             prompt: 'Run a task and collect an absolute report',
             cwd: '.',
             artifacts: [
@@ -967,14 +1196,16 @@ describe('agent gateway daemon runner', () => {
 
     const result = await runDaemonOnce({
       gateway,
-      allowlist: {
+      executionPolicies: {
         codex: {
-          commandKey: 'codex',
+          executionPolicyKey: 'codex',
+          provider: 'codex',
           executable: process.execPath,
+          workspaceRoot: workspace,
           defaultTimeoutMs: 5000,
+          maxTimeoutMs: 5000,
         },
       },
-      workspaceRoot: workspace,
       skillsRoot: path.join(tempDir, 'skills'),
       artifactDir: path.join(tempDir, 'artifacts'),
       runHeartbeatIntervalMs: 60_000,
@@ -1053,7 +1284,7 @@ describe('agent gateway daemon runner', () => {
           id: 'run-2',
           requestedAt: new Date(Date.now() - 1000).toISOString(),
           executionPayloadJson: {
-            commandKey: 'codex',
+            executionPolicyKey: 'codex',
             prompt: 'Run the local batch harness from cwd',
             cwd: 'myskills/skills/nb-opencode-ui-batch',
             artifactRoot: '../..',
@@ -1072,14 +1303,16 @@ describe('agent gateway daemon runner', () => {
 
     const result = await runDaemonOnce({
       gateway,
-      allowlist: {
+      executionPolicies: {
         codex: {
-          commandKey: 'codex',
+          executionPolicyKey: 'codex',
+          provider: 'codex',
           executable: process.execPath,
+          workspaceRoot: workspace,
           defaultTimeoutMs: 5000,
+          maxTimeoutMs: 5000,
         },
       },
-      workspaceRoot: workspace,
       skillsRoot: path.join(tempDir, 'skills'),
       artifactDir: path.join(tempDir, 'artifacts'),
       runHeartbeatIntervalMs: 60_000,
@@ -1152,7 +1385,8 @@ describe('agent gateway daemon runner', () => {
         run: {
           id: 'run-artifacts',
           executionPayloadJson: {
-            commandKey: 'node',
+            executionPolicyKey: 'node',
+            prompt: 'process.stdout.write("artifact run")',
             cwd: '.',
             artifactPaths: ['first.txt', 'second.txt'],
           },
@@ -1169,14 +1403,17 @@ describe('agent gateway daemon runner', () => {
 
     const result = await runDaemonOnce({
       gateway,
-      allowlist: {
+      executionPolicies: {
         node: {
-          commandKey: 'node',
+          executionPolicyKey: 'node',
+          provider: 'generic-cli',
           executable: process.execPath,
+          baseArgs: ['-e'],
+          workspaceRoot: workspace,
           defaultTimeoutMs: 5000,
+          maxTimeoutMs: 5000,
         },
       },
-      workspaceRoot: workspace,
       skillsRoot: path.join(tempDir, 'skills'),
       artifactDir: path.join(tempDir, 'artifacts'),
       runHeartbeatIntervalMs: 5,
@@ -1235,7 +1472,7 @@ describe('agent gateway daemon runner', () => {
           id: 'run-1',
           requestedAt: new Date(Date.now() - 1000).toISOString(),
           executionPayloadJson: {
-            commandKey: 'codex',
+            executionPolicyKey: 'codex',
             prompt: 'Run a generic task with a skill',
             cwd: '.',
             artifactGlobs: ['runs/nb-opencode-ui-batch/*/report.html'],
@@ -1264,14 +1501,16 @@ describe('agent gateway daemon runner', () => {
 
     const result = await runDaemonOnce({
       gateway,
-      allowlist: {
+      executionPolicies: {
         codex: {
-          commandKey: 'codex',
+          executionPolicyKey: 'codex',
+          provider: 'codex',
           executable: process.execPath,
+          workspaceRoot: workspace,
           defaultTimeoutMs: 5000,
+          maxTimeoutMs: 5000,
         },
       },
-      workspaceRoot: workspace,
       skillsRoot: path.join(tempDir, 'skills'),
       artifactDir: path.join(tempDir, 'artifacts'),
       runHeartbeatIntervalMs: 60_000,
@@ -1334,7 +1573,7 @@ describe('agent gateway daemon runner', () => {
         run: {
           id: 'run-1',
           executionPayloadJson: {
-            commandKey: 'codex',
+            executionPolicyKey: 'codex',
             prompt: 'Use existing project skill',
             cwd: '.',
             skillVersions: [
@@ -1362,14 +1601,16 @@ describe('agent gateway daemon runner', () => {
 
     const result = await runDaemonOnce({
       gateway,
-      allowlist: {
+      executionPolicies: {
         codex: {
-          commandKey: 'codex',
+          executionPolicyKey: 'codex',
+          provider: 'codex',
           executable: process.execPath,
+          workspaceRoot: workspace,
           defaultTimeoutMs: 5000,
+          maxTimeoutMs: 5000,
         },
       },
-      workspaceRoot: workspace,
       skillsRoot: path.join(tempDir, 'skills'),
       artifactDir: path.join(tempDir, 'artifacts'),
       runHeartbeatIntervalMs: 60_000,
@@ -1425,8 +1666,7 @@ describe('agent gateway daemon runner', () => {
 
     const result = await runDaemonOnce({
       gateway,
-      allowlist: {},
-      workspaceRoot: workspace,
+      executionPolicies: {},
       skillsRoot: path.join(tempDir, 'skills'),
       artifactDir: path.join(tempDir, 'artifacts'),
       claimProfileKey: 'codex',
@@ -1464,8 +1704,8 @@ describe('agent gateway daemon runner', () => {
         run: {
           id: 'run-1',
           executionPayloadJson: {
-            commandKey: 'codex',
-            args: ['exec', '--json', 'echo session'],
+            executionPolicyKey: 'codex',
+            prompt: 'echo session',
             cwd: '.',
           },
         },
@@ -1481,14 +1721,16 @@ describe('agent gateway daemon runner', () => {
 
     const result = await runDaemonOnce({
       gateway,
-      allowlist: {
+      executionPolicies: {
         codex: {
-          commandKey: 'codex',
+          executionPolicyKey: 'codex',
+          provider: 'codex',
           executable: process.execPath,
+          workspaceRoot: workspace,
           defaultTimeoutMs: 5000,
+          maxTimeoutMs: 5000,
         },
       },
-      workspaceRoot: workspace,
       skillsRoot: path.join(tempDir, 'skills'),
       artifactDir: path.join(tempDir, 'artifacts'),
       runHeartbeatIntervalMs: 60_000,
@@ -1548,7 +1790,7 @@ describe('agent gateway daemon runner', () => {
     });
   });
 
-  it('uses the claimed canonical provider for adapter commands when profile keys are custom', async () => {
+  it('uses the provider declared by a custom local execution policy', async () => {
     const workspace = path.join(tempDir, 'workspace');
     await fs.mkdir(workspace, { recursive: true });
     const requester = new RunnerRequester({
@@ -1559,8 +1801,7 @@ describe('agent gateway daemon runner', () => {
         claimToken: 'ag_claim_CLAIM_TOKEN_SECRET',
         claimAttempt: 1,
         leaseVersion: 1,
-        profileKey: 'custom-codex',
-        profileProvider: 'codex',
+        executionPolicyKey: 'custom-codex',
         profileCapabilities: {
           artifacts: false,
         },
@@ -1570,7 +1811,7 @@ describe('agent gateway daemon runner', () => {
             renderedPrompt: 'Build with custom profile',
           },
           executionPayloadJson: {
-            profileKey: 'custom-codex',
+            executionPolicyKey: 'custom-codex',
             cwd: '.',
           },
         },
@@ -1587,20 +1828,22 @@ describe('agent gateway daemon runner', () => {
 
     const result = await runDaemonOnce({
       gateway,
-      allowlist: {
-        codex: {
-          commandKey: 'codex',
+      executionPolicies: {
+        'custom-codex': {
+          executionPolicyKey: 'custom-codex',
+          provider: 'codex',
           executable: process.execPath,
+          workspaceRoot: workspace,
           defaultTimeoutMs: 5000,
+          maxTimeoutMs: 5000,
         },
       },
-      workspaceRoot: workspace,
       skillsRoot: path.join(tempDir, 'skills'),
       artifactDir: path.join(tempDir, 'artifacts'),
       runHeartbeatIntervalMs: 60_000,
       executeCommand: async (options) => {
         executedCommands.push({
-          commandKey: options.commandKey,
+          executionPolicyKey: options.executionPolicyKey,
           args: options.args,
           cwd: options.cwd,
         });
@@ -1629,7 +1872,7 @@ describe('agent gateway daemon runner', () => {
 
     expect(result.status).toBe('succeeded');
     expect(executedCommands[0]).toMatchObject({
-      commandKey: 'codex',
+      executionPolicyKey: 'custom-codex',
       args: ['exec', '--skip-git-repo-check', '--json', 'Build with custom profile'],
     });
     const upsertCall = requester.calls.find((call) => isObservabilityActionCall(call, 'upsertAgentSession'));
@@ -1642,7 +1885,7 @@ describe('agent gateway daemon runner', () => {
     });
   });
 
-  it('keeps explicit allowlisted commands when a claimed profile also reports a canonical provider', async () => {
+  it('uses an explicit generic-cli policy without provider fallback', async () => {
     const workspace = path.join(tempDir, 'workspace');
     await fs.mkdir(workspace, { recursive: true });
     const requester = new RunnerRequester({
@@ -1653,17 +1896,14 @@ describe('agent gateway daemon runner', () => {
         claimToken: 'ag_claim_CLAIM_TOKEN_SECRET',
         claimAttempt: 1,
         leaseVersion: 1,
-        profileKey: 'custom-codex',
-        profileProvider: 'codex',
         run: {
           id: 'run-1',
           promptSnapshot: {
             text: 'Prompt should not replace the explicit node command',
           },
           executionPayloadJson: {
-            commandKey: 'node',
-            profileKey: 'custom-codex',
-            args: ['-e', 'process.stdout.write("legacy command complete")'],
+            executionPolicyKey: 'node',
+            prompt: 'process.stdout.write("legacy command complete")',
             cwd: '.',
           },
         },
@@ -1680,20 +1920,23 @@ describe('agent gateway daemon runner', () => {
 
     const result = await runDaemonOnce({
       gateway,
-      allowlist: {
+      executionPolicies: {
         node: {
-          commandKey: 'node',
+          executionPolicyKey: 'node',
+          provider: 'generic-cli',
           executable: process.execPath,
+          baseArgs: ['-e'],
+          workspaceRoot: workspace,
           defaultTimeoutMs: 5000,
+          maxTimeoutMs: 5000,
         },
       },
-      workspaceRoot: workspace,
       skillsRoot: path.join(tempDir, 'skills'),
       artifactDir: path.join(tempDir, 'artifacts'),
       runHeartbeatIntervalMs: 60_000,
       executeCommand: async (options) => {
         executedCommands.push({
-          commandKey: options.commandKey,
+          executionPolicyKey: options.executionPolicyKey,
           args: options.args,
           cwd: options.cwd,
         });
@@ -1715,14 +1958,14 @@ describe('agent gateway daemon runner', () => {
 
     expect(result.status).toBe('succeeded');
     expect(executedCommands[0]).toMatchObject({
-      commandKey: 'node',
-      args: ['-e', 'process.stdout.write("legacy command complete")'],
+      executionPolicyKey: 'node',
+      args: ['process.stdout.write("legacy command complete")'],
     });
     expect(requester.calls.some((call) => isObservabilityActionCall(call, 'upsertAgentSession'))).toBe(false);
     expect(requester.calls.some((call) => isObservabilityActionCall(call, 'appendConversationEvents'))).toBe(false);
   });
 
-  it('does not treat a canonical-looking profile key as the provider for explicit commands', async () => {
+  it('does not infer a provider from unrelated claim metadata', async () => {
     const workspace = path.join(tempDir, 'workspace');
     await fs.mkdir(workspace, { recursive: true });
     const requester = new RunnerRequester({
@@ -1739,9 +1982,8 @@ describe('agent gateway daemon runner', () => {
             text: 'Prompt should not replace explicit node command',
           },
           executionPayloadJson: {
-            commandKey: 'node',
-            profileKey: 'codex',
-            args: ['-e', 'process.stdout.write("legacy command complete")'],
+            executionPolicyKey: 'node',
+            prompt: 'process.stdout.write("legacy command complete")',
             cwd: '.',
           },
         },
@@ -1758,20 +2000,23 @@ describe('agent gateway daemon runner', () => {
 
     const result = await runDaemonOnce({
       gateway,
-      allowlist: {
+      executionPolicies: {
         node: {
-          commandKey: 'node',
+          executionPolicyKey: 'node',
+          provider: 'generic-cli',
           executable: process.execPath,
+          baseArgs: ['-e'],
+          workspaceRoot: workspace,
           defaultTimeoutMs: 5000,
+          maxTimeoutMs: 5000,
         },
       },
-      workspaceRoot: workspace,
       skillsRoot: path.join(tempDir, 'skills'),
       artifactDir: path.join(tempDir, 'artifacts'),
       runHeartbeatIntervalMs: 60_000,
       executeCommand: async (options) => {
         executedCommands.push({
-          commandKey: options.commandKey,
+          executionPolicyKey: options.executionPolicyKey,
           args: options.args,
           cwd: options.cwd,
         });
@@ -1793,8 +2038,8 @@ describe('agent gateway daemon runner', () => {
 
     expect(result.status).toBe('succeeded');
     expect(executedCommands[0]).toMatchObject({
-      commandKey: 'node',
-      args: ['-e', 'process.stdout.write("legacy command complete")'],
+      executionPolicyKey: 'node',
+      args: ['process.stdout.write("legacy command complete")'],
     });
     expect(requester.calls.some((call) => isObservabilityActionCall(call, 'upsertAgentSession'))).toBe(false);
     expect(requester.calls.some((call) => isObservabilityActionCall(call, 'appendConversationEvents'))).toBe(false);
@@ -1815,10 +2060,9 @@ describe('agent gateway daemon runner', () => {
           id: 'run-1',
           executionPayloadJson: {
             mode: 'agent-session-resume',
-            commandKey: 'codex',
+            executionPolicyKey: 'codex',
             providerSessionId: '019f1e72-d75c-7c61-a9ba-cc99c653e0a2',
             message: resumeMessage,
-            args: ['exec', '--json', 'stale start args must not be used'],
             cwd: '.',
           },
         },
@@ -1835,14 +2079,16 @@ describe('agent gateway daemon runner', () => {
 
     const result = await runDaemonOnce({
       gateway,
-      allowlist: {
+      executionPolicies: {
         codex: {
-          commandKey: 'codex',
+          executionPolicyKey: 'codex',
+          provider: 'codex',
           executable: process.execPath,
+          workspaceRoot: workspace,
           defaultTimeoutMs: 5000,
+          maxTimeoutMs: 5000,
         },
       },
-      workspaceRoot: workspace,
       skillsRoot: path.join(tempDir, 'skills'),
       artifactDir: path.join(tempDir, 'artifacts'),
       runHeartbeatIntervalMs: 60_000,
@@ -1891,7 +2137,7 @@ describe('agent gateway daemon runner', () => {
           id: 'run-1',
           executionPayloadJson: {
             mode: 'agent-session-resume',
-            commandKey: 'codex',
+            executionPolicyKey: 'codex',
             message: 'continue without a provider session id',
             cwd: '.',
           },
@@ -1909,14 +2155,16 @@ describe('agent gateway daemon runner', () => {
 
     const result = await runDaemonOnce({
       gateway,
-      allowlist: {
+      executionPolicies: {
         codex: {
-          commandKey: 'codex',
+          executionPolicyKey: 'codex',
+          provider: 'codex',
           executable: process.execPath,
+          workspaceRoot: workspace,
           defaultTimeoutMs: 5000,
+          maxTimeoutMs: 5000,
         },
       },
-      workspaceRoot: workspace,
       skillsRoot: path.join(tempDir, 'skills'),
       artifactDir: path.join(tempDir, 'artifacts'),
       runHeartbeatIntervalMs: 60_000,
@@ -1959,8 +2207,8 @@ describe('agent gateway daemon runner', () => {
         run: {
           id: 'run-1',
           executionPayloadJson: {
-            commandKey: 'codex',
-            args: ['exec', '--json', 'echo session'],
+            executionPolicyKey: 'codex',
+            prompt: 'echo session',
             cwd: '.',
           },
         },
@@ -1976,14 +2224,16 @@ describe('agent gateway daemon runner', () => {
 
     const result = await runDaemonOnce({
       gateway,
-      allowlist: {
+      executionPolicies: {
         codex: {
-          commandKey: 'codex',
+          executionPolicyKey: 'codex',
+          provider: 'codex',
           executable: process.execPath,
+          workspaceRoot: workspace,
           defaultTimeoutMs: 5000,
+          maxTimeoutMs: 5000,
         },
       },
-      workspaceRoot: workspace,
       skillsRoot: path.join(tempDir, 'skills'),
       artifactDir: path.join(tempDir, 'artifacts'),
       runHeartbeatIntervalMs: 5,
@@ -2046,8 +2296,8 @@ describe('agent gateway daemon runner', () => {
         run: {
           id: 'run-1',
           executionPayloadJson: {
-            commandKey: 'codex',
-            args: ['exec', '--json', 'echo session'],
+            executionPolicyKey: 'codex',
+            prompt: 'echo session',
             cwd: '.',
           },
         },
@@ -2063,14 +2313,16 @@ describe('agent gateway daemon runner', () => {
 
     const result = await runDaemonOnce({
       gateway,
-      allowlist: {
+      executionPolicies: {
         codex: {
-          commandKey: 'codex',
+          executionPolicyKey: 'codex',
+          provider: 'codex',
           executable: process.execPath,
+          workspaceRoot: workspace,
           defaultTimeoutMs: 5000,
+          maxTimeoutMs: 5000,
         },
       },
-      workspaceRoot: workspace,
       skillsRoot: path.join(tempDir, 'skills'),
       artifactDir: path.join(tempDir, 'artifacts'),
       runHeartbeatIntervalMs: 60_000,
@@ -2127,8 +2379,8 @@ describe('agent gateway daemon runner', () => {
         run: {
           id: 'run-1',
           executionPayloadJson: {
-            commandKey: 'codex',
-            args: ['exec', '--json', 'echo session'],
+            executionPolicyKey: 'codex',
+            prompt: 'echo session',
             cwd: '.',
           },
         },
@@ -2144,14 +2396,16 @@ describe('agent gateway daemon runner', () => {
 
     const result = await runDaemonOnce({
       gateway,
-      allowlist: {
+      executionPolicies: {
         codex: {
-          commandKey: 'codex',
+          executionPolicyKey: 'codex',
+          provider: 'codex',
           executable: process.execPath,
+          workspaceRoot: workspace,
           defaultTimeoutMs: 5000,
+          maxTimeoutMs: 5000,
         },
       },
-      workspaceRoot: workspace,
       skillsRoot: path.join(tempDir, 'skills'),
       artifactDir: path.join(tempDir, 'artifacts'),
       runHeartbeatIntervalMs: 60_000,
@@ -2252,8 +2506,8 @@ describe('agent gateway daemon runner', () => {
         run: {
           id: 'run-1',
           executionPayloadJson: {
-            commandKey: 'codex',
-            args: ['exec', '--json', 'echo session'],
+            executionPolicyKey: 'codex',
+            prompt: 'echo session',
             cwd: '.',
           },
         },
@@ -2269,14 +2523,16 @@ describe('agent gateway daemon runner', () => {
 
     const result = await runDaemonOnce({
       gateway,
-      allowlist: {
+      executionPolicies: {
         codex: {
-          commandKey: 'codex',
+          executionPolicyKey: 'codex',
+          provider: 'codex',
           executable: process.execPath,
+          workspaceRoot: workspace,
           defaultTimeoutMs: 5000,
+          maxTimeoutMs: 5000,
         },
       },
-      workspaceRoot: workspace,
       skillsRoot: path.join(tempDir, 'skills'),
       artifactDir: path.join(tempDir, 'artifacts'),
       runHeartbeatIntervalMs: 60_000,
@@ -2334,8 +2590,8 @@ describe('agent gateway daemon runner', () => {
         run: {
           id: 'run-oversized-provider-line',
           executionPayloadJson: {
-            commandKey: 'codex',
-            args: ['exec', '--json', 'oversized line'],
+            executionPolicyKey: 'codex',
+            prompt: 'oversized line',
             cwd: '.',
           },
         },
@@ -2351,14 +2607,16 @@ describe('agent gateway daemon runner', () => {
 
     const result = await runDaemonOnce({
       gateway,
-      allowlist: {
+      executionPolicies: {
         codex: {
-          commandKey: 'codex',
+          executionPolicyKey: 'codex',
+          provider: 'codex',
           executable: process.execPath,
+          workspaceRoot: workspace,
           defaultTimeoutMs: 5000,
+          maxTimeoutMs: 5000,
         },
       },
-      workspaceRoot: workspace,
       skillsRoot: path.join(tempDir, 'skills'),
       artifactDir: path.join(tempDir, 'artifacts'),
       runHeartbeatIntervalMs: 60_000,
@@ -2414,8 +2672,8 @@ describe('agent gateway daemon runner', () => {
         run: {
           id: 'run-1',
           executionPayloadJson: {
-            commandKey: 'codex',
-            args: ['exec', '--json', 'echo session'],
+            executionPolicyKey: 'codex',
+            prompt: 'echo session',
             cwd: '.',
           },
         },
@@ -2431,14 +2689,16 @@ describe('agent gateway daemon runner', () => {
 
     const result = await runDaemonOnce({
       gateway,
-      allowlist: {
+      executionPolicies: {
         codex: {
-          commandKey: 'codex',
+          executionPolicyKey: 'codex',
+          provider: 'codex',
           executable: process.execPath,
+          workspaceRoot: workspace,
           defaultTimeoutMs: 5000,
+          maxTimeoutMs: 5000,
         },
       },
-      workspaceRoot: workspace,
       skillsRoot: path.join(tempDir, 'skills'),
       artifactDir: path.join(tempDir, 'artifacts'),
       runHeartbeatIntervalMs: 60_000,
@@ -2480,6 +2740,11 @@ describe('agent gateway daemon runner', () => {
 
     const workspace = path.join(tempDir, 'workspace');
     await fs.mkdir(workspace, { recursive: true });
+    const commandScript = [
+      'process.stdout.write(\'{"type":"thread.started","thread_id":"019f1eb9-2c3a-7f77-9004-8c81f7abf7b1"}\\n\');',
+      'process.stdout.write("x".repeat(66 * 1024) + "\\n");',
+      'process.stdout.write(\'{"type":"item.completed","item":{"id":"item-tail-tmux","type":"agent_message","text":"tail after pane capture"}}\\n\');',
+    ].join('');
     const requester = new RunnerRequester({
       claimPayload: {
         claimed: true,
@@ -2490,15 +2755,8 @@ describe('agent gateway daemon runner', () => {
         run: {
           id: 'run-1',
           executionPayloadJson: {
-            commandKey: 'codex',
-            args: [
-              '-e',
-              [
-                'process.stdout.write(\'{"type":"thread.started","thread_id":"019f1eb9-2c3a-7f77-9004-8c81f7abf7b1"}\\n\');',
-                'process.stdout.write("x".repeat(66 * 1024) + "\\n");',
-                'process.stdout.write(\'{"type":"item.completed","item":{"id":"item-tail-tmux","type":"agent_message","text":"tail after pane capture"}}\\n\');',
-              ].join(''),
-            ],
+            executionPolicyKey: 'codex',
+            prompt: 'Run the locally configured Codex harness',
             cwd: '.',
           },
         },
@@ -2515,14 +2773,17 @@ describe('agent gateway daemon runner', () => {
     try {
       const result = await runDaemonOnce({
         gateway,
-        allowlist: {
+        executionPolicies: {
           codex: {
-            commandKey: 'codex',
+            executionPolicyKey: 'codex',
+            provider: 'codex',
             executable: process.execPath,
+            baseArgs: ['-e', commandScript, '--'],
+            workspaceRoot: workspace,
             defaultTimeoutMs: 5000,
+            maxTimeoutMs: 5000,
           },
         },
-        workspaceRoot: workspace,
         skillsRoot: path.join(tempDir, 'skills'),
         artifactDir: path.join(tempDir, 'artifacts'),
         terminalBackend: 'tmux',
@@ -2576,6 +2837,12 @@ describe('agent gateway daemon runner', () => {
 
     const workspace = path.join(tempDir, 'workspace');
     await fs.mkdir(workspace, { recursive: true });
+    const commandScript = [
+      'for (let index = 0; index < 500; index += 1) {',
+      '  process.stdout.write(JSON.stringify({ type: "item.completed", item: { id: `item-${index}`, type: "agent_message", text: `message ${index}` } }) + "\\n");',
+      '}',
+      'process.stdout.write("x".repeat(512 * 1024) + "\\n");',
+    ].join('');
     const requester = new RunnerRequester({
       failConversationAppends: true,
       claimPayload: {
@@ -2587,16 +2854,8 @@ describe('agent gateway daemon runner', () => {
         run: {
           id: 'run-live-buffer',
           executionPayloadJson: {
-            commandKey: 'codex',
-            args: [
-              '-e',
-              [
-                'for (let index = 0; index < 500; index += 1) {',
-                '  process.stdout.write(JSON.stringify({ type: "item.completed", item: { id: `item-${index}`, type: "agent_message", text: `message ${index}` } }) + "\\n");',
-                '}',
-                'process.stdout.write("x".repeat(512 * 1024) + "\\n");',
-              ].join(''),
-            ],
+            executionPolicyKey: 'codex',
+            prompt: 'Run the locally configured Codex live timeline harness',
             cwd: '.',
           },
         },
@@ -2613,14 +2872,17 @@ describe('agent gateway daemon runner', () => {
     try {
       const result = await runDaemonOnce({
         gateway,
-        allowlist: {
+        executionPolicies: {
           codex: {
-            commandKey: 'codex',
+            executionPolicyKey: 'codex',
+            provider: 'codex',
             executable: process.execPath,
+            baseArgs: ['-e', commandScript, '--'],
+            workspaceRoot: workspace,
             defaultTimeoutMs: 5000,
+            maxTimeoutMs: 5000,
           },
         },
-        workspaceRoot: workspace,
         skillsRoot: path.join(tempDir, 'skills'),
         artifactDir: path.join(tempDir, 'artifacts'),
         terminalBackend: 'tmux',
@@ -2653,6 +2915,12 @@ describe('agent gateway daemon runner', () => {
 
     const workspace = path.join(tempDir, 'workspace');
     await fs.mkdir(workspace, { recursive: true });
+    const commandScript = [
+      'process.stdout.write(JSON.stringify({ type: "thread.started", thread_id: "019f4eab-1cf4-75d2-b8b6-5b9af93477af" }) + "\\n");',
+      'const oversized = { type: "item.completed", item: { id: "item-oversized", type: "agent_message", text: "x".repeat(300 * 1024) } };',
+      'const following = { type: "item.completed", item: { id: "item-following", type: "agent_message", text: "after oversized" } };',
+      'process.stdout.write(`${JSON.stringify(oversized)}\\n${JSON.stringify(following)}\\n`);',
+    ].join('');
     const requester = new RunnerRequester({
       claimPayload: {
         claimed: true,
@@ -2663,16 +2931,8 @@ describe('agent gateway daemon runner', () => {
         run: {
           id: 'run-live-sequence',
           executionPayloadJson: {
-            commandKey: 'codex',
-            args: [
-              '-e',
-              [
-                'process.stdout.write(JSON.stringify({ type: "thread.started", thread_id: "019f4eab-1cf4-75d2-b8b6-5b9af93477af" }) + "\\n");',
-                'const oversized = { type: "item.completed", item: { id: "item-oversized", type: "agent_message", text: "x".repeat(300 * 1024) } };',
-                'const following = { type: "item.completed", item: { id: "item-following", type: "agent_message", text: "after oversized" } };',
-                'process.stdout.write(`${JSON.stringify(oversized)}\\n${JSON.stringify(following)}\\n`);',
-              ].join(''),
-            ],
+            executionPolicyKey: 'codex',
+            prompt: 'Run the locally configured Codex sequence harness',
             cwd: '.',
           },
         },
@@ -2689,14 +2949,17 @@ describe('agent gateway daemon runner', () => {
     try {
       const result = await runDaemonOnce({
         gateway,
-        allowlist: {
+        executionPolicies: {
           codex: {
-            commandKey: 'codex',
+            executionPolicyKey: 'codex',
+            provider: 'codex',
             executable: process.execPath,
+            baseArgs: ['-e', commandScript, '--'],
+            workspaceRoot: workspace,
             defaultTimeoutMs: 5000,
+            maxTimeoutMs: 5000,
           },
         },
-        workspaceRoot: workspace,
         skillsRoot: path.join(tempDir, 'skills'),
         artifactDir: path.join(tempDir, 'artifacts'),
         terminalBackend: 'tmux',
@@ -2773,7 +3036,7 @@ describe('agent gateway daemon runner', () => {
         run: {
           id: 'run-1',
           executionPayloadJson: {
-            commandKey: 'codex',
+            executionPolicyKey: 'codex',
             prompt: 'Start one sub-agent named Aquinas and ask it to say Hi.',
             cwd: '.',
           },
@@ -2791,15 +3054,17 @@ describe('agent gateway daemon runner', () => {
     try {
       const result = await runDaemonOnce({
         gateway,
-        allowlist: {
+        executionPolicies: {
           codex: {
-            commandKey: 'codex',
+            executionPolicyKey: 'codex',
+            provider: 'codex',
             executable: process.execPath,
+            workspaceRoot: workspace,
             baseArgs: [fakeCodexPath],
             defaultTimeoutMs: 5000,
+            maxTimeoutMs: 5000,
           },
         },
-        workspaceRoot: workspace,
         skillsRoot: path.join(tempDir, 'skills'),
         artifactDir: path.join(tempDir, 'artifacts'),
         terminalBackend: 'tmux',
@@ -2863,8 +3128,8 @@ describe('agent gateway daemon runner', () => {
         run: {
           id: 'run-1',
           executionPayloadJson: {
-            commandKey: 'node',
-            args: ['-e', 'process.stdout.write("unused")'],
+            executionPolicyKey: 'node',
+            prompt: 'process.stdout.write("unused")',
             cwd: '.',
           },
         },
@@ -2880,14 +3145,17 @@ describe('agent gateway daemon runner', () => {
 
     const result = await runDaemonOnce({
       gateway,
-      allowlist: {
+      executionPolicies: {
         node: {
-          commandKey: 'node',
+          executionPolicyKey: 'node',
+          provider: 'generic-cli',
           executable: process.execPath,
+          baseArgs: ['-e'],
+          workspaceRoot: workspace,
           defaultTimeoutMs: 15000,
+          maxTimeoutMs: 15000,
         },
       },
-      workspaceRoot: workspace,
       skillsRoot: path.join(tempDir, 'skills'),
       artifactDir: path.join(tempDir, 'artifacts'),
       runHeartbeatIntervalMs: 60_000,
@@ -2945,8 +3213,8 @@ describe('agent gateway daemon runner', () => {
         run: {
           id: 'run-1',
           executionPayloadJson: {
-            commandKey: 'node',
-            args: ['-e', 'setTimeout(() => process.stdout.write("done"), 50)'],
+            executionPolicyKey: 'node',
+            prompt: 'setTimeout(() => process.stdout.write("done"), 50)',
             cwd: '.',
           },
         },
@@ -2962,14 +3230,17 @@ describe('agent gateway daemon runner', () => {
 
     const result = await runDaemonOnce({
       gateway,
-      allowlist: {
+      executionPolicies: {
         node: {
-          commandKey: 'node',
+          executionPolicyKey: 'node',
+          provider: 'generic-cli',
           executable: process.execPath,
+          baseArgs: ['-e'],
+          workspaceRoot: workspace,
           defaultTimeoutMs: 5000,
+          maxTimeoutMs: 5000,
         },
       },
-      workspaceRoot: workspace,
       skillsRoot: path.join(tempDir, 'skills'),
       artifactDir: path.join(tempDir, 'artifacts'),
       runHeartbeatIntervalMs: 1,
@@ -3177,8 +3448,8 @@ describe('agent gateway daemon runner', () => {
         run: {
           id: 'run-1',
           executionPayloadJson: {
-            commandKey: 'node',
-            args: ['-e', 'process.stdout.write("done")'],
+            executionPolicyKey: 'node',
+            prompt: 'process.stdout.write("done")',
             cwd: '.',
           },
         },
@@ -3194,14 +3465,17 @@ describe('agent gateway daemon runner', () => {
 
     const result = await runDaemonOnce({
       gateway,
-      allowlist: {
+      executionPolicies: {
         node: {
-          commandKey: 'node',
+          executionPolicyKey: 'node',
+          provider: 'generic-cli',
           executable: process.execPath,
+          baseArgs: ['-e'],
+          workspaceRoot: workspace,
           defaultTimeoutMs: 5000,
+          maxTimeoutMs: 5000,
         },
       },
-      workspaceRoot: workspace,
       skillsRoot: path.join(tempDir, 'skills'),
       artifactDir: path.join(tempDir, 'artifacts'),
       runHeartbeatIntervalMs: 60_000,
@@ -3236,8 +3510,8 @@ describe('agent gateway daemon runner', () => {
         run: {
           id: 'run-1',
           executionPayloadJson: {
-            commandKey: 'codex',
-            args: ['exec', '--json', 'echo session'],
+            executionPolicyKey: 'codex',
+            prompt: 'echo session',
             cwd: '.',
           },
         },
@@ -3253,14 +3527,16 @@ describe('agent gateway daemon runner', () => {
 
     const result = await runDaemonOnce({
       gateway,
-      allowlist: {
+      executionPolicies: {
         codex: {
-          commandKey: 'codex',
+          executionPolicyKey: 'codex',
+          provider: 'codex',
           executable: process.execPath,
+          workspaceRoot: workspace,
           defaultTimeoutMs: 5000,
+          maxTimeoutMs: 5000,
         },
       },
-      workspaceRoot: workspace,
       skillsRoot: path.join(tempDir, 'skills'),
       artifactDir: path.join(tempDir, 'artifacts'),
       runHeartbeatIntervalMs: 60_000,
@@ -3315,7 +3591,7 @@ describe('agent gateway daemon runner', () => {
         run: {
           id: 'run-1',
           executionPayloadJson: {
-            commandKey: 'codex',
+            executionPolicyKey: 'codex',
             prompt: 'Run with a synced project skill',
             cwd: '.',
             skillVersions: [
@@ -3343,14 +3619,16 @@ describe('agent gateway daemon runner', () => {
 
     const result = await runDaemonOnce({
       gateway,
-      allowlist: {
+      executionPolicies: {
         codex: {
-          commandKey: 'codex',
+          executionPolicyKey: 'codex',
+          provider: 'codex',
           executable: process.execPath,
+          workspaceRoot: workspace,
           defaultTimeoutMs: 5000,
+          maxTimeoutMs: 5000,
         },
       },
-      workspaceRoot: workspace,
       skillsRoot: path.join(tempDir, 'skills'),
       artifactDir: path.join(tempDir, 'artifacts'),
       runHeartbeatIntervalMs: 5,
@@ -3408,7 +3686,7 @@ describe('agent gateway daemon runner', () => {
         run: {
           id: 'run-1',
           executionPayloadJson: {
-            commandKey: 'codex',
+            executionPolicyKey: 'codex',
             prompt: 'Cancel while syncing a project skill',
             cwd: '.',
             skillVersions: [
@@ -3436,14 +3714,16 @@ describe('agent gateway daemon runner', () => {
 
     const result = await runDaemonOnce({
       gateway,
-      allowlist: {
+      executionPolicies: {
         codex: {
-          commandKey: 'codex',
+          executionPolicyKey: 'codex',
+          provider: 'codex',
           executable: process.execPath,
+          workspaceRoot: workspace,
           defaultTimeoutMs: 5000,
+          maxTimeoutMs: 5000,
         },
       },
-      workspaceRoot: workspace,
       skillsRoot: path.join(tempDir, 'skills'),
       artifactDir: path.join(tempDir, 'artifacts'),
       runHeartbeatIntervalMs: 5,
@@ -3493,8 +3773,8 @@ describe('agent gateway daemon runner', () => {
         run: {
           id: 'run-1',
           executionPayloadJson: {
-            commandKey: 'node',
-            args: ['-e', 'process.stdout.write("done")'],
+            executionPolicyKey: 'node',
+            prompt: 'process.stdout.write("done")',
             cwd: '.',
           },
         },
@@ -3510,14 +3790,17 @@ describe('agent gateway daemon runner', () => {
 
     const result = await runDaemonOnce({
       gateway,
-      allowlist: {
+      executionPolicies: {
         node: {
-          commandKey: 'node',
+          executionPolicyKey: 'node',
+          provider: 'generic-cli',
           executable: process.execPath,
+          baseArgs: ['-e'],
+          workspaceRoot: workspace,
           defaultTimeoutMs: 5000,
+          maxTimeoutMs: 5000,
         },
       },
-      workspaceRoot: workspace,
       skillsRoot: path.join(tempDir, 'skills'),
       artifactDir: path.join(tempDir, 'artifacts'),
       runHeartbeatIntervalMs: 60_000,

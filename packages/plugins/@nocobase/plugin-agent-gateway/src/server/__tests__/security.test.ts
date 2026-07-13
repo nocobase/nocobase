@@ -9,6 +9,7 @@
 
 import {
   AGENT_GATEWAY_NODE_TOKEN_HEADER,
+  AGENT_GATEWAY_INTERNAL_COLLECTIONS,
   AGENT_GATEWAY_PERMISSION_DEFINITIONS,
   AGENT_GATEWAY_PERMISSIONS,
   AclLike,
@@ -33,6 +34,7 @@ import {
   verifyInvitationToken,
   verifyNodeToken,
 } from '../security';
+import { AGENT_GATEWAY_COLLECTION_REGISTRY } from '../collectionRegistry';
 
 class NodeAuthTestError extends Error {
   constructor(
@@ -239,6 +241,14 @@ describe('agent gateway ACL registration', () => {
         'agDispatchBindings:*',
       ]),
     );
+    expect(AGENT_GATEWAY_INTERNAL_COLLECTIONS).toEqual(
+      AGENT_GATEWAY_COLLECTION_REGISTRY.map((registration) => registration.name),
+    );
+    for (const registration of AGENT_GATEWAY_COLLECTION_REGISTRY) {
+      expect(snippets.find((snippet) => snippet.name === AGENT_GATEWAY_PERMISSIONS.manage)?.actions).toContain(
+        `${registration.name}:*`,
+      );
+    }
     expect(snippets.find((snippet) => snippet.name === AGENT_GATEWAY_PERMISSIONS.dispatch)?.actions).toEqual([
       'agentGateway:dispatch',
       'agentGatewayApi:listRunOptions',
