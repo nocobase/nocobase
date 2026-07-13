@@ -2,9 +2,23 @@
 
 Ao implantar o NocoBase em um ambiente de produção, a instalação de dependências pode ser um pouco trabalhosa devido às diferenças nos métodos de construção entre os diversos sistemas e ambientes. Para ter uma experiência funcional completa, recomendamos a implantação com **Docker**. Se o seu ambiente não puder usar o Docker, você também pode implantar usando o **create-nocobase-app**.
 
-:::warning
+:::warning Atenção
 
 Não é recomendado implantar diretamente do código-fonte em um ambiente de produção. O código-fonte possui muitas dependências, é grande em tamanho e uma compilação completa exige bastante CPU e memória. Se você realmente precisar implantar a partir do código-fonte, sugerimos que primeiro construa uma imagem Docker personalizada e só então faça a implantação.
+
+:::
+
+:::warning Atenção
+
+Ao implantar vários serviços NocoBase independentes, use um `hostname` diferente para cada serviço, como subdomínios distintos. Não diferencie os serviços apenas pela porta, como `https://example.com:13000` e `https://example.com:14000`.
+
+O NocoBase usa cookies para manter o estado de login e as [permissões de acesso a arquivos](../../file-manager/stable-url.md). Os navegadores não isolam cookies por porta, portanto serviços em portas diferentes sob o mesmo `hostname` podem compartilhar cookies com o mesmo nome. Isso pode sobrescrever o estado de login ou causar falhas de autorização na pré-visualização e no download de arquivos.
+
+Os subaplicativos na mesma implantação do NocoBase não estão sujeitos a essa restrição. Os cookies de login são diferenciados pelo nome do aplicativo, portanto o aplicativo principal e subaplicativos com nomes diferentes podem compartilhar o mesmo `hostname`.
+
+No entanto, serviços independentes ainda precisam ser isolados. Se outro serviço NocoBase for executado em outra porta sob o mesmo `hostname` e contiver um aplicativo principal ou subaplicativo com o mesmo nome, os cookies ainda poderão entrar em conflito.
+
+Use endereços como `app1.example.com` e `app2.example.com` e encaminhe-os para serviços NocoBase diferentes por meio do Nginx ou Caddy.
 
 :::
 

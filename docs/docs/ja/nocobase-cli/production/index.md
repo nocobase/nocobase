@@ -69,6 +69,16 @@ nb app autostart run
 - リバースプロキシに接続する場合は、`appPort`がenvに保存されています
 - 正式に外部に公開する準備ができている場合は、ドメイン名、入口ポート、HTTPS ソリューションをすでに計画しています。
 
+:::warning 注意
+
+独立した NocoBase サービスごとに、別のサブドメインなど異なる `hostname` を使用してください。ポートだけでサービスを区別しないでください。ブラウザーの cookie はポートでは分離されないため、同じ `hostname` のサービスがログイン状態を上書きし、[安定 URL](../../file-manager/stable-url.md) の認証に影響する可能性があります。
+
+同じ NocoBase デプロイ環境内のサブアプリはアプリ名で区別されるため、個別の hostname は必要ありません。ただし、同じ `hostname` の別ポートで独立した NocoBase サービスを実行し、その中に同名のメインアプリまたはサブアプリがある場合、cookie が競合する可能性があります。
+
+たとえば、`example.com:13000` と `example.com:14000` ではなく、`app1.example.com` と `app2.example.com` を使用してください。
+
+:::
+
 CLI のインストールまたは環境の初期化が完了していない場合は、[CLI を使用したインストール (推奨)](../installation/cli.md) に戻ります。
 
 env が `appPort` がないというコマンド プロンプトが表示された場合は、まず [`nb env update`](../../api/cli/env/update.md) を実行してそれを入力します。

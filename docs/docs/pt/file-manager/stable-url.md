@@ -5,11 +5,9 @@ description: "Explica o formato, as permissões, os redirecionamentos e o compor
 keywords: "URL estável,URL de proxy,URL permanente,acesso a arquivos,pré-visualização do Office,NocoBase"
 ---
 
-# URL estável (URL de proxy)
+# URL estável
 
 Arquivos gerenciados por um mecanismo de armazenamento são acessados por uma **URL estável**. O NocoBase verifica o registro e as permissões e depois redireciona para a URL real gerada pelo armazenamento.
-
-O nome anterior “URL permanente” indica apenas que a URL salva não muda com as assinaturas temporárias do armazenamento. Isso não torna o arquivo público nem garante que ele exista para sempre.
 
 ## Formato
 
@@ -46,7 +44,9 @@ Não salve essa URL em campos, Markdown ou dados de negócio e não a use como l
 - Excluir ou mover o registro para outro contexto invalida a URL antiga
 - A resposta é um redirecionamento `302`, que o cliente deve seguir
 - Não persista `302 Location` nem `temporaryAccessToken`
-- O proxy reverso deve encaminhar `/files/` sob `APP_PUBLIC_PATH` para o NocoBase
+- O proxy reverso deve encaminhar ao NocoBase a rota `/files/` sob `APP_PUBLIC_PATH`. Em implantações em subcaminhos, mantenha também a rota compatível `/files/` na raiz. As configurações geradas pela CLI do NocoBase incluem ambas as regras automaticamente
+- Use um `hostname` diferente para cada serviço NocoBase independente, em vez de diferenciá-los apenas pela porta. Os cookies do navegador não são isolados por porta; consulte [Implantação em produção](../get-started/deployment/production.md)
+- Os subaplicativos da mesma implantação do NocoBase são diferenciados pelo nome do aplicativo e não precisam de hostnames separados. No entanto, um serviço independente em outra porta ainda precisa ser isolado por hostname se contiver um aplicativo principal ou subaplicativo com o mesmo nome
 
 ## Links relacionados
 

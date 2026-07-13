@@ -8,9 +8,23 @@ keywords: "Deployment Lingkungan Produksi,Deployment Produksi,Deployment Docker,
 
 Saat men-deploy NocoBase di lingkungan produksi, karena perbedaan cara build pada sistem dan lingkungan yang berbeda, instalasi dependencies bisa menjadi rumit. Untuk mendapatkan pengalaman fitur yang lengkap, kami merekomendasikan menggunakan **Docker** untuk deployment. Jika lingkungan sistem tidak dapat menggunakan Docker, Anda juga dapat menggunakan **create-nocobase-app** untuk deployment.
 
-:::warning
+:::warning Perhatian
 
 Tidak disarankan untuk langsung men-deploy source code di lingkungan produksi. Source code memiliki banyak dependencies, ukuran yang besar, dan kompilasi penuh memerlukan CPU dan memori yang tinggi. Jika benar-benar perlu menggunakan source code untuk deployment, disarankan untuk membangun image Docker kustom terlebih dahulu, kemudian melakukan deployment.
+
+:::
+
+:::warning Perhatian
+
+Jika men-deploy beberapa layanan NocoBase yang berdiri sendiri, gunakan `hostname` yang berbeda untuk setiap layanan, misalnya subdomain yang berbeda. Jangan hanya membedakan layanan berdasarkan port seperti `https://example.com:13000` dan `https://example.com:14000`.
+
+NocoBase menggunakan cookie untuk mempertahankan status login dan [izin akses file](../../file-manager/stable-url.md). Browser tidak mengisolasi cookie berdasarkan port, sehingga layanan pada port berbeda di bawah `hostname` yang sama dapat berbagi cookie dengan nama yang sama. Hal ini dapat menimpa status login atau menyebabkan kegagalan otorisasi pada pratinjau dan unduhan file.
+
+Sub-app dalam deployment NocoBase yang sama tidak termasuk dalam pembatasan ini. Cookie login dibedakan berdasarkan nama aplikasi, sehingga aplikasi utama dan sub-app dengan nama berbeda dapat berbagi `hostname` yang sama.
+
+Namun, layanan independen tetap harus diisolasi. Jika layanan NocoBase lain berjalan pada port berbeda di bawah `hostname` yang sama dan memiliki aplikasi utama atau sub-app dengan nama yang sama, cookie tetap dapat mengalami konflik.
+
+Gunakan alamat seperti `app1.example.com` dan `app2.example.com`, lalu arahkan ke layanan NocoBase yang berbeda melalui Nginx atau Caddy.
 
 :::
 

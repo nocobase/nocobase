@@ -5,11 +5,9 @@ description: "Explica el formato, los permisos, las redirecciones y el comportam
 keywords: "URL estable,URL proxy,URL permanente,acceso a archivos,vista previa de Office,NocoBase"
 ---
 
-# URL estable (URL proxy)
+# URL estable
 
 Los archivos administrados por un motor de almacenamiento se abren mediante una **URL estable**. NocoBase comprueba el registro y los permisos, y después redirige a la URL real generada por el almacenamiento.
-
-El nombre anterior «URL permanente» solo indica que la URL guardada no cambia con cada firma temporal del almacenamiento. No significa que el archivo sea público ni que exista para siempre.
 
 ## Formato
 
@@ -46,7 +44,9 @@ No guardes esa URL temporal en campos, Markdown ni datos de negocio, y no la use
 - Al eliminar o mover el registro a otro contexto, la URL anterior deja de funcionar
 - La respuesta es una redirección `302`; los clientes deben seguirla
 - No guardes `302 Location` ni `temporaryAccessToken`
-- El proxy inverso debe reenviar `/files/` bajo `APP_PUBLIC_PATH` a NocoBase
+- El proxy inverso debe reenviar a NocoBase la ruta `/files/` situada bajo `APP_PUBLIC_PATH`. En despliegues bajo una subruta, también debe conservarse la ruta compatible `/files/` en la raíz. Las configuraciones generadas por la CLI de NocoBase incluyen ambas reglas automáticamente
+- Usa un `hostname` diferente para cada servicio NocoBase independiente, en vez de diferenciarlos únicamente por el puerto. Las cookies del navegador no se aíslan por puerto; consulta [Despliegue en producción](../get-started/deployment/production.md)
+- Las subaplicaciones de un mismo despliegue de NocoBase se distinguen por el nombre de la aplicación y no necesitan hostnames separados. Sin embargo, un servicio independiente en otro puerto sigue necesitando aislamiento por hostname si contiene una aplicación principal o subaplicación con el mismo nombre
 
 ## Enlaces relacionados
 

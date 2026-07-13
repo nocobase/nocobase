@@ -5,11 +5,9 @@ description: "Menjelaskan format, izin, pengalihan, dan perilaku URL file stabil
 keywords: "URL stabil,URL proxy,URL permanen,akses file,pratinjau Office,NocoBase"
 ---
 
-# URL stabil (URL proxy)
+# URL stabil
 
 File yang dikelola oleh storage engine NocoBase diakses melalui **URL stabil**. NocoBase memeriksa record file dan izin akses, lalu mengalihkan permintaan ke URL aktual yang dibuat oleh storage engine.
-
-Istilah lama “URL permanen” hanya berarti URL yang disimpan tidak berubah mengikuti signature sementara dari storage. File tersebut tidak otomatis menjadi publik atau tersedia selamanya.
 
 ## Format
 
@@ -46,7 +44,9 @@ Jangan simpan URL sementara ini ke field, Markdown, atau data bisnis, dan jangan
 - Menghapus atau memindahkan record ke konteks lain akan membatalkan URL lama
 - Respons berupa pengalihan `302` yang harus diikuti oleh klien
 - Jangan menyimpan `302 Location` atau `temporaryAccessToken`
-- Reverse proxy harus meneruskan `/files/` di bawah `APP_PUBLIC_PATH` ke NocoBase
+- Reverse proxy harus meneruskan rute `/files/` di bawah `APP_PUBLIC_PATH` ke NocoBase. Untuk deployment pada subpath, pertahankan juga rute kompatibilitas `/files/` di root. Konfigurasi yang dibuat oleh NocoBase CLI otomatis mencakup kedua rute tersebut
+- Gunakan `hostname` yang berbeda untuk setiap layanan NocoBase yang berdiri sendiri, bukan hanya membedakannya berdasarkan port. Cookie browser tidak diisolasi berdasarkan port; lihat [Deployment environment produksi](../get-started/deployment/production.md)
+- Sub-app dalam deployment NocoBase yang sama dibedakan berdasarkan nama aplikasi dan tidak memerlukan hostname terpisah. Namun, layanan independen pada port lain tetap harus diisolasi dengan hostname jika memiliki aplikasi utama atau sub-app dengan nama yang sama
 
 ## Tautan terkait
 

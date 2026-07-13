@@ -2,9 +2,23 @@
 
 Wenn Sie NocoBase in einer Produktionsumgebung bereitstellen, kann die Installation von Abhängigkeiten aufwendig sein, da die Build-Methoden in verschiedenen Systemen und Umgebungen variieren. Für ein vollständiges Funktionserlebnis empfehlen wir die Bereitstellung mit **Docker**. Wenn Ihre Systemumgebung Docker nicht verwenden kann, können Sie auch **create-nocobase-app** für die Bereitstellung nutzen.
 
-:::warning
+:::warning Hinweis
 
 Es wird nicht empfohlen, NocoBase direkt aus dem Quellcode in einer Produktionsumgebung bereitzustellen. Der Quellcode hat viele Abhängigkeiten, ist umfangreich und eine vollständige Kompilierung stellt hohe Anforderungen an CPU und Arbeitsspeicher. Wenn Sie unbedingt aus dem Quellcode bereitstellen müssen, wird empfohlen, zuerst ein benutzerdefiniertes Docker-Image zu erstellen und es dann bereitzustellen.
+
+:::
+
+:::warning Hinweis
+
+Wenn Sie mehrere voneinander unabhängige NocoBase-Dienste bereitstellen, verwenden Sie für jeden Dienst einen eigenen `hostname`, etwa unterschiedliche Subdomains. Unterscheiden Sie die Dienste nicht nur über Ports wie `https://example.com:13000` und `https://example.com:14000`.
+
+NocoBase verwendet Cookies für den Anmeldestatus und die [Dateizugriffsrechte](../../file-manager/stable-url.md). Browser trennen Cookies nicht nach Port. Dienste auf verschiedenen Ports unter demselben `hostname` können daher gleichnamige Cookies gemeinsam verwenden, wodurch Anmeldestatus überschrieben oder die Autorisierung von Dateivorschau und Download beeinträchtigt werden kann.
+
+Unteranwendungen innerhalb derselben NocoBase-Bereitstellung fallen nicht unter diese Einschränkung. Anmelde-Cookies werden anhand des Anwendungsnamens unterschieden, sodass die Hauptanwendung und unterschiedlich benannte Unteranwendungen denselben `hostname` verwenden können.
+
+Unabhängige Dienste müssen dennoch isoliert werden. Wenn ein weiterer NocoBase-Dienst auf einem anderen Port unter demselben `hostname` läuft und eine gleichnamige Haupt- oder Unteranwendung enthält, können die Cookies weiterhin kollidieren.
+
+Verwenden Sie beispielsweise `app1.example.com` und `app2.example.com` und leiten Sie diese über Nginx oder Caddy an die jeweiligen NocoBase-Dienste weiter.
 
 :::
 

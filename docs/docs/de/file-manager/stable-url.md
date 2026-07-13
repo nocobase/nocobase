@@ -5,11 +5,9 @@ description: "Beschreibt Format, Berechtigungen, Weiterleitungen und das Verhalt
 keywords: "stabile URL,Proxy-URL,permanente URL,Dateizugriff,Office-Vorschau,NocoBase"
 ---
 
-# Stabile URL (Proxy-URL)
+# Stabile URL
 
 Dateien, die von einer NocoBase-Speicher-Engine verwaltet werden, sind über eine **stabile URL** erreichbar. NocoBase prüft zuerst den Dateidatensatz und die Berechtigungen und leitet anschließend zur tatsächlichen Speicher-URL weiter.
-
-Die frühere Bezeichnung „permanente URL“ bedeutet nur, dass sich die gespeicherte URL nicht mit temporären Speichersignaturen ändert. Die Datei wird dadurch weder öffentlich noch dauerhaft verfügbar.
 
 ## Format
 
@@ -46,7 +44,9 @@ Speichere diese URL nicht in Feldern, Markdown oder Geschäftsdaten und verwende
 - Löschen oder Verschieben des Datensatzes macht die alte URL ungültig
 - Die Antwort ist eine `302`-Weiterleitung, der Clients folgen müssen
 - `302 Location` und `temporaryAccessToken` dürfen nicht dauerhaft gespeichert werden
-- Der Reverse Proxy muss `/files/` unter `APP_PUBLIC_PATH` an NocoBase weiterleiten
+- Der Reverse Proxy muss `/files/` unter `APP_PUBLIC_PATH` an NocoBase weiterleiten. Bei einer Bereitstellung unter einem Unterpfad sollte zusätzlich die kompatible Route `/files/` auf Root-Ebene erhalten bleiben. Von der NocoBase CLI erzeugte Konfigurationen enthalten beide Regeln automatisch
+- Verwende für jeden unabhängigen NocoBase-Dienst einen eigenen `hostname`, statt die Dienste nur durch Ports zu unterscheiden. Browser-Cookies werden nicht nach Port getrennt; weitere Informationen findest du unter [Bereitstellung in einer Produktionsumgebung](../get-started/deployment/production.md)
+- Unteranwendungen innerhalb derselben NocoBase-Bereitstellung werden anhand des Anwendungsnamens unterschieden und benötigen keine eigenen Hostnames. Ein unabhängiger Dienst auf einem anderen Port muss jedoch weiterhin über einen eigenen Hostname isoliert werden, wenn er eine Haupt- oder Unteranwendung mit demselben Namen enthält
 
 ## Verwandte Links
 
