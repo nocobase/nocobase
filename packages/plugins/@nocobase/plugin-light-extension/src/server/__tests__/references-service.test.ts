@@ -19,8 +19,6 @@ import {
   createReferenceRecord,
   createReferenceServiceFixture,
   createRepoRecord,
-  createRunJSEntryRecord,
-  createRunJSHostNode,
   stableJsonHash,
 } from './reference-test-helpers';
 
@@ -148,7 +146,7 @@ describe('plugin-light-extension references service', () => {
     }
   });
 
-  it('indexes JS field, action, item, and RunJS host references', async () => {
+  it('indexes JS field, action, and item references', async () => {
     const { service, repositories } = createReferenceServiceFixture({
       flowModelTrees: {
         root: {
@@ -157,7 +155,6 @@ describe('plugin-light-extension references service', () => {
             field: createJsFieldNode(),
             action: createJsActionNode(),
             item: createJsItemNode(),
-            runjs: createRunJSHostNode(),
           },
         },
       },
@@ -165,14 +162,8 @@ describe('plugin-light-extension references service', () => {
         createRepoRecord({ id: 'ler_fields' }),
         createRepoRecord({ id: 'ler_actions' }),
         createRepoRecord({ id: 'ler_items' }),
-        createRepoRecord({ id: 'ler_runjs' }),
       ],
-      entries: [
-        createJsFieldEntryRecord(),
-        createJsActionEntryRecord(),
-        createJsItemEntryRecord(),
-        createRunJSEntryRecord(),
-      ],
+      entries: [createJsFieldEntryRecord(), createJsActionEntryRecord(), createJsItemEntryRecord()],
     });
 
     const result = await service.syncFlowModelReferencesForNodeTree({
@@ -181,17 +172,16 @@ describe('plugin-light-extension references service', () => {
     });
 
     expect(result).toMatchObject({
-      scanned: 4,
-      upserted: 4,
+      scanned: 3,
+      upserted: 3,
       statusCounts: {
-        active: 4,
+        active: 3,
       },
     });
     expect(repositories.lightExtensionReferences.records.map((record) => record.get('kind')).sort()).toEqual([
       'js-action',
       'js-field',
       'js-item',
-      'runjs',
     ]);
   });
 

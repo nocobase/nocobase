@@ -346,6 +346,11 @@ export interface StepDefinition<TModel extends FlowModel = FlowModel>
   params?: ActionDefinition<TModel, FlowRuntimeContext<TModel>>['defaultParams'];
   // `preset: true` 的 step params 需要在创建时填写，没有标记的可以创建模型后再填写。
   preset?: boolean;
+  /**
+   * Whether the settings form values are persisted under this step key.
+   * Runtime-only settings steps can set this to false and persist through beforeParamsSave instead.
+   */
+  persistParams?: boolean;
   uiMode?: StepUIMode | ((ctx: FlowRuntimeContext<TModel>) => StepUIMode | Promise<StepUIMode>);
 }
 

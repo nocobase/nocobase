@@ -55,6 +55,7 @@ export class RuntimeResolveService {
         'entryPath',
         'title',
         'settingsSchema',
+        'settingsSchemaHash',
         'compiledCommitId',
         'runtimeVersion',
         'surfaceStyle',
@@ -356,7 +357,7 @@ function isSelectableRuntimeEntry(entry: SelectableEntryProjection, repoHeadComm
         entry.runtimeVersion &&
         entry.surfaceStyle &&
         entry.filesHash &&
-        entry.settingsDefaultsHash,
+        hasConsistentSettingsHashes(entry),
     )
   );
 }
@@ -369,6 +370,7 @@ interface SelectableEntryProjection {
   entryPath: string;
   title: string | null;
   settingsSchema: Record<string, unknown> | null;
+  settingsSchemaHash: string | null;
   compiledCommitId: string | null;
   runtimeVersion: string | null;
   surfaceStyle: string | null;
@@ -388,6 +390,7 @@ function selectableEntryFromModel(record: Model): SelectableEntryProjection {
     entryPath: String(record.get('entryPath')),
     title: nullableString(record.get('title')),
     settingsSchema: nullableRecord(record.get('settingsSchema')),
+    settingsSchemaHash: nullableString(record.get('settingsSchemaHash')),
     compiledCommitId: nullableString(record.get('compiledCommitId')),
     runtimeVersion: nullableString(record.get('runtimeVersion')),
     surfaceStyle: nullableString(record.get('surfaceStyle')),
@@ -408,11 +411,20 @@ function toSelectableEntrySummary(entry: SelectableEntryProjection): LightExtens
     entryPath: entry.entryPath,
     title: entry.title,
     settingsSchema: entry.settingsSchema,
-    settingsDefaultsHash: entry.settingsDefaultsHash || '',
+    settingsSchemaHash: entry.settingsSchemaHash,
+    settingsDefaultsHash: entry.settingsDefaultsHash,
     ...(entry.artifactHash ? { artifactHash: entry.artifactHash } : {}),
     runtimeCodeHash: entry.runtimeCodeHash || '',
     runtimeAvailable: true,
   };
+}
+
+function hasConsistentSettingsHashes(entry: SelectableEntryProjection): boolean {
+  if (!entry.settingsSchema) {
+    return entry.settingsSchemaHash === null && entry.settingsDefaultsHash === null;
+  }
+
+  return Boolean(entry.settingsSchemaHash && entry.settingsDefaultsHash);
 }
 
 function nullableString(value: unknown): string | null {

@@ -7,14 +7,24 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { RunJSSourceResolverRegistry } from '../../../components/runjs-source';
 import {
   createRuntimeRunTracker,
-  getLightExtensionSettingDefaultValue,
+  getLightExtensionSettingsDescriptor,
   normalizeLightExtensionRuntimeError,
+  normalizeLightExtensionSourceSettings,
   stableSerialize,
 } from '../runjsSourceRuntimeCommon';
 
 describe('runjsSourceRuntimeCommon', () => {
+  beforeEach(() => {
+    RunJSSourceResolverRegistry.clear();
+  });
+
+  afterEach(() => {
+    RunJSSourceResolverRegistry.clear();
+  });
+
   it('tracks the latest run per model independently', () => {
     const tracker = createRuntimeRunTracker();
     const firstModel = {};
@@ -28,14 +38,46 @@ describe('runjsSourceRuntimeCommon', () => {
     expect(tracker.isCurrent(secondModel, secondRun)).toBe(false);
   });
 
-  it('prefers saved settings, descriptor defaults, then schema defaults', () => {
-    const schema = { default: 'schema' };
+  it('rejects light extension source saves when the settings descriptor is unavailable', () => {
+    expect(() =>
+      normalizeLightExtensionSourceSettings({
+        currentRunJs: { sourceBinding: { entryId: 'old' }, settings: { mode: 2 } },
+        nextSourceMode: 'light-extension',
+        nextSourceBinding: { entryId: 'next' },
+        nextSettings: { mode: 2 },
+        descriptor: null,
+      }),
+    ).toThrow('Light extension settings descriptor is required.');
+  });
 
-    expect(getLightExtensionSettingDefaultValue('value', schema, { value: 'descriptor' }, { value: 'saved' })).toBe(
-      'saved',
-    );
-    expect(getLightExtensionSettingDefaultValue('value', schema, { value: 'descriptor' }, {})).toBe('descriptor');
-    expect(getLightExtensionSettingDefaultValue('value', schema, {}, {})).toBe('schema');
+  it('accepts an explicit null schema hash when the entry has no settings schema', async () => {
+    RunJSSourceResolverRegistry.registerResolver({
+      sourceMode: 'light-extension',
+      resolve: async () => ({ code: 'return true;' }),
+      getSettingsDescriptor: async () => ({
+        entryId: 'entry_without_schema',
+        schema: null,
+        defaults: {},
+        settingsSchemaHash: null,
+      }),
+    });
+
+    await expect(
+      getLightExtensionSettingsDescriptor({
+        modelUid: 'model_1',
+        ownerKind: 'flowModel.step',
+        ownerLocator: { kind: 'flowModel.step' },
+        params: {
+          sourceMode: 'light-extension',
+          sourceBinding: { entryId: 'entry_without_schema' },
+        },
+      }),
+    ).resolves.toEqual({
+      entryId: 'entry_without_schema',
+      schema: null,
+      defaults: {},
+      settingsSchemaHash: null,
+    });
   });
 
   it('normalizes server error envelopes without changing surface-specific hints', () => {

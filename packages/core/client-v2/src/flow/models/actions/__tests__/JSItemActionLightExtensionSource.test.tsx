@@ -25,7 +25,8 @@ const SOURCE_BINDING = {
 };
 
 const SETTINGS_DESCRIPTOR: RunJSSourceSettingsDescriptor = {
-  schemaHash: 'schema_open_message',
+  entryId: 'entry_open_message',
+  settingsSchemaHash: 'schema_open_message',
   defaults: {
     successMessage: 'Opened',
   },

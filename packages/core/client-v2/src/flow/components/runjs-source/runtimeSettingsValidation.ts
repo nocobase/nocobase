@@ -48,10 +48,6 @@ export function getSchemaTitle(schema: JsonSchemaLike, fallback: string): string
   return toNonEmptyString(schema.title) || fallback;
 }
 
-export function getDescriptorSchemaHash(descriptor: RunJSSourceSettingsDescriptor): string {
-  return toNonEmptyString(descriptor.schemaHash) || shortHash(stableSerialize(descriptor.schema || null));
-}
-
 export function isSettingValueValid(schema: JsonSchemaLike, value: unknown, required: boolean): boolean {
   const type = normalizeSchemaType(schema);
 
@@ -187,13 +183,4 @@ function stableSerialize(value: unknown): string {
 
   const serialized = JSON.stringify(value);
   return typeof serialized === 'undefined' ? 'undefined' : serialized;
-}
-
-function shortHash(input: string): string {
-  let hash = 0x811c9dc5;
-  for (let index = 0; index < input.length; index++) {
-    hash ^= input.charCodeAt(index);
-    hash = Math.imul(hash, 0x01000193);
-  }
-  return (hash >>> 0).toString(36).padStart(6, '0').slice(0, 8);
 }

@@ -19,6 +19,7 @@ import {
   type FlowSettingsContext,
 } from '@nocobase/flow-engine';
 import { RunJSSourceResolverRegistry, type RunJSSourceSettingsDescriptor } from '../../../components/runjs-source';
+import { assertLightExtensionSettingsHostContract } from '../../utils/__tests__/lightExtensionSettingsHostContract';
 import { JSFieldModel } from '../JSFieldModel';
 
 const SOURCE_BINDING = {
@@ -30,7 +31,8 @@ const SOURCE_BINDING = {
 };
 
 const SETTINGS_DESCRIPTOR: RunJSSourceSettingsDescriptor = {
-  schemaHash: 'schema_phone',
+  entryId: 'entry_phone',
+  settingsSchemaHash: 'schema_phone',
   defaults: {
     prefix: 'tel:',
   },
@@ -108,6 +110,7 @@ describe('JSFieldModel light extension source', () => {
       resolve: () => ({
         code: '',
       }),
+      getSettingsDescriptor: async () => SETTINGS_DESCRIPTOR,
       listSourceMenuItems,
     });
     await sourceModeStep?.uiMode?.props?.loadItems?.({
@@ -144,11 +147,11 @@ describe('JSFieldModel light extension source', () => {
       sourceBinding: undefined,
       settings: {},
     });
-    expect(() => sourceModeStep.beforeParamsSave?.(model.context, { sourceMode: 'light-extension' }, {})).toThrow(
-      'Light extension source binding is required.',
-    );
+    await expect(
+      sourceModeStep.beforeParamsSave?.(model.context, { sourceMode: 'light-extension' }, {}),
+    ).rejects.toThrow('Light extension source binding is required.');
 
-    sourceModeStep.beforeParamsSave?.(
+    await sourceModeStep.beforeParamsSave?.(
       model.context,
       {
         sourceMode: 'light-extension',
@@ -168,7 +171,12 @@ describe('JSFieldModel light extension source', () => {
     });
   });
 
-  it('copies selected source binding and settings into the RunJS step', () => {
+  it('copies the selected source binding and initializes its descriptor defaults in the RunJS step', async () => {
+    RunJSSourceResolverRegistry.registerResolver({
+      sourceMode: 'light-extension',
+      resolve: () => ({ code: '' }),
+      getSettingsDescriptor: async () => SETTINGS_DESCRIPTOR,
+    });
     const { model } = createJSField({
       sourceMode: 'inline',
       code: 'ctx.render("inline");',
@@ -178,18 +186,11 @@ describe('JSFieldModel light extension source', () => {
       beforeParamsSave?: (ctx: FlowSettingsContext<JSFieldModel>, params: Record<string, unknown>) => void;
     };
 
-    model.setStepParams('jsSettings', 'sourceBinding', {
+    await sourceBindingStep.beforeParamsSave?.(model.context as FlowSettingsContext<JSFieldModel>, {
       sourceMode: 'light-extension',
       sourceBinding: SOURCE_BINDING,
       settings: {
-        prefix: 'callto:',
-      },
-    });
-    sourceBindingStep.beforeParamsSave?.(model.context as FlowSettingsContext<JSFieldModel>, {
-      sourceMode: 'light-extension',
-      sourceBinding: SOURCE_BINDING,
-      settings: {
-        prefix: 'callto:',
+        prefix: 'tel:',
       },
     });
 
@@ -197,15 +198,13 @@ describe('JSFieldModel light extension source', () => {
       sourceMode: 'light-extension',
       sourceBinding: SOURCE_BINDING,
       settings: {
-        prefix: 'callto:',
+        prefix: 'tel:',
       },
       code: 'ctx.render("inline");',
       version: 'v2',
     });
-    expect(model.getStepParams('jsSettings', 'sourceBinding')).toEqual(SOURCE_BINDING);
-    expect(model.getStepParams('jsSettings', 'settings')).toEqual({
-      prefix: 'callto:',
-    });
+    expect(model.getStepParams('jsSettings', 'sourceBinding')).toBeUndefined();
+    expect(model.getStepParams('jsSettings', 'settings')).toBeUndefined();
   });
 
   it('generates runtime settings steps from the JS Field settings schema', async () => {
@@ -227,6 +226,22 @@ describe('JSFieldModel light extension source', () => {
     expect(Object.values(steps || {})[0]?.uiSchema?.value?.['x-component']).toBe(
       'JSFieldLightExtensionSettingsStepField',
     );
+  });
+
+  it('uses canonical light extension settings across saves and entry switches', async () => {
+    const { model } = createJSField({});
+
+    await assertLightExtensionSettingsHostContract({
+      model,
+      flowKey: 'jsSettings',
+      settingsComponent: 'JSFieldLightExtensionSettingsStepField',
+      sourceBinding: SOURCE_BINDING,
+      nextSourceBinding: {
+        ...SOURCE_BINDING,
+        entryId: 'entry_currency',
+        entryPath: 'src/client/js-fields/currency/index.tsx',
+      },
+    });
   });
 
   it('persists runtime settings step values back to RunJS settings', async () => {
@@ -254,9 +269,7 @@ describe('JSFieldModel light extension source', () => {
         prefix: 'callto:',
       },
     });
-    expect(model.getStepParams('jsSettings', 'settings')).toEqual({
-      prefix: 'callto:',
-    });
+    expect(model.getStepParams('jsSettings', 'settings')).toBeUndefined();
   });
 
   it('does not fetch settings descriptors before resolving the runtime source', async () => {

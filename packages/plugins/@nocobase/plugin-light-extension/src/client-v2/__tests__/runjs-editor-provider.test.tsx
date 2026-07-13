@@ -15,22 +15,6 @@ import { describe, expect, it, vi } from 'vitest';
 import { createRunJSLightExtensionEditorProvider } from '../components/RunJSLightExtensionEditorProvider';
 import type { ApiClientLike } from '../api/lightExtensionEntriesRequests';
 
-vi.mock('@nocobase/client-v2', async () => {
-  const actual = await vi.importActual<typeof import('@nocobase/client-v2')>('@nocobase/client-v2');
-  return {
-    ...actual,
-    CodeEditor: ({ value, onChange }: { value?: string; onChange?: (value: string) => void }) => (
-      <textarea aria-label="runjs-code" value={value || ''} onChange={(event) => onChange?.(event.target.value)} />
-    ),
-  };
-});
-
-vi.mock('../components/JSBlockLightExtensionSourceField', () => ({
-  RunJSLightExtensionSourceField: ({ value }: { value?: string | { entryId?: string } }) => (
-    <div>source:{typeof value === 'string' ? value : value?.entryId || 'inline'}</div>
-  ),
-}));
-
 vi.mock('../pages/LightExtensionWorkspacePage', () => {
   const MockLightExtensionWorkspacePage = ({
     repoId,
@@ -167,7 +151,7 @@ function EditorViewHarness(props: {
 }
 
 describe('RunJSLightExtensionEditorProvider', () => {
-  it('only handles nested values after a light extension is selected', () => {
+  it('never handles nested RunJS values, including stale light-extension bindings', () => {
     const provider = createRunJSLightExtensionEditorProvider();
     const nestedLocator = {
       kind: 'flowModel.nestedRunJS' as const,
@@ -212,7 +196,7 @@ describe('RunJSLightExtensionEditorProvider', () => {
       }),
     ).toBe(false);
 
-    const lightExtensionValue = {
+    const staleLightExtensionValue = {
       code: '',
       version: 'v2',
       sourceMode: 'light-extension',
@@ -226,24 +210,11 @@ describe('RunJSLightExtensionEditorProvider', () => {
     };
     expect(
       provider.canHandle?.({
-        value: lightExtensionValue,
+        value: staleLightExtensionValue,
         locator: nestedLocator,
         surfaceStyle: 'value',
       }),
-    ).toBe(true);
-
-    render(
-      <>
-        {provider.renderEditor({
-          value: lightExtensionValue,
-          locator: nestedLocator,
-          surfaceStyle: 'value',
-        })}
-      </>,
-    );
-
-    expect(screen.getByText('source:entry_1')).toBeInTheDocument();
-    expect(screen.queryByLabelText('runjs-code')).not.toBeInTheDocument();
+    ).toBe(false);
   });
 
   it('opens the selected light extension workspace for JS block render editors', () => {

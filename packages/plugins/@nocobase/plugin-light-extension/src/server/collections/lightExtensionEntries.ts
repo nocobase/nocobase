@@ -79,11 +79,8 @@ export default defineCollection({
     },
     {
       type: 'string',
-      name: 'metaPath',
-    },
-    {
-      type: 'string',
-      name: 'settingsPath',
+      name: 'descriptorPath',
+      allowNull: false,
     },
     {
       type: 'string',
@@ -112,6 +109,10 @@ export default defineCollection({
     {
       type: 'json',
       name: 'settingsSchema',
+    },
+    {
+      type: 'string',
+      name: 'settingsSchemaHash',
     },
     {
       type: 'string',

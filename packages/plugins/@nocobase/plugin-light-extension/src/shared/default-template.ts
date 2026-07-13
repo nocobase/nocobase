@@ -17,84 +17,22 @@ Put each reusable entry in its own directory:
 - JS Action: \`src/client/js-actions/<entry-name>/index.ts\`
 - JS Field: \`src/client/js-fields/<entry-name>/index.tsx\`
 - JS Item / JS Entry: \`src/client/js-items/<entry-name>/index.tsx\`
-- RunJS: \`src/client/runjs/<entry-name>/index.ts\`
+
+Light Extension supports only these four entry kinds: JS Block, JS Field, JS Action, and JS Item. Generic or nested RunJS source stays inline and is not a Light Extension entry kind.
 
 An entry can use \`index.ts\`, \`index.tsx\`, \`index.js\`, or \`index.jsx\`. Keep entry-specific modules in the same entry directory. Put modules shared by multiple entries in \`src/shared/\`.
 
-Use \`meta.json.key\` as the stable technical identity of an entry. The key stays unchanged when the entry directory is renamed.
-`;
+Every entry root must include \`entry.json\`. Its required \`schemaVersion\` and \`key\` fields define the descriptor version and stable technical identity. The key stays unchanged when the entry directory is renamed.
 
-export const LIGHT_EXTENSION_SDK_SHIM_PATH = 'src/shared/light-extension-sdk.d.ts';
-export const LIGHT_EXTENSION_SDK_SHIM_CONTENT = `declare module "@nocobase/light-extension-sdk/client" {
-  export interface LightExtensionSettingsContext<TSettings = unknown> {
-    settings: TSettings;
-  }
+When \`entry.json.settingsSchema\` defines an object schema, every top-level property is shown as an independent settings menu. Property declaration order controls the menu order.
 
-  export type LightExtensionRecord = Record<string, unknown>;
+Generated descriptors intentionally omit the optional \`$schema\` field. Authoring and runtime validation use the bundled contract and never probe a Schema URL over the network.
 
-  export interface LightExtensionDataContext<TSettings = unknown> extends LightExtensionSettingsContext<TSettings> {
-    record?: LightExtensionRecord | null;
-    records?: LightExtensionRecord[];
-    values?: LightExtensionRecord;
-    collection?: unknown;
-    collectionField?: unknown;
-    dataSource?: unknown;
-  }
-
-  export interface JSBlockContext<TSettings = unknown> extends LightExtensionDataContext<TSettings> {
-    element?: HTMLElement | null;
-    render?: (node: unknown) => void;
-    i18n?: {
-      t: (key: string, options?: Record<string, unknown>) => string;
-    };
-  }
-
-  export interface JSFieldContext<TSettings = unknown, TValue = unknown> extends LightExtensionDataContext<TSettings> {
-    value?: TValue;
-  }
-
-  export interface JSActionContext<TSettings = unknown> extends LightExtensionDataContext<TSettings> {
-    event?: unknown;
-    formValues?: LightExtensionRecord;
-  }
-
-  export interface JSItemContext<TSettings = unknown, TValue = unknown> extends LightExtensionDataContext<TSettings> {
-    value?: TValue;
-  }
-
-  export interface RunJSContext<TSettings = unknown, TInput = unknown> extends LightExtensionDataContext<TSettings> {
-    input?: TInput;
-    event?: unknown;
-    formValues?: LightExtensionRecord;
-  }
-
-  export function defineSettings<TSettings>(settings: TSettings): TSettings;
-  export function assertSettings<TSettings>(settings: TSettings): TSettings;
-}
-
-declare module "@nocobase/light-extension-sdk/shared" {
-  export interface LightExtensionSettingsContext<TSettings = unknown> {
-    settings: TSettings;
-  }
-
-  export type LightExtensionRecord = Record<string, unknown>;
-
-  export interface LightExtensionDataContext<TSettings = unknown> extends LightExtensionSettingsContext<TSettings> {
-    record?: LightExtensionRecord | null;
-    records?: LightExtensionRecord[];
-    values?: LightExtensionRecord;
-    collection?: unknown;
-    collectionField?: unknown;
-    dataSource?: unknown;
-  }
-
-  export function defineSettings<TSettings>(settings: TSettings): TSettings;
-  export function assertSettings<TSettings>(settings: TSettings): TSettings;
-}
+Use \`@nocobase/light-extension-sdk/client\` and \`@nocobase/light-extension-sdk/shared\` for explicit authoring types. Entry settings types are generated from \`entry.json.settingsSchema\` by the authoring workspace.
 `;
 
 export const LIGHT_EXTENSION_TSCONFIG_CONTENT =
-  '{\n  "compilerOptions": {\n    "allowSyntheticDefaultImports": true,\n    "baseUrl": ".",\n    "esModuleInterop": true,\n    "jsx": "react",\n    "module": "ESNext",\n    "moduleResolution": "Node",\n    "resolveJsonModule": true,\n    "skipLibCheck": true,\n    "strict": false,\n    "target": "ES2020",\n    "paths": {\n      "@nocobase/light-extension-sdk/client": ["src/shared/light-extension-sdk.d.ts"],\n      "@nocobase/light-extension-sdk/shared": ["src/shared/light-extension-sdk.d.ts"],\n      "light-extension:settings/*": [".light-extension/types/*"]\n    }\n  }\n}\n';
+  '{\n  "compilerOptions": {\n    "allowSyntheticDefaultImports": true,\n    "baseUrl": ".",\n    "esModuleInterop": true,\n    "jsx": "react",\n    "module": "ESNext",\n    "moduleResolution": "Node",\n    "resolveJsonModule": true,\n    "skipLibCheck": true,\n    "strict": false,\n    "target": "ES2020"\n  }\n}\n';
 
 export const BASE_LIGHT_EXTENSION_TEMPLATE_FILES: readonly LightExtensionTreeEntryInput[] = [
   {
@@ -107,11 +45,6 @@ export const BASE_LIGHT_EXTENSION_TEMPLATE_FILES: readonly LightExtensionTreeEnt
     content: LIGHT_EXTENSION_TSCONFIG_CONTENT,
     language: 'json',
   },
-  {
-    path: LIGHT_EXTENSION_SDK_SHIM_PATH,
-    content: LIGHT_EXTENSION_SDK_SHIM_CONTENT,
-    language: 'typescript',
-  },
 ];
 
 export const DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES: readonly LightExtensionTreeEntryInput[] = [
@@ -122,8 +55,8 @@ export const DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES: readonly LightExtensionTree
     language: 'typescript',
   },
   {
-    path: 'src/client/js-blocks/example/meta.json',
-    content: '{\n  "key": "example"\n}\n',
+    path: 'src/client/js-blocks/example/entry.json',
+    content: '{\n  "schemaVersion": 1,\n  "key": "example"\n}\n',
     language: 'json',
   },
   {
@@ -132,8 +65,8 @@ export const DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES: readonly LightExtensionTree
     language: 'typescript',
   },
   {
-    path: 'src/client/js-actions/example/meta.json',
-    content: '{\n  "key": "example"\n}\n',
+    path: 'src/client/js-actions/example/entry.json',
+    content: '{\n  "schemaVersion": 1,\n  "key": "example"\n}\n',
     language: 'json',
   },
   {
@@ -142,8 +75,8 @@ export const DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES: readonly LightExtensionTree
     language: 'typescript',
   },
   {
-    path: 'src/client/js-fields/example/meta.json',
-    content: '{\n  "key": "example"\n}\n',
+    path: 'src/client/js-fields/example/entry.json',
+    content: '{\n  "schemaVersion": 1,\n  "key": "example"\n}\n',
     language: 'json',
   },
   {
@@ -152,18 +85,8 @@ export const DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES: readonly LightExtensionTree
     language: 'typescript',
   },
   {
-    path: 'src/client/js-items/example/meta.json',
-    content: '{\n  "key": "example"\n}\n',
-    language: 'json',
-  },
-  {
-    path: 'src/client/runjs/example/index.ts',
-    content: 'export default async function run() {\n  return true;\n}\n',
-    language: 'typescript',
-  },
-  {
-    path: 'src/client/runjs/example/meta.json',
-    content: '{\n  "key": "example"\n}\n',
+    path: 'src/client/js-items/example/entry.json',
+    content: '{\n  "schemaVersion": 1,\n  "key": "example"\n}\n',
     language: 'json',
   },
 ];

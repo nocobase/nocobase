@@ -21,7 +21,8 @@ describe('light extension selectable entry summary', () => {
       entryPath: 'src/client/js-blocks/example/index.tsx',
       title: 'Example',
       settingsSchema: null,
-      settingsDefaultsHash: 'settings_hash',
+      settingsSchemaHash: null,
+      settingsDefaultsHash: null,
       runtimeCodeHash: 'runtime_hash',
       runtimeAvailable: true as const,
     };

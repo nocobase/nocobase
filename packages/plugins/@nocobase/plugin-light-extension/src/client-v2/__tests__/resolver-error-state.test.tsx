@@ -135,6 +135,7 @@ describe('LightExtensionRunJSResolver error state', () => {
                   },
                 },
               },
+              settingsSchemaHash: 'schema_hash',
               settingsDefaultsHash: 'defaults_hash',
             },
           ],
@@ -149,6 +150,7 @@ describe('LightExtensionRunJSResolver error state', () => {
         sourceBinding: SOURCE_BINDING,
       }),
     ).resolves.toEqual({
+      entryId: 'entry_sales',
       schema: {
         type: 'object',
         properties: {
@@ -162,7 +164,7 @@ describe('LightExtensionRunJSResolver error state', () => {
       defaults: {
         message: 'Hello',
       },
-      schemaHash: 'defaults_hash',
+      settingsSchemaHash: 'schema_hash',
     });
   });
 

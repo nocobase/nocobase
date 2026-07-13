@@ -15,6 +15,7 @@ import {
   getImportEqualsSpecifier,
   getImportSpecifier,
   getImportTypeSpecifier,
+  isEntryDescriptorImport,
   isRelativeImportOutsideCurrentEntry,
   isRelativeImportOutsideSharedRoot,
   scriptKind,
@@ -104,6 +105,17 @@ class ForbiddenRuntimeApiValidator {
         const specifier = getImportSpecifier(node.moduleSpecifier);
         if (specifier && !specifier.startsWith('.')) {
           diagnostics.push(...validateExternalSdkImport(node, sourceFile, specifier, target));
+        } else if (specifier && isEntryDescriptorImport(file.path, specifier)) {
+          diagnostics.push(
+            diagnosticAt(
+              sourceFile,
+              node.moduleSpecifier.getStart(sourceFile),
+              'entry_descriptor_import_not_allowed',
+              'error',
+              'entry.json is descriptor-only and cannot be imported by runtime source',
+              target,
+            ),
+          );
         } else if (
           specifier &&
           (boundary === 'shared'
@@ -142,6 +154,17 @@ class ForbiddenRuntimeApiValidator {
               'import_not_allowed',
               'error',
               `Re-export from "${specifier}" is not allowed in light-extension source`,
+              target,
+            ),
+          );
+        } else if (specifier && isEntryDescriptorImport(file.path, specifier)) {
+          diagnostics.push(
+            diagnosticAt(
+              sourceFile,
+              node.moduleSpecifier.getStart(sourceFile),
+              'entry_descriptor_import_not_allowed',
+              'error',
+              'entry.json is descriptor-only and cannot be re-exported by runtime source',
               target,
             ),
           );

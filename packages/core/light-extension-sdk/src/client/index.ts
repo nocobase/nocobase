@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { LightExtensionDataContext, LightExtensionRecord } from './shared';
+import type { LightExtensionDataContext, LightExtensionRecord } from '../shared';
 
-export type { LightExtensionDataContext, LightExtensionRecord, LightExtensionSettingsContext } from './shared';
-export { assertSettings, defineSettings } from './shared';
+export type { LightExtensionDataContext, LightExtensionRecord, LightExtensionSettingsContext } from '../shared';
+export { assertSettings, defineSettings } from '../shared';
 
 export interface JSBlockContext<TSettings = unknown> extends LightExtensionDataContext<TSettings> {
   element?: HTMLElement | null;

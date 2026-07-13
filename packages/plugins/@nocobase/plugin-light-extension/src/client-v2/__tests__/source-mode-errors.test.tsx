@@ -263,8 +263,7 @@ function createSelectableEntry() {
     kind: 'js-block',
     entryName: 'sales',
     entryPath: 'src/client/js-blocks/sales/index.tsx',
-    metaPath: null,
-    settingsPath: null,
+    descriptorPath: 'src/client/js-blocks/sales/entry.json',
     title: 'Sales',
     description: null,
     category: null,
@@ -282,6 +281,7 @@ function createSelectableEntry() {
         },
       },
     },
+    settingsSchemaHash: 'schema_hash',
     compiledCommitId: 'commit_sales',
     runtimeArtifact: {
       code: 'ctx.render("sales");',

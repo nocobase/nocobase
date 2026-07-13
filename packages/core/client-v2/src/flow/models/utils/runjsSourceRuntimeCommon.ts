@@ -13,9 +13,18 @@ import {
   type FlowSettingsContext,
   type StepDefinition,
 } from '@nocobase/flow-engine';
+import {
+  getCanonicalRunJSSettings,
+  getLightExtensionSettingStepKey,
+  normalizeLightExtensionEntrySelection,
+  normalizeLightExtensionSettings,
+  setLightExtensionTopLevelSetting,
+} from '@nocobase/runjs/settings';
 
 import {
   getSchemaTitle,
+  getSettingsSchemaProperties,
+  getSettingsSchemaRequired,
   isSettingValueValid,
   normalizeSchemaType,
   RunJSSourceResolverRegistry,
@@ -35,6 +44,11 @@ export type LightExtensionSourceModeParams = {
   sourceMode?: string;
   sourceBinding?: unknown;
   settings?: unknown;
+};
+
+type CanonicalSettingsModel = FlowModel & {
+  getStepParams(flowKey: string, stepKey: string): unknown;
+  setStepParams(flowKey: string, stepParams: Record<string, Record<string, unknown>>): void;
 };
 
 export type RuntimeErrorInfo = {
@@ -81,6 +95,7 @@ export function createLightExtensionSourceModeStep(options: {
 }): StepDefinition {
   return {
     title: '{{t("Code source")}}',
+    persistParams: false,
     uiMode: options.createMenuUIMode({ kind: options.kind }),
     useRawParams: true,
     uiSchema: {
@@ -105,6 +120,7 @@ export function createLightExtensionSourceBindingStep(options: {
   return {
     title: '{{t("Light extension source")}}',
     hideInSettings: true,
+    persistParams: false,
     useRawParams: true,
     uiSchema: {
       sourceMode: { type: 'string', 'x-display': 'hidden' },
@@ -179,7 +195,16 @@ export async function getLightExtensionSettingsDescriptor(options: {
       ownerLocator: options.ownerLocator,
     },
   });
-  return isRecord(descriptor) ? descriptor : null;
+  if (!isRecord(descriptor) || !toNonEmptyString(descriptor.entryId)) {
+    return null;
+  }
+  const schema = isRecord(descriptor.schema) ? descriptor.schema : null;
+  const settingsSchemaHash = descriptor.settingsSchemaHash;
+  if ((schema === null && settingsSchemaHash !== null) || (schema !== null && !toNonEmptyString(settingsSchemaHash))) {
+    return null;
+  }
+
+  return descriptor as unknown as RunJSSourceSettingsDescriptor;
 }
 
 export async function resolveLightExtensionBindingTitle(options: {
@@ -213,21 +238,6 @@ export async function resolveLightExtensionBindingTitle(options: {
   }
 }
 
-export function getLightExtensionSettingDefaultValue(
-  fieldName: string,
-  fieldSchema: JsonSchemaLike,
-  descriptorDefaults: Record<string, unknown>,
-  legacySettings: Record<string, unknown>,
-): unknown {
-  if (Object.prototype.hasOwnProperty.call(legacySettings, fieldName)) {
-    return cloneJsonValue(legacySettings[fieldName]);
-  }
-  if (Object.prototype.hasOwnProperty.call(descriptorDefaults, fieldName)) {
-    return cloneJsonValue(descriptorDefaults[fieldName]);
-  }
-  return Object.prototype.hasOwnProperty.call(fieldSchema, 'default') ? cloneJsonValue(fieldSchema.default) : undefined;
-}
-
 export function createLightExtensionSettingStep<TModel extends FlowModel>(options: {
   fieldName: string;
   fieldSchema: JsonSchemaLike;
@@ -247,6 +257,7 @@ export function createLightExtensionSettingStep<TModel extends FlowModel>(option
       key: stepKey,
       title,
       sort,
+      persistParams: false,
       uiSchema: {
         value: {
           type: normalizeSchemaType(fieldSchema) || 'string',
@@ -268,6 +279,98 @@ export function createLightExtensionSettingStep<TModel extends FlowModel>(option
       afterParamsSave: options.afterParamsSave,
     },
   ];
+}
+
+export function createLightExtensionSettingSteps<TModel extends FlowModel>(options: {
+  descriptor: RunJSSourceSettingsDescriptor;
+  settings: Record<string, unknown>;
+  component: string;
+  sortStart?: number;
+  syncValue: (ctx: FlowSettingsContext<TModel>, fieldName: string, value: unknown) => void;
+  afterParamsSave: (ctx: FlowSettingsContext<TModel>) => Promise<void>;
+}): Record<string, StepDefinition> | undefined {
+  if (!options.descriptor.schema) {
+    return undefined;
+  }
+  const properties = getSettingsSchemaProperties(options.descriptor.schema);
+  if (Object.keys(properties).length === 0) {
+    return undefined;
+  }
+  const requiredFields = getSettingsSchemaRequired(options.descriptor.schema);
+  const canonicalSettings = normalizeLightExtensionSettings(options.descriptor, options.settings);
+
+  return Object.fromEntries(
+    Object.entries(properties).map(([fieldName, fieldSchema], index) =>
+      createLightExtensionSettingStep<TModel>({
+        fieldName,
+        fieldSchema,
+        required: requiredFields.has(fieldName),
+        stepKey: getLightExtensionSettingStepKey(options.descriptor.entryId, fieldName),
+        defaultValue: canonicalSettings[fieldName],
+        sort: (options.sortStart ?? 700) + index,
+        component: options.component,
+        syncValue: options.syncValue,
+        afterParamsSave: options.afterParamsSave,
+      }),
+    ),
+  );
+}
+
+export function normalizeLightExtensionSourceSettings(options: {
+  currentRunJs: Record<string, unknown>;
+  nextSourceMode: LightExtensionSourceMode;
+  nextSourceBinding?: Record<string, unknown>;
+  nextSettings?: unknown;
+  descriptor?: RunJSSourceSettingsDescriptor | null;
+}): Record<string, unknown> {
+  if (options.nextSourceMode !== LIGHT_EXTENSION_SOURCE_MODE || !options.nextSourceBinding) {
+    return {};
+  }
+  if (!options.descriptor) {
+    throw new FlowCancelSaveException('Light extension settings descriptor is required.');
+  }
+  return normalizeLightExtensionEntrySelection({
+    currentBinding: options.currentRunJs.sourceBinding,
+    currentSettings: getCanonicalRunJSSettings(options.currentRunJs),
+    submittedSettings: options.nextSettings,
+    nextBinding: options.nextSourceBinding,
+    descriptor: options.descriptor,
+  });
+}
+
+export function setCanonicalLightExtensionSetting(
+  model: CanonicalSettingsModel,
+  flowKey: string,
+  fieldName: string,
+  value: unknown,
+): void {
+  const runJs = cloneRecord(model.getStepParams(flowKey, 'runJs'));
+  model.setStepParams(flowKey, {
+    runJs: {
+      ...runJs,
+      settings: setLightExtensionTopLevelSetting(getCanonicalRunJSSettings(runJs), fieldName, value),
+    },
+  });
+}
+
+export function setCanonicalLightExtensionSource(
+  model: CanonicalSettingsModel,
+  flowKey: string,
+  value: {
+    sourceMode: LightExtensionSourceMode;
+    sourceBinding?: Record<string, unknown>;
+    settings: Record<string, unknown>;
+  },
+): void {
+  const runJs = cloneRecord(model.getStepParams(flowKey, 'runJs'));
+  model.setStepParams(flowKey, {
+    runJs: {
+      ...runJs,
+      sourceMode: value.sourceMode,
+      sourceBinding: value.sourceBinding,
+      settings: cloneRecord(value.settings),
+    },
+  });
 }
 
 export function normalizeLightExtensionRuntimeError(error: unknown, labels: RuntimeErrorLabels): RuntimeErrorInfo {
@@ -372,14 +475,6 @@ export function shortHash(input: string): string {
     hash = Math.imul(hash, 0x01000193);
   }
   return (hash >>> 0).toString(36).padStart(6, '0').slice(0, 8);
-}
-
-export function getLightExtensionSettingStepKey(fieldName: string, schemaHash: string): string {
-  const sanitized = fieldName
-    .replace(/[^a-zA-Z0-9_]/g, '_')
-    .replace(/_+/g, '_')
-    .replace(/^_+|_+$/g, '');
-  return `leSetting__${(sanitized || 'field').slice(0, 48)}__${shortHash(`${fieldName}:${schemaHash}`)}`;
 }
 
 export function stableSerialize(value: unknown): string {

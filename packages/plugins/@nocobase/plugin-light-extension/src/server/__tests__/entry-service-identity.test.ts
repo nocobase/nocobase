@@ -22,6 +22,7 @@ describe('LightExtensionEntryService stable source identity', () => {
       ['kind', 'js-block'],
       ['entryName', 'stable-sales'],
       ['entryPath', 'src/client/js-blocks/old-directory/index.tsx'],
+      ['descriptorPath', 'src/client/js-blocks/old-directory/entry.json'],
       ['healthStatus', 'ready'],
       ['diagnostics', []],
     ]);
@@ -74,8 +75,8 @@ describe('LightExtensionEntryService stable source identity', () => {
               content: 'ctx.render(<div>Sales</div>);\n',
             },
             {
-              path: 'src/client/js-blocks/new-directory/meta.json',
-              content: '{"key":"stable-sales","title":"Sales"}',
+              path: 'src/client/js-blocks/new-directory/entry.json',
+              content: '{"schemaVersion":1,"key":"stable-sales","title":"Sales"}',
             },
           ],
         })),
@@ -94,12 +95,14 @@ describe('LightExtensionEntryService stable source identity', () => {
       id: 'lee_stable_sales',
       entryName: 'stable-sales',
       entryPath: 'src/client/js-blocks/new-directory/index.tsx',
+      descriptorPath: 'src/client/js-blocks/new-directory/entry.json',
       healthStatus: 'ready',
     });
     expect(entryModel.update).toHaveBeenCalledWith(
       expect.objectContaining({
         entryName: 'stable-sales',
         entryPath: 'src/client/js-blocks/new-directory/index.tsx',
+        descriptorPath: 'src/client/js-blocks/new-directory/entry.json',
         healthStatus: 'ready',
       }),
       expect.objectContaining({ transaction }),

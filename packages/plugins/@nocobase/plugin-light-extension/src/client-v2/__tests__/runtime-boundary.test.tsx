@@ -8,11 +8,11 @@
  */
 
 import { createMockClient } from '@nocobase/client-v2';
+import { defineSettings } from '@nocobase/light-extension-sdk/client';
 import fs from 'fs';
 import path from 'path';
 
 import { LIGHT_EXTENSION_ACL_SNIPPET, LIGHT_EXTENSION_SETTINGS_KEY, NAMESPACE } from '../../constants';
-import { defineSettings } from '../../sdk/client';
 import PluginLightExtensionClientV2 from '../plugin';
 
 describe('plugin-light-extension client-v2 boundary', () => {
@@ -67,7 +67,10 @@ describe('plugin-light-extension client-v2 boundary', () => {
 
     expect(defineSettings(settings)).toBe(settings);
 
-    const sdkSource = fs.readFileSync(path.resolve(__dirname, '../../sdk/client.ts'), 'utf8');
+    const sdkSource = fs.readFileSync(
+      path.resolve(__dirname, '../../../../../../core/light-extension-sdk/src/client/index.ts'),
+      'utf8',
+    );
     expect(sdkSource).not.toMatch(
       /defineClientExtension|defineServerExtension|registerBlock|registerAction|registerResource/,
     );
@@ -75,10 +78,15 @@ describe('plugin-light-extension client-v2 boundary', () => {
     expect(sdkSource).not.toMatch(/getVar|getValue|setValue/);
   });
 
-  it('keeps the package root separate from local SDK shims', () => {
+  it('uses the standalone SDK package instead of plugin-local SDK shims', () => {
     const pluginRoot = path.resolve(__dirname, '../../..');
+    const sdkRoot = path.resolve(pluginRoot, '../../../core/light-extension-sdk');
     const rootSource = fs.readFileSync(path.resolve(__dirname, '../../index.ts'), 'utf8');
     const packageJson = JSON.parse(fs.readFileSync(path.join(pluginRoot, 'package.json'), 'utf8')) as {
+      exports: Record<string, { import?: string; types?: string } | string>;
+      dependencies: Record<string, string>;
+    };
+    const sdkPackageJson = JSON.parse(fs.readFileSync(path.join(sdkRoot, 'package.json'), 'utf8')) as {
       exports: Record<string, { import?: string; types?: string } | string>;
     };
 
@@ -93,6 +101,11 @@ describe('plugin-light-extension client-v2 boundary', () => {
     });
     expect(packageJson.exports['./sdk/client']).toBeUndefined();
     expect(packageJson.exports['./sdk/shared']).toBeUndefined();
+    expect(packageJson.dependencies['@nocobase/light-extension-sdk']).toBeDefined();
+    expect(sdkPackageJson.exports['./client']).toBeDefined();
+    expect(sdkPackageJson.exports['./shared']).toBeDefined();
+    expect(sdkPackageJson.exports['./typegen']).toBeDefined();
+    expect(collectSourceFiles(path.join(pluginRoot, 'src/sdk'))).toEqual([]);
     expect(fs.existsSync(path.join(pluginRoot, 'client.js'))).toBe(true);
     expect(fs.existsSync(path.join(pluginRoot, 'client-v2.js'))).toBe(true);
     expect(fs.existsSync(path.join(pluginRoot, 'server.js'))).toBe(true);

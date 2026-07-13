@@ -41,6 +41,10 @@ describe('plugin-light-extension compile preview', () => {
         path: 'src/client/js-blocks/sales-trend/index.tsx',
         content: "import { missing } from './missing';\nctx.render(<div>{missing}</div>);\n",
       },
+      {
+        path: 'src/client/js-blocks/sales-trend/entry.json',
+        content: '{"schemaVersion":1,"key":"sales-trend"}',
+      },
     ]);
     const { service, recordCompileEvent } = createPreviewService(db, fileService);
 
@@ -130,8 +134,8 @@ describe('plugin-light-extension compile preview', () => {
             language: 'typescript',
           },
           {
-            path: 'src/client/js-blocks/sales-kpi/meta.json',
-            content: JSON.stringify({ title: 'Sales KPI' }),
+            path: 'src/client/js-blocks/sales-kpi/entry.json',
+            content: JSON.stringify({ schemaVersion: 1, key: 'sales-kpi', title: 'Sales KPI' }),
             language: 'json',
           },
         ],
@@ -179,8 +183,8 @@ describe('plugin-light-extension compile preview', () => {
           content: "const count: number = 'invalid';\nctx.render(<div>{count}</div>);\n",
         },
         {
-          path: 'src/client/js-blocks/sales-trend/meta.json',
-          content: JSON.stringify({ title: 'Sales trend' }),
+          path: 'src/client/js-blocks/sales-trend/entry.json',
+          content: JSON.stringify({ schemaVersion: 1, key: 'sales-trend', title: 'Sales trend' }),
         },
       ].map((file) => ({
         path: file.path,
@@ -224,6 +228,10 @@ describe('plugin-light-extension compile preview', () => {
           content: 'ctx.render(<div />);\n',
         },
         {
+          path: 'src/client/js-blocks/sales-kpi/entry.json',
+          content: '{"schemaVersion":1,"key":"sales-kpi"}',
+        },
+        {
           path: 'src/client/not-allowed.ts',
           content: 'export const secret = true;\n',
         },
@@ -235,7 +243,7 @@ describe('plugin-light-extension compile preview', () => {
       failureCode: 'LIGHT_EXTENSION_VALIDATION_FAILED',
       diagnostics: [
         expect.objectContaining({
-          code: 'path_not_allowed',
+          code: 'workspace_path_not_allowed',
           path: 'src/client/not-allowed.ts',
         }),
       ],
@@ -275,7 +283,7 @@ describe('plugin-light-extension compile preview', () => {
     expect(salesKpi?.diagnostics).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          code: 'path_not_allowed',
+          code: 'workspace_path_not_allowed',
           path: 'src/client/not-allowed.js',
         }),
       ]),
@@ -283,7 +291,7 @@ describe('plugin-light-extension compile preview', () => {
     expect(result.diagnostics).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          code: 'path_not_allowed',
+          code: 'workspace_path_not_allowed',
           path: 'src/client/not-allowed.js',
         }),
       ]),
@@ -361,6 +369,10 @@ describe('plugin-light-extension compile preview', () => {
       {
         path: 'src/client/js-items/customer-menu/index.tsx',
         content: 'ctx.render(<button>{ctx.record.name}</button>);\n',
+      },
+      {
+        path: 'src/client/js-items/customer-menu/entry.json',
+        content: '{"schemaVersion":1,"key":"customer-menu"}',
       },
     ]);
     const { service, recordCompileEvent } = createPreviewService(db, fileService);
@@ -658,8 +670,7 @@ function createEntryRecord(input: {
     kind: 'js-block',
     entryName: input.entryName,
     entryPath: `src/client/js-blocks/${input.entryName}/index.tsx`,
-    metaPath: null,
-    settingsPath: null,
+    descriptorPath: `src/client/js-blocks/${input.entryName}/entry.json`,
     title: input.entryName,
     description: null,
     category: null,
@@ -667,6 +678,7 @@ function createEntryRecord(input: {
     tags: null,
     sort: null,
     settingsSchema: null,
+    settingsSchemaHash: null,
     compiledCommitId: input.compiledCommitId || null,
     runtimeArtifact: input.compiledCommitId
       ? {
@@ -679,7 +691,7 @@ function createEntryRecord(input: {
     surfaceStyle: input.compiledCommitId ? 'render' : null,
     runtimeCodeHash: input.compiledCommitId ? 'runtime_hash_existing' : null,
     filesHash: input.compiledCommitId ? 'files_hash_existing' : null,
-    settingsDefaultsHash: input.compiledCommitId ? 'settings_defaults_hash_existing' : null,
+    settingsDefaultsHash: null,
     compiledAt: input.compiledCommitId ? new Date('2026-07-06T00:00:00.000Z') : null,
     healthStatus: 'ready',
     diagnostics: [],
@@ -701,8 +713,10 @@ function validSalesKpiFiles(): LightExtensionTreeEntryInput[] {
       content: "const title = 'Sales KPI';\nctx.render(<div>{title}</div>);\n",
     },
     {
-      path: 'src/client/js-blocks/sales-kpi/meta.json',
+      path: 'src/client/js-blocks/sales-kpi/entry.json',
       content: JSON.stringify({
+        schemaVersion: 1,
+        key: 'sales-kpi',
         title: 'Sales KPI',
       }),
     },

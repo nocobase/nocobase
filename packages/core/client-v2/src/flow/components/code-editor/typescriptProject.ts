@@ -32,6 +32,7 @@ export interface CodeEditorTypeScriptProject {
   compilerOptions?: Partial<import('typescript').CompilerOptions>;
   runJSContext?: {
     modelUse?: string;
+    globalContextType?: string;
   };
 }
 
@@ -133,7 +134,9 @@ function createFiles(project: CodeEditorTypeScriptProject, currentFileContent?: 
   }
 
   files.set(RUNJS_TYPESCRIPT_CONTEXT_PATH, {
-    content: buildRunJSTypeScriptContextDeclaration(project.runJSContext?.modelUse),
+    content: buildRunJSTypeScriptContextDeclaration(project.runJSContext?.modelUse, {
+      globalContextType: project.runJSContext?.globalContextType,
+    }),
     fileName: RUNJS_TYPESCRIPT_CONTEXT_PATH,
     path: RUNJS_TYPESCRIPT_CONTEXT_PATH.slice(1),
   });

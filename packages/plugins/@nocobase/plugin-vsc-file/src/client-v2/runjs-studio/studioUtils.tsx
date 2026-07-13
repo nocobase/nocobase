@@ -578,6 +578,7 @@ export function buildRunJSTypeScriptProject(
   files: RunJSWorkspaceFile[],
   activeFile?: RunJSWorkspaceFile,
   modelUse?: string,
+  globalContextType?: string,
 ): CodeEditorTypeScriptProject | undefined {
   if (!activeFile || !isRunJSTypeScriptProjectFile(activeFile.path)) {
     return undefined;
@@ -592,7 +593,7 @@ export function buildRunJSTypeScriptProject(
         content: file.content,
         path: file.path,
       })),
-    ...(modelUse ? { runJSContext: { modelUse } } : {}),
+    ...(modelUse || globalContextType ? { runJSContext: { modelUse, globalContextType } } : {}),
   };
 }
 

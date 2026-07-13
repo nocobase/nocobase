@@ -14,6 +14,7 @@ import { act, fireEvent, render, screen, waitFor } from '@nocobase/test/client';
 import { FlowEngine, FlowEngineProvider, FlowModelRenderer, type FlowSettingsContext } from '@nocobase/flow-engine';
 import { RunJSSourceResolverRegistry, type RunJSSourceSettingsDescriptor } from '../../../components/runjs-source';
 import { assertJSItemLightExtensionSourceContract } from '../../utils/__tests__/jsItemLightExtensionSourceContract';
+import { assertLightExtensionSettingsHostContract } from '../../utils/__tests__/lightExtensionSettingsHostContract';
 import { JSItemModel } from '../JSItemModel';
 
 const SOURCE_BINDING = {
@@ -31,7 +32,8 @@ const NEXT_SOURCE_BINDING = {
 };
 
 const SETTINGS_DESCRIPTOR: RunJSSourceSettingsDescriptor = {
-  schemaHash: 'schema_level_label',
+  entryId: 'entry_level_label',
+  settingsSchemaHash: 'schema_level_label',
   defaults: {
     vipColor: '#f5222d',
   },
@@ -45,6 +47,19 @@ const SETTINGS_DESCRIPTOR: RunJSSourceSettingsDescriptor = {
     },
   },
 };
+
+function getEmptySettingsDescriptor(sourceBinding: Record<string, unknown>): RunJSSourceSettingsDescriptor {
+  const entryId = String(sourceBinding.entryId);
+  return {
+    entryId,
+    settingsSchemaHash: `${entryId}-empty-settings`,
+    defaults: {},
+    schema: {
+      type: 'object',
+      properties: {},
+    },
+  };
+}
 
 function createJSItem(stepParams: Record<string, unknown>) {
   const engine = new FlowEngine();
@@ -127,6 +142,18 @@ describe('JSItemModel light extension source', () => {
     );
   });
 
+  it('uses canonical light extension settings across saves and entry switches', async () => {
+    const { model } = createJSItem({});
+
+    await assertLightExtensionSettingsHostContract({
+      model,
+      flowKey: 'jsSettings',
+      settingsComponent: 'JSItemLightExtensionSettingsStepField',
+      sourceBinding: SOURCE_BINDING,
+      nextSourceBinding: NEXT_SOURCE_BINDING,
+    });
+  });
+
   it('resolves JS Item entries and injects item, record, settings, and source metadata', async () => {
     const resolve = vi.fn(() => ({
       code: `
@@ -186,6 +213,7 @@ ctx.render(
   it('refreshes the current item after selecting a different JS Item entry', async () => {
     RunJSSourceResolverRegistry.registerResolver({
       sourceMode: 'light-extension',
+      getSettingsDescriptor: async (input) => getEmptySettingsDescriptor(input.sourceBinding),
       resolve: (input) => ({
         code:
           input.sourceBinding?.entryId === 'entry_open_message'
@@ -207,7 +235,7 @@ ctx.render(
     });
 
     await act(async () => {
-      sourceBindingStep?.beforeParamsSave?.(
+      await sourceBindingStep?.beforeParamsSave?.(
         model.context as FlowSettingsContext<JSItemModel>,
         {
           sourceMode: 'light-extension',
@@ -646,6 +674,7 @@ window.setTimeout(() => {
     const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout');
     RunJSSourceResolverRegistry.registerResolver({
       sourceMode: 'light-extension',
+      getSettingsDescriptor: async (input) => getEmptySettingsDescriptor(input.sourceBinding),
       resolve: (input) => ({
         code:
           input.sourceBinding?.entryId === 'entry_open_message'
@@ -678,7 +707,7 @@ window.setTimeout(() => {
     const staleTimerId = setTimeoutSpy.mock.results[staleTimerCallIndex]?.value;
 
     await act(async () => {
-      sourceBindingStep?.beforeParamsSave?.(
+      await sourceBindingStep?.beforeParamsSave?.(
         model.context as FlowSettingsContext<JSItemModel>,
         {
           sourceMode: 'light-extension',

@@ -34,7 +34,6 @@ const DEFAULT_KIND_NAMES: Record<LightExtensionKind, string> = {
   'js-action': 'JS Action',
   'js-field': 'JS Field',
   'js-item': 'JS Item',
-  runjs: 'RunJS',
 };
 
 const KIND_NAME_LABELS: Record<LightExtensionKind, string> = {
@@ -42,7 +41,6 @@ const KIND_NAME_LABELS: Record<LightExtensionKind, string> = {
   'js-action': 'JS Action name',
   'js-field': 'JS Field name',
   'js-item': 'JS Item name',
-  runjs: 'RunJS name',
 };
 
 const MODEL_USE_KIND = new Map<string, LightExtensionKind>([
@@ -224,9 +222,6 @@ export const MoveSourceToLightExtension: React.FC<{
 };
 
 function resolveLightExtensionKind(context: RunJSStudioToolbarContext): LightExtensionKind | null {
-  if (context.locator.kind === 'flowModel.nestedRunJS') {
-    return 'runjs';
-  }
   if (context.locator.kind !== 'flowModel.step') {
     return null;
   }

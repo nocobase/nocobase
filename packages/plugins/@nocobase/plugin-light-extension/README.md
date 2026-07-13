@@ -15,11 +15,11 @@ Light extensions organize multi-file RunJS entries on top of `@nocobase/plugin-v
 
 ## SDK Shape
 
-The local SDK boundary is limited to TypeScript types and zero-runtime helpers such as `defineSettings()`. It does not export extension registration APIs such as `defineClientExtension`, `registerBlock`, `registerAction`, or `registerResource`.
+The standalone `@nocobase/light-extension-sdk` boundary is limited to TypeScript types, type generation, and zero-runtime helpers such as `defineSettings()`. It does not export extension registration APIs such as `defineClientExtension`, `registerBlock`, `registerAction`, or `registerResource`.
 
-CLI templates should generate local `.d.ts` shims and TypeScript path mappings for entry typechecking. Entry source code should import SDK types with `import type` and receive runtime objects from the injected context.
+Entry source code should import SDK types with `import type` and receive runtime objects from the injected context. The authoring workspace generates editor-only SDK declarations and settings types from each `entry.json`; generated files are never persisted with repository source.
 
-The package root remains the server plugin entry. The source workspace seeds local `.d.ts` shims for `@nocobase/light-extension-sdk/client` and `@nocobase/light-extension-sdk/shared` so browser authoring can typecheck before a standalone SDK package exists.
+The plugin package root remains the server plugin entry. SDK imports use the public `@nocobase/light-extension-sdk/client`, `shared`, and `typegen` exports instead of plugin-local shims.
 
 ## Source Save Contract
 
@@ -90,23 +90,21 @@ An entry has separate source, database, path, and display identities:
 
 | Field | Contract |
 | --- | --- |
-| `meta.json.key` | Stable source identity. It must be a lowercase slug, remain unchanged when the entry directory moves, and be unique within one repository target and kind. |
+| `entry.json.key` | Stable source identity. It must be a lowercase slug, remain unchanged when the entry directory moves, and be unique within one repository target and kind. |
 | `lightExtensionEntries.id` / `entryId` | Local database identity used by runtime bindings, reference rows, logs, caches, and compiled artifacts. |
 | `entryPath` | Mutable physical source location. Directory renames update this field without replacing `entryId`. |
 | `title` | Mutable display label. It does not participate in identity matching. |
 
-Workspace validation derives `entryName` from `meta.json.key`; legacy entries without a key temporarily fall back to the directory slug. Entry reconciliation matches `repoId + target + kind + entryName`, so a stable key preserves the existing database `entryId` while `entryPath` changes. Duplicate keys fail validation with `duplicate_entry_key`.
+Workspace validation derives `entryName` only from `entry.json.key`. Entry reconciliation matches `repoId + target + kind + entryName`, so a stable key preserves the existing database `entryId` while `entryPath` changes. Duplicate keys fail validation with `duplicate_entry_key`.
 
-Repository workspace folder renames backfill a missing key with the pre-rename directory slug before moving an entry root. **Move to light extension** always writes the generated technical entry name to `meta.json.key`; the user only supplies the display title. Settings type generation also uses the key, so `light-extension:settings/client/<kind>/<key>` imports remain stable after directory renames.
+**Move to light extension** writes the generated technical entry name to `entry.json.key`; the user only supplies the display title. Settings type generation also uses the key, so `light-extension:settings/client/<kind>/<key>` imports remain stable after directory renames.
 
-Changing `meta.json.key` is an explicit identity replacement and may orphan existing bindings. Renaming only the directory is identity-preserving. Internal relative imports remain scoped to the physical entry root, and cross-entry sharing must continue through `src/shared`.
+Changing `entry.json.key` is an explicit identity replacement and may orphan existing bindings. Renaming only the directory is identity-preserving. Internal relative imports remain scoped to the physical entry root, and cross-entry sharing must continue through `src/shared`.
 
 Compatibility cases:
 
 | Case | Result |
 | --- | --- |
-| Legacy entry, unchanged directory, no key | Uses the current directory slug as the source identity. |
-| Legacy entry renamed in the repository workspace | Writes the old directory slug to `meta.json.key`, then moves the files. |
 | Keyed entry renamed | Reuses the existing `entryId`, updates `entryPath`, recompiles, and keeps runtime bindings active. |
 | Duplicate key in two directories of the same kind | Save is rejected with validation diagnostics. |
 
@@ -124,7 +122,7 @@ yarn test packages/plugins/@nocobase/plugin-light-extension/src/client-v2/__test
 
 Light extensions are selected from the code-source settings of existing JS Block, JS Item, JS Field, and JS Action surfaces. The plugin must not inject light-extension entries into Add Block, Add Field, or Add Action menus. When an existing surface opens **Write JavaScript** with a light-extension binding, the editor opens that repository workspace at the bound `entryPath`.
 
-An entry-bound workspace can edit the selected entry directory and files outside all managed entry roots, such as shared helpers and repository metadata. Other entries under `js-blocks`, `js-actions`, `js-items`, `js-fields`, and `runjs` remain viewable but read-only. Repository management opens the same workspace without this entry scope and retains full authoring access.
+An entry-bound workspace can edit the selected entry directory and files outside all managed entry roots, such as shared helpers and repository metadata. Other entries under `js-blocks`, `js-actions`, `js-items`, and `js-fields` remain viewable but read-only. Repository management opens the same workspace without this entry scope and retains full authoring access.
 
 ## Move RunJS Source Contract
 
@@ -168,7 +166,6 @@ If any step fails, destination source, compiled artifacts, host binding, and ref
 | --- | --- | --- |
 | `flowModel.step` with `JSBlockModel` | `js-block` | Supported |
 | `flowModel.step` with JS Field/Action/Item owner metadata | `js-field`, `js-action`, or `js-item` | Supported |
-| `flowModel.nestedRunJS` | `runjs` | Supported |
 | Workflow JavaScript, chart option/events, or FlowRegistry RunJS | N/A | Not exposed; adapter has no external-binding writer |
 
 ### Validation and errors

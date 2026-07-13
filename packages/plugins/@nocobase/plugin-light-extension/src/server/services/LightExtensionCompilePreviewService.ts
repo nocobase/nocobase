@@ -642,7 +642,9 @@ function getEntryCompileFiles(
 
   return files
     .filter(
-      (file) => file.path === rootPath || file.path.startsWith(`${rootPath}/`) || file.path.startsWith('src/shared/'),
+      (file) =>
+        file.path !== entry.descriptorPath &&
+        (file.path === rootPath || file.path.startsWith(`${rootPath}/`) || file.path.startsWith('src/shared/')),
     )
     .map((file) => ({
       path: file.path,

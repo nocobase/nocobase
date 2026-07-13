@@ -12,6 +12,7 @@ import { createSchemaField, FormProvider, ISchema } from '@formily/react';
 import { autorun, toJS } from '@formily/reactive';
 import { Button, Space } from 'antd';
 import React, { useEffect } from 'react';
+import { FlowRuntimeContext } from '../../../../flowContext';
 import { FlowSettingsContextProvider, useFlowSettingsContext } from '../../../../hooks/useFlowSettingsContext';
 import { StepSettingsDialogProps } from '../../../../types';
 import {
@@ -21,6 +22,9 @@ import {
   resolveDefaultParams,
   resolveStepUiSchema,
   FlowCancelSaveException,
+  createFlowWithSettingSteps,
+  getFlowSettingSteps,
+  setupRuntimeContextSteps,
 } from '../../../../utils';
 import { FlowExitAllException } from '../../../../utils/exceptions';
 import { observer } from '../../../../reactive';
@@ -57,12 +61,15 @@ const openStepSettingsDialog = async ({
 
   // 获取流程和步骤信息
   const flow = model.getFlow(flowKey);
-  const step = flow?.steps?.[stepKey];
 
   if (!flow) {
     message.error(t('Flow with key {{flowKey}} not found', { flowKey }));
     throw new Error(t('Flow with key {{flowKey}} not found', { flowKey }));
   }
+
+  const flowSteps = await getFlowSettingSteps(model, flow, flowKey);
+  const flowForSettings = createFlowWithSettingSteps(flow, flowSteps, flowKey);
+  const step = flowSteps[stepKey];
 
   if (!step) {
     message.error(t('Step with key {{stepKey}} not found', { stepKey }));
@@ -85,9 +92,7 @@ const openStepSettingsDialog = async ({
   }
 
   // 获取流程定义
-  const flowDefinition = model.getFlow(flowKey);
-
-  const mergedUiSchema = await resolveStepUiSchema(model, flowDefinition, step);
+  const mergedUiSchema = await resolveStepUiSchema(model, flowForSettings, step);
 
   // 如果没有可配置的UI Schema，显示提示
   if (!mergedUiSchema) {
@@ -95,7 +100,8 @@ const openStepSettingsDialog = async ({
     return {};
   }
 
-  const flowRuntimeContext = ctx;
+  const flowRuntimeContext = ctx || new FlowRuntimeContext(model, flowKey, 'settings');
+  setupRuntimeContextSteps(flowRuntimeContext, flowSteps, model, flowKey);
 
   // 确保上下文中设置了当前步骤
   if (!flowRuntimeContext.currentStep || flowRuntimeContext.currentStep !== step) {
@@ -269,7 +275,9 @@ const openStepSettingsDialog = async ({
                         try {
                           await form.submit();
                           const currentValues = form.values;
-                          model.setStepParams(flowKey, stepKey, currentValues);
+                          if (step.persistParams !== false) {
+                            model.setStepParams(flowKey, stepKey, currentValues);
+                          }
 
                           // Call beforeParamsSave callback if it exists
                           if (beforeParamsSave) {

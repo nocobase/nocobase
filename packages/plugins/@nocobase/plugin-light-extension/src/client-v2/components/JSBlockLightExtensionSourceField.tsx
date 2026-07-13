@@ -7,28 +7,24 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ApplicationContext, type EmbeddedRunJSEditorController } from '@nocobase/client-v2';
-import { useFlowContext, type RunJSValue } from '@nocobase/flow-engine';
+import { ApplicationContext } from '@nocobase/client-v2';
+import { useFlowContext } from '@nocobase/flow-engine';
 import type { Field } from '@formily/core';
 import { useField, useForm } from '@formily/react';
 import { Alert, Button, Modal, Select, Space, Typography } from 'antd';
 import React from 'react';
+import { normalizeLightExtensionEntrySelection } from '@nocobase/runjs/settings';
 import { useTranslation } from 'react-i18next';
 
 import { NAMESPACE } from '../../constants';
 import type {
   LightExtensionKind,
-  LightExtensionEntryRuntimeArtifact,
   LightExtensionRuntimeSourceBinding,
   LightExtensionSelectableEntrySummary,
 } from '../../shared/types';
 import type { ApiClientLike } from '../api/lightExtensionEntriesRequests';
 import { listSelectableLightExtensionEntries } from '../api/lightExtensionEntriesRequests';
 import { resolveLightExtensionRuntimeSource } from '../resolvers/LightExtensionRunJSResolver';
-import LightExtensionWorkspacePage, {
-  type LightExtensionWorkspaceFooterActions,
-} from '../pages/LightExtensionWorkspacePage';
-import type { LightExtensionWorkspaceScope } from '../workspace/lightExtensionWorkspaceAccess';
 import {
   formatSettingsValidationErrors,
   normalizeSettingsForSchema,
@@ -72,13 +68,17 @@ export interface JSBlockLightExtensionSourceFieldProps {
   onChange?: (value: string | LightExtensionRuntimeSourceBinding | undefined) => void;
   disabled?: boolean;
   kind?: LightExtensionKind;
-  showEntryWorkspace?: boolean;
-  onEmbeddedEditorControllerChange?: (controller: EmbeddedRunJSEditorController | null) => void;
-  onPreview?: (value: RunJSValue) => void | Promise<void>;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function getSettingsSchemaPropertyNames(schema: unknown): Set<string> | null {
+  if (!isRecord(schema) || !isRecord(schema.properties)) {
+    return null;
+  }
+  return new Set(Object.keys(schema.properties));
 }
 
 function isLightExtensionBinding(
@@ -162,9 +162,6 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
   onChange,
   disabled,
   kind = 'js-block',
-  showEntryWorkspace = false,
-  onEmbeddedEditorControllerChange,
-  onPreview,
 }) => {
   const { t } = useTranslation(NAMESPACE);
   const form = useForm();
@@ -181,8 +178,6 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
   const [sourceEntries, setSourceEntries] = React.useState<LightExtensionSelectableEntrySummary[]>([]);
   const [sourceEntriesLoading, setSourceEntriesLoading] = React.useState(false);
   const [sourceEntriesError, setSourceEntriesError] = React.useState<string | null>(null);
-  const [workspaceFooterActions, setWorkspaceFooterActions] =
-    React.useState<LightExtensionWorkspaceFooterActions | null>(null);
 
   const values = form.values as JSBlockRunJSFormValues;
   const rendersSourceModeControl = typeof value === 'string' || getFieldPath(field) === 'sourceMode';
@@ -204,25 +199,10 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
         : null,
     [sourceBinding, sourceEntries],
   );
-  const workspaceEntryPath = selectedEntry?.entryPath || sourceBinding?.entryPath || null;
-  const entryWorkspaceScope = React.useMemo<LightExtensionWorkspaceScope | null>(() => {
-    if (!showEntryWorkspace || !workspaceEntryPath || sourceBinding?.kind !== 'runjs') {
-      return null;
-    }
-    return {
-      mode: 'entry',
-      entryPath: workspaceEntryPath,
-      kind: 'runjs',
-    };
-  }, [showEntryWorkspace, sourceBinding?.kind, workspaceEntryPath]);
   const hasSettings = Boolean(selectedEntry && getSettingsSchemaPropertyNames(selectedEntry.settingsSchema)?.size);
 
   React.useEffect(() => {
-    if (
-      showEntryWorkspace ||
-      sourceMode !== LIGHT_EXTENSION_SOURCE_MODE ||
-      typeof ctx?.view?.setFooter !== 'function'
-    ) {
+    if (sourceMode !== LIGHT_EXTENSION_SOURCE_MODE || typeof ctx?.view?.setFooter !== 'function') {
       return;
     }
 
@@ -238,22 +218,7 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
     return () => {
       ctx.view?.setFooter?.(null);
     };
-  }, [ctx?.view, showEntryWorkspace, sourceMode, t]);
-
-  React.useEffect(() => {
-    if (!showEntryWorkspace || !workspaceFooterActions) {
-      onEmbeddedEditorControllerChange?.(null);
-      return;
-    }
-    onEmbeddedEditorControllerChange?.({
-      dirty: workspaceFooterActions.dirty,
-      saving: workspaceFooterActions.loading,
-      requestSave: workspaceFooterActions.requestSave,
-    });
-    return () => {
-      onEmbeddedEditorControllerChange?.(null);
-    };
-  }, [onEmbeddedEditorControllerChange, showEntryWorkspace, workspaceFooterActions]);
+  }, [ctx?.view, sourceMode, t]);
 
   React.useEffect(() => {
     const subscriptionId = form.subscribe(() => {
@@ -386,7 +351,20 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
     const defaults = extractSettingsDefaults(entry.settingsSchema);
     form.setValuesIn('sourceMode', LIGHT_EXTENSION_SOURCE_MODE);
     form.setValuesIn('sourceBinding', nextBinding);
-    form.setValuesIn('settings', mergeSettings(defaults, values.settings, entry.settingsSchema));
+    form.setValuesIn(
+      'settings',
+      normalizeLightExtensionEntrySelection({
+        currentBinding: sourceBinding,
+        currentSettings: values.settings,
+        nextBinding,
+        descriptor: {
+          entryId: entry.id,
+          settingsSchemaHash: entry.settingsSchemaHash,
+          schema: entry.settingsSchema,
+          defaults,
+        },
+      }),
+    );
     onChange?.(rendersSourceModeControl ? LIGHT_EXTENSION_SOURCE_MODE : nextBinding);
   };
 
@@ -426,22 +404,6 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
       setCopying(false);
     }
   };
-
-  const handleWorkspacePreview = React.useCallback(
-    async (artifact: LightExtensionEntryRuntimeArtifact) => {
-      if (!onPreview) {
-        return;
-      }
-      await onPreview({
-        code: artifact.code,
-        version: artifact.version,
-        sourceMode: INLINE_SOURCE_MODE,
-        ...(sourceBinding ? { sourceBinding: { ...sourceBinding } } : {}),
-        settings: isRecord(values.settings) ? { ...values.settings } : {},
-      });
-    },
-    [onPreview, sourceBinding, values.settings],
-  );
 
   const sourceSelectValue =
     sourceMode === LIGHT_EXTENSION_SOURCE_MODE && sourceBinding
@@ -490,7 +452,7 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
         <Typography.Text strong>{getBindingDisplayLabel(sourceBinding, t('Light extension'))}</Typography.Text>
       ) : null}
       {sourceBinding && selectedEntry ? (
-        hasSettings || !entryWorkspaceScope ? (
+        hasSettings ? (
           <SettingsAutoForm
             schema={selectedEntry.settingsSchema}
             value={values.settings}
@@ -511,20 +473,6 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
       ) : (
         <Alert type="info" showIcon message={t('Select a light extension entry to configure settings')} />
       )}
-      {sourceBinding && entryWorkspaceScope ? (
-        <div style={{ height: 480, minHeight: 360, minWidth: 0, overflow: 'hidden' }}>
-          <LightExtensionWorkspacePage
-            defaultFilesCollapsed
-            embedded
-            entryId={sourceBinding.entryId}
-            initialPath={workspaceEntryPath || undefined}
-            onFooterActionsChange={setWorkspaceFooterActions}
-            onPreview={onPreview ? handleWorkspacePreview : undefined}
-            repoId={sourceBinding.repoId}
-            workspaceScope={entryWorkspaceScope}
-          />
-        </div>
-      ) : null}
       {copying ? <Typography.Text type="secondary">{t('Copying light extension code')}</Typography.Text> : null}
     </Space>
   );
@@ -574,38 +522,6 @@ export const JSActionLightExtensionSourceField: React.FC<Omit<JSBlockLightExtens
 export const JSItemLightExtensionSourceField: React.FC<Omit<JSBlockLightExtensionSourceFieldProps, 'kind'>> = (
   props,
 ) => <JSBlockLightExtensionSourceField {...props} kind="js-item" />;
-
-export const RunJSLightExtensionSourceField: React.FC<Omit<JSBlockLightExtensionSourceFieldProps, 'kind'>> = (
-  props,
-) => <JSBlockLightExtensionSourceField {...props} kind="runjs" />;
-
-function mergeSettings(
-  defaults: Record<string, unknown>,
-  current: Record<string, unknown> | undefined,
-  settingsSchema: Record<string, unknown> | null,
-): Record<string, unknown> {
-  const allowedSettings = getSettingsSchemaPropertyNames(settingsSchema);
-  if (!allowedSettings) {
-    return {
-      ...defaults,
-      ...(isRecord(current) ? current : {}),
-    };
-  }
-
-  return {
-    ...defaults,
-    ...(isRecord(current)
-      ? Object.fromEntries(Object.entries(current).filter(([key]) => allowedSettings.has(key)))
-      : {}),
-  };
-}
-
-function getSettingsSchemaPropertyNames(schema: unknown): Set<string> | null {
-  if (!isRecord(schema) || !isRecord(schema.properties)) {
-    return null;
-  }
-  return new Set(Object.keys(schema.properties));
-}
 
 function createLightExtensionRuntimeSourceBinding(
   entry: LightExtensionSelectableEntrySummary,

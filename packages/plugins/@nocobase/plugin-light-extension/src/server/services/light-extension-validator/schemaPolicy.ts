@@ -7,9 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { LIGHT_EXTENSION_ENTRY_SCHEMA_URL, LIGHT_EXTENSION_ENTRY_SCHEMA_VERSION } from '../../../constants';
 import type { LightExtensionCapabilities, LightExtensionDiagnostic } from '../../../shared/types';
 import { diagnostic, isPlainRecord } from './diagnostics';
-import type { DiagnosticTarget, NormalizedSourceFile, ParsedMeta } from './types';
+import type { DiagnosticTarget, NormalizedSourceFile, ParsedEntryDescriptor } from './types';
 import { isValidEntryName } from './workspacePolicy';
 
 const invalidJsonParse = Symbol('invalidJsonParse');
@@ -17,94 +18,139 @@ const invalidJsonParse = Symbol('invalidJsonParse');
 export class LightExtensionSchemaValidator {
   constructor(private readonly capabilities: LightExtensionCapabilities) {}
 
-  validateMetaFile(
+  validateEntryDescriptor(
     file: NormalizedSourceFile | undefined,
     diagnostics: LightExtensionDiagnostic[],
     target: Omit<DiagnosticTarget, 'path'>,
-  ): ParsedMeta {
-    const emptyMeta: ParsedMeta = {
-      key: null,
-      title: null,
-      description: null,
-      category: null,
-      icon: null,
-      tags: null,
-      sort: null,
-    };
-
+  ): ParsedEntryDescriptor | null {
     if (!file) {
-      return emptyMeta;
+      diagnostics.push(diagnostic('entry_descriptor_missing', 'error', 'Entry root must include entry.json', target));
+      return null;
     }
 
-    const json = this.parseJson(file, 'meta_json_invalid', diagnostics, target);
+    if (file.size > this.capabilities.limits.maxEntryDescriptorBytes) {
+      diagnostics.push(
+        diagnostic('entry_descriptor_too_large', 'error', 'entry.json exceeds the 128 KiB size limit', {
+          ...target,
+          path: file.path,
+          details: {
+            size: file.size,
+            maxEntryDescriptorBytes: this.capabilities.limits.maxEntryDescriptorBytes,
+          },
+        }),
+      );
+      return null;
+    }
+
+    const json = this.parseJson(file, 'entry_descriptor_json_invalid', diagnostics, target);
     if (json === invalidJsonParse) {
-      return emptyMeta;
+      return null;
     }
     if (!isPlainRecord(json)) {
       diagnostics.push(
-        diagnostic('meta_json_invalid', 'error', 'meta.json must contain a JSON object', {
+        diagnostic('entry_descriptor_invalid', 'error', 'entry.json must contain a JSON object', {
           ...target,
           path: file.path,
         }),
       );
-      return emptyMeta;
+      return null;
     }
 
-    const allowedKeys = new Set(['key', 'title', 'description', 'category', 'icon', 'tags', 'sort']);
+    const descriptorTarget = { ...target, path: file.path };
+    const allowedKeys = new Set([
+      '$schema',
+      'schemaVersion',
+      'key',
+      'title',
+      'description',
+      'category',
+      'icon',
+      'tags',
+      'sort',
+      'settingsSchema',
+    ]);
     for (const key of Object.keys(json)) {
       if (!allowedKeys.has(key)) {
         diagnostics.push(
-          diagnostic('meta_unknown_field', 'error', `meta.json field "${key}" is not supported`, {
-            ...target,
-            path: file.path,
-          }),
+          diagnostic(
+            'entry_descriptor_unknown_field',
+            'error',
+            `entry.json field "${key}" is not supported`,
+            descriptorTarget,
+          ),
         );
       }
     }
 
+    if (json.schemaVersion !== LIGHT_EXTENSION_ENTRY_SCHEMA_VERSION) {
+      diagnostics.push(
+        diagnostic(
+          typeof json.schemaVersion === 'undefined'
+            ? 'entry_descriptor_schema_version_required'
+            : 'entry_descriptor_schema_version_unsupported',
+          'error',
+          `entry.json schemaVersion must be ${LIGHT_EXTENSION_ENTRY_SCHEMA_VERSION}`,
+          descriptorTarget,
+        ),
+      );
+    }
+    if (typeof json.$schema !== 'undefined' && json.$schema !== LIGHT_EXTENSION_ENTRY_SCHEMA_URL) {
+      diagnostics.push(
+        diagnostic(
+          'entry_descriptor_schema_url_unsupported',
+          'error',
+          `entry.json $schema must be "${LIGHT_EXTENSION_ENTRY_SCHEMA_URL}"`,
+          descriptorTarget,
+        ),
+      );
+    }
+    const key = requiredSlugField(json, 'key', diagnostics, descriptorTarget);
+    const settingsSchema = this.validateSettingsSchema(json.settingsSchema, diagnostics, descriptorTarget);
+    if (!key) {
+      return null;
+    }
+
     return {
-      key: optionalSlugField(json, 'key', diagnostics, { ...target, path: file.path }),
-      title: optionalStringField(json, 'title', diagnostics, { ...target, path: file.path }, 120),
-      description: optionalStringField(json, 'description', diagnostics, { ...target, path: file.path }, 1000),
-      category: optionalSlugField(json, 'category', diagnostics, { ...target, path: file.path }),
-      icon: optionalStringField(json, 'icon', diagnostics, { ...target, path: file.path }, 120),
-      tags: optionalStringArrayField(json, 'tags', diagnostics, { ...target, path: file.path }),
-      sort: optionalIntegerField(json, 'sort', diagnostics, { ...target, path: file.path }),
+      key,
+      title: optionalStringField(json, 'title', diagnostics, descriptorTarget, 120),
+      description: optionalStringField(json, 'description', diagnostics, descriptorTarget, 1000),
+      category: optionalSlugField(json, 'category', diagnostics, descriptorTarget),
+      icon: optionalStringField(json, 'icon', diagnostics, descriptorTarget, 120),
+      tags: optionalStringArrayField(json, 'tags', diagnostics, descriptorTarget),
+      sort: optionalIntegerField(json, 'sort', diagnostics, descriptorTarget),
+      settingsSchema,
     };
   }
 
-  validateSettingsFile(
-    file: NormalizedSourceFile | undefined,
+  private validateSettingsSchema(
+    value: unknown,
     diagnostics: LightExtensionDiagnostic[],
-    target: Omit<DiagnosticTarget, 'path'>,
+    target: DiagnosticTarget,
   ): Record<string, unknown> | null {
-    if (!file) {
+    if (typeof value === 'undefined') {
       return null;
     }
-
-    const json = this.parseJson(file, 'settings_json_invalid', diagnostics, target);
-    if (json === invalidJsonParse) {
-      return null;
-    }
-    if (!isPlainRecord(json)) {
+    if (!isPlainRecord(value)) {
       diagnostics.push(
-        diagnostic('settings_schema_invalid', 'error', 'settings.json must contain a JSON object schema', {
-          ...target,
-          path: file.path,
-        }),
+        diagnostic(
+          'settings_schema_invalid',
+          'error',
+          'entry.json settingsSchema must be a JSON object schema',
+          target,
+        ),
       );
       return null;
     }
 
-    this.validateSettingsSchemaNode(json, {
-      path: file.path,
-      schemaPath: '$',
+    this.validateSettingsSchemaNode(value, {
+      path: target.path || '',
+      schemaPath: '$.settingsSchema',
       depth: 0,
       diagnostics,
       target,
     });
 
-    return json;
+    return value;
   }
 
   private parseJson(
@@ -158,7 +204,7 @@ export class LightExtensionSchemaValidator {
 
     if (input.depth > this.capabilities.limits.maxSettingsSchemaDepth) {
       input.diagnostics.push(
-        diagnostic('settings_schema_too_deep', 'error', 'settings.json schema is too deeply nested', {
+        diagnostic('settings_schema_too_deep', 'error', 'entry.json settingsSchema is too deeply nested', {
           ...schemaTarget,
           details: {
             schemaPath: input.schemaPath,
@@ -175,7 +221,7 @@ export class LightExtensionSchemaValidator {
           diagnostic(
             'settings_schema_keyword_not_allowed',
             'error',
-            `settings.json keyword "${key}" is not supported`,
+            `entry.json settingsSchema keyword "${key}" is not supported`,
             {
               ...schemaTarget,
               details: {
@@ -190,13 +236,18 @@ export class LightExtensionSchemaValidator {
     for (const [key, value] of Object.entries(node)) {
       if (typeof value === 'string' && containsTemplateExpression(value)) {
         input.diagnostics.push(
-          diagnostic('settings_expression_not_allowed', 'error', 'settings.json expression strings are not supported', {
-            ...schemaTarget,
-            details: {
-              schemaPath: `${input.schemaPath}.${key}`,
-              keyword: key,
+          diagnostic(
+            'settings_expression_not_allowed',
+            'error',
+            'entry.json settingsSchema expressions are not supported',
+            {
+              ...schemaTarget,
+              details: {
+                schemaPath: `${input.schemaPath}.${key}`,
+                keyword: key,
+              },
             },
-          }),
+          ),
         );
       }
     }
@@ -214,7 +265,7 @@ export class LightExtensionSchemaValidator {
     if (typeof node.type !== 'undefined') {
       if (typeof node.type !== 'string' || !this.capabilities.schemaSubset.allowedTypes.includes(node.type)) {
         input.diagnostics.push(
-          diagnostic('settings_schema_type_not_allowed', 'error', 'settings.json schema type is not supported', {
+          diagnostic('settings_schema_type_not_allowed', 'error', 'entry.json settingsSchema type is not supported', {
             ...schemaTarget,
             details: {
               schemaPath: input.schemaPath,
@@ -239,13 +290,18 @@ export class LightExtensionSchemaValidator {
         !this.capabilities.xComponentWhitelist.includes(node['x-component'])
       ) {
         input.diagnostics.push(
-          diagnostic('settings_x_component_not_allowed', 'error', 'settings.json x-component is not allowed', {
-            ...schemaTarget,
-            details: {
-              schemaPath: input.schemaPath,
-              component: node['x-component'],
+          diagnostic(
+            'settings_x_component_not_allowed',
+            'error',
+            'entry.json settingsSchema x-component is not allowed',
+            {
+              ...schemaTarget,
+              details: {
+                schemaPath: input.schemaPath,
+                component: node['x-component'],
+              },
             },
-          }),
+          ),
         );
       }
     }
@@ -253,19 +309,24 @@ export class LightExtensionSchemaValidator {
     if (typeof node.required !== 'undefined') {
       if (!Array.isArray(node.required) || node.required.some((item) => typeof item !== 'string')) {
         input.diagnostics.push(
-          diagnostic('settings_required_invalid', 'error', 'settings.json required must be a string array', {
-            ...schemaTarget,
-            details: {
-              schemaPath: input.schemaPath,
+          diagnostic(
+            'settings_required_invalid',
+            'error',
+            'entry.json settingsSchema required must be a string array',
+            {
+              ...schemaTarget,
+              details: {
+                schemaPath: input.schemaPath,
+              },
             },
-          }),
+          ),
         );
       }
     }
 
     if (typeof node.enum !== 'undefined' && !Array.isArray(node.enum)) {
       input.diagnostics.push(
-        diagnostic('settings_enum_invalid', 'error', 'settings.json enum must be an array', {
+        diagnostic('settings_enum_invalid', 'error', 'entry.json settingsSchema enum must be an array', {
           ...schemaTarget,
           details: {
             schemaPath: input.schemaPath,
@@ -277,7 +338,7 @@ export class LightExtensionSchemaValidator {
     if (typeof node.properties !== 'undefined') {
       if (!isPlainRecord(node.properties)) {
         input.diagnostics.push(
-          diagnostic('settings_properties_invalid', 'error', 'settings.json properties must be an object', {
+          diagnostic('settings_properties_invalid', 'error', 'entry.json settingsSchema properties must be an object', {
             ...schemaTarget,
             details: {
               schemaPath: input.schemaPath,
@@ -288,13 +349,18 @@ export class LightExtensionSchemaValidator {
         for (const [propertyName, propertySchema] of Object.entries(node.properties)) {
           if (!isValidSettingsPropertyName(propertyName)) {
             input.diagnostics.push(
-              diagnostic('settings_property_name_invalid', 'error', 'settings.json property name is invalid', {
-                ...schemaTarget,
-                details: {
-                  schemaPath: `${input.schemaPath}.properties.${propertyName}`,
-                  propertyName,
+              diagnostic(
+                'settings_property_name_invalid',
+                'error',
+                'entry.json settingsSchema property name is invalid',
+                {
+                  ...schemaTarget,
+                  details: {
+                    schemaPath: `${input.schemaPath}.properties.${propertyName}`,
+                    propertyName,
+                  },
                 },
-              }),
+              ),
             );
             continue;
           }
@@ -303,7 +369,7 @@ export class LightExtensionSchemaValidator {
               diagnostic(
                 'settings_property_schema_invalid',
                 'error',
-                'settings.json property schema must be an object',
+                'entry.json settingsSchema property schema must be an object',
                 {
                   ...schemaTarget,
                   details: {
@@ -326,7 +392,7 @@ export class LightExtensionSchemaValidator {
     if (typeof node.items !== 'undefined') {
       if (!isPlainRecord(node.items)) {
         input.diagnostics.push(
-          diagnostic('settings_items_invalid', 'error', 'settings.json items must be a schema object', {
+          diagnostic('settings_items_invalid', 'error', 'entry.json settingsSchema items must be a schema object', {
             ...schemaTarget,
             details: {
               schemaPath: input.schemaPath,
@@ -360,7 +426,7 @@ export class LightExtensionSchemaValidator {
 
     if (input.depth > this.capabilities.limits.maxSettingsSchemaDepth) {
       input.diagnostics.push(
-        diagnostic('settings_schema_too_deep', 'error', 'settings.json schema is too deeply nested', {
+        diagnostic('settings_schema_too_deep', 'error', 'entry.json settingsSchema is too deeply nested', {
           ...schemaTarget,
           details: {
             schemaPath: input.schemaPath,
@@ -374,12 +440,17 @@ export class LightExtensionSchemaValidator {
     if (typeof value === 'string') {
       if (containsTemplateExpression(value)) {
         input.diagnostics.push(
-          diagnostic('settings_expression_not_allowed', 'error', 'settings.json expression strings are not supported', {
-            ...schemaTarget,
-            details: {
-              schemaPath: input.schemaPath,
+          diagnostic(
+            'settings_expression_not_allowed',
+            'error',
+            'entry.json settingsSchema expressions are not supported',
+            {
+              ...schemaTarget,
+              details: {
+                schemaPath: input.schemaPath,
+              },
             },
-          }),
+          ),
         );
       }
       return;
@@ -420,11 +491,15 @@ function optionalStringField(
     return null;
   }
   if (typeof value !== 'string') {
-    diagnostics.push(diagnostic('meta_field_invalid', 'error', `meta.json field "${key}" must be a string`, target));
+    diagnostics.push(
+      diagnostic('entry_descriptor_field_invalid', 'error', `entry.json field "${key}" must be a string`, target),
+    );
     return null;
   }
   if (value.length > maxLength) {
-    diagnostics.push(diagnostic('meta_field_too_long', 'error', `meta.json field "${key}" is too long`, target));
+    diagnostics.push(
+      diagnostic('entry_descriptor_field_too_long', 'error', `entry.json field "${key}" is too long`, target),
+    );
     return null;
   }
   return value;
@@ -438,7 +513,9 @@ function optionalSlugField(
 ): string | null {
   const value = optionalStringField(record, key, diagnostics, target, 80);
   if (value && !isValidEntryName(value)) {
-    diagnostics.push(diagnostic('meta_field_invalid', 'error', `meta.json field "${key}" must be a slug`, target));
+    diagnostics.push(
+      diagnostic('entry_descriptor_field_invalid', 'error', `entry.json field "${key}" must be a slug`, target),
+    );
     return null;
   }
   return value;
@@ -456,13 +533,13 @@ function optionalStringArrayField(
   }
   if (!Array.isArray(value) || value.some((item) => typeof item !== 'string')) {
     diagnostics.push(
-      diagnostic('meta_field_invalid', 'error', `meta.json field "${key}" must be a string array`, target),
+      diagnostic('entry_descriptor_field_invalid', 'error', `entry.json field "${key}" must be a string array`, target),
     );
     return null;
   }
   if (value.length > 20) {
     diagnostics.push(
-      diagnostic('meta_field_too_large', 'error', `meta.json field "${key}" has too many items`, target),
+      diagnostic('entry_descriptor_field_too_large', 'error', `entry.json field "${key}" has too many items`, target),
     );
     return null;
   }
@@ -480,7 +557,9 @@ function optionalIntegerField(
     return null;
   }
   if (typeof value !== 'number' || !Number.isInteger(value)) {
-    diagnostics.push(diagnostic('meta_field_invalid', 'error', `meta.json field "${key}" must be an integer`, target));
+    diagnostics.push(
+      diagnostic('entry_descriptor_field_invalid', 'error', `entry.json field "${key}" must be an integer`, target),
+    );
     return null;
   }
   return value;
@@ -494,7 +573,12 @@ function validateOptionalString(
 ): void {
   if (typeof record[key] !== 'undefined' && typeof record[key] !== 'string') {
     diagnostics.push(
-      diagnostic('settings_field_invalid', 'error', `settings.json field "${key}" must be a string`, target),
+      diagnostic(
+        'settings_field_invalid',
+        'error',
+        `entry.json settingsSchema field "${key}" must be a string`,
+        target,
+      ),
     );
   }
 }
@@ -507,7 +591,12 @@ function validateOptionalNumber(
 ): void {
   if (typeof record[key] !== 'undefined' && typeof record[key] !== 'number') {
     diagnostics.push(
-      diagnostic('settings_field_invalid', 'error', `settings.json field "${key}" must be a number`, target),
+      diagnostic(
+        'settings_field_invalid',
+        'error',
+        `entry.json settingsSchema field "${key}" must be a number`,
+        target,
+      ),
     );
   }
 }
@@ -518,4 +607,20 @@ function isValidSettingsPropertyName(value: string): boolean {
 
 function containsTemplateExpression(value: string): boolean {
   return value.includes('{{') || value.includes('}}');
+}
+
+function requiredSlugField(
+  record: Record<string, unknown>,
+  key: string,
+  diagnostics: LightExtensionDiagnostic[],
+  target: DiagnosticTarget,
+): string | null {
+  if (typeof record[key] === 'undefined' || record[key] === null || record[key] === '') {
+    diagnostics.push(
+      diagnostic('entry_descriptor_key_required', 'error', 'entry.json field "key" is required', target),
+    );
+    return null;
+  }
+
+  return optionalSlugField(record, key, diagnostics, target);
 }

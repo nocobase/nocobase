@@ -9,6 +9,11 @@
 
 import { ImportOutlined, SaveOutlined } from '@ant-design/icons';
 import {
+  createActiveEntryContextType,
+  generateClientSettingsTypes,
+  type LightExtensionSettingsTypegenResult,
+} from '@nocobase/light-extension-sdk/typegen';
+import {
   CodeTab,
   CloseConfirmModal,
   FilesPanel,
@@ -32,13 +37,13 @@ import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
-import { LIGHT_EXTENSION_ENTRY_KEY_PATTERN, NAMESPACE } from '../../constants';
-import { generateClientSettingsTypes, type LightExtensionSettingsTypegenResult } from '../../sdk/settings-typegen';
 import {
-  DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES,
-  LIGHT_EXTENSION_SDK_SHIM_CONTENT,
-  LIGHT_EXTENSION_SDK_SHIM_PATH,
-} from '../../shared/default-template';
+  LIGHT_EXTENSION_ENTRY_DESCRIPTOR_FILE,
+  LIGHT_EXTENSION_ENTRY_KEY_PATTERN,
+  LIGHT_EXTENSION_ENTRY_SCHEMA_VERSION,
+  NAMESPACE,
+} from '../../constants';
+import { DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES } from '../../shared/default-template';
 import type {
   LightExtensionDiagnostic,
   LightExtensionEntryRuntimeArtifact,
@@ -48,10 +53,15 @@ import type {
   LightExtensionTreeEntryInput,
 } from '../../shared/types';
 import DiagnosticsPanel from '../components/DiagnosticsPanel';
-import { getLightExtensionErrorDiagnostics, useLightExtensionRepo } from '../hooks/useLightExtensionRepo';
+import {
+  getLightExtensionErrorDiagnostics,
+  LightExtensionHookError,
+  useLightExtensionRepo,
+} from '../hooks/useLightExtensionRepo';
 import {
   canChangeLightExtensionWorkspacePath,
   getLightExtensionEntryRoot,
+  getManagedLightExtensionEntryRoot,
   getLightExtensionWorkspacePathAccess,
   normalizeWorkspacePath,
   type LightExtensionWorkspaceScope,
@@ -102,13 +112,11 @@ const LIGHT_EXTENSION_CLIENT_KIND_TEMPLATE_FILES = [
   'src/client/js-fields/example/index.tsx',
   'src/client/js-actions/example/index.ts',
   'src/client/js-items/example/index.tsx',
-  'src/client/runjs/example/index.ts',
 ] as const;
 const LIGHT_EXTENSION_CLIENT_KIND_ROOTS = [
   'src/client/js-fields',
   'src/client/js-actions',
   'src/client/js-items',
-  'src/client/runjs',
 ] as const;
 const DEFAULT_NEW_FILE_NAME = 'helper';
 const DEFAULT_NEW_FILE_EXTENSION = '.ts';
@@ -137,6 +145,7 @@ function LightExtensionWorkspacePage({
     useLightExtensionRepo();
   const [repo, setRepo] = useState<LightExtensionRepoRecord | null>(null);
   const [baseCommitSeq, setBaseCommitSeq] = useState<number>();
+  const [baseHeadCommitId, setBaseHeadCommitId] = useState<string | null>(null);
   const [baseFiles, setBaseFiles] = useState<WorkspaceFile[]>([]);
   const [files, setFiles] = useState<WorkspaceFile[]>([]);
   const [folders, setFolders] = useState<string[]>([]);
@@ -212,6 +221,7 @@ function LightExtensionWorkspacePage({
           setActivePath(undefined);
           setOpenPaths([]);
           setBaseCommitSeq(undefined);
+          setBaseHeadCommitId(null);
           setHistoryItems([]);
           setHistoryNextBeforeSeq(null);
           setNotice({ type: 'warning', message: t('Archived repositories are read-only') });
@@ -224,6 +234,7 @@ function LightExtensionWorkspacePage({
         const nextActivePath = resolveActivePath(nextFiles, initialPath);
         const commits = await listCommits({ repoId, limit: HISTORY_PAGE_SIZE }).catch(() => []);
         const nextBaseCommitId = pullResult.commit?.id || null;
+        setBaseHeadCommitId(nextBaseCommitId);
         setBaseCommitSeq(commits.find((commit) => commit.id === nextBaseCommitId)?.seq);
         setBaseFiles(pulledFiles);
         setFiles(nextFiles);
@@ -252,11 +263,15 @@ function LightExtensionWorkspacePage({
 
   const activeFile = files.find((file) => file.path === activePath);
   const settingsTypegen = useMemo(() => generateClientSettingsTypes({ files }), [files]);
-  const authoringFiles = useMemo(
-    () => addLightExtensionSdkShim(addSettingsTypeFiles(files, settingsTypegen.files)),
-    [files, settingsTypegen.files],
+  const activeEntryContext = useMemo(
+    () => createActiveEntryContextType({ activePath, entries: settingsTypegen.entries }),
+    [activePath, settingsTypegen.entries],
   );
-  const filesForSave = useMemo(() => ensurePersistedLightExtensionSdkShim(files), [files]);
+  const authoringFiles = useMemo(
+    () => addSettingsTypeFiles(files, settingsTypegen.files, activeEntryContext.file),
+    [activeEntryContext.file, files, settingsTypegen.files],
+  );
+  const filesForSave = files;
   const dirtyChanges = useMemo(() => buildFileChanges(baseFiles, filesForSave), [baseFiles, filesForSave]);
   const saveSummary = useMemo(() => summarizeWorkspaceChanges(baseFiles, filesForSave), [baseFiles, filesForSave]);
   const diffRows = useMemo(
@@ -314,7 +329,6 @@ function LightExtensionWorkspacePage({
         content: getDefaultWorkspaceFileContent(nextPath),
         language: inferLightExtensionLanguageFromPath(nextPath),
       },
-      ...getCompanionWorkspaceFiles(nextPath, files),
     ]);
     setFiles(nextFiles);
     setFolders((current) => mergeFolders(current, collectWorkspaceFolders(nextFiles)));
@@ -418,9 +432,33 @@ function LightExtensionWorkspacePage({
       return false;
     }
 
-    const filesWithEntryKey = ensureEntryKeyBeforeRootFolderRename(files, path);
+    const managedEntryRoot = getManagedLightExtensionEntryRoot(path);
+    if (managedEntryRoot) {
+      const descriptorPath = `${managedEntryRoot.path}/${LIGHT_EXTENSION_ENTRY_DESCRIPTOR_FILE}`;
+      const descriptorFile = files.find((file) => file.path === descriptorPath);
+      if (!descriptorFile) {
+        message.error(t('Entry descriptor is missing'));
+        return false;
+      }
+      try {
+        const descriptor = JSON.parse(descriptorFile.content) as unknown;
+        if (
+          !isRecord(descriptor) ||
+          descriptor.schemaVersion !== LIGHT_EXTENSION_ENTRY_SCHEMA_VERSION ||
+          typeof descriptor.key !== 'string' ||
+          !LIGHT_EXTENSION_ENTRY_KEY_PATTERN.test(descriptor.key)
+        ) {
+          message.error(t('Entry descriptor key is invalid'));
+          return false;
+        }
+      } catch {
+        message.error(t('Entry descriptor key is invalid'));
+        return false;
+      }
+    }
+
     const nextFiles = normalizeWorkspaceFiles(
-      filesWithEntryKey.map((file) => ({
+      files.map((file) => ({
         ...file,
         language: inferLightExtensionLanguageFromPath(replacePathPrefix(file.path, path, normalizedNextPath)),
         path: replacePathPrefix(file.path, path, normalizedNextPath),
@@ -601,10 +639,12 @@ function LightExtensionWorkspacePage({
 
       const result = await saveSource({
         repoId,
+        expectedHeadCommitId: baseHeadCommitId,
         message: commitMessage,
         files: dirtyChanges,
       });
       setDiagnostics(result.diagnostics);
+      setBaseHeadCommitId(result.commit.id);
       setBaseFiles(filesForSave);
       if (onRequestClose) {
         await onRequestClose();
@@ -622,11 +662,20 @@ function LightExtensionWorkspacePage({
       embeddedSavePromiseRef.current = null;
       request?.reject(error);
       setDiagnostics(getLightExtensionErrorDiagnostics(error) as LightExtensionDiagnostic[]);
-      setNotice({ type: 'error', message: error instanceof Error ? error.message : t('Failed to save source') });
+      setNotice({
+        type: 'error',
+        message:
+          error instanceof LightExtensionHookError && error.code === 'LIGHT_EXTENSION_SOURCE_OUTDATED'
+            ? t('Source changed remotely. Refresh the latest source and reapply your changes.')
+            : error instanceof Error
+              ? error.message
+              : t('Failed to save source'),
+      });
     } finally {
       setSaving(false);
     }
   }, [
+    baseHeadCommitId,
     dirtyChanges,
     compileWorkspacePreview,
     filesForSave,
@@ -1111,6 +1160,7 @@ function LightExtensionWorkspacePage({
                         openPaths={openPaths}
                         previewing={previewing}
                         readOnly={activeFileReadOnly}
+                        runJSGlobalContextType={activeEntryContext.globalContextType}
                         savedFiles={baseFiles}
                         showRunButton={canPreview}
                         t={studioT}
@@ -1297,9 +1347,6 @@ function buildNewFilePath(files: WorkspaceFile[], parentPath: string): string {
     if (missingRootFile) {
       return missingRootFile;
     }
-    if (!existing.has(LIGHT_EXTENSION_SDK_SHIM_PATH)) {
-      return LIGHT_EXTENSION_SDK_SHIM_PATH;
-    }
     const missingClientKindTemplate = LIGHT_EXTENSION_CLIENT_KIND_TEMPLATE_FILES.find((path) => !existing.has(path));
     if (missingClientKindTemplate) {
       return missingClientKindTemplate;
@@ -1336,20 +1383,6 @@ function buildUniqueWorkspaceFilePath(files: WorkspaceFile[], folder: string): s
 
 function getDefaultWorkspaceFileContent(path: string): string {
   return DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES.find((file) => file.path === path)?.content || '';
-}
-
-function getCompanionWorkspaceFiles(path: string, files: WorkspaceFile[]): WorkspaceFile[] {
-  if (path !== 'tsconfig.json' || files.some((file) => file.path === LIGHT_EXTENSION_SDK_SHIM_PATH)) {
-    return [];
-  }
-
-  return [
-    {
-      path: LIGHT_EXTENSION_SDK_SHIM_PATH,
-      content: LIGHT_EXTENSION_SDK_SHIM_CONTENT,
-      language: 'typescript',
-    },
-  ];
 }
 
 function buildNewFolderPath(files: WorkspaceFile[], folders: string[], parentPath: string): string {
@@ -1477,98 +1510,20 @@ function buildFileChanges(baseFiles: WorkspaceFile[], files: WorkspaceFile[]): L
   return changes.sort((left, right) => left.path.localeCompare(right.path));
 }
 
-function addLightExtensionSdkShim(files: WorkspaceFile[]): WorkspaceFile[] {
-  return upsertWorkspaceSdkShim(files);
-}
-
 function addSettingsTypeFiles(
   files: WorkspaceFile[],
   settingsTypeFiles: LightExtensionSettingsTypegenResult['files'],
+  activeContextFile?: LightExtensionSettingsTypegenResult['files'][number],
 ): WorkspaceFile[] {
   const sourceFiles = files.filter((file) => !file.path.startsWith('.light-extension/types/'));
   return mergeFiles(
     sourceFiles,
-    settingsTypeFiles.map((file) => ({
+    [...settingsTypeFiles, ...(activeContextFile ? [activeContextFile] : [])].map((file) => ({
       path: file.path,
       content: file.content,
       language: 'typescript',
     })),
   );
-}
-
-function ensureEntryKeyBeforeRootFolderRename(files: WorkspaceFile[], folderPath: string): WorkspaceFile[] {
-  const match = folderPath.match(/^src\/client\/(?:js-blocks|js-fields|js-actions|js-items|runjs)\/([^/]+)$/);
-  const entryKey = match?.[1];
-  if (!entryKey || !LIGHT_EXTENSION_ENTRY_KEY_PATTERN.test(entryKey)) {
-    return files;
-  }
-
-  const metaPath = `${folderPath}/meta.json`;
-  const metaFile = files.find((file) => file.path === metaPath);
-  if (!metaFile) {
-    return mergeFiles(files, [
-      {
-        path: metaPath,
-        content: `${JSON.stringify({ key: entryKey }, null, 2)}\n`,
-        language: 'json',
-      },
-    ]);
-  }
-
-  try {
-    const meta = JSON.parse(metaFile.content) as unknown;
-    if (!meta || typeof meta !== 'object' || Array.isArray(meta) || Object.prototype.hasOwnProperty.call(meta, 'key')) {
-      return files;
-    }
-
-    return files.map((file) =>
-      file.path === metaPath
-        ? {
-            ...file,
-            content: `${JSON.stringify({ key: entryKey, ...(meta as Record<string, unknown>) }, null, 2)}\n`,
-            language: 'json',
-          }
-        : file,
-    );
-  } catch {
-    return files;
-  }
-}
-
-function ensurePersistedLightExtensionSdkShim(files: WorkspaceFile[]): WorkspaceFile[] {
-  return shouldPersistLightExtensionSdkShim(files) ? upsertWorkspaceSdkShim(files) : files;
-}
-
-function shouldPersistLightExtensionSdkShim(files: WorkspaceFile[]): boolean {
-  const existingShim = files.find((file) => file.path === LIGHT_EXTENSION_SDK_SHIM_PATH);
-  if (existingShim?.content === LIGHT_EXTENSION_SDK_SHIM_CONTENT) {
-    return false;
-  }
-
-  return files.some(
-    (file) =>
-      (file.path === 'tsconfig.json' && file.content.includes('@nocobase/light-extension-sdk/')) ||
-      isClientSettingsFilePath(file.path) ||
-      (isCodeFilePath(file.path) && file.content.includes('@nocobase/light-extension-sdk/')),
-  );
-}
-
-function upsertWorkspaceSdkShim(files: WorkspaceFile[]): WorkspaceFile[] {
-  return mergeFiles(files, [
-    {
-      path: LIGHT_EXTENSION_SDK_SHIM_PATH,
-      content: LIGHT_EXTENSION_SDK_SHIM_CONTENT,
-      language: 'typescript',
-    },
-  ]);
-}
-
-function isCodeFilePath(path: string): boolean {
-  return ['.ts', '.tsx', '.js', '.jsx'].includes(getExtension(path));
-}
-
-function isClientSettingsFilePath(path: string): boolean {
-  return /^src\/client\/(?:js-blocks|js-fields|js-actions|js-items|runjs)\/[^/]+\/settings\.json$/.test(path);
 }
 
 function inferLightExtensionLanguageFromPath(path: string): string {
@@ -1580,6 +1535,10 @@ function buildWorkspacePreviewSnapshot(files: WorkspaceFile[], workspaceScope: L
     workspaceScope,
     files: files.map((file) => [file.path, file.content, file.language || '', file.mode || '']),
   });
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
 export default LightExtensionWorkspacePage;

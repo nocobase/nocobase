@@ -8,13 +8,13 @@
  */
 
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { Modal } from 'antd';
+import { Modal, message } from 'antd';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { vi } from 'vitest';
 
 import { DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES } from '../../shared/default-template';
-import type { UseLightExtensionRepoResult } from '../hooks/useLightExtensionRepo';
+import { LightExtensionHookError, type UseLightExtensionRepoResult } from '../hooks/useLightExtensionRepo';
 import LightExtensionWorkspacePage, {
   type LightExtensionWorkspaceFooterActions,
 } from '../pages/LightExtensionWorkspacePage';
@@ -139,6 +139,7 @@ vi.mock('@nocobase/plugin-vsc-file/client-v2', () => {
         {files.map((file) => (
           <button
             data-can-write={String(getPathAccess?.(file.path, 'file').canWrite !== false)}
+            data-file-path={file.path}
             key={file.path}
             onClick={() => onOpen(file.path)}
             type="button"
@@ -184,6 +185,7 @@ vi.mock('@nocobase/plugin-vsc-file/client-v2', () => {
       readOnly,
       toolbarActions,
       workspaceFiles,
+      runJSGlobalContextType,
       onFilesCollapsedChange,
       filesCollapsed,
     }: {
@@ -196,6 +198,7 @@ vi.mock('@nocobase/plugin-vsc-file/client-v2', () => {
       readOnly?: boolean;
       toolbarActions?: React.ReactNode;
       workspaceFiles: Array<{ content: string; path: string }>;
+      runJSGlobalContextType?: string;
       onFilesCollapsedChange: (collapsed: boolean) => void;
       filesCollapsed: boolean;
     }) => (
@@ -204,6 +207,7 @@ vi.mock('@nocobase/plugin-vsc-file/client-v2', () => {
         data-scene={scene || ''}
         data-show-run-button={String(showRunButton)}
         data-testid="runjs-code-tab"
+        data-runjs-global-context-type={runJSGlobalContextType || ''}
         data-workspace-file-contents={JSON.stringify(workspaceFiles.map((file) => [file.path, file.content]))}
         data-workspace-files={workspaceFiles.map((file) => file.path).join(',')}
       >
@@ -490,6 +494,7 @@ describe('LightExtensionWorkspacePage', () => {
     expect(mocks.api.saveSource).toHaveBeenCalledWith(
       expect.objectContaining({
         repoId: 'ler_sales',
+        expectedHeadCommitId: 'commit-1',
         message: 'Update sales KPI',
         files: [
           expect.objectContaining({
@@ -501,6 +506,7 @@ describe('LightExtensionWorkspacePage', () => {
       }),
     );
     const saveInput = mocks.api.saveSource.mock.calls[0][0];
+    expect(saveInput.expectedHeadCommitId).toBe('commit-1');
     expect(saveInput).not.toHaveProperty('baseCommitId');
     expect(saveInput).not.toHaveProperty('baseOwnerFingerprint');
     expect(screen.queryByText('Source saved and compiled')).not.toBeInTheDocument();
@@ -535,6 +541,39 @@ describe('LightExtensionWorkspacePage', () => {
 
     expect(await screen.findByText('Source validation failed')).toBeInTheDocument();
     expect(mocks.api.saveSource).not.toHaveBeenCalled();
+  });
+
+  it('keeps local edits and shows refresh guidance when the source head is outdated', async () => {
+    mocks.api.saveSource.mockRejectedValueOnce(
+      new LightExtensionHookError({
+        operation: 'saveSource',
+        code: 'LIGHT_EXTENSION_SOURCE_OUTDATED',
+        status: 409,
+        message: 'Light extension source changed after the workspace was opened',
+      }),
+    );
+
+    render(
+      <MemoryRouter initialEntries={['/admin/settings/light-extension?panel=source&repoId=ler_sales']}>
+        <LightExtensionWorkspacePage />
+      </MemoryRouter>,
+    );
+
+    await screen.findByTestId('runjs-code-tab');
+    fireEvent.change(screen.getByLabelText('Edit file content'), {
+      target: { value: 'export default function SalesKpi() { return "local edit"; }\n' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Save/ }));
+    await confirmSaveVersion('Save stale workspace');
+
+    expect(
+      await screen.findByText('Source changed remotely. Refresh the latest source and reapply your changes.'),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('Edit file content')).toHaveValue(
+      'export default function SalesKpi() { return "local edit"; }\n',
+    );
+    expect(mocks.api.saveSource).toHaveBeenCalledWith(expect.objectContaining({ expectedHeadCommitId: 'commit-1' }));
+    expect(mocks.api.pull).toHaveBeenCalledTimes(1);
   });
 
   it('compiles and previews the current unsaved entry workspace without saving it', async () => {
@@ -645,7 +684,8 @@ describe('LightExtensionWorkspacePage', () => {
     confirmSpy.mockRestore();
   });
 
-  it('adds a stable meta key before renaming a legacy entry directory', async () => {
+  it('renames an entry directory without changing its entry.json key', async () => {
+    const descriptorContent = '{\n  "schemaVersion": 1,\n  "key": "stable-sales-kpi",\n  "title": "Sales KPI"\n}\n';
     mocks.api.pull.mockResolvedValueOnce({
       repo: { id: 'ler_sales' },
       commit: { id: 'commit-1' },
@@ -658,8 +698,8 @@ describe('LightExtensionWorkspacePage', () => {
           language: 'typescript',
         },
         {
-          path: 'src/client/js-blocks/sales-kpi/meta.json',
-          content: '{\n  "title": "Sales KPI"\n}\n',
+          path: 'src/client/js-blocks/sales-kpi/entry.json',
+          content: descriptorContent,
           language: 'json',
         },
       ],
@@ -676,9 +716,7 @@ describe('LightExtensionWorkspacePage', () => {
     const workspaceContents = new Map<string, string>(
       JSON.parse(screen.getByTestId('runjs-code-tab').getAttribute('data-workspace-file-contents') || '[]'),
     );
-    expect(workspaceContents.get('src/client/js-blocks/sales-kpi-renamed/meta.json')).toBe(
-      '{\n  "key": "sales-kpi",\n  "title": "Sales KPI"\n}\n',
-    );
+    expect(workspaceContents.get('src/client/js-blocks/sales-kpi-renamed/entry.json')).toBe(descriptorContent);
     expect(workspaceContents.get('src/client/js-blocks/sales-kpi-renamed/index.tsx')).toBe(
       'ctx.render(<div>Sales KPI</div>);\n',
     );
@@ -689,18 +727,67 @@ describe('LightExtensionWorkspacePage', () => {
     expect(mocks.api.saveSource.mock.calls[0][0].files).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ path: 'src/client/js-blocks/sales-kpi/index.tsx', operation: 'delete' }),
-        expect.objectContaining({ path: 'src/client/js-blocks/sales-kpi/meta.json', operation: 'delete' }),
+        expect.objectContaining({ path: 'src/client/js-blocks/sales-kpi/entry.json', operation: 'delete' }),
         expect.objectContaining({
           path: 'src/client/js-blocks/sales-kpi-renamed/index.tsx',
           operation: 'upsert',
         }),
         expect.objectContaining({
-          path: 'src/client/js-blocks/sales-kpi-renamed/meta.json',
-          content: expect.stringContaining('"key": "sales-kpi"'),
+          path: 'src/client/js-blocks/sales-kpi-renamed/entry.json',
+          content: descriptorContent,
           operation: 'upsert',
         }),
       ]),
     );
+    expect(mocks.api.saveSource.mock.calls[0][0].expectedHeadCommitId).toBe('commit-1');
+  });
+
+  it.each([
+    ['missing entry.json', undefined, 'Entry descriptor is missing'],
+    ['invalid entry key', '{"schemaVersion":1,"key":"Invalid Key"}', 'Entry descriptor key is invalid'],
+  ])('blocks entry directory rename for %s', async (_label, descriptorContent, expectedError) => {
+    const files = [
+      {
+        path: 'src/client/js-blocks/sales-kpi/index.tsx',
+        content: 'ctx.render(<div>Sales KPI</div>);\n',
+        language: 'typescript',
+      },
+      ...(descriptorContent
+        ? [
+            {
+              path: 'src/client/js-blocks/sales-kpi/entry.json',
+              content: descriptorContent,
+              language: 'json',
+            },
+          ]
+        : []),
+    ];
+    mocks.api.pull.mockResolvedValueOnce({
+      repo: { id: 'ler_sales' },
+      commit: { id: 'commit-1' },
+      tree: { hash: 'tree-1', entryCount: files.length, byteSize: 90 },
+      unchanged: false,
+      files,
+    });
+    const errorSpy = vi.spyOn(message, 'error');
+
+    render(
+      <MemoryRouter initialEntries={['/admin/settings/light-extension?panel=source&repoId=ler_sales']}>
+        <LightExtensionWorkspacePage />
+      </MemoryRouter>,
+    );
+
+    await screen.findByTestId('runjs-code-tab');
+    fireEvent.click(screen.getByRole('button', { name: 'Rename folder src/client/js-blocks/sales-kpi', exact: true }));
+
+    expect(errorSpy).toHaveBeenCalledWith(expectedError);
+    expect(screen.getByTestId('runjs-code-tab').getAttribute('data-workspace-files')).toContain(
+      'src/client/js-blocks/sales-kpi/index.tsx',
+    );
+    expect(screen.getByTestId('runjs-code-tab').getAttribute('data-workspace-files')).not.toContain(
+      'src/client/js-blocks/sales-kpi-renamed/index.tsx',
+    );
+    errorSpy.mockRestore();
   });
 
   it('shows save progress and closes an embedded workspace after the persisted save completes', async () => {
@@ -1282,12 +1369,6 @@ describe('LightExtensionWorkspacePage', () => {
     await waitFor(() => expect(screen.getAllByText('README.md').length).toBeGreaterThan(0));
     fireEvent.click(defaultFileButton);
     await waitFor(() => expect(screen.getAllByText('tsconfig.json').length).toBeGreaterThan(0));
-    fireEvent.click(defaultFileButton);
-    await waitFor(() =>
-      expect(screen.getByTestId('runjs-code-tab').getAttribute('data-workspace-files')).toContain(
-        'src/shared/light-extension-sdk.d.ts',
-      ),
-    );
 
     fireEvent.click(screen.getByRole('button', { name: /Save/ }));
     await confirmSaveVersion('Add repository files');
@@ -1302,15 +1383,13 @@ describe('LightExtensionWorkspacePage', () => {
         }),
         expect.objectContaining({
           path: 'tsconfig.json',
-          content: expect.stringContaining('@nocobase/light-extension-sdk/shared'),
-          operation: 'upsert',
-        }),
-        expect.objectContaining({
-          path: 'src/shared/light-extension-sdk.d.ts',
-          content: expect.stringContaining('@nocobase/light-extension-sdk/client'),
+          content: expect.stringContaining('"moduleResolution": "Node"'),
           operation: 'upsert',
         }),
       ]),
+    );
+    expect(mocks.api.saveSource.mock.calls[0][0].files).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ path: expect.stringMatching(/^\.light-extension\/types\//) })]),
     );
   });
 
@@ -1335,11 +1414,6 @@ describe('LightExtensionWorkspacePage', () => {
           path: 'tsconfig.json',
           content: '{}\n',
           language: 'json',
-        },
-        {
-          path: 'src/shared/light-extension-sdk.d.ts',
-          content: '',
-          language: 'typescript',
         },
         {
           path: 'src/client/js-blocks/sales-kpi/index.tsx',
@@ -1396,11 +1470,6 @@ describe('LightExtensionWorkspacePage', () => {
           language: 'json',
         },
         {
-          path: 'src/shared/light-extension-sdk.d.ts',
-          content: '',
-          language: 'typescript',
-        },
-        {
           path: 'src/client/js-blocks/sales-kpi/index.tsx',
           content: 'export default function SalesKpi() { return null; }\n',
           language: 'typescript',
@@ -1433,9 +1502,9 @@ describe('LightExtensionWorkspacePage', () => {
           language: 'typescript',
         },
         {
-          path: 'src/client/js-blocks/product-list/settings.json',
+          path: 'src/client/js-blocks/product-list/entry.json',
           content:
-            '{"type":"object","properties":{"title":{"type":"string","default":"Products"},"pageSize":{"type":"integer","default":5}}}',
+            '{"schemaVersion":1,"key":"product-list","settingsSchema":{"type":"object","properties":{"title":{"type":"string","default":"Products"},"pageSize":{"type":"integer","default":5}}}}',
           language: 'json',
         },
         {
@@ -1444,8 +1513,9 @@ describe('LightExtensionWorkspacePage', () => {
           language: 'typescript',
         },
         {
-          path: 'src/client/js-blocks/order-list/settings.json',
-          content: '{"type":"object","properties":{"orderStatus":{"type":"string"},"limit":{"type":"integer"}}}',
+          path: 'src/client/js-blocks/order-list/entry.json',
+          content:
+            '{"schemaVersion":1,"key":"order-list","settingsSchema":{"type":"object","properties":{"orderStatus":{"type":"string"},"limit":{"type":"integer"}}}}',
           language: 'json',
         },
       ],
@@ -1453,7 +1523,7 @@ describe('LightExtensionWorkspacePage', () => {
 
     render(
       <MemoryRouter initialEntries={['/admin/settings/light-extension?panel=source&repoId=ler_sales']}>
-        <LightExtensionWorkspacePage />
+        <LightExtensionWorkspacePage initialPath="src/client/js-blocks/product-list/index.tsx" />
       </MemoryRouter>,
     );
 
@@ -1467,35 +1537,63 @@ describe('LightExtensionWorkspacePage', () => {
     expect(screen.getByTestId('runjs-code-tab').getAttribute('data-workspace-files')).toContain(
       '.light-extension/types/modules.d.ts',
     );
+    expect(screen.getByTestId('runjs-code-tab').getAttribute('data-workspace-files')).toContain(
+      '.light-extension/types/sdk.d.ts',
+    );
+    expect(screen.getByTestId('runjs-code-tab').getAttribute('data-workspace-files')).toContain(
+      '.light-extension/types/__active-entry-context.d.ts',
+    );
+    expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute(
+      'data-runjs-global-context-type',
+      'LightExtensionActiveEntryContext',
+    );
     expect(screen.queryByRole('button', { name: /Settings type preview/ })).toBeNull();
     expect(screen.queryByRole('button', { name: /Download settings types/ })).toBeNull();
     expect(screen.queryByTestId('light-extension-settings-type-preview')).toBeNull();
     expect(screen.getByTestId('runjs-code-tab').getAttribute('data-workspace-file-contents')).toContain(
       'orderStatus?: string;',
     );
+    expect(screen.getByTestId('runjs-code-tab').getAttribute('data-workspace-file-contents')).toContain(
+      'light-extension:settings/client/js-block/product-list',
+    );
+
+    const orderListButton = screen
+      .getByTestId('runjs-files-panel')
+      .querySelector<HTMLButtonElement>('[data-file-path="src/client/js-blocks/order-list/index.tsx"]');
+    expect(orderListButton).not.toBeNull();
+    fireEvent.click(orderListButton as HTMLButtonElement);
+    await waitFor(() => {
+      const workspaceFiles = JSON.parse(
+        screen.getByTestId('runjs-code-tab').getAttribute('data-workspace-file-contents') || '[]',
+      ) as Array<[string, string]>;
+      expect(
+        workspaceFiles.find(([path]) => path === '.light-extension/types/__active-entry-context.d.ts')?.[1],
+      ).toContain('light-extension:settings/client/js-block/order-list');
+    });
+    const activeContextFiles = JSON.parse(
+      screen.getByTestId('runjs-code-tab').getAttribute('data-workspace-file-contents') || '[]',
+    ) as Array<[string, string]>;
+    expect(
+      activeContextFiles.filter(([path]) => path === '.light-extension/types/__active-entry-context.d.ts'),
+    ).toHaveLength(1);
   });
 
-  it('overlays the current SDK shim for existing source repositories with an outdated shim', async () => {
+  it('keeps generated SDK declarations out of saveSource changes', async () => {
     mocks.api.pull.mockResolvedValueOnce({
       repo: { id: 'ler_sales' },
       commit: { id: 'commit-1' },
-      tree: { hash: 'tree-1', entryCount: 3, byteSize: 260 },
+      tree: { hash: 'tree-1', entryCount: 2, byteSize: 260 },
       unchanged: false,
       files: [
-        {
-          path: 'src/shared/light-extension-sdk.d.ts',
-          content:
-            'declare module "@nocobase/light-extension-sdk/client" { export interface LightExtensionSettingsContext<TSettings = unknown> { settings: TSettings; } }\n',
-          language: 'typescript',
-        },
         {
           path: 'src/client/js-blocks/product-list/index.tsx',
           content: 'import type { Settings } from "light-extension:settings/client/js-block/product-list";\n',
           language: 'typescript',
         },
         {
-          path: 'src/client/js-blocks/product-list/settings.json',
-          content: '{"type":"object","properties":{"title":{"type":"string"}}}',
+          path: 'src/client/js-blocks/product-list/entry.json',
+          content:
+            '{"schemaVersion":1,"key":"product-list","settingsSchema":{"type":"object","properties":{"title":{"type":"string"}}}}',
           language: 'json',
         },
       ],
@@ -1503,7 +1601,7 @@ describe('LightExtensionWorkspacePage', () => {
 
     render(
       <MemoryRouter initialEntries={['/admin/settings/light-extension?panel=source&repoId=ler_sales']}>
-        <LightExtensionWorkspacePage />
+        <LightExtensionWorkspacePage initialPath="src/client/js-blocks/product-list/index.tsx" />
       </MemoryRouter>,
     );
 
@@ -1511,6 +1609,20 @@ describe('LightExtensionWorkspacePage', () => {
     const workspaceFileContents = codeTab.getAttribute('data-workspace-file-contents') || '';
     expect(workspaceFileContents).toContain('JSBlockContext');
     expect(workspaceFileContents).toContain('RunJSContext');
+
+    fireEvent.change(screen.getByLabelText('Edit file content'), {
+      target: {
+        value:
+          'import type { Settings } from "light-extension:settings/client/js-block/product-list";\nctx.render(null as unknown as Settings);\n',
+      },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Save/ }));
+    await confirmSaveVersion('Update product list');
+
+    await waitFor(() => expect(mocks.api.saveSource).toHaveBeenCalledTimes(1));
+    expect(mocks.api.saveSource.mock.calls[0][0].files).toEqual([
+      expect.objectContaining({ path: 'src/client/js-blocks/product-list/index.tsx', operation: 'upsert' }),
+    ]);
   });
 
   it('shows persisted save diagnostics after validation failure', async () => {

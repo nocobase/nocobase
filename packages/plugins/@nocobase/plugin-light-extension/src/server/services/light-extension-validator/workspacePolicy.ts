@@ -10,6 +10,7 @@
 import { posix as pathPosix } from 'path';
 
 import {
+  LIGHT_EXTENSION_ENTRY_DESCRIPTOR_FILE,
   LIGHT_EXTENSION_ENTRY_KEY_PATTERN,
   LIGHT_EXTENSION_SUPPORTED_KINDS,
   type LightExtensionKind,
@@ -29,31 +30,25 @@ const entryFileRules: Record<LightExtensionKind, EntryFileRule> = {
   'js-block': {
     root: 'src/client/js-blocks',
     indexFiles: ['index.tsx', 'index.ts', 'index.jsx', 'index.js'],
-    metadataFiles: ['meta.json', 'settings.json'],
+    metadataFiles: [LIGHT_EXTENSION_ENTRY_DESCRIPTOR_FILE],
     allowedExtensions: ['.ts', '.tsx', '.js', '.jsx', '.json', '.md'],
   },
   'js-field': {
     root: 'src/client/js-fields',
     indexFiles: ['index.tsx', 'index.ts', 'index.jsx', 'index.js'],
-    metadataFiles: ['meta.json', 'settings.json'],
+    metadataFiles: [LIGHT_EXTENSION_ENTRY_DESCRIPTOR_FILE],
     allowedExtensions: ['.ts', '.tsx', '.js', '.jsx', '.json', '.md'],
   },
   'js-action': {
     root: 'src/client/js-actions',
     indexFiles: ['index.tsx', 'index.ts', 'index.jsx', 'index.js'],
-    metadataFiles: ['meta.json', 'settings.json'],
+    metadataFiles: [LIGHT_EXTENSION_ENTRY_DESCRIPTOR_FILE],
     allowedExtensions: ['.ts', '.tsx', '.js', '.jsx', '.json', '.md'],
   },
   'js-item': {
     root: 'src/client/js-items',
     indexFiles: ['index.tsx', 'index.ts', 'index.jsx', 'index.js'],
-    metadataFiles: ['meta.json', 'settings.json'],
-    allowedExtensions: ['.ts', '.tsx', '.js', '.jsx', '.json', '.md'],
-  },
-  runjs: {
-    root: 'src/client/runjs',
-    indexFiles: ['index.tsx', 'index.ts', 'index.jsx', 'index.js'],
-    metadataFiles: ['meta.json', 'settings.json'],
+    metadataFiles: [LIGHT_EXTENSION_ENTRY_DESCRIPTOR_FILE],
     allowedExtensions: ['.ts', '.tsx', '.js', '.jsx', '.json', '.md'],
   },
 };
@@ -164,9 +159,14 @@ export function validateDeleteSourcePath(
 
   if (pathKind.status === 'unsupported') {
     diagnostics.push(
-      diagnostic('path_not_allowed', 'error', 'Source file path is outside the allowed light-extension roots', {
-        path: normalizedPath,
-      }),
+      diagnostic(
+        'workspace_path_not_allowed',
+        'error',
+        'Source file path is outside the allowed light-extension roots',
+        {
+          path: normalizedPath,
+        },
+      ),
     );
   } else if (pathKind.status === 'missingEntryName') {
     diagnostics.push(
@@ -244,11 +244,19 @@ export function isAllowedEntryFilePath(path: string): boolean {
   }
   const rule = entryFileRules[pathKind.kind];
   const fileName = pathPosix.basename(path);
+  if (isForbiddenEntryRootFile(path, pathKind.kind, pathKind.entryName)) {
+    return false;
+  }
   if (rule.metadataFiles.includes(fileName)) {
     return true;
   }
 
   return rule.allowedExtensions.includes(pathPosix.extname(path));
+}
+
+function isForbiddenEntryRootFile(path: string, kind: LightExtensionKind, entryName: string): boolean {
+  const rootPath = getEntryRootPath(kind, entryName);
+  return path === `${rootPath}/meta.json` || path === `${rootPath}/settings.json`;
 }
 
 export function isAllowedSharedFilePath(path: string): boolean {
@@ -360,9 +368,14 @@ export function normalizeFiles(
     }
     if (pathKind.status === 'unsupported') {
       diagnostics.push(
-        diagnostic('path_not_allowed', 'error', 'Source file path is outside the allowed light-extension roots', {
-          path,
-        }),
+        diagnostic(
+          'workspace_path_not_allowed',
+          'error',
+          'Source file path is outside the allowed light-extension roots',
+          {
+            path,
+          },
+        ),
       );
     } else if (pathKind.status === 'shared' && !isAllowedSharedFilePath(path)) {
       diagnostics.push(
@@ -381,7 +394,9 @@ export function normalizeFiles(
     if (pathKind.status === 'enabled' && !isAllowedEntryFilePath(path)) {
       diagnostics.push(
         diagnostic(
-          'path_extension_not_allowed',
+          isForbiddenEntryRootFile(path, pathKind.kind, pathKind.entryName)
+            ? 'workspace_path_not_allowed'
+            : 'path_extension_not_allowed',
           'error',
           'Source file path is not allowed for light-extension entries',
           {

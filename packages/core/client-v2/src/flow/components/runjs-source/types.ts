@@ -44,9 +44,10 @@ export interface RunJSSourceResolverResult {
 }
 
 export interface RunJSSourceSettingsDescriptor {
+  entryId: string;
+  settingsSchemaHash: string | null;
   schema?: Record<string, unknown> | null;
   defaults?: Record<string, unknown>;
-  schemaHash?: string;
 }
 
 export interface RunJSSourceMenuItem {

@@ -12,6 +12,7 @@ import { describe, expect, it } from 'vitest';
 import type { LightExtensionKind } from '../../constants';
 import {
   getLightExtensionEntryRoot,
+  getManagedLightExtensionEntryRoot,
   getLightExtensionWorkspacePathAccess,
   type LightExtensionWorkspaceScope,
 } from '../workspace/lightExtensionWorkspaceAccess';
@@ -35,11 +36,6 @@ const cases: Array<{ entryPath: string; kind: LightExtensionKind; lockedPath: st
   {
     entryPath: 'src/client/js-fields/current/index.tsx',
     kind: 'js-field',
-    lockedPath: 'src/client/runjs/other/index.ts',
-  },
-  {
-    entryPath: 'src/client/runjs/current/index.ts',
-    kind: 'runjs',
     lockedPath: 'src/client/js-blocks/other/index.tsx',
   },
 ];
@@ -92,5 +88,15 @@ describe('light extension entry workspace access', () => {
       canRename: true,
       canWrite: true,
     });
+  });
+
+  it('recognizes only managed entry root folders', () => {
+    expect(getManagedLightExtensionEntryRoot('src/client/js-actions/send-email')).toEqual({
+      kind: 'js-action',
+      path: 'src/client/js-actions/send-email',
+    });
+    expect(getManagedLightExtensionEntryRoot('src/client/js-actions')).toBeNull();
+    expect(getManagedLightExtensionEntryRoot('src/client/js-actions/send-email/helpers')).toBeNull();
+    expect(getManagedLightExtensionEntryRoot('src/shared/send-email')).toBeNull();
   });
 });

@@ -80,6 +80,7 @@ export interface LightExtensionListCommitsInput {
 
 export interface LightExtensionSaveSourceInput {
   repoId: string;
+  expectedHeadCommitId: string | null;
   message: string;
   files: LightExtensionFileChange[];
 }

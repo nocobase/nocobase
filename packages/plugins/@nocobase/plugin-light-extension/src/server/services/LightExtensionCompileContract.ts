@@ -11,7 +11,7 @@ import type { RunJSSurfaceStyle } from '@nocobase/runjs';
 
 import type { LightExtensionKind } from '../../constants';
 
-export type LightExtensionSurfaceStyle = 'render' | 'value' | 'action' | 'run';
+export type LightExtensionSurfaceStyle = 'render' | 'value' | 'action';
 
 export interface LightExtensionAuthoringSurfaceSpec {
   kind: LightExtensionKind;
@@ -49,12 +49,5 @@ export const LIGHT_EXTENSION_AUTHORING_SURFACES: Record<LightExtensionKind, Ligh
     compilerSurfaceStyle: 'render',
     modelUse: 'JSItemActionModel',
     surface: 'js-model.render',
-  },
-  runjs: {
-    kind: 'runjs',
-    surfaceStyle: 'run',
-    compilerSurfaceStyle: 'value',
-    modelUse: 'JSItemModel',
-    surface: 'reaction.value-runjs',
   },
 };

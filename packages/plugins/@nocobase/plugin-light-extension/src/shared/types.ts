@@ -130,6 +130,7 @@ export interface LightExtensionFileResult extends LightExtensionPulledFile {
 
 export interface LightExtensionPushInput {
   repoId: string;
+  expectedHeadCommitId: string | null;
   message: string;
   files: LightExtensionFileChange[];
   allowEmptyCommit?: boolean;
@@ -172,8 +173,7 @@ export interface LightExtensionEntryRecord {
   kind: string;
   entryName: string;
   entryPath: string;
-  metaPath: string | null;
-  settingsPath: string | null;
+  descriptorPath: string;
   title: string | null;
   description: string | null;
   category: string | null;
@@ -181,6 +181,7 @@ export interface LightExtensionEntryRecord {
   tags: string[] | null;
   sort: number | null;
   settingsSchema: Record<string, unknown> | null;
+  settingsSchemaHash: string | null;
   compiledCommitId: string | null;
   runtimeArtifact: LightExtensionEntryRuntimeArtifact | null;
   runtimeVersion: string | null;
@@ -226,6 +227,7 @@ export interface LightExtensionValidationLimits {
   maxRepoFiles: number;
   maxEntryFiles: number;
   maxFileBytes: number;
+  maxEntryDescriptorBytes: number;
   maxRepoBytes: number;
   maxEntries: number;
   maxSyncBatchFiles: number;
@@ -236,6 +238,10 @@ export interface LightExtensionValidationLimits {
 }
 
 export interface LightExtensionCapabilities {
+  entryDescriptor: {
+    schemaVersion: number;
+    keyPattern: string;
+  };
   allowedPaths: {
     repo: string[];
     entries: Record<string, string[]>;
@@ -246,6 +252,22 @@ export interface LightExtensionCapabilities {
     maxDepth: number;
   };
   xComponentWhitelist: string[];
+  conditions: {
+    operators: string[];
+    logic: string[];
+    limits: {
+      maxDepth: number;
+      maxNodes: number;
+      maxItemsPerGroup: number;
+      maxPathSegments: number;
+    };
+  };
+  sdk: {
+    packageName: string;
+    version: string;
+    entrySchemaUri: string;
+    entrySchemaSha256: string;
+  };
   limits: LightExtensionValidationLimits;
   writePolicy: {
     validateFinalWorkspaceOnPush: boolean;
@@ -319,7 +341,8 @@ export interface LightExtensionSelectableEntrySummary {
   entryPath: string;
   title: string | null;
   settingsSchema: Record<string, unknown> | null;
-  settingsDefaultsHash: string;
+  settingsSchemaHash: string | null;
+  settingsDefaultsHash: string | null;
   artifactHash?: string;
   runtimeCodeHash: string;
   runtimeAvailable: true;
@@ -445,8 +468,7 @@ export type LightExtensionReferenceOwnerKind =
   | 'flowModel.step'
   | 'flowModel.fieldSettings'
   | 'flowModel.actionSettings'
-  | 'flowModel.itemSettings'
-  | 'flowModel.runjsHost';
+  | 'flowModel.itemSettings';
 
 export interface LightExtensionFlowModelOwnerLocator {
   kind: 'flowModel.step';

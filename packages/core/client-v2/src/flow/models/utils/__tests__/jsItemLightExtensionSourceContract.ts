@@ -27,6 +27,15 @@ export async function assertJSItemLightExtensionSourceContract(options: {
   RunJSSourceResolverRegistry.registerResolver({
     sourceMode: 'light-extension',
     resolve: () => ({ code: '' }),
+    getSettingsDescriptor: async () => ({
+      entryId: String(sourceBinding.entryId),
+      settingsSchemaHash: 'test-schema',
+      schema: {
+        type: 'object',
+        properties: Object.fromEntries(Object.keys(settings).map((key) => [key, {}])),
+      },
+      defaults: settings,
+    }),
     listSourceMenuItems,
   });
   await (
@@ -64,11 +73,15 @@ export async function assertJSItemLightExtensionSourceContract(options: {
     sourceBinding: undefined,
     settings: {},
   });
-  expect(() => sourceModeStep?.beforeParamsSave?.(settingsContext, { sourceMode: 'light-extension' }, {})).toThrow(
-    'Light extension source binding is required.',
-  );
+  await expect(
+    sourceModeStep?.beforeParamsSave?.(settingsContext, { sourceMode: 'light-extension' }, {}),
+  ).rejects.toThrow('Light extension source binding is required.');
 
-  sourceModeStep?.beforeParamsSave?.(settingsContext, { sourceMode: 'light-extension', sourceBinding, settings }, {});
+  await sourceModeStep?.beforeParamsSave?.(
+    settingsContext,
+    { sourceMode: 'light-extension', sourceBinding, settings },
+    {},
+  );
   expect(model.getStepParams('jsSettings', 'runJs')).toMatchObject({
     sourceMode: 'light-extension',
     sourceBinding,

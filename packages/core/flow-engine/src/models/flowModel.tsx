@@ -1487,15 +1487,22 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   async openStepSettingsDialog(flowKey: string, stepKey: string) {
     // 创建流程运行时上下文
     const flow = this.getFlow(flowKey);
-    const step = flow?.steps?.[stepKey];
+    if (!flow) {
+      console.error(`Flow ${flowKey} or step ${stepKey} not found`);
+      return;
+    }
 
-    if (!flow || !step) {
+    const { getFlowSettingSteps } = await import('../utils/runtimeFlowSettingSteps');
+    const flowSteps = await getFlowSettingSteps(this, flow, flowKey);
+    const step = flowSteps[stepKey];
+
+    if (!step) {
       console.error(`Flow ${flowKey} or step ${stepKey} not found`);
       return;
     }
 
     const ctx = new FlowRuntimeContext(this, flowKey, 'settings');
-    setupRuntimeContextSteps(ctx, flow.steps, this, flowKey);
+    setupRuntimeContextSteps(ctx, flowSteps, this, flowKey);
     ctx.defineProperty('currentStep', { value: step });
 
     const openStepSettingsDialog = await loadOpenStepSettingsDialog();

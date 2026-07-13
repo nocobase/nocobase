@@ -57,6 +57,7 @@ const resourceActionRunners: Record<LightExtensionFileActionName, ResourceAction
     services.runtimeCompileService.saveSource(
       {
         repoId: requireRepoId(input),
+        expectedHeadCommitId: requireNullableString(input, 'expectedHeadCommitId'),
         message: requireString(input, 'message'),
         files: requireArray(input, 'files', normalizeFileChange),
       },
@@ -172,6 +173,21 @@ function requireString(input: ResourceActionInput, key: string, label = key): st
   const value = input[key];
   if (typeof value !== 'string' || !value.trim()) {
     throw invalidInput(`${label} is required`);
+  }
+
+  return value.trim();
+}
+
+function requireNullableString(input: ResourceActionInput, key: string, label = key): string | null {
+  if (!Object.prototype.hasOwnProperty.call(input, key)) {
+    throw invalidInput(`${label} is required`);
+  }
+  const value = input[key];
+  if (value === null) {
+    return null;
+  }
+  if (typeof value !== 'string' || !value.trim()) {
+    throw invalidInput(`${label} must be a string or null`);
   }
 
   return value.trim();

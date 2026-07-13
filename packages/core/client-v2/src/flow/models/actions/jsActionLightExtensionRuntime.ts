@@ -10,7 +10,6 @@
 import {
   FlowCancelSaveException,
   type FlowModel,
-  type ParamObject,
   type FlowRuntimeContext,
   type RunJSValue,
   type FlowSettingsContext,
@@ -20,11 +19,7 @@ import {
 import {
   resolveRuntimeRunJS,
   createRunJSSourceCascadeMenuUIMode,
-  getDescriptorSchemaHash,
   getRunJSModelUse,
-  getSettingsSchemaProperties,
-  getSettingsSchemaRequired,
-  type JsonSchemaLike,
   type ResolvedRuntimeRunJS,
   type RunJSSourceBinding,
   type RunJSSourceSettings,
@@ -33,12 +28,11 @@ import {
   cloneJsonValue,
   cloneRecord,
   createLightExtensionRunJsUISchema,
-  createLightExtensionSettingStep as createSharedLightExtensionSettingStep,
+  createLightExtensionSettingSteps,
   createLightExtensionSourceBindingStep,
   createLightExtensionSourceModeStep,
   createRuntimeRunTracker,
   getLightExtensionFallbackBindingTitle,
-  getLightExtensionSettingDefaultValue,
   getLightExtensionSettingsDescriptor as getSharedLightExtensionSettingsDescriptor,
   getLightExtensionStoredBindingTitle,
   getModelTranslator,
@@ -47,7 +41,10 @@ import {
   isRecord,
   LIGHT_EXTENSION_SOURCE_MODE,
   normalizeLightExtensionRuntimeError,
+  normalizeLightExtensionSourceSettings,
   normalizeLightExtensionSourceMode,
+  setCanonicalLightExtensionSetting,
+  setCanonicalLightExtensionSource,
   type LightExtensionSourceMode,
   type LightExtensionSourceModeParams,
   type RuntimeErrorInfo,
@@ -162,32 +159,16 @@ export async function getJSActionRuntimeFlowSettingSteps(
 ): Promise<Record<string, StepDefinition> | undefined> {
   const params = getJSActionRunJsStepParams(model);
   const descriptor = await getLightExtensionSettingsDescriptor(model, params);
-  if (!descriptor?.schema) {
+  if (!descriptor) {
     return undefined;
   }
-
-  const properties = getSettingsSchemaProperties(descriptor.schema);
-  if (Object.keys(properties).length === 0) {
-    return undefined;
-  }
-
-  const requiredFields = getSettingsSchemaRequired(descriptor.schema);
-  const schemaHash = getDescriptorSchemaHash(descriptor);
-  const descriptorDefaults = cloneRecord(descriptor.defaults);
-  const legacySettings = isRecord(params.settings) ? params.settings : {};
-
-  return Object.fromEntries(
-    Object.entries(properties).map(([fieldName, fieldSchema], index) =>
-      createLightExtensionSettingStep({
-        fieldName,
-        fieldSchema,
-        required: requiredFields.has(fieldName),
-        schemaHash,
-        defaultValue: getLightExtensionSettingDefaultValue(fieldName, fieldSchema, descriptorDefaults, legacySettings),
-        sort: 700 + index,
-      }),
-    ),
-  );
+  return createLightExtensionSettingSteps<JSActionRuntimeModel>({
+    descriptor,
+    settings: isRecord(params.settings) ? params.settings : {},
+    component: JS_ACTION_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+    syncValue: syncLightExtensionSettingToRunJs,
+    afterParamsSave: refreshJSActionAfterSettingsSave,
+  });
 }
 
 export async function runJSActionRuntime(input: {
@@ -281,24 +262,29 @@ function getJSActionSourceDefaultParams(ctx: FlowSettingsContext<JSActionRuntime
   };
 }
 
-function syncJSActionSourceToRunJs(ctx: FlowSettingsContext<JSActionRuntimeModel>, params: JSActionSourceModeParams) {
+async function syncJSActionSourceToRunJs(
+  ctx: FlowSettingsContext<JSActionRuntimeModel>,
+  params: JSActionSourceModeParams,
+) {
   const sourceMode = normalizeJSActionSourceMode(params?.sourceMode);
   const sourceBinding = isRecord(params.sourceBinding) ? cloneJsonValue(params.sourceBinding) : undefined;
   if (sourceMode === LIGHT_EXTENSION_SOURCE_MODE && !sourceBinding) {
     ctx.model.context?.message?.error?.(ctx.model.context.t('Select a light extension entry'));
     throw new FlowCancelSaveException('Light extension source binding is required.');
   }
-  const settings = isRecord(params.settings) ? cloneJsonValue(params.settings) : {};
-  ctx.model.setStepParams('clickSettings', {
-    sourceBinding: toParamObject(sourceBinding),
-    settings: toParamObject(settings),
+  const currentRunJs = getJSActionRunJsStepParams(ctx.model);
+  const descriptor =
+    sourceMode === LIGHT_EXTENSION_SOURCE_MODE
+      ? await getLightExtensionSettingsDescriptor(ctx.model, { ...params, sourceMode, sourceBinding })
+      : null;
+  const settings = normalizeLightExtensionSourceSettings({
+    currentRunJs,
+    nextSourceMode: sourceMode,
+    nextSourceBinding: sourceBinding,
+    nextSettings: params.settings,
+    descriptor,
   });
-  ctx.model.setStepParams('clickSettings', 'runJs', {
-    ...getJSActionRunJsStepParams(ctx.model),
-    sourceMode,
-    sourceBinding,
-    settings,
-  });
+  setCanonicalLightExtensionSource(ctx.model, 'clickSettings', { sourceMode, sourceBinding, settings });
 }
 
 async function refreshJSActionAfterSettingsSave(ctx: FlowSettingsContext<JSActionRuntimeModel>) {
@@ -315,54 +301,16 @@ async function getLightExtensionSettingsDescriptor(model: JSActionRuntimeModel, 
   });
 }
 
-function createLightExtensionSettingStep(options: {
-  fieldName: string;
-  fieldSchema: JsonSchemaLike;
-  required: boolean;
-  schemaHash: string;
-  defaultValue: unknown;
-  sort: number;
-}): [string, StepDefinition] {
-  const { fieldName, fieldSchema, required, schemaHash, defaultValue, sort } = options;
-  const stepKey = getLightExtensionSettingStepKey(fieldName, schemaHash);
-  return createSharedLightExtensionSettingStep<JSActionRuntimeModel>({
-    fieldName,
-    fieldSchema,
-    required,
-    stepKey,
-    defaultValue,
-    sort,
-    component: JS_ACTION_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
-    syncValue: syncLightExtensionSettingToRunJs,
-    afterParamsSave: refreshJSActionAfterSettingsSave,
-  });
-}
-
 function syncLightExtensionSettingToRunJs(
   ctx: FlowSettingsContext<JSActionRuntimeModel>,
   fieldName: string,
   value: unknown,
 ) {
-  const runJs = getJSActionRunJsStepParams(ctx.model);
-  const topLevelSettings = ctx.model.getStepParams('clickSettings', 'settings');
-  const settings = isRecord(runJs.settings)
-    ? cloneRecord(runJs.settings)
-    : isRecord(topLevelSettings)
-      ? cloneRecord(topLevelSettings)
-      : {};
-  settings[fieldName] = cloneJsonValue(value);
-  ctx.model.setStepParams('clickSettings', {
-    settings: toParamObject(settings),
-  });
-  ctx.model.setStepParams('clickSettings', 'runJs', {
-    ...runJs,
-    settings,
-  });
+  setCanonicalLightExtensionSetting(ctx.model, 'clickSettings', fieldName, value);
 }
 
 function getJSActionRuntimeSettings(params: Record<string, unknown>): RunJSSourceSettings {
-  const legacySettings = isRecord(params.settings) ? params.settings : {};
-  return cloneRecord(legacySettings);
+  return cloneRecord(params.settings);
 }
 
 function getJSActionRunJsEditorTitle(ctx: { model: JSActionRuntimeModel }): string {
@@ -401,34 +349,10 @@ function normalizeRuntimeError(error: unknown): JSActionRuntimeError {
   });
 }
 
-function sanitizeSettingFieldName(fieldName: string): string {
-  const sanitized = fieldName
-    .replace(/[^a-zA-Z0-9_]/g, '_')
-    .replace(/_+/g, '_')
-    .replace(/^_+|_+$/g, '');
-  return (sanitized || 'field').slice(0, 48);
-}
-
-function getLightExtensionSettingStepKey(fieldName: string, schemaHash: string): string {
-  return `leSetting__${sanitizeSettingFieldName(fieldName)}__${shortHash(`${fieldName}:${schemaHash}`)}`;
-}
-
 function getCallableProperty(value: unknown, key: string): ((...args: unknown[]) => unknown) | undefined {
   if (!isRecord(value)) {
     return undefined;
   }
   const property = value[key];
   return typeof property === 'function' ? (property as (...args: unknown[]) => unknown) : undefined;
-}
-
-function toParamObject(value: unknown): ParamObject {
-  return isRecord(value) ? (value as ParamObject) : {};
-}
-
-function shortHash(value: string): string {
-  let hash = 0;
-  for (let index = 0; index < value.length; index += 1) {
-    hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
-  }
-  return hash.toString(36);
 }

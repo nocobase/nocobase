@@ -7,17 +7,25 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Alert, Form, Input, InputNumber, Select, Switch } from 'antd';
-import React, { useCallback, useEffect, useState } from 'react';
+import type { ISchema } from '@formily/react';
+import { Alert, Button, Form, Input, InputNumber, Select, Switch } from 'antd';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { FlowRuntimeContext } from '../../../../flowContext';
 import { useFlowModelById } from '../../../../hooks';
 import { FlowModel } from '../../../../models';
-import { resolveDefaultParams, setupRuntimeContextSteps, shouldHideStepInSettings } from '../../../../utils';
 import { observer } from '../../../../reactive';
+import type { ParamObject, StepDefinition } from '../../../../types';
+import {
+  createFlowWithSettingSteps,
+  getFlowSettingSteps,
+  getT,
+  resolveDefaultParams,
+  resolveStepUiSchema,
+  resolveUiMode,
+  setupRuntimeContextSteps,
+  shouldHideStepInSettings,
+} from '../../../../utils';
 
-const { Item: FormItem } = Form;
-
-// 创建两个组件版本，一个使用props传递的model，一个使用hook获取model
 interface ModelProvidedProps {
   model: FlowModel;
   flowKey: string;
@@ -31,238 +39,202 @@ interface ModelByIdProps {
 
 type FlowSettingsProps = ModelProvidedProps | ModelByIdProps;
 
-// 判断是否是通过ID获取模型的props
-const isModelByIdProps = (props: FlowSettingsProps): props is ModelByIdProps => {
-  return 'uid' in props && 'modelClassName' in props && Boolean(props.uid) && Boolean(props.modelClassName);
-};
+interface ConfigurableStep {
+  stepKey: string;
+  step: StepDefinition;
+  uiSchema: Record<string, ISchema>;
+  ctx: FlowRuntimeContext;
+  actionDefaultParams: ParamObject;
+  beforeParamsSave?: StepDefinition['beforeParamsSave'];
+  afterParamsSave?: StepDefinition['afterParamsSave'];
+}
 
-/**
- * FlowSettings组件 - 单个流程的详细配置表单（embedded版本）
- *
- * 特点：
- * - 实时保存到model
- * - 适用于嵌入式配置界面
- *
- * 支持两种使用方式：
- * 1. 直接提供model: <FlowSettings model={myModel} flowKey="workflow1" />
- * 2. 通过uid和modelClassName获取model: <FlowSettings uid="model1" modelClassName="MyModel" flowKey="workflow1" />
- */
+const isModelByIdProps = (props: FlowSettingsProps): props is ModelByIdProps =>
+  'uid' in props && 'modelClassName' in props && Boolean(props.uid) && Boolean(props.modelClassName);
+
 const FlowSettings: React.FC<FlowSettingsProps> = (props) => {
   if (isModelByIdProps(props)) {
     return <FlowSettingsWithModelById {...props} />;
-  } else {
-    return <FlowSettingsWithModel {...props} />;
   }
+  return <FlowSettingsWithModel {...props} />;
 };
 
-// 使用传入的model
 const FlowSettingsWithModel: React.FC<ModelProvidedProps> = observer(({ model, flowKey }) => {
+  const t = useMemo(() => getT(model), [model]);
   if (!model) {
-    return <Alert message="提供的模型无效" type="error" />;
+    return <Alert message={t('Invalid model provided')} type="error" />;
   }
-
   return <FlowSettingsContent model={model} flowKey={flowKey} />;
 });
 
-// 通过useModelById hook获取model
 const FlowSettingsWithModelById: React.FC<ModelByIdProps> = observer(({ uid, flowKey, modelClassName }) => {
   const model = useFlowModelById(uid, modelClassName);
-
   if (!model) {
-    return <Alert message={`未找到ID为 ${uid} 的模型`} type="error" />;
+    return <Alert message={`Flow model '${uid}' not found`} type="error" />;
   }
-
   return <FlowSettingsContent model={model} flowKey={flowKey} />;
 });
 
-// 提取核心渲染逻辑到一个共享组件
-interface FlowSettingsContentProps {
-  model: FlowModel;
-  flowKey: string;
-}
+const FlowSettingsContent: React.FC<ModelProvidedProps> = observer(({ model, flowKey }) => {
+  const [form] = Form.useForm<Record<string, ParamObject>>();
+  const t = useMemo(() => getT(model), [model]);
+  const flow = model.getFlow(flowKey);
+  const [configurableSteps, setConfigurableSteps] = useState<ConfigurableStep[]>([]);
+  const [refreshTick, setRefreshTick] = useState(0);
+  const [saving, setSaving] = useState(false);
 
-const FlowSettingsContent: React.FC<FlowSettingsContentProps> = observer(({ model, flowKey }) => {
-  const [form] = Form.useForm();
+  useEffect(() => {
+    const refresh = () => setRefreshTick((value) => value + 1);
+    model.emitter?.on('onStepParamsChanged', refresh);
+    return () => model.emitter?.off('onStepParamsChanged', refresh);
+  }, [model]);
 
-  // 获取流程定义
-  const flows = model.getFlows();
-  const flow = flows.get(flowKey);
-
-  const [configurableSteps, setConfigurableSteps] = useState<{ stepKey: string; step: any; uiSchema: any }[]>([]);
-
-  // 获取可配置的步骤（支持动态 hideInSettings）
   useEffect(() => {
     let mounted = true;
+
     const buildConfigurableSteps = async () => {
-      const steps: { stepKey: string; step: any; uiSchema: any }[] = [];
-      for (const [stepKey, actionStep] of Object.entries(flow?.steps || {})) {
-        if (await shouldHideStepInSettings(model, flow, actionStep as any)) {
+      if (!flow) {
+        if (mounted) setConfigurableSteps([]);
+        return;
+      }
+
+      const flowSteps = await getFlowSettingSteps(model, flow, flowKey);
+      const flowForSettings = createFlowWithSettingSteps(flow, flowSteps, flowKey);
+      const steps: ConfigurableStep[] = [];
+
+      for (const [stepKey, step] of Object.entries(flowSteps)) {
+        if (await shouldHideStepInSettings(model, flowForSettings, step)) {
           continue;
         }
 
-        // 从step获取uiSchema（如果存在）
-        const stepUiSchema = actionStep.uiSchema || {};
+        const ctx = new FlowRuntimeContext(model, flowKey, 'settings');
+        setupRuntimeContextSteps(ctx, flowSteps, model, flowKey);
+        ctx.defineProperty('currentStep', { value: step });
+        await resolveUiMode(step.uiMode, ctx);
 
-        // 如果step使用了action，也获取action的uiSchema
-        let actionUiSchema = {};
-        if (actionStep.use) {
-          const action = model.flowEngine?.getAction?.(actionStep.use);
-          if (action && action.uiSchema) {
-            actionUiSchema = action.uiSchema;
-          }
+        const uiSchema = await resolveStepUiSchema(model, flowForSettings, step);
+        if (!uiSchema || Object.keys(uiSchema).length === 0) {
+          continue;
         }
 
-        // 合并uiSchema，确保step的uiSchema优先级更高
-        const mergedUiSchema = { ...actionUiSchema };
-
-        // 将stepUiSchema中的字段合并到mergedUiSchema
-        Object.entries(stepUiSchema).forEach(([fieldKey, schema]) => {
-          if (mergedUiSchema[fieldKey]) {
-            mergedUiSchema[fieldKey] = { ...mergedUiSchema[fieldKey], ...schema };
-          } else {
-            mergedUiSchema[fieldKey] = schema;
-          }
+        const action = step.use ? model.getAction?.(step.use) : undefined;
+        steps.push({
+          stepKey,
+          step,
+          uiSchema,
+          ctx,
+          actionDefaultParams: (action?.defaultParams || {}) as ParamObject,
+          beforeParamsSave: step.beforeParamsSave || action?.beforeParamsSave,
+          afterParamsSave: step.afterParamsSave || action?.afterParamsSave,
         });
-
-        // 如果没有可配置的UI Schema，跳过
-        if (Object.keys(mergedUiSchema).length === 0) {
-          continue;
-        }
-
-        steps.push({ stepKey, step: actionStep, uiSchema: mergedUiSchema });
       }
-      if (mounted) {
-        setConfigurableSteps(steps);
+
+      if (!mounted) return;
+      setConfigurableSteps(steps);
+
+      const values: Record<string, ParamObject> = {};
+      for (const item of steps) {
+        const actionDefaults = await resolveDefaultParams(item.actionDefaultParams, item.ctx);
+        const stepDefaults = await resolveDefaultParams(item.step.defaultParams, item.ctx);
+        values[item.stepKey] = {
+          ...(actionDefaults || {}),
+          ...(stepDefaults || {}),
+          ...(model.getStepParams(flowKey, item.stepKey) || {}),
+        };
       }
+      if (mounted) form.setFieldsValue(values);
     };
 
-    buildConfigurableSteps();
+    buildConfigurableSteps().catch((error) => {
+      console.warn(`FlowSettings: failed to build embedded settings for flow '${flowKey}'.`, error);
+      if (mounted) setConfigurableSteps([]);
+    });
+
     return () => {
       mounted = false;
     };
-  }, [model, flow]);
+  }, [flow, flowKey, form, model, refreshTick]);
 
-  // 获取当前流程的参数 - 从model中获取实际参数
-  const getCurrentParams = useCallback(async () => {
-    const params = {};
+  const handleSave = useCallback(async () => {
+    setSaving(true);
+    try {
+      const values = await form.validateFields();
+      const savedSteps: Array<{ item: ConfigurableStep; params: ParamObject; previousParams: ParamObject }> = [];
 
-    // 从model中获取每个步骤的参数，如果为空则使用默认参数
-    for (const { stepKey, step } of configurableSteps) {
-      const stepParams = model.getStepParams(flowKey, stepKey) || {};
-
-      const flowRuntimeContext = new FlowRuntimeContext(model, flowKey, 'settings');
-      const flow = model.getFlow(flowKey);
-      setupRuntimeContextSteps(flowRuntimeContext, flow?.steps || {}, model, flowKey);
-      // 解析 defaultParams
-      const resolvedDefaultParams = await resolveDefaultParams(step.defaultParams, flowRuntimeContext);
-
-      // 合并默认参数和当前参数，当前参数优先
-      const mergedParams = { ...resolvedDefaultParams, ...stepParams };
-
-      if (Object.keys(mergedParams).length > 0) {
-        params[stepKey] = mergedParams;
-      }
-    }
-
-    return params;
-  }, [model, flowKey, configurableSteps]);
-
-  // 初始化表单值
-  useEffect(() => {
-    const loadParams = async () => {
-      try {
-        const currentParams = await getCurrentParams();
-        form.setFieldsValue(currentParams);
-      } catch (error) {
-        console.error('Error loading default params:', error);
-      }
-    };
-
-    loadParams();
-  }, [flowKey, form, getCurrentParams]);
-
-  // 处理表单值变化 - 实时保存
-  const handleValuesChange = useCallback(
-    (changedValues: any, allValues: any) => {
-      // 实时保存到model
-      Object.entries(allValues).forEach(([stepKey, stepValues]: [string, any]) => {
-        if (stepValues && typeof stepValues === 'object') {
-          // 使用setStepParams保存步骤参数
-          model.setStepParams(flowKey, stepKey, stepValues);
+      for (const item of configurableSteps) {
+        const params = values[item.stepKey] || {};
+        const previousParams = model.getStepParams(flowKey, item.stepKey) || {};
+        if (item.step.persistParams !== false) {
+          model.setStepParams(flowKey, item.stepKey, params);
         }
-      });
-    },
-    [model, flowKey],
-  );
+        if (item.beforeParamsSave) {
+          await item.beforeParamsSave(item.ctx, params, previousParams);
+        }
+        savedSteps.push({ item, params, previousParams });
+      }
+
+      await model.saveStepParams();
+      for (const { item, params, previousParams } of savedSteps) {
+        if (item.afterParamsSave) {
+          await item.afterParamsSave(item.ctx, params, previousParams);
+        }
+      }
+      model.context.message?.success?.(t('Configuration saved'));
+    } catch (error) {
+      console.error(t('Error saving configuration'), ':', error);
+      model.context.message?.error?.(t('Error saving configuration, please check console'));
+    } finally {
+      setSaving(false);
+    }
+  }, [configurableSteps, flowKey, form, model, t]);
 
   if (!flow) {
-    return <Alert message={`未找到Key为 ${flowKey} 的流程`} type="error" />;
+    return <Alert message={t('Flow with key {{flowKey}} not found', { flowKey })} type="error" />;
   }
 
   if (configurableSteps.length === 0) {
-    return <Alert message="此流程没有可配置的参数" type="info" />;
+    return <Alert message={t('This flow has no configurable parameters')} type="info" />;
   }
 
-  // 渲染表单字段
-  const renderFormFields = () => {
-    return configurableSteps.map(({ stepKey, uiSchema }) => {
-      return Object.entries(uiSchema).map(([fieldKey, schema]: [string, any]) => {
-        const fieldName = `${stepKey}.${fieldKey}`;
-
-        // 根据schema类型渲染不同的组件
-        const renderField = () => {
+  return (
+    <Form form={form} layout="vertical">
+      {configurableSteps.flatMap(({ stepKey, uiSchema }) =>
+        Object.entries(uiSchema).map(([fieldKey, schema]) => {
+          const componentProps = schema['x-component-props'] || {};
+          let input: React.ReactNode;
           switch (schema['x-component']) {
             case 'Select':
-              return (
-                <Select
-                  placeholder={schema['x-component-props']?.placeholder || `请选择${schema.title}`}
-                  options={schema.enum || []}
-                  {...(schema['x-component-props'] || {})}
-                />
-              );
+              input = <Select options={schema.enum || []} {...componentProps} />;
+              break;
             case 'InputNumber':
-              return (
-                <InputNumber
-                  placeholder={schema['x-component-props']?.placeholder || `请输入${schema.title}`}
-                  {...(schema['x-component-props'] || {})}
-                />
-              );
+              input = <InputNumber {...componentProps} />;
+              break;
             case 'Switch':
-              return <Switch {...(schema['x-component-props'] || {})} />;
+              input = <Switch {...componentProps} />;
+              break;
             case 'Input.TextArea':
-              return (
-                <Input.TextArea
-                  placeholder={schema['x-component-props']?.placeholder || `请输入${schema.title}`}
-                  {...(schema['x-component-props'] || {})}
-                />
-              );
+              input = <Input.TextArea {...componentProps} />;
+              break;
             default:
-              return (
-                <Input
-                  placeholder={schema['x-component-props']?.placeholder || `请输入${schema.title}`}
-                  {...(schema['x-component-props'] || {})}
-                />
-              );
+              input = <Input {...componentProps} />;
           }
-        };
 
-        return (
-          <Form.Item
-            key={fieldName}
-            name={[stepKey, fieldKey]}
-            label={schema.title || fieldKey}
-            rules={schema.required ? [{ required: true, message: `请输入${schema.title || fieldKey}` }] : []}
-          >
-            {renderField()}
-          </Form.Item>
-        );
-      });
-    });
-  };
-
-  return (
-    <Form form={form} layout="vertical" onValuesChange={handleValuesChange}>
-      {renderFormFields()}
+          return (
+            <Form.Item
+              key={`${stepKey}.${fieldKey}`}
+              name={[stepKey, fieldKey]}
+              label={schema.title || fieldKey}
+              valuePropName={schema['x-component'] === 'Switch' ? 'checked' : 'value'}
+              rules={schema.required ? [{ required: true, message: t('This field is required') }] : []}
+            >
+              {input}
+            </Form.Item>
+          );
+        }),
+      )}
+      <Button type="primary" loading={saving} onClick={handleSave}>
+        {t('Save')}
+      </Button>
     </Form>
   );
 });

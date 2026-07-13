@@ -64,12 +64,6 @@ const REFERENCE_OWNER_ADAPTERS: ReferenceOwnerAdapter[] = [
     modelUse: 'JSItemModel',
     modelUses: ['JSItemModel', 'JSItemActionModel'],
   },
-  {
-    kind: 'runjs',
-    ownerKind: 'flowModel.runjsHost',
-    title: 'RunJS',
-    locatorContract: 'RunJS value host locator for field linkage, defaults, and assignment forms',
-  },
 ];
 
 export const JS_BLOCK_REFERENCE_OWNER_ADAPTER = REFERENCE_OWNER_ADAPTERS[0];

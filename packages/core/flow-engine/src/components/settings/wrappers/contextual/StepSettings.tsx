@@ -11,7 +11,13 @@ import { autorun, model as observableModel } from '@formily/reactive';
 import { message } from 'antd';
 import { FlowRuntimeContext } from '../../../../flowContext';
 import { StepSettingsProps } from '../../../../types';
-import { getT, resolveUiMode, setupRuntimeContextSteps } from '../../../../utils';
+import {
+  createFlowWithSettingSteps,
+  getFlowSettingSteps,
+  getT,
+  resolveUiMode,
+  setupRuntimeContextSteps,
+} from '../../../../utils';
 import { openStepSettingsDialog } from './StepSettingsDialog';
 import { openStepSettingsDrawer } from './StepSettingsDrawer';
 
@@ -30,12 +36,15 @@ const openStepSettings = async ({ model, flowKey, stepKey, width = 600, title }:
 
   // 获取流程和步骤信息
   const flow = model.getFlow(flowKey);
-  const step = flow?.steps?.[stepKey];
 
   if (!flow) {
     message.error(t('Flow with key {{flowKey}} not found', { flowKey }));
     throw new Error(t('Flow with key {{flowKey}} not found', { flowKey }));
   }
+
+  const flowSteps = await getFlowSettingSteps(model, flow, flowKey);
+  const flowForSettings = createFlowWithSettingSteps(flow, flowSteps, flowKey);
+  const step = flowSteps[stepKey];
 
   if (!step) {
     message.error(t('Step with key {{stepKey}} not found', { stepKey }));
@@ -44,7 +53,7 @@ const openStepSettings = async ({ model, flowKey, stepKey, width = 600, title }:
 
   // 创建设置专用的流程运行时上下文
   const ctx = new FlowRuntimeContext(model, flowKey, 'settings');
-  setupRuntimeContextSteps(ctx, flow.steps, model, flowKey);
+  setupRuntimeContextSteps(ctx, flowForSettings.steps || {}, model, flowKey);
   ctx.defineProperty('currentStep', { value: step });
 
   // 解析 uiMode，支持函数式

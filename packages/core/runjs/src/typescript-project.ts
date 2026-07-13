@@ -444,9 +444,18 @@ const runJSSourceRuntimeModelUses = new Set([
   'JSRecordActionModel',
 ]);
 
-export function buildRunJSTypeScriptContextDeclaration(modelUse?: string): string {
+export function buildRunJSTypeScriptContextDeclaration(
+  modelUse?: string,
+  options: { globalContextType?: string } = {},
+): string {
   const modelDeclaration = (modelUse && runJSContextModelDeclarations[modelUse]) || genericRunJSContextDeclaration;
   const sourceRuntimeDeclaration =
     modelUse && runJSSourceRuntimeModelUses.has(modelUse) ? runJSSourceRuntimeDeclaration : '';
-  return [runJSEnvDeclaration, sourceRuntimeDeclaration, modelDeclaration].filter(Boolean).join('\n');
+  const environmentDeclaration = options.globalContextType
+    ? runJSEnvDeclaration.replace(
+        'declare const ctx: RunJSContext;',
+        `declare const ctx: ${options.globalContextType};`,
+      )
+    : runJSEnvDeclaration;
+  return [environmentDeclaration, sourceRuntimeDeclaration, modelDeclaration].filter(Boolean).join('\n');
 }

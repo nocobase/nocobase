@@ -11,6 +11,7 @@ import { type FlowSettingsContext, type StepDefinition } from '@nocobase/flow-en
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { RunJSSourceResolverRegistry } from '../../../components/runjs-source';
+import { assertLightExtensionSettingsHostContract } from '../../utils/__tests__/lightExtensionSettingsHostContract';
 import { JSActionModel } from '../JSActionModel';
 import { runJSActionRuntime } from '../jsActionLightExtensionRuntime';
 import {
@@ -44,6 +45,7 @@ describe('JSActionModel light extension source', () => {
       resolve: () => ({
         code: '',
       }),
+      getSettingsDescriptor: async () => JS_ACTION_SETTINGS_DESCRIPTOR,
       listSourceMenuItems,
     });
     await (
@@ -80,11 +82,11 @@ describe('JSActionModel light extension source', () => {
       sourceBinding: undefined,
       settings: {},
     });
-    expect(() => sourceModeStep.beforeParamsSave?.(model.context, { sourceMode: 'light-extension' }, {})).toThrow(
-      'Light extension source binding is required.',
-    );
+    await expect(
+      sourceModeStep.beforeParamsSave?.(model.context, { sourceMode: 'light-extension' }, {}),
+    ).rejects.toThrow('Light extension source binding is required.');
 
-    sourceModeStep.beforeParamsSave?.(
+    await sourceModeStep.beforeParamsSave?.(
       model.context as FlowSettingsContext<JSActionModel>,
       {
         sourceMode: 'light-extension',
@@ -236,18 +238,39 @@ ctx.message.success(ctx.settings.successMessage + ':' + ctx.runJsSource.context.
 
     const steps = await model.getRuntimeFlowSettingSteps('clickSettings');
     const successMessageStep = Object.values(steps || {}).find((step) => step.title === 'Success message');
+    const emit = vi.spyOn(model.emitter, 'emit');
     successMessageStep?.beforeParamsSave?.(model.context as FlowSettingsContext<JSActionModel>, {
       value: 'Marked approved',
     });
 
     expect(successMessageStep?.uiSchema?.value?.['x-component']).toBe('JSActionLightExtensionSettingsStepField');
+    expect(successMessageStep?.persistParams).toBe(false);
     expect(model.getStepParams('clickSettings', 'runJs')).toMatchObject({
       settings: {
         successMessage: 'Marked approved',
       },
     });
-    expect(model.getStepParams('clickSettings', 'settings')).toEqual({
-      successMessage: 'Marked approved',
+    expect(model.getStepParams('clickSettings', 'settings')).toBeUndefined();
+    expect(emit.mock.calls.filter(([event]) => event === 'onStepParamsChanged')).toHaveLength(1);
+  });
+
+  it('uses canonical light extension settings across saves and entry switches', async () => {
+    const { model } = createActionModel<JSActionModel>({
+      ModelClass: JSActionModel,
+      use: 'JSActionModel',
+      uid: 'js-action-canonical-settings-contract',
+    });
+
+    await assertLightExtensionSettingsHostContract({
+      model,
+      flowKey: 'clickSettings',
+      settingsComponent: 'JSActionLightExtensionSettingsStepField',
+      sourceBinding: JS_ACTION_SOURCE_BINDING,
+      nextSourceBinding: {
+        ...JS_ACTION_SOURCE_BINDING,
+        entryId: 'entry_send_reminder',
+        entryPath: 'src/client/js-actions/send-reminder/index.ts',
+      },
     });
   });
 
@@ -256,7 +279,7 @@ ctx.message.success(ctx.settings.successMessage + ':' + ctx.runJsSource.context.
       sourceMode: 'light-extension',
       getSettingsDescriptor: vi.fn(async () => ({
         ...JS_ACTION_SETTINGS_DESCRIPTOR,
-        schemaHash: 'schema_action_strict',
+        settingsSchemaHash: 'schema_action_strict',
         schema: {
           type: 'object',
           properties: {

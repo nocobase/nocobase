@@ -28,6 +28,7 @@ const selectableEntry = {
       },
     },
   },
+  settingsSchemaHash: 'schema_hash',
   runtimeCodeHash: 'runtime_hash',
   settingsDefaultsHash: 'defaults_hash',
   runtimeAvailable: true,
@@ -40,7 +41,8 @@ const chartSelectableEntry = {
   entryPath: 'src/client/js-blocks/order-chart/index.tsx',
   title: 'Order chart block',
   settingsSchema: null,
-  settingsDefaultsHash: 'defaults_hash_chart',
+  settingsSchemaHash: null,
+  settingsDefaultsHash: null,
   runtimeCodeHash: 'runtime_hash_chart',
 };
 
@@ -137,7 +139,7 @@ describe('light extension source menu items', () => {
         kind: 'js-block',
       },
       settings: {
-        currency: 'EUR',
+        currency: 'USD',
       },
       version: 'v2',
     });

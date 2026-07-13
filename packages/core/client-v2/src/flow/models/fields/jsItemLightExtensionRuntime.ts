@@ -21,11 +21,7 @@ import React from 'react';
 import {
   resolveRuntimeRunJS,
   createRunJSSourceCascadeMenuUIMode,
-  getDescriptorSchemaHash,
   getRunJSModelUse,
-  getSettingsSchemaProperties,
-  getSettingsSchemaRequired,
-  type JsonSchemaLike,
   type ResolvedRuntimeRunJS,
   type RunJSSourceBinding,
   type RunJSSourceSettings,
@@ -34,13 +30,11 @@ import {
   cloneJsonValue,
   cloneRecord,
   createLightExtensionRunJsUISchema,
-  createLightExtensionSettingStep as createSharedLightExtensionSettingStep,
+  createLightExtensionSettingSteps,
   createLightExtensionSourceBindingStep,
   createLightExtensionSourceModeStep,
   createRuntimeRunTracker,
   getLightExtensionFallbackBindingTitle,
-  getLightExtensionSettingDefaultValue,
-  getLightExtensionSettingStepKey,
   getLightExtensionSettingsDescriptor as getSharedLightExtensionSettingsDescriptor,
   getLightExtensionStoredBindingTitle,
   getModelTranslator,
@@ -50,8 +44,11 @@ import {
   isRecord,
   LIGHT_EXTENSION_SOURCE_MODE,
   normalizeLightExtensionRuntimeError,
+  normalizeLightExtensionSourceSettings,
   normalizeLightExtensionSourceMode,
   resolveLightExtensionBindingTitle as resolveSharedLightExtensionBindingTitle,
+  setCanonicalLightExtensionSetting,
+  setCanonicalLightExtensionSource,
   stableSerialize,
   stableSerializeWithCircular,
   toNonEmptyString,
@@ -140,18 +137,13 @@ export function getJSItemRunJsStepParams(model: JSItemRuntimeModel): Record<stri
 }
 
 export function getJSItemSourceSignature(model: JSItemRuntimeModel, inlineCode?: string): string {
-  const jsSettings = model.getStepParams('jsSettings') || {};
   const runJs = getJSItemRunJsStepParams(model);
   const sourceMode = normalizeJSItemSourceMode(runJs.sourceMode);
-  const runtimeSettingsParams = Object.fromEntries(
-    Object.entries(jsSettings).filter(([key]) => key.startsWith('leSetting__')),
-  );
 
   return stableSerialize({
     sourceMode,
     sourceBinding: runJs.sourceBinding,
     settings: runJs.settings,
-    runtimeSettingsParams,
     code: typeof inlineCode === 'string' ? inlineCode : runJs.code,
     version: runJs.version,
   });
@@ -236,32 +228,16 @@ export async function getJSItemRuntimeFlowSettingSteps(
 ): Promise<Record<string, StepDefinition> | undefined> {
   const params = getJSItemRunJsStepParams(model);
   const descriptor = await getLightExtensionSettingsDescriptor(model, params);
-  if (!descriptor?.schema) {
+  if (!descriptor) {
     return undefined;
   }
-
-  const properties = getSettingsSchemaProperties(descriptor.schema);
-  if (Object.keys(properties).length === 0) {
-    return undefined;
-  }
-
-  const requiredFields = getSettingsSchemaRequired(descriptor.schema);
-  const schemaHash = getDescriptorSchemaHash(descriptor);
-  const descriptorDefaults = cloneRecord(descriptor.defaults);
-  const legacySettings = isRecord(params.settings) ? params.settings : {};
-
-  return Object.fromEntries(
-    Object.entries(properties).map(([fieldName, fieldSchema], index) =>
-      createLightExtensionSettingStep({
-        fieldName,
-        fieldSchema,
-        required: requiredFields.has(fieldName),
-        schemaHash,
-        defaultValue: getLightExtensionSettingDefaultValue(fieldName, fieldSchema, descriptorDefaults, legacySettings),
-        sort: 700 + index,
-      }),
-    ),
-  );
+  return createLightExtensionSettingSteps<JSItemRuntimeModel>({
+    descriptor,
+    settings: isRecord(params.settings) ? params.settings : {},
+    component: JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+    syncValue: syncLightExtensionSettingToRunJs,
+    afterParamsSave: refreshJSItemAfterSettingsSave,
+  });
 }
 
 export async function resolveJSItemRuntimeRunJS(input: {
@@ -419,24 +395,26 @@ function getJSItemSourceDefaultParams(ctx: FlowSettingsContext<JSItemRuntimeMode
   };
 }
 
-function syncJSItemSourceToRunJs(ctx: FlowSettingsContext<JSItemRuntimeModel>, params: JSItemSourceModeParams) {
+async function syncJSItemSourceToRunJs(ctx: FlowSettingsContext<JSItemRuntimeModel>, params: JSItemSourceModeParams) {
   const sourceMode = normalizeJSItemSourceMode(params?.sourceMode);
   const sourceBinding = isRecord(params.sourceBinding) ? cloneJsonValue(params.sourceBinding) : undefined;
   if (sourceMode === LIGHT_EXTENSION_SOURCE_MODE && !sourceBinding) {
     ctx.model.context?.message?.error?.(ctx.model.context.t('Select a light extension entry'));
     throw new FlowCancelSaveException('Light extension source binding is required.');
   }
-  const settings = isRecord(params.settings) ? cloneJsonValue(params.settings) : {};
-  ctx.model.setStepParams('jsSettings', {
-    sourceBinding,
-    settings,
+  const currentRunJs = getJSItemRunJsStepParams(ctx.model);
+  const descriptor =
+    sourceMode === LIGHT_EXTENSION_SOURCE_MODE
+      ? await getLightExtensionSettingsDescriptor(ctx.model, { ...params, sourceMode, sourceBinding })
+      : null;
+  const settings = normalizeLightExtensionSourceSettings({
+    currentRunJs,
+    nextSourceMode: sourceMode,
+    nextSourceBinding: sourceBinding,
+    nextSettings: params.settings,
+    descriptor,
   });
-  ctx.model.setStepParams('jsSettings', 'runJs', {
-    ...getJSItemRunJsStepParams(ctx.model),
-    sourceMode,
-    sourceBinding,
-    settings,
-  });
+  setCanonicalLightExtensionSource(ctx.model, 'jsSettings', { sourceMode, sourceBinding, settings });
 }
 
 async function refreshJSItemAfterSettingsSave(ctx: FlowSettingsContext<JSItemRuntimeModel>) {
@@ -453,53 +431,16 @@ async function getLightExtensionSettingsDescriptor(model: JSItemRuntimeModel, pa
   });
 }
 
-function createLightExtensionSettingStep(options: {
-  fieldName: string;
-  fieldSchema: JsonSchemaLike;
-  required: boolean;
-  schemaHash: string;
-  defaultValue: unknown;
-  sort: number;
-}): [string, StepDefinition] {
-  const { fieldName, fieldSchema, required, schemaHash, defaultValue, sort } = options;
-  return createSharedLightExtensionSettingStep<JSItemRuntimeModel>({
-    fieldName,
-    fieldSchema,
-    required,
-    stepKey: getLightExtensionSettingStepKey(fieldName, schemaHash),
-    defaultValue,
-    sort,
-    component: JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
-    syncValue: syncLightExtensionSettingToRunJs,
-    afterParamsSave: refreshJSItemAfterSettingsSave,
-  });
-}
-
 function syncLightExtensionSettingToRunJs(
   ctx: FlowSettingsContext<JSItemRuntimeModel>,
   fieldName: string,
   value: unknown,
 ) {
-  const runJs = getJSItemRunJsStepParams(ctx.model);
-  const topLevelSettings = ctx.model.getStepParams('jsSettings', 'settings');
-  const settings = isRecord(runJs.settings)
-    ? cloneRecord(runJs.settings)
-    : isRecord(topLevelSettings)
-      ? cloneRecord(topLevelSettings)
-      : {};
-  settings[fieldName] = cloneJsonValue(value);
-  ctx.model.setStepParams('jsSettings', {
-    settings,
-  });
-  ctx.model.setStepParams('jsSettings', 'runJs', {
-    ...runJs,
-    settings,
-  });
+  setCanonicalLightExtensionSetting(ctx.model, 'jsSettings', fieldName, value);
 }
 
 function getJSItemRuntimeSettings(params: Record<string, unknown>): RunJSSourceSettings {
-  const legacySettings = isRecord(params.settings) ? params.settings : {};
-  return cloneRecord(legacySettings);
+  return cloneRecord(params.settings);
 }
 
 async function resolveLightExtensionBindingTitle(ctx: { model: JSItemRuntimeModel }, params: Record<string, unknown>) {

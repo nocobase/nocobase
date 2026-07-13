@@ -1709,6 +1709,48 @@ describe('FlowSettings.open rendering behavior', () => {
     expect(capturedDialog.close).toHaveBeenCalled();
   });
 
+  it('lets runtime-only setting steps persist canonical params without storing their own values', async () => {
+    const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
+    const TestFlowModel = createIsolatedFlowModel('test-transient-submit');
+    const model = new TestFlowModel({ uid: 'm-transient-submit', flowEngine: engine });
+
+    TestFlowModel.registerFlow({
+      key: 'settingsFlow',
+      steps: {
+        runtimeSetting: {
+          title: 'Runtime setting',
+          persistParams: false,
+          uiSchema: { value: { type: 'string', 'x-component': 'Input' } },
+          defaultParams: { value: 'saved value' },
+          beforeParamsSave(ctx, params) {
+            ctx.model.setStepParams('settingsFlow', 'canonical', { value: params.value });
+          },
+        },
+      },
+    });
+
+    model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
+    vi.spyOn(model, 'saveStepParams').mockResolvedValue(undefined);
+
+    let capturedDialog: any;
+    model.context.defineProperty('viewer', {
+      value: {
+        dialog: ({ content }) => {
+          capturedDialog = { close: vi.fn(), Footer: () => null };
+          content(capturedDialog, { defineMethod: vi.fn() });
+          return capturedDialog;
+        },
+      },
+    });
+
+    await flowSettings.open({ model, flowKey: 'settingsFlow', stepKey: 'runtimeSetting' } as any);
+    await capturedDialog.submit();
+
+    expect(model.getStepParams('settingsFlow', 'runtimeSetting')).toBeUndefined();
+    expect(model.getStepParams('settingsFlow', 'canonical')).toEqual({ value: 'saved value' });
+  });
+
   it('submit method handles multiple steps correctly', async () => {
     const engine = new FlowEngine();
     const flowSettings = new FlowSettings(engine);

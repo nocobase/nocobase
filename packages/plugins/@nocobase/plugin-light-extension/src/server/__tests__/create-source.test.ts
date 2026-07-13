@@ -70,11 +70,10 @@ describe('plugin-light-extension initial source creation', () => {
       DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES.map((file) => file.path).sort(),
     );
     expect(historyResponse.body.data).toHaveLength(1);
-    expect(entriesResponse.body.data).toHaveLength(5);
+    expect(entriesResponse.body.data).toHaveLength(4);
     expect(entriesResponse.body.data).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ kind: 'js-block', entryName: 'example', healthStatus: 'ready' }),
-        expect.objectContaining({ kind: 'runjs', entryName: 'example', healthStatus: 'ready' }),
       ]),
     );
     expect(entriesResponse.body.data.every((entry) => Boolean(entry.runtimeArtifact?.code))).toBe(true);
@@ -84,6 +83,7 @@ describe('plugin-light-extension initial source creation', () => {
     const zip = new JSZip();
     zip.file('uploaded/README.md', '# Uploaded\n');
     zip.file('uploaded/src/client/js-blocks/example/index.jsx', 'ctx.render(<div>Uploaded</div>);\n');
+    zip.file('uploaded/src/client/js-blocks/example/entry.json', '{"schemaVersion":1,"key":"example"}\n');
     const zipBase64 = await zip.generateAsync({ type: 'base64' });
 
     const createResponse = await app
@@ -113,6 +113,7 @@ describe('plugin-light-extension initial source creation', () => {
     expect(repo).toMatchObject({ healthStatus: 'ready', headCommitId: expect.any(String) });
     expect(pullResponse.body.data.files.map((file) => file.path)).toEqual([
       'README.md',
+      'src/client/js-blocks/example/entry.json',
       'src/client/js-blocks/example/index.jsx',
     ]);
     expect(entriesResponse.body.data).toEqual([
@@ -128,6 +129,7 @@ describe('plugin-light-extension initial source creation', () => {
   it('rolls back repository creation when uploaded source cannot be compiled', async () => {
     const zip = new JSZip();
     zip.file('src/client/js-blocks/broken/index.tsx', "import Missing from './missing';\nctx.render(<Missing />);\n");
+    zip.file('src/client/js-blocks/broken/entry.json', '{"schemaVersion":1,"key":"broken"}\n');
     const zipBase64 = await zip.generateAsync({ type: 'base64' });
     const repoCount = await app.db.getRepository('lightExtensionRepos').count();
     const vscRepoCount = await app.db.getRepository('vscFileRepositories').count();

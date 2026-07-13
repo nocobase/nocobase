@@ -15,6 +15,7 @@ import {
   type RunJSSourceResolverInput,
   type RunJSSourceResolverResult,
 } from '@nocobase/client-v2';
+import { normalizeLightExtensionEntrySelection } from '@nocobase/runjs/settings';
 
 import { LIGHT_EXTENSION_SUPPORTED_KINDS } from '../../constants';
 import type {
@@ -103,9 +104,10 @@ export function createLightExtensionRunJSResolver(api: ApiClientLike): RunJSSour
       }
 
       return {
+        entryId: entry.id,
         schema: entry.settingsSchema,
         defaults: extractSettingsDefaults(entry.settingsSchema),
-        schemaHash: entry.settingsDefaultsHash,
+        settingsSchemaHash: entry.settingsSchemaHash,
       };
     },
     async listSourceMenuItems(input) {
@@ -343,11 +345,17 @@ function createEntryMenuItem(
         ...params,
         sourceMode: 'light-extension',
         sourceBinding: createRuntimeSourceBinding(entry, repoLabel),
-        settings: mergeSettings(
-          extractSettingsDefaults(entry.settingsSchema),
-          isRecord(params.settings) ? params.settings : undefined,
-          entry.settingsSchema,
-        ),
+        settings: normalizeLightExtensionEntrySelection({
+          currentBinding: params.sourceBinding,
+          currentSettings: params.settings,
+          nextBinding: createRuntimeSourceBinding(entry, repoLabel),
+          descriptor: {
+            entryId: entry.id,
+            settingsSchemaHash: entry.settingsSchemaHash,
+            schema: entry.settingsSchema,
+            defaults: extractSettingsDefaults(entry.settingsSchema),
+          },
+        }),
       };
     },
   };
@@ -373,32 +381,6 @@ function getRepoLabel(repo: LightExtensionRepoRecord): string {
   return repo.title || repo.name || repo.id;
 }
 
-function mergeSettings(
-  defaults: Record<string, unknown>,
-  current: Record<string, unknown> | undefined,
-  settingsSchema: Record<string, unknown> | null,
-): Record<string, unknown> {
-  const allowedSettings = getSettingsSchemaPropertyNames(settingsSchema);
-  if (!allowedSettings) {
-    return {
-      ...defaults,
-      ...(current || {}),
-    };
-  }
-
-  return {
-    ...defaults,
-    ...(current ? Object.fromEntries(Object.entries(current).filter(([key]) => allowedSettings.has(key))) : {}),
-  };
-}
-
-function getSettingsSchemaPropertyNames(schema: unknown): Set<string> | null {
-  if (!isRecord(schema) || !isRecord(schema.properties)) {
-    return null;
-  }
-  return new Set(Object.keys(schema.properties));
-}
-
 function getKindLabel(kind: LightExtensionKind | string, t: (key: string) => string): string {
   if (kind === 'js-block') {
     return t('JS Block');
@@ -411,9 +393,6 @@ function getKindLabel(kind: LightExtensionKind | string, t: (key: string) => str
   }
   if (kind === 'js-item') {
     return t('JS Item');
-  }
-  if (kind === 'runjs') {
-    return t('RunJS');
   }
   return String(kind);
 }

@@ -136,51 +136,6 @@ describe('JSBlockLightExtensionSourceField save behavior', () => {
     expect(form.values.code).toBe('ctx.render("keep inline");');
     expect(form.values.version).toBe('v2');
   });
-
-  it('shows the light extension hierarchy and embeds the selected RunJS entry workspace', async () => {
-    const sourceBinding = {
-      type: 'light-extension-entry',
-      repoId: 'repo_sales',
-      repoTitle: 'Sales tools',
-      entryId: 'entry_sales_runjs',
-      entryTitle: 'Calculate total',
-      entryName: 'calculate-total',
-      entryPath: 'src/client/runjs/calculate-total/index.ts',
-      kind: 'runjs',
-    };
-    mocks.request.mockImplementation((options: { url: string }) => {
-      if (options.url === 'lightExtensionEntries:listSelectable') {
-        return Promise.resolve({
-          data: {
-            data: [createSelectableRunJSEntry()],
-          },
-        });
-      }
-      return Promise.reject(new Error(`Unexpected request: ${options.url}`));
-    });
-    const form = createForm({
-      initialValues: {
-        sourceMode: 'light-extension',
-        sourceBinding,
-        settings: {},
-        code: '',
-        version: 'v2',
-      },
-    });
-
-    renderSourceBindingField(form, { kind: 'runjs', showEntryWorkspace: true });
-
-    expect(await screen.findByText('Light extension / Sales tools / Calculate total')).toBeTruthy();
-    const workspace = await screen.findByTestId('entry-workspace');
-    expect(workspace.getAttribute('data-repo-id')).toBe('repo_sales');
-    expect(workspace.getAttribute('data-initial-path')).toBe('src/client/runjs/calculate-total/index.ts');
-    expect(JSON.parse(workspace.getAttribute('data-workspace-scope') || '{}')).toEqual({
-      mode: 'entry',
-      entryPath: 'src/client/runjs/calculate-total/index.ts',
-      kind: 'runjs',
-    });
-    expect(screen.queryByText('No settings')).toBeNull();
-  });
 });
 
 function renderSourceField(form: ReturnType<typeof createForm>) {
@@ -254,8 +209,7 @@ function createSelectableEntry() {
     kind: 'js-block',
     entryName: 'sales',
     entryPath: 'src/client/js-blocks/sales/index.tsx',
-    metaPath: null,
-    settingsPath: null,
+    descriptorPath: 'src/client/js-blocks/sales/entry.json',
     title: 'Sales',
     description: null,
     category: null,
@@ -271,6 +225,7 @@ function createSelectableEntry() {
         },
       },
     },
+    settingsSchemaHash: 'schema_hash',
     compiledCommitId: 'commit_sales',
     runtimeAvailable: true,
     runtimeVersion: 'v2',
@@ -281,18 +236,5 @@ function createSelectableEntry() {
     compiledAt: '2026-07-09T00:00:00.000Z',
     healthStatus: 'ready',
     diagnostics: [],
-  };
-}
-
-function createSelectableRunJSEntry() {
-  return {
-    ...createSelectableEntry(),
-    id: 'entry_sales_runjs',
-    kind: 'runjs',
-    entryName: 'calculate-total',
-    entryPath: 'src/client/runjs/calculate-total/index.ts',
-    title: 'Calculate total',
-    settingsSchema: null,
-    surfaceStyle: 'value',
   };
 }

@@ -16,6 +16,7 @@ describe('plugin-light-extension source ZIP archive', () => {
   it('reads a normal source ZIP', async () => {
     const zipBase64 = await createZipBase64({
       'README.md': '# Imported\n',
+      'src/client/js-blocks/example/entry.json': '{"schemaVersion":1,"key":"example"}\n',
       'src/client/js-blocks/example/index.jsx': 'ctx.render(<div>Imported</div>);\n',
     });
 
@@ -24,6 +25,7 @@ describe('plugin-light-extension source ZIP archive', () => {
     expect(files).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ path: 'README.md', content: '# Imported\n' }),
+        expect.objectContaining({ path: 'src/client/js-blocks/example/entry.json' }),
         expect.objectContaining({
           path: 'src/client/js-blocks/example/index.jsx',
           content: 'ctx.render(<div>Imported</div>);\n',
@@ -35,14 +37,19 @@ describe('plugin-light-extension source ZIP archive', () => {
   it('strips one shared top-level directory and ignores macOS metadata', async () => {
     const zipBase64 = await createZipBase64({
       'example-source/README.md': '# Wrapped\n',
-      'example-source/src/client/runjs/example/index.js': 'export default async function run() { return true; }\n',
+      'example-source/src/client/js-blocks/example/entry.json': '{"schemaVersion":1,"key":"example"}\n',
+      'example-source/src/client/js-blocks/example/index.js': 'ctx.render("example");\n',
       'example-source/.DS_Store': 'metadata',
       '__MACOSX/example-source/._README.md': 'metadata',
     });
 
     const files = await parseLightExtensionSourceArchive(zipBase64, new LightExtensionValidator());
 
-    expect(files.map((file) => file.path)).toEqual(['README.md', 'src/client/runjs/example/index.js']);
+    expect(files.map((file) => file.path)).toEqual([
+      'README.md',
+      'src/client/js-blocks/example/entry.json',
+      'src/client/js-blocks/example/index.js',
+    ]);
   });
 
   it('rejects path traversal and case-insensitive duplicate paths', async () => {
@@ -70,7 +77,7 @@ describe('plugin-light-extension source ZIP archive', () => {
 
   it('rejects compressed, uncompressed, and per-file budget overruns before accepting source', async () => {
     const zipBase64 = await createZipBase64({
-      'src/client/runjs/example/index.js': `export default ${JSON.stringify('a'.repeat(1024))};\n`,
+      'src/client/js-blocks/example/index.js': `export default ${JSON.stringify('a'.repeat(1024))};\n`,
     });
 
     await expect(

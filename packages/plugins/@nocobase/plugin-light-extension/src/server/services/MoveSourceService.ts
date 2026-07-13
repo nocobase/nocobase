@@ -52,7 +52,6 @@ const ENTRY_ROOTS: Record<LightExtensionKind, string> = {
   'js-field': 'src/client/js-fields',
   'js-action': 'src/client/js-actions',
   'js-item': 'src/client/js-items',
-  runjs: 'src/client/runjs',
 };
 
 export interface MoveSourceServiceContext extends LightExtensionServiceContext {
@@ -228,6 +227,7 @@ export class MoveSourceService {
     const saved = await this.runtimeCompileService.saveSource(
       {
         repoId,
+        expectedHeadCommitId: current.commit?.id || null,
         message: commitMessage,
         files: entryFiles,
       },
@@ -282,11 +282,14 @@ export function relocateRunJSWorkspace(input: {
   }
 
   const sourceBasePath = pathPosix.dirname(normalizedEntryPath);
+  const relocatableFiles = sourceFiles.filter(
+    (file) => file.path !== `${sourceBasePath}/meta.json` && file.path !== `${sourceBasePath}/settings.json`,
+  );
   const entryRoot = getEntryRoot(input.kind, input.entryName);
   const targetBySource = new Map<string, string>();
   const targetPaths = new Set<string>();
 
-  for (const file of sourceFiles) {
+  for (const file of relocatableFiles) {
     const targetPath =
       file.path === normalizedEntryPath
         ? `${entryRoot}/index${entryExtension}`
@@ -300,7 +303,7 @@ export function relocateRunJSWorkspace(input: {
     targetBySource.set(file.path, targetPath);
   }
 
-  const relocated = sourceFiles.map<LightExtensionFileChange>((file) => {
+  const relocated = relocatableFiles.map<LightExtensionFileChange>((file) => {
     const targetPath = targetBySource.get(file.path);
     if (!targetPath) {
       throw new LightExtensionError('LIGHT_EXTENSION_SOURCE_ERROR', 'RunJS workspace relocation failed');
@@ -314,7 +317,7 @@ export function relocateRunJSWorkspace(input: {
     };
   });
 
-  upsertEntryMeta(relocated, entryRoot, input.entryName, input.entryTitle?.trim() || null);
+  upsertEntryDescriptor(relocated, entryRoot, input.entryName, input.entryTitle?.trim() || null);
 
   return relocated;
 }
@@ -407,9 +410,6 @@ function normalizeWorkspacePath(value: string): string {
 }
 
 function resolveLightExtensionKind(locator: RunJSSourceLocator, legacy: RunJSLegacySource): LightExtensionKind {
-  if (locator.kind === 'flowModel.nestedRunJS') {
-    return 'runjs';
-  }
   if (locator.kind !== 'flowModel.step') {
     throw unsupportedLocator(locator);
   }
@@ -496,37 +496,28 @@ function toInitialTreeEntry(file: LightExtensionFileChange) {
   return entry;
 }
 
-function upsertEntryMeta(
+function upsertEntryDescriptor(
   files: LightExtensionFileChange[],
   entryRoot: string,
   key: string,
   title: string | null,
 ): void {
-  const metaPath = `${entryRoot}/meta.json`;
-  const existing = files.find((file) => file.path === metaPath);
+  const descriptorPath = `${entryRoot}/entry.json`;
+  const existing = files.find((file) => file.path === descriptorPath);
+  const content = `${JSON.stringify({ schemaVersion: 1, key, ...(title ? { title } : {}) }, null, 2)}\n`;
   if (!existing) {
     files.push({
-      path: metaPath,
-      content: `${JSON.stringify({ key, ...(title ? { title } : {}) }, null, 2)}\n`,
+      path: descriptorPath,
+      content,
       language: 'json',
       operation: 'upsert',
     });
     return;
   }
 
-  let meta: Record<string, unknown> = {};
-  try {
-    const parsed = JSON.parse(existing.content || '{}');
-    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-      meta = parsed as Record<string, unknown>;
-    }
-  } catch {
-    throw new LightExtensionError('LIGHT_EXTENSION_INVALID_INPUT', 'RunJS workspace meta.json is invalid', {
-      details: { path: metaPath },
-    });
-  }
-  existing.content = `${JSON.stringify({ ...meta, key, ...(title ? { title } : {}) }, null, 2)}\n`;
+  existing.content = content;
   existing.language = 'json';
+  existing.operation = 'upsert';
 }
 
 function supportsExternalBinding(adapter: RunJSSourceAdapter): adapter is ExternalBindingAdapter {

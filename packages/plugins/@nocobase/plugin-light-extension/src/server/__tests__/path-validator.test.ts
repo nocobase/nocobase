@@ -18,8 +18,8 @@ describe('plugin-light-extension path validator', () => {
           content: 'export default function SalesKpi() { return null; }\n',
         },
         {
-          path: 'src/client/js-blocks/sales-kpi/settings.json',
-          content: '{"type":"object","properties":{}}',
+          path: 'src/client/js-blocks/sales-kpi/entry.json',
+          content: '{"schemaVersion":1,"key":"sales-kpi","settingsSchema":{"type":"object","properties":{}}}',
         },
         {
           path: 'README.md',
@@ -59,6 +59,7 @@ describe('plugin-light-extension path validator', () => {
           path: 'src/client/js-blocks/sales-kpi/index.tsx',
           content: 'import { formatValue } from "../../../shared/format";\nctx.render(formatValue("ok"));\n',
         },
+        entryDescriptor(),
       ],
     });
 
@@ -79,6 +80,7 @@ describe('plugin-light-extension path validator', () => {
           path: 'src/client/js-blocks/sales-kpi/index.tsx',
           content: 'export default function SalesKpiTsx() { return null; }\n',
         },
+        entryDescriptor(),
       ],
     });
     const second = validator.validateWorkspace({
@@ -91,6 +93,7 @@ describe('plugin-light-extension path validator', () => {
           path: 'src/client/js-blocks/sales-kpi/index.js',
           content: 'export default function SalesKpiJs() { return null; }\n',
         },
+        entryDescriptor(),
       ],
     });
 
@@ -188,7 +191,7 @@ describe('plugin-light-extension path validator', () => {
           path: 'src/shared/style.css',
         }),
         expect.objectContaining({
-          code: 'path_not_allowed',
+          code: 'workspace_path_not_allowed',
           path: 'src/shared',
         }),
         expect.objectContaining({
@@ -199,3 +202,10 @@ describe('plugin-light-extension path validator', () => {
     );
   });
 });
+
+function entryDescriptor() {
+  return {
+    path: 'src/client/js-blocks/sales-kpi/entry.json',
+    content: '{"schemaVersion":1,"key":"sales-kpi"}',
+  };
+}

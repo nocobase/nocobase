@@ -39,8 +39,7 @@ const entry: LightExtensionEntryRecord = {
   kind: 'js-block',
   entryName: 'sales-kpi',
   entryPath: 'src/client/js-blocks/sales-kpi/index.ts',
-  metaPath: null,
-  settingsPath: null,
+  descriptorPath: 'src/client/js-blocks/sales-kpi/entry.json',
   title: 'Sales KPI',
   description: null,
   category: null,
@@ -48,13 +47,14 @@ const entry: LightExtensionEntryRecord = {
   tags: null,
   sort: null,
   settingsSchema: null,
+  settingsSchemaHash: null,
   compiledCommitId: 'commit_2',
   runtimeArtifact: { code: 'return 1;', version: 'v2', entryPath: 'src/client/js-blocks/sales-kpi/index.ts' },
   runtimeVersion: 'v2',
   surfaceStyle: 'render',
   runtimeCodeHash: 'runtime_hash',
   filesHash: 'files_hash',
-  settingsDefaultsHash: 'settings_hash',
+  settingsDefaultsHash: null,
   compiledAt: '2026-07-11T00:00:00.000Z',
   healthStatus: 'ready',
   diagnostics: [],
@@ -90,30 +90,48 @@ describe('MoveSourceService', () => {
 
     expect(files.map((file) => file.path).sort()).toEqual([
       'src/client/js-blocks/sales-kpi/__workspace/shared/value.ts',
+      'src/client/js-blocks/sales-kpi/entry.json',
       'src/client/js-blocks/sales-kpi/helper.ts',
       'src/client/js-blocks/sales-kpi/index.ts',
-      'src/client/js-blocks/sales-kpi/meta.json',
     ]);
     expect(files.find((file) => file.path.endsWith('/index.ts'))?.content).toContain(
       "from './__workspace/shared/value'",
     );
-    expect(JSON.parse(files.find((file) => file.path.endsWith('/meta.json'))?.content || '{}')).toEqual({
+    expect(JSON.parse(files.find((file) => file.path.endsWith('/entry.json'))?.content || '{}')).toEqual({
+      schemaVersion: 1,
       key: 'sales-kpi',
       title: 'Sales KPI',
     });
     expect(files.some((file) => file.path.includes('.nocobase'))).toBe(false);
   });
 
-  it('always generates a stable entry key when no title is provided', () => {
+  it.each([
+    ['js-block', 'src/client/js-blocks'],
+    ['js-field', 'src/client/js-fields'],
+    ['js-action', 'src/client/js-actions'],
+    ['js-item', 'src/client/js-items'],
+  ] as const)('generates only a minimal entry.json descriptor for %s', (kind, root) => {
     const files = relocateRunJSWorkspace({
-      kind: 'runjs',
+      kind,
       entryName: 'normalize-order',
+      entryTitle: 'Normalize order',
       entryPath: 'src/main.ts',
-      files: [{ path: 'src/main.ts', content: 'return input;' }],
+      files: [
+        { path: 'src/main.ts', content: 'return input;' },
+        { path: 'src/entry.json', content: JSON.stringify({ settingsSchema: { type: 'object' }, unknown: true }) },
+        { path: 'src/meta.json', content: '{"key":"legacy"}' },
+        { path: 'src/settings.json', content: '{"type":"object"}' },
+      ],
     });
 
-    expect(JSON.parse(files.find((file) => file.path.endsWith('/meta.json'))?.content || '{}')).toEqual({
+    expect(files.map((file) => file.path).sort()).toEqual([
+      `${root}/normalize-order/entry.json`,
+      `${root}/normalize-order/index.ts`,
+    ]);
+    expect(JSON.parse(files.find((file) => file.path.endsWith('/entry.json'))?.content || '{}')).toEqual({
+      schemaVersion: 1,
       key: 'normalize-order',
+      title: 'Normalize order',
     });
   });
 
@@ -150,7 +168,13 @@ describe('MoveSourceService', () => {
         lockInternalRepoForUpdate: vi.fn(async () => ({ ...repo, vscRepoId: 'vsc_repo' })),
       } as never,
       {
-        pull: vi.fn(async () => ({ repo, commit: null, tree: null, unchanged: false, files: [] })),
+        pull: vi.fn(async () => ({
+          repo,
+          commit: { id: 'commit_2' },
+          tree: null,
+          unchanged: false,
+          files: [],
+        })),
       } as never,
       { listEntries } as never,
       { saveSource } as never,
@@ -180,6 +204,7 @@ describe('MoveSourceService', () => {
     expect(saveSource).toHaveBeenCalledWith(
       expect.objectContaining({
         repoId: repo.id,
+        expectedHeadCommitId: 'commit_2',
         files: expect.arrayContaining([expect.objectContaining({ path: 'src/client/js-blocks/sales-kpi/index.ts' })]),
       }),
       expect.objectContaining({ transaction }),

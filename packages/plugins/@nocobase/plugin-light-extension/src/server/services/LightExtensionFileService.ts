@@ -139,6 +139,7 @@ export class LightExtensionFileService {
       return await this.withTransaction(ctx.transaction, async (transaction) => {
         const repo = await this.repoService.lockInternalRepoForUpdate(input.repoId, { ...ctx, transaction });
         assertRepoNotArchived(repo, 'write source');
+        assertExpectedHead(input.expectedHeadCommitId, repo.headCommitId, repo.id);
         const current = await this.pullInternal(
           repo,
           {
@@ -476,6 +477,24 @@ function assertRepoNotArchived(repo: LightExtensionRepoInternalRecord, actionLab
       details: {
         repoId: repo.id,
         lifecycleStatus: repo.lifecycleStatus,
+      },
+    },
+  );
+}
+
+function assertExpectedHead(expectedHeadCommitId: string | null, currentHeadCommitId: string | null, repoId: string) {
+  if (expectedHeadCommitId === currentHeadCommitId) {
+    return;
+  }
+
+  throw new LightExtensionError(
+    'LIGHT_EXTENSION_SOURCE_OUTDATED',
+    'Light extension source changed after the workspace was opened',
+    {
+      details: {
+        repoId,
+        expectedHeadCommitId,
+        currentHeadCommitId,
       },
     },
   );

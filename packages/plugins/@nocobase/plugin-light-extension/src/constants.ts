@@ -7,6 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import {
+  LIGHT_EXTENSION_ENTRY_KEY_PATTERN as LIGHT_EXTENSION_ENTRY_KEY_PATTERN_SOURCE,
+  LIGHT_EXTENSION_ENTRY_SCHEMA_URI,
+  LIGHT_EXTENSION_ENTRY_SCHEMA_VERSION,
+} from '@nocobase/light-extension-sdk/schema';
+
 export const NAMESPACE = '@nocobase/plugin-light-extension';
 export const LIGHT_EXTENSION_RUNTIME_ARTIFACT_CONTRACT = 'light-extension.runtime-artifact.v1';
 export const LIGHT_EXTENSION_SETTINGS_KEY = 'light-extension';
@@ -14,8 +20,12 @@ export const LIGHT_EXTENSION_ACL_SNIPPET = 'pm.light-extension';
 
 export const LIGHT_EXTENSION_OWNER_TYPE = 'light-extension';
 
-export const LIGHT_EXTENSION_SUPPORTED_KINDS = ['js-block', 'js-field', 'js-action', 'js-item', 'runjs'] as const;
-export const LIGHT_EXTENSION_ENTRY_KEY_PATTERN = /^[a-z0-9][a-z0-9-]{0,62}$/;
+export const LIGHT_EXTENSION_SUPPORTED_KINDS = ['js-block', 'js-field', 'js-action', 'js-item'] as const;
+export const LIGHT_EXTENSION_ENTRY_KEY_PATTERN = new RegExp(LIGHT_EXTENSION_ENTRY_KEY_PATTERN_SOURCE);
+export { LIGHT_EXTENSION_ENTRY_SCHEMA_VERSION };
+export const LIGHT_EXTENSION_ENTRY_SCHEMA_URL = LIGHT_EXTENSION_ENTRY_SCHEMA_URI;
+export const LIGHT_EXTENSION_ENTRY_DESCRIPTOR_FILE = 'entry.json';
+export const LIGHT_EXTENSION_ENTRY_DESCRIPTOR_MAX_BYTES = 128 * 1024;
 
 export const LIGHT_EXTENSION_ACL_ACTIONS = [
   'list',

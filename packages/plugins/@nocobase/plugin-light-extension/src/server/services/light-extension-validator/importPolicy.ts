@@ -8,10 +8,14 @@
  */
 
 import { posix as pathPosix } from 'path';
+import { parseSettingsTypeImport } from '@nocobase/light-extension-sdk/typegen';
 import ts from 'typescript';
 
-import { LIGHT_EXTENSION_SUPPORTED_KINDS, type LightExtensionKind } from '../../../constants';
-import { isAmbiguousSettingsTypeImport, isNamespacedSettingsTypeImport } from '../../../sdk/settings-typegen';
+import {
+  LIGHT_EXTENSION_ENTRY_DESCRIPTOR_FILE,
+  LIGHT_EXTENSION_SUPPORTED_KINDS,
+  type LightExtensionKind,
+} from '../../../constants';
 import type { LightExtensionDiagnostic } from '../../../shared/types';
 import { diagnosticAt } from './diagnostics';
 import type { DiagnosticTarget } from './types';
@@ -186,20 +190,8 @@ export function validateSettingsTypeSpecifier(
   specifier: string,
   target: Omit<DiagnosticTarget, 'path'>,
 ): LightExtensionDiagnostic[] {
-  if (isNamespacedSettingsTypeImport(specifier)) {
+  if (parseSettingsTypeImport(specifier)) {
     return [];
-  }
-  if (isAmbiguousSettingsTypeImport(specifier)) {
-    return [
-      diagnosticAt(
-        sourceFile,
-        position,
-        'settings_type_import_ambiguous',
-        'error',
-        'Settings type import must include target and kind, for example light-extension:settings/client/js-block/product-list',
-        target,
-      ),
-    ];
   }
 
   return [
@@ -235,6 +227,15 @@ export function isRelativeImportOutsideCurrentEntry(
 export function isRelativeImportOutsideSharedRoot(filePath: string, specifier: string): boolean {
   const resolvedPath = normalizeSourcePath(pathPosix.join(pathPosix.dirname(filePath), specifier));
   return resolvedPath !== sharedSourceRoot && !resolvedPath.startsWith(`${sharedSourceRoot}/`);
+}
+
+export function isEntryDescriptorImport(filePath: string, specifier: string): boolean {
+  if (!specifier.startsWith('.')) {
+    return false;
+  }
+
+  const resolvedPath = normalizeSourcePath(pathPosix.join(pathPosix.dirname(filePath), specifier));
+  return pathPosix.basename(resolvedPath) === LIGHT_EXTENSION_ENTRY_DESCRIPTOR_FILE;
 }
 
 export function scriptKind(path: string): ts.ScriptKind {

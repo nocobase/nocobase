@@ -25,19 +25,17 @@ import { RunJSEditorField } from '../../../components/runjs-studio';
 import {
   resolveRuntimeRunJS,
   createRunJSSourceCascadeMenuUIMode,
-  getDescriptorSchemaHash,
-  getSchemaTitle,
-  getSettingsSchemaProperties,
-  getSettingsSchemaRequired,
-  isSettingValueValid,
-  normalizeSchemaType,
-  RunJSSourceResolverRegistry,
-  type JsonSchemaLike,
-  type RunJSSourceBinding,
   type RunJSSourceSettings,
-  type RunJSSourceSettingsDescriptor,
 } from '../../../components/runjs-source';
 import { JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD } from './JSBlockSourceModeField';
+import {
+  createLightExtensionSettingSteps,
+  getLightExtensionSettingsDescriptor as getSharedLightExtensionSettingsDescriptor,
+  normalizeLightExtensionSourceSettings,
+  resolveLightExtensionBindingTitle as resolveSharedLightExtensionBindingTitle,
+  setCanonicalLightExtensionSetting,
+  setCanonicalLightExtensionSource,
+} from '../../utils/runjsSourceRuntimeCommon';
 
 const NAMESPACE = 'client';
 const INLINE_SOURCE_MODE = 'inline';
@@ -134,46 +132,6 @@ function cloneJsonValue<T>(value: T): T {
   } catch {
     return value;
   }
-}
-
-function stableSerialize(value: unknown): string {
-  if (Array.isArray(value)) {
-    return `[${value.map((item) => stableSerialize(item)).join(',')}]`;
-  }
-  if (isRecord(value)) {
-    return `{${Object.keys(value)
-      .sort()
-      .map((key) => `${JSON.stringify(key)}:${stableSerialize(value[key])}`)
-      .join(',')}}`;
-  }
-
-  const serialized = JSON.stringify(value);
-  return typeof serialized === 'undefined' ? 'undefined' : serialized;
-}
-
-function shortHash(input: string): string {
-  let hash = 0x811c9dc5;
-  for (let index = 0; index < input.length; index++) {
-    hash ^= input.charCodeAt(index);
-    hash = Math.imul(hash, 0x01000193);
-  }
-  return (hash >>> 0).toString(36).padStart(6, '0').slice(0, 8);
-}
-
-function sanitizeSettingFieldName(fieldName: string): string {
-  const sanitized = fieldName
-    .replace(/[^a-zA-Z0-9_]/g, '_')
-    .replace(/_+/g, '_')
-    .replace(/^_+|_+$/g, '');
-  return (sanitized || 'field').slice(0, 48);
-}
-
-function getLightExtensionSettingStepKey(fieldName: string, schemaHash: string): string {
-  return `leSetting__${sanitizeSettingFieldName(fieldName)}__${shortHash(`${fieldName}:${schemaHash}`)}`;
-}
-
-function cloneRecord(value: unknown): Record<string, unknown> {
-  return isRecord(value) ? cloneJsonValue(value) : {};
 }
 
 function toNonEmptyString(value: unknown): string | undefined {
@@ -578,103 +536,13 @@ function getRunJsStepParams(model: JSBlockModel): Record<string, unknown> {
   return isRecord(params) ? { ...params } : {};
 }
 
-async function getLightExtensionSettingsDescriptor(
-  model: JSBlockModel,
-  params: Record<string, unknown>,
-): Promise<RunJSSourceSettingsDescriptor | null> {
-  if (
-    normalizeJSBlockSourceMode(params.sourceMode) !== LIGHT_EXTENSION_SOURCE_MODE ||
-    !isRecord(params.sourceBinding)
-  ) {
-    return null;
-  }
-
-  const resolver = RunJSSourceResolverRegistry.getResolver(LIGHT_EXTENSION_SOURCE_MODE);
-  if (typeof resolver?.getSettingsDescriptor !== 'function') {
-    return null;
-  }
-
-  const descriptor = await resolver.getSettingsDescriptor({
-    sourceMode: LIGHT_EXTENSION_SOURCE_MODE,
-    sourceBinding: params.sourceBinding as RunJSSourceBinding,
-    settings: isRecord(params.settings) ? (params.settings as RunJSSourceSettings) : undefined,
-    context: {
-      modelUid: model.uid,
-    },
+async function getLightExtensionSettingsDescriptor(model: JSBlockModel, params: Record<string, unknown>) {
+  return getSharedLightExtensionSettingsDescriptor({
+    modelUid: model.uid,
+    ownerKind: 'flowModel.blockSettings',
+    ownerLocator: { modelUid: model.uid },
+    params,
   });
-
-  if (!descriptor || !isRecord(descriptor)) {
-    return null;
-  }
-
-  return descriptor;
-}
-
-function getLightExtensionSettingDefaultValue(
-  fieldName: string,
-  fieldSchema: JsonSchemaLike,
-  descriptorDefaults: Record<string, unknown>,
-  legacySettings: Record<string, unknown>,
-): unknown {
-  if (Object.prototype.hasOwnProperty.call(legacySettings, fieldName)) {
-    return cloneJsonValue(legacySettings[fieldName]);
-  }
-  if (Object.prototype.hasOwnProperty.call(descriptorDefaults, fieldName)) {
-    return cloneJsonValue(descriptorDefaults[fieldName]);
-  }
-  if (Object.prototype.hasOwnProperty.call(fieldSchema, 'default')) {
-    return cloneJsonValue(fieldSchema.default);
-  }
-  return undefined;
-}
-
-function createLightExtensionSettingStep(options: {
-  fieldName: string;
-  fieldSchema: JsonSchemaLike;
-  required: boolean;
-  schemaHash: string;
-  defaultValue: unknown;
-  sort: number;
-}): [string, StepDefinition] {
-  const { fieldName, fieldSchema, required, schemaHash, defaultValue, sort } = options;
-  const stepKey = getLightExtensionSettingStepKey(fieldName, schemaHash);
-  const title = getSchemaTitle(fieldSchema, fieldName);
-  const fieldType = normalizeSchemaType(fieldSchema);
-
-  return [
-    stepKey,
-    {
-      key: stepKey,
-      title,
-      sort,
-      uiSchema: {
-        value: {
-          type: fieldType || 'string',
-          title,
-          'x-decorator': 'FormItem',
-          'x-component': JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
-          'x-component-props': {
-            fieldName,
-            fieldSchema,
-            required,
-          },
-        },
-      },
-      defaultParams() {
-        return {
-          value: cloneJsonValue(defaultValue),
-        };
-      },
-      beforeParamsSave(ctx: FlowSettingsContext<JSBlockModel>, params: Record<string, unknown>) {
-        if (isSettingValueValid(fieldSchema, params?.value, required)) {
-          return;
-        }
-        ctx.model.context?.message?.error?.(ctx.model.context.t('Settings validation failed'));
-        throw new FlowCancelSaveException('Light extension settings validation failed.');
-      },
-      afterParamsSave: refreshJSBlockAfterSettingsSave,
-    },
-  ];
 }
 
 async function getLightExtensionRuntimeSettingSteps(
@@ -682,64 +550,20 @@ async function getLightExtensionRuntimeSettingSteps(
 ): Promise<Record<string, StepDefinition> | undefined> {
   const params = getRunJsStepParams(model);
   const descriptor = await getLightExtensionSettingsDescriptor(model, params);
-  if (!descriptor?.schema) {
+  if (!descriptor) {
     return undefined;
   }
-
-  const properties = getSettingsSchemaProperties(descriptor.schema);
-  if (Object.keys(properties).length === 0) {
-    return undefined;
-  }
-
-  const requiredFields = getSettingsSchemaRequired(descriptor.schema);
-  const schemaHash = getDescriptorSchemaHash(descriptor);
-  const descriptorDefaults = cloneRecord(descriptor.defaults);
-  const legacySettings = isRecord(params.settings) ? params.settings : {};
-
-  return Object.fromEntries(
-    Object.entries(properties).map(([fieldName, fieldSchema], index) =>
-      createLightExtensionSettingStep({
-        fieldName,
-        fieldSchema,
-        required: requiredFields.has(fieldName),
-        schemaHash,
-        defaultValue: getLightExtensionSettingDefaultValue(fieldName, fieldSchema, descriptorDefaults, legacySettings),
-        sort: 700 + index,
-      }),
-    ),
-  );
+  return createLightExtensionSettingSteps<JSBlockModel>({
+    descriptor,
+    settings: isRecord(params.settings) ? params.settings : {},
+    component: JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+    syncValue: (ctx, fieldName, value) => setCanonicalLightExtensionSetting(ctx.model, 'jsSettings', fieldName, value),
+    afterParamsSave: refreshJSBlockAfterSettingsSave,
+  });
 }
 
-async function resolveLightExtensionRuntimeSettings(
-  model: JSBlockModel,
-  params: Record<string, unknown>,
-): Promise<RunJSSourceSettings> {
-  const legacySettings = isRecord(params.settings) ? params.settings : {};
-  if (normalizeJSBlockSourceMode(params.sourceMode) !== LIGHT_EXTENSION_SOURCE_MODE) {
-    return cloneRecord(legacySettings);
-  }
-
-  const descriptor = await getLightExtensionSettingsDescriptor(model, params);
-  if (!descriptor?.schema) {
-    return cloneRecord(legacySettings);
-  }
-
-  const properties = getSettingsSchemaProperties(descriptor.schema);
-  const schemaHash = getDescriptorSchemaHash(descriptor);
-  const resolvedSettings: Record<string, unknown> = {
-    ...cloneRecord(descriptor.defaults),
-    ...cloneRecord(legacySettings),
-  };
-
-  for (const fieldName of Object.keys(properties)) {
-    const stepKey = getLightExtensionSettingStepKey(fieldName, schemaHash);
-    const paramsForStep = model.getStepParams('jsSettings', stepKey);
-    if (isRecord(paramsForStep) && Object.prototype.hasOwnProperty.call(paramsForStep, 'value')) {
-      resolvedSettings[fieldName] = cloneJsonValue(paramsForStep.value);
-    }
-  }
-
-  return resolvedSettings;
+function resolveLightExtensionRuntimeSettings(params: Record<string, unknown>): RunJSSourceSettings {
+  return isRecord(params.settings) ? cloneJsonValue(params.settings) : {};
 }
 
 function getLightExtensionStoredBindingTitle(binding: unknown): string | undefined {
@@ -765,29 +589,12 @@ function getLightExtensionFallbackBindingTitle(binding: unknown): string | undef
 }
 
 async function resolveLightExtensionBindingTitle(ctx: { model: JSBlockModel }, params: Record<string, unknown>) {
-  if (!isRecord(params.sourceBinding)) {
-    return undefined;
-  }
-
-  const resolver = RunJSSourceResolverRegistry.getResolver(LIGHT_EXTENSION_SOURCE_MODE);
-  if (typeof resolver?.getBindingTitle !== 'function') {
-    return undefined;
-  }
-
-  try {
-    const title = await resolver.getBindingTitle({
-      sourceMode: LIGHT_EXTENSION_SOURCE_MODE,
-      sourceBinding: params.sourceBinding as RunJSSourceBinding,
-      settings: isRecord(params.settings) ? (params.settings as RunJSSourceSettings) : undefined,
-      context: {
-        modelUid: ctx.model.uid,
-      },
-    });
-    return toNonEmptyString(title);
-  } catch (error) {
-    console.warn('[NocoBase] Failed to resolve RunJS source binding title:', error);
-    return undefined;
-  }
+  return resolveSharedLightExtensionBindingTitle({
+    modelUid: ctx.model.uid,
+    ownerKind: 'flowModel.blockSettings',
+    ownerLocator: { modelUid: ctx.model.uid },
+    params,
+  });
 }
 
 async function getRunJsEditorTitle(ctx: { model: JSBlockModel }): Promise<string> {
@@ -816,20 +623,26 @@ function getSourceModeDefaultParams(ctx: FlowSettingsContext<JSBlockModel>): JSB
   };
 }
 
-function syncSourceModeToRunJs(ctx: FlowSettingsContext<JSBlockModel>, params: JSBlockSourceModeParams) {
+async function syncSourceModeToRunJs(ctx: FlowSettingsContext<JSBlockModel>, params: JSBlockSourceModeParams) {
   const sourceMode = normalizeJSBlockSourceMode(params?.sourceMode);
   const sourceBinding = isRecord(params?.sourceBinding) ? cloneJsonValue(params.sourceBinding) : undefined;
   if (sourceMode === LIGHT_EXTENSION_SOURCE_MODE && !sourceBinding) {
     ctx.model.context?.message?.error?.(ctx.model.context.t('Select a light extension entry'));
     throw new FlowCancelSaveException('Light extension source binding is required.');
   }
-  const settings = isRecord(params?.settings) ? cloneJsonValue(params.settings) : {};
-  ctx.model.setStepParams('jsSettings', 'runJs', {
-    ...getRunJsStepParams(ctx.model),
-    sourceMode,
-    sourceBinding,
-    settings,
+  const currentRunJs = getRunJsStepParams(ctx.model);
+  const descriptor =
+    sourceMode === LIGHT_EXTENSION_SOURCE_MODE
+      ? await getLightExtensionSettingsDescriptor(ctx.model, { ...params, sourceMode, sourceBinding })
+      : null;
+  const settings = normalizeLightExtensionSourceSettings({
+    currentRunJs,
+    nextSourceMode: sourceMode,
+    nextSourceBinding: sourceBinding,
+    nextSettings: params.settings,
+    descriptor,
   });
+  setCanonicalLightExtensionSource(ctx.model, 'jsSettings', { sourceMode, sourceBinding, settings });
 }
 
 async function refreshJSBlockAfterSettingsSave(ctx: FlowSettingsContext<JSBlockModel>) {
@@ -857,6 +670,7 @@ JSBlockModel.registerFlow({
     },
     sourceMode: {
       title: tExpr('Code source'),
+      persistParams: false,
       uiMode: createRunJSSourceCascadeMenuUIMode({
         kind: 'js-block',
       }),
@@ -1004,7 +818,7 @@ ctx.render(\`
                 },
               },
             });
-            const runtimeSettings = await resolveLightExtensionRuntimeSettings(model, params || {});
+            const runtimeSettings = resolveLightExtensionRuntimeSettings(params || {});
             const resolved = await resolveRuntimeRunJS({
               runJs: inlineRunJs,
               sourceMode: params?.sourceMode,

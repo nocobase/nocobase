@@ -33,14 +33,15 @@ export interface EntryBucket {
   files: NormalizedSourceFile[];
 }
 
-export interface ParsedMeta {
-  key: string | null;
+export interface ParsedEntryDescriptor {
+  key: string;
   title: string | null;
   description: string | null;
   category: string | null;
   icon: string | null;
   tags: string[] | null;
   sort: number | null;
+  settingsSchema: Record<string, unknown> | null;
 }
 
 export type DiagnosticTarget = Pick<LightExtensionDiagnostic, 'path' | 'kind' | 'entryName'>;

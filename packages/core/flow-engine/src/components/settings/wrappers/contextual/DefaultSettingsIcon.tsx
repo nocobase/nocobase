@@ -633,7 +633,9 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
       previousParams: ParamObject;
     }) => {
       const { targetModel, flowKey, stepKey, step, params, previousParams } = input;
-      targetModel.setStepParams(flowKey, stepKey, params);
+      if (step.persistParams !== false) {
+        targetModel.setStepParams(flowKey, stepKey, params);
+      }
       if (typeof step.beforeParamsSave === 'function') {
         await step.beforeParamsSave(targetModel.context as FlowSettingsContext, params, previousParams);
       }

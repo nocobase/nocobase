@@ -9,7 +9,6 @@
 
 import type { Database, Transaction } from '@nocobase/database';
 import { buildRunJSArtifactHash, buildRunJSRuntimeCodeHash, type RunJSRuntimeArtifact } from '@nocobase/runjs';
-import { createHash } from 'crypto';
 import { posix as pathPosix } from 'path';
 
 import {
@@ -251,8 +250,6 @@ export class LightExtensionRuntimeCompileService {
     },
     transaction?: Transaction,
   ): Promise<LightExtensionEntryRecord> {
-    const settingsSchema = cloneRecordOrNull(input.entry.settingsSchema);
-    const settingsDefaultsHash = stableJsonHash(extractSettingsDefaults(settingsSchema));
     const runtimeCodeHash = buildRunJSRuntimeCodeHash(input.artifact.code);
     const entryPath = input.artifact.entryPath || input.entry.entryPath;
     const artifactHash = buildRunJSArtifactHash({
@@ -283,14 +280,12 @@ export class LightExtensionRuntimeCompileService {
         runtimeCodeHash,
         artifactHash,
         runtimeContract: LIGHT_EXTENSION_RUNTIME_ARTIFACT_CONTRACT,
-        settingsSchema,
       }),
       runtimeVersion: input.artifact.version,
       surfaceStyle: input.surfaceStyle,
       runtimeCodeHash,
       artifactHash,
       filesHash: input.artifact.filesHash || '',
-      settingsDefaultsHash,
       compiledAt: new Date(),
       diagnostics: sortDiagnostics([...input.entry.diagnostics, ...input.diagnostics]),
       healthStatus: 'ready',
@@ -317,7 +312,9 @@ function getEntryCompileFiles(
 
   return files
     .filter(
-      (file) => file.path === rootPath || file.path.startsWith(`${rootPath}/`) || file.path.startsWith('src/shared/'),
+      (file) =>
+        file.path !== entry.descriptorPath &&
+        (file.path === rootPath || file.path.startsWith(`${rootPath}/`) || file.path.startsWith('src/shared/')),
     )
     .map((file) => ({
       path: file.path,
@@ -346,73 +343,12 @@ function cloneRuntimeArtifact(artifact: RunJSRuntimeArtifact, metadata: Record<s
   };
 }
 
-function extractSettingsDefaults(schema: Record<string, unknown> | null): unknown {
-  if (!schema) {
-    return {};
-  }
-  if (Object.prototype.hasOwnProperty.call(schema, 'default')) {
-    return cloneJsonValue(schema.default);
-  }
-
-  const properties = schema.properties;
-  if (!isPlainRecord(properties)) {
-    return {};
-  }
-
-  const defaults: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(properties)) {
-    if (!isPlainRecord(value)) {
-      continue;
-    }
-    const childDefault = extractSettingsDefaults(value);
-    if (
-      typeof childDefault !== 'undefined' &&
-      !(isPlainRecord(childDefault) && Object.keys(childDefault).length === 0)
-    ) {
-      defaults[key] = childDefault;
-    }
-  }
-
-  return defaults;
-}
-
-function stableJsonHash(value: unknown): string {
-  return createHash('sha256').update(stableSerialize(value)).digest('hex');
-}
-
-function stableSerialize(value: unknown): string {
-  if (Array.isArray(value)) {
-    return `[${value.map((item) => stableSerialize(item)).join(',')}]`;
-  }
-  if (isPlainRecord(value)) {
-    return `{${Object.keys(value)
-      .sort()
-      .map((key) => `${JSON.stringify(key)}:${stableSerialize(value[key])}`)
-      .join(',')}}`;
-  }
-
-  const serialized = JSON.stringify(value);
-  return typeof serialized === 'undefined' ? 'undefined' : serialized;
-}
-
-function cloneRecordOrNull(value: Record<string, unknown> | null | undefined): Record<string, unknown> | null {
-  return value ? cloneRecord(value) : null;
-}
-
 function normalizeRecord(value: unknown): Record<string, unknown> | undefined {
   return isPlainRecord(value) ? cloneRecord(value) : undefined;
 }
 
 function cloneRecord(value: Record<string, unknown>): Record<string, unknown> {
   return JSON.parse(JSON.stringify(value)) as Record<string, unknown>;
-}
-
-function cloneJsonValue(value: unknown): unknown {
-  if (typeof value === 'undefined') {
-    return undefined;
-  }
-
-  return JSON.parse(JSON.stringify(value));
 }
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {

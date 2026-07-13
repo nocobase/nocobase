@@ -60,7 +60,9 @@ describe('plugin-light-extension collections', () => {
       'kind',
       'entryName',
       'entryPath',
+      'descriptorPath',
       'settingsSchema',
+      'settingsSchemaHash',
       'compiledCommitId',
       'runtimeArtifact',
       'runtimeVersion',
@@ -84,6 +86,8 @@ describe('plugin-light-extension collections', () => {
       'byteSize',
     ]);
     expect(app.db.getCollection('lightExtensionEntries')?.getField('validatorVersion')).toBeFalsy();
+    expect(app.db.getCollection('lightExtensionEntries')?.getField('metaPath')).toBeFalsy();
+    expect(app.db.getCollection('lightExtensionEntries')?.getField('settingsPath')).toBeFalsy();
     expect(app.db.getCollection('lightExtensionEntryPublications')).toBeFalsy();
     expectCollectionFields('lightExtensionReferences', [
       'id',
@@ -141,6 +145,7 @@ describe('plugin-light-extension collections', () => {
         kind: 'jsBlock',
         entryName: 'main',
         entryPath: 'src/client/index.tsx',
+        descriptorPath: 'src/client/entry.json',
       },
     });
 

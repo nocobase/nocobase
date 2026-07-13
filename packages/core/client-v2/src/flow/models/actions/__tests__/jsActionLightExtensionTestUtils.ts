@@ -21,7 +21,8 @@ export const JS_ACTION_SOURCE_BINDING = {
 };
 
 export const JS_ACTION_SETTINGS_DESCRIPTOR: RunJSSourceSettingsDescriptor = {
-  schemaHash: 'schema_action',
+  entryId: 'entry_mark_approved',
+  settingsSchemaHash: 'schema_action',
   defaults: {
     successMessage: 'Approved',
   },

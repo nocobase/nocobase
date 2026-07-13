@@ -244,6 +244,7 @@ describe('plugin-light-extension repo service', () => {
     await fileService.push(
       {
         repoId: repo.id,
+        expectedHeadCommitId: repo.headCommitId,
         message: 'source write before lifecycle change',
         files: [
           {
@@ -327,7 +328,8 @@ describe('plugin-light-extension repo service', () => {
         surfaceStyle: 'render',
         runtimeCodeHash: 'runtime_hash',
         filesHash: 'files_hash',
-        settingsDefaultsHash: 'settings_defaults_hash',
+        settingsSchemaHash: null,
+        settingsDefaultsHash: null,
         compiledAt: new Date(),
       },
     });

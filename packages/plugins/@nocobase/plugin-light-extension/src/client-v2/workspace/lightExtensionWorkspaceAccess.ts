@@ -32,10 +32,24 @@ const KIND_ROOTS: Record<LightExtensionKind, string> = {
   'js-block': 'src/client/js-blocks',
   'js-field': 'src/client/js-fields',
   'js-item': 'src/client/js-items',
-  runjs: 'src/client/runjs',
 };
 
 const MANAGED_ENTRY_ROOTS = Object.values(KIND_ROOTS);
+
+export function getManagedLightExtensionEntryRoot(path: string): { kind: LightExtensionKind; path: string } | null {
+  const normalizedPath = normalizeWorkspacePath(path);
+  for (const [kind, kindRoot] of Object.entries(KIND_ROOTS) as Array<[LightExtensionKind, string]>) {
+    if (!normalizedPath.startsWith(`${kindRoot}/`)) {
+      continue;
+    }
+    const relativePath = normalizedPath.slice(kindRoot.length + 1);
+    if (relativePath && !relativePath.includes('/')) {
+      return { kind, path: normalizedPath };
+    }
+  }
+
+  return null;
+}
 
 export function getLightExtensionEntryRoot(scope: LightExtensionWorkspaceScope): string | null {
   if (scope.mode !== 'entry') {

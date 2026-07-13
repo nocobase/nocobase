@@ -18,40 +18,35 @@ describe('plugin-light-extension supported kinds validator', () => {
           path: 'src/client/js-fields/phone-link/index.tsx',
           content: 'export default function PhoneLink() { return null; }\n',
         },
+        entryDescriptor('src/client/js-fields/phone-link', 'phone-link'),
         {
           path: 'src/client/js-actions/batch-approve/index.ts',
           content: 'export default async function batchApprove() { return true; }\n',
         },
+        entryDescriptor('src/client/js-actions/batch-approve', 'batch-approve'),
         {
           path: 'src/client/js-items/customer-menu/index.tsx',
           content: 'export default function CustomerMenuItem() { return null; }\n',
         },
+        entryDescriptor('src/client/js-items/customer-menu', 'customer-menu'),
         {
-          path: 'src/client/runjs/sales-kpi/index.tsx',
-          content: 'export default async function run() { return 1; }\n',
+          path: 'src/client/js-blocks/sales-kpi/index.tsx',
+          content: 'ctx.render(<div />);\n',
         },
-        {
-          path: 'src/client/runjs/sales-kpi/README.md',
-          content: '# runjs\n',
-        },
+        entryDescriptor('src/client/js-blocks/sales-kpi', 'sales-kpi'),
       ],
     });
 
     expect(result.accepted).toBe(true);
-    expect(result.capabilities.supportedKinds).toEqual(['js-block', 'js-field', 'js-action', 'js-item', 'runjs']);
+    expect(result.capabilities.supportedKinds).toEqual(['js-block', 'js-field', 'js-action', 'js-item']);
     expect(result.entries.map((entry) => `${entry.kind}:${entry.entryName}`)).toEqual([
       'js-action:batch-approve',
+      'js-block:sales-kpi',
       'js-field:phone-link',
       'js-item:customer-menu',
-      'runjs:sales-kpi',
     ]);
     expect(result.diagnostics).toEqual([]);
-    expect(result.capabilities.allowedPaths.entries.runjs).toEqual(
-      expect.arrayContaining([
-        'src/client/runjs/<entryName>/index.tsx',
-        'src/client/runjs/<entryName>/**/*.{ts,tsx,js,jsx,json,md}',
-      ]),
-    );
+    expect(result.capabilities.allowedPaths.entries.runjs).toBeUndefined();
     expect(result.capabilities.allowedPaths.entries['js-field']).toEqual(
       expect.arrayContaining([
         'src/client/js-fields/<entryName>/index.tsx',
@@ -89,6 +84,7 @@ describe('plugin-light-extension supported kinds validator', () => {
           content:
             'import { type LightExtensionSettingsContext, defineSettings } from "@nocobase/light-extension-sdk/client";\nimport { formatValue } from "../../../shared/format";\nexport const settings = defineSettings({ type: "object", properties: {} });\nexport default function PhoneLink(ctx: LightExtensionSettingsContext) { return formatValue(ctx); }\n',
         },
+        entryDescriptor('src/client/js-fields/phone-link', 'phone-link'),
       ],
     });
 
@@ -110,11 +106,13 @@ describe('plugin-light-extension supported kinds validator', () => {
           path: 'src/client/js-actions/show-message/index.ts',
           content: 'export default function showMessage() { return true; }\n',
         },
+        entryDescriptor('src/client/js-actions/show-message', 'show-message'),
         {
           path: 'src/client/js-fields/phone-link/index.tsx',
           content:
             'import React from "react";\nimport "../../../server/private";\nimport "../../js-actions/show-message/index";\nexport default function PhoneLink() { return React.createElement("span"); }\n',
         },
+        entryDescriptor('src/client/js-fields/phone-link', 'phone-link'),
       ],
     });
 
@@ -144,6 +142,7 @@ describe('plugin-light-extension supported kinds validator', () => {
           content:
             'import {} from "@nocobase/light-extension-sdk/client";\nexport default function PhoneLink() { return null; }\n',
         },
+        entryDescriptor('src/client/js-fields/phone-link', 'phone-link'),
       ],
     });
 
@@ -157,4 +156,29 @@ describe('plugin-light-extension supported kinds validator', () => {
       }),
     );
   });
+
+  it('rejects the removed runjs light-extension kind as a workspace path', () => {
+    const result = new LightExtensionValidator().validateWorkspace({
+      files: [
+        { path: 'src/client/runjs/example/index.ts', content: 'return 1;\n' },
+        entryDescriptor('src/client/runjs/example', 'example'),
+      ],
+    });
+
+    expect(result.accepted).toBe(false);
+    expect(result.entries).toEqual([]);
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'workspace_path_not_allowed',
+        path: 'src/client/runjs/example/index.ts',
+      }),
+    );
+  });
 });
+
+function entryDescriptor(root: string, key: string) {
+  return {
+    path: `${root}/entry.json`,
+    content: JSON.stringify({ schemaVersion: 1, key }),
+  };
+}

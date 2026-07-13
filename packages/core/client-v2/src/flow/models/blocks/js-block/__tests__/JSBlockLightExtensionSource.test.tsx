@@ -21,6 +21,7 @@ import {
 import { RunJSSourceResolverRegistry, type RunJSSourceSettingsDescriptor } from '../../../../components/runjs-source';
 import { PluginFlowEngine } from '../../../../index';
 import { createMockClient } from '../../../../../MockApplication';
+import { assertLightExtensionSettingsHostContract } from '../../../utils/__tests__/lightExtensionSettingsHostContract';
 import { JSBlockModel } from '../JSBlock';
 import { JSBlockSourceModeField } from '../JSBlockSourceModeField';
 
@@ -32,7 +33,8 @@ const SOURCE_BINDING = {
 };
 
 const SETTINGS_DESCRIPTOR = {
-  schemaHash: 'schema_active',
+  entryId: 'entry_sales',
+  settingsSchemaHash: 'schema_active',
   defaults: {
     message: 'Hello',
     pageSize: 5,
@@ -140,7 +142,11 @@ describe('JSBlockModel light extension source', () => {
       useRawParams?: boolean;
       uiSchema?: Record<string, Record<string, unknown>>;
       defaultParams?: (ctx: typeof model.context) => Record<string, unknown> | Promise<Record<string, unknown>>;
-      beforeParamsSave?: (ctx: typeof model.context, params: Record<string, unknown>, previousParams: unknown) => void;
+      beforeParamsSave?: (
+        ctx: typeof model.context,
+        params: Record<string, unknown>,
+        previousParams: unknown,
+      ) => void | Promise<void>;
       afterParamsSave?: (ctx: typeof model.context, params: Record<string, unknown>, previousParams: unknown) => void;
     };
 
@@ -303,6 +309,11 @@ describe('JSBlockModel light extension source', () => {
   });
 
   it('syncs menu code source changes into the RunJS step and refreshes rendering', async () => {
+    RunJSSourceResolverRegistry.registerResolver({
+      sourceMode: 'light-extension',
+      resolve: () => ({ code: '' }),
+      getSettingsDescriptor: async () => SETTINGS_DESCRIPTOR,
+    });
     const engine = new FlowEngine();
     engine.registerModels({ JSBlockModel });
     const model = engine.createModel<JSBlockModel>({
@@ -325,13 +336,13 @@ describe('JSBlockModel light extension source', () => {
     const invalidateSpy = vi.spyOn(model, 'invalidateFlowCache');
     const rerenderSpy = vi.spyOn(model, 'rerender').mockResolvedValue(undefined);
 
-    sourceModeStep.beforeParamsSave?.(
+    await sourceModeStep.beforeParamsSave?.(
       model.context,
       {
         sourceMode: 'light-extension',
         sourceBinding: SOURCE_BINDING,
         settings: {
-          title: 'Sales',
+          stale: 'Sales',
         },
       },
       {},
@@ -341,7 +352,9 @@ describe('JSBlockModel light extension source', () => {
       sourceMode: 'light-extension',
       sourceBinding: SOURCE_BINDING,
       settings: {
-        title: 'Sales',
+        message: 'Hello',
+        pageSize: 5,
+        enabled: true,
       },
       code: 'ctx.render("inline");',
       version: 'v2',
@@ -399,15 +412,36 @@ describe('JSBlockModel light extension source', () => {
 
     expect(Object.values(steps || {}).map((step) => step.title)).toEqual(['Message', 'Page size', 'Enabled']);
     expect(Object.keys(steps || {})).toHaveLength(3);
-    expect(Object.keys(steps || {}).every((key) => key.startsWith('leSetting__'))).toBe(true);
+    expect(Object.keys(steps || {}).every((key) => key.startsWith('lightExtensionSetting__'))).toBe(true);
     expect(Object.values(steps || {})[0]?.uiSchema?.value?.['x-component']).toBe(
       'JSBlockLightExtensionSettingsStepField',
     );
   });
 
+  it('uses canonical light extension settings across saves and entry switches', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ JSBlockModel });
+    const model = engine.createModel<JSBlockModel>({
+      use: 'JSBlockModel',
+      uid: 'js-block-canonical-settings-contract',
+    });
+
+    await assertLightExtensionSettingsHostContract({
+      model,
+      flowKey: 'jsSettings',
+      settingsComponent: 'JSBlockLightExtensionSettingsStepField',
+      sourceBinding: SOURCE_BINDING,
+      nextSourceBinding: {
+        ...SOURCE_BINDING,
+        entryId: 'entry_orders',
+      },
+    });
+  });
+
   it('validates nested object settings before saving a runtime settings step', async () => {
     const descriptor: RunJSSourceSettingsDescriptor = {
-      schemaHash: 'schema_object_settings',
+      entryId: 'entry_object_settings',
+      settingsSchemaHash: 'schema_object_settings',
       defaults: {},
       schema: {
         type: 'object',
@@ -460,7 +494,7 @@ describe('JSBlockModel light extension source', () => {
     expect(() => optionsStep?.beforeParamsSave?.(settingsContext, { value: { limit: 10 } })).not.toThrow();
   });
 
-  it('uses the active schema hash when regenerating runtime settings steps', async () => {
+  it('keeps step identity stable when the schema changes for the same entry', async () => {
     let descriptor: RunJSSourceSettingsDescriptor = SETTINGS_DESCRIPTOR;
     RunJSSourceResolverRegistry.registerResolver({
       sourceMode: 'light-extension',
@@ -488,13 +522,13 @@ describe('JSBlockModel light extension source', () => {
     const oldSteps = await model.getRuntimeFlowSettingSteps('jsSettings');
     descriptor = {
       ...SETTINGS_DESCRIPTOR,
-      schemaHash: 'schema_next',
+      settingsSchemaHash: 'schema_next',
       schema: {
         type: 'object',
         properties: {
-          title: {
+          message: {
             type: 'string',
-            title: 'Title',
+            title: 'Updated message',
           },
         },
       },
@@ -502,8 +536,8 @@ describe('JSBlockModel light extension source', () => {
 
     const nextSteps = await model.getRuntimeFlowSettingSteps('jsSettings');
 
-    expect(Object.values(nextSteps || {}).map((step) => step.title)).toEqual(['Title']);
-    expect(Object.keys(nextSteps || {})).not.toEqual(Object.keys(oldSteps || {}));
+    expect(Object.values(nextSteps || {}).map((step) => step.title)).toEqual(['Updated message']);
+    expect(Object.keys(nextSteps || {})[0]).toBe(Object.keys(oldSteps || {})[0]);
   });
 
   it('passes runtime settings step values to the light extension resolver', async () => {
@@ -530,16 +564,13 @@ describe('JSBlockModel light extension source', () => {
             sourceBinding: SOURCE_BINDING,
             settings: {
               message: 'Legacy',
+              pageSize: 20,
+              enabled: true,
             },
           },
         },
       },
     });
-    const steps = await model.getRuntimeFlowSettingSteps('jsSettings');
-    const pageSizeStepKey = Object.entries(steps || {}).find(([, step]) => step.title === 'Page size')?.[0];
-    expect(pageSizeStepKey).toBeTruthy();
-    model.setStepParams('jsSettings', pageSizeStepKey as string, { value: 20 });
-
     render(
       <FlowEngineProvider engine={engine}>
         <ConfigProvider>
@@ -562,6 +593,7 @@ describe('JSBlockModel light extension source', () => {
         },
       }),
     );
+    expect(Object.keys(model.getStepParams('jsSettings') || {})).toEqual(['runJs']);
   });
 
   it('resolves external source through the RunJS source registry', async () => {

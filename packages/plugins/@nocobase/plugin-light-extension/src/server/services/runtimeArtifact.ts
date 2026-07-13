@@ -20,7 +20,7 @@ export function getRuntimeSettingsSource(entry: LightExtensionEntryRecord): Ligh
   return {
     id: entry.id,
     settingsSchema: getRuntimeSettingsSchema(entry),
-    settingsDefaultsHash: entry.settingsDefaultsHash || '',
+    settingsDefaultsHash: entry.settingsDefaultsHash,
   };
 }
 

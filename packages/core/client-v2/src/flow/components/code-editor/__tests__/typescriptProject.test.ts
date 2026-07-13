@@ -82,6 +82,35 @@ describe('CodeEditor TypeScript project', () => {
     expect(missingDiagnostics.some((diagnostic) => /missing/.test(diagnostic.message))).toBe(true);
   });
 
+  it('supports an editor-only active Entry ctx type without dropping the RunJS context', async () => {
+    const code = 'ctx.settings.';
+    const project: CodeEditorTypeScriptProject = {
+      currentFilePath: 'src/main.tsx',
+      files: [{ content: code, path: 'src/main.tsx' }],
+      declarationFiles: [
+        {
+          path: '.light-extension/types/__active-entry-context.d.ts',
+          content:
+            'interface ActiveSettings { mode: 1 | 2; title?: string; }\ntype LightExtensionActiveEntryContext = RunJSContext & { settings: ActiveSettings };',
+        },
+      ],
+      runJSContext: {
+        globalContextType: 'LightExtensionActiveEntryContext',
+        modelUse: 'JSBlockModel',
+      },
+    };
+
+    const completion = await getTypeScriptCompletionResult(project, code.length, code, true);
+    expect(completion?.options.some((option) => option.label === 'mode')).toBe(true);
+    expect(completion?.options.some((option) => option.label === 'title')).toBe(true);
+    expect(await getTypeScriptProjectDiagnostics(project, 'ctx.logger; ctx.settings.mode;')).toEqual([]);
+    expect(
+      (await getTypeScriptProjectDiagnostics(project, 'const mode: string = ctx.settings.mode;')).some((diagnostic) =>
+        /string/.test(diagnostic.message),
+      ),
+    ).toBe(true);
+  });
+
   it('uses the shared compiler profile for JSON module imports', async () => {
     const code = "import config from './config.json';\nconfig.label.toUpperCase();";
     const project: CodeEditorTypeScriptProject = {

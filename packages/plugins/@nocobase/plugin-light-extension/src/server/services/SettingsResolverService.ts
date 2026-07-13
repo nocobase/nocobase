@@ -54,7 +54,7 @@ export class SettingsResolverService {
   }
 
   getRuntimeDefaults(source: LightExtensionRuntimeSettingsSource): Record<string, unknown> {
-    const extracted = extractSettingsDefaults(source.settingsSchema);
+    const extracted = extractSettingsDefaults(source.settingsSchema).value;
     return isPlainRecord(extracted) ? extracted : {};
   }
 
@@ -71,17 +71,17 @@ export class SettingsResolverService {
   }
 }
 
-function extractSettingsDefaults(schema: Record<string, unknown> | null): unknown {
+function extractSettingsDefaults(schema: Record<string, unknown> | null): { hasDefault: boolean; value: unknown } {
   if (!schema) {
-    return {};
+    return { hasDefault: false, value: {} };
   }
   if (Object.prototype.hasOwnProperty.call(schema, 'default')) {
-    return cloneJsonValue(schema.default);
+    return { hasDefault: true, value: cloneJsonValue(schema.default) };
   }
 
   const properties = schema.properties;
   if (!isPlainRecord(properties)) {
-    return {};
+    return { hasDefault: false, value: {} };
   }
 
   const defaults: Record<string, unknown> = {};
@@ -90,15 +90,12 @@ function extractSettingsDefaults(schema: Record<string, unknown> | null): unknow
       continue;
     }
     const childDefault = extractSettingsDefaults(value);
-    if (
-      typeof childDefault !== 'undefined' &&
-      !(isPlainRecord(childDefault) && Object.keys(childDefault).length === 0)
-    ) {
-      defaults[key] = childDefault;
+    if (childDefault.hasDefault) {
+      defaults[key] = childDefault.value;
     }
   }
 
-  return defaults;
+  return { hasDefault: Object.keys(defaults).length > 0, value: defaults };
 }
 
 function mergeSettings(defaults: Record<string, unknown>, overrides: Record<string, unknown>): Record<string, unknown> {

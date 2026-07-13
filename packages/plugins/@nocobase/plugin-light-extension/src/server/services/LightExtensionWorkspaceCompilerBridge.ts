@@ -14,7 +14,7 @@ import { randomUUID } from 'crypto';
 import { posix as pathPosix } from 'path';
 import ts from 'typescript';
 
-import type { LightExtensionKind } from '../../constants';
+import { LIGHT_EXTENSION_ENTRY_DESCRIPTOR_FILE, type LightExtensionKind } from '../../constants';
 import { isLightExtensionError } from '../../shared/errors';
 import type { LightExtensionDiagnostic } from '../../shared/types';
 import { LightExtensionAuditService } from './LightExtensionAuditService';
@@ -92,8 +92,9 @@ export class LightExtensionWorkspaceCompilerBridge {
       return result;
     }
     const compilerSurfaceStyle = surface.compilerSurfaceStyle;
+    const runtimeFiles = filterCurrentEntryDescriptor(input);
     const compiled = compileRunJSSourceWorkspace({
-      files: prepareLightExtensionCompileFiles(input.files),
+      files: prepareLightExtensionCompileFiles(runtimeFiles),
       entry: input.entryPath,
       runtimeVersion: input.runtimeVersion || 'v2',
       surfaceStyle: compilerSurfaceStyle,
@@ -156,12 +157,8 @@ export class LightExtensionWorkspaceCompilerBridge {
     compiled: CompileRunJSSourceWorkspaceResult,
   ): LightExtensionWorkspaceCompileResult {
     const diagnostics = sortDiagnostics(compiled.artifact.diagnostics.map((item) => toLightExtensionDiagnostic(item)));
-    const artifactCode =
-      input.kind === 'runjs' ? wrapRunJSDefaultExportEntry(compiled.artifact.code) : compiled.artifact.code;
     const artifact: RunJSRuntimeArtifact = {
       ...compiled.artifact,
-      code: artifactCode,
-      filesHash: buildRunJSFilesHash(input.files),
       metadata: {
         ...compiled.artifact.metadata,
         target: 'client',
@@ -195,7 +192,7 @@ export class LightExtensionWorkspaceCompilerBridge {
         code: '',
         version: input.runtimeVersion || 'v2',
         diagnostics,
-        filesHash: buildRunJSFilesHash(input.files),
+        filesHash: buildRunJSFilesHash(filterCurrentEntryDescriptor(input)),
         entryPath: input.entryPath,
         metadata: {
           target: 'client',
@@ -341,19 +338,6 @@ function inferEntryName(path: string): string {
   return segments.length >= 2 ? segments[segments.length - 2] : normalized;
 }
 
-function wrapRunJSDefaultExportEntry(code: string): string {
-  const defaultSymbol = findRunJSDefaultExportSymbol(code);
-  if (!defaultSymbol) {
-    return code;
-  }
-  return `${code}\n\nif (typeof ${defaultSymbol} === 'function') {\n  return await ${defaultSymbol}(ctx);\n}\nreturn ${defaultSymbol};`;
-}
-
-function findRunJSDefaultExportSymbol(code: string): string | null {
-  const match = code.match(/(?:^|\n)const (__runjs_default_[A-Za-z0-9_$]+)\s*=/);
-  return match?.[1] || null;
-}
-
 function normalizeSourcePath(path: string): string {
   return pathPosix.normalize(path.trim()).replace(/^\.\/+/, '');
 }
@@ -371,6 +355,14 @@ function prepareLightExtensionCompileFiles(
       content: rewriteLightExtensionSdkRuntimeImports(file.path, file.content),
     };
   });
+}
+
+function filterCurrentEntryDescriptor(
+  input: Pick<LightExtensionWorkspaceCompileInput, 'entryPath' | 'files'>,
+): LightExtensionWorkspaceCompileFileInput[] {
+  const entryRoot = pathPosix.dirname(normalizeSourcePath(input.entryPath));
+  const descriptorPath = `${entryRoot}/${LIGHT_EXTENSION_ENTRY_DESCRIPTOR_FILE}`;
+  return input.files.filter((file) => normalizeSourcePath(file.path) !== descriptorPath);
 }
 
 export function rewriteLightExtensionSdkRuntimeImports(path: string, content: string): string {

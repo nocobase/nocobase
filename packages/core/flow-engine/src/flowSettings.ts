@@ -692,6 +692,7 @@ export class FlowSettings {
       previousParams: any;
       beforeParamsSave?: Function;
       afterParamsSave?: Function;
+      persistParams: boolean;
       ctx: any; // FlowRuntimeContext
       uiMode: any; // UI 模式
     };
@@ -776,6 +777,7 @@ export class FlowSettings {
           mergedUiSchema, // 存储合并后的 UI Schema，在 renderStepForm 中进行包装
           beforeParamsSave,
           afterParamsSave,
+          persistParams: step.persistParams !== false,
           ctx: flowRuntimeContext,
           uiMode: step.uiMode || uiMode,
         });
@@ -999,7 +1001,9 @@ export class FlowSettings {
               if (!form) continue;
               await form.submit();
               const currentValues = form.values;
-              model.setStepParams(e.flowKey, e.stepKey, currentValues as ParamObject);
+              if (e.persistParams) {
+                model.setStepParams(e.flowKey, e.stepKey, currentValues as ParamObject);
+              }
 
               if (typeof e.beforeParamsSave === 'function') {
                 await e.beforeParamsSave(e.ctx, currentValues, e.previousParams);

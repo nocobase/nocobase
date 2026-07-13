@@ -30,32 +30,38 @@ describe('plugin-light-extension default source template', () => {
     expect(paths).toEqual([
       'README.md',
       'tsconfig.json',
-      'src/shared/light-extension-sdk.d.ts',
       'src/client/js-blocks/example/index.tsx',
-      'src/client/js-blocks/example/meta.json',
+      'src/client/js-blocks/example/entry.json',
       'src/client/js-actions/example/index.ts',
-      'src/client/js-actions/example/meta.json',
+      'src/client/js-actions/example/entry.json',
       'src/client/js-fields/example/index.tsx',
-      'src/client/js-fields/example/meta.json',
+      'src/client/js-fields/example/entry.json',
       'src/client/js-items/example/index.tsx',
-      'src/client/js-items/example/meta.json',
-      'src/client/runjs/example/index.ts',
-      'src/client/runjs/example/meta.json',
+      'src/client/js-items/example/entry.json',
     ]);
     expect(diagnostics).toEqual([]);
     expect(DEFAULT_LIGHT_EXTENSION_README).toContain('src/client/js-blocks/<entry-name>/index.tsx');
     expect(DEFAULT_LIGHT_EXTENSION_README).toContain('src/client/js-actions/<entry-name>/index.ts');
     expect(DEFAULT_LIGHT_EXTENSION_README).toContain('src/client/js-fields/<entry-name>/index.tsx');
     expect(DEFAULT_LIGHT_EXTENSION_README).toContain('src/client/js-items/<entry-name>/index.tsx');
-    expect(DEFAULT_LIGHT_EXTENSION_README).toContain('src/client/runjs/<entry-name>/index.ts');
-    expect(DEFAULT_LIGHT_EXTENSION_README).toContain('meta.json.key');
+    expect(DEFAULT_LIGHT_EXTENSION_README).toContain('entry.json');
+    expect(DEFAULT_LIGHT_EXTENSION_README).toContain('stable technical identity');
+    expect(DEFAULT_LIGHT_EXTENSION_README).toContain('top-level property');
+    expect(DEFAULT_LIGHT_EXTENSION_README).toContain('independent settings menu');
+    expect(DEFAULT_LIGHT_EXTENSION_README).toContain('supports only these four entry kinds');
+    expect(DEFAULT_LIGHT_EXTENSION_README).toContain('never probe a Schema URL over the network');
+    expect(paths.some((path) => path.endsWith('/meta.json') || path.endsWith('/settings.json'))).toBe(false);
+    expect(paths.some((path) => path.includes('/runjs/'))).toBe(false);
+    for (const descriptor of files.filter((file) => file.path.endsWith('/entry.json'))) {
+      expect(JSON.parse(descriptor.content || '{}')).toEqual({ schemaVersion: 1, key: 'example' });
+    }
     expect(
       files.filter((file) => file.path.endsWith('/index.tsx')).every((file) => file.language === 'typescript'),
     ).toBe(true);
-    expect(files.filter((file) => file.path.endsWith('/meta.json')).every((file) => file.language === 'json')).toBe(
+    expect(files.filter((file) => file.path.endsWith('/entry.json')).every((file) => file.language === 'json')).toBe(
       true,
     );
-    expect(DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES).toHaveLength(13);
+    expect(DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES).toHaveLength(10);
   });
 
   it('returns a fresh file array for each repository', () => {
@@ -78,7 +84,6 @@ describe('plugin-light-extension default source template', () => {
       { kind: 'js-action', entryPath: 'src/client/js-actions/example/index.ts' },
       { kind: 'js-field', entryPath: 'src/client/js-fields/example/index.tsx' },
       { kind: 'js-item', entryPath: 'src/client/js-items/example/index.tsx' },
-      { kind: 'runjs', entryPath: 'src/client/runjs/example/index.ts' },
     ];
 
     for (const item of cases) {

@@ -344,9 +344,10 @@ exports.genTsConfigPaths = function genTsConfigPaths() {
     if (packageJsonName === '@nocobase/plugin-workflow-test') {
       paths[`${packageJsonName}/e2e`] = [`${relativePath}/src/e2e`];
     }
-    if (packageJsonName === '@nocobase/plugin-light-extension') {
-      paths['@nocobase/light-extension-sdk/client'] = [`${relativePath}/src/sdk/client`];
-      paths['@nocobase/light-extension-sdk/shared'] = [`${relativePath}/src/sdk/shared`];
+    if (packageJsonName === '@nocobase/light-extension-sdk') {
+      paths[`${packageJsonName}/schema`] = [`${relativePath}/src/schema`];
+      paths[`${packageJsonName}/shared`] = [`${relativePath}/src/shared`];
+      paths[`${packageJsonName}/typegen`] = [`${relativePath}/src/typegen`];
     }
   });
 

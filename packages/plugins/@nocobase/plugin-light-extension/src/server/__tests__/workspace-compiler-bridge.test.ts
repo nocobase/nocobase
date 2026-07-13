@@ -8,10 +8,10 @@
  */
 
 import type { Database } from '@nocobase/database';
+import { sha256Hex } from '@nocobase/runjs';
 import { vi } from 'vitest';
 
 import { LIGHT_EXTENSION_SUPPORTED_KINDS } from '../../constants';
-import { LIGHT_EXTENSION_SDK_SHIM_CONTENT, LIGHT_EXTENSION_SDK_SHIM_PATH } from '../../shared/default-template';
 import { LightExtensionAuditService } from '../services/LightExtensionAuditService';
 import { LIGHT_EXTENSION_AUTHORING_SURFACES } from '../services/LightExtensionCompileContract';
 import { LightExtensionPermissionService } from '../services/LightExtensionPermissionService';
@@ -113,13 +113,9 @@ describe('plugin-light-extension workspace compiler bridge', () => {
             content: 'export function formatValue(value: unknown) { return String(value ?? ""); }\n',
           },
           {
-            path: LIGHT_EXTENSION_SDK_SHIM_PATH,
-            content: LIGHT_EXTENSION_SDK_SHIM_CONTENT,
-          },
-          {
             path: 'src/client/js-blocks/sales-kpi/index.tsx',
             content:
-              'import { type LightExtensionSettingsContext, defineSettings } from "@nocobase/light-extension-sdk/client";\nimport { formatValue } from "../../../shared/format";\nexport const settings = defineSettings({ type: "object", properties: {} });\nexport default function render(ctxSettings: LightExtensionSettingsContext) { return formatValue(ctxSettings.settings); }\nctx.render(<div>{formatValue("Revenue")}</div>);\n',
+              'import { defineSettings } from "@nocobase/light-extension-sdk/client";\nimport { formatValue } from "../../../shared/format";\nexport const settings = defineSettings({ type: "object", properties: {} });\nctx.render(<div>{formatValue("Revenue")}</div>);\n',
           },
         ],
       },
@@ -132,6 +128,47 @@ describe('plugin-light-extension workspace compiler bridge', () => {
     expect(result.diagnostics).toEqual([]);
     expect(result.artifact.code).toContain('Revenue');
     expect(result.artifact.code).not.toContain('@nocobase/light-extension-sdk/client');
+  });
+
+  it('excludes entry.json from compiler hashes while retaining ordinary JSON modules', async () => {
+    const compile = (descriptorTitle: string, dataTitle: string) =>
+      bridge.compileEntry({
+        repoId: 'ler_sales',
+        entryId: 'lee_sales_kpi',
+        kind: 'js-block',
+        entryName: 'sales-kpi',
+        entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+        files: [
+          {
+            path: 'src/client/js-blocks/sales-kpi/index.tsx',
+            content: "import data from './data.json';\nctx.render(<div>{data.title}</div>);\n",
+          },
+          {
+            path: 'src/client/js-blocks/sales-kpi/data.json',
+            content: JSON.stringify({ title: dataTitle }),
+          },
+          {
+            path: 'src/client/js-blocks/sales-kpi/entry.json',
+            content: JSON.stringify({ schemaVersion: 1, key: 'sales-kpi', title: descriptorTitle }),
+          },
+        ],
+      });
+
+    const initial = await compile('Sales KPI', 'Revenue');
+    const descriptorChanged = await compile('Revenue KPI', 'Revenue');
+    const dataChanged = await compile('Revenue KPI', 'Orders');
+
+    expect(initial.accepted).toBe(true);
+    expect(descriptorChanged.accepted).toBe(true);
+    expect(dataChanged.accepted).toBe(true);
+    expect(descriptorChanged.artifact.filesHash).toBe(initial.artifact.filesHash);
+    expect(descriptorChanged.artifact.code).toBe(initial.artifact.code);
+    expect(descriptorChanged.artifact.sourceMap).toBe(initial.artifact.sourceMap);
+    expect(initial.artifact.code).toContain(
+      `nocobase-runjs://bundle/${sha256Hex(initial.artifact.filesHash || '').slice(0, 16)}.js`,
+    );
+    expect(dataChanged.artifact.filesHash).not.toBe(initial.artifact.filesHash);
+    expect(dataChanged.artifact.code).not.toBe(initial.artifact.code);
   });
 
   it('rejects SDK type imports when the repository omits its declaration file', async () => {
@@ -328,52 +365,6 @@ describe('plugin-light-extension workspace compiler bridge', () => {
         requestId: 'req_compile_js_item',
       }),
     );
-  });
-
-  it('compiles RunJS entries through the value compiler surface', async () => {
-    const result = await bridge.compileEntry(
-      {
-        repoId: 'ler_sales',
-        entryId: 'lee_normalize_amount',
-        kind: 'runjs',
-        entryName: 'normalize-amount',
-        entryPath: 'src/client/runjs/normalize-amount/index.ts',
-        surfaceStyle: 'run',
-        files: [
-          {
-            path: 'src/client/runjs/normalize-amount/index.ts',
-            content:
-              'export default async function normalizeAmount(ctx) {\n  const amount = await ctx.getValue("amount");\n  await ctx.setValue("amountText", `${ctx.settings.currency}:${amount}`);\n  return amount;\n}\n',
-          },
-        ],
-      },
-      {
-        requestId: 'req_compile_runjs',
-      },
-    );
-
-    expect(result.accepted).toBe(true);
-    expect(result.diagnostics).toEqual([]);
-    expect(result.surface).toMatchObject({
-      kind: 'runjs',
-      surfaceStyle: 'run',
-      compilerSurfaceStyle: 'value',
-      modelUse: 'JSItemModel',
-      surface: 'reaction.value-runjs',
-    });
-    expect(result.artifact).toMatchObject({
-      version: 'v2',
-      entryPath: 'src/client/runjs/normalize-amount/index.ts',
-      metadata: expect.objectContaining({
-        repoId: 'ler_sales',
-        entryId: 'lee_normalize_amount',
-        kind: 'runjs',
-        entryName: 'normalize-amount',
-        surfaceStyle: 'run',
-        compilerSurfaceStyle: 'value',
-      }),
-    });
-    expect(result.artifact.code).toContain('return await __runjs_default_');
   });
 
   it('uses compiler-owned runtime global validation for js-block render surfaces', async () => {

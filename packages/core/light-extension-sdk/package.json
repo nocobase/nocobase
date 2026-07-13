@@ -1,0 +1,40 @@
+{
+  "name": "@nocobase/light-extension-sdk",
+  "version": "2.2.0-beta.13",
+  "main": "lib/index.js",
+  "types": "./lib/index.d.ts",
+  "license": "Apache-2.0",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "import": "./lib/index.js",
+      "require": "./lib/index.js"
+    },
+    "./client": {
+      "types": "./lib/client/index.d.ts",
+      "import": "./lib/client/index.js",
+      "require": "./lib/client/index.js"
+    },
+    "./shared": {
+      "types": "./lib/shared/index.d.ts",
+      "import": "./lib/shared/index.js",
+      "require": "./lib/shared/index.js"
+    },
+    "./schema": {
+      "types": "./lib/schema/index.d.ts",
+      "import": "./lib/schema/index.js",
+      "require": "./lib/schema/index.js"
+    },
+    "./schema/entry-v1.schema.json": "./lib/schema/entry-v1.schema.json",
+    "./typegen": {
+      "types": "./lib/typegen/index.d.ts",
+      "import": "./lib/typegen/index.js",
+      "require": "./lib/typegen/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "devDependencies": {
+    "ajv": "^8.17.1",
+    "typescript": "^5.x"
+  }
+}

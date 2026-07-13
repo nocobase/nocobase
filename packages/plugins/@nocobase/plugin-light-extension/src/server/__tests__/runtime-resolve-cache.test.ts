@@ -63,8 +63,7 @@ function createService(): RuntimeResolveService {
     kind: 'js-action',
     entryName: 'example',
     entryPath: 'src/client/js-actions/example/index.ts',
-    metaPath: null,
-    settingsPath: null,
+    descriptorPath: 'src/client/js-blocks/sales-kpi/entry.json',
     title: 'Example',
     description: null,
     category: null,
@@ -75,6 +74,7 @@ function createService(): RuntimeResolveService {
       type: 'object',
       properties: { label: { type: 'string', default: 'DEFAULT' } },
     },
+    settingsSchemaHash: 'schema_v1',
     compiledCommitId: 'commit_1',
     runtimeArtifact: {
       code: 'ctx.message.success(ctx.settings.label);',

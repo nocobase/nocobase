@@ -108,6 +108,34 @@ describe('plugin-light-extension runtime resolve API', () => {
     await expect(service.listSelectableEntries()).resolves.toEqual([]);
   });
 
+  it('returns the schema hash independently from the defaults hash', async () => {
+    const { service } = createRuntimeResolveService();
+
+    await expect(service.listSelectableEntries()).resolves.toEqual([
+      expect.objectContaining({
+        settingsSchemaHash: 'schema_hash_1',
+        settingsDefaultsHash: 'defaults_hash_1',
+      }),
+    ]);
+  });
+
+  it('keeps no-schema entries selectable when both settings hashes are null', async () => {
+    const { service } = createRuntimeResolveService({
+      settingsSchema: null,
+      settingsSchemaHash: null,
+      settingsDefaultsHash: null,
+    });
+
+    await expect(service.listSelectableEntries()).resolves.toEqual([
+      expect.objectContaining({
+        settingsSchema: null,
+        settingsSchemaHash: null,
+        settingsDefaultsHash: null,
+        runtimeAvailable: true,
+      }),
+    ]);
+  });
+
   it('rejects runtime bindings whose identity does not match the entry current runtime', async () => {
     const { service } = createRuntimeResolveService();
 
@@ -444,6 +472,9 @@ function createRuntimeResolveService(
     repoHeadCommitId?: string | null;
     entryPath?: string;
     artifactEntryPath?: string;
+    settingsSchema?: Record<string, unknown> | null;
+    settingsSchemaHash?: string | null;
+    settingsDefaultsHash?: string | null;
   } = {},
 ) {
   const entryRecord = createEntryRecord(options);
@@ -498,6 +529,9 @@ function createEntryRecord(
     compiledCommitId?: string | null;
     entryPath?: string;
     artifactEntryPath?: string;
+    settingsSchema?: Record<string, unknown> | null;
+    settingsSchemaHash?: string | null;
+    settingsDefaultsHash?: string | null;
   } = {},
 ): Record<string, unknown> {
   const kind = input.entryKind || 'js-block';
@@ -525,49 +559,52 @@ function createEntryRecord(
     kind,
     entryName: 'sales-kpi',
     entryPath,
-    metaPath: null,
-    settingsPath: null,
+    descriptorPath: 'src/client/js-blocks/sales-kpi/entry.json',
     title: 'Sales KPI',
     description: null,
     category: null,
     icon: null,
     tags: null,
     sort: null,
-    settingsSchema: {
-      type: 'object',
-      required: ['threshold'],
-      properties: {
-        threshold: {
-          type: 'number',
-          default: 5,
-          minimum: 0,
-          maximum: 10,
-        },
-        region: {
-          type: 'string',
-          default: 'APAC',
-          enum: ['APAC', 'EMEA'],
-        },
-        contactEmail: {
-          type: 'string',
-          default: 'ops@example.com',
-          format: 'email',
-        },
-        nested: {
-          type: 'object',
-          properties: {
-            enabled: {
-              type: 'boolean',
-              default: true,
+    settingsSchema:
+      typeof input.settingsSchema === 'undefined'
+        ? {
+            type: 'object',
+            required: ['threshold'],
+            properties: {
+              threshold: {
+                type: 'number',
+                default: 5,
+                minimum: 0,
+                maximum: 10,
+              },
+              region: {
+                type: 'string',
+                default: 'APAC',
+                enum: ['APAC', 'EMEA'],
+              },
+              contactEmail: {
+                type: 'string',
+                default: 'ops@example.com',
+                format: 'email',
+              },
+              nested: {
+                type: 'object',
+                properties: {
+                  enabled: {
+                    type: 'boolean',
+                    default: true,
+                  },
+                  label: {
+                    type: 'string',
+                    default: 'KPI',
+                  },
+                },
+              },
             },
-            label: {
-              type: 'string',
-              default: 'KPI',
-            },
-          },
-        },
-      },
-    },
+          }
+        : input.settingsSchema,
+    settingsSchemaHash: typeof input.settingsSchemaHash === 'undefined' ? 'schema_hash_1' : input.settingsSchemaHash,
     compiledCommitId: typeof input.compiledCommitId === 'undefined' ? 'vsc_commit_1' : input.compiledCommitId,
     runtimeArtifact,
     runtimeVersion: runtimeArtifact ? 'v2' : null,
@@ -575,7 +612,11 @@ function createEntryRecord(
     runtimeCodeHash: runtimeArtifact ? 'runtime_hash_1' : null,
     artifactHash: runtimeArtifact ? 'a'.repeat(64) : null,
     filesHash: runtimeArtifact ? 'files_hash_1' : null,
-    settingsDefaultsHash: runtimeArtifact ? 'defaults_hash_1' : null,
+    settingsDefaultsHash: runtimeArtifact
+      ? typeof input.settingsDefaultsHash === 'undefined'
+        ? 'defaults_hash_1'
+        : input.settingsDefaultsHash
+      : null,
     compiledAt: runtimeArtifact ? '2026-07-06T00:00:00.000Z' : null,
     healthStatus: input.entryHealthStatus || 'ready',
     diagnostics: [],

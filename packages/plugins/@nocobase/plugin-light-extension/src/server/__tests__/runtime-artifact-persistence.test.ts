@@ -9,10 +9,13 @@
 
 import type { Database, Model, Transaction } from '@nocobase/database';
 import type { RunJSRuntimeArtifact } from '@nocobase/runjs';
+import { createHash } from 'crypto';
 import { vi } from 'vitest';
 
 import type { LightExtensionEntryRecord } from '../../shared/types';
+import { buildLightExtensionSettingsHashes } from '../services/LightExtensionEntryService';
 import { LightExtensionRuntimeCompileService } from '../services/LightExtensionRuntimeCompileService';
+import { SettingsResolverService } from '../services/SettingsResolverService';
 
 describe('light extension runtime artifact persistence', () => {
   it('upserts the immutable artifact before updating the Entry pointer in the same transaction', async () => {
@@ -89,6 +92,53 @@ describe('light extension runtime artifact persistence', () => {
     );
     expect(result.artifactHash).toMatch(/^[a-f0-9]{64}$/u);
     expect(result.runtimeCodeHash).toMatch(/^[a-f0-9]{64}$/u);
+    expect(result.settingsSchemaHash).toBeNull();
+    expect(result.settingsDefaultsHash).toBeNull();
+    expect(result.runtimeArtifact?.metadata).not.toHaveProperty('settingsSchema');
+  });
+
+  it('hashes and resolves explicit empty, array, and null defaults without treating them as absent', () => {
+    const settingsSchema = {
+      type: 'object',
+      properties: {
+        emptyObject: { type: 'object', default: {} },
+        emptyArray: { type: 'array', default: [] },
+        nullable: { type: 'string', default: null },
+        absent: { type: 'string' },
+      },
+    };
+    const hashes = buildLightExtensionSettingsHashes(settingsSchema);
+    const withoutExplicitDefaults = buildLightExtensionSettingsHashes({
+      type: 'object',
+      properties: {
+        emptyObject: { type: 'object' },
+        emptyArray: { type: 'array' },
+        nullable: { type: 'string' },
+        absent: { type: 'string' },
+      },
+    });
+    const expectedDefaultsHash = createHash('sha256')
+      .update('{"emptyArray":[],"emptyObject":{},"nullable":null}')
+      .digest('hex');
+
+    expect(hashes.settingsDefaultsHash).toBe(expectedDefaultsHash);
+    expect(hashes.settingsDefaultsHash).not.toBe(withoutExplicitDefaults.settingsDefaultsHash);
+    expect(new SettingsResolverService().getRuntimeDefaults({ id: 'entry_1', settingsSchema })).toEqual({
+      emptyObject: {},
+      emptyArray: [],
+      nullable: null,
+    });
+  });
+
+  it('distinguishes missing settings schemas from explicit empty schemas', () => {
+    expect(buildLightExtensionSettingsHashes(null)).toEqual({
+      settingsSchemaHash: null,
+      settingsDefaultsHash: null,
+    });
+    expect(buildLightExtensionSettingsHashes({})).toEqual({
+      settingsSchemaHash: expect.stringMatching(/^[a-f0-9]{64}$/u),
+      settingsDefaultsHash: expect.stringMatching(/^[a-f0-9]{64}$/u),
+    });
   });
 });
 
@@ -100,8 +150,7 @@ function createEntryValues(): Record<string, unknown> {
     kind: 'js-action',
     entryName: 'example',
     entryPath: 'src/client/js-actions/example/index.ts',
-    metaPath: null,
-    settingsPath: null,
+    descriptorPath: 'src/client/js-blocks/example/entry.json',
     title: 'Example',
     description: null,
     category: null,
@@ -109,6 +158,7 @@ function createEntryValues(): Record<string, unknown> {
     tags: null,
     sort: null,
     settingsSchema: null,
+    settingsSchemaHash: null,
     compiledCommitId: null,
     runtimeArtifact: null,
     runtimeVersion: null,

@@ -10,6 +10,7 @@
 import PluginVscFileServer from '@nocobase/plugin-vsc-file';
 import { MockServer, createMockServer } from '@nocobase/test';
 
+import type { LightExtensionSaveSourceInput } from '../../shared/types';
 import PluginLightExtensionServer from '../plugin';
 import { LightExtensionAuditService } from '../services/LightExtensionAuditService';
 import { LightExtensionEntryService } from '../services/LightExtensionEntryService';
@@ -54,10 +55,18 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     await app?.destroy();
   });
 
+  const saveCurrentSource = async (input: Omit<LightExtensionSaveSourceInput, 'expectedHeadCommitId'>) => {
+    const currentRepo = await repoService.getRepo(input.repoId);
+    return runtimeCompileService.saveSource({
+      ...input,
+      expectedHeadCommitId: currentRepo.headCommitId,
+    });
+  };
+
   it('saves source, compiles ready entries, and resolves runtime from the entry current artifact', async () => {
     const repo = await repoService.createRepo({ name: 'Save Source Runtime', initialFiles: baselineSalesKpiFiles() });
 
-    const result = await runtimeCompileService.saveSource({
+    const result = await saveCurrentSource({
       repoId: repo.id,
       message: 'save source runtime',
       files: validSalesKpiFiles(),
@@ -105,45 +114,322 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     expect(runtimeArtifact.code).toContain('Sales KPI');
   });
 
-  it('preserves entryId and runtime bindings when an entry directory is renamed', async () => {
+  it('keeps descriptor hashes isolated from runtime hashes and tracks ordinary JSON modules', async () => {
     const repo = await repoService.createRepo({
-      name: 'Stable Entry Directory Rename',
-      initialFiles: [
-        ...baselineSalesKpiFiles(),
+      name: 'Hash Isolation',
+      initialFiles: baselineSalesKpiFiles(),
+    });
+    const entryRepository = app.db.getRepository('lightExtensionEntries');
+    const artifactRepository = app.db.getRepository('lightExtensionRuntimeArtifacts');
+    const readEntry = async () => {
+      const entry = await entryRepository.findOne({ filter: { repoId: repo.id, entryName: 'sales-kpi' } });
+      expect(entry).toBeTruthy();
+      return {
+        compiledCommitId: String(entry?.get('compiledCommitId')),
+        filesHash: String(entry?.get('filesHash')),
+        runtimeCodeHash: String(entry?.get('runtimeCodeHash')),
+        artifactHash: String(entry?.get('artifactHash')),
+        settingsSchemaHash: String(entry?.get('settingsSchemaHash')),
+        settingsDefaultsHash: String(entry?.get('settingsDefaultsHash')),
+      };
+    };
+
+    const initial = await saveCurrentSource({
+      repoId: repo.id,
+      message: 'compile initial hash contract',
+      files: salesKpiJsonModuleFiles({ descriptorTitle: 'Sales KPI', dataTitle: 'Revenue' }),
+    });
+    const initialHashes = await readEntry();
+    expect(initialHashes.compiledCommitId).toBe(initial.commit.id);
+    await expect(artifactRepository.count()).resolves.toBe(1);
+
+    const titleChanged = await saveCurrentSource({
+      repoId: repo.id,
+      message: 'change descriptor title',
+      files: [
         {
-          path: 'src/client/js-blocks/sales-kpi/meta.json',
-          content: JSON.stringify({ key: 'stable-sales-kpi', title: 'Sales KPI' }),
+          path: 'src/client/js-blocks/sales-kpi/entry.json',
+          content: JSON.stringify(
+            salesKpiDescriptor({ descriptorTitle: 'Revenue KPI', propertyTitle: 'Region', defaultRegion: 'APAC' }),
+          ),
           language: 'json',
         },
       ],
     });
-    const first = await runtimeCompileService.saveSource({
+    const titleHashes = await readEntry();
+    expect(titleHashes.compiledCommitId).toBe(titleChanged.commit.id);
+    expectRuntimeHashes(titleHashes, initialHashes);
+    expect(titleHashes.settingsSchemaHash).toBe(initialHashes.settingsSchemaHash);
+    expect(titleHashes.settingsDefaultsHash).toBe(initialHashes.settingsDefaultsHash);
+    await expect(artifactRepository.count()).resolves.toBe(1);
+
+    await saveCurrentSource({
+      repoId: repo.id,
+      message: 'reorder settings properties',
+      files: [
+        {
+          path: 'src/client/js-blocks/sales-kpi/entry.json',
+          content: JSON.stringify(
+            salesKpiDescriptor({
+              descriptorTitle: 'Revenue KPI',
+              propertyTitle: 'Region',
+              defaultRegion: 'APAC',
+              reverseProperties: true,
+            }),
+          ),
+          language: 'json',
+        },
+      ],
+    });
+    const reorderedHashes = await readEntry();
+    expectRuntimeHashes(reorderedHashes, initialHashes);
+    expect(reorderedHashes.settingsSchemaHash).not.toBe(titleHashes.settingsSchemaHash);
+    expect(reorderedHashes.settingsDefaultsHash).toBe(titleHashes.settingsDefaultsHash);
+    await expect(artifactRepository.count()).resolves.toBe(1);
+
+    await saveCurrentSource({
+      repoId: repo.id,
+      message: 'change settings UI declaration',
+      files: [
+        {
+          path: 'src/client/js-blocks/sales-kpi/entry.json',
+          content: JSON.stringify(
+            salesKpiDescriptor({
+              descriptorTitle: 'Revenue KPI',
+              propertyTitle: 'Sales region',
+              defaultRegion: 'APAC',
+              component: 'Select',
+              reverseProperties: true,
+            }),
+          ),
+          language: 'json',
+        },
+      ],
+    });
+    const uiHashes = await readEntry();
+    expectRuntimeHashes(uiHashes, initialHashes);
+    expect(uiHashes.settingsSchemaHash).not.toBe(initialHashes.settingsSchemaHash);
+    expect(uiHashes.settingsDefaultsHash).toBe(initialHashes.settingsDefaultsHash);
+    await expect(artifactRepository.count()).resolves.toBe(1);
+
+    await saveCurrentSource({
+      repoId: repo.id,
+      message: 'change settings default',
+      files: [
+        {
+          path: 'src/client/js-blocks/sales-kpi/entry.json',
+          content: JSON.stringify(
+            salesKpiDescriptor({
+              descriptorTitle: 'Revenue KPI',
+              propertyTitle: 'Sales region',
+              defaultRegion: 'EMEA',
+              component: 'Select',
+              reverseProperties: true,
+            }),
+          ),
+          language: 'json',
+        },
+      ],
+    });
+    const defaultHashes = await readEntry();
+    expectRuntimeHashes(defaultHashes, initialHashes);
+    expect(defaultHashes.settingsSchemaHash).not.toBe(uiHashes.settingsSchemaHash);
+    expect(defaultHashes.settingsDefaultsHash).not.toBe(uiHashes.settingsDefaultsHash);
+    await expect(artifactRepository.count()).resolves.toBe(1);
+
+    await saveCurrentSource({
+      repoId: repo.id,
+      message: 'change runtime code',
+      files: [
+        {
+          path: 'src/client/js-blocks/sales-kpi/index.tsx',
+          content: "import data from './data.json';\nctx.render(<strong>{data.title}</strong>);\n",
+          language: 'typescript',
+        },
+      ],
+    });
+    const codeHashes = await readEntry();
+    expect(codeHashes.filesHash).not.toBe(defaultHashes.filesHash);
+    expect(codeHashes.runtimeCodeHash).not.toBe(defaultHashes.runtimeCodeHash);
+    expect(codeHashes.artifactHash).not.toBe(defaultHashes.artifactHash);
+    expect(codeHashes.settingsSchemaHash).toBe(defaultHashes.settingsSchemaHash);
+    expect(codeHashes.settingsDefaultsHash).toBe(defaultHashes.settingsDefaultsHash);
+    await expect(artifactRepository.count()).resolves.toBe(2);
+
+    await saveCurrentSource({
+      repoId: repo.id,
+      message: 'change runtime JSON module',
+      files: [
+        {
+          path: 'src/client/js-blocks/sales-kpi/data.json',
+          content: JSON.stringify({ title: 'Orders' }),
+          language: 'json',
+        },
+      ],
+    });
+    const jsonHashes = await readEntry();
+    expect(jsonHashes.filesHash).not.toBe(codeHashes.filesHash);
+    expect(jsonHashes.runtimeCodeHash).not.toBe(codeHashes.runtimeCodeHash);
+    expect(jsonHashes.artifactHash).not.toBe(codeHashes.artifactHash);
+    expect(jsonHashes.settingsSchemaHash).toBe(codeHashes.settingsSchemaHash);
+    expect(jsonHashes.settingsDefaultsHash).toBe(codeHashes.settingsDefaultsHash);
+    await expect(artifactRepository.count()).resolves.toBe(3);
+  });
+
+  it('returns null settings hashes without a schema and stable hashes for an explicit empty schema', async () => {
+    const repo = await repoService.createRepo({
+      name: 'Null And Empty Settings Schema',
+      initialFiles: [
+        ...entryFiles('no-schema', 'Initial no schema', { schemaVersion: 1, key: 'no-schema' }),
+        ...entryFiles('empty-schema', 'Initial empty schema', {
+          schemaVersion: 1,
+          key: 'empty-schema',
+          settingsSchema: {},
+        }),
+      ],
+    });
+
+    await saveCurrentSource({
+      repoId: repo.id,
+      message: 'compile null and empty schemas',
+      files: [
+        {
+          path: 'src/client/js-blocks/no-schema/index.tsx',
+          content: 'ctx.render(<div>No schema</div>);\n',
+          language: 'typescript',
+        },
+        {
+          path: 'src/client/js-blocks/empty-schema/index.tsx',
+          content: 'ctx.render(<div>Empty schema</div>);\n',
+          language: 'typescript',
+        },
+      ],
+    });
+    const entries = await app.db.getRepository('lightExtensionEntries').find({
+      filter: { repoId: repo.id },
+      sort: ['entryName'],
+    });
+    const emptySchema = entries.find((entry) => entry.get('entryName') === 'empty-schema');
+    const noSchema = entries.find((entry) => entry.get('entryName') === 'no-schema');
+
+    expect(noSchema?.get('settingsSchema')).toBeNull();
+    expect(noSchema?.get('settingsSchemaHash')).toBeNull();
+    expect(noSchema?.get('settingsDefaultsHash')).toBeNull();
+    expect(emptySchema?.get('settingsSchema')).toEqual({});
+    expect(emptySchema?.get('settingsSchemaHash')).toMatch(/^[a-f0-9]{64}$/u);
+    expect(emptySchema?.get('settingsDefaultsHash')).toMatch(/^[a-f0-9]{64}$/u);
+    await expect(runtimeResolveService.listSelectableEntries({ repoId: repo.id })).resolves.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          entryName: 'no-schema',
+          settingsSchema: null,
+          settingsSchemaHash: null,
+          settingsDefaultsHash: null,
+        }),
+        expect.objectContaining({
+          entryName: 'empty-schema',
+          settingsSchema: {},
+          settingsSchemaHash: expect.stringMatching(/^[a-f0-9]{64}$/u),
+          settingsDefaultsHash: expect.stringMatching(/^[a-f0-9]{64}$/u),
+        }),
+      ]),
+    );
+  });
+
+  it('rejects entry.json imports without changing the repository head or current artifact', async () => {
+    const repo = await repoService.createRepo({
+      name: 'Reject Descriptor Import',
+      initialFiles: baselineSalesKpiFiles(),
+    });
+    const first = await saveCurrentSource({
+      repoId: repo.id,
+      message: 'compile before descriptor import',
+      files: validSalesKpiFiles(),
+    });
+    const entryId = first.compile.entries[0].entryId;
+    const initialEntry = await app.db.getRepository('lightExtensionEntries').findOne({ filterByTk: entryId });
+    const initialArtifactHash = initialEntry?.get('artifactHash');
+
+    await expect(
+      saveCurrentSource({
+        repoId: repo.id,
+        message: 'reject descriptor import',
+        files: [
+          {
+            path: 'src/client/js-blocks/sales-kpi/index.tsx',
+            content: "import descriptor from './entry.json';\nctx.render(<div>{descriptor.title}</div>);\n",
+            language: 'typescript',
+          },
+        ],
+      }),
+    ).rejects.toMatchObject({
+      code: 'LIGHT_EXTENSION_VALIDATION_FAILED',
+      status: 422,
+      details: {
+        diagnostics: expect.arrayContaining([expect.objectContaining({ code: 'entry_descriptor_import_not_allowed' })]),
+      },
+    });
+
+    await expect(repoService.getRepo(repo.id)).resolves.toMatchObject({ headCommitId: first.commit.id });
+    const currentEntry = await app.db.getRepository('lightExtensionEntries').findOne({ filterByTk: entryId });
+    expect(currentEntry?.get('compiledCommitId')).toBe(first.commit.id);
+    expect(currentEntry?.get('artifactHash')).toBe(initialArtifactHash);
+  });
+
+  it('preserves entryId and runtime bindings when an entry directory is renamed', async () => {
+    const repo = await repoService.createRepo({
+      name: 'Stable Entry Directory Rename',
+      initialFiles: [
+        {
+          path: 'src/client/js-blocks/sales-kpi/index.tsx',
+          content: 'ctx.render(<div>Initial</div>);\n',
+          language: 'typescript',
+        },
+        {
+          path: 'src/client/js-blocks/sales-kpi/entry.json',
+          content: JSON.stringify({ schemaVersion: 1, key: 'stable-sales-kpi', title: 'Sales KPI' }),
+          language: 'json',
+        },
+      ],
+    });
+    const first = await saveCurrentSource({
       repoId: repo.id,
       message: 'compile stable entry',
-      files: validSalesKpiFiles(),
+      files: validSalesKpiFiles().map((file) =>
+        file.path.endsWith('/entry.json')
+          ? {
+              ...file,
+              content: JSON.stringify({
+                schemaVersion: 1,
+                key: 'stable-sales-kpi',
+                title: 'Sales KPI',
+                settingsSchema: { type: 'object', properties: {} },
+              }),
+            }
+          : file,
+      ),
     });
     const originalEntryId = first.compile.entries[0].entryId;
 
-    const renamed = await runtimeCompileService.saveSource({
+    const renamed = await saveCurrentSource({
       repoId: repo.id,
       message: 'rename stable entry directory',
       files: [
         { path: 'src/client/js-blocks/sales-kpi/index.tsx', operation: 'delete' },
-        { path: 'src/client/js-blocks/sales-kpi/meta.json', operation: 'delete' },
-        { path: 'src/client/js-blocks/sales-kpi/settings.json', operation: 'delete' },
+        { path: 'src/client/js-blocks/sales-kpi/entry.json', operation: 'delete' },
         {
           path: 'src/client/js-blocks/renamed-sales/index.tsx',
           content: 'const title = "Renamed Sales KPI";\nctx.render(<div>{title}</div>);\n',
           language: 'typescript',
         },
         {
-          path: 'src/client/js-blocks/renamed-sales/meta.json',
-          content: JSON.stringify({ key: 'stable-sales-kpi', title: 'Sales KPI' }),
-          language: 'json',
-        },
-        {
-          path: 'src/client/js-blocks/renamed-sales/settings.json',
-          content: JSON.stringify({ type: 'object', properties: {} }),
+          path: 'src/client/js-blocks/renamed-sales/entry.json',
+          content: JSON.stringify({
+            schemaVersion: 1,
+            key: 'stable-sales-kpi',
+            title: 'Sales KPI',
+            settingsSchema: { type: 'object', properties: {} },
+          }),
           language: 'json',
         },
       ],
@@ -179,14 +465,14 @@ describe('plugin-light-extension saveSource runtime compile', () => {
 
   it('rejects no-change saves and blocks archived repositories', async () => {
     const repo = await repoService.createRepo({ name: 'No Change Save', initialFiles: baselineSalesKpiFiles() });
-    const first = await runtimeCompileService.saveSource({
+    const first = await saveCurrentSource({
       repoId: repo.id,
       message: 'initial save',
       files: validSalesKpiFiles(),
     });
 
     await expect(
-      runtimeCompileService.saveSource({
+      saveCurrentSource({
         repoId: repo.id,
         message: 'no change save',
         files: [],
@@ -196,7 +482,7 @@ describe('plugin-light-extension saveSource runtime compile', () => {
       details: { sourceCode: 'NO_CHANGES' },
     });
 
-    const updated = await runtimeCompileService.saveSource({
+    const updated = await saveCurrentSource({
       repoId: repo.id,
       message: 'save against current repository head',
       files: [
@@ -213,7 +499,7 @@ describe('plugin-light-extension saveSource runtime compile', () => {
       repoId: repo.id,
     });
     await expect(
-      runtimeCompileService.saveSource({
+      saveCurrentSource({
         repoId: repo.id,
         message: 'blocked save',
         files: [],
@@ -228,14 +514,14 @@ describe('plugin-light-extension saveSource runtime compile', () => {
       name: 'Failed Runtime Compile',
       initialFiles: baselineSalesKpiFiles(),
     });
-    const first = await runtimeCompileService.saveSource({
+    const first = await saveCurrentSource({
       repoId: repo.id,
       message: 'initial save',
       files: validSalesKpiFiles(),
     });
 
     await expect(
-      runtimeCompileService.saveSource({
+      saveCurrentSource({
         repoId: repo.id,
         message: 'broken source',
         files: [
@@ -280,7 +566,7 @@ describe('plugin-light-extension saveSource runtime compile', () => {
       name: 'Atomic Multi Entry Compile',
       initialFiles: baselineMultiEntryFiles(),
     });
-    const first = await runtimeCompileService.saveSource({
+    const first = await saveCurrentSource({
       repoId: repo.id,
       message: 'compile both v1 entries',
       files: multiEntryFiles('V1'),
@@ -288,7 +574,7 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     const commitCountBeforeFailure = await app.db.getRepository('vscFileCommits').count();
 
     await expect(
-      runtimeCompileService.saveSource({
+      saveCurrentSource({
         repoId: repo.id,
         message: 'reject partial v2 compile',
         files: multiEntryFiles('V2', true),
@@ -319,7 +605,7 @@ describe('plugin-light-extension saveSource runtime compile', () => {
       });
     }
 
-    const fixed = await runtimeCompileService.saveSource({
+    const fixed = await saveCurrentSource({
       repoId: repo.id,
       message: 'compile both v2 entries',
       files: multiEntryFiles('V2'),
@@ -339,11 +625,12 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     }
   });
 
-  it('serializes the complete save pipeline and keeps runtime on the latest head', async () => {
+  it('rejects the second save when concurrent requests use the same expected head', async () => {
     const repo = await repoService.createRepo({
       name: 'Serialized Runtime Compile',
       initialFiles: baselineSalesKpiFiles(),
     });
+    const expectedHeadCommitId = repo.headCommitId;
     const firstCompileStarted = createDeferred();
     const secondCompileStarted = createDeferred();
     const releaseFirstCompile = createDeferred();
@@ -364,6 +651,7 @@ describe('plugin-light-extension saveSource runtime compile', () => {
 
     const firstSavePromise = runtimeCompileService.saveSource({
       repoId: repo.id,
+      expectedHeadCommitId,
       message: 'first serialized save',
       files: [
         {
@@ -377,6 +665,7 @@ describe('plugin-light-extension saveSource runtime compile', () => {
 
     const secondSavePromise = runtimeCompileService.saveSource({
       repoId: repo.id,
+      expectedHeadCommitId,
       message: 'second serialized save',
       files: [
         {
@@ -386,6 +675,7 @@ describe('plugin-light-extension saveSource runtime compile', () => {
         },
       ],
     });
+    const secondSaveErrorPromise = secondSavePromise.catch((error) => error);
     const secondCompileStartedBeforeRelease = await Promise.race([
       secondCompileStarted.promise.then(() => true),
       delay(250).then(() => false),
@@ -393,7 +683,8 @@ describe('plugin-light-extension saveSource runtime compile', () => {
 
     releaseFirstCompile.resolve();
 
-    const [firstSave, secondSave] = await Promise.all([firstSavePromise, secondSavePromise]);
+    const firstSave = await firstSavePromise;
+    const secondSaveError = await secondSaveErrorPromise;
     const currentRepo = await repoService.getRepo(repo.id);
     const entry = await app.db.getRepository('lightExtensionEntries').findOne({
       filter: {
@@ -403,11 +694,19 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     });
 
     expect(secondCompileStartedBeforeRelease).toBe(false);
-    expect(secondSave.commit.parentCommitId).toBe(firstSave.commit.id);
-    expect(currentRepo.headCommitId).toBe(secondSave.commit.id);
-    expect(entry?.get('compiledCommitId')).toBe(secondSave.commit.id);
+    expect(secondSaveError).toMatchObject({
+      code: 'LIGHT_EXTENSION_SOURCE_OUTDATED',
+      status: 409,
+      details: {
+        expectedHeadCommitId,
+        currentHeadCommitId: firstSave.commit.id,
+      },
+    });
+    expect(compileCallCount).toBe(1);
+    expect(currentRepo.headCommitId).toBe(firstSave.commit.id);
+    expect(entry?.get('compiledCommitId')).toBe(firstSave.commit.id);
     expect(entry?.get('runtimeArtifact')).toMatchObject({
-      code: expect.stringContaining('Second serialized runtime'),
+      code: expect.stringContaining('First serialized runtime'),
     });
   });
 });
@@ -420,13 +719,17 @@ function validSalesKpiFiles() {
       language: 'typescript',
     },
     {
-      path: 'src/client/js-blocks/sales-kpi/settings.json',
+      path: 'src/client/js-blocks/sales-kpi/entry.json',
       content: JSON.stringify({
-        type: 'object',
-        properties: {
-          region: {
-            type: 'string',
-            default: 'APAC',
+        schemaVersion: 1,
+        key: 'sales-kpi',
+        settingsSchema: {
+          type: 'object',
+          properties: {
+            region: {
+              type: 'string',
+              default: 'APAC',
+            },
           },
         },
       }),
@@ -435,12 +738,98 @@ function validSalesKpiFiles() {
   ];
 }
 
+function salesKpiJsonModuleFiles(input: { descriptorTitle: string; dataTitle: string }) {
+  return [
+    {
+      path: 'src/client/js-blocks/sales-kpi/index.tsx',
+      content: "import data from './data.json';\nctx.render(<div>{data.title}</div>);\n",
+      language: 'typescript',
+    },
+    {
+      path: 'src/client/js-blocks/sales-kpi/data.json',
+      content: JSON.stringify({ title: input.dataTitle }),
+      language: 'json',
+    },
+    {
+      path: 'src/client/js-blocks/sales-kpi/entry.json',
+      content: JSON.stringify(
+        salesKpiDescriptor({
+          descriptorTitle: input.descriptorTitle,
+          propertyTitle: 'Region',
+          defaultRegion: 'APAC',
+        }),
+      ),
+      language: 'json',
+    },
+  ];
+}
+
+function salesKpiDescriptor(input: {
+  descriptorTitle: string;
+  propertyTitle: string;
+  defaultRegion: string;
+  component?: string;
+  reverseProperties?: boolean;
+}) {
+  const region = {
+    type: 'string',
+    title: input.propertyTitle,
+    default: input.defaultRegion,
+    enum: ['APAC', 'EMEA'],
+    ...(input.component ? { 'x-component': input.component } : {}),
+  };
+  const showLabel = {
+    type: 'boolean',
+    default: true,
+  };
+  const properties = input.reverseProperties ? { showLabel, region } : { region, showLabel };
+
+  return {
+    schemaVersion: 1,
+    key: 'sales-kpi',
+    title: input.descriptorTitle,
+    settingsSchema: {
+      type: 'object',
+      properties,
+    },
+  };
+}
+
+function entryFiles(entryName: string, label: string, descriptor: Record<string, unknown>) {
+  return [
+    {
+      path: `src/client/js-blocks/${entryName}/index.tsx`,
+      content: `ctx.render(<div>${label}</div>);\n`,
+      language: 'typescript',
+    },
+    {
+      path: `src/client/js-blocks/${entryName}/entry.json`,
+      content: JSON.stringify(descriptor),
+      language: 'json',
+    },
+  ];
+}
+
+function expectRuntimeHashes(
+  actual: { filesHash: string; runtimeCodeHash: string; artifactHash: string },
+  expected: { filesHash: string; runtimeCodeHash: string; artifactHash: string },
+) {
+  expect(actual.filesHash).toBe(expected.filesHash);
+  expect(actual.runtimeCodeHash).toBe(expected.runtimeCodeHash);
+  expect(actual.artifactHash).toBe(expected.artifactHash);
+}
+
 function baselineSalesKpiFiles() {
   return [
     {
       path: 'src/client/js-blocks/sales-kpi/index.tsx',
       content: 'ctx.render(<div>Initial</div>);\n',
       language: 'typescript',
+    },
+    {
+      path: 'src/client/js-blocks/sales-kpi/entry.json',
+      content: '{"schemaVersion":1,"key":"sales-kpi"}',
+      language: 'json',
     },
   ];
 }
@@ -453,9 +842,19 @@ function baselineMultiEntryFiles() {
       language: 'typescript',
     },
     {
+      path: 'src/client/js-blocks/entry-a/entry.json',
+      content: '{"schemaVersion":1,"key":"entry-a"}',
+      language: 'json',
+    },
+    {
       path: 'src/client/js-blocks/entry-b/index.tsx',
       content: 'ctx.render(<div>B initial</div>);\n',
       language: 'typescript',
+    },
+    {
+      path: 'src/client/js-blocks/entry-b/entry.json',
+      content: '{"schemaVersion":1,"key":"entry-b"}',
+      language: 'json',
     },
   ];
 }
@@ -468,11 +867,21 @@ function multiEntryFiles(version: string, breakEntryB = false) {
       language: 'typescript',
     },
     {
+      path: 'src/client/js-blocks/entry-a/entry.json',
+      content: '{"schemaVersion":1,"key":"entry-a"}',
+      language: 'json',
+    },
+    {
       path: 'src/client/js-blocks/entry-b/index.tsx',
       content: breakEntryB
         ? `import Missing from './missing';\nctx.render(<Missing>B ${version}</Missing>);\n`
         : `ctx.render(<div>B ${version}</div>);\n`,
       language: 'typescript',
+    },
+    {
+      path: 'src/client/js-blocks/entry-b/entry.json',
+      content: '{"schemaVersion":1,"key":"entry-b"}',
+      language: 'json',
     },
   ];
 }

@@ -7,8 +7,27 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import {
+  LIGHT_EXTENSION_ENTRY_KEY_PATTERN,
+  LIGHT_EXTENSION_ENTRY_SCHEMA_URI,
+  LIGHT_EXTENSION_ENTRY_SCHEMA_VERSION,
+  LIGHT_EXTENSION_SETTINGS_CONDITION_LIMITS,
+  LIGHT_EXTENSION_SETTINGS_CONDITION_LOGICS,
+  LIGHT_EXTENSION_SETTINGS_CONDITION_OPERATORS,
+  LIGHT_EXTENSION_SETTINGS_SCHEMA_KEYWORDS,
+  LIGHT_EXTENSION_SETTINGS_SCHEMA_TYPES,
+  LIGHT_EXTENSION_X_COMPONENT_WHITELIST,
+  lightExtensionEntryV1SchemaJson,
+} from '@nocobase/light-extension-sdk/schema';
+import sdkPackageJson from '@nocobase/light-extension-sdk/package.json';
+import { createHash } from 'crypto';
 import { posix as pathPosix } from 'path';
-import { LIGHT_EXTENSION_SUPPORTED_KINDS, type LightExtensionKind } from '../../constants';
+import {
+  LIGHT_EXTENSION_ENTRY_DESCRIPTOR_FILE,
+  LIGHT_EXTENSION_ENTRY_DESCRIPTOR_MAX_BYTES,
+  LIGHT_EXTENSION_SUPPORTED_KINDS,
+  type LightExtensionKind,
+} from '../../constants';
 import type {
   LightExtensionCapabilities,
   LightExtensionDiagnostic,
@@ -44,6 +63,7 @@ export const LIGHT_EXTENSION_VALIDATION_LIMITS: LightExtensionValidationLimits =
   maxRepoFiles: 200,
   maxEntryFiles: 30,
   maxFileBytes: 256 * 1024,
+  maxEntryDescriptorBytes: LIGHT_EXTENSION_ENTRY_DESCRIPTOR_MAX_BYTES,
   maxRepoBytes: 2 * 1024 * 1024,
   maxEntries: 50,
   maxSyncBatchFiles: 100,
@@ -53,51 +73,6 @@ export const LIGHT_EXTENSION_VALIDATION_LIMITS: LightExtensionValidationLimits =
   maxSettingsSchemaDepth: 6,
 };
 
-export const LIGHT_EXTENSION_X_COMPONENT_WHITELIST = [
-  'Input',
-  'Input.TextArea',
-  'InputNumber',
-  'Select',
-  'CollectionSelect',
-  'CollectionFieldSelect',
-  'RoleSelect',
-  'DataSourceSelect',
-  'Switch',
-  'Checkbox',
-  'Radio.Group',
-  'DatePicker',
-  'ColorPicker',
-] as const;
-
-export const LIGHT_EXTENSION_SETTINGS_SCHEMA_TYPES = [
-  'object',
-  'array',
-  'string',
-  'number',
-  'integer',
-  'boolean',
-] as const;
-
-export const LIGHT_EXTENSION_SETTINGS_SCHEMA_KEYWORDS = [
-  'type',
-  'title',
-  'description',
-  'default',
-  'enum',
-  'required',
-  'properties',
-  'items',
-  'minLength',
-  'maxLength',
-  'minimum',
-  'maximum',
-  'format',
-  'x-component',
-  'x-component-props',
-  'x-decorator',
-  'x-decorator-props',
-] as const;
-
 export type { LightExtensionSourceFileInput } from './light-extension-validator/types';
 
 export interface LightExtensionEntryValidationResult {
@@ -105,8 +80,7 @@ export interface LightExtensionEntryValidationResult {
   kind: LightExtensionKind;
   entryName: string;
   entryPath: string;
-  metaPath: string | null;
-  settingsPath: string | null;
+  descriptorPath: string;
   title: string | null;
   description: string | null;
   category: string | null;
@@ -152,7 +126,14 @@ export class LightExtensionValidator {
         allowedKeywords: [...this.capabilities.schemaSubset.allowedKeywords],
         maxDepth: this.capabilities.schemaSubset.maxDepth,
       },
+      entryDescriptor: { ...this.capabilities.entryDescriptor },
       xComponentWhitelist: [...this.capabilities.xComponentWhitelist],
+      conditions: {
+        operators: [...this.capabilities.conditions.operators],
+        logic: [...this.capabilities.conditions.logic],
+        limits: { ...this.capabilities.conditions.limits },
+      },
+      sdk: { ...this.capabilities.sdk },
       limits: { ...this.capabilities.limits },
       writePolicy: { ...this.capabilities.writePolicy },
       supportedKinds: [...this.capabilities.supportedKinds],
@@ -245,10 +226,8 @@ export class LightExtensionValidator {
       };
       if (isCodeFile(file.path)) {
         diagnostics.push(...validateCodeFile(file, target));
-      } else if (pathPosix.basename(file.path) === 'meta.json') {
-        this.schemaValidator.validateMetaFile(file, diagnostics, target);
-      } else if (pathPosix.basename(file.path) === 'settings.json') {
-        this.schemaValidator.validateSettingsFile(file, diagnostics, target);
+      } else if (pathPosix.basename(file.path) === LIGHT_EXTENSION_ENTRY_DESCRIPTOR_FILE) {
+        this.schemaValidator.validateEntryDescriptor(file, diagnostics, target);
       }
     }
 
@@ -270,25 +249,26 @@ export class LightExtensionValidator {
       entryName: bucket.entryName,
     };
     const diagnostics: LightExtensionDiagnostic[] = [];
-    const metaPath = `${bucket.rootPath}/meta.json`;
-    const settingsPath = `${bucket.rootPath}/settings.json`;
+    const descriptorPath = `${bucket.rootPath}/${LIGHT_EXTENSION_ENTRY_DESCRIPTOR_FILE}`;
     const indexFile = findEntryIndexFile(bucket);
-    const metaFile = bucket.files.find((file) => file.path === metaPath);
-    const settingsFile = bucket.files.find((file) => file.path === settingsPath);
-    const metaDiagnostics: LightExtensionDiagnostic[] = [];
-    const meta = this.schemaValidator.validateMetaFile(metaFile, metaDiagnostics, folderTarget);
-    const entryName = meta.key || bucket.entryName;
+    const descriptorFile = bucket.files.find((file) => file.path === descriptorPath);
+    const descriptorDiagnostics: LightExtensionDiagnostic[] = [];
+    const descriptor = this.schemaValidator.validateEntryDescriptor(
+      descriptorFile,
+      descriptorDiagnostics,
+      folderTarget,
+    );
+    const entryName = descriptor?.key || bucket.entryName;
     const target = {
       kind: bucket.kind,
       entryName,
     };
     diagnostics.push(
-      ...metaDiagnostics.map((item) => ({
+      ...descriptorDiagnostics.map((item) => ({
         ...item,
         entryName,
       })),
     );
-    const settingsSchema = this.schemaValidator.validateSettingsFile(settingsFile, diagnostics, target);
     const codeFiles = bucket.files.filter((file) => isCodeFile(file.path));
 
     if (bucket.files.length > this.capabilities.limits.maxEntryFiles) {
@@ -321,15 +301,14 @@ export class LightExtensionValidator {
       kind: bucket.kind,
       entryName,
       entryPath: indexFile?.path || bucket.rootPath,
-      metaPath: metaFile ? metaPath : null,
-      settingsPath: settingsFile ? settingsPath : null,
-      title: meta.title || entryName,
-      description: meta.description,
-      category: meta.category,
-      icon: meta.icon,
-      tags: meta.tags,
-      sort: meta.sort,
-      settingsSchema,
+      descriptorPath,
+      title: descriptor?.title || entryName,
+      description: descriptor?.description || null,
+      category: descriptor?.category || null,
+      icon: descriptor?.icon || null,
+      tags: descriptor?.tags || null,
+      sort: descriptor?.sort ?? null,
+      settingsSchema: descriptor?.settingsSchema || null,
       diagnostics,
     };
   }
@@ -351,6 +330,10 @@ export class LightExtensionValidator {
 
 export function buildCapabilities(limits: LightExtensionValidationLimits): LightExtensionCapabilities {
   return {
+    entryDescriptor: {
+      schemaVersion: LIGHT_EXTENSION_ENTRY_SCHEMA_VERSION,
+      keyPattern: LIGHT_EXTENSION_ENTRY_KEY_PATTERN,
+    },
     allowedPaths: {
       repo: [
         'README.md',
@@ -361,7 +344,6 @@ export function buildCapabilities(limits: LightExtensionValidationLimits): Light
         'src/client/js-fields/**',
         'src/client/js-actions/**',
         'src/client/js-items/**',
-        'src/client/runjs/**',
       ],
       entries: buildEntryAllowedPaths(),
     },
@@ -371,6 +353,17 @@ export function buildCapabilities(limits: LightExtensionValidationLimits): Light
       maxDepth: limits.maxSettingsSchemaDepth,
     },
     xComponentWhitelist: [...LIGHT_EXTENSION_X_COMPONENT_WHITELIST],
+    conditions: {
+      operators: [...LIGHT_EXTENSION_SETTINGS_CONDITION_OPERATORS],
+      logic: [...LIGHT_EXTENSION_SETTINGS_CONDITION_LOGICS],
+      limits: { ...LIGHT_EXTENSION_SETTINGS_CONDITION_LIMITS },
+    },
+    sdk: {
+      packageName: sdkPackageJson.name,
+      version: sdkPackageJson.version,
+      entrySchemaUri: LIGHT_EXTENSION_ENTRY_SCHEMA_URI,
+      entrySchemaSha256: createHash('sha256').update(lightExtensionEntryV1SchemaJson).digest('hex'),
+    },
     limits,
     writePolicy: {
       validateFinalWorkspaceOnPush: true,
@@ -404,7 +397,7 @@ function validateUniqueEntryKeys(entries: LightExtensionEntryValidationResult[])
     .flatMap((group) =>
       group.map((entry) =>
         diagnostic('duplicate_entry_key', 'error', `Entry key "${entry.entryName}" must be unique for ${entry.kind}`, {
-          path: entry.metaPath || entry.entryPath,
+          path: entry.descriptorPath,
           kind: entry.kind,
           entryName: entry.entryName,
         }),

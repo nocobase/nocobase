@@ -8,6 +8,7 @@
  */
 
 import type { Database, Model, Transaction } from '@nocobase/database';
+import { createHash } from 'crypto';
 
 import { LightExtensionError } from '../../shared/errors';
 import type {
@@ -127,6 +128,7 @@ export class LightExtensionEntryService {
     const entries: LightExtensionEntryRecord[] = [];
 
     for (const sourceEntry of sourceEntries) {
+      const settingsHashes = buildLightExtensionSettingsHashes(sourceEntry.settingsSchema);
       const existing = await this.db.getRepository('lightExtensionEntries').findOne({
         filter: {
           repoId,
@@ -142,8 +144,7 @@ export class LightExtensionEntryService {
         kind: sourceEntry.kind,
         entryName: sourceEntry.entryName,
         entryPath: sourceEntry.entryPath,
-        metaPath: sourceEntry.metaPath,
-        settingsPath: sourceEntry.settingsPath,
+        descriptorPath: sourceEntry.descriptorPath,
         title: sourceEntry.title,
         description: sourceEntry.description,
         category: sourceEntry.category,
@@ -151,6 +152,8 @@ export class LightExtensionEntryService {
         tags: sourceEntry.tags,
         sort: sourceEntry.sort,
         settingsSchema: sourceEntry.settingsSchema,
+        settingsSchemaHash: settingsHashes.settingsSchemaHash,
+        settingsDefaultsHash: settingsHashes.settingsDefaultsHash,
         healthStatus: 'ready',
         diagnostics: sourceEntry.diagnostics,
       };
@@ -217,7 +220,6 @@ function emptyRuntimeFields() {
     runtimeCodeHash: null,
     artifactHash: null,
     filesHash: null,
-    settingsDefaultsHash: null,
     compiledAt: null,
   };
 }
@@ -230,8 +232,7 @@ export function entryFromModel(record: Model): LightExtensionEntryRecord {
     kind: String(record.get('kind')),
     entryName: String(record.get('entryName')),
     entryPath: String(record.get('entryPath')),
-    metaPath: nullableString(record.get('metaPath')),
-    settingsPath: nullableString(record.get('settingsPath')),
+    descriptorPath: String(record.get('descriptorPath')),
     title: nullableString(record.get('title')),
     description: nullableString(record.get('description')),
     category: nullableString(record.get('category')),
@@ -239,6 +240,7 @@ export function entryFromModel(record: Model): LightExtensionEntryRecord {
     tags: normalizeTags(record.get('tags')),
     sort: normalizeNullableNumber(record.get('sort')),
     settingsSchema: normalizeRecord(record.get('settingsSchema')),
+    settingsSchemaHash: nullableString(record.get('settingsSchemaHash')),
     compiledCommitId: nullableString(record.get('compiledCommitId')),
     runtimeArtifact: normalizeRuntimeArtifact(record.get('runtimeArtifact')),
     runtimeVersion: nullableString(record.get('runtimeVersion')),
@@ -315,4 +317,87 @@ function normalizeDate(value: unknown): string | null {
     return value.toISOString();
   }
   return typeof value === 'string' ? value : null;
+}
+
+export function buildLightExtensionSettingsHashes(settingsSchema: Record<string, unknown> | null): {
+  settingsSchemaHash: string | null;
+  settingsDefaultsHash: string | null;
+} {
+  if (!settingsSchema) {
+    return {
+      settingsSchemaHash: null,
+      settingsDefaultsHash: null,
+    };
+  }
+
+  return {
+    settingsSchemaHash: sha256(settingsSchemaSerialize(settingsSchema)),
+    settingsDefaultsHash: sha256(stableSerialize(extractSettingsDefaults(settingsSchema).value)),
+  };
+}
+
+function extractSettingsDefaults(schema: Record<string, unknown>): { hasDefault: boolean; value: unknown } {
+  if (Object.prototype.hasOwnProperty.call(schema, 'default')) {
+    return { hasDefault: true, value: cloneJsonValue(schema.default) };
+  }
+
+  if (!isPlainRecord(schema.properties)) {
+    return { hasDefault: false, value: {} };
+  }
+
+  const defaults: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(schema.properties)) {
+    if (!isPlainRecord(value)) {
+      continue;
+    }
+    const childDefault = extractSettingsDefaults(value);
+    if (childDefault.hasDefault) {
+      defaults[key] = childDefault.value;
+    }
+  }
+
+  return { hasDefault: Object.keys(defaults).length > 0, value: defaults };
+}
+
+function settingsSchemaSerialize(value: unknown, parentKey?: string): string {
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => settingsSchemaSerialize(item)).join(',')}]`;
+  }
+  if (isPlainRecord(value)) {
+    const keys = parentKey === 'properties' ? Object.keys(value) : Object.keys(value).sort();
+    return `{${keys.map((key) => `${JSON.stringify(key)}:${settingsSchemaSerialize(value[key], key)}`).join(',')}}`;
+  }
+
+  const serialized = JSON.stringify(value);
+  return typeof serialized === 'undefined' ? 'undefined' : serialized;
+}
+
+function stableSerialize(value: unknown): string {
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableSerialize(item)).join(',')}]`;
+  }
+  if (isPlainRecord(value)) {
+    return `{${Object.keys(value)
+      .sort()
+      .map((key) => `${JSON.stringify(key)}:${stableSerialize(value[key])}`)
+      .join(',')}}`;
+  }
+
+  const serialized = JSON.stringify(value);
+  return typeof serialized === 'undefined' ? 'undefined' : serialized;
+}
+
+function cloneJsonValue(value: unknown): unknown {
+  if (typeof value === 'undefined') {
+    return undefined;
+  }
+  return JSON.parse(JSON.stringify(value));
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function sha256(value: string): string {
+  return createHash('sha256').update(value).digest('hex');
 }

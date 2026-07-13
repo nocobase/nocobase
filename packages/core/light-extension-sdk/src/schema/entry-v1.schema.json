@@ -1,0 +1,209 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.nocobase.com/light-extension/entry-v1.schema.json",
+  "title": "NocoBase light extension entry.json v1",
+  "description": "Canonical descriptor for one NocoBase light extension client Entry.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "key"],
+  "properties": {
+    "$schema": {
+      "const": "https://schemas.nocobase.com/light-extension/entry-v1.schema.json",
+      "description": "Canonical public schema identifier."
+    },
+    "schemaVersion": {
+      "const": 1,
+      "description": "Descriptor contract version."
+    },
+    "key": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{0,62}$",
+      "description": "Stable technical identity. It must not change when the Entry directory is renamed."
+    },
+    "title": { "type": "string", "maxLength": 120 },
+    "description": { "type": "string", "maxLength": 1000 },
+    "category": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{0,62}$"
+    },
+    "icon": { "type": "string", "maxLength": 120 },
+    "tags": {
+      "type": "array",
+      "maxItems": 20,
+      "items": { "type": "string" }
+    },
+    "sort": { "type": "integer" },
+    "settingsSchema": { "$ref": "#/$defs/settingsSchema" }
+  },
+  "$defs": {
+    "jsonValue": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "boolean" },
+        { "type": "number" },
+        { "type": "string" },
+        {
+          "type": "array",
+          "items": { "$ref": "#/$defs/jsonValue" }
+        },
+        {
+          "type": "object",
+          "propertyNames": {
+            "not": { "enum": ["__proto__", "prototype", "constructor"] }
+          },
+          "additionalProperties": { "$ref": "#/$defs/jsonValue" }
+        }
+      ]
+    },
+    "componentProps": {
+      "type": "object",
+      "maxProperties": 64,
+      "propertyNames": {
+        "not": { "enum": ["__proto__", "prototype", "constructor"] }
+      },
+      "additionalProperties": { "$ref": "#/$defs/jsonValue" }
+    },
+    "conditionPath": {
+      "type": "string",
+      "pattern": "^(?!.*(?:^|\\.)(?:__proto__|prototype|constructor)(?:\\.|$))[A-Za-z_][A-Za-z0-9_-]*(?:\\.[A-Za-z_][A-Za-z0-9_-]*){0,15}$"
+    },
+    "conditionWithValue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "operator", "value"],
+      "properties": {
+        "path": { "$ref": "#/$defs/conditionPath" },
+        "operator": { "enum": ["$eq", "$ne"] },
+        "value": { "$ref": "#/$defs/jsonValue" }
+      }
+    },
+    "conditionWithArrayValue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "operator", "value"],
+      "properties": {
+        "path": { "$ref": "#/$defs/conditionPath" },
+        "operator": { "enum": ["$in", "$notIn"] },
+        "value": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/jsonValue" }
+        }
+      }
+    },
+    "conditionWithoutValue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "operator"],
+      "properties": {
+        "path": { "$ref": "#/$defs/conditionPath" },
+        "operator": { "enum": ["$empty", "$notEmpty"] }
+      }
+    },
+    "conditionGroup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["logic", "items"],
+      "properties": {
+        "logic": { "enum": ["$and", "$or"] },
+        "items": {
+          "type": "array",
+          "maxItems": 32,
+          "items": { "$ref": "#/$defs/condition" }
+        }
+      }
+    },
+    "condition": {
+      "oneOf": [
+        { "$ref": "#/$defs/conditionWithValue" },
+        { "$ref": "#/$defs/conditionWithArrayValue" },
+        { "$ref": "#/$defs/conditionWithoutValue" },
+        { "$ref": "#/$defs/conditionGroup" }
+      ]
+    },
+    "settingsSchema": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": ["object", "array", "string", "number", "integer", "boolean"]
+        },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "default": { "$ref": "#/$defs/jsonValue" },
+        "enum": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/jsonValue" }
+        },
+        "required": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_-]{0,63}$"
+          }
+        },
+        "properties": {
+          "type": "object",
+          "propertyNames": {
+            "pattern": "^[A-Za-z_][A-Za-z0-9_-]{0,63}$",
+            "not": { "enum": ["__proto__", "prototype", "constructor"] }
+          },
+          "additionalProperties": { "$ref": "#/$defs/settingsSchema" }
+        },
+        "items": { "$ref": "#/$defs/settingsSchema" },
+        "minLength": { "type": "integer", "minimum": 0 },
+        "maxLength": { "type": "integer", "minimum": 0 },
+        "minimum": { "type": "number" },
+        "maximum": { "type": "number" },
+        "format": { "type": "string" },
+        "x-component": {
+          "enum": [
+            "Input",
+            "Input.TextArea",
+            "InputNumber",
+            "Select",
+            "CollectionSelect",
+            "CollectionFieldSelect",
+            "RoleSelect",
+            "DataSourceSelect",
+            "Switch",
+            "Checkbox",
+            "Radio.Group",
+            "DatePicker",
+            "ColorPicker"
+          ]
+        },
+        "x-component-props": { "$ref": "#/$defs/componentProps" },
+        "x-visible-when": { "$ref": "#/$defs/condition" }
+      }
+    }
+  },
+  "examples": [
+    {
+      "$schema": "https://schemas.nocobase.com/light-extension/entry-v1.schema.json",
+      "schemaVersion": 1,
+      "key": "sales-kpi",
+      "title": "Sales KPI",
+      "settingsSchema": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "integer",
+            "enum": [1, 2],
+            "default": 1,
+            "x-component": "Select"
+          },
+          "title": {
+            "type": "string",
+            "x-component": "Input",
+            "x-visible-when": {
+              "path": "mode",
+              "operator": "$eq",
+              "value": 1
+            }
+          }
+        }
+      }
+    }
+  ]
+}

@@ -29,7 +29,6 @@ import {
   JSBlockLightExtensionSourceField,
   JSFieldLightExtensionSourceField,
   JSItemLightExtensionSourceField,
-  RunJSLightExtensionSourceField,
 } from './components/JSBlockLightExtensionSourceField';
 import { createRunJSLightExtensionEditorProvider } from './components/RunJSLightExtensionEditorProvider';
 import { createMoveSourceToLightExtensionContribution } from './components/MoveSourceToLightExtension';
@@ -56,7 +55,6 @@ export class PluginLightExtensionClientV2 extends Plugin<Record<string, never>, 
       [JS_FIELD_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
       [JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSItemLightExtensionSourceField,
       [JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
-      RunJSLightExtensionSourceField,
       SettingsAutoForm,
     });
     this.disposers.push(

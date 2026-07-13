@@ -231,17 +231,6 @@ export function createJsItemSourceBinding(
   });
 }
 
-export function createRunJSSourceBinding(
-  input: Partial<LightExtensionRuntimeSourceBinding> = {},
-): LightExtensionRuntimeSourceBinding {
-  return createSourceBinding({
-    repoId: 'ler_runjs',
-    entryId: 'lee_normalize_amount',
-    kind: 'runjs',
-    ...input,
-  });
-}
-
 export function createJsBlockNode(
   input: {
     uid?: string;
@@ -340,68 +329,6 @@ export function createJsItemNode(
   };
 }
 
-export function createRunJSHostNode(
-  input: {
-    uid?: string;
-    use?: string;
-    sourceMode?: string;
-    sourceBinding?: LightExtensionRuntimeSourceBinding;
-    settings?: Record<string, unknown>;
-    hostPath?: 'defaultValue' | 'assignRule' | 'assignForm';
-  } = {},
-): FlowModelNode {
-  const runJsValue = {
-    code: '',
-    version: 'v2',
-    sourceMode: input.sourceMode || 'light-extension',
-    sourceBinding: input.sourceBinding || createRunJSSourceBinding(),
-    settings: input.settings || {},
-  };
-  if (input.hostPath === 'assignRule') {
-    return {
-      uid: input.uid || 'flow_form_runjs',
-      use: input.use || 'FormBlockModel',
-      stepParams: {
-        formModelSettings: {
-          assignRules: {
-            value: [
-              {
-                key: 'amountText',
-                targetPath: 'amountText',
-                value: runJsValue,
-              },
-            ],
-          },
-        },
-      },
-    };
-  }
-  if (input.hostPath === 'assignForm') {
-    return {
-      uid: input.uid || 'flow_assign_item_runjs',
-      use: input.use || 'AssignFormItemModel',
-      stepParams: {
-        fieldSettings: {
-          assignValue: {
-            value: runJsValue,
-          },
-        },
-      },
-    };
-  }
-  return {
-    uid: input.uid || 'flow_field_default_runjs',
-    use: input.use || 'InputFieldModel',
-    stepParams: {
-      editItemSettings: {
-        initialValue: {
-          defaultValue: runJsValue,
-        },
-      },
-    },
-  };
-}
-
 export function createRepoRecord(input: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     id: 'ler_sales',
@@ -441,16 +368,6 @@ export function createJsItemEntryRecord(input: Record<string, unknown> = {}): Re
   });
 }
 
-export function createRunJSEntryRecord(input: Record<string, unknown> = {}): Record<string, unknown> {
-  return createEntryRecord({
-    id: 'lee_normalize_amount',
-    repoId: 'ler_runjs',
-    kind: 'runjs',
-    healthStatus: 'ready',
-    ...input,
-  });
-}
-
 export function createEntryRecord(input: Record<string, unknown> = {}): Record<string, unknown> {
   const kind = typeof input.kind === 'string' ? input.kind : 'js-block';
   const entryPath =
@@ -462,8 +379,7 @@ export function createEntryRecord(input: Record<string, unknown> = {}): Record<s
     kind,
     entryName: 'sales-kpi',
     entryPath,
-    metaPath: null,
-    settingsPath: null,
+    descriptorPath: `${entryPath.slice(0, entryPath.lastIndexOf('/'))}/entry.json`,
     title: 'Sales KPI',
     description: null,
     category: null,
@@ -485,6 +401,21 @@ export function createEntryRecord(input: Record<string, unknown> = {}): Record<s
         },
       },
     },
+    settingsSchemaHash: stableJsonHash({
+      type: 'object',
+      properties: {
+        threshold: {
+          type: 'number',
+          default: 5,
+          maximum: 10,
+        },
+        region: {
+          type: 'string',
+          default: 'APAC',
+          enum: ['APAC', 'EMEA'],
+        },
+      },
+    }),
     compiledCommitId: 'vsc_commit_1',
     runtimeArtifact: {
       code: 'ctx.render("ok");',
@@ -539,18 +470,14 @@ function kindToFolder(kind: string): string {
   if (kind === 'js-item') {
     return 'js-items';
   }
-  if (kind === 'runjs') {
-    return 'runjs';
-  }
   return 'js-blocks';
 }
 
 export function createOwnerLocator(
   modelUid: string,
   input: {
-    kind?: 'js-block' | 'js-field' | 'js-action' | 'js-item' | 'runjs';
+    kind?: 'js-block' | 'js-field' | 'js-action' | 'js-item';
     use?: string;
-    hostPath?: string[];
   } = {},
 ): LightExtensionReferenceOwnerLocator {
   if (input.kind === 'js-field') {
@@ -575,15 +502,6 @@ export function createOwnerLocator(
       modelUid,
       use: input.use || 'JSItemModel',
       descriptor: 'Item model settings locator',
-    };
-  }
-  if (input.kind === 'runjs') {
-    return {
-      kind: 'flowModel.runjsHost',
-      modelUid,
-      use: input.use,
-      hostPath: input.hostPath,
-      descriptor: 'RunJS value host locator for field linkage, defaults, and assignment forms',
     };
   }
   return {

@@ -18,11 +18,7 @@ import {
 import {
   resolveRuntimeRunJS,
   createRunJSSourceCascadeMenuUIMode,
-  getDescriptorSchemaHash,
   getRunJSModelUse,
-  getSettingsSchemaProperties,
-  getSettingsSchemaRequired,
-  type JsonSchemaLike,
   type ResolvedRuntimeRunJS,
   type RunJSSourceBinding,
   type RunJSSourceSettings,
@@ -32,13 +28,11 @@ import {
   cloneJsonValue,
   cloneRecord,
   createLightExtensionRunJsUISchema,
-  createLightExtensionSettingStep as createSharedLightExtensionSettingStep,
+  createLightExtensionSettingSteps,
   createLightExtensionSourceBindingStep,
   createLightExtensionSourceModeStep,
   createRuntimeRunTracker,
   getLightExtensionFallbackBindingTitle,
-  getLightExtensionSettingDefaultValue,
-  getLightExtensionSettingStepKey,
   getLightExtensionSettingsDescriptor as getSharedLightExtensionSettingsDescriptor,
   getLightExtensionStoredBindingTitle,
   getModelTranslator,
@@ -48,8 +42,11 @@ import {
   isRecord,
   LIGHT_EXTENSION_SOURCE_MODE,
   normalizeLightExtensionRuntimeError,
+  normalizeLightExtensionSourceSettings,
   normalizeLightExtensionSourceMode,
   resolveLightExtensionBindingTitle as resolveSharedLightExtensionBindingTitle,
+  setCanonicalLightExtensionSetting,
+  setCanonicalLightExtensionSource,
   stableSerialize,
   stableSerializeWithCircular,
   toNonEmptyString,
@@ -115,18 +112,13 @@ export function getJSFieldRunJsStepParams(model: JSFieldRuntimeModel): Record<st
 }
 
 export function getJSFieldSourceSignature(model: JSFieldRuntimeModel, inlineCode?: string): string {
-  const jsSettings = model.getStepParams('jsSettings') || {};
   const runJs = getJSFieldRunJsStepParams(model);
   const sourceMode = normalizeJSFieldSourceMode(runJs.sourceMode);
-  const runtimeSettingsParams = Object.fromEntries(
-    Object.entries(jsSettings).filter(([key]) => key.startsWith('leSetting__')),
-  );
 
   return stableSerialize({
     sourceMode,
     sourceBinding: runJs.sourceBinding,
     settings: runJs.settings,
-    runtimeSettingsParams,
     code: typeof inlineCode === 'string' ? inlineCode : runJs.code,
     version: runJs.version,
   });
@@ -211,32 +203,16 @@ export async function getJSFieldRuntimeFlowSettingSteps(
 ): Promise<Record<string, StepDefinition> | undefined> {
   const params = getJSFieldRunJsStepParams(model);
   const descriptor = await getLightExtensionSettingsDescriptor(model, params);
-  if (!descriptor?.schema) {
+  if (!descriptor) {
     return undefined;
   }
-
-  const properties = getSettingsSchemaProperties(descriptor.schema);
-  if (Object.keys(properties).length === 0) {
-    return undefined;
-  }
-
-  const requiredFields = getSettingsSchemaRequired(descriptor.schema);
-  const schemaHash = getDescriptorSchemaHash(descriptor);
-  const descriptorDefaults = cloneRecord(descriptor.defaults);
-  const legacySettings = isRecord(params.settings) ? params.settings : {};
-
-  return Object.fromEntries(
-    Object.entries(properties).map(([fieldName, fieldSchema], index) =>
-      createLightExtensionSettingStep({
-        fieldName,
-        fieldSchema,
-        required: requiredFields.has(fieldName),
-        schemaHash,
-        defaultValue: getLightExtensionSettingDefaultValue(fieldName, fieldSchema, descriptorDefaults, legacySettings),
-        sort: 700 + index,
-      }),
-    ),
-  );
+  return createLightExtensionSettingSteps<JSFieldRuntimeModel>({
+    descriptor,
+    settings: isRecord(params.settings) ? params.settings : {},
+    component: JS_FIELD_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+    syncValue: syncLightExtensionSettingToRunJs,
+    afterParamsSave: refreshJSFieldAfterSettingsSave,
+  });
 }
 
 export async function resolveJSFieldRuntimeRunJS(input: {
@@ -327,24 +303,29 @@ function getJSFieldSourceDefaultParams(ctx: FlowSettingsContext<JSFieldRuntimeMo
   };
 }
 
-function syncJSFieldSourceToRunJs(ctx: FlowSettingsContext<JSFieldRuntimeModel>, params: JSFieldSourceModeParams) {
+async function syncJSFieldSourceToRunJs(
+  ctx: FlowSettingsContext<JSFieldRuntimeModel>,
+  params: JSFieldSourceModeParams,
+) {
   const sourceMode = normalizeJSFieldSourceMode(params?.sourceMode);
   const sourceBinding = isRecord(params.sourceBinding) ? cloneJsonValue(params.sourceBinding) : undefined;
   if (sourceMode === LIGHT_EXTENSION_SOURCE_MODE && !sourceBinding) {
     ctx.model.context?.message?.error?.(ctx.model.context.t('Select a light extension entry'));
     throw new FlowCancelSaveException('Light extension source binding is required.');
   }
-  const settings = isRecord(params.settings) ? cloneJsonValue(params.settings) : {};
-  ctx.model.setStepParams('jsSettings', {
-    sourceBinding,
-    settings,
+  const currentRunJs = getJSFieldRunJsStepParams(ctx.model);
+  const descriptor =
+    sourceMode === LIGHT_EXTENSION_SOURCE_MODE
+      ? await getLightExtensionSettingsDescriptor(ctx.model, { ...params, sourceMode, sourceBinding })
+      : null;
+  const settings = normalizeLightExtensionSourceSettings({
+    currentRunJs,
+    nextSourceMode: sourceMode,
+    nextSourceBinding: sourceBinding,
+    nextSettings: params.settings,
+    descriptor,
   });
-  ctx.model.setStepParams('jsSettings', 'runJs', {
-    ...getJSFieldRunJsStepParams(ctx.model),
-    sourceMode,
-    sourceBinding,
-    settings,
-  });
+  setCanonicalLightExtensionSource(ctx.model, 'jsSettings', { sourceMode, sourceBinding, settings });
 }
 
 async function refreshJSFieldAfterSettingsSave(ctx: FlowSettingsContext<JSFieldRuntimeModel>) {
@@ -361,53 +342,16 @@ async function getLightExtensionSettingsDescriptor(model: JSFieldRuntimeModel, p
   });
 }
 
-function createLightExtensionSettingStep(options: {
-  fieldName: string;
-  fieldSchema: JsonSchemaLike;
-  required: boolean;
-  schemaHash: string;
-  defaultValue: unknown;
-  sort: number;
-}): [string, StepDefinition] {
-  const { fieldName, fieldSchema, required, schemaHash, defaultValue, sort } = options;
-  return createSharedLightExtensionSettingStep<JSFieldRuntimeModel>({
-    fieldName,
-    fieldSchema,
-    required,
-    stepKey: getLightExtensionSettingStepKey(fieldName, schemaHash),
-    defaultValue,
-    sort,
-    component: JS_FIELD_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
-    syncValue: syncLightExtensionSettingToRunJs,
-    afterParamsSave: refreshJSFieldAfterSettingsSave,
-  });
-}
-
 function syncLightExtensionSettingToRunJs(
   ctx: FlowSettingsContext<JSFieldRuntimeModel>,
   fieldName: string,
   value: unknown,
 ) {
-  const runJs = getJSFieldRunJsStepParams(ctx.model);
-  const topLevelSettings = ctx.model.getStepParams('jsSettings', 'settings');
-  const settings = isRecord(runJs.settings)
-    ? cloneRecord(runJs.settings)
-    : isRecord(topLevelSettings)
-      ? cloneRecord(topLevelSettings)
-      : {};
-  settings[fieldName] = cloneJsonValue(value);
-  ctx.model.setStepParams('jsSettings', {
-    settings,
-  });
-  ctx.model.setStepParams('jsSettings', 'runJs', {
-    ...runJs,
-    settings,
-  });
+  setCanonicalLightExtensionSetting(ctx.model, 'jsSettings', fieldName, value);
 }
 
 function getJSFieldRuntimeSettings(params: Record<string, unknown>): RunJSSourceSettings {
-  const legacySettings = isRecord(params.settings) ? params.settings : {};
-  return cloneRecord(legacySettings);
+  return cloneRecord(params.settings);
 }
 
 async function resolveLightExtensionBindingTitle(ctx: { model: JSFieldRuntimeModel }, params: Record<string, unknown>) {

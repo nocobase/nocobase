@@ -839,6 +839,7 @@ export function CodeTab(props: {
   previewing?: boolean;
   readOnly: boolean;
   runJSModelUse?: string;
+  runJSGlobalContextType?: string;
   savedFiles: RunJSWorkspaceFile[];
   scene?: string;
   showRunButton?: boolean;
@@ -865,6 +866,7 @@ export function CodeTab(props: {
     previewing,
     readOnly,
     runJSModelUse,
+    runJSGlobalContextType,
     savedFiles,
     scene,
     showRunButton = true,
@@ -879,8 +881,8 @@ export function CodeTab(props: {
     .filter((file): file is RunJSWorkspaceFile => Boolean(file));
   const moduleImportCompletions = useRunJSImportModuleCompletions(workspaceFiles, activeFile?.path);
   const typescriptProject = useMemo(
-    () => buildRunJSTypeScriptProject(workspaceFiles, activeFile, runJSModelUse),
-    [activeFile, runJSModelUse, workspaceFiles],
+    () => buildRunJSTypeScriptProject(workspaceFiles, activeFile, runJSModelUse, runJSGlobalContextType),
+    [activeFile, runJSGlobalContextType, runJSModelUse, workspaceFiles],
   );
 
   if (!activeFile) {
