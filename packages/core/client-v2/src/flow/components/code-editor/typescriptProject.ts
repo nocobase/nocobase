@@ -11,6 +11,9 @@ import type { Completion, CompletionContext, CompletionResult, CompletionSource 
 import type { Extension } from '@codemirror/state';
 import { type Diagnostic, linter } from '@codemirror/lint';
 import { type Tooltip, hoverTooltip } from '@codemirror/view';
+import { buildRunJSTypeScriptEnvironmentFiles } from '@nocobase/runjs/client-v2';
+
+import { runJSTypeScriptLibSources } from './runJSTypeScriptLibSources';
 
 export interface CodeEditorTypeScriptFile {
   path: string;
@@ -62,89 +65,9 @@ type ProjectService = {
 };
 
 const RUNJS_ENV_FILE_NAME = '/__runjs__/runjs-env.d.ts';
+const runJSTypeScriptEnvironmentFiles = buildRunJSTypeScriptEnvironmentFiles(runJSTypeScriptLibSources);
 
 const runJSEnvDeclaration = `
-interface Array<T> {
-  readonly length: number;
-  [n: number]: T;
-  concat(...items: Array<T | T[]>): T[];
-  filter(predicate: (value: T, index: number, array: T[]) => unknown): T[];
-  find(predicate: (value: T, index: number, array: T[]) => unknown): T | undefined;
-  forEach(callbackfn: (value: T, index: number, array: T[]) => void): void;
-  includes(searchElement: T): boolean;
-  join(separator?: string): string;
-  map<U>(callbackfn: (value: T, index: number, array: T[]) => U): U[];
-  push(...items: T[]): number;
-  reduce<U>(callbackfn: (previousValue: U, currentValue: T, currentIndex: number, array: T[]) => U, initialValue: U): U;
-  slice(start?: number, end?: number): T[];
-}
-interface ReadonlyArray<T> {
-  readonly length: number;
-  readonly [n: number]: T;
-  forEach(callbackfn: (value: T, index: number, array: readonly T[]) => void): void;
-  map<U>(callbackfn: (value: T, index: number, array: readonly T[]) => U): U[];
-}
-interface Boolean {}
-interface CallableFunction {}
-interface Function {}
-interface IArguments {}
-interface NewableFunction {}
-interface Number {}
-interface Object {
-  toString(): string;
-}
-interface RegExp {}
-interface String {
-  readonly length: number;
-  includes(searchString: string, position?: number): boolean;
-  replace(searchValue: string | RegExp, replaceValue: string): string;
-  slice(start?: number, end?: number): string;
-  split(separator: string | RegExp, limit?: number): string[];
-  startsWith(searchString: string, position?: number): boolean;
-  trim(): string;
-}
-interface PromiseLike<T> {
-  then<TResult1 = T, TResult2 = never>(
-    onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | null,
-    onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
-  ): PromiseLike<TResult1 | TResult2>;
-}
-interface Promise<T> extends PromiseLike<T> {
-  catch<TResult = never>(
-    onrejected?: ((reason: unknown) => TResult | PromiseLike<TResult>) | null,
-  ): Promise<T | TResult>;
-  finally(onfinally?: (() => void) | null): Promise<T>;
-}
-interface PromiseConstructor {
-  new <T>(
-    executor: (
-      resolve: (value: T | PromiseLike<T>) => void,
-      reject: (reason?: unknown) => void,
-    ) => void,
-  ): Promise<T>;
-  resolve<T>(value: T | PromiseLike<T>): Promise<T>;
-  reject<T = never>(reason?: unknown): Promise<T>;
-  all<T>(values: Array<T | PromiseLike<T>>): Promise<T[]>;
-}
-declare const Promise: PromiseConstructor;
-type PropertyKey = string | number | symbol;
-type Partial<T> = { [P in keyof T]?: T[P] };
-type Pick<T, K extends keyof T> = { [P in K]: T[P] };
-type Record<K extends PropertyKey, T> = { [P in K]: T };
-type Omit<T, K extends PropertyKey> = Pick<T, Exclude<keyof T, K>>;
-type Exclude<T, U> = T extends U ? never : T;
-type Extract<T, U> = T extends U ? T : never;
-type NonNullable<T> = T extends null | undefined ? never : T;
-declare function String(value?: unknown): string;
-declare function Number(value?: unknown): number;
-declare function Boolean(value?: unknown): boolean;
-declare function parseInt(string: string, radix?: number): number;
-declare function parseFloat(string: string): number;
-declare function setTimeout(handler: (...args: unknown[]) => void, timeout?: number, ...args: unknown[]): number;
-declare function clearTimeout(handle?: number): void;
-declare function setInterval(handler: (...args: unknown[]) => void, timeout?: number, ...args: unknown[]): number;
-declare function clearInterval(handle?: number): void;
-
 interface RunJSLogger {
   log(...args: unknown[]): void;
   info(...args: unknown[]): void;
@@ -291,41 +214,7 @@ interface RunJSExecutionResult<T = unknown> {
   readonly error?: unknown;
   readonly timeout?: boolean;
 }
-interface RunJSSafeElement {
-  readonly tagName?: string;
-  innerHTML: string;
-  outerHTML: string;
-  textContent?: string | null;
-  readonly style?: Record<string, string | number | undefined>;
-  readonly classList?: {
-    add(...tokens: string[]): void;
-    contains(token: string): boolean;
-    remove(...tokens: string[]): void;
-    toggle(token: string, force?: boolean): boolean;
-  };
-  setAttribute(name: string, value: string): void;
-  getAttribute(name: string): string | null;
-  append(...nodes: unknown[]): void;
-  appendChild(child: RunJSSafeElement | string): void;
-  querySelector(selector: string): RunJSSafeElement | null;
-  querySelectorAll(selector: string): RunJSSafeElement[];
-  addEventListener(type: string, listener: (event: unknown) => void): void;
-  removeEventListener(type: string, listener: (event: unknown) => void): void;
-}
-interface RunJSSafeDocument {
-  createElement(tagName: string): RunJSSafeElement;
-  querySelector(selector: string): RunJSSafeElement | null;
-}
-interface RunJSSafeNavigator {
-  readonly language?: string;
-  readonly userAgent?: string;
-}
-interface RunJSSafeWindow {
-  readonly document?: RunJSSafeDocument;
-  readonly navigator?: RunJSSafeNavigator;
-  setTimeout: typeof setTimeout;
-  clearTimeout: typeof clearTimeout;
-}
+type RunJSSafeElement = RunJSDOM.HTMLElement;
 interface RunJSContext {
   logger: RunJSLogger;
   api: RunJSApi;
@@ -388,9 +277,6 @@ interface RunJSContext {
 }
 declare const ctx: RunJSContext;
 declare const console: RunJSLogger;
-declare const window: RunJSSafeWindow;
-declare const document: RunJSSafeDocument;
-declare const navigator: RunJSSafeNavigator;
 
 declare namespace React {
   type Key = string | number;
@@ -673,6 +559,9 @@ function createFiles(project: CodeEditorTypeScriptProject, currentFileContent?: 
     addFile(file);
   }
   for (const file of Array.isArray(project.declarationFiles) ? project.declarationFiles : []) {
+    addFile(file);
+  }
+  for (const file of runJSTypeScriptEnvironmentFiles) {
     addFile(file);
   }
 

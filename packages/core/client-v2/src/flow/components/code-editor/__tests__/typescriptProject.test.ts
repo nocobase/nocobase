@@ -93,6 +93,35 @@ describe('CodeEditor TypeScript project', () => {
     expect(diagnostics.some((diagnostic) => /notARealMember/.test(diagnostic.message))).toBe(true);
   });
 
+  it('uses the official TypeScript browser libraries for RunJS globals', async () => {
+    const code = `
+const blob1 = new Blob(['hello']);
+const blob2 = new window.Blob(['hello']);
+new window.File(['hello'], 'hello.txt').size;
+const url1 = URL.createObjectURL(blob1);
+const url2 = window.URL.createObjectURL(blob2);
+URL.revokeObjectURL(url1);
+window.URL.revokeObjectURL(url2);
+window.location.assign('/demo');
+document.createElement('div');
+navigator.clipboard.writeText('x');
+fetch('/api/test');
+globalThis.Blob;
+window.Array.isArray([]);
+window.Promise.resolve('ready');
+`;
+
+    expect(await getTypeScriptProjectDiagnostics(baseProject(code), code)).toEqual([]);
+
+    const invalidCode = `
+window.notARealBrowserGlobal;
+new File(['hello'], 'hello.txt');
+`;
+    const invalidDiagnostics = await getTypeScriptProjectDiagnostics(baseProject(invalidCode), invalidCode);
+    expect(invalidDiagnostics.some((diagnostic) => /notARealBrowserGlobal/.test(diagnostic.message))).toBe(true);
+    expect(invalidDiagnostics.some((diagnostic) => /Cannot find name 'File'/.test(diagnostic.message))).toBe(true);
+  });
+
   it('types the shared RunJS runtime APIs for known source models', async () => {
     const code = `
 ctx.i18n.t('Hello', { ns: 'runjs' });

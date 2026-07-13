@@ -11,6 +11,14 @@ import ts from 'typescript';
 
 import type { RunJSCompileDiagnostic, RunJSSourceAuthoringLegacyInfo, RunJSSourceLocator, RunJSSurfaceStyle } from '..';
 import { normalizePath } from '..';
+import {
+  buildRunJSTypeScriptEnvironmentFiles,
+  RUNJS_TYPESCRIPT_DECLARED_GLOBAL_NAMES,
+  RUNJS_TYPESCRIPT_ES_LIB_PATH,
+  RUNJS_TYPESCRIPT_LIB_FILE_NAMES,
+  type RunJSTypeScriptEnvironmentFile,
+  type RunJSTypeScriptLibSource,
+} from '../typescript-environment';
 
 export const RUNJS_COMPILER_ALLOWED_GLOBALS = new Set([
   'ctx',
@@ -98,6 +106,7 @@ const chartEventGlobals = new Set(['chart', 'params']);
 const sourceExtensions = new Set(['.ts', '.tsx', '.js', '.jsx']);
 const unknownNameDiagnosticCodes = new Set([2304, 2448, 2552, 2580]);
 const ambientDeclarationsPath = '/__nocobase_runjs_globals__.d.ts';
+let cachedTypeScriptEnvironmentFiles: RunJSTypeScriptEnvironmentFile[] | undefined;
 
 export interface InspectRunJSSourceWorkspaceInput {
   files: Array<{
@@ -201,6 +210,9 @@ function collectUnknownGlobalDiagnostics(
   for (const [path, source] of files) {
     virtualFiles.set(toVirtualPath(path), maskTopLevelReturnKeywords(path, source));
   }
+  for (const file of getTypeScriptEnvironmentFiles()) {
+    virtualFiles.set(file.path, file.content);
+  }
   virtualFiles.set(ambientDeclarationsPath, buildAmbientDeclarations(allowedGlobals));
 
   const compilerOptions: ts.CompilerOptions = {
@@ -214,6 +226,7 @@ function collectUnknownGlobalDiagnostics(
     noResolve: true,
     skipLibCheck: true,
     target: ts.ScriptTarget.ES2020,
+    types: [],
   };
   const host = createVirtualCompilerHost(virtualFiles, compilerOptions);
   const program = ts.createProgram({
@@ -361,7 +374,7 @@ function createVirtualCompilerHost(files: Map<string, string>, options: ts.Compi
     fileExists: (path) => files.has(path),
     getCanonicalFileName: (path) => path,
     getCurrentDirectory: () => '/',
-    getDefaultLibFileName: () => ambientDeclarationsPath,
+    getDefaultLibFileName: () => RUNJS_TYPESCRIPT_ES_LIB_PATH,
     getNewLine: () => '\n',
     getSourceFile: (path, languageVersion) => {
       const source = files.get(path);
@@ -377,9 +390,29 @@ function createVirtualCompilerHost(files: Map<string, string>, options: ts.Compi
 
 function buildAmbientDeclarations(allowedGlobals: Set<string>): string {
   return [...allowedGlobals]
+    .filter((name) => !RUNJS_TYPESCRIPT_DECLARED_GLOBAL_NAMES.has(name))
     .filter((name) => /^[A-Za-z_$][\w$]*$/u.test(name))
     .map((name) => `declare const ${name}: unknown;`)
     .join('\n');
+}
+
+function getTypeScriptEnvironmentFiles(): RunJSTypeScriptEnvironmentFile[] {
+  if (cachedTypeScriptEnvironmentFiles) {
+    return cachedTypeScriptEnvironmentFiles;
+  }
+
+  const defaultLibPath = ts.getDefaultLibFilePath({ target: ts.ScriptTarget.ES2020 });
+  const separatorIndex = Math.max(defaultLibPath.lastIndexOf('/'), defaultLibPath.lastIndexOf('\\'));
+  const libDirectory = defaultLibPath.slice(0, separatorIndex + 1);
+  const sources: RunJSTypeScriptLibSource[] = RUNJS_TYPESCRIPT_LIB_FILE_NAMES.map((fileName) => {
+    const content = ts.sys.readFile(`${libDirectory}${fileName}`);
+    if (typeof content !== 'string') {
+      throw new Error(`Unable to read TypeScript standard library: ${fileName}`);
+    }
+    return { fileName, content };
+  });
+  cachedTypeScriptEnvironmentFiles = buildRunJSTypeScriptEnvironmentFiles(sources);
+  return cachedTypeScriptEnvironmentFiles;
 }
 
 function findIdentifierAt(sourceFile: ts.SourceFile, position: number): ts.Identifier | undefined {

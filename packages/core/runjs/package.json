@@ -15,6 +15,11 @@
       "import": "./lib/compiler/index.js",
       "require": "./lib/compiler/index.js"
     },
+    "./client-v2": {
+      "types": "./lib/client-v2/index.d.ts",
+      "import": "./lib/client-v2/index.js",
+      "require": "./lib/client-v2/index.js"
+    },
     "./package.json": "./package.json"
   },
   "dependencies": {

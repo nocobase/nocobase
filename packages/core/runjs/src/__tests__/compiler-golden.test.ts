@@ -111,4 +111,37 @@ describe('@nocobase/runjs compiler golden contracts', () => {
       ]),
     );
   });
+
+  it('accepts complete browser APIs through window while keeping bare globals restricted', () => {
+    const windowResult = compileRunJSSourceWorkspace({
+      files: [
+        {
+          path: 'index.ts',
+          content: `
+const blob = new window.Blob(['hello']);
+const file = new window.File(['hello'], 'hello.txt');
+window.URL.createObjectURL(blob);
+window.location.assign('/demo');
+`,
+        },
+      ],
+      entry: 'index.ts',
+      surfaceStyle: 'action',
+    });
+    expect(windowResult.artifact.diagnostics).toEqual([]);
+
+    const bareGlobalResult = compileRunJSSourceWorkspace({
+      files: [{ path: 'index.ts', content: `new File(['hello'], 'hello.txt');` }],
+      entry: 'index.ts',
+      surfaceStyle: 'action',
+    });
+    expect(bareGlobalResult.artifact.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-global-unknown',
+          message: expect.stringContaining("Cannot find name 'File'"),
+        }),
+      ]),
+    );
+  });
 });

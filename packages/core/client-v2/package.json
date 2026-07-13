@@ -29,6 +29,7 @@
     "@formily/shared": "^2.2.27",
     "@nocobase/evaluators": "2.2.0-beta.13",
     "@nocobase/flow-engine": "2.2.0-beta.13",
+    "@nocobase/runjs": "2.2.0-beta.13",
     "@nocobase/sdk": "2.2.0-beta.13",
     "@nocobase/shared": "2.2.0-beta.13",
     "@nocobase/utils": "2.2.0-beta.13",
@@ -45,6 +46,7 @@
     "jsqr": "^1.4.0",
     "lodash": "4.17.21",
     "react-i18next": "^11.15.1",
-    "react-router-dom": "^6.30.1"
+    "react-router-dom": "^6.30.1",
+    "typescript": "5.1.3"
   }
 }
