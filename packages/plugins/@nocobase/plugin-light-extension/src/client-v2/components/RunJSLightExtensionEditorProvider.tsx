@@ -72,6 +72,7 @@ type ApplicationWithApi = {
 };
 
 type FlowModelStepLocator = Extract<RunJSSourceLocator, { kind: 'flowModel.step' }>;
+type LightExtensionEntryWorkspaceScope = Extract<LightExtensionWorkspaceScope, { mode: 'entry' }>;
 
 const UNSAFE_RUNJS_PATH_SEGMENTS = new Set(['__proto__', 'constructor', 'prototype']);
 
@@ -387,7 +388,11 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
       }
 
       const result = await moveLightExtensionToInline(api, {
-        locator: effectiveLocator,
+        locator: {
+          ...effectiveLocator,
+          paramPath: [...effectiveLocator.paramPath],
+          versionPath: effectiveLocator.versionPath ? [...effectiveLocator.versionPath] : undefined,
+        },
         repoId: currentBinding.repoId,
         entryId: currentBinding.entryId,
         entryPath: request.entryPath,
@@ -516,7 +521,7 @@ export function createRunJSLightExtensionEditorProvider(): RunJSEditorProvider {
   };
 }
 
-function getEntryWorkspaceScope(binding: LightExtensionRuntimeSourceBinding): LightExtensionWorkspaceScope | null {
+function getEntryWorkspaceScope(binding: LightExtensionRuntimeSourceBinding): LightExtensionEntryWorkspaceScope | null {
   if (
     typeof binding.entryPath !== 'string' ||
     !binding.entryPath.trim() ||

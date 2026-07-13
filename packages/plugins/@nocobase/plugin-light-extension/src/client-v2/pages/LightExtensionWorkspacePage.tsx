@@ -43,9 +43,9 @@ import type {
   LightExtensionDiagnostic,
   LightExtensionEntryRuntimeArtifact,
   LightExtensionFileChange,
-  LightExtensionPulledFile,
   LightExtensionRepoRecord,
   LightExtensionCommitRecord,
+  LightExtensionTreeEntryInput,
 } from '../../shared/types';
 import DiagnosticsPanel from '../components/DiagnosticsPanel';
 import { getLightExtensionErrorDiagnostics, useLightExtensionRepo } from '../hooks/useLightExtensionRepo';
@@ -1201,7 +1201,7 @@ function LightExtensionWorkspacePage({
   );
 }
 
-function normalizeWorkspaceFiles(files: Array<LightExtensionPulledFile | WorkspaceFile>): WorkspaceFile[] {
+function normalizeWorkspaceFiles(files: LightExtensionTreeEntryInput[]): WorkspaceFile[] {
   return files
     .map((file) => ({
       path: normalizeWorkspacePath(file.path),
