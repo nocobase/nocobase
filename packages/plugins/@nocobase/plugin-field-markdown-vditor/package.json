@@ -26,7 +26,7 @@
     "@formily/shared": "2.x",
     "antd": "5.x",
     "koa-send": "^5.0.1",
-    "vditor": "^3.10.3"
+    "vditor": "^3.11.2"
   },
   "keywords": [
     "Collection fields"

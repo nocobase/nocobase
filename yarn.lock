@@ -34962,10 +34962,10 @@ vasync@^2.2.1:
   dependencies:
     verror "1.10.0"
 
-vditor@^3.10.3:
-  version "3.10.4"
-  resolved "https://registry.npmmirror.com/vditor/-/vditor-3.10.4.tgz#df7e5cdf8c737b588152b2119942ff0e0904c9cd"
-  integrity sha512-NWaMom0buUvRjOCaK/jKeJEVfZNmfTgblK4+pxBoeTdiCYn5yWokcGYMh9GzHIvt5gy6FiQFc1VQvytIwyeIwA==
+vditor@^3.11.2:
+  version "3.11.2"
+  resolved "https://registry.npmmirror.com/vditor/-/vditor-3.11.2.tgz#612a405c74b71278a4eea188db3c7d93c0884c11"
+  integrity sha512-8QguQQUPWbBFocnfQmWjz4jiykQnvsmCuhOomGIVVK7vc+dQq2h8w9qQQuEjUTZpnZT5fEdYbj4aLr1NGdAZaA==
   dependencies:
     diff-match-patch "^1.0.5"
 
