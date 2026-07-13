@@ -122,13 +122,22 @@ describe('WorkflowTasksTopbarActionModel', () => {
       getKeys: () => ['demo'],
       get: (key: string) => (key === 'demo' ? taskType : undefined),
     };
-    holder.total = 3;
+    holder.total = 100;
     const ModelClass = WorkflowTasksTopbarActionModel as unknown as { new (): WorkflowTasksTopbarActionModel };
     const model = new ModelClass();
 
     render(<>{model.render()}</>);
 
     const button = screen.getByTestId('workflow-tasks-button');
+    const badge = button.querySelector('.ant-badge-count');
+
+    expect(badge).toHaveClass('ant-badge-count-sm');
+    expect(badge).toHaveStyle({
+      fontSize: '8px',
+      height: '10px',
+      lineHeight: '10px',
+    });
+
     fireEvent.click(button);
 
     expect(holder.reload).toHaveBeenCalled();

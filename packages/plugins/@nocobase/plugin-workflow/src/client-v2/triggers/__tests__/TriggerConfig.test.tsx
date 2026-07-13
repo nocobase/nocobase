@@ -282,6 +282,39 @@ describe('TriggerConfig', () => {
     expect(container.querySelector('.ant-form-item-label label')?.textContent).toBe('*Collection:');
   });
 
+  it('provides the canvas refresh callback to trigger fieldsets rendered in the drawer', async () => {
+    const drawer = vi.fn();
+    const refresh = vi.fn();
+    let drawerFlowContext: React.ContextType<typeof FlowContext> | undefined;
+    function RefreshFieldset() {
+      drawerFlowContext = React.useContext(FlowContext);
+      return <div data-testid="refresh-fieldset" />;
+    }
+    const trigger: Trigger = {
+      title: 'Approval event',
+      FieldsetLoader: () =>
+        Promise.resolve({
+          default: RefreshFieldset,
+        }),
+    };
+    const workflow = { id: 1, config: {} };
+
+    openTriggerConfigDrawer({
+      ctx: { viewer: { drawer } },
+      refresh,
+      trigger,
+      workflow,
+    });
+
+    const Content = drawer.mock.calls[0][0].content;
+    render(<Content />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('refresh-fieldset')).toBeInTheDocument();
+    });
+    expect(drawerFlowContext).toMatchObject({ refresh, workflow });
+  });
+
   it('renders the trigger tag without a hover tooltip on the v2 canvas card', () => {
     holder.workflowPlugin.getTriggerOptions.mockReturnValue({
       title: `{{t('Collection event', { ns: "workflow" })}}`,

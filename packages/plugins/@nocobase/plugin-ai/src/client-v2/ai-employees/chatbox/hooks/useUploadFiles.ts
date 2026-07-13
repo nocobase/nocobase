@@ -117,7 +117,11 @@ export const useUploadFiles = () => {
             if (!file?.response?.data) {
               return file;
             }
-            return { ...file.response.data, status: file.status };
+            return {
+              ...file.response.data,
+              ...(file.response.data.meta?.source ? { source: file.response.data.meta.source } : {}),
+              status: file.status,
+            };
           }
           return file;
         }),

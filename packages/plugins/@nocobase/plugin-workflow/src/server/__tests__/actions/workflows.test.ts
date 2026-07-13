@@ -43,6 +43,32 @@ describe('workflow > actions > workflows', () => {
   afterEach(() => app.destroy());
 
   describe('create', () => {
+    it('defaults invalid to false', async () => {
+      const workflow = await WorkflowModel.create({
+        type: 'collection',
+        config: {},
+      });
+
+      expect(workflow.get('invalid')).toBe(false);
+    });
+
+    it('ignores invalid supplied by create requests', async () => {
+      const { body, status } = await agent.resource('workflows').create({
+        values: {
+          type: 'collection',
+          config: {
+            mode: 1,
+            collection: 'posts',
+          },
+          invalid: true,
+        },
+      });
+
+      expect(status).toBe(200);
+      expect(body.data.invalid).toBe(false);
+      await expect(WorkflowModel.findByPk(body.data.id)).resolves.toMatchObject({ invalid: false });
+    });
+
     it('type should be required', async () => {
       const { status } = await agent.resource('workflows').create({
         values: {
@@ -64,21 +90,14 @@ describe('workflow > actions > workflows', () => {
   });
 
   describe('list', () => {
-    it('returns persisted validation without calculating approval UI status', async () => {
+    it('returns persisted invalid without calculating plugin-specific status', async () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
         type: 'approval',
         config: {
           applyForm: 'legacy_schema',
         },
-        validation: {
-          approval: {
-            legacyUi: {
-              initiator: true,
-              approver: false,
-            },
-          },
-        },
+        invalid: true,
       });
       await workflow.createNode({
         type: 'approval',
@@ -99,17 +118,8 @@ describe('workflow > actions > workflows', () => {
 
       expect(status).toBe(200);
       expect(body.data).toHaveLength(1);
-      expect(body.data[0]).toMatchObject({
-        validation: {
-          approval: {
-            legacyUi: {
-              initiator: true,
-              approver: false,
-            },
-          },
-        },
-      });
-      expect(body.data[0]).not.toHaveProperty('legacyApprovalUi');
+      expect(body.data[0]).toMatchObject({ invalid: true });
+      expect(body.data[0]).not.toHaveProperty('validation');
       expect(flowNodesFind).not.toHaveBeenCalled();
       flowNodesFind.mockRestore();
     });
@@ -385,6 +395,22 @@ describe('workflow > actions > workflows', () => {
   });
 
   describe('revision', () => {
+    it('ignores invalid supplied by revision requests', async () => {
+      const workflow = await WorkflowModel.create({
+        type: 'collection',
+        config: {},
+      });
+
+      const { body, status } = await agent.resource('workflows').revision({
+        filterByTk: workflow.id,
+        filter: { key: workflow.key },
+        values: { invalid: true },
+      });
+
+      expect(status).toBe(200);
+      await expect(WorkflowModel.findByPk(body.data.id)).resolves.toMatchObject({ invalid: false });
+    });
+
     it('create revision', async () => {
       const w1 = await WorkflowModel.create({
         enabled: true,

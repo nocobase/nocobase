@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { App } from 'antd';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { App, theme } from 'antd';
 import { get } from 'lodash';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -104,6 +104,7 @@ vi.mock('../WorkflowCategoryTabs', () => ({
 
 import { WorkflowFormDrawer } from '../WorkflowFormDrawer';
 import WorkflowPane from '../WorkflowPane';
+import type { WorkflowNotice } from '../../plugin';
 
 const mockPlugin = {
   triggers: { getEntities: () => [['collection', { title: 'Collection event' }]] },
@@ -122,6 +123,15 @@ function makeCtx(resourceMap: Record<string, any>) {
 
 function renderWithApp(node: React.ReactNode) {
   return render(<App>{node}</App>);
+}
+
+function createDeferred<T>() {
+  let resolvePromise: (value: T) => void = () => undefined;
+  const promise = new Promise<T>((resolve) => {
+    resolvePromise = resolve;
+  });
+
+  return { promise, resolve: resolvePromise };
 }
 
 describe('WorkflowPane (request layer)', () => {
@@ -433,7 +443,19 @@ describe('WorkflowPane (request layer)', () => {
       display: 'inline-block',
       maxWidth: '384px',
     });
-    expect(await screen.findByText('Approval interface needs reconfiguration')).toBeInTheDocument();
+    const noticeIcon = await screen.findByLabelText('Approval interface needs reconfiguration');
+    expect(noticeIcon).toHaveAttribute('tabindex', '0');
+    expect(noticeIcon).toHaveStyle({ color: theme.getDesignToken().colorWarningTextActive });
+    expect(noticeIcon.querySelector('.anticon-exclamation-circle')).toBeInTheDocument();
+    expect(screen.getByText('Approval interface needs reconfiguration')).toHaveStyle({
+      position: 'absolute',
+      width: '1px',
+    });
+
+    fireEvent.mouseEnter(noticeIcon);
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      'This workflow contains approval interfaces created in an earlier version. Reconfigure the approval interfaces before using this workflow.',
+    );
     expect(mockPlugin.getWorkflowNotices).toHaveBeenCalledWith(
       expect.objectContaining({
         surface: 'workflow-list-row',
@@ -448,8 +470,6 @@ describe('WorkflowPane (request layer)', () => {
         {
           key: 'legacy-ui',
           message: 'Approval interface needs reconfiguration',
-          description:
-            'This workflow contains approval interfaces created in an earlier version. Reconfigure the approval interfaces before using this workflow.',
           type: 'warning',
         },
       ],
@@ -477,7 +497,14 @@ describe('WorkflowPane (request layer)', () => {
 
     renderWithApp(<WorkflowPane />);
 
-    expect(await screen.findByText('Approval interface needs reconfiguration')).toBeInTheDocument();
+    const noticeIcon = await screen.findByLabelText('Approval interface needs reconfiguration');
+    expect(screen.getByText('Approval interface needs reconfiguration')).toHaveStyle({
+      position: 'absolute',
+      width: '1px',
+    });
+
+    fireEvent.focus(noticeIcon);
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Approval interface needs reconfiguration');
     expect(mockPlugin.loadWorkflowListNotices).toHaveBeenCalledWith(
       expect.objectContaining({
         api: holder.ctx.api,
@@ -493,7 +520,60 @@ describe('WorkflowPane (request layer)', () => {
     );
   });
 
-  it('maps info workflow row notices to an Ant Design supported tag color', async () => {
+  it('renders persisted invalid warnings before asynchronous notices finish loading', async () => {
+    const deferredNotices = createDeferred<Record<string, WorkflowNotice[]>>();
+    mockPlugin.getWorkflowNotices.mockReturnValue([
+      { key: 'sync-provider-notice', message: 'Synchronous provider notice', type: 'warning' },
+    ]);
+    mockPlugin.loadWorkflowListNotices.mockReturnValue(deferredNotices.promise);
+    const workflows = {
+      list: vi.fn().mockResolvedValue({
+        data: {
+          data: [
+            {
+              id: 9,
+              title: 'Invalid workflow',
+              type: 'approval',
+              invalid: true,
+              sync: false,
+              enabled: false,
+              categories: [],
+              stats: { executed: 0 },
+            },
+          ],
+          meta: { count: 1 },
+        },
+      }),
+    };
+    const workflowCategories = { list: vi.fn().mockResolvedValue({ data: { data: [] } }) };
+    holder.ctx = makeCtx({ workflows, workflowCategories });
+
+    renderWithApp(<WorkflowPane />);
+
+    const invalidIcon = await screen.findByRole('img', {
+      name: 'This workflow has configuration issues and may not work properly.',
+    });
+    fireEvent.focus(invalidIcon);
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      'This workflow has configuration issues and may not work properly.',
+    );
+    const titleCell = screen.getByText('Invalid workflow').closest('td');
+    expect(titleCell).not.toBeNull();
+    if (!titleCell) {
+      throw new Error('Expected the invalid workflow title cell to exist');
+    }
+    const syncIcon = screen.getByRole('img', { name: 'Synchronous provider notice' });
+    expect(within(titleCell).getAllByRole('img')).toEqual([invalidIcon, syncIcon]);
+
+    deferredNotices.resolve({
+      9: [{ key: 'provider-notice', message: 'Provider notice', type: 'info' }],
+    });
+
+    const asyncIcon = await screen.findByRole('img', { name: 'Provider notice' });
+    expect(within(titleCell).getAllByRole('img')).toEqual([invalidIcon, syncIcon, asyncIcon]);
+  });
+
+  it('maps info workflow row notices to an Ant Design status icon', async () => {
     mockPlugin.loadWorkflowListNotices.mockResolvedValue({
       9: [
         {
@@ -525,10 +605,81 @@ describe('WorkflowPane (request layer)', () => {
     const workflowCategories = { list: vi.fn().mockResolvedValue({ data: { data: [] } }) };
     holder.ctx = makeCtx({ workflows, workflowCategories });
 
-    const { container } = renderWithApp(<WorkflowPane />);
+    renderWithApp(<WorkflowPane />);
 
-    const notice = await screen.findByText('Info notice');
-    expect(notice.closest('.ant-tag')).toHaveClass('ant-tag-blue');
-    expect(container.querySelector('.anticon-info-circle')).toBeInTheDocument();
+    const noticeIcon = await screen.findByLabelText('Info notice');
+    expect(noticeIcon.closest('.ant-tag')).not.toBeInTheDocument();
+    expect(noticeIcon.querySelector('.anticon-info-circle')).toBeInTheDocument();
+
+    fireEvent.mouseEnter(noticeIcon);
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('This notice is informational.');
+  });
+
+  it.each([false, undefined])('does not render an invalid notice when invalid is %s', async (invalid) => {
+    const workflows = {
+      list: vi.fn().mockResolvedValue({
+        data: {
+          data: [
+            {
+              id: 9,
+              title: 'Normal workflow',
+              type: 'collection',
+              invalid,
+              sync: false,
+              enabled: false,
+              categories: [],
+              stats: { executed: 0 },
+            },
+          ],
+          meta: { count: 1 },
+        },
+      }),
+    };
+    const workflowCategories = { list: vi.fn().mockResolvedValue({ data: { data: [] } }) };
+    holder.ctx = makeCtx({ workflows, workflowCategories });
+
+    renderWithApp(<WorkflowPane />);
+
+    const title = await screen.findByText('Normal workflow');
+    expect(title.closest('td')?.querySelector('[role="img"]')).not.toBeInTheDocument();
+  });
+
+  it('uses the rendered notice message as the accessible name', async () => {
+    mockPlugin.getWorkflowNotices.mockReturnValue([
+      {
+        key: 'internal-provider-key',
+        message: (
+          <>
+            <strong>Readable</strong> notice
+          </>
+        ),
+        type: 'warning',
+      },
+    ]);
+    const workflows = {
+      list: vi.fn().mockResolvedValue({
+        data: {
+          data: [
+            {
+              id: 9,
+              title: 'Row',
+              type: 'approval',
+              sync: false,
+              enabled: false,
+              categories: [],
+              stats: { executed: 0 },
+            },
+          ],
+          meta: { count: 1 },
+        },
+      }),
+    };
+    const workflowCategories = { list: vi.fn().mockResolvedValue({ data: { data: [] } }) };
+    holder.ctx = makeCtx({ workflows, workflowCategories });
+
+    renderWithApp(<WorkflowPane />);
+
+    expect(await screen.findByRole('img', { name: 'Readable notice' })).toBeInTheDocument();
+    expect(screen.queryByLabelText('internal-provider-key')).not.toBeInTheDocument();
   });
 });

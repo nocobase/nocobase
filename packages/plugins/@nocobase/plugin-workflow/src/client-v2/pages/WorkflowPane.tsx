@@ -54,45 +54,84 @@ function normalizeListResponse(response: any) {
   return { records, total: meta.count || meta.total || records.length };
 }
 
-function WorkflowNoticeTags({ notices }: { notices: WorkflowNotice[] }) {
-  if (!notices.length) {
-    return null;
-  }
+const visuallyHiddenStyle: React.CSSProperties = {
+  position: 'absolute',
+  width: 1,
+  height: 1,
+  padding: 0,
+  margin: -1,
+  overflow: 'hidden',
+  clip: 'rect(0, 0, 0, 0)',
+  whiteSpace: 'nowrap',
+  border: 0,
+};
+
+function WorkflowNoticeIcon({ notice }: { notice: WorkflowNotice }) {
+  const { token } = theme.useToken();
+  const messageId = React.useId();
 
   const getNoticeIcon = (type: WorkflowNotice['type']) => {
     switch (type) {
       case 'error':
-        return <CloseCircleOutlined />;
+        return <CloseCircleOutlined aria-hidden />;
       case 'info':
-        return <InfoCircleOutlined />;
+        return <InfoCircleOutlined aria-hidden />;
       case 'success':
-        return <CheckCircleOutlined />;
+        return <CheckCircleOutlined aria-hidden />;
       case 'warning':
       default:
-        return <ExclamationCircleOutlined />;
+        return <ExclamationCircleOutlined aria-hidden />;
     }
   };
   const getNoticeColor = (type: WorkflowNotice['type']) => {
     switch (type) {
       case 'error':
+        return token.colorErrorTextActive;
       case 'success':
+        return token.colorSuccessTextActive;
       case 'warning':
-        return type;
+        return token.colorWarningTextActive;
       case 'info':
-        return 'blue';
+        return token.colorInfoTextActive;
       default:
-        return 'warning';
+        return token.colorWarningTextActive;
     }
   };
 
   return (
+    <Tooltip title={notice.description ?? notice.message} trigger={['hover', 'focus']}>
+      <span
+        aria-labelledby={messageId}
+        role="img"
+        tabIndex={0}
+        style={{
+          alignItems: 'center',
+          color: getNoticeColor(notice.type),
+          cursor: 'help',
+          display: 'inline-flex',
+          fontSize: token.fontSize,
+          justifyContent: 'center',
+          lineHeight: 1,
+        }}
+      >
+        {getNoticeIcon(notice.type || 'warning')}
+        <span id={messageId} style={visuallyHiddenStyle}>
+          {notice.message}
+        </span>
+      </span>
+    </Tooltip>
+  );
+}
+
+function WorkflowNoticeIcons({ notices }: { notices: WorkflowNotice[] }) {
+  if (!notices.length) {
+    return null;
+  }
+
+  return (
     <>
       {notices.map((notice, index) => (
-        <Tooltip key={`${notice.key}-${index}`} title={notice.description}>
-          <Tag color={getNoticeColor(notice.type)} icon={getNoticeIcon(notice.type || 'warning')}>
-            {notice.message}
-          </Tag>
-        </Tooltip>
+        <WorkflowNoticeIcon key={`${notice.key}-${index}`} notice={notice} />
       ))}
     </>
   );
@@ -107,6 +146,8 @@ function WorkflowTitleCell({
   notices: WorkflowNotice[];
   title?: React.ReactNode;
 }) {
+  const { token } = theme.useToken();
+
   return (
     <span
       style={{
@@ -120,8 +161,15 @@ function WorkflowTitleCell({
     >
       {title}
       {notices.length ? (
-        <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: '4px 8px', marginInlineStart: 8 }}>
-          <WorkflowNoticeTags notices={notices} />
+        <span
+          style={{
+            display: 'inline-flex',
+            flexWrap: 'wrap',
+            gap: token.marginXS,
+            marginInlineStart: token.marginXS,
+          }}
+        >
+          <WorkflowNoticeIcons notices={notices} />
         </span>
       ) : null}
     </span>
@@ -415,9 +463,19 @@ function WorkflowPaneInner() {
           },
         }),
         render: (value, record) => {
+          const invalidNotices: WorkflowNotice[] =
+            record.invalid === true
+              ? [
+                  {
+                    key: 'workflow-invalid',
+                    message: t('This workflow has configuration issues and may not work properly.'),
+                    type: 'warning',
+                  },
+                ]
+              : [];
           const syncNotices = plugin.getWorkflowNotices({ surface: 'workflow-list-row', workflow: record });
           const asyncNotices = workflowListNotices[String(record.id)] || [];
-          const notices = [...syncNotices, ...asyncNotices];
+          const notices = [...invalidNotices, ...syncNotices, ...asyncNotices];
 
           return <WorkflowTitleCell title={value} notices={notices} maxWidth={workflowTitleMaxWidth} />;
         },
