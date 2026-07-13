@@ -146,13 +146,17 @@ export const resolveTemporaryOfficeFileUrl = async (
     };
     headers = { 'X-Data-Source': accessParams.dataSourceKey };
   } else {
-    accessParams = parsePermanentFileUrl(file);
-    if (!accessParams || (fileCollection && accessParams.collectionName !== fileCollection.collectionName)) {
+    const permanentAccessParams = parsePermanentFileUrl(file);
+    if (
+      !permanentAccessParams ||
+      (fileCollection && permanentAccessParams.collectionName !== fileCollection.collectionName)
+    ) {
       return resolveFileUrl(file);
     }
+    accessParams = permanentAccessParams;
     headers = {
-      'X-App': accessParams.appName,
-      'X-Data-Source': accessParams.dataSourceKey,
+      'X-App': permanentAccessParams.appName,
+      'X-Data-Source': permanentAccessParams.dataSourceKey,
     };
   }
 
