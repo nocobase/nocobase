@@ -19,6 +19,22 @@ import {
   terminateTmuxSession,
   writeTerminalArtifactFromFile,
 } from '../tmuxTerminal';
+import type { ExecutionPolicyDefinition } from '../types';
+
+function createExecutionPolicy(
+  executable: string,
+  workspaceRoot: string,
+  envKeys: string[] = [],
+): ExecutionPolicyDefinition {
+  return {
+    executionPolicyKey: `tmux-test-${path.basename(executable)}`,
+    provider: 'generic-cli',
+    executable,
+    workspaceRoot,
+    envKeys,
+    maxTimeoutMs: 10_000,
+  };
+}
 
 function execTmux(args: string[]) {
   return new Promise<void>((resolve, reject) => {
@@ -66,24 +82,33 @@ describe('agent gateway tmux terminal driver', () => {
     await fs.rm(tempDir, { recursive: true, force: true });
   });
 
-  it('rejects environment variables that are not allowlisted', async () => {
-    await expect(
-      executeTmuxCommand({
+  it('does not inherit environment variables outside the canonical policy allowlist', async () => {
+    if (!tmuxReady) {
+      return;
+    }
+    const previousValue = process.env.NOT_ALLOWED;
+    process.env.NOT_ALLOWED = 'secret';
+    try {
+      const result = await executeTmuxCommand({
         runId: `tmux-env-rejected-${Date.now()}`,
-        definition: {
-          commandKey: 'node',
-          executable: process.execPath,
-          allowedEnvKeys: [],
-        },
-        args: ['-e', 'process.exit(0)'],
+        policy: createExecutionPolicy(process.execPath, tempDir),
+        args: ['-e', 'console.log(process.env.NOT_ALLOWED || "missing")'],
         cwd: tempDir,
-        workspaceRoot: tempDir,
-        env: {
-          NOT_ALLOWED: 'secret',
-        },
         timeoutMs: 5000,
-      }),
-    ).rejects.toThrow('Environment variable is not allowlisted: NOT_ALLOWED');
+        artifactDir: tempDir,
+      });
+      const output = result.stdout.artifactPath
+        ? await fs.readFile(result.stdout.artifactPath, 'utf8')
+        : result.stdout.text || '';
+      expect(output).toContain('missing');
+      expect(output).not.toContain('secret');
+    } finally {
+      if (previousValue === undefined) {
+        delete process.env.NOT_ALLOWED;
+      } else {
+        process.env.NOT_ALLOWED = previousValue;
+      }
+    }
   });
 
   it('returns failed status and the process exit code for non-zero commands', async () => {
@@ -95,13 +120,9 @@ describe('agent gateway tmux terminal driver', () => {
     try {
       const result = await executeTmuxCommand({
         runId,
-        definition: {
-          commandKey: 'node',
-          executable: process.execPath,
-        },
+        policy: createExecutionPolicy(process.execPath, process.cwd()),
         args: ['-e', 'console.error("tmux failure marker"); process.exit(2);'],
         cwd: process.cwd(),
-        workspaceRoot: process.cwd(),
         timeoutMs: 5000,
         artifactDir: tempDir,
       });
@@ -126,10 +147,7 @@ describe('agent gateway tmux terminal driver', () => {
     try {
       const result = await executeTmuxCommand({
         runId,
-        definition: {
-          commandKey: 'node',
-          executable: process.execPath,
-        },
+        policy: createExecutionPolicy(process.execPath, process.cwd()),
         args: [
           '-e',
           [
@@ -139,7 +157,6 @@ describe('agent gateway tmux terminal driver', () => {
           ].join(''),
         ],
         cwd: process.cwd(),
-        workspaceRoot: process.cwd(),
         timeoutMs: 5000,
         artifactDir: tempDir,
       });
@@ -172,10 +189,7 @@ describe('agent gateway tmux terminal driver', () => {
     try {
       const result = await executeTmuxCommand({
         runId,
-        definition: {
-          commandKey: 'node',
-          executable: process.execPath,
-        },
+        policy: createExecutionPolicy(process.execPath, process.cwd()),
         args: [
           '-e',
           [
@@ -185,7 +199,6 @@ describe('agent gateway tmux terminal driver', () => {
           ].join(''),
         ],
         cwd: process.cwd(),
-        workspaceRoot: process.cwd(),
         timeoutMs: 5000,
         artifactDir: tempDir,
       });
@@ -214,13 +227,9 @@ describe('agent gateway tmux terminal driver', () => {
     try {
       const result = await executeTmuxCommand({
         runId,
-        definition: {
-          commandKey: 'node',
-          executable: process.execPath,
-        },
+        policy: createExecutionPolicy(process.execPath, process.cwd()),
         args: ['-e', 'process.stdout.write("x".repeat(16 * 1024));'],
         cwd: process.cwd(),
-        workspaceRoot: process.cwd(),
         timeoutMs: 5000,
         artifactDir: tempDir,
         maxOutputSpoolBytes: 1024,
@@ -334,10 +343,7 @@ describe('agent gateway tmux terminal driver', () => {
     try {
       const command = executeTmuxCommand({
         runId,
-        definition: {
-          commandKey: 'node',
-          executable: process.execPath,
-        },
+        policy: createExecutionPolicy(process.execPath, process.cwd()),
         args: [
           '-e',
           [
@@ -347,7 +353,6 @@ describe('agent gateway tmux terminal driver', () => {
           ].join(''),
         ],
         cwd: process.cwd(),
-        workspaceRoot: process.cwd(),
         timeoutMs: 5000,
         artifactDir: tempDir,
         liveOutputPollIntervalMs: 25,
@@ -384,10 +389,7 @@ describe('agent gateway tmux terminal driver', () => {
     try {
       const result = await executeTmuxCommand({
         runId,
-        definition: {
-          commandKey: 'sh',
-          executable: 'sh',
-        },
+        policy: createExecutionPolicy('sh', process.cwd()),
         args: [
           '-lc',
           [
@@ -398,7 +400,6 @@ describe('agent gateway tmux terminal driver', () => {
           ].join(''),
         ],
         cwd: process.cwd(),
-        workspaceRoot: process.cwd(),
         timeoutMs: 5000,
         artifactDir: tempDir,
         liveOutputPollIntervalMs: 10,
@@ -441,12 +442,8 @@ describe('agent gateway tmux terminal driver', () => {
     try {
       const result = await executeTmuxCommand({
         runId,
-        definition: {
-          commandKey: 'ag-local-tmux-tool',
-          executable: 'ag-local-tmux-tool',
-        },
+        policy: createExecutionPolicy('ag-local-tmux-tool', workspace),
         cwd: workspace,
-        workspaceRoot: workspace,
         timeoutMs: 5000,
         artifactDir: tempDir,
       });
@@ -479,13 +476,9 @@ describe('agent gateway tmux terminal driver', () => {
     try {
       const command = executeTmuxCommand({
         runId,
-        definition: {
-          commandKey: 'sh',
-          executable: 'sh',
-        },
+        policy: createExecutionPolicy('sh', process.cwd()),
         args: ['-lc', 'printf "AGENT_GATEWAY_TMUX_PARTIAL"; sleep 0.4; printf "_DONE\\n"'],
         cwd: process.cwd(),
-        workspaceRoot: process.cwd(),
         timeoutMs: 5000,
         artifactDir: tempDir,
         liveOutputPollIntervalMs: 25,
@@ -521,13 +514,9 @@ describe('agent gateway tmux terminal driver', () => {
     try {
       const result = await executeTmuxCommand({
         runId,
-        definition: {
-          commandKey: 'sh',
-          executable: 'sh',
-        },
+        policy: createExecutionPolicy('sh', process.cwd()),
         args: ['-lc', 'printf "to"; sleep 0.2; printf "ken=TMUX_SPLIT_SECRET\\n"'],
         cwd: process.cwd(),
-        workspaceRoot: process.cwd(),
         timeoutMs: 5000,
         artifactDir: tempDir,
         liveOutputPollIntervalMs: 25,
@@ -559,13 +548,9 @@ describe('agent gateway tmux terminal driver', () => {
     try {
       const result = await executeTmuxCommand({
         runId,
-        definition: {
-          commandKey: 'sh',
-          executable: 'sh',
-        },
+        policy: createExecutionPolicy('sh', process.cwd()),
         args: ['-lc', 'printf "AGENT_GATEWAY_TMUX_NO_LIVE_SHELL\\n"'],
         cwd: process.cwd(),
-        workspaceRoot: process.cwd(),
         timeoutMs: 5000,
         artifactDir: tempDir,
       });
@@ -589,13 +574,9 @@ describe('agent gateway tmux terminal driver', () => {
     await expect(
       executeTmuxCommand({
         runId,
-        definition: {
-          commandKey: 'sh',
-          executable: 'sh',
-        },
+        policy: createExecutionPolicy('sh', process.cwd()),
         args: ['-lc', 'sleep 30'],
         cwd: process.cwd(),
-        workspaceRoot: process.cwd(),
         timeoutMs: 5000,
         artifactDir: tempDir,
         onSessionStarted: async () => {
@@ -617,14 +598,14 @@ describe('agent gateway tmux terminal driver', () => {
     const cancelController = new AbortController();
     const startMarkerPath = path.join(tempDir, `${runId}-start-marker.txt`);
     const interruptMarkerPath = path.join(tempDir, `${runId}-interrupt-marker.txt`);
+    const previousStartMarker = process.env.AGW_START_MARKER;
+    const previousInterruptMarker = process.env.AGW_INT_MARKER;
+    process.env.AGW_START_MARKER = startMarkerPath;
+    process.env.AGW_INT_MARKER = interruptMarkerPath;
     try {
       const result = await executeTmuxCommand({
         runId,
-        definition: {
-          commandKey: 'sh',
-          executable: 'sh',
-          allowedEnvKeys: ['AGW_START_MARKER', 'AGW_INT_MARKER'],
-        },
+        policy: createExecutionPolicy('sh', process.cwd(), ['AGW_START_MARKER', 'AGW_INT_MARKER']),
         args: [
           '-lc',
           [
@@ -636,11 +617,6 @@ describe('agent gateway tmux terminal driver', () => {
           ].join(' '),
         ],
         cwd: process.cwd(),
-        workspaceRoot: process.cwd(),
-        env: {
-          AGW_START_MARKER: startMarkerPath,
-          AGW_INT_MARKER: interruptMarkerPath,
-        },
         timeoutMs: 10_000,
         artifactDir: tempDir,
         cancelSignal: cancelController.signal,
@@ -664,6 +640,16 @@ describe('agent gateway tmux terminal driver', () => {
       const interruptMarker = await fs.readFile(interruptMarkerPath, 'utf8').catch(() => '');
       expect(interruptMarker).toBe('');
     } finally {
+      if (previousStartMarker === undefined) {
+        delete process.env.AGW_START_MARKER;
+      } else {
+        process.env.AGW_START_MARKER = previousStartMarker;
+      }
+      if (previousInterruptMarker === undefined) {
+        delete process.env.AGW_INT_MARKER;
+      } else {
+        process.env.AGW_INT_MARKER = previousInterruptMarker;
+      }
       await terminateTmuxSession(sessionName).catch(() => {
         // The test may already have killed the session.
       });
@@ -681,13 +667,9 @@ describe('agent gateway tmux terminal driver', () => {
     try {
       const result = await executeTmuxCommand({
         runId,
-        definition: {
-          commandKey: 'sh',
-          executable: 'sh',
-        },
+        policy: createExecutionPolicy('sh', process.cwd()),
         args: ['-lc', 'printf "AGENT_GATEWAY_TMUX_PANE_DEAD_START\\n"; sleep 30'],
         cwd: process.cwd(),
-        workspaceRoot: process.cwd(),
         timeoutMs: 10_000,
         artifactDir: tempDir,
         onSessionStarted: async ({ sessionName }) => {

@@ -75,7 +75,6 @@ describe('agent gateway run observability APIs', () => {
     const nodeKey = `node-observe-${nodeCounter}`;
     const invitationResponse = await rootAgent.post('/agentGatewayApi:createNodeInvitation').send({
       invitationKey: `invite-observe-${nodeCounter}`,
-      serverUrl: 'http://127.0.0.1:13000',
       expectedNodeKey: nodeKey,
     });
     expect(invitationResponse.status).toBe(200);
@@ -92,7 +91,7 @@ describe('agent gateway run observability APIs', () => {
         inviteToken,
         nodeKey,
         displayName: 'Observe Node',
-        metadata: {
+        hostInfo: {
           apiSecret: 'REGISTER_SECRET',
         },
       });
@@ -106,7 +105,7 @@ describe('agent gateway run observability APIs', () => {
       .post(`/agentGatewayApi:heartbeatNode/${nodeId}`)
       .set('Authorization', `Bearer ${nodeToken}`)
       .send({
-        capabilities: {
+        capabilitiesJson: {
           maxConcurrency: 1,
         },
         profiles: [
@@ -117,11 +116,11 @@ describe('agent gateway run observability APIs', () => {
             agentType: 'code',
             driver: 'fake',
             status: 'active',
-            capabilities: {
+            capabilitiesJson: {
               executionPolicyKey: 'fake-observer',
               maxConcurrency: 1,
             },
-            metadata: {
+            metadataJson: {
               accessKeySecret: 'PROFILE_SECRET',
             },
           },
@@ -150,10 +149,16 @@ describe('agent gateway run observability APIs', () => {
       runCode: `run-observe-${Date.now()}-${Math.random()}`,
       sourceType: 'test',
       agentProfileId: runner.profileId,
+      provider: 'opencode',
+      executionPolicyKey: 'fake-observer',
+      capabilitiesSnapshotJson: {
+        structuredEvents: true,
+        artifacts: true,
+      },
       promptSnapshot: {
         prompt: 'Prompt that should not appear in management read APIs or API logs',
       },
-      executionPayload: {
+      executionPayloadJson: {
         executionPolicyKey: 'fake-observer',
         task: 'observe',
         cwd: '.',
@@ -250,7 +255,7 @@ describe('agent gateway run observability APIs', () => {
         level: 'info',
         message:
           'small event\nAuthorization: Bearer EVENT_MESSAGE_SECRET\ncommand=EVENT_COMMAND_SECRET cwd=/tmp/EVENT_CWD_SECRET env.SECRET=EVENT_ENV_SECRET',
-        payload: {
+        contentJson: {
           token: 'EVENT_SECRET',
           command: 'EVENT_PAYLOAD_COMMAND_SECRET',
           cwd: '/tmp/EVENT_PAYLOAD_CWD_SECRET',
@@ -346,7 +351,7 @@ describe('agent gateway run observability APIs', () => {
         mimeType: 'text/plain',
         contentText:
           'visible line\nAuthorization: Bearer ARTIFACT_SECRET\ncommand=ARTIFACT_COMMAND_SECRET cwd=/tmp/ARTIFACT_CWD_SECRET env.SECRET=ARTIFACT_ENV_SECRET\n',
-        metadata: {
+        metadataJson: {
           externalUrl: 'https://daemon.example/artifacts/stdout-main',
           downloadUrl: 'https://daemon.example/download/stdout-main',
           nested: {
@@ -443,7 +448,7 @@ describe('agent gateway run observability APIs', () => {
         artifactType: 'html-report',
         mimeType: 'text/html',
         contentText: '<html><body>report</body></html>',
-        metadata: {
+        metadataJson: {
           relativePath: 'runs/nb-opencode-ui-batch/run-1/report.html',
         },
       }),
@@ -459,7 +464,7 @@ describe('agent gateway run observability APIs', () => {
         artifactType: 'json-report',
         mimeType: 'application/json',
         contentText: '{"status":"passed"}',
-        metadata: {
+        metadataJson: {
           relativePath: 'runs/nb-opencode-ui-batch/run-1/run.json',
         },
       }),
@@ -497,7 +502,7 @@ describe('agent gateway run observability APIs', () => {
       'snapshots:register',
       leaseValues(claim, {
         snapshotType: 'workspace',
-        snapshot: {
+        snapshotJson: {
           files: ['a.ts'],
           command: 'SNAPSHOT_COMMAND_SECRET',
           cwd: '/tmp/SNAPSHOT_CWD_SECRET',
@@ -508,7 +513,7 @@ describe('agent gateway run observability APIs', () => {
             apiKey: 'SNAPSHOT_SECRET',
           },
         },
-        metadata: {
+        metadataJson: {
           authorization: 'Bearer SNAPSHOT_METADATA_SECRET',
           command: 'SNAPSHOT_METADATA_COMMAND_SECRET',
           cwd: '/tmp/SNAPSHOT_METADATA_CWD_SECRET',
@@ -559,7 +564,7 @@ describe('agent gateway run observability APIs', () => {
       'snapshots:register',
       leaseValues(claim, {
         snapshotType: 'workspace',
-        snapshot: {
+        snapshotJson: {
           largeValue: oversizedSnapshotMarker,
         },
       }),
@@ -574,7 +579,7 @@ describe('agent gateway run observability APIs', () => {
         artifactKey: 'oversized-metadata',
         artifactType: 'stdout',
         contentText: 'small body',
-        metadata: {
+        metadataJson: {
           largeValue: oversizedMetadataMarker,
         },
       }),
@@ -632,7 +637,7 @@ describe('agent gateway run observability APIs', () => {
       leaseValues(claim, {
         leaseVersion: staleLease,
         snapshotType: 'node',
-        snapshot: {
+        snapshotJson: {
           status: 'stale',
         },
       }),
@@ -833,7 +838,7 @@ describe('agent gateway run observability APIs', () => {
         'snapshots:register',
         leaseValues(claim, {
           snapshotType,
-          snapshot: {
+          snapshotJson: {
             snapshotType,
           },
         }),
@@ -903,7 +908,13 @@ describe('agent gateway run observability APIs', () => {
       runCode: `run-observe-other-${Date.now()}-${Math.random()}`,
       sourceType: 'test',
       agentProfileId: runner.profileId,
-      executionPayload: {
+      provider: 'opencode',
+      executionPolicyKey: 'fake-observer',
+      capabilitiesSnapshotJson: {
+        structuredEvents: true,
+        artifacts: true,
+      },
+      executionPayloadJson: {
         executionPolicyKey: 'fake-observer',
         task: 'observe-other',
         cwd: '.',
@@ -937,7 +948,7 @@ describe('agent gateway run observability APIs', () => {
         eventType: 'log',
         level: 'info',
         message: 'observable event',
-        payload: {
+        contentJson: {
           token: 'EVENT_READ_SECRET',
         },
       }),
@@ -951,7 +962,7 @@ describe('agent gateway run observability APIs', () => {
         artifactType: 'log',
         mimeType: 'text/plain',
         contentText: 'inline artifact',
-        metadata: {
+        metadataJson: {
           externalUrl: 'https://daemon.example/artifacts/stdout',
         },
       }),
@@ -962,7 +973,7 @@ describe('agent gateway run observability APIs', () => {
       'snapshots:register',
       leaseValues(claim, {
         snapshotType: 'workspace',
-        snapshot: {
+        snapshotJson: {
           files: ['a.ts'],
         },
       }),

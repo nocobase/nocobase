@@ -15,10 +15,23 @@ import { vi } from 'vitest';
 import { AgentGatewayDaemonNodeClient } from '../gateway';
 import { runDaemonOnce } from '../runner';
 import { ExecDriverResult } from '../execDriver';
-import { GatewayRequestOptions, GatewayRequester, JsonRecord } from '../types';
+import { ExecutionPolicyDefinition, GatewayRequestOptions, GatewayRequester, JsonRecord } from '../types';
 import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiPath } from '../../shared/apiContract';
 import { AGENT_GATEWAY_TERMINATE_CONTROL_CANCEL_REASON } from '../../shared/runControl';
 import type { TmuxCommandOptions } from '../tmuxTerminal';
+
+function createExecutionPolicy(options: {
+  executionPolicyKey: string;
+  provider: ExecutionPolicyDefinition['provider'];
+  executable: string;
+  workspaceRoot: string;
+}): ExecutionPolicyDefinition {
+  return {
+    ...options,
+    defaultTimeoutMs: 5000,
+    maxTimeoutMs: 5000,
+  };
+}
 
 function createSucceededResult(): ExecDriverResult {
   return {
@@ -148,11 +161,18 @@ class ControlRequester implements GatewayRequester {
         claimToken: 'ag_claim_CONTROL',
         claimAttempt: 1,
         leaseVersion: 1,
+        executionPolicyKey: 'node',
         run: {
           id: 'run-control-1',
+          provider: 'generic-cli',
+          capabilitiesSnapshotJson: {},
+          executionPolicyKey: 'node',
+          sourceType: 'manual',
+          promptSnapshot: {
+            text: 'console.log("done")',
+          },
           executionPayloadJson: {
-            commandKey: 'node',
-            args: ['-e', 'console.log("done")'],
+            executionPolicyKey: 'node',
             cwd: '.',
           },
         },
@@ -255,14 +275,14 @@ describe('agent gateway daemon control requests', () => {
     await fs.mkdir(path.join(tempDir, 'workspace'), { recursive: true });
     const result = await runDaemonOnce({
       gateway,
-      allowlist: {
-        node: {
-          commandKey: 'node',
+      executionPolicies: {
+        node: createExecutionPolicy({
+          executionPolicyKey: 'node',
+          provider: 'generic-cli',
           executable: process.execPath,
-          defaultTimeoutMs: 5000,
-        },
+          workspaceRoot: path.join(tempDir, 'workspace'),
+        }),
       },
-      workspaceRoot: path.join(tempDir, 'workspace'),
       skillsRoot: path.join(tempDir, 'skills'),
       artifactDir: path.join(tempDir, 'artifacts'),
       claimProfileKey: 'codex',
@@ -298,14 +318,18 @@ describe('agent gateway daemon control requests', () => {
             claimToken: 'ag_claim_TERMINAL',
             claimAttempt: 1,
             leaseVersion: 1,
-            profileProvider: 'codex',
+            executionPolicyKey: 'codex',
             run: {
               id: 'run-terminal-codex-1',
+              provider: 'codex',
+              capabilitiesSnapshotJson: {},
+              executionPolicyKey: 'codex',
+              sourceType: 'manual',
               promptSnapshot: {
                 text: 'Build a terminal-readable page',
               },
               executionPayloadJson: {
-                commandKey: 'codex',
+                executionPolicyKey: 'codex',
                 cwd: '.',
               },
             },
@@ -335,14 +359,14 @@ describe('agent gateway daemon control requests', () => {
 
     const result = await runDaemonOnce({
       gateway,
-      allowlist: {
-        codex: {
-          commandKey: 'codex',
+      executionPolicies: {
+        codex: createExecutionPolicy({
+          executionPolicyKey: 'codex',
+          provider: 'codex',
           executable: 'codex',
-          defaultTimeoutMs: 5000,
-        },
+          workspaceRoot: workspace,
+        }),
       },
-      workspaceRoot: workspace,
       skillsRoot: path.join(tempDir, 'skills'),
       artifactDir: path.join(tempDir, 'artifacts'),
       runHeartbeatIntervalMs: 20,
@@ -370,7 +394,7 @@ describe('agent gateway daemon control requests', () => {
     );
   });
 
-  it('uses the task payload terminal backend for live timeline reporting', async () => {
+  it('uses the configured terminal backend for live timeline reporting', async () => {
     const workspace = path.join(tempDir, 'workspace');
     await fs.mkdir(workspace, { recursive: true });
     tmuxMocks.executeTmuxCommand.mockImplementationOnce(async (options: TmuxCommandOptions) => {
@@ -395,16 +419,19 @@ describe('agent gateway daemon control requests', () => {
             claimToken: 'ag_claim_TASK_LIVE',
             claimAttempt: 1,
             leaseVersion: 1,
-            profileProvider: 'codex',
+            executionPolicyKey: 'codex',
             run: {
               id: 'run-task-live-1',
+              provider: 'codex',
+              capabilitiesSnapshotJson: {},
+              executionPolicyKey: 'codex',
+              sourceType: 'manual',
               promptSnapshot: {
                 text: 'Build with live task output',
               },
               executionPayloadJson: {
-                commandKey: 'codex',
+                executionPolicyKey: 'codex',
                 cwd: '.',
-                terminalBackend: 'tmux',
               },
             },
           } as T;
@@ -433,17 +460,18 @@ describe('agent gateway daemon control requests', () => {
 
     const result = await runDaemonOnce({
       gateway,
-      allowlist: {
-        codex: {
-          commandKey: 'codex',
+      executionPolicies: {
+        codex: createExecutionPolicy({
+          executionPolicyKey: 'codex',
+          provider: 'codex',
           executable: 'codex',
-          defaultTimeoutMs: 5000,
-        },
+          workspaceRoot: workspace,
+        }),
       },
-      workspaceRoot: workspace,
       skillsRoot: path.join(tempDir, 'skills'),
       artifactDir: path.join(tempDir, 'artifacts'),
       runHeartbeatIntervalMs: 60_000,
+      terminalBackend: 'tmux',
       terminalStreamClientFactory: () => ({
         start: async () => undefined,
         appendText: async () => undefined,

@@ -9,18 +9,7 @@
 
 import { JsonRecord } from '../json';
 import { NormalizedAgentEvent, ProviderEventInput } from '../providerEvents';
-
-function isRecord(value: unknown): value is JsonRecord {
-  return Object.prototype.toString.call(value) === '[object Object]';
-}
-
-function getString(value: unknown) {
-  return typeof value === 'string' ? value.trim() : '';
-}
-
-function getRecord(value: unknown): JsonRecord {
-  return isRecord(value) ? value : {};
-}
+import { getFallbackEventType, getFallbackTextKind, getRecord, getString, isRecord } from './common';
 
 function getEventText(event: JsonRecord) {
   return (
@@ -30,39 +19,6 @@ function getEventText(event: JsonRecord) {
     getString(getRecord(event.delta).text) ||
     getString(getRecord(event.content).text)
   );
-}
-
-function getFallbackEventType(type: string, text: string) {
-  const normalizedType = type.toLowerCase();
-  if (
-    normalizedType.includes('reasoning') ||
-    normalizedType.includes('thinking') ||
-    normalizedType.includes('summary')
-  ) {
-    return 'agent.reasoning';
-  }
-  if (
-    normalizedType.includes('progress') ||
-    normalizedType.includes('status') ||
-    normalizedType.includes('log') ||
-    normalizedType.includes('event')
-  ) {
-    return text ? 'agent.progress' : 'agent.raw';
-  }
-  return text ? 'agent.message' : 'agent.raw';
-}
-
-function getFallbackTextKind(eventType: string) {
-  if (eventType === 'agent.reasoning') {
-    return 'reasoning';
-  }
-  if (eventType === 'agent.progress') {
-    return 'progress';
-  }
-  if (eventType === 'agent.raw') {
-    return 'raw';
-  }
-  return 'message';
 }
 
 export function parseClaudeCodeJsonLine(input: ProviderEventInput): JsonRecord | null {

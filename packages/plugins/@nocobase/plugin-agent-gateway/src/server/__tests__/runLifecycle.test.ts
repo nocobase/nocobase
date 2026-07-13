@@ -9,6 +9,7 @@
 
 import { MockServer, createMockServer } from '@nocobase/test';
 import { randomUUID } from 'crypto';
+import { vi } from 'vitest';
 
 import PluginAgentGatewayServer from '../plugin';
 import { createNodeToken, toStoredTokenFields } from '../security';
@@ -1128,6 +1129,43 @@ describe('agent gateway run lifecycle APIs', () => {
     });
   });
 
+  it('serializes concurrent claim contention so only one daemon receives the run', async () => {
+    const runner = await createRunner();
+    const run = await createRun('run-claim-contention-1', {
+      agentProfileId: runner.profileId,
+    });
+
+    const responses = await Promise.all([claimRun(runner), claimRun(runner)]);
+    const claims = responses.map(getData);
+    expect(responses.every((response) => response.status === 200)).toBe(true);
+    expect(claims.filter((claim) => claim.claimed === true)).toHaveLength(1);
+    expect(claims.filter((claim) => claim.claimed === false)).toHaveLength(1);
+    expect(claims.find((claim) => claim.claimed === true)?.runId).toBe(run.id);
+
+    const storedRun = await app.db.getRepository('agRuns').findOne({ filterByTk: run.id });
+    expect(storedRun.get('claimAttempt')).toBe(1);
+    expect(storedRun.get('leaseVersion')).toBe(1);
+  });
+
+  it('rolls back task run creation when the initial conversation event fails', async () => {
+    const runner = await createRunner({ profileKey: 'codex', profileProvider: 'codex' });
+    const eventRepository = app.db.getRepository('agAgentConversationEvents');
+    const createEvent = vi.spyOn(eventRepository, 'create').mockRejectedValueOnce(new Error('event write failed'));
+
+    const response = await rootAgent.post('/agentGatewayApi:createTaskRun').send({
+      runCode: 'run-task-rollback-1',
+      title: 'Rollback task',
+      instruction: 'This task must roll back',
+      nodeId: runner.nodeId,
+      agentProfileId: runner.profileId,
+      cwd: '.',
+    });
+
+    expect(response.status).toBe(500);
+    expect(await app.db.getRepository('agRuns').count({ filter: { runCode: 'run-task-rollback-1' } })).toBe(0);
+    createEvent.mockRestore();
+  });
+
   it('keeps stalled leases in concurrency and lets the same daemon resume before claiming new work', async () => {
     const runner = await createRunner();
     const expiredRun = await createRun('run-claim-recovery-expired', {
@@ -2097,6 +2135,37 @@ describe('agent gateway run lifecycle APIs', () => {
       errorSummary: 'late failure',
     });
     expect(failAfterCancelResponse.status).toBe(409);
+  });
+
+  it('serializes completion and cancellation races without double terminalization', async () => {
+    const runner = await createRunner();
+    const run = await createRun('run-complete-cancel-race-1', {
+      agentProfileId: runner.profileId,
+    });
+    const claim = getData(await claimRun(runner));
+    const heartbeat = getData(
+      await runDaemonAction(runner, run.id, 'heartbeat', {
+        claimToken: claim.claimToken,
+        claimAttempt: claim.claimAttempt,
+        leaseVersion: claim.leaseVersion,
+        status: 'running',
+      }),
+    );
+
+    const [completeResponse, cancelResponse] = await Promise.all([
+      runDaemonAction(runner, run.id, 'complete', {
+        claimToken: claim.claimToken,
+        claimAttempt: claim.claimAttempt,
+        leaseVersion: heartbeat.leaseVersion,
+        resultSummaryJson: { ok: true },
+      }),
+      rootAgent.post(`/agentGatewayApi:cancelRun/${run.id}`).send({}),
+    ]);
+
+    expect([completeResponse.status, cancelResponse.status].sort()).toEqual([200, 409]);
+    const storedRun = await app.db.getRepository('agRuns').findOne({ filterByTk: run.id });
+    expect(['succeeded', 'canceling']).toContain(storedRun.get('status'));
+    expect(storedRun.get('finishedAt') ? 1 : 0).toBe(storedRun.get('status') === 'succeeded' ? 1 : 0);
   });
 
   it('rejects terminal transitions that skip required active states', async () => {

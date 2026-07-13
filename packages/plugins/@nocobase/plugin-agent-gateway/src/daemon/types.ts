@@ -8,6 +8,7 @@
  */
 
 import { AgentProviderKey } from '../shared/providerCapabilities';
+import type { CanonicalRunSnapshot } from '../shared/contracts';
 import type { JsonRecord } from '../shared/json';
 
 export type { JsonRecord } from '../shared/json';
@@ -93,6 +94,23 @@ export interface RunLease extends JsonRecord {
   profileCapabilities?: JsonRecord;
   cancelRequested?: boolean;
   cancelReason?: string;
+}
+
+export interface CanonicalClaimedRun extends CanonicalRunSnapshot {
+  id?: string;
+  executionPayloadJson: JsonRecord;
+  promptSnapshot?: JsonRecord;
+  timeoutMs?: number;
+}
+
+export interface ClaimedRunLease extends RunLease {
+  claimed: true;
+  runId: string;
+  claimToken: string;
+  claimAttempt: number;
+  leaseVersion: number;
+  run: CanonicalClaimedRun;
+  executionPolicyKey: string;
 }
 
 export interface PendingControlRequest extends JsonRecord {

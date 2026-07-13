@@ -27,6 +27,7 @@ describe('agent gateway retention', () => {
   beforeEach(async () => {
     app = await createMockServer({
       plugins: [
+        'file-manager',
         'system-settings',
         'field-sort',
         'users',
@@ -763,12 +764,14 @@ describe('agent gateway retention', () => {
         cancelRequested: false,
       })),
     });
-    await app.db.getCollection('agRuns').model.update(
-      { updatedAt: oldDate },
+    const runModel = app.db.getCollection('agRuns').model;
+    await app.db.sequelize.getQueryInterface().bulkUpdate(
+      runModel.getTableName(),
       {
-        where: {
-          id: runs.map((run) => run.get('id')),
-        },
+        [runModel.rawAttributes.updatedAt.field || 'updatedAt']: oldDate,
+      },
+      {
+        [runModel.rawAttributes.id.field || 'id']: runs.map((run) => run.get('id')),
       },
     );
     const orphanEvents = await app.db.sequelize.transaction(async (transaction) => {

@@ -10,46 +10,15 @@
 import { COMMAND_OUTPUT_PAYLOAD_LIMIT_CHARS } from '../conversationLimits';
 import { JsonRecord } from '../json';
 import { NormalizedAgentEvent, ProviderEventInput } from '../providerEvents';
-
-function isRecord(value: unknown): value is JsonRecord {
-  return Object.prototype.toString.call(value) === '[object Object]';
-}
-
-function getString(value: unknown) {
-  return typeof value === 'string' ? value.trim() : '';
-}
-
-function getOutputString(value: unknown) {
-  return typeof value === 'string' && value.trim() ? value : '';
-}
-
-function getRecord(value: unknown): JsonRecord {
-  return isRecord(value) ? value : {};
-}
-
-function getRecordArray(value: unknown) {
-  return Array.isArray(value) ? value.map(getRecord).filter((record) => Object.keys(record).length) : [];
-}
-
-function getStringArray(value: unknown) {
-  return Array.isArray(value) ? value.map(getString).filter(Boolean) : [];
-}
-
-function parseJsonRecordString(value: unknown) {
-  if (typeof value !== 'string') {
-    return {};
-  }
-  const trimmed = value.trim();
-  if (!trimmed || !trimmed.startsWith('{')) {
-    return {};
-  }
-  try {
-    const parsed = JSON.parse(trimmed) as unknown;
-    return getRecord(parsed);
-  } catch {
-    return {};
-  }
-}
+import {
+  getOutputString,
+  getRecord,
+  getRecordArray,
+  getString,
+  getStringArray,
+  isRecord,
+  parseJsonRecordString,
+} from './common';
 
 function getCodexItemRecord(event: JsonRecord): JsonRecord {
   if (getString(event.type) === 'response_item') {

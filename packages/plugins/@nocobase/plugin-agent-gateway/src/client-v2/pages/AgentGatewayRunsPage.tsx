@@ -7,75 +7,24 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  EnterOutlined,
-  ImportOutlined,
-  PoweroffOutlined,
-  PlusOutlined,
-  ReloadOutlined,
-  StopOutlined,
-} from '@ant-design/icons';
-import { Collection, type CollectionOptions, useFlowContext } from '@nocobase/flow-engine';
-import { CollectionFilter, type CompiledFilter } from '@nocobase/client-v2';
+import { ImportOutlined, PlusOutlined, ReloadOutlined, StopOutlined } from '@ant-design/icons';
+import { Collection, useFlowContext } from '@nocobase/flow-engine';
+import { CollectionFilter, CompiledFilter } from '@nocobase/client-v2';
 import { useRequest } from 'ahooks';
-import {
-  Alert,
-  Button,
-  Card,
-  Collapse,
-  Descriptions,
-  Drawer,
-  Empty,
-  Flex,
-  Form,
-  List,
-  Pagination,
-  Space,
-  Spin,
-  Table,
-  Tabs,
-  Tag,
-  Tooltip,
-  Typography,
-} from 'antd';
-import type { TableProps, UploadProps } from 'antd';
-import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
-import type { CSSMotionProps } from 'rc-motion';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Alert, Button, Card, Drawer, Flex, Form, Space, Spin, Table, Tabs, Tooltip } from 'antd';
+import { TableProps, UploadProps } from 'antd';
+import { ColumnsType, TablePaginationConfig } from 'antd/es/table';
+import React from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiUrl } from '../../shared/apiContract';
-import {
-  type AgentCapabilityKey,
-  isAgentCapabilitySupported,
-  normalizeAgentProviderCapabilities,
-} from '../../shared/providerCapabilities';
-import {
-  ACTIVE_RUN_STATUSES as ACTIVE_RUN_STATUS_VALUES,
-  CLAIMABLE_RUN_STATUS,
-  HEARTBEAT_RUN_STATUSES,
-  IMPORTING_RUN_STATUS,
-  LEASE_OWNING_RUN_STATUSES,
-  STALLED_RUN_STATUS,
-  TERMINAL_CONTROL_RUN_STATUSES as TERMINAL_CONTROL_RUN_STATUS_VALUES,
-} from '../../shared/runState';
-import { AgentTimeline, AgentTimelineEventRecord } from '../components/AgentTimeline';
-import { AgentSessionResumeBox, AgentSessionResumeInput } from '../components/AgentSessionResumeBox';
-import { LazyReadonlyXtermOutput } from '../components/LazyReadonlyXtermOutput';
-import {
-  ApiCallLogRecord,
-  ArtifactContentEntry,
-  DetailPageMeta,
-  RunArtifactRecord,
-  RunEventRecord,
-  RunSnapshotRecord,
-  createDetailPageMeta,
-  useRunObservabilityDetails,
-} from '../hooks/useRunObservabilityDetails';
-import { useTerminalStream, UseTerminalStreamState } from '../hooks/useTerminalStream';
+import { AgentTimeline } from '../components/AgentTimeline';
+import { AgentSessionResumeInput } from '../components/AgentSessionResumeBox';
+import { createDetailPageMeta, useRunObservabilityDetails } from '../hooks/useRunObservabilityDetails';
+import { useTerminalStream } from '../hooks/useTerminalStream';
 import { useT } from '../locale';
+import { useRunDetailPolling } from '../features/runs/hooks/useRunDetailPolling';
 import {
   BuildRunOptions,
-  BuildSkillVersionOption,
-  BuildTaskArtifactDeclarationFormValue,
   getBuildRunnerSelectOptions,
   getBuildSkillVersionSelectOptions,
   getDefaultBuildRunnerValue,
@@ -86,16 +35,10 @@ import {
   parseBuildRunnerValue,
 } from './AgentGatewayTaskParameterFormItems';
 import {
-  AgentGatewayContext,
-  JsonPreview,
-  JsonRecord,
   formatDateTime,
   getApiErrorMessage,
-  getObjectRecord,
   getRequiredResponseData,
   getResponseData,
-  redactExternalUrlPreviewJson,
-  redactPreviewText,
   statusTag,
   uploadAgentGatewayFile,
 } from './AgentGatewayPageUtils';
@@ -108,27 +51,17 @@ import {
   CreateBuildRunResult,
   ExternalRunImportFormValues,
   ExternalRunImportResult,
-  ReadableArtifactItem,
-  ReadableArtifactItemKind,
-  ReadableArtifactPreview,
   ResumeAgentSessionResult,
-  RunActionPermissionKey,
   RunDetailTabKey,
   RunDetails,
   RunListData,
-  RunListMeta,
   RunRecord,
-  RunnerStatusRecord,
-  RunTaskTemplateFilterOption,
-  RunTaskTemplateSummary,
   SkillUploadFormValues,
   SkillUploadResult,
   SkillVersionDetailRecord,
   TaskTemplateDetailRecord,
   TerminalSnapshot,
   TerminalSnapshotState,
-  TFunction,
-  TokenUsageRecord,
 } from './runs/types';
 import {
   AgentSessionPanel,
@@ -142,6 +75,9 @@ import {
   getRunIdFromLocationSearch,
   getSkillVersionIdFromLocationSearch,
   getTaskTemplateIdFromLocationSearch,
+  pushRunIdInLocationSearch,
+  pushSkillVersionIdInLocationSearch,
+  pushTaskTemplateIdInLocationSearch,
   replaceRunIdInLocationSearch,
   replaceSkillVersionIdInLocationSearch,
   replaceTaskTemplateIdInLocationSearch,
@@ -156,1933 +92,56 @@ import {
   ExternalRunImportDrawer,
   SkillUploadModal,
 } from './runs/RunActionDrawers';
-
-const RUN_STATUS_OPTIONS = [
-  'queued',
-  'claimed',
-  'syncing_skills',
-  'running',
-  IMPORTING_RUN_STATUS,
-  'finalizing',
-  'canceling',
-  'stalled',
-  'succeeded',
-  'failed',
-  'canceled',
-  'timeout',
-  'abandoned',
-];
-
-const CANCELABLE_STATUSES = new Set<string>([
-  CLAIMABLE_RUN_STATUS,
-  IMPORTING_RUN_STATUS,
-  ...HEARTBEAT_RUN_STATUSES,
-  STALLED_RUN_STATUS,
-]);
-const TERMINAL_CONTROL_RUN_STATUSES = new Set<string>(TERMINAL_CONTROL_RUN_STATUS_VALUES);
-const LIVE_RUN_STATUSES = new Set<string>([CLAIMABLE_RUN_STATUS, IMPORTING_RUN_STATUS, ...LEASE_OWNING_RUN_STATUSES]);
-const DANGLING_TOOL_LIVE_RUN_STATUSES = new Set<string>([
-  CLAIMABLE_RUN_STATUS,
-  IMPORTING_RUN_STATUS,
-  ...ACTIVE_RUN_STATUS_VALUES,
-]);
-const DEFAULT_RUNS_PAGE_SIZE = 20;
-const DETAIL_PAGE_SIZE_OPTIONS = ['10', '20', '50', '100'];
-const TASK_RUN_DRAWER_WIDTH = 1040;
-const SKILL_DETAIL_DRAWER_WIDTH = 720;
-const RUNS_FILTER_FIELD_NAMES = ['taskTemplateId', 'status', 'nodeId', 'agentProfileId', 'createdAt'];
-const RUN_SORT_FALLBACK = '-createdAt';
-
-function getRunsFilterCollectionOptions(
-  taskTemplateOptions: Array<{ label: string; value: string }>,
-): CollectionOptions {
-  return {
-    name: 'agentGatewayRunsFilter',
-    title: '{{t("Runs")}}',
-    filterTargetKey: 'id',
-    fields: [
-      {
-        type: 'string',
-        name: 'taskTemplateId',
-        interface: 'select',
-        uiSchema: {
-          type: 'string',
-          title: '{{t("Task template")}}',
-          'x-component': 'Select',
-          enum: taskTemplateOptions,
-        },
-      },
-      {
-        type: 'string',
-        name: 'status',
-        interface: 'select',
-        uiSchema: {
-          type: 'string',
-          title: '{{t("Status")}}',
-          'x-component': 'Select',
-          enum: RUN_STATUS_OPTIONS.map((status) => ({
-            label: status,
-            value: status,
-          })),
-        },
-      },
-      {
-        type: 'string',
-        name: 'nodeId',
-        interface: 'input',
-        uiSchema: {
-          type: 'string',
-          title: '{{t("Node ID")}}',
-          'x-component': 'Input',
-        },
-      },
-      {
-        type: 'string',
-        name: 'agentProfileId',
-        interface: 'input',
-        uiSchema: {
-          type: 'string',
-          title: '{{t("Profile ID")}}',
-          'x-component': 'Input',
-        },
-      },
-      {
-        type: 'date',
-        name: 'createdAt',
-        interface: 'createdAt',
-        uiSchema: {
-          type: 'datetime',
-          title: '{{t("Created at")}}',
-          'x-component': 'DatePicker',
-        },
-      },
-    ],
-  };
-}
-
-function readFileAsText(file: File) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      resolve(typeof reader.result === 'string' ? reader.result : '');
-    };
-    reader.onerror = () => {
-      reject(reader.error || new Error('Failed to read file'));
-    };
-    reader.readAsText(file);
-  });
-}
-
-function getSkillVersionIds(value: unknown) {
-  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string' && Boolean(item)) : [];
-}
-const ARTIFACT_PREVIEW_MAX_ITEMS = 80;
-const ARTIFACT_ITEM_TEXT_MAX_CHARS = 4000;
-const ARTIFACT_RAW_PREVIEW_MAX_CHARS = 24 * 1024;
-const HTML_ARTIFACT_PREVIEW_CSP = [
-  "default-src 'none'",
-  'img-src data:',
-  'font-src data:',
-  "style-src 'unsafe-inline'",
-  "base-uri 'none'",
-  "form-action 'none'",
-  "frame-src 'none'",
-  "object-src 'none'",
-  "connect-src 'none'",
-  "media-src 'none'",
-  "manifest-src 'none'",
-  "worker-src 'none'",
-].join('; ');
-const HTML_ARTIFACT_REMOVED_ELEMENTS = [
-  'base',
-  'embed',
-  'form',
-  'frame',
-  'frameset',
-  'iframe',
-  'link',
-  'meta',
-  'object',
-  'portal',
-  'script',
-  'template',
-].join(',');
-const HTML_ARTIFACT_URL_ATTRIBUTES = new Set([
-  'action',
-  'archive',
-  'background',
-  'cite',
-  'codebase',
-  'data',
-  'formaction',
-  'href',
-  'manifest',
-  'ping',
-  'poster',
-  'src',
-  'srcset',
-  'xlink:href',
-]);
-const NO_COLLAPSE_MOTION: CSSMotionProps = {
-  motionName: '',
-  motionAppear: false,
-  motionEnter: false,
-  motionLeave: false,
-};
-const FastCollapse = Collapse as React.ComponentType<
-  React.ComponentProps<typeof Collapse> & { openMotion?: CSSMotionProps }
->;
-
-function isCancelableRun(run: RunRecord) {
-  return CANCELABLE_STATUSES.has(run.status);
-}
-
-function getTimelineEmptyDescription(run: RunRecord | undefined, t: TFunction) {
-  if (isLiveRunStatus(run?.status)) {
-    return t('Waiting for live task updates from the agent');
-  }
-  return t('No task messages yet');
-}
-
-function shouldCloseDanglingToolCalls(status?: string) {
-  return !status || !DANGLING_TOOL_LIVE_RUN_STATUSES.has(status);
-}
-
-function canUseTerminalControl(run: RunRecord | undefined, snapshot: TerminalSnapshot | null | undefined) {
-  if (!run || !TERMINAL_CONTROL_RUN_STATUSES.has(run.status)) {
-    return false;
-  }
-  const outputUnsupported = snapshot?.unsupportedCapability === 'terminalOutput';
-  const backend = outputUnsupported ? run.terminalBackend : snapshot?.backend ?? run.terminalBackend;
-  const terminalStatus = outputUnsupported ? run.terminalStatus : snapshot?.terminalStatus ?? run.terminalStatus;
-  return backend === 'tmux' && terminalStatus === 'active' && (outputUnsupported || snapshot?.available !== false);
-}
-
-function createControlIdempotencyKey(action: 'interrupt' | 'terminate', runId: string) {
-  const randomValue = globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2);
-  return `ag_control:${action}:${runId}:${randomValue}`;
-}
-
-function isFinalControlStatus(status?: ControlRequestState['status']) {
-  return status === 'succeeded' || status === 'failed';
-}
-
-function getHttpErrorStatus(error: unknown) {
-  const status = getObjectRecord(getObjectRecord(error).response).status;
-  return typeof status === 'number' ? status : null;
-}
-
-function shouldResetControlIdempotencyKey(error: unknown) {
-  const status = getHttpErrorStatus(error);
-  return status !== null && status >= 400 && status < 500;
-}
-
-function getNumberMetaValue(value: unknown) {
-  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
-}
-
-function getRunTaskTemplateMetaOptions(value: unknown): RunTaskTemplateFilterOption[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-  return value
-    .map((item) => {
-      const record = getObjectRecord(item);
-      return {
-        id: getStringValue(record.id),
-        templateKey: getStringValue(record.templateKey),
-        displayName: getStringValue(record.displayName),
-      };
-    })
-    .filter((template) => Boolean(template.id));
-}
-
-function getRunListMeta(value: unknown): RunListMeta {
-  const record = getObjectRecord(value);
-  return {
-    count: getNumberMetaValue(record.count),
-    page: getNumberMetaValue(record.page),
-    pageSize: getNumberMetaValue(record.pageSize),
-    totalPage: getNumberMetaValue(record.totalPage),
-    taskTemplates: getRunTaskTemplateMetaOptions(record.taskTemplates),
-  };
-}
-
-function getRunTaskTemplateFilterOptions(runListData: RunListData) {
-  const optionsById = new Map<string, { label: string; value: string }>();
-  const addTemplate = (template: RunTaskTemplateFilterOption | RunTaskTemplateSummary | null | undefined) => {
-    if (!template?.id) {
-      return;
-    }
-    optionsById.set(template.id, {
-      value: template.id,
-      label: template.displayName || template.templateKey || template.id,
-    });
-  };
-
-  for (const template of runListData.meta.taskTemplates || []) {
-    addTemplate(template);
-  }
-  for (const run of runListData.runs) {
-    addTemplate(run.taskTemplateJson);
-  }
-
-  return [...optionsById.values()].sort((left, right) => left.label.localeCompare(right.label));
-}
-
-function getRunSortParam(sorter: Parameters<NonNullable<TableProps<RunRecord>['onChange']>>[2]) {
-  const activeSorter = Array.isArray(sorter) ? sorter[0] : sorter;
-  if (!activeSorter?.order) {
-    return undefined;
-  }
-  const columnKey = typeof activeSorter.columnKey === 'string' ? activeSorter.columnKey : '';
-  const field = typeof activeSorter.field === 'string' ? activeSorter.field : '';
-  const sortField = columnKey || field;
-  if (!sortField) {
-    return undefined;
-  }
-  return activeSorter.order === 'descend' ? `-${sortField}` : sortField;
-}
-
-function getRunColumnSortOrder(runSort: string | undefined, columnKey: string) {
-  if (runSort === columnKey) {
-    return 'ascend' as const;
-  }
-  if (runSort === `-${columnKey}`) {
-    return 'descend' as const;
-  }
-  return null;
-}
-
-function EmptyInline({ description }: { description: string }) {
-  return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={description} />;
-}
-
-function getBuildTaskTemplateSelectOptions(options: BuildRunOptions | undefined) {
-  return (options?.taskTemplates || []).map((template) => ({
-    value: template.id,
-    label: template.displayName || template.templateKey,
-  }));
-}
-
-function findBuildTaskTemplate(options: BuildRunOptions | undefined, templateId?: string) {
-  if (!templateId) {
-    return null;
-  }
-  return (
-    (options?.taskTemplates || []).find(
-      (template) => template.id === templateId || template.templateKey === templateId,
-    ) || null
-  );
-}
-
-function findBuildRunnerNodeByValue(options: BuildRunOptions | undefined, value?: string) {
-  const { nodeId, agentProfileId } = parseBuildRunnerValue(value);
-  if (!nodeId || !agentProfileId) {
-    return null;
-  }
-  for (const node of options?.nodes || []) {
-    if (node.id !== nodeId) {
-      continue;
-    }
-    const profile = (node.profiles || []).find((item) => item.id === agentProfileId);
-    if (profile) {
-      return {
-        node,
-        profile,
-      };
-    }
-  }
-  return null;
-}
-
-function shouldUseDefaultBuildRunner(
-  options: BuildRunOptions | undefined,
-  currentValue: string | undefined,
-  defaultValue: string | undefined,
-) {
-  if (!defaultValue || currentValue === defaultValue) {
-    return false;
-  }
-  if (!currentValue) {
-    return true;
-  }
-  const currentRunner = findBuildRunnerNodeByValue(options, currentValue);
-  const defaultRunner = findBuildRunnerNodeByValue(options, defaultValue);
-  if (!currentRunner) {
-    return true;
-  }
-  return currentRunner.node.online === false && defaultRunner?.node.online === true;
-}
-
-function isRunActionAllowed(
-  permissions: RunRecord['agentGatewayActionPermissionsJson'] | undefined,
-  action: RunActionPermissionKey,
-) {
-  return permissions?.[action] === true;
-}
-
-function RunTaskTitle({ run, t, onOpen }: { run: RunRecord; t: TFunction; onOpen?: (run: RunRecord) => void }) {
-  const title = getRunTaskTitle(run, t);
-  if (onOpen) {
-    return (
-      <Typography.Link
-        href="#"
-        strong
-        aria-label={t('View run details')}
-        ellipsis
-        title={title}
-        onClick={(event) => {
-          event.preventDefault();
-          onOpen(run);
-        }}
-        style={{ display: 'inline-block', maxWidth: 300 }}
-      >
-        {title}
-      </Typography.Link>
-    );
-  }
-  return (
-    <Typography.Text strong ellipsis={{ tooltip: title }} style={{ display: 'inline-block', maxWidth: 300 }}>
-      {title}
-    </Typography.Text>
-  );
-}
-
-function RunTaskTemplateLink({ run, onOpen }: { run: RunRecord; onOpen: (templateId: string) => void }) {
-  const template = run.taskTemplateJson;
-  const label = template?.displayName || template?.templateKey || run.taskTemplateId || '';
-  const templateId = template?.id || run.taskTemplateId || '';
-  if (!label) {
-    return <Typography.Text type="secondary">-</Typography.Text>;
-  }
-  if (!templateId) {
-    return (
-      <Typography.Text ellipsis={{ tooltip: label }} style={{ display: 'inline-block', maxWidth: 220 }}>
-        {label}
-      </Typography.Text>
-    );
-  }
-  return (
-    <Typography.Link
-      href="#"
-      ellipsis
-      title={label}
-      onClick={(event) => {
-        event.preventDefault();
-        onOpen(templateId);
-      }}
-      style={{ display: 'inline-block', maxWidth: 220 }}
-    >
-      {label}
-    </Typography.Link>
-  );
-}
-
-function getSkillVersionLabel(skillVersion: BuildSkillVersionOption) {
-  return [skillVersion.displayName || skillVersion.skillKey || skillVersion.id, skillVersion.versionLabel]
-    .filter(Boolean)
-    .join(' / ');
-}
-
-function getSkillVersionDetailDisplayLabel(skillVersion: SkillVersionDetailRecord) {
-  return [
-    skillVersion.displayName || skillVersion.skillKey || skillVersion.skillId || skillVersion.id,
-    skillVersion.versionLabel,
-  ]
-    .filter(Boolean)
-    .join(' / ');
-}
-
-function RunTaskTemplateSkills({ run, onOpen }: { run: RunRecord; onOpen: (skillVersionId: string) => void }) {
-  const skills = run.taskTemplateJson?.skills || [];
-  if (!skills.length) {
-    return <Typography.Text type="secondary">-</Typography.Text>;
-  }
-  return (
-    <Space wrap size={[4, 0]}>
-      {skills.map((skillVersion) => {
-        const label = getSkillVersionLabel(skillVersion);
-        return (
-          <Typography.Link
-            key={skillVersion.id}
-            href="#"
-            onClick={(event) => {
-              event.preventDefault();
-              onOpen(skillVersion.id);
-            }}
-          >
-            {label}
-          </Typography.Link>
-        );
-      })}
-    </Space>
-  );
-}
-
-function TaskTemplateDetailDrawerContent({
-  template,
-  loading,
-  error,
-  t,
-}: {
-  template: TaskTemplateDetailRecord | null | undefined;
-  loading: boolean;
-  error?: string;
-  t: TFunction;
-}) {
-  if (error) {
-    return <Alert type="warning" showIcon message={t('Task template details unavailable')} description={error} />;
-  }
-  if (loading && !template) {
-    return <Spin />;
-  }
-  if (!template) {
-    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('Task template details unavailable')} />;
-  }
-
-  const skillVersionIds = Array.isArray(template.skillVersionIdsJson) ? template.skillVersionIdsJson : [];
-  const artifacts = Array.isArray(template.artifactsJson) ? template.artifactsJson : [];
-
-  return (
-    <Space direction="vertical" size={16} style={{ width: '100%' }}>
-      <Descriptions bordered size="small" column={1}>
-        <Descriptions.Item label={t('Template key')}>{template.templateKey || '-'}</Descriptions.Item>
-        <Descriptions.Item label={t('Display name')}>{template.displayName || '-'}</Descriptions.Item>
-        <Descriptions.Item label={t('Description')}>{template.description || '-'}</Descriptions.Item>
-        <Descriptions.Item label={t('Status')}>{statusTag(template.status || 'active')}</Descriptions.Item>
-        <Descriptions.Item label={t('Default title')}>{template.defaultTitle || '-'}</Descriptions.Item>
-        <Descriptions.Item label={t('Prompt')}>
-          {template.defaultPrompt ? (
-            <Typography.Paragraph style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
-              {template.defaultPrompt}
-            </Typography.Paragraph>
-          ) : (
-            '-'
-          )}
-        </Descriptions.Item>
-        <Descriptions.Item label={t('Working directory')}>{template.cwd || '-'}</Descriptions.Item>
-        <Descriptions.Item label={t('Skills')}>
-          {skillVersionIds.length ? (
-            <Space size={[4, 4]} wrap>
-              {skillVersionIds.map((skillVersionId) => (
-                <Tag key={skillVersionId}>{skillVersionId}</Tag>
-              ))}
-            </Space>
-          ) : (
-            '-'
-          )}
-        </Descriptions.Item>
-        <Descriptions.Item label={t('Artifact root')}>{template.artifactRoot || '-'}</Descriptions.Item>
-      </Descriptions>
-      {artifacts.length ? (
-        <Space direction="vertical" size={8} style={{ width: '100%' }}>
-          <Typography.Title level={5} style={{ margin: 0 }}>
-            {t('Artifacts')}
-          </Typography.Title>
-          <JsonPreview value={artifacts} />
-        </Space>
-      ) : null}
-    </Space>
-  );
-}
-
-function SkillDetailDrawerContent({
-  skillVersion,
-  loading,
-  error,
-  t,
-}: {
-  skillVersion: SkillVersionDetailRecord | null | undefined;
-  loading: boolean;
-  error?: string;
-  t: TFunction;
-}) {
-  if (error) {
-    return <Alert type="warning" showIcon message={t('Skill details unavailable')} description={error} />;
-  }
-  if (loading && !skillVersion) {
-    return <Spin />;
-  }
-  if (!skillVersion) {
-    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('Skill details unavailable')} />;
-  }
-
-  return (
-    <Descriptions bordered size="small" column={1}>
-      <Descriptions.Item label={t('Skill')}>{skillVersion.displayName || '-'}</Descriptions.Item>
-      <Descriptions.Item label={t('Skill key')}>{skillVersion.skillKey || '-'}</Descriptions.Item>
-      <Descriptions.Item label={t('Skill ID')}>{skillVersion.skillId || '-'}</Descriptions.Item>
-      <Descriptions.Item label={t('Skill version ID')}>
-        {skillVersion.skillVersionId || skillVersion.id}
-      </Descriptions.Item>
-      <Descriptions.Item label={t('Version label')}>{skillVersion.versionLabel || '-'}</Descriptions.Item>
-      <Descriptions.Item label={t('Status')}>
-        <Space size={4} wrap>
-          {statusTag(skillVersion.status)}
-          {skillVersion.skillStatus && skillVersion.skillStatus !== skillVersion.status
-            ? statusTag(skillVersion.skillStatus)
-            : null}
-        </Space>
-      </Descriptions.Item>
-      <Descriptions.Item label={t('Source')}>
-        {[skillVersion.sourceType, skillVersion.sourceSha256].filter(Boolean).join(' / ') || '-'}
-      </Descriptions.Item>
-      <Descriptions.Item label={t('Content size')}>{skillVersion.sourceSizeBytes ?? '-'}</Descriptions.Item>
-      <Descriptions.Item label={t('Uploaded at')}>
-        {formatDateTime(skillVersion.sourceUploadedAt || undefined)}
-      </Descriptions.Item>
-      <Descriptions.Item label={t('Created at')}>
-        {formatDateTime(skillVersion.createdAt || undefined)}
-      </Descriptions.Item>
-      <Descriptions.Item label={t('Updated at')}>
-        {formatDateTime(skillVersion.updatedAt || undefined)}
-      </Descriptions.Item>
-    </Descriptions>
-  );
-}
-
-function getTextFingerprint(text: string) {
-  const sample = text.length > 1024 ? `${text.slice(0, 256)}:${text.slice(-768)}` : text;
-  let hash = 2166136261;
-  for (let index = 0; index < sample.length; index += 1) {
-    hash ^= sample.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
-  return `${text.length}:${(hash >>> 0).toString(36)}`;
-}
-
-function getTerminalResetKey(runId: string, snapshot: TerminalSnapshot | null | undefined, useStreamOutput: boolean) {
-  if (useStreamOutput) {
-    return [runId, 'stream', 'live'].join(':');
-  }
-  const output = snapshot?.output || '';
-  return [
-    runId,
-    'snapshot',
-    snapshot?.terminalStatus || 'unknown',
-    snapshot?.available === false ? 'unavailable' : 'available',
-    snapshot?.unsupportedCapability || 'supported',
-    getTextFingerprint(output),
-  ].join(':');
-}
-
-function getRunCapability(run: RunRecord, capability: AgentCapabilityKey) {
-  const capabilities = run.capabilitiesSnapshotJson;
-  if (!capabilities || !Object.keys(capabilities).length) {
-    return true;
-  }
-  return isAgentCapabilitySupported(run.provider || 'generic-cli', capabilities, capability);
-}
-
-function getRawLogDetailsWarning(run: RunRecord | undefined, t: TFunction) {
-  if (!run) {
-    return undefined;
-  }
-  if (!isRunActionAllowed(run.agentGatewayActionPermissionsJson, 'readRawLogs')) {
-    return t('Agent Gateway raw log read permission required');
-  }
-  if (!getRunCapability(run, 'structuredEvents')) {
-    return t('Structured events are not supported by this provider');
-  }
-  return undefined;
-}
-
-function getArtifactDetailsWarning(run: RunRecord | undefined, t: TFunction) {
-  if (!run) {
-    return undefined;
-  }
-  if (!isRunActionAllowed(run.agentGatewayActionPermissionsJson, 'readArtifacts')) {
-    return t('Agent Gateway artifact read permission required');
-  }
-  if (!getRunCapability(run, 'artifacts')) {
-    return t('Artifacts are not supported by this provider');
-  }
-  return undefined;
-}
-
-function createUnsupportedTerminalSnapshot(run: RunRecord): TerminalSnapshot {
-  return {
-    backend: run.terminalBackend,
-    terminalStatus: run.terminalStatus,
-    runStatus: run.status,
-    available: false,
-    output: '',
-    capturedAt: run.terminalLastActivityAt || run.startedAt || run.requestedAt || '',
-    inputEnabled: false,
-    unsupported: true,
-    unsupportedCapability: 'terminalOutput',
-    message: 'Agent CLI terminal output is not supported by this provider',
-  };
-}
-
-function getControlRequestStatusText(t: TFunction, status: ControlRequestState['status']) {
-  switch (status) {
-    case 'accepted':
-      return t('Control request accepted');
-    case 'delivered':
-      return t('Control request delivered');
-    case 'succeeded':
-      return t('Control request succeeded');
-    case 'failed':
-      return t('Control request failed');
-    default:
-      return t('Control request accepted');
-  }
-}
-
-function TerminalPanel({
-  runId,
-  t,
-  snapshot,
-  stream,
-  loading,
-  interrupting,
-  terminating,
-  controlRequestState,
-  canReadTerminal,
-  canInterrupt,
-  canTerminate,
-  onRefresh,
-  onInterrupt,
-  onTerminate,
-}: {
-  runId: string;
-  t: TFunction;
-  snapshot: TerminalSnapshot | null | undefined;
-  stream: UseTerminalStreamState;
-  loading: boolean;
-  interrupting: boolean;
-  terminating: boolean;
-  controlRequestState?: ControlRequestState | null;
-  canReadTerminal: boolean;
-  canInterrupt: boolean;
-  canTerminate: boolean;
-  onRefresh(): void;
-  onInterrupt(): void;
-  onTerminate(): void;
-}) {
-  const output = snapshot?.output || '';
-  const terminalAvailable = Boolean(snapshot?.available);
-  const terminalOutputSupported = snapshot?.unsupportedCapability !== 'terminalOutput';
-  const streamHasOutput = stream.hasStreamOutput || stream.chunks.length > 0 || Boolean(stream.previewText);
-  const snapshotHasOutput = Boolean(output);
-  const streamUnavailable =
-    stream.connectionState === 'closed' || stream.connectionState === 'error' || Boolean(stream.lastErrorCode);
-  const useSnapshotFallback = !streamHasOutput || (streamUnavailable && snapshotHasOutput);
-  const useStreamOutput = streamHasOutput && !useSnapshotFallback;
-  const outputMode = useStreamOutput
-    ? t('Live stream')
-    : snapshotHasOutput
-      ? t('Snapshot fallback')
-      : t('Waiting for output');
-  const xtermResetKey = getTerminalResetKey(runId, snapshot, useStreamOutput);
-  const fallbackOutput = output || t('No terminal output yet');
-
-  return (
-    <Space direction="vertical" size={12} style={{ width: '100%' }}>
-      <Space wrap style={{ justifyContent: 'space-between', width: '100%' }}>
-        <Space wrap>
-          <Typography.Text type="secondary">{t('Agent CLI')}</Typography.Text>
-          {snapshot?.terminalStatus ? statusTag(snapshot.terminalStatus) : null}
-          <Typography.Text type="secondary">{t('Stream')}</Typography.Text>
-          {statusTag(stream.connectionState)}
-          <Typography.Text data-testid="agent-gateway-xterm-output-mode" type="secondary">
-            {outputMode}
-          </Typography.Text>
-          <Typography.Text data-testid="agent-gateway-xterm-stream-offset" type="secondary">
-            {t('Offset')}: {stream.currentOffset}
-          </Typography.Text>
-          {stream.lastErrorCode ? (
-            <Typography.Text data-testid="agent-gateway-xterm-stream-error" type="danger">
-              {stream.lastErrorCode}
-            </Typography.Text>
-          ) : null}
-          <Typography.Text type="secondary">{formatDateTime(snapshot?.capturedAt)}</Typography.Text>
-        </Space>
-        <Space>
-          {canReadTerminal && terminalOutputSupported ? (
-            <Tooltip title={t('Refresh terminal')}>
-              <Button
-                aria-label={t('Refresh terminal')}
-                icon={<ReloadOutlined />}
-                loading={loading}
-                onClick={onRefresh}
-              />
-            </Tooltip>
-          ) : null}
-          {canInterrupt ? (
-            <Tooltip title={t('Interrupt')}>
-              <Button
-                aria-label={t('Interrupt')}
-                icon={<EnterOutlined />}
-                loading={interrupting}
-                onClick={onInterrupt}
-              />
-            </Tooltip>
-          ) : null}
-          {canTerminate ? (
-            <Tooltip title={t('Terminate')}>
-              <Button
-                aria-label={t('Terminate')}
-                danger
-                icon={<PoweroffOutlined />}
-                loading={terminating}
-                onClick={onTerminate}
-              />
-            </Tooltip>
-          ) : null}
-        </Space>
-      </Space>
-
-      {!canReadTerminal ? (
-        <Alert type="warning" showIcon message={t('Agent Gateway terminal read permission required')} />
-      ) : null}
-      {canReadTerminal && !terminalAvailable ? (
-        <Alert
-          type="info"
-          showIcon
-          message={
-            snapshot?.unsupported
-              ? t('Terminal output is not supported by this provider')
-              : t('No terminal session yet')
-          }
-        />
-      ) : null}
-      {controlRequestState ? (
-        <Alert
-          data-testid="agent-gateway-control-request-state"
-          type={controlRequestState.status === 'failed' ? 'error' : 'info'}
-          showIcon
-          message={getControlRequestStatusText(t, controlRequestState.status)}
-        />
-      ) : null}
-      {stream.lastErrorCode === 'TERMINAL_OFFSET_GAP' ? (
-        <Alert
-          data-testid="agent-gateway-terminal-offset-gap"
-          type="warning"
-          showIcon
-          message={t('Live output gap detected. Showing saved terminal output when available.')}
-        />
-      ) : null}
-      {streamUnavailable && snapshotHasOutput ? (
-        <Alert
-          data-testid="agent-gateway-terminal-snapshot-fallback"
-          type="info"
-          showIcon
-          message={t('Live stream unavailable; showing terminal snapshots')}
-        />
-      ) : null}
-      {canReadTerminal && terminalOutputSupported ? (
-        <LazyReadonlyXtermOutput
-          ariaLabel={t('Readonly live terminal output')}
-          chunks={useStreamOutput ? stream.chunks : []}
-          emptyText={t('No terminal output yet')}
-          initialOutput={useStreamOutput ? '' : fallbackOutput}
-          resetKey={xtermResetKey}
-        />
-      ) : null}
-    </Space>
-  );
-}
-
-function createRunLifecycleEvents(run: RunRecord, t: TFunction): RunEventRecord[] {
-  const events: RunEventRecord[] = [];
-  const addEvent = (eventType: string, message: string, emittedAt?: string) => {
-    if (!emittedAt) {
-      return;
-    }
-    events.push({
-      id: `${run.id}:${eventType}`,
-      sequence: events.length + 1,
-      source: 'agent-gateway',
-      level: 'info',
-      eventType,
-      message,
-      emittedAt,
-    });
-  };
-
-  addEvent('run.requested', t('Run requested'), run.requestedAt);
-  addEvent('run.queued', t('Run queued'), run.queuedAt);
-  addEvent('run.claimed', t('Run claimed by runner'), run.claimedAt);
-  addEvent('terminal.started', t('Terminal started'), run.terminalStartedAt);
-  addEvent('run.started', t('Run started'), run.startedAt);
-  addEvent('terminal.finished', t('Terminal finished'), run.terminalEndedAt);
-  addEvent(
-    `run.${run.status || 'finished'}`,
-    t('Run finished with status', { status: run.status || 'finished' }),
-    run.finishedAt,
-  );
-  return events;
-}
-
-function isHeartbeatRunEvent(record: RunEventRecord) {
-  const source = record.source || '';
-  const eventType = record.eventType || '';
-  return source.includes('heartbeat') || eventType.includes('heartbeat');
-}
-
-function isHarnessStageRunEvent(record: RunEventRecord) {
-  const payload = getObjectRecord(record.payloadJson);
-  const source = record.source || '';
-  const eventType = record.eventType || '';
-  return (
-    payload.progress === true ||
-    source === 'harness' ||
-    eventType.includes('harness') ||
-    eventType.includes('render_run') ||
-    eventType.includes('skill.sync') ||
-    eventType.includes('agent.process') ||
-    eventType.includes('artifacts.collect') ||
-    eventType.includes('run.finalizing')
-  );
-}
-
-function getRunEventStageLabel(record: RunEventRecord) {
-  const { phase, status } = getRunEventStageParts(record);
-  return [phase, status].filter(Boolean).join(' / ');
-}
-
-function getRunEventStageParts(record: RunEventRecord) {
-  const payload = getObjectRecord(record.payloadJson);
-  const phase = getStringValue(payload.phase) || record.eventType || '-';
-  const status = getStringValue(payload.status);
-  return { phase, status };
-}
-
-function LogsPanel({
-  t,
-  run,
-  events,
-  eventsWarning,
-  hasMoreBefore,
-  loading,
-  onLoadOlder,
-}: {
-  t: TFunction;
-  run: RunRecord;
-  events: RunEventRecord[];
-  eventsWarning?: string;
-  hasMoreBefore?: boolean;
-  loading?: boolean;
-  onLoadOlder(): void;
-}) {
-  const displayEvents = events.length ? events : createRunLifecycleEvents(run, t);
-  const heartbeatEvents = displayEvents.filter(isHeartbeatRunEvent);
-  const visibleEvents = displayEvents.filter((event) => !isHeartbeatRunEvent(event));
-  const harnessStageEvents = visibleEvents.filter(isHarnessStageRunEvent);
-  const columns: ColumnsType<RunEventRecord> = [
-    { title: t('Sequence'), dataIndex: 'sequence', key: 'sequence', width: 96 },
-    { title: t('Source'), dataIndex: 'source', key: 'source', width: 120 },
-    { title: t('Level'), dataIndex: 'level', key: 'level', width: 96 },
-    { title: t('Type'), dataIndex: 'eventType', key: 'eventType', width: 180 },
-    {
-      title: t('Message'),
-      dataIndex: 'message',
-      key: 'message',
-      render: (value: string | null | undefined) => (
-        <Typography.Paragraph style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{value || '-'}</Typography.Paragraph>
-      ),
-    },
-    {
-      title: t('Emitted at'),
-      dataIndex: 'emittedAt',
-      key: 'emittedAt',
-      width: 180,
-      render: (value: string | undefined) => formatDateTime(value),
-    },
-  ];
-  const expandedRowRender = (record: RunEventRecord) => <JsonPreview value={record.payloadJson} />;
-  return (
-    <Space direction="vertical" size={16} style={{ width: '100%' }}>
-      {eventsWarning ? <Alert type="warning" showIcon message={eventsWarning} /> : null}
-      {harnessStageEvents.length ? (
-        <Collapse
-          size="small"
-          defaultActiveKey={['harness-stages']}
-          items={[
-            {
-              key: 'harness-stages',
-              label: (
-                <Space wrap size={6}>
-                  <Typography.Text strong>{t('Harness stages')}</Typography.Text>
-                  <Tag>{harnessStageEvents.length}</Tag>
-                </Space>
-              ),
-              children: (
-                <List
-                  size="small"
-                  dataSource={harnessStageEvents}
-                  style={{ maxHeight: 280, overflow: 'auto' }}
-                  renderItem={(event) => (
-                    <List.Item>
-                      <Space direction="vertical" size={2} style={{ width: '100%' }}>
-                        <Space wrap size={6}>
-                          <Typography.Text strong>{getRunEventStageLabel(event)}</Typography.Text>
-                          {event.source ? <Tag>{event.source}</Tag> : null}
-                          {event.level ? <Tag>{event.level}</Tag> : null}
-                          <Typography.Text type="secondary">{formatDateTime(event.emittedAt)}</Typography.Text>
-                        </Space>
-                        {event.message ? (
-                          <Typography.Paragraph style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
-                            {event.message}
-                          </Typography.Paragraph>
-                        ) : null}
-                      </Space>
-                    </List.Item>
-                  )}
-                />
-              ),
-            },
-          ]}
-        />
-      ) : null}
-      {visibleEvents.length ? (
-        <Table<RunEventRecord>
-          columns={columns}
-          expandable={{
-            expandedRowRender,
-          }}
-          dataSource={visibleEvents}
-          rowKey="id"
-          loading={loading}
-          pagination={false}
-          size="small"
-        />
-      ) : (
-        <EmptyInline
-          description={heartbeatEvents.length ? t('Only heartbeat events were recorded') : t('No events yet')}
-        />
-      )}
-      {heartbeatEvents.length ? (
-        <Collapse
-          size="small"
-          items={[
-            {
-              key: 'heartbeat-events',
-              label: (
-                <Space wrap size={6}>
-                  <Typography.Text strong>{t('Heartbeat event details')}</Typography.Text>
-                  <Tag>{heartbeatEvents.length}</Tag>
-                </Space>
-              ),
-              children: (
-                <Table<RunEventRecord>
-                  columns={columns}
-                  expandable={{
-                    expandedRowRender,
-                  }}
-                  dataSource={heartbeatEvents}
-                  rowKey="id"
-                  pagination={false}
-                  size="small"
-                />
-              ),
-            },
-          ]}
-        />
-      ) : null}
-      {hasMoreBefore ? (
-        <Button loading={loading} onClick={onLoadOlder}>
-          {t('Load older events')}
-        </Button>
-      ) : null}
-    </Space>
-  );
-}
-
-function isHeartbeatApiCallLog(record: ApiCallLogRecord) {
-  return Boolean(record.path && /\/heartbeat$/.test(record.path));
-}
-
-function getApiLogTimeMs(record: ApiCallLogRecord) {
-  if (!record.createdAt) {
-    return null;
-  }
-  const time = Date.parse(record.createdAt);
-  return Number.isFinite(time) ? time : null;
-}
-
-function getHeartbeatApiLogSummary(apiCallLogs: ApiCallLogRecord[]) {
-  if (!apiCallLogs.length) {
-    return null;
-  }
-  const sortedLogs = [...apiCallLogs].sort((left, right) => {
-    const leftTime = getApiLogTimeMs(left) || 0;
-    const rightTime = getApiLogTimeMs(right) || 0;
-    return leftTime - rightTime;
-  });
-  const durations = apiCallLogs
-    .map((log) => (typeof log.durationMs === 'number' && Number.isFinite(log.durationMs) ? log.durationMs : null))
-    .filter((duration): duration is number => duration !== null);
-  const averageDurationMs = durations.length
-    ? Math.round(durations.reduce((total, duration) => total + duration, 0) / durations.length)
-    : null;
-  const latestLog = sortedLogs[sortedLogs.length - 1];
-  return {
-    count: apiCallLogs.length,
-    firstCreatedAt: sortedLogs[0]?.createdAt,
-    lastCreatedAt: latestLog?.createdAt,
-    latestStatusCode: latestLog?.statusCode,
-    averageDurationMs,
-  };
-}
-
-function ApiLogsPanel({
-  t,
-  apiCallLogs,
-  meta,
-  apiCallLogsWarning,
-  loading,
-  onPageChange,
-}: {
-  t: TFunction;
-  apiCallLogs: ApiCallLogRecord[];
-  meta: DetailPageMeta;
-  apiCallLogsWarning?: string;
-  loading?: boolean;
-  onPageChange(page: number, pageSize: number): void;
-}) {
-  const heartbeatLogs = apiCallLogs.filter(isHeartbeatApiCallLog);
-  const visibleLogs = apiCallLogs.filter((log) => !isHeartbeatApiCallLog(log));
-  const heartbeatSummary = getHeartbeatApiLogSummary(heartbeatLogs);
-  const columns: ColumnsType<ApiCallLogRecord> = [
-    { title: t('Method'), dataIndex: 'method', key: 'method', width: 96 },
-    { title: t('Path'), dataIndex: 'path', key: 'path' },
-    { title: t('Status code'), dataIndex: 'statusCode', key: 'statusCode', width: 120 },
-    { title: t('Duration ms'), dataIndex: 'durationMs', key: 'durationMs', width: 120 },
-    {
-      title: t('Created at'),
-      dataIndex: 'createdAt',
-      key: 'createdAt',
-      width: 180,
-      render: (value: string | undefined) => formatDateTime(value),
-    },
-  ];
-  const expandedRowRender = (record: ApiCallLogRecord) => (
-    <Space direction="vertical" size={8} style={{ width: '100%' }}>
-      <Typography.Text strong>{t('Request summary')}</Typography.Text>
-      <JsonPreview value={record.requestSummaryJson} />
-      <Typography.Text strong>{t('Response summary')}</Typography.Text>
-      <JsonPreview value={record.responseSummaryJson} />
-      {record.errorSummary ? <Typography.Text type="danger">{record.errorSummary}</Typography.Text> : null}
-    </Space>
-  );
-
-  return (
-    <Space direction="vertical" size={16} style={{ width: '100%' }}>
-      {apiCallLogsWarning ? <Alert type="warning" showIcon message={apiCallLogsWarning} /> : null}
-      {heartbeatSummary ? (
-        <Alert
-          type="info"
-          showIcon
-          message={t('Heartbeat summary')}
-          description={
-            <Space wrap size={8}>
-              <Tag>
-                {t('Heartbeat calls')}: {heartbeatSummary.count}
-              </Tag>
-              <Tag>
-                {t('First heartbeat')}: {formatDateTime(heartbeatSummary.firstCreatedAt)}
-              </Tag>
-              <Tag>
-                {t('Last heartbeat')}: {formatDateTime(heartbeatSummary.lastCreatedAt)}
-              </Tag>
-              {heartbeatSummary.averageDurationMs !== null ? (
-                <Tag>
-                  {t('Average duration ms')}: {heartbeatSummary.averageDurationMs}
-                </Tag>
-              ) : null}
-              {heartbeatSummary.latestStatusCode ? (
-                <Tag>
-                  {t('Latest status code')}: {heartbeatSummary.latestStatusCode}
-                </Tag>
-              ) : null}
-            </Space>
-          }
-        />
-      ) : null}
-      {visibleLogs.length || loading ? (
-        <Table<ApiCallLogRecord>
-          columns={columns}
-          expandable={{
-            expandedRowRender,
-          }}
-          dataSource={visibleLogs}
-          rowKey="id"
-          loading={loading}
-          pagination={false}
-          size="small"
-        />
-      ) : (
-        <EmptyInline
-          description={heartbeatLogs.length ? t('Only heartbeat API calls were recorded') : t('No API logs yet')}
-        />
-      )}
-      {heartbeatLogs.length ? (
-        <Collapse
-          size="small"
-          items={[
-            {
-              key: 'heartbeat-details',
-              label: (
-                <Space wrap size={6}>
-                  <Typography.Text strong>{t('Heartbeat details')}</Typography.Text>
-                  <Tag>{heartbeatLogs.length}</Tag>
-                </Space>
-              ),
-              children: (
-                <Table<ApiCallLogRecord>
-                  columns={columns}
-                  expandable={{
-                    expandedRowRender,
-                  }}
-                  dataSource={heartbeatLogs}
-                  rowKey="id"
-                  pagination={false}
-                  size="small"
-                />
-              ),
-            },
-          ]}
-        />
-      ) : null}
-      {meta.count > meta.pageSize ? (
-        <Pagination
-          current={meta.page}
-          pageSize={meta.pageSize}
-          total={meta.count}
-          showSizeChanger
-          pageSizeOptions={DETAIL_PAGE_SIZE_OPTIONS}
-          showTotal={(total) => `${t('Total')}: ${total}`}
-          onChange={onPageChange}
-        />
-      ) : null}
-    </Space>
-  );
-}
-
-function getStringValue(value: unknown) {
-  return typeof value === 'string' ? value : '';
-}
-
-function truncateArtifactPreviewText(text: string, maxChars: number) {
-  if (text.length <= maxChars) {
-    return text;
-  }
-  return `${text.slice(0, maxChars)}\n\n[${'...'} ${text.length - maxChars} chars truncated]`;
-}
-
-function decodeCommonEscapedWhitespace(text: string) {
-  const escapedNewlineCount = (text.match(/\\n/g) || []).length;
-  const newlineCount = (text.match(/\n/g) || []).length;
-  if (escapedNewlineCount < 2 || escapedNewlineCount < newlineCount) {
-    return text;
-  }
-  return text
-    .replace(/\\r\\n/g, '\n')
-    .replace(/\\n/g, '\n')
-    .replace(/\\r/g, '\r')
-    .replace(/\\t/g, '\t');
-}
-
-function normalizeArtifactReadableText(text: string, maxChars = ARTIFACT_ITEM_TEXT_MAX_CHARS) {
-  return truncateArtifactPreviewText(decodeCommonEscapedWhitespace(redactPreviewText(text) || ''), maxChars);
-}
-
-function getArtifactRawPreview(contentText: string) {
-  const rawPreview = truncateArtifactPreviewText(contentText, ARTIFACT_RAW_PREVIEW_MAX_CHARS);
-  return {
-    rawPreview,
-    rawTruncated: rawPreview.length !== contentText.length,
-  };
-}
-
-function isAllowedHtmlArtifactDataUrl(value: string) {
-  const normalizedValue = value.trim().toLowerCase();
-  return (
-    /^data:image\/(?:avif|bmp|gif|jpe?g|png|webp|x-icon)(?:;|,)/.test(normalizedValue) ||
-    /^data:font\/[a-z0-9.+-]+(?:;|,)/.test(normalizedValue) ||
-    /^data:application\/(?:font-[a-z0-9.+-]+|vnd\.ms-fontobject|x-font-[a-z0-9.+-]+)(?:;|,)/.test(normalizedValue)
-  );
-}
-
-function sanitizeHtmlArtifactCss(cssText: string) {
-  return cssText
-    .replace(/@import\s+(?:url\s*\([^)]*\)|["'][^"']*["'])[^;]*(?:;|$)/gi, '')
-    .replace(/url\s*\(\s*(["']?)(.*?)\1\s*\)/gis, (_match, _quote: string, value: string) => {
-      return isAllowedHtmlArtifactDataUrl(value) ? `url("${value.trim().replace(/"/g, '%22')}")` : 'none';
-    })
-    .replace(/(["'])(?:(?:https?:)?\/\/)[^"']*\1/gi, 'none')
-    .replace(/(?:https?:)?\/\/[^\s);}"']+/gi, '');
-}
-
-function escapeHtmlArtifactText(value: string) {
-  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
-export function sanitizeHtmlArtifactPreview(contentText: string) {
-  if (typeof DOMParser === 'undefined') {
-    return `<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="${escapeHtmlArtifactText(
-      HTML_ARTIFACT_PREVIEW_CSP,
-    )}"></head><body><pre>${escapeHtmlArtifactText(contentText)}</pre></body></html>`;
-  }
-
-  const document = new DOMParser().parseFromString(contentText, 'text/html');
-  document.querySelectorAll(HTML_ARTIFACT_REMOVED_ELEMENTS).forEach((element) => element.remove());
-  document.querySelectorAll('*').forEach((element) => {
-    for (const attribute of Array.from(element.attributes)) {
-      const attributeName = attribute.name.toLowerCase();
-      if (attributeName.startsWith('on') || HTML_ARTIFACT_URL_ATTRIBUTES.has(attributeName)) {
-        if (
-          element.tagName.toLowerCase() === 'img' &&
-          attributeName === 'src' &&
-          isAllowedHtmlArtifactDataUrl(attribute.value)
-        ) {
-          continue;
-        }
-        element.removeAttribute(attribute.name);
-      }
-    }
-
-    if (element.hasAttribute('style')) {
-      const sanitizedStyle = sanitizeHtmlArtifactCss(element.getAttribute('style') || '').trim();
-      if (sanitizedStyle) {
-        element.setAttribute('style', sanitizedStyle);
-      } else {
-        element.removeAttribute('style');
-      }
-    }
-
-    if (element.tagName.toLowerCase() === 'style') {
-      element.textContent = sanitizeHtmlArtifactCss(element.textContent || '');
-    }
-  });
-
-  const csp = document.createElement('meta');
-  csp.setAttribute('http-equiv', 'Content-Security-Policy');
-  csp.setAttribute('content', HTML_ARTIFACT_PREVIEW_CSP);
-  document.head.prepend(csp);
-  return `<!doctype html>\n${document.documentElement.outerHTML}`;
-}
-
-function getJsonPreviewText(value: unknown) {
-  return normalizeArtifactReadableText(JSON.stringify(redactExternalUrlPreviewJson(value), null, 2));
-}
-
-function tryParseJson(value: string): unknown {
-  try {
-    return JSON.parse(value) as unknown;
-  } catch {
-    return undefined;
-  }
-}
-
-function parseJsonlArtifact(contentText: string) {
-  const lines = contentText
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-  if (lines.length < 2) {
-    return null;
-  }
-
-  const values: unknown[] = [];
-  let failedCount = 0;
-  for (const line of lines) {
-    const value = tryParseJson(line);
-    if (value === undefined) {
-      failedCount += 1;
-      continue;
-    }
-    values.push(value);
-  }
-
-  if (values.length < 2 || failedCount > Math.max(2, Math.floor(lines.length * 0.1))) {
-    return null;
-  }
-
-  return {
-    values,
-    failedCount,
-    totalCount: lines.length,
-  };
-}
-
-function getArtifactItemLabel(t: TFunction, kind: ReadableArtifactItemKind, label: string) {
-  const colors: Record<ReadableArtifactItemKind, string> = {
-    message: 'blue',
-    tool: 'purple',
-    error: 'red',
-    event: 'default',
-  };
-  const kindLabel: Record<ReadableArtifactItemKind, string> = {
-    message: t('Message'),
-    tool: t('Tool call'),
-    error: t('Error'),
-    event: t('Event'),
-  };
-  return (
-    <Space size={8} wrap>
-      <Tag color={colors[kind]}>{kindLabel[kind]}</Tag>
-      <Typography.Text>{label}</Typography.Text>
-    </Space>
-  );
-}
-
-function getReadableArtifactItem(value: unknown, index: number, t: TFunction): ReadableArtifactItem | null {
-  const record = getObjectRecord(value);
-  const type = getStringValue(record.type);
-  const item = getObjectRecord(record.item);
-  const itemType = getStringValue(item.type);
-  const itemId = getStringValue(item.id) || `${index + 1}`;
-  const status = getStringValue(item.status);
-  const key = `${itemId}-${index}`;
-
-  if (itemType === 'agent_message') {
-    const text = getStringValue(item.text);
-    if (!text) {
-      return null;
-    }
-    return {
-      key,
-      kind: 'message',
-      label: `${t('Agent message')} #${index + 1}`,
-      text: normalizeArtifactReadableText(text),
-      defaultOpen: true,
-    };
-  }
-
-  if (itemType === 'error') {
-    const text = getStringValue(item.message) || getJsonPreviewText(value);
-    return {
-      key,
-      kind: 'error',
-      label: `${t('Error')} #${index + 1}`,
-      text: normalizeArtifactReadableText(text),
-      defaultOpen: true,
-    };
-  }
-
-  if (itemType === 'command_execution') {
-    const output = getStringValue(item.aggregated_output);
-    const command = getStringValue(item.command);
-    if (!output && type === 'item.started') {
-      return null;
-    }
-    return {
-      key,
-      kind: 'tool',
-      label: [t('Tool call'), status, itemId ? `#${itemId}` : null].filter(Boolean).join(' '),
-      text: normalizeArtifactReadableText(output || command || t('No tool output')),
-      defaultOpen: false,
-    };
-  }
-
-  if (['thread.started', 'turn.started', 'turn.completed'].includes(type)) {
-    return null;
-  }
-
-  const text =
-    getStringValue(record.message) ||
-    getStringValue(record.text) ||
-    getStringValue(item.text) ||
-    getStringValue(item.message) ||
-    getJsonPreviewText(value);
-  if (!text) {
-    return null;
-  }
-
-  return {
-    key,
-    kind: 'event',
-    label: type || `${t('Event')} #${index + 1}`,
-    text: normalizeArtifactReadableText(text),
-    defaultOpen: false,
-  };
-}
-
-function buildReadableArtifactPreview(contentText: string, t: TFunction): ReadableArtifactPreview {
-  const { rawPreview, rawTruncated } = getArtifactRawPreview(contentText);
-  const jsonl = parseJsonlArtifact(contentText);
-  if (jsonl) {
-    const items = jsonl.values
-      .map((value, index) => getReadableArtifactItem(value, index, t))
-      .filter((item): item is ReadableArtifactItem => Boolean(item))
-      .slice(0, ARTIFACT_PREVIEW_MAX_ITEMS);
-    return {
-      mode: 'jsonl',
-      summary: `${t('Readable JSONL preview')}: ${items.length}/${jsonl.values.length}`,
-      items,
-      text: items.length ? '' : normalizeArtifactReadableText(contentText),
-      rawPreview,
-      rawTruncated,
-    };
-  }
-
-  const parsedJson = tryParseJson(contentText.trim());
-  if (parsedJson !== undefined) {
-    return {
-      mode: 'json',
-      summary: t('Readable JSON preview'),
-      items: [],
-      text: getJsonPreviewText(parsedJson),
-      rawPreview,
-      rawTruncated,
-    };
-  }
-
-  return {
-    mode: 'text',
-    summary: t('Readable text preview'),
-    items: [],
-    text: normalizeArtifactReadableText(contentText, ARTIFACT_RAW_PREVIEW_MAX_CHARS),
-    rawPreview,
-    rawTruncated,
-  };
-}
-
-function ArtifactPreviewText({ text }: { text: string }) {
-  return (
-    <Typography.Paragraph
-      style={{
-        background: '#f6f8fa',
-        border: '1px solid #edf0f2',
-        borderRadius: 6,
-        margin: 0,
-        maxHeight: 360,
-        overflow: 'auto',
-        padding: 12,
-        whiteSpace: 'pre-wrap',
-      }}
-    >
-      {text}
-    </Typography.Paragraph>
-  );
-}
-
-export function ArtifactContentPreview({
-  artifact,
-  contentText,
-  t,
-}: {
-  artifact: RunArtifactRecord;
-  contentText: string | null | undefined;
-  t: TFunction;
-}) {
-  const normalizedContentText = contentText || '';
-  const preview = useMemo(() => buildReadableArtifactPreview(normalizedContentText, t), [normalizedContentText, t]);
-  if (!normalizedContentText) {
-    return <Typography.Text type="secondary">{t('No inline artifact text')}</Typography.Text>;
-  }
-
-  if (artifact.mimeType === 'text/html') {
-    const sanitizedHtmlPreview = sanitizeHtmlArtifactPreview(preview.rawPreview);
-    return (
-      <Space direction="vertical" size={8} style={{ width: '100%' }}>
-        <Alert
-          type="info"
-          showIcon
-          message={t('Restricted HTML artifact preview')}
-          description={t('Scripts, forms, navigation, and external network requests are disabled.')}
-        />
-        <iframe
-          sandbox=""
-          referrerPolicy="no-referrer"
-          srcDoc={sanitizedHtmlPreview}
-          title={`${artifact.artifactKey || artifact.id}: ${t('Restricted HTML artifact preview')}`}
-          style={{
-            background: '#fff',
-            border: '1px solid #edf0f2',
-            borderRadius: 6,
-            height: 420,
-            width: '100%',
-          }}
-        />
-        <Collapse
-          size="small"
-          items={[
-            {
-              key: 'raw',
-              label: preview.rawTruncated ? t('Raw artifact text (truncated)') : t('Raw artifact text'),
-              children: <ArtifactPreviewText text={preview.rawPreview} />,
-            },
-          ]}
-        />
-      </Space>
-    );
-  }
-
-  if ((artifact.mimeType || '').startsWith('image/') && normalizedContentText.startsWith('data:image/')) {
-    return (
-      <Space direction="vertical" size={8} style={{ width: '100%' }}>
-        <Typography.Text type="secondary">{t('Image artifact preview')}</Typography.Text>
-        <img
-          alt={artifact.artifactKey || artifact.id}
-          src={normalizedContentText}
-          style={{
-            border: '1px solid #edf0f2',
-            borderRadius: 6,
-            maxHeight: 420,
-            maxWidth: '100%',
-            objectFit: 'contain',
-          }}
-        />
-      </Space>
-    );
-  }
-
-  const defaultActiveKey = preview.items
-    .filter((item) => item.defaultOpen)
-    .slice(0, 3)
-    .map((item) => item.key);
-  return (
-    <Space direction="vertical" size={8} style={{ width: '100%' }}>
-      <Typography.Text type="secondary">{preview.summary}</Typography.Text>
-      {preview.items.length ? (
-        <Collapse
-          size="small"
-          defaultActiveKey={defaultActiveKey}
-          items={preview.items.map((item) => ({
-            key: item.key,
-            label: getArtifactItemLabel(t, item.kind, item.label),
-            children: <ArtifactPreviewText text={item.text} />,
-          }))}
-        />
-      ) : (
-        <ArtifactPreviewText text={preview.text} />
-      )}
-      <Collapse
-        size="small"
-        items={[
-          {
-            key: 'raw',
-            label: preview.rawTruncated ? t('Raw artifact text (truncated)') : t('Raw artifact text'),
-            children: <ArtifactPreviewText text={preview.rawPreview} />,
-          },
-        ]}
-      />
-    </Space>
-  );
-}
-
-function ArtifactLazyPreview({
-  artifact,
-  entry,
-  t,
-  onLoad,
-}: {
-  artifact: RunArtifactRecord;
-  entry?: ArtifactContentEntry;
-  t: TFunction;
-  onLoad(artifact: RunArtifactRecord, force?: boolean): Promise<void>;
-}) {
-  const inlineContentAvailable = artifact.contentText !== undefined;
-  const loaded = entry?.loaded || inlineContentAvailable;
-  const contentText = entry?.loaded ? entry.contentText : artifact.contentText;
-  const handleChange = async (activeKeys: string | string[]) => {
-    const keys = Array.isArray(activeKeys) ? activeKeys : [activeKeys];
-    if (keys.includes('preview') && !loaded && !entry?.loading) {
-      await onLoad(artifact);
-    }
-  };
-  return (
-    <Collapse
-      size="small"
-      onChange={handleChange}
-      items={[
-        {
-          key: 'preview',
-          label: t('Preview'),
-          children: entry?.loading ? (
-            <Spin size="small" />
-          ) : entry?.warning ? (
-            <Space direction="vertical" size={8} style={{ width: '100%' }}>
-              <Alert type="warning" showIcon message={entry.warning} />
-              <Button size="small" onClick={async () => await onLoad(artifact, true)}>
-                {t('Retry')}
-              </Button>
-            </Space>
-          ) : loaded ? (
-            <ArtifactContentPreview artifact={artifact} contentText={contentText} t={t} />
-          ) : (
-            <Spin size="small" />
-          ),
-        },
-      ]}
-    />
-  );
-}
-
-function getArtifactDisplayPriority(artifact: RunArtifactRecord) {
-  const mimeType = artifact.mimeType || '';
-  const artifactType = artifact.artifactType || '';
-  const searchableText = [
-    artifact.artifactKey,
-    artifact.artifactType,
-    artifact.mimeType,
-    artifact.metadataJson?.relativePath,
-  ]
-    .filter((value): value is string => typeof value === 'string')
-    .join(' ')
-    .toLowerCase();
-  if (mimeType === 'text/html' || artifactType === 'html-report' || searchableText.includes('report.html')) {
-    return 0;
-  }
-  if (mimeType.startsWith('image/') || artifactType === 'image' || searchableText.includes('browser-screenshots')) {
-    return 1;
-  }
-  if (searchableText.includes('browser-verification')) {
-    return 2;
-  }
-  if (mimeType.includes('json') || artifactType === 'json-report') {
-    return 3;
-  }
-  return 4;
-}
-
-function compareArtifactsForDisplay(first: RunArtifactRecord, second: RunArtifactRecord) {
-  const priorityDelta = getArtifactDisplayPriority(first) - getArtifactDisplayPriority(second);
-  if (priorityDelta !== 0) {
-    return priorityDelta;
-  }
-  const firstLabel = first.artifactKey || first.id;
-  const secondLabel = second.artifactKey || second.id;
-  return firstLabel.localeCompare(secondLabel);
-}
-
-interface ArtifactDisplayGroup {
-  key: string;
-  label: string;
-  artifacts: RunArtifactRecord[];
-}
-
-function getArtifactDisplayGroup(artifact: RunArtifactRecord, t: TFunction) {
-  const metadata = getObjectRecord(artifact.metadataJson);
-  const groupLabel = getStringValue(metadata.artifactGroupLabel) || getStringValue(metadata.groupLabel);
-  const groupKey = getStringValue(metadata.artifactGroupKey) || getStringValue(metadata.groupKey) || groupLabel;
-  return {
-    key: groupKey ? `group:${groupKey}` : 'group:default',
-    label: groupLabel || groupKey || t('Default artifacts'),
-  };
-}
-
-function groupArtifactsForDisplay(artifacts: RunArtifactRecord[], t: TFunction) {
-  const groups: ArtifactDisplayGroup[] = [];
-  const groupIndex = new Map<string, ArtifactDisplayGroup>();
-  for (const artifact of artifacts) {
-    const groupInfo = getArtifactDisplayGroup(artifact, t);
-    let group = groupIndex.get(groupInfo.key);
-    if (!group) {
-      group = {
-        ...groupInfo,
-        artifacts: [],
-      };
-      groupIndex.set(group.key, group);
-      groups.push(group);
-    }
-    group.artifacts.push(artifact);
-  }
-  return groups;
-}
-
-function getArtifactOverviewCounts(artifacts: RunArtifactRecord[]) {
-  return {
-    htmlReports: artifacts.filter((artifact) => getArtifactDisplayPriority(artifact) === 0).length,
-    screenshots: artifacts.filter((artifact) => getArtifactDisplayPriority(artifact) === 1).length,
-    manifests: artifacts.filter((artifact) => artifact.artifactType === 'artifact-manifest').length,
-    truncated: artifacts.filter(
-      (artifact) => artifact.truncated === true || getObjectRecord(artifact.metadataJson).truncated === true,
-    ).length,
-    total: artifacts.length,
-  };
-}
-
-function ArtifactList({
-  t,
-  artifacts,
-  loading,
-  contentEntries,
-  onLoadContent,
-}: {
-  t: TFunction;
-  artifacts: RunArtifactRecord[];
-  loading?: boolean;
-  contentEntries: Record<string, ArtifactContentEntry>;
-  onLoadContent(artifact: RunArtifactRecord, force?: boolean): Promise<void>;
-}) {
-  return (
-    <List
-      dataSource={artifacts}
-      loading={loading}
-      renderItem={(artifact) => (
-        <List.Item>
-          <Space direction="vertical" size={8} style={{ width: '100%' }}>
-            <Typography.Text strong>
-              {[artifact.artifactKey, artifact.artifactType, artifact.mimeType].filter(Boolean).join(' / ') ||
-                artifact.id}
-            </Typography.Text>
-            <Space wrap size={6}>
-              {artifact.storageMode ? <Tag>{artifact.storageMode}</Tag> : null}
-              {artifact.truncated ? <Tag color="orange">{t('Truncated')}</Tag> : null}
-              {artifact.originalSizeBytes ? (
-                <Tag>
-                  {t('Original size')}: {String(artifact.originalSizeBytes)}
-                </Tag>
-              ) : null}
-              {artifact.previewBytes ? (
-                <Tag>
-                  {t('Preview size')}: {String(artifact.previewBytes)}
-                </Tag>
-              ) : null}
-            </Space>
-            <ArtifactLazyPreview artifact={artifact} entry={contentEntries[artifact.id]} t={t} onLoad={onLoadContent} />
-            <JsonPreview value={redactExternalUrlPreviewJson(artifact.metadataJson)} />
-          </Space>
-        </List.Item>
-      )}
-    />
-  );
-}
-
-function isFormValidationError(value: unknown) {
-  return Array.isArray(getObjectRecord(value).errorFields);
-}
-
-function ArtifactsPanel({
-  t,
-  artifacts,
-  snapshots,
-  artifactMeta,
-  snapshotMeta,
-  artifactContentEntries,
-  artifactsWarning,
-  snapshotsWarning,
-  artifactsLoading,
-  snapshotsLoading,
-  onArtifactPageChange,
-  onSnapshotPageChange,
-  onLoadArtifactContent,
-}: {
-  t: TFunction;
-  artifacts: RunArtifactRecord[];
-  snapshots: RunSnapshotRecord[];
-  artifactMeta: DetailPageMeta;
-  snapshotMeta: DetailPageMeta;
-  artifactContentEntries: Record<string, ArtifactContentEntry>;
-  artifactsWarning?: string;
-  snapshotsWarning?: string;
-  artifactsLoading?: boolean;
-  snapshotsLoading?: boolean;
-  onArtifactPageChange(page: number, pageSize: number): void;
-  onSnapshotPageChange(page: number, pageSize: number): void;
-  onLoadArtifactContent(artifact: RunArtifactRecord, force?: boolean): Promise<void>;
-}) {
-  const displayArtifacts = useMemo(() => [...artifacts].sort(compareArtifactsForDisplay), [artifacts]);
-  const artifactGroups = useMemo(() => groupArtifactsForDisplay(displayArtifacts, t), [displayArtifacts, t]);
-  const overviewCounts = useMemo(() => getArtifactOverviewCounts(displayArtifacts), [displayArtifacts]);
-
-  return (
-    <Space direction="vertical" size={16} style={{ width: '100%' }}>
-      {artifactsWarning ? <Alert type="warning" showIcon message={artifactsWarning} /> : null}
-      {displayArtifacts.length ? (
-        <Space size={[8, 8]} wrap>
-          <Tag>
-            {t('Artifacts')}: {artifactMeta.count}
-          </Tag>
-          <Tag color={overviewCounts.htmlReports ? 'blue' : undefined}>
-            {t('HTML reports')}: {overviewCounts.htmlReports}
-          </Tag>
-          <Tag color={overviewCounts.screenshots ? 'green' : undefined}>
-            {t('Screenshots')}: {overviewCounts.screenshots}
-          </Tag>
-          <Tag color={overviewCounts.manifests ? 'purple' : undefined}>
-            {t('Artifact manifests')}: {overviewCounts.manifests}
-          </Tag>
-          <Tag color={overviewCounts.truncated ? 'orange' : undefined}>
-            {t('Truncated')}: {overviewCounts.truncated}
-          </Tag>
-        </Space>
-      ) : null}
-      {displayArtifacts.length || artifactsLoading ? (
-        artifactGroups.length > 1 ? (
-          <Tabs
-            destroyInactiveTabPane
-            items={artifactGroups.map((group) => ({
-              key: group.key,
-              label: `${group.label} (${group.artifacts.length})`,
-              children: (
-                <ArtifactList
-                  t={t}
-                  artifacts={group.artifacts}
-                  loading={artifactsLoading}
-                  contentEntries={artifactContentEntries}
-                  onLoadContent={onLoadArtifactContent}
-                />
-              ),
-            }))}
-          />
-        ) : (
-          <ArtifactList
-            t={t}
-            artifacts={displayArtifacts}
-            loading={artifactsLoading}
-            contentEntries={artifactContentEntries}
-            onLoadContent={onLoadArtifactContent}
-          />
-        )
-      ) : (
-        <EmptyInline description={t('No artifacts yet')} />
-      )}
-      {artifactMeta.count > artifactMeta.pageSize ? (
-        <Pagination
-          current={artifactMeta.page}
-          pageSize={artifactMeta.pageSize}
-          total={artifactMeta.count}
-          showSizeChanger
-          pageSizeOptions={DETAIL_PAGE_SIZE_OPTIONS}
-          showTotal={(total) => `${t('Total')}: ${total}`}
-          onChange={onArtifactPageChange}
-        />
-      ) : null}
-
-      <Typography.Title level={5} style={{ margin: 0 }}>
-        {t('Snapshots')}
-      </Typography.Title>
-      {snapshotsWarning ? <Alert type="warning" showIcon message={snapshotsWarning} /> : null}
-      {snapshots.length || snapshotsLoading ? (
-        <List
-          dataSource={snapshots}
-          loading={snapshotsLoading}
-          renderItem={(snapshot) => (
-            <List.Item>
-              <Space direction="vertical" size={8} style={{ width: '100%' }}>
-                <Typography.Text strong>
-                  {snapshot.snapshotType || snapshot.id} - {formatDateTime(snapshot.capturedAt)}
-                </Typography.Text>
-                <JsonPreview value={snapshot.snapshotJson} />
-              </Space>
-            </List.Item>
-          )}
-        />
-      ) : (
-        <EmptyInline description={t('No snapshots yet')} />
-      )}
-      {snapshotMeta.count > snapshotMeta.pageSize ? (
-        <Pagination
-          current={snapshotMeta.page}
-          pageSize={snapshotMeta.pageSize}
-          total={snapshotMeta.count}
-          showSizeChanger
-          pageSizeOptions={DETAIL_PAGE_SIZE_OPTIONS}
-          showTotal={(total) => `${t('Total')}: ${total}`}
-          onChange={onSnapshotPageChange}
-        />
-      ) : null}
-    </Space>
-  );
-}
+import { ArtifactsPanel, getArtifactDetailsWarning } from '../features/runs/artifacts/ArtifactsPanel';
+import {
+  ApiLogsPanel,
+  LogsPanel,
+  getRawLogDetailsWarning,
+  getTimelineEmptyDescription,
+  shouldCloseDanglingToolCalls,
+} from '../features/runs/detail/RunLogsPanels';
+import {
+  RunTaskTemplateLink,
+  RunTaskTemplateSkills,
+  RunTaskTitle,
+  SkillDetailDrawerContent,
+  TaskTemplateDetailDrawerContent,
+  getSkillVersionDetailDisplayLabel,
+} from '../features/runs/detail/RelatedDetails';
+import {
+  DEFAULT_RUNS_PAGE_SIZE,
+  EmptyInline,
+  FastCollapse,
+  NO_COLLAPSE_MOTION,
+  RUNS_FILTER_FIELD_NAMES,
+  RUN_SORT_FALLBACK,
+  SKILL_DETAIL_DRAWER_WIDTH,
+  TASK_RUN_DRAWER_WIDTH,
+  findBuildTaskTemplate,
+  getBuildTaskTemplateSelectOptions,
+  getRunColumnSortOrder,
+  getRunListMeta,
+  getRunSortParam,
+  getRunTaskTemplateFilterOptions,
+  getRunsFilterCollectionOptions,
+  getSkillVersionIds,
+  isCancelableRun,
+  isFormValidationError,
+  isRunActionAllowed,
+  readFileAsText,
+  shouldUseDefaultBuildRunner,
+} from '../features/runs/runShared';
+import {
+  TerminalPanel,
+  canUseTerminalControl,
+  createControlIdempotencyKey,
+  createUnsupportedTerminalSnapshot,
+  getRunCapability,
+  isFinalControlStatus,
+  shouldResetControlIdempotencyKey,
+} from '../features/runs/terminal/TerminalPanel';
+
+export { ArtifactContentPreview, sanitizeHtmlArtifactPreview } from '../features/runs/artifacts/ArtifactsPanel';
 
 export default function AgentGatewayRunsPage() {
   const t = useT();
@@ -2292,7 +351,7 @@ export default function AgentGatewayRunsPage() {
           setActiveDetailTab('summary');
           setSelectedRunId(nextRunId);
           setDetailOpen(true);
-          replaceRunIdInLocationSearch(nextRunId);
+          pushRunIdInLocationSearch(nextRunId);
         }
         refreshRuns();
         ctx.message?.success(t('Task run created'));
@@ -2343,7 +402,7 @@ export default function AgentGatewayRunsPage() {
           setActiveDetailTab('summary');
           setSelectedRunId(nextRunId);
           setDetailOpen(true);
-          replaceRunIdInLocationSearch(nextRunId);
+          pushRunIdInLocationSearch(nextRunId);
         }
         refreshRuns();
         ctx.message?.success(result.deduped ? t('External run already imported') : t('External run imported'));
@@ -2697,7 +756,7 @@ export default function AgentGatewayRunsPage() {
         setActiveDetailTab('summary');
         setSelectedRunId(nextRunId);
         setDetailOpen(true);
-        replaceRunIdInLocationSearch(nextRunId);
+        pushRunIdInLocationSearch(nextRunId);
         runsRequest.refresh();
         ctx.message?.success(result.deduped ? t('Continuation run already exists') : t('Continuation run created'));
       },
@@ -2720,7 +779,7 @@ export default function AgentGatewayRunsPage() {
       resetObservability();
       setSelectedRunId(run.id);
       setDetailOpen(true);
-      replaceRunIdInLocationSearch(run.id);
+      pushRunIdInLocationSearch(run.id);
     },
     [resetObservability],
   );
@@ -2732,7 +791,7 @@ export default function AgentGatewayRunsPage() {
     setSelectedSkillVersionId(undefined);
     setSkillDetailsError(undefined);
     setSkillDetailOpen(false);
-    replaceTaskTemplateIdInLocationSearch(templateId);
+    pushTaskTemplateIdInLocationSearch(templateId);
   }, []);
 
   const closeTaskTemplateDetails = useCallback(() => {
@@ -2749,7 +808,7 @@ export default function AgentGatewayRunsPage() {
     setSelectedTaskTemplateId(undefined);
     setTaskTemplateDetailsError(undefined);
     setTaskTemplateDetailOpen(false);
-    replaceSkillVersionIdInLocationSearch(skillVersionId);
+    pushSkillVersionIdInLocationSearch(skillVersionId);
   }, []);
 
   const closeSkillDetails = useCallback(() => {
@@ -3135,6 +1194,28 @@ export default function AgentGatewayRunsPage() {
   const terminalStreamFallbackActive =
     canStreamTerminal && (terminalStream.connectionState !== 'live' || Boolean(terminalStream.lastErrorCode));
 
+  const detailPollingEnabled =
+    Boolean(detailOpen && selectedRunId && !runDetailsError && pollingRun?.id === selectedRunId) && Boolean(pollingRun);
+  const pollingActionPermissions = selectedRunActionPermissions || {};
+  const pollTerminalFallback =
+    activeDetailTab === 'agent-sessions' &&
+    isRunActionAllowed(pollingActionPermissions, 'readTerminal') &&
+    Boolean(pollingRun && getRunCapability(pollingRun, 'terminalOutput')) &&
+    terminalStreamFallbackActive;
+  const pollConversation =
+    activeDetailTab === 'summary' && isRunActionAllowed(pollingActionPermissions, 'readSessionMessages');
+
+  useRunDetailPolling({
+    enabled: detailPollingEnabled,
+    live: isLiveRunStatus(pollingRun?.status),
+    pollTerminalFallback,
+    pollConversation,
+    refreshTerminalSnapshot,
+    refreshConversationEvents,
+    refreshRunDetails,
+    refreshRuns,
+  });
+
   useEffect(() => {
     if (!detailOpen || !selectedRunId || runDetailsError || pollingRun?.id !== selectedRunId) {
       terminalSnapshotRequestKeyRef.current = undefined;
@@ -3172,38 +1253,11 @@ export default function AgentGatewayRunsPage() {
     if (canPollSessionMessages) {
       refreshConversationEvents();
     }
-    if (!isLiveRunStatus(run.status)) {
-      return;
-    }
-
-    const realtimeTimer =
-      terminalStreamFallbackActive || canPollSessionMessages
-        ? window.setInterval(() => {
-            if (terminalStreamFallbackActive) {
-              refreshTerminalSnapshot();
-            }
-            if (canPollSessionMessages) {
-              refreshConversationEvents();
-            }
-          }, 2000)
-        : undefined;
-    const summaryTimer = window.setInterval(() => {
-      refreshRuns();
-      refreshRunDetails();
-    }, 5000);
-    return () => {
-      if (realtimeTimer !== undefined) {
-        window.clearInterval(realtimeTimer);
-      }
-      window.clearInterval(summaryTimer);
-    };
   }, [
     activeDetailTab,
     detailOpen,
     pollingRun,
     refreshConversationEvents,
-    refreshRunDetails,
-    refreshRuns,
     refreshTerminalSnapshot,
     runDetailsError,
     selectedRunActionPermissions,
@@ -3337,7 +1391,7 @@ export default function AgentGatewayRunsPage() {
     <section aria-label={t('Runs')}>
       <Card variant="borderless">
         <Space direction="vertical" size={16} style={{ width: '100%' }}>
-          <Flex justify="space-between" align="center" gap={8} wrap="wrap">
+          <Flex role="toolbar" aria-label={t('Actions')} justify="space-between" align="center" gap={8} wrap="wrap">
             <CollectionFilter
               collection={runsFilterCollection}
               filterableFieldNames={RUNS_FILTER_FIELD_NAMES}
@@ -3359,6 +1413,7 @@ export default function AgentGatewayRunsPage() {
           </Flex>
 
           <Table<RunRecord>
+            aria-label={t('Runs')}
             columns={runColumns}
             dataSource={runListData.runs}
             loading={runsRequest.loading && !runsRequest.data}
@@ -3384,6 +1439,7 @@ export default function AgentGatewayRunsPage() {
         {!runDetailsError && detailOpen && selectedRunId && !activeRunDetails ? <Spin /> : null}
         {activeRunDetails ? (
           <Tabs
+            aria-label={t('Run details')}
             activeKey={activeDetailTab}
             onChange={(key) => setActiveDetailTab(key as RunDetailTabKey)}
             destroyInactiveTabPane

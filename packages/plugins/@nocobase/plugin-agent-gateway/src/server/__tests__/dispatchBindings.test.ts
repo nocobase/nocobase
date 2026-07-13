@@ -71,6 +71,8 @@ describe('agent gateway dispatch binding APIs', () => {
   let rootAgent: ReturnType<MockServer['agent']>;
   let rootUserId: string;
   let ticketSequence: number;
+  let runnerSequence: number;
+  let defaultRunner: Awaited<ReturnType<typeof createRunner>> | null;
 
   beforeEach(async () => {
     app = await createMockServer({
@@ -96,6 +98,8 @@ describe('agent gateway dispatch binding APIs', () => {
     rootUserId = String(rootUser.get('id'));
     rootAgent = await app.agent().login(rootUser);
     ticketSequence = 1;
+    runnerSequence = 0;
+    defaultRunner = null;
     await seedBusinessCollections();
   });
 
@@ -158,11 +162,20 @@ describe('agent gateway dispatch binding APIs', () => {
 
   async function createBinding(values: Record<string, unknown> = {}) {
     const template = values.promptTemplateId ? null : await createTemplate();
+    if (!values.agentProfileId && !values.agentProfileField) {
+      defaultRunner ||= await createRunner();
+    }
     const response = await rootAgent.post('/agentGatewayApi:createDispatchBinding').send({
       bindingKey: 'ticket-dispatch',
       collectionName: 'agDispatchTickets',
       promptTemplateId: template?.id || values.promptTemplateId,
       outputAgentRunField: 'agentRun',
+      ...(!values.agentProfileId && !values.agentProfileField
+        ? {
+            agentProfileId: defaultRunner?.profileId,
+            nodeId: defaultRunner?.nodeId,
+          }
+        : {}),
       ...values,
     });
     expect(response.status).toBe(200);
@@ -170,9 +183,10 @@ describe('agent gateway dispatch binding APIs', () => {
   }
 
   async function createRunner() {
+    runnerSequence += 1;
     const node = await app.db.getRepository('agNodes').create({
       values: {
-        nodeKey: 'node-dispatch',
+        nodeKey: `node-dispatch-${runnerSequence}`,
         displayName: 'Dispatch node',
         status: 'active',
         authMode: 'node-token',
@@ -187,6 +201,7 @@ describe('agent gateway dispatch binding APIs', () => {
       values: {
         nodeId: node.get('id'),
         profileKey: 'code-builder',
+        provider: 'generic-cli',
         displayName: 'Code builder',
         agentType: 'code',
         driver: 'fake',
@@ -497,7 +512,7 @@ describe('agent gateway dispatch binding APIs', () => {
     });
 
     const dispatchResponse = await rootAgent.post(`/agentGatewayApi:dispatchBinding/${binding.id}`).send({
-      recordId: 'code-ticket-1',
+      sourceRecordId: 'code-ticket-1',
       sourceCollection: 'agDispatchCodeTickets',
       idempotencyKey: 'code-ticket-click',
     });
@@ -519,7 +534,7 @@ describe('agent gateway dispatch binding APIs', () => {
     const missingCollectionResponse = await rootAgent
       .post(`/agentGatewayApi:dispatchBinding/${binding.bindingKey}`)
       .send({
-        recordId: ticket.get('id'),
+        sourceRecordId: ticket.get('id'),
         idempotencyKey: 'missing-collection',
       });
     expect(missingCollectionResponse.status).toBe(400);
@@ -528,7 +543,7 @@ describe('agent gateway dispatch binding APIs', () => {
     );
 
     const response = await rootAgent.post(`/agentGatewayApi:dispatchBinding/${binding.bindingKey}`).send({
-      recordId: ticket.get('id'),
+      sourceRecordId: ticket.get('id'),
       sourceCollection: 'agDispatchOtherTickets',
       idempotencyKey: 'wrong-collection',
     });
@@ -546,7 +561,7 @@ describe('agent gateway dispatch binding APIs', () => {
     const ticket = await createTicket();
 
     const firstResponse = await rootAgent.post(`/agentGatewayApi:dispatchBinding/${binding.bindingKey}`).send({
-      recordId: ticket.get('id'),
+      sourceRecordId: ticket.get('id'),
       sourceCollection: 'agDispatchTickets',
       idempotencyKey: 'same-click',
     });
@@ -565,7 +580,7 @@ describe('agent gateway dispatch binding APIs', () => {
     });
 
     const sameKeyResponse = await rootAgent.post(`/agentGatewayApi:dispatchBinding/${binding.bindingKey}`).send({
-      recordId: ticket.get('id'),
+      sourceRecordId: ticket.get('id'),
       sourceCollection: 'agDispatchTickets',
       idempotencyKey: 'same-click',
     });
@@ -596,7 +611,7 @@ describe('agent gateway dispatch binding APIs', () => {
     }
 
     const differentKeyResponse = await rootAgent.post(`/agentGatewayApi:dispatchBinding/${binding.bindingKey}`).send({
-      recordId: ticket.get('id'),
+      sourceRecordId: ticket.get('id'),
       sourceCollection: 'agDispatchTickets',
       idempotencyKey: 'second-click',
     });
@@ -614,7 +629,7 @@ describe('agent gateway dispatch binding APIs', () => {
     const ticket = await createTicket();
 
     const firstResponse = await rootAgent.post(`/agentGatewayApi:dispatchBinding/${binding.bindingKey}`).send({
-      recordId: ticket.get('id'),
+      sourceRecordId: ticket.get('id'),
       sourceCollection: 'agDispatchTickets',
       idempotencyKey: 'hidden-existing-click',
     });
@@ -646,7 +661,7 @@ describe('agent gateway dispatch binding APIs', () => {
     const hiddenExistingResponse = await dispatcherAgent
       .post(`/agentGatewayApi:dispatchBinding/${binding.bindingKey}`)
       .send({
-        recordId: ticket.get('id'),
+        sourceRecordId: ticket.get('id'),
         sourceCollection: 'agDispatchTickets',
         idempotencyKey: 'hidden-existing-click',
       });
@@ -664,12 +679,12 @@ describe('agent gateway dispatch binding APIs', () => {
 
     const responses = await Promise.all([
       rootAgent.post(`/agentGatewayApi:dispatchBinding/${binding.bindingKey}`).send({
-        recordId: ticket.get('id'),
+        sourceRecordId: ticket.get('id'),
         sourceCollection: 'agDispatchTickets',
         idempotencyKey: 'concurrent-click',
       }),
       rootAgent.post(`/agentGatewayApi:dispatchBinding/${binding.bindingKey}`).send({
-        recordId: ticket.get('id'),
+        sourceRecordId: ticket.get('id'),
         sourceCollection: 'agDispatchTickets',
         idempotencyKey: 'concurrent-click',
       }),
@@ -709,7 +724,7 @@ describe('agent gateway dispatch binding APIs', () => {
     });
 
     const response = await rootAgent.post(`/agentGatewayApi:dispatchBinding/${binding.bindingKey}`).send({
-      recordId: ticket.get('id'),
+      sourceRecordId: ticket.get('id'),
       sourceCollection: 'agDispatchTickets',
       idempotencyKey: 'retry-click',
     });
@@ -730,7 +745,7 @@ describe('agent gateway dispatch binding APIs', () => {
     });
 
     const response = await rootAgent.post(`/agentGatewayApi:dispatchBinding/${binding.bindingKey}`).send({
-      recordId: ticket.get('id'),
+      sourceRecordId: ticket.get('id'),
       sourceCollection: 'agDispatchTickets',
       idempotencyKey: 'rollback-click',
     });
@@ -768,7 +783,7 @@ describe('agent gateway dispatch binding APIs', () => {
     const dispatcherAgent = await app.agent().login(user);
 
     const response = await dispatcherAgent.post(`/agentGatewayApi:dispatchBinding/${binding.bindingKey}`).send({
-      recordId: ticket.get('id'),
+      sourceRecordId: ticket.get('id'),
       sourceCollection: 'agDispatchTickets',
       idempotencyKey: 'no-business-permission',
     });
@@ -968,7 +983,7 @@ describe('agent gateway dispatch binding APIs', () => {
     const noProfileAccessResponse = await dispatcherAgent
       .post(`/agentGatewayApi:dispatchBinding/${binding.bindingKey}`)
       .send({
-        recordId: ticket.get('id'),
+        sourceRecordId: ticket.get('id'),
         sourceCollection: 'agDispatchTickets',
         idempotencyKey: 'no-profile-permission',
       });
@@ -981,7 +996,7 @@ describe('agent gateway dispatch binding APIs', () => {
     const noNodeAccessResponse = await dispatcherAgent
       .post(`/agentGatewayApi:dispatchBinding/${binding.bindingKey}`)
       .send({
-        recordId: ticket.get('id'),
+        sourceRecordId: ticket.get('id'),
         sourceCollection: 'agDispatchTickets',
         idempotencyKey: 'no-node-permission',
       });
@@ -994,7 +1009,7 @@ describe('agent gateway dispatch binding APIs', () => {
     const noSkillVersionAccessAfterNodeResponse = await dispatcherAgent
       .post(`/agentGatewayApi:dispatchBinding/${binding.bindingKey}`)
       .send({
-        recordId: ticket.get('id'),
+        sourceRecordId: ticket.get('id'),
         sourceCollection: 'agDispatchTickets',
         idempotencyKey: 'no-skill-version-permission-after-node',
       });
@@ -1040,7 +1055,7 @@ describe('agent gateway dispatch binding APIs', () => {
     const noProfileAccessResponse = await dispatcherAgent
       .post(`/agentGatewayApi:dispatchBinding/${binding.bindingKey}`)
       .send({
-        recordId: ticket.get('id'),
+        sourceRecordId: ticket.get('id'),
         sourceCollection: 'agDispatchTickets',
         idempotencyKey: 'static-no-profile-permission',
       });
@@ -1053,7 +1068,7 @@ describe('agent gateway dispatch binding APIs', () => {
     const noNodeAccessResponse = await dispatcherAgent
       .post(`/agentGatewayApi:dispatchBinding/${binding.bindingKey}`)
       .send({
-        recordId: ticket.get('id'),
+        sourceRecordId: ticket.get('id'),
         sourceCollection: 'agDispatchTickets',
         idempotencyKey: 'static-no-node-permission',
       });

@@ -9,33 +9,15 @@
 
 import { JsonRecord } from '../json';
 import { NormalizedAgentEvent, ProviderEventInput } from '../providerEvents';
-
-function isRecord(value: unknown): value is JsonRecord {
-  return Object.prototype.toString.call(value) === '[object Object]';
-}
-
-function getString(value: unknown) {
-  return typeof value === 'string' ? value.trim() : '';
-}
-
-function getRecord(value: unknown): JsonRecord {
-  return isRecord(value) ? value : {};
-}
-
-function getNumber(value: unknown) {
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return value;
-  }
-  if (typeof value !== 'string') {
-    return undefined;
-  }
-  const parsed = Number(value.trim());
-  return Number.isFinite(parsed) ? parsed : undefined;
-}
-
-function getOutputString(value: unknown) {
-  return typeof value === 'string' && value.trim() ? value : '';
-}
+import {
+  getFallbackEventType,
+  getFallbackTextKind,
+  getNumber,
+  getOutputString,
+  getRecord,
+  getString,
+  isRecord,
+} from './common';
 
 function getCommandFromRecord(record: JsonRecord) {
   return getString(record.command || record.cmd || record.commandLine || record.command_line);
@@ -49,39 +31,6 @@ function getEventText(event: JsonRecord) {
     getString(getRecord(event.part).text) ||
     getString(getRecord(event.delta).text)
   );
-}
-
-function getFallbackEventType(type: string, text: string) {
-  const normalizedType = type.toLowerCase();
-  if (
-    normalizedType.includes('reasoning') ||
-    normalizedType.includes('thinking') ||
-    normalizedType.includes('summary')
-  ) {
-    return 'agent.reasoning';
-  }
-  if (
-    normalizedType.includes('progress') ||
-    normalizedType.includes('status') ||
-    normalizedType.includes('log') ||
-    normalizedType.includes('event')
-  ) {
-    return text ? 'agent.progress' : 'agent.raw';
-  }
-  return text ? 'agent.message' : 'agent.raw';
-}
-
-function getFallbackTextKind(eventType: string) {
-  if (eventType === 'agent.reasoning') {
-    return 'reasoning';
-  }
-  if (eventType === 'agent.progress') {
-    return 'progress';
-  }
-  if (eventType === 'agent.raw') {
-    return 'raw';
-  }
-  return 'message';
 }
 
 function getDurationMs(start: unknown, end: unknown) {

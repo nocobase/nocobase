@@ -481,16 +481,11 @@ async function assertControlSupported(ctx: Context, run: ModelRecord, action: 'i
 
   const session = await getSessionForRun(ctx, run);
   const capabilitySummary = await getRunProviderCapabilitySummary(ctx, run, session);
-  const runnerCapabilityDecision =
-    capabilitySummary.providerSource === 'fallback' ? await getRunnerControlCapabilityDecision(ctx, run, action) : null;
-  const controlCapability =
-    capabilitySummary.providerSource === 'fallback'
-      ? runnerCapabilityDecision === true
-      : capabilitySummary.enforceCapabilities
-        ? isRunCapabilitySupported(capabilitySummary, action)
-        : session
-          ? getControlCapabilityDecision(getRecord(getModelValue(session, 'capabilitiesJson')), action) !== false
-          : (await getRunnerControlCapabilityDecision(ctx, run, action)) === true;
+  const controlCapability = capabilitySummary.enforceCapabilities
+    ? isRunCapabilitySupported(capabilitySummary, action)
+    : session
+      ? getControlCapabilityDecision(getRecord(getModelValue(session, 'capabilitiesJson')), action) !== false
+      : (await getRunnerControlCapabilityDecision(ctx, run, action)) === true;
   if (!controlCapability) {
     ctx.throw(409, {
       code: AGENT_GATEWAY_ACTION_UNSUPPORTED_CODE,

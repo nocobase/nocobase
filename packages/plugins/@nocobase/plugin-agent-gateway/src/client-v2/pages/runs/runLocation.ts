@@ -20,7 +20,12 @@ function getLocationSearchParam(name: string) {
   return new URLSearchParams(window.location.search).get(name) || undefined;
 }
 
-function replaceLocationSearchParam(name: string, value?: string, mutuallyExclusiveName?: string) {
+function updateLocationSearchParam(
+  method: 'pushState' | 'replaceState',
+  name: string,
+  value?: string,
+  mutuallyExclusiveName?: string,
+) {
   if (typeof window === 'undefined') {
     return;
   }
@@ -35,7 +40,7 @@ function replaceLocationSearchParam(name: string, value?: string, mutuallyExclus
   }
   const search = params.toString();
   const nextUrl = `${window.location.pathname}${search ? `?${search}` : ''}${window.location.hash}`;
-  window.history.replaceState(window.history.state, '', nextUrl);
+  window.history[method](window.history.state, '', nextUrl);
 }
 
 export function getRunIdFromLocationSearch() {
@@ -43,7 +48,11 @@ export function getRunIdFromLocationSearch() {
 }
 
 export function replaceRunIdInLocationSearch(runId?: string) {
-  replaceLocationSearchParam(RUN_DETAIL_QUERY_PARAM, runId);
+  updateLocationSearchParam('replaceState', RUN_DETAIL_QUERY_PARAM, runId);
+}
+
+export function pushRunIdInLocationSearch(runId: string) {
+  updateLocationSearchParam('pushState', RUN_DETAIL_QUERY_PARAM, runId);
 }
 
 export function getTaskTemplateIdFromLocationSearch() {
@@ -51,7 +60,21 @@ export function getTaskTemplateIdFromLocationSearch() {
 }
 
 export function replaceTaskTemplateIdInLocationSearch(templateId?: string) {
-  replaceLocationSearchParam(TASK_TEMPLATE_DETAIL_QUERY_PARAM, templateId, SKILL_VERSION_DETAIL_QUERY_PARAM);
+  updateLocationSearchParam(
+    'replaceState',
+    TASK_TEMPLATE_DETAIL_QUERY_PARAM,
+    templateId,
+    SKILL_VERSION_DETAIL_QUERY_PARAM,
+  );
+}
+
+export function pushTaskTemplateIdInLocationSearch(templateId: string) {
+  updateLocationSearchParam(
+    'pushState',
+    TASK_TEMPLATE_DETAIL_QUERY_PARAM,
+    templateId,
+    SKILL_VERSION_DETAIL_QUERY_PARAM,
+  );
 }
 
 export function getSkillVersionIdFromLocationSearch() {
@@ -59,7 +82,21 @@ export function getSkillVersionIdFromLocationSearch() {
 }
 
 export function replaceSkillVersionIdInLocationSearch(skillVersionId?: string) {
-  replaceLocationSearchParam(SKILL_VERSION_DETAIL_QUERY_PARAM, skillVersionId, TASK_TEMPLATE_DETAIL_QUERY_PARAM);
+  updateLocationSearchParam(
+    'replaceState',
+    SKILL_VERSION_DETAIL_QUERY_PARAM,
+    skillVersionId,
+    TASK_TEMPLATE_DETAIL_QUERY_PARAM,
+  );
+}
+
+export function pushSkillVersionIdInLocationSearch(skillVersionId: string) {
+  updateLocationSearchParam(
+    'pushState',
+    SKILL_VERSION_DETAIL_QUERY_PARAM,
+    skillVersionId,
+    TASK_TEMPLATE_DETAIL_QUERY_PARAM,
+  );
 }
 
 export function useInitialRunDetailQuery() {
