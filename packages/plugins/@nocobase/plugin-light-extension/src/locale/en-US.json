@@ -32,6 +32,7 @@
   "Failed to load source": "Failed to load source",
   "Failed to restore version": "Failed to restore version",
   "Failed to save source": "Failed to save source",
+  "Source validation failed": "Source validation failed",
   "File already exists": "File already exists",
   "Filter": "Filter",
   "Folder already exists": "Folder already exists",

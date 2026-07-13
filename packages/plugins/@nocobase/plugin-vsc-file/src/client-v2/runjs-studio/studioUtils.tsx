@@ -570,6 +570,10 @@ export function isRunJSTypeScriptProjectFile(path: string): boolean {
   return /\.(?:[cm]?[jt]sx?|d\.ts)$/i.test(path);
 }
 
+function isRunJSTypeScriptWorkspaceFile(path: string): boolean {
+  return isRunJSTypeScriptProjectFile(path) || path.endsWith('.json');
+}
+
 export function buildRunJSTypeScriptProject(
   files: RunJSWorkspaceFile[],
   activeFile?: RunJSWorkspaceFile,
@@ -583,7 +587,7 @@ export function buildRunJSTypeScriptProject(
     currentFilePath: activeFile.path,
     files: files
       .filter((file) => file.path !== runJSManifestPath)
-      .filter((file) => isRunJSTypeScriptProjectFile(file.path))
+      .filter((file) => isRunJSTypeScriptWorkspaceFile(file.path))
       .map((file) => ({
         content: file.content,
         path: file.path,

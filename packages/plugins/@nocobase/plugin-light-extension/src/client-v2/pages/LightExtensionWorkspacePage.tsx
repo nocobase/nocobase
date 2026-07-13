@@ -578,6 +578,27 @@ function LightExtensionWorkspacePage({
     setSaving(true);
     setNotice(null);
     try {
+      const preview = await compileWorkspacePreview({
+        repoId,
+        runtimeVersion: 'v2',
+        files: filesForSave.map((file) => ({
+          path: file.path,
+          content: file.content,
+          language: file.language,
+          mode: file.mode,
+        })),
+      });
+      setDiagnostics(preview.diagnostics);
+      if (!preview.accepted) {
+        const validationError = new Error(t('Source validation failed'));
+        const request = embeddedSaveRequestRef.current;
+        embeddedSaveRequestRef.current = null;
+        embeddedSavePromiseRef.current = null;
+        request?.reject(validationError);
+        setNotice({ type: 'error', message: validationError.message });
+        return;
+      }
+
       const result = await saveSource({
         repoId,
         message: commitMessage,
@@ -607,6 +628,7 @@ function LightExtensionWorkspacePage({
     }
   }, [
     dirtyChanges,
+    compileWorkspacePreview,
     filesForSave,
     hasBlockedDirtyChanges,
     loadWorkspace,

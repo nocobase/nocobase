@@ -32,6 +32,7 @@
   "Failed to load source": "加载源码失败",
   "Failed to restore version": "恢复版本失败",
   "Failed to save source": "保存源码失败",
+  "Source validation failed": "源码校验失败",
   "File already exists": "文件已存在",
   "Filter": "筛选",
   "Folder already exists": "文件夹已存在",

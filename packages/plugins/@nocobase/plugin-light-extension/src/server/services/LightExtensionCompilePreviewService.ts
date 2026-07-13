@@ -30,6 +30,7 @@ import type { LightExtensionServiceContext } from './LightExtensionRepoService';
 import {
   LightExtensionEntryValidationResult,
   LightExtensionValidator,
+  type LightExtensionWorkspaceValidationResult,
   getWorkspaceLevelDiagnostics,
   hasErrorDiagnostic,
   sortDiagnostics,
@@ -194,10 +195,32 @@ export class LightExtensionCompilePreviewService {
     const validation = this.validator.validateWorkspace({
       files: input.files.map((file) => ({ ...file })),
     });
+    const targetKind = input.kind;
+    const targetEntryPath = input.entryPath?.trim();
+    if (!targetKind && !targetEntryPath) {
+      return this.compileWholeWorkspacePreview(input, validation, previewContext);
+    }
+    if (!targetKind || !targetEntryPath) {
+      const diagnostics = [
+        {
+          code: 'light_extension_preview_target_incomplete',
+          severity: 'error',
+          message: 'Light extension workspace preview must include both kind and entryPath when targeting an entry',
+          path: input.entryPath,
+          kind: input.kind,
+        } satisfies LightExtensionDiagnostic,
+      ];
+      return {
+        accepted: false,
+        diagnostics,
+        failureCode: 'LIGHT_EXTENSION_VALIDATION_FAILED',
+      };
+    }
+
     const workspaceDiagnostics = getWorkspaceLevelDiagnostics(validation.diagnostics);
-    const normalizedEntryPath = normalizeSourcePath(input.entryPath);
+    const normalizedEntryPath = normalizeSourcePath(targetEntryPath);
     const validationEntry = validation.entries.find(
-      (entry) => entry.kind === input.kind && normalizeSourcePath(entry.entryPath) === normalizedEntryPath,
+      (entry) => entry.kind === targetKind && normalizeSourcePath(entry.entryPath) === normalizedEntryPath,
     );
     const entryDiagnostics = validationEntry
       ? validationEntry.diagnostics
@@ -207,7 +230,7 @@ export class LightExtensionCompilePreviewService {
             severity: 'error',
             message: `Light extension entry source "${normalizedEntryPath}" was not found`,
             path: normalizedEntryPath,
-            kind: input.kind,
+            kind: targetKind,
             entryName: inferEntryName(normalizedEntryPath),
           } satisfies LightExtensionDiagnostic,
         ];
@@ -218,7 +241,7 @@ export class LightExtensionCompilePreviewService {
         repoId: input.repoId,
         entryId: input.entryId,
         target: 'client',
-        kind: input.kind,
+        kind: targetKind,
         name: validationEntry?.entryName || inferEntryName(normalizedEntryPath),
         entryPath: normalizedEntryPath,
         ctx: previewContext,
@@ -267,6 +290,82 @@ export class LightExtensionCompilePreviewService {
             metadata: compiled.artifact.metadata,
           }
         : undefined,
+    };
+  }
+
+  private async compileWholeWorkspacePreview(
+    input: LightExtensionWorkspacePreviewInput,
+    validation: LightExtensionWorkspaceValidationResult,
+    ctx: LightExtensionServiceContext,
+  ): Promise<LightExtensionWorkspacePreviewResult> {
+    const workspaceDiagnostics = getWorkspaceLevelDiagnostics(validation.diagnostics);
+    const persistedEntries = await this.listPersistedEntries(input.repoId, ctx);
+    const persistedEntryIds = new Map(
+      persistedEntries.map((entry) => [`${entry.kind}:${entry.entryName}`, entry.id] as const),
+    );
+    const entries: LightExtensionCompilePreviewEntryResult[] = [];
+
+    for (const validationEntry of validation.entries) {
+      const validationDiagnostics = sortUniqueDiagnostics([...workspaceDiagnostics, ...validationEntry.diagnostics]);
+      const entryId = persistedEntryIds.get(`${validationEntry.kind}:${validationEntry.entryName}`) || null;
+      if (hasErrorDiagnostic(validationDiagnostics)) {
+        entries.push({
+          entryId,
+          repoId: input.repoId,
+          target: 'client',
+          kind: validationEntry.kind,
+          entryName: validationEntry.entryName,
+          entryPath: validationEntry.entryPath,
+          status: 'failed',
+          accepted: false,
+          diagnostics: validationDiagnostics,
+          failureCode: 'LIGHT_EXTENSION_VALIDATION_FAILED',
+        });
+        continue;
+      }
+
+      const compiled = await this.compilerBridge.compileEntry(
+        {
+          repoId: input.repoId,
+          entryId,
+          operation: 'compilePreview',
+          kind: validationEntry.kind,
+          entryName: validationEntry.entryName,
+          entryPath: validationEntry.entryPath,
+          runtimeVersion: input.runtimeVersion,
+          files: getEntryCompileFiles(input.files, validationEntry),
+        },
+        ctx,
+      );
+      const diagnostics = sortUniqueDiagnostics([...validationDiagnostics, ...compiled.diagnostics]);
+      entries.push({
+        entryId,
+        repoId: input.repoId,
+        target: 'client',
+        kind: validationEntry.kind,
+        entryName: validationEntry.entryName,
+        entryPath: validationEntry.entryPath,
+        status: compiled.accepted ? 'success' : 'failed',
+        accepted: compiled.accepted && !hasErrorDiagnostic(diagnostics),
+        diagnostics,
+        failureCode: compiled.failureCode,
+        artifact: compiled.accepted ? summarizeArtifact(compiled.artifact, validationEntry.entryPath) : undefined,
+      });
+    }
+
+    const diagnostics = sortUniqueDiagnostics([
+      ...workspaceDiagnostics,
+      ...entries.flatMap((entry) => entry.diagnostics),
+    ]);
+    const accepted = !hasErrorDiagnostic(diagnostics) && entries.every((entry) => entry.accepted);
+
+    return {
+      accepted,
+      diagnostics,
+      entries,
+      failureCode: accepted
+        ? undefined
+        : entries.find((entry) => !entry.accepted)?.failureCode || 'LIGHT_EXTENSION_VALIDATION_FAILED',
     };
   }
 

@@ -19,6 +19,11 @@ import {
   type RunJSTypeScriptEnvironmentFile,
   type RunJSTypeScriptLibSource,
 } from '../typescript-environment';
+import {
+  buildRunJSTypeScriptContextDeclaration,
+  createRunJSTypeScriptCompilerOptions,
+  RUNJS_TYPESCRIPT_CONTEXT_PATH,
+} from '../typescript-project';
 
 export const RUNJS_COMPILER_ALLOWED_GLOBALS = new Set([
   'ctx',
@@ -103,9 +108,8 @@ export const RUNJS_COMPILER_ALLOWED_GLOBALS = new Set([
 ]);
 
 const chartEventGlobals = new Set(['chart', 'params']);
-const sourceExtensions = new Set(['.ts', '.tsx', '.js', '.jsx']);
+const sourceExtensions = new Set(['.ts', '.tsx', '.js', '.jsx', '.json']);
 const unknownNameDiagnosticCodes = new Set([2304, 2448, 2552, 2580]);
-const ambientDeclarationsPath = '/__nocobase_runjs_globals__.d.ts';
 let cachedTypeScriptEnvironmentFiles: RunJSTypeScriptEnvironmentFile[] | undefined;
 
 export interface InspectRunJSSourceWorkspaceInput {
@@ -149,7 +153,7 @@ export function inspectRunJSSourceWorkspace(input: InspectRunJSSourceWorkspaceIn
   const sourceFiles = collectSourceFiles(input.files);
   const entryPath = normalizePath(input.entry);
   const allowedGlobals = resolveAllowedGlobals(input);
-  const diagnostics = collectUnknownGlobalDiagnostics(sourceFiles, allowedGlobals);
+  const diagnostics = collectTypeScriptDiagnostics(sourceFiles, allowedGlobals, input.legacy?.metadata?.modelUse);
   const entry = sourceFiles.get(entryPath);
 
   if (entry) {
@@ -198,9 +202,10 @@ function resolveAllowedGlobals(input: InspectRunJSSourceWorkspaceInput): Set<str
   return allowedGlobals;
 }
 
-function collectUnknownGlobalDiagnostics(
+function collectTypeScriptDiagnostics(
   files: Map<string, string>,
   allowedGlobals: Set<string>,
+  modelUse: unknown,
 ): RunJSCompileDiagnostic[] {
   if (!files.size) {
     return [];
@@ -213,21 +218,17 @@ function collectUnknownGlobalDiagnostics(
   for (const file of getTypeScriptEnvironmentFiles()) {
     virtualFiles.set(file.path, file.content);
   }
-  virtualFiles.set(ambientDeclarationsPath, buildAmbientDeclarations(allowedGlobals));
+  virtualFiles.set(
+    RUNJS_TYPESCRIPT_CONTEXT_PATH,
+    [
+      buildRunJSTypeScriptContextDeclaration(typeof modelUse === 'string' ? modelUse : undefined),
+      buildAmbientDeclarations(allowedGlobals),
+    ]
+      .filter(Boolean)
+      .join('\n'),
+  );
 
-  const compilerOptions: ts.CompilerOptions = {
-    allowJs: true,
-    checkJs: true,
-    jsx: ts.JsxEmit.React,
-    jsxFactory: 'ctx.React.createElement',
-    jsxFragmentFactory: 'ctx.React.Fragment',
-    module: ts.ModuleKind.ESNext,
-    noLib: true,
-    noResolve: true,
-    skipLibCheck: true,
-    target: ts.ScriptTarget.ES2020,
-    types: [],
-  };
+  const compilerOptions = createRunJSTypeScriptCompilerOptions(ts);
   const host = createVirtualCompilerHost(virtualFiles, compilerOptions);
   const program = ts.createProgram({
     rootNames: [...virtualFiles.keys()],
@@ -237,36 +238,33 @@ function collectUnknownGlobalDiagnostics(
   const diagnostics: RunJSCompileDiagnostic[] = [];
   const reported = new Set<string>();
 
-  for (const diagnostic of program.getSemanticDiagnostics()) {
-    if (!unknownNameDiagnosticCodes.has(diagnostic.code) || !diagnostic.file || diagnostic.start === undefined) {
-      continue;
-    }
-    const identifier = findIdentifierAt(diagnostic.file, diagnostic.start);
-    if (!identifier || isTypeOnlyIdentifier(identifier)) {
-      continue;
-    }
-    const globalName = identifier.text;
-    if (allowedGlobals.has(globalName)) {
+  for (const diagnostic of [...program.getSyntacticDiagnostics(), ...program.getSemanticDiagnostics()]) {
+    if (!diagnostic.file || diagnostic.start === undefined) {
       continue;
     }
     const path = fromVirtualPath(diagnostic.file.fileName);
-    const location = diagnostic.file.getLineAndCharacterOfPosition(identifier.getStart(diagnostic.file));
-    const key = `${path}:${identifier.getStart(diagnostic.file)}:${globalName}`;
+    if (!files.has(path)) {
+      continue;
+    }
+    const location = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
+    const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
+    const identifier = unknownNameDiagnosticCodes.has(diagnostic.code)
+      ? findIdentifierAt(diagnostic.file, diagnostic.start)
+      : undefined;
+    const key = `${path}:${diagnostic.start}:${diagnostic.code}:${message}`;
     if (reported.has(key)) {
       continue;
     }
     reported.add(key);
     diagnostics.push({
-      severity: 'error',
+      severity: diagnostic.category === ts.DiagnosticCategory.Warning ? 'warning' : 'error',
       code: 'RUNJS_COMPILE_FAILED',
-      ruleId: 'runjs-global-unknown',
+      ruleId: unknownNameDiagnosticCodes.has(diagnostic.code) ? 'runjs-global-unknown' : 'runjs-typescript',
       path,
       line: location.line + 1,
       column: location.character + 1,
-      message: `Cannot find name '${globalName}'. Declare it locally or import it before use.`,
-      details: {
-        global: globalName,
-      },
+      message,
+      details: identifier ? { global: identifier.text } : { tsCode: diagnostic.code },
     });
   }
 
@@ -369,8 +367,18 @@ function maskTopLevelReturnKeywords(path: string, source: string): string {
 
 function createVirtualCompilerHost(files: Map<string, string>, options: ts.CompilerOptions): ts.CompilerHost {
   const baseHost = ts.createCompilerHost(options, true);
+  const normalizedDirectories = new Set<string>(['/']);
+  for (const path of files.keys()) {
+    const segments = path.split('/').filter(Boolean);
+    let directory = '';
+    for (const segment of segments.slice(0, -1)) {
+      directory += `/${segment}`;
+      normalizedDirectories.add(directory);
+    }
+  }
   return {
     ...baseHost,
+    directoryExists: (path) => normalizedDirectories.has(normalizeVirtualPath(path)),
     fileExists: (path) => files.has(path),
     getCanonicalFileName: (path) => path,
     getCurrentDirectory: () => '/',
@@ -383,17 +391,29 @@ function createVirtualCompilerHost(files: Map<string, string>, options: ts.Compi
         : ts.createSourceFile(path, source, languageVersion, true, getScriptKind(path));
     },
     readFile: (path) => files.get(path),
+    realpath: (path) => path,
     useCaseSensitiveFileNames: () => true,
     writeFile: () => undefined,
   };
 }
 
 function buildAmbientDeclarations(allowedGlobals: Set<string>): string {
-  return [...allowedGlobals]
+  const declarations = [...allowedGlobals]
     .filter((name) => !RUNJS_TYPESCRIPT_DECLARED_GLOBAL_NAMES.has(name))
     .filter((name) => /^[A-Za-z_$][\w$]*$/u.test(name))
-    .map((name) => `declare const ${name}: unknown;`)
-    .join('\n');
+    .map((name) => `declare const ${name}: RunJSPermissiveGlobal;`);
+  if (!declarations.length) {
+    return '';
+  }
+
+  return [
+    'interface RunJSPermissiveGlobal {',
+    '  readonly [key: string]: RunJSPermissiveGlobal;',
+    '  (...args: unknown[]): RunJSPermissiveGlobal;',
+    '  new (...args: unknown[]): RunJSPermissiveGlobal;',
+    '}',
+    ...declarations,
+  ].join('\n');
 }
 
 function getTypeScriptEnvironmentFiles(): RunJSTypeScriptEnvironmentFile[] {
@@ -429,31 +449,6 @@ function findIdentifierAt(sourceFile: ts.SourceFile, position: number): ts.Ident
   };
   visit(sourceFile);
   return found;
-}
-
-function isTypeOnlyIdentifier(identifier: ts.Identifier): boolean {
-  let node: ts.Node = identifier;
-  while (node.parent) {
-    const parent = node.parent;
-    if (ts.isExpressionWithTypeArguments(parent) && isRuntimeClassExtends(parent)) {
-      return false;
-    }
-    if (ts.isTypeNode(parent)) {
-      return true;
-    }
-    if (ts.isExpression(parent) || ts.isStatement(parent) || ts.isSourceFile(parent)) {
-      return false;
-    }
-    node = parent;
-  }
-  return false;
-}
-
-function isRuntimeClassExtends(node: ts.ExpressionWithTypeArguments): boolean {
-  const heritage = node.parent;
-  return (
-    ts.isHeritageClause(heritage) && heritage.token === ts.SyntaxKind.ExtendsKeyword && ts.isClassLike(heritage.parent)
-  );
 }
 
 function isCtxRenderCall(node: ts.CallExpression): boolean {
@@ -518,6 +513,9 @@ function getScriptKind(path: string): ts.ScriptKind {
   if (path.endsWith('.js')) {
     return ts.ScriptKind.JS;
   }
+  if (path.endsWith('.json')) {
+    return ts.ScriptKind.JSON;
+  }
   return ts.ScriptKind.TS;
 }
 
@@ -532,6 +530,11 @@ function toVirtualPath(path: string): string {
 
 function fromVirtualPath(path: string): string {
   return normalizePath(path.replace(/^\/+/, ''));
+}
+
+function normalizeVirtualPath(path: string): string {
+  const normalized = path.replace(/\\/gu, '/').replace(/\/+$/u, '');
+  return normalized || '/';
 }
 
 function byNodeStart(left: ts.Node, right: ts.Node): number {

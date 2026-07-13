@@ -642,7 +642,7 @@ describe('compileRunJSSourceWorkspace', () => {
     expect(result.artifact.diagnostics[0].message).not.toContain('flowSurfaces authoring');
   });
 
-  it('accepts local bindings, imports, type-only names, and chart event globals', () => {
+  it('accepts local bindings, imports, and chart event globals while rejecting missing type names', () => {
     const localBindings = compileRunJSSourceWorkspace({
       entry: 'src/main.tsx',
       runtimeVersion: 'v2',
@@ -679,8 +679,15 @@ describe('compileRunJSSourceWorkspace', () => {
       ],
     });
 
-    expect(localBindings.failureCode).toBeUndefined();
-    expect(localBindings.artifact.diagnostics).toEqual([]);
+    expect(localBindings.failureCode).toBe('RUNJS_COMPILE_FAILED');
+    expect(localBindings.artifact.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-global-unknown',
+          message: expect.stringContaining("Cannot find name 'MissingType'"),
+        }),
+      ]),
+    );
     expect(chartEvents.failureCode).toBeUndefined();
     expect(chartEvents.artifact.diagnostics).toEqual([]);
   });

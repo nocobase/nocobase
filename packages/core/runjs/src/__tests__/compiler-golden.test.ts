@@ -112,6 +112,26 @@ describe('@nocobase/runjs compiler golden contracts', () => {
     );
   });
 
+  it('uses TypeScript semantic diagnostics as a backend compile gate', () => {
+    const result = compileRunJSSourceWorkspace({
+      files: [{ path: 'index.ts', content: "const count: number = 'invalid';\nreturn count;" }],
+      entry: 'index.ts',
+      surfaceStyle: 'value',
+    });
+
+    expect(result.failureCode).toBe('RUNJS_COMPILE_FAILED');
+    expect(result.artifact.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: 'index.ts',
+          ruleId: 'runjs-typescript',
+          message: expect.stringContaining("Type 'string' is not assignable to type 'number'"),
+          details: expect.objectContaining({ tsCode: 2322 }),
+        }),
+      ]),
+    );
+  });
+
   it('accepts complete browser APIs through window while keeping bare globals restricted', () => {
     const windowResult = compileRunJSSourceWorkspace({
       files: [

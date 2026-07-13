@@ -160,6 +160,54 @@ describe('plugin-light-extension compile preview', () => {
     expect(entriesRepository.update).not.toHaveBeenCalled();
   });
 
+  it('compiles every entry in an unsaved workspace before save', async () => {
+    const repo = createRepo();
+    const { db } = createDbStub([
+      createEntryRecord({ id: 'lee_sales_kpi', repoId: repo.id, entryName: 'sales-kpi' }),
+      createEntryRecord({ id: 'lee_sales_trend', repoId: repo.id, entryName: 'sales-trend' }),
+    ]);
+    const fileService = createFileServiceStub(repo, []);
+    const { service } = createPreviewService(db, fileService);
+
+    const result = await service.compileWorkspacePreview({
+      repoId: repo.id,
+      runtimeVersion: 'v2',
+      files: [
+        ...validSalesKpiFiles(),
+        {
+          path: 'src/client/js-blocks/sales-trend/index.tsx',
+          content: "const count: number = 'invalid';\nctx.render(<div>{count}</div>);\n",
+        },
+        {
+          path: 'src/client/js-blocks/sales-trend/meta.json',
+          content: JSON.stringify({ title: 'Sales trend' }),
+        },
+      ].map((file) => ({
+        path: file.path,
+        content: file.content || '',
+        language: file.language,
+        mode: file.mode,
+      })),
+    });
+
+    expect(result.accepted).toBe(false);
+    expect(result.entries).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ entryName: 'sales-kpi', accepted: true, status: 'success' }),
+        expect.objectContaining({ entryName: 'sales-trend', accepted: false, status: 'failed' }),
+      ]),
+    );
+    expect(result.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: 'src/client/js-blocks/sales-trend/index.tsx',
+          message: expect.stringContaining("Type 'string' is not assignable to type 'number'"),
+        }),
+      ]),
+    );
+    expect(fileService.pull).not.toHaveBeenCalled();
+  });
+
   it('rejects invalid unsaved workspace paths before compiling the preview', async () => {
     const repo = createRepo();
     const { db } = createDbStub([]);

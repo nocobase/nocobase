@@ -134,6 +134,8 @@ export const RUNJS_TYPESCRIPT_DECLARED_GLOBAL_NAMES = new Set([
   'caches',
   'clearInterval',
   'clearTimeout',
+  'console',
+  'ctx',
   'decodeURI',
   'decodeURIComponent',
   'document',

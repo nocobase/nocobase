@@ -94,7 +94,7 @@ declare module "@nocobase/light-extension-sdk/shared" {
 `;
 
 export const LIGHT_EXTENSION_TSCONFIG_CONTENT =
-  '{\n  "compilerOptions": {\n    "baseUrl": ".",\n    "jsx": "react-jsx",\n    "strict": true,\n    "target": "ES2020",\n    "paths": {\n      "@nocobase/light-extension-sdk/client": ["src/shared/light-extension-sdk.d.ts"],\n      "@nocobase/light-extension-sdk/shared": ["src/shared/light-extension-sdk.d.ts"],\n      "light-extension:settings/*": [".light-extension/types/*"]\n    }\n  }\n}\n';
+  '{\n  "compilerOptions": {\n    "allowSyntheticDefaultImports": true,\n    "baseUrl": ".",\n    "esModuleInterop": true,\n    "jsx": "react",\n    "module": "ESNext",\n    "moduleResolution": "Node",\n    "resolveJsonModule": true,\n    "skipLibCheck": true,\n    "strict": false,\n    "target": "ES2020",\n    "paths": {\n      "@nocobase/light-extension-sdk/client": ["src/shared/light-extension-sdk.d.ts"],\n      "@nocobase/light-extension-sdk/shared": ["src/shared/light-extension-sdk.d.ts"],\n      "light-extension:settings/*": [".light-extension/types/*"]\n    }\n  }\n}\n';
 
 export const BASE_LIGHT_EXTENSION_TEMPLATE_FILES: readonly LightExtensionTreeEntryInput[] = [
   {

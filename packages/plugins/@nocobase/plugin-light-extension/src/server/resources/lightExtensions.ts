@@ -113,8 +113,8 @@ function normalizeWorkspacePreviewInput(input: ResourceActionInput): LightExtens
   return {
     repoId: requireRepoId(input),
     entryId: optionalNullableString(input, 'entryId'),
-    kind: requireLightExtensionKind(input, 'kind'),
-    entryPath: requireString(input, 'entryPath'),
+    kind: optionalLightExtensionKind(input, 'kind'),
+    entryPath: optionalString(input, 'entryPath', 'entryPath'),
     runtimeVersion: optionalString(input, 'runtimeVersion', 'runtimeVersion'),
     files: requireArray(input, 'files', normalizeWorkspacePreviewFile),
   };
@@ -243,6 +243,13 @@ function requireLightExtensionKind(input: ResourceActionInput, key: string): Lig
     throw invalidInput(`${key} must be a supported light extension kind`);
   }
   return value as LightExtensionKind;
+}
+
+function optionalLightExtensionKind(input: ResourceActionInput, key: string): LightExtensionKind | undefined {
+  if (typeof input[key] === 'undefined') {
+    return undefined;
+  }
+  return requireLightExtensionKind(input, key);
 }
 
 function normalizeMoveSourceDestination(value: unknown): LightExtensionMoveSourceInput['destination'] {

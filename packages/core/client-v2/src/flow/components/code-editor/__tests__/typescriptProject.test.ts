@@ -82,6 +82,19 @@ describe('CodeEditor TypeScript project', () => {
     expect(missingDiagnostics.some((diagnostic) => /missing/.test(diagnostic.message))).toBe(true);
   });
 
+  it('uses the shared compiler profile for JSON module imports', async () => {
+    const code = "import config from './config.json';\nconfig.label.toUpperCase();";
+    const project: CodeEditorTypeScriptProject = {
+      currentFilePath: 'src/main.ts',
+      files: [
+        { path: 'src/main.ts', content: code },
+        { path: 'src/config.json', content: '{"label":"Ready"}' },
+      ],
+    };
+
+    expect(await getTypeScriptProjectDiagnostics(project, code)).toEqual([]);
+  });
+
   it('provides RunJS ctx completions and reports unknown ctx members', async () => {
     const project = baseProject('ctx.');
     const completion = await getTypeScriptCompletionResult(project, 'ctx.'.length, 'ctx.', true);

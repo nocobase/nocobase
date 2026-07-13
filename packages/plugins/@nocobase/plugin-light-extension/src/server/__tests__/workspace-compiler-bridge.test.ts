@@ -11,6 +11,7 @@ import type { Database } from '@nocobase/database';
 import { vi } from 'vitest';
 
 import { LIGHT_EXTENSION_SUPPORTED_KINDS } from '../../constants';
+import { LIGHT_EXTENSION_SDK_SHIM_CONTENT, LIGHT_EXTENSION_SDK_SHIM_PATH } from '../../shared/default-template';
 import { LightExtensionAuditService } from '../services/LightExtensionAuditService';
 import { LIGHT_EXTENSION_AUTHORING_SURFACES } from '../services/LightExtensionCompileContract';
 import { LightExtensionPermissionService } from '../services/LightExtensionPermissionService';
@@ -112,6 +113,10 @@ describe('plugin-light-extension workspace compiler bridge', () => {
             content: 'export function formatValue(value: unknown) { return String(value ?? ""); }\n',
           },
           {
+            path: LIGHT_EXTENSION_SDK_SHIM_PATH,
+            content: LIGHT_EXTENSION_SDK_SHIM_CONTENT,
+          },
+          {
             path: 'src/client/js-blocks/sales-kpi/index.tsx',
             content:
               'import { type LightExtensionSettingsContext, defineSettings } from "@nocobase/light-extension-sdk/client";\nimport { formatValue } from "../../../shared/format";\nexport const settings = defineSettings({ type: "object", properties: {} });\nexport default function render(ctxSettings: LightExtensionSettingsContext) { return formatValue(ctxSettings.settings); }\nctx.render(<div>{formatValue("Revenue")}</div>);\n',
@@ -127,6 +132,35 @@ describe('plugin-light-extension workspace compiler bridge', () => {
     expect(result.diagnostics).toEqual([]);
     expect(result.artifact.code).toContain('Revenue');
     expect(result.artifact.code).not.toContain('@nocobase/light-extension-sdk/client');
+  });
+
+  it('rejects SDK type imports when the repository omits its declaration file', async () => {
+    const result = await bridge.compileEntry({
+      repoId: 'ler_sales',
+      entryId: 'lee_sales_kpi',
+      kind: 'js-block',
+      entryName: 'sales-kpi',
+      entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+      surfaceStyle: 'render',
+      files: [
+        {
+          path: 'src/client/js-blocks/sales-kpi/index.tsx',
+          content:
+            'import { type LightExtensionSettingsContext, defineSettings } from "@nocobase/light-extension-sdk/client";\nexport const settings = defineSettings({ type: "object", properties: {} });\nexport default function render(ctxSettings: LightExtensionSettingsContext) { return ctxSettings.settings; }\nctx.render(<div>Revenue</div>);\n',
+        },
+      ],
+    });
+
+    expect(result.accepted).toBe(false);
+    expect(result.failureCode).toBe('RUNJS_COMPILE_FAILED');
+    expect(result.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: 'src/client/js-blocks/sales-kpi/index.tsx',
+          message: expect.stringContaining("Cannot find module '@nocobase/light-extension-sdk/client'"),
+        }),
+      ]),
+    );
   });
 
   it('hoists zero-runtime SDK helpers when the static import appears after first use', async () => {

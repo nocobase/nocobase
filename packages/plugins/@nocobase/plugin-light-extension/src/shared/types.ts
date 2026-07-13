@@ -297,8 +297,8 @@ export interface LightExtensionWorkspacePreviewFile {
 export interface LightExtensionWorkspacePreviewInput {
   repoId: string;
   entryId?: string | null;
-  kind: LightExtensionKind;
-  entryPath: string;
+  kind?: LightExtensionKind;
+  entryPath?: string;
   runtimeVersion?: string;
   files: LightExtensionWorkspacePreviewFile[];
 }
@@ -308,6 +308,7 @@ export interface LightExtensionWorkspacePreviewResult {
   diagnostics: LightExtensionDiagnostic[];
   failureCode?: string;
   artifact?: LightExtensionEntryRuntimeArtifact;
+  entries?: LightExtensionCompilePreviewEntryResult[];
 }
 
 export interface LightExtensionSelectableEntrySummary {

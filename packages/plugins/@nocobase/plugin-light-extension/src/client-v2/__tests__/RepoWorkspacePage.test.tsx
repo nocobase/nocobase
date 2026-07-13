@@ -477,6 +477,16 @@ describe('LightExtensionWorkspacePage', () => {
     await confirmSaveVersion('Update sales KPI');
 
     await waitFor(() => expect(mocks.api.saveSource).toHaveBeenCalledTimes(1));
+    expect(mocks.api.compileWorkspacePreview).toHaveBeenCalledWith({
+      repoId: 'ler_sales',
+      runtimeVersion: 'v2',
+      files: expect.arrayContaining([
+        expect.objectContaining({
+          path: 'src/client/js-blocks/sales-kpi/index.tsx',
+          content: 'export default function SalesKpi() { return "ok"; }\n',
+        }),
+      ]),
+    });
     expect(mocks.api.saveSource).toHaveBeenCalledWith(
       expect.objectContaining({
         repoId: 'ler_sales',
@@ -494,6 +504,37 @@ describe('LightExtensionWorkspacePage', () => {
     expect(saveInput).not.toHaveProperty('baseCommitId');
     expect(saveInput).not.toHaveProperty('baseOwnerFingerprint');
     expect(screen.queryByText('Source saved and compiled')).not.toBeInTheDocument();
+  });
+
+  it('does not save when the authoritative workspace preview rejects the unsaved source', async () => {
+    mocks.api.compileWorkspacePreview.mockResolvedValueOnce({
+      accepted: false,
+      failureCode: 'RUNJS_COMPILE_FAILED',
+      diagnostics: [
+        {
+          code: 'RUNJS_COMPILE_FAILED',
+          severity: 'error',
+          path: 'src/client/js-blocks/sales-kpi/index.tsx',
+          message: "Type 'string' is not assignable to type 'number'.",
+        },
+      ],
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/admin/settings/light-extension?panel=source&repoId=ler_sales']}>
+        <LightExtensionWorkspacePage />
+      </MemoryRouter>,
+    );
+
+    await screen.findByTestId('runjs-code-tab');
+    fireEvent.change(screen.getByLabelText('Edit file content'), {
+      target: { value: "const count: number = 'invalid';\nctx.render(<div>{count}</div>);\n" },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Save/ }));
+    await confirmSaveVersion('Invalid source');
+
+    expect(await screen.findByText('Source validation failed')).toBeInTheDocument();
+    expect(mocks.api.saveSource).not.toHaveBeenCalled();
   });
 
   it('compiles and previews the current unsaved entry workspace without saving it', async () => {
