@@ -17,6 +17,8 @@ import type {
   LightExtensionCommitRecord,
   LightExtensionCreateRepoInput,
   LightExtensionFileChange,
+  LightExtensionInspectSourceArchiveInput,
+  LightExtensionInspectSourceArchiveResult,
   LightExtensionPullResult,
   LightExtensionRepoRecord,
   LightExtensionSaveSourceResult,
@@ -88,6 +90,9 @@ export interface UseLightExtensionRepoResult {
   getRepo(repoId: string): Promise<LightExtensionRepoRecord>;
   changeLifecycle(input: LightExtensionChangeLifecycleInput): Promise<LightExtensionRepoRecord>;
   deleteRepo(repoId: string): Promise<LightExtensionRepoRecord>;
+  inspectSourceArchive(
+    input: LightExtensionInspectSourceArchiveInput,
+  ): Promise<LightExtensionInspectSourceArchiveResult>;
   pull(input: LightExtensionPullInput): Promise<LightExtensionPullResult>;
   pullCommit(input: LightExtensionPullCommitInput): Promise<LightExtensionPullResult>;
   saveSource(input: LightExtensionSaveSourceInput): Promise<LightExtensionSaveSourceResult>;
@@ -121,6 +126,7 @@ type OperationInputMap = {
   getRepo: { repoId: string };
   changeLifecycle: LightExtensionChangeLifecycleInput;
   deleteRepo: { repoId: string };
+  inspectSourceArchive: LightExtensionInspectSourceArchiveInput;
   pull: LightExtensionPullInput;
   pullCommit: LightExtensionPullCommitInput;
   saveSource: LightExtensionSaveSourceInput;
@@ -134,6 +140,7 @@ type OperationResultMap = {
   getRepo: LightExtensionRepoRecord;
   changeLifecycle: LightExtensionRepoRecord;
   deleteRepo: LightExtensionRepoRecord;
+  inspectSourceArchive: LightExtensionInspectSourceArchiveResult;
   pull: LightExtensionPullResult;
   pullCommit: LightExtensionPullResult;
   saveSource: LightExtensionSaveSourceResult;
@@ -147,6 +154,7 @@ const operationResourceActions: Record<LightExtensionRepoOperation, string> = {
   getRepo: 'lightExtensionRepos:get',
   changeLifecycle: 'lightExtensionRepos:changeLifecycle',
   deleteRepo: 'lightExtensionRepos:delete',
+  inspectSourceArchive: 'lightExtensionRepos:inspectSourceArchive',
   pull: 'lightExtensionFiles:pull',
   pullCommit: 'lightExtensionFiles:pullCommit',
   saveSource: 'lightExtensionFiles:saveSource',
@@ -189,6 +197,10 @@ export function useLightExtensionRepo(): UseLightExtensionRepoResult {
     [requestOperation],
   );
   const deleteRepo = useCallback((repoId: string) => requestOperation('deleteRepo', { repoId }), [requestOperation]);
+  const inspectSourceArchive = useCallback(
+    (input: LightExtensionInspectSourceArchiveInput) => requestOperation('inspectSourceArchive', input),
+    [requestOperation],
+  );
   const pull = useCallback((input: LightExtensionPullInput) => requestOperation('pull', input), [requestOperation]);
   const pullCommit = useCallback(
     (input: LightExtensionPullCommitInput) => requestOperation('pullCommit', input),
@@ -214,6 +226,7 @@ export function useLightExtensionRepo(): UseLightExtensionRepoResult {
       getRepo,
       changeLifecycle,
       deleteRepo,
+      inspectSourceArchive,
       pull,
       pullCommit,
       saveSource,
@@ -226,6 +239,7 @@ export function useLightExtensionRepo(): UseLightExtensionRepoResult {
       createRepo,
       deleteRepo,
       getRepo,
+      inspectSourceArchive,
       listCommits,
       listRepos,
       pull,

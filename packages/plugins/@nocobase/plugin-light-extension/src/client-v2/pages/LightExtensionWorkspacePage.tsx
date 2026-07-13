@@ -56,6 +56,12 @@ import {
   normalizeWorkspacePath,
   type LightExtensionWorkspaceScope,
 } from '../workspace/lightExtensionWorkspaceAccess';
+import {
+  buildLightExtensionWorkspaceArchiveFileName,
+  createLightExtensionWorkspaceArchive,
+  downloadLightExtensionWorkspaceArchive,
+  readLightExtensionWorkspaceArchive,
+} from '../workspace/lightExtensionWorkspaceArchive';
 
 type WorkspaceFile = RunJSWorkspaceFile;
 
@@ -127,7 +133,8 @@ function LightExtensionWorkspacePage({
   const studioT = useVscFileT();
   const [searchParams] = useSearchParams();
   const repoId = repoIdProp || searchParams.get('repoId') || '';
-  const { compileWorkspacePreview, getRepo, listCommits, pull, pullCommit, saveSource } = useLightExtensionRepo();
+  const { compileWorkspacePreview, getRepo, inspectSourceArchive, listCommits, pull, pullCommit, saveSource } =
+    useLightExtensionRepo();
   const [repo, setRepo] = useState<LightExtensionRepoRecord | null>(null);
   const [baseCommitSeq, setBaseCommitSeq] = useState<number>();
   const [baseFiles, setBaseFiles] = useState<WorkspaceFile[]>([]);
@@ -142,6 +149,8 @@ function LightExtensionWorkspacePage({
   const [loading, setLoading] = useState(false);
   const [initializedRepoId, setInitializedRepoId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [previewing, setPreviewing] = useState(false);
   const [movingToInline, setMovingToInline] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
@@ -163,6 +172,7 @@ function LightExtensionWorkspacePage({
   } | null>(null);
   const embeddedSavePromiseRef = useRef<Promise<EmbeddedRunJSEditorSaveResult> | null>(null);
   const historyRequestSeqRef = useRef(0);
+  const importInputRef = useRef<HTMLInputElement | null>(null);
   const latestPreviewSnapshotRef = useRef('');
   const entryRoot = getLightExtensionEntryRoot(workspaceScope);
   const entryScoped = workspaceScope.mode === 'entry';
@@ -782,6 +792,104 @@ function LightExtensionWorkspacePage({
     });
   }, [moveToInline, t]);
 
+  const exportWorkspace = useCallback(async () => {
+    if (!repo || exporting || importing) {
+      return;
+    }
+
+    setExporting(true);
+    setNotice(null);
+    try {
+      const archiveFiles =
+        workspaceScope.mode === 'repository'
+          ? files
+          : files.filter((file) => canChangeLightExtensionWorkspacePath(workspaceScope, file.path));
+      const archive = await createLightExtensionWorkspaceArchive(archiveFiles);
+      const downloaded = downloadLightExtensionWorkspaceArchive(
+        archive,
+        buildLightExtensionWorkspaceArchiveFileName(repo.name || repo.title || repo.id),
+      );
+      if (!downloaded) {
+        throw new Error(t('Failed to start ZIP download'));
+      }
+    } catch (error) {
+      setNotice({ type: 'error', message: error instanceof Error ? error.message : t('Failed to export ZIP') });
+    } finally {
+      setExporting(false);
+    }
+  }, [exporting, files, importing, repo, t, workspaceScope]);
+
+  const requestImportWorkspace = useCallback(() => {
+    if (!canWrite || importing || exporting) {
+      return;
+    }
+
+    if (!hasUnsavedLocalChanges) {
+      importInputRef.current?.click();
+      return;
+    }
+
+    Modal.confirm({
+      cancelText: t('Cancel'),
+      content: (
+        <Space direction="vertical" size={4}>
+          <Typography.Text>{t('Importing will replace editable files in the current workspace.')}</Typography.Text>
+          <Typography.Text>{t('Unsaved editor changes in this scope will be discarded.')}</Typography.Text>
+        </Space>
+      ),
+      okText: t('Import'),
+      onOk: () => importInputRef.current?.click(),
+      title: t('Import workspace'),
+    });
+  }, [canWrite, exporting, hasUnsavedLocalChanges, importing, t]);
+
+  const importWorkspaceFile = useCallback(
+    async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const archive = event.target.files?.[0];
+      event.target.value = '';
+      if (!archive || !repoId || !canWrite || importing) {
+        return;
+      }
+
+      setImporting(true);
+      setNotice(null);
+      try {
+        const zipBase64 = await readLightExtensionWorkspaceArchive(archive, t('Failed to read source ZIP'));
+        const result = await inspectSourceArchive({ repoId, zipBase64 });
+        const importedFiles = normalizeWorkspaceFiles(result.files || []);
+        if (workspaceScope.mode === 'entry') {
+          const readOnlyPath = importedFiles.find(
+            (file) => !canChangeLightExtensionWorkspacePath(workspaceScope, file.path),
+          );
+          if (readOnlyPath) {
+            throw new Error(t('ZIP contains files that are read-only in this editor'));
+          }
+          if (!importedFiles.some((file) => file.path === workspaceScope.entryPath)) {
+            throw new Error(t('ZIP does not contain the current entry file'));
+          }
+        }
+
+        const nextFiles = restoreWorkspaceFiles(files, importedFiles, workspaceScope);
+        const nextActivePath = resolveActivePath(
+          nextFiles,
+          workspaceScope.mode === 'entry' ? workspaceScope.entryPath : activePath,
+        );
+        setFiles(nextFiles);
+        setFolders(collectWorkspaceFolders(nextFiles));
+        setActivePath(nextActivePath);
+        setOpenPaths(nextActivePath ? [nextActivePath] : []);
+        setDiagnostics([]);
+        setIsDiff(false);
+        message.success(t('ZIP imported. Save to create a new version.'));
+      } catch (error) {
+        setNotice({ type: 'error', message: error instanceof Error ? error.message : t('Failed to import ZIP') });
+      } finally {
+        setImporting(false);
+      }
+    },
+    [activePath, canWrite, files, importing, inspectSourceArchive, repoId, t, workspaceScope],
+  );
+
   if (!repoId) {
     return (
       <Flex vertical gap={16} style={{ padding: embedded ? 0 : 24 }}>
@@ -900,23 +1008,26 @@ function LightExtensionWorkspacePage({
                       activePath={activePath}
                       collapsed={filesCollapsed}
                       defaultCreateParentPath={entryScoped ? entryRoot || LIGHT_EXTENSION_SOURCE_ROOT : undefined}
-                      exporting={false}
+                      exporting={exporting}
                       files={files}
                       fillAvailableHeight={historyCollapsed}
                       folders={folders}
                       getPathAccess={resolveWorkspacePathAccess}
+                      importing={importing}
                       onCollapseChange={setFilesCollapsed}
                       onCreate={createWorkspaceFile}
                       onCreateFolder={createWorkspaceFolder}
                       onDelete={removeFile}
                       onDeleteFolder={deleteFolder}
+                      onExportWorkspace={exportWorkspace}
+                      onImportWorkspace={requestImportWorkspace}
                       onMoveFile={moveFileToFolder}
                       onMoveFolder={moveFolderToFolder}
                       onOpen={openFilePath}
                       onRefresh={loadWorkspace}
                       onRename={renameFile}
                       onRenameFolder={renameFolder}
-                      readOnly={!canWrite}
+                      readOnly={!canWrite || importing}
                       savedFiles={baseFiles}
                       t={studioT}
                     />
@@ -1032,6 +1143,15 @@ function LightExtensionWorkspacePage({
             : undefined
         }
         t={studioT}
+      />
+
+      <input
+        accept=".zip,application/zip,application/x-zip-compressed"
+        aria-label={t('Import workspace')}
+        onChange={importWorkspaceFile}
+        ref={importInputRef}
+        style={{ display: 'none' }}
+        type="file"
       />
 
       <SaveVersionModal

@@ -15,6 +15,7 @@ import { LIGHT_EXTENSION_REPO_LIFECYCLE_STATUSES } from '../../constants';
 import { LightExtensionError } from '../../shared/errors';
 import type {
   LightExtensionCreateRepoInput,
+  LightExtensionInspectSourceArchiveResult,
   LightExtensionRepoLifecycleStatus,
   LightExtensionTreeEntryInput,
 } from '../../shared/types';
@@ -25,7 +26,15 @@ import { parseLightExtensionSourceArchive } from '../services/LightExtensionSour
 import { toLightExtensionSourceError } from '../services/errorContract';
 import { createTypedResourceAction, getServiceContext, toRecord, type ResourceActionInput } from './resourceAction';
 
-export const lightExtensionRepoActionNames = ['create', 'list', 'get', 'changeLifecycle', 'archive', 'delete'] as const;
+export const lightExtensionRepoActionNames = [
+  'create',
+  'list',
+  'get',
+  'changeLifecycle',
+  'archive',
+  'delete',
+  'inspectSourceArchive',
+] as const;
 
 type LightExtensionRepoActionName = (typeof lightExtensionRepoActionNames)[number];
 
@@ -67,6 +76,7 @@ const resourceActionRunners: Record<LightExtensionRepoActionName, ResourceAction
       },
       currentUser,
     ),
+  inspectSourceArchive: (services, input, currentUser) => inspectSourceArchive(services, input, currentUser),
 };
 
 export function createLightExtensionReposResource(
@@ -134,6 +144,33 @@ async function createRepoAndCompileInitialSource(
     });
     return compile.repo;
   });
+}
+
+async function inspectSourceArchive(
+  services: LightExtensionRepoActionServices,
+  input: ResourceActionInput,
+  currentUser: LightExtensionServiceContext,
+): Promise<LightExtensionInspectSourceArchiveResult> {
+  const repo = await services.repoService.getRepo(requireRepoId(input), currentUser);
+  if (repo.lifecycleStatus === 'archived') {
+    throw new LightExtensionError(
+      'LIGHT_EXTENSION_REPO_ARCHIVED',
+      'Archived light extension repositories cannot import source archives',
+      {
+        details: {
+          repoId: repo.id,
+          lifecycleStatus: repo.lifecycleStatus,
+        },
+      },
+    );
+  }
+
+  return {
+    files: await parseLightExtensionSourceArchive(
+      requireString(input, 'zipBase64'),
+      services.repoService.getValidator(),
+    ),
+  };
 }
 
 async function normalizeCreateInput(

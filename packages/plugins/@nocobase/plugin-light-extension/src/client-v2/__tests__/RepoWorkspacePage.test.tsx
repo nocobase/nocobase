@@ -24,11 +24,18 @@ const mocks = vi.hoisted(() => ({
   t: (key: string) => key,
   api: {
     getRepo: vi.fn(),
+    inspectSourceArchive: vi.fn(),
     pull: vi.fn(),
     pullCommit: vi.fn(),
     saveSource: vi.fn(),
     compileWorkspacePreview: vi.fn(),
     listCommits: vi.fn(),
+  },
+  archive: {
+    buildLightExtensionWorkspaceArchiveFileName: vi.fn(() => 'sales-widgets.zip'),
+    createLightExtensionWorkspaceArchive: vi.fn(),
+    downloadLightExtensionWorkspaceArchive: vi.fn(() => true),
+    readLightExtensionWorkspaceArchive: vi.fn(),
   },
 }));
 
@@ -54,6 +61,13 @@ vi.mock('@nocobase/client-v2', () => ({
   },
 }));
 
+vi.mock('../workspace/lightExtensionWorkspaceArchive', () => ({
+  buildLightExtensionWorkspaceArchiveFileName: mocks.archive.buildLightExtensionWorkspaceArchiveFileName,
+  createLightExtensionWorkspaceArchive: mocks.archive.createLightExtensionWorkspaceArchive,
+  downloadLightExtensionWorkspaceArchive: mocks.archive.downloadLightExtensionWorkspaceArchive,
+  readLightExtensionWorkspaceArchive: mocks.archive.readLightExtensionWorkspaceArchive,
+}));
+
 vi.mock('@nocobase/plugin-vsc-file/client-v2', () => {
   return {
     buildLineDiff: () => [],
@@ -75,6 +89,8 @@ vi.mock('@nocobase/plugin-vsc-file/client-v2', () => {
       getPathAccess,
       onCreate,
       onCreateFolder,
+      onExportWorkspace,
+      onImportWorkspace,
       onOpen,
       onRenameFolder,
     }: {
@@ -85,10 +101,22 @@ vi.mock('@nocobase/plugin-vsc-file/client-v2', () => {
       getPathAccess?: (path: string, pathType: 'file' | 'folder') => { canWrite?: boolean; reason?: string };
       onCreate: (parentPath?: string) => string | undefined;
       onCreateFolder: (parentPath?: string) => string | undefined;
+      onExportWorkspace?: () => void;
+      onImportWorkspace?: () => void;
       onOpen: (path: string) => void;
       onRenameFolder: (path: string, nextPath: string) => boolean;
     }) => (
       <div data-collapsed={String(collapsed)} data-testid="runjs-files-panel">
+        {onExportWorkspace ? (
+          <button onClick={onExportWorkspace} type="button">
+            Export workspace
+          </button>
+        ) : null}
+        {onImportWorkspace ? (
+          <button onClick={onImportWorkspace} type="button">
+            Import workspace
+          </button>
+        ) : null}
         <button onClick={() => onCreate(defaultCreateParentPath || 'src/client')} type="button">
           New default file
         </button>
@@ -369,7 +397,13 @@ describe('LightExtensionWorkspacePage', () => {
         entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
       },
     });
+    mocks.api.inspectSourceArchive.mockResolvedValue({ files: [] });
     mocks.api.listCommits.mockResolvedValue([]);
+    mocks.archive.createLightExtensionWorkspaceArchive.mockResolvedValue(
+      new Blob(['workspace'], { type: 'application/zip' }),
+    );
+    mocks.archive.downloadLightExtensionWorkspaceArchive.mockReturnValue(true);
+    mocks.archive.readLightExtensionWorkspaceArchive.mockResolvedValue('zip-base64');
   });
 
   it('shows only a global loading state while the initial workspace is loading', async () => {
@@ -775,6 +809,226 @@ describe('LightExtensionWorkspacePage', () => {
         operation: 'upsert',
       }),
     ]);
+  });
+
+  it('exports the current unsaved entry-scoped workspace from the files panel', async () => {
+    mocks.api.pull.mockResolvedValueOnce({
+      repo: { id: 'ler_sales' },
+      commit: { id: 'commit-1' },
+      tree: { hash: 'tree-1', entryCount: 4, byteSize: 180 },
+      unchanged: false,
+      files: [
+        {
+          path: 'README.md',
+          content: '# Sales widgets\n',
+          language: 'markdown',
+        },
+        {
+          path: 'src/client/js-blocks/sales-kpi/index.tsx',
+          content: 'ctx.render(<div>Saved sales</div>);\n',
+          language: 'typescript',
+        },
+        {
+          path: 'src/client/js-blocks/other/index.tsx',
+          content: 'ctx.render(<div>Other</div>);\n',
+          language: 'typescript',
+        },
+        {
+          path: 'src/shared/format.ts',
+          content: 'export const format = String;\n',
+          language: 'typescript',
+        },
+      ],
+    });
+    const archive = new Blob(['entry workspace'], { type: 'application/zip' });
+    mocks.archive.createLightExtensionWorkspaceArchive.mockResolvedValueOnce(archive);
+    const workspaceScope: LightExtensionWorkspaceScope = {
+      mode: 'entry',
+      entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+      kind: 'js-block',
+    };
+
+    render(
+      <MemoryRouter>
+        <LightExtensionWorkspacePage
+          initialPath={workspaceScope.entryPath}
+          repoId="ler_sales"
+          workspaceScope={workspaceScope}
+        />
+      </MemoryRouter>,
+    );
+
+    await screen.findByTestId('runjs-code-tab');
+    expect(screen.getByRole('button', { name: 'Import workspace' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Export workspace' })).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Edit file content'), {
+      target: { value: 'ctx.render(<div>Unsaved sales</div>);\n' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Export workspace' }));
+
+    await waitFor(() => expect(mocks.archive.createLightExtensionWorkspaceArchive).toHaveBeenCalledTimes(1));
+    expect(mocks.archive.createLightExtensionWorkspaceArchive).toHaveBeenCalledWith([
+      expect.objectContaining({ path: 'README.md', content: '# Sales widgets\n' }),
+      expect.objectContaining({
+        path: 'src/client/js-blocks/sales-kpi/index.tsx',
+        content: 'ctx.render(<div>Unsaved sales</div>);\n',
+      }),
+      expect.objectContaining({ path: 'src/shared/format.ts', content: 'export const format = String;\n' }),
+    ]);
+    expect(mocks.archive.downloadLightExtensionWorkspaceArchive).toHaveBeenCalledWith(archive, 'sales-widgets.zip');
+    expect(mocks.api.saveSource).not.toHaveBeenCalled();
+  });
+
+  it('imports entry-scoped ZIP files into local editor state while preserving read-only entries', async () => {
+    mocks.api.pull.mockResolvedValueOnce({
+      repo: { id: 'ler_sales' },
+      commit: { id: 'commit-1' },
+      tree: { hash: 'tree-1', entryCount: 4, byteSize: 180 },
+      unchanged: false,
+      files: [
+        {
+          path: 'src/client/js-blocks/sales-kpi/index.tsx',
+          content: 'ctx.render(<div>Current sales</div>);\n',
+          language: 'typescript',
+        },
+        {
+          path: 'src/client/js-blocks/other/index.tsx',
+          content: 'ctx.render(<div>Current other</div>);\n',
+          language: 'typescript',
+        },
+        {
+          path: 'src/shared/format.ts',
+          content: 'export const format = String;\n',
+          language: 'typescript',
+        },
+        {
+          path: 'src/shared/obsolete.ts',
+          content: 'export const obsolete = true;\n',
+          language: 'typescript',
+        },
+      ],
+    });
+    mocks.api.inspectSourceArchive.mockResolvedValueOnce({
+      files: [
+        {
+          path: 'src/client/js-blocks/sales-kpi/index.tsx',
+          content: 'ctx.render(<div>Imported sales</div>);\n',
+          language: 'typescript',
+        },
+        {
+          path: 'src/shared/format.ts',
+          content: 'export const format = (value: unknown) => String(value);\n',
+          language: 'typescript',
+        },
+        {
+          path: 'src/shared/imported.ts',
+          content: 'export const imported = true;\n',
+          language: 'typescript',
+        },
+      ],
+    });
+    const confirmSpy = vi.spyOn(Modal, 'confirm').mockImplementation((config) => {
+      config.onOk?.(() => undefined);
+      return {
+        destroy: vi.fn(),
+        update: vi.fn(),
+      } as ReturnType<typeof Modal.confirm>;
+    });
+    const workspaceScope: LightExtensionWorkspaceScope = {
+      mode: 'entry',
+      entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+      kind: 'js-block',
+    };
+
+    render(
+      <MemoryRouter>
+        <LightExtensionWorkspacePage
+          initialPath={workspaceScope.entryPath}
+          repoId="ler_sales"
+          workspaceScope={workspaceScope}
+        />
+      </MemoryRouter>,
+    );
+
+    await screen.findByTestId('runjs-code-tab');
+    fireEvent.change(screen.getByLabelText('Edit file content'), {
+      target: { value: 'ctx.render(<div>Unsaved local sales</div>);\n' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Import workspace' }));
+    expect(confirmSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Import workspace',
+        okText: 'Import',
+      }),
+    );
+
+    const zipFile = new File(['zip'], 'sales.zip', { type: 'application/zip' });
+    fireEvent.change(screen.getByLabelText('Import workspace'), {
+      target: { files: [zipFile] },
+    });
+
+    await waitFor(() => expect(mocks.api.inspectSourceArchive).toHaveBeenCalledTimes(1));
+    expect(mocks.archive.readLightExtensionWorkspaceArchive).toHaveBeenCalledWith(zipFile, 'Failed to read source ZIP');
+    expect(mocks.api.inspectSourceArchive).toHaveBeenCalledWith({
+      repoId: 'ler_sales',
+      zipBase64: 'zip-base64',
+    });
+    await waitFor(() =>
+      expect(screen.getByLabelText('Edit file content')).toHaveValue('ctx.render(<div>Imported sales</div>);\n'),
+    );
+    const workspaceContents = new Map<string, string>(
+      JSON.parse(screen.getByTestId('runjs-code-tab').getAttribute('data-workspace-file-contents') || '[]'),
+    );
+    expect(workspaceContents.get('src/client/js-blocks/other/index.tsx')).toBe(
+      'ctx.render(<div>Current other</div>);\n',
+    );
+    expect(workspaceContents.get('src/shared/format.ts')).toBe(
+      'export const format = (value: unknown) => String(value);\n',
+    );
+    expect(workspaceContents.get('src/shared/imported.ts')).toBe('export const imported = true;\n');
+    expect(workspaceContents.has('src/shared/obsolete.ts')).toBe(false);
+    expect(screen.getByRole('button', { name: /Save/ })).toBeEnabled();
+    expect(mocks.api.saveSource).not.toHaveBeenCalled();
+    confirmSpy.mockRestore();
+  });
+
+  it('rejects an entry-scoped ZIP that does not include the current entry file', async () => {
+    mocks.api.inspectSourceArchive.mockResolvedValueOnce({
+      files: [
+        {
+          path: 'src/shared/format.ts',
+          content: 'export const format = String;\n',
+          language: 'typescript',
+        },
+      ],
+    });
+    const workspaceScope: LightExtensionWorkspaceScope = {
+      mode: 'entry',
+      entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+      kind: 'js-block',
+    };
+
+    render(
+      <MemoryRouter>
+        <LightExtensionWorkspacePage
+          initialPath={workspaceScope.entryPath}
+          repoId="ler_sales"
+          workspaceScope={workspaceScope}
+        />
+      </MemoryRouter>,
+    );
+
+    await screen.findByTestId('runjs-code-tab');
+    const zipFile = new File(['zip'], 'missing-entry.zip', { type: 'application/zip' });
+    fireEvent.change(screen.getByLabelText('Import workspace'), {
+      target: { files: [zipFile] },
+    });
+
+    expect(await screen.findByText('ZIP does not contain the current entry file')).toBeInTheDocument();
+    expect(screen.getByLabelText('Edit file content')).toHaveValue(
+      'export default function SalesKpi() { return null; }\n',
+    );
+    expect(mocks.api.saveSource).not.toHaveBeenCalled();
   });
 
   it('restores only editable entry-scoped files into the unsaved editor state', async () => {

@@ -38,6 +38,52 @@ The primary assertion coverage lives in `src/server/__tests__/save-source-runtim
 yarn test packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__/save-source-runtime.test.ts --run
 ```
 
+## Workspace ZIP Contract
+
+The workspace file manager exposes ZIP import and export. Export is client-side and packages the current working copy, including unsaved editor content. Repository workspaces export every source file; entry-bound workspaces export only paths writable in that scope, so other managed entries are excluded. Generated authoring-only type files are not exported.
+
+Import parses and validates the archive through `POST lightExtensionRepos:inspectSourceArchive` before changing editor state:
+
+```ts
+interface LightExtensionInspectSourceArchiveInput {
+  repoId: string;
+  zipBase64: string;
+}
+
+interface LightExtensionInspectSourceArchiveResult {
+  files: LightExtensionTreeEntryInput[];
+}
+```
+
+`inspectSourceArchive` is read-only: it verifies that the repository exists and is not archived, then reuses `parseLightExtensionSourceArchive()` for ZIP path, symlink, UTF-8, duplicate-path, file-count, byte-budget, and compression-ratio validation. It does not create a VSC commit, change Head, compile runtime artifacts, or update references.
+
+After validation, repository workspaces replace the complete local working copy. Entry-bound workspaces replace only editable paths and preserve other read-only entries. An entry-bound import is rejected when the ZIP contains another managed entry or omits the currently bound `entryPath`. Import never saves automatically; the user must use the drawer footer **Save** action to create and compile a new version.
+
+| Condition | Result |
+| --- | --- |
+| Valid repository ZIP | Replaces the complete unsaved editor working copy |
+| Valid entry ZIP | Replaces writable entry/shared/root files and preserves read-only entries |
+| Existing unsaved changes | Requires confirmation before opening the file picker |
+| Missing repository | Returns `LIGHT_EXTENSION_REPO_NOT_FOUND` |
+| Archived repository | Returns `LIGHT_EXTENSION_REPO_ARCHIVED` |
+| Invalid or unsafe ZIP | Returns the existing source-archive validation error; editor state remains unchanged |
+| Missing current entry or ZIP containing another managed entry | Client rejects the import; editor state remains unchanged |
+
+Required cases:
+
+- Good: export an unsaved entry working copy, then import it locally without creating a source version.
+- Base: import shared and current-entry files while preserving other managed entries as read-only.
+- Bad: reject missing-entry, cross-entry, archived-repository, traversal, symlink, duplicate-path, non-UTF-8, and over-budget archives without changing editor state or repository Head.
+
+Primary assertion coverage:
+
+```bash
+yarn test packages/plugins/@nocobase/plugin-light-extension/src/client-v2/__tests__/RepoWorkspacePage.test.tsx --run --reporter=verbose
+yarn test packages/plugins/@nocobase/plugin-light-extension/src/client-v2/__tests__/lightExtensionWorkspaceArchive.test.ts --run --reporter=verbose
+yarn test packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__/inspect-source-archive.test.ts --run --reporter=verbose
+yarn test packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__/source-archive.test.ts --run --reporter=verbose
+```
+
 ## Entry Identity Contract
 
 An entry has separate source, database, path, and display identities:

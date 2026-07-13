@@ -55,6 +55,15 @@ export interface LightExtensionCreateRepoInput {
   message?: string;
 }
 
+export interface LightExtensionInspectSourceArchiveInput {
+  repoId: string;
+  zipBase64: string;
+}
+
+export interface LightExtensionInspectSourceArchiveResult {
+  files: LightExtensionTreeEntryInput[];
+}
+
 export interface LightExtensionChangeLifecycleInput {
   repoId: string;
   lifecycleStatus: LightExtensionRepoLifecycleStatus;

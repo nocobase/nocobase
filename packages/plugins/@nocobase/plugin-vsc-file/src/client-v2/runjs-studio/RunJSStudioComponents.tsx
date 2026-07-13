@@ -90,6 +90,7 @@ export function FilesPanel(props: {
   activePath?: string;
   collapsed: boolean;
   exporting: boolean;
+  importing?: boolean;
   files: RunJSWorkspaceFile[];
   fillAvailableHeight?: boolean;
   folders?: string[];
@@ -116,6 +117,7 @@ export function FilesPanel(props: {
     activePath,
     collapsed,
     exporting,
+    importing = false,
     files,
     fillAvailableHeight = false,
     folders,
@@ -413,6 +415,7 @@ export function FilesPanel(props: {
                 aria-label={t('Import workspace')}
                 disabled={readOnly}
                 icon={<UploadOutlined />}
+                loading={importing}
                 onClick={onImportWorkspace}
                 size="small"
               />

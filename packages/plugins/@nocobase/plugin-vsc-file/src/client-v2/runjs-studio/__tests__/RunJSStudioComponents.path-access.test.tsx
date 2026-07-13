@@ -79,6 +79,37 @@ describe('FilesPanel path access', () => {
     });
   });
 
+  it('shows the import loading state and keeps import disabled in read-only mode', () => {
+    const commonProps = {
+      collapsed: false,
+      exporting: false,
+      files: [],
+      onCollapseChange: vi.fn(),
+      onCreate: vi.fn(),
+      onCreateFolder: vi.fn(),
+      onDelete: vi.fn(),
+      onDeleteFolder: vi.fn(),
+      onImportWorkspace: vi.fn(),
+      onMoveFile: vi.fn(),
+      onMoveFolder: vi.fn(),
+      onOpen: vi.fn(),
+      onRefresh: vi.fn(),
+      onRename: vi.fn(),
+      onRenameFolder: vi.fn(),
+      savedFiles: [],
+      t: (key: string) => key,
+    };
+    const { rerender } = render(<FilesPanel {...commonProps} importing readOnly={false} />);
+    const importButton = screen.getByRole('button', { name: 'Import workspace' });
+
+    expect(importButton).toHaveClass('ant-btn-loading');
+
+    rerender(<FilesPanel {...commonProps} readOnly />);
+
+    expect(screen.getByRole('button', { name: 'Import workspace' })).not.toHaveClass('ant-btn-loading');
+    expect(screen.getByRole('button', { name: 'Import workspace' })).toBeDisabled();
+  });
+
   it('keeps locked files viewable while disabling their mutation actions', () => {
     const lockedPath = 'src/client/js-actions/locked/index.ts';
     const editablePath = 'src/client/js-blocks/current/index.tsx';
