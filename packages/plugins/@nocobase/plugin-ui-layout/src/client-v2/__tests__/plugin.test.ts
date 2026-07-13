@@ -39,10 +39,7 @@ describe('PluginUiLayoutClientV2', () => {
           },
         }),
       },
-      getRouteUrl: vi.fn((pathname: string) => `/v/${pathname.replace(/^\/+/, '')}`),
-      router: {
-        getBasename: vi.fn(() => '/v/'),
-      },
+      getHref: vi.fn((pathname: string) => `/v/${pathname.replace(/^\/+/, '')}`),
       layoutManager: {
         hasLayout: vi.fn(() => false),
         registerLayout: vi.fn(),
@@ -71,6 +68,7 @@ describe('PluginUiLayoutClientV2', () => {
       aclSnippet: 'pm.mobile',
       link: '/v/mobile',
     });
+    expect(app.getHref).toHaveBeenCalledWith('/mobile');
     expect(app.pluginSettingsManager.addPageTabItem).toHaveBeenCalledWith({
       menuKey: 'mobile',
       key: 'index',
@@ -186,47 +184,20 @@ describe('PluginUiLayoutClientV2', () => {
     });
   });
 
-  it('should include the sub-app router basename in the mobile settings link', async () => {
+  it('should preserve the current sub-app path in the mobile settings link', async () => {
     const { default: PluginUiLayoutClientV2 } = await import('../plugin');
-    const app = {
-      i18n: {
-        t: vi.fn((key: string) => key),
-      },
-      pluginSettingsManager: {
-        addMenuItem: vi.fn(),
-        addPageTabItem: vi.fn(),
-        setPluginSettingsLink: vi.fn(),
-      },
-      apiClient: {
-        request: vi.fn().mockResolvedValue({ data: { data: [] } }),
-      },
-      getRouteUrl: vi.fn((pathname: string) => `/v/${pathname.replace(/^\/+/, '')}`),
-      router: {
-        getBasename: vi.fn(() => '/v/apps/sub-app/'),
-      },
-      layoutManager: {
-        hasLayout: vi.fn(() => false),
-        registerLayout: vi.fn(),
-      },
-      flowEngine: {
-        registerModelLoaders: vi.fn(),
-        registerActions: vi.fn(),
-        flowSettings: {
-          registerComponents: vi.fn(),
-        },
-      },
-    };
-    const plugin = new PluginUiLayoutClientV2({} as Record<string, never>, app as unknown as Application);
+    const app = createMockClient({
+      name: 'portal',
+      publicPath: '/nocobase/v/',
+      plugins: [PluginUiLayoutClientV2],
+    });
+    app.apiMock.onGet('uiLayouts:listEnabled').reply(200, { data: [] });
 
-    await plugin.load();
+    await app.load();
 
-    expect(app.pluginSettingsManager.addMenuItem).toHaveBeenCalledWith(
-      expect.objectContaining({
-        key: 'mobile',
-        link: '/v/apps/sub-app/mobile',
-      }),
-    );
-    expect(app.getRouteUrl).not.toHaveBeenCalledWith('/mobile');
+    expect(app.pluginSettingsManager.get('mobile', false)).toMatchObject({
+      link: '/nocobase/v/apps/portal/mobile',
+    });
   });
 
   it('should register custom layout routes during plugin load', async () => {
