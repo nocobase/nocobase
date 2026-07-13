@@ -47,7 +47,7 @@ describe('useCDN', () => {
     rerender(<CDNReader />);
 
     expect(screen.getByText('https://cdn.example/vditor')).toBeInTheDocument();
-    expect(flowContext.app.pm.get).toHaveBeenCalledWith('@nocobase/plugin-field-markdown-vditor');
+    expect(flowContext.app.pm.get).toHaveBeenCalledWith('@nocobase/plugin-markdown');
     expect(plugin.initVditorDependency).toHaveBeenCalledTimes(1);
     expect(plugin.dependencyLoaded).toBe(true);
     expect(plugin.getCDN).toHaveBeenCalledTimes(2);

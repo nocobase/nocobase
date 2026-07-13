@@ -51,8 +51,8 @@ describe('useStyle', () => {
   it('registers markdown vditor styles and returns stable class metadata', () => {
     render(<StyleReader />);
 
-    expect(screen.getByTestId('style-wrapper')).toHaveAttribute('data-selectors', '.nb-field-markdown-vditor');
-    expect(screen.getByTestId('style-result')).toHaveAttribute('data-component-cls', 'nb-field-markdown-vditor');
+    expect(screen.getByTestId('style-wrapper')).toHaveAttribute('data-selectors', '.nb-markdown-vditor');
+    expect(screen.getByTestId('style-result')).toHaveAttribute('data-component-cls', 'nb-markdown-vditor');
     expect(screen.getByTestId('style-result')).toHaveAttribute('data-hash-id', 'hash-id');
     expect(useStyleRegister).toHaveBeenCalledWith(
       {
@@ -62,7 +62,7 @@ describe('useStyle', () => {
           colorBgContainer: '#fff',
         },
         hashId: 'hash-id',
-        path: ['field-markdown-vditor', 'nb-field-markdown-vditor'],
+        path: ['plugin-markdown', 'nb-markdown-vditor'],
       },
       expect.any(Function),
     );

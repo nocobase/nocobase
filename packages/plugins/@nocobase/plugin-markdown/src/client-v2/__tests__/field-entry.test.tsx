@@ -9,11 +9,65 @@
 
 import { MarkdownFieldInterface } from '@nocobase/client-v2';
 import { DisplayItemModel, EditableItemModel } from '@nocobase/flow-engine';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { MarkdownVditorFieldInterface } from '../interface';
 import { PluginMarkdownClient } from '../plugin';
 import '../models/VditorFieldModel';
 import '../models/DisplayVditorFieldModel';
+
+vi.mock('@nocobase/client-v2', () => ({
+  Application: class Application {},
+  BlockModel: class BlockModel {
+    static define = vi.fn();
+    static registerFlow = vi.fn();
+  },
+  CollectionFieldInterface: class CollectionFieldInterface {},
+  DisplayTitleFieldModel: class DisplayTitleFieldModel {
+    static define = vi.fn();
+    static registerFlow = vi.fn();
+  },
+  FieldModel: class FieldModel {
+    static define = vi.fn();
+    static registerFlow = vi.fn();
+  },
+  MarkdownFieldInterface: class MarkdownFieldInterface {
+    hidden = true;
+  },
+  Plugin: class Plugin {
+    app: unknown;
+    flowEngine: unknown;
+
+    constructor(_options: unknown, app: { flowEngine?: unknown }) {
+      this.app = app;
+      this.flowEngine = app.flowEngine;
+    }
+  },
+  getOrCreateMarkdownRegistry: (ctx: MarkdownContext) => {
+    if (ctx.markdown) {
+      return ctx.markdown;
+    }
+    const engines = new Map<string, unknown>();
+    const registry = {
+      register(engine: { name: string }, options?: { default?: boolean }) {
+        engines.set(engine.name, engine);
+        if (options?.default) {
+          engines.set('__default__', engine);
+        }
+      },
+      getEngine(name?: string) {
+        return engines.get(name || '__default__');
+      },
+    };
+    ctx.defineProperty('markdown', {
+      get: () => registry,
+    });
+    return registry;
+  },
+  removeMarkdownIframes: (value: string) => value,
+  stripMarkdownIframeTags: (value: string) => value,
+  stripMarkdownIframes: (value: string) => value,
+  stripModernClientPrefix: (path: string) => path.replace('/v/', '/'),
+}));
 
 type MarkdownContext = {
   markdown?: {

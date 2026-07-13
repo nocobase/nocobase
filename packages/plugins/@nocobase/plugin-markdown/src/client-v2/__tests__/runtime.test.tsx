@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   MarkdownVditorRuntime,
   registerMarkdownVditorContext,
@@ -16,6 +16,16 @@ import {
   VditorEditor,
   VditorPreview,
 } from '../runtime';
+
+vi.mock('@nocobase/client-v2', () => ({
+  CollectionFieldInterface: class CollectionFieldInterface {},
+  DisplayTitleFieldModel: class DisplayTitleFieldModel {},
+  FieldModel: class FieldModel {},
+  removeMarkdownIframes: (value: string) => value,
+  stripMarkdownIframeTags: (value: string) => value,
+  stripMarkdownIframes: (value: string) => value,
+  stripModernClientPrefix: (path: string) => path.replace('/v/', '/'),
+}));
 
 describe('MarkdownVditorRuntime', () => {
   const runtime = new MarkdownVditorRuntime(
