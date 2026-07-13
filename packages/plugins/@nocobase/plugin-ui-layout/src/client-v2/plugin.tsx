@@ -22,12 +22,7 @@ function MobileSettingsRedirect() {
 }
 
 function getMobileSettingsLink(app: Application) {
-  const basename = app.router.getBasename?.();
-  if (basename) {
-    return `${basename.replace(/\/+$/, '')}/mobile`;
-  }
-
-  return app.getRouteUrl?.('/mobile') || '/mobile';
+  return app.getHref('/mobile');
 }
 
 export class PluginUiLayoutClientV2 extends Plugin<Record<string, never>, Application> {
