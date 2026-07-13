@@ -11,20 +11,20 @@ import { Tag, Typography } from 'antd';
 import React from 'react';
 import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiUrl } from '../../shared/apiContract';
 
-export interface AgentGatewayApiResponse<T> {
+export interface AgentGatewayApiResponse<T, TMeta = Record<string, unknown>> {
   data?: {
     data?: T;
-    meta?: Record<string, unknown>;
+    meta?: TMeta;
   };
 }
 
 export interface AgentGatewayApi {
-  request<T>(config: {
+  request<T, TMeta = Record<string, unknown>>(config: {
     url: string;
     method: 'get' | 'post';
     data?: Record<string, unknown>;
     params?: Record<string, unknown>;
-  }): Promise<AgentGatewayApiResponse<T>>;
+  }): Promise<AgentGatewayApiResponse<T, TMeta>>;
 }
 
 export interface AgentGatewayContext {
@@ -133,11 +133,11 @@ const REDACTED_KEY_FRAGMENTS = [
 ];
 const EXTERNAL_URL_KEY_FRAGMENTS = ['url', 'href'];
 
-export function getResponseData<T>(response: AgentGatewayApiResponse<T>, fallback: T) {
+export function getResponseData<T, TMeta>(response: AgentGatewayApiResponse<T, TMeta>, fallback: T) {
   return response.data?.data ?? fallback;
 }
 
-export function getRequiredResponseData<T>(response: AgentGatewayApiResponse<T>, message: string) {
+export function getRequiredResponseData<T, TMeta>(response: AgentGatewayApiResponse<T, TMeta>, message: string) {
   const data = response.data?.data;
   if (data === undefined || data === null) {
     throw new Error(message);

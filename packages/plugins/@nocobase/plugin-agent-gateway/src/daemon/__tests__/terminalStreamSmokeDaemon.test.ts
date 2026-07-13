@@ -17,7 +17,7 @@ import {
   encodeSmokeLineForTest,
   parseTerminalStreamSmokeDaemonArgs,
   runTerminalStreamSmokeDaemon,
-} from '../terminalStreamSmokeDaemon';
+} from '../../../scripts/terminalStreamSmokeDaemon';
 
 function parseFrame(data: WebSocket.RawData) {
   return JSON.parse(data.toString()) as TerminalFrame;

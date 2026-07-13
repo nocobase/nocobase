@@ -299,6 +299,12 @@ describe('agent gateway Skill version upload APIs', () => {
     const listResponse = await rootAgent.get('/agentGatewayApi:listSkillVersions');
     expect(listResponse.status).toBe(200);
     const listedSkillVersions = listResponse.body.data as Array<Record<string, unknown>>;
+    expect(listResponse.body.meta).toMatchObject({
+      count: 1,
+      page: 1,
+      pageSize: 20,
+      totalPage: 1,
+    });
     expect(listedSkillVersions).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -315,6 +321,25 @@ describe('agent gateway Skill version upload APIs', () => {
         }),
       ]),
     );
+
+    const detailResponse = await rootAgent.get(`/agentGatewayApi:getSkillVersion/${firstUpload.skillVersionId}`);
+    expect(detailResponse.status).toBe(200);
+    expect(detailResponse.body.data).toMatchObject({
+      id: firstUpload.skillVersionId,
+      skillVersionId: firstUpload.skillVersionId,
+      skillKey: 'nb-opencode-ui-batch',
+      sourceSha256: sha256(secondContent),
+    });
+
+    const emptyPageResponse = await rootAgent.get('/agentGatewayApi:listSkillVersions?page=2&pageSize=1');
+    expect(emptyPageResponse.status).toBe(200);
+    expect(emptyPageResponse.body.data).toEqual([]);
+    expect(emptyPageResponse.body.meta).toMatchObject({
+      count: 1,
+      page: 2,
+      pageSize: 1,
+      totalPage: 1,
+    });
   });
 
   it('uploads Skill ZIP files in bounded chunks before creating the version', async () => {
@@ -395,6 +420,7 @@ describe('agent gateway Skill version upload APIs', () => {
 
     expect(response.status).toBe(403);
     expect((await memberAgent.get('/agentGatewayApi:listSkillVersions')).status).toBe(403);
+    expect((await memberAgent.get('/agentGatewayApi:getSkillVersion/missing')).status).toBe(403);
     expect(await app.db.getRepository('agSkillVersions').count()).toBe(0);
   });
 

@@ -144,30 +144,28 @@ async function upsertProfile(args: SeedSmokeArgs, token: string, nodeId: string)
   return profile;
 }
 
-async function createFreshRun(args: SeedSmokeArgs, nodeId: string, nodeToken: string) {
+async function createFreshRun(args: SeedSmokeArgs, token: string, nodeId: string, profileId: string) {
   const runCode = `agw_terminal_stream_smoke_${args.scenarioKey}_${Date.now()}_${randomUUID().slice(0, 8)}`;
-  const data = await requestJson<JsonRecord>(
-    args.baseUrl,
-    `/api/agentGatewayApi:createSmokeRun/${encodeURIComponent(nodeId)}`,
-    {
-      method: 'POST',
-      nodeToken,
-      body: {
-        runCode,
+  const data = await requestJson<JsonRecord>(args.baseUrl, '/api/agentGatewayApi:createRun', {
+    method: 'POST',
+    token,
+    body: {
+      runCode,
+      sourceType: 'acceptance-smoke',
+      nodeId,
+      agentProfileId: profileId,
+      promptSnapshot: {
+        text: `Terminal stream protocol smoke: ${args.scenarioKey}`,
+      },
+      executionPayload: {
+        mode: 'terminal-stream-protocol-smoke',
+        scenarioKey: args.scenarioKey,
         profileKey: PROFILE_KEY,
-        promptSnapshot: {
-          text: `Terminal stream protocol smoke: ${args.scenarioKey}`,
-        },
-        executionPayload: {
-          mode: 'terminal-stream-protocol-smoke',
-          scenarioKey: args.scenarioKey,
-          profileKey: PROFILE_KEY,
-        },
       },
     },
-  );
+  });
   return {
-    runId: getString(data.runId),
+    runId: getString(data.id),
     runCode,
   };
 }
@@ -180,8 +178,8 @@ async function main() {
   const token = await signIn(args);
   const { node, nodeToken } = await upsertNode(args, token);
   const nodeId = getString(node.id);
-  await upsertProfile(args, token, nodeId);
-  const run = await createFreshRun(args, nodeId, nodeToken);
+  const profile = await upsertProfile(args, token, nodeId);
+  const run = await createFreshRun(args, token, nodeId, getString(profile.id));
   const output = {
     runId: run.runId,
     runCode: run.runCode,

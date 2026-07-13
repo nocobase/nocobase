@@ -14,7 +14,6 @@ export * from './config';
 export * from './execDriver';
 export * from './executionCommand';
 export * from './gateway';
-export * from './openCodeSmoke';
 export * from './profileDetection';
 export * from './registration';
 export * from './runner';

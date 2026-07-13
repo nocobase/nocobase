@@ -189,37 +189,35 @@ async function createConfigFile(args: SeedRealDaemonArgs, nodeId: string, nodeKe
   return configPath;
 }
 
-async function createRun(args: SeedRealDaemonArgs, nodeId: string, nodeToken: string) {
+async function createRun(args: SeedRealDaemonArgs, token: string, nodeId: string, profileId: string) {
   const promptHash = createHash('sha256').update(args.prompt).digest('hex');
   const runCode = `agw_real_daemon_stream_${args.scenarioKey}_${Date.now()}_${randomUUID().slice(0, 8)}`;
-  const data = await requestJson<JsonRecord>(
-    args.baseUrl,
-    `/api/agentGatewayApi:createSmokeRun/${encodeURIComponent(nodeId)}`,
-    {
-      method: 'POST',
-      nodeToken,
-      body: {
-        runCode,
+  const data = await requestJson<JsonRecord>(args.baseUrl, '/api/agentGatewayApi:createRun', {
+    method: 'POST',
+    token,
+    body: {
+      runCode,
+      sourceType: 'acceptance-smoke',
+      nodeId,
+      agentProfileId: profileId,
+      promptSnapshot: {
+        text: args.prompt,
+        promptHash,
+      },
+      executionPayload: {
+        mode: 'real-daemon-stream',
+        commandKey: args.profileKey,
         profileKey: args.profileKey,
-        promptSnapshot: {
-          text: args.prompt,
-          promptHash,
-        },
-        executionPayload: {
-          mode: 'real-daemon-stream',
-          commandKey: args.profileKey,
-          profileKey: args.profileKey,
-          args: args.profileKey === 'codex' ? ['exec', args.prompt] : ['run', args.prompt],
-          cwd: '.',
-          timeoutMs: 180_000,
-          workspaceRoot: args.workspaceRoot,
-          promptHash,
-        },
+        args: args.profileKey === 'codex' ? ['exec', args.prompt] : ['run', args.prompt],
+        cwd: '.',
+        timeoutMs: 180_000,
+        workspaceRoot: args.workspaceRoot,
+        promptHash,
       },
     },
-  );
+  });
   return {
-    runId: getString(data.runId),
+    runId: getString(data.id),
     runCode,
     promptHash,
   };
@@ -230,9 +228,9 @@ async function main() {
   const token = await signIn(args);
   const { node, nodeKey, nodeToken } = await upsertNode(args, token);
   const nodeId = getString(node.id);
-  await upsertProfile(args, token, nodeId);
+  const profile = await upsertProfile(args, token, nodeId);
   const configPath = await createConfigFile(args, nodeId, nodeKey, nodeToken);
-  const run = await createRun(args, nodeId, nodeToken);
+  const run = await createRun(args, token, nodeId, getString(profile.id));
   const output = {
     runId: run.runId,
     runCode: run.runCode,

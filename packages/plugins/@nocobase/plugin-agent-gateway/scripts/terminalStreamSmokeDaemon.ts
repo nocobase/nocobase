@@ -21,10 +21,10 @@ import {
   TerminalSnapshotRequest,
   createTerminalDataFrame,
   encodeTerminalPayload,
-} from '../shared/terminalStreamProtocol';
-import { AgentGatewayApiClient } from './apiClient';
-import { AgentGatewayDaemonNodeClient } from './gateway';
-import { GatewayRequester, JsonRecord, RunLease } from './types';
+} from '../src/shared/terminalStreamProtocol';
+import { AgentGatewayApiClient } from '../src/daemon/apiClient';
+import { AgentGatewayDaemonNodeClient } from '../src/daemon/gateway';
+import { GatewayRequester, JsonRecord, RunLease } from '../src/daemon/types';
 
 export interface TerminalStreamSmokeDaemonOptions {
   serverUrl: string;

@@ -19,6 +19,7 @@ import agExternalImportBatches from '../collections/agExternalImportBatches';
 import agExternalRunIdentities from '../collections/agExternalRunIdentities';
 import agEventIngestSequences from '../collections/agEventIngestSequences';
 import agFileUploads from '../collections/agFileUploads';
+import agMaintenanceLeases from '../collections/agMaintenanceLeases';
 import agNodeInvitations from '../collections/agNodeInvitations';
 import agNodeSkillInstalls from '../collections/agNodeSkillInstalls';
 import agNodes from '../collections/agNodes';
@@ -50,6 +51,7 @@ const collections = [
   agExternalRunIdentities,
   agExternalImportBatches,
   agFileUploads,
+  agMaintenanceLeases,
   agRuns,
   agRunControlRequests,
   agRunEvents,
@@ -76,6 +78,7 @@ const requiredCollectionNames = [
   'agExternalRunIdentities',
   'agExternalImportBatches',
   'agFileUploads',
+  'agMaintenanceLeases',
   'agRuns',
   'agRunControlRequests',
   'agRunEvents',
@@ -231,6 +234,13 @@ describe('agent gateway collections', () => {
     expectRequiredField('agFileUploads', 'receivedBytes');
     expectRequiredField('agFileUploads', 'storagePath');
     expectRequiredField('agFileUploads', 'expiresAt');
+  });
+
+  it('defines maintenance lease coordination fields', () => {
+    expect(fieldNamesOf('agMaintenanceLeases')).toEqual(expect.arrayContaining(['key', 'ownerId', 'expiresAt']));
+    expectRequiredField('agMaintenanceLeases', 'key');
+    expectRequiredField('agMaintenanceLeases', 'ownerId');
+    expectRequiredField('agMaintenanceLeases', 'expiresAt');
   });
 
   it('defines required run and artifact fields', () => {

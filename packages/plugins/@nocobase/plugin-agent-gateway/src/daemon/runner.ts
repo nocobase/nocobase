@@ -8,16 +8,10 @@
  */
 
 import path from 'path';
-import { createHash } from 'crypto';
 import { createReadStream } from 'fs';
 import { promises as fs } from 'fs';
 import { StringDecoder } from 'string_decoder';
 
-import {
-  buildDeclaredArtifactManifestUpload,
-  buildTextArtifactUpload,
-  processDeclaredArtifactUploads,
-} from './artifactUpload';
 import { isAgentGatewayLeaseLostError, isAgentGatewayRetryableError } from './apiClient';
 import { getAgentAdapter, type AgentAdapter, type NormalizedAgentEvent } from './adapters';
 import { AgentGatewayDaemonNodeClient } from './gateway';
@@ -59,11 +53,11 @@ import { hasAgentCapabilitySignal, normalizeAgentProviderCapabilities } from '..
 import {
   AgentCommandOutputMode,
   getCanonicalProvider,
-  getDeclaredArtifactModifiedSinceMs,
   getExecutionCommandSpec,
   getPayload,
   getRequestedTerminalBackend,
 } from './executionCommand';
+import { compactDeclaredArtifactSummary, hashText, reportDeclaredArtifacts, reportExecOutputs } from './runArtifacts';
 import {
   executeTmuxCommand,
   getManagedTmuxSessionName,
@@ -300,79 +294,12 @@ function withInstalledSkillMetadata(
   };
 }
 
-function hashText(value: string) {
-  return createHash('sha256').update(value).digest('hex');
-}
-
 function getJsonText(value: unknown) {
   try {
     return JSON.stringify(value) || '';
   } catch {
     return String(value);
   }
-}
-
-function getArraySample(value: unknown, limit = SUMMARY_ARRAY_SAMPLE_LIMIT) {
-  return Array.isArray(value) ? value.slice(0, limit) : [];
-}
-
-function getArrayCount(value: unknown) {
-  return Array.isArray(value) ? value.length : 0;
-}
-
-function compactArtifactManifestForSummary(value: unknown): JsonRecord {
-  const manifest = getRecord(value);
-  if (!Object.keys(manifest).length) {
-    return {};
-  }
-  const artifacts = getArraySample(manifest.artifacts);
-  const skipped = getArraySample(manifest.skipped);
-  const ignored = getArraySample(manifest.ignored);
-  const referencedScreenshots = getArraySample(manifest.referencedScreenshots);
-  const missingReferencedScreenshots = getArraySample(manifest.missingReferencedScreenshots);
-  return {
-    schema: getString(manifest.schema) || undefined,
-    generatedAt: getString(manifest.generatedAt) || undefined,
-    maxArtifactUploads: manifest.maxArtifactUploads,
-    counts: getRecord(manifest.counts),
-    artifactSample: artifacts,
-    artifactSampleCount: artifacts.length,
-    artifactCount: getArrayCount(manifest.artifacts),
-    skippedSample: skipped,
-    skippedSampleCount: skipped.length,
-    skippedCount: getArrayCount(manifest.skipped),
-    ignoredSample: ignored,
-    ignoredSampleCount: ignored.length,
-    ignoredCount: getArrayCount(manifest.ignored),
-    referencedScreenshotSample: referencedScreenshots,
-    referencedScreenshotSampleCount: referencedScreenshots.length,
-    referencedScreenshotCount: getArrayCount(manifest.referencedScreenshots),
-    missingReferencedScreenshotSample: missingReferencedScreenshots,
-    missingReferencedScreenshotSampleCount: missingReferencedScreenshots.length,
-    missingReferencedScreenshotCount: getArrayCount(manifest.missingReferencedScreenshots),
-  };
-}
-
-function compactDeclaredArtifactSummary(value: unknown): JsonRecord {
-  const summary = getRecord(value);
-  if (!Object.keys(summary).length) {
-    return {};
-  }
-  const declaredArtifactKeys = getArraySample(summary.declaredArtifactKeys, 50);
-  const declaredArtifactFailures = getArraySample(summary.declaredArtifactFailures, SUMMARY_ARRAY_SAMPLE_LIMIT);
-  return {
-    declaredArtifactCount: summary.declaredArtifactCount,
-    declaredArtifactKeySample: declaredArtifactKeys,
-    declaredArtifactKeySampleCount: declaredArtifactKeys.length,
-    declaredArtifactKeyCount: getArrayCount(summary.declaredArtifactKeys),
-    declaredArtifactFailedCount: summary.declaredArtifactFailedCount,
-    declaredArtifactFailures,
-    declaredArtifactFailureSample: declaredArtifactFailures,
-    declaredArtifactFailureSampleCount: declaredArtifactFailures.length,
-    declaredArtifactFailureCount: getArrayCount(summary.declaredArtifactFailures),
-    artifactManifestArtifactKey: 'declared:artifact-manifest.json',
-    artifactManifest: compactArtifactManifestForSummary(summary.artifactManifest),
-  };
 }
 
 function compactProgressPayloadJson(payloadJson: JsonRecord) {
@@ -385,128 +312,6 @@ function compactProgressPayloadJson(payloadJson: JsonRecord) {
     progressPayloadOriginalChars: payloadText.length,
     progressPayloadSha256: hashText(payloadText),
     progressPayloadPreview: payloadText.slice(0, PROGRESS_EVENT_PAYLOAD_PREVIEW_CHARS),
-  };
-}
-
-async function registerOutputArtifact(options: {
-  gateway: AgentGatewayDaemonNodeClient;
-  lease: RunLease;
-  streamName: 'stdout' | 'stderr';
-  output: ExecDriverResult['stdout'];
-}) {
-  if (options.output.text !== null && (options.output.text || options.output.truncated)) {
-    await options.gateway.registerArtifact(options.lease, {
-      artifactKey: `${options.streamName}-main`,
-      artifactType: options.streamName,
-      mimeType: 'text/plain',
-      sizeBytes: options.output.sizeBytes,
-      contentText: options.output.text,
-      metadata: {
-        originalSizeBytes: options.output.sizeBytes,
-        uploadedBytes: Buffer.byteLength(options.output.text),
-        truncated: options.output.truncated === true,
-        ...(options.output.capturedBytes !== undefined ? { capturedBytes: options.output.capturedBytes } : {}),
-        ...(options.output.truncated ? { spoolTruncated: true } : {}),
-        sha256: hashText(options.output.text),
-        storageMode: 'inline',
-      },
-    });
-    return;
-  }
-  if (options.output.artifactPath) {
-    const artifactUpload = await buildTextArtifactUpload(options.output.artifactPath, options.output.sizeBytes);
-    await options.gateway.registerArtifact(options.lease, {
-      artifactKey: `${options.streamName}-main`,
-      artifactType: options.streamName,
-      mimeType: 'text/plain',
-      sizeBytes: options.output.sizeBytes,
-      contentText: artifactUpload.contentText,
-      metadata: {
-        ...artifactUpload.metadata,
-        ...(options.output.capturedBytes !== undefined ? { capturedBytes: options.output.capturedBytes } : {}),
-        ...(options.output.truncated ? { truncated: true, spoolTruncated: true } : {}),
-      },
-    });
-  }
-}
-
-async function reportExecOutputs(gateway: AgentGatewayDaemonNodeClient, lease: RunLease, result: ExecDriverResult) {
-  let sequence = 1;
-  for (const [streamName, output] of [
-    ['stdout', result.stdout],
-    ['stderr', result.stderr],
-  ] as const) {
-    if (output.text) {
-      await gateway.appendEvent(lease, {
-        source: streamName,
-        sequence,
-        eventType: 'agent.output.chunk',
-        level: streamName === 'stderr' && result.status !== 'succeeded' ? 'error' : 'info',
-        message: output.text.slice(0, 4000),
-      });
-      sequence += 1;
-    }
-    await registerOutputArtifact({
-      gateway,
-      lease,
-      streamName,
-      output,
-    });
-  }
-}
-
-async function reportDeclaredArtifacts(options: {
-  gateway: AgentGatewayDaemonNodeClient;
-  getLease(): RunLease;
-  payload: JsonRecord;
-  cwd: string;
-}) {
-  const uploadedArtifactKeys: string[] = [];
-  const uploadFailures: JsonRecord[] = [];
-  const collection = await processDeclaredArtifactUploads({
-    payload: options.payload,
-    cwd: options.cwd,
-    modifiedSinceMs: getDeclaredArtifactModifiedSinceMs(options.getLease(), options.payload),
-    onUpload: async (upload) => {
-      try {
-        await options.gateway.registerArtifact(options.getLease(), upload);
-        uploadedArtifactKeys.push(upload.artifactKey);
-      } catch (error) {
-        uploadFailures.push({
-          artifactKey: upload.artifactKey,
-          artifactType: upload.artifactType,
-          message: error instanceof Error ? error.message : String(error),
-        });
-      }
-    },
-  });
-  const finalManifest = {
-    ...collection.manifest,
-    counts: {
-      ...getRecord(collection.manifest.counts),
-      uploaded: uploadedArtifactKeys.length,
-      failed: uploadFailures.length,
-    },
-    ...(uploadFailures.length ? { uploadFailures } : {}),
-  };
-  const manifestUpload = buildDeclaredArtifactManifestUpload(finalManifest);
-  try {
-    await options.gateway.registerArtifact(options.getLease(), manifestUpload.upload);
-    uploadedArtifactKeys.push(manifestUpload.upload.artifactKey);
-  } catch (error) {
-    uploadFailures.push({
-      artifactKey: manifestUpload.upload.artifactKey,
-      artifactType: manifestUpload.upload.artifactType,
-      message: error instanceof Error ? error.message : String(error),
-    });
-  }
-
-  return {
-    declaredArtifactCount: uploadedArtifactKeys.length,
-    declaredArtifactKeys: uploadedArtifactKeys,
-    declaredArtifactFailedCount: uploadFailures.length,
-    ...(uploadFailures.length ? { declaredArtifactFailures: uploadFailures } : {}),
-    artifactManifest: manifestUpload.manifest,
   };
 }
 

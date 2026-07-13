@@ -241,7 +241,14 @@ describe('agent gateway ACL registration', () => {
     );
     expect(snippets.find((snippet) => snippet.name === AGENT_GATEWAY_PERMISSIONS.dispatch)?.actions).toEqual([
       'agentGateway:dispatch',
+      'agentGatewayApi:listRunOptions',
+      'agentGatewayApi:createTaskRun',
+      'agentGatewayApi:listTaskTemplates',
+      'agentGatewayApi:dispatchBinding',
     ]);
+    expect(snippets.find((snippet) => snippet.name === 'pm.agent-gateway.skills')?.actions).toEqual(
+      expect.arrayContaining(['agentGatewayApi:listSkillVersions', 'agentGatewayApi:getSkillVersion']),
+    );
     expect(snippets.find((snippet) => snippet.name === AGENT_GATEWAY_PERMISSIONS.readRuns)?.actions).toEqual(
       expect.arrayContaining(['agentGateway:readRuns', 'agRuns:list']),
     );
@@ -278,10 +285,11 @@ describe('agent gateway ACL registration', () => {
     expect(snippets.find((snippet) => snippet.name === AGENT_GATEWAY_PERMISSIONS.cancelRun)?.actions).toEqual([
       'agentGateway:cancelRun',
       'agRuns:get',
+      'agentGatewayApi:cancelRun',
     ]);
-    expect(snippets.find((snippet) => snippet.name === AGENT_GATEWAY_PERMISSIONS.writeTerminalRaw)?.actions).toEqual(
-      [],
-    );
+    expect(snippets.find((snippet) => snippet.name === AGENT_GATEWAY_PERMISSIONS.writeTerminalRaw)?.actions).toEqual([
+      'agentGatewayApi:sendTerminalInput',
+    ]);
   });
 });
 

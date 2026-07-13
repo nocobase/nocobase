@@ -10,6 +10,7 @@
 import type { DataSource } from '@nocobase/flow-engine';
 
 import type { AgentCapabilityKey } from '../../../shared/providerCapabilities';
+import type { AgentGatewaySkillVersionSummary } from '../../../shared/apiContract';
 import type { AgentTimelineEventRecord } from '../../components/AgentTimeline';
 import type {
   ApiCallLogRecord,
@@ -106,22 +107,7 @@ export interface TaskTemplateDetailRecord {
   artifactsJson?: JsonRecord[];
 }
 
-export interface SkillVersionDetailRecord {
-  id: string;
-  skillVersionId?: string;
-  skillId?: string | null;
-  skillKey?: string | null;
-  displayName?: string | null;
-  skillStatus?: string | null;
-  versionLabel?: string;
-  status?: string;
-  sourceType?: string | null;
-  sourceSha256?: string | null;
-  sourceSizeBytes?: number | null;
-  sourceUploadedAt?: string | null;
-  createdAt?: string | null;
-  updatedAt?: string | null;
-}
+export type SkillVersionDetailRecord = AgentGatewaySkillVersionSummary;
 
 export interface TerminalSnapshot {
   backend?: string | null;

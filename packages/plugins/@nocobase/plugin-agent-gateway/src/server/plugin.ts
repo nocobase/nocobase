@@ -8,6 +8,7 @@
  */
 
 import { Plugin } from '@nocobase/server';
+import { randomUUID } from 'crypto';
 
 import { registerApiCallLogMiddleware } from './actions/apiCallLogging';
 import { registerAgentSessionRoutes } from './actions/agentSessions';
@@ -29,10 +30,13 @@ import { AGENT_GATEWAY_API_RESOURCE, AGENT_GATEWAY_MACHINE_API_ACTIONS } from '.
 import { registerAgentGatewayAcl } from './security/permissions';
 import { cleanupAgentGatewayRetention } from './services/retention';
 import { registerEventIngestCursorHooks } from './services/eventIngestCursor';
+import { runWithMaintenanceLease } from './services/maintenanceLease';
 
-const LEASE_RECOVERY_COLLECTIONS = ['agRuns', 'agRunEvents', 'agRunControlRequests'];
+const LEASE_RECOVERY_COLLECTIONS = ['agRuns', 'agRunEvents', 'agRunControlRequests', 'agMaintenanceLeases'];
 const RETENTION_INTERVAL_MS = 6 * 60 * 60 * 1000;
 const RETENTION_CONTINUATION_DELAY_MS = 1000;
+const LEASE_RECOVERY_MAINTENANCE_TTL_MS = 2 * 60 * 1000;
+const RETENTION_MAINTENANCE_TTL_MS = 60 * 60 * 1000;
 
 function unrefTimer(timer: ReturnType<typeof setInterval>) {
   if (!timer || typeof timer !== 'object' || !('unref' in timer)) {
@@ -46,6 +50,7 @@ function unrefTimer(timer: ReturnType<typeof setInterval>) {
 
 export class PluginAgentGatewayServer extends Plugin {
   private terminalStreamBroker?: TerminalStreamBroker;
+  private readonly maintenanceOwnerId = randomUUID();
   private leaseRecoveryTimer?: ReturnType<typeof setInterval>;
   private leaseRecoveryQueue = Promise.resolve();
   private leaseRecoveryActive = false;
@@ -172,8 +177,20 @@ export class PluginAgentGatewayServer extends Plugin {
         if (!this.retentionActive) {
           return;
         }
-        const expiredUploadCount = await cleanupExpiredFileUploads(this);
-        const result = await cleanupAgentGatewayRetention(this);
+        const maintenance = await runWithMaintenanceLease(this, {
+          key: 'retention',
+          ownerId: this.maintenanceOwnerId,
+          ttlMs: RETENTION_MAINTENANCE_TTL_MS,
+          task: async () => {
+            const expiredUploadCount = await cleanupExpiredFileUploads(this);
+            const result = await cleanupAgentGatewayRetention(this);
+            return { expiredUploadCount, result };
+          },
+        });
+        if (!maintenance.acquired || !maintenance.result) {
+          return;
+        }
+        const { expiredUploadCount, result } = maintenance.result;
         if (
           expiredUploadCount > 0 ||
           result.deletedTotal > 0 ||
@@ -216,7 +233,16 @@ export class PluginAgentGatewayServer extends Plugin {
         if (!(await this.isLeaseRecoveryStorageReady(reason))) {
           return;
         }
-        const result = await recoverExpiredRunLeases(this, reason);
+        const maintenance = await runWithMaintenanceLease(this, {
+          key: 'lease-recovery',
+          ownerId: this.maintenanceOwnerId,
+          ttlMs: LEASE_RECOVERY_MAINTENANCE_TTL_MS,
+          task: async () => await recoverExpiredRunLeases(this, reason),
+        });
+        if (!maintenance.acquired || !maintenance.result) {
+          return;
+        }
+        const result = maintenance.result;
         if (result.stalledCount > 0 || result.failedCount > 0 || result.canceledCount > 0) {
           this.app.logger?.info?.('Agent Gateway recovered expired run leases', {
             reason,

@@ -7,10 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  parseTerminalStreamSmokeDaemonArgs,
-  runTerminalStreamSmokeDaemon,
-} from '../src/daemon/terminalStreamSmokeDaemon';
+import { parseTerminalStreamSmokeDaemonArgs, runTerminalStreamSmokeDaemon } from './terminalStreamSmokeDaemon';
 
 async function main() {
   const options = parseTerminalStreamSmokeDaemonArgs(process.argv);

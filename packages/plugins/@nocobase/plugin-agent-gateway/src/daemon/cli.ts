@@ -20,13 +20,11 @@ import {
 import { AgentGatewayApiClient } from './apiClient';
 import { getDefaultConfigPath, readDaemonConfig } from './config';
 import { AgentGatewayDaemonNodeClient } from './gateway';
-import { DEFAULT_EXEC_TIMEOUT_MS, ExecCommandAllowlist, executeAllowlistedCommand } from './execDriver';
+import { DEFAULT_EXEC_TIMEOUT_MS, ExecCommandAllowlist } from './execDriver';
 import { uploadExternalRun } from './externalRunUploader';
-import { runOpenCodeSmoke } from './openCodeSmoke';
 import { detectAgentProfiles } from './profileDetection';
 import { heartbeatDaemonNode, registerDaemonNode } from './registration';
 import { runDaemonLoop, runDaemonOnce } from './runner';
-import { SkillVersionSource, syncNodeSkillVersion } from './skillSync';
 import { JsonRecord } from './types';
 
 interface ParsedArgs {
@@ -159,38 +157,6 @@ function parseJsonRecord(rawValue: string, flagName: string) {
   throw new Error(`${flagName} must be a JSON object`);
 }
 
-function parseJsonStringArray(rawValue: string, flagName: string) {
-  try {
-    const parsed = JSON.parse(rawValue) as unknown;
-    if (Array.isArray(parsed) && parsed.every((item) => typeof item === 'string')) {
-      return parsed;
-    }
-  } catch {
-    throw new Error(`${flagName} must be valid JSON`);
-  }
-  throw new Error(`${flagName} must be a JSON string array`);
-}
-
-function isSkillVersionSource(value: unknown): value is SkillVersionSource {
-  if (Object.prototype.toString.call(value) !== '[object Object]') {
-    return false;
-  }
-  const source = value as Record<string, unknown>;
-  if (source.type === 'zip') {
-    return (
-      typeof source.sha256 === 'string' &&
-      (typeof source.archivePath === 'string' || typeof source.archiveUrl === 'string')
-    );
-  }
-  if (source.type === 'github') {
-    return (
-      typeof source.repoUrl === 'string' &&
-      (typeof source.commitSha === 'string' || typeof source.archiveUrl === 'string')
-    );
-  }
-  return false;
-}
-
 function getDefaultExternalLogFormat(provider: string) {
   if (provider === 'codex') {
     return 'codex-jsonl';
@@ -221,20 +187,6 @@ function getExternalRunStatus(flags: Record<string, string | boolean | string[]>
     throw new Error(`--status must be one of: ${EXTERNAL_IMPORTED_RUN_STATUSES.join(', ')}`);
   }
   return status as ExternalImportedRunStatus;
-}
-
-async function getSkillSource(flags: Record<string, string | boolean | string[]>) {
-  const sourceJson = getFlagString(flags, 'skill-source-json');
-  const sourceFile = getFlagString(flags, 'skill-source-file');
-  const source = sourceJson
-    ? parseJsonRecord(sourceJson, '--skill-source-json')
-    : sourceFile
-      ? parseJsonRecord(await fs.readFile(sourceFile, 'utf8'), '--skill-source-file')
-      : {};
-  if (!isSkillVersionSource(source)) {
-    throw new Error('--skill-source-json or --skill-source-file must define an immutable zip/github Skill source');
-  }
-  return source;
 }
 
 async function handleRegister(flags: Record<string, string | boolean | string[]>) {
@@ -335,56 +287,6 @@ async function handleRun(flags: Record<string, string | boolean | string[]>) {
   });
 }
 
-async function handleSmokeOpenCode(flags: Record<string, string | boolean | string[]>) {
-  const skillVersionId = getFlagString(flags, 'skill-version-id');
-  if (!skillVersionId) {
-    throw new Error('--skill-version-id is required');
-  }
-  const config = await readDaemonConfig(getFlagString(flags, 'config') || undefined);
-  const requester = new AgentGatewayApiClient(config.serverUrl, getFlagNumber(flags, 'request-timeout-ms', 30_000));
-  const gateway = new AgentGatewayDaemonNodeClient(requester, config);
-  const workspaceRoot = path.resolve(getFlagString(flags, 'workspace-root') || process.cwd());
-  const artifactDir = path.resolve(getFlagString(flags, 'artifact-dir') || getDaemonDataPath('artifacts'));
-  const prompt = getFlagString(flags, 'prompt') || 'Create a minimal NocoBase UI build smoke result.';
-  const opencodeArgs = getFlagString(flags, 'opencode-args-json')
-    ? parseJsonStringArray(getFlagString(flags, 'opencode-args-json'), '--opencode-args-json')
-    : ['run', prompt];
-  const skillSource = await getSkillSource(flags);
-
-  const result = await runOpenCodeSmoke({
-    gateway,
-    prompt,
-    skillVersion: {
-      skillVersionId,
-      versionLabel: getFlagString(flags, 'skill-version-label') || skillVersionId,
-      source: skillSource,
-    },
-    syncSkillVersion: async (skillVersion) =>
-      await syncNodeSkillVersion({
-        nodeId: gateway.nodeId,
-        skillsRoot: path.resolve(getFlagString(flags, 'skills-root') || getDaemonDataPath('skills')),
-        skillVersion,
-        downloadHeaders: gateway.getNodeAuthHeaders(),
-        trustedArchiveServerUrl: gateway.serverUrl,
-        writeInstallStatus: async (installPayload) => {
-          await gateway.upsertSkillInstall(installPayload);
-        },
-      }),
-    executeOpenCode: async (signals) =>
-      await executeAllowlistedCommand({
-        commandKey: 'opencode',
-        allowlist: getDefaultAllowlist(),
-        args: opencodeArgs,
-        cwd: workspaceRoot,
-        workspaceRoot,
-        artifactDir,
-        cancelSignal: signals.cancelSignal,
-        leaseLostSignal: signals.leaseLostSignal,
-      }),
-  });
-  printJson(result);
-}
-
 async function getExternalImportServerUrl(flags: Record<string, string | boolean | string[]>) {
   const explicitServerUrl = getFlagString(flags, 'server-url');
   if (explicitServerUrl) {
@@ -471,7 +373,6 @@ function printHelp() {
       '  run [--config <path>] [--server-url <url>] [--node-id <id>] [--node-token <token>]',
       '      [--once] [--profile-key <key>] [--run-id <id>] [--workspace-root <path>]',
       '      [--terminal-backend tmux|exec]',
-      '  smoke-opencode --skill-version-id <id> --skill-source-json <json> [--workspace-root <path>]',
       '  import-external-run --server-url <url> --api-token <token> --external-run-key <key> --provider <provider> --log-file <path>',
       '  detect-profiles',
       '',
@@ -491,10 +392,6 @@ export async function runCli(argv: string[]) {
   }
   if (command === 'run') {
     await handleRun(flags);
-    return;
-  }
-  if (command === 'smoke-opencode') {
-    await handleSmokeOpenCode(flags);
     return;
   }
   if (command === 'import-external-run') {

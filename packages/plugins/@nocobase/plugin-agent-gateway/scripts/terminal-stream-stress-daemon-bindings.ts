@@ -195,38 +195,52 @@ async function upsertProfile(args: DaemonBindingStressArgs, token: string, nodeI
         body: values,
       },
     );
-    return;
+  } else {
+    await requestJson<JsonRecord>(args.baseUrl, '/api/agAgentProfiles:create', {
+      method: 'POST',
+      token,
+      body: values,
+    });
   }
-  await requestJson<JsonRecord>(args.baseUrl, '/api/agAgentProfiles:create', {
-    method: 'POST',
-    token,
-    body: values,
+  const profile = await findOneByFilter(args.baseUrl, token, 'agAgentProfiles', {
+    nodeId,
+    profileKey: args.profileKey,
   });
+  if (!profile) {
+    throw new Error('Stress daemon profile could not be read back');
+  }
+  return profile;
 }
 
-async function createAndClaimRun(args: DaemonBindingStressArgs, nodeId: string, nodeToken: string, index: number) {
+async function createAndClaimRun(
+  args: DaemonBindingStressArgs,
+  adminToken: string,
+  nodeId: string,
+  nodeToken: string,
+  profileId: string,
+  index: number,
+) {
   const runCode = `agw_terminal_binding_${args.scenarioKey}_${index}_${Date.now()}_${randomUUID().slice(0, 8)}`;
-  const created = await requestJson<JsonRecord>(
-    args.baseUrl,
-    `/api/agentGatewayApi:createSmokeRun/${encodeURIComponent(nodeId)}`,
-    {
-      method: 'POST',
-      nodeToken,
-      body: {
-        runCode,
+  const created = await requestJson<JsonRecord>(args.baseUrl, '/api/agentGatewayApi:createRun', {
+    method: 'POST',
+    token: adminToken,
+    body: {
+      runCode,
+      sourceType: 'acceptance-smoke',
+      nodeId,
+      agentProfileId: profileId,
+      promptSnapshot: {
+        text: `Terminal daemon binding stress ${index}`,
+      },
+      executionPayload: {
+        mode: 'terminal-daemon-binding-stress',
+        scenarioKey: args.scenarioKey,
+        index,
         profileKey: args.profileKey,
-        promptSnapshot: {
-          text: `Terminal daemon binding stress ${index}`,
-        },
-        executionPayload: {
-          mode: 'terminal-daemon-binding-stress',
-          scenarioKey: args.scenarioKey,
-          index,
-        },
       },
     },
-  );
-  const runId = getString(created.runId);
+  });
+  const runId = getString(created.id);
   const claimed = await requestJson<JsonRecord>(
     args.baseUrl,
     `/api/agentGatewayApi:claimRun/${encodeURIComponent(nodeId)}`,
@@ -255,10 +269,11 @@ async function main() {
     adminPassword: args.adminPassword,
   });
   const { nodeId, nodeToken } = await upsertNode(args, adminToken);
-  await upsertProfile(args, adminToken, nodeId);
+  const profile = await upsertProfile(args, adminToken, nodeId);
+  const profileId = getString(profile.id);
   const runs: ClaimedRun[] = [];
   for (let index = 0; index < args.bindings; index += 1) {
-    runs.push(await createAndClaimRun(args, nodeId, nodeToken, index + 1));
+    runs.push(await createAndClaimRun(args, adminToken, nodeId, nodeToken, profileId, index + 1));
   }
 
   const ws = new WebSocket(buildWsUrl(args.serverUrl), {

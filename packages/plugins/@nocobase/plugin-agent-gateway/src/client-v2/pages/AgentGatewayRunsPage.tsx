@@ -14,7 +14,6 @@ import {
   PlusOutlined,
   ReloadOutlined,
   StopOutlined,
-  UploadOutlined,
 } from '@ant-design/icons';
 import { Collection, type CollectionOptions, useFlowContext } from '@nocobase/flow-engine';
 import { CollectionFilter, type CompiledFilter } from '@nocobase/client-v2';
@@ -29,11 +28,8 @@ import {
   Empty,
   Flex,
   Form,
-  Input,
   List,
-  Modal,
   Pagination,
-  Select,
   Space,
   Spin,
   Table,
@@ -41,7 +37,6 @@ import {
   Tag,
   Tooltip,
   Typography,
-  Upload,
 } from 'antd';
 import type { TableProps, UploadProps } from 'antd';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
@@ -65,7 +60,6 @@ import {
 import { AgentTimeline, AgentTimelineEventRecord } from '../components/AgentTimeline';
 import { AgentSessionResumeBox, AgentSessionResumeInput } from '../components/AgentSessionResumeBox';
 import { LazyReadonlyXtermOutput } from '../components/LazyReadonlyXtermOutput';
-import { TerminalStreamSmokePanel, isTerminalStreamSmokeEnabled } from '../components/TerminalStreamSmokePanel';
 import {
   ApiCallLogRecord,
   ArtifactContentEntry,
@@ -79,7 +73,6 @@ import {
 import { useTerminalStream, UseTerminalStreamState } from '../hooks/useTerminalStream';
 import { useT } from '../locale';
 import {
-  AgentGatewayTaskParameterFormItems,
   BuildRunOptions,
   BuildSkillVersionOption,
   BuildTaskArtifactDeclarationFormValue,
@@ -90,7 +83,6 @@ import {
   getTaskArtifactDeclarations,
   getTaskArtifactFormValues,
   hasSelectableBuildRunner,
-  OPENCODE_UI_BATCH_SKILL_KEY,
   parseBuildRunnerValue,
 } from './AgentGatewayTaskParameterFormItems';
 import {
@@ -157,6 +149,13 @@ import {
   useInitialSkillVersionDetailQuery,
   useInitialTaskTemplateDetailQuery,
 } from './runs/runLocation';
+import {
+  BuildTaskDrawer,
+  DEFAULT_EXTERNAL_RUN_IMPORT_FORM_VALUES,
+  DEFAULT_SKILL_UPLOAD_FORM_VALUES,
+  ExternalRunImportDrawer,
+  SkillUploadModal,
+} from './runs/RunActionDrawers';
 
 const RUN_STATUS_OPTIONS = [
   'queued',
@@ -191,17 +190,6 @@ const DEFAULT_RUNS_PAGE_SIZE = 20;
 const DETAIL_PAGE_SIZE_OPTIONS = ['10', '20', '50', '100'];
 const TASK_RUN_DRAWER_WIDTH = 1040;
 const SKILL_DETAIL_DRAWER_WIDTH = 720;
-const DEFAULT_SKILL_UPLOAD_FORM_VALUES: SkillUploadFormValues = {
-  skillKey: OPENCODE_UI_BATCH_SKILL_KEY,
-  displayName: 'NB OpenCode UI Batch',
-  versionLabel: 'local',
-};
-const DEFAULT_EXTERNAL_RUN_IMPORT_FORM_VALUES: ExternalRunImportFormValues = {
-  provider: 'codex',
-  format: 'codex-jsonl',
-  status: 'succeeded',
-  externalRunKey: '',
-};
 const RUNS_FILTER_FIELD_NAMES = ['taskTemplateId', 'status', 'nodeId', 'agentProfileId', 'createdAt'];
 const RUN_SORT_FALLBACK = '-createdAt';
 
@@ -2097,17 +2085,11 @@ export default function AgentGatewayRunsPage() {
       if (!selectedSkillVersionId || !skillDetailOpen) {
         return null;
       }
-      const response = await ctx.api.request<SkillVersionDetailRecord[]>({
-        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.listSkillVersions),
+      const response = await ctx.api.request<SkillVersionDetailRecord>({
+        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.getSkillVersion, selectedSkillVersionId),
         method: 'get',
       });
-      const skillVersions = getResponseData(response, []);
-      return (
-        skillVersions.find(
-          (skillVersion) =>
-            skillVersion.id === selectedSkillVersionId || skillVersion.skillVersionId === selectedSkillVersionId,
-        ) || null
-      );
+      return getRequiredResponseData(response, t('Failed to load skill detail'));
     },
     {
       refreshDeps: [selectedSkillVersionId, skillDetailOpen],
@@ -3011,7 +2993,6 @@ export default function AgentGatewayRunsPage() {
   const apiCallLogs = activeRunApiLogsDetails?.apiCallLogs || [];
   const apiCallLogsMeta = activeRunApiLogsDetails?.meta || createDetailPageMeta();
   const apiCallLogsWarning = activeRunApiLogsDetails?.warning || rawLogDetailsWarning;
-  const showTerminalStreamSmoke = isTerminalStreamSmokeEnabled();
   const createStreamTicket = useCallback(
     async (runId: string) => {
       const response = await ctx.api.request<{
@@ -3335,9 +3316,6 @@ export default function AgentGatewayRunsPage() {
                         });
                       }}
                     />
-                    {showTerminalStreamSmoke && canStreamTerminal ? (
-                      <TerminalStreamSmokePanel runId={activeRunDetails.run.id} />
-                    ) : null}
                     <FastCollapse
                       defaultActiveKey={['live-output']}
                       openMotion={NO_COLLAPSE_MOTION}
@@ -3458,252 +3436,48 @@ export default function AgentGatewayRunsPage() {
         />
       </Drawer>
 
-      <Drawer
-        title={t('New task run')}
+      <BuildTaskDrawer
+        t={t}
         open={buildTaskOpen}
+        form={buildTaskForm}
+        loading={createBuildTaskRequest.loading}
+        optionsLoading={buildRunOptionsRequest.loading}
+        hasOnlineRunner={hasOnlineBuildRunner}
+        runnerOptions={buildRunnerSelectOptions}
+        skillVersionOptions={buildSkillVersionSelectOptions}
+        taskTemplateOptions={buildTaskTemplateSelectOptions}
+        defaultCwd={defaultBuildTaskCwd}
+        defaultRunner={defaultBuildRunnerValue}
         onClose={closeBuildTask}
-        width={TASK_RUN_DRAWER_WIDTH}
-        destroyOnClose
-        extra={
-          <Space>
-            <Button onClick={closeBuildTask}>{t('Close')}</Button>
-            <Button
-              type="primary"
-              loading={createBuildTaskRequest.loading}
-              disabled={buildRunOptionsRequest.loading || !hasOnlineBuildRunner}
-              onClick={submitBuildTask}
-            >
-              {t('Create')}
-            </Button>
-          </Space>
-        }
-      >
-        <Space direction="vertical" size={16} style={{ width: '100%' }}>
-          {buildRunnerSelectOptions.length ? null : (
-            <Alert type="warning" showIcon message={t('No active runner profiles yet')} />
-          )}
-          {buildRunnerSelectOptions.length && !hasOnlineBuildRunner ? (
-            <Alert
-              type="warning"
-              showIcon
-              message={t('No online runner is available. Start or reconnect the daemon.')}
-            />
-          ) : null}
-          <Form<BuildTaskFormValues>
-            form={buildTaskForm}
-            layout="vertical"
-            initialValues={{
-              cwd: defaultBuildTaskCwd,
-              runner: defaultBuildRunnerValue,
-            }}
-          >
-            <Form.Item label={t('Task template')} name="taskTemplateId">
-              <Select
-                allowClear
-                loading={buildRunOptionsRequest.loading}
-                onChange={handleBuildTaskTemplateChange}
-                options={buildTaskTemplateSelectOptions}
-                optionFilterProp="label"
-                placeholder={t('Select task template')}
-                showSearch
-              />
-            </Form.Item>
-            <AgentGatewayTaskParameterFormItems
-              t={t}
-              loading={buildRunOptionsRequest.loading}
-              runnerSelectOptions={buildRunnerSelectOptions}
-              skillVersionSelectOptions={buildSkillVersionSelectOptions}
-              promptRequired
-              runnerRequired
-              onUploadSkill={openSkillUploadModal}
-            />
-          </Form>
-        </Space>
-      </Drawer>
+        onSubmit={submitBuildTask}
+        onTemplateChange={handleBuildTaskTemplateChange}
+        onUploadSkill={openSkillUploadModal}
+      />
 
-      <Drawer
-        title={t('Import external run')}
+      <ExternalRunImportDrawer
+        t={t}
         open={externalRunImportOpen}
+        form={externalRunImportForm}
+        loading={importExternalRunRequest.loading}
+        logContent={externalRunLogContent}
         onClose={closeExternalRunImport}
-        width={TASK_RUN_DRAWER_WIDTH}
-        destroyOnClose
-        extra={
-          <Space>
-            <Button onClick={closeExternalRunImport}>{t('Close')}</Button>
-            <Button type="primary" loading={importExternalRunRequest.loading} onClick={submitExternalRunImport}>
-              {t('Import')}
-            </Button>
-          </Space>
-        }
-      >
-        <Form<ExternalRunImportFormValues>
-          form={externalRunImportForm}
-          layout="vertical"
-          initialValues={DEFAULT_EXTERNAL_RUN_IMPORT_FORM_VALUES}
-        >
-          <Form.Item
-            label={t('Provider')}
-            name="provider"
-            rules={[{ required: true, message: t('Provider is required') }]}
-          >
-            <Select
-              onChange={(provider) => {
-                const defaultFormats: Record<string, string> = {
-                  codex: 'codex-jsonl',
-                  opencode: 'opencode-jsonl',
-                  'claude-code': 'claude-code-jsonl',
-                  'generic-cli': 'text',
-                };
-                externalRunImportForm.setFieldValue('format', defaultFormats[String(provider)] || 'text');
-              }}
-              options={[
-                { value: 'codex', label: 'Codex' },
-                { value: 'opencode', label: 'OpenCode' },
-                { value: 'claude-code', label: 'Claude Code' },
-                { value: 'generic-cli', label: t('Generic CLI') },
-              ]}
-            />
-          </Form.Item>
-          <Form.Item
-            label={t('Log format')}
-            name="format"
-            rules={[{ required: true, message: t('Log format is required') }]}
-          >
-            <Select
-              options={[
-                { value: 'codex-jsonl', label: 'Codex JSONL' },
-                { value: 'opencode-jsonl', label: 'OpenCode JSONL' },
-                { value: 'claude-code-jsonl', label: 'Claude Code JSONL' },
-                { value: 'text', label: t('Plain text') },
-              ]}
-            />
-          </Form.Item>
-          <Form.Item label={t('Title')} name="title">
-            <Input />
-          </Form.Item>
-          <Form.Item label={t('Prompt')} name="instruction">
-            <Input.TextArea autoSize={{ minRows: 3, maxRows: 8 }} />
-          </Form.Item>
-          <Form.Item label={t('Status')} name="status" rules={[{ required: true, message: t('Status is required') }]}>
-            <Select
-              options={['running', 'succeeded', 'failed', 'canceled', 'timeout', 'abandoned'].map((status) => ({
-                value: status,
-                label: status,
-              }))}
-            />
-          </Form.Item>
-          <Form.Item
-            label={t('External run key')}
-            name="externalRunKey"
-            rules={[{ required: true, whitespace: true, message: t('External run key is required') }]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item label={t('Log file')}>
-            <Upload
-              accept=".jsonl,.ndjson,.json,.log,.txt,text/plain,application/json,application/x-ndjson"
-              beforeUpload={handleExternalLogBeforeUpload}
-              maxCount={1}
-              onRemove={handleExternalLogRemove}
-            >
-              <Button icon={<UploadOutlined />}>{t('Upload')}</Button>
-            </Upload>
-          </Form.Item>
-          <Form.Item label={t('Raw log')}>
-            <Input.TextArea
-              aria-label={t('Raw log')}
-              autoSize={{ minRows: 8, maxRows: 16 }}
-              value={externalRunLogContent}
-              onChange={(event) => setExternalRunLogContent(event.target.value)}
-            />
-          </Form.Item>
-          <FastCollapse
-            ghost
-            size="small"
-            openMotion={NO_COLLAPSE_MOTION}
-            items={[
-              {
-                key: 'advanced',
-                label: t('Advanced'),
-                children: (
-                  <Space direction="vertical" size={16} style={{ width: '100%' }}>
-                    <Form.Item label={t('Provider session ID')} name="providerSessionId">
-                      <Input />
-                    </Form.Item>
-                    <Form.Item label={t('Source collection')} name="sourceCollection">
-                      <Input />
-                    </Form.Item>
-                    <Form.Item label={t('Source record ID')} name="sourceRecordId">
-                      <Input />
-                    </Form.Item>
-                    <Form.Item label={t('Output Agent run field')} name="outputAgentRunField">
-                      <Input />
-                    </Form.Item>
-                  </Space>
-                ),
-              },
-            ]}
-          />
-        </Form>
-      </Drawer>
+        onSubmit={submitExternalRunImport}
+        onLogContentChange={setExternalRunLogContent}
+        beforeUpload={handleExternalLogBeforeUpload}
+        onRemove={handleExternalLogRemove}
+      />
 
-      <Modal
-        title={t('Upload skill')}
+      <SkillUploadModal
+        t={t}
         open={skillUploadOpen}
-        onCancel={closeSkillUploadModal}
-        onOk={submitSkillUpload}
-        confirmLoading={uploadSkillVersionRequest.loading}
-        okText={t('Upload')}
-        cancelText={t('Close')}
-        destroyOnClose
-      >
-        <Space direction="vertical" size={16} style={{ width: '100%' }}>
-          <Form<SkillUploadFormValues>
-            form={skillUploadForm}
-            layout="vertical"
-            initialValues={DEFAULT_SKILL_UPLOAD_FORM_VALUES}
-          >
-            <Form.Item
-              label={t('Skill key')}
-              name="skillKey"
-              rules={[{ required: true, message: t('Skill key is required') }]}
-            >
-              <Input />
-            </Form.Item>
-            <Form.Item label={t('Display name')} name="displayName">
-              <Input />
-            </Form.Item>
-            <Form.Item
-              label={t('Version label')}
-              name="versionLabel"
-              rules={[{ required: true, message: t('Version label is required') }]}
-            >
-              <Input placeholder="local" />
-            </Form.Item>
-            <Form.Item label={t('Skill ZIP file')} required>
-              <Upload
-                accept=".zip,application/zip"
-                beforeUpload={handleSkillZipBeforeUpload}
-                maxCount={1}
-                onRemove={handleSkillZipRemove}
-              >
-                <Button icon={<UploadOutlined />}>{t('Select ZIP')}</Button>
-              </Upload>
-            </Form.Item>
-          </Form>
-
-          {skillUploadResult ? (
-            <Alert
-              type="success"
-              showIcon
-              message={t('Skill uploaded')}
-              description={[skillUploadResult.skillKey, skillUploadResult.versionLabel, skillUploadResult.status]
-                .filter(Boolean)
-                .join(' / ')}
-            />
-          ) : null}
-        </Space>
-      </Modal>
+        form={skillUploadForm}
+        loading={uploadSkillVersionRequest.loading}
+        result={skillUploadResult}
+        onClose={closeSkillUploadModal}
+        onSubmit={submitSkillUpload}
+        beforeUpload={handleSkillZipBeforeUpload}
+        onRemove={handleSkillZipRemove}
+      />
     </section>
   );
 }

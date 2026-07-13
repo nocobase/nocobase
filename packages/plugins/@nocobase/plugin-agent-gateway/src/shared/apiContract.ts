@@ -21,20 +21,19 @@ export const AGENT_GATEWAY_API_ACTIONS = {
   uploadSkillVersion: 'uploadSkillVersion',
   createSkillVersionFromUpload: 'createSkillVersionFromUpload',
   listSkillVersions: 'listSkillVersions',
+  getSkillVersion: 'getSkillVersion',
   downloadSkillVersion: 'downloadSkillVersion',
   listRunOptions: 'listRunOptions',
   createTaskRun: 'createTaskRun',
   listRuns: 'listRuns',
   getRun: 'getRun',
   createRun: 'createRun',
-  createSmokeRun: 'createSmokeRun',
   claimRun: 'claimRun',
   heartbeatRun: 'heartbeatRun',
   completeRun: 'completeRun',
   failRun: 'failRun',
   timeoutRun: 'timeoutRun',
   ackCancelRun: 'ackCancelRun',
-  skipRun: 'skipRun',
   cancelRun: 'cancelRun',
   expireRunLeases: 'expireRunLeases',
   listTaskTemplates: 'listTaskTemplates',
@@ -94,14 +93,12 @@ export const AGENT_GATEWAY_MACHINE_API_ACTIONS = [
   AGENT_GATEWAY_API_ACTIONS.heartbeatNode,
   AGENT_GATEWAY_API_ACTIONS.upsertNodeSkillInstall,
   AGENT_GATEWAY_API_ACTIONS.downloadSkillVersion,
-  AGENT_GATEWAY_API_ACTIONS.createSmokeRun,
   AGENT_GATEWAY_API_ACTIONS.claimRun,
   AGENT_GATEWAY_API_ACTIONS.heartbeatRun,
   AGENT_GATEWAY_API_ACTIONS.completeRun,
   AGENT_GATEWAY_API_ACTIONS.failRun,
   AGENT_GATEWAY_API_ACTIONS.timeoutRun,
   AGENT_GATEWAY_API_ACTIONS.ackCancelRun,
-  AGENT_GATEWAY_API_ACTIONS.skipRun,
   AGENT_GATEWAY_API_ACTIONS.upsertAgentSession,
   AGENT_GATEWAY_API_ACTIONS.appendConversationEvents,
   AGENT_GATEWAY_API_ACTIONS.appendRunEvents,
@@ -121,6 +118,7 @@ export const AGENT_GATEWAY_MANAGE_API_ACTIONS = [
   AGENT_GATEWAY_API_ACTIONS.uploadSkillVersion,
   AGENT_GATEWAY_API_ACTIONS.createSkillVersionFromUpload,
   AGENT_GATEWAY_API_ACTIONS.listSkillVersions,
+  AGENT_GATEWAY_API_ACTIONS.getSkillVersion,
   AGENT_GATEWAY_API_ACTIONS.listRuns,
   AGENT_GATEWAY_API_ACTIONS.getRun,
   AGENT_GATEWAY_API_ACTIONS.createRun,
@@ -159,4 +157,28 @@ export function getAgentGatewayApiUrl(action: AgentGatewayApiAction, targetKey?:
 
 export function getAgentGatewayApiPath(action: AgentGatewayApiAction, targetKey?: string | number) {
   return `/api/${getAgentGatewayApiUrl(action, targetKey)}`;
+}
+
+export interface AgentGatewayPaginationMeta {
+  count: number;
+  page: number;
+  pageSize: number;
+  totalPage: number;
+}
+
+export interface AgentGatewaySkillVersionSummary {
+  id: string;
+  skillVersionId: string;
+  skillId: string | null;
+  skillKey: string | null;
+  displayName: string | null;
+  skillStatus: string | null;
+  versionLabel: string;
+  status: string;
+  sourceType: string | null;
+  sourceSha256: string | null;
+  sourceSizeBytes: number | null;
+  sourceUploadedAt: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
 }

@@ -28,8 +28,14 @@ import {
 } from 'antd';
 import type { UploadProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import type { TablePaginationConfig } from 'antd/es/table/interface';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiUrl } from '../../shared/apiContract';
+import {
+  AGENT_GATEWAY_API_ACTIONS,
+  AgentGatewayPaginationMeta,
+  AgentGatewaySkillVersionSummary,
+  getAgentGatewayApiUrl,
+} from '../../shared/apiContract';
 import { useT } from '../locale';
 import {
   AgentGatewayContext,
@@ -55,22 +61,7 @@ interface SkillUploadResult {
   idempotent?: boolean;
 }
 
-interface SkillVersionRecord {
-  id: string;
-  skillVersionId?: string;
-  skillId?: string | null;
-  skillKey?: string | null;
-  displayName?: string | null;
-  skillStatus?: string | null;
-  versionLabel?: string;
-  status?: string;
-  sourceType?: string | null;
-  sourceSha256?: string | null;
-  sourceSizeBytes?: number | null;
-  sourceUploadedAt?: string | null;
-  createdAt?: string | null;
-  updatedAt?: string | null;
-}
+type SkillVersionRecord = AgentGatewaySkillVersionSummary;
 
 const DEFAULT_SKILL_UPLOAD_FORM_VALUES: SkillUploadFormValues = {
   skillKey: 'nb-opencode-ui-batch',
@@ -80,6 +71,7 @@ const DEFAULT_SKILL_UPLOAD_FORM_VALUES: SkillUploadFormValues = {
 
 const SKILL_VERSION_DETAIL_QUERY_PARAM = 'skillVersionId';
 const SKILL_DETAIL_DRAWER_WIDTH = 720;
+const DEFAULT_SKILL_VERSION_PAGE_SIZE = 20;
 
 function getSkillVersionIdFromLocationSearch() {
   if (typeof window === 'undefined') {
@@ -123,23 +115,47 @@ export default function AgentGatewaySkillsPage() {
   const [skillUploadOpen, setSkillUploadOpen] = useState(false);
   const [skillZipFile, setSkillZipFile] = useState<File | null>(null);
   const [skillUploadResult, setSkillUploadResult] = useState<SkillUploadResult | null>(null);
+  const [pagination, setPagination] = useState({ current: 1, pageSize: DEFAULT_SKILL_VERSION_PAGE_SIZE });
 
-  const skillVersionsRequest = useRequest(async () => {
-    const response = await ctx.api.request<SkillVersionRecord[]>({
-      url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.listSkillVersions),
-      method: 'get',
-    });
-    return getResponseData(response, []);
-  });
-
-  const selectedSkillVersion = useMemo(
-    () =>
-      skillVersionsRequest.data?.find(
-        (skillVersion) =>
-          skillVersion.id === selectedSkillVersionId || skillVersion.skillVersionId === selectedSkillVersionId,
-      ),
-    [selectedSkillVersionId, skillVersionsRequest.data],
+  const skillVersionsRequest = useRequest(
+    async () => {
+      const response = await ctx.api.request<SkillVersionRecord[], AgentGatewayPaginationMeta>({
+        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.listSkillVersions),
+        method: 'get',
+        params: {
+          page: pagination.current,
+          pageSize: pagination.pageSize,
+        },
+      });
+      return {
+        rows: getResponseData(response, []),
+        meta: response.data?.meta,
+      };
+    },
+    {
+      refreshDeps: [pagination.current, pagination.pageSize],
+    },
   );
+
+  const skillVersionDetailsRequest = useRequest(
+    async () => {
+      if (!selectedSkillVersionId || !skillDetailOpen) {
+        return null;
+      }
+      const response = await ctx.api.request<SkillVersionRecord>({
+        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.getSkillVersion, selectedSkillVersionId),
+        method: 'get',
+      });
+      return getRequiredResponseData(response, t('Failed to load skill detail'));
+    },
+    {
+      refreshDeps: [selectedSkillVersionId, skillDetailOpen],
+      onError() {
+        ctx.message?.error(t('Failed to load skill detail'));
+      },
+    },
+  );
+  const selectedSkillVersion = skillVersionDetailsRequest.data;
 
   const uploadSkillVersionRequest = useRequest(
     async (values: SkillUploadFormValues & { file: File }) => {
@@ -277,6 +293,17 @@ export default function AgentGatewaySkillsPage() {
     ],
     [openSkillDetails, t],
   );
+  const tablePagination = useMemo<TablePaginationConfig>(
+    () => ({
+      current: pagination.current,
+      pageSize: pagination.pageSize,
+      total: skillVersionsRequest.data?.meta?.count ?? skillVersionsRequest.data?.rows.length ?? 0,
+      showSizeChanger: true,
+      pageSizeOptions: ['10', '20', '50', '100'],
+      showTotal: (total) => t('Total {{count}} skill versions', { count: total }),
+    }),
+    [pagination, skillVersionsRequest.data, t],
+  );
 
   return (
     <section aria-label={t('Agent Gateway Skills')}>
@@ -295,13 +322,19 @@ export default function AgentGatewaySkillsPage() {
 
           <Table<SkillVersionRecord>
             columns={skillVersionColumns}
-            dataSource={skillVersionsRequest.data || []}
+            dataSource={skillVersionsRequest.data?.rows || []}
             loading={skillVersionsRequest.loading}
             rowKey="id"
             locale={{
               emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('No skills yet')} />,
             }}
-            pagination={false}
+            pagination={tablePagination}
+            onChange={(nextPagination) => {
+              setPagination({
+                current: nextPagination.current || 1,
+                pageSize: nextPagination.pageSize || DEFAULT_SKILL_VERSION_PAGE_SIZE,
+              });
+            }}
           />
         </Space>
       </Card>
@@ -313,7 +346,9 @@ export default function AgentGatewaySkillsPage() {
         width={SKILL_DETAIL_DRAWER_WIDTH}
         destroyOnClose
       >
-        {selectedSkillVersion ? (
+        {skillVersionDetailsRequest.loading ? (
+          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('Loading')} />
+        ) : selectedSkillVersion ? (
           <Descriptions bordered size="small" column={1}>
             <Descriptions.Item label={t('Skill')}>{selectedSkillVersion.displayName || '-'}</Descriptions.Item>
             <Descriptions.Item label={t('Skill key')}>{selectedSkillVersion.skillKey || '-'}</Descriptions.Item>

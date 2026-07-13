@@ -69,15 +69,6 @@ export class AgentGatewayDaemonNodeClient {
     });
   }
 
-  async createRun(values: JsonRecord): Promise<{ runId: string }> {
-    return await this.requester.request<{ runId: string }>({
-      method: 'POST',
-      path: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.createSmokeRun, this.config.nodeId),
-      nodeToken: this.config.nodeToken,
-      body: values,
-    });
-  }
-
   async claimRun(options?: string | { profileKey?: string; runId?: string }): Promise<RunLease> {
     const body =
       typeof options === 'string'
@@ -287,19 +278,6 @@ export class AgentGatewayDaemonNodeClient {
         requestId,
         status,
         ...values,
-      },
-    });
-  }
-
-  async skipRun(runId: string, reason: string, resultSummary: JsonRecord = {}) {
-    await this.requester.request({
-      method: 'POST',
-      path: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.skipRun, runId),
-      nodeToken: this.config.nodeToken,
-      body: {
-        nodeId: this.config.nodeId,
-        reason,
-        resultSummary,
       },
     });
   }

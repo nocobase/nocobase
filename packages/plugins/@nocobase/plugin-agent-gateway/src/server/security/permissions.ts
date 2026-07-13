@@ -76,6 +76,7 @@ export const AGENT_GATEWAY_INTERNAL_COLLECTIONS = [
   'agExternalRunIdentities',
   'agExternalImportBatches',
   'agFileUploads',
+  'agMaintenanceLeases',
 ] as const;
 
 const AGENT_GATEWAY_INTERNAL_COLLECTION_ACTIONS = AGENT_GATEWAY_INTERNAL_COLLECTIONS.map(
@@ -286,6 +287,7 @@ export const AGENT_GATEWAY_PERMISSION_DEFINITIONS = [
       getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.uploadSkillVersion),
       getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.createSkillVersionFromUpload),
       getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.listSkillVersions),
+      getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.getSkillVersion),
       'agSkills:*',
       'agSkillVersions:*',
       'agNodeSkillInstalls:*',

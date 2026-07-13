@@ -19,6 +19,7 @@ import { Transaction } from 'sequelize';
 
 import {
   AGENT_GATEWAY_API_ACTIONS,
+  AgentGatewaySkillVersionSummary,
   getAgentGatewayApiActionName,
   getAgentGatewayApiPath,
 } from '../../shared/apiContract';
@@ -44,6 +45,8 @@ const MAX_SKILL_ZIP_UPLOAD_BYTES = 50 * 1024 * 1024;
 const BASE64_PATTERN = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
 const SHA256_PATTERN = /^[0-9a-f]{64}$/i;
 const VERSION_STATUSES = new Set(['active', 'inactive', 'deprecated']);
+const DEFAULT_SKILL_VERSION_PAGE_SIZE = 20;
+const MAX_SKILL_VERSION_PAGE_SIZE = 100;
 
 function hasOwnKey(value: JsonRecord, key: string) {
   return Object.prototype.hasOwnProperty.call(value, key);
@@ -406,7 +409,7 @@ function getRelatedSkillTargetKey(skillVersion: ModelRecord, key: string) {
   return typeof value === 'string' || typeof value === 'number' ? String(value) : '';
 }
 
-function serializeSkillVersionForManagement(skillVersion: ModelRecord) {
+function serializeSkillVersionForManagement(skillVersion: ModelRecord): AgentGatewaySkillVersionSummary {
   const metadata = getRecord(getModelValue(skillVersion, 'metadataJson'));
   const source = getRecord(metadata.source);
   return {
@@ -429,11 +432,43 @@ function serializeSkillVersionForManagement(skillVersion: ModelRecord) {
 
 async function listSkillVersions(ctx: Context) {
   await requireManagePermission(ctx);
-  const skillVersions = (await ctx.db.getRepository('agSkillVersions').find({
+  const query = getRecord(ctx.query);
+  const requestedPage = Number(query.page || 1);
+  const requestedPageSize = Number(query.pageSize || query.limit || DEFAULT_SKILL_VERSION_PAGE_SIZE);
+  const page = Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
+  const pageSize =
+    Number.isInteger(requestedPageSize) && requestedPageSize > 0
+      ? Math.min(requestedPageSize, MAX_SKILL_VERSION_PAGE_SIZE)
+      : DEFAULT_SKILL_VERSION_PAGE_SIZE;
+  const repository = ctx.db.getRepository('agSkillVersions');
+  const [count, skillVersions] = await Promise.all([
+    repository.count(),
+    repository.find({
+      appends: ['skill'],
+      sort: ['-createdAt'],
+      limit: pageSize,
+      offset: (page - 1) * pageSize,
+    }) as Promise<ModelRecord[]>,
+  ]);
+  ctx.body = {
+    rows: skillVersions.map(serializeSkillVersionForManagement),
+    count,
+    page,
+    pageSize,
+    totalPage: Math.ceil(count / pageSize),
+  };
+}
+
+async function getSkillVersion(ctx: Context, skillVersionId: string) {
+  await requireManagePermission(ctx);
+  const skillVersion = (await ctx.db.getRepository('agSkillVersions').findOne({
+    filterByTk: skillVersionId,
     appends: ['skill'],
-    sort: ['-createdAt'],
-  })) as ModelRecord[];
-  ctx.body = skillVersions.map(serializeSkillVersionForManagement);
+  })) as ModelRecord | null;
+  if (!skillVersion) {
+    ctx.throw(404, 'Skill version not found');
+  }
+  ctx.body = serializeSkillVersionForManagement(skillVersion);
 }
 
 async function downloadSkillVersionArchive(ctx: Context, skillVersionId: string) {
@@ -501,6 +536,11 @@ export function registerSkillVersionRoutes(plugin: Plugin) {
     },
     [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.listSkillVersions)]: async (ctx, next) => {
       await listSkillVersions(asActionContext(ctx));
+      await next();
+    },
+    [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.getSkillVersion)]: async (ctx, next) => {
+      const actionCtx = asActionContext(ctx);
+      await getSkillVersion(actionCtx, getActionTargetKey(actionCtx));
       await next();
     },
     [getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.downloadSkillVersion)]: async (ctx, next) => {

@@ -37,7 +37,6 @@ const LOGGED_API_ACTIONS = new Set<AgentGatewayApiAction>([
 const NODE_TARGET_API_ACTIONS = new Set<AgentGatewayApiAction>([
   AGENT_GATEWAY_API_ACTIONS.heartbeatNode,
   AGENT_GATEWAY_API_ACTIONS.claimRun,
-  AGENT_GATEWAY_API_ACTIONS.createSmokeRun,
   AGENT_GATEWAY_API_ACTIONS.upsertNodeSkillInstall,
 ]);
 const SESSION_TARGET_API_ACTIONS = new Set<AgentGatewayApiAction>([
