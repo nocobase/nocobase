@@ -33,6 +33,7 @@ export interface AttachmentModel {
   id?: number;
   title: string;
   filename: string;
+  extname?: string;
   mimetype?: string;
   path: string;
   url?: string;

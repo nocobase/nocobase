@@ -408,10 +408,10 @@ export const isSameOriginUrl = (url?: string) => {
 };
 
 const isPermanentFileUrl = (url: URL) => {
-  const publicPath = new URL(window.__nocobase_public_path__ || '/', window.location.href).pathname.replace(
-    /\/+$/g,
-    '',
-  );
+  const publicPath = new URL(
+    (window as NocoBaseWindow).__nocobase_public_path__ || '/',
+    window.location.href,
+  ).pathname.replace(/\/+$/g, '');
   const filesPath = `${publicPath}/files`;
   return (
     url.pathname === '/files' ||

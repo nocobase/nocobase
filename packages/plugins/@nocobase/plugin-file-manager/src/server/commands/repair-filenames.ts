@@ -157,11 +157,11 @@ function getColumnName(model: AttachmentModelLike, attribute: keyof AttachmentRo
 }
 
 function quotedColumn(app: Application, model: AttachmentModelLike, attribute: keyof AttachmentRow) {
-  return app.db.sequelize.getQueryInterface().queryGenerator.quoteIdentifier(getColumnName(model, attribute));
+  return app.db.quoteIdentifier(getColumnName(model, attribute));
 }
 
 function quotedAlias(app: Application, attribute: keyof AttachmentRow) {
-  return app.db.sequelize.getQueryInterface().queryGenerator.quoteIdentifier(attribute);
+  return app.db.quoteIdentifier(attribute);
 }
 
 async function findAttachmentRows(

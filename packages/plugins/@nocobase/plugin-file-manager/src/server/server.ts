@@ -43,6 +43,8 @@ const DEFAULT_STORAGE_TYPE = STORAGE_TYPE_LOCAL;
 const DEFAULT_APP_NAME = 'main';
 const DEFAULT_DATA_SOURCE_KEY = 'main';
 
+type AttachmentRecord = Model & AttachmentModel;
+
 class FileDeleteError extends Error {
   data: Model;
 
@@ -260,6 +262,10 @@ export class PluginFileManagerServer extends Plugin {
       if (collection.options.template !== 'file') {
         return;
       }
+      collection.setField('local', {
+        type: 'virtual',
+        hidden: true,
+      });
       const idField = collection.getField('id');
       if (idField) {
         idField.options.deletable = false;
@@ -270,7 +276,7 @@ export class PluginFileManagerServer extends Plugin {
         extnameField.options.updatable = false;
       }
       collection.model.afterCreate(async (model) => {
-        await this.setFileResponseURLs(model, collection.name);
+        await this.setFileResponseURLs(model as AttachmentRecord, collection.name);
       });
       collection.model.beforeUpdate((model) => {
         if (model.changed('extname')) {
@@ -392,14 +398,14 @@ export class PluginFileManagerServer extends Plugin {
         const collection = this.db.getCollection(name);
         if (collection?.name === 'attachments' || collection?.options?.template === 'file') {
           for (const record of records) {
-            await this.setFileResponseURLs(record, collection.name);
+            await this.setFileResponseURLs(record as AttachmentRecord, collection.name);
           }
         }
       }
     });
   }
 
-  async setFileResponseURLs(record: AttachmentModel, collectionName: string) {
+  async setFileResponseURLs(record: AttachmentRecord, collectionName: string) {
     const url = this.getPermanentFileURL(record, false, { collectionName });
     const previewUrl = this.getPermanentFileURL(record, true, { collectionName });
     const storage = this.storagesCache.get(record.get('storageId'));
@@ -407,9 +413,7 @@ export class PluginFileManagerServer extends Plugin {
     record.set('preview', previewUrl);
     record.dataValues.preview = previewUrl; // 强制添加preview，在附件字段时，通过set设置无效
     if (storage?.type) {
-      const local = storage.type === STORAGE_TYPE_LOCAL;
-      record.set('local', local);
-      record.dataValues.local = local;
+      record.set('local', storage.type === STORAGE_TYPE_LOCAL);
     }
   }
 

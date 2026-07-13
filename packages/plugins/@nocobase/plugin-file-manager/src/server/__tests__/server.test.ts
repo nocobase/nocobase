@@ -954,6 +954,27 @@ describe('file manager > server', () => {
         expect(response.headers.location).toBe(await plugin.getFileURL(found));
       });
 
+      it('does not persist the local response flag when associating file records', async () => {
+        const user = await db.getRepository('users').create({
+          values: {
+            name: 'file-owner',
+          },
+        });
+        const file = await plugin.createFileRecord({
+          collectionName: 'files',
+          filePath: path.resolve(__dirname, './files/text.txt'),
+        });
+
+        await user.setFiles([file]);
+        await user.setFiles([], { individualHooks: true });
+
+        const associatedFile = await db.getRepository('files').findOne({
+          filterByTk: file.id,
+        });
+        expect(associatedFile.get('userId')).toBeNull();
+        expect(associatedFile.get('local')).toBe(true);
+      });
+
       it('uses current app name in permanent URL and rejects other app names', async () => {
         const originalName = app.options.name;
         app.options.name = 'subapp';
