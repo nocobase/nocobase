@@ -11,6 +11,7 @@ import React from 'react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
+import { Form } from 'antd';
 import { FilterDynamicComponent } from '../FilterDynamicComponent';
 
 const testState = vi.hoisted(() => ({
@@ -313,6 +314,27 @@ describe('FilterDynamicComponent', () => {
           onChange={() => undefined}
           disabled
         />
+      </FlowEngineProvider>,
+    );
+
+    expect(testState.variableFilterItems.length).toBeGreaterThan(0);
+    expect(testState.variableFilterItems.at(-1)?.disabled).toBe(true);
+    expect(screen.getByText('Add condition').closest('button')).toBeDisabled();
+    expect(screen.getByText('Add condition group').closest('button')).toBeDisabled();
+  });
+
+  it('inherits disabled state from the parent form', () => {
+    const { engine } = setupEngine();
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <Form disabled>
+          <FilterDynamicComponent
+            collection="posts"
+            value={{ $and: [{ title: { $eq: 'foo' } }] }}
+            onChange={() => undefined}
+          />
+        </Form>
       </FlowEngineProvider>,
     );
 

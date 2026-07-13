@@ -9,11 +9,12 @@
 
 import React from 'react';
 import { render, screen } from '@testing-library/react';
+import { Form } from 'antd';
 import { describe, expect, it, vi } from 'vitest';
 import { CalculationConfig } from '../Calculation';
 
 const holder = vi.hoisted(() => ({
-  typedVariableInputProps: [] as Array<{ metaTree: unknown; value: unknown; style: unknown }>,
+  typedVariableInputProps: [] as Array<{ disabled: boolean; metaTree: unknown; value: unknown; style: unknown }>,
 }));
 
 vi.mock('../../locale', () => ({
@@ -23,8 +24,9 @@ vi.mock('../../locale', () => ({
 }));
 
 vi.mock('@nocobase/client-v2', () => ({
-  TypedVariableInput: (props: any) => {
+  TypedVariableInput: (props: { disabled?: boolean; metaTree?: unknown; style?: unknown; value?: unknown }) => {
     holder.typedVariableInputProps.push({
+      disabled: Boolean(props.disabled),
       metaTree: props.metaTree,
       value: props.value,
       style: props.style,
@@ -92,5 +94,27 @@ describe('CalculationConfig', () => {
     expect(holder.typedVariableInputProps).toHaveLength(2);
     expect(holder.typedVariableInputProps[0].style).toBeUndefined();
     expect(holder.typedVariableInputProps[1].style).toBeUndefined();
+  });
+
+  it('inherits disabled state from the parent form for both operands', () => {
+    holder.typedVariableInputProps = [];
+
+    render(
+      <Form disabled>
+        <CalculationConfig
+          useVariableHook={() => [{ name: '$context', title: 'Trigger variables', paths: ['$context'], type: '' }]}
+          value={{
+            group: {
+              type: 'and',
+              calculations: [{ calculator: 'equal', operands: ['{{$context.data.id}}', 0] }],
+            },
+          }}
+          onChange={() => undefined}
+        />
+      </Form>,
+    );
+
+    expect(holder.typedVariableInputProps).toHaveLength(2);
+    expect(holder.typedVariableInputProps.every((props) => props.disabled)).toBe(true);
   });
 });
