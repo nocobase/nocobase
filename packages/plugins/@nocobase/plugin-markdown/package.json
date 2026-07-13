@@ -6,7 +6,7 @@
   "description": "Provide Markdown blocks and collection fields powered by a pluggable Markdown engine, with Vditor as the default implementation.",
   "description.ru-RU": "Provides Markdown blocks and collection fields powered by a pluggable Markdown engine, with Vditor as the default implementation.",
   "description.zh-CN": "提供 Markdown 区块和数据表字段，由可插拔 Markdown 引擎驱动，默认实现为 Vditor。",
-  "version": "2.2.0-alpha.7",
+  "version": "2.2.0-alpha.8",
   "license": "Apache-2.0",
   "main": "dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/field-markdown-vditor",
