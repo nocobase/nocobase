@@ -461,7 +461,8 @@
   "When enabled, URL and headers can use current user variables and NocoBase request variables. Stdio transport is not supported.": "When enabled, URL and headers can use current user variables and NocoBase request variables. Stdio transport is not supported.",
   "Connection test failed": "Connection test failed",
   "The MCP server uses current user variables and the connection test failed. Do you want to save it anyway?": "The MCP server uses current user variables and the connection test failed. Do you want to save it anyway?",
-  "Save anyway": "Save anyway",
+  "Invalid attachment": "Invalid attachment",
+  "Attachment not found": "Attachment not found",
   "MiniMax (OpenAI-compatible; Anthropic via Anthropic provider)": "MiniMax (OpenAI-compatible; Anthropic via Anthropic provider)",
   "MiniMax endpoint configuration": "MiniMax endpoint configuration",
   "The MiniMax provider uses the OpenAI-compatible API.": "The MiniMax provider uses the OpenAI-compatible API.",
@@ -478,5 +479,6 @@
   "Disabled": "Disabled",
   "Standard": "Standard",
   "Priority": "Priority",
-  "Use model default": "Use model default"
+  "Use model default": "Use model default",
+  "Save anyway": "Save anyway"
 }

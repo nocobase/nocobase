@@ -9,9 +9,9 @@
 
 import { LLMProvider, ParsedAttachmentResult } from './provider';
 import { ChatAnthropic } from '@langchain/anthropic';
-import { PluginFileManagerServer } from '@nocobase/plugin-file-manager';
+import type { AttachmentModel } from '@nocobase/plugin-file-manager';
 import { serverRequest } from '@nocobase/utils';
-import { encodeFile, stripToolCallTags } from '../utils';
+import { stripToolCallTags } from '../utils';
 import { Model } from '@nocobase/database';
 import { LLMProviderMeta, SupportedModel } from '../manager/ai-manager';
 import { Context } from '@nocobase/actions';
@@ -196,10 +196,8 @@ export class AnthropicProvider extends LLMProvider {
       }));
   }
 
-  protected async convertToContent(ctx: Context, attachment: any): Promise<ParsedAttachmentResult> {
-    const fileManager = this.app.pm.get('file-manager') as PluginFileManagerServer;
-    const url = await fileManager.getFileURL(attachment);
-    const data = await encodeFile(ctx, decodeURIComponent(url));
+  protected async convertToContent(ctx: Context, attachment: AttachmentModel): Promise<ParsedAttachmentResult> {
+    const data = await this.encodeAttachment(ctx, attachment);
     if (attachment.mimetype.startsWith('image/')) {
       return {
         placement: 'contentBlocks',

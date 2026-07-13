@@ -467,6 +467,8 @@
   "When enabled, URL and headers can use current user variables and NocoBase request variables. Stdio transport is not supported.": "启用后，可在 URL 和请求头中使用当前用户变量和 NocoBase 请求变量。Stdio 传输方式不支持。",
   "Connection test failed": "连接测试失败",
   "The MCP server uses current user variables and the connection test failed. Do you want to save it anyway?": "该 MCP 服务使用当前用户变量，且连接测试失败。是否仍然保存？",
+  "Invalid attachment": "无效的附件",
+  "Attachment not found": "附件不存在",
   "MiniMax (OpenAI-compatible; Anthropic via Anthropic provider)": "MiniMax (OpenAI-compatible; Anthropic via Anthropic provider)",
   "MiniMax endpoint configuration": "MiniMax endpoint configuration",
   "The MiniMax provider uses the OpenAI-compatible API.": "The MiniMax provider uses the OpenAI-compatible API.",
