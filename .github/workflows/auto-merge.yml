@@ -89,7 +89,7 @@ jobs:
           WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: bash nocobase-scripts/scripts/feishu-notify.sh
       # - name: push ${{ inputs.repository || 'nocobase' }}(${{ steps.get-branch.outputs.targetBranch }})
-      #   uses: ad-m/github-push-action@master
+      #   uses: ad-m/github-push-action@881a6320fdb16eb5318c5054f31c218aec2b324c # master
       #   with:
       #     branch: ${{ steps.get-branch.outputs.targetBranch }}
       #     github_token: ${{ steps.app-token.outputs.token }}
