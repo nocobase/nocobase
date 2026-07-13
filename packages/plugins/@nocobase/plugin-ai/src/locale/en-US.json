@@ -461,5 +461,7 @@
   "When enabled, URL and headers can use current user variables and NocoBase request variables. Stdio transport is not supported.": "When enabled, URL and headers can use current user variables and NocoBase request variables. Stdio transport is not supported.",
   "Connection test failed": "Connection test failed",
   "The MCP server uses current user variables and the connection test failed. Do you want to save it anyway?": "The MCP server uses current user variables and the connection test failed. Do you want to save it anyway?",
+  "Invalid attachment": "Invalid attachment",
+  "Attachment not found": "Attachment not found",
   "Save anyway": "Save anyway"
 }

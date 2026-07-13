@@ -71,6 +71,7 @@ function compileCreatePlan(
   const steps: FlowSurfacePlanStep[] = [];
   const chrome = buildPageChrome(document);
   const layoutUid = document.navigation?.layoutUid;
+  const portalUid = document.navigation?.portalUid;
 
   if (_.isPlainObject(document.navigation?.group) && _.isUndefined(document.navigation.group.routeId)) {
     steps.push({
@@ -78,6 +79,7 @@ function compileCreatePlan(
       action: 'createMenu',
       values: buildDefinedPayload({
         layoutUid,
+        portalUid,
         title: document.navigation?.group?.title,
         type: 'group',
         icon: document.navigation?.group?.icon,
@@ -92,6 +94,7 @@ function compileCreatePlan(
     action: 'createMenu',
     values: buildDefinedPayload({
       layoutUid,
+      portalUid,
       title: document.navigation?.item?.title || chrome.pageTitle,
       type: 'item',
       icon: document.navigation?.item?.icon || document.page?.icon || 'FileOutlined',
@@ -110,6 +113,7 @@ function compileCreatePlan(
     action: 'createPage',
     values: buildDefinedPayload({
       layoutUid,
+      portalUid,
       menuRouteId: { step: CREATE_MENU_ITEM_STEP_ID, path: 'routeId' },
       title: chrome.pageTitle,
       icon: document.page?.icon,

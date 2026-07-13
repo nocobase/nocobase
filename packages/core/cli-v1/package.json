@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/cli-v1",
-  "version": "2.2.0-beta.11",
+  "version": "2.2.0-beta.13",
   "description": "",
   "license": "Apache-2.0",
   "main": "./src/index.js",
@@ -9,9 +9,9 @@
     "nocobase-v1": "./bin/index.js"
   },
   "dependencies": {
-    "@nocobase/cli": "2.2.0-beta.11",
+    "@nocobase/cli": "2.2.0-beta.13",
     "@nocobase/license-kit": "^0.3.8",
-    "@nocobase/utils": "2.2.0-beta.11",
+    "@nocobase/utils": "2.2.0-beta.13",
     "chalk": "^4.1.1",
     "commander": "^9.2.0",
     "deepmerge": "^4.3.1",
