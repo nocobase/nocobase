@@ -12,6 +12,8 @@ import type {
   LightExtensionRepoRecord,
   LightExtensionMoveSourceInput,
   LightExtensionMoveSourceResult,
+  LightExtensionMoveToInlineInput,
+  LightExtensionMoveToInlineResult,
   LightExtensionSelectableEntrySummary,
   LightExtensionSelectableEntriesInput,
 } from '../../shared/types';
@@ -70,6 +72,19 @@ export async function moveSourceToLightExtension(
 ): Promise<LightExtensionMoveSourceResult> {
   const response = await api.request<ResourceResponse<LightExtensionMoveSourceResult>>({
     url: 'lightExtensions:moveSource',
+    method: 'post',
+    data: input,
+  });
+
+  return unwrapResourceResponse(response);
+}
+
+export async function moveLightExtensionToInline(
+  api: ApiClientLike,
+  input: LightExtensionMoveToInlineInput,
+): Promise<LightExtensionMoveToInlineResult> {
+  const response = await api.request<ResourceResponse<LightExtensionMoveToInlineResult>>({
+    url: 'lightExtensions:moveToInline',
     method: 'post',
     data: input,
   });

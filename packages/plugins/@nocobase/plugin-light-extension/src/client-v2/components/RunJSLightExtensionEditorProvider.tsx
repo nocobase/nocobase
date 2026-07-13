@@ -10,12 +10,19 @@
 import { createForm, type Form } from '@formily/core';
 import { createSchemaField, FormProvider } from '@formily/react';
 import {
+  ApplicationContext,
   CodeEditor,
   type RunJSEditorProvider,
   type RunJSEditorProviderRenderProps,
   type RunJSSourceLocator,
 } from '@nocobase/client-v2';
-import { useFlowContext, type FlowEngineContext, type FlowModel, type RunJSValue } from '@nocobase/flow-engine';
+import {
+  useFlowContext,
+  type FlowEngineContext,
+  type FlowModel,
+  type ParamObject,
+  type RunJSValue,
+} from '@nocobase/flow-engine';
 import { Alert, Button, Flex, Space } from 'antd';
 import React from 'react';
 
@@ -25,9 +32,14 @@ import type {
   LightExtensionKind,
   LightExtensionRuntimeSourceBinding,
 } from '../../shared/types';
-import { getLightExtensionEntry, type ApiClientLike } from '../api/lightExtensionEntriesRequests';
+import {
+  getLightExtensionEntry,
+  moveLightExtensionToInline,
+  type ApiClientLike,
+} from '../api/lightExtensionEntriesRequests';
 import { isLightExtensionRuntimeSourceBinding } from '../resolvers/LightExtensionRunJSResolver';
 import LightExtensionWorkspacePage, {
+  type LightExtensionMoveToInlineRequest,
   type LightExtensionWorkspaceFooterActions,
 } from '../pages/LightExtensionWorkspacePage';
 import type { LightExtensionWorkspaceScope } from '../workspace/lightExtensionWorkspaceAccess';
@@ -53,6 +65,10 @@ type LightExtensionEditorView = {
 type LightExtensionEditorFlowContext = FlowEngineContext & {
   api?: ApiClientLike;
   model?: FlowModel;
+};
+
+type ApplicationWithApi = {
+  apiClient?: ApiClientLike;
 };
 
 type FlowModelStepLocator = Extract<RunJSSourceLocator, { kind: 'flowModel.step' }>;
@@ -253,25 +269,29 @@ const RunJSLightExtensionEditor: React.FC<RunJSEditorProviderRenderProps> = (pro
 
 const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderProps> = (props) => {
   const { locator, onPreview, sourceLocator, surfaceStyle, value } = props;
+  const effectiveLocator = sourceLocator || locator;
   const translate = props.t;
   const binding = isLightExtensionRuntimeSourceBinding(props.value.sourceBinding) ? props.value.sourceBinding : null;
   const [currentBinding, setCurrentBinding] = React.useState(binding);
   const [footerActions, setFooterActions] = React.useState<LightExtensionWorkspaceFooterActions | null>(null);
   const flowContext = useFlowContext<LightExtensionEditorFlowContext | null>();
+  const app = React.useContext(ApplicationContext) as ApplicationWithApi | null;
+  const api = flowContext?.api || app?.apiClient;
   const editorView = flowContext?.view as LightExtensionEditorView | undefined;
   const workspaceScope = currentBinding ? getEntryWorkspaceScope(currentBinding) : null;
+  const readonly = Boolean(props.readOnly || props.disabled);
   const previewAppliedRef = React.useRef(false);
   const persistedPreviewValueRef = React.useRef(value);
   const previewValueApplierRef = React.useRef<(value: RunJSValue) => Promise<boolean>>(async () => false);
 
   React.useEffect(() => {
     setCurrentBinding(binding);
-    if (!binding || !flowContext?.api) {
+    if (!binding || !api) {
       return;
     }
 
     let active = true;
-    getLightExtensionEntry(flowContext.api, binding.entryId)
+    getLightExtensionEntry(api, binding.entryId)
       .then((entry) => {
         if (!active || entry.id !== binding.entryId || entry.repoId !== binding.repoId || entry.kind !== binding.kind) {
           return;
@@ -290,7 +310,7 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
     return () => {
       active = false;
     };
-  }, [binding, flowContext?.api]);
+  }, [api, binding]);
 
   React.useEffect(() => {
     if (!previewAppliedRef.current) {
@@ -347,15 +367,59 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
     [applyPreviewValue, value],
   );
 
-  const closeEditorView = React.useCallback(async () => {
-    await restoreWorkspacePreview();
+  const closeEditorViewWithoutRestore = React.useCallback(async () => {
     if (typeof editorView?.close === 'function') {
       await editorView.close();
       return;
     }
 
     editorView?.destroy?.();
-  }, [editorView, restoreWorkspacePreview]);
+  }, [editorView]);
+  const closeEditorView = React.useCallback(async () => {
+    await restoreWorkspacePreview();
+    await closeEditorViewWithoutRestore();
+  }, [closeEditorViewWithoutRestore, restoreWorkspacePreview]);
+
+  const handleMoveToInline = React.useCallback(
+    async (request: LightExtensionMoveToInlineRequest) => {
+      if (!api || !currentBinding || !workspaceScope || effectiveLocator?.kind !== 'flowModel.step') {
+        throw new Error(translate?.('RunJS source service is unavailable') || 'RunJS source service is unavailable');
+      }
+
+      const result = await moveLightExtensionToInline(api, {
+        locator: effectiveLocator,
+        repoId: currentBinding.repoId,
+        entryId: currentBinding.entryId,
+        entryPath: request.entryPath,
+        kind: workspaceScope.kind,
+        version: request.version,
+        files: request.files,
+      });
+      const nextValue = {
+        ...value,
+        code: result.code,
+        version: result.version,
+        sourceMode: INLINE_SOURCE_MODE,
+        sourceBinding: undefined,
+        sourceRef: result.sourceRef,
+      };
+      previewAppliedRef.current = false;
+      persistedPreviewValueRef.current = nextValue;
+      (props.onPersistedChange || props.onChange)?.(nextValue);
+      await closeEditorViewWithoutRestore();
+    },
+    [
+      closeEditorViewWithoutRestore,
+      currentBinding,
+      api,
+      effectiveLocator,
+      props.onChange,
+      props.onPersistedChange,
+      translate,
+      value,
+      workspaceScope,
+    ],
+  );
   const handlePersistedChange = React.useCallback(() => {
     (props.onPersistedChange || props.onChange)?.({
       ...props.value,
@@ -410,6 +474,11 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
         entryId={currentBinding.entryId}
         initialPath={currentBinding.entryPath}
         onFooterActionsChange={setFooterActions}
+        onMoveToInline={
+          workspaceScope.kind === 'js-block' && effectiveLocator?.kind === 'flowModel.step' && api && !readonly
+            ? handleMoveToInline
+            : undefined
+        }
         onPreview={canPreview ? handleWorkspacePreview : undefined}
         onRequestClose={closeEditorView}
         onSaved={handlePersistedChange}
@@ -506,8 +575,8 @@ async function applyFlowModelStepPreview(
   return true;
 }
 
-function cloneJsonRecordValue(value: unknown): Record<string, unknown> {
-  return isRecord(value) ? cloneJsonRecord(value) : {};
+function cloneJsonRecordValue(value: unknown): ParamObject {
+  return isRecord(value) ? (cloneJsonRecord(value) as ParamObject) : {};
 }
 
 function resolvePreviewVersionPath(paramPath: readonly string[]): string[] {

@@ -8,6 +8,7 @@
  */
 
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { Modal } from 'antd';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { vi } from 'vitest';
@@ -153,6 +154,7 @@ vi.mock('@nocobase/plugin-vsc-file/client-v2', () => {
       showRunButton,
       previewing,
       readOnly,
+      toolbarActions,
       workspaceFiles,
       onFilesCollapsedChange,
       filesCollapsed,
@@ -164,6 +166,7 @@ vi.mock('@nocobase/plugin-vsc-file/client-v2', () => {
       showRunButton?: boolean;
       previewing?: boolean;
       readOnly?: boolean;
+      toolbarActions?: React.ReactNode;
       workspaceFiles: Array<{ content: string; path: string }>;
       onFilesCollapsedChange: (collapsed: boolean) => void;
       filesCollapsed: boolean;
@@ -184,6 +187,7 @@ vi.mock('@nocobase/plugin-vsc-file/client-v2', () => {
             {previewing ? 'Running' : 'Run'}
           </button>
         ) : null}
+        {toolbarActions}
         {activeFile ? <span>{activeFile.path}</span> : null}
         <textarea
           aria-label="Edit file content"
@@ -509,7 +513,61 @@ describe('LightExtensionWorkspacePage', () => {
       ),
     );
     expect(mocks.api.saveSource).not.toHaveBeenCalled();
-    expect(screen.getByText('Preview updated')).toBeInTheDocument();
+    expect(screen.queryByText('Preview updated')).not.toBeInTheDocument();
+  });
+
+  it('offers moving the current unsaved entry workspace back to inline code', async () => {
+    const onMoveToInline = vi.fn(async () => undefined);
+    const confirmSpy = vi.spyOn(Modal, 'confirm').mockImplementation((config) => {
+      config.onOk?.(() => undefined);
+      return {
+        destroy: vi.fn(),
+        update: vi.fn(),
+      } as ReturnType<typeof Modal.confirm>;
+    });
+    const workspaceScope: LightExtensionWorkspaceScope = {
+      mode: 'entry',
+      entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+      kind: 'js-block',
+    };
+
+    render(
+      <MemoryRouter>
+        <LightExtensionWorkspacePage
+          embedded
+          entryId="lee_sales_kpi"
+          onMoveToInline={onMoveToInline}
+          repoId="ler_sales"
+          workspaceScope={workspaceScope}
+        />
+      </MemoryRouter>,
+    );
+
+    await screen.findByTestId('runjs-code-tab');
+    fireEvent.change(screen.getByLabelText('Edit file content'), {
+      target: { value: 'ctx.render(<div>unsaved inline move</div>);\n' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Move to inline code' }));
+
+    expect(confirmSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Move to inline code?',
+        okText: 'Move to inline code',
+      }),
+    );
+    await waitFor(() =>
+      expect(onMoveToInline).toHaveBeenCalledWith({
+        entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+        version: 'v2',
+        files: [
+          expect.objectContaining({
+            path: 'src/client/js-blocks/sales-kpi/index.tsx',
+            content: 'ctx.render(<div>unsaved inline move</div>);\n',
+          }),
+        ],
+      }),
+    );
+    confirmSpy.mockRestore();
   });
 
   it('adds a stable meta key before renaming a legacy entry directory', async () => {

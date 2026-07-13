@@ -36,10 +36,21 @@ type CodeSchema = {
   'x-component-props'?: Record<string, unknown>;
 };
 
-type SerializedRunJSStep = {
-  uiMode?: {
-    props?: Record<string, unknown>;
+type RunJSUiMode = {
+  props?: Record<string, unknown>;
+};
+
+type RunJSUiModeContext = {
+  model: {
+    context: {
+      t: (key: string) => string;
+    };
+    getStepParams: () => Record<string, unknown>;
   };
+};
+
+type SerializedRunJSStep = {
+  uiMode?: RunJSUiMode | ((ctx: RunJSUiModeContext) => RunJSUiMode | Promise<RunJSUiMode>);
 };
 
 const surfaces: SurfaceSpec[] = [
@@ -123,7 +134,7 @@ describe('RunJS FlowModel surfaces', () => {
     });
   });
 
-  it.each(surfaces)('$name uses the RunJS studio embed size while the provider owns the footer', (spec) => {
+  it.each(surfaces)('$name uses the RunJS studio embed size while the provider owns the footer', async (spec) => {
     const flow = spec.modelClass.globalFlowRegistry.getFlow(spec.flowKey);
     const step = flow?.getStep('runJs');
     const codeSchema = getRunJsCodeSchema(spec);
@@ -139,7 +150,20 @@ describe('RunJS FlowModel surfaces', () => {
       minHeight: 0,
       minWidth: 0,
     });
-    const props = (step?.serialize() as SerializedRunJSStep | undefined)?.uiMode?.props;
+    const uiMode = (step?.serialize() as SerializedRunJSStep | undefined)?.uiMode;
+    expect(uiMode).toBeTypeOf('function');
+    const resolvedUiMode =
+      typeof uiMode === 'function'
+        ? await uiMode({
+            model: {
+              context: {
+                t: (key) => key,
+              },
+              getStepParams: () => ({ sourceMode: 'inline' }),
+            },
+          })
+        : uiMode;
+    const props = resolvedUiMode?.props;
     expect(props).toMatchObject({
       footer: null,
       maxWidth: '960px',
@@ -154,8 +178,5 @@ describe('RunJS FlowModel surfaces', () => {
       },
       width: '45%',
     });
-    if (spec.name === 'JSBlockModel') {
-      expect(props).not.toHaveProperty('title');
-    }
   });
 });

@@ -8,7 +8,7 @@
  */
 
 import type { RunJSSourceAdapterRegistry, VscPermissionHook } from '@nocobase/plugin-vsc-file';
-import { VscPermissionHookRegistry } from '@nocobase/plugin-vsc-file';
+import { VscFileService, VscPermissionHookRegistry } from '@nocobase/plugin-vsc-file';
 import { Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 
@@ -41,6 +41,7 @@ import { LightExtensionWorkspaceCompilerBridge } from './services/LightExtension
 import { RuntimeResolveService } from './services/RuntimeResolveService';
 import { ReferenceService } from './services/ReferenceService';
 import { MoveSourceService } from './services/MoveSourceService';
+import { MoveToInlineService } from './services/MoveToInlineService';
 
 type VscPermissionHookRegistrar = {
   registerPermissionHook: (hook: VscPermissionHook) => () => void;
@@ -123,6 +124,8 @@ export class PluginLightExtensionServer extends Plugin {
   private referenceService?: ReferenceService;
 
   private moveSourceService?: MoveSourceService;
+
+  private moveToInlineService?: MoveToInlineService;
 
   private unregisterVscPermissionHook?: () => void;
 
@@ -207,8 +210,19 @@ export class PluginLightExtensionServer extends Plugin {
       this.referenceService,
       () => findRunJSSourceAdapterRegistry((this.app as unknown as AppWithPluginEvents).pm),
     );
+    this.moveToInlineService = new MoveToInlineService(
+      db,
+      this.entryService,
+      this.workspaceCompilerBridge,
+      this.referenceService,
+      () => {
+        const permissionHooks = findVscPermissionHookRegistry((this.app as unknown as AppWithPluginEvents).pm);
+        return permissionHooks ? new VscFileService(db, permissionHooks) : null;
+      },
+      () => findRunJSSourceAdapterRegistry((this.app as unknown as AppWithPluginEvents).pm),
+    );
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
-      createLightExtensionsResource(this.compilePreviewService, this.moveSourceService),
+      createLightExtensionsResource(this.compilePreviewService, this.moveSourceService, this.moveToInlineService),
     );
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
       createLightExtensionRuntimeResource(this.runtimeResolveService),

@@ -168,8 +168,8 @@ export function FilesPanel(props: {
   const defaultCreateAccess = resolvePathAccess(defaultCreateParentPath, 'folder');
   const visibleFiles = React.useMemo(() => files.filter((file) => file.path !== runJSManifestPath), [files]);
   const folderPaths = React.useMemo(
-    () => (folders || collectRunJSWorkspaceFolders(visibleFiles)).filter((path) => path !== '.nocobase'),
-    [folders, visibleFiles],
+    () => (folders || collectRunJSWorkspaceFolders(files)).filter((path) => path !== '.nocobase'),
+    [files, folders],
   );
   const treeRows = React.useMemo(
     () => buildFileTreeRows(visibleFiles, folderPaths, collapsedFolderPaths),

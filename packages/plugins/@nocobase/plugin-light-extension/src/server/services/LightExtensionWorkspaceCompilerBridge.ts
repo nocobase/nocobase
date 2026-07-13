@@ -368,12 +368,12 @@ function prepareLightExtensionCompileFiles(
 
     return {
       ...file,
-      content: rewriteAllowedSdkRuntimeImports(file.path, file.content),
+      content: rewriteLightExtensionSdkRuntimeImports(file.path, file.content),
     };
   });
 }
 
-function rewriteAllowedSdkRuntimeImports(path: string, content: string): string {
+export function rewriteLightExtensionSdkRuntimeImports(path: string, content: string): string {
   const sourceFile = ts.createSourceFile(
     path,
     content,

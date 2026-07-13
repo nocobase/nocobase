@@ -319,7 +319,7 @@ export function relocateRunJSWorkspace(input: {
   return relocated;
 }
 
-function rewriteRelativeImports(
+export function rewriteRelativeImports(
   content: string,
   sourcePath: string,
   targetPath: string,
@@ -332,7 +332,11 @@ function rewriteRelativeImports(
   const sourceFile = ts.createSourceFile(sourcePath, content, ts.ScriptTarget.Latest, true);
   const replacements: Array<{ start: number; end: number; value: string }> = [];
   const visit = (node: ts.Node) => {
-    if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier)) {
+    if (
+      (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
+      node.moduleSpecifier &&
+      ts.isStringLiteral(node.moduleSpecifier)
+    ) {
       const specifier = node.moduleSpecifier.text;
       if (specifier.startsWith('.')) {
         const importedSourcePath = resolveImportedSourcePath(sourcePath, specifier, targetBySource);

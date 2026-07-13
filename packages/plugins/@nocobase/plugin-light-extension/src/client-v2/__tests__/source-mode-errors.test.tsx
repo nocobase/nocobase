@@ -271,6 +271,7 @@ function createSelectableEntry() {
     icon: null,
     tags: null,
     sort: null,
+    runtimeAvailable: true,
     settingsSchema: {
       type: 'object',
       properties: {

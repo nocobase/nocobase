@@ -534,7 +534,9 @@ function buildWorkspaceBlockedEntryResult(
 }
 
 function getEntryCompileFiles(
-  files: Array<Pick<LightExtensionPulledFile, 'content' | 'language' | 'path'>>,
+  files: Array<
+    Pick<LightExtensionPulledFile, 'content' | 'path'> & Partial<Pick<LightExtensionPulledFile, 'language'>>
+  >,
   entry: LightExtensionEntryValidationResult,
 ) {
   const rootPath = getEntryRootPath(entry);

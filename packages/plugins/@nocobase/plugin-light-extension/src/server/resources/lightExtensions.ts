@@ -12,12 +12,17 @@ import type { HandlerType, ResourceOptions } from '@nocobase/resourcer';
 
 import { LIGHT_EXTENSION_SUPPORTED_KINDS, type LightExtensionKind } from '../../constants';
 import { LightExtensionError } from '../../shared/errors';
-import type { LightExtensionMoveSourceInput, LightExtensionWorkspacePreviewInput } from '../../shared/types';
+import type {
+  LightExtensionMoveSourceInput,
+  LightExtensionMoveToInlineInput,
+  LightExtensionWorkspacePreviewInput,
+} from '../../shared/types';
 import {
   type LightExtensionCompilePreviewInput,
   LightExtensionCompilePreviewService,
 } from '../services/LightExtensionCompilePreviewService';
 import { MoveSourceService, type MoveSourceServiceContext } from '../services/MoveSourceService';
+import { MoveToInlineService } from '../services/MoveToInlineService';
 import {
   createTypedResourceAction,
   getRequestMetadata,
@@ -26,7 +31,12 @@ import {
   type ResourceActionInput,
 } from './resourceAction';
 
-export const lightExtensionActionNames = ['compilePreview', 'compileWorkspacePreview', 'moveSource'] as const;
+export const lightExtensionActionNames = [
+  'compilePreview',
+  'compileWorkspacePreview',
+  'moveSource',
+  'moveToInline',
+] as const;
 
 type LightExtensionActionName = (typeof lightExtensionActionNames)[number];
 type ResourceActionRunner = (
@@ -38,6 +48,7 @@ type ResourceActionRunner = (
 interface LightExtensionActionServices {
   compilePreviewService: LightExtensionCompilePreviewService;
   moveSourceService?: MoveSourceService;
+  moveToInlineService?: MoveToInlineService;
 }
 
 const resourceActionRunners: Record<LightExtensionActionName, ResourceActionRunner> = {
@@ -51,15 +62,23 @@ const resourceActionRunners: Record<LightExtensionActionName, ResourceActionRunn
     }
     return services.moveSourceService.moveSource(normalizeMoveSourceInput(input), currentUser);
   },
+  moveToInline: (services, input, currentUser) => {
+    if (!services.moveToInlineService) {
+      throw new LightExtensionError('LIGHT_EXTENSION_RUNTIME_UNAVAILABLE', 'Move to inline service is unavailable');
+    }
+    return services.moveToInlineService.moveToInline(normalizeMoveToInlineInput(input), currentUser);
+  },
 };
 
 export function createLightExtensionsResource(
   compilePreviewService: LightExtensionCompilePreviewService,
   moveSourceService?: MoveSourceService,
+  moveToInlineService?: MoveToInlineService,
 ): ResourceOptions {
   const services = {
     compilePreviewService,
     moveSourceService,
+    moveToInlineService,
   };
 
   return {
@@ -113,6 +132,18 @@ function normalizeMoveSourceInput(input: ResourceActionInput): LightExtensionMov
     destination: normalizeMoveSourceDestination(input.destination),
     entryName: requireString(input, 'entryName'),
     entryTitle: optionalNullableString(input, 'entryTitle'),
+  };
+}
+
+function normalizeMoveToInlineInput(input: ResourceActionInput): LightExtensionMoveToInlineInput {
+  return {
+    locator: normalizeRunJSSourceLocator(input.locator),
+    repoId: requireRepoId(input),
+    entryId: requireString(input, 'entryId'),
+    entryPath: requireString(input, 'entryPath'),
+    kind: requireLightExtensionKind(input, 'kind'),
+    version: requireString(input, 'version'),
+    files: requireArray(input, 'files', normalizeMoveSourceFile),
   };
 }
 

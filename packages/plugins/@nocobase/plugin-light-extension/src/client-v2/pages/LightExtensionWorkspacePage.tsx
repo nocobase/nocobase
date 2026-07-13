@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SaveOutlined } from '@ant-design/icons';
+import { ImportOutlined, SaveOutlined } from '@ant-design/icons';
 import {
   CodeTab,
   CloseConfirmModal,
@@ -26,7 +26,7 @@ import {
   useVscFileT,
 } from '@nocobase/plugin-vsc-file/client-v2';
 import { type EmbeddedRunJSEditorSaveResult, useFullscreenOverlay } from '@nocobase/client-v2';
-import { Alert, Button, Empty, Flex, Modal, Space, Spin, Typography, message, theme } from 'antd';
+import { Alert, Button, Empty, Flex, Modal, Space, Spin, Tooltip, Typography, message, theme } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
@@ -67,9 +67,16 @@ interface LightExtensionWorkspacePageProps {
   workspaceScope?: LightExtensionWorkspaceScope;
   entryId?: string | null;
   onPreview?: (artifact: LightExtensionEntryRuntimeArtifact) => void | Promise<void>;
+  onMoveToInline?: (input: LightExtensionMoveToInlineRequest) => void | Promise<void>;
   onFooterActionsChange?: (actions: LightExtensionWorkspaceFooterActions | null) => void;
   onRequestClose?: () => void | Promise<void>;
   onSaved?: () => void;
+}
+
+export interface LightExtensionMoveToInlineRequest {
+  entryPath: string;
+  files: RunJSWorkspaceFile[];
+  version: string;
 }
 
 export interface LightExtensionWorkspaceFooterActions {
@@ -110,6 +117,7 @@ function LightExtensionWorkspacePage({
   workspaceScope = REPOSITORY_WORKSPACE_SCOPE,
   entryId,
   onPreview,
+  onMoveToInline,
   onFooterActionsChange,
   onRequestClose,
   onSaved,
@@ -135,6 +143,7 @@ function LightExtensionWorkspacePage({
   const [initializedRepoId, setInitializedRepoId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [previewing, setPreviewing] = useState(false);
+  const [movingToInline, setMovingToInline] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
   const [versionMessage, setVersionMessage] = useState('');
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -257,6 +266,7 @@ function LightExtensionWorkspacePage({
   );
   latestPreviewSnapshotRef.current = previewSnapshotKey;
   const canPreview = entryScoped && Boolean(onPreview);
+  const canMoveToInline = entryScoped && Boolean(onMoveToInline);
 
   const openFilePath = useCallback((path?: string) => {
     if (!path) {
@@ -728,7 +738,6 @@ function LightExtensionWorkspacePage({
       }
 
       await onPreview(result.artifact);
-      setNotice({ type: 'success', message: t('Preview updated') });
     } catch (error) {
       setDiagnostics(getLightExtensionErrorDiagnostics(error) as LightExtensionDiagnostic[]);
       setNotice({ type: 'error', message: error instanceof Error ? error.message : t('Preview failed') });
@@ -736,6 +745,42 @@ function LightExtensionWorkspacePage({
       setPreviewing(false);
     }
   }, [canPreview, compileWorkspacePreview, entryId, files, onPreview, previewSnapshotKey, repoId, t, workspaceScope]);
+
+  const moveToInline = useCallback(async () => {
+    if (!canMoveToInline || workspaceScope.mode !== 'entry' || !onMoveToInline) {
+      return;
+    }
+
+    setMovingToInline(true);
+    setNotice(null);
+    try {
+      await onMoveToInline({
+        entryPath: workspaceScope.entryPath,
+        files: files.map((file) => ({ ...file })),
+        version: 'v2',
+      });
+    } catch (error) {
+      setNotice({
+        type: 'error',
+        message: error instanceof Error ? error.message : t('Failed to move source to inline code'),
+      });
+      throw error;
+    } finally {
+      setMovingToInline(false);
+    }
+  }, [canMoveToInline, files, onMoveToInline, t, workspaceScope]);
+
+  const confirmMoveToInline = useCallback(() => {
+    Modal.confirm({
+      title: t('Move to inline code?'),
+      content: t(
+        'The current working copy of this entry and its referenced files will be copied to inline code. The light extension will remain unchanged.',
+      ),
+      okText: t('Move to inline code'),
+      cancelText: t('Cancel'),
+      onOk: moveToInline,
+    });
+  }, [moveToInline, t]);
 
   if (!repoId) {
     return (
@@ -936,6 +981,20 @@ function LightExtensionWorkspacePage({
                         savedFiles={baseFiles}
                         showRunButton={canPreview}
                         t={studioT}
+                        toolbarActions={
+                          canMoveToInline ? (
+                            <Tooltip title={t('Move to inline code')}>
+                              <Button
+                                aria-label={t('Move to inline code')}
+                                disabled={isDiff}
+                                icon={<ImportOutlined />}
+                                loading={movingToInline}
+                                onClick={confirmMoveToInline}
+                                size="small"
+                              />
+                            </Tooltip>
+                          ) : null
+                        }
                         version="v2"
                         workspaceFiles={authoringFiles}
                       />

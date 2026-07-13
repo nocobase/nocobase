@@ -83,7 +83,12 @@ describe('plugin-light-extension permission service', () => {
   it('registers the vsc permission hook after vsc-file becomes available later', async () => {
     let afterLoadPluginListener: ((plugin: unknown, options?: unknown) => void) | undefined;
     const registeredHooks: unknown[] = [];
-    let registrar: { registerPermissionHook: ReturnType<typeof vi.fn> } | null = null;
+    const definedResources: Array<{ name?: string; actions?: Record<string, unknown> }> = [];
+    let registrar: {
+      registerPermissionHook: ReturnType<typeof vi.fn>;
+      getPermissionHookRegistry: () => Record<string, unknown>;
+      getRunJSSourceAdapterRegistry: () => Record<string, unknown>;
+    } | null = null;
     const on = vi.fn((eventName: string, listener: (plugin: unknown, options?: unknown) => void) => {
       if (eventName === 'afterLoadPlugin') {
         afterLoadPluginListener = listener;
@@ -100,6 +105,12 @@ describe('plugin-light-extension permission service', () => {
         get: vi.fn(() => registrar),
         getPlugins: vi.fn(() => (registrar ? new Map([['vsc-file', registrar]]) : new Map())),
       },
+      resourceManager: {
+        define: vi.fn((resource: { name?: string; actions?: Record<string, unknown> }) => {
+          definedResources.push(resource);
+        }),
+        options: {},
+      },
       on,
       off,
     } as unknown as Application;
@@ -112,6 +123,9 @@ describe('plugin-light-extension permission service', () => {
 
     expect(on).toHaveBeenCalledWith('afterLoadPlugin', expect.any(Function));
     expect(registeredHooks).toHaveLength(0);
+    expect(definedResources.find((resource) => resource.name === 'lightExtensions')?.actions).toHaveProperty(
+      'moveToInline',
+    );
 
     const unregister = vi.fn();
     registrar = {
@@ -119,6 +133,8 @@ describe('plugin-light-extension permission service', () => {
         registeredHooks.push(hook);
         return unregister;
       }),
+      getPermissionHookRegistry: () => ({}),
+      getRunJSSourceAdapterRegistry: () => ({}),
     };
     afterLoadPluginListener?.(registrar);
 

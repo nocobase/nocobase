@@ -49,6 +49,7 @@ const entry = {
   icon: null,
   tags: null,
   sort: null,
+  runtimeAvailable: true,
   settingsSchema: null,
   compiledCommitId: 'commit_sales',
   runtimeArtifact: {

@@ -37,7 +37,7 @@ import {
   getFormItemPreferredFieldPath,
   isToManyAssociationField,
 } from '../internal/utils/modelUtils';
-import { RunJSValueEditor } from './RunJSValueEditor';
+import { RunJSValueEditor, type RunJSValueEditorProps } from './RunJSValueEditor';
 import { RunJSSourceResolverRegistry, type RunJSSourceMenuItem } from './runjs-source';
 import type { EmbeddedRunJSEditorController, RunJSSourceLocator, RunJSSurfaceStyle } from './runjs-studio';
 import { pickOperatorStyle as pickStyle, resolveOperatorComponent } from '../internal/utils/operatorSchemaHelper';
@@ -1531,7 +1531,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
   }, [flowCtx]);
 
   const RunJSComponent = React.useMemo(() => {
-    const C: React.FC<any> = (inputProps) => (
+    const C = (inputProps: Pick<RunJSValueEditorProps, 'value' | 'onChange'>): JSX.Element => (
       <RunJSValueEditor
         t={flowCtx.t}
         value={inputProps?.value}

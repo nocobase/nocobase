@@ -38,6 +38,7 @@ vi.mock('../pages/LightExtensionWorkspacePage', () => {
     workspaceScope,
     defaultFilesCollapsed,
     entryId,
+    onMoveToInline,
     onPreview,
     onFooterActionsChange,
     onRequestClose,
@@ -48,6 +49,11 @@ vi.mock('../pages/LightExtensionWorkspacePage', () => {
     workspaceScope?: unknown;
     defaultFilesCollapsed?: boolean;
     entryId?: string | null;
+    onMoveToInline?: (input: {
+      entryPath: string;
+      files: Array<{ path: string; content: string }>;
+      version: string;
+    }) => void | Promise<void>;
     onPreview?: (artifact: { code: string; version: string; entryPath: string }) => void | Promise<void>;
     onFooterActionsChange?: (
       actions: {
@@ -96,6 +102,23 @@ vi.mock('../pages/LightExtensionWorkspacePage', () => {
             }
           >
             preview workspace
+          </button>
+        ) : null}
+        {onMoveToInline ? (
+          <button
+            type="button"
+            onClick={() =>
+              onMoveToInline({
+                entryPath: initialPath || '',
+                files: [
+                  { path: initialPath || '', content: 'ctx.render(<div>working copy</div>);' },
+                  { path: 'src/shared/format.ts', content: 'export const format = () => "ok";' },
+                ],
+                version: 'v2',
+              })
+            }
+          >
+            move workspace to inline
           </button>
         ) : null}
         <button type="button" onClick={onSaved}>
@@ -350,6 +373,122 @@ describe('RunJSLightExtensionEditorProvider', () => {
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
     expect(model.getStepParams('jsSettings', 'runJs')).toMatchObject(value);
     expect(rerender).toHaveBeenCalledTimes(2);
+  });
+
+  it('moves the current JS block workspace back to inline code and closes without restoring the old binding', async () => {
+    const provider = createRunJSLightExtensionEditorProvider();
+    const onPersistedChange = vi.fn();
+    const onClose = vi.fn();
+    const sourceRef = {
+      type: 'vsc-file' as const,
+      repoId: 'runjs_repo_1',
+      commitId: 'runjs_commit_2',
+      entry: 'src/client/index.tsx',
+    };
+    const api: ApiClientLike = {
+      request: vi.fn(async (options) => {
+        if (options.url === 'lightExtensionEntries:get') {
+          return {
+            data: {
+              data: {
+                id: 'lee_example',
+                repoId: 'ler_example',
+                entryName: 'example',
+                entryPath: 'src/client/js-blocks/example/index.tsx',
+                kind: 'js-block',
+                title: 'Example',
+              },
+            },
+          };
+        }
+        if (options.url === 'lightExtensions:moveToInline') {
+          return {
+            data: {
+              data: {
+                runJSRepoId: sourceRef.repoId,
+                commitId: sourceRef.commitId,
+                ownerFingerprint: 'owner_after',
+                code: 'ctx.render(<div>inline workspace</div>);',
+                version: 'v2',
+                entryPath: sourceRef.entry,
+                filesHash: 'files_hash',
+                sourceRef,
+              },
+            },
+          };
+        }
+        throw new Error(`Unexpected request: ${options.url}`);
+      }),
+    };
+    const value = {
+      code: 'ctx.render(<div>persisted light extension</div>);',
+      version: 'v2',
+      sourceMode: 'light-extension',
+      sourceBinding: {
+        type: 'light-extension-entry' as const,
+        repoId: 'ler_example',
+        entryId: 'lee_example',
+        entryPath: 'src/client/js-blocks/example/index.tsx',
+        kind: 'js-block' as const,
+      },
+      settings: { title: 'Revenue' },
+    };
+
+    render(
+      <EditorViewHarness api={api} onClose={onClose}>
+        {provider.renderEditor({
+          value,
+          locator: {
+            kind: 'flowModel.step',
+            modelUid: 'model_1',
+            flowKey: 'jsSettings',
+            stepKey: 'runJs',
+            paramPath: ['code'],
+          },
+          surfaceStyle: 'render',
+          onPersistedChange,
+        })}
+      </EditorViewHarness>,
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: 'move workspace to inline' }));
+
+    await waitFor(() => {
+      expect(api.request).toHaveBeenCalledWith({
+        url: 'lightExtensions:moveToInline',
+        method: 'post',
+        data: {
+          locator: {
+            kind: 'flowModel.step',
+            modelUid: 'model_1',
+            flowKey: 'jsSettings',
+            stepKey: 'runJs',
+            paramPath: ['code'],
+          },
+          repoId: 'ler_example',
+          entryId: 'lee_example',
+          entryPath: 'src/client/js-blocks/example/index.tsx',
+          kind: 'js-block',
+          version: 'v2',
+          files: [
+            {
+              path: 'src/client/js-blocks/example/index.tsx',
+              content: 'ctx.render(<div>working copy</div>);',
+            },
+            { path: 'src/shared/format.ts', content: 'export const format = () => "ok";' },
+          ],
+        },
+      });
+    });
+    expect(onPersistedChange).toHaveBeenCalledWith({
+      ...value,
+      code: 'ctx.render(<div>inline workspace</div>);',
+      version: 'v2',
+      sourceMode: 'inline',
+      sourceBinding: undefined,
+      sourceRef,
+    });
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   it('refreshes the entry path by entryId before applying workspace access after a directory rename', async () => {

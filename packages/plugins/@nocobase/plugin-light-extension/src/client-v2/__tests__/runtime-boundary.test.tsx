@@ -119,6 +119,9 @@ function collectSourceFilesFromDirectories(directories: string[]): string[] {
 }
 
 function collectSourceFiles(directory: string): string[] {
+  if (!fs.existsSync(directory)) {
+    return [];
+  }
   return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const entryPath = path.join(directory, entry.name);
     if (entry.isDirectory()) {

@@ -372,6 +372,32 @@ export interface LightExtensionMoveSourceResult {
   ownerFingerprint: string;
 }
 
+export interface LightExtensionMoveToInlineInput {
+  locator: RunJSSourceLocator;
+  repoId: string;
+  entryId: string;
+  entryPath: string;
+  kind: LightExtensionKind;
+  version: string;
+  files: LightExtensionMoveSourceWorkspaceFile[];
+}
+
+export interface LightExtensionMoveToInlineResult {
+  runJSRepoId: string;
+  commitId: string;
+  ownerFingerprint: string;
+  code: string;
+  version: string;
+  entryPath: string;
+  filesHash?: string;
+  sourceRef: {
+    type: 'vsc-file';
+    repoId: string;
+    commitId: string;
+    entry: string;
+  };
+}
+
 export interface LightExtensionRuntimeResolveInput {
   sourceMode: 'light-extension';
   sourceBinding: LightExtensionRuntimeSourceBinding;
