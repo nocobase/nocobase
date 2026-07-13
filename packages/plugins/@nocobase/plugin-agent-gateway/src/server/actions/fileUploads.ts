@@ -16,6 +16,7 @@ import { Transaction } from 'sequelize';
 import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiActionName } from '../../shared/apiContract';
 import {
   SharedStorageObject,
+  assertSharedStorageObjectScope,
   deleteSharedStorageObject,
   materializeSharedStorageObjects,
   parseSharedStorageObject,
@@ -52,11 +53,23 @@ interface UploadChunkRecord {
   object: ReturnType<typeof serializeSharedStorageObject>;
 }
 
+function getUploadChunkScope(uploadId: string) {
+  return {
+    path: `agent-gateway/file-uploads/${uploadId}/chunks`,
+  };
+}
+
+function getUploadCompletedScope(uploadId: string) {
+  return {
+    path: `agent-gateway/file-uploads/${uploadId}/completed`,
+  };
+}
+
 function getStorageHost(ctx: Context) {
   return { app: ctx.app };
 }
 
-function getChunkManifest(upload: ModelRecord) {
+function getChunkManifest(upload: ModelRecord, uploadId: string) {
   const value = getModelValue(upload, 'chunkManifestJson');
   if (!Array.isArray(value)) {
     return [];
@@ -73,20 +86,23 @@ function getChunkManifest(upload: ModelRecord) {
       offset,
       sizeBytes,
       sha256,
-      object: serializeSharedStorageObject(parseSharedStorageObject(record.object)),
+      object: serializeSharedStorageObject(parseSharedStorageObject(record.object, getUploadChunkScope(uploadId))),
     } satisfies UploadChunkRecord;
   });
 }
 
-function getCompletedStorageObject(upload: ModelRecord) {
-  return parseSharedStorageObject({
-    storageId: getModelValue(upload, 'storageId'),
-    objectPath: getModelString(upload, 'objectPath'),
-    objectFilename: getModelString(upload, 'objectFilename'),
-    objectKey: getModelString(upload, 'objectKey'),
-    sizeBytes: getModelNumber(upload, 'expectedBytes'),
-    mimetype: getModelString(upload, 'mimeType'),
-  });
+function getCompletedStorageObject(upload: ModelRecord, uploadId: string) {
+  return parseSharedStorageObject(
+    {
+      storageId: getModelValue(upload, 'storageId'),
+      objectPath: getModelString(upload, 'objectPath'),
+      objectFilename: getModelString(upload, 'objectFilename'),
+      objectKey: getModelString(upload, 'objectKey'),
+      sizeBytes: getModelNumber(upload, 'expectedBytes'),
+      mimetype: getModelString(upload, 'mimeType'),
+    },
+    getUploadCompletedScope(uploadId),
+  );
 }
 
 function throwInvalidStorageLocator(ctx: Context): never {
@@ -98,9 +114,9 @@ function throwInvalidStorageLocator(ctx: Context): never {
   });
 }
 
-function getSafeChunkManifest(ctx: Context, upload: ModelRecord) {
+function getSafeChunkManifest(ctx: Context, upload: ModelRecord, uploadId: string) {
   try {
-    return getChunkManifest(upload);
+    return getChunkManifest(upload, uploadId);
   } catch {
     return throwInvalidStorageLocator(ctx);
   }
@@ -180,7 +196,7 @@ async function appendUpload(ctx: Context, uploadId: string) {
     }
     const receivedBytes = getModelNumber(upload, 'receivedBytes');
     const expectedBytes = getModelNumber(upload, 'expectedBytes');
-    const chunkManifest = getSafeChunkManifest(ctx, upload);
+    const chunkManifest = getSafeChunkManifest(ctx, upload, uploadId);
     const contentSha256 = createHash('sha256').update(content).digest('hex');
     if (offset < receivedBytes && offset + content.byteLength <= receivedBytes) {
       const existingChunk = chunkManifest.find(
@@ -202,6 +218,7 @@ async function appendUpload(ctx: Context, uploadId: string) {
       mimetype: 'application/octet-stream',
       subPath: `agent-gateway/file-uploads/${uploadId}/chunks`,
     });
+    assertSharedStorageObjectScope(storageObject, getUploadChunkScope(uploadId));
     const nextManifest: UploadChunkRecord[] = [
       ...chunkManifest,
       {
@@ -239,7 +256,7 @@ async function completeUpload(ctx: Context, uploadId: string) {
     if (getModelNumber(upload, 'receivedBytes') !== getModelNumber(upload, 'expectedBytes')) {
       ctx.throw(409, 'Upload is incomplete');
     }
-    const chunks = getSafeChunkManifest(ctx, upload).sort((left, right) => left.offset - right.offset);
+    const chunks = getSafeChunkManifest(ctx, upload, uploadId).sort((left, right) => left.offset - right.offset);
     let expectedOffset = 0;
     for (const chunk of chunks) {
       if (chunk.offset !== expectedOffset) {
@@ -259,7 +276,9 @@ async function completeUpload(ctx: Context, uploadId: string) {
     };
   });
 
-  const chunkObjects = prepared.chunks.map((chunk) => parseSharedStorageObject(chunk.object));
+  const chunkObjects = prepared.chunks.map((chunk) =>
+    parseSharedStorageObject(chunk.object, getUploadChunkScope(uploadId)),
+  );
   let materialized: Awaited<ReturnType<typeof materializeSharedStorageObjects>> | undefined;
   let completedObject: SharedStorageObject | undefined;
   try {
@@ -271,6 +290,7 @@ async function completeUpload(ctx: Context, uploadId: string) {
       filePath: materialized.filePath,
       subPath: `agent-gateway/file-uploads/${uploadId}/completed`,
     });
+    assertSharedStorageObjectScope(completedObject, getUploadCompletedScope(uploadId));
     await ctx.db.getRepository('agFileUploads').update({
       filterByTk: uploadId,
       values: {
@@ -315,10 +335,12 @@ async function completeUpload(ctx: Context, uploadId: string) {
 async function abortUpload(ctx: Context, uploadId: string) {
   await requireManagePermission(ctx);
   const upload = await getUpload(ctx, uploadId);
-  const objects = getSafeChunkManifest(ctx, upload).map((chunk) => parseSharedStorageObject(chunk.object));
+  const objects = getSafeChunkManifest(ctx, upload, uploadId).map((chunk) =>
+    parseSharedStorageObject(chunk.object, getUploadChunkScope(uploadId)),
+  );
   if (getModelString(upload, 'objectKey')) {
     try {
-      objects.push(getCompletedStorageObject(upload));
+      objects.push(getCompletedStorageObject(upload, uploadId));
     } catch {
       throwInvalidStorageLocator(ctx);
     }
@@ -337,7 +359,7 @@ export async function consumeCompletedUpload(ctx: Context, uploadId: string, pur
   }
   let storageObject: SharedStorageObject;
   try {
-    storageObject = getCompletedStorageObject(upload);
+    storageObject = getCompletedStorageObject(upload, uploadId);
   } catch {
     return throwInvalidStorageLocator(ctx);
   }
@@ -374,10 +396,13 @@ export async function cleanupExpiredFileUploads(plugin: Pick<Plugin, 'app' | 'db
     limit: 1000,
   })) as ModelRecord[];
   for (const upload of uploads) {
+    const uploadId = String(getModelTargetKey(upload, 'id'));
     try {
-      const objects = getChunkManifest(upload).map((chunk) => parseSharedStorageObject(chunk.object));
+      const objects = getChunkManifest(upload, uploadId).map((chunk) =>
+        parseSharedStorageObject(chunk.object, getUploadChunkScope(uploadId)),
+      );
       if (getModelString(upload, 'objectKey')) {
-        objects.push(getCompletedStorageObject(upload));
+        objects.push(getCompletedStorageObject(upload, uploadId));
       }
       for (const storageObject of objects) {
         await deleteSharedStorageObject(plugin, storageObject);

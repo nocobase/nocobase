@@ -32,6 +32,7 @@ import { AGENT_GATEWAY_SKILL_CAPABILITY_HEADER, SKILL_CAPABILITY_REPLAY_POLICY }
 import { authenticateNodeToken } from '../security';
 import {
   SharedStorageObject,
+  assertSharedStorageObjectScope,
   copySharedStorageObject,
   deleteSharedStorageObject,
   materializeSharedStorageObjects,
@@ -375,23 +376,38 @@ function buildSkillZipSource(locator: SharedStorageObject, sha256: string, sizeB
   };
 }
 
+function getSkillArchiveScope(sha256: string) {
+  return {
+    path: `agent-gateway/skills/${sha256.slice(0, 2)}`,
+    filename: `${sha256}.zip`,
+  };
+}
+
 function parseSkillZipSource(source: JsonRecord) {
-  return parseSharedStorageObject({
-    storageId: source.storageId,
-    objectPath: source.objectPath,
-    objectFilename: source.objectFilename,
-    objectKey: source.objectKey,
-    sizeBytes: source.sizeBytes,
-    mimetype: 'application/zip',
-  });
+  const sha256 = getString(source.sha256);
+  if (!SHA256_PATTERN.test(sha256)) {
+    throw new Error('Invalid Skill archive digest');
+  }
+  return parseSharedStorageObject(
+    {
+      storageId: source.storageId,
+      objectPath: source.objectPath,
+      objectFilename: source.objectFilename,
+      objectKey: source.objectKey,
+      sizeBytes: source.sizeBytes,
+      mimetype: 'application/zip',
+    },
+    getSkillArchiveScope(sha256),
+  );
 }
 
 async function solidifySkillArchive(ctx: Context, source: SharedStorageObject, sha256: string) {
-  return await copySharedStorageObject(getStorageHost(ctx), source, {
+  const solidified = await copySharedStorageObject(getStorageHost(ctx), source, {
     filename: `${sha256}.zip`,
     mimetype: 'application/zip',
     subPath: `agent-gateway/skills/${sha256.slice(0, 2)}`,
   });
+  return assertSharedStorageObjectScope(solidified, getSkillArchiveScope(sha256));
 }
 
 async function persistValidatedSkillZipUpload(ctx: Context, content: Buffer) {

@@ -14,7 +14,11 @@ import { Transaction } from 'sequelize';
 
 import { COMMAND_CONTENT_JSON_LIMIT_CHARS } from '../../../shared/conversationLimits';
 import { JsonRecord, ModelRecord, getModelJson, getRecord, getString } from '../../actions/utils';
-import { deleteSharedStorageObject, putSharedStorageBuffer } from '../../services/sharedFileStorage';
+import {
+  assertSharedStorageObjectScope,
+  deleteSharedStorageObject,
+  putSharedStorageBuffer,
+} from '../../services/sharedFileStorage';
 
 const MAX_ARTIFACT_TEXT_BYTES = COMMAND_CONTENT_JSON_LIMIT_CHARS;
 const MAX_METADATA_JSON_CHARS = 16 * 1024;
@@ -134,21 +138,28 @@ export async function createRunArtifact(ctx: Context, options: CreateRunArtifact
   );
   const metadataUploadedBytes = getOptionalNonNegativeInteger(ctx, rawMetadata.uploadedBytes, 'metadata.uploadedBytes');
   const content = contentText === null ? null : Buffer.from(contentText);
+  const artifactId = randomUUID();
+  const artifactScope = {
+    path: `agent-gateway/run-artifacts/${options.runId}/${artifactId}`,
+  };
   const storageObject = content
-    ? await putSharedStorageBuffer(
-        { app: ctx.app },
-        {
-          content,
-          filename: `${randomUUID()}.txt`,
-          mimetype: mimeType,
-          subPath: `agent-gateway/run-artifacts/${options.runId}`,
-        },
+    ? assertSharedStorageObjectScope(
+        await putSharedStorageBuffer(
+          { app: ctx.app },
+          {
+            content,
+            filename: 'artifact.txt',
+            mimetype: mimeType,
+            subPath: artifactScope.path,
+          },
+        ),
+        artifactScope,
       )
     : null;
   try {
     const artifact = (await artifactRepo.create({
       values: {
-        id: randomUUID(),
+        id: artifactId,
         runId: options.runId,
         claimAttempt: options.claimAttempt,
         artifactKey,

@@ -145,7 +145,6 @@ describe('agent gateway API call log sampling', () => {
       .post(`/agentGatewayApi:heartbeatRun/${String(run.get('id'))}`)
       .set('Authorization', `Bearer ${runner.nodeToken}`)
       .send({
-        nodeId: runner.nodeId,
         claimToken: claim.claimToken,
         claimAttempt: claim.claimAttempt,
         leaseVersion: claim.leaseVersion,
@@ -158,7 +157,6 @@ describe('agent gateway API call log sampling', () => {
       .post(`/agentGatewayApi:heartbeatRun/${String(run.get('id'))}`)
       .set('Authorization', `Bearer ${runner.nodeToken}`)
       .send({
-        nodeId: runner.nodeId,
         claimToken: claim.claimToken,
         claimAttempt: claim.claimAttempt,
         leaseVersion: Number(claim.leaseVersion) + 1,

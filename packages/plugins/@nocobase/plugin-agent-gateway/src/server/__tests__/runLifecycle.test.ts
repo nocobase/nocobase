@@ -147,7 +147,7 @@ describe('agent gateway run lifecycle APIs', () => {
       executionPolicyKey,
       executionPayloadJson: {
         executionPolicyKey,
-        task: runCode,
+        title: runCode,
         prompt: `Prompt for ${runCode}`,
         cwd: '.',
       },
@@ -259,7 +259,7 @@ describe('agent gateway run lifecycle APIs', () => {
     });
     expect(storedRun.get('executionPayloadJson')).toMatchObject({
       executionPolicyKey: 'fake-success',
-      task: 'run-create-1',
+      title: 'run-create-1',
       prompt: 'Prompt for run-create-1',
       cwd: '.',
     });
@@ -271,6 +271,7 @@ describe('agent gateway run lifecycle APIs', () => {
     ['args', ['--sandbox', 'danger-full-access']],
     ['env', { UNDECLARED_SECRET: 'secret' }],
     ['commandKey', 'codex'],
+    ['unexpectedField', 'blocked'],
     ['cwd', '/tmp'],
   ])('rejects unsafe remote execution field %s without creating a run', async (field, value) => {
     const before = await app.db.getRepository('agRuns').count();
@@ -290,6 +291,31 @@ describe('agent gateway run lifecycle APIs', () => {
 
     expect(response.status).toBe(400);
     expect(await app.db.getRepository('agRuns').count()).toBe(before);
+  });
+
+  it('rejects persisted runs with unknown execution payload fields before claiming them', async () => {
+    const runner = await createRunner();
+    const run = await seedQueuedRun('run-reject-unknown-claim-payload', {
+      nodeId: runner.nodeId,
+      agentProfileId: runner.profileId,
+      provider: runner.profileProvider,
+      capabilitiesSnapshotJson: {},
+      executionPolicyKey: runner.profileKey,
+      executionPayloadJson: {
+        executionPolicyKey: runner.profileKey,
+        prompt: 'Safe prompt',
+        cwd: '.',
+        unexpectedField: 'blocked',
+      },
+    });
+
+    const response = await claimRun(runner, { runId: run.get('id') });
+
+    expect(response.status).toBe(400);
+    expect(JSON.stringify(response.body)).toContain('Execution field is not allowed: unexpectedField');
+    const storedRun = await app.db.getRepository('agRuns').findOne({ filterByTk: run.get('id') });
+    expect(storedRun.get('status')).toBe('queued');
+    expect(storedRun.get('claimAttempt')).toBe(0);
   });
 
   it('reroutes manual UI build runs from stale runners to an online matching Codex runner', async () => {
@@ -531,7 +557,7 @@ describe('agent gateway run lifecycle APIs', () => {
       description: 'Browser validation build template',
       defaultTitle: '187 browser validation',
       defaultPrompt: '搭建一个用于浏览器验收的任务页面',
-      cwd: '/root/work/nocobase',
+      cwd: '.',
       nodeId: runner.nodeId,
       agentProfileId: runner.profileId,
       artifactRoot: 'storage/agent-gateway',
@@ -590,7 +616,7 @@ describe('agent gateway run lifecycle APIs', () => {
     expect(storedRun.get('executionPayloadJson')).toMatchObject({
       title: '187 browser validation',
       instruction: '搭建一个用于浏览器验收的任务页面',
-      cwd: '/root/work/nocobase',
+      cwd: '.',
       artifactRoot: 'storage/agent-gateway',
       artifacts: [
         {
@@ -1106,7 +1132,7 @@ describe('agent gateway run lifecycle APIs', () => {
       },
       executionPayloadJson: {
         executionPolicyKey: 'fake-success',
-        task: 'run-claim-1',
+        title: 'run-claim-1',
       },
     });
     expect(String(JSON.stringify(claim))).not.toContain('must-not-render');

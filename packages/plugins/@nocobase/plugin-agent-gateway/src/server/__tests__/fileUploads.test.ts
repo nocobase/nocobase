@@ -61,6 +61,18 @@ function getCompletedStorageObject(upload: { get(name: string): unknown }) {
   });
 }
 
+function getFirstChunkStorageObject(upload: { get(name: string): unknown }) {
+  const manifest = upload.get('chunkManifestJson');
+  if (!Array.isArray(manifest) || !manifest.length) {
+    throw new Error('Expected an upload chunk manifest');
+  }
+  const firstChunk = manifest[0];
+  if (!firstChunk || typeof firstChunk !== 'object' || Array.isArray(firstChunk)) {
+    throw new Error('Expected a valid upload chunk');
+  }
+  return parseSharedStorageObject((firstChunk as Record<string, unknown>).object);
+}
+
 describe('agent gateway file uploads', () => {
   let app: MockServer;
   let rootAgent: Awaited<ReturnType<typeof getRootAgent>>;
@@ -164,6 +176,56 @@ describe('agent gateway file uploads', () => {
       expect(JSON.stringify(abortResponse.body)).toContain('AGENT_GATEWAY_UNSAFE_FILE_UPLOAD_STORAGE_LOCATOR');
       expect(JSON.stringify(abortResponse.body)).not.toContain(String(object.objectKey));
     }
+  });
+
+  it('does not let one upload abort or expire another upload storage object', async () => {
+    const ownerInit = await rootAgent.post('/agentGatewayApi:initFileUpload').send({
+      purpose: 'run-artifact',
+      sizeBytes: 1,
+    });
+    const ownerUploadId = String(getData(ownerInit).id);
+    expect(
+      (
+        await rootAgent.post(`/agentGatewayApi:appendFileUpload/${ownerUploadId}`).send({
+          offset: 0,
+          contentBase64: Buffer.from('b').toString('base64'),
+        })
+      ).status,
+    ).toBe(200);
+    const ownerUpload = await app.db.getRepository('agFileUploads').findOne({ filterByTk: ownerUploadId });
+    const ownerManifest = ownerUpload.get('chunkManifestJson');
+    const ownerChunk = getFirstChunkStorageObject(ownerUpload);
+
+    const forgedUploadId = await createUploadRecord({
+      receivedBytes: 1,
+      chunkManifestJson: ownerManifest,
+    });
+    const abortResponse = await rootAgent.post(`/agentGatewayApi:abortFileUpload/${forgedUploadId}`).send({});
+    expect(abortResponse.status).toBe(409);
+    expect(await readSharedStorageBuffer({ app }, ownerChunk, 1)).toEqual(Buffer.from('b'));
+
+    await app.db.getRepository('agFileUploads').update({
+      filterByTk: forgedUploadId,
+      values: { expiresAt: new Date(Date.now() - 1000) },
+    });
+    const plugin = app.pm.get(PluginAgentGatewayServer) as PluginAgentGatewayServer;
+    expect(await cleanupExpiredFileUploads(plugin, new Date())).toBe(1);
+    expect(await app.db.getRepository('agFileUploads').findOne({ filterByTk: forgedUploadId })).toBeNull();
+    expect(await readSharedStorageBuffer({ app }, ownerChunk, 1)).toEqual(Buffer.from('b'));
+
+    expect((await rootAgent.post(`/agentGatewayApi:completeFileUpload/${ownerUploadId}`).send({})).status).toBe(200);
+    const completedOwner = await app.db.getRepository('agFileUploads').findOne({ filterByTk: ownerUploadId });
+    const completedOwnerObject = getCompletedStorageObject(completedOwner);
+    const forgedCompletedId = await createUploadRecord({
+      status: 'completed',
+      receivedBytes: 1,
+      storageId: completedOwner.get('storageId'),
+      objectPath: completedOwner.get('objectPath'),
+      objectFilename: completedOwner.get('objectFilename'),
+      objectKey: completedOwner.get('objectKey'),
+    });
+    expect((await rootAgent.post(`/agentGatewayApi:abortFileUpload/${forgedCompletedId}`).send({})).status).toBe(409);
+    expect(await readSharedStorageBuffer({ app }, completedOwnerObject, 1)).toEqual(Buffer.from('b'));
   });
 
   it('drops expired invalid locator records without touching storage objects', async () => {

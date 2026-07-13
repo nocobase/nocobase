@@ -118,7 +118,7 @@ describe('agent gateway run terminal APIs', () => {
       executionPolicyKey: 'fake-terminal',
       executionPayloadJson: {
         executionPolicyKey: 'fake-terminal',
-        task: 'terminal',
+        title: 'terminal',
         cwd: '.',
       },
     });

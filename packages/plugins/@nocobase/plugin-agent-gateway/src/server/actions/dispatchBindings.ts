@@ -39,6 +39,7 @@ import {
 import { renderPromptTemplate } from './promptTemplates';
 import { CLAIMABLE_RUN_STATUS, LEASE_OWNING_RUN_STATUSES, TERMINAL_RUN_STATUSES } from '../../shared/runState';
 import { getExplicitAgentProviderKey, normalizeAgentProviderCapabilities } from '../../shared/providerCapabilities';
+import { assertSafeRemoteExecutionPayload } from '../modules/runs/types';
 
 const BINDING_KEY_PATTERN = /^[A-Za-z][A-Za-z0-9_.:-]*$/;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -1275,6 +1276,13 @@ async function createDispatchRun(
     nodeAndProfile.nodeId,
     transaction,
   );
+  const provider = getExplicitAgentProviderKey(
+    nodeAndProfile.profile ? getModelString(nodeAndProfile.profile, 'provider') : '',
+  );
+  if (!provider || !nodeAndProfile.profile) {
+    ctx.throw(409, 'Selected Agent Gateway profile provider is invalid');
+  }
+  const executionPolicyKey = getModelString(nodeAndProfile.profile, 'profileKey');
   const defaultPayload = getRecord(getModelValue(template, 'defaultExecutionPayloadJson'));
   const executionPayload = {
     ...defaultPayload,
@@ -1283,6 +1291,7 @@ async function createDispatchRun(
           prompt: rendered.renderedPrompt,
         }
       : {}),
+    executionPolicyKey,
     dispatch: {
       bindingId: getModelTargetKey(binding, 'id'),
       bindingKey: getModelString(binding, 'bindingKey'),
@@ -1297,13 +1306,7 @@ async function createDispatchRun(
     skills: skillSelections.values,
     resolvedSkills: skillSelections.resolved,
   };
-  const provider = getExplicitAgentProviderKey(
-    nodeAndProfile.profile ? getModelString(nodeAndProfile.profile, 'provider') : '',
-  );
-  if (!provider || !nodeAndProfile.profile) {
-    ctx.throw(409, 'Selected Agent Gateway profile provider is invalid');
-  }
-  const executionPolicyKey = getModelString(nodeAndProfile.profile, 'profileKey');
+  assertSafeRemoteExecutionPayload(ctx, executionPayload);
 
   const run = (await ctx.db.getRepository('agRuns').create({
     values: {

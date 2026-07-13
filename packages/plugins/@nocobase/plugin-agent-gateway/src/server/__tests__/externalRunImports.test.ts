@@ -1203,7 +1203,7 @@ describe('agent gateway external run imports', () => {
     ).toBe(98);
 
     const maintenanceResult = await cleanupAgentGatewayRetention(
-      { db: app.db },
+      { app, db: app.db },
       {
         now: new Date(Date.now() + 2 * 60 * 60 * 1000),
       },

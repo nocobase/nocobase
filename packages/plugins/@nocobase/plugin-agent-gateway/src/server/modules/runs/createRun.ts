@@ -648,6 +648,7 @@ export async function createTaskRun(ctx: Context) {
           }
         : {}),
     };
+    assertSafeRemoteExecutionPayload(ctx, executionPayloadJson);
     const run = (await ctx.db.getRepository('agRuns').create({
       values: {
         runCode: getString(values.runCode) || `run_task_${randomUUID()}`,

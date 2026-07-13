@@ -14,6 +14,7 @@ import path from 'path';
 import { Readable } from 'stream';
 
 import { Plugin } from '@nocobase/server';
+import { storagePathJoin } from '@nocobase/utils';
 
 interface FileManagerUploadResult {
   storageId: string | number;
@@ -25,8 +26,12 @@ interface FileManagerUploadResult {
 
 interface FileManagerStorageModel {
   id?: string | number;
+  default?: boolean;
   type: string;
   path?: string;
+  options?: {
+    documentRoot?: unknown;
+  };
 }
 
 interface FileManagerStorageInstance {
@@ -56,6 +61,11 @@ export interface SharedStorageObject {
   sizeBytes: number;
   mimetype?: string;
   title: string;
+}
+
+export interface SharedStorageObjectScope {
+  path: string;
+  filename?: string;
 }
 
 export interface MaterializedStorageObjects {
@@ -92,6 +102,118 @@ function normalizeOwnedSubPath(value: string) {
   return segments.join('/');
 }
 
+function isPathInside(base: string, target: string) {
+  const relative = path.relative(base, target);
+  return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
+}
+
+function normalizeLocalDocumentRoot(value: unknown) {
+  const documentRoot = typeof value === 'string' && value ? value : storagePathJoin('uploads');
+  if (path.isAbsolute(documentRoot)) {
+    return path.resolve(documentRoot);
+  }
+  const normalized = documentRoot.replace(/\\/g, '/');
+  if (
+    normalized === 'storage' ||
+    normalized.startsWith('storage/') ||
+    normalized === './storage' ||
+    normalized.startsWith('./storage/')
+  ) {
+    const relativePath = normalized.replace(/^\.?\/?storage(?:\/|$)/, '').replace(/^[/\\]+/, '');
+    return relativePath ? storagePathJoin(relativePath) : storagePathJoin();
+  }
+  return path.resolve(process.cwd(), documentRoot);
+}
+
+function getLocalStorageDocumentRoot(storage: FileManagerStorageModel) {
+  return normalizeLocalDocumentRoot(
+    storage.options?.documentRoot ?? process.env.LOCAL_STORAGE_DEST ?? storagePathJoin('uploads'),
+  );
+}
+
+async function getLocalStorageRealRoot(storage: FileManagerStorageModel) {
+  const documentRoot = getLocalStorageDocumentRoot(storage);
+  await fs.mkdir(documentRoot, { recursive: true });
+  return {
+    documentRoot,
+    realRoot: await fs.realpath(documentRoot),
+  };
+}
+
+function assertLexicalLocalPath(documentRoot: string, targetPath: string) {
+  if (!isPathInside(documentRoot, targetPath)) {
+    throw new Error('Agent Gateway local storage path is outside the storage root');
+  }
+}
+
+async function findExistingAncestor(targetPath: string) {
+  let candidate = targetPath;
+  while (path.dirname(candidate) !== candidate) {
+    try {
+      await fs.lstat(candidate);
+      return candidate;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+        throw error;
+      }
+      candidate = path.dirname(candidate);
+    }
+  }
+  await fs.lstat(candidate);
+  return candidate;
+}
+
+async function assertNoSymbolicLinkComponents(documentRoot: string, targetPath: string) {
+  const relative = path.relative(documentRoot, targetPath);
+  if (!relative) {
+    return;
+  }
+  let currentPath = documentRoot;
+  for (const segment of relative.split(path.sep)) {
+    currentPath = path.join(currentPath, segment);
+    try {
+      const stat = await fs.lstat(currentPath);
+      if (stat.isSymbolicLink()) {
+        throw new Error('Agent Gateway local storage path must not contain symbolic links');
+      }
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        return;
+      }
+      throw error;
+    }
+  }
+}
+
+async function assertLocalStorageDestination(storage: FileManagerStorageModel, objectPath: string, filename?: string) {
+  if (storage.type !== 'local') {
+    return;
+  }
+  const { documentRoot, realRoot } = await getLocalStorageRealRoot(storage);
+  const targetPath = path.resolve(documentRoot, objectPath, filename || '');
+  assertLexicalLocalPath(documentRoot, targetPath);
+  await assertNoSymbolicLinkComponents(documentRoot, targetPath);
+  const existingAncestor = await findExistingAncestor(targetPath);
+  const realAncestor = await fs.realpath(existingAncestor);
+  if (!isPathInside(realRoot, realAncestor)) {
+    throw new Error('Agent Gateway local storage destination escapes through a symbolic link');
+  }
+}
+
+async function assertLocalStorageObject(storage: FileManagerStorageModel, locator: SharedStorageObject) {
+  if (storage.type !== 'local') {
+    return;
+  }
+  const { documentRoot, realRoot } = await getLocalStorageRealRoot(storage);
+  const targetPath = path.resolve(documentRoot, locator.path, locator.filename);
+  assertLexicalLocalPath(documentRoot, targetPath);
+  await assertNoSymbolicLinkComponents(documentRoot, targetPath);
+  const realTarget = await fs.realpath(targetPath);
+  if (!isPathInside(realRoot, realTarget)) {
+    throw new Error('Agent Gateway local storage object escapes through a symbolic link');
+  }
+}
+
 function buildObjectKey(objectPath: string, filename: string) {
   return [...normalizeSegments(objectPath), ...normalizeSegments(filename)].join('/');
 }
@@ -105,6 +227,21 @@ function assertOwnedObject(locator: SharedStorageObject) {
   if (!getStorageId(locator.storageId) || !Number.isInteger(locator.sizeBytes) || locator.sizeBytes < 0) {
     throw new Error('Invalid Agent Gateway storage object locator');
   }
+}
+
+export function assertSharedStorageObjectScope(locator: SharedStorageObject, scope: SharedStorageObjectScope) {
+  assertOwnedObject(locator);
+  const objectPathSegments = normalizeSegments(locator.path);
+  const expectedPathSegments = normalizeSegments(scope.path);
+  const actualSuffix = objectPathSegments.slice(-expectedPathSegments.length);
+  if (
+    actualSuffix.length !== expectedPathSegments.length ||
+    actualSuffix.some((segment, index) => segment !== expectedPathSegments[index]) ||
+    (scope.filename !== undefined && locator.filename !== scope.filename)
+  ) {
+    throw new Error('Agent Gateway storage object does not belong to the expected record scope');
+  }
+  return locator;
 }
 
 function getFileManager(plugin: Pick<Plugin, 'app'>) {
@@ -206,6 +343,15 @@ export async function putSharedStorageFile(
 ) {
   const fileManager = getFileManager(plugin);
   await ensureStoragesLoaded(fileManager);
+  const sourceStat = await fs.lstat(options.filePath);
+  if (sourceStat.isSymbolicLink()) {
+    throw new Error('Agent Gateway storage upload source must not be a symbolic link');
+  }
+  const defaultStorage = Array.from(fileManager.storagesCache.values()).find((storage) => storage.default);
+  if (!defaultStorage) {
+    throw new Error('Agent Gateway storage provider is unavailable');
+  }
+  await assertLocalStorageDestination(defaultStorage, getTargetObjectPath(defaultStorage, options.subPath));
   const result = await fileManager.uploadFile({
     filePath: options.filePath,
     subPath: normalizeOwnedSubPath(options.subPath),
@@ -213,6 +359,7 @@ export async function putSharedStorageFile(
   const locator = toStorageObject(result);
   const { storage } = getStorageRuntime(fileManager, locator.storageId);
   assertObjectOwnedByStorage(storage, locator);
+  await assertLocalStorageObject(storage, locator);
   return locator;
 }
 
@@ -222,6 +369,7 @@ export async function getSharedStorageStream(plugin: Pick<Plugin, 'app'>, locato
   await ensureStoragesLoaded(fileManager);
   const { storage } = getStorageRuntime(fileManager, locator.storageId);
   assertObjectOwnedByStorage(storage, locator);
+  await assertLocalStorageObject(storage, locator);
   return await fileManager.getFileStream(locator);
 }
 
@@ -251,6 +399,7 @@ export async function deleteSharedStorageObject(plugin: Pick<Plugin, 'app'>, loc
   await ensureStoragesLoaded(fileManager);
   const { storage, instance } = getStorageRuntime(fileManager, locator.storageId);
   assertObjectOwnedByStorage(storage, locator);
+  await assertLocalStorageObject(storage, locator);
   const [deletedCount, undeleted] = await instance.delete([locator]);
   if (deletedCount !== 1 || undeleted.length) {
     throw new Error('Agent Gateway storage object deletion failed');
@@ -267,8 +416,10 @@ export async function copySharedStorageObject(
   await ensureStoragesLoaded(fileManager);
   const { storage, instance } = getStorageRuntime(fileManager, source.storageId);
   assertObjectOwnedByStorage(storage, source);
+  await assertLocalStorageObject(storage, source);
   const targetPath = getTargetObjectPath(storage, options.subPath);
   const targetFilename = path.basename(options.filename);
+  await assertLocalStorageDestination(storage, targetPath, targetFilename);
   const target: SharedStorageObject = {
     storageId: source.storageId,
     path: targetPath,
@@ -280,6 +431,7 @@ export async function copySharedStorageObject(
   };
   assertObjectOwnedByStorage(storage, target);
   await instance.copy(source, target);
+  await assertLocalStorageObject(storage, target);
   return target;
 }
 
@@ -335,7 +487,7 @@ export function serializeSharedStorageObject(locator: SharedStorageObject) {
   };
 }
 
-export function parseSharedStorageObject(value: unknown): SharedStorageObject {
+export function parseSharedStorageObject(value: unknown, scope?: SharedStorageObjectScope): SharedStorageObject {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new Error('Invalid Agent Gateway storage object metadata');
   }
@@ -358,5 +510,5 @@ export function parseSharedStorageObject(value: unknown): SharedStorageObject {
     title: path.parse(filename).name,
   };
   assertOwnedObject(locator);
-  return locator;
+  return scope ? assertSharedStorageObjectScope(locator, scope) : locator;
 }

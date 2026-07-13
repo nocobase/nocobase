@@ -222,7 +222,7 @@ describe('agent gateway permission matrix', () => {
       executionPolicyKey: 'codex',
       executionPayloadJson: {
         executionPolicyKey: 'codex',
-        task: 'must-not-queue',
+        title: 'must-not-queue',
         cwd: '.',
       },
     });
@@ -242,7 +242,7 @@ describe('agent gateway permission matrix', () => {
       executionPolicyKey: 'codex',
       executionPayloadJson: {
         executionPolicyKey: 'codex',
-        task: 'queue',
+        title: 'queue',
         cwd: '.',
       },
     });

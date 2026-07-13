@@ -34,6 +34,7 @@ import {
   TERMINAL_TOKEN_TAIL_ROW_LIMIT,
   TOKEN_USAGE_EVENT_BATCH_SIZE,
   TaskRunSkillVersionOption,
+  assertSafeRemoteExecutionPayload,
   getDateFromModel,
   getOptionalTargetKey,
   getRunnerOnlineState,
@@ -573,6 +574,7 @@ export function stripResolvedSkillSources(value: unknown): unknown {
 export async function serializeRunForNodeClaim(ctx: Context, run: ModelRecord, transaction: Transaction) {
   const json = serializeRun(run);
   const executionPayloadJson = getRecord(getModelValue(run, 'executionPayloadJson'));
+  assertSafeRemoteExecutionPayload(ctx, executionPayloadJson);
   await revokeSkillDownloadCapabilitiesForRun(ctx, String(getModelTargetKey(run, 'id')), transaction);
   const skillVersions = await getClaimSkillVersionPayloads(ctx, run, executionPayloadJson, transaction);
   const baseExecutionPayloadJson = stripInlineSkillVersionSources(executionPayloadJson);

@@ -160,7 +160,6 @@ describe('agent gateway Skill version upload APIs', () => {
         requestedAt: now,
         queuedAt: now,
         executionPayloadJson: {
-          commandKey: 'skill-test',
           executionPolicyKey: 'skill-test',
           resolvedSkills: [{ skillVersionId }],
         },

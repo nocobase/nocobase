@@ -15,7 +15,7 @@ import {
   pushSkillVersionIdInLocationSearch,
   pushTaskTemplateIdInLocationSearch,
   replaceRunIdInLocationSearch,
-} from '../../pages/runs/runLocation';
+} from '../../../pages/runs/runLocation';
 
 function traverseHistory(action: () => void) {
   return new Promise<void>((resolve) => {

@@ -11,7 +11,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { ArtifactContentPreview, sanitizeHtmlArtifactPreview } from '../../features/runs/artifacts/ArtifactsPanel';
+import { ArtifactContentPreview, sanitizeHtmlArtifactPreview } from '../../../features/runs/artifacts/ArtifactsPanel';
 
 describe('run artifact previews', () => {
   afterEach(cleanup);

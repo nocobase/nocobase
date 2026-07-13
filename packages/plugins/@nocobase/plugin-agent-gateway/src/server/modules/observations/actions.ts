@@ -160,14 +160,21 @@ function serializeArtifact(model: ModelRecord) {
 }
 
 function getArtifactStorageObject(artifact: ModelRecord) {
-  return parseSharedStorageObject({
-    storageId: getModelValue(artifact, 'storageId'),
-    objectPath: getModelValue(artifact, 'objectPath'),
-    objectFilename: getModelValue(artifact, 'objectFilename'),
-    objectKey: getModelValue(artifact, 'objectKey'),
-    sizeBytes: getModelValue(artifact, 'storageSizeBytes'),
-    mimetype: getModelValue(artifact, 'mimeType'),
-  });
+  const artifactId = String(getModelValue(artifact, 'id') || '');
+  const runId = String(getModelValue(artifact, 'runId') || '');
+  return parseSharedStorageObject(
+    {
+      storageId: getModelValue(artifact, 'storageId'),
+      objectPath: getModelValue(artifact, 'objectPath'),
+      objectFilename: getModelValue(artifact, 'objectFilename'),
+      objectKey: getModelValue(artifact, 'objectKey'),
+      sizeBytes: getModelValue(artifact, 'storageSizeBytes'),
+      mimetype: getModelValue(artifact, 'mimeType'),
+    },
+    {
+      path: `agent-gateway/run-artifacts/${runId}/${artifactId}`,
+    },
+  );
 }
 
 function normalizeArtifactPath(value: string) {

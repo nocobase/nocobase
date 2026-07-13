@@ -35,6 +35,41 @@ export interface CreateRunRequest extends JsonRecord {
   executionPolicyKey: string;
 }
 
+export const AGENT_GATEWAY_RUN_EXECUTION_PAYLOAD_FIELDS = [
+  'executionPolicyKey',
+  'prompt',
+  'message',
+  'messageHash',
+  'mode',
+  'providerSessionId',
+  'cwd',
+  'timeoutMs',
+  'source',
+  'title',
+  'instruction',
+  'artifactRoot',
+  'artifactPaths',
+  'artifactGlobs',
+  'artifacts',
+  'includeOlderArtifacts',
+  'artifactModifiedSince',
+  'maxArtifactUploads',
+  'maxArtifactScanEntries',
+  'resolvedSkills',
+  'skillVersion',
+  'skillVersions',
+  'taskTemplate',
+  'dispatch',
+  'fields',
+  'skills',
+] as const;
+
+const AGENT_GATEWAY_RUN_EXECUTION_PAYLOAD_FIELD_SET = new Set<string>(AGENT_GATEWAY_RUN_EXECUTION_PAYLOAD_FIELDS);
+
+export function getUnknownRunExecutionPayloadField(payload: JsonRecord) {
+  return Object.keys(payload).find((field) => !AGENT_GATEWAY_RUN_EXECUTION_PAYLOAD_FIELD_SET.has(field));
+}
+
 export interface RunLeaseRequest extends JsonRecord {
   claimToken: string;
   claimAttempt: number;

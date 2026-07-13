@@ -43,6 +43,7 @@ import {
 import { CLAIMABLE_RUN_STATUS, LEASE_OWNING_RUN_STATUSES, TERMINAL_RUN_STATUSES } from '../../shared/runState';
 import { getRunProviderCapabilitySummary, isRunCapabilitySupported } from './capabilityUtils';
 import { getConversationSessionIngestScope, reserveEventIngestRange } from '../services/eventIngestCursor';
+import { assertSafeRemoteExecutionPayload } from '../modules/runs/types';
 
 const AGENT_SESSION_STATUSES = new Set(['active', 'idle', 'ended', 'unknown']);
 const AGENT_SESSION_PROVIDERS = new Set(['codex', 'opencode', 'claude-code', 'generic-cli']);
@@ -686,6 +687,14 @@ async function createContinuationRun(options: {
 }) {
   const now = new Date();
   const sourceRunId = String(getModelTargetKey(options.sourceRun, 'id'));
+  const executionPayloadJson = buildResumePayload({
+    sourceRun: options.sourceRun,
+    provider: options.provider,
+    providerSessionId: options.providerSessionId,
+    message: options.message,
+    messageHash: options.messageFields.contentHash,
+  });
+  assertSafeRemoteExecutionPayload(options.ctx, executionPayloadJson);
   const run = (await options.ctx.db.getRepository('agRuns').create({
     values: {
       id: randomUUID(),
@@ -703,13 +712,7 @@ async function createContinuationRun(options: {
         providerSessionId: options.providerSessionId,
         resumedFromRunId: sourceRunId,
       },
-      executionPayloadJson: buildResumePayload({
-        sourceRun: options.sourceRun,
-        provider: options.provider,
-        providerSessionId: options.providerSessionId,
-        message: options.message,
-        messageHash: options.messageFields.contentHash,
-      }),
+      executionPayloadJson,
       provider: getModelString(options.sourceRun, 'provider'),
       capabilitiesSnapshotJson: getRecord(getModelValue(options.sourceRun, 'capabilitiesSnapshotJson')),
       executionPolicyKey: getModelString(options.sourceRun, 'executionPolicyKey'),

@@ -202,80 +202,100 @@ describe('agent gateway daemon runner', () => {
   });
 
   it('keeps node heartbeats independent during a long-running claimed run and stops them on abort', async () => {
-    const workspace = path.join(tempDir, 'workspace-long-run');
-    await fs.mkdir(workspace, { recursive: true });
-    const requester = new RunnerRequester();
-    const gateway = new AgentGatewayDaemonNodeClient(requester, {
-      serverUrl: 'https://nocobase.example.test',
-      nodeId: 'node-1',
-      nodeKey: 'node-1',
-      nodeToken: 'ag_node_NODE_TOKEN_SECRET',
-      savedAt: new Date().toISOString(),
+    vi.useFakeTimers({
+      toFake: ['Date', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'],
     });
-    const stopController = new AbortController();
-    let executionStarted = false;
-    const loop = runDaemonLoop({
-      gateway,
-      executionPolicies: {
-        node: {
-          executionPolicyKey: 'node',
-          provider: 'generic-cli',
-          executable: process.execPath,
-          baseArgs: ['-e'],
-          workspaceRoot: workspace,
-          defaultTimeoutMs: 5000,
-          maxTimeoutMs: 5000,
+    try {
+      const workspace = path.join(tempDir, 'workspace-long-run');
+      await fs.mkdir(workspace, { recursive: true });
+      const requester = new RunnerRequester();
+      const gateway = new AgentGatewayDaemonNodeClient(requester, {
+        serverUrl: 'https://nocobase.example.test',
+        nodeId: 'node-1',
+        nodeKey: 'node-1',
+        nodeToken: 'ag_node_NODE_TOKEN_SECRET',
+        savedAt: new Date().toISOString(),
+      });
+      const stopController = new AbortController();
+      const startedAt = Date.now();
+      let executionStarted = false;
+      const loop = runDaemonLoop({
+        gateway,
+        executionPolicies: {
+          node: {
+            executionPolicyKey: 'node',
+            provider: 'generic-cli',
+            executable: process.execPath,
+            baseArgs: ['-e'],
+            workspaceRoot: workspace,
+            defaultTimeoutMs: 180_000,
+            maxTimeoutMs: 180_000,
+          },
         },
-      },
-      skillsRoot: path.join(tempDir, 'skills'),
-      artifactDir: path.join(tempDir, 'artifacts'),
-      nodeHeartbeatIntervalMs: 5,
-      runHeartbeatIntervalMs: 5,
-      stopSignal: stopController.signal,
-      executeCommand: async ({ leaseLostSignal }) => {
-        executionStarted = true;
-        await waitForAbort(leaseLostSignal);
-        return {
-          status: 'lease_lost',
-          exitCode: null,
-          signal: 'SIGTERM',
-          stdout: { text: '', sizeBytes: 0 },
-          stderr: { text: null, sizeBytes: 0 },
-        };
-      },
-      detectOptions: {
-        probeCommand: async () => ({
-          available: false,
-        }),
-      },
-    });
+        skillsRoot: path.join(tempDir, 'skills'),
+        artifactDir: path.join(tempDir, 'artifacts'),
+        nodeHeartbeatIntervalMs: 30_000,
+        runHeartbeatIntervalMs: 10_000,
+        stopSignal: stopController.signal,
+        executeCommand: async ({ leaseLostSignal }) => {
+          executionStarted = true;
+          await new Promise<void>((resolve) => {
+            if (leaseLostSignal?.aborted) {
+              resolve();
+              return;
+            }
+            leaseLostSignal?.addEventListener('abort', () => resolve(), { once: true });
+          });
+          return {
+            status: 'lease_lost',
+            exitCode: null,
+            signal: 'SIGTERM',
+            stdout: { text: '', sizeBytes: 0 },
+            stderr: { text: null, sizeBytes: 0 },
+          };
+        },
+        detectOptions: {
+          probeCommand: async () => ({
+            available: false,
+          }),
+        },
+      });
 
-    await waitUntil(
-      () =>
-        executionStarted &&
-        requester.calls.filter((call) => call.path === '/api/agentGatewayApi:heartbeatNode/node-1').length >= 4,
-      1000,
-    );
-    const nodeHeartbeatCalls = requester.calls.filter(
-      (call) => call.path === '/api/agentGatewayApi:heartbeatNode/node-1',
-    );
-    expect(nodeHeartbeatCalls[0].body).toMatchObject({
-      currentConcurrency: 0,
-      profiles: expect.any(Array),
-      profilesHash: expect.any(String),
-      capabilitiesJson: expect.any(Object),
-      hostInfo: expect.any(Object),
-    });
-    expect(nodeHeartbeatCalls.slice(1).some((call) => (call.body as JsonRecord).currentConcurrency === 1)).toBe(true);
-    expect(nodeHeartbeatCalls.slice(1).every((call) => !('profiles' in (call.body as JsonRecord)))).toBe(true);
-    expect(nodeHeartbeatCalls.slice(1).every((call) => !('capabilities' in (call.body as JsonRecord)))).toBe(true);
-    expect(requester.calls.some((call) => isRunActionCall(call, 'heartbeat'))).toBe(true);
+      for (let index = 0; index < 20 && !executionStarted; index += 1) {
+        await new Promise<void>((resolve) => setImmediate(resolve));
+      }
+      expect(executionStarted).toBe(true);
+      await vi.advanceTimersByTimeAsync(120_001);
+      expect(Date.now() - startedAt).toBeGreaterThan(120_000);
 
-    stopController.abort();
-    await loop;
-    const callCountAfterAbort = requester.calls.length;
-    await new Promise((resolve) => setTimeout(resolve, 20));
-    expect(requester.calls).toHaveLength(callCountAfterAbort);
+      const nodeHeartbeatCalls = requester.calls.filter(
+        (call) => call.path === '/api/agentGatewayApi:heartbeatNode/node-1',
+      );
+      const runHeartbeatCalls = requester.calls.filter((call) => isRunActionCall(call, 'heartbeat'));
+      expect(nodeHeartbeatCalls.length).toBeGreaterThanOrEqual(5);
+      expect(runHeartbeatCalls.length).toBeGreaterThanOrEqual(12);
+      expect(nodeHeartbeatCalls[0].body).toMatchObject({
+        currentConcurrency: 0,
+        profiles: expect.any(Array),
+        profilesHash: expect.any(String),
+        capabilitiesJson: expect.any(Object),
+        hostInfo: expect.any(Object),
+      });
+      expect(nodeHeartbeatCalls.slice(1).some((call) => (call.body as JsonRecord).currentConcurrency === 1)).toBe(true);
+      expect(nodeHeartbeatCalls.slice(1).every((call) => !('profiles' in (call.body as JsonRecord)))).toBe(true);
+      expect(nodeHeartbeatCalls.slice(1).every((call) => !('capabilitiesJson' in (call.body as JsonRecord)))).toBe(
+        true,
+      );
+
+      stopController.abort();
+      await loop;
+      const callCountAfterAbort = requester.calls.length;
+      await vi.advanceTimersByTimeAsync(60_000);
+      expect(requester.calls).toHaveLength(callCountAfterAbort);
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('keeps node heartbeats running while claim polling retries', async () => {
@@ -646,6 +666,7 @@ describe('agent gateway daemon runner', () => {
     ['args', ['--sandbox', 'danger-full-access']],
     ['extraArgs', ['--add-dir', '/tmp']],
     ['env', { UNDECLARED_SECRET: 'secret' }],
+    ['unexpectedField', 'blocked'],
     ['cwd', '__absolute__'],
   ])('rejects remote %s overrides before command execution', async (field, value) => {
     const workspace = path.join(tempDir, `workspace-${field}`);

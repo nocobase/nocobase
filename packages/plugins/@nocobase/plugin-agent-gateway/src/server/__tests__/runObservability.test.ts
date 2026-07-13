@@ -160,7 +160,7 @@ describe('agent gateway run observability APIs', () => {
       },
       executionPayloadJson: {
         executionPolicyKey: 'fake-observer',
-        task: 'observe',
+        title: 'observe',
         cwd: '.',
         ...executionPayload,
       },
@@ -904,6 +904,32 @@ describe('agent gateway run observability APIs', () => {
       contentText: 'content-artifact-page-1',
     });
 
+    const artifactRepository = app.db.getRepository('agRunArtifacts');
+    const secondArtifact = await artifactRepository.findOne({ filterByTk: artifactIds[1] });
+    await artifactRepository.update({
+      filterByTk: artifactIds[0],
+      values: {
+        storageId: secondArtifact.get('storageId'),
+        objectPath: secondArtifact.get('objectPath'),
+        objectFilename: secondArtifact.get('objectFilename'),
+        objectKey: secondArtifact.get('objectKey'),
+        storageSizeBytes: secondArtifact.get('storageSizeBytes'),
+        storageSha256: secondArtifact.get('storageSha256'),
+      },
+    });
+    const crossArtifactResponse = await rootAgent.get(
+      `/agentGatewayApi:getRunArtifactContent/${runId}?artifactId=${artifactIds[0]}`,
+    );
+    expect(crossArtifactResponse.status).toBe(409);
+    const secondArtifactResponse = await rootAgent.get(
+      `/agentGatewayApi:getRunArtifactContent/${runId}?artifactId=${artifactIds[1]}`,
+    );
+    expect(secondArtifactResponse.status).toBe(200);
+    expect(getData(secondArtifactResponse)).toMatchObject({
+      id: artifactIds[1],
+      contentText: 'content-artifact-page-2',
+    });
+
     const otherRunResponse = await rootAgent.post('/agentGatewayApi:createRun').send({
       runCode: `run-observe-other-${Date.now()}-${Math.random()}`,
       sourceType: 'test',
@@ -916,7 +942,7 @@ describe('agent gateway run observability APIs', () => {
       },
       executionPayloadJson: {
         executionPolicyKey: 'fake-observer',
-        task: 'observe-other',
+        title: 'observe-other',
         cwd: '.',
       },
     });

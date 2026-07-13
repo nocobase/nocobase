@@ -14,6 +14,7 @@ import { MockServer, createMockServer } from '@nocobase/test';
 import PluginAgentGatewayServer from '../plugin';
 import { buildRunObservabilityRollup } from '../services/observationRollup';
 import { AGENT_GATEWAY_ROLLUP_EVENT_PAGE_SIZE, cleanupAgentGatewayRetention } from '../services/retention';
+import { putSharedStorageBuffer, readSharedStorageBuffer } from '../services/sharedFileStorage';
 
 function getExternalConversationSource(provider: string, format: string, batchKey: string, logIndex: number) {
   const source = ['external', provider, format, batchKey, String(logIndex)].join(':');
@@ -137,7 +138,10 @@ describe('agent gateway retention', () => {
       .getCollection('agRunArtifacts')
       .model.update({ createdAt: recentDate }, { where: { id: recentArtifact.get('id') } });
 
-    const first = await cleanupAgentGatewayRetention({ db: app.db }, { now, batchSize: 1, maxBatchesPerCollection: 1 });
+    const first = await cleanupAgentGatewayRetention(
+      { app, db: app.db },
+      { now, batchSize: 1, maxBatchesPerCollection: 1 },
+    );
     expect(first.deletedByCollection.agRunEvents).toBe(1);
     expect(first.deletedByCollection.agRunArtifacts).toBe(1);
     expect(first.hasMore).toBe(true);
@@ -146,13 +150,108 @@ describe('agent gateway retention', () => {
     expect(await app.db.getRepository('agRunArtifacts').count()).toBe(1);
 
     const second = await cleanupAgentGatewayRetention(
-      { db: app.db },
+      { app, db: app.db },
       { now, batchSize: 1, maxBatchesPerCollection: 10 },
     );
     expect(second.deletedByCollection.agRunEvents).toBe(1);
     expect(second.hasMore).toBe(false);
     expect(await app.db.getRepository('agRunEvents').count()).toBe(1);
     expect(await app.db.getRepository('agRunArtifacts').count()).toBe(1);
+  });
+
+  it('deletes only validated retained artifact objects and isolates cross-artifact locators', async () => {
+    const now = new Date('2026-07-11T00:00:00.000Z');
+    const oldDate = new Date('2025-01-01T00:00:00.000Z');
+    const recentDate = new Date('2026-07-10T00:00:00.000Z');
+    const run = await app.db.getRepository('agRuns').create({
+      values: {
+        runCode: `retention-artifact-storage-${randomUUID()}`,
+        status: 'succeeded',
+        claimAttempt: 1,
+        leaseVersion: 2,
+        cancelRequested: false,
+      },
+    });
+    const runId = String(run.get('id'));
+    const retainedArtifactId = randomUUID();
+    const expiredArtifactId = randomUUID();
+    const forgedArtifactId = randomUUID();
+    const retainedContent = Buffer.from('retained artifact');
+    const expiredContent = Buffer.from('expired artifact');
+    const retainedObject = await putSharedStorageBuffer(
+      { app },
+      {
+        content: retainedContent,
+        filename: `${retainedArtifactId}.txt`,
+        mimetype: 'text/plain',
+        subPath: `agent-gateway/run-artifacts/${runId}/${retainedArtifactId}`,
+      },
+    );
+    const expiredObject = await putSharedStorageBuffer(
+      { app },
+      {
+        content: expiredContent,
+        filename: `${expiredArtifactId}.txt`,
+        mimetype: 'text/plain',
+        subPath: `agent-gateway/run-artifacts/${runId}/${expiredArtifactId}`,
+      },
+    );
+    await app.db.getRepository('agRunArtifacts').createMany({
+      records: [
+        {
+          id: retainedArtifactId,
+          runId,
+          claimAttempt: 1,
+          artifactKey: 'retained-storage-object',
+          artifactType: 'text',
+          mimeType: 'text/plain',
+          storageId: retainedObject.storageId,
+          objectPath: retainedObject.path,
+          objectFilename: retainedObject.filename,
+          objectKey: retainedObject.objectKey,
+          storageSizeBytes: retainedObject.sizeBytes,
+        },
+        {
+          id: expiredArtifactId,
+          runId,
+          claimAttempt: 1,
+          artifactKey: 'expired-storage-object',
+          artifactType: 'text',
+          mimeType: 'text/plain',
+          storageId: expiredObject.storageId,
+          objectPath: expiredObject.path,
+          objectFilename: expiredObject.filename,
+          objectKey: expiredObject.objectKey,
+          storageSizeBytes: expiredObject.sizeBytes,
+        },
+        {
+          id: forgedArtifactId,
+          runId,
+          claimAttempt: 1,
+          artifactKey: 'forged-storage-object',
+          artifactType: 'text',
+          mimeType: 'text/plain',
+          storageId: retainedObject.storageId,
+          objectPath: retainedObject.path,
+          objectFilename: retainedObject.filename,
+          objectKey: retainedObject.objectKey,
+          storageSizeBytes: retainedObject.sizeBytes,
+        },
+      ],
+    });
+    await app.db
+      .getCollection('agRunArtifacts')
+      .model.update({ createdAt: oldDate }, { where: { id: [expiredArtifactId, forgedArtifactId] }, hooks: false });
+    await app.db
+      .getCollection('agRunArtifacts')
+      .model.update({ createdAt: recentDate }, { where: { id: retainedArtifactId }, hooks: false });
+
+    const result = await cleanupAgentGatewayRetention({ app, db: app.db }, { now });
+    expect(result.deletedByCollection.agRunArtifacts).toBe(2);
+    expect(await app.db.getRepository('agRunArtifacts').findOne({ filterByTk: expiredArtifactId })).toBeNull();
+    expect(await app.db.getRepository('agRunArtifacts').findOne({ filterByTk: forgedArtifactId })).toBeNull();
+    expect(await readSharedStorageBuffer({ app }, retainedObject, retainedContent.byteLength)).toEqual(retainedContent);
+    await expect(readSharedStorageBuffer({ app }, expiredObject, expiredContent.byteLength)).rejects.toThrow();
   });
 
   it('keeps expired observations for non-terminal runs', async () => {
@@ -196,7 +295,7 @@ describe('agent gateway retention', () => {
       .getCollection('agRunArtifacts')
       .model.update({ createdAt: oldDate }, { where: { id: artifact.get('id') } });
 
-    const result = await cleanupAgentGatewayRetention({ db: app.db }, { now });
+    const result = await cleanupAgentGatewayRetention({ app, db: app.db }, { now });
     expect(result.deletedByCollection.agRunEvents).toBe(0);
     expect(result.deletedByCollection.agRunArtifacts).toBe(0);
     expect(await app.db.getRepository('agRunEvents').count()).toBe(1);
@@ -271,7 +370,7 @@ describe('agent gateway retention', () => {
       },
     );
 
-    const result = await cleanupAgentGatewayRetention({ db: app.db }, { now });
+    const result = await cleanupAgentGatewayRetention({ app, db: app.db }, { now });
     expect(result.deletedByCollection.agAgentConversationEvents).toBe(4);
     expect(await app.db.getRepository('agAgentConversationEvents').count({ filter: { runId } })).toBe(0);
 
@@ -370,7 +469,7 @@ describe('agent gateway retention', () => {
 
     const conversationRepository = app.db.getRepository('agAgentConversationEvents');
     const eventFindSpy = vi.spyOn(conversationRepository, 'find');
-    const result = await cleanupAgentGatewayRetention({ db: app.db }, { now });
+    const result = await cleanupAgentGatewayRetention({ app, db: app.db }, { now });
     const rollupFindOptions = eventFindSpy.mock.calls
       .map(([options]) => options as { limit?: number; offset?: number; sort?: string[] })
       .filter((options) => options.sort?.join(',') === 'createdAt,sequence,id');
@@ -633,7 +732,7 @@ describe('agent gateway retention', () => {
         hooks: false,
       },
     );
-    const secondRetention = await cleanupAgentGatewayRetention({ db: app.db }, { now });
+    const secondRetention = await cleanupAgentGatewayRetention({ app, db: app.db }, { now });
     expect(secondRetention.deletedByCollection.agAgentConversationEvents).toBe(5);
     const retainedAccumulatedRun = await app.db.getRepository('agRuns').findOne({
       filterByTk: runId,
@@ -703,7 +802,7 @@ describe('agent gateway retention', () => {
         hooks: false,
       },
     );
-    const retention = await cleanupAgentGatewayRetention({ db: app.db }, { now });
+    const retention = await cleanupAgentGatewayRetention({ app, db: app.db }, { now });
     expect(retention.deletedByCollection.agAgentConversationEvents).toBe(events.length);
 
     const appendResponse = await rootAgent.post(`/agentGatewayApi:appendExternalRunObservations/${runId}`).send({
@@ -837,7 +936,10 @@ describe('agent gateway retention', () => {
       },
     });
 
-    const first = await cleanupAgentGatewayRetention({ db: app.db }, { now, batchSize: 1, maxBatchesPerCollection: 1 });
+    const first = await cleanupAgentGatewayRetention(
+      { app, db: app.db },
+      { now, batchSize: 1, maxBatchesPerCollection: 1 },
+    );
     expect(first.abandonedImportRuns).toBe(0);
     expect(first.hasMore).toBe(true);
     const runsAfterFirst = await app.db.getRepository('agRuns').find({
@@ -856,17 +958,20 @@ describe('agent gateway retention', () => {
     ).toBe(true);
 
     const second = await cleanupAgentGatewayRetention(
-      { db: app.db },
+      { app, db: app.db },
       { now, batchSize: 1, maxBatchesPerCollection: 1 },
     );
     expect(second.abandonedImportRuns).toBe(1);
     expect(second.hasMore).toBe(true);
 
-    const third = await cleanupAgentGatewayRetention({ db: app.db }, { now, batchSize: 1, maxBatchesPerCollection: 1 });
+    const third = await cleanupAgentGatewayRetention(
+      { app, db: app.db },
+      { now, batchSize: 1, maxBatchesPerCollection: 1 },
+    );
     expect(third.abandonedImportRuns).toBe(1);
     expect(third.hasMore).toBe(true);
 
-    const final = await cleanupAgentGatewayRetention({ db: app.db }, { now });
+    const final = await cleanupAgentGatewayRetention({ app, db: app.db }, { now });
     expect(final.abandonedImportRuns).toBe(0);
     expect(final.hasMore).toBe(false);
 
@@ -1009,7 +1114,7 @@ describe('agent gateway retention', () => {
     });
     expect(new Date(String(storedCompletedBatch.get('updatedAt'))).toISOString()).toBe(oldDate.toISOString());
 
-    const result = await cleanupAgentGatewayRetention({ db: app.db }, { now });
+    const result = await cleanupAgentGatewayRetention({ app, db: app.db }, { now });
     expect(result.recoveredImportBatches).toBe(1);
     expect(result.deletedByCollection.agExternalImportBatches).toBe(1);
     const recoveredBatch = await app.db.getRepository('agExternalImportBatches').findOne({

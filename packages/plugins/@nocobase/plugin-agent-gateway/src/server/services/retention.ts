@@ -18,6 +18,7 @@ import {
 import { IMPORTING_RUN_STATUS, TERMINAL_RUN_STATUSES } from '../../shared/runState';
 import { JsonRecord, ModelRecord, getModelString, getModelTargetKey, getModelValue } from '../actions/utils';
 import { AGENT_GATEWAY_RETENTION_DEFAULTS_DAYS } from '../constants';
+import { deleteSharedStorageObject, parseSharedStorageObject } from './sharedFileStorage';
 import {
   OBSERVABILITY_ROLLUP_EVENT_FILTER,
   RunObservabilityRollup,
@@ -37,6 +38,8 @@ interface RetentionTarget {
   retentionDays: number;
   filter: JsonRecord;
 }
+
+type RetentionPlugin = Pick<Plugin, 'app' | 'db'>;
 
 const TERMINAL_RUN_FILTER: JsonRecord = {
   'run.status': {
@@ -478,7 +481,7 @@ async function abandonOrphanedImportingRuns(
 }
 
 async function cleanRetentionTarget(
-  plugin: Pick<Plugin, 'db'>,
+  plugin: RetentionPlugin,
   target: RetentionTarget,
   options: {
     now: Date;
@@ -522,7 +525,10 @@ async function cleanRetentionTarget(
       // Lock only the target rows after resolving the candidate IDs.
       const records = (await repository.find({
         filterByTk: candidateIds,
-        fields: ['id', 'runId'],
+        fields:
+          target.collectionName === 'agRunArtifacts'
+            ? ['id', 'runId', 'mimeType', 'storageId', 'objectPath', 'objectFilename', 'objectKey', 'storageSizeBytes']
+            : ['id', 'runId'],
         transaction,
         lock: transaction.LOCK.UPDATE,
       })) as ModelRecord[];
@@ -540,6 +546,43 @@ async function cleanRetentionTarget(
           ),
         ];
         await materializeConversationRollups(plugin, runIds, options.now, transaction);
+      }
+      if (target.collectionName === 'agRunArtifacts') {
+        for (const artifact of records) {
+          const storageId = getModelValue(artifact, 'storageId');
+          if (storageId === null || storageId === undefined) {
+            continue;
+          }
+          const artifactId = getModelString(artifact, 'id');
+          const runId = getModelString(artifact, 'runId');
+          let storageObject;
+          try {
+            if (!artifactId || !runId) {
+              throw new Error('Invalid retained artifact ownership fields');
+            }
+            storageObject = parseSharedStorageObject(
+              {
+                storageId,
+                objectPath: getModelValue(artifact, 'objectPath'),
+                objectFilename: getModelValue(artifact, 'objectFilename'),
+                objectKey: getModelValue(artifact, 'objectKey'),
+                sizeBytes: getModelValue(artifact, 'storageSizeBytes'),
+                mimetype: getModelValue(artifact, 'mimeType'),
+              },
+              {
+                path: `agent-gateway/run-artifacts/${runId}/${artifactId}`,
+              },
+            );
+          } catch (error) {
+            plugin.app.logger?.warn?.('Agent Gateway skipped unsafe retained artifact storage locator', {
+              artifactId,
+              runId,
+              error: error instanceof Error ? error.message : String(error),
+            });
+            continue;
+          }
+          await deleteSharedStorageObject(plugin, storageObject);
+        }
       }
       await repository.destroy({
         filterByTk: batchIds,
@@ -669,7 +712,7 @@ async function materializeConversationRollups(
 }
 
 export async function cleanupAgentGatewayRetention(
-  plugin: Pick<Plugin, 'db'>,
+  plugin: RetentionPlugin,
   options: { now?: Date; batchSize?: number; maxBatchesPerCollection?: number } = {},
 ): Promise<AgentGatewayRetentionResult> {
   const now = options.now || new Date();

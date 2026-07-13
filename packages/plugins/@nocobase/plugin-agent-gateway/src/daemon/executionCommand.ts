@@ -10,6 +10,7 @@
 import { getAgentAdapter } from './adapters';
 import { getExecutionPolicyArgs } from './execDriver';
 import { ExecutionPolicyDefinition, JsonRecord, RunLease } from './types';
+import { getUnknownRunExecutionPayloadField } from '../shared/contracts';
 
 export type AgentCommandOutputMode = 'structured' | 'terminal';
 export type AgentTerminalBackend = 'exec' | 'tmux';
@@ -21,23 +22,6 @@ export interface ExecutionCommandSpec {
   cwd: string;
   timeoutMs: number;
 }
-
-const FORBIDDEN_REMOTE_EXECUTION_FIELDS = [
-  'args',
-  'extraArgs',
-  'env',
-  'executable',
-  'command',
-  'commandKey',
-  'profileKey',
-  'provider',
-  'workspaceRoot',
-  'additionalWritableDirs',
-  'config',
-  'hooks',
-  'permissionMode',
-  'terminalBackend',
-] as const;
 
 function isRecord(value: unknown): value is JsonRecord {
   return Object.prototype.toString.call(value) === '[object Object]';
@@ -104,9 +88,9 @@ function getRunPrompt(lease: RunLease, payload: JsonRecord) {
 }
 
 export function assertRemoteExecutionPayloadIsSafe(payload: JsonRecord) {
-  const forbiddenField = FORBIDDEN_REMOTE_EXECUTION_FIELDS.find((field) => payload[field] !== undefined);
-  if (forbiddenField) {
-    throw new Error(`Remote execution field is not allowed: ${forbiddenField}`);
+  const unknownField = getUnknownRunExecutionPayloadField(payload);
+  if (unknownField) {
+    throw new Error(`Remote execution field is not allowed: ${unknownField}`);
   }
 }
 
@@ -137,7 +121,6 @@ export function getExecutionCommandSpec(
   outputMode: AgentCommandOutputMode,
 ): ExecutionCommandSpec {
   const payload = getPayload(lease);
-  assertRemoteExecutionPayloadIsSafe(payload);
   const executionPolicyKey = getRequestedExecutionPolicyKey(lease, payload);
   if (executionPolicyKey !== policy.executionPolicyKey) {
     throw new Error(`Claimed execution policy does not match local policy: ${executionPolicyKey}`);

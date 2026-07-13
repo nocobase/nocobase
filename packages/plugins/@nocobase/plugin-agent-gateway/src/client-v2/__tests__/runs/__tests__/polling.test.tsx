@@ -15,7 +15,7 @@ import {
   RUN_LIST_REFRESH_INTERVAL_MS,
   RUN_REALTIME_REFRESH_INTERVAL_MS,
   useRunDetailPolling,
-} from '../../features/runs/hooks/useRunDetailPolling';
+} from '../../../features/runs/hooks/useRunDetailPolling';
 
 function createOptions() {
   return {

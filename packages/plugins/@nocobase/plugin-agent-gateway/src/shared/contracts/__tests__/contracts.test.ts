@@ -12,9 +12,11 @@ import { describe, expect, it } from 'vitest';
 import {
   AGENT_GATEWAY_API_ACTIONS,
   AGENT_GATEWAY_API_CONTRACTS,
+  AGENT_GATEWAY_RUN_EXECUTION_PAYLOAD_FIELDS,
   AgentGatewayContractError,
   getAgentGatewayApiPath,
   getAgentGatewayApiUrl,
+  getUnknownRunExecutionPayloadField,
   parseAgentGatewayActionRequest,
 } from '..';
 
@@ -54,6 +56,22 @@ describe('Agent Gateway canonical API contracts', () => {
         unexpected: true,
       }),
     ).toThrow('Unknown request field: unexpected');
+  });
+
+  it('defines a strict allowlist for claimed run execution payloads', () => {
+    const canonicalPayload = Object.fromEntries(
+      AGENT_GATEWAY_RUN_EXECUTION_PAYLOAD_FIELDS.map((field) => [field, null]),
+    );
+
+    expect(getUnknownRunExecutionPayloadField(canonicalPayload)).toBeUndefined();
+    expect(
+      getUnknownRunExecutionPayloadField({
+        executionPolicyKey: 'codex',
+        prompt: 'Build a page',
+        cwd: '.',
+        unexpectedField: true,
+      }),
+    ).toBe('unexpectedField');
   });
 
   it('accepts canonical nested conversation events', () => {

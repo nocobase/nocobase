@@ -20,6 +20,7 @@ import {
   hasModelGetter,
 } from '../../actions/utils';
 import { TERMINAL_CONTROL_RUN_STATUSES } from '../../../shared/runState';
+import { getUnknownRunExecutionPayloadField } from '../../../shared/contracts';
 
 export const DEFAULT_CLAIM_LEASE_SECONDS = 60;
 
@@ -85,9 +86,9 @@ export const CLAIM_PROFILE_CAPABILITY_KEYS = [
 export const CONTROL_RUN_STATUSES = new Set<string>(TERMINAL_CONTROL_RUN_STATUSES);
 
 export function assertSafeRemoteExecutionPayload(ctx: Context, payload: JsonRecord) {
-  const forbiddenField = Object.keys(payload).find((field) => FORBIDDEN_REMOTE_EXECUTION_FIELDS.has(field));
-  if (forbiddenField) {
-    ctx.throw(400, `Execution field is not allowed: ${forbiddenField}`);
+  const unknownField = getUnknownRunExecutionPayloadField(payload);
+  if (unknownField) {
+    ctx.throw(400, `Execution field is not allowed: ${unknownField}`);
   }
   if (!getString(payload.executionPolicyKey)) {
     ctx.throw(400, 'executionPolicyKey is required');
