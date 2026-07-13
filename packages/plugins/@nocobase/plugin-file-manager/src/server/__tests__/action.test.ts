@@ -177,7 +177,7 @@ describe('action', () => {
         // 文件上传和解析是否正常
         expect(body.data).toMatchObject(matcher);
         // 文件的 url 是否正常生成
-        expect(body.data.url).toBe(`/files/main/main/attachments/${body.data.id}`);
+        expect(body.data.url).toBe(`/files/main/main/attachments/${body.data.id}${body.data.extname}`);
         const storageUrl = await plugin.getFileURL(body.data);
         expect(storageUrl).toBe(`${DEFAULT_LOCAL_BASE_URL}/${body.data.filename}`);
 
@@ -228,7 +228,7 @@ describe('action', () => {
         // 文件上传和解析是否正常
         expect(body.data).toMatchObject(matcher);
         // 文件的 url 是否正常生成
-        expect(body.data.url).toBe(`/files/main/main/attachments/${body.data.id}`);
+        expect(body.data.url).toBe(`/files/main/main/attachments/${body.data.id}${body.data.extname}`);
         const encodedFilename = querystring.escape(rawText);
         expect(await plugin.getFileURL(body.data)).toContain(`${DEFAULT_LOCAL_BASE_URL}/${encodedFilename}`);
 
@@ -478,7 +478,7 @@ describe('action', () => {
         });
 
         // 文件的 url 是否正常生成
-        expect(body.data.url).toBe(`/files/main/main/attachments/${body.data.id}`);
+        expect(body.data.url).toBe(`/files/main/main/attachments/${body.data.id}${body.data.extname}`);
         expect(await plugin.getFileURL(body.data)).toBe(`${BASE_URL}/${urlPath}/${body.data.filename}`);
         const destPath = getStorageDestPath(storage);
         const content = await fs.readFile(path.join(destPath, body.data.filename), 'utf8');
@@ -523,7 +523,7 @@ describe('action', () => {
         });
 
         // 文件的 url 是否正常生成
-        expect(body.data.url).toBe(`/files/main/main/attachments/${body.data.id}`);
+        expect(body.data.url).toBe(`/files/main/main/attachments/${body.data.id}${body.data.extname}`);
         expect(await plugin.getFileURL(body.data)).toBe(`${BASE_URL}/${urlPath}/${body.data.filename}`);
         const destPath = getStorageDestPath(storage);
         const content = await fs.readFile(path.join(destPath, body.data.filename), 'utf8');
@@ -569,7 +569,7 @@ describe('action', () => {
         });
 
         // 文件的 url 是否正常生成
-        expect(body.data.url).toBe(`/files/main/main/attachments/${body.data.id}`);
+        expect(body.data.url).toBe(`/files/main/main/attachments/${body.data.id}${body.data.extname}`);
         expect(await plugin.getFileURL(body.data)).toBe(`${BASE_URL}/${urlPath}/${body.data.filename}`);
         const destPath = getStorageDestPath(storage);
         const content = await fs.readFile(path.join(destPath, body.data.filename), 'utf8');
