@@ -1,0 +1,78 @@
+name: Agent Gateway release gate
+
+on:
+  workflow_dispatch:
+    inputs:
+      evidence_run_id:
+        description: Workflow run containing the agent-gateway-live-evidence artifact prepared for this execution
+        required: false
+        type: string
+      required_providers:
+        description: Comma-separated provider binaries required by this release environment
+        required: false
+        default: ''
+        type: string
+      allow_incomplete:
+        description: Upload an incomplete report without failing the workflow
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  release-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      EVIDENCE_DIR: /tmp/agent-gateway-acceptance
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Download prepared live evidence
+        if: inputs.evidence_run_id != ''
+        run: gh run download "${{ inputs.evidence_run_id }}" --name agent-gateway-live-evidence --dir "$EVIDENCE_DIR"
+
+      - name: Prepare a fresh evidence execution
+        if: inputs.evidence_run_id == ''
+        working-directory: packages/plugins/@nocobase/plugin-agent-gateway
+        run: >-
+          yarn acceptance:prepare
+          --evidence-dir "$EVIDENCE_DIR"
+          --required-providers "${{ inputs.required_providers }}"
+
+      - name: Run release gate
+        id: release_gate
+        continue-on-error: true
+        working-directory: packages/plugins/@nocobase/plugin-agent-gateway
+        run: |
+          args=(acceptance:verify --evidence-dir "$EVIDENCE_DIR" --scope full)
+          if [ "${{ inputs.allow_incomplete }}" = "true" ]; then
+            args+=(--allow-incomplete)
+          fi
+          yarn "${args[@]}"
+
+      - name: Upload release evidence and reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-gateway-live-evidence
+          path: /tmp/agent-gateway-acceptance
+          if-no-files-found: error
+
+      - name: Enforce release gate result
+        if: steps.release_gate.outcome != 'success'
+        run: exit 1

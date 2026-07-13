@@ -13,6 +13,7 @@ import { AGENT_GATEWAY_API_ACTIONS, createActionContract } from './common';
 export interface CreateNodeInvitationRequest extends JsonRecord {
   invitationKey?: string;
   expectedNodeKey?: string;
+  serverUrl?: string;
   expiresInSeconds?: number;
   metadataJson?: JsonRecord;
 }
@@ -49,6 +50,7 @@ export const nodeContracts = {
   >(AGENT_GATEWAY_API_ACTIONS.createNodeInvitation, [
     'invitationKey',
     'expectedNodeKey',
+    'serverUrl',
     'expiresInSeconds',
     'metadataJson',
   ]),

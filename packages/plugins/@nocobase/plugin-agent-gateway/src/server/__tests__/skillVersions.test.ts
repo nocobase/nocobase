@@ -194,10 +194,10 @@ describe('agent gateway Skill version upload APIs', () => {
       description: 'Builds NocoBase UI pages through OpenCode.',
       versionLabel: '2026-07-01',
       contentBase64: firstContent.toString('base64'),
-      manifest: {
+      manifestJson: {
         name: 'nb-opencode-ui-batch',
       },
-      metadata: {
+      metadataJson: {
         channel: 'smoke',
       },
     });
@@ -265,7 +265,7 @@ describe('agent gateway Skill version upload APIs', () => {
       skillKey: 'nb-opencode-ui-batch',
       versionLabel: '2026-07-01',
       contentBase64: secondContent.toString('base64'),
-      metadata: {
+      metadataJson: {
         channel: 'updated',
       },
     });

@@ -184,7 +184,7 @@ describe('terminal stream smoke daemon script', () => {
   it('parses claim-run and repeated/comma-separated line arguments', () => {
     const options = parseTerminalStreamSmokeDaemonArgs([
       'node',
-      'terminal-stream-smoke-daemon.ts',
+      'terminalStreamSmokeDaemon.ts',
       '--server-url',
       'http://127.0.0.1:23000',
       '--run-id',

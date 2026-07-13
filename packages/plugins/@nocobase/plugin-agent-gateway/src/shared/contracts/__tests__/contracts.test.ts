@@ -40,6 +40,7 @@ describe('Agent Gateway canonical API contracts', () => {
     [AGENT_GATEWAY_API_ACTIONS.appendRunEvents, { eventType: 'run.started', payloadJson: {} }],
     [AGENT_GATEWAY_API_ACTIONS.appendConversationEvents, { events: [{ type: 'agent.message' }] }],
     [AGENT_GATEWAY_API_ACTIONS.importExternalRun, { provider: 'codex', metadata: {} }],
+    [AGENT_GATEWAY_API_ACTIONS.uploadSkillVersion, { skillKey: 'skill-1', manifest: {} }],
     [AGENT_GATEWAY_API_ACTIONS.createTaskTemplate, { templateKey: 'task', title: 'Legacy title' }],
   ])('rejects legacy fields for %s', (action, request) => {
     expect(() => parseAgentGatewayActionRequest(action, request)).toThrow(AgentGatewayContractError);
@@ -76,6 +77,10 @@ describe('Agent Gateway canonical API contracts', () => {
   });
 
   it.each([
+    [
+      AGENT_GATEWAY_API_ACTIONS.createNodeInvitation,
+      { expectedNodeKey: 'node-1', serverUrl: 'https://nocobase.example.test' },
+    ],
     [
       AGENT_GATEWAY_API_ACTIONS.resumeAgentSession,
       { message: 'Continue', idempotencyKey: 'resume-1', resumedFromRunId: 'run-1' },

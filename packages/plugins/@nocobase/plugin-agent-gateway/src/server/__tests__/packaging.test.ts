@@ -47,7 +47,7 @@ describe('agent gateway package contents', () => {
 
       expect(packedPaths).toContain('dist/server/assets/install-agent-gateway-daemon.sh');
       expect(packedPaths.some((filePath) => filePath.startsWith('scripts/'))).toBe(false);
-      expect(packedPaths).not.toContain('scripts/final-agent-gateway-acceptance.ts');
+      expect(packedPaths).not.toContain('scripts/agent-gateway-release-gate.ts');
 
       await execFileAsync('tar', ['-xzf', path.resolve(tempDirectory, packageInfo.filename), '-C', tempDirectory]);
 

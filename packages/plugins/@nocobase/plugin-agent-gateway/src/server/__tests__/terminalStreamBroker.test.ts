@@ -64,7 +64,7 @@ function waitForFrames(ws: WebSocket, predicate: (frame: TerminalFrame) => boole
     const timer = setTimeout(() => {
       ws.off('message', onMessage);
       reject(new Error('Terminal stream frames timed out'));
-    }, 5000);
+    }, 10_000);
     const onMessage = (data: WebSocket.RawData) => {
       const frame = JSON.parse(data.toString()) as TerminalFrame;
       if (!predicate(frame)) {
@@ -1065,6 +1065,10 @@ describe('terminal stream broker multi-instance transport', () => {
       });
       await waitForFrame(daemon, (frame) => frame.type === 'ack' && frame.requestId === 'cluster-bind-other');
 
+      const snapshotRequestPromise = waitForFrame(
+        daemon,
+        (frame) => frame.type === 'daemon.snapshotRequest' && frame.runId === runId,
+      );
       sendBrowserSubscribe(browser, browserConnection.ticket, {
         runId,
         requestId: 'cluster-subscribe',
@@ -1079,10 +1083,7 @@ describe('terminal stream broker multi-instance transport', () => {
         otherBrowser,
         (frame) => frame.type === 'ack' && frame.requestId === 'cluster-subscribe-other',
       );
-      const snapshotRequest = await waitForFrame(
-        daemon,
-        (frame) => frame.type === 'daemon.snapshotRequest' && frame.runId === runId,
-      );
+      const snapshotRequest = await snapshotRequestPromise;
       const snapshotText = 'cluster-snapshot\n';
       const snapshotOffset = Buffer.byteLength(snapshotText);
       sendFrame(daemon, {

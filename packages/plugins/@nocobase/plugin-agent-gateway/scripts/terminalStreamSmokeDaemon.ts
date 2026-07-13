@@ -476,3 +476,16 @@ export async function runTerminalStreamSmokeDaemon(
 export function encodeSmokeLineForTest(line: string) {
   return encodeTerminalPayload(normalizeLine(line));
 }
+
+async function main() {
+  const options = parseTerminalStreamSmokeDaemonArgs(process.argv);
+  const result = await runTerminalStreamSmokeDaemon(options);
+  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+}
+
+if (require.main === module) {
+  main().catch((error: unknown) => {
+    process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
+    process.exitCode = 1;
+  });
+}

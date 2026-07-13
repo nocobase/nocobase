@@ -85,7 +85,7 @@ describe('agent gateway node lifecycle APIs', () => {
         hostInfo: {
           hostname: 'agent-host',
         },
-        capabilities: {
+        capabilitiesJson: {
           maxConcurrency: 2,
         },
         ...values,
@@ -214,7 +214,7 @@ describe('agent gateway node lifecycle APIs', () => {
     });
     const firstResponse = await registerNode(extractInviteToken(firstInvitation.registerCommand), {
       displayName: 'Local daemon',
-      capabilities: {
+      capabilitiesJson: {
         maxConcurrency: 1,
       },
     });
@@ -242,7 +242,7 @@ describe('agent gateway node lifecycle APIs', () => {
         hostname: 'agent-host',
         platform: 'linux',
       },
-      capabilities: {
+      capabilitiesJson: {
         maxConcurrency: 4,
       },
     });
@@ -447,7 +447,7 @@ describe('agent gateway node lifecycle APIs', () => {
       .send({
         installationId: '33333333-3333-4333-8333-333333333333',
         currentConcurrency: 1,
-        capabilities: {
+        capabilitiesJson: {
           maxConcurrency: 3,
           supportsArtifacts: true,
         },
@@ -459,11 +459,11 @@ describe('agent gateway node lifecycle APIs', () => {
             displayName: 'Fake Success',
             agentType: 'code',
             driver: 'fake',
-            capabilities: {
+            capabilitiesJson: {
               executionPolicyKey: 'fake-success',
               mode: 'success',
             },
-            metadata: {
+            metadataJson: {
               command: 'must-not-persist',
               cwd: '/tmp/must-not-persist',
               env: {
@@ -478,7 +478,7 @@ describe('agent gateway node lifecycle APIs', () => {
             displayName: 'Local Node',
             agentType: 'code',
             driver: 'exec',
-            capabilities: {
+            capabilitiesJson: {
               executionPolicyKey: 'local-node',
               mode: 'success',
             },
@@ -611,10 +611,10 @@ describe('agent gateway node lifecycle APIs', () => {
           {
             profileKey: 'fake-success',
             provider: 'generic-cli',
-            capabilities: {
+            capabilitiesJson: {
               executionPolicyKey: 'fake-success',
             },
-            metadata: {
+            metadataJson: {
               command: 'hidden',
               label: 'visible',
             },
@@ -690,7 +690,7 @@ describe('agent gateway node lifecycle APIs', () => {
           {
             profileKey: 'fake-success',
             provider: 'generic-cli',
-            capabilities: {
+            capabilitiesJson: {
               executionPolicyKey: 'fake-success',
             },
           },

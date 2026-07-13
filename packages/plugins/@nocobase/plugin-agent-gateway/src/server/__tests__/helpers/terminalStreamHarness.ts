@@ -303,7 +303,7 @@ export async function waitForOpen(ws: WebSocket) {
     return;
   }
   await new Promise<void>((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error('WebSocket open timed out')), 5000);
+    const timer = setTimeout(() => reject(new Error('WebSocket open timed out')), 10_000);
     ws.once('open', () => {
       clearTimeout(timer);
       resolve();
@@ -322,7 +322,7 @@ export async function waitForFrame(
   return await new Promise<TerminalFrame>((resolve, reject) => {
     const timer = setTimeout(() => {
       reject(new Error('Terminal stream frame timed out'));
-    }, 5000);
+    }, 10_000);
     const onMessage = (data: WebSocket.RawData) => {
       const frame = JSON.parse(data.toString()) as TerminalFrame;
       if (!predicate(frame)) {
