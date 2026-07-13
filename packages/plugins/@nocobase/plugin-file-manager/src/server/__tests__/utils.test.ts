@@ -8,6 +8,7 @@
  */
 
 import { storagePathJoin } from '@nocobase/utils';
+import type { Collection } from '@nocobase/database';
 import path from 'path';
 import fs from 'fs/promises';
 import os from 'os';
@@ -20,6 +21,8 @@ import { STORAGE_TYPE_LOCAL } from '../../constants';
 import {
   cloudFilenameGetter,
   getFileKey,
+  getFileRecordValue,
+  hasStandardFileId,
   normalizeDocumentRoot,
   normalizeStorageSubPath,
   resolveStoragePath,
@@ -78,6 +81,18 @@ describe('file manager > utils', () => {
   let db;
   let plugin: PluginFileManagerServer;
   let StorageRepo;
+
+  it('recognizes the standard id exposed by a data source collection facade', () => {
+    const collection = {
+      getField: (name: string) => (name === 'id' ? { name: 'id' } : undefined),
+      model: {
+        primaryKeyAttribute: 'id',
+      },
+    } as unknown as Collection;
+
+    expect(hasStandardFileId(collection)).toBe(true);
+    expect(getFileRecordValue({ id: 1, storageId: 2 }, 'storageId')).toBe(2);
+  });
   let AttachmentRepo;
   let FileRepo;
   let local;

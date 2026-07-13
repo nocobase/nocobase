@@ -12,19 +12,26 @@ import type { DataSource } from '@nocobase/data-source-manager';
 import type { Collection } from '@nocobase/database';
 import type { PluginFileManagerServer } from '../server';
 import { verifyTemporaryFileAccessToken } from '../temporary-access';
+import { getFilePlainObject, getFileRecordValue, hasStandardFileId } from '../utils';
+import type { AttachmentModel } from '../storages';
 
 const GET_FILE_ACTION = 'getFile';
 
-function hasStandardIdAttribute(collection: Collection) {
-  return Boolean(collection.model?.rawAttributes?.id || collection.model?.getAttributes?.().id);
-}
+type StorageFileURLResolver = {
+  resolveStorageFileURL?: (options: {
+    collectionName: string;
+    file: Record<string, unknown>;
+    preview: boolean;
+    download: boolean;
+  }) => Promise<string | undefined>;
+};
 
 export async function getFile(ctx: Context, next: Next) {
   const collection = ctx.dataSource.collectionManager.getCollection(ctx.action.resourceName);
   if (!collection || (collection.name !== 'attachments' && collection.options?.template !== 'file')) {
     return ctx.throw(404);
   }
-  if (!hasStandardIdAttribute(collection)) {
+  if (!hasStandardFileId(collection as Collection)) {
     ctx.logger.error('file collection is missing standard id field', {
       method: 'file-manager.getFile',
       collection: collection.name,
@@ -100,22 +107,27 @@ export async function getFile(ctx: Context, next: Next) {
     context: ctx,
   });
 
-  if (!file || !file.get('storageId')) {
+  const storageId = getFileRecordValue(file, 'storageId');
+  if (!file || !storageId) {
     return ctx.throw(404);
   }
-  if (temporaryAccessPayload && String(temporaryAccessPayload.storageId) !== String(file.get('storageId'))) {
+  if (temporaryAccessPayload && String(temporaryAccessPayload.storageId) !== String(storageId)) {
     return ctx.throw(403);
   }
-  if (ctx.state.fileAccess?.extname && ctx.state.fileAccess.extname !== file.get('extname')) {
+  if (ctx.state.fileAccess?.extname && ctx.state.fileAccess.extname !== getFileRecordValue(file, 'extname')) {
     return ctx.throw(404);
   }
 
   const download = !temporaryAccess && ctx.method === 'GET' && ctx.query.download === '1';
-  const finalUrl = await plugin.getFileURL(
-    file,
-    download ? false : temporaryAccess ? false : Boolean(ctx.state.fileAccess?.preview),
-    { download },
-  );
+  const preview = download ? false : temporaryAccess ? false : Boolean(ctx.state.fileAccess?.preview);
+  const dataSource = ctx.dataSource as DataSource & StorageFileURLResolver;
+  const finalUrl =
+    (await dataSource.resolveStorageFileURL?.({
+      collectionName: collection.name,
+      file: getFilePlainObject(file as AttachmentModel) as Record<string, unknown>,
+      preview,
+      download,
+    })) || (await plugin.getFileURL(file, preview, { download }));
   ctx.status = 302;
   ctx.redirect(finalUrl);
   await next();

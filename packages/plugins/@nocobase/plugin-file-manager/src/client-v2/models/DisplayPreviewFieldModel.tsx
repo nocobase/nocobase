@@ -30,6 +30,36 @@ const isPlainRecord = (value: unknown): value is Record<string, unknown> =>
 
 const isString = (value: unknown): value is string => typeof value === 'string' && value.length > 0;
 
+type FileCollectionLike = {
+  dataSourceKey?: string;
+  name: string;
+  template?: string;
+};
+
+type FileCollectionFieldLike = {
+  interface?: string;
+  target?: string;
+  targetCollection?: FileCollectionLike;
+};
+
+export const getFileCollectionReference = (
+  collectionField?: FileCollectionFieldLike,
+  currentCollection?: FileCollectionLike,
+) => {
+  if (collectionField?.interface === 'attachmentURL' && collectionField.target) {
+    return {
+      dataSourceKey: currentCollection?.dataSourceKey || 'main',
+      collectionName: collectionField.target,
+    };
+  }
+
+  const fileCollection =
+    collectionField?.targetCollection || (currentCollection?.template === 'file' ? currentCollection : null);
+  return fileCollection
+    ? { dataSourceKey: fileCollection.dataSourceKey || 'main', collectionName: fileCollection.name }
+    : undefined;
+};
+
 const mergeCurrentFileRecordMeta = (file: unknown, record: unknown) => {
   if (!isString(file) || !isPlainRecord(record)) {
     return file;
@@ -208,15 +238,8 @@ export class DisplayPreviewFieldModel extends FieldModel {
     const { value, titleField, template, target } = this.props;
     const record = this.context.record;
     const collectionField = this.context.collectionField;
-    const targetCollection = collectionField?.targetCollection;
     const currentCollection = this.context.collection;
-    const fileCollection = targetCollection || (currentCollection?.template === 'file' ? currentCollection : null);
-    const fileCollectionReference =
-      collectionField?.interface === 'attachmentURL' && collectionField.target
-        ? { dataSourceKey: 'main', collectionName: collectionField.target }
-        : fileCollection
-          ? { dataSourceKey: fileCollection.dataSourceKey, collectionName: fileCollection.name }
-          : undefined;
+    const fileCollectionReference = getFileCollectionReference(collectionField, currentCollection);
     if (titleField && template !== 'file' && target !== 'attachments') {
       return castArray(value).flatMap((v, idx) => {
         const result = v?.[titleField];

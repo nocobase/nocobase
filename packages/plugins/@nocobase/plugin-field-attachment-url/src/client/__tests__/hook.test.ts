@@ -8,9 +8,21 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { getPermanentFilePreviewUrl, normalizeAttachmentUrlValue, toAttachmentUrlValueItem } from '../hook';
+import {
+  getAttachmentUrlFileCollection,
+  getPermanentFilePreviewUrl,
+  normalizeAttachmentUrlValue,
+  toAttachmentUrlValueItem,
+} from '../hook';
 
 describe('attachment url hook helpers', () => {
+  it('keeps the current data source in file collection metadata', () => {
+    expect(getAttachmentUrlFileCollection('remoteFiles', 'external')).toEqual({
+      dataSourceKey: 'external',
+      collectionName: 'remoteFiles',
+    });
+  });
+
   it('wraps permanent URL strings with preview metadata for v1 Upload display', () => {
     expect(normalizeAttachmentUrlValue('/files/main/main/t_n6fvrknhqjr/24.jpg')).toMatchObject({
       uid: '/files/main/main/t_n6fvrknhqjr/24.jpg',

@@ -9,9 +9,21 @@
 
 import { fireEvent, render } from '@testing-library/react';
 import React from 'react';
-import { FilePreview } from '../DisplayPreviewFieldModel';
+import { FilePreview, getFileCollectionReference } from '../DisplayPreviewFieldModel';
 
 describe('FilePreview', () => {
+  it('keeps the current data source for Attachment URL file collections', () => {
+    expect(
+      getFileCollectionReference(
+        { interface: 'attachmentURL', target: 'remoteFiles' },
+        { dataSourceKey: 'external', name: 'posts' },
+      ),
+    ).toEqual({
+      dataSourceKey: 'external',
+      collectionName: 'remoteFiles',
+    });
+  });
+
   it('keeps a failed image as a native broken image instead of replacing it with a file icon', () => {
     const { container } = render(
       <FilePreview

@@ -615,6 +615,51 @@ describe('file manager > server', () => {
         expect(response.headers.location).toBe(await plugin.getFileURL(file));
       });
 
+      it('delegates file URL resolution to the selected data source', async () => {
+        await app.destroy();
+        app = await getApp({ plugins: ['data-source-manager'] });
+        agent = app.agent();
+        db = app.db;
+        plugin = app.pm.get(PluginFileManagerServer) as PluginFileManagerServer;
+
+        const anotherFiles = await createAnotherFileCollection(app);
+        const fileData = await plugin.uploadFile({
+          filePath: path.resolve(__dirname, './files/text.txt'),
+        });
+        const file = await anotherFiles.repository.create({ values: fileData });
+        const findOne = anotherFiles.repository.findOne.bind(anotherFiles.repository);
+        vi.spyOn(anotherFiles.repository, 'findOne').mockImplementation(async (options) => {
+          const record = await findOne(options);
+          return record?.get();
+        });
+        const another = app.dataSourceManager.get('another') as SequelizeDataSource & {
+          resolveStorageFileURL: (options: {
+            collectionName: string;
+            file: Record<string, unknown>;
+            preview: boolean;
+            download: boolean;
+          }) => Promise<string>;
+        };
+        const resolveStorageFileURL = vi.fn().mockResolvedValue('https://remote.example.com/files/text.txt');
+        another.resolveStorageFileURL = resolveStorageFileURL;
+        const admin = await db.getRepository('users').findOne();
+        const loggedAgent = (await app.agent().login(admin)).set('X-Data-Source', 'another');
+
+        const createResponse = await loggedAgent.post(`/api/files:createTemporaryURL/${file.id}`);
+        const response = await app.agent().get(createResponse.body.data.url);
+
+        expect(response.status).toBe(302);
+        expect(response.headers.location).toBe('https://remote.example.com/files/text.txt');
+        expect(resolveStorageFileURL).toHaveBeenCalledWith(
+          expect.objectContaining({
+            collectionName: 'files',
+            file: expect.objectContaining({ id: file.id, storageId: file.storageId }),
+            preview: false,
+            download: false,
+          }),
+        );
+      });
+
       it('requires login and file get permission to create a temporary URL', async () => {
         const { body } = await agent.resource('attachments').create({
           [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),

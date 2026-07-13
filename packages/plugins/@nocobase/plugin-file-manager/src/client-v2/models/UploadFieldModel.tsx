@@ -413,6 +413,7 @@ UploadFieldModel.registerFlow({
                 `${fileCollection}:create?attachmentField=${collectionField.collectionName}.${collectionField.name}`,
                 dataSourceKey,
               ),
+              dataSourceKey,
               storage,
             });
 

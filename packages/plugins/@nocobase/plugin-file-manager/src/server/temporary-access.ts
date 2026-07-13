@@ -13,7 +13,7 @@ import type { DataSource } from '@nocobase/data-source-manager';
 import type { Collection } from '@nocobase/database';
 import jwt, { type JwtPayload, type SignOptions } from 'jsonwebtoken';
 import type { PluginFileManagerServer } from './server';
-import { getFileAccessPathSegment, getFilePublicBasePath } from './utils';
+import { getFileAccessPathSegment, getFilePublicBasePath, getFileRecordValue, hasStandardFileId } from './utils';
 
 export const CREATE_TEMPORARY_URL_ACTION = 'createTemporaryURL';
 export const TEMPORARY_FILE_ACCESS_AUDIENCE = 'temporary-file-access';
@@ -38,10 +38,6 @@ type TemporaryFileAccessResource = Pick<
 
 function isFileCollection(collection: Collection | undefined): collection is Collection {
   return Boolean(collection && (collection.name === 'attachments' || collection.options?.template === 'file'));
-}
-
-function hasStandardIdAttribute(collection: Collection) {
-  return Boolean(collection.model?.rawAttributes?.id || collection.model?.getAttributes?.().id);
 }
 
 export function getTemporaryFileAccessExpiresIn(): SignOptions['expiresIn'] {
@@ -102,7 +98,7 @@ export async function createTemporaryURLAction(ctx: Context, next: Next) {
   if (!isFileCollection(collection)) {
     return ctx.throw(404);
   }
-  if (!hasStandardIdAttribute(collection)) {
+  if (!hasStandardFileId(collection)) {
     ctx.logger.error('file collection is missing standard id field', {
       method: 'file-manager.createTemporaryURL',
       collection: collection.name,
@@ -131,7 +127,7 @@ export async function createTemporaryURLAction(ctx: Context, next: Next) {
     fields: ['id', 'storageId', 'extname'],
     context: ctx,
   });
-  const storageId = file?.get('storageId');
+  const storageId = getFileRecordValue(file, 'storageId');
   if (!file || (typeof storageId !== 'string' && typeof storageId !== 'number')) {
     return ctx.throw(404);
   }
@@ -139,7 +135,7 @@ export async function createTemporaryURLAction(ctx: Context, next: Next) {
   const plugin = ctx.app.pm.get('file-manager') as PluginFileManagerServer;
   const appName = ctx.app.name || 'main';
   const dataSourceName = ctx.dataSource.name;
-  const fileId = getFileAccessPathSegment(id, file.get('extname'));
+  const fileId = getFileAccessPathSegment(id, getFileRecordValue(file, 'extname'));
   const token = signTemporaryFileAccessToken(plugin, {
     app: appName,
     dataSource: dataSourceName,

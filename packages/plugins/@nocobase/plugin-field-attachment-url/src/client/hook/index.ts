@@ -8,7 +8,7 @@
  */
 
 import { useFieldSchema, useField } from '@formily/react';
-import { matchMimetype, useCollectionField, useDesignable, useRequest } from '@nocobase/client';
+import { matchMimetype, useCollectionField, useDataSourceKey, useDesignable, useRequest } from '@nocobase/client';
 import { cloneDeep, uniqBy } from 'lodash';
 import { useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -107,6 +107,15 @@ export const toAttachmentUrlValueItem = (data: unknown) => {
   return url;
 };
 
+export const getAttachmentUrlFileCollection = (target?: string, dataSourceKey?: string) => {
+  return target
+    ? {
+        dataSourceKey: dataSourceKey || 'main',
+        collectionName: target,
+      }
+    : undefined;
+};
+
 function useStorageRules(storage) {
   const name = storage ?? '';
   const { loading, data } = useRequest<any>(
@@ -121,6 +130,7 @@ function useStorageRules(storage) {
 }
 export function useAttachmentUrlFieldProps(props) {
   const field = useCollectionField();
+  const dataSourceKey = useDataSourceKey();
   const rules = useStorageRules(field?.storage);
   const fileMetaByUrlRef = useRef(new Map<string, Record<string, unknown>>());
   return {
@@ -128,12 +138,7 @@ export function useAttachmentUrlFieldProps(props) {
     value: normalizeAttachmentUrlValue(props.value, fileMetaByUrlRef.current),
     rules,
     action: `${field.target}:create${field.storage ? `?attachmentField=${field.collectionName}.${field.name}` : ''}`,
-    fileCollection: field?.target
-      ? {
-          dataSourceKey: 'main',
-          collectionName: field.target,
-        }
-      : undefined,
+    fileCollection: getAttachmentUrlFileCollection(field?.target, dataSourceKey),
     toValueItem: (data) => {
       const url = toAttachmentUrlValueItem(data);
       const record = getResponseFileRecord(data);

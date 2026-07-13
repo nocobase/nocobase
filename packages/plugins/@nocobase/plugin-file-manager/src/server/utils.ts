@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { Model } from '@nocobase/database';
+import type { Collection, Model } from '@nocobase/database';
 import { storagePathJoin, uid } from '@nocobase/utils';
 import crypto from 'crypto';
 import path from 'path';
@@ -132,6 +132,15 @@ export function getFileAccessPathSegment(id: string | number, extname: unknown) 
   return `${encodeURIComponent(String(id))}${encodeURIComponent(normalizeFileAccessExtname(extname))}`;
 }
 
+export function hasStandardFileId(collection: Collection) {
+  return Boolean(
+    collection.getField?.('id') ||
+      collection.model?.primaryKeyAttribute === 'id' ||
+      collection.model?.rawAttributes?.id ||
+      collection.model?.getAttributes?.().id,
+  );
+}
+
 export function getRecordCollectionName(file: AttachmentModel) {
   const modelName = (file as unknown as Model)?.constructor?.name;
   return modelName && modelName !== 'Object' ? modelName : 'attachments';
@@ -142,6 +151,17 @@ export function getFilePlainObject(file: AttachmentModel) {
     return { ...((file as unknown as Model).get() as AttachmentModel) };
   }
   return { ...file };
+}
+
+export function getFileRecordValue(file: unknown, key: string) {
+  if (!file || typeof file !== 'object') {
+    return undefined;
+  }
+  const model = file as Model;
+  if (typeof model.get === 'function') {
+    return model.get(key);
+  }
+  return (file as Record<string, unknown>)[key];
 }
 
 export function isPermanentFileAccessURL(value: unknown, file: AttachmentModel, appName: string) {
