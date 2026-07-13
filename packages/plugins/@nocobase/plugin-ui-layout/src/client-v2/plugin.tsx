@@ -22,6 +22,11 @@ function MobileSettingsRedirect() {
 }
 
 function getMobileSettingsLink(app: Application) {
+  const basename = app.router.getBasename?.();
+  if (basename) {
+    return `${basename.replace(/\/+$/, '')}/mobile`;
+  }
+
   return app.getRouteUrl?.('/mobile') || '/mobile';
 }
 
