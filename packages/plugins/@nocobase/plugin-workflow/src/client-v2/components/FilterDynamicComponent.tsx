@@ -19,6 +19,7 @@ import {
   type MetaTreeNode,
 } from '@nocobase/flow-engine';
 import { useMemoizedFn } from 'ahooks';
+import { ConfigProvider } from 'antd';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { removeInvalidFilterItems, type FilterGroupType } from '@nocobase/utils/client';
 import { useWorkflowVariableOptions } from '../canvas/useWorkflowVariableOptions';
@@ -277,7 +278,7 @@ export function FilterDynamicComponent({
   collection,
   value,
   onChange,
-  disabled = false,
+  disabled,
   rightAsVariable = true,
   maxAssociationFieldDepth = 2,
 }: {
@@ -299,6 +300,8 @@ export function FilterDynamicComponent({
 }) {
   const flowEngine = useFlowEngine();
   const t = useT();
+  const { componentDisabled } = ConfigProvider.useConfig();
+  const mergedDisabled = Boolean(componentDisabled || disabled);
   const stableT = useMemoizedFn((key: string, options?: Record<string, unknown>) => t(key, options));
   const workflowMetaTree = useWorkflowVariableOptions();
   const rightMetaTree = useMemo(
@@ -383,7 +386,7 @@ export function FilterDynamicComponent({
         <VariableFilterItem
           value={value}
           model={filterModel}
-          disabled={disabled}
+          disabled={mergedDisabled}
           rightAsVariable={rightAsVariable}
           rightMetaTree={rightMetaTree}
           maxAssociationFieldDepth={maxAssociationFieldDepth}
@@ -392,9 +395,11 @@ export function FilterDynamicComponent({
     );
     Component.displayName = 'WorkflowVariableFilterItem';
     return Component;
-  }, [disabled, filterModel, maxAssociationFieldDepth, rightAsVariable, rightMetaTree]);
+  }, [filterModel, maxAssociationFieldDepth, mergedDisabled, rightAsVariable, rightMetaTree]);
 
-  return <FilterGroup value={filterRef.current} FilterItem={FilterItemComponent ?? undefined} disabled={disabled} />;
+  return (
+    <FilterGroup value={filterRef.current} FilterItem={FilterItemComponent ?? undefined} disabled={mergedDisabled} />
+  );
 }
 
 export const ConditionField = FilterDynamicComponent;

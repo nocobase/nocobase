@@ -9,6 +9,7 @@
 
 import { FlowContext, FlowContextProvider } from '@nocobase/flow-engine';
 import { render, screen } from '@testing-library/react';
+import { Form } from 'antd';
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { HideVariableContext } from '../../components/HideVariableContext';
@@ -46,5 +47,16 @@ describe('WorkflowTypedVariableInput', () => {
 
     expect(screen.getByRole('button', { name: 'variable-tag' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'variable-switcher' })).toBeNull();
+  });
+
+  it('inherits disabled state from the parent form', () => {
+    renderWithCtx(
+      <Form disabled>
+        <WorkflowTypedVariableInput value="{{$context.id}}" types={[]} onChange={() => undefined} />
+      </Form>,
+    );
+
+    expect(screen.getByRole('button', { name: 'variable-switcher' })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: 'icon-close' })).toBeNull();
   });
 });

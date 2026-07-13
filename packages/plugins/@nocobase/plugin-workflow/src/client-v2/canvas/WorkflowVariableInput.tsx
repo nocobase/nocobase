@@ -23,6 +23,7 @@
  */
 
 import React, { useMemo } from 'react';
+import { ConfigProvider } from 'antd';
 import { VariableHybridInput } from '@nocobase/flow-engine';
 import { useWorkflowVariableOptions, type UseWorkflowVariableOptions } from './useWorkflowVariableOptions';
 import { workflowVariableConverters } from './workflowVariableConverters';
@@ -44,8 +45,16 @@ export type WorkflowVariableInputProps = {
 };
 
 export function WorkflowVariableInput(props: WorkflowVariableInputProps) {
-  const { variableOptions, ...rest } = props;
+  const { variableOptions, disabled, ...rest } = props;
+  const { componentDisabled } = ConfigProvider.useConfig();
   const metaTree = useWorkflowVariableOptions(variableOptions);
   const tree = useMemo(() => metaTree, [metaTree]);
-  return <VariableHybridInput {...rest} metaTree={tree} converters={workflowVariableConverters} />;
+  return (
+    <VariableHybridInput
+      {...rest}
+      disabled={Boolean(componentDisabled || disabled)}
+      metaTree={tree}
+      converters={workflowVariableConverters}
+    />
+  );
 }

@@ -26,7 +26,7 @@ import { css, cx } from '@emotion/css';
 import { TypedVariableInput, type TypedConstantSpec } from '@nocobase/client-v2';
 import type { MetaTreeNode } from '@nocobase/flow-engine';
 import { Registry } from '@nocobase/utils/client';
-import { Button, Select } from 'antd';
+import { Button, ConfigProvider, Select } from 'antd';
 import React, { createContext, useCallback, useContext } from 'react';
 import { Trans } from 'react-i18next';
 import { useT, useWorkflowTranslation, NAMESPACE } from '../locale';
@@ -110,6 +110,8 @@ function useOperandMetaTree(): MetaTreeNode[] {
 
 function Calculation({ calculator, operands = [], onChange }: any) {
   const compile = useT();
+  const { componentDisabled } = ConfigProvider.useConfig();
+  const disabled = Boolean(componentDisabled);
   // Keep the left/right operands on separate meta-tree instances. `TypedVariableInput`
   // lazily resolves relation children by mutating its `metaTree` in place; sharing one
   // tree between both sides can leave the other cascader stuck on a stale loading column
@@ -144,6 +146,7 @@ function Calculation({ calculator, operands = [], onChange }: any) {
           metaTree={leftMetaTree}
           value={operands[0]}
           onChange={leftOperandOnChange}
+          disabled={disabled}
         />
       </div>
       <Select
@@ -176,6 +179,7 @@ function Calculation({ calculator, operands = [], onChange }: any) {
           metaTree={rightMetaTree}
           value={operands[1]}
           onChange={rightOperandOnChange}
+          disabled={disabled}
         />
       </div>
     </fieldset>
