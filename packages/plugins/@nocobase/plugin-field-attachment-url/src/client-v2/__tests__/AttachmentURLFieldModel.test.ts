@@ -17,13 +17,24 @@ import {
 
 describe('AttachmentURLFieldModel', () => {
   it('adds preview thumbnail for permanent file URL values', () => {
-    const file = normalizeAttachmentURLFile('/files/main/main/t_n6fvrknhqjr/24');
+    const file = normalizeAttachmentURLFile('/files/main/main/t_n6fvrknhqjr/24.jpg');
 
     expect(file).toMatchObject({
-      url: '/files/main/main/t_n6fvrknhqjr/24',
-      thumbUrl: '/files/main/main/t_n6fvrknhqjr/24?preview=1',
+      url: '/files/main/main/t_n6fvrknhqjr/24.jpg',
+      thumbUrl: '/files/main/main/t_n6fvrknhqjr/24.jpg?preview=1',
     });
     expect(isAttachmentURLImage(file)).toBe(true);
+  });
+
+  it('uses the file type placeholder for permanent non-image URLs', () => {
+    const file = normalizeAttachmentURLFile('/files/file/main/t_n6fvrknhqjr/55.xlsx');
+
+    expect(file).toMatchObject({
+      url: '/files/file/main/t_n6fvrknhqjr/55.xlsx',
+      preview: '/files/file/main/t_n6fvrknhqjr/55.xlsx?preview=1',
+    });
+    expect(file.thumbUrl).toContain('/file-placeholder/xlsx-200-200.png');
+    expect(isAttachmentURLImage(file)).toBe(false);
   });
 
   it('uses the preview query parameter', () => {
@@ -66,6 +77,24 @@ describe('AttachmentURLFieldModel', () => {
       thumbUrl: '/files/main/main/t_n6fvrknhqjr/24?preview=1',
     });
     expect(isAttachmentURLImage(file)).toBe(true);
+  });
+
+  it('uses the file type placeholder immediately after uploading a non-image file', () => {
+    const file = normalizeAttachmentURLFile({
+      status: 'done',
+      response: {
+        filename: 'report.xlsx',
+        extname: '.xlsx',
+        mimetype: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        url: '/files/file/main/t_n6fvrknhqjr/55.xlsx',
+        preview: '/files/file/main/t_n6fvrknhqjr/55.xlsx?preview=1',
+        id: 55,
+      },
+    });
+
+    expect(file.thumbUrl).toContain('/file-placeholder/xlsx-200-200.png');
+    expect(file.thumbUrl).not.toContain('/55.xlsx?preview=1');
+    expect(isAttachmentURLImage(file)).toBe(false);
   });
 
   it('keeps uploaded metadata when the field value is written back as a URL string', () => {

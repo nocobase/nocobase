@@ -8,7 +8,7 @@
  */
 
 import { useFieldSchema, useField } from '@formily/react';
-import { useCollectionField, useDesignable, useRequest } from '@nocobase/client';
+import { matchMimetype, useCollectionField, useDesignable, useRequest } from '@nocobase/client';
 import { cloneDeep, uniqBy } from 'lodash';
 import { useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -58,13 +58,14 @@ const getResponseFileRecord = (response: unknown) => {
 const normalizeAttachmentUrlFileRecord = (record: Record<string, unknown>, url: string) => {
   const preview = typeof record.preview === 'string' ? record.preview : getPermanentFilePreviewUrl(url);
   const mimetype = typeof record.mimetype === 'string' ? record.mimetype : undefined;
+  const isImage = matchMimetype({ ...record, url }, 'image/*');
   return {
     ...record,
     ...(mimetype ? { type: mimetype } : {}),
     uid: record.id ?? url,
     id: record.id ?? url,
     url,
-    ...(preview ? { preview, thumbUrl: preview } : {}),
+    ...(isImage && preview ? { preview, thumbUrl: preview } : {}),
   };
 };
 
@@ -78,16 +79,16 @@ export const normalizeAttachmentUrlValue = (
       return normalizeAttachmentUrlFileRecord(cachedFile, value);
     }
     const preview = getPermanentFilePreviewUrl(value);
-    return preview
-      ? {
-          uid: value,
-          id: value,
-          url: value,
-          type: 'image/*',
-          preview,
-          thumbUrl: preview,
-        }
-      : value;
+    if (!preview) {
+      return value;
+    }
+    const isImage = matchMimetype({ url: value }, 'image/*');
+    return {
+      uid: value,
+      id: value,
+      url: value,
+      ...(isImage && preview ? { preview, thumbUrl: preview } : {}),
+    };
   }
   return value;
 };

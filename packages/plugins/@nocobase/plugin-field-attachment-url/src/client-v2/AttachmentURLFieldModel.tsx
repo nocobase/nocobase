@@ -12,7 +12,7 @@ import { css } from '@emotion/css';
 import { Upload } from '@formily/antd-v5';
 import { FieldContext, useField } from '@formily/react';
 import { DisplayItemModel, EditableItemModel } from '@nocobase/flow-engine';
-import { UploadFieldModel } from '@nocobase/plugin-file-manager/client-v2';
+import { getPreviewThumbnailUrl, matchMimetype, UploadFieldModel } from '@nocobase/plugin-file-manager/client-v2';
 import { castArray } from 'lodash';
 import React, { useEffect, useState } from 'react';
 import { tExpr } from './locale';
@@ -62,10 +62,15 @@ export const getPermanentFilePreviewUrl = (value?: string) => {
 export const normalizeAttachmentURLFile = (file: any) => {
   if (typeof file === 'string') {
     const preview = getPermanentFilePreviewUrl(file);
-    return {
+    const normalized = {
       uid: file,
       url: file,
-      ...(preview ? { thumbUrl: preview } : {}),
+      ...(preview ? { preview } : {}),
+    };
+    const thumbUrl = getPreviewThumbnailUrl(normalized);
+    return {
+      ...normalized,
+      ...(thumbUrl ? { thumbUrl } : {}),
     };
   }
 
@@ -81,11 +86,17 @@ export const normalizeAttachmentURLFile = (file: any) => {
   const preview = normalized?.preview || getPermanentFilePreviewUrl(normalized?.url);
   const mimetype = normalized?.mimetype || normalized?.type;
 
-  return {
+  const normalizedFile = {
     ...normalized,
     ...(mimetype && !normalized?.type ? { type: mimetype } : {}),
     uid: normalized?.uid || normalized?.url || normalized?.id,
-    ...(preview ? { preview, thumbUrl: normalized?.thumbUrl || preview } : {}),
+    ...(preview ? { preview } : {}),
+  };
+  const thumbUrl = getPreviewThumbnailUrl(normalizedFile);
+
+  return {
+    ...normalizedFile,
+    ...(thumbUrl ? { thumbUrl } : {}),
   };
 };
 
@@ -112,12 +123,7 @@ export const normalizeAttachmentURLFileList = (value: any, previousFileList: any
 
 export const isAttachmentURLImage = (file: any) => {
   const normalized = normalizeAttachmentURLFile(file);
-  const mimetype = normalized?.mimetype || normalized?.type;
-  if (typeof mimetype === 'string') {
-    return mimetype.toLowerCase().startsWith('image/');
-  }
-
-  return !!getPermanentFilePreviewUrl(normalized?.thumbUrl || normalized?.preview || normalized?.url);
+  return matchMimetype(normalized, 'image/*');
 };
 
 const CardUpload = (props) => {
@@ -170,7 +176,6 @@ const CardUpload = (props) => {
           {...props}
           listType="picture-card"
           fileList={fileList}
-          isImageUrl={isAttachmentURLImage}
           onChange={handleChange}
           itemRender={(originNode, file: any) => {
             const rawName = file.name || file.filename || file.url?.split('/').pop() || '';

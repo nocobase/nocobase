@@ -12,14 +12,25 @@ import { getPermanentFilePreviewUrl, normalizeAttachmentUrlValue, toAttachmentUr
 
 describe('attachment url hook helpers', () => {
   it('wraps permanent URL strings with preview metadata for v1 Upload display', () => {
-    expect(normalizeAttachmentUrlValue('/files/main/main/t_n6fvrknhqjr/24')).toMatchObject({
-      uid: '/files/main/main/t_n6fvrknhqjr/24',
-      id: '/files/main/main/t_n6fvrknhqjr/24',
-      url: '/files/main/main/t_n6fvrknhqjr/24',
-      type: 'image/*',
-      preview: '/files/main/main/t_n6fvrknhqjr/24?preview=1',
-      thumbUrl: '/files/main/main/t_n6fvrknhqjr/24?preview=1',
+    expect(normalizeAttachmentUrlValue('/files/main/main/t_n6fvrknhqjr/24.jpg')).toMatchObject({
+      uid: '/files/main/main/t_n6fvrknhqjr/24.jpg',
+      id: '/files/main/main/t_n6fvrknhqjr/24.jpg',
+      url: '/files/main/main/t_n6fvrknhqjr/24.jpg',
+      preview: '/files/main/main/t_n6fvrknhqjr/24.jpg?preview=1',
+      thumbUrl: '/files/main/main/t_n6fvrknhqjr/24.jpg?preview=1',
     });
+  });
+
+  it('does not mark permanent non-image URLs as images', () => {
+    expect(normalizeAttachmentUrlValue('/files/file/main/t_n6fvrknhqjr/55.xlsx')).toEqual({
+      uid: '/files/file/main/t_n6fvrknhqjr/55.xlsx',
+      id: '/files/file/main/t_n6fvrknhqjr/55.xlsx',
+      url: '/files/file/main/t_n6fvrknhqjr/55.xlsx',
+    });
+  });
+
+  it('keeps external URL strings unchanged', () => {
+    expect(normalizeAttachmentUrlValue('https://example.com/report.xlsx')).toBe('https://example.com/report.xlsx');
   });
 
   it('reuses uploaded metadata when the saved field value is written back as a URL string', () => {
