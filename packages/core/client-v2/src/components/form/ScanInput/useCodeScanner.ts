@@ -25,6 +25,7 @@ type UseCodeScannerOptions = {
   onScannerSizeChanged?: (size: ScannerSize) => void;
   onScanSuccess: (text: string) => void;
   onScanFailure?: () => void;
+  onCameraStartFailure?: (error: unknown) => void;
 };
 
 type ImageDataVariant = {
@@ -67,6 +68,13 @@ export function getCodeScanBoxSize(width: number, height: number) {
   return {
     width: Math.floor(Math.min(width * 0.82, 520)),
     height: Math.floor(Math.min(height * 0.32, 240)),
+  };
+}
+
+function clampCodeScanBoxSize(scanBoxSize: ScannerSize, width: number, height: number) {
+  return {
+    width: Math.min(scanBoxSize.width, width),
+    height: Math.min(scanBoxSize.height, height),
   };
 }
 
@@ -212,6 +220,7 @@ export function useCodeScanner({
   onScannerSizeChanged,
   onScanSuccess,
   onScanFailure,
+  onCameraStartFailure,
 }: UseCodeScannerOptions) {
   const [scanner, setScanner] = useState<Html5Qrcode>();
 
@@ -223,7 +232,7 @@ export function useCodeScanner({
           fps: 10,
           qrbox(width, height) {
             onScannerSizeChanged?.({ width, height });
-            return scanBoxSize ?? getCodeScanBoxSize(width, height);
+            return clampCodeScanBoxSize(scanBoxSize ?? getCodeScanBoxSize(width, height), width, height);
           },
         },
         (decodedText) => {
@@ -273,14 +282,18 @@ export function useCodeScanner({
       verbose: false,
     });
     setScanner(scannerInstance);
-    startScanCamera(scannerInstance).catch(() => {
+    startScanCamera(scannerInstance).catch((error: unknown) => {
+      if (onCameraStartFailure) {
+        onCameraStartFailure(error);
+        return;
+      }
       onScanFailure?.();
     });
 
     return () => {
       stopScanner(scannerInstance, { clear: true }).catch(() => undefined);
     };
-  }, [elementId, enabled, formatsToSupport, onScanFailure, startScanCamera]);
+  }, [elementId, enabled, formatsToSupport, onCameraStartFailure, onScanFailure, startScanCamera]);
 
   return {
     startScanFile,
