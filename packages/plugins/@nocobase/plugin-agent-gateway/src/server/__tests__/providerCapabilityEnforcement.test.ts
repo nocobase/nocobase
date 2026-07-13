@@ -49,6 +49,7 @@ describe('agent gateway provider capability enforcement', () => {
   beforeEach(async () => {
     app = await createMockServer({
       plugins: [
+        'file-manager',
         'system-settings',
         'field-sort',
         'users',

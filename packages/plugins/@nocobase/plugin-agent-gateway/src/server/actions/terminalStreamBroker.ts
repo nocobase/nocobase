@@ -8,6 +8,7 @@
  */
 
 import { IncomingMessage } from 'http';
+import { randomUUID } from 'crypto';
 import { Duplex } from 'stream';
 import { parse } from 'url';
 
@@ -58,11 +59,22 @@ import {
 import { validateRunLease } from './runLifecycle';
 import { TerminalStreamTicketError, consumeTerminalStreamTicket } from './terminalStreamTickets';
 import { ACTIVE_RUN_STATUSES } from '../../shared/runState';
+import {
+  NocoBaseTerminalStreamTransport,
+  TerminalStreamBrowserTransportEvent,
+  TerminalStreamDaemonTransportEvent,
+  TerminalStreamTransport,
+  TerminalStreamTransportUnsubscribe,
+} from '../services/terminalStreamTransport';
 
 const MAX_TERMINAL_WEBSOCKET_BUFFERED_BYTES = 1024 * 1024;
+const MAX_TERMINAL_QUEUED_FRAMES_PER_CONNECTION = 256;
 const TERMINAL_ACTIVITY_TOUCH_MIN_INTERVAL_MS = 2000;
 const TERMINAL_LEASE_REVALIDATION_INTERVAL_MS = 2000;
 const TERMINAL_SNAPSHOT_REQUEST_TIMEOUT_MS = 10_000;
+const TERMINAL_BROKER_HEARTBEAT_INTERVAL_MS = 2000;
+const TERMINAL_BROKER_OWNER_TIMEOUT_MS = 10_000;
+const TERMINAL_BROKER_DEDUP_EVENT_LIMIT = 8192;
 const ACTIVE_TERMINAL_STREAM_RUN_STATUSES = new Set<string>(ACTIVE_RUN_STATUSES);
 const TERMINALIZED_RUN_END_REASONS = new Map<string, TerminalEnd['reason']>([
   ['succeeded', 'completed'],
@@ -97,11 +109,25 @@ interface BoundRunStream {
 
 interface PendingSnapshotRequest {
   browser: WebSocket;
-  daemon: WebSocket;
+  daemon?: WebSocket;
   runId: string;
+  fromOffset: number;
   subscribeOnSuccess?: boolean;
   reservationId?: string;
   timeout: ReturnType<typeof setTimeout>;
+}
+
+interface RelayedSnapshotRequest {
+  requesterId: string;
+  runId: string;
+  daemon: WebSocket;
+  timeout: ReturnType<typeof setTimeout>;
+}
+
+interface RemoteRunOwner {
+  ownerId: string;
+  lastSeenAtMs: number;
+  unavailableNotified: boolean;
 }
 
 interface PendingBrowserSubscriptionReservation {
@@ -411,6 +437,7 @@ function rawDataToString(data: RawData) {
 }
 
 export class TerminalStreamBroker {
+  private readonly ownerId = randomUUID();
   private readonly wss = new WebSocketServer({
     noServer: true,
     maxPayload: TERMINAL_SERVER_MAX_RAW_FRAME_BYTES,
@@ -422,9 +449,22 @@ export class TerminalStreamBroker {
   private readonly boundRuns = new Map<string, BoundRunStream>();
   private readonly browserSubscriptions = new Map<string, Set<WebSocket>>();
   private readonly pendingSnapshotRequests = new Map<string, PendingSnapshotRequest>();
+  private readonly relayedSnapshotRequests = new Map<string, RelayedSnapshotRequest>();
   private readonly pendingBrowserSubscriptionReservations = new Map<string, PendingBrowserSubscriptionReservation>();
   private readonly frameQueues = new Map<WebSocket, Promise<void>>();
+  private readonly frameQueueDepths = new Map<WebSocket, number>();
   private readonly terminalActivityTouchedAt = new Map<string, number>();
+  private readonly daemonTransportSubscriptions = new Map<string, Promise<TerminalStreamTransportUnsubscribe>>();
+  private readonly browserTransportSubscriptions = new Map<string, Promise<TerminalStreamTransportUnsubscribe>>();
+  private readonly transportSequences = new Map<string, number>();
+  private readonly receivedTransportSequences = new Map<string, number>();
+  private readonly receivedTransportEventIds = new Set<string>();
+  private readonly receivedTransportEventOrder: string[] = [];
+  private readonly remoteRunOwners = new Map<string, RemoteRunOwner>();
+  private sharedTransportAvailable = false;
+  private brokerHeartbeatTimer?: ReturnType<typeof setInterval>;
+  private brokerOwnerWatchdogTimer?: ReturnType<typeof setInterval>;
+  private unregistered = false;
   private readonly gatewayHandler: (
     request: IncomingMessage,
     socket: Duplex,
@@ -432,7 +472,10 @@ export class TerminalStreamBroker {
     app: Application,
   ) => boolean | void;
 
-  constructor(private readonly app: Application) {
+  constructor(
+    private readonly app: Application,
+    private readonly transport: TerminalStreamTransport = new NocoBaseTerminalStreamTransport(app),
+  ) {
     this.gatewayHandler = (request, socket, head, gatewayApp) => {
       if ((gatewayApp?.name || 'main') !== (this.app.name || 'main')) {
         return false;
@@ -452,11 +495,19 @@ export class TerminalStreamBroker {
         this.handleMessage(ws, data);
       });
       ws.on('close', () => {
-        this.removeConnection(ws);
+        this.removeConnection(ws).catch((error) => {
+          this.logTransportFailure('remove closed terminal connection', error);
+        });
       });
       ws.on('error', () => {
-        this.removeConnection(ws);
+        this.removeConnection(ws).catch((error) => {
+          this.logTransportFailure('remove failed terminal connection', error);
+        });
       });
+    });
+    this.startBrokerTimers();
+    this.refreshTransportAvailability().catch((error) => {
+      this.logTransportFailure('detect shared terminal transport', error);
     });
   }
 
@@ -464,8 +515,18 @@ export class TerminalStreamBroker {
     Gateway.registerWsHandler(this.gatewayHandler);
   }
 
-  unregister() {
+  async unregister() {
+    if (this.unregistered) {
+      return;
+    }
+    this.unregistered = true;
     Gateway.unregisterWsHandler(this.gatewayHandler);
+    this.stopBrokerTimers();
+    await Promise.all(
+      Array.from(this.boundRuns.entries()).map(async ([runId, bound]) => {
+        await this.publishDaemonState(runId, 'closed', bound.nodeId);
+      }),
+    );
     this.wss.close();
     for (const connection of this.connections.values()) {
       connection.ws.close();
@@ -474,7 +535,19 @@ export class TerminalStreamBroker {
     this.boundRuns.clear();
     this.browserSubscriptions.clear();
     this.clearPendingSnapshotRequests();
+    this.clearRelayedSnapshotRequests();
     this.pendingBrowserSubscriptionReservations.clear();
+    this.frameQueueDepths.clear();
+    this.remoteRunOwners.clear();
+    this.receivedTransportSequences.clear();
+    this.receivedTransportEventIds.clear();
+    this.receivedTransportEventOrder.length = 0;
+    await this.closeTransportSubscriptions();
+    try {
+      await this.transport.close();
+    } catch (error) {
+      this.logTransportFailure('close terminal broker transport', error);
+    }
   }
 
   handleUpgrade(request: IncomingMessage, socket: Duplex, head: Buffer) {
@@ -541,6 +614,13 @@ export class TerminalStreamBroker {
   }
 
   private enqueueFrame(connection: TerminalStreamConnection, frame: TerminalFrame) {
+    const queuedFrames = (this.frameQueueDepths.get(connection.ws) || 0) + 1;
+    if (queuedFrames > MAX_TERMINAL_QUEUED_FRAMES_PER_CONNECTION) {
+      this.sendError(connection.ws, 'TERMINAL_SUBSCRIPTION_LIMIT', 'Terminal stream frame queue limit exceeded');
+      connection.ws.close();
+      return;
+    }
+    this.frameQueueDepths.set(connection.ws, queuedFrames);
     const previous = this.frameQueues.get(connection.ws) || Promise.resolve();
     const next = previous
       .catch(() => {
@@ -563,6 +643,12 @@ export class TerminalStreamBroker {
     this.frameQueues.set(connection.ws, next);
     next
       .finally(() => {
+        const remainingFrames = Math.max(0, (this.frameQueueDepths.get(connection.ws) || 1) - 1);
+        if (remainingFrames) {
+          this.frameQueueDepths.set(connection.ws, remainingFrames);
+        } else {
+          this.frameQueueDepths.delete(connection.ws);
+        }
         if (this.frameQueues.get(connection.ws) === next) {
           this.frameQueues.delete(connection.ws);
         }
@@ -673,6 +759,8 @@ export class TerminalStreamBroker {
         leaseExpiresAtMs: getDateFromModel(lease.run, 'claimExpiresAt')?.getTime() || 0,
         lastLeaseValidationAtMs: Date.now(),
       });
+      await this.ensureBrowserTransportSubscription(frame.runId);
+      await this.publishDaemonState(frame.runId, 'bound', connection.nodeId);
       this.send(connection.ws, createTerminalAck(frame.requestId));
     } catch (error) {
       this.sendError(connection.ws, this.mapAuthOrLeaseError(error), getErrorMessage(error), frame.requestId);
@@ -694,6 +782,8 @@ export class TerminalStreamBroker {
         this.sendError(connection.ws, 'TERMINAL_SUBSCRIPTION_LIMIT', limitError, frame.requestId);
         return;
       }
+      await this.ensureDaemonTransportSubscription(frame.runId);
+      await this.publishBrowserLocate(frame.runId);
       reservationId =
         frame.lastOffset !== undefined ? this.reserveBrowserSubscription(connection, frame.runId) : undefined;
       this.send(connection.ws, createTerminalAck(frame.requestId));
@@ -725,6 +815,7 @@ export class TerminalStreamBroker {
     }
     await this.touchRunTerminalActivity(frame.runId);
     this.broadcastToRun(frame.runId, frame);
+    await this.publishDaemonFrame(frame.runId, frame);
     if (frame.requestId) {
       this.send(connection.ws, createTerminalAck(frame.requestId));
     }
@@ -736,11 +827,11 @@ export class TerminalStreamBroker {
       this.send(connection.ws, payloadError);
       return;
     }
-    if (frame.requestId) {
-      const pending = this.pendingSnapshotRequests.get(frame.requestId);
-      if (!pending || pending.runId !== frame.runId || pending.daemon !== connection.ws) {
-        return;
-      }
+    if (!frame.requestId) {
+      return;
+    }
+    const pending = this.pendingSnapshotRequests.get(frame.requestId);
+    if (pending && pending.runId === frame.runId && pending.daemon === connection.ws) {
       this.takePendingSnapshotRequest(frame.requestId);
       const validation = await this.validateBoundRun(frame.runId, {
         expectedWs: connection.ws,
@@ -761,6 +852,26 @@ export class TerminalStreamBroker {
         this.releaseBrowserSubscriptionReservation(pending.reservationId);
       }
       this.send(pending.browser, frame);
+      return;
+    }
+    const relayed = this.takeRelayedSnapshotRequest(frame.requestId);
+    if (relayed) {
+      const validation = await this.validateBoundRun(frame.runId, {
+        expectedWs: connection.ws,
+        forceRefresh: true,
+      });
+      if (validation.ok === false) {
+        await this.publishSnapshotResponse(
+          relayed,
+          createTerminalError(
+            validation.reason === 'leaseLost' ? 'TERMINAL_LEASE_LOST' : 'TERMINAL_RUN_NOT_BOUND',
+            'Run stream is no longer bound to this daemon',
+            { requestId: frame.requestId },
+          ),
+        );
+        return;
+      }
+      await this.publishSnapshotResponse(relayed, frame);
     }
   }
 
@@ -778,10 +889,11 @@ export class TerminalStreamBroker {
       );
       return;
     }
-    this.resolvePendingSnapshotsWithTerminalEnd(connection.ws, frame);
+    await this.resolvePendingSnapshotsWithTerminalEnd(connection.ws, frame);
     this.boundRuns.delete(frame.runId);
     this.terminalActivityTouchedAt.delete(frame.runId);
     this.broadcastToRun(frame.runId, frame);
+    await this.publishDaemonFrame(frame.runId, frame);
     if (frame.requestId) {
       this.send(connection.ws, createTerminalAck(frame.requestId));
     }
@@ -809,7 +921,7 @@ export class TerminalStreamBroker {
     }
   }
 
-  private resolvePendingSnapshotsWithTerminalEnd(daemon: WebSocket, frame: TerminalEnd) {
+  private async resolvePendingSnapshotsWithTerminalEnd(daemon: WebSocket, frame: TerminalEnd) {
     for (const [requestId, pending] of Array.from(this.pendingSnapshotRequests.entries())) {
       if (pending.runId !== frame.runId || pending.daemon !== daemon) {
         continue;
@@ -817,6 +929,16 @@ export class TerminalStreamBroker {
       this.takePendingSnapshotRequest(requestId);
       this.releaseBrowserSubscriptionReservation(pending.reservationId);
       this.send(pending.browser, frame);
+    }
+    for (const [requestId, relayed] of Array.from(this.relayedSnapshotRequests.entries())) {
+      if (relayed.runId !== frame.runId || relayed.daemon !== daemon) {
+        continue;
+      }
+      this.takeRelayedSnapshotRequest(requestId);
+      await this.publishSnapshotResponse(relayed, {
+        ...frame,
+        requestId,
+      });
     }
   }
 
@@ -842,6 +964,11 @@ export class TerminalStreamBroker {
           return;
         }
         this.send(pending.browser, frame);
+        return;
+      }
+      const relayed = this.takeRelayedSnapshotRequest(frame.requestId);
+      if (relayed) {
+        await this.publishSnapshotResponse(relayed, frame);
         return;
       }
     }
@@ -930,20 +1057,53 @@ export class TerminalStreamBroker {
           return true;
         }
       }
-      if (fromOffset > 0) {
-        this.sendError(
-          browser,
-          validation.reason === 'leaseLost' ? 'TERMINAL_LEASE_LOST' : 'TERMINAL_DAEMON_UNAVAILABLE',
-          'No daemon stream is currently bound to this run',
-        );
-      } else if (validation.reason === 'leaseLost') {
+      if (validation.reason === 'leaseLost') {
         this.sendError(browser, 'TERMINAL_LEASE_LOST', 'Run lease is no longer active for this daemon');
+        return false;
       }
-      return false;
+      if (!(await this.transport.isShared())) {
+        if (fromOffset > 0) {
+          this.sendError(browser, 'TERMINAL_DAEMON_UNAVAILABLE', 'No daemon stream is currently bound to this run');
+        }
+        return false;
+      }
+      const requestId = this.createSnapshotRequestId();
+      this.addPendingSnapshotRequest(requestId, {
+        browser,
+        runId,
+        fromOffset,
+        subscribeOnSuccess: options.subscribeOnSuccess,
+        reservationId: options.reservationId,
+      });
+      await this.publishBrowserSnapshotRequest(runId, requestId, fromOffset);
+      return true;
     }
     const { bound } = validation;
 
-    const requestId = `snapshot:${Date.now()}:${Math.random().toString(16).slice(2)}`;
+    const requestId = this.createSnapshotRequestId();
+    this.addPendingSnapshotRequest(requestId, {
+      browser,
+      daemon: bound.ws,
+      runId,
+      fromOffset,
+      subscribeOnSuccess: options.subscribeOnSuccess,
+      reservationId: options.reservationId,
+    });
+    this.send(bound.ws, {
+      type: 'daemon.snapshotRequest',
+      protocol: 'agent-gateway.terminal.v1',
+      requestId,
+      runId,
+      fromOffset,
+    });
+    return true;
+  }
+
+  private createSnapshotRequestId() {
+    return `snapshot:${this.ownerId}:${randomUUID()}`;
+  }
+
+  private addPendingSnapshotRequest(requestId: string, values: Omit<PendingSnapshotRequest, 'timeout'>) {
     const timeout = setTimeout(() => {
       const pending = this.takePendingSnapshotRequest(requestId);
       if (!pending) {
@@ -958,21 +1118,354 @@ export class TerminalStreamBroker {
     }, TERMINAL_SNAPSHOT_REQUEST_TIMEOUT_MS);
     timeout.unref?.();
     this.pendingSnapshotRequests.set(requestId, {
-      browser,
-      daemon: bound.ws,
-      runId,
-      subscribeOnSuccess: options.subscribeOnSuccess,
-      reservationId: options.reservationId,
+      ...values,
       timeout,
     });
-    this.send(bound.ws, {
+  }
+
+  private async ensureDaemonTransportSubscription(runId: string) {
+    const existing = this.daemonTransportSubscriptions.get(runId);
+    if (existing) {
+      await existing;
+      return;
+    }
+    const subscription = this.transport.subscribe(runId, 'daemon-to-browser', async (event) => {
+      if (event.runId !== runId || !event.type.startsWith('daemon.')) {
+        return;
+      }
+      await this.handleDaemonTransportEvent(event as TerminalStreamDaemonTransportEvent);
+    });
+    this.daemonTransportSubscriptions.set(runId, subscription);
+    try {
+      await subscription;
+    } catch (error) {
+      this.daemonTransportSubscriptions.delete(runId);
+      throw error;
+    }
+  }
+
+  private async ensureBrowserTransportSubscription(runId: string) {
+    const existing = this.browserTransportSubscriptions.get(runId);
+    if (existing) {
+      await existing;
+      return;
+    }
+    const subscription = this.transport.subscribe(runId, 'browser-to-daemon', async (event) => {
+      if (event.runId !== runId || !event.type.startsWith('browser.')) {
+        return;
+      }
+      await this.handleBrowserTransportEvent(event as TerminalStreamBrowserTransportEvent);
+    });
+    this.browserTransportSubscriptions.set(runId, subscription);
+    try {
+      await subscription;
+    } catch (error) {
+      this.browserTransportSubscriptions.delete(runId);
+      throw error;
+    }
+  }
+
+  private async closeTransportSubscriptions() {
+    const subscriptions = [
+      ...this.daemonTransportSubscriptions.values(),
+      ...this.browserTransportSubscriptions.values(),
+    ];
+    this.daemonTransportSubscriptions.clear();
+    this.browserTransportSubscriptions.clear();
+    await Promise.all(
+      subscriptions.map(async (subscription) => {
+        try {
+          const unsubscribe = await subscription;
+          await unsubscribe();
+        } catch (error) {
+          this.logTransportFailure('unsubscribe terminal broker transport', error);
+        }
+      }),
+    );
+  }
+
+  private rememberTransportEvent(eventId: string) {
+    if (this.receivedTransportEventIds.has(eventId)) {
+      return false;
+    }
+    this.receivedTransportEventIds.add(eventId);
+    this.receivedTransportEventOrder.push(eventId);
+    if (this.receivedTransportEventOrder.length > TERMINAL_BROKER_DEDUP_EVENT_LIMIT) {
+      const expiredEventId = this.receivedTransportEventOrder.shift();
+      if (expiredEventId) {
+        this.receivedTransportEventIds.delete(expiredEventId);
+      }
+    }
+    return true;
+  }
+
+  private acceptTransportSequence(event: TerminalStreamDaemonTransportEvent) {
+    if (event.type !== 'daemon.frame') {
+      return true;
+    }
+    const key = `${event.runId}:${event.ownerId}`;
+    const previous = this.receivedTransportSequences.get(key);
+    if (previous !== undefined && event.sequence <= previous) {
+      return false;
+    }
+    this.receivedTransportSequences.set(key, event.sequence);
+    if (previous !== undefined && event.sequence > previous + 1) {
+      this.broadcastToRun(
+        event.runId,
+        createTerminalError('TERMINAL_OFFSET_GAP', 'Terminal broker transport lost one or more live frames', {
+          details: {
+            reconnectRequired: true,
+          },
+        }),
+      );
+      return false;
+    }
+    return true;
+  }
+
+  private async handleDaemonTransportEvent(event: TerminalStreamDaemonTransportEvent) {
+    if (event.ownerId === this.ownerId || !this.rememberTransportEvent(event.eventId)) {
+      return;
+    }
+    if (event.type === 'daemon.snapshotResponse') {
+      if (event.targetId !== this.ownerId) {
+        return;
+      }
+      const pending = this.pendingSnapshotRequests.get(event.requestId);
+      if (!pending || pending.runId !== event.runId || pending.daemon) {
+        return;
+      }
+      this.takePendingSnapshotRequest(event.requestId);
+      if (event.frame.type === 'terminal.snapshot' && pending.subscribeOnSuccess) {
+        this.promoteBrowserSubscriptionBySocket(pending.browser, pending.runId, pending.reservationId);
+      } else {
+        this.releaseBrowserSubscriptionReservation(pending.reservationId);
+      }
+      this.send(pending.browser, event.frame);
+      return;
+    }
+    if (!this.acceptTransportSequence(event)) {
+      return;
+    }
+    if (event.type === 'daemon.state') {
+      if (event.state === 'closed') {
+        const owner = this.remoteRunOwners.get(event.runId);
+        if (!owner || owner.ownerId !== event.ownerId) {
+          return;
+        }
+        this.remoteRunOwners.delete(event.runId);
+        this.broadcastToRun(
+          event.runId,
+          createTerminalError('TERMINAL_DAEMON_UNAVAILABLE', 'Terminal daemon connection moved or closed', {
+            details: {
+              reconnectRequired: true,
+            },
+          }),
+        );
+        return;
+      }
+      this.remoteRunOwners.set(event.runId, {
+        ownerId: event.ownerId,
+        lastSeenAtMs: Date.now(),
+        unavailableNotified: false,
+      });
+      await this.retryRemoteSnapshotRequests(event.runId);
+      return;
+    }
+    this.remoteRunOwners.set(event.runId, {
+      ownerId: event.ownerId,
+      lastSeenAtMs: Date.now(),
+      unavailableNotified: false,
+    });
+    this.broadcastToRun(event.runId, event.frame);
+    if (event.frame.type === 'terminal.end') {
+      this.remoteRunOwners.delete(event.runId);
+    }
+  }
+
+  private async handleBrowserTransportEvent(event: TerminalStreamBrowserTransportEvent) {
+    if (event.requesterId === this.ownerId || !this.rememberTransportEvent(event.eventId)) {
+      return;
+    }
+    const validation = await this.validateBoundRun(event.runId);
+    if (validation.ok === false) {
+      return;
+    }
+    if (event.type === 'browser.locate') {
+      await this.publishDaemonState(event.runId, 'bound', validation.bound.nodeId);
+      return;
+    }
+    if (this.relayedSnapshotRequests.has(event.requestId)) {
+      return;
+    }
+    const timeout = setTimeout(() => {
+      this.takeRelayedSnapshotRequest(event.requestId);
+    }, TERMINAL_SNAPSHOT_REQUEST_TIMEOUT_MS);
+    timeout.unref?.();
+    this.relayedSnapshotRequests.set(event.requestId, {
+      requesterId: event.requesterId,
+      runId: event.runId,
+      daemon: validation.bound.ws,
+      timeout,
+    });
+    this.send(validation.bound.ws, {
       type: 'daemon.snapshotRequest',
       protocol: 'agent-gateway.terminal.v1',
+      requestId: event.requestId,
+      runId: event.runId,
+      fromOffset: event.fromOffset,
+    });
+  }
+
+  private async retryRemoteSnapshotRequests(runId: string) {
+    for (const [requestId, pending] of this.pendingSnapshotRequests.entries()) {
+      if (pending.runId !== runId || pending.daemon) {
+        continue;
+      }
+      await this.publishBrowserSnapshotRequest(runId, requestId, pending.fromOffset);
+    }
+  }
+
+  private nextTransportSequence(runId: string) {
+    const sequence = (this.transportSequences.get(runId) || 0) + 1;
+    this.transportSequences.set(runId, sequence);
+    return sequence;
+  }
+
+  private async publishDaemonState(runId: string, state: 'bound' | 'heartbeat' | 'closed', nodeId?: string) {
+    await this.publishTransportEvent(runId, 'daemon-to-browser', {
+      type: 'daemon.state',
+      eventId: randomUUID(),
+      ownerId: this.ownerId,
+      runId,
+      sequence: this.transportSequences.get(runId) || 0,
+      state,
+      nodeId,
+    });
+  }
+
+  private async publishDaemonFrame(runId: string, frame: TerminalData | TerminalEnd) {
+    await this.publishTransportEvent(runId, 'daemon-to-browser', {
+      type: 'daemon.frame',
+      eventId: randomUUID(),
+      ownerId: this.ownerId,
+      runId,
+      sequence: this.nextTransportSequence(runId),
+      frame,
+    });
+  }
+
+  private async publishSnapshotResponse(
+    relayed: RelayedSnapshotRequest,
+    frame: TerminalSnapshot | TerminalEnd | TerminalError,
+  ) {
+    await this.publishTransportEvent(relayed.runId, 'daemon-to-browser', {
+      type: 'daemon.snapshotResponse',
+      eventId: randomUUID(),
+      ownerId: this.ownerId,
+      targetId: relayed.requesterId,
+      runId: relayed.runId,
+      requestId: frame.requestId || '',
+      frame,
+    });
+  }
+
+  private async publishBrowserLocate(runId: string) {
+    await this.publishTransportEvent(runId, 'browser-to-daemon', {
+      type: 'browser.locate',
+      eventId: randomUUID(),
+      requesterId: this.ownerId,
+      runId,
+    });
+  }
+
+  private async publishBrowserSnapshotRequest(runId: string, requestId: string, fromOffset: number) {
+    await this.publishTransportEvent(runId, 'browser-to-daemon', {
+      type: 'browser.snapshotRequest',
+      eventId: randomUUID(),
+      requesterId: this.ownerId,
       requestId,
       runId,
       fromOffset,
     });
-    return true;
+  }
+
+  private async publishTransportEvent(
+    runId: string,
+    direction: 'browser-to-daemon' | 'daemon-to-browser',
+    event: TerminalStreamBrowserTransportEvent | TerminalStreamDaemonTransportEvent,
+  ) {
+    try {
+      await this.transport.publish(runId, direction, event);
+      await this.refreshTransportAvailability();
+    } catch (error) {
+      this.sharedTransportAvailable = false;
+      this.logTransportFailure('publish terminal broker event', error, runId);
+    }
+  }
+
+  private async refreshTransportAvailability() {
+    this.sharedTransportAvailable = await this.transport.isShared();
+  }
+
+  private startBrokerTimers() {
+    if (!this.brokerHeartbeatTimer) {
+      this.brokerHeartbeatTimer = setInterval(() => {
+        this.publishBrokerHeartbeats().catch((error) => {
+          this.logTransportFailure('publish terminal broker heartbeat', error);
+        });
+      }, TERMINAL_BROKER_HEARTBEAT_INTERVAL_MS);
+      this.brokerHeartbeatTimer.unref?.();
+    }
+    if (!this.brokerOwnerWatchdogTimer) {
+      this.brokerOwnerWatchdogTimer = setInterval(() => {
+        this.checkRemoteRunOwners();
+      }, TERMINAL_BROKER_HEARTBEAT_INTERVAL_MS);
+      this.brokerOwnerWatchdogTimer.unref?.();
+    }
+  }
+
+  private stopBrokerTimers() {
+    if (this.brokerHeartbeatTimer) {
+      clearInterval(this.brokerHeartbeatTimer);
+      this.brokerHeartbeatTimer = undefined;
+    }
+    if (this.brokerOwnerWatchdogTimer) {
+      clearInterval(this.brokerOwnerWatchdogTimer);
+      this.brokerOwnerWatchdogTimer = undefined;
+    }
+  }
+
+  private async publishBrokerHeartbeats() {
+    await this.refreshTransportAvailability();
+    for (const [runId, bound] of this.boundRuns.entries()) {
+      await this.publishDaemonState(runId, 'heartbeat', bound.nodeId);
+    }
+  }
+
+  private checkRemoteRunOwners() {
+    const nowMs = Date.now();
+    for (const [runId, owner] of this.remoteRunOwners.entries()) {
+      if (owner.unavailableNotified || nowMs - owner.lastSeenAtMs <= TERMINAL_BROKER_OWNER_TIMEOUT_MS) {
+        continue;
+      }
+      owner.unavailableNotified = true;
+      this.broadcastToRun(
+        runId,
+        createTerminalError('TERMINAL_DAEMON_UNAVAILABLE', 'Terminal broker owner heartbeat expired', {
+          details: {
+            reconnectRequired: true,
+          },
+        }),
+      );
+    }
+  }
+
+  private logTransportFailure(action: string, error: unknown, runId?: string) {
+    this.app.logger?.warn?.(`Agent Gateway failed to ${action}`, {
+      runId,
+      error: getErrorMessage(error),
+    });
   }
 
   private async createTerminalEndForCompletedRun(runId: string, offsetEnd: number): Promise<TerminalEnd | null> {
@@ -1237,13 +1730,14 @@ export class TerminalStreamBroker {
     }
   }
 
-  private removeConnection(ws: WebSocket) {
+  private async removeConnection(ws: WebSocket) {
     const connection = this.connections.get(ws);
     if (!connection) {
       return;
     }
     this.connections.delete(ws);
     this.frameQueues.delete(ws);
+    this.frameQueueDepths.delete(ws);
 
     if (connection.kind === 'browser') {
       for (const runId of connection.subscriptions) {
@@ -1259,6 +1753,7 @@ export class TerminalStreamBroker {
       for (const [runId, bound] of Array.from(this.boundRuns.entries())) {
         if (bound.ws === ws) {
           this.boundRuns.delete(runId);
+          await this.publishDaemonState(runId, 'closed', bound.nodeId);
         }
       }
     }
@@ -1270,7 +1765,26 @@ export class TerminalStreamBroker {
       } else if (pending.daemon === ws) {
         this.takePendingSnapshotRequest(requestId);
         this.releaseBrowserSubscriptionReservation(pending.reservationId);
-        pending.browser.close();
+        this.sendError(pending.browser, 'TERMINAL_DAEMON_UNAVAILABLE', 'Terminal daemon connection closed', undefined, {
+          reconnectRequired: true,
+        });
+      }
+    }
+    if (connection.kind === 'daemon') {
+      for (const [requestId, relayed] of Array.from(this.relayedSnapshotRequests.entries())) {
+        if (relayed.daemon !== ws) {
+          continue;
+        }
+        this.takeRelayedSnapshotRequest(requestId);
+        await this.publishSnapshotResponse(
+          relayed,
+          createTerminalError('TERMINAL_DAEMON_UNAVAILABLE', 'Terminal daemon connection closed', {
+            requestId,
+            details: {
+              reconnectRequired: true,
+            },
+          }),
+        );
       }
     }
     for (const [reservationId, reservation] of Array.from(this.pendingBrowserSubscriptionReservations.entries())) {
@@ -1295,6 +1809,23 @@ export class TerminalStreamBroker {
       clearTimeout(pending.timeout);
     }
     this.pendingSnapshotRequests.clear();
+  }
+
+  private takeRelayedSnapshotRequest(requestId: string) {
+    const relayed = this.relayedSnapshotRequests.get(requestId);
+    if (!relayed) {
+      return undefined;
+    }
+    this.relayedSnapshotRequests.delete(requestId);
+    clearTimeout(relayed.timeout);
+    return relayed;
+  }
+
+  private clearRelayedSnapshotRequests() {
+    for (const relayed of this.relayedSnapshotRequests.values()) {
+      clearTimeout(relayed.timeout);
+    }
+    this.relayedSnapshotRequests.clear();
   }
 
   private sendError(
@@ -1388,6 +1919,11 @@ export class TerminalStreamBroker {
       activeBrowserSubscriptionsForUser: options.userId ? activeBrowserSubscriptionsForUser : undefined,
       activeDaemonBindingsForNode: options.nodeId && options.includeNodeStats ? activeDaemonBindingsForNode : undefined,
       pendingSnapshotRequests,
+      brokerTransport: this.sharedTransportAvailable ? 'shared-pubsub' : 'single-instance-memory',
+      remoteRunOwners: options.includeGlobalStats ? this.remoteRunOwners.size : undefined,
+      queuedFrames: options.includeGlobalStats
+        ? Array.from(this.frameQueueDepths.values()).reduce((sum, count) => sum + count, 0)
+        : undefined,
     };
   }
 }

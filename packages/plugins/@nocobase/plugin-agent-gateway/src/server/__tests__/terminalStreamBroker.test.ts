@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { MockServer, createMockServer } from '@nocobase/test';
+import { MockCluster, MockServer, createMockCluster, createMockServer } from '@nocobase/test';
 import WebSocket from 'ws';
 
 import {
@@ -79,24 +79,6 @@ function waitForFrames(ws: WebSocket, predicate: (frame: TerminalFrame) => boole
       resolve(frames);
     };
     ws.on('message', onMessage);
-  });
-}
-
-function waitForClose(ws: WebSocket) {
-  if (ws.readyState === WebSocket.CLOSED) {
-    return Promise.resolve();
-  }
-  return new Promise<void>((resolve, reject) => {
-    const timer = setTimeout(() => {
-      ws.off('close', onClose);
-      reject(new Error('WebSocket close timed out'));
-    }, 5000);
-    const onClose = () => {
-      clearTimeout(timer);
-      ws.off('close', onClose);
-      resolve();
-    };
-    ws.on('close', onClose);
   });
 }
 
@@ -591,7 +573,7 @@ describe('terminal stream broker', () => {
     }
   });
 
-  it('closes a reconnecting browser when the daemon disconnects before snapshot response', async () => {
+  it('keeps a reconnecting browser open with an explicit fallback error when the daemon disconnects', async () => {
     const runner = await createRunner(app, { nodeKey: 'terminal-stream-broker-node-snapshot-daemon-close' });
     const runId = await createQueuedRun(app, runner, 'terminal-stream-broker-run-snapshot-daemon-close');
     const lease = await claimRun(app, runner, runId);
@@ -642,8 +624,18 @@ describe('terminal stream broker', () => {
       );
       await waitForFrame(daemon, (frame) => frame.type === 'daemon.snapshotRequest');
 
+      const fallbackFrame = waitForFrame(
+        browser,
+        (frame) => frame.type === 'error' && frame.code === 'TERMINAL_DAEMON_UNAVAILABLE',
+      );
       daemon.close();
-      await waitForClose(browser);
+      expect(await fallbackFrame).toMatchObject({
+        code: 'TERMINAL_DAEMON_UNAVAILABLE',
+        details: {
+          reconnectRequired: true,
+        },
+      });
+      expect(browser.readyState).toBe(WebSocket.OPEN);
     } finally {
       daemon.close();
       browser.close();
@@ -975,6 +967,284 @@ describe('terminal stream broker', () => {
       daemon.close();
       browser.close();
       await server.close();
+    }
+  });
+});
+
+describe('terminal stream broker multi-instance transport', () => {
+  let cluster: MockCluster;
+  let instanceA: MockServer;
+  let instanceB: MockServer;
+  let rootUserId: string | number;
+
+  beforeEach(async () => {
+    cluster = await createMockCluster({
+      plugins: [
+        'system-settings',
+        'field-sort',
+        'users',
+        'departments',
+        'auth',
+        'acl',
+        'data-source-manager',
+        'error-handler',
+        [PluginAgentGatewayServer, { packageName: '@nocobase/plugin-agent-gateway' }],
+      ],
+    });
+    [instanceA, instanceB] = cluster.nodes;
+    const rootUser = await instanceB.db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
+      },
+    });
+    expect(rootUser).toBeTruthy();
+    rootUserId = rootUser.get('id') as string | number;
+  });
+
+  afterEach(async () => {
+    await cluster?.destroy();
+  });
+
+  it('routes snapshots and ordered live frames when daemon and browser use different instances', async () => {
+    const runner = await createRunner(instanceA, {
+      nodeKey: 'terminal-stream-cluster-node',
+      maxConcurrency: 2,
+    });
+    const runId = await createQueuedRun(instanceA, runner, 'terminal-stream-cluster-run');
+    const otherRunId = await createQueuedRun(instanceA, runner, 'terminal-stream-cluster-other-run');
+    const lease = await claimRun(instanceA, runner, runId);
+    const otherLease = await claimRun(instanceA, runner, otherRunId);
+    const serverA = await createTerminalStreamServer(instanceA);
+    const serverB = await createTerminalStreamServer(instanceB);
+    const daemon = createWebSocket(serverA.wsUrl, { nodeToken: runner.nodeToken });
+    const browserConnection = await createBrowserWithTicket(instanceB, serverB.wsUrl, {
+      userId: rootUserId,
+      runId,
+    });
+    const otherBrowserConnection = await createBrowserWithTicket(instanceB, serverB.wsUrl, {
+      userId: rootUserId,
+      runId: otherRunId,
+    });
+    const browser = browserConnection.browser;
+    const otherBrowser = otherBrowserConnection.browser;
+
+    try {
+      await Promise.all([waitForOpen(daemon), waitForOpen(browser), waitForOpen(otherBrowser)]);
+      sendFrame(daemon, {
+        type: 'daemon.register',
+        protocol: TERMINAL_PROTOCOL,
+        requestId: 'cluster-register',
+        nodeId: runner.nodeId,
+        capabilities: {
+          terminalStream: true,
+        },
+      });
+      await waitForFrame(daemon, (frame) => frame.type === 'ack' && frame.requestId === 'cluster-register');
+      sendFrame(daemon, {
+        type: 'daemon.bindRun',
+        protocol: TERMINAL_PROTOCOL,
+        requestId: 'cluster-bind',
+        runId,
+        sessionName: 'agw_terminal_stream_cluster',
+        startOffset: 0,
+        claimToken: lease.claimToken,
+        claimAttempt: lease.claimAttempt,
+        leaseVersion: lease.leaseVersion,
+      });
+      await waitForFrame(daemon, (frame) => frame.type === 'ack' && frame.requestId === 'cluster-bind');
+      sendFrame(daemon, {
+        type: 'daemon.bindRun',
+        protocol: TERMINAL_PROTOCOL,
+        requestId: 'cluster-bind-other',
+        runId: otherRunId,
+        sessionName: 'agw_terminal_stream_cluster_other',
+        startOffset: 0,
+        claimToken: otherLease.claimToken,
+        claimAttempt: otherLease.claimAttempt,
+        leaseVersion: otherLease.leaseVersion,
+      });
+      await waitForFrame(daemon, (frame) => frame.type === 'ack' && frame.requestId === 'cluster-bind-other');
+
+      sendBrowserSubscribe(browser, browserConnection.ticket, {
+        runId,
+        requestId: 'cluster-subscribe',
+        lastOffset: 0,
+      });
+      sendBrowserSubscribe(otherBrowser, otherBrowserConnection.ticket, {
+        runId: otherRunId,
+        requestId: 'cluster-subscribe-other',
+      });
+      await waitForFrame(browser, (frame) => frame.type === 'ack' && frame.requestId === 'cluster-subscribe');
+      await waitForFrame(
+        otherBrowser,
+        (frame) => frame.type === 'ack' && frame.requestId === 'cluster-subscribe-other',
+      );
+      const snapshotRequest = await waitForFrame(
+        daemon,
+        (frame) => frame.type === 'daemon.snapshotRequest' && frame.runId === runId,
+      );
+      const snapshotText = 'cluster-snapshot\n';
+      const snapshotOffset = Buffer.byteLength(snapshotText);
+      sendFrame(daemon, {
+        type: 'terminal.snapshot',
+        protocol: TERMINAL_PROTOCOL,
+        requestId: snapshotRequest.type === 'daemon.snapshotRequest' ? snapshotRequest.requestId : '',
+        runId,
+        sessionName: 'agw_terminal_stream_cluster',
+        offsetStart: 0,
+        offsetEnd: snapshotOffset,
+        payloadEncoding: TERMINAL_PAYLOAD_ENCODING,
+        payload: encodeTerminalPayload(snapshotText),
+      });
+      expect(await waitForFrame(browser, (frame) => frame.type === 'terminal.snapshot')).toMatchObject({
+        runId,
+        offsetEnd: snapshotOffset,
+      });
+
+      const firstText = 'cluster-frame-1\n';
+      const secondText = 'cluster-frame-2\n';
+      const firstEnd = snapshotOffset + Buffer.byteLength(firstText);
+      const secondEnd = firstEnd + Buffer.byteLength(secondText);
+      const liveFrames = waitForFrames(browser, (frame) => frame.type === 'terminal.data', 2);
+      sendFrame(daemon, {
+        type: 'terminal.data',
+        protocol: TERMINAL_PROTOCOL,
+        runId,
+        sessionName: 'agw_terminal_stream_cluster',
+        offsetStart: snapshotOffset,
+        offsetEnd: firstEnd,
+        payloadEncoding: TERMINAL_PAYLOAD_ENCODING,
+        payload: encodeTerminalPayload(firstText),
+      });
+      sendFrame(daemon, {
+        type: 'terminal.data',
+        protocol: TERMINAL_PROTOCOL,
+        runId,
+        sessionName: 'agw_terminal_stream_cluster',
+        offsetStart: firstEnd,
+        offsetEnd: secondEnd,
+        payloadEncoding: TERMINAL_PAYLOAD_ENCODING,
+        payload: encodeTerminalPayload(secondText),
+      });
+      expect(
+        (await liveFrames).map((frame) => decodeTerminalPayload(frame.type === 'terminal.data' ? frame.payload : '')),
+      ).toEqual([firstText, secondText]);
+      expect(await waitForNoFrame(otherBrowser, (frame) => frame.type === 'terminal.data', 150)).toBe(false);
+    } finally {
+      daemon.close();
+      browser.close();
+      otherBrowser.close();
+      await serverA.close();
+      await serverB.close();
+    }
+  });
+
+  it('keeps the browser socket in an explicit fallback state and accepts a replacement daemon owner', async () => {
+    const runner = await createRunner(instanceA, { nodeKey: 'terminal-stream-cluster-failover-node' });
+    const runId = await createQueuedRun(instanceA, runner, 'terminal-stream-cluster-failover-run');
+    const lease = await claimRun(instanceA, runner, runId);
+    const serverA = await createTerminalStreamServer(instanceA);
+    const serverB = await createTerminalStreamServer(instanceB);
+    const daemonA = createWebSocket(serverA.wsUrl, { nodeToken: runner.nodeToken });
+    const browserConnection = await createBrowserWithTicket(instanceB, serverB.wsUrl, {
+      userId: rootUserId,
+      runId,
+    });
+    const browser = browserConnection.browser;
+    let daemonB: WebSocket | undefined;
+    let serverAClosed = false;
+
+    try {
+      await Promise.all([waitForOpen(daemonA), waitForOpen(browser)]);
+      sendFrame(daemonA, {
+        type: 'daemon.register',
+        protocol: TERMINAL_PROTOCOL,
+        requestId: 'failover-register-a',
+        nodeId: runner.nodeId,
+        capabilities: {
+          terminalStream: true,
+        },
+      });
+      await waitForFrame(daemonA, (frame) => frame.type === 'ack' && frame.requestId === 'failover-register-a');
+      sendFrame(daemonA, {
+        type: 'daemon.bindRun',
+        protocol: TERMINAL_PROTOCOL,
+        requestId: 'failover-bind-a',
+        runId,
+        sessionName: 'agw_terminal_stream_cluster_failover',
+        startOffset: 0,
+        claimToken: lease.claimToken,
+        claimAttempt: lease.claimAttempt,
+        leaseVersion: lease.leaseVersion,
+      });
+      await waitForFrame(daemonA, (frame) => frame.type === 'ack' && frame.requestId === 'failover-bind-a');
+      sendBrowserSubscribe(browser, browserConnection.ticket, {
+        runId,
+        requestId: 'failover-subscribe',
+      });
+      await waitForFrame(browser, (frame) => frame.type === 'ack' && frame.requestId === 'failover-subscribe');
+
+      const fallbackFrame = waitForFrame(
+        browser,
+        (frame) => frame.type === 'error' && frame.code === 'TERMINAL_DAEMON_UNAVAILABLE',
+      );
+      await serverA.close();
+      serverAClosed = true;
+      expect(await fallbackFrame).toMatchObject({
+        code: 'TERMINAL_DAEMON_UNAVAILABLE',
+        details: {
+          reconnectRequired: true,
+        },
+      });
+      expect(browser.readyState).toBe(WebSocket.OPEN);
+
+      daemonB = createWebSocket(serverB.wsUrl, { nodeToken: runner.nodeToken });
+      await waitForOpen(daemonB);
+      sendFrame(daemonB, {
+        type: 'daemon.register',
+        protocol: TERMINAL_PROTOCOL,
+        requestId: 'failover-register-b',
+        nodeId: runner.nodeId,
+        capabilities: {
+          terminalStream: true,
+        },
+      });
+      await waitForFrame(daemonB, (frame) => frame.type === 'ack' && frame.requestId === 'failover-register-b');
+      sendFrame(daemonB, {
+        type: 'daemon.bindRun',
+        protocol: TERMINAL_PROTOCOL,
+        requestId: 'failover-bind-b',
+        runId,
+        sessionName: 'agw_terminal_stream_cluster_failover',
+        startOffset: 0,
+        claimToken: lease.claimToken,
+        claimAttempt: lease.claimAttempt,
+        leaseVersion: lease.leaseVersion,
+      });
+      await waitForFrame(daemonB, (frame) => frame.type === 'ack' && frame.requestId === 'failover-bind-b');
+      const recoveredText = 'cluster-owner-recovered\n';
+      sendFrame(daemonB, {
+        type: 'terminal.data',
+        protocol: TERMINAL_PROTOCOL,
+        runId,
+        sessionName: 'agw_terminal_stream_cluster_failover',
+        offsetStart: 0,
+        offsetEnd: Buffer.byteLength(recoveredText),
+        payloadEncoding: TERMINAL_PAYLOAD_ENCODING,
+        payload: encodeTerminalPayload(recoveredText),
+      });
+      const recoveredFrame = await waitForFrame(browser, (frame) => frame.type === 'terminal.data');
+      expect(decodeTerminalPayload(recoveredFrame.type === 'terminal.data' ? recoveredFrame.payload : '')).toBe(
+        recoveredText,
+      );
+    } finally {
+      daemonA.close();
+      daemonB?.close();
+      browser.close();
+      if (!serverAClosed) {
+        await serverA.close();
+      }
+      await serverB.close();
     }
   });
 });

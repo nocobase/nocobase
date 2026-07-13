@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createHash } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 import { promises as fs } from 'fs';
 import os from 'os';
 import path from 'path';
@@ -19,6 +19,13 @@ import { createSkillZipFixture } from '../../node/__tests__/skillArchiveFixtures
 import { AGENT_GATEWAY_SKILL_CAPABILITY_HEADER } from '../../shared/skillCapability';
 import PluginAgentGatewayServer from '../plugin';
 import { createNodeToken, toStoredTokenFields } from '../security';
+import {
+  copySharedStorageObject,
+  deleteSharedStorageObject,
+  parseSharedStorageObject,
+  putSharedStorageBuffer,
+  readSharedStorageBuffer,
+} from '../services/sharedFileStorage';
 
 interface ResponseLike {
   status: number;
@@ -69,6 +76,7 @@ describe('agent gateway Skill version upload APIs', () => {
     process.env.STORAGE_PATH = storageDir;
     app = await createMockServer({
       plugins: [
+        'file-manager',
         'system-settings',
         'field-sort',
         'users',
@@ -226,9 +234,15 @@ describe('agent gateway Skill version upload APIs', () => {
       },
     });
     const metadataSource = (skillVersion.get('metadataJson') as Record<string, Record<string, unknown>>).source;
-    const archivePath = String(metadataSource.archivePath);
-    expect(archivePath.startsWith(path.join(storageDir, 'agent-gateway', 'skill-uploads'))).toBe(true);
-    expect(await fs.readFile(archivePath)).toEqual(firstContent);
+    expect(metadataSource.archivePath).toBeUndefined();
+    expect(String(metadataSource.objectKey)).toContain('agent-gateway/skills/');
+    const storageObject = parseSharedStorageObject({
+      ...metadataSource,
+      mimetype: 'application/zip',
+    });
+    expect(await readSharedStorageBuffer({ app }, storageObject, SKILL_ARCHIVE_LIMITS.maxDownloadBytes)).toEqual(
+      firstContent,
+    );
 
     const archiveUrl = new URL(String(source.archiveUrl));
     const archiveRequestPath = `${archiveUrl.pathname.replace(/^\/api/, '')}${archiveUrl.search}`;
@@ -381,7 +395,17 @@ describe('agent gateway Skill version upload APIs', () => {
 
     const storedUpload = await app.db.getRepository('agFileUploads').findOne({ filterByTk: uploadId });
     expect(storedUpload?.get('status')).toBe('consumed');
-    await expect(fs.stat(String(storedUpload?.get('storagePath')))).rejects.toThrow();
+    const completedObject = parseSharedStorageObject({
+      storageId: storedUpload?.get('storageId'),
+      objectPath: storedUpload?.get('objectPath'),
+      objectFilename: storedUpload?.get('objectFilename'),
+      objectKey: storedUpload?.get('objectKey'),
+      sizeBytes: storedUpload?.get('expectedBytes'),
+      mimetype: storedUpload?.get('mimeType'),
+    });
+    await expect(
+      readSharedStorageBuffer({ app }, completedObject, SKILL_ARCHIVE_LIMITS.maxDownloadBytes),
+    ).rejects.toThrow();
   });
 
   it('authorizes archive downloads only for the bound node, run, claim attempt, digest, and expiry', async () => {
@@ -544,8 +568,6 @@ describe('agent gateway Skill version upload APIs', () => {
     const archiveUrl = new URL(String(claimed.source.archiveUrl));
     const capabilityToken = String(claimed.source.capabilityToken);
 
-    const outsideArchivePath = path.join(storageDir, 'outside-skill.zip');
-    await fs.writeFile(outsideArchivePath, archiveContent);
     await versionRepo.update({
       filterByTk: upload.skillVersionId,
       values: {
@@ -553,7 +575,8 @@ describe('agent gateway Skill version upload APIs', () => {
           ...metadata,
           source: {
             ...originalSource,
-            archivePath: outsideArchivePath,
+            objectPath: 'outside',
+            objectKey: `outside/${String(originalSource.objectFilename)}`,
           },
         },
       },
@@ -575,14 +598,28 @@ describe('agent gateway Skill version upload APIs', () => {
         },
       },
     });
-    await fs.writeFile(String(originalSource.archivePath), createStoredZip({ 'SKILL.md': '# Tampered Skill\n' }));
+    const tamperedStagingObject = await putSharedStorageBuffer(
+      { app },
+      {
+        content: createStoredZip({ 'SKILL.md': '# Tampered Skill\n' }),
+        filename: 'tampered.zip',
+        mimetype: 'application/zip',
+        subPath: `agent-gateway/skills/staging/${randomUUID()}`,
+      },
+    );
+    await copySharedStorageObject({ app }, tamperedStagingObject, {
+      filename: String(originalSource.objectFilename),
+      mimetype: 'application/zip',
+      subPath: `agent-gateway/skills/${String(originalSource.sha256).slice(0, 2)}`,
+    });
+    await deleteSharedStorageObject({ app }, tamperedStagingObject);
     const tamperedResponse = await app
       .agent()
       .get(`${archiveUrl.pathname.replace(/^\/api/, '')}${archiveUrl.search}`)
       .set('Authorization', `Bearer ${runner.nodeToken}`)
       .set(AGENT_GATEWAY_SKILL_CAPABILITY_HEADER, capabilityToken);
     expect(tamperedResponse.status).toBe(404);
-    expect(JSON.stringify(tamperedResponse.body)).not.toContain(String(originalSource.archivePath));
+    expect(JSON.stringify(tamperedResponse.body)).not.toContain(String(originalSource.objectKey));
   });
 
   it('rejects invalid ZIP uploads before creating Skill versions', async () => {
@@ -732,9 +769,5 @@ describe('agent gateway Skill version upload APIs', () => {
       expect(JSON.stringify(response.body), fixture.name).not.toContain(storageDir);
       expect(await app.db.getRepository('agSkillVersions').count(), fixture.name).toBe(0);
     }
-
-    const uploadDir = path.join(storageDir, 'agent-gateway', 'skill-uploads');
-    const uploadFiles = await fs.readdir(uploadDir).catch(() => []);
-    expect(uploadFiles).toEqual([]);
   });
 });

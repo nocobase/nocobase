@@ -44,6 +44,7 @@ describe('agent gateway run observability APIs', () => {
   beforeEach(async () => {
     app = await createMockServer({
       plugins: [
+        'file-manager',
         'system-settings',
         'field-sort',
         'users',
@@ -117,6 +118,7 @@ describe('agent gateway run observability APIs', () => {
             driver: 'fake',
             status: 'active',
             capabilities: {
+              executionPolicyKey: 'fake-observer',
               maxConcurrency: 1,
             },
             metadata: {
@@ -152,12 +154,9 @@ describe('agent gateway run observability APIs', () => {
         prompt: 'Prompt that should not appear in management read APIs or API logs',
       },
       executionPayload: {
+        executionPolicyKey: 'fake-observer',
         task: 'observe',
-        command: 'must-not-render',
-        cwd: '/tmp/must-not-render',
-        env: {
-          SECRET: 'must-not-render',
-        },
+        cwd: '.',
         ...executionPayload,
       },
     });
@@ -333,7 +332,7 @@ describe('agent gateway run observability APIs', () => {
     expect(await app.db.getRepository('agRunEvents').count({ filter: { runId: run.id } })).toBe(1);
   });
 
-  it('registers artifacts idempotently and preserves artifact text before persistence', async () => {
+  it('registers artifacts idempotently and persists artifact text in protected shared storage', async () => {
     const runner = await registerRunner();
     const { run, claim } = await createAndClaimRun(runner);
 
@@ -385,11 +384,20 @@ describe('agent gateway run observability APIs', () => {
     const storedArtifact = await app.db.getRepository('agRunArtifacts').findOne({
       filterByTk: artifact.id,
     });
-    expect(String(storedArtifact.get('contentText'))).toContain('ARTIFACT_SECRET');
-    expect(String(storedArtifact.get('contentText'))).toContain('ARTIFACT_COMMAND_SECRET');
-    expect(String(storedArtifact.get('contentText'))).toContain('ARTIFACT_CWD_SECRET');
-    expect(String(storedArtifact.get('contentText'))).toContain('ARTIFACT_ENV_SECRET');
-    expect(String(storedArtifact.get('contentText'))).toContain('Authorization: Bearer ARTIFACT_SECRET');
+    expect(storedArtifact.get('contentText')).toBeNull();
+    expect(storedArtifact.get('storageId')).toBeTruthy();
+    expect(String(storedArtifact.get('objectKey'))).toContain('agent-gateway/run-artifacts/');
+    expect(String(storedArtifact.get('storageSha256'))).toMatch(/^[a-f0-9]{64}$/);
+    expect(artifact).not.toHaveProperty('objectKey');
+    const contentResponse = await rootAgent.get(
+      `/agentGatewayApi:getRunArtifactContent/${run.id}?artifactId=${artifact.id}`,
+    );
+    expect(contentResponse.status).toBe(200);
+    expect(String(getData(contentResponse).contentText)).toContain('ARTIFACT_SECRET');
+    expect(String(getData(contentResponse).contentText)).toContain('ARTIFACT_COMMAND_SECRET');
+    expect(String(getData(contentResponse).contentText)).toContain('ARTIFACT_CWD_SECRET');
+    expect(String(getData(contentResponse).contentText)).toContain('ARTIFACT_ENV_SECRET');
+    expect(String(getData(contentResponse).contentText)).toContain('Authorization: Bearer ARTIFACT_SECRET');
     expect(storedArtifact.get('metadataJson')).toMatchObject({
       externalUrl: 'https://daemon.example/artifacts/stdout-main',
       downloadUrl: 'https://daemon.example/download/stdout-main',
@@ -895,6 +903,11 @@ describe('agent gateway run observability APIs', () => {
       runCode: `run-observe-other-${Date.now()}-${Math.random()}`,
       sourceType: 'test',
       agentProfileId: runner.profileId,
+      executionPayload: {
+        executionPolicyKey: 'fake-observer',
+        task: 'observe-other',
+        cwd: '.',
+      },
     });
     expect(otherRunResponse.status).toBe(200);
     const otherRun = getData(otherRunResponse);
@@ -990,6 +1003,8 @@ describe('agent gateway run observability APIs', () => {
     expect(artifactsResponse.status).toBe(200);
     const artifacts = artifactsResponse.body.data as Array<Record<string, unknown>>;
     expect(artifacts[0]).not.toHaveProperty('contentText');
+    expect(artifacts[0]).not.toHaveProperty('objectKey');
+    expect(artifacts[0]).not.toHaveProperty('storageId');
     expect(artifacts[0].metadataJson).toMatchObject({
       externalUrl: 'https://daemon.example/artifacts/stdout',
     });

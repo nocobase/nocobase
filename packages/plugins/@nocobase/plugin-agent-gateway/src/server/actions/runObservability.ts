@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { randomUUID } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 
 import { Context, Next } from '@nocobase/actions';
 import { Plugin } from '@nocobase/server';
@@ -47,6 +47,12 @@ import {
 import { COMMAND_CONTENT_JSON_LIMIT_CHARS } from '../../shared/conversationLimits';
 import { getRunProviderCapabilitySummary, isRunCapabilitySupported } from './capabilityUtils';
 import { findCursorPage, getBoundedPositiveIntegerQuery } from './cursorPagination';
+import {
+  deleteSharedStorageObject,
+  parseSharedStorageObject,
+  putSharedStorageBuffer,
+  readSharedStorageBuffer,
+} from '../services/sharedFileStorage';
 
 const MAX_EVENT_MESSAGE_LENGTH = 4000;
 const MAX_EVENT_PAYLOAD_CHARS = 16000;
@@ -153,6 +159,31 @@ function getPayloadValue(values: JsonRecord, canonicalKey: string, aliasKey: str
 
 function serializeModel(model: ModelRecord) {
   return getModelJson(model);
+}
+
+function serializeArtifact(model: ModelRecord) {
+  const {
+    storageId: _storageId,
+    objectPath: _objectPath,
+    objectFilename: _objectFilename,
+    objectKey: _objectKey,
+    storageSizeBytes: _storageSizeBytes,
+    storageSha256: _storageSha256,
+    contentText: _contentText,
+    ...artifact
+  } = serializeModel(model);
+  return artifact;
+}
+
+function getArtifactStorageObject(artifact: ModelRecord) {
+  return parseSharedStorageObject({
+    storageId: getModelValue(artifact, 'storageId'),
+    objectPath: getModelValue(artifact, 'objectPath'),
+    objectFilename: getModelValue(artifact, 'objectFilename'),
+    objectKey: getModelValue(artifact, 'objectKey'),
+    sizeBytes: getModelValue(artifact, 'storageSizeBytes'),
+    mimetype: getModelValue(artifact, 'mimeType'),
+  });
 }
 
 function normalizeArtifactPath(value: string) {
@@ -450,7 +481,7 @@ export async function createRunArtifact(ctx: Context, options: CreateRunArtifact
     })) as ModelRecord | null;
     if (existingArtifact) {
       return {
-        ...serializeModel(existingArtifact),
+        ...serializeArtifact(existingArtifact),
         idempotent: true,
       };
     }
@@ -476,36 +507,65 @@ export async function createRunArtifact(ctx: Context, options: CreateRunArtifact
     'metadata.originalSizeBytes',
   );
   const metadataUploadedBytes = getOptionalNonNegativeInteger(ctx, rawMetadata.uploadedBytes, 'metadata.uploadedBytes');
-  const artifact = (await artifactRepo.create({
-    values: {
-      id: randomUUID(),
-      runId: options.runId,
-      claimAttempt: options.claimAttempt,
-      artifactKey,
-      artifactType: getRequiredString(ctx, options.values.artifactType || options.values.type, 'artifactType'),
-      mimeType,
-      sizeBytes: providedSizeBytes ?? computedSizeBytes,
-      originalSizeBytes: metadataOriginalSizeBytes ?? providedSizeBytes ?? computedSizeBytes,
-      previewBytes: metadataUploadedBytes ?? previewBytes,
-      truncated: rawMetadata.truncated === true,
-      storageMode: getString(rawMetadata.storageMode) || (rawMetadata.truncated === true ? 'preview' : 'inline'),
-      contentSha256: getString(rawMetadata.sha256) || null,
-      contentText,
-      metadataJson: getBoundedRedactedJson(
-        ctx,
-        metadataWithJsonStatus,
-        'Artifact metadata',
-        MAX_METADATA_JSON_CHARS,
-        preserveJson,
-      ),
-    },
-    transaction: options.transaction,
-  })) as ModelRecord;
+  const content = contentText === null ? null : Buffer.from(contentText);
+  const storageObject = content
+    ? await putSharedStorageBuffer(
+        { app: ctx.app },
+        {
+          content,
+          filename: `${randomUUID()}.txt`,
+          mimetype: mimeType,
+          subPath: `agent-gateway/run-artifacts/${options.runId}`,
+        },
+      )
+    : null;
+  try {
+    const artifact = (await artifactRepo.create({
+      values: {
+        id: randomUUID(),
+        runId: options.runId,
+        claimAttempt: options.claimAttempt,
+        artifactKey,
+        artifactType: getRequiredString(ctx, options.values.artifactType || options.values.type, 'artifactType'),
+        mimeType,
+        sizeBytes: providedSizeBytes ?? computedSizeBytes,
+        originalSizeBytes: metadataOriginalSizeBytes ?? providedSizeBytes ?? computedSizeBytes,
+        previewBytes: metadataUploadedBytes ?? previewBytes,
+        truncated: rawMetadata.truncated === true,
+        storageMode: getString(rawMetadata.storageMode) || (rawMetadata.truncated === true ? 'preview' : 'shared'),
+        contentSha256: getString(rawMetadata.sha256) || null,
+        storageSha256: content ? createHash('sha256').update(content).digest('hex') : null,
+        ...(storageObject
+          ? {
+              storageId: storageObject.storageId,
+              objectPath: storageObject.path,
+              objectFilename: storageObject.filename,
+              objectKey: storageObject.objectKey,
+              storageSizeBytes: storageObject.sizeBytes,
+            }
+          : {}),
+        contentText: null,
+        metadataJson: getBoundedRedactedJson(
+          ctx,
+          metadataWithJsonStatus,
+          'Artifact metadata',
+          MAX_METADATA_JSON_CHARS,
+          preserveJson,
+        ),
+      },
+      transaction: options.transaction,
+    })) as ModelRecord;
 
-  return {
-    ...serializeModel(artifact),
-    idempotent: false,
-  };
+    return {
+      ...serializeArtifact(artifact),
+      idempotent: false,
+    };
+  } catch (error) {
+    if (storageObject) {
+      await deleteSharedStorageObject({ app: ctx.app }, storageObject).catch(() => undefined);
+    }
+    throw error;
+  }
 }
 
 async function registerArtifact(ctx: Context, runId: string) {
@@ -633,7 +693,7 @@ async function listRunArtifacts(ctx: Context, runId: string) {
   ]);
 
   ctx.body = {
-    rows: applyDeclaredArtifactGroups(artifacts.map(serializeModel), run),
+    rows: applyDeclaredArtifactGroups(artifacts.map(serializeArtifact), run),
     count,
     page,
     pageSize,
@@ -659,9 +719,39 @@ async function getRunArtifactContent(ctx: Context, runId: string, artifactId: st
   if (!artifact) {
     ctx.throw(404, 'Artifact not found');
   }
+  const storageId = getModelValue(artifact, 'storageId');
+  if (storageId === null || storageId === undefined) {
+    ctx.body = {
+      id: artifactId,
+      contentText: artifact.get('contentText') ?? null,
+    };
+    return;
+  }
+
+  let storageObject;
+  try {
+    storageObject = getArtifactStorageObject(artifact);
+  } catch {
+    ctx.throw(409, 'Artifact storage locator is invalid');
+  }
+  let content: Buffer;
+  try {
+    content = await readSharedStorageBuffer({ app: ctx.app }, storageObject, MAX_ARTIFACT_TEXT_BYTES);
+  } catch {
+    ctx.throw(409, 'Artifact storage content is unavailable');
+  }
+  const storageSha256 = getModelValue(artifact, 'storageSha256');
+  if (
+    content.byteLength !== storageObject.sizeBytes ||
+    typeof storageSha256 !== 'string' ||
+    !storageSha256 ||
+    createHash('sha256').update(content).digest('hex') !== storageSha256
+  ) {
+    ctx.throw(409, 'Artifact storage integrity check failed');
+  }
   ctx.body = {
     id: artifactId,
-    contentText: artifact.get('contentText') ?? null,
+    contentText: content.toString('utf8'),
   };
 }
 

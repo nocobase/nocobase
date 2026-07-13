@@ -154,7 +154,7 @@ export const AGENT_GATEWAY_COLLECTION_REGISTRY = [
     allowBusinessRelation: false,
     containsSecret: true,
     containsToken: false,
-    containsStorageLocator: false,
+    containsStorageLocator: true,
   },
   {
     name: 'agRunSnapshots',

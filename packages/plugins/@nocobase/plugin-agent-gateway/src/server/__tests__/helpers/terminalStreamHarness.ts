@@ -22,6 +22,7 @@ import {
   TerminalFrame,
 } from '../../../shared/terminalStreamProtocol';
 import { TerminalStreamBroker } from '../../actions/terminalStreamBroker';
+import type { TerminalStreamTransport } from '../../services/terminalStreamTransport';
 import { createNodeToken, toStoredTokenFields } from '../../security';
 
 export interface TestRunner {
@@ -223,8 +224,8 @@ export function sendBrowserSubscribeFrame(
   });
 }
 
-export async function createTerminalStreamServer(app: MockServer) {
-  const broker = new TerminalStreamBroker(app);
+export async function createTerminalStreamServer(app: MockServer, transport?: TerminalStreamTransport) {
+  const broker = new TerminalStreamBroker(app, transport);
   const server = http.createServer();
   server.on('upgrade', (request, socket, head) => {
     const handled = broker.handleUpgrade(request, socket, head);
@@ -241,7 +242,7 @@ export async function createTerminalStreamServer(app: MockServer) {
     serverUrl,
     wsUrl: `ws://127.0.0.1:${address.port}${TERMINAL_STREAM_WS_PATH}`,
     async close() {
-      broker.unregister();
+      await broker.unregister();
       await new Promise<void>((resolve) => {
         server.close(() => resolve());
       });

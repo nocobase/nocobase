@@ -65,6 +65,7 @@ export class PluginAgentGatewayServer extends Plugin {
   };
   private readonly handleAppStopping = async () => {
     await this.stopBackgroundMaintenance();
+    await this.terminalStreamBroker?.unregister();
   };
 
   async afterAdd() {}
@@ -104,7 +105,7 @@ export class PluginAgentGatewayServer extends Plugin {
 
   async afterDisable() {
     await this.stopBackgroundMaintenance();
-    this.terminalStreamBroker?.unregister();
+    await this.terminalStreamBroker?.unregister();
     this.terminalStreamBroker = undefined;
   }
 

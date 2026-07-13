@@ -97,6 +97,37 @@ export default defineCollection({
       name: 'contentSha256',
     },
     {
+      type: 'string',
+      name: 'storageSha256',
+      hidden: true,
+    },
+    {
+      type: 'bigInt',
+      name: 'storageSizeBytes',
+      hidden: true,
+    },
+    {
+      type: 'bigInt',
+      name: 'storageId',
+      index: true,
+      hidden: true,
+    },
+    {
+      type: 'string',
+      name: 'objectPath',
+      hidden: true,
+    },
+    {
+      type: 'string',
+      name: 'objectFilename',
+      hidden: true,
+    },
+    {
+      type: 'string',
+      name: 'objectKey',
+      hidden: true,
+    },
+    {
       type: 'text',
       name: 'contentText',
       length: 'long',

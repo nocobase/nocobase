@@ -76,6 +76,7 @@ describe('agent gateway fake daemon E2E', () => {
   beforeEach(async () => {
     app = await createMockServer({
       plugins: [
+        'file-manager',
         'system-settings',
         'field-sort',
         'users',

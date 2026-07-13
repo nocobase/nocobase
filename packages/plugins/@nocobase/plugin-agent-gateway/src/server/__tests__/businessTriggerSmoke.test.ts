@@ -128,6 +128,7 @@ describe('agent gateway no-code business trigger smoke', () => {
   beforeEach(async () => {
     app = await createMockServer({
       plugins: [
+        'file-manager',
         'system-settings',
         'field-sort',
         'users',

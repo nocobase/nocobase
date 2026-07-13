@@ -8,13 +8,12 @@
  */
 
 import { createHash, randomUUID } from 'crypto';
-import { createReadStream } from 'fs';
 import { promises as fs } from 'fs';
+import os from 'os';
 import path from 'path';
 
 import { Context, Next } from '@nocobase/actions';
 import { Plugin } from '@nocobase/server';
-import { storagePathJoin } from '@nocobase/utils';
 import { Transaction } from 'sequelize';
 
 import {
@@ -23,9 +22,24 @@ import {
   getAgentGatewayApiActionName,
   getAgentGatewayApiPath,
 } from '../../shared/apiContract';
-import { getSkillArchiveErrorCode, persistSkillZipUpload, validateSkillZipArchive } from '../../node/skillArchive';
+import {
+  SKILL_ARCHIVE_LIMITS,
+  getSkillArchiveErrorCode,
+  persistSkillZipUpload,
+  validateSkillZipArchive,
+} from '../../node/skillArchive';
 import { AGENT_GATEWAY_SKILL_CAPABILITY_HEADER, SKILL_CAPABILITY_REPLAY_POLICY } from '../../shared/skillCapability';
 import { authenticateNodeToken } from '../security';
+import {
+  SharedStorageObject,
+  copySharedStorageObject,
+  deleteSharedStorageObject,
+  materializeSharedStorageObjects,
+  parseSharedStorageObject,
+  putSharedStorageFile,
+  readSharedStorageBuffer,
+  serializeSharedStorageObject,
+} from '../services/sharedFileStorage';
 import { consumeCompletedUpload } from './fileUploads';
 import { validateSkillDownloadCapability } from './skillCapabilities';
 import {
@@ -52,19 +66,6 @@ const MAX_SKILL_VERSION_PAGE_SIZE = 100;
 
 function hasOwnKey(value: JsonRecord, key: string) {
   return Object.prototype.hasOwnProperty.call(value, key);
-}
-
-function isWithinPath(parent: string, child: string) {
-  const relative = path.relative(parent, child);
-  return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
-}
-
-async function sha256File(filePath: string) {
-  const hash = createHash('sha256');
-  for await (const chunk of createReadStream(filePath)) {
-    hash.update(chunk);
-  }
-  return hash.digest('hex');
 }
 
 function getRequiredString(ctx: Context, value: unknown, name: string) {
@@ -205,7 +206,7 @@ export function serializeSkillVersionSourceForNode(
     publicSource.runId = access.runId;
     publicSource.claimAttempt = access.claimAttempt;
   }
-  if (getString(source.archivePath)) {
+  if (getString(source.objectKey) && (typeof source.storageId === 'string' || typeof source.storageId === 'number')) {
     publicSource.archiveUrl = getArchiveDownloadUrl(ctx, skillVersionId, source, access);
     if (access) {
       publicSource.auth = 'skill-capability';
@@ -363,17 +364,66 @@ async function upsertSkillVersion(ctx: Context, values: JsonRecord, source: Json
   };
 }
 
+function getStorageHost(ctx: Context) {
+  return { app: ctx.app };
+}
+
+function buildSkillZipSource(locator: SharedStorageObject, sha256: string, sizeBytes: number): JsonRecord {
+  return {
+    type: 'zip',
+    ...serializeSharedStorageObject(locator),
+    sha256,
+    sizeBytes,
+    uploadedAt: new Date().toISOString(),
+  };
+}
+
+function parseSkillZipSource(source: JsonRecord) {
+  return parseSharedStorageObject({
+    storageId: source.storageId,
+    objectPath: source.objectPath,
+    objectFilename: source.objectFilename,
+    objectKey: source.objectKey,
+    sizeBytes: source.sizeBytes,
+    mimetype: 'application/zip',
+  });
+}
+
+async function solidifySkillArchive(ctx: Context, source: SharedStorageObject, sha256: string) {
+  return await copySharedStorageObject(getStorageHost(ctx), source, {
+    filename: `${sha256}.zip`,
+    mimetype: 'application/zip',
+    subPath: `agent-gateway/skills/${sha256.slice(0, 2)}`,
+  });
+}
+
 async function persistValidatedSkillZipUpload(ctx: Context, content: Buffer) {
+  const temporaryDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-gateway-skill-upload-'));
+  let stagedObject: SharedStorageObject | undefined;
   try {
-    return await persistSkillZipUpload({
-      content,
-      uploadDir: storagePathJoin('agent-gateway', 'skill-uploads'),
-      validateArchive: true,
+    let persisted: Awaited<ReturnType<typeof persistSkillZipUpload>>;
+    try {
+      persisted = await persistSkillZipUpload({
+        content,
+        uploadDir: temporaryDirectory,
+        validateArchive: true,
+      });
+    } catch (error) {
+      const errorCode = getSkillArchiveErrorCode(error);
+      ctx.throw(400, errorCode);
+      throw new Error(errorCode);
+    }
+    stagedObject = await putSharedStorageFile(getStorageHost(ctx), {
+      filePath: persisted.archivePath,
+      subPath: `agent-gateway/skills/staging/${randomUUID()}`,
     });
-  } catch (error) {
-    const errorCode = getSkillArchiveErrorCode(error);
-    ctx.throw(400, errorCode);
-    throw new Error(errorCode);
+    const solidified = await solidifySkillArchive(ctx, stagedObject, persisted.sha256);
+    return buildSkillZipSource(solidified, persisted.sha256, persisted.sizeBytes);
+  } finally {
+    if (stagedObject) {
+      await deleteSharedStorageObject(getStorageHost(ctx), stagedObject).catch(() => undefined);
+    }
+    await fs.rm(temporaryDirectory, { recursive: true, force: true });
   }
 }
 
@@ -386,9 +436,14 @@ async function uploadSkillVersionZip(ctx: Context) {
     ...uploadedSource,
   };
 
-  ctx.body = await ctx.db.sequelize.transaction(async (transaction) => {
-    return await upsertSkillVersion(ctx, values, source, transaction);
-  });
+  try {
+    ctx.body = await ctx.db.sequelize.transaction(async (transaction) => {
+      return await upsertSkillVersion(ctx, values, source, transaction);
+    });
+  } catch (error) {
+    await deleteSharedStorageObject(getStorageHost(ctx), parseSkillZipSource(source)).catch(() => undefined);
+    throw error;
+  }
 }
 
 async function createSkillVersionFromUpload(ctx: Context) {
@@ -396,35 +451,41 @@ async function createSkillVersionFromUpload(ctx: Context) {
   const values = getBodyValues(ctx);
   const uploadId = getRequiredString(ctx, values.uploadId, 'uploadId');
   const completedUpload = await consumeCompletedUpload(ctx, uploadId, 'skill-version');
+  const materialized = await materializeSharedStorageObjects(
+    getStorageHost(ctx),
+    [completedUpload.storageObject],
+    SKILL_ARCHIVE_LIMITS.maxDownloadBytes,
+  );
+  if (materialized.sha256 !== completedUpload.sha256 || materialized.sizeBytes !== completedUpload.sizeBytes) {
+    await materialized.cleanup();
+    ctx.throw(409, 'Upload storage object does not match its declared digest');
+  }
   try {
-    await validateSkillZipArchive(completedUpload.storagePath);
+    await validateSkillZipArchive(materialized.filePath);
   } catch (error) {
     ctx.throw(400, getSkillArchiveErrorCode(error));
+  } finally {
+    await materialized.cleanup();
   }
 
-  const uploadDir = storagePathJoin('agent-gateway', 'skill-uploads');
-  await fs.mkdir(uploadDir, { recursive: true });
-  const archivePath = path.join(uploadDir, `${completedUpload.sha256}.zip`);
-  await fs.copyFile(completedUpload.storagePath, archivePath);
-  await fs.chmod(archivePath, 0o600);
-  const source: JsonRecord = {
-    type: 'zip',
-    archivePath,
-    sha256: completedUpload.sha256,
-    sizeBytes: completedUpload.sizeBytes,
-    uploadedAt: new Date().toISOString(),
-  };
+  const solidifiedObject = await solidifySkillArchive(ctx, completedUpload.storageObject, completedUpload.sha256);
+  const source = buildSkillZipSource(solidifiedObject, completedUpload.sha256, completedUpload.sizeBytes);
 
-  ctx.body = await ctx.db.sequelize.transaction(async (transaction) => {
-    const result = await upsertSkillVersion(ctx, values, source, transaction);
-    await ctx.db.getRepository('agFileUploads').update({
-      filterByTk: uploadId,
-      values: { status: 'consumed' },
-      transaction,
+  try {
+    ctx.body = await ctx.db.sequelize.transaction(async (transaction) => {
+      const result = await upsertSkillVersion(ctx, values, source, transaction);
+      await ctx.db.getRepository('agFileUploads').update({
+        filterByTk: uploadId,
+        values: { status: 'consumed' },
+        transaction,
+      });
+      return result;
     });
-    return result;
-  });
-  await fs.rm(completedUpload.storagePath, { force: true });
+  } catch (error) {
+    await deleteSharedStorageObject(getStorageHost(ctx), solidifiedObject).catch(() => undefined);
+    throw error;
+  }
+  await deleteSharedStorageObject(getStorageHost(ctx), completedUpload.storageObject);
 }
 
 function getDateISOString(value: unknown) {
@@ -560,39 +621,38 @@ async function downloadSkillVersionArchive(ctx: Context, skillVersionId: string)
     return;
   }
 
-  const archivePath = getString(source.archivePath);
   const sha256 = getString(source.sha256);
-  if (!archivePath || !SHA256_PATTERN.test(sha256) || requestedSha256 !== sha256) {
+  if (!SHA256_PATTERN.test(sha256) || requestedSha256 !== sha256) {
     notFound();
     return;
   }
 
-  const uploadDir = storagePathJoin('agent-gateway', 'skill-uploads');
-  const [realUploadDir, realArchivePath] = await Promise.all([
-    fs.realpath(uploadDir).catch(() => null),
-    fs.realpath(archivePath).catch(() => null),
-  ]);
-  if (!realUploadDir || !realArchivePath || !isWithinPath(realUploadDir, realArchivePath)) {
+  let storageObject: SharedStorageObject;
+  try {
+    storageObject = parseSkillZipSource(source);
+  } catch {
     notFound();
     return;
   }
-
-  const stat = await fs.stat(realArchivePath).catch(() => null);
-  if (!stat?.isFile()) {
+  const content = await readSharedStorageBuffer(
+    getStorageHost(ctx),
+    storageObject,
+    SKILL_ARCHIVE_LIMITS.maxDownloadBytes,
+  ).catch(() => null);
+  if (!content || content.byteLength !== storageObject.sizeBytes) {
     notFound();
     return;
   }
-
-  const actualSha256 = await sha256File(realArchivePath).catch(() => null);
+  const actualSha256 = createHash('sha256').update(content).digest('hex');
   if (actualSha256 !== sha256) {
     notFound();
     return;
   }
 
   ctx.set('Content-Type', 'application/zip');
-  ctx.set('Content-Length', String(stat.size));
+  ctx.set('Content-Length', String(content.byteLength));
   ctx.set('Content-Disposition', `attachment; filename="${sha256}.zip"`);
-  ctx.body = createReadStream(realArchivePath);
+  ctx.body = content;
 }
 
 export function registerSkillVersionRoutes(plugin: Plugin) {

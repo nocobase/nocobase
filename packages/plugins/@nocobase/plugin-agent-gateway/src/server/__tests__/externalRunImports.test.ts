@@ -74,6 +74,7 @@ describe('agent gateway external run imports', () => {
   beforeEach(async () => {
     app = await createMockServer({
       plugins: [
+        'file-manager',
         'system-settings',
         'field-sort',
         'users',
@@ -1528,8 +1529,9 @@ describe('agent gateway external run imports', () => {
         renderedPrompt: 'managed',
       },
       executionPayload: {
-        provider: 'codex',
+        executionPolicyKey: 'managed-codex',
         prompt: 'managed',
+        cwd: '.',
       },
     });
     expect(managedRunResponse.status).toBe(200);

@@ -621,7 +621,11 @@ describe('agent gateway run lifecycle APIs', () => {
     const installableSkillSource = {
       type: 'zip',
       sha256: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-      archivePath: '/tmp/nb-opencode-ui-batch.zip',
+      storageId: 1,
+      objectPath: 'agent-gateway/skills/aa',
+      objectFilename: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.zip',
+      objectKey: 'agent-gateway/skills/aa/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.zip',
+      sizeBytes: 1024,
     };
     const activeSkill = await app.db.getRepository('agSkills').create({
       values: {
@@ -1341,7 +1345,10 @@ describe('agent gateway run lifecycle APIs', () => {
         metadataJson: {
           source: {
             type: 'zip',
-            archivePath: '/server-only/agent-gateway/uploaded.zip',
+            storageId: 1,
+            objectPath: 'agent-gateway/skills/up',
+            objectFilename: 'uploaded-zip-sha256.zip',
+            objectKey: 'agent-gateway/skills/up/uploaded-zip-sha256.zip',
             sha256: 'uploaded-zip-sha256',
             sizeBytes: 1024,
             uploadedAt: '2026-07-01T00:00:00.000Z',
@@ -1445,8 +1452,10 @@ describe('agent gateway run lifecycle APIs', () => {
         status: 'active',
         metadataJson: {
           source: {
-            type: 'zip',
-            archivePath: '/server-only/agent-gateway/skill-sync-test.zip',
+            type: 'github',
+            repoUrl: 'https://github.com/example/skill-sync-test',
+            commitSha: 'a'.repeat(40),
+            archiveUrl: `https://github.com/example/skill-sync-test/archive/${'a'.repeat(40)}.zip`,
             sha256: 'a'.repeat(64),
           },
         },
@@ -1481,8 +1490,10 @@ describe('agent gateway run lifecycle APIs', () => {
         status: 'active',
         metadataJson: {
           source: {
-            type: 'zip',
-            archivePath: '/server-only/agent-gateway/skill-sync-test-v2.zip',
+            type: 'github',
+            repoUrl: 'https://github.com/example/skill-sync-test',
+            commitSha: 'b'.repeat(40),
+            archiveUrl: `https://github.com/example/skill-sync-test/archive/${'b'.repeat(40)}.zip`,
             sha256: 'b'.repeat(64),
           },
         },

@@ -142,7 +142,11 @@ describe('agent gateway collections', () => {
         expect(registration.allowBusinessRelation, registration.name).toBe(false);
       }
       if (registration.containsStorageLocator) {
-        expect(registration.name === 'agFileUploads' || registration.name === 'agSkillVersions').toBe(true);
+        expect(
+          registration.name === 'agFileUploads' ||
+            registration.name === 'agSkillVersions' ||
+            registration.name === 'agRunArtifacts',
+        ).toBe(true);
       }
     }
   });
@@ -237,14 +241,26 @@ describe('agent gateway collections', () => {
 
   it('defines bounded file upload tracking fields', () => {
     expect(fieldNamesOf('agFileUploads')).toEqual(
-      expect.arrayContaining(['id', 'purpose', 'status', 'expectedBytes', 'receivedBytes', 'storagePath', 'expiresAt']),
+      expect.arrayContaining([
+        'id',
+        'purpose',
+        'status',
+        'expectedBytes',
+        'receivedBytes',
+        'storageId',
+        'objectPath',
+        'objectFilename',
+        'objectKey',
+        'chunkManifestJson',
+        'expiresAt',
+      ]),
     );
     expectRequiredField('agFileUploads', 'purpose');
     expectRequiredField('agFileUploads', 'status');
     expectRequiredField('agFileUploads', 'expectedBytes');
     expectRequiredField('agFileUploads', 'receivedBytes');
-    expectRequiredField('agFileUploads', 'storagePath');
     expectRequiredField('agFileUploads', 'expiresAt');
+    expect(fieldNamesOf('agFileUploads')).not.toContain('storagePath');
   });
 
   it('defines maintenance lease coordination fields', () => {
@@ -302,7 +318,19 @@ describe('agent gateway collections', () => {
     expectRequiredField('agRuns', 'cancelRequested');
 
     expect(fieldNamesOf('agRunArtifacts')).toEqual(
-      expect.arrayContaining(['contentText', 'artifactType', 'mimeType', 'sizeBytes', 'metadataJson']),
+      expect.arrayContaining([
+        'contentText',
+        'artifactType',
+        'mimeType',
+        'sizeBytes',
+        'storageId',
+        'objectPath',
+        'objectFilename',
+        'objectKey',
+        'storageSizeBytes',
+        'storageSha256',
+        'metadataJson',
+      ]),
     );
     expect(fieldNamesOf('agRunControlRequests')).toEqual(
       expect.arrayContaining([
