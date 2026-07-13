@@ -58,7 +58,15 @@ const getResponseFileRecord = (response: unknown) => {
 const normalizeAttachmentUrlFileRecord = (record: Record<string, unknown>, url: string) => {
   const preview = typeof record.preview === 'string' ? record.preview : getPermanentFilePreviewUrl(url);
   const mimetype = typeof record.mimetype === 'string' ? record.mimetype : undefined;
-  const isImage = matchMimetype({ ...record, url }, 'image/*');
+  const isImage = matchMimetype(
+    {
+      ...record,
+      uid: String(record.id ?? url),
+      name: typeof record.filename === 'string' ? record.filename : url,
+      url,
+    },
+    'image/*',
+  );
   return {
     ...record,
     ...(mimetype ? { type: mimetype } : {}),
@@ -82,7 +90,7 @@ export const normalizeAttachmentUrlValue = (
     if (!preview) {
       return value;
     }
-    const isImage = matchMimetype({ url: value }, 'image/*');
+    const isImage = matchMimetype({ uid: value, name: value, url: value }, 'image/*');
     return {
       uid: value,
       id: value,
