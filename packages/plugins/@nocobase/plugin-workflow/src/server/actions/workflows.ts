@@ -51,7 +51,9 @@ export async function list(context: Context, next) {
 
 export async function create(context: Context, next) {
   const plugin = context.app.pm.get(Plugin) as Plugin;
-  const { values } = context.action.params;
+  const values = { ...(context.action.params.values || {}) };
+  delete values.invalid;
+  context.action.mergeParams({ values }, { values: 'overwrite' });
 
   validateWorkflow(context, plugin, values);
 
@@ -128,11 +130,13 @@ export async function destroy(context: Context, next) {
 export async function revision(context: Context, next) {
   const repository = utils.getRepositoryFromParams(context) as WorkflowRepository;
   const { filterByTk, filter = {}, values = {} } = context.action.params;
+  const revisionValues = { ...values };
+  delete revisionValues.invalid;
 
   context.body = await repository.revision({
     filterByTk,
     filter,
-    values,
+    values: revisionValues,
     context,
   });
 
