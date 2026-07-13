@@ -40,6 +40,10 @@ type UploadChangeInfo = {
   fileList: UploadFileItem[];
 };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
 export function useStorage(storage?: string) {
   const app = useApp();
   const name = storage ?? '';
@@ -117,9 +121,11 @@ export const useUploadFiles = () => {
             if (!file?.response?.data) {
               return file;
             }
+            const meta = file.response.data.meta;
+            const source = isRecord(meta) ? meta.source : undefined;
             return {
               ...file.response.data,
-              ...(file.response.data.meta?.source ? { source: file.response.data.meta.source } : {}),
+              ...(source ? { source } : {}),
               status: file.status,
             };
           }
