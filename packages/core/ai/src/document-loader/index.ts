@@ -11,8 +11,12 @@ import { Document } from '@langchain/core/documents';
 import { Worker } from 'node:worker_threads';
 import path from 'node:path';
 
-export const loadByWorker = async (extname: string, blob: Blob): Promise<Document[]> => {
-  const buffer = Buffer.from(await blob.arrayBuffer());
+export type DocumentLoaderWorkerOptions = {
+  filePath: string;
+  mimeType?: string;
+};
+
+export const loadByWorker = async (extname: string, options: DocumentLoaderWorkerOptions): Promise<Document[]> => {
   const isTsRuntime = __filename.endsWith('.ts');
   const workerPath = path.join(__dirname, `loader.worker.${isTsRuntime ? 'ts' : 'js'}`);
   const worker = new Worker(workerPath, {
@@ -48,8 +52,8 @@ export const loadByWorker = async (extname: string, blob: Blob): Promise<Documen
 
     worker.postMessage({
       extname,
-      mimeType: blob.type,
-      buffer: Uint8Array.from(buffer),
+      filePath: options.filePath,
+      mimeType: options.mimeType,
     });
   }).finally(() => {
     worker.terminate().catch(() => undefined);
