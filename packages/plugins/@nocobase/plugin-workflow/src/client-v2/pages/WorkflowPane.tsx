@@ -463,9 +463,19 @@ function WorkflowPaneInner() {
           },
         }),
         render: (value, record) => {
+          const invalidNotices: WorkflowNotice[] =
+            record.invalid === true
+              ? [
+                  {
+                    key: 'workflow-invalid',
+                    message: t('This workflow has configuration issues and may not work properly.'),
+                    type: 'warning',
+                  },
+                ]
+              : [];
           const syncNotices = plugin.getWorkflowNotices({ surface: 'workflow-list-row', workflow: record });
           const asyncNotices = workflowListNotices[String(record.id)] || [];
-          const notices = [...syncNotices, ...asyncNotices];
+          const notices = [...invalidNotices, ...syncNotices, ...asyncNotices];
 
           return <WorkflowTitleCell title={value} notices={notices} maxWidth={workflowTitleMaxWidth} />;
         },

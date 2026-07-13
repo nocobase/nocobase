@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { App, theme } from 'antd';
 import { get } from 'lodash';
 import React from 'react';
@@ -104,6 +104,7 @@ vi.mock('../WorkflowCategoryTabs', () => ({
 
 import { WorkflowFormDrawer } from '../WorkflowFormDrawer';
 import WorkflowPane from '../WorkflowPane';
+import type { WorkflowNotice } from '../../plugin';
 
 const mockPlugin = {
   triggers: { getEntities: () => [['collection', { title: 'Collection event' }]] },
@@ -122,6 +123,15 @@ function makeCtx(resourceMap: Record<string, any>) {
 
 function renderWithApp(node: React.ReactNode) {
   return render(<App>{node}</App>);
+}
+
+function createDeferred<T>() {
+  let resolvePromise: (value: T) => void = () => undefined;
+  const promise = new Promise<T>((resolve) => {
+    resolvePromise = resolve;
+  });
+
+  return { promise, resolve: resolvePromise };
 }
 
 describe('WorkflowPane (request layer)', () => {
@@ -510,6 +520,59 @@ describe('WorkflowPane (request layer)', () => {
     );
   });
 
+  it('renders persisted invalid warnings before asynchronous notices finish loading', async () => {
+    const deferredNotices = createDeferred<Record<string, WorkflowNotice[]>>();
+    mockPlugin.getWorkflowNotices.mockReturnValue([
+      { key: 'sync-provider-notice', message: 'Synchronous provider notice', type: 'warning' },
+    ]);
+    mockPlugin.loadWorkflowListNotices.mockReturnValue(deferredNotices.promise);
+    const workflows = {
+      list: vi.fn().mockResolvedValue({
+        data: {
+          data: [
+            {
+              id: 9,
+              title: 'Invalid workflow',
+              type: 'approval',
+              invalid: true,
+              sync: false,
+              enabled: false,
+              categories: [],
+              stats: { executed: 0 },
+            },
+          ],
+          meta: { count: 1 },
+        },
+      }),
+    };
+    const workflowCategories = { list: vi.fn().mockResolvedValue({ data: { data: [] } }) };
+    holder.ctx = makeCtx({ workflows, workflowCategories });
+
+    renderWithApp(<WorkflowPane />);
+
+    const invalidIcon = await screen.findByRole('img', {
+      name: 'This workflow has configuration issues and may not work properly.',
+    });
+    fireEvent.focus(invalidIcon);
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      'This workflow has configuration issues and may not work properly.',
+    );
+    const titleCell = screen.getByText('Invalid workflow').closest('td');
+    expect(titleCell).not.toBeNull();
+    if (!titleCell) {
+      throw new Error('Expected the invalid workflow title cell to exist');
+    }
+    const syncIcon = screen.getByRole('img', { name: 'Synchronous provider notice' });
+    expect(within(titleCell).getAllByRole('img')).toEqual([invalidIcon, syncIcon]);
+
+    deferredNotices.resolve({
+      9: [{ key: 'provider-notice', message: 'Provider notice', type: 'info' }],
+    });
+
+    const asyncIcon = await screen.findByRole('img', { name: 'Provider notice' });
+    expect(within(titleCell).getAllByRole('img')).toEqual([invalidIcon, syncIcon, asyncIcon]);
+  });
+
   it('maps info workflow row notices to an Ant Design status icon', async () => {
     mockPlugin.loadWorkflowListNotices.mockResolvedValue({
       9: [
@@ -552,7 +615,7 @@ describe('WorkflowPane (request layer)', () => {
     expect(await screen.findByRole('tooltip')).toHaveTextContent('This notice is informational.');
   });
 
-  it('does not render a notice icon for workflows without notices', async () => {
+  it.each([false, undefined])('does not render an invalid notice when invalid is %s', async (invalid) => {
     const workflows = {
       list: vi.fn().mockResolvedValue({
         data: {
@@ -561,6 +624,7 @@ describe('WorkflowPane (request layer)', () => {
               id: 9,
               title: 'Normal workflow',
               type: 'collection',
+              invalid,
               sync: false,
               enabled: false,
               categories: [],

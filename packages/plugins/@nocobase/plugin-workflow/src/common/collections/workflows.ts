@@ -100,9 +100,9 @@ export default {
       defaultValue: {},
     },
     {
-      type: 'jsonb',
-      name: 'validation',
-      defaultValue: {},
+      type: 'boolean',
+      name: 'invalid',
+      defaultValue: false,
     },
     {
       type: 'hasMany',
