@@ -119,9 +119,9 @@ describe('AgentGatewayProviderCapabilitiesPage', () => {
                 runCode: 'AGW-CODEX',
                 status: 'succeeded',
                 sourceType: 'provider-capability-seed',
-                agentProvider: 'codex',
-                agentProviderCapabilitySource: 'adapter',
-                agentProviderCapabilitiesJson: {
+                provider: 'codex',
+                capabilitySource: 'adapter',
+                capabilitiesSnapshotJson: {
                   resumeSession: true,
                   terminalOutput: true,
                   interrupt: true,
@@ -151,9 +151,9 @@ describe('AgentGatewayProviderCapabilitiesPage', () => {
                 runCode: 'AGW-GENERIC',
                 status: 'running',
                 sourceType: 'provider-capability-seed',
-                agentProvider: 'generic-cli',
-                agentProviderCapabilitySource: 'adapter',
-                agentProviderCapabilitiesJson: {
+                provider: 'generic-cli',
+                capabilitySource: 'adapter',
+                capabilitiesSnapshotJson: {
                   terminalOutput: true,
                   terminate: true,
                 },
@@ -183,7 +183,7 @@ describe('AgentGatewayProviderCapabilitiesPage', () => {
 
     renderProviderCapabilitiesPage(request);
 
-    expect(await screen.findByRole('heading', { name: 'Provider Capabilities' })).toBeInTheDocument();
+    expect(await screen.findByRole('region', { name: 'Provider Capabilities' })).toBeInTheDocument();
 
     await waitFor(() => {
       expect(screen.getByText('AGW-CODEX')).toBeInTheDocument();

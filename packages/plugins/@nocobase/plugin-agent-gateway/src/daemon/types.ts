@@ -23,8 +23,8 @@ export interface DetectedAgentProfile {
   agentType: 'code';
   driver: 'exec';
   status: AgentGatewayProfileStatus;
-  capabilities: JsonRecord;
-  metadata: JsonRecord;
+  capabilitiesJson: JsonRecord;
+  metadataJson: JsonRecord;
 }
 
 export interface DaemonConfig {

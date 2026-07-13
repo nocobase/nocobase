@@ -79,10 +79,8 @@ function getInstallValues(
     status,
     installedAt: getDate(values.installedAt) || (status === 'installed' ? now : null),
     lastSeenAt: getDate(values.lastSeenAt) || now,
-    capabilitiesSnapshotJson: getRecord(
-      redactJson(getRecord(values.capabilitiesSnapshotJson || values.capabilitiesSnapshot)),
-    ),
-    settingsSnapshotJson: getRecord(redactJson(getRecord(values.settingsSnapshotJson || values.settingsSnapshot))),
+    capabilitiesSnapshotJson: getRecord(redactJson(getRecord(values.capabilitiesSnapshotJson))),
+    settingsSnapshotJson: getRecord(redactJson(getRecord(values.settingsSnapshotJson))),
   };
 }
 

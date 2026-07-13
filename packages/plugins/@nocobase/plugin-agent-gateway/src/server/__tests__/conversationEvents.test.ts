@@ -11,6 +11,7 @@ import { randomUUID } from 'crypto';
 
 import { MockServer, createMockServer } from '@nocobase/test';
 
+import { normalizeAgentProviderCapabilities } from '../../shared/providerCapabilities';
 import PluginAgentGatewayServer from '../plugin';
 import { createNodeToken, toStoredTokenFields } from '../security';
 import { buildRunObservabilityRollup } from '../services/observationRollup';
@@ -91,11 +92,13 @@ describe('agent gateway conversation event APIs', () => {
       values: {
         nodeId,
         profileKey,
+        provider: 'codex',
         displayName: profileKey,
         agentType: 'code',
         driver: 'exec',
         status: 'active',
         capabilitiesJson: {
+          ...normalizeAgentProviderCapabilities('codex'),
           maxConcurrency: 2,
         },
       },
@@ -118,9 +121,13 @@ describe('agent gateway conversation event APIs', () => {
       promptSnapshot: {
         text: runCode,
       },
-      executionPayload: {
-        commandKey: 'codex',
-        args: ['exec', '--json', `Prompt for ${runCode}`],
+      provider: 'codex',
+      capabilitiesSnapshotJson: normalizeAgentProviderCapabilities('codex'),
+      executionPolicyKey: runner.profileKey,
+      executionPayloadJson: {
+        executionPolicyKey: runner.profileKey,
+        prompt: `Prompt for ${runCode}`,
+        cwd: '.',
       },
     });
     expect(response.status).toBe(200);
@@ -162,7 +169,7 @@ describe('agent gateway conversation event APIs', () => {
         leaseValues(claim, {
           provider: 'codex',
           providerSessionId,
-          capabilities: {
+          capabilitiesJson: {
             detectSessionId: true,
           },
         }),
@@ -176,11 +183,17 @@ describe('agent gateway conversation event APIs', () => {
     runId: unknown,
     values: Record<string, unknown>,
   ) {
+    const { claimToken, claimAttempt, leaseVersion, events, ...event } = values;
     return await app
       .agent()
       .post(`/agentGatewayApi:appendConversationEvents/${runId}`)
       .set('Authorization', `Bearer ${runner.nodeToken}`)
-      .send(values);
+      .send({
+        claimToken,
+        claimAttempt,
+        leaseVersion,
+        events: Array.isArray(events) ? events : [event],
+      });
   }
 
   function registerTestSnippet(name: string, actions: string[]) {
@@ -372,7 +385,6 @@ describe('agent gateway conversation event APIs', () => {
       filterByTk: runId,
       values: {
         agentSessionId: sessionId,
-        agentSessionProvider: 'codex',
         agentSessionProviderId: `cursor-session-${runId}`,
       },
     });
@@ -1212,15 +1224,18 @@ describe('agent gateway conversation event APIs', () => {
           text: 'Hidden scoped prompt',
         },
         executionPayloadJson: {
-          commandKey: 'codex',
+          executionPolicyKey: runner.profileKey,
+          cwd: '.',
         },
+        provider: 'codex',
+        capabilitiesSnapshotJson: normalizeAgentProviderCapabilities('codex'),
+        executionPolicyKey: runner.profileKey,
         requestedAt: new Date(),
         queuedAt: new Date(),
         startedAt: new Date(),
         completedAt: new Date(),
         finishedAt: new Date(),
         agentSessionId: sessionId,
-        agentSessionProvider: 'codex',
         agentSessionProviderId: 'codex-conversation-thread-partial-scope',
       },
     });
@@ -1285,13 +1300,16 @@ describe('agent gateway conversation event APIs', () => {
     const missingNodeTokenResponse = await app
       .agent()
       .post(`/agentGatewayApi:appendConversationEvents/${run.id}`)
-      .send(
-        leaseValues(claim, {
-          source: 'codex',
-          sequence: 1,
-          eventType: 'agent.message',
-        }),
-      );
+      .send({
+        ...leaseValues(claim),
+        events: [
+          {
+            source: 'codex',
+            sequence: 1,
+            eventType: 'agent.message',
+          },
+        ],
+      });
     expect(missingNodeTokenResponse.status).toBe(401);
 
     const wrongClaimTokenResponse = await appendConversationEvents(

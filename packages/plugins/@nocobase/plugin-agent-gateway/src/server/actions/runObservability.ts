@@ -153,10 +153,6 @@ function getOptionalNonNegativeInteger(ctx: Context, value: unknown, name: strin
   return numberValue;
 }
 
-function getPayloadValue(values: JsonRecord, canonicalKey: string, aliasKey: string) {
-  return Object.prototype.hasOwnProperty.call(values, canonicalKey) ? values[canonicalKey] : values[aliasKey];
-}
-
 function serializeModel(model: ModelRecord) {
   return getModelJson(model);
 }
@@ -413,9 +409,9 @@ async function appendEvent(ctx: Context, runId: string) {
         id: randomUUID(),
         ...uniqueFilter,
         level: getString(values.level) || 'info',
-        eventType: getRequiredString(ctx, values.eventType || values.type, 'eventType'),
+        eventType: getRequiredString(ctx, values.eventType, 'eventType'),
         message: getEventMessage(ctx, values.message),
-        payloadJson: getRedactedPayload(ctx, getPayloadValue(values, 'payloadJson', 'payload')),
+        payloadJson: getRedactedPayload(ctx, values.contentJson),
         emittedAt: getDate(values.emittedAt) || now,
       },
       transaction,
@@ -488,7 +484,7 @@ export async function createRunArtifact(ctx: Context, options: CreateRunArtifact
   }
 
   const mimeType = getString(options.values.mimeType) || 'text/plain';
-  const rawMetadata = getRecord(getPayloadValue(options.values, 'metadataJson', 'metadata'));
+  const rawMetadata = getRecord(options.values.metadataJson);
   const metadataWithJsonStatus = {
     ...rawMetadata,
   };
@@ -526,7 +522,7 @@ export async function createRunArtifact(ctx: Context, options: CreateRunArtifact
         runId: options.runId,
         claimAttempt: options.claimAttempt,
         artifactKey,
-        artifactType: getRequiredString(ctx, options.values.artifactType || options.values.type, 'artifactType'),
+        artifactType: getRequiredString(ctx, options.values.artifactType, 'artifactType'),
         mimeType,
         sizeBytes: providedSizeBytes ?? computedSizeBytes,
         originalSizeBytes: metadataOriginalSizeBytes ?? providedSizeBytes ?? computedSizeBytes,
@@ -608,7 +604,7 @@ async function registerSnapshot(ctx: Context, runId: string) {
       return null;
     }
 
-    const snapshotType = getRequiredString(ctx, values.snapshotType || values.type, 'snapshotType');
+    const snapshotType = getRequiredString(ctx, values.snapshotType, 'snapshotType');
     if (!SUPPORTED_SNAPSHOT_TYPES.has(snapshotType)) {
       ctx.throw(400, 'Unsupported snapshot type');
     }
@@ -619,18 +615,8 @@ async function registerSnapshot(ctx: Context, runId: string) {
         runId,
         claimAttempt: lease.claimAttempt,
         snapshotType,
-        snapshotJson: getBoundedRedactedJson(
-          ctx,
-          getPayloadValue(values, 'snapshotJson', 'snapshot'),
-          'Snapshot JSON',
-          MAX_SNAPSHOT_JSON_CHARS,
-        ),
-        metadataJson: getBoundedRedactedJson(
-          ctx,
-          getPayloadValue(values, 'metadataJson', 'metadata'),
-          'Snapshot metadata',
-          MAX_METADATA_JSON_CHARS,
-        ),
+        snapshotJson: getBoundedRedactedJson(ctx, values.snapshotJson, 'Snapshot JSON', MAX_SNAPSHOT_JSON_CHARS),
+        metadataJson: getBoundedRedactedJson(ctx, values.metadataJson, 'Snapshot metadata', MAX_METADATA_JSON_CHARS),
         capturedAt: getDate(values.capturedAt) || new Date(),
       },
       transaction,

@@ -58,11 +58,10 @@ export interface RunRecord {
   parentRunId?: string | null;
   resumedFromRunId?: string | null;
   continuationReason?: string | null;
-  agentSessionProvider?: string | null;
   agentSessionProviderId?: string | null;
-  agentProvider?: string | null;
-  agentProviderCapabilitySource?: string | null;
-  agentProviderCapabilitiesJson?: JsonRecord;
+  provider?: string | null;
+  capabilitySource?: string | null;
+  capabilitiesSnapshotJson?: JsonRecord;
   agentSessionCapabilitiesJson?: JsonRecord;
   agentGatewayActionPermissionsJson?: {
     resumeAgentSession?: boolean;

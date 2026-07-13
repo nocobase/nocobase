@@ -633,8 +633,8 @@ async function reportProviderSessionIfDetected(options: {
         provider: detected.adapter.provider,
         providerSessionId: detected.providerSessionId,
         status: 'active',
-        capabilities,
-        metadata: {
+        capabilitiesJson: capabilities,
+        metadataJson: {
           detectedFrom: 'exec-jsonl',
           provider: detected.adapter.provider,
           upsertAttempt: attempt,
@@ -1045,7 +1045,7 @@ function createRunProgressReporter(options: {
         eventType: `${phase}.${status}`,
         level: event.level || getProgressLevel(status),
         message: event.message || `${phase} ${status}`,
-        payloadJson: compactProgressPayloadJson({
+        contentJson: compactProgressPayloadJson({
           progress: true,
           phase,
           status,
@@ -1567,7 +1567,7 @@ async function terminalizeRun(options: {
   try {
     await options.gateway.registerSnapshot(options.getLease(), {
       snapshotType: 'agent',
-      snapshot: {
+      snapshotJson: {
         status: options.result.status,
         exitCode: options.result.exitCode,
         signal: options.result.signal,

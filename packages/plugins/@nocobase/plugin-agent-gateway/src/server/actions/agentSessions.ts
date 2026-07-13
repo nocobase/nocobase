@@ -585,8 +585,8 @@ async function upsertAgentSession(ctx: Context, nodeId: string, runId: string) {
         : resolvedRootRunId,
       latestRunId,
       status: getSessionStatus(values.status),
-      capabilitiesJson: normalizeAgentProviderCapabilities(provider, values.capabilitiesJson || values.capabilities),
-      metadataJson: getRecord(values.metadataJson || values.metadata),
+      capabilitiesJson: normalizeAgentProviderCapabilities(provider, values.capabilitiesJson),
+      metadataJson: getRecord(values.metadataJson),
     };
     let session: ModelRecord;
     let idempotent = false;
@@ -618,7 +618,6 @@ async function upsertAgentSession(ctx: Context, nodeId: string, runId: string) {
       filterByTk: runId,
       values: {
         agentSessionId: getModelTargetKey(session, 'id'),
-        agentSessionProvider: provider,
         agentSessionProviderId: providerSessionId,
       },
       transaction,
@@ -711,6 +710,9 @@ async function createContinuationRun(options: {
         message: options.message,
         messageHash: options.messageFields.contentHash,
       }),
+      provider: getModelString(options.sourceRun, 'provider'),
+      capabilitiesSnapshotJson: getRecord(getModelValue(options.sourceRun, 'capabilitiesSnapshotJson')),
+      executionPolicyKey: getModelString(options.sourceRun, 'executionPolicyKey'),
       sourceType: 'agent-session-resume',
       requestedAt: now,
       queuedAt: now,
@@ -726,7 +728,6 @@ async function createContinuationRun(options: {
       continuationRequestKey: options.continuationRequestKey,
       continuationRequestedById: options.operatorId,
       continuationRequestedAt: now,
-      agentSessionProvider: options.provider,
       agentSessionProviderId: options.providerSessionId,
     },
     transaction: options.transaction,

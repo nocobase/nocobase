@@ -16,7 +16,6 @@ interface ResumeSourceRun {
   runCode?: string;
   status?: string;
   agentSessionId?: string | null;
-  agentSessionProvider?: string | null;
   agentSessionProviderId?: string | null;
   agentSessionCapabilitiesJson?: {
     resumeSession?: unknown;

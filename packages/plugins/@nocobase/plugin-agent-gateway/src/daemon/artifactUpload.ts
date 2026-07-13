@@ -29,7 +29,7 @@ export interface DeclaredArtifactUpload extends JsonRecord {
   mimeType: string;
   sizeBytes: number;
   contentText: string;
-  metadata: JsonRecord;
+  metadataJson: JsonRecord;
 }
 
 export interface DeclaredArtifactCollectionResult {
@@ -198,12 +198,12 @@ function getArtifactType(filePath: string, declaredType?: string) {
   return 'file';
 }
 
-function getStorageMode(contentText: string, metadata: JsonRecord) {
-  if (getString(metadata.inlineEncoding) === 'data-url') {
+function getStorageMode(contentText: string, metadataJson: JsonRecord) {
+  if (getString(metadataJson.inlineEncoding) === 'data-url') {
     return 'inline';
   }
   if (contentText) {
-    return getBoolean(metadata.truncated) ? 'preview' : 'inline';
+    return getBoolean(metadataJson.truncated) ? 'preview' : 'inline';
   }
   return 'local-path';
 }
@@ -749,7 +749,7 @@ export function buildDeclaredArtifactManifestUpload(manifest: JsonRecord): {
       mimeType: 'application/json',
       sizeBytes: Buffer.byteLength(contentText),
       contentText,
-      metadata: {
+      metadataJson: {
         declaredArtifact: true,
         relativePath: 'artifact-manifest.json',
         fileName: 'artifact-manifest.json',
@@ -858,7 +858,7 @@ async function buildTextArtifactUploadWithBudget(
   const contentText = fitInlineTextUploadBudget(decodeUtf8Chunks(file.capturedChunks), maxUploadBytes);
   const uploadedBytes = Buffer.byteLength(contentText);
 
-  const metadata: JsonRecord = {
+  const metadataJson: JsonRecord = {
     originalSizeBytes: sizeBytes,
     uploadedBytes,
     truncated: file.changedDuringRead || uploadedBytes < sizeBytes,
@@ -868,7 +868,7 @@ async function buildTextArtifactUploadWithBudget(
 
   return {
     contentText,
-    metadata,
+    metadataJson,
     readBytes: file.readBytes,
   };
 }
@@ -910,7 +910,7 @@ export async function buildImageArtifactUpload(
   if (file.changedDuringRead) {
     return {
       contentText: '',
-      metadata: {
+      metadataJson: {
         originalSizeBytes: sizeBytes,
         uploadedBytes: 0,
         truncated: true,
@@ -931,7 +931,7 @@ export async function buildImageArtifactUpload(
           : 'total-upload-budget-exhausted';
     return {
       contentText: '',
-      metadata: {
+      metadataJson: {
         originalSizeBytes: sizeBytes,
         uploadedBytes: 0,
         truncated: true,
@@ -946,7 +946,7 @@ export async function buildImageArtifactUpload(
   const contentText = `data:${mimeType};base64,${content.toString('base64')}`;
   return {
     contentText,
-    metadata: {
+    metadataJson: {
       originalSizeBytes: sizeBytes,
       uploadedBytes: Buffer.byteLength(contentText),
       truncated: false,
@@ -974,14 +974,14 @@ async function buildDeclaredArtifactUpload(
     mimeType,
     sizeBytes: stat.size,
     contentText: upload.contentText,
-    metadata: {
-      ...upload.metadata,
+    metadataJson: {
+      ...upload.metadataJson,
       declaredArtifact: true,
       relativePath: match.relativePath,
       fileName: path.basename(match.filePath),
       ...(match.groupKey ? { artifactGroupKey: match.groupKey } : {}),
       ...(match.groupLabel ? { artifactGroupLabel: match.groupLabel } : {}),
-      storageMode: getStorageMode(upload.contentText, upload.metadata),
+      storageMode: getStorageMode(upload.contentText, upload.metadataJson),
     },
   };
   return {
@@ -997,12 +997,12 @@ function buildArtifactManifestEntry(upload: DeclaredArtifactUpload): ArtifactMan
     artifactType: upload.artifactType,
     mimeType: upload.mimeType,
     sizeBytes: upload.sizeBytes,
-    relativePath: getString(upload.metadata.relativePath),
-    artifactGroupKey: getString(upload.metadata.artifactGroupKey),
-    artifactGroupLabel: getString(upload.metadata.artifactGroupLabel),
-    storageMode: getString(upload.metadata.storageMode),
-    sha256: getString(upload.metadata.sha256),
-    truncated: upload.metadata.truncated === true,
+    relativePath: getString(upload.metadataJson.relativePath),
+    artifactGroupKey: getString(upload.metadataJson.artifactGroupKey),
+    artifactGroupLabel: getString(upload.metadataJson.artifactGroupLabel),
+    storageMode: getString(upload.metadataJson.storageMode),
+    sha256: getString(upload.metadataJson.sha256),
+    truncated: upload.metadataJson.truncated === true,
   };
 }
 

@@ -288,6 +288,9 @@ describe('agent gateway collections', () => {
         'resultSummaryJson',
         'observabilityRollupJson',
         'errorSummary',
+        'provider',
+        'capabilitiesSnapshotJson',
+        'executionPolicyKey',
         'requestedById',
         'requestedBy',
         'finishedAt',
@@ -308,7 +311,6 @@ describe('agent gateway collections', () => {
         'continuationRequestKey',
         'continuationRequestedById',
         'continuationRequestedAt',
-        'agentSessionProvider',
         'agentSessionProviderId',
       ]),
     );
@@ -316,6 +318,9 @@ describe('agent gateway collections', () => {
     expectRequiredField('agRuns', 'claimAttempt');
     expectRequiredField('agRuns', 'leaseVersion');
     expectRequiredField('agRuns', 'cancelRequested');
+    expectRequiredField('agRuns', 'provider');
+    expectRequiredField('agRuns', 'capabilitiesSnapshotJson');
+    expectRequiredField('agRuns', 'executionPolicyKey');
 
     expect(fieldNamesOf('agRunArtifacts')).toEqual(
       expect.arrayContaining([
@@ -570,7 +575,6 @@ describe('agent gateway collections', () => {
       await db.getCollection('agRuns').model.update(
         {
           agentSessionId: agentSession.get('id'),
-          agentSessionProvider: 'codex',
           agentSessionProviderId: 'thread-1',
           continuationRequestKey: 'continue-once',
         },

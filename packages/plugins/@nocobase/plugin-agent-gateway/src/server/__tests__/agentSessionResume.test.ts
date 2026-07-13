@@ -11,6 +11,7 @@ import { randomUUID } from 'crypto';
 
 import { MockServer, createMockServer } from '@nocobase/test';
 
+import { normalizeAgentProviderCapabilities } from '../../shared/providerCapabilities';
 import PluginAgentGatewayServer from '../plugin';
 
 interface ResponseLike {
@@ -114,6 +115,8 @@ describe('agent gateway agent session resume API', () => {
     } = {},
   ) {
     const now = new Date();
+    const provider = options.provider || 'codex';
+    const capabilities = normalizeAgentProviderCapabilities(provider, options.capabilitiesJson);
     const run = await app.db.getRepository('agRuns').create({
       values: {
         id: options.latestRunId || randomUUID(),
@@ -128,10 +131,14 @@ describe('agent gateway agent session resume API', () => {
         executionPayloadJson: {
           commandKey: 'codex',
           profileKey: 'codex',
+          executionPolicyKey: provider,
           args: ['exec', '--json', 'Initial prompt'],
           cwd: 'packages',
           timeoutMs: 12345,
         },
+        provider,
+        capabilitiesSnapshotJson: capabilities,
+        executionPolicyKey: provider,
         sourceType: 'test',
         requestedAt: now,
         queuedAt: now,
@@ -143,23 +150,19 @@ describe('agent gateway agent session resume API', () => {
     const session = await app.db.getRepository('agAgentSessions').create({
       values: {
         id: randomUUID(),
-        provider: options.provider || 'codex',
+        provider,
         providerSessionId:
           options.providerSessionId === undefined ? 'codex-thread-resume-1' : options.providerSessionId,
         rootRunId: run.get('id'),
         latestRunId: run.get('id'),
         status: 'ended',
-        capabilitiesJson: options.capabilitiesJson || {
-          resumeWithMessage: true,
-          detectSessionId: true,
-        },
+        capabilitiesJson: capabilities,
       },
     });
     await app.db.getRepository('agRuns').update({
       filterByTk: run.get('id'),
       values: {
         agentSessionId: session.get('id'),
-        agentSessionProvider: session.get('provider'),
         agentSessionProviderId: session.get('providerSessionId'),
       },
     });
@@ -189,9 +192,13 @@ describe('agent gateway agent session resume API', () => {
         executionPayloadJson: {
           commandKey: 'codex',
           profileKey: 'codex',
+          executionPolicyKey: 'codex',
           args: ['exec', '--json', 'Extra prompt'],
           cwd: 'packages',
         },
+        provider: 'codex',
+        capabilitiesSnapshotJson: normalizeAgentProviderCapabilities('codex'),
+        executionPolicyKey: 'codex',
         sourceType: 'test',
         requestedAt: now,
         queuedAt: now,
@@ -199,7 +206,6 @@ describe('agent gateway agent session resume API', () => {
         completedAt: now,
         finishedAt: now,
         agentSessionId: sessionId,
-        agentSessionProvider: 'codex',
         agentSessionProviderId: 'codex-thread-resume-1',
       },
     });
@@ -245,10 +251,9 @@ describe('agent gateway agent session resume API', () => {
     expect(continuation.get('continuationMessageHash')).toMatch(/^[0-9a-f]{64}$/);
     expect(continuation.get('executionPayloadJson')).toMatchObject({
       mode: 'agent-session-resume',
-      commandKey: 'codex',
+      executionPolicyKey: 'codex',
       providerSessionId: 'codex-thread-resume-1',
       message,
-      args: ['exec', 'resume', '--json', 'codex-thread-resume-1', message],
       cwd: 'packages',
       timeoutMs: 12345,
     });

@@ -220,7 +220,7 @@ async function readArtifact(filePath: string, maxContentBytes: number) {
     mimeType,
     ...(Buffer.isBuffer(content) ? { sizeBytes: content.byteLength } : {}),
     contentText,
-    metadata: {
+    metadataJson: {
       fileName: path.basename(absolutePath),
       sourcePath: absolutePath,
       ...(Buffer.isBuffer(content) ? { originalSizeBytes: content.byteLength } : {}),
@@ -315,7 +315,7 @@ function getInitialRunBody(options: ExternalRunUploadOptions) {
     sourceRecordId: options.sourceRecordId,
     outputAgentRunField: options.outputAgentRunField,
     providerSessionId: options.providerSessionId,
-    metadata: options.metadata || {},
+    metadataJson: options.metadata || {},
   } satisfies JsonRecord;
 }
 
@@ -323,7 +323,7 @@ function getFinalRunBody(options: ExternalRunUploadOptions) {
   return {
     provider: options.provider,
     status: options.status || (options.errorSummary ? 'failed' : 'succeeded'),
-    resultSummary: options.resultSummary || {},
+    resultSummaryJson: options.resultSummary || {},
     errorSummary: options.errorSummary,
     logs: [],
     artifacts: [],

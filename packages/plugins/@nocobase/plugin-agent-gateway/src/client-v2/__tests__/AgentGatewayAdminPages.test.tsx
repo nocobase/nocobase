@@ -344,9 +344,9 @@ describe('Agent Gateway admin pages', () => {
                 sourceType: 'provider-capability-seed',
                 agentSessionId: 'session-codex',
                 agentSessionProviderId: 'codex-thread',
-                agentProvider: 'codex',
-                agentProviderCapabilitySource: 'session',
-                agentProviderCapabilitiesJson: {
+                provider: 'codex',
+                capabilitySource: 'session',
+                capabilitiesSnapshotJson: {
                   resumeSession: true,
                   artifacts: false,
                 },
@@ -868,7 +868,7 @@ describe('Agent Gateway admin pages', () => {
             defaultPrompt: '搭建一个用于浏览器验收的任务页面',
             nodeId: null,
             agentProfileId: null,
-            skillVersionIds: ['uploaded-template-skill-version-id'],
+            skillVersionIdsJson: ['uploaded-template-skill-version-id'],
           }),
         }),
       );

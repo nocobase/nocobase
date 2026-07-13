@@ -7,86 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export const AGENT_GATEWAY_API_RESOURCE = 'agentGatewayApi' as const;
+export * from './contracts';
 
-export const AGENT_GATEWAY_API_ACTIONS = {
-  createNodeInvitation: 'createNodeInvitation',
-  registerNode: 'registerNode',
-  heartbeatNode: 'heartbeatNode',
-  listNodes: 'listNodes',
-  getNode: 'getNode',
-  updateNode: 'updateNode',
-  listNodeProfiles: 'listNodeProfiles',
-  upsertNodeSkillInstall: 'upsertNodeSkillInstall',
-  uploadSkillVersion: 'uploadSkillVersion',
-  createSkillVersionFromUpload: 'createSkillVersionFromUpload',
-  listSkillVersions: 'listSkillVersions',
-  getSkillVersion: 'getSkillVersion',
-  downloadSkillVersion: 'downloadSkillVersion',
-  listRunOptions: 'listRunOptions',
-  createTaskRun: 'createTaskRun',
-  listRuns: 'listRuns',
-  getRun: 'getRun',
-  createRun: 'createRun',
-  claimRun: 'claimRun',
-  heartbeatRun: 'heartbeatRun',
-  completeRun: 'completeRun',
-  failRun: 'failRun',
-  timeoutRun: 'timeoutRun',
-  ackCancelRun: 'ackCancelRun',
-  cancelRun: 'cancelRun',
-  expireRunLeases: 'expireRunLeases',
-  listTaskTemplates: 'listTaskTemplates',
-  getTaskTemplate: 'getTaskTemplate',
-  createTaskTemplate: 'createTaskTemplate',
-  updateTaskTemplate: 'updateTaskTemplate',
-  listPromptTemplates: 'listPromptTemplates',
-  getPromptTemplate: 'getPromptTemplate',
-  createPromptTemplate: 'createPromptTemplate',
-  updatePromptTemplate: 'updatePromptTemplate',
-  destroyPromptTemplate: 'destroyPromptTemplate',
-  previewPromptTemplate: 'previewPromptTemplate',
-  listDispatchBindings: 'listDispatchBindings',
-  getDispatchBinding: 'getDispatchBinding',
-  createDispatchBinding: 'createDispatchBinding',
-  updateDispatchBinding: 'updateDispatchBinding',
-  destroyDispatchBinding: 'destroyDispatchBinding',
-  dispatchBinding: 'dispatchBinding',
-  initFileUpload: 'initFileUpload',
-  appendFileUpload: 'appendFileUpload',
-  completeFileUpload: 'completeFileUpload',
-  abortFileUpload: 'abortFileUpload',
-  upsertAgentSession: 'upsertAgentSession',
-  resumeAgentSession: 'resumeAgentSession',
-  messageAgentSession: 'messageAgentSession',
-  appendConversationEvents: 'appendConversationEvents',
-  listRunConversationEvents: 'listRunConversationEvents',
-  listRunToolCalls: 'listRunToolCalls',
-  listToolCallStats: 'listToolCallStats',
-  listSessionConversationEvents: 'listSessionConversationEvents',
-  appendRunEvents: 'appendRunEvents',
-  registerRunArtifact: 'registerRunArtifact',
-  registerRunSnapshot: 'registerRunSnapshot',
-  listRunEvents: 'listRunEvents',
-  listRunArtifacts: 'listRunArtifacts',
-  listRunSnapshots: 'listRunSnapshots',
-  listRunApiCallLogs: 'listRunApiCallLogs',
-  getRunArtifactContent: 'getRunArtifactContent',
-  importExternalRun: 'importExternalRun',
-  appendExternalRunObservations: 'appendExternalRunObservations',
-  createTerminalStreamTicket: 'createTerminalStreamTicket',
-  getTerminalSnapshot: 'getTerminalSnapshot',
-  sendTerminalInput: 'sendTerminalInput',
-  interruptTerminal: 'interruptTerminal',
-  terminateTerminal: 'terminateTerminal',
-  updateRunTerminal: 'updateRunTerminal',
-  getControlRequestStatus: 'getControlRequestStatus',
-  listPendingControlRequests: 'listPendingControlRequests',
-  ackControlRequest: 'ackControlRequest',
-  getTerminalStreamStats: 'getTerminalStreamStats',
-} as const;
-
-export type AgentGatewayApiAction = (typeof AGENT_GATEWAY_API_ACTIONS)[keyof typeof AGENT_GATEWAY_API_ACTIONS];
+import { AGENT_GATEWAY_API_ACTIONS } from './contracts';
 
 export const AGENT_GATEWAY_MACHINE_API_ACTIONS = [
   AGENT_GATEWAY_API_ACTIONS.registerNode,
@@ -145,40 +68,3 @@ export const AGENT_GATEWAY_MANAGE_API_ACTIONS = [
   AGENT_GATEWAY_API_ACTIONS.abortFileUpload,
   AGENT_GATEWAY_API_ACTIONS.getTerminalStreamStats,
 ] as const;
-
-export function getAgentGatewayApiActionName(action: AgentGatewayApiAction) {
-  return `${AGENT_GATEWAY_API_RESOURCE}:${action}`;
-}
-
-export function getAgentGatewayApiUrl(action: AgentGatewayApiAction, targetKey?: string | number) {
-  const suffix = targetKey === undefined ? '' : `/${encodeURIComponent(String(targetKey))}`;
-  return `${getAgentGatewayApiActionName(action)}${suffix}`;
-}
-
-export function getAgentGatewayApiPath(action: AgentGatewayApiAction, targetKey?: string | number) {
-  return `/api/${getAgentGatewayApiUrl(action, targetKey)}`;
-}
-
-export interface AgentGatewayPaginationMeta {
-  count: number;
-  page: number;
-  pageSize: number;
-  totalPage: number;
-}
-
-export interface AgentGatewaySkillVersionSummary {
-  id: string;
-  skillVersionId: string;
-  skillId: string | null;
-  skillKey: string | null;
-  displayName: string | null;
-  skillStatus: string | null;
-  versionLabel: string;
-  status: string;
-  sourceType: string | null;
-  sourceSha256: string | null;
-  sourceSizeBytes: number | null;
-  sourceUploadedAt: string | null;
-  createdAt: string | null;
-  updatedAt: string | null;
-}

@@ -65,7 +65,7 @@ export class AgentGatewayDaemonNodeClient {
                 platform: platform(),
                 arch: arch(),
               },
-              capabilities: {
+              capabilitiesJson: {
                 maxConcurrency: 1,
                 supportsExecDriver: true,
                 supportsArtifacts: true,
@@ -110,7 +110,6 @@ export class AgentGatewayDaemonNodeClient {
       path: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatRun, lease.runId),
       nodeToken: this.config.nodeToken,
       body: {
-        nodeId: this.config.nodeId,
         claimToken: lease.claimToken,
         claimAttempt: lease.claimAttempt,
         leaseVersion: lease.leaseVersion,
@@ -210,11 +209,10 @@ export class AgentGatewayDaemonNodeClient {
       path: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.completeRun, lease.runId),
       nodeToken: this.config.nodeToken,
       body: {
-        nodeId: this.config.nodeId,
         claimToken: lease.claimToken,
         claimAttempt: lease.claimAttempt,
         leaseVersion: lease.leaseVersion,
-        resultSummary,
+        resultSummaryJson: resultSummary,
       },
     });
   }
@@ -225,12 +223,11 @@ export class AgentGatewayDaemonNodeClient {
       path: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.failRun, lease.runId),
       nodeToken: this.config.nodeToken,
       body: {
-        nodeId: this.config.nodeId,
         claimToken: lease.claimToken,
         claimAttempt: lease.claimAttempt,
         leaseVersion: lease.leaseVersion,
         errorSummary,
-        resultSummary,
+        resultSummaryJson: resultSummary,
       },
     });
   }
@@ -241,7 +238,6 @@ export class AgentGatewayDaemonNodeClient {
       path: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.timeoutRun, lease.runId),
       nodeToken: this.config.nodeToken,
       body: {
-        nodeId: this.config.nodeId,
         claimToken: lease.claimToken,
         claimAttempt: lease.claimAttempt,
         leaseVersion: lease.leaseVersion,
@@ -256,7 +252,6 @@ export class AgentGatewayDaemonNodeClient {
       path: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.ackCancelRun, lease.runId),
       nodeToken: this.config.nodeToken,
       body: {
-        nodeId: this.config.nodeId,
         claimToken: lease.claimToken,
         claimAttempt: lease.claimAttempt,
         leaseVersion: lease.leaseVersion,
@@ -299,11 +294,23 @@ export class AgentGatewayDaemonNodeClient {
   }
 
   async upsertSkillInstall(payload: NodeSkillInstallPayload) {
+    const body = {
+      skillVersionId: payload.skillVersionId,
+      status: payload.status,
+      installedAt: payload.installedAt,
+      lastSeenAt: payload.lastSeenAt,
+      capabilitiesSnapshotJson: payload.capabilitiesSnapshotJson,
+      settingsSnapshotJson: payload.settingsSnapshotJson,
+      capabilityToken: payload.capabilityToken,
+      runId: payload.runId,
+      claimAttempt: payload.claimAttempt,
+      sourceSha256: payload.sourceSha256,
+    };
     await this.requester.request({
       method: 'POST',
       path: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.upsertNodeSkillInstall, this.config.nodeId),
       nodeToken: this.config.nodeToken,
-      body: payload,
+      body,
     });
   }
 }

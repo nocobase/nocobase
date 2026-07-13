@@ -155,7 +155,7 @@ async function initUpload(ctx: Context) {
       receivedBytes: 0,
       chunkManifestJson: [],
       expiresAt: new Date(Date.now() + UPLOAD_TTL_MS),
-      metadataJson: getRecord(values.metadata),
+      metadataJson: getRecord(values.metadataJson),
     },
   })) as ModelRecord;
   ctx.body = { ...serializeUpload(upload), chunkSize: MAX_CHUNK_BYTES };

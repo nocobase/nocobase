@@ -350,20 +350,18 @@ function getTemplatePayload(ctx: Context, values: JsonRecord, options: TemplateP
   if (hasOwnKey(values, 'status') || !options.partial) {
     payload.status = getTemplateStatus(ctx, values.status);
   }
-  if (hasOwnKey(values, 'variablesSchemaJson') || hasOwnKey(values, 'variablesSchema')) {
-    payload.variablesSchemaJson = getRecord(values.variablesSchemaJson || values.variablesSchema);
+  if (hasOwnKey(values, 'variablesSchemaJson')) {
+    payload.variablesSchemaJson = getRecord(values.variablesSchemaJson);
   } else if (!options.partial) {
     payload.variablesSchemaJson = {};
   }
-  if (hasOwnKey(values, 'defaultExecutionPayloadJson') || hasOwnKey(values, 'defaultExecutionPayload')) {
-    payload.defaultExecutionPayloadJson = getRecord(
-      values.defaultExecutionPayloadJson || values.defaultExecutionPayload,
-    );
+  if (hasOwnKey(values, 'defaultExecutionPayloadJson')) {
+    payload.defaultExecutionPayloadJson = getRecord(values.defaultExecutionPayloadJson);
   } else if (!options.partial) {
     payload.defaultExecutionPayloadJson = {};
   }
-  if (hasOwnKey(values, 'metadataJson') || hasOwnKey(values, 'metadata')) {
-    payload.metadataJson = getRecord(values.metadataJson || values.metadata);
+  if (hasOwnKey(values, 'metadataJson')) {
+    payload.metadataJson = getRecord(values.metadataJson);
   } else if (!options.partial) {
     payload.metadataJson = {};
   }

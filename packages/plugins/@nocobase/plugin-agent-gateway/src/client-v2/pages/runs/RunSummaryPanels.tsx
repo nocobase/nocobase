@@ -72,7 +72,7 @@ export function RunRunnerSummary({ run, t }: { run: RunRecord; t: TFunction }) {
 }
 
 function RunSessionSummary({ run, t }: { run: RunRecord; t: TFunction }) {
-  const providerSummary = [run.agentSessionProvider, run.agentSessionProviderId].filter(Boolean).join(' / ');
+  const providerSummary = [run.provider, run.agentSessionProviderId].filter(Boolean).join(' / ');
   if (!providerSummary && !run.agentSessionId) {
     return <Typography.Text type="secondary">{t('No agent session')}</Typography.Text>;
   }
@@ -171,7 +171,7 @@ export function RunSummaryPanel({ run, t }: { run: RunRecord; t: TFunction }) {
       <Descriptions.Item label={t('Provider capabilities')} span={2}>
         <Space wrap>
           {Object.entries(
-            normalizeAgentProviderCapabilities(run.agentProvider || 'generic-cli', run.agentProviderCapabilitiesJson),
+            normalizeAgentProviderCapabilities(run.provider || 'generic-cli', run.capabilitiesSnapshotJson),
           )
             .filter(([key]) =>
               [

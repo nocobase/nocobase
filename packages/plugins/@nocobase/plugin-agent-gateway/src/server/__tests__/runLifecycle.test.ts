@@ -83,6 +83,7 @@ describe('agent gateway run lifecycle APIs', () => {
   ): Promise<TestRunner> {
     const nodeKey = options.nodeKey || 'node-1';
     const profileKey = options.profileKey || 'fake-success';
+    const profileProvider = options.profileProvider || (profileKey === 'codex' ? 'codex' : 'generic-cli');
     const nodeToken = createNodeToken();
     const now = new Date();
     const lastHeartbeatAt = options.lastHeartbeatAt || now;
@@ -105,7 +106,7 @@ describe('agent gateway run lifecycle APIs', () => {
       values: {
         nodeId,
         profileKey,
-        provider: options.profileProvider,
+        provider: profileProvider,
         displayName: profileKey,
         agentType: 'code',
         driver: 'fake',
@@ -121,7 +122,7 @@ describe('agent gateway run lifecycle APIs', () => {
       nodeToken: nodeToken.token,
       profileId: String(profile.get('id')),
       profileKey,
-      profileProvider: options.profileProvider,
+      profileProvider,
     };
   }
 
@@ -132,13 +133,18 @@ describe('agent gateway run lifecycle APIs', () => {
         })
       : null;
     const executionPolicyKey = profile ? String(profile.get('profileKey')) : 'fake-success';
+    const provider = profile ? String(profile.get('provider')) : 'generic-cli';
+    const capabilitiesSnapshotJson = profile ? profile.get('capabilitiesJson') : {};
     const response = await rootAgent.post('/agentGatewayApi:createRun').send({
       runCode,
       sourceType: 'test',
       promptSnapshot: {
         text: `Prompt for ${runCode}`,
       },
-      executionPayload: {
+      provider,
+      capabilitiesSnapshotJson,
+      executionPolicyKey,
+      executionPayloadJson: {
         executionPolicyKey,
         task: runCode,
         prompt: `Prompt for ${runCode}`,
@@ -194,9 +200,6 @@ describe('agent gateway run lifecycle APIs', () => {
       .set('Authorization', `Bearer ${runner.nodeToken}`)
       .send({
         profileKey: runner.profileKey,
-        capabilities: {
-          maxConcurrency: 999,
-        },
         ...values,
       });
   }
@@ -273,7 +276,10 @@ describe('agent gateway run lifecycle APIs', () => {
     const response = await rootAgent.post('/agentGatewayApi:createRun').send({
       runCode: `run-reject-${field}`,
       sourceType: 'test',
-      executionPayload: {
+      provider: 'codex',
+      capabilitiesSnapshotJson: {},
+      executionPolicyKey: 'codex',
+      executionPayloadJson: {
         executionPolicyKey: 'codex',
         prompt: 'Safe prompt',
         cwd: '.',
@@ -306,6 +312,9 @@ describe('agent gateway run lifecycle APIs', () => {
         leaseVersion: 0,
         cancelRequested: false,
         sourceType: 'manual-ui-build',
+        provider: 'codex',
+        capabilitiesSnapshotJson: {},
+        executionPolicyKey: 'codex',
         requestedAt: now,
         queuedAt: now,
         nodeId: staleRunner.nodeId,
@@ -525,7 +534,7 @@ describe('agent gateway run lifecycle APIs', () => {
       nodeId: runner.nodeId,
       agentProfileId: runner.profileId,
       artifactRoot: 'storage/agent-gateway',
-      artifacts: [
+      artifactsJson: [
         {
           glob: 'screenshots/**/*.png',
           groupLabel: 'Screenshots',
@@ -790,7 +799,7 @@ describe('agent gateway run lifecycle APIs', () => {
     });
   });
 
-  it('includes agent session capabilities in management run list and details', async () => {
+  it('uses the persisted run capability snapshot in management run list and details', async () => {
     const now = new Date();
     const session = await app.db.getRepository('agAgentSessions').create({
       values: {
@@ -800,7 +809,7 @@ describe('agent gateway run lifecycle APIs', () => {
         status: 'ended',
         capabilitiesJson: {
           resumeWithMessage: false,
-          detectSessionId: true,
+          detectSessionId: false,
         },
       },
     });
@@ -817,8 +826,13 @@ describe('agent gateway run lifecycle APIs', () => {
         startedAt: now,
         completedAt: now,
         finishedAt: now,
+        provider: 'codex',
+        capabilitiesSnapshotJson: {
+          resumeWithMessage: false,
+          detectSessionId: true,
+        },
+        executionPolicyKey: 'codex',
         agentSessionId: session.get('id'),
-        agentSessionProvider: 'codex',
         agentSessionProviderId: session.get('providerSessionId'),
       },
     });
@@ -1013,11 +1027,21 @@ describe('agent gateway run lifecycle APIs', () => {
     });
   });
 
-  it('ignores session and continuation lineage fields when dispatch creates queued runs', async () => {
+  it('rejects session and continuation lineage fields on canonical run creation', async () => {
     const parentRun = await seedQueuedRun('run-parent-for-continuation');
     const continuationRequestedAt = '2026-07-01T00:00:00.000Z';
 
-    const run = await createRun('run-continuation-create-1', {
+    const response = await rootAgent.post('/agentGatewayApi:createRun').send({
+      runCode: 'run-continuation-create-1',
+      sourceType: 'test',
+      provider: 'generic-cli',
+      capabilitiesSnapshotJson: {},
+      executionPolicyKey: 'fake-success',
+      executionPayloadJson: {
+        executionPolicyKey: 'fake-success',
+        prompt: 'Prompt for run-continuation-create-1',
+        cwd: '.',
+      },
       agentSessionId: '11111111-1111-4111-8111-111111111111',
       parentRunId: parentRun.get('id'),
       resumedFromRunId: parentRun.get('id'),
@@ -1028,25 +1052,10 @@ describe('agent gateway run lifecycle APIs', () => {
       continuationRequestKey: 'request-1',
       continuationRequestedById: '1',
       continuationRequestedAt,
-      agentSessionProvider: 'codex',
       agentSessionProviderId: 'thread-create-1',
     });
-
-    const storedRun = await app.db.getRepository('agRuns').findOne({
-      filterByTk: run.id,
-    });
-    expect(storedRun.get('agentSessionId')).toBeFalsy();
-    expect(storedRun.get('parentRunId')).toBeFalsy();
-    expect(storedRun.get('resumedFromRunId')).toBeFalsy();
-    expect(storedRun.get('continuationReason')).toBeFalsy();
-    expect(storedRun.get('continuationMessagePreview')).toBeFalsy();
-    expect(storedRun.get('continuationMessageHash')).toBeFalsy();
-    expect(storedRun.get('continuationIdempotencyKey')).toBeFalsy();
-    expect(storedRun.get('continuationRequestKey')).toBeFalsy();
-    expect(storedRun.get('continuationRequestedById')).toBeFalsy();
-    expect(storedRun.get('continuationRequestedAt')).toBeFalsy();
-    expect(storedRun.get('agentSessionProvider')).toBeFalsy();
-    expect(storedRun.get('agentSessionProviderId')).toBeFalsy();
+    expect(response.status).toBe(400);
+    expect(await app.db.getRepository('agRuns').count({ filter: { runCode: 'run-continuation-create-1' } })).toBe(0);
   });
 
   it('claims a queued run once and enforces persisted node/profile concurrency', async () => {
@@ -1071,7 +1080,18 @@ describe('agent gateway run lifecycle APIs', () => {
     expect(Date.parse(String(claim.serverTime))).toBeGreaterThan(0);
     expect(Date.parse(String(claim.claimExpiresAt)) - Date.parse(String(claim.serverTime))).toBe(claim.leaseTtlMs);
     expect(claim).not.toHaveProperty('nodeCapabilities');
-    expect(claim.profileCapabilities).toEqual({});
+    expect(claim.profileCapabilities).toEqual({
+      structuredEvents: false,
+      liveSemanticMessage: false,
+      resumeSession: false,
+      resumeWithMessage: false,
+      stdinMessage: false,
+      detectSessionId: false,
+      terminalOutput: true,
+      artifacts: false,
+      interrupt: false,
+      terminate: true,
+    });
     expect(claim.executionPolicyKey).toBe(runner.profileKey);
     expect(claim.run).toMatchObject({
       id: firstRun.id,
@@ -1170,7 +1190,7 @@ describe('agent gateway run lifecycle APIs', () => {
       claimToken: firstClaim.claimToken,
       claimAttempt: firstClaim.claimAttempt,
       leaseVersion: resumedHeartbeat.leaseVersion,
-      resultSummary: {
+      resultSummaryJson: {
         recovered: true,
       },
     });
@@ -1188,7 +1208,7 @@ describe('agent gateway run lifecycle APIs', () => {
     });
     const run = await createRun('run-custom-provider', {
       agentProfileId: runner.profileId,
-      executionPayload: {
+      executionPayloadJson: {
         executionPolicyKey: 'custom-codex',
         prompt: 'Prompt for run-custom-provider',
         cwd: '.',
@@ -1524,10 +1544,10 @@ describe('agent gateway run lifecycle APIs', () => {
         runId: claim.runId,
         claimAttempt: claim.claimAttempt,
         sourceSha256: source.sha256,
-        capabilitiesSnapshot: {
+        capabilitiesSnapshotJson: {
           skillRootPath: '/workspace/skills/v1',
         },
-        settingsSnapshot: {
+        settingsSnapshotJson: {
           versionLabel: 'v1',
         },
       });
@@ -1549,7 +1569,7 @@ describe('agent gateway run lifecycle APIs', () => {
       .send({
         skillVersionId: skillVersion.get('id'),
         status: 'installed',
-        capabilitiesSnapshot: {
+        capabilitiesSnapshotJson: {
           skillRootPath: '/workspace/skills/v1',
         },
       });
@@ -1763,7 +1783,7 @@ describe('agent gateway run lifecycle APIs', () => {
       claimToken: claim.claimToken,
       claimAttempt: claim.claimAttempt,
       leaseVersion: heartbeat.leaseVersion,
-      resultSummary: {
+      resultSummaryJson: {
         command: 'must-not-render',
         cwd: '/tmp/must-not-render',
         env: {
@@ -1809,7 +1829,7 @@ describe('agent gateway run lifecycle APIs', () => {
       claimToken: failedClaim.claimToken,
       claimAttempt: failedClaim.claimAttempt,
       leaseVersion: failedClaim.leaseVersion,
-      resultSummary: {
+      resultSummaryJson: {
         commandPath: 'must-not-render',
       },
       errorSummary: 'command=must-not-render cwd=/tmp/must-not-render env.SECRET=must-not-render token=FAIL_SECRET',
@@ -1885,7 +1905,7 @@ describe('agent gateway run lifecycle APIs', () => {
       claimToken: claim.claimToken,
       claimAttempt: claim.claimAttempt,
       leaseVersion: heartbeat.leaseVersion,
-      resultSummary: {
+      resultSummaryJson: {
         status: 'succeeded',
       },
     });
@@ -1988,7 +2008,7 @@ describe('agent gateway run lifecycle APIs', () => {
       claimToken: claim.claimToken,
       claimAttempt: claim.claimAttempt,
       leaseVersion: heartbeat.leaseVersion,
-      resultSummary: {
+      resultSummaryJson: {
         title: 'Terminal token fallback',
       },
     });
@@ -2046,7 +2066,7 @@ describe('agent gateway run lifecycle APIs', () => {
       claimToken: claim.claimToken,
       claimAttempt: claim.claimAttempt,
       leaseVersion: heartbeat.leaseVersion,
-      resultSummary: {
+      resultSummaryJson: {
         ok: true,
       },
     });
@@ -2090,7 +2110,7 @@ describe('agent gateway run lifecycle APIs', () => {
       claimToken: claim.claimToken,
       claimAttempt: claim.claimAttempt,
       leaseVersion: claim.leaseVersion,
-      resultSummary: {
+      resultSummaryJson: {
         ok: true,
       },
     });
@@ -2301,7 +2321,7 @@ describe('agent gateway run lifecycle APIs', () => {
       claimToken: timeoutClaim.claimToken,
       claimAttempt: timeoutClaim.claimAttempt,
       leaseVersion: timeout.leaseVersion,
-      resultSummary: {
+      resultSummaryJson: {
         ok: true,
       },
     });

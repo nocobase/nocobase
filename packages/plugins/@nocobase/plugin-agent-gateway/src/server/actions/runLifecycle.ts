@@ -62,6 +62,7 @@ import {
 } from './taskTemplates';
 import { AGENT_GATEWAY_TERMINATE_CONTROL_CANCEL_REASON } from '../../shared/runControl';
 import { EXTERNAL_IMPORT_USER_CANCELED_ERROR_SUMMARY } from '../../shared/externalRunImport';
+import { getExplicitAgentProviderKey, normalizeAgentProviderCapabilities } from '../../shared/providerCapabilities';
 import {
   ACTIVE_RUN_STATUSES,
   ActiveRunStatus,
@@ -119,7 +120,6 @@ const FORBIDDEN_REMOTE_EXECUTION_FIELDS = new Set([
   'commandKey',
   'profileKey',
   'provider',
-  'agentProvider',
   'workspaceRoot',
   'additionalWritableDirs',
   'config',
@@ -648,21 +648,11 @@ async function findActiveProfile(ctx: Context, profileId: string, transaction: T
 }
 
 function getBuildRunProfileKeyFromRun(run: ModelRecord, profile: ModelRecord | null) {
-  const payload = getRecord(getModelValue(run, 'executionPayloadJson'));
-  return (
-    getString(payload.executionPolicyKey) ||
-    (profile ? getModelString(profile, 'profileKey') : '') ||
-    DEFAULT_TASK_RUN_PROFILE_KEY
-  );
+  return getModelString(run, 'executionPolicyKey') || (profile ? getModelString(profile, 'profileKey') : '');
 }
 
-function getBuildRunProviderFromRun(run: ModelRecord, profile: ModelRecord | null) {
-  const payload = getRecord(getModelValue(run, 'executionPayloadJson'));
-  return (
-    getString(payload.provider) ||
-    getString(payload.agentProvider) ||
-    (profile ? getModelString(profile, 'provider') : '')
-  );
+function getBuildRunProviderFromRun(run: ModelRecord) {
+  return getModelString(run, 'provider');
 }
 
 async function findOnlineBuildRunnerFallback(
@@ -770,7 +760,7 @@ async function findFallbackForQueuedBuildRun(
   }
 
   const profileKey = getBuildRunProfileKeyFromRun(run, currentRunner.profile);
-  const provider = getBuildRunProviderFromRun(run, currentRunner.profile);
+  const provider = getBuildRunProviderFromRun(run);
   const fallback = await findOnlineBuildRunnerFallback(ctx, { profileKey, provider }, transaction);
   if (!fallback) {
     return null;
@@ -788,10 +778,8 @@ function applyBuildRunnerFallbackToRun(run: MutableModelRecord, fallback: BuildR
   const payload = getRecord(getModelValue(run, 'executionPayloadJson'));
   run.set('nodeId', getModelTargetKey(fallback.node, 'id'));
   run.set('agentProfileId', getModelTargetKey(fallback.profile, 'id'));
-  run.set('executionPayloadJson', {
-    ...payload,
-    executionPolicyKey: getString(payload.executionPolicyKey) || profileKey,
-  });
+  run.set('executionPayloadJson', { ...payload, executionPolicyKey: profileKey });
+  run.set('executionPolicyKey', profileKey);
 }
 
 async function resolveBuildRunnerSelection(
@@ -1380,9 +1368,9 @@ export async function serializeRunForManagement(
           agentSessionCapabilitiesJson: capabilitySummary.capabilities,
         }
       : {}),
-    agentProvider: capabilitySummary.provider,
-    agentProviderCapabilitySource: capabilitySummary.providerSource,
-    agentProviderCapabilitiesJson: capabilitySummary.capabilities,
+    provider: capabilitySummary.provider,
+    capabilitySource: capabilitySummary.providerSource,
+    capabilitiesSnapshotJson: capabilitySummary.capabilities,
     agentGatewayActionPermissionsJson: {
       resumeAgentSession: actionPermissions.resumeAgentSession,
       readSessionMessages: actionPermissions.readSessionMessages,
@@ -1625,9 +1613,17 @@ async function createRun(ctx: Context) {
 
   const values = getBodyValues(ctx);
   const sourceType = getString(values.sourceType) || 'manual';
+  const provider = getExplicitAgentProviderKey(values.provider);
+  if (!provider) {
+    ctx.throw(400, 'provider is required');
+  }
+  const executionPolicyKey = getString(values.executionPolicyKey);
+  if (!executionPolicyKey) {
+    ctx.throw(400, 'executionPolicyKey is required');
+  }
   const now = new Date();
   const promptSnapshot = getRecord(values.promptSnapshot);
-  const rawExecutionPayload = getRecord(values.executionPayloadJson || values.executionPayload);
+  const rawExecutionPayload = getRecord(values.executionPayloadJson);
   assertSafeRemoteExecutionPayload(ctx, rawExecutionPayload);
   const hasExecutionPrompt = Boolean(getString(rawExecutionPayload.prompt) || getString(rawExecutionPayload.message));
   const renderedPrompt = hasExecutionPrompt ? '' : getString(promptSnapshot.renderedPrompt);
@@ -1646,6 +1642,12 @@ async function createRun(ctx: Context) {
       cancelRequested: false,
       promptSnapshot,
       executionPayloadJson,
+      provider,
+      capabilitiesSnapshotJson: normalizeAgentProviderCapabilities(
+        provider,
+        getRecord(values.capabilitiesSnapshotJson),
+      ),
+      executionPolicyKey,
       sourceType,
       sourceCollection: getString(values.sourceCollection) || null,
       sourceRecordId: getString(values.sourceRecordId) || null,
@@ -1690,6 +1692,14 @@ async function createTaskRun(ctx: Context) {
     const nodeId = String(getModelTargetKey(selection.node, 'id'));
     const agentProfileId = String(getModelTargetKey(selection.profile, 'id'));
     const profileKey = getModelString(selection.profile, 'profileKey');
+    const provider = getExplicitAgentProviderKey(getModelString(selection.profile, 'provider'));
+    if (!provider) {
+      ctx.throw(409, 'Selected agent profile provider is invalid');
+    }
+    const capabilitiesSnapshotJson = normalizeAgentProviderCapabilities(
+      provider,
+      getRecord(getModelValue(selection.profile, 'capabilitiesJson')),
+    );
     const cwd = getString(values.cwd) || '.';
     const now = new Date();
     const artifactPayload = getTaskRunArtifactPayload(values);
@@ -1739,6 +1749,9 @@ async function createTaskRun(ctx: Context) {
           renderedAt: now.toISOString(),
         },
         executionPayloadJson,
+        provider,
+        capabilitiesSnapshotJson,
+        executionPolicyKey: profileKey,
         resultSummaryJson: {
           title: getString(values.title) || null,
           requestedFrom: 'agent-gateway-ui',
@@ -2185,8 +2198,8 @@ async function claimRun(ctx: Context, nodeId: string) {
       claimToken: claimToken.token,
       tokenLast4: claimToken.tokenLast4,
       heartbeatIntervalSeconds: Math.min(DEFAULT_CLAIM_LEASE_SECONDS, 30),
-      executionPolicyKey: getString(getRecord(getModelValue(claimedRun, 'executionPayloadJson')).executionPolicyKey),
-      profileCapabilities: serializeClaimProfileCapabilities(getModelValue(candidate.profile, 'capabilitiesJson')),
+      executionPolicyKey: getModelString(claimedRun, 'executionPolicyKey'),
+      profileCapabilities: serializeClaimProfileCapabilities(getModelValue(claimedRun, 'capabilitiesSnapshotJson')),
       run: await serializeRunForNodeClaim(ctx, claimedRun, transaction),
     };
   });
@@ -2700,7 +2713,7 @@ async function completeRun(ctx: Context, nodeId: string, runId: string) {
     runId,
     'succeeded',
     (values, now, run) => ({
-      resultSummaryJson: mergeTerminalResultSummary(run, values.resultSummaryJson || values.resultSummary),
+      resultSummaryJson: mergeTerminalResultSummary(run, values.resultSummaryJson),
       completedAt: now,
     }),
     ['running', 'finalizing'],
@@ -2714,7 +2727,7 @@ async function failRun(ctx: Context, nodeId: string, runId: string) {
     runId,
     'failed',
     (values, now, run) => ({
-      resultSummaryJson: mergeTerminalResultSummary(run, values.resultSummaryJson || values.resultSummary),
+      resultSummaryJson: mergeTerminalResultSummary(run, values.resultSummaryJson),
       errorSummary: getString(values.errorSummary) ? redactRunErrorSummary(getString(values.errorSummary)) : null,
       failedAt: now,
     }),

@@ -98,10 +98,10 @@ describe('agent gateway daemon lifecycle client', () => {
           agentType: 'code',
           driver: 'exec',
           status: 'active',
-          capabilities: {
+          capabilitiesJson: {
             executionPolicyKey: 'opencode',
           },
-          metadata: {},
+          metadataJson: {},
         },
       ],
     });
@@ -177,7 +177,7 @@ describe('agent gateway daemon lifecycle client', () => {
     expect(requester.calls[0].body).toMatchObject({
       profiles: [],
       profilesHash: 'profiles-hash-1',
-      capabilities: expect.any(Object),
+      capabilitiesJson: expect.any(Object),
       hostInfo: expect.any(Object),
     });
     expect(requester.calls[1].body).toEqual({

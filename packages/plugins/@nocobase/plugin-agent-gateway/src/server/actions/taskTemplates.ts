@@ -183,20 +183,13 @@ function getTaskTemplatePayload(ctx: Context, values: JsonRecord, options: TaskT
   if (!options.partial || hasOwnKey(values, 'sort')) {
     payload.sort = getOptionalInteger(values.sort, 0);
   }
-  if (hasOwnKey(values, 'defaultTitle') || hasOwnKey(values, 'title')) {
-    payload.defaultTitle = getString(values.defaultTitle || values.title);
+  if (hasOwnKey(values, 'defaultTitle')) {
+    payload.defaultTitle = getString(values.defaultTitle);
   } else if (!options.partial) {
     payload.defaultTitle = '';
   }
-  if (hasOwnKey(values, 'defaultPrompt') || hasOwnKey(values, 'prompt') || hasOwnKey(values, 'instruction')) {
-    payload.defaultPrompt =
-      typeof values.defaultPrompt === 'string'
-        ? values.defaultPrompt
-        : typeof values.prompt === 'string'
-          ? values.prompt
-          : typeof values.instruction === 'string'
-            ? values.instruction
-            : '';
+  if (hasOwnKey(values, 'defaultPrompt')) {
+    payload.defaultPrompt = typeof values.defaultPrompt === 'string' ? values.defaultPrompt : '';
   } else if (!options.partial) {
     payload.defaultPrompt = '';
   }
@@ -209,21 +202,21 @@ function getTaskTemplatePayload(ctx: Context, values: JsonRecord, options: TaskT
   if (hasOwnKey(values, 'agentProfileId')) {
     payload.agentProfileId = getString(values.agentProfileId) || null;
   }
-  if (hasOwnKey(values, 'skillVersionIdsJson') || hasOwnKey(values, 'skillVersionIds')) {
-    payload.skillVersionIdsJson = getOptionalStringArray(values.skillVersionIdsJson || values.skillVersionIds);
+  if (hasOwnKey(values, 'skillVersionIdsJson')) {
+    payload.skillVersionIdsJson = getOptionalStringArray(values.skillVersionIdsJson);
   } else if (!options.partial) {
     payload.skillVersionIdsJson = [];
   }
   if (!options.partial || hasOwnKey(values, 'artifactRoot')) {
     payload.artifactRoot = getString(values.artifactRoot);
   }
-  if (hasOwnKey(values, 'artifactsJson') || hasOwnKey(values, 'artifacts')) {
-    payload.artifactsJson = getOptionalJsonArray(values.artifactsJson || values.artifacts);
+  if (hasOwnKey(values, 'artifactsJson')) {
+    payload.artifactsJson = getOptionalJsonArray(values.artifactsJson);
   } else if (!options.partial) {
     payload.artifactsJson = [];
   }
-  if (hasOwnKey(values, 'metadataJson') || hasOwnKey(values, 'metadata')) {
-    payload.metadataJson = getRecord(values.metadataJson || values.metadata);
+  if (hasOwnKey(values, 'metadataJson')) {
+    payload.metadataJson = getRecord(values.metadataJson);
   } else if (!options.partial) {
     payload.metadataJson = {};
   }

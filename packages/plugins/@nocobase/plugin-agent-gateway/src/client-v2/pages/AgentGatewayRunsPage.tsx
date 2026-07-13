@@ -768,11 +768,11 @@ function getTerminalResetKey(runId: string, snapshot: TerminalSnapshot | null | 
 }
 
 function getRunCapability(run: RunRecord, capability: AgentCapabilityKey) {
-  const capabilities = run.agentProviderCapabilitiesJson;
+  const capabilities = run.capabilitiesSnapshotJson;
   if (!capabilities || !Object.keys(capabilities).length) {
     return true;
   }
-  return isAgentCapabilitySupported(run.agentProvider || 'generic-cli', capabilities, capability);
+  return isAgentCapabilitySupported(run.provider || 'generic-cli', capabilities, capability);
 }
 
 function getRawLogDetailsWarning(run: RunRecord | undefined, t: TFunction) {
@@ -2310,7 +2310,6 @@ export default function AgentGatewayRunsPage() {
         method: 'post',
         data: {
           provider: values.provider || 'codex',
-          format: values.format || 'codex-jsonl',
           title: values.title,
           instruction: values.instruction,
           status: values.status || 'succeeded',
@@ -2357,11 +2356,12 @@ export default function AgentGatewayRunsPage() {
 
   const uploadSkillVersionRequest = useRequest(
     async (values: SkillUploadFormValues & { file: File }) => {
-      const uploadId = await uploadAgentGatewayFile(ctx.api, values.file, 'skill-version');
+      const { file, ...skillValues } = values;
+      const uploadId = await uploadAgentGatewayFile(ctx.api, file, 'skill-version');
       const response = await ctx.api.request<SkillUploadResult>({
         url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.createSkillVersionFromUpload),
         method: 'post',
-        data: { ...values, file: undefined, uploadId },
+        data: { ...skillValues, uploadId },
       });
       return getRequiredResponseData(response, t('Failed to upload skill'));
     },

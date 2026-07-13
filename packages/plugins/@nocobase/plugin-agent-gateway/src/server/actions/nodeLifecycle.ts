@@ -151,7 +151,7 @@ function getInvitationExpiry(values: JsonRecord) {
 }
 
 function sanitizeProfileMetadata(profile: JsonRecord) {
-  const metadata = getRecord(profile.metadataJson || profile.metadata);
+  const metadata = getRecord(profile.metadataJson);
   const sanitized: JsonRecord = {};
 
   for (const [key, value] of Object.entries(metadata)) {
@@ -218,7 +218,7 @@ async function createInvitation(ctx: Context) {
   await requireManagePermission(ctx);
 
   const values = getBodyValues(ctx);
-  const expectedNodeKey = getString(values.expectedNodeKey || values.nodeKey);
+  const expectedNodeKey = getString(values.expectedNodeKey);
   if (!expectedNodeKey) {
     ctx.throw(400, 'Node key is required');
   }
@@ -236,7 +236,7 @@ async function createInvitation(ctx: Context) {
       tokenLast4: invitationToken.tokenLast4,
       expectedNodeKey: expectedNodeKey || null,
       expiresAt,
-      metadataJson: getRecord(values.metadataJson || values.metadata),
+      metadataJson: getRecord(values.metadataJson),
     },
   })) as ModelRecord;
   const bootstrapCommand = buildBootstrapCommand({
@@ -375,7 +375,7 @@ function isUniqueConstraintError(error: unknown) {
 
 async function registerNode(ctx: Context) {
   const values = getBodyValues(ctx);
-  const inviteToken = getString(values.inviteToken || values.invitationToken);
+  const inviteToken = getString(values.inviteToken);
   const nodeKey = getString(values.nodeKey);
   const installationId = getString(values.installationId);
 
@@ -399,7 +399,7 @@ async function registerNode(ctx: Context) {
         displayName: getString(values.displayName) || nodeKey,
         status: 'active',
         ...toStoredTokenFields(nodeToken, 'nodeTokenHash', 'tokenLast4'),
-        capabilitiesJson: getRecord(values.capabilitiesJson || values.capabilities),
+        capabilitiesJson: getRecord(values.capabilitiesJson),
         metadataJson,
         lastHeartbeatAt: now,
         disabledAt: null,
@@ -497,7 +497,7 @@ async function syncProfiles(ctx: Context, nodeId: unknown, profiles: unknown[], 
 
   for (const rawProfile of profiles) {
     const profile = getRecord(rawProfile);
-    const profileKey = getString(profile.profileKey || profile.key);
+    const profileKey = getString(profile.profileKey);
     if (!profileKey) {
       ctx.throw(400, 'Profile key is required');
     }
@@ -512,7 +512,7 @@ async function syncProfiles(ctx: Context, nodeId: unknown, profiles: unknown[], 
       lock: transaction.LOCK.UPDATE,
     })) as ModelRecord | null;
     const reportedCapabilities = {
-      ...getRecord(profile.capabilitiesJson || profile.capabilities),
+      ...getRecord(profile.capabilitiesJson),
     };
     delete reportedCapabilities.commandKey;
     delete reportedCapabilities.detectedCommand;
@@ -520,8 +520,7 @@ async function syncProfiles(ctx: Context, nodeId: unknown, profiles: unknown[], 
     if (!executionPolicyKey || executionPolicyKey !== profileKey) {
       ctx.throw(400, 'Profile executionPolicyKey must match profileKey');
     }
-    const explicitProvider =
-      getString(profile.provider) || getString(profile.providerKey) || getString(reportedCapabilities.provider);
+    const explicitProvider = getString(profile.provider);
     const profileProvider = getExplicitAgentProviderKey(explicitProvider);
     if (explicitProvider && !profileProvider) {
       ctx.throw(400, 'Provider is not supported');
@@ -603,10 +602,8 @@ async function heartbeat(ctx: Context, nodeId: string) {
   if (currentInstallationId && heartbeatInstallationId && currentInstallationId !== heartbeatInstallationId) {
     ctx.throw(409, 'Heartbeat installation ID does not match the registered node');
   }
-  const heartbeatCapabilities = getRecord(values.capabilitiesJson || values.capabilities);
-  const capabilitiesProvided =
-    Object.prototype.hasOwnProperty.call(values, 'capabilitiesJson') ||
-    Object.prototype.hasOwnProperty.call(values, 'capabilities');
+  const heartbeatCapabilities = getRecord(values.capabilitiesJson);
+  const capabilitiesProvided = Object.prototype.hasOwnProperty.call(values, 'capabilitiesJson');
   const capabilitiesChanged =
     capabilitiesProvided &&
     JSON.stringify(heartbeatCapabilities) !== JSON.stringify(getRecord(auth.node.get('capabilitiesJson')));

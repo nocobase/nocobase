@@ -31,7 +31,6 @@ const FORBIDDEN_REMOTE_EXECUTION_FIELDS = [
   'commandKey',
   'profileKey',
   'provider',
-  'agentProvider',
   'workspaceRoot',
   'additionalWritableDirs',
   'config',

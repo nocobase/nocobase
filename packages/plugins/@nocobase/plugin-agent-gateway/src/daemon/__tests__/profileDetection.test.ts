@@ -28,8 +28,8 @@ describe('agent gateway daemon profile detection', () => {
         agentType: 'code' as const,
         driver: 'exec' as const,
         status: 'active' as const,
-        capabilities: { version: '1', structuredEvents: true },
-        metadata: { detector: 'daemon' },
+        capabilitiesJson: { version: '1', structuredEvents: true },
+        metadataJson: { detector: 'daemon' },
       },
       {
         profileKey: 'opencode',
@@ -38,15 +38,15 @@ describe('agent gateway daemon profile detection', () => {
         agentType: 'code' as const,
         driver: 'exec' as const,
         status: 'active' as const,
-        capabilities: { structuredEvents: true },
-        metadata: {},
+        capabilitiesJson: { structuredEvents: true },
+        metadataJson: {},
       },
     ];
     const second = [
       first[1],
       {
         ...first[0],
-        capabilities: { structuredEvents: true, version: '1' },
+        capabilitiesJson: { structuredEvents: true, version: '1' },
       },
     ];
 
@@ -55,7 +55,7 @@ describe('agent gateway daemon profile detection', () => {
       getDetectedProfilesHash([
         {
           ...first[0],
-          capabilities: { version: '2', structuredEvents: true },
+          capabilitiesJson: { version: '2', structuredEvents: true },
         },
         first[1],
       ]),
@@ -86,7 +86,7 @@ describe('agent gateway daemon profile detection', () => {
       provider: 'opencode',
       status: 'active',
       driver: 'exec',
-      capabilities: {
+      capabilitiesJson: {
         executionPolicyKey: 'opencode',
         version: 'opencode 1.2.3',
         structuredEvents: true,

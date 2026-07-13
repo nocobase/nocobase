@@ -38,6 +38,7 @@ import {
 } from './utils';
 import { renderPromptTemplate } from './promptTemplates';
 import { CLAIMABLE_RUN_STATUS, LEASE_OWNING_RUN_STATUSES, TERMINAL_RUN_STATUSES } from '../../shared/runState';
+import { getExplicitAgentProviderKey, normalizeAgentProviderCapabilities } from '../../shared/providerCapabilities';
 
 const BINDING_KEY_PATTERN = /^[A-Za-z][A-Za-z0-9_.:-]*$/;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -542,13 +543,13 @@ function getBindingPayload(ctx: Context, values: JsonRecord, options: BindingPay
   if (hasOwnKey(values, 'nodeField')) {
     payload.nodeField = getString(values.nodeField) || null;
   }
-  if (hasOwnKey(values, 'skillFieldsJson') || hasOwnKey(values, 'skillFields')) {
-    payload.skillFieldsJson = getJsonConfig(values.skillFieldsJson || values.skillFields);
+  if (hasOwnKey(values, 'skillFieldsJson')) {
+    payload.skillFieldsJson = getJsonConfig(values.skillFieldsJson);
   } else if (!options.partial) {
     payload.skillFieldsJson = {};
   }
-  if (hasOwnKey(values, 'fieldMappingsJson') || hasOwnKey(values, 'fieldMappings')) {
-    payload.fieldMappingsJson = getJsonConfig(values.fieldMappingsJson || values.fieldMappings);
+  if (hasOwnKey(values, 'fieldMappingsJson')) {
+    payload.fieldMappingsJson = getJsonConfig(values.fieldMappingsJson);
   } else if (!options.partial) {
     payload.fieldMappingsJson = {};
   }
@@ -562,8 +563,8 @@ function getBindingPayload(ctx: Context, values: JsonRecord, options: BindingPay
   } else if (!options.partial) {
     payload.payloadMappingJson = {};
   }
-  if (hasOwnKey(values, 'metadataJson') || hasOwnKey(values, 'metadata')) {
-    payload.metadataJson = getRecord(values.metadataJson || values.metadata);
+  if (hasOwnKey(values, 'metadataJson')) {
+    payload.metadataJson = getRecord(values.metadataJson);
   } else if (!options.partial) {
     payload.metadataJson = {};
   }
@@ -1121,6 +1122,7 @@ async function resolveNodeAndProfile(
   return {
     nodeId: node ? String(getModelTargetKey(node, 'id')) : null,
     agentProfileId: profile ? String(getModelTargetKey(profile, 'id')) : null,
+    profile,
   };
 }
 
@@ -1295,6 +1297,13 @@ async function createDispatchRun(
     skills: skillSelections.values,
     resolvedSkills: skillSelections.resolved,
   };
+  const provider = getExplicitAgentProviderKey(
+    nodeAndProfile.profile ? getModelString(nodeAndProfile.profile, 'provider') : '',
+  );
+  if (!provider || !nodeAndProfile.profile) {
+    ctx.throw(409, 'Selected Agent Gateway profile provider is invalid');
+  }
+  const executionPolicyKey = getModelString(nodeAndProfile.profile, 'profileKey');
 
   const run = (await ctx.db.getRepository('agRuns').create({
     values: {
@@ -1312,6 +1321,12 @@ async function createDispatchRun(
         renderedAt: now.toISOString(),
       },
       executionPayloadJson: executionPayload,
+      provider,
+      capabilitiesSnapshotJson: normalizeAgentProviderCapabilities(
+        provider,
+        getRecord(getModelValue(nodeAndProfile.profile, 'capabilitiesJson')),
+      ),
+      executionPolicyKey,
       sourceType: 'dispatch',
       sourceCollection: collectionName,
       sourceRecordId: recordId,
@@ -1490,7 +1505,7 @@ async function dispatchBinding(ctx: Context, identifier: string) {
   );
 
   const values = getBodyValues(ctx);
-  const recordId = getRequiredTargetKey(ctx, values.sourceRecordId ?? values.recordId, 'sourceRecordId');
+  const recordId = getRequiredTargetKey(ctx, values.sourceRecordId, 'sourceRecordId');
   const idempotencyKey = getString(values.idempotencyKey);
   const expectedCollectionName = getString(values.sourceCollection);
   if (!expectedCollectionName) {

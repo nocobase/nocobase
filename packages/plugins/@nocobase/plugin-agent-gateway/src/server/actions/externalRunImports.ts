@@ -504,10 +504,9 @@ function getImportedRunTimestamps(values: JsonRecord, status: string, now: Date,
 function getImportedRunPayload(values: JsonRecord, provider: AgentProviderKey, existing?: ModelRecord) {
   const existingPayload = getRecord(existing ? getModelValue(existing, 'executionPayloadJson') : undefined);
   const title = getString(values.title) || getString(existingPayload.title);
-  const instruction = getString(values.instruction || values.prompt) || getString(existingPayload.instruction);
+  const instruction = getString(values.instruction) || getString(existingPayload.instruction);
   const externalRunKey = getString(values.externalRunKey) || getString(existingPayload.externalRunKey);
-  const providerSessionId =
-    getString(values.providerSessionId || values.sessionId) || getString(existingPayload.providerSessionId);
+  const providerSessionId = getString(values.providerSessionId) || getString(existingPayload.providerSessionId);
   return {
     ...existingPayload,
     imported: true,
@@ -520,7 +519,7 @@ function getImportedRunPayload(values: JsonRecord, provider: AgentProviderKey, e
     capabilities: EXTERNAL_IMPORT_CAPABILITIES,
     metadata: {
       ...getRecord(existingPayload.metadata),
-      ...getRecord(values.metadata || values.metadataJson),
+      ...getRecord(values.metadataJson),
     },
   };
 }
@@ -530,7 +529,7 @@ function getImportedRunPromptSnapshot(values: JsonRecord, existing?: ModelRecord
   const existingVariables = getRecord(existingSnapshot.variables);
   const title = getString(values.title) || getString(existingVariables.title);
   const instruction =
-    getString(values.instruction || values.prompt) ||
+    getString(values.instruction) ||
     getString(existingVariables.instruction) ||
     getString(existingSnapshot.renderedPrompt);
   return {
@@ -552,7 +551,7 @@ function getImportedRunResultSummary(values: JsonRecord, provider: AgentProvider
   const title = getString(values.title) || getString(existingResultSummary.title);
   const resultSummary = {
     ...existingResultSummary,
-    ...getRecord(values.resultSummary || values.resultSummaryJson),
+    ...getRecord(values.resultSummaryJson),
     ...(title ? { title } : {}),
     requestedFrom: 'external-import',
     provider,
@@ -575,7 +574,7 @@ function getRunUpdateValues(
   now: Date,
   existing?: ModelRecord,
 ) {
-  const providerSessionId = getString(values.providerSessionId || values.sessionId);
+  const providerSessionId = getString(values.providerSessionId);
   return {
     status,
     cancelRequested: status === 'canceled',
@@ -588,6 +587,9 @@ function getRunUpdateValues(
         ? getModelString(existing, 'errorSummary') || null
         : null,
     sourceType: EXTERNAL_IMPORT_SOURCE_TYPE,
+    provider,
+    capabilitiesSnapshotJson: EXTERNAL_IMPORT_CAPABILITIES,
+    executionPolicyKey: `external-import:${provider}`,
     sourceCollection:
       getString(values.sourceCollection) || (existing ? getModelString(existing, 'sourceCollection') : '') || null,
     sourceRecordId:
@@ -606,7 +608,6 @@ function getRunUpdateValues(
     terminalEndedAt: null,
     terminalLastActivityAt: null,
     terminalExitCode: null,
-    agentSessionProvider: provider,
     agentSessionProviderId:
       providerSessionId || (existing ? getModelString(existing, 'agentSessionProviderId') : '') || null,
     ...getImportedRunTimestamps(values, status, now, existing),
@@ -756,14 +757,14 @@ function getRawLogArtifactValues(options: {
 
 function getExternalArtifactValues(artifactValues: JsonRecord, batchKey: string, index: number) {
   const artifactKey =
-    getString(artifactValues.artifactKey || artifactValues.key) ||
+    getString(artifactValues.artifactKey) ||
     getSourceKey(
       'artifact',
       batchKey,
       String(index),
       getHash(
         [
-          getString(artifactValues.artifactType || artifactValues.type),
+          getString(artifactValues.artifactType),
           getString(artifactValues.mimeType),
           getString(artifactValues.contentText),
         ].join(':'),
@@ -772,8 +773,8 @@ function getExternalArtifactValues(artifactValues: JsonRecord, batchKey: string,
   return {
     ...artifactValues,
     artifactKey,
-    metadata: {
-      ...getRecord(artifactValues.metadata || artifactValues.metadataJson),
+    metadataJson: {
+      ...getRecord(artifactValues.metadataJson),
       externalImport: true,
       batchKey,
     },
@@ -880,10 +881,6 @@ function getObservationOperations(options: {
   return operations;
 }
 
-function getAliasedValue(values: JsonRecord, canonicalKey: string, aliasKey: string) {
-  return Object.prototype.hasOwnProperty.call(values, canonicalKey) ? values[canonicalKey] : values[aliasKey];
-}
-
 function assertRequiredObservationString(ctx: Context, value: unknown, name: string) {
   const stringValue = getString(value);
   if (!stringValue) {
@@ -948,7 +945,7 @@ function truncateConversationDetailValue(value: unknown): unknown {
 
 function validateConversationOperation(ctx: Context, values: JsonRecord) {
   const source = assertRequiredObservationString(ctx, values.source, 'source');
-  const eventType = assertRequiredObservationString(ctx, values.eventType || values.type, 'eventType');
+  const eventType = assertRequiredObservationString(ctx, values.eventType, 'eventType');
   assertOptionalObservationString(ctx, values.providerEventId, 'providerEventId');
   assertOptionalObservationString(ctx, values.correlationId, 'correlationId');
 
@@ -963,7 +960,7 @@ function validateConversationOperation(ctx: Context, values: JsonRecord) {
     }
   }
 
-  const contentJsonValue = values.contentJson || values.payloadJson || values.payload || {};
+  const contentJsonValue = values.contentJson || {};
   if (isDetailedConversationEvent(eventType) || isVerboseConversationEvent(eventType)) {
     const storedContentJson = truncateConversationDetailValue(getRecord(contentJsonValue));
     if ((JSON.stringify(storedContentJson) || '').length > COMMAND_CONTENT_JSON_LIMIT_CHARS) {
@@ -990,14 +987,14 @@ function validateConversationOperation(ctx: Context, values: JsonRecord) {
 
 function validateArtifactOperation(ctx: Context, values: JsonRecord) {
   const artifactKey = assertOptionalObservationString(ctx, values.artifactKey, 'artifactKey');
-  assertRequiredObservationString(ctx, values.artifactType || values.type, 'artifactType');
+  assertRequiredObservationString(ctx, values.artifactType, 'artifactType');
   const mimeType = assertOptionalObservationString(ctx, values.mimeType, 'mimeType') || 'text/plain';
   const contentText = typeof values.contentText === 'string' ? values.contentText : '';
   if (Buffer.byteLength(contentText) > COMMAND_CONTENT_JSON_LIMIT_CHARS) {
     ctx.throw(413, 'Artifact text is too large for plugin-hosted P0 storage');
   }
 
-  const rawMetadata = getRecord(getAliasedValue(values, 'metadataJson', 'metadata'));
+  const rawMetadata = getRecord(values.metadataJson);
   assertOptionalNonNegativeInteger(ctx, values.sizeBytes, 'sizeBytes');
   assertOptionalNonNegativeInteger(ctx, rawMetadata.originalSizeBytes, 'metadata.originalSizeBytes');
   assertOptionalNonNegativeInteger(ctx, rawMetadata.uploadedBytes, 'metadata.uploadedBytes');
@@ -1972,7 +1969,7 @@ async function prepareImportFoundationOnce(
         runCode: options.descriptor.runCode,
         runId: getModelTargetKey(run, 'id'),
         createdById: getCurrentUserId(ctx) || null,
-        metadataJson: getRecord(options.values.metadata || options.values.metadataJson),
+        metadataJson: getRecord(options.values.metadataJson),
       },
       transaction,
     })) as ModelRecord;
@@ -2192,7 +2189,7 @@ async function appendExternalRunObservations(ctx: Context, runId: string) {
     ctx.throw(409, 'Only imported external runs can receive external observations');
   }
   const batchKey = getBatchKey(ctx, values.batchKey, true);
-  const provider = getProvider(ctx, values.provider || getModelValue(visibleRun, 'agentSessionProvider'));
+  const provider = getProvider(ctx, values.provider || getModelValue(visibleRun, 'provider'));
   const preparedBatch = prepareObservationBatch(ctx, values, provider, batchKey);
   const observationPlan = prepareObservationPlan(
     ctx,

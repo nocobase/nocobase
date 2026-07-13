@@ -41,9 +41,9 @@ interface RunRecord {
   id: string;
   runCode?: string;
   status?: string;
-  agentProvider?: string | null;
-  agentProviderCapabilitySource?: string | null;
-  agentProviderCapabilitiesJson?: Record<string, unknown>;
+  provider?: string | null;
+  capabilitySource?: string | null;
+  capabilitiesSnapshotJson?: Record<string, unknown>;
   agentProfileId?: string | null;
   sourceType?: string | null;
   agentSessionId?: string | null;
@@ -308,8 +308,8 @@ export default function AgentGatewayProviderCapabilitiesPage() {
         const run =
           runs.find((item) => item.agentProfileId === profile.id && item.sourceType === 'provider-capability-seed') ||
           runs.find((item) => item.agentProfileId === profile.id);
-        const provider = getAgentProviderKey(run?.agentProvider || profile.provider);
-        const rawCapabilities = run?.agentProviderCapabilitiesJson || profile.capabilitiesJson;
+        const provider = getAgentProviderKey(run?.provider || profile.provider);
+        const rawCapabilities = run?.capabilitiesSnapshotJson || profile.capabilitiesJson;
         return {
           id: profile.id,
           nodeKey: node.nodeKey,
@@ -317,7 +317,7 @@ export default function AgentGatewayProviderCapabilitiesPage() {
           displayName: profile.displayName || profile.profileKey,
           status: profile.status,
           provider,
-          capabilitySource: run?.agentProviderCapabilitySource || (run ? 'run' : 'profile'),
+          capabilitySource: run?.capabilitySource || (run ? 'run' : 'profile'),
           capabilities: normalizeAgentProviderCapabilities(provider, rawCapabilities),
           runId: run?.id,
           runCode: run?.runCode,

@@ -12,6 +12,7 @@ import { randomUUID } from 'crypto';
 import { MockServer, createMockServer } from '@nocobase/test';
 
 import { AGENT_GATEWAY_API_ACTIONS } from '../../shared/apiContract';
+import { normalizeAgentProviderCapabilities } from '../../shared/providerCapabilities';
 import PluginAgentGatewayServer from '../plugin';
 import { createNodeToken, toStoredTokenFields } from '../security';
 
@@ -80,11 +81,13 @@ describe('agent gateway agent session lifecycle APIs', () => {
       values: {
         nodeId,
         profileKey,
+        provider: 'codex',
         displayName: profileKey,
         agentType: 'code',
         driver: 'exec',
         status: 'active',
         capabilitiesJson: {
+          ...normalizeAgentProviderCapabilities('codex'),
           maxConcurrency: 2,
         },
       },
@@ -99,15 +102,26 @@ describe('agent gateway agent session lifecycle APIs', () => {
   }
 
   async function createRun(runCode: string, values: Record<string, unknown>) {
+    const profile = values.agentProfileId
+      ? await app.db.getRepository('agAgentProfiles').findOne({
+          filterByTk: values.agentProfileId,
+        })
+      : null;
+    const provider = profile ? String(profile.get('provider')) : 'codex';
+    const executionPolicyKey = profile ? String(profile.get('profileKey')) : 'codex';
     const response = await rootAgent.post('/agentGatewayApi:createRun').send({
       runCode,
       sourceType: 'test',
       promptSnapshot: {
         text: runCode,
       },
-      executionPayload: {
-        commandKey: 'codex',
-        args: ['exec', '--json', `Prompt for ${runCode}`],
+      provider,
+      capabilitiesSnapshotJson: normalizeAgentProviderCapabilities(provider, profile?.get('capabilitiesJson')),
+      executionPolicyKey,
+      executionPayloadJson: {
+        executionPolicyKey,
+        prompt: `Prompt for ${runCode}`,
+        cwd: '.',
       },
       ...values,
     });
@@ -153,10 +167,10 @@ describe('agent gateway agent session lifecycle APIs', () => {
         leaseVersion: claim.leaseVersion,
         provider: 'codex',
         providerSessionId,
-        capabilities: {
+        capabilitiesJson: {
           detectSessionId: true,
         },
-        metadata: {
+        metadataJson: {
           source: 'test',
         },
       });
@@ -199,7 +213,7 @@ describe('agent gateway agent session lifecycle APIs', () => {
       filterByTk: run.id,
     });
     expect(storedRun.get('agentSessionId')).toBeTruthy();
-    expect(storedRun.get('agentSessionProvider')).toBe('codex');
+    expect(storedRun.get('provider')).toBe('codex');
     expect(storedRun.get('agentSessionProviderId')).toBe('codex-thread-1');
 
     const session = await app.db.getRepository('agAgentSessions').findOne({
@@ -296,9 +310,13 @@ describe('agent gateway agent session lifecycle APIs', () => {
           text: 'session-run-continuation',
         },
         executionPayloadJson: {
-          commandKey: 'codex',
-          args: ['exec', '--json', 'Prompt for session-run-continuation'],
+          executionPolicyKey: 'codex',
+          prompt: 'Prompt for session-run-continuation',
+          cwd: '.',
         },
+        provider: 'codex',
+        capabilitiesSnapshotJson: normalizeAgentProviderCapabilities('codex'),
+        executionPolicyKey: 'codex',
         requestedAt: now,
         queuedAt: now,
         nodeId: runner.nodeId,
@@ -343,9 +361,13 @@ describe('agent gateway agent session lifecycle APIs', () => {
           text: 'session-child-first-detection',
         },
         executionPayloadJson: {
-          commandKey: 'codex',
-          args: ['exec', '--json', 'Prompt for session-child-first-detection'],
+          executionPolicyKey: 'codex',
+          prompt: 'Prompt for session-child-first-detection',
+          cwd: '.',
         },
+        provider: 'codex',
+        capabilitiesSnapshotJson: normalizeAgentProviderCapabilities('codex'),
+        executionPolicyKey: 'codex',
         requestedAt: now,
         queuedAt: now,
         nodeId: runner.nodeId,
@@ -385,9 +407,13 @@ describe('agent gateway agent session lifecycle APIs', () => {
           text: 'session-child-before-grandchild-detection',
         },
         executionPayloadJson: {
-          commandKey: 'codex',
-          args: ['exec', '--json', 'Prompt for session-child-before-grandchild-detection'],
+          executionPolicyKey: 'codex',
+          prompt: 'Prompt for session-child-before-grandchild-detection',
+          cwd: '.',
         },
+        provider: 'codex',
+        capabilitiesSnapshotJson: normalizeAgentProviderCapabilities('codex'),
+        executionPolicyKey: 'codex',
         requestedAt: now,
         queuedAt: now,
         nodeId: runner.nodeId,
@@ -408,9 +434,13 @@ describe('agent gateway agent session lifecycle APIs', () => {
           text: 'session-grandchild-first-detection',
         },
         executionPayloadJson: {
-          commandKey: 'codex',
-          args: ['exec', '--json', 'Prompt for session-grandchild-first-detection'],
+          executionPolicyKey: 'codex',
+          prompt: 'Prompt for session-grandchild-first-detection',
+          cwd: '.',
         },
+        provider: 'codex',
+        capabilitiesSnapshotJson: normalizeAgentProviderCapabilities('codex'),
+        executionPolicyKey: 'codex',
         requestedAt: now,
         queuedAt: now,
         nodeId: runner.nodeId,

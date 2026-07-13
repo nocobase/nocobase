@@ -109,7 +109,7 @@ async function registerOutputArtifact(options: {
       mimeType: 'text/plain',
       sizeBytes: options.output.sizeBytes,
       contentText: options.output.text,
-      metadata: {
+      metadataJson: {
         originalSizeBytes: options.output.sizeBytes,
         uploadedBytes: Buffer.byteLength(options.output.text),
         truncated: options.output.truncated === true,
@@ -129,8 +129,8 @@ async function registerOutputArtifact(options: {
       mimeType: 'text/plain',
       sizeBytes: options.output.sizeBytes,
       contentText: artifactUpload.contentText,
-      metadata: {
-        ...artifactUpload.metadata,
+      metadataJson: {
+        ...artifactUpload.metadataJson,
         ...(options.output.capturedBytes !== undefined ? { capturedBytes: options.output.capturedBytes } : {}),
         ...(options.output.truncated ? { truncated: true, spoolTruncated: true } : {}),
       },

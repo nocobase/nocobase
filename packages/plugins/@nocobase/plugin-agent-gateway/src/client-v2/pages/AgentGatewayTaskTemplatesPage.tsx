@@ -177,9 +177,9 @@ export default function AgentGatewayTaskTemplatesPage() {
         cwd: values.cwd || optionsRequest.data?.defaultCwd || '.',
         nodeId: null,
         agentProfileId: null,
-        skillVersionIds: values.skillVersionIds || [],
+        skillVersionIdsJson: values.skillVersionIds || [],
         artifactRoot: values.artifactRoot,
-        artifacts: getTaskArtifactDeclarations(values.artifactDeclarations),
+        artifactsJson: getTaskArtifactDeclarations(values.artifactDeclarations),
       };
 
       if (editingTemplate) {
@@ -218,11 +218,12 @@ export default function AgentGatewayTaskTemplatesPage() {
 
   const uploadSkillVersionRequest = useRequest(
     async (values: SkillUploadFormValues & { file: File }) => {
-      const uploadId = await uploadAgentGatewayFile(ctx.api, values.file, 'skill-version');
+      const { file, ...skillValues } = values;
+      const uploadId = await uploadAgentGatewayFile(ctx.api, file, 'skill-version');
       const response = await ctx.api.request<SkillUploadResult>({
         url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.createSkillVersionFromUpload),
         method: 'post',
-        data: { ...values, file: undefined, uploadId },
+        data: { ...skillValues, uploadId },
       });
       return getRequiredResponseData(response, t('Failed to upload skill'));
     },

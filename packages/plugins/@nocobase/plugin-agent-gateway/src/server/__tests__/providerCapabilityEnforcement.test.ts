@@ -122,7 +122,8 @@ describe('agent gateway provider capability enforcement', () => {
       providerSessionId?: string;
       profileCapabilities?: Record<string, unknown>;
       rawProfileCapabilities?: Record<string, unknown>;
-      runProvider?: boolean;
+      runCapabilities?: Record<string, unknown>;
+      rawRunCapabilities?: Record<string, unknown>;
       sessionCapabilities?: Record<string, unknown>;
       rawSessionCapabilities?: Record<string, unknown>;
     } = {},
@@ -159,6 +160,13 @@ describe('agent gateway provider capability enforcement', () => {
     });
     const profileId = String(profile.get('id'));
     const runId = randomUUID();
+    const runCapabilities = normalizeAgentProviderCapabilities(
+      provider,
+      options.rawRunCapabilities ??
+        options.runCapabilities ??
+        options.rawProfileCapabilities ??
+        options.profileCapabilities,
+    );
     const run = await app.db.getRepository('agRuns').create({
       values: {
         id: runId,
@@ -176,14 +184,15 @@ describe('agent gateway provider capability enforcement', () => {
           args: ['run', provider],
         },
         sourceType: 'provider-capability-test',
+        provider,
+        capabilitiesSnapshotJson: runCapabilities,
+        executionPolicyKey: provider,
         requestedAt: now,
         queuedAt: now,
         startedAt: now,
         finishedAt: options.status === 'running' ? null : now,
         nodeId,
         agentProfileId: profileId,
-        agentSessionProvider: options.runProvider ? provider : null,
-        agentSessionProviderId: options.runProvider ? `${provider}-run-provider-${randomUUID()}` : null,
         terminalBackend: options.terminal ? 'tmux' : null,
         terminalStatus: options.terminal ? 'active' : null,
         terminalSessionName: options.terminal ? getManagedSessionName(runId) : null,
@@ -214,7 +223,6 @@ describe('agent gateway provider capability enforcement', () => {
       filterByTk: run.get('id'),
       values: {
         agentSessionId: session.get('id'),
-        agentSessionProvider: provider,
         agentSessionProviderId: session.get('providerSessionId'),
       },
     });
@@ -238,9 +246,7 @@ describe('agent gateway provider capability enforcement', () => {
       const response = await rootAgent.get(`/agentGatewayApi:getRun/${entry.runId}`);
       expect(response.status).toBe(200);
       const run = getData(response);
-      expect(run.agentProviderCapabilitiesJson).toMatchObject(
-        normalizeAgentProviderCapabilities(String(run.agentProvider)),
-      );
+      expect(run.capabilitiesSnapshotJson).toMatchObject(normalizeAgentProviderCapabilities(String(run.provider)));
     }
 
     expect(normalizeAgentProviderCapabilities('codex', { liveSemanticMessage: true })).toMatchObject({
@@ -249,14 +255,14 @@ describe('agent gateway provider capability enforcement', () => {
 
     const optimisticCodexSession = await seedProviderRun('codex', {
       session: true,
-      rawSessionCapabilities: {
+      rawRunCapabilities: {
         liveSemanticMessage: true,
         resumeSession: true,
       },
     });
     const optimisticCodexResponse = await rootAgent.get(`/agentGatewayApi:getRun/${optimisticCodexSession.runId}`);
     expect(optimisticCodexResponse.status).toBe(200);
-    expect(getData(optimisticCodexResponse).agentProviderCapabilitiesJson).toMatchObject({
+    expect(getData(optimisticCodexResponse).capabilitiesSnapshotJson).toMatchObject({
       liveSemanticMessage: false,
       resumeSession: true,
     });
@@ -266,7 +272,7 @@ describe('agent gateway provider capability enforcement', () => {
     const codex = await seedProviderRun('codex', { session: true });
     const opencodeResumeOnly = await seedProviderRun('opencode', {
       session: true,
-      rawSessionCapabilities: {
+      rawRunCapabilities: {
         resumeSession: true,
       },
     });
@@ -294,7 +300,7 @@ describe('agent gateway provider capability enforcement', () => {
 
     const opencodeRunResponse = await rootAgent.get(`/agentGatewayApi:getRun/${opencodeResumeOnly.runId}`);
     expect(opencodeRunResponse.status).toBe(200);
-    expect(getData(opencodeRunResponse).agentProviderCapabilitiesJson).toMatchObject({
+    expect(getData(opencodeRunResponse).capabilitiesSnapshotJson).toMatchObject({
       resumeSession: false,
       resumeWithMessage: false,
     });
@@ -311,13 +317,13 @@ describe('agent gateway provider capability enforcement', () => {
     for (const provider of ['opencode', 'claude-code'] as AgentProviderKey[]) {
       const rawResumeWithMessage = await seedProviderRun(provider, {
         session: true,
-        rawSessionCapabilities: {
+        rawRunCapabilities: {
           resumeWithMessage: true,
         },
       });
       const runResponse = await rootAgent.get(`/agentGatewayApi:getRun/${rawResumeWithMessage.runId}`);
       expect(runResponse.status).toBe(200);
-      expect(getData(runResponse).agentProviderCapabilitiesJson).toMatchObject({
+      expect(getData(runResponse).capabilitiesSnapshotJson).toMatchObject({
         resumeSession: false,
         resumeWithMessage: false,
       });
@@ -356,9 +362,9 @@ describe('agent gateway provider capability enforcement', () => {
     const runResponse = await rootAgent.get(`/agentGatewayApi:getRun/${profileDisabledResume.runId}`);
     expect(runResponse.status).toBe(200);
     expect(getData(runResponse)).toMatchObject({
-      agentProvider: 'codex',
-      agentProviderCapabilitySource: 'profile',
-      agentProviderCapabilitiesJson: {
+      provider: 'codex',
+      capabilitySource: 'run',
+      capabilitiesSnapshotJson: {
         resumeSession: false,
         resumeWithMessage: false,
       },
@@ -382,10 +388,9 @@ describe('agent gateway provider capability enforcement', () => {
     expect(continuationRun).toBeFalsy();
   });
 
-  it('rechecks run capability summary before returning an idempotent resume request', async () => {
+  it('keeps the persisted run capability snapshot for idempotent resume requests', async () => {
     const profileBackedResume = await seedProviderRun('codex', {
       session: true,
-      rawSessionCapabilities: {},
     });
     const idempotencyKey = 'codex-profile-rechecked-resume';
     const firstResponse = await rootAgent
@@ -413,11 +418,11 @@ describe('agent gateway provider capability enforcement', () => {
     const runResponse = await rootAgent.get(`/agentGatewayApi:getRun/${profileBackedResume.runId}`);
     expect(runResponse.status).toBe(200);
     expect(getData(runResponse)).toMatchObject({
-      agentProvider: 'codex',
-      agentProviderCapabilitySource: 'profile',
-      agentProviderCapabilitiesJson: {
-        resumeSession: false,
-        resumeWithMessage: false,
+      provider: 'codex',
+      capabilitySource: 'run',
+      capabilitiesSnapshotJson: {
+        resumeSession: true,
+        resumeWithMessage: true,
       },
     });
 
@@ -427,8 +432,11 @@ describe('agent gateway provider capability enforcement', () => {
         message: 'Continue codex once',
         idempotencyKey,
       });
-    expect(replayResponse.status).toBe(409);
-    expect(JSON.stringify(replayResponse.body)).toContain('AGENT_GATEWAY_ACTION_UNSUPPORTED');
+    expect(replayResponse.status).toBe(200);
+    expect(getData(replayResponse)).toMatchObject({
+      resumedFromRunId: profileBackedResume.runId,
+      deduped: true,
+    });
 
     const continuationCount = await app.db.getRepository('agRuns').count({
       filter: {
@@ -507,7 +515,7 @@ describe('agent gateway provider capability enforcement', () => {
     expect(JSON.stringify(directArtifactsResponse.body)).not.toContain('ARTIFACT_SECRET');
   });
 
-  it('applies the generic capability floor to runs without provider identity', async () => {
+  it('applies the persisted generic run capability floor', async () => {
     const now = new Date();
     const runId = randomUUID();
     await app.db.getRepository('agRuns').create({
@@ -567,9 +575,9 @@ describe('agent gateway provider capability enforcement', () => {
     const runResponse = await rootAgent.get(`/agentGatewayApi:getRun/${runId}`);
     expect(runResponse.status).toBe(200);
     expect(getData(runResponse)).toMatchObject({
-      agentProvider: 'generic-cli',
-      agentProviderCapabilitySource: 'fallback',
-      agentProviderCapabilitiesJson: {
+      provider: 'generic-cli',
+      capabilitySource: 'run',
+      capabilitiesSnapshotJson: {
         structuredEvents: false,
         artifacts: false,
       },
@@ -632,6 +640,9 @@ describe('agent gateway provider capability enforcement', () => {
           profileKey: 'codex',
         },
         sourceType: 'provider-capability-test',
+        provider: 'codex',
+        capabilitiesSnapshotJson: normalizeAgentProviderCapabilities('codex'),
+        executionPolicyKey: 'codex',
         requestedAt: now,
         queuedAt: now,
         startedAt: now,
@@ -676,9 +687,9 @@ describe('agent gateway provider capability enforcement', () => {
     const runResponse = await rootAgent.get(`/agentGatewayApi:getRun/${runId}`);
     expect(runResponse.status).toBe(200);
     expect(getData(runResponse)).toMatchObject({
-      agentProvider: 'codex',
-      agentProviderCapabilitySource: 'profile',
-      agentProviderCapabilitiesJson: {
+      provider: 'codex',
+      capabilitySource: 'run',
+      capabilitiesSnapshotJson: {
         structuredEvents: true,
         artifacts: true,
       },
@@ -693,7 +704,7 @@ describe('agent gateway provider capability enforcement', () => {
     expect(JSON.stringify(artifactsResponse.body)).not.toContain('PROFILE_KEY_ARTIFACT_SECRET');
   });
 
-  it('uses explicit payload provider fields when no stored provider is available', async () => {
+  it('uses persisted run provider snapshots instead of payload provider fields', async () => {
     const now = new Date();
     const node = await app.db.getRepository('agNodes').create({
       values: {
@@ -718,7 +729,7 @@ describe('agent gateway provider capability enforcement', () => {
       },
       {
         payload: {
-          agentProvider: 'claude-code',
+          provider: 'claude-code',
         },
         expectedProvider: 'claude-code',
       },
@@ -739,6 +750,9 @@ describe('agent gateway provider capability enforcement', () => {
           },
           executionPayloadJson: entry.payload,
           sourceType: 'provider-capability-test',
+          provider: entry.expectedProvider,
+          capabilitiesSnapshotJson: normalizeAgentProviderCapabilities(entry.expectedProvider),
+          executionPolicyKey: entry.expectedProvider,
           requestedAt: now,
           queuedAt: now,
           startedAt: now,
@@ -751,9 +765,9 @@ describe('agent gateway provider capability enforcement', () => {
       const runResponse = await rootAgent.get(`/agentGatewayApi:getRun/${runId}`);
       expect(runResponse.status).toBe(200);
       expect(getData(runResponse)).toMatchObject({
-        agentProvider: entry.expectedProvider,
-        agentProviderCapabilitySource: 'payload',
-        agentProviderCapabilitiesJson: {
+        provider: entry.expectedProvider,
+        capabilitySource: 'run',
+        capabilitiesSnapshotJson: {
           terminalOutput: true,
           structuredEvents: true,
           liveSemanticMessage: false,
@@ -781,6 +795,9 @@ describe('agent gateway provider capability enforcement', () => {
           commandKey: 'codex',
         },
         sourceType: 'provider-capability-test',
+        provider: 'generic-cli',
+        capabilitiesSnapshotJson: normalizeAgentProviderCapabilities('generic-cli'),
+        executionPolicyKey: 'generic-cli',
         requestedAt: now,
         queuedAt: now,
         startedAt: now,
@@ -823,9 +840,9 @@ describe('agent gateway provider capability enforcement', () => {
     const runResponse = await rootAgent.get(`/agentGatewayApi:getRun/${runId}`);
     expect(runResponse.status).toBe(200);
     expect(getData(runResponse)).toMatchObject({
-      agentProvider: 'generic-cli',
-      agentProviderCapabilitySource: 'payload',
-      agentProviderCapabilitiesJson: {
+      provider: 'generic-cli',
+      capabilitySource: 'run',
+      capabilitiesSnapshotJson: {
         structuredEvents: false,
         artifacts: false,
       },
@@ -842,7 +859,7 @@ describe('agent gateway provider capability enforcement', () => {
     expect(JSON.stringify(artifactsResponse.body)).not.toContain('EXPLICIT_GENERIC_ARTIFACT_SECRET');
   });
 
-  it('rechecks provider capability before returning an idempotent terminal control request', async () => {
+  it('keeps the persisted run capability snapshot for idempotent terminal control requests', async () => {
     const codex = await seedProviderRun('codex', {
       status: 'running',
       terminal: true,
@@ -852,6 +869,7 @@ describe('agent gateway provider capability enforcement', () => {
       idempotencyKey,
     });
     expect(firstResponse.status).toBe(200);
+    const firstControlRequestId = getData(firstResponse).controlRequestId;
 
     await app.db.getRepository('agAgentProfiles').update({
       filterByTk: codex.profileId,
@@ -865,17 +883,17 @@ describe('agent gateway provider capability enforcement', () => {
     const replayResponse = await rootAgent.post(`/agentGatewayApi:interruptTerminal/${codex.runId}`).send({
       idempotencyKey,
     });
-    expect(replayResponse.status).toBe(409);
-    expect(JSON.stringify(replayResponse.body)).toContain('AGENT_GATEWAY_ACTION_UNSUPPORTED');
-    expect(JSON.stringify(replayResponse.body)).toContain('Agent CLI interrupt is not supported by this provider');
+    expect(replayResponse.status).toBe(200);
+    expect(getData(replayResponse)).toMatchObject({
+      controlRequestId: firstControlRequestId,
+    });
   });
 
-  it('uses profile and stored session capability overrides when read routes resolve run capabilities', async () => {
+  it('uses only persisted run capability snapshots when read routes resolve capabilities', async () => {
     const profileOverride = await seedProviderRun('opencode', {
       profileCapabilities: {
         artifacts: false,
       },
-      runProvider: true,
     });
     await app.db.getRepository('agRunArtifacts').create({
       values: {
@@ -893,9 +911,9 @@ describe('agent gateway provider capability enforcement', () => {
 
     const profileRunResponse = await rootAgent.get(`/agentGatewayApi:getRun/${profileOverride.runId}`);
     expect(profileRunResponse.status).toBe(200);
-    expect(getData(profileRunResponse).agentProvider).toBe('opencode');
-    expect(getData(profileRunResponse).agentProviderCapabilitySource).toBe('profile');
-    expect(getData(profileRunResponse).agentProviderCapabilitiesJson).toMatchObject({
+    expect(getData(profileRunResponse).provider).toBe('opencode');
+    expect(getData(profileRunResponse).capabilitySource).toBe('run');
+    expect(getData(profileRunResponse).capabilitiesSnapshotJson).toMatchObject({
       artifacts: false,
     });
 
@@ -909,13 +927,12 @@ describe('agent gateway provider capability enforcement', () => {
       profileCapabilities: {
         artifacts: false,
       },
-      rawSessionCapabilities: {},
     });
     const partialSessionRunResponse = await rootAgent.get(`/agentGatewayApi:getRun/${partialSession.runId}`);
     expect(partialSessionRunResponse.status).toBe(200);
-    expect(getData(partialSessionRunResponse).agentProvider).toBe('opencode');
-    expect(getData(partialSessionRunResponse).agentProviderCapabilitySource).toBe('profile');
-    expect(getData(partialSessionRunResponse).agentProviderCapabilitiesJson).toMatchObject({
+    expect(getData(partialSessionRunResponse).provider).toBe('opencode');
+    expect(getData(partialSessionRunResponse).capabilitySource).toBe('run');
+    expect(getData(partialSessionRunResponse).capabilitiesSnapshotJson).toMatchObject({
       artifacts: false,
     });
 
@@ -923,7 +940,7 @@ describe('agent gateway provider capability enforcement', () => {
       status: 'running',
       terminal: true,
       session: true,
-      sessionCapabilities: {
+      runCapabilities: {
         terminalOutput: false,
       },
     });
@@ -952,10 +969,9 @@ describe('agent gateway provider capability enforcement', () => {
     });
 
     const profileAliasOverride = await seedProviderRun('opencode', {
-      rawProfileCapabilities: {
-        supportsArtifacts: false,
+      rawRunCapabilities: {
+        artifacts: false,
       },
-      runProvider: true,
     });
     await app.db.getRepository('agRunArtifacts').create({
       values: {
@@ -973,8 +989,8 @@ describe('agent gateway provider capability enforcement', () => {
 
     const profileAliasRunResponse = await rootAgent.get(`/agentGatewayApi:getRun/${profileAliasOverride.runId}`);
     expect(profileAliasRunResponse.status).toBe(200);
-    expect(getData(profileAliasRunResponse).agentProviderCapabilitySource).toBe('profile');
-    expect(getData(profileAliasRunResponse).agentProviderCapabilitiesJson).toMatchObject({
+    expect(getData(profileAliasRunResponse).capabilitySource).toBe('run');
+    expect(getData(profileAliasRunResponse).capabilitiesSnapshotJson).toMatchObject({
       artifacts: false,
     });
     const profileAliasArtifactsResponse = await rootAgent.get(
@@ -988,20 +1004,16 @@ describe('agent gateway provider capability enforcement', () => {
       status: 'running',
       terminal: true,
       session: true,
-      rawSessionCapabilities: {
-        terminalStream: false,
-        terminal: {
-          interrupt: false,
-        },
-        terminalControl: {
-          terminate: false,
-        },
+      rawRunCapabilities: {
+        terminalOutput: false,
+        interrupt: false,
+        terminate: false,
       },
     });
     const nestedRunResponse = await rootAgent.get(`/agentGatewayApi:getRun/${nestedSessionOverride.runId}`);
     expect(nestedRunResponse.status).toBe(200);
-    expect(getData(nestedRunResponse).agentProviderCapabilitySource).toBe('session');
-    expect(getData(nestedRunResponse).agentProviderCapabilitiesJson).toMatchObject({
+    expect(getData(nestedRunResponse).capabilitySource).toBe('run');
+    expect(getData(nestedRunResponse).capabilitiesSnapshotJson).toMatchObject({
       terminalOutput: false,
       interrupt: false,
       terminate: false,

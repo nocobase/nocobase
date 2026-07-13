@@ -263,7 +263,7 @@ describe('agent gateway daemon runner', () => {
       currentConcurrency: 0,
       profiles: expect.any(Array),
       profilesHash: expect.any(String),
-      capabilities: expect.any(Object),
+      capabilitiesJson: expect.any(Object),
       hostInfo: expect.any(Object),
     });
     expect(nodeHeartbeatCalls.slice(1).some((call) => (call.body as JsonRecord).currentConcurrency === 1)).toBe(true);
@@ -764,7 +764,7 @@ describe('agent gateway daemon runner', () => {
     );
     expect(stdoutArtifactCall?.body).toMatchObject({
       sizeBytes: 128 * 1024,
-      metadata: {
+      metadataJson: {
         capturedBytes: 80 * 1024,
         spoolTruncated: true,
         truncated: true,
@@ -955,7 +955,7 @@ describe('agent gateway daemon runner', () => {
           artifactType: 'stdout',
           mimeType: 'text/plain',
           contentText: expect.stringContaining('AGW_PROGRESS phase=render_run status=started'),
-          metadata: expect.objectContaining({
+          metadataJson: expect.objectContaining({
             storageMode: 'inline',
             truncated: false,
           }),
@@ -982,7 +982,7 @@ describe('agent gateway daemon runner', () => {
           artifactType: 'html-report',
           mimeType: 'text/html',
           contentText: expect.stringContaining('batch report'),
-          metadata: expect.objectContaining({
+          metadataJson: expect.objectContaining({
             artifactGroupLabel: 'Reports',
           }),
         }),
@@ -1003,7 +1003,7 @@ describe('agent gateway daemon runner', () => {
           artifactType: 'image',
           mimeType: 'image/png',
           contentText: expect.stringContaining('data:image/png;base64,'),
-          metadata: expect.objectContaining({
+          metadataJson: expect.objectContaining({
             relativePath: 'runs/nb-opencode-ui-batch/run-1/browser-screenshots/overview.png',
             inlineEncoding: 'data-url',
           }),
@@ -1026,7 +1026,7 @@ describe('agent gateway daemon runner', () => {
     );
     expect(harnessProgressCall?.body).toMatchObject({
       message: 'rerendering report',
-      payloadJson: {
+      contentJson: {
         progress: true,
         phase: 'render_run',
         status: 'started',
@@ -1034,7 +1034,7 @@ describe('agent gateway daemon runner', () => {
     });
     const completeCall = requester.calls.find((call) => isRunActionCall(call, 'complete'));
     expect(completeCall?.body).toMatchObject({
-      resultSummary: {
+      resultSummaryJson: {
         declaredArtifacts: {
           declaredArtifactCount: 7,
         },
@@ -1134,7 +1134,7 @@ describe('agent gateway daemon runner', () => {
     );
     const completeCall = requester.calls.find((call) => isRunActionCall(call, 'complete'));
     expect(completeCall?.body).toMatchObject({
-      resultSummary: {
+      resultSummaryJson: {
         declaredArtifacts: {
           artifactManifest: {
             counts: {
@@ -1238,14 +1238,14 @@ describe('agent gateway daemon runner', () => {
         expect.objectContaining({
           artifactType: 'html-report',
           contentText: expect.stringContaining('absolute path report'),
-          metadata: expect.objectContaining({
+          metadataJson: expect.objectContaining({
             artifactGroupLabel: 'Reports',
           }),
         }),
         expect.objectContaining({
           artifactType: 'json-report',
           contentText: '{"absolute":true}',
-          metadata: expect.objectContaining({
+          metadataJson: expect.objectContaining({
             artifactGroupLabel: 'JSON',
           }),
         }),
@@ -1348,7 +1348,7 @@ describe('agent gateway daemon runner', () => {
     );
     const completeCall = requester.calls.find((call) => isRunActionCall(call, 'complete'));
     expect(completeCall?.body).toMatchObject({
-      resultSummary: {
+      resultSummaryJson: {
         declaredArtifacts: {
           declaredArtifactFailedCount: 1,
           declaredArtifactFailures: [
@@ -1442,7 +1442,7 @@ describe('agent gateway daemon runner', () => {
     expect(new Set(artifactCalls.map((call) => (call.body as JsonRecord).leaseVersion)).size).toBeGreaterThan(1);
     const completeCall = requester.calls.find((call) => isRunActionCall(call, 'complete'));
     expect(completeCall?.body).toMatchObject({
-      resultSummary: {
+      resultSummaryJson: {
         declaredArtifacts: {
           declaredArtifactFailedCount: 0,
         },
@@ -1765,7 +1765,7 @@ describe('agent gateway daemon runner', () => {
     expect(upsertCall?.body).toMatchObject({
       provider: 'codex',
       providerSessionId: '019f1e72-d75c-7c61-a9ba-cc99c653e0a2',
-      capabilities: {
+      capabilitiesJson: {
         detectSessionId: true,
         resumeWithMessage: true,
       },
@@ -1879,7 +1879,7 @@ describe('agent gateway daemon runner', () => {
     expect(upsertCall?.body).toMatchObject({
       provider: 'codex',
       providerSessionId: '019f1e72-d75c-7c61-a9ba-cc99c653e0a2',
-      capabilities: {
+      capabilitiesJson: {
         artifacts: false,
       },
     });
@@ -2268,7 +2268,7 @@ describe('agent gateway daemon runner', () => {
     expect(upsertCalls[1]?.body).toMatchObject({
       provider: 'codex',
       providerSessionId: '019f1ea4-0ea4-7ef4-a911-f9f986f377e5',
-      metadata: {
+      metadataJson: {
         upsertAttempt: 2,
       },
     });
@@ -3190,11 +3190,13 @@ describe('agent gateway daemon runner', () => {
     const artifactBody = (artifactCall?.body || {}) as JsonRecord;
     expect(String(artifactBody.contentText).length).toBeLessThan(COMMAND_OUTPUT_PAYLOAD_LIMIT_CHARS);
     expect(String(artifactBody.contentText).length).toBeGreaterThan(9 * 1024 * 1024);
-    expect(artifactBody.metadata).toMatchObject({
+    expect(artifactBody.metadataJson).toMatchObject({
       originalSizeBytes: largeLogSize,
       truncated: true,
     });
-    expect(artifactBody.metadata?.uploadedBytes).toBe(Buffer.byteLength(String(artifactBody.contentText)));
+    expect((artifactBody.metadataJson as JsonRecord).uploadedBytes).toBe(
+      Buffer.byteLength(String(artifactBody.contentText)),
+    );
     expect(requester.calls.some((call) => isRunActionCall(call, 'complete'))).toBe(true);
   });
 

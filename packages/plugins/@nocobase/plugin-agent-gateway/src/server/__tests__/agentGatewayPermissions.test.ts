@@ -11,6 +11,7 @@ import { randomUUID } from 'crypto';
 
 import { MockServer, createMockServer } from '@nocobase/test';
 
+import { normalizeAgentProviderCapabilities } from '../../shared/providerCapabilities';
 import PluginAgentGatewayServer from '../plugin';
 
 interface ResponseLike {
@@ -123,10 +124,12 @@ describe('agent gateway permission matrix', () => {
           text: 'permission prompt',
         },
         executionPayloadJson: {
-          commandKey: 'codex',
-          profileKey: 'codex',
+          executionPolicyKey: 'codex',
           cwd: '.',
         },
+        provider: 'codex',
+        capabilitiesSnapshotJson: normalizeAgentProviderCapabilities('codex'),
+        executionPolicyKey: 'codex',
         ...(options.terminal
           ? {
               terminalBackend: 'tmux',
@@ -157,7 +160,6 @@ describe('agent gateway permission matrix', () => {
       filterByTk: run.get('id'),
       values: {
         agentSessionId: session.get('id'),
-        agentSessionProvider: 'codex',
         agentSessionProviderId: session.get('providerSessionId'),
       },
     });
@@ -215,8 +217,13 @@ describe('agent gateway permission matrix', () => {
       promptSnapshot: {
         text: 'must not queue',
       },
-      executionPayload: {
+      provider: 'codex',
+      capabilitiesSnapshotJson: normalizeAgentProviderCapabilities('codex'),
+      executionPolicyKey: 'codex',
+      executionPayloadJson: {
+        executionPolicyKey: 'codex',
         task: 'must-not-queue',
+        cwd: '.',
       },
     });
     expect(deniedResponse.status).toBe(403);
@@ -230,8 +237,13 @@ describe('agent gateway permission matrix', () => {
       promptSnapshot: {
         text: 'queue from management API',
       },
-      executionPayload: {
+      provider: 'codex',
+      capabilitiesSnapshotJson: normalizeAgentProviderCapabilities('codex'),
+      executionPolicyKey: 'codex',
+      executionPayloadJson: {
+        executionPolicyKey: 'codex',
         task: 'queue',
+        cwd: '.',
       },
     });
     expect(allowedResponse.status).toBe(200);

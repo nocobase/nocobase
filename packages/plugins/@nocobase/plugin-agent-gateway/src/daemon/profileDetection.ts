@@ -314,8 +314,8 @@ export async function detectAgentProfiles(options: DetectAgentProfilesOptions = 
       agentType: 'code',
       driver: 'exec',
       status: buildProfileStatus(result),
-      capabilities: buildCapabilities(definition, result),
-      metadata: {
+      capabilitiesJson: buildCapabilities(definition, result),
+      metadataJson: {
         detector: 'agent-gateway-daemon',
         detectionError: result.available ? null : result.error || 'Command is not installed',
       },

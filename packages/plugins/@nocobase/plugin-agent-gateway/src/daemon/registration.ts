@@ -74,7 +74,7 @@ export async function registerDaemonNode(options: RegisterDaemonOptions) {
         platform: platform(),
         arch: arch(),
       },
-      capabilities: options.capabilities || {
+      capabilitiesJson: options.capabilities || {
         maxConcurrency: 1,
         supportsExecDriver: true,
       },
@@ -112,7 +112,7 @@ export async function heartbeatDaemonNode(options: HeartbeatDaemonOptions) {
         platform: platform(),
         arch: arch(),
       },
-      capabilities: options.capabilities || {
+      capabilitiesJson: options.capabilities || {
         maxConcurrency: 1,
         supportsExecDriver: true,
         supportsArtifacts: true,

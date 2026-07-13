@@ -11,6 +11,7 @@ import { randomUUID } from 'crypto';
 
 import { MockServer, createMockServer } from '@nocobase/test';
 import PluginAgentGatewayServer from '../plugin';
+import { AgentProviderKey, normalizeAgentProviderCapabilities } from '../../shared/providerCapabilities';
 import { AGENT_GATEWAY_TERMINATE_CONTROL_CANCEL_REASON } from '../../shared/runControl';
 import {
   claimRun,
@@ -80,6 +81,8 @@ describe('agent gateway run control requests', () => {
   async function seedActiveRun(
     options: {
       capabilitiesJson?: Record<string, unknown>;
+      provider?: AgentProviderKey;
+      runCapabilitiesJson?: Record<string, unknown>;
       terminalControl?: boolean;
       withSession?: boolean;
     } = {},
@@ -89,6 +92,24 @@ describe('agent gateway run control requests', () => {
       terminalControl: options.terminalControl,
     });
     const runId = await createQueuedRun(app, runner, `control-run-${randomUUID()}`);
+    const provider = options.provider || 'codex';
+    const runCapabilitiesJson =
+      options.runCapabilitiesJson ||
+      options.capabilitiesJson ||
+      (options.terminalControl === false
+        ? {
+            interrupt: false,
+            terminate: false,
+          }
+        : {});
+    await app.db.getRepository('agRuns').update({
+      filterByTk: runId,
+      values: {
+        provider,
+        capabilitiesSnapshotJson: normalizeAgentProviderCapabilities(provider, runCapabilitiesJson),
+        executionPolicyKey: 'fake-success',
+      },
+    });
     const claim = await claimRun(app, runner, runId);
     const sessionName = `ag-run-${runId
       .toLowerCase()
@@ -131,7 +152,6 @@ describe('agent gateway run control requests', () => {
         filterByTk: runId,
         values: {
           agentSessionId: sessionId,
-          agentSessionProvider: 'codex',
           agentSessionProviderId: session.get('providerSessionId'),
         },
       });
@@ -550,7 +570,14 @@ describe('agent gateway run control requests', () => {
   });
 
   it('does not use fallback provider defaults when runner control capabilities are unspecified', async () => {
-    const { runner, runId } = await seedActiveRun({ withSession: false });
+    const { runner, runId } = await seedActiveRun({
+      provider: 'generic-cli',
+      runCapabilitiesJson: {
+        interrupt: false,
+        terminate: false,
+      },
+      withSession: false,
+    });
     await app.db.getRepository('agNodes').update({
       filterByTk: runner.nodeId,
       values: {
@@ -564,7 +591,7 @@ describe('agent gateway run control requests', () => {
     const detailResponse = await rootAgent.get(`/agentGatewayApi:getRun/${runId}`);
     expect(detailResponse.status).toBe(200);
     expect(getData(detailResponse)).toMatchObject({
-      agentProviderCapabilitySource: 'fallback',
+      capabilitySource: 'run',
       agentGatewayControlActionsJson: {
         interruptRun: false,
         terminateRun: false,
@@ -582,8 +609,15 @@ describe('agent gateway run control requests', () => {
     expect(await app.db.getRepository('agRunControlRequests').count({ filter: { runId } })).toBe(0);
   });
 
-  it('does not expose or accept controls when the runner terminal capability disables them', async () => {
-    const { runId } = await seedActiveRun({ withSession: false, terminalControl: false });
+  it('does not expose or accept controls when the persisted run snapshot disables them', async () => {
+    const { runId } = await seedActiveRun({
+      runCapabilitiesJson: {
+        interrupt: false,
+        terminate: false,
+      },
+      withSession: false,
+      terminalControl: false,
+    });
     const detailResponse = await rootAgent.get(`/agentGatewayApi:getRun/${runId}`);
     expect(detailResponse.status).toBe(200);
     expect(getData(detailResponse)).toMatchObject({

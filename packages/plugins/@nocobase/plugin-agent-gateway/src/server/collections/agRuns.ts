@@ -130,6 +130,27 @@ export default defineCollection({
     },
     {
       type: 'string',
+      name: 'provider',
+      allowNull: false,
+      defaultValue: 'generic-cli',
+      index: true,
+    },
+    {
+      type: 'jsonb',
+      name: 'capabilitiesSnapshotJson',
+      allowNull: false,
+      defaultValue: {},
+      hidden: true,
+    },
+    {
+      type: 'string',
+      name: 'executionPolicyKey',
+      allowNull: false,
+      defaultValue: 'generic-cli',
+      index: true,
+    },
+    {
+      type: 'string',
       name: 'sourceCollection',
       interface: 'input',
     },
@@ -287,11 +308,6 @@ export default defineCollection({
     {
       type: 'date',
       name: 'continuationRequestedAt',
-    },
-    {
-      type: 'string',
-      name: 'agentSessionProvider',
-      index: true,
     },
     {
       type: 'string',

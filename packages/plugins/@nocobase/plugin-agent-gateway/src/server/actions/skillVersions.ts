@@ -104,10 +104,7 @@ function getVersionStatus(ctx: Context, value: unknown, existingVersion?: ModelR
 
 function getVersionMetadata(values: JsonRecord, source: JsonRecord, existingVersion?: ModelRecord | null) {
   const existingMetadata = existingVersion ? getRecord(getModelValue(existingVersion, 'metadataJson')) : {};
-  const requestMetadata =
-    hasOwnKey(values, 'metadataJson') || hasOwnKey(values, 'metadata')
-      ? getRecord(values.metadataJson || values.metadata)
-      : {};
+  const requestMetadata = hasOwnKey(values, 'metadataJson') ? getRecord(values.metadataJson) : {};
   return {
     ...existingMetadata,
     ...requestMetadata,

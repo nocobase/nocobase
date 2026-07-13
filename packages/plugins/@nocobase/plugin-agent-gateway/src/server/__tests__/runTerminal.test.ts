@@ -11,6 +11,7 @@ import { randomUUID } from 'crypto';
 
 import { MockServer, createMockServer } from '@nocobase/test';
 
+import { normalizeAgentProviderCapabilities } from '../../shared/providerCapabilities';
 import { createNodeToken, toStoredTokenFields } from '../security';
 import PluginAgentGatewayServer from '../plugin';
 
@@ -85,11 +86,13 @@ describe('agent gateway run terminal APIs', () => {
       values: {
         nodeId,
         profileKey: 'fake-terminal',
+        provider: 'codex',
         displayName: 'Fake Terminal',
         agentType: 'code',
         driver: 'fake',
         status: 'active',
         capabilitiesJson: {
+          ...normalizeAgentProviderCapabilities('codex'),
           maxConcurrency: 1,
         },
       },
@@ -110,8 +113,13 @@ describe('agent gateway run terminal APIs', () => {
       promptSnapshot: {
         prompt: 'terminal test',
       },
-      executionPayload: {
+      provider: 'codex',
+      capabilitiesSnapshotJson: normalizeAgentProviderCapabilities('codex'),
+      executionPolicyKey: 'fake-terminal',
+      executionPayloadJson: {
+        executionPolicyKey: 'fake-terminal',
         task: 'terminal',
+        cwd: '.',
       },
     });
     expect(runResponse.status).toBe(200);
@@ -173,7 +181,6 @@ describe('agent gateway run terminal APIs', () => {
       filterByTk: runId,
       values: {
         agentSessionId: session.get('id'),
-        agentSessionProvider: 'codex',
         agentSessionProviderId: providerSessionId,
       },
     });

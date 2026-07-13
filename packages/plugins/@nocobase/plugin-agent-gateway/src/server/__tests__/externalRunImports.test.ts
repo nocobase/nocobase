@@ -213,7 +213,7 @@ describe('agent gateway external run imports', () => {
           artifactType: 'text',
           mimeType: 'text/markdown',
           contentText: '# Imported report',
-          metadata: {
+          metadataJson: {
             kind: 'report',
           },
         },
@@ -236,8 +236,7 @@ describe('agent gateway external run imports', () => {
     expect(importResult.run).toMatchObject({
       status: 'succeeded',
       sourceType: 'external-import',
-      agentProvider: 'codex',
-      agentSessionProvider: 'codex',
+      provider: 'codex',
       agentSessionProviderId: 'codex-import-thread-1',
     });
     expect(JSON.stringify(importResult.run)).not.toContain('promptSnapshot');
@@ -407,7 +406,7 @@ describe('agent gateway external run imports', () => {
       batchKey: 'final-only-retry',
       provider: 'generic-cli',
       status: 'succeeded',
-      resultSummary: {
+      resultSummaryJson: {
         summary: 'finalized without observations',
       },
       logs: [],
@@ -839,7 +838,7 @@ describe('agent gateway external run imports', () => {
       externalRunKey,
       provider: 'codex',
       status: 'succeeded',
-      resultSummary: {
+      resultSummaryJson: {
         tokenUsageJson: {
           inputTokens: 80,
           outputTokens: 20,
@@ -860,7 +859,7 @@ describe('agent gateway external run imports', () => {
       batchKey: 'updated-result-summary',
       provider: 'codex',
       status: 'succeeded',
-      resultSummary: {
+      resultSummaryJson: {
         tokenUsageJson: {
           inputTokens: 160,
           outputTokens: 40,
@@ -1140,7 +1139,7 @@ describe('agent gateway external run imports', () => {
       sourceCollection: 'agExternalImportTickets',
       sourceRecordId: ticket.get('id'),
       outputAgentRunField: 'agentRun',
-      resultSummary: {
+      resultSummaryJson: {
         summary: 'final imported result',
         tokenUsageJson: {
           inputTokens: 90,
@@ -1477,7 +1476,6 @@ describe('agent gateway external run imports', () => {
     const importResponse = await rootAgent.post('/agentGatewayApi:importExternalRun').send({
       externalRunKey: `text-import-${randomUUID()}`,
       provider: 'generic-cli',
-      format: 'text',
       title: 'Imported text run',
       status: 'running',
       logs: [
@@ -1500,7 +1498,7 @@ describe('agent gateway external run imports', () => {
           contentText: 'finished',
         },
       ],
-      resultSummary: {
+      resultSummaryJson: {
         imported: true,
       },
     });
@@ -1528,7 +1526,10 @@ describe('agent gateway external run imports', () => {
       promptSnapshot: {
         renderedPrompt: 'managed',
       },
-      executionPayload: {
+      provider: 'codex',
+      capabilitiesSnapshotJson: {},
+      executionPolicyKey: 'managed-codex',
+      executionPayloadJson: {
         executionPolicyKey: 'managed-codex',
         prompt: 'managed',
         cwd: '.',

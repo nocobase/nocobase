@@ -332,7 +332,7 @@ function getStoredContentText(ctx: Context, rawEvent: JsonRecord, eventType: str
   }
   return getContentText(
     ctx,
-    rawEvent.contentText || rawEvent.message,
+    rawEvent.contentText,
     isVerboseTranscriptEvent(eventType) ? COMMAND_DETAIL_STRING_LIMIT_CHARS : MAX_CONTENT_TEXT_LENGTH,
   );
 }
@@ -540,12 +540,8 @@ export async function createConversationEvent(
     };
   }
 
-  const eventType = getRequiredString(ctx, rawEvent.eventType || rawEvent.type, 'eventType');
-  const redactedContentJson = getIncomingContentJson(
-    ctx,
-    eventType,
-    rawEvent.contentJson || rawEvent.payloadJson || rawEvent.payload,
-  );
+  const eventType = getRequiredString(ctx, rawEvent.eventType, 'eventType');
+  const redactedContentJson = getIncomingContentJson(ctx, eventType, rawEvent.contentJson);
   const storedContentJson = getStoredContentJson(eventType, redactedContentJson);
   let event: ModelRecord;
   try {
