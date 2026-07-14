@@ -17,10 +17,9 @@ import {
   LIGHT_EXTENSION_SETTINGS_SCHEMA_KEYWORDS,
   LIGHT_EXTENSION_SETTINGS_SCHEMA_TYPES,
   LIGHT_EXTENSION_X_COMPONENT_WHITELIST,
-  lightExtensionEntryV1SchemaJson,
 } from '@nocobase/light-extension-sdk/schema';
 import sdkPackageJson from '@nocobase/light-extension-sdk/package.json';
-import { createHash } from 'crypto';
+import { lightExtensionEntryV1SchemaSha256 } from '@nocobase/light-extension-sdk/schema/server';
 import { posix as pathPosix } from 'path';
 import {
   LIGHT_EXTENSION_ENTRY_DESCRIPTOR_FILE,
@@ -56,7 +55,7 @@ import {
   validateZipBudget as validateWorkspaceZipBudget,
 } from './light-extension-validator/workspacePolicy';
 
-export const LIGHT_EXTENSION_VALIDATOR_VERSION = 'light-extension-validator-v2';
+export const LIGHT_EXTENSION_VALIDATOR_VERSION = 'light-extension-validator-v3';
 export const LIGHT_EXTENSION_SDK_TEMPLATE_VERSION = 'light-extension-sdk-template-v2';
 
 export const LIGHT_EXTENSION_VALIDATION_LIMITS: LightExtensionValidationLimits = {
@@ -362,7 +361,7 @@ export function buildCapabilities(limits: LightExtensionValidationLimits): Light
       packageName: sdkPackageJson.name,
       version: sdkPackageJson.version,
       entrySchemaUri: LIGHT_EXTENSION_ENTRY_SCHEMA_URI,
-      entrySchemaSha256: createHash('sha256').update(lightExtensionEntryV1SchemaJson).digest('hex'),
+      entrySchemaSha256: lightExtensionEntryV1SchemaSha256,
     },
     limits,
     writePolicy: {

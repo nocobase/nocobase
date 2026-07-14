@@ -36,11 +36,23 @@ import {
   JSItemSourceModeField,
 } from './models/fields/JSItemSourceModeField';
 
+const PLUGIN_FLOW_ENGINE_LOADED = Symbol.for('nocobase.client-v2.plugin-flow-engine.loaded');
+
+interface FlowEngineWithPluginFlowEngineState {
+  [PLUGIN_FLOW_ENGINE_LOADED]?: true;
+}
+
 export class PluginFlowEngine<TApp extends BaseApplication<any> = BaseApplication<any>> extends Plugin<
   PluginOptions<any>,
   TApp
 > {
   async load() {
+    const flowEngine = this.flowEngine as typeof this.flowEngine & FlowEngineWithPluginFlowEngineState;
+
+    if (flowEngine[PLUGIN_FLOW_ENGINE_LOADED]) {
+      return;
+    }
+
     this.app.addComponents({ FlowRoute });
     this.app.flowEngine.setModelRepository(new FlowModelRepository(this.app));
     const filteredModels = Object.fromEntries(
@@ -104,6 +116,7 @@ export class PluginFlowEngine<TApp extends BaseApplication<any> = BaseApplicatio
         completion: { insertText: "await ctx.previewRunJS('console.log(1)', 'v2')" },
       },
     );
+    flowEngine[PLUGIN_FLOW_ENGINE_LOADED] = true;
   }
 }
 

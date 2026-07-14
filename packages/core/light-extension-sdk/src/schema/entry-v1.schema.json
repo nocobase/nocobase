@@ -1,5 +1,5 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://schemas.nocobase.com/light-extension/entry-v1.schema.json",
   "title": "NocoBase light extension entry.json v1",
   "description": "Canonical descriptor for one NocoBase light extension client Entry.",
@@ -20,38 +20,68 @@
       "pattern": "^[a-z0-9][a-z0-9-]{0,62}$",
       "description": "Stable technical identity. It must not change when the Entry directory is renamed."
     },
-    "title": { "type": "string", "maxLength": 120 },
-    "description": { "type": "string", "maxLength": 1000 },
+    "title": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
     "category": {
       "type": "string",
       "pattern": "^[a-z0-9][a-z0-9-]{0,62}$"
     },
-    "icon": { "type": "string", "maxLength": 120 },
+    "icon": {
+      "type": "string",
+      "maxLength": 120
+    },
     "tags": {
       "type": "array",
       "maxItems": 20,
-      "items": { "type": "string" }
+      "items": {
+        "type": "string"
+      }
     },
-    "sort": { "type": "integer" },
-    "settingsSchema": { "$ref": "#/$defs/settingsSchema" }
+    "sort": {
+      "type": "integer"
+    },
+    "settingsSchema": {
+      "description": "Settings form schema for this light extension Entry.",
+      "$ref": "#/definitions/rootSettingsSchema"
+    }
   },
-  "$defs": {
+  "definitions": {
     "jsonValue": {
       "oneOf": [
-        { "type": "null" },
-        { "type": "boolean" },
-        { "type": "number" },
-        { "type": "string" },
+        {
+          "type": "null"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "string"
+        },
         {
           "type": "array",
-          "items": { "$ref": "#/$defs/jsonValue" }
+          "items": {
+            "$ref": "#/definitions/jsonValue"
+          }
         },
         {
           "type": "object",
           "propertyNames": {
-            "not": { "enum": ["__proto__", "prototype", "constructor"] }
+            "not": {
+              "enum": ["__proto__", "prototype", "constructor"]
+            }
           },
-          "additionalProperties": { "$ref": "#/$defs/jsonValue" }
+          "additionalProperties": {
+            "$ref": "#/definitions/jsonValue"
+          }
         }
       ]
     },
@@ -59,9 +89,13 @@
       "type": "object",
       "maxProperties": 64,
       "propertyNames": {
-        "not": { "enum": ["__proto__", "prototype", "constructor"] }
+        "not": {
+          "enum": ["__proto__", "prototype", "constructor"]
+        }
       },
-      "additionalProperties": { "$ref": "#/$defs/jsonValue" }
+      "additionalProperties": {
+        "$ref": "#/definitions/jsonValue"
+      }
     },
     "conditionPath": {
       "type": "string",
@@ -72,9 +106,15 @@
       "additionalProperties": false,
       "required": ["path", "operator", "value"],
       "properties": {
-        "path": { "$ref": "#/$defs/conditionPath" },
-        "operator": { "enum": ["$eq", "$ne"] },
-        "value": { "$ref": "#/$defs/jsonValue" }
+        "path": {
+          "$ref": "#/definitions/conditionPath"
+        },
+        "operator": {
+          "enum": ["$eq", "$ne"]
+        },
+        "value": {
+          "$ref": "#/definitions/jsonValue"
+        }
       }
     },
     "conditionWithArrayValue": {
@@ -82,11 +122,17 @@
       "additionalProperties": false,
       "required": ["path", "operator", "value"],
       "properties": {
-        "path": { "$ref": "#/$defs/conditionPath" },
-        "operator": { "enum": ["$in", "$notIn"] },
+        "path": {
+          "$ref": "#/definitions/conditionPath"
+        },
+        "operator": {
+          "enum": ["$in", "$notIn"]
+        },
         "value": {
           "type": "array",
-          "items": { "$ref": "#/$defs/jsonValue" }
+          "items": {
+            "$ref": "#/definitions/jsonValue"
+          }
         }
       }
     },
@@ -95,8 +141,12 @@
       "additionalProperties": false,
       "required": ["path", "operator"],
       "properties": {
-        "path": { "$ref": "#/$defs/conditionPath" },
-        "operator": { "enum": ["$empty", "$notEmpty"] }
+        "path": {
+          "$ref": "#/definitions/conditionPath"
+        },
+        "operator": {
+          "enum": ["$empty", "$notEmpty"]
+        }
       }
     },
     "conditionGroup": {
@@ -104,20 +154,71 @@
       "additionalProperties": false,
       "required": ["logic", "items"],
       "properties": {
-        "logic": { "enum": ["$and", "$or"] },
+        "logic": {
+          "enum": ["$and", "$or"]
+        },
         "items": {
           "type": "array",
           "maxItems": 32,
-          "items": { "$ref": "#/$defs/condition" }
+          "items": {
+            "$ref": "#/definitions/condition"
+          }
         }
       }
     },
     "condition": {
       "oneOf": [
-        { "$ref": "#/$defs/conditionWithValue" },
-        { "$ref": "#/$defs/conditionWithArrayValue" },
-        { "$ref": "#/$defs/conditionWithoutValue" },
-        { "$ref": "#/$defs/conditionGroup" }
+        {
+          "$ref": "#/definitions/conditionWithValue"
+        },
+        {
+          "$ref": "#/definitions/conditionWithArrayValue"
+        },
+        {
+          "$ref": "#/definitions/conditionWithoutValue"
+        },
+        {
+          "$ref": "#/definitions/conditionGroup"
+        }
+      ]
+    },
+    "noDirectVisibleCondition": {
+      "properties": {
+        "x-visible-when": false
+      }
+    },
+    "noVisibleConditionSubtree": {
+      "properties": {
+        "x-visible-when": false,
+        "properties": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/noVisibleConditionSubtree"
+          }
+        },
+        "items": {
+          "$ref": "#/definitions/noVisibleConditionSubtree"
+        }
+      }
+    },
+    "rootSettingsSchema": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/settingsSchema"
+        },
+        {
+          "$ref": "#/definitions/noDirectVisibleCondition"
+        }
+      ]
+    },
+    "arraySettingsSchema": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/settingsSchema"
+        },
+        {
+          "$ref": "#/definitions/noVisibleConditionSubtree"
+        }
       ]
     },
     "settingsSchema": {
@@ -127,12 +228,20 @@
         "type": {
           "enum": ["object", "array", "string", "number", "integer", "boolean"]
         },
-        "title": { "type": "string" },
-        "description": { "type": "string" },
-        "default": { "$ref": "#/$defs/jsonValue" },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "default": {
+          "$ref": "#/definitions/jsonValue"
+        },
         "enum": {
           "type": "array",
-          "items": { "$ref": "#/$defs/jsonValue" }
+          "items": {
+            "$ref": "#/definitions/jsonValue"
+          }
         },
         "required": {
           "type": "array",
@@ -146,16 +255,34 @@
           "type": "object",
           "propertyNames": {
             "pattern": "^[A-Za-z_][A-Za-z0-9_-]{0,63}$",
-            "not": { "enum": ["__proto__", "prototype", "constructor"] }
+            "not": {
+              "enum": ["__proto__", "prototype", "constructor"]
+            }
           },
-          "additionalProperties": { "$ref": "#/$defs/settingsSchema" }
+          "additionalProperties": {
+            "$ref": "#/definitions/settingsSchema"
+          }
         },
-        "items": { "$ref": "#/$defs/settingsSchema" },
-        "minLength": { "type": "integer", "minimum": 0 },
-        "maxLength": { "type": "integer", "minimum": 0 },
-        "minimum": { "type": "number" },
-        "maximum": { "type": "number" },
-        "format": { "type": "string" },
+        "items": {
+          "$ref": "#/definitions/arraySettingsSchema"
+        },
+        "minLength": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "maxLength": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "minimum": {
+          "type": "number"
+        },
+        "maximum": {
+          "type": "number"
+        },
+        "format": {
+          "type": "string"
+        },
         "x-component": {
           "enum": [
             "Input",
@@ -173,8 +300,13 @@
             "ColorPicker"
           ]
         },
-        "x-component-props": { "$ref": "#/$defs/componentProps" },
-        "x-visible-when": { "$ref": "#/$defs/condition" }
+        "x-component-props": {
+          "$ref": "#/definitions/componentProps"
+        },
+        "x-visible-when": {
+          "description": "Condition that controls whether this settings field is visible.",
+          "$ref": "#/definitions/condition"
+        }
       }
     }
   },

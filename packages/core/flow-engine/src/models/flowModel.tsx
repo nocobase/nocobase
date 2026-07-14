@@ -17,6 +17,7 @@ import { FlowContext, FlowModelContext, FlowRuntimeContext } from '../flowContex
 import { FlowEngine } from '../flowEngine';
 import type {
   ActionDefinition,
+  ActionRegistrationOptions,
   ArrayElementType,
   CreateModelOptions,
   CreateSubModelOptions,
@@ -447,8 +448,11 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    * 注册仅当前 FlowModel 类及其子类可用的 Action。
    * 该注册是类级别的，不会影响全局（FlowEngine）的 Action 注册。
    */
-  public static registerAction<TModel extends FlowModel = FlowModel>(definition: ActionDefinition<TModel>): void {
-    this.actionRegistry.registerAction(definition);
+  public static registerAction<TModel extends FlowModel = FlowModel>(
+    definition: ActionDefinition<TModel>,
+    options?: ActionRegistrationOptions,
+  ): void {
+    this.actionRegistry.registerAction(definition, options);
   }
 
   /**
@@ -456,8 +460,9 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    */
   public static registerActions<TModel extends FlowModel = FlowModel>(
     actions: Record<string, ActionDefinition<TModel>>,
+    options?: ActionRegistrationOptions,
   ): void {
-    this.actionRegistry.registerActions(actions);
+    this.actionRegistry.registerActions(actions, options);
   }
 
   /**

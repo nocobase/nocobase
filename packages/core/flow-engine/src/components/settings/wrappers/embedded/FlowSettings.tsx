@@ -192,49 +192,60 @@ const FlowSettingsContent: React.FC<ModelProvidedProps> = observer(({ model, flo
     return <Alert message={t('Flow with key {{flowKey}} not found', { flowKey })} type="error" />;
   }
 
-  if (configurableSteps.length === 0) {
-    return <Alert message={t('This flow has no configurable parameters')} type="info" />;
-  }
-
   return (
     <Form form={form} layout="vertical">
-      {configurableSteps.flatMap(({ stepKey, uiSchema }) =>
-        Object.entries(uiSchema).map(([fieldKey, schema]) => {
-          const componentProps = schema['x-component-props'] || {};
-          let input: React.ReactNode;
-          switch (schema['x-component']) {
-            case 'Select':
-              input = <Select options={schema.enum || []} {...componentProps} />;
-              break;
-            case 'InputNumber':
-              input = <InputNumber {...componentProps} />;
-              break;
-            case 'Switch':
-              input = <Switch {...componentProps} />;
-              break;
-            case 'Input.TextArea':
-              input = <Input.TextArea {...componentProps} />;
-              break;
-            default:
-              input = <Input {...componentProps} />;
-          }
+      {configurableSteps.length === 0 ? (
+        <Alert message={t('This flow has no configurable parameters')} type="info" />
+      ) : (
+        <>
+          {configurableSteps.flatMap(({ stepKey, uiSchema }) =>
+            Object.entries(uiSchema).map(([fieldKey, schema]) => {
+              const componentProps = schema['x-component-props'] || {};
+              const componentName = schema['x-component'];
+              const registeredComponent =
+                typeof componentName === 'string'
+                  ? model.flowEngine?.flowSettings?.components?.[componentName]
+                  : componentName;
+              let input: React.ReactNode;
+              switch (componentName) {
+                case 'Select':
+                  input = <Select options={schema.enum || []} {...componentProps} />;
+                  break;
+                case 'InputNumber':
+                  input = <InputNumber {...componentProps} />;
+                  break;
+                case 'Switch':
+                  input = <Switch {...componentProps} />;
+                  break;
+                case 'Input.TextArea':
+                  input = <Input.TextArea {...componentProps} />;
+                  break;
+                default:
+                  input = registeredComponent ? (
+                    React.createElement(registeredComponent as React.ElementType, componentProps)
+                  ) : (
+                    <Input {...componentProps} />
+                  );
+              }
 
-          return (
-            <Form.Item
-              key={`${stepKey}.${fieldKey}`}
-              name={[stepKey, fieldKey]}
-              label={schema.title || fieldKey}
-              valuePropName={schema['x-component'] === 'Switch' ? 'checked' : 'value'}
-              rules={schema.required ? [{ required: true, message: t('This field is required') }] : []}
-            >
-              {input}
-            </Form.Item>
-          );
-        }),
+              return (
+                <Form.Item
+                  key={`${stepKey}.${fieldKey}`}
+                  name={[stepKey, fieldKey]}
+                  label={schema.title || fieldKey}
+                  valuePropName={componentName === 'Switch' ? 'checked' : 'value'}
+                  rules={schema.required ? [{ required: true, message: t('This field is required') }] : []}
+                >
+                  {input}
+                </Form.Item>
+              );
+            }),
+          )}
+          <Button type="primary" loading={saving} onClick={handleSave}>
+            {t('Save')}
+          </Button>
+        </>
       )}
-      <Button type="primary" loading={saving} onClick={handleSave}>
-        {t('Save')}
-      </Button>
     </Form>
   );
 });

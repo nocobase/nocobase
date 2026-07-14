@@ -13,6 +13,7 @@ import {
   getLightExtensionSettingsDescriptor,
   normalizeLightExtensionRuntimeError,
   normalizeLightExtensionSourceSettings,
+  normalizeLightExtensionSourceSettingsForBinding,
   stableSerialize,
 } from '../runjsSourceRuntimeCommon';
 
@@ -78,6 +79,168 @@ describe('runjsSourceRuntimeCommon', () => {
       defaults: {},
       settingsSchemaHash: null,
     });
+  });
+
+  it('rejects binding settings when the entry declares no settings schema', () => {
+    let caught: unknown;
+    try {
+      normalizeLightExtensionSourceSettingsForBinding({
+        currentRunJs: {
+          sourceBinding: { entryId: 'entry_without_schema' },
+          settings: { unexpected: true },
+        },
+        nextSourceMode: 'light-extension',
+        nextSourceBinding: { entryId: 'entry_without_schema' },
+        nextSettings: { unexpected: true },
+        descriptor: {
+          entryId: 'entry_without_schema',
+          schema: null,
+          defaults: {},
+          settingsSchemaHash: null,
+        },
+      });
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toMatchObject({ code: 'LIGHT_EXTENSION_SETTINGS_INVALID', paths: ['unexpected'] });
+  });
+
+  it('allows missing required settings in binding mode and reports nested paths', () => {
+    const result = normalizeLightExtensionSourceSettingsForBinding({
+      currentRunJs: {},
+      nextSourceMode: 'light-extension',
+      nextSourceBinding: { entryId: 'entry_required' },
+      nextSettings: {},
+      descriptor: {
+        entryId: 'entry_required',
+        settingsSchemaHash: 'schema_required',
+        defaults: {},
+        schema: {
+          type: 'object',
+          required: ['title', 'options'],
+          properties: {
+            title: { type: 'string' },
+            options: {
+              type: 'object',
+              required: ['limit'],
+              properties: {
+                limit: { type: 'integer' },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    expect(result).toEqual({
+      settings: {},
+      missingRequiredPaths: ['title', 'options'],
+    });
+    expect(result.missingRequiredPaths).not.toContain('');
+  });
+
+  it('reports nested required paths when the parent object exists', () => {
+    const result = normalizeLightExtensionSourceSettingsForBinding({
+      currentRunJs: { sourceBinding: { entryId: 'entry_nested' }, settings: { options: {} } },
+      nextSourceMode: 'light-extension',
+      nextSourceBinding: { entryId: 'entry_nested' },
+      nextSettings: { options: {} },
+      descriptor: {
+        entryId: 'entry_nested',
+        settingsSchemaHash: 'schema_nested',
+        defaults: {},
+        schema: {
+          type: 'object',
+          required: ['options'],
+          properties: {
+            options: {
+              type: 'object',
+              required: ['limit'],
+              properties: { limit: { type: 'integer' } },
+            },
+          },
+        },
+      },
+    });
+
+    expect(result.missingRequiredPaths).toEqual(['options.limit']);
+  });
+
+  it('treats schema defaults as satisfying required settings', () => {
+    const result = normalizeLightExtensionSourceSettingsForBinding({
+      currentRunJs: {},
+      nextSourceMode: 'light-extension',
+      nextSourceBinding: { entryId: 'entry_defaults' },
+      nextSettings: {},
+      descriptor: {
+        entryId: 'entry_defaults',
+        settingsSchemaHash: 'schema_defaults',
+        defaults: {},
+        schema: {
+          type: 'object',
+          required: ['title'],
+          properties: { title: { type: 'string', default: 'Default title' } },
+        },
+      },
+    });
+
+    expect(result).toEqual({ settings: { title: 'Default title' }, missingRequiredPaths: [] });
+  });
+
+  it.each([
+    [{ count: 'invalid' }, 'count'],
+    [{ unknown: true }, 'unknown'],
+  ])('rejects explicit invalid binding settings %j', (nextSettings, invalidPath) => {
+    let caught: unknown;
+    try {
+      normalizeLightExtensionSourceSettingsForBinding({
+        currentRunJs: { sourceBinding: { entryId: 'entry_invalid' }, settings: {} },
+        nextSourceMode: 'light-extension',
+        nextSourceBinding: { entryId: 'entry_invalid' },
+        nextSettings,
+        descriptor: {
+          entryId: 'entry_invalid',
+          settingsSchemaHash: 'schema_invalid',
+          defaults: {},
+          schema: {
+            type: 'object',
+            properties: { count: { type: 'integer' } },
+          },
+        },
+      });
+    } catch (error) {
+      caught = error;
+    }
+    expect(caught).toMatchObject({ code: 'LIGHT_EXTENSION_SETTINGS_INVALID', paths: [invalidPath] });
+  });
+
+  it('rejects an explicitly submitted unknown path even when it already exists in canonical settings', () => {
+    let caught: unknown;
+    try {
+      normalizeLightExtensionSourceSettingsForBinding({
+        currentRunJs: {
+          sourceBinding: { entryId: 'entry_existing_unknown' },
+          settings: { unknown: 'stored' },
+        },
+        nextSourceMode: 'light-extension',
+        nextSourceBinding: { entryId: 'entry_existing_unknown' },
+        nextSettings: { unknown: 'submitted' },
+        descriptor: {
+          entryId: 'entry_existing_unknown',
+          settingsSchemaHash: 'schema_existing_unknown',
+          defaults: {},
+          schema: {
+            type: 'object',
+            properties: { count: { type: 'integer' } },
+          },
+        },
+      });
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toMatchObject({ code: 'LIGHT_EXTENSION_SETTINGS_INVALID', paths: ['unknown'] });
   });
 
   it('normalizes server error envelopes without changing surface-specific hints', () => {

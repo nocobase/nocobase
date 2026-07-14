@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { extractRunJSSettingsDefaults } from '@nocobase/runjs/settings';
+
 import { LightExtensionError } from '../../shared/errors';
 
 export interface LightExtensionRuntimeSettingsSource {
@@ -33,6 +35,8 @@ export class SettingsResolverService {
 
     if (source.settingsSchema) {
       validateSettingsValue(source.settingsSchema, settings, '$', issues);
+    } else {
+      validateObjectSettings({ type: 'object', properties: {} }, settings, '$', issues);
     }
 
     if (issues.length) {
@@ -54,8 +58,7 @@ export class SettingsResolverService {
   }
 
   getRuntimeDefaults(source: LightExtensionRuntimeSettingsSource): Record<string, unknown> {
-    const extracted = extractSettingsDefaults(source.settingsSchema).value;
-    return isPlainRecord(extracted) ? extracted : {};
+    return extractRunJSSettingsDefaults(source.settingsSchema);
   }
 
   pruneUnknownSettings(
@@ -64,49 +67,22 @@ export class SettingsResolverService {
   ): Record<string, unknown> {
     const settings = isPlainRecord(inputSettings) ? inputSettings : {};
     if (!settingsSchemaHasProperties(source.settingsSchema)) {
-      return cloneRecord(settings);
+      return {};
     }
     const pruned = pruneSettingsValue(source.settingsSchema, settings);
     return isPlainRecord(pruned) ? pruned : {};
   }
 }
 
-function extractSettingsDefaults(schema: Record<string, unknown> | null): { hasDefault: boolean; value: unknown } {
-  if (!schema) {
-    return { hasDefault: false, value: {} };
-  }
-  if (Object.prototype.hasOwnProperty.call(schema, 'default')) {
-    return { hasDefault: true, value: cloneJsonValue(schema.default) };
-  }
-
-  const properties = schema.properties;
-  if (!isPlainRecord(properties)) {
-    return { hasDefault: false, value: {} };
-  }
-
-  const defaults: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(properties)) {
-    if (!isPlainRecord(value)) {
-      continue;
-    }
-    const childDefault = extractSettingsDefaults(value);
-    if (childDefault.hasDefault) {
-      defaults[key] = childDefault.value;
-    }
-  }
-
-  return { hasDefault: Object.keys(defaults).length > 0, value: defaults };
-}
-
 function mergeSettings(defaults: Record<string, unknown>, overrides: Record<string, unknown>): Record<string, unknown> {
   const output = cloneRecord(defaults);
 
   for (const [key, value] of Object.entries(overrides)) {
-    const currentValue = output[key];
+    const currentValue = Object.prototype.hasOwnProperty.call(output, key) ? output[key] : undefined;
     if (isPlainRecord(currentValue) && isPlainRecord(value)) {
-      output[key] = mergeSettings(currentValue, value);
+      defineOwnSetting(output, key, mergeSettings(currentValue, value));
     } else {
-      output[key] = cloneJsonValue(value);
+      defineOwnSetting(output, key, cloneJsonValue(value));
     }
   }
 
@@ -292,12 +268,10 @@ function validateObjectSettings(
     }
   }
 
-  if (!isPlainRecord(schema.properties)) {
-    return;
-  }
+  const properties = isPlainRecord(schema.properties) ? schema.properties : {};
 
   for (const key of Object.keys(value)) {
-    if (!Object.prototype.hasOwnProperty.call(schema.properties, key)) {
+    if (!Object.prototype.hasOwnProperty.call(properties, key)) {
       issues.push({
         path: `${path}.${key}`,
         code: 'settings_unknown_property',
@@ -306,7 +280,7 @@ function validateObjectSettings(
     }
   }
 
-  for (const [key, childSchema] of Object.entries(schema.properties)) {
+  for (const [key, childSchema] of Object.entries(properties)) {
     if (!Object.prototype.hasOwnProperty.call(value, key) || !isPlainRecord(childSchema)) {
       continue;
     }
@@ -396,6 +370,15 @@ function cloneJsonValue(value: unknown): unknown {
   }
 
   return JSON.parse(JSON.stringify(value));
+}
+
+function defineOwnSetting(target: Record<string, unknown>, key: string, value: unknown): void {
+  Object.defineProperty(target, key, {
+    configurable: true,
+    enumerable: true,
+    value,
+    writable: true,
+  });
 }
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {

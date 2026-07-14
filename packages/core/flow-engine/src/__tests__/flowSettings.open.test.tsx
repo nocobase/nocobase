@@ -710,6 +710,47 @@ describe('FlowSettings.open rendering behavior', () => {
     expect(dialog).toHaveBeenCalled(); // 应该显示弹窗，但只包含 visibleStep
   });
 
+  it('recomputes runtime step visibility whenever openFlowSettings is reopened', async () => {
+    class RuntimeSettingsModel extends FlowModel {
+      getRuntimeFlowSettingSteps(flowKey: string) {
+        if (flowKey !== 'runtimeVisibility') {
+          return undefined;
+        }
+        return {
+          runtimeStep: {
+            key: 'runtimeStep',
+            title: 'Runtime step',
+            hideInSettings: () => this.getStepParams('runtimeVisibility', 'state')?.hidden === true,
+            uiSchema: { value: { type: 'string', 'x-component': 'Input' } },
+          },
+        };
+      }
+    }
+    const engine = new FlowEngine();
+    const model = new RuntimeSettingsModel({ uid: 'runtime-visibility-open', flowEngine: engine });
+    RuntimeSettingsModel.registerFlow({ key: 'runtimeVisibility', steps: {} });
+
+    const dialog = vi.fn(({ content }) => {
+      const currentDialog = { close: vi.fn(), Footer: () => null };
+      if (typeof content === 'function') content(currentDialog, { defineMethod: vi.fn() });
+      return currentDialog;
+    });
+    model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
+    model.context.defineProperty('viewer', { value: { dialog } });
+
+    await model.openFlowSettings({ flowKey: 'runtimeVisibility' });
+    expect(dialog).toHaveBeenCalledOnce();
+
+    model.setStepParams('runtimeVisibility', 'state', { hidden: true });
+    dialog.mockClear();
+    await model.openFlowSettings({ flowKey: 'runtimeVisibility' });
+    expect(dialog).not.toHaveBeenCalled();
+
+    model.setStepParams('runtimeVisibility', 'state', { hidden: false });
+    await model.openFlowSettings({ flowKey: 'runtimeVisibility' });
+    expect(dialog).toHaveBeenCalledOnce();
+  });
+
   it('accepts uiMode object (dialog) and merges props while keeping our content', async () => {
     const engine = new FlowEngine();
     const flowSettings = new FlowSettings(engine);

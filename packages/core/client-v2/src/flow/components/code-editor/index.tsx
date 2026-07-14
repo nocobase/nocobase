@@ -27,6 +27,7 @@ import { useFullscreenOverlay } from '../../../flow-compat';
 import { createRunJSCompletionSource, type RunJSImportModuleCompletion } from './runjsCompletionSource';
 import { inferRunJSScenesFromContext, mergeRunJSScenes } from './resolveScenes';
 import type { CodeEditorTypeScriptProject } from './typescriptProject';
+import type { CodeEditorJsonSchema } from './jsonLanguageService';
 
 export interface CodeEditorProps {
   value?: string;
@@ -44,6 +45,7 @@ export interface CodeEditorProps {
   version?: string; // runjs 版本（默认 v1）
   name?: string;
   language?: string;
+  jsonSchema?: CodeEditorJsonSchema;
   scene?: string | string[];
   RightExtra?: React.FC<any>;
   toolbarLeftExtra?: React.ReactNode;
@@ -61,6 +63,7 @@ export * from './types';
 export * from './extension';
 export * from './runjsDiagnostics';
 export * from './typescriptProject';
+export type { CodeEditorJsonSchema } from './jsonLanguageService';
 export type { RunJSImportModuleCompletion } from './runjsCompletionSource';
 
 export const CodeEditor: React.FC<CodeEditorProps> = ({
@@ -79,6 +82,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   version = 'v1',
   name,
   language,
+  jsonSchema,
   scene,
   RightExtra,
   toolbarLeftExtra,
@@ -210,6 +214,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
       />
     </Tooltip>
   );
+  const jsonLanguage = language?.trim().toLowerCase() === 'json';
 
   const node = (
     <div
@@ -239,14 +244,17 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
               <RightExtra viewRef={viewRef} />
             ) : (
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <Button size="small" onClick={() => setSnippetOpen(true)}>
-                  {tr('Snippets')}
-                </Button>
-                {runButton ?? (
-                  <Button size="small" loading={running} onClick={runCurrentCode}>
-                    {tr('Run')}
+                {!jsonLanguage ? (
+                  <Button size="small" onClick={() => setSnippetOpen(true)}>
+                    {tr('Snippets')}
                   </Button>
-                )}
+                ) : null}
+                {runButton ??
+                  (!jsonLanguage ? (
+                    <Button size="small" loading={running} onClick={runCurrentCode}>
+                      {tr('Run')}
+                    </Button>
+                  ) : null)}
               </div>
             )}
             {fullscreenButton}
@@ -264,6 +272,8 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         enableLinter={enableLinter}
         completionSource={completionSource}
         typescriptProjectRef={typescriptProject ? typescriptProjectRef : undefined}
+        language={language}
+        jsonSchema={jsonSchema}
         viewRef={viewRef}
       />
       {showLogs ? (
@@ -276,21 +286,27 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
           tr={tr}
         />
       ) : null}
-      <SnippetsDrawer
-        open={snippetOpen}
-        onClose={() => setSnippetOpen(false)}
-        entries={snippetEntries}
-        tr={tr}
-        onInsert={(text) => {
-          const view = viewRef.current;
-          if (!view) return;
-          const { from, to } = view.state.selection.main;
-          const newPos = from + text.length;
-          view.dispatch({ changes: { from, to, insert: text }, selection: { anchor: newPos }, scrollIntoView: true });
-          view.focus();
-          setSnippetOpen(false);
-        }}
-      />
+      {!jsonLanguage ? (
+        <SnippetsDrawer
+          open={snippetOpen}
+          onClose={() => setSnippetOpen(false)}
+          entries={snippetEntries}
+          tr={tr}
+          onInsert={(text) => {
+            const view = viewRef.current;
+            if (!view) return;
+            const { from, to } = view.state.selection.main;
+            const newPos = from + text.length;
+            view.dispatch({
+              changes: { from, to, insert: text },
+              selection: { anchor: newPos },
+              scrollIntoView: true,
+            });
+            view.focus();
+            setSnippetOpen(false);
+          }}
+        />
+      ) : null}
     </div>
   );
 

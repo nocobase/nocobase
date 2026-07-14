@@ -22,7 +22,7 @@ describe('plugin-light-extension bootstrap', () => {
       packageName: NAMESPACE,
     });
 
-    await expect(plugin.afterAdd()).resolves.toBeUndefined();
+    expect(plugin.afterAdd()).toBeUndefined();
     await expect(plugin.beforeLoad()).resolves.toBeUndefined();
     await expect(plugin.load()).resolves.toBeUndefined();
     await expect(plugin.install()).resolves.toBeUndefined();

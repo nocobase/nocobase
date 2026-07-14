@@ -23,6 +23,10 @@ export {
   SaveVersionModal,
   VersionHistoryDock,
 } from './RunJSStudioComponents';
-export type { RunJSWorkspacePathAccess, RunJSWorkspacePathType } from './RunJSStudioComponents';
+export type {
+  RunJSWorkspaceJsonSchemaResolver,
+  RunJSWorkspacePathAccess,
+  RunJSWorkspacePathType,
+} from './RunJSStudioComponents';
 export { buildLineDiff, inferLanguageFromPath, mergeHistoryItems, summarizeWorkspaceChanges } from './workspaceUtils';
 export type { RunJSChangeSummary, RunJSLineDiffRow, RunJSSourceHistoryItem, RunJSWorkspaceFile } from './types';

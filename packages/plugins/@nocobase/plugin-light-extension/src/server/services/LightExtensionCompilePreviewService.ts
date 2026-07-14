@@ -212,6 +212,7 @@ export class LightExtensionCompilePreviewService {
       ];
       return {
         accepted: false,
+        httpStatus: 422,
         diagnostics,
         failureCode: 'LIGHT_EXTENSION_VALIDATION_FAILED',
       };
@@ -255,6 +256,7 @@ export class LightExtensionCompilePreviewService {
       });
       return {
         accepted: false,
+        httpStatus: 422,
         diagnostics: validationDiagnostics,
         failureCode: 'LIGHT_EXTENSION_VALIDATION_FAILED',
       };
@@ -277,6 +279,7 @@ export class LightExtensionCompilePreviewService {
 
     return {
       accepted: compiled.accepted && !hasErrorDiagnostic(diagnostics),
+      httpStatus: compiled.accepted && !hasErrorDiagnostic(diagnostics) ? 200 : 422,
       diagnostics,
       failureCode: compiled.failureCode,
       artifact: compiled.accepted
@@ -361,6 +364,7 @@ export class LightExtensionCompilePreviewService {
 
     return {
       accepted,
+      httpStatus: accepted ? 200 : entries.some((entry) => entry.accepted) ? 207 : 422,
       diagnostics,
       entries,
       failureCode: accepted

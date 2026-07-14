@@ -26,7 +26,7 @@ import {
   UploadOutlined,
   CopyOutlined,
 } from '@ant-design/icons';
-import { CodeEditor, type CodeEditorFullscreenControl } from '@nocobase/client-v2';
+import { CodeEditor, type CodeEditorFullscreenControl, type CodeEditorJsonSchema } from '@nocobase/client-v2';
 import {
   Alert,
   Button,
@@ -76,6 +76,10 @@ import {
 import { formatChangeSummary, formatVersion, inferLanguageFromPath, runJSManifestPath } from './workspaceUtils';
 
 export type RunJSWorkspacePathType = 'file' | 'folder';
+export type RunJSWorkspaceJsonSchemaResolver = (
+  path: string,
+  files: RunJSWorkspaceFile[],
+) => CodeEditorJsonSchema | undefined;
 
 export interface RunJSWorkspacePathAccess {
   canCreate?: boolean;
@@ -848,6 +852,7 @@ export function CodeTab(props: {
   version: string;
   workspaceFiles: RunJSWorkspaceFile[];
   fullscreenControl?: CodeEditorFullscreenControl;
+  jsonSchemaResolver?: RunJSWorkspaceJsonSchemaResolver;
 }) {
   const {
     activeFile,
@@ -875,6 +880,7 @@ export function CodeTab(props: {
     version,
     workspaceFiles,
     fullscreenControl,
+    jsonSchemaResolver,
   } = props;
   const openFiles = openPaths
     .map((path) => workspaceFiles.find((file) => file.path === path))
@@ -883,6 +889,10 @@ export function CodeTab(props: {
   const typescriptProject = useMemo(
     () => buildRunJSTypeScriptProject(workspaceFiles, activeFile, runJSModelUse, runJSGlobalContextType),
     [activeFile, runJSGlobalContextType, runJSModelUse, workspaceFiles],
+  );
+  const jsonSchema = useMemo(
+    () => (activeFile ? jsonSchemaResolver?.(activeFile.path, workspaceFiles) : undefined),
+    [activeFile, jsonSchemaResolver, workspaceFiles],
   );
 
   if (!activeFile) {
@@ -994,6 +1004,7 @@ export function CodeTab(props: {
         enableLinter={isRunJSTypeScriptProjectFile(activeFile.path)}
         height="100%"
         language={isDiff ? 'diff' : activeFile.language || inferLanguageFromPath(activeFile.path)}
+        jsonSchema={jsonSchema}
         minHeight={0}
         moduleImportCompletions={moduleImportCompletions}
         name={activeFile.path}

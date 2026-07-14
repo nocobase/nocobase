@@ -23,6 +23,11 @@ import {
 } from 'antd';
 import type { SelectProps } from 'antd';
 import { ApplicationContext } from '@nocobase/client-v2';
+import {
+  extractRunJSSettingsDefaults,
+  isSettingsFieldVisible,
+  type RunJSSettingsCondition,
+} from '@nocobase/runjs/settings';
 import dayjs, { type Dayjs } from 'dayjs';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -45,10 +50,13 @@ export type JsonSchema = {
   format?: string;
   'x-component'?: string;
   'x-component-props'?: Record<string, unknown>;
+  'x-visible-when'?: RunJSSettingsCondition;
 };
 
 export type SettingsValidationError = {
+  code?: string;
   label: string;
+  path?: string;
   message: string;
 };
 
@@ -66,7 +74,11 @@ export interface SettingsAutoFormProps {
 
 export interface SettingsSingleFieldProps {
   fieldName?: string;
+  fieldPath?: string[] | string;
   fieldSchema?: Record<string, unknown> | JsonSchema | null;
+  rootSchema?: Record<string, unknown> | JsonSchema | null;
+  savedRootValue?: Record<string, unknown> | null;
+  descriptorDefaults?: Record<string, unknown> | null;
   required?: boolean;
   value?: unknown;
   onChange?: (value: unknown, validation: SettingsValidationResult) => void;
@@ -98,22 +110,7 @@ function normalizeType(schema: JsonSchema): string | undefined {
 }
 
 function getObjectDefaults(schema: JsonSchema): Record<string, unknown> {
-  if (isRecord(schema.default)) {
-    return { ...schema.default };
-  }
-  if (!schema.properties) {
-    return {};
-  }
-
-  const defaults: Record<string, unknown> = {};
-  for (const [key, childSchema] of Object.entries(schema.properties)) {
-    if (childSchema.default !== undefined) {
-      defaults[key] = childSchema.default;
-    } else if (normalizeType(childSchema) === 'object') {
-      defaults[key] = getObjectDefaults(childSchema);
-    }
-  }
-  return defaults;
+  return extractRunJSSettingsDefaults(schema);
 }
 
 function normalizePrimitiveValue(schema: JsonSchema, value: unknown): unknown {
@@ -142,17 +139,30 @@ function normalizeSettings(schemaInput: unknown, rawValue: unknown, path: string
   const rawRecord = isRecord(rawValue) ? rawValue : {};
   const next: Record<string, unknown> = getObjectDefaults(schema);
   const required = new Set(schema.required || []);
+  const properties = schema.properties || {};
 
-  for (const [key, childSchema] of Object.entries(schema.properties || {})) {
+  for (const [key, rawChild] of Object.entries(rawRecord)) {
+    if (Object.prototype.hasOwnProperty.call(properties, key)) {
+      continue;
+    }
     const childPath = [...path, key];
-    const label = childSchema.title || childPath.join('.');
+    next[key] = cloneJsonValue(rawChild);
+    errors.push(
+      createValidationError(childPath.join('.'), 'Unknown property', childPath.join('.'), 'settings_unknown_property'),
+    );
+  }
+
+  for (const [key, childSchema] of Object.entries(properties)) {
+    const childPath = [...path, key];
+    const settingsPath = childPath.join('.');
+    const label = childSchema.title || settingsPath;
     const childType = normalizeType(childSchema);
     const hasRawChild = Object.prototype.hasOwnProperty.call(rawRecord, key);
     const hasDefaultChild = Object.prototype.hasOwnProperty.call(next, key);
     const rawChild = hasRawChild ? rawRecord[key] : next[key];
 
     if (required.has(key) && !hasDefaultChild && (!hasRawChild || rawChild === undefined)) {
-      errors.push(createValidationError(label, 'Required'));
+      errors.push(createValidationError(label, 'Required', settingsPath));
       next[key] = rawChild;
       continue;
     }
@@ -160,7 +170,7 @@ function normalizeSettings(schemaInput: unknown, rawValue: unknown, path: string
     if (childType === 'object') {
       if (rawChild !== undefined && !isRecord(rawChild)) {
         next[key] = rawChild;
-        errors.push(createValidationError(label, 'Must be an object'));
+        errors.push(createValidationError(label, 'Must be an object', settingsPath));
         continue;
       }
       const childResult = normalizeSettings(childSchema, rawChild, childPath);
@@ -171,7 +181,7 @@ function normalizeSettings(schemaInput: unknown, rawValue: unknown, path: string
 
     const value = normalizePrimitiveValue(childSchema, rawChild);
     next[key] = value;
-    errors.push(...validateLeafValue(childSchema, value, label));
+    errors.push(...validateLeafValue(childSchema, value, label, settingsPath));
   }
 
   return {
@@ -180,7 +190,12 @@ function normalizeSettings(schemaInput: unknown, rawValue: unknown, path: string
   };
 }
 
-function validateLeafValue(schema: JsonSchema, value: unknown, label: string): SettingsValidationError[] {
+function validateLeafValue(
+  schema: JsonSchema,
+  value: unknown,
+  label: string,
+  path: string = label,
+): SettingsValidationError[] {
   const errors: SettingsValidationError[] = [];
   const type = normalizeType(schema);
 
@@ -189,54 +204,55 @@ function validateLeafValue(schema: JsonSchema, value: unknown, label: string): S
   }
 
   if (type === 'string' && typeof value !== 'string') {
-    errors.push(createValidationError(label, 'Must be a string'));
+    errors.push(createValidationError(label, 'Must be a string', path));
   }
   if ((type === 'number' || type === 'integer') && typeof value !== 'number') {
-    errors.push(createValidationError(label, 'Must be a number'));
+    errors.push(createValidationError(label, 'Must be a number', path));
   }
   if (type === 'integer' && typeof value === 'number' && !Number.isInteger(value)) {
-    errors.push(createValidationError(label, 'Must be an integer'));
+    errors.push(createValidationError(label, 'Must be an integer', path));
   }
   if (type === 'boolean' && typeof value !== 'boolean') {
-    errors.push(createValidationError(label, 'Must be a boolean'));
+    errors.push(createValidationError(label, 'Must be a boolean', path));
   }
   if (type === 'array' && !Array.isArray(value)) {
-    errors.push(createValidationError(label, 'Must be an array'));
+    errors.push(createValidationError(label, 'Must be an array', path));
   }
   if (schema.enum && !schema.enum.some((item) => stableSerialize(item) === stableSerialize(value))) {
-    errors.push(createValidationError(label, 'Must be one of the allowed values'));
+    errors.push(createValidationError(label, 'Must be one of the allowed values', path));
   }
   if (typeof value === 'string') {
     if (typeof schema.minLength === 'number' && value.length < schema.minLength) {
-      errors.push(createValidationError(label, 'Too short'));
+      errors.push(createValidationError(label, 'Too short', path));
     }
     if (typeof schema.maxLength === 'number' && value.length > schema.maxLength) {
-      errors.push(createValidationError(label, 'Too long'));
+      errors.push(createValidationError(label, 'Too long', path));
     }
     if (!isValidStringFormat(schema.format, value)) {
-      errors.push(createValidationError(label, 'Must match the required format'));
+      errors.push(createValidationError(label, 'Must match the required format', path));
     }
   }
   if (typeof value === 'number') {
     if (typeof schema.minimum === 'number' && value < schema.minimum) {
-      errors.push(createValidationError(label, 'Too small'));
+      errors.push(createValidationError(label, 'Too small', path));
     }
     if (typeof schema.maximum === 'number' && value > schema.maximum) {
-      errors.push(createValidationError(label, 'Too large'));
+      errors.push(createValidationError(label, 'Too large', path));
     }
   }
   if (Array.isArray(value) && schema.items) {
     value.forEach((item, index) => {
       const itemLabel = `${label}[${index}]`;
+      const itemPath = `${path}[${index}]`;
       if (normalizeType(schema.items as JsonSchema) === 'object') {
         if (!isRecord(item)) {
-          errors.push(createValidationError(itemLabel, 'Must be an object'));
+          errors.push(createValidationError(itemLabel, 'Must be an object', itemPath));
           return;
         }
-        errors.push(...normalizeSettings(schema.items, item, [itemLabel]).errors);
+        errors.push(...normalizeSettings(schema.items, item, [itemPath]).errors);
         return;
       }
-      errors.push(...validateLeafValue(schema.items as JsonSchema, item, itemLabel));
+      errors.push(...validateLeafValue(schema.items as JsonSchema, item, itemLabel, itemPath));
     });
   }
 
@@ -272,8 +288,13 @@ function isValidStringFormat(format: string | undefined, value: string): boolean
   return true;
 }
 
-function createValidationError(label: string, message: string): SettingsValidationError {
-  return { label, message };
+function createValidationError(
+  label: string,
+  message: string,
+  path: string = label,
+  code?: string,
+): SettingsValidationError {
+  return { code, label, path, message };
 }
 
 function stableSerialize(value: unknown): string {
@@ -295,7 +316,7 @@ export function formatSettingsValidationErrors(
   errors: SettingsValidationError[],
   t: (key: string) => unknown,
 ): string[] {
-  return errors.map((error) => `${error.label}: ${String(t(error.message))}`);
+  return errors.map((error) => `${error.path || error.label}: ${String(t(error.message))}`);
 }
 
 function updateAtPath(root: Record<string, unknown>, path: string[], value: unknown): Record<string, unknown> {
@@ -312,6 +333,41 @@ function updateAtPath(root: Record<string, unknown>, path: string[], value: unkn
   }
   cursor[path[path.length - 1]] = value;
   return next;
+}
+
+function deepMergeRecords(
+  defaults: Record<string, unknown>,
+  overrides: Record<string, unknown>,
+): Record<string, unknown> {
+  const next = cloneRecord(defaults);
+  for (const [key, value] of Object.entries(overrides)) {
+    next[key] = isRecord(next[key]) && isRecord(value) ? deepMergeRecords(next[key], value) : cloneJsonValue(value);
+  }
+  return next;
+}
+
+function replaceValueAtPath(root: Record<string, unknown>, path: string[], value: unknown): Record<string, unknown> {
+  return updateAtPath(cloneRecord(root), path, cloneJsonValue(value));
+}
+
+function normalizeFieldPath(fieldPath: string[] | string | undefined, fieldName: string): string[] {
+  const path = Array.isArray(fieldPath)
+    ? fieldPath.filter((segment): segment is string => typeof segment === 'string' && Boolean(segment))
+    : typeof fieldPath === 'string'
+      ? fieldPath.split('.').filter(Boolean)
+      : [];
+  return path.length > 0 ? path : [fieldName];
+}
+
+function cloneRecord(value: unknown): Record<string, unknown> {
+  return isRecord(value) ? (cloneJsonValue(value) as Record<string, unknown>) : {};
+}
+
+function cloneJsonValue<T>(value: T): T {
+  if (typeof value === 'undefined') {
+    return value;
+  }
+  return JSON.parse(JSON.stringify(value)) as T;
 }
 
 export function normalizeSettingsForSchema(schema: unknown, value: unknown): SettingsValidationResult {
@@ -398,7 +454,11 @@ export const SettingsAutoForm: React.FC<SettingsAutoFormProps> = ({ schema, valu
 
 export const SettingsSingleField: React.FC<SettingsSingleFieldProps> = ({
   fieldName = 'value',
+  fieldPath,
   fieldSchema,
+  rootSchema,
+  savedRootValue,
+  descriptorDefaults,
   required,
   value,
   onChange,
@@ -406,7 +466,8 @@ export const SettingsSingleField: React.FC<SettingsSingleFieldProps> = ({
 }) => {
   const { t } = useTranslation(NAMESPACE);
   const schema = React.useMemo(() => asSchema(fieldSchema), [fieldSchema]);
-  const rootSchema = React.useMemo(
+  const resolvedFieldPath = React.useMemo(() => normalizeFieldPath(fieldPath, fieldName), [fieldName, fieldPath]);
+  const validationSchema = React.useMemo(
     () => ({
       type: 'object',
       required: required ? [fieldName] : [],
@@ -416,11 +477,17 @@ export const SettingsSingleField: React.FC<SettingsSingleFieldProps> = ({
     }),
     [fieldName, required, schema],
   );
-  const current = React.useMemo(
-    () => normalizeSettingsForSchema(rootSchema, { [fieldName]: value }).value,
-    [fieldName, rootSchema, value],
+  const fieldDraftValue = React.useMemo(() => cloneJsonValue(value), [value]);
+  const validation = React.useMemo(
+    () => normalizeSettingsForSchema(validationSchema, { [fieldName]: fieldDraftValue }),
+    [fieldDraftValue, fieldName, validationSchema],
   );
-  const validation = React.useMemo(() => normalizeSettingsForSchema(rootSchema, current), [rootSchema, current]);
+  const candidateRootValue = React.useMemo(() => {
+    const schemaDefaults = getObjectDefaults(asSchema(rootSchema));
+    const defaults = deepMergeRecords(schemaDefaults, cloneRecord(descriptorDefaults));
+    const saved = deepMergeRecords(defaults, cloneRecord(savedRootValue));
+    return replaceValueAtPath(saved, resolvedFieldPath, fieldDraftValue);
+  }, [descriptorDefaults, fieldDraftValue, resolvedFieldPath, rootSchema, savedRootValue]);
   const lastReportedRef = React.useRef<string>();
   const validationErrors = React.useMemo(
     () => formatSettingsValidationErrors(validation.errors, t),
@@ -429,20 +496,50 @@ export const SettingsSingleField: React.FC<SettingsSingleFieldProps> = ({
 
   React.useEffect(() => {
     const reportKey = JSON.stringify({
-      value: current[fieldName],
+      value: fieldDraftValue,
       errors: validation.errors,
     });
     if (lastReportedRef.current === reportKey) {
       return;
     }
     lastReportedRef.current = reportKey;
-    onChange?.(current[fieldName], validation);
-  }, [current, fieldName, onChange, validation]);
+    onChange?.(cloneJsonValue(fieldDraftValue), validation);
+  }, [fieldDraftValue, onChange, validation]);
 
   const handleChange = (path: string[], nextValue: unknown) => {
-    const next = updateAtPath(current, path, nextValue);
-    onChange?.(next[fieldName], normalizeSettingsForSchema(rootSchema, next));
+    const nextCandidateRoot = updateAtPath(candidateRootValue, path, nextValue);
+    const nextFieldValue = getValueAtPath(nextCandidateRoot, resolvedFieldPath);
+    const nextValidation = normalizeSettingsForSchema(validationSchema, { [fieldName]: nextFieldValue });
+    onChange?.(cloneJsonValue(nextFieldValue), nextValidation);
   };
+
+  const fieldRecord = isRecord(fieldDraftValue) ? fieldDraftValue : {};
+  const scopeValues = [fieldRecord, candidateRootValue];
+  const content =
+    normalizeType(schema) === 'object' ? (
+      Object.entries(schema.properties || {}).map(([key, childSchema]) => (
+        <SettingsField
+          key={key}
+          path={[...resolvedFieldPath, key]}
+          rootValue={candidateRootValue}
+          scopeValues={scopeValues}
+          schema={childSchema}
+          value={fieldRecord[key]}
+          onChange={handleChange}
+          disabled={disabled}
+        />
+      ))
+    ) : (
+      <SettingsField
+        path={resolvedFieldPath}
+        rootValue={candidateRootValue}
+        scopeValues={scopeValues}
+        schema={schema}
+        value={fieldDraftValue}
+        onChange={handleChange}
+        disabled={disabled}
+      />
+    );
 
   return (
     <Space direction="vertical" style={{ width: '100%' }} size={12}>
@@ -454,15 +551,7 @@ export const SettingsSingleField: React.FC<SettingsSingleFieldProps> = ({
           description={validationErrors.join('\n')}
         />
       ) : null}
-      <SettingsField
-        path={[fieldName]}
-        rootValue={current}
-        scopeValues={[current]}
-        schema={schema}
-        value={current[fieldName]}
-        onChange={handleChange}
-        disabled={disabled}
-      />
+      {content}
     </Space>
   );
 };
@@ -489,6 +578,11 @@ const SettingsField: React.FC<SettingsFieldProps> = ({
   const label = schema.title || path[path.length - 1];
   const description = schema.description;
   const type = normalizeType(schema);
+  const condition = schema['x-visible-when'];
+
+  if (condition && !isSettingsFieldVisible(condition, { settings: rootValue })) {
+    return null;
+  }
 
   if (type === 'object') {
     const record = isRecord(value) ? value : {};

@@ -32,7 +32,7 @@ import {
 } from './components/JSBlockLightExtensionSourceField';
 import { createRunJSLightExtensionEditorProvider } from './components/RunJSLightExtensionEditorProvider';
 import { createMoveSourceToLightExtensionContribution } from './components/MoveSourceToLightExtension';
-import { SettingsAutoForm, SettingsSingleField } from './components/SettingsAutoForm';
+import { SettingsSingleField } from './components/SettingsAutoForm';
 import { createLightExtensionRunJSResolver } from './resolvers/LightExtensionRunJSResolver';
 
 let activeLightExtensionClientV2Instance: PluginLightExtensionClientV2 | null = null;
@@ -46,17 +46,19 @@ export class PluginLightExtensionClientV2 extends Plugin<Record<string, never>, 
   }
 
   async load() {
-    this.flowEngine.flowSettings.registerComponents({
-      [JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSActionLightExtensionSourceField,
-      [JS_ACTION_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
-      [JS_BLOCK_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSBlockLightExtensionSourceField,
-      [JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
-      [JS_FIELD_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSFieldLightExtensionSourceField,
-      [JS_FIELD_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
-      [JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSItemLightExtensionSourceField,
-      [JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
-      SettingsAutoForm,
-    });
+    this.flowEngine.flowSettings.registerComponents(
+      {
+        [JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSActionLightExtensionSourceField,
+        [JS_ACTION_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
+        [JS_BLOCK_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSBlockLightExtensionSourceField,
+        [JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
+        [JS_FIELD_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSFieldLightExtensionSourceField,
+        [JS_FIELD_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
+        [JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSItemLightExtensionSourceField,
+        [JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
+      },
+      { warnOnOverwrite: false },
+    );
     this.disposers.push(
       RunJSSourceResolverRegistry.registerResolver(createLightExtensionRunJSResolver(this.app.apiClient)),
     );

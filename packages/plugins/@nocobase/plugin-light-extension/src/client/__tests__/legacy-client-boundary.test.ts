@@ -15,6 +15,8 @@ import {
   JS_ACTION_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
   JS_BLOCK_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
   JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+  JS_FIELD_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
+  JS_FIELD_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
   JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
   JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
   RunJSEditorRegistry,
@@ -88,10 +90,12 @@ describe('plugin-light-extension legacy client boundary', () => {
         [JS_ACTION_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: expect.any(Function),
         [JS_BLOCK_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: expect.any(Function),
         [JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: expect.any(Function),
+        [JS_FIELD_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: expect.any(Function),
+        [JS_FIELD_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: expect.any(Function),
         [JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: expect.any(Function),
         [JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: expect.any(Function),
-        SettingsAutoForm: expect.any(Function),
       }),
+      { warnOnOverwrite: false },
     );
     await expect(plugin.beforeLoad()).resolves.toBeUndefined();
     expect(RunJSSourceResolverRegistry.getResolver('light-extension')).toBeNull();

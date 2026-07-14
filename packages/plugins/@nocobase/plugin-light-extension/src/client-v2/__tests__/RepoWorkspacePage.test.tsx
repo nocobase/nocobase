@@ -9,6 +9,7 @@
 
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { Modal, message } from 'antd';
+import { LIGHT_EXTENSION_ENTRY_SCHEMA_URI } from '@nocobase/light-extension-sdk/schema';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { vi } from 'vitest';
@@ -89,9 +90,11 @@ vi.mock('@nocobase/plugin-vsc-file/client-v2', () => {
       getPathAccess,
       onCreate,
       onCreateFolder,
+      onDelete,
       onExportWorkspace,
       onImportWorkspace,
       onOpen,
+      onRename,
       onRenameFolder,
     }: {
       collapsed: boolean;
@@ -101,9 +104,11 @@ vi.mock('@nocobase/plugin-vsc-file/client-v2', () => {
       getPathAccess?: (path: string, pathType: 'file' | 'folder') => { canWrite?: boolean; reason?: string };
       onCreate: (parentPath?: string) => string | undefined;
       onCreateFolder: (parentPath?: string) => string | undefined;
+      onDelete: (path: string) => void;
       onExportWorkspace?: () => void;
       onImportWorkspace?: () => void;
       onOpen: (path: string) => void;
+      onRename: (path: string, nextPath: string) => boolean;
       onRenameFolder: (path: string, nextPath: string) => boolean;
     }) => (
       <div data-collapsed={String(collapsed)} data-testid="runjs-files-panel">
@@ -137,15 +142,22 @@ vi.mock('@nocobase/plugin-vsc-file/client-v2', () => {
           );
         })}
         {files.map((file) => (
-          <button
-            data-can-write={String(getPathAccess?.(file.path, 'file').canWrite !== false)}
-            data-file-path={file.path}
-            key={file.path}
-            onClick={() => onOpen(file.path)}
-            type="button"
-          >
-            {file.path.split('/').pop()}
-          </button>
+          <div key={file.path}>
+            <button
+              data-can-write={String(getPathAccess?.(file.path, 'file').canWrite !== false)}
+              data-file-path={file.path}
+              onClick={() => onOpen(file.path)}
+              type="button"
+            >
+              {file.path.split('/').pop()}
+            </button>
+            <button onClick={() => onRename(file.path, `${file.path}.renamed`)} type="button">
+              Rename file {file.path}
+            </button>
+            <button onClick={() => onDelete(file.path)} type="button">
+              Delete file {file.path}
+            </button>
+          </div>
         ))}
       </div>
     ),
@@ -188,6 +200,7 @@ vi.mock('@nocobase/plugin-vsc-file/client-v2', () => {
       runJSGlobalContextType,
       onFilesCollapsedChange,
       filesCollapsed,
+      jsonSchemaResolver,
     }: {
       activeFile?: { content: string; path: string };
       onChange: (value: string) => void;
@@ -201,6 +214,10 @@ vi.mock('@nocobase/plugin-vsc-file/client-v2', () => {
       runJSGlobalContextType?: string;
       onFilesCollapsedChange: (collapsed: boolean) => void;
       filesCollapsed: boolean;
+      jsonSchemaResolver?: (
+        path: string,
+        files: Array<{ content: string; path: string }>,
+      ) => { uri: string } | undefined;
     }) => (
       <div
         data-has-run-preview={String(Boolean(onRunPreview))}
@@ -208,6 +225,7 @@ vi.mock('@nocobase/plugin-vsc-file/client-v2', () => {
         data-show-run-button={String(showRunButton)}
         data-testid="runjs-code-tab"
         data-runjs-global-context-type={runJSGlobalContextType || ''}
+        data-json-schema-uri={activeFile ? jsonSchemaResolver?.(activeFile.path, workspaceFiles)?.uri || '' : ''}
         data-workspace-file-contents={JSON.stringify(workspaceFiles.map((file) => [file.path, file.content]))}
         data-workspace-files={workspaceFiles.map((file) => file.path).join(',')}
       >
@@ -740,6 +758,68 @@ describe('LightExtensionWorkspacePage', () => {
       ]),
     );
     expect(mocks.api.saveSource.mock.calls[0][0].expectedHeadCommitId).toBe('commit-1');
+  });
+
+  it('recomputes the canonical entry.json Schema after file creation, entry rename, selection, and deletion', async () => {
+    const descriptorPath = 'src/client/js-blocks/sales-kpi/entry.json';
+    mocks.api.pull.mockResolvedValueOnce({
+      repo: { id: 'ler_sales' },
+      commit: { id: 'commit-1' },
+      tree: { hash: 'tree-1', entryCount: 3, byteSize: 120 },
+      unchanged: false,
+      files: [
+        {
+          path: descriptorPath,
+          content: '{"schemaVersion":1,"key":"sales-kpi"}',
+          language: 'json',
+        },
+        {
+          path: 'src/client/js-blocks/sales-kpi/data.json',
+          content: '{"schemaVersion":2}',
+          language: 'json',
+        },
+        {
+          path: 'src/client/js-blocks/sales-kpi/index.tsx',
+          content: 'ctx.render(<div>Sales KPI</div>);\n',
+          language: 'typescript',
+        },
+      ],
+    });
+
+    render(
+      <MemoryRouter>
+        <LightExtensionWorkspacePage initialPath={descriptorPath} repoId="ler_sales" />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByTestId('runjs-code-tab')).toHaveAttribute(
+      'data-json-schema-uri',
+      LIGHT_EXTENSION_ENTRY_SCHEMA_URI,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'data.json' }));
+    expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute('data-json-schema-uri', '');
+
+    fireEvent.click(screen.getByRole('button', { name: 'entry.json' }));
+    expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute(
+      'data-json-schema-uri',
+      LIGHT_EXTENSION_ENTRY_SCHEMA_URI,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'New default file' }));
+    expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute('data-json-schema-uri', '');
+
+    fireEvent.click(screen.getByRole('button', { name: 'entry.json' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Rename folder src/client/js-blocks/sales-kpi', exact: true }));
+    expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute(
+      'data-json-schema-uri',
+      LIGHT_EXTENSION_ENTRY_SCHEMA_URI,
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Delete file src/client/js-blocks/sales-kpi-renamed/entry.json' }),
+    );
+    expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute('data-json-schema-uri', '');
   });
 
   it.each([

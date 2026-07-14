@@ -8,8 +8,21 @@
  */
 
 import type { RunJSSourceSettingsDescriptor } from './types';
+import { extractRunJSSettingsDefault } from '@nocobase/runjs/settings';
 
 export type JsonSchemaLike = Record<string, unknown>;
+
+export type RunJSSettingsValidationMode = 'binding' | 'runtime';
+
+export type RunJSSettingsValidationIssue = {
+  code: 'required' | 'type' | 'enum' | 'constraint' | 'unknown';
+  path: string;
+};
+
+export type RunJSSettingsValidationResult = {
+  errors: RunJSSettingsValidationIssue[];
+  missingRequiredPaths: string[];
+};
 
 export function normalizeSchemaType(schema: JsonSchemaLike): string | undefined {
   const schemaType = schema.type;
@@ -49,90 +62,182 @@ export function getSchemaTitle(schema: JsonSchemaLike, fallback: string): string
 }
 
 export function isSettingValueValid(schema: JsonSchemaLike, value: unknown, required: boolean): boolean {
+  return (
+    validateRunJSSettingValue({
+      schema,
+      value,
+      required,
+      mode: 'runtime',
+    }).errors.length === 0
+  );
+}
+
+export function validateRunJSSettingValue(options: {
+  schema: JsonSchemaLike;
+  value: unknown;
+  required: boolean;
+  mode: RunJSSettingsValidationMode;
+  path?: string;
+}): RunJSSettingsValidationResult {
+  const errors: RunJSSettingsValidationIssue[] = [];
+  const missingRequiredPaths: string[] = [];
+  collectSettingValueIssues({
+    ...options,
+    path: options.path || '',
+    errors,
+    missingRequiredPaths,
+  });
+  return { errors, missingRequiredPaths };
+}
+
+export function validateRunJSSettings(options: {
+  schema: JsonSchemaLike;
+  settings: unknown;
+  mode: RunJSSettingsValidationMode;
+}): RunJSSettingsValidationResult {
+  if (!isRecord(options.settings)) {
+    return {
+      errors: [{ code: 'type', path: '' }],
+      missingRequiredPaths: [],
+    };
+  }
+  return validateRunJSSettingValue({
+    schema: options.schema,
+    value: options.settings,
+    required: true,
+    mode: options.mode,
+  });
+}
+
+function collectSettingValueIssues(options: {
+  schema: JsonSchemaLike;
+  value: unknown;
+  required: boolean;
+  mode: RunJSSettingsValidationMode;
+  path: string;
+  errors: RunJSSettingsValidationIssue[];
+  missingRequiredPaths: string[];
+}): void {
+  const { schema, required, mode, path, errors, missingRequiredPaths } = options;
   const type = normalizeSchemaType(schema);
+  const schemaDefault = extractRunJSSettingsDefault(schema);
+  const effectiveValue = options.value === undefined && schemaDefault.hasDefault ? schemaDefault.value : options.value;
 
-  if (required && value === undefined) {
-    return false;
+  if (required && effectiveValue === undefined) {
+    missingRequiredPaths.push(path);
+    if (mode === 'runtime') {
+      errors.push({ code: 'required', path });
+    }
+    return;
+  }
+  if (effectiveValue === undefined) {
+    return;
   }
 
-  if (value === undefined) {
-    return true;
+  if (type === 'string' && typeof effectiveValue !== 'string') {
+    errors.push({ code: 'type', path });
+    return;
   }
-
-  if (type === 'string' && typeof value !== 'string') {
-    return false;
+  if ((type === 'number' || type === 'integer') && typeof effectiveValue !== 'number') {
+    errors.push({ code: 'type', path });
+    return;
   }
-  if ((type === 'number' || type === 'integer') && typeof value !== 'number') {
-    return false;
+  if (type === 'integer' && typeof effectiveValue === 'number' && !Number.isInteger(effectiveValue)) {
+    errors.push({ code: 'type', path });
+    return;
   }
-  if (type === 'integer' && typeof value === 'number' && !Number.isInteger(value)) {
-    return false;
+  if (type === 'boolean' && typeof effectiveValue !== 'boolean') {
+    errors.push({ code: 'type', path });
+    return;
   }
-  if (type === 'boolean' && typeof value !== 'boolean') {
-    return false;
+  if (type === 'array' && !Array.isArray(effectiveValue)) {
+    errors.push({ code: 'type', path });
+    return;
   }
-  if (type === 'array' && !Array.isArray(value)) {
-    return false;
-  }
-  if (type === 'object' && !isRecord(value)) {
-    return false;
-  }
-  if (type === 'object' && isRecord(value) && !isObjectSettingValueValid(schema, value)) {
-    return false;
+  if (type === 'object' && !isRecord(effectiveValue)) {
+    errors.push({ code: 'type', path });
+    return;
   }
 
   const enumValues = Array.isArray(schema.enum) ? schema.enum : null;
-  if (enumValues && !enumValues.some((item) => stableSerialize(item) === stableSerialize(value))) {
-    return false;
+  if (enumValues && !enumValues.some((item) => stableSerialize(item) === stableSerialize(effectiveValue))) {
+    errors.push({ code: 'enum', path });
+    return;
   }
 
-  if (typeof value === 'string') {
+  if (typeof effectiveValue === 'string') {
     const minLength = typeof schema.minLength === 'number' ? schema.minLength : undefined;
     const maxLength = typeof schema.maxLength === 'number' ? schema.maxLength : undefined;
-    if (typeof minLength === 'number' && value.length < minLength) {
-      return false;
+    if (typeof minLength === 'number' && effectiveValue.length < minLength) {
+      errors.push({ code: 'constraint', path });
+      return;
     }
-    if (typeof maxLength === 'number' && value.length > maxLength) {
-      return false;
+    if (typeof maxLength === 'number' && effectiveValue.length > maxLength) {
+      errors.push({ code: 'constraint', path });
+      return;
     }
-    if (!isValidSettingStringFormat(toNonEmptyString(schema.format), value)) {
-      return false;
+    if (!isValidSettingStringFormat(toNonEmptyString(schema.format), effectiveValue)) {
+      errors.push({ code: 'constraint', path });
+      return;
     }
   }
 
-  if (typeof value === 'number') {
+  if (typeof effectiveValue === 'number') {
     const minimum = typeof schema.minimum === 'number' ? schema.minimum : undefined;
     const maximum = typeof schema.maximum === 'number' ? schema.maximum : undefined;
-    if (typeof minimum === 'number' && value < minimum) {
-      return false;
+    if (typeof minimum === 'number' && effectiveValue < minimum) {
+      errors.push({ code: 'constraint', path });
+      return;
     }
-    if (typeof maximum === 'number' && value > maximum) {
-      return false;
+    if (typeof maximum === 'number' && effectiveValue > maximum) {
+      errors.push({ code: 'constraint', path });
+      return;
     }
   }
 
-  if (Array.isArray(value) && isRecord(schema.items)) {
-    return value.every((item) => {
-      if (normalizeSchemaType(schema.items as JsonSchemaLike) === 'object') {
-        if (!isRecord(item)) {
-          return false;
-        }
-        return isObjectSettingValueValid(schema.items as JsonSchemaLike, item);
-      }
-      return isSettingValueValid(schema.items as JsonSchemaLike, item, false);
+  if (Array.isArray(effectiveValue) && isRecord(schema.items)) {
+    effectiveValue.forEach((item, index) => {
+      collectSettingValueIssues({
+        schema: schema.items as JsonSchemaLike,
+        value: item,
+        required: false,
+        mode,
+        path: appendPath(path, String(index)),
+        errors,
+        missingRequiredPaths,
+      });
     });
   }
 
-  return true;
-}
+  if (type !== 'object' || !isRecord(effectiveValue)) {
+    return;
+  }
 
-function isObjectSettingValueValid(schema: JsonSchemaLike, value: Record<string, unknown>): boolean {
   const properties = getSettingsSchemaProperties(schema);
   const requiredFields = getSettingsSchemaRequired(schema);
-  return Object.entries(properties).every(([childName, childSchema]) => {
-    const childValue = Object.prototype.hasOwnProperty.call(value, childName) ? value[childName] : undefined;
-    return isSettingValueValid(childSchema, childValue, requiredFields.has(childName));
-  });
+  for (const key of Object.keys(effectiveValue)) {
+    if (!Object.prototype.hasOwnProperty.call(properties, key)) {
+      errors.push({ code: 'unknown', path: appendPath(path, key) });
+    }
+  }
+  for (const [childName, childSchema] of Object.entries(properties)) {
+    const childValue = Object.prototype.hasOwnProperty.call(effectiveValue, childName)
+      ? effectiveValue[childName]
+      : undefined;
+    collectSettingValueIssues({
+      schema: childSchema,
+      value: childValue,
+      required: requiredFields.has(childName),
+      mode,
+      path: appendPath(path, childName),
+      errors,
+      missingRequiredPaths,
+    });
+  }
+}
+
+function appendPath(parent: string, child: string): string {
+  return parent ? `${parent}.${child}` : child;
 }
 
 function isValidSettingStringFormat(format: string | undefined, value: string): boolean {

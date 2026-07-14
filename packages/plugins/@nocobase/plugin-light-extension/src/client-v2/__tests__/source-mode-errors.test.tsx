@@ -113,7 +113,7 @@ describe('JSBlockLightExtensionSourceField source mode errors', () => {
     footerView.unmount();
   });
 
-  it('validates selected entry settings against the current entry schema and clears errors in inline mode', async () => {
+  it('does not duplicate entry settings validation in Code source and clears binding errors in inline mode', async () => {
     const form = createForm({
       initialValues: {
         sourceMode: 'light-extension',
@@ -126,9 +126,10 @@ describe('JSBlockLightExtensionSourceField source mode errors', () => {
 
     renderSourceField(form);
 
-    await waitFor(() => {
-      expect(getSelfErrors(form.query('sourceMode').take())).toContain('plan: Must be one of the allowed values');
-    });
+    await screen.findByText('Settings are available in separate menus');
+    expect(screen.getByText('Settings require attention')).toBeInTheDocument();
+    expect(screen.queryByText('plan')).not.toBeInTheDocument();
+    expect(getSelfErrors(form.query('sourceMode').take())).toEqual([]);
 
     fireEvent.mouseDown(screen.getByRole('combobox', { name: 'Code source' }));
     fireEvent.click(await screen.findByText('Inline code'));
@@ -164,7 +165,7 @@ describe('JSBlockLightExtensionSourceField source mode errors', () => {
     });
   });
 
-  it('uses current entry settings defaults for a valid saved binding', async () => {
+  it('shows only a settings status summary for a valid saved binding', async () => {
     const form = createForm({
       initialValues: {
         sourceMode: 'light-extension',
@@ -176,9 +177,46 @@ describe('JSBlockLightExtensionSourceField source mode errors', () => {
     renderSourceField(form);
 
     await waitFor(() => {
-      expect(screen.getByText('plan')).toBeTruthy();
+      expect(screen.getByText('Settings are available in separate menus')).toBeTruthy();
+      expect(screen.getByText('Required settings are complete')).toBeTruthy();
+      expect(screen.queryByText('plan')).not.toBeInTheDocument();
       expect(getSelfErrors(form.query('sourceMode').take())).not.toContain('Select a light extension entry');
     });
+  });
+
+  it('shows a read-only missing-required summary without turning it into a field error', async () => {
+    mocks.request.mockImplementation((options: { url: string }) => {
+      if (options.url === 'lightExtensionEntries:listSelectable') {
+        return Promise.resolve({
+          data: {
+            data: [
+              {
+                ...createSelectableEntry(),
+                settingsSchema: {
+                  type: 'object',
+                  required: ['apiKey'],
+                  properties: { apiKey: { type: 'string', title: 'API key' } },
+                },
+              },
+            ],
+          },
+        });
+      }
+      return Promise.reject(new Error(`Unexpected request: ${options.url}`));
+    });
+    const form = createForm({
+      initialValues: {
+        sourceMode: 'light-extension',
+        sourceBinding: createSourceBinding(),
+        settings: {},
+      },
+    });
+
+    renderSourceField(form);
+
+    expect(await screen.findByText('Required settings remaining: 1')).toBeInTheDocument();
+    expect(screen.queryByText('API key')).not.toBeInTheDocument();
+    expect(getSelfErrors(form.query('sourceMode').take())).toEqual([]);
   });
 
   it('does not copy invalid source bindings in inline mode', async () => {

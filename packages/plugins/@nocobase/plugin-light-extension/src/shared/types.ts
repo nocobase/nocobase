@@ -327,6 +327,7 @@ export interface LightExtensionWorkspacePreviewInput {
 
 export interface LightExtensionWorkspacePreviewResult {
   accepted: boolean;
+  httpStatus: 200 | 207 | 422;
   diagnostics: LightExtensionDiagnostic[];
   failureCode?: string;
   artifact?: LightExtensionEntryRuntimeArtifact;

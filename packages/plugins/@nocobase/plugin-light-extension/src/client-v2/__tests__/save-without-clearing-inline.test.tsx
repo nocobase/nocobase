@@ -106,7 +106,8 @@ describe('JSBlockLightExtensionSourceField save behavior', () => {
     renderSourceField(form);
 
     await waitFor(() => {
-      expect(screen.getByText('title')).toBeTruthy();
+      expect(screen.getByText('Required settings are complete')).toBeTruthy();
+      expect(screen.queryByText('title')).toBeNull();
       expect(form.values.sourceBinding).toMatchObject(createSourceBinding());
     });
 
@@ -128,7 +129,8 @@ describe('JSBlockLightExtensionSourceField save behavior', () => {
     renderSourceBindingField(form);
 
     await waitFor(() => {
-      expect(screen.getByText('title')).toBeTruthy();
+      expect(screen.getByText('Required settings are complete')).toBeTruthy();
+      expect(screen.queryByText('title')).toBeNull();
     });
 
     expect(screen.queryByText('Inline code')).toBeNull();

@@ -28,11 +28,9 @@ test.describe('light extension runtime payload boundaries', () => {
       expect(entry).not.toHaveProperty('code');
       expect(entry).not.toHaveProperty('sourceMap');
 
-      const resolveBody = await resolveEntry(page, headers, repo, entry as Record<string, unknown>, {
-        label: 'CLICK',
-      });
+      const resolveBody = await resolveEntry(page, headers, repo, entry as Record<string, unknown>, {});
       expect(resolveBody.artifactHash).toMatch(/^[a-f0-9]{64}$/u);
-      expect(resolveBody.settings).toEqual({ label: 'CLICK' });
+      expect(resolveBody.settings).toEqual({});
       expect(resolveBody).not.toHaveProperty('code');
       expect(resolveBody).not.toHaveProperty('sourceMap');
     } finally {

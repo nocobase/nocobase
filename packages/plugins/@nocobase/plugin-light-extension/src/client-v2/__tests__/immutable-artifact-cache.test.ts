@@ -11,6 +11,8 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { ApiClientLike, ApiRequestOptions } from '../api/lightExtensionEntriesRequests';
 import { createLightExtensionRunJSResolver } from '../resolvers/LightExtensionRunJSResolver';
+import { invalidateLightExtensionRuntimeCache } from '../resolvers/LightExtensionRuntimeCacheRegistry';
+import { getLightExtensionSettingsDescriptorCache } from '../resolvers/LightExtensionSettingsDescriptorCache';
 
 const artifactHash = 'a'.repeat(64);
 const sourceBinding = {
@@ -22,21 +24,35 @@ const sourceBinding = {
 
 export function describeImmutableArtifactCache(): void {
   describe('light extension immutable artifact cache', () => {
-    it('fetches an artifact once while resolving settings on every execution', async () => {
+    it('reuses the resolved immutable artifact for settings-only executions', async () => {
       const request = vi.fn(async (options: ApiRequestOptions) => {
         return options.method === 'get' ? artifactResponse() : resolveResponse(options.data);
       });
-      const resolver = createLightExtensionRunJSResolver(createApi(request));
+      const { api, resolver } = createPrimedResolver(request);
+      const duplicateResolver = createLightExtensionRunJSResolver(api);
+      const legacyBridgeResolver = createLightExtensionRunJSResolver(api);
 
       const first = await resolver.resolve({ sourceMode: 'light-extension', sourceBinding, settings: { label: 'A' } });
-      const second = await resolver.resolve({ sourceMode: 'light-extension', sourceBinding, settings: { label: 'B' } });
+      const second = await duplicateResolver.resolve({
+        sourceMode: 'light-extension',
+        sourceBinding,
+        settings: { label: 'B' },
+      });
+      const third = await legacyBridgeResolver.resolve({
+        sourceMode: 'light-extension',
+        sourceBinding,
+        settings: { label: 'C' },
+      });
+      const fourth = await resolver.resolve({ sourceMode: 'light-extension', sourceBinding, settings: { label: 'D' } });
 
       expect(first.code).toContain('ACTION_V1');
       expect(second.code).toBe(first.code);
       expect(first.settings).toEqual({ label: 'A' });
       expect(second.settings).toEqual({ label: 'B' });
+      expect(third.settings).toEqual({ label: 'C' });
+      expect(fourth.settings).toEqual({ label: 'D' });
       expect(request.mock.calls.filter(([options]) => options.url === '/light-extension-runtime/resolve')).toHaveLength(
-        2,
+        1,
       );
       expect(request.mock.calls.filter(([options]) => options.method === 'get')).toHaveLength(1);
       expect(request.mock.calls.find(([options]) => options.method === 'get')?.[0].url).toBe(
@@ -54,7 +70,7 @@ export function describeImmutableArtifactCache(): void {
           resolveArtifact = resolve;
         });
       });
-      const resolver = createLightExtensionRunJSResolver(createApi(request));
+      const { resolver } = createPrimedResolver(request);
 
       const first = resolver.resolve({ sourceMode: 'light-extension', sourceBinding, settings: { label: 'A' } });
       const second = resolver.resolve({ sourceMode: 'light-extension', sourceBinding, settings: { label: 'B' } });
@@ -67,7 +83,7 @@ export function describeImmutableArtifactCache(): void {
       expect(request.mock.calls.filter(([options]) => options.method === 'get')).toHaveLength(1);
     });
 
-    it('does not execute cached code when Resolve fails', async () => {
+    it('does not execute cached code after the repository cache is invalidated', async () => {
       let resolveCount = 0;
       const request = vi.fn(async (options: ApiRequestOptions) => {
         if (options.method === 'get') {
@@ -79,9 +95,10 @@ export function describeImmutableArtifactCache(): void {
         }
         return resolveResponse(options.data);
       });
-      const resolver = createLightExtensionRunJSResolver(createApi(request));
+      const { api, resolver } = createPrimedResolver(request);
 
       await resolver.resolve({ sourceMode: 'light-extension', sourceBinding, settings: {} });
+      invalidateLightExtensionRuntimeCache(api, sourceBinding.repoId);
       await expect(resolver.resolve({ sourceMode: 'light-extension', sourceBinding, settings: {} })).rejects.toThrow(
         'repo disabled',
       );
@@ -99,7 +116,7 @@ export function describeImmutableArtifactCache(): void {
         }
         return artifactResponse();
       });
-      const resolver = createLightExtensionRunJSResolver(createApi(request));
+      const { resolver } = createPrimedResolver(request);
 
       await expect(
         resolver.resolve({ sourceMode: 'light-extension', sourceBinding, settings: {} }),
@@ -152,5 +169,34 @@ function artifactResponse() {
 function createApi(request: (options: ApiRequestOptions) => Promise<unknown>): ApiClientLike {
   return {
     request: async <TResponse>(options: ApiRequestOptions) => (await request(options)) as TResponse,
+  };
+}
+
+function createPrimedResolver(request: (options: ApiRequestOptions) => Promise<unknown>) {
+  const api = createApi(request);
+  getLightExtensionSettingsDescriptorCache(api).primeScope(sourceBinding.repoId, 'js-action', [
+    {
+      id: sourceBinding.entryId,
+      repoId: sourceBinding.repoId,
+      kind: 'js-action',
+      entryName: 'example',
+      entryPath: 'src/client/js-actions/example/index.ts',
+      title: 'Example',
+      settingsSchema: {
+        type: 'object',
+        properties: {
+          label: { type: 'string' },
+        },
+      },
+      settingsSchemaHash: 'settings-schema-v1',
+      settingsDefaultsHash: 'settings-defaults-v1',
+      runtimeCodeHash: 'runtime_hash_v1',
+      artifactHash,
+      runtimeAvailable: true,
+    },
+  ]);
+  return {
+    api,
+    resolver: createLightExtensionRunJSResolver(api),
   };
 }

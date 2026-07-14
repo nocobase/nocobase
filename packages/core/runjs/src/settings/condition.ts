@@ -9,6 +9,13 @@
 
 export const RUNJS_SETTINGS_CONDITION_OPERATORS = ['$eq', '$ne', '$in', '$notIn', '$empty', '$notEmpty'] as const;
 export const RUNJS_SETTINGS_CONDITION_LOGICS = ['$and', '$or'] as const;
+export const RUNJS_SETTINGS_CONDITION_LIMITS = {
+  maxDepth: 8,
+  maxNodes: 64,
+  maxItemsPerGroup: 32,
+  maxPathSegments: 16,
+} as const;
+const settingsConditionPathSegmentPattern = /^[A-Za-z_][A-Za-z0-9_-]{0,63}$/u;
 
 export type RunJSSettingsConditionOperator = (typeof RUNJS_SETTINGS_CONDITION_OPERATORS)[number];
 export type RunJSSettingsConditionLogic = (typeof RUNJS_SETTINGS_CONDITION_LOGICS)[number];
@@ -47,7 +54,7 @@ export function evaluateSettingsCondition(
   input: RunJSSettingsConditionInput,
 ): boolean {
   const settings = mergeSettingsValues(input.defaults, input.settings);
-  return evaluateConditionNode(condition, settings);
+  return evaluateConditionNode(condition, settings, { nodes: 0 }, 1);
 }
 
 export function getSettingsValueAtPath(settings: unknown, path: string): unknown {
@@ -55,9 +62,14 @@ export function getSettingsValueAtPath(settings: unknown, path: string): unknown
     throw new RunJSSettingsConditionError('Settings condition path must be a non-empty string');
   }
 
+  const segments = path.split('.');
+  if (segments.length > RUNJS_SETTINGS_CONDITION_LIMITS.maxPathSegments) {
+    throw new RunJSSettingsConditionError('Settings condition path has too many segments');
+  }
+
   let current = settings;
-  for (const segment of path.split('.')) {
-    if (!segment || isUnsafePathSegment(segment)) {
+  for (const segment of segments) {
+    if (!settingsConditionPathSegmentPattern.test(segment) || isUnsafePathSegment(segment)) {
       throw new RunJSSettingsConditionError(`Settings condition path segment "${segment}" is not allowed`);
     }
     if (!isRecord(current) || !Object.prototype.hasOwnProperty.call(current, segment)) {
@@ -75,21 +87,33 @@ export function isSettingsFieldVisible(
   return typeof condition === 'undefined' || evaluateSettingsCondition(condition, input);
 }
 
-function evaluateConditionNode(condition: RunJSSettingsCondition, settings: unknown): boolean {
+function evaluateConditionNode(
+  condition: RunJSSettingsCondition,
+  settings: unknown,
+  state: { nodes: number },
+  depth: number,
+): boolean {
+  state.nodes += 1;
+  if (depth > RUNJS_SETTINGS_CONDITION_LIMITS.maxDepth || state.nodes > RUNJS_SETTINGS_CONDITION_LIMITS.maxNodes) {
+    throw new RunJSSettingsConditionError('Settings condition exceeds the supported complexity limits');
+  }
   if (!isRecord(condition)) {
     throw new RunJSSettingsConditionError('Settings condition must be an object');
   }
 
   if ('logic' in condition) {
+    assertExactConditionFields(condition, ['logic', 'items']);
     if (!RUNJS_SETTINGS_CONDITION_LOGICS.includes(condition.logic as RunJSSettingsConditionLogic)) {
       throw new RunJSSettingsConditionError(`Settings condition logic "${String(condition.logic)}" is not supported`);
     }
     if (!Array.isArray(condition.items)) {
       throw new RunJSSettingsConditionError('Settings condition group items must be an array');
     }
-    return condition.logic === '$and'
-      ? condition.items.every((item) => evaluateConditionNode(item, settings))
-      : condition.items.some((item) => evaluateConditionNode(item, settings));
+    if (condition.items.length > RUNJS_SETTINGS_CONDITION_LIMITS.maxItemsPerGroup) {
+      throw new RunJSSettingsConditionError('Settings condition group contains too many items');
+    }
+    const results = condition.items.map((item) => evaluateConditionNode(item, settings, state, depth + 1));
+    return condition.logic === '$and' ? results.every(Boolean) : results.some(Boolean);
   }
 
   if (typeof condition.path !== 'string' || typeof condition.operator !== 'string') {
@@ -97,6 +121,16 @@ function evaluateConditionNode(condition: RunJSSettingsCondition, settings: unkn
   }
   if (!RUNJS_SETTINGS_CONDITION_OPERATORS.includes(condition.operator as RunJSSettingsConditionOperator)) {
     throw new RunJSSettingsConditionError(`Settings condition operator "${condition.operator}" is not supported`);
+  }
+  assertExactConditionFields(condition, ['path', 'operator', 'value']);
+
+  const hasValue = Object.prototype.hasOwnProperty.call(condition, 'value');
+  if (condition.operator === '$empty' || condition.operator === '$notEmpty') {
+    if (hasValue) {
+      throw new RunJSSettingsConditionError(`${condition.operator} condition must not define a value`);
+    }
+  } else if (!hasValue) {
+    throw new RunJSSettingsConditionError(`${condition.operator} condition value is required`);
   }
 
   const current = getSettingsValueAtPath(settings, condition.path);
@@ -119,6 +153,14 @@ function evaluateConditionNode(condition: RunJSSettingsCondition, settings: unkn
       return isEmptySettingsValue(current);
     case '$notEmpty':
       return !isEmptySettingsValue(current);
+  }
+}
+
+function assertExactConditionFields(condition: Record<string, unknown>, allowedFields: string[]): void {
+  const allowed = new Set(allowedFields);
+  const extraField = Object.keys(condition).find((key) => !allowed.has(key));
+  if (extraField) {
+    throw new RunJSSettingsConditionError(`Settings condition field "${extraField}" is not allowed`);
   }
 }
 

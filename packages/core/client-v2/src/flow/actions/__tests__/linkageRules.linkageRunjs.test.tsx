@@ -29,7 +29,6 @@ vi.mock('../../components/RunJSValueEditor', () => ({
   },
 }));
 
-import { RunJSSourceResolverRegistry } from '../../components/runjs-source';
 import { linkageRunjs } from '../linkageRules';
 
 type LinkageRunJSComponentProps = {
@@ -42,7 +41,6 @@ type LinkageRunJSComponentProps = {
 describe('linkageRunjs', () => {
   afterEach(() => {
     mocks.runJSValueEditor.mockClear();
-    RunJSSourceResolverRegistry.clear();
     vi.restoreAllMocks();
   });
 
@@ -80,16 +78,8 @@ describe('linkageRunjs', () => {
     });
 
     const nextValue: RunJSValue = {
-      code: '',
+      code: 'return 8;',
       version: 'v2',
-      sourceMode: 'light-extension',
-      sourceBinding: {
-        type: 'light-extension-entry',
-        repoId: 'repo-1',
-        entryId: 'entry-1',
-        kind: 'runjs',
-      },
-      settings: { currency: 'USD' },
     };
     (editorProps?.onChange as ((value: RunJSValue) => void) | undefined)?.(nextValue);
 
@@ -109,86 +99,25 @@ describe('linkageRunjs', () => {
     expect(runjs).toHaveBeenCalledWith('return 7;', undefined, { version: 'v2' });
   });
 
-  it('resolves light-extension code and settings before execution', async () => {
-    RunJSSourceResolverRegistry.registerResolver({
-      sourceMode: 'light-extension',
-      resolve: (input) => ({
-        code: 'return `${ctx.settings.currency}:${ctx.formValues.amount}`;',
-        version: 'v2',
-        settings: input.settings,
-      }),
-    });
-
-    const runjs = vi.fn(async function (this: { settings?: Record<string, unknown> }, code: string) {
-      return {
-        success: true,
-        value: `${this.settings?.currency}:12:${code.includes('formValues.amount')}`,
-      };
-    });
+  it('does not revive a stale generic light-extension binding', async () => {
+    const runjs = vi.fn(async () => ({ success: true, value: 8 }));
     const ctx = new FlowContext();
-    ctx.defineProperty('model', { value: { uid: 'form-block-runjs', use: 'FormBlockModel' } });
-    ctx.defineProperty('formValues', { value: { amount: 12 } });
     ctx.defineMethod('runjs', runjs);
 
     await linkageRunjs.handler(ctx, {
       value: {
-        code: '',
+        code: 'return 8;',
         version: 'v2',
         sourceMode: 'light-extension',
         sourceBinding: {
           type: 'light-extension-entry',
-          repoId: 'repo-1',
-          entryId: 'entry-1',
+          repoId: 'legacy_repo',
+          entryId: 'legacy_entry',
           kind: 'runjs',
         },
-        settings: { currency: 'USD' },
       },
     });
 
-    expect(runjs).toHaveBeenCalledTimes(1);
-    expect(runjs).toHaveBeenCalledWith('return `${ctx.settings.currency}:${ctx.formValues.amount}`;', undefined, {
-      version: 'v2',
-    });
-  });
-
-  it('shows a runtime error without rejecting the linkage flow', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    RunJSSourceResolverRegistry.registerResolver({
-      sourceMode: 'light-extension',
-      resolve: (input) => ({
-        code: 'throw new Error("boom");',
-        version: 'v2',
-        sourceMap: { entryPath: 'src/client/runjs/check/index.ts' },
-        settings: input.settings,
-        context: input.context,
-      }),
-    });
-
-    const message = { error: vi.fn() };
-    const ctx = new FlowContext();
-    ctx.defineProperty('flowKey', { value: 'eventSettings' });
-    ctx.defineProperty('currentStep', { value: { key: 'linkageRules' } });
-    ctx.defineProperty('model', { value: { uid: 'form-block-runjs', use: 'FormBlockModel' } });
-    ctx.defineProperty('message', { value: message });
-    ctx.defineProperty('t', { value: (key: string) => key });
-    ctx.defineMethod('runjs', async () => ({ success: false, error: new Error('boom') }));
-    ctx.__linkageRunJSOwnerPath = { ruleIndex: 1, actionIndex: 2 };
-
-    await linkageRunjs.handler(ctx, {
-      value: {
-        code: '',
-        version: 'v2',
-        sourceMode: 'light-extension',
-        sourceBinding: {
-          type: 'light-extension-entry',
-          repoId: 'repo-1',
-          entryId: 'entry-1',
-          kind: 'runjs',
-        },
-        settings: { enabled: true },
-      },
-    });
-
-    expect(message.error).toHaveBeenCalledWith('RunJS execution failed');
+    expect(runjs).toHaveBeenCalledWith('return 8;', undefined, { version: 'v2' });
   });
 });

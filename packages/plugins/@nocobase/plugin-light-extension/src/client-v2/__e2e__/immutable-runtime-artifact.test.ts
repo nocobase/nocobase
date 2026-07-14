@@ -41,7 +41,7 @@ test.describe('light extension immutable runtime artifact', () => {
             entryId: String(entry?.id),
             kind: 'js-action',
           },
-          settings: { label: 'CLICK' },
+          settings: {},
         },
       });
       expect(resolveResponse.ok()).toBe(true);

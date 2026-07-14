@@ -8,6 +8,7 @@
  */
 
 import type { Database, Model, Transaction } from '@nocobase/database';
+import { extractRunJSSettingsDefault } from '@nocobase/runjs/settings';
 import { createHash } from 'crypto';
 
 import { LightExtensionError } from '../../shared/errors';
@@ -332,31 +333,8 @@ export function buildLightExtensionSettingsHashes(settingsSchema: Record<string,
 
   return {
     settingsSchemaHash: sha256(settingsSchemaSerialize(settingsSchema)),
-    settingsDefaultsHash: sha256(stableSerialize(extractSettingsDefaults(settingsSchema).value)),
+    settingsDefaultsHash: sha256(stableSerialize(extractRunJSSettingsDefault(settingsSchema).value)),
   };
-}
-
-function extractSettingsDefaults(schema: Record<string, unknown>): { hasDefault: boolean; value: unknown } {
-  if (Object.prototype.hasOwnProperty.call(schema, 'default')) {
-    return { hasDefault: true, value: cloneJsonValue(schema.default) };
-  }
-
-  if (!isPlainRecord(schema.properties)) {
-    return { hasDefault: false, value: {} };
-  }
-
-  const defaults: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(schema.properties)) {
-    if (!isPlainRecord(value)) {
-      continue;
-    }
-    const childDefault = extractSettingsDefaults(value);
-    if (childDefault.hasDefault) {
-      defaults[key] = childDefault.value;
-    }
-  }
-
-  return { hasDefault: Object.keys(defaults).length > 0, value: defaults };
 }
 
 function settingsSchemaSerialize(value: unknown, parentKey?: string): string {

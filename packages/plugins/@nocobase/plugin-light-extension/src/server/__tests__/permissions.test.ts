@@ -58,6 +58,11 @@ describe('plugin-light-extension permission service', () => {
     await plugin.load();
 
     expect(acl.allow).toHaveBeenCalledWith('lightExtensionRuntime', [...lightExtensionRuntimeActionNames], 'loggedIn');
+    expect(acl.allow).toHaveBeenCalledWith(
+      'lightExtensionCapabilities',
+      [...lightExtensionCapabilitiesActionNames],
+      'public',
+    );
     expect(acl.registerSnippet).toHaveBeenCalledTimes(1);
     expect(registeredSnippets).toContainEqual({
       name: LIGHT_EXTENSION_ACL_SNIPPET,

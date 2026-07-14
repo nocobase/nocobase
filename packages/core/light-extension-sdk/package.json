@@ -25,6 +25,11 @@
       "import": "./lib/schema/index.js",
       "require": "./lib/schema/index.js"
     },
+    "./schema/server": {
+      "types": "./lib/schema/server.d.ts",
+      "import": "./lib/schema/server.js",
+      "require": "./lib/schema/server.js"
+    },
     "./schema/entry-v1.schema.json": "./lib/schema/entry-v1.schema.json",
     "./typegen": {
       "types": "./lib/typegen/index.d.ts",
@@ -34,7 +39,7 @@
     "./package.json": "./package.json"
   },
   "devDependencies": {
-    "ajv": "^8.17.1",
+    "ajv": "^6.12.6",
     "typescript": "^5.x"
   }
 }

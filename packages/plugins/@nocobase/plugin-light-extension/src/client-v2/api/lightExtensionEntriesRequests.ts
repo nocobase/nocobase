@@ -17,6 +17,8 @@ import type {
   LightExtensionSelectableEntrySummary,
   LightExtensionSelectableEntriesInput,
 } from '../../shared/types';
+import { invalidateLightExtensionRuntimeCache } from '../resolvers/LightExtensionRuntimeCacheRegistry';
+import { invalidateLightExtensionSettingsDescriptorCache } from '../resolvers/LightExtensionSettingsDescriptorCache';
 
 export type ApiRequestOptions = {
   url: string;
@@ -76,7 +78,10 @@ export async function moveSourceToLightExtension(
     data: input,
   });
 
-  return unwrapResourceResponse(response);
+  const result = unwrapResourceResponse(response);
+  invalidateLightExtensionSettingsDescriptorCache(api, result.repo.id);
+  invalidateLightExtensionRuntimeCache(api, result.repo.id);
+  return result;
 }
 
 export async function moveLightExtensionToInline(
@@ -89,7 +94,9 @@ export async function moveLightExtensionToInline(
     data: input,
   });
 
-  return unwrapResourceResponse(response);
+  const result = unwrapResourceResponse(response);
+  invalidateLightExtensionSettingsDescriptorCache(api, input.repoId);
+  return result;
 }
 
 export function unwrapResourceResponse<T>(response: ResourceResponse<T>): T {

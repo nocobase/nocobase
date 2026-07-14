@@ -23,8 +23,6 @@ import {
   serializeCtxDateValue,
   type CollectionField,
   type MetaTreeNode,
-  type ParamObject,
-  type RunJSValue,
   useFlowContext,
   EditableItemModel,
   FlowModelContext,
@@ -38,7 +36,6 @@ import {
   isToManyAssociationField,
 } from '../internal/utils/modelUtils';
 import { RunJSValueEditor, type RunJSValueEditorProps } from './RunJSValueEditor';
-import { RunJSSourceResolverRegistry, type RunJSSourceMenuItem } from './runjs-source';
 import type { EmbeddedRunJSEditorController, RunJSSourceLocator, RunJSSurfaceStyle } from './runjs-studio';
 import { pickOperatorStyle as pickStyle, resolveOperatorComponent } from '../internal/utils/operatorSchemaHelper';
 import { InputFieldModel } from '../models/fields/InputFieldModel';
@@ -361,126 +358,6 @@ type ResolvedFieldContext = {
   fieldName: string | null;
   collectionField: CollectionField | null;
 };
-
-type FieldAssignRunJSSourceMetaOptions = {
-  runJSValue: RunJSValue;
-};
-
-function getLightExtensionValuePath(value: unknown): string[] | undefined {
-  if (!isRunJSValue(value) || value.sourceMode !== 'light-extension') {
-    return undefined;
-  }
-  const repoId = value.sourceBinding?.repoId;
-  const entryId = value.sourceBinding?.entryId;
-  if (typeof repoId !== 'string' || typeof entryId !== 'string') {
-    return undefined;
-  }
-  return ['light-extension', `repo:${repoId}`, `entry:${entryId}`];
-}
-
-async function createLightExtensionMetaTreeChildren(
-  items: RunJSSourceMenuItem[],
-  parentPath: string[],
-  params: ParamObject,
-  render: NonNullable<MetaTreeNode['render']>,
-): Promise<MetaTreeNode[]> {
-  const nodes = await Promise.all(
-    items.map(async (item): Promise<MetaTreeNode | null> => {
-      const paths = [...parentPath, item.key];
-      if (item.children?.length) {
-        const children = await createLightExtensionMetaTreeChildren(item.children, paths, params, render);
-        if (!children.length) {
-          return null;
-        }
-        return {
-          name: item.key,
-          title: item.label,
-          type: 'object',
-          paths,
-          children,
-        };
-      }
-      if (item.disabled || !item.onSelect) {
-        return null;
-      }
-
-      const selected = await item.onSelect({
-        kind: 'runjs',
-        sourceMode: typeof params.sourceMode === 'string' ? params.sourceMode : 'inline',
-        sourceBinding:
-          params.sourceBinding && typeof params.sourceBinding === 'object' && !Array.isArray(params.sourceBinding)
-            ? (params.sourceBinding as Record<string, unknown>)
-            : undefined,
-        settings:
-          params.settings && typeof params.settings === 'object' && !Array.isArray(params.settings)
-            ? (params.settings as Record<string, unknown>)
-            : {},
-        params,
-        defaultParams: { code: '', version: 'v2' },
-      });
-      const candidate = {
-        code: typeof params.code === 'string' ? params.code : '',
-        version: typeof params.version === 'string' ? params.version : 'v2',
-        ...(selected || {}),
-      };
-      if (!isRunJSValue(candidate)) {
-        return null;
-      }
-
-      return {
-        name: item.key,
-        title: item.label,
-        type: 'object',
-        paths,
-        render,
-        options: {
-          runJSValue: candidate,
-        } satisfies FieldAssignRunJSSourceMetaOptions,
-      };
-    }),
-  );
-
-  return nodes.filter((node): node is MetaTreeNode => Boolean(node));
-}
-
-export async function createFieldAssignLightExtensionMetaTree(
-  value: unknown,
-  t: (key: string, options?: Record<string, unknown>) => string,
-  render: NonNullable<MetaTreeNode['render']>,
-): Promise<MetaTreeNode | undefined> {
-  const currentRunJSValue: RunJSValue = isRunJSValue(value) ? value : { code: '', version: 'v2' };
-  const resolver = RunJSSourceResolverRegistry.getResolver('light-extension');
-  let items: RunJSSourceMenuItem[] = [];
-  try {
-    items =
-      (await resolver?.listSourceMenuItems?.({
-        kind: 'runjs',
-        sourceMode: currentRunJSValue.sourceMode || 'inline',
-        sourceBinding: currentRunJSValue.sourceBinding,
-        settings: currentRunJSValue.settings || {},
-        t,
-      })) || [];
-  } catch {
-    return undefined;
-  }
-  const children = await createLightExtensionMetaTreeChildren(
-    items,
-    ['light-extension'],
-    { ...currentRunJSValue },
-    render,
-  );
-  if (!children.length) {
-    return undefined;
-  }
-
-  return {
-    title: tExpr('Light extension'),
-    name: 'light-extension',
-    type: 'object',
-    paths: ['light-extension'],
-    children,
-  };
-}
 
 function withFullWidthStyle(style?: React.CSSProperties): React.CSSProperties {
   return { ...style, width: '100%', minWidth: 0 };
@@ -861,9 +738,6 @@ export const FieldAssignValueInput: React.FC<Props> = ({
   React.useEffect(() => {
     extraMetaTreeRef.current = extraMetaTree;
   }, [extraMetaTree]);
-  const valueRef = React.useRef(value);
-  valueRef.current = value;
-
   // 优先：表单上已配置的字段（含子表单/子表单列表的子字段）
   const itemModel = React.useMemo(() => {
     if (!targetPath) return null;
@@ -1555,11 +1429,6 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       const extraTree = Array.isArray(extra) ? extra : [];
       const mergedBase = mergeItemMetaTreeForAssignValue(base as MetaTreeNode[], extraTree as MetaTreeNode[]);
       const limitedBase = limitAssociationMetaTree(mergedBase, { maxAssociationDepth: maxAssociationFieldDepth });
-      const lightExtensionNode = await createFieldAssignLightExtensionMetaTree(
-        valueRef.current,
-        flowCtx.t || ((key) => key),
-        RunJSComponent,
-      );
       return [
         {
           title: tExpr('Constant'),
@@ -1570,7 +1439,6 @@ export const FieldAssignValueInput: React.FC<Props> = ({
         },
         { title: tExpr('Null'), name: 'null', type: 'object', paths: ['null'], render: NullComponent },
         { title: tExpr('RunJS'), name: 'runjs', type: 'object', paths: ['runjs'], render: RunJSComponent },
-        ...(lightExtensionNode ? [lightExtensionNode] : []),
         ...limitedBase,
       ];
     };
@@ -1619,7 +1487,6 @@ export const FieldAssignValueInput: React.FC<Props> = ({
           if (firstPath === 'constant') return ConstantEditor;
           if (firstPath === 'null') return NullComponent;
           if (firstPath === 'runjs') return RunJSComponent;
-          if (firstPath === 'light-extension') return RunJSComponent;
           return null;
         },
         resolveValueFromPath: (item) => {
@@ -1629,16 +1496,10 @@ export const FieldAssignValueInput: React.FC<Props> = ({
           }
           if (firstPath === 'null') return null;
           if (firstPath === 'runjs') return { code: '', version: 'v2' };
-          if (firstPath === 'light-extension') {
-            const options = item.options as FieldAssignRunJSSourceMetaOptions | undefined;
-            return options?.runJSValue;
-          }
           return undefined;
         },
         resolvePathFromValue: (currentValue) => {
           if (currentValue === null) return ['null'];
-          const lightExtensionPath = getLightExtensionValuePath(currentValue);
-          if (lightExtensionPath) return lightExtensionPath;
           if (isRunJSValue(currentValue)) return ['runjs'];
           if (useDateVariableConstant && isCtxDateExpression(currentValue)) {
             return ['constant'];

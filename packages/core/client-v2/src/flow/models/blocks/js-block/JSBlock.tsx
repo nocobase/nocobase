@@ -31,10 +31,12 @@ import { JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD } from './JSBlockSourceMod
 import {
   createLightExtensionSettingSteps,
   getLightExtensionSettingsDescriptor as getSharedLightExtensionSettingsDescriptor,
-  normalizeLightExtensionSourceSettings,
+  normalizeLightExtensionSourceSettingsForBinding,
+  rememberLightExtensionBindingSettings,
   resolveLightExtensionBindingTitle as resolveSharedLightExtensionBindingTitle,
   setCanonicalLightExtensionSetting,
   setCanonicalLightExtensionSource,
+  showPendingLightExtensionRequiredSettings,
 } from '../../utils/runjsSourceRuntimeCommon';
 
 const NAMESPACE = 'client';
@@ -635,19 +637,29 @@ async function syncSourceModeToRunJs(ctx: FlowSettingsContext<JSBlockModel>, par
     sourceMode === LIGHT_EXTENSION_SOURCE_MODE
       ? await getLightExtensionSettingsDescriptor(ctx.model, { ...params, sourceMode, sourceBinding })
       : null;
-  const settings = normalizeLightExtensionSourceSettings({
+  const normalized = normalizeLightExtensionSourceSettingsForBinding({
     currentRunJs,
     nextSourceMode: sourceMode,
     nextSourceBinding: sourceBinding,
     nextSettings: params.settings,
     descriptor,
   });
-  setCanonicalLightExtensionSource(ctx.model, 'jsSettings', { sourceMode, sourceBinding, settings });
+  setCanonicalLightExtensionSource(ctx.model, 'jsSettings', {
+    sourceMode,
+    sourceBinding,
+    settings: normalized.settings,
+  });
+  rememberLightExtensionBindingSettings(ctx.model, descriptor, normalized.missingRequiredPaths);
 }
 
 async function refreshJSBlockAfterSettingsSave(ctx: FlowSettingsContext<JSBlockModel>) {
   ctx.model.invalidateFlowCache('beforeRender', true);
   await ctx.model.rerender();
+}
+
+async function refreshJSBlockAfterSourceSave(ctx: FlowSettingsContext<JSBlockModel>) {
+  await refreshJSBlockAfterSettingsSave(ctx);
+  await showPendingLightExtensionRequiredSettings(ctx.model, 'jsSettings');
 }
 
 JSBlockModel.define({
@@ -677,7 +689,7 @@ JSBlockModel.registerFlow({
       useRawParams: true,
       defaultParams: getSourceModeDefaultParams,
       beforeParamsSave: syncSourceModeToRunJs,
-      afterParamsSave: refreshJSBlockAfterSettingsSave,
+      afterParamsSave: refreshJSBlockAfterSourceSave,
     },
     runJs: {
       title: tExpr('Write JavaScript'),

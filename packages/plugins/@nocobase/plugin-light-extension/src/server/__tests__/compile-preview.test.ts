@@ -164,6 +164,58 @@ describe('plugin-light-extension compile preview', () => {
     expect(entriesRepository.update).not.toHaveBeenCalled();
   });
 
+  it('rejects invalid settings visibility conditions before compiling an unsaved preview', async () => {
+    const repo = createRepo();
+    const { db } = createDbStub([]);
+    const fileService = createFileServiceStub(repo, []);
+    const { service } = createPreviewService(db, fileService);
+
+    const result = await service.compileWorkspacePreview({
+      repoId: repo.id,
+      entryId: 'lee_sales_kpi',
+      kind: 'js-block',
+      entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+      runtimeVersion: 'v2',
+      files: [
+        {
+          path: 'src/client/js-blocks/sales-kpi/index.tsx',
+          content: 'ctx.render(<div />);\n',
+        },
+        {
+          path: 'src/client/js-blocks/sales-kpi/entry.json',
+          content: JSON.stringify({
+            schemaVersion: 1,
+            key: 'sales-kpi',
+            settingsSchema: {
+              type: 'object',
+              properties: {
+                mode: { type: 'integer' },
+                target: {
+                  type: 'string',
+                  'x-visible-when': { path: 'mode', operator: '$in', value: 1 },
+                },
+              },
+            },
+          }),
+        },
+      ],
+    });
+
+    expect(result).toMatchObject({
+      accepted: false,
+      failureCode: 'LIGHT_EXTENSION_VALIDATION_FAILED',
+      diagnostics: [
+        expect.objectContaining({
+          code: 'settings_condition_value_invalid',
+          path: 'src/client/js-blocks/sales-kpi/entry.json',
+          details: expect.objectContaining({ schemaPath: expect.stringContaining('x-visible-when') }),
+        }),
+      ],
+    });
+    expect(result.artifact).toBeUndefined();
+    expect(fileService.pull).not.toHaveBeenCalled();
+  });
+
   it('compiles every entry in an unsaved workspace before save', async () => {
     const repo = createRepo();
     const { db } = createDbStub([
@@ -532,7 +584,13 @@ describe('plugin-light-extension compile preview', () => {
   });
 
   it('normalizes the unsaved workspace preview resource input', async () => {
-    const compileWorkspacePreview = vi.fn().mockResolvedValue({ accepted: true, diagnostics: [] });
+    const previewResult = {
+      accepted: false,
+      httpStatus: 422,
+      failureCode: 'LIGHT_EXTENSION_VALIDATION_FAILED',
+      diagnostics: [{ code: 'settings_condition_invalid', severity: 'error', message: 'Invalid condition' }],
+    };
+    const compileWorkspacePreview = vi.fn().mockResolvedValue(previewResult);
     const resource = createLightExtensionsResource({
       compileWorkspacePreview,
     } as unknown as LightExtensionCompilePreviewService);
@@ -577,6 +635,8 @@ describe('plugin-light-extension compile preview', () => {
       },
       expect.any(Object),
     );
+    expect((ctx as { status?: number }).status).toBe(422);
+    expect((ctx as { body?: unknown }).body).toBe(previewResult);
   });
 });
 

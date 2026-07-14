@@ -10,6 +10,7 @@
 export type RunJSSettingsRecord = Record<string, unknown>;
 
 export * from './condition';
+export * from './defaults';
 
 export interface LightExtensionSettingsDescriptorLike {
   entryId: string;

@@ -41,10 +41,12 @@ import {
   isRecord,
   LIGHT_EXTENSION_SOURCE_MODE,
   normalizeLightExtensionRuntimeError,
-  normalizeLightExtensionSourceSettings,
+  normalizeLightExtensionSourceSettingsForBinding,
   normalizeLightExtensionSourceMode,
+  rememberLightExtensionBindingSettings,
   setCanonicalLightExtensionSetting,
   setCanonicalLightExtensionSource,
+  showPendingLightExtensionRequiredSettings,
   type LightExtensionSourceMode,
   type LightExtensionSourceModeParams,
   type RuntimeErrorInfo,
@@ -107,7 +109,7 @@ export function createJSActionSourceModeStep(): StepDefinition {
     hooks: {
       defaultParams: getJSActionSourceDefaultParams,
       beforeParamsSave: syncJSActionSourceToRunJs,
-      afterParamsSave: refreshJSActionAfterSettingsSave,
+      afterParamsSave: refreshJSActionAfterSourceSave,
     },
   });
 }
@@ -119,7 +121,7 @@ export function createJSActionSourceBindingStep(): StepDefinition {
     hooks: {
       defaultParams: getJSActionSourceDefaultParams,
       beforeParamsSave: syncJSActionSourceToRunJs,
-      afterParamsSave: refreshJSActionAfterSettingsSave,
+      afterParamsSave: refreshJSActionAfterSourceSave,
     },
   });
 }
@@ -277,19 +279,29 @@ async function syncJSActionSourceToRunJs(
     sourceMode === LIGHT_EXTENSION_SOURCE_MODE
       ? await getLightExtensionSettingsDescriptor(ctx.model, { ...params, sourceMode, sourceBinding })
       : null;
-  const settings = normalizeLightExtensionSourceSettings({
+  const normalized = normalizeLightExtensionSourceSettingsForBinding({
     currentRunJs,
     nextSourceMode: sourceMode,
     nextSourceBinding: sourceBinding,
     nextSettings: params.settings,
     descriptor,
   });
-  setCanonicalLightExtensionSource(ctx.model, 'clickSettings', { sourceMode, sourceBinding, settings });
+  setCanonicalLightExtensionSource(ctx.model, 'clickSettings', {
+    sourceMode,
+    sourceBinding,
+    settings: normalized.settings,
+  });
+  rememberLightExtensionBindingSettings(ctx.model, descriptor, normalized.missingRequiredPaths);
 }
 
 async function refreshJSActionAfterSettingsSave(ctx: FlowSettingsContext<JSActionRuntimeModel>) {
   ctx.model.invalidateFlowCache('clickSettings', true);
   await ctx.model.rerender();
+}
+
+async function refreshJSActionAfterSourceSave(ctx: FlowSettingsContext<JSActionRuntimeModel>) {
+  await refreshJSActionAfterSettingsSave(ctx);
+  await showPendingLightExtensionRequiredSettings(ctx.model, 'clickSettings');
 }
 
 async function getLightExtensionSettingsDescriptor(model: JSActionRuntimeModel, params: Record<string, unknown>) {

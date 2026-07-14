@@ -130,6 +130,59 @@ describe('light extension runtime artifact persistence', () => {
     });
   });
 
+  it('deeply merges object-level defaults with property defaults for runtime and hash parity', () => {
+    const settingsSchema = {
+      type: 'object',
+      default: {
+        displayOptions: {
+          color: 'red',
+        },
+        explicitNull: null,
+      },
+      properties: {
+        displayOptions: {
+          type: 'object',
+          default: {
+            pageSize: 20,
+          },
+          properties: {
+            density: { type: 'string', default: 'compact' },
+            color: { type: 'string', default: 'blue' },
+          },
+        },
+        emptyObject: { type: 'object', default: {} },
+        explicitNull: { type: ['string', 'null'], default: 'fallback' },
+      },
+    };
+    const defaults = {
+      displayOptions: {
+        density: 'compact',
+        color: 'red',
+        pageSize: 20,
+      },
+      emptyObject: {},
+      explicitNull: null,
+    };
+
+    expect(new SettingsResolverService().getRuntimeDefaults({ id: 'entry_1', settingsSchema })).toEqual(defaults);
+    expect(buildLightExtensionSettingsHashes(settingsSchema).settingsDefaultsHash).toBe(
+      createHash('sha256')
+        .update(
+          '{"displayOptions":{"color":"red","density":"compact","pageSize":20},"emptyObject":{},"explicitNull":null}',
+        )
+        .digest('hex'),
+    );
+  });
+
+  it('preserves explicit root null and array defaults in the defaults hash', () => {
+    expect(buildLightExtensionSettingsHashes({ type: ['object', 'null'], default: null }).settingsDefaultsHash).toBe(
+      createHash('sha256').update('null').digest('hex'),
+    );
+    expect(buildLightExtensionSettingsHashes({ type: 'array', default: [] }).settingsDefaultsHash).toBe(
+      createHash('sha256').update('[]').digest('hex'),
+    );
+  });
+
   it('distinguishes missing settings schemas from explicit empty schemas', () => {
     expect(buildLightExtensionSettingsHashes(null)).toEqual({
       settingsSchemaHash: null,

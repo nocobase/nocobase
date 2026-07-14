@@ -9,14 +9,22 @@
 
 import React, { useEffect, useMemo, useRef } from 'react';
 import { autocompletion, type Completion, type CompletionSource } from '@codemirror/autocomplete';
-import { lintGutter } from '@codemirror/lint';
-import { EditorState } from '@codemirror/state';
+import { json } from '@codemirror/lang-json';
+import { forceLinting, lintGutter } from '@codemirror/lint';
+import { Compartment, EditorSelection, EditorState, type Extension } from '@codemirror/state';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { basicSetup } from 'codemirror';
 import { EditorView, placeholder as cmPlaceholder, tooltips } from '@codemirror/view';
 import { javascriptWithHtmlTemplates } from '../javascriptHtmlTemplate';
 import { createHtmlCompletion } from '../htmlCompletion';
 import { createJsxCompletion } from '../jsxCompletion';
+import {
+  createJsonCompletionSource,
+  createJsonHoverTooltip,
+  createJsonLinter,
+  type CodeEditorJsonSchema,
+  type CodeEditorJsonSchemaRef,
+} from '../jsonLanguageService';
 import { createJavaScriptLinter } from '../linter';
 import {
   createTypeScriptCompletionSource,
@@ -25,6 +33,79 @@ import {
   type CodeEditorTypeScriptProjectRef,
 } from '../typescriptProject';
 import { resolveTooltipParent } from './tooltipParent';
+
+function isJsonLanguage(language: string | undefined): boolean {
+  return language?.trim().toLowerCase() === 'json';
+}
+
+function createEditorTheme(height: string | number, minHeight: string | number | undefined): Extension {
+  const cmMinHeight =
+    typeof minHeight === 'undefined' ? undefined : typeof minHeight === 'string' ? minHeight : `${minHeight}px`;
+  const gutterTheme =
+    typeof cmMinHeight === 'string'
+      ? {
+          '.cm-gutter,.cm-content': {
+            minHeight: cmMinHeight,
+          },
+        }
+      : {};
+
+  return EditorView.theme({
+    '&.cm-editor': {
+      height: typeof height === 'string' ? height || '100%' : `${height}px`,
+    },
+    ...gutterTheme,
+    '.cm-scroller': {
+      fontFamily: '"Fira Code", "Monaco", "Menlo", "Ubuntu Mono", monospace',
+      overflow: 'auto',
+    },
+    '.cm-placeholder': {
+      color: '#999',
+      fontStyle: 'normal',
+      whiteSpace: 'pre',
+      pointerEvents: 'none',
+    },
+    '.cm-diagnostic': {
+      padding: '4px 8px',
+      borderRadius: '4px',
+      border: '1px solid #d9d9d9',
+      backgroundColor: '#fff',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+      fontSize: '12px',
+      maxWidth: '300px',
+    },
+    '.cm-diagnostic-error': {
+      borderLeftColor: '#ff4d4f',
+      borderLeftWidth: '3px',
+    },
+    '.cm-diagnostic-warning': {
+      borderLeftColor: '#faad14',
+      borderLeftWidth: '3px',
+    },
+    '.cm-diagnostic-info': {
+      borderLeftColor: '#1890ff',
+      borderLeftWidth: '3px',
+    },
+    '.cm-lintRange-error': {
+      backgroundImage: `url("data:image/svg+xml;charset=utf8,<svg xmlns='http://www.w3.org/2000/svg' width='6' height='3'><path d='m0 3 l2 -2 l1 0 l2 2 l1 0' stroke='%23ff4d4f' fill='none' stroke-width='.7'/></svg>")`,
+      backgroundRepeat: 'repeat-x',
+      backgroundPosition: 'left bottom',
+    },
+    '.cm-lintRange-warning': {
+      backgroundImage: `url("data:image/svg+xml;charset=utf8,<svg xmlns='http://www.w3.org/2000/svg' width='6' height='3'><path d='m0 3 l2 -2 l1 0 l2 2 l1 0' stroke='%23faad14' fill='none' stroke-width='.7'/></svg>")`,
+      backgroundRepeat: 'repeat-x',
+      backgroundPosition: 'left bottom',
+    },
+    '.cm-lintRange-info': {
+      backgroundImage: `url("data:image/svg+xml;charset=utf8,<svg xmlns='http://www.w3.org/2000/svg' width='6' height='3'><path d='m0 3 l2 -2 l1 0 l2 2 l1 0' stroke='%231890ff' fill='none' stroke-width='.7'/></svg>")`,
+      backgroundRepeat: 'repeat-x',
+      backgroundPosition: 'left bottom',
+    },
+    '.cm-tooltip': {
+      zIndex: 1,
+    },
+  });
+}
 
 export const EditorCore: React.FC<{
   value?: string;
@@ -39,6 +120,8 @@ export const EditorCore: React.FC<{
   extraCompletions?: Completion[];
   completionSource?: CompletionSource;
   typescriptProjectRef?: CodeEditorTypeScriptProjectRef;
+  language?: string;
+  jsonSchema?: CodeEditorJsonSchema;
   viewRef: React.MutableRefObject<EditorView | null>;
 }> = ({
   value = '',
@@ -53,14 +136,32 @@ export const EditorCore: React.FC<{
   extraCompletions,
   completionSource,
   typescriptProjectRef,
+  language,
+  jsonSchema,
   viewRef,
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const onChangeRef = useRef<typeof onChange>();
+  const readonlyRef = useRef(readonly);
   const completionSourceRef = useRef(completionSource);
   const extraCompletionsRef = useRef(extraCompletions);
+  const jsonSchemaRef = useRef<CodeEditorJsonSchema | undefined>(jsonSchema) as CodeEditorJsonSchemaRef;
+  const stableTypeScriptProjectRef = useRef(typescriptProjectRef?.current);
+  const readonlyCompartment = useMemo(() => new Compartment(), []);
+  const languageCompartment = useMemo(() => new Compartment(), []);
+  const completionCompartment = useMemo(() => new Compartment(), []);
+  const linterCompartment = useMemo(() => new Compartment(), []);
+  const hoverCompartment = useMemo(() => new Compartment(), []);
+  const placeholderCompartment = useMemo(() => new Compartment(), []);
+  const themeCompartment = useMemo(() => new Compartment(), []);
+  const editorThemeCompartment = useMemo(() => new Compartment(), []);
+
   completionSourceRef.current = completionSource;
   extraCompletionsRef.current = extraCompletions;
+  jsonSchemaRef.current = jsonSchema;
+  stableTypeScriptProjectRef.current = typescriptProjectRef?.current;
+  readonlyRef.current = readonly;
+
   const dynamicCompletionSource = useMemo<CompletionSource>(() => {
     return (context) => {
       if (completionSourceRef.current) {
@@ -84,176 +185,183 @@ export const EditorCore: React.FC<{
     };
   }, []);
   const typeScriptCompletionSource = useMemo(
-    () => createTypeScriptCompletionSource({ projectRef: typescriptProjectRef }),
-    [typescriptProjectRef],
+    () => createTypeScriptCompletionSource({ projectRef: stableTypeScriptProjectRef }),
+    [],
   );
-  const typeScriptLinter = useMemo(
-    () => createTypeScriptProjectLinter({ projectRef: typescriptProjectRef }),
-    [typescriptProjectRef],
-  );
-  const typeScriptHover = useMemo(
-    () => createTypeScriptHoverTooltip({ projectRef: typescriptProjectRef }),
-    [typescriptProjectRef],
-  );
-  // keep latest onChange without re-creating the editor
+  const typeScriptLinter = useMemo(() => createTypeScriptProjectLinter({ projectRef: stableTypeScriptProjectRef }), []);
+  const typeScriptHover = useMemo(() => createTypeScriptHoverTooltip({ projectRef: stableTypeScriptProjectRef }), []);
+  const jsonCompletionSource = useMemo(() => createJsonCompletionSource(jsonSchemaRef), []);
+  const jsonLinter = useMemo(() => createJsonLinter(jsonSchemaRef), []);
+  const jsonHover = useMemo(() => createJsonHoverTooltip(jsonSchemaRef), []);
+
   useEffect(() => {
     onChangeRef.current = onChange;
   }, [onChange]);
 
   useEffect(() => {
-    if (!editorRef.current) return;
-    const cmMinHeight =
-      typeof minHeight === 'undefined' ? undefined : typeof minHeight === 'string' ? minHeight : `${minHeight}px`;
-    const gutterTheme =
-      typeof cmMinHeight === 'string'
-        ? {
-            '.cm-gutter,.cm-content': {
-              minHeight: cmMinHeight,
-            },
-          }
-        : {};
-
-    const extensions = [
-      basicSetup,
-      EditorState.readOnly.of(readonly),
-      EditorView.editable.of(!readonly),
-      javascriptWithHtmlTemplates(),
-      autocompletion({
-        override: [
-          createHtmlCompletion(),
-          createJsxCompletion(),
-          dynamicCompletionSource,
-          ...(typescriptProjectRef ? [typeScriptCompletionSource] : []),
-        ],
-        closeOnBlur: false,
-        activateOnTyping: true,
-      }),
-      ...(placeholder ? [cmPlaceholder(placeholder)] : []),
-      ...(enableLinter
-        ? [lintGutter(), typescriptProjectRef ? typeScriptLinter : createJavaScriptLinter({ knownCtxMemberRoots })]
-        : []),
-      ...(typescriptProjectRef ? [typeScriptHover] : []),
-      // Prefer the current popup container so completion tooltips stay above Modal/Drawer masks.
-      tooltips({
-        parent: resolveTooltipParent(editorRef.current),
-      }),
-      EditorView.updateListener.of((update) => {
-        if (update.docChanged && !readonly) {
-          const newValue = update.state.doc.toString();
-          try {
-            onChangeRef.current?.(newValue);
-          } catch (_) {
-            void 0;
-          }
-        }
-      }),
-      EditorView.theme({
-        '&.cm-editor': {
-          height: typeof height === 'string' ? height || '100%' : `${height}px`,
-        },
-        ...gutterTheme,
-        '.cm-scroller': {
-          fontFamily: '"Fira Code", "Monaco", "Menlo", "Ubuntu Mono", monospace',
-          overflow: 'auto',
-        },
-        '.cm-placeholder': {
-          color: '#999',
-          fontStyle: 'normal',
-          whiteSpace: 'pre',
-          pointerEvents: 'none',
-        },
-        '.cm-diagnostic': {
-          padding: '4px 8px',
-          borderRadius: '4px',
-          border: '1px solid #d9d9d9',
-          backgroundColor: '#fff',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-          fontSize: '12px',
-          maxWidth: '300px',
-        },
-        '.cm-diagnostic-error': {
-          borderLeftColor: '#ff4d4f',
-          borderLeftWidth: '3px',
-        },
-        '.cm-diagnostic-warning': {
-          borderLeftColor: '#faad14',
-          borderLeftWidth: '3px',
-        },
-        '.cm-diagnostic-info': {
-          borderLeftColor: '#1890ff',
-          borderLeftWidth: '3px',
-        },
-        '.cm-lintRange-error': {
-          backgroundImage: `url("data:image/svg+xml;charset=utf8,<svg xmlns='http://www.w3.org/2000/svg' width='6' height='3'><path d='m0 3 l2 -2 l1 0 l2 2 l1 0' stroke='%23ff4d4f' fill='none' stroke-width='.7'/></svg>")`,
-          backgroundRepeat: 'repeat-x',
-          backgroundPosition: 'left bottom',
-        },
-        '.cm-lintRange-warning': {
-          backgroundImage: `url("data:image/svg+xml;charset=utf8,<svg xmlns='http://www.w3.org/2000/svg' width='6' height='3'><path d='m0 3 l2 -2 l1 0 l2 2 l1 0' stroke='%23faad14' fill='none' stroke-width='.7'/></svg>")`,
-          backgroundRepeat: 'repeat-x',
-          backgroundPosition: 'left bottom',
-        },
-        '.cm-lintRange-info': {
-          backgroundImage: `url("data:image/svg+xml;charset=utf8,<svg xmlns='http://www.w3.org/2000/svg' width='6' height='3'><path d='m0 3 l2 -2 l1 0 l2 2 l1 0' stroke='%231890ff' fill='none' stroke-width='.7'/></svg>")`,
-          backgroundRepeat: 'repeat-x',
-          backgroundPosition: 'left bottom',
-        },
-        '.cm-tooltip': {
-          zIndex: 1,
-        },
-      }),
-    ];
-
-    if (theme === 'dark') {
-      extensions.push(oneDark);
+    if (!editorRef.current) {
+      return;
     }
 
-    // Preserve current document when reinitializing (e.g., theme/linters/completions change)
-    const initialDoc = (
-      viewRef.current && typeof viewRef.current.state?.doc?.toString === 'function'
-        ? viewRef.current.state.doc.toString()
-        : value || ''
-    ) as string;
-    const view = new EditorView({ doc: initialDoc, extensions, parent: editorRef.current });
+    const jsonLanguage = isJsonLanguage(language);
+    const view = new EditorView({
+      doc: value || '',
+      extensions: [
+        basicSetup,
+        readonlyCompartment.of([EditorState.readOnly.of(readonly), EditorView.editable.of(!readonly)]),
+        languageCompartment.of(jsonLanguage ? json() : javascriptWithHtmlTemplates()),
+        completionCompartment.of(
+          autocompletion({
+            override: jsonLanguage
+              ? [jsonCompletionSource]
+              : [createHtmlCompletion(), createJsxCompletion(), dynamicCompletionSource, typeScriptCompletionSource],
+            closeOnBlur: false,
+            activateOnTyping: true,
+          }),
+        ),
+        linterCompartment.of(
+          jsonLanguage
+            ? [lintGutter(), jsonLinter]
+            : enableLinter
+              ? [
+                  lintGutter(),
+                  stableTypeScriptProjectRef.current
+                    ? typeScriptLinter
+                    : createJavaScriptLinter({ knownCtxMemberRoots }),
+                ]
+              : [],
+        ),
+        hoverCompartment.of(jsonLanguage ? jsonHover : typeScriptHover),
+        placeholderCompartment.of(placeholder ? cmPlaceholder(placeholder) : []),
+        themeCompartment.of(theme === 'dark' ? oneDark : []),
+        editorThemeCompartment.of(createEditorTheme(height, minHeight)),
+        tooltips({
+          parent: resolveTooltipParent(editorRef.current),
+        }),
+        EditorView.updateListener.of((update) => {
+          if (update.docChanged && !readonlyRef.current) {
+            const newValue = update.state.doc.toString();
+            try {
+              onChangeRef.current?.(newValue);
+            } catch (_) {
+              // Ignore host callbacks so editor input stays responsive.
+            }
+          }
+        }),
+      ],
+      parent: editorRef.current,
+    });
     viewRef.current = view;
+
     return () => {
       try {
         view.destroy();
       } catch (_) {
-        void 0;
+        // EditorView.destroy is best-effort during host teardown.
       }
       viewRef.current = null;
     };
+    // Dynamic editor behavior is updated through compartments below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) {
+      return;
+    }
+
+    const jsonLanguage = isJsonLanguage(language);
+    view.dispatch({
+      effects: [
+        readonlyCompartment.reconfigure([EditorState.readOnly.of(readonly), EditorView.editable.of(!readonly)]),
+        languageCompartment.reconfigure(jsonLanguage ? json() : javascriptWithHtmlTemplates()),
+        completionCompartment.reconfigure(
+          autocompletion({
+            override: jsonLanguage
+              ? [jsonCompletionSource]
+              : [createHtmlCompletion(), createJsxCompletion(), dynamicCompletionSource, typeScriptCompletionSource],
+            closeOnBlur: false,
+            activateOnTyping: true,
+          }),
+        ),
+        linterCompartment.reconfigure(
+          jsonLanguage
+            ? [lintGutter(), jsonLinter]
+            : enableLinter
+              ? [
+                  lintGutter(),
+                  stableTypeScriptProjectRef.current
+                    ? typeScriptLinter
+                    : createJavaScriptLinter({ knownCtxMemberRoots }),
+                ]
+              : [],
+        ),
+        hoverCompartment.reconfigure(jsonLanguage ? jsonHover : typeScriptHover),
+        placeholderCompartment.reconfigure(placeholder ? cmPlaceholder(placeholder) : []),
+        themeCompartment.reconfigure(theme === 'dark' ? oneDark : []),
+        editorThemeCompartment.reconfigure(createEditorTheme(height, minHeight)),
+      ],
+    });
   }, [
+    completionCompartment,
     dynamicCompletionSource,
+    editorThemeCompartment,
     enableLinter,
     height,
+    hoverCompartment,
+    jsonCompletionSource,
+    jsonHover,
+    jsonLinter,
+    knownCtxMemberRoots,
+    language,
+    languageCompartment,
+    linterCompartment,
     minHeight,
-    theme,
-    readonly,
     placeholder,
+    placeholderCompartment,
+    readonly,
+    readonlyCompartment,
+    theme,
+    themeCompartment,
     typeScriptCompletionSource,
     typeScriptHover,
     typeScriptLinter,
     typescriptProjectRef,
+    viewRef,
   ]);
 
-  // Update editor content when value changes
   useEffect(() => {
     const view = viewRef.current;
-    if (view && view.state.doc.toString() !== (value || '')) {
-      view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: value || '' } });
+    if (view && isJsonLanguage(language)) {
+      forceLinting(view);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value]);
+  }, [jsonSchema, language, viewRef]);
+
+  useEffect(() => {
+    const view = viewRef.current;
+    const nextValue = value || '';
+    if (!view || view.state.doc.toString() === nextValue) {
+      return;
+    }
+
+    const clampPosition = (position: number) => Math.min(position, nextValue.length);
+    const selection = EditorSelection.create(
+      view.state.selection.ranges.map((range) =>
+        EditorSelection.range(clampPosition(range.anchor), clampPosition(range.head)),
+      ),
+      view.state.selection.mainIndex,
+    );
+    view.dispatch({
+      changes: { from: 0, to: view.state.doc.length, insert: nextValue },
+      selection,
+    });
+  }, [value, viewRef]);
 
   const editorContainerMinHeight =
     typeof minHeight === 'undefined' ? 120 : typeof minHeight === 'string' ? minHeight : `${minHeight}px`;
 
   return (
-    <>
-      <div style={{ flex: 1, minHeight: editorContainerMinHeight, minWidth: 0, overflow: 'hidden' }} ref={editorRef} />
-    </>
+    <div style={{ flex: 1, minHeight: editorContainerMinHeight, minWidth: 0, overflow: 'hidden' }} ref={editorRef} />
   );
 };

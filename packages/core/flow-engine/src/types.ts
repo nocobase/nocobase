@@ -209,6 +209,10 @@ export interface ActionDefinition<TModel extends FlowModel = FlowModel, TCtx ext
         | Promise<Record<string, (this: TCtx, ...args: any[]) => any>>);
 }
 
+export interface ActionRegistrationOptions {
+  warnOnOverwrite?: boolean;
+}
+
 /**
  * Flow 事件名称集合。
  * - 收录内置常用事件，便于智能提示；

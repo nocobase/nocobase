@@ -72,6 +72,7 @@ import {
   downloadLightExtensionWorkspaceArchive,
   readLightExtensionWorkspaceArchive,
 } from '../workspace/lightExtensionWorkspaceArchive';
+import { resolveLightExtensionWorkspaceJsonSchema } from '../workspace/lightExtensionWorkspaceJsonSchema';
 
 type WorkspaceFile = RunJSWorkspaceFile;
 
@@ -1151,6 +1152,7 @@ function LightExtensionWorkspacePage({
                           toggleFullscreen: workspaceFullscreen.toggleFullscreen,
                         }}
                         isDiff={isDiff}
+                        jsonSchemaResolver={resolveLightExtensionWorkspaceJsonSchema}
                         onChange={updateActiveFile}
                         onCloseFile={closeOpenFile}
                         onDiffToggle={() => setIsDiff((current) => !current)}

@@ -244,9 +244,11 @@ export function createJsBlockNode(
     use: 'JSBlockModel',
     stepParams: {
       jsSettings: {
-        sourceMode: input.sourceMode || 'light-extension',
-        sourceBinding: input.sourceBinding || createSourceBinding(),
-        settings: input.settings || {},
+        runJs: {
+          sourceMode: input.sourceMode || 'light-extension',
+          sourceBinding: input.sourceBinding || createSourceBinding(),
+          settings: input.settings || {},
+        },
       },
     },
   };
@@ -429,6 +431,7 @@ export function createEntryRecord(input: Record<string, unknown> = {}): Record<s
     runtimeVersion: 'v2',
     surfaceStyle: kind === 'js-action' ? 'action' : 'render',
     runtimeCodeHash: 'runtime_hash_1',
+    artifactHash: 'artifact_hash_1',
     filesHash: 'files_hash_1',
     settingsDefaultsHash: stableJsonHash({
       threshold: 5,

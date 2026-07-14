@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { LIGHT_EXTENSION_ENTRY_SCHEMA_LOCAL_PATH } from '@nocobase/light-extension-sdk/schema';
+import { lightExtensionEntryV1SchemaFileContent } from '@nocobase/light-extension-sdk/schema/server';
 import type { RunJSSourceAdapterRegistry, VscPermissionHook } from '@nocobase/plugin-vsc-file';
 import { VscFileService, VscPermissionHookRegistry } from '@nocobase/plugin-vsc-file';
 import { Plugin } from '@nocobase/server';
@@ -84,10 +86,15 @@ type AppWithPluginEvents = {
 };
 
 type LightExtensionRouteContext = {
+  body?: unknown;
   path: string;
   method: string;
+  status?: number;
+  type?: string;
+  set?: (name: string, value: string) => void;
   request?: {
     path: string;
+    headers?: Record<string, string | string[] | undefined>;
   };
   state?: {
     lightExtensionCapabilitiesAlias?: boolean;
@@ -243,6 +250,7 @@ export class PluginLightExtensionServer extends Plugin {
       createLightExtensionCapabilitiesResource(this.validator),
     );
     this.registerCapabilitiesHttpRoute();
+    this.registerEntrySchemaHttpRoute();
     this.registerCompilePreviewHttpRoute();
     this.registerRuntimeResolveHttpRoute();
     this.registerRuntimeArtifactHttpRoute();
@@ -261,6 +269,7 @@ export class PluginLightExtensionServer extends Plugin {
   private registerAclActions() {
     const app = this.app as unknown as AppWithPluginEvents;
     app.acl?.allow?.('lightExtensionRuntime', [...lightExtensionRuntimeActionNames], 'loggedIn');
+    app.acl?.allow?.('lightExtensionCapabilities', [...lightExtensionCapabilitiesActionNames], 'public');
     app.acl?.registerSnippet?.({
       name: LIGHT_EXTENSION_ACL_SNIPPET,
       actions: [
@@ -412,6 +421,38 @@ export class PluginLightExtensionServer extends Plugin {
     );
   }
 
+  private registerEntrySchemaHttpRoute() {
+    const app = this.app as unknown as AppWithPluginEvents;
+    app.use?.(
+      async (ctx, next) => {
+        if (ctx.method !== 'GET' || ctx.path !== getEntrySchemaPath(app.resourceManager?.options?.prefix)) {
+          await next();
+          return;
+        }
+
+        const schemaHash = this.validator?.getCapabilities().sdk.entrySchemaSha256;
+        if (!schemaHash) {
+          ctx.status = 503;
+          return;
+        }
+        const etag = `"${schemaHash}"`;
+        ctx.set?.('ETag', etag);
+        ctx.set?.('Cache-Control', 'public, max-age=300');
+        if (ctx.request?.headers?.['if-none-match'] === etag) {
+          ctx.status = 304;
+          return;
+        }
+        ctx.status = 200;
+        ctx.type = 'application/schema+json';
+        ctx.body = lightExtensionEntryV1SchemaFileContent;
+      },
+      {
+        tag: 'light-extension-entry-schema',
+        before: 'auth',
+      },
+    );
+  }
+
   private registerVscPermissionHookWhenAvailable() {
     if (this.tryRegisterVscPermissionHook()) {
       return;
@@ -475,6 +516,12 @@ export class PluginLightExtensionServer extends Plugin {
 
 function getDocumentedCapabilitiesPath(resourcePrefix?: string): string {
   return `${normalizeBasePath(resourcePrefix ?? process.env.API_BASE_PATH ?? '/api')}${DOCUMENTED_CAPABILITIES_ROUTE}`;
+}
+
+function getEntrySchemaPath(resourcePrefix?: string): string {
+  return `${normalizeBasePath(
+    resourcePrefix ?? process.env.API_BASE_PATH ?? '/api',
+  )}${LIGHT_EXTENSION_ENTRY_SCHEMA_LOCAL_PATH}`;
 }
 
 function getDocumentedRuntimeResolvePath(resourcePrefix?: string): string {

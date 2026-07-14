@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { fireEvent, render, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { ApplicationContext } from '@nocobase/client-v2';
 import dayjs from 'dayjs';
 import React from 'react';
@@ -34,6 +34,228 @@ vi.mock('@nocobase/client-v2', async () => {
 });
 
 describe('SettingsAutoForm', () => {
+  it('uses the complete candidate root for object draft visibility without rendering the object title twice', async () => {
+    const onChange = vi.fn();
+    const schema = {
+      type: 'object',
+      properties: {
+        mode: {
+          type: 'string',
+          default: 'simple',
+        },
+        displayOptions: {
+          type: 'object',
+          title: 'Display settings',
+          properties: {
+            enableColor: {
+              type: 'boolean',
+              default: false,
+              title: 'Enable color',
+            },
+            advancedColor: {
+              type: 'string',
+              default: '#1677ff',
+              title: 'Advanced color',
+              'x-visible-when': {
+                logic: '$and',
+                items: [
+                  { path: 'mode', operator: '$eq', value: 'advanced' },
+                  { path: 'displayOptions.enableColor', operator: '$eq', value: true },
+                ],
+              },
+            },
+          },
+        },
+      },
+    };
+
+    const Harness = () => {
+      const [value, setValue] = React.useState({ enableColor: false, advancedColor: '#ff0000' });
+      return (
+        <SettingsSingleField
+          fieldName="displayOptions"
+          fieldPath={['displayOptions']}
+          fieldSchema={schema.properties.displayOptions}
+          rootSchema={schema}
+          descriptorDefaults={{
+            mode: 'simple',
+            displayOptions: { enableColor: false, advancedColor: '#1677ff' },
+          }}
+          savedRootValue={{
+            mode: 'advanced',
+            displayOptions: { enableColor: false, advancedColor: '#ff0000' },
+          }}
+          value={value}
+          onChange={(next, validation) => {
+            setValue(next as typeof value);
+            onChange(next, validation);
+          }}
+        />
+      );
+    };
+    const { queryByText, getByText, getByRole, getByDisplayValue } = render(<Harness />);
+
+    expect(queryByText('Display settings')).not.toBeInTheDocument();
+    expect(queryByText('Advanced color')).not.toBeInTheDocument();
+    fireEvent.click(getByRole('switch'));
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalledWith(
+        { enableColor: true, advancedColor: '#ff0000' },
+        expect.objectContaining({ errors: [] }),
+      );
+    });
+    await waitFor(() => expect(getByText('Advanced color')).toBeInTheDocument());
+    fireEvent.change(getByDisplayValue('#ff0000'), { target: { value: '#00ff00' } });
+    fireEvent.click(getByRole('switch'));
+    await waitFor(() => expect(queryByText('Advanced color')).not.toBeInTheDocument());
+    fireEvent.click(getByRole('switch'));
+    await waitFor(() => expect(getByDisplayValue('#00ff00')).toBeInTheDocument());
+  });
+
+  it('atomically replaces the current object draft so cleared saved children do not reappear', async () => {
+    const onChange = vi.fn();
+    const fieldSchema = {
+      type: 'object',
+      properties: {
+        enabled: { type: 'boolean' },
+        removedControl: { type: 'string' },
+        title: {
+          type: 'string',
+          'x-visible-when': { path: 'displayOptions.removedControl', operator: '$empty' },
+        },
+      },
+    };
+    render(
+      <SettingsSingleField
+        fieldName="displayOptions"
+        fieldSchema={fieldSchema}
+        rootSchema={{ type: 'object', properties: { displayOptions: fieldSchema } }}
+        descriptorDefaults={{ displayOptions: { enabled: false } }}
+        savedRootValue={{ displayOptions: { enabled: true, removedControl: 'legacy-value' } }}
+        value={{ enabled: false }}
+        onChange={onChange}
+      />,
+    );
+
+    expect(await waitFor(() => screen.getByText('title'))).toBeInTheDocument();
+    await waitFor(() =>
+      expect(onChange).toHaveBeenCalledWith({ enabled: false }, expect.objectContaining({ errors: [] })),
+    );
+  });
+
+  it('keeps an explicitly cleared value absent instead of restoring saved or default values', async () => {
+    const onChange = vi.fn();
+    const Harness = () => {
+      const [value, setValue] = React.useState<Record<string, unknown>>({ pageSize: 30 });
+      return (
+        <SettingsSingleField
+          fieldName="displayOptions"
+          fieldSchema={{
+            type: 'object',
+            properties: {
+              pageSize: {
+                type: 'integer',
+                default: 20,
+              },
+            },
+          }}
+          rootSchema={{ type: 'object' }}
+          savedRootValue={{ displayOptions: { pageSize: 40 } }}
+          value={value}
+          onChange={(next, validation) => {
+            setValue(next as Record<string, unknown>);
+            onChange(next, validation);
+          }}
+        />
+      );
+    };
+    render(<Harness />);
+
+    fireEvent.change(screen.getByRole('spinbutton'), { target: { value: '' } });
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenLastCalledWith({}, expect.objectContaining({ errors: [] }));
+    });
+  });
+
+  it('keeps other top-level saved settings read-only while evaluating the current object draft', () => {
+    const displayOptionsSchema = {
+      type: 'object',
+      properties: {
+        enableColor: { type: 'boolean' },
+        advancedColor: {
+          type: 'string',
+          title: 'Advanced color',
+          'x-visible-when': {
+            logic: '$and',
+            items: [
+              { path: 'mode', operator: '$eq', value: 'advanced' },
+              { path: 'displayOptions.enableColor', operator: '$eq', value: true },
+            ],
+          },
+        },
+      },
+    };
+    const rootSchema = {
+      type: 'object',
+      properties: {
+        mode: { type: 'string' },
+        displayOptions: displayOptionsSchema,
+      },
+    };
+    const { queryByText } = render(
+      <SettingsSingleField
+        fieldName="displayOptions"
+        fieldSchema={displayOptionsSchema}
+        rootSchema={rootSchema}
+        descriptorDefaults={{ mode: 'advanced', displayOptions: { enableColor: false } }}
+        savedRootValue={{ mode: 'simple', displayOptions: { enableColor: false } }}
+        value={{ enableColor: true, advancedColor: '#00ff00' }}
+      />,
+    );
+
+    expect(queryByText('Advanced color')).not.toBeInTheDocument();
+  });
+
+  it('preserves hidden values and validates them while rejecting unknown object properties', () => {
+    const schema = {
+      type: 'object',
+      properties: {
+        displayOptions: {
+          type: 'object',
+          properties: {
+            enabled: { type: 'boolean' },
+            pageSize: {
+              type: 'integer',
+              minimum: 1,
+              'x-visible-when': { path: 'displayOptions.enabled', operator: '$eq', value: true },
+            },
+          },
+        },
+      },
+    };
+
+    expect(
+      normalizeSettingsForSchema(schema, {
+        displayOptions: { enabled: false, pageSize: 0, unknown: true },
+      }),
+    ).toMatchObject({
+      value: {
+        displayOptions: { enabled: false, pageSize: 0, unknown: true },
+      },
+      errors: expect.arrayContaining([
+        { label: 'displayOptions.pageSize', path: 'displayOptions.pageSize', message: 'Too small' },
+        {
+          code: 'settings_unknown_property',
+          label: 'displayOptions.unknown',
+          path: 'displayOptions.unknown',
+          message: 'Unknown property',
+        },
+      ]),
+    });
+  });
+
   it('renders and validates a single schema field for runtime flow steps', async () => {
     const onChange = vi.fn();
     render(

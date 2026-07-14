@@ -7,13 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ApplicationContext } from '@nocobase/client-v2';
+import { ApplicationContext, validateRunJSSettings } from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
 import type { Field } from '@formily/core';
 import { useField, useForm } from '@formily/react';
 import { Alert, Button, Modal, Select, Space, Typography } from 'antd';
 import React from 'react';
-import { normalizeLightExtensionEntrySelection } from '@nocobase/runjs/settings';
+import {
+  extractRunJSSettingsDefaults,
+  normalizeLightExtensionEntrySelection,
+  normalizeLightExtensionSettings,
+} from '@nocobase/runjs/settings';
 import { useTranslation } from 'react-i18next';
 
 import { NAMESPACE } from '../../constants';
@@ -25,12 +29,6 @@ import type {
 import type { ApiClientLike } from '../api/lightExtensionEntriesRequests';
 import { listSelectableLightExtensionEntries } from '../api/lightExtensionEntriesRequests';
 import { resolveLightExtensionRuntimeSource } from '../resolvers/LightExtensionRunJSResolver';
-import {
-  formatSettingsValidationErrors,
-  normalizeSettingsForSchema,
-  SettingsAutoForm,
-  type SettingsValidationResult,
-} from './SettingsAutoForm';
 
 const INLINE_SOURCE_MODE = 'inline';
 const LIGHT_EXTENSION_SOURCE_MODE = 'light-extension';
@@ -170,10 +168,6 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
   const app = React.useContext(ApplicationContext) as ApplicationWithApi | null;
   const api = ctx?.api || app?.apiClient;
   const [, rerender] = React.useReducer((count: number) => count + 1, 0);
-  const [settingsValidation, setSettingsValidation] = React.useState<SettingsValidationResult>({
-    value: {},
-    errors: [],
-  });
   const [copying, setCopying] = React.useState(false);
   const [sourceEntries, setSourceEntries] = React.useState<LightExtensionSelectableEntrySummary[]>([]);
   const [sourceEntriesLoading, setSourceEntriesLoading] = React.useState(false);
@@ -200,6 +194,30 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
     [sourceBinding, sourceEntries],
   );
   const hasSettings = Boolean(selectedEntry && getSettingsSchemaPropertyNames(selectedEntry.settingsSchema)?.size);
+  const settingsStatus = React.useMemo(() => {
+    if (!selectedEntry || !isRecord(selectedEntry.settingsSchema) || !hasSettings) {
+      return { kind: 'none' as const, missingCount: 0 };
+    }
+    const validation = validateRunJSSettings({
+      schema: selectedEntry.settingsSchema,
+      settings: normalizeLightExtensionSettings(
+        {
+          schema: selectedEntry.settingsSchema,
+          defaults: extractRunJSSettingsDefaults(selectedEntry.settingsSchema),
+        },
+        values.settings,
+      ),
+      mode: 'binding',
+    });
+    if (validation.errors.length > 0) {
+      return { kind: 'invalid' as const, missingCount: 0 };
+    }
+    const missingCount = new Set(validation.missingRequiredPaths.map((path) => path.split('.')[0]).filter(Boolean))
+      .size;
+    return missingCount > 0
+      ? { kind: 'missing' as const, missingCount }
+      : { kind: 'complete' as const, missingCount: 0 };
+  }, [hasSettings, selectedEntry, values.settings]);
 
   React.useEffect(() => {
     if (sourceMode !== LIGHT_EXTENSION_SOURCE_MODE || typeof ctx?.view?.setFooter !== 'function') {
@@ -277,40 +295,16 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
   }, [form, onChange, rendersSourceModeControl, values.sourceMode]);
 
   React.useEffect(() => {
-    const errors =
-      sourceMode === LIGHT_EXTENSION_SOURCE_MODE
-        ? [
-            ...(hasSourceBinding ? [] : [String(t('Select a light extension entry'))]),
-            ...formatSettingsValidationErrors(settingsValidation.errors, t),
-          ]
-        : [];
-    setFieldErrors(field, errors);
-  }, [field, hasSourceBinding, settingsValidation.errors, sourceMode, t]);
-
-  React.useEffect(() => {
-    if (!sourceBinding) {
-      setSettingsValidation({
-        value: {},
-        errors: [],
-      });
-      return;
-    }
-
-    if (!selectedEntry) {
-      return;
-    }
-
-    setSettingsValidation(normalizeSettingsForSchema(selectedEntry.settingsSchema, values.settings));
-  }, [selectedEntry, sourceBinding, values.settings]);
+    setFieldErrors(
+      field,
+      sourceMode === LIGHT_EXTENSION_SOURCE_MODE && !hasSourceBinding
+        ? [String(t('Select a light extension entry'))]
+        : [],
+    );
+  }, [field, hasSourceBinding, sourceMode, t]);
 
   const setSourceMode = (nextMode: string) => {
     form.setValuesIn('sourceMode', nextMode);
-    if (nextMode !== LIGHT_EXTENSION_SOURCE_MODE) {
-      setSettingsValidation({
-        value: {},
-        errors: [],
-      });
-    }
     onChange?.(nextMode);
   };
 
@@ -348,7 +342,7 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
 
   const handleSourceEntrySelect = (entry: LightExtensionSelectableEntrySummary) => {
     const nextBinding = createLightExtensionRuntimeSourceBinding(entry);
-    const defaults = extractSettingsDefaults(entry.settingsSchema);
+    const defaults = extractRunJSSettingsDefaults(entry.settingsSchema);
     form.setValuesIn('sourceMode', LIGHT_EXTENSION_SOURCE_MODE);
     form.setValuesIn('sourceBinding', nextBinding);
     form.setValuesIn(
@@ -379,11 +373,6 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
       return;
     }
     handleSourceEntrySelect(entry);
-  };
-
-  const handleSettingsChange = (nextSettings: Record<string, unknown>, validation: SettingsValidationResult) => {
-    form.setValuesIn('settings', nextSettings);
-    setSettingsValidation(validation);
   };
 
   const copyLightExtensionToInline = async () => {
@@ -453,13 +442,19 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
       ) : null}
       {sourceBinding && selectedEntry ? (
         hasSettings ? (
-          <SettingsAutoForm
-            schema={selectedEntry.settingsSchema}
-            value={values.settings}
-            disabled={disabled}
-            onChange={handleSettingsChange}
-          />
-        ) : null
+          <Space direction="vertical" size={4}>
+            <Typography.Text type="secondary">{t('Settings are available in separate menus')}</Typography.Text>
+            <Typography.Text type={settingsStatus.kind === 'complete' ? 'success' : 'warning'}>
+              {settingsStatus.kind === 'complete'
+                ? t('Required settings are complete')
+                : settingsStatus.kind === 'missing'
+                  ? `${t('Required settings remaining')}: ${settingsStatus.missingCount}`
+                  : t('Settings require attention')}
+            </Typography.Text>
+          </Space>
+        ) : (
+          <Typography.Text type="secondary">{t('No settings')}</Typography.Text>
+        )
       ) : sourceBinding ? (
         <Alert
           type={sourceEntriesLoading ? 'info' : 'warning'}
@@ -539,10 +534,6 @@ function createLightExtensionRuntimeSourceBinding(
 
 function getLightExtensionEntryLabel(entry: LightExtensionSelectableEntrySummary): string {
   return entry.title || entry.entryName || entry.id;
-}
-
-function extractSettingsDefaults(schema: Record<string, unknown> | null): Record<string, unknown> {
-  return normalizeSettingsForSchema(schema, {}).value;
 }
 
 export default JSBlockLightExtensionSourceField;

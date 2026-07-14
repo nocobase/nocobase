@@ -42,11 +42,13 @@ import {
   isRecord,
   LIGHT_EXTENSION_SOURCE_MODE,
   normalizeLightExtensionRuntimeError,
-  normalizeLightExtensionSourceSettings,
+  normalizeLightExtensionSourceSettingsForBinding,
   normalizeLightExtensionSourceMode,
+  rememberLightExtensionBindingSettings,
   resolveLightExtensionBindingTitle as resolveSharedLightExtensionBindingTitle,
   setCanonicalLightExtensionSetting,
   setCanonicalLightExtensionSource,
+  showPendingLightExtensionRequiredSettings,
   stableSerialize,
   stableSerializeWithCircular,
   toNonEmptyString,
@@ -156,7 +158,7 @@ export function createJSFieldSourceModeStep(): StepDefinition {
     hooks: {
       defaultParams: getJSFieldSourceDefaultParams,
       beforeParamsSave: syncJSFieldSourceToRunJs,
-      afterParamsSave: refreshJSFieldAfterSettingsSave,
+      afterParamsSave: refreshJSFieldAfterSourceSave,
     },
   });
 }
@@ -168,7 +170,7 @@ export function createJSFieldSourceBindingStep(): StepDefinition {
     hooks: {
       defaultParams: getJSFieldSourceDefaultParams,
       beforeParamsSave: syncJSFieldSourceToRunJs,
-      afterParamsSave: refreshJSFieldAfterSettingsSave,
+      afterParamsSave: refreshJSFieldAfterSourceSave,
     },
   });
 }
@@ -318,19 +320,29 @@ async function syncJSFieldSourceToRunJs(
     sourceMode === LIGHT_EXTENSION_SOURCE_MODE
       ? await getLightExtensionSettingsDescriptor(ctx.model, { ...params, sourceMode, sourceBinding })
       : null;
-  const settings = normalizeLightExtensionSourceSettings({
+  const normalized = normalizeLightExtensionSourceSettingsForBinding({
     currentRunJs,
     nextSourceMode: sourceMode,
     nextSourceBinding: sourceBinding,
     nextSettings: params.settings,
     descriptor,
   });
-  setCanonicalLightExtensionSource(ctx.model, 'jsSettings', { sourceMode, sourceBinding, settings });
+  setCanonicalLightExtensionSource(ctx.model, 'jsSettings', {
+    sourceMode,
+    sourceBinding,
+    settings: normalized.settings,
+  });
+  rememberLightExtensionBindingSettings(ctx.model, descriptor, normalized.missingRequiredPaths);
 }
 
 async function refreshJSFieldAfterSettingsSave(ctx: FlowSettingsContext<JSFieldRuntimeModel>) {
   ctx.model.invalidateFlowCache('jsSettings', true);
   await ctx.model.rerender();
+}
+
+async function refreshJSFieldAfterSourceSave(ctx: FlowSettingsContext<JSFieldRuntimeModel>) {
+  await refreshJSFieldAfterSettingsSave(ctx);
+  await showPendingLightExtensionRequiredSettings(ctx.model, 'jsSettings');
 }
 
 async function getLightExtensionSettingsDescriptor(model: JSFieldRuntimeModel, params: Record<string, unknown>) {

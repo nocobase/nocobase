@@ -123,6 +123,10 @@ export interface FlowSettingsOpenOptions {
   onSaved?: () => void | Promise<void>;
 }
 
+export interface FlowSettingsRegisterComponentsOptions {
+  warnOnOverwrite?: boolean;
+}
+
 export type FlowSettingsComponent = React.ComponentType<any>;
 export type FlowSettingsComponentModule = { default?: FlowSettingsComponent } | Record<string, FlowSettingsComponent>;
 export type FlowSettingsComponentLoader = () => Promise<FlowSettingsComponentModule | FlowSettingsComponent>;
@@ -299,9 +303,13 @@ export class FlowSettings {
    * @example
    * flowSettings.registerComponents({ MyComponent, AnotherComponent });
    */
-  public registerComponents(components: Record<string, any>): void {
+  public registerComponents(
+    components: Record<string, any>,
+    options: FlowSettingsRegisterComponentsOptions = {},
+  ): void {
+    const { warnOnOverwrite = true } = options;
     Object.keys(components).forEach((name) => {
-      if (this.components[name]) {
+      if (warnOnOverwrite && this.components[name]) {
         console.warn(`FlowSettings: Component with name '${name}' is already registered and will be overwritten.`);
       }
       this.components[name] = components[name];

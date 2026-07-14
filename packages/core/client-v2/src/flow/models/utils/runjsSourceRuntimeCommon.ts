@@ -10,24 +10,30 @@
 import {
   FlowCancelSaveException,
   type FlowModel,
+  type RuntimeFlowSettingDiagnosticPayload,
   type FlowSettingsContext,
   type StepDefinition,
 } from '@nocobase/flow-engine';
+import React from 'react';
 import {
   getCanonicalRunJSSettings,
+  getLightExtensionEntryId,
   getLightExtensionSettingStepKey,
+  isSettingsFieldVisible,
   normalizeLightExtensionEntrySelection,
   normalizeLightExtensionSettings,
   setLightExtensionTopLevelSetting,
+  type RunJSSettingsCondition,
 } from '@nocobase/runjs/settings';
 
 import {
   getSchemaTitle,
   getSettingsSchemaProperties,
   getSettingsSchemaRequired,
-  isSettingValueValid,
   normalizeSchemaType,
   RunJSSourceResolverRegistry,
+  validateRunJSSettings,
+  validateRunJSSettingValue,
   type JsonSchemaLike,
   type RunJSSourceBinding,
   type RunJSSourceSettings,
@@ -68,6 +74,54 @@ type RuntimeErrorLabels = {
 };
 
 type SourceStepHooks = Pick<StepDefinition, 'defaultParams' | 'beforeParamsSave' | 'afterParamsSave'>;
+
+type PendingLightExtensionBindingSettings = {
+  entryId: string;
+  missingRequiredPaths: string[];
+  schema: JsonSchemaLike;
+};
+
+const pendingLightExtensionBindingSettings = new WeakMap<object, PendingLightExtensionBindingSettings>();
+
+export class LightExtensionSettingsValidationError extends FlowCancelSaveException {
+  readonly code = 'LIGHT_EXTENSION_SETTINGS_INVALID';
+  readonly paths: string[];
+
+  constructor(paths: string[]) {
+    super('Light extension settings validation failed.');
+    this.name = 'LightExtensionSettingsValidationError';
+    this.paths = paths;
+  }
+}
+
+export class LightExtensionSettingsConditionRuntimeError extends Error {
+  readonly code = 'LIGHT_EXTENSION_SETTINGS_CONDITION_INVALID';
+  readonly entryId: string;
+  readonly propertyPath: string;
+  readonly reason: string;
+  readonly flowSettingsDiagnostic: RuntimeFlowSettingDiagnosticPayload;
+
+  constructor(options: { entryId: string; propertyPath: string; cause: unknown; message?: string }) {
+    const reason = options.cause instanceof Error ? options.cause.message : String(options.cause);
+    super(
+      options.message ||
+        `Light extension entry "${options.entryId}" setting "${options.propertyPath}" has an invalid x-visible-when condition: ${reason}`,
+    );
+    this.name = 'LightExtensionSettingsConditionRuntimeError';
+    this.entryId = options.entryId;
+    this.propertyPath = options.propertyPath;
+    this.reason = reason;
+    this.flowSettingsDiagnostic = {
+      code: this.code,
+      message: this.message,
+      details: {
+        entryId: this.entryId,
+        propertyPath: this.propertyPath,
+        reason: this.reason,
+      },
+    };
+  }
+}
 
 export function normalizeLightExtensionSourceMode(value: unknown): LightExtensionSourceMode {
   return value === LIGHT_EXTENSION_SOURCE_MODE ? LIGHT_EXTENSION_SOURCE_MODE : INLINE_SOURCE_MODE;
@@ -239,6 +293,7 @@ export async function resolveLightExtensionBindingTitle(options: {
 }
 
 export function createLightExtensionSettingStep<TModel extends FlowModel>(options: {
+  entryId: string;
   fieldName: string;
   fieldSchema: JsonSchemaLike;
   required: boolean;
@@ -246,11 +301,15 @@ export function createLightExtensionSettingStep<TModel extends FlowModel>(option
   defaultValue: unknown;
   sort: number;
   component: string;
+  rootSchema: JsonSchemaLike;
+  descriptorDefaults: Record<string, unknown>;
+  savedRootValue: Record<string, unknown>;
   syncValue: (ctx: FlowSettingsContext<TModel>, fieldName: string, value: unknown) => void;
   afterParamsSave: (ctx: FlowSettingsContext<TModel>) => Promise<void>;
 }): [string, StepDefinition] {
   const { fieldName, fieldSchema, required, stepKey, defaultValue, sort } = options;
   const title = getSchemaTitle(fieldSchema, fieldName);
+  const visibilityCondition = fieldSchema['x-visible-when'];
   return [
     stepKey,
     {
@@ -264,17 +323,60 @@ export function createLightExtensionSettingStep<TModel extends FlowModel>(option
           title,
           'x-decorator': 'FormItem',
           'x-component': options.component,
-          'x-component-props': { fieldName, fieldSchema, required },
+          'x-component-props': {
+            fieldName,
+            fieldPath: [fieldName],
+            fieldSchema,
+            rootSchema: options.rootSchema,
+            savedRootValue: options.savedRootValue,
+            descriptorDefaults: options.descriptorDefaults,
+            required,
+          },
         },
       },
       defaultParams: () => ({ value: cloneJsonValue(defaultValue) }),
+      ...(typeof visibilityCondition === 'undefined'
+        ? {}
+        : {
+            hideInSettings: (ctx) => {
+              try {
+                return !isSettingsFieldVisible(visibilityCondition as RunJSSettingsCondition, {
+                  defaults: options.descriptorDefaults,
+                  settings: options.savedRootValue,
+                });
+              } catch (error) {
+                const reason = error instanceof Error ? error.message : String(error);
+                const translate = getModelTranslator(ctx.model);
+                throw new LightExtensionSettingsConditionRuntimeError({
+                  entryId: options.entryId,
+                  propertyPath: fieldName,
+                  cause: error,
+                  message: translate(
+                    'Light extension entry "{{entryId}}" setting "{{propertyPath}}" has an invalid x-visible-when condition: {{reason}}',
+                    {
+                      entryId: options.entryId,
+                      propertyPath: fieldName,
+                      reason,
+                    },
+                  ),
+                });
+              }
+            },
+          }),
       beforeParamsSave(ctx: FlowSettingsContext<TModel>, params: Record<string, unknown>) {
-        if (isSettingValueValid(fieldSchema, params?.value, required)) {
+        const validation = validateRunJSSettingValue({
+          schema: fieldSchema,
+          value: params?.value,
+          required,
+          mode: 'runtime',
+          path: fieldName,
+        });
+        if (validation.errors.length === 0) {
           options.syncValue(ctx, fieldName, params?.value);
           return;
         }
         ctx.model.context?.message?.error?.(ctx.model.context.t('Settings validation failed'));
-        throw new FlowCancelSaveException('Light extension settings validation failed.');
+        throw new LightExtensionSettingsValidationError(validation.errors.map((issue) => issue.path));
       },
       afterParamsSave: options.afterParamsSave,
     },
@@ -302,6 +404,7 @@ export function createLightExtensionSettingSteps<TModel extends FlowModel>(optio
   return Object.fromEntries(
     Object.entries(properties).map(([fieldName, fieldSchema], index) =>
       createLightExtensionSettingStep<TModel>({
+        entryId: options.descriptor.entryId,
         fieldName,
         fieldSchema,
         required: requiredFields.has(fieldName),
@@ -309,6 +412,9 @@ export function createLightExtensionSettingSteps<TModel extends FlowModel>(optio
         defaultValue: canonicalSettings[fieldName],
         sort: (options.sortStart ?? 700) + index,
         component: options.component,
+        rootSchema: options.descriptor.schema,
+        descriptorDefaults: cloneRecord(options.descriptor.defaults),
+        savedRootValue: cloneRecord(options.settings),
         syncValue: options.syncValue,
         afterParamsSave: options.afterParamsSave,
       }),
@@ -323,19 +429,148 @@ export function normalizeLightExtensionSourceSettings(options: {
   nextSettings?: unknown;
   descriptor?: RunJSSourceSettingsDescriptor | null;
 }): Record<string, unknown> {
+  return normalizeLightExtensionSourceSettingsForBinding(options).settings;
+}
+
+export function normalizeLightExtensionSourceSettingsForBinding(options: {
+  currentRunJs: Record<string, unknown>;
+  nextSourceMode: LightExtensionSourceMode;
+  nextSourceBinding?: Record<string, unknown>;
+  nextSettings?: unknown;
+  descriptor?: RunJSSourceSettingsDescriptor | null;
+}): { settings: Record<string, unknown>; missingRequiredPaths: string[] } {
   if (options.nextSourceMode !== LIGHT_EXTENSION_SOURCE_MODE || !options.nextSourceBinding) {
-    return {};
+    return { settings: {}, missingRequiredPaths: [] };
   }
   if (!options.descriptor) {
     throw new FlowCancelSaveException('Light extension settings descriptor is required.');
   }
-  return normalizeLightExtensionEntrySelection({
+  const settings = normalizeLightExtensionEntrySelection({
     currentBinding: options.currentRunJs.sourceBinding,
     currentSettings: getCanonicalRunJSSettings(options.currentRunJs),
     submittedSettings: options.nextSettings,
     nextBinding: options.nextSourceBinding,
     descriptor: options.descriptor,
   });
+  if (!isRecord(options.descriptor.schema)) {
+    const sameEntry =
+      getLightExtensionEntryId(options.currentRunJs.sourceBinding) ===
+      getLightExtensionEntryId(options.nextSourceBinding);
+    const submittedPaths = sameEntry && isRecord(options.nextSettings) ? Object.keys(options.nextSettings) : [];
+    if (submittedPaths.length > 0) {
+      throw new LightExtensionSettingsValidationError(submittedPaths);
+    }
+    return { settings: {}, missingRequiredPaths: [] };
+  }
+
+  const validation = validateRunJSSettings({
+    schema: options.descriptor.schema,
+    settings,
+    mode: 'binding',
+  });
+  const sameEntry =
+    getLightExtensionEntryId(options.currentRunJs.sourceBinding) ===
+    getLightExtensionEntryId(options.nextSourceBinding);
+  const submittedUnknownPaths =
+    sameEntry && isRecord(options.nextSettings)
+      ? validateRunJSSettings({
+          schema: options.descriptor.schema,
+          settings: options.nextSettings,
+          mode: 'binding',
+        })
+          .errors.filter((issue) => issue.code === 'unknown')
+          .map((issue) => issue.path)
+      : [];
+  const invalidPaths = [...validation.errors.map((issue) => issue.path), ...submittedUnknownPaths];
+  if (invalidPaths.length > 0) {
+    throw new LightExtensionSettingsValidationError(Array.from(new Set(invalidPaths)));
+  }
+
+  return {
+    settings,
+    missingRequiredPaths: validation.missingRequiredPaths,
+  };
+}
+
+export function rememberLightExtensionBindingSettings(
+  model: object,
+  descriptor: RunJSSourceSettingsDescriptor | null,
+  missingRequiredPaths: string[],
+): void {
+  if (!descriptor || !isRecord(descriptor.schema) || missingRequiredPaths.length === 0) {
+    pendingLightExtensionBindingSettings.delete(model);
+    return;
+  }
+  pendingLightExtensionBindingSettings.set(model, {
+    entryId: descriptor.entryId,
+    missingRequiredPaths: [...missingRequiredPaths],
+    schema: descriptor.schema,
+  });
+}
+
+export async function showPendingLightExtensionRequiredSettings(model: FlowModel, flowKey: string): Promise<void> {
+  const pending = pendingLightExtensionBindingSettings.get(model);
+  pendingLightExtensionBindingSettings.delete(model);
+  if (!pending) {
+    return;
+  }
+
+  const properties = getSettingsSchemaProperties(pending.schema);
+  const menuEntries = Array.from(
+    new Map(
+      pending.missingRequiredPaths.flatMap((path) => {
+        const fieldName = path.split('.')[0];
+        const fieldSchema = properties[fieldName];
+        if (!fieldName || !fieldSchema) {
+          return [];
+        }
+        return [
+          [
+            fieldName,
+            {
+              label: getSchemaTitle(fieldSchema, fieldName),
+              stepKey: getLightExtensionSettingStepKey(pending.entryId, fieldName),
+            },
+          ] as const,
+        ];
+      }),
+    ).values(),
+  );
+  if (menuEntries.length === 0) {
+    return;
+  }
+
+  const translate = getModelTranslator(model);
+  const openSetting = (stepKey: string) => {
+    model.openFlowSettings({ flowKey, stepKey });
+  };
+  const content = React.createElement(
+    'span',
+    null,
+    `${translate('Configure required light extension settings')}: `,
+    ...menuEntries.flatMap((entry, index) => [
+      index > 0 ? ', ' : '',
+      React.createElement(
+        'button',
+        {
+          key: entry.stepKey,
+          type: 'button',
+          onClick: () => openSetting(entry.stepKey),
+          style: {
+            appearance: 'none',
+            background: 'none',
+            border: 0,
+            color: 'inherit',
+            cursor: 'pointer',
+            padding: 0,
+            textDecoration: 'underline',
+          },
+        },
+        entry.label,
+      ),
+    ]),
+  );
+  model.context?.message?.info?.({ content, duration: 0 });
 }
 
 export function setCanonicalLightExtensionSetting(
@@ -421,9 +656,13 @@ export function getLightExtensionFallbackBindingTitle(binding: unknown): string 
   return toNonEmptyString(binding.entryId) || toNonEmptyString(binding.repoId);
 }
 
-export function getModelTranslator(model: { context?: { t?: unknown } }): (text: string) => string {
+export function getModelTranslator(model: {
+  context?: { t?: unknown };
+}): (text: string, options?: Record<string, unknown>) => string {
   const t = model.context?.t;
-  return typeof t === 'function' ? t.bind(model.context) : (text: string) => text;
+  return typeof t === 'function'
+    ? (text: string, options?: Record<string, unknown>) => Reflect.apply(t, model.context, [text, options])
+    : (text: string) => text;
 }
 
 export function getStringProperty(value: unknown, key: string): string | undefined {

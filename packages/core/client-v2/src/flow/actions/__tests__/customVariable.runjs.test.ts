@@ -8,36 +8,42 @@
  */
 
 import { FlowContext } from '@nocobase/flow-engine';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
-import { RunJSSourceResolverRegistry } from '../../components/runjs-source';
 import { customVariable } from '../customVariable';
 
 describe('customVariable RunJS values', () => {
-  afterEach(() => {
-    RunJSSourceResolverRegistry.clear();
-    vi.restoreAllMocks();
-  });
-
-  it('resolves light-extension sources and exposes the evaluated value', async () => {
-    const resolve = vi.fn((input) => ({
-      code: 'return ctx.settings.currency;',
-      version: 'v2',
-      settings: input.settings || {},
-      context: input.context,
-    }));
-    RunJSSourceResolverRegistry.registerResolver({
-      sourceMode: 'light-extension',
-      resolve,
-    });
-
+  it('executes regular inline RunJS values', async () => {
     const ctx = new FlowContext();
     ctx.defineProperty('flowKey', { value: 'eventSettings' });
     ctx.defineProperty('currentStep', { value: { key: 'customVariable' } });
     ctx.defineProperty('model', { value: { uid: 'form_block_1', use: 'FormBlockModel', context: ctx } });
-    ctx.defineMethod('runjs', async function (this: { settings?: Record<string, unknown> }, code: string) {
-      return { success: true, value: `${this.settings?.currency}:${code.includes('ctx.settings')}` };
+    const runjs = vi.fn(async (code: string) => ({
+      success: true,
+      value: code.includes('ctx.formValues.amount') ? 42 : undefined,
+    }));
+    ctx.defineMethod('runjs', runjs);
+
+    await customVariable.handler(ctx, {
+      variables: [
+        {
+          key: 'total',
+          title: 'Total',
+          type: 'runjs',
+          runjs: { code: 'return ctx.formValues.amount;', version: 'v2' },
+        },
+      ],
     });
+
+    await expect((ctx as unknown as { total: Promise<unknown> }).total).resolves.toBe(42);
+    expect(runjs).toHaveBeenCalledWith('return ctx.formValues.amount;', undefined, { version: 'v2' });
+  });
+
+  it('treats stale light-extension metadata as ordinary inline RunJS', async () => {
+    const ctx = new FlowContext();
+    ctx.defineProperty('model', { value: { context: ctx } });
+    const runjs = vi.fn(async () => ({ success: true, value: 9 }));
+    ctx.defineMethod('runjs', runjs);
 
     await customVariable.handler(ctx, {
       variables: [
@@ -46,35 +52,22 @@ describe('customVariable RunJS values', () => {
           title: 'Total',
           type: 'runjs',
           runjs: {
-            code: '',
+            code: 'return 9;',
             version: 'v2',
             sourceMode: 'light-extension',
             sourceBinding: {
               type: 'light-extension-entry',
-              repoId: 'repo_finance',
-              entryId: 'entry_total',
+              repoId: 'legacy_repo',
+              entryId: 'legacy_entry',
               kind: 'runjs',
             },
-            settings: { currency: 'USD' },
           },
         },
       ],
     });
 
-    await expect((ctx as unknown as { total: Promise<unknown> }).total).resolves.toBe('USD:true');
-    expect(resolve).toHaveBeenCalledWith(
-      expect.objectContaining({
-        sourceBinding: expect.objectContaining({ entryId: 'entry_total' }),
-        context: {
-          ownerKind: 'flowModel.runjsHost',
-          ownerLocator: expect.objectContaining({
-            modelUid: 'form_block_1',
-            use: 'FormBlockModel',
-            hostPath: ['stepParams', 'eventSettings', 'customVariable', 'variables', '0', 'runjs'],
-          }),
-        },
-      }),
-    );
+    await expect((ctx as unknown as { total: Promise<unknown> }).total).resolves.toBe(9);
+    expect(runjs).toHaveBeenCalledWith('return 9;', undefined, { version: 'v2' });
   });
 
   it('ignores unsafe variable identifiers', async () => {

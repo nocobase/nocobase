@@ -22,12 +22,6 @@ import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { uid } from '@formily/shared';
 import { RunJSValueEditor } from '../components/RunJSValueEditor';
-import {
-  buildRunJSOwnerLocator,
-  evaluateResolvedRunJSValue,
-  getRunJSModelUse,
-  resolveRuntimeRunJS,
-} from '../components/runjs-source';
 
 export const customVariable = defineAction({
   name: 'customVariable',
@@ -51,19 +45,14 @@ export const customVariable = defineAction({
       }
       if (variable.type === 'runjs') {
         const getFunction = async () => {
-          const ownerLocator = buildRunJSOwnerLocator({
-            modelUid: ctx.model?.uid,
-            use: getRunJSModelUse(ctx.model),
-            hostPath: buildCustomVariableRunJSHostPath(ctx, variableIndex),
+          const runJs = normalizeRunJSValue(variable.runjs);
+          const result = await ctx.runjs(runJs.code, undefined, {
+            version: runJs.version,
           });
-          const resolved = await resolveRuntimeRunJS({
-            runJs: variable.runjs,
-            context: {
-              ownerKind: 'flowModel.runjsHost',
-              ownerLocator,
-            },
-          });
-          return evaluateResolvedRunJSValue({ ctx, resolved });
+          if (!result?.success) {
+            throw result?.error || new Error('RunJS execution failed');
+          }
+          return result.value;
         };
         const metaFunction = () => ({
           title: variable.title,
@@ -121,16 +110,6 @@ const UNSAFE_CUSTOM_VARIABLE_KEYS = new Set(['__proto__', 'constructor', 'protot
 
 function isSafeCustomVariableKey(value: unknown): value is string {
   return typeof value === 'string' && Boolean(value.trim()) && !UNSAFE_CUSTOM_VARIABLE_KEYS.has(value);
-}
-
-function buildCustomVariableRunJSHostPath(context: unknown, variableIndex: number): Array<string | number> {
-  const ctx = context as { flowKey?: unknown; currentStep?: { key?: unknown } };
-  const flowKey = typeof ctx.flowKey === 'string' ? ctx.flowKey : undefined;
-  const stepKey = typeof ctx.currentStep?.key === 'string' ? ctx.currentStep.key : undefined;
-  if (flowKey && stepKey) {
-    return ['stepParams', flowKey, stepKey, 'variables', variableIndex, 'runjs'];
-  }
-  return ['variables', variableIndex, 'runjs'];
 }
 
 type FlowVariableType = 'formValue' | 'runjs';
@@ -438,14 +417,8 @@ function VariableEditor(props: VariableEditorProps) {
               rules={[
                 {
                   validator: async (_, value) => {
-                    if (!isRunJSValue(value)) {
-                      throw new Error(t('Please enter JavaScript code'));
-                    }
-                    const normalized = normalizeRunJSValue(value);
-                    if (normalized.sourceMode === 'light-extension' && normalized.sourceBinding) {
-                      return;
-                    }
-                    if (!normalized.code.trim()) {
+                    const normalized = isRunJSValue(value) ? normalizeRunJSValue(value) : undefined;
+                    if (!normalized?.code.trim()) {
                       throw new Error(t('Please enter JavaScript code'));
                     }
                   },

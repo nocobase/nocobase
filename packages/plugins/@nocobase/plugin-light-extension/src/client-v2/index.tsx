@@ -15,7 +15,6 @@ export {
   JSFieldLightExtensionSourceField,
   JSItemLightExtensionSourceField,
 } from './components/JSBlockLightExtensionSourceField';
-export { SettingsAutoForm } from './components/SettingsAutoForm';
 export { createLightExtensionRunJSResolver } from './resolvers/LightExtensionRunJSResolver';
 export { PluginLightExtensionClientV2 } from './plugin';
 export { default } from './plugin';

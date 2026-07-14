@@ -8,110 +8,97 @@
  */
 
 import React from 'react';
+import { render, waitFor } from '@nocobase/test/client';
+import type { MetaTreeNode, RunJSValue } from '@nocobase/flow-engine';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { createFieldAssignLightExtensionMetaTree } from '../FieldAssignValueInput';
+const mocks = vi.hoisted(() => ({
+  useFlowContext: vi.fn(),
+  variableInput: vi.fn((_props: Record<string, unknown>) => null),
+}));
+
+vi.mock('@nocobase/flow-engine', async () => {
+  const actual = await vi.importActual<typeof import('@nocobase/flow-engine')>('@nocobase/flow-engine');
+  return {
+    ...actual,
+    useFlowContext: () => mocks.useFlowContext(),
+    VariableInput: (props: Record<string, unknown>) => {
+      mocks.variableInput(props);
+      return <div data-testid="variable-input" />;
+    },
+  };
+});
+
+import { FieldAssignValueInput } from '../FieldAssignValueInput';
 import { RunJSSourceResolverRegistry } from '../runjs-source';
 
-describe('FieldAssignValueInput light extension menu', () => {
+describe('FieldAssignValueInput RunJS menu', () => {
   afterEach(() => {
     RunJSSourceResolverRegistry.clear();
+    mocks.useFlowContext.mockReset();
+    mocks.variableInput.mockReset();
   });
 
-  it('adds repository and entry levels that produce a light extension RunJS value', async () => {
-    const listSourceMenuItems = vi.fn(async () => [
-      {
-        key: 'light-extension',
-        label: 'Light extensions',
-        disabled: true,
-      },
-      {
-        key: 'repo:repo_orders',
-        label: 'Orders',
-        children: [
-          {
-            key: 'entry:entry_total',
-            label: 'Order total',
-            onSelect: ({ params, defaultParams }) => ({
-              ...defaultParams,
-              ...params,
-              sourceMode: 'light-extension',
-              sourceBinding: {
-                type: 'light-extension-entry',
-                repoId: 'repo_orders',
-                entryId: 'entry_total',
-                entryPath: 'src/client/runjs/order-total/index.ts',
-                kind: 'runjs',
-              },
-              settings: { currency: 'USD' },
-            }),
-          },
-        ],
-      },
-    ]);
+  it('keeps only the regular RunJS entry and does not query light-extension sources', async () => {
+    const listSourceMenuItems = vi.fn(async () => [{ key: 'entry:entry_total', label: 'Order total' }]);
     RunJSSourceResolverRegistry.registerResolver({
       sourceMode: 'light-extension',
       resolve: async () => ({ code: 'return 1;', version: 'v2' }),
       listSourceMenuItems,
     });
 
-    const tree = await createFieldAssignLightExtensionMetaTree(
-      { code: 'return 0;', version: 'v2' },
-      (key) => key,
-      () => <div />,
-    );
-
-    expect(listSourceMenuItems).toHaveBeenCalledWith(
-      expect.objectContaining({
-        kind: 'runjs',
-        sourceMode: 'inline',
-      }),
-    );
-    expect(tree).toMatchObject({
-      name: 'light-extension',
-      paths: ['light-extension'],
-      children: [
-        {
-          name: 'repo:repo_orders',
-          paths: ['light-extension', 'repo:repo_orders'],
-          children: [
-            {
-              name: 'entry:entry_total',
-              paths: ['light-extension', 'repo:repo_orders', 'entry:entry_total'],
-              options: {
-                runJSValue: {
-                  code: 'return 0;',
-                  version: 'v2',
-                  sourceMode: 'light-extension',
-                  sourceBinding: {
-                    repoId: 'repo_orders',
-                    entryId: 'entry_total',
-                  },
-                  settings: { currency: 'USD' },
-                },
-              },
-            },
-          ],
+    const collectionField = {
+      name: 'status',
+      interface: 'input',
+      uiSchema: {},
+      isAssociationField: () => false,
+    };
+    const collection = {
+      dataSourceKey: 'main',
+      getField: (name: string) => (name === 'status' ? collectionField : null),
+      getFields: () => [collectionField],
+    };
+    mocks.useFlowContext.mockReturnValue({
+      model: {
+        context: {
+          collection,
+          dataSourceManager: { getDataSource: vi.fn(() => ({})) },
         },
-      ],
-    });
-  });
-
-  it('leaves the regular value menu usable when light extension entries fail to load', async () => {
-    RunJSSourceResolverRegistry.registerResolver({
-      sourceMode: 'light-extension',
-      resolve: async () => ({ code: 'return 1;', version: 'v2' }),
-      listSourceMenuItems: async () => {
-        throw new Error('request failed');
       },
+      t: (key: string) => key,
+      getPropertyMetaTree: vi.fn(async () => [{ name: 'record', paths: ['record'], type: 'object' }]),
     });
 
-    await expect(
-      createFieldAssignLightExtensionMetaTree(
-        { code: '', version: 'v2' },
-        (key) => key,
-        () => <div />,
-      ),
-    ).resolves.toBeUndefined();
+    render(<FieldAssignValueInput targetPath="status" value="" onChange={vi.fn()} />);
+
+    await waitFor(() => expect(mocks.variableInput).toHaveBeenCalled());
+    const variableInputProps = mocks.variableInput.mock.calls.at(-1)?.[0] as {
+      metaTree?: () => Promise<MetaTreeNode[]>;
+      converters?: {
+        resolvePathFromValue?: (value: unknown) => string[] | undefined;
+        resolveValueFromPath?: (item: MetaTreeNode) => unknown;
+      };
+    };
+    const metaTree = await variableInputProps.metaTree?.();
+
+    expect(metaTree?.map((item) => item.name)).toEqual(['constant', 'null', 'runjs', 'record']);
+    expect(listSourceMenuItems).not.toHaveBeenCalled();
+    expect(variableInputProps.converters?.resolveValueFromPath?.({ name: 'runjs', paths: ['runjs'] })).toEqual({
+      code: '',
+      version: 'v2',
+    });
+
+    const staleLightExtensionValue: RunJSValue = {
+      code: '',
+      version: 'v2',
+      sourceMode: 'light-extension',
+      sourceBinding: {
+        type: 'light-extension-entry',
+        repoId: 'repo_orders',
+        entryId: 'entry_total',
+        kind: 'runjs',
+      },
+    };
+    expect(variableInputProps.converters?.resolvePathFromValue?.(staleLightExtensionValue)).toEqual(['runjs']);
   });
 });

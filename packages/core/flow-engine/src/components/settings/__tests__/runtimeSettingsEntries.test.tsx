@@ -13,8 +13,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FlowEngine } from '../../../flowEngine';
 import { FlowModel } from '../../../models/flowModel';
 import type { StepDefinition } from '../../../types';
+import { getRuntimeFlowSettingDiagnostics } from '../../../utils';
 import { FlowsDropdownButton } from '../independents/dropdown/FlowsDropdownButton';
 import { FlowSettings } from '../wrappers/embedded/FlowSettings';
+import FlowsSettingsContent from '../wrappers/embedded/FlowsSettingsContent';
 import { FlowsContextMenu } from '../wrappers/contextual/FlowsContextMenu';
 
 let lastDropdownMenu:
@@ -57,7 +59,10 @@ vi.mock('antd', () => {
     useForm: () => [formApi],
   });
   const Input = Object.assign((props: React.InputHTMLAttributes<HTMLInputElement>) => <input {...props} />, {
-    TextArea: (props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) => <textarea {...props} />,
+    TextArea: ({
+      autoSize: _autoSize,
+      ...props
+    }: React.TextareaHTMLAttributes<HTMLTextAreaElement> & { autoSize?: unknown }) => <textarea {...props} />,
   });
   const ConfigProvider = Object.assign(({ children }: { children: React.ReactNode }) => <>{children}</>, {
     ConfigContext: React.createContext({}),
@@ -72,9 +77,16 @@ vi.mock('antd', () => {
   return {
     Alert: ({ message }: { message: React.ReactNode }) => <div role="alert">{message}</div>,
     Button,
+    Card: ({ children, title }: { children: React.ReactNode; title?: React.ReactNode }) => (
+      <section>
+        {title}
+        {children}
+      </section>
+    ),
     Collapse,
     ConfigProvider,
     Dropdown,
+    Empty: ({ description }: { description?: React.ReactNode }) => <div>{description}</div>,
     Form,
     Input,
     InputNumber: (props: React.InputHTMLAttributes<HTMLInputElement>) => <input type="number" {...props} />,
@@ -220,5 +232,107 @@ describe('runtime FlowSettings entries', () => {
     expect(model.getStepParams('settings', 'runtimeStep')).toBeUndefined();
     expect(model.getStepParams('settings', 'canonical')).toEqual({ value: 'saved' });
     expect(model.saveStepParams).toHaveBeenCalledOnce();
+  });
+
+  it('embedded settings renders a registered custom runtime setting component', async () => {
+    const model = createModel('embedded-custom-component', () => ({
+      runtimeStep: {
+        title: 'Runtime setting',
+        persistParams: false,
+        uiSchema: {
+          value: {
+            title: 'Runtime value',
+            type: 'object',
+            'x-component': 'RuntimeCustomSetting',
+            'x-component-props': { fieldName: 'options' },
+          },
+        },
+      },
+    }));
+    model.flowEngine.flowSettings.registerComponents({
+      RuntimeCustomSetting: ({ fieldName }: { fieldName: string }) => (
+        <div data-testid="runtime-custom-setting">{fieldName}</div>
+      ),
+    });
+
+    const { getByTestId } = render(<FlowSettings model={model} flowKey="settings" />);
+    await waitFor(() => expect(getByTestId('runtime-custom-setting').textContent).toBe('options'));
+  });
+
+  it('marks runtime settings unavailable and reports a diagnostic when dynamic visibility is invalid', async () => {
+    class InvalidVisibilityError extends Error {
+      readonly flowSettingsDiagnostic = {
+        code: 'LIGHT_EXTENSION_SETTINGS_CONDITION_INVALID',
+        message: this.message,
+        details: {
+          entryId: 'entry-1',
+          propertyPath: 'options',
+          reason: 'invalid path',
+        },
+      };
+    }
+    const model = createModel('runtime-invalid-visibility', () => ({
+      runtimeStep: {
+        key: 'runtimeStep',
+        title: 'Runtime setting',
+        hideInSettings: () => {
+          throw new InvalidVisibilityError(
+            'Light extension entry "entry-1" setting "options" has an invalid x-visible-when condition: invalid path',
+          );
+        },
+        uiSchema: { value: { type: 'string', 'x-component': 'Input' } },
+      },
+    }));
+    render(<FlowsDropdownButton model={model} />);
+    await waitFor(() => {
+      const items = lastDropdownMenu?.items || [];
+      expect(items.map((item) => item.key)).toContain('settings:staticStep');
+      expect(items.map((item) => item.key)).toContain('settings:runtimeStep');
+    });
+
+    expect(lastDropdownMenu?.items?.find((item) => item.key === 'settings:runtimeStep')?.label).toContain(
+      'Unavailable',
+    );
+    expect(getRuntimeFlowSettingDiagnostics(model)).toEqual([
+      expect.objectContaining({
+        code: 'LIGHT_EXTENSION_SETTINGS_CONDITION_INVALID',
+        flowKey: 'settings',
+        stepKey: 'runtimeStep',
+        message: expect.stringContaining('entry-1'),
+        details: {
+          entryId: 'entry-1',
+          propertyPath: 'options',
+          reason: 'invalid path',
+        },
+      }),
+    ]);
+  });
+
+  it('keeps embedded flow settings stable when a runtime visibility condition is invalid', async () => {
+    class InvalidVisibilityError extends Error {
+      readonly flowSettingsDiagnostic = {
+        code: 'LIGHT_EXTENSION_SETTINGS_CONDITION_INVALID',
+        message: this.message,
+        details: {
+          entryId: 'entry-embedded',
+          propertyPath: 'options',
+          reason: 'invalid operator',
+        },
+      };
+    }
+    const model = createModel('embedded-invalid-visibility', () => ({
+      runtimeStep: {
+        key: 'runtimeStep',
+        title: 'Runtime setting',
+        hideInSettings: () => {
+          throw new InvalidVisibilityError('entry-embedded options invalid operator');
+        },
+        uiSchema: { value: { type: 'string', 'x-component': 'Input' } },
+      },
+    }));
+
+    const { getByText } = render(<FlowsSettingsContent model={model} expandAll />);
+    await waitFor(() => expect(getByText('Settings diagnostic')).toBeTruthy());
+    expect(getByText('staticValue')).toBeTruthy();
   });
 });

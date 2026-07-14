@@ -26,6 +26,8 @@ import type {
   LightExtensionWorkspacePreviewResult,
 } from '../../shared/types';
 import { unwrapResourceResponse } from '../api/lightExtensionEntriesRequests';
+import { invalidateLightExtensionRuntimeCache } from '../resolvers/LightExtensionRuntimeCacheRegistry';
+import { invalidateLightExtensionSettingsDescriptorCache } from '../resolvers/LightExtensionSettingsDescriptorCache';
 
 export type LightExtensionRepoOperation = keyof OperationInputMap;
 
@@ -194,10 +196,23 @@ export function useLightExtensionRepo(): UseLightExtensionRepoResult {
   );
   const getRepo = useCallback((repoId: string) => requestOperation('getRepo', { repoId }), [requestOperation]);
   const changeLifecycle = useCallback(
-    (input: LightExtensionChangeLifecycleInput) => requestOperation('changeLifecycle', input),
-    [requestOperation],
+    async (input: LightExtensionChangeLifecycleInput) => {
+      const result = await requestOperation('changeLifecycle', input);
+      invalidateLightExtensionSettingsDescriptorCache(ctx.api, input.repoId);
+      invalidateLightExtensionRuntimeCache(ctx.api, input.repoId);
+      return result;
+    },
+    [ctx.api, requestOperation],
   );
-  const deleteRepo = useCallback((repoId: string) => requestOperation('deleteRepo', { repoId }), [requestOperation]);
+  const deleteRepo = useCallback(
+    async (repoId: string) => {
+      const result = await requestOperation('deleteRepo', { repoId });
+      invalidateLightExtensionSettingsDescriptorCache(ctx.api, repoId);
+      invalidateLightExtensionRuntimeCache(ctx.api, repoId);
+      return result;
+    },
+    [ctx.api, requestOperation],
+  );
   const inspectSourceArchive = useCallback(
     (input: LightExtensionInspectSourceArchiveInput) => requestOperation('inspectSourceArchive', input),
     [requestOperation],
@@ -208,8 +223,13 @@ export function useLightExtensionRepo(): UseLightExtensionRepoResult {
     [requestOperation],
   );
   const saveSource = useCallback(
-    (input: LightExtensionSaveSourceInput) => requestOperation('saveSource', input),
-    [requestOperation],
+    async (input: LightExtensionSaveSourceInput) => {
+      const result = await requestOperation('saveSource', input);
+      invalidateLightExtensionSettingsDescriptorCache(ctx.api, input.repoId);
+      invalidateLightExtensionRuntimeCache(ctx.api, input.repoId);
+      return result;
+    },
+    [ctx.api, requestOperation],
   );
   const compileWorkspacePreview = useCallback(
     (input: LightExtensionWorkspacePreviewInput) => requestOperation('compileWorkspacePreview', input),

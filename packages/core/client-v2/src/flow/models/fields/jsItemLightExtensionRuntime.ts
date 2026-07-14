@@ -44,11 +44,13 @@ import {
   isRecord,
   LIGHT_EXTENSION_SOURCE_MODE,
   normalizeLightExtensionRuntimeError,
-  normalizeLightExtensionSourceSettings,
+  normalizeLightExtensionSourceSettingsForBinding,
   normalizeLightExtensionSourceMode,
+  rememberLightExtensionBindingSettings,
   resolveLightExtensionBindingTitle as resolveSharedLightExtensionBindingTitle,
   setCanonicalLightExtensionSetting,
   setCanonicalLightExtensionSource,
+  showPendingLightExtensionRequiredSettings,
   stableSerialize,
   stableSerializeWithCircular,
   toNonEmptyString,
@@ -181,7 +183,7 @@ export function createJSItemSourceModeStep(): StepDefinition {
     hooks: {
       defaultParams: getJSItemSourceDefaultParams,
       beforeParamsSave: syncJSItemSourceToRunJs,
-      afterParamsSave: refreshJSItemAfterSettingsSave,
+      afterParamsSave: refreshJSItemAfterSourceSave,
     },
   });
 }
@@ -193,7 +195,7 @@ export function createJSItemSourceBindingStep(): StepDefinition {
     hooks: {
       defaultParams: getJSItemSourceDefaultParams,
       beforeParamsSave: syncJSItemSourceToRunJs,
-      afterParamsSave: refreshJSItemAfterSettingsSave,
+      afterParamsSave: refreshJSItemAfterSourceSave,
     },
   });
 }
@@ -407,19 +409,29 @@ async function syncJSItemSourceToRunJs(ctx: FlowSettingsContext<JSItemRuntimeMod
     sourceMode === LIGHT_EXTENSION_SOURCE_MODE
       ? await getLightExtensionSettingsDescriptor(ctx.model, { ...params, sourceMode, sourceBinding })
       : null;
-  const settings = normalizeLightExtensionSourceSettings({
+  const normalized = normalizeLightExtensionSourceSettingsForBinding({
     currentRunJs,
     nextSourceMode: sourceMode,
     nextSourceBinding: sourceBinding,
     nextSettings: params.settings,
     descriptor,
   });
-  setCanonicalLightExtensionSource(ctx.model, 'jsSettings', { sourceMode, sourceBinding, settings });
+  setCanonicalLightExtensionSource(ctx.model, 'jsSettings', {
+    sourceMode,
+    sourceBinding,
+    settings: normalized.settings,
+  });
+  rememberLightExtensionBindingSettings(ctx.model, descriptor, normalized.missingRequiredPaths);
 }
 
 async function refreshJSItemAfterSettingsSave(ctx: FlowSettingsContext<JSItemRuntimeModel>) {
   ctx.model.invalidateFlowCache('jsSettings', true);
   await ctx.model.rerender();
+}
+
+async function refreshJSItemAfterSourceSave(ctx: FlowSettingsContext<JSItemRuntimeModel>) {
+  await refreshJSItemAfterSettingsSave(ctx);
+  await showPendingLightExtensionRequiredSettings(ctx.model, 'jsSettings');
 }
 
 async function getLightExtensionSettingsDescriptor(model: JSItemRuntimeModel, params: Record<string, unknown>) {

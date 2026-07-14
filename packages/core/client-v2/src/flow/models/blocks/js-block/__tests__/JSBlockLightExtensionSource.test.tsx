@@ -450,10 +450,17 @@ describe('JSBlockModel light extension source', () => {
             type: 'object',
             title: 'Options',
             required: ['limit'],
+            default: {
+              label: 'Object default',
+            },
             properties: {
               limit: {
                 type: 'integer',
                 title: 'Limit',
+                default: 5,
+              },
+              label: {
+                type: 'string',
               },
             },
           },
@@ -489,6 +496,13 @@ describe('JSBlockModel light extension source', () => {
     const settingsContext = { model } as FlowSettingsContext<JSBlockModel>;
 
     expect(() => optionsStep?.beforeParamsSave?.(settingsContext, { value: { limit: 'bad' } })).toThrow(
+      'Light extension settings validation failed.',
+    );
+    expect(() => optionsStep?.beforeParamsSave?.(settingsContext, { value: { limit: 10, unknown: true } })).toThrow(
+      'Light extension settings validation failed.',
+    );
+    expect(() => optionsStep?.beforeParamsSave?.(settingsContext, { value: { label: 'saved' } })).not.toThrow();
+    expect(() => optionsStep?.beforeParamsSave?.(settingsContext, { value: null })).toThrow(
       'Light extension settings validation failed.',
     );
     expect(() => optionsStep?.beforeParamsSave?.(settingsContext, { value: { limit: 10 } })).not.toThrow();

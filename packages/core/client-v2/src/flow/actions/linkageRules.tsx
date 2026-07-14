@@ -51,13 +51,7 @@ import {
 } from '../internal/utils/modelUtils';
 import { namePathToPathKey, parsePathString, resolveDynamicNamePath } from '../models/blocks/form/value-runtime/path';
 import { ensureFormValueDrivenLinkageRefresh } from './linkageRulesFormValueRefresh';
-import {
-  buildRunJSOwnerLocator,
-  evaluateResolvedRunJSValue,
-  getRunJSModelUse,
-  INLINE_RUNJS_SOURCE_MODE,
-  resolveRuntimeRunJS,
-} from '../components/runjs-source';
+import { INLINE_RUNJS_SOURCE_MODE } from '../components/runjs-source';
 
 interface LinkageRule {
   /** 随机生成的字符串 */
@@ -489,59 +483,24 @@ function createLegacyTargetPathResolver(ctx: FlowContext) {
 
 const SKIP_RUNJS_ASSIGN_VALUE = Symbol('SKIP_RUNJS_ASSIGN_VALUE');
 
-async function resolveLinkageAssignRuntimeValue(
-  ctx: FlowContext,
-  rawValue: unknown,
-  options: { itemIndex?: number } = {},
-) {
+async function resolveLinkageAssignRuntimeValue(ctx: FlowContext, rawValue: unknown) {
   if (!isRunJSValue(rawValue)) {
     return rawValue;
   }
 
-  const ownerLocator = buildRunJSOwnerLocator({
-    modelUid: ctx.model?.uid,
-    use: getRunJSModelUse(ctx.model),
-    hostPath: buildLinkageAssignRunJSHostPath(ctx, options.itemIndex),
-  });
+  const runJs = normalizeRunJSValue(rawValue);
   try {
-    const resolved = await resolveRuntimeRunJS({
-      runJs: rawValue,
-      context: {
-        ownerKind: 'flowModel.runjsHost',
-        ownerLocator,
-      },
+    const result = await ctx.runjs(runJs.code, undefined, {
+      version: runJs.version,
     });
-    return await evaluateResolvedRunJSValue({
-      ctx,
-      resolved,
-    });
+    if (!result?.success) {
+      throw result?.error || new Error('RunJS execution failed');
+    }
+    return result.value;
   } catch (error) {
     console.warn('[linkageRules] Failed to evaluate RunJS assign value', error);
     return SKIP_RUNJS_ASSIGN_VALUE;
   }
-}
-
-function buildLinkageAssignRunJSHostPath(ctx: FlowContext, itemIndex?: number): Array<string | number> {
-  const flowKey = typeof ctx.flowKey === 'string' ? ctx.flowKey : undefined;
-  const stepKey = getCurrentStepKey(ctx);
-  const itemPath = typeof itemIndex === 'number' ? [itemIndex, 'value'] : ['value'];
-  const ownerPath = (ctx as { __linkageRunJSOwnerPath?: { ruleIndex?: number; actionIndex?: number } })
-    .__linkageRunJSOwnerPath;
-  if (flowKey && stepKey && typeof ownerPath?.ruleIndex === 'number' && typeof ownerPath?.actionIndex === 'number') {
-    return [
-      'stepParams',
-      flowKey,
-      stepKey,
-      'value',
-      ownerPath.ruleIndex,
-      'actions',
-      ownerPath.actionIndex,
-      'params',
-      'value',
-      ...itemPath,
-    ];
-  }
-  return flowKey && stepKey ? ['stepParams', flowKey, stepKey, 'value', ...itemPath] : ['linkageAssign', ...itemPath];
 }
 
 function getSubFormHostFieldPath(ctx: FlowContext): string | null {
@@ -1128,7 +1087,7 @@ export const linkageAssignField = defineAction({
         return ctx.app.jsonLogic.apply({ [operator]: [path, right] });
       };
 
-      for (const [itemIndex, it] of items.entries()) {
+      for (const it of items) {
         if (it?.enable === false) continue;
         const targetPath = it?.targetPath ? String(it.targetPath) : '';
         if (!targetPath) continue;
@@ -1144,9 +1103,7 @@ export const linkageAssignField = defineAction({
           (fieldModel as any)?.collectionField ?? getCollectionFromModel(ctx.model)?.getField?.(top);
         let runtimeValue = it?.value;
         if (isRunJSValue(runtimeValue)) {
-          runtimeValue = await resolveLinkageAssignRuntimeValue(ctx, runtimeValue, {
-            itemIndex,
-          });
+          runtimeValue = await resolveLinkageAssignRuntimeValue(ctx, runtimeValue);
           if (runtimeValue === SKIP_RUNJS_ASSIGN_VALUE) {
             continue;
           }
@@ -1326,7 +1283,7 @@ export const subFormLinkageAssignField = defineAction({
         return model as any;
       };
 
-      for (const [itemIndex, it] of items.entries()) {
+      for (const it of items) {
         if (it?.enable === false) continue;
         const rawTargetPath = it?.targetPath ? String(it.targetPath) : '';
         if (!rawTargetPath) continue;
@@ -1359,9 +1316,7 @@ export const subFormLinkageAssignField = defineAction({
           getCollectionFromModel((ctx.model as any)?.parent ?? ctx.model)?.getField?.(top);
         let runtimeValue = it?.value;
         if (isRunJSValue(runtimeValue)) {
-          runtimeValue = await resolveLinkageAssignRuntimeValue(ctx, runtimeValue, {
-            itemIndex,
-          });
+          runtimeValue = await resolveLinkageAssignRuntimeValue(ctx, runtimeValue);
           if (runtimeValue === SKIP_RUNJS_ASSIGN_VALUE) {
             continue;
           }
@@ -1438,7 +1393,7 @@ export const setFieldsDefaultValue = defineAction({
         return ctx.app.jsonLogic.apply({ [operator]: [path, right] });
       };
 
-      for (const [itemIndex, it] of items.entries()) {
+      for (const it of items) {
         if (it?.enable === false) continue;
         const targetPath = it?.targetPath ? String(it.targetPath) : '';
         if (!targetPath) continue;
@@ -1454,9 +1409,7 @@ export const setFieldsDefaultValue = defineAction({
           (fieldModel as any)?.collectionField ?? getCollectionFromModel(ctx.model)?.getField?.(top);
         let runtimeValue = it?.value;
         if (isRunJSValue(runtimeValue)) {
-          runtimeValue = await resolveLinkageAssignRuntimeValue(ctx, runtimeValue, {
-            itemIndex,
-          });
+          runtimeValue = await resolveLinkageAssignRuntimeValue(ctx, runtimeValue);
           if (runtimeValue === SKIP_RUNJS_ASSIGN_VALUE) {
             continue;
           }
@@ -1510,20 +1463,13 @@ export const linkageRunjs = defineAction({
       return;
     }
 
-    const ownerLocator = buildRunJSOwnerLocator({
-      modelUid: ctx.model?.uid,
-      use: getRunJSModelUse(ctx.model),
-      hostPath: buildLinkageRunJSHostPath(ctx),
-    });
     try {
-      const resolved = await resolveRuntimeRunJS({
-        runJs,
-        context: {
-          ownerKind: 'flowModel.runjsHost',
-          ownerLocator,
-        },
+      const result = await ctx.runjs(runJs.code, undefined, {
+        version: runJs.version,
       });
-      await evaluateResolvedRunJSValue({ ctx, resolved });
+      if (!result?.success) {
+        throw result?.error || new Error('RunJS execution failed');
+      }
     } catch (error) {
       console.error('[linkageRules] RunJS execution failed', error);
       const translate =
@@ -1540,27 +1486,6 @@ export const linkageRunjs = defineAction({
     }
   },
 });
-
-function buildLinkageRunJSHostPath(ctx: FlowContext): Array<string | number> {
-  const flowKey = typeof ctx.flowKey === 'string' ? ctx.flowKey : undefined;
-  const stepKey = getCurrentStepKey(ctx);
-  const ownerPath = (ctx as { __linkageRunJSOwnerPath?: { ruleIndex?: number; actionIndex?: number } })
-    .__linkageRunJSOwnerPath;
-  if (flowKey && stepKey && typeof ownerPath?.ruleIndex === 'number' && typeof ownerPath?.actionIndex === 'number') {
-    return [
-      'stepParams',
-      flowKey,
-      stepKey,
-      'value',
-      ownerPath.ruleIndex,
-      'actions',
-      ownerPath.actionIndex,
-      'params',
-      'value',
-    ];
-  }
-  return flowKey && stepKey ? ['stepParams', flowKey, stepKey, 'value'] : ['linkageRunjs', 'value'];
-}
 
 function protectLinkageRunJsScripts(params: { value?: LinkageRule[] } & Record<string, any>) {
   const masked = _.cloneDeep(params || {}) as typeof params;

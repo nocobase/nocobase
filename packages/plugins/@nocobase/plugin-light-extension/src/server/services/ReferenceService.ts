@@ -1450,19 +1450,9 @@ function readRunJsSource(node: FlowModelNode, adapter?: ReferenceOwnerAdapter): 
   const rawSettings = node.stepParams?.[settingsKey];
   const settings = isPlainRecord(rawSettings) ? rawSettings : {};
   const runJs = isPlainRecord(settings.runJs) ? settings.runJs : {};
-  const sourceModeStep = isPlainRecord(settings.sourceMode) ? settings.sourceMode : {};
-  const sourceBindingStep = isPlainRecord(settings.sourceBinding) ? settings.sourceBinding : {};
-  const sourceMode =
-    normalizeString(settings.sourceMode) ||
-    normalizeString(sourceModeStep.sourceMode) ||
-    normalizeString(sourceBindingStep.sourceMode) ||
-    normalizeString(runJs.sourceMode) ||
-    'inline';
-  const sourceBinding =
-    normalizeSourceBinding(settings.sourceBinding) ||
-    normalizeSourceBinding(sourceBindingStep.sourceBinding) ||
-    normalizeSourceBinding(runJs.sourceBinding);
-  const sourceSettings = normalizeFirstSettings(runJs.settings, settings.settings, sourceBindingStep.settings);
+  const sourceMode = normalizeString(runJs.sourceMode) || 'inline';
+  const sourceBinding = normalizeSourceBinding(runJs.sourceBinding);
+  const sourceSettings = normalizeFirstSettings(runJs.settings);
   return {
     sourceMode,
     sourceBinding,

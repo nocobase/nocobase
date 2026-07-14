@@ -376,6 +376,58 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     expect(currentEntry?.get('artifactHash')).toBe(initialArtifactHash);
   });
 
+  it('rejects invalid settings visibility conditions with HTTP 422 semantics before saving source', async () => {
+    const repo = await repoService.createRepo({
+      name: 'Reject Invalid Settings Condition',
+      initialFiles: baselineSalesKpiFiles(),
+    });
+    const first = await saveCurrentSource({
+      repoId: repo.id,
+      message: 'compile before invalid condition',
+      files: validSalesKpiFiles(),
+    });
+
+    await expect(
+      saveCurrentSource({
+        repoId: repo.id,
+        message: 'reject invalid condition',
+        files: [
+          {
+            path: 'src/client/js-blocks/sales-kpi/entry.json',
+            content: JSON.stringify({
+              schemaVersion: 1,
+              key: 'sales-kpi',
+              settingsSchema: {
+                type: 'object',
+                properties: {
+                  mode: { type: 'integer' },
+                  region: {
+                    type: 'string',
+                    'x-visible-when': { path: 'mode', operator: '$in', value: 1 },
+                  },
+                },
+              },
+            }),
+            language: 'json',
+          },
+        ],
+      }),
+    ).rejects.toMatchObject({
+      code: 'LIGHT_EXTENSION_VALIDATION_FAILED',
+      status: 422,
+      details: {
+        diagnostics: expect.arrayContaining([
+          expect.objectContaining({
+            code: 'settings_condition_value_invalid',
+            path: 'src/client/js-blocks/sales-kpi/entry.json',
+            details: expect.objectContaining({ schemaPath: expect.stringContaining('x-visible-when') }),
+          }),
+        ]),
+      },
+    });
+    await expect(repoService.getRepo(repo.id)).resolves.toMatchObject({ headCommitId: first.commit.id });
+  });
+
   it('preserves entryId and runtime bindings when an entry directory is renamed', async () => {
     const repo = await repoService.createRepo({
       name: 'Stable Entry Directory Rename',

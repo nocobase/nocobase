@@ -346,8 +346,12 @@ exports.genTsConfigPaths = function genTsConfigPaths() {
     }
     if (packageJsonName === '@nocobase/light-extension-sdk') {
       paths[`${packageJsonName}/schema`] = [`${relativePath}/src/schema`];
+      paths[`${packageJsonName}/schema/server`] = [`${relativePath}/src/schema/server`];
       paths[`${packageJsonName}/shared`] = [`${relativePath}/src/shared`];
       paths[`${packageJsonName}/typegen`] = [`${relativePath}/src/typegen`];
+    }
+    if (packageJsonName === '@nocobase/runjs') {
+      paths[`${packageJsonName}/settings`] = [`${relativePath}/src/settings`];
     }
   });
 

@@ -172,18 +172,19 @@ describe('flowSurfaces JS block light-extension compatibility', () => {
     expect(configureRes.status, readErrorMessage(configureRes)).toBe(200);
 
     const readback = await getSurface(rootAgent, { uid: block.uid });
-    expect(readback.tree.stepParams?.jsSettings).toMatchObject({
-      runJs: {
-        code: legacyCode,
-        version: 'v1',
-        sourceRef: LEGACY_SOURCE_REF,
-      },
+    expect(readback.tree.stepParams?.jsSettings?.runJs).toMatchObject({
+      code: legacyCode,
+      version: 'v1',
+      sourceRef: LEGACY_SOURCE_REF,
       sourceMode: 'light-extension',
       sourceBinding: LIGHT_EXTENSION_SOURCE_BINDING,
       settings: {
         region: 'APAC',
       },
     });
+    expect(readback.tree.stepParams?.jsSettings).not.toHaveProperty('sourceMode');
+    expect(readback.tree.stepParams?.jsSettings).not.toHaveProperty('sourceBinding');
+    expect(readback.tree.stepParams?.jsSettings).not.toHaveProperty('settings');
 
     const exportRes = await rootAgent.resource('flowSurfaces').exportBlueprint({
       values: {
@@ -199,7 +200,6 @@ describe('flowSurfaces JS block light-extension compatibility', () => {
     const exportedJsBlock = findExportedJsBlock(exported.document.tabs[0].blocks);
     expect(exportedJsBlock).toMatchObject({
       type: 'jsBlock',
-      title: 'Finance summary',
       settings: {
         code: legacyCode,
         version: 'v1',

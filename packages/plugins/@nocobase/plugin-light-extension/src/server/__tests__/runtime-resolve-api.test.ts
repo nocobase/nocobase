@@ -76,6 +76,201 @@ describe('plugin-light-extension runtime resolve API', () => {
     expect(result).not.toHaveProperty('sourceMap');
   });
 
+  it('deeply merges object defaults and preserves optional or hidden values using normal schema validation', async () => {
+    const settingsSchema = {
+      type: 'object',
+      required: ['displayOptions'],
+      properties: {
+        mode: {
+          type: 'string',
+          default: 'advanced',
+        },
+        displayOptions: {
+          type: 'object',
+          required: ['advancedColor'],
+          properties: {
+            enableColor: {
+              type: 'boolean',
+              default: false,
+            },
+            advancedColor: {
+              type: 'string',
+              default: '#1677ff',
+              'x-visible-when': {
+                path: 'displayOptions.enableColor',
+                operator: '$eq',
+                value: true,
+              },
+            },
+            optionalLabel: {
+              type: 'string',
+              'x-visible-when': {
+                path: 'displayOptions.enableColor',
+                operator: '$eq',
+                value: true,
+              },
+            },
+          },
+        },
+      },
+    };
+    const { service } = createRuntimeResolveService({ settingsSchema });
+
+    await expect(
+      service.resolve(
+        {
+          sourceMode: 'light-extension',
+          sourceBinding: createSourceBinding(),
+          settings: {
+            displayOptions: {
+              enableColor: false,
+            },
+          },
+        },
+        {},
+      ),
+    ).resolves.toMatchObject({
+      settings: {
+        mode: 'advanced',
+        displayOptions: {
+          enableColor: false,
+          advancedColor: '#1677ff',
+        },
+      },
+    });
+
+    await expect(
+      service.resolve(
+        {
+          sourceMode: 'light-extension',
+          sourceBinding: createSourceBinding(),
+          settings: {
+            displayOptions: {
+              enableColor: false,
+              advancedColor: '#00ff00',
+              optionalLabel: 'preserved while hidden',
+            },
+          },
+        },
+        {},
+      ),
+    ).resolves.toMatchObject({
+      settings: {
+        displayOptions: {
+          enableColor: false,
+          advancedColor: '#00ff00',
+          optionalLabel: 'preserved while hidden',
+        },
+      },
+    });
+  });
+
+  it('rejects invalid hidden values and nested unknown properties with field-level issues', async () => {
+    const settingsSchema = {
+      type: 'object',
+      properties: {
+        displayOptions: {
+          type: 'object',
+          properties: {
+            enableColor: { type: 'boolean', default: false },
+            pageSize: {
+              type: 'integer',
+              minimum: 1,
+              'x-visible-when': {
+                path: 'displayOptions.enableColor',
+                operator: '$eq',
+                value: true,
+              },
+            },
+          },
+        },
+      },
+    };
+    const { service } = createRuntimeResolveService({ settingsSchema });
+
+    await expect(
+      service.resolve(
+        {
+          sourceMode: 'light-extension',
+          sourceBinding: createSourceBinding(),
+          settings: {
+            displayOptions: {
+              enableColor: false,
+              pageSize: 0,
+              unknown: true,
+            },
+          },
+        },
+        {},
+      ),
+    ).rejects.toMatchObject({
+      code: 'LIGHT_EXTENSION_SETTINGS_INVALID',
+      status: 422,
+      details: {
+        issues: expect.arrayContaining([
+          expect.objectContaining({ path: '$.displayOptions.pageSize', code: 'settings_minimum' }),
+          expect.objectContaining({ path: '$.displayOptions.unknown', code: 'settings_unknown_property' }),
+        ]),
+      },
+    });
+  });
+
+  it.each([
+    ['a missing settings schema', null],
+    ['an empty settings schema', {}],
+    ['an object schema without properties', { type: 'object' }],
+  ])('rejects settings when the entry has %s', async (_label, settingsSchema) => {
+    const { service } = createRuntimeResolveService({
+      settingsSchema,
+      settingsSchemaHash: settingsSchema ? 'schema_hash_empty' : null,
+      settingsDefaultsHash: settingsSchema ? 'defaults_hash_empty' : null,
+    });
+
+    await expect(
+      service.resolve(
+        {
+          sourceMode: 'light-extension',
+          sourceBinding: createSourceBinding(),
+          settings: { unexpected: true },
+        },
+        {},
+      ),
+    ).rejects.toMatchObject({
+      code: 'LIGHT_EXTENSION_SETTINGS_INVALID',
+      status: 422,
+      details: {
+        issues: [expect.objectContaining({ path: '$.unexpected', code: 'settings_unknown_property' })],
+      },
+    });
+  });
+
+  it('rejects unsafe settings keys without mutating the result prototype', async () => {
+    const { service } = createRuntimeResolveService({
+      settingsSchema: { type: 'object', properties: {} },
+      settingsSchemaHash: 'schema_hash_empty',
+      settingsDefaultsHash: 'defaults_hash_empty',
+    });
+    const settings = JSON.parse('{"__proto__":{"inheritedSetting":"attacker"}}') as Record<string, unknown>;
+
+    await expect(
+      service.resolve(
+        {
+          sourceMode: 'light-extension',
+          sourceBinding: createSourceBinding(),
+          settings,
+        },
+        {},
+      ),
+    ).rejects.toMatchObject({
+      code: 'LIGHT_EXTENSION_SETTINGS_INVALID',
+      status: 422,
+      details: {
+        issues: [expect.objectContaining({ path: '$.__proto__', code: 'settings_unknown_property' })],
+      },
+    });
+    expect(({} as { inheritedSetting?: unknown }).inheritedSetting).toBeUndefined();
+  });
+
   it('rejects legacy failed entries instead of running their last successful artifact', async () => {
     const { service } = createRuntimeResolveService({
       entryHealthStatus: 'failed',

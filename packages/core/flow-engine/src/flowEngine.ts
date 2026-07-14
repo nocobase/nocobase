@@ -23,6 +23,7 @@ import type { ScheduleOptions, ScheduledCancel } from './scheduler/ModelOperatio
 import { createLoadedPageCache } from './utils/loadedPageCache';
 import type {
   ActionDefinition,
+  ActionRegistrationOptions,
   ApplyFlowCacheEntry,
   CreateModelOptions,
   EnsureBatchResult,
@@ -404,8 +405,8 @@ export class FlowEngine {
    * Register multiple actions.
    * @param {Record<string, ActionDefinition>} actions Action definition object collection
    */
-  registerActions(actions: Record<string, ActionDefinition>): void {
-    this._actionRegistry.registerActions(actions);
+  registerActions(actions: Record<string, ActionDefinition>, options?: ActionRegistrationOptions): void {
+    this._actionRegistry.registerActions(actions, options);
   }
 
   /**

@@ -75,14 +75,16 @@ describe('flowSurfaces JS item light-extension unit contract', () => {
     expect(jsItemOptions.sourceBinding?.example).toEqual(JS_ITEM_SOURCE_BINDING);
     expect(jsItemActionOptions.sourceBinding?.example).toEqual(JS_ITEM_SOURCE_BINDING);
     expect(jsItemPaths).toEqual(
-      expect.arrayContaining(['sourceBinding', 'settings.*', 'runJs.sourceMode', 'runJs.sourceBinding']),
+      expect.arrayContaining(['runJs.sourceMode', 'runJs.sourceBinding', 'runJs.settings.*']),
     );
     expect(jsItemActionPaths).toEqual(
-      expect.arrayContaining(['sourceBinding', 'settings.*', 'runJs.sourceMode', 'runJs.sourceBinding']),
+      expect.arrayContaining(['runJs.sourceMode', 'runJs.sourceBinding', 'runJs.settings.*']),
     );
+    expect(jsItemPaths).not.toEqual(expect.arrayContaining(['sourceMode', 'sourceBinding', 'settings.*']));
+    expect(jsItemActionPaths).not.toEqual(expect.arrayContaining(['sourceMode', 'sourceBinding', 'settings.*']));
   });
 
-  it('should map JS item source settings into runJs and top-level source storage', async () => {
+  it('should map JS item source settings only into runJs', async () => {
     const service = new FlowSurfacesService({
       db: {},
     } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
@@ -114,11 +116,6 @@ describe('flowSurfaces JS item light-extension unit contract', () => {
               settings: {
                 vipColor: '#d4380d',
               },
-            },
-            sourceMode: 'light-extension',
-            sourceBinding: JS_ITEM_SOURCE_BINDING,
-            settings: {
-              vipColor: '#d4380d',
             },
           },
         },
@@ -163,11 +160,6 @@ describe('flowSurfaces JS item light-extension unit contract', () => {
               settings: {
                 vipColor: '#d4380d',
               },
-            },
-            sourceMode: 'light-extension',
-            sourceBinding: JS_ITEM_SOURCE_BINDING,
-            settings: {
-              vipColor: '#d4380d',
             },
           },
         },

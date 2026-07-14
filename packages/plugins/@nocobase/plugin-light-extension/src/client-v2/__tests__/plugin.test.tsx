@@ -13,13 +13,21 @@ import {
   JS_ACTION_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
   JS_BLOCK_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
   JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+  JS_FIELD_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
+  JS_FIELD_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
   JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
   JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+  PluginFlowEngine,
 } from '@nocobase/client-v2';
 import { RunJSEditorRegistry, RunJSSourceResolverRegistry } from '@nocobase/client-v2';
 import { afterEach, vi } from 'vitest';
 
 import { LIGHT_EXTENSION_ACL_SNIPPET, LIGHT_EXTENSION_SETTINGS_KEY, NAMESPACE } from '../../constants';
+import {
+  JSActionLightExtensionSourceField,
+  JSFieldLightExtensionSourceField,
+  JSItemLightExtensionSourceField,
+} from '../components/JSBlockLightExtensionSourceField';
 import PluginLightExtensionClientV2 from '../plugin';
 
 describe('PluginLightExtensionClientV2', () => {
@@ -66,14 +74,49 @@ describe('PluginLightExtensionClientV2', () => {
       [JS_ACTION_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: expect.any(Function),
       [JS_BLOCK_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: expect.any(Function),
       [JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: expect.any(Function),
+      [JS_FIELD_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: expect.any(Function),
+      [JS_FIELD_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: expect.any(Function),
       [JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: expect.any(Function),
       [JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: expect.any(Function),
-      RunJSLightExtensionSourceField: expect.any(Function),
-      SettingsAutoForm: expect.any(Function),
     });
+    expect(app.flowEngine.flowSettings.components.SettingsAutoForm).toBeUndefined();
     expect(warn.mock.calls.flat().join('\n')).not.toContain('JSBlockLightExtensionSourceField');
     expect(RunJSSourceResolverRegistry.getResolver('light-extension')).toBeTruthy();
     expect(RunJSEditorRegistry.getProviders().map((provider) => provider.key)).toContain('light-extension-runjs-value');
+  });
+
+  it('replaces core source-field fallbacks without duplicate-registration warnings', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const app = createMockClient({
+      plugins: [
+        [
+          PluginFlowEngine,
+          {
+            name: 'flow-engine',
+          },
+        ],
+        [
+          PluginLightExtensionClientV2,
+          {
+            name: 'light-extension',
+            packageName: NAMESPACE,
+          },
+        ],
+      ],
+    });
+
+    await app.load();
+
+    expect(app.flowEngine.flowSettings.components[JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD]).toBe(
+      JSActionLightExtensionSourceField,
+    );
+    expect(app.flowEngine.flowSettings.components[JS_FIELD_LIGHT_EXTENSION_FULL_SOURCE_FIELD]).toBe(
+      JSFieldLightExtensionSourceField,
+    );
+    expect(app.flowEngine.flowSettings.components[JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD]).toBe(
+      JSItemLightExtensionSourceField,
+    );
+    expect(warn.mock.calls.flat().join('\n')).not.toContain('LightExtensionFullSourceField');
   });
 
   it('cleans previous global registrations before loading a new instance', async () => {

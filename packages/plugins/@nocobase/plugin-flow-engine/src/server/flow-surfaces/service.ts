@@ -1308,6 +1308,28 @@ type FlowSurfaceApplyBlueprintResponse = {
 
 const MOBILE_UI_LAYOUT_TYPE = 'mobile';
 
+const RUN_JS_SOURCE_SETTING_KEYS = ['sourceMode', 'sourceBinding', 'settings'] as const;
+type RunJsSettingsGroupKey = 'jsSettings' | 'clickSettings';
+
+function resolveRunJsSettingsGroupKey(use: unknown): RunJsSettingsGroupKey | undefined {
+  const normalizedUse = String(use || '').trim();
+  if (JS_ACTION_USES.has(normalizedUse)) {
+    return 'clickSettings';
+  }
+  if (normalizedUse === 'JSBlockModel' || normalizedUse === 'JSItemModel' || JS_ITEM_ACTION_USES.has(normalizedUse)) {
+    return 'jsSettings';
+  }
+  return undefined;
+}
+
+function hasLightExtensionSourceMode(stepParams: unknown, groupKey: RunJsSettingsGroupKey | undefined) {
+  if (!groupKey || !_.isPlainObject(stepParams)) {
+    return false;
+  }
+  const group = _.get(stepParams, [groupKey]);
+  return _.get(group, ['runJs', 'sourceMode']) === 'light-extension';
+}
+
 function shouldSyncLightExtensionReferences(
   currentOptions: Record<string, unknown>,
   nextOptions: Record<string, unknown>,
@@ -1315,13 +1337,11 @@ function shouldSyncLightExtensionReferences(
   if (currentOptions?.use === 'JSBlockModel' || nextOptions?.use === 'JSBlockModel') {
     return true;
   }
-  const currentJsSettings = _.get(currentOptions, ['stepParams', 'jsSettings']);
-  const nextJsSettings = _.get(nextOptions, ['stepParams', 'jsSettings']);
+  const currentGroupKey = resolveRunJsSettingsGroupKey(currentOptions?.use);
+  const nextGroupKey = resolveRunJsSettingsGroupKey(nextOptions?.use);
   return (
-    _.get(currentJsSettings, ['sourceMode']) === 'light-extension' ||
-    _.get(nextJsSettings, ['sourceMode']) === 'light-extension' ||
-    _.get(currentJsSettings, ['runJs', 'sourceMode']) === 'light-extension' ||
-    _.get(nextJsSettings, ['runJs', 'sourceMode']) === 'light-extension'
+    hasLightExtensionSourceMode(currentOptions?.stepParams, currentGroupKey) ||
+    hasLightExtensionSourceMode(nextOptions?.stepParams, nextGroupKey)
   );
 }
 
@@ -4777,6 +4797,38 @@ export class FlowSurfacesService {
     return visit(node);
   }
 
+  private projectJSBlockRunJsSourceSettingsForBlueprintExport<T>(node: T): T {
+    const visit = (current: unknown) => {
+      if (!_.isPlainObject(current)) {
+        return;
+      }
+      const currentRecord = current as Record<string, unknown>;
+      if (currentRecord.use === 'JSBlockModel') {
+        const jsSettings = _.get(currentRecord, ['stepParams', 'jsSettings']) as unknown;
+        const runJs = _.get(jsSettings, ['runJs']) as unknown;
+        if (_.isPlainObject(jsSettings) && _.isPlainObject(runJs)) {
+          const jsSettingsRecord = jsSettings as Record<string, unknown>;
+          const runJsRecord = runJs as Record<string, unknown>;
+          RUN_JS_SOURCE_SETTING_KEYS.forEach((key) => {
+            if (Object.prototype.hasOwnProperty.call(runJsRecord, key)) {
+              jsSettingsRecord[key] = _.cloneDeep(runJsRecord[key]);
+              delete runJsRecord[key];
+            }
+          });
+        }
+      }
+      const subModels = currentRecord.subModels;
+      if (!_.isPlainObject(subModels)) {
+        return;
+      }
+      for (const value of Object.values(subModels)) {
+        (Array.isArray(value) ? value : [value]).forEach((child) => visit(child));
+      }
+    };
+    visit(node);
+    return node;
+  }
+
   private async buildSurfaceReadPayload(
     target: FlowSurfaceReadLocator,
     resolved: FlowSurfaceResolvedTarget,
@@ -4858,7 +4910,7 @@ export class FlowSurfacesService {
       ? ((await this.routeSync.hydrateRoute(resolved.pageRoute, options.transaction)) as Record<string, unknown>)
       : undefined;
     const result = exportFlowSurfaceBlueprintDocument({
-      page: rawNode,
+      page: this.projectJSBlockRunJsSourceSettingsForBlueprintExport(_.cloneDeep(rawNode)),
       pageRoute,
       target: {
         pageSchemaUid,
@@ -22820,9 +22872,20 @@ export class FlowSurfacesService {
                         code: changes.code,
                         version: changes.version,
                         sourceRef: changes.sourceRef,
+                        sourceMode: changes.sourceMode,
+                        sourceBinding: changes.sourceBinding,
+                        settings: changes.settings,
                       }),
                     }
-                  : {}),
+                  : hasDefinedValue(changes, ['sourceMode', 'sourceBinding', 'settings'])
+                    ? {
+                        runJs: buildDefinedPayload({
+                          sourceMode: changes.sourceMode,
+                          sourceBinding: changes.sourceBinding,
+                          settings: changes.settings,
+                        }),
+                      }
+                    : {}),
                 ...(hasOwnDefined(changes, 'showBlockCard')
                   ? {
                       showBlockCard: {
@@ -22830,9 +22893,6 @@ export class FlowSurfacesService {
                       },
                     }
                   : {}),
-                sourceMode: changes.sourceMode,
-                sourceBinding: changes.sourceBinding,
-                settings: changes.settings,
               }),
             }
           : undefined,
@@ -22946,9 +23006,6 @@ export class FlowSurfacesService {
                   sourceBinding: changes.sourceBinding,
                   settings: changes.settings,
                 }),
-                sourceMode: changes.sourceMode,
-                sourceBinding: changes.sourceBinding,
-                settings: changes.settings,
               }),
             }
           : undefined,
@@ -25078,10 +25135,13 @@ export class FlowSurfacesService {
         : null);
     changes = await this.normalizeActionPanelActionChanges(changes, options);
     const allowedKeys = getConfigureOptionKeysForUse(use);
+    const effectiveAllowedKeys = JS_ACTION_USES.has(use)
+      ? Array.from(new Set([...allowedKeys, ...RUN_JS_SOURCE_SETTING_KEYS]))
+      : allowedKeys;
     if (hasOwnDefined(changes, 'openView') && !allowedKeys.includes('openView') && JS_POPUP_GUIDANCE_USES.has(use)) {
       throwBadRequest(withJsPopupGuidance(`flowSurfaces configure action '${use}' does not support openView`, use));
     }
-    assertSupportedSimpleChanges('action', changes, allowedKeys);
+    assertSupportedSimpleChanges('action', changes, effectiveAllowedKeys);
     if (this.isAIEmployeeActionUse(use)) {
       const aiEmployeeSettingsPayload = await this.normalizeAIEmployeeActionPublicSettings(
         'configure action',
@@ -25335,21 +25395,10 @@ export class FlowSurfacesService {
         runJs: buildDefinedPayload({
           code: changes.code,
           version: changes.version,
-          ...(JS_ITEM_ACTION_USES.has(use)
-            ? {
-                sourceMode: changes.sourceMode,
-                sourceBinding: changes.sourceBinding,
-                settings: changes.settings,
-              }
-            : {}),
+          sourceMode: changes.sourceMode,
+          sourceBinding: changes.sourceBinding,
+          settings: changes.settings,
         }),
-        ...(JS_ITEM_ACTION_USES.has(use)
-          ? {
-              sourceMode: changes.sourceMode,
-              sourceBinding: changes.sourceBinding,
-              settings: changes.settings,
-            }
-          : {}),
       });
       if (JS_ITEM_ACTION_USES.has(use)) {
         stepParams.jsSettings = runJsSettings;
