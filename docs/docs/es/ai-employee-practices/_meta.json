@@ -1,0 +1,17 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Automatización de la investigación de antecedentes de empresas",
+    "link": "/ai-employees/scenarios/company-background-research"
+  },
+  {
+    "type": "custom-link",
+    "label": "Generar informe de análisis de negocio",
+    "link": "/ai-employees/scenarios/business-report"
+  },
+  {
+    "type": "custom-link",
+    "label": "Lina: Traducción de localización",
+    "link": "/ai-employees/scenarios/localization-hy-mt"
+  }
+]

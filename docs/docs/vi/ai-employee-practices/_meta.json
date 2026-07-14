@@ -1,0 +1,17 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Tự động hóa nghiên cứu thông tin doanh nghiệp",
+    "link": "/ai-employees/scenarios/company-background-research"
+  },
+  {
+    "type": "custom-link",
+    "label": "Tạo báo cáo phân tích kinh doanh",
+    "link": "/ai-employees/scenarios/business-report"
+  },
+  {
+    "type": "custom-link",
+    "label": "Lina: Dịch bản địa hóa",
+    "link": "/ai-employees/scenarios/localization-hy-mt"
+  }
+]
