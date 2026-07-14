@@ -38,6 +38,8 @@ export function createRunJSTypeScriptCompilerOptions(ts: TypeScriptModule): Comp
     checkJs: false,
     esModuleInterop: true,
     jsx: ts.JsxEmit.React,
+    jsxFactory: 'ctx.React.createElement',
+    jsxFragmentFactory: 'ctx.React.Fragment',
     module: ts.ModuleKind.ESNext,
     moduleDetection: ts.ModuleDetectionKind.Force,
     moduleResolution: ts.ModuleResolutionKind.NodeJs,
@@ -259,31 +261,6 @@ interface RunJSContext {
 }
 declare const ctx: RunJSContext;
 declare const console: RunJSLogger;
-
-declare module 'antd' {
-  export const Alert: RunJSComponent;
-  export const Button: RunJSComponent;
-  export const Card: RunJSComponent;
-  export const Col: RunJSComponent;
-  export const DatePicker: RunJSComponent;
-  export const Divider: RunJSComponent;
-  export const Form: RunJSComponent;
-  export const Input: RunJSComponent;
-  export const List: RunJSComponent;
-  export const Modal: RunJSComponent;
-  export const Row: RunJSComponent;
-  export const Select: RunJSComponent;
-  export const Space: RunJSComponent;
-  export const Table: RunJSComponent;
-  export const Tag: RunJSComponent;
-  export const Typography: Record<string, RunJSComponent>;
-  export const message: {
-    success(content: unknown): void;
-    error(content: unknown): void;
-    warning(content: unknown): void;
-    info(content: unknown): void;
-  };
-}
 `;
 
 const runJSSourceRuntimeDeclaration = `

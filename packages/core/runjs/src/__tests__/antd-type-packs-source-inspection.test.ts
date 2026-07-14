@@ -9,6 +9,7 @@
 
 import { inspectRunJSSourceWorkspace } from '../compiler';
 import { loadNodeRunJSTypeLibraryFiles } from '../compiler/node-type-library';
+import { buildRunJSTypeScriptContextDeclaration } from '../typescript-project';
 
 function inspect(code: string) {
   return inspectRunJSSourceWorkspace({
@@ -19,6 +20,22 @@ function inspect(code: string) {
 }
 
 describe('RunJS Node Ant Design symbol and Icons group source inspection', () => {
+  it('keeps NocoBase imperative API overlays without an ambient antd module stub', () => {
+    const baseDeclaration = buildRunJSTypeScriptContextDeclaration();
+
+    expect(baseDeclaration).toContain('interface RunJSMessage');
+    expect(baseDeclaration).toContain('interface RunJSNotification');
+    expect(baseDeclaration).toContain('interface RunJSModal');
+    expect(baseDeclaration).not.toContain("declare module 'antd'");
+    expect(
+      inspect(`
+ctx.message.success('Saved');
+ctx.notification.open({ message: 'Saved' });
+ctx.modal.confirm({ title: 'Continue?' });
+`),
+    ).toEqual([]);
+  });
+
   it('accepts representative official Ant Design and icon usage', () => {
     expect(
       inspect(`
