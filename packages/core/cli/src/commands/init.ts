@@ -27,7 +27,8 @@ import {
 } from '../lib/prompt-catalog.ts';
 import { applyCliLocale, localeText, translateCli } from '../lib/cli-locale.ts';
 import { resolveConfiguredEnvPath, resolveDefaultConfigScope, resolveEnvRelativePath } from '../lib/cli-home.js';
-import { resolveDefaultApiHost, resolveDefaultUiHost } from '../lib/cli-config.js';
+import { getCliConfigValue, resolveDefaultApiHost, resolveDefaultUiHost } from '../lib/cli-config.js';
+import { resolveOfficialDockerRegistry } from '../lib/docker-image.js';
 import {
   areConfiguredPathsEquivalent,
   deriveConfiguredSourcePath,
@@ -924,6 +925,15 @@ Prompt modes:
       downloadSeed.source = 'docker';
     }
 
+    const builtinDbImageRegistry =
+      String(presetValues.dockerRegistry ?? '').trim() ||
+      resolveOfficialDockerRegistry(await getCliConfigValue('nb-image-registry'));
+
+    if (!Object.prototype.hasOwnProperty.call(presetValues, 'dockerRegistry')) {
+      out.dockerRegistry = builtinDbImageRegistry;
+    }
+    out.builtinDbImageRegistry = builtinDbImageRegistry;
+
     const dbInitial = await Install.buildDbPromptInitialValues({
       flags,
       downloadResults: downloadSeed as Record<string, PromptValue>,
@@ -931,6 +941,9 @@ Prompt modes:
       warnOnPortFallback: false,
     });
     for (const [key, value] of Object.entries(dbInitial)) {
+      if (key === 'builtinDbImage') {
+        continue;
+      }
       if (!Object.prototype.hasOwnProperty.call(presetValues, key)) {
         out[key] = value;
       }

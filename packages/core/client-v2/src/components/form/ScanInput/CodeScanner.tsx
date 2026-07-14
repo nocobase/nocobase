@@ -49,6 +49,21 @@ function CodeScannerContent({ visible, formatsToSupport, onClose, onScanSuccess 
     message.error(t('Code recognition failed, please scan again'));
   }, [t]);
 
+  const showCameraStartFailure = useCallback(
+    (error: unknown) => {
+      const errorName = error instanceof Error ? error.name : '';
+      const errorMessage = error instanceof Error ? error.message : '';
+      const errorMap: Record<string, string> = {
+        NotFoundError: t('No camera device detected'),
+        NotAllowedError: t('You have not granted permission to use the camera'),
+      };
+
+      message.error(errorMap[errorName] || errorMessage || t('You have not granted permission to use the camera'));
+      onClose();
+    },
+    [onClose, t],
+  );
+
   const handleScanSuccess = useCallback(
     (text: string) => {
       onScanSuccess(text);
@@ -64,6 +79,7 @@ function CodeScannerContent({ visible, formatsToSupport, onClose, onScanSuccess 
     scanBoxSize,
     onScanSuccess: handleScanSuccess,
     onScanFailure: showScanFailure,
+    onCameraStartFailure: showCameraStartFailure,
   });
 
   useEffect(() => {
@@ -129,7 +145,7 @@ function CodeScannerContent({ visible, formatsToSupport, onClose, onScanSuccess 
     inset: 0;
     z-index: ${token.zIndexPopupBase + 1000};
     overflow: hidden;
-    background: ${token.colorBgMask};
+    background: #000;
   `;
   const scannerWrapperClass = css`
     position: absolute;
@@ -137,16 +153,17 @@ function CodeScannerContent({ visible, formatsToSupport, onClose, onScanSuccess 
     overflow: hidden;
   `;
   const scannerClass = css`
+    position: relative;
     width: 100%;
     height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    overflow: hidden;
 
     video {
-      width: auto !important;
+      position: absolute !important;
+      inset: 0 !important;
+      width: 100% !important;
       height: 100% !important;
-      max-width: none !important;
+      object-fit: cover !important;
     }
 
     #qr-shaded-region {

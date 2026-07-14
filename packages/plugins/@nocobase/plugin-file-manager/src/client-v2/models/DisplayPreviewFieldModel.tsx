@@ -161,8 +161,9 @@ const Preview = (props) => {
         }
 
         if (blobUrl) {
+          const urlToRevoke = blobUrl;
           setTimeout(() => {
-            URL.revokeObjectURL(blobUrl!);
+            URL.revokeObjectURL(urlToRevoke);
           }, DOWNLOAD_REVOKE_DELAY);
         }
       }

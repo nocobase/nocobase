@@ -15,6 +15,7 @@ import {
   useFlowContext,
 } from '@nocobase/flow-engine';
 import React, { createRef } from 'react';
+import type { EChartsType } from 'echarts';
 import _ from 'lodash';
 import { Button, Space } from 'antd';
 import dayjs from 'dayjs';
@@ -35,6 +36,8 @@ import {
 } from './chartDirtyTracking';
 
 const NO_PREVIEW_SNAPSHOT = Symbol('NO_PREVIEW_SNAPSHOT');
+
+type ChartEventCleanup = () => void | Promise<void>;
 
 type ChartBlockModelStructure = {
   subModels: {
@@ -91,8 +94,27 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
 
   // 统一管理 refresh 监听引用，便于 off 解绑
   private __onResourceRefresh = () => this.renderChart();
+  private __eventsBoundChart?: EChartsType;
+  private __eventsBoundRaw?: string;
+  private chartEventsCleanup?: ChartEventCleanup;
+  private __eventsApplyToken = 0;
   private lastRefreshSnapshot: ChartDirtyRefreshSnapshot | null = null;
   private dirtyRefreshing = false;
+
+  private __onChartRefReady = (chart: EChartsType) => {
+    try {
+      this.props.chart?.onRefReady?.(chart);
+    } catch (error) {
+      console.error('Chart onRefReady error:', error);
+    }
+
+    const raw = this.getConfiguredEventsRaw();
+    if (raw) {
+      this.applyEvents(raw, chart).catch((error) => {
+        console.error('Chart applyEvents error:', error);
+      });
+    }
+  };
 
   private getCurrentRefreshSnapshot(): ChartDirtyRefreshSnapshot | null {
     return getChartDirtyRefreshSnapshot({
@@ -175,6 +197,51 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
     return this.getStepParams('chartSettings', 'configure');
   }
 
+  private getConfiguredEventsRaw() {
+    return this.getResourceSettingsInitParams()?.chart?.events?.raw;
+  }
+
+  private shouldSkipApplyEvents(raw: string, chart: EChartsType) {
+    return this.__eventsBoundChart === chart && this.__eventsBoundRaw === raw;
+  }
+
+  private markEventsBound(raw: string, chart: EChartsType) {
+    this.__eventsBoundChart = chart;
+    this.__eventsBoundRaw = raw;
+  }
+
+  private clearEventsBound(raw: string, chart: EChartsType) {
+    if (this.__eventsBoundChart === chart && this.__eventsBoundRaw === raw) {
+      this.__eventsBoundChart = undefined;
+      this.__eventsBoundRaw = undefined;
+    }
+  }
+
+  private resetEventsBound() {
+    this.__eventsBoundChart = undefined;
+    this.__eventsBoundRaw = undefined;
+  }
+
+  private async runChartEventCleanups(cleanups: ChartEventCleanup[]) {
+    for (const cleanup of cleanups.slice().reverse()) {
+      try {
+        await cleanup();
+      } catch (error) {
+        console.error('Chart events cleanup error:', error);
+      }
+    }
+  }
+
+  private async cleanupChartEvents() {
+    const cleanup = this.chartEventsCleanup;
+    this.chartEventsCleanup = undefined;
+    this.resetEventsBound();
+
+    if (cleanup) {
+      await this.runChartEventCleanups([cleanup]);
+    }
+  }
+
   async buildQueryRequest(query: any) {
     if (!query || query?.mode === 'sql') {
       return query;
@@ -231,13 +298,13 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
   }
 
   renderComponent() {
-    // TODO onRefReady 的逻辑理清，内部的 onRefReady props是否已经没必要？
     return (
       <Chart
         {...this.props.chart}
         dataSource={this.resource.getData()}
         loading={this.resource.loading}
         heightMode={this.decoratorProps?.heightMode}
+        onRefReady={this.__onChartRefReady}
         ref={this.context.chartRef}
       />
     );
@@ -474,18 +541,77 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
   }
 
   // 应用事件配置（仅设置，不负责渲染）
-  async applyEvents(raw?: string) {
-    if (!raw) return;
+  async applyEvents(raw?: string, chartInstance?: EChartsType) {
+    const applyToken = ++this.__eventsApplyToken;
+
+    if (!raw) {
+      await this.cleanupChartEvents();
+      return;
+    }
+
+    if (chartInstance) {
+      await this.runChartEvents(raw, chartInstance, applyToken);
+      return;
+    }
+
+    const chart = (this.context.chartRef as any).current as EChartsType | null;
+    if (chart) {
+      await this.runChartEvents(raw, chart, applyToken);
+      return;
+    }
 
     this.context.onRefReady(this.context.chartRef, async () => {
-      const { success, value, error, timeout } = await this.context.runjs(raw, {
-        chart: (this.context.chartRef as any).current,
-      });
-      if (!success && error) {
-        console.error('applyEvents runjs error:', error);
+      if (applyToken !== this.__eventsApplyToken) {
         return;
       }
+
+      const currentChart = (this.context.chartRef as any).current as EChartsType | null;
+      if (currentChart && applyToken === this.__eventsApplyToken) {
+        await this.runChartEvents(raw, currentChart, applyToken);
+      }
     });
+  }
+
+  private async runChartEvents(raw: string, chart: EChartsType, applyToken: number) {
+    if (this.shouldSkipApplyEvents(raw, chart)) {
+      return;
+    }
+
+    await this.cleanupChartEvents();
+    if (applyToken !== this.__eventsApplyToken) {
+      return;
+    }
+
+    this.markEventsBound(raw, chart);
+    const cleanups: ChartEventCleanup[] = [];
+
+    try {
+      const { success, value, error, timeout } = await this.context.runjs(raw, {
+        chart,
+      });
+      if (success) {
+        if (typeof value === 'function') {
+          cleanups.push(value);
+        }
+        if (applyToken !== this.__eventsApplyToken) {
+          this.clearEventsBound(raw, chart);
+          await this.runChartEventCleanups(cleanups);
+          return;
+        }
+        this.chartEventsCleanup = cleanups.length ? () => this.runChartEventCleanups(cleanups) : undefined;
+        return;
+      }
+
+      this.clearEventsBound(raw, chart);
+      await this.runChartEventCleanups(cleanups);
+      if (error || timeout) {
+        console.error('applyEvents runjs error:', error || 'timeout');
+      }
+    } catch (error) {
+      this.clearEventsBound(raw, chart);
+      await this.runChartEventCleanups(cleanups);
+      throw error;
+    }
   }
 
   // 显式渲染（必要时可直接调用）
@@ -668,9 +794,7 @@ ChartBlockModel.registerFlow({
           });
 
           // 事件部分
-          if (chart.events?.raw) {
-            await ctx.model.applyEvents(chart.events?.raw);
-          }
+          await ctx.model.applyEvents(chart.events?.raw);
         } catch (error) {
           console.error('ChartBlockModel chartSettings configure flow handler() error:', error);
         }

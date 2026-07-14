@@ -11,7 +11,7 @@ import { CheckCircleOutlined } from '@ant-design/icons';
 import { TopbarActionModel, useMobileLayout } from '@nocobase/client-v2';
 import { observer, useFlowEngine } from '@nocobase/flow-engine';
 import { useMemoizedFn } from 'ahooks';
-import { Badge, Button, Tooltip } from 'antd';
+import { Badge, Button, ConfigProvider, Tooltip } from 'antd';
 import React, { useMemo } from 'react';
 import { getWorkflowTasksPath } from '../constants';
 import { tExpr } from '../locale';
@@ -21,6 +21,15 @@ import {
   useWorkflowTaskCounts,
   type WorkflowTaskFlowContext,
 } from '../taskCenter';
+
+const workflowTasksBadgeTheme = {
+  components: {
+    Badge: {
+      indicatorHeightSM: 10,
+      textFontSizeSM: 8,
+    },
+  },
+};
 
 const WorkflowTasksTopbarAction = observer(
   ({ model }: { model: WorkflowTasksTopbarActionModel }) => {
@@ -48,9 +57,11 @@ const WorkflowTasksTopbarAction = observer(
     return (
       <Tooltip title={model.context.t(model.tooltip)}>
         <Button type="text" onClick={handleClick} data-testid={model.getTestId()}>
-          <Badge count={total} size="small">
-            <CheckCircleOutlined />
-          </Badge>
+          <ConfigProvider theme={workflowTasksBadgeTheme}>
+            <Badge count={total} size="small">
+              <CheckCircleOutlined />
+            </Badge>
+          </ConfigProvider>
         </Button>
       </Tooltip>
     );

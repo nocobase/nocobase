@@ -42,6 +42,12 @@ import { normalizeFilterValueByOperator } from '../models/blocks/filter-form/val
 import { FieldAssignExactDatePicker, type ExactDatePickerMode } from './FieldAssignExactDatePicker';
 import { limitAssociationMetaTree } from './filter/metaTreeAssociationDepth';
 
+type VariableInputConverters = {
+  renderInputComponent?: (metaTreeNode: MetaTreeNode | null) => React.ComponentType<any> | null;
+  resolvePathFromValue?: (value: any) => string[] | undefined;
+  resolveValueFromPath?: (metaTreeNode: MetaTreeNode) => any;
+};
+
 const DATE_FIELD_INTERFACES = new Set(['date', 'datetime', 'datetimeNoTz', 'createdAt', 'updatedAt', 'unixTimestamp']);
 
 const TZ_AWARE_DATE_INTERFACES = new Set(['datetime', 'createdAt', 'updatedAt', 'unixTimestamp']);
@@ -345,6 +351,7 @@ interface Props {
   allowRunJS?: boolean;
   maxAssociationFieldDepth?: number;
   disabled?: boolean;
+  variableConverters?: VariableInputConverters;
 }
 
 type ResolvedFieldContext = {
@@ -718,6 +725,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
   allowRunJS = true,
   maxAssociationFieldDepth = 2,
   disabled = false,
+  variableConverters,
 }) => {
   const flowCtx = useFlowContext<FlowModelContext>();
   const normalizeEventValue = React.useCallback((eventOrValue: unknown) => {
@@ -1033,18 +1041,22 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       collectionField: effectiveCollectionField,
     });
 
-    const created = engine?.createModel?.({
-      use: 'VariableFieldFormModel',
-      subModels: {
-        fields: [
-          {
-            use: effectiveFieldModelUse,
-            stepParams: tempFieldStepParams,
-            props: tempFieldProps,
-          },
-        ],
+    const sourceContext = resolved?.itemModel?.context || flowCtx.model?.context;
+    const created = engine?.createModel?.(
+      {
+        use: 'VariableFieldFormModel',
+        subModels: {
+          fields: [
+            {
+              use: effectiveFieldModelUse,
+              stepParams: tempFieldStepParams,
+              props: tempFieldProps,
+            },
+          ],
+        },
       },
-    });
+      sourceContext ? { delegate: sourceContext } : undefined,
+    );
     if (!created) return;
 
     // 注入上下文（集合/数据源/字段/区块/资源）
@@ -1507,7 +1519,12 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       clearValue={''}
       disabled={disabled}
       converters={{
+        ...variableConverters,
         renderInputComponent: (meta) => {
+          const external = variableConverters?.renderInputComponent?.(meta ?? null);
+          if (external) {
+            return external;
+          }
           const firstPath = meta?.paths?.[0];
           if (firstPath === 'constant') return ConstantEditor;
           if (firstPath === 'null') return NullComponent;
@@ -1515,6 +1532,10 @@ export const FieldAssignValueInput: React.FC<Props> = ({
           return null;
         },
         resolveValueFromPath: (item) => {
+          const external = variableConverters?.resolveValueFromPath?.(item);
+          if (external !== undefined) {
+            return external;
+          }
           const firstPath = item?.paths?.[0];
           if (firstPath === 'constant') {
             return useDateVariableConstant ? { type: 'today' } : '';
@@ -1524,6 +1545,10 @@ export const FieldAssignValueInput: React.FC<Props> = ({
           return undefined;
         },
         resolvePathFromValue: (currentValue) => {
+          const external = variableConverters?.resolvePathFromValue?.(currentValue);
+          if (external !== undefined) {
+            return external;
+          }
           if (currentValue === null) return ['null'];
           if (allowRunJS && isRunJSValue(currentValue)) return ['runjs'];
           if (useDateVariableConstant && isCtxDateExpression(currentValue)) {

@@ -125,16 +125,19 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
     [onChange],
   );
 
+  const resolvedPath = useMemo(() => {
+    return resolvePathFromValue?.(innerValue);
+  }, [innerValue, resolvePathFromValue]);
+
   const resolvedMetaTreeNode = useMemo(() => {
     if (currentMetaTreeNode) return currentMetaTreeNode;
     if (Array.isArray(resolvedMetaTree)) {
-      const path = resolvePathFromValue?.(innerValue);
-      if (path) {
-        return findMetaTreeNodeByPath(resolvedMetaTree, path);
+      if (resolvedPath) {
+        return findMetaTreeNodeByPath(resolvedMetaTree, resolvedPath);
       }
     }
     return null;
-  }, [currentMetaTreeNode, innerValue, resolvedMetaTree, resolvePathFromValue]);
+  }, [currentMetaTreeNode, resolvedMetaTree, resolvedPath]);
 
   // 当 value 存在但 currentMetaTreeNode 还未恢复，尝试按路径逐级加载（支持 children 为函数的场景）
   useEffect(() => {
@@ -197,9 +200,25 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
   const ValueComponent = useMemo(() => {
     const Component = renderInputComponent?.(resolvedMetaTreeNode);
     const CustomComponent = resolvedMetaTreeNode?.render;
-    const finalComponent = isVariableValue(innerValue) ? VariableTag : Component || CustomComponent || Input;
+    // Some domains (workflow) persist variables as `{{$context...}}` rather than the core `{{ ctx... }}` form.
+    // When a custom converter recognizes such a value as a variable path, render VariableTag even if the path no longer
+    // exists in the current meta tree. VariableTag will then show either the resolved label or the parsing-failed state.
+    const shouldRenderVariableTag =
+      isVariableValue(innerValue) ||
+      (Array.isArray(resolvedPath) && resolvedPath.length > 0 && !Component && !CustomComponent);
+    const finalComponent = shouldRenderVariableTag ? VariableTag : Component || CustomComponent || Input;
     return finalComponent;
-  }, [renderInputComponent, resolvedMetaTreeNode, innerValue]);
+  }, [renderInputComponent, resolvedMetaTreeNode, innerValue, resolvedPath]);
+
+  const isVariableActive = useMemo(() => {
+    return (
+      isVariableValue(innerValue) ||
+      (Array.isArray(resolvedPath) &&
+        resolvedPath.length > 0 &&
+        !renderInputComponent?.(resolvedMetaTreeNode) &&
+        !resolvedMetaTreeNode?.render)
+    );
+  }, [innerValue, renderInputComponent, resolvedMetaTreeNode, resolvedPath]);
 
   useEffect(() => {
     if (!resolvedMetaTreeNode) return;
@@ -303,8 +322,11 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
       return {
         ...baseProps,
         onClear: handleClear,
+        disabled,
+        allowCustomTagInput: false,
         metaTreeNode: resolvedMetaTreeNode,
         metaTree,
+        resolvedPath,
         style: stableProps.style,
       };
     }
@@ -327,6 +349,7 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
     disabled,
     handleClear,
     resolvedMetaTreeNode,
+    resolvedPath,
     metaTree,
     ValueComponent,
     stableProps,
@@ -356,7 +379,7 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
       <FlowContextSelector
         metaTree={resolvedMetaTree}
         value={innerValue}
-        active={isVariableValue(innerValue)}
+        active={isVariableActive}
         disabled={disabled}
         onChange={handleVariableSelect}
         parseValueToPath={resolvePathFromValue}

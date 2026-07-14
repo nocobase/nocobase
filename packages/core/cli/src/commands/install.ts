@@ -774,7 +774,10 @@ export default class Install extends Command {
       type: 'text',
       message: installText('prompts.builtinDbImage.message'),
       placeholder: installText('prompts.builtinDbImage.placeholder'),
-      initialValue: (values) => defaultBuiltinDbImageForDialect(values.dbDialect),
+      initialValue: (values) =>
+        defaultBuiltinDbImageForDialect(values.dbDialect, {
+          registry: String(values.builtinDbImageRegistry ?? '').trim() || undefined,
+        }),
       hidden: (values) => !values.builtinDb || !supportsBuiltinDbDialect(values.dbDialect),
       required: true,
     },

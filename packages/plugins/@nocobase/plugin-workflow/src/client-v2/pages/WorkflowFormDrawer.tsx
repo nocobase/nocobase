@@ -27,6 +27,7 @@ export type WorkflowRecord = {
   sync?: boolean;
   description?: string;
   enabled?: boolean;
+  invalid?: boolean;
   config?: Record<string, any>;
   options?: Record<string, any>;
   categories?: Array<{ id: string | number }>;

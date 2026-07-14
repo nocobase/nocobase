@@ -55,32 +55,6 @@ calculators.register('lte', {
   group: 'boolean',
 });
 
-calculators.register('add', {
-  name: '+',
-  type: 'number',
-  group: 'number',
-});
-calculators.register('minus', {
-  name: '-',
-  type: 'number',
-  group: 'number',
-});
-calculators.register('multiple', {
-  name: '*',
-  type: 'number',
-  group: 'number',
-});
-calculators.register('divide', {
-  name: '/',
-  type: 'number',
-  group: 'number',
-});
-calculators.register('mod', {
-  name: '%',
-  type: 'number',
-  group: 'number',
-});
-
 calculators.register('includes', {
   name: '{{t("contains")}}',
   type: 'boolean',
@@ -109,11 +83,6 @@ calculators.register('endsWith', {
 calculators.register('notEndsWith', {
   name: '{{t("not ends with")}}',
   type: 'boolean',
-  group: 'string',
-});
-calculators.register('concat', {
-  name: `{{t("Concatenate", { ns: "${NAMESPACE}" })}}`,
-  type: 'string',
   group: 'string',
 });
 

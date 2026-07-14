@@ -258,6 +258,7 @@
   "Workflow": "Workflow",
   "Workflow title": "工作流名稱",
   "Workflow executed, the result status is <1>{{statusText}}</1><2>View the execution</2>": "Workflow executed, the result status is <1>{{statusText}}</1><2>View the execution</2>",
+  "Workflow was not triggered because the current request did not meet the trigger requirements.": "目前請求未滿足觸發要求，工作流未觸發。",
   "Workflow of execution is not existed": "Workflow of execution is not existed",
   "Workflow tasks": "Workflow tasks",
   "Workflow todos": "Workflow todos",

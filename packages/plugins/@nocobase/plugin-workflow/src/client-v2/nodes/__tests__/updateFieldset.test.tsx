@@ -78,8 +78,8 @@ vi.mock('../../components/collection', () => ({
 }));
 
 vi.mock('../../components/FilterDynamicComponent', () => ({
-  FilterDynamicComponent: ({ collection }: { collection?: string }) => (
-    <div data-testid="filter" data-collection={collection ?? ''} />
+  FilterDynamicComponent: ({ collection, disabled }: { collection?: string; disabled?: boolean }) => (
+    <div data-testid="filter" data-collection={collection ?? ''} data-disabled={String(Boolean(disabled))} />
   ),
 }));
 
@@ -226,6 +226,7 @@ describe('UpdateFieldset', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('assigned-fields')).toHaveAttribute('data-disabled', 'true');
+      expect(screen.getByTestId('filter')).toHaveAttribute('data-disabled', 'true');
     });
   });
 });

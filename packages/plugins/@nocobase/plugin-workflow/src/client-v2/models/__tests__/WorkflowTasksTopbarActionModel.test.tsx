@@ -7,39 +7,21 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TaskTypeOptions, WorkflowTaskRegistry } from '../../taskCenter';
 
 const holder = vi.hoisted(() => ({
   navigate: vi.fn(),
+  reload: vi.fn(),
   isMobileLayout: false,
   taskTypes: {
     getKeys: () => [],
     get: (_key: string) => undefined,
   } as WorkflowTaskRegistry,
-  eventBus: new EventTarget(),
-  resources: {
-    userWorkflowTasks: {
-      listMine: vi.fn(),
-    },
-  },
-}));
-
-const flowContext = vi.hoisted(() => ({
-  api: {
-    resource: (name: string) =>
-      (holder.resources as Record<string, { listMine?: ReturnType<typeof vi.fn> } | undefined>)[name] || {},
-  },
-  app: {
-    eventBus: holder.eventBus,
-    pm: {
-      get: () => ({
-        taskTypes: holder.taskTypes,
-      }),
-    },
-  },
+  counts: {},
+  total: 0,
 }));
 
 vi.mock('@nocobase/client-v2', () => ({
@@ -66,12 +48,39 @@ vi.mock('@nocobase/flow-engine', () => ({
   observer: (component: unknown) => component,
   tExpr: (key: string) => key,
   useFlowEngine: () => ({
-    context: flowContext,
+    context: {
+      api: {
+        resource: () => ({}),
+      },
+      app: {
+        eventBus: new EventTarget(),
+        pm: {
+          get: () => ({
+            taskTypes: holder.taskTypes,
+          }),
+        },
+      },
+    },
   }),
 }));
 
-vi.mock('../../locale', () => ({
-  tExpr: (key: string) => key,
+vi.mock('../../taskCenter', () => ({
+  getAvailableWorkflowTaskTypeKeys: (
+    taskTypes: WorkflowTaskRegistry | undefined,
+    counts: Record<string, { all?: number }>,
+  ) =>
+    taskTypes
+      ? Array.from(taskTypes.getKeys()).filter((key) => {
+          const type = taskTypes.get(key);
+          return Boolean(type?.alwaysShow || counts[key]?.all);
+        })
+      : [],
+  getWorkflowTaskRegistry: () => holder.taskTypes,
+  useWorkflowTaskCounts: () => ({
+    counts: holder.counts,
+    total: holder.total,
+    reload: holder.reload,
+  }),
 }));
 
 import { WorkflowTasksTopbarActionModel } from '../WorkflowTasksTopbarActionModel';
@@ -79,13 +88,15 @@ import { WorkflowTasksTopbarActionModel } from '../WorkflowTasksTopbarActionMode
 describe('WorkflowTasksTopbarActionModel', () => {
   beforeEach(() => {
     holder.navigate.mockClear();
+    holder.reload.mockReset();
+    holder.reload.mockResolvedValue(undefined);
     holder.isMobileLayout = false;
     holder.taskTypes = {
       getKeys: () => [],
       get: (_key: string) => undefined,
     };
-    holder.resources.userWorkflowTasks.listMine.mockReset();
-    holder.resources.userWorkflowTasks.listMine.mockResolvedValue({ data: [] });
+    holder.counts = {};
+    holder.total = 0;
   });
 
   it('does not render the workflow todos entry before task types are registered', () => {
@@ -98,7 +109,7 @@ describe('WorkflowTasksTopbarActionModel', () => {
     expect(screen.queryByTestId('workflow-tasks-button')).toBeNull();
   });
 
-  it('renders the workflow todos entry after a task type is registered', async () => {
+  it('renders the workflow todos entry after a task type is registered', () => {
     const taskType = {
       key: 'demo',
       title: 'Demo',
@@ -111,15 +122,25 @@ describe('WorkflowTasksTopbarActionModel', () => {
       getKeys: () => ['demo'],
       get: (key: string) => (key === 'demo' ? taskType : undefined),
     };
+    holder.total = 100;
     const ModelClass = WorkflowTasksTopbarActionModel as unknown as { new (): WorkflowTasksTopbarActionModel };
     const model = new ModelClass();
 
     render(<>{model.render()}</>);
 
     const button = screen.getByTestId('workflow-tasks-button');
-    await waitFor(() => expect(holder.resources.userWorkflowTasks.listMine).toHaveBeenCalledTimes(1));
+    const badge = button.querySelector('.ant-badge-count');
+
+    expect(badge).toHaveClass('ant-badge-count-sm');
+    expect(badge).toHaveStyle({
+      fontSize: '8px',
+      height: '10px',
+      lineHeight: '10px',
+    });
+
     fireEvent.click(button);
 
+    expect(holder.reload).toHaveBeenCalled();
     expect(holder.navigate).toHaveBeenCalledWith('/admin/workflow/tasks');
   });
 });

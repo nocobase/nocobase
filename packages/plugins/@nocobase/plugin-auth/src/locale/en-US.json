@@ -13,6 +13,7 @@
   "Days": "Days",
   "Email channel not found": "Email channel not found",
   "Enable forget password": "Enable forget password",
+  "Failed to load authenticator": "Failed to load authenticator",
   "Expired token refresh limit": "Expired token refresh limit",
   "Forgot password": "Forgot password",
   "Go to login": "Go to login",
