@@ -34,10 +34,6 @@ type AuthTypeOption = { name: string; title?: string };
 
 const AUTHENTICATOR_LIST_FIELDS = ['id', 'name', 'authType', 'title', 'description', 'enabled'];
 
-type AuthenticatorDetailResource = {
-  get: (options: { filterByTk: AuthenticatorRecord['id'] }) => Promise<{ data?: unknown }>;
-};
-
 function recursiveTrim(value: any): any {
   if (typeof value === 'string') return value.trim();
   if (Array.isArray(value)) return value.map(recursiveTrim);
@@ -67,7 +63,7 @@ function useAuthTypesFromServer() {
 }
 
 export async function loadAuthenticatorForEdit(
-  resource: AuthenticatorDetailResource,
+  resource: ReturnType<typeof useAuthenticatorsResource>,
   record: AuthenticatorRecord,
 ): Promise<AuthenticatorRecord> {
   const response = await resource.get({ filterByTk: record.id });
@@ -267,7 +263,7 @@ export default function AuthenticatorsPage() {
   const { token } = theme.useToken();
   const { modal, message } = App.useApp();
   const resource = useAuthenticatorsResource();
-  const plugin = ctx.app.pm.get(PluginAuthClientV2);
+  const plugin = ctx.app.pm.get('@nocobase/plugin-auth') as PluginAuthClientV2;
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
