@@ -289,6 +289,11 @@
       },
       {
         "type": "custom-link",
+        "label": "Automatización de la investigación de antecedentes de empresas",
+        "link": "/ai-employees/scenarios/company-background-research"
+      },
+      {
+        "type": "custom-link",
         "label": "Viz: Configuración de escenario CRM",
         "link": "/ai-employees/scenarios/viz-crm"
       },
