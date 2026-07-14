@@ -27,9 +27,10 @@ import {
 } from '@nocobase/plugin-workflow/client-v2';
 import { useNotificationTranslation } from '../../locale';
 
-type UserOption = { id: number | string; nickname?: string };
+type UserOption = { id: number; nickname?: string };
+type ReceiverScalarValue = number | string;
 type ReceiverQueryValue = { filter?: Record<string, unknown> };
-type ReceiverValue = string | ReceiverQueryValue;
+type ReceiverValue = ReceiverScalarValue | ReceiverQueryValue;
 type UsersListResponse = { data?: { data?: UserOption[] } };
 type MetaNodeTooltipOptions = { tooltip?: React.ReactNode };
 
@@ -67,7 +68,7 @@ function formatWorkflowPathToValue(item?: MetaTreeNode) {
   return path.length ? `{{${path.join('.')}}}` : '';
 }
 
-function parseWorkflowValueToPath(value?: string) {
+function parseWorkflowValueToPath(value?: ReceiverScalarValue | null) {
   if (typeof value !== 'string') {
     return undefined;
   }
@@ -111,20 +112,21 @@ function normalizeWorkflowVariableOptions(options: MetaTreeNode[], t: (key: stri
   ].filter(Boolean) as MetaTreeNode[];
 }
 
-function UserPickerInput(props: { value?: string; onChange?: (next: string) => void }) {
+function UserPickerInput(props: { value?: ReceiverScalarValue; onChange?: (next: ReceiverScalarValue) => void }) {
   const { value, onChange } = props;
   const ctx = useFlowContext();
+  const normalizedValue = typeof value === 'string' && /^\d+$/.test(value) ? Number(value) : value;
 
   return (
-    <RemoteSelect<UserOption>
-      value={value}
-      onChange={(next) => onChange?.(next == null ? '' : String(next))}
+    <RemoteSelect<UserOption, UserOption[], ReceiverScalarValue>
+      value={normalizedValue}
+      onChange={(next) => onChange?.(next == null ? '' : next)}
       request={async () => {
         const response = await ctx.api.resource('users').list();
         const payload = (response as UsersListResponse)?.data?.data;
         return Array.isArray(payload) ? payload : [];
       }}
-      mapOptions={(item) => ({ label: item.nickname || String(item.id), value: String(item.id) })}
+      mapOptions={(item) => ({ label: item.nickname || String(item.id), value: item.id })}
       style={{ width: '100%' }}
     />
   );
@@ -132,15 +134,16 @@ function UserPickerInput(props: { value?: string; onChange?: (next: string) => v
 
 function WorkflowUserVariableInput(props: {
   metaTree: MetaTreeNode[];
-  onChange?: (next: string) => void;
+  onChange?: (next: ReceiverScalarValue) => void;
   translate: (key: string) => string;
-  value?: string | null;
+  value?: ReceiverScalarValue | null;
 }) {
   const { metaTree, onChange, translate, value } = props;
   const { token } = theme.useToken();
   const { resolvedMetaTree } = useResolvedMetaTree(metaTree);
   const [updateFlag, setUpdateFlag] = useState(0);
-  const selectedPath = useMemo(() => parseWorkflowValueToPath(value ?? '') ?? ['constant'], [value]);
+  const variableValue = typeof value === 'string' ? value : '';
+  const selectedPath = useMemo(() => parseWorkflowValueToPath(value) ?? ['constant'], [value]);
   const isVariableValue = selectedPath[0] !== 'constant';
 
   const renderTooltipIcon = useMemoizedFn((title: React.ReactNode, label: React.ReactNode) => {
@@ -227,7 +230,7 @@ function WorkflowUserVariableInput(props: {
 
   const valueNode = isVariableValue ? (
     <WorkflowVariableTag
-      value={value ?? ''}
+      value={variableValue}
       onClear={() => onChange?.('')}
       metaTree={resolvedMetaTree ?? metaTree}
       style={{ width: '100%', minWidth: 0 }}
@@ -251,7 +254,10 @@ function WorkflowUserVariableInput(props: {
   );
 }
 
-function WorkflowUserSelectInput(props: { value?: string | null; onChange?: (next: string) => void }) {
+function WorkflowUserSelectInput(props: {
+  value?: ReceiverScalarValue | null;
+  onChange?: (next: ReceiverScalarValue) => void;
+}) {
   const { value, onChange } = props;
   const { t } = useNotificationTranslation();
   const ctx = useFlowContext();
@@ -312,7 +318,10 @@ export function UserSelect(props: UserSelectProps) {
   }
 
   return (
-    <WorkflowUserSelectInput value={typeof props.value === 'string' ? props.value : ''} onChange={props.onChange} />
+    <WorkflowUserSelectInput
+      value={typeof props.value === 'string' || typeof props.value === 'number' ? props.value : ''}
+      onChange={props.onChange}
+    />
   );
 }
 

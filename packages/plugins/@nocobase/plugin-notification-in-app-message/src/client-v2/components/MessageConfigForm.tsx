@@ -22,7 +22,7 @@ function withPrefix(namePrefix: Array<string | number> | undefined, ...segments:
   return [...(namePrefix ?? []), ...segments];
 }
 
-type ReceiverValue = string | { filter?: Record<string, unknown> };
+type ReceiverValue = number | string | { filter?: Record<string, unknown> };
 type SortableReceiverRowContextValue = {
   attributes?: DraggableAttributes;
   listeners?: DraggableSyntheticListeners;

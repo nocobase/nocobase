@@ -107,6 +107,64 @@ describe('UserSelect', () => {
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
   });
 
+  it('returns the numeric user id when selecting a constant receiver', async () => {
+    const onChange = vi.fn();
+    holder.ctx = {
+      api: {
+        resource: () => ({
+          list: vi.fn().mockResolvedValue({
+            data: {
+              data: [{ id: 1, nickname: 'Demo user' }],
+            },
+          }),
+        }),
+      },
+    };
+
+    render(<UserSelect value="" onChange={onChange} />);
+
+    fireEvent.mouseDown(await screen.findByRole('combobox'));
+    fireEvent.click(await screen.findByText('Demo user'));
+
+    expect(onChange).toHaveBeenLastCalledWith(1);
+  });
+
+  it('renders a saved numeric user id as the selected receiver', async () => {
+    holder.ctx = {
+      api: {
+        resource: () => ({
+          list: vi.fn().mockResolvedValue({
+            data: {
+              data: [{ id: 1, nickname: 'Demo user' }],
+            },
+          }),
+        }),
+      },
+    };
+
+    render(<UserSelect value={1} onChange={() => undefined} />);
+
+    expect(await screen.findByText('Demo user')).toBeInTheDocument();
+  });
+
+  it('renders a saved string user id as the selected receiver', async () => {
+    holder.ctx = {
+      api: {
+        resource: () => ({
+          list: vi.fn().mockResolvedValue({
+            data: {
+              data: [{ id: 1, nickname: 'Demo user' }],
+            },
+          }),
+        }),
+      },
+    };
+
+    render(<UserSelect value="1" onChange={() => undefined} />);
+
+    expect(await screen.findByText('Demo user')).toBeInTheDocument();
+  });
+
   it('restricts workflow receiver variables to user id fields', async () => {
     holder.ctx = {
       api: {

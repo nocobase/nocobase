@@ -33,16 +33,16 @@ afterEach(() => {
 });
 
 describe('RecipientsInput', () => {
-  it('normalizes numeric user ids for the v2 user selector and preserves them when echoed back', () => {
+  it('passes numeric user ids through the shared user selector', () => {
     const onChange = vi.fn();
     const value = [1, { filter: { $and: [] } }];
 
     render(<RecipientsInput value={value} onChange={onChange} />);
 
-    expect(holder.userSelect).toHaveBeenNthCalledWith(1, expect.objectContaining({ value: '1' }));
+    expect(holder.userSelect).toHaveBeenNthCalledWith(1, expect.objectContaining({ value: 1 }));
     expect(holder.userSelect).toHaveBeenNthCalledWith(2, expect.objectContaining({ value: value[1] }));
 
-    holder.userSelect.mock.calls[0][0].onChange('1');
+    holder.userSelect.mock.calls[0][0].onChange(1);
     expect(onChange).toHaveBeenLastCalledWith([1, value[1]]);
   });
 

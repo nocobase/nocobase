@@ -23,25 +23,14 @@ export interface RecipientsInputProps {
   value?: RecipientValue[];
 }
 
-function normalizeValue(item: RecipientValue): string | { filter?: Record<string, unknown> } {
-  return typeof item === 'number' ? String(item) : item;
-}
-
-function preserveValue(next: string | { filter?: Record<string, unknown> }, previous?: RecipientValue): RecipientValue {
-  if (typeof previous === 'number' && next === String(previous)) {
-    return previous;
-  }
-  return next;
-}
-
 function RecipientsAddition({
   disabled,
   onChange,
   value = [],
 }: {
   disabled?: boolean;
-  onChange?: (value: Array<string | { filter?: Record<string, unknown> }>) => void;
-  value?: Array<string | { filter?: Record<string, unknown> }>;
+  onChange?: (value: RecipientValue[]) => void;
+  value?: RecipientValue[];
 }) {
   const t = useT();
   const [open, setOpen] = useState(false);
@@ -121,7 +110,7 @@ function RecipientRow({
         type="text"
       />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <UserSelect value={normalizeValue(item)} onChange={(next) => onUpdate(preserveValue(next, item))} />
+        <UserSelect value={item} onChange={onUpdate} />
       </div>
       {disabled ? null : (
         <>
@@ -177,8 +166,8 @@ export function RecipientsInput({ disabled, onChange, value = [] }: RecipientsIn
   const update = useMemoizedFn((index: number, next: RecipientValue) => {
     onChange?.(value.map((item, currentIndex) => (currentIndex === index ? next : item)));
   });
-  const updateAll = useMemoizedFn((nextValue: Array<string | { filter?: Record<string, unknown> }>) => {
-    onChange?.(nextValue.map((item, index) => preserveValue(item, value[index])));
+  const updateAll = useMemoizedFn((nextValue: RecipientValue[]) => {
+    onChange?.(nextValue);
   });
   const remove = useMemoizedFn((index: number) => {
     onChange?.(value.filter((_item, currentIndex) => currentIndex !== index));
@@ -209,7 +198,7 @@ export function RecipientsInput({ disabled, onChange, value = [] }: RecipientsIn
           ))}
         </Flex>
       ) : null}
-      <RecipientsAddition value={value.map(normalizeValue)} onChange={updateAll} disabled={disabled} />
+      <RecipientsAddition value={value} onChange={updateAll} disabled={disabled} />
     </Flex>
   );
 }

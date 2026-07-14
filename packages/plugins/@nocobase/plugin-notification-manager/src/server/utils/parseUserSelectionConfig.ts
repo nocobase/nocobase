@@ -9,11 +9,11 @@
 
 import { Repository } from '@nocobase/database';
 export async function parseUserSelectionConfig(
-  userSelectionConfig: Array<Record<any, any> | string>,
+  userSelectionConfig: Array<Record<any, any> | number | string>,
   UserRepo: Repository,
 ) {
   const SelectionConfigs = userSelectionConfig.flat().filter(Boolean);
-  const users = new Set<string>();
+  const users = new Set<number | string>();
   for (const item of SelectionConfigs) {
     if (typeof item === 'object') {
       const result = await UserRepo.find({
