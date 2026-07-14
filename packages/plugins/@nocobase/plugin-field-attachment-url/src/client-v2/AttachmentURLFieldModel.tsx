@@ -12,12 +12,15 @@ import { css } from '@emotion/css';
 import { Upload } from '@formily/antd-v5';
 import { FieldContext, useField } from '@formily/react';
 import { DisplayItemModel, EditableItemModel } from '@nocobase/flow-engine';
-import { getPreviewThumbnailUrl, matchMimetype, UploadFieldModel } from '@nocobase/plugin-file-manager/client-v2';
+import {
+  getPermanentFilePreviewUrl,
+  getPreviewThumbnailUrl,
+  matchMimetype,
+  UploadFieldModel,
+} from '@nocobase/plugin-file-manager/client-v2';
 import { castArray } from 'lodash';
 import React, { useEffect, useState } from 'react';
 import { tExpr } from './locale';
-
-const FILE_ACCESS_SEGMENT = 'files';
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === 'object' && !Array.isArray(value);
@@ -31,33 +34,7 @@ const getResponseFileRecord = (response: unknown) => {
   return ['id', 'url', 'preview', 'filename', 'extname', 'mimetype'].some((key) => key in candidate) ? candidate : null;
 };
 
-export const getPermanentFilePreviewUrl = (value?: string) => {
-  if (!value) {
-    return '';
-  }
-
-  try {
-    const url = new URL(value, typeof window === 'undefined' ? 'http://localhost' : window.location.href);
-    const segments = url.pathname.split('/').filter(Boolean);
-    const filesIndex = segments.indexOf(FILE_ACCESS_SEGMENT);
-    if (filesIndex === -1) {
-      return '';
-    }
-    const filePathSegments = segments.length - filesIndex;
-    if (filePathSegments !== 5) {
-      return '';
-    }
-    if (url.searchParams.has('temporaryAccessToken')) {
-      return '';
-    }
-    url.searchParams.set('preview', '1');
-    return value.startsWith('http://') || value.startsWith('https://')
-      ? url.href
-      : `${url.pathname}${url.search}${url.hash}`;
-  } catch (error) {
-    return '';
-  }
-};
+export { getPermanentFilePreviewUrl };
 
 export const normalizeAttachmentURLFile = (file: any) => {
   if (typeof file === 'string') {

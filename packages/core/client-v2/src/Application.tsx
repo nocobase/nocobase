@@ -34,6 +34,17 @@ export interface ApplicationOptions extends BaseApplicationOptions<PluginType> {
   router?: RouterOptions;
 }
 
+function isSameOriginApiBaseURL(baseURL?: unknown) {
+  if (typeof window === 'undefined' || typeof baseURL !== 'string' || !baseURL) {
+    return true;
+  }
+  try {
+    return new URL(baseURL, window.location.href).origin === window.location.origin;
+  } catch (error) {
+    return true;
+  }
+}
+
 export class Application extends BaseApplication<
   ApplicationOptions,
   PluginManager,
@@ -45,7 +56,9 @@ export class Application extends BaseApplication<
   public hasLoadError = false;
 
   protected createApiClient(options: ApplicationOptions) {
+    const apiClientOptions = options.apiClient && typeof options.apiClient !== 'function' ? options.apiClient : {};
     return new APIClient({
+      withCredentials: isSameOriginApiBaseURL(apiClientOptions.baseURL),
       ...options.apiClient,
       appName: options.name || getSubAppName(options.publicPath),
     });

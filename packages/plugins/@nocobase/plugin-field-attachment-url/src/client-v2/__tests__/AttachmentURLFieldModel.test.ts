@@ -47,6 +47,17 @@ describe('AttachmentURLFieldModel', () => {
     expect(getPermanentFilePreviewUrl('/files/main/main/t_n6fvrknhqjr/24?temporaryAccessToken=signed')).toBe('');
   });
 
+  it('does not treat external /files/ URLs as permanent file URLs', () => {
+    const url = 'https://cdn.example.com/files/main/main/t_n6fvrknhqjr/24.jpg';
+
+    expect(getPermanentFilePreviewUrl(url)).toBe('');
+    expect(normalizeAttachmentURLFile(url)).toMatchObject({
+      uid: url,
+      url,
+    });
+    expect(normalizeAttachmentURLFile(url).preview).toBeUndefined();
+  });
+
   it('merges uploaded response metadata into the Upload file item', () => {
     const file = normalizeAttachmentURLFile({
       status: 'done',

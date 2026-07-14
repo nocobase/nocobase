@@ -117,10 +117,7 @@ export class APIClient {
       this.shareToken = shareToken;
       this.baseStoragePrefix = storagePrefix;
       this.storagePrefix = appName ? `${storagePrefix}${appName.toUpperCase()}_` : storagePrefix;
-      this.axios = axios.create({
-        withCredentials: true,
-        ...others,
-      });
+      this.axios = axios.create(others);
       this.initStorage(storageClass, storageType);
       if (authClass) {
         this.auth = new authClass(this);

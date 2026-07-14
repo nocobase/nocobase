@@ -199,7 +199,22 @@ export class AuthManager {
         return next();
       }
 
-      const user = await ctx.auth.check();
+      let user;
+      try {
+        user = await ctx.auth.check();
+      } catch (err) {
+        if (
+          ctx.state?.optionalAuth === true &&
+          ctx.state?.pendingAuthTokenSource === 'cookie' &&
+          (err.status === 401 || err.statusCode === 401)
+        ) {
+          ctx.state.currentUser = undefined;
+          ctx.state.authTokenSource = undefined;
+          ctx.state.pendingAuthTokenSource = undefined;
+          return next();
+        }
+        throw err;
+      }
       if (user) {
         ctx.auth.user = user;
       }

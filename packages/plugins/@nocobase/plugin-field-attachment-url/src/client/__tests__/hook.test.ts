@@ -45,6 +45,13 @@ describe('attachment url hook helpers', () => {
     expect(normalizeAttachmentUrlValue('https://example.com/report.xlsx')).toBe('https://example.com/report.xlsx');
   });
 
+  it('does not treat external /files/ URLs as permanent file URLs', () => {
+    const url = 'https://cdn.example.com/files/main/main/t_n6fvrknhqjr/24.jpg';
+
+    expect(getPermanentFilePreviewUrl(url)).toBe('');
+    expect(normalizeAttachmentUrlValue(url)).toBe(url);
+  });
+
   it('reuses uploaded metadata when the saved field value is written back as a URL string', () => {
     const fileMetaByUrl = new Map<string, Record<string, unknown>>();
     fileMetaByUrl.set('/files/main/main/t_n6fvrknhqjr/24', {

@@ -42,7 +42,9 @@ export { AttachmentFieldInterface } from './interfaces/attachment';
 // to add custom preview handlers under v2 without going through the v1 `@nocobase/plugin-file-manager/client` entry.
 export {
   filePreviewTypes,
+  getPermanentFilePreviewUrl,
   getPreviewThumbnailUrl,
+  isPermanentFileUrl,
   matchMimetype,
   wrapWithModalPreviewer,
 } from './previewer/filePreviewTypes';

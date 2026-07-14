@@ -93,6 +93,15 @@ describe('api-client', () => {
     expect(response.data).toMatchObject({
       data: { id: 1, name: 'John Smith' },
     });
+    expect(api.axios.defaults.withCredentials).toBeUndefined();
+  });
+
+  test('respects explicit credentials option', async () => {
+    const api = new APIClient({
+      baseURL: 'https://localhost:8000/api',
+      withCredentials: true,
+    });
+
     expect(api.axios.defaults.withCredentials).toBe(true);
   });
 

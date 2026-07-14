@@ -1162,10 +1162,11 @@ describe('file manager > server', () => {
         expect(response.headers.location).toBe(await plugin.getFileURL(body.data));
       });
 
-      it('returns 401 with an invalid cookie token', async () => {
+      it('treats an invalid cookie token as anonymous for optional file access', async () => {
         const { body } = await agent.resource('attachments').create({
           [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
         });
+        enableFileAccessACL(app);
 
         const response = await app
           .agent()
@@ -1175,7 +1176,31 @@ describe('file manager > server', () => {
             `${getAuthCookieName('authenticator', app.name)}=basic`,
           ]);
 
-        expect(response.status).toBe(401);
+        expect(response.status).toBe(403);
+      });
+
+      it('allows file access authorizers when an optional file request has an invalid login cookie', async () => {
+        const { body } = await agent.resource('attachments').create({
+          [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
+        });
+        enableFileAccessACL(app);
+        plugin.registerFileAccessAuthorizer({
+          name: 'public-form-like-authorizer',
+          authorize: async (_ctx, params) =>
+            params.collectionName === 'attachments' && params.id === String(body.data.id),
+        });
+
+        const response = await app
+          .agent()
+          .get(body.data.url)
+          .set('Cookie', [
+            `${getAuthCookieName('authToken', app.name)}=invalid-token`,
+            `${getAuthCookieName('authenticator', app.name)}=basic`,
+            'nb_pf_test=signed-public-form-cookie',
+          ]);
+
+        expect(response.status).toBe(302);
+        expect(response.headers.location).toBe(await plugin.getFileURL(body.data));
       });
 
       it('returns 403 when role cannot view attachments', async () => {

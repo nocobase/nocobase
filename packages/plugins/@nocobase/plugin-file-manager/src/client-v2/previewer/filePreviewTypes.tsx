@@ -28,10 +28,16 @@ import type { DocumentInitParameters } from 'pdfjs-dist/types/src/display/api';
 import { NAMESPACE } from '../../common/constants';
 
 type NocoBaseWindow = Window & {
+  __nocobase_api_base_url__?: string;
   __nocobase_modern_client_prefix__?: string;
   __nocobase_public_path__?: string;
   __webpack_public_path__?: string;
 };
+
+const FILE_ACCESS_SEGMENT = 'files';
+const IDENTIFIER_PATTERN = /^[A-Za-z0-9_][A-Za-z0-9_-]*$/;
+const ABSOLUTE_URL_PATTERN = /^[a-z][a-z\d+.-]*:/i;
+const PROTOCOL_RELATIVE_URL_PATTERN = /^\/\//;
 
 const withPublicPath = (path: string) => {
   const browserWindow = typeof window === 'undefined' ? undefined : (window as NocoBaseWindow);
@@ -407,38 +413,102 @@ export const isSameOriginUrl = (url?: string) => {
   }
 };
 
-const isPermanentFileUrl = (url: URL) => {
-  const publicPath = new URL(
-    (window as NocoBaseWindow).__nocobase_public_path__ || '/',
-    window.location.href,
-  ).pathname.replace(/\/+$/g, '');
-  const filesPath = `${publicPath}/files`;
+const isRelativeUrlInput = (value?: string) => {
+  return !!value && !ABSOLUTE_URL_PATTERN.test(value) && !PROTOCOL_RELATIVE_URL_PATTERN.test(value);
+};
+
+const getBrowserWindow = () => (typeof window === 'undefined' ? undefined : (window as NocoBaseWindow));
+
+const getCurrentOrigin = () => {
+  const browserWindow = getBrowserWindow();
+  return browserWindow?.location?.origin;
+};
+
+const getTrustedApiOrigin = () => {
+  const browserWindow = getBrowserWindow();
+  const apiBaseURL = browserWindow?.__nocobase_api_base_url__;
+  if (!apiBaseURL) {
+    return undefined;
+  }
+  try {
+    return new URL(apiBaseURL, browserWindow.location.href).origin;
+  } catch (error) {
+    return undefined;
+  }
+};
+
+const getPublicPathname = () => {
+  const browserWindow = getBrowserWindow();
+  const href = browserWindow?.location?.href || 'http://localhost/';
+  return new URL(browserWindow?.__nocobase_public_path__ || '/', href).pathname.replace(/\/+$/g, '');
+};
+
+const stripPublicPath = (pathname: string) => {
+  const publicPath = getPublicPathname();
+  if (publicPath && publicPath !== '/' && (pathname === publicPath || pathname.startsWith(`${publicPath}/`))) {
+    return pathname.slice(publicPath.length) || '/';
+  }
+  return pathname;
+};
+
+const hasTrustedFileUrlOrigin = (url: URL, source?: string) => {
+  if (isRelativeUrlInput(source)) {
+    return true;
+  }
+  const currentOrigin = getCurrentOrigin();
+  const trustedApiOrigin = getTrustedApiOrigin();
+  return (!!currentOrigin && url.origin === currentOrigin) || (!!trustedApiOrigin && url.origin === trustedApiOrigin);
+};
+
+const isIdentifierSegment = (segment: string) => {
+  try {
+    return IDENTIFIER_PATTERN.test(decodeURIComponent(segment));
+  } catch (error) {
+    return false;
+  }
+};
+
+const hasPermanentFilePath = (pathname: string) => {
+  const segments = stripPublicPath(pathname).split('/').filter(Boolean);
   return (
-    url.pathname === '/files' ||
-    url.pathname.startsWith('/files/') ||
-    url.pathname === filesPath ||
-    url.pathname.startsWith(`${filesPath}/`) ||
-    url.pathname.includes('/files/')
+    segments.length === 5 &&
+    segments[0] === FILE_ACCESS_SEGMENT &&
+    isIdentifierSegment(segments[1]) &&
+    isIdentifierSegment(segments[2]) &&
+    isIdentifierSegment(segments[3]) &&
+    !!segments[4]
   );
 };
 
-const getPermanentFilePreviewUrl = (value?: string) => {
+export const isPermanentFileUrl = (value: string | URL) => {
+  const source = typeof value === 'string' ? value : undefined;
+  const href = getBrowserWindow()?.location?.href || 'http://localhost/';
+  try {
+    const url = value instanceof URL ? value : new URL(value, href);
+    return hasTrustedFileUrlOrigin(url, source) && hasPermanentFilePath(url.pathname);
+  } catch (error) {
+    return false;
+  }
+};
+
+const formatUrlLikeInput = (url: URL, source: string) => {
+  if (!isRelativeUrlInput(source)) {
+    return url.toString();
+  }
+  return `${url.pathname}${url.search}${url.hash}`;
+};
+
+export const getPermanentFilePreviewUrl = (value?: string) => {
   if (!value || typeof window === 'undefined') {
     return '';
   }
   try {
     const url = new URL(value, window.location.href);
-    if (!isPermanentFileUrl(url)) {
-      return '';
-    }
-    const segments = url.pathname.split('/').filter(Boolean);
-    const filesIndex = segments.indexOf('files');
-    const filePathSegments = segments.length - filesIndex;
-    if (filesIndex === -1 || filePathSegments !== 5 || url.searchParams.has('temporaryAccessToken')) {
+    if (!isPermanentFileUrl(value) || url.searchParams.has('temporaryAccessToken')) {
       return '';
     }
     url.searchParams.set('preview', '1');
-    return url.toString();
+    return formatUrlLikeInput(url, value);
   } catch (error) {
     return '';
   }
@@ -454,7 +524,7 @@ export const getFileFetchCredentials = (url: string | URL): RequestCredentials =
     if (target.origin === window.location.origin) {
       return 'include';
     }
-    if (target.hostname === window.location.hostname && isPermanentFileUrl(target)) {
+    if (isPermanentFileUrl(target)) {
       return 'include';
     }
   } catch (error) {
@@ -468,7 +538,7 @@ export const triggerFileDownload = (url: string, filename: string) => {
   let downloadUrl = url;
   try {
     const target = new URL(url, window.location.href);
-    if (isPermanentFileUrl(target)) {
+    if (isPermanentFileUrl(url)) {
       target.searchParams.set('download', '1');
       downloadUrl = /^[a-z][a-z\d+.-]*:/i.test(url)
         ? target.toString()

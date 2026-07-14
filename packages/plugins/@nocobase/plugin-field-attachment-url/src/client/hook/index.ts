@@ -9,42 +9,14 @@
 
 import { useFieldSchema, useField } from '@formily/react';
 import { matchMimetype, useCollectionField, useDataSourceKey, useDesignable, useRequest } from '@nocobase/client';
+import { getPermanentFilePreviewUrl } from '@nocobase/plugin-file-manager/client-v2';
 import { cloneDeep, uniqBy } from 'lodash';
 import { useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
-const FILE_ACCESS_SEGMENT = 'files';
-
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === 'object' && !Array.isArray(value);
-
-export const getPermanentFilePreviewUrl = (value?: string) => {
-  if (!value) {
-    return '';
-  }
-
-  try {
-    const url = new URL(value, typeof window === 'undefined' ? 'http://localhost' : window.location.href);
-    const segments = url.pathname.split('/').filter(Boolean);
-    const filesIndex = segments.indexOf(FILE_ACCESS_SEGMENT);
-    if (filesIndex === -1) {
-      return '';
-    }
-    const filePathSegments = segments.length - filesIndex;
-    if (filePathSegments !== 5) {
-      return '';
-    }
-    if (url.searchParams.has('temporaryAccessToken')) {
-      return '';
-    }
-    url.searchParams.set('preview', '1');
-    return value.startsWith('http://') || value.startsWith('https://')
-      ? url.href
-      : `${url.pathname}${url.search}${url.hash}`;
-  } catch (error) {
-    return '';
-  }
-};
+export { getPermanentFilePreviewUrl };
 
 const getResponseFileRecord = (response: unknown) => {
   if (!isPlainObject(response)) {

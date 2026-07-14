@@ -16,6 +16,7 @@ import {
   getPdfPreviewApiSrc,
   getPdfPreviewResourceOptions,
   getPdfPreviewWorkerSrc,
+  getPermanentFilePreviewUrl,
   getPreviewThumbnailUrl,
   getPreviewFileUrl,
   isActiveContentFile,
@@ -32,6 +33,7 @@ const originalRevokeObjectURL = URL.revokeObjectURL;
 describe('getDownloadFileName', () => {
   afterEach(() => {
     delete window.__webpack_public_path__;
+    delete window['__nocobase_api_base_url__'];
     delete window.__nocobase_public_path__;
     delete window.__nocobase_modern_client_prefix__;
     delete window['__nocobase_dev_public_path__'];
@@ -127,6 +129,18 @@ describe('getDownloadFileName', () => {
         preview: '/files/main/main/attachments/1?preview=1',
       }),
     ).toBe('/files/main/main/attachments/1?preview=1');
+  });
+
+  it('外部 /files/ 地址不应被当作永久文件地址追加预览参数', () => {
+    expect(getPermanentFilePreviewUrl('https://cdn.example.com/files/main/main/attachments/1.png')).toBe('');
+  });
+
+  it('显式配置的 API origin 下的永久文件地址应追加预览参数', () => {
+    window['__nocobase_api_base_url__'] = 'https://api.example.com/api/';
+
+    expect(getPermanentFilePreviewUrl('https://api.example.com/files/main/main/attachments/1.png')).toBe(
+      'https://api.example.com/files/main/main/attachments/1.png?preview=1',
+    );
   });
 
   it('上传项应根据 response 中的文件元数据生成图片缩略图', () => {
@@ -251,20 +265,27 @@ describe('getDownloadFileName', () => {
     expect(shouldUsePdfJsPreview('https://files.example.com/storage/uploads/report.pdf')).toBe(false);
   });
 
-  it('同 host 跨端口的永久文件地址 fetch 应带 cookie', () => {
+  it('只有同源文件地址 fetch 才应带 cookie', () => {
     expect(getFileFetchCredentials('/files/main/main/attachments/1')).toBe('include');
     expect(
       getFileFetchCredentials(`${window.location.protocol}//${window.location.hostname}:14000/files/main/main/1`),
-    ).toBe('include');
+    ).toBe('same-origin');
     expect(
       getFileFetchCredentials(
         `${window.location.protocol}//${window.location.hostname}:14000/nocobase/files/main/main/1`,
       ),
-    ).toBe('include');
+    ).toBe('same-origin');
     expect(getFileFetchCredentials(`${window.location.protocol}//${window.location.hostname}:14000/storage/1`)).toBe(
       'same-origin',
     );
     expect(getFileFetchCredentials('https://files.example.com/files/main/main/1')).toBe('same-origin');
+  });
+
+  it('显式配置的 API origin 下的永久文件地址 fetch 应带 cookie', () => {
+    window['__nocobase_api_base_url__'] = 'https://api.example.com/api/';
+
+    expect(getFileFetchCredentials('https://api.example.com/files/main/main/attachments/1')).toBe('include');
+    expect(getFileFetchCredentials('https://cdn.example.com/files/main/main/attachments/1')).toBe('same-origin');
   });
 
   it('应通过浏览器原生链接下载永久文件 URL', () => {
@@ -278,6 +299,18 @@ describe('getDownloadFileName', () => {
     expect(link.download).toBe('report.pdf');
     expect(link.rel).toBe('noopener noreferrer');
     expect(document.body.contains(link)).toBe(false);
+    click.mockRestore();
+  });
+
+  it('下载外部 /files/ 地址时不应追加永久文件参数', () => {
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+
+    triggerFileDownload('https://cdn.example.com/files/main/main/attachments/1.png', '1.png');
+
+    expect(click).toHaveBeenCalledOnce();
+    const link = click.mock.instances[0];
+    expect(link.getAttribute('href')).toBe('https://cdn.example.com/files/main/main/attachments/1.png');
+    expect(link.download).toBe('1.png');
     click.mockRestore();
   });
 
