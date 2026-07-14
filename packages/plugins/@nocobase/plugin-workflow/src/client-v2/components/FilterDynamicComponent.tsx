@@ -16,6 +16,7 @@ import {
   reaction,
   toJS,
   useFlowEngine,
+  type Converters,
   type MetaTreeNode,
 } from '@nocobase/flow-engine';
 import { useMemoizedFn } from 'ahooks';
@@ -23,6 +24,7 @@ import { ConfigProvider } from 'antd';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { removeInvalidFilterItems, type FilterGroupType } from '@nocobase/utils/client';
 import { useWorkflowVariableOptions } from '../canvas/useWorkflowVariableOptions';
+import { formatWorkflowPathToValue, parseWorkflowValueToPath } from '../canvas/workflowVariableConverters';
 import { useT } from '../locale';
 import { getCollection } from './collection/utils';
 
@@ -36,9 +38,6 @@ type FilterGroupValue = {
 function createEmptyGroup(): FilterGroupType {
   return { logic: '$and', items: [] };
 }
-
-const WORKFLOW_VARIABLE_REGEXP = /^\{\{\s*([^{}]+?)\s*\}\}$/;
-const CTX_WORKFLOW_VARIABLE_REGEXP = /^\{\{\s*ctx\.(\$[^{}]+?)\s*\}\}$/;
 
 const dateRangeVariableKeys = [
   'yesterday',
@@ -88,27 +87,10 @@ const dateRangeVariableTitles: Record<(typeof dateRangeVariableKeys)[number], st
   next90Days: 'Next 90 days',
 };
 
-function toVariableFilterValue(value: unknown): unknown {
-  if (typeof value !== 'string') {
-    return value;
-  }
-  const match = value.trim().match(WORKFLOW_VARIABLE_REGEXP);
-  if (!match || match[1].startsWith('ctx.')) {
-    return value;
-  }
-  return `{{ ctx.${match[1]} }}`;
-}
-
-function toWorkflowFilterValue(value: unknown): unknown {
-  if (typeof value !== 'string') {
-    return value;
-  }
-  const match = value.trim().match(CTX_WORKFLOW_VARIABLE_REGEXP);
-  if (!match) {
-    return value;
-  }
-  return `{{${match[1]}}}`;
-}
+const workflowFilterVariableConverters: Pick<Converters, 'resolvePathFromValue' | 'resolveValueFromPath'> = {
+  resolvePathFromValue: (value) => (typeof value === 'string' ? parseWorkflowValueToPath(value) : undefined),
+  resolveValueFromPath: (metaTreeNode) => formatWorkflowPathToValue(metaTreeNode),
+};
 
 function createDateRangeNode(t: (key: string) => string): MetaTreeNode {
   return {
@@ -188,7 +170,7 @@ function compileFilterGroup(group: FilterGroupType | undefined): Record<string, 
       if (!item.path || !item.operator) {
         return undefined;
       }
-      return nestPath(item.path, { [item.operator]: toWorkflowFilterValue(item.value) });
+      return nestPath(item.path, { [item.operator]: item.value });
     })
     .filter((item): item is Record<string, unknown> => Boolean(item));
   if (!compiled.length) {
@@ -204,7 +186,7 @@ function decompileConditions(value: unknown, path: string[] = []): FilterConditi
           {
             path: path.join('.'),
             operator: '$eq',
-            value: toVariableFilterValue(value) as VariableFilterItemValue['value'],
+            value: value as VariableFilterItemValue['value'],
           },
         ]
       : [];
@@ -219,7 +201,7 @@ function decompileConditions(value: unknown, path: string[] = []): FilterConditi
     return operatorEntries.map(([operator, operatorValue]) => ({
       path: path.join('.'),
       operator,
-      value: toVariableFilterValue(operatorValue) as VariableFilterItemValue['value'],
+      value: operatorValue as VariableFilterItemValue['value'],
     }));
   }
 
@@ -389,6 +371,7 @@ export function FilterDynamicComponent({
           disabled={mergedDisabled}
           rightAsVariable={rightAsVariable}
           rightMetaTree={rightMetaTree}
+          rightVariableConverters={workflowFilterVariableConverters}
           maxAssociationFieldDepth={maxAssociationFieldDepth}
         />
       </FlowModelProvider>

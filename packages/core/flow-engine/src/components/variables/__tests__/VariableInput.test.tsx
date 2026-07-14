@@ -155,6 +155,52 @@ describe('VariableInput', () => {
     expect(selectorButton.className).toContain('ant-btn-primary');
   });
 
+  it('renders a parsing failure tag when a custom variable path is missing from the meta tree', async () => {
+    const flowContext = createTestFlowContext();
+    const workflowMetaTree = [
+      {
+        name: '$context',
+        title: 'Trigger variables',
+        type: 'object',
+        paths: ['$context'],
+        children: [
+          {
+            name: 'data',
+            title: 'Trigger data',
+            type: 'object',
+            paths: ['$context', 'data'],
+          },
+        ],
+      },
+    ];
+
+    render(
+      <TestFlowContextWrapper context={flowContext}>
+        <VariableInput
+          value="{{$context.data.id}}"
+          metaTree={workflowMetaTree}
+          converters={{
+            resolvePathFromValue: (currentValue) =>
+              currentValue === '{{$context.data.id}}' ? ['$context', 'data', 'id'] : undefined,
+            resolveValueFromPath: () => undefined,
+          }}
+        />
+      </TestFlowContextWrapper>,
+    );
+
+    await waitFor(
+      () => {
+        const variableTag = screen.getByText('Variable parsing failed');
+        expect(variableTag).toBeInTheDocument();
+        expect(variableTag.closest('.ant-tag')).toHaveClass('ant-tag-error');
+      },
+      { timeout: 3000 },
+    );
+
+    expect(screen.queryByDisplayValue('{{$context.data.id}}')).not.toBeInTheDocument();
+    expect(screen.getByRole('button').className).toContain('ant-btn-primary');
+  });
+
   it('disables custom tag input when rendering a selected variable', async () => {
     const flowContext = createTestFlowContext();
     const { container } = render(

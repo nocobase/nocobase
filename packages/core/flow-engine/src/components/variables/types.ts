@@ -94,6 +94,7 @@ export interface VariableInputProps {
 
 export interface VariableTagProps {
   value?: string;
+  resolvedPath?: Array<string | number>;
   onClear?: () => void;
   disabled?: boolean;
   allowCustomTagInput?: boolean;
