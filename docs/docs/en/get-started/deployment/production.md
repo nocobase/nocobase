@@ -22,6 +22,14 @@ Use addresses such as `app1.example.com` and `app2.example.com`, then route them
 
 :::
 
+## Separated Frontend / Cross-Origin API Access
+
+Prefer keeping the pages and the API on the same origin: use a reverse proxy under one domain to forward `${APP_PUBLIC_PATH}api/` and `${APP_PUBLIC_PATH}files/` to the NocoBase service, and leave `API_BASE_URL` empty.
+
+If the pages must access the API cross-origin (with `API_BASE_URL` pointing to another origin), add the page origin to `CORS_ORIGIN_WHITELIST`. Otherwise the browser ignores `Set-Cookie` in API responses, the login cookie is never stored, and preview and download through stable file URLs fail authorization.
+
+Also note that cookies are stored per `hostname`: when the pages and the API use entirely different domains, requests to `/files/` from the page domain will not carry the login cookie stored under the API domain. Such deployments should switch to a same-origin reverse proxy. See [Environment Variables](../installation/env.md#api_base_url).
+
 ## Deployment Process
 
 For production environment deployment, you can refer to the existing installation and upgrade steps.

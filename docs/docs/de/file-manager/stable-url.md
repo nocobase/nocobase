@@ -45,6 +45,7 @@ Speichere diese URL nicht in Feldern, Markdown oder Geschäftsdaten und verwende
 - Die Antwort ist eine `302`-Weiterleitung, der Clients folgen müssen
 - `302 Location` und `temporaryAccessToken` dürfen nicht dauerhaft gespeichert werden
 - Der Reverse Proxy muss `/files/` unter `APP_PUBLIC_PATH` an NocoBase weiterleiten. Bei einer Bereitstellung unter einem Unterpfad sollte zusätzlich die kompatible Route `/files/` auf Root-Ebene erhalten bleiben. Von der NocoBase CLI erzeugte Konfigurationen enthalten beide Regeln automatisch
+- Bei Bereitstellungen, bei denen Seiten die API ursprungsübergreifend aufrufen (`API_BASE_URL` zeigt auf einen anderen Origin), muss der Seiten-Ursprung zu `CORS_ORIGIN_WHITELIST` hinzugefügt werden. Andernfalls wird das Anmelde-Cookie nie gespeichert und stabile URLs liefern wegen fehlender Anmeldeinformationen `403`. Siehe [Umgebungsvariablen](../get-started/installation/env.md#api_base_url)
 - Verwende für jeden unabhängigen NocoBase-Dienst einen eigenen `hostname`, statt die Dienste nur durch Ports zu unterscheiden. Browser-Cookies werden nicht nach Port getrennt; weitere Informationen findest du unter [Bereitstellung in einer Produktionsumgebung](../get-started/deployment/production.md)
 - Unteranwendungen innerhalb derselben NocoBase-Bereitstellung werden anhand des Anwendungsnamens unterschieden und benötigen keine eigenen Hostnames. Ein unabhängiger Dienst auf einem anderen Port muss jedoch weiterhin über einen eigenen Hostname isoliert werden, wenn er eine Haupt- oder Unteranwendung mit demselben Namen enthält
 

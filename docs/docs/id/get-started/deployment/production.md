@@ -28,6 +28,14 @@ Gunakan alamat seperti `app1.example.com` dan `app2.example.com`, lalu arahkan k
 
 :::
 
+## Frontend terpisah / Akses API lintas origin
+
+Sebaiknya halaman dan API tetap berada pada origin yang sama: gunakan reverse proxy di domain yang sama untuk meneruskan `${APP_PUBLIC_PATH}api/` dan `${APP_PUBLIC_PATH}files/` ke layanan NocoBase, lalu biarkan `API_BASE_URL` kosong.
+
+Jika halaman memang harus mengakses API secara lintas origin (`API_BASE_URL` menunjuk ke origin lain), tambahkan origin halaman ke `CORS_ORIGIN_WHITELIST`. Jika tidak, browser akan mengabaikan `Set-Cookie` pada respons API, cookie login tidak akan tersimpan, dan pratinjau maupun unduhan melalui stable file URL akan gagal otorisasi.
+
+Perhatikan juga bahwa cookie disimpan per `hostname`: jika halaman dan API menggunakan domain yang benar-benar berbeda, permintaan ke `/files/` dari domain halaman tidak akan membawa cookie login yang tersimpan di domain API. Deployment seperti ini sebaiknya diubah ke reverse proxy same-origin. Lihat [Variabel lingkungan](../installation/env.md#api_base_url).
+
 ## Alur Deployment
 
 Deployment lingkungan produksi dapat merujuk ke langkah-langkah instalasi dan upgrade yang sudah ada.

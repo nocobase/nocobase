@@ -45,6 +45,7 @@ No guardes esa URL temporal en campos, Markdown ni datos de negocio, y no la use
 - La respuesta es una redirección `302`; los clientes deben seguirla
 - No guardes `302 Location` ni `temporaryAccessToken`
 - El proxy inverso debe reenviar a NocoBase la ruta `/files/` situada bajo `APP_PUBLIC_PATH`. En despliegues bajo una subruta, también debe conservarse la ruta compatible `/files/` en la raíz. Las configuraciones generadas por la CLI de NocoBase incluyen ambas reglas automáticamente
+- En despliegues donde las páginas acceden a la API entre orígenes (`API_BASE_URL` apunta a otro origen), debes añadir el origen de la página a `CORS_ORIGIN_WHITELIST`. De lo contrario, la cookie de inicio de sesión nunca se almacenará y las URL estables devolverán `403` por falta de credenciales. Consulta [Variables de entorno](../get-started/installation/env.md#api_base_url)
 - Usa un `hostname` diferente para cada servicio NocoBase independiente, en vez de diferenciarlos únicamente por el puerto. Las cookies del navegador no se aíslan por puerto; consulta [Despliegue en producción](../get-started/deployment/production.md)
 - Las subaplicaciones de un mismo despliegue de NocoBase se distinguen por el nombre de la aplicación y no necesitan hostnames separados. Sin embargo, un servicio independiente en otro puerto sigue necesitando aislamiento por hostname si contiene una aplicación principal o subaplicación con el mismo nombre
 

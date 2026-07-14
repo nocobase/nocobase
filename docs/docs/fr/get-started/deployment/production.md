@@ -22,6 +22,14 @@ Utilisez par exemple `app1.example.com` et `app2.example.com`, puis acheminez-le
 
 :::
 
+## Frontend séparé / Accès API cross-origin
+
+Il est recommandé de conserver les pages et l'API sur la même origine : utilisez un proxy inverse sous le même domaine pour transférer `${APP_PUBLIC_PATH}api/` et `${APP_PUBLIC_PATH}files/` vers le service NocoBase, et laissez `API_BASE_URL` vide.
+
+Si les pages doivent accéder à l'API en cross-origin (`API_BASE_URL` pointe vers une autre origine), ajoutez l'origine des pages à `CORS_ORIGIN_WHITELIST`. Sinon, le navigateur ignorera `Set-Cookie` dans les réponses de l'API, le cookie de connexion ne sera pas enregistré et l'aperçu ainsi que le téléchargement via les URL de fichiers stables échoueront à l'autorisation.
+
+Notez également que les cookies sont stockés par `hostname` : si les pages et l'API utilisent des domaines totalement différents, les requêtes vers `/files/` depuis le domaine des pages n'enverront pas le cookie de connexion stocké sous le domaine de l'API. Ce type de déploiement doit être remplacé par un proxy inverse same-origin. Voir [Variables d'environnement](../installation/env.md#api_base_url).
+
 ## Processus de déploiement
 
 Pour le déploiement en environnement de production, vous pouvez vous référer aux étapes d'installation et de mise à niveau existantes.

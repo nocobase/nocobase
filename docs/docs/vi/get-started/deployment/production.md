@@ -28,6 +28,14 @@ Hãy dùng các địa chỉ như `app1.example.com` và `app2.example.com`, sau
 
 :::
 
+## Frontend tách rời / Truy cập API cross-origin
+
+Nên giữ trang và API cùng origin: dùng reverse proxy dưới cùng một domain để chuyển tiếp `${APP_PUBLIC_PATH}api/` và `${APP_PUBLIC_PATH}files/` đến dịch vụ NocoBase, đồng thời để trống `API_BASE_URL`.
+
+Nếu trang buộc phải truy cập API theo cơ chế cross-origin (`API_BASE_URL` trỏ sang origin khác), hãy thêm origin của trang vào `CORS_ORIGIN_WHITELIST`. Nếu không, trình duyệt sẽ bỏ qua `Set-Cookie` trong phản hồi API, cookie đăng nhập sẽ không được lưu, và việc xem trước hay tải xuống qua stable file URL sẽ thất bại ở bước xác thực.
+
+Đồng thời lưu ý rằng cookie được lưu theo `hostname`: nếu trang và API dùng hai domain hoàn toàn khác nhau, các request tới `/files/` từ domain của trang sẽ không mang theo cookie đăng nhập được lưu dưới domain của API. Với kiểu triển khai này, nên chuyển sang reverse proxy cùng origin. Xem [Biến môi trường](../installation/env.md#api_base_url).
+
 ## Quy trình triển khai
 
 Triển khai môi trường sản xuất có thể tham khảo các bước cài đặt và nâng cấp đã có.

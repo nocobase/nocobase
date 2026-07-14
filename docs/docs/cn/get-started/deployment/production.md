@@ -28,6 +28,14 @@ NocoBase 会使用 cookie 维持登录状态和[文件访问权限](../../file-m
 
 :::
 
+## 前后端分离 / 跨源访问 API
+
+推荐让页面和 API 保持同源：通过同一域名下的反向代理，把 `${APP_PUBLIC_PATH}api/` 和 `${APP_PUBLIC_PATH}files/` 转发到 NocoBase 服务，`API_BASE_URL` 留空。
+
+如果页面必须跨源访问 API（配置了指向其他源的 `API_BASE_URL`），需要把页面来源加入 `CORS_ORIGIN_WHITELIST`，否则浏览器会忽略 API 响应中的 `Set-Cookie`，登录 cookie 无法写入，文件稳定 URL 的预览和下载会鉴权失败。
+
+同时注意 cookie 按 `hostname` 存储：页面与 API 域名完全不同时，从页面域名访问 `/files/` 不会携带 API 域名下的登录 cookie，这类部署应改为同源反向代理。详见[环境变量](../installation/env.md#api_base_url)。
+
 ## 部署流程
 
 生产环境的部署可参考已有的安装和升级步骤。
