@@ -28,6 +28,7 @@ const VariableTagComponent: React.FC<VariableTagProps> = ({
   style,
   metaTreeNode,
   metaTree,
+  resolvedPath,
 }) => {
   const { resolvedMetaTree } = useResolvedMetaTree(metaTree);
   const ctx = useFlowContext();
@@ -87,7 +88,7 @@ const VariableTagComponent: React.FC<VariableTagProps> = ({
 
       // 2) metaTreeNode 存在但缺少 parentTitles：尝试根据 value/metaTreeNode.paths 从 metaTree 还原完整路径
       if (metaTreeNode) {
-        const rawPath = parseValueToPath(value) || metaTreeNode.paths;
+        const rawPath = resolvedPath || parseValueToPath(value) || metaTreeNode.paths;
         const result = await resolveLabelFromPath(rawPath as any);
         if (result.resolved && result.label != null) {
           return { text: result.label, invalid: false };
@@ -100,7 +101,7 @@ const VariableTagComponent: React.FC<VariableTagProps> = ({
 
       // 3) 无 metaTreeNode：从 value 还原路径并拼接标题链；若找不到任何前缀则回退原始路径字符串
       if (!value) return { text: String(value), invalid: false };
-      const rawPath = parseValueToPath(value);
+      const rawPath = resolvedPath || parseValueToPath(value);
       const result = await resolveLabelFromPath(rawPath as any);
       if (result.resolved && result.label != null) {
         return { text: result.label, invalid: false };
@@ -110,7 +111,7 @@ const VariableTagComponent: React.FC<VariableTagProps> = ({
       }
       return { text: Array.isArray(rawPath) ? rawPath.join('/') : String(value), invalid: false };
     },
-    { refreshDeps: [resolvedMetaTree, value, metaTreeNode] },
+    { refreshDeps: [resolvedMetaTree, resolvedPath, value, metaTreeNode] },
   );
 
   const { token } = theme.useToken();

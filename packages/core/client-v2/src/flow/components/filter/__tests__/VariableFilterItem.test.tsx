@@ -11,7 +11,7 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { VariableFilterItem, VariableFilterItemValue } from '../VariableFilterItem';
-import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
+import { FlowEngine, FlowModel, type Converters, type MetaTreeNode } from '@nocobase/flow-engine';
 import { observable } from '@formily/reactive';
 import { createMockFlowApp, TestCollectionFieldInterface } from '../../../__tests__/helpers/mockFlowApp';
 
@@ -177,6 +177,54 @@ describe('VariableFilterItem', () => {
     const operatorSelect = document.body.querySelector('.ant-select') as HTMLDivElement | null;
     expect(operatorSelect).not.toBeNull();
     expect(operatorSelect).toHaveClass('ant-select-disabled');
+  });
+
+  it('composes custom right variable converters with constant, null, and core fallbacks', () => {
+    const value: VariableFilterItemValue = {
+      path: 'name',
+      operator: '$eq',
+      value: '{{$context.data.id}}',
+    };
+    const model = CreateModel();
+    const rightVariableConverters: Pick<Converters, 'resolvePathFromValue' | 'resolveValueFromPath'> = {
+      resolvePathFromValue: (input) => (input === '{{$context.data.id}}' ? ['$context', 'data', 'id'] : undefined),
+      resolveValueFromPath: (metaTreeNode) =>
+        metaTreeNode.paths?.[0] === '$context' ? `{{${metaTreeNode.paths.join('.')}}}` : undefined,
+    };
+
+    render(
+      <VariableFilterItem
+        value={value}
+        model={model}
+        rightAsVariable
+        rightVariableConverters={rightVariableConverters}
+      />,
+    );
+
+    const variableInputProps = (
+      globalThis as {
+        __LAST_VARIABLE_INPUT_PROPS__?: {
+          converters?: Converters;
+          value?: unknown;
+        };
+      }
+    ).__LAST_VARIABLE_INPUT_PROPS__;
+    const converters = variableInputProps?.converters;
+    const constantNode: MetaTreeNode = { name: 'constant', title: 'Constant', type: 'string', paths: ['constant'] };
+    const nullNode: MetaTreeNode = { name: 'null', title: 'Null', type: 'object', paths: ['null'] };
+    const workflowNode: MetaTreeNode = {
+      name: 'id',
+      title: 'ID',
+      type: 'number',
+      paths: ['$context', 'data', 'id'],
+    };
+
+    expect(variableInputProps?.value).toBe('{{$context.data.id}}');
+    expect(converters?.resolvePathFromValue?.('{{$context.data.id}}')).toEqual(['$context', 'data', 'id']);
+    expect(converters?.resolvePathFromValue?.('{{ ctx.$context.data.id }}')).toEqual(['$context', 'data', 'id']);
+    expect(converters?.resolveValueFromPath?.(constantNode)).toBe('');
+    expect(converters?.resolveValueFromPath?.(nullNode)).toBeNull();
+    expect(converters?.resolveValueFromPath?.(workflowNode)).toBe('{{$context.data.id}}');
   });
 
   it('uses scoped context dataSourceManager when app dataSourceManager has no field interface manager', async () => {
