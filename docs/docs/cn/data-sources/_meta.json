@@ -7,7 +7,7 @@
       {
         "type": "custom-link",
         "label": "数据源管理",
-        "link": "/data-sources/data-source-manager"
+        "link": "/data-sources/data-source-manager/"
       },
       {
         "type": "custom-link",
@@ -16,7 +16,7 @@
           {
             "type": "custom-link",
             "label": "介绍",
-            "link": "/data-sources/main/"
+            "link": "/data-sources/data-source-main/"
           },
           {
             "type": "custom-link",
@@ -52,32 +52,32 @@
           {
             "type": "custom-link",
             "label": "介绍",
-            "link": "/data-sources/external/"
+            "link": "/data-sources/data-source-manager/external-database"
           },
           {
             "type": "custom-link",
             "label": "PostgreSQL",
-            "link": "/data-sources/external/postgresql"
+            "link": "/data-sources/data-source-external-postgres/"
           },
           {
             "type": "custom-link",
             "label": "MySQL",
-            "link": "/data-sources/external/mysql"
+            "link": "/data-sources/data-source-external-mysql/"
           },
           {
             "type": "custom-link",
             "label": "MariaDB",
-            "link": "/data-sources/external/mariadb"
+            "link": "/data-sources/data-source-external-mariadb/"
           },
           {
             "type": "custom-link",
             "label": "MSSQL",
-            "link": "/data-sources/external/mssql"
+            "link": "/data-sources/data-source-external-mssql/"
           },
           {
             "type": "custom-link",
             "label": "KingbaseES",
-            "link": "/data-sources/external/kingbase"
+            "link": "/data-sources/data-source-kingbase/"
           },
           {
             "type": "custom-link",
@@ -87,7 +87,7 @@
           {
             "type": "custom-link",
             "label": "Oracle",
-            "link": "/data-sources/external/oracle"
+            "link": "/data-sources/data-source-external-oracle/"
           },
           {
             "type": "custom-link",
@@ -102,12 +102,12 @@
           {
             "type": "custom-link",
             "label": "REST API 数据源",
-            "link": "/data-sources/external/rest-api"
+            "link": "/data-sources/data-source-rest-api/"
           },
           {
             "type": "custom-link",
             "label": "外部 NocoBase 数据源",
-            "link": "/data-sources/external/nocobase"
+            "link": "/data-sources/data-source-external-nocobase/"
           }
         ]
       }

@@ -107,5 +107,5 @@ keywords: "继承表,Inheritance Collection,表继承,数据表扩展,PostgreSQL
 ## 相关链接
 
 - [普通表](./general.md) — 查看普通表通用配置
-- [主数据库](../main/index.md) — 查看主数据库支持的数据库类型
+- [主数据库](./index.md) — 查看主数据库支持的数据库类型
 - [数据表字段](../field/index.md) — 查看字段配置方式
