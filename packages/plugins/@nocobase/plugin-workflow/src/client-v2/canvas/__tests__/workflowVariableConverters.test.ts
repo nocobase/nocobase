@@ -16,34 +16,27 @@
 
 import { describe, expect, it } from 'vitest';
 import { adaptVariableOptionToMetaTree } from '../adaptVariableOptionToMetaTree';
-
-// Re-declare the converters here as a pure-logic mirror (the component wires the same functions into
-// VariableHybridInput). Keeping them inline avoids importing the .tsx component (and React) into a pure logic test.
-const formatPathToValue = (item: { paths?: string[] }) => {
-  const path = item?.paths ?? [];
-  return path.length ? `{{${path.join('.')}}}` : '';
-};
-const parseValueToPath = (value?: string) => {
-  if (typeof value !== 'string') return undefined;
-  const match = value.trim().match(/^\{\{\s*(.+?)\s*\}\}$/);
-  return match ? match[1].split('.') : undefined;
-};
+import { formatWorkflowPathToValue, parseWorkflowValueToPath } from '../workflowVariableConverters';
 
 describe('workflow variable converters', () => {
   it('formats an adapter-built leaf path to the $jobsMapByNodeKey template', () => {
     const node = adaptVariableOptionToMetaTree({ value: 'title', children: null }, ['$jobsMapByNodeKey', 'node1']);
     expect(node.paths).toEqual(['$jobsMapByNodeKey', 'node1', 'title']);
-    expect(formatPathToValue(node)).toBe('{{$jobsMapByNodeKey.node1.title}}');
+    expect(formatWorkflowPathToValue(node)).toBe('{{$jobsMapByNodeKey.node1.title}}');
   });
 
   it('round-trips: format → parse === the leaf paths', () => {
     const node = adaptVariableOptionToMetaTree({ value: 'field' }, ['$jobsMapByNodeKey', 'nodeX']);
-    const value = formatPathToValue(node);
-    expect(parseValueToPath(value)).toEqual(node.paths);
+    const value = formatWorkflowPathToValue(node);
+    expect(parseWorkflowValueToPath(value)).toEqual(node.paths);
   });
 
   it('parse tolerates inner whitespace and returns undefined for non-variable strings', () => {
-    expect(parseValueToPath('{{ $jobsMapByNodeKey.n.f }}')).toEqual(['$jobsMapByNodeKey', 'n', 'f']);
-    expect(parseValueToPath('plain text')).toBeUndefined();
+    expect(parseWorkflowValueToPath('{{ $jobsMapByNodeKey.n.f }}')).toEqual(['$jobsMapByNodeKey', 'n', 'f']);
+    expect(parseWorkflowValueToPath('plain text')).toBeUndefined();
+  });
+
+  it('parses the FlowEngine ctx form without adding ctx to the workflow path', () => {
+    expect(parseWorkflowValueToPath('{{ ctx.$context.data.id }}')).toEqual(['$context', 'data', 'id']);
   });
 });

@@ -201,16 +201,11 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
     const Component = renderInputComponent?.(resolvedMetaTreeNode);
     const CustomComponent = resolvedMetaTreeNode?.render;
     // Some domains (workflow) persist variables as `{{$context...}}` rather than the core `{{ ctx... }}` form.
-    // Those values are not recognized by `isVariableValue`, but if the active converters can resolve them back to a
-    // real meta-tree path and that path maps to a plain variable node (not Constant / Null / RunJS), they should still
-    // render as the labelled pill instead of falling back to the raw input text.
+    // When a custom converter recognizes such a value as a variable path, render VariableTag even if the path no longer
+    // exists in the current meta tree. VariableTag will then show either the resolved label or the parsing-failed state.
     const shouldRenderVariableTag =
       isVariableValue(innerValue) ||
-      (Boolean(resolvedMetaTreeNode) &&
-        Array.isArray(resolvedPath) &&
-        resolvedPath.length > 0 &&
-        !Component &&
-        !CustomComponent);
+      (Array.isArray(resolvedPath) && resolvedPath.length > 0 && !Component && !CustomComponent);
     const finalComponent = shouldRenderVariableTag ? VariableTag : Component || CustomComponent || Input;
     return finalComponent;
   }, [renderInputComponent, resolvedMetaTreeNode, innerValue, resolvedPath]);
@@ -218,8 +213,7 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
   const isVariableActive = useMemo(() => {
     return (
       isVariableValue(innerValue) ||
-      (Boolean(resolvedMetaTreeNode) &&
-        Array.isArray(resolvedPath) &&
+      (Array.isArray(resolvedPath) &&
         resolvedPath.length > 0 &&
         !renderInputComponent?.(resolvedMetaTreeNode) &&
         !resolvedMetaTreeNode?.render)
@@ -332,6 +326,7 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
         allowCustomTagInput: false,
         metaTreeNode: resolvedMetaTreeNode,
         metaTree,
+        resolvedPath,
         style: stableProps.style,
       };
     }
@@ -354,6 +349,7 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
     disabled,
     handleClear,
     resolvedMetaTreeNode,
+    resolvedPath,
     metaTree,
     ValueComponent,
     stableProps,
