@@ -20,10 +20,6 @@ import {
   lightExtensionEntryV1Schema,
 } from '@nocobase/light-extension-sdk/schema';
 import sdkPackageJson from '@nocobase/light-extension-sdk/package.json';
-import {
-  lightExtensionEntryV1SchemaFileContent,
-  lightExtensionEntryV1SchemaSha256,
-} from '@nocobase/light-extension-sdk/schema/server';
 import type { Database } from '@nocobase/database';
 import {
   RUNJS_SETTINGS_CONDITION_LIMITS,
@@ -35,6 +31,10 @@ import { createHash } from 'crypto';
 import { vi } from 'vitest';
 
 import { NAMESPACE } from '../../constants';
+import {
+  lightExtensionEntryV1SchemaFileContent,
+  lightExtensionEntryV1SchemaSha256,
+} from '../lightExtensionEntrySchema';
 import PluginLightExtensionServer from '../plugin';
 import { LightExtensionValidator } from '../services/LightExtensionValidator';
 

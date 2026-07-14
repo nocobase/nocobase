@@ -341,7 +341,9 @@ function deepMergeRecords(
 ): Record<string, unknown> {
   const next = cloneRecord(defaults);
   for (const [key, value] of Object.entries(overrides)) {
-    next[key] = isRecord(next[key]) && isRecord(value) ? deepMergeRecords(next[key], value) : cloneJsonValue(value);
+    const currentValue = next[key];
+    next[key] =
+      isRecord(currentValue) && isRecord(value) ? deepMergeRecords(currentValue, value) : cloneJsonValue(value);
   }
   return next;
 }

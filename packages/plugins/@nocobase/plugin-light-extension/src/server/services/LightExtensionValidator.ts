@@ -19,7 +19,6 @@ import {
   LIGHT_EXTENSION_X_COMPONENT_WHITELIST,
 } from '@nocobase/light-extension-sdk/schema';
 import sdkPackageJson from '@nocobase/light-extension-sdk/package.json';
-import { lightExtensionEntryV1SchemaSha256 } from '@nocobase/light-extension-sdk/schema/server';
 import { posix as pathPosix } from 'path';
 import {
   LIGHT_EXTENSION_ENTRY_DESCRIPTOR_FILE,
@@ -42,6 +41,7 @@ import type {
   LightExtensionSourceFileInput,
   NormalizedSourceFile,
 } from './light-extension-validator/types';
+import { lightExtensionEntryV1SchemaSha256 } from '../lightExtensionEntrySchema';
 import {
   buildEntryAllowedPaths,
   classifySourcePath,

@@ -8,13 +8,13 @@
  */
 
 import { LIGHT_EXTENSION_ENTRY_SCHEMA_LOCAL_PATH } from '@nocobase/light-extension-sdk/schema';
-import { lightExtensionEntryV1SchemaFileContent } from '@nocobase/light-extension-sdk/schema/server';
 import type { RunJSSourceAdapterRegistry, VscPermissionHook } from '@nocobase/plugin-vsc-file';
 import { VscFileService, VscPermissionHookRegistry } from '@nocobase/plugin-vsc-file';
 import { Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 
 import { LIGHT_EXTENSION_ACL_ACTIONS, LIGHT_EXTENSION_ACL_SNIPPET } from '../constants';
+import { lightExtensionEntryV1SchemaFileContent } from './lightExtensionEntrySchema';
 import {
   createLightExtensionCapabilitiesResource,
   lightExtensionCapabilitiesActionNames,
