@@ -20,7 +20,7 @@ import { AIConfigRepository } from './repositories/AIConfigRepository';
 import { builtinLLMProviderOptions } from './llm-providers';
 import { registerPluginAIWorkflow } from './workflow/register';
 import { setupAICoding } from './ai-employees/ai-coding/setup';
-import { registerPluginAIRunJSFacade } from '../shared/runjs/registerAIEmployeeRunJSFacade';
+import { registerPluginAIRunJSFacade } from './runjs/registerAIEmployeeRunJSFacade';
 
 type AIFlowContext = {
   aiConfigRepository?: AIConfigRepository;
@@ -151,4 +151,4 @@ export default PluginAIClientV2;
 export {
   registerPluginAIRunJSContextContribution,
   registerPluginAIRunJSFacade,
-} from '../shared/runjs/registerAIEmployeeRunJSFacade';
+} from './runjs/registerAIEmployeeRunJSFacade';

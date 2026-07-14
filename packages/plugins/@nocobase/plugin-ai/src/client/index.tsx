@@ -33,7 +33,7 @@ import { AIEmployeeInstruction } from './workflow/nodes/employee';
 import { registerPluginAIClientV2BuiltinTools } from '../client-v2/ai-employees/tools';
 import { builtinLLMProviderOptions } from '../client-v2/llm-providers';
 import { ChatBoxLayout } from '../client-v2/ai-employees/chatbox/components/ChatBoxLayout';
-import { registerPluginAIRunJSFacade } from '../shared/runjs/registerAIEmployeeRunJSFacade';
+import { registerPluginAIRunJSFacade } from '../client-v2/runjs/registerAIEmployeeRunJSFacade';
 const Employees = lazy(() => import('../client-v2/pages/EmployeesPage'));
 const LLMServices = lazy(() => import('../client-v2/pages/LLMServicesPage'));
 const MCPSettings = lazy(() => import('../client-v2/pages/MCPSettingsPage'));
