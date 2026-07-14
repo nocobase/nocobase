@@ -8,12 +8,19 @@
  */
 
 import React from 'react';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { ApplicationContext, RunJSSourceResolverRegistry } from '@nocobase/client-v2';
 import { FlowContext, FlowContextProvider, FlowEngine, FlowModel } from '@nocobase/flow-engine';
 import { describe, expect, it, vi } from 'vitest';
 
-import { createRunJSLightExtensionEditorProvider } from '../components/RunJSLightExtensionEditorProvider';
+import {
+  createRunJSLightExtensionEditorProvider,
+  waitForHostRefreshCommit,
+} from '../components/RunJSLightExtensionEditorProvider';
 import type { ApiClientLike } from '../api/lightExtensionEntriesRequests';
+import { createLightExtensionRunJSResolver } from '../resolvers/LightExtensionRunJSResolver';
+import { getOrCreateLightExtensionRuntimeCache } from '../resolvers/LightExtensionRuntimeCacheRegistry';
+import { getLightExtensionSettingsDescriptorCache } from '../resolvers/LightExtensionSettingsDescriptorCache';
 
 vi.mock('../pages/LightExtensionWorkspacePage', () => {
   const MockLightExtensionWorkspacePage = ({
@@ -49,9 +56,14 @@ vi.mock('../pages/LightExtensionWorkspacePage', () => {
         requestSave: () => Promise<'saved'>;
       } | null,
     ) => void;
-    onRequestClose?: () => void;
-    onSaved?: () => void;
+    onRequestClose?: () => void | Promise<void>;
+    onSaved?: () => void | Promise<void>;
   }) => {
+    const saveAndClose = async () => {
+      await onSaved?.();
+      await onRequestClose?.();
+    };
+
     React.useEffect(() => {
       onFooterActionsChange?.({
         dirty: true,
@@ -60,7 +72,7 @@ vi.mock('../pages/LightExtensionWorkspacePage', () => {
         onCancel: () => onRequestClose?.(),
         onSave: () => onSaved?.(),
         requestSave: async () => {
-          onSaved?.();
+          await onSaved?.();
           return 'saved';
         },
       });
@@ -108,6 +120,9 @@ vi.mock('../pages/LightExtensionWorkspacePage', () => {
         <button type="button" onClick={onSaved}>
           save workspace
         </button>
+        <button type="button" onClick={saveAndClose}>
+          save workspace and close
+        </button>
       </div>
     );
   };
@@ -119,11 +134,12 @@ vi.mock('../pages/LightExtensionWorkspacePage', () => {
 
 function EditorViewHarness(props: {
   api?: ApiClientLike;
+  appApi?: ApiClientLike;
   children: React.ReactNode;
   model?: FlowModel;
   onClose: () => void;
 }) {
-  const { api, children, model, onClose } = props;
+  const { api, appApi, children, model, onClose } = props;
   const [footer, setFooter] = React.useState<React.ReactNode>(null);
   const context = React.useMemo(() => {
     const nextContext = new FlowContext();
@@ -142,11 +158,23 @@ function EditorViewHarness(props: {
     return nextContext;
   }, [api, model, onClose]);
 
-  return (
+  const content = (
     <FlowContextProvider context={context}>
       {children}
       <div data-testid="editor-view-footer">{footer}</div>
     </FlowContextProvider>
+  );
+
+  if (!appApi) {
+    return content;
+  }
+
+  return (
+    <ApplicationContext.Provider
+      value={{ apiClient: appApi } as unknown as React.ContextType<typeof ApplicationContext>}
+    >
+      {content}
+    </ApplicationContext.Provider>
   );
 }
 
@@ -282,7 +310,7 @@ describe('RunJSLightExtensionEditorProvider', () => {
       version: 'v2',
       sourceMode: 'inline',
     });
-    fireEvent.click(screen.getByRole('button', { name: 'save workspace' }));
+    fireEvent.click(screen.getByRole('button', { name: 'save workspace and close' }));
     expect(onPersistedChange).toHaveBeenCalledWith(props.value);
     expect(onChange).not.toHaveBeenCalled();
   });
@@ -465,24 +493,60 @@ describe('RunJSLightExtensionEditorProvider', () => {
   it('refreshes the entry path by entryId before applying workspace access after a directory rename', async () => {
     const provider = createRunJSLightExtensionEditorProvider();
     const onPersistedChange = vi.fn();
-    const api: ApiClientLike = {
-      request: vi.fn(async () => ({
-        data: {
+    const workspaceApi: ApiClientLike = {
+      request: vi.fn(async (options) => {
+        if (options.url !== 'lightExtensionEntries:get') {
+          throw new Error(`Unexpected workspace request: ${options.url}`);
+        }
+        return {
           data: {
-            id: 'lee_example',
-            repoId: 'ler_example',
-            entryName: 'stable-example',
-            entryPath: 'src/client/js-blocks/renamed-example/index.tsx',
-            kind: 'js-block',
-            title: 'Example',
-            runtimeArtifact: {
-              code: 'ctx.render(<div>refreshed runtime</div>);',
-              version: 'v3',
+            data: {
+              id: 'lee_example',
+              repoId: 'ler_example',
+              entryName: 'stable-example',
               entryPath: 'src/client/js-blocks/renamed-example/index.tsx',
+              kind: 'js-block',
+              title: 'Example refreshed',
+              runtimeArtifact: {
+                code: 'ctx.render(<div>refreshed runtime</div>);',
+                version: 'v3',
+                entryPath: 'src/client/js-blocks/renamed-example/index.tsx',
+              },
             },
           },
-        },
-      })),
+        };
+      }),
+    };
+    const resolverApi: ApiClientLike = {
+      request: vi.fn(async (options) => {
+        if (options.url !== 'lightExtensionEntries:listSelectable') {
+          throw new Error(`Unexpected resolver request: ${options.url}`);
+        }
+        return {
+          data: {
+            data: [
+              {
+                id: 'lee_example',
+                repoId: 'ler_example',
+                kind: 'js-block',
+                entryName: 'stable-example',
+                entryPath: 'src/client/js-blocks/renamed-example/index.tsx',
+                title: 'Example refreshed',
+                settingsSchema: {
+                  type: 'object',
+                  properties: {
+                    refreshedLabel: { type: 'string', title: 'Refreshed label' },
+                  },
+                },
+                settingsSchemaHash: 'new-schema',
+                settingsDefaultsHash: 'new-defaults',
+                runtimeCodeHash: 'new-runtime',
+                runtimeAvailable: true,
+              },
+            ],
+          },
+        };
+      }),
     };
     const value = {
       code: 'ctx.render(<div />);',
@@ -497,9 +561,37 @@ describe('RunJSLightExtensionEditorProvider', () => {
         kind: 'js-block' as const,
       },
     };
+    const descriptorCache = getLightExtensionSettingsDescriptorCache(resolverApi);
+    descriptorCache.primeScope('ler_example', 'js-block', [
+      {
+        id: 'lee_example',
+        repoId: 'ler_example',
+        kind: 'js-block',
+        entryName: 'stable-example',
+        entryPath: 'src/client/js-blocks/old-example/index.tsx',
+        title: 'Old example',
+        settingsSchema: {
+          type: 'object',
+          properties: {
+            oldLabel: { type: 'string' },
+          },
+        },
+        settingsSchemaHash: 'old-schema',
+        settingsDefaultsHash: 'old-defaults',
+        runtimeCodeHash: 'old-runtime',
+        runtimeAvailable: true,
+      },
+    ]);
+    const invalidateRuntimeRepo = vi.fn();
+    getOrCreateLightExtensionRuntimeCache(resolverApi, () => ({
+      invalidateRepo: invalidateRuntimeRepo,
+      clear: vi.fn(),
+    }));
+    const resolver = createLightExtensionRunJSResolver(resolverApi);
+    const unregisterResolver = RunJSSourceResolverRegistry.registerResolver(resolver);
 
     render(
-      <EditorViewHarness api={api} onClose={vi.fn()}>
+      <EditorViewHarness api={workspaceApi} appApi={resolverApi} onClose={vi.fn()}>
         {provider.renderEditor({
           value,
           locator: {
@@ -535,10 +627,124 @@ describe('RunJSLightExtensionEditorProvider', () => {
         sourceBinding: {
           ...value.sourceBinding,
           entryPath: 'src/client/js-blocks/renamed-example/index.tsx',
-          entryTitle: 'Example',
+          entryTitle: 'Example refreshed',
         },
       });
     });
+    expect(descriptorCache.get(value.sourceBinding)).toMatchObject({
+      entryId: 'lee_example',
+      settingsSchemaHash: 'new-schema',
+      schema: {
+        type: 'object',
+        properties: {
+          refreshedLabel: { type: 'string', title: 'Refreshed label' },
+        },
+      },
+    });
+    expect(invalidateRuntimeRepo).toHaveBeenCalledWith('ler_example');
+    expect(resolverApi.request).toHaveBeenCalledWith({
+      url: 'lightExtensionEntries:listSelectable',
+      method: 'post',
+      data: { repoId: 'ler_example', kind: 'js-block' },
+    });
+    unregisterResolver();
+  });
+
+  it('waits for the persisted host update before closing the embedded editor after save', async () => {
+    const provider = createRunJSLightExtensionEditorProvider();
+    const onClose = vi.fn();
+    const requestAnimationFrame = vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      queueMicrotask(() => callback(performance.now()));
+      return 1;
+    });
+    let resolvePersistedChange: (() => void) | undefined;
+    const onPersistedChange = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolvePersistedChange = resolve;
+        }),
+    );
+    const api: ApiClientLike = {
+      request: vi.fn(async () => ({
+        data: {
+          data: {
+            id: 'lee_example',
+            repoId: 'ler_example',
+            entryName: 'example',
+            entryPath: 'src/client/js-blocks/example/index.tsx',
+            kind: 'js-block',
+            title: 'Example',
+            runtimeArtifact: {
+              code: 'ctx.render(<div>saved</div>);',
+              version: 'v3',
+              entryPath: 'src/client/js-blocks/example/index.tsx',
+            },
+          },
+        },
+      })),
+    };
+    const value = {
+      code: 'ctx.render(<div />);',
+      version: 'v2',
+      sourceMode: 'light-extension',
+      sourceBinding: {
+        type: 'light-extension-entry' as const,
+        repoId: 'ler_example',
+        entryId: 'lee_example',
+        entryPath: 'src/client/js-blocks/example/index.tsx',
+        kind: 'js-block' as const,
+      },
+    };
+
+    render(
+      <EditorViewHarness api={api} onClose={onClose}>
+        {provider.renderEditor({
+          value,
+          locator: {
+            kind: 'flowModel.step',
+            modelUid: 'model_1',
+            flowKey: 'jsSettings',
+            stepKey: 'runJs',
+            paramPath: ['code'],
+          },
+          surfaceStyle: 'render',
+          onPersistedChange,
+        })}
+      </EditorViewHarness>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'save workspace' }));
+    await waitFor(() => {
+      expect(onPersistedChange).toHaveBeenCalled();
+    });
+    expect(onClose).not.toHaveBeenCalled();
+
+    act(() => {
+      resolvePersistedChange?.();
+    });
+    await waitFor(() => {
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
+    requestAnimationFrame.mockRestore();
+  });
+
+  it('waits for the next animation frame before completing a host refresh commit', async () => {
+    let animationFrame: FrameRequestCallback | undefined;
+    const requestAnimationFrame = vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      animationFrame = callback;
+      return 1;
+    });
+    let completed = false;
+    const refreshCommit = waitForHostRefreshCommit().then(() => {
+      completed = true;
+    });
+
+    await Promise.resolve();
+    expect(completed).toBe(false);
+    animationFrame?.(performance.now());
+    await refreshCommit;
+    expect(completed).toBe(true);
+    requestAnimationFrame.mockRestore();
   });
 
   it('places cancel and save actions in the editor view footer', async () => {

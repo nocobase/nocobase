@@ -9,6 +9,7 @@
 
 import {
   ApplicationContext,
+  RunJSSourceResolverRegistry,
   type RunJSEditorProvider,
   type RunJSEditorProviderRenderProps,
   type RunJSSourceLocator,
@@ -35,6 +36,8 @@ import {
   type ApiClientLike,
 } from '../api/lightExtensionEntriesRequests';
 import { isLightExtensionRuntimeSourceBinding } from '../resolvers/LightExtensionRunJSResolver';
+import { invalidateLightExtensionRuntimeCache } from '../resolvers/LightExtensionRuntimeCacheRegistry';
+import { invalidateLightExtensionSettingsDescriptorCache } from '../resolvers/LightExtensionSettingsDescriptorCache';
 import LightExtensionWorkspacePage, {
   type LightExtensionMoveToInlineRequest,
   type LightExtensionWorkspaceFooterActions,
@@ -72,7 +75,7 @@ function cloneJsonRecord<T extends Record<string, unknown>>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
-function waitForHostRefreshCommit(): Promise<void> {
+export function waitForHostRefreshCommit(): Promise<void> {
   if (typeof window === 'undefined' || typeof window.requestAnimationFrame !== 'function') {
     return Promise.resolve();
   }
@@ -91,7 +94,8 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
   const [footerActions, setFooterActions] = React.useState<LightExtensionWorkspaceFooterActions | null>(null);
   const flowContext = useFlowContext<LightExtensionEditorFlowContext | null>();
   const app = React.useContext(ApplicationContext) as ApplicationWithApi | null;
-  const api = flowContext?.api || app?.apiClient;
+  const resolverApi = app?.apiClient;
+  const api = flowContext?.api || resolverApi;
   const editorView = flowContext?.view as LightExtensionEditorView | undefined;
   const workspaceScope = currentBinding ? getEntryWorkspaceScope(currentBinding) : null;
   const readonly = Boolean(props.readOnly || props.disabled);
@@ -241,26 +245,64 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
   );
   const handlePersistedChange = React.useCallback(async () => {
     let nextValue = props.value;
+    let refreshedBinding = currentBinding;
     if (api && currentBinding) {
+      const cacheApis = [api, resolverApi].filter((item): item is ApiClientLike => Boolean(item));
+      for (const cacheApi of new Set(cacheApis)) {
+        invalidateLightExtensionSettingsDescriptorCache(cacheApi, currentBinding.repoId);
+        invalidateLightExtensionRuntimeCache(cacheApi, currentBinding.repoId);
+      }
       try {
         const entry = await getLightExtensionEntry(api, currentBinding.entryId);
-        if (entry.runtimeArtifact) {
-          nextValue = {
-            ...nextValue,
-            code: entry.runtimeArtifact.code,
-            version: entry.runtimeArtifact.version,
+        if (
+          entry.id === currentBinding.entryId &&
+          entry.repoId === currentBinding.repoId &&
+          entry.kind === currentBinding.kind
+        ) {
+          refreshedBinding = {
+            ...currentBinding,
+            entryName: entry.entryName,
+            entryPath: entry.entryPath,
+            entryTitle: entry.title || currentBinding.entryTitle,
           };
+          setCurrentBinding(refreshedBinding);
+          if (entry.runtimeArtifact) {
+            nextValue = {
+              ...nextValue,
+              code: entry.runtimeArtifact.code,
+              version: entry.runtimeArtifact.version,
+            };
+          }
         }
       } catch {
-        // The persisted binding remains valid even if the refreshed runtime artifact cannot be read immediately.
+        // Keep the persisted binding when the refreshed entry metadata cannot be read immediately.
+      }
+      const resolver = RunJSSourceResolverRegistry.getResolver(LIGHT_EXTENSION_SOURCE_MODE);
+      if (refreshedBinding && typeof resolver?.getBindingTitle === 'function') {
+        try {
+          const refreshedTitle = await resolver.getBindingTitle({
+            sourceMode: LIGHT_EXTENSION_SOURCE_MODE,
+            sourceBinding: refreshedBinding,
+            settings: isRecord(props.value.settings) ? props.value.settings : undefined,
+          });
+          if (refreshedTitle) {
+            refreshedBinding = {
+              ...refreshedBinding,
+              entryTitle: refreshedTitle,
+            };
+            setCurrentBinding(refreshedBinding);
+          }
+        } catch {
+          // Cache invalidation is still effective when the selectable entry refresh temporarily fails.
+        }
       }
     }
     await (props.onPersistedChange || props.onChange)?.({
       ...nextValue,
-      ...(currentBinding ? { sourceBinding: currentBinding } : {}),
+      ...(refreshedBinding ? { sourceBinding: refreshedBinding } : {}),
     });
     await waitForHostRefreshCommit();
-  }, [api, currentBinding, props.onChange, props.onPersistedChange, props.value]);
+  }, [api, currentBinding, props.onChange, props.onPersistedChange, props.value, resolverApi]);
 
   React.useEffect(() => {
     if (typeof editorView?.setFooter !== 'function') {
