@@ -30,6 +30,7 @@ import {
   createTypeScriptCompletionSource,
   createTypeScriptHoverTooltip,
   createTypeScriptProjectLinter,
+  createTypeScriptProjectSession,
   type CodeEditorTypeScriptProjectRef,
 } from '../typescriptProject';
 import { resolveTooltipParent } from './tooltipParent';
@@ -155,6 +156,7 @@ export const EditorCore: React.FC<{
   const placeholderCompartment = useMemo(() => new Compartment(), []);
   const themeCompartment = useMemo(() => new Compartment(), []);
   const editorThemeCompartment = useMemo(() => new Compartment(), []);
+  const typeScriptProjectSession = useMemo(() => createTypeScriptProjectSession(), []);
 
   completionSourceRef.current = completionSource;
   extraCompletionsRef.current = extraCompletions;
@@ -185,11 +187,18 @@ export const EditorCore: React.FC<{
     };
   }, []);
   const typeScriptCompletionSource = useMemo(
-    () => createTypeScriptCompletionSource({ projectRef: stableTypeScriptProjectRef }),
-    [],
+    () =>
+      createTypeScriptCompletionSource({ projectRef: stableTypeScriptProjectRef, session: typeScriptProjectSession }),
+    [typeScriptProjectSession],
   );
-  const typeScriptLinter = useMemo(() => createTypeScriptProjectLinter({ projectRef: stableTypeScriptProjectRef }), []);
-  const typeScriptHover = useMemo(() => createTypeScriptHoverTooltip({ projectRef: stableTypeScriptProjectRef }), []);
+  const typeScriptLinter = useMemo(
+    () => createTypeScriptProjectLinter({ projectRef: stableTypeScriptProjectRef, session: typeScriptProjectSession }),
+    [typeScriptProjectSession],
+  );
+  const typeScriptHover = useMemo(
+    () => createTypeScriptHoverTooltip({ projectRef: stableTypeScriptProjectRef, session: typeScriptProjectSession }),
+    [typeScriptProjectSession],
+  );
   const jsonCompletionSource = useMemo(() => createJsonCompletionSource(jsonSchemaRef), []);
   const jsonLinter = useMemo(() => createJsonLinter(jsonSchemaRef), []);
   const jsonHover = useMemo(() => createJsonHoverTooltip(jsonSchemaRef), []);
@@ -259,6 +268,7 @@ export const EditorCore: React.FC<{
       } catch (_) {
         // EditorView.destroy is best-effort during host teardown.
       }
+      typeScriptProjectSession.dispose();
       viewRef.current = null;
     };
     // Dynamic editor behavior is updated through compartments below.

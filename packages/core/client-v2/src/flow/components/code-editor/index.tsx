@@ -63,6 +63,7 @@ export * from './types';
 export * from './extension';
 export * from './runjsDiagnostics';
 export * from './typescriptProject';
+export * from './typescriptLibraryRegistry';
 export type { CodeEditorJsonSchema } from './jsonLanguageService';
 export type { RunJSImportModuleCompletion } from './runjsCompletionSource';
 

@@ -14,11 +14,21 @@ import { type Tooltip, hoverTooltip } from '@codemirror/view';
 import {
   buildRunJSTypeScriptContextDeclaration,
   buildRunJSTypeScriptEnvironmentFiles,
+  collectRunJSTypeLibraryUsage,
   createRunJSTypeScriptCompilerOptions,
+  type RunJSTypeLibraryPack,
   RUNJS_TYPESCRIPT_CONTEXT_PATH,
 } from '@nocobase/runjs/client-v2';
 
 import { runJSTypeScriptLibSources } from './runJSTypeScriptLibSources';
+import { loadRunJSTypeLibraryPacks } from './typescriptLibraryRegistry';
+import {
+  clearTypeScriptImmutableFileCacheForTests,
+  getTypeScriptImmutableFileCacheDebugState,
+  TypeScriptImmutableFileConflictError,
+  TypeScriptVirtualFileSystem,
+  type TypeScriptVirtualFileInput,
+} from './typescriptVirtualFileSystem';
 
 export interface CodeEditorTypeScriptFile {
   path: string;
@@ -34,6 +44,7 @@ export interface CodeEditorTypeScriptProject {
     modelUse?: string;
     globalContextType?: string;
   };
+  onInternalError?: (error: CodeEditorTypeScriptProjectInternalError) => void;
 }
 
 export interface CodeEditorTypeScriptProjectRef {
@@ -50,12 +61,6 @@ type TypeScriptUserPreferences = import('typescript').UserPreferences;
 type TypeScriptFormatCodeSettings = import('typescript').FormatCodeSettings;
 type TypeScriptTextChange = import('typescript').TextChange;
 
-type VirtualFile = {
-  fileName: string;
-  path: string;
-  content: string;
-};
-
 type CodeMirrorTextChange = {
   from: number;
   insert: string;
@@ -64,16 +69,81 @@ type CodeMirrorTextChange = {
 
 type ProjectService = {
   currentFileName: string;
-  files: Map<string, VirtualFile>;
+  compilerOptions: TypeScriptCompilerOptions;
+  fileSystem: TypeScriptVirtualFileSystem;
   service: TypeScriptLanguageService;
-  signature: string;
+  structureKey: string;
   ts: TypeScriptModule;
 };
+
+export type CodeEditorTypeScriptProjectInternalErrorCode = 'TYPE_LIBRARY_LOAD_FAILED' | 'TYPE_LIBRARY_FILE_CONFLICT';
+
+export interface CodeEditorTypeScriptProjectInternalError {
+  cause: unknown;
+  code: CodeEditorTypeScriptProjectInternalErrorCode;
+  message: string;
+  packIds: readonly string[];
+}
+
+export interface CodeEditorTypeScriptProjectDebugState {
+  allFileNames: string[];
+  disposed: boolean;
+  fileVersions: Record<string, string>;
+  immutableFileCount: number;
+  immutableSnapshotCreationCount: number;
+  languageServiceCreationCount: number;
+  rootFileNames: string[];
+  structureKey?: string;
+}
+
+export interface CodeEditorTypeScriptProjectSession {
+  dispose(): void;
+  getCompletionResult(
+    project: CodeEditorTypeScriptProject,
+    position: number,
+    currentFileContent?: string,
+    explicit?: boolean,
+  ): Promise<CompletionResult | null>;
+  getDebugState(): CodeEditorTypeScriptProjectDebugState;
+  getDiagnostics(project: CodeEditorTypeScriptProject, currentFileContent?: string): Promise<Diagnostic[]>;
+  getHover(
+    project: CodeEditorTypeScriptProject,
+    position: number,
+    currentFileContent?: string,
+  ): Promise<TypeScriptQuickInfoResult | null>;
+  getLastInternalError(): CodeEditorTypeScriptProjectInternalError | null;
+}
+
+type TypeScriptQuickInfoResult = {
+  detail: string;
+  from: number;
+  message: string;
+  to: number;
+};
+
+type PreparedProject = {
+  compilerOptions: TypeScriptCompilerOptions;
+  currentFileName: string;
+  files: TypeScriptVirtualFileInput[];
+  packIds: string[];
+  structureKey: string;
+  ts: TypeScriptModule;
+};
+
+class TypeScriptLibraryLoadingError extends Error {
+  constructor(
+    readonly packIds: readonly string[],
+    readonly cause: unknown,
+  ) {
+    super('Failed to load RunJS TypeScript library packs.');
+    this.name = 'TypeScriptLibraryLoadingError';
+  }
+}
 
 const runJSTypeScriptEnvironmentFiles = buildRunJSTypeScriptEnvironmentFiles(runJSTypeScriptLibSources);
 
 let typeScriptModulePromise: Promise<TypeScriptModule> | null = null;
-let cachedProjectService: ProjectService | null = null;
+let sharedDocumentRegistry: import('typescript').DocumentRegistry | null = null;
 
 async function loadTypeScript(): Promise<TypeScriptModule> {
   if (!typeScriptModulePromise) {
@@ -111,91 +181,166 @@ function getScriptKind(ts: TypeScriptModule, fileName: string): import('typescri
   return ts.ScriptKind.TS;
 }
 
-function createFiles(project: CodeEditorTypeScriptProject, currentFileContent?: string): Map<string, VirtualFile> {
-  const files = new Map<string, VirtualFile>();
-  const addFile = (file: CodeEditorTypeScriptFile) => {
-    const path = normalizeProjectPath(file.path);
-    const fileName = toFileName(path);
-    files.set(fileName, {
-      content: String(file.content ?? ''),
-      fileName,
-      path,
-    });
-  };
-
-  for (const file of Array.isArray(project.files) ? project.files : []) {
-    addFile(file);
-  }
-  for (const file of Array.isArray(project.declarationFiles) ? project.declarationFiles : []) {
-    addFile(file);
-  }
-  for (const file of runJSTypeScriptEnvironmentFiles) {
-    addFile(file);
-  }
-
-  files.set(RUNJS_TYPESCRIPT_CONTEXT_PATH, {
-    content: buildRunJSTypeScriptContextDeclaration(project.runJSContext?.modelUse, {
-      globalContextType: project.runJSContext?.globalContextType,
-    }),
-    fileName: RUNJS_TYPESCRIPT_CONTEXT_PATH,
-    path: RUNJS_TYPESCRIPT_CONTEXT_PATH.slice(1),
-  });
-
-  const currentFileName = toFileName(project.currentFilePath);
-  if (typeof currentFileContent === 'string') {
-    const currentFile = files.get(currentFileName);
-    files.set(currentFileName, {
-      content: currentFileContent,
-      fileName: currentFileName,
-      path: currentFile?.path || normalizeProjectPath(project.currentFilePath),
-    });
-  }
-
-  return files;
-}
-
-function createProjectSignature(
-  project: CodeEditorTypeScriptProject,
-  currentFileContent: string | undefined,
-  compilerOptions: TypeScriptCompilerOptions,
-  files: Map<string, VirtualFile>,
-): string {
-  const fileSignature = Array.from(files.values())
-    .sort((left, right) => left.fileName.localeCompare(right.fileName))
-    .map((file) => `${file.fileName}\u0000${file.content}`)
-    .join('\u0001');
-  return [
-    toFileName(project.currentFilePath),
-    typeof currentFileContent === 'string' ? 'inline' : 'project',
-    JSON.stringify(compilerOptions),
-    fileSignature,
-  ].join('\u0002');
-}
-
 function isInsideDirectory(fileName: string, directoryName: string): boolean {
   const normalizedFile = normalizeFileName(fileName);
   const normalizedDirectory = normalizeFileName(directoryName).replace(/\/$/, '');
   return normalizedFile === normalizedDirectory || normalizedFile.startsWith(`${normalizedDirectory}/`);
 }
 
-async function getProjectService(
+function mergeFileInput(files: Map<string, TypeScriptVirtualFileInput>, input: TypeScriptVirtualFileInput): void {
+  const fileName = normalizeFileName(input.fileName);
+  const existing = files.get(fileName);
+  if (!existing) {
+    files.set(fileName, { ...input, fileName });
+    return;
+  }
+  if (existing.content !== input.content) {
+    throw new TypeScriptImmutableFileConflictError(
+      fileName,
+      existing.contentHash || 'mutable',
+      input.contentHash || 'mutable',
+    );
+  }
+  files.set(fileName, {
+    ...existing,
+    immutable: existing.immutable || input.immutable,
+    root: existing.root || input.root,
+  });
+}
+
+function addProjectFile(
+  files: Map<string, TypeScriptVirtualFileInput>,
+  file: CodeEditorTypeScriptFile,
+  root: boolean,
+): void {
+  const fileName = toFileName(file.path);
+  mergeFileInput(files, {
+    content: String(file.content ?? ''),
+    fileName,
+    root,
+  });
+}
+
+function addPackFiles(files: Map<string, TypeScriptVirtualFileInput>, packs: readonly RunJSTypeLibraryPack[]): void {
+  for (const pack of packs) {
+    for (const file of pack.rootFiles) {
+      mergeFileInput(files, {
+        content: file.content,
+        contentHash: file.contentHash,
+        fileName: file.path,
+        immutable: true,
+        root: true,
+      });
+    }
+    for (const file of pack.dependencyFiles) {
+      mergeFileInput(files, {
+        content: file.content,
+        contentHash: file.contentHash,
+        fileName: file.path,
+        immutable: true,
+        root: false,
+      });
+    }
+  }
+}
+
+function createRequestStateKey(project: CodeEditorTypeScriptProject, currentFileContent?: string): string {
+  const files = [...(project.files || []), ...(project.declarationFiles || [])]
+    .map((file) => [normalizeProjectPath(file.path), file.content] as const)
+    .sort(([left], [right]) => left.localeCompare(right));
+  return JSON.stringify({
+    compilerOptions: project.compilerOptions || {},
+    currentFileContent,
+    currentFilePath: normalizeProjectPath(project.currentFilePath),
+    files,
+    runJSContext: project.runJSContext || {},
+  });
+}
+
+async function prepareProject(
   project: CodeEditorTypeScriptProject,
   currentFileContent?: string,
-): Promise<ProjectService> {
+): Promise<PreparedProject> {
   const ts = await loadTypeScript();
   const compilerOptions = {
     ...createRunJSTypeScriptCompilerOptions(ts),
     ...(project.compilerOptions || {}),
   };
-  const files = createFiles(project, currentFileContent);
   const currentFileName = toFileName(project.currentFilePath);
-  const signature = createProjectSignature(project, currentFileContent, compilerOptions, files);
-
-  if (cachedProjectService?.signature === signature) {
-    return cachedProjectService;
+  const usageRequests = collectRunJSTypeLibraryUsage(ts, {
+    currentFile:
+      typeof currentFileContent === 'string'
+        ? { content: currentFileContent, path: normalizeProjectPath(project.currentFilePath) }
+        : undefined,
+    files: (project.files || []).map((file) => ({ content: file.content, path: normalizeProjectPath(file.path) })),
+  });
+  let packs: RunJSTypeLibraryPack[];
+  try {
+    packs = await loadRunJSTypeLibraryPacks(usageRequests);
+  } catch (error) {
+    throw new TypeScriptLibraryLoadingError(
+      usageRequests.map((request) => request.packId),
+      error,
+    );
   }
+  const files = new Map<string, TypeScriptVirtualFileInput>();
+  for (const file of project.files || []) {
+    addProjectFile(files, file, true);
+  }
+  for (const file of project.declarationFiles || []) {
+    addProjectFile(files, file, true);
+  }
+  for (const file of runJSTypeScriptEnvironmentFiles) {
+    mergeFileInput(files, {
+      content: file.content,
+      fileName: file.path,
+      immutable: true,
+      root: true,
+    });
+  }
+  mergeFileInput(files, {
+    content: buildRunJSTypeScriptContextDeclaration(project.runJSContext?.modelUse, {
+      globalContextType: project.runJSContext?.globalContextType,
+    }),
+    fileName: RUNJS_TYPESCRIPT_CONTEXT_PATH,
+    root: true,
+  });
+  if (typeof currentFileContent === 'string') {
+    const current = files.get(currentFileName);
+    files.set(currentFileName, {
+      content: currentFileContent,
+      fileName: currentFileName,
+      root: true,
+    });
+  }
+  addPackFiles(files, packs);
+  const packIds = packs.map((pack) => pack.id).sort();
+  const fileStructure = Array.from(files.values())
+    .map((file) => `${file.fileName}:${file.root ? 'root' : 'dependency'}`)
+    .sort();
+  const structureKey = JSON.stringify({
+    compilerOptions,
+    context: project.runJSContext || {},
+    files: fileStructure,
+    packIds,
+  });
+  return {
+    compilerOptions,
+    currentFileName,
+    files: Array.from(files.values()),
+    packIds,
+    structureKey,
+    ts,
+  };
+}
 
-  const getFile = (fileName: string): VirtualFile | undefined => files.get(normalizeFileName(fileName));
+function createLanguageServiceHost(
+  ts: TypeScriptModule,
+  fileSystem: TypeScriptVirtualFileSystem,
+  compilerOptions: TypeScriptCompilerOptions,
+): import('typescript').LanguageServiceHost {
+  const getFile = (fileName: string) => fileSystem.get(fileName);
+
   const moduleResolutionHost: import('typescript').ModuleResolutionHost = {
     fileExists(fileName) {
       return Boolean(getFile(fileName));
@@ -205,10 +350,10 @@ async function getProjectService(
     },
   };
 
-  const host: import('typescript').LanguageServiceHost = {
+  return {
     directoryExists(directoryName) {
       const normalizedDirectory = normalizeFileName(directoryName).replace(/\/$/, '');
-      return Array.from(files.keys()).some((fileName) => isInsideDirectory(fileName, normalizedDirectory));
+      return fileSystem.getAllFileNames().some((fileName) => isInsideDirectory(fileName, normalizedDirectory));
     },
     fileExists(fileName) {
       return Boolean(getFile(fileName));
@@ -225,7 +370,7 @@ async function getProjectService(
     getDirectories(directoryName) {
       const normalizedDirectory = normalizeFileName(directoryName).replace(/\/$/, '');
       const directories = new Set<string>();
-      for (const fileName of files.keys()) {
+      for (const fileName of fileSystem.getAllFileNames()) {
         if (!isInsideDirectory(fileName, normalizedDirectory)) continue;
         const relative = fileName.slice(normalizedDirectory.length).replace(/^\/+/, '');
         const first = relative.split('/')[0];
@@ -236,23 +381,23 @@ async function getProjectService(
       return Array.from(directories);
     },
     getScriptFileNames() {
-      return Array.from(files.keys());
+      return fileSystem.getRootFileNames();
     },
     getScriptKind(fileName) {
       return getScriptKind(ts, fileName);
     },
     getScriptSnapshot(fileName) {
       const file = getFile(fileName);
-      return file ? ts.ScriptSnapshot.fromString(file.content) : undefined;
+      return file?.snapshot;
     },
     getScriptVersion(fileName) {
       const file = getFile(fileName);
-      return file ? String(file.content.length) : '0';
+      return file?.version || '0';
     },
     readDirectory(directoryName, extensions) {
       const normalizedDirectory = normalizeFileName(directoryName).replace(/\/$/, '');
       const allowedExtensions = Array.isArray(extensions) ? new Set(extensions) : null;
-      return Array.from(files.keys()).filter((fileName) => {
+      return fileSystem.getAllFileNames().filter((fileName) => {
         if (!isInsideDirectory(fileName, normalizedDirectory)) return false;
         if (!allowedExtensions) return true;
         return Array.from(allowedExtensions).some((extension) => fileName.endsWith(extension));
@@ -271,16 +416,6 @@ async function getProjectService(
       return true;
     },
   };
-
-  const service = ts.createLanguageService(host, ts.createDocumentRegistry());
-  cachedProjectService = {
-    currentFileName,
-    files,
-    service,
-    signature,
-    ts,
-  };
-  return cachedProjectService;
 }
 
 function getWordRange(context: CompletionContext): { from: number; to: number } | null {
@@ -464,13 +599,11 @@ function completionEntryToCodeMirrorCompletion(
   };
 }
 
-export async function getTypeScriptCompletionResult(
-  project: CodeEditorTypeScriptProject,
+function getCompletionResultFromService(
+  projectService: ProjectService,
   position: number,
-  currentFileContent?: string,
-  explicit = false,
-): Promise<CompletionResult | null> {
-  const projectService = await getProjectService(project, currentFileContent);
+  explicit: boolean,
+): CompletionResult | null {
   const preferences: TypeScriptUserPreferences = {
     allowIncompleteCompletions: true,
     includeCompletionsForModuleExports: true,
@@ -507,10 +640,238 @@ export async function getTypeScriptCompletionResult(
   };
 }
 
+function getDiagnosticsFromService(projectService: ProjectService): Diagnostic[] {
+  const syntax = projectService.service.getSyntacticDiagnostics(projectService.currentFileName);
+  const semantic = projectService.service.getSemanticDiagnostics(projectService.currentFileName);
+  const suggestions = projectService.service.getSuggestionDiagnostics(projectService.currentFileName);
+  return [...syntax, ...semantic, ...suggestions]
+    .filter((diagnostic) => typeof diagnostic.start === 'number')
+    .map((diagnostic) => {
+      const from = Math.max(0, diagnostic.start || 0);
+      const length = Math.max(1, diagnostic.length || 1);
+      return {
+        from,
+        message: flattenDiagnosticMessage(projectService.ts, diagnostic),
+        severity: diagnosticCategoryToSeverity(projectService.ts, diagnostic),
+        source: 'TypeScript',
+        to: from + length,
+      };
+    });
+}
+
+class TypeScriptProjectSession implements CodeEditorTypeScriptProjectSession {
+  private disposed = false;
+  private languageServiceCreationCount = 0;
+  private lastInternalError: CodeEditorTypeScriptProjectInternalError | null = null;
+  private latestStateGeneration = 0;
+  private latestStateKey = '';
+  private projectService: ProjectService | null = null;
+  private requestIds = new Map<'completion' | 'diagnostics' | 'hover', number>();
+
+  async getCompletionResult(
+    project: CodeEditorTypeScriptProject,
+    position: number,
+    currentFileContent?: string,
+    explicit = false,
+  ): Promise<CompletionResult | null> {
+    const request = this.beginRequest('completion', project, currentFileContent);
+    try {
+      const service = await this.prepareService(project, currentFileContent, request.stateGeneration);
+      if (!service || !this.isCurrentRequest('completion', request)) return null;
+      const result = getCompletionResultFromService(service, position, explicit);
+      return this.isCurrentRequest('completion', request) ? result : null;
+    } catch (error) {
+      this.reportInternalError(project, error);
+      return null;
+    }
+  }
+
+  async getDiagnostics(project: CodeEditorTypeScriptProject, currentFileContent?: string): Promise<Diagnostic[]> {
+    const request = this.beginRequest('diagnostics', project, currentFileContent);
+    try {
+      const service = await this.prepareService(project, currentFileContent, request.stateGeneration);
+      if (!service || !this.isCurrentRequest('diagnostics', request)) return [];
+      const diagnostics = getDiagnosticsFromService(service);
+      return this.isCurrentRequest('diagnostics', request) ? diagnostics : [];
+    } catch (error) {
+      this.reportInternalError(project, error);
+      return [];
+    }
+  }
+
+  async getHover(
+    project: CodeEditorTypeScriptProject,
+    position: number,
+    currentFileContent?: string,
+  ): Promise<TypeScriptQuickInfoResult | null> {
+    const request = this.beginRequest('hover', project, currentFileContent);
+    try {
+      const service = await this.prepareService(project, currentFileContent, request.stateGeneration);
+      if (!service || !this.isCurrentRequest('hover', request)) return null;
+      const quickInfo = service.service.getQuickInfoAtPosition(service.currentFileName, position);
+      if (!quickInfo || !this.isCurrentRequest('hover', request)) return null;
+      return {
+        detail: service.ts.displayPartsToString(quickInfo.documentation || []),
+        from: quickInfo.textSpan?.start ?? position,
+        message: service.ts.displayPartsToString(quickInfo.displayParts || []),
+        to: quickInfo.textSpan ? quickInfo.textSpan.start + quickInfo.textSpan.length : position,
+      };
+    } catch (error) {
+      this.reportInternalError(project, error);
+      return null;
+    }
+  }
+
+  getDebugState(): CodeEditorTypeScriptProjectDebugState {
+    const immutableCache = getTypeScriptImmutableFileCacheDebugState();
+    return {
+      allFileNames: this.projectService?.fileSystem.getAllFileNames() || [],
+      disposed: this.disposed,
+      fileVersions: this.projectService?.fileSystem.getVersions() || {},
+      immutableFileCount: immutableCache.fileCount,
+      immutableSnapshotCreationCount: immutableCache.snapshotCreationCount,
+      languageServiceCreationCount: this.languageServiceCreationCount,
+      rootFileNames: this.projectService?.fileSystem.getRootFileNames() || [],
+      structureKey: this.projectService?.structureKey,
+    };
+  }
+
+  getLastInternalError(): CodeEditorTypeScriptProjectInternalError | null {
+    return this.lastInternalError;
+  }
+
+  dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
+    this.projectService?.service.dispose();
+    this.projectService = null;
+    this.requestIds.clear();
+    this.latestStateGeneration += 1;
+  }
+
+  private beginRequest(
+    kind: 'completion' | 'diagnostics' | 'hover',
+    project: CodeEditorTypeScriptProject,
+    currentFileContent?: string,
+  ): { requestId: number; stateGeneration: number } {
+    const stateKey = createRequestStateKey(project, currentFileContent);
+    if (stateKey !== this.latestStateKey) {
+      this.latestStateKey = stateKey;
+      this.latestStateGeneration += 1;
+    }
+    const requestId = (this.requestIds.get(kind) || 0) + 1;
+    this.requestIds.set(kind, requestId);
+    return { requestId, stateGeneration: this.latestStateGeneration };
+  }
+
+  private isCurrentRequest(
+    kind: 'completion' | 'diagnostics' | 'hover',
+    request: { requestId: number; stateGeneration: number },
+  ): boolean {
+    return (
+      !this.disposed &&
+      request.stateGeneration === this.latestStateGeneration &&
+      request.requestId === this.requestIds.get(kind)
+    );
+  }
+
+  private async prepareService(
+    project: CodeEditorTypeScriptProject,
+    currentFileContent: string | undefined,
+    stateGeneration: number,
+  ): Promise<ProjectService | null> {
+    if (this.disposed) return null;
+    const prepared = await prepareProject(project, currentFileContent);
+    if (this.disposed || stateGeneration !== this.latestStateGeneration) return null;
+
+    if (this.projectService?.structureKey === prepared.structureKey) {
+      this.projectService.fileSystem.synchronize(prepared.files);
+      this.projectService.currentFileName = prepared.currentFileName;
+      return this.projectService;
+    }
+
+    this.projectService?.service.dispose();
+    const fileSystem = new TypeScriptVirtualFileSystem(prepared.ts);
+    fileSystem.synchronize(prepared.files);
+    if (!sharedDocumentRegistry) {
+      sharedDocumentRegistry = prepared.ts.createDocumentRegistry();
+    }
+    const host = createLanguageServiceHost(prepared.ts, fileSystem, prepared.compilerOptions);
+    const service = prepared.ts.createLanguageService(host, sharedDocumentRegistry);
+    this.languageServiceCreationCount += 1;
+    this.projectService = {
+      compilerOptions: prepared.compilerOptions,
+      currentFileName: prepared.currentFileName,
+      fileSystem,
+      service,
+      structureKey: prepared.structureKey,
+      ts: prepared.ts,
+    };
+    return this.projectService;
+  }
+
+  private reportInternalError(project: CodeEditorTypeScriptProject, error: unknown): void {
+    const internalError: CodeEditorTypeScriptProjectInternalError =
+      error instanceof TypeScriptImmutableFileConflictError
+        ? {
+            cause: error,
+            code: error.code,
+            message: error.message,
+            packIds: [],
+          }
+        : error instanceof TypeScriptLibraryLoadingError
+          ? {
+              cause: error.cause,
+              code: 'TYPE_LIBRARY_LOAD_FAILED',
+              message: error.message,
+              packIds: error.packIds,
+            }
+          : {
+              cause: error,
+              code: 'TYPE_LIBRARY_LOAD_FAILED',
+              message: error instanceof Error ? error.message : 'Unknown TypeScript project error.',
+              packIds: [],
+            };
+    this.lastInternalError = internalError;
+    try {
+      project.onInternalError?.(internalError);
+    } catch (_) {
+      // Internal error observers must not interrupt editor requests.
+    }
+  }
+}
+
+export function createTypeScriptProjectSession(): CodeEditorTypeScriptProjectSession {
+  return new TypeScriptProjectSession();
+}
+
+let defaultProjectSession = createTypeScriptProjectSession();
+
+export function disposeDefaultTypeScriptProjectSession(): void {
+  defaultProjectSession.dispose();
+  defaultProjectSession = createTypeScriptProjectSession();
+}
+
+export function clearTypeScriptProjectCachesForTests(): void {
+  disposeDefaultTypeScriptProjectSession();
+  clearTypeScriptImmutableFileCacheForTests();
+  sharedDocumentRegistry = null;
+}
+
+export async function getTypeScriptCompletionResult(
+  project: CodeEditorTypeScriptProject,
+  position: number,
+  currentFileContent?: string,
+  explicit = false,
+): Promise<CompletionResult | null> {
+  return await defaultProjectSession.getCompletionResult(project, position, currentFileContent, explicit);
+}
+
 export function createTypeScriptCompletionSource(options: {
   projectRef?: CodeEditorTypeScriptProjectRef;
+  session?: CodeEditorTypeScriptProjectSession;
 }): CompletionSource {
-  const { projectRef } = options;
+  const { projectRef, session = defaultProjectSession } = options;
 
   return async (context: CompletionContext): Promise<CompletionResult | null> => {
     const project = projectRef?.current;
@@ -524,7 +885,7 @@ export function createTypeScriptCompletionSource(options: {
     }
 
     try {
-      const result = await getTypeScriptCompletionResult(
+      const result = await session.getCompletionResult(
         project,
         context.pos,
         context.state.doc.toString(),
@@ -562,27 +923,14 @@ export async function getTypeScriptProjectDiagnostics(
   project: CodeEditorTypeScriptProject,
   currentFileContent?: string,
 ): Promise<Diagnostic[]> {
-  const projectService = await getProjectService(project, currentFileContent);
-  const syntax = projectService.service.getSyntacticDiagnostics(projectService.currentFileName);
-  const semantic = projectService.service.getSemanticDiagnostics(projectService.currentFileName);
-  const suggestions = projectService.service.getSuggestionDiagnostics(projectService.currentFileName);
-  return [...syntax, ...semantic, ...suggestions]
-    .filter((diagnostic) => typeof diagnostic.start === 'number')
-    .map((diagnostic) => {
-      const from = Math.max(0, diagnostic.start || 0);
-      const length = Math.max(1, diagnostic.length || 1);
-      return {
-        from,
-        message: flattenDiagnosticMessage(projectService.ts, diagnostic),
-        severity: diagnosticCategoryToSeverity(projectService.ts, diagnostic),
-        source: 'TypeScript',
-        to: from + length,
-      };
-    });
+  return await defaultProjectSession.getDiagnostics(project, currentFileContent);
 }
 
-export function createTypeScriptProjectLinter(options: { projectRef?: CodeEditorTypeScriptProjectRef }): Extension {
-  const { projectRef } = options;
+export function createTypeScriptProjectLinter(options: {
+  projectRef?: CodeEditorTypeScriptProjectRef;
+  session?: CodeEditorTypeScriptProjectSession;
+}): Extension {
+  const { projectRef, session = defaultProjectSession } = options;
 
   return linter(async (view) => {
     const project = projectRef?.current;
@@ -591,7 +939,7 @@ export function createTypeScriptProjectLinter(options: { projectRef?: CodeEditor
     }
 
     try {
-      return await getTypeScriptProjectDiagnostics(project, view.state.doc.toString());
+      return await session.getDiagnostics(project, view.state.doc.toString());
     } catch (_) {
       return [];
     }
@@ -609,8 +957,11 @@ function createHoverTooltip(message: string, detail?: string): Tooltip['create']
   };
 }
 
-export function createTypeScriptHoverTooltip(options: { projectRef?: CodeEditorTypeScriptProjectRef }): Extension {
-  const { projectRef } = options;
+export function createTypeScriptHoverTooltip(options: {
+  projectRef?: CodeEditorTypeScriptProjectRef;
+  session?: CodeEditorTypeScriptProjectSession;
+}): Extension {
+  const { projectRef, session = defaultProjectSession } = options;
 
   return hoverTooltip(async (view, position) => {
     const project = projectRef?.current;
@@ -619,20 +970,15 @@ export function createTypeScriptHoverTooltip(options: { projectRef?: CodeEditorT
     }
 
     try {
-      const projectService = await getProjectService(project, view.state.doc.toString());
-      const quickInfo = projectService.service.getQuickInfoAtPosition(projectService.currentFileName, position);
+      const quickInfo = await session.getHover(project, position, view.state.doc.toString());
       if (!quickInfo) {
         return null;
       }
 
-      const message = projectService.ts.displayPartsToString(quickInfo.displayParts || []);
-      const detail = projectService.ts.displayPartsToString(quickInfo.documentation || []);
-      const from = quickInfo.textSpan?.start ?? position;
-      const to = quickInfo.textSpan ? quickInfo.textSpan.start + quickInfo.textSpan.length : position;
       return {
-        create: createHoverTooltip(message, detail),
-        end: to,
-        pos: from,
+        create: createHoverTooltip(quickInfo.message, quickInfo.detail),
+        end: quickInfo.to,
+        pos: quickInfo.from,
       };
     } catch (_) {
       return null;

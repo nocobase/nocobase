@@ -29,5 +29,8 @@
   },
   "dependencies": {
     "typescript": "5.1.3"
+  },
+  "scripts": {
+    "generate:type-packs": "tsx scripts/generate-type-packs.ts"
   }
 }

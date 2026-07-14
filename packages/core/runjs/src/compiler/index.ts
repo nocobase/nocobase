@@ -27,6 +27,7 @@ import {
 import { inspectRunJSSourceWorkspace } from './source-inspection';
 
 export * from './source-inspection';
+export * from '../type-packs/generator';
 export type { RunJSCompileFailureCode } from '..';
 
 export type RunJSCompileFileInput = RunJSCompileFile;
