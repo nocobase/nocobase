@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ReloadOutlined } from '@ant-design/icons';
+import { ArrowRightOutlined, ReloadOutlined } from '@ant-design/icons';
 import {
   CollectionFilter,
   type CompiledFilter,
@@ -354,7 +354,7 @@ function WorkflowManualTaskDetail() {
         'Manual tasks are not yet supported on the new page. Return to the legacy page to process this task.',
       )}
       extra={
-        <Button type="primary" href={href}>
+        <Button type="primary" href={href} icon={<ArrowRightOutlined aria-hidden />}>
           {t('Return to legacy page')}
         </Button>
       }
