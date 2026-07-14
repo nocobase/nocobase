@@ -17,9 +17,13 @@ import { useRequest } from 'ahooks';
 import { useFlowContext } from '../../FlowContextProvider';
 import type { MetaTreeNode } from '../../flowContext';
 
+const VARIABLE_PARSING_FAILED_TEXT = 'Variable parsing failed';
+
 const VariableTagComponent: React.FC<VariableTagProps> = ({
   value,
   onClear,
+  disabled = false,
+  allowCustomTagInput = true,
   className,
   style,
   metaTreeNode,
@@ -28,30 +32,30 @@ const VariableTagComponent: React.FC<VariableTagProps> = ({
   const { resolvedMetaTree } = useResolvedMetaTree(metaTree);
   const ctx = useFlowContext();
 
-  const { data: displayedValue } = useRequest(
+  const { data: displayState } = useRequest(
     async () => {
-      const resolveLabelFromPath = async (rawPath?: (string | number)[]): Promise<string | null> => {
-        if (!rawPath) return null;
-        if (!Array.isArray(rawPath)) return null;
-        if (!Array.isArray(resolvedMetaTree)) return null;
+      const resolveLabelFromPath = async (
+        rawPath?: (string | number)[],
+      ): Promise<{ label: string | null; resolved: boolean; attempted: boolean }> => {
+        if (!rawPath) return { label: null, resolved: false, attempted: false };
+        if (!Array.isArray(rawPath)) return { label: null, resolved: false, attempted: false };
+        if (!Array.isArray(resolvedMetaTree)) return { label: null, resolved: false, attempted: false };
 
         // 兼容 metaTree 为子树：顶层不含首段时，裁剪首段
         const topNames = new Set((resolvedMetaTree || []).map((n: any) => String(n?.name)));
         const path = !topNames.has(String(rawPath[0])) ? rawPath.slice(1) : rawPath;
-        if (!path.length) return '';
+        if (!path.length) return { label: '', resolved: true, attempted: true };
 
         let nodes: MetaTreeNode[] | undefined = resolvedMetaTree as MetaTreeNode[];
         const titleChain: string[] = [];
-        let matchedCount = 0;
 
         for (let i = 0; i < path.length; i++) {
-          if (!nodes) break;
+          if (!nodes) return { label: null, resolved: false, attempted: true };
           const seg = String(path[i]);
           const node = nodes.find((n) => String(n?.name) === seg) as MetaTreeNode | undefined;
-          if (!node) break; // 停在第一个无效段之前
+          if (!node) return { label: null, resolved: false, attempted: true };
 
           titleChain.push(String(node.title ?? node.name ?? seg));
-          matchedCount = i + 1;
 
           if (i < path.length - 1) {
             if (Array.isArray(node.children)) {
@@ -70,34 +74,41 @@ const VariableTagComponent: React.FC<VariableTagProps> = ({
           }
         }
 
-        if (matchedCount === 0) return null;
-
-        let label = titleChain.map(ctx.t).join('/');
-        if (matchedCount < path.length) {
-          const tail = path.slice(matchedCount).join('/');
-          label = tail ? `${label}/${tail}` : label;
-        }
-        return label;
+        return { label: titleChain.map(ctx.t).join('/'), resolved: true, attempted: true };
       };
 
       // 1) 优先使用已解析到的节点（包含完整父标题链）
       if (metaTreeNode?.parentTitles) {
-        return [...metaTreeNode.parentTitles, metaTreeNode.title].map(ctx.t).join('/');
+        return {
+          text: [...metaTreeNode.parentTitles, metaTreeNode.title].map(ctx.t).join('/'),
+          invalid: false,
+        };
       }
 
       // 2) metaTreeNode 存在但缺少 parentTitles：尝试根据 value/metaTreeNode.paths 从 metaTree 还原完整路径
       if (metaTreeNode) {
         const rawPath = parseValueToPath(value) || metaTreeNode.paths;
-        const label = await resolveLabelFromPath(rawPath as any);
-        return label ?? ctx.t(metaTreeNode.title) ?? '';
+        const result = await resolveLabelFromPath(rawPath as any);
+        if (result.resolved && result.label != null) {
+          return { text: result.label, invalid: false };
+        }
+        if (result.attempted) {
+          return { text: VARIABLE_PARSING_FAILED_TEXT, invalid: true, rawValue: String(value ?? '') };
+        }
+        return { text: ctx.t(metaTreeNode.title) ?? '', invalid: false };
       }
 
       // 3) 无 metaTreeNode：从 value 还原路径并拼接标题链；若找不到任何前缀则回退原始路径字符串
-      if (!value) return String(value);
+      if (!value) return { text: String(value), invalid: false };
       const rawPath = parseValueToPath(value);
-      const label = await resolveLabelFromPath(rawPath as any);
-      if (label != null) return label;
-      return Array.isArray(rawPath) ? rawPath.join('/') : String(value);
+      const result = await resolveLabelFromPath(rawPath as any);
+      if (result.resolved && result.label != null) {
+        return { text: result.label, invalid: false };
+      }
+      if (result.attempted) {
+        return { text: VARIABLE_PARSING_FAILED_TEXT, invalid: true, rawValue: String(value ?? '') };
+      }
+      return { text: Array.isArray(rawPath) ? rawPath.join('/') : String(value), invalid: false };
     },
     { refreshDeps: [resolvedMetaTree, value, metaTreeNode] },
   );
@@ -119,13 +130,13 @@ const VariableTagComponent: React.FC<VariableTagProps> = ({
   `;
 
   const customTagRender = (props: any) => {
-    const { label } = props;
-    const fullText = typeof label === 'string' ? label : String(label);
+    const fullText = displayState?.text || (typeof props.label === 'string' ? props.label : String(props.label));
+    const tooltipText = displayState?.invalid ? displayState.rawValue || fullText : fullText;
 
     return (
-      <Tooltip title={fullText} placement="top" getPopupContainer={() => document.body}>
+      <Tooltip title={tooltipText} placement="top" getPopupContainer={() => document.body}>
         <Tag
-          color="blue"
+          color={displayState?.invalid ? 'error' : 'blue'}
           style={{
             margin: `0 ${token.marginXXS || token.marginXS}px`,
             borderRadius: token.borderRadiusSM,
@@ -166,12 +177,14 @@ const VariableTagComponent: React.FC<VariableTagProps> = ({
         flex: '1 1 auto',
         ...style,
       }}
-      value={displayedValue ? [displayedValue] : []}
-      mode="tags"
+      value={displayState?.text ? [displayState.text] : []}
+      mode={allowCustomTagInput ? 'tags' : 'multiple'}
       open={false}
-      allowClear={!!onClear}
-      onClear={onClear}
-      disabled={!onClear}
+      showSearch={allowCustomTagInput}
+      searchValue={allowCustomTagInput ? undefined : ''}
+      allowClear={!disabled && !!onClear}
+      onClear={disabled ? undefined : onClear}
+      disabled={disabled || !onClear}
       variant="outlined"
       suffixIcon={null}
       tagRender={customTagRender}

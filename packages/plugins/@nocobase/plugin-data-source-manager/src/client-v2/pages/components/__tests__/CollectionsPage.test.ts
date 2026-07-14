@@ -10,6 +10,12 @@
 import { compileLegacyTemplate } from '../../../utils/compileLegacyTemplate';
 import { getInheritedFieldGroups, isFieldDeleteDisabled, isInheritedFieldOverridden } from '../FieldsPage';
 import { getPresetFieldRows } from '../CollectionsPage';
+import {
+  collectionNeedsRecordUniqueKey,
+  getCollectionRecordUniqueKey,
+  getCollectionUpdateActionUrl,
+  getRecordUniqueKeyFieldOptions,
+} from '../RecordUniqueKey';
 
 describe('getPresetFieldRows', () => {
   it('uses the preset title template when preset field label is a raw translation key', () => {
@@ -45,6 +51,63 @@ describe('getPresetFieldRows', () => {
     };
 
     expect(compileLegacyTemplate(rows[0].field, t)).toBe('空间');
+  });
+});
+
+describe('collection record unique key helpers', () => {
+  it('uses filterTargetKey before field primary keys', () => {
+    expect(
+      getCollectionRecordUniqueKey(
+        {
+          filterTargetKey: ['code'],
+        },
+        [{ name: 'id', primaryKey: true }],
+      ),
+    ).toEqual(['code']);
+  });
+
+  it('treats field primary keys as configured record unique keys', () => {
+    expect(getCollectionRecordUniqueKey({}, [{ name: 'id', primaryKey: true }])).toEqual(['id']);
+    expect(collectionNeedsRecordUniqueKey({}, [{ name: 'id', primaryKey: true }])).toBe(false);
+  });
+
+  it('requires a record unique key when no primary key is available', () => {
+    expect(collectionNeedsRecordUniqueKey({}, [{ name: 'name' }])).toBe(true);
+  });
+});
+
+describe('record unique key quick setup helpers', () => {
+  const t = (key: string) => key;
+
+  it('only includes fields whose interface is title usable', () => {
+    const options = getRecordUniqueKeyFieldOptions({
+      dataSourceType: 'postgres',
+      fieldInterfaceManager: {
+        getFieldInterface: (name, dataSourceType) => {
+          if (name === 'input' && dataSourceType === 'postgres') {
+            return { titleUsable: true };
+          }
+          if (name === 'json') {
+            return { titleUsable: false };
+          }
+          return undefined;
+        },
+      },
+      fields: [
+        { name: 'name', interface: 'input', uiSchema: { title: 'Name' } },
+        { name: 'config', interface: 'json', uiSchema: { title: 'Config' } },
+        { name: 'legacy', interface: 'unknown', uiSchema: { title: 'Legacy' } },
+        { name: 'no_interface', uiSchema: { title: 'No interface' } },
+      ],
+      t,
+    });
+
+    expect(options).toEqual([{ value: 'name', label: 'Name', title: 'Name' }]);
+  });
+
+  it('uses the external data source collection update endpoint', () => {
+    expect(getCollectionUpdateActionUrl('main')).toBe('collections:update');
+    expect(getCollectionUpdateActionUrl('analytics')).toBe('dataSources/analytics/collections:update');
   });
 });
 

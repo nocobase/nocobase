@@ -22,6 +22,7 @@ type PublicFormLayoutRuntimeModel = FlowModel & {
   getPageUidFromLayoutRoute?: (match: unknown) => string;
   context: FlowModel['context'] & {
     dataSourceManager?: DataSourceManager;
+    publicFormDataSourceManager?: DataSourceManager;
   };
 };
 
@@ -31,8 +32,8 @@ const PublicFormSettingsContent = observer((props: { model: PublicFormPageModel 
   const { token } = theme.useToken();
   const className = useMemo(
     () => css`
-      max-width: 800px;
-      margin: 20px auto 0;
+      max-width: ${token.screenMD}px;
+      margin: ${token.marginLG}px auto 0;
 
       .nb-block-grid {
         padding: 0 !important;
@@ -55,7 +56,7 @@ const PublicFormSettingsContent = observer((props: { model: PublicFormPageModel 
       }
 
       @media (max-width: ${token.screenMD}px) {
-        margin-top: 20px;
+        margin-top: ${token.marginLG}px;
       }
     `,
     [
@@ -91,6 +92,10 @@ export class PublicFormPageModel extends ChildPageModel {
   }
 
   private getPublicFormDataSourceManager() {
+    if (this.context.publicFormDataSourceManager) {
+      return this.context.publicFormDataSourceManager;
+    }
+
     const layoutModel = this.flowEngine.getModel<PublicFormLayoutRuntimeModel>(PUBLIC_FORM_LAYOUT_UID, true);
     const routePageUid = this.parent?.uid;
     const layoutPageUid = layoutModel?.getPageUidFromLayoutRoute?.(layoutModel.currentLayoutRoute);

@@ -62,6 +62,16 @@
             "type": "custom-link",
             "label": "Kanban",
             "link": "/interface-builder/blocks/data-blocks/kanban"
+          },
+          {
+            "type": "custom-link",
+            "label": "Gantt",
+            "link": "/interface-builder/blocks/data-blocks/gantt"
+          },
+          {
+            "type": "custom-link",
+            "label": "Bình luận",
+            "link": "/interface-builder/blocks/data-blocks/comment"
           }
         ]
       },

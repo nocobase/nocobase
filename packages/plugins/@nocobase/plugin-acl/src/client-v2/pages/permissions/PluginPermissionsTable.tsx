@@ -22,14 +22,20 @@ interface PluginPermissionsTableProps {
   role: Role;
 }
 
+function normalizeSettingsItem(item: PluginSettingsPageType): PluginSettingsPageType {
+  const children = (item.children ?? [])
+    .filter((child) => child.key !== item.key && child.title !== item.title)
+    .filter((child) => !item.aclSnippet || child.aclSnippet !== item.aclSnippet)
+    .map((child) => normalizeSettingsItem(child));
+
+  if (!children.length) {
+    return { ...item, children: undefined };
+  }
+  return { ...item, children };
+}
+
 function normalizeSettingsItems(items: PluginSettingsPageType[]): PluginSettingsPageType[] {
-  return items.map((item) => {
-    const children = (item.children ?? []).filter((child) => child.key !== item.key && child.title !== item.title);
-    if (!children.length) {
-      return { ...item, children: undefined };
-    }
-    return { ...item, children };
-  });
+  return items.map((item) => normalizeSettingsItem(item));
 }
 
 function flattenSettings(items: PluginSettingsPageType[]) {
@@ -47,7 +53,10 @@ function getChildrenAclSnippets(item: PluginSettingsPageType, result: string[] =
 }
 
 function getDeniedSnippets(item: PluginSettingsPageType) {
-  return [item.aclSnippet, ...getChildrenAclSnippets(item)].filter(Boolean).map((snippet) => `!${snippet}`);
+  const snippets = [item.aclSnippet, ...getChildrenAclSnippets(item)].filter((snippet): snippet is string =>
+    Boolean(snippet),
+  );
+  return Array.from(new Set(snippets.map((snippet) => `!${snippet}`)));
 }
 
 export default function PluginPermissionsTable(props: PluginPermissionsTableProps) {

@@ -8,7 +8,7 @@
  */
 
 import { ChatOpenAI } from '@langchain/openai';
-import { LLMProvider } from '../provider';
+import { LLMProvider, ReasoningOptions, ResolvedReasoningOptions } from '../provider';
 import { Model } from '@nocobase/database';
 import { stripToolCallTags } from '../../utils';
 import { AIMessageChunk } from '@langchain/core/messages';
@@ -25,6 +25,7 @@ export class OpenAIResponsesProvider extends LLMProvider {
     const { apiKey } = this.serviceOptions || {};
     const { responseFormat, structuredOutput } = this.modelOptions || {};
     const { name, schema, strict } = structuredOutput || {};
+    const reasoningOptions = this.resolveReasoningOptions(this.modelReasoningOptions);
     let responseFormatOptions: Record<string, any> = {
       type: responseFormat ?? 'text',
     };
@@ -39,10 +40,12 @@ export class OpenAIResponsesProvider extends LLMProvider {
     return new ChatOpenAI({
       apiKey,
       ...this.modelOptions,
+      ...(reasoningOptions.modelRequestParams || {}),
       modelKwargs: {
         text: {
           format: responseFormatOptions,
         },
+        ...(reasoningOptions.modelKwargs || {}),
       },
       configuration: {
         baseURL: this.getResolvedBaseURL(),
@@ -120,6 +123,20 @@ export class OpenAIResponsesProvider extends LLMProvider {
       return [webSearchTool];
     }
     return [];
+  }
+
+  protected resolveReasoningOptions(reasoning?: ReasoningOptions): ResolvedReasoningOptions {
+    if (!reasoning || reasoning.mode === 'default') {
+      return {};
+    }
+    const effort = reasoning.mode === 'off' ? 'none' : reasoning.mode;
+    return {
+      modelRequestParams: {
+        reasoning: {
+          effort,
+        },
+      },
+    };
   }
 
   isToolConflict(): boolean {

@@ -6,7 +6,7 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Управление плагинами",
+        "label": "Менеджер плагинов",
         "link": "/system-management/plugin-manager/"
       },
       {
@@ -16,7 +16,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Пользовательский брендинг",
+        "label": "Пользовательский бренд",
         "link": "/system-management/custom-brand/"
       },
       {
@@ -26,7 +26,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Настройки языка",
+        "label": "Языковые настройки",
         "link": "/system-management/language-settings/"
       },
       {

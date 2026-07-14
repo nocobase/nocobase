@@ -12,7 +12,6 @@ import {
   defineAction,
   isRunJSValue,
   normalizeRunJSValue,
-  runjsWithSafeGlobals,
   tExpr,
   type RunJSValue,
   useFlowContext,
@@ -43,7 +42,7 @@ export const customVariable = defineAction({
       if (variable.type === 'runjs') {
         const getFunction = async () => {
           const { code, version } = normalizeRunJSValue(variable.runjs);
-          return runjsWithSafeGlobals(ctx, code, { version });
+          return ctx.runjs(code, undefined, { version });
         };
         const metaFunction = () => ({
           title: variable.title,

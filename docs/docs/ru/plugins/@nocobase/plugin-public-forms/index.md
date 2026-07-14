@@ -4,7 +4,7 @@ keywords: "Public forms,Plugin,NocoBase"
 displayName: "Public forms"
 packageName: '@nocobase/plugin-public-forms'
 description: |
-  Share public forms externally to collect information from anonymous users
+  Публикация форм для внешнего доступа и сбора данных от анонимных пользователей.
 isFree: true
 builtIn: true
 defaultEnabled: false

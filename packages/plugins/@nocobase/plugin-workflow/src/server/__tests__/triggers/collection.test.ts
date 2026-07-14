@@ -902,6 +902,38 @@ describe('workflow > triggers > collection', () => {
       expect(e2s[0].toJSON()).toMatchObject(data.execution);
       expect(data.execution.status).toBe(EXECUTION_STATUS.RESOLVED);
     });
+
+    it('should not fail when manually executed data does not match condition', async () => {
+      const workflow = await WorkflowModel.create({
+        type: 'collection',
+        sync: true,
+        config: {
+          mode: 1,
+          collection: 'posts',
+          condition: {
+            id: -1,
+          },
+        },
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      const {
+        status,
+        body: { data },
+      } = await agent.resource('workflows').execute({
+        filterByTk: workflow.id,
+        values: {
+          data: post.toJSON(),
+        },
+      });
+
+      expect(status).toBe(200);
+      expect(data.execution).toBeNull();
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(0);
+    });
   });
 
   describe('cycling trigger', () => {
@@ -1157,6 +1189,103 @@ describe('workflow > triggers > collection', () => {
       const executions = await workflow.getExecutions();
       expect(executions.length).toBe(1);
       expect(executions[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+    });
+
+    it('does not rollback failed sync collection trigger by default', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        sync: true,
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      await workflow.createNode({
+        type: 'error',
+      });
+
+      await PostRepo.create({ values: { title: 't1' } });
+
+      const posts = await PostRepo.find();
+      expect(posts.length).toBe(1);
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(1);
+      expect(executions[0].status).toBe(EXECUTION_STATUS.ERROR);
+    });
+
+    it.skipIf(process.env['DB_DIALECT'] === 'sqlite')(
+      'rolls back source operation when failed sync collection trigger is configured to rollback',
+      async () => {
+        const workflow = await WorkflowModel.create({
+          enabled: true,
+          type: 'collection',
+          sync: true,
+          config: {
+            mode: 1,
+            collection: 'posts',
+            rollbackOnFailure: true,
+          },
+        });
+
+        await workflow.createNode({
+          type: 'error',
+        });
+
+        await expect(
+          db.sequelize.transaction(async (transaction) => {
+            await PostRepo.create({ values: { title: 't1' }, transaction });
+          }),
+        ).rejects.toMatchObject({
+          message: 'System process failed, please contact administrator.',
+          status: 422,
+          code: 'WORKFLOW_ROLLBACK_ON_FAILURE',
+        });
+
+        const posts = await PostRepo.find();
+        expect(posts.length).toBe(0);
+
+        const executions = await workflow.getExecutions();
+        expect(executions.length).toBe(1);
+        expect(executions[0].status).toBe(EXECUTION_STATUS.ERROR);
+      },
+    );
+
+    it.skipIf(process.env['DB_DIALECT'] === 'sqlite')('translates rollback error by request locale', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        sync: true,
+        config: {
+          mode: 1,
+          collection: 'posts',
+          rollbackOnFailure: true,
+        },
+      });
+
+      await workflow.createNode({
+        type: 'error',
+      });
+
+      const response = await agent
+        .set('X-Locale', 'zh-CN')
+        .resource('posts')
+        .create({
+          values: { title: 't1' },
+        });
+
+      expect(response.status).toBe(422);
+      expect(response.body.errors).toMatchObject([
+        {
+          message: '系统处理失败，请联系管理员。',
+          code: 'WORKFLOW_ROLLBACK_ON_FAILURE',
+        },
+      ]);
+
+      const posts = await PostRepo.find();
+      expect(posts.length).toBe(0);
     });
   });
 

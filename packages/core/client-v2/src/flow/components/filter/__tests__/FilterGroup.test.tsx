@@ -140,4 +140,49 @@ describe('FilterGroup closeIcon', () => {
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(value.items[0].items).toHaveLength(1);
   });
+
+  it('disables close and add actions when the filter group is disabled', () => {
+    const value = {
+      logic: '$and',
+      items: [
+        {
+          path: 'name',
+          operator: 'eq',
+          value: 'test',
+        },
+      ],
+    };
+    const onRemove = vi.fn();
+    const onChange = vi.fn();
+
+    renderWithProviders(
+      <FilterGroup
+        value={value}
+        FilterItem={DummyFilterItem}
+        showBorder
+        onRemove={onRemove}
+        onChange={onChange}
+        disabled
+      />,
+    );
+
+    const closeButtons = screen
+      .getAllByLabelText('icon-close')
+      .map((element) => element.closest('button'))
+      .filter(Boolean) as HTMLButtonElement[];
+    expect(closeButtons).toHaveLength(2);
+    expect(closeButtons[0]).toBeDisabled();
+    expect(closeButtons[1]).toBeDisabled();
+    expect(screen.getByText('Add condition').closest('button')).toBeDisabled();
+    expect(screen.getByText('Add condition group').closest('button')).toBeDisabled();
+
+    fireEvent.click(closeButtons[0]);
+    fireEvent.click(closeButtons[1]);
+    fireEvent.click(screen.getByText('Add condition').closest('button') as HTMLButtonElement);
+    fireEvent.click(screen.getByText('Add condition group').closest('button') as HTMLButtonElement);
+
+    expect(onRemove).not.toHaveBeenCalled();
+    expect(onChange).not.toHaveBeenCalled();
+    expect(value.items).toHaveLength(1);
+  });
 });

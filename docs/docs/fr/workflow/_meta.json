@@ -249,6 +249,11 @@
             "type": "custom-link",
             "label": "Opération SQL",
             "link": "/workflow/nodes/sql"
+          },
+          {
+            "type": "custom-link",
+            "label": "Transaction de base de données",
+            "link": "/workflow/nodes/transaction"
           }
         ]
       },
@@ -354,6 +359,11 @@
         "type": "custom-link",
         "label": "Référence API",
         "link": "/workflow/development/api"
+      },
+      {
+        "type": "custom-link",
+        "label": "Guide de migration v1 vers v2",
+        "link": "/workflow/development/migration"
       }
     ]
   }

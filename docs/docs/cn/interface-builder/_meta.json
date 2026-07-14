@@ -62,6 +62,16 @@
             "type": "custom-link",
             "label": "看板",
             "link": "/interface-builder/blocks/data-blocks/kanban"
+          },
+          {
+            "type": "custom-link",
+            "label": "甘特图",
+            "link": "/interface-builder/blocks/data-blocks/gantt"
+          },
+          {
+            "type": "custom-link",
+            "label": "评论",
+            "link": "/interface-builder/blocks/data-blocks/comment"
           }
         ]
       },

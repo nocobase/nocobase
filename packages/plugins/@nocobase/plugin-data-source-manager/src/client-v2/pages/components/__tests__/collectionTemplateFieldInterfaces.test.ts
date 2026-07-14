@@ -8,29 +8,137 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { filterCreateFieldInterfacesByCollectionTemplate } from '../collectionTemplateFieldInterfaces';
+import {
+  filterCreateFieldInterfacesByCollectionTemplate,
+  filterFieldInterfacesByCollectionTemplate,
+} from '../collectionTemplateFieldInterfaces';
 
-describe('filterCreateFieldInterfacesByCollectionTemplate', () => {
-  it('excludes field interfaces marked as not creatable', () => {
-    const fieldInterfaces = [{ name: 'input' }, { name: 'attachment', creatable: false }];
+const fieldInterfaces = [
+  {
+    name: 'input',
+    group: 'basic',
+  },
+  {
+    name: 'number',
+    group: 'basic',
+  },
+  {
+    name: 'createdAt',
+    group: 'systemInfo',
+  },
+  {
+    name: 'tableoid',
+    group: 'systemInfo',
+  },
+];
+
+describe('collection template field interface filters', () => {
+  it('filters interfaces with include and exclude policies', () => {
+    expect(
+      filterFieldInterfacesByCollectionTemplate(
+        fieldInterfaces,
+        {
+          title: 'General',
+          fieldInterfaces: {
+            include: ['input', { interface: 'number' }],
+          },
+        },
+        {},
+      ).map((item) => item.name),
+    ).toEqual(['input', 'number', 'createdAt']);
 
     expect(
-      filterCreateFieldInterfacesByCollectionTemplate(fieldInterfaces, undefined).map((item) => item.name),
+      filterFieldInterfacesByCollectionTemplate(
+        fieldInterfaces,
+        {
+          title: 'General',
+          fieldInterfaces: {
+            exclude: ['number'],
+          },
+        },
+        {
+          createdAt: false,
+        },
+        {
+          databaseDialect: 'mysql',
+        },
+      ).map((item) => item.name),
+    ).toEqual(['input']);
+  });
+
+  it('keeps PostgreSQL tableoid by default and supports deprecated availableFieldInterfaces', () => {
+    expect(
+      filterFieldInterfacesByCollectionTemplate(
+        fieldInterfaces,
+        {
+          title: 'General',
+        },
+        {},
+        {
+          databaseDialect: 'postgres',
+        },
+      ).map((item) => item.name),
+    ).toEqual(['input', 'number', 'createdAt', 'tableoid']);
+
+    expect(
+      filterFieldInterfacesByCollectionTemplate(
+        fieldInterfaces,
+        {
+          title: 'Legacy',
+          availableFieldInterfaces: {
+            include: [{ name: 'tableoid' }],
+          },
+        },
+        {},
+        {
+          databaseDialect: 'mysql',
+        },
+      ).map((item) => item.name),
+    ).toEqual(['createdAt', 'tableoid']);
+  });
+
+  it('filters create interfaces with create-specific include and exclude policies', () => {
+    expect(
+      filterCreateFieldInterfacesByCollectionTemplate(fieldInterfaces, {
+        title: 'General',
+        fieldInterfaces: {
+          create: {
+            include: [{ name: 'input' }],
+          },
+        },
+      }).map((item) => item.name),
+    ).toEqual(['input']);
+
+    expect(
+      filterCreateFieldInterfacesByCollectionTemplate(fieldInterfaces, {
+        title: 'General',
+        fieldInterfaces: {
+          create: {
+            exclude: ['number'],
+          },
+        },
+      }).map((item) => item.name),
+    ).toEqual(['input', 'createdAt', 'tableoid']);
+  });
+
+  it('excludes field interfaces marked as not creatable', () => {
+    expect(
+      filterCreateFieldInterfacesByCollectionTemplate(
+        [{ name: 'input' }, { name: 'attachment', creatable: false }],
+        undefined,
+      ).map((item) => item.name),
     ).toEqual(['input']);
   });
 
   it('does not allow template includes to restore not creatable field interfaces', () => {
-    const fieldInterfaces = [{ name: 'input' }, { name: 'attachment', creatable: false }];
-    const template = {
-      fieldInterfaces: {
-        create: {
-          include: ['attachment'],
+    expect(
+      filterCreateFieldInterfacesByCollectionTemplate([{ name: 'input' }, { name: 'attachment', creatable: false }], {
+        fieldInterfaces: {
+          create: {
+            include: ['attachment'],
+          },
         },
-      },
-    };
-
-    expect(filterCreateFieldInterfacesByCollectionTemplate(fieldInterfaces, template).map((item) => item.name)).toEqual(
-      [],
-    );
+      }).map((item) => item.name),
+    ).toEqual([]);
   });
 });

@@ -1,7 +1,7 @@
 [
   {
     "type": "section-header",
-    "label": "Файловый менеджер"
+    "label": "Менеджер файлов"
   },
   {
     "type": "custom-link",
@@ -51,7 +51,7 @@
   },
   {
     "type": "custom-link",
-    "label": "Таблица файлов",
+    "label": "Коллекция файлов",
     "link": "/file-manager/file-collection"
   },
   {
@@ -87,7 +87,7 @@
   },
   {
     "type": "custom-link",
-    "label": "Разработка расширений",
+    "label": "Разработка",
     "link": "/file-manager/development/"
   }
 ]

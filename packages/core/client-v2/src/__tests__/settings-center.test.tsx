@@ -14,7 +14,7 @@ import { message } from 'antd';
 import { AdminSettingsLayoutModel as ClientV2AdminSettingsLayoutModel } from '../settings-center';
 import { AdminSettingsLayoutModel as ClientV1AdminSettingsLayoutModel } from '../../../client/src/pm/AdminSettingsLayoutModel';
 import { NocoBaseBuildInPlugin } from '../nocobase-buildin-plugin';
-import { matchSettingsRoute } from '../settings-center/utils';
+import { matchSettingsRoute, sortTopLevelSettings } from '../settings-center/utils';
 
 class TestAclPlugin extends Plugin {
   async load() {
@@ -166,6 +166,12 @@ describe('settings center', () => {
     expect(matchSettingsRoute(settings, '/admin/settings/public-forms/advanced/form-1')).toMatchObject({
       name: 'public-forms.advanced',
     });
+  });
+
+  it('should sort system-settings with other top-level settings by normal ordering', () => {
+    const settings = [{ name: 'system-settings' }, { name: 'api-keys' }, { name: 'backups' }] as any;
+
+    expect(sortTopLevelSettings(settings).map((item) => item.name)).toEqual(['api-keys', 'backups', 'system-settings']);
   });
 
   it('should redirect /admin/settings to system-settings by default', async () => {
@@ -352,6 +358,39 @@ describe('settings center', () => {
 
     expect(await screen.findByText('Menu ACL child page')).toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: 'Menu ACL Demo' })).toBeInTheDocument();
+  });
+
+  it('should allow the settings sidebar menu to scroll independently', async () => {
+    class ManySettingsPlugin extends Plugin {
+      async load() {
+        for (let index = 0; index < 30; index += 1) {
+          this.pluginSettingsManager.addMenuItem({
+            key: `scroll-demo-${index}`,
+            title: `Scroll demo ${index}`,
+          });
+          this.pluginSettingsManager.addPageTabItem({
+            menuKey: `scroll-demo-${index}`,
+            key: 'index',
+            title: `Scroll demo ${index}`,
+            Component: () => <div>{`Scroll demo page ${index}`}</div>,
+          });
+        }
+      }
+    }
+
+    const app = createMockClient({
+      plugins: [NocoBaseBuildInPlugin, TestAclPlugin, ManySettingsPlugin],
+      router: { type: 'memory', initialEntries: ['/admin/settings/scroll-demo-29'] },
+    });
+    mockAdminRuntime(app);
+
+    await renderApp(app);
+    await waitForGetRequests(app, ['/auth:check', 'roles:check']);
+
+    expect(await screen.findByText('Scroll demo page 29')).toBeInTheDocument();
+
+    const sidebar = screen.getByRole('menuitem', { name: 'Scroll demo 29' }).closest('.ant-layout-sider');
+    expect(sidebar).toHaveStyle({ overflowY: 'auto' });
   });
 
   it('should save system settings through systemSettings:put', async () => {

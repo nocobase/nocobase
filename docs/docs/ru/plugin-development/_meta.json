@@ -10,17 +10,17 @@
       },
       {
         "type": "custom-link",
-        "label": "Создание первого плагина",
+        "label": "Напишите свой первый плагин",
         "link": "/plugin-development/write-your-first-plugin"
       },
       {
         "type": "custom-link",
-        "label": "AI-разработка плагинов",
+        "label": "ИИ-разработка плагинов",
         "link": "/plugin-development/ai-development"
       },
       {
         "type": "custom-link",
-        "label": "Структура каталогов проекта",
+        "label": "Структура проекта",
         "link": "/plugin-development/project-structure"
       }
     ]
@@ -36,87 +36,87 @@
       },
       {
         "type": "custom-link",
-        "label": "Plugin",
+        "label": "Плагин",
         "link": "/plugin-development/server/plugin"
       },
       {
         "type": "custom-link",
-        "label": "Collections — таблицы данных",
+        "label": "Коллекции",
         "link": "/plugin-development/server/collections"
       },
       {
         "type": "custom-link",
-        "label": "Database — операции с базой данных",
+        "label": "База данных (Database)",
         "link": "/plugin-development/server/database"
       },
       {
         "type": "custom-link",
-        "label": "DataSourceManager — управление источниками данных",
+        "label": "Менеджер источников данных (DataSourceManager)",
         "link": "/plugin-development/server/data-source-manager"
       },
       {
         "type": "custom-link",
-        "label": "ResourceManager — управление ресурсами",
+        "label": "Менеджер ресурсов (ResourceManager)",
         "link": "/plugin-development/server/resource-manager"
       },
       {
         "type": "custom-link",
-        "label": "ACL — контроль доступа",
+        "label": "Список управления доступом (ACL)",
         "link": "/plugin-development/server/acl"
       },
       {
         "type": "custom-link",
-        "label": "Middleware — промежуточное ПО",
+        "label": "Middleware",
         "link": "/plugin-development/server/middleware"
       },
       {
         "type": "custom-link",
-        "label": "Cache — кэш",
+        "label": "Кэш (Cache)",
         "link": "/plugin-development/server/cache"
       },
       {
         "type": "custom-link",
-        "label": "Event — события",
+        "label": "События",
         "link": "/plugin-development/server/event"
       },
       {
         "type": "custom-link",
-        "label": "Context — контекст запроса",
+        "label": "Контекст",
         "link": "/plugin-development/server/context"
       },
       {
         "type": "custom-link",
-        "label": "Migration — скрипты обновления",
+        "label": "Миграция",
         "link": "/plugin-development/server/migration"
       },
       {
         "type": "custom-link",
-        "label": "Logger — логгер",
+        "label": "Логирование",
         "link": "/plugin-development/server/logger"
       },
       {
         "type": "custom-link",
-        "label": "Telemetry — телеметрия",
+        "label": "Телеметрия",
         "link": "/plugin-development/server/telemetry"
       },
       {
         "type": "custom-link",
-        "label": "i18n — интернационализация",
+        "label": "Интернационализация (i18n)",
         "link": "/plugin-development/server/i18n"
       },
       {
         "type": "custom-link",
-        "label": "Command — командная строка",
+        "label": "Команда",
         "link": "/plugin-development/server/command"
       },
       {
         "type": "custom-link",
-        "label": "CronJobManager — управление задачами Cron",
+        "label": "Менеджер cron-задач",
         "link": "/plugin-development/server/cron-job-manager"
       },
       {
         "type": "custom-link",
-        "label": "Test — тестирование",
+        "label": "Тестирование",
         "link": "/plugin-development/server/test"
       }
     ]
@@ -132,17 +132,17 @@
       },
       {
         "type": "custom-link",
-        "label": "Plugin",
+        "label": "Плагин",
         "link": "/plugin-development/client/plugin"
       },
       {
         "type": "custom-link",
-        "label": "Router — маршрутизатор",
+        "label": "Маршрутизация",
         "link": "/plugin-development/client/router"
       },
       {
         "type": "custom-link",
-        "label": "Component — разработка компонентов",
+        "label": "Разработка компонентов",
         "items": [
           {
             "type": "custom-link",
@@ -151,7 +151,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Styles & Themes — стили и темы",
+            "label": "Стили и темы",
             "link": "/plugin-development/client/component/styles-themes"
           },
           {
@@ -163,7 +163,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Context — контекст",
+        "label": "Контекст",
         "items": [
           {
             "type": "custom-link",
@@ -278,7 +278,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Сборка и упаковка",
+        "label": "Сборка",
         "link": "/plugin-development/build"
       }
     ]

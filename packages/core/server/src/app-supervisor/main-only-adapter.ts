@@ -65,6 +65,10 @@ export class MainOnlyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
     return Object.values(this.apps);
   }
 
+  async listAppModels() {
+    return [];
+  }
+
   hasApp(appName: string) {
     if (appName !== 'main') {
       return false;

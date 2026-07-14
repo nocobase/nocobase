@@ -10,67 +10,34 @@
 import PluginACLClient from '@nocobase/plugin-acl/client';
 import PluginWorkflowClient from '@nocobase/plugin-workflow/client';
 import { Plugin, lazy } from '@nocobase/client';
-import { AIManager } from './manager/ai-manager';
+import { AIManager } from '../client-v2/manager/ai-manager';
 import { tval } from '@nocobase/utils/client';
 import { namespace } from './locale';
-import { AIPluginFeatureManagerImpl } from './manager/ai-feature-manager';
+import { AIPluginFeatureManagerImpl } from '../client-v2/manager/ai-feature-manager';
 import { LLMInstruction } from './workflow/nodes/llm';
 import { AIEmployeeTrigger } from './workflow/triggers/ai-employee';
-import { anthropicProviderOptions } from './llm-providers/anthropic';
-import { dashscopeProviderOptions } from './llm-providers/dashscope';
-import { deepseekProviderOptions } from './llm-providers/deepseek';
-import { googleGenAIProviderOptions } from './llm-providers/google-genai';
-import { ollamaProviderOptions } from './llm-providers/ollama';
-import { kimiProviderOptions } from './llm-providers/kimi';
-import { xaiProviderOptions } from './llm-providers/xai';
-import { openaiCompletionsProviderOptions } from './llm-providers/openai/completions';
-import { openaiResponsesProviderOptions } from './llm-providers/openai/responses';
 import { PermissionsTab } from './ai-employees/permissions/PermissionsTab';
 import {
   AIEmployeeShortcutListModel,
   AIEmployeeShortcutModel,
   AIEmployeeButtonModel,
-} from './ai-employees/flow/models';
-import './ai-employees/flow/events';
-import { AIConfigRepository } from './repositories/AIConfigRepository';
-import { FlowModelsContext } from './ai-employees/context/flow-models';
-import { DatasourceContext } from './ai-employees/context/datasource';
-import { CodeEditorContext } from './ai-employees/context/code-editor';
-import { chartConfigWorkContext } from './ai-employees/data-visualization/context';
-import { defineCollectionsTool } from './ai-employees/data-modeling/tools';
-import { formFillerTool } from './ai-employees/form-filler/tools';
-import { chartGeneratorTool } from './ai-employees/chart-generator/tools';
-import { businessReportGeneratorTool } from './ai-employees/business-report/tools';
-import { getCodeSnippetTool, listCodeSnippetTool } from './ai-employees/ai-coding/tools';
-import {
-  getContextApisTool,
-  getContextEnvsTool,
-  getContextVarsTool,
-  lintAndTestJSTool,
-  patchJSCodeTool,
-  readJSCodeTool,
-  writeJSCodeTool,
-} from './ai-employees/ai-coding/tools/context-tools';
-import { vizSwitchModesTool, vizRunQueryTool } from './ai-employees/data-visualization/tools';
-import { suggestionsTool } from './ai-employees/suggestions/tools';
-import { dispatchSubAgentTaskTool } from './ai-employees/sub-agents/tools';
-import { aiEmployeeWorkflowTaskOutputTool } from './ai-employees/workflow-tasks/tools';
-import { setupAICoding } from './ai-employees/ai-coding/setup';
-import { setupDataModeling } from './ai-employees/data-modeling/setup';
+} from '../client-v2/models/ai-employees';
+import { AIConfigRepository } from '../client-v2/repositories/AIConfigRepository';
+import { FlowModelsContext } from '../client-v2/ai-employees/context/flow-models';
+import { DatasourceContext } from '../client-v2/ai-employees/context/datasource';
+import { CodeEditorContext } from '../client-v2/ai-employees/context/code-editor';
+import { chartConfigWorkContext } from '../client-v2/ai-employees/context/chart-config';
+import { setupAICoding } from '../client-v2/ai-employees/ai-coding/setup';
+import { setupDataModeling } from '../client-v2/ai-employees/data-modeling/setup';
 import { AIEmployeeInstruction } from './workflow/nodes/employee';
-import { mimoProviderOptions } from './llm-providers/mimo';
-import { mistralProviderOptions } from './llm-providers/mistral';
-import { orcarouterProviderOptions } from './llm-providers/orcarouter';
-const { AIEmployeesProvider } = lazy(() => import('./ai-employees/AIEmployeesProvider'), 'AIEmployeesProvider');
-const { Employees } = lazy(() => import('./ai-employees/admin/Employees'), 'Employees');
-const { LLMServices } = lazy(() => import('./llm-services/LLMServices'), 'LLMServices');
-const { MCPSettings } = lazy(() => import('./ai-employees/admin/mcp/MCPSettings'), 'MCPSettings');
-const { MessagesSettings } = lazy(() => import('./chat-settings/Messages'), 'MessagesSettings');
-const { StructuredOutputSettings } = lazy(() => import('./chat-settings/StructuredOutput'), 'StructuredOutputSettings');
-const { AdminSettings } = lazy(() => import('./admin-settings/AdminSettings'), 'AdminSettings');
-const { DatasourceSettingPage } = lazy(() => import('./ai-employees/admin/datasource'), 'DatasourceSettingPage');
-const { Chat } = lazy(() => import('./llm-providers/components/Chat'), 'Chat');
-const { ModelSelect } = lazy(() => import('./llm-providers/components/ModelSelect'), 'ModelSelect');
+import { registerPluginAIClientV2BuiltinTools } from '../client-v2/ai-employees/tools';
+import { builtinLLMProviderOptions } from '../client-v2/llm-providers';
+import { ChatBoxLayout } from '../client-v2/ai-employees/chatbox/components/ChatBoxLayout';
+const Employees = lazy(() => import('../client-v2/pages/EmployeesPage'));
+const LLMServices = lazy(() => import('../client-v2/pages/LLMServicesPage'));
+const MCPSettings = lazy(() => import('../client-v2/pages/MCPSettingsPage'));
+const AdminSettings = lazy(() => import('../client-v2/pages/AdminSettingsPage'));
+const DatasourceSettingPage = lazy(() => import('../client-v2/pages/DatasourceSettingsPage'));
 const { AIResourceContextCollector } = lazy(
   () => import('./ai-employees/1.x/selector/AIContextCollector'),
   'AIResourceContextCollector',
@@ -88,7 +55,7 @@ export class PluginAIClient extends Plugin {
 
   // You can get and modify the app instance here
   async load() {
-    this.app.use(AIEmployeesProvider);
+    this.app.use(ChatBoxLayout);
 
     this.app.addComponents({
       AIResourceContextCollector,
@@ -160,25 +127,8 @@ export class PluginAIClient extends Plugin {
     });
     this.app.flowEngine.context.defineProperty('aiConfigRepository', { value: aiConfigRepository });
 
-    this.aiManager.registerLLMProvider('google-genai', googleGenAIProviderOptions);
-    this.aiManager.registerLLMProvider('openai', openaiResponsesProviderOptions);
-    this.aiManager.registerLLMProvider('anthropic', anthropicProviderOptions);
-    this.aiManager.registerLLMProvider('openai-completions', openaiCompletionsProviderOptions);
-    this.aiManager.registerLLMProvider('deepseek', deepseekProviderOptions);
-    this.aiManager.registerLLMProvider('dashscope', dashscopeProviderOptions);
-    this.aiManager.registerLLMProvider('ollama', ollamaProviderOptions);
-    this.aiManager.registerLLMProvider('kimi', kimiProviderOptions);
-    this.aiManager.registerLLMProvider('xai', xaiProviderOptions);
-    this.aiManager.registerLLMProvider('mimo', mimoProviderOptions);
-    this.aiManager.registerLLMProvider('mistral', mistralProviderOptions);
-    this.aiManager.registerLLMProvider('orcarouter', orcarouterProviderOptions);
-    this.aiManager.chatSettings.set('messages', {
-      title: tval('Messages'),
-      Component: MessagesSettings,
-    });
-    this.aiManager.chatSettings.set('structured-output', {
-      title: tval('Structured output'),
-      Component: StructuredOutputSettings,
+    builtinLLMProviderOptions.forEach(([name, options]) => {
+      this.aiManager.registerLLMProvider(name, options);
     });
 
     this.aiManager.registerWorkContext('flow-model', FlowModelsContext);
@@ -187,24 +137,7 @@ export class PluginAIClient extends Plugin {
     // 使用可视化员工的工作上下文参数
     this.aiManager.registerWorkContext('chart-config', chartConfigWorkContext);
 
-    this.ai.toolsManager.registerTools(...vizSwitchModesTool);
-    this.ai.toolsManager.registerTools(...vizRunQueryTool);
-    this.ai.toolsManager.registerTools(...defineCollectionsTool);
-    this.ai.toolsManager.registerTools(...formFillerTool);
-    this.ai.toolsManager.registerTools(...chartGeneratorTool);
-    this.ai.toolsManager.registerTools(...businessReportGeneratorTool);
-    this.ai.toolsManager.registerTools(...listCodeSnippetTool);
-    this.ai.toolsManager.registerTools(...getCodeSnippetTool);
-    this.ai.toolsManager.registerTools(...suggestionsTool);
-    this.ai.toolsManager.registerTools(...dispatchSubAgentTaskTool);
-    this.ai.toolsManager.registerTools(...aiEmployeeWorkflowTaskOutputTool);
-    this.ai.toolsManager.registerTools(...getContextApisTool);
-    this.ai.toolsManager.registerTools(...getContextEnvsTool);
-    this.ai.toolsManager.registerTools(...getContextVarsTool);
-    this.ai.toolsManager.registerTools(...readJSCodeTool);
-    this.ai.toolsManager.registerTools(...writeJSCodeTool);
-    this.ai.toolsManager.registerTools(...patchJSCodeTool);
-    this.ai.toolsManager.registerTools(...lintAndTestJSTool);
+    registerPluginAIClientV2BuiltinTools(this.ai.toolsManager);
   }
 
   setupWorkflow() {
@@ -217,17 +150,16 @@ export class PluginAIClient extends Plugin {
 }
 
 export default PluginAIClient;
-export { ModelSelect, Chat };
-export type { LLMProviderOptions, ToolOptions } from './manager/ai-manager';
-export type { AIEmployee, ToolCall } from './ai-employees/types';
-export * from './features';
-export { defaultVectorStorePropForm } from './features/components';
-export { AIEmployeeActionModel } from './ai-employees/flow/models/AIEmployeeActionModel';
-export { useChatMessagesStore } from './ai-employees/chatbox/stores/chat-messages';
-export { useChat } from './ai-employees/chatbox/hooks/useChat';
-export { useChatBoxStore } from './ai-employees/chatbox/stores/chat-box';
-export { useChatBoxActions } from './ai-employees/chatbox/hooks/useChatBoxActions';
-export { useChatConversationsStore } from './ai-employees/chatbox/stores/chat-conversations';
-export { useAIConfigRepository } from './repositories/hooks/useAIConfigRepository';
-export { ProfileCard } from './ai-employees/ProfileCard';
-export { avatars } from './ai-employees/avatars';
+export type { LLMProviderOptions, ToolModalProps, ToolOptions } from '../client-v2/manager/ai-manager';
+export type { AIEmployee, ToolCall } from '../client-v2/ai-employees/types';
+export * from '../client-v2/features';
+export { defaultVectorStorePropForm } from '../client-v2/features/components';
+export { AIEmployeeActionModel } from '../client-v2/models/ai-employees/AIEmployeeActionModel';
+export { useChatMessagesStore } from '../client-v2/ai-employees/chatbox/stores/chat-messages';
+export { useChat } from '../client-v2/ai-employees/chatbox/hooks/useChat';
+export { useChatBoxStore } from '../client-v2/ai-employees/chatbox/stores/chat-box';
+export { useChatBoxActions } from '../client-v2/ai-employees/chatbox/hooks/useChatBoxActions';
+export { useChatConversationsStore } from '../client-v2/ai-employees/chatbox/stores/chat-conversations';
+export { useAIConfigRepository } from '../client-v2/repositories/hooks/useAIConfigRepository';
+export { AIEmployeeProfileCard as ProfileCard } from '../client-v2/ai-employees/ProfileCard';
+export { avatars } from '../client-v2/ai-employees/avatars';

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ElementProxy, tExpr, createSafeDocument, createSafeWindow, createSafeNavigator } from '@nocobase/flow-engine';
+import { ElementProxy, tExpr } from '@nocobase/flow-engine';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { Input } from 'antd';
 import { FieldModel } from '../base/FieldModel';
@@ -398,16 +398,7 @@ JSEditableFieldModel.registerFlow({
             get: () => isReadOnlyMode(ctx.model),
             cache: false,
           });
-          const navigator = createSafeNavigator();
-          await ctx.runjs(
-            code,
-            {
-              window: createSafeWindow({ navigator }),
-              document: createSafeDocument(),
-              navigator,
-            },
-            { version },
-          );
+          await ctx.runjs(code, undefined, { version });
         });
       },
     },

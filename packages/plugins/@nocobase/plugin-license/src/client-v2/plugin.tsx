@@ -28,6 +28,7 @@ export class PluginLicenseClientV2 extends Plugin<Record<string, never>, Applica
       aclSnippet: 'pm.license-settings',
       componentLoader: () => import('./pages/LicenseSetting'),
     });
+    this.pluginSettingsManager.setPluginSettingsLink('license', 'license-settings');
   }
 }
 

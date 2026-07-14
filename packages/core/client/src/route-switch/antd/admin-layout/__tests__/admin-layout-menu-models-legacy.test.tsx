@@ -20,6 +20,10 @@ import { NocoBaseDesktopRouteType } from '../route-types';
 
 describe('AdminLayoutMenuItemModel legacy behavior', () => {
   let engine: FlowEngine;
+  let api: {
+    request: ReturnType<typeof vi.fn>;
+    resource: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(() => {
     engine = new FlowEngine();
@@ -37,12 +41,11 @@ describe('AdminLayoutMenuItemModel legacy behavior', () => {
         refreshAccessible: vi.fn(),
       },
     });
-    engine.context.defineProperty('api', {
-      value: {
-        request: vi.fn(),
-        resource: vi.fn(() => ({})),
-      },
-    });
+    api = {
+      request: vi.fn(),
+      resource: vi.fn(() => ({})),
+    };
+    engine.context.defineProperty('api', { value: api });
     engine.context.defineProperty('router', {
       value: {
         navigate: vi.fn(),
@@ -113,7 +116,7 @@ describe('AdminLayoutMenuItemModel legacy behavior', () => {
 
     engine.context.routeRepository.createRoute = createRoute;
     engine.context.routeRepository.moveRoute = moveRoute;
-    engine.context.api.request = request;
+    api.request = request;
 
     const model = engine.createModel<AdminLayoutMenuItemModel>({
       uid: 'legacy-flow-page-create',
@@ -186,7 +189,7 @@ describe('AdminLayoutMenuItemModel legacy behavior', () => {
         type: NocoBaseDesktopRouteType.page,
       },
     ];
-    engine.context.api.resource = vi.fn(() => ({
+    api.resource = vi.fn(() => ({
       'remove/current-page': removeSchema,
     }));
     engine.context.router.navigate = navigate;

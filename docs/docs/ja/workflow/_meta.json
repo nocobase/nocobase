@@ -249,6 +249,11 @@
             "type": "custom-link",
             "label": "SQL操作",
             "link": "/workflow/nodes/sql"
+          },
+          {
+            "type": "custom-link",
+            "label": "データベーストランザクション",
+            "link": "/workflow/nodes/transaction"
           }
         ]
       },
@@ -354,6 +359,11 @@
         "type": "custom-link",
         "label": "APIリファレンス",
         "link": "/workflow/development/api"
+      },
+      {
+        "type": "custom-link",
+        "label": "v1 から v2 への移行ガイド",
+        "link": "/workflow/development/migration"
       }
     ]
   }
