@@ -2205,17 +2205,30 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
               }
             : props;
 
-        // 存储原始值，用于恢复
-        if (!model.__originalProps) {
-          model.__originalProps = {
-            hiddenModel: model.hidden,
-            hiddenText: undefined,
-            disabled: undefined,
-            required: undefined,
-            hidden: undefined,
-            ...model.props,
-          };
-        }
+        // 只记录联动实际控制的属性，避免之后恢复状态时把标题、路由等无关的新配置回滚到旧快照。
+        const originalProps = model.__originalProps || (model.__originalProps = {});
+        const rememberOriginalProp = (key: string, value: unknown) => {
+          if (!Object.prototype.hasOwnProperty.call(originalProps, key)) {
+            originalProps[key] = value;
+          }
+        };
+        Object.keys(normalizedProps || {}).forEach((key) => {
+          if (key === 'hiddenModel') {
+            rememberOriginalProp(
+              key,
+              Object.prototype.hasOwnProperty.call(model.props || {}, key) ? model.props?.[key] : model.hidden,
+            );
+            return;
+          }
+
+          rememberOriginalProp(key, model.props?.[key]);
+          if (key === 'hiddenText') {
+            rememberOriginalProp('title', model.props?.title);
+          }
+          if (key === 'required') {
+            rememberOriginalProp('rules', model.props?.rules);
+          }
+        });
 
         // 临时存起来，遍历完所有规则后，再统一处理
         patchPropsByModel.set(model, {

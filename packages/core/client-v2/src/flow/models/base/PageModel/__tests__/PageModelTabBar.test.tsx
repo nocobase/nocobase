@@ -9,9 +9,8 @@
 
 import { fireEvent, render, screen } from '@testing-library/react';
 import { Tabs } from 'antd';
-import LibTabs from 'antd/lib/tabs';
 import React from 'react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { FilteredPageTabBar } from '../PageModelTabBar';
 
 function StatefulContent() {
@@ -19,17 +18,28 @@ function StatefulContent() {
   return <input aria-label="Tab draft" value={value} onChange={(event) => setValue(event.target.value)} />;
 }
 
-function renderTabs(hiddenTabKeys: Set<string>) {
+function renderTabs(hiddenTabKeys: Set<string>, onChange?: (activeKey: string) => void, activeKey = 'tab-hidden') {
+  const items = [
+    { key: 'tab-visible', label: 'Visible tab', children: 'Visible content' },
+    { key: 'tab-hidden', label: 'Hidden tab', children: <StatefulContent /> },
+  ];
   return (
     <Tabs
-      activeKey="tab-hidden"
-      items={[
-        { key: 'tab-visible', label: 'Visible tab', children: 'Visible content' },
-        { key: 'tab-hidden', label: 'Hidden tab', children: <StatefulContent /> },
-      ]}
-      renderTabBar={(tabBarProps, DefaultTabBar) => (
-        <FilteredPageTabBar hiddenTabKeys={hiddenTabKeys} tabBarProps={tabBarProps} DefaultTabBar={DefaultTabBar} />
-      )}
+      activeKey={activeKey}
+      onChange={onChange}
+      items={items}
+      renderTabBar={
+        hiddenTabKeys.size > 0
+          ? (tabBarProps) => (
+              <FilteredPageTabBar
+                hiddenTabKeys={hiddenTabKeys}
+                hiddenActiveTabLabel="Hidden tab"
+                items={items}
+                tabBarProps={tabBarProps}
+              />
+            )
+          : undefined
+      }
     />
   );
 }
@@ -56,26 +66,53 @@ describe('FilteredPageTabBar', () => {
     expect(screen.getByRole('textbox', { name: 'Tab draft' })).toHaveValue('Unsaved value');
   });
 
-  it('filters the navigation model when Tabs is loaded from the CommonJS entry', () => {
+  it('keeps visible navigation focusable and gives the hidden active pane an accessible name', () => {
+    const onChange = vi.fn();
+    render(renderTabs(new Set(['tab-hidden']), onChange));
+
+    const visibleTab = screen.getByRole('tab', { name: 'Visible tab' });
+    expect(visibleTab).toHaveAttribute('tabindex', '0');
+    expect(visibleTab).toHaveAttribute('aria-selected', 'false');
+
+    const activePanel = screen.getByRole('tabpanel');
+    expect(activePanel).toHaveAccessibleName('Hidden tab');
+    expect(document.getElementById(activePanel.getAttribute('aria-labelledby') || '')).not.toBeNull();
+    expect(document.querySelectorAll('[role="tabpanel"]')).toHaveLength(1);
+
+    fireEvent.focus(visibleTab);
+    fireEvent.keyDown(visibleTab, { code: 'Enter' });
+    expect(onChange).toHaveBeenCalledWith('tab-visible');
+  });
+
+  it('connects a visible navigation entry to the pane owned by the outer Tabs instance', () => {
+    render(renderTabs(new Set(['tab-hidden']), undefined, 'tab-visible'));
+
+    const visibleTab = screen.getByRole('tab', { name: 'Visible tab' });
+    const activePanel = screen.getByRole('tabpanel', { name: 'Visible tab' });
+    expect(visibleTab).toHaveAttribute('aria-controls', activePanel.id);
+    expect(activePanel).toHaveAttribute('aria-labelledby', visibleTab.id);
+    expect(document.querySelectorAll(`#${CSS.escape(visibleTab.id)}`)).toHaveLength(1);
+    expect(document.querySelectorAll('[role="tabpanel"]')).toHaveLength(1);
+  });
+
+  it('does not duplicate panes when a tab item requests forceRender', () => {
+    const items = [
+      { key: 'tab-visible', label: 'Visible tab', children: 'Visible content', forceRender: true },
+      { key: 'tab-hidden', label: 'Hidden tab', children: 'Hidden content' },
+    ];
+
     render(
-      <LibTabs
-        activeKey="tab-hidden"
-        items={[
-          { key: 'tab-visible', label: 'CJS visible tab', children: 'CJS visible content' },
-          { key: 'tab-hidden', label: 'CJS hidden tab', children: 'CJS hidden content' },
-        ]}
-        renderTabBar={(tabBarProps, DefaultTabBar) => (
-          <FilteredPageTabBar
-            hiddenTabKeys={new Set(['tab-hidden'])}
-            tabBarProps={tabBarProps}
-            DefaultTabBar={DefaultTabBar}
-          />
+      <Tabs
+        activeKey="tab-visible"
+        items={items}
+        renderTabBar={(tabBarProps) => (
+          <FilteredPageTabBar hiddenTabKeys={new Set(['tab-hidden'])} items={items} tabBarProps={tabBarProps} />
         )}
       />,
     );
 
-    expect(screen.getByRole('tab', { name: 'CJS visible tab' })).toBeInTheDocument();
-    expect(screen.queryByRole('tab', { name: 'CJS hidden tab' })).not.toBeInTheDocument();
-    expect(screen.getByText('CJS hidden content')).toBeVisible();
+    const activePanel = screen.getByRole('tabpanel', { name: 'Visible tab' });
+    expect(document.querySelectorAll(`#${CSS.escape(activePanel.id)}`)).toHaveLength(1);
+    expect(document.querySelectorAll('[role="tabpanel"]')).toHaveLength(1);
   });
 });

@@ -8,39 +8,107 @@
  */
 
 import { Tabs } from 'antd';
-import EsTabContext from 'rc-tabs/es/TabContext';
-import LibTabContext from 'rc-tabs/lib/TabContext';
+import type { TabsProps } from 'antd';
 import React from 'react';
 
 export const NO_ACTIVE_PAGE_TAB_KEY = '__no_active_page_tab__';
 
 type RenderTabBar = NonNullable<React.ComponentProps<typeof Tabs>['renderTabBar']>;
+type PageTabItem = NonNullable<TabsProps['items']>[number];
 
 type FilteredPageTabBarProps = {
   hiddenTabKeys: Set<string>;
+  hiddenActiveTabLabel?: React.ReactNode;
+  items: PageTabItem[];
   tabBarProps: Parameters<RenderTabBar>[0];
-  DefaultTabBar: Parameters<RenderTabBar>[1];
 };
 
-export function FilteredPageTabBar({ hiddenTabKeys, tabBarProps, DefaultTabBar }: FilteredPageTabBarProps) {
-  // `renderTabBar` node wrappers do not change rc-tabs' overflow, keyboard, or indicator data.
-  // Filter only the navigation context so the full items list can continue owning every pane.
-  const esTabContext = React.useContext(EsTabContext);
-  const libTabContext = React.useContext(LibTabContext);
-  const tabContext = esTabContext || libTabContext;
-  if (!tabContext) {
-    return <DefaultTabBar {...tabBarProps} />;
-  }
-
-  const visibleTabs = tabContext.tabs.filter((tab) => !hiddenTabKeys.has(String(tab.key)));
-  const activeKey = visibleTabs.some((tab) => tab.key === tabBarProps.activeKey)
+export function FilteredPageTabBar({
+  hiddenTabKeys,
+  hiddenActiveTabLabel,
+  items,
+  tabBarProps,
+}: FilteredPageTabBarProps) {
+  // Keep the outer Tabs instance responsible for every pane, while a navigation-only Tabs instance
+  // receives only visible items. This avoids relying on the rc-tabs Context instance bundled by antd.
+  const visibleItems = items
+    .filter((item) => !hiddenTabKeys.has(String(item.key)))
+    .map(
+      ({
+        children: _children,
+        className: _className,
+        destroyInactiveTabPane: _destroyInactiveTabPane,
+        forceRender: _forceRender,
+        style: _style,
+        ...item
+      }) => ({
+        ...item,
+        children: null,
+      }),
+    );
+  const activeKey = visibleItems.some((item) => item.key === tabBarProps.activeKey)
     ? tabBarProps.activeKey
     : NO_ACTIVE_PAGE_TAB_KEY;
-  const TabContextProvider = esTabContext ? EsTabContext.Provider : LibTabContext.Provider;
+  const firstFocusableTabKey = visibleItems.find((item) => !item.disabled)?.key;
+  const hiddenActiveTabKey = hiddenTabKeys.has(String(tabBarProps.activeKey))
+    ? String(tabBarProps.activeKey)
+    : undefined;
+  const hiddenActiveTabLabelId =
+    hiddenActiveTabKey && tabBarProps.id ? `${tabBarProps.id}-tab-${hiddenActiveTabKey}` : undefined;
+  const renderTabNode = (node: React.ReactElement) => {
+    const tabKey = String(node.key);
+    if (activeKey !== NO_ACTIVE_PAGE_TAB_KEY || tabKey !== String(firstFocusableTabKey)) {
+      return node;
+    }
+    let tabButtonFound = false;
+    const children = React.Children.map(
+      (node.props as { children?: React.ReactNode }).children,
+      (child: React.ReactNode) => {
+        if (tabButtonFound || !React.isValidElement(child)) {
+          return child;
+        }
+        const childProps = child.props as {
+          role?: string;
+          tabIndex?: number | null;
+        };
+        if (childProps.role !== 'tab') {
+          return child;
+        }
+        tabButtonFound = true;
+        return React.cloneElement(child as React.ReactElement<typeof childProps>, {
+          tabIndex: 0,
+        });
+      },
+    );
+    return React.cloneElement(node, undefined, children);
+  };
 
   return (
-    <TabContextProvider value={{ ...tabContext, tabs: visibleTabs }}>
-      <DefaultTabBar {...tabBarProps} activeKey={activeKey} />
-    </TabContextProvider>
+    <>
+      {hiddenActiveTabLabelId ? (
+        <span id={hiddenActiveTabLabelId} hidden>
+          {hiddenActiveTabLabel || hiddenActiveTabKey}
+        </span>
+      ) : null}
+      <Tabs
+        activeKey={NO_ACTIVE_PAGE_TAB_KEY}
+        animated={{ inkBar: tabBarProps.animated.inkBar, tabPane: false }}
+        destroyInactiveTabPane
+        id={tabBarProps.id}
+        items={visibleItems}
+        more={tabBarProps.more}
+        onTabClick={(key, event) => tabBarProps.onTabClick(key, event)}
+        onTabScroll={tabBarProps.onTabScroll}
+        renderTabBar={(navigationTabBarProps, NavigationDefaultTabBar) => (
+          <NavigationDefaultTabBar {...navigationTabBarProps} activeKey={activeKey}>
+            {renderTabNode}
+          </NavigationDefaultTabBar>
+        )}
+        tabBarExtraContent={tabBarProps.extra}
+        tabBarGutter={tabBarProps.tabBarGutter}
+        tabBarStyle={tabBarProps.style}
+        tabPosition={tabBarProps.tabPosition}
+      />
+    </>
   );
 }

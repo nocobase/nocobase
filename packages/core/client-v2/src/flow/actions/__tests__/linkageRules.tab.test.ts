@@ -33,7 +33,7 @@ function createRuntime() {
   });
   const model = {
     uid: 'tab-1',
-    props: {},
+    props: {} as Record<string, unknown>,
     hidden: false,
     __allModels: [],
     setProps,
@@ -133,6 +133,39 @@ describe('tab linkage rules', () => {
     expect(runtime.model.hidden).toBe(true);
 
     await tabLinkageRules?.handler(runtime.ctx as never, { value: [] });
+    expect(runtime.model.hidden).toBe(false);
+  });
+
+  it('should not restore stale tab props while applying or clearing visibility rules', async () => {
+    expect(tabLinkageRules).toBeDefined();
+    const runtime = createRuntime();
+    runtime.model.props = {
+      title: 'Original title',
+      icon: 'original-icon',
+      route: { options: { badge: 'original' } },
+    };
+
+    await tabLinkageRules?.handler(runtime.ctx as never, hideRule);
+    expect(runtime.model.hidden).toBe(true);
+
+    const updatedProps = {
+      title: 'Updated title',
+      icon: 'updated-icon',
+      route: { options: { badge: 'updated' } },
+    };
+    runtime.model.props = updatedProps;
+
+    await tabLinkageRules?.handler(runtime.ctx as never, hideRule);
+    expect(runtime.model.props).toMatchObject(updatedProps);
+    expect(runtime.model.hidden).toBe(true);
+
+    runtime.setMatched(false);
+    await tabLinkageRules?.handler(runtime.ctx as never, hideRule);
+    expect(runtime.model.props).toMatchObject(updatedProps);
+    expect(runtime.model.hidden).toBe(false);
+
+    await tabLinkageRules?.handler(runtime.ctx as never, { value: [] });
+    expect(runtime.model.props).toMatchObject(updatedProps);
     expect(runtime.model.hidden).toBe(false);
   });
 });
