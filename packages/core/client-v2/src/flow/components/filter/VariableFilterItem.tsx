@@ -131,6 +131,10 @@ export interface VariableFilterItemProps {
    * 默认使用整棵 ctx 的 metaTree：model.context.getPropertyMetaTree()
    */
   rightMetaTree?: MetaTreeNode[] | (() => MetaTreeNode[] | Promise<MetaTreeNode[]>);
+  /**
+   * 右侧变量的领域转换器。常量和空值仍由 VariableFilterItem 处理，未匹配的值回退到 FlowEngine 默认转换器。
+   */
+  rightVariableConverters?: Pick<Converters, 'resolvePathFromValue' | 'resolveValueFromPath'>;
   ignoreFieldNames?: string[];
   maxAssociationFieldDepth?: number;
 }
@@ -352,7 +356,16 @@ function findMetaTreeNodeByPath(metaTree: MetaTreeNode[], targetPath: string[]):
  * 上下文筛选项组件
  */
 export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
-  ({ value, model, disabled = false, rightAsVariable, rightMetaTree, ignoreFieldNames, maxAssociationFieldDepth }) => {
+  ({
+    value,
+    model,
+    disabled = false,
+    rightAsVariable,
+    rightMetaTree,
+    rightVariableConverters,
+    ignoreFieldNames,
+    maxAssociationFieldDepth,
+  }) => {
     // 使用 View 上下文，确保可访问 ctx.view 的异步子树
     const ctx = useFlowViewContext();
     const t = model.translate;
@@ -684,17 +697,19 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
           const first = meta?.paths?.[0];
           if (first === 'constant') return '';
           if (first === 'null') return null;
-          return undefined; // 交给默认逻辑格式化变量表达式
+          return rightVariableConverters?.resolveValueFromPath?.(meta);
         },
         resolvePathFromValue: (val) => {
           if (val === null) return ['null'];
-          // 变量表达式：使用内置解析；其他静态值走 constant
-          const parsed = typeof val === 'string' ? parseValueToPath(val) : undefined;
+          // 变量表达式：优先使用领域转换器，再回退内置解析；其他静态值走 constant
+          const parsed =
+            rightVariableConverters?.resolvePathFromValue?.(val) ??
+            (typeof val === 'string' ? parseValueToPath(val) : undefined);
           if (parsed) return parsed;
           return ['constant'];
         },
       };
-    }, [NullComponent, staticInputRenderer]);
+    }, [NullComponent, rightVariableConverters, staticInputRenderer]);
 
     // 为 2.0 左侧字段选择器追加“接口 filterable.children”定义（如 chinaRegion 的“省市区名称”子项），
     // 以恢复 1.0 左侧子菜单的能力。
