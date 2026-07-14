@@ -29,7 +29,7 @@ import {
 import type { UploadProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiUrl } from '../../shared/apiContract';
+import { AGENT_GATEWAY_API_ACTIONS } from '../../shared/apiContract';
 import { useT } from '../locale';
 import {
   AgentGatewayTaskParameterFormItems,
@@ -46,6 +46,7 @@ import {
   getApiErrorMessage,
   getRequiredResponseData,
   getResponseData,
+  requestAgentGatewayAction,
   uploadAgentGatewayFile,
 } from './AgentGatewayPageUtils';
 
@@ -142,21 +143,27 @@ export default function AgentGatewayTaskTemplatesPage() {
   const [skillUploadResult, setSkillUploadResult] = useState<SkillUploadResult | null>(null);
 
   const templatesRequest = useRequest(async () => {
-    const response = await ctx.api.request<TaskTemplateRecord[]>({
-      url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.listTaskTemplates),
-      method: 'get',
-      params: {
-        includeDisabled: true,
+    const response = await requestAgentGatewayAction<TaskTemplateRecord[]>(
+      ctx.api,
+      AGENT_GATEWAY_API_ACTIONS.listTaskTemplates,
+      {
+        method: 'get',
+        params: {
+          includeDisabled: true,
+        },
       },
-    });
+    );
     return getResponseData(response, []);
   });
 
   const optionsRequest = useRequest(async () => {
-    const response = await ctx.api.request<BuildRunOptions>({
-      url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.listRunOptions),
-      method: 'get',
-    });
+    const response = await requestAgentGatewayAction<BuildRunOptions>(
+      ctx.api,
+      AGENT_GATEWAY_API_ACTIONS.listRunOptions,
+      {
+        method: 'get',
+      },
+    );
     return getResponseData(response, {});
   });
 
@@ -183,19 +190,26 @@ export default function AgentGatewayTaskTemplatesPage() {
       };
 
       if (editingTemplate) {
-        const response = await ctx.api.request<TaskTemplateRecord>({
-          url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.updateTaskTemplate, editingTemplate.id),
-          method: 'post',
-          data: payload,
-        });
+        const response = await requestAgentGatewayAction<TaskTemplateRecord>(
+          ctx.api,
+          AGENT_GATEWAY_API_ACTIONS.updateTaskTemplate,
+          {
+            method: 'post',
+            targetKey: editingTemplate.id,
+            data: payload,
+          },
+        );
         return getRequiredResponseData(response, t('Failed to save task template'));
       }
 
-      const response = await ctx.api.request<TaskTemplateRecord>({
-        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.createTaskTemplate),
-        method: 'post',
-        data: payload,
-      });
+      const response = await requestAgentGatewayAction<TaskTemplateRecord>(
+        ctx.api,
+        AGENT_GATEWAY_API_ACTIONS.createTaskTemplate,
+        {
+          method: 'post',
+          data: payload,
+        },
+      );
       return getRequiredResponseData(response, t('Failed to save task template'));
     },
     {
@@ -220,11 +234,14 @@ export default function AgentGatewayTaskTemplatesPage() {
     async (values: SkillUploadFormValues & { file: File }) => {
       const { file, ...skillValues } = values;
       const uploadId = await uploadAgentGatewayFile(ctx.api, file, 'skill-version');
-      const response = await ctx.api.request<SkillUploadResult>({
-        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.createSkillVersionFromUpload),
-        method: 'post',
-        data: { ...skillValues, uploadId },
-      });
+      const response = await requestAgentGatewayAction<SkillUploadResult>(
+        ctx.api,
+        AGENT_GATEWAY_API_ACTIONS.createSkillVersionFromUpload,
+        {
+          method: 'post',
+          data: { ...skillValues, uploadId },
+        },
+      );
       return getRequiredResponseData(response, t('Failed to upload skill'));
     },
     {
@@ -247,13 +264,17 @@ export default function AgentGatewayTaskTemplatesPage() {
 
   const updateTemplateStatusRequest = useRequest(
     async (template: TaskTemplateRecord, enabled: boolean) => {
-      const response = await ctx.api.request<TaskTemplateRecord>({
-        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.updateTaskTemplate, template.id),
-        method: 'post',
-        data: {
-          status: enabled ? 'active' : 'disabled',
+      const response = await requestAgentGatewayAction<TaskTemplateRecord>(
+        ctx.api,
+        AGENT_GATEWAY_API_ACTIONS.updateTaskTemplate,
+        {
+          method: 'post',
+          targetKey: template.id,
+          data: {
+            status: enabled ? 'active' : 'disabled',
+          },
         },
-      });
+      );
       return getRequiredResponseData(response, t('Failed to update task template status'));
     },
     {

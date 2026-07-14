@@ -28,13 +28,14 @@ import {
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useCallback, useMemo, useState } from 'react';
-import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiUrl } from '../../shared/apiContract';
+import { AGENT_GATEWAY_API_ACTIONS } from '../../shared/apiContract';
 import { useT } from '../locale';
 import {
   AgentGatewayContext,
   getRequiredResponseData,
   getResponseData,
   formatDateTime,
+  requestAgentGatewayAction,
   statusTag,
 } from './AgentGatewayPageUtils';
 
@@ -145,8 +146,7 @@ export default function AgentGatewaySettingsPage() {
 
   const nodesRequest = useRequest(
     async () => {
-      const response = await ctx.api.request<NodeRecord[]>({
-        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.listNodes),
+      const response = await requestAgentGatewayAction<NodeRecord[]>(ctx.api, AGENT_GATEWAY_API_ACTIONS.listNodes, {
         method: 'get',
       });
       return getResponseData(response, []);
@@ -171,10 +171,14 @@ export default function AgentGatewaySettingsPage() {
         return [];
       }
 
-      const response = await ctx.api.request<AgentProfileRecord[]>({
-        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.listNodeProfiles, selectedNodeId),
-        method: 'get',
-      });
+      const response = await requestAgentGatewayAction<AgentProfileRecord[]>(
+        ctx.api,
+        AGENT_GATEWAY_API_ACTIONS.listNodeProfiles,
+        {
+          method: 'get',
+          targetKey: selectedNodeId,
+        },
+      );
       return getResponseData(response, []);
     },
     {
@@ -184,11 +188,14 @@ export default function AgentGatewaySettingsPage() {
 
   const createInvitationRequest = useRequest(
     async (values: InvitationFormValues) => {
-      const response = await ctx.api.request<InvitationResult>({
-        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.createNodeInvitation),
-        method: 'post',
-        data: values as Record<string, unknown>,
-      });
+      const response = await requestAgentGatewayAction<InvitationResult>(
+        ctx.api,
+        AGENT_GATEWAY_API_ACTIONS.createNodeInvitation,
+        {
+          method: 'post',
+          data: values as Record<string, unknown>,
+        },
+      );
       return getRequiredResponseData(response, t('Failed to create invitation'));
     },
     {
@@ -205,9 +212,9 @@ export default function AgentGatewaySettingsPage() {
 
   const updateNodeStatusRequest = useRequest(
     async (node: NodeRecord, enabled: boolean) => {
-      const response = await ctx.api.request<NodeRecord>({
-        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.updateNode, node.id),
+      const response = await requestAgentGatewayAction<NodeRecord>(ctx.api, AGENT_GATEWAY_API_ACTIONS.updateNode, {
         method: 'post',
+        targetKey: node.id,
         data: {
           status: enabled ? 'active' : 'disabled',
         },

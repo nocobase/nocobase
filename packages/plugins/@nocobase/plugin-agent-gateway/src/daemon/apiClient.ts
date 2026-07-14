@@ -11,6 +11,12 @@ import http from 'http';
 import https from 'https';
 
 import { GatewayRequestOptions, GatewayRequester, JsonRecord } from './types';
+import {
+  getAgentGatewayApiActionFromPath,
+  parseAgentGatewayActionQuery,
+  parseAgentGatewayActionRequest,
+  parseAgentGatewayActionResponse,
+} from '../shared/apiContract';
 
 export class AgentGatewayHttpError extends Error {
   readonly code?: string;
@@ -46,7 +52,12 @@ export class AgentGatewayApiClient implements GatewayRequester {
 
   async request<T extends JsonRecord = JsonRecord>(options: GatewayRequestOptions): Promise<T> {
     const url = new URL(options.path, this.serverUrl.replace(/\/$/, ''));
-    const payload = options.body === undefined ? '' : JSON.stringify(options.body);
+    const action = options.action || getAgentGatewayApiActionFromPath(url.pathname);
+    if (action) {
+      parseAgentGatewayActionQuery(action, Object.fromEntries(url.searchParams.entries()));
+    }
+    const requestBody = action ? parseAgentGatewayActionRequest(action, options.body ?? {}) : options.body;
+    const payload = requestBody === undefined ? '' : JSON.stringify(requestBody);
     const transport = url.protocol === 'https:' ? https : http;
 
     return await new Promise<T>((resolve, reject) => {
@@ -101,7 +112,8 @@ export class AgentGatewayApiClient implements GatewayRequester {
               reject(new AgentGatewayHttpError(message, statusCode, responseData));
               return;
             }
-            resolve((parsed.data && typeof parsed.data === 'object' ? parsed.data : parsed) as T);
+            const responseData = parsed.data && typeof parsed.data === 'object' ? parsed.data : parsed;
+            resolve((action ? parseAgentGatewayActionResponse(action, responseData) : responseData) as T);
           });
         },
       );

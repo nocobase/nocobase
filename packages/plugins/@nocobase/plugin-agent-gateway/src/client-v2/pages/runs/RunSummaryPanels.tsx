@@ -10,7 +10,6 @@
 import React from 'react';
 import { Alert, Descriptions, Space, Tag, Typography } from 'antd';
 
-import { normalizeAgentProviderCapabilities } from '../../../shared/providerCapabilities';
 import { AgentSessionResumeBox, AgentSessionResumeInput } from '../../components/AgentSessionResumeBox';
 import { formatDateTime, getObjectRecord, redactPreviewText, statusTag } from '../AgentGatewayPageUtils';
 import {
@@ -170,9 +169,7 @@ export function RunSummaryPanel({ run, t }: { run: RunRecord; t: TFunction }) {
       </Descriptions.Item>
       <Descriptions.Item label={t('Provider capabilities')} span={2}>
         <Space wrap>
-          {Object.entries(
-            normalizeAgentProviderCapabilities(run.provider || 'generic-cli', run.capabilitiesSnapshotJson),
-          )
+          {Object.entries(run.capabilitiesSnapshotJson || {})
             .filter(([key]) =>
               [
                 'structuredEvents',

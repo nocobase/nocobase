@@ -133,9 +133,6 @@ function getProvider(ctx: Context, value: unknown) {
   if (!provider) {
     return 'generic-cli' as const;
   }
-  if (provider === 'claude') {
-    return 'claude-code' as const;
-  }
   if (!isAgentProviderKey(provider)) {
     ctx.throw(400, 'provider is not supported');
   }
@@ -223,23 +220,24 @@ function getImportedRunTimestamps(values: JsonRecord, status: string, now: Date,
 
 function getImportedRunPayload(values: JsonRecord, provider: AgentProviderKey, existing?: ModelRecord) {
   const existingPayload = getRecord(existing ? getModelValue(existing, 'executionPayloadJson') : undefined);
+  const existingFields = getRecord(existingPayload.fields);
   const title = getString(values.title) || getString(existingPayload.title);
   const instruction = getString(values.instruction) || getString(existingPayload.instruction);
-  const externalRunKey = getString(values.externalRunKey) || getString(existingPayload.externalRunKey);
+  const externalRunKey = getString(values.externalRunKey) || getString(existingFields.externalRunKey);
   const providerSessionId = getString(values.providerSessionId) || getString(existingPayload.providerSessionId);
   return {
-    ...existingPayload,
-    imported: true,
+    executionPolicyKey: `external-import:${provider}`,
     source: 'external-import',
-    provider,
     title: title || null,
     instruction: instruction || null,
-    externalRunKey: externalRunKey || null,
     providerSessionId: providerSessionId || null,
-    capabilities: EXTERNAL_IMPORT_CAPABILITIES,
-    metadata: {
-      ...getRecord(existingPayload.metadata),
-      ...getRecord(values.metadataJson),
+    fields: {
+      ...existingFields,
+      externalRunKey: externalRunKey || null,
+      metadataJson: {
+        ...getRecord(existingFields.metadataJson),
+        ...getRecord(values.metadataJson),
+      },
     },
   };
 }
@@ -1051,7 +1049,7 @@ export async function appendExternalRunObservations(ctx: Context, runId: string)
     ctx.throw(409, 'Only imported external runs can receive external observations');
   }
   const batchKey = getBatchKey(ctx, values.batchKey, true);
-  const provider = getProvider(ctx, values.provider || getModelValue(visibleRun, 'provider'));
+  const provider = getProvider(ctx, values.provider);
   const preparedBatch = prepareObservationBatch(ctx, values, provider, batchKey);
   const observationPlan = prepareObservationPlan(
     ctx,

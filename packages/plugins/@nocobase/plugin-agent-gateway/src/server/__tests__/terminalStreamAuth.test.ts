@@ -25,6 +25,11 @@ import {
   waitForFrame,
   waitForOpen,
 } from './helpers/terminalStreamHarness';
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiUrl } from '../../shared/apiContract';
+
+function getTestApiPath(action: Parameters<typeof getAgentGatewayApiUrl>[0], targetKey?: unknown) {
+  return `/${getAgentGatewayApiUrl(action, targetKey === undefined ? undefined : String(targetKey))}`;
+}
 
 interface StreamTicket {
   ticket: string;
@@ -300,11 +305,13 @@ describe('terminal stream browser ticket auth', () => {
     await grantRunScope(roleNames[1], 'terminal-stream-union-scope-b', secondRunCode);
 
     const firstRoleAgent = await app.agent().login(user.user, roleNames[0]);
-    const firstRoleSecondRunDetail = await firstRoleAgent.get(`/agentGatewayApi:getRun/${secondRunId}`);
+    const firstRoleSecondRunDetail = await firstRoleAgent.get(
+      getTestApiPath(AGENT_GATEWAY_API_ACTIONS.getRun, secondRunId),
+    );
     expect(firstRoleSecondRunDetail.status).toBe(404);
 
     const unionAgent = await app.agent().login(user.user, UNION_ROLE_KEY);
-    const unionSecondRunDetail = await unionAgent.get(`/agentGatewayApi:getRun/${secondRunId}`);
+    const unionSecondRunDetail = await unionAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.getRun, secondRunId));
     expect(unionSecondRunDetail.status).toBe(200);
     expect(JSON.stringify(unionSecondRunDetail.body)).toContain(secondRunId);
 

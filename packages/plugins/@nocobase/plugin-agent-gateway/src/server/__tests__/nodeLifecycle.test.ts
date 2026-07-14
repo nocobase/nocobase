@@ -11,6 +11,11 @@ import { MockServer, createMockServer } from '@nocobase/test';
 
 import PluginAgentGatewayServer from '../plugin';
 import { createInvitationToken } from '../security';
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiUrl } from '../../shared/apiContract';
+
+function getTestApiPath(action: Parameters<typeof getAgentGatewayApiUrl>[0], targetKey?: unknown) {
+  return `/${getAgentGatewayApiUrl(action, targetKey === undefined ? undefined : String(targetKey))}`;
+}
 
 interface ResponseLike {
   status: number;
@@ -63,7 +68,7 @@ describe('agent gateway node lifecycle APIs', () => {
   });
 
   async function createInvitation(values: Record<string, unknown> = {}) {
-    const response = await rootAgent.post('/agentGatewayApi:createNodeInvitation').send({
+    const response = await rootAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.createNodeInvitation)).send({
       serverUrl: 'https://nocobase.example.test',
       expiresInSeconds: 3600,
       expectedNodeKey: 'node-1',
@@ -77,7 +82,7 @@ describe('agent gateway node lifecycle APIs', () => {
   async function registerNode(inviteToken: string, values: Record<string, unknown> = {}) {
     return await app
       .agent()
-      .post('/agentGatewayApi:registerNode')
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.registerNode))
       .send({
         inviteToken,
         nodeKey: 'node-1',
@@ -274,14 +279,14 @@ describe('agent gateway node lifecycle APIs', () => {
 
     const oldTokenHeartbeatResponse = await app
       .agent()
-      .post(`/agentGatewayApi:heartbeatNode/${nodeId}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatNode, nodeId))
       .set('Authorization', `Bearer ${firstNodeToken}`)
       .send({});
     expect(oldTokenHeartbeatResponse.status).toBe(401);
 
     const newTokenHeartbeatResponse = await app
       .agent()
-      .post(`/agentGatewayApi:heartbeatNode/${nodeId}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatNode, nodeId))
       .set('Authorization', `Bearer ${secondNodeToken}`)
       .send({});
     expect(newTokenHeartbeatResponse.status).toBe(200);
@@ -365,7 +370,7 @@ describe('agent gateway node lifecycle APIs', () => {
     expect(secondResponse.status).toBe(200);
     expect(secondRegistration.nodeId).not.toBe(firstRegistration.nodeId);
 
-    const listResponse = await rootAgent.get('/agentGatewayApi:listNodes');
+    const listResponse = await rootAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listNodes));
     expect(listResponse.status).toBe(200);
     const nodes = listResponse.body.data as Array<Record<string, unknown>>;
     expect(nodes).toHaveLength(2);
@@ -435,14 +440,14 @@ describe('agent gateway node lifecycle APIs', () => {
 
     const invalidResponse = await app
       .agent()
-      .post(`/agentGatewayApi:heartbeatNode/${nodeId}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatNode, nodeId))
       .set('Authorization', 'Bearer invalid-token')
       .send({});
     expect(invalidResponse.status).toBe(401);
 
     const heartbeatResponse = await app
       .agent()
-      .post(`/agentGatewayApi:heartbeatNode/${nodeId}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatNode, nodeId))
       .set('Authorization', `Bearer ${nodeToken}`)
       .send({
         installationId: '33333333-3333-4333-8333-333333333333',
@@ -537,7 +542,7 @@ describe('agent gateway node lifecycle APIs', () => {
     const profileUpdateSpy = vi.spyOn(profileRepository, 'update');
     const unchangedHeartbeatResponse = await app
       .agent()
-      .post(`/agentGatewayApi:heartbeatNode/${nodeId}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatNode, nodeId))
       .set('Authorization', `Bearer ${nodeToken}`)
       .send({
         installationId: '33333333-3333-4333-8333-333333333333',
@@ -566,7 +571,7 @@ describe('agent gateway node lifecycle APIs', () => {
 
     const emptyProfilesResponse = await app
       .agent()
-      .post(`/agentGatewayApi:heartbeatNode/${nodeId}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatNode, nodeId))
       .set('Authorization', `Bearer ${nodeToken}`)
       .send({
         profilesHash: 'profiles-empty',
@@ -590,7 +595,7 @@ describe('agent gateway node lifecycle APIs', () => {
     });
     const disabledResponse = await app
       .agent()
-      .post(`/agentGatewayApi:heartbeatNode/${nodeId}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatNode, nodeId))
       .set('Authorization', `Bearer ${nodeToken}`)
       .send({});
     expect(disabledResponse.status).toBe(403);
@@ -604,7 +609,7 @@ describe('agent gateway node lifecycle APIs', () => {
 
     await app
       .agent()
-      .post(`/agentGatewayApi:heartbeatNode/${nodeId}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatNode, nodeId))
       .set('Authorization', `Bearer ${registration.nodeToken}`)
       .send({
         profiles: [
@@ -622,13 +627,13 @@ describe('agent gateway node lifecycle APIs', () => {
         ],
       });
 
-    const listResponse = await rootAgent.get('/agentGatewayApi:listNodes');
+    const listResponse = await rootAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listNodes));
     expect(listResponse.status).toBe(200);
     const nodes = listResponse.body.data as Array<Record<string, unknown>>;
     expect(nodes[0].id).toBe(nodeId);
     expect(nodes[0]).not.toHaveProperty('nodeTokenHash');
 
-    const profilesResponse = await rootAgent.get(`/agentGatewayApi:listNodeProfiles/${nodeId}`);
+    const profilesResponse = await rootAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listNodeProfiles, nodeId));
     expect(profilesResponse.status).toBe(200);
     const profiles = profilesResponse.body.data as Array<Record<string, unknown>>;
     expect(profiles[0].profileKey).toBe('fake-success');
@@ -645,7 +650,7 @@ describe('agent gateway node lifecycle APIs', () => {
     const nodeId = String(registration.nodeId);
     const nodeToken = String(registration.nodeToken);
 
-    const disableResponse = await rootAgent.post(`/agentGatewayApi:updateNode/${nodeId}`).send({
+    const disableResponse = await rootAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.updateNode, nodeId)).send({
       status: 'disabled',
     });
     const disabledNode = getData(disableResponse);
@@ -656,12 +661,12 @@ describe('agent gateway node lifecycle APIs', () => {
 
     const disabledHeartbeatResponse = await app
       .agent()
-      .post(`/agentGatewayApi:heartbeatNode/${nodeId}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatNode, nodeId))
       .set('Authorization', `Bearer ${nodeToken}`)
       .send({});
     expect(disabledHeartbeatResponse.status).toBe(403);
 
-    const enableResponse = await rootAgent.post(`/agentGatewayApi:updateNode/${nodeId}`).send({
+    const enableResponse = await rootAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.updateNode, nodeId)).send({
       status: 'active',
     });
     const enabledNode = getData(enableResponse);
@@ -669,9 +674,11 @@ describe('agent gateway node lifecycle APIs', () => {
     expect(enabledNode.status).toBe('active');
     expect(enabledNode.disabledAt).toBeFalsy();
 
-    const invalidStatusResponse = await rootAgent.post(`/agentGatewayApi:updateNode/${nodeId}`).send({
-      status: 'pending',
-    });
+    const invalidStatusResponse = await rootAgent
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.updateNode, nodeId))
+      .send({
+        status: 'pending',
+      });
     expect(invalidStatusResponse.status).toBe(400);
   });
 
@@ -683,7 +690,7 @@ describe('agent gateway node lifecycle APIs', () => {
 
     await app
       .agent()
-      .post(`/agentGatewayApi:heartbeatNode/${nodeId}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatNode, nodeId))
       .set('Authorization', `Bearer ${registration.nodeToken}`)
       .send({
         profiles: [
@@ -711,7 +718,7 @@ describe('agent gateway node lifecycle APIs', () => {
     });
     const managerAgent = await app.agent().login(managerUser);
 
-    const managerListResponse = await managerAgent.get('/agentGatewayApi:listNodes');
+    const managerListResponse = await managerAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listNodes));
     expect(managerListResponse.status).toBe(200);
 
     const dualRoleUser = await app.db.getRepository('users').create({
@@ -739,11 +746,11 @@ describe('agent gateway node lifecycle APIs', () => {
     });
 
     const dualRoleDefaultAgent = await app.agent().login(dualRoleUser);
-    const dualRoleDefaultResponse = await dualRoleDefaultAgent.get('/agentGatewayApi:listNodes');
+    const dualRoleDefaultResponse = await dualRoleDefaultAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listNodes));
     expect(dualRoleDefaultResponse.status).toBe(403);
 
     const dualRoleManagerAgent = await app.agent().login(dualRoleUser, 'agentGatewayManager');
-    const dualRoleManagerResponse = await dualRoleManagerAgent.get('/agentGatewayApi:listNodes');
+    const dualRoleManagerResponse = await dualRoleManagerAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listNodes));
     expect(dualRoleManagerResponse.status).toBe(200);
 
     await app.db.getRepository('roles').create({
@@ -776,11 +783,15 @@ describe('agent gateway node lifecycle APIs', () => {
     });
 
     const departmentDefaultAgent = await app.agent().login(departmentUser);
-    const departmentDefaultResponse = await departmentDefaultAgent.get('/agentGatewayApi:listNodes');
+    const departmentDefaultResponse = await departmentDefaultAgent.get(
+      getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listNodes),
+    );
     expect(departmentDefaultResponse.status).toBe(403);
 
     const departmentManagerAgent = await app.agent().login(departmentUser, 'agentGatewayDepartmentManager');
-    const departmentManagerResponse = await departmentManagerAgent.get('/agentGatewayApi:listNodes');
+    const departmentManagerResponse = await departmentManagerAgent.get(
+      getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listNodes),
+    );
     expect(departmentManagerResponse.status).toBe(200);
 
     const memberUser = await app.db.getRepository('users').create({
@@ -791,23 +802,27 @@ describe('agent gateway node lifecycle APIs', () => {
     });
     const memberAgent = await app.agent().login(memberUser);
 
-    const invitationResponse = await memberAgent.post('/agentGatewayApi:createNodeInvitation').send({
-      serverUrl: 'https://nocobase.example.test',
-    });
+    const invitationResponse = await memberAgent
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.createNodeInvitation))
+      .send({
+        serverUrl: 'https://nocobase.example.test',
+      });
     expect(invitationResponse.status).toBe(403);
 
-    const listNodesResponse = await memberAgent.get('/agentGatewayApi:listNodes');
+    const listNodesResponse = await memberAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listNodes));
     expect(listNodesResponse.status).toBe(403);
 
-    const getNodeResponse = await memberAgent.get(`/agentGatewayApi:getNode/${nodeId}`);
+    const getNodeResponse = await memberAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.getNode, nodeId));
     expect(getNodeResponse.status).toBe(403);
 
-    const updateNodeResponse = await memberAgent.post(`/agentGatewayApi:updateNode/${nodeId}`).send({
-      status: 'disabled',
-    });
+    const updateNodeResponse = await memberAgent
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.updateNode, nodeId))
+      .send({
+        status: 'disabled',
+      });
     expect(updateNodeResponse.status).toBe(403);
 
-    const profilesResponse = await memberAgent.get(`/agentGatewayApi:listNodeProfiles/${nodeId}`);
+    const profilesResponse = await memberAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listNodeProfiles, nodeId));
     expect(profilesResponse.status).toBe(403);
   });
 });

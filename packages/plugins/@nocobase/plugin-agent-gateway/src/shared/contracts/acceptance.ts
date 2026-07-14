@@ -23,26 +23,40 @@ export const AGENT_GATEWAY_WEBSOCKET_DENIAL_SCENARIOS = [
 export type AgentGatewayWebSocketDenialScenario = (typeof AGENT_GATEWAY_WEBSOCKET_DENIAL_SCENARIOS)[number];
 
 export const AGENT_GATEWAY_REQUIRED_ACCEPTANCE_CHECKS = [
+  'static.repository-context',
   'static.eslint',
   'static.diff',
+  'static.api-alias-scan',
   'static.build',
   'static.pack',
+  'static.clean-tree',
   'contracts.release-gate',
+  'contracts.canonical',
   'packaging.bootstrap',
   'daemon.runner',
   'daemon.lifecycle',
   'daemon.skill-sync',
   'daemon.terminal-stream',
   'daemon.exec-driver',
+  'daemon.tmux-terminal',
+  'daemon.run-control-requests',
+  'daemon.supervisor-modules',
+  'daemon.execution-modules',
   'client.runs',
-  'client.artifacts',
+  'client.runs-features',
   'client.skills',
   'client.admin',
+  'client.terminal-a11y',
   'server.collections',
   'server.permissions',
+  'server.security',
   'server.node-lifecycle',
   'server.api-call-logging',
+  'server.file-uploads',
+  'server.dispatch-bindings',
   'server.run-lifecycle',
+  'server.run-terminal',
+  'server.run-domains',
   'server.external-imports',
   'server.run-observability',
   'server.conversation-events',
@@ -70,6 +84,18 @@ export interface AgentGatewayAcceptanceContext {
   executionId: string;
   startedAt: string;
   requiredProviders: AgentGatewayAcceptanceProvider[];
+  repository: AgentGatewayAcceptanceRepositoryContext;
+}
+
+export interface AgentGatewayAcceptanceRepositoryContext {
+  branch: string;
+  commit: string;
+  clean: boolean;
+}
+
+export interface AgentGatewayLiveSourceProvenance {
+  executionId?: string;
+  capturedAt?: string;
 }
 
 export interface AgentGatewayAcceptanceCheck {
@@ -82,6 +108,8 @@ export interface AgentGatewayAcceptanceCheck {
   logPath: string;
   reason?: string;
   warnings: string[];
+  skippedTests?: number;
+  skipDetails?: string[];
 }
 
 export interface AgentGatewayPackageEvidence {
@@ -174,11 +202,35 @@ export interface AgentGatewayAcceptanceEvidence {
   findings?: AgentGatewayAcceptanceFinding[];
 }
 
+export interface AgentGatewayAcceptanceEvidenceFileContent {
+  executionId?: string;
+  nodeId?: string;
+  runId?: string;
+  skillVersionId?: string;
+  provider?: AgentGatewayAcceptanceProvider;
+  providerSessionId?: string;
+  actualCode?: string;
+  actualHttpStatus?: number;
+  relatedRunId?: string;
+}
+
+export interface AgentGatewayAcceptanceEvidenceFileValidation {
+  path: string;
+  status: 'passed' | 'failed';
+  kind: 'json' | 'network' | 'media';
+  contained: boolean;
+  regularFile: boolean;
+  sizeBytes: number;
+  content?: AgentGatewayAcceptanceEvidenceFileContent;
+  reason?: string;
+}
+
 export interface AgentGatewayReleaseGateInput {
   context: AgentGatewayAcceptanceContext;
   checks: AgentGatewayAcceptanceCheck[];
   packageEvidence?: AgentGatewayPackageEvidence;
   evidence?: AgentGatewayAcceptanceEvidence;
+  evidenceFiles?: AgentGatewayAcceptanceEvidenceFileValidation[];
   generatedAt: string;
 }
 
@@ -187,6 +239,40 @@ export interface AgentGatewayReleaseGateSummary extends AgentGatewayReleaseGateI
   failures: string[];
   incomplete: string[];
   warnings: string[];
+}
+
+export function parseAgentGatewayVitestSkips(output: string) {
+  const details = output
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.startsWith('↓') || /\b(?:SKIP|skipped)\b/.test(line))
+    .slice(0, 100);
+  const summaryCounts = [...output.matchAll(/(?:Tests?|Test Files)\s+[^\r\n]*?(\d+)\s+skipped/gi)].map((match) =>
+    Number(match[1]),
+  );
+  return {
+    count: summaryCounts.length ? Math.max(...summaryCounts) : details.filter((line) => line.startsWith('↓')).length,
+    details,
+  };
+}
+
+export function getAgentGatewayLiveSourceProvenanceError(
+  context: AgentGatewayAcceptanceContext,
+  source: AgentGatewayLiveSourceProvenance,
+  label = 'Live evidence source',
+) {
+  if (source.executionId !== context.executionId) {
+    return `${label} belongs to another acceptance execution`;
+  }
+  const startedAt = Date.parse(context.startedAt);
+  if (!Number.isFinite(startedAt)) {
+    return `${label} cannot be validated against an invalid acceptance start timestamp`;
+  }
+  const capturedAt = Date.parse(source.capturedAt || '');
+  if (!Number.isFinite(capturedAt) || capturedAt < startedAt) {
+    return `${label} is stale or has an invalid capturedAt timestamp`;
+  }
+  return undefined;
 }
 
 function hasText(value: string | undefined) {
@@ -207,6 +293,21 @@ function sameAnchors(left: AgentGatewayAcceptanceAnchors, right: AgentGatewayAcc
   );
 }
 
+function contentMatchesAnchors(
+  content: AgentGatewayAcceptanceEvidenceFileContent | undefined,
+  executionId: string,
+  anchors: AgentGatewayAcceptanceAnchors,
+) {
+  return (
+    content?.executionId === executionId &&
+    content.nodeId === anchors.nodeId &&
+    content.runId === anchors.runId &&
+    content.skillVersionId === anchors.skillVersionId &&
+    content.provider === anchors.provider &&
+    content.providerSessionId === anchors.providerSessionId
+  );
+}
+
 function evaluateChecks(input: AgentGatewayReleaseGateInput, failures: string[], incomplete: string[]) {
   const checksById = new Map(input.checks.map((check) => [check.id, check]));
   for (const id of AGENT_GATEWAY_REQUIRED_ACCEPTANCE_CHECKS) {
@@ -220,6 +321,9 @@ function evaluateChecks(input: AgentGatewayReleaseGateInput, failures: string[],
     }
     if (check.status === 'skipped') {
       incomplete.push(`Required automated check ${id} was skipped: ${check.reason || 'no reason provided'}`);
+    }
+    if (check.status !== 'skipped' && (check.skippedTests || 0) > 0) {
+      incomplete.push(`Required automated check ${id} contains ${check.skippedTests} internally skipped test(s)`);
     }
   }
 }
@@ -237,6 +341,117 @@ function evaluatePackage(input: AgentGatewayReleaseGateInput, failures: string[]
   }
   if (packageEvidence.bannedFiles.length) {
     failures.push(`Package contains banned files: ${packageEvidence.bannedFiles.join(', ')}`);
+  }
+}
+
+function getEvidencePaths(evidence: AgentGatewayAcceptanceEvidence) {
+  const paths = new Set<string>();
+  for (const browserEvidence of Object.values(evidence.browser || {})) {
+    if (!browserEvidence) {
+      continue;
+    }
+    paths.add(browserEvidence.snapshotPath);
+    paths.add(browserEvidence.actionResultPath);
+    browserEvidence.mediaPaths.forEach((filePath) => paths.add(filePath));
+    browserEvidence.networkEvidencePaths.forEach((filePath) => paths.add(filePath));
+  }
+  for (const providerEvidence of Object.values(evidence.providers || {})) {
+    providerEvidence?.evidenceFiles.forEach((filePath) => paths.add(filePath));
+  }
+  for (const denialEvidence of Object.values(evidence.websocket || {})) {
+    denialEvidence?.evidenceFiles.forEach((filePath) => paths.add(filePath));
+  }
+  evidence.multiInstance?.evidenceFiles.forEach((filePath) => paths.add(filePath));
+  paths.delete('');
+  return paths;
+}
+
+function evaluateEvidenceFiles(
+  input: AgentGatewayReleaseGateInput,
+  evidence: AgentGatewayAcceptanceEvidence,
+  failures: string[],
+  incomplete: string[],
+) {
+  if (!input.evidenceFiles) {
+    incomplete.push('Live evidence files were not validated against the current evidence directory');
+    return;
+  }
+  const validations = new Map(input.evidenceFiles.map((validation) => [validation.path, validation]));
+  for (const filePath of getEvidencePaths(evidence)) {
+    const validation = validations.get(filePath);
+    if (!validation) {
+      failures.push(`Evidence file ${filePath} was declared but not validated`);
+      continue;
+    }
+    if (
+      validation.status !== 'passed' ||
+      !validation.contained ||
+      !validation.regularFile ||
+      validation.sizeBytes <= 0
+    ) {
+      failures.push(`Evidence file ${filePath} is invalid: ${validation.reason || 'file validation failed'}`);
+    }
+  }
+
+  const anchors = evidence.anchors;
+  if (!anchors) {
+    return;
+  }
+  for (const [scenario, browserEvidence] of Object.entries(evidence.browser || {})) {
+    if (!browserEvidence || browserEvidence.status !== 'passed') {
+      continue;
+    }
+    for (const filePath of [browserEvidence.snapshotPath, browserEvidence.actionResultPath]) {
+      if (!contentMatchesAnchors(validations.get(filePath)?.content, evidence.executionId, anchors)) {
+        failures.push(`Browser scenario ${scenario} evidence file ${filePath} does not contain the current anchors`);
+      }
+    }
+  }
+  for (const [provider, providerEvidence] of Object.entries(evidence.providers || {})) {
+    if (!providerEvidence || providerEvidence.status !== 'passed') {
+      continue;
+    }
+    const hasMatchingContent = providerEvidence.evidenceFiles.some((filePath) => {
+      const content = validations.get(filePath)?.content;
+      return (
+        content?.executionId === evidence.executionId &&
+        content.provider === provider &&
+        content.runId === providerEvidence.runId &&
+        content.providerSessionId === providerEvidence.providerSessionId
+      );
+    });
+    if (!hasMatchingContent) {
+      failures.push(`Provider ${provider} evidence files do not contain the current run and session anchors`);
+    }
+  }
+  for (const [scenario, denial] of Object.entries(evidence.websocket || {})) {
+    if (!denial || denial.status !== 'passed') {
+      continue;
+    }
+    const hasMatchingContent = denial.evidenceFiles.some((filePath) => {
+      const content = validations.get(filePath)?.content;
+      if (content?.executionId !== evidence.executionId || content.runId !== denial.runId) {
+        return false;
+      }
+      if (scenario === 'crossOrigin') {
+        return content.actualHttpStatus === denial.actualHttpStatus;
+      }
+      return (
+        content.actualCode === denial.actualCode &&
+        (scenario !== 'crossRun' || content.relatedRunId === denial.relatedRunId)
+      );
+    });
+    if (!hasMatchingContent) {
+      failures.push(`WebSocket denial scenario ${scenario} evidence files do not contain the asserted code or status`);
+    }
+  }
+  if (evidence.multiInstance) {
+    const hasCurrentExecution = evidence.multiInstance.evidenceFiles.some(
+      (filePath) => validations.get(filePath)?.content?.executionId === evidence.executionId,
+    );
+    if (!hasCurrentExecution) {
+      failures.push('Multi-instance evidence files do not contain the current execution ID');
+    }
   }
 }
 
@@ -431,6 +646,13 @@ export function evaluateAgentGatewayReleaseGate(input: AgentGatewayReleaseGateIn
   if (input.context.schemaVersion !== 1 || !hasText(input.context.executionId)) {
     failures.push('Acceptance context schema or execution ID is invalid');
   }
+  if (
+    !hasText(input.context.repository?.branch) ||
+    !/^[0-9a-f]{40}$/i.test(input.context.repository?.commit || '') ||
+    input.context.repository?.clean !== true
+  ) {
+    failures.push('Acceptance context must be bound to a clean repository branch and commit');
+  }
 
   evaluateChecks(input, failures, incomplete);
   evaluatePackage(input, failures, incomplete);
@@ -449,6 +671,7 @@ export function evaluateAgentGatewayReleaseGate(input: AgentGatewayReleaseGateIn
     evaluateBrowser(input.context, evidence, failures, incomplete);
     evaluateWebSocket(input.context, evidence, failures, incomplete);
     evaluateMultiInstance(input.context, evidence, failures, incomplete);
+    evaluateEvidenceFiles(input, evidence, failures, incomplete);
     for (const finding of evidence.findings || []) {
       if ((finding.severity === 'Critical' || finding.severity === 'Important') && finding.status !== 'resolved') {
         failures.push(`Unresolved ${finding.severity} finding: ${finding.message}`);

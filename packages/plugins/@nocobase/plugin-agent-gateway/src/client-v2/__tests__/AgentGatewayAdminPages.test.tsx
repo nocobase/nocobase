@@ -9,16 +9,20 @@
 
 import { Application } from '@nocobase/client-v2';
 import { FlowEngineProvider } from '@nocobase/flow-engine';
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { App as AntdApp } from 'antd';
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-
+import { AGENT_GATEWAY_API_ACTIONS, AgentGatewayApiAction, getAgentGatewayApiUrl } from '../../shared/apiContract';
 import AgentGatewayPromptTemplatesPage from '../pages/AgentGatewayPromptTemplatesPage';
 import AgentGatewayProviderCapabilitiesPage from '../pages/AgentGatewayProviderCapabilitiesPage';
 import AgentGatewaySettingsPage from '../pages/AgentGatewaySettingsPage';
 import AgentGatewayTaskTemplatesPage from '../pages/AgentGatewayTaskTemplatesPage';
 import PluginAgentGatewayClientV2 from '../plugin';
+
+function apiUrl(action: AgentGatewayApiAction, targetKey?: string) {
+  return getAgentGatewayApiUrl(action, targetKey);
+}
 
 interface FlowContextWithDefineProperty {
   defineProperty(name: string, descriptor: { value: unknown }): void;
@@ -162,7 +166,7 @@ describe('Agent Gateway admin pages', () => {
 
   it('renders nodes and per-node profiles without raw execution configuration', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listNodes') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listNodes)) {
         return {
           data: {
             data: [
@@ -199,7 +203,7 @@ describe('Agent Gateway admin pages', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:listNodeProfiles/node-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listNodeProfiles, 'node-id-1')) {
         return {
           data: {
             data: [
@@ -230,7 +234,7 @@ describe('Agent Gateway admin pages', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:updateNode/node-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.updateNode, 'node-id-1')) {
         return {
           data: {
             data: {
@@ -267,13 +271,13 @@ describe('Agent Gateway admin pages', () => {
     expect(screen.queryByText('must-not-render')).toBeNull();
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'agentGatewayApi:listNodes',
+        url: apiUrl(AGENT_GATEWAY_API_ACTIONS.listNodes),
         method: 'get',
       }),
     );
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'agentGatewayApi:listNodeProfiles/node-id-1',
+        url: apiUrl(AGENT_GATEWAY_API_ACTIONS.listNodeProfiles, 'node-id-1'),
         method: 'get',
       }),
     );
@@ -282,7 +286,7 @@ describe('Agent Gateway admin pages', () => {
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'agentGatewayApi:updateNode/node-id-1',
+          url: apiUrl(AGENT_GATEWAY_API_ACTIONS.updateNode, 'node-id-1'),
           method: 'post',
           data: {
             status: 'disabled',
@@ -294,7 +298,7 @@ describe('Agent Gateway admin pages', () => {
 
   it('renders a compact provider capability matrix', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listNodes') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listNodes)) {
         return {
           data: {
             data: [
@@ -306,7 +310,7 @@ describe('Agent Gateway admin pages', () => {
           },
         };
       }
-      if (config.url === 'agentGatewayApi:listNodeProfiles/node-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listNodeProfiles, 'node-id-1')) {
         return {
           data: {
             data: [
@@ -332,7 +336,7 @@ describe('Agent Gateway admin pages', () => {
           },
         };
       }
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [
@@ -348,6 +352,7 @@ describe('Agent Gateway admin pages', () => {
                 capabilitySource: 'session',
                 capabilitiesSnapshotJson: {
                   resumeSession: true,
+                  terminalOutput: true,
                   artifacts: false,
                 },
                 agentGatewayActionPermissionsJson: {
@@ -371,6 +376,10 @@ describe('Agent Gateway admin pages', () => {
                 sourceType: 'provider-capability-seed',
                 terminalBackend: 'tmux',
                 terminalStatus: 'active',
+                capabilitiesSnapshotJson: {
+                  terminalOutput: true,
+                  terminate: true,
+                },
                 agentGatewayActionPermissionsJson: {
                   resumeAgentSession: true,
                   readTerminal: true,
@@ -408,7 +417,12 @@ describe('Agent Gateway admin pages', () => {
     expect(await screen.findAllByText('Artifacts: 409 unsupported')).toHaveLength(2);
     expect(await screen.findAllByText('Live message: 409 unsupported')).toHaveLength(2);
     expect(await screen.findAllByText('CLI stdin: 403 disabled')).toHaveLength(2);
-    expect(await screen.findByText('Interrupt: 409 unsupported')).toBeTruthy();
+    const genericRunCode = await screen.findByText('provider-capability-generic');
+    const genericRow = genericRunCode.closest('tr');
+    expect(genericRow).toBeTruthy();
+    if (genericRow) {
+      expect(within(genericRow).getByText('Interrupt: 409 unsupported')).toBeTruthy();
+    }
     expect(await screen.findByText('Terminate: Allowed')).toBeTruthy();
     expect(await screen.findAllByText('Terminal output: 200 unavailable')).toHaveLength(2);
     expect(screen.queryByText('Live message: Allowed')).toBeNull();
@@ -424,7 +438,7 @@ describe('Agent Gateway admin pages', () => {
 
   it('renders provider capability matrix controls with current user permissions', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listNodes') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listNodes)) {
         return {
           data: {
             data: [
@@ -436,7 +450,7 @@ describe('Agent Gateway admin pages', () => {
           },
         };
       }
-      if (config.url === 'agentGatewayApi:listNodeProfiles/node-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listNodeProfiles, 'node-id-1')) {
         return {
           data: {
             data: [
@@ -459,7 +473,7 @@ describe('Agent Gateway admin pages', () => {
           },
         };
       }
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [
@@ -511,7 +525,7 @@ describe('Agent Gateway admin pages', () => {
 
   it('creates an invitation and clears the one-time register command when the modal closes', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:createNodeInvitation') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.createNodeInvitation)) {
         return {
           data: {
             data: {
@@ -543,7 +557,7 @@ describe('Agent Gateway admin pages', () => {
     expect(await screen.findByText(/AGENT_GATEWAY_NODE_KEY='remote-196'/)).toBeTruthy();
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'agentGatewayApi:createNodeInvitation',
+        url: apiUrl(AGENT_GATEWAY_API_ACTIONS.createNodeInvitation),
         method: 'post',
         data: expect.objectContaining({
           expectedNodeKey: 'remote-196',
@@ -569,7 +583,7 @@ describe('Agent Gateway admin pages', () => {
       },
     ];
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listPromptTemplates') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listPromptTemplates)) {
         return {
           data: {
             data: templates,
@@ -577,7 +591,7 @@ describe('Agent Gateway admin pages', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:createPromptTemplate') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.createPromptTemplate)) {
         templates.push({
           id: 'template-id-2',
           templateKey: String(config.data?.templateKey),
@@ -592,7 +606,7 @@ describe('Agent Gateway admin pages', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:previewPromptTemplate') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.previewPromptTemplate)) {
         return {
           data: {
             data: {
@@ -628,7 +642,7 @@ describe('Agent Gateway admin pages', () => {
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'agentGatewayApi:createPromptTemplate',
+          url: apiUrl(AGENT_GATEWAY_API_ACTIONS.createPromptTemplate),
           method: 'post',
           data: expect.objectContaining({
             templateKey: 'new-template',
@@ -652,7 +666,7 @@ describe('Agent Gateway admin pages', () => {
     expect(await screen.findByText('Rendered task prompt')).toBeTruthy();
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'agentGatewayApi:previewPromptTemplate',
+        url: apiUrl(AGENT_GATEWAY_API_ACTIONS.previewPromptTemplate),
         method: 'post',
         data: expect.objectContaining({
           templateId: 'template-id-1',
@@ -676,7 +690,7 @@ describe('Agent Gateway admin pages', () => {
       },
     ];
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listTaskTemplates') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listTaskTemplates)) {
         return {
           data: {
             data: templates,
@@ -684,7 +698,7 @@ describe('Agent Gateway admin pages', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:listRunOptions') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunOptions)) {
         return {
           data: {
             data: {
@@ -714,7 +728,7 @@ describe('Agent Gateway admin pages', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:initFileUpload') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.initFileUpload)) {
         return {
           data: {
             data: {
@@ -725,7 +739,7 @@ describe('Agent Gateway admin pages', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:appendFileUpload/upload-template-skill') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.appendFileUpload, 'upload-template-skill')) {
         return {
           data: {
             data: {
@@ -736,7 +750,7 @@ describe('Agent Gateway admin pages', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:completeFileUpload/upload-template-skill') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.completeFileUpload, 'upload-template-skill')) {
         return {
           data: {
             data: {
@@ -747,7 +761,7 @@ describe('Agent Gateway admin pages', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:createSkillVersionFromUpload') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.createSkillVersionFromUpload)) {
         return {
           data: {
             data: {
@@ -760,7 +774,7 @@ describe('Agent Gateway admin pages', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:createTaskTemplate') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.createTaskTemplate)) {
         templates.push({
           id: 'template-id-2',
           templateKey: String(config.data?.templateKey),
@@ -822,7 +836,7 @@ describe('Agent Gateway admin pages', () => {
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'agentGatewayApi:initFileUpload',
+          url: apiUrl(AGENT_GATEWAY_API_ACTIONS.initFileUpload),
           method: 'post',
           data: expect.objectContaining({
             purpose: 'skill-version',
@@ -833,7 +847,7 @@ describe('Agent Gateway admin pages', () => {
       );
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'agentGatewayApi:appendFileUpload/upload-template-skill',
+          url: apiUrl(AGENT_GATEWAY_API_ACTIONS.appendFileUpload, 'upload-template-skill'),
           method: 'post',
           data: expect.objectContaining({
             offset: 0,
@@ -843,7 +857,7 @@ describe('Agent Gateway admin pages', () => {
       );
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'agentGatewayApi:createSkillVersionFromUpload',
+          url: apiUrl(AGENT_GATEWAY_API_ACTIONS.createSkillVersionFromUpload),
           method: 'post',
           data: expect.objectContaining({
             uploadId: 'upload-template-skill',
@@ -859,7 +873,7 @@ describe('Agent Gateway admin pages', () => {
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'agentGatewayApi:createTaskTemplate',
+          url: apiUrl(AGENT_GATEWAY_API_ACTIONS.createTaskTemplate),
           method: 'post',
           data: expect.objectContaining({
             templateKey: 'build-on-187',
@@ -873,14 +887,16 @@ describe('Agent Gateway admin pages', () => {
         }),
       );
     });
-    const createCall = request.mock.calls.find(([config]) => config.url === 'agentGatewayApi:createTaskTemplate');
+    const createCall = request.mock.calls.find(
+      ([config]) => config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.createTaskTemplate),
+    );
     expect(createCall?.[0].data).not.toHaveProperty('sort');
   });
 
   it('opens task template details from the templateId query parameter', async () => {
     window.history.pushState({}, '', '/admin/settings/agent-gateway/task-templates?templateId=template-id-1');
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listTaskTemplates') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listTaskTemplates)) {
         return {
           data: {
             data: [
@@ -898,7 +914,7 @@ describe('Agent Gateway admin pages', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:listRunOptions') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunOptions)) {
         return {
           data: {
             data: {

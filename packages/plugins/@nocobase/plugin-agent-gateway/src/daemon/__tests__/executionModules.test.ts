@@ -12,6 +12,7 @@ import type { ExecDriverResult } from '../execDriver';
 import type { AgentGatewayDaemonNodeClient } from '../gateway';
 import { resolveExecutionServices } from '../execution/services';
 import { terminalizeRun } from '../observations/completion';
+import { createLiveTimelineReporter } from '../observations/liveTimelinePublisher';
 import type { RunLease } from '../types';
 
 const lease: RunLease = {
@@ -98,5 +99,32 @@ describe('daemon execution modules', () => {
     ).resolves.toBe('lease_lost');
     expect(completeCalls).toBe(1);
     expect(heartbeatCalls).toBe(1);
+  });
+
+  it('retries temporarily failed live observation batches on the next flush', async () => {
+    let appendCalls = 0;
+    const deliveredBatches: unknown[] = [];
+    const gateway = {
+      appendConversationEvents: async (_lease: RunLease, values: unknown) => {
+        appendCalls += 1;
+        if (appendCalls === 1) {
+          throw new Error('temporary observation failure');
+        }
+        deliveredBatches.push(values);
+      },
+    } as unknown as AgentGatewayDaemonNodeClient;
+    const reporter = createLiveTimelineReporter({
+      gateway,
+      getLease: () => lease,
+    });
+
+    await reporter.appendText('temporary retry event');
+    await reporter.flush();
+
+    expect(appendCalls).toBe(2);
+    expect(JSON.stringify(deliveredBatches)).toContain('temporary retry event');
+    expect(reporter.getWarnings()).toEqual(
+      expect.arrayContaining([expect.stringContaining('temporary observation failure')]),
+    );
   });
 });

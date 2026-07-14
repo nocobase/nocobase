@@ -10,7 +10,12 @@
 import { ActionModel, ActionSceneEnum } from '@nocobase/client-v2';
 import { ButtonProps } from 'antd';
 
-import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiUrl } from '../../shared/apiContract';
+import {
+  AGENT_GATEWAY_API_ACTIONS,
+  getAgentGatewayApiUrl,
+  parseAgentGatewayActionRequest,
+  parseAgentGatewayActionResponse,
+} from '../../shared/apiContract';
 import { NAMESPACE, tExpr } from '../locale';
 import { FlowCollectionLike, getCollectionFromContext, getCollectionNameFromContext } from '../utils/collectionContext';
 
@@ -45,11 +50,7 @@ interface AgentGatewayApiResponse<T> {
 }
 
 interface AgentGatewayApi {
-  request<T>(config: {
-    url: string;
-    method: 'post';
-    data?: Record<string, unknown>;
-  }): Promise<AgentGatewayApiResponse<T>>;
+  request<T>(config: { url: string; method: 'post'; data?: object }): Promise<AgentGatewayApiResponse<T>>;
 }
 
 interface AgentGatewayMessage {
@@ -206,18 +207,21 @@ export async function dispatchAgentGatewayRun(ctx: DispatchActionContext, params
     const response = await ctx.api.request<DispatchApiResponse>({
       url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.dispatchBinding, bindingIdentifier),
       method: 'post',
-      data: {
+      data: parseAgentGatewayActionRequest(AGENT_GATEWAY_API_ACTIONS.dispatchBinding, {
         sourceRecordId: recordId,
         idempotencyKey: createIdempotencyKey(bindingIdentifier, recordId),
         sourceCollection,
-      },
+      }),
     });
 
     const resource = ctx.blockModel?.resource;
     if (resource) {
       await resource.refresh();
     }
-    const dispatch = response.data?.data;
+    const dispatch = parseAgentGatewayActionResponse(
+      AGENT_GATEWAY_API_ACTIONS.dispatchBinding,
+      response.data?.data || {},
+    ) as DispatchApiResponse;
     ctx.message?.success(
       t(
         ctx,

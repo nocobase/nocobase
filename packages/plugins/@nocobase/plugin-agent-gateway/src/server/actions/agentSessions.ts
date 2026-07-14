@@ -315,7 +315,8 @@ function buildResumePayload(options: {
   const timeoutMs = sourcePayload.timeoutMs;
   return {
     mode: 'agent-session-resume',
-    executionPolicyKey: getString(sourcePayload.executionPolicyKey),
+    executionPolicyKey:
+      getString(sourcePayload.executionPolicyKey) || getModelString(options.sourceRun, 'executionPolicyKey'),
     providerSessionId: options.providerSessionId,
     message: options.message,
     messageHash: options.messageHash,

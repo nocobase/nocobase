@@ -346,6 +346,15 @@ async function getCurrentNodeId(ctx: Context) {
   return String(auth.subject.nodeId);
 }
 
+function serializeRunEvent(event: ModelRecord) {
+  const serialized = serializeModel(event);
+  const { payloadJson, ...canonicalEvent } = serialized;
+  return {
+    ...canonicalEvent,
+    contentJson: getRecord(payloadJson),
+  };
+}
+
 async function appendEvent(ctx: Context, runId: string) {
   const nodeId = await getCurrentNodeId(ctx);
   const values = getBodyValues(ctx);
@@ -375,7 +384,7 @@ async function appendEvent(ctx: Context, runId: string) {
     })) as ModelRecord | null;
     if (existingEvent) {
       return {
-        ...serializeModel(existingEvent),
+        ...serializeRunEvent(existingEvent),
         idempotent: true,
       };
     }
@@ -409,7 +418,7 @@ async function appendEvent(ctx: Context, runId: string) {
     })) as ModelRecord;
 
     return {
-      ...serializeModel(event),
+      ...serializeRunEvent(event),
       idempotent: false,
     };
   });
@@ -496,7 +505,7 @@ async function listRunEvents(ctx: Context, runId: string) {
 
   const page = await findRunEventPage(ctx, runId);
   ctx.body = {
-    rows: page.rows.map(serializeModel),
+    rows: page.rows.map(serializeRunEvent),
     pageSize: page.pageSize,
     beforeCursor: page.beforeCursor,
     afterCursor: page.afterCursor,

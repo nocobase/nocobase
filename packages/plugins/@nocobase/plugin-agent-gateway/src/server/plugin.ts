@@ -11,6 +11,7 @@ import { Plugin } from '@nocobase/server';
 import { randomUUID } from 'crypto';
 
 import { registerApiCallLogMiddleware } from './actions/apiCallLogging';
+import { registerAgentGatewayContractBoundary } from './actions/contractBoundary';
 import { registerAgentSessionRoutes } from './actions/agentSessions';
 import { registerConversationEventRoutes } from './actions/conversationEvents';
 import { registerDispatchBindingRoutes, registerDispatchBindingValidationHooks } from './actions/dispatchBindings';
@@ -80,6 +81,7 @@ export class PluginAgentGatewayServer extends Plugin {
   async load() {
     this.app.acl.allow(AGENT_GATEWAY_API_RESOURCE, [...AGENT_GATEWAY_MACHINE_API_ACTIONS], 'public');
     registerApiCallLogMiddleware(this);
+    registerAgentGatewayContractBoundary(this);
     registerFileUploadActions(this);
     registerNodeLifecycleRoutes(this);
     registerSkillInstallRoutes(this);

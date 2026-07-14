@@ -15,13 +15,17 @@ import {
   AGENT_GATEWAY_REQUIRED_ACCEPTANCE_CHECKS,
   AGENT_GATEWAY_WEBSOCKET_DENIAL_SCENARIOS,
   AgentGatewayAcceptanceEvidence,
+  AgentGatewayAcceptanceEvidenceFileValidation,
   AgentGatewayReleaseGateInput,
   evaluateAgentGatewayReleaseGate,
+  getAgentGatewayLiveSourceProvenanceError,
+  parseAgentGatewayVitestSkips,
 } from '../acceptance';
 
 const startedAt = '2026-07-13T20:00:00.000Z';
 const capturedAt = '2026-07-13T20:01:00.000Z';
 const executionId = '019faaaa-bbbb-7ccc-8ddd-eeeeeeeeeeee';
+const commit = '0123456789abcdef0123456789abcdef01234567';
 const anchors = {
   nodeId: 'node-1',
   runId: 'run-1',
@@ -35,7 +39,7 @@ function createEvidence(): AgentGatewayAcceptanceEvidence {
     schemaVersion: 1,
     executionId,
     capturedAt,
-    anchors,
+    anchors: { ...anchors },
     browser: Object.fromEntries(
       AGENT_GATEWAY_BROWSER_SCENARIOS.map((scenario) => [
         scenario,
@@ -43,7 +47,7 @@ function createEvidence(): AgentGatewayAcceptanceEvidence {
           status: 'passed',
           executionId,
           capturedAt,
-          anchors,
+          anchors: { ...anchors },
           snapshotPath: `${scenario}/snapshot.json`,
           actionResultPath: `${scenario}/action.json`,
           mediaPaths: [`${scenario}/screen.png`],
@@ -115,12 +119,18 @@ function createEvidence(): AgentGatewayAcceptanceEvidence {
 }
 
 function createInput(): AgentGatewayReleaseGateInput {
+  const evidence = createEvidence();
   return {
     context: {
       schemaVersion: 1,
       executionId,
       startedAt,
       requiredProviders: ['codex'],
+      repository: {
+        branch: 'ai-task-platform-improve',
+        commit,
+        clean: true,
+      },
     },
     checks: AGENT_GATEWAY_REQUIRED_ACCEPTANCE_CHECKS.map((id) => ({
       id,
@@ -138,12 +148,85 @@ function createInput(): AgentGatewayReleaseGateInput {
       files: ['dist/server/index.js'],
       bannedFiles: [],
     },
-    evidence: createEvidence(),
+    evidence,
+    evidenceFiles: createEvidenceFileValidations(evidence),
     generatedAt: capturedAt,
   };
 }
 
+function createEvidenceFileValidations(evidence: AgentGatewayAcceptanceEvidence) {
+  const validations: AgentGatewayAcceptanceEvidenceFileValidation[] = [];
+  const add = (
+    filePath: string,
+    kind: AgentGatewayAcceptanceEvidenceFileValidation['kind'],
+    content?: AgentGatewayAcceptanceEvidenceFileValidation['content'],
+  ) => {
+    validations.push({
+      path: filePath,
+      status: 'passed',
+      kind,
+      contained: true,
+      regularFile: true,
+      sizeBytes: 10,
+      content,
+    });
+  };
+  for (const browserEvidence of Object.values(evidence.browser || {})) {
+    if (!browserEvidence) {
+      continue;
+    }
+    const content = { executionId, ...anchors };
+    add(browserEvidence.snapshotPath, 'json', content);
+    add(browserEvidence.actionResultPath, 'json', content);
+    browserEvidence.mediaPaths.forEach((filePath) => add(filePath, 'media'));
+    browserEvidence.networkEvidencePaths.forEach((filePath) => add(filePath, 'network'));
+  }
+  for (const [provider, providerEvidence] of Object.entries(evidence.providers || {})) {
+    providerEvidence?.evidenceFiles.forEach((filePath) =>
+      add(filePath, 'json', {
+        executionId,
+        provider: provider as 'codex' | 'claude-code' | 'opencode',
+        runId: providerEvidence.runId,
+        providerSessionId: providerEvidence.providerSessionId,
+      }),
+    );
+  }
+  for (const [scenario, denial] of Object.entries(evidence.websocket || {})) {
+    denial?.evidenceFiles.forEach((filePath) =>
+      add(filePath, filePath.endsWith('.har') ? 'network' : 'json', {
+        executionId,
+        runId: denial.runId,
+        actualCode: denial.actualCode,
+        actualHttpStatus: denial.actualHttpStatus,
+        relatedRunId: scenario === 'crossRun' ? denial.relatedRunId : undefined,
+      }),
+    );
+  }
+  evidence.multiInstance?.evidenceFiles.forEach((filePath) => add(filePath, 'json', { executionId }));
+  return validations;
+}
+
 describe('Agent Gateway release gate', () => {
+  it('requires canonical, refactor feature, security, upload, and cluster suites', () => {
+    expect(AGENT_GATEWAY_REQUIRED_ACCEPTANCE_CHECKS).toEqual(
+      expect.arrayContaining([
+        'static.repository-context',
+        'static.api-alias-scan',
+        'static.clean-tree',
+        'contracts.canonical',
+        'daemon.supervisor-modules',
+        'daemon.execution-modules',
+        'client.runs-features',
+        'client.terminal-a11y',
+        'server.security',
+        'server.api-call-logging',
+        'server.file-uploads',
+        'server.run-domains',
+        'multi-instance.terminal',
+      ]),
+    );
+  });
+
   it('completes only when automated and live evidence is current and anchored', () => {
     expect(evaluateAgentGatewayReleaseGate(createInput())).toMatchObject({
       status: 'complete',
@@ -211,5 +294,88 @@ describe('Agent Gateway release gate', () => {
         'Live provider, browser, WebSocket, and multi-instance evidence is missing',
       ]),
     );
+  });
+
+  it('rejects dirty repository context and invalid or mismatched evidence files', () => {
+    const input = createInput();
+    input.context.repository.clean = false;
+    const snapshot = input.evidenceFiles?.find((file) => file.path === 'admin/snapshot.json');
+    expect(snapshot).toBeTruthy();
+    if (snapshot) {
+      snapshot.status = 'failed';
+      snapshot.sizeBytes = 0;
+      snapshot.reason = 'empty file';
+      snapshot.content = { ...snapshot.content, runId: 'other-run' };
+    }
+
+    const summary = evaluateAgentGatewayReleaseGate(input);
+    expect(summary.status).toBe('failed');
+    expect(summary.failures).toEqual(
+      expect.arrayContaining([
+        'Acceptance context must be bound to a clean repository branch and commit',
+        expect.stringContaining('Evidence file admin/snapshot.json is invalid'),
+        expect.stringContaining('does not contain the current anchors'),
+      ]),
+    );
+  });
+
+  it('keeps required checks incomplete when Vitest reports internal skips', () => {
+    const input = createInput();
+    const runsCheck = input.checks.find((check) => check.id === 'client.runs-features');
+    expect(runsCheck).toBeTruthy();
+    if (runsCheck) {
+      runsCheck.skippedTests = 2;
+      runsCheck.skipDetails = ['Tests  10 passed | 2 skipped'];
+    }
+
+    const summary = evaluateAgentGatewayReleaseGate(input);
+    expect(summary.status).toBe('incomplete');
+    expect(summary.incomplete).toContain(
+      'Required automated check client.runs-features contains 2 internally skipped test(s)',
+    );
+  });
+
+  it('parses Vitest summary and individual skipped test output', () => {
+    expect(
+      parseAgentGatewayVitestSkips(`
+ ↓ feature suite > requires a provider binary
+ Test Files  1 passed (1)
+      Tests  9 passed | 1 skipped (10)
+`),
+    ).toMatchObject({
+      count: 1,
+      details: expect.arrayContaining([expect.stringContaining('requires a provider binary')]),
+    });
+  });
+
+  it('rejects stale or cross-execution raw live evidence provenance', () => {
+    const context = createInput().context;
+    expect(
+      getAgentGatewayLiveSourceProvenanceError(context, {
+        executionId,
+        capturedAt,
+      }),
+    ).toBeUndefined();
+    expect(
+      getAgentGatewayLiveSourceProvenanceError(context, {
+        executionId: 'old-execution',
+        capturedAt,
+      }),
+    ).toContain('another acceptance execution');
+    expect(
+      getAgentGatewayLiveSourceProvenanceError(context, {
+        executionId,
+        capturedAt: '2026-07-13T19:59:59.000Z',
+      }),
+    ).toContain('stale');
+    expect(
+      getAgentGatewayLiveSourceProvenanceError(
+        { ...context, startedAt: 'invalid' },
+        {
+          executionId,
+          capturedAt,
+        },
+      ),
+    ).toContain('invalid acceptance start timestamp');
   });
 });

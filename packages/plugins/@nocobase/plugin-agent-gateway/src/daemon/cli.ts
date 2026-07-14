@@ -140,7 +140,7 @@ function getDefaultExternalLogFormat(provider: string) {
   if (provider === 'opencode') {
     return 'opencode-jsonl';
   }
-  if (provider === 'claude-code' || provider === 'claude') {
+  if (provider === 'claude-code') {
     return 'claude-code-jsonl';
   }
   return 'text';
@@ -312,7 +312,6 @@ async function handleImportExternalRun(flags: Record<string, string | boolean | 
   const metadata = getFlagString(flags, 'metadata-json')
     ? parseJsonRecord(getFlagString(flags, 'metadata-json'), '--metadata-json')
     : {};
-  const canonicalProvider = provider === 'claude' ? 'claude-code' : provider;
   const requester = new AgentGatewayApiClient(
     await getExternalImportServerUrl(flags),
     getFlagNumber(flags, 'request-timeout-ms', 30_000),
@@ -320,7 +319,7 @@ async function handleImportExternalRun(flags: Record<string, string | boolean | 
   const response = await uploadExternalRun({
     requester,
     authToken: apiToken,
-    provider: canonicalProvider,
+    provider,
     title: getFlagString(flags, 'title') || undefined,
     instruction: getFlagString(flags, 'instruction') || getFlagString(flags, 'prompt') || undefined,
     status: getExternalRunStatus(flags),

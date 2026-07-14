@@ -15,7 +15,7 @@ import { Alert, Button, Card, Drawer, Flex, Space, Spin, Table, Tooltip } from '
 import { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import React from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiUrl } from '../../shared/apiContract';
+import { AGENT_GATEWAY_API_ACTIONS } from '../../shared/apiContract';
 import { AgentTimeline } from '../components/AgentTimeline';
 import { AgentSessionResumeInput } from '../components/AgentSessionResumeBox';
 import { createDetailPageMeta, useRunObservabilityDetails } from '../hooks/useRunObservabilityDetails';
@@ -27,6 +27,7 @@ import {
   getApiErrorMessage,
   getRequiredResponseData,
   getResponseData,
+  requestAgentGatewayAction,
   statusTag,
 } from './AgentGatewayPageUtils';
 import {
@@ -138,16 +139,19 @@ export default function AgentGatewayRunsPage() {
 
   const runsRequest = useRequest(
     async () => {
-      const response = await ctx.api.request<RunRecord[]>({
-        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns),
-        method: 'get',
-        params: {
-          ...(runFilters ? { filter: JSON.stringify(runFilters) } : {}),
-          ...(runSort ? { sort: runSort } : {}),
-          page: runPagination.current,
-          pageSize: runPagination.pageSize,
+      const response = await requestAgentGatewayAction<RunRecord[], RunListData['meta']>(
+        ctx.api,
+        AGENT_GATEWAY_API_ACTIONS.listRuns,
+        {
+          method: 'get',
+          params: {
+            ...(runFilters ? { filter: JSON.stringify(runFilters) } : {}),
+            ...(runSort ? { sort: runSort } : {}),
+            page: runPagination.current,
+            pageSize: runPagination.pageSize,
+          },
         },
-      });
+      );
       return {
         runs: getResponseData(response, []),
         meta: getRunListMeta(response.data?.meta),
@@ -224,10 +228,14 @@ export default function AgentGatewayRunsPage() {
           snapshot: createUnsupportedTerminalSnapshot(run),
         } satisfies TerminalSnapshotState;
       }
-      const response = await ctx.api.request<TerminalSnapshot | null>({
-        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.getTerminalSnapshot, requestRunId),
-        method: 'get',
-      });
+      const response = await requestAgentGatewayAction<TerminalSnapshot | null>(
+        ctx.api,
+        AGENT_GATEWAY_API_ACTIONS.getTerminalSnapshot,
+        {
+          method: 'get',
+          targetKey: requestRunId,
+        },
+      );
       return {
         runId: requestRunId,
         snapshot: getResponseData(response, null),
@@ -280,9 +288,9 @@ export default function AgentGatewayRunsPage() {
 
   const cancelRunRequest = useRequest(
     async (run: RunRecord) => {
-      const response = await ctx.api.request<RunRecord>({
-        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.cancelRun, run.id),
+      const response = await requestAgentGatewayAction<RunRecord>(ctx.api, AGENT_GATEWAY_API_ACTIONS.cancelRun, {
         method: 'post',
+        targetKey: run.id,
       });
       return getRequiredResponseData(response, t('Failed to cancel run'));
     },
@@ -304,13 +312,17 @@ export default function AgentGatewayRunsPage() {
       if (!runId) {
         return null;
       }
-      const response = await ctx.api.request<ControlRequestResult>({
-        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.interruptTerminal, runId),
-        method: 'post',
-        data: {
-          idempotencyKey: getControlIdempotencyKey('interrupt', runId),
+      const response = await requestAgentGatewayAction<ControlRequestResult>(
+        ctx.api,
+        AGENT_GATEWAY_API_ACTIONS.interruptTerminal,
+        {
+          method: 'post',
+          targetKey: runId,
+          data: {
+            idempotencyKey: getControlIdempotencyKey('interrupt', runId),
+          },
         },
-      });
+      );
       return {
         runId,
         result: getResponseData(response, {}),
@@ -351,13 +363,17 @@ export default function AgentGatewayRunsPage() {
       if (!runId) {
         return null;
       }
-      const response = await ctx.api.request<ControlRequestResult>({
-        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.terminateTerminal, runId),
-        method: 'post',
-        data: {
-          idempotencyKey: getControlIdempotencyKey('terminate', runId),
+      const response = await requestAgentGatewayAction<ControlRequestResult>(
+        ctx.api,
+        AGENT_GATEWAY_API_ACTIONS.terminateTerminal,
+        {
+          method: 'post',
+          targetKey: runId,
+          data: {
+            idempotencyKey: getControlIdempotencyKey('terminate', runId),
+          },
         },
-      });
+      );
       return {
         runId,
         result: getResponseData(response, {}),
@@ -396,13 +412,17 @@ export default function AgentGatewayRunsPage() {
 
   const refreshControlRequestStatus = useCallback(
     async (poll: ControlRequestStatusPoll) => {
-      const response = await ctx.api.request<ControlRequestResult>({
-        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.getControlRequestStatus, poll.runId),
-        method: 'get',
-        params: {
-          requestId: poll.controlRequestId,
+      const response = await requestAgentGatewayAction<ControlRequestResult>(
+        ctx.api,
+        AGENT_GATEWAY_API_ACTIONS.getControlRequestStatus,
+        {
+          method: 'get',
+          targetKey: poll.runId,
+          params: {
+            requestId: poll.controlRequestId,
+          },
         },
-      });
+      );
       const result = getResponseData(response, {});
       if (!result.controlRequestId || result.controlRequestId !== poll.controlRequestId) {
         return;
@@ -431,15 +451,19 @@ export default function AgentGatewayRunsPage() {
       if (!options.run.agentSessionId) {
         throw new Error(t('No agent session'));
       }
-      const response = await ctx.api.request<ResumeAgentSessionResult>({
-        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.resumeAgentSession, options.run.agentSessionId),
-        method: 'post',
-        data: {
-          message: options.message,
-          idempotencyKey: options.idempotencyKey,
-          resumedFromRunId: options.run.id,
+      const response = await requestAgentGatewayAction<ResumeAgentSessionResult>(
+        ctx.api,
+        AGENT_GATEWAY_API_ACTIONS.resumeAgentSession,
+        {
+          method: 'post',
+          targetKey: options.run.agentSessionId,
+          data: {
+            message: options.message,
+            idempotencyKey: options.idempotencyKey,
+            resumedFromRunId: options.run.id,
+          },
         },
-      });
+      );
       return getRequiredResponseData(response, t('Failed to resume session'));
     },
     {
@@ -647,14 +671,14 @@ export default function AgentGatewayRunsPage() {
   const apiCallLogsWarning = activeRunApiLogsDetails?.warning || rawLogDetailsWarning;
   const createStreamTicket = useCallback(
     async (runId: string) => {
-      const response = await ctx.api.request<{
+      const response = await requestAgentGatewayAction<{
         ticket: string;
         runId?: string;
         protocols?: string[];
         expiresAt?: string;
-      }>({
-        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.createTerminalStreamTicket, runId),
+      }>(ctx.api, AGENT_GATEWAY_API_ACTIONS.createTerminalStreamTicket, {
         method: 'post',
+        targetKey: runId,
       });
       return getRequiredResponseData(response, t('Failed to create terminal stream ticket'));
     },
@@ -751,7 +775,7 @@ export default function AgentGatewayRunsPage() {
     }
     const nextStatus = (activeRunEventsDetails?.events || []).reduce<ControlRequestState['status'] | null>(
       (status, event) => {
-        const controlRequestId = event.payloadJson?.controlRequestId;
+        const controlRequestId = event.contentJson?.controlRequestId;
         if (controlRequestId !== controlRequestState.controlRequestId) {
           return status;
         }

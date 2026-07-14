@@ -13,15 +13,10 @@ import { useRequest } from 'ahooks';
 import { Button, Card, Empty, Flex, Space, Table, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useMemo } from 'react';
-import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiUrl } from '../../shared/apiContract';
-import {
-  AGENT_CAPABILITY_KEYS,
-  AgentCapabilityKey,
-  getAgentProviderKey,
-  normalizeAgentProviderCapabilities,
-} from '../../shared/providerCapabilities';
+import { AGENT_GATEWAY_API_ACTIONS } from '../../shared/apiContract';
+import { AGENT_CAPABILITY_KEYS, AgentCapabilityKey, getAgentProviderKey } from '../../shared/providerCapabilities';
 import { useT } from '../locale';
-import { AgentGatewayContext, getResponseData, statusTag } from './AgentGatewayPageUtils';
+import { AgentGatewayContext, getResponseData, requestAgentGatewayAction, statusTag } from './AgentGatewayPageUtils';
 
 interface NodeRecord {
   id: string;
@@ -281,25 +276,27 @@ export default function AgentGatewayProviderCapabilitiesPage() {
   const ctx = useFlowContext() as unknown as AgentGatewayContext;
 
   const matrixRequest = useRequest(async () => {
-    const nodeResponse = await ctx.api.request<NodeRecord[]>({
-      url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.listNodes),
+    const nodeResponse = await requestAgentGatewayAction<NodeRecord[]>(ctx.api, AGENT_GATEWAY_API_ACTIONS.listNodes, {
       method: 'get',
     });
     const nodes = getResponseData(nodeResponse, []);
     const profileGroups = await Promise.all(
       nodes.map(async (node) => {
-        const profileResponse = await ctx.api.request<AgentProfileRecord[]>({
-          url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.listNodeProfiles, node.id),
-          method: 'get',
-        });
+        const profileResponse = await requestAgentGatewayAction<AgentProfileRecord[]>(
+          ctx.api,
+          AGENT_GATEWAY_API_ACTIONS.listNodeProfiles,
+          {
+            method: 'get',
+            targetKey: node.id,
+          },
+        );
         return {
           node,
           profiles: getResponseData(profileResponse, []),
         };
       }),
     );
-    const runResponse = await ctx.api.request<RunRecord[]>({
-      url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns),
+    const runResponse = await requestAgentGatewayAction<RunRecord[]>(ctx.api, AGENT_GATEWAY_API_ACTIONS.listRuns, {
       method: 'get',
     });
     const runs = getResponseData(runResponse, []);
@@ -308,8 +305,7 @@ export default function AgentGatewayProviderCapabilitiesPage() {
         const run =
           runs.find((item) => item.agentProfileId === profile.id && item.sourceType === 'provider-capability-seed') ||
           runs.find((item) => item.agentProfileId === profile.id);
-        const provider = getAgentProviderKey(run?.provider || profile.provider);
-        const rawCapabilities = run?.capabilitiesSnapshotJson || profile.capabilitiesJson;
+        const provider = getAgentProviderKey(run ? run.provider : profile.provider);
         return {
           id: profile.id,
           nodeKey: node.nodeKey,
@@ -317,8 +313,8 @@ export default function AgentGatewayProviderCapabilitiesPage() {
           displayName: profile.displayName || profile.profileKey,
           status: profile.status,
           provider,
-          capabilitySource: run?.capabilitySource || (run ? 'run' : 'profile'),
-          capabilities: normalizeAgentProviderCapabilities(provider, rawCapabilities),
+          capabilitySource: run?.capabilitySource || (run ? 'run' : 'unavailable'),
+          capabilities: run?.capabilitiesSnapshotJson || {},
           runId: run?.id,
           runCode: run?.runCode,
           runStatus: run?.status,

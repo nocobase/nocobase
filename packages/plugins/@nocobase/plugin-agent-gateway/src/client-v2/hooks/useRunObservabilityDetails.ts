@@ -10,7 +10,7 @@
 import { useRequest } from 'ahooks';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiUrl } from '../../shared/apiContract';
+import { AGENT_GATEWAY_API_ACTIONS } from '../../shared/apiContract';
 import { AgentTimelineEventRecord } from '../components/AgentTimeline';
 import {
   AgentGatewayApi,
@@ -20,6 +20,7 @@ import {
   getObjectRecord,
   getRequiredResponseData,
   getResponseData,
+  requestAgentGatewayAction,
 } from '../pages/AgentGatewayPageUtils';
 
 const DEFAULT_CURSOR_PAGE_SIZE = 100;
@@ -35,7 +36,7 @@ export interface RunEventRecord {
   level?: string;
   eventType?: string;
   message?: string | null;
-  payloadJson?: JsonRecord;
+  contentJson?: JsonRecord;
   emittedAt?: string;
   createdAt?: string;
 }
@@ -401,12 +402,13 @@ export function useRunObservabilityDetails({
         if (!targetId) {
           throw new Error(t('No agent session'));
         }
-        const response = await api.request<AgentTimelineEventRecord[]>({
-          url:
-            scope === 'session'
-              ? getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.listSessionConversationEvents, targetId)
-              : getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.listRunConversationEvents, targetId),
+        const action =
+          scope === 'session'
+            ? AGENT_GATEWAY_API_ACTIONS.listSessionConversationEvents
+            : AGENT_GATEWAY_API_ACTIONS.listRunConversationEvents;
+        const response = await requestAgentGatewayAction<AgentTimelineEventRecord[]>(api, action, {
           method: 'get',
+          targetKey: targetId,
           params,
         });
         return {
@@ -487,9 +489,9 @@ export function useRunObservabilityDetails({
           mode,
         };
       }
-      const response = await api.request<RunEventRecord[]>({
-        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.listRunEvents, request.runId),
+      const response = await requestAgentGatewayAction<RunEventRecord[]>(api, AGENT_GATEWAY_API_ACTIONS.listRunEvents, {
         method: 'get',
+        targetKey: request.runId,
         params: {
           pageSize: DEFAULT_CURSOR_PAGE_SIZE,
           ...(mode === 'before' && currentState?.beforeCursor ? { beforeCursor: currentState.beforeCursor } : {}),
@@ -568,14 +570,18 @@ export function useRunObservabilityDetails({
           warning: request.warning,
         };
       }
-      const response = await api.request<RunArtifactRecord[]>({
-        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.listRunArtifacts, request.runId),
-        method: 'get',
-        params: {
-          page: request.current,
-          pageSize: request.pageSize,
+      const response = await requestAgentGatewayAction<RunArtifactRecord[]>(
+        api,
+        AGENT_GATEWAY_API_ACTIONS.listRunArtifacts,
+        {
+          method: 'get',
+          targetKey: request.runId,
+          params: {
+            page: request.current,
+            pageSize: request.pageSize,
+          },
         },
-      });
+      );
       return {
         runId: request.runId,
         artifacts: getResponseData(response, []),
@@ -650,14 +656,18 @@ export function useRunObservabilityDetails({
           warning: request.warning,
         };
       }
-      const response = await api.request<RunSnapshotRecord[]>({
-        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.listRunSnapshots, request.runId),
-        method: 'get',
-        params: {
-          page: request.current,
-          pageSize: request.pageSize,
+      const response = await requestAgentGatewayAction<RunSnapshotRecord[]>(
+        api,
+        AGENT_GATEWAY_API_ACTIONS.listRunSnapshots,
+        {
+          method: 'get',
+          targetKey: request.runId,
+          params: {
+            page: request.current,
+            pageSize: request.pageSize,
+          },
         },
-      });
+      );
       return {
         runId: request.runId,
         snapshots: getResponseData(response, []),
@@ -732,14 +742,18 @@ export function useRunObservabilityDetails({
           warning: request.warning,
         } satisfies RunApiLogsDetailsState;
       }
-      const response = await api.request<ApiCallLogRecord[]>({
-        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.listRunApiCallLogs, request.runId),
-        method: 'get',
-        params: {
-          page: request.current,
-          pageSize: request.pageSize,
+      const response = await requestAgentGatewayAction<ApiCallLogRecord[]>(
+        api,
+        AGENT_GATEWAY_API_ACTIONS.listRunApiCallLogs,
+        {
+          method: 'get',
+          targetKey: request.runId,
+          params: {
+            page: request.current,
+            pageSize: request.pageSize,
+          },
         },
-      });
+      );
       return {
         runId: request.runId,
         apiCallLogs: getResponseData(response, []),
@@ -836,13 +850,17 @@ export function useRunObservabilityDetails({
         },
       }));
       try {
-        const response = await api.request<ArtifactContentResponse>({
-          url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.getRunArtifactContent, runId),
-          method: 'get',
-          params: {
-            artifactId: artifact.id,
+        const response = await requestAgentGatewayAction<ArtifactContentResponse>(
+          api,
+          AGENT_GATEWAY_API_ACTIONS.getRunArtifactContent,
+          {
+            method: 'get',
+            targetKey: runId,
+            params: {
+              artifactId: artifact.id,
+            },
           },
-        });
+        );
         const content = getRequiredResponseData(response, t('Artifact content unavailable'));
         if (!isCurrentRequest(request) || content.id !== artifact.id) {
           return;

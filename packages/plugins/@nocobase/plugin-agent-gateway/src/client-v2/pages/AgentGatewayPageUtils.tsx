@@ -9,7 +9,17 @@
 
 import { Tag, Typography } from 'antd';
 import React from 'react';
-import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiUrl } from '../../shared/apiContract';
+import {
+  AGENT_GATEWAY_API_ACTIONS,
+  AgentGatewayActionQuery,
+  AgentGatewayActionRequest,
+  AgentGatewayActionResponse,
+  AgentGatewayApiAction,
+  getAgentGatewayApiUrl,
+  parseAgentGatewayActionQuery,
+  parseAgentGatewayActionRequest,
+  parseAgentGatewayActionResponse,
+} from '../../shared/apiContract';
 
 export interface AgentGatewayApiResponse<T, TMeta = Record<string, unknown>> {
   data?: {
@@ -22,8 +32,8 @@ export interface AgentGatewayApi {
   request<T, TMeta = Record<string, unknown>>(config: {
     url: string;
     method: 'get' | 'post';
-    data?: Record<string, unknown>;
-    params?: Record<string, unknown>;
+    data?: object;
+    params?: object;
   }): Promise<AgentGatewayApiResponse<T, TMeta>>;
 }
 
@@ -35,6 +45,39 @@ export interface AgentGatewayContext {
   message?: {
     success(content: string): void;
     error(content: string): void;
+  };
+}
+
+export async function requestAgentGatewayAction<
+  Response = never,
+  TMeta = Record<string, unknown>,
+  Action extends AgentGatewayApiAction = AgentGatewayApiAction,
+>(
+  api: AgentGatewayApi,
+  action: Action,
+  config: {
+    method: 'get' | 'post';
+    targetKey?: string | number;
+    data?: AgentGatewayActionRequest<Action>;
+    params?: AgentGatewayActionQuery<Action>;
+  },
+): Promise<AgentGatewayApiResponse<[Response] extends [never] ? AgentGatewayActionResponse<Action> : Response, TMeta>> {
+  const requestData = parseAgentGatewayActionRequest(action, config.data || {});
+  const query = parseAgentGatewayActionQuery(action, config.params || {});
+  const response = await api.request<unknown, TMeta>({
+    url: getAgentGatewayApiUrl(action, config.targetKey),
+    method: config.method,
+    ...(config.method === 'post' || config.data ? { data: requestData } : {}),
+    ...(config.params ? { params: query } : {}),
+  });
+  const responseData = response.data?.data;
+  const parsedData = parseAgentGatewayActionResponse(action, responseData === undefined ? {} : responseData);
+  return {
+    ...response,
+    data: {
+      ...response.data,
+      data: parsedData as [Response] extends [never] ? AgentGatewayActionResponse<Action> : Response,
+    },
   };
 }
 
@@ -74,42 +117,43 @@ export async function uploadAgentGatewayFile(
   file: File,
   purpose: 'skill-version' | 'run-artifact',
 ) {
-  const initResponse = await api.request<{ id: string; chunkSize?: number }>({
-    url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.initFileUpload),
-    method: 'post',
-    data: {
-      purpose,
-      fileName: file.name,
-      mimeType: file.type || 'application/octet-stream',
-      sizeBytes: file.size,
+  const initResponse = await requestAgentGatewayAction<{ id: string; chunkSize?: number }>(
+    api,
+    AGENT_GATEWAY_API_ACTIONS.initFileUpload,
+    {
+      method: 'post',
+      data: {
+        purpose,
+        fileName: file.name,
+        mimeType: file.type || 'application/octet-stream',
+        sizeBytes: file.size,
+      },
     },
-  });
+  );
   const initialized = getRequiredResponseData(initResponse, 'Failed to initialize file upload');
   const chunkSize = initialized.chunkSize || FILE_UPLOAD_CHUNK_BYTES;
   try {
     for (let offset = 0; offset < file.size; offset += chunkSize) {
       const chunk = await readBlobAsArrayBuffer(file.slice(offset, Math.min(offset + chunkSize, file.size)));
-      await api.request({
-        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.appendFileUpload, initialized.id),
+      await requestAgentGatewayAction(api, AGENT_GATEWAY_API_ACTIONS.appendFileUpload, {
         method: 'post',
+        targetKey: initialized.id,
         data: {
           offset,
           contentBase64: arrayBufferToBase64(chunk),
         },
       });
     }
-    await api.request({
-      url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.completeFileUpload, initialized.id),
+    await requestAgentGatewayAction(api, AGENT_GATEWAY_API_ACTIONS.completeFileUpload, {
       method: 'post',
+      targetKey: initialized.id,
     });
     return initialized.id;
   } catch (error) {
-    await api
-      .request({
-        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.abortFileUpload, initialized.id),
-        method: 'post',
-      })
-      .catch(() => undefined);
+    await requestAgentGatewayAction(api, AGENT_GATEWAY_API_ACTIONS.abortFileUpload, {
+      method: 'post',
+      targetKey: initialized.id,
+    }).catch(() => undefined);
     throw error;
   }
 }

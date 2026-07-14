@@ -89,10 +89,14 @@ describe('agent gateway permission foundation', () => {
     expect(manage?.actions).toEqual(
       expect.arrayContaining(['agentGateway:cancelRun', 'agentGateway:interruptRun', 'agentGateway:terminateRun']),
     );
-    expect(cancelRun?.actions).toEqual(['agentGateway:cancelRun', 'agRuns:get', 'agentGatewayApi:cancelRun']);
+    expect(cancelRun?.actions).toEqual([
+      'agentGateway:cancelRun',
+      'agRuns:get',
+      getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.cancelRun),
+    ]);
     expect(cancelRun?.actions).not.toContain('agentGateway:interruptRun');
     expect(cancelRun?.actions).not.toContain('agentGateway:terminateRun');
-    expect(rawWrite?.actions).toEqual(['agentGatewayApi:sendTerminalInput']);
+    expect(rawWrite?.actions).toEqual([getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.sendTerminalInput)]);
   });
 
   it('assigns every API action to machine authentication or an ACL snippet', () => {

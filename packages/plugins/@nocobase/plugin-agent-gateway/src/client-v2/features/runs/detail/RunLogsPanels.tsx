@@ -10,6 +10,7 @@
 import { Alert, Button, Collapse, List, Pagination, Space, Table, Tag, Typography } from 'antd';
 import { ColumnsType } from 'antd/es/table';
 import React from 'react';
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiActionFromPath } from '../../../../shared/apiContract';
 import { ApiCallLogRecord, DetailPageMeta, RunEventRecord } from '../../../hooks/useRunObservabilityDetails';
 import { JsonPreview, formatDateTime, getObjectRecord } from '../../../pages/AgentGatewayPageUtils';
 import { RunRecord, TFunction } from '../../../pages/runs/types';
@@ -85,7 +86,7 @@ export function isHeartbeatRunEvent(record: RunEventRecord) {
 }
 
 export function isHarnessStageRunEvent(record: RunEventRecord) {
-  const payload = getObjectRecord(record.payloadJson);
+  const payload = getObjectRecord(record.contentJson);
   const source = record.source || '';
   const eventType = record.eventType || '';
   return (
@@ -106,7 +107,7 @@ export function getRunEventStageLabel(record: RunEventRecord) {
 }
 
 export function getRunEventStageParts(record: RunEventRecord) {
-  const payload = getObjectRecord(record.payloadJson);
+  const payload = getObjectRecord(record.contentJson);
   const phase = getStringValue(payload.phase) || record.eventType || '-';
   const status = getStringValue(payload.status);
   return { phase, status };
@@ -154,7 +155,7 @@ export function LogsPanel({
       render: (value: string | undefined) => formatDateTime(value),
     },
   ];
-  const expandedRowRender = (record: RunEventRecord) => <JsonPreview value={record.payloadJson} />;
+  const expandedRowRender = (record: RunEventRecord) => <JsonPreview value={record.contentJson} />;
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
       {eventsWarning ? <Alert type="warning" showIcon message={eventsWarning} /> : null}
@@ -254,7 +255,7 @@ export function LogsPanel({
 }
 
 export function isHeartbeatApiCallLog(record: ApiCallLogRecord) {
-  return Boolean(record.path && /\/heartbeat$/.test(record.path));
+  return getAgentGatewayApiActionFromPath(record.path || '') === AGENT_GATEWAY_API_ACTIONS.heartbeatRun;
 }
 
 export function getApiLogTimeMs(record: ApiCallLogRecord) {

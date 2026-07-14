@@ -22,6 +22,7 @@ import {
 } from '../../node/skillArchive';
 import { createSkillZipFixture, createValidSkillZipFixture } from '../../node/__tests__/skillArchiveFixtures';
 import { AGENT_GATEWAY_SKILL_CAPABILITY_HEADER } from '../../shared/skillCapability';
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiPath } from '../../shared/apiContract';
 import {
   NodeSkillInstallPayload,
   persistSkillZipUpload,
@@ -86,11 +87,10 @@ async function createAuthenticatedArchiveServer(
   });
   const address = server.address() as AddressInfo;
   return {
-    url: `http://127.0.0.1:${
-      address.port
-    }/api/agentGatewayApi:downloadSkillVersion/55555555-5555-4555-8555-555555555555?sha256=${sha256(
-      content,
-    )}&runId=run-1&claimAttempt=1`,
+    url: `http://127.0.0.1:${address.port}${getAgentGatewayApiPath(
+      AGENT_GATEWAY_API_ACTIONS.downloadSkillVersion,
+      '55555555-5555-4555-8555-555555555555',
+    )}?sha256=${sha256(content)}&runId=run-1&claimAttempt=1`,
     requests,
     close: async () =>
       await new Promise<void>((resolve, reject) => {

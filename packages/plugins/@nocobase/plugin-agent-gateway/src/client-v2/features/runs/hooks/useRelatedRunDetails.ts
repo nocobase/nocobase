@@ -10,8 +10,12 @@
 import { useRequest } from 'ahooks';
 import { useCallback, useEffect, useState } from 'react';
 
-import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiUrl } from '../../../../shared/apiContract';
-import { getApiErrorMessage, getRequiredResponseData } from '../../../pages/AgentGatewayPageUtils';
+import { AGENT_GATEWAY_API_ACTIONS } from '../../../../shared/apiContract';
+import {
+  getApiErrorMessage,
+  getRequiredResponseData,
+  requestAgentGatewayAction,
+} from '../../../pages/AgentGatewayPageUtils';
 import {
   getSkillVersionIdFromLocationSearch,
   getTaskTemplateIdFromLocationSearch,
@@ -52,10 +56,14 @@ export function useRelatedRunDetails({
       if (!taskTemplateId || !taskTemplateOpen) {
         return null;
       }
-      const response = await ctx.api.request<TaskTemplateDetailRecord>({
-        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.getTaskTemplate, taskTemplateId),
-        method: 'get',
-      });
+      const response = await requestAgentGatewayAction<TaskTemplateDetailRecord>(
+        ctx.api,
+        AGENT_GATEWAY_API_ACTIONS.getTaskTemplate,
+        {
+          method: 'get',
+          targetKey: taskTemplateId,
+        },
+      );
       return getRequiredResponseData(response, t('Failed to load task template detail'));
     },
     {
@@ -76,10 +84,14 @@ export function useRelatedRunDetails({
       if (!skillVersionId || !skillOpen) {
         return null;
       }
-      const response = await ctx.api.request<SkillVersionDetailRecord>({
-        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.getSkillVersion, skillVersionId),
-        method: 'get',
-      });
+      const response = await requestAgentGatewayAction<SkillVersionDetailRecord>(
+        ctx.api,
+        AGENT_GATEWAY_API_ACTIONS.getSkillVersion,
+        {
+          method: 'get',
+          targetKey: skillVersionId,
+        },
+      );
       return getRequiredResponseData(response, t('Failed to load skill detail'));
     },
     {

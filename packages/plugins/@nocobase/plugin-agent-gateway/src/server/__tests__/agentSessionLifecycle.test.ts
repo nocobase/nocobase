@@ -11,10 +11,14 @@ import { randomUUID } from 'crypto';
 
 import { MockServer, createMockServer } from '@nocobase/test';
 
-import { AGENT_GATEWAY_API_ACTIONS } from '../../shared/apiContract';
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiUrl } from '../../shared/apiContract';
 import { normalizeAgentProviderCapabilities } from '../../shared/providerCapabilities';
 import PluginAgentGatewayServer from '../plugin';
 import { createNodeToken, toStoredTokenFields } from '../security';
+
+function getTestApiPath(action: Parameters<typeof getAgentGatewayApiUrl>[0], targetKey?: unknown) {
+  return `/${getAgentGatewayApiUrl(action, targetKey === undefined ? undefined : String(targetKey))}`;
+}
 
 interface ResponseLike {
   status: number;
@@ -109,7 +113,7 @@ describe('agent gateway agent session lifecycle APIs', () => {
       : null;
     const provider = profile ? String(profile.get('provider')) : 'codex';
     const executionPolicyKey = profile ? String(profile.get('profileKey')) : 'codex';
-    const response = await rootAgent.post('/agentGatewayApi:createRun').send({
+    const response = await rootAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.createRun)).send({
       runCode,
       sourceType: 'test',
       promptSnapshot: {
@@ -132,7 +136,7 @@ describe('agent gateway agent session lifecycle APIs', () => {
   async function claimRun(runner: Awaited<ReturnType<typeof createRunner>>, runId: unknown) {
     const response = await app
       .agent()
-      .post(`/agentGatewayApi:claimRun/${runner.nodeId}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.claimRun, runner.nodeId))
       .set('Authorization', `Bearer ${runner.nodeToken}`)
       .send({
         profileKey: runner.profileKey,
@@ -159,7 +163,7 @@ describe('agent gateway agent session lifecycle APIs', () => {
   ) {
     return await app
       .agent()
-      .post(`/agentGatewayApi:upsertAgentSession/${claim.runId}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.upsertAgentSession, claim.runId))
       .set('Authorization', `Bearer ${runner.nodeToken}`)
       .send({
         claimToken: claim.claimToken,
@@ -235,7 +239,9 @@ describe('agent gateway agent session lifecycle APIs', () => {
         runId: run.id,
       },
     });
-    const upsertLog = apiLogs.find((log) => log.get('path') === `/agentGatewayApi:upsertAgentSession/${run.id}`);
+    const upsertLog = apiLogs.find(
+      (log) => log.get('path') === getTestApiPath(AGENT_GATEWAY_API_ACTIONS.upsertAgentSession, run.id),
+    );
     expect(upsertLog).toBeTruthy();
     expect(upsertLog?.get('nodeId')).toBe(runner.nodeId);
     expect(upsertLog?.get('statusCode')).toBe(200);
@@ -255,7 +261,7 @@ describe('agent gateway agent session lifecycle APIs', () => {
     const nodeAgent = app.agent();
 
     const firstHeartbeatResponse = await nodeAgent
-      .post(`/agentGatewayApi:heartbeatRun/${run.id}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatRun, run.id))
       .set('Authorization', `Bearer ${runner.nodeToken}`)
       .send({
         claimToken: claim.claimToken,
@@ -266,7 +272,7 @@ describe('agent gateway agent session lifecycle APIs', () => {
     expect(firstHeartbeatResponse.status).toBe(200);
     const firstHeartbeat = getData(firstHeartbeatResponse);
     const secondHeartbeatResponse = await nodeAgent
-      .post(`/agentGatewayApi:heartbeatRun/${run.id}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatRun, run.id))
       .set('Authorization', `Bearer ${runner.nodeToken}`)
       .send({
         claimToken: claim.claimToken,

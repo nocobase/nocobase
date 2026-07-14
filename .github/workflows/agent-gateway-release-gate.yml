@@ -3,8 +3,8 @@ name: Agent Gateway release gate
 on:
   workflow_dispatch:
     inputs:
-      evidence_run_id:
-        description: Workflow run containing the agent-gateway-live-evidence artifact prepared for this execution
+      source_run_id:
+        description: Workflow run containing raw agent-gateway-live-source outputs from Agent Browser, providers, and WS denial probes
         required: false
         type: string
       required_providers:
@@ -28,10 +28,13 @@ jobs:
     timeout-minutes: 90
     env:
       EVIDENCE_DIR: /tmp/agent-gateway-acceptance
+      SOURCE_DIR: /tmp/agent-gateway-live-source
       GH_TOKEN: ${{ github.token }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Use Node.js 22
         uses: actions/setup-node@v4
@@ -42,17 +45,32 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: Download prepared live evidence
-        if: inputs.evidence_run_id != ''
-        run: gh run download "${{ inputs.evidence_run_id }}" --name agent-gateway-live-evidence --dir "$EVIDENCE_DIR"
+      - name: Download raw live evidence outputs
+        if: inputs.source_run_id != ''
+        run: gh run download "${{ inputs.source_run_id }}" --name agent-gateway-live-source --dir "$SOURCE_DIR"
 
       - name: Prepare a fresh evidence execution
-        if: inputs.evidence_run_id == ''
+        if: inputs.source_run_id == ''
         working-directory: packages/plugins/@nocobase/plugin-agent-gateway
         run: >-
           yarn acceptance:prepare
           --evidence-dir "$EVIDENCE_DIR"
           --required-providers "${{ inputs.required_providers }}"
+
+      - name: Restore the source execution context
+        if: inputs.source_run_id != ''
+        run: |
+          test -s "$SOURCE_DIR/context.json"
+          mkdir -p "$EVIDENCE_DIR"
+          cp "$SOURCE_DIR/context.json" "$EVIDENCE_DIR/context.json"
+
+      - name: Collect anchored live evidence
+        if: inputs.source_run_id != ''
+        working-directory: packages/plugins/@nocobase/plugin-agent-gateway
+        run: >-
+          yarn acceptance:collect
+          --evidence-dir "$EVIDENCE_DIR"
+          --source-dir "$SOURCE_DIR"
 
       - name: Run release gate
         id: release_gate
@@ -69,7 +87,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: agent-gateway-live-evidence
+          name: agent-gateway-live-evidence-${{ github.run_id }}
           path: /tmp/agent-gateway-acceptance
           if-no-files-found: error
 

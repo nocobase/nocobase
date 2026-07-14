@@ -12,6 +12,11 @@ import { randomUUID } from 'crypto';
 import { MockServer, createMockServer } from '@nocobase/test';
 
 import PluginAgentGatewayServer from '../plugin';
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiUrl } from '../../shared/apiContract';
+
+function getTestApiPath(action: Parameters<typeof getAgentGatewayApiUrl>[0], targetKey?: unknown) {
+  return `/${getAgentGatewayApiUrl(action, targetKey === undefined ? undefined : String(targetKey))}`;
+}
 
 interface ResponseLike {
   status: number;
@@ -73,10 +78,12 @@ describe('agent gateway run observability APIs', () => {
   async function registerRunner(): Promise<RegisteredRunner & { inviteToken: string }> {
     nodeCounter += 1;
     const nodeKey = `node-observe-${nodeCounter}`;
-    const invitationResponse = await rootAgent.post('/agentGatewayApi:createNodeInvitation').send({
-      invitationKey: `invite-observe-${nodeCounter}`,
-      expectedNodeKey: nodeKey,
-    });
+    const invitationResponse = await rootAgent
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.createNodeInvitation))
+      .send({
+        invitationKey: `invite-observe-${nodeCounter}`,
+        expectedNodeKey: nodeKey,
+      });
     expect(invitationResponse.status).toBe(200);
     const registerCommand = expectString(getData(invitationResponse).registerCommand);
     const inviteToken =
@@ -86,7 +93,7 @@ describe('agent gateway run observability APIs', () => {
 
     const registerResponse = await app
       .agent()
-      .post('/agentGatewayApi:registerNode')
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.registerNode))
       .send({
         inviteToken,
         nodeKey,
@@ -102,7 +109,7 @@ describe('agent gateway run observability APIs', () => {
 
     const heartbeatResponse = await app
       .agent()
-      .post(`/agentGatewayApi:heartbeatNode/${nodeId}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatNode, nodeId))
       .set('Authorization', `Bearer ${nodeToken}`)
       .send({
         capabilitiesJson: {
@@ -145,7 +152,7 @@ describe('agent gateway run observability APIs', () => {
   }
 
   async function createAndClaimRun(runner: RegisteredRunner, executionPayload?: Record<string, unknown>) {
-    const runResponse = await rootAgent.post('/agentGatewayApi:createRun').send({
+    const runResponse = await rootAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.createRun)).send({
       runCode: `run-observe-${Date.now()}-${Math.random()}`,
       sourceType: 'test',
       agentProfileId: runner.profileId,
@@ -170,7 +177,7 @@ describe('agent gateway run observability APIs', () => {
 
     const claimResponse = await app
       .agent()
-      .post(`/agentGatewayApi:claimRun/${runner.nodeId}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.claimRun, runner.nodeId))
       .set('Authorization', `Bearer ${runner.nodeToken}`)
       .send({
         profileKey: 'fake-observer',
@@ -192,16 +199,16 @@ describe('agent gateway run observability APIs', () => {
     values: Record<string, unknown>,
   ) {
     const actionName = {
-      'events:append': 'appendRunEvents',
-      'artifacts:register': 'registerRunArtifact',
-      'snapshots:register': 'registerRunSnapshot',
+      'events:append': AGENT_GATEWAY_API_ACTIONS.appendRunEvents,
+      'artifacts:register': AGENT_GATEWAY_API_ACTIONS.registerRunArtifact,
+      'snapshots:register': AGENT_GATEWAY_API_ACTIONS.registerRunSnapshot,
     }[action];
     if (!actionName) {
       throw new Error(`Unsupported observation action: ${action}`);
     }
     return await app
       .agent()
-      .post(`/agentGatewayApi:${actionName}/${runId}`)
+      .post(getTestApiPath(actionName, String(runId)))
       .set('Authorization', `Bearer ${runner.nodeToken}`)
       .send(values);
   }
@@ -395,7 +402,7 @@ describe('agent gateway run observability APIs', () => {
     expect(String(storedArtifact.get('storageSha256'))).toMatch(/^[a-f0-9]{64}$/);
     expect(artifact).not.toHaveProperty('objectKey');
     const contentResponse = await rootAgent.get(
-      `/agentGatewayApi:getRunArtifactContent/${run.id}?artifactId=${artifact.id}`,
+      `${getTestApiPath(AGENT_GATEWAY_API_ACTIONS.getRunArtifactContent, run.id)}?artifactId=${artifact.id}`,
     );
     expect(contentResponse.status).toBe(200);
     expect(String(getData(contentResponse).contentText)).toContain('ARTIFACT_SECRET');
@@ -471,7 +478,7 @@ describe('agent gateway run observability APIs', () => {
     );
     expect(runMetadataResponse.status).toBe(200);
 
-    const artifactsResponse = await rootAgent.get(`/agentGatewayApi:listRunArtifacts/${run.id}`);
+    const artifactsResponse = await rootAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunArtifacts, run.id));
     expect(artifactsResponse.status).toBe(200);
     const artifacts = artifactsResponse.body.data as Array<Record<string, unknown>>;
     expect(artifacts).toEqual(
@@ -683,7 +690,7 @@ describe('agent gateway run observability APIs', () => {
     });
     expect(logs.length).toBeGreaterThanOrEqual(4);
 
-    const registerLog = logs.find((log) => log.get('path') === '/agentGatewayApi:registerNode');
+    const registerLog = logs.find((log) => log.get('path') === getTestApiPath(AGENT_GATEWAY_API_ACTIONS.registerNode));
     expect(registerLog).toBeTruthy();
     expect(registerLog?.get('runId')).toBeFalsy();
 
@@ -737,7 +744,9 @@ describe('agent gateway run observability APIs', () => {
         .model.update({ createdAt: timestamps[index] }, { where: { id: event.get('id') }, hooks: false });
     }
 
-    const latestResponse = await rootAgent.get(`/agentGatewayApi:listRunEvents/${runId}`).query({ pageSize: 2 });
+    const latestResponse = await rootAgent
+      .get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunEvents, runId))
+      .query({ pageSize: 2 });
     expect(latestResponse.status).toBe(200);
     expect((latestResponse.body.data as Array<Record<string, unknown>>).map((event) => event.eventType)).toEqual([
       'cursor.event.3',
@@ -752,7 +761,7 @@ describe('agent gateway run observability APIs', () => {
     const afterCursor = expectString(latestResponse.body.meta?.afterCursor);
 
     const olderResponse = await rootAgent
-      .get(`/agentGatewayApi:listRunEvents/${runId}`)
+      .get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunEvents, runId))
       .query({ pageSize: 2, beforeCursor });
     expect(olderResponse.status).toBe(200);
     expect((olderResponse.body.data as Array<Record<string, unknown>>).map((event) => event.eventType)).toEqual([
@@ -798,17 +807,24 @@ describe('agent gateway run observability APIs', () => {
     }
 
     const deltaResponse = await rootAgent
-      .get(`/agentGatewayApi:listRunEvents/${runId}`)
+      .get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunEvents, runId))
       .query({ pageSize: 10, afterCursor });
     expect(deltaResponse.status).toBe(200);
     const deltaEvents = deltaResponse.body.data as Array<Record<string, unknown>>;
     expect(deltaEvents.map((event) => event.id).sort()).toEqual([...deltaIds].sort());
     expect(deltaEvents.map((event) => event.eventType).sort()).toEqual(['cursor.delta.attempt', 'cursor.delta.source']);
 
-    expect((await rootAgent.get(`/agentGatewayApi:listRunEvents/${runId}`).query({ pageSize: 501 })).status).toBe(400);
-    expect((await rootAgent.get(`/agentGatewayApi:listRunEvents/${runId}`).query({ beforeCursor: 'bad' })).status).toBe(
-      400,
-    );
+    expect(
+      (await rootAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunEvents, runId)).query({ pageSize: 501 }))
+        .status,
+    ).toBe(400);
+    expect(
+      (
+        await rootAgent
+          .get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunEvents, runId))
+          .query({ beforeCursor: 'bad' })
+      ).status,
+    ).toBe(400);
   });
 
   it('paginates artifact, snapshot, and API log metadata and guards lazy artifact content ownership', async () => {
@@ -859,7 +875,7 @@ describe('agent gateway run observability APIs', () => {
     }
 
     const artifactsResponse = await rootAgent
-      .get(`/agentGatewayApi:listRunArtifacts/${runId}`)
+      .get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunArtifacts, runId))
       .query({ page: 2, pageSize: 1 });
     expect(artifactsResponse.status).toBe(200);
     expect(artifactsResponse.body.data).toHaveLength(1);
@@ -872,7 +888,7 @@ describe('agent gateway run observability APIs', () => {
     });
 
     const snapshotsResponse = await rootAgent
-      .get(`/agentGatewayApi:listRunSnapshots/${runId}`)
+      .get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunSnapshots, runId))
       .query({ page: 2, pageSize: 1 });
     expect(snapshotsResponse.status).toBe(200);
     expect(snapshotsResponse.body.data).toHaveLength(1);
@@ -884,7 +900,7 @@ describe('agent gateway run observability APIs', () => {
     });
 
     const apiLogsResponse = await rootAgent
-      .get(`/agentGatewayApi:listRunApiCallLogs/${runId}`)
+      .get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunApiCallLogs, runId))
       .query({ page: 2, pageSize: 1 });
     expect(apiLogsResponse.status).toBe(200);
     expect(apiLogsResponse.body.data).toHaveLength(1);
@@ -896,7 +912,7 @@ describe('agent gateway run observability APIs', () => {
     expect(Number(apiLogsResponse.body.meta?.totalPage)).toBe(Number(apiLogsResponse.body.meta?.count));
 
     const contentResponse = await rootAgent.get(
-      `/agentGatewayApi:getRunArtifactContent/${runId}?artifactId=${artifactIds[0]}`,
+      `${getTestApiPath(AGENT_GATEWAY_API_ACTIONS.getRunArtifactContent, runId)}?artifactId=${artifactIds[0]}`,
     );
     expect(contentResponse.status).toBe(200);
     expect(getData(contentResponse)).toMatchObject({
@@ -918,11 +934,11 @@ describe('agent gateway run observability APIs', () => {
       },
     });
     const crossArtifactResponse = await rootAgent.get(
-      `/agentGatewayApi:getRunArtifactContent/${runId}?artifactId=${artifactIds[0]}`,
+      `${getTestApiPath(AGENT_GATEWAY_API_ACTIONS.getRunArtifactContent, runId)}?artifactId=${artifactIds[0]}`,
     );
     expect(crossArtifactResponse.status).toBe(409);
     const secondArtifactResponse = await rootAgent.get(
-      `/agentGatewayApi:getRunArtifactContent/${runId}?artifactId=${artifactIds[1]}`,
+      `${getTestApiPath(AGENT_GATEWAY_API_ACTIONS.getRunArtifactContent, runId)}?artifactId=${artifactIds[1]}`,
     );
     expect(secondArtifactResponse.status).toBe(200);
     expect(getData(secondArtifactResponse)).toMatchObject({
@@ -930,7 +946,7 @@ describe('agent gateway run observability APIs', () => {
       contentText: 'content-artifact-page-2',
     });
 
-    const otherRunResponse = await rootAgent.post('/agentGatewayApi:createRun').send({
+    const otherRunResponse = await rootAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.createRun)).send({
       runCode: `run-observe-other-${Date.now()}-${Math.random()}`,
       sourceType: 'test',
       agentProfileId: runner.profileId,
@@ -949,12 +965,15 @@ describe('agent gateway run observability APIs', () => {
     expect(otherRunResponse.status).toBe(200);
     const otherRun = getData(otherRunResponse);
     const wrongRunResponse = await rootAgent.get(
-      `/agentGatewayApi:getRunArtifactContent/${expectString(otherRun.id)}?artifactId=${artifactIds[0]}`,
+      `${getTestApiPath(AGENT_GATEWAY_API_ACTIONS.getRunArtifactContent, expectString(otherRun.id))}?artifactId=${
+        artifactIds[0]
+      }`,
     );
     expect(wrongRunResponse.status).toBe(404);
-    expect((await rootAgent.get(`/agentGatewayApi:listRunArtifacts/${runId}`).query({ pageSize: 101 })).status).toBe(
-      400,
-    );
+    expect(
+      (await rootAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunArtifacts, runId)).query({ pageSize: 101 }))
+        .status,
+    ).toBe(400);
   });
 
   it('lists runs and observation details through read-only management APIs', async () => {
@@ -1007,7 +1026,9 @@ describe('agent gateway run observability APIs', () => {
 
     const conversationEventFindSpy = vi.spyOn(app.db.getRepository('agAgentConversationEvents'), 'find');
     const listResponse = await rootAgent.get(
-      `/agentGatewayApi:listRuns?status=claimed&nodeId=${runner.nodeId}&agentProfileId=${runner.profileId}`,
+      `${getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRuns)}?status=claimed&nodeId=${runner.nodeId}&agentProfileId=${
+        runner.profileId
+      }`,
     );
     expect(listResponse.status).toBe(200);
     expect(conversationEventFindSpy).not.toHaveBeenCalled();
@@ -1020,7 +1041,7 @@ describe('agent gateway run observability APIs', () => {
     expect(runs[0]).not.toHaveProperty('executionPayloadJson');
     expect(JSON.stringify(runs[0])).not.toContain('must-not-render');
 
-    const getResponse = await rootAgent.get(`/agentGatewayApi:getRun/${runId}`);
+    const getResponse = await rootAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.getRun, runId));
     expect(getResponse.status).toBe(200);
     expect(getData(getResponse).id).toBe(runId);
     expect(getData(getResponse)).not.toHaveProperty('claimTokenHash');
@@ -1028,15 +1049,15 @@ describe('agent gateway run observability APIs', () => {
     expect(getData(getResponse)).not.toHaveProperty('executionPayloadJson');
     expect(JSON.stringify(getData(getResponse))).not.toContain('must-not-render');
 
-    const eventsResponse = await rootAgent.get(`/agentGatewayApi:listRunEvents/${runId}`);
+    const eventsResponse = await rootAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunEvents, runId));
     expect(eventsResponse.status).toBe(200);
     const events = eventsResponse.body.data as Array<Record<string, unknown>>;
     expect(events[0].message).toBe('observable event');
-    expect(events[0].payloadJson).toMatchObject({
+    expect(events[0].contentJson).toMatchObject({
       token: '[REDACTED]',
     });
 
-    const artifactsResponse = await rootAgent.get(`/agentGatewayApi:listRunArtifacts/${runId}`);
+    const artifactsResponse = await rootAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunArtifacts, runId));
     expect(artifactsResponse.status).toBe(200);
     const artifacts = artifactsResponse.body.data as Array<Record<string, unknown>>;
     expect(artifacts[0]).not.toHaveProperty('contentText');
@@ -1053,7 +1074,9 @@ describe('agent gateway run observability APIs', () => {
       totalPage: 1,
     });
     const artifactContentResponse = await rootAgent.get(
-      `/agentGatewayApi:getRunArtifactContent/${runId}?artifactId=${expectString(artifacts[0].id)}`,
+      `${getTestApiPath(AGENT_GATEWAY_API_ACTIONS.getRunArtifactContent, runId)}?artifactId=${expectString(
+        artifacts[0].id,
+      )}`,
     );
     expect(artifactContentResponse.status).toBe(200);
     expect(getData(artifactContentResponse)).toMatchObject({
@@ -1061,21 +1084,21 @@ describe('agent gateway run observability APIs', () => {
       contentText: 'inline artifact',
     });
 
-    const snapshotsResponse = await rootAgent.get(`/agentGatewayApi:listRunSnapshots/${runId}`);
+    const snapshotsResponse = await rootAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunSnapshots, runId));
     expect(snapshotsResponse.status).toBe(200);
     const snapshots = snapshotsResponse.body.data as Array<Record<string, unknown>>;
     expect(snapshots[0].snapshotJson).toMatchObject({
       files: ['a.ts'],
     });
 
-    const apiLogsResponse = await rootAgent.get(`/agentGatewayApi:listRunApiCallLogs/${runId}`);
+    const apiLogsResponse = await rootAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunApiCallLogs, runId));
     expect(apiLogsResponse.status).toBe(200);
     const apiLogs = apiLogsResponse.body.data as Array<Record<string, unknown>>;
     expect(apiLogs.length).toBeGreaterThan(0);
     expect(JSON.stringify(apiLogs)).not.toContain('EVENT_READ_SECRET');
 
     const readRunAgent = await createUserAgent('agent-gateway-run-reader', ['agentGateway.readRun']);
-    expect((await readRunAgent.get('/agentGatewayApi:listRuns')).status).toBe(200);
+    expect((await readRunAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRuns))).status).toBe(200);
     const standardRunListResponse = await readRunAgent.get('/agRuns:list');
     expect(standardRunListResponse.status).toBe(200);
     const standardRuns = standardRunListResponse.body.data as Array<Record<string, unknown>>;
@@ -1088,11 +1111,11 @@ describe('agent gateway run observability APIs', () => {
     expect(getData(standardRunGetResponse)).not.toHaveProperty('promptSnapshot');
     expect(getData(standardRunGetResponse)).not.toHaveProperty('executionPayloadJson');
     expect(JSON.stringify(getData(standardRunGetResponse))).not.toContain('must-not-render');
-    expect((await readRunAgent.get(`/agentGatewayApi:listRunEvents/${runId}`)).status).toBe(403);
+    expect((await readRunAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunEvents, runId))).status).toBe(403);
 
     const readRunsAgent = await createUserAgent('agent-gateway-runs-list-reader', ['agentGateway.readRuns']);
-    expect((await readRunsAgent.get('/agentGatewayApi:listRuns')).status).toBe(200);
-    expect((await readRunsAgent.get(`/agentGatewayApi:getRun/${runId}`)).status).toBe(403);
+    expect((await readRunsAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRuns))).status).toBe(200);
+    expect((await readRunsAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.getRun, runId))).status).toBe(403);
     expect((await readRunsAgent.get(`/agRuns:get/${runId}`)).status).toBe(403);
 
     const rawRunsSnippet = registerTestSnippet('agentGateway.test.rawRunsCollection', ['agRuns:list', 'agRuns:get']);
@@ -1125,10 +1148,18 @@ describe('agent gateway run observability APIs', () => {
     const readRunDetailsAgent = await createUserAgent('agent-gateway-run-details-reader', [
       'agentGateway.readRunDetails',
     ]);
-    expect((await readRunDetailsAgent.get(`/agentGatewayApi:listRunEvents/${runId}`)).status).toBe(403);
-    expect((await readRunDetailsAgent.get(`/agentGatewayApi:listRunArtifacts/${runId}`)).status).toBe(403);
-    expect((await readRunDetailsAgent.get(`/agentGatewayApi:listRunSnapshots/${runId}`)).status).toBe(403);
-    expect((await readRunDetailsAgent.get(`/agentGatewayApi:listRunApiCallLogs/${runId}`)).status).toBe(403);
+    expect((await readRunDetailsAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunEvents, runId))).status).toBe(
+      403,
+    );
+    expect(
+      (await readRunDetailsAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunArtifacts, runId))).status,
+    ).toBe(403);
+    expect(
+      (await readRunDetailsAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunSnapshots, runId))).status,
+    ).toBe(403);
+    expect(
+      (await readRunDetailsAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunApiCallLogs, runId))).status,
+    ).toBe(403);
     expect((await readRunDetailsAgent.get('/agRunEvents:list')).status).toBe(403);
     expect((await readRunDetailsAgent.get('/agRunArtifacts:list')).status).toBe(403);
     expect((await readRunDetailsAgent.get('/agRunSnapshots:list')).status).toBe(403);
@@ -1157,36 +1188,62 @@ describe('agent gateway run observability APIs', () => {
     expect((await rawCoreCollectionsAgent.get('/api/agNodeInvitations:list')).status).toBe(403);
 
     const readArtifactsAgent = await createUserAgent('agent-gateway-artifacts-reader', ['agentGateway.readArtifacts']);
-    expect((await readArtifactsAgent.get(`/agentGatewayApi:listRunArtifacts/${runId}`)).status).toBe(200);
+    expect(
+      (await readArtifactsAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunArtifacts, runId))).status,
+    ).toBe(200);
     expect(
       (
         await readArtifactsAgent.get(
-          `/agentGatewayApi:getRunArtifactContent/${runId}?artifactId=${expectString(artifacts[0].id)}`,
+          `${getTestApiPath(AGENT_GATEWAY_API_ACTIONS.getRunArtifactContent, runId)}?artifactId=${expectString(
+            artifacts[0].id,
+          )}`,
         )
       ).status,
     ).toBe(200);
-    expect((await readArtifactsAgent.get(`/agentGatewayApi:listRunSnapshots/${runId}`)).status).toBe(200);
-    expect((await readArtifactsAgent.get(`/agentGatewayApi:listRunEvents/${runId}`)).status).toBe(403);
-    expect((await readArtifactsAgent.get(`/agentGatewayApi:listRunApiCallLogs/${runId}`)).status).toBe(403);
+    expect(
+      (await readArtifactsAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunSnapshots, runId))).status,
+    ).toBe(200);
+    expect((await readArtifactsAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunEvents, runId))).status).toBe(
+      403,
+    );
+    expect(
+      (await readArtifactsAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunApiCallLogs, runId))).status,
+    ).toBe(403);
 
     const readRawLogsAgent = await createUserAgent('agent-gateway-raw-logs-reader', ['agentGateway.readRawLogs']);
-    expect((await readRawLogsAgent.get(`/agentGatewayApi:listRunEvents/${runId}`)).status).toBe(200);
-    expect((await readRawLogsAgent.get(`/agentGatewayApi:listRunApiCallLogs/${runId}`)).status).toBe(200);
-    expect((await readRawLogsAgent.get(`/agentGatewayApi:listRunArtifacts/${runId}`)).status).toBe(403);
+    expect((await readRawLogsAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunEvents, runId))).status).toBe(
+      200,
+    );
+    expect(
+      (await readRawLogsAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunApiCallLogs, runId))).status,
+    ).toBe(200);
+    expect((await readRawLogsAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunArtifacts, runId))).status).toBe(
+      403,
+    );
     expect(
       (
         await readRawLogsAgent.get(
-          `/agentGatewayApi:getRunArtifactContent/${runId}?artifactId=${expectString(artifacts[0].id)}`,
+          `${getTestApiPath(AGENT_GATEWAY_API_ACTIONS.getRunArtifactContent, runId)}?artifactId=${expectString(
+            artifacts[0].id,
+          )}`,
         )
       ).status,
     ).toBe(403);
-    expect((await readRawLogsAgent.get(`/agentGatewayApi:listRunSnapshots/${runId}`)).status).toBe(403);
+    expect((await readRawLogsAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunSnapshots, runId))).status).toBe(
+      403,
+    );
 
     const managerAgent = await createUserAgent('agent-gateway-observer-manager', ['agentGateway.manage']);
-    expect((await managerAgent.get(`/agentGatewayApi:listRunEvents/${runId}`)).status).toBe(200);
-    expect((await managerAgent.get(`/agentGatewayApi:listRunArtifacts/${runId}`)).status).toBe(200);
-    expect((await managerAgent.get(`/agentGatewayApi:listRunSnapshots/${runId}`)).status).toBe(200);
-    expect((await managerAgent.get(`/agentGatewayApi:listRunApiCallLogs/${runId}`)).status).toBe(200);
+    expect((await managerAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunEvents, runId))).status).toBe(200);
+    expect((await managerAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunArtifacts, runId))).status).toBe(
+      200,
+    );
+    expect((await managerAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunSnapshots, runId))).status).toBe(
+      200,
+    );
+    expect((await managerAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunApiCallLogs, runId))).status).toBe(
+      200,
+    );
     expect((await managerAgent.get('/agRuns:list')).status).toBe(200);
 
     const memberUser = await app.db.getRepository('users').create({
@@ -1196,6 +1253,6 @@ describe('agent gateway run observability APIs', () => {
       },
     });
     const memberAgent = await app.agent().login(memberUser);
-    expect((await memberAgent.get('/agentGatewayApi:listRuns')).status).toBe(403);
+    expect((await memberAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRuns))).status).toBe(403);
   });
 });

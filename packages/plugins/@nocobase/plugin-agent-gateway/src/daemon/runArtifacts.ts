@@ -74,7 +74,7 @@ function compactArtifactManifestForSummary(value: unknown): JsonRecord {
   };
 }
 
-export function compactDeclaredArtifactSummary(value: unknown): JsonRecord {
+export function compactDeclaredArtifactSummary(value: unknown) {
   const summary = getRecord(value);
   if (!Object.keys(summary).length) {
     return {};
@@ -95,6 +95,8 @@ export function compactDeclaredArtifactSummary(value: unknown): JsonRecord {
     artifactManifest: compactArtifactManifestForSummary(summary.artifactManifest),
   };
 }
+
+export type CompactDeclaredArtifactSummary = ReturnType<typeof compactDeclaredArtifactSummary>;
 
 async function registerOutputArtifact(options: {
   gateway: AgentGatewayDaemonNodeClient;
@@ -155,6 +157,9 @@ export async function reportExecOutputs(
         eventType: 'agent.output.chunk',
         level: streamName === 'stderr' && result.status !== 'succeeded' ? 'error' : 'info',
         message: output.text.slice(0, 4000),
+        contentJson: {
+          output: output.text.slice(0, 4000),
+        },
       });
       sequence += 1;
     }

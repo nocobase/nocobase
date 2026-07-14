@@ -24,6 +24,11 @@ import {
 import { TerminalStreamBroker } from '../../actions/terminalStreamBroker';
 import type { TerminalStreamTransport } from '../../services/terminalStreamTransport';
 import { createNodeToken, toStoredTokenFields } from '../../security';
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiUrl } from '../../../shared/apiContract';
+
+function getTestApiPath(action: Parameters<typeof getAgentGatewayApiUrl>[0], targetKey?: unknown) {
+  return `/${getAgentGatewayApiUrl(action, targetKey === undefined ? undefined : String(targetKey))}`;
+}
 
 export interface TestRunner {
   nodeId: string;
@@ -147,7 +152,9 @@ export async function createBrowserStreamTicket(
     .agent()
     .auth(browserAuthSession.authToken, { type: 'bearer' })
     .set('X-Authenticator', browserAuthSession.authenticator);
-  let request = agent.post(`/agentGatewayApi:createTerminalStreamTicket/${encodeURIComponent(options.runId)}`);
+  let request = agent.post(
+    getTestApiPath(AGENT_GATEWAY_API_ACTIONS.createTerminalStreamTicket, encodeURIComponent(options.runId)),
+  );
   if (options.roleName) {
     request = request.set('X-Role', options.roleName);
   }
@@ -424,7 +431,7 @@ export async function createQueuedRun(app: MockServer, runner: TestRunner, runCo
 export async function claimRun(app: MockServer, runner: TestRunner, runId: string): Promise<ClaimedRun> {
   const response = await app
     .agent()
-    .post(`/agentGatewayApi:claimRun/${runner.nodeId}`)
+    .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.claimRun, runner.nodeId))
     .set('Authorization', `Bearer ${runner.nodeToken}`)
     .send({
       runId,

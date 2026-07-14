@@ -8,7 +8,12 @@
  */
 
 import { AgentProviderKey } from '../shared/providerCapabilities';
-import type { CanonicalRunSnapshot } from '../shared/contracts';
+import type {
+  AgentGatewayActionRequest,
+  AgentGatewayActionResponse,
+  AgentGatewayApiAction,
+  CanonicalRunSnapshot,
+} from '../shared/contracts';
 import type { JsonRecord } from '../shared/json';
 
 export type { JsonRecord } from '../shared/json';
@@ -65,9 +70,10 @@ export interface ExecutionPolicyDefinition {
 export type ExecutionPolicySet = Record<string, ExecutionPolicyDefinition> | ExecutionPolicyDefinition[];
 
 export interface GatewayRequestOptions {
+  action?: AgentGatewayApiAction;
   method: 'GET' | 'POST';
   path: string;
-  body?: unknown;
+  body?: object;
   nodeToken?: string;
   authToken?: string;
   timeoutMs?: number;
@@ -76,6 +82,22 @@ export interface GatewayRequestOptions {
 
 export interface GatewayRequester {
   request<T extends JsonRecord = JsonRecord>(options: GatewayRequestOptions): Promise<T>;
+}
+
+export interface GatewayActionRequestOptions<Action extends AgentGatewayApiAction>
+  extends Omit<GatewayRequestOptions, 'body'> {
+  action: Action;
+  body?: AgentGatewayActionRequest<Action>;
+}
+
+export async function requestGatewayAction<Action extends AgentGatewayApiAction>(
+  requester: GatewayRequester,
+  options: GatewayActionRequestOptions<Action>,
+): Promise<AgentGatewayActionResponse<Action>> {
+  return (await requester.request({
+    ...options,
+    body: options.body,
+  })) as AgentGatewayActionResponse<Action>;
 }
 
 export interface RunLease extends JsonRecord {

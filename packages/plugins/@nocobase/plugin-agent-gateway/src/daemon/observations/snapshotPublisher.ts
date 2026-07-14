@@ -9,13 +9,14 @@
 
 import type { ExecDriverResult } from '../execDriver';
 import type { AgentGatewayDaemonNodeClient } from '../gateway';
-import type { JsonRecord, RunLease } from '../types';
+import type { CompactDeclaredArtifactSummary } from '../runArtifacts';
+import type { RunLease } from '../types';
 
 export async function publishCompletionSnapshot(options: {
   gateway: AgentGatewayDaemonNodeClient;
   lease: RunLease;
   result: ExecDriverResult;
-  declaredArtifactSummary: JsonRecord;
+  declaredArtifactSummary: CompactDeclaredArtifactSummary;
   observationWarnings: string[];
 }) {
   await options.gateway.registerSnapshot(options.lease, {

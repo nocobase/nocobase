@@ -10,8 +10,9 @@
 import type { ExecDriverResult } from '../execDriver';
 import type { AgentGatewayDaemonNodeClient } from '../gateway';
 import { compactDeclaredArtifactSummary, reportExecOutputs } from '../runArtifacts';
-import type { JsonRecord, RunLease } from '../types';
+import type { RunLease } from '../types';
 import { recoverTerminalConflict } from '../execution/leaseHeartbeat';
+import type { DeclaredArtifactCollectionSummary } from './artifactCollector';
 import type { RunProgressReporter } from './eventPublisher';
 import { publishCompletionSnapshot } from './snapshotPublisher';
 
@@ -26,7 +27,7 @@ export async function terminalizeRun(options: {
   result: ExecDriverResult;
   progressReporter?: RunProgressReporter;
   observationWarnings?: string[];
-  declaredArtifactSummary?: JsonRecord;
+  declaredArtifactSummary?: DeclaredArtifactCollectionSummary;
 }): Promise<RunCompletionStatus> {
   const observationWarnings: string[] = [...(options.observationWarnings || [])];
   const declaredArtifactSummary = compactDeclaredArtifactSummary(options.declaredArtifactSummary);

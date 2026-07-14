@@ -30,6 +30,11 @@ import {
   waitForFrame,
   waitForOpen,
 } from './helpers/terminalStreamHarness';
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiUrl } from '../../shared/apiContract';
+
+function getTestApiPath(action: Parameters<typeof getAgentGatewayApiUrl>[0], targetKey?: unknown) {
+  return `/${getAgentGatewayApiUrl(action, targetKey === undefined ? undefined : String(targetKey))}`;
+}
 
 function waitForNoFrame(ws: WebSocket, predicate: (frame: TerminalFrame) => boolean, durationMs: number) {
   return new Promise<boolean>((resolve, reject) => {
@@ -764,7 +769,7 @@ describe('terminal stream broker', () => {
 
       const heartbeatResponse = await app
         .agent()
-        .post(`/agentGatewayApi:heartbeatRun/${runId}`)
+        .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatRun, runId))
         .set('Authorization', `Bearer ${runner.nodeToken}`)
         .send({
           claimToken: lease.claimToken,

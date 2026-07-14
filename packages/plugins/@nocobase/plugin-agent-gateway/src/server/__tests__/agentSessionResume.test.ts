@@ -13,6 +13,11 @@ import { MockServer, createMockServer } from '@nocobase/test';
 
 import { normalizeAgentProviderCapabilities } from '../../shared/providerCapabilities';
 import PluginAgentGatewayServer from '../plugin';
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiUrl } from '../../shared/apiContract';
+
+function getTestApiPath(action: Parameters<typeof getAgentGatewayApiUrl>[0], targetKey?: unknown) {
+  return `/${getAgentGatewayApiUrl(action, targetKey === undefined ? undefined : String(targetKey))}`;
+}
 
 interface ResponseLike {
   status: number;
@@ -173,7 +178,7 @@ describe('agent gateway agent session resume API', () => {
   }
 
   async function resumeSession(sessionId: unknown, body: Record<string, unknown>) {
-    return await rootAgent.post(`/agentGatewayApi:resumeAgentSession/${sessionId}`).send(body);
+    return await rootAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.resumeAgentSession, sessionId)).send(body);
   }
 
   async function createEndedSessionRun(sessionId: unknown) {
@@ -310,17 +315,21 @@ describe('agent gateway agent session resume API', () => {
       runCode: run.get('runCode'),
     });
 
-    const first = await scopedAgent.post(`/agentGatewayApi:resumeAgentSession/${session.get('id')}`).send({
-      message: 'Continue hidden once',
-      idempotencyKey: 'same-hidden-resume-click',
-    });
+    const first = await scopedAgent
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.resumeAgentSession, session.get('id')))
+      .send({
+        message: 'Continue hidden once',
+        idempotencyKey: 'same-hidden-resume-click',
+      });
     expect(first.status).toBe(200);
     const firstResult = getData(first);
 
-    const hiddenReplay = await scopedAgent.post(`/agentGatewayApi:resumeAgentSession/${session.get('id')}`).send({
-      message: 'Continue hidden once',
-      idempotencyKey: 'same-hidden-resume-click',
-    });
+    const hiddenReplay = await scopedAgent
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.resumeAgentSession, session.get('id')))
+      .send({
+        message: 'Continue hidden once',
+        idempotencyKey: 'same-hidden-resume-click',
+      });
     expect(hiddenReplay.status).toBe(404);
     expect(JSON.stringify(hiddenReplay.body)).toContain('AGENT_GATEWAY_RESOURCE_NOT_VISIBLE');
     expect(JSON.stringify(hiddenReplay.body)).not.toContain(String(firstResult.runId));
@@ -483,7 +492,7 @@ describe('agent gateway agent session resume API', () => {
     });
 
     const response = await scopedAgent
-      .post(`/agentGatewayApi:resumeAgentSession/${hiddenUnsupported.session.get('id')}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.resumeAgentSession, hiddenUnsupported.session.get('id')))
       .send({
         message: 'Continue hidden unsupported session',
         idempotencyKey: 'hidden-unsupported-resume',
@@ -509,11 +518,13 @@ describe('agent gateway agent session resume API', () => {
       runCode: visible.run.get('runCode'),
     });
 
-    const response = await scopedAgent.post(`/agentGatewayApi:resumeAgentSession/${hidden.session.get('id')}`).send({
-      message: 'Continue with visible run against hidden session',
-      resumedFromRunId: visible.run.get('id'),
-      idempotencyKey: 'hidden-session-visible-source-mismatch',
-    });
+    const response = await scopedAgent
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.resumeAgentSession, hidden.session.get('id')))
+      .send({
+        message: 'Continue with visible run against hidden session',
+        resumedFromRunId: visible.run.get('id'),
+        idempotencyKey: 'hidden-session-visible-source-mismatch',
+      });
 
     expect(response.status).toBe(404);
     const responseBody = JSON.stringify(response.body);

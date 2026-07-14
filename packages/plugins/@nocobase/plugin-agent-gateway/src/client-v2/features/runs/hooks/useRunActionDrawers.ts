@@ -12,7 +12,7 @@ import { Form } from 'antd';
 import type { UploadProps } from 'antd';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiUrl } from '../../../../shared/apiContract';
+import { AGENT_GATEWAY_API_ACTIONS } from '../../../../shared/apiContract';
 import {
   BuildRunOptions,
   getBuildRunnerSelectOptions,
@@ -28,6 +28,7 @@ import {
   getApiErrorMessage,
   getRequiredResponseData,
   getResponseData,
+  requestAgentGatewayAction,
   uploadAgentGatewayFile,
 } from '../../../pages/AgentGatewayPageUtils';
 import {
@@ -73,10 +74,13 @@ export function useRunActionDrawers({ ctx, t, refreshRuns, openRunById }: UseRun
 
   const buildRunOptionsRequest = useRequest(
     async () => {
-      const response = await ctx.api.request<BuildRunOptions>({
-        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.listRunOptions),
-        method: 'get',
-      });
+      const response = await requestAgentGatewayAction<BuildRunOptions>(
+        ctx.api,
+        AGENT_GATEWAY_API_ACTIONS.listRunOptions,
+        {
+          method: 'get',
+        },
+      );
       return getResponseData(response, {});
     },
     { manual: true },
@@ -109,21 +113,24 @@ export function useRunActionDrawers({ ctx, t, refreshRuns, openRunById }: UseRun
       const runner = parseBuildRunnerValue(values.runner || defaultRunner);
       const artifacts = getTaskArtifactDeclarations(values.artifactDeclarations);
       const artifactRoot = getOptionalFormString(values.artifactRoot);
-      const response = await ctx.api.request<CreateBuildRunResult>({
-        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.createTaskRun),
-        method: 'post',
-        data: {
-          taskTemplateId: values.taskTemplateId,
-          title: values.title,
-          prompt: values.prompt,
-          skillVersionIds: values.skillVersionIds,
-          cwd: values.cwd || defaultCwd || '.',
-          ...(artifactRoot ? { artifactRoot } : {}),
-          ...(artifacts.length ? { artifacts } : {}),
-          nodeId: runner.nodeId,
-          agentProfileId: runner.agentProfileId,
+      const response = await requestAgentGatewayAction<CreateBuildRunResult>(
+        ctx.api,
+        AGENT_GATEWAY_API_ACTIONS.createTaskRun,
+        {
+          method: 'post',
+          data: {
+            taskTemplateId: values.taskTemplateId,
+            title: values.title,
+            prompt: values.prompt,
+            skillVersionIds: values.skillVersionIds,
+            cwd: values.cwd || defaultCwd || '.',
+            ...(artifactRoot ? { artifactRoot } : {}),
+            ...(artifacts.length ? { artifacts } : {}),
+            nodeId: runner.nodeId,
+            agentProfileId: runner.agentProfileId,
+          },
         },
-      });
+      );
       return getRequiredResponseData(response, t('Failed to create task run'));
     },
     {
@@ -146,22 +153,25 @@ export function useRunActionDrawers({ ctx, t, refreshRuns, openRunById }: UseRun
 
   const importExternalRunRequest = useRequest(
     async (values: ExternalRunImportFormValues & { logContent: string }) => {
-      const response = await ctx.api.request<ExternalRunImportResult>({
-        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.importExternalRun),
-        method: 'post',
-        data: {
-          provider: values.provider || 'codex',
-          title: values.title,
-          instruction: values.instruction,
-          status: values.status || 'succeeded',
-          externalRunKey: values.externalRunKey,
-          providerSessionId: values.providerSessionId,
-          sourceCollection: values.sourceCollection,
-          sourceRecordId: values.sourceRecordId,
-          outputAgentRunField: values.outputAgentRunField,
-          logs: values.logContent ? [{ format: values.format || 'codex-jsonl', contentText: values.logContent }] : [],
+      const response = await requestAgentGatewayAction<ExternalRunImportResult>(
+        ctx.api,
+        AGENT_GATEWAY_API_ACTIONS.importExternalRun,
+        {
+          method: 'post',
+          data: {
+            provider: values.provider || 'codex',
+            title: values.title,
+            instruction: values.instruction,
+            status: values.status || 'succeeded',
+            externalRunKey: values.externalRunKey,
+            providerSessionId: values.providerSessionId,
+            sourceCollection: values.sourceCollection,
+            sourceRecordId: values.sourceRecordId,
+            outputAgentRunField: values.outputAgentRunField,
+            logs: values.logContent ? [{ format: values.format || 'codex-jsonl', contentText: values.logContent }] : [],
+          },
         },
-      });
+      );
       return getRequiredResponseData(response, t('Failed to import external run'));
     },
     {
@@ -187,11 +197,14 @@ export function useRunActionDrawers({ ctx, t, refreshRuns, openRunById }: UseRun
     async (values: SkillUploadFormValues & { file: File }) => {
       const { file, ...skillValues } = values;
       const uploadId = await uploadAgentGatewayFile(ctx.api, file, 'skill-version');
-      const response = await ctx.api.request<SkillUploadResult>({
-        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.createSkillVersionFromUpload),
-        method: 'post',
-        data: { ...skillValues, uploadId },
-      });
+      const response = await requestAgentGatewayAction<SkillUploadResult>(
+        ctx.api,
+        AGENT_GATEWAY_API_ACTIONS.createSkillVersionFromUpload,
+        {
+          method: 'post',
+          data: { ...skillValues, uploadId },
+        },
+      );
       return getRequiredResponseData(response, t('Failed to upload skill'));
     },
     {

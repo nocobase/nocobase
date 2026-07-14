@@ -15,6 +15,11 @@ import { createSkillZipFixture } from '../../node/__tests__/skillArchiveFixtures
 import { AGENT_GATEWAY_SKILL_CAPABILITY_HEADER } from '../../shared/skillCapability';
 import PluginAgentGatewayServer from '../plugin';
 import { createNodeToken, toStoredTokenFields } from '../security';
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiUrl } from '../../shared/apiContract';
+
+function getTestApiPath(action: Parameters<typeof getAgentGatewayApiUrl>[0], targetKey?: unknown) {
+  return `/${getAgentGatewayApiUrl(action, targetKey === undefined ? undefined : String(targetKey))}`;
+}
 
 interface ResponseLike {
   body: {
@@ -73,7 +78,7 @@ describe('agent gateway shared storage cluster access', () => {
     const [appA, appB] = cluster.nodes;
     const [agentA, agentB] = await Promise.all([getRootAgent(appA), getRootAgent(appB)]);
     const skillZip = createSkillZipFixture([{ name: 'SKILL.md', content: '# Shared Skill\n' }]);
-    const skillResponse = await agentA.post('/agentGatewayApi:uploadSkillVersion').send({
+    const skillResponse = await agentA.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.uploadSkillVersion)).send({
       skillKey: `shared-skill-${randomUUID()}`,
       versionLabel: 'v1',
       contentBase64: skillZip.toString('base64'),
@@ -126,7 +131,7 @@ describe('agent gateway shared storage cluster access', () => {
     });
     const claimResponse = await appB
       .agent()
-      .post(`/agentGatewayApi:claimRun/${nodeId}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.claimRun, nodeId))
       .set('Authorization', `Bearer ${nodeToken.token}`)
       .send({ runId: run.get('id'), profileKey: 'shared-storage' });
     expect(claimResponse.status).toBe(200);
@@ -148,7 +153,7 @@ describe('agent gateway shared storage cluster access', () => {
     expect(archiveResponse.body).toEqual(skillZip);
 
     const artifactText = '# Shared artifact';
-    const importResponse = await agentA.post('/agentGatewayApi:importExternalRun').send({
+    const importResponse = await agentA.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.importExternalRun)).send({
       externalRunKey: `shared-artifact-${randomUUID()}`,
       provider: 'codex',
       title: 'Shared artifact run',
@@ -164,14 +169,14 @@ describe('agent gateway shared storage cluster access', () => {
     });
     expect(importResponse.status).toBe(200);
     const runId = String(getData(importResponse).runId);
-    const listResponse = await agentB.get(`/agentGatewayApi:listRunArtifacts/${runId}`);
+    const listResponse = await agentB.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunArtifacts, runId));
     expect(listResponse.status).toBe(200);
     const artifacts = listResponse.body.data as Array<Record<string, unknown>>;
     const artifact = artifacts.find((item) => item.artifactKey === 'shared-report');
     expect(artifact).toBeTruthy();
     expect(artifact).not.toHaveProperty('objectKey');
     const contentResponse = await agentB.get(
-      `/agentGatewayApi:getRunArtifactContent/${runId}?artifactId=${String(artifact?.id)}`,
+      `${getTestApiPath(AGENT_GATEWAY_API_ACTIONS.getRunArtifactContent, runId)}?artifactId=${String(artifact?.id)}`,
     );
     expect(contentResponse.status).toBe(200);
     expect(getData(contentResponse)).toMatchObject({ contentText: artifactText });

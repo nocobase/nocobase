@@ -17,6 +17,7 @@ import { readDaemonConfig } from '../config';
 import { AgentGatewayDaemonNodeClient } from '../gateway';
 import { heartbeatDaemonNode, registerDaemonNode } from '../registration';
 import { GatewayRequestOptions, GatewayRequester, JsonRecord } from '../types';
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiPath } from '../../shared/apiContract';
 
 const execFileAsync = promisify(execFile);
 
@@ -25,7 +26,7 @@ class FakeRequester implements GatewayRequester {
 
   async request<T extends JsonRecord = JsonRecord>(options: GatewayRequestOptions): Promise<T> {
     this.calls.push(options);
-    if (options.path === '/api/agentGatewayApi:registerNode') {
+    if (options.path === getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.registerNode)) {
       return {
         nodeId: 'node-1',
         nodeKey: 'node-key-1',
@@ -108,13 +109,13 @@ describe('agent gateway daemon lifecycle client', () => {
 
     expect(requester.calls[0]).toMatchObject({
       method: 'POST',
-      path: '/api/agentGatewayApi:registerNode',
+      path: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.registerNode),
     });
     expect((requester.calls[0].body as JsonRecord).inviteToken).toBe('ag_inv_INVITE_TOKEN_SECRET');
     expect((requester.calls[0].body as JsonRecord).installationId).toBe(config.installationId);
     expect(requester.calls[1]).toMatchObject({
       method: 'POST',
-      path: '/api/agentGatewayApi:heartbeatNode/node-1',
+      path: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatNode, 'node-1'),
       nodeToken: 'ag_node_NODE_TOKEN_SECRET',
     });
     expect((requester.calls[1].body as JsonRecord).installationId).toBe(config.installationId);

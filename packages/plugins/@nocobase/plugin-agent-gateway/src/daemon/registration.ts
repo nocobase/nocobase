@@ -11,7 +11,14 @@ import { hostname, platform, arch } from 'os';
 import { randomUUID } from 'crypto';
 
 import { createDefaultExecutionPolicies, writeDaemonConfig, serializeSafeConfig } from './config';
-import { DaemonConfig, DetectedAgentProfile, ExecutionPolicyDefinition, GatewayRequester, JsonRecord } from './types';
+import {
+  DaemonConfig,
+  DetectedAgentProfile,
+  ExecutionPolicyDefinition,
+  GatewayRequester,
+  JsonRecord,
+  requestGatewayAction,
+} from './types';
 import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiPath } from '../shared/apiContract';
 import { getDetectedProfilesHash } from './profileDetection';
 
@@ -53,14 +60,8 @@ function getDaemonVersion(providedVersion?: string) {
 export async function registerDaemonNode(options: RegisterDaemonOptions) {
   const installationId = options.installationId || randomUUID();
   const nodeKey = getNodeKey(options.nodeKey, installationId);
-  const registerResponse = await options.requester.request<{
-    nodeId: string;
-    nodeKey?: string;
-    nodeToken: string;
-    tokenLast4?: string;
-    heartbeatIntervalSeconds?: number;
-    claimIntervalSeconds?: number;
-  }>({
+  const registerResponse = await requestGatewayAction(options.requester, {
+    action: AGENT_GATEWAY_API_ACTIONS.registerNode,
     method: 'POST',
     path: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.registerNode),
     body: {
@@ -99,7 +100,8 @@ export async function registerDaemonNode(options: RegisterDaemonOptions) {
 }
 
 export async function heartbeatDaemonNode(options: HeartbeatDaemonOptions) {
-  return await options.requester.request({
+  return await requestGatewayAction(options.requester, {
+    action: AGENT_GATEWAY_API_ACTIONS.heartbeatNode,
     method: 'POST',
     path: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatNode, options.config.nodeId),
     nodeToken: options.config.nodeToken,

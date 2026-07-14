@@ -20,7 +20,8 @@ import {
   ExternalLogFormat,
 } from '../shared/externalRunImport';
 import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiPath } from '../shared/apiContract';
-import { GatewayRequester, JsonRecord } from './types';
+import type { AppendExternalRunObservationsRequest, ImportExternalRunRequest } from '../shared/contracts';
+import { GatewayRequester, JsonRecord, requestGatewayAction } from './types';
 
 const DEFAULT_LOG_BATCH_BYTES = 6 * 1024 * 1024;
 const DEFAULT_LOG_BATCH_LINES = 250;
@@ -382,15 +383,22 @@ export async function uploadExternalRun(options: ExternalRunUploadOptions) {
     batchIndex += 1;
     const body = getObservationRunBody(options, observations, batchIndex);
     assertPayloadSize(body);
-    response = await options.requester.request({
-      method: 'POST',
-      path:
-        batchIndex === 1
-          ? getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.importExternalRun)
-          : getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.appendExternalRunObservations, runId),
-      authToken: options.authToken,
-      body,
-    });
+    response =
+      batchIndex === 1
+        ? await requestGatewayAction(options.requester, {
+            action: AGENT_GATEWAY_API_ACTIONS.importExternalRun,
+            method: 'POST',
+            path: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.importExternalRun),
+            authToken: options.authToken,
+            body: body as ImportExternalRunRequest,
+          })
+        : await requestGatewayAction(options.requester, {
+            action: AGENT_GATEWAY_API_ACTIONS.appendExternalRunObservations,
+            method: 'POST',
+            path: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.appendExternalRunObservations, runId),
+            authToken: options.authToken,
+            body: body as AppendExternalRunObservationsRequest,
+          });
     if (batchIndex === 1) {
       runId = typeof response.runId === 'string' ? response.runId : '';
       if (!runId) {
@@ -404,10 +412,11 @@ export async function uploadExternalRun(options: ExternalRunUploadOptions) {
 
   const finalBody = withStableBatchKey(options, 'final', 0, getFinalRunBody(options));
   assertPayloadSize(finalBody);
-  return await options.requester.request({
+  return await requestGatewayAction(options.requester, {
+    action: AGENT_GATEWAY_API_ACTIONS.appendExternalRunObservations,
     method: 'POST',
     path: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.appendExternalRunObservations, runId),
     authToken: options.authToken,
-    body: finalBody,
+    body: finalBody as AppendExternalRunObservationsRequest,
   });
 }

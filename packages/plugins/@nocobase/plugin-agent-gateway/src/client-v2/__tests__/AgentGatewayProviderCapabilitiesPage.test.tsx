@@ -13,7 +13,12 @@ import { cleanup, render, screen, waitFor, within } from '@testing-library/react
 import { App as AntdApp } from 'antd';
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { AGENT_GATEWAY_API_ACTIONS, AgentGatewayApiAction, getAgentGatewayApiUrl } from '../../shared/apiContract';
 import AgentGatewayProviderCapabilitiesPage from '../pages/AgentGatewayProviderCapabilitiesPage';
+
+function apiUrl(action: AgentGatewayApiAction, targetKey?: string) {
+  return getAgentGatewayApiUrl(action, targetKey);
+}
 
 interface FlowContextWithDefineProperty {
   defineProperty(name: string, descriptor: { value: unknown }): void;
@@ -68,7 +73,7 @@ describe('AgentGatewayProviderCapabilitiesPage', () => {
 
   it('renders provider capability and degradation states from profiles and runs', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listNodes') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listNodes)) {
         return {
           data: {
             data: [{ id: 'node-1', nodeKey: 'local-node' }],
@@ -76,7 +81,7 @@ describe('AgentGatewayProviderCapabilitiesPage', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:listNodeProfiles/node-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listNodeProfiles, 'node-1')) {
         return {
           data: {
             data: [
@@ -110,7 +115,7 @@ describe('AgentGatewayProviderCapabilitiesPage', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [
@@ -203,7 +208,7 @@ describe('AgentGatewayProviderCapabilitiesPage', () => {
     expect(within(genericRow).getByText('Terminate: Allowed')).toBeInTheDocument();
 
     expect(request).toHaveBeenCalledWith({
-      url: 'agentGatewayApi:listNodes',
+      url: apiUrl(AGENT_GATEWAY_API_ACTIONS.listNodes),
       method: 'get',
     });
   });

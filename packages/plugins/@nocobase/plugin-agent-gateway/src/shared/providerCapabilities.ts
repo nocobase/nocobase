@@ -114,46 +114,12 @@ export function getCapabilityRecord(value: unknown): JsonRecord {
 
 export function hasAgentCapabilitySignal(value: unknown) {
   const record = getCapabilityRecord(value);
-  const topLevelCapabilityKeys = [
-    ...AGENT_CAPABILITY_KEYS,
-    'detectSessionId',
-    'resumeWithMessage',
-    'terminalStream',
-    'terminalInput',
-    'supportsArtifacts',
-  ];
-  const hasTopLevelSignal = topLevelCapabilityKeys.some((key) => Object.prototype.hasOwnProperty.call(record, key));
-  if (hasTopLevelSignal) {
-    return true;
-  }
-
-  return [
-    ['terminal', ['input', 'interrupt', 'terminate']],
-    ['terminalControl', ['interrupt', 'terminate']],
-  ].some(([key, nestedKeys]) => {
-    const nested = getCapabilityRecord(record[key as string]);
-    return (nestedKeys as string[]).some((nestedKey) => Object.prototype.hasOwnProperty.call(nested, nestedKey));
-  });
+  const topLevelCapabilityKeys = [...AGENT_CAPABILITY_KEYS, 'detectSessionId', 'resumeWithMessage'];
+  return topLevelCapabilityKeys.some((key) => Object.prototype.hasOwnProperty.call(record, key));
 }
 
 function getBoolean(value: unknown, fallback: boolean) {
   return typeof value === 'boolean' ? value : fallback;
-}
-
-function getNestedBoolean(record: JsonRecord, key: string, nestedKey: string) {
-  const nested = getCapabilityRecord(record[key]);
-  const value = nested[nestedKey];
-  return typeof value === 'boolean' ? value : undefined;
-}
-
-function getBooleanByAliases(record: JsonRecord, aliases: string[], fallback: boolean) {
-  for (const alias of aliases) {
-    const value = record[alias];
-    if (typeof value === 'boolean') {
-      return value;
-    }
-  }
-  return fallback;
 }
 
 function normalizeNonGenericCapabilities(provider: AgentProviderKey, raw: JsonRecord): AgentProviderCapabilities {
@@ -169,27 +135,13 @@ function normalizeNonGenericCapabilities(provider: AgentProviderKey, raw: JsonRe
     : defaults.resumeWithMessage;
   return {
     structuredEvents: getBoolean(raw.structuredEvents, defaults.structuredEvents),
-    terminalOutput: getBooleanByAliases(raw, ['terminalOutput', 'terminalStream'], defaults.terminalOutput),
+    terminalOutput: getBoolean(raw.terminalOutput, defaults.terminalOutput),
     resumeSession,
     liveSemanticMessage: false,
-    stdinMessage: getBooleanByAliases(
-      raw,
-      ['stdinMessage', 'terminalInput'],
-      getNestedBoolean(raw, 'terminal', 'input') ?? defaults.stdinMessage,
-    ),
-    interrupt: getBoolean(
-      raw.interrupt,
-      getNestedBoolean(raw, 'terminal', 'interrupt') ??
-        getNestedBoolean(raw, 'terminalControl', 'interrupt') ??
-        defaults.interrupt,
-    ),
-    terminate: getBoolean(
-      raw.terminate,
-      getNestedBoolean(raw, 'terminal', 'terminate') ??
-        getNestedBoolean(raw, 'terminalControl', 'terminate') ??
-        defaults.terminate,
-    ),
-    artifacts: getBooleanByAliases(raw, ['artifacts', 'supportsArtifacts'], defaults.artifacts),
+    stdinMessage: getBoolean(raw.stdinMessage, defaults.stdinMessage),
+    interrupt: getBoolean(raw.interrupt, defaults.interrupt),
+    terminate: getBoolean(raw.terminate, defaults.terminate),
+    artifacts: getBoolean(raw.artifacts, defaults.artifacts),
     detectSessionId: getBoolean(raw.detectSessionId, defaults.detectSessionId),
     resumeWithMessage,
   };
@@ -201,10 +153,14 @@ export function normalizeAgentProviderCapabilities(
 ): JsonRecord & AgentProviderCapabilities {
   const provider = getAgentProviderKey(providerInput);
   const raw = getCapabilityRecord(capabilitiesInput);
-  const normalized = normalizeNonGenericCapabilities(provider, raw);
+  const canonicalExtras = Object.fromEntries(
+    Object.entries(raw).filter(
+      ([key]) => !['terminalStream', 'terminalInput', 'supportsArtifacts', 'terminal', 'terminalControl'].includes(key),
+    ),
+  );
   return {
-    ...raw,
-    ...normalized,
+    ...canonicalExtras,
+    ...normalizeNonGenericCapabilities(provider, raw),
   };
 }
 

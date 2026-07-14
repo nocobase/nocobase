@@ -13,6 +13,7 @@ import { AddressInfo } from 'net';
 import WebSocket, { WebSocketServer } from 'ws';
 
 import { TERMINAL_PROTOCOL, TerminalFrame, decodeTerminalPayload } from '../../shared/terminalStreamProtocol';
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiPath } from '../../shared/apiContract';
 import {
   encodeSmokeLineForTest,
   parseTerminalStreamSmokeDaemonArgs,
@@ -38,7 +39,10 @@ async function waitForFrameCount(frames: TerminalFrame[], count: number) {
 async function createSmokeServer() {
   const frames: TerminalFrame[] = [];
   const server = http.createServer((request, response) => {
-    if (request.method === 'POST' && request.url === '/api/agentGatewayApi:claimRun/node-1') {
+    if (
+      request.method === 'POST' &&
+      request.url === getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.claimRun, 'node-1')
+    ) {
       response.setHeader('Content-Type', 'application/json');
       response.end(
         JSON.stringify({
@@ -105,7 +109,10 @@ async function createSmokeServer() {
 async function createSnapshotSmokeServer() {
   const frames: TerminalFrame[] = [];
   const server = http.createServer((request, response) => {
-    if (request.method === 'POST' && request.url === '/api/agentGatewayApi:claimRun/node-1') {
+    if (
+      request.method === 'POST' &&
+      request.url === getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.claimRun, 'node-1')
+    ) {
       response.setHeader('Content-Type', 'application/json');
       response.end(
         JSON.stringify({

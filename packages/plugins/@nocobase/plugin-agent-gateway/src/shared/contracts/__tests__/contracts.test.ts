@@ -14,11 +14,15 @@ import {
   AGENT_GATEWAY_API_CONTRACTS,
   AGENT_GATEWAY_RUN_EXECUTION_PAYLOAD_FIELDS,
   AgentGatewayContractError,
+  getAgentGatewayApiActionFromPath,
   getAgentGatewayApiPath,
   getAgentGatewayApiUrl,
   getUnknownRunExecutionPayloadField,
   parseAgentGatewayActionRequest,
+  parseAgentGatewayActionQuery,
+  parseAgentGatewayActionResponse,
 } from '..';
+import { normalizeAgentProviderCapabilities } from '../../providerCapabilities';
 
 describe('Agent Gateway canonical API contracts', () => {
   it('defines exactly one contract for every action', () => {
@@ -32,6 +36,9 @@ describe('Agent Gateway canonical API contracts', () => {
     expect(getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run/1')).toBe('agentGatewayApi:getRun/run%2F1');
     expect(getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.getRun, 'run/1')).toBe(
       '/api/agentGatewayApi:getRun/run%2F1',
+    );
+    expect(getAgentGatewayApiActionFromPath('/api/agentGatewayApi:getRun/run%2F1?include=detail')).toBe(
+      AGENT_GATEWAY_API_ACTIONS.getRun,
     );
   });
 
@@ -56,6 +63,98 @@ describe('Agent Gateway canonical API contracts', () => {
         unexpected: true,
       }),
     ).toThrow('Unknown request field: unexpected');
+  });
+
+  it('validates canonical query fields separately from request bodies', () => {
+    expect(
+      parseAgentGatewayActionQuery(AGENT_GATEWAY_API_ACTIONS.listRuns, {
+        page: 2,
+        pageSize: 20,
+        filter: '{"status":"running"}',
+      }),
+    ).toEqual({ page: 2, pageSize: 20, filter: '{"status":"running"}' });
+    expect(() =>
+      parseAgentGatewayActionQuery(AGENT_GATEWAY_API_ACTIONS.listRuns, {
+        page: 2,
+        metadata: {},
+      }),
+    ).toThrow('Unknown query field: metadata');
+    expect(
+      parseAgentGatewayActionQuery(AGENT_GATEWAY_API_ACTIONS.getTerminalStreamStats, {
+        runId: 'run-1',
+        nodeId: 'node-1',
+      }),
+    ).toEqual({ runId: 'run-1', nodeId: 'node-1' });
+    expect(() =>
+      parseAgentGatewayActionQuery(AGENT_GATEWAY_API_ACTIONS.getTerminalStreamStats, {
+        runId: 'run-1',
+        includeGlobalStats: true,
+      }),
+    ).toThrow('Unknown query field: includeGlobalStats');
+  });
+
+  it('rejects non-canonical provider aliases', () => {
+    expect(() =>
+      parseAgentGatewayActionRequest(AGENT_GATEWAY_API_ACTIONS.importExternalRun, {
+        provider: 'claude',
+        externalRunKey: 'external-1',
+      }),
+    ).toThrow('provider is required and must be canonical');
+  });
+
+  it('parses response shapes and rejects public legacy response fields', () => {
+    expect(
+      parseAgentGatewayActionResponse(AGENT_GATEWAY_API_ACTIONS.listRuns, [
+        { id: 'run-1', contentJson: { status: 'ok' } },
+      ]),
+    ).toEqual([{ id: 'run-1', contentJson: { status: 'ok' } }]);
+    expect(
+      parseAgentGatewayActionResponse(AGENT_GATEWAY_API_ACTIONS.listRuns, {
+        rows: [{ id: 'run-1' }],
+        count: 1,
+        page: 1,
+        pageSize: 20,
+        totalPage: 1,
+        taskTemplates: [],
+      }),
+    ).toMatchObject({ rows: [{ id: 'run-1' }], count: 1 });
+    expect(() =>
+      parseAgentGatewayActionResponse(AGENT_GATEWAY_API_ACTIONS.listRunEvents, [
+        { id: 'event-1', payloadJson: { status: 'legacy' } },
+      ]),
+    ).toThrow('Legacy response[0] field is not allowed: payloadJson');
+    expect(() => parseAgentGatewayActionResponse(AGENT_GATEWAY_API_ACTIONS.listRuns, {})).toThrow(
+      'response.rows must be an array',
+    );
+  });
+
+  it('preserves scheduling fields while removing legacy capability aliases', () => {
+    expect(
+      normalizeAgentProviderCapabilities('codex', {
+        maxConcurrency: 4,
+        executionPolicyKey: 'codex',
+        terminalStream: false,
+        terminalInput: true,
+        supportsArtifacts: false,
+      }),
+    ).toMatchObject({
+      maxConcurrency: 4,
+      executionPolicyKey: 'codex',
+      terminalOutput: true,
+      stdinMessage: false,
+      artifacts: true,
+    });
+    expect(
+      normalizeAgentProviderCapabilities('codex', {
+        terminalStream: false,
+        terminalInput: true,
+        supportsArtifacts: false,
+      }),
+    ).not.toMatchObject({
+      terminalStream: expect.anything(),
+      terminalInput: expect.anything(),
+      supportsArtifacts: expect.anything(),
+    });
   });
 
   it('defines a strict allowlist for claimed run execution payloads', () => {

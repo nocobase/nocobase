@@ -9,10 +9,13 @@
 
 import type { AgentGatewayDaemonNodeClient } from '../gateway';
 import { reportDeclaredArtifacts } from '../runArtifacts';
-import type { JsonRecord, RunLease } from '../types';
+import type { ClaimedRunLease, RunLease } from '../types';
+
+export type ArtifactCollectionPayload = ClaimedRunLease['run']['executionPayloadJson'];
+export type DeclaredArtifactCollectionSummary = Awaited<ReturnType<typeof reportDeclaredArtifacts>>;
 
 export interface ArtifactCollector {
-  collect(options: { payload: JsonRecord; cwd: string }): Promise<JsonRecord>;
+  collect(options: { payload: ArtifactCollectionPayload; cwd: string }): Promise<DeclaredArtifactCollectionSummary>;
 }
 
 export function createArtifactCollector(options: {

@@ -34,7 +34,6 @@ import {
   AGENT_GATEWAY_API_ACTIONS,
   AgentGatewayPaginationMeta,
   AgentGatewaySkillVersionSummary,
-  getAgentGatewayApiUrl,
 } from '../../shared/apiContract';
 import { useT } from '../locale';
 import {
@@ -42,6 +41,7 @@ import {
   formatDateTime,
   getRequiredResponseData,
   getResponseData,
+  requestAgentGatewayAction,
   statusTag,
   uploadAgentGatewayFile,
 } from './AgentGatewayPageUtils';
@@ -119,14 +119,17 @@ export default function AgentGatewaySkillsPage() {
 
   const skillVersionsRequest = useRequest(
     async () => {
-      const response = await ctx.api.request<SkillVersionRecord[], AgentGatewayPaginationMeta>({
-        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.listSkillVersions),
-        method: 'get',
-        params: {
-          page: pagination.current,
-          pageSize: pagination.pageSize,
+      const response = await requestAgentGatewayAction<SkillVersionRecord[], AgentGatewayPaginationMeta>(
+        ctx.api,
+        AGENT_GATEWAY_API_ACTIONS.listSkillVersions,
+        {
+          method: 'get',
+          params: {
+            page: pagination.current,
+            pageSize: pagination.pageSize,
+          },
         },
-      });
+      );
       return {
         rows: getResponseData(response, []),
         meta: response.data?.meta,
@@ -142,10 +145,14 @@ export default function AgentGatewaySkillsPage() {
       if (!selectedSkillVersionId || !skillDetailOpen) {
         return null;
       }
-      const response = await ctx.api.request<SkillVersionRecord>({
-        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.getSkillVersion, selectedSkillVersionId),
-        method: 'get',
-      });
+      const response = await requestAgentGatewayAction<SkillVersionRecord>(
+        ctx.api,
+        AGENT_GATEWAY_API_ACTIONS.getSkillVersion,
+        {
+          method: 'get',
+          targetKey: selectedSkillVersionId,
+        },
+      );
       return getRequiredResponseData(response, t('Failed to load skill detail'));
     },
     {
@@ -161,11 +168,14 @@ export default function AgentGatewaySkillsPage() {
     async (values: SkillUploadFormValues & { file: File }) => {
       const { file, ...skillValues } = values;
       const uploadId = await uploadAgentGatewayFile(ctx.api, file, 'skill-version');
-      const response = await ctx.api.request<SkillUploadResult>({
-        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.createSkillVersionFromUpload),
-        method: 'post',
-        data: { ...skillValues, uploadId },
-      });
+      const response = await requestAgentGatewayAction<SkillUploadResult>(
+        ctx.api,
+        AGENT_GATEWAY_API_ACTIONS.createSkillVersionFromUpload,
+        {
+          method: 'post',
+          data: { ...skillValues, uploadId },
+        },
+      );
       return getRequiredResponseData(response, t('Failed to upload skill'));
     },
     {

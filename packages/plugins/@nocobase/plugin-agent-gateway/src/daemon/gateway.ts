@@ -14,11 +14,58 @@ import {
   JsonRecord,
   PendingControlRequest,
   RunLease,
+  requestGatewayAction,
 } from './types';
 import { arch, hostname, platform } from 'os';
 import { NodeSkillInstallPayload } from './skillSync';
 import { attachLocalRunLeaseDeadline } from './leaseDeadline';
 import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiPath } from '../shared/apiContract';
+import type {
+  AckControlRequest,
+  AppendObservationRequest,
+  AppendRunEventRequest,
+  RegisterRunArtifactRequest,
+  RegisterRunSnapshotRequest,
+  UpdateRunTerminalRequest,
+  UpsertAgentSessionRequest,
+} from '../shared/contracts';
+
+type UpdateRunTerminalValues = Pick<
+  UpdateRunTerminalRequest,
+  | 'terminalBackend'
+  | 'terminalSessionName'
+  | 'terminalStatus'
+  | 'terminalExitCode'
+  | 'terminalStartedAt'
+  | 'terminalEndedAt'
+  | 'terminalLastActivityAt'
+>;
+type AppendRunEventValues = Pick<
+  AppendRunEventRequest,
+  'ingestId' | 'source' | 'sequence' | 'eventType' | 'level' | 'message' | 'contentJson' | 'emittedAt'
+>;
+type AppendConversationEventValues = Pick<AppendObservationRequest, 'events'>;
+type RegisterRunArtifactValues = Pick<
+  RegisterRunArtifactRequest,
+  | 'artifactKey'
+  | 'artifactType'
+  | 'fileName'
+  | 'mimeType'
+  | 'sizeBytes'
+  | 'sourceSha256'
+  | 'uploadId'
+  | 'contentText'
+  | 'metadataJson'
+>;
+type RegisterRunSnapshotValues = Pick<
+  RegisterRunSnapshotRequest,
+  'snapshotType' | 'snapshotJson' | 'capturedAt' | 'metadataJson'
+>;
+type UpsertAgentSessionValues = Pick<
+  UpsertAgentSessionRequest,
+  'provider' | 'providerSessionId' | 'status' | 'capabilitiesJson' | 'metadataJson'
+>;
+type AckControlRequestValues = Pick<AckControlRequest, 'reason' | 'resultMessage'>;
 
 export class AgentGatewayDaemonNodeClient {
   constructor(
@@ -50,7 +97,8 @@ export class AgentGatewayDaemonNodeClient {
     currentConcurrency?: number;
     includeNodeSnapshot?: boolean;
   }) {
-    return await this.requester.request({
+    return await requestGatewayAction(this.requester, {
+      action: AGENT_GATEWAY_API_ACTIONS.heartbeatNode,
       method: 'POST',
       path: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatNode, this.config.nodeId),
       nodeToken: this.config.nodeToken,
@@ -95,7 +143,8 @@ export class AgentGatewayDaemonNodeClient {
             ...(options?.profileKey ? { profileKey: options.profileKey } : {}),
             ...(options?.runId ? { runId: options.runId } : {}),
           };
-    const response = await this.requester.request<RunLease>({
+    const response = await requestGatewayAction(this.requester, {
+      action: AGENT_GATEWAY_API_ACTIONS.claimRun,
       method: 'POST',
       path: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.claimRun, this.config.nodeId),
       nodeToken: this.config.nodeToken,
@@ -105,7 +154,8 @@ export class AgentGatewayDaemonNodeClient {
   }
 
   async heartbeatRun(lease: RunLease, status: 'claimed' | 'syncing_skills' | 'running' | 'finalizing') {
-    const response = await this.requester.request<RunLease>({
+    const response = await requestGatewayAction(this.requester, {
+      action: AGENT_GATEWAY_API_ACTIONS.heartbeatRun,
       method: 'POST',
       path: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatRun, lease.runId),
       nodeToken: this.config.nodeToken,
@@ -119,8 +169,9 @@ export class AgentGatewayDaemonNodeClient {
     return attachLocalRunLeaseDeadline(response);
   }
 
-  async updateRunTerminal(lease: RunLease, values: JsonRecord) {
-    return await this.requester.request({
+  async updateRunTerminal(lease: RunLease, values: UpdateRunTerminalValues) {
+    return await requestGatewayAction(this.requester, {
+      action: AGENT_GATEWAY_API_ACTIONS.updateRunTerminal,
       method: 'POST',
       path: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.updateRunTerminal, lease.runId),
       nodeToken: this.config.nodeToken,
@@ -133,8 +184,9 @@ export class AgentGatewayDaemonNodeClient {
     });
   }
 
-  async appendEvent(lease: RunLease, values: JsonRecord) {
-    await this.requester.request({
+  async appendEvent(lease: RunLease, values: AppendRunEventValues) {
+    await requestGatewayAction(this.requester, {
+      action: AGENT_GATEWAY_API_ACTIONS.appendRunEvents,
       method: 'POST',
       path: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.appendRunEvents, lease.runId),
       nodeToken: this.config.nodeToken,
@@ -147,8 +199,9 @@ export class AgentGatewayDaemonNodeClient {
     });
   }
 
-  async appendConversationEvents(lease: RunLease, values: JsonRecord) {
-    await this.requester.request({
+  async appendConversationEvents(lease: RunLease, values: AppendConversationEventValues) {
+    await requestGatewayAction(this.requester, {
+      action: AGENT_GATEWAY_API_ACTIONS.appendConversationEvents,
       method: 'POST',
       path: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.appendConversationEvents, lease.runId),
       nodeToken: this.config.nodeToken,
@@ -161,8 +214,9 @@ export class AgentGatewayDaemonNodeClient {
     });
   }
 
-  async registerArtifact(lease: RunLease, values: JsonRecord) {
-    await this.requester.request({
+  async registerArtifact(lease: RunLease, values: RegisterRunArtifactValues) {
+    await requestGatewayAction(this.requester, {
+      action: AGENT_GATEWAY_API_ACTIONS.registerRunArtifact,
       method: 'POST',
       path: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.registerRunArtifact, lease.runId),
       nodeToken: this.config.nodeToken,
@@ -175,8 +229,9 @@ export class AgentGatewayDaemonNodeClient {
     });
   }
 
-  async registerSnapshot(lease: RunLease, values: JsonRecord) {
-    await this.requester.request({
+  async registerSnapshot(lease: RunLease, values: RegisterRunSnapshotValues) {
+    await requestGatewayAction(this.requester, {
+      action: AGENT_GATEWAY_API_ACTIONS.registerRunSnapshot,
       method: 'POST',
       path: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.registerRunSnapshot, lease.runId),
       nodeToken: this.config.nodeToken,
@@ -189,8 +244,9 @@ export class AgentGatewayDaemonNodeClient {
     });
   }
 
-  async upsertAgentSession(lease: RunLease, values: JsonRecord) {
-    await this.requester.request({
+  async upsertAgentSession(lease: RunLease, values: UpsertAgentSessionValues) {
+    await requestGatewayAction(this.requester, {
+      action: AGENT_GATEWAY_API_ACTIONS.upsertAgentSession,
       method: 'POST',
       path: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.upsertAgentSession, lease.runId),
       nodeToken: this.config.nodeToken,
@@ -204,7 +260,8 @@ export class AgentGatewayDaemonNodeClient {
   }
 
   async completeRun(lease: RunLease, resultSummary: JsonRecord) {
-    await this.requester.request({
+    await requestGatewayAction(this.requester, {
+      action: AGENT_GATEWAY_API_ACTIONS.completeRun,
       method: 'POST',
       path: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.completeRun, lease.runId),
       nodeToken: this.config.nodeToken,
@@ -218,7 +275,8 @@ export class AgentGatewayDaemonNodeClient {
   }
 
   async failRun(lease: RunLease, errorSummary: string, resultSummary: JsonRecord = {}) {
-    await this.requester.request({
+    await requestGatewayAction(this.requester, {
+      action: AGENT_GATEWAY_API_ACTIONS.failRun,
       method: 'POST',
       path: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.failRun, lease.runId),
       nodeToken: this.config.nodeToken,
@@ -233,7 +291,8 @@ export class AgentGatewayDaemonNodeClient {
   }
 
   async timeoutRun(lease: RunLease, errorSummary: string) {
-    await this.requester.request({
+    await requestGatewayAction(this.requester, {
+      action: AGENT_GATEWAY_API_ACTIONS.timeoutRun,
       method: 'POST',
       path: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.timeoutRun, lease.runId),
       nodeToken: this.config.nodeToken,
@@ -247,7 +306,8 @@ export class AgentGatewayDaemonNodeClient {
   }
 
   async cancelAckRun(lease: RunLease) {
-    await this.requester.request({
+    await requestGatewayAction(this.requester, {
+      action: AGENT_GATEWAY_API_ACTIONS.ackCancelRun,
       method: 'POST',
       path: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.ackCancelRun, lease.runId),
       nodeToken: this.config.nodeToken,
@@ -260,7 +320,8 @@ export class AgentGatewayDaemonNodeClient {
   }
 
   async listPendingControlRequests(lease: RunLease) {
-    return await this.requester.request<{ requests: PendingControlRequest[] }>({
+    return (await requestGatewayAction(this.requester, {
+      action: AGENT_GATEWAY_API_ACTIONS.listPendingControlRequests,
       method: 'POST',
       path: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.listPendingControlRequests, lease.runId),
       nodeToken: this.config.nodeToken,
@@ -269,16 +330,17 @@ export class AgentGatewayDaemonNodeClient {
         claimAttempt: lease.claimAttempt,
         leaseVersion: lease.leaseVersion,
       },
-    });
+    })) as { requests: PendingControlRequest[] };
   }
 
   async ackControlRequest(
     lease: RunLease,
     requestId: string,
     status: 'delivered' | 'succeeded' | 'failed',
-    values: JsonRecord = {},
+    values: AckControlRequestValues = {},
   ) {
-    await this.requester.request({
+    await requestGatewayAction(this.requester, {
+      action: AGENT_GATEWAY_API_ACTIONS.ackControlRequest,
       method: 'POST',
       path: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.ackControlRequest, lease.runId),
       nodeToken: this.config.nodeToken,
@@ -306,7 +368,8 @@ export class AgentGatewayDaemonNodeClient {
       claimAttempt: payload.claimAttempt,
       sourceSha256: payload.sourceSha256,
     };
-    await this.requester.request({
+    await requestGatewayAction(this.requester, {
+      action: AGENT_GATEWAY_API_ACTIONS.upsertNodeSkillInstall,
       method: 'POST',
       path: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.upsertNodeSkillInstall, this.config.nodeId),
       nodeToken: this.config.nodeToken,

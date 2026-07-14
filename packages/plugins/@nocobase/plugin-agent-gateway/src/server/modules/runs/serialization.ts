@@ -105,27 +105,6 @@ export async function getAgentGatewayActionPermissions(ctx: Context) {
   };
 }
 
-export function getControlCapabilityDecision(capabilities: JsonRecord, action: 'interrupt' | 'terminate') {
-  if (capabilities[action] === true) {
-    return true;
-  }
-  if (capabilities[action] === false) {
-    return false;
-  }
-
-  for (const key of ['terminal', 'terminalControl']) {
-    const scopedCapabilities = getRecord(capabilities[key]);
-    if (scopedCapabilities[action] === true) {
-      return true;
-    }
-    if (scopedCapabilities[action] === false) {
-      return false;
-    }
-  }
-
-  return null;
-}
-
 export function hasActiveTmuxControlSurface(run: ModelRecord) {
   return (
     CONTROL_RUN_STATUSES.has(getModelString(run, 'status')) &&
@@ -135,64 +114,17 @@ export function hasActiveTmuxControlSurface(run: ModelRecord) {
   );
 }
 
-export function getRunnerControlCapabilityDecisionFromModels(
-  node: ModelRecord | null,
-  profile: ModelRecord | null,
-  action: 'interrupt' | 'terminate',
-) {
-  const decisions: Array<boolean | null> = [];
-  if (node) {
-    decisions.push(getControlCapabilityDecision(getRecord(getModelValue(node, 'capabilitiesJson')), action));
-  }
-  if (profile) {
-    decisions.push(getControlCapabilityDecision(getRecord(getModelValue(profile, 'capabilitiesJson')), action));
-  }
-  if (decisions.includes(false)) {
-    return false;
-  }
-  return decisions.includes(true) ? true : null;
-}
-
-export async function getRunnerControlCapabilityDecision(
-  ctx: Context,
-  run: ModelRecord,
-  action: 'interrupt' | 'terminate',
-) {
-  const nodeId = getOptionalTargetKey(run, 'nodeId');
-  const agentProfileId = getOptionalTargetKey(run, 'agentProfileId');
-  const [node, profile] = (await Promise.all([
-    nodeId ? ctx.db.getRepository('agNodes').findOne({ filterByTk: nodeId }) : null,
-    agentProfileId ? ctx.db.getRepository('agAgentProfiles').findOne({ filterByTk: agentProfileId }) : null,
-  ])) as [ModelRecord | null, ModelRecord | null];
-  return getRunnerControlCapabilityDecisionFromModels(node, profile, action);
-}
-
 export async function getRunControlCapability(
   ctx: Context,
   run: ModelRecord,
-  session: ModelRecord | null,
   action: 'interrupt' | 'terminate',
-  preloaded?: {
-    node: ModelRecord | null;
-    profile: ModelRecord | null;
-    capabilitySummary: Awaited<ReturnType<typeof getRunProviderCapabilitySummary>>;
-  },
+  capabilitySummary?: Awaited<ReturnType<typeof getRunProviderCapabilitySummary>>,
 ) {
   if (!hasActiveTmuxControlSurface(run)) {
     return false;
   }
-  const capabilitySummary = preloaded?.capabilitySummary || (await getRunProviderCapabilitySummary(ctx, run, session));
-  if (capabilitySummary.enforceCapabilities) {
-    return isRunCapabilitySupported(capabilitySummary, action);
-  }
-  if (session) {
-    return true;
-  }
-  return (
-    (preloaded
-      ? getRunnerControlCapabilityDecisionFromModels(preloaded.node, preloaded.profile, action)
-      : await getRunnerControlCapabilityDecision(ctx, run, action)) === true
-  );
+  const summary = capabilitySummary || (await getRunProviderCapabilitySummary(ctx, run));
+  return isRunCapabilitySupported(summary, action);
 }
 
 export async function getRunRunnerStatus(
@@ -391,13 +323,8 @@ export async function serializeRunForManagement(
   const node = getMappedModel(context.nodesById, nodeId);
   const taskTemplateJson = getRunTaskTemplateSummaryFromContext(run, context);
   const capabilitySummary = await getRunProviderCapabilitySummary(ctx, run, session, profile);
-  const preloadedControlContext = {
-    node,
-    profile,
-    capabilitySummary,
-  };
-  const interruptCapable = await getRunControlCapability(ctx, run, session, 'interrupt', preloadedControlContext);
-  const terminateCapable = await getRunControlCapability(ctx, run, session, 'terminate', preloadedControlContext);
+  const interruptCapable = await getRunControlCapability(ctx, run, 'interrupt', capabilitySummary);
+  const terminateCapable = await getRunControlCapability(ctx, run, 'terminate', capabilitySummary);
   const actionPermissions = context.actionPermissions;
   return {
     ...json,

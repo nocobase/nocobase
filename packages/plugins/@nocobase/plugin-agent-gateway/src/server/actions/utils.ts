@@ -10,12 +10,7 @@
 import { NoPermissionError, checkFilterParams, createUserProvider, parseJsonTemplate } from '@nocobase/acl';
 import { Context } from '@nocobase/actions';
 
-import {
-  AGENT_GATEWAY_API_RESOURCE,
-  AgentGatewayContractError,
-  isAgentGatewayApiAction,
-  parseAgentGatewayActionRequest,
-} from '../../shared/apiContract';
+import { AGENT_GATEWAY_API_RESOURCE } from '../../shared/apiContract';
 import { JsonRecord, getJsonArray, getJsonRecord, getJsonString, isJsonRecord } from '../../shared/json';
 import { AGENT_GATEWAY_COLLECTION_REGISTRY } from '../collectionRegistry';
 import { AGENT_GATEWAY_ACTIONS, AGENT_GATEWAY_RESOURCE } from '../security';
@@ -89,19 +84,7 @@ export function isRecord(value: unknown): value is JsonRecord {
 
 export function getBodyValues(ctx: Context): JsonRecord {
   const body = ctx.request.body;
-  const values = isRecord(body) ? body : {};
-  const actionName = ctx.action.actionName;
-  if (!isAgentGatewayApiAction(actionName)) {
-    return values;
-  }
-  try {
-    return parseAgentGatewayActionRequest(actionName, values);
-  } catch (error) {
-    if (error instanceof AgentGatewayContractError) {
-      ctx.throw(400, error.message);
-    }
-    throw error;
-  }
+  return isRecord(body) ? body : {};
 }
 
 export function getString(value: unknown) {

@@ -14,6 +14,11 @@ import { MockServer, createMockServer } from '@nocobase/test';
 import { EXTERNAL_IMPORT_LIMITS, EXTERNAL_IMPORT_USER_CANCELED_ERROR_SUMMARY } from '../../shared/externalRunImport';
 import PluginAgentGatewayServer from '../plugin';
 import { cleanupAgentGatewayRetention } from '../services/retention';
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiUrl } from '../../shared/apiContract';
+
+function getTestApiPath(action: Parameters<typeof getAgentGatewayApiUrl>[0], targetKey?: unknown) {
+  return `/${getAgentGatewayApiUrl(action, targetKey === undefined ? undefined : String(targetKey))}`;
+}
 
 interface ResponseLike {
   status: number;
@@ -219,7 +224,7 @@ describe('agent gateway external run imports', () => {
         },
       ],
     };
-    const response = await rootAgent.post('/agentGatewayApi:importExternalRun').send(payload);
+    const response = await rootAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.importExternalRun)).send(payload);
     expect(response.status).toBe(200);
     const importResult = getData<{
       runId: string;
@@ -242,7 +247,9 @@ describe('agent gateway external run imports', () => {
     expect(JSON.stringify(importResult.run)).not.toContain('promptSnapshot');
     expect(JSON.stringify(importResult.run)).not.toContain('executionPayloadJson');
 
-    const conversationResponse = await rootAgent.get(`/agentGatewayApi:listRunConversationEvents/${runId}`);
+    const conversationResponse = await rootAgent.get(
+      getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunConversationEvents, runId),
+    );
     expect(conversationResponse.status).toBe(200);
     const conversationEvents = getListData(conversationResponse);
     expect(conversationEvents.map((event) => event.eventType)).toEqual(
@@ -254,7 +261,7 @@ describe('agent gateway external run imports', () => {
       ]),
     );
 
-    const artifactsResponse = await rootAgent.get(`/agentGatewayApi:listRunArtifacts/${runId}`);
+    const artifactsResponse = await rootAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunArtifacts, runId));
     expect(artifactsResponse.status).toBe(200);
     const artifacts = getListData(artifactsResponse);
     expect(artifacts).toEqual(
@@ -310,7 +317,9 @@ describe('agent gateway external run imports', () => {
       },
     });
 
-    const retryResponse = await rootAgent.post('/agentGatewayApi:importExternalRun').send(payload);
+    const retryResponse = await rootAgent
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.importExternalRun))
+      .send(payload);
     expect(retryResponse.status).toBe(200);
     expect(
       getData<{ runId: string; deduped: boolean; observations: Record<string, number> }>(retryResponse),
@@ -338,8 +347,8 @@ describe('agent gateway external run imports', () => {
       ],
     };
     const responses = await Promise.all([
-      rootAgent.post('/agentGatewayApi:importExternalRun').send(payload),
-      rootAgent.post('/agentGatewayApi:importExternalRun').send(payload),
+      rootAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.importExternalRun)).send(payload),
+      rootAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.importExternalRun)).send(payload),
     ]);
     expect(responses.map((response) => response.status)).toEqual([200, 200]);
     const results = responses.map((response) =>
@@ -389,7 +398,7 @@ describe('agent gateway external run imports', () => {
   });
 
   it('retries a final-only batch interrupted after its empty operation plan is persisted', async () => {
-    const initialResponse = await rootAgent.post('/agentGatewayApi:importExternalRun').send({
+    const initialResponse = await rootAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.importExternalRun)).send({
       externalRunKey: `final-only-retry-${randomUUID()}`,
       provider: 'generic-cli',
       status: 'running',
@@ -424,7 +433,7 @@ describe('agent gateway external run imports', () => {
     });
 
     const failedResponse = await rootAgent
-      .post(`/agentGatewayApi:appendExternalRunObservations/${runId}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.appendExternalRunObservations, runId))
       .send(finalPayload);
     batchFindSpy.mockRestore();
     expect(failedResponse.status).toBe(500);
@@ -445,7 +454,7 @@ describe('agent gateway external run imports', () => {
     });
 
     const retryResponse = await rootAgent
-      .post(`/agentGatewayApi:appendExternalRunObservations/${runId}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.appendExternalRunObservations, runId))
       .send(finalPayload);
     expect(retryResponse.status, JSON.stringify(retryResponse.body)).toBe(200);
     expect(
@@ -482,9 +491,9 @@ describe('agent gateway external run imports', () => {
       },
     });
     const externalRunKey = `status-import-${randomUUID()}`;
-    const importResponse = await importAgent.post('/agentGatewayApi:importExternalRun').send({
+    const importResponse = await importAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.importExternalRun)).send({
       externalRunKey,
-      provider: 'claude',
+      provider: 'claude-code',
       status: 'running',
       logs: [
         {
@@ -517,11 +526,11 @@ describe('agent gateway external run imports', () => {
       ],
     };
     const appendResponse = await rootAgent
-      .post(`/agentGatewayApi:appendExternalRunObservations/${runId}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.appendExternalRunObservations, runId))
       .send(finalPayload);
     expect(appendResponse.status).toBe(200);
     const retryResponse = await rootAgent
-      .post(`/agentGatewayApi:appendExternalRunObservations/${runId}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.appendExternalRunObservations, runId))
       .send(finalPayload);
     expect(retryResponse.status).toBe(200);
     expect(getData<{ observations: Record<string, number> }>(retryResponse).observations).toEqual({
@@ -530,28 +539,32 @@ describe('agent gateway external run imports', () => {
       artifacts: 1,
     });
 
-    const changedBatchResponse = await rootAgent.post(`/agentGatewayApi:appendExternalRunObservations/${runId}`).send({
-      ...finalPayload,
-      logs: [
-        {
-          format: 'text',
-          contentText: 'changed',
-        },
-      ],
-    });
+    const changedBatchResponse = await rootAgent
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.appendExternalRunObservations, runId))
+      .send({
+        ...finalPayload,
+        logs: [
+          {
+            format: 'text',
+            contentText: 'changed',
+          },
+        ],
+      });
     expect(changedBatchResponse.status).toBe(409);
 
-    const regressionResponse = await rootAgent.post(`/agentGatewayApi:appendExternalRunObservations/${runId}`).send({
-      batchKey: 'regress',
-      provider: 'claude-code',
-      status: 'running',
-      logs: [
-        {
-          format: 'text',
-          contentText: 'must not reopen',
-        },
-      ],
-    });
+    const regressionResponse = await rootAgent
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.appendExternalRunObservations, runId))
+      .send({
+        batchKey: 'regress',
+        provider: 'claude-code',
+        status: 'running',
+        logs: [
+          {
+            format: 'text',
+            contentText: 'must not reopen',
+          },
+        ],
+      });
     expect(regressionResponse.status).toBe(409);
 
     const run = await app.db.getRepository('agRuns').findOne({
@@ -570,7 +583,7 @@ describe('agent gateway external run imports', () => {
 
   it('merges correlated tool lifecycle across batches and only closes dangling calls for terminal runs', async () => {
     const externalRunKey = `cross-batch-tool-${randomUUID()}`;
-    const startedResponse = await rootAgent.post('/agentGatewayApi:importExternalRun').send({
+    const startedResponse = await rootAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.importExternalRun)).send({
       externalRunKey,
       provider: 'codex',
       status: 'running',
@@ -611,38 +624,40 @@ describe('agent gateway external run imports', () => {
       },
     });
 
-    const completedResponse = await rootAgent.post(`/agentGatewayApi:appendExternalRunObservations/${runId}`).send({
-      batchKey: 'complete-and-start-next',
-      provider: 'codex',
-      status: 'running',
-      logs: [
-        {
-          format: 'codex-jsonl',
-          contentText: [
-            JSON.stringify({
-              type: 'item.completed',
-              item: {
-                id: 'cross-batch-command',
-                type: 'command_execution',
-                command: 'echo cross-batch',
-                aggregated_output: 'done\n',
-                exit_code: 0,
-                status: 'completed',
-              },
-            }),
-            JSON.stringify({
-              type: 'item.started',
-              item: {
-                id: 'terminal-dangling-command',
-                type: 'command_execution',
-                command: 'sleep 1',
-                status: 'in_progress',
-              },
-            }),
-          ].join('\n'),
-        },
-      ],
-    });
+    const completedResponse = await rootAgent
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.appendExternalRunObservations, runId))
+      .send({
+        batchKey: 'complete-and-start-next',
+        provider: 'codex',
+        status: 'running',
+        logs: [
+          {
+            format: 'codex-jsonl',
+            contentText: [
+              JSON.stringify({
+                type: 'item.completed',
+                item: {
+                  id: 'cross-batch-command',
+                  type: 'command_execution',
+                  command: 'echo cross-batch',
+                  aggregated_output: 'done\n',
+                  exit_code: 0,
+                  status: 'completed',
+                },
+              }),
+              JSON.stringify({
+                type: 'item.started',
+                item: {
+                  id: 'terminal-dangling-command',
+                  type: 'command_execution',
+                  command: 'sleep 1',
+                  status: 'in_progress',
+                },
+              }),
+            ].join('\n'),
+          },
+        ],
+      });
     expect(completedResponse.status, JSON.stringify(completedResponse.body)).toBe(200);
 
     run = await app.db.getRepository('agRuns').findOne({ filterByTk: runId });
@@ -656,17 +671,19 @@ describe('agent gateway external run imports', () => {
       },
     });
 
-    const terminalResponse = await rootAgent.post(`/agentGatewayApi:appendExternalRunObservations/${runId}`).send({
-      batchKey: 'terminalize',
-      provider: 'codex',
-      status: 'succeeded',
-      logs: [
-        {
-          format: 'text',
-          contentText: 'run finished',
-        },
-      ],
-    });
+    const terminalResponse = await rootAgent
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.appendExternalRunObservations, runId))
+      .send({
+        batchKey: 'terminalize',
+        provider: 'codex',
+        status: 'succeeded',
+        logs: [
+          {
+            format: 'text',
+            contentText: 'run finished',
+          },
+        ],
+      });
     expect(terminalResponse.status, JSON.stringify(terminalResponse.body)).toBe(200);
 
     run = await app.db.getRepository('agRuns').findOne({ filterByTk: runId });
@@ -683,7 +700,7 @@ describe('agent gateway external run imports', () => {
 
   it('commits each chunk rollup with batch progress when a later chunk fails', async () => {
     const externalRunKey = `partial-chunk-rollup-${randomUUID()}`;
-    const initialResponse = await rootAgent.post('/agentGatewayApi:importExternalRun').send({
+    const initialResponse = await rootAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.importExternalRun)).send({
       externalRunKey,
       provider: 'codex',
       status: 'running',
@@ -755,17 +772,19 @@ describe('agent gateway external run imports', () => {
       }
       return await originalCreate(options);
     });
-    const failedResponse = await rootAgent.post(`/agentGatewayApi:appendExternalRunObservations/${runId}`).send({
-      batchKey: 'partial-failure',
-      provider: 'codex',
-      status: 'running',
-      logs: [
-        {
-          format: 'codex-jsonl',
-          contentText: appendEvents.map((event) => JSON.stringify(event)).join('\n'),
-        },
-      ],
-    });
+    const failedResponse = await rootAgent
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.appendExternalRunObservations, runId))
+      .send({
+        batchKey: 'partial-failure',
+        provider: 'codex',
+        status: 'running',
+        logs: [
+          {
+            format: 'codex-jsonl',
+            contentText: appendEvents.map((event) => JSON.stringify(event)).join('\n'),
+          },
+        ],
+      });
     conversationWriteSpy.mockRestore();
     expect(failedResponse.status).toBe(500);
 
@@ -809,14 +828,14 @@ describe('agent gateway external run imports', () => {
       },
     });
 
-    const toolCallsResponse = await rootAgent.get(`/agentGatewayApi:listRunToolCalls/${runId}`);
+    const toolCallsResponse = await rootAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunToolCalls, runId));
     expect(toolCallsResponse.status).toBe(200);
     expect(getData<{ stats: Record<string, number> }>(toolCallsResponse).stats).toMatchObject({
       total: 1,
       succeeded: 1,
       unknown: 0,
     });
-    const runsResponse = await rootAgent.get('/agentGatewayApi:listRuns');
+    const runsResponse = await rootAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRuns));
     expect(runsResponse.status).toBe(200);
     expect(runsResponse.body.data).toEqual(
       expect.arrayContaining([
@@ -834,7 +853,7 @@ describe('agent gateway external run imports', () => {
 
   it('uses the final imported result summary as the authoritative token rollup', async () => {
     const externalRunKey = `result-summary-token-rollup-${randomUUID()}`;
-    const initialResponse = await rootAgent.post('/agentGatewayApi:importExternalRun').send({
+    const initialResponse = await rootAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.importExternalRun)).send({
       externalRunKey,
       provider: 'codex',
       status: 'succeeded',
@@ -855,24 +874,26 @@ describe('agent gateway external run imports', () => {
     expect(initialResponse.status, JSON.stringify(initialResponse.body)).toBe(200);
     const runId = expectString(getData<{ runId: string }>(initialResponse).runId);
 
-    const appendResponse = await rootAgent.post(`/agentGatewayApi:appendExternalRunObservations/${runId}`).send({
-      batchKey: 'updated-result-summary',
-      provider: 'codex',
-      status: 'succeeded',
-      resultSummaryJson: {
-        tokenUsageJson: {
-          inputTokens: 160,
-          outputTokens: 40,
-          totalTokens: 200,
+    const appendResponse = await rootAgent
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.appendExternalRunObservations, runId))
+      .send({
+        batchKey: 'updated-result-summary',
+        provider: 'codex',
+        status: 'succeeded',
+        resultSummaryJson: {
+          tokenUsageJson: {
+            inputTokens: 160,
+            outputTokens: 40,
+            totalTokens: 200,
+          },
         },
-      },
-      logs: [
-        {
-          format: 'text',
-          contentText: 'updated result',
-        },
-      ],
-    });
+        logs: [
+          {
+            format: 'text',
+            contentText: 'updated result',
+          },
+        ],
+      });
     expect(appendResponse.status, JSON.stringify(appendResponse.body)).toBe(200);
 
     const run = await app.db.getRepository('agRuns').findOne({ filterByTk: runId });
@@ -883,7 +904,7 @@ describe('agent gateway external run imports', () => {
         totalTokens: 200,
       },
     });
-    const runsResponse = await rootAgent.get('/agentGatewayApi:listRuns');
+    const runsResponse = await rootAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRuns));
     expect(runsResponse.status).toBe(200);
     expect(runsResponse.body.data).toEqual(
       expect.arrayContaining([
@@ -943,7 +964,7 @@ describe('agent gateway external run imports', () => {
     ];
 
     for (const payload of cases) {
-      const response = await rootAgent.post('/agentGatewayApi:importExternalRun').send(payload);
+      const response = await rootAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.importExternalRun)).send(payload);
       expect(response.status).toBe(413);
     }
     expect(await app.db.getRepository('agRuns').count({})).toBe(runCount);
@@ -953,7 +974,7 @@ describe('agent gateway external run imports', () => {
 
   it('writes observation batches larger than one chunk and persists final progress', async () => {
     const lines = Array.from({ length: 150 }, (_, index) => `chunked-event-${index}`);
-    const response = await rootAgent.post('/agentGatewayApi:importExternalRun').send({
+    const response = await rootAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.importExternalRun)).send({
       externalRunKey: `chunked-import-${randomUUID()}`,
       provider: 'generic-cli',
       status: 'succeeded',
@@ -1011,7 +1032,7 @@ describe('agent gateway external run imports', () => {
         },
       ],
     };
-    const response = await rootAgent.post('/agentGatewayApi:importExternalRun').send(payload);
+    const response = await rootAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.importExternalRun)).send(payload);
     expect(response.status).toBe(200);
     const runId = expectString(getData<{ runId: string }>(response).runId);
     const batch = await app.db.getRepository('agExternalImportBatches').findOne({
@@ -1093,7 +1114,9 @@ describe('agent gateway external run imports', () => {
       },
     });
 
-    const retryResponse = await rootAgent.post('/agentGatewayApi:importExternalRun').send(payload);
+    const retryResponse = await rootAgent
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.importExternalRun))
+      .send(payload);
     expect(retryResponse.status).toBe(200);
     expect(getData<{ observations: Record<string, number> }>(retryResponse).observations).toEqual({
       conversationEvents: 150,
@@ -1159,7 +1182,9 @@ describe('agent gateway external run imports', () => {
       .spyOn(ticketRepository, 'update')
       .mockRejectedValueOnce(new Error('simulated backlink write failure'));
 
-    const failedResponse = await rootAgent.post('/agentGatewayApi:importExternalRun').send(payload);
+    const failedResponse = await rootAgent
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.importExternalRun))
+      .send(payload);
     relationUpdateSpy.mockRestore();
     expect(failedResponse.status).toBe(500);
 
@@ -1219,7 +1244,9 @@ describe('agent gateway external run imports', () => {
     });
     expect(abandonedRun.get('resultSummaryJson')).toBeNull();
 
-    const retryResponse = await rootAgent.post('/agentGatewayApi:importExternalRun').send(payload);
+    const retryResponse = await rootAgent
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.importExternalRun))
+      .send(payload);
     expect(retryResponse.status, JSON.stringify(retryResponse.body)).toBe(200);
     expect(getData<{ relationUpdated: boolean; run: Record<string, unknown> }>(retryResponse)).toMatchObject({
       relationUpdated: true,
@@ -1258,7 +1285,7 @@ describe('agent gateway external run imports', () => {
 
   it('cancels an incomplete import without allowing the canceled batch to revive the run', async () => {
     const externalRunKey = `cancel-import-${randomUUID()}`;
-    const importResponse = await rootAgent.post('/agentGatewayApi:importExternalRun').send({
+    const importResponse = await rootAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.importExternalRun)).send({
       externalRunKey,
       provider: 'generic-cli',
       status: 'running',
@@ -1287,12 +1314,12 @@ describe('agent gateway external run imports', () => {
       .spyOn(conversationRepository, 'create')
       .mockRejectedValueOnce(new Error('simulated observation write failure'));
     const failedResponse = await rootAgent
-      .post(`/agentGatewayApi:appendExternalRunObservations/${runId}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.appendExternalRunObservations, runId))
       .send(finalPayload);
     conversationWriteSpy.mockRestore();
     expect(failedResponse.status).toBe(500);
 
-    const cancelResponse = await rootAgent.post(`/agentGatewayApi:cancelRun/${runId}`).send({});
+    const cancelResponse = await rootAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.cancelRun, runId)).send({});
     expect(cancelResponse.status).toBe(200);
     expect(getData<{ status: string }>(cancelResponse).status).toBe('canceled');
     const batch = await app.db.getRepository('agExternalImportBatches').findOne({
@@ -1307,7 +1334,7 @@ describe('agent gateway external run imports', () => {
     });
 
     const retryResponse = await rootAgent
-      .post(`/agentGatewayApi:appendExternalRunObservations/${runId}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.appendExternalRunObservations, runId))
       .send(finalPayload);
     expect(retryResponse.status).toBe(409);
     expect(getErrorMessage(retryResponse)).toContain('cannot be resumed');
@@ -1318,7 +1345,7 @@ describe('agent gateway external run imports', () => {
   });
 
   it('stops an in-flight multi-chunk import as soon as cancellation becomes visible', async () => {
-    const importResponse = await rootAgent.post('/agentGatewayApi:importExternalRun').send({
+    const importResponse = await rootAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.importExternalRun)).send({
       externalRunKey: `cancel-in-flight-${randomUUID()}`,
       provider: 'generic-cli',
       status: 'running',
@@ -1398,7 +1425,7 @@ describe('agent gateway external run imports', () => {
     });
 
     const canceledResponse = await rootAgent
-      .post(`/agentGatewayApi:appendExternalRunObservations/${runId}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.appendExternalRunObservations, runId))
       .send(finalPayload);
     runFindSpy.mockRestore();
     batchUpdateSpy.mockRestore();
@@ -1424,7 +1451,7 @@ describe('agent gateway external run imports', () => {
     expect(eventCountAfterCancel).toBeLessThan(150);
 
     const retryResponse = await rootAgent
-      .post(`/agentGatewayApi:appendExternalRunObservations/${runId}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.appendExternalRunObservations, runId))
       .send(finalPayload);
     expect(retryResponse.status).toBe(409);
     expect(
@@ -1442,7 +1469,7 @@ describe('agent gateway external run imports', () => {
     const runCount = await app.db.getRepository('agRuns').count({});
     const identityCount = await app.db.getRepository('agExternalRunIdentities').count({});
     const batchCount = await app.db.getRepository('agExternalImportBatches').count({});
-    const response = await rootAgent.post('/agentGatewayApi:importExternalRun').send({
+    const response = await rootAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.importExternalRun)).send({
       externalRunKey: `invalid-observation-${randomUUID()}`,
       provider: 'generic-cli',
       sourceCollection: 'agExternalImportTickets',
@@ -1473,7 +1500,7 @@ describe('agent gateway external run imports', () => {
   });
 
   it('appends external observations only to imported runs', async () => {
-    const importResponse = await rootAgent.post('/agentGatewayApi:importExternalRun').send({
+    const importResponse = await rootAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.importExternalRun)).send({
       externalRunKey: `text-import-${randomUUID()}`,
       provider: 'generic-cli',
       title: 'Imported text run',
@@ -1488,26 +1515,28 @@ describe('agent gateway external run imports', () => {
     expect(importResponse.status).toBe(200);
     const runId = expectString(getData<{ runId: string }>(importResponse).runId);
 
-    const appendResponse = await rootAgent.post(`/agentGatewayApi:appendExternalRunObservations/${runId}`).send({
-      batchKey: 'final',
-      provider: 'generic-cli',
-      status: 'succeeded',
-      logs: [
-        {
-          format: 'text',
-          contentText: 'finished',
+    const appendResponse = await rootAgent
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.appendExternalRunObservations, runId))
+      .send({
+        batchKey: 'final',
+        provider: 'generic-cli',
+        status: 'succeeded',
+        logs: [
+          {
+            format: 'text',
+            contentText: 'finished',
+          },
+        ],
+        resultSummaryJson: {
+          imported: true,
         },
-      ],
-      resultSummaryJson: {
-        imported: true,
-      },
-    });
+      });
     expect(appendResponse.status, JSON.stringify(appendResponse.body)).toBe(200);
     expect(getData<{ run: Record<string, unknown> }>(appendResponse).run).toMatchObject({
       status: 'succeeded',
     });
 
-    const artifactsResponse = await rootAgent.get(`/agentGatewayApi:listRunArtifacts/${runId}`);
+    const artifactsResponse = await rootAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunArtifacts, runId));
     expect(artifactsResponse.status).toBe(200);
     expect(getListData(artifactsResponse)).toEqual(
       expect.arrayContaining([
@@ -1517,10 +1546,10 @@ describe('agent gateway external run imports', () => {
       ]),
     );
 
-    const runEventsResponse = await rootAgent.get(`/agentGatewayApi:listRunEvents/${runId}`);
+    const runEventsResponse = await rootAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunEvents, runId));
     expect(runEventsResponse.status).toBe(200);
 
-    const managedRunResponse = await rootAgent.post('/agentGatewayApi:createRun').send({
+    const managedRunResponse = await rootAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.createRun)).send({
       runCode: `managed-${randomUUID()}`,
       sourceType: 'manual',
       promptSnapshot: {
@@ -1538,9 +1567,10 @@ describe('agent gateway external run imports', () => {
     expect(managedRunResponse.status).toBe(200);
     const managedRunId = expectString(getData<{ id: string }>(managedRunResponse).id);
     const deniedAppendResponse = await rootAgent
-      .post(`/agentGatewayApi:appendExternalRunObservations/${managedRunId}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.appendExternalRunObservations, managedRunId))
       .send({
         batchKey: 'denied',
+        provider: 'codex',
         logs: [
           {
             format: 'text',
@@ -1553,7 +1583,7 @@ describe('agent gateway external run imports', () => {
 
   it('requires external import permission', async () => {
     const readOnlyAgent = await createUserAgent('external-import-read-only', ['agentGateway.readRuns']);
-    const deniedResponse = await readOnlyAgent.post('/agentGatewayApi:importExternalRun').send({
+    const deniedResponse = await readOnlyAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.importExternalRun)).send({
       provider: 'codex',
       logs: [
         {
@@ -1565,7 +1595,7 @@ describe('agent gateway external run imports', () => {
     expect(deniedResponse.status).toBe(403);
 
     const importAgent = await createUserAgent('external-import-user', ['agentGateway.importExternalRuns']);
-    const allowedResponse = await importAgent.post('/agentGatewayApi:importExternalRun').send({
+    const allowedResponse = await importAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.importExternalRun)).send({
       externalRunKey: `permission-import-${randomUUID()}`,
       provider: 'codex',
       logs: [
@@ -1581,7 +1611,7 @@ describe('agent gateway external run imports', () => {
 
   it('requires a stable externalRunKey or runCode for idempotent imports', async () => {
     const runCount = await app.db.getRepository('agRuns').count({});
-    const response = await rootAgent.post('/agentGatewayApi:importExternalRun').send({
+    const response = await rootAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.importExternalRun)).send({
       provider: 'generic-cli',
       logs: [
         {
@@ -1605,8 +1635,12 @@ describe('agent gateway external run imports', () => {
         },
       ],
     };
-    const firstResponse = await rootAgent.post('/agentGatewayApi:importExternalRun').send(payload);
-    const retryResponse = await rootAgent.post('/agentGatewayApi:importExternalRun').send(payload);
+    const firstResponse = await rootAgent
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.importExternalRun))
+      .send(payload);
+    const retryResponse = await rootAgent
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.importExternalRun))
+      .send(payload);
     expect(firstResponse.status).toBe(200);
     expect(retryResponse.status).toBe(200);
     expect(getData<{ runId: string }>(retryResponse).runId).toBe(getData<{ runId: string }>(firstResponse).runId);
@@ -1628,7 +1662,7 @@ describe('agent gateway external run imports', () => {
     const importAgent = await createUserWithRole('external-import-business-writer-user', roleName);
     const ticket = await createTicket('Imported business task');
 
-    const response = await importAgent.post('/agentGatewayApi:importExternalRun').send({
+    const response = await importAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.importExternalRun)).send({
       externalRunKey: `business-import-${randomUUID()}`,
       provider: 'opencode',
       title: 'Imported business task',
@@ -1657,7 +1691,7 @@ describe('agent gateway external run imports', () => {
     const runCountBeforeDeniedImport = await app.db.getRepository('agRuns').count({});
     const identityCountBeforeDeniedImport = await app.db.getRepository('agExternalRunIdentities').count({});
     const batchCountBeforeDeniedImport = await app.db.getRepository('agExternalImportBatches').count({});
-    const deniedResponse = await deniedAgent.post('/agentGatewayApi:importExternalRun').send({
+    const deniedResponse = await deniedAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.importExternalRun)).send({
       externalRunKey: `business-denied-${randomUUID()}`,
       provider: 'codex',
       status: 'succeeded',

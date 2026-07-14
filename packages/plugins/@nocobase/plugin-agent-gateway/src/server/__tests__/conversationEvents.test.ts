@@ -15,6 +15,11 @@ import { normalizeAgentProviderCapabilities } from '../../shared/providerCapabil
 import PluginAgentGatewayServer from '../plugin';
 import { createNodeToken, toStoredTokenFields } from '../security';
 import { buildRunObservabilityRollup } from '../services/observationRollup';
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiUrl } from '../../shared/apiContract';
+
+function getTestApiPath(action: Parameters<typeof getAgentGatewayApiUrl>[0], targetKey?: unknown) {
+  return `/${getAgentGatewayApiUrl(action, targetKey === undefined ? undefined : String(targetKey))}`;
+}
 
 interface ResponseLike {
   status: number;
@@ -113,7 +118,7 @@ describe('agent gateway conversation event APIs', () => {
   }
 
   async function createRun(runner: Awaited<ReturnType<typeof createRunner>>, runCode: string) {
-    const response = await rootAgent.post('/agentGatewayApi:createRun').send({
+    const response = await rootAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.createRun)).send({
       runCode,
       sourceType: 'test',
       nodeId: runner.nodeId,
@@ -137,7 +142,7 @@ describe('agent gateway conversation event APIs', () => {
   async function claimRun(runner: Awaited<ReturnType<typeof createRunner>>, runId: unknown) {
     const response = await app
       .agent()
-      .post(`/agentGatewayApi:claimRun/${runner.nodeId}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.claimRun, runner.nodeId))
       .set('Authorization', `Bearer ${runner.nodeToken}`)
       .send({
         profileKey: runner.profileKey,
@@ -163,7 +168,7 @@ describe('agent gateway conversation event APIs', () => {
   ) {
     const response = await app
       .agent()
-      .post(`/agentGatewayApi:upsertAgentSession/${claim.runId}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.upsertAgentSession, claim.runId))
       .set('Authorization', `Bearer ${runner.nodeToken}`)
       .send(
         leaseValues(claim, {
@@ -186,7 +191,7 @@ describe('agent gateway conversation event APIs', () => {
     const { claimToken, claimAttempt, leaseVersion, events, ...event } = values;
     return await app
       .agent()
-      .post(`/agentGatewayApi:appendConversationEvents/${runId}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.appendConversationEvents, runId))
       .set('Authorization', `Bearer ${runner.nodeToken}`)
       .send({
         claimToken,
@@ -327,7 +332,9 @@ describe('agent gateway conversation event APIs', () => {
     });
     expect(getTime(runAfterRetry.get('terminalLastActivityAt'))).toBe(firstTerminalActivityAt);
 
-    const runListResponse = await rootAgent.get(`/agentGatewayApi:listRunConversationEvents/${run.id}`);
+    const runListResponse = await rootAgent.get(
+      getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunConversationEvents, run.id),
+    );
     expect(runListResponse.status).toBe(200);
     const runEvents = runListResponse.body.data as Array<Record<string, unknown>>;
     expect(runEvents.map((event) => event.eventType)).toEqual(['agent.session.started', 'agent.message']);
@@ -345,7 +352,9 @@ describe('agent gateway conversation event APIs', () => {
       },
     });
 
-    const sessionListResponse = await rootAgent.get(`/agentGatewayApi:listSessionConversationEvents/${sessionId}`);
+    const sessionListResponse = await rootAgent.get(
+      getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listSessionConversationEvents, sessionId),
+    );
     expect(sessionListResponse.status).toBe(200);
     const sessionEvents = sessionListResponse.body.data as Array<Record<string, unknown>>;
     expect(sessionEvents).toHaveLength(2);
@@ -360,7 +369,7 @@ describe('agent gateway conversation event APIs', () => {
       },
     });
     const orphanSessionListResponse = await rootAgent.get(
-      `/agentGatewayApi:listSessionConversationEvents/${String(orphanSession.get('id'))}`,
+      getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listSessionConversationEvents, String(orphanSession.get('id'))),
     );
     expect(orphanSessionListResponse.status).toBe(404);
   });
@@ -426,7 +435,7 @@ describe('agent gateway conversation event APIs', () => {
     }
 
     const latestResponse = await rootAgent
-      .get(`/agentGatewayApi:listRunConversationEvents/${runId}`)
+      .get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunConversationEvents, runId))
       .query({ pageSize: 2 });
     expect(latestResponse.status).toBe(200);
     expect((latestResponse.body.data as Array<Record<string, unknown>>).map((event) => event.contentText)).toEqual([
@@ -441,7 +450,7 @@ describe('agent gateway conversation event APIs', () => {
     const beforeCursor = expectString(latestResponse.body.meta?.beforeCursor);
     const afterCursor = expectString(latestResponse.body.meta?.afterCursor);
     const latestSessionResponse = await rootAgent
-      .get(`/agentGatewayApi:listSessionConversationEvents/${sessionId}`)
+      .get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listSessionConversationEvents, sessionId))
       .query({ pageSize: 2 });
     expect(latestSessionResponse.status).toBe(200);
     expect(
@@ -450,7 +459,7 @@ describe('agent gateway conversation event APIs', () => {
     const sessionAfterCursor = expectString(latestSessionResponse.body.meta?.afterCursor);
 
     const olderResponse = await rootAgent
-      .get(`/agentGatewayApi:listRunConversationEvents/${runId}`)
+      .get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunConversationEvents, runId))
       .query({ pageSize: 2, beforeCursor });
     expect(olderResponse.status).toBe(200);
     expect((olderResponse.body.data as Array<Record<string, unknown>>).map((event) => event.contentText)).toEqual([
@@ -490,7 +499,7 @@ describe('agent gateway conversation event APIs', () => {
     }
 
     const deltaResponse = await rootAgent
-      .get(`/agentGatewayApi:listRunConversationEvents/${runId}`)
+      .get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunConversationEvents, runId))
       .query({ pageSize: 10, afterCursor });
     expect(deltaResponse.status).toBe(200);
     const deltaEvents = deltaResponse.body.data as Array<Record<string, unknown>>;
@@ -501,7 +510,7 @@ describe('agent gateway conversation event APIs', () => {
     });
 
     const sessionDeltaResponse = await rootAgent
-      .get(`/agentGatewayApi:listSessionConversationEvents/${sessionId}`)
+      .get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listSessionConversationEvents, sessionId))
       .query({ pageSize: 10, afterCursor: sessionAfterCursor });
     expect(sessionDeltaResponse.status).toBe(200);
     expect((sessionDeltaResponse.body.data as Array<Record<string, unknown>>).map((event) => event.id).sort()).toEqual(
@@ -509,14 +518,25 @@ describe('agent gateway conversation event APIs', () => {
     );
 
     expect(
-      (await rootAgent.get(`/agentGatewayApi:listRunConversationEvents/${runId}`).query({ pageSize: 0 })).status,
+      (
+        await rootAgent
+          .get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunConversationEvents, runId))
+          .query({ pageSize: 0 })
+      ).status,
     ).toBe(400);
     expect(
-      (await rootAgent.get(`/agentGatewayApi:listRunConversationEvents/${runId}`).query({ afterCursor: 'bad' })).status,
+      (
+        await rootAgent
+          .get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunConversationEvents, runId))
+          .query({ afterCursor: 'bad' })
+      ).status,
     ).toBe(400);
     expect(
-      (await rootAgent.get(`/agentGatewayApi:listRunConversationEvents/${runId}`).query({ beforeCursor, afterCursor }))
-        .status,
+      (
+        await rootAgent
+          .get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunConversationEvents, runId))
+          .query({ beforeCursor, afterCursor })
+      ).status,
     ).toBe(400);
   });
 
@@ -591,7 +611,9 @@ describe('agent gateway conversation event APIs', () => {
     expect(JSON.stringify(storedEvent?.toJSON())).toContain('RAW_COMMAND_STDOUT_SHOULD_BE_TOOL_OUTPUT');
     expect(JSON.stringify(storedEvent?.toJSON())).toContain('RAW_COMMAND_AGGREGATED_OUTPUT_SHOULD_BE_TOOL_OUTPUT');
 
-    const runListResponse = await rootAgent.get(`/agentGatewayApi:listRunConversationEvents/${run.id}`);
+    const runListResponse = await rootAgent.get(
+      getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunConversationEvents, run.id),
+    );
     expect(runListResponse.status).toBe(200);
     expect(runListResponse.body.data[0]).toMatchObject({
       eventType: 'agent.command.completed',
@@ -652,7 +674,9 @@ describe('agent gateway conversation event APIs', () => {
     expect(JSON.stringify(oldRowRetryEvents)).toContain('OLD_RAW_COMMAND_STDOUT_SHOULD_BE_TOOL_OUTPUT');
     expect(JSON.stringify(oldRowRetryEvents)).toContain('OLD_RAW_COMMAND_AGGREGATED_OUTPUT_SHOULD_BE_TOOL_OUTPUT');
 
-    const oldRowListResponse = await rootAgent.get(`/agentGatewayApi:listRunConversationEvents/${run.id}`);
+    const oldRowListResponse = await rootAgent.get(
+      getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunConversationEvents, run.id),
+    );
     expect(oldRowListResponse.status).toBe(200);
     expect(oldRowListResponse.body.data[0]).toMatchObject({
       eventType: 'agent.command.completed',
@@ -776,7 +800,9 @@ describe('agent gateway conversation event APIs', () => {
       },
     });
 
-    const runListResponse = await rootAgent.get(`/agentGatewayApi:listRunConversationEvents/${run.id}`);
+    const runListResponse = await rootAgent.get(
+      getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunConversationEvents, run.id),
+    );
     expect(runListResponse.status).toBe(200);
     expect(runListResponse.body.data[0].contentText).toBe(largeReasoningText);
     expect(runListResponse.body.data[1].contentJson).toMatchObject({
@@ -860,7 +886,7 @@ describe('agent gateway conversation event APIs', () => {
       },
     });
 
-    const toolCallsResponse = await rootAgent.get(`/agentGatewayApi:listRunToolCalls/${run.id}`);
+    const toolCallsResponse = await rootAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunToolCalls, run.id));
     expect(toolCallsResponse.status).toBe(200);
     const toolCallsData = getData(toolCallsResponse) as {
       toolCalls?: Array<Record<string, unknown>>;
@@ -907,7 +933,7 @@ describe('agent gateway conversation event APIs', () => {
       },
     });
 
-    const toolCallsResponse = await rootAgent.get(`/agentGatewayApi:listRunToolCalls/${run.id}`);
+    const toolCallsResponse = await rootAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunToolCalls, run.id));
     expect(toolCallsResponse.status).toBe(200);
     const toolCallsData = getData(toolCallsResponse) as {
       toolCalls?: Array<Record<string, unknown>>;
@@ -959,7 +985,7 @@ describe('agent gateway conversation event APIs', () => {
     );
     expect(appendResponse.status).toBe(200);
 
-    const toolCallsResponse = await rootAgent.get(`/agentGatewayApi:listRunToolCalls/${run.id}`);
+    const toolCallsResponse = await rootAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunToolCalls, run.id));
     expect(toolCallsResponse.status).toBe(200);
     const toolCallsData = getData(toolCallsResponse) as {
       toolCalls?: Array<Record<string, unknown>>;
@@ -978,7 +1004,9 @@ describe('agent gateway conversation event APIs', () => {
       succeeded: 1,
     });
 
-    const statsResponse = await rootAgent.get('/agentGatewayApi:listToolCallStats?limit=10');
+    const statsResponse = await rootAgent.get(
+      `${getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listToolCallStats)}?limit=10`,
+    );
     expect(statsResponse.status).toBe(200);
     const statsData = getData(statsResponse) as {
       toolCallCount?: number;
@@ -1033,7 +1061,9 @@ describe('agent gateway conversation event APIs', () => {
     });
 
     const eventFindSpy = vi.spyOn(conversationRepository, 'find');
-    const statsResponse = await rootAgent.get('/agentGatewayApi:listToolCallStats').query({ limit: 1 });
+    const statsResponse = await rootAgent
+      .get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listToolCallStats))
+      .query({ limit: 1 });
 
     expect(statsResponse.status).toBe(200);
     expect(eventFindSpy).not.toHaveBeenCalled();
@@ -1092,7 +1122,7 @@ describe('agent gateway conversation event APIs', () => {
     expect(appendResponse.status).toBe(200);
 
     const toolCallsResponse = await rootAgent
-      .get(`/agentGatewayApi:listRunToolCalls/${run.id}`)
+      .get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunToolCalls, run.id))
       .query({ eventLimit: 1 });
     expect(toolCallsResponse.status).toBe(200);
     expect(getData(toolCallsResponse)).toMatchObject({
@@ -1111,7 +1141,9 @@ describe('agent gateway conversation event APIs', () => {
 
     const conversationRepository = app.db.getRepository('agAgentConversationEvents');
     const eventFindSpy = vi.spyOn(conversationRepository, 'find');
-    const statsResponse = await rootAgent.get('/agentGatewayApi:listToolCallStats').query({ limit: 1, eventLimit: 1 });
+    const statsResponse = await rootAgent
+      .get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listToolCallStats))
+      .query({ limit: 1, eventLimit: 1 });
 
     expect(statsResponse.status).toBe(200);
     expect(eventFindSpy).toHaveBeenCalledTimes(1);
@@ -1182,11 +1214,15 @@ describe('agent gateway conversation event APIs', () => {
       },
     });
 
-    const hiddenSessionResponse = await scopedReader.get(`/agentGatewayApi:listSessionConversationEvents/${sessionId}`);
+    const hiddenSessionResponse = await scopedReader.get(
+      getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listSessionConversationEvents, sessionId),
+    );
     expect(hiddenSessionResponse.status).toBe(404);
     expect(JSON.stringify(hiddenSessionResponse.body)).not.toContain('scoped session message');
 
-    const hiddenRunResponse = await scopedReader.get(`/agentGatewayApi:listRunConversationEvents/${run.id}`);
+    const hiddenRunResponse = await scopedReader.get(
+      getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunConversationEvents, run.id),
+    );
     expect(hiddenRunResponse.status).toBe(404);
     expect(JSON.stringify(hiddenRunResponse.body)).not.toContain('scoped session message');
   });
@@ -1286,7 +1322,9 @@ describe('agent gateway conversation event APIs', () => {
       },
     });
 
-    const sessionResponse = await scopedReader.get(`/agentGatewayApi:listSessionConversationEvents/${sessionId}`);
+    const sessionResponse = await scopedReader.get(
+      getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listSessionConversationEvents, sessionId),
+    );
     expect(sessionResponse.status).toBe(200);
     expect(JSON.stringify(sessionResponse.body.data)).toContain('visible scoped session message');
     expect(JSON.stringify(sessionResponse.body.data)).not.toContain('hidden scoped session message');
@@ -1299,7 +1337,7 @@ describe('agent gateway conversation event APIs', () => {
 
     const missingNodeTokenResponse = await app
       .agent()
-      .post(`/agentGatewayApi:appendConversationEvents/${run.id}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.appendConversationEvents, run.id))
       .send({
         ...leaseValues(claim),
         events: [
@@ -1404,20 +1442,29 @@ describe('agent gateway conversation event APIs', () => {
     );
 
     const listOnlyAgent = await createUserAgent('conversation-list-only', ['agentGateway.readRuns']);
-    expect((await listOnlyAgent.get('/agentGatewayApi:listRuns')).status).toBe(200);
-    expect((await listOnlyAgent.get(`/agentGatewayApi:listRunConversationEvents/${run.id}`)).status).toBe(403);
+    expect((await listOnlyAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRuns))).status).toBe(200);
+    expect(
+      (await listOnlyAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunConversationEvents, run.id))).status,
+    ).toBe(403);
 
     const messageReader = await createUserAgent('conversation-message-reader', ['agentGateway.readSessionMessages']);
-    expect((await messageReader.get(`/agentGatewayApi:listRunConversationEvents/${run.id}`)).status).toBe(200);
+    expect(
+      (await messageReader.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunConversationEvents, run.id))).status,
+    ).toBe(200);
 
     const runAndMessageReader = await createUserAgent('conversation-run-message-reader', [
       'agentGateway.readRun',
       'agentGateway.readSessionMessages',
     ]);
-    expect((await runAndMessageReader.get(`/agentGatewayApi:listRunConversationEvents/${run.id}`)).status).toBe(200);
+    expect(
+      (await runAndMessageReader.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunConversationEvents, run.id)))
+        .status,
+    ).toBe(200);
 
     const detailReader = await createUserAgent('conversation-detail-reader', ['agentGateway.readRunDetails']);
-    const deniedResponse = await detailReader.get(`/agentGatewayApi:listRunConversationEvents/${run.id}`);
+    const deniedResponse = await detailReader.get(
+      getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunConversationEvents, run.id),
+    );
     expect(deniedResponse.status).toBe(403);
 
     const rawConversationSnippet = registerTestSnippet('agentGateway.test.rawConversationEvents', [

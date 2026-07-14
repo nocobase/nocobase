@@ -14,6 +14,11 @@ import { MockCluster, MockServer, createMockCluster, createMockServer } from '@n
 import { cleanupExpiredFileUploads } from '../actions/fileUploads';
 import PluginAgentGatewayServer from '../plugin';
 import { parseSharedStorageObject, readSharedStorageBuffer } from '../services/sharedFileStorage';
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiUrl } from '../../shared/apiContract';
+
+function getTestApiPath(action: Parameters<typeof getAgentGatewayApiUrl>[0], targetKey?: unknown) {
+  return `/${getAgentGatewayApiUrl(action, targetKey === undefined ? undefined : String(targetKey))}`;
+}
 
 interface ResponseLike {
   body: {
@@ -104,7 +109,7 @@ describe('agent gateway file uploads', () => {
   }
 
   it('completes a valid bounded upload lifecycle through shared storage', async () => {
-    const initResponse = await rootAgent.post('/agentGatewayApi:initFileUpload').send({
+    const initResponse = await rootAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.initFileUpload)).send({
       purpose: 'run-artifact',
       sizeBytes: 3,
       fileName: 'artifact.txt',
@@ -113,13 +118,17 @@ describe('agent gateway file uploads', () => {
     expect(initResponse.status).toBe(200);
     const uploadId = String(getData(initResponse).id);
 
-    const appendResponse = await rootAgent.post(`/agentGatewayApi:appendFileUpload/${uploadId}`).send({
-      offset: 0,
-      contentBase64: Buffer.from('abc').toString('base64'),
-    });
+    const appendResponse = await rootAgent
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.appendFileUpload, uploadId))
+      .send({
+        offset: 0,
+        contentBase64: Buffer.from('abc').toString('base64'),
+      });
     expect(appendResponse.status).toBe(200);
 
-    const completeResponse = await rootAgent.post(`/agentGatewayApi:completeFileUpload/${uploadId}`).send({});
+    const completeResponse = await rootAgent
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.completeFileUpload, uploadId))
+      .send({});
     expect(completeResponse.status).toBe(200);
     expect(getData(completeResponse).sha256).toMatch(/^[a-f0-9]{64}$/);
 
@@ -128,7 +137,9 @@ describe('agent gateway file uploads', () => {
     expect(storageObject.objectKey).toContain('agent-gateway/file-uploads/');
     expect(await readSharedStorageBuffer({ app }, storageObject, 3)).toEqual(Buffer.from('abc'));
 
-    const abortResponse = await rootAgent.post(`/agentGatewayApi:abortFileUpload/${uploadId}`).send({});
+    const abortResponse = await rootAgent
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.abortFileUpload, uploadId))
+      .send({});
     expect(abortResponse.status).toBe(200);
     await expect(readSharedStorageBuffer({ app }, storageObject, 3)).rejects.toThrow();
     expect(await app.db.getRepository('agFileUploads').findOne({ filterByTk: uploadId })).toBeNull();
@@ -171,7 +182,9 @@ describe('agent gateway file uploads', () => {
           },
         ],
       });
-      const abortResponse = await rootAgent.post(`/agentGatewayApi:abortFileUpload/${uploadId}`).send({});
+      const abortResponse = await rootAgent
+        .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.abortFileUpload, uploadId))
+        .send({});
       expect(abortResponse.status).toBe(409);
       expect(JSON.stringify(abortResponse.body)).toContain('AGENT_GATEWAY_UNSAFE_FILE_UPLOAD_STORAGE_LOCATOR');
       expect(JSON.stringify(abortResponse.body)).not.toContain(String(object.objectKey));
@@ -179,14 +192,14 @@ describe('agent gateway file uploads', () => {
   });
 
   it('does not let one upload abort or expire another upload storage object', async () => {
-    const ownerInit = await rootAgent.post('/agentGatewayApi:initFileUpload').send({
+    const ownerInit = await rootAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.initFileUpload)).send({
       purpose: 'run-artifact',
       sizeBytes: 1,
     });
     const ownerUploadId = String(getData(ownerInit).id);
     expect(
       (
-        await rootAgent.post(`/agentGatewayApi:appendFileUpload/${ownerUploadId}`).send({
+        await rootAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.appendFileUpload, ownerUploadId)).send({
           offset: 0,
           contentBase64: Buffer.from('b').toString('base64'),
         })
@@ -200,7 +213,9 @@ describe('agent gateway file uploads', () => {
       receivedBytes: 1,
       chunkManifestJson: ownerManifest,
     });
-    const abortResponse = await rootAgent.post(`/agentGatewayApi:abortFileUpload/${forgedUploadId}`).send({});
+    const abortResponse = await rootAgent
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.abortFileUpload, forgedUploadId))
+      .send({});
     expect(abortResponse.status).toBe(409);
     expect(await readSharedStorageBuffer({ app }, ownerChunk, 1)).toEqual(Buffer.from('b'));
 
@@ -213,7 +228,10 @@ describe('agent gateway file uploads', () => {
     expect(await app.db.getRepository('agFileUploads').findOne({ filterByTk: forgedUploadId })).toBeNull();
     expect(await readSharedStorageBuffer({ app }, ownerChunk, 1)).toEqual(Buffer.from('b'));
 
-    expect((await rootAgent.post(`/agentGatewayApi:completeFileUpload/${ownerUploadId}`).send({})).status).toBe(200);
+    expect(
+      (await rootAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.completeFileUpload, ownerUploadId)).send({}))
+        .status,
+    ).toBe(200);
     const completedOwner = await app.db.getRepository('agFileUploads').findOne({ filterByTk: ownerUploadId });
     const completedOwnerObject = getCompletedStorageObject(completedOwner);
     const forgedCompletedId = await createUploadRecord({
@@ -224,7 +242,10 @@ describe('agent gateway file uploads', () => {
       objectFilename: completedOwner.get('objectFilename'),
       objectKey: completedOwner.get('objectKey'),
     });
-    expect((await rootAgent.post(`/agentGatewayApi:abortFileUpload/${forgedCompletedId}`).send({})).status).toBe(409);
+    expect(
+      (await rootAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.abortFileUpload, forgedCompletedId)).send({}))
+        .status,
+    ).toBe(409);
     expect(await readSharedStorageBuffer({ app }, completedOwnerObject, 1)).toEqual(Buffer.from('b'));
   });
 
@@ -322,7 +343,7 @@ describe('agent gateway file uploads in a cluster', () => {
     const [appA, appB] = cluster.nodes;
     const [agentA, agentB] = await Promise.all([getRootAgent(appA), getRootAgent(appB)]);
     const contentBase64 = Buffer.from('shared').toString('base64');
-    const initResponse = await agentA.post('/agentGatewayApi:initFileUpload').send({
+    const initResponse = await agentA.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.initFileUpload)).send({
       purpose: 'run-artifact',
       sizeBytes: 6,
       fileName: 'shared.txt',
@@ -332,29 +353,37 @@ describe('agent gateway file uploads in a cluster', () => {
     const uploadId = String(getData(initResponse).id);
 
     const appendResponses = await Promise.all([
-      agentB.post(`/agentGatewayApi:appendFileUpload/${uploadId}`).send({ offset: 0, contentBase64 }),
-      agentB.post(`/agentGatewayApi:appendFileUpload/${uploadId}`).send({ offset: 0, contentBase64 }),
+      agentB
+        .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.appendFileUpload, uploadId))
+        .send({ offset: 0, contentBase64 }),
+      agentB
+        .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.appendFileUpload, uploadId))
+        .send({ offset: 0, contentBase64 }),
     ]);
     expect(appendResponses.map((response) => response.status)).toEqual([200, 200]);
     expect(appendResponses.map((response) => Boolean(getData(response).idempotent)).sort()).toEqual([false, true]);
 
-    const completeResponse = await agentA.post(`/agentGatewayApi:completeFileUpload/${uploadId}`).send({});
+    const completeResponse = await agentA
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.completeFileUpload, uploadId))
+      .send({});
     expect(completeResponse.status).toBe(200);
     const completedUpload = await appB.db.getRepository('agFileUploads').findOne({ filterByTk: uploadId });
     const storageObject = getCompletedStorageObject(completedUpload);
     expect(await readSharedStorageBuffer({ app: appB }, storageObject, 6)).toEqual(Buffer.from('shared'));
 
-    expect((await agentB.post(`/agentGatewayApi:abortFileUpload/${uploadId}`).send({})).status).toBe(200);
+    expect(
+      (await agentB.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.abortFileUpload, uploadId)).send({})).status,
+    ).toBe(200);
     expect(await appA.db.getRepository('agFileUploads').findOne({ filterByTk: uploadId })).toBeNull();
 
-    const expiringInit = await agentA.post('/agentGatewayApi:initFileUpload').send({
+    const expiringInit = await agentA.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.initFileUpload)).send({
       purpose: 'run-artifact',
       sizeBytes: 1,
     });
     const expiringUploadId = String(getData(expiringInit).id);
     expect(
       (
-        await agentA.post(`/agentGatewayApi:appendFileUpload/${expiringUploadId}`).send({
+        await agentA.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.appendFileUpload, expiringUploadId)).send({
           offset: 0,
           contentBase64: Buffer.from('x').toString('base64'),
         })

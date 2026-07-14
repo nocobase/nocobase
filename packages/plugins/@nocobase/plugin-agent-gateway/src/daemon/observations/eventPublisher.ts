@@ -9,7 +9,7 @@
 
 import type { AgentGatewayDaemonNodeClient } from '../gateway';
 import { hashText } from '../runArtifacts';
-import type { JsonRecord, RunLease } from '../types';
+import type { RunLease } from '../types';
 
 const DAEMON_PROGRESS_SOURCE = 'agent-gateway-daemon';
 const HARNESS_PROGRESS_SOURCE = 'harness';
@@ -21,22 +21,22 @@ const PROGRESS_MAX_WARNINGS = 20;
 
 export type RunProgressLevel = 'info' | 'warning' | 'error';
 
-export interface RunProgressAppendOptions {
+export interface RunProgressAppendOptions<TPayload extends object = object> {
   source?: string;
   phase: string;
   status: string;
   level?: RunProgressLevel;
   message?: string;
-  payloadJson?: JsonRecord;
+  payloadJson?: TPayload;
 }
 
 export interface RunProgressReporter {
-  append(options: RunProgressAppendOptions): Promise<void>;
+  append<TPayload extends object>(options: RunProgressAppendOptions<TPayload>): Promise<void>;
   appendHarnessMarkers(text: string): Promise<void>;
   getWarnings(): string[];
 }
 
-function isRecord(value: unknown): value is JsonRecord {
+function isRecord(value: unknown): value is Record<string, unknown> {
   return Object.prototype.toString.call(value) === '[object Object]';
 }
 
@@ -56,7 +56,7 @@ function getJsonStringLength(value: unknown) {
   }
 }
 
-function compactProgressPayloadJson(payloadJson: JsonRecord) {
+function compactProgressPayloadJson(payloadJson: Record<string, unknown>) {
   if (getJsonStringLength(payloadJson) <= PROGRESS_EVENT_PAYLOAD_BUDGET_CHARS) {
     return payloadJson;
   }
@@ -187,7 +187,7 @@ export function createRunProgressReporter(options: {
     return sequence;
   };
 
-  const append = async (event: RunProgressAppendOptions) => {
+  const append = async <TPayload extends object>(event: RunProgressAppendOptions<TPayload>) => {
     const source = event.source || DAEMON_PROGRESS_SOURCE;
     const phase = sanitizeProgressPart(event.phase);
     const status = sanitizeProgressPart(event.status);

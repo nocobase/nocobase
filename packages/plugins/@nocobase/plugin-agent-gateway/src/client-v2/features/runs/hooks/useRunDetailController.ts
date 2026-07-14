@@ -10,8 +10,12 @@
 import { useRequest } from 'ahooks';
 import { useCallback, useEffect, useState } from 'react';
 
-import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiUrl } from '../../../../shared/apiContract';
-import { getApiErrorMessage, getRequiredResponseData } from '../../../pages/AgentGatewayPageUtils';
+import { AGENT_GATEWAY_API_ACTIONS } from '../../../../shared/apiContract';
+import {
+  getApiErrorMessage,
+  getRequiredResponseData,
+  requestAgentGatewayAction,
+} from '../../../pages/AgentGatewayPageUtils';
 import {
   getRunIdFromLocationSearch,
   pushRunIdInLocationSearch,
@@ -57,9 +61,9 @@ export function useRunDetailController({ ctx, t, initialRunId, onClearTerminal }
       if (!selectedRunId || !open) {
         return null;
       }
-      const response = await ctx.api.request<RunRecord>({
-        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, selectedRunId),
+      const response = await requestAgentGatewayAction<RunRecord>(ctx.api, AGENT_GATEWAY_API_ACTIONS.getRun, {
         method: 'get',
+        targetKey: selectedRunId,
       });
       const run = getRequiredResponseData(response, t('Failed to load run details'));
       return {

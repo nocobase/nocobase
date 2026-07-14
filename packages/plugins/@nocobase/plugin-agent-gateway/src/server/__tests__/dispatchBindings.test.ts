@@ -10,6 +10,11 @@
 import { MockServer, createMockServer } from '@nocobase/test';
 
 import PluginAgentGatewayServer from '../plugin';
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiUrl } from '../../shared/apiContract';
+
+function getTestApiPath(action: Parameters<typeof getAgentGatewayApiUrl>[0], targetKey?: unknown) {
+  return `/${getAgentGatewayApiUrl(action, targetKey === undefined ? undefined : String(targetKey))}`;
+}
 
 interface ResponseBody<T> {
   data?: T;
@@ -150,7 +155,7 @@ describe('agent gateway dispatch binding APIs', () => {
   }
 
   async function createTemplate(values: Record<string, unknown> = {}) {
-    const response = await rootAgent.post('/agentGatewayApi:createPromptTemplate').send({
+    const response = await rootAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.createPromptTemplate)).send({
       templateKey: 'ticket-build',
       displayName: 'Ticket build',
       templateText: 'Build {{record.title}}',
@@ -165,7 +170,7 @@ describe('agent gateway dispatch binding APIs', () => {
     if (!values.agentProfileId && !values.agentProfileField) {
       defaultRunner ||= await createRunner();
     }
-    const response = await rootAgent.post('/agentGatewayApi:createDispatchBinding').send({
+    const response = await rootAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.createDispatchBinding)).send({
       bindingKey: 'ticket-dispatch',
       collectionName: 'agDispatchTickets',
       promptTemplateId: template?.id || values.promptTemplateId,
@@ -310,7 +315,7 @@ describe('agent gateway dispatch binding APIs', () => {
 
   it('validates outputAgentRunField and provides dispatch binding CRUD APIs', async () => {
     const template = await createTemplate();
-    const invalidResponse = await rootAgent.post('/agentGatewayApi:createDispatchBinding').send({
+    const invalidResponse = await rootAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.createDispatchBinding)).send({
       bindingKey: 'invalid-output',
       collectionName: 'agDispatchTickets',
       promptTemplateId: template.id,
@@ -335,19 +340,21 @@ describe('agent gateway dispatch binding APIs', () => {
       'outputAgentRunField must be a belongsTo relation field targeting agRuns.id',
     );
 
-    const invalidSkillFieldResponse = await rootAgent.post('/agentGatewayApi:createDispatchBinding').send({
-      bindingKey: 'invalid-skill-field',
-      collectionName: 'agDispatchTickets',
-      promptTemplateId: template.id,
-      outputAgentRunField: 'agentRun',
-      skillFieldsJson: ['skillName'],
-    });
+    const invalidSkillFieldResponse = await rootAgent
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.createDispatchBinding))
+      .send({
+        bindingKey: 'invalid-skill-field',
+        collectionName: 'agDispatchTickets',
+        promptTemplateId: template.id,
+        outputAgentRunField: 'agentRun',
+        skillFieldsJson: ['skillName'],
+      });
     expect(invalidSkillFieldResponse.status).toBe(400);
     expect(getErrorMessage(invalidSkillFieldResponse as ResponseLike<unknown>)).toContain(
       'skillFieldsJson must reference relation fields targeting agSkillVersions or agNodeSkillInstalls',
     );
 
-    const createResponse = await rootAgent.post('/agentGatewayApi:createDispatchBinding').send({
+    const createResponse = await rootAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.createDispatchBinding)).send({
       bindingKey: 'valid-output',
       collectionName: 'agDispatchTickets',
       promptTemplateId: template.id,
@@ -361,15 +368,17 @@ describe('agent gateway dispatch binding APIs', () => {
     expect(binding.bindingKey).toBe('valid-output');
     expect(binding.enabled).toBe(true);
 
-    const getByIdResponse = await rootAgent.get(`/agentGatewayApi:getDispatchBinding/${binding.id}`);
+    const getByIdResponse = await rootAgent.get(
+      getTestApiPath(AGENT_GATEWAY_API_ACTIONS.getDispatchBinding, binding.id),
+    );
     expect(getByIdResponse.status).toBe(200);
     expect(getData(getByIdResponse as ResponseLike<DispatchBindingRecord>).bindingKey).toBe('valid-output');
 
-    const listResponse = await rootAgent.get('/agentGatewayApi:listDispatchBindings');
+    const listResponse = await rootAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listDispatchBindings));
     expect(getData(listResponse as ResponseLike<DispatchBindingRecord[]>)).toHaveLength(1);
 
     const invalidCollectionUpdateResponse = await rootAgent
-      .post(`/agentGatewayApi:updateDispatchBinding/${binding.bindingKey}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.updateDispatchBinding, binding.bindingKey))
       .send({
         collectionName: 'agDispatchOtherTickets',
       });
@@ -389,16 +398,20 @@ describe('agent gateway dispatch binding APIs', () => {
       'fieldMappingsJson references an unknown field: title',
     );
 
-    const updateResponse = await rootAgent.post(`/agentGatewayApi:updateDispatchBinding/${binding.id}`).send({
-      enabled: false,
-    });
+    const updateResponse = await rootAgent
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.updateDispatchBinding, binding.id))
+      .send({
+        enabled: false,
+      });
     expect(updateResponse.status).toBe(200);
     expect(getData(updateResponse as ResponseLike<DispatchBindingRecord>).enabled).toBe(false);
 
-    const destroyResponse = await rootAgent.post(`/agentGatewayApi:destroyDispatchBinding/${binding.id}`);
+    const destroyResponse = await rootAgent.post(
+      getTestApiPath(AGENT_GATEWAY_API_ACTIONS.destroyDispatchBinding, binding.id),
+    );
     expect(destroyResponse.status).toBe(200);
 
-    const emptyListResponse = await rootAgent.get('/agentGatewayApi:listDispatchBindings');
+    const emptyListResponse = await rootAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listDispatchBindings));
     expect(getData(emptyListResponse as ResponseLike<DispatchBindingRecord[]>)).toHaveLength(0);
   });
 
@@ -418,11 +431,13 @@ describe('agent gateway dispatch binding APIs', () => {
       selectedSkillVersionId: runner.skillVersionId,
     });
 
-    const dispatchResponse = await rootAgent.post(`/agentGatewayApi:dispatchBinding/${binding.id}`).send({
-      sourceRecordId: ticket.get('id'),
-      idempotencyKey: 'ticket-click-1',
-      sourceCollection: 'agDispatchTickets',
-    });
+    const dispatchResponse = await rootAgent
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.dispatchBinding, binding.id))
+      .send({
+        sourceRecordId: ticket.get('id'),
+        idempotencyKey: 'ticket-click-1',
+        sourceCollection: 'agDispatchTickets',
+      });
     expect(dispatchResponse.status).toBe(200);
     const dispatch = getData(dispatchResponse as ResponseLike<DispatchResponse>);
     expect(dispatch).toMatchObject({
@@ -511,11 +526,13 @@ describe('agent gateway dispatch binding APIs', () => {
       },
     });
 
-    const dispatchResponse = await rootAgent.post(`/agentGatewayApi:dispatchBinding/${binding.id}`).send({
-      sourceRecordId: 'code-ticket-1',
-      sourceCollection: 'agDispatchCodeTickets',
-      idempotencyKey: 'code-ticket-click',
-    });
+    const dispatchResponse = await rootAgent
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.dispatchBinding, binding.id))
+      .send({
+        sourceRecordId: 'code-ticket-1',
+        sourceCollection: 'agDispatchCodeTickets',
+        idempotencyKey: 'code-ticket-click',
+      });
     expect(dispatchResponse.status).toBe(200);
     const dispatch = getData(dispatchResponse as ResponseLike<DispatchResponse>);
 
@@ -532,7 +549,7 @@ describe('agent gateway dispatch binding APIs', () => {
     const ticket = await createTicket();
 
     const missingCollectionResponse = await rootAgent
-      .post(`/agentGatewayApi:dispatchBinding/${binding.bindingKey}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.dispatchBinding, binding.bindingKey))
       .send({
         sourceRecordId: ticket.get('id'),
         idempotencyKey: 'missing-collection',
@@ -542,11 +559,13 @@ describe('agent gateway dispatch binding APIs', () => {
       'sourceCollection is required',
     );
 
-    const response = await rootAgent.post(`/agentGatewayApi:dispatchBinding/${binding.bindingKey}`).send({
-      sourceRecordId: ticket.get('id'),
-      sourceCollection: 'agDispatchOtherTickets',
-      idempotencyKey: 'wrong-collection',
-    });
+    const response = await rootAgent
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.dispatchBinding, binding.bindingKey))
+      .send({
+        sourceRecordId: ticket.get('id'),
+        sourceCollection: 'agDispatchOtherTickets',
+        idempotencyKey: 'wrong-collection',
+      });
     expect(response.status).toBe(409);
     expect(getErrorMessage(response as ResponseLike<unknown>)).toContain(
       'Dispatch binding does not match the current record collection',
@@ -560,11 +579,13 @@ describe('agent gateway dispatch binding APIs', () => {
     const binding = await createBinding();
     const ticket = await createTicket();
 
-    const firstResponse = await rootAgent.post(`/agentGatewayApi:dispatchBinding/${binding.bindingKey}`).send({
-      sourceRecordId: ticket.get('id'),
-      sourceCollection: 'agDispatchTickets',
-      idempotencyKey: 'same-click',
-    });
+    const firstResponse = await rootAgent
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.dispatchBinding, binding.bindingKey))
+      .send({
+        sourceRecordId: ticket.get('id'),
+        sourceCollection: 'agDispatchTickets',
+        idempotencyKey: 'same-click',
+      });
     expect(firstResponse.status).toBe(200);
     const firstDispatch = getData(firstResponse as ResponseLike<DispatchResponse>);
     await app.db.getRepository('agRuns').update({
@@ -579,11 +600,13 @@ describe('agent gateway dispatch binding APIs', () => {
       },
     });
 
-    const sameKeyResponse = await rootAgent.post(`/agentGatewayApi:dispatchBinding/${binding.bindingKey}`).send({
-      sourceRecordId: ticket.get('id'),
-      sourceCollection: 'agDispatchTickets',
-      idempotencyKey: 'same-click',
-    });
+    const sameKeyResponse = await rootAgent
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.dispatchBinding, binding.bindingKey))
+      .send({
+        sourceRecordId: ticket.get('id'),
+        sourceCollection: 'agDispatchTickets',
+        idempotencyKey: 'same-click',
+      });
     expect(sameKeyResponse.status).toBe(200);
     const sameKeyDispatch = getData(sameKeyResponse as ResponseLike<DispatchResponse>);
     expect(sameKeyDispatch).toMatchObject({
@@ -610,11 +633,13 @@ describe('agent gateway dispatch binding APIs', () => {
       expect(sameKeyDispatch.run).not.toHaveProperty(internalField);
     }
 
-    const differentKeyResponse = await rootAgent.post(`/agentGatewayApi:dispatchBinding/${binding.bindingKey}`).send({
-      sourceRecordId: ticket.get('id'),
-      sourceCollection: 'agDispatchTickets',
-      idempotencyKey: 'second-click',
-    });
+    const differentKeyResponse = await rootAgent
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.dispatchBinding, binding.bindingKey))
+      .send({
+        sourceRecordId: ticket.get('id'),
+        sourceCollection: 'agDispatchTickets',
+        idempotencyKey: 'second-click',
+      });
     expect(differentKeyResponse.status).toBe(409);
     expect(getErrorMessage(differentKeyResponse as ResponseLike<unknown>)).toContain(
       'A non-terminal Agent Gateway run already exists',
@@ -628,11 +653,13 @@ describe('agent gateway dispatch binding APIs', () => {
     const binding = await createBinding();
     const ticket = await createTicket();
 
-    const firstResponse = await rootAgent.post(`/agentGatewayApi:dispatchBinding/${binding.bindingKey}`).send({
-      sourceRecordId: ticket.get('id'),
-      sourceCollection: 'agDispatchTickets',
-      idempotencyKey: 'hidden-existing-click',
-    });
+    const firstResponse = await rootAgent
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.dispatchBinding, binding.bindingKey))
+      .send({
+        sourceRecordId: ticket.get('id'),
+        sourceCollection: 'agDispatchTickets',
+        idempotencyKey: 'hidden-existing-click',
+      });
     expect(firstResponse.status).toBe(200);
     const firstDispatch = getData(firstResponse as ResponseLike<DispatchResponse>);
 
@@ -659,7 +686,7 @@ describe('agent gateway dispatch binding APIs', () => {
     const dispatcherAgent = await app.agent().login(user);
 
     const hiddenExistingResponse = await dispatcherAgent
-      .post(`/agentGatewayApi:dispatchBinding/${binding.bindingKey}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.dispatchBinding, binding.bindingKey))
       .send({
         sourceRecordId: ticket.get('id'),
         sourceCollection: 'agDispatchTickets',
@@ -678,12 +705,12 @@ describe('agent gateway dispatch binding APIs', () => {
     const ticket = await createTicket();
 
     const responses = await Promise.all([
-      rootAgent.post(`/agentGatewayApi:dispatchBinding/${binding.bindingKey}`).send({
+      rootAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.dispatchBinding, binding.bindingKey)).send({
         sourceRecordId: ticket.get('id'),
         sourceCollection: 'agDispatchTickets',
         idempotencyKey: 'concurrent-click',
       }),
-      rootAgent.post(`/agentGatewayApi:dispatchBinding/${binding.bindingKey}`).send({
+      rootAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.dispatchBinding, binding.bindingKey)).send({
         sourceRecordId: ticket.get('id'),
         sourceCollection: 'agDispatchTickets',
         idempotencyKey: 'concurrent-click',
@@ -723,11 +750,13 @@ describe('agent gateway dispatch binding APIs', () => {
       agentRunId: oldRun.get('id'),
     });
 
-    const response = await rootAgent.post(`/agentGatewayApi:dispatchBinding/${binding.bindingKey}`).send({
-      sourceRecordId: ticket.get('id'),
-      sourceCollection: 'agDispatchTickets',
-      idempotencyKey: 'retry-click',
-    });
+    const response = await rootAgent
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.dispatchBinding, binding.bindingKey))
+      .send({
+        sourceRecordId: ticket.get('id'),
+        sourceCollection: 'agDispatchTickets',
+        idempotencyKey: 'retry-click',
+      });
     expect(response.status).toBe(409);
     expect(getErrorMessage(response as ResponseLike<unknown>)).toContain(
       'Retry for existing Agent Gateway dispatch runs is not implemented',
@@ -744,11 +773,13 @@ describe('agent gateway dispatch binding APIs', () => {
       }
     });
 
-    const response = await rootAgent.post(`/agentGatewayApi:dispatchBinding/${binding.bindingKey}`).send({
-      sourceRecordId: ticket.get('id'),
-      sourceCollection: 'agDispatchTickets',
-      idempotencyKey: 'rollback-click',
-    });
+    const response = await rootAgent
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.dispatchBinding, binding.bindingKey))
+      .send({
+        sourceRecordId: ticket.get('id'),
+        sourceCollection: 'agDispatchTickets',
+        idempotencyKey: 'rollback-click',
+      });
     expect(response.status).toBe(500);
     expect(getErrorMessage(response as ResponseLike<unknown>)).toContain('Failed to write Agent Gateway run relation');
     expect(JSON.stringify(response.body)).not.toContain('WRITEBACK_SECRET');
@@ -782,11 +813,13 @@ describe('agent gateway dispatch binding APIs', () => {
     });
     const dispatcherAgent = await app.agent().login(user);
 
-    const response = await dispatcherAgent.post(`/agentGatewayApi:dispatchBinding/${binding.bindingKey}`).send({
-      sourceRecordId: ticket.get('id'),
-      sourceCollection: 'agDispatchTickets',
-      idempotencyKey: 'no-business-permission',
-    });
+    const response = await dispatcherAgent
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.dispatchBinding, binding.bindingKey))
+      .send({
+        sourceRecordId: ticket.get('id'),
+        sourceCollection: 'agDispatchTickets',
+        idempotencyKey: 'no-business-permission',
+      });
     expect(response.status).toBe(403);
     expect(getErrorMessage(response as ResponseLike<unknown>)).toContain(
       'No permission to view collection: agDispatchTickets',
@@ -832,11 +865,13 @@ describe('agent gateway dispatch binding APIs', () => {
     });
     const dispatcherAgent = await app.agent().login(user);
 
-    const response = await dispatcherAgent.post(`/agentGatewayApi:dispatchBinding/${binding.bindingKey}`).send({
-      sourceCollection: 'agDispatchTickets',
-      sourceRecordId: hiddenTicket.get('id'),
-      idempotencyKey: 'hidden-source-record',
-    });
+    const response = await dispatcherAgent
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.dispatchBinding, binding.bindingKey))
+      .send({
+        sourceCollection: 'agDispatchTickets',
+        sourceRecordId: hiddenTicket.get('id'),
+        idempotencyKey: 'hidden-source-record',
+      });
     expect(response.status).toBe(404);
     expect(getErrorMessage(response as ResponseLike<unknown>)).toContain('Dispatch target record not found');
 
@@ -877,11 +912,13 @@ describe('agent gateway dispatch binding APIs', () => {
     });
     const dispatcherAgent = await app.agent().login(user);
 
-    const response = await dispatcherAgent.post(`/agentGatewayApi:dispatchBinding/${binding.bindingKey}`).send({
-      sourceCollection: 'agDispatchTickets',
-      sourceRecordId: ticket.get('id'),
-      idempotencyKey: 'no-output-relation-update',
-    });
+    const response = await dispatcherAgent
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.dispatchBinding, binding.bindingKey))
+      .send({
+        sourceCollection: 'agDispatchTickets',
+        sourceRecordId: ticket.get('id'),
+        idempotencyKey: 'no-output-relation-update',
+      });
     expect(response.status).toBe(403);
     expect(getErrorMessage(response as ResponseLike<unknown>)).toContain(
       'No permission to write output relation field: agentRun',
@@ -927,11 +964,13 @@ describe('agent gateway dispatch binding APIs', () => {
     });
     const dispatcherAgent = await app.agent().login(user);
 
-    const response = await dispatcherAgent.post(`/agentGatewayApi:dispatchBinding/${binding.bindingKey}`).send({
-      sourceCollection: 'agDispatchTickets',
-      sourceRecordId: ticket.get('id'),
-      idempotencyKey: 'hidden-prompt-field',
-    });
+    const response = await dispatcherAgent
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.dispatchBinding, binding.bindingKey))
+      .send({
+        sourceCollection: 'agDispatchTickets',
+        sourceRecordId: ticket.get('id'),
+        idempotencyKey: 'hidden-prompt-field',
+      });
     expect(response.status).toBe(403);
     expect(getErrorMessage(response as ResponseLike<unknown>)).toContain(
       'No permission to preview template variable: record.skillName',
@@ -981,7 +1020,7 @@ describe('agent gateway dispatch binding APIs', () => {
     const dispatcherAgent = await app.agent().login(user);
 
     const noProfileAccessResponse = await dispatcherAgent
-      .post(`/agentGatewayApi:dispatchBinding/${binding.bindingKey}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.dispatchBinding, binding.bindingKey))
       .send({
         sourceRecordId: ticket.get('id'),
         sourceCollection: 'agDispatchTickets',
@@ -994,7 +1033,7 @@ describe('agent gateway dispatch binding APIs', () => {
 
     await grantCollectionActions(roleName, 'agAgentProfiles', ['view']);
     const noNodeAccessResponse = await dispatcherAgent
-      .post(`/agentGatewayApi:dispatchBinding/${binding.bindingKey}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.dispatchBinding, binding.bindingKey))
       .send({
         sourceRecordId: ticket.get('id'),
         sourceCollection: 'agDispatchTickets',
@@ -1007,7 +1046,7 @@ describe('agent gateway dispatch binding APIs', () => {
 
     await grantCollectionActions(roleName, 'agNodes', ['view']);
     const noSkillVersionAccessAfterNodeResponse = await dispatcherAgent
-      .post(`/agentGatewayApi:dispatchBinding/${binding.bindingKey}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.dispatchBinding, binding.bindingKey))
       .send({
         sourceRecordId: ticket.get('id'),
         sourceCollection: 'agDispatchTickets',
@@ -1053,7 +1092,7 @@ describe('agent gateway dispatch binding APIs', () => {
     const dispatcherAgent = await app.agent().login(user);
 
     const noProfileAccessResponse = await dispatcherAgent
-      .post(`/agentGatewayApi:dispatchBinding/${binding.bindingKey}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.dispatchBinding, binding.bindingKey))
       .send({
         sourceRecordId: ticket.get('id'),
         sourceCollection: 'agDispatchTickets',
@@ -1066,7 +1105,7 @@ describe('agent gateway dispatch binding APIs', () => {
 
     await grantCollectionActions(roleName, 'agAgentProfiles', ['view']);
     const noNodeAccessResponse = await dispatcherAgent
-      .post(`/agentGatewayApi:dispatchBinding/${binding.bindingKey}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.dispatchBinding, binding.bindingKey))
       .send({
         sourceRecordId: ticket.get('id'),
         sourceCollection: 'agDispatchTickets',

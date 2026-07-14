@@ -8,7 +8,7 @@
  */
 
 import type { AgentGatewayDaemonNodeClient } from '../gateway';
-import type { JsonRecord, PendingControlRequest, RunLease } from '../types';
+import type { PendingControlRequest, RunLease } from '../types';
 import { interruptTmuxSession, terminateTmuxSession, TMUX_TERMINATE_CANCEL_REASON } from '../tmuxTerminal';
 import { delay } from '../supervisor/shutdown';
 
@@ -20,6 +20,14 @@ export interface ControlRequestLoopOptions {
   intervalMs: number;
 }
 
+type ControlRequestAckValues = {
+  resultMessage?: string;
+  metadataJson?: {
+    action: PendingControlRequest['action'];
+    duplicateSignalSkipped?: boolean;
+  };
+};
+
 export function controlRequestWhileRunPhase(options: ControlRequestLoopOptions) {
   let inFlight: Promise<void> | null = null;
   const handledRequestIds = new Set<string>();
@@ -28,14 +36,14 @@ export function controlRequestWhileRunPhase(options: ControlRequestLoopOptions) 
     string,
     {
       status: 'succeeded' | 'failed';
-      values: JsonRecord;
+      values: ControlRequestAckValues;
     }
   >();
 
   const ackControlRequest = async (
     requestId: string,
     status: 'delivered' | 'succeeded' | 'failed',
-    values: JsonRecord = {},
+    values: ControlRequestAckValues = {},
   ) => {
     try {
       await options.gateway.ackControlRequest(options.getLease(), requestId, status, values);
@@ -49,7 +57,7 @@ export function controlRequestWhileRunPhase(options: ControlRequestLoopOptions) 
     requestId: string,
     finalAck: {
       status: 'succeeded' | 'failed';
-      values: JsonRecord;
+      values: ControlRequestAckValues;
     },
   ) => {
     await ackControlRequest(requestId, finalAck.status, finalAck.values);
@@ -108,7 +116,7 @@ export function controlRequestWhileRunPhase(options: ControlRequestLoopOptions) 
 
     let finalAck: {
       status: 'succeeded' | 'failed';
-      values: JsonRecord;
+      values: ControlRequestAckValues;
     };
     try {
       if (request.action === 'interrupt') {

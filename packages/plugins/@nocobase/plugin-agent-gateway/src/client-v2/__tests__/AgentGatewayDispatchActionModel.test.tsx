@@ -9,10 +9,14 @@
 
 import { Application } from '@nocobase/client-v2';
 import { describe, expect, it, vi } from 'vitest';
-
+import { AGENT_GATEWAY_API_ACTIONS, AgentGatewayApiAction, getAgentGatewayApiUrl } from '../../shared/apiContract';
 import { getDispatchBindingOptions } from '../components/AgentGatewayDispatchBindingSelect';
 import { dispatchAgentGatewayRun } from '../models/AgentGatewayDispatchActionModel';
 import PluginAgentGatewayClientV2 from '../plugin';
+
+function apiUrl(action: AgentGatewayApiAction, targetKey?: string) {
+  return getAgentGatewayApiUrl(action, targetKey);
+}
 
 interface RequestConfig {
   url: string;
@@ -111,7 +115,7 @@ describe('AgentGatewayDispatchActionModel', () => {
     });
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'agentGatewayApi:dispatchBinding/binding-id-1',
+        url: apiUrl(AGENT_GATEWAY_API_ACTIONS.dispatchBinding, 'binding-id-1'),
         method: 'post',
         data: expect.objectContaining({
           sourceRecordId: '42',

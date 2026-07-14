@@ -13,7 +13,6 @@ import {
   AgentCapabilityKey,
   AgentProviderKey,
   getExplicitAgentProviderKey,
-  isAgentCapabilitySupported,
   normalizeAgentProviderCapabilities,
 } from '../../shared/providerCapabilities';
 import { JsonRecord, ModelRecord, getModelValue, getRecord, getString } from './utils';
@@ -22,7 +21,6 @@ export interface RunProviderCapabilitySummary {
   provider: AgentProviderKey;
   providerSource: 'run';
   capabilities: JsonRecord;
-  enforceCapabilities: boolean;
 }
 
 export async function getRunProviderCapabilitySummary(
@@ -35,18 +33,17 @@ export async function getRunProviderCapabilitySummary(
   if (!provider) {
     throw new Error('Run provider snapshot is missing or invalid');
   }
-  const capabilities = getRecord(getModelValue(run, 'capabilitiesSnapshotJson'));
+  const capabilities = normalizeAgentProviderCapabilities(
+    provider,
+    getRecord(getModelValue(run, 'capabilitiesSnapshotJson')),
+  );
   return {
     provider,
     providerSource: 'run',
-    capabilities: normalizeAgentProviderCapabilities(provider, capabilities),
-    enforceCapabilities: true,
+    capabilities,
   };
 }
 
 export function isRunCapabilitySupported(summary: RunProviderCapabilitySummary, capability: AgentCapabilityKey) {
-  if (!summary.enforceCapabilities) {
-    return true;
-  }
-  return isAgentCapabilitySupported(summary.provider, summary.capabilities, capability);
+  return summary.capabilities[capability] === true;
 }

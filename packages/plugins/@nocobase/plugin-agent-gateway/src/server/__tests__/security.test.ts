@@ -35,6 +35,7 @@ import {
   verifyNodeToken,
 } from '../security';
 import { AGENT_GATEWAY_COLLECTION_REGISTRY } from '../collectionRegistry';
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiActionName } from '../../shared/apiContract';
 
 class NodeAuthTestError extends Error {
   constructor(
@@ -251,13 +252,16 @@ describe('agent gateway ACL registration', () => {
     }
     expect(snippets.find((snippet) => snippet.name === AGENT_GATEWAY_PERMISSIONS.dispatch)?.actions).toEqual([
       'agentGateway:dispatch',
-      'agentGatewayApi:listRunOptions',
-      'agentGatewayApi:createTaskRun',
-      'agentGatewayApi:listTaskTemplates',
-      'agentGatewayApi:dispatchBinding',
+      getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.listRunOptions),
+      getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.createTaskRun),
+      getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.listTaskTemplates),
+      getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.dispatchBinding),
     ]);
     expect(snippets.find((snippet) => snippet.name === 'pm.agent-gateway.skills')?.actions).toEqual(
-      expect.arrayContaining(['agentGatewayApi:listSkillVersions', 'agentGatewayApi:getSkillVersion']),
+      expect.arrayContaining([
+        getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.listSkillVersions),
+        getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.getSkillVersion),
+      ]),
     );
     expect(snippets.find((snippet) => snippet.name === AGENT_GATEWAY_PERMISSIONS.readRuns)?.actions).toEqual(
       expect.arrayContaining(['agentGateway:readRuns', 'agRuns:list']),
@@ -295,10 +299,10 @@ describe('agent gateway ACL registration', () => {
     expect(snippets.find((snippet) => snippet.name === AGENT_GATEWAY_PERMISSIONS.cancelRun)?.actions).toEqual([
       'agentGateway:cancelRun',
       'agRuns:get',
-      'agentGatewayApi:cancelRun',
+      getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.cancelRun),
     ]);
     expect(snippets.find((snippet) => snippet.name === AGENT_GATEWAY_PERMISSIONS.writeTerminalRaw)?.actions).toEqual([
-      'agentGatewayApi:sendTerminalInput',
+      getAgentGatewayApiActionName(AGENT_GATEWAY_API_ACTIONS.sendTerminalInput),
     ]);
   });
 });

@@ -25,7 +25,6 @@ export interface AgentTranscriptEvent {
   createdAt?: string;
   emittedAt?: string;
   message?: string | null;
-  payloadJson?: AgentTranscriptJsonRecord;
 }
 
 export type AgentTranscriptParticipantType = 'user' | 'root-agent' | 'sub-agent' | 'tool' | 'system' | 'unknown';
@@ -472,7 +471,7 @@ function getAgentTextPartKind(eventType: string | undefined): AgentTranscriptTex
 }
 
 function getEventJson(event: AgentTranscriptEvent) {
-  return event.contentJson || event.payloadJson || {};
+  return event.contentJson || {};
 }
 
 function getEventTime(event: AgentTranscriptEvent) {

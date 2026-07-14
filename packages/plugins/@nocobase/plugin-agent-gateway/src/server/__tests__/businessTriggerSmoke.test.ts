@@ -10,6 +10,11 @@
 import { MockServer, createMockServer } from '@nocobase/test';
 
 import PluginAgentGatewayServer from '../plugin';
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiUrl } from '../../shared/apiContract';
+
+function getTestApiPath(action: Parameters<typeof getAgentGatewayApiUrl>[0], targetKey?: unknown) {
+  return `/${getAgentGatewayApiUrl(action, targetKey === undefined ? undefined : String(targetKey))}`;
+}
 
 const BUSINESS_COLLECTIONS = [
   'build_nb_envs',
@@ -237,7 +242,7 @@ describe('agent gateway no-code business trigger smoke', () => {
 
   async function createInvitation() {
     const nodeKey = nextCode('ui-build-node');
-    const response = await rootAgent.post('/agentGatewayApi:createNodeInvitation').send({
+    const response = await rootAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.createNodeInvitation)).send({
       invitationKey: nextCode('ui-build-invite'),
       serverUrl: 'http://127.0.0.1:13000',
       expiresInSeconds: 3600,
@@ -254,7 +259,7 @@ describe('agent gateway no-code business trigger smoke', () => {
     const invitation = await createInvitation();
     const registerResponse = await app
       .agent()
-      .post('/agentGatewayApi:registerNode')
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.registerNode))
       .send({
         inviteToken: extractInviteToken(invitation.registerCommand),
         nodeKey: invitation.nodeKey,
@@ -263,7 +268,7 @@ describe('agent gateway no-code business trigger smoke', () => {
         hostInfo: {
           hostname: 'ui-build-fake-host',
         },
-        capabilities: {
+        capabilitiesJson: {
           maxConcurrency: 1,
         },
       });
@@ -274,27 +279,30 @@ describe('agent gateway no-code business trigger smoke', () => {
 
     const heartbeatResponse = await app
       .agent()
-      .post(`/agentGatewayApi:heartbeatNode/${nodeId}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatNode, nodeId))
       .set('Authorization', `Bearer ${nodeToken}`)
       .send({
         currentConcurrency: 0,
-        capabilities: {
+        capabilitiesJson: {
           maxConcurrency: 1,
-          supportsArtifacts: true,
-          supportsSnapshots: true,
+          artifacts: true,
+          snapshots: true,
         },
         profiles: [
           {
             profileKey: 'fake-success',
+            provider: 'opencode',
             displayName: 'Fake UI Build Success',
             agentType: 'code',
             driver: 'fake',
             status: 'active',
-            capabilities: {
+            capabilitiesJson: {
               artifacts: true,
+              executionPolicyKey: 'fake-success',
               maxConcurrency: 1,
               structuredEvents: true,
             },
+            metadataJson: {},
           },
         ],
       });
@@ -350,21 +358,19 @@ describe('agent gateway no-code business trigger smoke', () => {
   }
 
   async function createPromptTemplate() {
-    const response = await rootAgent.post('/agentGatewayApi:createPromptTemplate').send({
+    const response = await rootAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.createPromptTemplate)).send({
       templateKey: nextCode('ui.build.template'),
       displayName: 'NocoBase UI Build smoke template',
       templateText: UI_BUILD_PROMPT_TEMPLATE,
       status: 'active',
-      defaultExecutionPayload: {
-        driver: 'fake',
-      },
+      defaultExecutionPayloadJson: {},
     });
     expect(response.status).toBe(200);
     return getRecordData(response);
   }
 
   async function createDispatchBinding(promptTemplateId: unknown) {
-    const response = await rootAgent.post('/agentGatewayApi:createDispatchBinding').send({
+    const response = await rootAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.createDispatchBinding)).send({
       bindingKey: nextCode('ui.build.dispatch'),
       collectionName: 'build_runs',
       promptTemplateId,
@@ -521,7 +527,7 @@ describe('agent gateway no-code business trigger smoke', () => {
   async function claimRun(daemon: FakeDaemonRegistration) {
     return await app
       .agent()
-      .post(`/agentGatewayApi:claimRun/${daemon.nodeId}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.claimRun, daemon.nodeId))
       .set('Authorization', `Bearer ${daemon.nodeToken}`)
       .send({
         profileKey: 'fake-success',
@@ -535,18 +541,18 @@ describe('agent gateway no-code business trigger smoke', () => {
     values: Record<string, unknown>,
   ) {
     const actionName = {
-      heartbeat: 'heartbeatRun',
-      complete: 'completeRun',
-      fail: 'failRun',
-      timeout: 'timeoutRun',
-      'cancel-ack': 'ackCancelRun',
+      heartbeat: AGENT_GATEWAY_API_ACTIONS.heartbeatRun,
+      complete: AGENT_GATEWAY_API_ACTIONS.completeRun,
+      fail: AGENT_GATEWAY_API_ACTIONS.failRun,
+      timeout: AGENT_GATEWAY_API_ACTIONS.timeoutRun,
+      'cancel-ack': AGENT_GATEWAY_API_ACTIONS.ackCancelRun,
     }[action];
     if (!actionName) {
       throw new Error(`Unsupported daemon action: ${action}`);
     }
     return await app
       .agent()
-      .post(`/agentGatewayApi:${actionName}/${runId}`)
+      .post(getTestApiPath(actionName, String(runId)))
       .set('Authorization', `Bearer ${daemon.nodeToken}`)
       .send(values);
   }
@@ -558,16 +564,16 @@ describe('agent gateway no-code business trigger smoke', () => {
     values: Record<string, unknown>,
   ) {
     const actionName = {
-      'events:append': 'appendRunEvents',
-      'artifacts:register': 'registerRunArtifact',
-      'snapshots:register': 'registerRunSnapshot',
+      'events:append': AGENT_GATEWAY_API_ACTIONS.appendRunEvents,
+      'artifacts:register': AGENT_GATEWAY_API_ACTIONS.registerRunArtifact,
+      'snapshots:register': AGENT_GATEWAY_API_ACTIONS.registerRunSnapshot,
     }[action];
     if (!actionName) {
       throw new Error(`Unsupported observation action: ${action}`);
     }
     return await app
       .agent()
-      .post(`/agentGatewayApi:${actionName}/${runId}`)
+      .post(getTestApiPath(actionName, String(runId)))
       .set('Authorization', `Bearer ${daemon.nodeToken}`)
       .send(values);
   }
@@ -589,11 +595,13 @@ describe('agent gateway no-code business trigger smoke', () => {
     const buildRun = await createBusinessBuildRun(businessAgent, daemon, skill.skillVersionId);
     const buildRunId = buildRun.id;
 
-    const dispatchResponse = await businessAgent.post(`/agentGatewayApi:dispatchBinding/${binding.id}`).send({
-      sourceRecordId: buildRunId,
-      sourceCollection: 'build_runs',
-      idempotencyKey: 'ui-build-smoke-click',
-    });
+    const dispatchResponse = await businessAgent
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.dispatchBinding, binding.id))
+      .send({
+        sourceRecordId: buildRunId,
+        sourceCollection: 'build_runs',
+        idempotencyKey: 'ui-build-smoke-click',
+      });
     expect(dispatchResponse.status).toBe(200);
     const dispatch = getRecordData(dispatchResponse);
     expect(dispatch).toMatchObject({
@@ -630,7 +638,7 @@ describe('agent gateway no-code business trigger smoke', () => {
       expect.stringContaining('capture-after-build-and-verify'),
     );
     expect(storedRun.get('executionPayloadJson')).toMatchObject({
-      driver: 'fake',
+      executionPolicyKey: 'fake-success',
       dispatch: {
         bindingId: binding.id,
         bindingKey: binding.bindingKey,
@@ -693,7 +701,7 @@ describe('agent gateway no-code business trigger smoke', () => {
       eventType: 'log',
       level: 'info',
       message: 'UI build smoke started from business build_runs record',
-      payload: {
+      contentJson: {
         collectionName: 'build_runs',
         recordId: buildRunId,
       },
@@ -706,7 +714,7 @@ describe('agent gateway no-code business trigger smoke', () => {
       artifactType: 'text',
       mimeType: 'text/markdown',
       contentText: '# UI Build Smoke\n\nFake daemon completed the no-code business dispatch.',
-      metadata: {
+      metadataJson: {
         kind: 'report',
       },
     });
@@ -715,11 +723,11 @@ describe('agent gateway no-code business trigger smoke', () => {
     const snapshotResponse = await appendObservation(daemon, runId, 'snapshots:register', {
       ...activeLease,
       snapshotType: 'nocobase',
-      snapshot: {
+      snapshotJson: {
         nocobaseVersion: 'smoke',
         pageCount: 1,
       },
-      metadata: {
+      metadataJson: {
         kind: 'version-info',
       },
     });
@@ -727,7 +735,7 @@ describe('agent gateway no-code business trigger smoke', () => {
 
     const completeResponse = await runDaemonAction(daemon, runId, 'complete', {
       ...activeLease,
-      resultSummary: {
+      resultSummaryJson: {
         status: 'ok',
         reportArtifactKey: 'ui-build-report',
         generatedPages: 1,
@@ -738,10 +746,14 @@ describe('agent gateway no-code business trigger smoke', () => {
       status: 'succeeded',
     });
 
-    const runResponse = await businessAgent.get(`/agentGatewayApi:getRun/${runId}`);
-    const eventsResponse = await businessAgent.get(`/agentGatewayApi:listRunEvents/${runId}`);
-    const artifactsResponse = await businessAgent.get(`/agentGatewayApi:listRunArtifacts/${runId}`);
-    const snapshotsResponse = await businessAgent.get(`/agentGatewayApi:listRunSnapshots/${runId}`);
+    const runResponse = await businessAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.getRun, runId));
+    const eventsResponse = await businessAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunEvents, runId));
+    const artifactsResponse = await businessAgent.get(
+      getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunArtifacts, runId),
+    );
+    const snapshotsResponse = await businessAgent.get(
+      getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunSnapshots, runId),
+    );
     expect(runResponse.status).toBe(200);
     expect(eventsResponse.status).toBe(200);
     expect(artifactsResponse.status).toBe(200);

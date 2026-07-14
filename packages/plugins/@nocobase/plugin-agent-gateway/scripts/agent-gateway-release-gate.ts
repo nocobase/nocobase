@@ -9,7 +9,7 @@
 
 import { execFile } from 'child_process';
 import { randomUUID } from 'crypto';
-import { access, mkdir, readFile, writeFile } from 'fs/promises';
+import { access, copyFile, lstat, mkdir, readFile, readdir, realpath, writeFile } from 'fs/promises';
 import path from 'path';
 import { promisify } from 'util';
 
@@ -23,11 +23,16 @@ import {
   AgentGatewayAcceptanceCheckId,
   AgentGatewayAcceptanceContext,
   AgentGatewayAcceptanceEvidence,
+  AgentGatewayAcceptanceEvidenceFileContent,
+  AgentGatewayAcceptanceEvidenceFileValidation,
   AgentGatewayAcceptanceProvider,
+  AgentGatewayAcceptanceRepositoryContext,
   AgentGatewayPackageEvidence,
   AgentGatewayReleaseGateSummary,
   evaluateAgentGatewayReleaseGate,
+  getAgentGatewayLiveSourceProvenanceError,
   getAgentGatewayApiPath,
+  parseAgentGatewayVitestSkips,
 } from '../src/shared/apiContract';
 
 const execFileAsync = promisify(execFile);
@@ -38,8 +43,9 @@ const DEFAULT_EVIDENCE_ROOT = path.resolve(REPOSITORY_ROOT, 'storage/agent-gatew
 type GateScope = 'none' | 'static' | 'full';
 
 interface GateArgs {
-  command: 'prepare' | 'verify';
+  command: 'prepare' | 'collect' | 'scan' | 'verify';
   evidenceDir: string;
+  sourceDir?: string;
   scope: GateScope;
   requiredProviders: AgentGatewayAcceptanceProvider[];
   allowIncomplete: boolean;
@@ -52,6 +58,8 @@ interface CommandSpec {
   cwd: string;
   env?: NodeJS.ProcessEnv;
   scope: Exclude<GateScope, 'none'>;
+  expectEmptyOutput?: boolean;
+  run?: () => Promise<{ stdout: string; stderr: string }>;
 }
 
 interface CommandOutput {
@@ -67,6 +75,11 @@ interface ExecFailure extends Error {
 
 interface PackResult {
   files?: Array<{ path?: string }>;
+}
+
+interface EvidenceFileReference {
+  path: string;
+  kind: AgentGatewayAcceptanceEvidenceFileValidation['kind'];
 }
 
 function parseProviderList(value: string | undefined) {
@@ -87,13 +100,14 @@ function parseProviderList(value: string | undefined) {
 
 function parseArgs(argv: string[]): GateArgs {
   const command = argv[2];
-  if (command !== 'prepare' && command !== 'verify') {
-    throw new Error('Usage: agent-gateway-release-gate.ts <prepare|verify> [options]');
+  if (command !== 'prepare' && command !== 'collect' && command !== 'scan' && command !== 'verify') {
+    throw new Error('Usage: agent-gateway-release-gate.ts <prepare|collect|scan|verify> [options]');
   }
   let evidenceDir = '';
   let scope: GateScope = command === 'verify' ? 'full' : 'none';
   let requiredProviders: AgentGatewayAcceptanceProvider[] = [];
   let allowIncomplete = false;
+  let sourceDir: string | undefined;
   for (let index = 3; index < argv.length; index += 1) {
     const argument = argv[index];
     if (argument === '--evidence-dir') {
@@ -107,6 +121,11 @@ function parseArgs(argv: string[]): GateArgs {
         throw new Error(`Unsupported release gate scope: ${value}`);
       }
       scope = value;
+      index += 1;
+      continue;
+    }
+    if (argument === '--source-dir') {
+      sourceDir = path.resolve(argv[index + 1] || '');
       index += 1;
       continue;
     }
@@ -124,7 +143,10 @@ function parseArgs(argv: string[]): GateArgs {
   if (!evidenceDir) {
     evidenceDir = path.resolve(DEFAULT_EVIDENCE_ROOT, `agw-${Date.now()}`);
   }
-  return { command, evidenceDir, scope, requiredProviders, allowIncomplete };
+  if (command === 'collect' && !sourceDir) {
+    throw new Error('The collect command requires --source-dir');
+  }
+  return { command, evidenceDir, sourceDir, scope, requiredProviders, allowIncomplete };
 }
 
 async function pathExists(filePath: string) {
@@ -142,6 +164,120 @@ async function readJson<T>(filePath: string): Promise<T> {
 
 async function writeJson(filePath: string, value: unknown) {
   await writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+}
+
+async function runGit(args: string[]) {
+  const output = await execFileAsync('git', args, {
+    cwd: REPOSITORY_ROOT,
+    env: process.env,
+    maxBuffer: 16 * 1024 * 1024,
+  });
+  return output.stdout.trim();
+}
+
+async function getRepositoryContext(): Promise<AgentGatewayAcceptanceRepositoryContext> {
+  const [commit, branchFromGit, status] = await Promise.all([
+    runGit(['rev-parse', 'HEAD']),
+    runGit(['rev-parse', '--abbrev-ref', 'HEAD']),
+    runGit(['status', '--porcelain', '--untracked-files=all']),
+  ]);
+  return {
+    branch: process.env.GITHUB_HEAD_REF || process.env.GITHUB_REF_NAME || branchFromGit,
+    commit,
+    clean: !status,
+  };
+}
+
+function sameRepositoryContext(
+  expected: AgentGatewayAcceptanceRepositoryContext | undefined,
+  actual: AgentGatewayAcceptanceRepositoryContext,
+) {
+  return Boolean(
+    expected &&
+      expected.branch === actual.branch &&
+      expected.commit === actual.commit &&
+      expected.clean &&
+      actual.clean,
+  );
+}
+
+function createRepositoryContextCheck(
+  expected: AgentGatewayAcceptanceRepositoryContext | undefined,
+  actual: AgentGatewayAcceptanceRepositoryContext,
+): AgentGatewayAcceptanceCheck {
+  const now = new Date().toISOString();
+  const matches = sameRepositoryContext(expected, actual);
+  return {
+    id: 'static.repository-context',
+    status: matches ? 'passed' : 'failed',
+    startedAt: now,
+    finishedAt: now,
+    durationMs: 0,
+    command: 'git branch/commit/status verification',
+    logPath: '',
+    reason: matches
+      ? undefined
+      : `Expected ${expected?.branch || 'missing'}@${expected?.commit || 'missing'} clean=${
+          expected?.clean ?? false
+        }; got ${actual.branch}@${actual.commit} clean=${actual.clean}`,
+    warnings: [],
+  };
+}
+
+async function listSourceFiles(directory: string): Promise<string[]> {
+  const entries = await readdir(directory, { withFileTypes: true });
+  const files: string[] = [];
+  for (const entry of entries) {
+    const entryPath = path.resolve(directory, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...(await listSourceFiles(entryPath)));
+    } else if (entry.isFile() && /\.(?:js|mjs|cjs|ts|tsx|sh)$/.test(entry.name)) {
+      files.push(entryPath);
+    }
+  }
+  return files;
+}
+
+async function scanCanonicalAliases() {
+  const violations: string[] = [];
+  const files = [
+    ...(await listSourceFiles(path.resolve(PLUGIN_ROOT, 'src'))),
+    ...(await listSourceFiles(path.resolve(PLUGIN_ROOT, 'scripts'))),
+  ].filter((filePath) => !filePath.includes(`${path.sep}shared${path.sep}providerLogNormalizers${path.sep}`));
+  const aliasPatterns: Array<[string, RegExp]> = [
+    ['metadataJson/metadata fallback', /\bmetadataJson\s*(?:\|\||\?\?)\s*[^;\n]*\bmetadata\b/],
+    ['metadata/metadataJson fallback', /\bmetadata\s*(?:\|\||\?\?)\s*[^;\n]*\bmetadataJson\b/],
+    ['payloadJson/payload fallback', /\bpayloadJson\s*(?:\|\||\?\?)\s*[^;\n]*\bpayload\b/],
+    ['payload/payloadJson fallback', /\bpayload\s*(?:\|\||\?\?)\s*[^;\n]*\bpayloadJson\b/],
+    ['eventType/type fallback', /\beventType\s*(?:\|\||\?\?)\s*[^;\n]*\btype\b/],
+    ['type/eventType fallback', /\btype\s*(?:\|\||\?\?)\s*[^;\n]*\beventType\b/],
+    ['capabilities alias fallback', /\bcapabilities(?:Json)?\s*(?:\|\||\?\?)\s*[^;\n]*\bcapabilities(?:Json)?\b/],
+    [
+      'provider alias fallback',
+      /\b(?:agentProvider|commandKey|provider)\s*(?:\|\||\?\?)\s*[^;\n]*\b(?:agentProvider|commandKey|provider)\b/,
+    ],
+    ['raw resource-action HTTP call', /\.(?:get|post|put|patch|delete)\(\s*[`'"]\/?(?:api\/)?agentGatewayApi:/],
+    ['raw resource-action URL', /\burl\s*:\s*[`'"]\/?(?:api\/)?agentGatewayApi:/],
+    ['raw path-sensitive action assertion', /(?:===|==|\$includes\s*:)\s*[`'"]\/?(?:api\/)?agentGatewayApi:/],
+  ];
+  for (const filePath of files) {
+    const source = await readFile(filePath, 'utf8');
+    const lines = source.split(/\r?\n/);
+    lines.forEach((line, index) => {
+      if (/\/api\/agent-gateway\/(?!bootstrap\.sh|daemon-package\.tgz|terminal-stream)/.test(line)) {
+        violations.push(`${path.relative(PLUGIN_ROOT, filePath)}:${index + 1}: legacy business REST route`);
+      }
+      for (const [label, pattern] of aliasPatterns) {
+        if (pattern.test(line)) {
+          violations.push(`${path.relative(PLUGIN_ROOT, filePath)}:${index + 1}: ${label}`);
+        }
+      }
+    });
+  }
+  if (violations.length) {
+    throw new Error(violations.join('\n'));
+  }
+  return { stdout: 'No legacy DTO fallbacks, business routes, or raw action aliases found\n', stderr: '' };
 }
 
 function createEvidenceTemplate(context: AgentGatewayAcceptanceContext): AgentGatewayAcceptanceEvidence {
@@ -230,12 +366,17 @@ async function prepare(args: GateArgs) {
   if (await pathExists(contextPath)) {
     throw new Error(`Refusing to reuse an existing acceptance execution: ${contextPath}`);
   }
+  const repository = await getRepositoryContext();
+  if (!repository.clean) {
+    throw new Error('Refusing to prepare release evidence from a dirty repository tree');
+  }
   await mkdir(args.evidenceDir, { recursive: true });
   const context: AgentGatewayAcceptanceContext = {
     schemaVersion: 1,
     executionId: randomUUID(),
     startedAt: new Date().toISOString(),
     requiredProviders: args.requiredProviders,
+    repository,
   };
   await writeJson(contextPath, context);
   await writeJson(path.resolve(args.evidenceDir, 'evidence-template.json'), createEvidenceTemplate(context));
@@ -249,6 +390,383 @@ async function prepare(args: GateArgs) {
     createTerminalStreamTicket: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.createTerminalStreamTicket),
   });
   process.stdout.write(`${JSON.stringify({ contextPath, executionId: context.executionId })}\n`);
+}
+
+function getRecord(value: unknown) {
+  return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : undefined;
+}
+
+function hasFixtureMarker(value: unknown): boolean {
+  if (Array.isArray(value)) {
+    return value.some(hasFixtureMarker);
+  }
+  const record = getRecord(value);
+  if (!record) {
+    return false;
+  }
+  if (record.fixture === true || record.source === 'fixture') {
+    return true;
+  }
+  return Object.values(record).some(hasFixtureMarker);
+}
+
+async function readLiveSourceJson(sourceDir: string, relativePath: string) {
+  const sourcePath = path.resolve(sourceDir, relativePath);
+  if (
+    !isContainedPath(sourceDir, sourcePath) ||
+    /(?:^|[\\/])(?:__fixtures__|fixtures|test-fixtures)(?:[\\/]|$)/i.test(sourcePath)
+  ) {
+    throw new Error(`Live evidence source path is invalid or fixture-backed: ${relativePath}`);
+  }
+  const [stats, resolvedRoot, resolvedFile] = await Promise.all([
+    lstat(sourcePath),
+    realpath(sourceDir),
+    realpath(sourcePath),
+  ]);
+  if (!stats.isFile() || stats.isSymbolicLink() || stats.size <= 0 || !isContainedPath(resolvedRoot, resolvedFile)) {
+    throw new Error(`Live evidence source must be a contained regular nonempty file: ${relativePath}`);
+  }
+  const parsed = JSON.parse(await readFile(sourcePath, 'utf8')) as unknown;
+  if (hasFixtureMarker(parsed)) {
+    throw new Error(`Fixture data cannot be collected as live evidence: ${relativePath}`);
+  }
+  return parsed;
+}
+
+async function writeLiveEnvelope(evidenceDir: string, relativePath: string, envelope: Record<string, unknown>) {
+  const target = path.resolve(evidenceDir, 'live', relativePath);
+  await mkdir(path.dirname(target), { recursive: true });
+  await writeJson(target, envelope);
+  return path.relative(evidenceDir, target);
+}
+
+async function copyLiveSourceFile(sourceDir: string, evidenceDir: string, relativePath: string) {
+  const source = path.resolve(sourceDir, relativePath);
+  if (
+    !isContainedPath(sourceDir, source) ||
+    /(?:^|[\\/])(?:__fixtures__|fixtures|test-fixtures)(?:[\\/]|$)/i.test(source)
+  ) {
+    throw new Error(`Live evidence source path is invalid or fixture-backed: ${relativePath}`);
+  }
+  const [stats, resolvedRoot, resolvedFile] = await Promise.all([lstat(source), realpath(sourceDir), realpath(source)]);
+  if (!stats.isFile() || stats.isSymbolicLink() || stats.size <= 0 || !isContainedPath(resolvedRoot, resolvedFile)) {
+    throw new Error(`Live evidence source must be a contained regular nonempty file: ${relativePath}`);
+  }
+  const target = path.resolve(evidenceDir, 'live', relativePath);
+  await mkdir(path.dirname(target), { recursive: true });
+  await copyFile(source, target);
+  return path.relative(evidenceDir, target);
+}
+
+async function findBrowserMedia(sourceDir: string, scenario: string) {
+  const directory = path.resolve(sourceDir, 'browser', scenario);
+  const entries = await readdir(directory);
+  const media = entries.find((entry) => /\.(?:png|jpe?g|webp|mp4|webm)$/i.test(entry));
+  if (!media) {
+    throw new Error(`Browser scenario ${scenario} has no screenshot or video`);
+  }
+  return path.join('browser', scenario, media);
+}
+
+function getConsoleErrors(value: unknown) {
+  const errors = Array.isArray(value) ? value : getRecord(value)?.errors;
+  if (!Array.isArray(errors)) {
+    return [];
+  }
+  return errors.map((item) => {
+    const record = getRecord(item) || {};
+    return {
+      message: typeof record.message === 'string' ? record.message : String(record.message || ''),
+      explained: record.explained === true,
+      explanation: typeof record.explanation === 'string' ? record.explanation : undefined,
+    };
+  });
+}
+
+function assertRawStatusPassed(value: unknown, label: string) {
+  if (getRecord(value)?.status !== 'passed') {
+    throw new Error(`${label} must explicitly declare status=passed`);
+  }
+}
+
+function assertRawProvenance(context: AgentGatewayAcceptanceContext, value: unknown, label: string) {
+  const source = getRecord(value);
+  const error = getAgentGatewayLiveSourceProvenanceError(
+    context,
+    {
+      executionId: typeof source?.executionId === 'string' ? source.executionId : undefined,
+      capturedAt: typeof source?.capturedAt === 'string' ? source.capturedAt : undefined,
+    },
+    label,
+  );
+  if (error) {
+    throw new Error(error);
+  }
+}
+
+function assertRawAnchors(
+  value: unknown,
+  anchors: AgentGatewayAcceptanceEvidence['anchors'],
+  label: string,
+  full: boolean,
+) {
+  if (!anchors || getStringContentValue(value, 'runId') !== anchors.runId) {
+    throw new Error(`${label} does not contain the current runId`);
+  }
+  if (
+    full &&
+    (getStringContentValue(value, 'nodeId') !== anchors.nodeId ||
+      getStringContentValue(value, 'skillVersionId') !== anchors.skillVersionId ||
+      getStringContentValue(value, 'provider') !== anchors.provider ||
+      getStringContentValue(value, 'providerSessionId') !== anchors.providerSessionId)
+  ) {
+    throw new Error(`${label} does not contain all current entity anchors`);
+  }
+}
+
+function assertRawTextContains(value: unknown, expected: string, label: string) {
+  if (!JSON.stringify(value).includes(expected)) {
+    throw new Error(`${label} does not contain ${expected}`);
+  }
+}
+
+async function collect(args: GateArgs) {
+  const sourceDir = args.sourceDir as string;
+  const contextPath = path.resolve(args.evidenceDir, 'context.json');
+  if (!(await pathExists(contextPath))) {
+    throw new Error(`Acceptance context is missing. Run prepare first: ${contextPath}`);
+  }
+  if (await pathExists(path.resolve(args.evidenceDir, 'evidence.json'))) {
+    throw new Error('Refusing to overwrite existing live evidence.json');
+  }
+  const context = await readJson<AgentGatewayAcceptanceContext>(contextPath);
+  const repository = await getRepositoryContext();
+  if (!sameRepositoryContext(context.repository, repository)) {
+    throw new Error('Live evidence collection repository does not match the prepared branch, commit, and clean tree');
+  }
+  const capturedAt = new Date().toISOString();
+  const rawAnchors = await readLiveSourceJson(sourceDir, 'anchors.json');
+  assertRawProvenance(context, rawAnchors, 'Live anchors');
+  const provider = getStringContentValue(rawAnchors, 'provider');
+  if (!AGENT_GATEWAY_ACCEPTANCE_PROVIDERS.includes(provider as AgentGatewayAcceptanceProvider)) {
+    throw new Error(`Unsupported live provider anchor: ${provider || 'missing'}`);
+  }
+  const anchors = {
+    nodeId: getStringContentValue(rawAnchors, 'nodeId') || '',
+    runId: getStringContentValue(rawAnchors, 'runId') || '',
+    skillVersionId: getStringContentValue(rawAnchors, 'skillVersionId') || '',
+    provider: provider as AgentGatewayAcceptanceProvider,
+    providerSessionId: getStringContentValue(rawAnchors, 'providerSessionId') || '',
+  };
+  if (!anchors.nodeId || !anchors.runId || !anchors.skillVersionId || !anchors.providerSessionId) {
+    throw new Error('Live anchors must contain nodeId, runId, skillVersionId, provider, and providerSessionId');
+  }
+
+  const browser: AgentGatewayAcceptanceEvidence['browser'] = {};
+  for (const scenario of AGENT_GATEWAY_BROWSER_SCENARIOS) {
+    const snapshot = await readLiveSourceJson(sourceDir, path.join('browser', scenario, 'snapshot.json'));
+    const action = await readLiveSourceJson(sourceDir, path.join('browser', scenario, 'action.json'));
+    const consoleErrors = await readLiveSourceJson(sourceDir, path.join('browser', scenario, 'console-errors.json'));
+    const network = await readLiveSourceJson(sourceDir, path.join('browser', scenario, 'network.har'));
+    assertRawProvenance(context, snapshot, `Browser scenario ${scenario} snapshot`);
+    assertRawProvenance(context, action, `Browser scenario ${scenario} action`);
+    assertRawProvenance(context, consoleErrors, `Browser scenario ${scenario} console errors`);
+    assertRawProvenance(context, network, `Browser scenario ${scenario} HAR`);
+    assertRawAnchors(snapshot, anchors, `Browser scenario ${scenario} snapshot`, false);
+    assertRawStatusPassed(action, `Browser scenario ${scenario} action`);
+    assertRawAnchors(action, anchors, `Browser scenario ${scenario} action`, true);
+    assertRawTextContains(network, anchors.runId, `Browser scenario ${scenario} HAR`);
+    const snapshotPath = await writeLiveEnvelope(args.evidenceDir, path.join('browser', scenario, 'snapshot.json'), {
+      executionId: context.executionId,
+      capturedAt,
+      ...anchors,
+      payload: snapshot,
+    });
+    const actionResultPath = await writeLiveEnvelope(args.evidenceDir, path.join('browser', scenario, 'action.json'), {
+      executionId: context.executionId,
+      capturedAt,
+      ...anchors,
+      payload: action,
+    });
+    const mediaSource = await findBrowserMedia(sourceDir, scenario);
+    const mediaPath = await copyLiveSourceFile(sourceDir, args.evidenceDir, mediaSource);
+    const networkPath = await copyLiveSourceFile(
+      sourceDir,
+      args.evidenceDir,
+      path.join('browser', scenario, 'network.har'),
+    );
+    browser[scenario] = {
+      status: 'passed',
+      executionId: context.executionId,
+      capturedAt,
+      anchors,
+      snapshotPath,
+      actionResultPath,
+      mediaPaths: [mediaPath],
+      networkEvidencePaths: [networkPath],
+      consoleErrors: getConsoleErrors(consoleErrors),
+    };
+  }
+
+  const providers: AgentGatewayAcceptanceEvidence['providers'] = {};
+  for (const providerName of AGENT_GATEWAY_ACCEPTANCE_PROVIDERS) {
+    const relativePath = path.join('providers', `${providerName}.json`);
+    if (!(await pathExists(path.resolve(sourceDir, relativePath)))) {
+      providers[providerName] = {
+        status: context.requiredProviders.includes(providerName) ? 'pending' : 'skipped',
+        releaseRequired: context.requiredProviders.includes(providerName),
+        source: 'real',
+        executionId: context.executionId,
+        capturedAt,
+        evidenceFiles: [],
+        reason: context.requiredProviders.includes(providerName)
+          ? 'Required real provider output is missing'
+          : 'Provider binary is not required by this release matrix',
+      };
+      continue;
+    }
+    const rawProvider = await readLiveSourceJson(sourceDir, relativePath);
+    assertRawProvenance(context, rawProvider, `Provider ${providerName} output`);
+    assertRawStatusPassed(rawProvider, `Provider ${providerName} output`);
+    if (getRecord(rawProvider)?.source !== 'real') {
+      throw new Error(`Provider ${providerName} output must explicitly declare source=real`);
+    }
+    const runId = getStringContentValue(rawProvider, 'runId');
+    const providerSessionId = getStringContentValue(rawProvider, 'providerSessionId');
+    if (getStringContentValue(rawProvider, 'provider') !== providerName || !runId || !providerSessionId) {
+      throw new Error(`Provider ${providerName} output is missing canonical real-run anchors`);
+    }
+    const evidenceFile = await writeLiveEnvelope(args.evidenceDir, relativePath, {
+      executionId: context.executionId,
+      capturedAt,
+      provider: providerName,
+      runId,
+      providerSessionId,
+      payload: rawProvider,
+    });
+    providers[providerName] = {
+      status: 'passed',
+      releaseRequired: context.requiredProviders.includes(providerName),
+      source: 'real',
+      executionId: context.executionId,
+      capturedAt,
+      runId,
+      providerSessionId,
+      evidenceFiles: [evidenceFile],
+    };
+  }
+
+  const websocket: AgentGatewayAcceptanceEvidence['websocket'] = {};
+  for (const scenario of AGENT_GATEWAY_WEBSOCKET_DENIAL_SCENARIOS) {
+    const relativePath = path.join('websocket', `${scenario}.json`);
+    const rawDenial = await readLiveSourceJson(sourceDir, relativePath);
+    assertRawProvenance(context, rawDenial, `WebSocket denial ${scenario}`);
+    assertRawStatusPassed(rawDenial, `WebSocket denial ${scenario}`);
+    const runId = getStringContentValue(rawDenial, 'runId') || anchors.runId;
+    const actualCode = getStringContentValue(rawDenial, 'actualCode') || getStringContentValue(rawDenial, 'code');
+    const actualHttpStatus = findValueByKey(rawDenial, 'actualHttpStatus');
+    const relatedRunId = getStringContentValue(rawDenial, 'relatedRunId');
+    if (runId !== anchors.runId) {
+      throw new Error(`WebSocket denial ${scenario} does not match the current runId`);
+    }
+    if (scenario === 'crossOrigin') {
+      if (actualHttpStatus !== 403) {
+        throw new Error('Cross-origin WebSocket denial must explicitly report actualHttpStatus=403');
+      }
+    } else if (actualCode !== 'TERMINAL_STREAM_TICKET_SCOPE_MISMATCH') {
+      throw new Error(`${scenario} WebSocket denial must explicitly report TERMINAL_STREAM_TICKET_SCOPE_MISMATCH`);
+    }
+    if (scenario === 'crossRun' && (!relatedRunId || relatedRunId === anchors.runId)) {
+      throw new Error('Cross-run WebSocket denial must report a distinct relatedRunId');
+    }
+    const evidenceFile = await writeLiveEnvelope(args.evidenceDir, relativePath, {
+      executionId: context.executionId,
+      capturedAt,
+      runId,
+      actualCode,
+      actualHttpStatus,
+      relatedRunId,
+      payload: rawDenial,
+    });
+    websocket[scenario] =
+      scenario === 'crossOrigin'
+        ? {
+            status: 'passed',
+            executionId: context.executionId,
+            capturedAt,
+            runId,
+            expectedHttpStatus: 403,
+            actualHttpStatus: typeof actualHttpStatus === 'number' ? actualHttpStatus : undefined,
+            evidenceFiles: [evidenceFile],
+          }
+        : {
+            status: 'passed',
+            executionId: context.executionId,
+            capturedAt,
+            runId,
+            expectedCode: 'TERMINAL_STREAM_TICKET_SCOPE_MISMATCH',
+            actualCode,
+            relatedRunId,
+            evidenceFiles: [evidenceFile],
+          };
+  }
+
+  const rawFile = await readLiveSourceJson(sourceDir, path.join('multi-instance', 'file.json'));
+  const rawTerminal = await readLiveSourceJson(sourceDir, path.join('multi-instance', 'terminal.json'));
+  for (const [label, value] of [
+    ['Multi-instance file output', rawFile],
+    ['Multi-instance terminal output', rawTerminal],
+  ] as const) {
+    assertRawProvenance(context, value, label);
+    assertRawStatusPassed(value, label);
+    assertRawAnchors(value, anchors, label, true);
+    const sourceInstanceId = getStringContentValue(value, 'sourceInstanceId');
+    const targetInstanceId = getStringContentValue(value, 'targetInstanceId');
+    if (!sourceInstanceId || !targetInstanceId || sourceInstanceId === targetInstanceId) {
+      throw new Error(`${label} must identify distinct sourceInstanceId and targetInstanceId values`);
+    }
+  }
+  const fileEvidence = await writeLiveEnvelope(args.evidenceDir, path.join('multi-instance', 'file.json'), {
+    executionId: context.executionId,
+    capturedAt,
+    payload: rawFile,
+  });
+  const terminalEvidence = await writeLiveEnvelope(args.evidenceDir, path.join('multi-instance', 'terminal.json'), {
+    executionId: context.executionId,
+    capturedAt,
+    payload: rawTerminal,
+  });
+  const findingsPath = path.resolve(sourceDir, 'findings.json');
+  const rawFindings = (await pathExists(findingsPath))
+    ? await readLiveSourceJson(sourceDir, 'findings.json')
+    : undefined;
+  if (rawFindings) {
+    assertRawProvenance(context, rawFindings, 'Acceptance findings');
+  }
+  const findings = rawFindings ? getRecord(rawFindings)?.findings : [];
+  if (!Array.isArray(findings)) {
+    throw new Error('findings.json must be an array when provided');
+  }
+  const evidence: AgentGatewayAcceptanceEvidence = {
+    schemaVersion: 1,
+    executionId: context.executionId,
+    capturedAt,
+    anchors,
+    browser,
+    providers,
+    websocket,
+    multiInstance: {
+      mode: 'multi-instance',
+      file: 'passed',
+      terminal: 'passed',
+      executionId: context.executionId,
+      capturedAt,
+      evidenceFiles: [fileEvidence, terminalEvidence],
+    },
+    findings: findings as AgentGatewayAcceptanceEvidence['findings'],
+  };
+  await writeJson(path.resolve(args.evidenceDir, 'evidence.json'), evidence);
+  process.stdout.write(`${JSON.stringify({ evidencePath: path.resolve(args.evidenceDir, 'evidence.json') })}\n`);
 }
 
 function testSpec(id: AgentGatewayAcceptanceCheckId, file: string, scope: CommandSpec['scope'] = 'full'): CommandSpec {
@@ -291,6 +809,14 @@ function getCommandSpecs(): CommandSpec[] {
       scope: 'static',
     },
     {
+      id: 'static.api-alias-scan',
+      executable: 'internal',
+      args: ['scan-canonical-aliases'],
+      cwd: REPOSITORY_ROOT,
+      scope: 'static',
+      run: scanCanonicalAliases,
+    },
+    {
       id: 'static.build',
       executable: 'yarn',
       args: ['build', '@nocobase/plugin-agent-gateway'],
@@ -304,22 +830,41 @@ function getCommandSpecs(): CommandSpec[] {
       cwd: PLUGIN_ROOT,
       scope: 'static',
     },
+    {
+      id: 'static.clean-tree',
+      executable: 'git',
+      args: ['status', '--porcelain', '--untracked-files=all'],
+      cwd: REPOSITORY_ROOT,
+      scope: 'static',
+      expectEmptyOutput: true,
+    },
     testSpec('contracts.release-gate', `${pluginPath}/src/shared/contracts/__tests__/acceptance.test.ts`),
+    testSpec('contracts.canonical', `${pluginPath}/src/shared/contracts/__tests__/contracts.test.ts`),
     testSpec('packaging.bootstrap', `${pluginPath}/src/server/__tests__/packaging.test.ts`),
     testSpec('daemon.runner', `${pluginPath}/src/daemon/__tests__/runner.test.ts`),
     testSpec('daemon.lifecycle', `${pluginPath}/src/daemon/__tests__/daemonLifecycle.test.ts`),
     testSpec('daemon.skill-sync', `${pluginPath}/src/daemon/__tests__/skillSync.test.ts`),
     testSpec('daemon.terminal-stream', `${pluginPath}/src/daemon/__tests__/terminalStreamClient.test.ts`),
     testSpec('daemon.exec-driver', `${pluginPath}/src/daemon/__tests__/execDriver.test.ts`),
+    testSpec('daemon.tmux-terminal', `${pluginPath}/src/daemon/__tests__/tmuxTerminal.test.ts`),
+    testSpec('daemon.run-control-requests', `${pluginPath}/src/daemon/__tests__/runControlRequests.test.ts`),
+    testSpec('daemon.supervisor-modules', `${pluginPath}/src/daemon/__tests__/supervisorModules.test.ts`),
+    testSpec('daemon.execution-modules', `${pluginPath}/src/daemon/__tests__/executionModules.test.ts`),
     testSpec('client.runs', `${pluginPath}/src/client-v2/__tests__/AgentGatewayRunsPage.test.tsx`),
-    testSpec('client.artifacts', `${pluginPath}/src/client-v2/__tests__/runs/__tests__/artifacts.test.tsx`),
+    testSpec('client.runs-features', `${pluginPath}/src/client-v2/__tests__/runs`),
     testSpec('client.skills', `${pluginPath}/src/client-v2/__tests__/AgentGatewaySkillsPage.test.tsx`),
     testSpec('client.admin', `${pluginPath}/src/client-v2/__tests__/AgentGatewayAdminPages.test.tsx`),
+    testSpec('client.terminal-a11y', `${pluginPath}/src/client-v2/__tests__/AgentGatewayTerminalA11y.test.tsx`),
     serverTestSpec('server.collections', `${pluginPath}/src/server/__tests__/collections.test.ts`),
     serverTestSpec('server.permissions', `${pluginPath}/src/server/__tests__/agentGatewayPermissions.test.ts`),
+    serverTestSpec('server.security', `${pluginPath}/src/server/__tests__/security.test.ts`),
     serverTestSpec('server.node-lifecycle', `${pluginPath}/src/server/__tests__/nodeLifecycle.test.ts`),
     serverTestSpec('server.api-call-logging', `${pluginPath}/src/server/__tests__/apiCallLogging.test.ts`),
+    serverTestSpec('server.file-uploads', `${pluginPath}/src/server/__tests__/fileUploads.test.ts`),
+    serverTestSpec('server.dispatch-bindings', `${pluginPath}/src/server/__tests__/dispatchBindings.test.ts`),
     serverTestSpec('server.run-lifecycle', `${pluginPath}/src/server/__tests__/runLifecycle.test.ts`),
+    serverTestSpec('server.run-terminal', `${pluginPath}/src/server/__tests__/runTerminal.test.ts`),
+    serverTestSpec('server.run-domains', `${pluginPath}/src/server/modules/runs/__tests__/runDomains.test.ts`),
     serverTestSpec('server.external-imports', `${pluginPath}/src/server/__tests__/externalRunImports.test.ts`),
     serverTestSpec('server.run-observability', `${pluginPath}/src/server/__tests__/runObservability.test.ts`),
     serverTestSpec('server.conversation-events', `${pluginPath}/src/server/__tests__/conversationEvents.test.ts`),
@@ -371,14 +916,21 @@ async function runCommand(spec: CommandSpec, logsDirectory: string): Promise<Com
   let stdout = '';
   let stderr = '';
   let status: AgentGatewayAcceptanceCheck['status'] = 'passed';
+  let reason: string | undefined;
   try {
-    const output = await execFileAsync(spec.executable, spec.args, {
-      cwd: spec.cwd,
-      env: spec.env,
-      maxBuffer: 64 * 1024 * 1024,
-    });
+    const output = spec.run
+      ? await spec.run()
+      : await execFileAsync(spec.executable, spec.args, {
+          cwd: spec.cwd,
+          env: spec.env,
+          maxBuffer: 64 * 1024 * 1024,
+        });
     stdout = output.stdout;
     stderr = output.stderr;
+    if (spec.expectEmptyOutput && `${stdout}${stderr}`.trim()) {
+      status = 'failed';
+      reason = 'Command was expected to produce no output';
+    }
   } catch (error) {
     status = 'failed';
     const output = getFailureOutput(error);
@@ -386,6 +938,11 @@ async function runCommand(spec: CommandSpec, logsDirectory: string): Promise<Com
     stderr = output.stderr;
   }
   const finishedAt = new Date();
+  const vitestSkips = parseAgentGatewayVitestSkips(`${stdout}\n${stderr}`);
+  if (status === 'passed' && vitestSkips.count > 0) {
+    status = 'skipped';
+    reason = `Vitest reported ${vitestSkips.count} internally skipped test(s)`;
+  }
   const logPath = path.resolve(logsDirectory, `${spec.id}.log`);
   await writeFile(logPath, `${stdout}${stderr ? `\n${stderr}` : ''}`, 'utf8');
   return {
@@ -397,7 +954,10 @@ async function runCommand(spec: CommandSpec, logsDirectory: string): Promise<Com
       durationMs: finishedAt.getTime() - startedAt.getTime(),
       command: [spec.executable, ...spec.args].join(' '),
       logPath: path.relative(path.dirname(logsDirectory), logPath),
+      reason,
       warnings: getWarnings(`${stdout}\n${stderr}`),
+      skippedTests: vitestSkips.count,
+      skipDetails: vitestSkips.details,
     },
     stdout,
     stderr,
@@ -455,9 +1015,170 @@ function parsePackageEvidence(packOutput: CommandOutput | undefined): AgentGatew
   }
 }
 
+function getReferenceKind(filePath: string): AgentGatewayAcceptanceEvidenceFileValidation['kind'] {
+  if (/\.(?:png|jpe?g|gif|webp|mp4|webm)$/i.test(filePath)) {
+    return 'media';
+  }
+  return /\.har$/i.test(filePath) ? 'network' : 'json';
+}
+
+function getEvidenceFileReferences(evidence: AgentGatewayAcceptanceEvidence) {
+  const references = new Map<string, EvidenceFileReference>();
+  const add = (filePath: string, kind = getReferenceKind(filePath)) => {
+    if (filePath) {
+      references.set(filePath, { path: filePath, kind });
+    }
+  };
+  for (const browserEvidence of Object.values(evidence.browser || {})) {
+    if (!browserEvidence) {
+      continue;
+    }
+    add(browserEvidence.snapshotPath, 'json');
+    add(browserEvidence.actionResultPath, 'json');
+    browserEvidence.mediaPaths.forEach((filePath) => add(filePath, 'media'));
+    browserEvidence.networkEvidencePaths.forEach((filePath) => add(filePath, 'network'));
+  }
+  for (const providerEvidence of Object.values(evidence.providers || {})) {
+    providerEvidence?.evidenceFiles.forEach((filePath) => add(filePath));
+  }
+  for (const denialEvidence of Object.values(evidence.websocket || {})) {
+    denialEvidence?.evidenceFiles.forEach((filePath) => add(filePath));
+  }
+  evidence.multiInstance?.evidenceFiles.forEach((filePath) => add(filePath));
+  return [...references.values()];
+}
+
+function findValueByKey(value: unknown, key: string): unknown {
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const found = findValueByKey(item, key);
+      if (found !== undefined) {
+        return found;
+      }
+    }
+    return undefined;
+  }
+  if (!value || typeof value !== 'object') {
+    return undefined;
+  }
+  const record = value as Record<string, unknown>;
+  if (record[key] !== undefined) {
+    return record[key];
+  }
+  for (const item of Object.values(record)) {
+    const found = findValueByKey(item, key);
+    if (found !== undefined) {
+      return found;
+    }
+  }
+  return undefined;
+}
+
+function getStringContentValue(value: unknown, key: string) {
+  const found = findValueByKey(value, key);
+  return typeof found === 'string' && found ? found : undefined;
+}
+
+function parseEvidenceFileContent(value: unknown): AgentGatewayAcceptanceEvidenceFileContent {
+  const provider = getStringContentValue(value, 'provider');
+  const actualHttpStatus = findValueByKey(value, 'actualHttpStatus');
+  return {
+    executionId: getStringContentValue(value, 'executionId'),
+    nodeId: getStringContentValue(value, 'nodeId'),
+    runId: getStringContentValue(value, 'runId'),
+    skillVersionId: getStringContentValue(value, 'skillVersionId'),
+    provider: AGENT_GATEWAY_ACCEPTANCE_PROVIDERS.includes(provider as AgentGatewayAcceptanceProvider)
+      ? (provider as AgentGatewayAcceptanceProvider)
+      : undefined,
+    providerSessionId: getStringContentValue(value, 'providerSessionId'),
+    actualCode: getStringContentValue(value, 'actualCode') || getStringContentValue(value, 'code'),
+    actualHttpStatus:
+      typeof actualHttpStatus === 'number' && Number.isFinite(actualHttpStatus) ? actualHttpStatus : undefined,
+    relatedRunId: getStringContentValue(value, 'relatedRunId'),
+  };
+}
+
+function isContainedPath(root: string, candidate: string) {
+  const relative = path.relative(root, candidate);
+  return relative !== '' && !relative.startsWith(`..${path.sep}`) && relative !== '..' && !path.isAbsolute(relative);
+}
+
+async function validateEvidenceFile(
+  evidenceDir: string,
+  reference: EvidenceFileReference,
+): Promise<AgentGatewayAcceptanceEvidenceFileValidation> {
+  const candidate = path.resolve(evidenceDir, reference.path);
+  const base = {
+    path: reference.path,
+    kind: reference.kind,
+    contained: false,
+    regularFile: false,
+    sizeBytes: 0,
+  };
+  if (
+    path.isAbsolute(reference.path) ||
+    !isContainedPath(evidenceDir, candidate) ||
+    reference.path
+      .split(/[\\/]/)
+      .some((segment) => ['__fixtures__', 'fixtures', 'test-fixtures'].includes(segment.toLowerCase()))
+  ) {
+    return { ...base, status: 'failed', reason: 'Path escapes the evidence directory or points to fixture data' };
+  }
+  try {
+    const [stats, resolvedRoot, resolvedFile] = await Promise.all([
+      lstat(candidate),
+      realpath(evidenceDir),
+      realpath(candidate),
+    ]);
+    const contained = isContainedPath(resolvedRoot, resolvedFile);
+    const regularFile = stats.isFile() && !stats.isSymbolicLink();
+    if (!contained || !regularFile || stats.size <= 0) {
+      return {
+        ...base,
+        status: 'failed',
+        contained,
+        regularFile,
+        sizeBytes: stats.size,
+        reason: 'Evidence must be a contained regular nonempty file',
+      };
+    }
+    if (reference.kind === 'media') {
+      return { ...base, status: 'passed', contained, regularFile, sizeBytes: stats.size };
+    }
+    const source = await readFile(candidate, 'utf8');
+    const parsed = JSON.parse(source) as unknown;
+    return {
+      ...base,
+      status: 'passed',
+      contained,
+      regularFile,
+      sizeBytes: stats.size,
+      content: parseEvidenceFileContent(parsed),
+    };
+  } catch (error) {
+    return {
+      ...base,
+      status: 'failed',
+      reason: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+async function validateEvidenceFiles(evidenceDir: string, evidence: AgentGatewayAcceptanceEvidence | undefined) {
+  if (!evidence) {
+    return undefined;
+  }
+  return Promise.all(
+    getEvidenceFileReferences(evidence).map((reference) => validateEvidenceFile(evidenceDir, reference)),
+  );
+}
+
 function renderReport(summary: AgentGatewayReleaseGateSummary) {
   const checks = summary.checks
-    .map((check) => `| ${check.id} | ${check.status} | ${check.durationMs} | ${check.reason || ''} |`)
+    .map(
+      (check) =>
+        `| ${check.id} | ${check.status} | ${check.durationMs} | ${check.skippedTests || 0} | ${check.reason || ''} |`,
+    )
     .join('\n');
   const list = (values: string[]) => (values.length ? values.map((value) => `- ${value}`).join('\n') : '- None');
   return (
@@ -466,15 +1187,23 @@ function renderReport(summary: AgentGatewayReleaseGateSummary) {
     `- Execution ID: \`${summary.context.executionId}\`\n` +
     `- Started: ${summary.context.startedAt}\n` +
     `- Generated: ${summary.generatedAt}\n` +
+    `- Repository: \`${summary.context.repository?.branch || 'missing'}@${
+      summary.context.repository?.commit || 'missing'
+    }\`\n` +
+    `- Prepared from clean tree: ${summary.context.repository?.clean === true}\n` +
     `- Required providers: ${summary.context.requiredProviders.join(', ') || 'none'}\n\n` +
-    `## Automated checks\n\n| Check | Status | Duration ms | Reason |\n| --- | --- | ---: | --- |\n${checks}\n\n` +
+    `## Automated checks\n\n| Check | Status | Duration ms | Internal skips | Reason |\n| --- | --- | ---: | ---: | --- |\n${checks}\n\n` +
+    `Adapter fixture checks are automated parser tests only and never count as live provider evidence.\n\n` +
     `## Failures\n\n${list(summary.failures)}\n\n` +
     `## Incomplete evidence\n\n${list(summary.incomplete)}\n\n` +
     `## Warnings\n\n${list(summary.warnings)}\n\n` +
     `## Package\n\n` +
     `- Status: ${summary.packageEvidence?.status || 'missing'}\n` +
     `- File count: ${summary.packageEvidence?.fileCount || 0}\n` +
-    `- Banned files: ${summary.packageEvidence?.bannedFiles.join(', ') || 'none'}\n`
+    `- Banned files: ${summary.packageEvidence?.bannedFiles.join(', ') || 'none'}\n\n` +
+    `## Live evidence files\n\n` +
+    `- Validated files: ${summary.evidenceFiles?.length || 0}\n` +
+    `- Invalid files: ${summary.evidenceFiles?.filter((file) => file.status === 'failed').length || 0}\n`
   );
 }
 
@@ -484,6 +1213,7 @@ async function verify(args: GateArgs) {
     throw new Error(`Acceptance context is missing. Run prepare first: ${contextPath}`);
   }
   const context = await readJson<AgentGatewayAcceptanceContext>(contextPath);
+  const currentRepository = await getRepositoryContext();
   const evidencePath = path.resolve(args.evidenceDir, 'evidence.json');
   const evidence = (await pathExists(evidencePath))
     ? await readJson<AgentGatewayAcceptanceEvidence>(evidencePath)
@@ -491,7 +1221,7 @@ async function verify(args: GateArgs) {
   const logsDirectory = path.resolve(args.evidenceDir, 'logs');
   await mkdir(logsDirectory, { recursive: true });
 
-  const checks: AgentGatewayAcceptanceCheck[] = [];
+  const checks: AgentGatewayAcceptanceCheck[] = [createRepositoryContextCheck(context.repository, currentRepository)];
   let packOutput: CommandOutput | undefined;
   for (const spec of getCommandSpecs()) {
     if (!shouldRunSpec(spec, args.scope)) {
@@ -516,6 +1246,7 @@ async function verify(args: GateArgs) {
     checks,
     packageEvidence: parsePackageEvidence(packOutput),
     evidence,
+    evidenceFiles: await validateEvidenceFiles(args.evidenceDir, evidence),
     generatedAt: new Date().toISOString(),
   });
   await writeJson(path.resolve(args.evidenceDir, 'summary.json'), summary);
@@ -530,6 +1261,15 @@ async function main() {
   const args = parseArgs(process.argv);
   if (args.command === 'prepare') {
     await prepare(args);
+    return;
+  }
+  if (args.command === 'collect') {
+    await collect(args);
+    return;
+  }
+  if (args.command === 'scan') {
+    const result = await scanCanonicalAliases();
+    process.stdout.write(result.stdout);
     return;
   }
   await verify(args);

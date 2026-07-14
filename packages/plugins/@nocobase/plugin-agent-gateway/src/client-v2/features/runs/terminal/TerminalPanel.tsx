@@ -10,7 +10,7 @@
 import { EnterOutlined, PoweroffOutlined, ReloadOutlined } from '@ant-design/icons';
 import { Alert, Button, Space, Tooltip, Typography } from 'antd';
 import React from 'react';
-import { AgentCapabilityKey, isAgentCapabilitySupported } from '../../../../shared/providerCapabilities';
+import { AgentCapabilityKey } from '../../../../shared/providerCapabilities';
 import { LazyReadonlyXtermOutput } from '../../../components/LazyReadonlyXtermOutput';
 import { UseTerminalStreamState } from '../../../hooks/useTerminalStream';
 import { formatDateTime, getObjectRecord, statusTag } from '../../../pages/AgentGatewayPageUtils';
@@ -76,11 +76,7 @@ export function getTerminalResetKey(
 }
 
 export function getRunCapability(run: RunRecord, capability: AgentCapabilityKey) {
-  const capabilities = run.capabilitiesSnapshotJson;
-  if (!capabilities || !Object.keys(capabilities).length) {
-    return true;
-  }
-  return isAgentCapabilitySupported(run.provider || 'generic-cli', capabilities, capability);
+  return run.capabilitiesSnapshotJson?.[capability] === true;
 }
 
 export function createUnsupportedTerminalSnapshot(run: RunRecord): TerminalSnapshot {

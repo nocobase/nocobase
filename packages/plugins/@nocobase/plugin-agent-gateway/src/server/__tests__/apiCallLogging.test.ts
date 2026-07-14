@@ -11,6 +11,11 @@ import { MockServer, createMockServer } from '@nocobase/test';
 
 import PluginAgentGatewayServer from '../plugin';
 import { createNodeToken, toStoredTokenFields } from '../security';
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiUrl } from '../../shared/apiContract';
+
+function getTestApiPath(action: Parameters<typeof getAgentGatewayApiUrl>[0], targetKey?: unknown) {
+  return `/${getAgentGatewayApiUrl(action, targetKey === undefined ? undefined : String(targetKey))}`;
+}
 
 function getData(response: { body: { data?: Record<string, unknown> } }) {
   return response.body.data || response.body;
@@ -84,13 +89,13 @@ describe('agent gateway API call log sampling', () => {
 
     for (let index = 0; index < 5; index += 1) {
       const heartbeatResponse = await daemon
-        .post(`/agentGatewayApi:heartbeatNode/${runner.nodeId}`)
+        .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatNode, runner.nodeId))
         .set('Authorization', `Bearer ${runner.nodeToken}`)
         .send({ currentConcurrency: 0 });
       expect(heartbeatResponse.status).toBe(200);
 
       const claimResponse = await daemon
-        .post(`/agentGatewayApi:claimRun/${runner.nodeId}`)
+        .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.claimRun, runner.nodeId))
         .set('Authorization', `Bearer ${runner.nodeToken}`)
         .send({ profileKey: 'codex' });
       expect(claimResponse.status).toBe(200);
@@ -119,7 +124,7 @@ describe('agent gateway API call log sampling', () => {
       },
     });
     const claimResponse = await daemon
-      .post(`/agentGatewayApi:claimRun/${runner.nodeId}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.claimRun, runner.nodeId))
       .set('Authorization', `Bearer ${runner.nodeToken}`)
       .send({ profileKey: 'codex', runId: run.get('id') });
     expect(claimResponse.status).toBe(200);
@@ -128,21 +133,21 @@ describe('agent gateway API call log sampling', () => {
     expect(await app.db.getRepository('agApiCallLogs').count()).toBe(1);
 
     const changedNodeHeartbeatResponse = await daemon
-      .post(`/agentGatewayApi:heartbeatNode/${runner.nodeId}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatNode, runner.nodeId))
       .set('Authorization', `Bearer ${runner.nodeToken}`)
       .send({ currentConcurrency: 1 });
     expect(changedNodeHeartbeatResponse.status).toBe(200);
     expect(await app.db.getRepository('agApiCallLogs').count()).toBe(2);
 
     const repeatedNodeHeartbeatResponse = await daemon
-      .post(`/agentGatewayApi:heartbeatNode/${runner.nodeId}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatNode, runner.nodeId))
       .set('Authorization', `Bearer ${runner.nodeToken}`)
       .send({ currentConcurrency: 1 });
     expect(repeatedNodeHeartbeatResponse.status).toBe(200);
     expect(await app.db.getRepository('agApiCallLogs').count()).toBe(2);
 
     const runHeartbeatResponse = await daemon
-      .post(`/agentGatewayApi:heartbeatRun/${String(run.get('id'))}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatRun, String(run.get('id'))))
       .set('Authorization', `Bearer ${runner.nodeToken}`)
       .send({
         claimToken: claim.claimToken,
@@ -154,7 +159,7 @@ describe('agent gateway API call log sampling', () => {
     expect(await app.db.getRepository('agApiCallLogs').count()).toBe(3);
 
     const repeatedRunHeartbeatResponse = await daemon
-      .post(`/agentGatewayApi:heartbeatRun/${String(run.get('id'))}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatRun, String(run.get('id'))))
       .set('Authorization', `Bearer ${runner.nodeToken}`)
       .send({
         claimToken: claim.claimToken,
@@ -166,7 +171,7 @@ describe('agent gateway API call log sampling', () => {
     expect(await app.db.getRepository('agApiCallLogs').count()).toBe(3);
 
     const failedHeartbeatResponse = await daemon
-      .post(`/agentGatewayApi:heartbeatNode/${runner.nodeId}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatNode, runner.nodeId))
       .set('Authorization', 'Bearer invalid-node-token')
       .send({ currentConcurrency: 0 });
     expect(failedHeartbeatResponse.status).toBe(401);

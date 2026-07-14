@@ -7,19 +7,58 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { JsonRecord } from '../json';
+import {
+  dispatchBindingContracts,
+  type DispatchBindingActionRequestMap,
+  type DispatchBindingActionResponseMap,
+} from './dispatchBindings';
 import { importContracts } from './imports';
-import { nodeContracts } from './nodes';
-import { observationContracts } from './observations';
-import { runContracts } from './runs';
-import { skillContracts } from './skills';
-import { terminalContracts } from './terminal';
+import type { ImportActionRequestMap, ImportActionResponseMap } from './imports';
+import { nodeContracts, type NodeActionRequestMap, type NodeActionResponseMap } from './nodes';
+import {
+  observationContracts,
+  type CursorListQuery,
+  type GetRunArtifactContentQuery,
+  type ListRunToolCallsQuery,
+  type ListToolCallStatsQuery,
+  type ObservationActionRequestMap,
+  type ObservationActionResponseMap,
+  type PaginationQuery,
+} from './observations';
+import {
+  promptTemplateContracts,
+  type PromptTemplateActionRequestMap,
+  type PromptTemplateActionResponseMap,
+} from './promptTemplates';
+import { runContracts, type ListRunsQuery, type RunActionRequestMap, type RunActionResponseMap } from './runs';
+import { sessionContracts, type SessionActionRequestMap, type SessionActionResponseMap } from './sessions';
+import {
+  skillContracts,
+  type DownloadSkillVersionQuery,
+  type ListSkillVersionsQuery,
+  type SkillActionRequestMap,
+  type SkillActionResponseMap,
+} from './skills';
+import {
+  taskTemplateContracts,
+  type ListTaskTemplatesQuery,
+  type TaskTemplateActionRequestMap,
+  type TaskTemplateActionResponseMap,
+} from './taskTemplates';
+import {
+  terminalContracts,
+  type GetTerminalSnapshotQuery,
+  type TerminalActionRequestMap,
+  type TerminalActionResponseMap,
+} from './terminal';
+import { uploadContracts, type UploadActionRequestMap, type UploadActionResponseMap } from './uploads';
 import {
   AGENT_GATEWAY_API_ACTIONS,
   AgentGatewayContractError,
-  createActionContract,
+  parseStrictObject,
   type AgentGatewayActionContract,
   type AgentGatewayApiAction,
+  type AgentGatewayEmptyRequest,
 } from './common';
 
 export * from './common';
@@ -27,213 +66,161 @@ export * from './acceptance';
 export * from './imports';
 export * from './nodes';
 export * from './observations';
+export * from './promptTemplates';
 export * from './runs';
+export * from './sessions';
 export * from './skills';
+export * from './taskTemplates';
 export * from './terminal';
+export * from './uploads';
+export * from './dispatchBindings';
 
-const genericContractFields: Partial<Record<AgentGatewayApiAction, readonly string[]>> = {
-  [AGENT_GATEWAY_API_ACTIONS.initFileUpload]: [
-    'purpose',
-    'fileName',
-    'mimeType',
-    'sizeBytes',
-    'sourceSha256',
-    'expiresInSeconds',
-    'metadataJson',
-  ],
-  [AGENT_GATEWAY_API_ACTIONS.appendFileUpload]: ['offset', 'contentBase64'],
-  [AGENT_GATEWAY_API_ACTIONS.completeFileUpload]: ['sourceSha256', 'sizeBytes'],
-  [AGENT_GATEWAY_API_ACTIONS.abortFileUpload]: ['reason'],
-  [AGENT_GATEWAY_API_ACTIONS.upsertAgentSession]: [
-    'claimToken',
-    'claimAttempt',
-    'leaseVersion',
-    'provider',
-    'providerSessionId',
-    'status',
-    'capabilitiesJson',
-    'metadataJson',
-  ],
-  [AGENT_GATEWAY_API_ACTIONS.resumeAgentSession]: ['message', 'idempotencyKey', 'resumedFromRunId'],
-  [AGENT_GATEWAY_API_ACTIONS.messageAgentSession]: ['message'],
-  [AGENT_GATEWAY_API_ACTIONS.createTaskTemplate]: [
-    'templateKey',
-    'displayName',
-    'description',
-    'status',
-    'sort',
-    'defaultTitle',
-    'defaultPrompt',
-    'cwd',
-    'nodeId',
-    'agentProfileId',
-    'skillVersionIdsJson',
-    'artifactRoot',
-    'artifactsJson',
-    'metadataJson',
-  ],
-  [AGENT_GATEWAY_API_ACTIONS.updateTaskTemplate]: [
-    'templateKey',
-    'displayName',
-    'description',
-    'status',
-    'sort',
-    'defaultTitle',
-    'defaultPrompt',
-    'cwd',
-    'nodeId',
-    'agentProfileId',
-    'skillVersionIdsJson',
-    'artifactRoot',
-    'artifactsJson',
-    'metadataJson',
-  ],
-  [AGENT_GATEWAY_API_ACTIONS.createPromptTemplate]: [
-    'templateKey',
-    'displayName',
-    'description',
-    'templateText',
-    'status',
-    'variablesSchemaJson',
-    'defaultExecutionPayloadJson',
-    'metadataJson',
-    'defaultAgentProfileId',
-  ],
-  [AGENT_GATEWAY_API_ACTIONS.updatePromptTemplate]: [
-    'templateKey',
-    'displayName',
-    'description',
-    'templateText',
-    'status',
-    'variablesSchemaJson',
-    'defaultExecutionPayloadJson',
-    'metadataJson',
-    'defaultAgentProfileId',
-  ],
-  [AGENT_GATEWAY_API_ACTIONS.previewPromptTemplate]: [
-    'templateId',
-    'templateKey',
-    'templateText',
-    'collectionName',
-    'recordId',
-  ],
-  [AGENT_GATEWAY_API_ACTIONS.createDispatchBinding]: [
-    'bindingKey',
-    'collectionName',
-    'outputAgentRunField',
-    'promptTemplateId',
-    'agentProfileId',
-    'nodeId',
-    'agentProfileField',
-    'nodeField',
-    'skillFieldsJson',
-    'fieldMappingsJson',
-    'filterJson',
-    'payloadMappingJson',
-    'metadataJson',
-    'triggerType',
-    'sourceAction',
-    'priority',
-    'enabled',
-    'status',
-  ],
-  [AGENT_GATEWAY_API_ACTIONS.updateDispatchBinding]: [
-    'bindingKey',
-    'collectionName',
-    'outputAgentRunField',
-    'promptTemplateId',
-    'agentProfileId',
-    'nodeId',
-    'agentProfileField',
-    'nodeField',
-    'skillFieldsJson',
-    'fieldMappingsJson',
-    'filterJson',
-    'payloadMappingJson',
-    'metadataJson',
-    'triggerType',
-    'sourceAction',
-    'priority',
-    'enabled',
-    'status',
-  ],
-  [AGENT_GATEWAY_API_ACTIONS.dispatchBinding]: ['sourceRecordId', 'sourceCollection', 'idempotencyKey'],
-  [AGENT_GATEWAY_API_ACTIONS.listPendingControlRequests]: ['claimToken', 'claimAttempt', 'leaseVersion'],
-  [AGENT_GATEWAY_API_ACTIONS.getControlRequestStatus]: ['requestId'],
+export interface AgentGatewayActionRequestMap
+  extends NodeActionRequestMap,
+    SkillActionRequestMap,
+    RunActionRequestMap,
+    TaskTemplateActionRequestMap,
+    PromptTemplateActionRequestMap,
+    DispatchBindingActionRequestMap,
+    UploadActionRequestMap,
+    SessionActionRequestMap,
+    ObservationActionRequestMap,
+    ImportActionRequestMap,
+    TerminalActionRequestMap {}
+
+export interface AgentGatewayActionResponseMap
+  extends NodeActionResponseMap,
+    SkillActionResponseMap,
+    RunActionResponseMap,
+    TaskTemplateActionResponseMap,
+    PromptTemplateActionResponseMap,
+    DispatchBindingActionResponseMap,
+    UploadActionResponseMap,
+    SessionActionResponseMap,
+    ObservationActionResponseMap,
+    ImportActionResponseMap,
+    TerminalActionResponseMap {}
+
+export type AgentGatewayActionRequest<Action extends AgentGatewayApiAction> = AgentGatewayActionRequestMap[Action];
+export type AgentGatewayActionResponse<Action extends AgentGatewayApiAction> = AgentGatewayActionResponseMap[Action];
+
+export type AgentGatewayActionQueryMap = {
+  [Action in AgentGatewayApiAction]: Action extends typeof AGENT_GATEWAY_API_ACTIONS.listSkillVersions
+    ? ListSkillVersionsQuery
+    : Action extends typeof AGENT_GATEWAY_API_ACTIONS.downloadSkillVersion
+      ? DownloadSkillVersionQuery
+      : Action extends typeof AGENT_GATEWAY_API_ACTIONS.listRuns
+        ? ListRunsQuery
+        : Action extends typeof AGENT_GATEWAY_API_ACTIONS.listTaskTemplates
+          ? ListTaskTemplatesQuery
+          : Action extends
+                | typeof AGENT_GATEWAY_API_ACTIONS.listRunConversationEvents
+                | typeof AGENT_GATEWAY_API_ACTIONS.listSessionConversationEvents
+                | typeof AGENT_GATEWAY_API_ACTIONS.listRunEvents
+            ? CursorListQuery
+            : Action extends typeof AGENT_GATEWAY_API_ACTIONS.listRunToolCalls
+              ? ListRunToolCallsQuery
+              : Action extends typeof AGENT_GATEWAY_API_ACTIONS.listToolCallStats
+                ? ListToolCallStatsQuery
+                : Action extends
+                      | typeof AGENT_GATEWAY_API_ACTIONS.listRunArtifacts
+                      | typeof AGENT_GATEWAY_API_ACTIONS.listRunSnapshots
+                      | typeof AGENT_GATEWAY_API_ACTIONS.listRunApiCallLogs
+                  ? PaginationQuery
+                  : Action extends typeof AGENT_GATEWAY_API_ACTIONS.getRunArtifactContent
+                    ? GetRunArtifactContentQuery
+                    : Action extends typeof AGENT_GATEWAY_API_ACTIONS.getTerminalSnapshot
+                      ? GetTerminalSnapshotQuery
+                      : Action extends typeof AGENT_GATEWAY_API_ACTIONS.getTerminalStreamStats
+                        ? import('./terminal').GetTerminalStreamStatsQuery
+                        : Action extends typeof AGENT_GATEWAY_API_ACTIONS.getControlRequestStatus
+                          ? import('./terminal').GetControlRequestStatusRequest
+                          : AgentGatewayEmptyRequest;
 };
 
-const bodylessActions = new Set<AgentGatewayApiAction>([
-  AGENT_GATEWAY_API_ACTIONS.listNodes,
-  AGENT_GATEWAY_API_ACTIONS.getNode,
-  AGENT_GATEWAY_API_ACTIONS.listNodeProfiles,
-  AGENT_GATEWAY_API_ACTIONS.listSkillVersions,
-  AGENT_GATEWAY_API_ACTIONS.getSkillVersion,
-  AGENT_GATEWAY_API_ACTIONS.downloadSkillVersion,
-  AGENT_GATEWAY_API_ACTIONS.listRunOptions,
-  AGENT_GATEWAY_API_ACTIONS.listRuns,
-  AGENT_GATEWAY_API_ACTIONS.getRun,
-  AGENT_GATEWAY_API_ACTIONS.expireRunLeases,
-  AGENT_GATEWAY_API_ACTIONS.listTaskTemplates,
-  AGENT_GATEWAY_API_ACTIONS.getTaskTemplate,
-  AGENT_GATEWAY_API_ACTIONS.listPromptTemplates,
-  AGENT_GATEWAY_API_ACTIONS.getPromptTemplate,
-  AGENT_GATEWAY_API_ACTIONS.destroyPromptTemplate,
-  AGENT_GATEWAY_API_ACTIONS.listDispatchBindings,
-  AGENT_GATEWAY_API_ACTIONS.getDispatchBinding,
-  AGENT_GATEWAY_API_ACTIONS.destroyDispatchBinding,
-  AGENT_GATEWAY_API_ACTIONS.listRunConversationEvents,
-  AGENT_GATEWAY_API_ACTIONS.listRunToolCalls,
-  AGENT_GATEWAY_API_ACTIONS.listToolCallStats,
-  AGENT_GATEWAY_API_ACTIONS.listSessionConversationEvents,
-  AGENT_GATEWAY_API_ACTIONS.listRunEvents,
-  AGENT_GATEWAY_API_ACTIONS.listRunArtifacts,
-  AGENT_GATEWAY_API_ACTIONS.listRunSnapshots,
-  AGENT_GATEWAY_API_ACTIONS.listRunApiCallLogs,
-  AGENT_GATEWAY_API_ACTIONS.getRunArtifactContent,
-  AGENT_GATEWAY_API_ACTIONS.getTerminalSnapshot,
-  AGENT_GATEWAY_API_ACTIONS.getTerminalStreamStats,
-]);
+export type AgentGatewayActionQuery<Action extends AgentGatewayApiAction> = AgentGatewayActionQueryMap[Action];
 
-const explicitContracts: Partial<
-  Record<AgentGatewayApiAction, AgentGatewayActionContract<AgentGatewayApiAction, JsonRecord, JsonRecord>>
-> = {
+const queryContractFields: Partial<Record<AgentGatewayApiAction, readonly string[]>> = {
+  [AGENT_GATEWAY_API_ACTIONS.listSkillVersions]: ['page', 'pageSize', 'limit'],
+  [AGENT_GATEWAY_API_ACTIONS.downloadSkillVersion]: ['runId', 'claimAttempt', 'sha256'],
+  [AGENT_GATEWAY_API_ACTIONS.listRuns]: [
+    'filter',
+    'sort',
+    'page',
+    'pageSize',
+    'limit',
+    'status',
+    'nodeId',
+    'agentProfileId',
+    'taskTemplateId',
+    'createdAtFrom',
+    'createdAtTo',
+  ],
+  [AGENT_GATEWAY_API_ACTIONS.listTaskTemplates]: ['includeDisabled', 'status'],
+  [AGENT_GATEWAY_API_ACTIONS.listRunConversationEvents]: ['pageSize', 'limit', 'beforeCursor', 'afterCursor'],
+  [AGENT_GATEWAY_API_ACTIONS.listSessionConversationEvents]: ['pageSize', 'limit', 'beforeCursor', 'afterCursor'],
+  [AGENT_GATEWAY_API_ACTIONS.listRunToolCalls]: ['eventLimit'],
+  [AGENT_GATEWAY_API_ACTIONS.listRunEvents]: ['pageSize', 'limit', 'beforeCursor', 'afterCursor'],
+  [AGENT_GATEWAY_API_ACTIONS.listRunArtifacts]: ['page', 'pageSize', 'limit'],
+  [AGENT_GATEWAY_API_ACTIONS.listRunSnapshots]: ['page', 'pageSize', 'limit'],
+  [AGENT_GATEWAY_API_ACTIONS.listRunApiCallLogs]: ['page', 'pageSize', 'limit'],
+  [AGENT_GATEWAY_API_ACTIONS.getRunArtifactContent]: ['artifactId'],
+  [AGENT_GATEWAY_API_ACTIONS.getTerminalSnapshot]: ['lines'],
+  [AGENT_GATEWAY_API_ACTIONS.getTerminalStreamStats]: ['runId', 'nodeId'],
+  [AGENT_GATEWAY_API_ACTIONS.getControlRequestStatus]: ['requestId'],
+  [AGENT_GATEWAY_API_ACTIONS.listToolCallStats]: ['limit', 'eventLimit'],
+};
+
+export type AgentGatewayActionContractMap = {
+  [Action in AgentGatewayApiAction]: AgentGatewayActionContract<
+    Action,
+    AgentGatewayActionRequest<Action>,
+    AgentGatewayActionResponse<Action>
+  >;
+};
+
+export const AGENT_GATEWAY_API_CONTRACTS = {
   ...nodeContracts,
   ...runContracts,
   ...observationContracts,
   ...importContracts,
   ...skillContracts,
   ...terminalContracts,
-};
+  ...uploadContracts,
+  ...sessionContracts,
+  ...taskTemplateContracts,
+  ...promptTemplateContracts,
+  ...dispatchBindingContracts,
+} as const satisfies AgentGatewayActionContractMap;
 
-export const AGENT_GATEWAY_API_CONTRACTS = Object.fromEntries(
-  Object.values(AGENT_GATEWAY_API_ACTIONS).map((action) => {
-    const explicitContract = explicitContracts[action];
-    if (explicitContract) {
-      return [action, explicitContract];
-    }
-    const fields = genericContractFields[action];
-    if (fields) {
-      return [action, createActionContract(action, fields)];
-    }
-    if (bodylessActions.has(action)) {
-      return [action, createActionContract(action, [])];
-    }
-    return [action, createActionContract(action, [])];
-  }),
-) as Record<AgentGatewayApiAction, AgentGatewayActionContract<AgentGatewayApiAction, JsonRecord, JsonRecord>>;
-
-export function parseAgentGatewayActionRequest(action: AgentGatewayApiAction, value: unknown) {
+export function parseAgentGatewayActionRequest<Action extends AgentGatewayApiAction>(
+  action: Action,
+  value: unknown,
+): AgentGatewayActionRequest<Action> {
   const contract = AGENT_GATEWAY_API_CONTRACTS[action];
   if (!contract) {
     throw new AgentGatewayContractError(`Unknown Agent Gateway action: ${action}`);
   }
-  return contract.parseRequest(value);
+  return contract.parseRequest(value) as AgentGatewayActionRequest<Action>;
 }
 
-export function parseAgentGatewayActionResponse(action: AgentGatewayApiAction, value: unknown) {
+export function parseAgentGatewayActionQuery<Action extends AgentGatewayApiAction>(
+  action: Action,
+  value: unknown,
+): AgentGatewayActionQuery<Action> {
+  if (!AGENT_GATEWAY_API_CONTRACTS[action]) {
+    throw new AgentGatewayContractError(`Unknown Agent Gateway action: ${action}`);
+  }
+  return parseStrictObject(value, queryContractFields[action] || [], 'query') as AgentGatewayActionQuery<Action>;
+}
+
+export function parseAgentGatewayActionResponse<Action extends AgentGatewayApiAction>(
+  action: Action,
+  value: unknown,
+): AgentGatewayActionResponse<Action> {
   const contract = AGENT_GATEWAY_API_CONTRACTS[action];
   if (!contract) {
     throw new AgentGatewayContractError(`Unknown Agent Gateway action: ${action}`);
   }
-  return contract.parseResponse(value);
+  return contract.parseResponse(value) as AgentGatewayActionResponse<Action>;
 }

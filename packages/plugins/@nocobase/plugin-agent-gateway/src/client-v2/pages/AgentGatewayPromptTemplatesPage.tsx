@@ -13,13 +13,14 @@ import { useRequest } from 'ahooks';
 import { Alert, Button, Card, Empty, Flex, Form, Input, Modal, Space, Switch, Table, Tooltip, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useCallback, useMemo, useState } from 'react';
-import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiUrl } from '../../shared/apiContract';
+import { AGENT_GATEWAY_API_ACTIONS } from '../../shared/apiContract';
 import { useT } from '../locale';
 import {
   AgentGatewayContext,
   getApiErrorMessage,
   getRequiredResponseData,
   getResponseData,
+  requestAgentGatewayAction,
 } from './AgentGatewayPageUtils';
 
 interface PromptTemplateRecord {
@@ -66,10 +67,13 @@ export default function AgentGatewayPromptTemplatesPage() {
   const [previewError, setPreviewError] = useState('');
 
   const templatesRequest = useRequest(async () => {
-    const response = await ctx.api.request<PromptTemplateRecord[]>({
-      url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.listPromptTemplates),
-      method: 'get',
-    });
+    const response = await requestAgentGatewayAction<PromptTemplateRecord[]>(
+      ctx.api,
+      AGENT_GATEWAY_API_ACTIONS.listPromptTemplates,
+      {
+        method: 'get',
+      },
+    );
     return getResponseData(response, []);
   });
 
@@ -84,19 +88,26 @@ export default function AgentGatewayPromptTemplatesPage() {
       };
 
       if (editingTemplate) {
-        const response = await ctx.api.request<PromptTemplateRecord>({
-          url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.updatePromptTemplate, editingTemplate.id),
-          method: 'post',
-          data: payload,
-        });
+        const response = await requestAgentGatewayAction<PromptTemplateRecord>(
+          ctx.api,
+          AGENT_GATEWAY_API_ACTIONS.updatePromptTemplate,
+          {
+            method: 'post',
+            targetKey: editingTemplate.id,
+            data: payload,
+          },
+        );
         return getRequiredResponseData(response, t('Failed to save template'));
       }
 
-      const response = await ctx.api.request<PromptTemplateRecord>({
-        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.createPromptTemplate),
-        method: 'post',
-        data: payload,
-      });
+      const response = await requestAgentGatewayAction<PromptTemplateRecord>(
+        ctx.api,
+        AGENT_GATEWAY_API_ACTIONS.createPromptTemplate,
+        {
+          method: 'post',
+          data: payload,
+        },
+      );
       return getRequiredResponseData(response, t('Failed to save template'));
     },
     {
@@ -116,13 +127,17 @@ export default function AgentGatewayPromptTemplatesPage() {
 
   const updateTemplateStatusRequest = useRequest(
     async (template: PromptTemplateRecord, enabled: boolean) => {
-      const response = await ctx.api.request<PromptTemplateRecord>({
-        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.updatePromptTemplate, template.id),
-        method: 'post',
-        data: {
-          status: enabled ? 'active' : 'disabled',
+      const response = await requestAgentGatewayAction<PromptTemplateRecord>(
+        ctx.api,
+        AGENT_GATEWAY_API_ACTIONS.updatePromptTemplate,
+        {
+          method: 'post',
+          targetKey: template.id,
+          data: {
+            status: enabled ? 'active' : 'disabled',
+          },
         },
-      });
+      );
       return getRequiredResponseData(response, t('Failed to update template status'));
     },
     {
@@ -142,15 +157,18 @@ export default function AgentGatewayPromptTemplatesPage() {
         throw new Error(t('No template selected'));
       }
 
-      const response = await ctx.api.request<PromptPreviewResult>({
-        url: getAgentGatewayApiUrl(AGENT_GATEWAY_API_ACTIONS.previewPromptTemplate),
-        method: 'post',
-        data: {
-          templateId: previewTemplate.id,
-          collectionName: values.collectionName,
-          recordId: values.recordId,
+      const response = await requestAgentGatewayAction<PromptPreviewResult>(
+        ctx.api,
+        AGENT_GATEWAY_API_ACTIONS.previewPromptTemplate,
+        {
+          method: 'post',
+          data: {
+            templateId: previewTemplate.id,
+            collectionName: values.collectionName,
+            recordId: values.recordId,
+          },
         },
-      });
+      );
       return getRequiredResponseData(response, t('Preview failed'));
     },
     {

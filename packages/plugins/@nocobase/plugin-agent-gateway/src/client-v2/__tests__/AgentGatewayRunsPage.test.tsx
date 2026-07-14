@@ -14,6 +14,12 @@ import { App as AntdApp } from 'antd';
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  AGENT_GATEWAY_API_ACTIONS,
+  AgentGatewayApiAction,
+  getAgentGatewayApiPath,
+  getAgentGatewayApiUrl,
+} from '../../shared/apiContract';
+import {
   TERMINAL_PAYLOAD_ENCODING,
   TERMINAL_PROTOCOL,
   TERMINAL_STREAM_BROWSER_SUBPROTOCOL,
@@ -29,12 +35,21 @@ interface FlowContextWithDefineProperty {
   defineProperty(name: string, descriptor: { value: unknown }): void;
 }
 
+function apiUrl(action: AgentGatewayApiAction, targetKey?: string) {
+  return getAgentGatewayApiUrl(action, targetKey);
+}
+
 interface RequestConfig {
   url: string;
   method: 'get' | 'post';
   data?: Record<string, unknown>;
   params?: Record<string, unknown>;
 }
+
+const RESUMABLE_RUN_CAPABILITIES = {
+  resumeSession: true,
+  resumeWithMessage: true,
+} as const;
 
 interface ApiContextOverrides {
   auth?: {
@@ -273,7 +288,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
   it('opens associated task template and skill details from the runs table links', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [
@@ -304,7 +319,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getRun/run-id-link') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-link')) {
         return {
           data: {
             data: {
@@ -318,7 +333,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getTaskTemplate/template-id-link') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getTaskTemplate, 'template-id-link')) {
         return {
           data: {
             data: {
@@ -337,7 +352,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getSkillVersion/skill-version-id-link') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getSkillVersion, 'skill-version-id-link')) {
         return {
           data: {
             data: {
@@ -369,7 +384,7 @@ describe('PluginAgentGatewayClientV2', () => {
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'agentGatewayApi:getTaskTemplate/template-id-link',
+          url: apiUrl(AGENT_GATEWAY_API_ACTIONS.getTaskTemplate, 'template-id-link'),
           method: 'get',
         }),
       );
@@ -386,7 +401,7 @@ describe('PluginAgentGatewayClientV2', () => {
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'agentGatewayApi:getSkillVersion/skill-version-id-link',
+          url: apiUrl(AGENT_GATEWAY_API_ACTIONS.getSkillVersion, 'skill-version-id-link'),
           method: 'get',
         }),
       );
@@ -402,7 +417,7 @@ describe('PluginAgentGatewayClientV2', () => {
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'agentGatewayApi:getRun/run-id-link',
+          url: apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-link'),
           method: 'get',
         }),
       );
@@ -411,7 +426,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
   it('creates a task run from the runs page and opens the run details', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listRunOptions') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunOptions)) {
         return {
           data: {
             data: {
@@ -485,7 +500,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [],
@@ -493,7 +508,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:createTaskRun') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.createTaskRun)) {
         return {
           data: {
             data: {
@@ -512,7 +527,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getRun/run-id-created') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-created')) {
         return {
           data: {
             data: {
@@ -555,7 +570,7 @@ describe('PluginAgentGatewayClientV2', () => {
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'agentGatewayApi:createTaskRun',
+          url: apiUrl(AGENT_GATEWAY_API_ACTIONS.createTaskRun),
           method: 'post',
           data: expect.objectContaining({
             taskTemplateId: 'task-template-opencode',
@@ -583,7 +598,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
   it('imports an external run from pasted agent logs and opens the run details', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [],
@@ -591,7 +606,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:importExternalRun') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.importExternalRun)) {
         return {
           data: {
             data: {
@@ -610,7 +625,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getRun/run-id-imported') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-imported')) {
         return {
           data: {
             data: {
@@ -653,7 +668,7 @@ describe('PluginAgentGatewayClientV2', () => {
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'agentGatewayApi:importExternalRun',
+          url: apiUrl(AGENT_GATEWAY_API_ACTIONS.importExternalRun),
           method: 'post',
           data: expect.objectContaining({
             provider: 'codex',
@@ -676,7 +691,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
   it('paginates the runs table through the run list API', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         const page = Number(config.params?.page || 1);
         const pageSize = Number(config.params?.pageSize || 20);
         return {
@@ -723,7 +738,7 @@ describe('PluginAgentGatewayClientV2', () => {
           },
         };
       }
-      if (config.url === 'agentGatewayApi:getRun/run-page-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-page-1')) {
         return {
           data: {
             data: {
@@ -767,7 +782,7 @@ describe('PluginAgentGatewayClientV2', () => {
     await waitFor(() => {
       expect(request).toHaveBeenLastCalledWith(
         expect.objectContaining({
-          url: 'agentGatewayApi:listRuns',
+          url: apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns),
           params: expect.objectContaining({
             page: 1,
             pageSize: 20,
@@ -781,7 +796,7 @@ describe('PluginAgentGatewayClientV2', () => {
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'agentGatewayApi:listRuns',
+          url: apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns),
           params: expect.objectContaining({
             sort: 'status',
           }),
@@ -793,7 +808,7 @@ describe('PluginAgentGatewayClientV2', () => {
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'agentGatewayApi:getRun/run-page-1',
+          url: apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-page-1'),
         }),
       );
     });
@@ -804,7 +819,7 @@ describe('PluginAgentGatewayClientV2', () => {
     await waitFor(() => {
       expect(request).toHaveBeenLastCalledWith(
         expect.objectContaining({
-          url: 'agentGatewayApi:listRuns',
+          url: apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns),
           params: expect.objectContaining({
             page: 2,
             pageSize: 20,
@@ -816,7 +831,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
   it('uploads a skill while creating a task run and submits the selected skill version ids', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listRunOptions') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunOptions)) {
         return {
           data: {
             data: {
@@ -847,7 +862,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:initFileUpload') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.initFileUpload)) {
         return {
           data: {
             data: {
@@ -858,7 +873,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:appendFileUpload/upload-custom-skill') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.appendFileUpload, 'upload-custom-skill')) {
         return {
           data: {
             data: {
@@ -869,7 +884,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:completeFileUpload/upload-custom-skill') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.completeFileUpload, 'upload-custom-skill')) {
         return {
           data: {
             data: {
@@ -880,7 +895,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:createSkillVersionFromUpload') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.createSkillVersionFromUpload)) {
         return {
           data: {
             data: {
@@ -893,7 +908,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:createTaskRun') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.createTaskRun)) {
         return {
           data: {
             data: {
@@ -910,7 +925,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getRun/run-id-created') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-created')) {
         return {
           data: {
             data: {
@@ -924,7 +939,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return { data: { data: [] } };
       }
 
@@ -959,7 +974,7 @@ describe('PluginAgentGatewayClientV2', () => {
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'agentGatewayApi:initFileUpload',
+          url: apiUrl(AGENT_GATEWAY_API_ACTIONS.initFileUpload),
           method: 'post',
           data: expect.objectContaining({
             purpose: 'skill-version',
@@ -970,7 +985,7 @@ describe('PluginAgentGatewayClientV2', () => {
       );
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'agentGatewayApi:appendFileUpload/upload-custom-skill',
+          url: apiUrl(AGENT_GATEWAY_API_ACTIONS.appendFileUpload, 'upload-custom-skill'),
           method: 'post',
           data: expect.objectContaining({
             offset: 0,
@@ -980,7 +995,7 @@ describe('PluginAgentGatewayClientV2', () => {
       );
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'agentGatewayApi:createSkillVersionFromUpload',
+          url: apiUrl(AGENT_GATEWAY_API_ACTIONS.createSkillVersionFromUpload),
           method: 'post',
           data: expect.objectContaining({
             uploadId: 'upload-custom-skill',
@@ -996,7 +1011,7 @@ describe('PluginAgentGatewayClientV2', () => {
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'agentGatewayApi:createTaskRun',
+          url: apiUrl(AGENT_GATEWAY_API_ACTIONS.createTaskRun),
           method: 'post',
           data: expect.objectContaining({
             title: 'Uploaded skill task',
@@ -1010,7 +1025,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
   it('does not allow creating a task run when all runners are offline', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listRunOptions') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunOptions)) {
         return {
           data: {
             data: {
@@ -1041,7 +1056,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [],
@@ -1062,14 +1077,14 @@ describe('PluginAgentGatewayClientV2', () => {
     fireEvent.click(createButton);
     expect(request).not.toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'agentGatewayApi:createTaskRun',
+        url: apiUrl(AGENT_GATEWAY_API_ACTIONS.createTaskRun),
       }),
     );
   });
 
   it('creates a task run from a template without a skill version requirement', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listRunOptions') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunOptions)) {
         return {
           data: {
             data: {
@@ -1111,7 +1126,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [],
@@ -1119,7 +1134,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:createTaskRun') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.createTaskRun)) {
         return {
           data: {
             data: {
@@ -1135,7 +1150,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getRun/run-id-no-skill-template') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-no-skill-template')) {
         return {
           data: {
             data: {
@@ -1164,7 +1179,7 @@ describe('PluginAgentGatewayClientV2', () => {
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'agentGatewayApi:createTaskRun',
+          url: apiUrl(AGENT_GATEWAY_API_ACTIONS.createTaskRun),
           method: 'post',
           data: expect.objectContaining({
             taskTemplateId: 'task-template-opencode',
@@ -1184,7 +1199,7 @@ describe('PluginAgentGatewayClientV2', () => {
       resolveConversationEvents = resolve;
     });
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [
@@ -1202,7 +1217,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getRun/run-id-empty') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-empty')) {
         return {
           data: {
             data: {
@@ -1226,7 +1241,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:listRunConversationEvents/run-id-empty') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunConversationEvents, 'run-id-empty')) {
         return conversationEventsResponse;
       }
 
@@ -1261,7 +1276,7 @@ describe('PluginAgentGatewayClientV2', () => {
     const intervalCallbacks = spyOnPageIntervals();
     let conversationEventsCallCount = 0;
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [
@@ -1279,7 +1294,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getRun/run-id-live') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-live')) {
         return {
           data: {
             data: {
@@ -1303,7 +1318,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:listRunConversationEvents/run-id-live') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunConversationEvents, 'run-id-live')) {
         conversationEventsCallCount += 1;
         if (conversationEventsCallCount < 3) {
           return {
@@ -1377,7 +1392,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
   it('shows run-scoped task events before falling back to an empty session timeline', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [
@@ -1396,7 +1411,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getRun/run-id-task') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-task')) {
         return {
           data: {
             data: {
@@ -1421,7 +1436,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:listRunConversationEvents/run-id-task') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunConversationEvents, 'run-id-task')) {
         return {
           data: {
             data: [
@@ -1438,7 +1453,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:listSessionConversationEvents/session-id-empty') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listSessionConversationEvents, 'session-id-empty')) {
         return {
           data: {
             data: [],
@@ -1458,7 +1473,7 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(screen.queryByText('Waiting for live task updates from the agent')).toBeNull();
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'agentGatewayApi:listRunConversationEvents/run-id-task',
+        url: apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunConversationEvents, 'run-id-task'),
         method: 'get',
       }),
     );
@@ -1466,7 +1481,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
   it('lists runs, shows observation details, and requests cancel for active runs', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [
@@ -1519,7 +1534,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:cancelRun/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.cancelRun, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -1531,7 +1546,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -1542,6 +1557,18 @@ describe('PluginAgentGatewayClientV2', () => {
               agentProfileId: 'profile-id-1',
               agentSessionId: 'session-id-1',
               provider: 'codex',
+              capabilitiesSnapshotJson: {
+                structuredEvents: true,
+                terminalOutput: true,
+                resumeSession: true,
+                liveSemanticMessage: false,
+                stdinMessage: false,
+                interrupt: true,
+                terminate: true,
+                artifacts: true,
+                detectSessionId: true,
+                resumeWithMessage: true,
+              },
               agentSessionProviderId: 'thread-id-1',
               continuationReason: 'initial-run',
               promptSnapshot: {
@@ -1590,7 +1617,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:listRunEvents/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunEvents, 'run-id-1')) {
         return {
           data: {
             data: [
@@ -1610,7 +1637,7 @@ describe('PluginAgentGatewayClientV2', () => {
                 level: 'info',
                 eventType: 'render_run.started',
                 message: 'rerendering report',
-                payloadJson: {
+                contentJson: {
                   progress: true,
                   phase: 'render_run',
                   status: 'started',
@@ -1631,7 +1658,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:listSessionConversationEvents/session-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listSessionConversationEvents, 'session-id-1')) {
         return {
           data: {
             data: [
@@ -1697,7 +1724,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:listRunArtifacts/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunArtifacts, 'run-id-1')) {
         return {
           data: {
             data: [
@@ -1733,7 +1760,7 @@ describe('PluginAgentGatewayClientV2', () => {
       }
 
       if (
-        config.url === 'agentGatewayApi:getRunArtifactContent/run-id-1' &&
+        config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRunArtifactContent, 'run-id-1') &&
         config.params?.artifactId === 'artifact-id-1'
       ) {
         return {
@@ -1747,7 +1774,7 @@ describe('PluginAgentGatewayClientV2', () => {
       }
 
       if (
-        config.url === 'agentGatewayApi:getRunArtifactContent/run-id-1' &&
+        config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRunArtifactContent, 'run-id-1') &&
         config.params?.artifactId === 'artifact-id-2'
       ) {
         return {
@@ -1761,7 +1788,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:listRunSnapshots/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunSnapshots, 'run-id-1')) {
         return {
           data: {
             data: [
@@ -1777,14 +1804,14 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:listRunApiCallLogs/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunApiCallLogs, 'run-id-1')) {
         return {
           data: {
             data: [
               {
                 id: 'api-log-id-1',
                 method: 'POST',
-                path: '/api/agent-gateway/runs/run-id-1/events:append',
+                path: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.appendRunEvents, 'run-id-1'),
                 statusCode: 200,
                 durationMs: 12,
                 createdAt: '2026-06-30T10:01:02.000Z',
@@ -1798,7 +1825,7 @@ describe('PluginAgentGatewayClientV2', () => {
               {
                 id: 'api-log-heartbeat-1',
                 method: 'POST',
-                path: '/api/agent-gateway/nodes/node-id-1/runs/run-id-1/heartbeat',
+                path: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatRun, 'run-id-1'),
                 statusCode: 200,
                 durationMs: 3,
                 createdAt: '2026-06-30T10:01:03.000Z',
@@ -1806,7 +1833,7 @@ describe('PluginAgentGatewayClientV2', () => {
               {
                 id: 'api-log-heartbeat-2',
                 method: 'POST',
-                path: '/api/agent-gateway/nodes/node-id-1/runs/run-id-1/heartbeat',
+                path: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatRun, 'run-id-1'),
                 statusCode: 200,
                 durationMs: 5,
                 createdAt: '2026-06-30T10:01:13.000Z',
@@ -1816,7 +1843,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getTerminalSnapshot/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getTerminalSnapshot, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -1865,7 +1892,7 @@ describe('PluginAgentGatewayClientV2', () => {
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'agentGatewayApi:cancelRun/run-id-1',
+          url: apiUrl(AGENT_GATEWAY_API_ACTIONS.cancelRun, 'run-id-1'),
           method: 'post',
         }),
       );
@@ -1897,10 +1924,10 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(screen.queryByText('Command completed')).toBeNull();
 
     const getRequestedUrls = () => request.mock.calls.map(([config]) => config.url);
-    expect(getRequestedUrls()).not.toContain('agentGatewayApi:listRunEvents/run-id-1');
-    expect(getRequestedUrls()).not.toContain('agentGatewayApi:listRunArtifacts/run-id-1');
-    expect(getRequestedUrls()).not.toContain('agentGatewayApi:listRunSnapshots/run-id-1');
-    expect(getRequestedUrls()).not.toContain('agentGatewayApi:listRunApiCallLogs/run-id-1');
+    expect(getRequestedUrls()).not.toContain(apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunEvents, 'run-id-1'));
+    expect(getRequestedUrls()).not.toContain(apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunArtifacts, 'run-id-1'));
+    expect(getRequestedUrls()).not.toContain(apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunSnapshots, 'run-id-1'));
+    expect(getRequestedUrls()).not.toContain(apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunApiCallLogs, 'run-id-1'));
 
     fireEvent.click(await screen.findByRole('tab', { name: 'Agent Sessions' }));
     expect(await screen.findByText('Live CLI Output')).toBeTruthy();
@@ -1921,10 +1948,10 @@ describe('PluginAgentGatewayClientV2', () => {
 
     fireEvent.click(await screen.findByRole('tab', { name: 'Logs' }));
     expect(await screen.findByText('build started')).toBeTruthy();
-    expect(getRequestedUrls()).toContain('agentGatewayApi:listRunEvents/run-id-1');
+    expect(getRequestedUrls()).toContain(apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunEvents, 'run-id-1'));
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'agentGatewayApi:listRunEvents/run-id-1',
+        url: apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunEvents, 'run-id-1'),
         params: expect.objectContaining({ pageSize: 100 }),
       }),
     );
@@ -1937,50 +1964,54 @@ describe('PluginAgentGatewayClientV2', () => {
 
     fireEvent.click(await screen.findByRole('tab', { name: 'Artifacts' }));
     expect(await screen.findByRole('tab', { name: 'Screenshots (1)' })).toBeTruthy();
-    expect(getRequestedUrls()).toContain('agentGatewayApi:listRunArtifacts/run-id-1');
-    expect(getRequestedUrls()).toContain('agentGatewayApi:listRunSnapshots/run-id-1');
+    expect(getRequestedUrls()).toContain(apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunArtifacts, 'run-id-1'));
+    expect(getRequestedUrls()).toContain(apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunSnapshots, 'run-id-1'));
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'agentGatewayApi:listRunArtifacts/run-id-1',
+        url: apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunArtifacts, 'run-id-1'),
         params: { page: 1, pageSize: 20 },
       }),
     );
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'agentGatewayApi:listRunSnapshots/run-id-1',
+        url: apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunSnapshots, 'run-id-1'),
         params: { page: 1, pageSize: 20 },
       }),
     );
-    expect(getRequestedUrls()).not.toContain('agentGatewayApi:getRunArtifactContent/run-id-1');
+    expect(getRequestedUrls()).not.toContain(apiUrl(AGENT_GATEWAY_API_ACTIONS.getRunArtifactContent, 'run-id-1'));
     fireEvent.click(await screen.findByText('Preview'));
     expect(await screen.findByText('Image artifact preview')).toBeTruthy();
-    expect(getRequestedUrls()).toContain('agentGatewayApi:getRunArtifactContent/run-id-1');
+    expect(getRequestedUrls()).toContain(apiUrl(AGENT_GATEWAY_API_ACTIONS.getRunArtifactContent, 'run-id-1'));
     expect(screen.getByAltText('browser-screenshot').getAttribute('src')).toContain('data:image/png;base64,');
     fireEvent.click(await screen.findByText('Preview'));
     fireEvent.click(await screen.findByText('Preview'));
     await screen.findByText('Image artifact preview');
-    expect(getRequestedUrls().filter((url) => url === 'agentGatewayApi:getRunArtifactContent/run-id-1')).toHaveLength(
-      1,
-    );
+    expect(
+      getRequestedUrls().filter((url) => url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRunArtifactContent, 'run-id-1')),
+    ).toHaveLength(1);
     fireEvent.click(await screen.findByRole('tab', { name: 'Logs (1)' }));
     fireEvent.click(await screen.findByText('Preview'));
     expect(await screen.findByText('inline artifact text')).toBeTruthy();
     expect(await screen.findByText(/"files":/)).toBeTruthy();
 
     fireEvent.click(await screen.findByRole('tab', { name: 'API Logs' }));
-    expect(await screen.findByText('/api/agent-gateway/runs/run-id-1/events:append')).toBeTruthy();
-    expect(getRequestedUrls()).toContain('agentGatewayApi:listRunApiCallLogs/run-id-1');
+    expect(
+      await screen.findByText(getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.appendRunEvents, 'run-id-1')),
+    ).toBeTruthy();
+    expect(getRequestedUrls()).toContain(apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunApiCallLogs, 'run-id-1'));
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'agentGatewayApi:listRunApiCallLogs/run-id-1',
+        url: apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunApiCallLogs, 'run-id-1'),
         params: { page: 1, pageSize: 20 },
       }),
     );
     expect(await screen.findByText('Heartbeat summary')).toBeTruthy();
     expect(await screen.findByText('Heartbeat calls: 2')).toBeTruthy();
-    expect(screen.queryByText('/api/agent-gateway/nodes/node-id-1/runs/run-id-1/heartbeat')).toBeNull();
+    expect(screen.queryByText(getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatRun, 'run-id-1'))).toBeNull();
     fireEvent.click(await screen.findByText('Heartbeat details'));
-    expect(await screen.findAllByText('/api/agent-gateway/nodes/node-id-1/runs/run-id-1/heartbeat')).toHaveLength(2);
+    expect(
+      await screen.findAllByText(getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatRun, 'run-id-1')),
+    ).toHaveLength(2);
     expect(screen.queryByText(/must-not-render/)).toBeNull();
     expect(screen.queryByText(/https:\/\/daemon\.example\/artifact/)).toBeNull();
     fireEvent.click(screen.getByLabelText('Close'));
@@ -1991,14 +2022,14 @@ describe('PluginAgentGatewayClientV2', () => {
 
   it('loads artifact pages from the server when detail pagination changes', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [{ id: 'run-id-1', runCode: 'run-artifact-pages', status: 'succeeded' }],
           },
         };
       }
-      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -2008,11 +2039,14 @@ describe('PluginAgentGatewayClientV2', () => {
               agentGatewayActionPermissionsJson: {
                 readArtifacts: true,
               },
+              capabilitiesSnapshotJson: {
+                artifacts: true,
+              },
             },
           },
         };
       }
-      if (config.url === 'agentGatewayApi:listRunArtifacts/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunArtifacts, 'run-id-1')) {
         const page = Number(config.params?.page || 1);
         return {
           data: {
@@ -2033,7 +2067,7 @@ describe('PluginAgentGatewayClientV2', () => {
           },
         };
       }
-      if (config.url === 'agentGatewayApi:listRunSnapshots/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunSnapshots, 'run-id-1')) {
         return {
           data: {
             data: [],
@@ -2054,8 +2088,10 @@ describe('PluginAgentGatewayClientV2', () => {
     fireEvent.click(await screen.findByRole('tab', { name: 'Artifacts' }));
     expect(await screen.findByText(/artifact-page-1 \/ log \/ text\/plain/)).toBeTruthy();
 
-    const enabledNextButton = [...document.querySelectorAll<HTMLButtonElement>('.ant-pagination-next button')].find(
-      (button) => !button.closest('.ant-pagination-disabled'),
+    const artifactsPanel = screen.getByText('Artifacts: 21').closest('.ant-space-vertical');
+    expect(artifactsPanel).toBeTruthy();
+    const enabledNextButton = artifactsPanel?.querySelector<HTMLButtonElement>(
+      '.ant-pagination-next:not(.ant-pagination-disabled) button',
     );
     expect(enabledNextButton).toBeTruthy();
     fireEvent.click(enabledNextButton as HTMLButtonElement);
@@ -2063,7 +2099,7 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(await screen.findByText(/artifact-page-2 \/ log \/ text\/plain/)).toBeTruthy();
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'agentGatewayApi:listRunArtifacts/run-id-1',
+        url: apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunArtifacts, 'run-id-1'),
         params: { page: 2, pageSize: 20 },
       }),
     );
@@ -2073,7 +2109,7 @@ describe('PluginAgentGatewayClientV2', () => {
     let controlAccepted = false;
     let controlStatusPollCount = 0;
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [
@@ -2087,7 +2123,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -2102,19 +2138,24 @@ describe('PluginAgentGatewayClientV2', () => {
                 interruptRun: true,
                 terminateRun: true,
               },
+              capabilitiesSnapshotJson: {
+                interrupt: true,
+                terminalOutput: true,
+                terminate: true,
+              },
             },
           },
         };
       }
 
-      if (config.url === 'agentGatewayApi:listRunEvents/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunEvents, 'run-id-1')) {
         const error = new Error('events forbidden') as Error & { response?: { status: number } };
         error.response = { status: 403 };
         throw error;
       }
 
       if (
-        config.url === 'agentGatewayApi:getControlRequestStatus/run-id-1' &&
+        config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getControlRequestStatus, 'run-id-1') &&
         config.params?.requestId === 'control-request-1'
       ) {
         if (controlAccepted) {
@@ -2132,7 +2173,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getTerminalSnapshot/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getTerminalSnapshot, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -2149,7 +2190,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:interruptTerminal/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.interruptTerminal, 'run-id-1')) {
         controlAccepted = true;
         return {
           data: {
@@ -2179,12 +2220,12 @@ describe('PluginAgentGatewayClientV2', () => {
     await waitFor(() => {
       interruptCall = request.mock.calls
         .map(([config]) => config)
-        .find((config) => config.url === 'agentGatewayApi:interruptTerminal/run-id-1');
+        .find((config) => config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.interruptTerminal, 'run-id-1'));
       expect(interruptCall).toBeTruthy();
     });
     expect(interruptCall).toEqual(
       expect.objectContaining({
-        url: 'agentGatewayApi:interruptTerminal/run-id-1',
+        url: apiUrl(AGENT_GATEWAY_API_ACTIONS.interruptTerminal, 'run-id-1'),
         method: 'post',
         data: expect.objectContaining({
           idempotencyKey: expect.stringMatching(/^ag_control:interrupt:run-id-1:.+/),
@@ -2198,7 +2239,7 @@ describe('PluginAgentGatewayClientV2', () => {
       expect(
         request.mock.calls
           .map(([config]) => config.url)
-          .filter((url) => url === 'agentGatewayApi:getControlRequestStatus/run-id-1'),
+          .filter((url) => url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getControlRequestStatus, 'run-id-1')),
       ).not.toHaveLength(0);
     });
     expect(await screen.findByText('Control request accepted')).toBeTruthy();
@@ -2215,7 +2256,7 @@ describe('PluginAgentGatewayClientV2', () => {
         }) => void)
       | undefined;
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [
@@ -2234,7 +2275,10 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getRun/run-id-1' || config.url === 'agentGatewayApi:getRun/run-id-2') {
+      if (
+        config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-1') ||
+        config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-2')
+      ) {
         const runId = config.url.endsWith('run-id-1') ? 'run-id-1' : 'run-id-2';
         return {
           data: {
@@ -2250,21 +2294,26 @@ describe('PluginAgentGatewayClientV2', () => {
                 interruptRun: true,
                 terminateRun: true,
               },
+              capabilitiesSnapshotJson: {
+                interrupt: true,
+                terminalOutput: true,
+                terminate: true,
+              },
             },
           },
         };
       }
 
       if (
-        config.url === 'agentGatewayApi:listRunEvents/run-id-1' ||
-        config.url === 'agentGatewayApi:listRunEvents/run-id-2'
+        config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunEvents, 'run-id-1') ||
+        config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunEvents, 'run-id-2')
       ) {
         return { data: { data: [] } };
       }
 
       if (
-        config.url === 'agentGatewayApi:getTerminalSnapshot/run-id-1' ||
-        config.url === 'agentGatewayApi:getTerminalSnapshot/run-id-2'
+        config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getTerminalSnapshot, 'run-id-1') ||
+        config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getTerminalSnapshot, 'run-id-2')
       ) {
         const runId = config.url.includes('run-id-1') ? 'run-id-1' : 'run-id-2';
         return {
@@ -2282,7 +2331,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:interruptTerminal/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.interruptTerminal, 'run-id-1')) {
         return await new Promise<{ data: { data: Record<string, unknown> } }>((resolve) => {
           resolveInterrupt = resolve;
         });
@@ -2321,7 +2370,7 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(
       request.mock.calls
         .map(([config]) => config.url)
-        .filter((url) => url === 'agentGatewayApi:getControlRequestStatus/run-id-2'),
+        .filter((url) => url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getControlRequestStatus, 'run-id-2')),
     ).toHaveLength(0);
   });
 
@@ -2332,7 +2381,7 @@ describe('PluginAgentGatewayClientV2', () => {
     let terminateAttempts = 0;
     let controlStatusPollCount = 0;
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [
@@ -2346,7 +2395,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -2361,12 +2410,17 @@ describe('PluginAgentGatewayClientV2', () => {
                 interruptRun: true,
                 terminateRun: true,
               },
+              capabilitiesSnapshotJson: {
+                interrupt: true,
+                terminalOutput: true,
+                terminate: true,
+              },
             },
           },
         };
       }
 
-      if (config.url === 'agentGatewayApi:getTerminalSnapshot/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getTerminalSnapshot, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -2384,7 +2438,7 @@ describe('PluginAgentGatewayClientV2', () => {
       }
 
       if (
-        config.url === 'agentGatewayApi:getControlRequestStatus/run-id-1' &&
+        config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getControlRequestStatus, 'run-id-1') &&
         config.params?.requestId === 'control-request-terminate'
       ) {
         controlStatusPollCount += 1;
@@ -2399,7 +2453,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:terminateTerminal/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.terminateTerminal, 'run-id-1')) {
         terminateAttempts += 1;
         return {
           data: {
@@ -2428,7 +2482,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
     const terminateCalls = request.mock.calls
       .map(([config]) => config)
-      .filter((config) => config.url === 'agentGatewayApi:terminateTerminal/run-id-1');
+      .filter((config) => config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.terminateTerminal, 'run-id-1'));
     const idempotencyKeys = terminateCalls.map((config) => config.data?.idempotencyKey);
     expect(idempotencyKeys).toHaveLength(2);
     expect(idempotencyKeys[0]).toBe(idempotencyKeys[1]);
@@ -2438,7 +2492,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
   it('disables terminal controls without server-provided control action permission and capability', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [
@@ -2452,7 +2506,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -2467,12 +2521,17 @@ describe('PluginAgentGatewayClientV2', () => {
                 interruptRun: false,
                 terminateRun: false,
               },
+              capabilitiesSnapshotJson: {
+                interrupt: false,
+                terminalOutput: true,
+                terminate: false,
+              },
             },
           },
         };
       }
 
-      if (config.url === 'agentGatewayApi:getTerminalSnapshot/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getTerminalSnapshot, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -2507,7 +2566,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
   it('hides terminal controls for completed runs even when control actions are present', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [
@@ -2521,7 +2580,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -2537,12 +2596,17 @@ describe('PluginAgentGatewayClientV2', () => {
                 interruptRun: true,
                 terminateRun: true,
               },
+              capabilitiesSnapshotJson: {
+                interrupt: true,
+                terminalOutput: true,
+                terminate: true,
+              },
             },
           },
         };
       }
 
-      if (config.url === 'agentGatewayApi:getTerminalSnapshot/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getTerminalSnapshot, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -2578,7 +2642,7 @@ describe('PluginAgentGatewayClientV2', () => {
       .mockReturnValueOnce('control-retry-key-2' as `${string}-${string}-${string}-${string}-${string}`);
     let interruptAttempts = 0;
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [
@@ -2592,7 +2656,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -2607,12 +2671,17 @@ describe('PluginAgentGatewayClientV2', () => {
                 interruptRun: true,
                 terminateRun: true,
               },
+              capabilitiesSnapshotJson: {
+                interrupt: true,
+                terminalOutput: true,
+                terminate: true,
+              },
             },
           },
         };
       }
 
-      if (config.url === 'agentGatewayApi:getTerminalSnapshot/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getTerminalSnapshot, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -2629,7 +2698,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:interruptTerminal/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.interruptTerminal, 'run-id-1')) {
         interruptAttempts += 1;
         if (interruptAttempts === 1) {
           const error = new Error('temporary interrupt failure') as Error & { response?: { status: number } };
@@ -2663,7 +2732,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
     const interruptCalls = request.mock.calls
       .map(([config]) => config)
-      .filter((config) => config.url === 'agentGatewayApi:interruptTerminal/run-id-1');
+      .filter((config) => config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.interruptTerminal, 'run-id-1'));
     const idempotencyKeys = interruptCalls.map((config) => config.data?.idempotencyKey);
     expect(idempotencyKeys).toHaveLength(2);
     expect(idempotencyKeys[0]).toBe(idempotencyKeys[1]);
@@ -2676,7 +2745,7 @@ describe('PluginAgentGatewayClientV2', () => {
       .mockReturnValueOnce('control-validation-key-2' as `${string}-${string}-${string}-${string}-${string}`);
     let interruptAttempts = 0;
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [
@@ -2690,7 +2759,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -2705,12 +2774,17 @@ describe('PluginAgentGatewayClientV2', () => {
                 interruptRun: true,
                 terminateRun: true,
               },
+              capabilitiesSnapshotJson: {
+                interrupt: true,
+                terminalOutput: true,
+                terminate: true,
+              },
             },
           },
         };
       }
 
-      if (config.url === 'agentGatewayApi:getTerminalSnapshot/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getTerminalSnapshot, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -2727,7 +2801,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:interruptTerminal/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.interruptTerminal, 'run-id-1')) {
         interruptAttempts += 1;
         if (interruptAttempts === 1) {
           const error = new Error('invalid control request') as Error & { response?: { status: number } };
@@ -2761,7 +2835,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
     const idempotencyKeys = request.mock.calls
       .map(([config]) => config)
-      .filter((config) => config.url === 'agentGatewayApi:interruptTerminal/run-id-1')
+      .filter((config) => config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.interruptTerminal, 'run-id-1'))
       .map((config) => config.data?.idempotencyKey);
     expect(idempotencyKeys).toHaveLength(2);
     expect(idempotencyKeys[0]).toMatch(/^ag_control:interrupt:run-id-1:/);
@@ -2775,7 +2849,7 @@ describe('PluginAgentGatewayClientV2', () => {
       .mockReturnValueOnce('control-final-key-2' as `${string}-${string}-${string}-${string}-${string}`);
     let interruptAttempts = 0;
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [
@@ -2789,7 +2863,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -2804,12 +2878,17 @@ describe('PluginAgentGatewayClientV2', () => {
                 interruptRun: true,
                 terminateRun: true,
               },
+              capabilitiesSnapshotJson: {
+                interrupt: true,
+                terminalOutput: true,
+                terminate: true,
+              },
             },
           },
         };
       }
 
-      if (config.url === 'agentGatewayApi:getTerminalSnapshot/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getTerminalSnapshot, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -2826,7 +2905,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:interruptTerminal/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.interruptTerminal, 'run-id-1')) {
         interruptAttempts += 1;
         return {
           data: {
@@ -2856,7 +2935,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
     const idempotencyKeys = request.mock.calls
       .map(([config]) => config)
-      .filter((config) => config.url === 'agentGatewayApi:interruptTerminal/run-id-1')
+      .filter((config) => config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.interruptTerminal, 'run-id-1'))
       .map((config) => config.data?.idempotencyKey);
     expect(idempotencyKeys).toHaveLength(2);
     expect(idempotencyKeys[0]).toMatch(/^ag_control:interrupt:run-id-1:/);
@@ -2867,7 +2946,7 @@ describe('PluginAgentGatewayClientV2', () => {
   it('opens run details from the runId query and preserves unrelated query parameters on close', async () => {
     window.history.pushState({}, '', '/admin/settings/agent-gateway/runs?source=acceptance&runId=run-id-1');
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [
@@ -2881,7 +2960,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -2899,12 +2978,17 @@ describe('PluginAgentGatewayClientV2', () => {
                 interruptRun: true,
                 terminateRun: true,
               },
+              capabilitiesSnapshotJson: {
+                interrupt: true,
+                terminalOutput: true,
+                terminate: true,
+              },
             },
           },
         };
       }
 
-      if (config.url === 'agentGatewayApi:getTerminalSnapshot/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getTerminalSnapshot, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -2930,7 +3014,7 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(await screen.findByText(/opened from query/)).toBeTruthy();
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'agentGatewayApi:getRun/run-id-1',
+        url: apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-1'),
         method: 'get',
       }),
     );
@@ -2947,7 +3031,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
   it('shows a stable detail access error without polling sensitive endpoints', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [
@@ -2961,7 +3045,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-1')) {
         throw Object.assign(new Error('Run details are not allowed'), {
           response: {
             data: {
@@ -2989,14 +3073,14 @@ describe('PluginAgentGatewayClientV2', () => {
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'agentGatewayApi:getRun/run-id-1',
+          url: apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-1'),
           method: 'get',
         }),
       );
     });
 
     const requestedUrls = request.mock.calls.map(([config]) => config.url);
-    expect(requestedUrls.filter((url) => url === 'agentGatewayApi:getRun/run-id-1')).toHaveLength(1);
+    expect(requestedUrls.filter((url) => url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-1'))).toHaveLength(1);
     expect(requestedUrls.some((url) => url?.includes('terminal:snapshot'))).toBe(false);
     expect(requestedUrls.some((url) => url?.includes('conversation-events:list'))).toBe(false);
     expect(requestedUrls.some((url) => url?.includes('events:list'))).toBe(false);
@@ -3014,7 +3098,7 @@ describe('PluginAgentGatewayClientV2', () => {
     const requestCounts = new Map<string, number>();
     const request = vi.fn(async (config: RequestConfig) => {
       requestCounts.set(config.url, (requestCounts.get(config.url) || 0) + 1);
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [
@@ -3030,7 +3114,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-1')) {
         detailCallCount += 1;
         if (detailCallCount > 1) {
           throw Object.assign(new Error('Run details were revoked'), {
@@ -3055,6 +3139,11 @@ describe('PluginAgentGatewayClientV2', () => {
               agentSessionId: 'session-id-1',
               provider: 'codex',
               terminalStatus: 'active',
+              capabilitiesSnapshotJson: {
+                artifacts: true,
+                structuredEvents: true,
+                terminalOutput: true,
+              },
               agentGatewayActionPermissionsJson: {
                 readTerminal: true,
                 readSessionMessages: true,
@@ -3067,7 +3156,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getTerminalSnapshot/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getTerminalSnapshot, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -3083,7 +3172,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:createTerminalStreamTicket/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.createTerminalStreamTicket, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -3095,12 +3184,12 @@ describe('PluginAgentGatewayClientV2', () => {
       }
 
       if (
-        config.url === 'agentGatewayApi:listSessionConversationEvents/session-id-1' ||
-        config.url === 'agentGatewayApi:listRunConversationEvents/run-id-1' ||
-        config.url === 'agentGatewayApi:listRunEvents/run-id-1' ||
-        config.url === 'agentGatewayApi:listRunArtifacts/run-id-1' ||
-        config.url === 'agentGatewayApi:listRunSnapshots/run-id-1' ||
-        config.url === 'agentGatewayApi:listRunApiCallLogs/run-id-1'
+        config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listSessionConversationEvents, 'session-id-1') ||
+        config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunConversationEvents, 'run-id-1') ||
+        config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunEvents, 'run-id-1') ||
+        config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunArtifacts, 'run-id-1') ||
+        config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunSnapshots, 'run-id-1') ||
+        config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunApiCallLogs, 'run-id-1')
       ) {
         return { data: { data: [] } };
       }
@@ -3136,9 +3225,9 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(screen.queryByText('stale snapshot before denial')).toBeNull();
 
     const sensitiveUrls = [
-      'agentGatewayApi:getTerminalSnapshot/run-id-1',
-      'agentGatewayApi:listSessionConversationEvents/session-id-1',
-      'agentGatewayApi:createTerminalStreamTicket/run-id-1',
+      apiUrl(AGENT_GATEWAY_API_ACTIONS.getTerminalSnapshot, 'run-id-1'),
+      apiUrl(AGENT_GATEWAY_API_ACTIONS.listSessionConversationEvents, 'session-id-1'),
+      apiUrl(AGENT_GATEWAY_API_ACTIONS.createTerminalStreamTicket, 'run-id-1'),
     ];
     const countsAfterDenial = Object.fromEntries(sensitiveUrls.map((url) => [url, requestCounts.get(url) || 0]));
 
@@ -3163,7 +3252,7 @@ describe('PluginAgentGatewayClientV2', () => {
     const request = vi.fn(async (config: RequestConfig) => {
       requestCounts.set(config.url, (requestCounts.get(config.url) || 0) + 1);
 
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [
@@ -3179,7 +3268,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-1')) {
         detailCallCount += 1;
         return {
           data: {
@@ -3190,6 +3279,9 @@ describe('PluginAgentGatewayClientV2', () => {
               agentSessionId: 'session-id-1',
               provider: 'codex',
               terminalStatus: 'active',
+              capabilitiesSnapshotJson: {
+                terminalOutput: true,
+              },
               agentGatewayActionPermissionsJson:
                 detailCallCount === 1
                   ? {
@@ -3210,7 +3302,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getTerminalSnapshot/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getTerminalSnapshot, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -3226,7 +3318,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:createTerminalStreamTicket/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.createTerminalStreamTicket, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -3238,8 +3330,8 @@ describe('PluginAgentGatewayClientV2', () => {
       }
 
       if (
-        config.url === 'agentGatewayApi:listSessionConversationEvents/session-id-1' ||
-        config.url === 'agentGatewayApi:listRunConversationEvents/run-id-1'
+        config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listSessionConversationEvents, 'session-id-1') ||
+        config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunConversationEvents, 'run-id-1')
       ) {
         return {
           data: {
@@ -3290,9 +3382,9 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(screen.queryByText('stale session event after affordance revoked')).toBeNull();
 
     const sensitiveUrls = [
-      'agentGatewayApi:getTerminalSnapshot/run-id-1',
-      'agentGatewayApi:listSessionConversationEvents/session-id-1',
-      'agentGatewayApi:createTerminalStreamTicket/run-id-1',
+      apiUrl(AGENT_GATEWAY_API_ACTIONS.getTerminalSnapshot, 'run-id-1'),
+      apiUrl(AGENT_GATEWAY_API_ACTIONS.listSessionConversationEvents, 'session-id-1'),
+      apiUrl(AGENT_GATEWAY_API_ACTIONS.createTerminalStreamTicket, 'run-id-1'),
     ];
     const countsAfterRevocation = Object.fromEntries(sensitiveUrls.map((url) => [url, requestCounts.get(url) || 0]));
 
@@ -3310,7 +3402,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
   it('hides detail controls and skips sensitive polling when run affordances deny access', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [
@@ -3327,7 +3419,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -3375,7 +3467,7 @@ describe('PluginAgentGatewayClientV2', () => {
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'agentGatewayApi:getRun/run-id-1',
+          url: apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-1'),
           method: 'get',
         }),
       );
@@ -3397,7 +3489,7 @@ describe('PluginAgentGatewayClientV2', () => {
     const requestedUrls: string[] = [];
     const request = vi.fn(async (config: RequestConfig) => {
       requestedUrls.push(config.url);
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [
@@ -3413,7 +3505,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -3464,7 +3556,7 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(await screen.findByText('Terminal output is not supported by this provider')).toBeTruthy();
     expect(await screen.findByLabelText('Interrupt')).toBeTruthy();
     expect(await screen.findByLabelText('Terminate')).toBeTruthy();
-    await waitFor(() => expect(requestedUrls).toContain('agentGatewayApi:getRun/run-id-1'));
+    await waitFor(() => expect(requestedUrls).toContain(apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-1')));
     expect(requestedUrls.some((url) => url.includes('terminal:snapshot'))).toBe(false);
     expect(requestedUrls.some((url) => url.includes('terminal-stream-tickets:create'))).toBe(false);
     expect(FakeBrowserWebSocket.instances).toHaveLength(0);
@@ -3472,7 +3564,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
   it('hides cancel actions when the run affordance denies cancel permission', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [
@@ -3489,7 +3581,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -3530,7 +3622,7 @@ describe('PluginAgentGatewayClientV2', () => {
   it('opens run details when the v route receives a runId after mount', async () => {
     window.history.pushState({}, '', '/v/admin/settings/agent-gateway/runs');
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [
@@ -3544,7 +3636,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -3553,6 +3645,9 @@ describe('PluginAgentGatewayClientV2', () => {
               status: 'running',
               requestedAt: '2026-06-30T10:00:00.000Z',
               startedAt: '2026-06-30T10:01:00.000Z',
+              capabilitiesSnapshotJson: {
+                terminalOutput: true,
+              },
               agentGatewayActionPermissionsJson: {
                 readTerminal: true,
               },
@@ -3561,7 +3656,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getTerminalSnapshot/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getTerminalSnapshot, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -3605,7 +3700,7 @@ describe('PluginAgentGatewayClientV2', () => {
   it('ignores a stale terminal snapshot response after switching run details', async () => {
     let resolveRunOneSnapshot: ((value: { data: { data: Record<string, unknown> } }) => void) | undefined;
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [
@@ -3624,7 +3719,10 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getRun/run-id-1' || config.url === 'agentGatewayApi:getRun/run-id-2') {
+      if (
+        config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-1') ||
+        config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-2')
+      ) {
         const runId = config.url.endsWith('run-id-1') ? 'run-id-1' : 'run-id-2';
         return {
           data: {
@@ -3643,18 +3741,23 @@ describe('PluginAgentGatewayClientV2', () => {
                 interruptRun: true,
                 terminateRun: true,
               },
+              capabilitiesSnapshotJson: {
+                interrupt: true,
+                terminalOutput: true,
+                terminate: true,
+              },
             },
           },
         };
       }
 
-      if (config.url === 'agentGatewayApi:getTerminalSnapshot/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getTerminalSnapshot, 'run-id-1')) {
         return await new Promise<{ data: { data: Record<string, unknown> } }>((resolve) => {
           resolveRunOneSnapshot = resolve;
         });
       }
 
-      if (config.url === 'agentGatewayApi:getTerminalSnapshot/run-id-2') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getTerminalSnapshot, 'run-id-2')) {
         return {
           data: {
             data: {
@@ -3711,7 +3814,7 @@ describe('PluginAgentGatewayClientV2', () => {
     const intervalCallbacks = spyOnPageIntervals();
     let terminalSnapshotCallCount = 0;
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [
@@ -3725,7 +3828,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -3734,6 +3837,9 @@ describe('PluginAgentGatewayClientV2', () => {
               status: 'running',
               requestedAt: '2026-06-30T10:00:00.000Z',
               startedAt: '2026-06-30T10:01:00.000Z',
+              capabilitiesSnapshotJson: {
+                terminalOutput: true,
+              },
               agentGatewayActionPermissionsJson: {
                 readTerminal: true,
               },
@@ -3742,7 +3848,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getTerminalSnapshot/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getTerminalSnapshot, 'run-id-1')) {
         terminalSnapshotCallCount += 1;
         return {
           data: {
@@ -3760,7 +3866,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:createTerminalStreamTicket/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.createTerminalStreamTicket, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -3875,7 +3981,7 @@ describe('PluginAgentGatewayClientV2', () => {
     window.sessionStorage.setItem('agentGatewayTerminalOffset:run-id-1', '12');
     vi.stubGlobal('WebSocket', FakeBrowserWebSocket);
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [
@@ -3889,7 +3995,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -3898,6 +4004,9 @@ describe('PluginAgentGatewayClientV2', () => {
               status: 'running',
               requestedAt: '2026-06-30T10:00:00.000Z',
               startedAt: '2026-06-30T10:01:00.000Z',
+              capabilitiesSnapshotJson: {
+                terminalOutput: true,
+              },
               agentGatewayActionPermissionsJson: {
                 readTerminal: true,
               },
@@ -3906,7 +4015,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getTerminalSnapshot/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getTerminalSnapshot, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -3923,7 +4032,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:createTerminalStreamTicket/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.createTerminalStreamTicket, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -4009,7 +4118,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
   it('keeps run details visible when optional observation streams are forbidden', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [
@@ -4026,7 +4135,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -4038,6 +4147,11 @@ describe('PluginAgentGatewayClientV2', () => {
               agentSessionProviderId: 'thread-id-1',
               requestedAt: '2026-06-30T10:00:00.000Z',
               startedAt: '2026-06-30T10:01:00.000Z',
+              capabilitiesSnapshotJson: {
+                artifacts: true,
+                structuredEvents: true,
+                terminalOutput: true,
+              },
               agentGatewayActionPermissionsJson: {
                 readTerminal: true,
                 readSessionMessages: true,
@@ -4049,15 +4163,15 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:listRunEvents/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunEvents, 'run-id-1')) {
         throw new Error('403 Forbidden');
       }
 
-      if (config.url === 'agentGatewayApi:listSessionConversationEvents/session-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listSessionConversationEvents, 'session-id-1')) {
         throw new Error('403 Forbidden');
       }
 
-      if (config.url === 'agentGatewayApi:listRunArtifacts/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunArtifacts, 'run-id-1')) {
         return {
           data: {
             data: [],
@@ -4065,7 +4179,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:listRunSnapshots/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunSnapshots, 'run-id-1')) {
         return {
           data: {
             data: [],
@@ -4073,11 +4187,11 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:listRunApiCallLogs/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunApiCallLogs, 'run-id-1')) {
         throw new Error('403 Forbidden');
       }
 
-      if (config.url === 'agentGatewayApi:getTerminalSnapshot/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getTerminalSnapshot, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -4115,7 +4229,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
   it('does not promote legacy run events into the primary timeline while a normalized run is active', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [
@@ -4131,7 +4245,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -4149,7 +4263,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:listRunEvents/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunEvents, 'run-id-1')) {
         return {
           data: {
             data: [
@@ -4167,7 +4281,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getTerminalSnapshot/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getTerminalSnapshot, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -4201,7 +4315,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
   it('does not promote legacy run events into the primary timeline for a new failed run without a session', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [
@@ -4218,7 +4332,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -4237,7 +4351,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:listRunEvents/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunEvents, 'run-id-1')) {
         return {
           data: {
             data: [
@@ -4274,7 +4388,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
   it('marks failed normalized command events as failed in the primary timeline', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [
@@ -4291,7 +4405,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -4312,7 +4426,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:listSessionConversationEvents/session-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listSessionConversationEvents, 'session-id-1')) {
         return {
           data: {
             data: [
@@ -4752,7 +4866,7 @@ describe('PluginAgentGatewayClientV2', () => {
   it('does not clear the normalized timeline when a later poll returns an empty older snapshot', async () => {
     let conversationEventCallCount = 0;
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [
@@ -4769,7 +4883,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -4789,7 +4903,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:listSessionConversationEvents/session-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listSessionConversationEvents, 'session-id-1')) {
         conversationEventCallCount += 1;
         if (conversationEventCallCount > 1) {
           return { data: { data: [] } };
@@ -4828,7 +4942,7 @@ describe('PluginAgentGatewayClientV2', () => {
     const intervalCallbacks = spyOnPageIntervals();
     const conversationRequests: RequestConfig[] = [];
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [
@@ -4841,7 +4955,7 @@ describe('PluginAgentGatewayClientV2', () => {
           },
         };
       }
-      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -4855,7 +4969,7 @@ describe('PluginAgentGatewayClientV2', () => {
           },
         };
       }
-      if (config.url === 'agentGatewayApi:listRunConversationEvents/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunConversationEvents, 'run-id-1')) {
         conversationRequests.push(config);
         if (config.params?.beforeCursor === 'before-1') {
           return {
@@ -4956,7 +5070,7 @@ describe('PluginAgentGatewayClientV2', () => {
     const intervalCallbacks = spyOnPageIntervals();
 
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [
@@ -4973,7 +5087,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -4994,7 +5108,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:listSessionConversationEvents/session-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listSessionConversationEvents, 'session-id-1')) {
         conversationEventCallCount += 1;
         if (conversationEventCallCount > 1) {
           throw new Error('temporary timeline outage');
@@ -5015,7 +5129,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:listRunEvents/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunEvents, 'run-id-1')) {
         return {
           data: {
             data: [
@@ -5033,7 +5147,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getTerminalSnapshot/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getTerminalSnapshot, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -5080,7 +5194,7 @@ describe('PluginAgentGatewayClientV2', () => {
     const intervalCallbacks = spyOnPageIntervals();
 
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [
@@ -5097,7 +5211,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-1')) {
         runDetailsCallCount += 1;
         const completed = runDetailsCallCount > 1;
         return {
@@ -5118,7 +5232,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getTerminalSnapshot/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getTerminalSnapshot, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -5174,7 +5288,7 @@ describe('PluginAgentGatewayClientV2', () => {
     const intervalCallbacks = spyOnPageIntervals();
 
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         runsListCallCount += 1;
         if (runsListCallCount > 1) {
           return await secondRunsList;
@@ -5192,7 +5306,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-1')) {
         runDetailsCallCount += 1;
         if (runDetailsCallCount > 1) {
           return await secondRunDetails;
@@ -5268,7 +5382,7 @@ describe('PluginAgentGatewayClientV2', () => {
     let terminalSnapshotCallCount = 0;
     let conversationEventsCallCount = 0;
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [
@@ -5283,7 +5397,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -5293,6 +5407,9 @@ describe('PluginAgentGatewayClientV2', () => {
               terminalBackend: 'tmux',
               terminalStatus: 'closed',
               agentSessionId: 'session-id-1',
+              capabilitiesSnapshotJson: {
+                terminalOutput: true,
+              },
               requestedAt: '2026-06-30T10:00:00.000Z',
               startedAt: '2026-06-30T10:01:00.000Z',
               finishedAt: '2026-06-30T10:02:00.000Z',
@@ -5305,7 +5422,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getTerminalSnapshot/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getTerminalSnapshot, 'run-id-1')) {
         terminalSnapshotCallCount += 1;
         return {
           data: {
@@ -5323,7 +5440,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:listSessionConversationEvents/session-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listSessionConversationEvents, 'session-id-1')) {
         conversationEventsCallCount += 1;
         return {
           data: {
@@ -5389,7 +5506,7 @@ describe('PluginAgentGatewayClientV2', () => {
       .mockReturnValueOnce('resume-key-1' as `${string}-${string}-${string}-${string}-${string}`)
       .mockReturnValueOnce('resume-key-2' as `${string}-${string}-${string}-${string}-${string}`);
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [
@@ -5416,7 +5533,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -5428,6 +5545,7 @@ describe('PluginAgentGatewayClientV2', () => {
               provider: 'codex',
               agentSessionProviderId: 'thread-id-1',
               finishedAt: '2026-07-02T10:00:00.000Z',
+              capabilitiesSnapshotJson: RESUMABLE_RUN_CAPABILITIES,
               agentGatewayActionPermissionsJson: {
                 resumeAgentSession: true,
                 readSessionMessages: true,
@@ -5437,7 +5555,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getRun/run-id-2') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-2')) {
         return {
           data: {
             data: {
@@ -5450,6 +5568,7 @@ describe('PluginAgentGatewayClientV2', () => {
               parentRunId: 'run-id-1',
               resumedFromRunId: 'run-id-1',
               continuationReason: 'user-message',
+              capabilitiesSnapshotJson: RESUMABLE_RUN_CAPABILITIES,
               agentGatewayActionPermissionsJson: {
                 resumeAgentSession: true,
                 readSessionMessages: true,
@@ -5459,7 +5578,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:listSessionConversationEvents/session-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listSessionConversationEvents, 'session-id-1')) {
         return {
           data: {
             data: [
@@ -5484,7 +5603,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:resumeAgentSession/session-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.resumeAgentSession, 'session-id-1')) {
         return {
           data: {
             data: {
@@ -5528,7 +5647,7 @@ describe('PluginAgentGatewayClientV2', () => {
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'agentGatewayApi:resumeAgentSession/session-id-1',
+          url: apiUrl(AGENT_GATEWAY_API_ACTIONS.resumeAgentSession, 'session-id-1'),
           method: 'post',
           data: {
             message: 'Continue this session',
@@ -5550,7 +5669,7 @@ describe('PluginAgentGatewayClientV2', () => {
     let sessionOneTimelineRequests = 0;
     let runTwoTimelineRequests = 0;
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [
@@ -5575,7 +5694,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -5586,6 +5705,7 @@ describe('PluginAgentGatewayClientV2', () => {
               agentSessionId: 'session-id-1',
               provider: 'codex',
               agentSessionProviderId: 'thread-id-1',
+              capabilitiesSnapshotJson: RESUMABLE_RUN_CAPABILITIES,
               agentGatewayActionPermissionsJson: {
                 resumeAgentSession: true,
                 readSessionMessages: true,
@@ -5595,13 +5715,13 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getRun/run-id-2') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-2')) {
         return await new Promise((resolve) => {
           resolveRunTwoDetails = resolve;
         });
       }
 
-      if (config.url === 'agentGatewayApi:listSessionConversationEvents/session-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listSessionConversationEvents, 'session-id-1')) {
         sessionOneTimelineRequests += 1;
         return {
           data: {
@@ -5620,8 +5740,8 @@ describe('PluginAgentGatewayClientV2', () => {
       }
 
       if (
-        config.url === 'agentGatewayApi:listRunConversationEvents/run-id-2' ||
-        config.url === 'agentGatewayApi:listSessionConversationEvents/session-id-2'
+        config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRunConversationEvents, 'run-id-2') ||
+        config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listSessionConversationEvents, 'session-id-2')
       ) {
         runTwoTimelineRequests += 1;
         return {
@@ -5689,6 +5809,7 @@ describe('PluginAgentGatewayClientV2', () => {
             agentSessionId: 'session-id-2',
             provider: 'codex',
             agentSessionProviderId: 'thread-id-2',
+            capabilitiesSnapshotJson: RESUMABLE_RUN_CAPABILITIES,
             agentGatewayActionPermissionsJson: {
               resumeAgentSession: true,
               readSessionMessages: true,
@@ -5710,7 +5831,7 @@ describe('PluginAgentGatewayClientV2', () => {
       .mockReturnValueOnce('retry-key-2' as `${string}-${string}-${string}-${string}-${string}`);
     let resumeAttempts = 0;
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [
@@ -5726,7 +5847,7 @@ describe('PluginAgentGatewayClientV2', () => {
           },
         };
       }
-      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -5737,6 +5858,7 @@ describe('PluginAgentGatewayClientV2', () => {
               agentSessionId: 'session-id-1',
               provider: 'codex',
               agentSessionProviderId: 'thread-id-1',
+              capabilitiesSnapshotJson: RESUMABLE_RUN_CAPABILITIES,
               agentGatewayActionPermissionsJson: {
                 resumeAgentSession: true,
               },
@@ -5744,7 +5866,7 @@ describe('PluginAgentGatewayClientV2', () => {
           },
         };
       }
-      if (config.url === 'agentGatewayApi:resumeAgentSession/session-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.resumeAgentSession, 'session-id-1')) {
         resumeAttempts += 1;
         if (resumeAttempts === 1) {
           const error = new Error('temporary resume failure') as Error & { response?: { status: number } };
@@ -5781,7 +5903,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
     const resumeCalls = request.mock.calls
       .map(([config]) => config)
-      .filter((config) => config.url === 'agentGatewayApi:resumeAgentSession/session-id-1');
+      .filter((config) => config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.resumeAgentSession, 'session-id-1'));
     expect(resumeCalls.map((config) => config.data?.idempotencyKey)).toEqual(['retry-key-1', 'retry-key-1']);
   });
 
@@ -5792,7 +5914,7 @@ describe('PluginAgentGatewayClientV2', () => {
       .mockReturnValueOnce('retry-change-key-3' as `${string}-${string}-${string}-${string}-${string}`);
     let resumeAttempts = 0;
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [
@@ -5808,7 +5930,7 @@ describe('PluginAgentGatewayClientV2', () => {
           },
         };
       }
-      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -5819,6 +5941,7 @@ describe('PluginAgentGatewayClientV2', () => {
               agentSessionId: 'session-id-1',
               provider: 'codex',
               agentSessionProviderId: 'thread-id-1',
+              capabilitiesSnapshotJson: RESUMABLE_RUN_CAPABILITIES,
               agentGatewayActionPermissionsJson: {
                 resumeAgentSession: true,
               },
@@ -5826,7 +5949,7 @@ describe('PluginAgentGatewayClientV2', () => {
           },
         };
       }
-      if (config.url === 'agentGatewayApi:resumeAgentSession/session-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.resumeAgentSession, 'session-id-1')) {
         resumeAttempts += 1;
         if (resumeAttempts === 1) {
           const error = new Error('temporary resume failure') as Error & { response?: { status: number } };
@@ -5869,7 +5992,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
     const resumeCalls = request.mock.calls
       .map(([config]) => config)
-      .filter((config) => config.url === 'agentGatewayApi:resumeAgentSession/session-id-1');
+      .filter((config) => config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.resumeAgentSession, 'session-id-1'));
     expect(resumeCalls.map((config) => config.data?.idempotencyKey)).toEqual([
       'retry-change-key-1',
       'retry-change-key-2',
@@ -5884,7 +6007,7 @@ describe('PluginAgentGatewayClientV2', () => {
       .mockReturnValueOnce('validation-key-3' as `${string}-${string}-${string}-${string}-${string}`);
     let resumeAttempts = 0;
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [
@@ -5900,7 +6023,7 @@ describe('PluginAgentGatewayClientV2', () => {
           },
         };
       }
-      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -5911,6 +6034,7 @@ describe('PluginAgentGatewayClientV2', () => {
               agentSessionId: 'session-id-1',
               provider: 'codex',
               agentSessionProviderId: 'thread-id-1',
+              capabilitiesSnapshotJson: RESUMABLE_RUN_CAPABILITIES,
               agentGatewayActionPermissionsJson: {
                 resumeAgentSession: true,
               },
@@ -5918,7 +6042,7 @@ describe('PluginAgentGatewayClientV2', () => {
           },
         };
       }
-      if (config.url === 'agentGatewayApi:resumeAgentSession/session-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.resumeAgentSession, 'session-id-1')) {
         resumeAttempts += 1;
         if (resumeAttempts === 1) {
           const error = new Error('message is required') as Error & { response?: { status: number } };
@@ -5961,7 +6085,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
     const resumeCalls = request.mock.calls
       .map(([config]) => config)
-      .filter((config) => config.url === 'agentGatewayApi:resumeAgentSession/session-id-1');
+      .filter((config) => config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.resumeAgentSession, 'session-id-1'));
     expect(resumeCalls.map((config) => config.data?.idempotencyKey)).toEqual(['validation-key-1', 'validation-key-2']);
   });
 
@@ -5977,7 +6101,7 @@ describe('PluginAgentGatewayClientV2', () => {
       artifacts: false,
     };
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [
@@ -5998,7 +6122,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -6036,7 +6160,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
   it('disables resume when the agent session does not support resume with message', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listRuns') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listRuns)) {
         return {
           data: {
             data: [
@@ -6058,7 +6182,7 @@ describe('PluginAgentGatewayClientV2', () => {
           },
         };
       }
-      if (config.url === 'agentGatewayApi:getRun/run-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getRun, 'run-id-1')) {
         return {
           data: {
             data: {
@@ -6072,6 +6196,7 @@ describe('PluginAgentGatewayClientV2', () => {
               agentSessionCapabilitiesJson: {
                 resumeWithMessage: false,
               },
+              capabilitiesSnapshotJson: RESUMABLE_RUN_CAPABILITIES,
               agentGatewayActionPermissionsJson: {
                 resumeAgentSession: true,
               },
@@ -6109,7 +6234,7 @@ describe('PluginAgentGatewayClientV2', () => {
       },
     ];
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listDispatchBindings') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listDispatchBindings)) {
         return {
           data: {
             data: bindings,
@@ -6117,7 +6242,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:listPromptTemplates') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listPromptTemplates)) {
         return {
           data: {
             data: [
@@ -6131,7 +6256,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:createDispatchBinding') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.createDispatchBinding)) {
         const createdBinding = {
           id: 'binding-id-2',
           bindingKey: String(config.data?.bindingKey),
@@ -6149,7 +6274,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agentGatewayApi:updateDispatchBinding/binding-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.updateDispatchBinding, 'binding-id-1')) {
         return {
           data: {
             data: {
@@ -6184,7 +6309,7 @@ describe('PluginAgentGatewayClientV2', () => {
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'agentGatewayApi:createDispatchBinding',
+          url: apiUrl(AGENT_GATEWAY_API_ACTIONS.createDispatchBinding),
           method: 'post',
           data: expect.objectContaining({
             bindingKey: 'new-ticket-dispatch',
@@ -6200,7 +6325,7 @@ describe('PluginAgentGatewayClientV2', () => {
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'agentGatewayApi:updateDispatchBinding/binding-id-1',
+          url: apiUrl(AGENT_GATEWAY_API_ACTIONS.updateDispatchBinding, 'binding-id-1'),
           method: 'post',
           data: {
             enabled: false,

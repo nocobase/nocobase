@@ -118,7 +118,10 @@ export class RunnerRequester implements GatewayRequester {
 
   async request<T extends JsonRecord = JsonRecord>(options: GatewayRequestOptions): Promise<T> {
     this.calls.push(options);
-    if (this.options.failNodeHeartbeatOnce && options.path === '/api/agentGatewayApi:heartbeatNode/node-1') {
+    if (
+      this.options.failNodeHeartbeatOnce &&
+      options.path === getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatNode, 'node-1')
+    ) {
       this.options.failNodeHeartbeatOnce = false;
       throw new Error('connect ECONNREFUSED 127.0.0.1:23001');
     }

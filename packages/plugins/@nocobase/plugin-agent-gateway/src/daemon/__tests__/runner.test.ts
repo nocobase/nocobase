@@ -17,6 +17,7 @@ import { runDaemonLoop, runDaemonOnce } from '../runner';
 import { terminateTmuxSession } from '../tmuxTerminal';
 import { JsonRecord } from '../types';
 import { COMMAND_OUTPUT_PAYLOAD_LIMIT_CHARS } from '../../shared/conversationLimits';
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiPath } from '../../shared/apiContract';
 import {
   getRequestEvents,
   isJsonRecord,
@@ -186,7 +187,9 @@ describe('agent gateway daemon runner', () => {
       await waitUntil(
         () =>
           requester.calls.some((call) => isRunActionCall(call, 'claim')) &&
-          requester.calls.filter((call) => call.path === '/api/agentGatewayApi:heartbeatNode/node-1').length >= 2,
+          requester.calls.filter(
+            (call) => call.path === getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatNode, 'node-1'),
+          ).length >= 2,
       );
     } finally {
       stopController.abort();
@@ -194,7 +197,7 @@ describe('agent gateway daemon runner', () => {
     }
 
     const nodeHeartbeatCalls = requester.calls.filter(
-      (call) => call.path === '/api/agentGatewayApi:heartbeatNode/node-1',
+      (call) => call.path === getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatNode, 'node-1'),
     );
     expect(nodeHeartbeatCalls.length).toBeGreaterThanOrEqual(2);
     expect(profileProbeCalls).toBe(3);
@@ -269,7 +272,7 @@ describe('agent gateway daemon runner', () => {
       expect(Date.now() - startedAt).toBeGreaterThan(120_000);
 
       const nodeHeartbeatCalls = requester.calls.filter(
-        (call) => call.path === '/api/agentGatewayApi:heartbeatNode/node-1',
+        (call) => call.path === getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatNode, 'node-1'),
       );
       const runHeartbeatCalls = requester.calls.filter((call) => isRunActionCall(call, 'heartbeat'));
       expect(nodeHeartbeatCalls.length).toBeGreaterThanOrEqual(5);
@@ -335,7 +338,9 @@ describe('agent gateway daemon runner', () => {
     await waitUntil(
       () =>
         requester.calls.filter((call) => isRunActionCall(call, 'claim')).length >= 4 &&
-        requester.calls.filter((call) => call.path === '/api/agentGatewayApi:heartbeatNode/node-1').length >= 3,
+        requester.calls.filter(
+          (call) => call.path === getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatNode, 'node-1'),
+        ).length >= 3,
       1000,
     );
     stopController.abort();
@@ -628,11 +633,11 @@ describe('agent gateway daemon runner', () => {
     const paths = requester.calls.map((call) => call.path);
     expect(paths).toEqual(
       expect.arrayContaining([
-        '/api/agentGatewayApi:heartbeatNode/node-1',
-        '/api/agentGatewayApi:claimRun/node-1',
-        '/api/agentGatewayApi:appendRunEvents/run-1',
-        '/api/agentGatewayApi:registerRunSnapshot/run-1',
-        '/api/agentGatewayApi:completeRun/run-1',
+        getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatNode, 'node-1'),
+        getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.claimRun, 'node-1'),
+        getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.appendRunEvents, 'run-1'),
+        getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.registerRunSnapshot, 'run-1'),
+        getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.completeRun, 'run-1'),
       ]),
     );
     const runEventBodies = requester.calls

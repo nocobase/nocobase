@@ -406,65 +406,6 @@ function respondWithExistingControlRequest(
   };
 }
 
-async function getSessionForRun(ctx: Context, run: ModelRecord) {
-  const sessionId = getModelString(run, 'agentSessionId');
-  if (!sessionId) {
-    return null;
-  }
-  return (await ctx.db.getRepository('agAgentSessions').findOne({
-    filterByTk: sessionId,
-  })) as ModelRecord | null;
-}
-
-function getControlCapabilityDecision(capabilities: JsonRecord, action: 'interrupt' | 'terminate') {
-  if (capabilities[action] === true) {
-    return true;
-  }
-  if (capabilities[action] === false) {
-    return false;
-  }
-
-  for (const key of ['terminal', 'terminalControl']) {
-    const scopedCapabilities = getRecord(capabilities[key]);
-    if (scopedCapabilities[action] === true) {
-      return true;
-    }
-    if (scopedCapabilities[action] === false) {
-      return false;
-    }
-  }
-
-  return null;
-}
-
-async function getRunnerControlCapabilityDecision(ctx: Context, run: ModelRecord, action: 'interrupt' | 'terminate') {
-  const decisions: Array<boolean | null> = [];
-  const nodeId = getModelString(run, 'nodeId');
-  if (nodeId) {
-    const node = (await ctx.db.getRepository('agNodes').findOne({
-      filterByTk: nodeId,
-    })) as ModelRecord | null;
-    if (node) {
-      decisions.push(getControlCapabilityDecision(getRecord(getModelValue(node, 'capabilitiesJson')), action));
-    }
-  }
-
-  const agentProfileId = getModelString(run, 'agentProfileId');
-  if (agentProfileId) {
-    const profile = (await ctx.db.getRepository('agAgentProfiles').findOne({
-      filterByTk: agentProfileId,
-    })) as ModelRecord | null;
-    if (profile) {
-      decisions.push(getControlCapabilityDecision(getRecord(getModelValue(profile, 'capabilitiesJson')), action));
-    }
-  }
-
-  if (decisions.includes(false)) {
-    return false;
-  }
-  return decisions.includes(true) ? true : null;
-}
-
 async function assertControlSupported(ctx: Context, run: ModelRecord, action: 'interrupt' | 'terminate') {
   const status = getModelString(run, 'status');
   if (!TERMINAL_CONTROL_RUN_STATUS_SET.has(status)) {
@@ -479,14 +420,8 @@ async function assertControlSupported(ctx: Context, run: ModelRecord, action: 'i
     ctx.throw(409, CONTROL_ERROR_CODES.runNotActive);
   }
 
-  const session = await getSessionForRun(ctx, run);
-  const capabilitySummary = await getRunProviderCapabilitySummary(ctx, run, session);
-  const controlCapability = capabilitySummary.enforceCapabilities
-    ? isRunCapabilitySupported(capabilitySummary, action)
-    : session
-      ? getControlCapabilityDecision(getRecord(getModelValue(session, 'capabilitiesJson')), action) !== false
-      : (await getRunnerControlCapabilityDecision(ctx, run, action)) === true;
-  if (!controlCapability) {
+  const capabilitySummary = await getRunProviderCapabilitySummary(ctx, run);
+  if (!isRunCapabilitySupported(capabilitySummary, action)) {
     ctx.throw(409, {
       code: AGENT_GATEWAY_ACTION_UNSUPPORTED_CODE,
       message: getUnsupportedCapabilityMessage(action),

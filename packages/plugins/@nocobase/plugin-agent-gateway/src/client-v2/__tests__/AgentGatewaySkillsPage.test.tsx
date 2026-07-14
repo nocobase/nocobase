@@ -13,8 +13,13 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { App as AntdApp } from 'antd';
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { AGENT_GATEWAY_API_ACTIONS, AgentGatewayApiAction, getAgentGatewayApiUrl } from '../../shared/apiContract';
 
 import AgentGatewaySkillsPage from '../pages/AgentGatewaySkillsPage';
+
+function apiUrl(action: AgentGatewayApiAction, targetKey?: string) {
+  return getAgentGatewayApiUrl(action, targetKey);
+}
 
 interface FlowContextWithDefineProperty {
   defineProperty(name: string, descriptor: { value: unknown }): void;
@@ -79,7 +84,7 @@ describe('AgentGatewaySkillsPage', () => {
 
   it('paginates skill versions and loads detail through the dedicated endpoint', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listSkillVersions') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listSkillVersions)) {
         return {
           data: {
             data: [
@@ -99,7 +104,7 @@ describe('AgentGatewaySkillsPage', () => {
           },
         };
       }
-      if (config.url === 'agentGatewayApi:getSkillVersion/skill-version-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getSkillVersion, 'skill-version-id-1')) {
         return {
           data: {
             data: {
@@ -129,14 +134,14 @@ describe('AgentGatewaySkillsPage', () => {
     expect(await screen.findByText('skill-version-id-1')).toBeTruthy();
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'agentGatewayApi:listSkillVersions',
+        url: apiUrl(AGENT_GATEWAY_API_ACTIONS.listSkillVersions),
         method: 'get',
         params: { page: 1, pageSize: 20 },
       }),
     );
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'agentGatewayApi:getSkillVersion/skill-version-id-1',
+        url: apiUrl(AGENT_GATEWAY_API_ACTIONS.getSkillVersion, 'skill-version-id-1'),
         method: 'get',
       }),
     );
@@ -145,7 +150,7 @@ describe('AgentGatewaySkillsPage', () => {
   it('opens skill details from the skillVersionId query parameter', async () => {
     window.history.pushState({}, '', '/admin/settings/agent-gateway/skills?skillVersionId=skill-version-id-1');
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agentGatewayApi:listSkillVersions') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.listSkillVersions)) {
         return {
           data: {
             data: [],
@@ -153,7 +158,7 @@ describe('AgentGatewaySkillsPage', () => {
           },
         };
       }
-      if (config.url === 'agentGatewayApi:getSkillVersion/skill-version-id-1') {
+      if (config.url === apiUrl(AGENT_GATEWAY_API_ACTIONS.getSkillVersion, 'skill-version-id-1')) {
         return {
           data: {
             data: {

@@ -12,6 +12,8 @@
   },
   "scripts": {
     "acceptance:prepare": "tsx scripts/agent-gateway-release-gate.ts prepare",
+    "acceptance:collect": "tsx scripts/agent-gateway-release-gate.ts collect",
+    "acceptance:scan": "tsx scripts/agent-gateway-release-gate.ts scan",
     "acceptance:verify": "tsx scripts/agent-gateway-release-gate.ts verify"
   },
   "files": [

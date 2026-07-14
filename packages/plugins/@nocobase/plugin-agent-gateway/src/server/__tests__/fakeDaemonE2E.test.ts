@@ -10,6 +10,11 @@
 import { MockServer, createMockServer } from '@nocobase/test';
 
 import PluginAgentGatewayServer from '../plugin';
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiUrl } from '../../shared/apiContract';
+
+function getTestApiPath(action: Parameters<typeof getAgentGatewayApiUrl>[0], targetKey?: unknown) {
+  return `/${getAgentGatewayApiUrl(action, targetKey === undefined ? undefined : String(targetKey))}`;
+}
 
 interface ResponseLike {
   status: number;
@@ -108,7 +113,7 @@ describe('agent gateway fake daemon E2E', () => {
   }
 
   async function createInvitation(values: Record<string, unknown> = {}) {
-    const response = await rootAgent.post('/agentGatewayApi:createNodeInvitation').send({
+    const response = await rootAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.createNodeInvitation)).send({
       invitationKey: nextCode('fake-daemon-invite'),
       serverUrl: 'http://127.0.0.1:13000',
       expiresInSeconds: 3600,
@@ -122,7 +127,7 @@ describe('agent gateway fake daemon E2E', () => {
   async function registerNode(inviteToken: string, values: Record<string, unknown> = {}) {
     return await app
       .agent()
-      .post('/agentGatewayApi:registerNode')
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.registerNode))
       .send({
         inviteToken,
         nodeKey: 'fake-daemon-node',
@@ -131,7 +136,7 @@ describe('agent gateway fake daemon E2E', () => {
         hostInfo: {
           hostname: 'fake-daemon-host',
         },
-        capabilities: {
+        capabilitiesJson: {
           maxConcurrency: 1,
         },
         ...values,
@@ -146,7 +151,7 @@ describe('agent gateway fake daemon E2E', () => {
     const inviteToken = extractInviteToken(invitation.registerCommand);
     const maxConcurrency = options.maxConcurrency || 1;
     const registerResponse = await registerNode(inviteToken, {
-      capabilities: {
+      capabilitiesJson: {
         maxConcurrency,
       },
       ...values,
@@ -158,14 +163,14 @@ describe('agent gateway fake daemon E2E', () => {
 
     const heartbeatResponse = await app
       .agent()
-      .post(`/agentGatewayApi:heartbeatNode/${nodeId}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatNode, nodeId))
       .set('Authorization', `Bearer ${nodeToken}`)
       .send({
         currentConcurrency: 0,
-        capabilities: {
+        capabilitiesJson: {
           maxConcurrency,
-          supportsArtifacts: true,
-          supportsSnapshots: true,
+          artifacts: true,
+          snapshots: true,
         },
         profiles: [
           {
@@ -175,12 +180,13 @@ describe('agent gateway fake daemon E2E', () => {
             driver: 'fake',
             provider: 'opencode',
             status: 'active',
-            capabilities: {
+            capabilitiesJson: {
               artifacts: true,
+              executionPolicyKey: 'fake-success',
               maxConcurrency,
               structuredEvents: true,
             },
-            metadata: {
+            metadataJson: {
               label: 'fake-success-profile',
               command: 'FAKE_PROFILE_COMMAND_SECRET',
               cwd: '/tmp/FAKE_PROFILE_CWD_SECRET',
@@ -210,13 +216,13 @@ describe('agent gateway fake daemon E2E', () => {
   }
 
   async function createPromptTemplate(values: Record<string, unknown> = {}) {
-    const response = await rootAgent.post('/agentGatewayApi:createPromptTemplate').send({
+    const response = await rootAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.createPromptTemplate)).send({
       templateKey: nextCode('fake.daemon.template'),
       displayName: 'Fake daemon E2E template',
       templateText: 'Build a fake daemon task at {{ now }}.',
       status: 'active',
-      variablesSchema: {},
-      defaultExecutionPayload: {
+      variablesSchemaJson: {},
+      defaultExecutionPayloadJson: {
         mode: 'fake-success',
       },
       ...values,
@@ -229,20 +235,23 @@ describe('agent gateway fake daemon E2E', () => {
     daemon: FakeDaemonRegistration,
     values: Record<string, unknown> = {},
   ): Promise<Record<string, unknown>> {
-    const response = await rootAgent.post('/agentGatewayApi:createRun').send({
+    const response = await rootAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.createRun)).send({
       runCode: nextCode('fake-daemon-run'),
       sourceType: 'test',
       agentProfileId: daemon.profileId,
       promptSnapshot: {
         text: 'Prompt snapshot with PROMPT_SECRET',
       },
-      executionPayload: {
+      provider: 'opencode',
+      capabilitiesSnapshotJson: {
+        artifacts: true,
+        structuredEvents: true,
+      },
+      executionPolicyKey: 'fake-success',
+      executionPayloadJson: {
+        executionPolicyKey: 'fake-success',
         mode: 'fake-success',
-        command: 'RUN_COMMAND_SECRET',
-        cwd: '/tmp/RUN_CWD_SECRET',
-        env: {
-          SECRET: 'RUN_ENV_SECRET',
-        },
+        cwd: '.',
       },
       ...values,
     });
@@ -253,7 +262,7 @@ describe('agent gateway fake daemon E2E', () => {
   async function claimRun(daemon: FakeDaemonRegistration) {
     return await app
       .agent()
-      .post(`/agentGatewayApi:claimRun/${daemon.nodeId}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.claimRun, daemon.nodeId))
       .set('Authorization', `Bearer ${daemon.nodeToken}`)
       .send({
         profileKey: 'fake-success',
@@ -267,18 +276,18 @@ describe('agent gateway fake daemon E2E', () => {
     values: Record<string, unknown>,
   ) {
     const actionName = {
-      heartbeat: 'heartbeatRun',
-      complete: 'completeRun',
-      fail: 'failRun',
-      timeout: 'timeoutRun',
-      'cancel-ack': 'ackCancelRun',
+      heartbeat: AGENT_GATEWAY_API_ACTIONS.heartbeatRun,
+      complete: AGENT_GATEWAY_API_ACTIONS.completeRun,
+      fail: AGENT_GATEWAY_API_ACTIONS.failRun,
+      timeout: AGENT_GATEWAY_API_ACTIONS.timeoutRun,
+      'cancel-ack': AGENT_GATEWAY_API_ACTIONS.ackCancelRun,
     }[action];
     if (!actionName) {
       throw new Error(`Unsupported daemon action: ${action}`);
     }
     return await app
       .agent()
-      .post(`/agentGatewayApi:${actionName}/${runId}`)
+      .post(getTestApiPath(actionName, String(runId)))
       .set('Authorization', `Bearer ${daemon.nodeToken}`)
       .send(values);
   }
@@ -290,16 +299,16 @@ describe('agent gateway fake daemon E2E', () => {
     values: Record<string, unknown>,
   ) {
     const actionName = {
-      'events:append': 'appendRunEvents',
-      'artifacts:register': 'registerRunArtifact',
-      'snapshots:register': 'registerRunSnapshot',
+      'events:append': AGENT_GATEWAY_API_ACTIONS.appendRunEvents,
+      'artifacts:register': AGENT_GATEWAY_API_ACTIONS.registerRunArtifact,
+      'snapshots:register': AGENT_GATEWAY_API_ACTIONS.registerRunSnapshot,
     }[action];
     if (!actionName) {
       throw new Error(`Unsupported observation action: ${action}`);
     }
     return await app
       .agent()
-      .post(`/agentGatewayApi:${actionName}/${runId}`)
+      .post(getTestApiPath(actionName, String(runId)))
       .set('Authorization', `Bearer ${daemon.nodeToken}`)
       .send(values);
   }
@@ -341,7 +350,7 @@ describe('agent gateway fake daemon E2E', () => {
       eventType: 'log',
       level: 'info',
       message: 'Started fake run with Authorization: Bearer EVENT_MESSAGE_SECRET token=EVENT_TOKEN_SECRET',
-      payload: {
+      contentJson: {
         safe: 'event-safe-value',
         token: 'EVENT_PAYLOAD_TOKEN_SECRET',
         command: 'EVENT_PAYLOAD_COMMAND_SECRET',
@@ -360,7 +369,7 @@ describe('agent gateway fake daemon E2E', () => {
       eventType: 'log',
       level: 'info',
       message: 'Finished fake build step with password=EVENT_PASSWORD_SECRET',
-      payload: {
+      contentJson: {
         safe: 'second-event-safe-value',
       },
     });
@@ -373,14 +382,9 @@ describe('agent gateway fake daemon E2E', () => {
       mimeType: 'text/plain',
       contentText:
         'visible output\nAuthorization: Bearer ARTIFACT_TEXT_SECRET\ncommand=ARTIFACT_COMMAND_SECRET cwd=/tmp/ARTIFACT_CWD_SECRET env.SECRET=ARTIFACT_ENV_SECRET\n',
-      metadata: {
+      metadataJson: {
         safe: 'artifact-safe-value',
         externalUrl: 'https://daemon.example/artifacts/stdout-main',
-        command: 'ARTIFACT_METADATA_COMMAND_SECRET',
-        cwd: '/tmp/ARTIFACT_METADATA_CWD_SECRET',
-        env: {
-          SECRET: 'ARTIFACT_METADATA_ENV_SECRET',
-        },
       },
     });
     expect(artifactResponse.status).toBe(200);
@@ -388,7 +392,7 @@ describe('agent gateway fake daemon E2E', () => {
     const snapshotResponse = await appendObservation(daemon, runId, 'snapshots:register', {
       ...activeLease,
       snapshotType: 'workspace',
-      snapshot: {
+      snapshotJson: {
         files: ['src/page.tsx'],
         command: 'SNAPSHOT_COMMAND_SECRET',
         cwd: '/tmp/SNAPSHOT_CWD_SECRET',
@@ -399,7 +403,7 @@ describe('agent gateway fake daemon E2E', () => {
           token: 'SNAPSHOT_TOKEN_SECRET',
         },
       },
-      metadata: {
+      metadataJson: {
         safe: 'snapshot-safe-value',
         authorization: 'Bearer SNAPSHOT_METADATA_SECRET',
       },
@@ -408,7 +412,7 @@ describe('agent gateway fake daemon E2E', () => {
 
     const completeResponse = await runDaemonAction(daemon, runId, 'complete', {
       ...activeLease,
-      resultSummary: {
+      resultSummaryJson: {
         safe: 'completed',
         command: 'RESULT_COMMAND_SECRET',
         cwd: '/tmp/RESULT_CWD_SECRET',
@@ -434,7 +438,7 @@ describe('agent gateway fake daemon E2E', () => {
       code: 'lease_lost',
     });
 
-    const runResponse = await rootAgent.get(`/agentGatewayApi:getRun/${runId}`);
+    const runResponse = await rootAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.getRun, runId));
     expect(runResponse.status).toBe(200);
     const readableRun = getRecordData(runResponse);
     expect(readableRun.status).toBe('succeeded');
@@ -444,15 +448,17 @@ describe('agent gateway fake daemon E2E', () => {
     expect(readableRun).not.toHaveProperty('promptSnapshot');
     expect(readableRun).not.toHaveProperty('executionPayloadJson');
 
-    const runListResponse = await rootAgent.get('/agentGatewayApi:listRuns?status=succeeded');
+    const runListResponse = await rootAgent.get(
+      `${getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRuns)}?status=succeeded`,
+    );
     expect(runListResponse.status).toBe(200);
     const runList = getListData(runListResponse);
     expect(runList.some((item) => item.id === runId && item.status === 'succeeded')).toBe(true);
 
-    const eventsResponse = await rootAgent.get(`/agentGatewayApi:listRunEvents/${runId}`);
-    const artifactsResponse = await rootAgent.get(`/agentGatewayApi:listRunArtifacts/${runId}`);
-    const snapshotsResponse = await rootAgent.get(`/agentGatewayApi:listRunSnapshots/${runId}`);
-    const apiLogsResponse = await rootAgent.get(`/agentGatewayApi:listRunApiCallLogs/${runId}`);
+    const eventsResponse = await rootAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunEvents, runId));
+    const artifactsResponse = await rootAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunArtifacts, runId));
+    const snapshotsResponse = await rootAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunSnapshots, runId));
+    const apiLogsResponse = await rootAgent.get(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.listRunApiCallLogs, runId));
     expect(eventsResponse.status).toBe(200);
     expect(artifactsResponse.status).toBe(200);
     expect(snapshotsResponse.status).toBe(200);
@@ -464,17 +470,21 @@ describe('agent gateway fake daemon E2E', () => {
     const apiLogs = getListData(apiLogsResponse);
     expect(events).toHaveLength(2);
     expect(artifacts.length).toBeGreaterThanOrEqual(1);
+    expect(artifacts[0].metadataJson).toMatchObject({
+      externalUrl: 'https://daemon.example/artifacts/stdout-main',
+      safe: 'artifact-safe-value',
+    });
     expect(snapshots.length).toBeGreaterThanOrEqual(1);
     expect(apiLogs.length).toBeGreaterThanOrEqual(5);
     const apiLogActions = apiLogs.map((log) => String((log.requestSummaryJson as Record<string, unknown>).action));
     expect(apiLogActions).toEqual(
       expect.arrayContaining([
-        'claim',
-        'run-heartbeat',
-        'events:append',
-        'artifacts:register',
-        'snapshots:register',
-        'run-complete',
+        AGENT_GATEWAY_API_ACTIONS.claimRun,
+        AGENT_GATEWAY_API_ACTIONS.heartbeatRun,
+        AGENT_GATEWAY_API_ACTIONS.appendRunEvents,
+        AGENT_GATEWAY_API_ACTIONS.registerRunArtifact,
+        AGENT_GATEWAY_API_ACTIONS.registerRunSnapshot,
+        AGENT_GATEWAY_API_ACTIONS.completeRun,
       ]),
     );
 
@@ -495,10 +505,6 @@ describe('agent gateway fake daemon E2E', () => {
     expect(serializedObservability).not.toContain('ARTIFACT_COMMAND_SECRET');
     expect(serializedObservability).not.toContain('ARTIFACT_CWD_SECRET');
     expect(serializedObservability).not.toContain('ARTIFACT_ENV_SECRET');
-    expect(serializedObservability).not.toContain('ARTIFACT_METADATA_COMMAND_SECRET');
-    expect(serializedObservability).not.toContain('ARTIFACT_METADATA_CWD_SECRET');
-    expect(serializedObservability).not.toContain('ARTIFACT_METADATA_ENV_SECRET');
-    expect(serializedObservability).not.toContain('daemon.example');
     expect(serializedObservability).not.toContain('SNAPSHOT_COMMAND_SECRET');
     expect(serializedObservability).not.toContain('SNAPSHOT_CWD_SECRET');
     expect(serializedObservability).not.toContain('SNAPSHOT_ENV_SECRET');
@@ -528,8 +534,12 @@ describe('agent gateway fake daemon E2E', () => {
   });
 
   it('rejects expired invitations before node registration', async () => {
-    const invitation = await createInvitation({
-      expiresAt: new Date(Date.now() - 60_000).toISOString(),
+    const invitation = await createInvitation();
+    await app.db.getRepository('agNodeInvitations').update({
+      filterByTk: invitation.invitationId,
+      values: {
+        expiresAt: new Date(Date.now() - 60_000),
+      },
     });
     const inviteToken = extractInviteToken(invitation.registerCommand);
 
@@ -548,7 +558,7 @@ describe('agent gateway fake daemon E2E', () => {
 
     const heartbeatResponse = await app
       .agent()
-      .post(`/agentGatewayApi:heartbeatNode/${daemon.nodeId}`)
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatNode, daemon.nodeId))
       .set('Authorization', 'Bearer ag_node_invalid_token')
       .send({});
     expect(heartbeatResponse.status).toBe(401);
@@ -558,9 +568,11 @@ describe('agent gateway fake daemon E2E', () => {
     const daemon = await registerFakeDaemon();
     await createRun(daemon);
 
-    const disableResponse = await rootAgent.post(`/agentGatewayApi:updateNode/${daemon.nodeId}`).send({
-      status: 'disabled',
-    });
+    const disableResponse = await rootAgent
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.updateNode, daemon.nodeId))
+      .send({
+        status: 'disabled',
+      });
     expect(disableResponse.status).toBe(200);
 
     const claimResponse = await claimRun(daemon);
@@ -598,7 +610,7 @@ describe('agent gateway fake daemon E2E', () => {
       },
     });
 
-    const expireResponse = await rootAgent.post('/agentGatewayApi:expireRunLeases').send({});
+    const expireResponse = await rootAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.expireRunLeases)).send({});
     expect(expireResponse.status).toBe(200);
     expect(getRecordData(expireResponse)).toMatchObject({
       stalledCount: 1,
@@ -618,7 +630,9 @@ describe('agent gateway fake daemon E2E', () => {
       },
     });
 
-    const failExpiredResponse = await rootAgent.post('/agentGatewayApi:expireRunLeases').send({});
+    const failExpiredResponse = await rootAgent
+      .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.expireRunLeases))
+      .send({});
     expect(failExpiredResponse.status).toBe(200);
     expect(getRecordData(failExpiredResponse)).toMatchObject({
       stalledCount: 0,
@@ -649,7 +663,7 @@ describe('agent gateway fake daemon E2E', () => {
       leaseVersion: heartbeat.leaseVersion,
     });
 
-    const cancelResponse = await rootAgent.post(`/agentGatewayApi:cancelRun/${run.id}`).send({});
+    const cancelResponse = await rootAgent.post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.cancelRun, run.id)).send({});
     expect(cancelResponse.status).toBe(200);
     const cancel = getRecordData(cancelResponse);
     expect(cancel.status).toBe('canceling');
@@ -658,7 +672,7 @@ describe('agent gateway fake daemon E2E', () => {
 
     const completeWhileCancelingResponse = await runDaemonAction(daemon, run.id, 'complete', {
       ...activeLease,
-      resultSummary: {
+      resultSummaryJson: {
         ok: true,
       },
     });

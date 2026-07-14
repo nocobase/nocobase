@@ -14,6 +14,8 @@ import { getRunListFilter, getRunListPagination, getRunListSort } from '../../..
 import { getRunLeaseFenceFailure, RunLeaseFenceInput } from '../claimLease';
 import { getHeartbeatStatus } from '../heartbeatLease';
 import { getTerminalTransitionFailure } from '../terminalizeRun';
+import { getMaxConcurrency } from '../types';
+import { normalizeAgentProviderCapabilities } from '../../../../shared/providerCapabilities';
 
 const NOW = new Date('2026-07-13T00:00:00.000Z');
 
@@ -103,5 +105,17 @@ describe('agent gateway run domains', () => {
       taskTemplateId: 'template-1',
     });
     expect(getRunListSort(ctx)).toEqual(['-requestedAt', '-createdAt']);
+  });
+
+  it('preserves canonical profile scheduling limits while dropping capability aliases', () => {
+    const capabilities = normalizeAgentProviderCapabilities('codex', {
+      maxConcurrency: 4,
+      executionPolicyKey: 'codex',
+      terminalStream: false,
+    });
+
+    expect(getMaxConcurrency(capabilities)).toBe(4);
+    expect(capabilities.executionPolicyKey).toBe('codex');
+    expect(capabilities).not.toHaveProperty('terminalStream');
   });
 });

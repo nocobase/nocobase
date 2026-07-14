@@ -14,6 +14,7 @@ import path from 'path';
 import { uploadExternalRun } from '../externalRunUploader';
 import { GatewayRequestOptions, GatewayRequester, JsonRecord } from '../types';
 import { EXTERNAL_IMPORT_LIMITS } from '../../shared/externalRunImport';
+import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiPath } from '../../shared/apiContract';
 
 class UploadRequester implements GatewayRequester {
   calls: GatewayRequestOptions[] = [];
@@ -75,10 +76,10 @@ describe('external run uploader', () => {
 
     expect(firstRequester.calls).toHaveLength(4);
     expect(firstRequester.calls.map((call) => call.path)).toEqual([
-      '/api/agentGatewayApi:importExternalRun',
-      '/api/agentGatewayApi:appendExternalRunObservations/run-1',
-      '/api/agentGatewayApi:appendExternalRunObservations/run-1',
-      '/api/agentGatewayApi:appendExternalRunObservations/run-1',
+      getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.importExternalRun),
+      getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.appendExternalRunObservations, 'run-1'),
+      getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.appendExternalRunObservations, 'run-1'),
+      getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.appendExternalRunObservations, 'run-1'),
     ]);
     expect(firstRequester.calls.map((call) => getBody(call).batchKey)).toEqual(
       secondRequester.calls.map((call) => getBody(call).batchKey),
