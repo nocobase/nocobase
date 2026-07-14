@@ -11,7 +11,7 @@ keywords: "外部数据源,PostgreSQL,外部数据库,Schema,SSL,字段映射,No
 
 PostgreSQL 可以作为外部数据库接入 NocoBase。接入后，NocoBase 会读取 PostgreSQL 中的数据表、字段和视图，并把它们作为外部数据源中的数据表使用。
 
-跟[主数据库](../main/index.md)不同，外部 PostgreSQL 的真实表结构仍由原业务系统、数据库客户端或迁移脚本维护。NocoBase 负责读取结构、保存字段元数据、配置页面区块、权限、工作流和 API。
+跟[主数据库](../data-source-main/index.md)不同，外部 PostgreSQL 的真实表结构仍由原业务系统、数据库客户端或迁移脚本维护。NocoBase 负责读取结构、保存字段元数据、配置页面区块、权限、工作流和 API。
 
 | 配置项 | 说明 |
 | --- | --- |

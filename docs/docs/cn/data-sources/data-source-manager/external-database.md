@@ -10,7 +10,7 @@ keywords: "外部数据库,MySQL,PostgreSQL,MariaDB,KingbaseES,OceanBase,MSSQL,O
 
 外部数据库用于把已经存在的业务数据库接入 NocoBase ，读取外部数据库中的数据表、字段和视图，让这些数据表可以在页面区块、权限、工作流和 API 中使用。
 
-与[主数据库](../main/index.md)不同，外部数据库的表结构由原系统、数据库客户端维护，NocoBase 负责读取表结构和视图，不会修改外部数据库的真实表结构。
+与[主数据库](../data-source-main/index.md)不同，外部数据库的表结构由原系统、数据库客户端维护，NocoBase 负责读取表结构和视图，不会修改外部数据库的真实表结构。
 
 外部数据库支持的数据库版本和商业版本如下：
 
@@ -23,8 +23,8 @@ keywords: "外部数据库,MySQL,PostgreSQL,MariaDB,KingbaseES,OceanBase,MSSQL,O
 | KingbaseES | >=V9 | ❌ | ❌ | ✅ | ✅ |
 | OceanBase | >=4.3 | ❌ | ❌ | ❌ | ✅ |
 | Oracle | >= 11g | ❌ | ❌ | ❌ | ✅ |
-| ClickHouse | 以对应插件说明为准 | ❌ | ❌ | ❌ | ✅ |
-| Doris | 以对应插件说明为准 | ❌ | ❌ | ❌ | ✅ |
+| ClickHouse | >= 20.2 | ❌ | ❌ | ❌ | ✅ |
+| Doris | >= 2.1.0 | ❌ | ❌ | ❌ | ✅ |
 
 :::tip 提示
 
