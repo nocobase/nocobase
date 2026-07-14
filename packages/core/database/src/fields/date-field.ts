@@ -146,8 +146,10 @@ export class DateField extends Field {
       model.refreshAttributes();
     }
 
-    this.on('beforeSave', this.beforeSave);
-    this.on('beforeBulkCreate', this.beforeSave);
+    if (this.options.defaultToCurrentTime || this.options.onUpdateToCurrentTime) {
+      this.on('beforeSave', this.beforeSave);
+      this.on('beforeBulkCreate', this.beforeSave);
+    }
   }
 
   unbind() {

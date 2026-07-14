@@ -104,6 +104,9 @@ interface InstallMarker {
 
 const GITHUB_COMMIT_PATTERN = /^[0-9a-f]{40}$/i;
 const DEFAULT_DOWNLOAD_TIMEOUT_MS = 30_000;
+const PUBLIC_GITHUB_ORIGIN = 'https://github.com';
+const PUBLIC_GITHUB_API_ORIGIN = 'https://api.github.com';
+const PUBLIC_GITHUB_CODELOAD_ORIGIN = 'https://codeload.github.com';
 
 function getAbortError(signal?: AbortSignal) {
   if (signal?.reason instanceof Error) {
@@ -325,14 +328,51 @@ async function getArchivePath(
     source.type === 'zip' && source.auth === 'skill-capability'
       ? (url: URL) => getSkillCapabilityArchiveHeaders(url.toString(), source, trustedArchiveServerUrl, downloadHeaders)
       : undefined;
+  const assertOriginAllowed = createSkillArchiveOriginPolicy(source, archiveUrl, trustedArchiveServerUrl);
   await downloadSkillArchive({
     archiveUrl,
     destination: archivePath,
     timeoutMs,
+    assertOriginAllowed,
     getHeaders,
     signal,
   });
   return archivePath;
+}
+
+export function createSkillArchiveOriginPolicy(
+  source: SkillVersionSource,
+  archiveUrl: string,
+  trustedArchiveServerUrl?: string,
+) {
+  const initialArchiveOrigin = new URL(archiveUrl).origin;
+  if (source.type === 'zip' && source.auth === 'skill-capability') {
+    if (!trustedArchiveServerUrl) {
+      throw new SkillArchiveError(SKILL_ARCHIVE_ERROR_CODES.downloadTrustedServer);
+    }
+    const trustedOrigin = new URL(trustedArchiveServerUrl).origin;
+    return (url: URL) => {
+      if (url.origin !== trustedOrigin) {
+        throw new SkillArchiveError(SKILL_ARCHIVE_ERROR_CODES.downloadTrustedEndpoint);
+      }
+    };
+  }
+
+  const allowedOrigins = new Set([initialArchiveOrigin]);
+  if (source.type === 'github') {
+    const repoOrigin = new URL(source.repoUrl).origin;
+    if (
+      repoOrigin === PUBLIC_GITHUB_ORIGIN &&
+      (initialArchiveOrigin === PUBLIC_GITHUB_ORIGIN || initialArchiveOrigin === PUBLIC_GITHUB_API_ORIGIN)
+    ) {
+      allowedOrigins.add(PUBLIC_GITHUB_CODELOAD_ORIGIN);
+    }
+  }
+  return (url: URL) => {
+    if (!allowedOrigins.has(url.origin)) {
+      throw new SkillArchiveError(SKILL_ARCHIVE_ERROR_CODES.downloadOrigin);
+    }
+  };
 }
 
 function getSkillCapabilityArchiveHeaders(

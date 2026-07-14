@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { randomUUID } from 'crypto';
+
 import { MockCluster, MockServer, createMockCluster, createMockServer } from '@nocobase/test';
 import WebSocket from 'ws';
 
@@ -120,6 +122,30 @@ function sendBrowserSubscribe(
   });
 }
 
+async function createControlRequest(
+  app: MockServer,
+  options: {
+    runId: string;
+    requestedById: string | number;
+    action?: 'interrupt' | 'terminate';
+    status?: 'accepted' | 'delivered' | 'succeeded' | 'failed';
+  },
+) {
+  const id = randomUUID();
+  await app.db.getRepository('agRunControlRequests').create({
+    values: {
+      id,
+      runId: options.runId,
+      action: options.action || 'interrupt',
+      requestedById: options.requestedById,
+      status: options.status || 'accepted',
+      idempotencyKey: id,
+      requestKey: `terminal-stream-test:${id}`,
+    },
+  });
+  return id;
+}
+
 describe('terminal stream broker', () => {
   let app: MockServer;
   let rootUserId: string | number;
@@ -227,6 +253,102 @@ describe('terminal stream broker', () => {
       );
       expect(Object.prototype.hasOwnProperty.call(dataFrame, 'claimToken')).toBe(false);
       expect(Object.prototype.hasOwnProperty.call(dataFrame, 'sessionName')).toBe(false);
+    } finally {
+      daemon.close();
+      browser.close();
+      await server.close();
+    }
+  });
+
+  it('forwards an owned durable control request to the local daemon as a wake hint', async () => {
+    const runner = await createRunner(app, { nodeKey: 'terminal-stream-control-notify-node' });
+    const runId = await createQueuedRun(app, runner, 'terminal-stream-control-notify-run');
+    const lease = await claimRun(app, runner, runId);
+    const controlRequestId = await createControlRequest(app, {
+      runId,
+      requestedById: rootUserId,
+    });
+    const server = await createTerminalStreamServer(app);
+    const daemon = createWebSocket(server.wsUrl, { nodeToken: runner.nodeToken });
+    const browserConnection = await createBrowserWithTicket(app, server.wsUrl, {
+      userId: rootUserId,
+      runId,
+      requestId: 'control-notify-ticket',
+    });
+    const browser = browserConnection.browser;
+
+    try {
+      await Promise.all([waitForOpen(daemon), waitForOpen(browser)]);
+      sendFrame(daemon, {
+        type: 'daemon.register',
+        protocol: TERMINAL_PROTOCOL,
+        requestId: 'control-notify-register',
+        nodeId: runner.nodeId,
+        capabilities: { terminalStream: true },
+      });
+      await waitForFrame(daemon, (frame) => frame.type === 'ack' && frame.requestId === 'control-notify-register');
+      sendFrame(daemon, {
+        type: 'daemon.bindRun',
+        protocol: TERMINAL_PROTOCOL,
+        requestId: 'control-notify-bind',
+        runId,
+        sessionName: 'agw_terminal_stream_control_notify',
+        startOffset: 0,
+        claimToken: lease.claimToken,
+        claimAttempt: lease.claimAttempt,
+        leaseVersion: lease.leaseVersion,
+      });
+      await waitForFrame(daemon, (frame) => frame.type === 'ack' && frame.requestId === 'control-notify-bind');
+      sendBrowserSubscribe(browser, browserConnection.ticket, {
+        runId,
+        requestId: 'control-notify-subscribe',
+      });
+      await waitForFrame(browser, (frame) => frame.type === 'ack' && frame.requestId === 'control-notify-subscribe');
+
+      const daemonNotification = waitForFrame(
+        daemon,
+        (frame) => frame.type === 'daemon.controlAvailable' && frame.controlRequestId === controlRequestId,
+      );
+      const browserAck = waitForFrame(
+        browser,
+        (frame) => frame.type === 'ack' && frame.requestId === 'control-notify-owned',
+      );
+      sendFrame(browser, {
+        type: 'browser.controlNotify',
+        protocol: TERMINAL_PROTOCOL,
+        requestId: 'control-notify-owned',
+        runId,
+        controlRequestId,
+      });
+      expect(await daemonNotification).toMatchObject({
+        type: 'daemon.controlAvailable',
+        runId,
+        controlRequestId,
+      });
+      await browserAck;
+
+      await app.db.getRepository('agRunControlRequests').update({
+        filterByTk: controlRequestId,
+        values: { status: 'succeeded' },
+      });
+      const finalAck = waitForFrame(
+        browser,
+        (frame) => frame.type === 'ack' && frame.requestId === 'control-notify-final',
+      );
+      const noFinalNotification = waitForNoFrame(
+        daemon,
+        (frame) => frame.type === 'daemon.controlAvailable' && frame.controlRequestId === controlRequestId,
+        100,
+      );
+      sendFrame(browser, {
+        type: 'browser.controlNotify',
+        protocol: TERMINAL_PROTOCOL,
+        requestId: 'control-notify-final',
+        runId,
+        controlRequestId,
+      });
+      await finalAck;
+      expect(await noFinalNotification).toBe(false);
     } finally {
       daemon.close();
       browser.close();

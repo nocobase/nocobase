@@ -33,7 +33,9 @@ export function getMonotonicTimeMs() {
   return performance.now();
 }
 
-export function attachLocalRunLeaseDeadline(lease: RunLease): RunLease {
+export function attachLocalRunLeaseDeadline<Lease extends RunLease>(
+  lease: Lease,
+): Lease & { localLeaseDeadlineMonotonicMs: number } {
   return {
     ...lease,
     localLeaseDeadlineMonotonicMs: getMonotonicTimeMs() + getRunLeaseTtlMs(lease),

@@ -34,10 +34,9 @@ interface UseRunDetailControllerOptions {
   ctx: AgentGatewayPageContext;
   t: TFunction;
   initialRunId?: string;
-  onClearTerminal(): void;
 }
 
-export function useRunDetailController({ ctx, t, initialRunId, onClearTerminal }: UseRunDetailControllerOptions) {
+export function useRunDetailController({ ctx, t, initialRunId }: UseRunDetailControllerOptions) {
   const [open, setOpen] = useState(Boolean(initialRunId));
   const [selectedRunId, setSelectedRunId] = useState<string | undefined>(initialRunId);
   const [error, setError] = useState<string>();
@@ -46,8 +45,7 @@ export function useRunDetailController({ ctx, t, initialRunId, onClearTerminal }
   const resetSelectionState = useCallback(() => {
     setError(undefined);
     setActiveTab('summary');
-    onClearTerminal();
-  }, [onClearTerminal]);
+  }, []);
 
   const syncFromLocation = useCallback(() => {
     const runId = getRunIdFromLocationSearch();
@@ -83,14 +81,10 @@ export function useRunDetailController({ ctx, t, initialRunId, onClearTerminal }
           return;
         }
         setError(undefined);
-        if (!isRunActionAllowed(data.run.agentGatewayActionPermissionsJson, 'readTerminal')) {
-          onClearTerminal();
-        }
       },
       onError(requestError) {
         const message = getApiErrorMessage(requestError, t('Failed to load run details'));
         setError(message);
-        onClearTerminal();
         ctx.message?.error(message);
       },
     },

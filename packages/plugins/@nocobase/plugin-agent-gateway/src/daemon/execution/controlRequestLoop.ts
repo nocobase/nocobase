@@ -28,8 +28,15 @@ type ControlRequestAckValues = {
   };
 };
 
-export function controlRequestWhileRunPhase(options: ControlRequestLoopOptions) {
+export interface ControlRequestLoopHandle {
+  wake(): void;
+  stop(): Promise<void>;
+}
+
+export function controlRequestWhileRunPhase(options: ControlRequestLoopOptions): ControlRequestLoopHandle {
   let inFlight: Promise<void> | null = null;
+  let wakePending = false;
+  let stopped = false;
   const handledRequestIds = new Set<string>();
   const deliveredRequestIds = new Set<string>();
   const finalAckByRequestId = new Map<
@@ -157,7 +164,11 @@ export function controlRequestWhileRunPhase(options: ControlRequestLoopOptions) 
   };
 
   const poll = () => {
+    if (stopped) {
+      return;
+    }
     if (inFlight) {
+      wakePending = true;
       return;
     }
     inFlight = options.gateway
@@ -173,14 +184,23 @@ export function controlRequestWhileRunPhase(options: ControlRequestLoopOptions) 
       })
       .finally(() => {
         inFlight = null;
+        if (wakePending) {
+          wakePending = false;
+          poll();
+        }
       });
   };
 
   poll();
   const timer = setInterval(poll, options.intervalMs);
-  return async () => {
-    clearInterval(timer);
-    await inFlight;
-    await drainFinalAcks();
+  return {
+    wake: poll,
+    async stop() {
+      stopped = true;
+      wakePending = false;
+      clearInterval(timer);
+      await inFlight;
+      await drainFinalAcks();
+    },
   };
 }

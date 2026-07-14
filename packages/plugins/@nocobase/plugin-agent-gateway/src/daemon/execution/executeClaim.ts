@@ -44,6 +44,7 @@ import {
   type RunHeartbeatStatus,
 } from './leaseHeartbeat';
 import type { TerminalStreamHandle } from './terminalBackend';
+import type { ControlRequestLoopHandle } from './controlRequestLoop';
 import { createLiveTimelineReporter, type LiveTimelineReporter } from '../observations/liveTimelinePublisher';
 import { reportProviderSessionAndCollectWarnings } from '../observations/providerReporter';
 import type { DeclaredArtifactCollectionSummary } from '../observations/artifactCollector';
@@ -345,7 +346,7 @@ export async function executeClaimedRun(
   const leaseLostController = new AbortController();
   const stopForwardingExecutionAbort = forwardAbortSignal(options.stopSignal, leaseLostController);
   let stopHeartbeat: (() => Promise<void>) | null = null;
-  let stopControlRequests: (() => Promise<void>) | null = null;
+  let controlRequests: ControlRequestLoopHandle | null = null;
   let runHeartbeatStatus: RunHeartbeatStatus = 'running';
   const managedOutputArtifactPaths = new Set<string>();
 
@@ -382,6 +383,9 @@ export async function executeClaimedRun(
         runId: claimedLease.runId,
         sessionName: tmuxSessionName,
         getLease: activeLease,
+        onControlAvailable: () => {
+          controlRequests?.wake();
+        },
       });
       await terminalStream.start();
     }
@@ -392,8 +396,8 @@ export async function executeClaimedRun(
         terminalStatus: 'active',
         terminalStartedAt,
       });
-      if (!stopControlRequests) {
-        stopControlRequests = services.controlRequests.start({
+      if (!controlRequests) {
+        controlRequests = services.controlRequests.start({
           gateway: options.gateway,
           getLease: activeLease,
           sessionName: tmuxSessionName,
@@ -478,9 +482,9 @@ export async function executeClaimedRun(
         leaseLostController.abort();
       }
     }
-    if (stopControlRequests) {
-      await stopControlRequests();
-      stopControlRequests = null;
+    if (controlRequests) {
+      await controlRequests.stop();
+      controlRequests = null;
     }
     if (leaseLostController.signal.aborted) {
       if (usesManagedTmux) {
@@ -622,9 +626,9 @@ export async function executeClaimedRun(
       await stopHeartbeat();
       stopHeartbeat = null;
     }
-    if (stopControlRequests) {
-      await stopControlRequests();
-      stopControlRequests = null;
+    if (controlRequests) {
+      await controlRequests.stop();
+      controlRequests = null;
     }
     if (usesManagedTmux) {
       await services.terminal.close(options, activeLease(), claimedLease.runId, null);
@@ -670,8 +674,8 @@ export async function executeClaimedRun(
     if (stopHeartbeat) {
       await stopHeartbeat();
     }
-    if (stopControlRequests) {
-      await stopControlRequests();
+    if (controlRequests) {
+      await controlRequests.stop();
     }
     await cleanupProjectSkills(false);
     terminalStream?.close();
@@ -691,7 +695,7 @@ export async function claimAndExecuteOnce(
     profileKey: options.claimProfileKey,
     runId: options.claimRunId,
   });
-  if (claim.claimed === false || !claim.runId) {
+  if (claim.claimed === false) {
     return {
       status: 'idle',
       reason: 'no_claimable_run',
@@ -699,12 +703,7 @@ export async function claimAndExecuteOnce(
   }
   onActiveRunChange?.(true);
   try {
-    return await executeClaimedRun(options, {
-      ...claim,
-      claimed: true,
-      run: (claim.run || {}) as ClaimedRunLease['run'],
-      executionPolicyKey: claim.executionPolicyKey || '',
-    });
+    return await executeClaimedRun(options, claim);
   } finally {
     onActiveRunChange?.(false);
   }

@@ -55,8 +55,7 @@ function getTimestampMs(value: unknown) {
 }
 
 export function getPayload(lease: RunLease) {
-  const run = isRecord(lease.run) ? lease.run : {};
-  return isRecord(run.executionPayloadJson) ? run.executionPayloadJson : {};
+  return isRecord(lease.run?.executionPayloadJson) ? lease.run.executionPayloadJson : {};
 }
 
 export function getRequestedTerminalBackend(fallback?: AgentTerminalBackend) {
@@ -67,18 +66,16 @@ export function getDeclaredArtifactModifiedSinceMs(lease: RunLease, payload: Jso
   if (payload.includeOlderArtifacts === true || payload.collectAllArtifacts === true) {
     return undefined;
   }
-  const run = isRecord(lease.run) ? lease.run : {};
   return (
     getTimestampMs(payload.artifactModifiedSince) ||
-    getTimestampMs(run.startedAt) ||
-    getTimestampMs(run.requestedAt) ||
-    getTimestampMs(run.createdAt)
+    getTimestampMs(lease.run?.startedAt) ||
+    getTimestampMs(lease.run?.requestedAt) ||
+    getTimestampMs(lease.run?.createdAt)
   );
 }
 
 function getRunPrompt(lease: RunLease, payload: JsonRecord) {
-  const run = isRecord(lease.run) ? lease.run : {};
-  const promptSnapshot = isRecord(run.promptSnapshot) ? run.promptSnapshot : {};
+  const promptSnapshot = isRecord(lease.run?.promptSnapshot) ? lease.run.promptSnapshot : {};
   return (
     getRawString(payload.prompt) ||
     getRawString(payload.message) ||

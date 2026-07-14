@@ -1140,6 +1140,10 @@ describe('agent gateway run lifecycle APIs', () => {
       agentProfileId: runner.profileId,
       claimAttempt: 1,
       leaseVersion: 1,
+      capabilitiesSnapshotJson: expect.objectContaining({
+        terminalOutput: true,
+        terminate: true,
+      }),
       promptSnapshot: {
         text: 'Prompt for run-claim-1',
       },

@@ -24,12 +24,38 @@ import {
 } from '..';
 import { normalizeAgentProviderCapabilities } from '../../providerCapabilities';
 
+const canonicalRequestSamples = Object.fromEntries(
+  Object.values(AGENT_GATEWAY_API_ACTIONS).map((action) => [action, {}]),
+) as Record<(typeof AGENT_GATEWAY_API_ACTIONS)[keyof typeof AGENT_GATEWAY_API_ACTIONS], Record<string, unknown>>;
+
+canonicalRequestSamples[AGENT_GATEWAY_API_ACTIONS.appendConversationEvents] = { events: [] };
+canonicalRequestSamples[AGENT_GATEWAY_API_ACTIONS.importExternalRun] = {
+  provider: 'codex',
+  externalRunKey: 'contract-sample',
+};
+canonicalRequestSamples[AGENT_GATEWAY_API_ACTIONS.appendExternalRunObservations] = { provider: 'codex' };
+
 describe('Agent Gateway canonical API contracts', () => {
   it('defines exactly one contract for every action', () => {
     expect(Object.keys(AGENT_GATEWAY_API_CONTRACTS).sort()).toEqual(Object.values(AGENT_GATEWAY_API_ACTIONS).sort());
     for (const action of Object.values(AGENT_GATEWAY_API_ACTIONS)) {
       expect(AGENT_GATEWAY_API_CONTRACTS[action].action).toBe(action);
     }
+  });
+
+  it.each(Object.values(AGENT_GATEWAY_API_ACTIONS))('accepts a canonical request sample for %s', (action) => {
+    expect(parseAgentGatewayActionRequest(action, canonicalRequestSamples[action])).toEqual(
+      canonicalRequestSamples[action],
+    );
+  });
+
+  it.each(Object.values(AGENT_GATEWAY_API_ACTIONS))('rejects an unknown request field for %s', (action) => {
+    expect(() =>
+      parseAgentGatewayActionRequest(action, {
+        ...canonicalRequestSamples[action],
+        unknownContractField: true,
+      }),
+    ).toThrow('Unknown request field: unknownContractField');
   });
 
   it('builds canonical action URLs and paths', () => {
@@ -155,6 +181,19 @@ describe('Agent Gateway canonical API contracts', () => {
       terminalInput: expect.anything(),
       supportsArtifacts: expect.anything(),
     });
+  });
+
+  it('rejects legacy capability aliases at node registration boundaries', () => {
+    expect(() =>
+      parseAgentGatewayActionRequest(AGENT_GATEWAY_API_ACTIONS.heartbeatNode, {
+        capabilitiesJson: { supportsArtifacts: true },
+      }),
+    ).toThrow('Legacy capabilitiesJson field is not allowed: supportsArtifacts');
+    expect(() =>
+      parseAgentGatewayActionRequest(AGENT_GATEWAY_API_ACTIONS.heartbeatNode, {
+        profiles: [{ capabilitiesJson: { terminalStream: true } }],
+      }),
+    ).toThrow('Legacy profiles[0].capabilitiesJson field is not allowed: terminalStream');
   });
 
   it('defines a strict allowlist for claimed run execution payloads', () => {

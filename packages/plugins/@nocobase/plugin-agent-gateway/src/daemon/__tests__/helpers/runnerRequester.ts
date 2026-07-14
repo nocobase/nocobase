@@ -8,6 +8,7 @@
  */
 
 import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiPath } from '../../../shared/apiContract';
+import { isAgentProviderKey, type AgentProviderKey } from '../../../shared/providerCapabilities';
 import { AgentGatewayHttpError } from '../../apiClient';
 import { GatewayRequestOptions, GatewayRequester, JsonRecord } from '../../types';
 
@@ -96,6 +97,7 @@ export class RunnerRequester implements GatewayRequester {
   }
 
   private getDefaultClaimPayload() {
+    const provider: AgentProviderKey = 'generic-cli';
     return {
       claimed: true,
       runId: 'run-1',
@@ -105,8 +107,13 @@ export class RunnerRequester implements GatewayRequester {
       claimExpiresAt: this.options.leaseExpiresAt || new Date(Date.now() + 60_000).toISOString(),
       ...(this.options.leaseTtlMs !== undefined ? { leaseTtlMs: this.options.leaseTtlMs } : {}),
       ...(this.options.serverTime ? { serverTime: this.options.serverTime } : {}),
+      executionPolicyKey: 'node',
       run: {
         id: 'run-1',
+        provider,
+        capabilitiesSnapshotJson: {},
+        executionPolicyKey: 'node',
+        sourceType: 'task',
         executionPayloadJson: {
           executionPolicyKey: 'node',
           prompt: 'process.stdout.write("runner complete token=RUNNER_TOKEN_SECRET")',
@@ -116,7 +123,45 @@ export class RunnerRequester implements GatewayRequester {
     };
   }
 
-  async request<T extends JsonRecord = JsonRecord>(options: GatewayRequestOptions): Promise<T> {
+  private getClaimPayload() {
+    const claimPayload = this.options.claimPayload;
+    if (!claimPayload || claimPayload.claimed !== true || !isJsonRecord(claimPayload.run)) {
+      return claimPayload || this.getDefaultClaimPayload();
+    }
+    const executionPayloadJson = isJsonRecord(claimPayload.run.executionPayloadJson)
+      ? claimPayload.run.executionPayloadJson
+      : {};
+    const executionPolicyKey =
+      (typeof claimPayload.executionPolicyKey === 'string' && claimPayload.executionPolicyKey) ||
+      (typeof claimPayload.run.executionPolicyKey === 'string' && claimPayload.run.executionPolicyKey) ||
+      (typeof executionPayloadJson.executionPolicyKey === 'string' && executionPayloadJson.executionPolicyKey) ||
+      'node';
+    const provider = isAgentProviderKey(claimPayload.run.provider)
+      ? claimPayload.run.provider
+      : executionPolicyKey.includes('codex')
+        ? 'codex'
+        : 'generic-cli';
+    return {
+      ...this.getDefaultClaimPayload(),
+      ...claimPayload,
+      executionPolicyKey,
+      run: {
+        ...claimPayload.run,
+        provider,
+        capabilitiesSnapshotJson: isJsonRecord(claimPayload.run.capabilitiesSnapshotJson)
+          ? claimPayload.run.capabilitiesSnapshotJson
+          : {},
+        executionPolicyKey:
+          typeof claimPayload.run.executionPolicyKey === 'string'
+            ? claimPayload.run.executionPolicyKey
+            : executionPolicyKey,
+        sourceType: typeof claimPayload.run.sourceType === 'string' ? claimPayload.run.sourceType : 'task',
+        executionPayloadJson,
+      },
+    };
+  }
+
+  async request(options: GatewayRequestOptions): Promise<unknown> {
     this.calls.push(options);
     if (
       this.options.failNodeHeartbeatOnce &&
@@ -156,23 +201,33 @@ export class RunnerRequester implements GatewayRequester {
         throw new Error('connect ECONNRESET');
       }
       this.leaseVersion += 1;
+      const claimPayload = this.getClaimPayload();
+      const runId = isJsonRecord(claimPayload) && typeof claimPayload.runId === 'string' ? claimPayload.runId : 'run-1';
+      const claimToken =
+        isJsonRecord(claimPayload) && typeof claimPayload.claimToken === 'string'
+          ? claimPayload.claimToken
+          : 'ag_claim_CLAIM_TOKEN_SECRET';
+      const claimAttempt =
+        isJsonRecord(claimPayload) && Number.isInteger(claimPayload.claimAttempt)
+          ? Number(claimPayload.claimAttempt)
+          : 1;
       return {
-        runId: 'run-1',
-        claimToken: 'ag_claim_CLAIM_TOKEN_SECRET',
-        claimAttempt: 1,
+        runId,
+        claimToken,
+        claimAttempt,
         leaseVersion: this.leaseVersion,
         claimExpiresAt: this.options.leaseExpiresAt || new Date(Date.now() + 60_000).toISOString(),
         ...(this.options.leaseTtlMs !== undefined ? { leaseTtlMs: this.options.leaseTtlMs } : {}),
         ...(this.options.serverTime ? { serverTime: this.options.serverTime } : {}),
         cancelRequested: this.options.cancelOnRunHeartbeatCall === this.runHeartbeatCount,
-      } as T;
+      };
     }
     if (isRunActionCall(options, 'claim')) {
       if (this.options.failClaimCount && this.options.failClaimCount > 0) {
         this.options.failClaimCount -= 1;
         throw new Error('connect ECONNRESET claim');
       }
-      return (this.options.claimPayload || this.getDefaultClaimPayload()) as T;
+      return this.getClaimPayload();
     }
     if (this.failCompleteOnce && isRunActionCall(options, 'complete')) {
       this.failCompleteOnce = false;
@@ -211,6 +266,6 @@ export class RunnerRequester implements GatewayRequester {
     }
     return {
       ok: true,
-    } as T;
+    };
   }
 }

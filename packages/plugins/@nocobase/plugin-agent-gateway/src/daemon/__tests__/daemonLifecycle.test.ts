@@ -16,7 +16,7 @@ import { promisify } from 'util';
 import { readDaemonConfig } from '../config';
 import { AgentGatewayDaemonNodeClient } from '../gateway';
 import { heartbeatDaemonNode, registerDaemonNode } from '../registration';
-import { GatewayRequestOptions, GatewayRequester, JsonRecord } from '../types';
+import { GatewayRequestOptions, GatewayRequester } from '../types';
 import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiPath } from '../../shared/apiContract';
 
 const execFileAsync = promisify(execFile);
@@ -24,7 +24,7 @@ const execFileAsync = promisify(execFile);
 class FakeRequester implements GatewayRequester {
   calls: GatewayRequestOptions[] = [];
 
-  async request<T extends JsonRecord = JsonRecord>(options: GatewayRequestOptions): Promise<T> {
+  async request(options: GatewayRequestOptions): Promise<unknown> {
     this.calls.push(options);
     if (options.path === getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.registerNode)) {
       return {
@@ -34,13 +34,13 @@ class FakeRequester implements GatewayRequester {
         tokenLast4: 'CRET',
         heartbeatIntervalSeconds: 30,
         claimIntervalSeconds: 10,
-      } as T;
+      };
     }
     return {
       nodeId: 'node-1',
       status: 'active',
       heartbeatAt: '2026-07-01T00:00:00.000Z',
-    } as T;
+    };
   }
 }
 

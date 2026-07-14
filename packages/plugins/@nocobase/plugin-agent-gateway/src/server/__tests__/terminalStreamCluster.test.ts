@@ -273,6 +273,93 @@ describe('agent gateway terminal stream cluster behavior', () => {
     }
   });
 
+  it('forwards a browser control notification to the daemon connection owner', async () => {
+    const transport = new ControllableSharedTerminalTransport();
+    const runner = await createRunner(instanceA, { nodeKey: `terminal-control-notify-${randomUUID()}` });
+    const runId = await createQueuedRun(instanceA, runner, `terminal-control-notify-run-${randomUUID()}`);
+    const claim = await claimRun(instanceA, runner, runId);
+    const controlRequestId = randomUUID();
+    await instanceB.db.getRepository('agRunControlRequests').create({
+      values: {
+        id: controlRequestId,
+        runId,
+        action: 'interrupt',
+        requestedById: rootUserId,
+        status: 'accepted',
+        idempotencyKey: controlRequestId,
+        requestKey: `terminal-control-notify:${controlRequestId}`,
+      },
+    });
+    const serverA = await createTerminalStreamServer(instanceA, transport);
+    const serverB = await createTerminalStreamServer(instanceB, transport);
+    const daemon = createWebSocket(serverA.wsUrl, { nodeToken: runner.nodeToken });
+    const ticket = await createBrowserStreamTicket(instanceB, { userId: rootUserId, runId });
+    const browser = createWebSocket(serverB.wsUrl, { streamTicket: ticket });
+
+    try {
+      await Promise.all([waitForOpen(daemon), waitForOpen(browser)]);
+      sendFrame(daemon, {
+        type: 'daemon.register',
+        protocol: TERMINAL_PROTOCOL,
+        requestId: 'control-notify-cluster-register',
+        nodeId: runner.nodeId,
+        capabilities: { terminalStream: true },
+      });
+      await waitForFrame(
+        daemon,
+        (frame) => frame.type === 'ack' && frame.requestId === 'control-notify-cluster-register',
+      );
+      sendFrame(daemon, {
+        type: 'daemon.bindRun',
+        protocol: TERMINAL_PROTOCOL,
+        requestId: 'control-notify-cluster-bind',
+        runId,
+        sessionName: 'agw_terminal_control_notify_cluster',
+        startOffset: 0,
+        claimToken: claim.claimToken,
+        claimAttempt: claim.claimAttempt,
+        leaseVersion: claim.leaseVersion,
+      });
+      await waitForFrame(daemon, (frame) => frame.type === 'ack' && frame.requestId === 'control-notify-cluster-bind');
+      sendBrowserSubscribe(browser, {
+        runId,
+        requestId: 'control-notify-cluster-subscribe',
+      });
+      await waitForFrame(
+        browser,
+        (frame) => frame.type === 'ack' && frame.requestId === 'control-notify-cluster-subscribe',
+      );
+
+      const daemonNotification = waitForFrame(
+        daemon,
+        (frame) => frame.type === 'daemon.controlAvailable' && frame.controlRequestId === controlRequestId,
+      );
+      const browserAck = waitForFrame(
+        browser,
+        (frame) => frame.type === 'ack' && frame.requestId === 'control-notify-cluster-forward',
+      );
+      sendFrame(browser, {
+        type: 'browser.controlNotify',
+        protocol: TERMINAL_PROTOCOL,
+        requestId: 'control-notify-cluster-forward',
+        runId,
+        controlRequestId,
+      });
+
+      expect(await daemonNotification).toMatchObject({
+        type: 'daemon.controlAvailable',
+        runId,
+        controlRequestId,
+      });
+      await browserAck;
+    } finally {
+      daemon.close();
+      browser.close();
+      await serverA.close();
+      await serverB.close();
+    }
+  });
+
   it('atomically consumes one browser ticket when two instances subscribe concurrently', async () => {
     const transport = new ControllableSharedTerminalTransport();
     const runner = await createRunner(instanceA, { nodeKey: `terminal-ticket-cluster-${randomUUID()}` });

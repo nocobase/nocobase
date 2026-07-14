@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
   TerminalStreamChunk,
@@ -35,12 +35,15 @@ export interface TerminalStreamHookChunk extends TerminalStreamChunk {
 export interface UseTerminalStreamState extends TerminalStreamClientState {
   chunks: TerminalStreamHookChunk[];
   hasStreamOutput: boolean;
+  notifyControl(controlRequestId: string): boolean;
 }
 
 export const TERMINAL_STREAM_CHUNK_LIMIT = 500;
 const TERMINAL_STREAM_STATE_FLUSH_INTERVAL_MS = 250;
 
-const CLOSED_STATE: UseTerminalStreamState = {
+type TerminalStreamRenderState = Omit<UseTerminalStreamState, 'notifyControl'>;
+
+const CLOSED_STATE: TerminalStreamRenderState = {
   connectionState: 'closed',
   currentOffset: 0,
   previewText: '',
@@ -76,7 +79,11 @@ export function useTerminalStream(options: UseTerminalStreamOptions): UseTermina
     runId,
   } = options;
   const enabled = enabledOption !== false;
-  const [state, setState] = useState<UseTerminalStreamState>(CLOSED_STATE);
+  const [state, setState] = useState<TerminalStreamRenderState>(CLOSED_STATE);
+  const clientRef = useRef<TerminalStreamClient>();
+  const notifyControl = useCallback((controlRequestId: string) => {
+    return clientRef.current?.notifyControl(controlRequestId) ?? false;
+  }, []);
 
   useEffect(() => {
     if (!enabled || !runId || !createStreamTicket) {
@@ -155,10 +162,14 @@ export function useTerminalStream(options: UseTerminalStreamOptions): UseTermina
       },
     });
 
+    clientRef.current = client;
     client.connect();
     return () => {
       disposed = true;
       client.close();
+      if (clientRef.current === client) {
+        clientRef.current = undefined;
+      }
       if (flushTimer) {
         clearTimeout(flushTimer);
         flushTimer = null;
@@ -177,5 +188,8 @@ export function useTerminalStream(options: UseTerminalStreamOptions): UseTermina
     runId,
   ]);
 
-  return state;
+  return {
+    ...state,
+    notifyControl,
+  };
 }

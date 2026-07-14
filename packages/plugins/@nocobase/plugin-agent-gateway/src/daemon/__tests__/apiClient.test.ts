@@ -16,8 +16,63 @@ import {
   isAgentGatewayLeaseLostError,
   isAgentGatewayRetryableError,
 } from '../apiClient';
+import { AgentGatewayDaemonNodeClient } from '../gateway';
+import { GatewayRequester, requestGatewayAction } from '../types';
+import { AGENT_GATEWAY_API_ACTIONS } from '../../shared/apiContract';
 
 describe('agent gateway daemon API client', () => {
+  it('rejects malformed action responses returned by a low-level requester', async () => {
+    const requester: GatewayRequester = {
+      async request() {
+        return [];
+      },
+    };
+
+    await expect(
+      requestGatewayAction(requester, {
+        action: AGENT_GATEWAY_API_ACTIONS.heartbeatNode,
+        method: 'POST',
+        path: '/agentGatewayApi:heartbeatNode/node-1',
+        body: {},
+      }),
+    ).rejects.toThrow('response must be an object');
+  });
+
+  it('rejects malformed pending control requests at the daemon gateway boundary', async () => {
+    const requester: GatewayRequester = {
+      async request() {
+        return {
+          requests: [
+            {
+              id: 'control-1',
+              runId: 'run-1',
+              action: 'write',
+              status: 'accepted',
+              createdAt: new Date().toISOString(),
+            },
+          ],
+        };
+      },
+    };
+    const gateway = new AgentGatewayDaemonNodeClient(requester, {
+      serverUrl: 'https://nocobase.example.test',
+      nodeId: 'node-1',
+      nodeKey: 'node-1',
+      nodeToken: 'ag_node_TEST',
+      executionPolicies: [],
+      savedAt: new Date().toISOString(),
+    });
+
+    await expect(
+      gateway.listPendingControlRequests({
+        runId: 'run-1',
+        claimToken: 'ag_claim_TEST',
+        claimAttempt: 1,
+        leaseVersion: 1,
+      }),
+    ).rejects.toThrow('response.requests[0].action is invalid');
+  });
+
   it('preserves HTTP status and response code for non-success responses', async () => {
     const server = http.createServer((_request, response) => {
       response.writeHead(409, {

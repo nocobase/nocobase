@@ -3,6 +3,14 @@ name: Agent Gateway release gate
 on:
   workflow_dispatch:
     inputs:
+      mode:
+        description: Run the release gate with live evidence, or automated checks only
+        required: true
+        default: release
+        type: choice
+        options:
+          - release
+          - automated-only
       source_run_id:
         description: Workflow run containing raw agent-gateway-live-source outputs from Agent Browser, providers, and WS denial probes
         required: false
@@ -12,11 +20,6 @@ on:
         required: false
         default: ''
         type: string
-      allow_incomplete:
-        description: Upload an incomplete report without failing the workflow
-        required: false
-        default: false
-        type: boolean
 
 permissions:
   actions: read
@@ -36,6 +39,17 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Validate release-gate mode
+        run: |
+          if [ "${{ inputs.mode }}" = "release" ] && [ -z "${{ inputs.source_run_id }}" ]; then
+            echo "release mode requires source_run_id" >&2
+            exit 1
+          fi
+          if [ "${{ inputs.mode }}" = "automated-only" ] && [ -n "${{ inputs.source_run_id }}" ]; then
+            echo "automated-only mode does not accept source_run_id" >&2
+            exit 1
+          fi
+
       - name: Use Node.js 22
         uses: actions/setup-node@v4
         with:
@@ -46,11 +60,11 @@ jobs:
         run: yarn install --frozen-lockfile
 
       - name: Download raw live evidence outputs
-        if: inputs.source_run_id != ''
+        if: inputs.mode == 'release'
         run: gh run download "${{ inputs.source_run_id }}" --name agent-gateway-live-source --dir "$SOURCE_DIR"
 
       - name: Prepare a fresh evidence execution
-        if: inputs.source_run_id == ''
+        if: inputs.mode == 'automated-only'
         working-directory: packages/plugins/@nocobase/plugin-agent-gateway
         run: >-
           yarn acceptance:prepare
@@ -58,14 +72,14 @@ jobs:
           --required-providers "${{ inputs.required_providers }}"
 
       - name: Restore the source execution context
-        if: inputs.source_run_id != ''
+        if: inputs.mode == 'release'
         run: |
           test -s "$SOURCE_DIR/context.json"
           mkdir -p "$EVIDENCE_DIR"
           cp "$SOURCE_DIR/context.json" "$EVIDENCE_DIR/context.json"
 
       - name: Collect anchored live evidence
-        if: inputs.source_run_id != ''
+        if: inputs.mode == 'release'
         working-directory: packages/plugins/@nocobase/plugin-agent-gateway
         run: >-
           yarn acceptance:collect
@@ -78,7 +92,7 @@ jobs:
         working-directory: packages/plugins/@nocobase/plugin-agent-gateway
         run: |
           args=(acceptance:verify --evidence-dir "$EVIDENCE_DIR" --scope full)
-          if [ "${{ inputs.allow_incomplete }}" = "true" ]; then
+          if [ "${{ inputs.mode }}" = "automated-only" ]; then
             args+=(--allow-incomplete)
           fi
           yarn "${args[@]}"

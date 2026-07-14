@@ -19,6 +19,7 @@ import { ExecutionPolicyDefinition, GatewayRequestOptions, GatewayRequester, Jso
 import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiPath } from '../../shared/apiContract';
 import { AGENT_GATEWAY_TERMINATE_CONTROL_CANCEL_REASON } from '../../shared/runControl';
 import type { TmuxCommandOptions } from '../tmuxTerminal';
+import { controlRequestWhileRunPhase } from '../execution/controlRequestLoop';
 
 function createExecutionPolicy(options: {
   executionPolicyKey: string;
@@ -151,7 +152,7 @@ class ControlRequester implements GatewayRequester {
     } = {},
   ) {}
 
-  async request<T extends JsonRecord = JsonRecord>(options: GatewayRequestOptions): Promise<T> {
+  async request(options: GatewayRequestOptions): Promise<unknown> {
     this.calls.push(options);
     if (isActionCall(options, 'claimRun')) {
       return {
@@ -176,14 +177,14 @@ class ControlRequester implements GatewayRequester {
             cwd: '.',
           },
         },
-      } as T;
+      };
     }
     if (isActionCall(options, 'listPendingControlRequests')) {
       expect(options.path).not.toContain('claimToken=');
       if (this.finalAckSucceeded || this.options.disablePendingRequests) {
         return {
           requests: [],
-        } as T;
+        };
       }
       return {
         requests: [
@@ -195,7 +196,7 @@ class ControlRequester implements GatewayRequester {
             createdAt: new Date().toISOString(),
           },
         ],
-      } as T;
+      };
     }
     if (isActionCall(options, 'ackControlRequest')) {
       const body = options.body as JsonRecord;
@@ -229,11 +230,11 @@ class ControlRequester implements GatewayRequester {
         ...(cancelRequested && this.options.heartbeatCancelReason
           ? { cancelReason: this.options.heartbeatCancelReason }
           : {}),
-      } as T;
+      };
     }
     return {
       ok: true,
-    } as T;
+    };
   }
 }
 
@@ -249,6 +250,61 @@ describe('agent gateway daemon control requests', () => {
 
   afterEach(async () => {
     await fs.rm(tempDir, { recursive: true, force: true });
+  });
+
+  it('wakes durable control polling without duplicating the terminal signal', async () => {
+    let pending = false;
+    const listPendingControlRequests = vi.fn(async () => ({
+      requests: pending
+        ? [
+            {
+              id: 'control-interrupt-wake',
+              runId: 'run-control-wake',
+              action: 'interrupt' as const,
+              status: 'accepted' as const,
+              createdAt: new Date().toISOString(),
+            },
+          ]
+        : [],
+    }));
+    const ackControlRequest = vi.fn(async () => undefined);
+    const handle = controlRequestWhileRunPhase({
+      gateway: {
+        listPendingControlRequests,
+        ackControlRequest,
+      } as unknown as AgentGatewayDaemonNodeClient,
+      getLease: () => ({
+        runId: 'run-control-wake',
+        claimToken: 'ag_claim_CONTROL_WAKE',
+        claimAttempt: 1,
+        leaseVersion: 1,
+      }),
+      sessionName: 'ag-run-run-control-wake',
+      cancelController: new AbortController(),
+      intervalMs: 60_000,
+    });
+
+    try {
+      await vi.waitFor(() => {
+        expect(listPendingControlRequests).toHaveBeenCalledTimes(1);
+      });
+      pending = true;
+      handle.wake();
+      handle.wake();
+
+      await vi.waitFor(() => {
+        expect(tmuxMocks.interruptTmuxSession).toHaveBeenCalledTimes(1);
+      });
+      expect(listPendingControlRequests).toHaveBeenCalledTimes(2);
+      expect(ackControlRequest).toHaveBeenCalledWith(
+        expect.objectContaining({ runId: 'run-control-wake' }),
+        'control-interrupt-wake',
+        'delivered',
+        expect.any(Object),
+      );
+    } finally {
+      await handle.stop();
+    }
   });
 
   async function runWithControl(
@@ -308,7 +364,7 @@ describe('agent gateway daemon control requests', () => {
     const calls: GatewayRequestOptions[] = [];
     const requester: GatewayRequester & { calls: GatewayRequestOptions[] } = {
       calls,
-      async request<T extends JsonRecord = JsonRecord>(options: GatewayRequestOptions): Promise<T> {
+      async request(options: GatewayRequestOptions): Promise<unknown> {
         calls.push(options);
         if (isActionCall(options, 'claimRun')) {
           return {
@@ -333,7 +389,7 @@ describe('agent gateway daemon control requests', () => {
                 cwd: '.',
               },
             },
-          } as T;
+          };
         }
         if (isActionCall(options, 'heartbeatRun')) {
           return {
@@ -342,11 +398,11 @@ describe('agent gateway daemon control requests', () => {
             claimAttempt: 1,
             leaseVersion: 1,
             cancelRequested: false,
-          } as T;
+          };
         }
         return {
           ok: true,
-        } as T;
+        };
       },
     };
     const gateway = new AgentGatewayDaemonNodeClient(requester, {
@@ -409,7 +465,7 @@ describe('agent gateway daemon control requests', () => {
     const calls: GatewayRequestOptions[] = [];
     const requester: GatewayRequester & { calls: GatewayRequestOptions[] } = {
       calls,
-      async request<T extends JsonRecord = JsonRecord>(options: GatewayRequestOptions): Promise<T> {
+      async request(options: GatewayRequestOptions): Promise<unknown> {
         calls.push(options);
         if (isActionCall(options, 'claimRun')) {
           return {
@@ -434,7 +490,7 @@ describe('agent gateway daemon control requests', () => {
                 cwd: '.',
               },
             },
-          } as T;
+          };
         }
         if (isActionCall(options, 'heartbeatRun')) {
           return {
@@ -443,11 +499,11 @@ describe('agent gateway daemon control requests', () => {
             claimAttempt: 1,
             leaseVersion: 1,
             cancelRequested: false,
-          } as T;
+          };
         }
         return {
           ok: true,
-        } as T;
+        };
       },
     };
     const gateway = new AgentGatewayDaemonNodeClient(requester, {

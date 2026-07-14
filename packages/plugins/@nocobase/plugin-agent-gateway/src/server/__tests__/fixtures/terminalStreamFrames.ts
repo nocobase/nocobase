@@ -27,6 +27,13 @@ export const validTerminalStreamFrames: TerminalFrame[] = [
     lastOffset: 0,
   },
   {
+    type: 'browser.controlNotify',
+    protocol: TERMINAL_PROTOCOL,
+    requestId: 'browser-control-notify-1',
+    runId: terminalStreamRunId,
+    controlRequestId: 'control-request-1',
+  },
+  {
     type: 'daemon.register',
     protocol: TERMINAL_PROTOCOL,
     requestId: 'daemon-register-1',
@@ -52,6 +59,13 @@ export const validTerminalStreamFrames: TerminalFrame[] = [
     requestId: 'snapshot-request-1',
     runId: terminalStreamRunId,
     fromOffset: 0,
+  },
+  {
+    type: 'daemon.controlAvailable',
+    protocol: TERMINAL_PROTOCOL,
+    requestId: 'daemon-control-available-1',
+    runId: terminalStreamRunId,
+    controlRequestId: 'control-request-1',
   },
   {
     type: 'terminal.data',
@@ -116,6 +130,12 @@ export const invalidTerminalStreamFrames = [
     requestId: 'bad-capabilities',
     nodeId: terminalStreamNodeId,
     capabilities: {},
+  },
+  {
+    type: 'browser.controlNotify',
+    protocol: TERMINAL_PROTOCOL,
+    requestId: 'bad-control-notify',
+    runId: terminalStreamRunId,
   },
   {
     type: 'daemon.bindRun',

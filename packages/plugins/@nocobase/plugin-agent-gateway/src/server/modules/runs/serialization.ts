@@ -512,6 +512,7 @@ export async function serializeRunForNodeClaim(ctx: Context, run: ModelRecord, t
     ...json,
     claimAttempt: getModelNumber(run, 'claimAttempt'),
     leaseVersion: getModelNumber(run, 'leaseVersion'),
+    capabilitiesSnapshotJson: getRecord(getModelValue(run, 'capabilitiesSnapshotJson')),
     promptSnapshot: getRecord(getModelValue(run, 'promptSnapshot')),
     executionPayloadJson: skillVersions.length
       ? {

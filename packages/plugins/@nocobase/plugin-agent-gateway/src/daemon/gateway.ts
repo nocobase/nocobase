@@ -9,6 +9,9 @@
 
 import {
   DaemonConfig,
+  ClaimRunResult,
+  ClaimedRunLease,
+  CanonicalClaimedRun,
   DetectedAgentProfile,
   GatewayRequester,
   JsonRecord,
@@ -20,6 +23,13 @@ import { arch, hostname, platform } from 'os';
 import { NodeSkillInstallPayload } from './skillSync';
 import { attachLocalRunLeaseDeadline } from './leaseDeadline';
 import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiPath } from '../shared/apiContract';
+import { AgentGatewayContractError } from '../shared/contracts';
+import { isJsonRecord } from '../shared/json';
+import {
+  isAgentProviderKey,
+  normalizeAgentProviderCapabilities,
+  type AgentProviderCapabilities,
+} from '../shared/providerCapabilities';
 import type {
   AckControlRequest,
   AppendObservationRequest,
@@ -66,6 +76,184 @@ type UpsertAgentSessionValues = Pick<
   'provider' | 'providerSessionId' | 'status' | 'capabilitiesJson' | 'metadataJson'
 >;
 type AckControlRequestValues = Pick<AckControlRequest, 'reason' | 'resultMessage'>;
+
+function getRequiredString(value: unknown, label: string) {
+  if (typeof value !== 'string' || !value) {
+    throw new AgentGatewayContractError(`${label} must be a string`);
+  }
+  return value;
+}
+
+function getRequiredNonNegativeInteger(value: unknown, label: string) {
+  if (!Number.isInteger(value) || Number(value) < 0) {
+    throw new AgentGatewayContractError(`${label} must be a non-negative integer`);
+  }
+  return Number(value);
+}
+
+function getOptionalString(value: unknown, label: string) {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+  return getRequiredString(value, label);
+}
+
+function getOptionalBoolean(value: unknown, label: string) {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+  if (typeof value !== 'boolean') {
+    throw new AgentGatewayContractError(`${label} must be a boolean`);
+  }
+  return value;
+}
+
+function getOptionalFiniteNumber(value: unknown, label: string) {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    throw new AgentGatewayContractError(`${label} must be a finite number`);
+  }
+  return value;
+}
+
+function parseClaimedRun(value: unknown): CanonicalClaimedRun {
+  if (!isJsonRecord(value)) {
+    throw new AgentGatewayContractError('response.run must be an object');
+  }
+  if (!isAgentProviderKey(value.provider)) {
+    throw new AgentGatewayContractError('response.run.provider is invalid');
+  }
+  if (!isJsonRecord(value.capabilitiesSnapshotJson)) {
+    throw new AgentGatewayContractError('response.run.capabilitiesSnapshotJson must be an object');
+  }
+  if (!isJsonRecord(value.executionPayloadJson)) {
+    throw new AgentGatewayContractError('response.run.executionPayloadJson must be an object');
+  }
+  let promptSnapshot: JsonRecord | undefined;
+  if (value.promptSnapshot !== undefined) {
+    if (!isJsonRecord(value.promptSnapshot)) {
+      throw new AgentGatewayContractError('response.run.promptSnapshot must be an object');
+    }
+    promptSnapshot = value.promptSnapshot;
+  }
+  const capabilitiesSnapshotJson: AgentProviderCapabilities = normalizeAgentProviderCapabilities(
+    value.provider,
+    value.capabilitiesSnapshotJson,
+  );
+  return {
+    id: getOptionalString(value.id, 'response.run.id'),
+    provider: value.provider,
+    capabilitiesSnapshotJson,
+    executionPolicyKey: getRequiredString(value.executionPolicyKey, 'response.run.executionPolicyKey'),
+    sourceType: getRequiredString(value.sourceType, 'response.run.sourceType'),
+    executionPayloadJson: value.executionPayloadJson,
+    promptSnapshot,
+    timeoutMs: getOptionalFiniteNumber(value.timeoutMs, 'response.run.timeoutMs'),
+    startedAt: getOptionalString(value.startedAt, 'response.run.startedAt'),
+    requestedAt: getOptionalString(value.requestedAt, 'response.run.requestedAt'),
+    createdAt: getOptionalString(value.createdAt, 'response.run.createdAt'),
+  };
+}
+
+function parseClaimRunResult(value: unknown): ClaimRunResult {
+  if (!isJsonRecord(value)) {
+    throw new AgentGatewayContractError('response must be an object');
+  }
+  if (value.claimed === false) {
+    return {
+      claimed: false,
+      reason: getOptionalString(value.reason, 'response.reason'),
+      checkedAt: getOptionalString(value.checkedAt, 'response.checkedAt'),
+    };
+  }
+  if (value.claimed !== true) {
+    throw new AgentGatewayContractError('response.claimed must be true or false');
+  }
+  return {
+    claimed: true,
+    runId: getRequiredString(value.runId, 'response.runId'),
+    claimToken: getRequiredString(value.claimToken, 'response.claimToken'),
+    claimAttempt: getRequiredNonNegativeInteger(value.claimAttempt, 'response.claimAttempt'),
+    leaseVersion: getRequiredNonNegativeInteger(value.leaseVersion, 'response.leaseVersion'),
+    claimExpiresAt: getOptionalString(value.claimExpiresAt, 'response.claimExpiresAt'),
+    leaseTtlMs: getOptionalFiniteNumber(value.leaseTtlMs, 'response.leaseTtlMs'),
+    serverTime: getOptionalString(value.serverTime, 'response.serverTime'),
+    run: parseClaimedRun(value.run),
+    profileKey: getOptionalString(value.profileKey, 'response.profileKey'),
+    executionPolicyKey: getRequiredString(value.executionPolicyKey, 'response.executionPolicyKey'),
+    profileCapabilities: isJsonRecord(value.profileCapabilities) ? value.profileCapabilities : undefined,
+    cancelRequested: getOptionalBoolean(value.cancelRequested, 'response.cancelRequested'),
+    cancelReason: getOptionalString(value.cancelReason, 'response.cancelReason'),
+  };
+}
+
+function parseHeartbeatLease(lease: RunLease, value: unknown): RunLease {
+  if (!isJsonRecord(value)) {
+    throw new AgentGatewayContractError('response must be an object');
+  }
+  const runId = getRequiredString(value.runId, 'response.runId');
+  if (runId !== lease.runId) {
+    throw new AgentGatewayContractError('response.runId does not match the active lease');
+  }
+  return {
+    ...lease,
+    runId,
+    claimAttempt: getRequiredNonNegativeInteger(value.claimAttempt, 'response.claimAttempt'),
+    leaseVersion: getRequiredNonNegativeInteger(value.leaseVersion, 'response.leaseVersion'),
+    claimExpiresAt: getOptionalString(value.claimExpiresAt, 'response.claimExpiresAt'),
+    leaseTtlMs: getOptionalFiniteNumber(value.leaseTtlMs, 'response.leaseTtlMs'),
+    serverTime: getOptionalString(value.serverTime, 'response.serverTime'),
+    cancelRequested: getOptionalBoolean(value.cancelRequested, 'response.cancelRequested'),
+    cancelReason: getOptionalString(value.cancelReason, 'response.cancelReason'),
+  };
+}
+
+function parsePendingControlRequests(value: unknown): { requests: PendingControlRequest[] } {
+  if (!isJsonRecord(value)) {
+    throw new AgentGatewayContractError('response must be an object');
+  }
+  if (value.requests === undefined) {
+    return { requests: [] };
+  }
+  if (!Array.isArray(value.requests)) {
+    throw new AgentGatewayContractError('response.requests must be an array');
+  }
+  return {
+    requests: value.requests.map((request, index) => {
+      if (!isJsonRecord(request)) {
+        throw new AgentGatewayContractError(`response.requests[${index}] must be an object`);
+      }
+      if (typeof request.id !== 'string' || !request.id) {
+        throw new AgentGatewayContractError(`response.requests[${index}].id must be a string`);
+      }
+      if (typeof request.runId !== 'string' || !request.runId) {
+        throw new AgentGatewayContractError(`response.requests[${index}].runId must be a string`);
+      }
+      if (request.action !== 'interrupt' && request.action !== 'terminate') {
+        throw new AgentGatewayContractError(`response.requests[${index}].action is invalid`);
+      }
+      if (request.status !== 'accepted' && request.status !== 'delivered') {
+        throw new AgentGatewayContractError(`response.requests[${index}].status is invalid`);
+      }
+      if (typeof request.createdAt !== 'string' || !request.createdAt) {
+        throw new AgentGatewayContractError(`response.requests[${index}].createdAt must be a string`);
+      }
+      if (request.reason !== undefined && typeof request.reason !== 'string') {
+        throw new AgentGatewayContractError(`response.requests[${index}].reason must be a string`);
+      }
+      return {
+        id: request.id,
+        runId: request.runId,
+        action: request.action,
+        status: request.status,
+        reason: getOptionalString(request.reason, `response.requests[${index}].reason`),
+        createdAt: request.createdAt,
+      };
+    }),
+  };
+}
 
 export class AgentGatewayDaemonNodeClient {
   constructor(
@@ -116,7 +304,7 @@ export class AgentGatewayDaemonNodeClient {
               capabilitiesJson: {
                 maxConcurrency: 1,
                 supportsExecDriver: true,
-                supportsArtifacts: true,
+                artifacts: true,
                 supportsSnapshots: true,
                 terminal: {
                   backend: 'tmux',
@@ -133,7 +321,7 @@ export class AgentGatewayDaemonNodeClient {
     });
   }
 
-  async claimRun(options?: string | { profileKey?: string; runId?: string }): Promise<RunLease> {
+  async claimRun(options?: string | { profileKey?: string; runId?: string }): Promise<ClaimRunResult> {
     const body =
       typeof options === 'string'
         ? {
@@ -150,7 +338,8 @@ export class AgentGatewayDaemonNodeClient {
       nodeToken: this.config.nodeToken,
       body,
     });
-    return response.claimed === false ? response : attachLocalRunLeaseDeadline(response);
+    const claim = parseClaimRunResult(response);
+    return claim.claimed === false ? claim : attachLocalRunLeaseDeadline(claim);
   }
 
   async heartbeatRun(lease: RunLease, status: 'claimed' | 'syncing_skills' | 'running' | 'finalizing') {
@@ -166,7 +355,7 @@ export class AgentGatewayDaemonNodeClient {
         status,
       },
     });
-    return attachLocalRunLeaseDeadline(response);
+    return attachLocalRunLeaseDeadline(parseHeartbeatLease(lease, response));
   }
 
   async updateRunTerminal(lease: RunLease, values: UpdateRunTerminalValues) {
@@ -320,7 +509,7 @@ export class AgentGatewayDaemonNodeClient {
   }
 
   async listPendingControlRequests(lease: RunLease) {
-    return (await requestGatewayAction(this.requester, {
+    const response = await requestGatewayAction(this.requester, {
       action: AGENT_GATEWAY_API_ACTIONS.listPendingControlRequests,
       method: 'POST',
       path: getAgentGatewayApiPath(AGENT_GATEWAY_API_ACTIONS.listPendingControlRequests, lease.runId),
@@ -330,7 +519,8 @@ export class AgentGatewayDaemonNodeClient {
         claimAttempt: lease.claimAttempt,
         leaseVersion: lease.leaseVersion,
       },
-    })) as { requests: PendingControlRequest[] };
+    });
+    return parsePendingControlRequests(response);
   }
 
   async ackControlRequest(

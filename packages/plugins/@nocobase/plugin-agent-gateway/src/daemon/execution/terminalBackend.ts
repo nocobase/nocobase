@@ -70,6 +70,7 @@ export function createRunTerminalStream(options: {
   runId: string;
   sessionName: string;
   getLease(): RunLease;
+  onControlAvailable?(controlRequestId: string): void;
 }) {
   const ringBuffer = new TerminalRingBuffer({
     runId: options.runId,
@@ -85,6 +86,7 @@ export function createRunTerminalStream(options: {
     sessionName: options.sessionName,
     ringBuffer,
     getLease: options.getLease,
+    onControlAvailable: options.onControlAvailable,
   });
 }
 

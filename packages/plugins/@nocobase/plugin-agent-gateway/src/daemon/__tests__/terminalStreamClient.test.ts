@@ -476,6 +476,7 @@ describe('daemon terminal stream client', () => {
       runId: 'run-1',
       sessionName: 'session-1',
     });
+    const availableControlRequestIds: string[] = [];
     const client = new DaemonTerminalStreamClient({
       serverUrl: server.serverUrl,
       nodeId: 'node-1',
@@ -484,6 +485,9 @@ describe('daemon terminal stream client', () => {
       sessionName: 'session-1',
       ringBuffer,
       getLease: () => createLease(),
+      onControlAvailable: (controlRequestId) => {
+        availableControlRequestIds.push(controlRequestId);
+      },
     });
 
     try {
@@ -534,6 +538,16 @@ describe('daemon terminal stream client', () => {
         offsetEnd: 13,
       });
       expect(decodeTerminalPayload(snapshot.type === 'terminal.snapshot' ? snapshot.payload : '')).toBe('stream\n');
+
+      sendFrame(daemon, {
+        type: 'daemon.controlAvailable',
+        protocol: TERMINAL_PROTOCOL,
+        requestId: 'control-available-1',
+        runId: 'run-1',
+        controlRequestId: 'control-request-1',
+      });
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(availableControlRequestIds).toEqual(['control-request-1']);
     } finally {
       client.close();
       await server.close();

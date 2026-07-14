@@ -374,6 +374,7 @@ describe('Agent Gateway admin pages', () => {
                 status: 'running',
                 agentProfileId: 'profile-generic',
                 sourceType: 'provider-capability-seed',
+                provider: 'generic-cli',
                 terminalBackend: 'tmux',
                 terminalStatus: 'active',
                 capabilitiesSnapshotJson: {
@@ -485,6 +486,7 @@ describe('Agent Gateway admin pages', () => {
                 sourceType: 'provider-capability-seed',
                 agentSessionId: 'session-codex',
                 agentSessionProviderId: 'codex-thread',
+                provider: 'codex',
                 terminalBackend: 'tmux',
                 terminalStatus: 'active',
                 agentGatewayActionPermissionsJson: {

@@ -16,6 +16,7 @@ import {
   TERMINAL_STREAM_BROWSER_SUBPROTOCOL,
   TERMINAL_STREAM_BROWSER_TICKET_PROTOCOL_PREFIX,
   TERMINAL_STREAM_WS_PATH,
+  TerminalBrowserControlNotify,
   TerminalErrorCode,
   TerminalFrame,
   decodeTerminalPayload,
@@ -216,6 +217,26 @@ export class TerminalStreamClient {
     this.clearReconnectTimer();
     this.detachSocket(true);
     this.updateState({ connectionState: 'closed' });
+  }
+
+  notifyControl(controlRequestId: string) {
+    const ws = this.ws;
+    if (!controlRequestId || !ws || ws.readyState !== 1) {
+      return false;
+    }
+    const frame: TerminalBrowserControlNotify = {
+      type: 'browser.controlNotify',
+      protocol: TERMINAL_PROTOCOL,
+      requestId: `browser-control-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      runId: this.options.runId,
+      controlRequestId,
+    };
+    try {
+      ws.send(JSON.stringify(frame));
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   private openSocket(connectionState: TerminalStreamConnectionState) {

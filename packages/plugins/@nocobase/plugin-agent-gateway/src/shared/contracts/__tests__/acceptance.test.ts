@@ -11,7 +11,9 @@ import { describe, expect, it } from 'vitest';
 
 import {
   AGENT_GATEWAY_ACCEPTANCE_PROVIDERS,
+  AGENT_GATEWAY_BROWSER_REQUIRED_CHECKS,
   AGENT_GATEWAY_BROWSER_SCENARIOS,
+  AGENT_GATEWAY_PROVIDER_MARKERS,
   AGENT_GATEWAY_REQUIRED_ACCEPTANCE_CHECKS,
   AGENT_GATEWAY_WEBSOCKET_DENIAL_SCENARIOS,
   AgentGatewayAcceptanceEvidence,
@@ -33,6 +35,9 @@ const anchors = {
   provider: 'codex' as const,
   providerSessionId: 'codex-session-1',
 };
+const sourceInstanceId = 'instance-a';
+const targetInstanceId = 'instance-b';
+const terminalMarker = 'AGW_TERMINAL_CROSS_INSTANCE_019faaaa';
 
 function createEvidence(): AgentGatewayAcceptanceEvidence {
   return {
@@ -50,9 +55,11 @@ function createEvidence(): AgentGatewayAcceptanceEvidence {
           anchors: { ...anchors },
           snapshotPath: `${scenario}/snapshot.json`,
           actionResultPath: `${scenario}/action.json`,
+          consoleEvidencePath: `${scenario}/console-errors.json`,
           mediaPaths: [`${scenario}/screen.png`],
           networkEvidencePaths: [`${scenario}/network.har`],
           consoleErrors: [],
+          checks: Object.fromEntries(AGENT_GATEWAY_BROWSER_REQUIRED_CHECKS[scenario].map((check) => [check, true])),
         },
       ]),
     ),
@@ -68,6 +75,10 @@ function createEvidence(): AgentGatewayAcceptanceEvidence {
               capturedAt,
               runId: 'run-1',
               providerSessionId: 'codex-session-1',
+              nodeId: 'node-1',
+              skillVersionId: 'skill-version-1',
+              outcome: 'succeeded',
+              marker: AGENT_GATEWAY_PROVIDER_MARKERS.codex,
               evidenceFiles: ['providers/codex.json'],
             }
           : {
@@ -109,10 +120,17 @@ function createEvidence(): AgentGatewayAcceptanceEvidence {
     multiInstance: {
       mode: 'multi-instance',
       file: 'passed',
+      skillUpload: 'passed',
+      artifactPreview: 'passed',
       terminal: 'passed',
       executionId,
       capturedAt,
       evidenceFiles: ['multi-instance/file.json', 'multi-instance/terminal.json'],
+      fileEvidencePath: 'multi-instance/file.json',
+      terminalEvidencePath: 'multi-instance/terminal.json',
+      sourceInstanceId,
+      targetInstanceId,
+      terminalMarker,
     },
     findings: [],
   };
@@ -177,7 +195,8 @@ function createEvidenceFileValidations(evidence: AgentGatewayAcceptanceEvidence)
     }
     const content = { executionId, ...anchors };
     add(browserEvidence.snapshotPath, 'json', content);
-    add(browserEvidence.actionResultPath, 'json', content);
+    add(browserEvidence.actionResultPath, 'json', { ...content, checks: browserEvidence.checks });
+    add(browserEvidence.consoleEvidencePath, 'json', content);
     browserEvidence.mediaPaths.forEach((filePath) => add(filePath, 'media'));
     browserEvidence.networkEvidencePaths.forEach((filePath) => add(filePath, 'network'));
   }
@@ -188,6 +207,10 @@ function createEvidenceFileValidations(evidence: AgentGatewayAcceptanceEvidence)
         provider: provider as 'codex' | 'claude-code' | 'opencode',
         runId: providerEvidence.runId,
         providerSessionId: providerEvidence.providerSessionId,
+        nodeId: providerEvidence.nodeId,
+        skillVersionId: providerEvidence.skillVersionId,
+        outcome: providerEvidence.outcome,
+        marker: providerEvidence.marker,
       }),
     );
   }
@@ -202,7 +225,23 @@ function createEvidenceFileValidations(evidence: AgentGatewayAcceptanceEvidence)
       }),
     );
   }
-  evidence.multiInstance?.evidenceFiles.forEach((filePath) => add(filePath, 'json', { executionId }));
+  if (evidence.multiInstance?.mode === 'multi-instance') {
+    add(evidence.multiInstance.fileEvidencePath || '', 'json', {
+      executionId,
+      ...anchors,
+      sourceInstanceId,
+      targetInstanceId,
+      skillUpload: true,
+      artifactPreview: true,
+    });
+    add(evidence.multiInstance.terminalEvidencePath || '', 'json', {
+      executionId,
+      ...anchors,
+      sourceInstanceId,
+      targetInstanceId,
+      terminalMarker,
+    });
+  }
   return validations;
 }
 
@@ -255,6 +294,143 @@ describe('Agent Gateway release gate', () => {
       expect.arrayContaining([
         expect.stringContaining('fixture evidence'),
         expect.stringContaining('Browser scenario admin is stale'),
+      ]),
+    );
+  });
+
+  it('rejects browser evidence that does not prove the required scenario workflow', () => {
+    const input = createInput();
+    const evidence = input.evidence as AgentGatewayAcceptanceEvidence;
+    const admin = evidence.browser?.admin;
+    expect(admin).toBeTruthy();
+    if (admin) {
+      admin.checks.invitationCreated = false;
+      const action = input.evidenceFiles?.find((file) => file.path === admin.actionResultPath);
+      if (action?.content?.checks) {
+        action.content.checks.invitationCreated = false;
+      }
+    }
+
+    const summary = evaluateAgentGatewayReleaseGate(input);
+    expect(summary.status).toBe('failed');
+    expect(summary.failures).toEqual(
+      expect.arrayContaining([
+        'Browser scenario admin did not prove invitationCreated',
+        'Browser scenario admin action evidence does not prove invitationCreated',
+      ]),
+    );
+  });
+
+  it('rejects browser action files that contradict a passing scenario manifest', () => {
+    const input = createInput();
+    const admin = input.evidence?.browser?.admin;
+    const action = input.evidenceFiles?.find((file) => file.path === admin?.actionResultPath);
+    expect(action?.content?.checks).toBeTruthy();
+    if (action?.content?.checks) {
+      action.content.checks.invitationCreated = false;
+    }
+
+    const summary = evaluateAgentGatewayReleaseGate(input);
+    expect(summary.status).toBe('failed');
+    expect(summary.failures).toContain('Browser scenario admin action evidence does not prove invitationCreated');
+  });
+
+  it('rejects copied console evidence without the current entity anchors', () => {
+    const input = createInput();
+    const consoleEvidence = input.evidenceFiles?.find((file) => file.path === 'admin/console-errors.json');
+    expect(consoleEvidence?.content).toBeTruthy();
+    if (consoleEvidence?.content) {
+      consoleEvidence.content.skillVersionId = undefined;
+    }
+
+    const summary = evaluateAgentGatewayReleaseGate(input);
+    expect(summary.status).toBe('failed');
+    expect(summary.failures).toContain(
+      'Browser scenario admin evidence file admin/console-errors.json does not contain the current anchors',
+    );
+  });
+
+  it('rejects arbitrary provider markers and incomplete multi-instance file flows', () => {
+    const input = createInput();
+    const evidence = input.evidence as AgentGatewayAcceptanceEvidence;
+    const codex = evidence.providers?.codex;
+    expect(codex).toBeTruthy();
+    if (codex) {
+      codex.marker = 'AGW_REAL_OTHER';
+    }
+    if (evidence.multiInstance) {
+      evidence.multiInstance.skillUpload = 'pending';
+      evidence.multiInstance.artifactPreview = 'failed';
+    }
+
+    const summary = evaluateAgentGatewayReleaseGate(input);
+    expect(summary.status).toBe('failed');
+    expect(summary.failures).toEqual(
+      expect.arrayContaining([
+        'Provider codex pass is missing successful real-run proof',
+        'Multi-instance artifact preview validation failed',
+      ]),
+    );
+    expect(summary.incomplete).toContain('Multi-instance Skill upload validation is pending');
+  });
+
+  it('rejects provider file proof that does not match an otherwise valid provider manifest', () => {
+    const input = createInput();
+    const providerFile = input.evidenceFiles?.find((file) => file.path === 'providers/codex.json');
+    expect(providerFile?.content).toBeTruthy();
+    if (providerFile?.content) {
+      providerFile.content.marker = 'AGW_REAL_OTHER';
+    }
+
+    const summary = evaluateAgentGatewayReleaseGate(input);
+    expect(summary.status).toBe('failed');
+    expect(summary.failures).toContain(
+      'Provider codex evidence files do not contain the current successful real-run proof',
+    );
+  });
+
+  it('rejects false or misplaced multi-instance file and terminal semantics', () => {
+    const input = createInput();
+    const fileProof = input.evidenceFiles?.find((file) => file.path === 'multi-instance/file.json');
+    const terminalProof = input.evidenceFiles?.find((file) => file.path === 'multi-instance/terminal.json');
+    expect(fileProof?.content).toBeTruthy();
+    expect(terminalProof?.content).toBeTruthy();
+    if (fileProof?.content) {
+      fileProof.content.skillUpload = false;
+      fileProof.content.artifactPreview = false;
+      fileProof.content.terminalMarker = terminalMarker;
+    }
+    if (terminalProof?.content) {
+      terminalProof.content.artifactPreview = true;
+      terminalProof.content.terminalMarker = 'OTHER_TERMINAL_MARKER';
+    }
+
+    const summary = evaluateAgentGatewayReleaseGate(input);
+    expect(summary.status).toBe('failed');
+    expect(summary.failures).toEqual(
+      expect.arrayContaining([
+        'Multi-instance file evidence does not contain the current cross-instance file proof',
+        'Multi-instance terminal evidence does not contain the current cross-instance terminal proof',
+      ]),
+    );
+  });
+
+  it('rejects multi-instance manifests that reuse one instance or omit exact evidence paths', () => {
+    const input = createInput();
+    const multiInstance = input.evidence?.multiInstance;
+    expect(multiInstance).toBeTruthy();
+    if (multiInstance) {
+      multiInstance.targetInstanceId = sourceInstanceId;
+      multiInstance.terminalEvidencePath = '';
+      multiInstance.terminalMarker = '';
+    }
+
+    const summary = evaluateAgentGatewayReleaseGate(input);
+    expect(summary.status).toBe('failed');
+    expect(summary.failures).toEqual(
+      expect.arrayContaining([
+        'Multi-instance evidence is missing file, terminal, instance, or marker proof',
+        'Multi-instance evidence must identify distinct source and target instances',
       ]),
     );
   });

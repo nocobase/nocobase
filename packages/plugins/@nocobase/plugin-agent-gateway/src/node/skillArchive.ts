@@ -55,6 +55,7 @@ export const SKILL_ARCHIVE_ERROR_CODES = Object.freeze({
   downloadTimeout: 'AG_SKILL_ARCHIVE_DOWNLOAD_TIMEOUT',
   downloadInterrupted: 'AG_SKILL_ARCHIVE_DOWNLOAD_INTERRUPTED',
   downloadSize: 'AG_SKILL_ARCHIVE_DOWNLOAD_SIZE_LIMIT',
+  downloadOrigin: 'AG_SKILL_ARCHIVE_DOWNLOAD_ORIGIN_NOT_ALLOWED',
   downloadTrustedServer: 'AG_SKILL_ARCHIVE_DOWNLOAD_TRUSTED_SERVER_REQUIRED',
   downloadTrustedEndpoint: 'AG_SKILL_ARCHIVE_DOWNLOAD_TRUSTED_ENDPOINT_REQUIRED',
 } as const);
@@ -95,6 +96,7 @@ interface DownloadSkillArchiveOptions {
   timeoutMs: number;
   signal?: AbortSignal;
   maxBytes?: number;
+  assertOriginAllowed?: (url: URL) => void;
   getHeaders?: (url: URL) => Record<string, string>;
 }
 
@@ -571,10 +573,19 @@ export async function downloadSkillArchive(options: DownloadSkillArchiveOptions)
   const partialPath = `${options.destination}.${randomUUID()}.partial`;
   await fs.mkdir(path.dirname(options.destination), { recursive: true });
   try {
-    let url = new URL(options.archiveUrl);
+    const initialUrl = new URL(options.archiveUrl);
+    const assertOriginAllowed =
+      options.assertOriginAllowed ||
+      ((url: URL) => {
+        if (url.origin !== initialUrl.origin) {
+          throw new SkillArchiveError(SKILL_ARCHIVE_ERROR_CODES.downloadOrigin);
+        }
+      });
+    let url = initialUrl;
     for (let redirectCount = 0; ; redirectCount += 1) {
       throwIfAborted(options.signal);
       getDownloadTransport(url);
+      assertOriginAllowed(url);
       const headers = options.getHeaders?.(url) || {};
       const response = await requestArchive(url, options.timeoutMs, headers, options.signal);
       const statusCode = response.statusCode || 0;

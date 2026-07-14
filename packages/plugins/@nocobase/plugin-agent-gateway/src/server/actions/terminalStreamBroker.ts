@@ -26,6 +26,7 @@ import {
   TERMINAL_STREAM_WS_PATH,
   TERMINAL_SERVER_MAX_RAW_FRAME_BYTES,
   TERMINAL_SERVER_MAX_DECODED_PAYLOAD_BYTES,
+  TerminalBrowserControlNotify,
   TerminalClientSubscribe,
   TerminalDaemonBindRun,
   TerminalData,
@@ -93,6 +94,7 @@ interface TerminalStreamConnection {
   nodeId?: string;
   nodeToken?: string;
   userId?: string | number;
+  authorizedRunIds: Set<string>;
   subscriptions: Set<string>;
 }
 
@@ -488,6 +490,7 @@ export class TerminalStreamBroker {
         ws,
         request,
         kind: 'unknown',
+        authorizedRunIds: new Set(),
         subscriptions: new Set(),
       });
 
@@ -671,6 +674,10 @@ export class TerminalStreamBroker {
       await this.handleBrowserSubscribe(connection, frame);
       return;
     }
+    if (frame.type === 'browser.controlNotify') {
+      await this.handleBrowserControlNotify(connection, frame);
+      return;
+    }
     if (frame.type === 'terminal.data') {
       await this.handleTerminalData(connection, frame);
       return;
@@ -784,6 +791,7 @@ export class TerminalStreamBroker {
       }
       await this.ensureDaemonTransportSubscription(frame.runId);
       await this.publishBrowserLocate(frame.runId);
+      connection.authorizedRunIds.add(frame.runId);
       reservationId =
         frame.lastOffset !== undefined ? this.reserveBrowserSubscription(connection, frame.runId) : undefined;
       this.send(connection.ws, createTerminalAck(frame.requestId));
@@ -801,6 +809,61 @@ export class TerminalStreamBroker {
       this.releaseBrowserSubscriptionReservation(reservationId);
       this.sendError(connection.ws, this.mapBrowserAuthError(error), getErrorMessage(error), frame.requestId);
     }
+  }
+
+  private async handleBrowserControlNotify(connection: TerminalStreamConnection, frame: TerminalBrowserControlNotify) {
+    if (
+      connection.kind !== 'browser' ||
+      connection.userId === undefined ||
+      !connection.authorizedRunIds.has(frame.runId)
+    ) {
+      this.sendError(
+        connection.ws,
+        'TERMINAL_PERMISSION_DENIED',
+        'Control request is not available to this terminal connection',
+        frame.requestId,
+      );
+      return;
+    }
+
+    const request = (await this.app.db.getRepository('agRunControlRequests').findOne({
+      filter: {
+        id: frame.controlRequestId,
+        runId: frame.runId,
+        requestedById: connection.userId,
+      },
+    })) as ModelRecord | null;
+    const action = request ? getModelString(request, 'action') : '';
+    if (!request || (action !== 'interrupt' && action !== 'terminate')) {
+      this.sendError(
+        connection.ws,
+        'TERMINAL_PERMISSION_DENIED',
+        'Control request is not available to this terminal connection',
+        frame.requestId,
+      );
+      return;
+    }
+
+    const status = getModelString(request, 'status');
+    if (status === 'accepted' || status === 'delivered') {
+      await this.forwardControlAvailable(frame.runId, frame.controlRequestId);
+    }
+    this.send(connection.ws, createTerminalAck(frame.requestId));
+  }
+
+  private async forwardControlAvailable(runId: string, controlRequestId: string) {
+    const validation = await this.validateBoundRun(runId);
+    if (validation.ok) {
+      this.send(validation.bound.ws, {
+        type: 'daemon.controlAvailable',
+        protocol: 'agent-gateway.terminal.v1',
+        requestId: `control:${this.ownerId}:${randomUUID()}`,
+        runId,
+        controlRequestId,
+      });
+      return;
+    }
+    await this.publishBrowserControlAvailable(runId, controlRequestId);
   }
 
   private async handleTerminalData(connection: TerminalStreamConnection, frame: TerminalData) {
@@ -1295,6 +1358,16 @@ export class TerminalStreamBroker {
       await this.publishDaemonState(event.runId, 'bound', validation.bound.nodeId);
       return;
     }
+    if (event.type === 'browser.controlAvailable') {
+      this.send(validation.bound.ws, {
+        type: 'daemon.controlAvailable',
+        protocol: 'agent-gateway.terminal.v1',
+        requestId: `control:${event.eventId}`,
+        runId: event.runId,
+        controlRequestId: event.controlRequestId,
+      });
+      return;
+    }
     if (this.relayedSnapshotRequests.has(event.requestId)) {
       return;
     }
@@ -1387,6 +1460,16 @@ export class TerminalStreamBroker {
       requestId,
       runId,
       fromOffset,
+    });
+  }
+
+  private async publishBrowserControlAvailable(runId: string, controlRequestId: string) {
+    await this.publishTransportEvent(runId, 'browser-to-daemon', {
+      type: 'browser.controlAvailable',
+      eventId: randomUUID(),
+      requesterId: this.ownerId,
+      runId,
+      controlRequestId,
     });
   }
 

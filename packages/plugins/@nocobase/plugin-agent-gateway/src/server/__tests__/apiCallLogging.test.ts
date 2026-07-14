@@ -83,7 +83,7 @@ describe('agent gateway API call log sampling', () => {
     };
   }
 
-  it('skips successful heartbeats and empty claims while retaining state changes and failures', async () => {
+  it('skips successful heartbeats and empty claims while retaining slow requests, state changes, and failures', async () => {
     const runner = await createRunner();
     const daemon = app.agent();
 
@@ -103,6 +103,29 @@ describe('agent gateway API call log sampling', () => {
     }
 
     expect(await app.db.getRepository('agApiCallLogs').count()).toBe(0);
+
+    const delayIdleHeartbeat = async () => {
+      await new Promise<void>((resolve) => setTimeout(resolve, 1100));
+    };
+    const sendSlowIdleHeartbeat = async () => {
+      app.db.on('agNodes.beforeSave', delayIdleHeartbeat);
+      try {
+        return await daemon
+          .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatNode, runner.nodeId))
+          .set('Authorization', `Bearer ${runner.nodeToken}`)
+          .send({ currentConcurrency: 0 });
+      } finally {
+        app.db.off('agNodes.beforeSave', delayIdleHeartbeat);
+      }
+    };
+    const slowHeartbeatResponse = await sendSlowIdleHeartbeat();
+    expect(slowHeartbeatResponse.status).toBe(200);
+
+    const slowRequestLogs = await app.db.getRepository('agApiCallLogs').find();
+    expect(slowRequestLogs).toHaveLength(1);
+    expect(slowRequestLogs[0].get('path')).toContain('heartbeatNode');
+    expect(slowRequestLogs[0].get('statusCode')).toBe(200);
+    expect(slowRequestLogs[0].get('durationMs')).toBeGreaterThanOrEqual(1000);
 
     const now = new Date();
     const run = await app.db.getRepository('agRuns').create({
@@ -130,21 +153,21 @@ describe('agent gateway API call log sampling', () => {
     expect(claimResponse.status).toBe(200);
     const claim = getData(claimResponse);
     expect(claim.claimed).toBe(true);
-    expect(await app.db.getRepository('agApiCallLogs').count()).toBe(1);
+    expect(await app.db.getRepository('agApiCallLogs').count()).toBe(2);
 
     const changedNodeHeartbeatResponse = await daemon
       .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatNode, runner.nodeId))
       .set('Authorization', `Bearer ${runner.nodeToken}`)
       .send({ currentConcurrency: 1 });
     expect(changedNodeHeartbeatResponse.status).toBe(200);
-    expect(await app.db.getRepository('agApiCallLogs').count()).toBe(2);
+    expect(await app.db.getRepository('agApiCallLogs').count()).toBe(3);
 
     const repeatedNodeHeartbeatResponse = await daemon
       .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatNode, runner.nodeId))
       .set('Authorization', `Bearer ${runner.nodeToken}`)
       .send({ currentConcurrency: 1 });
     expect(repeatedNodeHeartbeatResponse.status).toBe(200);
-    expect(await app.db.getRepository('agApiCallLogs').count()).toBe(2);
+    expect(await app.db.getRepository('agApiCallLogs').count()).toBe(3);
 
     const runHeartbeatResponse = await daemon
       .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatRun, String(run.get('id'))))
@@ -156,7 +179,7 @@ describe('agent gateway API call log sampling', () => {
         status: 'running',
       });
     expect(runHeartbeatResponse.status).toBe(200);
-    expect(await app.db.getRepository('agApiCallLogs').count()).toBe(3);
+    expect(await app.db.getRepository('agApiCallLogs').count()).toBe(4);
 
     const repeatedRunHeartbeatResponse = await daemon
       .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatRun, String(run.get('id'))))
@@ -168,7 +191,7 @@ describe('agent gateway API call log sampling', () => {
         status: 'running',
       });
     expect(repeatedRunHeartbeatResponse.status).toBe(200);
-    expect(await app.db.getRepository('agApiCallLogs').count()).toBe(3);
+    expect(await app.db.getRepository('agApiCallLogs').count()).toBe(4);
 
     const failedHeartbeatResponse = await daemon
       .post(getTestApiPath(AGENT_GATEWAY_API_ACTIONS.heartbeatNode, runner.nodeId))
@@ -179,14 +202,17 @@ describe('agent gateway API call log sampling', () => {
     const logs = await app.db.getRepository('agApiCallLogs').find({
       sort: ['createdAt'],
     });
-    expect(logs).toHaveLength(4);
-    expect(logs[0].get('path')).toContain('claimRun');
+    expect(logs).toHaveLength(5);
+    expect(logs[0].get('path')).toContain('heartbeatNode');
     expect(logs[0].get('statusCode')).toBe(200);
-    expect(logs[1].get('path')).toContain('heartbeatNode');
+    expect(logs[0].get('durationMs')).toBeGreaterThanOrEqual(1000);
+    expect(logs[1].get('path')).toContain('claimRun');
     expect(logs[1].get('statusCode')).toBe(200);
-    expect(logs[2].get('path')).toContain('heartbeatRun');
+    expect(logs[2].get('path')).toContain('heartbeatNode');
     expect(logs[2].get('statusCode')).toBe(200);
-    expect(logs[3].get('path')).toContain('heartbeatNode');
-    expect(logs[3].get('statusCode')).toBe(401);
+    expect(logs[3].get('path')).toContain('heartbeatRun');
+    expect(logs[3].get('statusCode')).toBe(200);
+    expect(logs[4].get('path')).toContain('heartbeatNode');
+    expect(logs[4].get('statusCode')).toBe(401);
   });
 });

@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { AgentProviderKey } from '../shared/providerCapabilities';
-import type {
-  AgentGatewayActionRequest,
-  AgentGatewayActionResponse,
-  AgentGatewayApiAction,
-  CanonicalRunSnapshot,
+import type { AgentProviderCapabilities, AgentProviderKey } from '../shared/providerCapabilities';
+import {
+  parseAgentGatewayActionResponse,
+  type AgentGatewayActionRequest,
+  type AgentGatewayActionResponse,
+  type AgentGatewayApiAction,
 } from '../shared/contracts';
 import type { JsonRecord } from '../shared/json';
 
@@ -81,7 +81,7 @@ export interface GatewayRequestOptions {
 }
 
 export interface GatewayRequester {
-  request<T extends JsonRecord = JsonRecord>(options: GatewayRequestOptions): Promise<T>;
+  request(options: GatewayRequestOptions): Promise<unknown>;
 }
 
 export interface GatewayActionRequestOptions<Action extends AgentGatewayApiAction>
@@ -94,13 +94,14 @@ export async function requestGatewayAction<Action extends AgentGatewayApiAction>
   requester: GatewayRequester,
   options: GatewayActionRequestOptions<Action>,
 ): Promise<AgentGatewayActionResponse<Action>> {
-  return (await requester.request({
+  const response = await requester.request({
     ...options,
     body: options.body,
-  })) as AgentGatewayActionResponse<Action>;
+  });
+  return parseAgentGatewayActionResponse(options.action, response);
 }
 
-export interface RunLease extends JsonRecord {
+export interface RunLease {
   runId: string;
   claimToken: string;
   claimAttempt: number;
@@ -109,8 +110,8 @@ export interface RunLease extends JsonRecord {
   leaseTtlMs?: number;
   serverTime?: string;
   localLeaseDeadlineMonotonicMs?: number;
-  claimed?: boolean;
-  run?: JsonRecord;
+  claimed?: true;
+  run?: CanonicalClaimedRun;
   profileKey?: string;
   executionPolicyKey?: string;
   profileCapabilities?: JsonRecord;
@@ -118,11 +119,18 @@ export interface RunLease extends JsonRecord {
   cancelReason?: string;
 }
 
-export interface CanonicalClaimedRun extends CanonicalRunSnapshot {
+export interface CanonicalClaimedRun {
   id?: string;
+  provider: AgentProviderKey;
+  capabilitiesSnapshotJson: AgentProviderCapabilities;
+  executionPolicyKey: string;
+  sourceType: string;
   executionPayloadJson: JsonRecord;
   promptSnapshot?: JsonRecord;
   timeoutMs?: number;
+  startedAt?: string;
+  requestedAt?: string;
+  createdAt?: string;
 }
 
 export interface ClaimedRunLease extends RunLease {
@@ -135,11 +143,19 @@ export interface ClaimedRunLease extends RunLease {
   executionPolicyKey: string;
 }
 
-export interface PendingControlRequest extends JsonRecord {
+export interface UnclaimedRunLease {
+  claimed: false;
+  reason?: string;
+  checkedAt?: string;
+}
+
+export type ClaimRunResult = ClaimedRunLease | UnclaimedRunLease;
+
+export interface PendingControlRequest {
   id: string;
   runId: string;
   action: 'interrupt' | 'terminate';
-  status?: 'accepted' | 'delivered';
+  status: 'accepted' | 'delivered';
   reason?: string;
   createdAt: string;
 }

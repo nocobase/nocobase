@@ -15,8 +15,8 @@ import {
   getAgentGatewayApiActionFromPath,
   parseAgentGatewayActionQuery,
   parseAgentGatewayActionRequest,
-  parseAgentGatewayActionResponse,
 } from '../shared/apiContract';
+import { isJsonRecord } from '../shared/json';
 
 export class AgentGatewayHttpError extends Error {
   readonly code?: string;
@@ -50,7 +50,7 @@ export class AgentGatewayApiClient implements GatewayRequester {
     private readonly defaultSignal?: AbortSignal,
   ) {}
 
-  async request<T extends JsonRecord = JsonRecord>(options: GatewayRequestOptions): Promise<T> {
+  async request(options: GatewayRequestOptions): Promise<unknown> {
     const url = new URL(options.path, this.serverUrl.replace(/\/$/, ''));
     const action = options.action || getAgentGatewayApiActionFromPath(url.pathname);
     if (action) {
@@ -60,7 +60,7 @@ export class AgentGatewayApiClient implements GatewayRequester {
     const payload = requestBody === undefined ? '' : JSON.stringify(requestBody);
     const transport = url.protocol === 'https:' ? https : http;
 
-    return await new Promise<T>((resolve, reject) => {
+    return await new Promise<unknown>((resolve, reject) => {
       const request = transport.request(
         url,
         {
@@ -89,9 +89,9 @@ export class AgentGatewayApiClient implements GatewayRequester {
           });
           response.on('end', () => {
             const statusCode = response.statusCode || 0;
-            let parsed: JsonRecord = {};
+            let parsed: unknown = {};
             try {
-              parsed = body ? (JSON.parse(body) as JsonRecord) : {};
+              parsed = body ? (JSON.parse(body) as unknown) : {};
             } catch {
               if (statusCode < 200 || statusCode >= 300) {
                 reject(new AgentGatewayHttpError(`HTTP ${statusCode}`, statusCode));
@@ -101,19 +101,23 @@ export class AgentGatewayApiClient implements GatewayRequester {
               return;
             }
             if (statusCode < 200 || statusCode >= 300) {
-              const responseData =
-                parsed.data && typeof parsed.data === 'object' ? (parsed.data as JsonRecord) : parsed;
+              const parsedRecord = isJsonRecord(parsed) ? parsed : {};
+              const responseData = isJsonRecord(parsedRecord.data) ? parsedRecord.data : parsedRecord;
               const message =
                 typeof responseData.message === 'string'
                   ? responseData.message
-                  : typeof parsed.message === 'string'
-                    ? parsed.message
+                  : typeof parsedRecord.message === 'string'
+                    ? parsedRecord.message
                     : `HTTP ${statusCode}`;
               reject(new AgentGatewayHttpError(message, statusCode, responseData));
               return;
             }
-            const responseData = parsed.data && typeof parsed.data === 'object' ? parsed.data : parsed;
-            resolve((action ? parseAgentGatewayActionResponse(action, responseData) : responseData) as T);
+            const parsedRecord = isJsonRecord(parsed) ? parsed : null;
+            const responseData =
+              parsedRecord && parsedRecord.data !== null && typeof parsedRecord.data === 'object'
+                ? parsedRecord.data
+                : parsed;
+            resolve(responseData);
           });
         },
       );

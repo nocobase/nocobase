@@ -44,6 +44,7 @@ export interface DaemonTerminalStreamClientOptions {
   sendTimeoutMs?: number;
   createWebSocket?: (url: string, headers: Record<string, string>) => TerminalStreamSocket;
   onStateChange?: (state: DaemonTerminalStreamState, detail?: string) => void;
+  onControlAvailable?: (controlRequestId: string) => void;
 }
 
 export interface TerminalStreamSocket {
@@ -466,6 +467,10 @@ export class DaemonTerminalStreamClient {
     }
     if (frame.type === 'daemon.snapshotRequest') {
       this.sendSnapshot(frame.requestId, frame.fromOffset);
+      return;
+    }
+    if (frame.type === 'daemon.controlAvailable' && frame.runId === this.options.runId) {
+      this.options.onControlAvailable?.(frame.controlRequestId);
     }
   };
 

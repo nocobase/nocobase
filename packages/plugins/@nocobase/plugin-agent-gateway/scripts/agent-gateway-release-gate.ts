@@ -16,7 +16,9 @@ import { promisify } from 'util';
 import {
   AGENT_GATEWAY_ACCEPTANCE_PROVIDERS,
   AGENT_GATEWAY_API_ACTIONS,
+  AGENT_GATEWAY_BROWSER_REQUIRED_CHECKS,
   AGENT_GATEWAY_BROWSER_SCENARIOS,
+  AGENT_GATEWAY_PROVIDER_MARKERS,
   AGENT_GATEWAY_REQUIRED_ACCEPTANCE_CHECKS,
   AGENT_GATEWAY_WEBSOCKET_DENIAL_SCENARIOS,
   AgentGatewayAcceptanceCheck,
@@ -304,9 +306,11 @@ function createEvidenceTemplate(context: AgentGatewayAcceptanceContext): AgentGa
           anchors,
           snapshotPath: '',
           actionResultPath: '',
+          consoleEvidencePath: '',
           mediaPaths: [],
           networkEvidencePaths: [],
           consoleErrors: [],
+          checks: Object.fromEntries(AGENT_GATEWAY_BROWSER_REQUIRED_CHECKS[scenario].map((check) => [check, false])),
         },
       ]),
     ),
@@ -352,10 +356,17 @@ function createEvidenceTemplate(context: AgentGatewayAcceptanceContext): AgentGa
     multiInstance: {
       mode: 'multi-instance',
       file: 'pending',
+      skillUpload: 'pending',
+      artifactPreview: 'pending',
       terminal: 'pending',
       executionId: context.executionId,
       capturedAt: '',
       evidenceFiles: [],
+      fileEvidencePath: '',
+      terminalEvidencePath: '',
+      sourceInstanceId: '',
+      targetInstanceId: '',
+      terminalMarker: '',
     },
     findings: [],
   };
@@ -530,6 +541,17 @@ function assertRawTextContains(value: unknown, expected: string, label: string) 
   }
 }
 
+function getBrowserActionChecks(value: unknown, scenario: (typeof AGENT_GATEWAY_BROWSER_SCENARIOS)[number]) {
+  const checks = getRecord(getRecord(value)?.checks);
+  const requiredChecks = AGENT_GATEWAY_BROWSER_REQUIRED_CHECKS[scenario];
+  for (const check of requiredChecks) {
+    if (checks?.[check] !== true) {
+      throw new Error(`Browser scenario ${scenario} action must explicitly prove ${check}`);
+    }
+  }
+  return Object.fromEntries(requiredChecks.map((check) => [check, true]));
+}
+
 async function collect(args: GateArgs) {
   const sourceDir = args.sourceDir as string;
   const contextPath = path.resolve(args.evidenceDir, 'context.json');
@@ -575,7 +597,9 @@ async function collect(args: GateArgs) {
     assertRawAnchors(snapshot, anchors, `Browser scenario ${scenario} snapshot`, false);
     assertRawStatusPassed(action, `Browser scenario ${scenario} action`);
     assertRawAnchors(action, anchors, `Browser scenario ${scenario} action`, true);
+    assertRawAnchors(consoleErrors, anchors, `Browser scenario ${scenario} console errors`, true);
     assertRawTextContains(network, anchors.runId, `Browser scenario ${scenario} HAR`);
+    const checks = getBrowserActionChecks(action, scenario);
     const snapshotPath = await writeLiveEnvelope(args.evidenceDir, path.join('browser', scenario, 'snapshot.json'), {
       executionId: context.executionId,
       capturedAt,
@@ -586,8 +610,14 @@ async function collect(args: GateArgs) {
       executionId: context.executionId,
       capturedAt,
       ...anchors,
+      checks,
       payload: action,
     });
+    const consoleEvidencePath = await copyLiveSourceFile(
+      sourceDir,
+      args.evidenceDir,
+      path.join('browser', scenario, 'console-errors.json'),
+    );
     const mediaSource = await findBrowserMedia(sourceDir, scenario);
     const mediaPath = await copyLiveSourceFile(sourceDir, args.evidenceDir, mediaSource);
     const networkPath = await copyLiveSourceFile(
@@ -602,9 +632,11 @@ async function collect(args: GateArgs) {
       anchors,
       snapshotPath,
       actionResultPath,
+      consoleEvidencePath,
       mediaPaths: [mediaPath],
       networkEvidencePaths: [networkPath],
       consoleErrors: getConsoleErrors(consoleErrors),
+      checks,
     };
   }
 
@@ -633,8 +665,20 @@ async function collect(args: GateArgs) {
     }
     const runId = getStringContentValue(rawProvider, 'runId');
     const providerSessionId = getStringContentValue(rawProvider, 'providerSessionId');
-    if (getStringContentValue(rawProvider, 'provider') !== providerName || !runId || !providerSessionId) {
-      throw new Error(`Provider ${providerName} output is missing canonical real-run anchors`);
+    const nodeId = getStringContentValue(rawProvider, 'nodeId');
+    const skillVersionId = getStringContentValue(rawProvider, 'skillVersionId');
+    const outcome = getStringContentValue(rawProvider, 'outcome');
+    const marker = getStringContentValue(rawProvider, 'marker');
+    if (
+      getStringContentValue(rawProvider, 'provider') !== providerName ||
+      !runId ||
+      !providerSessionId ||
+      nodeId !== anchors.nodeId ||
+      skillVersionId !== anchors.skillVersionId ||
+      outcome !== 'succeeded' ||
+      marker !== AGENT_GATEWAY_PROVIDER_MARKERS[providerName]
+    ) {
+      throw new Error(`Provider ${providerName} output is missing successful canonical real-run proof`);
     }
     const evidenceFile = await writeLiveEnvelope(args.evidenceDir, relativePath, {
       executionId: context.executionId,
@@ -642,6 +686,10 @@ async function collect(args: GateArgs) {
       provider: providerName,
       runId,
       providerSessionId,
+      nodeId,
+      skillVersionId,
+      outcome,
+      marker,
       payload: rawProvider,
     });
     providers[providerName] = {
@@ -652,6 +700,10 @@ async function collect(args: GateArgs) {
       capturedAt,
       runId,
       providerSessionId,
+      nodeId,
+      skillVersionId,
+      outcome: 'succeeded',
+      marker,
       evidenceFiles: [evidenceFile],
     };
   }
@@ -726,14 +778,40 @@ async function collect(args: GateArgs) {
       throw new Error(`${label} must identify distinct sourceInstanceId and targetInstanceId values`);
     }
   }
+  if (findValueByKey(rawFile, 'skillUpload') !== true) {
+    throw new Error('Multi-instance file output must explicitly prove cross-instance Skill upload and download');
+  }
+  if (findValueByKey(rawFile, 'artifactPreview') !== true) {
+    throw new Error('Multi-instance file output must explicitly prove cross-instance artifact preview');
+  }
+  const fileSourceInstanceId = getStringContentValue(rawFile, 'sourceInstanceId') || '';
+  const fileTargetInstanceId = getStringContentValue(rawFile, 'targetInstanceId') || '';
+  const terminalSourceInstanceId = getStringContentValue(rawTerminal, 'sourceInstanceId') || '';
+  const terminalTargetInstanceId = getStringContentValue(rawTerminal, 'targetInstanceId') || '';
+  if (fileSourceInstanceId !== terminalSourceInstanceId || fileTargetInstanceId !== terminalTargetInstanceId) {
+    throw new Error('Multi-instance file and terminal outputs must identify the same source and target instances');
+  }
+  const terminalMarker = getStringContentValue(rawTerminal, 'terminalMarker');
+  if (!terminalMarker) {
+    throw new Error('Multi-instance terminal output must contain a non-empty terminalMarker');
+  }
   const fileEvidence = await writeLiveEnvelope(args.evidenceDir, path.join('multi-instance', 'file.json'), {
     executionId: context.executionId,
     capturedAt,
+    ...anchors,
+    sourceInstanceId: fileSourceInstanceId,
+    targetInstanceId: fileTargetInstanceId,
+    skillUpload: true,
+    artifactPreview: true,
     payload: rawFile,
   });
   const terminalEvidence = await writeLiveEnvelope(args.evidenceDir, path.join('multi-instance', 'terminal.json'), {
     executionId: context.executionId,
     capturedAt,
+    ...anchors,
+    sourceInstanceId: terminalSourceInstanceId,
+    targetInstanceId: terminalTargetInstanceId,
+    terminalMarker,
     payload: rawTerminal,
   });
   const findingsPath = path.resolve(sourceDir, 'findings.json');
@@ -758,10 +836,17 @@ async function collect(args: GateArgs) {
     multiInstance: {
       mode: 'multi-instance',
       file: 'passed',
+      skillUpload: 'passed',
+      artifactPreview: 'passed',
       terminal: 'passed',
       executionId: context.executionId,
       capturedAt,
       evidenceFiles: [fileEvidence, terminalEvidence],
+      fileEvidencePath: fileEvidence,
+      terminalEvidencePath: terminalEvidence,
+      sourceInstanceId: fileSourceInstanceId,
+      targetInstanceId: fileTargetInstanceId,
+      terminalMarker,
     },
     findings: findings as AgentGatewayAcceptanceEvidence['findings'],
   };
@@ -1035,6 +1120,7 @@ function getEvidenceFileReferences(evidence: AgentGatewayAcceptanceEvidence) {
     }
     add(browserEvidence.snapshotPath, 'json');
     add(browserEvidence.actionResultPath, 'json');
+    add(browserEvidence.consoleEvidencePath, 'json');
     browserEvidence.mediaPaths.forEach((filePath) => add(filePath, 'media'));
     browserEvidence.networkEvidencePaths.forEach((filePath) => add(filePath, 'network'));
   }
@@ -1082,6 +1168,9 @@ function getStringContentValue(value: unknown, key: string) {
 function parseEvidenceFileContent(value: unknown): AgentGatewayAcceptanceEvidenceFileContent {
   const provider = getStringContentValue(value, 'provider');
   const actualHttpStatus = findValueByKey(value, 'actualHttpStatus');
+  const skillUpload = findValueByKey(value, 'skillUpload');
+  const artifactPreview = findValueByKey(value, 'artifactPreview');
+  const rawChecks = getRecord(findValueByKey(value, 'checks'));
   return {
     executionId: getStringContentValue(value, 'executionId'),
     nodeId: getStringContentValue(value, 'nodeId'),
@@ -1091,6 +1180,20 @@ function parseEvidenceFileContent(value: unknown): AgentGatewayAcceptanceEvidenc
       ? (provider as AgentGatewayAcceptanceProvider)
       : undefined,
     providerSessionId: getStringContentValue(value, 'providerSessionId'),
+    outcome: getStringContentValue(value, 'outcome'),
+    marker: getStringContentValue(value, 'marker'),
+    checks: rawChecks
+      ? Object.fromEntries(
+          Object.entries(rawChecks)
+            .filter((entry): entry is [string, boolean] => typeof entry[1] === 'boolean')
+            .map(([key, result]) => [key, result]),
+        )
+      : undefined,
+    sourceInstanceId: getStringContentValue(value, 'sourceInstanceId'),
+    targetInstanceId: getStringContentValue(value, 'targetInstanceId'),
+    skillUpload: typeof skillUpload === 'boolean' ? skillUpload : undefined,
+    artifactPreview: typeof artifactPreview === 'boolean' ? artifactPreview : undefined,
+    terminalMarker: getStringContentValue(value, 'terminalMarker'),
     actualCode: getStringContentValue(value, 'actualCode') || getStringContentValue(value, 'code'),
     actualHttpStatus:
       typeof actualHttpStatus === 'number' && Number.isFinite(actualHttpStatus) ? actualHttpStatus : undefined,

@@ -49,7 +49,21 @@ findings.json (optional)
 
 Prepare `context.json` before starting Agent Browser/provider/WS collection. Every raw JSON/HAR source must contain that context's `executionId` and a `capturedAt` timestamp at or after `context.startedAt`; transferred source artifacts must include the same `context.json`. The collector rejects stale or cross-execution raw files instead of stamping them into the current execution.
 
-Browser `action.json` files must explicitly declare `status: "passed"` and contain every current anchor. Browser snapshots must contain the current `runId`, and each HAR must contain that run ID in its parsed JSON. `console-errors.json` uses an `errors` array inside its provenance envelope. Provider files must explicitly declare `status: "passed"`, `source: "real"`, a provider, run ID, and provider session ID. WebSocket files must explicitly declare a passing result and the exact expected code or HTTP status. Multi-instance files must declare `status: "passed"`, all current anchors, and distinct `sourceInstanceId` and `targetInstanceId` values. Optional `findings.json` uses a `findings` array inside the same provenance envelope.
+Browser `action.json` files must explicitly declare `status: "passed"` and contain every current anchor. Browser snapshots must contain the current `runId`, and each HAR must contain that run ID in its parsed JSON. `console-errors.json` uses an `errors` array inside its provenance envelope and must contain every current anchor. Provider files must explicitly declare `status: "passed"`, `source: "real"`, a provider, run ID, and provider session ID. WebSocket files must explicitly declare a passing result and the exact expected code or HTTP status. Multi-instance files must declare `status: "passed"`, all current anchors, and distinct `sourceInstanceId` and `targetInstanceId` values. Optional `findings.json` uses a `findings` array inside the same provenance envelope.
+
+Browser action results must also include scenario-specific `checks` with every value set to `true`:
+
+- `admin`: `adminShellVisible`, `invitationCreated`, `nodeRegistered`, `skillUploaded`, `taskCreated`, `runVisible`, `terminalVisible`, `conversationVisible`, `eventsVisible`, `snapshotsVisible`, `artifactsVisible`, `apiLogsVisible`, `controlMatrixVerified`, `externalImportsVerified`, `taskTemplatesVisible`, and `configPagesVisible`.
+- `union`: `unionRole`, `runVisible`, and `terminalVisible`.
+- `restricted`: `runDenied`, `rawLogsDenied`, `artifactsDenied`, `terminalDenied`, `controlDenied`, and `uiDenied`.
+
+Each passing provider file must additionally contain the current `nodeId` and `skillVersionId`, `outcome: "succeeded"`, and its exact provider-output marker:
+
+- Codex: `AGW_REAL_CODEX`
+- Claude Code: `AGW_REAL_CLAUDE_CODE`
+- OpenCode: `AGW_REAL_OPENCODE`
+
+The multi-instance file result must explicitly contain `skillUpload: true` and `artifactPreview: true`. The terminal result must contain a non-empty `terminalMarker`. Both files must use the same distinct source/target instance pair. Collection writes these semantics and all current anchors at the top level of separate file and terminal evidence envelopes; final evaluation rejects false values, missing markers, mismatched instances, or semantics placed in the wrong envelope.
 
 The collector rejects fixture markers and fixture-backed paths, refuses to overwrite an existing `evidence.json`, copies media/HAR files into the evidence directory, and writes current execution/anchor envelopes only after validating the raw outputs.
 
@@ -66,7 +80,7 @@ The collector rejects fixture markers and fixture-backed paths, refuses to overw
 
 A provider marked `passed` must have `source: "real"`, a run ID, a provider session ID, and evidence files. Adapter fixtures are separate automated checks and never satisfy a real-provider requirement. A provider that is not part of the release matrix must be marked `skipped` with a reason.
 
-Every declared evidence path is resolved beneath the current evidence directory. Symlinks, directories, empty files, escaping paths, fixture paths, and malformed JSON/HAR fail the gate. Snapshot/action envelopes must contain all current anchors; provider, WebSocket, and multi-instance envelopes must contain their asserted run/session/code/status values.
+Every declared evidence path is resolved beneath the current evidence directory. Symlinks, directories, empty files, escaping paths, fixture paths, and malformed JSON/HAR fail the gate. Snapshot/action/console envelopes must contain all current anchors; provider, WebSocket, and the exact multi-instance file/terminal envelopes must contain their asserted run/session/code/status and semantic proof values.
 
 Ticket denial cases must report `TERMINAL_STREAM_TICKET_SCOPE_MISMATCH`. Cross-origin upgrade denial must report HTTP 403. Generic socket close or JSON parse failures do not pass the gate.
 
@@ -101,3 +115,12 @@ The command always writes:
 `status` becomes `complete` only when every required automated check and live evidence gate passes. Use `--allow-incomplete` only for evidence-producing CI runs; it does not change the summary status.
 
 Vitest's internal skipped-test counts are parsed from command output. A required suite that exits successfully but contains skipped tests remains incomplete and records the skip details in `summary.json` and `report.md`.
+
+## GitHub Actions modes
+
+The `Agent Gateway release gate` workflow has two explicit modes:
+
+- `release` requires `source_run_id`, downloads `agent-gateway-live-source`, collects the anchored live evidence, and fails unless the summary is `complete`.
+- `automated-only` rejects `source_run_id`, prepares a fresh empty execution, runs the full automated matrix with `--allow-incomplete`, and uploads the intentionally incomplete report. It is not a release approval.
+
+The workflow validates these combinations before dependency installation. There is no generic workflow input that can make a live-evidence release run tolerate an incomplete result.

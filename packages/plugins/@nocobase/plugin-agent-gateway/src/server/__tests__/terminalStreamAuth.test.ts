@@ -864,6 +864,108 @@ describe('terminal stream browser ticket auth', () => {
     }
   });
 
+  it('rejects foreign, wrong-run, and unsupported control notifications', async () => {
+    const runId = await createRun(app, 'terminal-stream-auth-foreign-control');
+    const otherRunId = await createRun(app, 'terminal-stream-auth-wrong-run-control');
+    const rootUserId = await getRootUserId(app);
+    const otherUser = await createUserWithSnippets(app, 'terminal-stream-foreign-control-owner', [
+      'agentGateway.readTerminal',
+    ]);
+    const controlRequestId = randomUUID();
+    await app.db.getRepository('agRunControlRequests').create({
+      values: {
+        id: controlRequestId,
+        runId,
+        action: 'interrupt',
+        requestedById: otherUser.userId,
+        status: 'accepted',
+        idempotencyKey: controlRequestId,
+        requestKey: `terminal-stream-auth:${controlRequestId}`,
+      },
+    });
+    const wrongRunControlRequestId = randomUUID();
+    await app.db.getRepository('agRunControlRequests').create({
+      values: {
+        id: wrongRunControlRequestId,
+        runId: otherRunId,
+        action: 'interrupt',
+        requestedById: rootUserId,
+        status: 'accepted',
+        idempotencyKey: wrongRunControlRequestId,
+        requestKey: `terminal-stream-auth:${wrongRunControlRequestId}`,
+      },
+    });
+    const unsupportedControlRequestId = randomUUID();
+    await app.db.getRepository('agRunControlRequests').create({
+      values: {
+        id: unsupportedControlRequestId,
+        runId,
+        action: 'write',
+        requestedById: rootUserId,
+        status: 'accepted',
+        idempotencyKey: unsupportedControlRequestId,
+        requestKey: `terminal-stream-auth:${unsupportedControlRequestId}`,
+      },
+    });
+    const server = await createTerminalStreamServer(app);
+    const ticket = await createBrowserStreamTicket(app, {
+      userId: rootUserId,
+      runId,
+    });
+    const browser = createWebSocket(server.wsUrl, { streamTicket: ticket });
+
+    try {
+      await waitForOpen(browser);
+      sendFrame(browser, {
+        type: 'browser.subscribe',
+        protocol: TERMINAL_PROTOCOL,
+        requestId: 'foreign-control-subscribe',
+        runId,
+      });
+      await waitForFrame(browser, (frame) => frame.type === 'ack' && frame.requestId === 'foreign-control-subscribe');
+      sendFrame(browser, {
+        type: 'browser.controlNotify',
+        protocol: TERMINAL_PROTOCOL,
+        requestId: 'foreign-control-notify',
+        runId,
+        controlRequestId,
+      });
+
+      expect(
+        await waitForFrame(browser, (frame) => frame.type === 'error' && frame.requestId === 'foreign-control-notify'),
+      ).toMatchObject({
+        code: 'TERMINAL_PERMISSION_DENIED',
+      });
+
+      for (const notification of [
+        {
+          requestId: 'wrong-run-control-notify',
+          runId: otherRunId,
+          controlRequestId: wrongRunControlRequestId,
+        },
+        {
+          requestId: 'unsupported-control-notify',
+          runId,
+          controlRequestId: unsupportedControlRequestId,
+        },
+      ]) {
+        sendFrame(browser, {
+          type: 'browser.controlNotify',
+          protocol: TERMINAL_PROTOCOL,
+          ...notification,
+        });
+        expect(
+          await waitForFrame(browser, (frame) => frame.type === 'error' && frame.requestId === notification.requestId),
+        ).toMatchObject({
+          code: 'TERMINAL_PERMISSION_DENIED',
+        });
+      }
+    } finally {
+      browser.close();
+      await server.close();
+    }
+  });
+
   it('prunes expired and used stream ticket records before creating a new ticket', async () => {
     const runId = await createRun(app, 'terminal-stream-auth-cleanup');
     const userId = await getRootUserId(app);

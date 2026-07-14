@@ -131,6 +131,20 @@ describe('date-field', () => {
     await db.close();
   });
 
+  it('should not register no-op current-time hooks for passive date fields', () => {
+    db.collection({
+      name: 'passive_dates',
+      timestamps: false,
+      fields: Array.from({ length: 12 }, (_, index) => ({
+        name: `date${index}`,
+        type: 'date',
+      })),
+    });
+
+    expect(db.listenerCount('passive_dates.beforeSave')).toBe(0);
+    expect(db.listenerCount('passive_dates.beforeBulkCreate')).toBe(0);
+  });
+
   it('should set default value if collection is middle table in belongs to many association', async () => {
     const middleTable = db.collection({
       name: 'test_middle',

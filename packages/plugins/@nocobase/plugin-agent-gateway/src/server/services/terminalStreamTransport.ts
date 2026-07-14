@@ -27,6 +27,13 @@ export type TerminalStreamBrowserTransportEvent =
       requestId: string;
       runId: string;
       fromOffset: number;
+    }
+  | {
+      type: 'browser.controlAvailable';
+      eventId: string;
+      requesterId: string;
+      runId: string;
+      controlRequestId: string;
     };
 
 export type TerminalStreamDaemonTransportEvent =

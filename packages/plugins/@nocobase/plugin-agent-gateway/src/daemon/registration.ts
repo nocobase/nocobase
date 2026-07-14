@@ -117,7 +117,7 @@ export async function heartbeatDaemonNode(options: HeartbeatDaemonOptions) {
       capabilitiesJson: options.capabilities || {
         maxConcurrency: 1,
         supportsExecDriver: true,
-        supportsArtifacts: true,
+        artifacts: true,
         supportsSnapshots: true,
       },
       profiles: options.profiles,

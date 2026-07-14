@@ -24,6 +24,7 @@ import { createSkillZipFixture, createValidSkillZipFixture } from '../../node/__
 import { AGENT_GATEWAY_SKILL_CAPABILITY_HEADER } from '../../shared/skillCapability';
 import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiPath } from '../../shared/apiContract';
 import {
+  createSkillArchiveOriginPolicy,
   NodeSkillInstallPayload,
   persistSkillZipUpload,
   solidifyGitHubSkillSource,
@@ -61,6 +62,55 @@ async function createRedirectArchiveServer(content: Buffer) {
           resolve();
         });
       }),
+  };
+}
+
+async function createCrossOriginRedirectArchiveServers(content: Buffer) {
+  const targetRequests: Array<{ originHeader: string }> = [];
+  const targetServer = http.createServer((request, response) => {
+    targetRequests.push({ originHeader: String(request.headers['x-archive-origin'] || '') });
+    response.statusCode = 200;
+    response.end(content);
+  });
+  await new Promise<void>((resolve) => {
+    targetServer.listen(0, '127.0.0.1', resolve);
+  });
+  const targetAddress = targetServer.address() as AddressInfo;
+  const targetUrl = `http://127.0.0.1:${targetAddress.port}/final.zip`;
+
+  const sourceRequests: Array<{ originHeader: string }> = [];
+  const sourceServer = http.createServer((request, response) => {
+    sourceRequests.push({ originHeader: String(request.headers['x-archive-origin'] || '') });
+    response.statusCode = 302;
+    response.setHeader('Location', targetUrl);
+    response.end();
+  });
+  await new Promise<void>((resolve) => {
+    sourceServer.listen(0, '127.0.0.1', resolve);
+  });
+  const sourceAddress = sourceServer.address() as AddressInfo;
+  const sourceUrl = `http://127.0.0.1:${sourceAddress.port}/start.zip`;
+
+  const closeServer = async (server: http.Server) =>
+    await new Promise<void>((resolve, reject) => {
+      server.close((error) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+        resolve();
+      });
+    });
+
+  return {
+    sourceUrl,
+    targetUrl,
+    sourceRequests,
+    targetRequests,
+    close: async () => {
+      await closeServer(sourceServer);
+      await closeServer(targetServer);
+    },
   };
 }
 
@@ -247,6 +297,37 @@ describe('agent gateway daemon skill version sync', () => {
     });
   });
 
+  it('allows the public GitHub archive redirect to codeload but rejects unrelated origins', () => {
+    const source = solidifyGitHubSkillSource({
+      type: 'github',
+      repoUrl: 'https://github.com/example/skills',
+      commitSha: '0123456789abcdef0123456789abcdef01234567',
+    });
+    const assertOriginAllowed = createSkillArchiveOriginPolicy(source, String(source.archiveUrl));
+
+    expect(() => assertOriginAllowed(new URL(String(source.archiveUrl)))).not.toThrow();
+    expect(() =>
+      assertOriginAllowed(
+        new URL('https://codeload.github.com/example/skills/zip/0123456789abcdef0123456789abcdef01234567'),
+      ),
+    ).not.toThrow();
+    expect(() => assertOriginAllowed(new URL('https://archives.example.test/skill.zip'))).toThrow(
+      SKILL_ARCHIVE_ERROR_CODES.downloadOrigin,
+    );
+
+    const customSource = solidifyGitHubSkillSource({
+      type: 'github',
+      repoUrl: 'https://github.com/example/skills',
+      archiveUrl: 'https://archives.example.test/solidified.zip',
+      sha256: 'solidified-custom-archive-sha256',
+    });
+    const assertCustomOriginAllowed = createSkillArchiveOriginPolicy(customSource, String(customSource.archiveUrl));
+    expect(() => assertCustomOriginAllowed(new URL(String(customSource.archiveUrl)))).not.toThrow();
+    expect(() => assertCustomOriginAllowed(new URL('https://codeload.github.com/example/skills/zip/main'))).toThrow(
+      SKILL_ARCHIVE_ERROR_CODES.downloadOrigin,
+    );
+  });
+
   it('installs a specific skillVersionId idempotently and writes agNodeSkillInstalls payloads', async () => {
     const archiveContent = Buffer.from('fake archive');
     const archivePath = path.join(tempDir, 'skill.zip');
@@ -338,6 +419,69 @@ describe('agent gateway daemon skill version sync', () => {
       expect(await fs.readFile(path.join(result.installPath, 'SKILL.md'), 'utf8')).toContain('Redirected Skill');
     } finally {
       await server.close();
+    }
+  });
+
+  it('follows an explicitly allowed GitHub-style cross-origin redirect and reapplies per-hop headers', async () => {
+    const archiveContent = Buffer.from('allowed cross-origin archive');
+    const servers = await createCrossOriginRedirectArchiveServers(archiveContent);
+    const destination = path.join(tempDir, 'allowed-cross-origin.zip');
+    const allowedOrigins = new Set([new URL(servers.sourceUrl).origin, new URL(servers.targetUrl).origin]);
+    try {
+      await downloadSkillArchive({
+        archiveUrl: servers.sourceUrl,
+        destination,
+        timeoutMs: 5000,
+        maxBytes: archiveContent.byteLength,
+        assertOriginAllowed: (url) => {
+          if (!allowedOrigins.has(url.origin)) {
+            throw new Error(`unexpected origin: ${url.origin}`);
+          }
+        },
+        getHeaders: (url) => ({
+          'X-Archive-Origin': url.origin,
+        }),
+      });
+
+      expect(await fs.readFile(destination)).toEqual(archiveContent);
+      expect(servers.sourceRequests).toEqual([{ originHeader: new URL(servers.sourceUrl).origin }]);
+      expect(servers.targetRequests).toEqual([{ originHeader: new URL(servers.targetUrl).origin }]);
+      expect((await fs.readdir(tempDir)).filter((name) => name.endsWith('.partial'))).toEqual([]);
+    } finally {
+      await servers.close();
+    }
+  });
+
+  it('rejects a generic cross-origin redirect before requesting its body and removes partial files', async () => {
+    const archiveContent = Buffer.from('must not be downloaded');
+    const servers = await createCrossOriginRedirectArchiveServers(archiveContent);
+    const cacheRoot = path.join(tempDir, 'cross-origin-cache');
+    try {
+      await expect(
+        syncNodeSkillVersion({
+          nodeId: 'node-1',
+          skillsRoot: path.join(tempDir, 'cross-origin-skills'),
+          cacheRoot,
+          skillVersion: {
+            skillVersionId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+            versionLabel: 'v1',
+            source: {
+              type: 'zip',
+              archiveUrl: servers.sourceUrl,
+              sha256: sha256(archiveContent),
+            },
+          },
+          extractArchive: async () => {
+            throw new Error('rejected cross-origin download should not extract');
+          },
+        }),
+      ).rejects.toThrow(SKILL_ARCHIVE_ERROR_CODES.downloadOrigin);
+
+      expect(servers.sourceRequests).toHaveLength(1);
+      expect(servers.targetRequests).toHaveLength(0);
+      expect(await fs.readdir(cacheRoot)).toEqual([]);
+    } finally {
+      await servers.close();
     }
   });
 

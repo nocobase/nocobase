@@ -115,6 +115,29 @@ describe('terminal stream protocol contract', () => {
     }
   });
 
+  it('rejects control notification frames carrying action or input payloads', () => {
+    for (const type of ['browser.controlNotify', 'daemon.controlAvailable'] as const) {
+      for (const field of ['action', 'reason', 'input', 'payload']) {
+        const result = parseTerminalFrame({
+          type,
+          protocol: TERMINAL_PROTOCOL,
+          requestId: `${type}-${field}`,
+          runId: 'run-id',
+          controlRequestId: 'control-request-id',
+          [field]: 'unsafe-value',
+        });
+
+        expect(result).toMatchObject({
+          ok: false,
+          error: {
+            code: 'TERMINAL_PROTOCOL_ERROR',
+            message: `${type} contains unsupported fields`,
+          },
+        });
+      }
+    }
+  });
+
   it('encodes payloads as base64 utf8 and advances byte offsets', () => {
     const frame = createTerminalDataFrame({
       runId: 'run-id',

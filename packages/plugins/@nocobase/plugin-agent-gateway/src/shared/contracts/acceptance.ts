@@ -10,8 +10,37 @@
 export const AGENT_GATEWAY_ACCEPTANCE_PROVIDERS = ['codex', 'claude-code', 'opencode'] as const;
 export type AgentGatewayAcceptanceProvider = (typeof AGENT_GATEWAY_ACCEPTANCE_PROVIDERS)[number];
 
+export const AGENT_GATEWAY_PROVIDER_MARKERS = {
+  codex: 'AGW_REAL_CODEX',
+  'claude-code': 'AGW_REAL_CLAUDE_CODE',
+  opencode: 'AGW_REAL_OPENCODE',
+} as const satisfies Record<AgentGatewayAcceptanceProvider, string>;
+
 export const AGENT_GATEWAY_BROWSER_SCENARIOS = ['admin', 'union', 'restricted'] as const;
 export type AgentGatewayBrowserScenario = (typeof AGENT_GATEWAY_BROWSER_SCENARIOS)[number];
+
+export const AGENT_GATEWAY_BROWSER_REQUIRED_CHECKS = {
+  admin: [
+    'adminShellVisible',
+    'invitationCreated',
+    'nodeRegistered',
+    'skillUploaded',
+    'taskCreated',
+    'runVisible',
+    'terminalVisible',
+    'conversationVisible',
+    'eventsVisible',
+    'snapshotsVisible',
+    'artifactsVisible',
+    'apiLogsVisible',
+    'controlMatrixVerified',
+    'externalImportsVerified',
+    'taskTemplatesVisible',
+    'configPagesVisible',
+  ],
+  union: ['unionRole', 'runVisible', 'terminalVisible'],
+  restricted: ['runDenied', 'rawLogsDenied', 'artifactsDenied', 'terminalDenied', 'controlDenied', 'uiDenied'],
+} as const satisfies Record<AgentGatewayBrowserScenario, readonly string[]>;
 
 export const AGENT_GATEWAY_WEBSOCKET_DENIAL_SCENARIOS = [
   'missingTicket',
@@ -141,9 +170,11 @@ export interface AgentGatewayBrowserEvidence {
   anchors: AgentGatewayAcceptanceAnchors;
   snapshotPath: string;
   actionResultPath: string;
+  consoleEvidencePath: string;
   mediaPaths: string[];
   networkEvidencePaths: string[];
   consoleErrors: AgentGatewayConsoleErrorEvidence[];
+  checks: Record<string, boolean>;
   reason?: string;
 }
 
@@ -155,6 +186,10 @@ export interface AgentGatewayProviderEvidence {
   capturedAt: string;
   runId?: string;
   providerSessionId?: string;
+  nodeId?: string;
+  skillVersionId?: string;
+  outcome?: 'succeeded';
+  marker?: string;
   evidenceFiles: string[];
   reason?: string;
 }
@@ -176,11 +211,18 @@ export interface AgentGatewayWebSocketDenialEvidence {
 export interface AgentGatewayMultiInstanceEvidence {
   mode: 'multi-instance' | 'single-instance-fail-fast';
   file: AgentGatewayAcceptanceEvidenceStatus;
+  skillUpload: AgentGatewayAcceptanceEvidenceStatus;
+  artifactPreview: AgentGatewayAcceptanceEvidenceStatus;
   terminal: AgentGatewayAcceptanceEvidenceStatus;
   failFast?: AgentGatewayAcceptanceEvidenceStatus;
   executionId: string;
   capturedAt: string;
   evidenceFiles: string[];
+  fileEvidencePath?: string;
+  terminalEvidencePath?: string;
+  sourceInstanceId?: string;
+  targetInstanceId?: string;
+  terminalMarker?: string;
   reason?: string;
 }
 
@@ -209,6 +251,14 @@ export interface AgentGatewayAcceptanceEvidenceFileContent {
   skillVersionId?: string;
   provider?: AgentGatewayAcceptanceProvider;
   providerSessionId?: string;
+  outcome?: string;
+  marker?: string;
+  checks?: Record<string, boolean>;
+  sourceInstanceId?: string;
+  targetInstanceId?: string;
+  skillUpload?: boolean;
+  artifactPreview?: boolean;
+  terminalMarker?: string;
   actualCode?: string;
   actualHttpStatus?: number;
   relatedRunId?: string;
@@ -352,6 +402,7 @@ function getEvidencePaths(evidence: AgentGatewayAcceptanceEvidence) {
     }
     paths.add(browserEvidence.snapshotPath);
     paths.add(browserEvidence.actionResultPath);
+    paths.add(browserEvidence.consoleEvidencePath);
     browserEvidence.mediaPaths.forEach((filePath) => paths.add(filePath));
     browserEvidence.networkEvidencePaths.forEach((filePath) => paths.add(filePath));
   }
@@ -401,9 +452,19 @@ function evaluateEvidenceFiles(
     if (!browserEvidence || browserEvidence.status !== 'passed') {
       continue;
     }
-    for (const filePath of [browserEvidence.snapshotPath, browserEvidence.actionResultPath]) {
+    for (const filePath of [
+      browserEvidence.snapshotPath,
+      browserEvidence.actionResultPath,
+      browserEvidence.consoleEvidencePath,
+    ]) {
       if (!contentMatchesAnchors(validations.get(filePath)?.content, evidence.executionId, anchors)) {
         failures.push(`Browser scenario ${scenario} evidence file ${filePath} does not contain the current anchors`);
+      }
+    }
+    const actionContent = validations.get(browserEvidence.actionResultPath)?.content;
+    for (const check of AGENT_GATEWAY_BROWSER_REQUIRED_CHECKS[scenario as AgentGatewayBrowserScenario]) {
+      if (actionContent?.checks?.[check] !== true) {
+        failures.push(`Browser scenario ${scenario} action evidence does not prove ${check}`);
       }
     }
   }
@@ -417,11 +478,15 @@ function evaluateEvidenceFiles(
         content?.executionId === evidence.executionId &&
         content.provider === provider &&
         content.runId === providerEvidence.runId &&
-        content.providerSessionId === providerEvidence.providerSessionId
+        content.providerSessionId === providerEvidence.providerSessionId &&
+        content.nodeId === providerEvidence.nodeId &&
+        content.skillVersionId === providerEvidence.skillVersionId &&
+        content.outcome === providerEvidence.outcome &&
+        content.marker === providerEvidence.marker
       );
     });
     if (!hasMatchingContent) {
-      failures.push(`Provider ${provider} evidence files do not contain the current run and session anchors`);
+      failures.push(`Provider ${provider} evidence files do not contain the current successful real-run proof`);
     }
   }
   for (const [scenario, denial] of Object.entries(evidence.websocket || {})) {
@@ -446,11 +511,39 @@ function evaluateEvidenceFiles(
     }
   }
   if (evidence.multiInstance) {
-    const hasCurrentExecution = evidence.multiInstance.evidenceFiles.some(
-      (filePath) => validations.get(filePath)?.content?.executionId === evidence.executionId,
-    );
-    if (!hasCurrentExecution) {
-      failures.push('Multi-instance evidence files do not contain the current execution ID');
+    const multiInstance = evidence.multiInstance;
+    if (multiInstance.mode === 'multi-instance') {
+      const fileContent = validations.get(multiInstance.fileEvidencePath || '')?.content;
+      const terminalContent = validations.get(multiInstance.terminalEvidencePath || '')?.content;
+      const instanceProofMatches = (content: AgentGatewayAcceptanceEvidenceFileContent | undefined) =>
+        contentMatchesAnchors(content, evidence.executionId, anchors) &&
+        content?.sourceInstanceId === multiInstance.sourceInstanceId &&
+        content.targetInstanceId === multiInstance.targetInstanceId &&
+        content.sourceInstanceId !== content.targetInstanceId;
+      if (
+        !instanceProofMatches(fileContent) ||
+        fileContent?.skillUpload !== true ||
+        fileContent?.artifactPreview !== true ||
+        fileContent?.terminalMarker !== undefined
+      ) {
+        failures.push('Multi-instance file evidence does not contain the current cross-instance file proof');
+      }
+      if (
+        !instanceProofMatches(terminalContent) ||
+        !hasText(terminalContent?.terminalMarker) ||
+        terminalContent?.terminalMarker !== multiInstance.terminalMarker ||
+        terminalContent?.skillUpload !== undefined ||
+        terminalContent?.artifactPreview !== undefined
+      ) {
+        failures.push('Multi-instance terminal evidence does not contain the current cross-instance terminal proof');
+      }
+    } else {
+      const hasCurrentExecution = multiInstance.evidenceFiles.some(
+        (filePath) => validations.get(filePath)?.content?.executionId === evidence.executionId,
+      );
+      if (!hasCurrentExecution) {
+        failures.push('Multi-instance evidence files do not contain the current execution ID');
+      }
     }
   }
 }
@@ -486,11 +579,26 @@ function evaluateProviders(
         failures.push(`Provider ${provider} pass is missing run or provider session anchors`);
       }
       if (
+        !hasText(providerEvidence.nodeId) ||
+        !hasText(providerEvidence.skillVersionId) ||
+        providerEvidence.outcome !== 'succeeded' ||
+        providerEvidence.marker !== AGENT_GATEWAY_PROVIDER_MARKERS[provider]
+      ) {
+        failures.push(`Provider ${provider} pass is missing successful real-run proof`);
+      }
+      if (
         evidence.anchors?.provider === provider &&
         (providerEvidence.runId !== evidence.anchors.runId ||
           providerEvidence.providerSessionId !== evidence.anchors.providerSessionId)
       ) {
         failures.push(`Provider ${provider} pass does not match the current browser run and session anchors`);
+      }
+      if (
+        evidence.anchors &&
+        (providerEvidence.nodeId !== evidence.anchors.nodeId ||
+          providerEvidence.skillVersionId !== evidence.anchors.skillVersionId)
+      ) {
+        failures.push(`Provider ${provider} pass does not match the current node and Skill version anchors`);
       }
       if (!providerEvidence.evidenceFiles.length) {
         failures.push(`Provider ${provider} pass has no evidence files`);
@@ -546,10 +654,16 @@ function evaluateBrowser(
     if (
       !hasText(browserEvidence.snapshotPath) ||
       !hasText(browserEvidence.actionResultPath) ||
+      !hasText(browserEvidence.consoleEvidencePath) ||
       !browserEvidence.mediaPaths.length ||
       !browserEvidence.networkEvidencePaths.length
     ) {
       failures.push(`Browser scenario ${scenario} is missing snapshot, action, media, or network evidence`);
+    }
+    for (const check of AGENT_GATEWAY_BROWSER_REQUIRED_CHECKS[scenario]) {
+      if (browserEvidence.checks[check] !== true) {
+        failures.push(`Browser scenario ${scenario} did not prove ${check}`);
+      }
     }
     for (const consoleError of browserEvidence.consoleErrors) {
       if (!consoleError.explained || !hasText(consoleError.explanation)) {
@@ -626,10 +740,37 @@ function evaluateMultiInstance(
     }
     return;
   }
+  if (
+    !hasText(multiInstance.fileEvidencePath) ||
+    !hasText(multiInstance.terminalEvidencePath) ||
+    !hasText(multiInstance.sourceInstanceId) ||
+    !hasText(multiInstance.targetInstanceId) ||
+    !hasText(multiInstance.terminalMarker)
+  ) {
+    failures.push('Multi-instance evidence is missing file, terminal, instance, or marker proof');
+  }
+  if (multiInstance.sourceInstanceId === multiInstance.targetInstanceId) {
+    failures.push('Multi-instance evidence must identify distinct source and target instances');
+  }
+  for (const evidencePath of [multiInstance.fileEvidencePath, multiInstance.terminalEvidencePath]) {
+    if (evidencePath?.trim() && !multiInstance.evidenceFiles.includes(evidencePath)) {
+      failures.push(`Multi-instance evidence file ${evidencePath} is not attached to the manifest`);
+    }
+  }
   if (multiInstance.file === 'failed') {
     failures.push('Multi-instance file validation failed');
   } else if (multiInstance.file !== 'passed') {
     incomplete.push(`Multi-instance file validation is ${multiInstance.file}`);
+  }
+  if (multiInstance.skillUpload === 'failed') {
+    failures.push('Multi-instance Skill upload validation failed');
+  } else if (multiInstance.skillUpload !== 'passed') {
+    incomplete.push(`Multi-instance Skill upload validation is ${multiInstance.skillUpload}`);
+  }
+  if (multiInstance.artifactPreview === 'failed') {
+    failures.push('Multi-instance artifact preview validation failed');
+  } else if (multiInstance.artifactPreview !== 'passed') {
+    incomplete.push(`Multi-instance artifact preview validation is ${multiInstance.artifactPreview}`);
   }
   if (multiInstance.terminal === 'failed') {
     failures.push('Multi-instance terminal validation failed');

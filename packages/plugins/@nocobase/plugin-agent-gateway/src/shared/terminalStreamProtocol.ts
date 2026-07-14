@@ -28,6 +28,7 @@ export const TERMINAL_RECONNECT_MAX_DELAY_MS = 10 * 1000;
 export const TERMINAL_RECONNECT_JITTER_RATIO = 0.2;
 
 const BROWSER_SUBSCRIBE_ALLOWED_FIELDS = new Set(['type', 'protocol', 'requestId', 'runId', 'lastOffset']);
+const CONTROL_NOTIFICATION_ALLOWED_FIELDS = new Set(['type', 'protocol', 'requestId', 'runId', 'controlRequestId']);
 
 export type TerminalProtocol = typeof TERMINAL_PROTOCOL;
 export type TerminalPayloadEncoding = typeof TERMINAL_PAYLOAD_ENCODING;
@@ -38,6 +39,14 @@ export type TerminalClientSubscribe = {
   requestId: string;
   runId: string;
   lastOffset?: number;
+};
+
+export type TerminalBrowserControlNotify = {
+  type: 'browser.controlNotify';
+  protocol: TerminalProtocol;
+  requestId: string;
+  runId: string;
+  controlRequestId: string;
 };
 
 export type TerminalDaemonRegister = {
@@ -68,6 +77,14 @@ export type TerminalSnapshotRequest = {
   requestId: string;
   runId: string;
   fromOffset: number;
+};
+
+export type TerminalDaemonControlAvailable = {
+  type: 'daemon.controlAvailable';
+  protocol: TerminalProtocol;
+  requestId: string;
+  runId: string;
+  controlRequestId: string;
 };
 
 export type TerminalData = {
@@ -134,7 +151,7 @@ export type TerminalError = {
   details?: Record<string, unknown>;
 };
 
-export type TerminalClientFrame = TerminalClientSubscribe;
+export type TerminalClientFrame = TerminalClientSubscribe | TerminalBrowserControlNotify;
 
 export type TerminalDaemonFrame =
   | TerminalDaemonRegister
@@ -146,6 +163,7 @@ export type TerminalDaemonFrame =
 
 export type TerminalServerFrame =
   | TerminalSnapshotRequest
+  | TerminalDaemonControlAvailable
   | TerminalAck
   | TerminalData
   | TerminalSnapshot
@@ -174,9 +192,11 @@ type JsonRecord = Record<string, unknown>;
 
 const TERMINAL_FRAME_TYPES = new Set<TerminalFrameType>([
   'browser.subscribe',
+  'browser.controlNotify',
   'daemon.register',
   'daemon.bindRun',
   'daemon.snapshotRequest',
+  'daemon.controlAvailable',
   'terminal.data',
   'terminal.snapshot',
   'terminal.end',
@@ -305,6 +325,15 @@ function normalizeTerminalFrame(record: JsonRecord): TerminalFrame {
       lastOffset: record.lastOffset === undefined ? undefined : Number(record.lastOffset),
     };
   }
+  if (record.type === 'browser.controlNotify') {
+    return {
+      type: 'browser.controlNotify',
+      protocol: TERMINAL_PROTOCOL,
+      requestId: getString(record.requestId),
+      runId: getString(record.runId),
+      controlRequestId: getString(record.controlRequestId),
+    };
+  }
   if (record.type === 'daemon.register') {
     return {
       type: 'daemon.register',
@@ -336,6 +365,15 @@ function normalizeTerminalFrame(record: JsonRecord): TerminalFrame {
       requestId: getString(record.requestId),
       runId: getString(record.runId),
       fromOffset: Number(record.fromOffset),
+    };
+  }
+  if (record.type === 'daemon.controlAvailable') {
+    return {
+      type: 'daemon.controlAvailable',
+      protocol: TERMINAL_PROTOCOL,
+      requestId: getString(record.requestId),
+      runId: getString(record.runId),
+      controlRequestId: getString(record.controlRequestId),
     };
   }
   if (record.type === 'terminal.data') {
@@ -399,6 +437,20 @@ function validateBrowserSubscribeFields(record: JsonRecord) {
     : null;
 }
 
+function validateControlNotification(record: JsonRecord) {
+  const unsupportedField = Object.keys(record).find((field) => !CONTROL_NOTIFICATION_ALLOWED_FIELDS.has(field));
+  if (unsupportedField) {
+    return protocolError(`${String(record.type)} contains unsupported fields`, getString(record.requestId));
+  }
+  return (
+    validateRequestId(record) ||
+    validateRunId(record) ||
+    (isNonEmptyString(record.controlRequestId)
+      ? null
+      : protocolError('controlRequestId is required', getString(record.requestId)))
+  );
+}
+
 export function parseTerminalFrame(input: unknown, options: TerminalParseOptions = {}): TerminalParseResult {
   const record = isRecord(input) ? input : null;
   if (!record) {
@@ -424,63 +476,76 @@ export function parseTerminalFrame(input: unknown, options: TerminalParseOptions
         (record.lastOffset === undefined || isNonNegativeInteger(record.lastOffset)
           ? null
           : protocolError('lastOffset must be a non-negative integer', getString(record.requestId)))
-      : record.type === 'daemon.register'
-        ? validateRequestId(record) ||
-          (isNonEmptyString(record.nodeId) ? null : protocolError('nodeId is required', getString(record.requestId))) ||
-          (isRecord(record.capabilities) && typeof record.capabilities.terminalStream === 'boolean'
-            ? null
-            : protocolError('capabilities.terminalStream is required', getString(record.requestId)))
-        : record.type === 'daemon.bindRun'
+      : record.type === 'browser.controlNotify' || record.type === 'daemon.controlAvailable'
+        ? validateControlNotification(record)
+        : record.type === 'daemon.register'
           ? validateRequestId(record) ||
-            validateRunId(record) ||
-            (isNonEmptyString(record.sessionName)
+            (isNonEmptyString(record.nodeId)
               ? null
-              : protocolError('sessionName is required', getString(record.requestId))) ||
-            (isNonNegativeInteger(record.startOffset)
+              : protocolError('nodeId is required', getString(record.requestId))) ||
+            (isRecord(record.capabilities) && typeof record.capabilities.terminalStream === 'boolean'
               ? null
-              : protocolError('startOffset must be a non-negative integer', getString(record.requestId))) ||
-            (isNonEmptyString(record.claimToken)
-              ? null
-              : protocolError('claimToken is required', getString(record.requestId))) ||
-            (isNonNegativeInteger(record.claimAttempt)
-              ? null
-              : protocolError('claimAttempt must be a non-negative integer', getString(record.requestId))) ||
-            (isNonNegativeInteger(record.leaseVersion)
-              ? null
-              : protocolError('leaseVersion must be a non-negative integer', getString(record.requestId)))
-          : record.type === 'daemon.snapshotRequest'
+              : protocolError('capabilities.terminalStream is required', getString(record.requestId)))
+          : record.type === 'daemon.bindRun'
             ? validateRequestId(record) ||
               validateRunId(record) ||
-              (isNonNegativeInteger(record.fromOffset)
+              (isNonEmptyString(record.sessionName)
                 ? null
-                : protocolError('fromOffset must be a non-negative integer', getString(record.requestId)))
-            : record.type === 'terminal.data' || record.type === 'terminal.snapshot'
-              ? validatePayloadFrame(record, options)
-              : record.type === 'terminal.end'
-                ? validateRunId(record) ||
-                  validateSessionName(record, options) ||
-                  (isNonNegativeInteger(record.offsetEnd)
-                    ? null
-                    : protocolError(
-                        'offsetEnd must be a non-negative integer',
-                        getString(record.requestId) || undefined,
-                      )) ||
-                  (TERMINAL_END_REASONS.has(record.reason as TerminalEnd['reason'])
-                    ? null
-                    : protocolError('terminal end reason is invalid', getString(record.requestId) || undefined))
-                : record.type === 'ack'
-                  ? validateRequestId(record)
-                  : record.type === 'error'
-                    ? (record.requestId === undefined || isNonEmptyString(record.requestId)
-                        ? null
-                        : protocolError('requestId must be a non-empty string')) ||
-                      (TERMINAL_ERROR_CODES.has(record.code as TerminalErrorCode)
-                        ? null
-                        : protocolError('terminal error code is invalid', getString(record.requestId) || undefined)) ||
-                      (isNonEmptyString(record.message)
-                        ? null
-                        : protocolError('terminal error message is required', getString(record.requestId) || undefined))
-                    : protocolError('Unsupported terminal stream frame type', getString(record.requestId) || undefined);
+                : protocolError('sessionName is required', getString(record.requestId))) ||
+              (isNonNegativeInteger(record.startOffset)
+                ? null
+                : protocolError('startOffset must be a non-negative integer', getString(record.requestId))) ||
+              (isNonEmptyString(record.claimToken)
+                ? null
+                : protocolError('claimToken is required', getString(record.requestId))) ||
+              (isNonNegativeInteger(record.claimAttempt)
+                ? null
+                : protocolError('claimAttempt must be a non-negative integer', getString(record.requestId))) ||
+              (isNonNegativeInteger(record.leaseVersion)
+                ? null
+                : protocolError('leaseVersion must be a non-negative integer', getString(record.requestId)))
+            : record.type === 'daemon.snapshotRequest'
+              ? validateRequestId(record) ||
+                validateRunId(record) ||
+                (isNonNegativeInteger(record.fromOffset)
+                  ? null
+                  : protocolError('fromOffset must be a non-negative integer', getString(record.requestId)))
+              : record.type === 'terminal.data' || record.type === 'terminal.snapshot'
+                ? validatePayloadFrame(record, options)
+                : record.type === 'terminal.end'
+                  ? validateRunId(record) ||
+                    validateSessionName(record, options) ||
+                    (isNonNegativeInteger(record.offsetEnd)
+                      ? null
+                      : protocolError(
+                          'offsetEnd must be a non-negative integer',
+                          getString(record.requestId) || undefined,
+                        )) ||
+                    (TERMINAL_END_REASONS.has(record.reason as TerminalEnd['reason'])
+                      ? null
+                      : protocolError('terminal end reason is invalid', getString(record.requestId) || undefined))
+                  : record.type === 'ack'
+                    ? validateRequestId(record)
+                    : record.type === 'error'
+                      ? (record.requestId === undefined || isNonEmptyString(record.requestId)
+                          ? null
+                          : protocolError('requestId must be a non-empty string')) ||
+                        (TERMINAL_ERROR_CODES.has(record.code as TerminalErrorCode)
+                          ? null
+                          : protocolError(
+                              'terminal error code is invalid',
+                              getString(record.requestId) || undefined,
+                            )) ||
+                        (isNonEmptyString(record.message)
+                          ? null
+                          : protocolError(
+                              'terminal error message is required',
+                              getString(record.requestId) || undefined,
+                            ))
+                      : protocolError(
+                          'Unsupported terminal stream frame type',
+                          getString(record.requestId) || undefined,
+                        );
 
   if (error) {
     return {

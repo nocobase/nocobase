@@ -10,6 +10,7 @@
 import type { JsonRecord } from '../json';
 import {
   AGENT_GATEWAY_API_ACTIONS,
+  AgentGatewayContractError,
   createActionContract,
   parseCanonicalListResponse,
   type AgentGatewayCanonicalListResponse,
@@ -17,6 +18,30 @@ import {
   type AgentGatewayEmptyRequest,
   type AgentGatewayObjectDto,
 } from './common';
+
+const LEGACY_CAPABILITY_FIELDS = new Set(['supportsArtifacts', 'terminalStream', 'terminalInput', 'terminalControl']);
+
+function assertCanonicalCapabilities(value: unknown, label: string) {
+  if (!value || Object.prototype.toString.call(value) !== '[object Object]') {
+    return;
+  }
+  const legacyFields = Object.keys(value as JsonRecord).filter((field) => LEGACY_CAPABILITY_FIELDS.has(field));
+  if (legacyFields.length) {
+    throw new AgentGatewayContractError(`Legacy ${label} field is not allowed: ${legacyFields.sort().join(', ')}`);
+  }
+}
+
+function parseNodeCapabilityRequest<Request extends RegisterNodeRequest | HeartbeatNodeRequest>(value: JsonRecord) {
+  assertCanonicalCapabilities(value.capabilitiesJson, 'capabilitiesJson');
+  if (Array.isArray(value.profiles)) {
+    value.profiles.forEach((profile, index) => {
+      if (profile && Object.prototype.toString.call(profile) === '[object Object]') {
+        assertCanonicalCapabilities((profile as JsonRecord).capabilitiesJson, `profiles[${index}].capabilitiesJson`);
+      }
+    });
+  }
+  return value as unknown as Request;
+}
 
 export interface CreateNodeInvitationRequest {
   invitationKey?: string;
@@ -149,30 +174,30 @@ export const nodeContracts = {
     typeof AGENT_GATEWAY_API_ACTIONS.registerNode,
     RegisterNodeRequest,
     RegisterNodeResponse
-  >(AGENT_GATEWAY_API_ACTIONS.registerNode, [
-    'inviteToken',
-    'nodeKey',
-    'installationId',
-    'displayName',
-    'daemonVersion',
-    'hostInfo',
-    'capabilitiesJson',
-  ]),
+  >(
+    AGENT_GATEWAY_API_ACTIONS.registerNode,
+    ['inviteToken', 'nodeKey', 'installationId', 'displayName', 'daemonVersion', 'hostInfo', 'capabilitiesJson'],
+    parseNodeCapabilityRequest<RegisterNodeRequest>,
+  ),
   [AGENT_GATEWAY_API_ACTIONS.heartbeatNode]: createActionContract<
     typeof AGENT_GATEWAY_API_ACTIONS.heartbeatNode,
     HeartbeatNodeRequest,
     HeartbeatNodeResponse
-  >(AGENT_GATEWAY_API_ACTIONS.heartbeatNode, [
-    'installationId',
-    'daemonVersion',
-    'status',
-    'currentConcurrency',
-    'hostInfo',
-    'capabilitiesJson',
-    'metadataJson',
-    'profiles',
-    'profilesHash',
-  ]),
+  >(
+    AGENT_GATEWAY_API_ACTIONS.heartbeatNode,
+    [
+      'installationId',
+      'daemonVersion',
+      'status',
+      'currentConcurrency',
+      'hostInfo',
+      'capabilitiesJson',
+      'metadataJson',
+      'profiles',
+      'profilesHash',
+    ],
+    parseNodeCapabilityRequest<HeartbeatNodeRequest>,
+  ),
   [AGENT_GATEWAY_API_ACTIONS.listNodes]: createActionContract<
     typeof AGENT_GATEWAY_API_ACTIONS.listNodes,
     AgentGatewayEmptyRequest,

@@ -19,12 +19,12 @@ import { AGENT_GATEWAY_API_ACTIONS, getAgentGatewayApiPath } from '../../shared/
 class UploadRequester implements GatewayRequester {
   calls: GatewayRequestOptions[] = [];
 
-  async request<T extends JsonRecord = JsonRecord>(options: GatewayRequestOptions): Promise<T> {
+  async request(options: GatewayRequestOptions): Promise<unknown> {
     this.calls.push(options);
     return {
       runId: 'run-1',
       requestNumber: this.calls.length,
-    } as T;
+    };
   }
 }
 
@@ -104,7 +104,7 @@ describe('external run uploader', () => {
     });
     expect(getBody(firstRequester.calls[3])).toMatchObject({
       status: 'succeeded',
-      resultSummary: {
+      resultSummaryJson: {
         totalTokens: 42,
       },
       logs: [],

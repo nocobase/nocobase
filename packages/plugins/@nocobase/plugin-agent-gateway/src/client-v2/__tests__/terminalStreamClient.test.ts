@@ -170,6 +170,33 @@ describe('TerminalStreamClient', () => {
     );
   });
 
+  it('sends a strict best-effort browser control notification on an open socket', async () => {
+    const client = new TerminalStreamClient({
+      runId: 'run-id-1',
+      createStreamTicket: createStreamTicketFactory(),
+      createWebSocket: () => new FakeWebSocket(),
+    });
+
+    expect(client.notifyControl('control-request-1')).toBe(false);
+    client.connect();
+    const fakeWebSocket = await waitForFakeWebSocket();
+    fakeWebSocket.dispatch('open');
+
+    expect(client.notifyControl('control-request-1')).toBe(true);
+    const frame = JSON.parse(fakeWebSocket.sent[1]) as Record<string, unknown>;
+    expect(frame).toMatchObject({
+      type: 'browser.controlNotify',
+      protocol: TERMINAL_PROTOCOL,
+      runId: 'run-id-1',
+      controlRequestId: 'control-request-1',
+      requestId: expect.stringMatching(/^browser-control-/),
+    });
+    expect(Object.keys(frame).sort()).toEqual(['controlRequestId', 'protocol', 'requestId', 'runId', 'type'].sort());
+
+    client.close();
+    expect(client.notifyControl('control-request-2')).toBe(false);
+  });
+
   it('only emits the unconsumed tail from overlapping snapshot frames', async () => {
     const onChunk = vi.fn();
     const prefix = '你好\n';

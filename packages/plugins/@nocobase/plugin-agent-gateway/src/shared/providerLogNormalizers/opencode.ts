@@ -162,7 +162,7 @@ export function parseOpenCodeJsonLine(input: ProviderEventInput): JsonRecord | n
 
 export function detectOpenCodeSessionId(input: ProviderEventInput) {
   const event = parseOpenCodeJsonLine(input);
-  return getString(event?.sessionId) || getString(event?.session_id) || null;
+  return getString(event?.sessionID) || getString(event?.sessionId) || getString(event?.session_id) || null;
 }
 
 export function normalizeOpenCodeEvent(input: ProviderEventInput): NormalizedAgentEvent[] {

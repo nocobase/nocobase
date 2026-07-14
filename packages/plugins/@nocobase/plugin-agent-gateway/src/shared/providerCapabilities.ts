@@ -96,8 +96,11 @@ export function isAgentProviderKey(value: unknown): value is AgentProviderKey {
   return typeof value === 'string' && AGENT_PROVIDER_KEYS.includes(value as AgentProviderKey);
 }
 
-export function getAgentProviderKey(value: unknown, fallback: AgentProviderKey = 'generic-cli'): AgentProviderKey {
-  return isAgentProviderKey(value) ? value : fallback;
+export function getAgentProviderKey(value: unknown): AgentProviderKey {
+  if (!isAgentProviderKey(value)) {
+    throw new TypeError('Provider must be a canonical Agent Gateway provider');
+  }
+  return value;
 }
 
 export function getExplicitAgentProviderKey(value: unknown): AgentProviderKey | null {

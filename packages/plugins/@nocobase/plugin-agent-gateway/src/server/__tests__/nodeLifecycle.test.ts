@@ -454,7 +454,7 @@ describe('agent gateway node lifecycle APIs', () => {
         currentConcurrency: 1,
         capabilitiesJson: {
           maxConcurrency: 3,
-          supportsArtifacts: true,
+          artifacts: true,
         },
         profilesHash: 'profiles-v1',
         profiles: [
@@ -501,7 +501,7 @@ describe('agent gateway node lifecycle APIs', () => {
     expect(node.get('installationId')).toBe('33333333-3333-4333-8333-333333333333');
     expect(node.get('capabilitiesJson')).toMatchObject({
       maxConcurrency: 3,
-      supportsArtifacts: true,
+      artifacts: true,
     });
     expect(node.get('metadataJson')).toMatchObject({
       currentConcurrency: 1,
@@ -559,7 +559,7 @@ describe('agent gateway node lifecycle APIs', () => {
     });
     expect(unchangedNode.get('capabilitiesJson')).toMatchObject({
       maxConcurrency: 3,
-      supportsArtifacts: true,
+      artifacts: true,
     });
     expect(unchangedNode.get('metadataJson')).toMatchObject({
       currentConcurrency: 1,

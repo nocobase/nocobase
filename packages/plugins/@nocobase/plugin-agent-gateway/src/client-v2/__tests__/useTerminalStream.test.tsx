@@ -158,6 +158,28 @@ describe('useTerminalStream', () => {
     });
   });
 
+  it('exposes best-effort browser control notification', async () => {
+    const { result } = renderHook(() =>
+      useTerminalStream({
+        runId: 'run-id-1',
+        createStreamTicket: createStreamTicketFactory(),
+        createWebSocket: () => new FakeWebSocket(),
+      }),
+    );
+    const webSocket = await waitForFakeWebSocket();
+
+    act(() => {
+      webSocket.dispatch('open');
+    });
+    expect(result.current.notifyControl('control-request-hook')).toBe(true);
+    expect(JSON.parse(webSocket.sent[1])).toMatchObject({
+      type: 'browser.controlNotify',
+      protocol: TERMINAL_PROTOCOL,
+      runId: 'run-id-1',
+      controlRequestId: 'control-request-hook',
+    });
+  });
+
   it('stays closed when disabled or missing auth', () => {
     const { result } = renderHook(() =>
       useTerminalStream({
