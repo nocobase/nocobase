@@ -8,9 +8,13 @@
  */
 
 import type { RunJSTypeLibraryPackDefinition } from '../src/type-packs/generator';
+import { RUNJS_LODASH_TYPE_LIBRARY_PACK_DEFINITION } from '../src/lodash-type-library';
+import { RUNJS_DAYJS_TYPE_LIBRARY_PACK_DEFINITION } from '../src/type-packs/dayjs';
 import {
   RUNJS_TYPESCRIPT_REACT_BRIDGE_DECLARATION,
   RUNJS_TYPESCRIPT_REACT_BRIDGE_PATH,
+  RUNJS_TYPESCRIPT_REACT_DOM_BRIDGE_DECLARATION,
+  RUNJS_TYPESCRIPT_REACT_DOM_BRIDGE_PATH,
 } from '../src/typescript-project';
 
 export const runJSTypeLibraryPackDefinitions: readonly RunJSTypeLibraryPackDefinition[] = [
@@ -26,6 +30,21 @@ export const runJSTypeLibraryPackDefinitions: readonly RunJSTypeLibraryPackDefin
     ],
     triggers: ['react'],
   },
+  {
+    id: 'react-dom/client',
+    libraryName: 'react-dom',
+    entry: 'react-dom/client',
+    dependencies: ['react'],
+    rootFiles: [
+      {
+        path: RUNJS_TYPESCRIPT_REACT_DOM_BRIDGE_PATH,
+        content: RUNJS_TYPESCRIPT_REACT_DOM_BRIDGE_DECLARATION,
+      },
+    ],
+    triggers: ['react-dom/client'],
+  },
+  RUNJS_DAYJS_TYPE_LIBRARY_PACK_DEFINITION,
+  RUNJS_LODASH_TYPE_LIBRARY_PACK_DEFINITION,
   {
     id: 'antd/Button',
     libraryName: 'antd',

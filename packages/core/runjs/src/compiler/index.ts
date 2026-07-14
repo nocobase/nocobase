@@ -28,6 +28,7 @@ import { inspectRunJSSourceWorkspace } from './source-inspection';
 
 export * from './source-inspection';
 export * from '../completion-catalog/generator';
+export * from './node-lodash-type-library';
 export * from '../type-packs/generator';
 export type { RunJSCompileFailureCode } from '..';
 

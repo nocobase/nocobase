@@ -48,6 +48,38 @@ export const generatedRunJSTypeLibraryPackManifest: readonly GeneratedRunJSTypeL
     "rawBytes": 16638
   },
   {
+    "id": "dayjs",
+    "libraryName": "dayjs",
+    "version": "1.11.13",
+    "entry": "dayjs",
+    "sourcePackage": "dayjs",
+    "dependencies": [],
+    "triggers": [
+      "dayjs"
+    ],
+    "contentHash": "4b3d8579d61f431e753819f2cbf62b75dc845f9e2932010d3fc55331fd232497",
+    "fileCount": 5,
+    "rootFileCount": 1,
+    "dependencyFileCount": 4,
+    "rawBytes": 17282
+  },
+  {
+    "id": "lodash",
+    "libraryName": "lodash",
+    "version": "4.17.24",
+    "entry": "lodash",
+    "sourcePackage": "@types/lodash",
+    "dependencies": [],
+    "triggers": [
+      "lodash"
+    ],
+    "contentHash": "f2cf163509540aed4019a10dcfd96048d5695875a13632e15def333f5df5bf73",
+    "fileCount": 16,
+    "rootFileCount": 1,
+    "dependencyFileCount": 15,
+    "rawBytes": 466515
+  },
+  {
     "id": "react",
     "libraryName": "react",
     "version": "18.3.18",
@@ -62,5 +94,27 @@ export const generatedRunJSTypeLibraryPackManifest: readonly GeneratedRunJSTypeL
     "rootFileCount": 1,
     "dependencyFileCount": 9,
     "rawBytes": 1120136
+  },
+  {
+    "id": "react-dom/client",
+    "libraryName": "react-dom",
+    "version": "18.3.5",
+    "entry": "react-dom/client",
+    "sourcePackage": "@types/react-dom",
+    "dependencies": [
+      {
+        "id": "react",
+        "version": "18.3.18",
+        "contentHash": "4139ffb527029960c624f044b331e6fcf411d778abb5064af6bc12ba44844fb7"
+      }
+    ],
+    "triggers": [
+      "react-dom/client"
+    ],
+    "contentHash": "4787c958f8ad9f70dc4ce7c516b1b3ea4bacd3169b3c302a13e51476ca1ae206",
+    "fileCount": 4,
+    "rootFileCount": 1,
+    "dependencyFileCount": 3,
+    "rawBytes": 6268
   }
 ];

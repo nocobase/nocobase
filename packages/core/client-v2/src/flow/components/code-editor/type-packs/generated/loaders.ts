@@ -15,5 +15,8 @@ export type GeneratedRunJSTypeLibraryPackLoader = () => Promise<RunJSTypeLibrary
 
 export const generatedRunJSTypeLibraryPackLoaders: Readonly<Record<string, GeneratedRunJSTypeLibraryPackLoader>> = {
   "antd/Button": async () => (await import('./packs/antd-button')).default,
+  "dayjs": async () => (await import('./packs/dayjs')).default,
+  "lodash": async () => (await import('./packs/lodash')).default,
   "react": async () => (await import('./packs/react')).default,
+  "react-dom/client": async () => (await import('./packs/react-dom-client')).default,
 };

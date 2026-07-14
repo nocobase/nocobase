@@ -10,4 +10,6 @@
 export * from '../typescript-environment';
 export * from '../typescript-library';
 export * from '../typescript-library-usage';
+export * from '../lodash-type-library';
+export * from '../type-packs/dayjs';
 export * from '../typescript-project';
