@@ -42,6 +42,14 @@ export interface CollectRunJSTypeLibraryUsageInput {
     path: string;
     content: string;
   };
+  libraries?: readonly RunJSTypeLibraryUsageDefinition[];
+}
+
+export interface RunJSTypeLibraryUsageDefinition {
+  libraryName: string;
+  packId: string;
+  moduleNames?: readonly string[];
+  topLevelNames?: readonly string[];
 }
 
 interface RunJSTypeLibraryRequestBase {

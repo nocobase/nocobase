@@ -15,7 +15,7 @@ const pack: RunJSTypeLibraryPack = {
   "id": "antd/Button",
   "libraryName": "antd",
   "version": "5.24.2",
-  "contentHash": "e551a3b54e5e35c97c81e14bba87b6d5f8a4bd83278b962b8195ca88dfce9a54",
+  "contentHash": "4415a3945243218a380f901b51052acaad1b65277ad3f26649d776a41be1fe77",
   "dependencies": [
     {
       "id": "react",
@@ -23,7 +23,13 @@ const pack: RunJSTypeLibraryPack = {
       "contentHash": "4139ffb527029960c624f044b331e6fcf411d778abb5064af6bc12ba44844fb7"
     }
   ],
-  "rootFiles": [],
+  "rootFiles": [
+    {
+      "path": "/__runjs__/type-packs/antd/button-bridge.d.ts",
+      "content": "\ninterface RunJSAntdLibrary {\n  readonly Button: typeof import('antd/es/button').default;\n}\ninterface RunJSAntd extends RunJSAntdLibrary {}\n",
+      "contentHash": "128a6d1ba1f2e1316c4517007b04210f1d48b21c768a1cd2d02ffb974fe0441b"
+    }
+  ],
   "dependencyFiles": [
     {
       "path": "/node_modules/antd/es/button/button-group.d.ts",
@@ -57,10 +63,14 @@ const pack: RunJSTypeLibraryPack = {
     }
   ],
   "metadata": {
+    "category": "component",
+    "exportName": "default",
+    "requiresDOMTypeBridge": true,
+    "symbol": "Button",
     "entry": "antd/es/button",
     "sourcePackage": "antd",
-    "fileCount": 6,
-    "rawBytes": 16638
+    "fileCount": 7,
+    "rawBytes": 16778
   }
 };
 

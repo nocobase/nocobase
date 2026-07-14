@@ -61,6 +61,20 @@ export interface GeneratedRunJSCompletionCatalogArtifacts {
   manifest: readonly GeneratedRunJSCompletionCatalogManifestEntry[];
 }
 
+export function renderRunJSCompletionCatalogDataModule(catalogs: ReadonlyMap<string, RunJSCompletionCatalog>): string {
+  const antdEntries = catalogs.get('antd')?.entries || [];
+  const iconEntries = catalogs.get('antd-icons')?.entries || [];
+  return `${licenseHeader()}\n${generatedMarker}\n${generatedEslintDisable}\n\nimport type { RunJSCompletionCatalogEntry } from './generator';\n\nexport const generatedRunJSAntdCompletionCatalog = ${JSON.stringify(
+    antdEntries,
+    null,
+    2,
+  )} satisfies readonly RunJSCompletionCatalogEntry[];\n\nexport const generatedRunJSAntdIconsCompletionCatalog = ${JSON.stringify(
+    iconEntries,
+    null,
+    2,
+  )} satisfies readonly RunJSCompletionCatalogEntry[];\n`;
+}
+
 interface CatalogRecord {
   definition: RunJSCompletionCatalogDefinition;
   exportName: string;

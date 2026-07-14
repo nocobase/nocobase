@@ -171,11 +171,22 @@ interface RunJSReactLibrary {}
 interface RunJSReactDOMLibrary {}
 interface RunJSDayjsLibrary {}
 interface RunJSLodashLibrary {}
-interface RunJSComponent<P = Record<string, unknown>> {
-  (props: P & { children?: unknown }): null;
-}
-interface RunJSAntd {
-  readonly [componentName: string]: RunJSComponent;
+interface RunJSMathLibrary {}
+interface RunJSFormulaLibrary {}
+interface RunJSAntdLibrary {}
+interface RunJSAntd extends RunJSAntdLibrary {}
+interface RunJSAntdIconsLibrary {}
+interface RunJSAntdIcons extends RunJSAntdIconsLibrary {}
+interface RunJSLibraries {
+  React: RunJSReactLibrary;
+  ReactDOM: RunJSReactDOMLibrary;
+  antd: RunJSAntd;
+  antdIcons: RunJSAntdIcons;
+  dayjs: RunJSDayjsLibrary;
+  lodash: RunJSLodashLibrary;
+  math: RunJSMathLibrary;
+  formula: RunJSFormulaLibrary;
+  [libraryName: string]: unknown;
 }
 interface RunJSSourceInfo {
   readonly sourceMode: string;
@@ -211,14 +222,7 @@ interface RunJSContext {
   role?: string | string[];
   token?: string;
   urlSearchParams?: RunJSURLSearchParams;
-  libs: {
-    React: RunJSReactLibrary;
-    ReactDOM: RunJSReactDOMLibrary;
-    antd: RunJSAntd;
-    dayjs: RunJSDayjsLibrary;
-    lodash: RunJSLodashLibrary;
-    [libraryName: string]: unknown;
-  };
+  libs: RunJSLibraries;
   locale?: string;
   user?: RunJSRecord;
   themeToken?: RunJSUnknownObject;

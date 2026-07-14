@@ -35,13 +35,24 @@ function __runjsGetPendingMapForCtx(ctx: FlowContext): Map<string, Promise<unkno
   return m;
 }
 
-export function registerRunJSLib(name: string, loader: RunJSLibLoader, options?: { cache?: RunJSLibCache }): void {
-  if (typeof name !== 'string' || !name) return;
-  if (typeof loader !== 'function') return;
-  __runjsLibRegistry.set(name, { loader, cache: options?.cache || 'global' });
+export function registerRunJSLib(
+  name: string,
+  loader: RunJSLibLoader,
+  options?: { cache?: RunJSLibCache },
+): () => void {
+  if (typeof name !== 'string' || !name) return () => {};
+  if (typeof loader !== 'function') return () => {};
+  const entry = { loader, cache: options?.cache || 'global' } satisfies RunJSLibRegistryEntry;
+  __runjsLibRegistry.set(name, entry);
   // allow re-register to take effect on next ensure
   __runjsLibResolvedCache.delete(name);
   __runjsLibPendingCache.delete(name);
+  return () => {
+    if (__runjsLibRegistry.get(name) !== entry) return;
+    __runjsLibRegistry.delete(name);
+    __runjsLibResolvedCache.delete(name);
+    __runjsLibPendingCache.delete(name);
+  };
 }
 
 function __runjsIsObject(val: unknown): val is Record<string, unknown> {
@@ -198,7 +209,7 @@ export function setupRunJSLibs(ctx: FlowContext): void {
   // - 新增库应优先挂载到 ctx.libs.xxx（通过 registerRunJSLib）
   // - 同时保留顶层别名（如 ctx.React / ctx.antd），以兼容历史代码
   const libs: Record<string, unknown> = {};
-  for (const { name } of DEFAULT_RUNJS_LIBS) {
+  for (const name of __runjsLibRegistry.keys()) {
     Object.defineProperty(libs, name, {
       configurable: true,
       enumerable: true,

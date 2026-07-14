@@ -22,7 +22,7 @@ import {
 
 import { runJSTypeScriptLibSources } from './runJSTypeScriptLibSources';
 import { ensureGeneratedRunJSTypeLibraryPackLoadersRegistered } from './type-packs';
-import { loadRunJSTypeLibraryPacks } from './typescriptLibraryRegistry';
+import { getDefaultRunJSTypeLibraryRegistry, type RunJSTypeLibraryRegistry } from './typescriptLibraryRegistry';
 import {
   clearTypeScriptImmutableFileCacheForTests,
   getTypeScriptImmutableFileCacheDebugState,
@@ -40,6 +40,8 @@ export interface CodeEditorTypeScriptProject {
   currentFilePath: string;
   files: CodeEditorTypeScriptFile[];
   declarationFiles?: CodeEditorTypeScriptFile[];
+  typeLibraryIds?: string[];
+  typeLibraryRegistry?: RunJSTypeLibraryRegistry;
   compilerOptions?: Partial<import('typescript').CompilerOptions>;
   runJSContext?: {
     modelUse?: string;
@@ -255,6 +257,8 @@ function createRequestStateKey(project: CodeEditorTypeScriptProject, currentFile
     currentFilePath: normalizeProjectPath(project.currentFilePath),
     files,
     runJSContext: project.runJSContext || {},
+    typeLibraryIds: project.typeLibraryIds || [],
+    typeLibraryRegistry: project.typeLibraryRegistry?.getCacheKey(),
   });
 }
 
@@ -264,6 +268,7 @@ async function prepareProject(
 ): Promise<PreparedProject> {
   const ts = await loadTypeScript();
   ensureGeneratedRunJSTypeLibraryPackLoadersRegistered();
+  const typeLibraryRegistry = project.typeLibraryRegistry || getDefaultRunJSTypeLibraryRegistry();
   const compilerOptions = {
     ...createRunJSTypeScriptCompilerOptions(ts),
     ...(project.compilerOptions || {}),
@@ -275,13 +280,18 @@ async function prepareProject(
         ? { content: currentFileContent, path: normalizeProjectPath(project.currentFilePath) }
         : undefined,
     files: (project.files || []).map((file) => ({ content: file.content, path: normalizeProjectPath(file.path) })),
+    libraries: typeLibraryRegistry.getUsageDefinitions(),
   });
+  const explicitRequests = typeLibraryRegistry.createExplicitRequests(project.typeLibraryIds || []);
+  const requests = new Map(usageRequests.map((request) => [request.packId, request]));
+  for (const request of explicitRequests) requests.set(request.packId, request);
+  const typeLibraryRequests = [...requests.values()];
   let packs: RunJSTypeLibraryPack[];
   try {
-    packs = await loadRunJSTypeLibraryPacks(usageRequests);
+    packs = await typeLibraryRegistry.loadPacks(typeLibraryRequests);
   } catch (error) {
     throw new TypeScriptLibraryLoadingError(
-      usageRequests.map((request) => request.packId),
+      typeLibraryRequests.map((request) => request.packId),
       error,
     );
   }

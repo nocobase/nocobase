@@ -7,8 +7,23 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { RunJSTypeLibraryFile, RunJSTypeLibraryRequest } from '../typescript-library';
+import type {
+  RunJSTypeLibraryFile,
+  RunJSTypeLibraryPackDependency,
+  RunJSTypeLibraryRequest,
+  RunJSTypeLibraryUsageDefinition,
+} from '../typescript-library';
 import { loadNodeRunJSDayjsTypeLibraryFiles } from '../type-packs/dayjs/node';
+import { loadNodeRunJSFormulaTypeLibraryFiles } from '../type-packs/formulajs/node';
+import { loadNodeRunJSMathTypeLibraryFiles } from '../type-packs/mathjs/node';
+import {
+  generatedRunJSAntdCompletionCatalog,
+  generatedRunJSAntdIconsCompletionCatalog,
+} from '../completion-catalog/generated';
+import { createRunJSAntdIconsTypeLibraryPackDefinitions } from '../type-packs/antd-icons';
+import { loadNodeRunJSAntdIconsTypeLibraryFiles } from '../type-packs/antd-icons/node';
+import { createRunJSAntdTypeLibraryPackDefinitions } from '../type-packs/antd';
+import { loadNodeRunJSAntdTypeLibraryFiles } from '../type-packs/antd/node';
 import { loadNodeRunJSLodashTypeLibraryFiles } from './node-lodash-type-library';
 import {
   RUNJS_TYPESCRIPT_REACT_BRIDGE_DECLARATION,
@@ -23,13 +38,136 @@ export interface NodeRunJSTypeLibraryFiles {
   rootFiles: readonly RunJSTypeLibraryFile[];
 }
 
+export interface NodeRunJSTypeLibraryProvider {
+  id: string;
+  libraryName: string;
+  load(request: RunJSTypeLibraryRequest): NodeRunJSTypeLibraryFiles;
+  version?: string;
+  contentHash?: string;
+  dependencies?: readonly RunJSTypeLibraryPackDependency[];
+  moduleNames?: readonly string[];
+  topLevelNames?: readonly string[];
+}
+
+type StoredProvider = NodeRunJSTypeLibraryProvider & { token: symbol };
+
+const emptyFiles: NodeRunJSTypeLibraryFiles = { dependencyFiles: [], rootFiles: [] };
+
+export class NodeRunJSTypeLibraryRegistry {
+  private readonly providers = new Map<string, StoredProvider>();
+  private disposed = false;
+
+  constructor(private readonly parent?: NodeRunJSTypeLibraryRegistry) {}
+
+  register(provider: NodeRunJSTypeLibraryProvider): () => void {
+    this.assertActive();
+    const id = normalizeRequired(provider.id, 'Node RunJS TypeScript library id');
+    const libraryName = normalizeRequired(provider.libraryName, 'Node RunJS TypeScript library name');
+    if (this.has(id)) throw new Error(`Node RunJS TypeScript library is already registered: ${id}`);
+    const stored: StoredProvider = { ...provider, id, libraryName, token: Symbol(id) };
+    this.providers.set(id, stored);
+    return () => {
+      if (this.providers.get(id)?.token === stored.token) this.providers.delete(id);
+    };
+  }
+
+  has(id: string): boolean {
+    return this.providers.has(id) || Boolean(this.parent?.has(id));
+  }
+
+  getUsageDefinitions(): RunJSTypeLibraryUsageDefinition[] {
+    const definitions = new Map<string, RunJSTypeLibraryUsageDefinition>();
+    for (const definition of this.parent?.getUsageDefinitions() || [])
+      definitions.set(definition.libraryName, definition);
+    for (const provider of this.providers.values()) {
+      definitions.set(provider.libraryName, {
+        libraryName: provider.libraryName,
+        moduleNames: provider.moduleNames,
+        packId: provider.id,
+        topLevelNames: provider.topLevelNames,
+      });
+    }
+    return [...definitions.values()].sort((left, right) => left.libraryName.localeCompare(right.libraryName));
+  }
+
+  createExplicitRequests(ids: readonly string[]): RunJSTypeLibraryRequest[] {
+    return [...new Set(ids.map((id) => String(id || '').trim()).filter(Boolean))].sort().map((id) => {
+      const provider = this.resolve(id);
+      if (!provider) throw new Error(`Node RunJS TypeScript library is not registered: ${id}`);
+      return { kind: 'library', libraryName: provider.libraryName, packId: provider.id };
+    });
+  }
+
+  load(
+    requests: readonly RunJSTypeLibraryRequest[],
+    typeLibraryIds: readonly string[] = [],
+  ): NodeRunJSTypeLibraryFiles {
+    this.assertActive();
+    const allRequests = new Map(requests.map((request) => [request.packId, request]));
+    for (const request of this.createExplicitRequests(typeLibraryIds)) allRequests.set(request.packId, request);
+    const loaded = new Map<string, NodeRunJSTypeLibraryFiles>();
+    for (const request of [...allRequests.values()].sort((left, right) => left.packId.localeCompare(right.packId))) {
+      if (this.has(request.packId)) this.collect(request, new Set<string>(), loaded);
+    }
+    return loaded.size ? mergePacks(loaded.values()) : emptyFiles;
+  }
+
+  dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
+    this.providers.clear();
+  }
+
+  getDebugState(): { disposed: boolean; providerCount: number } {
+    return { disposed: this.disposed, providerCount: this.providers.size };
+  }
+
+  private collect(
+    request: RunJSTypeLibraryRequest,
+    ancestors: ReadonlySet<string>,
+    loaded: Map<string, NodeRunJSTypeLibraryFiles>,
+  ): void {
+    if (loaded.has(request.packId) || ancestors.has(request.packId)) return;
+    const provider = this.resolve(request.packId);
+    if (!provider) return;
+    const nextAncestors = new Set(ancestors);
+    nextAncestors.add(provider.id);
+    for (const dependency of provider.dependencies || []) {
+      if (nextAncestors.has(dependency.id)) continue;
+      const dependencyProvider = this.resolve(dependency.id);
+      if (!dependencyProvider)
+        throw new Error(`Node RunJS TypeScript library dependency is not registered: ${dependency.id}`);
+      if (
+        (dependencyProvider.version && dependencyProvider.version !== dependency.version) ||
+        (dependencyProvider.contentHash && dependencyProvider.contentHash !== dependency.contentHash)
+      ) {
+        throw new Error(`Node RunJS TypeScript library dependency mismatch: ${dependency.id}`);
+      }
+      this.collect(
+        { kind: 'library', libraryName: dependencyProvider.libraryName, packId: dependency.id },
+        nextAncestors,
+        loaded,
+      );
+    }
+    loaded.set(provider.id, provider.load(request));
+  }
+
+  private resolve(id: string): StoredProvider | undefined {
+    return this.providers.get(id) || this.parent?.resolve(id);
+  }
+
+  private assertActive(): void {
+    if (this.disposed) throw new Error('Node RunJS TypeScript library registry has been disposed.');
+  }
+}
+
 type NodeRunJSTypeLibraryDefinition = {
   dependencies: readonly string[];
   entry: string;
   rootFiles: readonly RunJSTypeLibraryFile[];
 };
 
-const definitions: Readonly<Record<string, NodeRunJSTypeLibraryDefinition>> = {
+const declarations: Readonly<Record<string, NodeRunJSTypeLibraryDefinition>> = {
   react: {
     dependencies: [],
     entry: 'react',
@@ -54,75 +192,116 @@ const definitions: Readonly<Record<string, NodeRunJSTypeLibraryDefinition>> = {
   },
 };
 
-const emptyFiles: NodeRunJSTypeLibraryFiles = {
-  dependencyFiles: [],
-  rootFiles: [],
-};
-const packCache = new Map<string, NodeRunJSTypeLibraryFiles>();
+const declarationCache = new Map<string, NodeRunJSTypeLibraryFiles>();
 
-export function loadNodeRunJSTypeLibraryFiles(requests: readonly RunJSTypeLibraryRequest[]): NodeRunJSTypeLibraryFiles {
-  const requestedPackIds = [...new Set(requests.map((request) => request.packId))]
-    .filter((packId) => definitions[packId])
-    .sort();
-  const packs = new Map<string, NodeRunJSTypeLibraryFiles>();
-  for (const packId of requestedPackIds) {
-    collectPack(packId, packs);
-  }
-  const dayjsFiles = loadNodeRunJSDayjsTypeLibraryFiles(requests);
-  const lodashFiles = loadNodeRunJSLodashTypeLibraryFiles(requests);
-  if (!packs.size && !dayjsFiles.rootFiles.length && !lodashFiles.rootFiles.length) {
-    return emptyFiles;
-  }
-  return mergePacks([...packs.values(), dayjsFiles, lodashFiles]);
-}
-
-function collectPack(packId: string, packs: Map<string, NodeRunJSTypeLibraryFiles>): void {
-  if (packs.has(packId)) return;
-  const definition = definitions[packId];
-  if (!definition) return;
-  for (const dependencyId of definition.dependencies) {
-    collectPack(dependencyId, packs);
-  }
-  packs.set(packId, loadPack(packId, definition));
-}
-
-function loadPack(packId: string, definition: NodeRunJSTypeLibraryDefinition): NodeRunJSTypeLibraryFiles {
-  const cached = packCache.get(packId);
+function loadDeclaration(id: string): NodeRunJSTypeLibraryFiles {
+  const cached = declarationCache.get(id);
   if (cached) return cached;
-
-  const inheritedFiles = mergePacks(
-    definition.dependencies.map((dependencyId) => loadPack(dependencyId, definitions[dependencyId])),
-  );
+  const definition = declarations[id];
+  const inherited = mergePacks(definition.dependencies.map(loadDeclaration));
   const inheritedHashes = new Map(
-    [...inheritedFiles.rootFiles, ...inheritedFiles.dependencyFiles].map((file) => [file.path, file.contentHash]),
+    [...inherited.rootFiles, ...inherited.dependencyFiles].map((file) => [file.path, file.contentHash]),
   );
   const graph = collectRunJSTypeDeclarationGraphSync(process.cwd(), definition.entry);
-  const dependencyFiles = graph.dependencyFiles.filter((file) => {
-    const inheritedHash = inheritedHashes.get(file.path);
-    if (!inheritedHash) return true;
-    if (inheritedHash !== file.contentHash) {
-      throw new Error(`Conflicting Node RunJS type library file: ${file.path}`);
-    }
-    return false;
-  });
-  const pack = {
-    dependencyFiles,
+  const files = {
+    dependencyFiles: graph.dependencyFiles.filter((file) => {
+      const inheritedHash = inheritedHashes.get(file.path);
+      if (!inheritedHash) return true;
+      if (inheritedHash !== file.contentHash) throw new Error(`Conflicting Node RunJS type library file: ${file.path}`);
+      return false;
+    }),
     rootFiles: definition.rootFiles,
   };
-  packCache.set(packId, pack);
-  return pack;
+  declarationCache.set(id, files);
+  return files;
+}
+
+const defaultNodeRunJSTypeLibraryRegistry = new NodeRunJSTypeLibraryRegistry();
+const antdTypeLibraryDefinitions = createRunJSAntdTypeLibraryPackDefinitions(generatedRunJSAntdCompletionCatalog);
+const antdIconsTypeLibraryDefinitions = createRunJSAntdIconsTypeLibraryPackDefinitions(
+  generatedRunJSAntdIconsCompletionCatalog,
+);
+
+defaultNodeRunJSTypeLibraryRegistry.register({
+  id: 'react',
+  libraryName: 'React',
+  load: () => loadDeclaration('react'),
+  moduleNames: ['react'],
+  topLevelNames: ['React'],
+});
+defaultNodeRunJSTypeLibraryRegistry.register({
+  dependencies: [],
+  id: 'react-dom/client',
+  libraryName: 'ReactDOM',
+  load: () => mergePacks([loadDeclaration('react'), loadDeclaration('react-dom/client')]),
+  moduleNames: ['react-dom', 'react-dom/client'],
+  topLevelNames: ['ReactDOM'],
+});
+defaultNodeRunJSTypeLibraryRegistry.register({
+  id: 'dayjs',
+  libraryName: 'dayjs',
+  load: (request) => loadNodeRunJSDayjsTypeLibraryFiles([request]),
+  moduleNames: ['dayjs'],
+  topLevelNames: ['dayjs'],
+});
+defaultNodeRunJSTypeLibraryRegistry.register({
+  id: 'lodash',
+  libraryName: 'lodash',
+  load: (request) => loadNodeRunJSLodashTypeLibraryFiles([request]),
+  moduleNames: ['lodash'],
+});
+defaultNodeRunJSTypeLibraryRegistry.register({
+  id: 'mathjs',
+  libraryName: 'math',
+  load: (request) => loadNodeRunJSMathTypeLibraryFiles([request]),
+  moduleNames: ['mathjs'],
+});
+defaultNodeRunJSTypeLibraryRegistry.register({
+  id: 'formulajs',
+  libraryName: 'formula',
+  load: (request) => loadNodeRunJSFormulaTypeLibraryFiles([request]),
+  moduleNames: ['@formulajs/formulajs'],
+});
+for (const definition of antdTypeLibraryDefinitions) {
+  defaultNodeRunJSTypeLibraryRegistry.register({
+    id: definition.id,
+    libraryName: 'antd',
+    load: (request) => loadNodeRunJSAntdTypeLibraryFiles([request], antdTypeLibraryDefinitions),
+  });
+}
+for (const definition of antdIconsTypeLibraryDefinitions) {
+  defaultNodeRunJSTypeLibraryRegistry.register({
+    id: definition.id,
+    libraryName: 'antdIcons',
+    load: (request) => loadNodeRunJSAntdIconsTypeLibraryFiles([request], antdIconsTypeLibraryDefinitions),
+  });
+}
+
+export function createNodeRunJSTypeLibraryRegistry(): NodeRunJSTypeLibraryRegistry {
+  return new NodeRunJSTypeLibraryRegistry(defaultNodeRunJSTypeLibraryRegistry);
+}
+
+export function registerNodeRunJSTypeLibrary(provider: NodeRunJSTypeLibraryProvider): () => void {
+  return defaultNodeRunJSTypeLibraryRegistry.register(provider);
+}
+
+export function getDefaultNodeRunJSTypeLibraryRegistry(): NodeRunJSTypeLibraryRegistry {
+  return defaultNodeRunJSTypeLibraryRegistry;
+}
+
+export function loadNodeRunJSTypeLibraryFiles(
+  requests: readonly RunJSTypeLibraryRequest[],
+  options: { registry?: NodeRunJSTypeLibraryRegistry; typeLibraryIds?: readonly string[] } = {},
+): NodeRunJSTypeLibraryFiles {
+  return (options.registry || defaultNodeRunJSTypeLibraryRegistry).load(requests, options.typeLibraryIds);
 }
 
 function mergePacks(packs: Iterable<NodeRunJSTypeLibraryFiles>): NodeRunJSTypeLibraryFiles {
   const rootFiles = new Map<string, RunJSTypeLibraryFile>();
   const dependencyFiles = new Map<string, RunJSTypeLibraryFile>();
   for (const pack of packs) {
-    for (const file of pack.rootFiles) {
-      mergeFile(rootFiles, file);
-    }
-    for (const file of pack.dependencyFiles) {
-      mergeFile(dependencyFiles, file);
-    }
+    for (const file of pack.rootFiles) mergeFile(rootFiles, file);
+    for (const file of pack.dependencyFiles) mergeFile(dependencyFiles, file);
   }
   return {
     dependencyFiles: [...dependencyFiles.values()].sort((left, right) => left.path.localeCompare(right.path)),
@@ -136,4 +315,10 @@ function mergeFile(files: Map<string, RunJSTypeLibraryFile>, file: RunJSTypeLibr
     throw new Error(`Conflicting Node RunJS type library file: ${file.path}`);
   }
   files.set(file.path, file);
+}
+
+function normalizeRequired(value: string, label: string): string {
+  const normalized = String(value || '').trim();
+  if (!normalized) throw new Error(`${label} is required.`);
+  return normalized;
 }

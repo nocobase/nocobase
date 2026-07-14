@@ -7,7 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { CollectRunJSTypeLibraryUsageInput, RunJSTypeLibraryRequest } from './typescript-library';
+import type {
+  CollectRunJSTypeLibraryUsageInput,
+  RunJSTypeLibraryRequest,
+  RunJSTypeLibraryUsageDefinition,
+} from './typescript-library';
 
 type TypeScriptModule = typeof import('typescript');
 type Node = import('typescript').Node;
@@ -19,7 +23,7 @@ type ObjectBindingPattern = import('typescript').ObjectBindingPattern;
 type ImportDeclaration = import('typescript').ImportDeclaration;
 type ImportTypeNode = import('typescript').ImportTypeNode;
 
-type LibraryName = 'React' | 'ReactDOM' | 'antd' | 'antdIcons' | 'dayjs' | 'lodash' | 'math' | 'formula';
+type LibraryName = string;
 
 type UsageTarget =
   | { kind: 'libs' }
@@ -47,6 +51,16 @@ const ctxLibraries: Readonly<Record<string, LibraryName>> = {
   formula: 'formula',
 };
 
+const builtInUsageDefinitions: readonly RunJSTypeLibraryUsageDefinition[] = Object.entries(ctxLibraries).map(
+  ([libraryName]) => ({
+    libraryName,
+    packId: libraryPackId(libraryName),
+    topLevelNames: Object.entries(topLevelLibraries)
+      .filter(([, target]) => target === libraryName)
+      .map(([name]) => name),
+  }),
+);
+
 class Scope {
   private readonly bindings = new Map<string, UsageTarget | null>();
 
@@ -72,8 +86,20 @@ class Scope {
 
 class UsageAnalyzer {
   private readonly requests = new Map<string, RunJSTypeLibraryRequest>();
+  private readonly ctxLibraries = new Map<string, RunJSTypeLibraryUsageDefinition>();
+  private readonly moduleLibraries = new Map<string, RunJSTypeLibraryUsageDefinition>();
+  private readonly topLevelLibraries = new Map<string, RunJSTypeLibraryUsageDefinition>();
 
-  constructor(private readonly ts: TypeScriptModule) {}
+  constructor(
+    private readonly ts: TypeScriptModule,
+    definitions: readonly RunJSTypeLibraryUsageDefinition[],
+  ) {
+    for (const definition of definitions) {
+      this.ctxLibraries.set(definition.libraryName, definition);
+      for (const name of definition.topLevelNames || []) this.topLevelLibraries.set(name, definition);
+      for (const name of definition.moduleNames || []) this.moduleLibraries.set(name, definition);
+    }
+  }
 
   analyze(sourceFile: SourceFile): void {
     const scope = new Scope();
@@ -245,7 +271,7 @@ class UsageAnalyzer {
     if (clause.name) {
       scope.declare(clause.name.text);
       if (isTypeOnlyDeclaration) {
-        const target = moduleTarget(moduleName);
+        const target = this.moduleTarget(moduleName);
         if (target) {
           scope.set(clause.name.text, target);
           this.emitTarget(target);
@@ -258,7 +284,7 @@ class UsageAnalyzer {
     if (ts.isNamespaceImport(bindings)) {
       scope.declare(bindings.name.text);
       if (isTypeOnlyDeclaration) {
-        const target = moduleTarget(moduleName);
+        const target = this.moduleTarget(moduleName);
         if (target) {
           scope.set(bindings.name.text, target);
           this.emitTarget(target);
@@ -271,7 +297,7 @@ class UsageAnalyzer {
       scope.declare(specifier.name.text);
       if (!isTypeOnlyDeclaration && !specifier.isTypeOnly) continue;
       const importedName = (specifier.propertyName || specifier.name).text;
-      const target = moduleTarget(moduleName, importedName);
+      const target = this.moduleTarget(moduleName, importedName);
       if (!target) continue;
       scope.set(specifier.name.text, target);
       this.emitTarget(target);
@@ -282,7 +308,7 @@ class UsageAnalyzer {
     const ts = this.ts;
     if (!ts.isLiteralTypeNode(node.argument) || !ts.isStringLiteral(node.argument.literal)) return;
     const qualifier = node.qualifier ? leftmostEntityName(node.qualifier) : undefined;
-    const target = moduleTarget(node.argument.literal.text, qualifier);
+    const target = this.moduleTarget(node.argument.literal.text, qualifier);
     if (target) this.emitTarget(target);
   }
 
@@ -353,8 +379,8 @@ class UsageAnalyzer {
       if (ts.isIdentifier(expression.expression) && expression.expression.text === 'ctx') {
         if (scope.lookup('ctx').found) return null;
         if (expression.name.text === 'libs') return { kind: 'libs' };
-        const libraryName = topLevelLibraries[expression.name.text];
-        return libraryName ? { kind: 'library', libraryName } : null;
+        const definition = this.topLevelLibraries.get(expression.name.text);
+        return definition ? { kind: 'library', libraryName: definition.libraryName } : null;
       }
       const base = this.resolveExpression(expression.expression, scope);
       if (!base || !expression.name.text) return base;
@@ -365,8 +391,8 @@ class UsageAnalyzer {
         if (scope.lookup('ctx').found) return null;
         const property = getStaticExpressionName(ts, expression.argumentExpression);
         if (property === 'libs') return { kind: 'libs' };
-        const libraryName = property ? topLevelLibraries[property] : undefined;
-        return libraryName ? { kind: 'library', libraryName } : null;
+        const definition = property ? this.topLevelLibraries.get(property) : undefined;
+        return definition ? { kind: 'library', libraryName: definition.libraryName } : null;
       }
       const base = this.resolveExpression(expression.expression, scope);
       if (!base) return null;
@@ -381,14 +407,14 @@ class UsageAnalyzer {
     if (ts.isIdentifier(name)) {
       const binding = scope.lookup(name.text);
       if (binding.found) return binding.target;
-      const libraryName = topLevelLibraries[name.text];
-      return libraryName ? { kind: 'library', libraryName } : null;
+      const definition = this.topLevelLibraries.get(name.text);
+      return definition ? { kind: 'library', libraryName: definition.libraryName } : null;
     }
     if (ts.isIdentifier(name.left) && name.left.text === 'ctx') {
       if (scope.lookup('ctx').found) return null;
       if (name.right.text === 'libs') return { kind: 'libs' };
-      const libraryName = topLevelLibraries[name.right.text];
-      return libraryName ? { kind: 'library', libraryName } : null;
+      const definition = this.topLevelLibraries.get(name.right.text);
+      return definition ? { kind: 'library', libraryName: definition.libraryName } : null;
     }
     const base = this.resolveEntityName(name.left, scope);
     return base ? this.resolveTargetProperty(base, name.right.text, false) : null;
@@ -397,8 +423,8 @@ class UsageAnalyzer {
   private resolveTargetProperty(target: UsageTarget, property: string, dynamic: boolean): UsageTarget | null {
     if (target.kind === 'libs') {
       if (dynamic) return null;
-      const libraryName = ctxLibraries[property];
-      return libraryName ? { kind: 'library', libraryName } : null;
+      const definition = this.ctxLibraries.get(property);
+      return definition ? { kind: 'library', libraryName: definition.libraryName } : null;
     }
     if (target.kind === 'full' || target.kind === 'symbol') return target;
     if (!isGranularLibrary(target.libraryName)) return target;
@@ -421,7 +447,7 @@ class UsageAnalyzer {
   }
 
   private emitLibrary(libraryName: LibraryName): void {
-    const packId = libraryPackId(libraryName);
+    const packId = this.ctxLibraries.get(libraryName)?.packId || libraryPackId(libraryName);
     this.requests.set(packId, { kind: 'library', libraryName, packId });
   }
 
@@ -451,10 +477,17 @@ class UsageAnalyzer {
   }
 
   private emitAllLibraries(): void {
-    (Object.values(ctxLibraries) as LibraryName[]).forEach((libraryName) => {
+    [...this.ctxLibraries.values()].forEach(({ libraryName }) => {
       if (isGranularLibrary(libraryName)) this.emitFull(libraryName);
       else this.emitLibrary(libraryName);
     });
+  }
+
+  private moduleTarget(moduleName: string, symbol?: string): UsageTarget | null {
+    const builtInTarget = moduleTarget(moduleName, symbol);
+    if (builtInTarget) return builtInTarget;
+    const definition = this.moduleLibraries.get(moduleName);
+    return definition ? { kind: 'library', libraryName: definition.libraryName } : null;
   }
 
   private predeclareStatements(
@@ -559,7 +592,18 @@ export function collectRunJSTypeLibraryUsage(
   input: CollectRunJSTypeLibraryUsageInput,
 ): RunJSTypeLibraryRequest[] {
   const files = collectSourceFiles(input);
-  const analyzer = new UsageAnalyzer(ts);
+  const customDefinitions = input.libraries || [];
+  const definitions = new Map<string, RunJSTypeLibraryUsageDefinition>();
+  for (const definition of [...builtInUsageDefinitions, ...customDefinitions]) {
+    const existing = definitions.get(definition.libraryName);
+    definitions.set(definition.libraryName, {
+      ...existing,
+      ...definition,
+      moduleNames: [...new Set([...(existing?.moduleNames || []), ...(definition.moduleNames || [])])],
+      topLevelNames: [...new Set([...(existing?.topLevelNames || []), ...(definition.topLevelNames || [])])],
+    });
+  }
+  const analyzer = new UsageAnalyzer(ts, [...definitions.values()]);
   for (const [path, content] of files) {
     analyzer.analyze(ts.createSourceFile(path, content, ts.ScriptTarget.Latest, true, getScriptKind(ts, path)));
   }
@@ -664,6 +708,8 @@ function libraryPackId(libraryName: LibraryName): string {
       return 'antd/full';
     case 'antdIcons':
       return 'antd-icons/full';
+    default:
+      return libraryName;
   }
 }
 

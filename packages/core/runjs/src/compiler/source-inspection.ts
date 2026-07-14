@@ -25,7 +25,11 @@ import {
   RUNJS_TYPESCRIPT_CONTEXT_PATH,
 } from '../typescript-project';
 import { collectRunJSTypeLibraryUsage } from '../typescript-library-usage';
-import { loadNodeRunJSTypeLibraryFiles } from './node-type-library';
+import {
+  getDefaultNodeRunJSTypeLibraryRegistry,
+  loadNodeRunJSTypeLibraryFiles,
+  type NodeRunJSTypeLibraryRegistry,
+} from './node-type-library';
 
 export const RUNJS_COMPILER_ALLOWED_GLOBALS = new Set([
   'ctx',
@@ -125,6 +129,8 @@ export interface InspectRunJSSourceWorkspaceInput {
   locator?: RunJSSourceLocator;
   legacy?: RunJSSourceAuthoringLegacyInfo;
   additionalAllowedGlobals?: Iterable<string>;
+  typeLibraryIds?: readonly string[];
+  typeLibraryRegistry?: NodeRunJSTypeLibraryRegistry;
 }
 
 export interface InspectRunJSSourceCodeInput {
@@ -132,6 +138,8 @@ export interface InspectRunJSSourceCodeInput {
   path: string;
   surfaceStyle: RunJSSurfaceStyle;
   additionalAllowedGlobals?: Iterable<string>;
+  typeLibraryIds?: readonly string[];
+  typeLibraryRegistry?: NodeRunJSTypeLibraryRegistry;
 }
 
 export function inspectRunJSSourceCode(input: InspectRunJSSourceCodeInput): RunJSCompileDiagnostic[] {
@@ -141,6 +149,8 @@ export function inspectRunJSSourceCode(input: InspectRunJSSourceCodeInput): RunJ
     entry: compilerPath,
     surfaceStyle: input.surfaceStyle,
     additionalAllowedGlobals: input.additionalAllowedGlobals,
+    typeLibraryIds: input.typeLibraryIds,
+    typeLibraryRegistry: input.typeLibraryRegistry,
   }).map((diagnostic) => ({
     ...diagnostic,
     path: input.path,
@@ -155,7 +165,13 @@ export function inspectRunJSSourceWorkspace(input: InspectRunJSSourceWorkspaceIn
   const sourceFiles = collectSourceFiles(input.files);
   const entryPath = normalizePath(input.entry);
   const allowedGlobals = resolveAllowedGlobals(input);
-  const diagnostics = collectTypeScriptDiagnostics(sourceFiles, allowedGlobals, input.legacy?.metadata?.modelUse);
+  const diagnostics = collectTypeScriptDiagnostics(
+    sourceFiles,
+    allowedGlobals,
+    input.legacy?.metadata?.modelUse,
+    input.typeLibraryRegistry,
+    input.typeLibraryIds,
+  );
   const entry = sourceFiles.get(entryPath);
 
   if (entry) {
@@ -208,6 +224,8 @@ function collectTypeScriptDiagnostics(
   files: Map<string, string>,
   allowedGlobals: Set<string>,
   modelUse: unknown,
+  typeLibraryRegistry?: NodeRunJSTypeLibraryRegistry,
+  typeLibraryIds: readonly string[] = [],
 ): RunJSCompileDiagnostic[] {
   if (!files.size) {
     return [];
@@ -235,10 +253,12 @@ function collectTypeScriptDiagnostics(
   );
   rootNames.add(RUNJS_TYPESCRIPT_CONTEXT_PATH);
 
+  const registry = typeLibraryRegistry || getDefaultNodeRunJSTypeLibraryRegistry();
   const usageRequests = collectRunJSTypeLibraryUsage(ts, {
     files: Array.from(files, ([path, content]) => ({ path, content })),
+    libraries: registry.getUsageDefinitions(),
   });
-  const typeLibraryFiles = loadNodeRunJSTypeLibraryFiles(usageRequests);
+  const typeLibraryFiles = loadNodeRunJSTypeLibraryFiles(usageRequests, { registry, typeLibraryIds });
   for (const file of typeLibraryFiles.rootFiles) {
     virtualFiles.set(file.path, file.content);
     rootNames.add(file.path);

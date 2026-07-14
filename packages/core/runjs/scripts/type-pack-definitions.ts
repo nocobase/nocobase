@@ -10,6 +10,14 @@
 import type { RunJSTypeLibraryPackDefinition } from '../src/type-packs/generator';
 import { RUNJS_LODASH_TYPE_LIBRARY_PACK_DEFINITION } from '../src/lodash-type-library';
 import { RUNJS_DAYJS_TYPE_LIBRARY_PACK_DEFINITION } from '../src/type-packs/dayjs';
+import { RUNJS_FORMULAJS_TYPE_LIBRARY_PACK_DEFINITION } from '../src/type-packs/formulajs';
+import { RUNJS_MATHJS_TYPE_LIBRARY_PACK_DEFINITION } from '../src/type-packs/mathjs';
+import {
+  generatedRunJSAntdCompletionCatalog,
+  generatedRunJSAntdIconsCompletionCatalog,
+} from '../src/completion-catalog/generated';
+import { createRunJSAntdIconsTypeLibraryPackDefinitions } from '../src/type-packs/antd-icons';
+import { createRunJSAntdTypeLibraryPackDefinitions } from '../src/type-packs/antd';
 import {
   RUNJS_TYPESCRIPT_REACT_BRIDGE_DECLARATION,
   RUNJS_TYPESCRIPT_REACT_BRIDGE_PATH,
@@ -45,11 +53,8 @@ export const runJSTypeLibraryPackDefinitions: readonly RunJSTypeLibraryPackDefin
   },
   RUNJS_DAYJS_TYPE_LIBRARY_PACK_DEFINITION,
   RUNJS_LODASH_TYPE_LIBRARY_PACK_DEFINITION,
-  {
-    id: 'antd/Button',
-    libraryName: 'antd',
-    entry: 'antd/es/button',
-    dependencies: ['react'],
-    triggers: ['antd/Button'],
-  },
+  RUNJS_MATHJS_TYPE_LIBRARY_PACK_DEFINITION,
+  RUNJS_FORMULAJS_TYPE_LIBRARY_PACK_DEFINITION,
+  ...createRunJSAntdTypeLibraryPackDefinitions(generatedRunJSAntdCompletionCatalog),
+  ...createRunJSAntdIconsTypeLibraryPackDefinitions(generatedRunJSAntdIconsCompletionCatalog),
 ];
