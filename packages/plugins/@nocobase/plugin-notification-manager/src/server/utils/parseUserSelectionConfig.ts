@@ -11,18 +11,18 @@ import { Repository } from '@nocobase/database';
 export async function parseUserSelectionConfig(
   userSelectionConfig: Array<Record<any, any> | number | string>,
   UserRepo: Repository,
-) {
+): Promise<string[]> {
   const SelectionConfigs = userSelectionConfig.flat().filter(Boolean);
-  const users = new Set<number | string>();
+  const users = new Set<string>();
   for (const item of SelectionConfigs) {
     if (typeof item === 'object') {
       const result = await UserRepo.find({
         ...item,
         fields: ['id'],
       });
-      result.forEach((item) => users.add(item.id));
+      result.forEach((item) => users.add(String(item.id)));
     } else {
-      users.add(item);
+      users.add(String(item));
     }
   }
 
