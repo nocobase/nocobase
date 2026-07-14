@@ -115,109 +115,6 @@ describe('PluginFlowEngineServer flow surface auto snapshots', () => {
     return snapshot;
   }
 
-  function createGanttSnapshot(sourceHash: string) {
-    const ganttAllowedActionModelUses = [
-      'GanttExpandCollapseActionModel',
-      'GanttTodayActionModel',
-      'FilterActionModel',
-      'RefreshActionModel',
-      'BulkDeleteActionModel',
-      'AddNewActionModel',
-      'PopupCollectionActionModel',
-    ];
-    return buildFlowSurfaceAutoSnapshot({
-      plugin: '@nocobase/plugin-gantt',
-      generatedAt: FLOW_SURFACE_PLUGIN_TEST_DATE,
-      sourceHash,
-      extractorVersion: 'test',
-      events: [
-        {
-          type: 'model.registered',
-          modelUse: 'GanttBlockModel',
-          className: 'GanttBlockModel',
-          source: 'packages/plugins/@nocobase/plugin-gantt/src/client-v2/plugin.tsx',
-          evidenceSource: 'runtime',
-          confidence: 'high',
-        },
-        {
-          type: 'menu.itemRegistered',
-          menuKey: 'gantt',
-          label: 'Gantt',
-          modelUse: 'GanttBlockModel',
-          slot: 'blocks',
-          createModelOptionsStatus: 'static',
-          createModelOptionsUse: 'GanttBlockModel',
-          createModelOptionsSubModels: {
-            actions: [],
-            columns: ['TableActionsColumnModel'],
-          },
-          source: 'packages/plugins/@nocobase/plugin-gantt/src/client-v2/models/GanttBlockModel.tsx',
-          evidenceSource: 'ast',
-          confidence: 'medium',
-        },
-        {
-          type: 'model.registered',
-          modelUse: 'GanttCollectionActionGroupModel',
-          className: 'GanttCollectionActionGroupModel',
-          source: 'packages/plugins/@nocobase/plugin-gantt/src/client-v2/models/actions/GanttActionModels.tsx',
-          evidenceSource: 'ast',
-          confidence: 'medium',
-        },
-        {
-          type: 'model.loaderRegistered',
-          modelUse: 'GanttEventViewActionModel',
-          loaderName: 'GanttEventViewActionModel',
-          source: 'packages/plugins/@nocobase/plugin-gantt/src/client-v2/plugin.tsx',
-          evidenceSource: 'ast',
-          confidence: 'medium',
-        },
-        ...ganttAllowedActionModelUses.map((actionModelUse, index) => ({
-          type: 'menu.itemRegistered' as const,
-          menuKey: `allowed-action-${String(index).padStart(2, '0')}`,
-          modelUse: actionModelUse,
-          slot: 'actions',
-          createModelOptionsStatus: 'static' as const,
-          createModelOptionsUse: actionModelUse,
-          source: 'packages/plugins/@nocobase/plugin-gantt/src/client-v2/models/actions/GanttActionModels.tsx',
-          evidenceSource: 'ast' as const,
-          confidence: 'medium' as const,
-        })),
-        {
-          type: 'model.flowRegistered',
-          modelUse: 'GanttBlockModel',
-          flowKey: 'ganttSettings',
-          title: 'Gantt settings',
-          staticStatus: 'static',
-          source: 'packages/plugins/@nocobase/plugin-gantt/src/client-v2/models/GanttBlockModel.settings.tsx',
-          evidenceSource: 'ast',
-          confidence: 'medium',
-        },
-      ],
-    });
-  }
-
-  function getGanttInferredCapability(snapshot: FlowSurfaceAutoSnapshot) {
-    return snapshot.inferredAuthoring?.capabilities.find((capability) => capability.publicType === 'gantt');
-  }
-
-  function getGanttCreateActionUses(snapshot: FlowSurfaceAutoSnapshot) {
-    const actions = getGanttInferredCapability(snapshot)?.createRecipe?.nodeTemplate?.subModels?.actions;
-    return Array.isArray(actions) ? actions.map((action) => String(action?.use || '')) : [];
-  }
-
-  function swapGanttCreateActions(snapshot: FlowSurfaceAutoSnapshot, leftUse: string, rightUse: string) {
-    const actions = getGanttInferredCapability(snapshot)?.createRecipe?.nodeTemplate?.subModels?.actions;
-    if (!Array.isArray(actions)) {
-      throw new Error('Gantt snapshot is missing inferred create action nodes');
-    }
-    const leftIndex = actions.findIndex((action) => action?.use === leftUse);
-    const rightIndex = actions.findIndex((action) => action?.use === rightUse);
-    if (leftIndex < 0 || rightIndex < 0) {
-      throw new Error('Gantt snapshot is missing inferred create action nodes to swap');
-    }
-    [actions[leftIndex], actions[rightIndex]] = [actions[rightIndex], actions[leftIndex]];
-  }
-
   it('should keep loaded storage snapshots until a new plugin instance starts', async () => {
     const tempRoot = await realpath(tmpdir());
     const outDir = await mkdtemp(join(tempRoot, 'flow-surfaces-plugin-cache-'));
@@ -527,49 +424,18 @@ describe('PluginFlowEngineServer flow surface auto snapshots', () => {
     const tempRoot = await realpath(tmpdir());
     const outDir = await mkdtemp(join(tempRoot, 'flow-surfaces-current-inference-'));
     try {
-      const staleSnapshot = createGanttSnapshot('stale-gantt-source-hash');
-      swapGanttCreateActions(staleSnapshot, 'BulkDeleteActionModel', 'AddNewActionModel');
-      const staleCapability = getGanttInferredCapability(staleSnapshot);
-      const staleEventPopupHost = staleCapability?.popupHosts?.find(
-        (popupHost) => popupHost.key === 'gantt.eventViewPopup',
-      );
-      if (!staleEventPopupHost) {
-        throw new Error('Gantt snapshot is missing event view popup host');
-      }
-      delete staleEventPopupHost.parentOpenViewMirrorPaths;
-      expect(getGanttCreateActionUses(staleSnapshot)).toEqual([
-        'FilterActionModel',
-        'GanttTodayActionModel',
-        'RefreshActionModel',
-        'AddNewActionModel',
-        'BulkDeleteActionModel',
-      ]);
-      expect(staleEventPopupHost.parentOpenViewMirrorPaths).toBeUndefined();
-
+      const snapshot = createInferredAuthoringSnapshot('@nocobase/plugin-cache-test', 'source-hash', {
+        currentContract: true,
+      });
       await writeFlowSurfaceAutoSnapshot({
-        snapshot: staleSnapshot,
+        snapshot,
         outDir,
-        fileName: getFlowSurfaceAutoSnapshotFileName(staleSnapshot.plugin),
-      });
-      const plugin = new TestPluginFlowEngineServer({
-        flowSurfaceCapabilities: {
-          extractorSnapshotDir: outDir,
-        },
+        fileName: getFlowSurfaceAutoSnapshotFileName(snapshot.plugin),
       });
 
-      const [loadedSnapshot] = await plugin.loadSnapshotsForTest(outDir);
-      expect(getGanttCreateActionUses(loadedSnapshot)).toEqual([
-        'FilterActionModel',
-        'GanttTodayActionModel',
-        'RefreshActionModel',
-        'AddNewActionModel',
-        'BulkDeleteActionModel',
-      ]);
-      expect(
-        getGanttInferredCapability(loadedSnapshot)?.popupHosts?.find(
-          (popupHost) => popupHost.key === 'gantt.eventViewPopup',
-        )?.parentOpenViewMirrorPaths,
-      ).toBeUndefined();
+      const [loadedSnapshot] = await new TestPluginFlowEngineServer().loadSnapshotsForTest(outDir);
+
+      expect(loadedSnapshot.inferredAuthoring).toEqual(snapshot.inferredAuthoring);
     } finally {
       await rm(outDir, { recursive: true, force: true });
     }

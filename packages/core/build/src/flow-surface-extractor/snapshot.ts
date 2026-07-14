@@ -617,7 +617,8 @@ function isFlowSurfaceAutoModel(value: unknown): value is FlowSurfaceAutoModel {
     isPlainRecord(value) &&
     typeof value.modelUse === 'string' &&
     hasOptionalStringFields(value, ['className', 'loaderName', 'modelBaseClass']) &&
-    (typeof value.actionScope === 'undefined' || ['collection', 'record', 'both'].includes(value.actionScope)) &&
+    (typeof value.actionScope === 'undefined' ||
+      (typeof value.actionScope === 'string' && ['collection', 'record', 'both'].includes(value.actionScope))) &&
     isArrayOf(value.sourceRefs, isFlowSurfaceAutoSourceRef) &&
     isFlowSurfaceCapabilityConfidence(value.confidence)
   );

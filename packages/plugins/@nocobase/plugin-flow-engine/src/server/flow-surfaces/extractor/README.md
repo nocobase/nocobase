@@ -3,8 +3,8 @@
 `@nocobase/build` analyzes plugin client-v2 source while building and writes an auto snapshot for capability discovery.
 Every discovered block also receives a namespaced, create-only `inferredAuthoring` contract. A serializable static
 `createModelOptions` object becomes its node template; otherwise the template is the minimal `{ use }` node. Plugins
-therefore get basic block creation without a server provider, while specialized inferred contracts such as Gantt can
-still provide richer defaults and settings.
+therefore get basic block creation without a server provider, while plugins such as Gantt can own richer defaults and
+settings through a server provider.
 
 ## Contract Boundary
 

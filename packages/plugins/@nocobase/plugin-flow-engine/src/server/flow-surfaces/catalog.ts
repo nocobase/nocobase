@@ -540,35 +540,6 @@ const TABLE_SETTINGS_GROUP = {
     'dragSortBy.dragSortBy': STRING_SCHEMA,
   },
 };
-const GANTT_SETTINGS_GROUP = {
-  allowedPaths: [
-    'fields.title',
-    'fields.start',
-    'fields.end',
-    'fields.progress',
-    'fields.color',
-    'fields.range',
-    'processField.progress',
-    'colorField.color',
-    'showTable.showTable',
-    'tableWidth.tableWidth',
-    'enableDragToReschedule.enableDragToReschedule',
-  ],
-  eventBindingSteps: ['fields', 'processField', 'colorField', 'showTable', 'tableWidth', 'enableDragToReschedule'],
-  pathSchemas: {
-    'fields.title': STRING_SCHEMA,
-    'fields.start': STRING_SCHEMA,
-    'fields.end': STRING_SCHEMA,
-    'fields.progress': NULLABLE_STRING_SCHEMA,
-    'fields.color': NULLABLE_STRING_SCHEMA,
-    'fields.range': STRING_SCHEMA,
-    'processField.progress': NULLABLE_STRING_SCHEMA,
-    'colorField.color': NULLABLE_STRING_SCHEMA,
-    'showTable.showTable': BOOLEAN_SCHEMA,
-    'tableWidth.tableWidth': NUMBER_SCHEMA,
-    'enableDragToReschedule.enableDragToReschedule': BOOLEAN_SCHEMA,
-  },
-};
 type FlowSurfaceActionRegistryItem = {
   publicKey: string;
   label: string;
@@ -1025,22 +996,6 @@ TABLE_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
   resourceSettings: RESOURCE_SETTINGS_GROUP,
   tableSettings: TABLE_SETTINGS_GROUP,
   cardSettings: BLOCK_CARD_SETTINGS_GROUP,
-});
-
-const GANTT_BLOCK_CONTRACT = createContract({
-  editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
-  props: ['fieldNames', 'showTable', 'tableWidth', 'enableDragToReschedule', 'treeTable', 'eventPopupSettings'],
-  stepParams: ['resourceSettings', 'ganttSettings', 'tableSettings'],
-  flowRegistry: true,
-  eventCapabilities: {
-    direct: ['beforeRender', 'paginationChange'],
-    object: ['click'],
-  },
-});
-GANTT_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
-  resourceSettings: RESOURCE_SETTINGS_GROUP,
-  ganttSettings: GANTT_SETTINGS_GROUP,
-  tableSettings: TABLE_SETTINGS_GROUP,
 });
 
 const FORM_BLOCK_CONTRACT = createContract({
@@ -2791,7 +2746,6 @@ const NODE_CONTRACT_ENTRIES: Array<[string, FlowSurfaceNodeContract]> = [
   ['ApprovalBlockGridModel', GRID_NODE_CONTRACT],
   ['TableBlockModel', TABLE_BLOCK_CONTRACT],
   ['TableSelectModel', TABLE_BLOCK_CONTRACT],
-  ['GanttBlockModel', GANTT_BLOCK_CONTRACT],
   ['CalendarBlockModel', CALENDAR_BLOCK_CONTRACT],
   ['TreeBlockModel', TREE_BLOCK_CONTRACT],
   ['KanbanBlockModel', KANBAN_BLOCK_CONTRACT],

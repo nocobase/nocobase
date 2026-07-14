@@ -441,25 +441,8 @@ export type FlowSurfaceCapabilityDiagnosticsCapabilityRef = {
   message?: string;
 };
 
-export type FlowSurfaceCapabilityDiagnosticsAdmissionRecord = {
-  reportPlugin: string;
-  reportGeneratedAt: string;
-  capabilityId: string;
-  kind: FlowSurfaceCapabilityKind;
-  publicType: string;
-  ownerPlugin: string;
-  readiness: FlowSurfaceCapabilityReadiness;
-  updatedAt: string;
-  approvedAt?: string;
-  failedChecks: Array<{
-    key: string;
-    reasonCode?: FlowSurfaceReasonCode;
-    message?: string;
-  }>;
-};
-
 export type FlowSurfaceCapabilityDiagnosticWarning = {
-  source: 'provider' | 'policy' | 'snapshot' | 'admission' | 'manifest';
+  source: 'provider' | 'policy' | 'snapshot' | 'manifest';
   code: string;
   path?: string;
   ownerPlugin?: string;
@@ -475,7 +458,6 @@ export type FlowSurfaceCapabilityDiagnosticsResponse = {
     publicTypeConflicts: FlowSurfaceCapabilityDiagnosticsCapabilityRef[];
     providerErrors: FlowSurfaceCapabilityDiagnosticsCapabilityRef[];
     staleSnapshots: FlowSurfaceCapabilityDiagnosticsCapabilityRef[];
-    admissionRecords: FlowSurfaceCapabilityDiagnosticsAdmissionRecord[];
   };
   meta: {
     version: 1;
@@ -487,7 +469,7 @@ export type FlowSurfaceCapabilityDiagnosticsResponse = {
 };
 
 export type FlowSurfaceDynamicCapabilityCreateValues = {
-  kind?: 'block';
+  kind?: 'block' | 'action' | 'fieldComponent';
   publicType: string;
   ownerPlugin?: string;
   target?: FlowSurfaceWriteTarget;

@@ -9,7 +9,7 @@
 
 import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import type { ResourcerContext } from '@nocobase/resourcer';
-import { Application, getPackageDir } from '@nocobase/server';
+import { getPackageDir } from '@nocobase/server';
 import { parseLiquidContext, transformSQL } from '@nocobase/utils';
 import { join } from 'path';
 import { FlowSurfaceCapabilityProviderRegistry } from './flow-surfaces/capability-provider';
@@ -18,7 +18,6 @@ import { registerFlowSurfacesResource } from './flow-surfaces';
 import { loadFlowSurfaceAutoSnapshotsFromDirectory } from './flow-surfaces/extractor/snapshot';
 import { FLOW_SURFACE_INFERRED_AUTHORING_CONTRACT_VERSION } from './flow-surfaces/extractor/types';
 import type { FlowSurfaceAutoSnapshot } from './flow-surfaces/extractor/types';
-import { registerFlowSurfaceCapabilityAdmissionCommand } from './flow-surfaces/admission-report-cli';
 import type { FlowSurfaceCapabilityDiagnosticWarning } from './flow-surfaces/types';
 import PluginUISchemaStorageServer from './server';
 import { JSONValue } from './template/resolver';
@@ -122,10 +121,6 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
   readonly flowSurfaceCapabilityProviders = new FlowSurfaceCapabilityProviderRegistry();
   flowSurfaceAutoSnapshots: readonly FlowSurfaceAutoSnapshot[] = [];
   flowSurfaceAutoSnapshotLoadWarnings: readonly FlowSurfaceCapabilityDiagnosticWarning[] = [];
-
-  static async staticImport() {
-    Application.addCommand(registerFlowSurfaceCapabilityAdmissionCommand);
-  }
 
   async afterAdd() {}
 

@@ -12,17 +12,12 @@ import { normalizeFlowSurfaceCapabilityManifestItem } from './capability-manifes
 import { resolveFlowSurfaceCapabilityReadiness } from './capability-readiness';
 import { callFlowSurfaceProvider } from './capability-provider-executor';
 import { assertJsonInferredPopupHostContractSupported } from './json-inferred-popup-host';
-import { resolveFlowSurfaceCapabilityAdmissionRuntimeEvidence } from './admission-report';
 import {
   applyFlowSurfaceCapabilityWritePolicy,
-  normalizeFlowSurfaceCapabilityPolicyConfig,
-  resolveFlowSurfaceVerifiedAutoAdmissionDecision,
   type FlowSurfaceCapabilityPolicyConfig,
   type NormalizedFlowSurfaceCapabilityPolicyConfig,
-  type FlowSurfaceVerifiedAutoAdmissionDecision,
 } from './capability-policy';
 import { deriveFlowSurfaceAutoCapabilityCandidates } from './extractor/snapshot';
-import type { FlowSurfaceCapabilityAdmissionIntegrity, FlowSurfaceCapabilityAdmissionReport } from './admission-report';
 import type { NormalizedFlowSurfaceProviderCapability } from './capability-manifest';
 import type { FlowSurfaceCapabilityProviderRegistry } from './capability-provider';
 import {
@@ -84,11 +79,6 @@ const INTERNAL_PUBLIC_PAYLOAD_KEYS = new Set([
   'implementation',
 ]);
 const capabilityModelUses = new WeakMap<FlowSurfacePublicCapabilityItem, string[]>();
-const capabilityAdmissionIntegrity = new WeakMap<
-  FlowSurfacePublicCapabilityItem,
-  FlowSurfaceCapabilityAdmissionIntegrity
->();
-const capabilityAdmissionCapabilityIds = new WeakMap<FlowSurfacePublicCapabilityItem, string>();
 const capabilityInferredAuthoring = new WeakMap<
   FlowSurfacePublicCapabilityItem,
   FlowSurfaceAutoInferredAuthoringCapability
@@ -107,11 +97,6 @@ type FlowSurfaceProviderRegistryProjectionOptions = {
 type FlowSurfaceAutoSnapshotProjectionOptions = {
   autoSnapshots?: readonly FlowSurfaceAutoSnapshot[];
   enabledPackages: ReadonlySet<string>;
-};
-
-type FlowSurfaceVerifiedAutoCatalogProjectionOptions = FlowSurfaceAutoSnapshotProjectionOptions & {
-  admissionReports?: readonly FlowSurfaceCapabilityAdmissionReport[];
-  capabilityPolicyConfig?: FlowSurfaceCapabilityPolicyConfig | NormalizedFlowSurfaceCapabilityPolicyConfig | null;
 };
 
 type FlowSurfaceJsonInferredAutoCatalogProjectionOptions = FlowSurfaceAutoSnapshotProjectionOptions & {
@@ -163,36 +148,6 @@ export function setFlowSurfaceCatalogCapabilityModelUse<T extends FlowSurfaceCat
 
 export function getFlowSurfaceCatalogCapabilityModelUses(item: FlowSurfaceCatalogItem) {
   return catalogItemCapabilityModelUses.get(item) || [];
-}
-
-export function setFlowSurfacePublicCapabilityAdmissionIntegrity<T extends FlowSurfacePublicCapabilityItem>(
-  item: T,
-  integrity?: FlowSurfaceCapabilityAdmissionIntegrity,
-): T {
-  const normalized = normalizeFlowSurfaceCapabilityAdmissionIntegrity(integrity);
-  if (normalized) {
-    capabilityAdmissionIntegrity.set(item, normalized);
-  }
-  return item;
-}
-
-export function getFlowSurfacePublicCapabilityAdmissionIntegrity(item: FlowSurfacePublicCapabilityItem) {
-  return capabilityAdmissionIntegrity.get(item);
-}
-
-export function setFlowSurfacePublicCapabilityAdmissionCapabilityId<T extends FlowSurfacePublicCapabilityItem>(
-  item: T,
-  capabilityId?: string,
-): T {
-  const normalized = normalizeString(capabilityId);
-  if (normalized) {
-    capabilityAdmissionCapabilityIds.set(item, normalized);
-  }
-  return item;
-}
-
-export function getFlowSurfacePublicCapabilityAdmissionCapabilityId(item: FlowSurfacePublicCapabilityItem) {
-  return capabilityAdmissionCapabilityIds.get(item);
 }
 
 export function setFlowSurfacePublicCapabilityInferredAuthoring<T extends FlowSurfacePublicCapabilityItem>(
@@ -255,42 +210,36 @@ function collectRawAutoSnapshotPublicCapabilities(snapshot: FlowSurfaceAutoSnaps
       const availability = buildReadOnlyAutoSnapshotAvailability(hasSnapshotStaleWarning(publicWarnings));
       const supportLevel = 'readback-only' as const;
       const capabilityId = [ownerPlugin, 'autoSnapshot', candidate.kind, publicType].join(':');
-      return setFlowSurfacePublicCapabilityAdmissionIntegrity(
-        setFlowSurfacePublicCapabilityAdmissionCapabilityId(
-          setFlowSurfacePublicCapabilityModelUse(
-            {
-              kind: candidate.kind,
-              publicType,
-              publicTypeMeta: {
-                value: publicType,
-                source: 'autoNamespaced',
-                searchAliases,
-              },
-              label,
-              ownerPlugin,
-              origin: AUTO_SNAPSHOT_ORIGIN,
-              semantic: {
-                title: label,
-                aliases: semanticAliases,
-              },
-              availability,
-              supportLevel,
-              confidence: candidate.confidence,
-              readiness: resolveFlowSurfaceCapabilityReadiness({
-                origin: AUTO_SNAPSHOT_ORIGIN,
-                availability,
-                warnings: publicWarnings,
-              }),
-              warnings: publicWarnings,
-              identity: {
-                capabilityId,
-              },
-            } satisfies FlowSurfacePublicCapabilityItem,
-            candidate.modelUse,
-          ),
-          capabilityId,
-        ),
-        buildAutoSnapshotAdmissionIntegrity(snapshot),
+      return setFlowSurfacePublicCapabilityModelUse(
+        {
+          kind: candidate.kind,
+          publicType,
+          publicTypeMeta: {
+            value: publicType,
+            source: 'autoNamespaced',
+            searchAliases,
+          },
+          label,
+          ownerPlugin,
+          origin: AUTO_SNAPSHOT_ORIGIN,
+          semantic: {
+            title: label,
+            aliases: semanticAliases,
+          },
+          availability,
+          supportLevel,
+          confidence: candidate.confidence,
+          readiness: resolveFlowSurfaceCapabilityReadiness({
+            origin: AUTO_SNAPSHOT_ORIGIN,
+            availability,
+            warnings: publicWarnings,
+          }),
+          warnings: publicWarnings,
+          identity: {
+            capabilityId,
+          },
+        } satisfies FlowSurfacePublicCapabilityItem,
+        candidate.modelUse,
       );
     })
     .filter((item): item is FlowSurfacePublicCapabilityItem => !!item);
@@ -354,47 +303,41 @@ function toInferredAuthoringPublicCapability(
   const supportLevel = resolveSupportLevel(availability);
   const capabilityId = [ownerPlugin, 'autoSnapshot', capability.kind, publicType].join(':');
   return setFlowSurfacePublicCapabilityInferredAuthoring(
-    setFlowSurfacePublicCapabilityAdmissionIntegrity(
-      setFlowSurfacePublicCapabilityAdmissionCapabilityId(
-        setFlowSurfacePublicCapabilityModelUse(
-          {
-            kind: capability.kind,
-            publicType,
-            publicTypeMeta: {
-              value: publicType,
-              source: 'autoNamespaced',
-              searchAliases,
-              ...(acceptedAliases.length ? { acceptedAliases } : {}),
-            },
-            label,
-            ownerPlugin,
-            origin: AUTO_SNAPSHOT_ORIGIN,
-            semantic: {
-              title: label,
-              aliases: semanticAliases,
-            },
-            availability,
-            supportLevel,
-            confidence: capability.confidence.write,
-            readiness: resolveFlowSurfaceCapabilityReadiness({
-              origin: AUTO_SNAPSHOT_ORIGIN,
-              availability,
-              warnings: publicWarnings,
-            }),
-            ...(capability.placement ? { placement: capability.placement } : {}),
-            ...(publicWarnings.length ? { warnings: publicWarnings } : {}),
-            identity: {
-              capabilityId,
-            },
-            ...(initParamsSchema ? { initParamsSchema } : {}),
-            ...(settingsSchema ? { settingsSchema } : {}),
-            ...(configureOptions ? { configureOptions } : {}),
-          } satisfies FlowSurfacePublicCapabilityItem,
-          capability.modelUse,
-        ),
-        capabilityId,
-      ),
-      buildAutoSnapshotAdmissionIntegrity(snapshot),
+    setFlowSurfacePublicCapabilityModelUse(
+      {
+        kind: capability.kind,
+        publicType,
+        publicTypeMeta: {
+          value: publicType,
+          source: 'autoNamespaced',
+          searchAliases,
+          ...(acceptedAliases.length ? { acceptedAliases } : {}),
+        },
+        label,
+        ownerPlugin,
+        origin: AUTO_SNAPSHOT_ORIGIN,
+        semantic: {
+          title: label,
+          aliases: semanticAliases,
+        },
+        availability,
+        supportLevel,
+        confidence: capability.confidence.write,
+        readiness: resolveFlowSurfaceCapabilityReadiness({
+          origin: AUTO_SNAPSHOT_ORIGIN,
+          availability,
+          warnings: publicWarnings,
+        }),
+        ...(capability.placement ? { placement: capability.placement } : {}),
+        ...(publicWarnings.length ? { warnings: publicWarnings } : {}),
+        identity: {
+          capabilityId,
+        },
+        ...(initParamsSchema ? { initParamsSchema } : {}),
+        ...(settingsSchema ? { settingsSchema } : {}),
+        ...(configureOptions ? { configureOptions } : {}),
+      } satisfies FlowSurfacePublicCapabilityItem,
+      capability.modelUse,
     ),
     capability,
   );
@@ -471,30 +414,6 @@ function buildInferredAuthoringAvailability(input: {
   };
 }
 
-export function collectVerifiedAutoSnapshotCatalogItems(
-  options: FlowSurfaceVerifiedAutoCatalogProjectionOptions,
-): FlowSurfaceCatalogItem[] {
-  const capabilityPolicyConfig = normalizeFlowSurfaceCapabilityPolicyConfig(options.capabilityPolicyConfig);
-  if (
-    capabilityPolicyConfig.writePolicy.mode !== 'verifiedAuto' ||
-    !hasStrictVerifiedAutoCatalogAllowlists(capabilityPolicyConfig) ||
-    !options.admissionReports?.length
-  ) {
-    return [];
-  }
-  return collectAutoSnapshotPublicCapabilities(options)
-    .map((item) => applyFlowSurfaceCapabilityWritePolicy(item, capabilityPolicyConfig))
-    .map((item) =>
-      applyVerifiedAutoAdmissionCatalogProjection(item, {
-        capabilityPolicyConfig,
-        admissionReports: options.admissionReports,
-      }),
-    )
-    .filter((item): item is FlowSurfacePublicCapabilityItem => !!item && item.kind === 'block')
-    .filter((item) => item.availability.create.supported)
-    .map((item) => toVerifiedAutoSnapshotCatalogItem(item));
-}
-
 export function collectJsonInferredAutoSnapshotCatalogItems(
   options: FlowSurfaceJsonInferredAutoCatalogProjectionOptions,
 ): FlowSurfaceCatalogItem[] {
@@ -505,11 +424,7 @@ export function collectJsonInferredAutoSnapshotCatalogItems(
     .filter((item) => !!getFlowSurfacePublicCapabilityInferredAuthoring(item))
     .filter((item) => (options.placementFilter ? options.placementFilter(item) : true))
     .filter((item) => item.availability.create.supported)
-    .map((item) => toVerifiedAutoSnapshotCatalogItem(item));
-}
-
-function hasStrictVerifiedAutoCatalogAllowlists(config: NormalizedFlowSurfaceCapabilityPolicyConfig) {
-  return !!config.writePolicy.allowedOwners?.length && !!config.writePolicy.allowedPublicTypes?.length;
+    .map((item) => toAutoSnapshotCatalogItem(item));
 }
 
 export async function collectProviderCatalogItems(
@@ -564,86 +479,7 @@ export async function collectNormalizedProviderCapabilities(
   return results;
 }
 
-function applyVerifiedAutoAdmissionCatalogProjection(
-  item: FlowSurfacePublicCapabilityItem,
-  options: {
-    capabilityPolicyConfig: NormalizedFlowSurfaceCapabilityPolicyConfig;
-    admissionReports?: readonly FlowSurfaceCapabilityAdmissionReport[];
-  },
-): FlowSurfacePublicCapabilityItem | null {
-  if (item.origin !== 'autoSnapshot') {
-    return null;
-  }
-  const capabilityId = getFlowSurfacePublicCapabilityAdmissionCapabilityId(item);
-  const evidence = resolveFlowSurfaceCapabilityAdmissionRuntimeEvidence({
-    reports: options.admissionReports || [],
-    capability: {
-      kind: item.kind,
-      publicType: item.publicType,
-      ownerPlugin: item.ownerPlugin,
-      ...(capabilityId ? { capabilityId } : {}),
-    },
-    expectedIntegrity: getFlowSurfacePublicCapabilityAdmissionIntegrity(item),
-  });
-  const decision = resolveFlowSurfaceVerifiedAutoAdmissionDecision({
-    item,
-    config: options.capabilityPolicyConfig,
-    admissionEvidence: evidence,
-  });
-  if (!decision.ok) {
-    return null;
-  }
-  return enableVerifiedAutoCatalogCreate(item, decision);
-}
-
-function enableVerifiedAutoCatalogCreate(
-  item: FlowSurfacePublicCapabilityItem,
-  decision: FlowSurfaceVerifiedAutoAdmissionDecision,
-): FlowSurfacePublicCapabilityItem {
-  const availability: FlowSurfaceCapabilityAvailability = {
-    ...item.availability,
-    create: {
-      supported: true,
-      ...(typeof item.availability.create.acceptsInitParams === 'boolean'
-        ? { acceptsInitParams: item.availability.create.acceptsInitParams }
-        : {}),
-      ...(typeof item.availability.create.acceptsSettings === 'boolean'
-        ? { acceptsSettings: item.availability.create.acceptsSettings }
-        : {}),
-    },
-  };
-  const warnings = (item.warnings || []).filter((warning) => warning.code !== 'auto-discovered-readonly');
-  const projected: FlowSurfacePublicCapabilityItem = {
-    ...item,
-    availability,
-    supportLevel: resolveSupportLevel(availability),
-    readiness: decision.readiness,
-  };
-  if (warnings.length) {
-    projected.warnings = warnings;
-  } else {
-    delete projected.warnings;
-  }
-  return copyAutoCapabilityProjectionMetadata(projected, item);
-}
-
-function copyAutoCapabilityProjectionMetadata(
-  target: FlowSurfacePublicCapabilityItem,
-  source: FlowSurfacePublicCapabilityItem,
-) {
-  return setFlowSurfacePublicCapabilityInferredAuthoring(
-    setFlowSurfacePublicCapabilityAdmissionIntegrity(
-      setFlowSurfacePublicCapabilityAdmissionCapabilityId(
-        setFlowSurfacePublicCapabilityModelUse(target, getFlowSurfacePublicCapabilityModelUses(source)),
-        getFlowSurfacePublicCapabilityAdmissionCapabilityId(source),
-      ),
-      getFlowSurfacePublicCapabilityAdmissionIntegrity(source),
-    ),
-    getFlowSurfacePublicCapabilityInferredAuthoring(source),
-  );
-}
-
-function toVerifiedAutoSnapshotCatalogItem(item: FlowSurfacePublicCapabilityItem): FlowSurfaceCatalogItem {
+function toAutoSnapshotCatalogItem(item: FlowSurfacePublicCapabilityItem): FlowSurfaceCatalogItem {
   return setFlowSurfaceCatalogCapabilityModelUse(
     {
       key: item.publicType,
@@ -697,7 +533,7 @@ async function collectOneProviderCapabilities(
     const normalized = normalizeFlowSurfaceCapabilityManifestItem({
       item,
       ownerPlugin,
-      source: ownerPlugin === '@nocobase/plugin-gantt' ? 'canaryOverlay' : 'provider',
+      source: 'provider',
       provider,
     });
     if (!normalized) {
@@ -762,21 +598,6 @@ function buildReadOnlyAutoSnapshotAvailability(stale: boolean): FlowSurfaceCapab
   };
 }
 
-function buildAutoSnapshotAdmissionIntegrity(
-  snapshot: FlowSurfaceAutoSnapshot,
-): FlowSurfaceCapabilityAdmissionIntegrity | undefined {
-  const integrity: FlowSurfaceCapabilityAdmissionIntegrity = {};
-  const capabilityVersion = normalizeString(snapshot.pluginVersion);
-  const snapshotHash = buildAutoSnapshotAdmissionSnapshotHash(snapshot);
-  if (capabilityVersion) {
-    integrity.capabilityVersion = capabilityVersion;
-  }
-  if (snapshotHash) {
-    integrity.snapshotHash = snapshotHash;
-  }
-  return Object.keys(integrity).length ? integrity : undefined;
-}
-
 function buildAutoSnapshotVersionWarnings(snapshot: FlowSurfaceAutoSnapshot): FlowSurfaceCapabilityWarning[] {
   const warnings: FlowSurfaceCapabilityWarning[] = [];
   if (snapshot.version !== FLOW_SURFACE_AUTO_SNAPSHOT_VERSION) {
@@ -799,40 +620,6 @@ function isInferredAuthoringContractStale(snapshot: FlowSurfaceAutoSnapshot) {
     return false;
   }
   return snapshot.inferredAuthoring.contractVersion !== FLOW_SURFACE_INFERRED_AUTHORING_CONTRACT_VERSION;
-}
-
-function buildAutoSnapshotAdmissionSnapshotHash(snapshot: FlowSurfaceAutoSnapshot) {
-  const sourceHash = normalizeString(snapshot.sourceHash);
-  if (!sourceHash) {
-    return undefined;
-  }
-  return `v${snapshot.version}:${sourceHash}`;
-}
-
-function normalizeFlowSurfaceCapabilityAdmissionIntegrity(
-  integrity?: FlowSurfaceCapabilityAdmissionIntegrity,
-): FlowSurfaceCapabilityAdmissionIntegrity | undefined {
-  if (!integrity) {
-    return undefined;
-  }
-  const normalized: FlowSurfaceCapabilityAdmissionIntegrity = {};
-  const capabilityVersion = normalizeString(integrity.capabilityVersion);
-  const manifestHash = normalizeString(integrity.manifestHash);
-  const snapshotHash = normalizeString(integrity.snapshotHash);
-  const dryRunFixtureHash = normalizeString(integrity.dryRunFixtureHash);
-  if (capabilityVersion) {
-    normalized.capabilityVersion = capabilityVersion;
-  }
-  if (manifestHash) {
-    normalized.manifestHash = manifestHash;
-  }
-  if (snapshotHash) {
-    normalized.snapshotHash = snapshotHash;
-  }
-  if (dryRunFixtureHash) {
-    normalized.dryRunFixtureHash = dryRunFixtureHash;
-  }
-  return Object.keys(normalized).length ? normalized : undefined;
 }
 
 function hasSnapshotStaleWarning(warnings: FlowSurfaceCapabilityWarning[]) {

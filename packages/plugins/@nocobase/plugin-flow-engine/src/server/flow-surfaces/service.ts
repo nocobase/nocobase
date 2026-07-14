@@ -39,24 +39,14 @@ import {
   collectJsonInferredAutoSnapshotCatalogItems,
   collectNormalizedProviderCapabilities,
   collectProviderCatalogItems,
-  collectVerifiedAutoSnapshotCatalogItems,
   filterProviderCatalogItemsForCatalog,
   getFlowSurfaceCatalogCapabilityModelUses,
-  getFlowSurfacePublicCapabilityAdmissionIntegrity,
   getFlowSurfacePublicCapabilityInferredAuthoring,
   getFlowSurfacePublicCapabilityModelUses,
   setFlowSurfaceCatalogCapabilityModelUse,
   type FlowSurfaceCapabilityRegistryLike,
   type FlowSurfaceCollectedProviderCapability,
 } from './capability-registry';
-import {
-  getFlowSurfaceCapabilityAdmissionReportStorageDir,
-  loadFlowSurfaceCapabilityAdmissionReportsFromDirectory,
-  validateFlowSurfaceCapabilityAdmissionRuntimeEvidence,
-  type FlowSurfaceCapabilityAdmissionIntegrity,
-  type FlowSurfaceCapabilityAdmissionReport,
-  type FlowSurfaceCapabilityAdmissionRecord,
-} from './admission-report';
 import { assertRequestedActionScope, getActionContainerScope, normalizeActionScope } from './action-scope';
 import {
   assignClientKeysToUids,
@@ -489,7 +479,6 @@ import type {
   FlowSurfaceActionScope,
   FlowSurfaceCapabilityAvailability,
   FlowSurfaceCapabilityDiagnosticWarning,
-  FlowSurfaceCapabilityDiagnosticsAdmissionRecord,
   FlowSurfaceCapabilityDiagnosticsCapabilityRef,
   FlowSurfaceCapabilityDiagnosticsResponse,
   FlowSurfaceCapabilityDiagnosticsValues,
@@ -1401,7 +1390,6 @@ type FlowSurfaceCapabilityDiagnosticsOptions = {
   transaction?: unknown;
   enabledPackages?: ReadonlySet<string>;
   currentRoles?: FlowSurfaceRequestRoles;
-  admissionReports?: readonly FlowSurfaceCapabilityAdmissionReport[];
 };
 
 type FlowSurfaceCapabilityProviderWarningSource = {
@@ -1516,7 +1504,6 @@ function collectFlowSurfaceCapabilityDiagnosticWarnings(input: {
   providerRegistry?: FlowSurfaceCapabilityProviderWarningSource;
   policyConfig?: ReturnType<typeof readFlowSurfaceCapabilityPolicyConfigFromPluginOptions>;
   snapshotWarnings?: readonly FlowSurfaceCapabilityDiagnosticWarning[];
-  admissionWarnings?: readonly FlowSurfaceCapabilityDiagnosticWarning[];
   filters: { ownerPlugin?: string; publicType?: string };
 }): FlowSurfaceCapabilityDiagnosticsResponse['data']['warnings'] {
   const providerWarnings: FlowSurfaceCapabilityDiagnosticWarning[] = (input.providerRegistry?.listWarnings?.() || [])
@@ -1535,164 +1522,7 @@ function collectFlowSurfaceCapabilityDiagnosticWarnings(input: {
       message: warning.message,
     }),
   );
-  return [
-    ...providerWarnings,
-    ...policyWarnings,
-    ...(input.snapshotWarnings || []),
-    ...(input.admissionWarnings || []),
-  ];
-}
-
-function buildFlowSurfaceAdmissionDiagnostics(
-  reports: readonly FlowSurfaceCapabilityAdmissionReport[],
-  filters: { ownerPlugin?: string; publicType?: string },
-  capabilities: readonly FlowSurfacePublicCapabilityItem[],
-): FlowSurfaceCapabilityDiagnosticsAdmissionRecord[] {
-  const expectedIntegrityLookup = buildFlowSurfaceAdmissionDiagnosticsIntegrityLookup(capabilities);
-  return reports
-    .flatMap((report) =>
-      report.records
-        .filter((record) => matchesFlowSurfaceDiagnosticsFilters(filters, record))
-        .map((record) =>
-          toFlowSurfaceAdmissionDiagnosticsRecord(
-            report,
-            record,
-            resolveFlowSurfaceAdmissionDiagnosticsExpectedIntegrity(record, expectedIntegrityLookup),
-          ),
-        ),
-    )
-    .sort((left, right) =>
-      [left.kind, left.ownerPlugin, left.publicType, left.capabilityId]
-        .join(':')
-        .localeCompare([right.kind, right.ownerPlugin, right.publicType, right.capabilityId].join(':')),
-    );
-}
-
-function toFlowSurfaceAdmissionDiagnosticsRecord(
-  report: FlowSurfaceCapabilityAdmissionReport,
-  record: FlowSurfaceCapabilityAdmissionRecord,
-  expectedIntegrity?: FlowSurfaceCapabilityAdmissionIntegrity,
-): FlowSurfaceCapabilityDiagnosticsAdmissionRecord {
-  const reportOwnershipFailures = getFlowSurfaceAdmissionDiagnosticsReportOwnershipFailures(report, record);
-  const runtimeValidation =
-    record.readiness === 'createEnabled'
-      ? validateFlowSurfaceCapabilityAdmissionRuntimeEvidence({ record, expectedIntegrity })
-      : undefined;
-  const failedChecks = [
-    ...reportOwnershipFailures,
-    ...(runtimeValidation?.failedChecks || getFlowSurfaceAdmissionDiagnosticsFailedChecks(record)),
-  ];
-  return {
-    reportPlugin: report.plugin,
-    reportGeneratedAt: report.generatedAt,
-    capabilityId: record.capabilityId,
-    kind: record.kind,
-    publicType: record.publicType,
-    ownerPlugin: record.ownerPlugin,
-    readiness: reportOwnershipFailures.length ? 'blocked' : runtimeValidation?.readiness || record.readiness,
-    updatedAt: record.updatedAt,
-    ...(record.approvedAt ? { approvedAt: record.approvedAt } : {}),
-    failedChecks,
-  };
-}
-
-function getFlowSurfaceAdmissionDiagnosticsReportOwnershipFailures(
-  report: FlowSurfaceCapabilityAdmissionReport,
-  record: FlowSurfaceCapabilityAdmissionRecord,
-): FlowSurfaceCapabilityDiagnosticsAdmissionRecord['failedChecks'] {
-  if (record.readiness !== 'createEnabled' || report.plugin === record.ownerPlugin) {
-    return [];
-  }
-  return [
-    {
-      key: 'admissionRecord',
-      reasonCode: 'contract-not-verified',
-      message: 'Admission report plugin must match record ownerPlugin before create-enabled evidence can be trusted.',
-    },
-  ];
-}
-
-function getFlowSurfaceAdmissionDiagnosticsFailedChecks(
-  record: FlowSurfaceCapabilityAdmissionRecord,
-): FlowSurfaceCapabilityDiagnosticsAdmissionRecord['failedChecks'] {
-  return Object.entries(record.checks).flatMap(([key, check]) =>
-    check.ok
-      ? []
-      : [
-          {
-            key,
-            ...(check.reasonCode ? { reasonCode: check.reasonCode } : {}),
-            ...(check.message ? { message: check.message } : {}),
-          },
-        ],
-  );
-}
-
-type FlowSurfaceAdmissionDiagnosticsIntegrityLookup = Map<string, FlowSurfaceCapabilityAdmissionIntegrity>;
-
-function buildFlowSurfaceAdmissionDiagnosticsIntegrityLookup(
-  capabilities: readonly FlowSurfacePublicCapabilityItem[],
-): FlowSurfaceAdmissionDiagnosticsIntegrityLookup {
-  const lookup: FlowSurfaceAdmissionDiagnosticsIntegrityLookup = new Map();
-  for (const item of capabilities) {
-    const integrity = getFlowSurfacePublicCapabilityAdmissionIntegrity(item);
-    if (!integrity) {
-      continue;
-    }
-    const capabilityId = item.identity?.capabilityId;
-    if (capabilityId) {
-      lookup.set(
-        getFlowSurfaceAdmissionDiagnosticsIntegrityLookupKey({
-          kind: item.kind,
-          ownerPlugin: item.ownerPlugin,
-          publicType: item.publicType,
-          capabilityId,
-        }),
-        integrity,
-      );
-    }
-    lookup.set(
-      getFlowSurfaceAdmissionDiagnosticsIntegrityLookupKey({
-        kind: item.kind,
-        ownerPlugin: item.ownerPlugin,
-        publicType: item.publicType,
-      }),
-      integrity,
-    );
-  }
-  return lookup;
-}
-
-function resolveFlowSurfaceAdmissionDiagnosticsExpectedIntegrity(
-  record: FlowSurfaceCapabilityAdmissionRecord,
-  lookup: FlowSurfaceAdmissionDiagnosticsIntegrityLookup,
-) {
-  return (
-    lookup.get(
-      getFlowSurfaceAdmissionDiagnosticsIntegrityLookupKey({
-        kind: record.kind,
-        ownerPlugin: record.ownerPlugin,
-        publicType: record.publicType,
-        capabilityId: record.capabilityId,
-      }),
-    ) ||
-    lookup.get(
-      getFlowSurfaceAdmissionDiagnosticsIntegrityLookupKey({
-        kind: record.kind,
-        ownerPlugin: record.ownerPlugin,
-        publicType: record.publicType,
-      }),
-    )
-  );
-}
-
-function getFlowSurfaceAdmissionDiagnosticsIntegrityLookupKey(input: {
-  kind: string;
-  ownerPlugin: string;
-  publicType: string;
-  capabilityId?: string;
-}) {
-  return [input.kind, input.ownerPlugin, input.publicType, input.capabilityId || ''].join('\u0000');
+  return [...providerWarnings, ...policyWarnings, ...(input.snapshotWarnings || [])];
 }
 
 const MOBILE_UI_LAYOUT_TYPE = 'mobile';
@@ -1747,14 +1577,6 @@ export class FlowSurfacesService {
         }
       ).flowSurfaceAutoSnapshotLoadWarnings || []
     );
-  }
-
-  private get configuredAdmissionReports(): readonly FlowSurfaceCapabilityAdmissionReport[] | undefined {
-    return (
-      this.plugin as Plugin & {
-        flowSurfaceCapabilityAdmissionReports?: readonly FlowSurfaceCapabilityAdmissionReport[];
-      }
-    ).flowSurfaceCapabilityAdmissionReports;
   }
 
   get db() {
@@ -1996,20 +1818,6 @@ export class FlowSurfacesService {
   ): Promise<ReadonlySet<string>> {
     const enabledPackages = options.enabledPackages ?? (await this.loadEnabledPluginPackages(options.transaction));
     return new Set([...CORE_FLOW_SURFACE_CAPABILITY_PACKAGES, ...enabledPackages]);
-  }
-
-  private async loadVerifiedAutoAdmissionReports(
-    capabilityPolicyConfig: ReturnType<typeof readFlowSurfaceCapabilityPolicyConfigFromPluginOptions>,
-  ) {
-    if (capabilityPolicyConfig.writePolicy.mode !== 'verifiedAuto') {
-      return undefined;
-    }
-    if (this.configuredAdmissionReports) {
-      return this.configuredAdmissionReports;
-    }
-    return loadFlowSurfaceCapabilityAdmissionReportsFromDirectory({
-      dir: getFlowSurfaceCapabilityAdmissionReportStorageDir(),
-    });
   }
 
   private allocateRouteSortValue(offset = 0) {
@@ -3159,12 +2967,10 @@ export class FlowSurfacesService {
   ): Promise<FlowSurfaceCapabilitiesResponse> {
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
     const capabilityPolicyConfig = readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.plugin.options);
-    const admissionReports = await this.loadVerifiedAutoAdmissionReports(capabilityPolicyConfig);
     return buildFlowSurfaceCapabilitiesResponse(input, {
       enabledPackages,
       providerRegistry: this.capabilityProviderRegistry,
       autoSnapshots: this.autoSnapshots,
-      admissionReports,
       capabilityPolicyConfig,
       catalog: (values, providerCapabilities) =>
         this.catalog(values, {
@@ -3182,12 +2988,10 @@ export class FlowSurfacesService {
   ): Promise<FlowSurfaceDescribeCapabilityResponse> {
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
     const capabilityPolicyConfig = readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.plugin.options);
-    const admissionReports = await this.loadVerifiedAutoAdmissionReports(capabilityPolicyConfig);
     return buildFlowSurfaceDescribeCapabilityResponse(input, {
       enabledPackages,
       providerRegistry: this.capabilityProviderRegistry,
       autoSnapshots: this.autoSnapshots,
-      admissionReports,
       capabilityPolicyConfig,
       catalog: (values, providerCapabilities) =>
         this.catalog(values, {
@@ -3205,7 +3009,6 @@ export class FlowSurfacesService {
     const auditStartedAt = Date.now();
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
     const capabilityPolicyConfig = readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.plugin.options);
-    const admissionReports = await this.loadVerifiedAutoAdmissionReports(capabilityPolicyConfig);
     const providerCapabilities =
       !input.kind || input.kind === 'block' ? await this.collectDynamicBlockCapabilities(enabledPackages) : [];
     let response: FlowSurfaceDynamicCapabilityCreateResponse;
@@ -3219,7 +3022,6 @@ export class FlowSurfacesService {
         providerCapabilities,
         providerTimeoutMs: capabilityPolicyConfig.providerTimeoutMs,
         autoSnapshots: this.autoSnapshots,
-        admissionReports,
         capabilityPolicyConfig,
         rawPublicPayload: input,
       });
@@ -3287,13 +3089,6 @@ export class FlowSurfacesService {
         enabledPackages,
       },
     );
-    const admissionWarnings: FlowSurfaceCapabilityDiagnosticWarning[] = [];
-    const reports =
-      options.admissionReports ||
-      (await loadFlowSurfaceCapabilityAdmissionReportsFromDirectory({
-        dir: getFlowSurfaceCapabilityAdmissionReportStorageDir(),
-        diagnosticWarnings: admissionWarnings,
-      }));
     const publicTypeConflicts = capabilities.data
       .filter((item) => getFlowSurfaceCapabilityAvailabilityReasonCode(item, 'public-type-conflict'))
       .map((item) =>
@@ -3327,13 +3122,11 @@ export class FlowSurfacesService {
           providerRegistry: this.capabilityProviderRegistry as FlowSurfaceCapabilityProviderWarningSource,
           policyConfig: capabilityPolicyConfig,
           snapshotWarnings: this.autoSnapshotLoadWarnings,
-          admissionWarnings,
           filters: values,
         }),
         publicTypeConflicts,
         providerErrors,
         staleSnapshots,
-        admissionRecords: buildFlowSurfaceAdmissionDiagnostics(reports, values, capabilities.data),
       },
       meta: {
         version: 1,
@@ -3980,10 +3773,6 @@ export class FlowSurfacesService {
           selectedSections: input.selectedSections,
           enabledPackages: input.enabledPackages,
         })),
-        ...(await this.buildVerifiedAutoSnapshotBlockCatalogItems({
-          hasTarget: input.hasTarget,
-          enabledPackages: input.enabledPackages,
-        })),
       ],
     });
   }
@@ -4489,25 +4278,6 @@ export class FlowSurfacesService {
       }
       seen.add(key);
       return true;
-    });
-  }
-
-  private async buildVerifiedAutoSnapshotBlockCatalogItems(input: {
-    hasTarget: boolean;
-    enabledPackages: ReadonlySet<string>;
-  }) {
-    if (!input.hasTarget) {
-      return [];
-    }
-    const capabilityPolicyConfig = readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.plugin.options);
-    if (capabilityPolicyConfig.writePolicy.mode !== 'verifiedAuto') {
-      return [];
-    }
-    return collectVerifiedAutoSnapshotCatalogItems({
-      autoSnapshots: this.autoSnapshots,
-      enabledPackages: input.enabledPackages,
-      admissionReports: await this.loadVerifiedAutoAdmissionReports(capabilityPolicyConfig),
-      capabilityPolicyConfig,
     });
   }
 
@@ -12158,7 +11928,6 @@ export class FlowSurfacesService {
             providerTimeoutMs: capabilityPolicyConfig.providerTimeoutMs,
             providerCapabilities,
             autoSnapshots: this.autoSnapshots,
-            admissionReports: await this.loadVerifiedAutoAdmissionReports(capabilityPolicyConfig),
             capabilityPolicyConfig,
             actionName,
           });
@@ -12255,10 +12024,7 @@ export class FlowSurfacesService {
         node: tree,
       });
     }
-    this.contractGuard.validateNodeTreeAgainstContract(
-      tree,
-      dynamicCreate.capability.origin === 'autoSnapshot' ? { allowUnknownUses: true } : undefined,
-    );
+    this.contractGuard.validateNodeTreeAgainstContract(tree, { allowUnknownUses: true });
     const initialGrid = input.options.deferAutoLayout
       ? null
       : await this.repository.findModelById(input.parentUid, {

@@ -2142,25 +2142,20 @@ describe('flowSurfaces swagger', () => {
       'Legacy raw node contracts are returned only when callers explicitly request',
     );
     expect(catalogPath.description).toContain('not write authorization');
-    expect(catalogPath.description).toContain('strict allowlist');
-    expect(catalogPath.description).toContain('create actions still revalidate before persisting');
+    expect(catalogPath.description).toContain('Create actions still revalidate before persisting');
     expect(catalogPath.description).toContain('When `sections` is omitted');
     expect(catalogPath.description).toContain('`selectedSections` in the response as the final authoritative result');
     expect(catalogPath.description).toContain('`loggedIn`');
     const capabilitiesPath = swaggerDocument.paths['/flowSurfaces:capabilities'].post;
     expect(capabilitiesPath.description).toContain('Global results are discovery only');
     expect(capabilitiesPath.description).toContain('target-scoped `catalog`');
-    expect(capabilitiesPath.description).toContain('`verifiedAuto`');
-    expect(capabilitiesPath.description).toContain('trusted admission evidence');
-    expect(capabilitiesPath.description).toContain('target-scoped `catalog` may expose');
-    expect(capabilitiesPath.description).toContain('Write actions still revalidate');
+    expect(capabilitiesPath.description).toContain('provider, manifest, or inferred contracts');
+    expect(capabilitiesPath.description).toContain('Write actions revalidate');
     expect(capabilitiesPath.description).toContain('only supports concrete `targetUid` / `uid` lookup');
     expect(capabilitiesPath.description).toContain('`debugImplementation` expand is forbidden');
     expect(capabilitiesPath.description).toContain('`loggedIn`');
     expect(capabilitiesPath.description).not.toContain('implementation.modelUse');
     const describeCapabilityPath = swaggerDocument.paths['/flowSurfaces:describeCapability'].post;
-    expect(describeCapabilityPath.description).toContain('`verifiedAuto`');
-    expect(describeCapabilityPath.description).toContain('trusted admission evidence');
     expect(describeCapabilityPath.description).toContain('discovery/detail metadata only');
     expect(schemas.FlowSurfaceCapabilitiesRequest.properties.target.$ref).toBe(
       '#/components/schemas/FlowSurfaceCapabilitiesTarget',
@@ -2188,14 +2183,10 @@ describe('flowSurfaces swagger', () => {
     expect(diagnosticsPath.description).toContain('includeImplementation` is forbidden');
     expect(diagnosticsPath.description).toContain('does not return internal `modelUse`');
     expect(diagnosticsPath.description).toContain('administrator roles');
-    expect(diagnosticsPath.description).toContain('Stale or incomplete create-enabled admission reports');
     expect(schemas.FlowSurfaceCapabilityDiagnosticsResponse.required).toEqual(['data', 'meta']);
     expect(
       schemas.FlowSurfaceCapabilityDiagnosticsResponse.properties.meta.properties.implementationIncluded.enum,
     ).toEqual([false]);
-    expect(
-      schemas.FlowSurfaceCapabilityDiagnosticsResponse.properties.data.properties.admissionRecords.items.$ref,
-    ).toBe('#/components/schemas/FlowSurfaceCapabilityDiagnosticsAdmissionRecord');
     expect(schemas.FlowSurfaceCapabilityDiagnosticsResponse.properties.data.required).toContain('warnings');
     expect(schemas.FlowSurfaceCapabilityDiagnosticsResponse.properties.data.properties.warnings.items.$ref).toBe(
       '#/components/schemas/FlowSurfaceCapabilityDiagnosticWarning',
@@ -2204,7 +2195,6 @@ describe('flowSurfaces swagger', () => {
       'provider',
       'policy',
       'snapshot',
-      'admission',
       'manifest',
     ]);
     const composePath = swaggerDocument.paths['/flowSurfaces:compose'].post;

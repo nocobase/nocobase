@@ -547,7 +547,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Discover public Flow Surface capabilities',
     description: valuesCompatibilityNote(
-      `Returns public-safe capability metadata for block, action, and field component candidates. Global results are discovery only; localized writes must still call target-scoped \`catalog\` and then use public \`type\` / \`settings\` payloads. When server policy is explicitly \`verifiedAuto\`, trusted admission evidence may advance an auto-snapshot capability's discovery readiness/create availability, and target-scoped \`catalog\` may expose the matching auto capability as create-enabled only after strict policy, allowlist, identity, runtime evidence, plugin, and target checks. Write actions still revalidate and must not trust client-provided capability metadata as authorization. In this discovery slice, \`target\` only supports concrete \`targetUid\` / \`uid\` lookup; scene, slot, collection, and field-interface hints are reserved for future scoped discovery. The response does not expose \`modelUse\`, \`defaultNode\`, \`lens\`, \`createModelOptions\`, \`props\`, \`decoratorProps\`, \`stepParams\`, or \`flowRegistry\`. \`debugImplementation\` expand is forbidden. ${FLOW_SURFACES_READ_ACL_NOTE}`,
+      `Returns public-safe capability metadata for block, action, and field component candidates. Global results are discovery only; localized writes must still call target-scoped \`catalog\` and then use public \`type\` / \`settings\` payloads. Write actions revalidate provider, manifest, or inferred contracts and must not trust client-provided capability metadata as authorization. In this discovery slice, \`target\` only supports concrete \`targetUid\` / \`uid\` lookup; scene, slot, collection, and field-interface hints are reserved for future scoped discovery. The response does not expose \`modelUse\`, \`defaultNode\`, \`lens\`, \`createModelOptions\`, \`props\`, \`decoratorProps\`, \`stepParams\`, or \`flowRegistry\`. \`debugImplementation\` expand is forbidden. ${FLOW_SURFACES_READ_ACL_NOTE}`,
     ),
     requestBody: requestBody('FlowSurfaceCapabilitiesRequest'),
     responses: responses('FlowSurfaceCapabilitiesResponse'),
@@ -556,7 +556,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Describe one public Flow Surface capability',
     description: valuesCompatibilityNote(
-      `Returns public-safe detail for one capability selected by \`publicType\` or read-only \`capabilityId\`. Use \`expand:["item.settings"]\` to include public \`initParamsSchema\`, \`settingsSchema\`, and \`configureOptions\`; the response still does not expose \`implementation.modelUse\`, \`createRecipe\`, \`defaultNode\`, \`lens\`, \`createModelOptions\`, \`props\`, \`decoratorProps\`, \`stepParams\`, or \`flowRegistry\`. Under explicit \`verifiedAuto\` policy, trusted admission evidence may affect readiness/create availability in this detail projection. This is discovery/detail metadata only, not write authorization. Localized writes must still check target-scoped \`catalog\`. ${FLOW_SURFACES_READ_ACL_NOTE}`,
+      `Returns public-safe detail for one capability selected by \`publicType\` or read-only \`capabilityId\`. Use \`expand:["item.settings"]\` to include public \`initParamsSchema\`, \`settingsSchema\`, and \`configureOptions\`; the response still does not expose \`implementation.modelUse\`, \`createRecipe\`, \`defaultNode\`, \`lens\`, \`createModelOptions\`, \`props\`, \`decoratorProps\`, \`stepParams\`, or \`flowRegistry\`. This is discovery/detail metadata only, not write authorization. Localized writes must still check target-scoped \`catalog\`. ${FLOW_SURFACES_READ_ACL_NOTE}`,
     ),
     requestBody: requestBody('FlowSurfaceDescribeCapabilityRequest'),
     responses: responses('FlowSurfaceDescribeCapabilityResponse'),
@@ -574,7 +574,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Read Flow Surface capability diagnostics',
     description: valuesCompatibilityNote(
-      `Returns public-safe registry diagnostics for dynamic capability discovery, including registry source counts, publicType conflicts, provider-error summaries, stale snapshot summaries, and admission readiness records. Stale or incomplete create-enabled admission reports are downgraded in diagnostics and do not enable writes. The action is available only when diagnostics are enabled by server config/non-production defaults or to administrator roles. It does not return internal \`modelUse\`, sourceRefs, full internal nodes, provider evidence payloads, or user business data; \`includeImplementation\` is forbidden. ${FLOW_SURFACES_READ_ACL_NOTE}`,
+      `Returns public-safe registry diagnostics for dynamic capability discovery, including registry source counts, publicType conflicts, provider-error summaries, and stale snapshot summaries. The action is available only when diagnostics are enabled by server config/non-production defaults or to administrator roles. It does not return internal \`modelUse\`, sourceRefs, full internal nodes, provider evidence payloads, or user business data; \`includeImplementation\` is forbidden. ${FLOW_SURFACES_READ_ACL_NOTE}`,
     ),
     requestBody: requestBody('FlowSurfaceCapabilityDiagnosticsRequest'),
     responses: responses('FlowSurfaceCapabilityDiagnosticsResponse'),
@@ -583,7 +583,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'List capabilities available in the current surface context',
     description: valuesCompatibilityNote(
-      `Returns the block / field / action capabilities that can be created under the current target context, together with the recommended public \`configureOptions\`. Legacy raw node contracts are returned only when callers explicitly request \`item.contracts\` or \`node.contracts\`; they are an advanced compatibility surface, not write authorization. The returned \`blocks[] / actions[] / recordActions[]\` only represent the truly available public capabilities under plugins enabled in the current instance. Under explicit \`verifiedAuto\` policy, target-scoped block catalog may include an admitted auto-snapshot capability only after strict allowlist, exact identity, trusted current admission evidence, enabled-plugin, and target-scope checks; create actions still revalidate before persisting. When \`sections\` is omitted, the server smart-selects the sections for the current target scenario, and clients should treat \`selectedSections\` in the response as the final authoritative result. For advanced field-value or linkage authoring, prefer \`getReactionMeta\` + \`set*Rules\` instead of guessing raw \`configureOptions\` keys. ${FLOW_SURFACES_READ_ACL_NOTE}`,
+      `Returns the block / field / action capabilities that can be created under the current target context, together with the recommended public \`configureOptions\`. Legacy raw node contracts are returned only when callers explicitly request \`item.contracts\` or \`node.contracts\`; they are an advanced compatibility surface, not write authorization. The returned \`blocks[] / actions[] / recordActions[]\` only represent the truly available public capabilities under plugins enabled in the current instance. Create actions still revalidate before persisting. When \`sections\` is omitted, the server smart-selects the sections for the current target scenario, and clients should treat \`selectedSections\` in the response as the final authoritative result. For advanced field-value or linkage authoring, prefer \`getReactionMeta\` + \`set*Rules\` instead of guessing raw \`configureOptions\` keys. ${FLOW_SURFACES_READ_ACL_NOTE}`,
     ),
     requestBody: requestBody('FlowSurfaceCatalogRequest', examples.catalog),
     responses: responses('FlowSurfaceCatalogResponse'),
@@ -2921,72 +2921,13 @@ const schemas = {
     },
     additionalProperties: false,
   },
-  FlowSurfaceCapabilityDiagnosticsAdmissionRecord: {
-    type: 'object',
-    required: [
-      'reportPlugin',
-      'reportGeneratedAt',
-      'capabilityId',
-      'kind',
-      'publicType',
-      'ownerPlugin',
-      'readiness',
-      'updatedAt',
-      'failedChecks',
-    ],
-    properties: {
-      reportPlugin: {
-        type: 'string',
-      },
-      reportGeneratedAt: {
-        type: 'string',
-      },
-      capabilityId: {
-        type: 'string',
-      },
-      kind: ref('FlowSurfaceCapabilityKind'),
-      publicType: {
-        type: 'string',
-      },
-      ownerPlugin: {
-        type: 'string',
-      },
-      readiness: ref('FlowSurfaceCapabilityReadiness'),
-      updatedAt: {
-        type: 'string',
-      },
-      approvedAt: {
-        type: 'string',
-      },
-      failedChecks: {
-        type: 'array',
-        items: {
-          type: 'object',
-          required: ['key'],
-          properties: {
-            key: {
-              type: 'string',
-            },
-            reasonCode: {
-              type: 'string',
-            },
-            message: {
-              type: 'string',
-            },
-          },
-          additionalProperties: false,
-        },
-      },
-    },
-    additionalProperties: false,
-  },
   FlowSurfaceCapabilityDiagnosticWarning: {
     type: 'object',
     required: ['source', 'code', 'message'],
     properties: {
       source: {
         type: 'string',
-        enum: ['provider', 'policy', 'snapshot', 'admission', 'manifest'],
+        enum: ['provider', 'policy', 'snapshot', 'manifest'],
       },
       code: {
         type: 'string',
@@ -3015,14 +2956,7 @@ const schemas = {
     properties: {
       data: {
         type: 'object',
-        required: [
-          'registrySources',
-          'warnings',
-          'publicTypeConflicts',
-          'providerErrors',
-          'staleSnapshots',
-          'admissionRecords',
-        ],
+        required: ['registrySources', 'warnings', 'publicTypeConflicts', 'providerErrors', 'staleSnapshots'],
         properties: {
           registrySources: {
             type: 'array',
@@ -3053,10 +2987,6 @@ const schemas = {
           staleSnapshots: {
             type: 'array',
             items: ref('FlowSurfaceCapabilityDiagnosticsCapabilityRef'),
-          },
-          admissionRecords: {
-            type: 'array',
-            items: ref('FlowSurfaceCapabilityDiagnosticsAdmissionRecord'),
           },
         },
         additionalProperties: false,
