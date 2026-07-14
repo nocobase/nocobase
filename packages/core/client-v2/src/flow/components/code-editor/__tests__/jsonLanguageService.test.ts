@@ -8,6 +8,7 @@
  */
 
 import { LIGHT_EXTENSION_ENTRY_SCHEMA_URI, lightExtensionEntryV1Schema } from '@nocobase/light-extension-sdk/schema';
+import { EditorState } from '@codemirror/state';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { CodeEditorJsonSchema } from '../jsonLanguageService';
@@ -21,7 +22,7 @@ const entryJsonSchema: CodeEditorJsonSchema = {
 async function getCompletionLabels(text: string, token: string, offset = token.length) {
   const position = text.indexOf(token) + offset;
   const result = await getJsonLanguageCompletions(text, position, entryJsonSchema);
-  return result?.options.map((option) => option.label) || [];
+  return result?.options.map((option) => option.displayLabel || option.label) || [];
 }
 
 describe('JSON language service', () => {
@@ -47,6 +48,23 @@ describe('JSON language service', () => {
       'operator":"'.length,
     );
     expect(operator).toEqual(['"$eq"', '"$ne"', '"$in"', '"$notIn"', '"$empty"', '"$notEmpty"']);
+  });
+
+  it('keeps quoted completion ranges reusable while a property name is being typed', async () => {
+    const text = '{"schemaVersion":1,"key":"demo","settingsSchema":{"en"}}';
+    const position = text.lastIndexOf('en') + 'en'.length;
+    const result = await getJsonLanguageCompletions(text, position, entryJsonSchema);
+    const validFor = result?.validFor;
+
+    expect(typeof validFor).toBe('function');
+    if (typeof validFor !== 'function') {
+      throw new Error('JSON completion validFor predicate was not returned');
+    }
+
+    const state = EditorState.create({ doc: text });
+    expect(validFor('"enum"', 0, 6, state)).toBe(true);
+    expect(validFor('"enum":', 0, 7, state)).toBe(false);
+    expect(result?.options.find((option) => option.displayLabel === 'enum')?.label).toBe('"enum"');
   });
 
   it('reports syntax and canonical Schema diagnostics with JSON paths', async () => {

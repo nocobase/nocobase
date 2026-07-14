@@ -40,7 +40,7 @@ export interface LightExtensionRawResourceDeniedPayload {
 
 export interface LightExtensionLifecycleAuditInput {
   repoId: string;
-  action: 'repoCreate' | 'repoLifecycleChange' | 'repoDelete';
+  action: 'repoCreate' | 'repoUpdate' | 'repoLifecycleChange' | 'repoDelete';
   result: 'success' | 'blocked';
   requestId: string;
   actorUserId?: string | null;

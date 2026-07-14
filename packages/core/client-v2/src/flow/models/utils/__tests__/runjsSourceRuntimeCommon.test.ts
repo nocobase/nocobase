@@ -7,8 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { createForm } from '@formily/core';
+import { FormItem } from '@formily/antd-v5';
+import { createSchemaField, FormProvider } from '@formily/react';
+import { render, screen } from '@testing-library/react';
+import type { FlowModel } from '@nocobase/flow-engine';
+import React from 'react';
+
 import { RunJSSourceResolverRegistry } from '../../../components/runjs-source';
 import {
+  createLightExtensionSettingStep,
   createRuntimeRunTracker,
   getLightExtensionSettingsDescriptor,
   normalizeLightExtensionRuntimeError,
@@ -37,6 +45,55 @@ describe('runjsSourceRuntimeCommon', () => {
     expect(tracker.isCurrent(firstModel, firstRun)).toBe(false);
     expect(tracker.isCurrent(firstModel, secondRun)).toBe(true);
     expect(tracker.isCurrent(secondModel, secondRun)).toBe(false);
+  });
+
+  it('uses the step title without repeating it in the rendered FormItem', () => {
+    const [, step] = createLightExtensionSettingStep<FlowModel>({
+      entryId: 'entry_display',
+      fieldName: 'displayOptions',
+      fieldSchema: {
+        type: 'object',
+        title: 'Display settings',
+        properties: {
+          color: { type: 'string', title: 'Color' },
+        },
+      },
+      required: false,
+      stepKey: 'display-options',
+      defaultValue: { color: 'blue' },
+      sort: 700,
+      component: 'SettingsSingleField',
+      rootSchema: { type: 'object' },
+      descriptorDefaults: {},
+      savedRootValue: {},
+      syncValue: () => undefined,
+      afterParamsSave: async () => undefined,
+    });
+    const SettingsSingleField = () => React.createElement('div', null, 'Color');
+    const SchemaField = createSchemaField({
+      components: {
+        FormItem,
+        SettingsSingleField,
+      },
+    });
+    const form = createForm({ values: { value: { color: 'blue' } } });
+
+    render(
+      React.createElement(
+        FormProvider,
+        { form },
+        React.createElement(SchemaField, {
+          schema: {
+            type: 'object',
+            properties: step.uiSchema,
+          },
+        }),
+      ),
+    );
+
+    expect(step.title).toBe('Display settings');
+    expect(screen.queryByText('Display settings')).not.toBeInTheDocument();
+    expect(screen.getByText('Color')).toBeInTheDocument();
   });
 
   it('rejects light extension source saves when the settings descriptor is unavailable', () => {

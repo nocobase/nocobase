@@ -55,6 +55,12 @@ export interface LightExtensionCreateRepoInput {
   message?: string;
 }
 
+export interface LightExtensionUpdateRepoInput {
+  repoId: string;
+  title: string;
+  description?: string | null;
+}
+
 export interface LightExtensionInspectSourceArchiveInput {
   repoId: string;
   zipBase64: string;

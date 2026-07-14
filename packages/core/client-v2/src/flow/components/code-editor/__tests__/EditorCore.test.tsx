@@ -7,9 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { CompletionSource } from '@codemirror/autocomplete';
+import {
+  acceptCompletion,
+  completionStatus,
+  currentCompletions,
+  startCompletion,
+  type CompletionSource,
+} from '@codemirror/autocomplete';
 import { syntaxTree } from '@codemirror/language';
 import { diagnosticCount } from '@codemirror/lint';
+import { Transaction } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
 import { render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
@@ -19,6 +26,24 @@ import { CodeEditor } from '..';
 import { EditorCore } from '../core/EditorCore';
 
 describe('EditorCore', () => {
+  const jsonCompletionSchema = {
+    uri: 'urn:nocobase:test:json-completion',
+    schema: {
+      additionalProperties: false,
+      properties: {
+        settingsSchema: {
+          additionalProperties: false,
+          properties: {
+            enum: { type: 'array' },
+            type: { enum: ['string', 'number'] },
+          },
+          type: 'object',
+        },
+      },
+      type: 'object',
+    },
+  };
+
   it('makes the CodeMirror content element non-editable in readonly mode', () => {
     const viewRef = { current: null } as React.MutableRefObject<EditorView | null>;
     const { container, rerender } = render(<EditorCore readonly value="const value = 1;" viewRef={viewRef} />);
@@ -167,6 +192,64 @@ describe('EditorCore', () => {
     }
 
     await waitFor(() => expect(diagnosticCount(view.state)).toBeGreaterThan(0));
+  });
+
+  it('filters JSON Schema completions by the typed property name', async () => {
+    const viewRef = { current: null } as React.MutableRefObject<EditorView | null>;
+    const value = '{"settingsSchema":{"en"}}';
+    const cursor = value.lastIndexOf('en') + 'en'.length;
+    render(<EditorCore jsonSchema={jsonCompletionSchema} language="json" value={value} viewRef={viewRef} />);
+    const view = viewRef.current;
+    if (!view) {
+      throw new Error('EditorView was not initialized');
+    }
+
+    view.dispatch({ selection: { anchor: cursor } });
+    startCompletion(view);
+
+    await waitFor(() => expect(completionStatus(view.state)).toBe('active'));
+    expect(currentCompletions(view.state).map((completion) => completion.displayLabel || completion.label)).toContain(
+      'enum',
+    );
+
+    view.dispatch({
+      annotations: Transaction.userEvent.of('input.type'),
+      changes: { from: cursor, insert: 'um' },
+      selection: { anchor: cursor + 2 },
+    });
+
+    expect(currentCompletions(view.state).map((completion) => completion.displayLabel || completion.label)).toEqual([
+      'enum',
+    ]);
+
+    view.dispatch({
+      annotations: Transaction.userEvent.of('input.type'),
+      changes: { from: cursor + 2, insert: 'x' },
+      selection: { anchor: cursor + 3 },
+    });
+
+    expect(currentCompletions(view.state)).toEqual([]);
+  });
+
+  it('converts JSON language service snippets before applying a completion', async () => {
+    const viewRef = { current: null } as React.MutableRefObject<EditorView | null>;
+    const value = '{"settingsSchema":{"ty"}}';
+    const cursor = value.indexOf('ty') + 'ty'.length;
+    render(<EditorCore jsonSchema={jsonCompletionSchema} language="json" value={value} viewRef={viewRef} />);
+    const view = viewRef.current;
+    if (!view) {
+      throw new Error('EditorView was not initialized');
+    }
+
+    view.dispatch({ selection: { anchor: cursor } });
+    startCompletion(view);
+
+    await waitFor(() => expect(completionStatus(view.state)).toBe('active'));
+    expect(currentCompletions(view.state).map((completion) => completion.displayLabel || completion.label)).toEqual([
+      'type',
+    ]);
+    await waitFor(() => expect(acceptCompletion(view)).toBe(true));
+    expect(view.state.doc.toString()).toBe('{"settingsSchema":{"type": }}');
   });
 
   it('hides RunJS snippets and the default Run action for JSON documents', () => {

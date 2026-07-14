@@ -231,16 +231,82 @@ function completionItemRange(item: CompletionItem, document: TextDocument, fallb
   return { from: fallback, to: fallback };
 }
 
+const CODEMIRROR_FINAL_TABSTOP = 1_000_000;
+
+function toCodeMirrorSnippet(value: string): string {
+  let result = '';
+
+  for (let index = 0; index < value.length; index += 1) {
+    const character = value[index];
+    const nextCharacter = value[index + 1];
+
+    if (character === '\\') {
+      if (nextCharacter === '$') {
+        result += value[index + 2] === '{' ? '$\\' : '$';
+        index += 1;
+        continue;
+      }
+      if (nextCharacter === '\\') {
+        result += '\\';
+        index += 1;
+        continue;
+      }
+      if (nextCharacter === '}') {
+        result += '\\}';
+        index += 1;
+        continue;
+      }
+      result += character;
+      continue;
+    }
+
+    if (character !== '$') {
+      result += character;
+      continue;
+    }
+
+    const remaining = value.slice(index + 1);
+    const unbracedTabstop = /^(\d+)/.exec(remaining);
+    if (unbracedTabstop) {
+      const tabstop = Number(unbracedTabstop[1]) || CODEMIRROR_FINAL_TABSTOP;
+      result += `\${${tabstop}}`;
+      index += unbracedTabstop[1].length;
+      continue;
+    }
+
+    const bracedTabstop = /^\{(\d+)(?=[:}])/.exec(remaining);
+    if (bracedTabstop) {
+      const tabstop = Number(bracedTabstop[1]) || CODEMIRROR_FINAL_TABSTOP;
+      result += `\${${tabstop}`;
+      index += bracedTabstop[0].length;
+      continue;
+    }
+
+    result += character;
+  }
+
+  return result;
+}
+
 function toCodeMirrorCompletion(item: CompletionItem): Completion {
   const insertText = completionItemText(item);
   const info = formatMarkupContent(item.documentation);
+  const filterLabel = item.filterText || item.label;
   return {
-    apply: item.insertTextFormat === InsertTextFormat.Snippet ? snippet(insertText) : insertText,
+    apply: item.insertTextFormat === InsertTextFormat.Snippet ? snippet(toCodeMirrorSnippet(insertText)) : insertText,
     detail: item.detail,
+    displayLabel: filterLabel === item.label ? undefined : item.label,
     info: info || undefined,
-    label: item.label,
+    label: filterLabel,
     type: completionKindToCodeMirror(item.kind),
   };
+}
+
+function isJsonCompletionTextValid(value: string): boolean {
+  if (value.startsWith('"')) {
+    return /^"(?:[^"\\]|\\.)*"?$/.test(value);
+  }
+  return !/[\s,:[\]{}]/.test(value);
 }
 
 export async function getJsonLanguageCompletions(
@@ -256,10 +322,10 @@ export async function getJsonLanguageCompletions(
 
   const range = completionItemRange(completionList.items[0], document, position);
   return {
-    filter: false,
     from: range.from,
     options: completionList.items.map(toCodeMirrorCompletion),
     to: range.to,
+    validFor: isJsonCompletionTextValid,
   };
 }
 

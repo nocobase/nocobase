@@ -135,96 +135,111 @@ describe('MoveSourceService', () => {
     });
   });
 
-  it('moves into an existing repository and writes the host binding in the same transaction', async () => {
-    const transaction = { id: 'tx_move' } as unknown as Transaction;
-    const writeExternalBinding = vi.fn(async () => ({ ownerFingerprint: 'owner_after' }));
-    const adapter = {
-      kind: 'flowModel.step',
-      assertCanRead: vi.fn(),
-      assertCanWrite: vi.fn(),
-      readLegacy: vi.fn(async () => ({
-        code: 'return 1;',
-        version: 'v2',
-        label: 'JS block',
-        surfaceStyle: 'render',
-        language: 'typescript',
-        ownerFingerprint: 'owner_before',
-        metadata: { modelUse: 'JSBlockModel' },
-      })),
-      writeRuntime: vi.fn(),
-      writeExternalBinding,
-      getFingerprint: vi.fn(async () => 'owner_after'),
-    };
-    const saveSource = vi.fn(async () => ({ repo, commit: {}, tree: {}, compile: {}, diagnostics: [] }));
-    const syncReferences = vi.fn(async () => undefined);
-    const listEntries = vi.fn().mockResolvedValueOnce([]).mockResolvedValueOnce([entry]);
-    const service = new MoveSourceService(
-      {
-        sequelize: {
-          transaction: (run: (transaction: Transaction) => Promise<unknown>) => run(transaction),
-        },
-      } as unknown as Database,
-      {
-        lockInternalRepoForUpdate: vi.fn(async () => ({ ...repo, vscRepoId: 'vsc_repo' })),
-      } as never,
-      {
-        pull: vi.fn(async () => ({
-          repo,
-          commit: { id: 'commit_2' },
-          tree: null,
-          unchanged: false,
-          files: [],
+  it.each([
+    ['JSBlockModel', 'js-block', 'src/client/js-blocks'],
+    ['JSActionModel', 'js-action', 'src/client/js-actions'],
+    ['JSFieldModel', 'js-field', 'src/client/js-fields'],
+    ['JSColumnModel', 'js-field', 'src/client/js-fields'],
+    ['JSItemModel', 'js-item', 'src/client/js-items'],
+  ] as const)(
+    'moves a %s source into an existing repository and writes the host binding in the same transaction',
+    async (modelUse, kind, entryRoot) => {
+      const transaction = { id: 'tx_move' } as unknown as Transaction;
+      const writeExternalBinding = vi.fn(async () => ({ ownerFingerprint: 'owner_after' }));
+      const movedEntry: LightExtensionEntryRecord = {
+        ...entry,
+        kind,
+        entryPath: `${entryRoot}/sales-kpi/index.ts`,
+        descriptorPath: `${entryRoot}/sales-kpi/entry.json`,
+      };
+      const adapter = {
+        kind: 'flowModel.step',
+        assertCanRead: vi.fn(),
+        assertCanWrite: vi.fn(),
+        readLegacy: vi.fn(async () => ({
+          code: 'return 1;',
+          version: 'v2',
+          label: 'JS block',
+          surfaceStyle: 'render',
+          language: 'typescript',
+          ownerFingerprint: 'owner_before',
+          metadata: { modelUse },
         })),
-      } as never,
-      { listEntries } as never,
-      { saveSource } as never,
-      { syncFlowModelReferencesForNodeTree: syncReferences } as never,
-      () => ({ require: () => adapter }) as unknown as RunJSSourceAdapterRegistry,
-    );
+        writeRuntime: vi.fn(),
+        writeExternalBinding,
+        getFingerprint: vi.fn(async () => 'owner_after'),
+      };
+      const saveSource = vi.fn(async () => ({ repo, commit: {}, tree: {}, compile: {}, diagnostics: [] }));
+      const syncReferences = vi.fn(async () => undefined);
+      const listEntries = vi.fn().mockResolvedValueOnce([]).mockResolvedValueOnce([movedEntry]);
+      const service = new MoveSourceService(
+        {
+          sequelize: {
+            transaction: (run: (transaction: Transaction) => Promise<unknown>) => run(transaction),
+          },
+        } as unknown as Database,
+        {
+          lockInternalRepoForUpdate: vi.fn(async () => ({ ...repo, vscRepoId: 'vsc_repo' })),
+        } as never,
+        {
+          pull: vi.fn(async () => ({
+            repo,
+            commit: { id: 'commit_2' },
+            tree: null,
+            unchanged: false,
+            files: [],
+          })),
+        } as never,
+        { listEntries } as never,
+        { saveSource } as never,
+        { syncFlowModelReferencesForNodeTree: syncReferences } as never,
+        () => ({ require: () => adapter }) as unknown as RunJSSourceAdapterRegistry,
+      );
 
-    const result = await service.moveSource(
-      {
-        locator,
-        expectedOwnerFingerprint: 'owner_before',
-        sourceRepoId: 'runjs_repo',
-        sourceHeadCommitId: 'runjs_commit',
-        entryPath: 'src/main.ts',
-        version: 'v2',
-        files: [{ path: 'src/main.ts', content: 'return 1;' }],
-        destination: { type: 'existing', repoId: repo.id },
-        entryName: 'sales-kpi',
-        entryTitle: 'Sales KPI',
-      },
-      {
-        actorUserId: '1',
-        adapterContext: {},
-      },
-    );
+      const result = await service.moveSource(
+        {
+          locator,
+          expectedOwnerFingerprint: 'owner_before',
+          sourceRepoId: 'runjs_repo',
+          sourceHeadCommitId: 'runjs_commit',
+          entryPath: 'src/main.ts',
+          version: 'v2',
+          files: [{ path: 'src/main.ts', content: 'return 1;' }],
+          destination: { type: 'existing', repoId: repo.id },
+          entryName: 'sales-kpi',
+          entryTitle: 'Sales KPI',
+        },
+        {
+          actorUserId: '1',
+          adapterContext: {},
+        },
+      );
 
-    expect(saveSource).toHaveBeenCalledWith(
-      expect.objectContaining({
-        repoId: repo.id,
-        expectedHeadCommitId: 'commit_2',
-        files: expect.arrayContaining([expect.objectContaining({ path: 'src/client/js-blocks/sales-kpi/index.ts' })]),
-      }),
-      expect.objectContaining({ transaction }),
-    );
-    expect(writeExternalBinding).toHaveBeenCalledWith(
-      expect.objectContaining({
-        baseOwnerFingerprint: 'owner_before',
-        binding: expect.objectContaining({
-          sourceMode: 'light-extension',
-          sourceBinding: expect.objectContaining({ repoId: repo.id, entryId: entry.id, kind: 'js-block' }),
+      expect(saveSource).toHaveBeenCalledWith(
+        expect.objectContaining({
+          repoId: repo.id,
+          expectedHeadCommitId: 'commit_2',
+          files: expect.arrayContaining([expect.objectContaining({ path: `${entryRoot}/sales-kpi/index.ts` })]),
         }),
-        ctx: expect.objectContaining({ transaction }),
-      }),
-    );
-    expect(syncReferences).toHaveBeenCalledWith(
-      expect.objectContaining({ rootUid: locator.modelUid }),
-      expect.objectContaining({ transaction }),
-    );
-    expect(result.binding).toMatchObject({ repoId: repo.id, entryId: entry.id, kind: 'js-block' });
-  });
+        expect.objectContaining({ transaction }),
+      );
+      expect(writeExternalBinding).toHaveBeenCalledWith(
+        expect.objectContaining({
+          baseOwnerFingerprint: 'owner_before',
+          binding: expect.objectContaining({
+            sourceMode: 'light-extension',
+            sourceBinding: expect.objectContaining({ repoId: repo.id, entryId: movedEntry.id, kind }),
+          }),
+          ctx: expect.objectContaining({ transaction }),
+        }),
+      );
+      expect(syncReferences).toHaveBeenCalledWith(
+        expect.objectContaining({ rootUid: locator.modelUid }),
+        expect.objectContaining({ transaction }),
+      );
+      expect(result.binding).toMatchObject({ repoId: repo.id, entryId: movedEntry.id, kind });
+    },
+  );
 
   it('creates a new repository with only base files and the moved entry', async () => {
     const createdRepo = { ...repo, id: 'ler_new', name: 'sales-tools', normalizedName: 'sales-tools' };

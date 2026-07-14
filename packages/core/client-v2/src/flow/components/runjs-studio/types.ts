@@ -74,6 +74,11 @@ export interface RunJSEditorFieldProps {
   versionPath?: readonly string[];
   label?: string;
   sourceLabel?: string;
+  /**
+   * Host-defined metadata exposed to shared RunJS editor integrations.
+   * Providers should treat it as descriptive context and keep persistence decisions server-authoritative.
+   */
+  sourceMetadata?: Record<string, unknown>;
   onPreview?: (value: RunJSValue) => void | Promise<void>;
   scene?: string;
   surfaceStyle?: RunJSSurfaceStyle;
@@ -95,7 +100,7 @@ export interface RunJSEditorProviderRenderProps extends Omit<RunJSEditorFieldPro
    * Notifies the host after the provider has already persisted the value server-side.
    * The host should refresh local runtime state without issuing another persistence request.
    */
-  onPersistedChange?: (value: RunJSValue) => void;
+  onPersistedChange?: (value: RunJSValue) => void | Promise<void>;
   renderNext?: (overrides?: Partial<RunJSEditorProviderRenderProps>) => React.ReactNode;
 }
 

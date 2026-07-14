@@ -8,6 +8,7 @@
  */
 
 import React from 'react';
+import { isEqual } from 'lodash';
 import {
   isRunJSValue,
   normalizeRunJSValue,
@@ -190,17 +191,14 @@ function syncFlowModelStepValue(
   surfaceStyle: RunJSEditorFieldProps['surfaceStyle'],
   stepParams: unknown,
   persist: boolean,
-) {
+): Promise<void> {
   if (!model || !locator) {
-    return;
+    return Promise.resolve();
   }
 
+  const savedStepParams = cloneRecord(model.getStepParams(locator.flowKey, locator.stepKey));
   const currentStepParams: StepParams = {};
-  Object.assign(
-    currentStepParams,
-    cloneRecord(model.getStepParams(locator.flowKey, locator.stepKey)),
-    cloneRecord(stepParams),
-  );
+  Object.assign(currentStepParams, savedStepParams, cloneRecord(stepParams));
   setAtPath(currentStepParams, locator.paramPath, value.code);
   setAtPath(currentStepParams, resolveVersionPath(locator.paramPath, locator.versionPath), value.version);
   const sourceConfigPath = locator.paramPath.slice(0, -1);
@@ -216,19 +214,32 @@ function syncFlowModelStepValue(
   if (value.sourceRef !== undefined) {
     setAtPath(currentStepParams, resolveSourceRefPath(locator.paramPath), value.sourceRef);
   }
+  const stepParamsChanged = !isEqual(savedStepParams, currentStepParams);
   model.setStepParams(locator.flowKey, locator.stepKey, currentStepParams);
+  if (!persist) {
+    if (model.flowEngine) {
+      model.flowEngine.forEachModel((targetModel) => {
+        if (stepParamsChanged && targetModel === model) {
+          return;
+        }
+        targetModel.emitter.emit('onStepParamsChanged');
+      });
+    } else if (!stepParamsChanged) {
+      model.emitter.emit('onStepParamsChanged');
+    }
+  }
   model.invalidateFlowCache('beforeRender', true);
 
   const saveAndRefresh = async () => {
     if (persist) {
       await model.saveStepParams();
     }
-    if (surfaceStyle === 'render') {
+    if (surfaceStyle === 'render' && persist) {
       await model.rerender();
     }
   };
 
-  saveAndRefresh().catch((error) => {
+  return saveAndRefresh().catch((error) => {
     if (surfaceStyle === 'render') {
       console.error('RunJSEditorField: failed to refresh saved RunJS surface', error);
       return;
@@ -276,9 +287,9 @@ export const RunJSEditorField: React.FC<RunJSEditorFieldProps> = (props) => {
   );
   const locator = props.sourceLocator ?? props.locator ?? generatedLocator;
   const label = props.sourceLabel ?? props.label;
-  const applyProviderChange = (nextValue: RunJSValue, persist: boolean) => {
+  const applyProviderChange = (nextValue: RunJSValue, persist: boolean): Promise<void> => {
     onChange?.(toFieldChangeValue(valueMode, nextValue));
-    syncFlowModelStepValue(
+    return syncFlowModelStepValue(
       flowContext?.model,
       generatedLocator,
       nextValue,
@@ -290,8 +301,8 @@ export const RunJSEditorField: React.FC<RunJSEditorFieldProps> = (props) => {
   const handleProviderChange = (nextValue: RunJSValue) => {
     applyProviderChange(nextValue, true);
   };
-  const handleProviderPersistedChange = (nextValue: RunJSValue) => {
-    applyProviderChange(nextValue, false);
+  const handleProviderPersistedChange = async (nextValue: RunJSValue) => {
+    await applyProviderChange(nextValue, false);
   };
   const providerProps: RunJSEditorProviderRenderProps = {
     ...props,

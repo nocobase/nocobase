@@ -57,6 +57,34 @@ describe('plugin-light-extension file service resource bridge', () => {
     );
   });
 
+  it('updates repository metadata through the custom non-CRUD resource action', async () => {
+    const createResponse = await agent.resource('lightExtensionRepos').create({
+      values: {
+        name: 'Resource Metadata Update',
+        title: 'Original title',
+        description: 'Original description',
+      },
+    });
+    const repo = createResponse.body.data;
+
+    const updateResponse = await agent.resource('lightExtensionRepos').updateMetadata({
+      values: {
+        repoId: repo.id,
+        title: 'Updated title',
+        description: null,
+      },
+    });
+
+    expect(updateResponse.status).toBe(200);
+    expect(updateResponse.body.data).toMatchObject({
+      id: repo.id,
+      name: 'Resource Metadata Update',
+      normalizedName: 'resource-metadata-update',
+      title: 'Updated title',
+      description: null,
+    });
+  });
+
   it('runs shared vsc permission hooks for light-extension internal source operations', async () => {
     const capturedActions: string[] = [];
     const unregister = getVscPermissionHookRegistrar(app).registerPermissionHook((input) => {

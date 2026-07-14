@@ -18,6 +18,7 @@ import type {
   LightExtensionInspectSourceArchiveResult,
   LightExtensionRepoLifecycleStatus,
   LightExtensionTreeEntryInput,
+  LightExtensionUpdateRepoInput,
 } from '../../shared/types';
 import type { LightExtensionServiceContext } from '../services/LightExtensionRepoService';
 import { LightExtensionRepoService } from '../services/LightExtensionRepoService';
@@ -30,6 +31,7 @@ export const lightExtensionRepoActionNames = [
   'create',
   'list',
   'get',
+  'updateMetadata',
   'changeLifecycle',
   'archive',
   'delete',
@@ -54,6 +56,8 @@ const resourceActionRunners: Record<LightExtensionRepoActionName, ResourceAction
   create: (services, input, currentUser) => createRepoAndCompileInitialSource(services, input, currentUser),
   list: (services, _input, currentUser) => services.repoService.listRepos(currentUser),
   get: (services, input, currentUser) => services.repoService.getRepo(requireRepoId(input), currentUser),
+  updateMetadata: (services, input, currentUser) =>
+    services.repoService.updateRepo(normalizeUpdateInput(input), currentUser),
   changeLifecycle: (services, input, currentUser) =>
     services.repoService.changeLifecycle(
       {
@@ -191,6 +195,14 @@ async function normalizeCreateInput(
     message:
       optionalString(input, 'message') ||
       (zipBase64 ? 'Import light extension source' : 'Initial light extension source'),
+  };
+}
+
+function normalizeUpdateInput(input: ResourceActionInput): LightExtensionUpdateRepoInput {
+  return {
+    repoId: requireRepoId(input),
+    title: requireString(input, 'title'),
+    description: optionalNullableString(input, 'description'),
   };
 }
 

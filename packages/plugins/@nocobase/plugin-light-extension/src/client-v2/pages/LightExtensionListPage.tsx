@@ -11,6 +11,7 @@ import {
   CodeOutlined,
   DeleteOutlined,
   DownOutlined,
+  EditOutlined,
   PlusOutlined,
   ReloadOutlined,
   SaveOutlined,
@@ -60,6 +61,11 @@ import LightExtensionWorkspacePage, { type LightExtensionWorkspaceFooterActions 
 interface CreateRepoFormValues {
   name: string;
   title?: string;
+  description?: string;
+}
+
+interface EditRepoFormValues {
+  title: string;
   description?: string;
 }
 
@@ -159,14 +165,18 @@ function LightExtensionListPageInner() {
     createRepo: createRepoRequest,
     deleteRepo: deleteRepoRequest,
     listRepos,
+    updateRepo: updateRepoRequest,
   } = useLightExtensionRepo();
   const [searchParams, setSearchParams] = useSearchParams();
   const [form] = Form.useForm<CreateRepoFormValues>();
+  const [editForm] = Form.useForm<EditRepoFormValues>();
   const [repos, setRepos] = useState<LightExtensionRepoRecord[]>([]);
   const [selectedRepoId, setSelectedRepoId] = useState<string | null>(searchParams.get('repoId'));
   const [loading, setLoading] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [editTarget, setEditTarget] = useState<LightExtensionRepoRecord | null>(null);
+  const [editing, setEditing] = useState(false);
   const [batchChanging, setBatchChanging] = useState<ToggleLifecycleStatus | null>(null);
   const [changingRepoIds, setChangingRepoIds] = useState<Set<string>>(() => new Set());
   const [removingRepoIds, setRemovingRepoIds] = useState<Set<string>>(() => new Set());
@@ -254,6 +264,26 @@ function LightExtensionListPageInner() {
     setSourceFileError(null);
     setCreateOpen(true);
   }, [form]);
+
+  const openEditDrawer = useCallback(
+    (repo: LightExtensionRepoRecord) => {
+      editForm.resetFields();
+      editForm.setFieldsValue({
+        title: repo.title || repo.name,
+        description: repo.description || undefined,
+      });
+      setEditTarget(repo);
+    },
+    [editForm],
+  );
+
+  const closeEditDrawer = useCallback(() => {
+    if (editing) {
+      return;
+    }
+    setEditTarget(null);
+    editForm.resetFields();
+  }, [editForm, editing]);
 
   const selectRepo = useCallback(
     (repoId: string, options: { panel?: DetailPanel; replace?: boolean } = {}) => {
@@ -442,6 +472,36 @@ function LightExtensionListPageInner() {
     }
   }, [removeRepo, removeTarget]);
 
+  const updateRepo = useCallback(
+    async (values: EditRepoFormValues) => {
+      if (!editTarget) {
+        return;
+      }
+
+      setEditing(true);
+      setNotice(null);
+      try {
+        const updatedRepo = await updateRepoRequest({
+          repoId: editTarget.id,
+          title: values.title.trim(),
+          description: values.description?.trim() || null,
+        });
+        setRepos((current) => current.map((repo) => (repo.id === updatedRepo.id ? { ...repo, ...updatedRepo } : repo)));
+        setEditTarget(null);
+        editForm.resetFields();
+        setNotice({ type: 'success', message: t('Repository updated') });
+      } catch (error) {
+        setNotice({
+          type: 'error',
+          message: error instanceof Error ? error.message : t('Failed to update repository'),
+        });
+      } finally {
+        setEditing(false);
+      }
+    },
+    [editForm, editTarget, t, updateRepoRequest],
+  );
+
   const columns = useMemo<ColumnsType<LightExtensionRepoRecord>>(
     () => [
       {
@@ -529,13 +589,19 @@ function LightExtensionListPageInner() {
       {
         title: t('Actions'),
         key: 'actions',
-        width: 90,
+        width: 130,
         render: (_value, repo) => (
           <Space size={4} onClick={(event) => event.stopPropagation()}>
             <Button
               aria-label={t('Open source')}
               icon={<CodeOutlined />}
               onClick={() => selectRepo(repo.id, { panel: 'source' })}
+              size="small"
+            />
+            <Button
+              aria-label={`${t('Edit')} ${repo.title || repo.name}`}
+              icon={<EditOutlined />}
+              onClick={() => openEditDrawer(repo)}
               size="small"
             />
             <Button
@@ -550,7 +616,7 @@ function LightExtensionListPageInner() {
         ),
       },
     ],
-    [changeRepoLifecycle, changingRepoIds, removingRepoIds, selectRepo, t],
+    [changeRepoLifecycle, changingRepoIds, openEditDrawer, removingRepoIds, selectRepo, t],
   );
 
   const batchActionItems: MenuProps['items'] = [
@@ -688,6 +754,41 @@ function LightExtensionListPageInner() {
           </Form.Item>
         </Form>
       </Modal>
+
+      <Drawer
+        aria-label={t('Edit light extension')}
+        destroyOnClose
+        footer={
+          <Flex justify="flex-end">
+            <Space>
+              <Button disabled={editing} onClick={closeEditDrawer}>
+                {t('Cancel')}
+              </Button>
+              <Button form="light-extension-edit-form" htmlType="submit" loading={editing} type="primary">
+                {t('Save')}
+              </Button>
+            </Space>
+          </Flex>
+        }
+        maskClosable={!editing}
+        onClose={closeEditDrawer}
+        open={Boolean(editTarget)}
+        title={t('Edit light extension')}
+        width={520}
+      >
+        <Form form={editForm} id="light-extension-edit-form" layout="vertical" onFinish={updateRepo}>
+          <Form.Item
+            label={t('Title')}
+            name="title"
+            rules={[{ required: true, whitespace: true, message: t('Title is required') }]}
+          >
+            <Input autoFocus />
+          </Form.Item>
+          <Form.Item label={t('Description')} name="description">
+            <Input.TextArea rows={4} />
+          </Form.Item>
+        </Form>
+      </Drawer>
 
       <Modal
         cancelButtonProps={{ disabled: Boolean(removeTarget && removingRepoIds.has(removeTarget.id)) }}

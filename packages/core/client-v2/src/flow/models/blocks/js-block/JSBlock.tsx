@@ -713,6 +713,9 @@ JSBlockModel.registerFlow({
           'x-component': RunJSEditorField,
           'x-component-props': {
             locatorFactory: 'flowModel.step',
+            sourceMetadata: {
+              lightExtensionKind: 'js-block',
+            },
             surfaceStyle: 'render',
             scene: 'block',
             minHeight: 'calc(100vh - 42px)',

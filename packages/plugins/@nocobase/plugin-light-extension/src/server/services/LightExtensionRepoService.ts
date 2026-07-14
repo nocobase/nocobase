@@ -27,6 +27,7 @@ import type {
   LightExtensionRepoLifecycleStatus,
   LightExtensionRepoRecord,
   LightExtensionTreeEntryInput,
+  LightExtensionUpdateRepoInput,
 } from '../../shared/types';
 import { LightExtensionAuditService } from './LightExtensionAuditService';
 import { LightExtensionPermissionService, type LightExtensionCanFunction } from './LightExtensionPermissionService';
@@ -219,6 +220,55 @@ export class LightExtensionRepoService {
 
   async getRepo(repoId: string, ctx: LightExtensionServiceContext = {}): Promise<LightExtensionRepoRecord> {
     return stripInternalRepo(await this.getInternalRepo(repoId, ctx));
+  }
+
+  async updateRepo(
+    input: LightExtensionUpdateRepoInput,
+    ctx: LightExtensionServiceContext = {},
+  ): Promise<LightExtensionRepoRecord> {
+    const title = optionalTrim(input.title);
+    if (!title) {
+      throw new LightExtensionError('LIGHT_EXTENSION_INVALID_INPUT', 'Light extension title is required');
+    }
+    const requestId = getRequestId(ctx);
+
+    return this.withTransaction(ctx.transaction, async (transaction) => {
+      const current = await this.lockInternalRepoForUpdate(input.repoId, { ...ctx, transaction });
+      const description = optionalTrim(input.description);
+      if (current.title === title && current.description === description) {
+        return stripInternalRepo(current);
+      }
+      const repoModel = this.db.getModel<Model<LightExtensionRepoInternalRecord>>('lightExtensionRepos');
+      await repoModel.update(
+        {
+          title,
+          description,
+        },
+        {
+          where: {
+            id: input.repoId,
+          },
+          transaction,
+        },
+      );
+
+      const next = await this.getInternalRepo(input.repoId, { ...ctx, transaction });
+      await this.auditService.recordLifecycleEvent({
+        repoId: input.repoId,
+        action: 'repoUpdate',
+        result: 'success',
+        requestId,
+        actorUserId: ctx.actorUserId,
+        message: 'Light extension repository metadata updated',
+        details: {
+          titleChanged: current.title !== next.title,
+          descriptionChanged: current.description !== next.description,
+        },
+        transaction,
+      });
+
+      return stripInternalRepo(next);
+    });
   }
 
   async getInternalRepo(

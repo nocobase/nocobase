@@ -72,6 +72,16 @@ function cloneJsonRecord<T extends Record<string, unknown>>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
+function waitForHostRefreshCommit(): Promise<void> {
+  if (typeof window === 'undefined' || typeof window.requestAnimationFrame !== 'function') {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    window.requestAnimationFrame(() => resolve());
+  });
+}
+
 const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderProps> = (props) => {
   const { locator, onPreview, sourceLocator, surfaceStyle, value } = props;
   const effectiveLocator = sourceLocator || locator;
@@ -229,12 +239,28 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
       workspaceScope,
     ],
   );
-  const handlePersistedChange = React.useCallback(() => {
-    (props.onPersistedChange || props.onChange)?.({
-      ...props.value,
+  const handlePersistedChange = React.useCallback(async () => {
+    let nextValue = props.value;
+    if (api && currentBinding) {
+      try {
+        const entry = await getLightExtensionEntry(api, currentBinding.entryId);
+        if (entry.runtimeArtifact) {
+          nextValue = {
+            ...nextValue,
+            code: entry.runtimeArtifact.code,
+            version: entry.runtimeArtifact.version,
+          };
+        }
+      } catch {
+        // The persisted binding remains valid even if the refreshed runtime artifact cannot be read immediately.
+      }
+    }
+    await (props.onPersistedChange || props.onChange)?.({
+      ...nextValue,
       ...(currentBinding ? { sourceBinding: currentBinding } : {}),
     });
-  }, [currentBinding, props.onChange, props.onPersistedChange, props.value]);
+    await waitForHostRefreshCommit();
+  }, [api, currentBinding, props.onChange, props.onPersistedChange, props.value]);
 
   React.useEffect(() => {
     if (typeof editorView?.setFooter !== 'function') {

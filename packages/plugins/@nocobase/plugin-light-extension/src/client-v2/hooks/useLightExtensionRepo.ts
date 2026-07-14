@@ -22,6 +22,7 @@ import type {
   LightExtensionPullResult,
   LightExtensionRepoRecord,
   LightExtensionSaveSourceResult,
+  LightExtensionUpdateRepoInput,
   LightExtensionWorkspacePreviewInput,
   LightExtensionWorkspacePreviewResult,
 } from '../../shared/types';
@@ -91,6 +92,7 @@ export interface UseLightExtensionRepoResult {
   listRepos(): Promise<LightExtensionRepoRecord[]>;
   createRepo(input: LightExtensionCreateRepoInput): Promise<LightExtensionRepoRecord>;
   getRepo(repoId: string): Promise<LightExtensionRepoRecord>;
+  updateRepo(input: LightExtensionUpdateRepoInput): Promise<LightExtensionRepoRecord>;
   changeLifecycle(input: LightExtensionChangeLifecycleInput): Promise<LightExtensionRepoRecord>;
   deleteRepo(repoId: string): Promise<LightExtensionRepoRecord>;
   inspectSourceArchive(
@@ -127,6 +129,7 @@ type OperationInputMap = {
   listRepos: undefined;
   createRepo: LightExtensionCreateRepoInput;
   getRepo: { repoId: string };
+  updateRepo: LightExtensionUpdateRepoInput;
   changeLifecycle: LightExtensionChangeLifecycleInput;
   deleteRepo: { repoId: string };
   inspectSourceArchive: LightExtensionInspectSourceArchiveInput;
@@ -141,6 +144,7 @@ type OperationResultMap = {
   listRepos: LightExtensionRepoRecord[];
   createRepo: LightExtensionRepoRecord;
   getRepo: LightExtensionRepoRecord;
+  updateRepo: LightExtensionRepoRecord;
   changeLifecycle: LightExtensionRepoRecord;
   deleteRepo: LightExtensionRepoRecord;
   inspectSourceArchive: LightExtensionInspectSourceArchiveResult;
@@ -155,6 +159,7 @@ const operationResourceActions: Record<LightExtensionRepoOperation, string> = {
   listRepos: 'lightExtensionRepos:list',
   createRepo: 'lightExtensionRepos:create',
   getRepo: 'lightExtensionRepos:get',
+  updateRepo: 'lightExtensionRepos:updateMetadata',
   changeLifecycle: 'lightExtensionRepos:changeLifecycle',
   deleteRepo: 'lightExtensionRepos:delete',
   inspectSourceArchive: 'lightExtensionRepos:inspectSourceArchive',
@@ -195,6 +200,10 @@ export function useLightExtensionRepo(): UseLightExtensionRepoResult {
     [requestOperation],
   );
   const getRepo = useCallback((repoId: string) => requestOperation('getRepo', { repoId }), [requestOperation]);
+  const updateRepo = useCallback(
+    (input: LightExtensionUpdateRepoInput) => requestOperation('updateRepo', input),
+    [requestOperation],
+  );
   const changeLifecycle = useCallback(
     async (input: LightExtensionChangeLifecycleInput) => {
       const result = await requestOperation('changeLifecycle', input);
@@ -245,6 +254,7 @@ export function useLightExtensionRepo(): UseLightExtensionRepoResult {
       listRepos,
       createRepo,
       getRepo,
+      updateRepo,
       changeLifecycle,
       deleteRepo,
       inspectSourceArchive,
@@ -266,6 +276,7 @@ export function useLightExtensionRepo(): UseLightExtensionRepoResult {
       pull,
       pullCommit,
       saveSource,
+      updateRepo,
     ],
   );
 }

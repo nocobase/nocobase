@@ -128,6 +128,7 @@ export function createJSActionSourceBindingStep(): StepDefinition {
 
 export function createJSActionRunJsUISchema(options: { minHeight?: string } = {}) {
   return createLightExtensionRunJsUISchema({
+    kind: 'js-action',
     scene: 'eventFlow',
     surfaceStyle: 'action',
     minHeight: options.minHeight,

@@ -191,6 +191,7 @@ export function createLightExtensionSourceBindingStep(options: {
 }
 
 export function createLightExtensionRunJsUISchema(options: {
+  kind: 'js-action' | 'js-field' | 'js-item';
   scene: string;
   surfaceStyle: 'action' | 'render' | 'value';
   minHeight?: string;
@@ -206,6 +207,9 @@ export function createLightExtensionRunJsUISchema(options: {
       'x-component': RunJSEditorField,
       'x-component-props': {
         locatorFactory: 'flowModel.step',
+        sourceMetadata: {
+          lightExtensionKind: options.kind,
+        },
         surfaceStyle: options.surfaceStyle,
         scene: options.scene,
         height: '100%',
@@ -320,7 +324,6 @@ export function createLightExtensionSettingStep<TModel extends FlowModel>(option
       uiSchema: {
         value: {
           type: normalizeSchemaType(fieldSchema) || 'string',
-          title,
           'x-decorator': 'FormItem',
           'x-component': options.component,
           'x-component-props': {

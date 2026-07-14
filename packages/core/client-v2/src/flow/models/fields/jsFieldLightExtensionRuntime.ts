@@ -177,6 +177,7 @@ export function createJSFieldSourceBindingStep(): StepDefinition {
 
 export function createJSFieldRunJsUISchema(options: { scene: string; minHeight?: string } = { scene: 'block' }) {
   return createLightExtensionRunJsUISchema({
+    kind: 'js-field',
     scene: options.scene,
     surfaceStyle: 'render',
     minHeight: options.minHeight,

@@ -259,7 +259,9 @@ export async function assertLightExtensionSettingsHostContract(options: {
   const currentProperties = currentDescriptor.schema?.properties as Record<string, Record<string, unknown>>;
 
   expect(initialLabelStep?.[1].uiSchema?.value?.['x-component']).toBe(settingsComponent);
+  expect(initialLabelStep?.[1].uiSchema?.value?.title).toBeUndefined();
   expect(displayOptionsStep?.[1].persistParams).toBe(false);
+  expect(displayOptionsStep?.[1].uiSchema?.value?.title).toBeUndefined();
   expect(displayOptionsStep?.[1].uiSchema?.value?.['x-component-props']).toMatchObject({
     fieldName: 'displayOptions',
     fieldPath: ['displayOptions'],

@@ -622,6 +622,7 @@ function renderLeafInput(props: SettingsFieldProps) {
   const { path, rootValue, scopeValues, schema, value, onChange, disabled } = props;
   const component = schema['x-component'];
   const type = normalizeType(schema);
+  const ariaLabel = schema.title || path[path.length - 1];
 
   if (
     component === 'CollectionSelect' ||
@@ -631,6 +632,7 @@ function renderLeafInput(props: SettingsFieldProps) {
   ) {
     return (
       <SettingsAdvancedSelect
+        ariaLabel={ariaLabel}
         component={component}
         disabled={disabled}
         onChange={(next) => onChange(path, next)}
@@ -650,6 +652,7 @@ function renderLeafInput(props: SettingsFieldProps) {
     if (component === 'Radio.Group') {
       return (
         <Radio.Group
+          aria-label={ariaLabel}
           disabled={disabled}
           options={options}
           value={value}
@@ -657,12 +660,21 @@ function renderLeafInput(props: SettingsFieldProps) {
         />
       );
     }
-    return <Select disabled={disabled} options={options} value={value} onChange={(next) => onChange(path, next)} />;
+    return (
+      <Select
+        aria-label={ariaLabel}
+        disabled={disabled}
+        options={options}
+        value={value}
+        onChange={(next) => onChange(path, next)}
+      />
+    );
   }
 
   if (schema.enum && !schema.enum.every(isPrimitiveSelectValue)) {
     return (
       <Input.TextArea
+        aria-label={ariaLabel}
         disabled={disabled}
         value={value === undefined ? '' : JSON.stringify(value, null, 2)}
         autoSize={{ minRows: 3, maxRows: 8 }}
@@ -681,18 +693,27 @@ function renderLeafInput(props: SettingsFieldProps) {
     if (component === 'Checkbox') {
       return (
         <Checkbox
+          aria-label={ariaLabel}
           disabled={disabled}
           checked={Boolean(value)}
           onChange={(event) => onChange(path, event.target.checked)}
         />
       );
     }
-    return <Switch disabled={disabled} checked={Boolean(value)} onChange={(checked) => onChange(path, checked)} />;
+    return (
+      <Switch
+        aria-label={ariaLabel}
+        disabled={disabled}
+        checked={Boolean(value)}
+        onChange={(checked) => onChange(path, checked)}
+      />
+    );
   }
 
   if (type === 'number' || type === 'integer') {
     return (
       <InputNumber
+        aria-label={ariaLabel}
         disabled={disabled}
         style={{ width: '100%' }}
         value={typeof value === 'number' ? value : undefined}
@@ -708,6 +729,7 @@ function renderLeafInput(props: SettingsFieldProps) {
   if (type === 'array') {
     return (
       <Input.TextArea
+        aria-label={ariaLabel}
         disabled={disabled}
         value={value === undefined ? '' : JSON.stringify(value, null, 2)}
         autoSize={{ minRows: 3, maxRows: 8 }}
@@ -726,6 +748,7 @@ function renderLeafInput(props: SettingsFieldProps) {
     const dateValue = typeof value === 'string' && value ? dayjs(value) : undefined;
     return (
       <DatePicker
+        aria-label={ariaLabel}
         disabled={disabled}
         style={{ width: '100%' }}
         showTime={schema.format === 'date-time'}
@@ -738,6 +761,7 @@ function renderLeafInput(props: SettingsFieldProps) {
   if (component === 'ColorPicker') {
     return (
       <ColorPicker
+        aria-label={ariaLabel}
         disabled={disabled}
         showText
         value={typeof value === 'string' ? value : undefined}
@@ -749,6 +773,7 @@ function renderLeafInput(props: SettingsFieldProps) {
   if (component === 'Input.TextArea') {
     return (
       <Input.TextArea
+        aria-label={ariaLabel}
         disabled={disabled}
         value={typeof value === 'string' ? value : ''}
         autoSize={{ minRows: 2, maxRows: 6 }}
@@ -759,6 +784,7 @@ function renderLeafInput(props: SettingsFieldProps) {
 
   return (
     <Input
+      aria-label={ariaLabel}
       disabled={disabled}
       value={typeof value === 'string' ? value : ''}
       onChange={(event) => onChange(path, event.target.value)}
@@ -775,6 +801,7 @@ type AdvancedComponentName = 'CollectionSelect' | 'CollectionFieldSelect' | 'Rol
 type SettingsSelectOption = NonNullable<SelectProps<string>['options']>[number];
 
 interface SettingsAdvancedSelectProps {
+  ariaLabel: string;
   component: AdvancedComponentName;
   schema: JsonSchema;
   rootValue: Record<string, unknown>;
@@ -837,6 +864,7 @@ interface SettingsApiResource {
 }
 
 const SettingsAdvancedSelect: React.FC<SettingsAdvancedSelectProps> = ({
+  ariaLabel,
   component,
   disabled,
   onChange,
@@ -891,6 +919,7 @@ const SettingsAdvancedSelect: React.FC<SettingsAdvancedSelectProps> = ({
 
   return (
     <Select
+      aria-label={ariaLabel}
       allowClear
       disabled={disabled || isFieldSelectWaitingForCollection}
       optionFilterProp="label"

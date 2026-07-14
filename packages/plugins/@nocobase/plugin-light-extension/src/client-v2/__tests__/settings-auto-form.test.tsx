@@ -95,6 +95,8 @@ describe('SettingsAutoForm', () => {
     };
     const { queryByText, getByText, getByRole, getByDisplayValue } = render(<Harness />);
 
+    expect(getByRole('switch', { name: 'Enable color' })).toBeInTheDocument();
+
     expect(queryByText('Display settings')).not.toBeInTheDocument();
     expect(queryByText('Advanced color')).not.toBeInTheDocument();
     fireEvent.click(getByRole('switch'));
@@ -106,6 +108,7 @@ describe('SettingsAutoForm', () => {
       );
     });
     await waitFor(() => expect(getByText('Advanced color')).toBeInTheDocument());
+    expect(getByRole('textbox', { name: 'Advanced color' })).toBeInTheDocument();
     fireEvent.change(getByDisplayValue('#ff0000'), { target: { value: '#00ff00' } });
     fireEvent.click(getByRole('switch'));
     await waitFor(() => expect(queryByText('Advanced color')).not.toBeInTheDocument());

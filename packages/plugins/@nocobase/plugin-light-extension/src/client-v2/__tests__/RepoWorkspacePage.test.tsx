@@ -873,11 +873,15 @@ describe('LightExtensionWorkspacePage', () => {
   it('shows save progress and closes an embedded workspace after the persisted save completes', async () => {
     let footerActions: LightExtensionWorkspaceFooterActions | null = null;
     let resolveSave: ((value: ReturnType<typeof createSaveResult>) => void) | undefined;
+    let resolveSavedRefresh: (() => void) | undefined;
     const pendingSave = new Promise<ReturnType<typeof createSaveResult>>((resolve) => {
       resolveSave = resolve;
     });
+    const pendingSavedRefresh = new Promise<void>((resolve) => {
+      resolveSavedRefresh = resolve;
+    });
     const onRequestClose = vi.fn();
-    const onSaved = vi.fn();
+    const onSaved = vi.fn(() => pendingSavedRefresh);
     mocks.api.saveSource.mockReturnValueOnce(pendingSave);
 
     render(
@@ -917,9 +921,16 @@ describe('LightExtensionWorkspacePage', () => {
       await pendingSave;
     });
 
+    await waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));
+    expect(onRequestClose).not.toHaveBeenCalled();
+
+    await act(async () => {
+      resolveSavedRefresh?.();
+      await pendingSavedRefresh;
+    });
+
     await waitFor(() => expect(onRequestClose).toHaveBeenCalledTimes(1));
     await expect(hostSavePromise).resolves.toBe('saved');
-    expect(onSaved).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole('dialog', { name: 'Saving changes' })).not.toBeInTheDocument();
     expect(screen.queryByText('Source saved and compiled')).not.toBeInTheDocument();
   });

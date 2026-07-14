@@ -23,11 +23,35 @@ describe('MoveSourceToLightExtension', () => {
   it.each([
     ['JSBlockModel', 'JS Block name'],
     ['JSActionModel', 'JS Action name'],
+    ['JSRecordActionModel', 'JS Action name'],
+    ['JSCollectionActionModel', 'JS Action name'],
+    ['JSFormActionModel', 'JS Action name'],
+    ['FilterFormJSActionModel', 'JS Action name'],
     ['JSFieldModel', 'JS Field name'],
+    ['JSEditableFieldModel', 'JS Field name'],
+    ['JSColumnModel', 'JS Field name'],
     ['JSItemModel', 'JS Item name'],
+    ['JSItemActionModel', 'JS Item name'],
   ])('uses the surface-specific name label for %s', async (modelUse, expectedLabel) => {
     const context = createContext(vi.fn());
     context.workspace.source.metadata = { modelUse };
+    const request = vi.fn(async () => ({ data: { data: [] } }));
+
+    render(<MoveSourceToLightExtension api={{ request }} context={context} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Move to light extension' }));
+    expect(await screen.findByLabelText(expectedLabel)).toBeTruthy();
+  });
+
+  it.each([
+    ['js-block', 'JS Block name'],
+    ['js-action', 'JS Action name'],
+    ['js-field', 'JS Field name'],
+    ['js-item', 'JS Item name'],
+  ] as const)('uses generic editor metadata for %s hosts', async (lightExtensionKind, expectedLabel) => {
+    const context = createContext(vi.fn());
+    context.workspace.source.metadata = undefined;
+    context.sourceMetadata = { lightExtensionKind };
     const request = vi.fn(async () => ({ data: { data: [] } }));
 
     render(<MoveSourceToLightExtension api={{ request }} context={context} />);

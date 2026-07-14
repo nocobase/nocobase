@@ -27,6 +27,7 @@ type SurfaceSpec = {
   name: string;
   modelClass: typeof FlowModel;
   flowKey: string;
+  lightExtensionKind: 'js-block' | 'js-action' | 'js-field' | 'js-item';
   surfaceStyle: RunJSSurfaceStyle;
   scene: string;
 };
@@ -54,21 +55,51 @@ type SerializedRunJSStep = {
 };
 
 const surfaces: SurfaceSpec[] = [
-  { name: 'JSBlockModel', modelClass: JSBlockModel, flowKey: 'jsSettings', surfaceStyle: 'render', scene: 'block' },
-  { name: 'JSFieldModel', modelClass: JSFieldModel, flowKey: 'jsSettings', surfaceStyle: 'render', scene: 'block' },
+  {
+    name: 'JSBlockModel',
+    modelClass: JSBlockModel,
+    flowKey: 'jsSettings',
+    lightExtensionKind: 'js-block',
+    surfaceStyle: 'render',
+    scene: 'block',
+  },
+  {
+    name: 'JSFieldModel',
+    modelClass: JSFieldModel,
+    flowKey: 'jsSettings',
+    lightExtensionKind: 'js-field',
+    surfaceStyle: 'render',
+    scene: 'block',
+  },
   {
     name: 'JSEditableFieldModel',
     modelClass: JSEditableFieldModel,
     flowKey: 'jsSettings',
+    lightExtensionKind: 'js-field',
     surfaceStyle: 'render',
     scene: 'formValue',
   },
-  { name: 'JSItemModel', modelClass: JSItemModel, flowKey: 'jsSettings', surfaceStyle: 'render', scene: 'block' },
-  { name: 'JSColumnModel', modelClass: JSColumnModel, flowKey: 'jsSettings', surfaceStyle: 'render', scene: 'block' },
+  {
+    name: 'JSItemModel',
+    modelClass: JSItemModel,
+    flowKey: 'jsSettings',
+    lightExtensionKind: 'js-item',
+    surfaceStyle: 'render',
+    scene: 'block',
+  },
+  {
+    name: 'JSColumnModel',
+    modelClass: JSColumnModel,
+    flowKey: 'jsSettings',
+    lightExtensionKind: 'js-field',
+    surfaceStyle: 'render',
+    scene: 'block',
+  },
   {
     name: 'JSItemActionModel',
     modelClass: JSItemActionModel,
     flowKey: 'jsSettings',
+    lightExtensionKind: 'js-item',
     surfaceStyle: 'render',
     scene: 'block',
   },
@@ -76,6 +107,7 @@ const surfaces: SurfaceSpec[] = [
     name: 'JSActionModel',
     modelClass: JSActionModel,
     flowKey: 'clickSettings',
+    lightExtensionKind: 'js-action',
     surfaceStyle: 'action',
     scene: 'eventFlow',
   },
@@ -83,6 +115,7 @@ const surfaces: SurfaceSpec[] = [
     name: 'JSRecordActionModel',
     modelClass: JSRecordActionModel,
     flowKey: 'clickSettings',
+    lightExtensionKind: 'js-action',
     surfaceStyle: 'action',
     scene: 'eventFlow',
   },
@@ -90,6 +123,7 @@ const surfaces: SurfaceSpec[] = [
     name: 'JSCollectionActionModel',
     modelClass: JSCollectionActionModel,
     flowKey: 'clickSettings',
+    lightExtensionKind: 'js-action',
     surfaceStyle: 'action',
     scene: 'eventFlow',
   },
@@ -97,6 +131,7 @@ const surfaces: SurfaceSpec[] = [
     name: 'JSFormActionModel',
     modelClass: JSFormActionModel,
     flowKey: 'clickSettings',
+    lightExtensionKind: 'js-action',
     surfaceStyle: 'action',
     scene: 'eventFlow',
   },
@@ -104,6 +139,7 @@ const surfaces: SurfaceSpec[] = [
     name: 'FilterFormJSActionModel',
     modelClass: FilterFormJSActionModel,
     flowKey: 'clickSettings',
+    lightExtensionKind: 'js-action',
     surfaceStyle: 'action',
     scene: 'eventFlow',
   },
@@ -129,6 +165,9 @@ describe('RunJS FlowModel surfaces', () => {
     expect(codeSchema['x-component']).toBe(RunJSEditorField);
     expect(codeSchema['x-component-props']).toMatchObject({
       locatorFactory: 'flowModel.step',
+      sourceMetadata: {
+        lightExtensionKind: spec.lightExtensionKind,
+      },
       surfaceStyle: spec.surfaceStyle,
       scene: spec.scene,
     });

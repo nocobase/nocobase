@@ -87,7 +87,7 @@ interface LightExtensionWorkspacePageProps {
   onMoveToInline?: (input: LightExtensionMoveToInlineRequest) => void | Promise<void>;
   onFooterActionsChange?: (actions: LightExtensionWorkspaceFooterActions | null) => void;
   onRequestClose?: () => void | Promise<void>;
-  onSaved?: () => void;
+  onSaved?: () => void | Promise<void>;
 }
 
 export interface LightExtensionMoveToInlineRequest {
@@ -647,12 +647,12 @@ function LightExtensionWorkspacePage({
       setDiagnostics(result.diagnostics);
       setBaseHeadCommitId(result.commit.id);
       setBaseFiles(filesForSave);
+      await onSaved?.();
       if (onRequestClose) {
         await onRequestClose();
       } else {
         await loadWorkspace();
       }
-      onSaved?.();
       const request = embeddedSaveRequestRef.current;
       embeddedSaveRequestRef.current = null;
       embeddedSavePromiseRef.current = null;

@@ -57,8 +57,9 @@ function mergeDefaultRecords(
 ): Record<string, unknown> {
   const output = cloneJsonValue(propertyDefaults);
   for (const [key, value] of Object.entries(explicitDefault)) {
+    const existingValue = output[key];
     output[key] =
-      isRecord(output[key]) && isRecord(value) ? mergeDefaultRecords(output[key], value) : cloneJsonValue(value);
+      isRecord(existingValue) && isRecord(value) ? mergeDefaultRecords(existingValue, value) : cloneJsonValue(value);
   }
   return output;
 }

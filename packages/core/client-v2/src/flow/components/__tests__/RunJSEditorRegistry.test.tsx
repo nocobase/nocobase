@@ -600,6 +600,65 @@ describe('RunJSEditorRegistry', () => {
     expect(saveStepParams).not.toHaveBeenCalled();
   });
 
+  it('notifies settings surfaces when an external source save keeps the same binding', () => {
+    const engine = new FlowEngine();
+    const persistedValue = {
+      code: 'ctx.render("remote");',
+      sourceBinding: {
+        type: 'light-extension-entry',
+        repoId: 'ler_1',
+        entryId: 'lee_1',
+        kind: 'js-block',
+      },
+      sourceMode: 'light-extension',
+      settings: { color: 'blue' },
+      version: 'v2',
+    };
+    const model = engine.createModel<FlowModel>({
+      use: 'FlowModel',
+      uid: 'fm_external_source_refresh',
+      stepParams: {
+        jsSettings: {
+          runJs: persistedValue,
+        },
+      },
+    });
+    const siblingModel = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'fm_external_source_sibling' });
+    const flowContext = new FlowRuntimeContext(model, 'jsSettings', 'settings');
+    flowContext.defineMethod('getStepFormValues', () => persistedValue);
+    const emit = vi.spyOn(model.emitter, 'emit');
+    const siblingEmit = vi.spyOn(siblingModel.emitter, 'emit');
+
+    RunJSEditorRegistry.registerProvider({
+      key: 'external-source-refresh-provider',
+      canHandle: (props) => props.locator?.kind === 'flowModel.step',
+      renderEditor: (props) => (
+        <button type="button" onClick={() => props.onPersistedChange?.(props.value)}>
+          save source
+        </button>
+      ),
+    });
+
+    render(
+      <FlowContextProvider context={flowContext}>
+        <FlowStepContext.Provider
+          value={{
+            params: persistedValue,
+            path: 'fm_external_source_refresh_jsSettings_runJs',
+          }}
+        >
+          <RunJSEditorField locatorFactory="flowModel.step" surfaceStyle="action" value={persistedValue} />
+        </FlowStepContext.Provider>
+      </FlowContextProvider>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'save source' }));
+
+    expect(emit.mock.calls.filter(([event]) => event === 'onStepParamsChanged')).toHaveLength(1);
+    expect(siblingEmit.mock.calls.filter(([event]) => event === 'onStepParamsChanged')).toHaveLength(1);
+    expect(model.getStepParams('jsSettings', 'runJs')).toEqual(persistedValue);
+  });
+
   it('keeps inline fallback edits in the form without mutating model params', () => {
     const engine = new FlowEngine();
     const model = new FlowModel({ uid: 'fm_1', flowEngine: engine });

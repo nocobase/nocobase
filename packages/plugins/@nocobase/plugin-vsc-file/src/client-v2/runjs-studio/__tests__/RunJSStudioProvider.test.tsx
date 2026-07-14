@@ -14,6 +14,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import enUS from '../../../locale/en-US.json';
 import zhCN from '../../../locale/zh-CN.json';
 import { runJSStudioProvider } from '../RunJSStudioProvider';
+import { runJSStudioToolbarRegistry } from '../RunJSStudioToolbarRegistry';
 import { runJSManifestPath } from '../workspaceUtils';
 
 const mocks = vi.hoisted(() => ({
@@ -414,6 +415,27 @@ describe('runJSStudioProvider', () => {
         },
       });
     });
+  });
+
+  it('passes host source metadata to shared toolbar contributions', async () => {
+    const unregister = runJSStudioToolbarRegistry.register({
+      key: 'test-source-metadata',
+      component: ({ context }) => (
+        <span data-testid="toolbar-source-kind">{String(context.sourceMetadata?.lightExtensionKind || '')}</span>
+      ),
+    });
+
+    try {
+      renderEditor(vi.fn(), {
+        sourceMetadata: {
+          lightExtensionKind: 'js-field',
+        },
+      });
+
+      expect(await screen.findByTestId('toolbar-source-kind')).toHaveTextContent('js-field');
+    } finally {
+      unregister();
+    }
   });
 
   afterEach(() => {

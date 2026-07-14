@@ -27,6 +27,7 @@ const mocks = vi.hoisted(() => ({
   api: {
     listRepos: vi.fn(),
     createRepo: vi.fn(),
+    updateRepo: vi.fn(),
     changeLifecycle: vi.fn(),
     deleteRepo: vi.fn(),
     listCommits: vi.fn(),
@@ -136,6 +137,16 @@ describe('LightExtensionListPage', () => {
       normalizedName: 'browser-smoke',
       title: 'Browser smoke',
       description: null,
+      lifecycleStatus: 'enabled',
+      healthStatus: 'pending',
+      headCommitId: null,
+    });
+    mocks.api.updateRepo.mockResolvedValue({
+      id: 'ler_browser_smoke',
+      name: 'browser-smoke',
+      normalizedName: 'browser-smoke',
+      title: 'Browser smoke updated',
+      description: 'Updated description',
       lifecycleStatus: 'enabled',
       healthStatus: 'pending',
       headCommitId: null,
@@ -252,6 +263,126 @@ describe('LightExtensionListPage', () => {
     expect(screen.queryByRole('columnheader', { name: 'Status' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'View details' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Reference contract diagnostics' })).not.toBeInTheDocument();
+  });
+
+  it('edits the repository display name and description in a drawer and refreshes the row immediately', async () => {
+    mocks.api.listRepos.mockResolvedValueOnce([
+      {
+        id: 'ler_sales',
+        name: 'sales-widgets',
+        normalizedName: 'sales-widgets',
+        title: 'Sales widgets',
+        description: 'Sales dashboard helpers',
+        lifecycleStatus: 'enabled',
+        healthStatus: 'ready',
+        headCommitId: null,
+        entryCount: 2,
+        entryKinds: {
+          'js-block': 2,
+        },
+      },
+    ]);
+    mocks.api.updateRepo.mockResolvedValueOnce({
+      id: 'ler_sales',
+      name: 'sales-widgets',
+      normalizedName: 'sales-widgets',
+      title: 'Sales widgets updated',
+      description: 'Updated dashboard helpers',
+      lifecycleStatus: 'enabled',
+      healthStatus: 'ready',
+      headCommitId: null,
+    });
+    renderListPage();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Edit Sales widgets' }));
+
+    const drawer = await screen.findByRole('dialog', { name: 'Edit light extension' });
+    const titleInput = within(drawer).getByLabelText('Title');
+    const descriptionInput = within(drawer).getByLabelText('Description');
+    expect(titleInput).toHaveValue('Sales widgets');
+    await userEvent.clear(titleInput);
+    await userEvent.type(titleInput, 'Sales widgets updated');
+    await userEvent.clear(descriptionInput);
+    await userEvent.type(descriptionInput, 'Updated dashboard helpers');
+    await userEvent.click(within(drawer).getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => {
+      expect(mocks.api.updateRepo).toHaveBeenCalledWith({
+        repoId: 'ler_sales',
+        title: 'Sales widgets updated',
+        description: 'Updated dashboard helpers',
+      });
+    });
+    expect(await screen.findByText('Sales widgets updated')).toBeInTheDocument();
+    expect(screen.getByText('Updated dashboard helpers')).toBeInTheDocument();
+    expect(screen.getByText('js-block 2')).toBeInTheDocument();
+  });
+
+  it('validates a non-empty display title before updating a repository', async () => {
+    mocks.api.listRepos.mockResolvedValueOnce([
+      {
+        id: 'ler_sales',
+        name: 'sales-widgets',
+        normalizedName: 'sales-widgets',
+        title: 'Sales widgets',
+        description: 'Sales dashboard helpers',
+        lifecycleStatus: 'enabled',
+        healthStatus: 'ready',
+        headCommitId: null,
+      },
+    ]);
+    renderListPage();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Edit Sales widgets' }));
+
+    const drawer = await screen.findByRole('dialog', { name: 'Edit light extension' });
+    await userEvent.clear(within(drawer).getByLabelText('Title'));
+    await userEvent.click(within(drawer).getByRole('button', { name: 'Save' }));
+
+    expect(await within(drawer).findByText('Title is required')).toBeInTheDocument();
+    expect(mocks.api.updateRepo).not.toHaveBeenCalled();
+  });
+
+  it('clears the repository description without changing its technical name', async () => {
+    mocks.api.listRepos.mockResolvedValueOnce([
+      {
+        id: 'ler_sales',
+        name: 'sales-widgets',
+        normalizedName: 'sales-widgets',
+        title: 'Sales widgets',
+        description: 'Sales dashboard helpers',
+        lifecycleStatus: 'enabled',
+        healthStatus: 'ready',
+        headCommitId: null,
+      },
+    ]);
+    mocks.api.updateRepo.mockResolvedValueOnce({
+      id: 'ler_sales',
+      name: 'sales-widgets',
+      normalizedName: 'sales-widgets',
+      title: 'Sales widgets',
+      description: null,
+      lifecycleStatus: 'enabled',
+      healthStatus: 'ready',
+      headCommitId: null,
+    });
+    renderListPage();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Edit Sales widgets' }));
+
+    const drawer = await screen.findByRole('dialog', { name: 'Edit light extension' });
+    await userEvent.clear(within(drawer).getByLabelText('Description'));
+    await userEvent.click(within(drawer).getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => {
+      expect(mocks.api.updateRepo).toHaveBeenCalledWith({
+        repoId: 'ler_sales',
+        title: 'Sales widgets',
+        description: null,
+      });
+    });
+    expect(mocks.api.updateRepo.mock.calls[0][0]).not.toHaveProperty('name');
+    expect(screen.getByText('sales-widgets')).toBeInTheDocument();
   });
 
   it('makes every data column sortable except actions', async () => {

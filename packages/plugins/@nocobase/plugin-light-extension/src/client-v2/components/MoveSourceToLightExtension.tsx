@@ -226,7 +226,19 @@ function resolveLightExtensionKind(context: RunJSStudioToolbarContext): LightExt
     return null;
   }
   const modelUse = context.workspace.source.metadata?.modelUse;
-  return typeof modelUse === 'string' ? MODEL_USE_KIND.get(modelUse) || null : null;
+  const serverKind = typeof modelUse === 'string' ? MODEL_USE_KIND.get(modelUse) : undefined;
+  if (serverKind) {
+    return serverKind;
+  }
+  const declaredKind = context.sourceMetadata?.lightExtensionKind;
+  if (isLightExtensionKind(declaredKind)) {
+    return declaredKind;
+  }
+  return null;
+}
+
+function isLightExtensionKind(value: unknown): value is LightExtensionKind {
+  return value === 'js-block' || value === 'js-action' || value === 'js-field' || value === 'js-item';
 }
 
 function suggestDisplayName(context: RunJSStudioToolbarContext, kind: LightExtensionKind): string {

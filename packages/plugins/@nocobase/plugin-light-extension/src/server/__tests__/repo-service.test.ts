@@ -102,6 +102,59 @@ describe('plugin-light-extension repo service', () => {
     });
   });
 
+  it('updates repository display metadata without changing its technical identity', async () => {
+    const repo = await service.createRepo(
+      {
+        name: 'Stable Technical Name',
+        title: 'Original display name',
+        description: 'Original description',
+      },
+      { requestId: 'req_update_repo_create' },
+    );
+
+    const updated = await service.updateRepo(
+      {
+        repoId: repo.id,
+        title: 'Updated display name',
+        description: 'Updated description',
+      },
+      { requestId: 'req_update_repo' },
+    );
+
+    expect(updated).toMatchObject({
+      id: repo.id,
+      name: 'Stable Technical Name',
+      normalizedName: 'stable-technical-name',
+      title: 'Updated display name',
+      description: 'Updated description',
+    });
+    await expect(
+      app.db.getRepository('lightExtensionLogs').count({
+        filter: {
+          repoId: repo.id,
+          action: 'repoUpdate',
+        },
+      }),
+    ).resolves.toBe(1);
+
+    await service.updateRepo(
+      {
+        repoId: repo.id,
+        title: 'Updated display name',
+        description: 'Updated description',
+      },
+      { requestId: 'req_update_repo_noop' },
+    );
+    await expect(
+      app.db.getRepository('lightExtensionLogs').count({
+        filter: {
+          repoId: repo.id,
+          action: 'repoUpdate',
+        },
+      }),
+    ).resolves.toBe(1);
+  });
+
   it('creates the default template as the first commit for an empty initialFiles array', async () => {
     const repo = await service.createRepo(
       {
@@ -318,6 +371,7 @@ describe('plugin-light-extension repo service', () => {
         kind: 'jsBlock',
         entryName: 'main',
         entryPath: 'src/client/index.tsx',
+        descriptorPath: 'src/client/entry.json',
         compiledCommitId: 'vscc_deleted',
         runtimeArtifact: {
           code: 'ctx.render("deleted");',
