@@ -13,6 +13,7 @@
   "Days": "天",
   "Email channel not found": "未找到邮件通道",
   "Enable forget password": "启用忘记密码功能",
+  "Failed to load authenticator": "加载认证器失败",
   "Expired token refresh limit": "过期 Token 刷新时限",
   "Forgot password": "忘记密码",
   "Go to login": "前往登录",
