@@ -695,6 +695,15 @@ export default {
         ctx.throw(400);
       }
 
+      const messageConversation = await plugin.aiConversationsManager.getConversation({
+        sessionId: message.sessionId,
+        userId,
+      });
+
+      if (!messageConversation) {
+        ctx.throw(400);
+      }
+
       const toolCalls = message.toolCalls;
       if (!toolCalls?.length) {
         ctx.throw(400);
@@ -733,7 +742,7 @@ export default {
           },
         },
       });
-      const toolMessageMap = new Map<string, any>(
+      const toolMessageMap = new Map<string, Model>(
         toolMessages.map((toolMessage: Model) => [toolMessage.toolCallId, toolMessage]),
       );
 
@@ -804,6 +813,15 @@ export default {
           return next();
         }
 
+        const messageConversation = await plugin.aiConversationsManager.getConversation({
+          sessionId: message.sessionId,
+          userId,
+        });
+        if (!messageConversation) {
+          sendErrorResponse(ctx, 'conversation not found');
+          return next();
+        }
+
         const tools = message.toolCalls;
         if (!tools?.length) {
           sendErrorResponse(ctx, 'No tool calls found');
@@ -822,7 +840,7 @@ export default {
           model: resolvedModel,
         });
 
-        const userDecisions = await plugin.aiConversationsManager.getUserDecisions(messageId);
+        const userDecisions = await plugin.aiConversationsManager.getUserDecisions(message.messageId);
         await aiEmployee.stream({
           userDecisions,
         });
