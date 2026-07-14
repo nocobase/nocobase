@@ -20,8 +20,9 @@ import {
   type BaseLayoutRouteCoordinatorOptions,
   type RoutePageMeta,
 } from './BaseLayoutRouteCoordinator';
+import type { APIClient } from '../../APIClient';
 import { NocoBaseDesktopRouteType } from '../../flow-compat';
-import type { LayoutDefinition, LayoutStorageScopeStorageType } from '../../layout-manager/types';
+import type { LayoutDefinition } from '../../layout-manager/types';
 import { isLayoutContentRouteName } from '../../layout-manager/utils';
 
 export type BaseLayoutStructure = {
@@ -79,16 +80,7 @@ export interface LayoutRouteLike {
   layoutBasePathname?: string;
 }
 
-type LayoutStorageScopeApiClient = {
-  storage: unknown;
-  storagePrefix: string;
-  createStorage?: (storageType: LayoutStorageScopeStorageType) => unknown;
-};
-
-type LayoutStorageScopeSnapshot = {
-  storage: LayoutStorageScopeApiClient['storage'];
-  storagePrefix: string;
-};
+type LayoutStorageScopeSnapshot = Pick<APIClient, 'storage' | 'storagePrefix'>;
 
 const normalizeBasePathname = (basePathname?: string) =>
   `/${(basePathname || '/admin').replace(/^\/+/, '').replace(/\/+$/, '')}`;
@@ -430,7 +422,7 @@ export class BaseLayoutModel<
   }
 
   private getLayoutStorageScopeApiClient() {
-    return (this.flowEngine.context.app as { apiClient?: LayoutStorageScopeApiClient } | undefined)?.apiClient;
+    return (this.flowEngine.context.app as { apiClient?: APIClient } | undefined)?.apiClient;
   }
 
   private syncLayoutStorageScope(layoutRoute: LayoutRouteMatch | null) {
@@ -448,7 +440,7 @@ export class BaseLayoutModel<
     }
 
     const apiClient = this.getLayoutStorageScopeApiClient();
-    if (!apiClient?.createStorage) {
+    if (!apiClient) {
       return;
     }
 

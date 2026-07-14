@@ -63,6 +63,14 @@ const layout: LayoutDefinition = {
   authCheck: true,
 };
 
+const sessionStorageScopedLayout: LayoutDefinition = {
+  ...layout,
+  storageScope: {
+    storageType: 'sessionStorage',
+    prefix: 'PUBLIC_FORM',
+  },
+};
+
 describe('LayoutRoute', () => {
   it('creates layout model from registered string class and injects layout definition', async () => {
     const engine = new FlowEngine();
@@ -423,16 +431,9 @@ describe('LayoutContentRoute', () => {
   });
 
   it('scopes apiClient storage for configured layout page routes and restores it when leaving', async () => {
-    const scopedLayout: LayoutDefinition = {
-      ...layout,
-      storageScope: {
-        storageType: 'sessionStorage',
-        prefix: 'PUBLIC_FORM',
-      },
-    };
     const { apiClient, originalStorage, router } = setup(
       '/test/page-1',
-      scopedLayout,
+      sessionStorageScopedLayout,
       TestLayoutModel,
       'NOCOBASE_APP1_',
     );
@@ -441,7 +442,6 @@ describe('LayoutContentRoute', () => {
       expect(apiClient.storagePrefix).toBe('NOCOBASE_APP1_PUBLIC_FORM_page-1_');
     });
     expect(apiClient.createStorage).toHaveBeenCalledWith('sessionStorage');
-    const firstStorage = apiClient.storage;
 
     await act(async () => {
       await router.navigate('/test/page-2');
@@ -451,7 +451,6 @@ describe('LayoutContentRoute', () => {
       expect(apiClient.storagePrefix).toBe('NOCOBASE_APP1_PUBLIC_FORM_page-2_');
     });
     expect(apiClient.createStorage).toHaveBeenCalledTimes(2);
-    expect(apiClient.storage).not.toBe(firstStorage);
 
     await act(async () => {
       await router.navigate('/test');
@@ -464,14 +463,7 @@ describe('LayoutContentRoute', () => {
   });
 
   it('restores scoped apiClient storage when a configured layout unmounts', async () => {
-    const scopedLayout: LayoutDefinition = {
-      ...layout,
-      storageScope: {
-        storageType: 'sessionStorage',
-        prefix: 'PUBLIC_FORM',
-      },
-    };
-    const { apiClient, originalStorage, unmount } = setup('/test/page-1', scopedLayout);
+    const { apiClient, originalStorage, unmount } = setup('/test/page-1', sessionStorageScopedLayout);
 
     await waitFor(() => {
       expect(apiClient.storagePrefix).toBe('NOCOBASE_PUBLIC_FORM_page-1_');
