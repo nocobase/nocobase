@@ -201,7 +201,7 @@ const FlowsContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
           }),
         );
 
-        return result.filter((item): item is ConfigurableFlow => Boolean(item));
+        return result.filter((item) => item !== null);
       } catch (error) {
         console.warn('[FlowsContextMenu] 获取可配置flows失败:', error);
         return [];
