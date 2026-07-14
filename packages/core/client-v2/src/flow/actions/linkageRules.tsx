@@ -731,6 +731,41 @@ export const linkageSetMenuItemProps = defineAction({
   },
 });
 
+export const linkageSetTabProps = defineAction({
+  name: 'linkageSetTabProps',
+  title: tExpr('Set tab state'),
+  scene: ActionScene.TAB_LINKAGE_RULES,
+  sort: 100,
+  uiSchema: {
+    value: {
+      type: 'string',
+      'x-component': (props) => {
+        const { value, onChange } = props;
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        const ctx = useFlowContext();
+        const t = ctx.model.translate.bind(ctx.model);
+
+        return (
+          <Select
+            value={value}
+            onChange={onChange}
+            placeholder={t('Please select state')}
+            style={{ width: '100%' }}
+            options={[
+              { label: t('Visible'), value: 'visible' },
+              { label: t('Hidden'), value: 'hidden' },
+            ]}
+            allowClear
+          />
+        );
+      },
+    },
+  },
+  handler(ctx, { value, setProps }) {
+    setProps(ctx.model, { hiddenModel: value === 'hidden' });
+  },
+});
+
 export const linkageSetFieldProps = defineAction({
   name: 'linkageSetFieldProps',
   title: tExpr('Set field state'),
@@ -1339,6 +1374,7 @@ export const linkageRunjs = defineAction({
     ActionScene.FIELD_LINKAGE_RULES,
     ActionScene.ACTION_LINKAGE_RULES,
     ActionScene.MENU_LINKAGE_RULES,
+    ActionScene.TAB_LINKAGE_RULES,
     ActionScene.DETAILS_FIELD_LINKAGE_RULES,
     ActionScene.SUB_FORM_FIELD_LINKAGE_RULES,
   ],
@@ -2449,6 +2485,32 @@ export const menuLinkageRules = defineAction({
         'x-component-props': {
           supportedActions: getSupportedActions(ctx, ActionScene.MENU_LINKAGE_RULES),
           title: tExpr('Menu linkage rules'),
+        },
+      },
+    };
+  },
+  defaultParams: {
+    value: [],
+  },
+  useRawParams: true,
+  handler: async (ctx, params) => {
+    const resolved = await resolveLinkageRulesParamsPreservingRunJsScripts(ctx, params);
+    return commonLinkageRulesHandler(ctx, resolved);
+  },
+});
+
+export const tabLinkageRules = defineAction({
+  name: 'tabLinkageRules',
+  title: tExpr('Tab linkage rules'),
+  uiMode: 'embed',
+  uiSchema(ctx) {
+    return {
+      value: {
+        type: 'array',
+        'x-component': LinkageRulesUI,
+        'x-component-props': {
+          supportedActions: getSupportedActions(ctx, ActionScene.TAB_LINKAGE_RULES),
+          title: tExpr('Tab linkage rules'),
         },
       },
     };

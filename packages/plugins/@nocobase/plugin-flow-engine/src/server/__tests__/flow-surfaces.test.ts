@@ -361,6 +361,48 @@ describe('flowSurfaces resource', () => {
       title: 'Tab flow registry page',
       tabTitle: 'Registry tab',
     });
+    const linkageRules = {
+      value: [
+        {
+          key: 'tab-rule',
+          title: 'Keep tab linkage rules',
+          enable: true,
+          condition: { logic: '$and', items: [] },
+          actions: [],
+        },
+      ],
+    };
+    const currentAnchor = await flowRepo.findModelById(created.tabSchemaUid, { includeAsyncNode: true });
+    const saveAnchor = await rootAgent.resource('flowModels').save({
+      values: {
+        ..._.omit(currentAnchor, ['subModels']),
+        stepParams: {
+          ...(currentAnchor?.stepParams || {}),
+          pageTabSettings: {
+            ...(currentAnchor?.stepParams?.pageTabSettings || {}),
+            linkageRules,
+          },
+        },
+      },
+    });
+    expect(saveAnchor.status).toBe(200);
+
+    const initialTabRoute = await routesRepo.findOne({
+      filter: {
+        schemaUid: created.tabSchemaUid,
+      },
+    });
+    await routesRepo.update({
+      filter: {
+        schemaUid: created.tabSchemaUid,
+      },
+      values: {
+        options: {
+          ...(initialTabRoute?.get('options') || {}),
+          hasPersistedPageTabLinkageRules: true,
+        },
+      },
+    });
 
     const setFlows = await rootAgent.resource('flowSurfaces').setEventFlows({
       values: {
@@ -386,6 +428,7 @@ describe('flowSurfaces resource', () => {
         key: 'tabBeforeRender',
       },
     });
+    expect(updatedTabRoute?.get('options')?.hasPersistedPageTabLinkageRules).toBe(true);
 
     const tabReadback = await getSurface(rootAgent, {
       tabSchemaUid: created.tabSchemaUid,
@@ -396,6 +439,7 @@ describe('flowSurfaces resource', () => {
         key: 'tabBeforeRender',
       },
     });
+    expect(tabReadback.tree.stepParams?.pageTabSettings?.linkageRules).toEqual(linkageRules);
 
     const readback = await getSurface(rootAgent, {
       tabSchemaUid: created.tabSchemaUid,

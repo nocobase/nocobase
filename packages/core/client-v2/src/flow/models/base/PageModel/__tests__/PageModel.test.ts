@@ -221,6 +221,17 @@ describe('PageModel', () => {
   let pageModel: InstanceType<typeof PageModelClass>;
   let mockDragEndEvent: DragEndEvent;
 
+  const getDndChildren = (result: { props: { children?: unknown } }) => {
+    const children = result.props.children;
+    return Array.isArray(children) ? children : [children].filter(Boolean);
+  };
+
+  const getTabsElement = (result: { props: { children?: unknown } }) => getDndChildren(result)[1] as any;
+
+  const getTabSyncElement = (result: { props: { children?: unknown } }) => getDndChildren(result)[0] as any;
+
+  const getHiddenActiveTabContent = (result: { props: { children?: unknown } }) => getDndChildren(result)[2];
+
   beforeEach(async () => {
     vi.resetModules();
     vi.clearAllMocks();
@@ -299,9 +310,82 @@ describe('PageModel', () => {
       expect(blockOnActive).toHaveBeenCalledWith(true);
       expect(blockOnInactive).toHaveBeenCalledWith(false);
     });
+
+    it('should use the first actual tab for lifecycle when tabs are disabled even if it is hidden', () => {
+      const hiddenFirstTab = {
+        uid: 'tab-hidden-first',
+        hidden: true,
+        context: {},
+        subModels: { grid: { mapSubModels: vi.fn() } },
+      };
+      const visibleSecondTab = {
+        uid: 'tab-visible-second',
+        context: {},
+        subModels: { grid: { mapSubModels: vi.fn() } },
+      };
+      (pageModel as any).subModels = { tabs: [hiddenFirstTab, visibleSecondTab] };
+      pageModel.props = { enableTabs: false, tabActiveKey: 'tab-visible-second' } as any;
+      (pageModel as any).context = { view: { navigation: null } };
+      const invokeSpy = vi.spyOn(pageModel as any, 'invokeTabModelLifecycleMethod').mockImplementation(() => undefined);
+
+      pageModel.activateCurrentTab();
+      pageModel.deactivateCurrentTab();
+
+      expect(invokeSpy).toHaveBeenNthCalledWith(1, 'tab-hidden-first', 'onActive', false);
+      expect(invokeSpy).toHaveBeenNthCalledWith(2, 'tab-hidden-first', 'onInactive');
+    });
+
+    it('should keep a hidden active tab responsible for lifecycle when tabs are enabled', () => {
+      const hiddenActiveTab = {
+        uid: 'tab-hidden-active',
+        hidden: true,
+        context: {},
+        subModels: { grid: { mapSubModels: vi.fn() } },
+      };
+      const visibleTab = {
+        uid: 'tab-visible',
+        context: {},
+        subModels: { grid: { mapSubModels: vi.fn() } },
+      };
+      (pageModel as any).subModels = { tabs: [hiddenActiveTab, visibleTab] };
+      pageModel.props = { enableTabs: true, tabActiveKey: 'tab-hidden-active' } as any;
+      (pageModel as any).context = {
+        view: { navigation: { viewParams: { tabUid: 'tab-hidden-active' } } },
+      };
+      const invokeSpy = vi.spyOn(pageModel as any, 'invokeTabModelLifecycleMethod').mockImplementation(() => undefined);
+
+      pageModel.activateCurrentTab();
+      pageModel.deactivateCurrentTab();
+
+      expect(invokeSpy).toHaveBeenNthCalledWith(1, 'tab-hidden-active', 'onActive', false);
+      expect(invokeSpy).toHaveBeenNthCalledWith(2, 'tab-hidden-active', 'onInactive');
+    });
   });
 
   describe('renderTabs activeKey logic', () => {
+    const createTab = (uid: string, hidden = false) => ({
+      uid,
+      hidden,
+      context: {},
+      subModels: { grid: { mapSubModels: vi.fn() } },
+      renderChildren: vi.fn(() => uid),
+    });
+
+    const initialSyncState = {
+      previousEffectiveActiveKey: undefined,
+      previousAllHidden: false,
+      lastCorrectionSignature: undefined,
+    };
+
+    const runTabSync = (
+      result: { props: { children?: unknown } },
+      state: typeof initialSyncState | Record<string, unknown> = initialSyncState,
+    ) => {
+      const syncElement = getTabSyncElement(result);
+      expect(typeof syncElement?.props?.onSync).toBe('function');
+      return syncElement.props.onSync(state);
+    };
+
     beforeEach(() => {
       // Mock mapTabs to avoid complex rendering logic inside it
       pageModel.mapTabs = vi.fn().mockReturnValue([]);
@@ -325,7 +409,7 @@ describe('PageModel', () => {
 
       const result = pageModel.renderTabs() as any;
       // result is <DndProvider><Tabs ... /></DndProvider>
-      const tabsElement = result.props.children;
+      const tabsElement = getTabsElement(result);
 
       expect(tabsElement.props.activeKey).toBe('tab-from-params');
     });
@@ -341,8 +425,300 @@ describe('PageModel', () => {
       };
 
       const result = pageModel.renderTabs() as any;
-      const tabsElement = result.props.children;
+      const tabsElement = getTabsElement(result);
       expect(tabsElement.props.activeKey).toBe('first-tab-uid');
+    });
+
+    it('should use the first visible tab when activeKey is unspecified', () => {
+      const hiddenTab = createTab('tab-hidden', true);
+      const visibleTab = createTab('tab-visible');
+      (pageModel as any).subModels = { tabs: [hiddenTab, visibleTab] };
+      pageModel.context.view = {
+        navigation: {
+          viewParams: {},
+          changeTo: vi.fn(),
+        },
+      } as any;
+
+      const tabsElement = getTabsElement(pageModel.renderTabs() as any);
+
+      expect(tabsElement.props.activeKey).toBe('tab-visible');
+      expect(pageModel.context.view.navigation.changeTo).not.toHaveBeenCalled();
+    });
+
+    it('should keep a visible URL activeKey unchanged', () => {
+      (pageModel as any).subModels = { tabs: [createTab('tab-1'), createTab('tab-2')] };
+      const changeTo = vi.fn();
+      pageModel.context.view = {
+        navigation: {
+          viewParams: { tabUid: 'tab-2' },
+          changeTo,
+        },
+      } as any;
+
+      const result = pageModel.renderTabs() as any;
+      const tabsElement = getTabsElement(result);
+      const nextState = runTabSync(result);
+
+      expect(tabsElement.props.activeKey).toBe('tab-2');
+      expect(nextState.effectiveActiveKey).toBe('tab-2');
+      expect(changeTo).not.toHaveBeenCalled();
+    });
+
+    it('should keep an unknown URL activeKey for the existing deep-link behavior', () => {
+      (pageModel as any).subModels = { tabs: [createTab('tab-1'), createTab('tab-2')] };
+      const changeTo = vi.fn();
+      const invokeSpy = vi.spyOn(pageModel as any, 'invokeTabModelLifecycleMethod');
+      pageModel.context.view = {
+        navigation: {
+          viewParams: { tabUid: 'unknown-tab' },
+          changeTo,
+        },
+      } as any;
+
+      const result = pageModel.renderTabs() as any;
+      const tabsElement = getTabsElement(result);
+      const nextState = runTabSync(result);
+
+      expect(tabsElement.props.activeKey).toBe('unknown-tab');
+      expect(nextState.effectiveActiveKey).toBe('unknown-tab');
+      expect(changeTo).not.toHaveBeenCalled();
+      expect(invokeSpy).not.toHaveBeenCalled();
+    });
+
+    it('should keep a hidden URL activeKey and render its content without exposing a tab item', () => {
+      (pageModel as any).subModels = { tabs: [createTab('tab-hidden', true), createTab('tab-visible')] };
+      pageModel.mapTabs = PageModelClass.prototype.mapTabs.bind(pageModel);
+      pageModel.props = { tabActiveKey: 'tab-hidden' } as any;
+      const changeTo = vi.fn();
+      const invokeSpy = vi.spyOn(pageModel as any, 'invokeTabModelLifecycleMethod').mockImplementation(() => undefined);
+      pageModel.context.view = {
+        navigation: {
+          viewParams: { tabUid: 'tab-hidden' },
+          changeTo,
+        },
+      } as any;
+
+      const result = pageModel.renderTabs() as any;
+      const tabsElement = getTabsElement(result);
+      const nextState = runTabSync(result, {
+        ...initialSyncState,
+        previousEffectiveActiveKey: 'tab-hidden',
+      });
+
+      expect(tabsElement.props.activeKey).toBe('tab-hidden');
+      expect(tabsElement.props.items.map((item: { key: string }) => item.key)).toEqual(['tab-hidden', 'tab-visible']);
+      expect(tabsElement.props.items[0].children).toBe('tab-hidden');
+      expect(getHiddenActiveTabContent(result)).toBeUndefined();
+      expect(typeof tabsElement.props.renderTabBar).toBe('function');
+      expect(changeTo).not.toHaveBeenCalled();
+      expect(pageModel.props.tabActiveKey).toBe('tab-hidden');
+      expect(invokeSpy).not.toHaveBeenCalled();
+      expect(nextState.effectiveActiveKey).toBe('tab-hidden');
+    });
+
+    it('should keep a hidden local activeKey and render its content without lifecycle switching', () => {
+      (pageModel as any).subModels = { tabs: [createTab('tab-hidden', true), createTab('tab-visible')] };
+      pageModel.props = { tabActiveKey: 'tab-hidden' } as any;
+      const invokeSpy = vi.spyOn(pageModel as any, 'invokeTabModelLifecycleMethod').mockImplementation(() => undefined);
+      pageModel.context.view = { navigation: null } as any;
+
+      const result = pageModel.renderTabs() as any;
+      const nextState = runTabSync(result, {
+        ...initialSyncState,
+        previousEffectiveActiveKey: 'tab-hidden',
+      });
+
+      expect(getTabsElement(result).props.activeKey).toBe('tab-hidden');
+      expect(pageModel.props.tabActiveKey).toBe('tab-hidden');
+      expect(invokeSpy).not.toHaveBeenCalled();
+      expect(nextState.effectiveActiveKey).toBe('tab-hidden');
+    });
+
+    it('should not switch when a non-active tab becomes hidden', () => {
+      (pageModel as any).subModels = { tabs: [createTab('tab-active'), createTab('tab-hidden', true)] };
+      pageModel.props = { tabActiveKey: 'tab-active' } as any;
+      const changeTo = vi.fn();
+      const invokeSpy = vi.spyOn(pageModel as any, 'invokeTabModelLifecycleMethod');
+      pageModel.context.view = {
+        navigation: {
+          viewParams: { tabUid: 'tab-active' },
+          changeTo,
+        },
+      } as any;
+
+      const nextState = runTabSync(pageModel.renderTabs() as any, {
+        ...initialSyncState,
+        previousEffectiveActiveKey: 'tab-active',
+      });
+
+      expect(nextState.effectiveActiveKey).toBe('tab-active');
+      expect(changeTo).not.toHaveBeenCalled();
+      expect(invokeSpy).not.toHaveBeenCalled();
+    });
+
+    it('should keep an implicitly active tab when it becomes hidden without adding tabUid to URL', () => {
+      const oldTab = createTab('tab-old');
+      (pageModel as any).subModels = { tabs: [oldTab, createTab('tab-new')] };
+      const changeTo = vi.fn();
+      const invokeSpy = vi.spyOn(pageModel as any, 'invokeTabModelLifecycleMethod').mockImplementation(() => undefined);
+      pageModel.context.view = {
+        navigation: {
+          viewParams: {},
+          changeTo,
+        },
+      } as any;
+
+      let syncState = runTabSync(pageModel.renderTabs() as any);
+      expect(pageModel.props.tabActiveKey).toBe('tab-old');
+
+      invokeSpy.mockClear();
+      oldTab.hidden = true;
+      const result = pageModel.renderTabs() as any;
+      syncState = runTabSync(result, syncState);
+
+      expect(changeTo).not.toHaveBeenCalled();
+      expect(getTabsElement(result).props.activeKey).toBe('tab-old');
+      expect(pageModel.props.tabActiveKey).toBe('tab-old');
+      expect(invokeSpy).not.toHaveBeenCalled();
+      expect(syncState.effectiveActiveKey).toBe('tab-old');
+    });
+
+    it('should keep an explicitly requested activeKey when all tabs are hidden', () => {
+      (pageModel as any).subModels = { tabs: [createTab('tab-1', true), createTab('tab-2', true)] };
+      pageModel.mapTabs = PageModelClass.prototype.mapTabs.bind(pageModel);
+      pageModel.props = { tabActiveKey: 'tab-1' } as any;
+      const changeTo = vi.fn();
+      const invokeSpy = vi.spyOn(pageModel as any, 'invokeTabModelLifecycleMethod').mockImplementation(() => undefined);
+      pageModel.context.view = {
+        navigation: {
+          viewParams: { tabUid: 'tab-1' },
+          changeTo,
+        },
+      } as any;
+
+      const result = pageModel.renderTabs() as any;
+      const nextState = runTabSync(result, {
+        ...initialSyncState,
+        previousEffectiveActiveKey: 'tab-1',
+      });
+
+      expect(getTabsElement(result).props.activeKey).toBe('tab-1');
+      expect(getTabsElement(result).props.items.map((item: { key: string }) => item.key)).toEqual(['tab-1', 'tab-2']);
+      expect(getTabsElement(result).props.items[0].children).toBe('tab-1');
+      expect(getHiddenActiveTabContent(result)).toBeUndefined();
+      expect(changeTo).not.toHaveBeenCalled();
+      expect(pageModel.props.tabActiveKey).toBe('tab-1');
+      expect(invokeSpy).not.toHaveBeenCalled();
+      expect(nextState).toMatchObject({ effectiveActiveKey: 'tab-1', previousAllHidden: true });
+    });
+
+    it('should not implicitly activate a hidden pane when all entries are hidden and activeKey is unspecified', () => {
+      (pageModel as any).subModels = { tabs: [createTab('tab-1', true), createTab('tab-2', true)] };
+      pageModel.mapTabs = PageModelClass.prototype.mapTabs.bind(pageModel);
+      pageModel.context.view = {
+        navigation: {
+          viewParams: {},
+          changeTo: vi.fn(),
+        },
+      } as any;
+
+      const tabsElement = getTabsElement(pageModel.renderTabs() as any);
+
+      expect(tabsElement.props.items.map((item: { key: string }) => item.key)).toEqual(['tab-1', 'tab-2']);
+      expect(tabsElement.props.activeKey).not.toBeUndefined();
+      expect(tabsElement.props.activeKey).not.toBe('tab-1');
+      expect(tabsElement.props.activeKey).not.toBe('tab-2');
+      expect(pageModel.context.view.navigation.changeTo).not.toHaveBeenCalled();
+    });
+
+    it('should keep the requested hidden tab active when other tab entries become visible again', () => {
+      const firstTab = createTab('tab-1', true);
+      const secondTab = createTab('tab-2', true);
+      (pageModel as any).subModels = { tabs: [firstTab, secondTab] };
+      pageModel.props = { tabActiveKey: 'tab-1' } as any;
+      const changeTo = vi.fn();
+      const invokeSpy = vi.spyOn(pageModel as any, 'invokeTabModelLifecycleMethod').mockImplementation(() => undefined);
+      vi.spyOn(pageModel as any, 'updateDocumentTitle').mockResolvedValue(undefined);
+      pageModel.context.view = {
+        navigation: {
+          viewParams: { tabUid: 'tab-1' },
+          changeTo,
+        },
+      } as any;
+
+      let syncState = runTabSync(pageModel.renderTabs() as any, {
+        ...initialSyncState,
+        previousEffectiveActiveKey: 'tab-1',
+      });
+      secondTab.hidden = false;
+      syncState = runTabSync(pageModel.renderTabs() as any, syncState);
+
+      expect(changeTo).not.toHaveBeenCalled();
+      expect(pageModel.props.tabActiveKey).toBe('tab-1');
+      expect(invokeSpy).not.toHaveBeenCalled();
+      expect(syncState.effectiveActiveKey).toBe('tab-1');
+
+      firstTab.hidden = false;
+      syncState = runTabSync(pageModel.renderTabs() as any, syncState);
+
+      expect(syncState.effectiveActiveKey).toBe('tab-1');
+      expect(pageModel.props.tabActiveKey).toBe('tab-1');
+      expect(changeTo).not.toHaveBeenCalled();
+      expect(invokeSpy).not.toHaveBeenCalled();
+    });
+
+    it('should keep the hidden active tab after UI Editor closes', () => {
+      (pageModel as any).subModels = { tabs: [createTab('tab-hidden', true), createTab('tab-visible')] };
+      pageModel.props = { tabActiveKey: 'tab-hidden' } as any;
+      const changeTo = vi.fn();
+      const invokeSpy = vi.spyOn(pageModel as any, 'invokeTabModelLifecycleMethod').mockImplementation(() => undefined);
+      pageModel.context = {
+        t: (value: string) => value,
+        flowSettingsEnabled: true,
+        view: {
+          navigation: {
+            viewParams: { tabUid: 'tab-hidden' },
+            changeTo,
+          },
+        },
+      } as any;
+
+      let syncState = runTabSync(pageModel.renderTabs() as any, {
+        ...initialSyncState,
+        previousEffectiveActiveKey: 'tab-hidden',
+      });
+      expect(changeTo).not.toHaveBeenCalled();
+
+      pageModel.context.flowSettingsEnabled = false;
+      syncState = runTabSync(pageModel.renderTabs() as any, syncState);
+
+      expect(syncState.effectiveActiveKey).toBe('tab-hidden');
+      expect(changeTo).not.toHaveBeenCalled();
+      expect(invokeSpy).not.toHaveBeenCalled();
+    });
+
+    it('should keep hidden active synchronization idempotent across repeated effect passes', () => {
+      (pageModel as any).subModels = { tabs: [createTab('tab-hidden', true), createTab('tab-visible')] };
+      pageModel.props = { tabActiveKey: 'tab-hidden' } as any;
+      const changeTo = vi.fn();
+      const invokeSpy = vi.spyOn(pageModel as any, 'invokeTabModelLifecycleMethod').mockImplementation(() => undefined);
+      pageModel.context.view = {
+        navigation: {
+          viewParams: { tabUid: 'tab-hidden' },
+          changeTo,
+        },
+      } as any;
+
+      let syncState = runTabSync(pageModel.renderTabs() as any, {
+        ...initialSyncState,
+        previousEffectiveActiveKey: 'tab-hidden',
+      });
+      syncState = runTabSync(pageModel.renderTabs() as any, syncState);
+
+      expect(syncState.effectiveActiveKey).toBe('tab-hidden');
+      expect(changeTo).not.toHaveBeenCalled();
+      expect(invokeSpy).not.toHaveBeenCalled();
     });
 
     it('should use props.tabActiveKey if viewParams is missing', () => {
@@ -353,7 +729,7 @@ describe('PageModel', () => {
       };
 
       const result = pageModel.renderTabs() as any;
-      const tabsElement = result.props.children;
+      const tabsElement = getTabsElement(result);
       expect(tabsElement.props.activeKey).toBe('tab-from-props');
     });
 
@@ -366,7 +742,7 @@ describe('PageModel', () => {
       } as any;
 
       const result = pageModel.renderTabs() as any;
-      const tabsElement = result.props.children;
+      const tabsElement = getTabsElement(result);
 
       expect(tabsElement.props.className).toBeUndefined();
     });
@@ -380,7 +756,7 @@ describe('PageModel', () => {
       } as any;
 
       const result = pageModel.renderTabs() as any;
-      const tabsElement = result.props.children;
+      const tabsElement = getTabsElement(result);
 
       expect(tabsElement.props.className).toBeUndefined();
     });
@@ -394,7 +770,7 @@ describe('PageModel', () => {
       } as any;
 
       const result = pageModel.renderTabs() as any;
-      const tabsElement = result.props.children;
+      const tabsElement = getTabsElement(result);
 
       expect(tabsElement.props.tabBarExtraContent.left).toBeTruthy();
     });
@@ -409,7 +785,7 @@ describe('PageModel', () => {
       pageModel.tabBarExtraContent = { left: 'back' } as any;
 
       const result = pageModel.renderTabs() as any;
-      const tabsElement = result.props.children;
+      const tabsElement = getTabsElement(result);
 
       expect(tabsElement.props.tabBarExtraContent.left).toBe('back');
     });
@@ -424,7 +800,7 @@ describe('PageModel', () => {
       pageModel.tabBarExtraContent = { right: 'custom-right' } as any;
 
       const result = pageModel.renderTabs() as any;
-      const tabsElement = result.props.children;
+      const tabsElement = getTabsElement(result);
 
       expect(tabsElement.props.tabBarExtraContent.right).toBe('custom-right');
     });
@@ -439,7 +815,7 @@ describe('PageModel', () => {
       } as any;
 
       const result = pageModel.renderTabs() as any;
-      const tabsElement = result.props.children;
+      const tabsElement = getTabsElement(result);
       const rightExtraContent = tabsElement.props.tabBarExtraContent.right;
 
       expect(rightExtraContent).toBeTruthy();
@@ -466,7 +842,7 @@ describe('PageModel', () => {
       } as any;
 
       const result = pageModel.renderTabs() as any;
-      const tabsElement = result.props.children;
+      const tabsElement = getTabsElement(result);
 
       tabsElement.props.onChange('tab-new');
 
@@ -791,6 +1167,99 @@ describe('PageModel', () => {
       await (pageModel as any).updateDocumentTitle();
 
       expect(document.title).toBe('Fallback tab title');
+    });
+
+    it('should use the hidden active tab documentTitle when its entry is hidden', async () => {
+      pageModel.props = { enableTabs: true, tabActiveKey: 'tab-hidden' } as any;
+      const hiddenTab = {
+        uid: 'tab-hidden',
+        hidden: true,
+        stepParams: {
+          pageTabSettings: {
+            tab: {
+              documentTitle: 'Hidden tab document title',
+            },
+          },
+        },
+        getTabTitle: vi.fn(() => 'Hidden tab'),
+      };
+      const visibleTab = {
+        uid: 'tab-visible',
+        stepParams: {
+          pageTabSettings: {
+            tab: {
+              documentTitle: 'Visible tab document title',
+            },
+          },
+        },
+        getTabTitle: vi.fn(() => 'Visible tab'),
+      };
+      (pageModel as any).subModels = { tabs: [hiddenTab, visibleTab] };
+      (pageModel as any).context.view.navigation = {
+        viewParams: { tabUid: 'tab-hidden' },
+      };
+
+      await (pageModel as any).updateDocumentTitle();
+
+      expect(document.title).toBe('Hidden tab document title');
+    });
+
+    it('should use page documentTitle when tabs are enabled but all tabs are hidden', async () => {
+      pageModel.props = { enableTabs: true, title: 'Page title' } as any;
+      const hiddenTab = {
+        uid: 'tab-hidden',
+        hidden: true,
+        stepParams: {
+          pageTabSettings: {
+            tab: {
+              documentTitle: 'Hidden tab title',
+            },
+          },
+        },
+        getTabTitle: vi.fn(() => 'Hidden tab'),
+      };
+      (pageModel as any).subModels = { tabs: [hiddenTab] };
+      (pageModel as any).stepParams = {
+        pageSettings: {
+          general: {
+            documentTitle: 'Page document title',
+          },
+        },
+      };
+      (pageModel as any).flowEngine.getModel = vi.fn(() => hiddenTab);
+
+      await (pageModel as any).updateDocumentTitle();
+
+      expect(document.title).toBe('Page document title');
+    });
+
+    it('should fallback to page title when all tabs are hidden and page documentTitle is empty', async () => {
+      pageModel.props = { enableTabs: true, title: 'Fallback page title' } as any;
+      const hiddenTab = {
+        uid: 'tab-hidden',
+        hidden: true,
+        stepParams: {
+          pageTabSettings: {
+            tab: {
+              documentTitle: 'Hidden tab title',
+            },
+          },
+        },
+        getTabTitle: vi.fn(() => 'Hidden tab'),
+      };
+      (pageModel as any).subModels = { tabs: [hiddenTab] };
+      (pageModel as any).stepParams = {
+        pageSettings: {
+          general: {
+            documentTitle: '',
+          },
+        },
+      };
+      (pageModel as any).flowEngine.getModel = vi.fn(() => hiddenTab);
+
+      await (pageModel as any).updateDocumentTitle();
+
+      expect(document.title).toBe('Fallback page title');
     });
 
     it('should also update document title for closable page (popup)', async () => {

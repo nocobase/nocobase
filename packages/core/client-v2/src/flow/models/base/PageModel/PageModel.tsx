@@ -33,6 +33,7 @@ import { commonConditionHandler, ConditionBuilder } from '../../../components/Co
 import { TextAreaWithContextSelector } from '../../../components/TextAreaWithContextSelector';
 import { confirmUnsavedChangesHandler } from './closeGuard';
 import { BasePageTabModel } from './PageTabModel';
+import { FilteredPageTabBar, NO_ACTIVE_PAGE_TAB_KEY } from './PageModelTabBar';
 
 type PageModelStructure = {
   subModels: {
@@ -49,6 +50,49 @@ type PageModelContextWithRoute = {
   currentRoute?: CurrentRouteWithTabs | null;
 };
 
+type RequestedTabKey = {
+  key?: string;
+  source: 'url' | 'local' | 'props' | 'none';
+};
+
+type TabActiveResolution = RequestedTabKey & {
+  status: 'unspecified' | 'visible' | 'hidden' | 'unknown';
+  effectiveKey?: string;
+  allTabs: BasePageTabModel[];
+  visibleTabs: BasePageTabModel[];
+};
+
+type TabActiveKeySyncState = {
+  previousEffectiveActiveKey?: string;
+  effectiveActiveKey?: string;
+  previousAllHidden: boolean;
+  lastCorrectionSignature?: string;
+};
+
+type TabActiveKeySyncProps = {
+  dependencyKey: string;
+  onSync: (state: TabActiveKeySyncState) => TabActiveKeySyncState;
+};
+
+function TabActiveKeySync({ dependencyKey, onSync }: TabActiveKeySyncProps) {
+  const previousEffectiveActiveKey = React.useRef<string>();
+  const previousAllHidden = React.useRef(false);
+  const lastCorrectionSignature = React.useRef<string>();
+
+  React.useEffect(() => {
+    const nextState = onSync({
+      previousEffectiveActiveKey: previousEffectiveActiveKey.current,
+      previousAllHidden: previousAllHidden.current,
+      lastCorrectionSignature: lastCorrectionSignature.current,
+    });
+    previousEffectiveActiveKey.current = nextState.effectiveActiveKey;
+    previousAllHidden.current = nextState.previousAllHidden;
+    lastCorrectionSignature.current = nextState.lastCorrectionSignature;
+  }, [dependencyKey, onSync]);
+
+  return null;
+}
+
 export class PageModel extends FlowModel<PageModelStructure> {
   tabBarExtraContent: { left?: ReactNode; right?: ReactNode } = {};
   private viewActivatedListener?: (_payload?: unknown) => void;
@@ -57,6 +101,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
   private dirtyRefreshScheduled = false;
   private unmounted = false;
   private documentTitleUpdateVersion = 0;
+  private preferImplicitLocalActiveKey = false;
 
   /**
    * 根页面标签页开关以路由表为准，避免 flow model 里的旧配置覆盖路由管理设置。
@@ -75,13 +120,226 @@ export class PageModel extends FlowModel<PageModelStructure> {
     return !!this.props.enableTabs;
   }
 
-  private getActiveTabKey(): string | undefined {
+  private getAllTabs(): BasePageTabModel[] {
+    return this.subModels?.tabs || [];
+  }
+
+  private getRuntimeVisibleTabs(): BasePageTabModel[] {
+    const tabs = this.getAllTabs();
+    return this.context.flowSettingsEnabled ? tabs : tabs.filter((tab) => !tab.hidden);
+  }
+
+  private getRequestedTabKey(): RequestedTabKey {
     const viewParams = this.context.view?.navigation?.viewParams;
     if (viewParams) {
-      return viewParams.tabUid || this.getFirstTab()?.uid;
+      const urlKey = typeof viewParams.tabUid === 'string' && viewParams.tabUid ? viewParams.tabUid : undefined;
+      if (urlKey) {
+        this.preferImplicitLocalActiveKey = false;
+        return { key: urlKey, source: 'url' };
+      }
+
+      const localKey =
+        typeof this.props.tabActiveKey === 'string' && this.props.tabActiveKey ? this.props.tabActiveKey : undefined;
+      if (this.preferImplicitLocalActiveKey && localKey) {
+        return { key: localKey, source: 'local' };
+      }
+      return { source: 'none' };
     }
-    return this.props.tabActiveKey || this.getFirstTab()?.uid;
+
+    const localKey =
+      typeof this.props.tabActiveKey === 'string' && this.props.tabActiveKey ? this.props.tabActiveKey : undefined;
+    return localKey ? { key: localKey, source: 'props' } : { source: 'none' };
   }
+
+  private resolveTabActiveState(): TabActiveResolution {
+    const allTabs = this.getAllTabs();
+    const visibleTabs = this.getRuntimeVisibleTabs();
+    const requested = this.getRequestedTabKey();
+
+    if (!requested.key) {
+      return {
+        ...requested,
+        status: 'unspecified',
+        effectiveKey: visibleTabs[0]?.uid,
+        allTabs,
+        visibleTabs,
+      };
+    }
+
+    const requestedTab = allTabs.find((tab) => tab.uid === requested.key);
+    if (!requestedTab) {
+      return {
+        ...requested,
+        status: 'unknown',
+        effectiveKey: requested.key,
+        allTabs,
+        visibleTabs,
+      };
+    }
+
+    if (visibleTabs.some((tab) => tab.uid === requested.key)) {
+      return {
+        ...requested,
+        status: 'visible',
+        effectiveKey: requested.key,
+        allTabs,
+        visibleTabs,
+      };
+    }
+
+    return {
+      ...requested,
+      status: 'hidden',
+      effectiveKey: requested.key,
+      allTabs,
+      visibleTabs,
+    };
+  }
+
+  private getActiveTabKey(): string | undefined {
+    if (!this.getEnableTabs()) {
+      const firstTabKey = this.getFirstTab()?.uid;
+      if (firstTabKey) {
+        return firstTabKey;
+      }
+    }
+    return this.resolveTabActiveState().effectiveKey;
+  }
+
+  private getTabActiveKeySyncDependency() {
+    const allTabs = this.getAllTabs();
+    const visibleTabs = this.getRuntimeVisibleTabs();
+    const viewParams = this.context.view?.navigation?.viewParams;
+    return JSON.stringify([
+      !!this.context.flowSettingsEnabled,
+      viewParams ? viewParams.tabUid || null : null,
+      this.props.tabActiveKey || null,
+      allTabs.map((tab) => tab.uid),
+      visibleTabs.map((tab) => tab.uid),
+      this.preferImplicitLocalActiveKey,
+    ]);
+  }
+
+  private requestDocumentTitleUpdate(preferredActiveTabKey?: string, retryCount = 0) {
+    this.updateDocumentTitle(preferredActiveTabKey, retryCount).catch((error) => {
+      console.warn('[PageModel] Failed to update document title', error);
+    });
+  }
+
+  private rememberImplicitActiveKey(activeKey: string) {
+    this.preferImplicitLocalActiveKey = true;
+    if (this.props.tabActiveKey !== activeKey) {
+      this.setProps('tabActiveKey', activeKey);
+    }
+  }
+
+  private commitTabActiveKey(
+    activeKey: string | undefined,
+    options: {
+      previousActiveKey?: string;
+      navigate: boolean;
+      preserveImplicitLocalKey?: boolean;
+    },
+  ) {
+    const { previousActiveKey, navigate, preserveImplicitLocalKey = false } = options;
+    if (preserveImplicitLocalKey && activeKey) {
+      this.preferImplicitLocalActiveKey = true;
+    } else if (navigate || !activeKey) {
+      this.preferImplicitLocalActiveKey = false;
+    }
+
+    if (navigate) {
+      this.context.view?.navigation?.changeTo?.({ tabUid: activeKey });
+    }
+
+    if (activeKey && activeKey !== previousActiveKey) {
+      this.invokeTabModelLifecycleMethod(activeKey, 'onActive');
+    }
+    if (previousActiveKey && previousActiveKey !== activeKey) {
+      this.invokeTabModelLifecycleMethod(previousActiveKey, 'onInactive');
+    }
+    this.setProps('tabActiveKey', activeKey);
+
+    if (!activeKey) {
+      this.requestDocumentTitleUpdate();
+    }
+  }
+
+  private synchronizeTabActiveKey = (state: TabActiveKeySyncState): TabActiveKeySyncState => {
+    const resolution = this.resolveTabActiveState();
+    const allHidden = resolution.allTabs.length > 0 && resolution.visibleTabs.length === 0;
+    const createNextState = (effectiveActiveKey: string | undefined, lastCorrectionSignature?: string) => ({
+      previousEffectiveActiveKey: effectiveActiveKey,
+      effectiveActiveKey,
+      previousAllHidden: allHidden,
+      lastCorrectionSignature,
+    });
+
+    if (this.context.flowSettingsEnabled) {
+      return createNextState(resolution.effectiveKey);
+    }
+
+    if (resolution.status === 'unknown') {
+      return createNextState(resolution.effectiveKey);
+    }
+
+    if (resolution.status === 'visible') {
+      const activeKey = resolution.effectiveKey;
+      const shouldActivateAfterRestore = state.previousAllHidden && resolution.source !== 'url';
+      const shouldSyncChangedVisibleKey =
+        !!state.previousEffectiveActiveKey && state.previousEffectiveActiveKey !== activeKey;
+      if ((shouldActivateAfterRestore || shouldSyncChangedVisibleKey) && activeKey) {
+        const signature = `visible:${resolution.source}:${state.previousEffectiveActiveKey || ''}->${activeKey}`;
+        if (signature !== state.lastCorrectionSignature) {
+          this.commitTabActiveKey(activeKey, {
+            previousActiveKey: state.previousEffectiveActiveKey,
+            navigate: false,
+            preserveImplicitLocalKey: resolution.source !== 'url',
+          });
+        }
+        return createNextState(activeKey, signature);
+      }
+      return createNextState(activeKey);
+    }
+
+    if (resolution.status === 'hidden') {
+      return createNextState(resolution.effectiveKey);
+    }
+
+    const activeKey = resolution.effectiveKey;
+    if (!activeKey) {
+      if (!allHidden) {
+        return createNextState(undefined);
+      }
+      const signature = `all-hidden:${state.previousEffectiveActiveKey || ''}`;
+      if (!state.previousAllHidden && signature !== state.lastCorrectionSignature) {
+        this.preferImplicitLocalActiveKey = false;
+        if (this.props.tabActiveKey || state.previousEffectiveActiveKey) {
+          this.commitTabActiveKey(undefined, {
+            previousActiveKey: state.previousEffectiveActiveKey,
+            navigate: false,
+          });
+        } else {
+          this.requestDocumentTitleUpdate();
+        }
+      }
+      return createNextState(undefined, signature);
+    }
+
+    const shouldSwitchImplicitActiveKey =
+      state.previousAllHidden || (!!state.previousEffectiveActiveKey && state.previousEffectiveActiveKey !== activeKey);
+    const signature = `implicit:${state.previousEffectiveActiveKey || ''}->${activeKey}`;
+    if (shouldSwitchImplicitActiveKey && signature !== state.lastCorrectionSignature) {
+      this.commitTabActiveKey(activeKey, {
+        previousActiveKey: state.previousEffectiveActiveKey,
+        navigate: false,
+        preserveImplicitLocalKey: true,
+      });
+    } else {
+      this.rememberImplicitActiveKey(activeKey);
+    }
+    return createNextState(activeKey, shouldSwitchImplicitActiveKey ? signature : undefined);
+  };
 
   private scheduleActiveLifecycleRefresh(forceRefresh = false): void {
     if (this.dirtyRefreshScheduled) return;
@@ -107,7 +365,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
   }
 
   deactivateCurrentTab() {
-    const activeKey = this.props.tabActiveKey || this.getFirstTab()?.uid;
+    const activeKey = this.getActiveTabKey();
     if (activeKey) {
       this.invokeTabModelLifecycleMethod(activeKey, 'onInactive');
     }
@@ -118,7 +376,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
     this.unmounted = false;
     this.setProps('tabActiveKey', this.context.view.inputArgs?.tabUid);
     if (this.context?.pageInfo) this.context.pageInfo.version = 'v2';
-    void this.updateDocumentTitle();
+    this.requestDocumentTitleUpdate();
 
     // When a nested view (popup/page) is closed, the opener view becomes active again.
     // We align this with the existing tab lifecycle by invoking `onActive` for the current tab blocks.
@@ -189,7 +447,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
     }
 
     if (method === 'onActive') {
-      void this.updateDocumentTitle(tabActiveKey);
+      this.requestDocumentTitleUpdate(tabActiveKey);
     }
   }
 
@@ -236,11 +494,18 @@ export class PageModel extends FlowModel<PageModelStructure> {
       }
     };
 
+    const allTabs = this.getAllTabs();
+    const visibleTabs = this.getRuntimeVisibleTabs();
+    const activeTabKey = preferredActiveTabKey || this.getActiveTabKey();
+    const shouldUsePageTitle =
+      !this.getEnableTabs() ||
+      (!activeTabKey && !this.context.flowSettingsEnabled && allTabs.length > 0 && visibleTabs.length === 0);
+
     let nextTitle = '';
-    if (this.getEnableTabs()) {
-      const activeTabKey = preferredActiveTabKey || this.getActiveTabKey();
+    if (!shouldUsePageTitle) {
       const activeTabModel = activeTabKey
-        ? (this.flowEngine.getModel(activeTabKey) as BasePageTabModel | undefined)
+        ? this.findSubModel('tabs', (model) => model.uid === activeTabKey) ||
+          (this.flowEngine.getModel(activeTabKey) as BasePageTabModel | undefined)
         : this.getFirstTab();
       if (!activeTabModel && retryCount < 5) {
         window.setTimeout(() => {
@@ -251,7 +516,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
           if (updateVersion !== this.documentTitleUpdateVersion) {
             return;
           }
-          void this.updateDocumentTitle(activeTabKey, retryCount + 1);
+          this.requestDocumentTitleUpdate(activeTabKey, retryCount + 1);
         }, 0);
         return;
       }
@@ -293,33 +558,31 @@ export class PageModel extends FlowModel<PageModelStructure> {
 
   mapTabs() {
     return this.mapSubModels('tabs', (model) => {
-      return !this.context.flowSettingsEnabled && model.hidden
-        ? null
-        : {
-            key: model.uid,
-            label: (
-              <Droppable model={model}>
-                <FlowModelRenderer
-                  model={model}
-                  showFlowSettings={{
-                    showBackground: true,
-                    showBorder: false,
-                    toolbarPosition: 'above',
-                    style: { transform: 'translateY(8px)' },
-                  }}
-                  extraToolbarItems={[
-                    {
-                      key: 'drag-handler',
-                      component: DragHandler,
-                      sort: 1,
-                    },
-                  ]}
-                />
-              </Droppable>
-            ),
-            children: model.renderChildren(),
-          };
-    }).filter(Boolean);
+      return {
+        key: model.uid,
+        label: (
+          <Droppable model={model}>
+            <FlowModelRenderer
+              model={model}
+              showFlowSettings={{
+                showBackground: true,
+                showBorder: false,
+                toolbarPosition: 'above',
+                style: { transform: 'translateY(8px)' },
+              }}
+              extraToolbarItems={[
+                {
+                  key: 'drag-handler',
+                  component: DragHandler,
+                  sort: 1,
+                },
+              ]}
+            />
+          </Droppable>
+        ),
+        children: model.renderChildren(),
+      };
+    });
   }
 
   getFirstTab() {
@@ -336,6 +599,12 @@ export class PageModel extends FlowModel<PageModelStructure> {
   }
 
   renderTabs() {
+    const activeState = this.resolveTabActiveState();
+    const hiddenTabKeys = new Set(
+      this.context.flowSettingsEnabled ? [] : activeState.allTabs.filter((tab) => tab.hidden).map((tab) => tab.uid),
+    );
+    const tabsActiveKey =
+      activeState.effectiveKey || (activeState.allTabs.length > 0 ? NO_ACTIVE_PAGE_TAB_KEY : undefined);
     const tabNavPaddingInlineStart = this.context.themeToken?.paddingLG ?? 16;
     const leftExtraContent =
       this.tabBarExtraContent.left !== undefined ? (
@@ -366,25 +635,29 @@ export class PageModel extends FlowModel<PageModelStructure> {
 
     return (
       <DndProvider onDragEnd={this.handleDragEnd.bind(this)}>
+        <TabActiveKeySync dependencyKey={this.getTabActiveKeySyncDependency()} onSync={this.synchronizeTabActiveKey} />
         <Tabs
-          activeKey={
-            this.context.view?.navigation?.viewParams
-              ? this.context.view.navigation.viewParams.tabUid || this.getFirstTab()?.uid
-              : this.props.tabActiveKey
-          }
+          activeKey={tabsActiveKey}
           tabBarStyle={this.props.tabBarStyle}
           items={this.mapTabs()}
+          renderTabBar={
+            hiddenTabKeys.size > 0
+              ? (tabBarProps, DefaultTabBar) => (
+                  <FilteredPageTabBar
+                    hiddenTabKeys={hiddenTabKeys}
+                    tabBarProps={tabBarProps}
+                    DefaultTabBar={DefaultTabBar}
+                  />
+                )
+              : undefined
+          }
           onChange={(activeKey) => {
-            const previousActiveKey = this.props.tabActiveKey || this.getActiveTabKey();
-            this.context.view.navigation?.changeTo?.({
-              tabUid: activeKey,
+            const previousActiveKey = this.getActiveTabKey();
+            this.preferImplicitLocalActiveKey = false;
+            this.commitTabActiveKey(activeKey, {
+              previousActiveKey,
+              navigate: !!this.context.view?.navigation,
             });
-
-            this.invokeTabModelLifecycleMethod(activeKey, 'onActive');
-            if (previousActiveKey && previousActiveKey !== activeKey) {
-              this.invokeTabModelLifecycleMethod(previousActiveKey, 'onInactive');
-            }
-            this.setProps('tabActiveKey', activeKey);
           }}
           // destroyInactiveTabPane
           tabBarExtraContent={{
@@ -527,7 +800,7 @@ PageModel.registerFlow({
             marginBottom: 0,
           });
         }
-        void (ctx.model as PageModel).updateDocumentTitle();
+        await (ctx.model as PageModel).updateDocumentTitle();
       },
     },
   },
