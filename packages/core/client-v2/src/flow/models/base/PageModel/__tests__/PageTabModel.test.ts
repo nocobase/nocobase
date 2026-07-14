@@ -342,7 +342,7 @@ describe('PageTabModel', () => {
           props: {
             route: {
               schemaUid: marked ? 'tab-marked' : 'tab-unmarked',
-              options: marked ? { hasPersistedPageTabLinkageRules: true } : {},
+              options: marked ? { hasPersistedPageTabFlowModel: true } : {},
             },
           },
           context: {
@@ -363,6 +363,31 @@ describe('PageTabModel', () => {
         expect(markedModel.stepParams.pageTabSettings.linkageRules).toEqual({ value: [] });
       });
       expect(unmarkedRequest).not.toHaveBeenCalled();
+    });
+
+    it('should ignore the linkage-specific legacy marker at runtime', async () => {
+      const { RootPageTabModel } = await import('../PageTabModel');
+      const request = vi.fn().mockResolvedValue({ data: { data: null } });
+      const legacyMarker = ['hasPersistedPageTab', 'LinkageRules'].join('');
+      const model = new RootPageTabModel({
+        uid: 'tab-legacy-marker',
+        props: {
+          route: {
+            schemaUid: 'tab-legacy-marker',
+            options: { [legacyMarker]: true },
+          },
+        },
+        context: {
+          api: { request },
+          flowSettingsEnabled: false,
+          defineProperty: vi.fn(),
+          t: (value: string) => value,
+        },
+      } as any);
+
+      model.onInit({});
+
+      expect(request).not.toHaveBeenCalled();
     });
 
     it('should share one in-flight hydrate request across concurrent settings opens', async () => {
@@ -573,13 +598,13 @@ describe('PageTabModel', () => {
           options: expect.objectContaining({
             badge: 'new',
             pluginOption: { keep: true },
-            hasPersistedPageTabLinkageRules: true,
+            hasPersistedPageTabFlowModel: true,
           }),
         },
         { refreshAfterMutation: false },
       );
       expect(request.mock.invocationCallOrder[2]).toBeLessThan(updateRoute.mock.invocationCallOrder[0]);
-      expect(model.props.route.options.hasPersistedPageTabLinkageRules).toBe(true);
+      expect(model.props.route.options.hasPersistedPageTabFlowModel).toBe(true);
     });
 
     it('should read the latest anchor again before every linkage save', async () => {
@@ -637,7 +662,7 @@ describe('PageTabModel', () => {
             schemaUid: 'tab-1',
             options: {
               badge: 'new',
-              hasPersistedPageTabLinkageRules: true,
+              hasPersistedPageTabFlowModel: true,
             },
           },
         },
@@ -663,8 +688,8 @@ describe('PageTabModel', () => {
       expect(anchorPayload.stepParams.pageTabSettings.linkageRules).toEqual({ value: [] });
       expect(anchorPayload).not.toHaveProperty('subModels');
       expect(updateRoute.mock.calls[0][1].options).toMatchObject({ badge: 'new' });
-      expect(updateRoute.mock.calls[0][1].options).not.toHaveProperty('hasPersistedPageTabLinkageRules');
-      expect(model.props.route.options).not.toHaveProperty('hasPersistedPageTabLinkageRules');
+      expect(updateRoute.mock.calls[0][1].options).not.toHaveProperty('hasPersistedPageTabFlowModel');
+      expect(model.props.route.options).not.toHaveProperty('hasPersistedPageTabFlowModel');
     });
 
     it('should create a minimal RouteModel anchor when the anchor is missing', async () => {

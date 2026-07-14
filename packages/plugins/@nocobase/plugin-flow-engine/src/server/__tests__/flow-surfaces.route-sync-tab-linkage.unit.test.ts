@@ -29,7 +29,7 @@ describe('FlowSurfaceRouteSync tab linkage preservation', () => {
       title: 'Tab title',
       options: {
         badge: 'new',
-        hasPersistedPageTabLinkageRules: true,
+        hasPersistedPageTabFlowModel: true,
         flowRegistry: {
           oldFlow: { key: 'oldFlow', on: 'beforeRender', steps: {} },
         },
@@ -86,7 +86,7 @@ describe('FlowSurfaceRouteSync tab linkage preservation', () => {
       values: {
         options: {
           badge: 'new',
-          hasPersistedPageTabLinkageRules: true,
+          hasPersistedPageTabFlowModel: true,
           flowRegistry: nextFlowRegistry,
         },
       },

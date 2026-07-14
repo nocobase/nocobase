@@ -399,7 +399,7 @@ describe('flowSurfaces resource', () => {
       values: {
         options: {
           ...(initialTabRoute?.get('options') || {}),
-          hasPersistedPageTabLinkageRules: true,
+          hasPersistedPageTabFlowModel: true,
         },
       },
     });
@@ -428,7 +428,7 @@ describe('flowSurfaces resource', () => {
         key: 'tabBeforeRender',
       },
     });
-    expect(updatedTabRoute?.get('options')?.hasPersistedPageTabLinkageRules).toBe(true);
+    expect(updatedTabRoute?.get('options')?.hasPersistedPageTabFlowModel).toBe(true);
 
     const tabReadback = await getSurface(rootAgent, {
       tabSchemaUid: created.tabSchemaUid,

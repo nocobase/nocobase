@@ -186,7 +186,7 @@ export class RootPageTabModel extends BasePageTabModel {
   }
 
   private shouldHydratePersistedLinkageRules() {
-    return !!this.context.flowSettingsEnabled || this.props.route?.options?.hasPersistedPageTabLinkageRules === true;
+    return !!this.context.flowSettingsEnabled || this.props.route?.options?.hasPersistedPageTabFlowModel === true;
   }
 
   private async fetchPersistedAnchor(): Promise<PersistedFlowModelAnchor | undefined> {
@@ -346,26 +346,26 @@ export class RootPageTabModel extends BasePageTabModel {
     });
 
     const hasRules = Array.isArray(linkageRules.value) && linkageRules.value.length > 0;
-    await this.syncPersistedLinkageRulesMarker(hasRules);
+    await this.syncPersistedPageTabFlowModelMarker(hasRules);
     this.persistedLinkageRulesHydrated = true;
   }
 
-  private async syncPersistedLinkageRulesMarker(hasRules: boolean) {
+  private async syncPersistedPageTabFlowModelMarker(hasRules: boolean) {
     const route = this.props.route;
     if (route?.id == null) {
-      throw new Error('Cannot persist tab linkage rules marker before the desktop route is saved.');
+      throw new Error('Cannot persist page tab FlowModel marker before the desktop route is saved.');
     }
     if (typeof this.context.routeRepository?.updateRoute !== 'function') {
-      throw new Error('Route repository is unavailable while persisting tab linkage rules marker.');
+      throw new Error('Route repository is unavailable while persisting the page tab FlowModel marker.');
     }
 
     const nextOptions = {
       ...(route.options || {}),
     };
     if (hasRules) {
-      nextOptions.hasPersistedPageTabLinkageRules = true;
+      nextOptions.hasPersistedPageTabFlowModel = true;
     } else {
-      delete nextOptions.hasPersistedPageTabLinkageRules;
+      delete nextOptions.hasPersistedPageTabFlowModel;
     }
     const persistedOptions = Object.keys(nextOptions).length > 0 ? nextOptions : undefined;
 

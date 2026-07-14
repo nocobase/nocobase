@@ -18,7 +18,7 @@ export enum NocoBaseDesktopRouteType {
 
 export interface NocoBaseDesktopRouteOptions {
   hasPersistedMenuInstanceFlow?: boolean;
-  hasPersistedPageTabLinkageRules?: boolean;
+  hasPersistedPageTabFlowModel?: boolean;
   [key: string]: any;
 }
 
