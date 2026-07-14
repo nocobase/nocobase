@@ -32,7 +32,7 @@ describe('Claude-style agent adapter', () => {
         cwd: '/workspace',
       }),
     ).toMatchObject({
-      args: ['-p', 'Build a page', '--output-format', 'stream-json'],
+      args: ['-p', 'Build a page', '--output-format', 'stream-json', '--verbose'],
       cwd: '/workspace',
     });
     expect(() =>

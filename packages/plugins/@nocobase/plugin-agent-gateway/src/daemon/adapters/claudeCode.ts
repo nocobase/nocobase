@@ -40,7 +40,7 @@ export const claudeCodeAdapter: AgentAdapter = {
   projectSkillTargetDirs: ['.claude/skills'],
   validatePolicyArgs: validateClaudeCodePolicyArgs,
   buildStartCommand(input: BuildStartCommandInput) {
-    const structuredArgs = input.outputMode === 'terminal' ? [] : ['--output-format', 'stream-json'];
+    const structuredArgs = input.outputMode === 'terminal' ? [] : ['--output-format', 'stream-json', '--verbose'];
     return {
       args: ['-p', input.prompt, ...structuredArgs],
       cwd: input.cwd,
