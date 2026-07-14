@@ -8,12 +8,22 @@
  */
 
 import type { RunJSTypeLibraryPackDefinition } from '../src/type-packs/generator';
+import {
+  RUNJS_TYPESCRIPT_REACT_BRIDGE_DECLARATION,
+  RUNJS_TYPESCRIPT_REACT_BRIDGE_PATH,
+} from '../src/typescript-project';
 
 export const runJSTypeLibraryPackDefinitions: readonly RunJSTypeLibraryPackDefinition[] = [
   {
     id: 'react',
     libraryName: 'react',
     entry: 'react',
+    rootFiles: [
+      {
+        path: RUNJS_TYPESCRIPT_REACT_BRIDGE_PATH,
+        content: RUNJS_TYPESCRIPT_REACT_BRIDGE_DECLARATION,
+      },
+    ],
     triggers: ['react'],
   },
   {

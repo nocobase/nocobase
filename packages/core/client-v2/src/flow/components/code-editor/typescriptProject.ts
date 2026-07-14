@@ -21,6 +21,7 @@ import {
 } from '@nocobase/runjs/client-v2';
 
 import { runJSTypeScriptLibSources } from './runJSTypeScriptLibSources';
+import { ensureGeneratedRunJSTypeLibraryPackLoadersRegistered } from './type-packs';
 import { loadRunJSTypeLibraryPacks } from './typescriptLibraryRegistry';
 import {
   clearTypeScriptImmutableFileCacheForTests,
@@ -262,6 +263,7 @@ async function prepareProject(
   currentFileContent?: string,
 ): Promise<PreparedProject> {
   const ts = await loadTypeScript();
+  ensureGeneratedRunJSTypeLibraryPackLoadersRegistered();
   const compilerOptions = {
     ...createRunJSTypeScriptCompilerOptions(ts),
     ...(project.compilerOptions || {}),

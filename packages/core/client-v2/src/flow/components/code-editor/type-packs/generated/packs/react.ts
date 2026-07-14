@@ -15,9 +15,15 @@ const pack: RunJSTypeLibraryPack = {
   "id": "react",
   "libraryName": "react",
   "version": "18.3.18",
-  "contentHash": "af455639a124f205423de9fe6c57c8718fd750b9f7fbad556e44e39bb9e8546c",
+  "contentHash": "4139ffb527029960c624f044b331e6fcf411d778abb5064af6bc12ba44844fb7",
   "dependencies": [],
-  "rootFiles": [],
+  "rootFiles": [
+    {
+      "path": "/__runjs__/type-packs/react-bridge.d.ts",
+      "content": "\ntype RunJSOfficialReactModule = typeof import('react');\ninterface RunJSReactLibrary extends RunJSOfficialReactModule {}\n",
+      "contentHash": "fdcd8005852f89482164064acaf4ab3585b0d85362394a7af63f1720080aaa6c"
+    }
+  ],
   "dependencyFiles": [
     {
       "path": "/node_modules/@types/prop-types/index.d.ts",
@@ -68,8 +74,8 @@ const pack: RunJSTypeLibraryPack = {
   "metadata": {
     "entry": "react",
     "sourcePackage": "@types/react",
-    "fileCount": 9,
-    "rawBytes": 1120015
+    "fileCount": 10,
+    "rawBytes": 1120136
   }
 };
 

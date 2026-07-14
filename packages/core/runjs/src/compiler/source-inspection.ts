@@ -24,6 +24,8 @@ import {
   createRunJSTypeScriptCompilerOptions,
   RUNJS_TYPESCRIPT_CONTEXT_PATH,
 } from '../typescript-project';
+import { collectRunJSTypeLibraryUsage } from '../typescript-library-usage';
+import { loadNodeRunJSTypeLibraryFiles } from './node-type-library';
 
 export const RUNJS_COMPILER_ALLOWED_GLOBALS = new Set([
   'ctx',
@@ -212,11 +214,15 @@ function collectTypeScriptDiagnostics(
   }
 
   const virtualFiles = new Map<string, string>();
+  const rootNames = new Set<string>();
   for (const [path, source] of files) {
-    virtualFiles.set(toVirtualPath(path), maskTopLevelReturnKeywords(path, source));
+    const virtualPath = toVirtualPath(path);
+    virtualFiles.set(virtualPath, maskTopLevelReturnKeywords(path, source));
+    rootNames.add(virtualPath);
   }
   for (const file of getTypeScriptEnvironmentFiles()) {
     virtualFiles.set(file.path, file.content);
+    rootNames.add(file.path);
   }
   virtualFiles.set(
     RUNJS_TYPESCRIPT_CONTEXT_PATH,
@@ -227,11 +233,24 @@ function collectTypeScriptDiagnostics(
       .filter(Boolean)
       .join('\n'),
   );
+  rootNames.add(RUNJS_TYPESCRIPT_CONTEXT_PATH);
+
+  const usageRequests = collectRunJSTypeLibraryUsage(ts, {
+    files: Array.from(files, ([path, content]) => ({ path, content })),
+  });
+  const typeLibraryFiles = loadNodeRunJSTypeLibraryFiles(usageRequests);
+  for (const file of typeLibraryFiles.rootFiles) {
+    virtualFiles.set(file.path, file.content);
+    rootNames.add(file.path);
+  }
+  for (const file of typeLibraryFiles.dependencyFiles) {
+    virtualFiles.set(file.path, file.content);
+  }
 
   const compilerOptions = createRunJSTypeScriptCompilerOptions(ts);
   const host = createVirtualCompilerHost(virtualFiles, compilerOptions);
   const program = ts.createProgram({
-    rootNames: [...virtualFiles.keys()],
+    rootNames: [...rootNames],
     options: compilerOptions,
     host,
   });

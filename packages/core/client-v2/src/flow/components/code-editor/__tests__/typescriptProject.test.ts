@@ -224,7 +224,7 @@ new File(['hello'], 'hello.txt');
 `;
     const invalidDiagnostics = await getTypeScriptProjectDiagnostics(baseProject(invalidCode), invalidCode);
     expect(invalidDiagnostics.some((diagnostic) => /notARealBrowserGlobal/.test(diagnostic.message))).toBe(true);
-    expect(invalidDiagnostics.some((diagnostic) => /Cannot find name 'File'/.test(diagnostic.message))).toBe(true);
+    expect(invalidDiagnostics.some((diagnostic) => /'File' only refers to a type/.test(diagnostic.message))).toBe(true);
   });
 
   it('types the shared RunJS runtime APIs for known source models', async () => {

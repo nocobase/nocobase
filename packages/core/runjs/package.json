@@ -31,6 +31,8 @@
     "typescript": "5.1.3"
   },
   "scripts": {
+    "generate:completion-catalogs": "tsx scripts/generate-completion-catalogs.ts",
+    "generate:dom-type-bridge": "tsx scripts/generate-dom-type-only-bridge.ts",
     "generate:type-packs": "tsx scripts/generate-type-packs.ts"
   }
 }

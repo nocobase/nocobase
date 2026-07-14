@@ -15,12 +15,12 @@ const pack: RunJSTypeLibraryPack = {
   "id": "antd/Button",
   "libraryName": "antd",
   "version": "5.24.2",
-  "contentHash": "bdad3bdf0eea068c16e8828bb0ef1dd07afb688e022b8e251aaf90e7bca1c063",
+  "contentHash": "e551a3b54e5e35c97c81e14bba87b6d5f8a4bd83278b962b8195ca88dfce9a54",
   "dependencies": [
     {
       "id": "react",
       "version": "18.3.18",
-      "contentHash": "af455639a124f205423de9fe6c57c8718fd750b9f7fbad556e44e39bb9e8546c"
+      "contentHash": "4139ffb527029960c624f044b331e6fcf411d778abb5064af6bc12ba44844fb7"
     }
   ],
   "rootFiles": [],

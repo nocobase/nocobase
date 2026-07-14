@@ -322,6 +322,113 @@ export async function collectRunJSTypeDeclarationGraph(
   };
 }
 
+export function collectRunJSTypeDeclarationGraphSync(projectRoot: string, entry: string): CollectedDeclarationGraph {
+  const compilerOptions: ts.CompilerOptions = {
+    allowSyntheticDefaultImports: true,
+    esModuleInterop: true,
+    jsx: ts.JsxEmit.React,
+    module: ts.ModuleKind.ESNext,
+    moduleResolution: ts.ModuleResolutionKind.NodeJs,
+    noEmit: true,
+    noLib: true,
+    skipLibCheck: true,
+    target: ts.ScriptTarget.ES2020,
+    types: [],
+  };
+  const normalizedRoot = path.resolve(projectRoot);
+  const syntheticFileName = path.join(normalizedRoot, '.runjs-type-pack', `${sha256Hex(entry).slice(0, 16)}.tsx`);
+  const syntheticSource = `import type * as RunJSTypePackEntry from ${JSON.stringify(
+    entry,
+  )};\nexport type __RunJSTypePackEntry = typeof RunJSTypePackEntry;\n`;
+  const packageJsonPaths = new Set<string>();
+  const baseHost = ts.createCompilerHost(compilerOptions, true);
+  const isSyntheticFile = (fileName: string): boolean => path.resolve(fileName) === path.resolve(syntheticFileName);
+  const readFile = (fileName: string): string | undefined => {
+    if (isSyntheticFile(fileName)) {
+      return syntheticSource;
+    }
+    const content = baseHost.readFile(fileName);
+    if (typeof content === 'string' && path.basename(fileName) === 'package.json') {
+      packageJsonPaths.add(path.resolve(fileName));
+    }
+    return content;
+  };
+  const host: ts.CompilerHost = {
+    ...baseHost,
+    fileExists(fileName) {
+      return isSyntheticFile(fileName) || baseHost.fileExists(fileName);
+    },
+    getSourceFile(fileName, languageVersion, onError, shouldCreateNewSourceFile) {
+      if (isSyntheticFile(fileName)) {
+        return ts.createSourceFile(fileName, syntheticSource, languageVersion, true, ts.ScriptKind.TSX);
+      }
+      return baseHost.getSourceFile(fileName, languageVersion, onError, shouldCreateNewSourceFile);
+    },
+    readFile,
+  };
+  const moduleResolutionHost: ts.ModuleResolutionHost = {
+    directoryExists: host.directoryExists,
+    fileExists: host.fileExists,
+    getCurrentDirectory: () => normalizedRoot,
+    getDirectories: host.getDirectories,
+    readFile,
+    realpath: host.realpath,
+    useCaseSensitiveFileNames: host.useCaseSensitiveFileNames,
+  };
+  const resolved = ts.resolveModuleName(entry, syntheticFileName, compilerOptions, moduleResolutionHost).resolvedModule;
+  if (!resolved) {
+    throw new Error(`Unable to resolve RunJS type-pack entry "${entry}" from ${normalizedRoot}`);
+  }
+
+  const program = ts.createProgram({ rootNames: [syntheticFileName], options: compilerOptions, host });
+  program.getTypeChecker();
+  const declarationPaths = program
+    .getSourceFiles()
+    .map((sourceFile) => path.resolve(sourceFile.fileName))
+    .filter((fileName) => !isSyntheticFile(fileName))
+    .filter((fileName) => declarationExtension.test(toPosixPath(fileName)))
+    .filter((fileName) => !testDeclarationPath.test(toVirtualTypePackPath(fileName)));
+
+  for (const declarationPath of declarationPaths) {
+    const ownerPackageJson = getOwningPackageJsonPath(declarationPath);
+    if (ownerPackageJson) {
+      packageJsonPaths.add(ownerPackageJson);
+    }
+  }
+
+  const files: RunJSTypeLibraryFile[] = [];
+  for (const fileName of stableUnique([...declarationPaths, ...packageJsonPaths])) {
+    if (!isInsideNodeModules(fileName)) {
+      continue;
+    }
+    const source = ts.sys.readFile(fileName);
+    if (typeof source !== 'string') {
+      throw new Error(`Unable to read RunJS type-pack file: ${fileName}`);
+    }
+    const content = normalizeText(source);
+    files.push({
+      path: toVirtualTypePackPath(fileName),
+      content,
+      contentHash: sha256Hex(content),
+    });
+  }
+  files.sort((left, right) => left.path.localeCompare(right.path));
+
+  const resolvedPackageJsonPath = getOwningPackageJsonPath(path.resolve(resolved.resolvedFileName));
+  const resolvedPackage = resolvedPackageJsonPath ? readPackageJsonSync(resolvedPackageJsonPath) : {};
+  const sourcePackage = resolved.packageId?.name || resolvedPackage.name || entry.split('/')[0];
+  const version = resolved.packageId?.version || resolvedPackage.version;
+  if (!version) {
+    throw new Error(`Unable to determine package version for RunJS type-pack entry "${entry}"`);
+  }
+
+  return {
+    dependencyFiles: files,
+    sourcePackage,
+    version,
+  };
+}
+
 export function toVirtualTypePackPath(fileName: string): string {
   const normalized = toPosixPath(fileName);
   const marker = '/node_modules/';
@@ -570,6 +677,22 @@ async function readPackageJson(fileName: string): Promise<PackageJsonRecord> {
     }
     throw error;
   }
+}
+
+function readPackageJsonSync(fileName: string): PackageJsonRecord {
+  const content = ts.sys.readFile(fileName);
+  if (typeof content !== 'string') {
+    return {};
+  }
+  const value: unknown = JSON.parse(content);
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {};
+  }
+  const record = value as Record<string, unknown>;
+  return {
+    name: typeof record.name === 'string' ? record.name : undefined,
+    version: typeof record.version === 'string' ? record.version : undefined,
+  };
 }
 
 function normalizeVirtualPackPath(value: string): string {

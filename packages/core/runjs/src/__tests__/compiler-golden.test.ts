@@ -158,8 +158,9 @@ window.location.assign('/demo');
     expect(bareGlobalResult.artifact.diagnostics).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          ruleId: 'runjs-global-unknown',
-          message: expect.stringContaining("Cannot find name 'File'"),
+          ruleId: 'runjs-typescript',
+          message: expect.stringContaining("'File' only refers to a type"),
+          details: expect.objectContaining({ tsCode: 2693 }),
         }),
       ]),
     );

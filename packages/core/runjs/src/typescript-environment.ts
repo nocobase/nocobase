@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { RUNJS_TYPESCRIPT_DOM_TYPE_ONLY_BRIDGE_DECLARATION } from './generated/dom-type-only-bridge';
+
 export const RUNJS_TYPESCRIPT_ES_LIB_FILE_NAMES = [
   'lib.es2020.d.ts',
   'lib.es2019.d.ts',
@@ -222,7 +224,7 @@ export function buildRunJSTypeScriptEnvironmentFiles(
     },
     {
       path: RUNJS_TYPESCRIPT_DOM_LIB_PATH,
-      content: `declare namespace RunJSDOM {\n${domDeclaration}\n}`,
+      content: `declare namespace RunJSDOM {\n${domDeclaration}\n}\n${RUNJS_TYPESCRIPT_DOM_TYPE_ONLY_BRIDGE_DECLARATION}`,
     },
     {
       path: RUNJS_TYPESCRIPT_BROWSER_GLOBALS_PATH,

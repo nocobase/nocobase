@@ -12,12 +12,18 @@ import type { CompilerOptions } from 'typescript';
 type TypeScriptModule = typeof import('typescript');
 
 export const RUNJS_TYPESCRIPT_CONTEXT_PATH = '/__runjs__/runjs-env.d.ts';
+export const RUNJS_TYPESCRIPT_REACT_BRIDGE_PATH = '/__runjs__/type-packs/react-bridge.d.ts';
+export const RUNJS_TYPESCRIPT_REACT_BRIDGE_DECLARATION = `
+type RunJSOfficialReactModule = typeof import('react');
+interface RunJSReactLibrary extends RunJSOfficialReactModule {}
+`;
 
 export function createRunJSTypeScriptCompilerOptions(ts: TypeScriptModule): CompilerOptions {
   return {
     allowJs: true,
     allowNonTsExtensions: true,
     allowSyntheticDefaultImports: true,
+    allowUmdGlobalAccess: true,
     checkJs: false,
     esModuleInterop: true,
     jsx: ts.JsxEmit.React,
@@ -165,8 +171,12 @@ interface RunJSReactRoot {
 interface RunJSReactDOM {
   createRoot(container: unknown, options?: Record<string, unknown>): RunJSReactRoot;
 }
+interface RunJSReactLibrary {}
+interface RunJSComponent<P = Record<string, unknown>> {
+  (props: P & { children?: unknown }): null;
+}
 interface RunJSAntd {
-  readonly [componentName: string]: React.FC<Record<string, unknown>>;
+  readonly [componentName: string]: RunJSComponent;
 }
 interface RunJSSourceInfo {
   readonly sourceMode: string;
@@ -184,7 +194,7 @@ type RunJSSafeElement = RunJSDOM.HTMLElement;
 interface RunJSContext {
   logger: RunJSLogger;
   api: RunJSApi;
-  React: typeof React;
+  React: RunJSReactLibrary;
   ReactDOM: RunJSReactDOM;
   antd: RunJSAntd;
   dayjs: RunJSDayjs;
@@ -201,7 +211,7 @@ interface RunJSContext {
   token?: string;
   urlSearchParams?: RunJSURLSearchParams;
   libs: {
-    React: typeof React;
+    React: RunJSReactLibrary;
     ReactDOM: RunJSReactDOM;
     antd: RunJSAntd;
     dayjs: RunJSDayjs;
@@ -244,55 +254,23 @@ interface RunJSContext {
 declare const ctx: RunJSContext;
 declare const console: RunJSLogger;
 
-declare namespace React {
-  type Key = string | number;
-  type ReactNode = unknown;
-  type CSSProperties = Record<string, string | number | undefined>;
-  interface Attributes {
-    key?: Key;
-  }
-  interface HTMLAttributes<T = unknown> extends Attributes {
-    children?: ReactNode;
-    className?: string;
-    style?: CSSProperties;
-    onClick?: (event: unknown) => void;
-  }
-  type FC<P = Record<string, unknown>> = (props: P & { children?: ReactNode }) => ReactNode;
-  function createElement(type: unknown, props?: Record<string, unknown> | null, ...children: ReactNode[]): ReactNode;
-  const Fragment: unknown;
-}
-declare const React: {
-  createElement: typeof React.createElement;
-  Fragment: typeof React.Fragment;
-};
-declare namespace JSX {
-  interface Element {}
-  interface IntrinsicElements {
-    [elementName: string]: Record<string, unknown>;
-  }
-}
-declare module 'react' {
-  export = React;
-  export as namespace React;
-}
 declare module 'antd' {
-  import React = require('react');
-  export const Alert: React.FC<Record<string, unknown>>;
-  export const Button: React.FC<Record<string, unknown>>;
-  export const Card: React.FC<Record<string, unknown>>;
-  export const Col: React.FC<Record<string, unknown>>;
-  export const DatePicker: React.FC<Record<string, unknown>>;
-  export const Divider: React.FC<Record<string, unknown>>;
-  export const Form: React.FC<Record<string, unknown>>;
-  export const Input: React.FC<Record<string, unknown>>;
-  export const List: React.FC<Record<string, unknown>>;
-  export const Modal: React.FC<Record<string, unknown>>;
-  export const Row: React.FC<Record<string, unknown>>;
-  export const Select: React.FC<Record<string, unknown>>;
-  export const Space: React.FC<Record<string, unknown>>;
-  export const Table: React.FC<Record<string, unknown>>;
-  export const Tag: React.FC<Record<string, unknown>>;
-  export const Typography: Record<string, React.FC<Record<string, unknown>>>;
+  export const Alert: RunJSComponent;
+  export const Button: RunJSComponent;
+  export const Card: RunJSComponent;
+  export const Col: RunJSComponent;
+  export const DatePicker: RunJSComponent;
+  export const Divider: RunJSComponent;
+  export const Form: RunJSComponent;
+  export const Input: RunJSComponent;
+  export const List: RunJSComponent;
+  export const Modal: RunJSComponent;
+  export const Row: RunJSComponent;
+  export const Select: RunJSComponent;
+  export const Space: RunJSComponent;
+  export const Table: RunJSComponent;
+  export const Tag: RunJSComponent;
+  export const Typography: Record<string, RunJSComponent>;
   export const message: {
     success(content: unknown): void;
     error(content: unknown): void;
