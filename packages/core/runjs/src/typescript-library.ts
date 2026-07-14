@@ -75,3 +75,32 @@ export type RunJSTypeLibraryRequest =
   | RunJSTypeLibraryLevelRequest
   | RunJSTypeLibraryFullRequest
   | RunJSTypeLibrarySymbolRequest;
+
+export function selectRunJSTypeLibraryRequests(
+  requests: readonly RunJSTypeLibraryRequest[],
+  loadedFullPackIds: ReadonlyMap<string, string> = new Map(),
+): RunJSTypeLibraryRequest[] {
+  const selectedByLibrary = new Map<string, Map<string, RunJSTypeLibraryRequest>>();
+
+  for (const request of requests) {
+    const loadedFullPackId = loadedFullPackIds.get(request.libraryName);
+    const nextRequest: RunJSTypeLibraryRequest = loadedFullPackId
+      ? { kind: 'full', libraryName: request.libraryName, packId: loadedFullPackId }
+      : request;
+    const selected = selectedByLibrary.get(nextRequest.libraryName) || new Map<string, RunJSTypeLibraryRequest>();
+    const existingFull = [...selected.values()].find((candidate) => candidate.kind === 'full');
+    if (existingFull && nextRequest.kind !== 'full') {
+      selectedByLibrary.set(nextRequest.libraryName, selected);
+      continue;
+    }
+    if (nextRequest.kind === 'full') {
+      selected.clear();
+    }
+    selected.set(nextRequest.packId, nextRequest);
+    selectedByLibrary.set(nextRequest.libraryName, selected);
+  }
+
+  return [...selectedByLibrary.values()]
+    .flatMap((selected) => [...selected.values()])
+    .sort((left, right) => left.packId.localeCompare(right.packId));
+}

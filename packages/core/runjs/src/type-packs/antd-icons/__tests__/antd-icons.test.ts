@@ -26,6 +26,7 @@ import {
   createRunJSAntdIconsTypePackEntries,
   getRunJSAntdIconGroup,
   RUNJS_ANTD_ICONS_BASE_PACK_ID,
+  RUNJS_ANTD_ICONS_FULL_PACK_ID,
   RUNJS_ANTD_ICONS_GROUP_NAMES,
   RUNJS_ANTD_ICONS_MAX_GROUP_COUNT,
   RUNJS_ANTD_ICONS_MAX_GROUP_SIZE,
@@ -37,6 +38,7 @@ import { clearNodeRunJSAntdIconsTypeLibraryCacheForTests, loadNodeRunJSAntdIcons
 const repositoryRoot = path.resolve(__dirname, '../../../../../../..');
 const selectedPackIds = new Set([
   RUNJS_ANTD_ICONS_BASE_PACK_ID,
+  RUNJS_ANTD_ICONS_FULL_PACK_ID,
   'antd-icons/C',
   'antd-icons/G',
   'antd-icons/I',
@@ -146,6 +148,29 @@ describe('RunJS Ant Design Icons grouped type packs', () => {
     });
   });
 
+  it('generates an official full-module fallback with readable phase-four metrics', () => {
+    const full = requirePack(RUNJS_ANTD_ICONS_FULL_PACK_ID);
+    const base = requirePack(RUNJS_ANTD_ICONS_BASE_PACK_ID);
+    const baseFiles = new Map(base.dependencyFiles.map((file) => [file.path, file.contentHash]));
+    const sharedFiles = full.dependencyFiles.filter((file) => baseFiles.has(file.path));
+
+    expect(full.dependencies.map((dependency) => dependency.id)).toEqual(['react']);
+    expect(full.rootFiles[0]?.content).toContain(
+      'interface RunJSAntdIconsLibrary extends RunJSOfficialAntdIconsModule',
+    );
+    expect(full.dependencyFiles.some((file) => file.path.endsWith('/@ant-design/icons/lib/index.d.ts'))).toBe(true);
+    expect(sharedFiles.length).toBeGreaterThan(0);
+    expect(sharedFiles.every((file) => baseFiles.get(file.path) === file.contentHash)).toBe(true);
+    expect(full.metadata).toMatchObject({
+      fallback: true,
+      fileCount: expect.any(Number),
+      rawBytes: expect.any(Number),
+      strategy: 'full-module',
+    });
+    expect(full.metadata?.fileCount).toBe(full.rootFiles.length + full.dependencyFiles.length);
+    expect(full.metadata?.rawBytes).toBeGreaterThan(0);
+  });
+
   it('keeps direct access, destructuring, aliases, and JSX on the requested groups', () => {
     const requests = collectRunJSTypeLibraryUsage(ts, {
       files: [
@@ -206,6 +231,27 @@ ctx.libs.antdIcons.NotAnIcon;
     expect(messages).toContain("Type 'string' is not assignable to type 'boolean");
     expect(messages).toContain("Type 'string' is not assignable to type 'number");
     expect(messages).toContain("Property 'NotAnIcon' does not exist");
+  });
+
+  it('provides all official icon exports after a dynamic fallback without widening unknown names', () => {
+    const diagnostics = getMainDiagnostics(
+      createProgram(`
+const iconKey: keyof RunJSAntdIconsLibrary = 'PlusOutlined';
+const SelectedIcon = ctx.libs.antdIcons[iconKey];
+const { MinusOutlined, PlusOutlined } = ctx.libs.antdIcons;
+const plus = <PlusOutlined spin rotate={90} />;
+const minus = <MinusOutlined />;
+ctx.libs.antdIcons.NotAnIcon;
+void SelectedIcon;
+void plus;
+void minus;
+`),
+    );
+    const messages = diagnostics.map(formatDiagnostic).join('\n');
+
+    expect(diagnostics).toHaveLength(1);
+    expect(messages).toContain("Property 'NotAnIcon' does not exist");
+    expect(requirePack(RUNJS_ANTD_ICONS_FULL_PACK_ID).rootFiles[0]?.content).not.toContain('[name: string]');
   });
 
   it('keeps Node group requests aligned, recursively includes base once, and caches closures', () => {

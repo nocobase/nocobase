@@ -24,6 +24,7 @@ import { generateRunJSTypeLibraryPacks, type RunJSTypeLibraryPackDefinition } fr
 import {
   createRunJSAntdTypeLibraryPackDefinitions,
   createRunJSAntdTypePackEntries,
+  RUNJS_ANTD_FULL_PACK_ID,
   RUNJS_ANTD_NON_COMPONENT_TYPE_POLICY,
   type RunJSAntdCompletionCatalogEntry,
 } from '..';
@@ -69,7 +70,7 @@ beforeAll(async () => {
   );
   const representativePackIds = new Set(representativeSymbols.map((symbol) => `antd/${symbol}`));
   representativeDefinitions = antdDefinitions.filter((definition) => representativePackIds.has(definition.id));
-  const generatedDefinitionIds = new Set(['antd/Button', 'antd/DatePicker']);
+  const generatedDefinitionIds = new Set(['antd/Button', 'antd/DatePicker', RUNJS_ANTD_FULL_PACK_ID]);
   outputDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'runjs-antd-type-packs-'));
   const result = await generateRunJSTypeLibraryPacks({
     projectRoot: repositoryRoot,
@@ -77,7 +78,7 @@ beforeAll(async () => {
     definitions: [
       reactDefinition,
       RUNJS_DAYJS_TYPE_LIBRARY_PACK_DEFINITION,
-      ...representativeDefinitions.filter((definition) => generatedDefinitionIds.has(definition.id)),
+      ...antdDefinitions.filter((definition) => generatedDefinitionIds.has(definition.id)),
     ],
   });
   generatedPacks = result.packs;
@@ -145,6 +146,53 @@ describe('RunJS Ant Design component-level type packs', () => {
     });
     expect(button.metadata?.rawBytes).toBeGreaterThan(0);
     expect(button.metadata?.fileCount).toBe(button.rootFiles.length + button.dependencyFiles.length);
+  });
+
+  it('generates an official full-module fallback with readable phase-four metrics', () => {
+    const full = requirePack(RUNJS_ANTD_FULL_PACK_ID);
+    const button = requirePack('antd/Button');
+    const buttonFiles = new Map(button.dependencyFiles.map((file) => [file.path, file.contentHash]));
+    const sharedFiles = full.dependencyFiles.filter((file) => buttonFiles.has(file.path));
+
+    expect(full.dependencies.map((dependency) => dependency.id)).toEqual(['dayjs', 'react']);
+    expect(full.rootFiles[0]?.content).toContain('interface RunJSAntdLibrary extends RunJSOfficialAntdModule');
+    expect(full.dependencyFiles.some((file) => file.path.endsWith('/antd/es/index.d.ts'))).toBe(true);
+    expect(sharedFiles.length).toBeGreaterThan(0);
+    expect(sharedFiles.every((file) => buttonFiles.get(file.path) === file.contentHash)).toBe(true);
+    expect(full.metadata).toMatchObject({
+      fallback: true,
+      fileCount: expect.any(Number),
+      rawBytes: expect.any(Number),
+      strategy: 'full-module',
+    });
+    expect(full.metadata?.fileCount).toBe(full.rootFiles.length + full.dependencyFiles.length);
+    expect(full.metadata?.rawBytes).toBeGreaterThan(0);
+  });
+
+  it('provides all official public members after a dynamic fallback without widening unknown names', () => {
+    const full = requirePack(RUNJS_ANTD_FULL_PACK_ID);
+    const diagnostics = getMainDiagnostics(
+      createProgram(
+        `
+const componentKey: keyof RunJSAntdLibrary = 'Input';
+const selected = ctx.libs.antd[componentKey];
+const { Button, Input } = ctx.libs.antd;
+const input = <Input allowClear onChange={(event) => event.currentTarget.select()} />;
+const button = <Button type="primary">Save</Button>;
+ctx.libs.antd.NotAComponent;
+void selected;
+void input;
+void button;
+`,
+        packClosure(RUNJS_ANTD_FULL_PACK_ID),
+        'virtual',
+      ),
+    );
+    const messages = diagnostics.map(formatDiagnostic).join('\n');
+
+    expect(diagnostics).toHaveLength(1);
+    expect(messages).toContain("Property 'NotAComponent' does not exist");
+    expect(full.rootFiles[0]?.content).not.toContain('[name: string]');
   });
 
   it('preserves official component props, refs, generics, hooks, compound members, and imperative APIs', () => {
@@ -267,6 +315,17 @@ function requirePack(id: string): RunJSTypeLibraryPack {
 
 function representativeBridgeFiles(): RunJSTypeLibraryFile[] {
   return rootFiles(representativeDefinitions);
+}
+
+function packClosure(id: string): RunJSTypeLibraryFile[] {
+  const collected = new Map<string, RunJSTypeLibraryFile>();
+  const visit = (packId: string): void => {
+    const pack = requirePack(packId);
+    pack.dependencies.forEach((dependency) => visit(dependency.id));
+    [...pack.rootFiles, ...pack.dependencyFiles].forEach((file) => collected.set(file.path, file));
+  };
+  visit(id);
+  return [...collected.values()];
 }
 
 function rootFiles(definitions: readonly RunJSTypeLibraryPackDefinition[]): RunJSTypeLibraryFile[] {

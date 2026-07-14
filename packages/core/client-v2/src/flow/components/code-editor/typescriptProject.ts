@@ -656,19 +656,44 @@ function getDiagnosticsFromService(projectService: ProjectService): Diagnostic[]
   const syntax = projectService.service.getSyntacticDiagnostics(projectService.currentFileName);
   const semantic = projectService.service.getSemanticDiagnostics(projectService.currentFileName);
   const suggestions = projectService.service.getSuggestionDiagnostics(projectService.currentFileName);
-  return [...syntax, ...semantic, ...suggestions]
+  return diagnosticsToCodeMirror(projectService.ts, [...syntax, ...semantic, ...suggestions]);
+}
+
+function diagnosticsToCodeMirror(ts: TypeScriptModule, diagnostics: readonly TypeScriptDiagnostic[]): Diagnostic[] {
+  return diagnostics
     .filter((diagnostic) => typeof diagnostic.start === 'number')
     .map((diagnostic) => {
       const from = Math.max(0, diagnostic.start || 0);
       const length = Math.max(1, diagnostic.length || 1);
       return {
         from,
-        message: flattenDiagnosticMessage(projectService.ts, diagnostic),
-        severity: diagnosticCategoryToSeverity(projectService.ts, diagnostic),
+        message: flattenDiagnosticMessage(ts, diagnostic),
+        severity: diagnosticCategoryToSeverity(ts, diagnostic),
         source: 'TypeScript',
         to: from + length,
       };
     });
+}
+
+async function getSyntacticDiagnosticsWithoutTypeLibraries(
+  project: CodeEditorTypeScriptProject,
+  currentFileContent?: string,
+): Promise<Diagnostic[]> {
+  const ts = await loadTypeScript();
+  const currentFilePath = normalizeProjectPath(project.currentFilePath);
+  const source =
+    currentFileContent ??
+    project.files.find((file) => normalizeProjectPath(file.path) === currentFilePath)?.content ??
+    '';
+  const result = ts.transpileModule(source, {
+    compilerOptions: {
+      ...createRunJSTypeScriptCompilerOptions(ts),
+      ...(project.compilerOptions || {}),
+    },
+    fileName: currentFilePath,
+    reportDiagnostics: true,
+  });
+  return diagnosticsToCodeMirror(ts, result.diagnostics || []);
 }
 
 class TypeScriptProjectSession implements CodeEditorTypeScriptProjectSession {
@@ -707,7 +732,8 @@ class TypeScriptProjectSession implements CodeEditorTypeScriptProjectSession {
       return this.isCurrentRequest('diagnostics', request) ? diagnostics : [];
     } catch (error) {
       this.reportInternalError(project, error);
-      return [];
+      const diagnostics = await getSyntacticDiagnosticsWithoutTypeLibraries(project, currentFileContent);
+      return this.isCurrentRequest('diagnostics', request) ? diagnostics : [];
     }
   }
 

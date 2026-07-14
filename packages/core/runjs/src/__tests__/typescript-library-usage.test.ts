@@ -9,6 +9,7 @@
 
 import ts from 'typescript';
 
+import { selectRunJSTypeLibraryRequests } from '../typescript-library';
 import { collectRunJSTypeLibraryUsage } from '../typescript-library-usage';
 
 function collect(code: string, path = 'src/main.tsx') {
@@ -127,6 +128,20 @@ const copied = { ...ctx.libs.antd };
 const { Button, ...rest } = ctx.libs.antd;
 `),
     ).toEqual(['antd-icons/full', 'antd/full']);
+  });
+
+  it('lets full requests dominate symbols and reuses an already loaded full pack', () => {
+    const requests = [
+      ...collect('ctx.libs.antd.Button; ctx.libs.antd.Input;'),
+      ...collect('const name = "Table"; ctx.libs.antd[name];'),
+    ];
+
+    expect(selectRunJSTypeLibraryRequests(requests).map((request) => request.packId)).toEqual(['antd/full']);
+    expect(
+      selectRunJSTypeLibraryRequests(collect('ctx.libs.antd.Input;'), new Map([['antd', 'antd/full']])).map(
+        (request) => request.packId,
+      ),
+    ).toEqual(['antd/full']);
   });
 
   it('loads every known library when the ctx.libs container or its alias is spread', () => {

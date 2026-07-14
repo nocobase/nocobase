@@ -25,6 +25,7 @@ export interface RunJSAntdTypePackEntry {
 }
 
 export const RUNJS_TYPESCRIPT_ANTD_BRIDGE_DIRECTORY = '/__runjs__/type-packs/antd';
+export const RUNJS_ANTD_FULL_PACK_ID = 'antd/full';
 
 export const RUNJS_ANTD_NON_COMPONENT_TYPE_POLICY = {
   strategy: 'symbol-pack',
@@ -74,7 +75,7 @@ export function createRunJSAntdTypePackEntries(
 export function createRunJSAntdTypeLibraryPackDefinitions(
   catalogEntries: readonly RunJSAntdCompletionCatalogEntry[],
 ): RunJSTypeLibraryPackDefinition[] {
-  return createRunJSAntdTypePackEntries(catalogEntries).map((entry) => ({
+  const symbolDefinitions = createRunJSAntdTypePackEntries(catalogEntries).map((entry) => ({
     id: entry.packId,
     libraryName: 'antd',
     entry: entry.entry,
@@ -93,6 +94,28 @@ export function createRunJSAntdTypeLibraryPackDefinitions(
       symbol: entry.symbol,
     },
   }));
+
+  return [
+    ...symbolDefinitions,
+    {
+      id: RUNJS_ANTD_FULL_PACK_ID,
+      libraryName: 'antd',
+      entry: 'antd',
+      dependencies: ['react', 'dayjs'],
+      rootFiles: [
+        {
+          path: `${RUNJS_TYPESCRIPT_ANTD_BRIDGE_DIRECTORY}/full-bridge.d.ts`,
+          content: createRunJSAntdFullBridgeDeclaration(),
+        },
+      ],
+      triggers: [RUNJS_ANTD_FULL_PACK_ID],
+      metadata: {
+        fallback: true,
+        requiresDOMTypeBridge: true,
+        strategy: 'full-module',
+      },
+    },
+  ];
 }
 
 export function createRunJSAntdBridgeDeclaration(entry: RunJSAntdTypePackEntry): string {
@@ -101,6 +124,14 @@ export function createRunJSAntdBridgeDeclaration(entry: RunJSAntdTypePackEntry):
 interface RunJSAntdLibrary {
   readonly ${entry.symbol}: typeof import('${entry.entry}').${exportAccess};
 }
+interface RunJSAntd extends RunJSAntdLibrary {}
+`;
+}
+
+export function createRunJSAntdFullBridgeDeclaration(): string {
+  return `
+type RunJSOfficialAntdModule = typeof import('antd');
+interface RunJSAntdLibrary extends RunJSOfficialAntdModule {}
 interface RunJSAntd extends RunJSAntdLibrary {}
 `;
 }

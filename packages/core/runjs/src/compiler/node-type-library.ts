@@ -13,6 +13,7 @@ import type {
   RunJSTypeLibraryRequest,
   RunJSTypeLibraryUsageDefinition,
 } from '../typescript-library';
+import { selectRunJSTypeLibraryRequests } from '../typescript-library';
 import { loadNodeRunJSDayjsTypeLibraryFiles } from '../type-packs/dayjs/node';
 import { loadNodeRunJSFormulaTypeLibraryFiles } from '../type-packs/formulajs/node';
 import { loadNodeRunJSMathTypeLibraryFiles } from '../type-packs/mathjs/node';
@@ -55,6 +56,7 @@ const emptyFiles: NodeRunJSTypeLibraryFiles = { dependencyFiles: [], rootFiles: 
 
 export class NodeRunJSTypeLibraryRegistry {
   private readonly providers = new Map<string, StoredProvider>();
+  private readonly loadedFullFiles = new Map<string, { id: string; files: NodeRunJSTypeLibraryFiles }>();
   private disposed = false;
 
   constructor(private readonly parent?: NodeRunJSTypeLibraryRegistry) {}
@@ -67,7 +69,12 @@ export class NodeRunJSTypeLibraryRegistry {
     const stored: StoredProvider = { ...provider, id, libraryName, token: Symbol(id) };
     this.providers.set(id, stored);
     return () => {
-      if (this.providers.get(id)?.token === stored.token) this.providers.delete(id);
+      if (this.providers.get(id)?.token === stored.token) {
+        this.providers.delete(id);
+        for (const [libraryName, full] of this.loadedFullFiles) {
+          if (full.id === id) this.loadedFullFiles.delete(libraryName);
+        }
+      }
     };
   }
 
@@ -94,7 +101,9 @@ export class NodeRunJSTypeLibraryRegistry {
     return [...new Set(ids.map((id) => String(id || '').trim()).filter(Boolean))].sort().map((id) => {
       const provider = this.resolve(id);
       if (!provider) throw new Error(`Node RunJS TypeScript library is not registered: ${id}`);
-      return { kind: 'library', libraryName: provider.libraryName, packId: provider.id };
+      return id.endsWith('/full')
+        ? { kind: 'full', libraryName: provider.libraryName, packId: provider.id }
+        : { kind: 'library', libraryName: provider.libraryName, packId: provider.id };
     });
   }
 
@@ -105,8 +114,13 @@ export class NodeRunJSTypeLibraryRegistry {
     this.assertActive();
     const allRequests = new Map(requests.map((request) => [request.packId, request]));
     for (const request of this.createExplicitRequests(typeLibraryIds)) allRequests.set(request.packId, request);
+    const loadedFullPackIds = new Map<string, string>();
+    for (const request of allRequests.values()) {
+      const full = this.resolveLoadedFullFiles(request.libraryName);
+      if (full) loadedFullPackIds.set(request.libraryName, full.id);
+    }
     const loaded = new Map<string, NodeRunJSTypeLibraryFiles>();
-    for (const request of [...allRequests.values()].sort((left, right) => left.packId.localeCompare(right.packId))) {
+    for (const request of selectRunJSTypeLibraryRequests([...allRequests.values()], loadedFullPackIds)) {
       if (this.has(request.packId)) this.collect(request, new Set<string>(), loaded);
     }
     return loaded.size ? mergePacks(loaded.values()) : emptyFiles;
@@ -116,6 +130,7 @@ export class NodeRunJSTypeLibraryRegistry {
     if (this.disposed) return;
     this.disposed = true;
     this.providers.clear();
+    this.loadedFullFiles.clear();
   }
 
   getDebugState(): { disposed: boolean; providerCount: number } {
@@ -128,6 +143,11 @@ export class NodeRunJSTypeLibraryRegistry {
     loaded: Map<string, NodeRunJSTypeLibraryFiles>,
   ): void {
     if (loaded.has(request.packId) || ancestors.has(request.packId)) return;
+    const cachedFull = request.kind === 'full' ? this.resolveLoadedFullFiles(request.libraryName) : undefined;
+    if (cachedFull?.id === request.packId) {
+      loaded.set(cachedFull.id, cachedFull.files);
+      return;
+    }
     const provider = this.resolve(request.packId);
     if (!provider) return;
     const nextAncestors = new Set(ancestors);
@@ -149,7 +169,9 @@ export class NodeRunJSTypeLibraryRegistry {
         loaded,
       );
     }
-    loaded.set(provider.id, provider.load(request));
+    const files = provider.load(request);
+    loaded.set(provider.id, files);
+    if (request.kind === 'full') this.loadedFullFiles.set(request.libraryName, { files, id: provider.id });
   }
 
   private resolve(id: string): StoredProvider | undefined {
@@ -158,6 +180,10 @@ export class NodeRunJSTypeLibraryRegistry {
 
   private assertActive(): void {
     if (this.disposed) throw new Error('Node RunJS TypeScript library registry has been disposed.');
+  }
+
+  private resolveLoadedFullFiles(libraryName: string): { id: string; files: NodeRunJSTypeLibraryFiles } | undefined {
+    return this.loadedFullFiles.get(libraryName) || this.parent?.resolveLoadedFullFiles(libraryName);
   }
 }
 

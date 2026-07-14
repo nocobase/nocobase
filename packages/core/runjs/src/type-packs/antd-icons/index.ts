@@ -27,6 +27,7 @@ export interface RunJSAntdIconsTypePackEntry {
 }
 
 export const RUNJS_ANTD_ICONS_BASE_PACK_ID = 'antd-icons/base';
+export const RUNJS_ANTD_ICONS_FULL_PACK_ID = 'antd-icons/full';
 export const RUNJS_TYPESCRIPT_ANTD_ICONS_BRIDGE_DIRECTORY = '/__runjs__/type-packs/antd-icons';
 export const RUNJS_ANTD_ICONS_MAX_GROUP_COUNT = 27;
 export const RUNJS_ANTD_ICONS_MAX_GROUP_SIZE = 128;
@@ -162,6 +163,23 @@ export function createRunJSAntdIconsTypeLibraryPackDefinitions(
       },
     },
     ...groupDefinitions,
+    {
+      id: RUNJS_ANTD_ICONS_FULL_PACK_ID,
+      libraryName: 'antdIcons',
+      entry: '@ant-design/icons',
+      dependencies: ['react'],
+      rootFiles: [
+        {
+          path: `${RUNJS_TYPESCRIPT_ANTD_ICONS_BRIDGE_DIRECTORY}/full-bridge.d.ts`,
+          content: createRunJSAntdIconsFullBridgeDeclaration(),
+        },
+      ],
+      triggers: [RUNJS_ANTD_ICONS_FULL_PACK_ID],
+      metadata: {
+        fallback: true,
+        strategy: 'full-module',
+      },
+    },
   ];
 }
 
@@ -184,6 +202,14 @@ export function createRunJSAntdIconsGroupBridgeDeclaration(entries: readonly Run
 interface RunJSAntdIconsLibrary {
 ${properties}
 }
+interface RunJSAntdIcons extends RunJSAntdIconsLibrary {}
+`;
+}
+
+export function createRunJSAntdIconsFullBridgeDeclaration(): string {
+  return `
+type RunJSOfficialAntdIconsModule = typeof import('@ant-design/icons');
+interface RunJSAntdIconsLibrary extends RunJSOfficialAntdIconsModule {}
 interface RunJSAntdIcons extends RunJSAntdIconsLibrary {}
 `;
 }

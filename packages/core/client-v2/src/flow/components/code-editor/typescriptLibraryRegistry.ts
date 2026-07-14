@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { selectRunJSTypeLibraryRequests } from '@nocobase/runjs/client-v2';
 import type {
   RunJSTypeLibraryPack,
   RunJSTypeLibraryPackDependency,
@@ -47,6 +48,7 @@ export class RunJSTypeLibraryRegistry {
   private readonly registrations = new Map<string, StoredRegistration>();
   private readonly loadingPacks = new Map<string, Promise<RunJSTypeLibraryPack>>();
   private readonly loadingCatalogs = new Map<string, Promise<readonly RunJSTypeLibraryCompletionCatalogEntry[]>>();
+  private readonly loadedFullPacks = new Map<string, RunJSTypeLibraryPack>();
   private disposed = false;
   private revision = 0;
   private readonly registryId = ++registrySequence;
@@ -68,6 +70,9 @@ export class RunJSTypeLibraryRegistry {
       this.registrations.delete(id);
       this.loadingPacks.delete(id);
       this.loadingCatalogs.delete(id);
+      for (const [libraryName, pack] of this.loadedFullPacks) {
+        if (pack.id === id) this.loadedFullPacks.delete(libraryName);
+      }
       this.revision += 1;
     };
   }
@@ -95,14 +100,22 @@ export class RunJSTypeLibraryRegistry {
     return [...new Set(ids.map((id) => String(id || '').trim()).filter(Boolean))].sort().map((id) => {
       const registration = this.resolve(id);
       if (!registration) throw new Error(`RunJS TypeScript library is not registered: ${id}`);
-      return { kind: 'library', libraryName: registration.libraryName, packId: id };
+      const libraryName = inferLibraryName(id, registration.libraryName);
+      return id.endsWith('/full')
+        ? { kind: 'full', libraryName, packId: id }
+        : { kind: 'library', libraryName, packId: id };
     });
   }
 
   async loadPacks(requests: readonly RunJSTypeLibraryRequest[]): Promise<RunJSTypeLibraryPack[]> {
     this.assertActive();
     const packs = new Map<string, RunJSTypeLibraryPack>();
-    const registeredRequests = requests
+    const loadedFullPackIds = new Map<string, string>();
+    for (const request of requests) {
+      const fullPack = this.resolveLoadedFullPack(request.libraryName);
+      if (fullPack) loadedFullPackIds.set(request.libraryName, fullPack.id);
+    }
+    const registeredRequests = selectRunJSTypeLibraryRequests(requests, loadedFullPackIds)
       .filter((request) => this.has(request.packId))
       .sort((left, right) => left.packId.localeCompare(right.packId));
     for (const request of registeredRequests) {
@@ -132,6 +145,7 @@ export class RunJSTypeLibraryRegistry {
     this.registrations.clear();
     this.loadingPacks.clear();
     this.loadingCatalogs.clear();
+    this.loadedFullPacks.clear();
     this.revision += 1;
   }
 
@@ -140,6 +154,7 @@ export class RunJSTypeLibraryRegistry {
     this.registrations.clear();
     this.loadingPacks.clear();
     this.loadingCatalogs.clear();
+    this.loadedFullPacks.clear();
     this.revision += 1;
   }
 
@@ -189,6 +204,7 @@ export class RunJSTypeLibraryRegistry {
       .then(() => registration.loader(request))
       .then((pack) => {
         assertRegistrationMatches(registration, pack);
+        if (request.kind === 'full') this.loadedFullPacks.set(request.libraryName, pack);
         return pack;
       })
       .catch((error: unknown) => {
@@ -201,6 +217,10 @@ export class RunJSTypeLibraryRegistry {
 
   private assertActive(): void {
     if (this.disposed) throw new Error('RunJS TypeScript library registry has been disposed.');
+  }
+
+  private resolveLoadedFullPack(libraryName: string): RunJSTypeLibraryPack | undefined {
+    return this.loadedFullPacks.get(libraryName) || this.parent?.resolveLoadedFullPack(libraryName);
   }
 }
 
@@ -248,6 +268,12 @@ function normalizeRequired(value: string, label: string): string {
   const normalized = String(value || '').trim();
   if (!normalized) throw new Error(`${label} is required.`);
   return normalized;
+}
+
+function inferLibraryName(packId: string, fallback: string): string {
+  if (packId.startsWith('antd-icons/')) return 'antdIcons';
+  if (packId.startsWith('antd/')) return 'antd';
+  return fallback;
 }
 
 function toDependencyRequest(dependency: RunJSTypeLibraryPackDependency): RunJSTypeLibraryRequest {

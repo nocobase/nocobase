@@ -68,4 +68,43 @@ ctx.libs.antdIcons.NotAnIcon;
     expect(roots.some((fileName) => fileName.endsWith('/antd-icons/m-bridge.d.ts'))).toBe(false);
     expect(new Set(files.dependencyFiles.map((file) => file.path)).size).toBe(files.dependencyFiles.length);
   });
+
+  it('uses the same full fallbacks for dynamic access and reuses them for later symbols', () => {
+    expect(
+      inspect(`
+const componentName: keyof RunJSAntdLibrary = 'Input';
+const iconName: keyof RunJSAntdIconsLibrary = 'PlusOutlined';
+const Component = ctx.libs.antd[componentName];
+const Icon = ctx.libs.antdIcons[iconName];
+void Component;
+void Icon;
+`),
+    ).toEqual([]);
+
+    const fullFiles = loadNodeRunJSTypeLibraryFiles([
+      { kind: 'full', libraryName: 'antd', packId: 'antd/full' },
+      { kind: 'full', libraryName: 'antdIcons', packId: 'antd-icons/full' },
+    ]);
+    const reusedFiles = loadNodeRunJSTypeLibraryFiles([
+      { kind: 'symbol', libraryName: 'antd', packId: 'antd/Input', symbol: 'Input' },
+      { kind: 'symbol', libraryName: 'antdIcons', packId: 'antd-icons/P', symbol: 'PlusOutlined', group: 'P' },
+    ]);
+    const fullRoots = fullFiles.rootFiles.map((file) => file.path);
+    const reusedRoots = reusedFiles.rootFiles.map((file) => file.path);
+
+    expect(fullRoots).toEqual(
+      expect.arrayContaining([
+        '/__runjs__/type-packs/antd/full-bridge.d.ts',
+        '/__runjs__/type-packs/antd-icons/full-bridge.d.ts',
+      ]),
+    );
+    expect(reusedRoots).toEqual(
+      expect.arrayContaining([
+        '/__runjs__/type-packs/antd/full-bridge.d.ts',
+        '/__runjs__/type-packs/antd-icons/full-bridge.d.ts',
+      ]),
+    );
+    expect(reusedRoots.some((fileName) => fileName.endsWith('/antd/input-bridge.d.ts'))).toBe(false);
+    expect(reusedRoots.some((fileName) => fileName.endsWith('/antd-icons/p-bridge.d.ts'))).toBe(false);
+  });
 });

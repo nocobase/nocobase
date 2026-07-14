@@ -449,6 +449,135 @@ await ctx.refresh();
     );
   });
 
+  it('keeps syntax diagnostics while suppressing semantic noise when a type pack fails', async () => {
+    registerRunJSTypeLibraryPackLoader('antd/full', async () => {
+      throw new Error('full pack failed');
+    });
+    const code = `
+const name = getComponentName();
+ctx.libs.antd[name];
+const broken = ;
+ctx.libs.antd.NotAComponent;
+`;
+    const session = createTypeScriptProjectSession();
+    const diagnostics = await session.getDiagnostics(baseProject(code), code);
+
+    expect(diagnostics.length).toBeGreaterThan(0);
+    expect(diagnostics.some((diagnostic) => /Expression expected/.test(diagnostic.message))).toBe(true);
+    expect(diagnostics.some((diagnostic) => /getComponentName|NotAComponent|antd/.test(diagnostic.message))).toBe(
+      false,
+    );
+    expect(session.getLastInternalError()).toEqual(
+      expect.objectContaining({ code: 'TYPE_LIBRARY_LOAD_FAILED', packIds: ['antd/full'] }),
+    );
+  });
+
+  it('upgrades symbol packs to full packs, reuses full, and rebuilds one shared project version', async () => {
+    const inputLoader = vi.fn(() =>
+      fakePack('antd/Input', {
+        bridgeContent: 'interface RunJSAntdLibrary { readonly Input: { readonly kind: "input" } }',
+        bridgePath: '/__fake_packs__/antd/input-bridge.d.ts',
+      }),
+    );
+    const buttonLoader = vi.fn(() =>
+      fakePack('antd/Button', {
+        bridgeContent: 'interface RunJSAntdLibrary { readonly Button: { readonly kind: "button" } }',
+        bridgePath: '/__fake_packs__/antd/button-bridge.d.ts',
+      }),
+    );
+    const fullLoader = vi.fn(() =>
+      fakePack('antd/full', {
+        bridgeContent:
+          'interface RunJSAntdLibrary { readonly Input: { readonly kind: "input" }; readonly Button: { readonly kind: "button" } }',
+        bridgePath: '/__fake_packs__/antd/full-bridge.d.ts',
+      }),
+    );
+    registerRunJSTypeLibraryPackLoader('antd/Input', inputLoader);
+    registerRunJSTypeLibraryPackLoader('antd/Button', buttonLoader);
+    registerRunJSTypeLibraryPackLoader('antd/full', fullLoader);
+    const session = createTypeScriptProjectSession();
+    const inputCode = 'ctx.libs.antd.Input.kind;';
+
+    expect(await session.getDiagnostics(baseProject(inputCode), inputCode)).toEqual([]);
+    const symbolState = session.getDebugState();
+    expect(inputLoader).toHaveBeenCalledTimes(1);
+    expect(symbolState.structureKey).toContain('antd/Input');
+
+    const dynamicCode = 'const name: keyof RunJSAntdLibrary = "Button"; ctx.libs.antd[name];';
+    const project = baseProject(dynamicCode);
+    const completion = session.getCompletionResult(project, dynamicCode.length, dynamicCode, true);
+    const hover = session.getHover(project, dynamicCode.indexOf('antd') + 2, dynamicCode);
+    const diagnostics = session.getDiagnostics(project, dynamicCode);
+    await Promise.all([completion, hover, diagnostics]);
+    const fullState = session.getDebugState();
+
+    expect(fullLoader).toHaveBeenCalledTimes(1);
+    expect(fullState.structureKey).toContain('antd/full');
+    expect(fullState.structureKey).not.toContain('antd/Input');
+    expect(fullState.languageServiceCreationCount).toBe(symbolState.languageServiceCreationCount + 1);
+
+    const buttonCode = 'ctx.libs.antd.Button.kind;';
+    expect(await session.getDiagnostics(baseProject(buttonCode), buttonCode)).toEqual([]);
+    expect(buttonLoader).not.toHaveBeenCalled();
+    expect(fullLoader).toHaveBeenCalledTimes(1);
+    expect(session.getDebugState().languageServiceCreationCount).toBe(fullState.languageServiceCreationCount);
+  });
+
+  it('rejects changed declarations at a shared path when upgrading a symbol pack to full', async () => {
+    const sharedPath = '/node_modules/fake-lib/index.d.ts';
+    registerRunJSTypeLibraryPackLoader('antd/Input', () =>
+      fakePack('antd/Input', {
+        bridgeContent: 'interface RunJSAntdLibrary { readonly Input: 1 }',
+        dependencyContent: 'export const answer: 1;',
+        dependencyPath: sharedPath,
+      }),
+    );
+    registerRunJSTypeLibraryPackLoader('antd/full', () =>
+      fakePack('antd/full', {
+        bridgeContent: 'interface RunJSAntdLibrary { readonly Input: 1 }',
+        dependencyContent: 'export const answer: 2;',
+        dependencyPath: sharedPath,
+      }),
+    );
+    const session = createTypeScriptProjectSession();
+    const inputCode = 'ctx.libs.antd.Input;';
+    expect(await session.getDiagnostics(baseProject(inputCode), inputCode)).toEqual([]);
+
+    const onInternalError = vi.fn();
+    const dynamicCode = 'const name: keyof RunJSAntdLibrary = "Input"; ctx.libs.antd[name];';
+    expect(await session.getDiagnostics({ ...baseProject(dynamicCode), onInternalError }, dynamicCode)).toEqual([]);
+    expect(onInternalError).toHaveBeenCalledWith(expect.objectContaining({ code: 'TYPE_LIBRARY_FILE_CONFLICT' }));
+  });
+
+  it('drops an in-flight symbol result after a newer full-pack request wins', async () => {
+    const inputDeferred = createDeferred<RunJSTypeLibraryPack>();
+    const inputLoader = vi.fn(() => inputDeferred.promise);
+    registerRunJSTypeLibraryPackLoader('antd/Input', inputLoader);
+    registerRunJSTypeLibraryPackLoader('antd/full', () =>
+      fakePack('antd/full', {
+        bridgeContent: 'interface RunJSAntdLibrary { readonly Input: 1; readonly Button: 2 }',
+        bridgePath: '/__fake_packs__/antd/full-bridge.d.ts',
+      }),
+    );
+    const session = createTypeScriptProjectSession();
+    const inputCode = 'ctx.libs.antd.Input;';
+    const stale = session.getDiagnostics(baseProject(inputCode), inputCode);
+    await vi.waitFor(() => expect(inputLoader).toHaveBeenCalledTimes(1));
+
+    const dynamicCode = 'const name: keyof RunJSAntdLibrary = "Button"; ctx.libs.antd[name];';
+    expect(await session.getDiagnostics(baseProject(dynamicCode), dynamicCode)).toEqual([]);
+    inputDeferred.resolve(
+      fakePack('antd/Input', {
+        bridgeContent: 'interface RunJSAntdLibrary { readonly Input: 1 }',
+        bridgePath: '/__fake_packs__/antd/input-bridge.d.ts',
+      }),
+    );
+
+    expect(await stale).toEqual([]);
+    expect(session.getDebugState().rootFileNames).toContain('/__fake_packs__/antd/full-bridge.d.ts');
+    expect(session.getDebugState().rootFileNames).not.toContain('/__fake_packs__/antd/input-bridge.d.ts');
+  });
+
   it('loads pack dependencies recursively, handles cycles, and retries rejected loaders', async () => {
     const reactPack: RunJSTypeLibraryPack = {
       ...fakePack('react', {

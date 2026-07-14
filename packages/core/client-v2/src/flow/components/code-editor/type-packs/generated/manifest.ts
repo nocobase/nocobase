@@ -180,6 +180,28 @@ export const generatedRunJSTypeLibraryPackManifest: readonly GeneratedRunJSTypeL
     "rawBytes": 5033
   },
   {
+    "id": "antd-icons/full",
+    "libraryName": "antdIcons",
+    "version": "5.6.1",
+    "entry": "@ant-design/icons",
+    "sourcePackage": "@ant-design/icons",
+    "dependencies": [
+      {
+        "id": "react",
+        "version": "18.3.18",
+        "contentHash": "4139ffb527029960c624f044b331e6fcf411d778abb5064af6bc12ba44844fb7"
+      }
+    ],
+    "triggers": [
+      "antd-icons/full"
+    ],
+    "contentHash": "ed0be6b69acaae11dd522dd9f7d9d92b680db75d85bb24ae4bf29abe10e727c0",
+    "fileCount": 842,
+    "rootFileCount": 1,
+    "dependencyFileCount": 841,
+    "rawBytes": 1197048
+  },
+  {
     "id": "antd-icons/G",
     "libraryName": "antdIcons",
     "version": "5.6.1",
@@ -1244,6 +1266,33 @@ export const generatedRunJSTypeLibraryPackManifest: readonly GeneratedRunJSTypeL
     "rootFileCount": 1,
     "dependencyFileCount": 633,
     "rawBytes": 905834
+  },
+  {
+    "id": "antd/full",
+    "libraryName": "antd",
+    "version": "5.24.2",
+    "entry": "antd",
+    "sourcePackage": "antd",
+    "dependencies": [
+      {
+        "id": "dayjs",
+        "version": "1.11.13",
+        "contentHash": "4b3d8579d61f431e753819f2cbf62b75dc845f9e2932010d3fc55331fd232497"
+      },
+      {
+        "id": "react",
+        "version": "18.3.18",
+        "contentHash": "4139ffb527029960c624f044b331e6fcf411d778abb5064af6bc12ba44844fb7"
+      }
+    ],
+    "triggers": [
+      "antd/full"
+    ],
+    "contentHash": "d745ab61f06ab286bd77f35121fe240955273d3ff41f79e464015f69e514d991",
+    "fileCount": 630,
+    "rootFileCount": 1,
+    "dependencyFileCount": 629,
+    "rawBytes": 888702
   },
   {
     "id": "antd/Grid",
