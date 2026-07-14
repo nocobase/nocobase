@@ -206,6 +206,64 @@ describe('actions', () => {
       expect(clearedCookies.toLowerCase()).toContain('expires=thu, 01 jan 1970 00:00:00 gmt');
     });
 
+    it('should reject cross-site sign-in origins', async () => {
+      const originalWhitelist = process.env.CORS_ORIGIN_WHITELIST;
+      delete process.env.CORS_ORIGIN_WHITELIST;
+
+      try {
+        const res = await agent
+          .post('/auth:signIn')
+          .set({ 'X-Authenticator': 'basic', Origin: 'https://evil.example' })
+          .send({
+            account: process.env.INIT_ROOT_USERNAME || process.env.INIT_ROOT_EMAIL,
+            password: process.env.INIT_ROOT_PASSWORD,
+          });
+
+        expect(res.statusCode).toEqual(403);
+      } finally {
+        if (originalWhitelist === undefined) {
+          delete process.env.CORS_ORIGIN_WHITELIST;
+        } else {
+          process.env.CORS_ORIGIN_WHITELIST = originalWhitelist;
+        }
+      }
+    });
+
+    it('should allow same-origin sign-in origins', async () => {
+      const res = await agent
+        .post('/auth:signIn')
+        .set({ 'X-Authenticator': 'basic', Host: 'example.com', Origin: 'http://example.com' })
+        .send({
+          account: process.env.INIT_ROOT_USERNAME || process.env.INIT_ROOT_EMAIL,
+          password: process.env.INIT_ROOT_PASSWORD,
+        });
+
+      expect(res.statusCode).toEqual(200);
+    });
+
+    it('should sync auth cookies from an existing authorization token', async () => {
+      const signInRes = await agent
+        .post('/auth:signIn')
+        .set({ 'X-Authenticator': 'basic' })
+        .send({
+          account: process.env.INIT_ROOT_USERNAME || process.env.INIT_ROOT_EMAIL,
+          password: process.env.INIT_ROOT_PASSWORD,
+        });
+      const token = signInRes.body.data.token;
+
+      const res = await app
+        .agent()
+        .post('/auth:syncCookies')
+        .set({ Authorization: `Bearer ${token}`, 'X-Authenticator': 'basic', 'X-Role': 'root' });
+
+      expect(res.statusCode).toEqual(200);
+      const cookies = res.headers['set-cookie'].join('; ');
+      expect(cookies).toContain(`${getAuthCookieName('authToken', app.name)}=`);
+      expect(cookies).toContain(`${getAuthCookieName('authenticator', app.name)}=basic`);
+      expect(cookies).toContain(`${getAuthCookieName('role', app.name)}=root`);
+      expect(cookies).toContain(`${getAuthCookieName('csrfToken', app.name)}=`);
+    });
+
     it('should set secure auth cookies behind an HTTPS reverse proxy', async () => {
       const res = await agent
         .post('/auth:signIn')

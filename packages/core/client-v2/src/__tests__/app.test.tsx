@@ -52,7 +52,7 @@ describe('app', () => {
       expect(app.getHref('/test')).toBe('/test');
     });
 
-    it('should enable credentials only for same-origin api clients by default', () => {
+    it('should enable credentials for api clients by default', () => {
       const sameOriginApp = new Application({
         router,
         apiClient: {
@@ -67,7 +67,7 @@ describe('app', () => {
       });
 
       expect(sameOriginApp.apiClient.axios.defaults.withCredentials).toBe(true);
-      expect(crossOriginApp.apiClient.axios.defaults.withCredentials).toBe(false);
+      expect(crossOriginApp.apiClient.axios.defaults.withCredentials).toBe(true);
     });
 
     it('should initialize shared jsonLogic operators', () => {

@@ -437,13 +437,20 @@ export class Gateway extends EventEmitter {
   }
 
   async requestHandler(req: IncomingMessage, res: ServerResponse) {
-    const { pathname } = parse(req.url);
+    const { pathname, search } = parse(req.url);
     const { PLUGIN_STATICS_PATH } = process.env;
     const APP_PUBLIC_PATH = this.getAppPublicPath();
 
     if (pathname.endsWith('/__umi/api/bundle-status')) {
       res.statusCode = 200;
       res.end('ok');
+      return;
+    }
+
+    if (APP_PUBLIC_PATH !== '/' && pathname.startsWith('/files/')) {
+      res.statusCode = 302;
+      res.setHeader('Location', `${APP_PUBLIC_PATH.replace(/\/$/, '')}${pathname}${search || ''}`);
+      res.end();
       return;
     }
 
@@ -464,7 +471,7 @@ export class Gateway extends EventEmitter {
           return;
         }
       }
-      const headers = getStorageUploadSecurityHeaders(pathname);
+      const headers = getStorageUploadSecurityHeaders(`${pathname}${search || ''}`);
       for (const [key, value] of Object.entries(headers)) {
         res.setHeader(key, value);
       }

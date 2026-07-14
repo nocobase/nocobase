@@ -78,14 +78,42 @@ async function createAnotherFileCollection(app: MockServer) {
     ],
   });
   await anotherDB.sync();
-  (another.acl.getRole('root') || another.acl.define({ role: 'root' })).grantAction('files:get', {});
-  (another.acl.getRole('admin') || another.acl.define({ role: 'admin' })).grantAction('files:get', {});
+  (another.acl.getRole('root') || another.acl.define({ role: 'root' })).grantAction('files:view', {});
+  (another.acl.getRole('admin') || another.acl.define({ role: 'admin' })).grantAction('files:view', {});
   return another.collectionManager.getCollection('files');
+}
+
+async function createFileTemplateCollection(db: MockServer['db'], name: string) {
+  db.collection({
+    name,
+    template: 'file',
+    fields: [
+      { type: 'string', name: 'title' },
+      { type: 'string', name: 'filename' },
+      { type: 'string', name: 'extname' },
+      { type: 'integer', name: 'size' },
+      { type: 'string', name: 'mimetype' },
+      { type: 'string', name: 'path' },
+      { type: 'string', name: 'url' },
+      { type: 'bigInt', name: 'storageId' },
+      { type: 'jsonb', name: 'meta', defaultValue: {} },
+    ],
+  });
+  await db.sync();
+  return db.getCollection(name);
 }
 
 function enableFileAccessACL(app: MockServer) {
   app.options.acl = true;
   app.dataSourceManager.get('main').options.useACL = true;
+}
+
+async function getRootUser(db: MockServer['db']) {
+  return db.getRepository('users').findOne({
+    filter: {
+      email: process.env.INIT_ROOT_EMAIL,
+    },
+  });
 }
 
 function restoreEnv(name: string, value: string | undefined) {
@@ -555,7 +583,7 @@ describe('file manager > server', () => {
         });
         enableFileAccessACL(app);
         const mainAcl = app.dataSourceManager.get('main').acl;
-        mainAcl.define({ role: 'temporary-viewer' }).grantAction('attachments:get', {});
+        mainAcl.define({ role: 'temporary-viewer' }).grantAction('attachments:view', {});
         app.resourcer.use(
           async (ctx, next) => {
             ctx.state.currentRole = 'temporary-viewer';
@@ -591,7 +619,7 @@ describe('file manager > server', () => {
 
       it('creates temporary URLs for file template collections and another data source', async () => {
         await app.destroy();
-        app = await getApp({ plugins: ['data-source-manager'] });
+        app = await getApp({ plugins: ['data-source-manager', 'acl'], acl: true });
         agent = app.agent();
         db = app.db;
         plugin = app.pm.get(PluginFileManagerServer) as PluginFileManagerServer;
@@ -601,8 +629,8 @@ describe('file manager > server', () => {
           filePath: path.resolve(__dirname, './files/text.txt'),
         });
         const file = await anotherFiles.repository.create({ values: fileData });
-        const admin = await db.getRepository('users').findOne();
-        const loggedAgent = (await app.agent().login(admin)).set('X-Data-Source', 'another');
+        const rootUser = await getRootUser(db);
+        const loggedAgent = (await app.agent().login(rootUser)).set('X-Data-Source', 'another').set('X-Role', 'root');
 
         const createResponse = await loggedAgent.post(`/api/files:createTemporaryURL/${file.id}`);
 
@@ -617,7 +645,7 @@ describe('file manager > server', () => {
 
       it('delegates file URL resolution to the selected data source', async () => {
         await app.destroy();
-        app = await getApp({ plugins: ['data-source-manager'] });
+        app = await getApp({ plugins: ['data-source-manager', 'acl'], acl: true });
         agent = app.agent();
         db = app.db;
         plugin = app.pm.get(PluginFileManagerServer) as PluginFileManagerServer;
@@ -642,8 +670,8 @@ describe('file manager > server', () => {
         };
         const resolveStorageFileURL = vi.fn().mockResolvedValue('https://remote.example.com/files/text.txt');
         another.resolveStorageFileURL = resolveStorageFileURL;
-        const admin = await db.getRepository('users').findOne();
-        const loggedAgent = (await app.agent().login(admin)).set('X-Data-Source', 'another');
+        const rootUser = await getRootUser(db);
+        const loggedAgent = (await app.agent().login(rootUser)).set('X-Data-Source', 'another').set('X-Role', 'root');
 
         const createResponse = await loggedAgent.post(`/api/files:createTemporaryURL/${file.id}`);
         const response = await app.agent().get(createResponse.body.data.url);
@@ -870,6 +898,7 @@ describe('file manager > server', () => {
 
         expect(response.status).toBe(302);
         expect(response.headers.location).toBe(await plugin.getFileURL(body.data, false, { download: true }));
+        expect(response.headers.location).toContain('download=1');
       });
 
       it('redirects external storage downloads to a signed attachment URL', async () => {
@@ -1046,7 +1075,7 @@ describe('file manager > server', () => {
 
       it('redirects permanent URL for another data source', async () => {
         await app.destroy();
-        app = await getApp({ plugins: ['data-source-manager'] });
+        app = await getApp({ plugins: ['data-source-manager', 'acl'], acl: true });
         agent = app.agent();
         db = app.db;
         plugin = app.pm.get(PluginFileManagerServer) as PluginFileManagerServer;
@@ -1063,8 +1092,8 @@ describe('file manager > server', () => {
 
         expect(url).toBe(`/files/main/another/files/${file.id}${file.extname}`);
 
-        const admin = await db.getRepository('users').findOne();
-        const loggedAgent = await app.agent().login(admin);
+        const rootUser = await getRootUser(db);
+        const loggedAgent = (await app.agent().login(rootUser)).set('X-Role', 'root');
         const response = await loggedAgent.get(url);
 
         expect(response.status).toBe(302);
@@ -1137,7 +1166,7 @@ describe('file manager > server', () => {
           [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
         });
         enableFileAccessACL(app);
-        (app.acl.getRole('anonymous') || app.acl.define({ role: 'anonymous' })).grantAction('attachments:get', {});
+        (app.acl.getRole('anonymous') || app.acl.define({ role: 'anonymous' })).grantAction('attachments:view', {});
 
         const response = await app.agent().get(body.data.url);
 
@@ -1177,6 +1206,14 @@ describe('file manager > server', () => {
           ]);
 
         expect(response.status).toBe(403);
+        const clearedCookies = ([] as string[]).concat(response.headers['set-cookie'] || []);
+        expect(
+          clearedCookies.some(
+            (cookie) =>
+              cookie.startsWith(`${getAuthCookieName('authToken', app.name)}=;`) &&
+              cookie.includes('expires=Thu, 01 Jan 1970'),
+          ),
+        ).toBe(true);
       });
 
       it('allows file access authorizers when an optional file request has an invalid login cookie', async () => {
@@ -1282,32 +1319,109 @@ describe('file manager > server', () => {
 
       it('uses sub app auth cookies when APP_PUBLIC_PATH is set', async () => {
         const originalPath = process.env.APP_PUBLIC_PATH;
+        await app.destroy();
+        app = await getApp({ plugins: ['data-source-manager', 'acl'], acl: true });
+        agent = app.agent();
+        db = app.db;
+        plugin = app.pm.get(PluginFileManagerServer) as PluginFileManagerServer;
         const originalName = app.options.name;
         process.env.APP_PUBLIC_PATH = '/nocobase';
         app.options.name = 'subapp';
 
         try {
-          const admin = await db.getRepository('users').findOne();
-          const loggedAgent = await app.agent().login(admin);
+          const rootUser = await db.getRepository('users').findOne({
+            filter: {
+              email: process.env.INIT_ROOT_EMAIL,
+            },
+          });
+          const loggedAgent = await app.agent().login(rootUser);
           const authCheckResponse = await loggedAgent.resource('auth').check();
           const token = authCheckResponse.request.header['Authorization'].replace('Bearer ', '');
           const cookieHeader = [
             `${getAuthCookieName('authToken', 'subapp')}=${token}`,
             `${getAuthCookieName('authenticator', 'subapp')}=basic`,
+            `${getAuthCookieName('role', 'subapp')}=root`,
           ];
 
-          const { body } = await agent.resource('attachments').create({
-            [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
+          const file = await plugin.createFileRecord({
+            collectionName: 'attachments',
+            filePath: path.resolve(__dirname, './files/text.txt'),
           });
-          expect(body.data.url).toBe(`/nocobase/files/subapp/main/attachments/${body.data.id}${body.data.extname}`);
+          expect(file.get('url')).toBe(`/nocobase/files/subapp/main/attachments/${file.id}${file.extname}`);
+          enableFileAccessACL(app);
 
-          const response = await app.agent().get(body.data.url).set('Cookie', cookieHeader);
+          const response = await app
+            .agent()
+            .get(file.get('url') as string)
+            .set('Cookie', cookieHeader);
           expect(response.status).toBe(302);
-          expect(response.headers.location).toBe(await plugin.getFileURL(body.data));
+          expect(response.headers.location).toBe(await plugin.getFileURL(file));
+
+          const fileTemplateRecord = await plugin.createFileRecord({
+            collectionName: 'files',
+            filePath: path.resolve(__dirname, './files/text.txt'),
+          });
+          expect(fileTemplateRecord.get('url')).toBe(
+            `/nocobase/files/subapp/main/files/${fileTemplateRecord.id}${fileTemplateRecord.extname}`,
+          );
+
+          const fileTemplateResponse = await app
+            .agent()
+            .get(fileTemplateRecord.get('url') as string)
+            .set('Cookie', cookieHeader);
+          expect(fileTemplateResponse.status).toBe(302);
+          expect(fileTemplateResponse.headers.location).toBe(await plugin.getFileURL(fileTemplateRecord));
+
+          const dynamicCollectionName = 't_8jbl7u3wx4j';
+          await createFileTemplateCollection(db, dynamicCollectionName);
+          const dynamicFileTemplateRecord = await plugin.createFileRecord({
+            collectionName: dynamicCollectionName,
+            filePath: path.resolve(__dirname, './files/image.jpg'),
+          });
+          expect(dynamicFileTemplateRecord.get('url')).toBe(
+            `/nocobase/files/subapp/main/${dynamicCollectionName}/${dynamicFileTemplateRecord.id}${dynamicFileTemplateRecord.extname}`,
+          );
+
+          const dynamicFileTemplateResponse = await app
+            .agent()
+            .get(dynamicFileTemplateRecord.get('url') as string)
+            .set('Cookie', cookieHeader);
+          expect(dynamicFileTemplateResponse.status).toBe(302);
+          expect(dynamicFileTemplateResponse.headers.location).toBe(await plugin.getFileURL(dynamicFileTemplateRecord));
         } finally {
           app.options.name = originalName;
           restoreEnv('APP_PUBLIC_PATH', originalPath);
         }
+      });
+
+      it('uses currentRole when currentRoles is absent during file access ACL checks', async () => {
+        await app.destroy();
+        app = await getApp({ plugins: ['data-source-manager', 'acl'], acl: true });
+        agent = app.agent();
+        db = app.db;
+        plugin = app.pm.get(PluginFileManagerServer) as PluginFileManagerServer;
+        app.dataSourceManager.use(
+          async (ctx, next) => {
+            ctx.state.currentRole = 'root';
+            ctx.state.currentRoles = undefined;
+            await next();
+          },
+          { tag: 'setRootCurrentRoleOnlyForFileManagerTest', after: 'setCurrentRole', before: 'acl' },
+        );
+        enableFileAccessACL(app);
+
+        const file = await plugin.createFileRecord({
+          collectionName: 'files',
+          filePath: path.resolve(__dirname, './files/text.txt'),
+        });
+        const found = await db.getRepository('files').findOne({
+          filterByTk: file.id,
+        });
+
+        const response = await agent.get(found.url);
+
+        expect(response.status).toBe(302);
+        expect(response.headers.location).toBe(await plugin.getFileURL(found));
       });
 
       it('keeps external URL records without storageId unchanged', async () => {

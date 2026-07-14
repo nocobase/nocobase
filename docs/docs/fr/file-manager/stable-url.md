@@ -45,6 +45,7 @@ N'enregistrez pas cette URL dans un champ, du Markdown ou des données métier, 
 - La réponse est une redirection `302` que le client doit suivre
 - Ne conservez pas `302 Location` ni `temporaryAccessToken`
 - Le proxy inverse doit transmettre à NocoBase la route `/files/` située sous `APP_PUBLIC_PATH`. Pour un déploiement dans un sous-chemin, conservez également la route compatible `/files/` à la racine. Les configurations générées par la CLI NocoBase incluent automatiquement ces deux règles
+- Dans les déploiements où les pages accèdent à l'API en cross-origin (`API_BASE_URL` pointe vers une autre origine), vous devez ajouter l'origine des pages à `CORS_ORIGIN_WHITELIST`. Sinon, le cookie de connexion n'est jamais enregistré et les URL stables renvoient `403` faute d'identifiants. Voir [Variables d'environnement](../get-started/installation/env.md#api_base_url)
 - Utilisez un `hostname` différent pour chaque service NocoBase indépendant au lieu de les distinguer uniquement par leur port. Les cookies du navigateur ne sont pas isolés par port ; consultez [Déploiement en production](../get-started/deployment/production.md)
 - Les sous-applications d'un même déploiement NocoBase sont distinguées par leur nom d'application et ne nécessitent pas de hostnames séparés. Un service indépendant exécuté sur un autre port doit toutefois être isolé par hostname s'il contient une application principale ou une sous-application portant le même nom
 

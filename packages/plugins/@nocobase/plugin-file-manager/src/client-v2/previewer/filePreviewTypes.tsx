@@ -799,7 +799,7 @@ export const getPdfPreviewApiSrc = () => `${getPdfjsBaseUrl()}pdf.min.mjs`;
 
 export const getPdfPreviewWorkerSrc = () => `${getPdfjsBaseUrl()}pdf.worker.min.mjs`;
 
-type PdfPreviewErrorCode = 'resources' | 'file' | 'document';
+type PdfPreviewErrorCode = 'resources' | 'file' | 'document' | 'size';
 
 class PdfPreviewError extends Error {
   code: PdfPreviewErrorCode;
@@ -828,6 +828,8 @@ const loadPdfJs = async () => {
 };
 
 const PDF_SCALE = 1.4;
+const PDF_PREVIEW_MAX_BYTES = 50 * 1024 * 1024;
+const PDF_MAX_CONCURRENT_PAGE_RENDERS = 1;
 
 const PDF_PREVIEW_PAGE_CLASS = css`
   position: relative;
@@ -896,6 +898,7 @@ const PDF_PREVIEW_ERROR_MESSAGES: Record<PdfPreviewErrorCode, string> = {
     'PDF preview resources failed to load. Please refresh the page and check whether plugin static files are deployed correctly.',
   file: 'PDF preview failed to load the file. If the file is stored on another domain, configure CORS for the external storage to allow this site to read the file.',
   document: 'PDF preview failed. Please download the file to preview it.',
+  size: 'PDF file is too large to preview in the browser. Please download it.',
 };
 
 interface PdfMeta {
@@ -917,6 +920,7 @@ interface PdfSession {
   data?: Uint8Array;
   rendered: Set<number>;
   inFlight: Set<number>;
+  pending: Set<number>;
   loadingTasks: PDFDocumentLoadingTask[];
   renderTasks: RenderTask[];
   textLayers: Set<PdfTextLayer>;
@@ -943,6 +947,7 @@ const PdfPreviewer = ({ file }: FilePreviewerProps) => {
       abortController: new AbortController(),
       rendered: new Set(),
       inFlight: new Set(),
+      pending: new Set(),
       loadingTasks: [],
       renderTasks: [],
       textLayers: new Set(),
@@ -983,11 +988,18 @@ const PdfPreviewer = ({ file }: FilePreviewerProps) => {
       if (!response.ok) {
         throw new PdfPreviewError('file', `Failed to fetch PDF file: ${response.status}`);
       }
+      const contentLength = Number(response.headers.get('content-length'));
+      if (Number.isFinite(contentLength) && contentLength > PDF_PREVIEW_MAX_BYTES) {
+        throw new PdfPreviewError('size', 'PDF file is too large to preview.');
+      }
       let data: Uint8Array;
       try {
         data = new Uint8Array(await response.arrayBuffer());
       } catch (error) {
         throw new PdfPreviewError('file', 'Failed to read PDF file response.', error);
+      }
+      if (data.byteLength > PDF_PREVIEW_MAX_BYTES) {
+        throw new PdfPreviewError('size', 'PDF file is too large to preview.');
       }
       if (session.cancelled) {
         return;
@@ -1200,11 +1212,36 @@ const PdfPreviewer = ({ file }: FilePreviewerProps) => {
       }
     };
 
+    const drainQueue = () => {
+      if (session.cancelled || session.inFlight.size >= PDF_MAX_CONCURRENT_PAGE_RENDERS) {
+        return;
+      }
+      const pageNumber = session.pending.values().next().value;
+      if (!pageNumber) {
+        return;
+      }
+      session.pending.delete(pageNumber);
+      return renderPage(pageNumber).finally(drainQueue);
+    };
+
+    const queuePage = (pageNumber: number) => {
+      if (
+        session.cancelled ||
+        session.rendered.has(pageNumber) ||
+        session.inFlight.has(pageNumber) ||
+        session.pending.has(pageNumber)
+      ) {
+        return;
+      }
+      session.pending.add(pageNumber);
+      drainQueue();
+    };
+
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
           if (entry.isIntersecting) {
-            renderPage(Number((entry.target as HTMLElement).dataset.page));
+            queuePage(Number((entry.target as HTMLElement).dataset.page));
           }
         }
       },

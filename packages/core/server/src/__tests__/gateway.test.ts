@@ -89,19 +89,15 @@ describe('gateway', () => {
       }
     });
 
-    it('should route bare file URLs to the application layer when APP_PUBLIC_PATH is set', async () => {
+    it('should redirect bare file URLs to the canonical APP_PUBLIC_PATH URL', async () => {
       const originalAppPublicPath = process.env.APP_PUBLIC_PATH;
       process.env.APP_PUBLIC_PATH = '/nocobase';
 
       try {
-        const res = await supertest.agent(gateway.getCallback()).get('/files/main/main/attachments/1');
+        const res = await supertest.agent(gateway.getCallback()).get('/files/main/main/attachments/1?download=1');
 
-        expect(res.status).toBe(404);
-        expect(res.body).toMatchObject({
-          error: {
-            code: 'APP_NOT_FOUND',
-          },
-        });
+        expect(res.status).toBe(302);
+        expect(res.headers.location).toBe('/nocobase/files/main/main/attachments/1?download=1');
       } finally {
         if (originalAppPublicPath === undefined) {
           delete process.env.APP_PUBLIC_PATH;

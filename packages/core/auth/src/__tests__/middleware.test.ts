@@ -214,6 +214,29 @@ describe('middleware', () => {
       expect(headerTokenRes.status).toBe(200);
     });
 
+    it('should require csrf token when a cookie-auth request renews an expired token', async () => {
+      await app.authManager.tokenController.setConfig({
+        tokenExpirationTime: '1s',
+        sessionExpirationTime: '1d',
+        expiredTokenRenewLimit: '1d',
+      });
+
+      const signInRes = await app
+        .agent()
+        .post('/auth:signIn')
+        .set({ 'X-Authenticator': 'basic' })
+        .send({
+          account: process.env.INIT_ROOT_USERNAME || process.env.INIT_ROOT_EMAIL,
+          password: process.env.INIT_ROOT_PASSWORD,
+        });
+      const cookieHeader = signInRes.headers['set-cookie'].map((cookie) => cookie.split(';')[0]);
+
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      const blockedRes = await app.agent().post('/auth:check').set('Cookie', cookieHeader);
+      expect(blockedRes.status).toBe(403);
+    });
+
     it('should not require csrf token for unsafe query-token requests', async () => {
       const signInRes = await app
         .agent()

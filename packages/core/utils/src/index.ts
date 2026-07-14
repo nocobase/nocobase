@@ -14,6 +14,7 @@ export * from './assign';
 export * from './auth-cookie';
 export * from './collections-graph';
 export * from './common';
+export * from './cors';
 export * from './crypto';
 export * from './date';
 export * from './dateRangeUtils';

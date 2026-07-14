@@ -14,6 +14,7 @@ import type { PluginFileManagerServer } from '../server';
 import { verifyTemporaryFileAccessToken } from '../temporary-access';
 import { getFilePlainObject, getFileRecordValue, hasStandardFileId } from '../utils';
 import type { AttachmentModel } from '../storages';
+import { resolveFileAccessFilter } from '../resolve-file-access-filter';
 
 const GET_FILE_ACTION = 'getFile';
 
@@ -82,7 +83,7 @@ export async function getFile(ctx: Context, next: Next) {
   const authorizedByExtension =
     fileAccessParams && !temporaryAccess ? await plugin.authorizeFileAccess(ctx, fileAccessParams) : false;
 
-  let filter = { id };
+  let filter: object = { id };
   if (
     !temporaryAccess &&
     !authorizedByExtension &&
@@ -90,15 +91,7 @@ export async function getFile(ctx: Context, next: Next) {
     ctx.dataSource.options?.useACL !== false &&
     ctx.dataSource.options?.acl !== false
   ) {
-    const permission = await ctx.dataSource.acl.checkAction({
-      context: ctx,
-      resource: collection.name,
-      action: 'get',
-      params: {
-        filter,
-      },
-    });
-    filter = permission.mergedParams?.filter || filter;
+    filter = await resolveFileAccessFilter(ctx, collection as Collection, filter);
   }
 
   const file = await ctx.getCurrentRepository().findOne({

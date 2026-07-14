@@ -22,6 +22,14 @@ Utilice direcciones como `app1.example.com` y `app2.example.com`, y diríjalas a
 
 :::
 
+## Frontend separado / Acceso API entre orígenes
+
+Se recomienda mantener las páginas y la API en el mismo origen: utilice un proxy inverso bajo el mismo dominio para reenviar `${APP_PUBLIC_PATH}api/` y `${APP_PUBLIC_PATH}files/` al servicio NocoBase, y deje `API_BASE_URL` vacío.
+
+Si las páginas deben acceder a la API entre orígenes (`API_BASE_URL` apunta a otro origen), añada el origen de la página a `CORS_ORIGIN_WHITELIST`. De lo contrario, el navegador ignorará `Set-Cookie` en las respuestas de la API, la cookie de inicio de sesión no se almacenará y la previsualización y descarga mediante URL de archivo estables fallarán en la autorización.
+
+Tenga en cuenta también que las cookies se almacenan por `hostname`: si las páginas y la API usan dominios completamente distintos, las solicitudes a `/files/` desde el dominio de la página no llevarán la cookie de inicio de sesión almacenada bajo el dominio de la API. En esos despliegues debe usarse un proxy inverso del mismo origen. Consulte [Variables de entorno](../installation/env.md#api_base_url).
+
 ## Proceso de Despliegue
 
 Para el despliegue en un entorno de producción, puede consultar los pasos de instalación y actualización existentes.

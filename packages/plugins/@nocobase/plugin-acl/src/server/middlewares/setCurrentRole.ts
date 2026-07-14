@@ -19,9 +19,65 @@ type RoleRecord = {
   name: string;
 };
 
+type UserWithRoles = {
+  id?: string | number;
+  get?: (key: string) => unknown;
+  getRoles?: (options?: object) => Promise<RoleRecord[]>;
+};
+
 type SystemSettingsRecord = {
   roleMode?: SystemRoleMode;
 };
+
+type RolesUserRecord = {
+  roleName?: string;
+};
+
+function getCurrentUserId(currentUser: UserWithRoles) {
+  return currentUser?.id ?? currentUser?.get?.('id');
+}
+
+async function loadCurrentUserRoles(options: {
+  cache: Cache;
+  mainDb: Context['db'];
+  currentUser: UserWithRoles;
+}): Promise<RoleRecord[]> {
+  const { cache, currentUser, mainDb } = options;
+  const userId = getCurrentUserId(currentUser);
+  if (typeof userId !== 'string' && typeof userId !== 'number') {
+    return [];
+  }
+
+  return cache.wrap(`roles:${userId}`, async () => {
+    const repository = mainDb?.getRepository?.('users.roles', userId) as Repository | undefined;
+    if (repository) {
+      return repository.find({
+        raw: true,
+      });
+    }
+    const roleUsers = (await mainDb?.getRepository?.('rolesUsers')?.find({
+      filter: {
+        userId,
+      },
+      raw: true,
+    })) as RolesUserRecord[] | undefined;
+    if (roleUsers?.length) {
+      return roleUsers.map((roleUser) => ({ name: roleUser.roleName })).filter((role) => role.name);
+    }
+    if (typeof currentUser.getRoles === 'function') {
+      return currentUser.getRoles({ raw: true });
+    }
+    const user = (await mainDb?.getRepository?.('users')?.findOne({
+      filter: {
+        id: userId,
+      },
+    })) as UserWithRoles | undefined;
+    if (typeof user?.getRoles === 'function') {
+      return user.getRoles({ raw: true });
+    }
+    return [];
+  }) as Promise<RoleRecord[]>;
+}
 
 export async function setCurrentRole(ctx: Context, next) {
   const headerRole = ctx.get('X-Role');
@@ -42,15 +98,11 @@ export async function setCurrentRole(ctx: Context, next) {
   const attachRoles = (ctx.state.attachRoles || []) as RoleRecord[];
   const cache = ctx.cache as Cache;
   const mainDb = ctx.app?.db || ctx.db;
-  const repository = mainDb?.getRepository?.('users.roles', ctx.state.currentUser.id) as Repository | undefined;
-  if (!repository) {
-    return next();
-  }
-  const roles = (await cache.wrap(`roles:${ctx.state.currentUser.id}`, () =>
-    repository.find({
-      raw: true,
-    }),
-  )) as RoleRecord[];
+  const roles = await loadCurrentUserRoles({
+    cache,
+    mainDb,
+    currentUser: ctx.state.currentUser as UserWithRoles,
+  });
   if (!roles.length && !attachRoles.length) {
     ctx.state.currentRole = undefined;
     return ctx.throw(401, {
@@ -65,9 +117,12 @@ export async function setCurrentRole(ctx: Context, next) {
   roles.forEach((role) => rolesMap.set(role.name, role));
   const userRoles = Array.from(rolesMap.values());
   ctx.state.currentUser.roles = userRoles;
-  const systemSettings = (await cache.wrap(`app:systemSettings`, () =>
-    mainDb.getRepository('systemSettings').findOne({ raw: true }),
-  )) as SystemSettingsRecord;
+  const systemSettingsRepository = mainDb?.getRepository('systemSettings');
+  const systemSettings = systemSettingsRepository
+    ? ((await cache.wrap(`app:systemSettings`, () =>
+        systemSettingsRepository.findOne({ raw: true }),
+      )) as SystemSettingsRecord)
+    : undefined;
   const roleMode = systemSettings?.roleMode || SystemRoleMode.default;
   if ([currentRole, ctx.state.currentRole].includes(UNION_ROLE_KEY) && roleMode === SystemRoleMode.default) {
     currentRole = userRoles[0].name;

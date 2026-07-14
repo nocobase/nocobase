@@ -291,73 +291,6 @@ describe('acl', () => {
     });
   });
 
-  it('should check another action without mutating current action context', async () => {
-    acl.define({
-      role: 'anonymous',
-      actions: {
-        'files:get': {
-          filter: {
-            status: 'public',
-          },
-        },
-      },
-    });
-
-    const createAction = () => ({
-      actionName: 'getFile',
-      resourceName: 'files',
-      params: {},
-      clone: () => createAction(),
-      setContext: () => {},
-      mergeParams(params) {
-        this.params = {
-          ...this.params,
-          ...params,
-          filter:
-            this.params.filter && params.filter
-              ? {
-                  $and: [this.params.filter, params.filter],
-                }
-              : params.filter || this.params.filter,
-        };
-      },
-    });
-    const action = createAction();
-    const permission = { resourceName: 'files', actionName: 'getFile' };
-    const ctx = {
-      state: {},
-      action,
-      permission,
-      throw: vi.fn((status, message) => {
-        throw Object.assign(new Error(message), { status });
-      }),
-    } as unknown as Context;
-
-    const result = await acl.checkAction({
-      context: ctx,
-      resource: 'files',
-      action: 'get',
-      params: {
-        filter: {
-          id: 1,
-        },
-      },
-    });
-
-    expect(result.mergedParams.filter).toEqual({
-      $and: [
-        {
-          id: 1,
-        },
-        {
-          status: 'public',
-        },
-      ],
-    });
-    expect(ctx.action).toBe(action);
-    expect(ctx.permission).toBe(permission);
-  });
-
   it('should revoke action', () => {
     acl.setAvailableAction('create', {
       displayName: 'create',
@@ -455,7 +388,147 @@ describe('acl', () => {
     });
   });
 
-  it('should clone can result deeply', () => {
+  it('should resolve action params without mutating current action context', async () => {
+    acl.define({
+      role: 'anonymous',
+      actions: {
+        'files:view': {
+          filter: {
+            status: 'public',
+          },
+        },
+      },
+    });
+
+    const action = {
+      actionName: 'getFile',
+      resourceName: 'files',
+      params: {},
+    };
+    const permission = { resourceName: 'files', actionName: 'getFile' };
+    const params = {
+      filter: {
+        id: 1,
+      },
+    };
+    const ctx = {
+      state: {},
+      action,
+      permission,
+      throw: vi.fn((status, message) => {
+        throw Object.assign(new Error(message), { status });
+      }),
+    } as unknown as Context;
+
+    const result = await acl.resolveActionParams(ctx, {
+      resourceName: 'files',
+      actionName: 'view',
+      params,
+    });
+
+    expect(result.mergedParams.filter).toEqual({
+      $and: [
+        {
+          id: 1,
+        },
+        {
+          status: 'public',
+        },
+      ],
+    });
+    expect(ctx.action).toBe(action);
+    expect(ctx.permission).toBe(permission);
+    expect(params).toEqual({
+      filter: {
+        id: 1,
+      },
+    });
+  });
+
+  it('should resolve action params with currentRole when currentRoles is absent', async () => {
+    acl.define({
+      role: 'root',
+    });
+
+    const result = await acl.resolveActionParams(
+      {
+        state: {
+          currentRole: 'root',
+        },
+      },
+      {
+        resourceName: 'files',
+        actionName: 'view',
+        params: {
+          filter: {
+            id: 1,
+          },
+        },
+      },
+    );
+
+    expect(result.can).toMatchObject({
+      role: 'root',
+      resource: 'files',
+      action: 'view',
+    });
+    expect(result.mergedParams).toEqual({
+      filter: {
+        id: 1,
+      },
+    });
+  });
+
+  it('should resolve association resource name from repository target collection', async () => {
+    acl.define({
+      role: 'anonymous',
+      actions: {
+        'comments:view': {
+          filter: {
+            status: 'published',
+          },
+        },
+      },
+    });
+
+    const result = await acl.resolveActionParams(
+      {
+        state: {},
+        dataSource: {
+          collectionManager: {
+            getRepository: vi.fn(() => ({
+              targetCollection: {
+                name: 'comments',
+              },
+            })),
+          },
+        },
+      },
+      {
+        resourceName: 'posts.latestComments',
+        actionName: 'view',
+        params: {
+          filter: {
+            id: 1,
+          },
+        },
+      },
+    );
+
+    expect(result.resourceName).toBe('comments');
+    expect(result.mergedParams.filter).toEqual({
+      $and: [
+        {
+          id: 1,
+        },
+        {
+          status: 'published',
+        },
+      ],
+    });
+  });
+
+  it('should clone can result deeply', async () => {
     vi.spyOn(acl, 'can').mockReturnValue({
       role: 'root',
       resource: 'test',
@@ -475,8 +548,8 @@ describe('acl', () => {
     });
     const ctx1 = newConext() as Context;
     const ctx2 = newConext() as Context;
-    acl.getActionParams(ctx1);
-    acl.getActionParams(ctx2);
+    await acl.getActionParams(ctx1);
+    await acl.getActionParams(ctx2);
     ctx1.permission.can.params.fields.push('createdById');
     expect(ctx2.permission.can.params.fields).toEqual([]);
   });

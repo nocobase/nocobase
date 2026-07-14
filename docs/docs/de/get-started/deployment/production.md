@@ -22,6 +22,14 @@ Verwenden Sie beispielsweise `app1.example.com` und `app2.example.com` und leite
 
 :::
 
+## Getrenntes Frontend / Ursprungsübergreifender API-Zugriff
+
+Es ist empfehlenswert, Seiten und API auf demselben Origin zu halten: Verwenden Sie einen Reverse-Proxy unter derselben Domain, der `${APP_PUBLIC_PATH}api/` und `${APP_PUBLIC_PATH}files/` an den NocoBase-Dienst weiterleitet, und lassen Sie `API_BASE_URL` leer.
+
+Wenn die Seiten die API ursprungsübergreifend aufrufen müssen (`API_BASE_URL` zeigt auf einen anderen Origin), fügen Sie den Ursprung der Seiten zu `CORS_ORIGIN_WHITELIST` hinzu. Andernfalls ignoriert der Browser `Set-Cookie` in API-Antworten, das Anmelde-Cookie wird nicht gespeichert und Vorschau sowie Download über stabile Datei-URLs schlagen bei der Autorisierung fehl.
+
+Beachten Sie außerdem, dass Cookies pro `hostname` gespeichert werden: Wenn Seiten und API vollständig unterschiedliche Domains verwenden, enthalten Aufrufe von `/files/` über die Seitendomain nicht das Anmelde-Cookie, das unter der API-Domain gespeichert wurde. Solche Bereitstellungen sollten auf einen Same-Origin-Reverse-Proxy umgestellt werden. Siehe [Umgebungsvariablen](../installation/env.md#api_base_url).
+
 ## Bereitstellungsprozess
 
 Für die Bereitstellung in der Produktionsumgebung können Sie sich an den vorhandenen Installations- und Upgrade-Schritten orientieren.

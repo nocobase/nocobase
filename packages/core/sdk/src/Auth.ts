@@ -202,6 +202,17 @@ export class Auth {
     });
   }
 
+  async syncCookies(): Promise<AxiosResponse<unknown> | undefined> {
+    if (!this.token) {
+      return undefined;
+    }
+    return await this.api.request({
+      method: 'post',
+      url: 'auth:syncCookies',
+      skipNotify: true,
+    });
+  }
+
   async signOut() {
     const response = await this.api.request({
       method: 'post',

@@ -129,6 +129,25 @@ describe('api-client', () => {
     expect(auth).toBe('basic');
   });
 
+  test('syncCookies', async () => {
+    const api = new APIClient({
+      baseURL: 'https://localhost:8000/api',
+    });
+    const mock = new MockAdapter(api.axios);
+    mock.onPost('auth:syncCookies').reply((config) => {
+      expect(config.headers?.Authorization).toBe('Bearer 123');
+      return [200, { data: { synced: true } }];
+    });
+
+    expect(await api.auth.syncCookies()).toBeUndefined();
+
+    api.auth.setToken('123');
+    const response = await api.auth.syncCookies();
+
+    expect(response?.status).toBe(200);
+    expect(response?.data).toMatchObject({ data: { synced: true } });
+  });
+
   test('set token', async () => {
     const api = new APIClient({
       baseURL: 'https://localhost:8000/api',

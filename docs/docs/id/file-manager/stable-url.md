@@ -45,6 +45,7 @@ Jangan simpan URL sementara ini ke field, Markdown, atau data bisnis, dan jangan
 - Respons berupa pengalihan `302` yang harus diikuti oleh klien
 - Jangan menyimpan `302 Location` atau `temporaryAccessToken`
 - Reverse proxy harus meneruskan rute `/files/` di bawah `APP_PUBLIC_PATH` ke NocoBase. Untuk deployment pada subpath, pertahankan juga rute kompatibilitas `/files/` di root. Konfigurasi yang dibuat oleh NocoBase CLI otomatis mencakup kedua rute tersebut
+- Pada deployment ketika halaman mengakses API secara lintas origin (`API_BASE_URL` menunjuk ke origin lain), origin halaman harus ditambahkan ke `CORS_ORIGIN_WHITELIST`. Jika tidak, cookie login tidak akan pernah tersimpan dan stable URL akan mengembalikan `403` karena kredensial tidak ikut terkirim. Lihat [Variabel lingkungan](../get-started/installation/env.md#api_base_url)
 - Gunakan `hostname` yang berbeda untuk setiap layanan NocoBase yang berdiri sendiri, bukan hanya membedakannya berdasarkan port. Cookie browser tidak diisolasi berdasarkan port; lihat [Deployment environment produksi](../get-started/deployment/production.md)
 - Sub-app dalam deployment NocoBase yang sama dibedakan berdasarkan nama aplikasi dan tidak memerlukan hostname terpisah. Namun, layanan independen pada port lain tetap harus diisolasi dengan hostname jika memiliki aplikasi utama atau sub-app dengan nama yang sama
 
