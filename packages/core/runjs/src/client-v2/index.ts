@@ -8,4 +8,6 @@
  */
 
 export * from '../typescript-environment';
+export * from '../typescript-library';
+export * from '../typescript-library-usage';
 export * from '../typescript-project';

@@ -10,6 +10,9 @@
 import { createHash } from 'crypto';
 import { posix as pathPosix } from 'path';
 
+export * from './typescript-library';
+export * from './typescript-library-usage';
+
 const maxRunJSPathLength = 512;
 const windowsDrivePrefix = /^[A-Za-z]:\//;
 const utf8Bom = '\ufeff';
