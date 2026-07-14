@@ -55,17 +55,9 @@ async function buildClientLib(
 ) {
   log('build client lib');
   const outDir = path.resolve(cwd, 'lib');
-  const esDir = path.resolve(cwd, 'es');
-  const entry = path.join(esDir, 'index.ts');
+  const entry = path.join(cwd, 'src/index.ts').replaceAll(/\\/g, '/');
 
-  fs.removeSync(entry);
-  fs.linkSync(path.join(cwd, 'es/index.mjs'), entry);
-
-  try {
-    await buildClientWithRsbuild(cwd, userConfig, sourcemap, external, entry, outDir, 'cjs');
-  } finally {
-    fs.removeSync(entry);
-  }
+  await buildClientWithRsbuild(cwd, userConfig, sourcemap, external, entry, outDir, 'cjs');
 
   await injectEntryStyleReference(path.join(outDir, 'index.js'), 'require("./index.css");');
 }
@@ -114,6 +106,7 @@ function createClientRsbuildConfig(
     },
     output: {
       target: 'web',
+      assetPrefix: 'auto',
       distPath: {
         root: outDir,
         js: '.',
@@ -156,7 +149,8 @@ function createClientRsbuildConfig(
     tools: {
       rspack(config) {
         config.output = config.output || {};
-        config.output.asyncChunks = false;
+        config.output.asyncChunks = true;
+        config.output.publicPath = 'auto';
 
         if (format === 'esm') {
           config.output.library = { type: 'module' };
@@ -171,6 +165,15 @@ function createClientRsbuildConfig(
           config.externalsType = 'module-import';
         } else {
           config.output.library = { type: 'commonjs-static' };
+          config.output.module = true;
+          config.output.chunkFormat = 'module';
+          config.output.chunkLoading = 'import';
+          config.output.workerChunkLoading = 'import';
+          config.experiments = {
+            ...config.experiments,
+            outputModule: true,
+          };
+          config.externalsType = 'module-import';
         }
 
         config.performance = false;

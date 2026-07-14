@@ -23,6 +23,13 @@ import {
 import { runJSTypeScriptLibSources } from './runJSTypeScriptLibSources';
 import { ensureGeneratedRunJSTypeLibraryPackLoadersRegistered } from './type-packs';
 import { getDefaultRunJSTypeLibraryRegistry, type RunJSTypeLibraryRegistry } from './typescriptLibraryRegistry';
+import type { RunJSTypeScriptMetrics } from './typescriptMetrics';
+import {
+  canUseTypeScriptWorker,
+  WorkerBackedTypeScriptProjectSession,
+  type TypeScriptWorkerFactory,
+} from './typescriptWorkerProjectSession';
+export type { TypeScriptWorkerFactory } from './typescriptWorkerProjectSession';
 import {
   clearTypeScriptImmutableFileCacheForTests,
   getTypeScriptImmutableFileCacheDebugState,
@@ -48,10 +55,15 @@ export interface CodeEditorTypeScriptProject {
     globalContextType?: string;
   };
   onInternalError?: (error: CodeEditorTypeScriptProjectInternalError) => void;
+  metrics?: RunJSTypeScriptMetrics;
 }
 
 export interface CodeEditorTypeScriptProjectRef {
   current?: CodeEditorTypeScriptProject;
+}
+
+export interface CodeEditorTypeScriptDiagnostic extends Diagnostic {
+  code: number;
 }
 
 type TypeScriptModule = typeof import('typescript');
@@ -108,7 +120,10 @@ export interface CodeEditorTypeScriptProjectSession {
     explicit?: boolean,
   ): Promise<CompletionResult | null>;
   getDebugState(): CodeEditorTypeScriptProjectDebugState;
-  getDiagnostics(project: CodeEditorTypeScriptProject, currentFileContent?: string): Promise<Diagnostic[]>;
+  getDiagnostics(
+    project: CodeEditorTypeScriptProject,
+    currentFileContent?: string,
+  ): Promise<CodeEditorTypeScriptDiagnostic[]>;
   getHover(
     project: CodeEditorTypeScriptProject,
     position: number,
@@ -286,15 +301,17 @@ async function prepareProject(
   const requests = new Map(usageRequests.map((request) => [request.packId, request]));
   for (const request of explicitRequests) requests.set(request.packId, request);
   const typeLibraryRequests = [...requests.values()];
+  project.metrics?.recordPackRequests(typeLibraryRequests.map((request) => request.packId));
   let packs: RunJSTypeLibraryPack[];
   try {
-    packs = await typeLibraryRegistry.loadPacks(typeLibraryRequests);
+    packs = await typeLibraryRegistry.loadPacks(typeLibraryRequests, project.metrics?.createLibraryLoadObserver());
   } catch (error) {
     throw new TypeScriptLibraryLoadingError(
       typeLibraryRequests.map((request) => request.packId),
       error,
     );
   }
+  project.metrics?.recordPreparedPacks(packs);
   const files = new Map<string, TypeScriptVirtualFileInput>();
   for (const file of project.files || []) {
     addProjectFile(files, file, true);
@@ -652,20 +669,24 @@ function getCompletionResultFromService(
   };
 }
 
-function getDiagnosticsFromService(projectService: ProjectService): Diagnostic[] {
+function getDiagnosticsFromService(projectService: ProjectService): CodeEditorTypeScriptDiagnostic[] {
   const syntax = projectService.service.getSyntacticDiagnostics(projectService.currentFileName);
   const semantic = projectService.service.getSemanticDiagnostics(projectService.currentFileName);
   const suggestions = projectService.service.getSuggestionDiagnostics(projectService.currentFileName);
   return diagnosticsToCodeMirror(projectService.ts, [...syntax, ...semantic, ...suggestions]);
 }
 
-function diagnosticsToCodeMirror(ts: TypeScriptModule, diagnostics: readonly TypeScriptDiagnostic[]): Diagnostic[] {
+function diagnosticsToCodeMirror(
+  ts: TypeScriptModule,
+  diagnostics: readonly TypeScriptDiagnostic[],
+): CodeEditorTypeScriptDiagnostic[] {
   return diagnostics
     .filter((diagnostic) => typeof diagnostic.start === 'number')
     .map((diagnostic) => {
       const from = Math.max(0, diagnostic.start || 0);
       const length = Math.max(1, diagnostic.length || 1);
       return {
+        code: diagnostic.code,
         from,
         message: flattenDiagnosticMessage(ts, diagnostic),
         severity: diagnosticCategoryToSeverity(ts, diagnostic),
@@ -678,7 +699,7 @@ function diagnosticsToCodeMirror(ts: TypeScriptModule, diagnostics: readonly Typ
 async function getSyntacticDiagnosticsWithoutTypeLibraries(
   project: CodeEditorTypeScriptProject,
   currentFileContent?: string,
-): Promise<Diagnostic[]> {
+): Promise<CodeEditorTypeScriptDiagnostic[]> {
   const ts = await loadTypeScript();
   const currentFilePath = normalizeProjectPath(project.currentFilePath);
   const source =
@@ -711,29 +732,46 @@ class TypeScriptProjectSession implements CodeEditorTypeScriptProjectSession {
     currentFileContent?: string,
     explicit = false,
   ): Promise<CompletionResult | null> {
+    const startedAt = project.metrics?.now();
     const request = this.beginRequest('completion', project, currentFileContent);
     try {
       const service = await this.prepareService(project, currentFileContent, request.stateGeneration);
       if (!service || !this.isCurrentRequest('completion', request)) return null;
+      const synchronousStartedAt = project.metrics?.now();
       const result = getCompletionResultFromService(service, position, explicit);
+      if (typeof synchronousStartedAt === 'number') {
+        project.metrics?.recordSynchronousTypeScriptTask('completion', synchronousStartedAt);
+      }
       return this.isCurrentRequest('completion', request) ? result : null;
     } catch (error) {
       this.reportInternalError(project, error);
       return null;
+    } finally {
+      if (typeof startedAt === 'number') project.metrics?.recordDuration('completion', startedAt);
     }
   }
 
-  async getDiagnostics(project: CodeEditorTypeScriptProject, currentFileContent?: string): Promise<Diagnostic[]> {
+  async getDiagnostics(
+    project: CodeEditorTypeScriptProject,
+    currentFileContent?: string,
+  ): Promise<CodeEditorTypeScriptDiagnostic[]> {
+    const startedAt = project.metrics?.now();
     const request = this.beginRequest('diagnostics', project, currentFileContent);
     try {
       const service = await this.prepareService(project, currentFileContent, request.stateGeneration);
       if (!service || !this.isCurrentRequest('diagnostics', request)) return [];
+      const synchronousStartedAt = project.metrics?.now();
       const diagnostics = getDiagnosticsFromService(service);
+      if (typeof synchronousStartedAt === 'number') {
+        project.metrics?.recordSynchronousTypeScriptTask('diagnostics', synchronousStartedAt);
+      }
       return this.isCurrentRequest('diagnostics', request) ? diagnostics : [];
     } catch (error) {
       this.reportInternalError(project, error);
       const diagnostics = await getSyntacticDiagnosticsWithoutTypeLibraries(project, currentFileContent);
       return this.isCurrentRequest('diagnostics', request) ? diagnostics : [];
+    } finally {
+      if (typeof startedAt === 'number') project.metrics?.recordDuration('diagnostics', startedAt);
     }
   }
 
@@ -742,11 +780,16 @@ class TypeScriptProjectSession implements CodeEditorTypeScriptProjectSession {
     position: number,
     currentFileContent?: string,
   ): Promise<TypeScriptQuickInfoResult | null> {
+    const startedAt = project.metrics?.now();
     const request = this.beginRequest('hover', project, currentFileContent);
     try {
       const service = await this.prepareService(project, currentFileContent, request.stateGeneration);
       if (!service || !this.isCurrentRequest('hover', request)) return null;
+      const synchronousStartedAt = project.metrics?.now();
       const quickInfo = service.service.getQuickInfoAtPosition(service.currentFileName, position);
+      if (typeof synchronousStartedAt === 'number') {
+        project.metrics?.recordSynchronousTypeScriptTask('hover', synchronousStartedAt);
+      }
       if (!quickInfo || !this.isCurrentRequest('hover', request)) return null;
       return {
         detail: service.ts.displayPartsToString(quickInfo.documentation || []),
@@ -757,6 +800,8 @@ class TypeScriptProjectSession implements CodeEditorTypeScriptProjectSession {
     } catch (error) {
       this.reportInternalError(project, error);
       return null;
+    } finally {
+      if (typeof startedAt === 'number') project.metrics?.recordDuration('hover', startedAt);
     }
   }
 
@@ -825,9 +870,11 @@ class TypeScriptProjectSession implements CodeEditorTypeScriptProjectSession {
     if (this.projectService?.structureKey === prepared.structureKey) {
       this.projectService.fileSystem.synchronize(prepared.files);
       this.projectService.currentFileName = prepared.currentFileName;
+      this.recordServiceState(project.metrics, this.projectService);
       return this.projectService;
     }
 
+    const rebuild = Boolean(this.projectService);
     this.projectService?.service.dispose();
     const fileSystem = new TypeScriptVirtualFileSystem(prepared.ts);
     fileSystem.synchronize(prepared.files);
@@ -835,8 +882,14 @@ class TypeScriptProjectSession implements CodeEditorTypeScriptProjectSession {
       sharedDocumentRegistry = prepared.ts.createDocumentRegistry();
     }
     const host = createLanguageServiceHost(prepared.ts, fileSystem, prepared.compilerOptions);
+    const serviceStartedAt = project.metrics?.now();
     const service = prepared.ts.createLanguageService(host, sharedDocumentRegistry);
+    if (typeof serviceStartedAt === 'number') {
+      project.metrics?.recordDuration('language-service-create', serviceStartedAt);
+      project.metrics?.recordSynchronousTypeScriptTask('language-service-create', serviceStartedAt);
+    }
     this.languageServiceCreationCount += 1;
+    project.metrics?.recordLanguageServiceCreation(rebuild);
     this.projectService = {
       compilerOptions: prepared.compilerOptions,
       currentFileName: prepared.currentFileName,
@@ -845,7 +898,17 @@ class TypeScriptProjectSession implements CodeEditorTypeScriptProjectSession {
       structureKey: prepared.structureKey,
       ts: prepared.ts,
     };
+    this.recordServiceState(project.metrics, this.projectService);
     return this.projectService;
+  }
+
+  private recordServiceState(metrics: RunJSTypeScriptMetrics | undefined, service: ProjectService): void {
+    if (!metrics?.enabled) return;
+    const programStartedAt = metrics.now();
+    metrics.recordProgramSourceFileCount(service.service.getProgram()?.getSourceFiles().length || 0);
+    metrics.recordSynchronousTypeScriptTask('program-source-files', programStartedAt);
+    const immutableCache = getTypeScriptImmutableFileCacheDebugState();
+    metrics.recordImmutableCache(immutableCache.fileCount, immutableCache.characterCount);
   }
 
   private reportInternalError(project: CodeEditorTypeScriptProject, error: unknown): void {
@@ -879,7 +942,12 @@ class TypeScriptProjectSession implements CodeEditorTypeScriptProjectSession {
   }
 }
 
-export function createTypeScriptProjectSession(): CodeEditorTypeScriptProjectSession {
+export function createTypeScriptProjectSession(options?: {
+  workerFactory?: TypeScriptWorkerFactory;
+}): CodeEditorTypeScriptProjectSession {
+  if (options?.workerFactory || canUseTypeScriptWorker()) {
+    return new WorkerBackedTypeScriptProjectSession(options?.workerFactory);
+  }
   return new TypeScriptProjectSession();
 }
 
@@ -960,7 +1028,7 @@ function diagnosticCategoryToSeverity(ts: TypeScriptModule, diagnostic: TypeScri
 export async function getTypeScriptProjectDiagnostics(
   project: CodeEditorTypeScriptProject,
   currentFileContent?: string,
-): Promise<Diagnostic[]> {
+): Promise<CodeEditorTypeScriptDiagnostic[]> {
   return await defaultProjectSession.getDiagnostics(project, currentFileContent);
 }
 

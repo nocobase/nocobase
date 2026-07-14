@@ -49,6 +49,7 @@ type ImmutableCacheEntry = {
 
 const immutableFileCache = new Map<string, ImmutableCacheEntry>();
 let immutableSnapshotCreationCount = 0;
+const immutableSnapshotCreationCountByNamespace = new Map<string, number>();
 let mutableFileVersion = 0;
 
 function normalizeFileName(fileName: string): string {
@@ -70,10 +71,12 @@ function createContentHash(content: string): string {
 function getImmutableFile(
   ts: TypeScriptModule,
   input: TypeScriptVirtualFileInput,
+  cacheNamespace: string,
 ): Pick<TypeScriptVirtualFile, 'contentHash' | 'snapshot' | 'version'> {
   const fileName = normalizeFileName(input.fileName);
+  const cacheKey = `${cacheNamespace}:${fileName}`;
   const contentHash = input.contentHash || createContentHash(input.content);
-  const cached = immutableFileCache.get(fileName);
+  const cached = immutableFileCache.get(cacheKey);
   if (cached) {
     if (cached.contentHash !== contentHash || cached.content !== input.content) {
       throw new TypeScriptImmutableFileConflictError(fileName, cached.contentHash, contentHash);
@@ -86,8 +89,12 @@ function getImmutableFile(
   }
 
   const snapshot = ts.ScriptSnapshot.fromString(input.content);
-  immutableFileCache.set(fileName, { content: input.content, contentHash, snapshot });
+  immutableFileCache.set(cacheKey, { content: input.content, contentHash, snapshot });
   immutableSnapshotCreationCount += 1;
+  immutableSnapshotCreationCountByNamespace.set(
+    cacheNamespace,
+    (immutableSnapshotCreationCountByNamespace.get(cacheNamespace) || 0) + 1,
+  );
   return {
     contentHash,
     snapshot,
@@ -98,7 +105,10 @@ function getImmutableFile(
 export class TypeScriptVirtualFileSystem {
   private files = new Map<string, TypeScriptVirtualFile>();
 
-  constructor(private readonly ts: TypeScriptModule) {}
+  constructor(
+    private readonly ts: TypeScriptModule,
+    private readonly cacheNamespace = 'shared',
+  ) {}
 
   synchronize(inputs: readonly TypeScriptVirtualFileInput[]): void {
     const nextFiles = new Map<string, TypeScriptVirtualFile>();
@@ -106,7 +116,7 @@ export class TypeScriptVirtualFileSystem {
       const fileName = normalizeFileName(input.fileName);
       const previous = this.files.get(fileName);
       if (input.immutable) {
-        const immutable = getImmutableFile(this.ts, { ...input, fileName });
+        const immutable = getImmutableFile(this.ts, { ...input, fileName }, this.cacheNamespace);
         nextFiles.set(fileName, {
           content: input.content,
           contentHash: immutable.contentHash,
@@ -162,15 +172,33 @@ export class TypeScriptVirtualFileSystem {
 export function clearTypeScriptImmutableFileCacheForTests(): void {
   immutableFileCache.clear();
   immutableSnapshotCreationCount = 0;
+  immutableSnapshotCreationCountByNamespace.clear();
   mutableFileVersion = 0;
 }
 
-export function getTypeScriptImmutableFileCacheDebugState(): {
+export function clearTypeScriptImmutableFileCacheNamespace(cacheNamespace: string): void {
+  const prefix = `${cacheNamespace}:`;
+  for (const key of immutableFileCache.keys()) {
+    if (key.startsWith(prefix)) immutableFileCache.delete(key);
+  }
+  immutableSnapshotCreationCountByNamespace.delete(cacheNamespace);
+}
+
+export function getTypeScriptImmutableFileCacheDebugState(cacheNamespace?: string): {
+  characterCount: number;
   fileCount: number;
   snapshotCreationCount: number;
 } {
+  const entries = cacheNamespace
+    ? [...immutableFileCache.entries()]
+        .filter(([key]) => key.startsWith(`${cacheNamespace}:`))
+        .map(([, value]) => value)
+    : [...immutableFileCache.values()];
   return {
-    fileCount: immutableFileCache.size,
-    snapshotCreationCount: immutableSnapshotCreationCount,
+    characterCount: entries.reduce((sum, file) => sum + file.content.length, 0),
+    fileCount: entries.length,
+    snapshotCreationCount: cacheNamespace
+      ? immutableSnapshotCreationCountByNamespace.get(cacheNamespace) || 0
+      : immutableSnapshotCreationCount,
   };
 }
