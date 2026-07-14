@@ -46,6 +46,7 @@ interface IAuth {
   signIn(): Promise<any>;
   signUp(): Promise<any>;
   signOut(): Promise<any>;
+  syncCookies(): Promise<unknown>;
 }
 
 export abstract class Auth implements IAuth {
@@ -108,4 +109,5 @@ export abstract class Auth implements IAuth {
   async signIn(): Promise<any> {}
   async signUp(): Promise<any> {}
   async signOut(): Promise<any> {}
+  async syncCookies(): Promise<unknown> {}
 }

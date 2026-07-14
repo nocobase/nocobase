@@ -34,17 +34,6 @@ export interface ApplicationOptions extends BaseApplicationOptions<PluginType> {
   router?: RouterOptions;
 }
 
-function isSameOriginApiBaseURL(baseURL?: unknown) {
-  if (typeof window === 'undefined' || typeof baseURL !== 'string' || !baseURL) {
-    return true;
-  }
-  try {
-    return new URL(baseURL, window.location.href).origin === window.location.origin;
-  } catch (error) {
-    return true;
-  }
-}
-
 export class Application extends BaseApplication<
   ApplicationOptions,
   PluginManager,
@@ -56,9 +45,11 @@ export class Application extends BaseApplication<
   public hasLoadError = false;
 
   protected createApiClient(options: ApplicationOptions) {
-    const apiClientOptions = options.apiClient && typeof options.apiClient !== 'function' ? options.apiClient : {};
     return new APIClient({
-      withCredentials: isSameOriginApiBaseURL(apiClientOptions.baseURL),
+      // Cross-origin API deployments rely on cookies for auth (e.g. permanent file
+      // URLs); trust is enforced server-side via the CORS origin whitelist and the
+      // CSRF middleware, not by omitting credentials.
+      withCredentials: true,
       ...options.apiClient,
       appName: options.name || getSubAppName(options.publicPath),
     });

@@ -140,27 +140,15 @@ export class Application extends BaseApplication<
     });
   }
 
-  protected isSameOriginApiBaseURL(baseURL?: unknown) {
-    if (typeof window === 'undefined' || typeof baseURL !== 'string' || !baseURL) {
-      return true;
-    }
-    try {
-      return new URL(baseURL, window.location.href).origin === window.location.origin;
-    } catch (error) {
-      return true;
-    }
-  }
-
   protected createApiClient(options: ApplicationOptions) {
-    const apiClientOptions =
-      options.apiClient && !(options.apiClient instanceof APIClient) && typeof options.apiClient !== 'function'
-        ? options.apiClient
-        : {};
     const apiClient =
       options.apiClient instanceof APIClient
         ? options.apiClient
         : new APIClient({
-            withCredentials: this.isSameOriginApiBaseURL(apiClientOptions.baseURL),
+            // Cross-origin API deployments rely on cookies for auth (e.g. permanent file
+            // URLs); trust is enforced server-side via the CORS origin whitelist and the
+            // CSRF middleware, not by omitting credentials.
+            withCredentials: true,
             ...options.apiClient,
             appName: this.options.name || getSubAppName(options.publicPath),
           });

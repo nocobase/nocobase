@@ -55,7 +55,7 @@ describe('Application', () => {
     expect(Object.keys(app.components).length).toBeGreaterThan(1);
   });
 
-  it('should enable credentials only for same-origin api clients by default', () => {
+  it('should enable credentials for api clients by default', () => {
     const sameOriginApp = new Application({
       router,
       apiClient: {
@@ -70,7 +70,7 @@ describe('Application', () => {
     });
 
     expect(sameOriginApp.apiClient.axios.defaults.withCredentials).toBe(true);
-    expect(crossOriginApp.apiClient.axios.defaults.withCredentials).toBe(false);
+    expect(crossOriginApp.apiClient.axios.defaults.withCredentials).toBe(true);
   });
 
   describe('getApiUrl', () => {

@@ -8,7 +8,26 @@
  */
 
 /* istanbul ignore file -- @preserve */
+import type { Context } from '@nocobase/actions';
 import { Handlers } from '@nocobase/resourcer';
+import { getOrigin, isTrustedOrigin } from '@nocobase/utils';
+
+const localeNamespace = 'auth';
+
+function assertTrustedSignInOrigin(ctx: Context) {
+  const origin = ctx.get('origin');
+  if (origin) {
+    if (!isTrustedOrigin(ctx, origin)) {
+      ctx.throw(403, ctx.t('Invalid sign-in origin', { ns: localeNamespace }));
+    }
+    return;
+  }
+
+  const refererOrigin = getOrigin(ctx.get('referer'));
+  if (refererOrigin && !isTrustedOrigin(ctx, refererOrigin)) {
+    ctx.throw(403, ctx.t('Invalid sign-in origin', { ns: localeNamespace }));
+  }
+}
 
 function filterHiddenFields(ctx, user) {
   if (!user) {
@@ -32,6 +51,7 @@ function filterHiddenFields(ctx, user) {
 
 export const actions = {
   signIn: async (ctx, next) => {
+    assertTrustedSignInOrigin(ctx);
     ctx.body = await ctx.auth.signIn();
     await next();
   },
@@ -46,6 +66,10 @@ export const actions = {
   },
   check: async (ctx, next) => {
     ctx.body = filterHiddenFields(ctx, ctx.auth.user);
+    await next();
+  },
+  syncCookies: async (ctx, next) => {
+    ctx.body = await ctx.auth.syncCookies();
     await next();
   },
 } as Handlers;

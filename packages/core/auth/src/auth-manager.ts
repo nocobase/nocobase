@@ -208,10 +208,30 @@ export class AuthManager {
           ctx.state?.pendingAuthTokenSource === 'cookie' &&
           (err.status === 401 || err.statusCode === 401)
         ) {
+          const authTokenCookieName = getAuthCookieName('authToken', ctx.app.name);
+          const authCookieOptions = getAuthCookieOptions(ctx);
+          ctx.cookies.set(authTokenCookieName, null, authCookieOptions);
+          // Cookies written by older deployments may carry the raw APP_PUBLIC_PATH (with a
+          // trailing slash) as path; that variant shadows the canonical cookie in browsers,
+          // so it has to be expired explicitly as well.
+          const rawPublicPath = process.env.APP_PUBLIC_PATH;
+          if (rawPublicPath && rawPublicPath !== authCookieOptions.path) {
+            ctx.cookies.set(authTokenCookieName, null, { ...authCookieOptions, path: rawPublicPath });
+          }
           ctx.state.currentUser = undefined;
           ctx.state.authTokenSource = undefined;
           ctx.state.pendingAuthTokenSource = undefined;
-          return next();
+          try {
+            return await next();
+          } catch (anonymousErr) {
+            // koa's onerror strips response headers from unhandled errors; re-attach the
+            // cookie cleanup so it still reaches the browser on error responses.
+            const setCookieHeader = ctx.res.getHeader('set-cookie');
+            if (setCookieHeader) {
+              anonymousErr.headers = { ...anonymousErr.headers, 'set-cookie': setCookieHeader };
+            }
+            throw anonymousErr;
+          }
         }
         throw err;
       }

@@ -10,7 +10,7 @@
 import cors from '@koa/cors';
 import { requestLogger } from '@nocobase/logger';
 import { Resourcer } from '@nocobase/resourcer';
-import { getAuthCookieName, getDateVars, uid } from '@nocobase/utils';
+import { getAuthCookieName, getCorsWhitelist, getDateVars, isTrustedOrigin, uid } from '@nocobase/utils';
 import { Command } from 'commander';
 import { randomUUID } from 'crypto';
 import fs from 'fs';
@@ -39,34 +39,6 @@ export function createResourcer(options: ApplicationOptions) {
   return new Resourcer({ ...options.resourcer });
 }
 
-function getFirstHeaderValue(value: string | string[] | undefined) {
-  const header = Array.isArray(value) ? value[0] : value;
-  return header?.split(',')[0]?.trim();
-}
-
-function getCorsWhitelist() {
-  const whitelistString = process.env.CORS_ORIGIN_WHITELIST;
-  if (!whitelistString) {
-    return null;
-  }
-  return new Set(
-    whitelistString
-      .split(',')
-      .map((item) => item.trim())
-      .filter(Boolean),
-  );
-}
-
-function getRequestOrigin(ctx: any) {
-  const protocol = (getFirstHeaderValue(ctx.headers?.['x-forwarded-proto']) || ctx.protocol)?.toLowerCase();
-  const host = getFirstHeaderValue(ctx.headers?.['x-forwarded-host']) || ctx.get('host');
-  return host ? `${protocol}://${host}` : undefined;
-}
-
-function isSameOrigin(ctx: any, origin: string) {
-  return origin === getRequestOrigin(ctx);
-}
-
 function isWhitelistedCorsOrigin(ctx: any) {
   const origin = ctx.get('origin');
   const whitelist = getCorsWhitelist();
@@ -76,7 +48,7 @@ function isWhitelistedCorsOrigin(ctx: any) {
   }
 
   if (!whitelist) {
-    return isSameOrigin(ctx, origin);
+    return isTrustedOrigin(ctx, origin);
   }
 
   return whitelist.has(origin);

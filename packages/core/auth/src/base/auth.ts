@@ -84,22 +84,49 @@ export class BaseAuth extends Auth {
     );
 
     let roleName: string | undefined;
-    try {
-      const userId = typeof user.get === 'function' ? user.get('id') : user.id;
-      const rolesUser = await this.ctx.db?.getRepository?.('rolesUsers')?.findOne({
-        where: {
-          userId,
-          default: true,
-        },
-        raw: true,
-      });
-      const roles = await this.ctx.db?.getRepository?.('users.roles', userId)?.find({
-        raw: true,
-      });
-      roleName = rolesUser?.roleName || roles?.[0]?.name || (await user.getRoles?.({ raw: true }))?.[0]?.name;
-    } catch (error) {
-      this.ctx.logger?.warn?.(error, { method: 'auth.setSessionCookies' });
-      roleName = undefined;
+    roleName = typeof this.ctx.state.currentRole === 'string' ? this.ctx.state.currentRole : this.ctx.get('X-Role');
+    const userId = typeof user.get === 'function' ? user.get('id') : user.id;
+
+    if (!roleName) {
+      try {
+        const rolesUser = await this.ctx.db?.getRepository?.('rolesUsers')?.findOne({
+          where: {
+            userId,
+            default: true,
+          },
+          raw: true,
+        });
+        roleName = rolesUser?.roleName;
+      } catch {
+        roleName = undefined;
+      }
+    }
+
+    if (!roleName) {
+      try {
+        const roles = await this.ctx.db?.getRepository?.('users.roles', userId)?.find({
+          raw: true,
+        });
+        roleName = roles?.[0]?.name;
+      } catch {
+        roleName = undefined;
+      }
+    }
+
+    if (!roleName) {
+      try {
+        if (typeof user.getRoles === 'function') {
+          roleName = (await user.getRoles({ raw: true }))?.[0]?.name;
+        } else if (userId) {
+          const userModel = await this.userRepository.findOne({
+            filter: { id: userId },
+          });
+          roleName = (await userModel?.getRoles?.({ raw: true }))?.[0]?.name;
+        }
+      } catch (error) {
+        this.ctx.logger?.warn?.(error, { method: 'auth.setSessionCookies' });
+        roleName = undefined;
+      }
     }
     if (roleName) {
       this.ctx.cookies.set(
@@ -275,6 +302,7 @@ export class BaseAuth extends Auth {
           code: AuthErrorCode.INVALID_TOKEN,
         });
       }
+      this.ctx.state.authTokenSource = tokenSource;
       return { tokenStatus, user, jti, signInTime, temp };
     }
 
@@ -388,6 +416,25 @@ export class BaseAuth extends Auth {
       user,
       token,
     };
+  }
+
+  async syncCookies(): Promise<{ synced: true }> {
+    const tokenHeader = this.ctx.res.getHeader('x-new-token');
+    const token = typeof tokenHeader === 'string' ? tokenHeader : this.ctx.getBearerToken();
+    const user = this.user || this.ctx.state.currentUser;
+
+    if (!token || !user) {
+      this.ctx.throw(401, {
+        message: this.ctx.t('Unauthenticated. Please sign in to continue.', { ns: localeNamespace }),
+        code: AuthErrorCode.EMPTY_TOKEN,
+      });
+    }
+
+    const maxAge = await this.getSessionCookieMaxAge();
+    this.setAuthCookies(token, maxAge);
+    await this.setSessionCookies(user, maxAge);
+
+    return { synced: true };
   }
 
   async signOut(): Promise<any> {

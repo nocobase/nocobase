@@ -14,6 +14,7 @@ import type { Collection } from '@nocobase/database';
 import jwt, { type JwtPayload, type SignOptions } from 'jsonwebtoken';
 import type { PluginFileManagerServer } from './server';
 import { getFileAccessPathSegment, getFilePublicBasePath, getFileRecordValue, hasStandardFileId } from './utils';
+import { resolveFileAccessFilter } from './resolve-file-access-filter';
 
 export const CREATE_TEMPORARY_URL_ACTION = 'createTemporaryURL';
 export const TEMPORARY_FILE_ACCESS_AUDIENCE = 'temporary-file-access';
@@ -107,19 +108,13 @@ export async function createTemporaryURLAction(ctx: Context, next: Next) {
   }
 
   const id = ctx.action.params.filterByTk;
-  let filter = { id };
+  let filter: object = { id };
   if (
     ctx.app.options.acl !== false &&
     ctx.dataSource.options?.useACL !== false &&
     ctx.dataSource.options?.acl !== false
   ) {
-    const permission = await ctx.dataSource.acl.checkAction({
-      context: ctx,
-      resource: collection.name,
-      action: 'get',
-      params: { filter },
-    });
-    filter = permission.mergedParams?.filter || filter;
+    filter = await resolveFileAccessFilter(ctx, collection, filter);
   }
 
   const file = await ctx.getCurrentRepository().findOne({
