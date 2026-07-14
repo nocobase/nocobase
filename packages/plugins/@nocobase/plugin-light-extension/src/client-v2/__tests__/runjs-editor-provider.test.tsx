@@ -310,7 +310,7 @@ describe('RunJSLightExtensionEditorProvider', () => {
       version: 'v2',
       sourceMode: 'inline',
     });
-    fireEvent.click(screen.getByRole('button', { name: 'save workspace and close' }));
+    fireEvent.click(screen.getByRole('button', { name: 'save workspace', exact: true }));
     expect(onPersistedChange).toHaveBeenCalledWith(props.value);
     expect(onChange).not.toHaveBeenCalled();
   });
@@ -618,7 +618,7 @@ describe('RunJSLightExtensionEditorProvider', () => {
       );
     });
 
-    fireEvent.click(screen.getByRole('button', { name: 'save workspace' }));
+    fireEvent.click(screen.getByRole('button', { name: 'save workspace', exact: true }));
     await waitFor(() => {
       expect(onPersistedChange).toHaveBeenCalledWith({
         ...value,
@@ -713,14 +713,15 @@ describe('RunJSLightExtensionEditorProvider', () => {
       </EditorViewHarness>,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'save workspace' }));
+    fireEvent.click(screen.getByRole('button', { name: 'save workspace and close', exact: true }));
     await waitFor(() => {
       expect(onPersistedChange).toHaveBeenCalled();
     });
     expect(onClose).not.toHaveBeenCalled();
 
-    act(() => {
+    await act(async () => {
       resolvePersistedChange?.();
+      await Promise.resolve();
     });
     await waitFor(() => {
       expect(onClose).toHaveBeenCalledTimes(1);

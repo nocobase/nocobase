@@ -7,16 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  CodeOutlined,
-  DeleteOutlined,
-  DownOutlined,
-  EditOutlined,
-  PlusOutlined,
-  ReloadOutlined,
-  SaveOutlined,
-  UploadOutlined,
-} from '@ant-design/icons';
+import { DownOutlined, PlusOutlined, ReloadOutlined, SaveOutlined, UploadOutlined } from '@ant-design/icons';
 import {
   CollectionFilter,
   DEFAULT_PAGE_SIZE,
@@ -589,29 +580,35 @@ function LightExtensionListPageInner() {
       {
         title: t('Actions'),
         key: 'actions',
-        width: 130,
+        width: 240,
         render: (_value, repo) => (
-          <Space size={4} onClick={(event) => event.stopPropagation()}>
+          <Space size={8} onClick={(event) => event.stopPropagation()}>
             <Button
               aria-label={t('Open source')}
-              icon={<CodeOutlined />}
               onClick={() => selectRepo(repo.id, { panel: 'source' })}
               size="small"
-            />
+              type="link"
+            >
+              {t('Open source')}
+            </Button>
             <Button
               aria-label={`${t('Edit')} ${repo.title || repo.name}`}
-              icon={<EditOutlined />}
               onClick={() => openEditDrawer(repo)}
               size="small"
-            />
+              type="link"
+            >
+              {t('Edit')}
+            </Button>
             <Button
               aria-label={t('Remove')}
               danger
-              icon={<DeleteOutlined />}
               loading={removingRepoIds.has(repo.id)}
               onClick={() => setRemoveTarget(repo)}
               size="small"
-            />
+              type="link"
+            >
+              {t('Remove')}
+            </Button>
           </Space>
         ),
       },

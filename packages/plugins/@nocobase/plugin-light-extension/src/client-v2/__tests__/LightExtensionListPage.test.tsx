@@ -419,6 +419,12 @@ describe('LightExtensionListPage', () => {
     expect(await screen.findByText('Zeta widgets')).toBeInTheDocument();
     expect(document.querySelectorAll('th.ant-table-column-has-sorters')).toHaveLength(5);
     expect(screen.getByRole('columnheader', { name: 'Actions' })).not.toHaveClass('ant-table-column-has-sorters');
+    expect(screen.getAllByRole('button', { name: 'Open source' })[0]).toHaveClass('ant-btn-link');
+    expect(screen.getAllByRole('button', { name: 'Open source' })[0]).toHaveTextContent('Open source');
+    expect(screen.getByRole('button', { name: 'Edit Zeta widgets' })).toHaveClass('ant-btn-link');
+    expect(screen.getByRole('button', { name: 'Edit Zeta widgets' })).toHaveTextContent('Edit');
+    expect(screen.getAllByRole('button', { name: 'Remove' })[0]).toHaveClass('ant-btn-link');
+    expect(screen.getAllByRole('button', { name: 'Remove' })[0]).toHaveTextContent('Remove');
 
     await userEvent.click(screen.getByText('Name'));
 
