@@ -517,9 +517,7 @@ describe('RunJSEditorRegistry', () => {
       },
       version: 'v2',
     });
-    await waitFor(() => {
-      expect(rerender).toHaveBeenCalledTimes(1);
-    });
+    expect(rerender).not.toHaveBeenCalled();
     expect(saveStepParams).not.toHaveBeenCalled();
   });
 

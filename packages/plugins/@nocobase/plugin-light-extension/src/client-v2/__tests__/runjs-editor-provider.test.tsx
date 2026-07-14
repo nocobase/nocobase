@@ -475,6 +475,11 @@ describe('RunJSLightExtensionEditorProvider', () => {
             entryPath: 'src/client/js-blocks/renamed-example/index.tsx',
             kind: 'js-block',
             title: 'Example',
+            runtimeArtifact: {
+              code: 'ctx.render(<div>refreshed runtime</div>);',
+              version: 'v3',
+              entryPath: 'src/client/js-blocks/renamed-example/index.tsx',
+            },
           },
         },
       })),
@@ -522,13 +527,17 @@ describe('RunJSLightExtensionEditorProvider', () => {
     });
 
     fireEvent.click(screen.getByRole('button', { name: 'save workspace' }));
-    expect(onPersistedChange).toHaveBeenCalledWith({
-      ...value,
-      sourceBinding: {
-        ...value.sourceBinding,
-        entryPath: 'src/client/js-blocks/renamed-example/index.tsx',
-        entryTitle: 'Example',
-      },
+    await waitFor(() => {
+      expect(onPersistedChange).toHaveBeenCalledWith({
+        ...value,
+        code: 'ctx.render(<div>refreshed runtime</div>);',
+        version: 'v3',
+        sourceBinding: {
+          ...value.sourceBinding,
+          entryPath: 'src/client/js-blocks/renamed-example/index.tsx',
+          entryTitle: 'Example',
+        },
+      });
     });
   });
 
