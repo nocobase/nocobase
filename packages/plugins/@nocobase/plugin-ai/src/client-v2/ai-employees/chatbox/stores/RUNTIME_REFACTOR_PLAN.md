@@ -433,7 +433,7 @@ Tests:
 
 ### T9. Design Conversation And Workflow Runtime Ownership
 
-Status: `Pending`
+Status: `Done`
 
 Dependencies: T8
 
@@ -472,10 +472,52 @@ Design direction:
 - Keep `useChatBoxRuntime()` strict. Runtime-aware hooks should accept `runtime?: ChatBoxRuntime` and resolve through `useResolvedChatBoxRuntime(runtime)`.
 - Do not reintroduce selector APIs as the primary render subscription mechanism.
 
+Design mapping:
+
+- Runtime ownership:
+  - `ChatConversationModel` owns conversation list UI state for one chatbox runtime. `currentConversation`, `conversations`, `keyword`, `webSearch`, and `conversationSegmented` must be runtime-local so a future embedded chatbox can select a session, filter its list, and toggle web search without mutating the global floating chatbox UI.
+  - `WorkflowTaskModel` owns workflow task list UI state for one chatbox runtime. `workflowTasks`, `currentWorkflowTask`, `loading`, `keyword`, and `selectedJobStatus` must be runtime-local for the same reason.
+  - `unreadCount` fields are stored on the corresponding runtime models in this phase to preserve existing UI behavior and avoid adding a new service layer. The counts are account-level values returned by the existing `aiConversations.unreadCounts()` API, so a later multi-runtime feature may introduce a shared unread-count service or event bridge if multiple visible runtimes need live synchronization. Do not change server APIs or websocket payload semantics in this refactor.
+  - `ChatBoxRuntime` should contain `chatConversationModel` and `workflowTaskModel` in addition to the existing `chatBoxModel`, `chatMessageModel`, `chatToolCallModel`, and `chatToolModel`.
+
+Field mapping:
+
+| Current store | Current field | New model | Ownership | Annotation |
+|---|---|---|---|---|
+| `chat-conversations` | `currentConversation` | `ChatConversationModel.currentConversation` | UI runtime | `observable.ref` |
+| `chat-conversations` | `conversations` | `ChatConversationModel.conversations` | UI runtime | `observable.shallow` |
+| `chat-conversations` | `keyword` | `ChatConversationModel.keyword` | UI runtime | `observable.ref` |
+| `chat-conversations` | `webSearch` | `ChatConversationModel.webSearch` | UI runtime | `observable.ref` |
+| `chat-conversations` | `conversationSegmented` | `ChatConversationModel.conversationSegmented` | UI runtime | `observable.ref` |
+| `chat-conversations` | `unreadCount` | `ChatConversationModel.unreadCount` | runtime-local snapshot of account-level count | `observable.ref` |
+| `workflow-tasks` | `workflowTasks` | `WorkflowTaskModel.workflowTasks` | UI runtime | `observable.shallow` |
+| `workflow-tasks` | `currentWorkflowTask` | `WorkflowTaskModel.currentWorkflowTask` | UI runtime | `observable.ref` |
+| `workflow-tasks` | `unreadCount` | `WorkflowTaskModel.unreadCount` | runtime-local snapshot of account-level count | `observable.ref` |
+| `workflow-tasks` | `loading` | `WorkflowTaskModel.loading` | UI runtime | `observable.ref` |
+| `workflow-tasks` | `keyword` | `WorkflowTaskModel.keyword` | UI runtime | `observable.ref` |
+| `workflow-tasks` | `selectedJobStatus` | `WorkflowTaskModel.selectedJobStatus` | UI runtime | `observable.ref` |
+
+Action mapping:
+
+| Current store | Current action | New model action | Annotation |
+|---|---|---|---|
+| `chat-conversations` | `setCurrentConversation`, `setKeyword`, `setWebSearch`, `setConversationSegmented` | same names on `ChatConversationModel` | `action` |
+| `chat-conversations` | `setConversations`, `markConversationRead`, `setUnreadCount` | same names on `ChatConversationModel` | `action` |
+| `workflow-tasks` | `setWorkflowTasks`, `setCurrentWorkflowTask`, `setUnreadCount` | same names on `WorkflowTaskModel` | `action` |
+| `workflow-tasks` | `markWorkflowTaskRead`, `setLoading`, `setKeyword`, `setSelectedJobStatus` | same names on `WorkflowTaskModel` | `action` |
+
+Temporary compatibility surfaces:
+
+- `chat-conversations.ts` and `workflow-tasks.ts` can be converted to export model classes in T10 while keeping their domain types in place for existing imports.
+- Selector-style `useChatConversationsStore` and `useWorkflowTasksStore` should not remain as production data sources after T11. If a compatibility adapter is needed during migration, it must be explicitly global-runtime-only and removed or isolated in T12.
+- Provider-less entrypoints must keep passing `getGlobalChatBoxRuntime()` explicitly to hooks that need conversation or workflow state.
+
 Tests:
 
 - Design-only task; no runtime tests required unless code is changed.
 - If only this document is touched, attempt markdown eslint and record the known `.md` parser failure.
+- Verification on 2026-07-16:
+  - `yarn eslint --fix packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/RUNTIME_REFACTOR_PLAN.md`: attempted, but the current ESLint configuration parses `.md` as JavaScript and fails at line 1 with `Parsing error: Invalid character`.
 - Commit the design update before implementation tasks.
 
 ### T10. Implement Conversation And Workflow Runtime Models
