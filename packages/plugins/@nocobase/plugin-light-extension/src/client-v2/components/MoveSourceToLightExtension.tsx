@@ -225,7 +225,7 @@ export const MoveSourceToLightExtension: React.FC<{
 
 function resolveLightExtensionKind(context: RunJSStudioToolbarContext): LightExtensionKind | null {
   if (context.locator.kind === 'flowModel.nestedRunJS') {
-    return 'runjs';
+    return context.workspace.source.surfaceStyle === 'value' ? 'runjs' : null;
   }
   if (context.locator.kind !== 'flowModel.step') {
     return null;

@@ -14,14 +14,12 @@ const repositoryRoot = process.cwd();
 const lightExtensionSourceRoot = path.join(repositoryRoot, 'packages/plugins/@nocobase/plugin-light-extension/src');
 const clientFlowRoot = path.join(repositoryRoot, 'packages/core/client-v2/src/flow');
 
-describe('removed light-extension prototype boundary', () => {
-  it('keeps removed generic Entry kinds and duplicate settings storage out of production code', () => {
+describe('light-extension production boundary', () => {
+  it('keeps duplicate settings storage and removed field-assignment prototypes out of production code', () => {
     const productionSources = [lightExtensionSourceRoot, clientFlowRoot]
       .flatMap((root) => collectProductionSourceFiles(root))
       .map((file) => ({ file, source: fs.readFileSync(file, 'utf8') }));
     const forbiddenPatterns = [
-      { label: 'generic runjs Entry kind', pattern: /kind\s*:\s*['"]runjs['"]/u },
-      { label: 'generic runjs Entry path', pattern: /src\/client\/runjs/u },
       { label: 'legacy settings mirror', pattern: /leSetting__/u },
       { label: 'removed FieldAssign Entry tree', pattern: /createFieldAssignLightExtensionMetaTree/u },
     ];
@@ -83,16 +81,23 @@ describe('removed light-extension prototype boundary', () => {
     );
   });
 
-  it('keeps generic RunJS surfaces inline while formal hosts retain external resolution', () => {
-    const customVariable = readSource('packages/core/client-v2/src/flow/actions/customVariable.tsx');
-    const linkageRules = readSource('packages/core/client-v2/src/flow/actions/linkageRules.tsx');
-    const jsBlock = readSource('packages/core/client-v2/src/flow/models/blocks/js-block/JSBlock.tsx');
+  it('keeps value-return RunJS connected to light-extension authoring and runtime resolution', () => {
+    const constants = readSource('packages/plugins/@nocobase/plugin-light-extension/src/constants.ts');
+    const workspacePolicy = readSource(
+      'packages/plugins/@nocobase/plugin-light-extension/src/server/services/light-extension-validator/workspacePolicy.ts',
+    );
+    const moveSource = readSource(
+      'packages/plugins/@nocobase/plugin-light-extension/src/server/services/MoveSourceService.ts',
+    );
+    const editorProvider = readSource(
+      'packages/plugins/@nocobase/plugin-light-extension/src/client-v2/components/RunJSLightExtensionEditorProvider.tsx',
+    );
 
-    expect(customVariable).not.toContain('resolveRuntimeRunJS');
-    expect(linkageRules).not.toContain('resolveRuntimeRunJS');
-    expect(customVariable).toContain('ctx.runjs');
-    expect(linkageRules).toContain('ctx.runjs');
-    expect(jsBlock).toContain('resolveRuntimeRunJS');
+    expect(constants).toContain("'runjs'");
+    expect(workspacePolicy).toContain("root: 'src/client/runjs'");
+    expect(moveSource).toContain("locator.kind === 'flowModel.nestedRunJS'");
+    expect(moveSource).toContain("return 'runjs'");
+    expect(editorProvider).toContain("locator?.kind === 'flowModel.nestedRunJS'");
   });
 });
 

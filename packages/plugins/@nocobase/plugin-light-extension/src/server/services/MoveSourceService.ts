@@ -412,6 +412,9 @@ function normalizeWorkspacePath(value: string): string {
 
 function resolveLightExtensionKind(locator: RunJSSourceLocator, legacy: RunJSLegacySource): LightExtensionKind {
   if (locator.kind === 'flowModel.nestedRunJS') {
+    if (legacy.surfaceStyle !== 'value') {
+      throw unsupportedLocator(locator);
+    }
     return 'runjs';
   }
   if (locator.kind !== 'flowModel.step') {

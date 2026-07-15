@@ -14,6 +14,7 @@ import {
   type RunJSEditorProvider,
   type RunJSEditorProviderRenderProps,
   type RunJSSourceLocator,
+  type RunJSSourceSettingsDescriptor,
 } from '@nocobase/client-v2';
 import { createForm, type Form } from '@formily/core';
 import { createSchemaField, FormProvider } from '@formily/react';
@@ -50,6 +51,7 @@ import LightExtensionWorkspacePage, {
 } from '../pages/LightExtensionWorkspacePage';
 import type { LightExtensionWorkspaceScope } from '../workspace/lightExtensionWorkspaceAccess';
 import { RunJSLightExtensionSourceField } from './JSBlockLightExtensionSourceField';
+import { SettingsAutoForm } from './SettingsAutoForm';
 
 const INLINE_SOURCE_MODE = 'inline';
 const LIGHT_EXTENSION_SOURCE_MODE = 'light-extension';
@@ -79,6 +81,10 @@ type ApplicationWithApi = {
 
 type FlowModelStepLocator = Extract<RunJSSourceLocator, { kind: 'flowModel.step' }>;
 type LightExtensionEntryWorkspaceScope = Extract<LightExtensionWorkspaceScope, { mode: 'entry' }>;
+type BoundSettingsDescriptor = {
+  bindingKey: string;
+  descriptor: RunJSSourceSettingsDescriptor;
+};
 
 const UNSAFE_RUNJS_PATH_SEGMENTS = new Set(['__proto__', 'constructor', 'prototype']);
 
@@ -157,10 +163,11 @@ function setFormValues(form: Form, values: RunJSValueFormValues) {
 }
 
 const RunJSLightExtensionEditor: React.FC<RunJSEditorProviderRenderProps> = (props) => {
-  const { onPreview } = props;
+  const { onChange, onPreview } = props;
   const initialValuesRef = React.useRef(normalizeFormValues(props.value));
   const form = React.useMemo(() => createForm({ initialValues: initialValuesRef.current }), []);
   const [, rerender] = React.useReducer((count: number) => count + 1, 0);
+  const [boundSettingsDescriptor, setBoundSettingsDescriptor] = React.useState<BoundSettingsDescriptor | null>(null);
   const applyingExternalValueRef = React.useRef(false);
   const lastValueSignatureRef = React.useRef(stableSerialize(normalizeFormValues(props.value)));
   const readonly = props.readOnly || props.disabled;
@@ -188,18 +195,74 @@ const RunJSLightExtensionEditor: React.FC<RunJSEditorProviderRenderProps> = (pro
       if (applyingExternalValueRef.current) {
         return;
       }
-      rerender();
       const nextValue = toRunJSValue(form.values as RunJSValueFormValues);
-      lastValueSignatureRef.current = stableSerialize(normalizeFormValues(nextValue));
-      props.onChange?.(nextValue);
+      const nextSignature = stableSerialize(normalizeFormValues(nextValue));
+      if (nextSignature === lastValueSignatureRef.current) {
+        return;
+      }
+      lastValueSignatureRef.current = nextSignature;
+      rerender();
+      onChange?.(nextValue);
     });
     return () => {
       form.unsubscribe(subscriptionId);
     };
-  }, [form, props.onChange]);
+  }, [form, onChange]);
 
   const formValues = form.values as RunJSValueFormValues;
   const sourceMode = normalizeSourceMode(formValues.sourceMode);
+  const sourceBindingKey = stableSerialize(formValues.sourceBinding);
+  const currentSourceBinding = isLightExtensionRuntimeSourceBinding(formValues.sourceBinding)
+    ? formValues.sourceBinding
+    : null;
+  const settingsDescriptor =
+    sourceMode === LIGHT_EXTENSION_SOURCE_MODE &&
+    currentSourceBinding &&
+    boundSettingsDescriptor?.bindingKey === sourceBindingKey &&
+    boundSettingsDescriptor.descriptor.entryId === currentSourceBinding.entryId
+      ? boundSettingsDescriptor.descriptor
+      : null;
+
+  React.useEffect(() => {
+    const currentValues = form.values as RunJSValueFormValues;
+    if (
+      sourceMode !== LIGHT_EXTENSION_SOURCE_MODE ||
+      !isLightExtensionRuntimeSourceBinding(currentValues.sourceBinding)
+    ) {
+      setBoundSettingsDescriptor(null);
+      return;
+    }
+    const resolver = RunJSSourceResolverRegistry.getResolver(LIGHT_EXTENSION_SOURCE_MODE);
+    if (typeof resolver?.getSettingsDescriptor !== 'function') {
+      setBoundSettingsDescriptor(null);
+      return;
+    }
+
+    let active = true;
+    const bindingKey = stableSerialize(currentValues.sourceBinding);
+    Promise.resolve(
+      resolver.getSettingsDescriptor({
+        sourceMode: LIGHT_EXTENSION_SOURCE_MODE,
+        sourceBinding: currentValues.sourceBinding,
+        settings: isRecord(currentValues.settings) ? currentValues.settings : {},
+      }),
+    )
+      .then((descriptor) => {
+        if (active) {
+          setBoundSettingsDescriptor(descriptor ? { bindingKey, descriptor } : null);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setBoundSettingsDescriptor(null);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [form, sourceBindingKey, sourceMode]);
+
   const tip = props.t?.('Use return to output value') ?? 'Use return to output value';
   const handleInlineEditorChange = React.useCallback(
     (nextValue: RunJSValue | string) => {
@@ -244,6 +307,14 @@ const RunJSLightExtensionEditor: React.FC<RunJSEditorProviderRenderProps> = (pro
           }}
         />
       </FormProvider>
+      {sourceMode === LIGHT_EXTENSION_SOURCE_MODE && settingsDescriptor?.schema ? (
+        <SettingsAutoForm
+          disabled={readonly}
+          schema={settingsDescriptor.schema}
+          value={isRecord(formValues.settings) ? formValues.settings : {}}
+          onChange={(settings) => form.setValuesIn('settings', settings)}
+        />
+      ) : null}
       {sourceMode === INLINE_SOURCE_MODE
         ? props.renderNext?.({
             value: toRunJSValue(formValues),
@@ -567,12 +638,7 @@ export function createRunJSLightExtensionEditorProvider(): RunJSEditorProvider {
       if (locator?.kind === 'flowModel.step' && props.value.sourceMode === LIGHT_EXTENSION_SOURCE_MODE) {
         return true;
       }
-      if (props.value.sourceMode !== LIGHT_EXTENSION_SOURCE_MODE) {
-        return false;
-      }
-      return (
-        (props.surfaceStyle === 'value' || props.surfaceStyle === 'action') && locator?.kind === 'flowModel.nestedRunJS'
-      );
+      return props.surfaceStyle === 'value' && locator?.kind === 'flowModel.nestedRunJS';
     },
     renderEditor(props) {
       const locator = props.sourceLocator || props.locator;

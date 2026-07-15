@@ -14,6 +14,7 @@ import { randomUUID } from 'crypto';
 
 import type {
   LightExtensionKind,
+  LightExtensionModelOwnerLocator,
   LightExtensionReferenceOwnerLocator,
   LightExtensionReferenceRebuildItem,
   LightExtensionReferenceRebuildInput,
@@ -61,6 +62,7 @@ type FlowModelNode = {
   uid?: string;
   use?: string;
   stepParams?: Record<string, unknown>;
+  flowRegistry?: Record<string, unknown>;
   subModels?: Record<string, FlowModelNode | FlowModelNode[] | undefined>;
 };
 
@@ -150,7 +152,7 @@ export class ReferenceService {
     const modelUids = collectModelUids(node);
     const templateOwnerUids = await this.collectTemplateTargetOwnerUids(ctx, new Set(modelUids));
     const seenOwnerHashes = new Set<string>();
-    const owners = collectReferenceOwnerNodes(node);
+    const owners = [...collectReferenceOwnerNodes(node), ...collectRunJSReferenceOwners(node)];
     for (const owner of owners) {
       const modelUid = normalizeString(owner.node.uid);
       if (modelUid) {
@@ -288,17 +290,20 @@ export class ReferenceService {
     const records = await this.findAllFlowModelRecords(rebuildContext);
     const templateOwnerUids = await this.collectTemplateTargetOwnerUids(rebuildContext);
     const seenOwnerHashes = new Set<string>();
+    const existingModelUids = new Set<string>();
     for (const record of records) {
       const node = flowModelNodeFromRecord(record);
       const modelUid = normalizeString(node.uid);
       if (!modelUid) {
         continue;
       }
+      existingModelUids.add(modelUid);
       if (templateOwnerUids.has(modelUid)) {
         continue;
       }
       const adapter = getReferenceOwnerAdapterByUse(node.use || '');
       const owners: ReferenceOwnerSource[] = adapter ? [{ adapter, node }] : [];
+      owners.push(...collectRunJSReferenceOwners(node));
       for (const owner of owners) {
         const ownerLocator = buildOwnerLocatorForSource(owner, modelUid);
         seenOwnerHashes.add(hashOwnerLocator(ownerLocator));
@@ -320,12 +325,26 @@ export class ReferenceService {
       summary,
       scopeRepoId,
     );
+    await this.removeUnseenReferencesForOwners(
+      Array.from(existingModelUids),
+      'referenceRebuild',
+      requestId,
+      rebuildContext,
+      summary,
+      scopeRepoId,
+      seenOwnerHashes,
+      'owner_not_reference_adapter',
+    );
 
     const references = await this.findReferenceModels(scopeRepoId ? { repoId: scopeRepoId } : {}, rebuildContext);
     const missingOwnerUids: string[] = [];
     for (const reference of references) {
       const ownerLocator = normalizeOwnerLocator(reference.get('ownerLocator'));
-      if (!ownerLocator?.modelUid || seenOwnerHashes.has(normalizeString(reference.get('ownerLocatorHash')))) {
+      if (
+        !ownerLocator?.modelUid ||
+        existingModelUids.has(ownerLocator.modelUid) ||
+        seenOwnerHashes.has(normalizeString(reference.get('ownerLocatorHash')))
+      ) {
         continue;
       }
       missingOwnerUids.push(ownerLocator.modelUid);
@@ -949,22 +968,16 @@ export class ReferenceService {
     scopeRepoId?: string,
     seenOwnerHashes: Set<string> = new Set(),
   ): Promise<void> {
-    const ownerUids = Array.from(new Set(uids.map((item) => normalizeString(item)).filter(Boolean)));
-    for (const modelUid of ownerUids) {
-      for (const ownerLocatorHash of buildActiveOwnerLocatorHashes(modelUid)) {
-        if (seenOwnerHashes.has(ownerLocatorHash)) {
-          continue;
-        }
-        const removed = await this.removeReferencesForOwner(ownerLocatorHash, action, requestId, ctx, {
-          repoId: scopeRepoId,
-          reasonCode: 'owner_not_reference_adapter',
-        });
-        if (removed) {
-          summary.scanned += 1;
-        }
-        summary.removed += removed;
-      }
-    }
+    await this.removeUnseenReferencesForOwners(
+      uids,
+      action,
+      requestId,
+      ctx,
+      summary,
+      scopeRepoId,
+      seenOwnerHashes,
+      'owner_not_reference_adapter',
+    );
   }
 
   private async removeReferencesForTemplateOwners(
@@ -975,18 +988,55 @@ export class ReferenceService {
     summary: ReferenceUpsertSummary,
     scopeRepoId?: string,
   ): Promise<void> {
-    const ownerUids = Array.from(new Set(uids.map((item) => normalizeString(item)).filter(Boolean)));
-    for (const modelUid of ownerUids) {
-      for (const ownerLocatorHash of buildActiveOwnerLocatorHashes(modelUid)) {
-        const removed = await this.removeReferencesForOwner(ownerLocatorHash, action, requestId, ctx, {
-          repoId: scopeRepoId,
-          reasonCode: 'owner_is_template_target',
-        });
-        if (removed) {
-          summary.scanned += 1;
-        }
-        summary.removed += removed;
+    await this.removeUnseenReferencesForOwners(
+      uids,
+      action,
+      requestId,
+      ctx,
+      summary,
+      scopeRepoId,
+      new Set(),
+      'owner_is_template_target',
+    );
+  }
+
+  private async removeUnseenReferencesForOwners(
+    uids: string[],
+    action: ReferenceSyncAction,
+    requestId: string,
+    ctx: ReferenceServiceContext,
+    summary: ReferenceUpsertSummary,
+    scopeRepoId: string | undefined,
+    seenOwnerHashes: Set<string>,
+    reasonCode: string,
+  ): Promise<void> {
+    const ownerUids = new Set(uids.map((item) => normalizeString(item)).filter(Boolean));
+    if (!ownerUids.size) {
+      return;
+    }
+    const references = await this.findReferenceModels(scopeRepoId ? { repoId: scopeRepoId } : {}, ctx);
+    const removedOwnerHashes = new Set<string>();
+    for (const reference of references) {
+      const ownerLocator = normalizeOwnerLocator(reference.get('ownerLocator'));
+      const ownerLocatorHash = normalizeString(reference.get('ownerLocatorHash'));
+      if (
+        !ownerLocator?.modelUid ||
+        !ownerUids.has(ownerLocator.modelUid) ||
+        !ownerLocatorHash ||
+        seenOwnerHashes.has(ownerLocatorHash) ||
+        removedOwnerHashes.has(ownerLocatorHash)
+      ) {
+        continue;
       }
+      removedOwnerHashes.add(ownerLocatorHash);
+      const removed = await this.removeReferencesForOwner(ownerLocatorHash, action, requestId, ctx, {
+        repoId: scopeRepoId,
+        reasonCode,
+      });
+      if (removed) {
+        summary.scanned += 1;
+      }
+      summary.removed += removed;
     }
   }
 
@@ -1463,9 +1513,172 @@ function readRunJsSource(node: FlowModelNode, adapter?: ReferenceOwnerAdapter): 
 function readReferenceOwnerSource(
   node: FlowModelNode,
   adapter: ReferenceOwnerAdapter | undefined,
-  _ownerLocator: LightExtensionReferenceOwnerLocator,
+  ownerLocator: LightExtensionReferenceOwnerLocator,
 ): NormalizedJsBlockSource {
+  if (adapter?.ownerKind === 'flowModel.runjsHost' && hasHostPath(ownerLocator)) {
+    return readNestedRunJSHostSource(node, ownerLocator.hostPath);
+  }
   return readRunJsSource(node, adapter);
+}
+
+function collectRunJSReferenceOwners(
+  node: FlowModelNode | null | undefined,
+  bucket: ReferenceOwnerSource[] = [],
+): ReferenceOwnerSource[] {
+  const adapter = getReferenceOwnerAdapterByKind('runjs');
+  if (!adapter || !node || typeof node !== 'object') {
+    return bucket;
+  }
+
+  const modelUid = normalizeString(node.uid);
+  if (modelUid) {
+    const pushOwner = (hostPath: Array<string | number>, source: NormalizedJsBlockSource) => {
+      if (source.sourceMode !== 'light-extension' || source.sourceBinding?.kind !== 'runjs') {
+        return;
+      }
+      bucket.push({
+        adapter,
+        node,
+        ownerLocator: buildFlowModelOwnerLocator(adapter, modelUid, node.use, hostPath),
+        source,
+      });
+    };
+    collectFlowRegistryRunJSHosts(node.flowRegistry, pushOwner);
+    collectStepParamsRunJSHosts(node.stepParams, node.flowRegistry, pushOwner);
+  }
+
+  for (const value of Object.values(node.subModels || {})) {
+    for (const child of Array.isArray(value) ? value : value ? [value] : []) {
+      collectRunJSReferenceOwners(child, bucket);
+    }
+  }
+  return bucket;
+}
+
+function collectFlowRegistryRunJSHosts(
+  flowRegistry: Record<string, unknown> | undefined,
+  push: (hostPath: Array<string | number>, source: NormalizedJsBlockSource) => void,
+): void {
+  if (!isPlainRecord(flowRegistry)) {
+    return;
+  }
+  for (const [flowKey, flowValue] of Object.entries(flowRegistry)) {
+    const steps = isPlainRecord(flowValue) && isPlainRecord(flowValue.steps) ? flowValue.steps : {};
+    for (const [stepKey, stepValue] of Object.entries(steps)) {
+      if (!isPlainRecord(stepValue)) {
+        continue;
+      }
+      const activeParamPaths = new Set<string>();
+      const paramsBase = ['flowRegistry', flowKey, 'steps', stepKey, 'params'];
+      collectNestedRunJSHosts(stepValue.params, paramsBase, (hostPath, source) => {
+        activeParamPaths.add(JSON.stringify(hostPath.slice(paramsBase.length)));
+        push(hostPath, source);
+      });
+      const defaultParamsBase = ['flowRegistry', flowKey, 'steps', stepKey, 'defaultParams'];
+      collectNestedRunJSHosts(stepValue.defaultParams, defaultParamsBase, (hostPath, source) => {
+        if (!activeParamPaths.has(JSON.stringify(hostPath.slice(defaultParamsBase.length)))) {
+          push(hostPath, source);
+        }
+      });
+    }
+  }
+}
+
+function collectStepParamsRunJSHosts(
+  stepParams: Record<string, unknown> | undefined,
+  flowRegistry: Record<string, unknown> | undefined,
+  push: (hostPath: Array<string | number>, source: NormalizedJsBlockSource) => void,
+): void {
+  if (!isPlainRecord(stepParams)) {
+    return;
+  }
+  for (const [flowKey, flowValue] of Object.entries(stepParams)) {
+    if (!isPlainRecord(flowValue)) {
+      continue;
+    }
+    for (const [stepKey, stepValue] of Object.entries(flowValue)) {
+      if (hasFlowRegistryStep(flowRegistry, flowKey, stepKey)) {
+        continue;
+      }
+      collectNestedRunJSHosts(stepValue, ['stepParams', flowKey, stepKey], push);
+    }
+  }
+}
+
+function hasFlowRegistryStep(
+  flowRegistry: Record<string, unknown> | undefined,
+  flowKey: string,
+  stepKey: string,
+): boolean {
+  const flow = isPlainRecord(flowRegistry) && isPlainRecord(flowRegistry[flowKey]) ? flowRegistry[flowKey] : null;
+  const steps = flow && isPlainRecord(flow.steps) ? flow.steps : null;
+  return Boolean(steps && Object.prototype.hasOwnProperty.call(steps, stepKey));
+}
+
+function hasHostPath(
+  ownerLocator: LightExtensionReferenceOwnerLocator,
+): ownerLocator is LightExtensionModelOwnerLocator & { hostPath: string[] } {
+  return 'hostPath' in ownerLocator && Array.isArray(ownerLocator.hostPath) && ownerLocator.hostPath.length > 0;
+}
+
+function collectNestedRunJSHosts(
+  value: unknown,
+  path: Array<string | number>,
+  push: (hostPath: Array<string | number>, source: NormalizedJsBlockSource) => void,
+): void {
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => collectNestedRunJSHosts(item, [...path, index], push));
+    return;
+  }
+  if (!isPlainRecord(value)) {
+    return;
+  }
+
+  const source = readRunJSValueSource(value);
+  if (source) {
+    push(path, source);
+  }
+
+  for (const [key, child] of Object.entries(value)) {
+    collectNestedRunJSHosts(child, [...path, key], push);
+  }
+}
+
+function readNestedRunJSHostSource(node: FlowModelNode, hostPath: string[]): NormalizedJsBlockSource {
+  return (
+    readRunJSValueSource(getAtPath(node, hostPath)) || {
+      sourceMode: 'inline',
+      settings: {},
+    }
+  );
+}
+
+function readRunJSValueSource(value: unknown): NormalizedJsBlockSource | null {
+  if (!isPlainRecord(value)) {
+    return null;
+  }
+  const sourceMode = normalizeString(value.sourceMode) || 'inline';
+  const sourceBinding = normalizeSourceBinding(value.sourceBinding);
+  const hasInlineCode = typeof value.code === 'string' || typeof value.script === 'string';
+  if (!hasInlineCode && sourceMode !== 'light-extension' && sourceBinding?.kind !== 'runjs') {
+    return null;
+  }
+  return {
+    sourceMode,
+    sourceBinding,
+    settings: normalizeSettings(value.settings),
+  };
+}
+
+function getAtPath(value: unknown, path: string[]): unknown {
+  let current = value;
+  for (const segment of path) {
+    if ((!isPlainRecord(current) && !Array.isArray(current)) || !(segment in current)) {
+      return undefined;
+    }
+    current = current[segment as keyof typeof current];
+  }
+  return current;
 }
 
 function normalizeSourceBinding(value: unknown): LightExtensionRuntimeSourceBinding | undefined {
@@ -1680,16 +1893,6 @@ function mergeStatusCounts(
     const normalizedStatus = normalizeStatus(status);
     summary.statusCounts[normalizedStatus] = (summary.statusCounts[normalizedStatus] || 0) + (count || 0);
   }
-}
-
-function buildActiveOwnerLocatorHashes(modelUid: string): string[] {
-  return listReferenceOwnerAdapters()
-    .map((adapterContract) => getReferenceOwnerAdapterByKind(adapterContract.kind))
-    .filter((adapter): adapter is ReferenceOwnerAdapter => Boolean(adapter))
-    .flatMap((adapter) => {
-      const modelUses = adapter.modelUses?.length ? adapter.modelUses : [adapter.modelUse].filter(Boolean);
-      return modelUses.map((modelUse) => hashOwnerLocator(buildFlowModelOwnerLocator(adapter, modelUid, modelUse)));
-    });
 }
 
 function buildInputOwnerLocatorHash(input: {

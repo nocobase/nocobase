@@ -300,10 +300,14 @@ describe('MoveSourceService', () => {
 
     const createInput = createRepo.mock.calls[0][0];
     const initialPaths = createInput.initialFiles.map((file: { path: string }) => file.path);
-    expect(initialPaths).toContain('src/client/js-blocks/sales-kpi/index.tsx');
-    expect(initialPaths).not.toContain('light-extension.json');
-    expect(initialPaths).not.toContain('src/client/js-blocks/example/index.tsx');
-    expect(initialPaths).not.toContain('src/client/js-actions/example/index.ts');
+    expect(initialPaths.sort()).toEqual(
+      [
+        'README.md',
+        'src/client/js-blocks/sales-kpi/entry.json',
+        'src/client/js-blocks/sales-kpi/index.tsx',
+        'tsconfig.json',
+      ].sort(),
+    );
     expect(compileCurrentRuntime).toHaveBeenCalledWith(
       createdRepo.id,
       createdRepo.headCommitId,
@@ -397,6 +401,40 @@ describe('MoveSourceService', () => {
     expect(saveSource).not.toHaveBeenCalled();
   });
 
+  it('rejects action-style nested RunJS sources', async () => {
+    const saveSource = vi.fn();
+    const service = createFailureService({
+      saveSource,
+      surfaceStyle: 'action',
+    });
+    const nestedLocator = {
+      kind: 'flowModel.nestedRunJS',
+      modelUid: 'flow_action',
+      containerFlowKey: 'eventFlow',
+      containerStepKey: 'runJs',
+      valuePath: ['code'],
+      scene: 'eventFlow',
+    } as const;
+
+    await expect(
+      service.moveSource(
+        {
+          locator: nestedLocator,
+          expectedOwnerFingerprint: 'owner_before',
+          sourceRepoId: 'runjs_repo',
+          sourceHeadCommitId: null,
+          entryPath: 'src/main.ts',
+          version: 'v2',
+          files: [{ path: 'src/main.ts', content: 'ctx.message.success("done");' }],
+          destination: { type: 'existing', repoId: repo.id },
+          entryName: 'action-script',
+        },
+        { adapterContext: {} },
+      ),
+    ).rejects.toMatchObject({ code: 'LIGHT_EXTENSION_INVALID_INPUT' });
+    expect(saveSource).not.toHaveBeenCalled();
+  });
+
   it('requires host write permission before changing the destination', async () => {
     const saveSource = vi.fn();
     const service = createFailureService({
@@ -463,6 +501,7 @@ describe('MoveSourceService', () => {
 
 function createFailureService(options: {
   ownerFingerprint?: string;
+  surfaceStyle?: 'render' | 'action' | 'value';
   transaction?: Transaction;
   saveSource: ReturnType<typeof vi.fn>;
   writeExternalBinding?: ReturnType<typeof vi.fn>;
@@ -496,7 +535,7 @@ function createFailureService(options: {
             code: 'return 1;',
             version: 'v2',
             label: 'JS block',
-            surfaceStyle: 'render',
+            surfaceStyle: options.surfaceStyle || 'render',
             language: 'typescript',
             ownerFingerprint: options.ownerFingerprint || 'owner_before',
             metadata: { modelUse: 'JSBlockModel' },

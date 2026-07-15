@@ -60,7 +60,7 @@ describe('MoveSourceToLightExtension', () => {
     expect(await screen.findByLabelText(expectedLabel)).toBeTruthy();
   });
 
-  it('does not render Move Source for nested RunJS sources', () => {
+  it('uses the RunJS name label for nested value-return sources', async () => {
     const context = createContext(vi.fn());
     const locator = {
       kind: 'flowModel.nestedRunJS',
@@ -72,9 +72,32 @@ describe('MoveSourceToLightExtension', () => {
     } as const;
     context.locator = locator;
     context.workspace.locator = locator;
+    context.workspace.legacy.surfaceStyle = 'value';
+    context.workspace.source.surfaceStyle = 'value';
     const request = vi.fn(async () => ({ data: { data: [] } }));
 
     render(<MoveSourceToLightExtension api={{ request }} context={context} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Move to light extension' }));
+    expect(await screen.findByLabelText('RunJS name')).toBeTruthy();
+  });
+
+  it('does not render Move Source for nested action-style RunJS', () => {
+    const context = createContext(vi.fn());
+    const locator = {
+      kind: 'flowModel.nestedRunJS',
+      modelUid: 'fm_1',
+      containerFlowKey: 'settings',
+      containerStepKey: 'configure',
+      valuePath: ['runJs'],
+      scene: 'event-flow',
+    } as const;
+    context.locator = locator;
+    context.workspace.locator = locator;
+    context.workspace.legacy.surfaceStyle = 'action';
+    context.workspace.source.surfaceStyle = 'action';
+
+    render(<MoveSourceToLightExtension api={{ request: vi.fn() }} context={context} />);
 
     expect(screen.queryByRole('button', { name: 'Move to light extension' })).toBeNull();
   });

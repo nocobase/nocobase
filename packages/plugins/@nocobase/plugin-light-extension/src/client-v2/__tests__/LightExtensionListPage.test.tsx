@@ -244,10 +244,11 @@ describe('LightExtensionListPage', () => {
         lifecycleStatus: 'enabled',
         healthStatus: 'ready',
         headCommitId: 'commit-1234567890',
-        entryCount: 2,
+        entryCount: 4,
         entryKinds: {
           'js-block': 1,
           'js-action': 1,
+          runjs: 2,
         },
         createdAt: '2026-07-08T00:00:00.000Z',
         updatedAt: '2026-07-09T00:00:00.000Z',
@@ -260,6 +261,7 @@ describe('LightExtensionListPage', () => {
     expect(screen.getByText('Sales dashboard helpers')).toBeInTheDocument();
     expect(screen.getByText('js-block 1')).toBeInTheDocument();
     expect(screen.getByText('js-action 1')).toBeInTheDocument();
+    expect(screen.getByText('runjs 2')).toBeInTheDocument();
     expect(screen.queryByRole('columnheader', { name: 'Status' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'View details' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Reference contract diagnostics' })).not.toBeInTheDocument();

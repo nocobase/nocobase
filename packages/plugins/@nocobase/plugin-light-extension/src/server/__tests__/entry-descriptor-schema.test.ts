@@ -78,7 +78,9 @@ describe('plugin-light-extension canonical entry schema', () => {
       entrySchemaUri: LIGHT_EXTENSION_ENTRY_SCHEMA_URI,
       entrySchemaSha256: lightExtensionEntryV1SchemaSha256,
     });
-    expect(JSON.stringify(capabilities)).not.toMatch(/meta\.json|settings\.json|"runjs"|\$not"/u);
+    expect(capabilities.supportedKinds).toContain('runjs');
+    expect(capabilities.allowedPaths.entries.runjs).toBeDefined();
+    expect(JSON.stringify(capabilities)).not.toMatch(/meta\.json|settings\.json|\$not"/u);
   });
 
   it('serves the canonical schema before auth with matching ETag and supports conditional GET', async () => {

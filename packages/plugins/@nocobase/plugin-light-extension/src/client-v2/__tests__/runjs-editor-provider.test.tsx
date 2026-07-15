@@ -179,7 +179,7 @@ function EditorViewHarness(props: {
 }
 
 describe('RunJSLightExtensionEditorProvider', () => {
-  it('never handles nested RunJS values, including stale light-extension bindings', () => {
+  it('handles value-return nested RunJS values before and after they bind to a light-extension entry', () => {
     const provider = createRunJSLightExtensionEditorProvider();
     const nestedLocator = {
       kind: 'flowModel.nestedRunJS' as const,
@@ -196,7 +196,7 @@ describe('RunJSLightExtensionEditorProvider', () => {
         locator: nestedLocator,
         surfaceStyle: 'value',
       }),
-    ).toBe(false);
+    ).toBe(true);
     expect(
       provider.canHandle?.({
         value: { code: 'return 1;', version: 'v2' },
@@ -224,7 +224,7 @@ describe('RunJSLightExtensionEditorProvider', () => {
       }),
     ).toBe(false);
 
-    const staleLightExtensionValue = {
+    const lightExtensionValue = {
       code: '',
       version: 'v2',
       sourceMode: 'light-extension',
@@ -238,11 +238,143 @@ describe('RunJSLightExtensionEditorProvider', () => {
     };
     expect(
       provider.canHandle?.({
-        value: staleLightExtensionValue,
+        value: lightExtensionValue,
         locator: nestedLocator,
         surfaceStyle: 'value',
       }),
+    ).toBe(true);
+    expect(
+      provider.canHandle?.({
+        value: lightExtensionValue,
+        locator: nestedLocator,
+        surfaceStyle: 'action',
+      }),
     ).toBe(false);
+  });
+
+  it('does not render or write back the previous entry settings while the next descriptor is loading', async () => {
+    const provider = createRunJSLightExtensionEditorProvider();
+    const onChange = vi.fn();
+    let resolveNextDescriptor:
+      | ((descriptor: { entryId: string; settingsSchemaHash: string; schema: Record<string, unknown> }) => void)
+      | undefined;
+    const nextDescriptor = new Promise<{
+      entryId: string;
+      settingsSchemaHash: string;
+      schema: Record<string, unknown>;
+    }>((resolve) => {
+      resolveNextDescriptor = resolve;
+    });
+    const getSettingsDescriptor = vi.fn(({ sourceBinding }: { sourceBinding?: Record<string, unknown> | null }) => {
+      if (sourceBinding?.entryId === 'entry_a') {
+        return {
+          entryId: 'entry_a',
+          settingsSchemaHash: 'schema_a',
+          schema: {
+            type: 'object',
+            properties: {
+              alpha: { type: 'string', title: 'Alpha setting', default: 'alpha-default' },
+            },
+          },
+        };
+      }
+      return nextDescriptor;
+    });
+    const unregisterResolver = RunJSSourceResolverRegistry.registerResolver({
+      sourceMode: 'light-extension',
+      resolve: async () => ({ code: 'return 1;', version: 'v2' }),
+      getSettingsDescriptor,
+    });
+    const api: ApiClientLike = {
+      request: vi.fn(async () => ({ data: { data: [] } })),
+    };
+    const locator = {
+      kind: 'flowModel.nestedRunJS' as const,
+      modelUid: 'form_1',
+      containerFlowKey: 'formModelSettings',
+      containerStepKey: 'assignRules',
+      valuePath: ['value', 0, 'value'],
+      scene: 'formValue',
+    };
+    const entryAValue = {
+      code: '',
+      version: 'v2',
+      sourceMode: 'light-extension',
+      sourceBinding: {
+        type: 'light-extension-entry' as const,
+        repoId: 'repo_1',
+        entryId: 'entry_a',
+        entryPath: 'src/client/runjs/entry-a/index.ts',
+        kind: 'runjs' as const,
+      },
+      settings: { alpha: 'saved-alpha' },
+    };
+    const entryBValue = {
+      ...entryAValue,
+      sourceBinding: {
+        ...entryAValue.sourceBinding,
+        entryId: 'entry_b',
+        entryPath: 'src/client/runjs/entry-b/index.ts',
+      },
+      settings: { beta: 'saved-beta' },
+    };
+
+    try {
+      const view = render(
+        <ApplicationContext.Provider
+          value={{ apiClient: api } as unknown as React.ContextType<typeof ApplicationContext>}
+        >
+          {provider.renderEditor({
+            value: entryAValue,
+            locator,
+            surfaceStyle: 'value',
+            onChange,
+          })}
+        </ApplicationContext.Provider>,
+      );
+
+      expect(await screen.findByRole('textbox', { name: 'Alpha setting' })).toHaveValue('saved-alpha');
+      onChange.mockClear();
+
+      view.rerender(
+        <ApplicationContext.Provider
+          value={{ apiClient: api } as unknown as React.ContextType<typeof ApplicationContext>}
+        >
+          {provider.renderEditor({
+            value: entryBValue,
+            locator,
+            surfaceStyle: 'value',
+            onChange,
+          })}
+        </ApplicationContext.Provider>,
+      );
+
+      await waitFor(() =>
+        expect(getSettingsDescriptor).toHaveBeenCalledWith(
+          expect.objectContaining({
+            sourceBinding: expect.objectContaining({ entryId: 'entry_b' }),
+          }),
+        ),
+      );
+      expect(screen.queryByRole('textbox', { name: 'Alpha setting' })).not.toBeInTheDocument();
+      expect(onChange).not.toHaveBeenCalled();
+
+      resolveNextDescriptor?.({
+        entryId: 'entry_b',
+        settingsSchemaHash: 'schema_b',
+        schema: {
+          type: 'object',
+          properties: {
+            beta: { type: 'string', title: 'Beta setting', default: 'beta-default' },
+          },
+        },
+      });
+
+      expect(await screen.findByRole('textbox', { name: 'Beta setting' })).toHaveValue('saved-beta');
+      expect(onChange).not.toHaveBeenCalled();
+    } finally {
+      unregisterResolver();
+    }
   });
 
   it('opens the selected light extension workspace for JS block render editors', () => {

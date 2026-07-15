@@ -56,7 +56,7 @@ export const DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES: readonly LightExtensionTree
     content: `const { Card, Space, Tag, Typography } = ctx.libs.antd;
 const dayjs = ctx.libs.dayjs;
 const user = ctx.user ?? ctx.auth?.user ?? null;
-const displayName = user?.nickname ?? user?.username ?? ctx.t('Anonymous');
+const displayName = String(user?.nickname ?? user?.username ?? ctx.t('Anonymous'));
 const title = ctx.t(String(ctx.settings?.title || 'Welcome'));
 const description = ctx.t(
   String(ctx.settings?.description || 'Build reusable UI with light extensions.'),
@@ -89,7 +89,7 @@ ctx.render(
   "key": "welcome-card",
   "title": "Welcome card",
   "description": "Configurable welcome card with a timestamp and accent color.",
-  "category": "Examples",
+  "category": "examples",
   "tags": ["JS Block", "Ant Design"],
   "sort": 10,
   "settings": {
@@ -108,19 +108,25 @@ ctx.render(
 const collectionName = String(ctx.settings?.collectionName || 'users');
 const displayField = String(ctx.settings?.displayField || 'username');
 const pageSize = Number(ctx.settings?.pageSize || 5);
-const resource = ctx.makeResource?.('MultiRecordResource');
-
-if (!resource) {
-  ctx.render(<Alert type="warning" showIcon message={ctx.t('Resource is unavailable')} />);
-  return;
-}
+const toRecord = (value: unknown): Record<string, unknown> =>
+  value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
 
 try {
+  ctx.initResource('MultiRecordResource');
+  const resource = ctx.resource;
+  if (!resource.setResourceName || !resource.runAction) {
+    throw new Error(ctx.t('Unable to initialize resource'));
+  }
   resource.setResourceName(collectionName);
-  resource.setPageSize?.(pageSize);
-  resource.setSort?.(['-createdAt']);
-  await resource.refresh();
-  const rows = resource.getData?.() || [];
+  const result = await resource.runAction('list', {
+    method: 'get',
+    params: {
+      pageSize,
+      sort: ['-createdAt'],
+    },
+  });
+  const resultData = toRecord(result).data;
+  const rows = Array.isArray(resultData) ? resultData : [];
 
   ctx.render(
     <Card size="small" title={ctx.t(String(ctx.settings?.title || 'Recent records'))}>
@@ -128,13 +134,16 @@ try {
         <List
           size="small"
           dataSource={rows}
-          renderItem={(row) => (
-            <List.Item>
-              <Typography.Text>
-                {String(row?.[displayField] ?? row?.name ?? row?.id ?? '-')}
-              </Typography.Text>
-            </List.Item>
-          )}
+          renderItem={(row) => {
+            const record = toRecord(row);
+            return (
+              <List.Item>
+                <Typography.Text>
+                  {String(record[displayField] ?? record.name ?? record.id ?? '-')}
+                </Typography.Text>
+              </List.Item>
+            );
+          }}
         />
       ) : (
         <Empty description={ctx.t(String(ctx.settings?.emptyText || 'No data'))} />
@@ -142,12 +151,13 @@ try {
     </Card>,
   );
 } catch (error) {
+  const errorMessage = error instanceof Error ? error.message : String(error);
   ctx.render(
     <Alert
       type="error"
       showIcon
       message={ctx.t('Failed to load data')}
-      description={String(error?.message || error)}
+      description={errorMessage}
     />,
   );
 }
@@ -161,7 +171,7 @@ try {
   "key": "collection-summary",
   "title": "Collection summary",
   "description": "Loads recent records through a MultiRecordResource and renders an Ant Design list.",
-  "category": "Examples",
+  "category": "examples",
   "tags": ["JS Block", "Resource"],
   "sort": 20,
   "settings": {
@@ -177,7 +187,7 @@ try {
   },
   {
     path: 'src/client/js-actions/refresh-data/index.ts',
-    content: `const resource = ctx.resource || ctx.blockModel?.resource;
+    content: `const resource = ctx.resource;
 
 if (!resource?.refresh) {
   ctx.message.warning(ctx.t(String(ctx.settings?.unavailableMessage || 'No resource to refresh')));
@@ -198,7 +208,7 @@ if (ctx.settings?.notifySuccess !== false) {
   "key": "refresh-data",
   "title": "Refresh data",
   "description": "Refreshes the current resource and optionally shows a success message.",
-  "category": "Examples",
+  "category": "examples",
   "tags": ["JS Action", "Resource"],
   "sort": 10,
   "settings": {
@@ -211,43 +221,43 @@ if (ctx.settings?.notifySuccess !== false) {
     language: 'json',
   },
   {
-    path: 'src/client/js-actions/validate-and-submit/index.ts',
-    content: `const values = ctx.form?.getFieldsValue?.() || ctx.formValues || {};
-const fieldName = String(ctx.settings?.requiredField || 'title');
-const rawValue = values?.[fieldName];
-const normalized =
-  ctx.settings?.trimValue === false || typeof rawValue !== 'string' ? rawValue : rawValue.trim();
+    path: 'src/client/js-actions/confirm-action/index.ts',
+    content: `const { Modal } = ctx.libs.antd;
+const confirmed = await new Promise<boolean>((resolve) => {
+  Modal.confirm({
+    title: ctx.t(String(ctx.settings?.title || 'Confirm action')),
+    content: ctx.t(String(ctx.settings?.content || 'Continue with this action?')),
+    okText: ctx.t(String(ctx.settings?.confirmText || 'Continue')),
+    cancelText: ctx.t(String(ctx.settings?.cancelText || 'Cancel')),
+    onOk: () => resolve(true),
+    onCancel: () => resolve(false),
+  });
+});
 
-if (normalized == null || normalized === '') {
-  ctx.message.error(ctx.t(String(ctx.settings?.requiredMessage || 'This field is required')));
+if (!confirmed) {
   return;
 }
 
-if (!ctx.form?.submit) {
-  ctx.message.warning(ctx.t('Form is unavailable'));
-  return;
-}
-
-await ctx.form.submit();
-ctx.message.success(ctx.t(String(ctx.settings?.successMessage || 'Form submitted')));
+ctx.message.success(ctx.t(String(ctx.settings?.successMessage || 'Action confirmed')));
 `,
     language: 'typescript',
   },
   {
-    path: 'src/client/js-actions/validate-and-submit/entry.json',
+    path: 'src/client/js-actions/confirm-action/entry.json',
     content: `{
   "schemaVersion": 1,
-  "key": "validate-and-submit",
-  "title": "Validate and submit",
-  "description": "Validates one configured field before submitting the current form.",
-  "category": "Examples",
-  "tags": ["JS Action", "Form"],
+  "key": "confirm-action",
+  "title": "Confirm action",
+  "description": "Shows a configurable confirmation dialog before running an action.",
+  "category": "examples",
+  "tags": ["JS Action", "Confirmation"],
   "sort": 20,
   "settings": {
-    "requiredField": { "type": "string", "title": "Required field", "default": "title", "required": true, "x-component": "Input" },
-    "requiredMessage": { "type": "string", "title": "Required message", "default": "This field is required", "x-component": "Input" },
-    "successMessage": { "type": "string", "title": "Success message", "default": "Form submitted", "x-component": "Input" },
-    "trimValue": { "type": "boolean", "title": "Trim string value", "default": true, "x-component": "Switch" }
+    "title": { "type": "string", "title": "Dialog title", "default": "Confirm action", "required": true, "x-component": "Input" },
+    "content": { "type": "string", "title": "Dialog content", "default": "Continue with this action?", "x-component": "Input.TextArea" },
+    "confirmText": { "type": "string", "title": "Confirm text", "default": "Continue", "x-component": "Input" },
+    "cancelText": { "type": "string", "title": "Cancel text", "default": "Cancel", "x-component": "Input" },
+    "successMessage": { "type": "string", "title": "Success message", "default": "Action confirmed", "x-component": "Input" }
   }
 }
 `,
@@ -256,7 +266,7 @@ ctx.message.success(ctx.t(String(ctx.settings?.successMessage || 'Form submitted
   {
     path: 'src/client/js-fields/status-tag/index.tsx',
     content: `const { Tag } = ctx.libs.antd;
-const rawValue = ctx.value;
+const rawValue = ctx.getValue?.() ?? ctx.value;
 const status =
   rawValue == null || String(rawValue).trim() === ''
     ? String(ctx.settings?.emptyText || ctx.t('Unknown'))
@@ -281,7 +291,7 @@ ctx.render(<Tag color={color}>{ctx.t(status)}</Tag>);
   "key": "status-tag",
   "title": "Status tag",
   "description": "Renders a bound field value as a configurable Ant Design tag.",
-  "category": "JS Field",
+  "category": "js-field",
   "tags": ["JS Field", "Display"],
   "sort": 10,
   "settings": {
@@ -299,23 +309,37 @@ ctx.render(<Tag color={color}>{ctx.t(status)}</Tag>);
   {
     path: 'src/client/js-fields/editable-text/index.tsx',
     content: `const { Input } = ctx.libs.antd;
-const currentValue = ctx.getValue ? await ctx.getValue() : ctx.value;
-const updateValue = (nextValue) => ctx.setValue?.(nextValue);
+const useState = (
+  ctx.libs.React as {
+    useState(initialValue: string): [string, (nextValue: string) => void];
+  }
+).useState;
+const initialValue = ctx.getValue?.() ?? ctx.value;
 
-ctx.render(
-  <Input
-    allowClear={ctx.settings?.allowClear !== false}
-    defaultValue={currentValue == null ? '' : String(currentValue)}
-    maxLength={Number(ctx.settings?.maxLength || 80)}
-    placeholder={ctx.t(String(ctx.settings?.placeholder || 'Enter a value'))}
-    onChange={(event) => updateValue(event.target.value)}
-    onBlur={(event) => {
-      if (ctx.settings?.trimOnBlur !== false) {
-        updateValue(event.target.value.trim());
-      }
-    }}
-  />,
-);
+function EditableText() {
+  const [value, setValue] = useState(initialValue == null ? '' : String(initialValue));
+  const updateValue = (nextValue: string) => {
+    setValue(nextValue);
+    ctx.setValue?.(nextValue);
+  };
+
+  return (
+    <Input
+      allowClear={ctx.settings?.allowClear !== false}
+      value={value}
+      maxLength={Number(ctx.settings?.maxLength ?? 80)}
+      placeholder={ctx.t(String(ctx.settings?.placeholder || 'Enter a value'))}
+      onChange={(event) => updateValue(event.target.value)}
+      onBlur={(event) => {
+        if (ctx.settings?.trimOnBlur !== false) {
+          updateValue(event.target.value.trim());
+        }
+      }}
+    />
+  );
+}
+
+ctx.render(<EditableText />);
 `,
     language: 'typescript',
   },
@@ -326,7 +350,7 @@ ctx.render(
   "key": "editable-text",
   "title": "Editable text",
   "description": "Renders an editable input and writes changes through ctx.setValue().",
-  "category": "JS Field",
+  "category": "js-field",
   "tags": ["JS Field", "Form"],
   "sort": 20,
   "settings": {
@@ -342,7 +366,11 @@ ctx.render(
   {
     path: 'src/client/js-fields/record-status-column/index.tsx',
     content: `const { Tag } = ctx.libs.antd;
-const record = (await ctx.getVar('ctx.record')) || ctx.record || {};
+const resolvedRecord = await ctx.getVar('ctx.record');
+const record =
+  resolvedRecord && typeof resolvedRecord === 'object' && !Array.isArray(resolvedRecord)
+    ? (resolvedRecord as Record<string, unknown>)
+    : {};
 const fieldName = String(ctx.settings?.fieldName || 'status');
 const status = String(record?.[fieldName] ?? ctx.settings?.emptyText ?? ctx.t('Unknown'));
 const activeValue = String(ctx.settings?.activeValue || 'active');
@@ -365,7 +393,7 @@ ctx.render(<Tag color={color}>{ctx.t(status)}</Tag>);
   "key": "record-status-column",
   "title": "Record status column",
   "description": "Standalone JS Column that reads a configurable field from the current table record.",
-  "category": "JS Column",
+  "category": "js-column",
   "tags": ["JS Column", "Table"],
   "sort": 30,
   "settings": {
@@ -384,7 +412,11 @@ ctx.render(<Tag color={color}>{ctx.t(status)}</Tag>);
   {
     path: 'src/client/js-fields/record-summary-column/index.tsx',
     content: `const { Space, Typography } = ctx.libs.antd;
-const record = (await ctx.getVar('ctx.record')) || ctx.record || {};
+const resolvedRecord = await ctx.getVar('ctx.record');
+const record =
+  resolvedRecord && typeof resolvedRecord === 'object' && !Array.isArray(resolvedRecord)
+    ? (resolvedRecord as Record<string, unknown>)
+    : {};
 const primary = record?.[String(ctx.settings?.primaryField || 'title')];
 const secondary = record?.[String(ctx.settings?.secondaryField || 'name')];
 const parts = [primary, secondary]
@@ -394,9 +426,7 @@ const text = parts.join(String(ctx.settings?.separator || ' · ')) || String(ctx
 
 ctx.render(
   <Space size={6}>
-    {ctx.settings?.showRowNumber !== false ? (
-      <Typography.Text type="secondary">#{Number(ctx.recordIndex || 0) + 1}</Typography.Text>
-    ) : null}
+    <Typography.Text type="secondary">{ctx.t('Summary')}</Typography.Text>
     <Typography.Text ellipsis={{ tooltip: text }}>{text}</Typography.Text>
   </Space>,
 );
@@ -409,15 +439,14 @@ ctx.render(
   "schemaVersion": 1,
   "key": "record-summary-column",
   "title": "Record summary column",
-  "description": "Standalone JS Column that combines two configurable fields and the row number.",
-  "category": "JS Column",
+  "description": "Standalone JS Column that combines two configurable fields into one compact summary.",
+  "category": "js-column",
   "tags": ["JS Column", "Table"],
   "sort": 40,
   "settings": {
     "primaryField": { "type": "string", "title": "Primary field", "default": "title", "required": true, "x-component": "Input" },
     "secondaryField": { "type": "string", "title": "Secondary field", "default": "name", "x-component": "Input" },
     "separator": { "type": "string", "title": "Separator", "default": " · ", "x-component": "Input" },
-    "showRowNumber": { "type": "boolean", "title": "Show row number", "default": true, "x-component": "Switch" },
     "emptyText": { "type": "string", "title": "Empty text", "default": "-", "x-component": "Input" }
   }
 }
@@ -427,7 +456,11 @@ ctx.render(
   {
     path: 'src/client/js-items/form-total-preview/index.tsx',
     content: `const { Card, Statistic } = ctx.libs.antd;
-const values = ctx.formValues || ctx.form?.getFieldsValue?.() || {};
+const resolvedValues = await ctx.getVar('ctx.formValues');
+const values =
+  resolvedValues && typeof resolvedValues === 'object' && !Array.isArray(resolvedValues)
+    ? (resolvedValues as Record<string, unknown>)
+    : {};
 const quantityField = String(ctx.settings?.quantityField || 'quantity');
 const unitPriceField = String(ctx.settings?.unitPriceField || 'unitPrice');
 const quantity = Number(values?.[quantityField] || 0);
@@ -443,7 +476,7 @@ ctx.render(
     <Statistic
       title={ctx.t('Calculated total')}
       value={quantity * unitPrice}
-      precision={Number(ctx.settings?.precision || 2)}
+      precision={Number(ctx.settings?.precision ?? 2)}
       prefix={String(ctx.settings?.currency || 'USD')}
     />
   </Card>,
@@ -458,7 +491,7 @@ ctx.render(
   "key": "form-total-preview",
   "title": "Form total preview",
   "description": "Standalone form item that previews quantity multiplied by unit price.",
-  "category": "JS Item",
+  "category": "js-item",
   "tags": ["JS Item", "Form"],
   "sort": 10,
   "settings": {
@@ -515,7 +548,7 @@ ctx.render(
   "key": "selection-tools",
   "title": "Selection tools",
   "description": "Custom action item with buttons for inspecting selected rows and refreshing data.",
-  "category": "JS Item",
+  "category": "js-item",
   "tags": ["JS Item", "Action bar"],
   "sort": 20,
   "settings": {
@@ -530,10 +563,14 @@ ctx.render(
   },
   {
     path: 'src/client/runjs/calculate-subtotal/index.ts',
-    content: `const values = ctx.formValues || {};
+    content: `const resolvedValues = await ctx.getVar('ctx.formValues');
+const values =
+  resolvedValues && typeof resolvedValues === 'object' && !Array.isArray(resolvedValues)
+    ? (resolvedValues as Record<string, unknown>)
+    : {};
 const quantity = Number(values?.[String(ctx.settings?.quantityField || 'quantity')] || 0);
 const unitPrice = Number(values?.[String(ctx.settings?.unitPriceField || 'unitPrice')] || 0);
-const precision = Number(ctx.settings?.precision || 2);
+const precision = Number(ctx.settings?.precision ?? 2);
 
 return Number((quantity * unitPrice).toFixed(precision));
 `,
@@ -546,7 +583,7 @@ return Number((quantity * unitPrice).toFixed(precision));
   "key": "calculate-subtotal",
   "title": "Calculate subtotal",
   "description": "Value-return RunJS that multiplies two configurable form fields.",
-  "category": "RunJS",
+  "category": "runjs",
   "tags": ["RunJS", "Form value"],
   "sort": 10,
   "settings": {
@@ -560,10 +597,14 @@ return Number((quantity * unitPrice).toFixed(precision));
   },
   {
     path: 'src/client/runjs/calculate-total-with-tax/index.ts',
-    content: `const values = ctx.formValues || {};
+    content: `const resolvedValues = await ctx.getVar('ctx.formValues');
+const values =
+  resolvedValues && typeof resolvedValues === 'object' && !Array.isArray(resolvedValues)
+    ? (resolvedValues as Record<string, unknown>)
+    : {};
 const subtotal = Number(values?.[String(ctx.settings?.subtotalField || 'subtotal')] || 0);
 const taxRate = Number(values?.[String(ctx.settings?.taxRateField || 'taxRate')] || 0);
-const precision = Number(ctx.settings?.precision || 2);
+const precision = Number(ctx.settings?.precision ?? 2);
 
 return Number((subtotal + subtotal * taxRate).toFixed(precision));
 `,
@@ -576,7 +617,7 @@ return Number((subtotal + subtotal * taxRate).toFixed(precision));
   "key": "calculate-total-with-tax",
   "title": "Calculate total with tax",
   "description": "Value-return RunJS that adds a configurable tax-rate field to a subtotal.",
-  "category": "RunJS",
+  "category": "runjs",
   "tags": ["RunJS", "Form value"],
   "sort": 20,
   "settings": {

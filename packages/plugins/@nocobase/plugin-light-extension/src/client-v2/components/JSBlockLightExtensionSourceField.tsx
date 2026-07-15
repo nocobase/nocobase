@@ -61,6 +61,14 @@ type SourceSelectOption = {
   searchText: string;
 };
 
+function serializeSourceFormValues(values: JSBlockRunJSFormValues): string {
+  return JSON.stringify({
+    sourceMode: values.sourceMode,
+    sourceBinding: values.sourceBinding,
+    settings: values.settings,
+  });
+}
+
 export interface JSBlockLightExtensionSourceFieldProps {
   value?: string | LightExtensionRuntimeSourceBinding | null;
   onChange?: (value: string | LightExtensionRuntimeSourceBinding | undefined) => void;
@@ -111,6 +119,10 @@ function setFieldErrors(field: Field, errors: string[]) {
     setSelfErrors?: (messages: string[] | string) => void;
     selfErrors?: string[];
   };
+  const currentErrors = Array.isArray(target.selfErrors) ? target.selfErrors : [];
+  if (currentErrors.length === errors.length && currentErrors.every((message, index) => message === errors[index])) {
+    return;
+  }
   if (typeof target.setSelfErrors === 'function') {
     target.setSelfErrors(errors);
     return;
@@ -168,6 +180,7 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
   const app = React.useContext(ApplicationContext) as ApplicationWithApi | null;
   const api = ctx?.api || app?.apiClient;
   const [, rerender] = React.useReducer((count: number) => count + 1, 0);
+  const formSignatureRef = React.useRef(serializeSourceFormValues(form.values as JSBlockRunJSFormValues));
   const [copying, setCopying] = React.useState(false);
   const [sourceEntries, setSourceEntries] = React.useState<LightExtensionSelectableEntrySummary[]>([]);
   const [sourceEntriesLoading, setSourceEntriesLoading] = React.useState(false);
@@ -240,6 +253,11 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
 
   React.useEffect(() => {
     const subscriptionId = form.subscribe(() => {
+      const nextSignature = serializeSourceFormValues(form.values as JSBlockRunJSFormValues);
+      if (nextSignature === formSignatureRef.current) {
+        return;
+      }
+      formSignatureRef.current = nextSignature;
       rerender();
     });
     return () => {
@@ -473,7 +491,26 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
   );
 
   if (!rendersSourceModeControl) {
-    return sourceMode === LIGHT_EXTENSION_SOURCE_MODE ? lightExtensionBinding : null;
+    if (sourceMode !== LIGHT_EXTENSION_SOURCE_MODE) {
+      return null;
+    }
+    return (
+      <Space direction="vertical" style={{ width: '100%' }} size={12}>
+        <Select
+          aria-label={t('Code source')}
+          disabled={disabled}
+          loading={sourceEntriesLoading}
+          value={sourceSelectValue}
+          showSearch
+          optionFilterProp="searchText"
+          options={sourceSelectOptions.filter((option) => option.value !== INLINE_SOURCE_SELECT_VALUE)}
+          onChange={handleSourceSelectChange}
+          placeholder={t('Select a light extension entry')}
+        />
+        {sourceEntriesError ? <Alert type="error" showIcon message={sourceEntriesError} /> : null}
+        {lightExtensionBinding}
+      </Space>
+    );
   }
 
   return (

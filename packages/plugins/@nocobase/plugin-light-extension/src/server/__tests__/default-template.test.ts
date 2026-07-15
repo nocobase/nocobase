@@ -21,8 +21,23 @@ import { LightExtensionPermissionService } from '../services/LightExtensionPermi
 import { LightExtensionValidator } from '../services/LightExtensionValidator';
 import { LightExtensionWorkspaceCompilerBridge } from '../services/LightExtensionWorkspaceCompilerBridge';
 
+const EXPECTED_ENTRY_PATHS = [
+  'src/client/js-blocks/welcome-card/index.tsx',
+  'src/client/js-blocks/collection-summary/index.tsx',
+  'src/client/js-actions/refresh-data/index.ts',
+  'src/client/js-actions/confirm-action/index.ts',
+  'src/client/js-fields/status-tag/index.tsx',
+  'src/client/js-fields/editable-text/index.tsx',
+  'src/client/js-fields/record-status-column/index.tsx',
+  'src/client/js-fields/record-summary-column/index.tsx',
+  'src/client/js-items/form-total-preview/index.tsx',
+  'src/client/js-items/selection-tools/index.tsx',
+  'src/client/runjs/calculate-subtotal/index.ts',
+  'src/client/runjs/calculate-total-with-tax/index.ts',
+] as const;
+
 describe('plugin-light-extension default source template', () => {
-  it('contains the simple multi-kind example layout and passes source validation', () => {
+  it('contains two configurable examples for every supported surface and passes source validation', () => {
     const files = createDefaultLightExtensionTemplate();
     const paths = files.map((file) => file.path);
     const diagnostics = new LightExtensionValidator().validateInitialFiles({ files });
@@ -30,30 +45,48 @@ describe('plugin-light-extension default source template', () => {
     expect(paths).toEqual([
       'README.md',
       'tsconfig.json',
-      'src/client/js-blocks/example/index.tsx',
-      'src/client/js-blocks/example/entry.json',
-      'src/client/js-actions/example/index.ts',
-      'src/client/js-actions/example/entry.json',
-      'src/client/js-fields/example/index.tsx',
-      'src/client/js-fields/example/entry.json',
-      'src/client/js-items/example/index.tsx',
-      'src/client/js-items/example/entry.json',
+      ...EXPECTED_ENTRY_PATHS.flatMap((path) => [path, path.replace(/\/index\.[^.]+$/u, '/entry.json')]),
     ]);
     expect(diagnostics).toEqual([]);
     expect(DEFAULT_LIGHT_EXTENSION_README).toContain('src/client/js-blocks/<entry-name>/index.tsx');
     expect(DEFAULT_LIGHT_EXTENSION_README).toContain('src/client/js-actions/<entry-name>/index.ts');
     expect(DEFAULT_LIGHT_EXTENSION_README).toContain('src/client/js-fields/<entry-name>/index.tsx');
     expect(DEFAULT_LIGHT_EXTENSION_README).toContain('src/client/js-items/<entry-name>/index.tsx');
+    expect(DEFAULT_LIGHT_EXTENSION_README).toContain('JS Column');
+    expect(DEFAULT_LIGHT_EXTENSION_README).toContain('src/client/runjs/<entry-name>/index.ts');
     expect(DEFAULT_LIGHT_EXTENSION_README).toContain('entry.json');
     expect(DEFAULT_LIGHT_EXTENSION_README).toContain('stable technical identity');
-    expect(DEFAULT_LIGHT_EXTENSION_README).toContain('top-level property');
+    expect(DEFAULT_LIGHT_EXTENSION_README).toContain('every property');
     expect(DEFAULT_LIGHT_EXTENSION_README).toContain('independent settings menu');
-    expect(DEFAULT_LIGHT_EXTENSION_README).toContain('supports only these four entry kinds');
+    expect(DEFAULT_LIGHT_EXTENSION_README).toContain('value-return RunJS entries');
     expect(DEFAULT_LIGHT_EXTENSION_README).toContain('never probe a Schema URL over the network');
     expect(paths.some((path) => path.endsWith('/meta.json') || path.endsWith('/settings.json'))).toBe(false);
-    expect(paths.some((path) => path.includes('/runjs/'))).toBe(false);
-    for (const descriptor of files.filter((file) => file.path.endsWith('/entry.json'))) {
-      expect(JSON.parse(descriptor.content || '{}')).toEqual({ schemaVersion: 1, key: 'example' });
+    const descriptors = files
+      .filter((file) => file.path.endsWith('/entry.json'))
+      .map((file) => JSON.parse(file.content || '{}') as Record<string, unknown>);
+    expect(new Set(descriptors.map((descriptor) => descriptor.key)).size).toBe(EXPECTED_ENTRY_PATHS.length);
+    expect(
+      descriptors.reduce<Record<string, number>>((counts, descriptor) => {
+        const category = String(descriptor.category || '');
+        counts[category] = (counts[category] || 0) + 1;
+        return counts;
+      }, {}),
+    ).toMatchObject({
+      'js-field': 2,
+      'js-column': 2,
+      'js-item': 2,
+      runjs: 2,
+    });
+    for (const descriptor of descriptors) {
+      expect(descriptor).toEqual(
+        expect.objectContaining({
+          schemaVersion: 1,
+          key: expect.any(String),
+          title: expect.any(String),
+          description: expect.any(String),
+          settings: expect.any(Object),
+        }),
+      );
     }
     expect(
       files.filter((file) => file.path.endsWith('/index.tsx')).every((file) => file.language === 'typescript'),
@@ -61,7 +94,10 @@ describe('plugin-light-extension default source template', () => {
     expect(files.filter((file) => file.path.endsWith('/entry.json')).every((file) => file.language === 'json')).toBe(
       true,
     );
-    expect(DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES).toHaveLength(10);
+    const collectionSummary = files.find((file) => file.path === 'src/client/js-blocks/collection-summary/index.tsx');
+    expect(collectionSummary?.content).toContain("ctx.initResource('MultiRecordResource');");
+    expect(collectionSummary?.content).toContain('const resource = ctx.resource;');
+    expect(DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES).toHaveLength(26);
   });
 
   it('returns a fresh file array for each repository', () => {
@@ -79,12 +115,10 @@ describe('plugin-light-extension default source template', () => {
       auditService,
       new LightExtensionPermissionService(auditService),
     );
-    const cases: Array<{ kind: LightExtensionKind; entryPath: string }> = [
-      { kind: 'js-block', entryPath: 'src/client/js-blocks/example/index.tsx' },
-      { kind: 'js-action', entryPath: 'src/client/js-actions/example/index.ts' },
-      { kind: 'js-field', entryPath: 'src/client/js-fields/example/index.tsx' },
-      { kind: 'js-item', entryPath: 'src/client/js-items/example/index.tsx' },
-    ];
+    const cases: Array<{ kind: LightExtensionKind; entryPath: string }> = EXPECTED_ENTRY_PATHS.map((entryPath) => ({
+      kind: getKindFromEntryPath(entryPath),
+      entryPath,
+    }));
 
     for (const item of cases) {
       const rootPath = item.entryPath.slice(0, item.entryPath.lastIndexOf('/'));
@@ -98,8 +132,18 @@ describe('plugin-light-extension default source template', () => {
         ),
       });
 
-      expect(result.accepted, item.kind).toBe(true);
-      expect(result.diagnostics, item.kind).toEqual([]);
+      expect(result.accepted, `${item.kind}:${item.entryPath}\n${JSON.stringify(result.diagnostics, null, 2)}`).toBe(
+        true,
+      );
+      expect(result.diagnostics, `${item.kind}:${item.entryPath}`).toEqual([]);
     }
   });
 });
+
+function getKindFromEntryPath(entryPath: string): LightExtensionKind {
+  if (entryPath.startsWith('src/client/js-blocks/')) return 'js-block';
+  if (entryPath.startsWith('src/client/js-actions/')) return 'js-action';
+  if (entryPath.startsWith('src/client/js-fields/')) return 'js-field';
+  if (entryPath.startsWith('src/client/js-items/')) return 'js-item';
+  return 'runjs';
+}

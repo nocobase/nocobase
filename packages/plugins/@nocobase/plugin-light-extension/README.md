@@ -120,9 +120,9 @@ yarn test packages/plugins/@nocobase/plugin-light-extension/src/client-v2/__test
 
 ## UI Integration Contract
 
-Light extensions are selected from the code-source settings of existing JS Block, JS Item, JS Field, and JS Action surfaces. The plugin must not inject light-extension entries into Add Block, Add Field, or Add Action menus. When an existing surface opens **Write JavaScript** with a light-extension binding, the editor opens that repository workspace at the bound `entryPath`.
+Light extensions are selected from the code-source settings of existing JS Block, JS Item, JS Field, JS Column, JS Action, and value-return RunJS surfaces. JS Column reuses the `js-field` kind because both surfaces share the same render contract. The plugin must not inject light-extension entries into Add Block, Add Field, or Add Action menus. When an existing surface opens **Write JavaScript** with a light-extension binding, the editor opens that repository workspace at the bound `entryPath`.
 
-An entry-bound workspace can edit the selected entry directory and files outside all managed entry roots, such as shared helpers and repository metadata. Other entries under `js-blocks`, `js-actions`, `js-items`, and `js-fields` remain viewable but read-only. Repository management opens the same workspace without this entry scope and retains full authoring access.
+An entry-bound workspace can edit the selected entry directory and files outside all managed entry roots, such as shared helpers and repository metadata. Other entries under `js-blocks`, `js-actions`, `js-items`, `js-fields`, and `runjs` remain viewable but read-only. Repository management opens the same workspace without this entry scope and retains full authoring access.
 
 ## Move RunJS Source Contract
 
@@ -166,6 +166,7 @@ If any step fails, destination source, compiled artifacts, host binding, and ref
 | --- | --- | --- |
 | `flowModel.step` with `JSBlockModel` | `js-block` | Supported |
 | `flowModel.step` with JS Field/Action/Item owner metadata | `js-field`, `js-action`, or `js-item` | Supported |
+| `flowModel.nestedRunJS` with a value-return RunJS host | `runjs` | Supported |
 | Workflow JavaScript, chart option/events, or FlowRegistry RunJS | N/A | Not exposed; adapter has no external-binding writer |
 
 ### Validation and errors

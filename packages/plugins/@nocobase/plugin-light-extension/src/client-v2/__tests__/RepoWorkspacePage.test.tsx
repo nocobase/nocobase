@@ -1420,7 +1420,7 @@ describe('LightExtensionWorkspacePage', () => {
 
     await screen.findAllByText('README.md');
     expect(screen.getByTestId('runjs-code-tab').getAttribute('data-workspace-files')).toContain(
-      'src/client/js-blocks/example/index.tsx',
+      'src/client/js-blocks/welcome-card/index.tsx',
     );
     expect(screen.getByRole('button', { name: /Save/ })).toBeDisabled();
     expect(mocks.api.saveSource).not.toHaveBeenCalled();
@@ -1522,7 +1522,7 @@ describe('LightExtensionWorkspacePage', () => {
 
     await screen.findByTestId('runjs-code-tab');
     fireEvent.click(screen.getByRole('button', { name: 'New default file' }));
-    expect(await screen.findByText('src/client/js-fields/example/index.tsx')).toBeInTheDocument();
+    expect(await screen.findByText('src/client/js-fields/status-tag/index.tsx')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Save/ }));
     await confirmSaveVersion('Add JS field example');
 
@@ -1530,8 +1530,10 @@ describe('LightExtensionWorkspacePage', () => {
     expect(mocks.api.saveSource.mock.calls[0][0].files).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          path: 'src/client/js-fields/example/index.tsx',
-          content: "ctx.render(<span>{String(ctx.value ?? '')}</span>);\n",
+          path: 'src/client/js-fields/status-tag/index.tsx',
+          content: DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES.find(
+            (file) => file.path === 'src/client/js-fields/status-tag/index.tsx',
+          )?.content,
           operation: 'upsert',
         }),
       ]),

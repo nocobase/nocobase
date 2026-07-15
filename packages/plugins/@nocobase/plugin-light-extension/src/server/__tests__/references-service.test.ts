@@ -19,6 +19,8 @@ import {
   createReferenceRecord,
   createReferenceServiceFixture,
   createRepoRecord,
+  createRunJSEntryRecord,
+  createRunJSHostNode,
   stableJsonHash,
 } from './reference-test-helpers';
 
@@ -146,7 +148,7 @@ describe('plugin-light-extension references service', () => {
     }
   });
 
-  it('indexes JS field, action, and item references', async () => {
+  it('indexes JS field, action, item, and RunJS host references', async () => {
     const { service, repositories } = createReferenceServiceFixture({
       flowModelTrees: {
         root: {
@@ -155,6 +157,7 @@ describe('plugin-light-extension references service', () => {
             field: createJsFieldNode(),
             action: createJsActionNode(),
             item: createJsItemNode(),
+            runjs: createRunJSHostNode({ storage: 'flowRegistry' }),
           },
         },
       },
@@ -162,8 +165,14 @@ describe('plugin-light-extension references service', () => {
         createRepoRecord({ id: 'ler_fields' }),
         createRepoRecord({ id: 'ler_actions' }),
         createRepoRecord({ id: 'ler_items' }),
+        createRepoRecord({ id: 'ler_runjs' }),
       ],
-      entries: [createJsFieldEntryRecord(), createJsActionEntryRecord(), createJsItemEntryRecord()],
+      entries: [
+        createJsFieldEntryRecord(),
+        createJsActionEntryRecord(),
+        createJsItemEntryRecord(),
+        createRunJSEntryRecord(),
+      ],
     });
 
     const result = await service.syncFlowModelReferencesForNodeTree({
@@ -172,17 +181,51 @@ describe('plugin-light-extension references service', () => {
     });
 
     expect(result).toMatchObject({
-      scanned: 3,
-      upserted: 3,
+      scanned: 4,
+      upserted: 4,
       statusCounts: {
-        active: 3,
+        active: 4,
       },
     });
     expect(repositories.lightExtensionReferences.records.map((record) => record.get('kind')).sort()).toEqual([
       'js-action',
       'js-field',
       'js-item',
+      'runjs',
     ]);
+  });
+
+  it('removes a RunJS host reference after the value switches back to inline source', async () => {
+    const { service, repositories } = createReferenceServiceFixture({
+      flowModelTrees: {
+        flow_form_runjs: createRunJSHostNode(),
+      },
+      repos: [createRepoRecord({ id: 'ler_runjs' })],
+      entries: [createRunJSEntryRecord()],
+    });
+
+    await service.syncFlowModelReferencesForNodeTree({
+      rootUid: 'flow_form_runjs',
+      action: 'flowModels.save',
+    });
+    expect(repositories.lightExtensionReferences.records).toHaveLength(1);
+
+    repositories.flowModels.findModelById.mockResolvedValueOnce(
+      createRunJSHostNode({
+        sourceMode: 'inline',
+      }),
+    );
+
+    const result = await service.syncFlowModelReferencesForNodeTree({
+      rootUid: 'flow_form_runjs',
+      action: 'flowModels.save',
+    });
+
+    expect(result).toMatchObject({
+      scanned: 1,
+      removed: 1,
+    });
+    expect(repositories.lightExtensionReferences.records).toHaveLength(0);
   });
 
   it('refreshes existing references after their runtime no longer matches the repo head', async () => {

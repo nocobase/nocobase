@@ -104,6 +104,7 @@ describe('light extension settings typegen', () => {
       files: [
         descriptor('js-blocks', 'sales-dir', 'sales', 'mode', 'number'),
         descriptor('js-actions', 'order-dir', 'orders', 'confirm', 'boolean'),
+        descriptor('runjs', 'subtotal-dir', 'subtotal', 'precision', 'number'),
       ],
     });
     const sales = createActiveEntryContextType({
@@ -114,13 +115,18 @@ describe('light extension settings typegen', () => {
       activePath: 'src/client/js-actions/order-dir/index.ts',
       entries: result.entries,
     });
+    const subtotal = createActiveEntryContextType({
+      activePath: 'src/client/runjs/subtotal-dir/index.ts',
+      entries: result.entries,
+    });
 
     expect(sales.file?.path).toBe(LIGHT_EXTENSION_ACTIVE_ENTRY_CONTEXT_PATH);
     expect(sales.file?.content).toContain('client/js-block/sales');
     expect(orders.file?.path).toBe(LIGHT_EXTENSION_ACTIVE_ENTRY_CONTEXT_PATH);
     expect(orders.file?.content).toContain('client/js-action/orders');
     expect(orders.file?.content).not.toContain('client/js-block/sales');
-    if (!sales.file || !orders.file) {
+    expect(subtotal.file?.content).toContain('client/runjs/subtotal');
+    if (!sales.file || !orders.file || !subtotal.file) {
       throw new Error('Expected active Entry context declarations');
     }
 
