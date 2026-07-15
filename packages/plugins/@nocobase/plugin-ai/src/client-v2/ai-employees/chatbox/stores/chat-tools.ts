@@ -9,10 +9,8 @@
 
 import { action, define, observable } from '@nocobase/flow-engine';
 import type { Message, ToolCall } from '../../types';
-import { getOrCreateGlobalStore } from '../../stores/global-store';
-import { createObservableStore } from './create-selectors';
 
-interface ChatToolsState {
+type ChatToolsState = {
   toolsByName: Record<
     string,
     (ToolCall<unknown> & {
@@ -33,15 +31,7 @@ interface ChatToolsState {
   activeTool?: ToolCall<unknown>;
   activeMessageId?: string;
   adjustArgs?: Record<string, unknown>;
-}
-
-interface ChatToolsActions {
-  updateTools: (messages: Message[]) => void;
-  setOpenToolModal: (open: boolean) => void;
-  setActiveTool: (tool: ToolCall<unknown>) => void;
-  setActiveMessageId: (messageId: string) => void;
-  setAdjustArgs: (args: Record<string, unknown>) => void;
-}
+};
 
 export class ChatToolModel {
   toolsByName: ChatToolsState['toolsByName'] = observable.shallow({});
@@ -119,53 +109,3 @@ export class ChatToolModel {
     this.adjustArgs = args;
   };
 }
-
-export const useChatToolsStore = getOrCreateGlobalStore('@nocobase/plugin-ai/chat-tools-store', () =>
-  createObservableStore<ChatToolsState & ChatToolsActions>((set) => ({
-    toolsByName: {},
-    toolsByMessageId: {},
-    openToolModal: false,
-    activeTool: null,
-    activeMessageId: '',
-    adjustArgs: {},
-
-    updateTools: (messages) => {
-      const toolsByName: ChatToolsState['toolsByName'] = {};
-      const toolsByMessageId: ChatToolsState['toolsByMessageId'] = {};
-
-      for (const msg of messages) {
-        const toolCalls = msg.content?.tool_calls || [];
-        const messageId = msg.content?.messageId;
-
-        for (const tool of toolCalls) {
-          if (!toolsByName[tool.name]) {
-            toolsByName[tool.name] = [];
-          }
-          toolsByName[tool.name].push({
-            ...tool,
-            messageId,
-          });
-          const version = toolsByName[tool.name].length;
-
-          if (!messageId) {
-            continue;
-          }
-          if (!toolsByMessageId[messageId]) {
-            toolsByMessageId[messageId] = {};
-          }
-          toolsByMessageId[messageId][tool.id] = {
-            ...tool,
-            version,
-          };
-        }
-      }
-
-      set({ toolsByName, toolsByMessageId });
-    },
-
-    setOpenToolModal: (open) => set({ openToolModal: open }),
-    setActiveTool: (tool) => set({ activeTool: tool }),
-    setActiveMessageId: (messageId) => set({ activeMessageId: messageId }),
-    setAdjustArgs: (args) => set({ adjustArgs: args }),
-  })),
-);

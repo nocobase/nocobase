@@ -8,10 +8,8 @@
  */
 
 import { afterEach, describe, expect, it } from 'vitest';
-import type { Conversation, Message } from '../../../types';
+import type { Conversation } from '../../../types';
 import { useChatConversationsStore } from '../chat-conversations';
-import { useChatToolCallStore } from '../chat-tool-call';
-import { useChatToolsStore } from '../chat-tools';
 import { useWorkflowTasksStore, type WorkflowTask } from '../workflow-tasks';
 
 const resetStores = () => {
@@ -23,15 +21,6 @@ const resetStores = () => {
     conversationSegmented: 'conversations',
     unreadCount: 0,
   });
-  useChatToolCallStore.setState({ sessions: {} });
-  useChatToolsStore.setState({
-    toolsByName: {},
-    toolsByMessageId: {},
-    openToolModal: false,
-    activeTool: null,
-    activeMessageId: '',
-    adjustArgs: {},
-  });
   useWorkflowTasksStore.setState({
     workflowTasks: [],
     currentWorkflowTask: undefined,
@@ -41,17 +30,6 @@ const resetStores = () => {
     selectedJobStatus: undefined,
   });
 };
-
-const messageWithToolCalls = (messageId: string, toolCalls: Message['content']['tool_calls']): Message => ({
-  key: messageId,
-  role: 'assistant',
-  content: {
-    type: 'text',
-    content: '',
-    messageId,
-    tool_calls: toolCalls,
-  },
-});
 
 const workflowTask = (sessionId: string, status = 'pending'): WorkflowTask => ({
   id: sessionId,
@@ -103,61 +81,6 @@ describe('client-v2 chatbox stores', () => {
     useChatConversationsStore.getState().markConversationRead('session-a');
     useChatConversationsStore.getState().markConversationRead('missing-session');
     expect(useChatConversationsStore.getState().unreadCount).toBe(0);
-  });
-
-  it('tracks interrupted tool calls per session and migrates session state', () => {
-    const draftSnapshot = useChatToolCallStore.getState().getSessionState('draft-session');
-
-    useChatToolCallStore.getState().updateToolCallInvokeStatus('draft-session', 'message-a', 'tool-a', 'interrupted');
-    useChatToolCallStore.getState().updateToolCallInvokeStatus('other-session', 'message-a', 'tool-a', 'waiting');
-
-    expect(draftSnapshot.toolCalls).toEqual({});
-    expect(useChatToolCallStore.getState().isInterrupted('draft-session', 'message-a', 'tool-a')).toBe(true);
-    expect(useChatToolCallStore.getState().isAllWaiting('draft-session', 'message-a')).toBe(false);
-
-    useChatToolCallStore.getState().updateToolCallInvokeStatus('draft-session', 'message-a', 'tool-a', 'waiting');
-    expect(useChatToolCallStore.getState().isAllWaiting('draft-session', 'message-a')).toBe(true);
-
-    useChatToolCallStore.getState().migrateSessionState('draft-session', 'created-session');
-
-    expect(useChatToolCallStore.getState().getInvokeStatus('created-session', 'message-a', 'tool-a')).toBe('waiting');
-    expect(useChatToolCallStore.getState().getSessionState('draft-session').toolCalls).toEqual({});
-    expect(useChatToolCallStore.getState().getInvokeStatus('other-session', 'message-a', 'tool-a')).toBe('waiting');
-  });
-
-  it('indexes tool calls by name and message id with stable versions', () => {
-    useChatToolsStore.getState().updateTools([
-      messageWithToolCalls('message-a', [
-        {
-          id: 'tool-a',
-          type: 'function',
-          name: 'getSkill',
-          invokeStatus: 'done',
-          auto: false,
-          args: { skill: 'alpha' },
-        },
-      ]),
-      messageWithToolCalls('message-b', [
-        {
-          id: 'tool-b',
-          type: 'function',
-          name: 'getSkill',
-          invokeStatus: 'done',
-          auto: true,
-          args: { skill: 'beta' },
-        },
-      ]),
-    ]);
-
-    expect(useChatToolsStore.getState().toolsByName.getSkill).toHaveLength(2);
-    expect(useChatToolsStore.getState().toolsByName.getSkill[0]).toMatchObject({
-      id: 'tool-a',
-      messageId: 'message-a',
-    });
-    expect(useChatToolsStore.getState().toolsByMessageId['message-b']['tool-b']).toMatchObject({
-      name: 'getSkill',
-      version: 2,
-    });
   });
 
   it('updates workflow task state through direct and functional setters', () => {

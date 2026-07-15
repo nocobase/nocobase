@@ -36,8 +36,6 @@ export type { LLMProviderOptions, ToolModalProps, ToolOptions } from './manager/
 export * from './features';
 export { defaultVectorStorePropForm } from './features/components';
 export { useAIConfigRepository } from './repositories/hooks/useAIConfigRepository';
-export { useChatMessagesStore } from './ai-employees/chatbox/stores/chat-messages';
-export { useChatBoxStore } from './ai-employees/chatbox/stores/chat-box';
 export { useChatConversationsStore } from './ai-employees/chatbox/stores/chat-conversations';
 export { useChatBoxActions } from './ai-employees/chatbox/hooks/useChatBoxActions';
 export {

@@ -27,9 +27,7 @@ import PluginAIClientV2, {
   OptionsFields,
   useAIConfigRepository,
   useChatBoxActions,
-  useChatBoxStore,
   useChatConversationsStore,
-  useChatMessagesStore,
 } from '@nocobase/plugin-ai/client-v2';
 import type {
   AIEmployee,
@@ -66,8 +64,6 @@ describe('plugin-ai client-v2 public API contract', () => {
     expect(AIPluginFeatureManagerImpl).toBeDefined();
     expect(defaultVectorStorePropForm).toBeDefined();
     expect(useAIConfigRepository).toBeDefined();
-    expect(useChatMessagesStore).toBeDefined();
-    expect(useChatBoxStore).toBeDefined();
     expect(useChatConversationsStore).toBeDefined();
     expect(useChatBoxActions).toBeDefined();
   });
