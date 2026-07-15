@@ -602,7 +602,7 @@ Tests:
 
 ### T12. Remove Obsolete Conversation And Workflow Selector Stores
 
-Status: `Pending`
+Status: `Done`
 
 Dependencies: T11
 
@@ -619,6 +619,20 @@ Tests:
 - Run `rg "useChatConversationsStore|useWorkflowTasksStore|createObservableStore|create-selectors" packages/plugins/@nocobase/plugin-ai/src/client-v2 -g '*.ts' -g '*.tsx'` and document any intentional remaining matches.
 - Run touched-file eslint and related tests.
 - Run public API contract tests if public exports change.
+- Verification on 2026-07-16:
+  - Removed `useChatConversationsStore`, `useWorkflowTasksStore`, `createObservableStore`, `create-selectors.ts`, and the obsolete selector store tests.
+  - Removed the public `useChatConversationsStore` export from `src/client-v2/index.tsx` and updated the public API contract test.
+  - `rg "useChatConversationsStore|useWorkflowTasksStore|createObservableStore|create-selectors" packages/plugins/@nocobase/plugin-ai/src/client-v2 -g '*.ts' -g '*.tsx'`: no matches.
+  - `rg "@formily/reactive" packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/tools packages/plugins/@nocobase/plugin-ai/src/client-v2/block -g '*.ts' -g '*.tsx'`: no matches.
+  - `yarn eslint --fix packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/chat-conversations.ts packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/workflow-tasks.ts packages/plugins/@nocobase/plugin-ai/src/client-v2/index.tsx packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/public-api-contract.test.ts`: passed.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/chatbox-models.test.ts --run --reporter=verbose`: passed, 9 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/chatbox-runtime.test.tsx --run --reporter=verbose`: passed, 9 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/chatbox-global-behavior.test.tsx --run --reporter=verbose`: passed, 1 test.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/public-api-contract.test.ts --run --reporter=verbose`: passed, 2 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/AIEmployeeShortcut.test.tsx --run --reporter=verbose`: passed, 2 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/suggestions-options-card.test.tsx --run --reporter=verbose`: passed, 2 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-data-visualization/src/client-v2/flow/models/__tests__/ChartBlockModel.dirtyRefresh.test.ts --run --reporter=verbose`: passed, 16 tests.
+  - `yarn eslint --fix packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/RUNTIME_REFACTOR_PLAN.md`: attempted, but the current ESLint configuration parses `.md` as JavaScript and fails at line 1 with `Parsing error: Invalid character`.
 - Commit after tests pass.
 
 ## Completion Rule
