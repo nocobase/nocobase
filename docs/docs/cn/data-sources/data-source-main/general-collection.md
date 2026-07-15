@@ -73,11 +73,11 @@ keywords: "普通表,General Collection,系统字段,数据表,NocoBase"
 
 可选的主键类型有：
 
-- [文本](../field/basic/input.md)
-- [整数](../field/basic/integer.md)
-- [Snowflake ID (53-bit)](../field/advanced/snowflake-id.md)
-- [UUID](../field/advanced/uuid.md)
-- [Nano ID](../field/advanced/nano-id.md)
+- [文本](../data-modeling/collection-fields/basic/input.md)
+- [整数](../data-modeling/collection-fields/basic/integer.md)
+- [Snowflake ID (53-bit)](../data-modeling/collection-fields/advanced/snowflake-id.md)
+- [UUID](../data-modeling/collection-fields/advanced/uuid.md)
+- [Nano ID](../data-modeling/collection-fields/advanced/nano-id.md)
 
 :::warning 注意
 

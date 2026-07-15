@@ -107,6 +107,6 @@ keywords: "数据表选择器,collection select,Collection,NocoBase"
 ## 相关链接
 
 - [字段](../index.md) — 了解字段的作用、分类和映射逻辑
-- [普通表](../../collection/general.md) — 在普通表中创建和管理字段
-- [普通表](../../collection/general.md) — 了解 Collection 的使用方式
-- [关系字段](../relation/index.md) — 选择某张表中的记录
+- [普通表](../../../data-source-main/general-collection.md) — 在普通表中创建和管理字段
+- [普通表](../../../data-source-main/general-collection.md) — 了解 Collection 的使用方式
+- [关系字段](../associations/index.md) — 选择某张表中的记录

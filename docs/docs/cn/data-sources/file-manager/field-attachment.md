@@ -10,7 +10,7 @@ keywords: "附件,attachment,文件上传,文件表,NocoBase"
 
 :::warning 注意
 
-附件字段已被废弃，建议使用[文件表](../../collection/file.md)或[附件 URL](./attachment-url.md)字段。
+附件字段已被废弃，建议使用[文件表](./file-collection.md)或[附件 URL](../field-attachment-url/index.md)字段。
 
 :::
 
@@ -18,7 +18,7 @@ keywords: "附件,attachment,文件上传,文件表,NocoBase"
 
 附件字段通常会关联文件表。文件本体由文件存储引擎保存，文件名、大小、URL、MIME 类型等元信息保存在文件表中。
 
-如果只是保存外部文件链接，选择[附件 URL](./attachment-url.md)或 [URL](../basic/url.md)。
+如果只是保存外部文件链接，选择[附件 URL](../field-attachment-url/index.md)或 [URL](../data-modeling/collection-fields/basic/url.md)。
 
 ## 适用场景
 
@@ -114,7 +114,7 @@ keywords: "附件,attachment,文件上传,文件表,NocoBase"
 ## 相关链接
 
 - [字段](../index.md) — 了解字段的作用、分类和映射逻辑
-- [普通表](../../collection/general.md) — 在普通表中创建和管理字段
-- [文件表](../../collection/file.md) — 了解文件元信息保存方式
-- [附件 URL](./attachment-url.md) — 保存外部文件地址
-- [URL](../basic/url.md) — 保存普通链接
+- [普通表](../data-source-main/general-collection.md) — 在普通表中创建和管理字段
+- [文件表](./file-collection.md) — 了解文件元信息保存方式
+- [附件 URL](../field-attachment-url/index.md) — 保存外部文件地址
+- [URL](../data-modeling/collection-fields/basic/url.md) — 保存普通链接

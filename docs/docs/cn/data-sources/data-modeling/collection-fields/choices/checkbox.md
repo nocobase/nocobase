@@ -108,6 +108,6 @@ keywords: "勾选,checkbox,布尔值,boolean,NocoBase"
 ## 相关链接
 
 - [字段](../index.md) — 了解字段的作用、分类和映射逻辑
-- [普通表](../../collection/general.md) — 在普通表中创建和管理字段
+- [普通表](../../../data-source-main/general-collection.md) — 在普通表中创建和管理字段
 - [下拉单选](./select.md) — 保存多状态中的一个值
 - [单选框组](./radio-group.md) — 以单选按钮方式展示选项

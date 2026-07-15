@@ -1,42 +1,48 @@
-# Eins-zu-Viele
+---
+title: "Eins-zu-viele"
+description: "Eins-zu-viele-Beziehungsfeld (O2M), bei dem eine Entität mit mehreren untergeordneten Entitäten verknüpft ist, z. B. Autor–Artikel."
+keywords: "Eins-zu-viele,O2M,HasMany,Beziehung,NocoBase"
+---
 
-Die Beziehung zwischen einer Klasse und ihren Schülern ist ein Beispiel für eine Eins-zu-Viele-Beziehung: Eine Klasse kann mehrere Schüler haben, aber jeder Schüler gehört nur zu einer Klasse.
+# Eins-zu-viele
 
-ER-Diagramm:
+Die Beziehung zwischen Klassen und Schülern: Eine Klasse kann mehrere Schüler haben, aber ein Schüler kann nur einer Klasse angehören. In diesem Fall besteht zwischen der Klasse und den Schülern eine Eins-zu-viele-Beziehung.
+
+Die ER-Beziehung sieht wie folgt aus:
 
 ![alt text](https://static-docs.nocobase.com/9475f044d123d28ac8e56a077411f8dc.png)
 
-Feldkonfiguration:
+Feldkonfiguration
 
 ![alt text](https://static-docs.nocobase.com/a608ce54821172dad7e8ab760107ff4e.png)
 
 ## Parameterbeschreibung
 
-### Quellsammlung
+### Quell-Collection
 
-Die Quellsammlung, also die Sammlung, in der sich das aktuelle Feld befindet.
+Die Quelltabelle, also die Tabelle, in der sich das aktuelle Feld befindet.
 
-### Zielsammlung
+### Ziel-Collection
 
-Die Zielsammlung, also die Sammlung, mit der verknüpft werden soll.
+Die Zieltabelle, mit der die Verknüpfung hergestellt wird.
 
 ### Quellschlüssel
 
-Das Feld in der Quellsammlung, auf das der Fremdschlüssel verweist. Es muss eindeutig sein.
+Das Feld, auf das die Fremdschlüsselreferenz verweist. Es muss eindeutig sein.
 
 ### Fremdschlüssel
 
-Das Feld in der Zielsammlung, das verwendet wird, um die Verknüpfung zwischen den beiden Sammlungen herzustellen.
+Das Feld der Zieltabelle, das zum Herstellen der Verknüpfung zwischen den beiden Tabellen verwendet wird.
 
 ### Zielschlüssel
 
-Das Feld in der Zielsammlung, das zur Anzeige jeder Zeile im Beziehungsblock dient, in der Regel ein eindeutiges Feld.
+Das Feld der Zieltabelle, das zur Anzeige des Datensatzes in jeder Zeile des Beziehungsblocks verwendet wird. In der Regel handelt es sich dabei um ein eindeutiges Feld.
 
 ### ON DELETE
 
-ON DELETE bezieht sich auf die Regeln, die auf Fremdschlüsselverweise in verknüpften Kindersammlungen angewendet werden, wenn Datensätze in der Elternsammlung gelöscht werden. Es ist eine Option, die beim Definieren einer Fremdschlüsselbeschränkung verwendet wird. Gängige ON DELETE-Optionen sind:
+ON DELETE bezeichnet die Regel für den Umgang mit Fremdschlüsselverweisen in der zugehörigen untergeordneten Tabelle, wenn ein Datensatz in der übergeordneten Tabelle gelöscht wird. Diese Option wird beim Definieren einer Fremdschlüsselbeschränkung festgelegt. Zu den gängigen ON-DELETE-Optionen gehören:
 
-- **CASCADE**: Wenn ein Datensatz in der Elternsammlung gelöscht wird, werden alle verknüpften Datensätze in der Kindersammlung automatisch gelöscht.
-- **SET NULL**: Wenn ein Datensatz in der Elternsammlung gelöscht wird, werden die Fremdschlüsselwerte in den verknüpften Datensätzen der Kindersammlung auf NULL gesetzt.
-- **RESTRICT**: Die Standardoption. Sie verhindert das Löschen eines Datensatzes in der Elternsammlung, wenn verknüpfte Datensätze in der Kindersammlung vorhanden sind.
-- **NO ACTION**: Ähnlich wie RESTRICT. Es verhindert das Löschen eines Datensatzes in der Elternsammlung, wenn verknüpfte Datensätze in der Kindersammlung vorhanden sind.
+- CASCADE: Beim Löschen eines Datensatzes in der übergeordneten Tabelle werden automatisch alle zugehörigen Datensätze in der untergeordneten Tabelle gelöscht.
+- SET NULL: Beim Löschen eines Datensatzes in der übergeordneten Tabelle wird der zugehörige Fremdschlüsselwert in der untergeordneten Tabelle auf NULL gesetzt.
+- RESTRICT: Standardoption. Wenn beim Versuch, einen Datensatz in der übergeordneten Tabelle zu löschen, zugehörige Datensätze in der untergeordneten Tabelle vorhanden sind, wird das Löschen des Datensatzes in der übergeordneten Tabelle abgelehnt.
+- NO ACTION: Ähnlich wie RESTRICT. Wenn zugehörige Datensätze in der untergeordneten Tabelle vorhanden sind, wird das Löschen des Datensatzes in der übergeordneten Tabelle abgelehnt.

@@ -1,12 +1,18 @@
+---
+title: "Desarrollo de extensiones del gestor de archivos"
+description: "Extender el componente de vista previa de tipos de archivo, el campo de archivos adjuntos y la lógica de carga mediante las API attachmentFileTypes, mime-match, etc."
+keywords: "extensión del gestor de archivos, extensión del campo de archivos adjuntos, extensión de vista previa de archivos, attachmentFileTypes,NocoBase"
+---
+
 # Desarrollo de extensiones
 
-## Extensión de tipos de archivo en el frontend
+## Extender los tipos de archivo en el frontend
 
-Para los archivos ya subidos, la interfaz de usuario del frontend puede mostrar diferentes vistas previas según el tipo de archivo. El campo de adjuntos del gestor de archivos incluye una vista previa de archivos integrada basada en el navegador (incrustada en un iframe), que permite previsualizar directamente en el navegador la mayoría de los formatos de archivo (como imágenes, vídeos, audio y PDF). Cuando un formato de archivo no es compatible con la vista previa del navegador, o si se necesita una interacción de vista previa especial, puede extender los componentes de vista previa basados en el tipo de archivo.
+Para los archivos que ya se han cargado, se puede mostrar un contenido de vista previa diferente en la interfaz según el tipo de archivo. El campo de archivos adjuntos del gestor de archivos incluye una vista previa basada en el navegador (incrustada en un iframe), que admite la vista previa directa en el navegador de la mayoría de los formatos de archivo (imágenes, vídeos, audio y PDF, entre otros). Cuando el formato no es compatible con la vista previa del navegador o se necesita una interacción de vista previa especial, se puede implementar mediante la extensión de componentes de vista previa basados en el tipo de archivo.
 
 ### Ejemplo
 
-Por ejemplo, si desea extender un componente de carrusel para archivos de imagen, puede usar el siguiente código:
+Por ejemplo, si se desea extender el tipo de archivo de imagen con un componente de carrusel, se puede hacer mediante el siguiente código:
 
 ```ts
 import match from 'mime-match';
@@ -58,11 +64,11 @@ class MyPlugin extends Plugin {
 }
 ```
 
-`attachmentFileTypes` es un objeto de entrada proporcionado por el paquete `@nocobase/client` para extender los tipos de archivo. Puede usar su método `add` para extender un descriptor de tipo de archivo.
+Aquí, `attachmentFileTypes` es el objeto de entrada para extender los tipos de archivo proporcionado por el paquete `@nocobase/client`, que utiliza el método `add` proporcionado para extender un objeto de descripción de tipo de archivo.
 
-Cada tipo de archivo debe implementar un método `match()` para verificar si el tipo de archivo cumple con los requisitos. En el ejemplo, se utiliza el paquete `mime-match` para comprobar el atributo `mimetype` del archivo. Si coincide con el tipo `image/*`, se considera un tipo de archivo que necesita procesamiento. Si no coincide, se recurrirá al manejo de tipo incorporado.
+Cada tipo de archivo debe implementar un método `match()` para comprobar si cumple los requisitos del tipo de archivo. En el ejemplo, se utiliza el método proporcionado por el paquete `mime-match` para comprobar la propiedad `mimetype` del archivo. Si coincide con el tipo `image/*`, se considera que es el tipo de archivo que debe procesarse. Si no se produce ninguna coincidencia, se recurre al procesamiento de tipos integrado.
 
-La propiedad `Previewer` en el descriptor de tipo es el componente utilizado para la vista previa. Cuando el tipo de archivo coincide, este componente se renderizará para la vista previa. Generalmente, se recomienda usar un componente de tipo modal (como `<Modal />`) como contenedor base y luego colocar el contenido de la vista previa y la interacción necesaria dentro de ese componente para implementar la funcionalidad de vista previa.
+La propiedad `Previewer` del objeto de descripción del tipo es el componente utilizado para la vista previa. Cuando el tipo de archivo coincide, se renderiza este componente para mostrar la vista previa. Por lo general, se recomienda utilizar un componente de tipo ventana emergente como contenedor base (por ejemplo, `<Modal />`) y colocar dentro de él la vista previa y el contenido interactivo necesario para implementar la funcionalidad de vista previa.
 
 ### API
 
@@ -96,7 +102,7 @@ export class AttachmentFileTypes {
 
 #### `attachmentFileTypes`
 
-`attachmentFileTypes` es una instancia global que se importa desde el paquete `@nocobase/client`:
+`attachmentFileTypes` es una instancia global que se importa mediante `@nocobase/client`:
 
 ```ts
 import { attachmentFileTypes } from '@nocobase/client';
@@ -104,34 +110,34 @@ import { attachmentFileTypes } from '@nocobase/client';
 
 #### `attachmentFileTypes.add()`
 
-Registra un nuevo descriptor de tipo de archivo en el registro de tipos de archivo. El tipo del objeto descriptor es `AttachmentFileType`.
+Registra un nuevo objeto de descripción de tipo de archivo en el registro de tipos de archivo. El tipo del objeto de descripción es `AttachmentFileType`.
 
 #### `AttachmentFileType`
 
 ##### `match()`
 
-Método para la coincidencia de formatos de archivo.
+Método de coincidencia del formato de archivo.
 
-El parámetro `file` es un objeto de datos para el archivo subido, que contiene propiedades que se pueden usar para la verificación de tipo:
+El parámetro `file` es el objeto de datos del archivo cargado e incluye las siguientes propiedades, que pueden utilizarse para determinar el tipo:
 
-*   `mimetype`: El tipo MIME del archivo.
-*   `extname`: La extensión del archivo, incluyendo el ".".
-*   `path`: La ruta de almacenamiento relativa del archivo.
-*   `url`: La URL del archivo.
+* `mimetype`: descripción del mimetype
+* `extname`: extensión del archivo, incluido “.”
+* `path`: ruta relativa donde se almacena el archivo
+* `url`: URL del archivo
 
-Devuelve un valor de tipo `boolean` que indica si el archivo coincide.
+El valor devuelto es de tipo `boolean` e indica si se ha producido una coincidencia.
 
 ##### `Previewer`
 
-Un componente de React para previsualizar el archivo.
+Componente React utilizado para mostrar la vista previa del archivo.
 
 Los parámetros de Props son:
 
-*   `index`: El índice del archivo en la lista de adjuntos.
-*   `list`: La lista de adjuntos.
-*   `onSwitchIndex`: Una función para cambiar el archivo previsualizado por su índice.
+* `index`: índice del archivo en la lista de archivos adjuntos
+* `list`: lista de archivos adjuntos
+* `onSwitchIndex`: método utilizado para cambiar el índice
 
-La función `onSwitchIndex` puede ser llamada con cualquier valor de índice de la `list` para cambiar a otro archivo. Si se usa `null` como parámetro para el cambio, el componente de vista previa se cerrará directamente.
+`onSwitchIndex` puede recibir cualquier valor de índice de una lista para cambiar a otro archivo. Si se utiliza `null` como parámetro de cambio, el componente de vista previa se cierra directamente.
 
 ```ts
 onSwitchIndex(null);

@@ -1,35 +1,37 @@
 ---
 pkg: "@nocobase/plugin-calendar"
+title: "Bloc calendrier"
+description: "Le bloc calendrier affiche les événements et les données de date dans une vue calendrier. Il convient à la planification de réunions et d’activités, avec la configuration du champ de titre, des heures de début et de fin, du calendrier lunaire et de la plage de données."
+keywords: "bloc calendrier,vue calendrier,événement,planification de réunions,Calendar,NocoBase"
 ---
+# Bloc calendrier
 
+## Présentation
 
-# Bloc Calendrier
-
-## Introduction
-
-Le bloc Calendrier vous permet de visualiser et de gérer facilement les événements et les données liées aux dates sous forme de calendrier. Il est idéal pour la planification de réunions, l'organisation d'activités et la gestion efficace de votre temps.
+Le bloc calendrier affiche les données liées aux événements et aux dates dans une vue calendrier. Il convient notamment à la planification de réunions et d’activités.
 
 ## Installation
 
-Ce plugin est préinstallé, aucune configuration supplémentaire n'est requise.
+Plugin intégré, aucune installation requise.
 
 ## Ajouter un bloc
 
 ![20250403220300](https://static-docs.nocobase.com/20250403220300.png)
 
-1.  **Champ de titre** : Ce champ affiche les informations sur les barres d'événements du calendrier. Actuellement, il prend en charge les types de champs tels que `Single Line Text` (texte sur une seule ligne), `Single select` (sélection unique), `Phone` (téléphone), `Email` (e-mail), `Radio Group` (groupe de boutons radio) et `Sequence` (séquence). Vous pouvez étendre les types de champs de titre pris en charge par le bloc Calendrier via des plugins.
-2.  **Heure de début** : Indique le début de la tâche.
-3.  **Heure de fin** : Marque la fin de la tâche.
+1. Champ de titre : informations affichées sur les barres du calendrier ; prend actuellement en charge les types de champs `input`, `select`, `phone`, `email`, `radioGroup` et `sequence`. Les types de champs pris en charge par le bloc calendrier peuvent être étendus au moyen de plugins.
+2. Heure de début : heure de début de la tâche ;
+3. Heure de fin : heure de fin de la tâche ;
 
 <video width="100%" height="440" controls>
       <source src="https://static-docs.nocobase.com/20240419201640.mp4" type="video/mp4">
 </video>
 
-Un clic sur une barre d'événement la met en surbrillance et ouvre une fenêtre contextuelle détaillée.
+
+Cliquez sur une barre de tâche pour la mettre en surbrillance et ouvrir une fenêtre contextuelle.
 
 ![20240408171928](https://static-docs.nocobase.com/20240408171928.png)
 
-## Paramètres du bloc
+## Options de configuration du bloc
 
 ![20240419203321](https://static-docs.nocobase.com/20240419203321.png)
 
@@ -40,55 +42,54 @@ Un clic sur une barre d'événement la met en surbrillance et ouvre une fenêtre
 -
 -
 
-### Définir la plage de données
+### Configurer la plage de données
 
 ![20240419203751](https://static-docs.nocobase.com/20240419203751.png)
 
-Pour plus d'informations, consultez .
+Pour plus d’informations, consultez
 
 ### Définir la hauteur du bloc
 
-Exemple : Ajustez la hauteur du bloc Calendrier des commandes. Aucune barre de défilement n'apparaîtra à l'intérieur du bloc calendrier.
+Exemple : ajuster la hauteur du bloc calendrier des commandes afin qu’aucune barre de défilement n’apparaisse à l’intérieur du bloc calendrier.
 
 ![20240605215742](https://static-docs.nocobase.com/20240605215742.gif)
 
-Pour plus d'informations, consultez
+Pour plus d’informations, consultez
 
-### Champ de couleur d'arrière-plan
+### Champ de couleur d’arrière-plan
 
-:::info{title=Astuce}
-Votre version de NocoBase doit être v1.4.0-beta ou supérieure.
+:::info{title=Conseil}
+La version de NocoBase doit être v1.4.0-beta ou ultérieure.
 :::
 
-Cette option permet de configurer la couleur d'arrière-plan des événements du calendrier. Voici comment l'utiliser :
+Cette option permet de configurer la couleur d’arrière-plan des événements du calendrier. Procédez comme suit :
 
-1.  Votre [collection](#) de données de calendrier doit contenir un champ de type **Sélection unique (Single select)** ou **Groupe de boutons radio (Radio group)**, et ce champ doit être configuré avec des couleurs.
-2.  Ensuite, retournez à l'interface de configuration du bloc Calendrier et sélectionnez le champ que vous venez de configurer avec des couleurs dans le **Champ de couleur d'arrière-plan**.
-3.  Enfin, vous pouvez essayer de sélectionner une couleur pour un événement du calendrier et de cliquer sur Soumettre. Vous verrez que la couleur a été appliquée.
+1. La table de données du calendrier doit contenir un champ de type **liste déroulante à sélection unique (Single select)** ou **groupe de boutons radio (Radio group)**, auquel une couleur doit être configurée.
+2. Ensuite, revenez à l’interface de configuration du bloc calendrier et sélectionnez, dans le **champ de couleur d’arrière-plan**, le champ auquel vous venez d’attribuer une couleur.
+3. Enfin, essayez de sélectionner une couleur pour un événement du calendrier, puis cliquez sur Envoyer. Vous pourrez alors constater que la couleur est appliquée.
 
 ![20240914192017_rec_](https://static-docs.nocobase.com/20240914192017_rec_.gif)
 
-### Jour de début de semaine
+### Premier jour de la semaine
 
-> Pris en charge à partir de la version v1.7.7
+> Prise en charge à partir de la version v1.7.7
 
-Le bloc Calendrier permet de définir le jour de début de la semaine. Vous pouvez choisir le **dimanche** ou le **lundi** comme premier jour de la semaine.
-Le jour de début par défaut est le **lundi**, ce qui permet aux utilisateurs d'adapter facilement l'affichage du calendrier aux habitudes régionales pour une meilleure expérience d'utilisation.
+Le bloc calendrier permet de définir le premier jour de la semaine. Vous pouvez choisir **dimanche** ou **lundi** comme premier jour de la semaine.
+Le premier jour par défaut est **lundi**, afin de permettre aux utilisateurs d’adapter l’affichage du calendrier aux habitudes de leur région et de mieux répondre à leurs besoins réels.
 
 ![20250707165958](https://static-docs.nocobase.com/20250707165958.png)
-
-## Actions de configuration
+## Configurer les opérations
 
 ![20240419203424](https://static-docs.nocobase.com/20240419203424.png)
 
-### Aujourd'hui
+### Aujourd’hui
 
-Le bouton « Aujourd'hui » du bloc Calendrier offre une navigation rapide, permettant aux utilisateurs de revenir instantanément à la date actuelle après avoir exploré d'autres dates.
+Le bouton « Aujourd’hui » du bloc calendrier offre une fonction de navigation pratique, permettant aux utilisateurs de revenir rapidement à la page du calendrier correspondant à la date actuelle après avoir consulté d’autres dates.
 
 ![20240419203514](https://static-docs.nocobase.com/20240419203514.png)
 
 ### Changer de vue
 
-La vue par défaut est le mois.
+La vue mensuelle est définie par défaut.
 
 ![20240419203349](https://static-docs.nocobase.com/20240419203349.png)

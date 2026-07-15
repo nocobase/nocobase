@@ -107,6 +107,6 @@ keywords: "单选框组,radio group,选项字段,NocoBase"
 ## 相关链接
 
 - [字段](../index.md) — 了解字段的作用、分类和映射逻辑
-- [普通表](../../collection/general.md) — 在普通表中创建和管理字段
+- [普通表](../../../data-source-main/general-collection.md) — 在普通表中创建和管理字段
 - [下拉单选](./select.md) — 选项较多时使用
 - [复选框组](./checkbox-group.md) — 选择多个值

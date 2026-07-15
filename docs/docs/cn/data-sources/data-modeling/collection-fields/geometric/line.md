@@ -108,6 +108,6 @@ keywords: "线,LineString,路线,几何图形,NocoBase"
 ## 相关链接
 
 - [字段](../index.md) — 了解字段的作用、分类和映射逻辑
-- [普通表](../../collection/general.md) — 在普通表中创建和管理字段
+- [普通表](../../../data-source-main/general-collection.md) — 在普通表中创建和管理字段
 - [点](./point.md) — 保存单个位置
 - [多边形](./polygon.md) — 保存区域

@@ -28,7 +28,7 @@ PostgreSQL 为内置能力，无需单独安装插件。
 1. 部署 NocoBase 时，在数据库连接配置中选择或填写 PostgreSQL 对应的连接参数。
 2. 启动 NocoBase 后，在「数据源管理」中进入「Main」数据源，可以管理主数据库中的数据表和字段。
 3. 如需接入数据库中已经存在的表，可以在主数据库管理页使用「从数据库同步」。
-4. 配置数据表字段时，可以参考[数据表](../collection/index.md)、[字段](../field/index.md)目录选择字段类型和字段组件。
+4. 配置数据表字段时，可以参考[数据表](../data-modeling/collection.md)、[字段](../data-modeling/collection-fields/index.md)目录选择字段类型和字段组件。
 
 ## 字段类型映射
 

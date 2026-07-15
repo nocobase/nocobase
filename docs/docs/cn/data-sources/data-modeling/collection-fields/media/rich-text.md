@@ -12,7 +12,7 @@ keywords: "富文本,rich text,内容字段,NocoBase"
 
 富文本字段适合公告正文、文章正文、邮件模板、说明文档等内容。它更接近所见即所得编辑体验。
 
-如果团队习惯 Markdown 或需要纯文本可控格式，选择 [Markdown](./markdown.md) 或 [Markdown Vditor](./markdown-vditor.md)。
+如果团队习惯 Markdown 或需要纯文本可控格式，选择 [Markdown](./markdown.md) 或 [Markdown Vditor](../../../field-markdown-vditor/index.md)。
 
 ## 适用场景
 
@@ -108,6 +108,6 @@ keywords: "富文本,rich text,内容字段,NocoBase"
 ## 相关链接
 
 - [字段](../index.md) — 了解字段的作用、分类和映射逻辑
-- [普通表](../../collection/general.md) — 在普通表中创建和管理字段
+- [普通表](../../../data-source-main/general-collection.md) — 在普通表中创建和管理字段
 - [Markdown](./markdown.md) — 保存 Markdown 内容
-- [Markdown Vditor](./markdown-vditor.md) — 使用 Vditor 编辑 Markdown
+- [Markdown Vditor](../../../field-markdown-vditor/index.md) — 使用 Vditor 编辑 Markdown

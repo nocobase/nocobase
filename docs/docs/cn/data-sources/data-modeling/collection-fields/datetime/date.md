@@ -108,6 +108,6 @@ keywords: "日期,date,日期字段,NocoBase"
 ## 相关链接
 
 - [字段](../index.md) — 了解字段的作用、分类和映射逻辑
-- [普通表](../../collection/general.md) — 在普通表中创建和管理字段
+- [普通表](../../../data-source-main/general-collection.md) — 在普通表中创建和管理字段
 - [日期时间（含时区）](./datetime.md) — 保存具体日期和时间
 - [时间](./time.md) — 只保存时间

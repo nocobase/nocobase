@@ -108,6 +108,6 @@ keywords: "整数,integer,数字字段,NocoBase"
 ## 相关链接
 
 - [字段](../index.md) — 了解字段的作用、分类和映射逻辑
-- [普通表](../../collection/general.md) — 在普通表中创建和管理字段
+- [普通表](../../../data-source-main/general-collection.md) — 在普通表中创建和管理字段
 - [数字](./number.md) — 保存小数、金额、重量等数值
 - [百分比](./percent.md) — 保存比例或完成率

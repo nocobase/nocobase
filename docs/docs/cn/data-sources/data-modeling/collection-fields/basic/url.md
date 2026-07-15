@@ -12,7 +12,7 @@ keywords: "URL,链接,网址,url,NocoBase"
 
 URL 字段适合外部系统地址、文档链接、官网地址、回调地址等内容。跟普通文本比，它更明确地表达链接语义。
 
-如果要上传文件，选择[附件](../media/attachment.md)。如果只是普通说明文本，选择[单行文本](./input.md)或[多行文本](./textarea.md)。
+如果要上传文件，选择[附件](../media/field-attachment.md)。如果只是普通说明文本，选择[单行文本](./input.md)或[多行文本](./textarea.md)。
 
 ## 适用场景
 
@@ -108,6 +108,6 @@ URL 字段适合在详情、表格和外部跳转场景中使用。
 ## 相关链接
 
 - [字段](../index.md) — 了解字段的作用、分类和映射逻辑
-- [普通表](../../collection/general.md) — 在普通表中创建和管理字段
+- [普通表](../../../data-source-main/general-collection.md) — 在普通表中创建和管理字段
 - [单行文本](./input.md) — 保存普通短文本
-- [附件](../media/attachment.md) — 上传和关联文件
+- [附件](../media/field-attachment.md) — 上传和关联文件

@@ -108,7 +108,7 @@ keywords: "日期时间,datetime,时区,NocoBase"
 ## 相关链接
 
 - [字段](../index.md) — 了解字段的作用、分类和映射逻辑
-- [普通表](../../collection/general.md) — 在普通表中创建和管理字段
+- [普通表](../../../data-source-main/general-collection.md) — 在普通表中创建和管理字段
 - [日期时间（不含时区）](./datetime-without-tz.md) — 保存不做时区转换的日期时间
 - [日期](./date.md) — 只保存日期
 - [时间](./time.md) — 只保存时间

@@ -1,50 +1,56 @@
-# Viele-zu-Viele
+---
+title: "Viele-zu-viele"
+description: "Feld für Viele-zu-viele-Beziehungen (M2M) zur Verknüpfung zweier Entitäten in einer Viele-zu-viele-Beziehung; in der Regel ist dafür eine Zwischentabelle erforderlich, z. B. Schüler und Kurse."
+keywords: "Viele-zu-viele,M2M,BelongsToMany,Zwischentabelle,Beziehungsfeld,NocoBase"
+---
 
-In einem Kurswahlsystem gibt es zwei Entitäten: Studenten und Kurse. Ein Student kann sich für mehrere Kurse einschreiben, und ein Kurs kann von mehreren Studenten belegt werden. Dies bildet eine Viele-zu-Viele-Beziehung. In einer relationalen Datenbank wird zur Darstellung der Viele-zu-Viele-Beziehung zwischen Studenten und Kursen üblicherweise eine Vermittlungs-Sammlung, wie zum Beispiel eine Einschreibungs-Sammlung, verwendet. Diese Sammlung kann festhalten, welche Kurse jeder Student gewählt hat und welche Studenten sich für jeden Kurs eingeschrieben haben. Dieses Design stellt die Viele-zu-Viele-Beziehung zwischen Studenten und Kursen effektiv dar.
+# Viele-zu-viele
 
-ER-Diagramm:
+In einem Kurswahlsystem gibt es die beiden Entitäten Schüler und Kurse. Ein Schüler kann mehrere Kurse belegen, und ein Kurs kann von mehreren Schülern belegt werden. Dadurch entsteht eine Viele-zu-viele-Beziehung. In relationalen Datenbanken wird zur Darstellung der Viele-zu-viele-Beziehung zwischen Schülern und Kursen in der Regel eine Zwischentabelle verwendet, beispielsweise eine Tabelle zur Kurswahl. Diese Tabelle kann festhalten, welche Kurse von welchem Schüler gewählt wurden und von welchen Schülern die einzelnen Kurse belegt werden. Mit diesem Aufbau lässt sich die Viele-zu-viele-Beziehung zwischen Schülern und Kursen gut darstellen.
 
-![alt text](https://static-docs.nocobase.com/0e9921228e1ee375dc639431bb89782c.png)
+Die ER-Beziehung sieht wie folgt aus
 
-Feldkonfiguration:
+![Alternativtext](https://static-docs.nocobase.com/0e9921228e1ee375dc639431bb89782c.png)
 
-![alt text](https://static-docs.nocobase.com/8e2739ac5d44fb46f30e2da42ca87a82.png)
+Feldkonfiguration
+
+![Alternativtext](https://static-docs.nocobase.com/8e2739ac5d44fb46f30e2da42ca87a82.png)
 
 ## Parameterbeschreibung
 
-### Quell-Sammlung
+### Source collection
 
-Die Quell-Sammlung, also die Sammlung, in der sich das aktuelle Feld befindet.
+Quelltabelle, also die Tabelle, in der sich das aktuelle Feld befindet.
 
-### Ziel-Sammlung
+### Target collection
 
-Die Ziel-Sammlung, also die Sammlung, mit der eine Verknüpfung hergestellt werden soll.
+Zieltabelle, mit welcher Tabelle die Beziehung hergestellt wird.
 
-### Vermittlungs-Sammlung
+### Through collection
 
-Die Vermittlungs-Sammlung, die verwendet wird, wenn eine Viele-zu-Viele-Beziehung zwischen zwei Entitäten besteht. Die Vermittlungs-Sammlung verfügt über zwei Fremdschlüssel, die zur Aufrechterhaltung der Verknüpfung zwischen den beiden Entitäten dienen.
+Zwischentabelle: Wenn zwischen zwei Entitäten eine Viele-zu-viele-Beziehung besteht, muss eine Zwischentabelle verwendet werden, um diese Beziehung zu speichern. Die Zwischentabelle enthält zwei Fremdschlüssel, über die die Beziehung zwischen den beiden Entitäten gespeichert wird.
 
-### Quellschlüssel
+### Source key
 
-Das Feld in der Quell-Sammlung, auf das der Fremdschlüssel verweist. Es muss eindeutig sein.
+Das von der Fremdschlüsselbedingung referenzierte Feld; es muss eindeutig sein.
 
-### Fremdschlüssel 1
+### Foreign key 1
 
-Das Feld in der Vermittlungs-Sammlung, das die Verknüpfung mit der Quell-Sammlung herstellt.
+Das Feld der Zwischentabelle, das zum Herstellen der Beziehung zur Quelltabelle verwendet wird.
 
-### Fremdschlüssel 2
+### Foreign key 2
 
-Das Feld in der Vermittlungs-Sammlung, das die Verknüpfung mit der Ziel-Sammlung herstellt.
+Das Feld der Zwischentabelle, das zum Herstellen der Beziehung zur Zieltabelle verwendet wird.
 
-### Zielschlüssel
+### Target key
 
-Das Feld in der Ziel-Sammlung, auf das der Fremdschlüssel verweist. Es muss eindeutig sein.
+Das von der Fremdschlüsselbedingung referenzierte Feld; es muss eindeutig sein.
 
 ### ON DELETE
 
-ON DELETE bezieht sich auf die Regeln, die auf Fremdschlüsselreferenzen in verknüpften Kind-Sammlungen angewendet werden, wenn Datensätze in der Eltern-Sammlung gelöscht werden. Es ist eine Option, die beim Definieren einer Fremdschlüsselbeschränkung verwendet wird. Häufige ON DELETE-Optionen sind:
+ON DELETE bezeichnet die Regel für den Umgang mit Fremdschlüsselreferenzen in der zugehörigen Kindtabelle, wenn ein Datensatz in der Elterntabelle gelöscht wird. Diese Option wird bei der Definition von Fremdschlüsselbedingungen verwendet. Zu den häufig verwendeten ON-DELETE-Optionen gehören:
 
-- **CASCADE**: Wenn ein Datensatz in der Eltern-Sammlung gelöscht wird, werden alle verknüpften Datensätze in der Kind-Sammlung automatisch gelöscht.
-- **SET NULL**: Wenn ein Datensatz in der Eltern-Sammlung gelöscht wird, werden die Fremdschlüsselwerte in den verknüpften Datensätzen der Kind-Sammlung auf NULL gesetzt.
-- **RESTRICT**: Die Standardoption. Sie verhindert das Löschen eines Datensatzes in der Eltern-Sammlung, wenn verknüpfte Datensätze in der Kind-Sammlung vorhanden sind.
-- **NO ACTION**: Ähnlich wie RESTRICT. Sie verhindert das Löschen eines Datensatzes in der Eltern-Sammlung, wenn verknüpfte Datensätze in der Kind-Sammlung vorhanden sind.
+- CASCADE: Beim Löschen eines Datensatzes in der Elterntabelle werden automatisch alle zugehörigen Datensätze in der Kindtabelle gelöscht.
+- SET NULL: Beim Löschen eines Datensatzes in der Elterntabelle wird der Wert des zugehörigen Fremdschlüssels in der Kindtabelle auf NULL gesetzt.
+- RESTRICT: Standardoption. Wenn beim Versuch, einen Datensatz in der Elterntabelle zu löschen, zugehörige Datensätze in der Kindtabelle vorhanden sind, wird das Löschen des Datensatzes in der Elterntabelle abgelehnt.
+- NO ACTION: Ähnlich wie RESTRICT. Wenn zugehörige Datensätze in der Kindtabelle vorhanden sind, wird das Löschen des Datensatzes in der Elterntabelle abgelehnt.

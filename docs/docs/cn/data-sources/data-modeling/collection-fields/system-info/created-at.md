@@ -108,6 +108,6 @@ keywords: "创建日期,createdAt,系统字段,NocoBase"
 ## 相关链接
 
 - [字段](../index.md) — 了解字段的作用、分类和映射逻辑
-- [普通表](../../collection/general.md) — 在普通表中创建和管理字段
+- [普通表](../../../data-source-main/general-collection.md) — 在普通表中创建和管理字段
 - [日期时间（含时区）](../datetime/datetime.md) — 保存业务时间
 - [更新日期](./updated-at.md) — 自动记录更新时间

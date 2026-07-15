@@ -108,6 +108,6 @@ JSON 字段适合在集成和扩展配置场景中使用。
 ## 相关链接
 
 - [字段](../index.md) — 了解字段的作用、分类和映射逻辑
-- [普通表](../../collection/general.md) — 在普通表中创建和管理字段
+- [普通表](../../../data-source-main/general-collection.md) — 在普通表中创建和管理字段
 - [多行文本](../basic/textarea.md) — 保存纯文本长内容
-- [公式](./formula.md) — 基于字段计算结果
+- [公式](../../../field-formula/index.md) — 基于字段计算结果

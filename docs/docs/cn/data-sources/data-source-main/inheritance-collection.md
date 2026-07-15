@@ -45,7 +45,7 @@ keywords: "继承表,Inheritance Collection,表继承,数据表扩展,PostgreSQL
 | Description | 数据表说明。可以写这个子表保存什么类型的数据、从哪个父表派生、由谁维护。 |
 | Preset fields | 预设字段。继承表通常也会保留普通表的 ID、创建时间、创建人、更新时间、更新人等字段。 |
 
-继承表可以使用[普通表](./general.md)的区块和字段配置方式。对页面区块来说，它仍然是一个可以增删改查的数据表。
+继承表可以使用[普通表](./general-collection.md)的区块和字段配置方式。对页面区块来说，它仍然是一个可以增删改查的数据表。
 
 :::warning 注意
 
@@ -106,6 +106,6 @@ keywords: "继承表,Inheritance Collection,表继承,数据表扩展,PostgreSQL
 
 ## 相关链接
 
-- [普通表](./general.md) — 查看普通表通用配置
+- [普通表](./general-collection.md) — 查看普通表通用配置
 - [主数据库](./index.md) — 查看主数据库支持的数据库类型
-- [数据表字段](../field/index.md) — 查看字段配置方式
+- [数据表字段](../data-modeling/collection-fields/index.md) — 查看字段配置方式

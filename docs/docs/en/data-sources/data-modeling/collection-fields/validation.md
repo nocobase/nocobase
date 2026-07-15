@@ -1,118 +1,128 @@
-# Field Validation
-To ensure data accuracy, security, and consistency in collections, NocoBase provides field validation functionality. This feature consists of two main parts: rule configuration and rule application.
+---
+title: "Field validation"
+description: "Field validation rules based on Joi configuration and validation rules. Supports minimum and maximum length, required values, and other rules for string, number, date, and other types."
+keywords: "field validation,field validation rules,Joi,validation rules,configuration rules,NocoBase"
+---
 
-## Rule Configuration
+# Field validation
 
-![20250819181342](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819181342.png)
+To ensure collection accuracy, security, and consistency, NocoBase provides field validation. It has two parts: configuration rules and validation rules.
 
+## Configuration rules
 
-NocoBase system fields integrate [Joi](https://joi.dev/api/) rules, with support as follows:
+![Field validation settings](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819181342.png)
 
-### String
-Joi string types correspond to the following NocoBase field types: Single Line Text, Long Text, Phone, Email, URL, Password, and UUID.
-#### Common Rules
-- Min length
-- Max length
+NocoBase field rules integrate [Joi](https://joi.dev/api/). The supported rules are as follows.
+
+### String types
+
+NocoBase Field interfaces corresponding to Joi string types include Input, Textarea, Phone, Email, URL, Password, and UUID.
+
+#### Common rules
+
+- Minimum length
+- Maximum length
 - Length
-- Pattern
+- Regular expression
 - Required
 
 #### Email
 
-![20250819192011](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819192011.png)
+![Email validation settings](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819192011.png)
 
 [View more options](https://joi.dev/api/?v=17.13.3#stringemailoptions)
 
 #### URL
 
-![20250819192409](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819192409.png)
+![URL validation settings](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819192409.png)
 
 [View more options](https://joi.dev/api/?v=17.13.3#stringurioptions)
 
 #### UUID
 
-![20250819192731](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819192731.png)
+![UUID validation settings](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819192731.png)
 
 [View more options](https://joi.dev/api/?v=17.13.3#stringguid---aliases-uuid)
 
-### Number
-Joi number types correspond to the following NocoBase field types: Integer, Number, and Percentage.
-#### Common Rules
+### Number types
+
+NocoBase Field interfaces corresponding to Joi number types include Integer, Number, and Percent.
+
+#### Common rules
+
 - Greater than
 - Less than
-- Max value
-- Min value
+- Maximum value
+- Minimum value
 - Multiple
 
 #### Integer
-In addition to common rules, integer fields additionally support [integer validation](https://joi.dev/api/?v=17.13.3#numberinteger) and [unsafe integer validation](https://joi.dev/api/?v=17.13.3#numberunsafeenabled).
 
-![20250819193758](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819193758.png)
+In addition to common rules, Integer fields support [integer validation](https://joi.dev/api/?v=17.13.3#numberinteger) and [unsafe-integer validation](https://joi.dev/api/?v=17.13.3#numberunsafeenabled).
 
+![Integer validation settings](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819193758.png)
 
-#### Number & Percentage
-In addition to common rules, number and percentage fields additionally support [precision validation](https://joi.dev/api/?v=17.13.3#numberinteger).
+#### Number and Percent
 
-![20250819193954](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819193954.png)
+In addition to common rules, Number and Percent fields support [precision validation](https://joi.dev/api/?v=17.13.3#numberinteger).
 
+![Number and Percent validation settings](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819193954.png)
 
-### Date
-Joi date types correspond to the following NocoBase field types: Date (with timezone), Date (without timezone), Date only, and Unix timestamp.
+### Date types
 
-Supported validation rules:
+NocoBase Field interfaces corresponding to Joi date types include DateTime (with time zone), DateTime (without time zone), Date only, and Unix timestamp.
+
+Supported validation rules are:
+
 - Greater than
 - Less than
-- Max value
-- Min value
-- Timestamp
+- Maximum value
+- Minimum value
+- Timestamp format validation
 - Required
 
-### Association Fields
-Association fields only support required validation. Note that required validation for association fields is currently not supported in sub-form or sub-table scenarios.
+### Relation fields
 
-![20250819184344](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819184344.png)
+Relation fields support required validation only. Note that required validation for relation fields is not currently supported in Subform or Subtable scenarios.
 
+![Relation field validation settings](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819184344.png)
 
-## Applying Validation Rules
-After configuring field rules, the corresponding validation rules will be triggered when adding or modifying data.
+## Apply validation rules
 
-![20250819201027](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819201027.png)
+After you configure field rules, the corresponding validation rules are triggered when data is created or changed.
 
-When the field is used in a form, field validation rules are also displayed in the field validation settings. These rules appear under **Server-side field validation rules** and are read-only there. If you need to change them, edit the field in Data source → Collection configuration.
+![Validation triggered when changing data](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819201027.png)
 
-You can still add extra rules for the current form field under **Client-side validation rules**. These rules only apply to the current field component. The final validation result combines **Server-side field validation rules** and **Client-side validation rules**.
+When a field is used in a form, its validation rules also appear in the field validation settings. They are displayed as read-only under **Server-side field validation rules**. To change these rules, return to **Data source / Collection configuration** and edit the field.
 
-Validation rules also apply to sub-table and sub-form components:
+You can still add additional rules for the current form field under **Client-side validation rules**. These rules affect only the current field component. The validation rules that ultimately take effect combine **Server-side field validation rules** and **Client-side validation rules**.
 
-![20250819202514](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819202514.png)
+Validation rules also apply to Subtable and Subform components:
 
+![Validation in a Subtable](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819202514.png)
 
+![Validation in a Subform](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819202357.png)
 
-![20250819202357](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819202357.png)
+Note that required validation for relation fields does not take effect in Subform or Subtable scenarios.
 
+![Relation required validation in a Subform or Subtable](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819203016.png)
 
-Note that in sub-form or sub-table scenarios, required validation for association fields does not take effect.
+## Difference between server-side field validation rules and client-side validation rules
 
-![20250819203016](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819203016.png)
-
-
-## Differences Between Server-Side Field Validation Rules and Client-Side Validation Rules
 Server-side field validation rules and client-side validation rules are configured in different places and have different scopes.
 
-### Configuration Method Differences
-- **Server-side field validation rules**: Set field rules in Data source → Collection configuration. These rules are the base rules of the field.
-- **Client-side validation rules**: Configure extra rules in a form field's settings. These rules only affect the current field component.
+### Configuration differences
 
-![20250819203836](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819203836.png)
+- **Server-side field validation rules**: Set field rules in **Data source / Collection configuration**. These rules are the base rules of the field
+- **Client-side validation rules**: Add additional rules in form-field settings. These rules affect only the current field component
 
+![Configure server-side field validation rules](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819203836.png)
 
+![Configure client-side validation rules](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819203845.png)
 
-![20250819203845](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819203845.png)
+### Validation timing differences
 
-
-
-### Validation Trigger Timing Differences
-- **Server-side field validation rules**: Trigger frontend validation when the field is used in a form, and also validate before data is written. They also apply to scenarios that create or update data, such as workflows and data imports.
-- **Client-side validation rules**: Trigger frontend validation in the current form field only.
-- **Rule display**: Server-side field validation rules are shown as inherited read-only rules. Client-side validation rules are shown separately and can be edited there.
-- **Error messages**: Client-side validation rules support custom error messages, while server-side field validation rules do not currently support custom error messages.
+- **Server-side field validation rules**: Trigger client-side validation when the field is used in a form, and trigger validation before data is written. These rules also apply when data is created or changed through workflows, data import, and other paths
+- **Client-side validation rules**: Trigger client-side validation only in the current form field
+- **Rule display**: Server-side field validation rules are displayed read-only as inherited rules. Client-side validation rules are displayed separately and can be edited here
+- **Error messages**: Client-side validation rules support custom error messages. Server-side field validation rules do not currently support custom error messages

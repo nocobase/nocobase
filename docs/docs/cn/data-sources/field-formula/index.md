@@ -108,6 +108,6 @@ keywords: "公式,formula,计算字段,NocoBase"
 ## 相关链接
 
 - [字段](../index.md) — 了解字段的作用、分类和映射逻辑
-- [普通表](../../collection/general.md) — 在普通表中创建和管理字段
-- [数字](../basic/number.md) — 保存参与计算的数值
-- [JSON](./json.md) — 保存结构化结果
+- [普通表](../data-source-main/general-collection.md) — 在普通表中创建和管理字段
+- [数字](../data-modeling/collection-fields/basic/number.md) — 保存参与计算的数值
+- [JSON](../data-modeling/collection-fields/advanced/json.md) — 保存结构化结果

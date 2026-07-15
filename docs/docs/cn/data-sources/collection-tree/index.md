@@ -71,7 +71,7 @@ keywords: "树表,树形集合,邻接表,层次数据,Tree Collection,NocoBase"
 
 ## 页面配置使用
 
-树表可以使用[普通表](./general.md)的多数数据区块做增删改查。另外，它还可以配合树形能力使用：
+树表可以使用[普通表](../data-source-main/general-collection.md)的多数数据区块做增删改查。另外，它还可以配合树形能力使用：
 
 | 区块 | 用途 |
 | --- | --- |
@@ -100,7 +100,7 @@ keywords: "树表,树形集合,邻接表,层次数据,Tree Collection,NocoBase"
 
 ## 相关链接
 
-- [普通表](./general.md) — 查看通用配置和区块使用方式
+- [普通表](../data-source-main/general-collection.md) — 查看通用配置和区块使用方式
 - [表格区块](../../interface-builder/blocks/data-blocks/table.md) — 在表格中启用树表展示
 - [树筛选区块](../../interface-builder/blocks/filter-blocks/tree.md) — 使用树结构筛选数据
 - [多空间](../../multi-app/multi-space/index.md) — 了解空间字段和空间隔离能力

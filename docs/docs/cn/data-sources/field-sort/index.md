@@ -162,5 +162,5 @@ B: [5,6,1,7,8]
 ## 相关链接
 
 - [数据表字段](../index.md) — 查看字段类型和字段映射说明
-- [表格区块](../../../interface-builder/blocks/data-blocks/table.md) — 在表格中使用拖拽排序
-- [看板区块](../../../interface-builder/blocks/data-blocks/kanban.md) — 在看板中使用拖拽排序
+- [表格区块](../../interface-builder/blocks/data-blocks/table.md) — 在表格中使用拖拽排序
+- [看板区块](../../interface-builder/blocks/data-blocks/kanban.md) — 在看板中使用拖拽排序

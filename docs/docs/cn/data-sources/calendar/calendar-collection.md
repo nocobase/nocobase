@@ -94,7 +94,7 @@ keywords: "日历表,Calendar Collection,日历事件,重复事件,日历区块,
 
 ## 页面配置使用
 
-日历表可以使用[普通表](./general.md)的多数数据区块做增删改查。另外，它通常会配合日历区块使用：
+日历表可以使用[普通表](../data-source-main/general-collection.md)的多数数据区块做增删改查。另外，它通常会配合日历区块使用：
 
 | 区块 | 用途 |
 | --- | --- |
@@ -105,7 +105,7 @@ keywords: "日历表,Calendar Collection,日历事件,重复事件,日历区块,
 
 ## 相关链接
 
-- [普通表](./general.md) — 查看通用配置和区块使用方式
-- [日期和时间字段](../field/datetime/datetime.md) — 创建事件开始时间和结束时间字段
+- [普通表](../data-source-main/general-collection.md) — 查看通用配置和区块使用方式
+- [日期和时间字段](../data-modeling/collection-fields/datetime/datetime.md) — 创建事件开始时间和结束时间字段
 - [日历区块](../../interface-builder/blocks/data-blocks/calendar.md) — 在页面中按日历方式展示数据
 - [多空间](../../multi-app/multi-space/index.md) — 了解空间字段和空间隔离能力

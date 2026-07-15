@@ -121,7 +121,7 @@ keywords: "文件表,File Collection,attachments,元信息,附件,NocoBase"
 
 ## 相关链接
 
-- [普通表](./general.md) — 查看通用配置和区块使用方式
-- [数据表字段](../field/index.md) — 查看附件字段和关系字段配置
+- [普通表](../data-source-main/general-collection.md) — 查看通用配置和区块使用方式
+- [数据表字段](../data-modeling/collection-fields/index.md) — 查看附件字段和关系字段配置
 - [文件管理器](../../plugins/@nocobase/plugin-file-manager/index.md) — 查看文件存储相关配置
 - [多空间](../../multi-app/multi-space/index.md) — 了解空间字段和空间隔离能力
