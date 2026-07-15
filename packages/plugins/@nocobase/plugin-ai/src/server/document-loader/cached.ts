@@ -31,7 +31,7 @@ export function getDocumentCacheKey(sourceFile: ParseableFile): string | null {
   if (!sourceFile) {
     return null;
   }
-  if (sourceFile.source?.dataSourceKey && sourceFile.source.dataSourceKey !== 'main') {
+  if (sourceFile.source?.documentCache === false) {
     return null;
   }
   if (!sourceFile.id || !sourceFile.storageId) {

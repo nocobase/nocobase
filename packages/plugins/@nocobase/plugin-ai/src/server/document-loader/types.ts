@@ -39,6 +39,7 @@ export type ParseableFile = {
     dataSourceKey?: string;
     collectionName?: string;
     field?: string;
+    documentCache?: boolean;
     trustworthy?: boolean;
   };
 };

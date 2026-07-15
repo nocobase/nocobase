@@ -21,7 +21,7 @@ describe('document loader cache', () => {
     ).toBe('1@2');
   });
 
-  it('does not cache parsed documents from external data sources', () => {
+  it('keeps the legacy cache key for external files by default', () => {
     expect(
       getDocumentCacheKey({
         id: 1,
@@ -30,6 +30,21 @@ describe('document loader cache', () => {
         source: {
           dataSourceKey: 'external',
           collectionName: 'attachments',
+        },
+      }),
+    ).toBe('1@2');
+  });
+
+  it('does not cache parsed documents when the attachment source disables it', () => {
+    expect(
+      getDocumentCacheKey({
+        id: 1,
+        filename: 'remote.docx',
+        storageId: 2,
+        source: {
+          dataSourceKey: 'external',
+          collectionName: 'attachments',
+          documentCache: false,
         },
       }),
     ).toBeNull();

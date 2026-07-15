@@ -41,6 +41,7 @@ export interface AttachmentModel {
     dataSourceKey?: string;
     collectionName?: string;
     field?: string;
+    documentCache?: boolean;
     trustworthy?: boolean;
   };
 }
