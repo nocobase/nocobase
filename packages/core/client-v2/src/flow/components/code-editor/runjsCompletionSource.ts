@@ -8,6 +8,7 @@
  */
 
 import type { Completion, CompletionContext, CompletionResult, CompletionSource } from '@codemirror/autocomplete';
+import type { Text } from '@codemirror/state';
 import {
   loadRunJSCompletionCatalog,
   type RunJSCompletionCatalogEntry,
@@ -85,7 +86,7 @@ export function createRunJSCompletionSource({
 
   const normalizeLabel = (label: string): string => (typeof label === 'string' ? label.trim() : '');
 
-  const isInStringLiteral = (doc: any, pos: number, includeComments = false): boolean => {
+  const isInStringLiteral = (doc: Text | undefined, pos: number, includeComments = false): boolean => {
     try {
       const end = typeof pos === 'number' && Number.isFinite(pos) ? Math.max(0, Math.floor(pos)) : 0;
       const start = Math.max(0, end - 4000);

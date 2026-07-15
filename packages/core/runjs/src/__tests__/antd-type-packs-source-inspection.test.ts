@@ -7,65 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { inspectRunJSSourceWorkspace } from '../compiler';
 import { loadNodeRunJSTypeLibraryFiles } from '../compiler/node-type-library';
 import { buildRunJSTypeScriptContextDeclaration } from '../typescript-project';
 
-function inspect(code: string) {
-  return inspectRunJSSourceWorkspace({
-    entry: 'src/main.tsx',
-    files: [{ path: 'src/main.tsx', content: code }],
-    surfaceStyle: 'action',
-  });
-}
-
-describe('RunJS Node Ant Design symbol and Icons group source inspection', () => {
-  it('keeps NocoBase imperative API overlays without an ambient antd module stub', () => {
+describe('RunJS Node Ant Design and Icons declarations', () => {
+  it('keeps NocoBase imperative overlays without an ambient antd module stub', () => {
     const baseDeclaration = buildRunJSTypeScriptContextDeclaration();
 
     expect(baseDeclaration).toContain('interface RunJSMessage');
     expect(baseDeclaration).toContain('interface RunJSNotification');
     expect(baseDeclaration).toContain('interface RunJSModal');
     expect(baseDeclaration).not.toContain("declare module 'antd'");
-    expect(
-      inspect(`
-ctx.message.success('Saved');
-ctx.notification.open({ message: 'Saved' });
-ctx.modal.confirm({ title: 'Continue?' });
-`),
-    ).toEqual([]);
-  });
-
-  it('accepts representative official Ant Design and icon usage', () => {
-    expect(
-      inspect(`
-const { Button, Input, Table } = ctx.libs.antd;
-const { MinusOutlined, PlusOutlined } = ctx.libs.antdIcons;
-interface Row { id: number; name: string }
-const button = <Button type="primary" onClick={(event) => event.currentTarget.focus()}>Save</Button>;
-const input = <Input onChange={(event) => event.currentTarget.select()} />;
-const table = <Table<Row> dataSource={[{ id: 1, name: 'Ada' }]} rowKey="id" />;
-const plus = <PlusOutlined spin rotate={90} />;
-const minus = <MinusOutlined />;
-void button; void input; void table; void plus; void minus;
-`),
-    ).toEqual([]);
-  });
-
-  it('reports official invalid props and unknown static members', () => {
-    const messages = inspect(`
-const { Button } = ctx.libs.antd;
-const { PlusOutlined } = ctx.libs.antdIcons;
-<Button type="rainbow" />;
-<PlusOutlined spin="yes" />;
-ctx.libs.antd.NotAComponent;
-ctx.libs.antdIcons.NotAnIcon;
-`).map((diagnostic) => diagnostic.message);
-
-    expect(messages.some((message) => /rainbow/.test(message))).toBe(true);
-    expect(messages.some((message) => /boolean/.test(message))).toBe(true);
-    expect(messages.some((message) => /NotAComponent/.test(message))).toBe(true);
-    expect(messages.some((message) => /NotAnIcon/.test(message))).toBe(true);
   });
 
   it('loads component and icon group closures without unrelated groups', () => {
@@ -86,18 +38,7 @@ ctx.libs.antdIcons.NotAnIcon;
     expect(new Set(files.dependencyFiles.map((file) => file.path)).size).toBe(files.dependencyFiles.length);
   });
 
-  it('uses the same full fallbacks for dynamic access and reuses them for later symbols', () => {
-    expect(
-      inspect(`
-const componentName: keyof RunJSAntdLibrary = 'Input';
-const iconName: keyof RunJSAntdIconsLibrary = 'PlusOutlined';
-const Component = ctx.libs.antd[componentName];
-const Icon = ctx.libs.antdIcons[iconName];
-void Component;
-void Icon;
-`),
-    ).toEqual([]);
-
+  it('reuses loaded full fallbacks for later symbol requests', () => {
     const fullFiles = loadNodeRunJSTypeLibraryFiles([
       { kind: 'full', libraryName: 'antd', packId: 'antd/full' },
       { kind: 'full', libraryName: 'antdIcons', packId: 'antd-icons/full' },

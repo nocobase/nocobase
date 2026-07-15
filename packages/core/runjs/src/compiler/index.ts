@@ -37,11 +37,6 @@ import { inspectRunJSSourceWorkspace } from './source-inspection';
 export * from './source-inspection';
 export * from './node-type-library';
 export * from '../completion-catalog/generator';
-export * from './node-lodash-type-library';
-export * from '../type-packs/formulajs/node';
-export * from '../type-packs/mathjs/node';
-export * from '../type-packs/antd/node';
-export * from '../type-packs/antd-icons/node';
 export * from '../type-packs/generator';
 export type { RunJSCompileFailureCode } from '..';
 
@@ -538,7 +533,8 @@ function adaptRunJSEntry(file: RunJSContentFile): RunJSEntryAdaptation {
       continue;
     }
 
-    for (const modifier of ts.getModifiers(statement) || []) {
+    const modifiers = ts.canHaveModifiers(statement) ? ts.getModifiers(statement) : undefined;
+    for (const modifier of modifiers || []) {
       if (modifier.kind !== ts.SyntaxKind.ExportKeyword && modifier.kind !== ts.SyntaxKind.DefaultKeyword) {
         continue;
       }

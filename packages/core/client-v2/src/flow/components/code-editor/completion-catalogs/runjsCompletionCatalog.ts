@@ -29,8 +29,3 @@ export function loadRunJSCompletionCatalog(
   antdIconsCatalogPromise ??= loadGeneratedRunJSAntdIconsCompletionCatalog();
   return antdIconsCatalogPromise;
 }
-
-export function clearRunJSCompletionCatalogCacheForTests(): void {
-  antdCatalogPromise = undefined;
-  antdIconsCatalogPromise = undefined;
-}

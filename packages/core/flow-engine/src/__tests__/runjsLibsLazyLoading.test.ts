@@ -22,8 +22,7 @@ describe('RunJS ctx.libs lazy loading', () => {
     disposers.push(registerRunJSLib('testLib', async () => ({ foo: 123 })));
 
     const engine = new FlowEngine();
-    const ctx: any = engine.context;
-    const r = await ctx.runjs(`return ctx.libs.testLib.foo;`);
+    const r = await engine.context.runjs(`return ctx.libs.testLib.foo;`);
     expect(r.success).toBe(true);
     expect(r.value).toBe(123);
   });
@@ -32,8 +31,7 @@ describe('RunJS ctx.libs lazy loading', () => {
     disposers.push(registerRunJSLib('testLib', async () => ({ foo: 456 })));
 
     const engine = new FlowEngine();
-    const ctx: any = engine.context;
-    const r = await ctx.runjs(`return ctx.libs['testLib'].foo;`);
+    const r = await engine.context.runjs(`return ctx.libs['testLib'].foo;`);
     expect(r.success).toBe(true);
     expect(r.value).toBe(456);
   });
@@ -42,8 +40,7 @@ describe('RunJS ctx.libs lazy loading', () => {
     disposers.push(registerRunJSLib('testLib', async () => ({ foo: 789 })));
 
     const engine = new FlowEngine();
-    const ctx: any = engine.context;
-    const r = await ctx.runjs(`const { testLib } = ctx.libs; return testLib.foo;`);
+    const r = await engine.context.runjs(`const { testLib } = ctx.libs; return testLib.foo;`);
     expect(r.success).toBe(true);
     expect(r.value).toBe(789);
   });
@@ -55,14 +52,12 @@ describe('RunJS ctx.libs lazy loading', () => {
     disposeFirst();
 
     const engine = new FlowEngine();
-    const ctx: any = engine.context;
-    const result = await ctx.runjs('return ctx.libs.fakeLib.answer;');
+    const result = await engine.context.runjs('return ctx.libs.fakeLib.answer;');
     expect(result).toEqual(expect.objectContaining({ success: true, value: 7 }));
 
     disposeSecond();
     const nextEngine = new FlowEngine();
-    const nextCtx: any = nextEngine.context;
-    const missing = await nextCtx.runjs('return ctx.libs.fakeLib;');
+    const missing = await nextEngine.context.runjs('return ctx.libs.fakeLib;');
     expect(missing).toEqual(expect.objectContaining({ success: true, value: undefined }));
   });
 });

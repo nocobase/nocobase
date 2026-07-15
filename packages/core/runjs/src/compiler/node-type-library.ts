@@ -7,6 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import path from 'node:path';
+
+import { sha256Hex } from '..';
+import {
+  generatedRunJSAntdCompletionCatalog,
+  generatedRunJSAntdIconsCompletionCatalog,
+} from '../completion-catalog/generated';
+import { RUNJS_LODASH_TYPE_LIBRARY_PACK_DEFINITION } from '../lodash-type-library';
 import type {
   RunJSTypeLibraryFile,
   RunJSTypeLibraryPackDependency,
@@ -14,25 +22,18 @@ import type {
   RunJSTypeLibraryUsageDefinition,
 } from '../typescript-library';
 import { selectRunJSTypeLibraryRequests } from '../typescript-library';
-import { loadNodeRunJSDayjsTypeLibraryFiles } from '../type-packs/dayjs/node';
-import { loadNodeRunJSFormulaTypeLibraryFiles } from '../type-packs/formulajs/node';
-import { loadNodeRunJSMathTypeLibraryFiles } from '../type-packs/mathjs/node';
-import {
-  generatedRunJSAntdCompletionCatalog,
-  generatedRunJSAntdIconsCompletionCatalog,
-} from '../completion-catalog/generated';
 import { createRunJSAntdIconsTypeLibraryPackDefinitions } from '../type-packs/antd-icons';
-import { loadNodeRunJSAntdIconsTypeLibraryFiles } from '../type-packs/antd-icons/node';
 import { createRunJSAntdTypeLibraryPackDefinitions } from '../type-packs/antd';
-import { loadNodeRunJSAntdTypeLibraryFiles } from '../type-packs/antd/node';
-import { loadNodeRunJSLodashTypeLibraryFiles } from './node-lodash-type-library';
+import { RUNJS_DAYJS_TYPE_LIBRARY_PACK_DEFINITION } from '../type-packs/dayjs';
+import { RUNJS_FORMULAJS_TYPE_LIBRARY_PACK_DEFINITION } from '../type-packs/formulajs';
+import { collectRunJSTypeDeclarationGraphSync, type RunJSTypeLibraryPackDefinition } from '../type-packs/generator';
+import { RUNJS_MATHJS_TYPE_LIBRARY_PACK_DEFINITION } from '../type-packs/mathjs';
 import {
   RUNJS_TYPESCRIPT_REACT_BRIDGE_DECLARATION,
   RUNJS_TYPESCRIPT_REACT_BRIDGE_PATH,
   RUNJS_TYPESCRIPT_REACT_DOM_BRIDGE_DECLARATION,
   RUNJS_TYPESCRIPT_REACT_DOM_BRIDGE_PATH,
 } from '../typescript-project';
-import { collectRunJSTypeDeclarationGraphSync } from '../type-packs/generator';
 
 export interface NodeRunJSTypeLibraryFiles {
   dependencyFiles: readonly RunJSTypeLibraryFile[];
@@ -187,59 +188,61 @@ export class NodeRunJSTypeLibraryRegistry {
   }
 }
 
-type NodeRunJSTypeLibraryDefinition = {
-  dependencies: readonly string[];
-  entry: string;
-  rootFiles: readonly RunJSTypeLibraryFile[];
+const reactTypeLibraryDefinition: RunJSTypeLibraryPackDefinition = {
+  id: 'react',
+  libraryName: 'React',
+  entry: 'react',
+  rootFiles: [{ content: RUNJS_TYPESCRIPT_REACT_BRIDGE_DECLARATION, path: RUNJS_TYPESCRIPT_REACT_BRIDGE_PATH }],
 };
-
-const declarations: Readonly<Record<string, NodeRunJSTypeLibraryDefinition>> = {
-  react: {
-    dependencies: [],
-    entry: 'react',
-    rootFiles: [
-      {
-        content: RUNJS_TYPESCRIPT_REACT_BRIDGE_DECLARATION,
-        contentHash: 'node-react-bridge',
-        path: RUNJS_TYPESCRIPT_REACT_BRIDGE_PATH,
-      },
-    ],
-  },
-  'react-dom/client': {
-    dependencies: ['react'],
-    entry: 'react-dom/client',
-    rootFiles: [
-      {
-        content: RUNJS_TYPESCRIPT_REACT_DOM_BRIDGE_DECLARATION,
-        contentHash: 'node-react-dom-client-bridge',
-        path: RUNJS_TYPESCRIPT_REACT_DOM_BRIDGE_PATH,
-      },
-    ],
-  },
+const reactDOMTypeLibraryDefinition: RunJSTypeLibraryPackDefinition = {
+  id: 'react-dom/client',
+  libraryName: 'ReactDOM',
+  entry: 'react-dom/client',
+  dependencies: ['react'],
+  rootFiles: [{ content: RUNJS_TYPESCRIPT_REACT_DOM_BRIDGE_DECLARATION, path: RUNJS_TYPESCRIPT_REACT_DOM_BRIDGE_PATH }],
 };
 
 const declarationCache = new Map<string, NodeRunJSTypeLibraryFiles>();
 
-function loadDeclaration(id: string): NodeRunJSTypeLibraryFiles {
-  const cached = declarationCache.get(id);
+function loadDeclaration(definition: RunJSTypeLibraryPackDefinition, projectRoot = process.cwd()) {
+  const normalizedRoot = path.resolve(projectRoot);
+  const cacheKey = `${normalizedRoot}:${definition.id}`;
+  const cached = declarationCache.get(cacheKey);
   if (cached) return cached;
-  const definition = declarations[id];
-  const inherited = mergePacks(definition.dependencies.map(loadDeclaration));
-  const inheritedHashes = new Map(
-    [...inherited.rootFiles, ...inherited.dependencyFiles].map((file) => [file.path, file.contentHash]),
-  );
-  const graph = collectRunJSTypeDeclarationGraphSync(process.cwd(), definition.entry);
-  const files = {
-    dependencyFiles: graph.dependencyFiles.filter((file) => {
-      const inheritedHash = inheritedHashes.get(file.path);
-      if (!inheritedHash) return true;
-      if (inheritedHash !== file.contentHash) throw new Error(`Conflicting Node RunJS type library file: ${file.path}`);
-      return false;
-    }),
-    rootFiles: definition.rootFiles,
+  const graph = collectRunJSTypeDeclarationGraphSync(normalizedRoot, definition.entry);
+  const files: NodeRunJSTypeLibraryFiles = {
+    dependencyFiles: graph.dependencyFiles,
+    rootFiles: (definition.rootFiles || []).map((file) => ({
+      content: file.content,
+      contentHash: sha256Hex(file.content),
+      path: file.path,
+    })),
   };
-  declarationCache.set(id, files);
+  declarationCache.set(cacheKey, files);
   return files;
+}
+
+function loadDeclarationSet(
+  request: RunJSTypeLibraryRequest,
+  definitions: readonly RunJSTypeLibraryPackDefinition[],
+): NodeRunJSTypeLibraryFiles {
+  const definitionsById = new Map(definitions.map((definition) => [definition.id, definition]));
+  const selected = new Map<string, RunJSTypeLibraryPackDefinition>();
+  const collect = (id: string): void => {
+    if (selected.has(id)) return;
+    const definition = definitionsById.get(id);
+    if (!definition) return;
+    selected.set(id, definition);
+    definition.dependencies?.forEach(collect);
+  };
+  collect(request.packId);
+  return selected.size
+    ? mergePacks([...selected.values()].sort(byId).map((definition) => loadDeclaration(definition)))
+    : emptyFiles;
+}
+
+function byId(left: RunJSTypeLibraryPackDefinition, right: RunJSTypeLibraryPackDefinition): number {
+  return left.id.localeCompare(right.id);
 }
 
 const defaultNodeRunJSTypeLibraryRegistry = new NodeRunJSTypeLibraryRegistry();
@@ -251,55 +254,54 @@ const antdIconsTypeLibraryDefinitions = createRunJSAntdIconsTypeLibraryPackDefin
 defaultNodeRunJSTypeLibraryRegistry.register({
   id: 'react',
   libraryName: 'React',
-  load: () => loadDeclaration('react'),
+  load: () => loadDeclaration(reactTypeLibraryDefinition),
   moduleNames: ['react'],
   topLevelNames: ['React'],
 });
 defaultNodeRunJSTypeLibraryRegistry.register({
-  dependencies: [],
   id: 'react-dom/client',
   libraryName: 'ReactDOM',
-  load: () => mergePacks([loadDeclaration('react'), loadDeclaration('react-dom/client')]),
+  load: (request) => loadDeclarationSet(request, [reactTypeLibraryDefinition, reactDOMTypeLibraryDefinition]),
   moduleNames: ['react-dom', 'react-dom/client'],
   topLevelNames: ['ReactDOM'],
 });
 defaultNodeRunJSTypeLibraryRegistry.register({
   id: 'dayjs',
   libraryName: 'dayjs',
-  load: (request) => loadNodeRunJSDayjsTypeLibraryFiles([request]),
+  load: () => loadDeclaration(RUNJS_DAYJS_TYPE_LIBRARY_PACK_DEFINITION),
   moduleNames: ['dayjs'],
   topLevelNames: ['dayjs'],
 });
 defaultNodeRunJSTypeLibraryRegistry.register({
   id: 'lodash',
   libraryName: 'lodash',
-  load: (request) => loadNodeRunJSLodashTypeLibraryFiles([request]),
+  load: () => loadDeclaration(RUNJS_LODASH_TYPE_LIBRARY_PACK_DEFINITION),
   moduleNames: ['lodash'],
 });
 defaultNodeRunJSTypeLibraryRegistry.register({
   id: 'mathjs',
   libraryName: 'math',
-  load: (request) => loadNodeRunJSMathTypeLibraryFiles([request]),
+  load: () => loadDeclaration(RUNJS_MATHJS_TYPE_LIBRARY_PACK_DEFINITION),
   moduleNames: ['mathjs'],
 });
 defaultNodeRunJSTypeLibraryRegistry.register({
   id: 'formulajs',
   libraryName: 'formula',
-  load: (request) => loadNodeRunJSFormulaTypeLibraryFiles([request]),
+  load: () => loadDeclaration(RUNJS_FORMULAJS_TYPE_LIBRARY_PACK_DEFINITION),
   moduleNames: ['@formulajs/formulajs'],
 });
 for (const definition of antdTypeLibraryDefinitions) {
   defaultNodeRunJSTypeLibraryRegistry.register({
     id: definition.id,
     libraryName: 'antd',
-    load: (request) => loadNodeRunJSAntdTypeLibraryFiles([request], antdTypeLibraryDefinitions),
+    load: (request) => loadDeclarationSet(request, antdTypeLibraryDefinitions),
   });
 }
 for (const definition of antdIconsTypeLibraryDefinitions) {
   defaultNodeRunJSTypeLibraryRegistry.register({
     id: definition.id,
     libraryName: 'antdIcons',
-    load: (request) => loadNodeRunJSAntdIconsTypeLibraryFiles([request], antdIconsTypeLibraryDefinitions),
+    load: (request) => loadDeclarationSet(request, antdIconsTypeLibraryDefinitions),
   });
 }
 
