@@ -96,6 +96,30 @@ describe('runjsSourceRuntimeCommon', () => {
     expect(screen.getByText('Color')).toBeInTheDocument();
   });
 
+  it('renders boolean settings as an inline switch', () => {
+    const [, step] = createLightExtensionSettingStep<FlowModel>({
+      entryId: 'entry_boolean',
+      fieldName: 'showCard',
+      fieldSchema: {
+        type: 'boolean',
+        title: 'Show block card',
+      },
+      required: false,
+      stepKey: 'show-card',
+      defaultValue: true,
+      sort: 700,
+      component: 'SettingsSingleField',
+      rootSchema: { type: 'object' },
+      descriptorDefaults: { showCard: true },
+      savedRootValue: { showCard: true },
+      syncValue: () => undefined,
+      afterParamsSave: async () => undefined,
+    });
+
+    expect(step.uiMode).toEqual({ type: 'switch', key: 'value' });
+    expect(step.defaultParams?.({} as never)).toEqual({ value: true });
+  });
+
   it('rejects light extension source saves when the settings descriptor is unavailable', () => {
     expect(() =>
       normalizeLightExtensionSourceSettings({

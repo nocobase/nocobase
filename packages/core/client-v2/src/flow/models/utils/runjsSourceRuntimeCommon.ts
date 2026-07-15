@@ -314,6 +314,7 @@ export function createLightExtensionSettingStep<TModel extends FlowModel>(option
   const { fieldName, fieldSchema, required, stepKey, defaultValue, sort } = options;
   const title = getSchemaTitle(fieldSchema, fieldName);
   const visibilityCondition = fieldSchema['x-visible-when'];
+  const fieldType = normalizeSchemaType(fieldSchema) || 'string';
   return [
     stepKey,
     {
@@ -321,9 +322,17 @@ export function createLightExtensionSettingStep<TModel extends FlowModel>(option
       title,
       sort,
       persistParams: false,
+      ...(fieldType === 'boolean'
+        ? {
+            uiMode: {
+              type: 'switch' as const,
+              key: 'value',
+            },
+          }
+        : {}),
       uiSchema: {
         value: {
-          type: normalizeSchemaType(fieldSchema) || 'string',
+          type: fieldType,
           'x-decorator': 'FormItem',
           'x-component': options.component,
           'x-component-props': {
