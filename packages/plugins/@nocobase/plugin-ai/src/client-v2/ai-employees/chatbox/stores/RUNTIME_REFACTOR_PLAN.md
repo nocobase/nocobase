@@ -431,6 +431,130 @@ Tests:
   - `yarn eslint --fix packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/RUNTIME_REFACTOR_PLAN.md`: attempted, but the current ESLint configuration parses `.md` as JavaScript and fails at line 1 with `Parsing error: Invalid character`.
 - Update this document status and commit after tests pass.
 
+### T9. Design Conversation And Workflow Runtime Ownership
+
+Status: `Pending`
+
+Dependencies: T8
+
+Problem:
+
+- `useChatConversationsStore` and `useWorkflowTasksStore` still use `createObservableStore` and selector-style `.use.*` APIs.
+- `useChatConversationActions` and `useWorkflowTasks` implicitly read those global stores.
+- Runtime-aware hooks should accept the same explicit `ChatBoxRuntime` injection pattern added in T8.
+- Future embedded chatbox blocks must be able to own their active conversation/workflow UI state without silently reading or writing a global singleton.
+
+Small tasks:
+
+- T9.1 Decide runtime ownership for conversation fields:
+  - `currentConversation`
+  - `conversations`
+  - `keyword`
+  - `webSearch`
+  - `conversationSegmented`
+  - `unreadCount`
+- T9.2 Decide runtime ownership for workflow task fields:
+  - `workflowTasks`
+  - `currentWorkflowTask`
+  - `unreadCount`
+  - `loading`
+  - `keyword`
+  - `selectedJobStatus`
+- T9.3 Document field annotations for new model classes, using `observable.shallow` for arrays/objects and `observable.ref` for primitives.
+- T9.4 Decide whether unread counts remain runtime-local UI state or need a future shared/global service. Do not change server APIs in this phase.
+- T9.5 Update `ChatBoxRuntime` design to include conversation and workflow task runtime dependencies.
+
+Design direction:
+
+- Add `ChatConversationModel` to own conversation list UI state and the currently active conversation for the current runtime.
+- Add `WorkflowTaskModel` to own workflow task list UI state and the currently active workflow task for the current runtime.
+- Keep `ChatMessageModel` and `ChatToolCallModel` shared by `sessionId` as already designed.
+- Keep `useChatBoxRuntime()` strict. Runtime-aware hooks should accept `runtime?: ChatBoxRuntime` and resolve through `useResolvedChatBoxRuntime(runtime)`.
+- Do not reintroduce selector APIs as the primary render subscription mechanism.
+
+Tests:
+
+- Design-only task; no runtime tests required unless code is changed.
+- If only this document is touched, attempt markdown eslint and record the known `.md` parser failure.
+- Commit the design update before implementation tasks.
+
+### T10. Implement Conversation And Workflow Runtime Models
+
+Status: `Pending`
+
+Dependencies: T9
+
+Small tasks:
+
+- T10.1 Implement `ChatConversationModel` with fields/actions equivalent to `useChatConversationsStore`.
+- T10.2 Implement `WorkflowTaskModel` with fields/actions equivalent to `useWorkflowTasksStore`.
+- T10.3 Preserve action names where practical:
+  - conversations: `setCurrentConversation`, `setKeyword`, `setConversations`, `markConversationRead`, `setWebSearch`, `setConversationSegmented`, `setUnreadCount`
+  - workflow tasks: `setWorkflowTasks`, `setCurrentWorkflowTask`, `setUnreadCount`, `markWorkflowTaskRead`, `setLoading`, `setKeyword`, `setSelectedJobStatus`
+- T10.4 Preserve workflow task normalization behavior currently in `workflow-tasks.ts`.
+- T10.5 Add both models to `ChatBoxRuntime` and `createChatBoxRuntime()`.
+- T10.6 Update `getGlobalChatBoxRuntime()` so existing global floating chatbox behavior keeps a stable global conversation/workflow runtime.
+
+Tests:
+
+- Add or update model tests covering conversation setters, unread count updates, workflow task normalization, workflow task read marking, and runtime isolation.
+- Run touched-file eslint and related store/runtime tests.
+- Commit after tests pass.
+
+### T11. Migrate Conversation And Workflow Consumers To Runtime Models
+
+Status: `Pending`
+
+Dependencies: T10
+
+Small tasks:
+
+- T11.1 Update `useChatConversationActions(runtime?)` to use `useResolvedChatBoxRuntime(runtime).chatConversationModel` and `workflowTaskModel`.
+- T11.2 Update `useWorkflowTasks(runtime?)` to use `useResolvedChatBoxRuntime(runtime).workflowTaskModel` and `chatBoxModel`.
+- T11.3 Update hooks/actions that currently call `useChatConversationsStore` or `useWorkflowTasksStore` to read/write through the current runtime models.
+- T11.4 Update React components that read conversation/workflow model state during render to use `useChatBoxRuntime()` or injected runtime and wrap with `observer` where needed.
+- T11.5 Keep provider-less entrypoints explicit: if a component can render outside `ChatBoxRuntimeProvider`, pass `getGlobalChatBoxRuntime()` into conversation/workflow hooks instead of relying on fallback.
+- T11.6 Ensure `useChat`, `useChatBoxActions`, `useChatMessageActions`, and `useToolCallActions` continue passing the already resolved runtime to nested hooks.
+
+Likely consumers to audit:
+
+- `useChatBoxActions`
+- `useChatMessageActions`
+- `useChatConversationActions`
+- `useWorkflowTasks`
+- chatbox components under `components/` that read current conversation, conversation list, web search, workflow tasks, or current workflow task
+- AI employee entrypoints and tool cards that read conversation/workflow state
+- external integrations already migrated to explicit global runtime, such as data-visualization's `DaraButton`
+
+Tests:
+
+- Run touched-file eslint.
+- Run chatbox runtime/model tests.
+- Run tests covering conversations, messages, sender, workflow tasks, AI employee shortcuts, and data-visualization integration.
+- Add focused regression tests if the existing suite does not cover conversation/workflow state changes through runtime models.
+- Commit after tests pass.
+
+### T12. Remove Obsolete Conversation And Workflow Selector Stores
+
+Status: `Pending`
+
+Dependencies: T11
+
+Small tasks:
+
+- T12.1 Remove or replace production usage of `useChatConversationsStore.use.*`, `useChatConversationsStore.getState()`, `useWorkflowTasksStore.use.*`, and `useWorkflowTasksStore.getState()`.
+- T12.2 Remove `createObservableStore` usage from `chat-conversations.ts` and `workflow-tasks.ts`, or replace those files with model exports.
+- T12.3 Update public exports if `useChatConversationsStore` is no longer part of the supported client-v2 API. If compatibility is required, keep only an explicit global-runtime adapter and document it as global-only.
+- T12.4 Search production code for stale selector store imports and static calls.
+- T12.5 Keep `create-selectors.ts` only if other non-chatbox code still needs it; otherwise remove it.
+
+Tests:
+
+- Run `rg "useChatConversationsStore|useWorkflowTasksStore|createObservableStore|create-selectors" packages/plugins/@nocobase/plugin-ai/src/client-v2 -g '*.ts' -g '*.tsx'` and document any intentional remaining matches.
+- Run touched-file eslint and related tests.
+- Run public API contract tests if public exports change.
+- Commit after tests pass.
+
 ## Completion Rule
 
 Each task must be completed independently:
