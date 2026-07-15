@@ -266,16 +266,13 @@ class UsageAnalyzer {
     const moduleName = ts.isStringLiteral(node.moduleSpecifier) ? node.moduleSpecifier.text : '';
     const clause = node.importClause;
     if (!moduleName || !clause) return;
-    const isTypeOnlyDeclaration = clause.isTypeOnly;
 
     if (clause.name) {
       scope.declare(clause.name.text);
-      if (isTypeOnlyDeclaration) {
-        const target = this.moduleTarget(moduleName);
-        if (target) {
-          scope.set(clause.name.text, target);
-          this.emitTarget(target);
-        }
+      const target = this.moduleTarget(moduleName);
+      if (target) {
+        scope.set(clause.name.text, target);
+        this.emitTarget(target);
       }
     }
 
@@ -283,19 +280,16 @@ class UsageAnalyzer {
     if (!bindings) return;
     if (ts.isNamespaceImport(bindings)) {
       scope.declare(bindings.name.text);
-      if (isTypeOnlyDeclaration) {
-        const target = this.moduleTarget(moduleName);
-        if (target) {
-          scope.set(bindings.name.text, target);
-          this.emitTarget(target);
-        }
+      const target = this.moduleTarget(moduleName);
+      if (target) {
+        scope.set(bindings.name.text, target);
+        this.emitTarget(target);
       }
       return;
     }
 
     for (const specifier of bindings.elements) {
       scope.declare(specifier.name.text);
-      if (!isTypeOnlyDeclaration && !specifier.isTypeOnly) continue;
       const importedName = (specifier.propertyName || specifier.name).text;
       const target = this.moduleTarget(moduleName, importedName);
       if (!target) continue;

@@ -21,6 +21,12 @@ import {
 } from '@nocobase/runjs/client-v2';
 
 import { runJSTypeScriptLibSources } from './runJSTypeScriptLibSources';
+import {
+  getRunJSBuiltInAutoImportLibrary,
+  isRunJSTypeScriptAutoImportSourceAllowed,
+  rewriteRunJSBuiltInAutoImportCodeActions,
+  type RunJSBuiltInAutoImportChange,
+} from './typescriptBuiltInAutoImport';
 import { ensureGeneratedRunJSTypeLibraryPackLoadersRegistered } from './type-packs';
 import { getDefaultRunJSTypeLibraryRegistry, type RunJSTypeLibraryRegistry } from './typescriptLibraryRegistry';
 import type { RunJSTypeScriptMetrics } from './typescriptMetrics';
@@ -56,6 +62,7 @@ export interface CodeEditorTypeScriptProject {
   };
   onInternalError?: (error: CodeEditorTypeScriptProjectInternalError) => void;
   metrics?: RunJSTypeScriptMetrics;
+  rewriteBuiltInAutoImports?: boolean;
 }
 
 export interface CodeEditorTypeScriptProjectRef {
@@ -543,11 +550,17 @@ function buildCompletionChanges(
   label: string,
   from: number,
   to: number,
+  builtInAutoImportChanges?: RunJSBuiltInAutoImportChange[],
 ): CodeMirrorTextChange[] {
   const changes: CodeMirrorTextChange[] = [];
   const seen = new Set<string>();
 
-  for (const action of details?.codeActions || []) {
+  for (const builtInAutoImportChange of builtInAutoImportChanges || []) {
+    changes.push(builtInAutoImportChange);
+    seen.add(`${builtInAutoImportChange.from}:${builtInAutoImportChange.to}:${builtInAutoImportChange.insert}`);
+  }
+
+  for (const action of builtInAutoImportChanges ? [] : details?.codeActions || []) {
     for (const change of action.changes || []) {
       if (normalizeFileName(change.fileName) !== projectService.currentFileName) {
         continue;
@@ -597,10 +610,28 @@ function createCompletionApply(
   label: string,
   preferences: TypeScriptUserPreferences,
   formatOptions: TypeScriptFormatCodeSettings,
+  rewriteBuiltInAutoImports: boolean,
 ): Completion['apply'] {
   return (view, _completion, from, to) => {
     const details = getCompletionDetails(projectService, position, entry, preferences, formatOptions);
-    const changes = buildCompletionChanges(projectService, details, label, from, to);
+    const source = getSourceDisplay(projectService.ts, entry);
+    const libraryName = rewriteBuiltInAutoImports ? getRunJSBuiltInAutoImportLibrary(source) : undefined;
+    const builtInAutoImportChanges =
+      libraryName && source
+        ? rewriteRunJSBuiltInAutoImportCodeActions({
+            codeActions: details?.codeActions,
+            currentFileName: projectService.currentFileName,
+            libraryName,
+            localName: label,
+            source,
+            sourceText: projectService.fileSystem.get(projectService.currentFileName)?.content || '',
+            ts: projectService.ts,
+          })
+        : undefined;
+    if (libraryName && !builtInAutoImportChanges) {
+      return;
+    }
+    const changes = buildCompletionChanges(projectService, details, label, from, to, builtInAutoImportChanges);
     view.dispatch({
       changes,
       scrollIntoView: true,
@@ -615,11 +646,25 @@ function completionEntryToCodeMirrorCompletion(
   entry: TypeScriptCompletionEntry,
   preferences: TypeScriptUserPreferences,
   formatOptions: TypeScriptFormatCodeSettings,
+  rewriteBuiltInAutoImports: boolean,
 ): Completion {
   const source = getSourceDisplay(projectService.ts, entry);
-  const detail = source ? `Auto import from ${source}` : entry.kind;
+  const libraryName = rewriteBuiltInAutoImports ? getRunJSBuiltInAutoImportLibrary(source) : undefined;
+  const detail = libraryName
+    ? `Auto import from ctx.libs.${libraryName}`
+    : source
+      ? `Auto import from ${source}`
+      : entry.kind;
   return {
-    apply: createCompletionApply(projectService, position, entry, entry.name, preferences, formatOptions),
+    apply: createCompletionApply(
+      projectService,
+      position,
+      entry,
+      entry.name,
+      preferences,
+      formatOptions,
+      rewriteBuiltInAutoImports,
+    ),
     boost: source ? 120 : 20,
     detail,
     info: entry.kindModifiers || detail,
@@ -632,6 +677,7 @@ function getCompletionResultFromService(
   projectService: ProjectService,
   position: number,
   explicit: boolean,
+  rewriteBuiltInAutoImports = false,
 ): CompletionResult | null {
   const preferences: TypeScriptUserPreferences = {
     allowIncompleteCompletions: true,
@@ -657,9 +703,24 @@ function getCompletionResultFromService(
   const replacementSpan = completions.optionalReplacementSpan || completions.entries[0]?.replacementSpan;
   const from = replacementSpan?.start ?? position;
   const to = replacementSpan ? replacementSpan.start + replacementSpan.length : position;
-  const options = completions.entries.map((entry) =>
-    completionEntryToCodeMirrorCompletion(projectService, position, entry, preferences, formatOptions),
-  );
+  const options = completions.entries
+    .filter((entry) =>
+      isRunJSTypeScriptAutoImportSourceAllowed(getSourceDisplay(projectService.ts, entry), rewriteBuiltInAutoImports),
+    )
+    .map((entry) =>
+      completionEntryToCodeMirrorCompletion(
+        projectService,
+        position,
+        entry,
+        preferences,
+        formatOptions,
+        rewriteBuiltInAutoImports,
+      ),
+    );
+
+  if (!options.length) {
+    return null;
+  }
 
   return {
     from,
@@ -738,7 +799,7 @@ class TypeScriptProjectSession implements CodeEditorTypeScriptProjectSession {
       const service = await this.prepareService(project, currentFileContent, request.stateGeneration);
       if (!service || !this.isCurrentRequest('completion', request)) return null;
       const synchronousStartedAt = project.metrics?.now();
-      const result = getCompletionResultFromService(service, position, explicit);
+      const result = getCompletionResultFromService(service, position, explicit, project.rewriteBuiltInAutoImports);
       if (typeof synchronousStartedAt === 'number') {
         project.metrics?.recordSynchronousTypeScriptTask('completion', synchronousStartedAt);
       }

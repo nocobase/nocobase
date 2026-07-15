@@ -586,6 +586,8 @@ export function buildRunJSTypeScriptProject(
 
   return {
     currentFilePath: activeFile.path,
+    rewriteBuiltInAutoImports: true,
+    typeLibraryIds: ['react'],
     files: files
       .filter((file) => file.path !== runJSManifestPath)
       .filter((file) => isRunJSTypeScriptWorkspaceFile(file.path))

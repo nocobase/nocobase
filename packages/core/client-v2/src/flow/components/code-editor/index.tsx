@@ -25,6 +25,7 @@ import { SnippetsDrawer } from './panels/SnippetsDrawer';
 import { useCodeRunner } from './hooks/useCodeRunner';
 import { useFullscreenOverlay } from '../../../flow-compat';
 import { createRunJSCompletionSource, type RunJSImportModuleCompletion } from './runjsCompletionSource';
+import { filterRunJSCompletionsForTypeScriptAutoImports } from './runjsCompletions';
 import { inferRunJSScenesFromContext, mergeRunJSScenes } from './resolveScenes';
 import type { CodeEditorTypeScriptProject } from './typescriptProject';
 import type { CodeEditorJsonSchema } from './jsonLanguageService';
@@ -143,10 +144,17 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   // 合并外部注入与动态构建的 completions
   const finalExtra = useMemo(() => {
     const arr: Completion[] = [];
-    if (Array.isArray(dynamicCompletions)) arr.push(...dynamicCompletions);
+    if (Array.isArray(dynamicCompletions)) {
+      arr.push(
+        ...filterRunJSCompletionsForTypeScriptAutoImports(
+          dynamicCompletions,
+          typescriptProject?.rewriteBuiltInAutoImports === true,
+        ),
+      );
+    }
     if (Array.isArray(extraCompletions)) arr.push(...extraCompletions);
     return arr;
-  }, [extraCompletions, dynamicCompletions]);
+  }, [extraCompletions, dynamicCompletions, typescriptProject?.rewriteBuiltInAutoImports]);
 
   const completionSource = useMemo(() => {
     return createRunJSCompletionSource({

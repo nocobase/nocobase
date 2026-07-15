@@ -69,6 +69,14 @@ interface ImportBinding {
   named: NamedImportBinding[];
 }
 
+interface BuiltInImportBinding {
+  ctxLibName: string;
+  start: number;
+  defaultName?: string;
+  namespaceName?: string;
+  named: NamedImportBinding[];
+}
+
 interface NamedImportBinding {
   imported: string;
   local: string;
@@ -78,6 +86,7 @@ interface RunJSModuleInfo {
   file: RunJSContentFile;
   sourceFile?: ts.SourceFile;
   imports: ImportBinding[];
+  builtInImports: BuiltInImportBinding[];
   namedExports: Set<string>;
   hasDefaultExport: boolean;
   defaultExportSymbol: string;
@@ -148,6 +157,16 @@ const commonJSRequireHosts = new Set(['globalThis', 'global', 'window', 'module'
 const runtimeVersionDefault = 'v2';
 const runJSSourceURLPrefix = 'nocobase-runjs://bundle/';
 const jsRunnerGeneratedCodeLineOffset = 2;
+const runJSBuiltInModules: Readonly<Record<string, string>> = {
+  react: 'React',
+  'react-dom/client': 'ReactDOM',
+  antd: 'antd',
+  '@ant-design/icons': 'antdIcons',
+  dayjs: 'dayjs',
+  lodash: 'lodash',
+  mathjs: 'math',
+  '@formulajs/formulajs': 'formula',
+};
 const asyncFunctionConstructor = Object.getPrototypeOf(async function runJSWorkflowSyntaxCheck() {})
   .constructor as AsyncFunctionConstructor;
 
@@ -325,6 +344,7 @@ function analyzeModule(
   const moduleInfo: RunJSModuleInfo = {
     file,
     imports: [],
+    builtInImports: [],
     namedExports: new Set<string>(),
     hasDefaultExport: file.extension === '.json',
     defaultExportSymbol,
@@ -375,6 +395,20 @@ function analyzeModule(
     collectExportDeclaration(statement, sourceFile, moduleInfo, diagnostics);
   }
 
+  if (moduleInfo.builtInImports.length) {
+    const ctxBinding = findTopLevelRuntimeBinding(sourceFile, 'ctx');
+    if (ctxBinding) {
+      diagnostics.push(
+        diagnosticAt(sourceFile, ctxBinding.getStart(sourceFile), {
+          code: 'RUNJS_COMPILE_FAILED',
+          path: file.path,
+          message:
+            'Built-in module imports cannot be compiled in a module that declares a top-level "ctx" runtime binding. Rename the binding because "ctx" is reserved for the RunJS context.',
+        }),
+      );
+    }
+  }
+
   return moduleInfo;
 }
 
@@ -399,6 +433,10 @@ function collectImportDeclaration(
     return;
   }
   if (!isRelativeImportSpecifier(specifier)) {
+    const ctxLibName = resolveRunJSBuiltInModule(specifier);
+    if (ctxLibName && collectBuiltInImportDeclaration(statement, sourceFile, moduleInfo, ctxLibName, diagnostics)) {
+      return;
+    }
     diagnostics.push(
       diagnosticAt(sourceFile, statement.moduleSpecifier.getStart(sourceFile), {
         code: 'RUNJS_IMPORT_NOT_ALLOWED',
@@ -444,6 +482,159 @@ function collectImportDeclaration(
   }
 
   moduleInfo.imports.push(importBinding);
+}
+
+function collectBuiltInImportDeclaration(
+  statement: ts.ImportDeclaration,
+  sourceFile: ts.SourceFile,
+  moduleInfo: RunJSModuleInfo,
+  ctxLibName: string,
+  diagnostics: RunJSCompileDiagnostic[],
+): boolean {
+  const importClause = statement.importClause;
+  if (!importClause || importClause.isTypeOnly) return false;
+  const binding: BuiltInImportBinding = {
+    ctxLibName,
+    start: statement.moduleSpecifier.getStart(sourceFile),
+    defaultName: importClause.name?.text,
+    named: [],
+  };
+  if (importClause.namedBindings) {
+    if (ts.isNamespaceImport(importClause.namedBindings)) {
+      binding.namespaceName = importClause.namedBindings.name.text;
+    } else {
+      for (const element of importClause.namedBindings.elements) {
+        if (element.isTypeOnly) continue;
+        binding.named.push({
+          imported: element.propertyName?.text || element.name.text,
+          local: element.name.text,
+        });
+      }
+    }
+  }
+  if (!binding.defaultName && !binding.namespaceName && !binding.named.length) {
+    diagnostics.push(
+      diagnosticAt(sourceFile, statement.getStart(sourceFile), {
+        code: 'RUNJS_IMPORT_NOT_ALLOWED',
+        path: moduleInfo.file.path,
+        message: 'Side-effect imports are not supported for RunJS built-in modules',
+      }),
+    );
+    return true;
+  }
+  moduleInfo.builtInImports.push(binding);
+  return true;
+}
+
+function resolveRunJSBuiltInModule(specifier: string): string | undefined {
+  return Object.prototype.hasOwnProperty.call(runJSBuiltInModules, specifier)
+    ? runJSBuiltInModules[specifier]
+    : undefined;
+}
+
+function findTopLevelRuntimeBinding(sourceFile: ts.SourceFile, name: string): ts.Node | undefined {
+  for (const statement of sourceFile.statements) {
+    if (hasModifier(statement, ts.SyntaxKind.DeclareKeyword)) {
+      continue;
+    }
+
+    const directBinding = findDirectTopLevelRuntimeBinding(statement, name);
+    if (directBinding) {
+      return directBinding;
+    }
+
+    const functionScopedBinding = findFunctionScopedVarBinding(statement, name);
+    if (functionScopedBinding) {
+      return functionScopedBinding;
+    }
+  }
+
+  return undefined;
+}
+
+function findDirectTopLevelRuntimeBinding(statement: ts.Statement, name: string): ts.Node | undefined {
+  if (ts.isImportDeclaration(statement) && isRuntimeImportDeclaration(statement)) {
+    const importClause = statement.importClause;
+    if (importClause?.name?.text === name) {
+      return importClause.name;
+    }
+    const namedBindings = importClause?.namedBindings;
+    if (namedBindings && ts.isNamespaceImport(namedBindings) && namedBindings.name.text === name) {
+      return namedBindings.name;
+    }
+    if (namedBindings && ts.isNamedImports(namedBindings)) {
+      return namedBindings.elements.find((element) => !element.isTypeOnly && element.name.text === name)?.name;
+    }
+    return undefined;
+  }
+
+  if (ts.isVariableStatement(statement)) {
+    for (const declaration of statement.declarationList.declarations) {
+      const binding = findBindingIdentifier(declaration.name, name);
+      if (binding) {
+        return binding;
+      }
+    }
+    return undefined;
+  }
+
+  if (
+    (ts.isFunctionDeclaration(statement) ||
+      ts.isClassDeclaration(statement) ||
+      ts.isEnumDeclaration(statement) ||
+      ts.isModuleDeclaration(statement)) &&
+    statement.name &&
+    ts.isIdentifier(statement.name) &&
+    statement.name.text === name
+  ) {
+    return statement.name;
+  }
+
+  return undefined;
+}
+
+function findFunctionScopedVarBinding(node: ts.Node, name: string): ts.Identifier | undefined {
+  if (
+    isFunctionLikeScope(node) ||
+    ts.isClassDeclaration(node) ||
+    ts.isClassExpression(node) ||
+    ts.isModuleDeclaration(node)
+  ) {
+    return undefined;
+  }
+
+  if (ts.isVariableDeclarationList(node) && !(node.flags & ts.NodeFlags.BlockScoped)) {
+    for (const declaration of node.declarations) {
+      const binding = findBindingIdentifier(declaration.name, name);
+      if (binding) {
+        return binding;
+      }
+    }
+  }
+
+  let binding: ts.Identifier | undefined;
+  ts.forEachChild(node, (child) => {
+    binding ||= findFunctionScopedVarBinding(child, name);
+  });
+  return binding;
+}
+
+function findBindingIdentifier(bindingName: ts.BindingName, name: string): ts.Identifier | undefined {
+  if (ts.isIdentifier(bindingName)) {
+    return bindingName.text === name ? bindingName : undefined;
+  }
+
+  for (const element of bindingName.elements) {
+    if (ts.isOmittedExpression(element)) {
+      continue;
+    }
+    const binding = findBindingIdentifier(element.name, name);
+    if (binding) {
+      return binding;
+    }
+  }
+
+  return undefined;
 }
 
 function collectExportDeclaration(
@@ -814,7 +1005,10 @@ function transformModuleSource(
   }
 
   const sourceFile = moduleInfo.sourceFile as ts.SourceFile;
-  const body: RunJSTransformedCode[] = [createImportAliasDeclarations(moduleInfo, modules)];
+  const body: RunJSTransformedCode[] = [
+    createBuiltInImportAliasDeclarations(moduleInfo),
+    createImportAliasDeclarations(moduleInfo, modules),
+  ];
 
   for (const statement of sourceFile.statements) {
     if (
@@ -1025,6 +1219,60 @@ function createImportAliasDeclarations(
     }
   }
 
+  return joinTransformedSegments(aliases);
+}
+
+function createBuiltInImportAliasDeclarations(moduleInfo: RunJSModuleInfo): RunJSTransformedCode {
+  const aliases: RunJSTransformedCode[] = [];
+  const sourceFile = moduleInfo.sourceFile;
+  for (const binding of moduleInfo.builtInImports) {
+    const position = sourceFile.getLineAndCharacterOfPosition(binding.start);
+    const sourceLine = position.line + 1;
+    const sourceColumn = position.character + 1;
+    const source = `ctx.libs.${binding.ctxLibName}`;
+    if (binding.defaultName) {
+      aliases.push(
+        transformedSourceCode(
+          `const ${binding.defaultName} = ${source};`,
+          moduleInfo.file.path,
+          sourceLine,
+          sourceColumn,
+        ),
+      );
+    }
+    if (binding.namespaceName) {
+      aliases.push(
+        transformedSourceCode(
+          `const ${binding.namespaceName} = ${source};`,
+          moduleInfo.file.path,
+          sourceLine,
+          sourceColumn,
+        ),
+      );
+    }
+    for (const namedImport of binding.named) {
+      if (namedImport.imported !== 'default') {
+        continue;
+      }
+      aliases.push(
+        transformedSourceCode(
+          `const ${namedImport.local} = ${source};`,
+          moduleInfo.file.path,
+          sourceLine,
+          sourceColumn,
+        ),
+      );
+    }
+    const namedImports = binding.named.filter((namedImport) => namedImport.imported !== 'default');
+    if (namedImports.length) {
+      const names = namedImports
+        .map(({ imported, local }) => (imported === local ? imported : `${imported}: ${local}`))
+        .join(', ');
+      aliases.push(
+        transformedSourceCode(`const { ${names} } = ${source};`, moduleInfo.file.path, sourceLine, sourceColumn),
+      );
+    }
+  }
   return joinTransformedSegments(aliases);
 }
 

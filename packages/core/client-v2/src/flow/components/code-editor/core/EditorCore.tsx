@@ -8,13 +8,19 @@
  */
 
 import React, { useEffect, useMemo, useRef } from 'react';
-import { autocompletion, type Completion, type CompletionSource } from '@codemirror/autocomplete';
+import {
+  acceptCompletion,
+  autocompletion,
+  completionStatus,
+  type Completion,
+  type CompletionSource,
+} from '@codemirror/autocomplete';
 import { json } from '@codemirror/lang-json';
 import { forceLinting, lintGutter } from '@codemirror/lint';
-import { Compartment, EditorSelection, EditorState, type Extension } from '@codemirror/state';
+import { Compartment, EditorSelection, EditorState, Prec, type Extension } from '@codemirror/state';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { basicSetup } from 'codemirror';
-import { EditorView, placeholder as cmPlaceholder, tooltips } from '@codemirror/view';
+import { EditorView, keymap, placeholder as cmPlaceholder, tooltips } from '@codemirror/view';
 import { javascriptWithHtmlTemplates } from '../javascriptHtmlTemplate';
 import { createHtmlCompletion } from '../htmlCompletion';
 import { createJsxCompletion } from '../jsxCompletion';
@@ -34,6 +40,13 @@ import {
   type CodeEditorTypeScriptProjectRef,
 } from '../typescriptProject';
 import { resolveTooltipParent } from './tooltipParent';
+
+const acceptCompletionOrKeepPending = (view: EditorView): boolean => {
+  if (completionStatus(view.state) === 'pending') return true;
+  return acceptCompletion(view);
+};
+
+const tabCompletionKeymap = Prec.highest(keymap.of([{ key: 'Tab', run: acceptCompletionOrKeepPending }]));
 
 function isJsonLanguage(language: string | undefined): boolean {
   return language?.trim().toLowerCase() === 'json';
@@ -217,6 +230,7 @@ export const EditorCore: React.FC<{
       doc: value || '',
       extensions: [
         basicSetup,
+        tabCompletionKeymap,
         readonlyCompartment.of([EditorState.readOnly.of(readonly), EditorView.editable.of(!readonly)]),
         languageCompartment.of(jsonLanguage ? json() : javascriptWithHtmlTemplates()),
         completionCompartment.of(
@@ -226,6 +240,7 @@ export const EditorCore: React.FC<{
               : [createHtmlCompletion(), createJsxCompletion(), dynamicCompletionSource, typeScriptCompletionSource],
             closeOnBlur: false,
             activateOnTyping: true,
+            interactionDelay: 0,
           }),
         ),
         linterCompartment.of(
@@ -293,6 +308,7 @@ export const EditorCore: React.FC<{
               : [createHtmlCompletion(), createJsxCompletion(), dynamicCompletionSource, typeScriptCompletionSource],
             closeOnBlur: false,
             activateOnTyping: true,
+            interactionDelay: 0,
           }),
         ),
         linterCompartment.reconfigure(

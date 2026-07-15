@@ -199,7 +199,8 @@ export class PluginLightExtensionServer extends Plugin {
       this.validator,
     );
     this.referenceService = new ReferenceService(db, this.auditService, this.permissionService);
-    this.runtimeResolveService = new RuntimeResolveService(db);
+    const apiBasePath = (this.app as unknown as AppWithPluginEvents).resourceManager?.options?.prefix;
+    this.runtimeResolveService = new RuntimeResolveService(db, typeof apiBasePath === 'string' ? { apiBasePath } : {});
     this.runtimeCompileService = new LightExtensionRuntimeCompileService(
       db,
       this.fileService,

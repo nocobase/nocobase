@@ -270,7 +270,7 @@ async function requestRuntimeArtifact(
   response: LightExtensionRuntimeResolveResult,
 ): Promise<LightExtensionRuntimeArtifactRecord> {
   const artifactResponse = await api.request<ResourceResponse<LightExtensionRuntimeArtifactRecord>>({
-    url: normalizeApiRequestUrl(response.artifactUrl),
+    url: getRuntimeArtifactRequestUrl(response.artifactHash),
     method: 'get',
   });
   const artifact = unwrapResourceResponse(artifactResponse);
@@ -283,8 +283,8 @@ async function requestRuntimeArtifact(
   return artifact;
 }
 
-function normalizeApiRequestUrl(url: string): string {
-  return url.startsWith('/api/') ? url.slice('/api'.length) : url;
+function getRuntimeArtifactRequestUrl(artifactHash: string): string {
+  return `/light-extension-runtime/artifacts/${encodeURIComponent(artifactHash)}`;
 }
 
 function getRuntimeBindingKey(sourceBinding: LightExtensionRuntimeSourceBinding): string {

@@ -12,6 +12,7 @@ import {
   completionStatus,
   currentCompletions,
   startCompletion,
+  type CompletionResult,
   type CompletionSource,
 } from '@codemirror/autocomplete';
 import { syntaxTree } from '@codemirror/language';
@@ -74,6 +75,99 @@ describe('EditorCore', () => {
     const nextContent = container.querySelector<HTMLElement>('.cm-content');
     expect(nextContent).toBe(originalContent);
     expect(document.activeElement).toBe(nextContent);
+  });
+
+  it('accepts the active completion with Tab without moving focus out of the editor', async () => {
+    const viewRef = { current: null } as React.MutableRefObject<EditorView | null>;
+    const completionSource: CompletionSource = () => ({
+      from: 0,
+      options: [{ label: 'focusedCompletion' }],
+    });
+    const { container } = render(<EditorCore completionSource={completionSource} value="focused" viewRef={viewRef} />);
+    const view = viewRef.current;
+    const content = container.querySelector<HTMLElement>('.cm-content');
+    if (!view || !content) {
+      throw new Error('EditorView was not initialized');
+    }
+
+    content.focus();
+    view.dispatch({ selection: { anchor: view.state.doc.length } });
+    startCompletion(view);
+
+    await waitFor(() => expect(completionStatus(view.state)).toBe('active'));
+
+    const tabEvent = new KeyboardEvent('keydown', {
+      bubbles: true,
+      cancelable: true,
+      code: 'Tab',
+      key: 'Tab',
+      keyCode: 9,
+    });
+    content.dispatchEvent(tabEvent);
+
+    expect(tabEvent.defaultPrevented).toBe(true);
+    expect(view.state.doc.toString()).toBe('focusedCompletion');
+    expect(document.activeElement).toBe(content);
+  });
+
+  it('keeps focus in the editor when Tab is pressed while completion is pending', async () => {
+    const viewRef = { current: null } as React.MutableRefObject<EditorView | null>;
+    let resolveCompletion: ((result: CompletionResult) => void) | undefined;
+    const completionSource: CompletionSource = () =>
+      new Promise<CompletionResult>((resolve) => {
+        resolveCompletion = resolve;
+      });
+    const { container } = render(<EditorCore completionSource={completionSource} value="focused" viewRef={viewRef} />);
+    const view = viewRef.current;
+    const content = container.querySelector<HTMLElement>('.cm-content');
+    if (!view || !content) {
+      throw new Error('EditorView was not initialized');
+    }
+
+    content.focus();
+    view.dispatch({ selection: { anchor: view.state.doc.length } });
+    startCompletion(view);
+    await waitFor(() => {
+      expect(completionStatus(view.state)).toBe('pending');
+      expect(resolveCompletion).toBeTypeOf('function');
+    });
+
+    const tabEvent = new KeyboardEvent('keydown', {
+      bubbles: true,
+      cancelable: true,
+      code: 'Tab',
+      key: 'Tab',
+      keyCode: 9,
+    });
+    content.dispatchEvent(tabEvent);
+
+    expect(tabEvent.defaultPrevented).toBe(true);
+    expect(view.state.doc.toString()).toBe('focused');
+    expect(document.activeElement).toBe(content);
+
+    resolveCompletion?.({ from: 0, options: [{ label: 'focusedCompletion' }] });
+    await waitFor(() => expect(completionStatus(view.state)).toBe('active'));
+  });
+
+  it('does not consume Tab when no completion is active', () => {
+    const viewRef = { current: null } as React.MutableRefObject<EditorView | null>;
+    const { container } = render(<EditorCore value="const focused = true;" viewRef={viewRef} />);
+    const content = container.querySelector<HTMLElement>('.cm-content');
+    if (!content) {
+      throw new Error('EditorView was not initialized');
+    }
+
+    content.focus();
+    const tabEvent = new KeyboardEvent('keydown', {
+      bubbles: true,
+      cancelable: true,
+      code: 'Tab',
+      key: 'Tab',
+      keyCode: 9,
+    });
+    content.dispatchEvent(tabEvent);
+
+    expect(tabEvent.defaultPrevented).toBe(false);
   });
 
   it('keeps focus when workspace module completions change', () => {

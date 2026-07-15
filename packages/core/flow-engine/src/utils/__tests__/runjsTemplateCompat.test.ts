@@ -121,6 +121,130 @@ ctx.render(<div className="x">{name}</div>);
       expect(out).toContain(`await ctx.__ensureLibs(["lodash"]);`);
     });
 
+    it('rewrites built-in module imports to ctx.libs declarations', async () => {
+      const src = [
+        `import React, { useEffect, useState as useLocalState } from 'react';`,
+        `import * as ReactDOM from 'react-dom/client';`,
+        `useEffect(() => undefined, []);`,
+        `return [React, ReactDOM, useLocalState];`,
+      ].join('\n');
+      const out = await prepareRunJsCode(src, { preprocessTemplates: false });
+
+      expect(out).not.toContain(`from 'react'`);
+      expect(out).not.toContain(`from 'react-dom/client'`);
+      expect(out).toContain('const React = ctx.libs.React;');
+      expect(out).toContain('const { useEffect, useState: useLocalState } = ctx.libs.React;');
+      expect(out).toContain('const ReactDOM = ctx.libs.ReactDOM;');
+      expect(out).toContain(`await ctx.__ensureLibs(["React","ReactDOM"]);`);
+    });
+
+    it('treats a named default import as the built-in library value', async () => {
+      const src = `import { default as ReactAlias } from 'react';\nreturn ReactAlias;`;
+      const out = await prepareRunJsCode(src, { preprocessTemplates: false });
+
+      expect(out).toContain('const ReactAlias = ctx.libs.React;');
+      expect(out).not.toContain('{ default: ReactAlias }');
+    });
+
+    it('supports a default import combined with a namespace import', async () => {
+      const src = `import React, * as ReactNS from 'react';\nreturn [React, ReactNS];`;
+      const out = await prepareRunJsCode(src, { preprocessTemplates: false });
+
+      expect(out).toContain('const React = ctx.libs.React;');
+      expect(out).toContain('const ReactNS = ctx.libs.React;');
+      expect(out).not.toContain('const React, * as ReactNS');
+    });
+
+    it('does not rewrite import-looking text inside templates or comments', async () => {
+      const templateImport = `import { useEffect } from 'react';`;
+      const src = [
+        'const example = `',
+        templateImport,
+        '`;',
+        `// import { useState } from 'react';`,
+        `/* import { useMemo } from 'react'; */`,
+        'return example;',
+      ].join('\n');
+      const out = await prepareRunJsCode(src, { preprocessTemplates: false });
+
+      expect(out).toContain(templateImport);
+      expect(out).toContain(`// import { useState } from 'react';`);
+      expect(out).toContain(`/* import { useMemo } from 'react'; */`);
+      expect(out).not.toContain('const { useEffect } = ctx.libs.React;');
+    });
+
+    it('does not rewrite import-looking text inside regular expressions or JSX content', async () => {
+      const regexImport = `/import { useEffect } from 'react';/`;
+      const src = [
+        `const pattern = ${regexImport};`,
+        `const element = <pre>import { useEffect } from 'react';</pre>;`,
+        'return [pattern, element];',
+      ].join('\n');
+      const out = await prepareRunJsCode(src, { preprocessTemplates: false });
+
+      expect(out).toContain(regexImport);
+      expect(out).not.toContain('const { useEffect } = ctx.libs.React;');
+      expect(out).toContain('ctx.React.createElement');
+    });
+
+    it('rewrites imports containing comments without emitting comment text as bindings', async () => {
+      const src = [
+        'import {',
+        '  useEffect, // runtime hook',
+        '  type FC,',
+        '  useState as useLocalState,',
+        `} from 'react';`,
+        'return [useEffect, useLocalState];',
+      ].join('\n');
+      const out = await prepareRunJsCode(src, { preprocessTemplates: false });
+
+      expect(out).toContain('const { useEffect, useState: useLocalState } = ctx.libs.React;');
+      expect(out).not.toContain('runtime hook');
+      expect(out).not.toContain('type FC');
+    });
+
+    it('leaves unsupported package subpath imports untouched', async () => {
+      const src = `import jsxRuntime from 'react/jsx-runtime';\nreturn jsxRuntime;`;
+      const out = await prepareRunJsCode(src, { preprocessTemplates: false });
+
+      expect(out).toContain(`import jsxRuntime from 'react/jsx-runtime';`);
+      expect(out).not.toContain('ctx.libs.React');
+    });
+
+    it.each(['__proto__', 'constructor', 'toString', 'react-dom'])(
+      'does not treat unsupported module %s as a built-in import',
+      async (specifier) => {
+        const src = `import value from '${specifier}';\nreturn value;`;
+        const out = await prepareRunJsCode(src, { preprocessTemplates: false });
+
+        expect(out).toContain(`import value from '${specifier}';`);
+        expect(out).not.toContain('ctx.libs.undefined');
+        expect(out).not.toContain('ctx.libs.ReactDOM');
+      },
+    );
+
+    it.each([
+      ['variable', `import { useEffect } from 'react';\nconst ctx = {};\nreturn useEffect;`],
+      [
+        'destructured variable',
+        `import { useEffect } from 'react';\nconst { value: ctx } = { value: 1 };\nreturn useEffect;`,
+      ],
+      ['import alias', `import { useEffect as ctx } from 'react';\nreturn ctx;`],
+      ['function-scoped var', `import { useEffect } from 'react';\nif (true) { var ctx = {}; }\nreturn useEffect;`],
+    ])('rejects a top-level ctx runtime binding declared through a %s', async (_kind, src) => {
+      await expect(prepareRunJsCode(src, { preprocessTemplates: false })).rejects.toThrow(
+        'top-level "ctx" runtime binding',
+      );
+    });
+
+    it('allows a type-only import binding named ctx with a built-in runtime import', async () => {
+      const src = `import { type FC as ctx, useEffect } from 'react';\nreturn useEffect;`;
+      const out = await prepareRunJsCode(src, { preprocessTemplates: false });
+
+      expect(out).toContain('const { useEffect } = ctx.libs.React;');
+      expect(out).not.toContain('type FC');
+    });
+
     it('does not inject ctx.libs preamble when ctx.libs only appears in string/comment', async () => {
       const src = `// ctx.libs.lodash\nconst s = "ctx.libs.lodash";\nreturn s;`;
       const out = await prepareRunJsCode(src, { preprocessTemplates: false });

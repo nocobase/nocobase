@@ -100,6 +100,7 @@ function projectSnapshot(
     runJSContext: project.runJSContext,
     typeLibraryIds: [...(project.typeLibraryIds || [])],
     typeLibraryUsageDefinitions: registry.getUsageDefinitions(),
+    rewriteBuiltInAutoImports: project.rewriteBuiltInAutoImports,
   };
 }
 
@@ -145,12 +146,14 @@ function projectUpdate(
     runJSContext: next.runJSContext,
     typeLibraryIds: next.typeLibraryIds,
     typeLibraryUsageDefinitions: next.typeLibraryUsageDefinitions,
+    rewriteBuiltInAutoImports: next.rewriteBuiltInAutoImports,
   };
 }
 
 function toCompletion(entry: TypeScriptWorkerCompletionEntry): Completion {
   return {
     apply(view, _completion, from, to) {
+      if (entry.unavailable) return;
       const changes = [...entry.changes, { from, insert: entry.label, to }].sort(
         (left, right) => left.from - right.from,
       );

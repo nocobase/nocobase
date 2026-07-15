@@ -21,6 +21,11 @@ import {
 
 import { runJSTypeScriptLibSources } from './runJSTypeScriptLibSources';
 import {
+  getRunJSBuiltInAutoImportLibrary,
+  isRunJSTypeScriptAutoImportSourceAllowed,
+  rewriteRunJSBuiltInAutoImportCodeActions,
+} from './typescriptBuiltInAutoImport';
+import {
   clearTypeScriptImmutableFileCacheNamespace,
   getTypeScriptImmutableFileCacheDebugState,
   TypeScriptVirtualFileSystem,
@@ -373,17 +378,37 @@ function completionEntryToDto(
   entry: TypeScriptCompletionEntry,
   from: number,
   to: number,
+  rewriteBuiltInAutoImports: boolean,
 ): TypeScriptWorkerCompletionEntry {
   const source = entry.source || (entry.sourceDisplay ? ts.displayPartsToString(entry.sourceDisplay) : '');
-  const detail = source ? `Auto import from ${source}` : entry.kind;
+  const libraryName = rewriteBuiltInAutoImports ? getRunJSBuiltInAutoImportLibrary(source) : undefined;
+  const detail = libraryName
+    ? `Auto import from ctx.libs.${libraryName}`
+    : source
+      ? `Auto import from ${source}`
+      : entry.kind;
   const details = entry.source || entry.hasAction ? getDetails(service, position, entry) : undefined;
-  const changes = buildCompletionChanges(service, details, from, to);
+  const builtInAutoImportChanges =
+    libraryName && source
+      ? rewriteRunJSBuiltInAutoImportCodeActions({
+          codeActions: details?.codeActions,
+          currentFileName: service.currentFileName,
+          libraryName,
+          localName: entry.name,
+          source,
+          sourceText: service.fileSystem.get(service.currentFileName)?.content || '',
+          ts,
+        })
+      : undefined;
+  const unavailable = Boolean(libraryName && !builtInAutoImportChanges);
+  const changes = unavailable ? [] : builtInAutoImportChanges || buildCompletionChanges(service, details, from, to);
   return {
     boost: source ? 120 : 20,
     changes,
     detail,
     info: entry.kindModifiers || detail,
     label: entry.name,
+    unavailable,
     type: getCompletionType(entry.kind),
   };
 }
@@ -483,6 +508,7 @@ export class TypeScriptWorkerRuntime {
         declarationFiles: [...declarationFiles.values()],
         files: [...files.values()],
         registryKey: update.registryKey,
+        rewriteBuiltInAutoImports: update.rewriteBuiltInAutoImports,
         runJSContext: update.runJSContext,
         typeLibraryIds: update.typeLibraryIds,
         typeLibraryUsageDefinitions: update.typeLibraryUsageDefinitions,
@@ -508,11 +534,21 @@ export class TypeScriptWorkerRuntime {
     const span = completions.optionalReplacementSpan || completions.entries[0]?.replacementSpan;
     const from = span?.start ?? position;
     const to = span ? span.start + span.length : position;
+    const options = completions.entries
+      .filter((entry) => {
+        const source = entry.source || (entry.sourceDisplay ? ts.displayPartsToString(entry.sourceDisplay) : '');
+        return isRunJSTypeScriptAutoImportSourceAllowed(
+          source || undefined,
+          state.snapshot.rewriteBuiltInAutoImports === true,
+        );
+      })
+      .map((entry) =>
+        completionEntryToDto(ts, service, position, entry, from, to, state.snapshot.rewriteBuiltInAutoImports === true),
+      );
+    if (!options.length) return null;
     return {
       from,
-      options: completions.entries.map((entry) =>
-        completionEntryToDto(ts, service, position, entry, from, to),
-      ),
+      options,
       to,
     };
   }

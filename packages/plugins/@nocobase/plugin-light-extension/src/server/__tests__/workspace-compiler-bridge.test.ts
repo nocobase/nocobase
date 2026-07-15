@@ -130,6 +130,35 @@ describe('plugin-light-extension workspace compiler bridge', () => {
     expect(result.artifact.code).not.toContain('@nocobase/light-extension-sdk/client');
   });
 
+  it('compiles built-in React imports to ctx.libs declarations', async () => {
+    const result = await bridge.compileEntry({
+      repoId: 'ler_sales',
+      entryId: 'lee_react_hooks',
+      kind: 'js-block',
+      entryName: 'react-hooks',
+      entryPath: 'src/client/js-blocks/react-hooks/index.tsx',
+      surfaceStyle: 'render',
+      files: [
+        {
+          path: 'src/client/js-blocks/react-hooks/index.tsx',
+          content: [
+            `import React, { useEffect, useState as useLocalState } from 'react';`,
+            `import * as ReactDOM from 'react-dom/client';`,
+            `useEffect(() => undefined, []);`,
+            `ctx.render(<div>{String(React && ReactDOM && useLocalState)}</div>);`,
+          ].join('\n'),
+        },
+      ],
+    });
+
+    expect(result.accepted).toBe(true);
+    expect(result.diagnostics).toEqual([]);
+    expect(result.artifact.code).toContain('const React = ctx.libs.React;');
+    expect(result.artifact.code).toContain('const { useEffect, useState: useLocalState } = ctx.libs.React;');
+    expect(result.artifact.code).toContain('const ReactDOM = ctx.libs.ReactDOM;');
+    expect(result.artifact.code).not.toContain(`from 'react'`);
+  });
+
   it('excludes entry.json from compiler hashes while retaining ordinary JSON modules', async () => {
     const compile = (descriptorTitle: string, dataTitle: string) =>
       bridge.compileEntry({
@@ -327,7 +356,7 @@ describe('plugin-light-extension workspace compiler bridge', () => {
         files: [
           {
             path: 'src/client/js-items/customer-menu/index.tsx',
-            content: 'ctx.render(<button>{ctx.record.name}</button>);\n',
+            content: 'ctx.render(<button>{String(ctx.record?.name ?? "")}</button>);\n',
           },
         ],
       },

@@ -26,6 +26,16 @@ const allowedClientSdkImports = new Set([
   '@nocobase/light-extension-sdk/shared',
 ]);
 const allowedSdkRuntimeHelpers = new Set(['defineSettings', 'assertSettings']);
+const allowedRunJSBuiltInImports = new Set([
+  'react',
+  'react-dom/client',
+  'antd',
+  '@ant-design/icons',
+  'dayjs',
+  'lodash',
+  'mathjs',
+  '@formulajs/formulajs',
+]);
 
 export function validateExternalSdkImport(
   node: ts.ImportDeclaration,
@@ -35,6 +45,10 @@ export function validateExternalSdkImport(
 ): LightExtensionDiagnostic[] {
   if (specifier.startsWith('light-extension:settings/')) {
     return validateSettingsTypeImport(node, sourceFile, specifier, target);
+  }
+
+  if (isAllowedRunJSBuiltInImport(specifier)) {
+    return validateRunJSBuiltInImport(node, sourceFile, specifier, target);
   }
 
   if (!allowedClientSdkImports.has(specifier)) {
@@ -138,6 +152,50 @@ export function validateExternalSdkImport(
   }
 
   return diagnostics;
+}
+
+function isAllowedRunJSBuiltInImport(specifier: string): boolean {
+  return allowedRunJSBuiltInImports.has(specifier);
+}
+
+function validateRunJSBuiltInImport(
+  node: ts.ImportDeclaration,
+  sourceFile: ts.SourceFile,
+  specifier: string,
+  target: Omit<DiagnosticTarget, 'path'>,
+): LightExtensionDiagnostic[] {
+  const importClause = node.importClause;
+  if (importClause?.isTypeOnly) {
+    return [];
+  }
+
+  const namedBindings = importClause?.namedBindings;
+  const hasRuntimeBinding =
+    Boolean(importClause?.name) ||
+    Boolean(namedBindings && ts.isNamespaceImport(namedBindings)) ||
+    Boolean(
+      namedBindings && ts.isNamedImports(namedBindings) && namedBindings.elements.some((item) => !item.isTypeOnly),
+    );
+  const hasTypeOnlyNamedBindings = Boolean(
+    namedBindings &&
+      ts.isNamedImports(namedBindings) &&
+      namedBindings.elements.length > 0 &&
+      namedBindings.elements.every((item) => item.isTypeOnly),
+  );
+
+  if (!hasRuntimeBinding && !hasTypeOnlyNamedBindings) {
+    return [
+      diagnosticAt(
+        sourceFile,
+        node.moduleSpecifier.getStart(sourceFile),
+        'import_not_allowed',
+        'error',
+        `Runtime import from "${specifier}" must bind a default, namespace, or named export`,
+        target,
+      ),
+    ];
+  }
+  return [];
 }
 
 export function validateSettingsTypeImport(

@@ -45,7 +45,7 @@ describe('@nocobase/runjs compiler golden contracts', () => {
   ])('keeps the $name artifact shape stable', ({ files, entry, surfaceStyle, expectedCode }) => {
     const result = compileRunJSSourceWorkspace({ files, entry, surfaceStyle });
 
-    expect(result.failureCode).toBeUndefined();
+    expect(result.failureCode, JSON.stringify(result.artifact.diagnostics, null, 2)).toBeUndefined();
     expect(result.artifact).toMatchObject({
       version: 'v2',
       entryPath: entry,
@@ -70,8 +70,8 @@ describe('@nocobase/runjs compiler golden contracts', () => {
       failureCode: 'RUNJS_IMPORT_NOT_FOUND',
     },
     {
-      name: 'package import',
-      files: [{ path: 'index.ts', content: "import React from 'react'; return React;" }],
+      name: 'unsupported package import',
+      files: [{ path: 'index.ts', content: "import value from 'unsupported-package'; return value;" }],
       entry: 'index.ts',
       failureCode: 'RUNJS_IMPORT_NOT_ALLOWED',
     },
@@ -110,6 +110,129 @@ describe('@nocobase/runjs compiler golden contracts', () => {
         }),
       ]),
     );
+  });
+
+  it('rewrites built-in module imports to ctx.libs declarations', () => {
+    const result = compileRunJSSourceWorkspace({
+      files: [
+        {
+          path: 'index.tsx',
+          content: [
+            `import React, { useEffect, useState as useLocalState } from 'react';`,
+            `import * as ReactDOM from 'react-dom/client';`,
+            `useEffect(() => undefined, []);`,
+            `ctx.render(<div>{String(React && ReactDOM && useLocalState)}</div>);`,
+          ].join('\n'),
+        },
+      ],
+      entry: 'index.tsx',
+      surfaceStyle: 'render',
+    });
+
+    expect(result.failureCode, JSON.stringify(result.artifact.diagnostics, null, 2)).toBeUndefined();
+    expect(result.artifact.diagnostics).toEqual([]);
+    expect(result.artifact.code).toContain('const React = ctx.libs.React;');
+    expect(result.artifact.code).toContain('const { useEffect, useState: useLocalState } = ctx.libs.React;');
+    expect(result.artifact.code).toContain('const ReactDOM = ctx.libs.ReactDOM;');
+    expect(result.artifact.code).not.toContain(`from 'react'`);
+  });
+
+  it('treats a named default import as the RunJS ctx library alias', () => {
+    const result = compileRunJSSourceWorkspace({
+      files: [
+        {
+          path: 'index.ts',
+          content: `import { default as ReactAlias } from 'react'; return ReactAlias.createElement('div');`,
+        },
+      ],
+      entry: 'index.ts',
+      surfaceStyle: 'value',
+    });
+
+    expect(result.failureCode, JSON.stringify(result.artifact.diagnostics, null, 2)).toBeUndefined();
+    expect(result.artifact.code).toContain('const ReactAlias = ctx.libs.React;');
+    expect(result.artifact.code).not.toContain('{ default: ReactAlias }');
+  });
+
+  it('supports a default import combined with a namespace import', () => {
+    const result = compileRunJSSourceWorkspace({
+      files: [
+        {
+          path: 'index.ts',
+          content: `import React, * as ReactNS from 'react'; return [React, ReactNS];`,
+        },
+      ],
+      entry: 'index.ts',
+      surfaceStyle: 'value',
+    });
+
+    expect(result.failureCode, JSON.stringify(result.artifact.diagnostics, null, 2)).toBeUndefined();
+    expect(result.artifact.code).toContain('const React = ctx.libs.React;');
+    expect(result.artifact.code).toContain('const ReactNS = ctx.libs.React;');
+  });
+
+  it.each(['react/jsx-runtime', 'react-dom', 'dayjs/plugin/utc', 'lodash/get', '__proto__', 'constructor', 'toString'])(
+    'rejects unsupported module specifier %s',
+    (specifier) => {
+      const result = compileRunJSSourceWorkspace({
+        files: [{ path: 'index.ts', content: `import value from '${specifier}'; return value;` }],
+        entry: 'index.ts',
+        surfaceStyle: 'value',
+      });
+
+      expect(result.failureCode).toBe('RUNJS_IMPORT_NOT_ALLOWED');
+      expect(result.artifact.diagnostics).toContainEqual(
+        expect.objectContaining({
+          code: 'RUNJS_IMPORT_NOT_ALLOWED',
+          message: `Import "${specifier}" is not allowed`,
+        }),
+      );
+    },
+  );
+
+  it.each([
+    ['variable', `import { useEffect } from 'react'; const ctx = {}; return useEffect;`],
+    [
+      'destructured variable',
+      `import { useEffect } from 'react'; const { value: ctx } = { value: 1 }; return useEffect;`,
+    ],
+    ['import alias', `import { useEffect as ctx } from 'react'; return ctx;`],
+    ['function-scoped var', `import { useEffect } from 'react'; if (true) { var ctx = {}; } return useEffect;`],
+  ])('rejects a top-level ctx runtime binding declared through a %s', (_kind, content) => {
+    const result = compileRunJSSourceWorkspace({
+      files: [{ path: 'index.ts', content }],
+      entry: 'index.ts',
+      surfaceStyle: 'value',
+    });
+
+    expect(result.failureCode).toBe('RUNJS_COMPILE_FAILED');
+    expect(result.artifact.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'RUNJS_COMPILE_FAILED',
+        message: expect.stringContaining('top-level "ctx" runtime binding'),
+      }),
+    );
+    expect(result.artifact.code).toBe('');
+  });
+
+  it('allows a type-only import binding named ctx with built-in imports', () => {
+    const result = compileRunJSSourceWorkspace({
+      files: [
+        {
+          path: 'index.ts',
+          content: [
+            `import { type FC as ctx, useEffect } from 'react';`,
+            `const Component: ctx = () => null;`,
+            `return useEffect && Component;`,
+          ].join('\n'),
+        },
+      ],
+      entry: 'index.ts',
+      surfaceStyle: 'value',
+    });
+
+    expect(result.failureCode, JSON.stringify(result.artifact.diagnostics, null, 2)).toBeUndefined();
+    expect(result.artifact.code).toContain('const { useEffect } = ctx.libs.React;');
   });
 
   it('uses TypeScript semantic diagnostics as a backend compile gate', () => {

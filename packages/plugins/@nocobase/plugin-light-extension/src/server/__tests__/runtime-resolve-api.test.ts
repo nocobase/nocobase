@@ -76,6 +76,18 @@ describe('plugin-light-extension runtime resolve API', () => {
     expect(result).not.toHaveProperty('sourceMap');
   });
 
+  it('uses the configured API prefix for artifact URLs', async () => {
+    const { service } = createRuntimeResolveService({ apiBasePath: '/foo/api' });
+
+    const result = await service.resolve({
+      sourceMode: 'light-extension',
+      sourceBinding: createSourceBinding(),
+      settings: {},
+    });
+
+    expect(result.artifactUrl).toBe(`/foo/api/light-extension-runtime/artifacts/${'a'.repeat(64)}`);
+  });
+
   it('deeply merges object defaults and preserves optional or hidden values using normal schema validation', async () => {
     const settingsSchema = {
       type: 'object',
@@ -528,6 +540,78 @@ describe('plugin-light-extension runtime resolve API', () => {
     expect(malformedCtx.request.path).toBe('/api/light-extensions/%E0%A4%A/compile-preview');
   });
 
+  it('registers runtime route aliases under a custom API prefix', async () => {
+    const registeredRoutes: Array<{ middleware: RouteMiddleware; options?: { tag?: string } }> = [];
+    const app = {
+      db: {} as Database,
+      acl: {
+        allow: vi.fn(),
+        registerSnippet: vi.fn(),
+      },
+      pm: {
+        get: vi.fn(() => null),
+        getPlugins: vi.fn(() => new Map()),
+      },
+      resourceManager: {
+        define: vi.fn(),
+        options: {
+          prefix: '/foo/api',
+        },
+      },
+      on: vi.fn(),
+      off: vi.fn(),
+      use: vi.fn((middleware: RouteMiddleware, options?: { tag?: string }) => {
+        registeredRoutes.push({
+          middleware,
+          options,
+        });
+      }),
+    } as unknown as Application;
+    const plugin = new PluginLightExtensionServer(app, {
+      name: 'light-extension',
+      packageName: NAMESPACE,
+    });
+
+    await plugin.load();
+
+    const runtimeRoute = registeredRoutes.find((route) => route.options?.tag === 'light-extension-runtime-resolve');
+    const ctx = {
+      method: 'POST',
+      path: '/foo/api/light-extension-runtime/resolve',
+      request: {
+        path: '/foo/api/light-extension-runtime/resolve',
+      },
+    };
+    let routedPath = '';
+
+    await runtimeRoute?.middleware(ctx, async () => {
+      routedPath = ctx.path;
+    });
+
+    expect(routedPath).toBe('/foo/api/lightExtensionRuntime:resolve');
+    expect(ctx.path).toBe('/foo/api/light-extension-runtime/resolve');
+    expect(ctx.request.path).toBe('/foo/api/light-extension-runtime/resolve');
+
+    const artifactRoute = registeredRoutes.find((route) => route.options?.tag === 'light-extension-runtime-artifact');
+    const artifactHash = 'a'.repeat(64);
+    const artifactCtx = {
+      method: 'GET',
+      path: `/foo/api/light-extension-runtime/artifacts/${artifactHash}`,
+      request: {
+        path: `/foo/api/light-extension-runtime/artifacts/${artifactHash}`,
+      },
+    };
+    let artifactRoutedPath = '';
+
+    await artifactRoute?.middleware(artifactCtx, async () => {
+      artifactRoutedPath = artifactCtx.path;
+    });
+
+    expect(artifactRoutedPath).toBe(`/foo/api/lightExtensionRuntime:getArtifact/${artifactHash}`);
+    expect(artifactCtx.path).toBe(`/foo/api/light-extension-runtime/artifacts/${artifactHash}`);
+    expect(artifactCtx.request.path).toBe(`/foo/api/light-extension-runtime/artifacts/${artifactHash}`);
+  });
+
   it('returns 422 with field-level issues when settings do not match the entry current schema', async () => {
     const { service } = createRuntimeResolveService();
 
@@ -670,6 +754,7 @@ function createRuntimeResolveService(
     settingsSchema?: Record<string, unknown> | null;
     settingsSchemaHash?: string | null;
     settingsDefaultsHash?: string | null;
+    apiBasePath?: string;
   } = {},
 ) {
   const entryRecord = createEntryRecord(options);
@@ -697,8 +782,9 @@ function createRuntimeResolveService(
       throw new Error(`Unexpected repository ${name}`);
     },
   } as unknown as Database;
+  const serviceOptions = typeof options.apiBasePath === 'string' ? { apiBasePath: options.apiBasePath } : {};
   return {
-    service: new RuntimeResolveService(db),
+    service: new RuntimeResolveService(db, serviceOptions),
     reposRepository,
     entriesRepository,
   };

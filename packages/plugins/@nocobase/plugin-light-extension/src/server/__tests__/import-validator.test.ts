@@ -16,7 +16,7 @@ describe('plugin-light-extension import validator', () => {
         {
           path: 'src/client/js-blocks/sales-kpi/index.tsx',
           content: [
-            "import React from 'react';",
+            "import unsupported from 'unsupported-package';",
             "import fs = require('fs');",
             "export * from 'react';",
             "const fs = require('fs');",
@@ -42,6 +42,85 @@ describe('plugin-light-extension import validator', () => {
         .every((item) => item.path === 'src/client/js-blocks/sales-kpi/index.tsx' && item.line && item.column),
     ).toBe(true);
   });
+
+  it('allows built-in module imports that compile to ctx.libs', () => {
+    const result = new LightExtensionValidator().validateWorkspace({
+      files: [
+        {
+          path: 'src/client/js-blocks/react-hooks/index.tsx',
+          content: [
+            `import type { FC } from 'react';`,
+            `import { type ReactNode } from 'react';`,
+            `import React, { useEffect } from 'react';`,
+            `import * as ReactDOM from 'react-dom/client';`,
+            `const Component: FC<{ children?: ReactNode }> = ({ children }) => <div>{children}</div>;`,
+            `ctx.render(<Component>{String(React && ReactDOM && useEffect)}</Component>);`,
+          ].join('\n'),
+        },
+        {
+          path: 'src/client/js-blocks/react-hooks/entry.json',
+          content: JSON.stringify({ schemaVersion: 1, key: 'react-hooks' }),
+        },
+      ],
+    });
+
+    expect(result.accepted).toBe(true);
+    expect(result.diagnostics.filter((item) => item.code === 'import_not_allowed')).toEqual([]);
+  });
+
+  it.each([`import 'react';`, `import {} from 'react';`])(
+    'rejects built-in runtime imports without bindings: %s',
+    (importStatement) => {
+      const result = new LightExtensionValidator().validateWorkspace({
+        files: [
+          {
+            path: 'src/client/js-blocks/react-side-effect/index.tsx',
+            content: `${importStatement}\nctx.render(<div />);`,
+          },
+          {
+            path: 'src/client/js-blocks/react-side-effect/entry.json',
+            content: JSON.stringify({ schemaVersion: 1, key: 'react-side-effect' }),
+          },
+        ],
+      });
+
+      expect(result.accepted).toBe(false);
+      expect(result.diagnostics).toContainEqual(
+        expect.objectContaining({
+          code: 'import_not_allowed',
+          message: 'Runtime import from "react" must bind a default, namespace, or named export',
+          path: 'src/client/js-blocks/react-side-effect/index.tsx',
+        }),
+      );
+    },
+  );
+
+  it.each(['react/jsx-runtime', 'react-dom', 'dayjs/plugin/utc', 'lodash/get', '__proto__', 'constructor', 'toString'])(
+    'rejects unsupported module specifier %s',
+    (specifier) => {
+      const result = new LightExtensionValidator().validateWorkspace({
+        files: [
+          {
+            path: 'src/client/js-blocks/unsupported-subpath/index.tsx',
+            content: `import value from '${specifier}';\nctx.render(<div>{String(value)}</div>);`,
+          },
+          {
+            path: 'src/client/js-blocks/unsupported-subpath/entry.json',
+            content: JSON.stringify({ schemaVersion: 1, key: 'unsupported-subpath' }),
+          },
+        ],
+      });
+
+      expect(result.accepted).toBe(false);
+      expect(result.diagnostics).toContainEqual(
+        expect.objectContaining({
+          code: 'import_not_allowed',
+          message: `Import "${specifier}" is not allowed in light-extension source`,
+          path: 'src/client/js-blocks/unsupported-subpath/index.tsx',
+        }),
+      );
+    },
+  );
 
   it('still rejects require references and aliases', () => {
     const result = new LightExtensionValidator().validateWorkspace({
@@ -80,6 +159,10 @@ describe('plugin-light-extension import validator', () => {
             'const descriptorFactory = Object.getOwnPropertyDescriptor(globalThis, "Function")?.value("return 4")();',
             'ctx.render(<div>{String(nodeEnv || evalValue || factoryValue || reflectedEval || descriptorFactory)}</div>);',
           ].join('\n'),
+        },
+        {
+          path: 'src/client/js-blocks/global-api/entry.json',
+          content: JSON.stringify({ schemaVersion: 1, key: 'global-api' }),
         },
       ],
     });
@@ -140,6 +223,10 @@ describe('plugin-light-extension import validator', () => {
         {
           path: 'src/client/js-blocks/local-import/helper.ts',
           content: 'export function helper() { return null; }\n',
+        },
+        {
+          path: 'src/client/js-blocks/local-import/entry.json',
+          content: JSON.stringify({ schemaVersion: 1, key: 'local-import' }),
         },
       ],
     });

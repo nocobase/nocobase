@@ -21,6 +21,10 @@ import {
   clearRunJSTypeLibraryPackRegistryForTests,
   registerRunJSTypeLibraryPackLoader,
 } from '../typescriptLibraryRegistry';
+import {
+  getRunJSBuiltInAutoImportLibrary,
+  isRunJSTypeScriptAutoImportSourceAllowed,
+} from '../typescriptBuiltInAutoImport';
 
 function baseProject(currentFileContent = '', modelUse?: string): CodeEditorTypeScriptProject {
   return {
@@ -96,6 +100,18 @@ afterEach(() => {
 });
 
 describe('CodeEditor TypeScript project', () => {
+  it('uses an exact, prototype-safe built-in auto-import allowlist', () => {
+    expect(getRunJSBuiltInAutoImportLibrary('react')).toBe('React');
+    expect(getRunJSBuiltInAutoImportLibrary('react-dom/client')).toBe('ReactDOM');
+    expect(getRunJSBuiltInAutoImportLibrary('react-dom')).toBeUndefined();
+    expect(getRunJSBuiltInAutoImportLibrary('constructor')).toBeUndefined();
+    expect(getRunJSBuiltInAutoImportLibrary('__proto__')).toBeUndefined();
+    expect(isRunJSTypeScriptAutoImportSourceAllowed('./helper', true)).toBe(true);
+    expect(isRunJSTypeScriptAutoImportSourceAllowed('../helper', true)).toBe(true);
+    expect(isRunJSTypeScriptAutoImportSourceAllowed('/src/helper', true)).toBe(false);
+    expect(isRunJSTypeScriptAutoImportSourceAllowed('external-package', true)).toBe(false);
+  });
+
   it('suggests workspace exports with auto import changes', async () => {
     const code = 'tes';
     const result = await getTypeScriptCompletionResult(baseProject(code), code.length, code, true);
@@ -116,6 +132,164 @@ describe('CodeEditor TypeScript project', () => {
     const changesText = JSON.stringify(dispatch.mock.calls[0]?.[0]?.changes || []);
     expect(changesText).toContain('./helper');
     expect(changesText).toContain('test');
+  });
+
+  it('filters unsupported package auto imports in rewrite mode while keeping workspace auto imports', async () => {
+    const project: CodeEditorTypeScriptProject = {
+      currentFilePath: 'src/main.ts',
+      declarationFiles: [
+        {
+          content: `declare module 'external-package' { export const externalThing: number; }`,
+          path: 'src/external.d.ts',
+        },
+      ],
+      files: [
+        { content: '', path: 'src/main.ts' },
+        { content: 'export const workspaceThing = 42;', path: 'src/helper.ts' },
+      ],
+      rewriteBuiltInAutoImports: true,
+    };
+
+    const externalCode = 'externalTh';
+    const externalResult = await getTypeScriptCompletionResult(project, externalCode.length, externalCode, true);
+    expect(externalResult?.options.some((option) => option.label === 'externalThing') ?? false).toBe(false);
+
+    const workspaceCode = 'workspaceTh';
+    const workspaceResult = await getTypeScriptCompletionResult(project, workspaceCode.length, workspaceCode, true);
+    expect(workspaceResult?.options.some((option) => option.label === 'workspaceThing')).toBe(true);
+
+    const nativeResult = await getTypeScriptCompletionResult(
+      { ...project, rewriteBuiltInAutoImports: false },
+      externalCode.length,
+      externalCode,
+      true,
+    );
+    expect(nativeResult?.options.some((option) => option.label === 'externalThing')).toBe(true);
+  });
+
+  it('rewrites built-in auto imports to ctx.libs declarations when enabled', async () => {
+    const code = 'useEff';
+    const project: CodeEditorTypeScriptProject = {
+      currentFilePath: 'src/main.tsx',
+      files: [{ content: code, path: 'src/main.tsx' }],
+      rewriteBuiltInAutoImports: true,
+      typeLibraryIds: ['react'],
+    };
+    const result = await getTypeScriptCompletionResult(project, code.length, code, true);
+    const completion = result?.options.find((option) => option.label === 'useEffect');
+    const dispatch = vi.fn();
+
+    expect(completion?.detail).toBe('Auto import from ctx.libs.React');
+    if (typeof completion?.apply === 'function') {
+      completion.apply({ dispatch } as never, completion, 0, code.length);
+    }
+    expect(dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        changes: expect.arrayContaining([
+          expect.objectContaining({ from: 0, insert: 'const { useEffect } = ctx.libs.React;\n', to: 0 }),
+          expect.objectContaining({ from: 0, insert: 'useEffect', to: code.length }),
+        ]),
+      }),
+    );
+    expect(JSON.stringify(dispatch.mock.calls[0]?.[0]?.changes)).not.toContain(`from 'react'`);
+  });
+
+  it('rewrites default and namespace built-in auto imports according to the TypeScript code action', async () => {
+    const testAutoImport = async (declaration: string, code: string, completionName: string) => {
+      const project: CodeEditorTypeScriptProject = {
+        currentFilePath: 'src/main.ts',
+        declarationFiles: [{ content: declaration, path: 'src/library.d.ts' }],
+        files: [{ content: code, path: 'src/main.ts' }],
+        rewriteBuiltInAutoImports: true,
+      };
+      const result = await getTypeScriptCompletionResult(project, code.length, code, true);
+      const completion = result?.options.find((option) => option.label === completionName);
+      const dispatch = vi.fn();
+
+      expect(completion?.detail).toBe('Auto import from ctx.libs.React');
+      if (typeof completion?.apply === 'function') {
+        completion.apply({ dispatch } as never, completion, result?.from || 0, result?.to || code.length);
+      }
+      return JSON.stringify(dispatch.mock.calls[0]?.[0]?.changes || []);
+    };
+
+    const defaultChanges = await testAutoImport(
+      `declare module 'react' { export default function React(): void; }`,
+      'Reac',
+      'React',
+    );
+    expect(defaultChanges).toContain('const React = ctx.libs.React;');
+    expect(defaultChanges).not.toContain('const { React }');
+
+    const namespaceChanges = await testAutoImport(
+      `declare module 'react' { export = React; namespace React { const version: string; } }`,
+      'Reac',
+      'React',
+    );
+    expect(namespaceChanges).toContain('const React = ctx.libs.React;');
+    expect(namespaceChanges).not.toContain('const { React }');
+  });
+
+  it('merges a named built-in auto import into the existing declaration shape', async () => {
+    const code = `import React from 'react';\nuseEff`;
+    const project: CodeEditorTypeScriptProject = {
+      currentFilePath: 'src/main.tsx',
+      files: [{ content: code, path: 'src/main.tsx' }],
+      rewriteBuiltInAutoImports: true,
+      typeLibraryIds: ['react'],
+    };
+    const result = await getTypeScriptCompletionResult(project, code.length, code, true);
+    const completion = result?.options.find((option) => option.label === 'useEffect');
+    const dispatch = vi.fn();
+
+    if (typeof completion?.apply === 'function') {
+      completion.apply({ dispatch } as never, completion, result?.from || code.length - 'useEff'.length, code.length);
+    }
+    const changes = JSON.stringify(dispatch.mock.calls[0]?.[0]?.changes || []);
+    expect(changes).toContain('const React = ctx.libs.React;');
+    expect(changes).toContain('const { useEffect } = ctx.libs.React;');
+    expect(changes).not.toContain(`from 'react'`);
+  });
+
+  it('preserves type-only imports while adding a runtime ctx.libs declaration', async () => {
+    const code = `import type { FC } from 'react';\nuseEff`;
+    const project: CodeEditorTypeScriptProject = {
+      currentFilePath: 'src/main.tsx',
+      files: [{ content: code, path: 'src/main.tsx' }],
+      rewriteBuiltInAutoImports: true,
+      typeLibraryIds: ['react'],
+    };
+    const result = await getTypeScriptCompletionResult(project, code.length, code, true);
+    const completion = result?.options.find((option) => option.label === 'useEffect');
+    const dispatch = vi.fn();
+
+    if (typeof completion?.apply === 'function') {
+      completion.apply({ dispatch } as never, completion, result?.from || code.length - 'useEff'.length, code.length);
+    }
+    const changes = JSON.stringify(dispatch.mock.calls[0]?.[0]?.changes || []);
+    expect(changes).toContain('const { useEffect } = ctx.libs.React;');
+    expect(changes).not.toContain('"insert":"","to":11');
+  });
+
+  it('reuses an existing ctx.libs React binding without inserting another declaration', async () => {
+    const code = `const { useEffect } = ctx.libs.React;\nuseEff`;
+    const project: CodeEditorTypeScriptProject = {
+      currentFilePath: 'src/main.tsx',
+      files: [{ content: code, path: 'src/main.tsx' }],
+      rewriteBuiltInAutoImports: true,
+      typeLibraryIds: ['react'],
+    };
+    const result = await getTypeScriptCompletionResult(project, code.length, code, true);
+    const completion = result?.options.find((option) => option.label === 'useEffect');
+    const dispatch = vi.fn();
+
+    expect(completion?.detail).not.toBe('Auto import from react');
+    if (typeof completion?.apply === 'function') {
+      completion.apply({ dispatch } as never, completion, result?.from || code.length - 'useEff'.length, code.length);
+    }
+    const changes = JSON.stringify(dispatch.mock.calls[0]?.[0]?.changes || []);
+    expect(changes).not.toContain('const { useEffect } = ctx.libs.React;');
+    expect(changes).not.toContain(`from 'react'`);
   });
 
   it('uses user declaration files for completions and diagnostics', async () => {
@@ -196,6 +370,7 @@ describe('CodeEditor TypeScript project', () => {
 
     const diagnostics = await getTypeScriptProjectDiagnostics(project, 'ctx.notARealMember;');
     expect(diagnostics.some((diagnostic) => /notARealMember/.test(diagnostic.message))).toBe(true);
+    expect(diagnostics.some((diagnostic) => diagnostic.code === 2339)).toBe(true);
   });
 
   it('uses the official TypeScript browser libraries for RunJS globals', async () => {

@@ -110,7 +110,7 @@ describe('plugin-light-extension supported kinds validator', () => {
         {
           path: 'src/client/js-fields/phone-link/index.tsx',
           content:
-            'import React from "react";\nimport "../../../server/private";\nimport "../../js-actions/show-message/index";\nexport default function PhoneLink() { return React.createElement("span"); }\n',
+            'import unsupported from "unsupported-package";\nimport "../../../server/private";\nimport "../../js-actions/show-message/index";\nexport default function PhoneLink() { return unsupported; }\n',
         },
         entryDescriptor('src/client/js-fields/phone-link', 'phone-link'),
       ],

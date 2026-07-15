@@ -83,6 +83,25 @@ export function describeImmutableArtifactCache(): void {
       expect(request.mock.calls.filter(([options]) => options.method === 'get')).toHaveLength(1);
     });
 
+    it('fetches artifacts through the API client when resolve returns a custom prefixed URL', async () => {
+      const request = vi.fn(async (options: ApiRequestOptions) => {
+        return options.method === 'get'
+          ? artifactResponse()
+          : resolveResponse(options.data, `/foo/api/light-extension-runtime/artifacts/${artifactHash}`);
+      });
+      const { resolver } = createPrimedResolver(request);
+
+      await expect(
+        resolver.resolve({ sourceMode: 'light-extension', sourceBinding, settings: {} }),
+      ).resolves.toMatchObject({
+        code: expect.stringContaining('ACTION_V1'),
+      });
+
+      expect(request.mock.calls.find(([options]) => options.method === 'get')?.[0].url).toBe(
+        `/light-extension-runtime/artifacts/${artifactHash}`,
+      );
+    });
+
     it('does not execute cached code after the repository cache is invalidated', async () => {
       let resolveCount = 0;
       const request = vi.fn(async (options: ApiRequestOptions) => {
@@ -133,7 +152,7 @@ export function describeImmutableArtifactCache(): void {
 
 describeImmutableArtifactCache();
 
-function resolveResponse(data: unknown) {
+function resolveResponse(data: unknown, artifactUrl = `/api/light-extension-runtime/artifacts/${artifactHash}`) {
   const settings = (data as { settings?: Record<string, unknown> } | undefined)?.settings || {};
   return {
     data: {
@@ -141,7 +160,7 @@ function resolveResponse(data: unknown) {
         entryId: 'entry_1',
         entryPath: 'src/client/js-actions/example/index.ts',
         artifactHash,
-        artifactUrl: `/api/light-extension-runtime/artifacts/${artifactHash}`,
+        artifactUrl,
         runtimeCodeHash: 'runtime_hash_v1',
         version: 'v2',
         settings,

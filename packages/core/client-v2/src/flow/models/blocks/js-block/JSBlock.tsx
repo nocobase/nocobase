@@ -410,12 +410,11 @@ export class JSBlockModel extends BlockModel {
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 8,
+            justifyContent: 'center',
             padding: 12,
           }}
         >
-          <Spin size="small" />
-          <span>{this.context.t('Resolving JavaScript source')}</span>
+          <Spin size="small" aria-label={this.context.t('Resolving JavaScript source')} />
         </div>
       );
     }

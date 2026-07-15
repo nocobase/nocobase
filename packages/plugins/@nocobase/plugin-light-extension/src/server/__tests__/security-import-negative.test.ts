@@ -39,8 +39,8 @@ describe('plugin-light-extension workspace compiler import/security denials', ()
       expectedReason: 'unsafe_import_denied',
     },
     {
-      name: 'runtime React import',
-      source: "import React from 'react';\nctx.render(<div />);\n",
+      name: 'unsupported package import',
+      source: "import moduleValue from 'unsupported-package';\nctx.render(<div>{String(moduleValue)}</div>);\n",
       expectedCode: 'RUNJS_IMPORT_NOT_ALLOWED',
       expectedReason: 'unsafe_import_denied',
     },

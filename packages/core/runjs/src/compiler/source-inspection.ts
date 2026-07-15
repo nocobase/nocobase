@@ -115,7 +115,7 @@ export const RUNJS_COMPILER_ALLOWED_GLOBALS = new Set([
 
 const chartEventGlobals = new Set(['chart', 'params']);
 const sourceExtensions = new Set(['.ts', '.tsx', '.js', '.jsx', '.json']);
-const unknownNameDiagnosticCodes = new Set([2304, 2448, 2552, 2580]);
+const unknownNameDiagnosticCodes = new Set([2304, 2448, 2552, 2580, 2591]);
 let cachedTypeScriptEnvironmentFiles: RunJSTypeScriptEnvironmentFile[] | undefined;
 
 export interface InspectRunJSSourceWorkspaceInput {

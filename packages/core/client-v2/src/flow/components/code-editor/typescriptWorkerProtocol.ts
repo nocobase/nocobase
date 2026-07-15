@@ -34,6 +34,7 @@ export interface TypeScriptWorkerProjectSnapshot {
   };
   typeLibraryIds: string[];
   typeLibraryUsageDefinitions: RunJSTypeLibraryUsageDefinition[];
+  rewriteBuiltInAutoImports?: boolean;
 }
 
 export interface TypeScriptWorkerProjectUpdate
@@ -56,6 +57,7 @@ export interface TypeScriptWorkerCompletionEntry {
   detail: string;
   info: string;
   label: string;
+  unavailable?: boolean;
   type: string;
 }
 

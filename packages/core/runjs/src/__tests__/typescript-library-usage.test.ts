@@ -218,7 +218,7 @@ function inspect() {
     ).toEqual([]);
   });
 
-  it('recognizes module type references without analyzing ordinary import strings', () => {
+  it('recognizes built-in module references while ignoring unrelated import strings', () => {
     expect(
       ids(
         `
@@ -227,10 +227,19 @@ type Button = import('antd').Button;
 import type { PlusOutlined } from '@ant-design/icons';
 import type { Dayjs } from 'dayjs';
 import value from 'lodash';
+import unrelated from 'unrelated-package';
 `,
         'src/main.ts',
       ),
-    ).toEqual(['antd-icons/P', 'antd/Button', 'dayjs', 'react']);
+    ).toEqual(['antd-icons/P', 'antd/Button', 'dayjs', 'lodash', 'react']);
+  });
+
+  it.each([
+    ['default', `import ReactDefault from 'react'; ReactDefault.createElement('div');`],
+    ['namespace', `import * as ReactNamespace from 'react'; ReactNamespace.useEffect(() => undefined, []);`],
+    ['named', `import { useEffect as useLocalEffect } from 'react'; useLocalEffect(() => undefined, []);`],
+  ])('recognizes %s runtime React imports', (_kind, code) => {
+    expect(ids(code, 'src/main.ts')).toEqual(['react']);
   });
 
   it('recognizes React namespace type references', () => {

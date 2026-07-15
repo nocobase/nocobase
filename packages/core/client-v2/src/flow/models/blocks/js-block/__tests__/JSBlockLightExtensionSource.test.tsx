@@ -650,6 +650,38 @@ describe('JSBlockModel light extension source', () => {
     );
   });
 
+  it('renders only a loading spinner while resolving an external source', async () => {
+    let resolveSource: (source: { code: string; version: 'v2' }) => void = () => {
+      throw new Error('Source resolver is not initialized');
+    };
+    const source = new Promise<{ code: string; version: 'v2' }>((resolve) => {
+      resolveSource = resolve;
+    });
+    RunJSSourceResolverRegistry.registerResolver({
+      sourceMode: 'light-extension',
+      resolve: () => source,
+    });
+
+    renderJSBlock({
+      sourceMode: 'light-extension',
+      sourceBinding: SOURCE_BINDING,
+      settings: {},
+      version: 'v2',
+    });
+
+    const loading = await screen.findByTestId('js-block-runtime-loading');
+    expect(loading.children).toHaveLength(1);
+    expect(loading.firstElementChild).toHaveClass('ant-spin');
+    expect(loading).not.toHaveTextContent('Resolving JavaScript source');
+
+    resolveSource({
+      code: 'ctx.render(<span data-testid="resolved-js-block">resolved</span>);',
+      version: 'v2',
+    });
+    expect(await screen.findByTestId('resolved-js-block')).toHaveTextContent('resolved');
+    expect(screen.queryByTestId('js-block-runtime-loading')).toBeNull();
+  });
+
   it('renders resolver failures in the current block shell', async () => {
     RunJSSourceResolverRegistry.registerResolver({
       sourceMode: 'light-extension',

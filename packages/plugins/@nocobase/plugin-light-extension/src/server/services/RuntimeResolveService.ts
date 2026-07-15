@@ -24,11 +24,31 @@ import type { LightExtensionServiceContext } from './LightExtensionRepoService';
 import { SettingsResolverService } from './SettingsResolverService';
 import { getRuntimeSettingsSource, hasUsableRuntimeArtifact } from './runtimeArtifact';
 
+export interface RuntimeResolveServiceOptions {
+  apiBasePath?: string;
+}
+
 export class RuntimeResolveService {
+  private readonly settingsResolver: SettingsResolverService;
+
+  private readonly options: RuntimeResolveServiceOptions;
+
+  constructor(db: Database, options?: RuntimeResolveServiceOptions);
+  constructor(db: Database, settingsResolver?: SettingsResolverService, options?: RuntimeResolveServiceOptions);
   constructor(
     private readonly db: Database,
-    private readonly settingsResolver = new SettingsResolverService(),
-  ) {}
+    settingsResolverOrOptions?: SettingsResolverService | RuntimeResolveServiceOptions,
+    options: RuntimeResolveServiceOptions = {},
+  ) {
+    if (isSettingsResolverService(settingsResolverOrOptions)) {
+      this.settingsResolver = settingsResolverOrOptions;
+      this.options = options;
+      return;
+    }
+
+    this.settingsResolver = new SettingsResolverService();
+    this.options = settingsResolverOrOptions ?? options;
+  }
 
   async listSelectableEntries(
     input: { repoId?: string; kind?: string } = {},
@@ -113,7 +133,7 @@ export class RuntimeResolveService {
       entryId: entry.id,
       entryPath: entry.entryPath,
       artifactHash: entry.artifactHash,
-      artifactUrl: `/api/light-extension-runtime/artifacts/${encodeURIComponent(entry.artifactHash)}`,
+      artifactUrl: buildRuntimeArtifactUrl(entry.artifactHash, this.options.apiBasePath),
       runtimeCodeHash: entry.runtimeCodeHash,
       version: entry.runtimeVersion,
       settings,
@@ -258,6 +278,22 @@ export class RuntimeResolveService {
       });
     }
   }
+}
+
+export function buildRuntimeArtifactUrl(artifactHash: string, apiBasePath?: string): string {
+  return `${normalizeApiBasePath(apiBasePath)}/light-extension-runtime/artifacts/${encodeURIComponent(artifactHash)}`;
+}
+
+function normalizeApiBasePath(apiBasePath?: string): string {
+  const input = apiBasePath ?? process.env.API_BASE_PATH ?? '/api';
+  const normalized = `/${input.trim().replace(/^\/+|\/+$/g, '')}`;
+  return normalized === '/' ? '' : normalized;
+}
+
+function isSettingsResolverService(
+  value: SettingsResolverService | RuntimeResolveServiceOptions | undefined,
+): value is SettingsResolverService {
+  return typeof (value as SettingsResolverService | undefined)?.resolveRuntimeSettings === 'function';
 }
 
 function assertRuntimeResolveInput(input: LightExtensionRuntimeResolveInput): void {

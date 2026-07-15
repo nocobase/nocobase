@@ -8,7 +8,9 @@
  */
 
 import { Completion } from '@codemirror/autocomplete';
+import { javascriptLanguage } from '@codemirror/lang-javascript';
 import { EditorView } from '@codemirror/view';
+import type { SyntaxNode } from '@lezer/common';
 import {
   getRunJSDocFor,
   setupRunJSContexts,
@@ -36,9 +38,20 @@ type StaticCompletionEntry = {
   insertText?: string;
   boost?: number;
   requires?: Array<'element'>;
+  ctxLibAutoImport?: string;
+};
+
+type RunJSStaticCompletion = Completion & {
+  runJSBuiltInAutoImport?: boolean;
 };
 
 const NON_ELEMENT_COMPLETION_SCENES = new Set(['eventFlow', 'formValue', 'linkage']);
+const QUALIFIED_REACT_HOOK_COMPLETION_LABELS = new Set([
+  'ctx.libs.React.useState()',
+  'ctx.libs.React.useEffect()',
+  'ctx.libs.React.useMemo()',
+  'ctx.libs.React.useCallback()',
+]);
 
 const normalizeScenes = (scene?: string | string[]): string[] =>
   (Array.isArray(scene) ? scene : scene ? [scene] : [])
@@ -60,24 +73,136 @@ const satisfiesCompletionRequirements = (
   return completionSpec.requires.every((requirement) => requirement !== 'element' || capabilities.element);
 };
 
-const createApply = (insertText?: string) => (view: EditorView, _completion: Completion, from: number, to: number) => {
-  if (!insertText) return;
-  view.dispatch({
-    changes: { from, to, insert: insertText },
-    selection: { anchor: from + insertText.length },
-    scrollIntoView: true,
-  });
-};
+function nodeText(source: string, node: SyntaxNode): string {
+  return source.slice(node.from, node.to);
+}
 
-const staticEntry = ({ label, type, detail, info, insertText, boost = 85 }: StaticCompletionEntry): Completion =>
+function childNodes(node: SyntaxNode): SyntaxNode[] {
+  const children: SyntaxNode[] = [];
+  for (let child = node.firstChild; child; child = child.nextSibling) children.push(child);
+  return children;
+}
+
+function patternBindsLocalName(source: string, node: SyntaxNode, localName: string): boolean {
+  if (node.name === 'VariableDefinition') return nodeText(source, node) === localName;
+  if (node.name === 'PatternProperty') {
+    const children = childNodes(node);
+    const hasAlias = children.some((child) => child.name === ':');
+    if (!hasAlias) {
+      const propertyName = children.find((child) => child.name === 'PropertyName');
+      if (propertyName && nodeText(source, propertyName) === localName) return true;
+    }
+  }
+  for (const child of childNodes(node)) {
+    if (child.name === 'PropertyName') continue;
+    if (patternBindsLocalName(source, child, localName)) return true;
+  }
+  return false;
+}
+
+function containsVariableDefinition(source: string, node: SyntaxNode, localName: string): boolean {
+  if (node.name === 'VariableDefinition') return nodeText(source, node) === localName;
+  return childNodes(node).some((child) => containsVariableDefinition(source, child, localName));
+}
+
+function declarationBindsLocalName(source: string, node: SyntaxNode, localName: string): boolean {
+  if (node.name === 'ImportDeclaration') {
+    return containsVariableDefinition(source, node, localName);
+  }
+  if (node.name === 'VariableDeclaration') {
+    return childNodes(node).some(
+      (child) => child.name === 'VariableDefinition' || child.name === 'ObjectPattern' || child.name === 'ArrayPattern',
+    )
+      ? childNodes(node).some((child) => patternBindsLocalName(source, child, localName))
+      : false;
+  }
+  if (node.name === 'FunctionDeclaration' || node.name === 'ClassDeclaration') {
+    const name = childNodes(node).find((child) => child.name === 'VariableDefinition');
+    return Boolean(name && nodeText(source, name) === localName);
+  }
+  if (node.name === 'ExportDeclaration') {
+    return childNodes(node).some((child) => declarationBindsLocalName(source, child, localName));
+  }
+  return false;
+}
+
+const FUNCTION_OR_CLASS_SCOPE_NODES = new Set([
+  'ArrowFunction',
+  'ClassDeclaration',
+  'ClassExpression',
+  'FunctionDeclaration',
+  'FunctionExpression',
+  'MethodDeclaration',
+]);
+
+function containsFunctionScopedVarBinding(source: string, node: SyntaxNode, localName: string): boolean {
+  if (FUNCTION_OR_CLASS_SCOPE_NODES.has(node.name)) return false;
+  if (node.name === 'VariableDeclaration') {
+    const declarationKind = childNodes(node).find(
+      (child) => child.name === 'var' || child.name === 'let' || child.name === 'const',
+    );
+    if (declarationKind?.name === 'var' && declarationBindsLocalName(source, node, localName)) return true;
+  }
+  return childNodes(node).some((child) => containsFunctionScopedVarBinding(source, child, localName));
+}
+
+function hasLocalValueBinding(source: string, localName: string): boolean {
+  const topNode = javascriptLanguage.parser.parse(source).topNode;
+  for (const node of childNodes(topNode)) {
+    if (declarationBindsLocalName(source, node, localName)) return true;
+    if (containsFunctionScopedVarBinding(source, node, localName)) return true;
+  }
+  return false;
+}
+
+const createApply =
+  (insertText?: string, ctxLibAutoImport?: string) =>
+  (view: EditorView, _completion: Completion, from: number, to: number) => {
+    if (!insertText) return;
+    const source = view.state?.doc?.toString?.() || '';
+    const declaration =
+      ctxLibAutoImport && !hasLocalValueBinding(source, insertText)
+        ? `const { ${insertText} } = ctx.libs.${ctxLibAutoImport};\n`
+        : '';
+    const changes = declaration
+      ? [
+          { from: 0, to: 0, insert: declaration },
+          { from, to, insert: insertText },
+        ]
+      : { from, to, insert: insertText };
+    view.dispatch({
+      changes,
+      selection: { anchor: from + declaration.length + insertText.length },
+      scrollIntoView: true,
+    });
+  };
+
+const staticEntry = ({
+  label,
+  type,
+  detail,
+  info,
+  insertText,
+  boost = 85,
+  ctxLibAutoImport,
+}: StaticCompletionEntry): Completion =>
   ({
     label,
     type,
     detail,
     info,
     boost,
-    apply: insertText ? createApply(insertText) : undefined,
-  }) as Completion;
+    apply: insertText ? createApply(insertText, ctxLibAutoImport) : undefined,
+    runJSBuiltInAutoImport: Boolean(ctxLibAutoImport),
+  }) as RunJSStaticCompletion;
+
+export function filterRunJSCompletionsForTypeScriptAutoImports(
+  completions: Completion[],
+  typeScriptAutoImportsEnabled: boolean,
+): Completion[] {
+  if (!typeScriptAutoImportsEnabled) return completions;
+  return completions.filter((completion) => !(completion as RunJSStaticCompletion).runJSBuiltInAutoImport);
+}
 
 const SAFE_GLOBAL_COMPLETIONS: StaticCompletionEntry[] = [
   {
@@ -380,32 +505,36 @@ const RUNJS_RUNTIME_COMPLETIONS: StaticCompletionEntry[] = [
     boost: 90,
   },
   {
-    label: 'ctx.libs.React.useState()',
+    label: 'useState',
     type: 'function',
-    detail: 'React.useState',
-    insertText: 'ctx.libs.React.useState(initialValue)',
-    boost: 90,
+    detail: 'Auto import from ctx.libs.React',
+    insertText: 'useState',
+    boost: 120,
+    ctxLibAutoImport: 'React',
   },
   {
-    label: 'ctx.libs.React.useEffect()',
+    label: 'useEffect',
     type: 'function',
-    detail: 'React.useEffect',
-    insertText: 'ctx.libs.React.useEffect(() => {}, [])',
-    boost: 90,
+    detail: 'Auto import from ctx.libs.React',
+    insertText: 'useEffect',
+    boost: 120,
+    ctxLibAutoImport: 'React',
   },
   {
-    label: 'ctx.libs.React.useMemo()',
+    label: 'useMemo',
     type: 'function',
-    detail: 'React.useMemo',
-    insertText: 'ctx.libs.React.useMemo(() => value, [])',
-    boost: 85,
+    detail: 'Auto import from ctx.libs.React',
+    insertText: 'useMemo',
+    boost: 115,
+    ctxLibAutoImport: 'React',
   },
   {
-    label: 'ctx.libs.React.useCallback()',
+    label: 'useCallback',
     type: 'function',
-    detail: 'React.useCallback',
-    insertText: 'ctx.libs.React.useCallback(() => {}, [])',
-    boost: 85,
+    detail: 'Auto import from ctx.libs.React',
+    insertText: 'useCallback',
+    boost: 115,
+    ctxLibAutoImport: 'React',
   },
   {
     label: 'ctx.libs.ReactDOM.createRoot()',
@@ -777,6 +906,7 @@ export async function buildRunJSCompletions(
       dedupedCompletions.push(completions[i]);
       continue;
     }
+    if (QUALIFIED_REACT_HOOK_COMPLETION_LABELS.has(label)) continue;
     if (seenLabels.has(label)) continue;
     seenLabels.add(label);
     dedupedCompletions.push(completions[i]);
