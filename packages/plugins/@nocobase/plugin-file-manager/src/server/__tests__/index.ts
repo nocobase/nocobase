@@ -8,6 +8,7 @@
  */
 
 import { MockServer, createMockServer } from '@nocobase/test';
+import { getStorageUploadSecurityHeaders } from '@nocobase/server';
 import send from 'koa-send';
 import path from 'path';
 import supertest from 'supertest';
@@ -25,6 +26,7 @@ export async function getApp(options = {}): Promise<MockServer> {
 
   app.use(async (ctx, next) => {
     if (ctx.path.startsWith('/storage/uploads')) {
+      ctx.set(getStorageUploadSecurityHeaders(ctx.path));
       const storages = await app.db.getRepository('storages').find({
         filter: {
           type: STORAGE_TYPE_LOCAL,
