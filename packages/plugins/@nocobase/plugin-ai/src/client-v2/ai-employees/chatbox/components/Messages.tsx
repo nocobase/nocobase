@@ -12,14 +12,14 @@ import { Bubble } from '@ant-design/x';
 import { Button, Divider, Layout, Space, Spin, theme, Typography } from 'antd';
 import { DownOutlined, LoadingOutlined, RightOutlined } from '@ant-design/icons';
 import { useApp } from '@nocobase/client-v2';
+import { observer } from '@nocobase/flow-engine';
 import { useT } from '../../../locale';
 import type { Message } from '../../types';
 import { useChat } from '../hooks/useChat';
 import { useChatMessageActions } from '../hooks/useChatMessageActions';
 import { useWorkflowTasks } from '../hooks/useWorkflowTasks';
-import { useChatBoxStore } from '../stores/chat-box';
 import { useChatConversationsStore } from '../stores/chat-conversations';
-import { useChatToolsStore } from '../stores/chat-tools';
+import { useChatBoxRuntime } from '../stores/runtime';
 import { flattenMessages, formatConversationDuration, type RenderedItem } from '../utils';
 import { createAIEmployeeRole, defaultMessageRoles } from './MessageRenderers';
 
@@ -49,14 +49,15 @@ const MemoBubble = React.memo(Bubble, (prevProps, nextProps) => {
   );
 });
 
-export const Messages: React.FC = () => {
+export const Messages: React.FC = observer(() => {
   const t = useT();
   const { token } = theme.useToken();
   const app = useApp();
   const currentConversation = useChatConversationsStore.use.currentConversation();
   const chat = useChat(currentConversation);
-  const roles = useChatBoxStore.use.roles();
-  const currentEmployee = useChatBoxStore.use.currentEmployee();
+  const { chatBoxModel, chatToolModel } = useChatBoxRuntime();
+  const roles = chatBoxModel.roles;
+  const currentEmployee = chatBoxModel.currentEmployee;
   const messages = chat.use.messages();
   const messagesLoading = chat.use.messagesLoading();
   const renderedMessages = useMemo(() => flattenMessages(Array.isArray(messages) ? messages : []), [messages]);
@@ -66,14 +67,13 @@ export const Messages: React.FC = () => {
   const [collapsedConversationKeys, setCollapsedConversationKeys] = useState<Record<string, boolean>>({});
   const containerRef = useRef<HTMLDivElement | null>(null);
   const shouldStickToBottomRef = useRef(true);
-  const updateTools = useChatToolsStore.use.updateTools();
   const { loadMessages, lastMessageRef } = useChatMessageActions();
   const setResponseLoading = chat.setResponseLoading;
   const { updateReadonly } = useWorkflowTasks();
 
   useEffect(() => {
-    updateTools(messages);
-  }, [messages, updateTools]);
+    chatToolModel.updateTools(messages);
+  }, [chatToolModel, messages]);
 
   useEffect(() => {
     setCollapsedConversationKeys((previous) => {
@@ -287,13 +287,14 @@ export const Messages: React.FC = () => {
       )}
     </Layout.Content>
   );
-};
+});
 
-const BackgroundWorkingHint: React.FC = () => {
+const BackgroundWorkingHint: React.FC = observer(() => {
   const t = useT();
   const { loadMessages, getConversationLLMActiveState } = useChatMessageActions();
   const currentConversation = useChatConversationsStore.use.currentConversation();
-  const currentEmployee = useChatBoxStore.use.currentEmployee();
+  const { chatBoxModel } = useChatBoxRuntime();
+  const currentEmployee = chatBoxModel.currentEmployee;
   const chat = useChat(currentConversation);
   const messages = chat.use.messages();
   const backgroundWorking = chat.use.backgroundWorking();
@@ -371,4 +372,4 @@ const BackgroundWorkingHint: React.FC = () => {
       messageRender={() => <Content />}
     />
   );
-};
+});

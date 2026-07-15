@@ -13,11 +13,10 @@ import { observer } from '@nocobase/flow-engine';
 import { toToolsMap, ToolsUIProperties, useApp } from '@nocobase/client-v2';
 import { useT } from '../../../locale';
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
-import { useChatBoxStore } from '../stores/chat-box';
 import { useChatConversationsStore } from '../stores/chat-conversations';
-import { useChatToolsStore } from '../stores/chat-tools';
 import { useChatMessageActions } from '../hooks/useChatMessageActions';
 import { useToolCallActions } from '../hooks/useToolCallActions';
+import { useChatBoxRuntime } from '../stores/runtime';
 
 const useDefaultOnOk = (_decisions: ToolsUIProperties['decisions'], _adjustArgs: Record<string, unknown>) => {
   return {
@@ -33,21 +32,19 @@ export const ToolModal: React.FC = observer(() => {
   const aiConfigRepository = useAIConfigRepository();
   const tools = aiConfigRepository.aiTools;
   const toolsMap = toToolsMap(tools);
+  const { chatBoxModel, chatToolModel } = useChatBoxRuntime();
 
   const currentConversation = useChatConversationsStore.use.currentConversation();
   useEffect(() => {
     aiConfigRepository.getAITools(currentConversation).catch(console.error);
   }, [aiConfigRepository, currentConversation]);
 
-  const open = useChatToolsStore.use.openToolModal();
-  const setOpen = useChatToolsStore.use.setOpenToolModal();
-  const activeTool = useChatToolsStore.use.activeTool();
-  const setActiveTool = useChatToolsStore.use.setActiveTool();
-  const activeMessageId = useChatToolsStore.use.activeMessageId();
-  const setActiveMessageId = useChatToolsStore.use.setActiveMessageId();
-  const toolsByMessageId = useChatToolsStore.use.toolsByMessageId();
-  const toolsByName = useChatToolsStore.use.toolsByName();
-  const readonly = useChatBoxStore.use.readonly();
+  const open = chatToolModel.openToolModal;
+  const activeTool = chatToolModel.activeTool;
+  const activeMessageId = chatToolModel.activeMessageId;
+  const toolsByMessageId = chatToolModel.toolsByMessageId;
+  const toolsByName = chatToolModel.toolsByName;
+  const readonly = chatBoxModel.readonly;
 
   const { updateToolArgs } = useChatMessageActions();
 
@@ -61,7 +58,7 @@ export const ToolModal: React.FC = observer(() => {
   const FooterComponent = modal?.footer;
   const modalProps = modal?.props;
 
-  const adjustArgs = useChatToolsStore.use.adjustArgs();
+  const adjustArgs = chatToolModel.adjustArgs;
   const { getDecisionActions } = useToolCallActions({ messageId: activeMessageId });
   const decisions = getDecisionActions(resolvedActiveTool);
   const { onOk } = useOnOk(decisions, adjustArgs);
@@ -74,9 +71,9 @@ export const ToolModal: React.FC = observer(() => {
   }));
 
   const closeModal = useCallback(() => {
-    setOpen(false);
-    setActiveTool(null);
-  }, [setActiveTool, setOpen]);
+    chatToolModel.setOpenToolModal(false);
+    chatToolModel.setActiveTool(null);
+  }, [chatToolModel]);
 
   const saveToolArgs = useCallback(
     async (args: unknown) => {
@@ -92,12 +89,12 @@ export const ToolModal: React.FC = observer(() => {
         },
       });
       message.success(t('Saved successfully'));
-      setActiveTool({
+      chatToolModel.setActiveTool({
         ...resolvedActiveTool,
         args,
       });
     },
-    [activeMessageId, currentConversation, message, resolvedActiveTool, setActiveTool, t, updateToolArgs],
+    [activeMessageId, chatToolModel, currentConversation, message, resolvedActiveTool, t, updateToolArgs],
   );
 
   return (
@@ -114,8 +111,8 @@ export const ToolModal: React.FC = observer(() => {
               }}
               onChange={(value) => {
                 const toolCall = toolCalls.find((tool) => tool.id === value);
-                setActiveMessageId(toolCall?.messageId || '');
-                setActiveTool(toolCall);
+                chatToolModel.setActiveMessageId(toolCall?.messageId || '');
+                chatToolModel.setActiveTool(toolCall);
               }}
             />
           ) : null}
@@ -128,7 +125,7 @@ export const ToolModal: React.FC = observer(() => {
       okText={modal?.okText ? t(modal.okText) : t('Submit')}
       onOk={async () => {
         await onOk?.();
-        setOpen(false);
+        chatToolModel.setOpenToolModal(false);
       }}
       okButtonProps={{
         disabled: !['init', 'interrupted', 'pending'].includes(resolvedActiveTool?.invokeStatus) || readonly,

@@ -10,12 +10,13 @@
 import React, { useMemo } from 'react';
 import { Button, Space, theme } from 'antd';
 import { useApp } from '@nocobase/client-v2';
+import { observer } from '@nocobase/flow-engine';
 import type { AIManager } from '../../../manager/ai-manager';
 import { useT } from '../../../locale';
 import type { ActionOptions, ContextItem, Message } from '../../types';
 import { useChat } from '../hooks/useChat';
-import { useChatBoxStore } from '../stores/chat-box';
 import { useChatConversationsStore } from '../stores/chat-conversations';
+import { useChatBoxRuntime } from '../stores/runtime';
 
 type AIPluginLike = {
   aiManager?: AIManager;
@@ -25,7 +26,7 @@ export const Actions: React.FC<{
   message: Message['content'];
   responseType: string;
   value?: string;
-}> = ({ responseType, message, value }) => {
+}> = observer(({ responseType, message, value }) => {
   const app = useApp();
   const t = useT();
   const { token } = theme.useToken();
@@ -33,7 +34,8 @@ export const Actions: React.FC<{
   const chat = useChat(currentConversation);
   const responseLoading = chat.use.responseLoading();
   const messages = chat.use.messages();
-  const currentEmployee = useChatBoxStore.use.currentEmployee();
+  const { chatBoxModel } = useChatBoxRuntime();
+  const currentEmployee = chatBoxModel.currentEmployee;
   const plugin = app.pm.get('ai') as AIPluginLike | undefined;
 
   const lastEmployeeMessageKey = useMemo(() => {
@@ -104,6 +106,6 @@ export const Actions: React.FC<{
       })}
     </Space>
   );
-};
+});
 
 Actions.displayName = 'Actions';

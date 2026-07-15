@@ -8,7 +8,8 @@
  */
 
 import React from 'react';
-import { render, renderHook, screen } from '@testing-library/react';
+import { act, render, renderHook, screen } from '@testing-library/react';
+import { observer } from '@nocobase/flow-engine';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ChatBoxLayout } from '../../components/ChatBoxLayout';
 import { ChatBoxRuntimeProvider, createChatBoxRuntime, getGlobalChatBoxRuntime, useChatBoxRuntime } from '../runtime';
@@ -73,6 +74,22 @@ const RuntimeReader: React.FC = () => {
   return <div data-testid="runtime-reader">{runtime.chatBoxModel.senderValue || 'empty'}</div>;
 };
 
+const ObservedRuntimeReader: React.FC = observer(() => {
+  const { chatBoxModel, chatMessageModel, chatToolModel } = useChatBoxRuntime();
+  const sessionState = chatMessageModel.getSessionState('session-a');
+  return (
+    <div data-testid="observed-runtime-reader">
+      {[
+        chatBoxModel.senderValue || 'empty',
+        chatBoxModel.currentEmployee?.username || 'no-employee',
+        chatBoxModel.model?.model || 'no-model',
+        sessionState.messages.length,
+        chatToolModel.openToolModal ? 'tool-open' : 'tool-closed',
+      ].join('|')}
+    </div>
+  );
+});
+
 describe('chatbox runtime context', () => {
   it('returns the provided runtime from ChatBoxRuntimeProvider', () => {
     const runtime = createChatBoxRuntime();
@@ -118,5 +135,31 @@ describe('chatbox runtime context', () => {
 
     expect(screen.getByTestId('runtime-reader').textContent).toBe('layout-runtime');
     expect(screen.getByTestId('chat-button')).toBeTruthy();
+  });
+
+  it('tracks runtime model reads through observer rendering', () => {
+    const runtime = createChatBoxRuntime();
+
+    render(
+      <ChatBoxRuntimeProvider runtime={runtime}>
+        <ObservedRuntimeReader />
+      </ChatBoxRuntimeProvider>,
+    );
+
+    expect(screen.getByTestId('observed-runtime-reader').textContent).toBe('empty|no-employee|no-model|0|tool-closed');
+
+    act(() => {
+      runtime.chatBoxModel.setSenderValue('draft');
+      runtime.chatBoxModel.setCurrentEmployee({ username: 'atlas', nickname: 'Atlas' });
+      runtime.chatBoxModel.setModel({ llmService: 'openai', model: 'gpt-4.1' });
+      runtime.chatMessageModel.addSessionMessage('session-a', {
+        key: 'message-a',
+        role: 'user',
+        content: { type: 'text', content: 'hello' },
+      });
+      runtime.chatToolModel.setOpenToolModal(true);
+    });
+
+    expect(screen.getByTestId('observed-runtime-reader').textContent).toBe('draft|atlas|gpt-4.1|1|tool-open');
   });
 });

@@ -41,14 +41,14 @@ vi.mock('../ai-employees/chatbox/stores/chat-conversations', () => ({
   },
 }));
 
-vi.mock('../ai-employees/chatbox/stores/chat-tools', () => ({
-  useChatToolsStore: {
-    use: {
-      setOpenToolModal: () => mocks.setOpenToolModal,
-      setActiveTool: () => mocks.setActiveTool,
-      setActiveMessageId: () => mocks.setActiveMessageId,
+vi.mock('../ai-employees/chatbox/stores/runtime', () => ({
+  useChatBoxRuntime: () => ({
+    chatToolModel: {
+      setOpenToolModal: mocks.setOpenToolModal,
+      setActiveTool: mocks.setActiveTool,
+      setActiveMessageId: mocks.setActiveMessageId,
     },
-  },
+  }),
 }));
 
 const createProps = (toolCall: Partial<React.ComponentProps<typeof BusinessReportCard>['toolCall']> = {}) => ({

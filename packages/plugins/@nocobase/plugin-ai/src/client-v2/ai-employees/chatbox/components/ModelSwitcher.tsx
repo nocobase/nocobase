@@ -23,8 +23,9 @@ import {
   MODEL_PREFERENCE_STORAGE_KEY,
   resolveModel,
 } from '../model';
-import { useChatBoxStore, type ModelRef } from '../stores/chat-box';
+import { type ModelRef } from '../stores/chat-box';
 import { useChatConversationsStore } from '../stores/chat-conversations';
+import { useChatBoxRuntime } from '../stores/runtime';
 import { AddLLMModal } from './AddLLMModal';
 
 export const ModelSwitcher: React.FC<{
@@ -37,11 +38,11 @@ export const ModelSwitcher: React.FC<{
   const { token } = theme.useToken();
   const [isOpen, setIsOpen] = useState(false);
   const repository = useAIConfigRepository();
-  const currentEmployee = useChatBoxStore.use.currentEmployee();
+  const { chatBoxModel } = useChatBoxRuntime();
+  const currentEmployee = chatBoxModel.currentEmployee;
   const currentEmployeeUsername = currentEmployee?.username;
   const currentConversation = useChatConversationsStore.use.currentConversation();
-  const model = useChatBoxStore.use.model();
-  const setModel = useChatBoxStore.use.setModel();
+  const model = chatBoxModel.model;
   const llmServices = repository.llmServices;
   const [addModalOpen, setAddModalOpen] = useState(false);
   const pluginSettingsManager = app.pluginSettingsManager as
@@ -86,9 +87,9 @@ export const ModelSwitcher: React.FC<{
     }
     const resolved = resolveModel(app.apiClient, currentEmployee, allModels, model);
     if (!isSameModel(resolved, model)) {
-      setModel(resolved);
+      chatBoxModel.setModel(resolved);
     }
-  }, [allModels, app.apiClient, currentConversation, currentEmployee, currentEmployeeUsername, model, setModel]);
+  }, [allModels, app.apiClient, chatBoxModel, currentConversation, currentEmployee, currentEmployeeUsername, model]);
 
   const selectedModel = useMemo(() => {
     if (isValidModel(model, scopedModels)) {
@@ -104,7 +105,7 @@ export const ModelSwitcher: React.FC<{
 
   const handleSelect = useCallback(
     (target: ModelRef) => {
-      setModel(target);
+      chatBoxModel.setModel(target);
       if (currentEmployee) {
         try {
           app.apiClient.storage?.setItem(MODEL_PREFERENCE_STORAGE_KEY + currentEmployee.username, getModelKey(target));
@@ -113,7 +114,7 @@ export const ModelSwitcher: React.FC<{
         }
       }
     },
-    [app.apiClient.storage, currentEmployee, setModel],
+    [app.apiClient.storage, chatBoxModel, currentEmployee],
   );
 
   const menuItems = useMemo<MenuProps['items']>(() => {

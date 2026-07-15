@@ -11,10 +11,11 @@ import React, { useMemo, useState } from 'react';
 import { Button, Flex, Space, Spin, type ButtonProps } from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
 import type { ToolsUIProperties } from '@nocobase/client-v2';
+import { observer } from '@nocobase/flow-engine';
 import { useT } from '../../locale';
 import { useChat } from '../chatbox/hooks/useChat';
-import { useChatBoxStore } from '../chatbox/stores/chat-box';
 import { useChatConversationsStore } from '../chatbox/stores/chat-conversations';
+import { useChatBoxRuntime } from '../chatbox/stores/runtime';
 import { isCurrentLiveMessage } from '../chatbox/utils';
 
 type SuggestionsArgs = {
@@ -57,7 +58,7 @@ const getEditableArgs = (args: SuggestionsArgs | undefined, option: string): Rec
   return { ...args, option };
 };
 
-export const SuggestionsOptionsCard: React.FC<ToolsUIProperties<SuggestionsArgs>> = ({
+const SuggestionsOptionsCardBase: React.FC<ToolsUIProperties<SuggestionsArgs>> = ({
   messageId,
   toolCall,
   decisions,
@@ -67,7 +68,8 @@ export const SuggestionsOptionsCard: React.FC<ToolsUIProperties<SuggestionsArgs>
   const chat = useChat(currentConversation);
   const responseLoading = chat.use.responseLoading();
   const messages = chat.use.messages();
-  const readonly = useChatBoxStore.use.readonly();
+  const { chatBoxModel } = useChatBoxRuntime();
+  const readonly = chatBoxModel.readonly;
   const [disabled, setDisabled] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const suggestionsToolCall = toolCall as SuggestionsToolCall;
@@ -122,5 +124,7 @@ export const SuggestionsOptionsCard: React.FC<ToolsUIProperties<SuggestionsArgs>
     </Flex>
   );
 };
+
+export const SuggestionsOptionsCard = observer(SuggestionsOptionsCardBase);
 
 SuggestionsOptionsCard.displayName = 'SuggestionsOptionsCard';

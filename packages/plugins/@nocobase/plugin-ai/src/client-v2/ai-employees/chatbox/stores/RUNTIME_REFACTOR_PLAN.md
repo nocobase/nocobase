@@ -255,7 +255,7 @@ Tests:
 
 ### T4. Migrate Store Consumers To Runtime Models
 
-Status: `Pending`
+Status: `Done`
 
 Dependencies: T3
 
@@ -274,6 +274,16 @@ Tests:
 - Add or update component tests proving render updates when model fields change.
 - Cover at least sender draft, current employee, current conversation, model selection, web search, messages, and tool modal state.
 - Run touched-file eslint and related component/hook tests.
+- Verification on 2026-07-15:
+  - `yarn eslint --fix <touched TS/TSX files>`: passed.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/chatbox-runtime.test.tsx --run --reporter=verbose`: passed, 5 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/chatbox-models.test.ts --run --reporter=verbose`: passed, 6 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/chatbox-stores.test.ts --run --reporter=verbose`: passed, 6 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/global-store.test.ts --run --reporter=verbose`: passed, 3 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/observable-store.test.tsx --run --reporter=verbose`: passed, 3 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/suggestions-options-card.test.tsx --run --reporter=verbose`: passed, 2 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/business-report-card.test.tsx --run --reporter=verbose`: passed, 2 tests.
+  - `yarn eslint --fix packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/RUNTIME_REFACTOR_PLAN.md`: attempted, but the current ESLint configuration parses `.md` as JavaScript and fails at line 1 with `Parsing error: Invalid character`.
 - Update this document status and commit after tests pass.
 
 ### T5. Preserve Global Chatbox Behavior

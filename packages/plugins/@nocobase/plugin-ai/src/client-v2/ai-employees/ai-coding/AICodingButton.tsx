@@ -17,8 +17,8 @@ import { useAIConfigRepository } from '../../repositories/hooks/useAIConfigRepos
 import { avatars } from '../avatars';
 import { useChat } from '../chatbox/hooks/useChat';
 import { useChatBoxActions } from '../chatbox/hooks/useChatBoxActions';
-import { useChatBoxStore } from '../chatbox/stores/chat-box';
 import { useChatConversationsStore } from '../chatbox/stores/chat-conversations';
+import { useChatBoxRuntime } from '../chatbox/stores/runtime';
 import { AIEmployeeProfileCard } from '../ProfileCard';
 import type { AIEmployee, Task } from '../types';
 import prompts from './prompts';
@@ -46,8 +46,9 @@ export const AICodingButton: React.FC<AICodingButtonProps> = observer(
     const { token } = theme.useToken();
     const aiConfigRepository = useAIConfigRepository();
     const aiEmployees = aiConfigRepository.aiEmployees;
-    const open = useChatBoxStore.use.open();
-    const currentEmployee = useChatBoxStore.use.currentEmployee();
+    const { chatBoxModel } = useChatBoxRuntime();
+    const open = chatBoxModel.open;
+    const currentEmployee = chatBoxModel.currentEmployee;
     const currentConversation = useChatConversationsStore.use.currentConversation();
     const chat = useChat(currentConversation);
     const { triggerTask } = useChatBoxActions();

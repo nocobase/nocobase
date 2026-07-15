@@ -40,6 +40,7 @@ import remarkGfm from 'remark-gfm';
 import SyntaxHighlighter from 'react-syntax-highlighter';
 import { dark, defaultStyle } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 import { useGlobalTheme } from '@nocobase/client-v2';
+import { observer } from '@nocobase/flow-engine';
 import { useT } from '../../../locale';
 import type { Message } from '../../types';
 import { useChat } from '../hooks/useChat';
@@ -155,7 +156,7 @@ export const CodeBasic: React.FC<CodeProps> = ({ children, className, node, ...r
   );
 };
 
-export const Code: React.FC<CodeProps> = ({ children, className, node, message: chatMessage, ...rest }) => {
+export const Code: React.FC<CodeProps> = observer(({ children, className, node, message: chatMessage, ...rest }) => {
   const { token } = theme.useToken();
   const { message } = App.useApp();
   const { isDarkTheme } = useGlobalTheme();
@@ -269,7 +270,7 @@ export const Code: React.FC<CodeProps> = ({ children, className, node, message: 
       </Modal>
     </>
   );
-};
+});
 
 type FormProps = React.ComponentProps<'form'> & {
   node?: {
@@ -404,131 +405,133 @@ class EchartsErrorBoundary extends React.Component<
   }
 }
 
-const Echarts: React.FC<EchartsProps> = React.memo(
-  ({ children, message, ...rest }) => {
-    const chartRef = useRef<ReactECharts>(null);
-    const containerRef = useRef<HTMLDivElement>(null);
-    const { token } = theme.useToken();
-    const { isDarkTheme } = useGlobalTheme();
-    const t = useT();
-    const currentConversation = useChatConversationsStore.use.currentConversation();
-    const chat = useChat(currentConversation);
-    const responseLoading = chat.use.responseLoading();
-    const optionSource = React.Children.toArray(children).join('');
-    let option: Record<string, unknown> = {};
-    let optionValid = true;
+const Echarts: React.FC<EchartsProps> = observer(
+  React.memo(
+    ({ children, message, ...rest }) => {
+      const chartRef = useRef<ReactECharts>(null);
+      const containerRef = useRef<HTMLDivElement>(null);
+      const { token } = theme.useToken();
+      const { isDarkTheme } = useGlobalTheme();
+      const t = useT();
+      const currentConversation = useChatConversationsStore.use.currentConversation();
+      const chat = useChat(currentConversation);
+      const responseLoading = chat.use.responseLoading();
+      const optionSource = React.Children.toArray(children).join('');
+      let option: Record<string, unknown> = {};
+      let optionValid = true;
 
-    try {
-      option = JSON.parse(optionSource) as Record<string, unknown>;
-    } catch (error) {
-      optionValid = false;
-    }
-
-    useEffect(() => {
-      if (!optionValid) {
-        return;
+      try {
+        option = JSON.parse(optionSource) as Record<string, unknown>;
+      } catch (error) {
+        optionValid = false;
       }
 
-      const resizeChart = () => {
-        chartRef.current?.getEchartsInstance()?.resize();
-      };
-      const timeouts = [0, 100, 300].map((delay) => window.setTimeout(resizeChart, delay));
-      const observer =
-        typeof ResizeObserver !== 'undefined' && containerRef.current
-          ? new ResizeObserver(() => {
-              resizeChart();
-            })
-          : null;
-
-      if (observer && containerRef.current) {
-        observer.observe(containerRef.current);
-      }
-
-      return () => {
-        timeouts.forEach((timeoutId) => window.clearTimeout(timeoutId));
-        observer?.disconnect();
-      };
-    }, [optionSource, optionValid]);
-
-    if (responseLoading && !message?.messageId) {
-      return <Spin size="small" tip={t('Generating')} />;
-    }
-
-    if (!optionValid) {
-      return (
-        <Card
-          size="small"
-          title={t('ECharts')}
-          styles={{
-            title: {
-              fontSize: token.fontSize,
-              fontWeight: 400,
-            },
-            body: {
-              width: '100%',
-              fontSize: token.fontSizeSM,
-            },
-          }}
-        >
-          <SyntaxHighlighter {...rest} PreTag="div" language="json" style={isDarkTheme ? dark : defaultStyle}>
-            {optionSource.replace(/\n$/, '')}
-          </SyntaxHighlighter>
-        </Card>
-      );
-    }
-
-    return (
-      <EchartsErrorBoundary
-        resetKey={optionSource}
-        fallback={(error) =>
-          responseLoading ? null : (
-            <Alert showIcon type="error" message={t('Invalid chart options')} description={error.message} />
-          )
+      useEffect(() => {
+        if (!optionValid) {
+          return;
         }
-      >
-        <div ref={containerRef}>
-          <ReactECharts
-            ref={chartRef}
-            echarts={echarts}
-            option={{
-              ...option,
-              toolbox: {
-                show: true,
-                feature: {
-                  saveAsImage: {
-                    title: t('Save as image'),
-                    icon: `path://${downloadIconPath}`,
-                    iconStyle: {
-                      fontSize: token.fontSizeSM,
-                      color: token.colorText,
-                      borderWidth: 0,
-                    },
-                    emphasis: {
+
+        const resizeChart = () => {
+          chartRef.current?.getEchartsInstance()?.resize();
+        };
+        const timeouts = [0, 100, 300].map((delay) => window.setTimeout(resizeChart, delay));
+        const observer =
+          typeof ResizeObserver !== 'undefined' && containerRef.current
+            ? new ResizeObserver(() => {
+                resizeChart();
+              })
+            : null;
+
+        if (observer && containerRef.current) {
+          observer.observe(containerRef.current);
+        }
+
+        return () => {
+          timeouts.forEach((timeoutId) => window.clearTimeout(timeoutId));
+          observer?.disconnect();
+        };
+      }, [optionSource, optionValid]);
+
+      if (responseLoading && !message?.messageId) {
+        return <Spin size="small" tip={t('Generating')} />;
+      }
+
+      if (!optionValid) {
+        return (
+          <Card
+            size="small"
+            title={t('ECharts')}
+            styles={{
+              title: {
+                fontSize: token.fontSize,
+                fontWeight: 400,
+              },
+              body: {
+                width: '100%',
+                fontSize: token.fontSizeSM,
+              },
+            }}
+          >
+            <SyntaxHighlighter {...rest} PreTag="div" language="json" style={isDarkTheme ? dark : defaultStyle}>
+              {optionSource.replace(/\n$/, '')}
+            </SyntaxHighlighter>
+          </Card>
+        );
+      }
+
+      return (
+        <EchartsErrorBoundary
+          resetKey={optionSource}
+          fallback={(error) =>
+            responseLoading ? null : (
+              <Alert showIcon type="error" message={t('Invalid chart options')} description={error.message} />
+            )
+          }
+        >
+          <div ref={containerRef}>
+            <ReactECharts
+              ref={chartRef}
+              echarts={echarts}
+              option={{
+                ...option,
+                toolbox: {
+                  show: true,
+                  feature: {
+                    saveAsImage: {
+                      title: t('Save as image'),
+                      icon: `path://${downloadIconPath}`,
                       iconStyle: {
                         fontSize: token.fontSizeSM,
-                        color: token.colorLinkHover,
+                        color: token.colorText,
                         borderWidth: 0,
+                      },
+                      emphasis: {
+                        iconStyle: {
+                          fontSize: token.fontSizeSM,
+                          color: token.colorLinkHover,
+                          borderWidth: 0,
+                        },
                       },
                     },
                   },
                 },
-              },
-            }}
-            theme={isDarkTheme ? 'dark' : 'default'}
-          />
-        </div>
-      </EchartsErrorBoundary>
-    );
-  },
-  (previous, next) => {
-    const previousChildren = React.Children.toArray(previous.children).join('');
-    const nextChildren = React.Children.toArray(next.children).join('');
-    return (
-      previousChildren === nextChildren &&
-      previous.message?.messageId === next.message?.messageId &&
-      previous.index === next.index
-    );
-  },
+              }}
+              theme={isDarkTheme ? 'dark' : 'default'}
+            />
+          </div>
+        </EchartsErrorBoundary>
+      );
+    },
+    (previous, next) => {
+      const previousChildren = React.Children.toArray(previous.children).join('');
+      const nextChildren = React.Children.toArray(next.children).join('');
+      return (
+        previousChildren === nextChildren &&
+        previous.message?.messageId === next.message?.messageId &&
+        previous.index === next.index
+      );
+    },
+  ),
 );
 
 Echarts.displayName = 'Echarts';

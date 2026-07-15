@@ -12,7 +12,7 @@ import { useApp } from '@nocobase/client-v2';
 import { useRequest } from 'ahooks';
 import { useWorkflowTasksStore, WorkflowTask, WorkflowTaskDetail } from '../stores/workflow-tasks';
 import { useLoadMoreObserver } from './useLoadMoreObserver';
-import { useChatBoxStore } from '../stores/chat-box';
+import { useChatBoxRuntime } from '../stores/runtime';
 
 const JOB_STATUS = {
   PENDING: 0,
@@ -177,14 +177,14 @@ export const useWorkflowTasks = () => {
     [setCurrentWorkflowTask, workflowTasksResource],
   );
 
-  const setReadonly = useChatBoxStore.use.setReadonly();
+  const { chatBoxModel } = useChatBoxRuntime();
   const updateReadonly = useCallback(
     async (sessionId: string) => {
       await acceptWorkflowTask(sessionId);
       const task = await getWorkflowTaskBySession(sessionId);
-      setReadonly(task?.readonly === true);
+      chatBoxModel.setReadonly(task?.readonly === true);
     },
-    [acceptWorkflowTask, getWorkflowTaskBySession, setReadonly],
+    [acceptWorkflowTask, chatBoxModel, getWorkflowTaskBySession],
   );
 
   return {

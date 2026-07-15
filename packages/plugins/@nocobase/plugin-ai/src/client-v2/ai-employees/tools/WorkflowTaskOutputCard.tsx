@@ -11,12 +11,13 @@ import React, { useMemo, useState } from 'react';
 import { Button, Card, Descriptions, Skeleton, Space, Typography, theme, type ButtonProps } from 'antd';
 import type { ToolsUIProperties } from '@nocobase/client-v2';
 import { useApp } from '@nocobase/client-v2';
+import { observer } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import { useT } from '../../locale';
 import { Markdown } from '../chatbox/components/Markdown';
 import { useWorkflowTasks } from '../chatbox/hooks/useWorkflowTasks';
-import { useChatBoxStore } from '../chatbox/stores/chat-box';
 import { useChatConversationsStore } from '../chatbox/stores/chat-conversations';
+import { useChatBoxRuntime } from '../chatbox/stores/runtime';
 import {
   useWorkflowTasksStore,
   type WorkflowTaskDetail,
@@ -61,10 +62,7 @@ const formatValue = (value: unknown): React.ReactNode => {
   );
 };
 
-export const WorkflowTaskOutputCard: React.FC<ToolsUIProperties<WorkflowTaskOutputArgs>> = ({
-  toolCall,
-  decisions,
-}) => {
+const WorkflowTaskOutputCardBase: React.FC<ToolsUIProperties<WorkflowTaskOutputArgs>> = ({ toolCall, decisions }) => {
   const t = useT();
   const { token } = theme.useToken();
   const app = useApp();
@@ -73,10 +71,10 @@ export const WorkflowTaskOutputCard: React.FC<ToolsUIProperties<WorkflowTaskOutp
   const currentWorkflowTask = useWorkflowTasksStore.use.currentWorkflowTask();
   const { getWorkflowTaskBySession } = useWorkflowTasks();
   const [action, setAction] = useState<'approve' | 'reject' | 'revise' | null>(null);
-  const readonly = useChatBoxStore.use.readonly();
+  const { chatBoxModel } = useChatBoxRuntime();
+  const readonly = chatBoxModel.readonly;
   const disabled = toolCall.invokeStatus !== 'interrupted' || Boolean(action) || readonly;
-  const senderRef = useChatBoxStore.use.senderRef();
-  const setShowSenderHint = useChatBoxStore.use.setShowSenderHint();
+  const senderRef = chatBoxModel.senderRef;
 
   const cachedWorkflowTask =
     currentWorkflowTask && currentWorkflowTask.sessionId === currentConversation ? currentWorkflowTask : undefined;
@@ -163,7 +161,7 @@ export const WorkflowTaskOutputCard: React.FC<ToolsUIProperties<WorkflowTaskOutp
           onClick={async () => {
             setAction('revise');
             try {
-              setShowSenderHint(true);
+              chatBoxModel.setShowSenderHint(true);
               senderRef?.current?.focus?.();
             } finally {
               setAction(null);
@@ -194,3 +192,5 @@ export const WorkflowTaskOutputCard: React.FC<ToolsUIProperties<WorkflowTaskOutp
     </Card>
   );
 };
+
+export const WorkflowTaskOutputCard = observer(WorkflowTaskOutputCardBase);

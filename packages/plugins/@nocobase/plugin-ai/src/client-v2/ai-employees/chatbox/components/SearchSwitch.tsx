@@ -13,15 +13,16 @@ import { GlobalOutlined } from '@ant-design/icons';
 import { observer } from '@nocobase/flow-engine';
 import { useT } from '../../../locale';
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
-import { useChatBoxStore } from '../stores/chat-box';
 import { useChatConversationsStore } from '../stores/chat-conversations';
+import { useChatBoxRuntime } from '../stores/runtime';
 
 export const SearchSwitch: React.FC<{ disabled?: boolean }> = observer(({ disabled }) => {
   const t = useT();
   const repository = useAIConfigRepository();
   const webSearch = useChatConversationsStore.use.webSearch();
   const setWebSearch = useChatConversationsStore.use.setWebSearch();
-  const model = useChatBoxStore.use.model();
+  const { chatBoxModel } = useChatBoxRuntime();
+  const model = chatBoxModel.model;
   const services = repository.llmServices;
 
   useEffect(() => {

@@ -15,9 +15,10 @@ import { useAIConfigRepository } from '../../repositories/hooks/useAIConfigRepos
 import { avatars } from '../avatars';
 import { useChat } from '../chatbox/hooks/useChat';
 import { useChatBoxActions } from '../chatbox/hooks/useChatBoxActions';
-import { useChatBoxStore } from '../chatbox/stores/chat-box';
+import { useChatBoxRuntime } from '../chatbox/stores/runtime';
 import { AIEmployeeProfileCard } from '../ProfileCard';
 import type { AIEmployee } from '../types';
+import { observer } from '@nocobase/flow-engine';
 
 type DataSourceManagerExtension = {
   registerManagerAction(options: { order?: number; component: ComponentType }): void;
@@ -48,17 +49,16 @@ export const setupDataModeling = (plugin: PluginWithDataSourceManager) => {
   });
 };
 
-const AIButton = () => {
+const AIButton = observer(() => {
   const [focus, setFocus] = useState(false);
   const aiConfigRepository = useAIConfigRepository();
   const { data: aiEmployees = [] } = useRequest<AIEmployee[], []>(async () => {
     return aiConfigRepository.getAIEmployees();
   });
-  const open = useChatBoxStore.use.open();
+  const { chatBoxModel } = useChatBoxRuntime();
+  const open = chatBoxModel.open;
   const chat = useChat();
-  const setOpen = useChatBoxStore.use.setOpen();
-  const setReadonly = useChatBoxStore.use.setReadonly();
-  const currentEmployee = useChatBoxStore.use.currentEmployee();
+  const currentEmployee = chatBoxModel.currentEmployee;
   const { switchAIEmployee } = useChatBoxActions();
 
   const aiEmployee = aiEmployees.find((e) => isDataModelingAssistant(e));
@@ -83,10 +83,10 @@ const AIButton = () => {
   }
 
   const handleClick = () => {
-    setReadonly(false);
+    chatBoxModel.setReadonly(false);
     chat.setResponseLoading(false);
     if (!open) {
-      setOpen(true);
+      chatBoxModel.setOpen(true);
       switchAIEmployee(aiEmployee);
       return;
     }
@@ -108,4 +108,4 @@ const AIButton = () => {
       />
     </Popover>
   );
-};
+});

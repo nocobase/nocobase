@@ -14,7 +14,7 @@ import SyntaxHighlighter from 'react-syntax-highlighter';
 import { dark, defaultStyle } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 import { useApp, useGlobalTheme, type ToolCall } from '@nocobase/client-v2';
 import { useT } from '../../locale';
-import { useChatToolsStore } from '../chatbox/stores/chat-tools';
+import { useChatBoxRuntime } from '../chatbox/stores/runtime';
 import { Diagram } from './data-modeling/Diagram';
 import { Table } from './data-modeling/Table';
 import type { CollectionDataType, DataModelingArgs, FieldDataType } from './data-modeling/types';
@@ -122,15 +122,15 @@ export const DataModelingModal: React.FC<{
   const t = useT();
   const { isDarkTheme } = useGlobalTheme();
   const collections = useCollections(normalizeCollections(tool.args.collections));
-  const setAdjustArgs = useChatToolsStore.use.setAdjustArgs();
+  const { chatToolModel } = useChatBoxRuntime();
   const { updateCollectionRecord, updateFieldRecord } = useUpdateTool(tool, saveToolArgs);
 
   useEffect(() => {
-    setAdjustArgs({
+    chatToolModel.setAdjustArgs({
       ...tool.args,
       collections,
     });
-  }, [collections, setAdjustArgs, tool.args]);
+  }, [chatToolModel, collections, tool.args]);
 
   if (!normalizeCollections(tool.args.collections)) {
     return <Alert showIcon type="error" message={t('Invalid definition')} />;

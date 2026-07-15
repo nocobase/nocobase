@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   App as AntdApp,
   Badge,
@@ -37,18 +37,20 @@ import { useChatBoxActions } from '../hooks/useChatBoxActions';
 import { useChatConversationActions } from '../hooks/useChatConversationActions';
 import { useChatMessageActions } from '../hooks/useChatMessageActions';
 import { useWorkflowTasks } from '../hooks/useWorkflowTasks';
-import { useChatBoxStore, type ModelRef } from '../stores/chat-box';
+import { type ModelRef } from '../stores/chat-box';
 import { useChatConversationsStore } from '../stores/chat-conversations';
 import { useWorkflowTasksStore } from '../stores/workflow-tasks';
 import type { WorkflowTask } from '../stores/workflow-tasks';
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
+import { observer } from '@nocobase/flow-engine';
+import { useChatBoxRuntime } from '../stores/runtime';
 
 type RenameTarget = {
   key: string;
   title: string;
 } | null;
 
-export const Conversations: React.FC = memo(() => {
+export const Conversations: React.FC = observer(() => {
   const t = useT();
   const app = useApp();
   const { modal, message } = AntdApp.useApp();
@@ -65,11 +67,8 @@ export const Conversations: React.FC = memo(() => {
   const keyword = useChatConversationsStore.use.keyword();
   const setKeyword = useChatConversationsStore.use.setKeyword();
   const setCurrentConversation = useChatConversationsStore.use.setCurrentConversation();
-  const setCurrentEmployee = useChatBoxStore.use.setCurrentEmployee();
-  const setReadonly = useChatBoxStore.use.setReadonly();
-  const setShowConversations = useChatBoxStore.use.setShowConversations();
-  const setModel = useChatBoxStore.use.setModel();
-  const expanded = useChatBoxStore.use.expanded();
+  const { chatBoxModel } = useChatBoxRuntime();
+  const expanded = chatBoxModel.expanded;
   const setCurrentWorkflowTask = useWorkflowTasksStore.use.setCurrentWorkflowTask();
   const {
     refresh,
@@ -175,7 +174,7 @@ export const Conversations: React.FC = memo(() => {
   const openConversation = useCallback(
     (sessionId: string, username?: string, model?: ModelRef) => {
       if (sessionId === currentConversation) {
-        setShowConversations(false);
+        chatBoxModel.setShowConversations(false);
         return;
       }
 
@@ -183,9 +182,9 @@ export const Conversations: React.FC = memo(() => {
       setCurrentConversation(sessionId);
       const aiEmployee = username ? aiEmployeesMap[username] : conversation?.aiEmployee;
       if (username) {
-        setCurrentEmployee(aiEmployee);
+        chatBoxModel.setCurrentEmployee(aiEmployee);
       } else {
-        setCurrentEmployee(conversation?.aiEmployee);
+        chatBoxModel.setCurrentEmployee(conversation?.aiEmployee);
       }
       const sessionChat = chat.for(sessionId);
       const sessionState = sessionChat.getState();
@@ -204,16 +203,17 @@ export const Conversations: React.FC = memo(() => {
         sessionChat.setMessages([]);
         clear(undefined, sessionId);
       }
-      setModel(model ?? (conversation ? getConversationModel(conversation) : null));
+      chatBoxModel.setModel(model ?? (conversation ? getConversationModel(conversation) : null));
       if (!shouldReuseLocalSession) {
         resumeAfterLoad(sessionId, aiEmployee?.username).catch(console.error);
       }
       if (!expanded) {
-        setShowConversations(false);
+        chatBoxModel.setShowConversations(false);
       }
     },
     [
       aiEmployeesMap,
+      chatBoxModel,
       chat,
       clear,
       conversations,
@@ -222,9 +222,6 @@ export const Conversations: React.FC = memo(() => {
       hasActiveStream,
       resumeAfterLoad,
       setCurrentConversation,
-      setCurrentEmployee,
-      setModel,
-      setShowConversations,
     ],
   );
 
@@ -234,16 +231,16 @@ export const Conversations: React.FC = memo(() => {
       try {
         await acceptWorkflowTask(sessionId);
         const task = await getWorkflowTaskBySession(sessionId);
-        setReadonly(task?.readonly === true);
+        chatBoxModel.setReadonly(task?.readonly === true);
         chat.for(sessionId).setResponseLoading(task?.status === 'processing');
-        setShowConversations(false);
+        chatBoxModel.setShowConversations(false);
         openConversation(sessionId, task?.config?.username, task?.config?.model ?? undefined);
       } catch (error) {
         setPendingWorkflowTask(undefined);
         throw error;
       }
     },
-    [acceptWorkflowTask, chat, getWorkflowTaskBySession, openConversation, setReadonly, setShowConversations],
+    [acceptWorkflowTask, chat, chatBoxModel, getWorkflowTaskBySession, openConversation],
   );
 
   const deleteConversation = useCallback(
@@ -396,7 +393,7 @@ export const Conversations: React.FC = memo(() => {
             activeKey={currentConversation}
             items={items}
             onActiveChange={(sessionId) => {
-              setReadonly(false);
+              chatBoxModel.setReadonly(false);
               setCurrentWorkflowTask(undefined);
               const conversation = conversations.find((item) => item.sessionId === sessionId);
               openConversation(sessionId, conversation?.aiEmployee?.username, getConversationModel(conversation));

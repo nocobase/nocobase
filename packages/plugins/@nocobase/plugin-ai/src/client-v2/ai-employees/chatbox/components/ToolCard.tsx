@@ -30,8 +30,8 @@ import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRe
 import type { ToolCall } from '../../types';
 import { useChat } from '../hooks/useChat';
 import { useToolCallActions } from '../hooks/useToolCallActions';
-import { useChatBoxStore } from '../stores/chat-box';
 import { useChatConversationsStore } from '../stores/chat-conversations';
+import { useChatBoxRuntime } from '../stores/runtime';
 import { isCurrentLiveMessage } from '../utils';
 
 type ToolCardProps = {
@@ -123,12 +123,13 @@ ToolCard.displayName = 'ToolCard';
 const CallButton: React.FC<{
   messageId: string;
   toolCalls: ToolCall[];
-}> = ({ messageId, toolCalls }) => {
+}> = observer(({ messageId, toolCalls }) => {
   const t = useT();
   const { token } = theme.useToken();
   const { getDecisionActions } = useToolCallActions({ messageId });
   const [loading, setLoading] = useState(false);
-  const readonly = useChatBoxStore.use.readonly();
+  const { chatBoxModel } = useChatBoxRuntime();
+  const readonly = chatBoxModel.readonly;
 
   return (
     <Flex align="center" gap={token.marginXS}>
@@ -161,7 +162,7 @@ const CallButton: React.FC<{
       </Button>
     </Flex>
   );
-};
+});
 
 const InvokeStatus: React.FC<{ toolCall: ToolCall }> = ({ toolCall }) => {
   const t = useT();
@@ -302,7 +303,7 @@ const DefaultToolCard: React.FC<{
   tools: ToolsEntry[];
   toolCalls: ToolCall[];
   inlineActions?: React.ReactNode;
-}> = ({ messageId, tools, toolCalls, inlineActions }) => {
+}> = observer(({ messageId, tools, toolCalls, inlineActions }) => {
   const toolsMap = useMemo(() => toToolsMap(tools), [tools]);
   const currentConversation = useChatConversationsStore.use.currentConversation();
   const chat = useChat(currentConversation);
@@ -342,7 +343,7 @@ const DefaultToolCard: React.FC<{
       {showCallButton ? <CallButton messageId={messageId} toolCalls={toolCalls} /> : null}
     </Flex>
   );
-};
+});
 
 const CodeHighlight: React.FC<{ language: string; value: string }> = ({ language, value }) => {
   const { isDarkTheme } = useGlobalTheme();

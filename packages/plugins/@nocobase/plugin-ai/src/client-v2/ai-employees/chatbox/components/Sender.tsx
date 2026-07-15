@@ -12,14 +12,15 @@ import { Attachments, Sender as AntSender } from '@ant-design/x';
 import { Alert, Button, Flex, Space, Spin, theme, Tooltip, type GetRef, type UploadFile } from 'antd';
 import { EditOutlined, InfoCircleOutlined, PaperClipOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
+import { observer } from '@nocobase/flow-engine';
 import { useT } from '../../../locale';
 import type { Attachment } from '../../types';
 import { useChat } from '../hooks/useChat';
 import { useChatBoxActions } from '../hooks/useChatBoxActions';
 import { useChatMessageActions } from '../hooks/useChatMessageActions';
 import { useUploadFiles } from '../hooks/useUploadFiles';
-import { useChatBoxStore } from '../stores/chat-box';
 import { useChatConversationsStore } from '../stores/chat-conversations';
+import { useChatBoxRuntime } from '../stores/runtime';
 import { AIEmployeeSwitcher } from './AIEmployeeSwitcher';
 import { AddContextButton } from '../../AddContextButton';
 import { ContextItem } from './ContextItem';
@@ -49,18 +50,16 @@ const senderClassName = css`
   }
 `;
 
-export const Sender: React.FC = () => {
+export const Sender: React.FC = observer(() => {
   const t = useT();
   const senderRef = useRef<SenderRef | null>(null);
   const currentConversation = useChatConversationsStore.use.currentConversation();
-  const currentEmployee = useChatBoxStore.use.currentEmployee();
-  const setShowSenderHint = useChatBoxStore.use.setShowSenderHint();
-  const senderValue = useChatBoxStore.use.senderValue();
-  const setSenderValue = useChatBoxStore.use.setSenderValue();
-  const setSenderRef = useChatBoxStore.use.setSenderRef();
-  const readonly = useChatBoxStore.use.readonly();
-  const isEditingMessage = useChatBoxStore.use.isEditingMessage();
-  const editingMessageId = useChatBoxStore.use.editingMessageId();
+  const { chatBoxModel } = useChatBoxRuntime();
+  const currentEmployee = chatBoxModel.currentEmployee;
+  const senderValue = chatBoxModel.senderValue;
+  const readonly = chatBoxModel.readonly;
+  const isEditingMessage = chatBoxModel.isEditingMessage;
+  const editingMessageId = chatBoxModel.editingMessageId;
   const webSearch = useChatConversationsStore.use.webSearch();
   const chat = useChat(currentConversation);
   const attachments = chat.use.attachments();
@@ -74,11 +73,11 @@ export const Sender: React.FC = () => {
   const [value, setValue] = useState(senderValue);
 
   useEffect(() => {
-    setSenderRef(senderRef);
+    chatBoxModel.setSenderRef(senderRef);
     return () => {
-      setSenderRef(null);
+      chatBoxModel.setSenderRef(null);
     };
-  }, [setSenderRef]);
+  }, [chatBoxModel]);
 
   useEffect(() => {
     setValue(senderValue);
@@ -88,9 +87,9 @@ export const Sender: React.FC = () => {
     if ((!content && !contextItems.length) || !currentEmployee || responseLoading || readonly) {
       return;
     }
-    setShowSenderHint(false);
+    chatBoxModel.setShowSenderHint(false);
     setValue('');
-    setSenderValue('');
+    chatBoxModel.setSenderValue('');
     send({
       sessionId: currentConversation,
       aiEmployee: currentEmployee,
@@ -182,13 +181,13 @@ export const Sender: React.FC = () => {
         ref={senderRef}
         onChange={(nextValue) => {
           setValue(nextValue);
-          setSenderValue(nextValue);
+          chatBoxModel.setSenderValue(nextValue);
         }}
         onPaste={handlePaste}
         onSubmit={submit}
         onCancel={cancelRequest}
         onBlur={() => {
-          setShowSenderHint(false);
+          chatBoxModel.setShowSenderHint(false);
         }}
         header={<SenderHeader />}
         loading={responseLoading}
@@ -200,13 +199,14 @@ export const Sender: React.FC = () => {
       />
     </div>
   );
-};
+});
 
-const SenderHeader: React.FC = () => {
-  const currentEmployee = useChatBoxStore.use.currentEmployee();
-  const isEditingMessage = useChatBoxStore.use.isEditingMessage();
-  const isShowSenderHint = useChatBoxStore.use.isShowSenderHint();
-  const readonly = useChatBoxStore.use.readonly();
+const SenderHeader: React.FC = observer(() => {
+  const { chatBoxModel } = useChatBoxRuntime();
+  const currentEmployee = chatBoxModel.currentEmployee;
+  const isEditingMessage = chatBoxModel.isEditingMessage;
+  const isShowSenderHint = chatBoxModel.isShowSenderHint;
+  const readonly = chatBoxModel.readonly;
   const currentConversation = useChatConversationsStore.use.currentConversation();
   const chat = useChat(currentConversation);
   const contextItems = chat.use.contextItems();
@@ -235,7 +235,7 @@ const SenderHeader: React.FC = () => {
       {currentEmployee ? <AttachmentsHeader readonly={readonly} /> : null}
     </div>
   );
-};
+});
 
 const SenderFooter: React.FC<{
   components: {
@@ -243,19 +243,20 @@ const SenderFooter: React.FC<{
     LoadingButton: React.ComponentType<React.ComponentProps<typeof Button>>;
   };
   handleSubmit: (content: string) => void;
-}> = ({ components, handleSubmit }) => {
+}> = observer(({ components, handleSubmit }) => {
   const { SendButton, LoadingButton } = components;
   const senderButtonRef = useRef<GetRef<typeof Button> | null>(null);
-  const currentEmployee = useChatBoxStore.use.currentEmployee();
+  const { chatBoxModel } = useChatBoxRuntime();
+  const currentEmployee = chatBoxModel.currentEmployee;
   const currentConversation = useChatConversationsStore.use.currentConversation();
   const chat = useChat(currentConversation);
-  const readonly = useChatBoxStore.use.readonly();
+  const readonly = chatBoxModel.readonly;
   const loading = chat.use.responseLoading();
   const addContextItems = chat.addContextItems;
   const removeContextItem = chat.removeContextItem;
-  const senderValue = useChatBoxStore.use.senderValue();
+  const senderValue = chatBoxModel.senderValue;
   const contextItems = chat.use.contextItems();
-  const senderRef = useChatBoxStore.use.senderRef() as React.MutableRefObject<SenderRef | null> | null;
+  const senderRef = chatBoxModel.senderRef as React.MutableRefObject<SenderRef | null> | null;
   const disabled = !currentEmployee || readonly;
   const handleEmptySubmit = () => {
     if (!senderValue && contextItems.length) {
@@ -308,12 +309,13 @@ const SenderFooter: React.FC<{
       </Flex>
     </Flex>
   );
-};
+});
 
-const UploadFiles: React.FC<{ disabled?: boolean }> = ({ disabled }) => {
+const UploadFiles: React.FC<{ disabled?: boolean }> = observer(({ disabled }) => {
   const t = useT();
   const uploadProps = useUploadFiles();
-  const chatBoxRef = useChatBoxStore.use.chatBoxRef();
+  const { chatBoxModel } = useChatBoxRuntime();
+  const chatBoxRef = chatBoxModel.chatBoxRef;
   const currentConversation = useChatConversationsStore.use.currentConversation();
   const chat = useChat(currentConversation);
   const attachments = chat.use.attachments();
@@ -349,9 +351,9 @@ const UploadFiles: React.FC<{ disabled?: boolean }> = ({ disabled }) => {
       </Tooltip>
     </Attachments>
   );
-};
+});
 
-const ContextItemsHeader: React.FC = () => {
+const ContextItemsHeader: React.FC = observer(() => {
   const currentConversation = useChatConversationsStore.use.currentConversation();
   const chat = useChat(currentConversation);
   const contextItems = chat.use.contextItems();
@@ -382,9 +384,9 @@ const ContextItemsHeader: React.FC = () => {
       ))}
     </div>
   );
-};
+});
 
-const AttachmentsHeader: React.FC<{ readonly: boolean }> = ({ readonly }) => {
+const AttachmentsHeader: React.FC<{ readonly: boolean }> = observer(({ readonly }) => {
   const currentConversation = useChatConversationsStore.use.currentConversation();
   const chat = useChat(currentConversation);
   const attachments = chat.use.attachments();
@@ -401,7 +403,7 @@ const AttachmentsHeader: React.FC<{ readonly: boolean }> = ({ readonly }) => {
       }
     />
   );
-};
+});
 
 const HintMessageHeader: React.FC = () => {
   const t = useT();
@@ -422,10 +424,10 @@ const HintMessageHeader: React.FC = () => {
   );
 };
 
-const EditMessageHeader: React.FC = () => {
+const EditMessageHeader: React.FC = observer(() => {
   const t = useT();
   const { token } = theme.useToken();
-  const setSenderValue = useChatBoxStore.use.setSenderValue();
+  const { chatBoxModel } = useChatBoxRuntime();
   const currentConversation = useChatConversationsStore.use.currentConversation();
   const chat = useChat(currentConversation);
   const { loadMessages, finishEditingMessage } = useChatMessageActions();
@@ -444,13 +446,13 @@ const EditMessageHeader: React.FC = () => {
       closable
       onClose={() => {
         finishEditingMessage();
-        setSenderValue('');
+        chatBoxModel.setSenderValue('');
         chat.setMessages([]);
         loadMessages(currentConversation).catch(console.error);
       }}
     />
   );
-};
+});
 
 function readUploadedFileData(response: unknown): Attachment | undefined {
   if (!response || typeof response !== 'object' || !('data' in response)) {

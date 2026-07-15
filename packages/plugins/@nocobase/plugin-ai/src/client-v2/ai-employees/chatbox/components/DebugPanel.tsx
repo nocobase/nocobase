@@ -10,10 +10,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Button, Drawer, Empty, Input, List, Select, Space, Tag, Tooltip, Typography, message, theme } from 'antd';
 import { CopyOutlined, DownloadOutlined, DownOutlined, RightOutlined } from '@ant-design/icons';
+import { observer } from '@nocobase/flow-engine';
 import { useT } from '../../../locale';
 import { aiDebugLogger, type LogEntry, type LogType } from '../../../debug-logger';
-import { useChatBoxStore } from '../stores/chat-box';
 import { useChatConversationsStore } from '../stores/chat-conversations';
+import { useChatBoxRuntime } from '../stores/runtime';
 
 const { Search } = Input;
 const { Text } = Typography;
@@ -47,11 +48,11 @@ const LOG_TYPE_OPTIONS = [
   { value: 'error', label: 'Error' },
 ];
 
-export const DebugPanel: React.FC = () => {
+export const DebugPanel: React.FC = observer(() => {
   const t = useT();
   const { token } = theme.useToken();
-  const showDebugPanel = useChatBoxStore.use.showDebugPanel();
-  const setShowDebugPanel = useChatBoxStore.use.setShowDebugPanel();
+  const { chatBoxModel } = useChatBoxRuntime();
+  const showDebugPanel = chatBoxModel.showDebugPanel;
   const currentConversation = useChatConversationsStore.use.currentConversation();
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [filterType, setFilterType] = useState<string>('all');
@@ -134,7 +135,7 @@ export const DebugPanel: React.FC = () => {
       placement="right"
       width={500}
       open={showDebugPanel}
-      onClose={() => setShowDebugPanel(false)}
+      onClose={() => chatBoxModel.setShowDebugPanel(false)}
       styles={{ body: { padding: 0, overflow: 'hidden' } }}
       extra={
         <Button icon={<DownloadOutlined />} size="small" onClick={handleExport} disabled={logs.length === 0}>
@@ -193,7 +194,7 @@ export const DebugPanel: React.FC = () => {
       </div>
     </Drawer>
   );
-};
+});
 
 const LogItem: React.FC<{
   log: LogEntry;

@@ -45,7 +45,7 @@ import {
 import type { ButtonProps } from 'antd';
 import { AIEmployeeSwitcher } from '../ai-employees/chatbox/components/AIEmployeeSwitcher';
 import { useChatBoxActions } from '../ai-employees/chatbox/hooks/useChatBoxActions';
-import { useChatBoxStore } from '../ai-employees/chatbox/stores/chat-box';
+import { useChatBoxRuntime } from '../ai-employees/chatbox/stores/runtime';
 import { ModelSwitcher } from '../ai-employees/chatbox/components/ModelSwitcher';
 import type { AIEmployee, ContextItem } from '../ai-employees/types';
 import type { LLMServiceItem } from '../repositories/AIConfigRepository';
@@ -1250,11 +1250,12 @@ AIChatDemoSenderBlockModel.define({
 
 const AIChatDemoSender: React.FC<{
   settings: Required<AIChatDemoChatBoxSettings>;
-}> = ({ settings }) => {
+}> = observer(({ settings }) => {
   const t = useT();
   const { message } = AntdApp.useApp();
   const [value, setValue] = useState('');
-  const currentEmployee = useChatBoxStore.use.currentEmployee();
+  const { chatBoxModel } = useChatBoxRuntime();
+  const currentEmployee = chatBoxModel.currentEmployee;
   const aiConfigRepository = useAIConfigRepository();
   const { switchAIEmployee } = useChatBoxActions();
   const allowedAIEmployees = settings.allowedAIEmployees;
@@ -1272,7 +1273,7 @@ const AIChatDemoSender: React.FC<{
           : employees;
         const targetEmployee =
           availableEmployees.find((employee) => employee.username === 'atlas') || availableEmployees[0];
-        if (targetEmployee && useChatBoxStore.getState().currentEmployee?.username !== targetEmployee.username) {
+        if (targetEmployee && chatBoxModel.currentEmployee?.username !== targetEmployee.username) {
           switchAIEmployee(targetEmployee, {
             clear: {
               sender: false,
@@ -1283,7 +1284,7 @@ const AIChatDemoSender: React.FC<{
         }
       })
       .catch(console.error);
-  }, [aiConfigRepository, allowedAIEmployees, currentEmployee, switchAIEmployee]);
+  }, [aiConfigRepository, allowedAIEmployees, chatBoxModel, currentEmployee, switchAIEmployee]);
 
   return (
     <div
@@ -1351,7 +1352,7 @@ const AIChatDemoSender: React.FC<{
       ) : null}
     </div>
   );
-};
+});
 
 export class AIChatDemoConversationListBlockModel extends FlowModel {
   render() {

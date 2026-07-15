@@ -15,14 +15,13 @@ import { AIEmployee, Attachment, ContextItem, Message, ResendOptions, SendOption
 import { useLoadMoreObserver } from './useLoadMoreObserver';
 import { useT } from '../../../locale';
 import { useChatConversationsStore } from '../stores/chat-conversations';
-import { useChatBoxStore } from '../stores/chat-box';
 import { flattenMessages, parseWorkContext } from '../utils';
 import { aiDebugLogger } from '../../../debug-logger'; // [AI_DEBUG]
-import { useChatToolCallStore } from '../stores/chat-tool-call';
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
 import { ensureModel, getAllModels, isSameModel, isValidModel } from '../model';
 import { FlowUtils } from '../../flow';
 import { UploadFieldModel } from '@nocobase/plugin-file-manager/client-v2';
+import { useChatBoxRuntime } from '../stores/runtime';
 
 const STREAM_UPDATE_INTERVAL = 50;
 
@@ -103,26 +102,13 @@ export const useChatMessageActions = () => {
   const t = useT();
   const api = app.apiClient;
   const aiConfigRepository = useAIConfigRepository();
-
-  const isEditingMessage = useChatBoxStore.use.isEditingMessage();
-  const setIsEditingMessage = useChatBoxStore.use.setIsEditingMessage();
-  const setEditingMessageId = useChatBoxStore.use.setEditingMessageId();
-  const setModel = useChatBoxStore.use.setModel();
+  const { chatBoxModel, chatToolCallModel } = useChatBoxRuntime();
 
   const currentConversation = useChatConversationsStore.use.currentConversation?.();
-  const currentWebSearch = useChatConversationsStore.use.webSearch();
   const setConversationUnreadCount = useChatConversationsStore.use.setUnreadCount();
   const markConversationRead = useChatConversationsStore.use.markConversationRead();
   const chat = useChat(currentConversation);
-  const messages = chat.use.messages();
-  const abortController = chat.use.abortController();
-  const setMessages = chat.setMessages;
-  const setResponseLoading = chat.setResponseLoading;
-  const setAbortController = chat.setAbortController;
-  const setAttachments = chat.setAttachments;
-  const setContextItems = chat.setContextItems;
 
-  const updateToolCallInvokeStatus = useChatToolCallStore.use.updateToolCallInvokeStatus();
   const getSessionChat = useCallback((sessionId?: string) => chat.for(sessionId).getState(), [chat]);
   const getConversationModel = useCallback(
     (messages: Message[], services: Awaited<ReturnType<typeof aiConfigRepository.getLLMServices>>) => {
@@ -152,21 +138,22 @@ export const useChatMessageActions = () => {
   );
   const ensureModelFromStore = useCallback(
     async (username?: string) => {
-      const state = useChatBoxStore.getState();
-      const targetUsername = username || state.currentEmployee?.username;
+      const targetUsername = username || chatBoxModel.currentEmployee?.username;
       if (!targetUsername) {
-        return state.model;
+        return chatBoxModel.model;
       }
       return ensureModel({
         api,
         aiConfigRepository,
         aiEmployee:
-          state.currentEmployee?.username === targetUsername ? state.currentEmployee : { username: targetUsername },
-        currentOverride: state.model,
-        onResolved: setModel,
+          chatBoxModel.currentEmployee?.username === targetUsername
+            ? chatBoxModel.currentEmployee
+            : { username: targetUsername },
+        currentOverride: chatBoxModel.model,
+        onResolved: chatBoxModel.setModel,
       });
     },
-    [api, aiConfigRepository, setModel],
+    [api, aiConfigRepository, chatBoxModel],
   );
 
   const extractContextAttachments = useCallback(
@@ -222,7 +209,7 @@ export const useChatMessageActions = () => {
       sessionChat.setMessagesError(null);
       try {
         const activeConversation = useChatConversationsStore.getState().currentConversation;
-        const chatBoxOpen = useChatBoxStore.getState().open;
+        const chatBoxOpen = chatBoxModel.open;
         const res = await api.resource('aiConversations').getMessages({
           sessionId,
           cursor,
@@ -242,10 +229,10 @@ export const useChatMessageActions = () => {
         const services = !cursor ? await aiConfigRepository.getLLMServices() : [];
         const conversationModel = !cursor ? getConversationModel(newMessages, services) : null;
         if (conversationModel) {
-          const currentModel = useChatBoxStore.getState().model;
+          const currentModel = chatBoxModel.model;
           const allModels = getAllModels(services);
           if (isValidModel(conversationModel, allModels) && !isSameModel(currentModel, conversationModel)) {
-            setModel(conversationModel);
+            chatBoxModel.setModel(conversationModel);
           }
         }
 
@@ -255,7 +242,7 @@ export const useChatMessageActions = () => {
           if (toolCalls?.length) {
             for (const tc of toolCalls) {
               if (tc.willInterrupt) {
-                updateToolCallInvokeStatus(sessionId, msg.content.messageId, tc.id, tc.invokeStatus);
+                chatToolCallModel.updateToolCallInvokeStatus(sessionId, msg.content.messageId, tc.id, tc.invokeStatus);
               }
               if (tc.invokeStatus === 'done' || tc.invokeStatus === 'confirmed') {
                 const contentStr = typeof tc.content === 'string' ? tc.content : JSON.stringify(tc.content);
@@ -282,7 +269,7 @@ export const useChatMessageActions = () => {
                 }
                 for (const tc of subToolCalls) {
                   if (tc.willInterrupt) {
-                    updateToolCallInvokeStatus(sessionId, subMessageId, tc.id, tc.invokeStatus);
+                    chatToolCallModel.updateToolCallInvokeStatus(sessionId, subMessageId, tc.id, tc.invokeStatus);
                   }
                 }
               }
@@ -308,11 +295,11 @@ export const useChatMessageActions = () => {
     [
       api,
       aiConfigRepository,
+      chatBoxModel,
+      chatToolCallModel,
       getConversationModel,
       getSessionChat,
       markConversationRead,
-      setModel,
-      updateToolCallInvokeStatus,
     ],
   );
 
@@ -537,7 +524,12 @@ export const useChatMessageActions = () => {
           if (body?.toolCall) {
             const { toolCall, invokeStatus } = body;
             if (toolCall.willInterrupt) {
-              updateToolCallInvokeStatus(sessionId, toolCall.messageId, toolCall.id, String(invokeStatus));
+              chatToolCallModel.updateToolCallInvokeStatus(
+                sessionId,
+                toolCall.messageId,
+                toolCall.id,
+                String(invokeStatus),
+              );
             }
           }
           store.updateLast((last) => {
@@ -710,7 +702,7 @@ export const useChatMessageActions = () => {
 
       await loadMessages(sessionId);
     },
-    [getSessionChat, loadMessages, t, updateToolCallInvokeStatus],
+    [chatToolCallModel, getSessionChat, loadMessages, t],
   );
 
   const sendMessages = async ({
@@ -735,7 +727,7 @@ export const useChatMessageActions = () => {
     sessionChat.setBackgroundWorking(false);
 
     // Read model from store at call time to avoid stale closure
-    const model = inputModel ?? useChatBoxStore.getState().model;
+    const model = inputModel ?? chatBoxModel.model;
 
     // [AI_DEBUG] request
     aiDebugLogger.log(
@@ -768,7 +760,7 @@ export const useChatMessageActions = () => {
       attachments: index === 0 ? attachments : undefined,
       workContext: index === 0 ? parsedWorkContext : undefined,
     }));
-    if (lastRenderedMessage?.type === 'conversation-group' && !isEditingMessage) {
+    if (lastRenderedMessage?.type === 'conversation-group' && !chatBoxModel.isEditingMessage) {
       sessionChat.addSubAgentMessages(
         lastRenderedMessage.key,
         sendMsgs.map((msg, index) => ({
@@ -815,7 +807,7 @@ export const useChatMessageActions = () => {
       targetSessionId = sessionId;
       chat.for(draftSessionId).migrateSessionState(sessionId);
       if (draftSessionId) {
-        useChatToolCallStore.getState().migrateSessionState(draftSessionId, sessionId);
+        chatToolCallModel.migrateSessionState(draftSessionId, sessionId);
       }
       sessionChat = getSessionChat(sessionId);
       onConversationCreate?.(sessionId);
@@ -823,7 +815,7 @@ export const useChatMessageActions = () => {
     sessionChat.setWebSearching(null);
     sessionChat.setResponseLoading(true);
 
-    if (lastRenderedMessage?.type === 'conversation-group' && !isEditingMessage) {
+    if (lastRenderedMessage?.type === 'conversation-group' && !chatBoxModel.isEditingMessage) {
       sessionChat.addSubAgentMessage(lastRenderedMessage.key, {
         key: randomId(),
         role: lastRenderedMessage.roleName,
@@ -901,7 +893,7 @@ export const useChatMessageActions = () => {
 
     // Read model from store at call time to avoid stale closure.
     // If not ready yet, resolve it through shared model rules.
-    let model = useChatBoxStore.getState().model;
+    let model = chatBoxModel.model;
     if (!model) {
       model = await ensureModelFromStore(aiEmployee?.username);
     }
@@ -913,7 +905,7 @@ export const useChatMessageActions = () => {
         url: 'aiConversations:resendMessages',
         method: 'POST',
         headers: { Accept: 'text/event-stream' },
-        data: { sessionId, messageId, model, important, webSearch: currentWebSearch },
+        data: { sessionId, messageId, model, important, webSearch: useChatConversationsStore.getState().webSearch },
         responseType: 'stream',
         adapter: 'fetch',
         signal: controller?.signal,
@@ -992,22 +984,24 @@ export const useChatMessageActions = () => {
   );
 
   const cancelRequest = useCallback(async () => {
-    const controller = abortController;
+    const activeConversation = useChatConversationsStore.getState().currentConversation;
+    const sessionChat = getSessionChat(activeConversation);
+    const controller = sessionChat.abortController;
     if (!controller) {
       return;
     }
     controller.abort();
-    setAbortController(null);
+    sessionChat.setAbortController(null);
     await api.resource('aiConversations').abort({
       values: {
-        sessionId: currentConversation,
+        sessionId: activeConversation,
       },
     });
     // sleep(500)
     await new Promise((resolve) => setTimeout(resolve, 500));
-    loadMessages(currentConversation);
-    setResponseLoading(false);
-  }, [abortController, api, currentConversation, loadMessages, setAbortController, setResponseLoading]);
+    await loadMessages(activeConversation);
+    sessionChat.setResponseLoading(false);
+  }, [api, getSessionChat, loadMessages]);
 
   const resumeToolCall = useCallback(
     async ({
@@ -1029,7 +1023,7 @@ export const useChatMessageActions = () => {
       sessionChat.setResponseLoading(true);
       // Read model from store at call time to avoid stale closure.
       // If not ready yet, resolve it through shared model rules.
-      let model = useChatBoxStore.getState().model;
+      let model = chatBoxModel.model;
       if (!model) {
         model = await ensureModelFromStore(aiEmployee?.username);
       }
@@ -1040,7 +1034,14 @@ export const useChatMessageActions = () => {
           url: 'aiConversations:resumeToolCall',
           method: 'POST',
           headers: { Accept: 'text/event-stream' },
-          data: { sessionId, messageId, toolCallIds, toolCallResults, model, webSearch: currentWebSearch },
+          data: {
+            sessionId,
+            messageId,
+            toolCallIds,
+            toolCallResults,
+            model,
+            webSearch: useChatConversationsStore.getState().webSearch,
+          },
           responseType: 'stream',
           adapter: 'fetch',
           signal: controller?.signal,
@@ -1064,7 +1065,7 @@ export const useChatMessageActions = () => {
         sessionChat.setAbortController(null);
       }
     },
-    [api, currentWebSearch, ensureModelFromStore, getSessionChat, processStreamResponse],
+    [api, chatBoxModel.model, ensureModelFromStore, getSessionChat, processStreamResponse],
   );
 
   const loadMoreMessages = useCallback(async () => {
@@ -1092,27 +1093,31 @@ export const useChatMessageActions = () => {
 
   const startEditingMessage = useCallback(
     (msg: { messageId: string; attachments?: Attachment[]; workContext?: ContextItem[] }) => {
-      const currentMessages = messages;
+      const activeConversation = useChatConversationsStore.getState().currentConversation;
+      const sessionChat = getSessionChat(activeConversation);
+      const currentMessages = sessionChat.messages;
       const index = currentMessages.findIndex((m) => m.key === msg.messageId);
-      setIsEditingMessage(true);
-      setEditingMessageId(msg.messageId);
-      setMessages(currentMessages.slice(0, index));
+      chatBoxModel.setIsEditingMessage(true);
+      chatBoxModel.setEditingMessageId(msg.messageId);
+      sessionChat.setMessages(currentMessages.slice(0, index));
       if (msg.attachments) {
-        setAttachments(msg.attachments);
+        sessionChat.setAttachments(msg.attachments);
       }
       if (msg.workContext) {
-        setContextItems(msg.workContext);
+        sessionChat.setContextItems(msg.workContext);
       }
     },
-    [messages, setAttachments, setContextItems, setEditingMessageId, setIsEditingMessage, setMessages],
+    [chatBoxModel, getSessionChat],
   );
 
   const finishEditingMessage = useCallback(() => {
-    setIsEditingMessage(false);
-    setEditingMessageId(undefined);
-    setAttachments([]);
-    setContextItems([]);
-  }, [setAttachments, setContextItems, setEditingMessageId, setIsEditingMessage]);
+    const activeConversation = useChatConversationsStore.getState().currentConversation;
+    const sessionChat = getSessionChat(activeConversation);
+    chatBoxModel.setIsEditingMessage(false);
+    chatBoxModel.setEditingMessageId(undefined);
+    sessionChat.setAttachments([]);
+    sessionChat.setContextItems([]);
+  }, [chatBoxModel, getSessionChat]);
 
   return {
     syncContextAttachments,

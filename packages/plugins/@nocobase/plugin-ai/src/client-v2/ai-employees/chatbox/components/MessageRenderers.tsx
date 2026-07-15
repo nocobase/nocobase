@@ -19,8 +19,8 @@ import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRe
 import { useChat } from '../hooks/useChat';
 import { useChatBoxActions } from '../hooks/useChatBoxActions';
 import { useChatMessageActions } from '../hooks/useChatMessageActions';
-import { useChatBoxStore } from '../stores/chat-box';
 import { useChatConversationsStore } from '../stores/chat-conversations';
+import { useChatBoxRuntime } from '../stores/runtime';
 import { FileCardList } from './Attachments';
 import { Actions } from './Actions';
 import { ContextItem } from './ContextItem';
@@ -215,8 +215,9 @@ export const AIMessage: React.FC<{
   const toolsLoading = aiConfigRepository.aiToolsLoading;
   const toolsMap = useMemo(() => toToolsMap(aiConfigRepository.aiTools || []), [aiConfigRepository.aiTools]);
   const currentConversation = useChatConversationsStore.use.currentConversation();
-  const currentEmployee = useChatBoxStore.use.currentEmployee();
-  const readonly = useChatBoxStore.use.readonly();
+  const { chatBoxModel } = useChatBoxRuntime();
+  const currentEmployee = chatBoxModel.currentEmployee;
+  const readonly = chatBoxModel.readonly;
   const { resendMessages } = useChatMessageActions();
   const footerButtonStyle: React.CSSProperties = {
     color: token.colorTextSecondary,
@@ -319,12 +320,12 @@ const Reference: React.FC<{ references: { title?: string; url?: string }[] }> = 
 
 export const UserMessage: React.FC<{
   msg: MessagePayload;
-}> = memo(({ msg }) => {
+}> = observer(({ msg }) => {
   const t = useT();
   const { token } = theme.useToken();
-  const setSenderValue = useChatBoxStore.use.setSenderValue();
-  const senderRef = useChatBoxStore.use.senderRef();
-  const readonly = useChatBoxStore.use.readonly();
+  const { chatBoxModel } = useChatBoxRuntime();
+  const senderRef = chatBoxModel.senderRef;
+  const readonly = chatBoxModel.readonly;
   const { startEditingMessage } = useChatMessageActions();
   const footerButtonStyle: React.CSSProperties = {
     color: token.colorTextSecondary,
@@ -367,7 +368,7 @@ export const UserMessage: React.FC<{
                       ...msg,
                       messageId: msg.messageId,
                     });
-                    setSenderValue(stringifyContent(msg.content));
+                    chatBoxModel.setSenderValue(stringifyContent(msg.content));
                     senderRef?.current?.focus();
                   }}
                 />
@@ -428,8 +429,9 @@ UserMessage.displayName = 'UserMessage';
 
 export const ErrorMessage: React.FC<{
   msg: MessagePayload;
-}> = memo(({ msg }) => {
-  const currentEmployee = useChatBoxStore.use.currentEmployee();
+}> = observer(({ msg }) => {
+  const { chatBoxModel } = useChatBoxRuntime();
+  const currentEmployee = chatBoxModel.currentEmployee;
   const currentConversation = useChatConversationsStore.use.currentConversation();
   const chat = useChat(currentConversation);
   const messages = chat.use.messages();
@@ -489,12 +491,13 @@ HintMessage.displayName = 'HintMessage';
 
 export const TaskMessage: React.FC<{
   msg: MessagePayload;
-}> = memo(({ msg }) => {
+}> = observer(({ msg }) => {
   const t = useT();
   const rawTasks = msg.content;
   const tasks: Task[] = Array.isArray(rawTasks) ? rawTasks : rawTasks ? [rawTasks as Task] : [];
-  const taskVariables = useChatBoxStore.use.taskVariables();
-  const currentEmployee = useChatBoxStore.use.currentEmployee();
+  const { chatBoxModel } = useChatBoxRuntime();
+  const taskVariables = chatBoxModel.taskVariables;
+  const currentEmployee = chatBoxModel.currentEmployee;
   const { triggerTask } = useChatBoxActions();
   const taskItems = tasks
     .map((task, index) => ({ ...task, title: task.title || `${t('Task')} ${index + 1}` }))
@@ -528,7 +531,7 @@ export const TaskMessage: React.FC<{
 
 TaskMessage.displayName = 'TaskMessage';
 
-export const AIThinking: React.FC<{ nickname?: string }> = ({ nickname }) => {
+export const AIThinking: React.FC<{ nickname?: string }> = observer(({ nickname }) => {
   const t = useT();
   const { token } = theme.useToken();
   const currentConversation = useChatConversationsStore.use.currentConversation();
@@ -556,7 +559,7 @@ export const AIThinking: React.FC<{ nickname?: string }> = ({ nickname }) => {
       ) : null}
     </Space>
   );
-};
+});
 
 function stringifyContent(content: unknown) {
   if (typeof content === 'string') {

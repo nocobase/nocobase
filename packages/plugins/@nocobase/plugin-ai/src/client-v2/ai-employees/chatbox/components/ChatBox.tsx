@@ -29,26 +29,22 @@ import { useChatBoxActions } from '../hooks/useChatBoxActions';
 import { useChatBoxEffect } from '../hooks/useChatBoxEffect';
 import { useChatConversationActions } from '../hooks/useChatConversationActions';
 import { useWorkflowTasks } from '../hooks/useWorkflowTasks';
-import { useChatBoxStore } from '../stores/chat-box';
+import { observer } from '@nocobase/flow-engine';
+import { useChatBoxRuntime } from '../stores/runtime';
 
 const { Header, Footer, Sider } = Layout;
 
 export const ChatBox: React.FC<{
   onClose?: () => void;
-}> = ({ onClose }) => {
+}> = observer(({ onClose }) => {
   const t = useT();
   const { token } = theme.useToken();
   const chatBoxRef = useRef<HTMLDivElement | null>(null);
-  const setChatBoxRef = useChatBoxStore.use.setChatBoxRef();
-  const setOpen = useChatBoxStore.use.setOpen();
-  const expanded = useChatBoxStore.use.expanded();
-  const setExpanded = useChatBoxStore.use.setExpanded();
-  const setMinimize = useChatBoxStore.use.setMinimize();
-  const showConversations = useChatBoxStore.use.showConversations();
-  const setShowConversations = useChatBoxStore.use.setShowConversations();
-  const currentEmployee = useChatBoxStore.use.currentEmployee();
-  const showDebugPanel = useChatBoxStore.use.showDebugPanel();
-  const setShowDebugPanel = useChatBoxStore.use.setShowDebugPanel();
+  const { chatBoxModel } = useChatBoxRuntime();
+  const expanded = chatBoxModel.expanded;
+  const showConversations = chatBoxModel.showConversations;
+  const currentEmployee = chatBoxModel.currentEmployee;
+  const showDebugPanel = chatBoxModel.showDebugPanel;
   const { startNewConversation } = useChatBoxActions();
   const { unreadCount: unreadConversationCount } = useChatConversationActions();
   const { unreadCount: unreadWorkflowTaskCount } = useWorkflowTasks();
@@ -57,11 +53,11 @@ export const ChatBox: React.FC<{
   useChatBoxEffect();
 
   useEffect(() => {
-    setChatBoxRef(chatBoxRef);
+    chatBoxModel.setChatBoxRef(chatBoxRef);
     return () => {
-      setChatBoxRef(null);
+      chatBoxModel.setChatBoxRef(null);
     };
-  }, [setChatBoxRef]);
+  }, [chatBoxModel]);
 
   const conversationPanelWidth = 300;
   const headerHeight = 48;
@@ -82,11 +78,11 @@ export const ChatBox: React.FC<{
               cursor: 'pointer',
             }}
             onClick={() => {
-              setShowConversations(false);
+              chatBoxModel.setShowConversations(false);
             }}
             onKeyDown={(event) => {
               if (event.key === 'Enter' || event.key === ' ') {
-                setShowConversations(false);
+                chatBoxModel.setShowConversations(false);
               }
             }}
           />
@@ -142,7 +138,7 @@ export const ChatBox: React.FC<{
                   type="text"
                   onClick={(event) => {
                     event.stopPropagation();
-                    setShowConversations(!showConversations);
+                    chatBoxModel.setShowConversations(!showConversations);
                   }}
                 />
               </Badge>
@@ -166,7 +162,7 @@ export const ChatBox: React.FC<{
                       aria-label={t('Debug Panel')}
                       icon={<BugOutlined />}
                       type="text"
-                      onClick={() => setShowDebugPanel(!showDebugPanel)}
+                      onClick={() => chatBoxModel.setShowDebugPanel(!showDebugPanel)}
                     />
                   </Tooltip>
                 ) : null}
@@ -180,7 +176,7 @@ export const ChatBox: React.FC<{
                   icon={<CompressOutlined />}
                   type="text"
                   onClick={() => {
-                    setMinimize(true);
+                    chatBoxModel.setMinimize(true);
                   }}
                 />
               </Tooltip>
@@ -192,9 +188,9 @@ export const ChatBox: React.FC<{
                   type="text"
                   onClick={() => {
                     if (!expanded) {
-                      setShowDebugPanel(false);
+                      chatBoxModel.setShowDebugPanel(false);
                     }
-                    setExpanded(!expanded);
+                    chatBoxModel.setExpanded(!expanded);
                   }}
                 />
               </Tooltip>
@@ -209,7 +205,7 @@ export const ChatBox: React.FC<{
                     onClose();
                     return;
                   }
-                  setOpen(false);
+                  chatBoxModel.setOpen(false);
                 }}
               />
             </Tooltip>
@@ -239,4 +235,4 @@ export const ChatBox: React.FC<{
       </Layout>
     </Layout>
   );
-};
+});
