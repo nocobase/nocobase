@@ -10,6 +10,7 @@
 import Database from '@nocobase/database';
 import UsersPlugin from '@nocobase/plugin-users';
 import { createMockServer, MockServer } from '@nocobase/test';
+import { getAuthCookieName } from '@nocobase/utils';
 import { vi } from 'vitest';
 import { UNION_ROLE_KEY } from '../constants';
 import { SystemRoleMode } from '../enum';
@@ -30,6 +31,7 @@ describe('role', () => {
     usersPlugin = api.getPlugin('users');
 
     ctx = {
+      app: api,
       db,
       cache: api.cache,
       state: {
@@ -66,6 +68,57 @@ describe('role', () => {
       }
     };
     await setCurrentRole(ctx, () => {});
+    expect(ctx.state.currentRole).toBe('root');
+  });
+
+  it('should set role with app namespace cookie when X-Role is empty', async () => {
+    ctx.state.currentUser = await db.getRepository('users').findOne({
+      appends: ['roles'],
+    });
+    ctx.get = function (name) {
+      if (name === 'X-Role') {
+        return '';
+      }
+    };
+    ctx.cookies = {
+      get: vi.fn((name) => {
+        if (name === getAuthCookieName('role', api.name)) {
+          return 'admin';
+        }
+      }),
+      set: vi.fn(),
+    };
+
+    await setCurrentRole(ctx, () => {});
+
+    expect(ctx.state.currentRole).toBe('admin');
+  });
+
+  it('should clear invalid role cookie and fallback to default role', async () => {
+    ctx.state.currentUser = await db.getRepository('users').findOne({
+      appends: ['roles'],
+    });
+    ctx.get = function (name) {
+      if (name === 'X-Role') {
+        return '';
+      }
+    };
+    ctx.cookies = {
+      get: vi.fn((name) => {
+        if (name === getAuthCookieName('role', api.name)) {
+          return 'not-found';
+        }
+      }),
+      set: vi.fn(),
+    };
+
+    await setCurrentRole(ctx, () => {});
+
+    expect(ctx.cookies.set).toHaveBeenCalledWith(
+      getAuthCookieName('role', api.name),
+      null,
+      expect.objectContaining({ path: '/', sameSite: 'lax', httpOnly: false }),
+    );
     expect(ctx.state.currentRole).toBe('root');
   });
 

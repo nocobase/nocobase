@@ -46,6 +46,10 @@ export class Application extends BaseApplication<
 
   protected createApiClient(options: ApplicationOptions) {
     return new APIClient({
+      // Cross-origin API deployments rely on cookies for auth (e.g. permanent file
+      // URLs); trust is enforced server-side via the CORS origin whitelist and the
+      // CSRF middleware, not by omitting credentials.
+      withCredentials: true,
       ...options.apiClient,
       appName: options.name || getSubAppName(options.publicPath),
     });

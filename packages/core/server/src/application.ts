@@ -8,7 +8,7 @@
  */
 
 import { registerActions } from '@nocobase/actions';
-import { actions as authActions, AuthManager, AuthManagerOptions } from '@nocobase/auth';
+import { actions as authActions, AuthManager, AuthManagerOptions, csrfMiddleware } from '@nocobase/auth';
 import { Cache, CacheManager, CacheManagerOptions } from '@nocobase/cache';
 import { DataSourceManager, SequelizeCollectionManager, SequelizeDataSource } from '@nocobase/data-source-manager';
 import Database, { CollectionOptions, IDatabaseOptions } from '@nocobase/database';
@@ -1330,6 +1330,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     });
 
     this._dataSourceManager.use(this._authManager.middleware(), { tag: 'auth', before: 'default' });
+    this._dataSourceManager.use(csrfMiddleware, { tag: 'csrf', after: 'auth', before: 'default' });
     this._dataSourceManager.use(validateFilterParams, { tag: 'validate-filter-params', before: ['auth'] });
 
     this._dataSourceManager.use(parseVariables, {
