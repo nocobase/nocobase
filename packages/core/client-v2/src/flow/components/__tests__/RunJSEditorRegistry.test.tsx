@@ -517,7 +517,7 @@ describe('RunJSEditorRegistry', () => {
       },
       version: 'v2',
     });
-    expect(rerender).not.toHaveBeenCalled();
+    expect(rerender).toHaveBeenCalledTimes(1);
     expect(saveStepParams).not.toHaveBeenCalled();
   });
 
@@ -598,7 +598,7 @@ describe('RunJSEditorRegistry', () => {
     expect(saveStepParams).not.toHaveBeenCalled();
   });
 
-  it('notifies settings surfaces when an external source save keeps the same binding', () => {
+  it('refreshes every loaded RunJS host that shares the persisted external source binding', async () => {
     const engine = new FlowEngine();
     const persistedValue = {
       code: 'ctx.render("remote");',
@@ -621,11 +621,43 @@ describe('RunJSEditorRegistry', () => {
         },
       },
     });
-    const siblingModel = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'fm_external_source_sibling' });
+    const siblingModel = engine.createModel<FlowModel>({
+      use: 'FlowModel',
+      uid: 'fm_external_source_sibling',
+      stepParams: {
+        clickSettings: {
+          runJs: {
+            ...persistedValue,
+            sourceBinding: {
+              ...persistedValue.sourceBinding,
+              entryTitle: 'Display metadata does not affect identity',
+            },
+          },
+        },
+      },
+    });
+    const unrelatedModel = engine.createModel<FlowModel>({
+      use: 'FlowModel',
+      uid: 'fm_external_source_unrelated',
+      stepParams: {
+        jsSettings: {
+          runJs: {
+            ...persistedValue,
+            sourceBinding: {
+              ...persistedValue.sourceBinding,
+              entryId: 'lee_2',
+            },
+          },
+        },
+      },
+    });
     const flowContext = new FlowRuntimeContext(model, 'jsSettings', 'settings');
     flowContext.defineMethod('getStepFormValues', () => persistedValue);
     const emit = vi.spyOn(model.emitter, 'emit');
     const siblingEmit = vi.spyOn(siblingModel.emitter, 'emit');
+    const modelRerender = vi.spyOn(model, 'rerender').mockResolvedValue(undefined);
+    const siblingRerender = vi.spyOn(siblingModel, 'rerender').mockResolvedValue(undefined);
+    const unrelatedRerender = vi.spyOn(unrelatedModel, 'rerender').mockResolvedValue(undefined);
 
     RunJSEditorRegistry.registerProvider({
       key: 'external-source-refresh-provider',
@@ -652,6 +684,9 @@ describe('RunJSEditorRegistry', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'save source' }));
 
+    await waitFor(() => expect(modelRerender).toHaveBeenCalledTimes(1));
+    expect(siblingRerender).toHaveBeenCalledTimes(1);
+    expect(unrelatedRerender).not.toHaveBeenCalled();
     expect(emit.mock.calls.filter(([event]) => event === 'onStepParamsChanged')).toHaveLength(1);
     expect(siblingEmit.mock.calls.filter(([event]) => event === 'onStepParamsChanged')).toHaveLength(1);
     expect(model.getStepParams('jsSettings', 'runJs')).toEqual(persistedValue);

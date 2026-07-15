@@ -10,7 +10,7 @@
 import { App, ConfigProvider } from 'antd';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor } from '@nocobase/test/client';
+import { act, render, screen, waitFor } from '@nocobase/test/client';
 import {
   FlowEngine,
   FlowEngineProvider,
@@ -136,7 +136,7 @@ describe('JSBlockModel light extension source', () => {
             defaultParams: Record<string, unknown>;
             t: (key: string) => string;
           }) => Promise<Array<{ key: string; label: string }>>;
-          getDisplayLabel?: (input: { params: Record<string, unknown>; t: (key: string) => string }) => string;
+          getDisplayLabel?: (input: { params: Record<string, unknown>; t: (key: string) => string }) => React.ReactNode;
         };
       };
       useRawParams?: boolean;
@@ -160,18 +160,18 @@ describe('JSBlockModel light extension source', () => {
     });
     expect(sourceModeStep?.uiMode?.props?.loadItems).toBeTypeOf('function');
     expect(sourceModeStep?.uiMode?.props?.getDisplayLabel).toBeTypeOf('function');
-    expect(
-      sourceModeStep?.uiMode?.props?.getDisplayLabel?.({
-        params: {
-          sourceMode: 'light-extension',
-          sourceBinding: {
-            repoTitle: 'Orders',
-            entryTitle: 'Order total calculator',
-          },
+    const displayLabel = sourceModeStep?.uiMode?.props?.getDisplayLabel?.({
+      params: {
+        sourceMode: 'light-extension',
+        sourceBinding: {
+          repoTitle: 'Orders',
+          entryTitle: 'Order total calculator',
         },
-        t: (key: string) => key,
-      }),
-    ).toBe('Orders / Order total calculator');
+      },
+      t: (key: string) => key,
+    });
+    render(<>{displayLabel}</>);
+    expect(screen.getByText('Orders / Order total calculator')).toBeInTheDocument();
     expect(sourceModeStep?.useRawParams).toBe(true);
     expect(sourceModeStep?.uiSchema).toBeUndefined();
     expect(await sourceModeStep.defaultParams?.(model.context)).toEqual({
@@ -189,6 +189,56 @@ describe('JSBlockModel light extension source', () => {
     const runJsUiMode = await runJsStep?.uiMode?.(new FlowRuntimeContext(model, 'jsSettings', 'settings'));
     expect(runJsUiMode?.props?.footer).toBeNull();
     expect(model.getFlow('jsSettings')?.steps?.lightExtensionSource).toBeUndefined();
+  });
+
+  it('resolves source binding names when persisted bindings only contain technical keys', async () => {
+    const getBindingTitle = vi.fn(async () => 'browser-feedback-fixture / example');
+    RunJSSourceResolverRegistry.registerResolver({
+      sourceMode: 'light-extension',
+      resolve: () => ({ code: '' }),
+      getBindingTitle,
+    });
+    const engine = new FlowEngine();
+    engine.registerModels({ JSBlockModel });
+    const model = engine.createModel<JSBlockModel>({
+      use: 'JSBlockModel',
+      uid: 'js-block-source-binding-name',
+    });
+    const sourceModeStep = model.getFlow('jsSettings')?.steps?.sourceMode as {
+      uiMode?: {
+        props?: {
+          getDisplayLabel?: (input: { params: Record<string, unknown>; t: (key: string) => string }) => React.ReactNode;
+        };
+      };
+    };
+
+    const displayLabel = sourceModeStep.uiMode?.props?.getDisplayLabel?.({
+      params: {
+        sourceMode: 'light-extension',
+        sourceBinding: {
+          type: 'light-extension-entry',
+          repoId: 'ler_zq9sgc3i7qh',
+          entryId: 'lee_hpujrt4yyie',
+          kind: 'js-block',
+        },
+      },
+      t: (key) => key,
+    });
+    render(<>{displayLabel}</>);
+
+    expect(screen.getByText('ler_zq9sgc3i7qh / lee_hpujrt4yyie')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('browser-feedback-fixture / example')).toBeInTheDocument();
+    });
+    expect(getBindingTitle).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sourceMode: 'light-extension',
+        sourceBinding: expect.objectContaining({
+          repoId: 'ler_zq9sgc3i7qh',
+          entryId: 'lee_hpujrt4yyie',
+        }),
+      }),
+    );
   });
 
   it('loads inline and resolver-backed source menu items for JS Block', async () => {
@@ -648,6 +698,38 @@ describe('JSBlockModel light extension source', () => {
         sourceBinding: SOURCE_BINDING,
       }),
     );
+  });
+
+  it('replaces an existing React root when the resolved source is refreshed', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    let code = 'ctx.render(<span data-testid="live-js-block">before</span>);';
+    try {
+      RunJSSourceResolverRegistry.registerResolver({
+        sourceMode: 'light-extension',
+        resolve: () => ({ code, version: 'v2' }),
+      });
+
+      const model = renderJSBlock({
+        sourceMode: 'light-extension',
+        sourceBinding: SOURCE_BINDING,
+        version: 'v2',
+      });
+
+      expect(await screen.findByTestId('live-js-block')).toHaveTextContent('before');
+
+      code = 'ctx.render(<span data-testid="live-js-block">after</span>);';
+      model.invalidateFlowCache('beforeRender', true);
+      await act(async () => {
+        await model.rerender();
+      });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('live-js-block')).toHaveTextContent('after');
+      });
+      expect(consoleError.mock.calls.flat().join(' ')).not.toContain('already been passed to createRoot');
+    } finally {
+      consoleError.mockRestore();
+    }
   });
 
   it('renders only a loading spinner while resolving an external source', async () => {

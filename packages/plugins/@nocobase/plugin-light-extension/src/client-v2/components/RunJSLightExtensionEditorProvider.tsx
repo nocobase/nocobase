@@ -35,7 +35,10 @@ import {
   moveLightExtensionToInline,
   type ApiClientLike,
 } from '../api/lightExtensionEntriesRequests';
-import { isLightExtensionRuntimeSourceBinding } from '../resolvers/LightExtensionRunJSResolver';
+import {
+  isLightExtensionRuntimeSourceBinding,
+  type LightExtensionRunJSSourceResolver,
+} from '../resolvers/LightExtensionRunJSResolver';
 import { invalidateLightExtensionRuntimeCache } from '../resolvers/LightExtensionRuntimeCacheRegistry';
 import { invalidateLightExtensionSettingsDescriptorCache } from '../resolvers/LightExtensionSettingsDescriptorCache';
 import LightExtensionWorkspacePage, {
@@ -119,7 +122,7 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
           ...binding,
           entryName: entry.entryName,
           entryPath: entry.entryPath,
-          entryTitle: entry.title || binding.entryTitle,
+          entryTitle: entry.entryName || entry.id,
         });
       })
       .catch(() => {
@@ -247,6 +250,10 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
     let nextValue = props.value;
     let refreshedBinding = currentBinding;
     if (api && currentBinding) {
+      const registeredResolver = RunJSSourceResolverRegistry.getResolver(
+        LIGHT_EXTENSION_SOURCE_MODE,
+      ) as Partial<LightExtensionRunJSSourceResolver> | null;
+      registeredResolver?.invalidateCache?.(currentBinding.repoId);
       const cacheApis = [api, resolverApi].filter((item): item is ApiClientLike => Boolean(item));
       for (const cacheApi of new Set(cacheApis)) {
         invalidateLightExtensionSettingsDescriptorCache(cacheApi, currentBinding.repoId);
@@ -263,7 +270,7 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
             ...currentBinding,
             entryName: entry.entryName,
             entryPath: entry.entryPath,
-            entryTitle: entry.title || currentBinding.entryTitle,
+            entryTitle: entry.entryName || entry.id,
           };
           setCurrentBinding(refreshedBinding);
           if (entry.runtimeArtifact) {
@@ -280,18 +287,11 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
       const resolver = RunJSSourceResolverRegistry.getResolver(LIGHT_EXTENSION_SOURCE_MODE);
       if (refreshedBinding && typeof resolver?.getBindingTitle === 'function') {
         try {
-          const refreshedTitle = await resolver.getBindingTitle({
+          await resolver.getBindingTitle({
             sourceMode: LIGHT_EXTENSION_SOURCE_MODE,
             sourceBinding: refreshedBinding,
             settings: isRecord(props.value.settings) ? props.value.settings : undefined,
           });
-          if (refreshedTitle) {
-            refreshedBinding = {
-              ...refreshedBinding,
-              entryTitle: refreshedTitle,
-            };
-            setCurrentBinding(refreshedBinding);
-          }
         } catch {
           // Cache invalidation is still effective when the selectable entry refresh temporarily fails.
         }

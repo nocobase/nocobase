@@ -50,12 +50,25 @@ type ResourceResponse<T> = {
   };
 };
 
-export function createLightExtensionRunJSResolver(api: ApiClientLike): RunJSSourceResolver {
+export type LightExtensionRunJSSourceResolver = RunJSSourceResolver & {
+  invalidateCache(repoId?: string): void;
+};
+
+export function createLightExtensionRunJSResolver(api: ApiClientLike): LightExtensionRunJSSourceResolver {
   const runtimeCache = getOrCreateLightExtensionRuntimeCache(api, () => new LightExtensionRuntimeCache());
   const settingsDescriptorCache = getLightExtensionSettingsDescriptorCache(api);
 
   return {
     sourceMode: 'light-extension',
+    invalidateCache(repoId) {
+      if (repoId) {
+        runtimeCache.invalidateRepo(repoId);
+        settingsDescriptorCache.invalidateRepo(repoId);
+        return;
+      }
+      runtimeCache.clear();
+      settingsDescriptorCache.clear();
+    },
     async resolve(input) {
       const binding = isLightExtensionRuntimeSourceBinding(input.sourceBinding) ? input.sourceBinding : undefined;
       const kind = toSupportedKind(binding?.kind);
@@ -90,17 +103,21 @@ export function createLightExtensionRunJSResolver(api: ApiClientLike): RunJSSour
         return undefined;
       }
 
-      const entries = await listSelectableLightExtensionEntries(api, {
-        repoId: binding.repoId,
-        kind,
-      });
+      const [entries, repos] = await Promise.all([
+        listSelectableLightExtensionEntries(api, {
+          repoId: binding.repoId,
+          kind,
+        }),
+        listLightExtensionRepos(api).catch(() => [] as LightExtensionRepoRecord[]),
+      ]);
       settingsDescriptorCache.primeScope(binding.repoId, kind, entries);
       const entry = entries.find((item) => item.id === binding.entryId);
       if (!entry || entry.kind !== kind) {
         return undefined;
       }
 
-      return getEntryLabel(entry);
+      const repo = repos.find((item) => item.id === binding.repoId);
+      return `${repo ? getRepoLabel(repo) : binding.repoId} / ${getEntryLabel(entry)}`;
     },
     async getSettingsDescriptor(input) {
       const binding = isLightExtensionRuntimeSourceBinding(input.sourceBinding) ? input.sourceBinding : undefined;
@@ -314,7 +331,7 @@ function isArtifactNotFoundError(error: unknown): boolean {
 }
 
 function getEntryLabel(entry: LightExtensionSelectableEntrySummary): string {
-  return entry.title || entry.entryName || entry.id;
+  return entry.entryName || entry.id;
 }
 
 async function listLightExtensionSourceMenuItems(
@@ -436,7 +453,7 @@ function createRuntimeSourceBinding(
 }
 
 function getRepoLabel(repo: LightExtensionRepoRecord): string {
-  return repo.title || repo.name || repo.id;
+  return repo.name || repo.id;
 }
 
 function getKindLabel(kind: LightExtensionKind | string, t: (key: string) => string): string {

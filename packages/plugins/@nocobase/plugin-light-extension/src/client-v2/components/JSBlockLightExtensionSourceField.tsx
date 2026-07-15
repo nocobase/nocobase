@@ -131,7 +131,7 @@ function getBindingSelectValue(binding: Pick<LightExtensionRuntimeSourceBinding,
 }
 
 function getBindingLabel(binding: LightExtensionRuntimeSourceBinding): string {
-  return binding.entryTitle || binding.entryName || binding.entryId || binding.repoTitle || binding.repoId;
+  return binding.entryName || binding.entryTitle || binding.entryId || binding.repoTitle || binding.repoId;
 }
 
 function getBindingDisplayLabel(binding: LightExtensionRuntimeSourceBinding, sourceLabel: string): string {
@@ -533,7 +533,7 @@ function createLightExtensionRuntimeSourceBinding(
 }
 
 function getLightExtensionEntryLabel(entry: LightExtensionSelectableEntrySummary): string {
-  return entry.title || entry.entryName || entry.id;
+  return entry.entryName || entry.id;
 }
 
 export default JSBlockLightExtensionSourceField;

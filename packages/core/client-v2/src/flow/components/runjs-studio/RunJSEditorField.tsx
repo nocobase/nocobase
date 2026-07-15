@@ -14,7 +14,7 @@ import {
   normalizeRunJSValue,
   useFlowContext,
   useFlowStep,
-  type FlowModel,
+  FlowModel,
   type FlowRuntimeContext,
   type ParamObject,
   type RunJSValue,
@@ -35,6 +35,7 @@ type SavedRunJSValue = RunJSValue & {
 };
 
 const UNSAFE_RUNJS_PATH_SEGMENTS = new Set(['__proto__', 'constructor', 'prototype']);
+const SOURCE_BINDING_IDENTITY_KEYS = ['type', 'repoId', 'entryId', 'kind'] as const;
 
 function isRecord(value: unknown): value is StepParams {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -139,6 +140,89 @@ function setAtPath(root: StepParams, path: readonly string[], value: unknown) {
   target[path[path.length - 1]] = value;
 }
 
+function hasSameSourceBinding(candidate: unknown, sourceBinding: RunJSValue['sourceBinding']): boolean {
+  if (!isRecord(candidate) || !isRecord(sourceBinding)) {
+    return false;
+  }
+
+  const identityKeys = SOURCE_BINDING_IDENTITY_KEYS.filter((key) => typeof sourceBinding[key] !== 'undefined');
+  if (identityKeys.length >= 2) {
+    return identityKeys.every((key) => isEqual(candidate[key], sourceBinding[key]));
+  }
+
+  return isEqual(candidate, sourceBinding);
+}
+
+function containsSourceBinding(
+  value: unknown,
+  sourceBinding: RunJSValue['sourceBinding'],
+  visited = new Set<object>(),
+): boolean {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+  if (visited.has(value)) {
+    return false;
+  }
+  visited.add(value);
+
+  if (Array.isArray(value)) {
+    return value.some((item) => containsSourceBinding(item, sourceBinding, visited));
+  }
+
+  const record = value as Record<string, unknown>;
+  if (hasSameSourceBinding(record.sourceBinding, sourceBinding)) {
+    return true;
+  }
+
+  return Object.values(record).some((item) => containsSourceBinding(item, sourceBinding, visited));
+}
+
+function collectModelTree(model: FlowModel, models: Set<FlowModel>): void {
+  if (models.has(model)) {
+    return;
+  }
+  models.add(model);
+
+  Object.values(model.subModels).forEach((subModel) => {
+    if (Array.isArray(subModel)) {
+      subModel.forEach((item) => collectModelTree(item, models));
+      return;
+    }
+    if (subModel instanceof FlowModel) {
+      collectModelTree(subModel, models);
+    }
+  });
+}
+
+function collectLoadedModels(model: FlowModel): Set<FlowModel> {
+  const models = new Set<FlowModel>();
+  let root = model;
+  while (root.parent) {
+    root = root.parent;
+  }
+  collectModelTree(root, models);
+  model.flowEngine?.forEachModel((loadedModel) => collectModelTree(loadedModel, models));
+  return models;
+}
+
+async function refreshLoadedRunJSSourceHosts(
+  model: FlowModel,
+  sourceBinding: RunJSValue['sourceBinding'],
+): Promise<void> {
+  if (!isRecord(sourceBinding)) {
+    await model.rerender();
+    return;
+  }
+
+  const sourceHosts = Array.from(collectLoadedModels(model)).filter((loadedModel) =>
+    containsSourceBinding(loadedModel.getStepParams(), sourceBinding),
+  );
+  const targets = sourceHosts.length > 0 ? sourceHosts : [model];
+  targets.forEach((target) => target.invalidateFlowCache('beforeRender', true));
+  await Promise.all(targets.map((target) => target.rerender()));
+}
+
 function resolveStepKey(path: string | undefined, modelUid: string, flowKey: string): string | undefined {
   const prefix = `${modelUid}_${flowKey}_`;
   return path?.startsWith(prefix) ? path.slice(prefix.length) || undefined : undefined;
@@ -234,7 +318,11 @@ function syncFlowModelStepValue(
     if (persist) {
       await model.saveStepParams();
     }
-    if (surfaceStyle === 'render' && persist) {
+    if (!persist && value.sourceMode && value.sourceBinding) {
+      await refreshLoadedRunJSSourceHosts(model, value.sourceBinding);
+      return;
+    }
+    if (surfaceStyle === 'render') {
       await model.rerender();
     }
   };

@@ -8,6 +8,7 @@
  */
 
 import type { StepCascadeMenuUIMode } from '@nocobase/flow-engine';
+import React from 'react';
 
 import type { RunJSSourceBinding, RunJSSourceMenuInput, RunJSSourceMenuItem, RunJSSourceSettings } from './types';
 import { INLINE_RUNJS_SOURCE_MODE } from './types';
@@ -40,10 +41,13 @@ function getSourceBindingLabel(sourceBinding: unknown): string | undefined {
     return undefined;
   }
 
-  const repoLabel = toNonEmptyString(sourceBinding.repoTitle) || toNonEmptyString(sourceBinding.repoId);
+  const repoLabel =
+    toNonEmptyString(sourceBinding.repoName) ||
+    toNonEmptyString(sourceBinding.repoTitle) ||
+    toNonEmptyString(sourceBinding.repoId);
   const entryLabel =
-    toNonEmptyString(sourceBinding.entryTitle) ||
     toNonEmptyString(sourceBinding.entryName) ||
+    toNonEmptyString(sourceBinding.entryTitle) ||
     toNonEmptyString(sourceBinding.entryId);
 
   if (repoLabel && entryLabel) {
@@ -59,6 +63,52 @@ function toNonEmptyString(value: unknown): string | undefined {
 
 function normalizeSourceMode(value: unknown): string {
   return value === 'light-extension' ? 'light-extension' : INLINE_RUNJS_SOURCE_MODE;
+}
+
+function RunJSSourceBindingDisplayLabel(props: {
+  fallback?: string;
+  input: RunJSSourceMenuInput;
+  t: RunJSSourceMenuInput['t'];
+}) {
+  const { fallback, input, t = (key) => key } = props;
+  const sourceBindingKey = JSON.stringify(input.sourceBinding || null);
+  const settingsKey = JSON.stringify(input.settings || {});
+  const [label, setLabel] = React.useState(fallback);
+
+  React.useEffect(() => {
+    setLabel(fallback);
+    const resolver = RunJSSourceResolverRegistry.getResolver(input.sourceMode);
+    if (typeof resolver?.getBindingTitle !== 'function' || sourceBindingKey === 'null') {
+      return;
+    }
+
+    let active = true;
+    const sourceBinding = JSON.parse(sourceBindingKey) as RunJSSourceBinding;
+    const settings = JSON.parse(settingsKey) as RunJSSourceSettings;
+    Promise.resolve()
+      .then(() =>
+        resolver.getBindingTitle({
+          sourceMode: input.sourceMode,
+          sourceBinding,
+          settings,
+        }),
+      )
+      .then((resolvedLabel) => {
+        const nextLabel = toNonEmptyString(resolvedLabel);
+        if (active && nextLabel) {
+          setLabel(nextLabel);
+        }
+      })
+      .catch((error: unknown) => {
+        console.warn('[NocoBase] Failed to resolve RunJS source binding display label:', error);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [fallback, input.sourceMode, settingsKey, sourceBindingKey]);
+
+  return label || t('Light extension');
 }
 
 function getMenuInput(
@@ -101,7 +151,12 @@ export function createRunJSSourceCascadeMenuUIMode(options: RunJSSourceCascadeMe
         if (sourceMode === INLINE_RUNJS_SOURCE_MODE) {
           return t('Inline code');
         }
-        return getSourceBindingLabel(displayParams.sourceBinding) || t('Light extension');
+        const input = getMenuInput(displayParams, options, t);
+        return React.createElement(RunJSSourceBindingDisplayLabel, {
+          fallback: getSourceBindingLabel(displayParams.sourceBinding),
+          input,
+          t,
+        });
       },
       async loadItems({ params, defaultParams, t }): Promise<RunJSSourceMenuItem[]> {
         const input = getMenuInput(params, options, t);

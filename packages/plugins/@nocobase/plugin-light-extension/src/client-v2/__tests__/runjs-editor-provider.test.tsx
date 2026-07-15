@@ -310,7 +310,7 @@ describe('RunJSLightExtensionEditorProvider', () => {
       version: 'v2',
       sourceMode: 'inline',
     });
-    fireEvent.click(screen.getByRole('button', { name: 'save workspace', exact: true }));
+    fireEvent.click(screen.getByRole('button', { name: 'save workspace and close' }));
     expect(onPersistedChange).toHaveBeenCalledWith(props.value);
     expect(onChange).not.toHaveBeenCalled();
   });
@@ -588,6 +588,7 @@ describe('RunJSLightExtensionEditorProvider', () => {
       clear: vi.fn(),
     }));
     const resolver = createLightExtensionRunJSResolver(resolverApi);
+    const invalidateResolverCache = vi.spyOn(resolver, 'invalidateCache');
     const unregisterResolver = RunJSSourceResolverRegistry.registerResolver(resolver);
 
     render(
@@ -618,7 +619,7 @@ describe('RunJSLightExtensionEditorProvider', () => {
       );
     });
 
-    fireEvent.click(screen.getByRole('button', { name: 'save workspace', exact: true }));
+    fireEvent.click(screen.getByRole('button', { name: 'save workspace and close' }));
     await waitFor(() => {
       expect(onPersistedChange).toHaveBeenCalledWith({
         ...value,
@@ -627,7 +628,7 @@ describe('RunJSLightExtensionEditorProvider', () => {
         sourceBinding: {
           ...value.sourceBinding,
           entryPath: 'src/client/js-blocks/renamed-example/index.tsx',
-          entryTitle: 'Example refreshed',
+          entryTitle: 'stable-example',
         },
       });
     });
@@ -641,6 +642,7 @@ describe('RunJSLightExtensionEditorProvider', () => {
         },
       },
     });
+    expect(invalidateResolverCache).toHaveBeenCalledWith('ler_example');
     expect(invalidateRuntimeRepo).toHaveBeenCalledWith('ler_example');
     expect(resolverApi.request).toHaveBeenCalledWith({
       url: 'lightExtensionEntries:listSelectable',
@@ -713,7 +715,7 @@ describe('RunJSLightExtensionEditorProvider', () => {
       </EditorViewHarness>,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'save workspace and close', exact: true }));
+    fireEvent.click(screen.getByRole('button', { name: 'save workspace and close' }));
     await waitFor(() => {
       expect(onPersistedChange).toHaveBeenCalled();
     });

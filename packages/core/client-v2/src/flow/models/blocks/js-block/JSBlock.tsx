@@ -76,6 +76,14 @@ type RunJSExecutionResult = {
   error?: unknown;
 };
 
+type RunJSRootEntry = {
+  root?: {
+    unmount?: () => void;
+  };
+  disposeTheme?: () => void;
+  unmount?: () => void;
+};
+
 type ServerErrorShape = {
   code?: string;
   status?: number;
@@ -134,6 +142,33 @@ function cloneJsonValue<T>(value: T): T {
   } catch {
     return value;
   }
+}
+
+function resetJSBlockRuntimeElement(element: HTMLElement): void {
+  const globalWithRunJSRoots = globalThis as typeof globalThis & {
+    __nbRunjsRoots?: WeakMap<object, RunJSRootEntry>;
+  };
+  const rootMap = globalWithRunJSRoots.__nbRunjsRoots;
+  const entry = rootMap?.get(element);
+  if (entry) {
+    if (typeof entry.disposeTheme === 'function') {
+      try {
+        entry.disposeTheme();
+      } catch {
+        // ignore cleanup failures
+      }
+    }
+    const root = entry.root || entry;
+    if (typeof root.unmount === 'function') {
+      try {
+        root.unmount();
+      } catch {
+        // ignore cleanup failures
+      }
+    }
+    rootMap?.delete(element);
+  }
+  element.innerHTML = '';
 }
 
 function toNonEmptyString(value: unknown): string | undefined {
@@ -823,7 +858,7 @@ ctx.render(\`
             if (!model.isCurrentRuntimeRun(runId)) {
               return;
             }
-            element.innerHTML = '';
+            resetJSBlockRuntimeElement(element);
             ctx.defineProperty('element', {
               get: () => new ElementProxy(element),
               info: {
@@ -872,7 +907,7 @@ ctx.render(\`
 
           run().catch((error) => {
             if (model.isCurrentRuntimeRun(runId)) {
-              element.innerHTML = '';
+              resetJSBlockRuntimeElement(element);
             }
             model.failRuntimeRun(runId, error);
           });
