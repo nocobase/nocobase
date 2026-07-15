@@ -12,7 +12,7 @@ keywords: "图标,icon,字段,NocoBase"
 
 图标字段适合给分类、菜单、状态、入口配置一个视觉标识。它保存的是图标值，页面展示时由图标组件渲染。
 
-如果要上传真实图片，选择[附件](../media/attachment.md)。如果只是保存图标说明，选择[单行文本](./input.md)。
+如果要上传真实图片，选择[附件](../media/field-attachment.md)。如果只是保存图标说明，选择[单行文本](./input.md)。
 
 ## 适用场景
 
@@ -108,6 +108,6 @@ keywords: "图标,icon,字段,NocoBase"
 ## 相关链接
 
 - [字段](../index.md) — 了解字段的作用、分类和映射逻辑
-- [普通表](../../collection/general.md) — 在普通表中创建和管理字段
+- [普通表](../../../data-source-main/general-collection.md) — 在普通表中创建和管理字段
 - [颜色](./color.md) — 保存颜色标识
-- [附件](../media/attachment.md) — 上传图片或文件
+- [附件](../media/field-attachment.md) — 上传图片或文件

@@ -107,6 +107,6 @@ keywords: "空间,space,多空间,系统字段,NocoBase"
 ## 相关链接
 
 - [字段](../index.md) — 了解字段的作用、分类和映射逻辑
-- [普通表](../../collection/general.md) — 在普通表中创建和管理字段
-- [多空间](../../../multi-app/multi-space/index.md) — 了解多空间能力
-- [关系字段](../relation/index.md) — 创建普通关系字段
+- [普通表](../../../data-source-main/general-collection.md) — 在普通表中创建和管理字段
+- [多空间](../../../../multi-app/multi-space/index.md) — 了解多空间能力
+- [关系字段](../associations/index.md) — 创建普通关系字段

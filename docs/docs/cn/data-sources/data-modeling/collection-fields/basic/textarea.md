@@ -109,7 +109,7 @@ keywords: "多行文本,textarea,文本字段,text,NocoBase"
 ## 相关链接
 
 - [字段](../index.md) — 了解字段的作用、分类和映射逻辑
-- [普通表](../../collection/general.md) — 在普通表中创建和管理字段
+- [普通表](../../../data-source-main/general-collection.md) — 在普通表中创建和管理字段
 - [单行文本](./input.md) — 保存一行以内的短文本内容
 - [Markdown](../media/markdown.md) — 保存带 Markdown 格式的内容
 - [富文本](../media/rich-text.md) — 保存复杂排版内容

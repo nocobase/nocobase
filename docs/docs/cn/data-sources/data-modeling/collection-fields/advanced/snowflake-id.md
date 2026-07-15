@@ -12,7 +12,7 @@ keywords: "Snowflake ID,snowflakeId,主键,NocoBase"
 
 Snowflake ID 是 NocoBase 普通表默认 ID 字段常用的主键类型。它适合作为内部记录唯一标识。
 
-如果需要外部系统可读的编号，使用[序列](./sequence.md)或业务编号字段。
+如果需要外部系统可读的编号，使用[序列](../../../field-sequence/index.md)或业务编号字段。
 
 ## 适用场景
 
@@ -108,7 +108,7 @@ Snowflake ID 字段适合作为主键和内部唯一标识。
 ## 相关链接
 
 - [字段](../index.md) — 了解字段的作用、分类和映射逻辑
-- [普通表](../../collection/general.md) — 在普通表中创建和管理字段
+- [普通表](../../../data-source-main/general-collection.md) — 在普通表中创建和管理字段
 - [UUID](./uuid.md) — 使用 UUID 作为唯一标识
 - [Nano ID](./nano-id.md) — 使用短 ID
-- [序列](./sequence.md) — 生成业务编号
+- [序列](../../../field-sequence/index.md) — 生成业务编号

@@ -107,6 +107,6 @@ keywords: "数据表标识,table oid,tableoid,系统字段,NocoBase"
 ## 相关链接
 
 - [字段](../index.md) — 了解字段的作用、分类和映射逻辑
-- [普通表](../../collection/general.md) — 在普通表中创建和管理字段
-- [继承表](../../collection/inheritance.md) — 了解继承表使用方式
+- [普通表](../../../data-source-main/general-collection.md) — 在普通表中创建和管理字段
+- [继承表](../../../data-source-main/inheritance-collection.md) — 了解继承表使用方式
 - [数据表选择器](../advanced/collection-select.md) — 选择数据表

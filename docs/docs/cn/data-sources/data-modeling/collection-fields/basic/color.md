@@ -108,6 +108,6 @@ keywords: "颜色,color,字段,NocoBase"
 ## 相关链接
 
 - [字段](../index.md) — 了解字段的作用、分类和映射逻辑
-- [普通表](../../collection/general.md) — 在普通表中创建和管理字段
+- [普通表](../../../data-source-main/general-collection.md) — 在普通表中创建和管理字段
 - [图标](./icon.md) — 保存图标标识
 - [下拉单选](../choices/select.md) — 在选项中直接配置颜色

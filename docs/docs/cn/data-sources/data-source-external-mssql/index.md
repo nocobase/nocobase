@@ -127,5 +127,5 @@ NocoBase 会根据 SQL Server 字段类型，自动映射到合适的 Field type
 ## 相关链接
 
 - [外部数据库](./index.md) — 查看外部数据库的通用配置和管理说明
-- [数据源管理](../data-source-manager.md) — 查看数据源入口和数据源管理方式
-- [数据表字段](../field/index.md) — 查看字段类型和字段映射说明
+- [数据源管理](../data-source-manager/index.md) — 查看数据源入口和数据源管理方式
+- [数据表字段](../data-modeling/collection-fields/index.md) — 查看字段类型和字段映射说明

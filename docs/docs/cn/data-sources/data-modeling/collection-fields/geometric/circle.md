@@ -108,6 +108,6 @@ keywords: "圆,Circle,几何图形,地图,NocoBase"
 ## 相关链接
 
 - [字段](../index.md) — 了解字段的作用、分类和映射逻辑
-- [普通表](../../collection/general.md) — 在普通表中创建和管理字段
+- [普通表](../../../data-source-main/general-collection.md) — 在普通表中创建和管理字段
 - [点](./point.md) — 保存中心位置
 - [多边形](./polygon.md) — 保存非圆形区域

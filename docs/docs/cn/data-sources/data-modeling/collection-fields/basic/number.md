@@ -108,7 +108,7 @@ keywords: "数字,number,double,decimal,NocoBase"
 ## 相关链接
 
 - [字段](../index.md) — 了解字段的作用、分类和映射逻辑
-- [普通表](../../collection/general.md) — 在普通表中创建和管理字段
+- [普通表](../../../data-source-main/general-collection.md) — 在普通表中创建和管理字段
 - [整数](./integer.md) — 保存不带小数的数值
 - [百分比](./percent.md) — 保存比例或完成率
-- [公式](../advanced/formula.md) — 基于数字字段计算结果
+- [公式](../../../field-formula/index.md) — 基于数字字段计算结果

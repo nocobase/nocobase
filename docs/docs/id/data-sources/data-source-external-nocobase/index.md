@@ -1,157 +1,157 @@
 ---
-title: 'NocoBase eksternal'
-description: 'Hubungkan aplikasi NocoBase lain sebagai sumber data eksternal dan pelajari konfigurasi, kemampuan yang tersedia, serta batasan workflow.'
-keywords: 'NocoBase eksternal,sumber data NocoBase,pengelola sumber data,workflow,NocoBase'
+title: 'NocoBase Eksternal'
+description: 'Hubungkan aplikasi NocoBase lain sebagai sumber data eksternal ke aplikasi saat ini, serta pahami cara konfigurasi, kemampuan yang tersedia, dan batasan penggunaannya dalam alur kerja.'
+keywords: 'NocoBase Eksternal,Sumber Data NocoBase,Manajemen Sumber Data,Alur Kerja,NocoBase'
 ---
 
-# NocoBase eksternal
+# NocoBase Eksternal
 
-## Pengantar
+## Pengenalan
 
-Sumber data NocoBase eksternal menghubungkan aplikasi NocoBase lain ke aplikasi saat ini, sekaligus mempertahankan metadata dari aplikasi jarak jauh, termasuk collection, antarmuka field, judul, dan field relasi.
+Sumber data NocoBase eksternal dapat menghubungkan aplikasi NocoBase lain ke aplikasi saat ini, sekaligus mempertahankan metadata yang telah dikonfigurasi di aplikasi jarak jauh, seperti tabel data, antarmuka field, judul, dan field relasi.
 
-Dibandingkan dengan sumber data database eksternal, sumber data NocoBase eksternal biasanya tidak memerlukan konfigurasi ulang antarmuka field atau pembuatan field relasi secara manual. Selain melihat, membuat, mengedit, dan menghapus record, sumber data ini juga mendukung unggah dan pratinjau file, impor dan ekspor, kueri chart, serta beberapa skenario workflow.
+Dibandingkan dengan sumber data database eksternal, setelah menghubungkan NocoBase eksternal, biasanya Anda tidak perlu mengonfigurasi ulang antarmuka field atau membuat field relasi secara manual. Selain melihat, menambah, mengedit, dan menghapus record, sumber data ini juga mendukung pengunggahan dan pratinjau file, impor dan ekspor, kueri grafik, serta beberapa skenario alur kerja.
 
-## Menambahkan Sumber Data
+## Menambahkan sumber data
 
-Setelah plugin diaktifkan, tambahkan sumber data NocoBase eksternal di Pengelola Sumber Data, lalu isi informasi akses aplikasi jarak jauh.
+Setelah mengaktifkan plugin, tambahkan sumber data NocoBase eksternal di「Manajemen Sumber Data」, lalu isi informasi akses aplikasi jarak jauh.
 
-| Opsi | Deskripsi |
-| --- | --- |
-| URL API | URL API lengkap aplikasi NocoBase jarak jauh, misalnya `https://example.com/api` |
-| Origin | Origin publik aplikasi NocoBase jarak jauh, misalnya `https://example.com`. Ini terutama digunakan untuk menangani URL pratinjau file lokal pada aplikasi jarak jauh |
-| API key | Kredensial yang digunakan aplikasi saat ini untuk mengakses aplikasi NocoBase jarak jauh |
-| Header permintaan | Header tambahan yang dikirim ke aplikasi jarak jauh, misalnya informasi space |
-| Timeout | Timeout permintaan untuk mengakses aplikasi jarak jauh |
+| Item konfigurasi | Keterangan                                                                                           |
+| -------- | ---------------------------------------------------------------------------------------------- |
+| Alamat API | Alamat API lengkap aplikasi NocoBase jarak jauh, misalnya `https://example.com/api`                              |
+| Origin   | Origin akses aplikasi NocoBase jarak jauh, misalnya `https://example.com`, terutama digunakan untuk menangani alamat pratinjau file lokal dari aplikasi jarak jauh |
+| API key  | Kredensial yang digunakan aplikasi saat ini untuk mengakses NocoBase jarak jauh                                                         |
+| Header permintaan   | Header permintaan tambahan yang perlu dikirim ke aplikasi jarak jauh, seperti informasi ruang                                                   |
+| Waktu tunggu | Waktu tunggu permintaan saat mengakses aplikasi jarak jauh                                                                     |
 
-Setelah sumber data diaktifkan, sistem memuat collection dari aplikasi jarak jauh.
+Setelah sumber data diaktifkan, sistem akan memuat tabel data dari aplikasi jarak jauh.
 
 ![](https://static-docs.nocobase.com/202606101149185.png)
 
-## Izin
+## Penjelasan izin
 
-Sumber data NocoBase eksternal dipengaruhi oleh izin pada aplikasi saat ini dan aplikasi jarak jauh.
+Sumber data NocoBase eksternal dipengaruhi oleh izin aplikasi saat ini dan aplikasi jarak jauh.
 
-- Pada aplikasi saat ini, Anda dapat mengonfigurasi izin akses untuk collection dan field yang berbeda seperti sumber data eksternal lainnya.
-- Pada aplikasi jarak jauh, data dibaca dan dioperasikan sesuai izin API key yang dikonfigurasi.
+- Aplikasi saat ini dapat mengonfigurasi izin akses untuk berbagai tabel dan field seperti sumber data eksternal lainnya;
+- sedangkan aplikasi jarak jauh akan membaca dan mengoperasikan data terkait berdasarkan izin API key yang dikonfigurasi.
 
-Sumber data NocoBase eksternal tidak mengembalikan metadata izin yang digunakan untuk mengontrol visibilitas tombol secara detail di frontend. Akibatnya, beberapa tombol mungkin tidak otomatis disembunyikan berdasarkan izin seperti pada sumber data utama. Terlepas dari apakah tombol terlihat, operasi yang dikirim tetap melewati pemeriksaan izin sisi server pada aplikasi saat ini, dan operasi yang tidak diizinkan akan ditolak.
+Sumber data NocoBase eksternal tidak mengembalikan metadata izin yang digunakan untuk mengontrol status tampilan tombol secara terperinci di frontend. Oleh karena itu, beberapa tombol mungkin tidak disembunyikan secara otomatis berdasarkan izin seperti pada sumber data utama. Terlepas dari apakah tombol ditampilkan atau tidak, operasi pengiriman tetap akan melalui pemeriksaan izin sisi server aplikasi saat ini, dan operasi yang tidak diizinkan akan ditolak.
 
-:::warning{title=Catatan}
-Siapkan API key khusus untuk sumber data NocoBase eksternal dan hanya berikan izin collection serta operasi yang diperlukan. Jika pengguna memiliki izin di aplikasi saat ini tetapi operasi gagal, periksa izin API key jarak jauh.
+:::warning{title=Perhatian}
+Sebaiknya siapkan API key khusus untuk sumber data NocoBase eksternal dan berikan hanya izin tabel data serta operasi yang diperlukan. Jika pengguna memiliki izin di aplikasi saat ini tetapi operasi gagal, periksa izin API key jarak jauh.
 :::
 
-## Menggunakan Collection
+## Menggunakan tabel data
 
-Setelah collection berhasil dimuat, pilih sumber data ini pada konfigurasi halaman, konfigurasi blok, chart, atau workflow untuk menggunakan collection dari aplikasi jarak jauh.
+Setelah tabel data berhasil dimuat, pilih sumber data ini dalam konfigurasi halaman, konfigurasi blok, grafik, atau alur kerja untuk menggunakan tabel data dari aplikasi jarak jauh.
 
-Jika struktur collection pada aplikasi jarak jauh berubah, muat ulang collection di aplikasi saat ini.
+Setelah struktur tabel data di aplikasi jarak jauh berubah, tabel data perlu dimuat ulang di aplikasi saat ini.
 
-## Fitur
+## Penjelasan fitur
 
-Sumber data NocoBase eksternal terutama digunakan untuk memakai collection dan data dari aplikasi jarak jauh di aplikasi saat ini. Struktur collection, konfigurasi field, dan data aktual tetap dikelola oleh aplikasi jarak jauh.
+Sumber data NocoBase eksternal terutama digunakan untuk memakai tabel data dan data dari aplikasi jarak jauh di aplikasi saat ini. Struktur tabel data, konfigurasi field, dan data aktual tetap dikelola oleh aplikasi jarak jauh.
 
-### Collection dan Field
+### Tabel data dan field
 
-Aplikasi saat ini memuat metadata dari aplikasi jarak jauh, termasuk collection, antarmuka field, judul, dan field relasi. Dibandingkan dengan sumber data database eksternal, biasanya Anda tidak perlu mengonfigurasi ulang antarmuka field atau membuat field relasi secara manual di aplikasi saat ini.
+Aplikasi saat ini akan memuat metadata dari aplikasi jarak jauh, seperti tabel data, antarmuka field, judul, dan field relasi. Dibandingkan dengan sumber data database eksternal, biasanya Anda tidak perlu mengonfigurasi ulang antarmuka field atau membuat field relasi secara manual di aplikasi saat ini.
 
-Aplikasi saat ini tidak mendukung konfigurasi field secara langsung untuk sumber data NocoBase eksternal. Untuk menambahkan field, menyesuaikan tipe field, atau mengubah field relasi, lakukan perubahan di aplikasi jarak jauh lalu muat ulang collection di aplikasi saat ini.
+Aplikasi saat ini tidak mendukung konfigurasi langsung field pada sumber data NocoBase eksternal. Jika perlu menambahkan field, menyesuaikan jenis field, atau mengubah field relasi, lakukan di aplikasi jarak jauh, lalu kembali ke aplikasi saat ini untuk memuat ulang tabel data.
 
-### Record dan Data Terkait
+### Record dan data relasi
 
-Sumber data NocoBase eksternal mendukung melihat, membuat, mengedit, dan menghapus record di blok halaman, serta melihat dan memelihara data terkait. Operasi dimulai oleh aplikasi saat ini dan dikirim ke aplikasi jarak jauh melalui API key yang dikonfigurasi.
+Sumber data NocoBase eksternal mendukung penayangan, penambahan, pengeditan, dan penghapusan record di blok halaman, serta penayangan dan pemeliharaan data relasi. Operasi dimulai oleh aplikasi saat ini dan dikirim ke aplikasi jarak jauh melalui API key yang dikonfigurasi.
 
-### File dan Lampiran
+### File dan lampiran
 
-File diunggah ke storage yang digunakan oleh aplikasi jarak jauh. Aplikasi saat ini memulai permintaan unggah, pratinjau, dan unduh, tetapi file itu sendiri tidak disimpan di aplikasi saat ini.
+File akan diunggah ke penyimpanan yang digunakan aplikasi jarak jauh. Aplikasi saat ini bertanggung jawab mengirim permintaan unggah, pratinjau, dan unduh; file itu sendiri tidak disimpan di aplikasi saat ini.
 
-Origin terutama digunakan untuk menangani URL pratinjau file yang disimpan secara lokal oleh aplikasi jarak jauh. Jika aplikasi jarak jauh mengembalikan path relatif, aplikasi saat ini menggunakan Origin untuk melengkapi URL akses file. Origin harus berupa alamat akses publik aplikasi NocoBase jarak jauh, misalnya:
+Origin terutama digunakan untuk menangani alamat pratinjau file penyimpanan lokal aplikasi jarak jauh. Jika respons dari jarak jauh berupa jalur relatif, aplikasi saat ini akan menggunakan Origin untuk melengkapi alamat akses file. Origin harus diisi dengan alamat akses publik aplikasi NocoBase jarak jauh, misalnya:
 
 ```text
 https://example.com
 ```
 
-Jangan gunakan URL API sebagai Origin.
+Jangan isi alamat API sebagai Origin.
 
-### Impor dan Ekspor
+### Impor dan ekspor
 
-Operasi impor dan ekspor membaca atau menulis sumber data melalui file eksternal, dan diproksikan ke aplikasi jarak jauh untuk dieksekusi. Aplikasi saat ini menangani operasi pengguna, meneruskan permintaan, dan mengembalikan hasil unduhan. Pembacaan dan penulisan data aktual dilakukan oleh aplikasi jarak jauh.
+Impor dan ekspor merupakan operasi untuk membaca dan menulis sumber data melalui file eksternal, dan semuanya akan diteruskan untuk dijalankan oleh aplikasi jarak jauh. Aplikasi saat ini bertanggung jawab menerima operasi pengguna, meneruskan permintaan, dan mengembalikan hasil unduhan; pembacaan dan penulisan data aktual dilakukan oleh aplikasi jarak jauh.
 
-- Impor record: aplikasi saat ini menerima file impor yang diunggah dan memproksikannya ke aplikasi jarak jauh untuk menjalankan impor.
-- Ekspor record: aplikasi saat ini memproksikan permintaan ke aplikasi jarak jauh untuk mengekspor record. Dalam mode sinkron, file record yang dikembalikan oleh aplikasi jarak jauh dialirkan kembali ke browser untuk diunduh. Dalam mode asinkron, tugas asinkron lokal dibuat, ekspor record dimulai di aplikasi jarak jauh, progres disinkronkan ke tugas lokal, dan file hasil dialirkan dari aplikasi jarak jauh saat diunduh.
-- Ekspor lampiran: aplikasi saat ini memproksikan permintaan ke aplikasi jarak jauh untuk mengekspor lampiran. Dalam mode sinkron, arsip lampiran yang dikembalikan oleh aplikasi jarak jauh dialirkan kembali ke browser untuk diunduh. Dalam mode asinkron, tugas asinkron lokal dibuat, ekspor lampiran dimulai di aplikasi jarak jauh, progres disinkronkan ke tugas lokal, dan arsip lampiran dialirkan dari aplikasi jarak jauh saat diunduh.
+- Impor record: aplikasi saat ini menerima file impor yang diunggah, lalu meneruskannya ke aplikasi jarak jauh untuk diproses;
+- Eksport record: aplikasi saat ini meneruskan permintaan ekspor record ke aplikasi jarak jauh. Dalam mode sinkron, aliran file record yang dikembalikan aplikasi jarak jauh diteruskan langsung ke browser untuk diunduh; dalam mode asinkron, aplikasi saat ini membuat tugas asinkron lokal, memulai ekspor record di aplikasi jarak jauh dan menyinkronkan progresnya, lalu mengambil aliran file record dari aplikasi jarak jauh saat hasilnya diunduh.
+- Eksport lampiran: aplikasi saat ini meneruskan permintaan ekspor lampiran ke aplikasi jarak jauh. Dalam mode sinkron, paket lampiran yang dikembalikan aplikasi jarak jauh diteruskan langsung ke browser untuk diunduh; dalam mode asinkron, aplikasi saat ini membuat tugas asinkron lokal, memulai ekspor lampiran di aplikasi jarak jauh dan menyinkronkan progresnya, lalu mengambil aliran paket lampiran dari aplikasi jarak jauh saat hasilnya diunduh.
 
-### Cetak Template
+### Pencetakan template
 
-Cetak Template dapat menggunakan record dari sumber data NocoBase eksternal. Template cetak dan konfigurasi aksi cetak disimpan di aplikasi saat ini. Saat mencetak, aplikasi saat ini membaca record jarak jauh dan data terkait, lalu menghasilkan file cetak di aplikasi saat ini.
+Pencetakan template dapat menggunakan record dari sumber data NocoBase eksternal. Template dan konfigurasi tindakan pencetakan disimpan di aplikasi saat ini. Saat mencetak, aplikasi saat ini akan membaca record serta data relasi dari jarak jauh, lalu membuat file cetak di aplikasi saat ini.
 
-### Chart
+### Grafik
 
-#### Panel Kueri
+#### P面el kueri
 
-Sumber data NocoBase eksternal dapat digunakan di panel kueri chart. Aplikasi saat ini memproses parameter kueri berdasarkan izin chart, sumber data, collection, dan field yang dikonfigurasi secara lokal, lalu meminta hasil dari aplikasi jarak jauh.
+Sumber data NocoBase eksternal dapat digunakan untuk panel kueri grafik. Aplikasi saat ini akan memproses parameter kueri berdasarkan grafik, sumber data, tabel data, dan izin field yang dikonfigurasi secara lokal, lalu meminta hasilnya dari aplikasi jarak jauh.
 
-API key jarak jauh juga harus memiliki akses ke data terkait; jika tidak, kueri akan gagal.
+API key jarak jauh juga harus memiliki izin akses ke data terkait; jika tidak, kueri akan gagal.
 
 #### Panel SQL
 
-Panel SQL adalah mode kueri SQL pada chart dan hanya digunakan untuk kueri. Aplikasi saat ini menyimpan konfigurasi SQL dan memulai panggilan, sementara SQL diproksikan ke aplikasi jarak jauh untuk dieksekusi.
+Panel SQL merupakan mode kueri SQL pada grafik dan hanya digunakan untuk kueri. Aplikasi saat ini bertanggung jawab menyimpan konfigurasi SQL dan memulai pemanggilan, sedangkan SQL diteruskan untuk dijalankan oleh aplikasi jarak jauh.
 
-Saat menggunakan panel SQL, pengguna lokal harus memiliki izin konfigurasi UI di aplikasi saat ini, dan API key jarak jauh juga harus memiliki izin konfigurasi UI di aplikasi jarak jauh. SQL tidak diuraikan berdasarkan izin collection dan field seperti panel kueri. Berikan izin konfigurasi UI kepada pengguna lokal dan API key terkait dengan hati-hati.
+Saat menggunakan panel SQL, pengguna lokal harus memiliki izin konfigurasi UI di aplikasi saat ini, dan API key jarak jauh juga harus memiliki izin konfigurasi UI di aplikasi jarak jauh. Tidak seperti panel kueri, SQL tidak akan memecah parameter kueri berdasarkan izin tabel data dan field. Berikan izin konfigurasi UI kepada pengguna lokal dan API key terkait dengan hati-hati.
 
-### Workflow
+### Alur kerja
 
-Sumber data NocoBase eksternal dapat melibatkan workflow di aplikasi saat ini dan aplikasi jarak jauh. Aplikasi saat ini merespons event pada halaman lokal, tombol, dan rantai permintaan API. Setelah aplikasi jarak jauh menerima permintaan yang diproksikan, aplikasi tersebut memprosesnya sesuai konfigurasi workflow sendiri.
+Sumber data NocoBase eksternal dapat melibatkan dua rangkaian alur kerja: aplikasi saat ini dan aplikasi jarak jauh. Aplikasi saat ini merespons peristiwa dalam rangkaian permintaan halaman, tombol, dan API lokal; setelah menerima permintaan yang diteruskan, aplikasi jarak jauh akan memprosesnya berdasarkan konfigurasi alur kerjanya sendiri.
 
-Aplikasi saat ini tidak mendengarkan event pembuatan, pembaruan, atau penghapusan yang terjadi di dalam collection jarak jauh. Event collection jarak jauh hanya dipicu di aplikasi jarak jauh.
+Perlu diperhatikan bahwa aplikasi saat ini tidak memantau peristiwa penambahan, pembaruan, dan penghapusan yang terjadi di dalam tabel data jarak jauh. Peristiwa tabel data jarak jauh hanya akan dipicu di aplikasi jarak jauh.
 
-#### Trigger
+#### Pemicu
 
-Tabel berikut menjelaskan perilaku trigger yang dipengaruhi oleh sumber data NocoBase eksternal pada aplikasi saat ini dan aplikasi jarak jauh ketika workflow terkait diaktifkan.
+Tabel berikut menjelaskan kondisi pemicu di aplikasi saat ini dan aplikasi jarak jauh untuk pemicu yang dipengaruhi oleh sumber data NocoBase eksternal ketika alur kerja terkait diaktifkan.
 
-| Trigger | Aplikasi saat ini | Aplikasi jarak jauh | Deskripsi |
-| --- | --- | --- | --- |
-| Event sebelum aksi | Dipicu | Hanya dipicu dalam mode global | Mode global dipicu di aplikasi saat ini, dan mode lokal mengikuti binding tombol di aplikasi saat ini. Setelah aplikasi jarak jauh menerima permintaan yang diproksikan, hanya mode global yang dipicu |
-| Event setelah aksi | Dipicu | Hanya dipicu dalam mode global | Mode global dipicu di aplikasi saat ini, dan mode lokal mengikuti binding tombol di aplikasi saat ini. Setelah aplikasi jarak jauh menerima permintaan yang diproksikan, hanya mode global yang dipicu |
-| Event aksi kustom | Dipicu | Tidak dipicu | Tombol "Trigger workflow" yang terikat di aplikasi saat ini memicu workflow lokal. Permintaan CRUD yang diproksikan tidak memicu event aksi kustom jarak jauh |
-| Event collection | Tidak dipicu | Dipicu | Data aktual berubah di aplikasi jarak jauh. Aplikasi saat ini tidak memicu event collection lokal, sedangkan aplikasi jarak jauh memicu event collection miliknya sendiri |
-| Trigger jadwal field tanggal | Tidak dipicu | Dipicu | Aplikasi saat ini tidak memicu berdasarkan field pada collection jarak jauh. Aplikasi jarak jauh memicu sesuai konfigurasi field tanggal miliknya sendiri |
+| Pemicu           | Aplikasi saat ini | Aplikasi jarak jauh       | Keterangan                                                                                         |
+| ---------------- | -------- | -------------- | -------------------------------------------------------------------------------------------- |
+| Peristiwa sebelum permintaan       | Dipicu     | Hanya dipicu dalam mode global | Aplikasi saat ini memicu dalam mode global, sedangkan mode lokal dipicu berdasarkan pengikatan tombol di aplikasi saat ini; setelah menerima permintaan yang diteruskan, aplikasi jarak jauh hanya memicu dalam mode global |
+| Peristiwa setelah permintaan       | Dipicu     | Hanya dipicu dalam mode global | Aplikasi saat ini memicu dalam mode global, sedangkan mode lokal dipicu berdasarkan pengikatan tombol di aplikasi saat ini; setelah menerima permintaan yang diteruskan, aplikasi jarak jauh hanya memicu dalam mode global |
+| Peristiwa operasi kustom   | Dipicu     | Tidak dipicu         | Tombol「Picu alur kerja」yang terikat di aplikasi saat ini akan memicu proses lokal; permintaan CRUD yang diteruskan tidak memicu peristiwa operasi kustom di aplikasi jarak jauh     |
+| Peristiwa tabel data       | Tidak dipicu   | Dipicu           | Data sebenarnya berubah di jarak jauh, sehingga aplikasi saat ini tidak memicu peristiwa tabel data lokal; aplikasi jarak jauh memicu peristiwa tabel datanya sendiri               |
+| Pemicu terjadwal field tanggal | Tidak dipicu   | Dipicu           | Aplikasi saat ini tidak memicu berdasarkan field tabel data jarak jauh; aplikasi jarak jauh memicu sesuai konfigurasi field tanggalnya sendiri                         |
 
-Trigger yang tidak bergantung pada sumber data dipicu di aplikasi saat ini dan aplikasi jarak jauh sesuai konfigurasi masing-masing.
+Pemicu yang tidak bergantung pada sumber data akan dipicu di aplikasi saat ini dan aplikasi jarak jauh berdasarkan konfigurasi masing-masing.
 
-Untuk menyusun workflow yang mengoperasikan data NocoBase eksternal di aplikasi saat ini, gunakan event sebelum aksi, event setelah aksi, atau event aksi kustom. Workflow yang sudah ada di aplikasi jarak jauh berjalan secara independen di aplikasi jarak jauh.
+Jika perlu mengatur proses yang mengoperasikan data NocoBase eksternal di aplikasi saat ini, sebaiknya gunakan peristiwa sebelum permintaan, peristiwa setelah permintaan, atau peristiwa operasi kustom. Alur kerja yang telah ada di aplikasi jarak jauh akan dijalankan secara independen oleh aplikasi jarak jauh.
 
 #### Node
 
-Tabel berikut hanya mencantumkan node yang terkait dengan sumber data. Node umum seperti kondisi, kalkulasi, loop, dan pemrosesan JSON tidak bergantung pada jenis sumber data dan dapat digunakan seperti biasa.
+Tabel berikut hanya mencantumkan node yang terkait dengan sumber data. Node umum seperti kondisi, perhitungan, perulangan, dan pemrosesan JSON tidak bergantung pada jenis sumber data dan dapat digunakan seperti biasa dalam alur kerja.
 
-| Node | Tersedia | Deskripsi |
-| --- | --- | --- |
-| Query records | Tersedia | Mengkueri record di aplikasi jarak jauh |
-| Create record | Tersedia | Membuat record di aplikasi jarak jauh |
-| Update record | Tersedia | Memperbarui record di aplikasi jarak jauh |
-| Delete record | Tersedia | Menghapus record di aplikasi jarak jauh |
-| Node SQL | Tidak tersedia | Node SQL workflow hanya mendukung sumber data database |
-| Node agregasi | Tidak tersedia | Node agregasi hanya mendukung sumber data database |
+| Node     | Tersedia | Keterangan                              |
+| -------- | -------- | --------------------------------- |
+| Kueri record | Tersedia     | Mengkueri record dalam aplikasi jarak jauh              |
+| Membuat record | Tersedia     | Membuat record di aplikasi jarak jauh                |
+| Memperbarui record | Tersedia     | Memperbarui record di aplikasi jarak jauh              |
+| Menghapus record | Tersedia     | Menghapus record di aplikasi jarak jauh              |
+| Node SQL | Tidak tersedia   | Node SQL alur kerja hanya mendukung sumber data database |
+| Node agregasi | Tidak tersedia   | Node agregasi hanya mendukung sumber data database        |
 
-## FAQ
+## Pertanyaan umum
 
-### Collection Tidak Muncul
+### Tabel data tidak muncul
 
-Periksa apakah sumber data sudah diaktifkan serta apakah URL API dan API key sudah benar. Aplikasi jarak jauh juga harus mengizinkan API key tersebut mengakses collection yang sesuai.
+Periksa apakah sumber data telah diaktifkan serta apakah alamat API dan API key sudah benar. Aplikasi jarak jauh juga harus mengizinkan API key tersebut mengakses tabel data terkait.
 
-### File Berhasil Diunggah tetapi Tidak Dapat Dipratinjau
+### File berhasil diunggah tetapi tidak dapat dipratinjau
 
-Jika aplikasi saat ini atau aplikasi jarak jauh menggunakan storage file lokal, periksa apakah Origin adalah alamat akses publik aplikasi terkait. Origin tidak boleh berupa URL API.
+Jika aplikasi saat ini atau aplikasi jarak jauh menggunakan penyimpanan file lokal, periksa apakah Origin telah diisi dengan alamat akses publik aplikasi terkait. Origin tidak boleh diisi dengan alamat API.
 
-### Aplikasi Saat Ini Memiliki Izin, tetapi Operasi Gagal
+### Memiliki izin di aplikasi saat ini, tetapi operasi gagal
 
-Periksa izin API key di aplikasi jarak jauh. Sumber data NocoBase eksternal dipengaruhi oleh izin pada aplikasi saat ini dan aplikasi jarak jauh.
+Periksa izin API key aplikasi jarak jauh. Sumber data NocoBase eksternal dipengaruhi oleh izin aplikasi saat ini dan izin aplikasi jarak jauh secara bersamaan.
 
-### Collection Tidak Dapat Digunakan Setelah Error Layanan Jarak Jauh
+### Tabel data tidak dapat digunakan setelah layanan jarak jauh mengalami gangguan
 
-Jika aplikasi jarak jauh mengembalikan 502, memulai ulang, atau tidak tersedia sementara, aplikasi saat ini mungkin sementara tidak dapat membaca metadata collection jarak jauh. Setelah layanan jarak jauh pulih, aplikasi saat ini otomatis memuat ulang metadata saat collection dari sumber data ini diakses berikutnya.
+Jika aplikasi jarak jauh mengalami 502, dimulai ulang, atau tidak tersedia sementara, aplikasi saat ini mungkin tidak dapat membaca metadata tabel data jarak jauh untuk sementara. Setelah layanan jarak jauh pulih, aplikasi saat ini akan memuat ulang metadata secara otomatis saat tabel data sumber tersebut diakses berikutnya.
 
-### Mengapa Field Tidak Dapat Dikonfigurasi di Aplikasi Saat Ini
+### Mengapa field tidak dapat dikonfigurasi di aplikasi saat ini
 
-Sumber data NocoBase eksternal menggunakan struktur collection dan konfigurasi field dari aplikasi jarak jauh. Sesuaikan field di aplikasi jarak jauh, lalu muat ulang collection di aplikasi saat ini.
+Sumber data NocoBase eksternal menggunakan struktur tabel data dan konfigurasi field dari aplikasi jarak jauh. Sesuaikan field di aplikasi jarak jauh, lalu kembali ke aplikasi saat ini untuk memuat ulang tabel data.

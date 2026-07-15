@@ -12,7 +12,7 @@ keywords: "UUID,唯一标识,主键,NocoBase"
 
 UUID 适合跨系统同步、公开接口标识、导入导出等场景。它比自增 ID 更不容易暴露数据规模。
 
-如果只是 NocoBase 内部默认主键，Snowflake ID 通常就够了。如果需要短编号，选择 [Nano ID](./nano-id.md) 或[序列](./sequence.md)。
+如果只是 NocoBase 内部默认主键，Snowflake ID 通常就够了。如果需要短编号，选择 [Nano ID](./nano-id.md) 或[序列](../../../field-sequence/index.md)。
 
 ## 适用场景
 
@@ -108,6 +108,6 @@ UUID 字段适合在集成和公开标识场景中使用。
 ## 相关链接
 
 - [字段](../index.md) — 了解字段的作用、分类和映射逻辑
-- [普通表](../../collection/general.md) — 在普通表中创建和管理字段
+- [普通表](../../../data-source-main/general-collection.md) — 在普通表中创建和管理字段
 - [Snowflake ID](./snowflake-id.md) — 使用默认雪花 ID
 - [Nano ID](./nano-id.md) — 使用短随机 ID

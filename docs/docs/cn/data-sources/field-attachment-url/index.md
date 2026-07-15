@@ -12,7 +12,7 @@ keywords: "附件 URL,attachment url,外部文件,URL,NocoBase"
 
 附件 URL 字段适合文件已经存放在外部系统、对象存储或 CDN 中，只需要在 NocoBase 中保存访问地址的场景。
 
-如果需要由 NocoBase 上传和管理文件，选择[附件](./attachment.md)。如果只是普通网页地址，选择 [URL](../basic/url.md)。
+如果需要由 NocoBase 上传和管理文件，选择[附件](../file-manager/field-attachment.md)。如果只是普通网页地址，选择 [URL](../data-modeling/collection-fields/basic/url.md)。
 
 ## 适用场景
 
@@ -112,6 +112,6 @@ keywords: "附件 URL,attachment url,外部文件,URL,NocoBase"
 ## 相关链接
 
 - [字段](../index.md) — 了解字段的作用、分类和映射逻辑
-- [普通表](../../collection/general.md) — 在普通表中创建和管理字段
-- [附件](./attachment.md) — 上传和关联 NocoBase 文件
-- [URL](../basic/url.md) — 保存普通链接
+- [普通表](../data-source-main/general-collection.md) — 在普通表中创建和管理字段
+- [附件](../file-manager/field-attachment.md) — 上传和关联 NocoBase 文件
+- [URL](../data-modeling/collection-fields/basic/url.md) — 保存普通链接

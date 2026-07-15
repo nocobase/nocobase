@@ -111,7 +111,7 @@ keywords: "评论表,评论功能,富文本评论,多级评论,Collection Commen
 
 ## 相关链接
 
-- [普通表](./general.md) — 查看通用配置和区块使用方式
-- [关系字段](../field/relation/index.md) — 了解业务表与评论表的关联方式
+- [普通表](../data-source-main/general-collection.md) — 查看通用配置和区块使用方式
+- [关系字段](../data-modeling/collection-fields/associations/index.md) — 了解业务表与评论表的关联方式
 - [评论插件](../../plugins/@nocobase/plugin-comments/index.md) — 查看评论区块和评论能力
 - [多空间](../../multi-app/multi-space/index.md) — 了解空间字段和空间隔离能力

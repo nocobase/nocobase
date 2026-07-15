@@ -12,7 +12,7 @@ keywords: "Markdown,markdown,内容字段,NocoBase"
 
 Markdown 字段适合说明文档、处理方案、知识库正文、变更记录等内容。它保存的是文本，页面展示时按 Markdown 渲染。
 
-如果需要所见即所得编辑体验，可以选择[富文本](./rich-text.md)或 [Markdown Vditor](./markdown-vditor.md)。
+如果需要所见即所得编辑体验，可以选择[富文本](./rich-text.md)或 [Markdown Vditor](../../../field-markdown-vditor/index.md)。
 
 ## 适用场景
 
@@ -108,7 +108,7 @@ Markdown 字段适合在内容编辑和详情展示中使用。
 ## 相关链接
 
 - [字段](../index.md) — 了解字段的作用、分类和映射逻辑
-- [普通表](../../collection/general.md) — 在普通表中创建和管理字段
-- [Markdown Vditor](./markdown-vditor.md) — 使用 Vditor 编辑 Markdown
+- [普通表](../../../data-source-main/general-collection.md) — 在普通表中创建和管理字段
+- [Markdown Vditor](../../../field-markdown-vditor/index.md) — 使用 Vditor 编辑 Markdown
 - [富文本](./rich-text.md) — 使用富文本编辑内容
 - [多行文本](../basic/textarea.md) — 保存纯文本长内容

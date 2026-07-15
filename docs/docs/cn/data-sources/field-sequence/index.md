@@ -108,6 +108,6 @@ keywords: "序列,sequence,编号,自动编号,NocoBase"
 ## 相关链接
 
 - [字段](../index.md) — 了解字段的作用、分类和映射逻辑
-- [普通表](../../collection/general.md) — 在普通表中创建和管理字段
-- [单行文本](../basic/input.md) — 手工维护业务编号
-- [Snowflake ID](./snowflake-id.md) — 使用内部主键 ID
+- [普通表](../data-source-main/general-collection.md) — 在普通表中创建和管理字段
+- [单行文本](../data-modeling/collection-fields/basic/input.md) — 手工维护业务编号
+- [Snowflake ID](../data-modeling/collection-fields/advanced/snowflake-id.md) — 使用内部主键 ID

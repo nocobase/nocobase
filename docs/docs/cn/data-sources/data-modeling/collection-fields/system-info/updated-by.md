@@ -108,6 +108,6 @@ keywords: "更新人,updatedBy,系统字段,用户,NocoBase"
 ## 相关链接
 
 - [字段](../index.md) — 了解字段的作用、分类和映射逻辑
-- [普通表](../../collection/general.md) — 在普通表中创建和管理字段
+- [普通表](../../../data-source-main/general-collection.md) — 在普通表中创建和管理字段
 - [创建人](./created-by.md) — 自动记录创建用户
-- [关系字段](../relation/index.md) — 创建业务负责人等用户关系
+- [关系字段](../associations/index.md) — 创建业务负责人等用户关系

@@ -108,6 +108,6 @@ Unix 时间戳字段适合外部系统对接和日志类场景。
 ## 相关链接
 
 - [字段](../index.md) — 了解字段的作用、分类和映射逻辑
-- [普通表](../../collection/general.md) — 在普通表中创建和管理字段
+- [普通表](../../../data-source-main/general-collection.md) — 在普通表中创建和管理字段
 - [日期时间（含时区）](./datetime.md) — 保存普通日期时间
 - [整数](../basic/integer.md) — 保存普通整数

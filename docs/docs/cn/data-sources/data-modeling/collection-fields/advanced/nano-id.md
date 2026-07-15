@@ -12,7 +12,7 @@ keywords: "Nano ID,nanoid,唯一标识,NocoBase"
 
 Nano ID 适合短链接、公开编号、外部引用 ID 等需要较短字符串标识的场景。
 
-如果要作为默认内部主键，Snowflake ID 通常更直接。如果要可读业务编号，选择[序列](./sequence.md)。
+如果要作为默认内部主键，Snowflake ID 通常更直接。如果要可读业务编号，选择[序列](../../../field-sequence/index.md)。
 
 ## 适用场景
 
@@ -108,7 +108,7 @@ Nano ID 字段适合公开短标识和外部引用场景。
 ## 相关链接
 
 - [字段](../index.md) — 了解字段的作用、分类和映射逻辑
-- [普通表](../../collection/general.md) — 在普通表中创建和管理字段
+- [普通表](../../../data-source-main/general-collection.md) — 在普通表中创建和管理字段
 - [Snowflake ID](./snowflake-id.md) — 使用默认内部 ID
 - [UUID](./uuid.md) — 使用 UUID
-- [序列](./sequence.md) — 生成可读业务编号
+- [序列](../../../field-sequence/index.md) — 生成可读业务编号
