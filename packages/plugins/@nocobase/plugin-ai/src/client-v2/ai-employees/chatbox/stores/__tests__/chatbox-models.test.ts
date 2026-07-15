@@ -9,11 +9,13 @@
 
 import { autorun } from '@nocobase/flow-engine';
 import { describe, expect, it } from 'vitest';
-import type { AIEmployee, ContextItem, Message, ToolCall } from '../../../types';
+import type { AIEmployee, ContextItem, Conversation, Message, ToolCall } from '../../../types';
 import { ChatBoxModel } from '../chat-box';
+import { ChatConversationModel } from '../chat-conversations';
 import { ChatMessageModel, CHAT_DEFAULT_SESSION_KEY } from '../chat-messages';
 import { ChatToolCallModel } from '../chat-tool-call';
 import { ChatToolModel } from '../chat-tools';
+import { WorkflowTaskModel, type WorkflowTask } from '../workflow-tasks';
 
 const employee = (username: string): AIEmployee => ({
   username,
@@ -35,6 +37,14 @@ const contextItem = (type: string, uid: string): ContextItem => ({
   uid,
 });
 
+const conversation = (sessionId: string, read = false): Conversation => ({
+  sessionId,
+  title: sessionId,
+  updatedAt: '2026-07-16T00:00:00.000Z',
+  aiEmployee: employee('atlas'),
+  read,
+});
+
 const toolCall = (id: string, name: string): ToolCall<unknown> => ({
   id,
   type: 'function',
@@ -53,6 +63,14 @@ const messageWithToolCalls = (messageId: string, toolCalls: ToolCall<unknown>[])
     messageId,
     tool_calls: toolCalls,
   },
+});
+
+const workflowTask = (sessionId: string, status = 'pending'): WorkflowTask => ({
+  id: sessionId,
+  sessionId,
+  workflowTitle: 'Workflow',
+  nodeTitle: 'Node',
+  status,
 });
 
 describe('chatbox runtime models', () => {
@@ -233,5 +251,63 @@ describe('chatbox runtime models', () => {
     expect(model.activeTool).toMatchObject({ id: 'tool-b' });
     expect(model.activeMessageId).toBe('message-b');
     expect(model.adjustArgs).toEqual({ title: 'updated' });
+  });
+
+  it('updates ChatConversationModel list UI state and unread counts', () => {
+    const model = new ChatConversationModel();
+
+    model.setCurrentConversation('session-a');
+    model.setKeyword('review');
+    model.setWebSearch(true);
+    model.setConversationSegmented('workflowTasks');
+    model.setConversations([conversation('session-a'), conversation('session-b', true)]);
+    model.setConversations((previous) => [...previous, conversation('session-c')]);
+    model.setUnreadCount((previous) => previous + 2);
+    model.markConversationRead('session-a');
+
+    expect(model.currentConversation).toBe('session-a');
+    expect(model.keyword).toBe('review');
+    expect(model.webSearch).toBe(true);
+    expect(model.conversationSegmented).toBe('workflowTasks');
+    expect(model.conversations.map((item) => item.sessionId)).toEqual(['session-a', 'session-b', 'session-c']);
+    expect(model.conversations[0].read).toBe(true);
+    expect(model.unreadCount).toBe(1);
+
+    model.markConversationRead('session-a');
+    model.markConversationRead('missing-session');
+
+    expect(model.unreadCount).toBe(1);
+  });
+
+  it('updates WorkflowTaskModel list UI state, normalization, and unread counts', () => {
+    const model = new WorkflowTaskModel();
+
+    model.setWorkflowTasks([workflowTask('session-pending', 'pending_approval')]);
+    model.setWorkflowTasks((previous) => [...previous, workflowTask('session-approved', 'approved')]);
+    model.setCurrentWorkflowTask((previous) => ({
+      ...(previous ?? workflowTask('session-approved')),
+      readonly: true,
+    }));
+    model.setUnreadCount((previous) => previous + 2);
+    model.setLoading(true);
+    model.setKeyword('approval');
+    model.setSelectedJobStatus(1);
+    model.markWorkflowTaskRead('session-pending');
+
+    expect(model.workflowTasks.map((item) => ({ sessionId: item.sessionId, jobStatus: item.jobStatus }))).toEqual([
+      { sessionId: 'session-pending', jobStatus: 0 },
+      { sessionId: 'session-approved', jobStatus: 1 },
+    ]);
+    expect(model.currentWorkflowTask).toMatchObject({ sessionId: 'session-approved', readonly: true });
+    expect(model.loading).toBe(true);
+    expect(model.keyword).toBe('approval');
+    expect(model.selectedJobStatus).toBe(1);
+    expect(model.workflowTasks[0].read).toBe(true);
+    expect(model.unreadCount).toBe(1);
+
+    model.markWorkflowTaskRead('session-pending');
+    model.markWorkflowTaskRead('missing-session');
+
+    expect(model.unreadCount).toBe(1);
   });
 });

@@ -79,6 +79,11 @@ afterEach(() => {
   runtime.chatBoxModel.setSenderValue('');
   runtime.chatToolModel.setActiveTool(null);
   runtime.chatToolModel.setOpenToolModal(false);
+  runtime.chatConversationModel.setCurrentConversation(undefined);
+  runtime.chatConversationModel.setConversations([]);
+  runtime.chatConversationModel.setUnreadCount(0);
+  runtime.workflowTaskModel.setWorkflowTasks([]);
+  runtime.workflowTaskModel.setUnreadCount(0);
 });
 
 const RuntimeReader: React.FC = () => {
@@ -152,7 +157,31 @@ describe('chatbox runtime context', () => {
 
     expect(secondRuntime).toBe(firstRuntime);
     expect(secondRuntime.chatBoxModel).toBe(firstRuntime.chatBoxModel);
+    expect(secondRuntime.chatConversationModel).toBe(firstRuntime.chatConversationModel);
     expect(secondRuntime.chatMessageModel).toBe(firstRuntime.chatMessageModel);
+    expect(secondRuntime.workflowTaskModel).toBe(firstRuntime.workflowTaskModel);
+  });
+
+  it('creates isolated conversation and workflow models per runtime', () => {
+    const firstRuntime = createChatBoxRuntime();
+    const secondRuntime = createChatBoxRuntime();
+
+    firstRuntime.chatConversationModel.setCurrentConversation('session-a');
+    firstRuntime.chatConversationModel.setUnreadCount(1);
+    firstRuntime.workflowTaskModel.setWorkflowTasks([
+      {
+        id: 'task-a',
+        sessionId: 'task-session-a',
+        workflowTitle: 'Workflow',
+        nodeTitle: 'Node',
+        status: 'approved',
+      },
+    ]);
+
+    expect(secondRuntime.chatConversationModel.currentConversation).toBeUndefined();
+    expect(secondRuntime.chatConversationModel.unreadCount).toBe(0);
+    expect(secondRuntime.workflowTaskModel.workflowTasks).toEqual([]);
+    expect(firstRuntime.workflowTaskModel.workflowTasks[0].jobStatus).toBe(1);
   });
 
   it('provides the global runtime from ChatBoxLayout', () => {

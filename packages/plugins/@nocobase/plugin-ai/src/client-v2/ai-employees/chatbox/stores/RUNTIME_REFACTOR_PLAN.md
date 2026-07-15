@@ -522,7 +522,7 @@ Tests:
 
 ### T10. Implement Conversation And Workflow Runtime Models
 
-Status: `Pending`
+Status: `Done`
 
 Dependencies: T9
 
@@ -541,6 +541,12 @@ Tests:
 
 - Add or update model tests covering conversation setters, unread count updates, workflow task normalization, workflow task read marking, and runtime isolation.
 - Run touched-file eslint and related store/runtime tests.
+- Verification on 2026-07-16:
+  - `yarn eslint --fix packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/chat-conversations.ts packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/workflow-tasks.ts packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/runtime.tsx packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/chatbox-models.test.ts packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/chatbox-runtime.test.tsx`: passed.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/chatbox-models.test.ts --run --reporter=verbose`: passed, 9 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/chatbox-runtime.test.tsx --run --reporter=verbose`: passed, 9 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/chatbox-stores.test.ts --run --reporter=verbose`: passed, 4 tests.
+  - `yarn eslint --fix packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/RUNTIME_REFACTOR_PLAN.md`: attempted, but the current ESLint configuration parses `.md` as JavaScript and fails at line 1 with `Parsing error: Invalid character`.
 - Commit after tests pass.
 
 ### T11. Migrate Conversation And Workflow Consumers To Runtime Models

@@ -8,6 +8,7 @@
  */
 
 import { getOrCreateGlobalStore } from '../../stores/global-store';
+import { action, define, observable } from '@nocobase/flow-engine';
 import { createObservableStore } from './create-selectors';
 
 export type WorkflowTask = {
@@ -46,7 +47,9 @@ export type WorkflowTaskDetail = WorkflowTask & {
   } | null;
 };
 
-type WorkflowTasksState = {
+type WorkflowTaskStateUpdater<T> = T | ((prev: T) => T);
+
+export type WorkflowTasksState = {
   workflowTasks: WorkflowTask[];
   currentWorkflowTask?: WorkflowTaskDetail;
   unreadCount: number;
@@ -55,7 +58,7 @@ type WorkflowTasksState = {
   selectedJobStatus?: number;
 };
 
-type WorkflowTasksActions = {
+export type WorkflowTasksActions = {
   setWorkflowTasks: (workflowTasks: WorkflowTask[] | ((prev: WorkflowTask[]) => WorkflowTask[])) => void;
   setCurrentWorkflowTask: (
     workflowTask: WorkflowTaskDetail | undefined | ((prev?: WorkflowTaskDetail) => WorkflowTaskDetail | undefined),
@@ -67,7 +70,7 @@ type WorkflowTasksActions = {
   setSelectedJobStatus: (selectedJobStatus: number | undefined) => void;
 };
 
-const JOB_STATUS = {
+export const JOB_STATUS = {
   PENDING: 0,
   RESOLVED: 1,
   FAILED: -1,
@@ -91,7 +94,7 @@ const aiWorkflowTaskJobStatusMap: Record<string, number> = {
   retry_needed: JOB_STATUS.RETRY_NEEDED,
 };
 
-const normalizeWorkflowTask = (workflowTask: WorkflowTask): WorkflowTask => {
+export const normalizeWorkflowTask = (workflowTask: WorkflowTask): WorkflowTask => {
   if (typeof workflowTask.jobStatus === 'number') {
     return workflowTask;
   }
@@ -101,6 +104,81 @@ const normalizeWorkflowTask = (workflowTask: WorkflowTask): WorkflowTask => {
     jobStatus: aiWorkflowTaskJobStatusMap[workflowTask.status] ?? JOB_STATUS.PENDING,
   };
 };
+
+export class WorkflowTaskModel implements WorkflowTasksState, WorkflowTasksActions {
+  workflowTasks: WorkflowTask[] = observable.shallow([]);
+  currentWorkflowTask: WorkflowTaskDetail | undefined = undefined;
+  unreadCount = 0;
+  loading = false;
+  keyword = '';
+  selectedJobStatus: number | undefined = undefined;
+
+  constructor() {
+    define(this, {
+      workflowTasks: observable.shallow,
+      currentWorkflowTask: observable.ref,
+      unreadCount: observable.ref,
+      loading: observable.ref,
+      keyword: observable.ref,
+      selectedJobStatus: observable.ref,
+      setWorkflowTasks: action,
+      setCurrentWorkflowTask: action,
+      setUnreadCount: action,
+      markWorkflowTaskRead: action,
+      setLoading: action,
+      setKeyword: action,
+      setSelectedJobStatus: action,
+    });
+  }
+
+  setWorkflowTasks = (workflowTasks: WorkflowTaskStateUpdater<WorkflowTask[]>) => {
+    const nextWorkflowTasks = typeof workflowTasks === 'function' ? workflowTasks(this.workflowTasks) : workflowTasks;
+    this.workflowTasks = nextWorkflowTasks.map(normalizeWorkflowTask);
+  };
+
+  setCurrentWorkflowTask = (
+    currentWorkflowTask:
+      | WorkflowTaskDetail
+      | undefined
+      | ((prev?: WorkflowTaskDetail) => WorkflowTaskDetail | undefined),
+  ) => {
+    this.currentWorkflowTask =
+      typeof currentWorkflowTask === 'function' ? currentWorkflowTask(this.currentWorkflowTask) : currentWorkflowTask;
+  };
+
+  setUnreadCount = (unreadCount: WorkflowTaskStateUpdater<number>) => {
+    this.unreadCount = typeof unreadCount === 'function' ? unreadCount(this.unreadCount) : unreadCount;
+  };
+
+  markWorkflowTaskRead = (sessionId: string) => {
+    const target = this.workflowTasks.find((item) => item.sessionId === sessionId);
+    if (!target || target.read) {
+      return;
+    }
+
+    this.workflowTasks = this.workflowTasks.map((item) =>
+      item.sessionId === sessionId
+        ? {
+            ...item,
+            read: true,
+          }
+        : item,
+    );
+    this.unreadCount = Math.max(0, this.unreadCount - 1);
+  };
+
+  setLoading = (loading: boolean) => {
+    this.loading = loading;
+  };
+
+  setKeyword = (keyword: string) => {
+    this.keyword = keyword;
+  };
+
+  setSelectedJobStatus = (selectedJobStatus: number | undefined) => {
+    this.selectedJobStatus = selectedJobStatus;
+  };
+}
 
 export const useWorkflowTasksStore = getOrCreateGlobalStore('@nocobase/plugin-ai/workflow-tasks-store', () =>
   createObservableStore<WorkflowTasksState & WorkflowTasksActions>((set) => ({

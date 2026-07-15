@@ -10,22 +10,28 @@
 import React, { createContext, useContext } from 'react';
 import { getOrCreateGlobalStore } from '../../stores/global-store';
 import { ChatBoxModel } from './chat-box';
+import { ChatConversationModel } from './chat-conversations';
 import { ChatMessageModel } from './chat-messages';
 import { ChatToolCallModel } from './chat-tool-call';
 import { ChatToolModel } from './chat-tools';
+import { WorkflowTaskModel } from './workflow-tasks';
 
 export type ChatBoxRuntime = {
   chatBoxModel: ChatBoxModel;
+  chatConversationModel: ChatConversationModel;
   chatMessageModel: ChatMessageModel;
   chatToolCallModel: ChatToolCallModel;
   chatToolModel: ChatToolModel;
+  workflowTaskModel: WorkflowTaskModel;
 };
 
 export const createChatBoxRuntime = (runtime?: Partial<ChatBoxRuntime>): ChatBoxRuntime => ({
   chatBoxModel: runtime?.chatBoxModel ?? new ChatBoxModel(),
+  chatConversationModel: runtime?.chatConversationModel ?? new ChatConversationModel(),
   chatMessageModel: runtime?.chatMessageModel ?? new ChatMessageModel(),
   chatToolCallModel: runtime?.chatToolCallModel ?? new ChatToolCallModel(),
   chatToolModel: runtime?.chatToolModel ?? new ChatToolModel(),
+  workflowTaskModel: runtime?.workflowTaskModel ?? new WorkflowTaskModel(),
 });
 
 export const getGlobalChatBoxRuntime = () =>
