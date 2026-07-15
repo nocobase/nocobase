@@ -17,6 +17,7 @@ export type AttachmentSource = {
   dataSourceKey?: string;
   collectionName?: string;
   field?: string;
+  documentCache?: boolean;
   trustworthy?: boolean;
 };
 
@@ -81,11 +82,12 @@ export function getAttachmentSource(attachment: unknown): AttachmentSource | nul
   if (!isRecord(attachment) || !isRecord(attachment.source)) {
     return null;
   }
-  const { dataSourceKey, collectionName, field, trustworthy } = attachment.source;
+  const { dataSourceKey, collectionName, field, documentCache, trustworthy } = attachment.source;
   const source = {
     dataSourceKey: typeof dataSourceKey === 'string' && dataSourceKey ? dataSourceKey : 'main',
     ...(typeof collectionName === 'string' && collectionName ? { collectionName } : {}),
     ...(typeof field === 'string' ? { field } : {}),
+    ...(typeof documentCache === 'boolean' ? { documentCache } : {}),
     ...(trustworthy === true ? { trustworthy } : {}),
   };
   if (!source.trustworthy && !source.collectionName) {

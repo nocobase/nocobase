@@ -314,4 +314,45 @@ describe('LLM provider baseURL guard', () => {
       },
     });
   });
+
+  it('accepts external attachments without a local storage id', async () => {
+    const app = {
+      ...createApp(),
+      pm: {
+        get: () => ({
+          getFileStream: async () => ({
+            stream: Readable.from([Buffer.from('remote')]),
+          }),
+        }),
+      },
+    } as unknown as Application;
+    const provider = new TestLLMProvider({ app });
+
+    const parsed = await provider.parseAttachment(
+      {
+        get: () => '',
+      } as unknown as Context,
+      {
+        id: 10,
+        title: 'remote image',
+        filename: 'remote.png',
+        mimetype: 'image/png',
+        path: '',
+        storageId: null,
+        source: {
+          dataSourceKey: 'external',
+          collectionName: 'attachments',
+        },
+      } as unknown as AttachmentModel,
+    );
+
+    expect(parsed).toMatchObject({
+      placement: 'contentBlocks',
+      content: {
+        image_url: {
+          url: 'data:image/png;base64,cmVtb3Rl',
+        },
+      },
+    });
+  });
 });

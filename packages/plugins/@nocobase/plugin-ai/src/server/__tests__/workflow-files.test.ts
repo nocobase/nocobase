@@ -19,6 +19,41 @@ vi.mock('axios', () => ({
 }));
 
 describe('workflow AI employee files', () => {
+  it('preserves external data source metadata for attachment fields', async () => {
+    const plugin = {} as Plugin;
+    const attachmentPart: { attachments?: unknown[] } = {};
+
+    await Files.resolvers(plugin, attachmentPart).resolveAttachments([
+      {
+        type: 'attachments',
+        value: {
+          id: 10,
+          filename: 'remote.pdf',
+          source: {
+            dataSourceKey: 'external',
+            collectionName: 'attachments',
+            field: 'orders.files',
+            documentCache: false,
+          },
+        } as unknown as string,
+      },
+    ]);
+
+    expect(attachmentPart.attachments).toEqual([
+      {
+        id: 10,
+        filename: 'remote.pdf',
+        source: {
+          dataSourceKey: 'external',
+          collectionName: 'attachments',
+          field: 'orders.files',
+          documentCache: false,
+          trustworthy: true,
+        },
+      },
+    ]);
+  });
+
   it('does not overwrite stored filenames when resolving file urls', async () => {
     vi.mocked(axios.get).mockResolvedValue({
       data: Buffer.from('image'),
