@@ -421,11 +421,13 @@ describe('file manager > server', () => {
             mimetype: 'text/plain',
             storageId: defaultStorage.id,
             meta: {},
+            local: false,
           },
         });
 
         expect(body.data.url).toBe(`/files/main/main/attachments/${body.data.id}${body.data.extname}`);
         expect(body.data.preview).toBe(`/files/main/main/attachments/${body.data.id}${body.data.extname}?preview=1`);
+        expect(body.data.local).toBe(true);
       });
 
       it('local (default with base url) attachment with env', async () => {
@@ -929,10 +931,13 @@ describe('file manager > server', () => {
             storageId: storage.id,
           },
         });
+        const getResponse = await agent.resource('attachments').get({ filterByTk: file.id });
 
         const response = await loggedAgent.get(`${file.url}?download=1`);
         const location = new URL(response.headers.location);
 
+        expect(file.toJSON()).toMatchObject({ local: false });
+        expect(getResponse.body.data.local).toBe(false);
         expect(response.status).toBe(302);
         expect(location.searchParams.get('response-content-disposition')).toContain('attachment');
         expect(location.searchParams.get('X-Amz-Signature')).toBeTruthy();
@@ -1047,6 +1052,7 @@ describe('file manager > server', () => {
         });
         expect(associatedFile.get('userId')).toBeNull();
         expect(associatedFile.get('local')).toBe(true);
+        expect(associatedFile.toJSON()).toMatchObject({ local: true });
       });
 
       it('uses current app name in permanent URL and rejects other app names', async () => {

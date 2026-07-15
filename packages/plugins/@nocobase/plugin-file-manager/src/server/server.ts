@@ -45,6 +45,23 @@ const DEFAULT_DATA_SOURCE_KEY = 'main';
 
 type AttachmentRecord = Model & AttachmentModel;
 
+type FileModelAttributes = AttachmentModel & {
+  local?: boolean;
+};
+
+class FileModel extends Model<FileModelAttributes> {
+  public toJSON<T extends FileModelAttributes>(): T {
+    const values = super.toJSON<T>();
+    const local = this.get('local');
+    // Keep `local` virtual so round-tripped file values never become a SQL column,
+    // while still exposing the computed storage flag required by the previewer.
+    if (typeof local === 'boolean') {
+      values.local = local;
+    }
+    return values;
+  }
+}
+
 class FileDeleteError extends Error {
   data: Model;
 
@@ -266,7 +283,7 @@ export class PluginFileManagerServer extends Plugin {
 
   async beforeLoad() {
     getTemporaryFileAccessExpiresIn();
-    this.db.registerModels({ FileModel: Model });
+    this.db.registerModels({ FileModel });
     this.db.on('beforeDefineCollection', (options) => {
       if (options.template === 'file') {
         options.model = 'FileModel';
