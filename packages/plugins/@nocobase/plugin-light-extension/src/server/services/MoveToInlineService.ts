@@ -36,6 +36,7 @@ import type {
 import { LightExtensionError } from '../../shared/errors';
 import { LightExtensionEntryService } from './LightExtensionEntryService';
 import { rewriteRelativeImports } from './MoveSourceService';
+import { getReferenceOwnerAdapterByUse } from './ReferenceOwnerRegistry';
 import type { ReferenceService } from './ReferenceService';
 import type { LightExtensionServiceContext } from './LightExtensionRepoService';
 import {
@@ -115,7 +116,7 @@ export class MoveToInlineService {
     relocatedFiles: LightExtensionMoveSourceWorkspaceFile[],
     transaction: Transaction,
   ): Promise<LightExtensionMoveToInlineResult> {
-    const locator = requireJSBlockLocator(input.locator, input.kind);
+    const locator = requireFlowModelStepLocator(input.locator);
     const registry = this.getAdapterRegistry();
     const vscFileService = this.getVscFileService();
     if (!registry || !vscFileService) {
@@ -181,7 +182,7 @@ export class MoveToInlineService {
     }
 
     const legacy = await adapter.readLegacy({ locator, ctx: adapterContext });
-    if (legacy.metadata?.modelUse !== 'JSBlockModel') {
+    if (!isMoveToInlineHostSupported(input.kind, legacy.metadata?.modelUse)) {
       throw unsupportedLocator(locator);
     }
 
@@ -630,11 +631,18 @@ function buildOverwriteChanges(
   ].sort((left, right) => left.path.localeCompare(right.path));
 }
 
-function requireJSBlockLocator(locator: RunJSSourceLocator, kind: string): FlowModelStepLocator {
-  if (locator.kind !== 'flowModel.step' || kind !== 'js-block') {
+function requireFlowModelStepLocator(locator: RunJSSourceLocator): FlowModelStepLocator {
+  if (locator.kind !== 'flowModel.step') {
     throw unsupportedLocator(locator);
   }
   return locator;
+}
+
+export function isMoveToInlineHostSupported(kind: string, modelUse: unknown): boolean {
+  if (kind === 'runjs' || typeof modelUse !== 'string') {
+    return false;
+  }
+  return getReferenceOwnerAdapterByUse(modelUse)?.kind === kind;
 }
 
 async function lockFlowModel(db: Database, modelUid: string, transaction: Transaction): Promise<void> {

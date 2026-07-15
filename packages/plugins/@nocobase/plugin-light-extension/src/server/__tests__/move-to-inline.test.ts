@@ -15,7 +15,11 @@ import { describe, expect, it, vi } from 'vitest';
 import type { LightExtensionEntryRecord } from '../../shared/types';
 import { createLightExtensionsResource } from '../resources/lightExtensions';
 import type { LightExtensionCompilePreviewService } from '../services/LightExtensionCompilePreviewService';
-import { collectAndRelocateInlineFiles, MoveToInlineService } from '../services/MoveToInlineService';
+import {
+  collectAndRelocateInlineFiles,
+  isMoveToInlineHostSupported,
+  MoveToInlineService,
+} from '../services/MoveToInlineService';
 
 const locator = {
   kind: 'flowModel.step',
@@ -62,6 +66,19 @@ const entry: LightExtensionEntryRecord = {
 };
 
 describe('MoveToInlineService', () => {
+  it.each([
+    ['js-block', 'JSBlockModel', true],
+    ['js-field', 'JSFieldModel', true],
+    ['js-field', 'JSEditableFieldModel', true],
+    ['js-field', 'JSColumnModel', true],
+    ['js-action', 'JSActionModel', true],
+    ['js-item', 'JSItemModel', true],
+    ['js-block', 'JSColumnModel', false],
+    ['runjs', 'JSColumnModel', false],
+  ])('checks whether %s can move from %s back to inline code', (kind, modelUse, expected) => {
+    expect(isMoveToInlineHostSupported(kind, modelUse)).toBe(expected);
+  });
+
   it('copies only runtime-reachable entry and shared modules', () => {
     const files = collectAndRelocateInlineFiles({
       entryPath: entry.entryPath,

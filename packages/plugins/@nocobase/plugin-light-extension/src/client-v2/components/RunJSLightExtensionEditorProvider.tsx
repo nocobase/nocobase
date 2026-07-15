@@ -615,7 +615,7 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
         initialPath={currentBinding.entryPath}
         onFooterActionsChange={setFooterActions}
         onMoveToInline={
-          workspaceScope.kind === 'js-block' && effectiveLocator?.kind === 'flowModel.step' && api && !readonly
+          workspaceScope.kind !== 'runjs' && effectiveLocator?.kind === 'flowModel.step' && api && !readonly
             ? handleMoveToInline
             : undefined
         }

@@ -622,6 +622,47 @@ describe('RunJSLightExtensionEditorProvider', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  it('offers move to inline for JS column light extension entries', async () => {
+    const provider = createRunJSLightExtensionEditorProvider();
+    const api: ApiClientLike = {
+      request: vi.fn(async () => ({ data: { data: {} } })),
+    };
+    const value = {
+      code: 'ctx.render(String(ctx.value));',
+      version: 'v2',
+      sourceMode: 'light-extension',
+      sourceBinding: {
+        type: 'light-extension-entry' as const,
+        repoId: 'ler_fields',
+        entryId: 'lee_column',
+        entryPath: 'src/client/js-fields/record-summary-column/index.tsx',
+        kind: 'js-field' as const,
+      },
+    };
+
+    render(
+      <EditorViewHarness appApi={api} onClose={vi.fn()}>
+        {provider.renderEditor({
+          value,
+          locator: {
+            kind: 'flowModel.step',
+            modelUid: 'column_1',
+            flowKey: 'jsSettings',
+            stepKey: 'runJs',
+            paramPath: ['code'],
+          },
+          sourceMetadata: {
+            lightExtensionKind: 'js-field',
+            modelUse: 'JSColumnModel',
+          },
+          surfaceStyle: 'render',
+        })}
+      </EditorViewHarness>,
+    );
+
+    expect(await screen.findByRole('button', { name: 'move workspace to inline' })).toBeInTheDocument();
+  });
+
   it('refreshes the entry path by entryId before applying workspace access after a directory rename', async () => {
     const provider = createRunJSLightExtensionEditorProvider();
     const onPersistedChange = vi.fn();
