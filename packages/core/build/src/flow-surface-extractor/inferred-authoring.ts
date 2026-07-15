@@ -261,6 +261,7 @@ function isCollectionBackedBlock(snapshot: FlowSurfaceAutoSnapshot, modelUse: st
   return (
     baseClass === 'CollectionBlockModel' ||
     baseClass === 'DataBlockModel' ||
+    baseClass === 'TableBlockModel' ||
     snapshot.flows.some(
       (flow) => flow.modelUse === modelUse && String(flow.flowKey || '').startsWith('resourceSettings'),
     )

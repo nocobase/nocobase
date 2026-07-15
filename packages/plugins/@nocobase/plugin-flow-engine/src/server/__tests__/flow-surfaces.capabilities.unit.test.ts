@@ -15,6 +15,7 @@ import { FlowSurfacesService } from '../flow-surfaces/service';
 import {
   collectAutoSnapshotPublicCapabilities,
   collectJsonInferredAutoSnapshotCatalogItems,
+  collectNormalizedProviderCapabilities,
   collectProviderCatalogItems,
   filterProviderCatalogItemsForCatalog,
 } from '../flow-surfaces/capability-registry';
@@ -128,6 +129,48 @@ describe('flowSurfaces capabilities projection', () => {
         message: expect.stringContaining('getCapabilities is missing'),
       }),
     ]);
+  });
+
+  it('should preserve provider authoring hints outside the public capability projection', async () => {
+    const provider: FlowSurfaceCapabilitiesProvider = {
+      ownerPlugin: '@nocobase/plugin-gantt',
+      getCapabilities: () => [
+        {
+          id: 'blocks.gantt',
+          capabilityVersion: '1.0.0',
+          kind: 'block',
+          publicType: 'gantt',
+          label: 'Gantt',
+          semantic: { title: 'Gantt' },
+          implementation: { modelUse: 'GanttBlockModel' },
+          authoring: {
+            popupHosts: [
+              {
+                key: 'gantt.eventViewPopup',
+                modelUse: 'GanttEventViewActionModel',
+                subModelKey: 'eventViewAction',
+                defaultType: 'view',
+              },
+            ],
+          },
+        },
+      ],
+      resolveCreate: () => ({ use: 'GanttBlockModel' }),
+    };
+    const normalized = await collectNormalizedProviderCapabilities({
+      providerRegistry: createProviderRegistry([provider]),
+      enabledPackages: new Set(['@nocobase/plugin-gantt']),
+    });
+
+    expect(normalized[0].authoring).toEqual({
+      popupHosts: [
+        expect.objectContaining({
+          modelUse: 'GanttEventViewActionModel',
+          defaultType: 'view',
+        }),
+      ],
+    });
+    expect(normalized[0].publicItem).not.toHaveProperty('authoring');
   });
 
   function createGanttProvider(): FlowSurfaceCapabilitiesProvider {

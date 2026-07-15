@@ -80,6 +80,18 @@ const FLOW_SURFACE_DEFAULT_BLOCK_ACTIONS: Readonly<
       },
     },
   ],
+  dataBlock: [
+    { type: 'filter', scope: 'actions' },
+    { type: 'refresh', scope: 'actions' },
+    {
+      type: 'addNew',
+      scope: 'actions',
+      popup: {
+        tryTemplate: true,
+        [FLOW_SURFACE_INTERNAL_AUTO_SAVE_DEFAULT_POPUP_TEMPLATE_KEY]: true,
+      },
+    },
+  ],
   calendar: [
     { type: 'filter', scope: 'actions' },
     { type: 'turnPages', scope: 'actions' },

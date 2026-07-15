@@ -136,7 +136,7 @@ describe('flowSurfaces extractor scaffold', () => {
     const events = collectFlowSurfaceExtractorAstEvents({
       sourceFile: 'packages/plugins/@nocobase/plugin-demo/src/client-v2/plugin.tsx',
       source: `
-        class CustomBlockModel extends CollectionBlockModel {}
+        class CustomBlockModel extends TableBlockModel {}
 
         flowEngine.registerModels({ CustomBlockModel });
         CustomBlockModel.define({
@@ -175,7 +175,7 @@ describe('flowSurfaces extractor scaffold', () => {
     expect(snapshot.models).toEqual([
       expect.objectContaining({
         modelUse: 'CustomBlockModel',
-        modelBaseClass: 'CollectionBlockModel',
+        modelBaseClass: 'TableBlockModel',
       }),
     ]);
     expect(snapshot.menuItems).toEqual(

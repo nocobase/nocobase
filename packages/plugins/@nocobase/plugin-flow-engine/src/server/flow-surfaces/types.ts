@@ -279,6 +279,26 @@ export type FlowSurfaceJsonCreateRecipe = {
   settings?: FlowSurfaceSettingBinding[];
 };
 
+export type FlowSurfaceCapabilityPopupHost = {
+  key: string;
+  modelUse: string;
+  publicType?: string;
+  parentModelUse?: string;
+  subModelKey?: string;
+  childSurfaceKey?: string;
+  openViewPath?: string;
+  parentOpenViewMirrorPaths?: string[];
+  defaultType: 'addNew' | 'view' | 'edit';
+  hasCurrentRecord?: boolean;
+  templateStrategy?: 'preferTemplateThenFallback' | 'fallbackOnly';
+  openViewDefaults?: Record<string, unknown>;
+  confidence?: FlowSurfaceCapabilityConfidence;
+};
+
+export type FlowSurfaceCapabilityAuthoring = {
+  popupHosts?: FlowSurfaceCapabilityPopupHost[];
+};
+
 export type FlowSurfaceCapabilityManifestItem = {
   id: string;
   capabilityVersion?: string;
@@ -306,6 +326,7 @@ export type FlowSurfaceCapabilityManifestItem = {
   settingsSchema?: FlowSurfaceJsonSchema;
   configureOptions?: FlowSurfaceConfigureOptions;
   createRecipe?: FlowSurfaceJsonCreateRecipe;
+  authoring?: FlowSurfaceCapabilityAuthoring;
 };
 
 export type FlowSurfaceCapabilitiesProvider = {

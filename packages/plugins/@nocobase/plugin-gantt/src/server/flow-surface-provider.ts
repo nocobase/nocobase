@@ -67,6 +67,21 @@ export const ganttFlowSurfaceCapabilitiesProvider: FlowSurfaceCapabilitiesProvid
         additionalProperties: false,
         properties: {},
       },
+      authoring: {
+        popupHosts: [
+          {
+            key: 'gantt.eventViewPopup',
+            modelUse: 'GanttEventViewActionModel',
+            parentModelUse: 'GanttBlockModel',
+            subModelKey: 'eventViewAction',
+            parentOpenViewMirrorPaths: ['props.eventPopupSettings'],
+            defaultType: 'view',
+            hasCurrentRecord: true,
+            templateStrategy: 'preferTemplateThenFallback',
+            confidence: 'high',
+          },
+        ],
+      },
     },
   ],
   resolveCreate: (_capability, input) => ({
@@ -86,6 +101,9 @@ export const ganttFlowSurfaceCapabilitiesProvider: FlowSurfaceCapabilitiesProvid
     },
     subModels: {
       actions: [],
+      eventViewAction: {
+        use: 'GanttEventViewActionModel',
+      },
       columns: [
         {
           use: 'TableActionsColumnModel',

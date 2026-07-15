@@ -200,6 +200,18 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     ): Promise<FlowSurfaceCatalogItem[]>;
   };
 
+  type AutoDiscoveredDataBlockDefaultsHarness = {
+    applyAutoDiscoveredDataBlockDefaults(input: {
+      blockUid: string;
+      transaction?: unknown;
+      enabledPackages: ReadonlySet<string>;
+    }): Promise<void>;
+    buildFieldCatalog(
+      target: FlowSurfaceWriteTarget,
+      options?: Record<string, unknown>,
+    ): Promise<FlowSurfaceCatalogItem[]>;
+  };
+
   type DynamicReadbackProjector = {
     projectDynamicBlockReadbackTypes<T>(
       node: T,
@@ -392,6 +404,14 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
           source: 'packages/plugins/@nocobase/plugin-gantt/src/client-v2/plugin.tsx',
           evidenceSource: 'runtime',
           confidence: 'high',
+        },
+        {
+          type: 'model.classDeclared',
+          modelUse: 'GanttBlockModel',
+          modelBaseClass: 'TableBlockModel',
+          source: 'packages/plugins/@nocobase/plugin-gantt/src/client-v2/models/GanttBlockModel.tsx',
+          evidenceSource: 'ast',
+          confidence: 'medium',
         },
         {
           type: 'menu.itemRegistered',
@@ -2476,7 +2496,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     );
   });
 
-  it('should keep JSON inferred Gantt field surfaces closed without enabled plugin, json policy, or columns surface', async () => {
+  it('should expose table-compatible Gantt fields from model inheritance without json inferred policy', async () => {
     const createService = (input: {
       enabledPackages: ReadonlySet<string>;
       writePolicyMode?: 'manifestOnly';
@@ -2534,11 +2554,13 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
             `flowSurfaces addField target 'GanttBlockModel' is not a field container`,
           );
         },
-        resolveActionContainer: async () => {
-          throw new FlowSurfaceBadRequestError(
-            `flowSurfaces addAction target 'GanttBlockModel' is not an action surface`,
-          );
-        },
+        resolveActionContainer: async () => ({
+          parentUid: 'gantt-block',
+          subKey: 'actions',
+          subType: 'array',
+          ownerUid: 'gantt-block',
+          ownerUse: 'GanttBlockModel',
+        }),
         collectFilterFormTargets: async () => [],
       });
       vi.spyOn(service as unknown as LocatorGetterHarness, 'locator', 'get').mockReturnValue({
@@ -2565,6 +2587,16 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
           return String(payload.uid || 'created-gantt-column');
         },
       });
+      vi.spyOn(service as unknown as AddActionPrivateHarness, 'assertApprovalActionSingleton').mockResolvedValue(
+        undefined,
+      );
+      vi.spyOn(service as unknown as AddActionPrivateHarness, 'syncFlowTemplateUsagesForNodeTree').mockResolvedValue(
+        undefined,
+      );
+      vi.spyOn(service as unknown as AddActionPrivateHarness, 'syncApprovalRuntimeConfigForNode').mockResolvedValue(
+        undefined,
+      );
+      vi.spyOn(service as unknown as AddActionPrivateHarness, 'collectComposeActionKeys').mockResolvedValue({});
       vi.spyOn(service as unknown as CollectionGetterHarness, 'getCollection').mockReturnValue({
         name: 'tasks',
         dataSourceKey: 'main',
@@ -2579,14 +2611,89 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
       };
     };
 
+    const supported = createService({
+      enabledPackages: new Set(['@nocobase/plugin-gantt']),
+      writePolicyMode: 'manifestOnly',
+      hasColumns: true,
+    });
+    const supportedCatalog = await supported.service.catalog(
+      {
+        target: {
+          uid: 'gantt-block',
+        },
+        sections: ['fields'],
+      },
+      {
+        enabledPackages: supported.enabledPackages,
+      },
+    );
+
+    expect(supportedCatalog.fields).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          key: 'title',
+          wrapperUse: 'TableColumnModel',
+        }),
+      ]),
+    );
+    const supportedActionCatalog = await supported.service.catalog(
+      {
+        target: {
+          uid: 'gantt-block',
+        },
+        sections: ['actions'],
+      },
+      {
+        enabledPackages: supported.enabledPackages,
+      },
+    );
+    expect(supportedActionCatalog.actions?.map((item) => item.key)).toEqual(
+      expect.arrayContaining(['filter', 'refresh', 'addNew']),
+    );
+    await expect(
+      supported.service.addField(
+        {
+          target: {
+            uid: 'gantt-block',
+          },
+          fieldPath: 'title',
+        },
+        {
+          enabledPackages: supported.enabledPackages,
+        },
+      ),
+    ).resolves.toMatchObject({ fieldPath: 'title', wrapperUid: expect.any(String) });
+    await expect(
+      supported.service.addAction(
+        {
+          target: {
+            uid: 'gantt-block',
+          },
+          type: 'filter',
+        },
+        {
+          enabledPackages: supported.enabledPackages,
+        },
+      ),
+    ).resolves.toMatchObject({ scope: 'block' });
+    expect(supported.persistedPayloads).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          parentId: 'gantt-block',
+          subKey: 'columns',
+          use: 'TableColumnModel',
+        }),
+        expect.objectContaining({
+          parentId: 'gantt-block',
+          subKey: 'actions',
+          use: 'FilterActionModel',
+        }),
+      ]),
+    );
+
     for (const scenario of [
       {
         enabledPackages: new Set<string>(),
-        hasColumns: true,
-      },
-      {
-        enabledPackages: new Set(['@nocobase/plugin-gantt']),
-        writePolicyMode: 'manifestOnly' as const,
         hasColumns: true,
       },
       {
@@ -2623,6 +2730,75 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
       ).rejects.toBeInstanceOf(FlowSurfaceBadRequestError);
       expect(persistedPayloads).toHaveLength(0);
     }
+  });
+
+  it('should complete discovered data blocks with supported default actions and business fields', async () => {
+    const service = new FlowSurfacesService({
+      flowSurfaceAutoSnapshots: [createGanttAutoSnapshot({ inferredAuthoring: true })],
+      flowSurfaceCapabilityProviders: createProviderRegistry([]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const harness = service as unknown as AutoDiscoveredDataBlockDefaultsHarness;
+    const enabledPackages = new Set(['@nocobase/plugin-gantt']);
+    const fields = [
+      { name: 'createdAt', type: 'datetime', interface: 'createdAt' },
+      { name: 'title', type: 'string', interface: 'input' },
+      { name: 'startAt', type: 'datetime', interface: 'datetime' },
+      { name: 'endAt', type: 'datetime', interface: 'datetime' },
+    ];
+    const ganttNode = {
+      uid: 'gantt-block',
+      use: 'GanttBlockModel',
+      stepParams: {
+        resourceSettings: {
+          init: {
+            dataSourceKey: 'main',
+            collectionName: 'tasks',
+          },
+        },
+      },
+      subModels: {
+        actions: [],
+        columns: [{ uid: 'actions-column', use: 'TableActionsColumnModel' }],
+      },
+    };
+    vi.spyOn(service as unknown as RepositoryGetterHarness, 'repository', 'get').mockReturnValue({
+      findModelById: async () => ganttNode,
+    });
+    vi.spyOn(service as unknown as CollectionGetterHarness, 'getCollection').mockReturnValue({
+      name: 'tasks',
+      dataSourceKey: 'main',
+      filterTargetKey: 'id',
+      getFields: () => fields,
+      getField: (name: string) => fields.find((field) => field.name === name),
+    });
+    vi.spyOn(harness, 'buildFieldCatalog').mockResolvedValue(
+      ['title', 'startAt', 'endAt'].map((key) => ({
+        key,
+        label: key,
+        kind: 'field',
+        use: 'TableColumnModel',
+      })) as FlowSurfaceCatalogItem[],
+    );
+    vi.spyOn(service, 'catalog').mockResolvedValue({
+      actions: ['filter', 'refresh', 'addNew', 'bulkDelete'].map((key) => ({
+        key,
+        publicType: key,
+        label: key,
+        kind: 'action',
+        use: `${key}ActionModel`,
+        createSupported: true,
+      })),
+    } as never);
+    const addField = vi.spyOn(service, 'addField').mockResolvedValue({ uid: 'field' } as never);
+    const addAction = vi.spyOn(service, 'addAction').mockResolvedValue({ uid: 'action' } as never);
+
+    await harness.applyAutoDiscoveredDataBlockDefaults({
+      blockUid: 'gantt-block',
+      enabledPackages,
+    });
+
+    expect(addField.mock.calls.map(([values]) => values.fieldPath)).toEqual(['title', 'startAt', 'endAt']);
+    expect(addAction.mock.calls.map(([values]) => values.type)).toEqual(['filter', 'refresh', 'addNew']);
   });
 
   it('should accept provider publicType aliases while returning canonical payload', async () => {
@@ -2816,6 +2992,113 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
       use: providerModelUse,
       type: 'dryRun',
     });
+  });
+
+  it('should apply provider-declared popup host defaults after dynamic block creation', async () => {
+    const modelUse = 'ProviderTimelineBlockModel';
+    const baseProvider = createDryRunProvider({
+      modelUse,
+      resolveCreate: () => ({
+        use: modelUse,
+        subModels: {
+          eventViewAction: {
+            use: 'ProviderEventViewActionModel',
+          },
+        },
+      }),
+    });
+    const provider: FlowSurfaceCapabilitiesProvider = {
+      ...baseProvider,
+      getCapabilities: async (context) => {
+        const capabilities = await baseProvider.getCapabilities(context);
+        return capabilities.map((capability) => ({
+          ...capability,
+          capabilityVersion: '1.0.0',
+          authoring: {
+            popupHosts: [
+              {
+                key: 'timeline.eventViewPopup',
+                modelUse: 'ProviderEventViewActionModel',
+                subModelKey: 'eventViewAction',
+                defaultType: 'view',
+                hasCurrentRecord: true,
+              },
+            ],
+          },
+        }));
+      },
+    };
+    const enabledPackages = new Set(['@nocobase/plugin-dry-run']);
+    const service = new FlowSurfacesService({
+      flowSurfaceCapabilityProviders: createProviderRegistry([provider]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const harness = service as unknown as DynamicBlockWriteGateHarness;
+    let materializedRoot: Record<string, unknown> | null = null;
+    harness.catalog = async () => ({
+      blocks: [
+        {
+          key: 'dryRun',
+          label: 'Dry run',
+          use: modelUse,
+          kind: 'block',
+          publicType: 'dryRun',
+          ownerPlugin: '@nocobase/plugin-dry-run',
+          origin: 'provider',
+          createSupported: true,
+          availability: {
+            create: {
+              supported: true,
+            },
+          },
+        },
+      ],
+    });
+    vi.spyOn(service as unknown as RepositoryGetterHarness, 'repository', 'get').mockReturnValue({
+      upsertModel: async (payload) => {
+        materializedRoot = materializePersistedRoot(payload, 'created-provider-timeline');
+        return 'created-provider-timeline';
+      },
+      findModelById: async (uid) => findFlowNodeByUid(materializedRoot, uid) || materializedRoot,
+    });
+    const applyPopup = vi
+      .spyOn(service as unknown as JsonInferredPopupDefaultsHarness, 'applyInlineActionPopup')
+      .mockResolvedValue(undefined);
+
+    await harness.tryAddDynamicBlock({
+      values: {
+        type: 'dryRun',
+        initParams: {
+          collectionName: 'tasks',
+        },
+        settings: {
+          pageSize: 20,
+        },
+      },
+      options: {
+        deferAutoLayout: true,
+      },
+      enabledPackages,
+      blockType: 'dryRun',
+      target: {
+        uid: 'target-grid',
+      },
+      parentUid: 'parent-grid',
+      subKey: 'items',
+      subType: 'array',
+      popupProfile: null,
+    });
+
+    expect(applyPopup).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(String),
+      expect.objectContaining({ tryTemplate: true }),
+      expect.objectContaining({
+        popupActionContext: expect.objectContaining({
+          defaultType: 'view',
+          hasCurrentRecord: true,
+        }),
+      }),
+    );
   });
 
   it('should resolve provider-backed popup raw resource before dynamic create', async () => {

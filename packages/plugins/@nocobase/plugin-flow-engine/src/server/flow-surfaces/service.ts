@@ -689,6 +689,9 @@ type FlowSurfacePopupSaveAsTemplate = {
 
 type FlowSurfacePopupTemplateAliasSession = Map<string, string>;
 type FlowSurfaceDefaultActionSettings = Record<string, any>;
+type FlowSurfacePopupHostAuthoring = {
+  popupHosts?: FlowSurfaceAutoPopupHost[];
+};
 type FlowSurfaceRequestRoles = readonly string[] | string;
 type FlowSurfaceModelPatchOptions = { transaction?: any };
 type FlowSurfaceReadOptions = { transaction?: any; currentRoles?: FlowSurfaceRequestRoles };
@@ -721,6 +724,14 @@ const FORM_BLOCK_USES = new Set(['FormBlockModel', 'CreateFormModel', 'EditFormM
 const STATIC_BLOCK_PUBLIC_TYPES = new Set(BLOCK_KEY_BY_USE.values());
 const AUTO_SUBMIT_FORM_BLOCK_USES = new Set(['CreateFormModel', 'EditFormModel']);
 const FLOW_SURFACE_DEFAULT_ACTION_SETTINGS_KEYS = new Set(['filter']);
+const AUTO_DISCOVERED_DATA_BLOCK_ACTION_CONTAINER_USES = new Set([
+  'TableBlockModel',
+  'CalendarBlockModel',
+  'KanbanBlockModel',
+  'ListBlockModel',
+  'GridCardBlockModel',
+]);
+const AUTO_DISCOVERED_DATA_BLOCK_DEFAULT_FIELD_COUNT = 3;
 const ACTION_BUTTON_GENERAL_SETTING_KEYS = ['title', 'tooltip', 'icon', 'iconOnly', 'type', 'danger', 'color'];
 const DETAILS_BLOCK_USES = new Set(['DetailsBlockModel', ...APPROVAL_DETAILS_BLOCK_USES]);
 const SIMPLE_FORM_BLOCK_USES = new Set([
@@ -2916,8 +2927,11 @@ export class FlowSurfacesService {
     }
 
     if (catalogAnalysis.selectedSections.includes('actions')) {
+      const actionContainerUse = node
+        ? this.resolveAutoDiscoveredDataBlockActionContainerUse(String(node.use || ''), enabledPackages) || node.use
+        : undefined;
       const availableActions = node
-        ? getAvailableActionCatalogItems(node?.use, undefined, enabledPackages).filter(
+        ? getAvailableActionCatalogItems(actionContainerUse, undefined, enabledPackages).filter(
             (item) => item.scope !== 'record',
           )
         : getAvailableActionCatalogItems(undefined, undefined, enabledPackages).filter(
@@ -3404,6 +3418,73 @@ export class FlowSurfacesService {
     );
   }
 
+  private getAutoDiscoveredModelInheritanceChain(modelUse: string, enabledPackages: ReadonlySet<string>): string[] {
+    const normalizedUse = String(modelUse || '').trim();
+    if (
+      !normalizedUse ||
+      !this.autoSnapshots.some(
+        (snapshot) =>
+          enabledPackages.has(snapshot.plugin) && snapshot.models.some((model) => model.modelUse === normalizedUse),
+      )
+    ) {
+      return [];
+    }
+    const baseClassByUse = new Map<string, string>();
+    this.autoSnapshots.forEach((snapshot) => {
+      snapshot.models.forEach((model) => {
+        if (model.modelUse && model.modelBaseClass && !baseClassByUse.has(model.modelUse)) {
+          baseClassByUse.set(model.modelUse, model.modelBaseClass);
+        }
+      });
+    });
+    const chain: string[] = [];
+    const seen = new Set<string>();
+    let current = normalizedUse;
+    while (current && !seen.has(current)) {
+      chain.push(current);
+      seen.add(current);
+      current = baseClassByUse.get(current) || '';
+    }
+    return chain;
+  }
+
+  private resolveAutoDiscoveredDataBlockActionContainerUse(modelUse: string, enabledPackages: ReadonlySet<string>) {
+    return this.getAutoDiscoveredModelInheritanceChain(modelUse, enabledPackages).find((use) =>
+      AUTO_DISCOVERED_DATA_BLOCK_ACTION_CONTAINER_USES.has(use),
+    );
+  }
+
+  private async resolveAutoDiscoveredDataBlockFieldContainer(
+    uid: string,
+    options: {
+      transaction?: unknown;
+      enabledPackages: ReadonlySet<string>;
+    },
+  ): Promise<FlowSurfaceResolvedFieldContainer | null> {
+    const targetNode = await this.repository
+      .findModelById(uid, {
+        transaction: options.transaction as any,
+        includeAsyncNode: true,
+      })
+      .catch(() => null);
+    const ownerUse = String(targetNode?.use || '').trim();
+    if (
+      !targetNode?.uid ||
+      !Array.isArray(targetNode?.subModels?.columns) ||
+      this.resolveAutoDiscoveredDataBlockActionContainerUse(ownerUse, options.enabledPackages) !== 'TableBlockModel'
+    ) {
+      return null;
+    }
+    return {
+      ownerUid: String(targetNode.uid),
+      ownerUse: 'TableBlockModel',
+      parentUid: String(targetNode.uid),
+      subKey: 'columns',
+      subType: 'array',
+      wrapperUse: 'TableColumnModel',
+    };
+  }
+
   private async resolveAddFieldContainer(
     uid: string,
     options: {
@@ -3421,6 +3502,11 @@ export class FlowSurfacesService {
       });
     if (builtInContainer) {
       return builtInContainer as FlowSurfaceResolvedFieldContainer;
+    }
+
+    const autoDiscoveredDataBlockContainer = await this.resolveAutoDiscoveredDataBlockFieldContainer(uid, options);
+    if (autoDiscoveredDataBlockContainer) {
+      return autoDiscoveredDataBlockContainer;
     }
 
     if (options.allowJsonInferred !== false) {
@@ -4308,6 +4394,12 @@ export class FlowSurfacesService {
     const actionContainer = input.target
       ? await this.surfaceContext.resolveActionContainer(input.target, input.transaction).catch(() => null)
       : null;
+    const actionContainerUse = actionContainer?.ownerUse
+      ? this.resolveAutoDiscoveredDataBlockActionContainerUse(
+          actionContainer.ownerUse,
+          input.enabledPackages || new Set<string>(),
+        ) || actionContainer.ownerUse
+      : undefined;
     const recordActionContainerUse = getCatalogRecordActionContainerUse(input.node?.use);
     let filterFormTargetCount: number | undefined;
 
@@ -4332,9 +4424,9 @@ export class FlowSurfacesService {
           }
         : null,
       filterFormTargetCount,
-      actionContainer: actionContainer?.ownerUse
+      actionContainer: actionContainerUse
         ? {
-            ownerUse: actionContainer.ownerUse,
+            ownerUse: actionContainerUse,
           }
         : null,
       recordActionContainerUse,
@@ -12012,6 +12104,13 @@ export class FlowSurfacesService {
       dynamicCreate.capability.origin === 'autoSnapshot'
         ? getFlowSurfacePublicCapabilityInferredAuthoring(dynamicCreate.capability)
         : undefined;
+    const popupHostAuthoring =
+      inferredAuthoring ||
+      (capability?.authoring?.popupHosts?.length
+        ? {
+            popupHosts: capability.authoring.popupHosts,
+          }
+        : undefined);
     const tree = assignClientKeysToUids(_.cloneDeep(dynamicCreate.node), {});
     if (dynamicCreate.capability.origin === 'autoSnapshot') {
       this.applyJsonInferredDefaultFilterToNodeTree(tree);
@@ -12040,11 +12139,11 @@ export class FlowSurfacesService {
       },
       { transaction: input.options.transaction },
     );
-    if (dynamicCreate.capability.origin === 'autoSnapshot') {
+    if (popupHostAuthoring?.popupHosts?.length) {
       await this.applyJsonInferredPopupHostDefaults({
         actionName,
         rootUid: created,
-        inferredAuthoring,
+        inferredAuthoring: popupHostAuthoring,
         transaction: input.options.transaction,
         enabledPackages: input.enabledPackages,
       });
@@ -12056,6 +12155,13 @@ export class FlowSurfacesService {
         expectedNode: tree,
         publicType: dynamicCreate.capability.publicType,
         inferredAuthoring,
+        transaction: input.options.transaction,
+        enabledPackages: input.enabledPackages,
+      });
+    }
+    if (this.resolveAutoDiscoveredDataBlockActionContainerUse(tree.use, input.enabledPackages)) {
+      await this.applyAutoDiscoveredDataBlockDefaults({
+        blockUid: created,
         transaction: input.options.transaction,
         enabledPackages: input.enabledPackages,
       });
@@ -12184,7 +12290,7 @@ export class FlowSurfacesService {
   }
 
   private getHighConfidenceJsonInferredPopupHosts(
-    inferredAuthoring?: FlowSurfaceAutoInferredAuthoringCapability,
+    inferredAuthoring?: FlowSurfacePopupHostAuthoring,
   ): FlowSurfaceAutoPopupHost[] {
     const popupHosts = (inferredAuthoring?.popupHosts || []).filter(
       (popupHost) => !popupHost.confidence || popupHost.confidence === 'high',
@@ -12209,10 +12315,7 @@ export class FlowSurfacesService {
     );
   }
 
-  private collectJsonInferredPopupHostNodes(
-    rootNode: unknown,
-    inferredAuthoring?: FlowSurfaceAutoInferredAuthoringCapability,
-  ) {
+  private collectJsonInferredPopupHostNodes(rootNode: unknown, inferredAuthoring?: FlowSurfacePopupHostAuthoring) {
     const popupHosts = this.getHighConfidenceJsonInferredPopupHosts(inferredAuthoring);
     if (!popupHosts.length) {
       return [];
@@ -12275,7 +12378,7 @@ export class FlowSurfacesService {
   private async applyJsonInferredPopupHostDefaults(input: {
     actionName: FlowSurfaceDynamicCapabilityCreateActionName;
     rootUid: string;
-    inferredAuthoring?: FlowSurfaceAutoInferredAuthoringCapability;
+    inferredAuthoring?: FlowSurfacePopupHostAuthoring;
     transaction?: any;
     enabledPackages: ReadonlySet<string>;
   }) {
@@ -12360,7 +12463,7 @@ export class FlowSurfacesService {
 
   private assertJsonInferredPopupHostReadback(
     readbackNode: unknown,
-    inferredAuthoring?: FlowSurfaceAutoInferredAuthoringCapability,
+    inferredAuthoring?: FlowSurfacePopupHostAuthoring,
   ) {
     const expectedPopupHosts = this.getHighConfidenceJsonInferredPopupHosts(inferredAuthoring);
     if (!expectedPopupHosts.length) {
@@ -13791,11 +13894,13 @@ export class FlowSurfacesService {
         `flowSurfaces addAction target '${container.ownerUse}' is a record action surface, use addRecordAction`,
       );
     }
+    const actionCatalogContainerUse =
+      this.resolveAutoDiscoveredDataBlockActionContainerUse(container.ownerUse, enabledPackages) || container.ownerUse;
     const staticActionCatalogItem = this.tryResolveActionCatalogItem(
       {
         type: values.type,
         use: values.use,
-        containerUse: container.ownerUse,
+        containerUse: actionCatalogContainerUse,
       },
       {
         context: 'addAction',
@@ -13824,7 +13929,7 @@ export class FlowSurfacesService {
         {
           type: values.type,
           use: values.use,
-          containerUse: container.ownerUse,
+          containerUse: actionCatalogContainerUse,
         },
         enabledPackages,
       );
@@ -13877,7 +13982,7 @@ export class FlowSurfacesService {
     assertRequestedActionScope({
       requestedScope: undefined,
       resolvedScope,
-      containerUse: jsonInferredActionCatalogItem ? undefined : container.ownerUse,
+      containerUse: jsonInferredActionCatalogItem ? undefined : actionCatalogContainerUse,
       context: 'addAction',
     });
     const reusableAction = await this.resolveReusableSingletonAction({
@@ -13957,7 +14062,7 @@ export class FlowSurfacesService {
           })
         : buildActionTree({
             use: actionCatalogItem.use,
-            containerUse: container.ownerUse,
+            containerUse: actionCatalogContainerUse,
             resourceInit: values.resourceInit || resourceContext?.resourceInit,
             props: actionSettingsPayload.props,
             decoratorProps: values.decoratorProps,
@@ -23451,6 +23556,117 @@ export class FlowSurfacesService {
     });
   }
 
+  private async applyAutoDiscoveredDataBlockDefaults(input: {
+    blockUid: string;
+    transaction?: any;
+    enabledPackages: ReadonlySet<string>;
+  }) {
+    const blockNode = await this.repository.findModelById(input.blockUid, {
+      transaction: input.transaction,
+      includeAsyncNode: true,
+    });
+    const actionContainerUse = this.resolveAutoDiscoveredDataBlockActionContainerUse(
+      String(blockNode?.use || ''),
+      input.enabledPackages,
+    );
+    if (!blockNode?.uid || !actionContainerUse) {
+      return;
+    }
+
+    if (
+      actionContainerUse === 'TableBlockModel' &&
+      Array.isArray(blockNode?.subModels?.columns) &&
+      !blockNode.subModels.columns.some((column: any) => column?.use === 'TableColumnModel')
+    ) {
+      const resourceInit = this.getDataBlockResourceInit(blockNode);
+      const collection = this.getCollection(resourceInit.dataSourceKey || 'main', resourceInit.collectionName);
+      const supportedFieldPaths = new Set(
+        (
+          await this.buildFieldCatalog(
+            { uid: input.blockUid },
+            {
+              transaction: input.transaction,
+              enabledPackages: input.enabledPackages,
+            },
+          )
+        )
+          .filter((item) => item.kind === 'field' && item.type !== 'jsColumn' && item.renderer !== 'js')
+          .map((item) => String(item.key || '').trim()),
+      );
+      const defaultFieldPaths = pickFlowSurfaceDefaultActionPopupFieldPaths(
+        getCollectionFields(collection).map((field) => ({
+          field,
+          fieldPath: getFieldName(field),
+        })),
+        {
+          excludeAuditTimestampFields: true,
+        },
+      )
+        .filter((fieldPath) => supportedFieldPaths.has(fieldPath))
+        .slice(0, AUTO_DISCOVERED_DATA_BLOCK_DEFAULT_FIELD_COUNT);
+      for (const fieldPath of defaultFieldPaths) {
+        await this.addField(
+          {
+            target: { uid: input.blockUid },
+            fieldPath,
+          },
+          {
+            transaction: input.transaction,
+            enabledPackages: input.enabledPackages,
+          },
+        );
+      }
+    }
+
+    if (!Array.isArray(blockNode?.subModels?.actions)) {
+      return;
+    }
+    const actionCatalog = await this.catalog(
+      {
+        target: { uid: input.blockUid },
+        sections: ['actions'],
+      },
+      {
+        transaction: input.transaction,
+        enabledPackages: input.enabledPackages,
+      },
+    );
+    const supportedActionTypes = new Set(
+      (actionCatalog.actions || [])
+        .filter((item) => item.createSupported !== false && item.availability?.create.supported !== false)
+        .map((item) => String(item.publicType || item.type || item.key || '').trim())
+        .filter(Boolean),
+    );
+    const defaultFilterInfo = await this.buildDefaultFilterFromDataBlockUid({
+      blockType: 'table',
+      blockUid: input.blockUid,
+      transaction: input.transaction,
+    });
+    const defaultFilter = this.normalizeEffectivePublicDataSurfaceDefaultFilter(defaultFilterInfo?.defaultFilter, {
+      requiredFieldCount: defaultFilterInfo?.requiredFieldCount,
+    });
+    await this.applyDefaultActionsForCreatedBlock(
+      {
+        blockUid: input.blockUid,
+        blockType: 'dataBlock',
+        defaultActionSettings: _.isUndefined(defaultFilter)
+          ? undefined
+          : {
+              filter: {
+                defaultFilter,
+              },
+            },
+        defaultFilterRequiredFieldCount: defaultFilterInfo?.requiredFieldCount,
+        allowedActionTypes: supportedActionTypes,
+        onlyMissing: true,
+      },
+      {
+        transaction: input.transaction,
+        enabledPackages: input.enabledPackages,
+      },
+    );
+  }
+
   private async applyDefaultActionsForCreatedBlock(
     input: {
       blockUid: string;
@@ -23458,6 +23674,8 @@ export class FlowSurfacesService {
       defaultActionSettings?: FlowSurfaceDefaultActionSettings;
       defaultFilterRequiredFieldCount?: number;
       popupDefaultsMetadata?: FlowSurfaceApplyBlueprintPopupDefaultsMetadata;
+      allowedActionTypes?: ReadonlySet<string>;
+      onlyMissing?: boolean;
     },
     options: {
       transaction?: any;
@@ -23469,15 +23687,26 @@ export class FlowSurfacesService {
       blockType: input.blockType,
     });
     const blockNode =
-      input.blockType === 'table'
+      input.blockType === 'table' || input.onlyMissing
         ? await this.repository.findModelById(input.blockUid, {
             transaction: options.transaction,
             includeAsyncNode: true,
           })
         : null;
     const shouldMergeRecordActionDefaults = !this.resolveTreeTableCreationContext(blockNode);
+    const existingActionTypes = new Set(
+      _.castArray(blockNode?.subModels?.actions || [])
+        .map((action) => ACTION_KEY_BY_USE.get(String(action?.use || '').trim()))
+        .filter((type): type is string => !!type),
+    );
     for (const descriptor of descriptors) {
       if (descriptor.scope === 'recordActions' && !shouldMergeRecordActionDefaults) {
+        continue;
+      }
+      if (input.allowedActionTypes && !input.allowedActionTypes.has(descriptor.type)) {
+        continue;
+      }
+      if (input.onlyMissing && descriptor.scope === 'actions' && existingActionTypes.has(descriptor.type)) {
         continue;
       }
       let settings = input.defaultActionSettings?.[descriptor.type];
@@ -23498,6 +23727,7 @@ export class FlowSurfacesService {
       });
       if (descriptor.scope === 'actions') {
         await this.addAction(actionValues, options);
+        existingActionTypes.add(descriptor.type);
       } else {
         await this.addRecordAction(actionValues, options);
       }

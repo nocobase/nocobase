@@ -134,6 +134,7 @@ export type NormalizedFlowSurfaceProviderCapability = {
   catalogItem: FlowSurfaceCatalogItem;
   implementation: FlowSurfaceCapabilityManifestItem['implementation'];
   createRecipe?: FlowSurfaceJsonCreateRecipe;
+  authoring?: FlowSurfaceCapabilityManifestItem['authoring'];
 };
 
 type FlowSurfaceSemanticExample = NonNullable<FlowSurfaceCapabilitySemantic['examples']>[number];
@@ -248,6 +249,9 @@ export function normalizeFlowSurfaceCapabilityManifestItem(input: {
     implementation,
     ...(isPlainRecord(input.item.createRecipe)
       ? { createRecipe: input.item.createRecipe as unknown as FlowSurfaceJsonCreateRecipe }
+      : {}),
+    ...(isPlainRecord(input.item.authoring)
+      ? { authoring: _.cloneDeep(input.item.authoring as FlowSurfaceCapabilityManifestItem['authoring']) }
       : {}),
   };
 }

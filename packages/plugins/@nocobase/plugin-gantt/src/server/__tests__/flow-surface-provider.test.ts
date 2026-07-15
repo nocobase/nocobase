@@ -28,9 +28,19 @@ describe('Gantt flow surface capability provider', () => {
     );
 
     expect(manifest).toMatchObject({
+      capabilityVersion: '1.0.0',
       publicType: 'gantt',
       implementation: { modelUse: 'GanttBlockModel' },
       availability: { create: { supported: true } },
+      authoring: {
+        popupHosts: [
+          expect.objectContaining({
+            modelUse: 'GanttEventViewActionModel',
+            subModelKey: 'eventViewAction',
+            defaultType: 'view',
+          }),
+        ],
+      },
     });
     expect(node).toMatchObject({
       use: 'GanttBlockModel',
@@ -43,6 +53,9 @@ describe('Gantt flow surface capability provider', () => {
         },
       },
       subModels: {
+        eventViewAction: {
+          use: 'GanttEventViewActionModel',
+        },
         columns: [
           {
             use: 'TableActionsColumnModel',
