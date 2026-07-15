@@ -74,7 +74,7 @@ describe('RunJS type-pack generator', () => {
     );
   });
 
-  it('writes byte-identical output across consecutive runs and emits literal dynamic imports', async () => {
+  it('writes byte-identical output across consecutive runs and emits literal graph imports', async () => {
     const directory = await createTemporaryDirectory();
     const outputDirectory = path.join(directory, 'generated');
     const definitions: RunJSTypeLibraryPackDefinition[] = [
@@ -87,19 +87,68 @@ describe('RunJS type-pack generator', () => {
       },
     ];
 
-    await generateRunJSTypeLibraryPacks({ projectRoot: repositoryRoot, outputDirectory, definitions });
+    const result = await generateRunJSTypeLibraryPacks({ projectRoot: repositoryRoot, outputDirectory, definitions });
     const first = await readDirectorySnapshot(outputDirectory);
     await generateRunJSTypeLibraryPacks({ projectRoot: repositoryRoot, outputDirectory, definitions });
     const second = await readDirectorySnapshot(outputDirectory);
 
     expect(second).toEqual(first);
-    expect(second.get('loaders.ts')).toContain("import('./packs/react')");
-    expect(second.get('loaders.ts')).toContain("import('./packs/antd-button')");
+    for (const entry of result.manifest) {
+      expect(second.get('loaders.ts')).toContain(`import('./graphs/${entry.graphHash}')`);
+      expect(second.has(`graphs/${entry.graphHash}.ts`)).toBe(true);
+    }
+    expect([...second.keys()].some((fileName) => fileName.startsWith('packs/'))).toBe(false);
     expect(second.get('loaders.ts')).not.toMatch(/import\(`[^`]*\$\{/u);
     expect(second.get('manifest.ts')).not.toContain('interface CSSProperties');
   });
 
-  it('changes the pack hash when version, entry, or declaration content changes', async () => {
+  it('shares identical declaration graphs while keeping pack contracts isolated', async () => {
+    const directory = await createTemporaryDirectory();
+    await writeFakePackage(directory, 'fake-shared', {
+      version: '1.0.0',
+      declarations: { 'index.d.ts': "export declare const marker: 'RUNJS_SHARED_GRAPH_MARKER';\n" },
+    });
+    const outputDirectory = path.join(directory, 'generated');
+    const result = await generateRunJSTypeLibraryPacks({
+      projectRoot: directory,
+      outputDirectory,
+      definitions: [
+        {
+          id: 'first',
+          libraryName: 'first',
+          entry: 'fake-shared',
+          rootFiles: [{ path: '/__runjs__/first.d.ts', content: 'declare const first: true;' }],
+        },
+        {
+          id: 'second',
+          libraryName: 'second',
+          entry: 'fake-shared',
+          rootFiles: [{ path: '/__runjs__/second.d.ts', content: 'declare const second: true;' }],
+        },
+      ],
+    });
+    const first = result.manifest.find((entry) => entry.id === 'first');
+    const second = result.manifest.find((entry) => entry.id === 'second');
+    const graphArtifacts = [...result.artifacts.keys()].filter((fileName) => fileName.startsWith('graphs/'));
+    const loaderSource = result.artifacts.get('loaders.ts') || '';
+    const graphSource = result.artifacts.get(graphArtifacts[0] || '') || '';
+
+    expect(first?.graphHash).toBe(second?.graphHash);
+    expect(first?.contentHash).not.toBe(second?.contentHash);
+    expect(first?.graphRawBytes).toBeGreaterThan(0);
+    expect(first?.graphRawBytes).toBe(second?.graphRawBytes);
+    expect(graphArtifacts).toEqual([`graphs/${first?.graphHash}.ts`]);
+    expect(countOccurrences(loaderSource, `import('./graphs/${first?.graphHash}')`)).toBe(1);
+    expect(loaderSource).toContain('generatedRunJSTypeLibraryGraphPromises');
+    expect(loaderSource).toContain('generatedRunJSTypeLibraryGraphPromises.delete(graphHash)');
+    expect(loaderSource).not.toContain('RUNJS_SHARED_GRAPH_MARKER');
+    expect(loaderSource).not.toContain('declare const first');
+    expect(graphSource).toContain('RUNJS_SHARED_GRAPH_MARKER');
+    expect(graphSource).toContain('declare const first');
+    expect(graphSource).toContain('declare const second');
+  });
+
+  it('changes the pack hash when version, entry, bridge, or declaration content changes', async () => {
     const directory = await createTemporaryDirectory();
     await writeFakePackage(directory, 'fake-lib', {
       version: '1.0.0',
@@ -126,6 +175,12 @@ describe('RunJS type-pack generator', () => {
       libraryName: 'fake',
       entry: 'fake-lib/alternate',
     });
+    const bridgeChanged = await generateSingleFakePack(directory, {
+      id: 'fake',
+      libraryName: 'fake',
+      entry: 'fake-lib',
+      rootFiles: [{ path: '/__runjs__/fake.d.ts', content: 'declare const bridge: true;' }],
+    });
     await fs.writeFile(
       path.join(directory, 'node_modules/fake-lib/shared.d.ts'),
       "export declare const marker: 'second';\n",
@@ -139,6 +194,7 @@ describe('RunJS type-pack generator', () => {
 
     expect(versionChanged.contentHash).not.toBe(first.contentHash);
     expect(entryChanged.contentHash).not.toBe(first.contentHash);
+    expect(bridgeChanged.contentHash).not.toBe(first.contentHash);
     expect(contentChanged.contentHash).not.toBe(first.contentHash);
   });
 
@@ -178,6 +234,8 @@ describe('RunJS type-pack generator', () => {
       dependencyFileCount: addon?.dependencyFiles.length,
       rootFileCount: 0,
     });
+    expect(addonManifest?.graphHash).toMatch(/^[a-f0-9]{64}$/u);
+    expect(addonManifest?.graphRawBytes).toBe(addonManifest?.rawBytes);
     expect(addonManifest?.rawBytes).toBeGreaterThan(0);
   });
 
@@ -214,14 +272,26 @@ describe('RunJS type-pack generator', () => {
     ).rejects.toBeInstanceOf(RunJSTypePackPathConflictError);
   });
 
-  it('reports stale pack artifacts in check mode without rewriting them', async () => {
+  it('checks the tracked manifest without requiring ignored runtime artifacts', async () => {
     const directory = await createTemporaryDirectory();
     const outputDirectory = path.join(directory, 'generated');
     const definitions: RunJSTypeLibraryPackDefinition[] = [{ id: 'react', libraryName: 'react', entry: 'react' }];
     await generateRunJSTypeLibraryPacks({ projectRoot: repositoryRoot, outputDirectory, definitions });
-    const packPath = path.join(outputDirectory, 'packs/react.ts');
-    const staleContent = `${await fs.readFile(packPath, 'utf8')}\n// stale\n`;
-    await fs.writeFile(packPath, staleContent, 'utf8');
+    await fs.rm(path.join(outputDirectory, 'loaders.ts'), { force: true });
+    await fs.rm(path.join(outputDirectory, 'graphs'), { recursive: true, force: true });
+
+    await expect(
+      generateRunJSTypeLibraryPacks({
+        projectRoot: repositoryRoot,
+        outputDirectory,
+        definitions,
+        check: true,
+      }),
+    ).resolves.toBeTruthy();
+
+    const manifestPath = path.join(outputDirectory, 'manifest.ts');
+    const staleContent = `${await fs.readFile(manifestPath, 'utf8')}\n// stale\n`;
+    await fs.writeFile(manifestPath, staleContent, 'utf8');
 
     let error: RunJSTypePackArtifactsOutOfDateError | undefined;
     try {
@@ -239,8 +309,8 @@ describe('RunJS type-pack generator', () => {
       }
     }
 
-    expect(error?.staleArtifacts).toContain('packs/react.ts');
-    expect(await fs.readFile(packPath, 'utf8')).toBe(staleContent);
+    expect(error?.staleArtifacts).toEqual(['manifest.ts']);
+    expect(await fs.readFile(manifestPath, 'utf8')).toBe(staleContent);
   });
 
   it('returns a non-zero CLI status and names outdated artifacts in --check mode', async () => {
@@ -262,7 +332,7 @@ describe('RunJS type-pack generator', () => {
     expect(messages.join('\n')).toContain('manifest.ts');
   });
 
-  it('keeps declaration bodies out of the initial Rsbuild chunk and splits packs independently', async () => {
+  it('keeps declaration bodies out of the initial Rsbuild chunk and splits unique graphs independently', async () => {
     const directory = await createTemporaryDirectory();
     await writeFakePackage(directory, 'fake-alpha', {
       version: '1.0.0',
@@ -277,7 +347,25 @@ describe('RunJS type-pack generator', () => {
       projectRoot: directory,
       outputDirectory: generatedDirectory,
       definitions: [
-        { id: 'alpha', libraryName: 'alpha', entry: 'fake-alpha' },
+        {
+          id: 'alpha-first',
+          libraryName: 'alpha',
+          entry: 'fake-alpha',
+          rootFiles: [
+            { path: '/__runjs__/alpha-first.d.ts', content: 'declare const RUNJS_ALPHA_FIRST_ROOT_MARKER: true;' },
+          ],
+        },
+        {
+          id: 'alpha-second',
+          libraryName: 'alpha',
+          entry: 'fake-alpha',
+          rootFiles: [
+            {
+              path: '/__runjs__/alpha-second.d.ts',
+              content: 'declare const RUNJS_ALPHA_SECOND_ROOT_MARKER: true;',
+            },
+          ],
+        },
         { id: 'beta', libraryName: 'beta', entry: 'fake-beta' },
       ],
     });
@@ -313,7 +401,7 @@ describe('RunJS type-pack generator', () => {
     const initial = [...javascript.entries()].find(([, content]) =>
       content.includes('__runjs_type_pack_loader_test__'),
     );
-    const alphaChunk = [...javascript.entries()].find(([, content]) =>
+    const alphaChunks = [...javascript.entries()].filter(([, content]) =>
       content.includes('RUNJS_ALPHA_DECLARATION_MARKER'),
     );
     const betaChunk = [...javascript.entries()].find(([, content]) =>
@@ -322,10 +410,14 @@ describe('RunJS type-pack generator', () => {
 
     expect(initial).toBeTruthy();
     expect(initial?.[1]).not.toContain('RUNJS_ALPHA_DECLARATION_MARKER');
+    expect(initial?.[1]).not.toContain('RUNJS_ALPHA_FIRST_ROOT_MARKER');
+    expect(initial?.[1]).not.toContain('RUNJS_ALPHA_SECOND_ROOT_MARKER');
     expect(initial?.[1]).not.toContain('RUNJS_BETA_DECLARATION_MARKER');
-    expect(alphaChunk).toBeTruthy();
+    expect(alphaChunks).toHaveLength(1);
+    expect(alphaChunks[0]?.[1]).toContain('RUNJS_ALPHA_FIRST_ROOT_MARKER');
+    expect(alphaChunks[0]?.[1]).toContain('RUNJS_ALPHA_SECOND_ROOT_MARKER');
     expect(betaChunk).toBeTruthy();
-    expect(alphaChunk?.[0]).not.toBe(betaChunk?.[0]);
+    expect(alphaChunks[0]?.[0]).not.toBe(betaChunk?.[0]);
   }, 30_000);
 });
 
@@ -392,4 +484,8 @@ async function readDirectorySnapshot(directory: string, prefix = ''): Promise<Ma
 async function readJavaScriptFiles(directory: string): Promise<Map<string, string>> {
   const snapshot = await readDirectorySnapshot(directory);
   return new Map([...snapshot].filter(([fileName]) => fileName.endsWith('.js')));
+}
+
+function countOccurrences(source: string, search: string): number {
+  return source.split(search).length - 1;
 }

@@ -30,6 +30,8 @@ cache/diskstore-*
 packages/core/client/docs/contributing.md
 packages/core/app/client/src/.plugins
 packages/core/app/client-v2/src/.plugins
+packages/core/client-v2/src/flow/components/code-editor/type-packs/generated/*
+!packages/core/client-v2/src/flow/components/code-editor/type-packs/generated/manifest.ts
 tsconfig.paths.json
 /playwright
 .swc

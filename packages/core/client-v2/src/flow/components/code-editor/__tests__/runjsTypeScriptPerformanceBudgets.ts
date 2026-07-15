@@ -10,6 +10,9 @@
 export interface RunJSTypeScriptPerformanceBudgetInput {
   antdButtonWarmReactP95Ms: number;
   concurrentSamePackLoaderCount: number;
+  declarationGraphChunkCount: number;
+  declarationGraphGzipBytes: number;
+  declarationGraphRawBytes: number;
   hotDiagnosticsBaselineP95Ms: number;
   hotDiagnosticsP95Ms: number;
   initialChunkContainsThirdPartyDeclarations: boolean;
@@ -18,6 +21,7 @@ export interface RunJSTypeScriptPerformanceBudgetInput {
   maximumTypeSystemLongTaskMs: number;
   reactColdP95Ms: number;
   singleIconColdP95Ms: number;
+  typePackCount: number;
 }
 
 export interface RunJSTypeScriptPerformanceBudgetResult {
@@ -35,6 +39,7 @@ export interface RunJSTypeScriptPerformanceBudgetReport {
 }
 
 const KIB = 1024;
+const MIB = 1024 * KIB;
 
 export function evaluateRunJSTypeScriptPerformanceBudgets(
   input: RunJSTypeScriptPerformanceBudgetInput,
@@ -56,6 +61,30 @@ export function evaluateRunJSTypeScriptPerformanceBudgets(
       passed: !input.initialChunkContainsThirdPartyDeclarations,
       policy: 'ci-gate',
       unit: 'boolean',
+    },
+    {
+      actual: input.declarationGraphChunkCount,
+      budget: 60,
+      id: 'shared-declaration-graph-chunks',
+      passed: input.declarationGraphChunkCount <= 60 && input.declarationGraphChunkCount < input.typePackCount,
+      policy: 'ci-gate',
+      unit: 'count',
+    },
+    {
+      actual: input.declarationGraphRawBytes,
+      budget: 8 * MIB,
+      id: 'declaration-graph-raw-bytes',
+      passed: input.declarationGraphRawBytes <= 8 * MIB,
+      policy: 'ci-gate',
+      unit: 'bytes',
+    },
+    {
+      actual: input.declarationGraphGzipBytes,
+      budget: 2 * MIB,
+      id: 'declaration-graph-gzip-bytes',
+      passed: input.declarationGraphGzipBytes <= 2 * MIB,
+      policy: 'ci-gate',
+      unit: 'bytes',
     },
     {
       actual: input.hotDiagnosticsP95Ms,

@@ -20,13 +20,22 @@ const entryPoint = path.resolve(
   'packages/core/client-v2/src/flow/components/code-editor/typescriptProject.ts',
 );
 const runJSClientEntry = path.resolve(repositoryRoot, 'packages/core/runjs/src/client-v2/index.ts');
+const typePackManifestPath = path.resolve(
+  repositoryRoot,
+  'packages/core/client-v2/src/flow/components/code-editor/type-packs/generated/manifest.ts',
+);
 const frozenBaselineGzipBytes = 232385;
 const initialGzipIncrementBudgetBytes = 50 * 1024;
+const declarationGraphRawBudgetBytes = 8 * 1024 * 1024;
+const declarationGraphGzipBudgetBytes = 2 * 1024 * 1024;
+const declarationGraphChunkBudget = 60;
 
 const declarationMarkers = {
   antd: 'InternalCompoundedButton',
+  'antd-bridge': "readonly Button: typeof import('antd/es/button').default;",
   'antd-icons': 'AccountBookFilled',
   react: 'DO_NOT_USE_OR_YOU_WILL_BE_FIRED_EXPERIMENTAL_REACT_NODES',
+  'react-bridge': "type RunJSOfficialReactModule = typeof import('react');",
 };
 
 const result = await build({
@@ -88,23 +97,65 @@ const declarationBodiesExcludedFromInitialChunk = Object.values(declarationMarke
 const initialBrotliBytes = brotliCompressSync(initialOutput.contents).byteLength;
 const initialGzipBytes = gzipSync(initialOutput.contents).byteLength;
 const initialGzipIncrementBytes = initialGzipBytes - frozenBaselineGzipBytes;
-const typePackOutputs = asyncOutputs.filter((output) =>
-  output.inputs.some((input) => input.includes('/type-packs/generated/packs/')),
+const declarationGraphOutputs = asyncOutputs.filter((output) =>
+  output.inputs.some((input) => input.includes('/type-packs/generated/graphs/')),
 );
+const declarationGraphRawBytes = declarationGraphOutputs.reduce((total, output) => total + output.rawBytes, 0);
+const declarationGraphGzipBytes = declarationGraphOutputs.reduce(
+  (total, output) => total + gzipSync(output.contents).byteLength,
+  0,
+);
+const declarationGraphBrotliBytes = declarationGraphOutputs.reduce(
+  (total, output) => total + brotliCompressSync(output.contents).byteLength,
+  0,
+);
+const manifestSource = await fs.readFile(typePackManifestPath, 'utf8');
+const manifestExportStart = manifestSource.indexOf('export const generatedRunJSTypeLibraryPackManifest');
+const manifestAssignmentStart = manifestSource.indexOf('= [', manifestExportStart);
+const manifestArrayStart = manifestAssignmentStart + 2;
+const manifestArrayEnd = manifestSource.lastIndexOf('];');
+if (manifestExportStart < 0 || manifestAssignmentStart < 0 || manifestArrayEnd < manifestArrayStart) {
+  throw new Error('Unable to parse the generated RunJS type-pack manifest.');
+}
+const manifest = JSON.parse(manifestSource.slice(manifestArrayStart, manifestArrayEnd + 1));
+const declarationGraphHashes = new Set(manifest.map((entry) => entry.graphHash));
+const packCount = manifest.length;
+const declarationGraphCount = declarationGraphHashes.size;
+const packsShareDeclarationGraphs = declarationGraphCount < packCount;
+const declarationGraphChunksMatchManifest = declarationGraphOutputs.length === declarationGraphCount;
 
 console.info(
   JSON.stringify(
     {
       asyncChunks: {
         count: asyncOutputs.length,
+        declarationGraphChunkCount: declarationGraphOutputs.length,
         rawBytes: asyncOutputs.reduce((total, output) => total + output.rawBytes, 0),
-        typePackChunkCount: typePackOutputs.length,
       },
       budgets: {
+        declarationGraphChunkCount: declarationGraphOutputs.length,
+        declarationGraphChunkLimit: declarationGraphChunkBudget,
+        declarationGraphChunksMatchManifest,
+        declarationGraphChunkWithinBudget:
+          declarationGraphChunksMatchManifest && declarationGraphOutputs.length <= declarationGraphChunkBudget,
+        declarationGraphGzipBytes,
+        declarationGraphGzipLimitBytes: declarationGraphGzipBudgetBytes,
+        declarationGraphGzipWithinBudget: declarationGraphGzipBytes <= declarationGraphGzipBudgetBytes,
+        declarationGraphRawBytes,
+        declarationGraphRawLimitBytes: declarationGraphRawBudgetBytes,
+        declarationGraphRawWithinBudget: declarationGraphRawBytes <= declarationGraphRawBudgetBytes,
         declarationBodiesExcludedFromInitialChunk,
         initialGzipIncrementBytes,
         initialGzipIncrementLimitBytes: initialGzipIncrementBudgetBytes,
         initialGzipWithinBudget: initialGzipIncrementBytes <= initialGzipIncrementBudgetBytes,
+        packsShareDeclarationGraphs,
+      },
+      declarationGraphs: {
+        brotliBytes: declarationGraphBrotliBytes,
+        chunkCount: declarationGraphOutputs.length,
+        gzipBytes: declarationGraphGzipBytes,
+        manifestCount: declarationGraphCount,
+        rawBytes: declarationGraphRawBytes,
       },
       declarationMarkerLocations: markerLocations,
       initialChunk: {
@@ -115,7 +166,7 @@ console.info(
       },
       measurement: 'code-split-minified-editor-typescript-support',
       outputCount: outputs.length,
-      packCount: typePackOutputs.length,
+      packCount,
       frozenBaselineGzipBytes,
       typescriptRuntime: 'external dynamic import',
     },

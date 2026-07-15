@@ -11,10 +11,13 @@ only on TypeScript plus Node.js standard-library modules. Browser-specific type-
 RunJS deliberately starts with `noLib: true` and a small NocoBase runtime declaration. Official third-party
 declarations are loaded only when source usage requires them.
 
-- The browser editor uses asynchronous type packs registered in a `RunJSTypeLibraryRegistry`.
+- The browser editor uses asynchronous logical type packs registered in a `RunJSTypeLibraryRegistry`. Generated
+  loaders assemble each pack from its NocoBase root bridge and a content-addressed declaration graph.
 - Node source inspection uses synchronous providers registered in a `NodeRunJSTypeLibraryRegistry`.
 - Both paths use the same library names, pack IDs, source triggers, root bridges, dependency paths, versions, and
   content hashes.
+- Browser declaration graphs are keyed by the stable hash of the ordered declaration closure after files supplied by
+  explicit pack dependencies are removed. Packs with the same closure share one graph module and one cached Promise.
 - Static Ant Design components and icon groups load symbol or group packs. Computed access, spreads, escaping aliases,
   and other unbounded usage load the corresponding `full` pack.
 - A pack bridge augments `RunJSLibraries` and, only when the runtime has the matching top-level alias, `RunJSContext`.
@@ -36,7 +39,9 @@ yarn workspace @nocobase/runjs generate:dom-type-bridge
 yarn workspace @nocobase/runjs generate:completion-catalogs
 ```
 
-CI and pre-commit verification must use check mode. Check mode reads and compares artifacts without rewriting them:
+CI and pre-commit verification must use check mode. Check mode reads and compares tracked artifacts without rewriting
+them; for type packs it validates the committed manifest while the ignored loaders and graphs are recreated by the
+build lifecycle:
 
 ```bash
 yarn workspace @nocobase/runjs generate:type-packs --check
@@ -46,16 +51,19 @@ yarn workspace @nocobase/runjs generate:completion-catalogs --check
 
 The generators own these outputs:
 
-- Browser type-pack loaders, manifests, and pack modules under
-  `packages/core/client-v2/src/flow/components/code-editor/type-packs/generated/`.
+- A committed browser type-pack manifest under
+  `packages/core/client-v2/src/flow/components/code-editor/type-packs/generated/manifest.ts`. It records pack hashes,
+  graph hashes, versions, sources, and size statistics without declaration bodies.
+- Ignored browser build inputs under the same generated directory: `loaders.ts` and content-addressed `graphs/`
+  modules. They are recreated from the locked npm declarations during dependency installation and client builds; they
+  are not source artifacts or npm package source files.
 - Browser completion catalogs under
   `packages/core/client-v2/src/flow/components/code-editor/completion-catalogs/generated/`.
 - Shared Node completion data in `src/completion-catalog/generated.ts`.
 - The DOM type-only bridge in `src/generated/dom-type-only-bridge.ts`.
 
-Never edit generated files by hand. Change the source definition or generator, regenerate, and review all resulting
-diffs. A generated file containing an unexpected version or hash is a failed generation, not a reason to patch the
-artifact.
+Never edit generated files by hand. Change the source definition or generator, regenerate, and review the manifest
+diff. Unexpected versions, pack hashes, or graph hashes indicate failed generation, not a reason to patch the artifact.
 
 ## Adding a built-in official type library
 
@@ -64,8 +72,9 @@ Use the following sequence so the browser and Node contracts cannot drift:
 1. Confirm that the runtime library is actually exposed by RunJS and install or update its official declaration
    package in the repository. Prefer declarations shipped by the package; otherwise use the matching `@types/*`
    package.
-2. Add the declaration graph and pack definitions under `scripts/`. The graph entry must resolve from the repository
-   root and must include every transitive declaration dependency required by TypeScript.
+2. Add the declaration entry and pack definitions under `scripts/`. The entry must resolve from the repository root
+   and must include every transitive declaration dependency required by TypeScript. The generator derives and shares
+   the content-addressed graph automatically.
 3. Choose stable pack IDs. Use a single library pack for small libraries, symbol/group packs for large static surfaces,
    and a `full` pack for dynamic access. Dependencies must reference exact IDs, versions, and content hashes.
 4. Add a minimal root bridge. It should normally use `typeof import('package')` and augment `RunJSLibraries`. Add a
@@ -83,17 +92,19 @@ Use the following sequence so the browser and Node contracts cannot drift:
 
 ### Pack contract
 
-Each pack has a stable `id`, `libraryName`, `version`, `contentHash`, dependency list, root files, and dependency files.
-Root files contain RunJS bridges and are TypeScript program roots. Dependency files satisfy module resolution but must
-not independently become roots. The registries reject:
+Each logical pack keeps its stable `id`, `libraryName`, `version`, `contentHash`, dependency list, root files, and
+dependency files. The generated manifest additionally records the `graphHash` used to load its shared declaration
+closure. Root files contain RunJS bridges and are TypeScript program roots. Dependency files come from the shared
+declaration graph, satisfy module resolution, and must not independently become roots. The registries reject:
 
 - duplicate provider or pack IDs;
 - declared dependency version or content-hash mismatches;
 - different content hashes for the same virtual path;
 - incompatible packs attempting to replace an already loaded full pack.
 
-The content hash identifies declaration content, not merely a package version. Update both whenever generated content
-changes. Reuse the same virtual path only when the content is byte-for-byte compatible.
+The pack content hash identifies the complete pack contract, not merely a package version. The graph hash identifies
+the ordered dependency-file closure after explicit pack dependencies are excluded. Reuse the same virtual path only
+when the content is byte-for-byte compatible.
 
 ## Custom library type extensions
 
@@ -169,10 +180,11 @@ Run the Chromium benchmark with 20 cold and 20 hot samples per scenario:
 node packages/core/client-v2/src/flow/components/code-editor/__tests__/runjs-typescript-performance-benchmark.mjs --samples 20
 ```
 
-Reports are written to
-`packages/core/client-v2/src/flow/components/code-editor/__tests__/reports/runjs-typescript-performance.json` and
-`runjs-typescript-performance.md`. Treat a regression in initial gzip size, pack bytes, cold/hot latency, stale work,
-or main-thread long tasks as a release blocker unless the budget and rationale are deliberately reviewed.
+Reports are written by default to `node_modules/.cache/runjs-typescript-performance/`. Pass `--output-dir` only when an
+intentional, reviewable report snapshot is needed; routine benchmark runs must not dirty the source tree. Treat a
+regression in initial gzip size, unique declaration-graph bytes, graph chunk count, cold/hot latency, stale work, or
+main-thread long tasks as a release blocker unless the budget and rationale are deliberately reviewed. The current
+graph budgets are 60 chunks, 8 MiB raw, and 2 MiB gzip while retaining all 109 logical packs.
 
 Build once with a non-root public path before release:
 
@@ -180,10 +192,10 @@ Build once with a non-root public path before release:
 APP_PUBLIC_PATH=/nocobase/ yarn build:client-v2
 ```
 
-In a served production build, confirm that normal JavaScript loads no third-party type pack, static symbols do not load
-the full pack, dynamic access does load the full pack, and all pack and Worker chunk URLs return `200` under the
-configured prefix or CDN origin. Verify immutable cache headers for content-hashed chunks and confirm a new build does
-not reuse an old declaration with a different version or hash.
+In a served production build, confirm that normal JavaScript loads no third-party declaration graph, static symbols do
+not load the full logical pack, dynamic access does load the full pack, and all declaration-graph and Worker chunk URLs
+return `200` under the configured prefix or CDN origin. Verify immutable cache headers for content-hashed chunks and
+confirm a new build does not reuse an old declaration with a different version or hash.
 
 ## Worker, public path, and CSP
 
@@ -192,7 +204,7 @@ the main thread transfers requested packs to the Worker and must preserve versio
 must cover diagnostics, hover, completion edits, rapid file switching, disposal, Worker crashes, and restart without
 accepting stale responses from the previous Worker.
 
-The deployment must allow the generated Worker and dynamic pack URLs:
+The deployment must allow the generated Worker and dynamic declaration-graph URLs:
 
 - `APP_PUBLIC_PATH`, reverse-proxy prefixes, and CDN asset bases must agree with the built chunk URLs.
 - CSP must permit the application script origin and Worker creation. Configure `worker-src` explicitly when the
@@ -209,11 +221,11 @@ indicate a session-recovery bug rather than a type-pack generation problem.
 When upgrading React, ReactDOM, Ant Design, icons, dayjs, lodash, mathjs, Formula.js, TypeScript, or DOM declarations:
 
 1. Update dependencies and confirm runtime/declaration major-version compatibility.
-2. Regenerate type packs, the DOM bridge when TypeScript DOM declarations changed, and completion catalogs when exports
-   changed.
+2. Regenerate the logical pack manifest and declaration graphs, the DOM bridge when TypeScript DOM declarations
+   changed, and completion catalogs when exports changed.
 3. Run all three generators with `--check` and ensure the working tree remains unchanged.
-4. Review manifest versions, content hashes, dependency closures, removed or added virtual files, symbol grouping, and
-   completion changes.
+4. Review manifest versions, pack and graph hashes, dependency closures, unique graph sizes, removed or added virtual
+   files, symbol grouping, and completion changes.
 5. Run the shared Node/browser diagnostic matrix, registry conflict tests, DOM boundary tests, performance benchmark,
    and non-root production build.
 6. Test upgrading an already opened application so cached old chunks cannot silently satisfy new manifest requests.
@@ -243,16 +255,16 @@ ambient module stub.
 Run the corresponding generator without `--check`, inspect the diff, and find the source dependency or definition that
 changed. Generated output should be deterministic; repeated generation with no input changes must produce no diff.
 
-### A dynamic chunk or Worker fails to load
+### A declaration-graph chunk or Worker fails to load
 
 Inspect its resolved URL, `APP_PUBLIC_PATH`, CDN/reverse-proxy routing, response MIME type, CORS, and CSP. A successful
 development-server URL does not prove that a prefixed production build works.
 
 ### Completion works but diagnostics are missing or stale
 
-The catalog may be loaded while the declaration pack failed. Check pack request/result messages, version/hash rejection,
-document versions, Worker restart state, and registry disposal. Completion catalog data must never be treated as a type
-authority.
+The catalog may be loaded while the declaration graph failed. Check graph chunk loading, pack request/result messages,
+pack version or content-hash rejection, document versions, Worker restart state, and registry disposal. Completion
+catalog data must never be treated as a type authority.
 
 ## Release and rollback
 

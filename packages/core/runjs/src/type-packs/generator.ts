@@ -46,9 +46,11 @@ export interface GeneratedRunJSTypeLibraryPackManifestEntry {
   dependencies: readonly RunJSTypeLibraryPackDependency[];
   triggers: readonly string[];
   contentHash: string;
+  graphHash: string;
   fileCount: number;
   rootFileCount: number;
   dependencyFileCount: number;
+  graphRawBytes: number;
   rawBytes: number;
 }
 
@@ -65,8 +67,7 @@ interface CollectedDeclarationGraph {
 }
 
 interface GeneratedPackRecord {
-  definition: RunJSTypeLibraryPackDefinition;
-  fileStem: string;
+  graphHash: string;
   pack: RunJSTypeLibraryPack;
   manifest: GeneratedRunJSTypeLibraryPackManifestEntry;
 }
@@ -131,16 +132,16 @@ export async function generateRunJSTypeLibraryPacks(
     const inheritedFiles = collectInheritedFiles(dependencyRecords, generatedById);
     const dependencyFiles = excludeInheritedFiles(graph.dependencyFiles, inheritedFiles);
     const rootFiles = createRootFiles(definition.rootFiles || []);
+    const graphHash = buildDeclarationGraphHash(dependencyFiles);
+    const graphRawBytes = dependencyFiles.reduce((total, file) => total + Buffer.byteLength(file.content, 'utf8'), 0);
     const dependencies = dependencyRecords.map(({ pack }) => ({
       id: pack.id,
       version: pack.version,
       contentHash: pack.contentHash,
     }));
     const version = definition.version || graph.version;
-    const rawBytes = [...rootFiles, ...dependencyFiles].reduce(
-      (total, file) => total + Buffer.byteLength(file.content, 'utf8'),
-      0,
-    );
+    const rawBytes =
+      graphRawBytes + rootFiles.reduce((total, file) => total + Buffer.byteLength(file.content, 'utf8'), 0);
     const contentHash = buildPackContentHash({
       definition,
       version,
@@ -176,14 +177,15 @@ export async function generateRunJSTypeLibraryPacks(
       dependencies,
       triggers: stableUnique(definition.triggers || [definition.id]),
       contentHash,
+      graphHash,
       fileCount: rootFiles.length + dependencyFiles.length,
       rootFileCount: rootFiles.length,
       dependencyFileCount: dependencyFiles.length,
+      graphRawBytes,
       rawBytes,
     };
     const record: GeneratedPackRecord = {
-      definition,
-      fileStem: toGeneratedFileStem(definition.id),
+      graphHash,
       pack,
       manifest,
     };
@@ -196,12 +198,18 @@ export async function generateRunJSTypeLibraryPacks(
     await generateDefinition(id);
   }
 
-  validateUniqueFileStems([...generatedById.values()]);
   const records = [...generatedById.values()].sort((left, right) => left.pack.id.localeCompare(right.pack.id));
   const artifacts = buildGeneratedArtifacts(records);
 
   if (options.check) {
-    const staleArtifacts = await findStaleArtifacts(options.outputDirectory, artifacts);
+    const manifestArtifact = artifacts.get('manifest.ts');
+    if (!manifestArtifact) {
+      throw new Error('Missing generated RunJS type-pack manifest artifact');
+    }
+    const staleArtifacts = await findStaleArtifacts(
+      options.outputDirectory,
+      new Map([['manifest.ts', manifestArtifact]]),
+    );
     if (staleArtifacts.length) {
       throw new RunJSTypePackArtifactsOutOfDateError(staleArtifacts);
     }
@@ -540,6 +548,10 @@ function buildPackContentHash(input: {
   );
 }
 
+function buildDeclarationGraphHash(dependencyFiles: readonly RunJSTypeLibraryFile[]): string {
+  return sha256Hex(stableSerialize(dependencyFiles.map(fileHashRecord)));
+}
+
 function fileHashRecord(file: RunJSTypeLibraryFile): Pick<RunJSTypeLibraryFile, 'path' | 'contentHash'> {
   return { path: file.path, contentHash: file.contentHash };
 }
@@ -556,24 +568,32 @@ function validateGlobalFileHashes(pack: RunJSTypeLibraryPack, seenFiles: Map<str
 
 function buildGeneratedArtifacts(records: readonly GeneratedPackRecord[]): Map<string, string> {
   const artifacts = new Map<string, string>();
-  for (const record of records) {
-    artifacts.set(`packs/${record.fileStem}.ts`, renderPackModule(record.pack));
+  const recordsByGraphHash = groupPackRecordsByGraphHash(records);
+  for (const [graphHash, graphRecords] of [...recordsByGraphHash].sort(([left], [right]) =>
+    left.localeCompare(right),
+  )) {
+    artifacts.set(`graphs/${graphHash}.ts`, renderGraphModule(graphRecords));
   }
   artifacts.set('manifest.ts', renderManifestModule(records.map((record) => record.manifest)));
   artifacts.set('loaders.ts', renderLoadersModule(records));
   return artifacts;
 }
 
-function renderPackModule(pack: RunJSTypeLibraryPack): string {
-  return `${licenseHeader()}\n${generatedMarker}\n${generatedEslintDisable}\n\nimport type { RunJSTypeLibraryPack } from '@nocobase/runjs/client-v2';\n\nconst pack: RunJSTypeLibraryPack = ${JSON.stringify(
-    pack,
+function renderGraphModule(records: readonly GeneratedPackRecord[]): string {
+  const dependencyFiles = records[0]?.pack.dependencyFiles;
+  if (!dependencyFiles) {
+    throw new Error('Cannot render an empty generated RunJS type-library graph');
+  }
+  const descriptors = Object.fromEntries(records.map((record) => [record.pack.id, createPackDescriptor(record.pack)]));
+  return `${licenseHeader()}\n${generatedMarker}\n${generatedEslintDisable}\n\nimport type { RunJSTypeLibraryFile, RunJSTypeLibraryPack } from '@nocobase/runjs/client-v2';\n\ntype GeneratedRunJSTypeLibraryPackDescriptor = Omit<RunJSTypeLibraryPack, 'dependencyFiles'>;\n\ninterface GeneratedRunJSTypeLibraryGraph {\n  dependencyFiles: readonly RunJSTypeLibraryFile[];\n  packDescriptors: Readonly<Record<string, GeneratedRunJSTypeLibraryPackDescriptor>>;\n}\n\nconst graph: GeneratedRunJSTypeLibraryGraph = {\n  dependencyFiles: ${JSON.stringify(
+    dependencyFiles,
     null,
     2,
-  )};\n\nexport default pack;\n`;
+  )},\n  packDescriptors: ${JSON.stringify(descriptors, null, 2)},\n};\n\nexport default graph;\n`;
 }
 
 function renderManifestModule(entries: readonly GeneratedRunJSTypeLibraryPackManifestEntry[]): string {
-  return `${licenseHeader()}\n${generatedMarker}\n${generatedEslintDisable}\n\nexport interface GeneratedRunJSTypeLibraryPackManifestEntry {\n  id: string;\n  libraryName: string;\n  version: string;\n  entry: string;\n  sourcePackage: string;\n  dependencies: readonly { id: string; version: string; contentHash: string }[];\n  triggers: readonly string[];\n  contentHash: string;\n  fileCount: number;\n  rootFileCount: number;\n  dependencyFileCount: number;\n  rawBytes: number;\n}\n\nexport const generatedRunJSTypeLibraryPackManifest: readonly GeneratedRunJSTypeLibraryPackManifestEntry[] = ${JSON.stringify(
+  return `${licenseHeader()}\n${generatedMarker}\n${generatedEslintDisable}\n\nexport interface GeneratedRunJSTypeLibraryPackManifestEntry {\n  id: string;\n  libraryName: string;\n  version: string;\n  entry: string;\n  sourcePackage: string;\n  dependencies: readonly { id: string; version: string; contentHash: string }[];\n  triggers: readonly string[];\n  contentHash: string;\n  graphHash: string;\n  fileCount: number;\n  rootFileCount: number;\n  dependencyFileCount: number;\n  graphRawBytes: number;\n  rawBytes: number;\n}\n\nexport const generatedRunJSTypeLibraryPackManifest: readonly GeneratedRunJSTypeLibraryPackManifestEntry[] = ${JSON.stringify(
     entries,
     null,
     2,
@@ -581,20 +601,47 @@ function renderManifestModule(entries: readonly GeneratedRunJSTypeLibraryPackMan
 }
 
 function renderLoadersModule(records: readonly GeneratedPackRecord[]): string {
+  const recordsByGraphHash = groupPackRecordsByGraphHash(records);
+  const graphLoaders = [...recordsByGraphHash.keys()]
+    .sort()
+    .map((graphHash) => `  ${JSON.stringify(graphHash)}: async () => (await import('./graphs/${graphHash}')).default,`)
+    .join('\n');
   const loaders = records
     .map(
       (record) =>
-        `  ${JSON.stringify(record.pack.id)}: async () => (await import('./packs/${record.fileStem}')).default,`,
+        `  ${JSON.stringify(record.pack.id)}: () => loadGeneratedRunJSTypeLibraryPack(${JSON.stringify(
+          record.pack.id,
+        )}, ${JSON.stringify(record.graphHash)}),`,
     )
     .join('\n');
-  return `${licenseHeader()}\n${generatedMarker}\n${generatedEslintDisable}\n\nimport type { RunJSTypeLibraryPack } from '@nocobase/runjs/client-v2';\n\nexport type GeneratedRunJSTypeLibraryPackLoader = () => Promise<RunJSTypeLibraryPack>;\n\nexport const generatedRunJSTypeLibraryPackLoaders: Readonly<Record<string, GeneratedRunJSTypeLibraryPackLoader>> = {\n${loaders}\n};\n`;
+  return `${licenseHeader()}\n${generatedMarker}\n${generatedEslintDisable}\n\nimport type { RunJSTypeLibraryFile, RunJSTypeLibraryPack } from '@nocobase/runjs/client-v2';\n\ntype GeneratedRunJSTypeLibraryPackDescriptor = Omit<RunJSTypeLibraryPack, 'dependencyFiles'>;\ninterface GeneratedRunJSTypeLibraryGraph {\n  dependencyFiles: readonly RunJSTypeLibraryFile[];\n  packDescriptors: Readonly<Record<string, GeneratedRunJSTypeLibraryPackDescriptor>>;\n}\ntype GeneratedRunJSTypeLibraryGraphLoader = () => Promise<GeneratedRunJSTypeLibraryGraph>;\n\nexport type GeneratedRunJSTypeLibraryPackLoader = () => Promise<RunJSTypeLibraryPack>;\n\nconst generatedRunJSTypeLibraryGraphLoaders: Readonly<Record<string, GeneratedRunJSTypeLibraryGraphLoader>> = {\n${graphLoaders}\n};\n\nconst generatedRunJSTypeLibraryGraphPromises = new Map<string, Promise<GeneratedRunJSTypeLibraryGraph>>();\n\nfunction loadGeneratedRunJSTypeLibraryGraph(graphHash: string): Promise<GeneratedRunJSTypeLibraryGraph> {\n  const cached = generatedRunJSTypeLibraryGraphPromises.get(graphHash);\n  if (cached) {\n    return cached;\n  }\n  const loader = generatedRunJSTypeLibraryGraphLoaders[graphHash];\n  if (!loader) {\n    return Promise.reject(new Error(\`Unknown generated RunJS type-library graph: \${graphHash}\`));\n  }\n  const promise = loader().catch((error: unknown) => {\n    generatedRunJSTypeLibraryGraphPromises.delete(graphHash);\n    throw error;\n  });\n  generatedRunJSTypeLibraryGraphPromises.set(graphHash, promise);\n  return promise;\n}\n\nasync function loadGeneratedRunJSTypeLibraryPack(\n  packId: string,\n  graphHash: string,\n): Promise<RunJSTypeLibraryPack> {\n  const graph = await loadGeneratedRunJSTypeLibraryGraph(graphHash);\n  const descriptor = graph.packDescriptors[packId];\n  if (!descriptor) {\n    throw new Error(\`Unknown generated RunJS type-library pack \${packId} in graph \${graphHash}\`);\n  }\n  return { ...descriptor, dependencyFiles: graph.dependencyFiles };\n}\n\nexport const generatedRunJSTypeLibraryPackLoaders: Readonly<Record<string, GeneratedRunJSTypeLibraryPackLoader>> = {\n${loaders}\n};\n`;
+}
+
+function groupPackRecordsByGraphHash(records: readonly GeneratedPackRecord[]): Map<string, GeneratedPackRecord[]> {
+  const recordsByGraphHash = new Map<string, GeneratedPackRecord[]>();
+  for (const record of records) {
+    const graphRecords = recordsByGraphHash.get(record.graphHash) || [];
+    graphRecords.push(record);
+    recordsByGraphHash.set(record.graphHash, graphRecords);
+  }
+  return recordsByGraphHash;
+}
+
+function createPackDescriptor(pack: RunJSTypeLibraryPack): Omit<RunJSTypeLibraryPack, 'dependencyFiles'> {
+  return {
+    id: pack.id,
+    libraryName: pack.libraryName,
+    version: pack.version,
+    contentHash: pack.contentHash,
+    dependencies: pack.dependencies,
+    rootFiles: pack.rootFiles,
+    metadata: pack.metadata,
+  };
 }
 
 async function findStaleArtifacts(outputDirectory: string, expected: ReadonlyMap<string, string>): Promise<string[]> {
-  const existingPaths = await listFiles(outputDirectory);
-  const allPaths = new Set([...expected.keys(), ...existingPaths]);
   const stale: string[] = [];
-  for (const relativePath of [...allPaths].sort()) {
+  for (const relativePath of [...expected.keys()].sort()) {
     const expectedContent = expected.get(relativePath);
     let actualContent: string | undefined;
     try {
@@ -618,29 +665,6 @@ async function writeGeneratedArtifacts(outputDirectory: string, artifacts: Reado
     await fs.mkdir(path.dirname(fileName), { recursive: true });
     await fs.writeFile(fileName, content, 'utf8');
   }
-}
-
-async function listFiles(directory: string): Promise<string[]> {
-  let entries: Awaited<ReturnType<typeof fs.readdir>>;
-  try {
-    entries = await fs.readdir(directory, { withFileTypes: true, encoding: 'utf8' });
-  } catch (error) {
-    if (isMissingFileError(error)) {
-      return [];
-    }
-    throw error;
-  }
-  const files: string[] = [];
-  for (const entry of entries) {
-    const entryPath = path.join(directory, entry.name);
-    if (entry.isDirectory()) {
-      const nested = await listFiles(entryPath);
-      files.push(...nested.map((fileName) => path.posix.join(entry.name, fileName)));
-    } else if (entry.isFile()) {
-      files.push(entry.name);
-    }
-  }
-  return files.sort();
 }
 
 function getOwningPackageJsonPath(fileName: string): string | undefined {
@@ -701,26 +725,6 @@ function normalizeVirtualPackPath(value: string): string {
     throw new Error(`Invalid RunJS type-pack virtual path: ${value}`);
   }
   return path.posix.normalize(normalized);
-}
-
-function toGeneratedFileStem(id: string): string {
-  const stem = id
-    .replace(/([a-z0-9])([A-Z])/gu, '$1-$2')
-    .replace(/[^A-Za-z0-9]+/gu, '-')
-    .replace(/^-+|-+$/gu, '')
-    .toLowerCase();
-  return stem || sha256Hex(id).slice(0, 12);
-}
-
-function validateUniqueFileStems(records: readonly GeneratedPackRecord[]): void {
-  const idsByStem = new Map<string, string>();
-  for (const record of records) {
-    const existing = idsByStem.get(record.fileStem);
-    if (existing && existing !== record.pack.id) {
-      throw new Error(`RunJS type-pack IDs "${existing}" and "${record.pack.id}" generate the same file name`);
-    }
-    idsByStem.set(record.fileStem, record.pack.id);
-  }
 }
 
 function stableUnique(values: readonly string[]): string[] {

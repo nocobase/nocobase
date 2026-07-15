@@ -8,7 +8,7 @@
  */
 
 const { Command } = require('commander');
-const { run, isDev, isPackageValid, generatePlaywrightPath, generatePlugins } = require('../util');
+const { run, isDev, hasCorePackages, isPackageValid, generatePlaywrightPath, generatePlugins } = require('../util');
 const { dirname, resolve } = require('path');
 const { existsSync, mkdirSync, readFileSync, appendFileSync } = require('fs');
 const { readFile, writeFile } = require('fs').promises;
@@ -17,7 +17,7 @@ const { syncPluginSymlinks } = require('@nocobase/utils/plugin-symlink');
 function runPatchPackage() {
   // run yarn patch-package
   // console.log('patching third party packages...');
-  run('yarn', ['patch-package'], {
+  return run('yarn', ['patch-package'], {
     stdio: 'pipe',
   });
 }
@@ -55,13 +55,16 @@ module.exports = (cli) => {
     .allowUnknownOption()
     .option('--skip-umi')
     .action(async (options) => {
-      runPatchPackage();
+      await runPatchPackage();
       writeToExclude();
       generatePlugins();
       generatePlaywrightPath(true);
       await syncPluginSymlinks();
       if (!isDev()) {
         return;
+      }
+      if (hasCorePackages()) {
+        await run('yarn', ['workspace', '@nocobase/runjs', 'generate:type-packs']);
       }
       const cwd = process.cwd();
       if (!existsSync(resolve(cwd, '.env')) && existsSync(resolve(cwd, '.env.example'))) {

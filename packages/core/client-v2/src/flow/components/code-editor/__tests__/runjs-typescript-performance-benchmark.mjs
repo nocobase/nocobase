@@ -20,10 +20,7 @@ import { chromium } from 'playwright';
 const repositoryRoot = process.cwd();
 const require = createRequire(import.meta.url);
 const execFileAsync = promisify(execFile);
-const defaultOutputDirectory = path.resolve(
-  repositoryRoot,
-  'packages/core/client-v2/src/flow/components/code-editor/__tests__/reports',
-);
+const defaultOutputDirectory = path.resolve(repositoryRoot, 'node_modules/.cache/runjs-typescript-performance');
 const temporaryBuildDirectory = path.resolve(
   repositoryRoot,
   `node_modules/.cache/runjs-typescript-benchmark-${process.pid}`,
@@ -421,11 +418,11 @@ async function buildBrowserHarness() {
   );
   const outputs = [...Object.entries(result.metafile.outputs), ...Object.entries(workerResult.metafile.outputs)];
   return {
+    declarationGraphChunkCount: outputs.filter(([, output]) =>
+      Object.keys(output.inputs).some((input) => input.includes('/type-packs/generated/graphs/')),
+    ).length,
     initialRawBytes: entryOutput[1].bytes,
     outputCount: outputs.length,
-    typePackChunkCount: outputs.filter(([, output]) =>
-      Object.keys(output.inputs).some((input) => input.includes('/type-packs/generated/packs/')),
-    ).length,
   };
 }
 
@@ -565,6 +562,34 @@ function evaluateBudgets(summaries, chunkMeasurement) {
         chunkMeasurement.budgets.declarationBodiesExcludedFromInitialChunk,
         'ci-gate',
         'boolean',
+        'chunk-scan',
+      ),
+      budgetResult(
+        'shared-declaration-graph-chunks',
+        chunkMeasurement.budgets.declarationGraphChunkCount,
+        chunkMeasurement.budgets.declarationGraphChunkLimit,
+        chunkMeasurement.budgets.declarationGraphChunkWithinBudget &&
+          chunkMeasurement.budgets.packsShareDeclarationGraphs,
+        'ci-gate',
+        'count',
+        'chunk-scan',
+      ),
+      budgetResult(
+        'declaration-graph-raw-bytes',
+        chunkMeasurement.budgets.declarationGraphRawBytes,
+        chunkMeasurement.budgets.declarationGraphRawLimitBytes,
+        chunkMeasurement.budgets.declarationGraphRawWithinBudget,
+        'ci-gate',
+        'bytes',
+        'chunk-scan',
+      ),
+      budgetResult(
+        'declaration-graph-gzip-bytes',
+        chunkMeasurement.budgets.declarationGraphGzipBytes,
+        chunkMeasurement.budgets.declarationGraphGzipLimitBytes,
+        chunkMeasurement.budgets.declarationGraphGzipWithinBudget,
+        'ci-gate',
+        'bytes',
         'chunk-scan',
       ),
       budgetResult(

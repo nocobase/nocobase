@@ -136,7 +136,7 @@ function buildRuntimeReplacement(
   const bindings = importClause.namedBindings;
   if (bindings && ts.isNamespaceImport(bindings)) {
     lines.push(`const ${bindings.name.text} = ${runtimeAccess};`);
-  } else if (bindings) {
+  } else if (bindings && ts.isNamedImports(bindings)) {
     const runtimeBindings = bindings.elements
       .filter((element) => !element.isTypeOnly)
       .map((element) => {

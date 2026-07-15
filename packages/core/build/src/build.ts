@@ -151,6 +151,9 @@ export async function build(pkgs: string[]) {
         });
       });
       await runProfiledStage(profile, 'app client-v2 shell', async () => {
+        if (!clientV2Core || process.argv.includes('--only-tar')) {
+          await runScript(['workspace', '@nocobase/runjs', 'generate:type-packs'], ROOT_PATH);
+        }
         await runScript(
           ['rsbuild', 'build', '--config', path.join(CORE_APP, 'client-v2', 'rsbuild.config.ts')],
           ROOT_PATH,
@@ -311,7 +314,6 @@ async function buildPackageSourceLifecycle(
     log('prebuild');
     await runPhase('prebuild', async () => {
       await runScript(['prebuild'], pkg.location);
-      await packageJson.prebuild(pkg.location);
     });
   }
   if (userConfig.beforeBuild) {
