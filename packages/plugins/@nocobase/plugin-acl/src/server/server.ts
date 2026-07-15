@@ -496,7 +496,7 @@ export class PluginACLServer extends Plugin {
     this.app.on('cache:del:roles', ({ userId }) => {
       this.app.cache.del(`roles:${userId}`);
     });
-    this.app.resourceManager.use(setCurrentRole, { tag: 'setCurrentRole', before: 'acl', after: 'auth' });
+    this.app.resourcer.use(setCurrentRole, { tag: 'setCurrentRole', before: 'acl', after: 'auth' });
 
     this.app.acl.allow('users', 'setDefaultRole', 'loggedIn');
     this.app.acl.allow('roles', 'check', 'loggedIn');

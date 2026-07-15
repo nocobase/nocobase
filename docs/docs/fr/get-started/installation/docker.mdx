@@ -628,7 +628,7 @@ Si vous utilisez l'image avec Nginx intégré, il est généralement préférabl
 
 La configuration suivante proxy les requêtes du domaine vers `http://127.0.0.1:13000/` :
 
-```nginx
+```bash
 server {
     listen 80;
     server_name your_domain.com;  # Remplacez your_domain.com par votre domaine
@@ -659,8 +659,6 @@ server {
 
 Si vous voulez aussi activer HTTPS, configurez `443` et le certificat dans le Nginx de l'hôte. Le conteneur NocoBase n'a pas besoin de gérer les certificats séparément.
 
-Le bloc `location /` de cette configuration à la racine transmet également `/api/`, `/ws` et `/files/`. Si vous séparez les ressources statiques des routes de l'application, assurez-vous que `/files/` reste transmis à NocoBase et n'est pas traité comme un répertoire statique.
-
 ### Déploiement sous un sous-chemin
 
 Si vous voulez déployer l'application sous un sous-chemin, par exemple `https://your_domain.com/nocobase/`, configurez d'abord la variable d'environnement `APP_PUBLIC_PATH` :
@@ -677,7 +675,7 @@ Conservez le `/` au début et à la fin du chemin. Une fois la configuration ter
 
 Configurez ensuite le Nginx de l'hôte avec le même sous-chemin :
 
-```nginx
+```bash
 server {
     listen 80;
     server_name your_domain.com;  # Remplacez your_domain.com par votre domaine
@@ -703,32 +701,10 @@ server {
         send_timeout 600;
         proxy_buffering off;
     }
-
-    # Conserver la compatibilité avec les URL d'accès aux fichiers à la racine.
-    location ^~ /files/ {
-        proxy_pass http://127.0.0.1:13000;
-        proxy_http_version 1.1;
-
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $upstream_x_forwarded_proto;
-        proxy_set_header Host $final_host;
-        proxy_set_header Referer $http_referer;
-        proxy_set_header User-Agent $http_user_agent;
-
-        add_header Cache-Control "no-cache, no-store" always;
-
-        proxy_connect_timeout 600;
-        proxy_send_timeout 600;
-        proxy_read_timeout 600;
-        send_timeout 600;
-    }
 }
 ```
 
-Gardez ces points à l'esprit :
-
-- `APP_PUBLIC_PATH` et le chemin dans `proxy_pass` doivent rester cohérents. Si l'un des deux oublie `/nocobase/`, les ressources statiques et le routage risquent de ne pas fonctionner correctement
-- `/nocobase/files/` est transmis par `location /nocobase/` ; la route compatible `/files/` à la racine doit être transmise séparément à NocoBase
+Le point clé est que `APP_PUBLIC_PATH` et le chemin dans `proxy_pass` doivent rester cohérents. Si l'un des deux oublie `/nocobase/`, les ressources statiques et le routage risquent de ne pas fonctionner correctement.
 
 ### Autres options
 

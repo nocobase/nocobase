@@ -61,11 +61,6 @@
   },
   {
     "type": "custom-link",
-    "label": "URL estable",
-    "link": "/file-manager/stable-url"
-  },
-  {
-    "type": "custom-link",
     "label": "Vista previa de archivos",
     "items": [
       {

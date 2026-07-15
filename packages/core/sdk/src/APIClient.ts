@@ -55,7 +55,6 @@ export class APIClient {
   storagePrefix = 'NOCOBASE_';
   baseStoragePrefix = 'NOCOBASE_';
   shareToken = false;
-  appName?: string;
 
   toErrMessages(error) {
     if (typeof document !== 'undefined' && typeof error?.response?.data === 'string') {
@@ -113,7 +112,6 @@ export class APIClient {
         shareToken = false,
         ...others
       } = options || {};
-      this.appName = appName;
       this.shareToken = shareToken;
       this.baseStoragePrefix = storagePrefix;
       this.storagePrefix = appName ? `${storagePrefix}${appName.toUpperCase()}_` : storagePrefix;

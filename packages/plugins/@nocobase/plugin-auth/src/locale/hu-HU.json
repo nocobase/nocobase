@@ -68,7 +68,6 @@
   "The username or email is incorrect, please re-enter": "A felhasználónév vagy email cím helytelen, kérjük, adja meg újra",
   "The username/email or password is incorrect, please re-enter": "A felhasználónév/email cím vagy jelszó helytelen, kérjük, adja meg újra",
   "The validity period of each issued API Token. After the Token expires, if it is within the session validity period and has not exceeded the refresh limit, the server will automatically issue a new Token to maintain the user session, otherwise the user is required to log in again. (Each Token can only be refreshed once)": "A kiadott API Token érvényességi ideje. Miután a Token lejárt, ha az az munkamenet érvényességi idején belül van, és nem haladta meg a frissítési korlátot, a szerver automatikusan kiad egy új Tokent a felhasználói munkamenet fenntartásához, különben a felhasználónak újra be kell jelentkeznie. (Minden Token csak egyszer frissíthető)",
-  "Invalid sign-in origin": "Érvénytelen bejelentkezési forrás",
   "Token expired": "Token expired",
   "Token policy": "Token politika",
   "Token validity period": "Token érvényességi ideje",

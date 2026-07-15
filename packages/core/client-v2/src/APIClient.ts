@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { APIClient as APIClientSDK, hasHeaderValue } from '@nocobase/sdk';
+import { APIClient as APIClientSDK, type APIClientOptions, hasHeaderValue } from '@nocobase/sdk';
 
 function offsetToTimeZone(offset: number) {
   const hours = Math.floor(Math.abs(offset));
@@ -23,6 +23,15 @@ function getCurrentTimezone() {
 }
 
 export class APIClient extends APIClientSDK {
+  appName?: string;
+
+  constructor(options?: APIClientOptions) {
+    super(options);
+    if (options && typeof options !== 'function') {
+      this.appName = options.appName;
+    }
+  }
+
   getHostname() {
     if (process.env.API_BASE_URL) {
       try {

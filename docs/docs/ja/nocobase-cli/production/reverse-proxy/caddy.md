@@ -124,7 +124,7 @@ nb proxy caddy reload
 
 アプリケーションが CLI でホストされていない場合、または完全な Caddy 構成を自分で明示的に保守したい場合は、手動で作成することもできます。
 
-ただし、NocoBase の本番環境エントリは、単純な `reverse_proxy` だけではありません。API リクエストの転送に加えて、アップロードディレクトリ、フロントエンド静的リソース、ファイルアクセスルート `/files/`、`.well-known` ルーティング、WebSocket、SPA フォールバックページも処理する必要があります。
+ただし、NocoBase の場合、運用環境エントリは通常、単なる `reverse_proxy` ではありません。 API リクエストをバックエンド アプリケーションに転送することに加えて、完全で機能する Caddy 構成では通常、アップロード ディレクトリ、フロントエンド静的リソース、`.well-known` ルーティング、WebSocket、および SPA フォールバック ページも処理する必要があります。
 
 `test2` を例に挙げると、通常、Caddy に関連する主要なディレクトリには次のものが含まれます。
 
@@ -139,7 +139,6 @@ nb proxy caddy reload
 - `dist`: フロントエンド ビルド製品ディレクトリを公開します
 - `oauth well-known`: OAuth 検出パスの処理
 - `openid well-known`: OpenID 検出パスの処理
-- `files`: `/files/` 配下のファイルアクセスリクエストをバックエンドアプリケーションへ転送します
 - `api`: `/api/` リクエストをバックエンド アプリケーションに転送します
 - `ws`: WebSocket リクエストをバックエンド アプリケーションに転送します。
 - `spa v2`: `/v/` のフロントエンドのエントリとリターン ページを提供します
@@ -185,10 +184,6 @@ c.local.nocobase.com {
     @openid path_regexp openid ^/\\.well-known/openid-configuration/(.+)$
     handle @openid {
         rewrite * /{re.openid.1}/.well-known/openid-configuration
-        reverse_proxy host.docker.internal:56575
-    }
-
-    handle /files/* {
         reverse_proxy host.docker.internal:56575
     }
 
@@ -254,15 +249,7 @@ NB_CLI_ROOT/test2/storage/uploads
 2. 生成された結果に基づいて、ルーティング構造と実際のパスを確認します。
 3. 次に、ドメイン名、実行モード、マウント パスに従って手動で調整します。
 
-通常、この方法では、構成を最初から手書きするよりも、`/files/`、WebSocket、静的リソース、アップロードディレクトリ、`.well-known` ルート、SPA フォールバックページに関連する詳細を見逃しにくくなります。
-
-:::warning 注意
-
-`/files/` は NocoBase の認証を通す必要があるアプリケーションルートです。静的ディレクトリとして処理したり、SPA フォールバックへ流したりしないでください。NocoBase バックエンドへ転送し、`handle_path /*` などのフロントエンドフォールバックルールより前に配置します。
-
-`APP_PUBLIC_PATH=/nocobase/` を設定している場合は、`/nocobase/files/*` も転送してください。既存のファイル URL との互換性のため、ルートの `/files/*` ルールも残します。
-
-:::
+通常、この方法では、構成を最初から手書きするよりも、WebSocket、静的リソース、アップロード ディレクトリ、`.well-known` ルート、または SPA フォールバック ページに関連する詳細を見逃す可能性が低くなります。
 
 ## 設定を確認してリロードする
 

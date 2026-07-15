@@ -15,5 +15,3 @@ export const SystemRoleMode = {
     return Object.values(this).includes(value);
   },
 } as const;
-
-export type SystemRoleMode = (typeof SystemRoleMode)[Exclude<keyof typeof SystemRoleMode, 'validate'>];

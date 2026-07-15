@@ -10,7 +10,7 @@
 import { Application } from '@nocobase/server';
 import type { Model } from '@nocobase/database';
 import type { CollectionRepository } from '@nocobase/plugin-data-source-main';
-import { QueryTypes } from 'sequelize';
+import { Op } from 'sequelize';
 import { getFileKey } from '../utils';
 import { AttachmentModel, StorageClassType, StorageModel } from '../storages';
 
@@ -54,16 +54,6 @@ interface FileManagerLike {
   };
   loadStorages(): Promise<void>;
   storagesCache: Map<number | string, StorageModel>;
-}
-
-type AttachmentRow = Pick<AttachmentModel, 'path' | 'filename' | 'storageId' | 'url'> & {
-  id: number | string;
-};
-
-interface AttachmentModelLike {
-  getTableName(): string | { tableName: string; schema?: string; delimiter?: string };
-  rawAttributes: Record<string, { field?: string }>;
-  update(values: Partial<AttachmentRow>, options: { where: { id: number | string } }): Promise<unknown>;
 }
 
 function containsInvisibleChars(value?: string | null) {
@@ -152,41 +142,6 @@ async function loadFileCollections(app: Application) {
   await repository.load?.();
 }
 
-function getColumnName(model: AttachmentModelLike, attribute: keyof AttachmentRow) {
-  return model.rawAttributes[attribute]?.field || attribute;
-}
-
-function quotedColumn(app: Application, model: AttachmentModelLike, attribute: keyof AttachmentRow) {
-  return app.db.quoteIdentifier(getColumnName(model, attribute));
-}
-
-function quotedAlias(app: Application, attribute: keyof AttachmentRow) {
-  return app.db.quoteIdentifier(attribute);
-}
-
-async function findAttachmentRows(
-  app: Application,
-  model: AttachmentModelLike,
-  lastId: number | string | null,
-  limit: number,
-) {
-  const tableName = app.db.utils.quoteTable(model.getTableName());
-  const idColumn = quotedColumn(app, model, 'id');
-  const columns = (['id', 'path', 'filename', 'storageId', 'url'] as Array<keyof AttachmentRow>)
-    .map((attribute) => `${quotedColumn(app, model, attribute)} as ${quotedAlias(app, attribute)}`)
-    .join(', ');
-
-  return (await app.db.sequelize.query(
-    `select ${columns} from ${tableName}${
-      lastId == null ? '' : ` where ${idColumn} > :lastId`
-    } order by ${idColumn} asc limit ${limit}`,
-    {
-      replacements: { lastId },
-      type: QueryTypes.SELECT,
-    },
-  )) as AttachmentRow[];
-}
-
 async function repairCollectionAttachmentFilenames({
   app,
   fileManager,
@@ -208,20 +163,25 @@ async function repairCollectionAttachmentFilenames({
   if (!collection) {
     return;
   }
-  const FileModel = collection.model as unknown as AttachmentModelLike;
+  const Model = collection.model;
 
   let lastId: number | string | null = null;
   while (result.scanned < limit) {
-    const rows = await findAttachmentRows(app, FileModel, lastId, Math.min(batchSize, limit - result.scanned));
+    const rows = await Model.findAll({
+      attributes: ['id', 'path', 'filename', 'storageId', 'url'],
+      where: lastId ? { id: { [Op.gt]: lastId } } : undefined,
+      order: [['id', 'ASC']],
+      limit: Math.min(batchSize, limit - result.scanned),
+    });
     if (!rows.length) {
       break;
     }
 
     for (const row of rows) {
       result.scanned += 1;
-      lastId = row.id;
+      lastId = row.get('id') as number | string;
 
-      const record = row as AttachmentModel;
+      const record = row.toJSON() as AttachmentModel;
       if (!containsInvisibleChars(record.path) && !containsInvisibleChars(record.filename)) {
         continue;
       }
@@ -286,14 +246,11 @@ async function repairCollectionAttachmentFilenames({
 
         if (apply) {
           await storageInstance.copy(record, newRecord);
-          await FileModel.update(
-            {
-              path: newPath,
-              filename: newFilename,
-              url: updateUrlValue(record.url, oldKey, newKey),
-            },
-            { where: { id: lastId } },
-          );
+          await row.update({
+            path: newPath,
+            filename: newFilename,
+            url: updateUrlValue(record.url, oldKey, newKey),
+          });
           try {
             const [deleted] = await storageInstance.delete([record]);
             if (!deleted) {

@@ -61,11 +61,6 @@
   },
   {
     "type": "custom-link",
-    "label": "安定 URL",
-    "link": "/file-manager/stable-url"
-  },
-  {
-    "type": "custom-link",
     "label": "ファイルプレビュー",
     "items": [
       {

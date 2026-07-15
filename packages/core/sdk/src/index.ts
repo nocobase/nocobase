@@ -8,7 +8,6 @@
  */
 
 export * from './APIClient';
-export * from './auth-cookie';
 export * from './Auth';
 export * from './headers';
 export * from './Storage';

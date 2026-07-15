@@ -61,11 +61,6 @@
   },
   {
     "type": "custom-link",
-    "label": "Стабильный URL",
-    "link": "/file-manager/stable-url"
-  },
-  {
-    "type": "custom-link",
     "label": "Предпросмотр файлов",
     "items": [
       {

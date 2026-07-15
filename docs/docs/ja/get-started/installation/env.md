@@ -86,39 +86,6 @@ API_BASE_PATH=/api/
 
 ### API_BASE_URL
 
-フロントエンドが NocoBase API にアクセスするためのベース URL です。デフォルトは空で、その場合は同一オリジンの `${APP_PUBLIC_PATH}api/` を使用します。
-
-```bash
-API_BASE_URL=
-```
-
-ページと API サービスのオリジンが異なる場合（プロトコル、ドメイン、またはポートのいずれかが異なる場合）にのみ、完全な API アドレスを設定してください。
-
-```bash
-API_BASE_URL=https://api.example.com/api/
-```
-
-:::warning{title="クロスオリジン構成の注意"}
-NocoBase は、ログイン状態の維持と [stable file URL](../../file-manager/stable-url.md) へのアクセス認可に cookie を使用します。`API_BASE_URL` がページとは別オリジンを指す場合:
-
-- ページのオリジンを [`CORS_ORIGIN_WHITELIST`](#cors_origin_whitelist) に追加する必要があります。そうしないと、ブラウザーは API レスポンス内の `Set-Cookie` を無視し、ログイン cookie が保存されず、ファイルのプレビューやダウンロードなど cookie に依存する機能が `403` で失敗します。
-- cookie は `hostname` ごとに保存されます。ページと API が完全に異なるドメインを使っている場合、ページ側ドメインから `/files/` の stable URL に送るリクエストには API ドメインに保存されたログイン cookie が含まれず、ファイルアクセスは引き続き失敗します。
-
-そのため、リバースプロキシを使ってページと API を同一オリジンで配信し、`API_BASE_URL` は空のままにしておくことを推奨します。
-:::
-
-### CORS_ORIGIN_WHITELIST
-
-資格情報（cookie）付きで API にクロスオリジンアクセスできるオリジンのホワイトリストです。複数のオリジンはカンマ区切りで指定します。デフォルトは空です。
-
-```bash
-CORS_ORIGIN_WHITELIST=https://www.example.com,https://admin.example.com
-```
-
-- 未設定の場合、信頼されるのは API と同一オリジンのリクエストだけです。クロスオリジンのリクエストでも匿名で API を呼び出すことはできますが、ブラウザーはそれらに対して cookie の読み書きを許可しません。
-- 設定すると、ホワイトリスト内のオリジンには正確に反映された `Access-Control-Allow-Origin` と `Access-Control-Allow-Credentials: true` が返され、ブラウザーがクロスオリジンリクエストでログイン cookie を送信、保存できるようになります。
-- サインイン API はリクエストの `Origin` / `Referer` を検証します。ホワイトリスト外のオリジンからのクロスオリジンサインインリクエストは `403` で拒否されます。
-
 ### CLUSTER_MODE
 
 > `v1.6.0+`

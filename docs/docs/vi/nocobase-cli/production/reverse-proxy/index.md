@@ -9,7 +9,7 @@ keywords: "NocoBase,nb proxy nginx,nb proxy caddy, proxy ngược, Nginx, Caddy,
 
 Bài viết này chỉ áp dụng cho các ứng dụng được cài đặt bằng `nb init`.
 
-Trong NocoBase, proxy ngược của môi trường production không chỉ chuyển tiếp request đến process ứng dụng. Nó còn phải xử lý WebSocket, subpath, tài nguyên tĩnh frontend, thư mục tải lên, route truy cập file `/files/` và các trang fallback SPA.
+Trong NocoBase, proxy ngược của môi trường sản xuất không chỉ đơn giản là chuyển tiếp các yêu cầu đến quy trình ứng dụng. Thông thường, các chi tiết về WebSockets, đường dẫn phụ, tài nguyên tĩnh giao diện người dùng, thư mục tải lên và trang dự phòng SPA cũng được xử lý cùng lúc.
 
 Chức năng của `nb proxy` là thu thập những chi tiết dễ bị bỏ sót này thành một tập hợp các mục lệnh ổn định.
 

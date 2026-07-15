@@ -121,6 +121,14 @@ export const Edit = withDynamicSchemaProps((props) => {
             fileCollectionName: fileCollection,
           });
 
+          if (!checkData?.data?.isSupportToUploadFiles) {
+            vditor.tip(
+              t('vditor.uploadError.message', { ns: NAMESPACE, storageTitle: checkData.data.storage?.title }),
+              0,
+            );
+            return;
+          }
+
           vditor.tip(t('uploading'), 0);
           const { data, errorMessage } = await fileManagerPlugin.uploadFile({
             file,

@@ -95,7 +95,6 @@ services:
 - `NOCOBASE_PROXY_UPSTREAM_HOST=app` cho phép container Nginx truy cập dịch vụ `app` qua mạng Compose
 - `./storage` cần được mount vào cả `app` và `nginx` để cùng dùng cấu hình proxy, tài nguyên tĩnh và tệp tải lên
 - Container `nginx` cần chờ `nocobase.conf` được tạo xong, sau đó dùng `ln -sf` liên kết nó tới `/etc/nginx/conf.d/default.conf`
-- Cấu hình được tạo tự động chuyển tiếp cả route `/files/` dưới `APP_PUBLIC_PATH` và route `/files/` ở root đến NocoBase để xử lý xem trước và tải file có xác thực
 - Nếu dùng container Nginx bên ngoài, chỉ cần để container `nginx` xử lý mapping cổng host. Khi kiểm thử, bạn có thể bắt đầu với `13000:80`; trong production, thường mở trực tiếp các cổng `80` và `443` của host, còn dịch vụ `app` không cần mở cổng ra host
 
 ## Nếu dùng Nginx cài trực tiếp trên máy host
@@ -170,8 +169,6 @@ sudo systemctl reload nginx
 ```
 
 Nếu Nginx trên host của bạn không dùng thư mục `conf.d`, hãy thay đường dẫn đích bằng đường dẫn cấu hình thực tế của bạn. Thông thường, giữ `nocobase.conf` như một file được include từ ngữ cảnh `http {}` sẽ an toàn hơn là chép thủ công nội dung của nó.
-
-Nếu bạn tự quản lý Nginx thay vì dùng cấu hình được tạo tự động, hãy bảo đảm `/files/` và route tương ứng dưới `APP_PUBLIC_PATH` được chuyển tiếp đến NocoBase trước các rule fallback SPA. Xem [Proxy ngược Nginx](../../nocobase-cli/production/reverse-proxy/nginx.md) để tham khảo ví dụ đầy đủ.
 
 ## Liên kết liên quan
 

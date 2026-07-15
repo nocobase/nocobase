@@ -13,16 +13,10 @@ import { Upload } from 'antd';
 import { castArray } from 'lodash';
 import { useTranslation } from 'react-i18next';
 import { largeField, tExpr, EditableItemModel, observable } from '@nocobase/flow-engine';
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useLayoutEffect, useState } from 'react';
 import { FieldContext } from '@formily/react';
 import { FieldModel, RecordPickerContent } from '@nocobase/client-v2';
-import {
-  FilePreviewRenderer,
-  getDownloadFileName,
-  rememberLocalPreviewUrl,
-  revokeLocalPreviewUrls,
-  triggerFileDownload,
-} from '../previewer/filePreviewTypes';
+import { FilePreviewRenderer, getDownloadFileName } from '../previewer/filePreviewTypes';
 import {
   getUploadFieldPreviewIndex,
   normalizeUploadFieldFileList,
@@ -47,25 +41,12 @@ export const CardUpload = (props) => {
     onSelectExitRecordClick,
     quickUpload = true,
     showFileName,
-    fileCollection,
   } = props;
   const [fileList, setFileList] = useState(() => normalizeUploadFieldFileList(castArray(value || [])));
-  const fileListRef = useRef(fileList);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0); // 用来跟踪当前预览的图片索引
   const { t } = useTranslation();
-
-  useEffect(() => {
-    fileListRef.current = fileList;
-  }, [fileList]);
-
-  useEffect(() => {
-    return () => {
-      revokeLocalPreviewUrls(fileListRef.current.flatMap((file: any) => [file, file.response].filter(Boolean)));
-    };
-  }, []);
-
   useLayoutEffect(() => {
     // 在浏览器绘制前完成外部值同步，避免先闪出旧槽位再切换成新布局。
     setFileList((previousFileList) => normalizeUploadFieldFileList(castArray(value || []), previousFileList));
@@ -105,7 +86,20 @@ export const CardUpload = (props) => {
     if (!url) {
       return;
     }
-    triggerFileDownload(url, getDownloadFileName(target, url));
+    const filename = getDownloadFileName(target, url);
+    // eslint-disable-next-line promise/catch-or-return
+    fetch(url)
+      .then((response) => response.blob())
+      .then((blob) => {
+        const blobUrl = URL.createObjectURL(new Blob([blob]));
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        URL.revokeObjectURL(blobUrl);
+        link.remove();
+      });
   };
 
   return (
@@ -155,16 +149,6 @@ export const CardUpload = (props) => {
           listType="picture-card"
           fileList={fileList}
           onChange={({ fileList: newFileList }) => {
-            newFileList.forEach((file: any) => {
-              if ((file.status === 'done' || file.id) && file.originFileObj) {
-                rememberLocalPreviewUrl(file.response || file, file);
-              }
-            });
-            revokeLocalPreviewUrls(
-              fileList
-                .filter((file: any) => !newFileList.some((nextFile: any) => nextFile.uid === file.uid))
-                .flatMap((file: any) => [file, file.response].filter(Boolean)),
-            );
             // 保留上传组件生成的 uid，避免上传完成后回灌值把同一项渲染成两张不同的卡片。
             setFileList((previousFileList) => normalizeUploadFieldFileList(newFileList, previousFileList));
             const doneFiles = newFileList.filter((f: any) => f.status === 'done' || f.id);
@@ -206,7 +190,6 @@ export const CardUpload = (props) => {
             open={previewOpen}
             file={previewImage}
             list={fileList}
-            fileCollection={fileCollection}
             index={currentImageIndex}
             onOpenChange={setPreviewOpen}
             onClose={() => setPreviewImage(null)}
@@ -270,13 +253,7 @@ export class UploadFieldModel extends FieldModel {
     this.props.onChange(this.selectedRows.value);
   }
   render() {
-    const targetCollection = this.context.collectionField?.targetCollection;
-    const currentCollection = this.context.collection;
-    const fileCollection = targetCollection || (currentCollection?.template === 'file' ? currentCollection : null);
-    const fileCollectionReference = fileCollection
-      ? { dataSourceKey: fileCollection.dataSourceKey, collectionName: fileCollection.name }
-      : undefined;
-    return <CardUpload {...this.props} fileCollection={fileCollectionReference} />;
+    return <CardUpload {...this.props} />;
   }
 }
 
@@ -413,7 +390,6 @@ UploadFieldModel.registerFlow({
                 `${fileCollection}:create?attachmentField=${collectionField.collectionName}.${collectionField.name}`,
                 dataSourceKey,
               ),
-              dataSourceKey,
               storage,
             });
 
