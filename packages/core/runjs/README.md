@@ -2,9 +2,12 @@
 
 Shared RunJS contracts, stable hashing helpers, source inspection, and the virtual-workspace compiler.
 
-The root entry is dependency-light. Compiler functionality is exported from `@nocobase/runjs/compiler` and depends
-only on TypeScript plus Node.js standard-library modules. Browser-specific type-library contracts are exported from
-`@nocobase/runjs/client-v2`.
+The root entry is dependency-light. Compiler functionality is exported from `@nocobase/runjs/compiler` and uses
+TypeScript for semantic diagnostics plus esbuild for server-side workspace bundling. Browser-specific type-library
+contracts are exported from `@nocobase/runjs/client-v2`.
+
+`compileRunJSSourceWorkspace()` is asynchronous because workspace files are resolved through an in-memory esbuild
+plugin. Callers must await its result.
 
 ## TypeScript type-library architecture
 

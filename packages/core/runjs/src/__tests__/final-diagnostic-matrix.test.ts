@@ -114,8 +114,8 @@ describe('RunJS final shared TypeScript diagnostic matrix', () => {
 
   it.each(runJSTypeScriptFinalDiagnosticMatrix.filter((caseDefinition) => caseDefinition.compiler !== false))(
     'matches the compiler gate for $id',
-    (caseDefinition) => {
-      const result = compileRunJSSourceWorkspace({
+    async (caseDefinition) => {
+      const result = await compileRunJSSourceWorkspace({
         entry: caseDefinition.path,
         files: [{ content: caseDefinition.source, path: caseDefinition.path }],
         legacy: legacy(caseDefinition),

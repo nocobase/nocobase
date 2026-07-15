@@ -7,22 +7,30 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { eachMapping, TraceMap } from '@jridgewell/trace-mapping';
+import {
+  build as esbuild,
+  type Loader,
+  type Message,
+  type OnResolveArgs,
+  type PartialMessage,
+  type Plugin,
+} from 'esbuild';
 import { posix as pathPosix } from 'path';
 import ts from 'typescript';
 
 import {
   buildRunJSFilesHash,
   normalizePath,
-  normalizeText,
   sha256Hex,
   type RunJSCompileDiagnostic,
   type RunJSCompileFailureCode,
   type RunJSCompileFile,
-  type RunJSSourceAuthoringLegacyInfo,
+  type RunJSRuntimeArtifact,
   type RunJSSourceAuthoringInspector,
+  type RunJSSourceAuthoringLegacyInfo,
   type RunJSSourceLocator,
   type RunJSSurfaceStyle,
-  type RunJSRuntimeArtifact,
 } from '..';
 import { inspectRunJSSourceWorkspace } from './source-inspection';
 
@@ -61,59 +69,29 @@ interface RunJSContentFile {
   extension: string;
 }
 
-interface ImportBinding {
-  specifier: string;
-  start: number;
-  targetPath?: string;
-  defaultName?: string;
-  named: NamedImportBinding[];
-}
-
-interface BuiltInImportBinding {
-  ctxLibName: string;
-  start: number;
-  defaultName?: string;
-  namespaceName?: string;
-  named: NamedImportBinding[];
-}
-
-interface NamedImportBinding {
-  imported: string;
-  local: string;
-}
-
-interface RunJSModuleInfo {
-  file: RunJSContentFile;
-  sourceFile?: ts.SourceFile;
-  imports: ImportBinding[];
-  builtInImports: BuiltInImportBinding[];
-  namedExports: Set<string>;
-  hasDefaultExport: boolean;
-  defaultExportSymbol: string;
-  moduleSymbol: string;
-  isJson: boolean;
-}
-
-interface RunJSTransformedLineMapping {
-  generatedLine: number;
-  source: string;
+interface RunJSEntryLineMapping {
   sourceLine: number;
   sourceColumn?: number;
 }
 
-interface RunJSTransformedCode {
+interface RunJSEntryAdaptation {
   code: string;
-  mappings: RunJSTransformedLineMapping[];
+  lineMappings: Map<number, RunJSEntryLineMapping>;
 }
 
-interface RunJSEmittedLineMapping {
-  generatedLine: number;
-  transformedLine: number;
+interface RunJSEntrySegment {
+  code: string;
+  mappings: Array<{
+    generatedLine: number;
+    sourceLine: number;
+    sourceColumn?: number;
+  }>;
 }
 
-interface RunJSTranspiledCode {
-  code: string;
-  mappings: RunJSEmittedLineMapping[];
+interface RunJSSourceReplacement {
+  start: number;
+  end: number;
+  content: string;
 }
 
 interface RunJSSourceMapPayload {
@@ -122,34 +100,35 @@ interface RunJSSourceMapPayload {
   sourceURL: string;
   entryPath: string;
   generatedCodeLineOffset: number;
-  mappings: RunJSTransformedLineMapping[];
+  mappings: Array<{
+    generatedLine: number;
+    source: string;
+    sourceLine: number;
+    sourceColumn?: number;
+  }>;
 }
 
-interface RunJSRuntimeCodeBuildResult {
+interface RunJSBundleOutput {
   code: string;
   sourceMap: RunJSSourceMapPayload;
+  warnings: RunJSCompileDiagnostic[];
 }
 
-interface SourceFileWithParseDiagnostics extends ts.SourceFile {
-  parseDiagnostics?: readonly ts.Diagnostic[];
+interface RunJSEsbuildMessageDetail {
+  runjsDiagnostic: RunJSCompileDiagnostic;
 }
 
 type AsyncFunctionConstructor = new (...args: string[]) => (...args: unknown[]) => Promise<unknown>;
 
 type ResolveImportResult =
-  | {
-      status: 'resolved';
-      path: string;
-    }
-  | {
-      status: 'blocked';
-      path?: string;
-      message: string;
-    }
-  | {
-      status: 'notFound';
-    };
+  | { status: 'resolved'; path: string }
+  | { status: 'blocked'; message: string }
+  | { status: 'notFound' };
 
+const sourceNamespace = 'runjs-source';
+const launcherNamespace = 'runjs-launcher';
+const launcherPath = '__runjs_launcher__.js';
+const entryModuleSpecifier = '__runjs_entry_module__';
 const importableExtensions = new Set(['.ts', '.tsx', '.js', '.jsx', '.json']);
 const resolvableExtensions = ['.ts', '.tsx', '.js', '.jsx', '.json'];
 const commonJSGlobalHosts = new Set(['globalThis', 'global', 'window']);
@@ -157,6 +136,7 @@ const commonJSRequireHosts = new Set(['globalThis', 'global', 'window', 'module'
 const runtimeVersionDefault = 'v2';
 const runJSSourceURLPrefix = 'nocobase-runjs://bundle/';
 const jsRunnerGeneratedCodeLineOffset = 2;
+const windowsDrivePrefix = /^[A-Za-z]:\//u;
 const runJSBuiltInModules: Readonly<Record<string, string>> = {
   react: 'React',
   'react-dom/client': 'ReactDOM',
@@ -170,90 +150,43 @@ const runJSBuiltInModules: Readonly<Record<string, string>> = {
 const asyncFunctionConstructor = Object.getPrototypeOf(async function runJSWorkflowSyntaxCheck() {})
   .constructor as AsyncFunctionConstructor;
 
-export function compileRunJSSourceWorkspace(
+export async function compileRunJSSourceWorkspace(
   input: CompileRunJSSourceWorkspaceInput,
-): CompileRunJSSourceWorkspaceResult {
+): Promise<CompileRunJSSourceWorkspaceResult> {
   const entryPath = normalizePath(input.entry);
   const files = contentFilesFromChanges(input.files);
+  const filesHash = buildRunJSFilesHash(input.files);
+  const sourceURL = buildRunJSSourceURL(filesHash);
   const diagnostics: RunJSCompileDiagnostic[] = [];
-  const modules = new Map<string, RunJSModuleInfo>();
-  const orderedPaths: string[] = [];
-  const visited = new Set<string>();
-  const visiting = new Set<string>();
+  const entry = files.get(entryPath);
 
-  const visit = (path: string, importer?: { sourceFile: ts.SourceFile; start: number }) => {
-    if (visited.has(path)) {
-      return;
+  if (!entry) {
+    diagnostics.push({
+      severity: 'error',
+      code: 'RUNJS_ENTRY_NOT_FOUND',
+      path: entryPath,
+      message: `Entry file "${entryPath}" was not found`,
+    });
+  } else if (!isImportableExtension(entry.path)) {
+    diagnostics.push({
+      severity: 'error',
+      code: 'RUNJS_IMPORT_NOT_ALLOWED',
+      path: entryPath,
+      message: `File "${entryPath}" cannot be compiled as RunJS`,
+    });
+  }
+
+  let bundled: RunJSBundleOutput | undefined;
+  if (!hasErrorDiagnostic(diagnostics) && entry) {
+    const entryAdaptation = adaptRunJSEntry(entry);
+    try {
+      bundled = await buildRunJSBundle(files, entryPath, entryAdaptation, sourceURL);
+      diagnostics.push(...bundled.warnings);
+    } catch (error) {
+      diagnostics.push(...esbuildFailureToDiagnostics(error, entryPath, entryAdaptation));
     }
-    if (visiting.has(path)) {
-      diagnostics.push(
-        diagnosticAt(importer?.sourceFile, importer?.start, {
-          code: 'RUNJS_COMPILE_FAILED',
-          path,
-          message: `Circular import involving "${path}" is not supported`,
-        }),
-      );
-      return;
-    }
+  }
 
-    const file = files.get(path);
-    if (!file) {
-      diagnostics.push({
-        severity: 'error',
-        code: importer ? 'RUNJS_IMPORT_NOT_FOUND' : 'RUNJS_ENTRY_NOT_FOUND',
-        path,
-        message: importer ? `Import "${path}" could not be resolved` : `Entry file "${path}" was not found`,
-      });
-      return;
-    }
-    if (!isImportableExtension(file.path)) {
-      diagnostics.push({
-        severity: 'error',
-        code: 'RUNJS_IMPORT_NOT_ALLOWED',
-        path,
-        message: `File "${path}" cannot be compiled as RunJS`,
-      });
-      return;
-    }
-
-    visiting.add(path);
-    const moduleInfo = analyzeModule(file, diagnostics, path === entryPath);
-    modules.set(path, moduleInfo);
-
-    for (const importBinding of moduleInfo.imports) {
-      const resolved = resolveRelativeRunJSImport(file.path, importBinding.specifier, files);
-      if (resolved.status === 'blocked') {
-        diagnostics.push(
-          diagnosticAt(moduleInfo.sourceFile, importBinding.start, {
-            code: 'RUNJS_IMPORT_NOT_ALLOWED',
-            path: file.path,
-            message: resolved.message,
-          }),
-        );
-        continue;
-      }
-      if (resolved.status === 'notFound') {
-        diagnostics.push(
-          diagnosticAt(moduleInfo.sourceFile, importBinding.start, {
-            code: 'RUNJS_IMPORT_NOT_FOUND',
-            path: file.path,
-            message: `Import "${importBinding.specifier}" could not be resolved`,
-          }),
-        );
-        continue;
-      }
-
-      importBinding.targetPath = resolved.path;
-      visit(resolved.path, { sourceFile: moduleInfo.sourceFile as ts.SourceFile, start: importBinding.start });
-    }
-
-    visiting.delete(path);
-    visited.add(path);
-    orderedPaths.push(path);
-  };
-
-  visit(entryPath);
-  validateImportBindings(modules, diagnostics);
   if (!hasErrorDiagnostic(diagnostics)) {
     diagnostics.push(
       ...inspectRunJSSourceWorkspace({
@@ -266,20 +199,14 @@ export function compileRunJSSourceWorkspace(
     );
   }
 
-  const filesHash = buildRunJSFilesHash(input.files);
   let code = '';
   let sourceMap: string | undefined;
-  if (!hasErrorDiagnostic(diagnostics)) {
-    const runtimeCode = buildRuntimeCode(orderedPaths, modules, entryPath, diagnostics, {
-      entryPath,
-      sourceURL: buildRunJSSourceURL(filesHash),
-    });
-    code = appendRunJSSourceURL(runtimeCode.code, runtimeCode.sourceMap.sourceURL);
-    sourceMap = JSON.stringify(runtimeCode.sourceMap);
-  }
-  if (!hasErrorDiagnostic(diagnostics)) {
+  if (!hasErrorDiagnostic(diagnostics) && bundled) {
+    code = appendRunJSSourceURL(bundled.code, sourceURL);
+    sourceMap = JSON.stringify(bundled.sourceMap);
     collectRuntimeSyntaxDiagnostics(code, entryPath, input.surfaceStyle, diagnostics);
   }
+
   if (!hasErrorDiagnostic(diagnostics) && input.surfaceStyle !== 'workflow' && input.inspectAuthoring) {
     diagnostics.push(
       ...input.inspectAuthoring({
@@ -293,17 +220,18 @@ export function compileRunJSSourceWorkspace(
     );
   }
 
+  const version = resolveArtifactVersion(input.surfaceStyle, input.runtimeVersion);
   return {
     artifact: {
       code,
       sourceMap,
-      version: resolveArtifactVersion(input.surfaceStyle, input.runtimeVersion),
+      version,
       diagnostics,
       filesHash,
       entryPath,
       metadata: {
         entry: entryPath,
-        runtimeVersion: resolveArtifactVersion(input.surfaceStyle, input.runtimeVersion),
+        runtimeVersion: version,
         surfaceStyle: input.surfaceStyle,
       },
     },
@@ -335,26 +263,204 @@ function contentFilesFromChanges(files: RunJSCompileFileInput[]): Map<string, Ru
   return contentFiles;
 }
 
-function analyzeModule(
-  file: RunJSContentFile,
-  diagnostics: RunJSCompileDiagnostic[],
-  isEntry: boolean,
-): RunJSModuleInfo {
-  const defaultExportSymbol = buildInternalSymbol('__runjs_default', file.path);
-  const moduleInfo: RunJSModuleInfo = {
-    file,
-    imports: [],
-    builtInImports: [],
-    namedExports: new Set<string>(),
-    hasDefaultExport: file.extension === '.json',
-    defaultExportSymbol,
-    moduleSymbol: buildInternalSymbol('__runjs_module', file.path),
-    isJson: file.extension === '.json',
-  };
+async function buildRunJSBundle(
+  files: Map<string, RunJSContentFile>,
+  entryPath: string,
+  entryAdaptation: RunJSEntryAdaptation,
+  sourceURL: string,
+): Promise<RunJSBundleOutput> {
+  const result = await esbuild({
+    absWorkingDir: '/',
+    banner: {
+      js: buildRuntimeRequirePreamble(),
+    },
+    bundle: true,
+    charset: 'utf8',
+    entryPoints: [launcherPath],
+    format: 'cjs',
+    jsx: 'transform',
+    jsxFactory: 'ctx.React.createElement',
+    jsxFragment: 'ctx.React.Fragment',
+    legalComments: 'none',
+    logLevel: 'silent',
+    outfile: '/runjs-bundle.js',
+    platform: 'neutral',
+    plugins: [createRunJSWorkspacePlugin(files, entryPath, entryAdaptation)],
+    sourcemap: 'external',
+    sourcesContent: true,
+    target: 'es2020',
+    treeShaking: true,
+    write: false,
+  });
 
+  const outputFiles = result.outputFiles || [];
+  const javascript = outputFiles.find((file) => file.path.endsWith('.js'))?.text;
+  const standardSourceMap = outputFiles.find((file) => file.path.endsWith('.js.map'))?.text;
+  if (typeof javascript !== 'string' || typeof standardSourceMap !== 'string') {
+    throw new Error('esbuild did not produce the expected RunJS bundle outputs');
+  }
+
+  return {
+    code: removeSourceMapComment(javascript).trimEnd(),
+    sourceMap: convertSourceMap(standardSourceMap, files, entryPath, entryAdaptation, sourceURL),
+    warnings: result.warnings.map((warning) => ({
+      ...esbuildMessageToDiagnostic(warning, entryPath, entryAdaptation),
+      severity: 'warning',
+    })),
+  };
+}
+
+function createRunJSWorkspacePlugin(
+  files: Map<string, RunJSContentFile>,
+  entryPath: string,
+  entryAdaptation: RunJSEntryAdaptation,
+): Plugin {
+  return {
+    name: 'nocobase-runjs-workspace',
+    setup(build) {
+      build.onResolve({ filter: /.*/ }, (args) => {
+        if (args.kind === 'entry-point') {
+          return { path: launcherPath, namespace: launcherNamespace };
+        }
+        if (args.namespace === launcherNamespace && args.path === entryModuleSpecifier) {
+          return { path: entryPath, namespace: sourceNamespace };
+        }
+        if (args.namespace !== sourceNamespace) {
+          return undefined;
+        }
+
+        return resolveWorkspaceImport(args, files, entryPath);
+      });
+
+      build.onLoad({ filter: /.*/, namespace: launcherNamespace }, () => ({
+        contents: `const __runjs_entry__ = require(${JSON.stringify(
+          entryModuleSpecifier,
+        )});\nreturn __runjs_entry__.default();`,
+        loader: 'js',
+        resolveDir: '/',
+      }));
+
+      build.onLoad({ filter: /.*/, namespace: sourceNamespace }, (args) => {
+        const file = files.get(args.path);
+        if (!file) {
+          return {
+            errors: [
+              diagnosticToEsbuildMessage({
+                severity: 'error',
+                code: 'RUNJS_IMPORT_NOT_FOUND',
+                path: args.path,
+                message: `Import "${args.path}" could not be resolved`,
+              }),
+            ],
+          };
+        }
+
+        const policyDiagnostics = collectModulePolicyDiagnostics(file, file.path === entryPath);
+        if (policyDiagnostics.length) {
+          return {
+            errors: policyDiagnostics.map(diagnosticToEsbuildMessage),
+          };
+        }
+
+        return {
+          contents: file.path === entryPath ? entryAdaptation.code : normalizeModuleSource(file),
+          loader: loaderForPath(file.path),
+          resolveDir: `/${pathPosix.dirname(file.path)}`,
+        };
+      });
+    },
+  };
+}
+
+function resolveWorkspaceImport(args: OnResolveArgs, files: Map<string, RunJSContentFile>, entryPath: string) {
+  const importer = normalizeVirtualSourcePath(args.importer);
+  const location = findModuleSpecifierLocation(files.get(importer), args.path);
+
+  if (args.kind === 'dynamic-import') {
+    return {
+      errors: [
+        diagnosticToEsbuildMessage({
+          severity: 'error',
+          code: 'RUNJS_DYNAMIC_IMPORT_UNSUPPORTED',
+          path: importer,
+          ...location,
+          message: 'Dynamic import(...) is not supported in RunJS modules',
+        }),
+      ],
+    };
+  }
+
+  if (!isRelativeImportSpecifier(args.path)) {
+    const ctxLibName = resolveRunJSBuiltInModule(args.path);
+    if (ctxLibName) {
+      return { path: args.path, external: true };
+    }
+    return {
+      errors: [
+        diagnosticToEsbuildMessage({
+          severity: 'error',
+          code: 'RUNJS_IMPORT_NOT_ALLOWED',
+          path: importer,
+          ...location,
+          message: `Import "${args.path}" is not allowed`,
+        }),
+      ],
+    };
+  }
+
+  const resolved = resolveRelativeRunJSImport(importer, args.path, files);
+  if (resolved.status === 'blocked') {
+    return {
+      errors: [
+        diagnosticToEsbuildMessage({
+          severity: 'error',
+          code: 'RUNJS_IMPORT_NOT_ALLOWED',
+          path: importer,
+          ...location,
+          message: resolved.message,
+        }),
+      ],
+    };
+  }
+  if (resolved.status === 'notFound') {
+    return {
+      errors: [
+        diagnosticToEsbuildMessage({
+          severity: 'error',
+          code: 'RUNJS_IMPORT_NOT_FOUND',
+          path: importer,
+          ...location,
+          message: `Import "${args.path}" could not be resolved`,
+        }),
+      ],
+    };
+  }
+  if (resolved.path === entryPath) {
+    return {
+      errors: [
+        diagnosticToEsbuildMessage({
+          severity: 'error',
+          code: 'RUNJS_IMPORT_NOT_ALLOWED',
+          path: importer,
+          ...location,
+          message: `Import "${args.path}" cannot target the executable RunJS entry`,
+        }),
+      ],
+    };
+  }
+
+  return { path: resolved.path, namespace: sourceNamespace };
+}
+
+function adaptRunJSEntry(file: RunJSContentFile): RunJSEntryAdaptation {
   if (file.extension === '.json') {
-    collectJsonDiagnostics(file, diagnostics);
-    return moduleInfo;
+    const executeSymbol = buildInternalSymbol('__runjs_execute', file.path);
+    return joinEntrySegments([
+      generatedEntrySegment(`async function ${executeSymbol}() {`),
+      sourceEntrySegment(`return ${file.content};`, 1, 1),
+      generatedEntrySegment('}'),
+      generatedEntrySegment(`export default ${executeSymbol};`),
+    ]);
   }
 
   const sourceFile = ts.createSourceFile(
@@ -364,166 +470,622 @@ function analyzeModule(
     true,
     getScriptKind(file.path),
   );
-  moduleInfo.sourceFile = sourceFile;
-  diagnostics.push(
-    ...getSourceFileParseDiagnostics(sourceFile).map((diagnostic) =>
-      tsDiagnosticToRunJSDiagnostic(diagnostic, file.path),
-    ),
-  );
-  collectDynamicImportDiagnostics(sourceFile, diagnostics);
-  collectRequireImportDiagnostics(sourceFile, diagnostics);
-  collectCommonJSExportDiagnostics(sourceFile, diagnostics);
-  if (!isEntry) {
-    collectNonEntryTopLevelReturnDiagnostics(sourceFile, diagnostics);
-  }
+  const executeSymbol = buildInternalSymbol('__runjs_execute', file.path);
+  const defaultSymbol = buildInternalSymbol('__runjs_default', file.path);
+  const hoistedSegments: RunJSEntrySegment[] = [];
+  const replacements: RunJSSourceReplacement[] = [];
 
   for (const statement of sourceFile.statements) {
     if (ts.isImportDeclaration(statement)) {
-      collectImportDeclaration(statement, sourceFile, moduleInfo, diagnostics);
+      const position = sourceFile.getLineAndCharacterOfPosition(statement.getStart(sourceFile));
+      const specifier = getStringLiteralText(statement.moduleSpecifier);
+      const source =
+        specifier && isEmptyRuntimeImport(statement)
+          ? `import ${JSON.stringify(specifier)};`
+          : sourceFile.text.slice(statement.getStart(sourceFile), statement.end);
+      hoistedSegments.push(sourceEntrySegment(source, position.line + 1, position.character + 1));
+      replacements.push(blankReplacement(sourceFile, statement));
       continue;
     }
     if (ts.isImportEqualsDeclaration(statement)) {
+      replacements.push(blankReplacement(sourceFile, statement));
+      continue;
+    }
+    if (ts.isExportDeclaration(statement)) {
+      if (statement.moduleSpecifier) {
+        const specifier = getStringLiteralText(statement.moduleSpecifier);
+        if (specifier) {
+          const position = sourceFile.getLineAndCharacterOfPosition(statement.getStart(sourceFile));
+          hoistedSegments.push(
+            sourceEntrySegment(`import ${JSON.stringify(specifier)};`, position.line + 1, position.character + 1),
+          );
+        }
+      }
+      replacements.push(blankReplacement(sourceFile, statement));
+      continue;
+    }
+    if (ts.isExportAssignment(statement) && !statement.isExportEquals) {
+      const original = sourceFile.text.slice(statement.getStart(sourceFile), statement.end);
+      const replacement = `const ${defaultSymbol} = ${statement.expression.getText(sourceFile)};`;
+      replacements.push({
+        start: statement.getStart(sourceFile),
+        end: statement.end,
+        content: preserveLineCount(original, replacement),
+      });
+      continue;
+    }
+    if (!hasExportModifier(statement)) {
+      continue;
+    }
+
+    if (
+      hasDefaultModifier(statement) &&
+      (ts.isFunctionDeclaration(statement) || ts.isClassDeclaration(statement)) &&
+      !statement.name
+    ) {
+      const original = sourceFile.text.slice(statement.getStart(sourceFile), statement.end);
+      const replacement = ts.isFunctionDeclaration(statement)
+        ? original.replace(
+            /^export\s+default\s+(async\s+)?function\b/u,
+            (_match, asyncModifier: string | undefined) => `const ${defaultSymbol} = ${asyncModifier || ''}function`,
+          )
+        : original.replace(/^export\s+default\s+class\b/u, `const ${defaultSymbol} = class`);
+      replacements.push({
+        start: statement.getStart(sourceFile),
+        end: statement.end,
+        content: preserveLineCount(original, replacement),
+      });
+      continue;
+    }
+
+    for (const modifier of ts.getModifiers(statement) || []) {
+      if (modifier.kind !== ts.SyntaxKind.ExportKeyword && modifier.kind !== ts.SyntaxKind.DefaultKeyword) {
+        continue;
+      }
+      const original = sourceFile.text.slice(modifier.getStart(sourceFile), modifier.end);
+      replacements.push({
+        start: modifier.getStart(sourceFile),
+        end: modifier.end,
+        content: preserveNewlines(original),
+      });
+    }
+  }
+
+  const body = applySourceReplacements(file.content, replacements);
+  return joinEntrySegments([
+    ...hoistedSegments,
+    generatedEntrySegment(`async function ${executeSymbol}() {`),
+    sourceEntrySegment(body, 1, 1),
+    generatedEntrySegment('}'),
+    generatedEntrySegment(`export default ${executeSymbol};`),
+  ]);
+}
+
+function generatedEntrySegment(code: string): RunJSEntrySegment {
+  return { code, mappings: [] };
+}
+
+function sourceEntrySegment(code: string, sourceLine: number, sourceColumn?: number): RunJSEntrySegment {
+  return {
+    code,
+    mappings: code.split('\n').map((_, index) => ({
+      generatedLine: index + 1,
+      sourceLine: sourceLine + index,
+      sourceColumn: index === 0 ? sourceColumn : 1,
+    })),
+  };
+}
+
+function joinEntrySegments(segments: RunJSEntrySegment[]): RunJSEntryAdaptation {
+  const code: string[] = [];
+  const lineMappings = new Map<number, RunJSEntryLineMapping>();
+  let nextLine = 1;
+
+  for (const segment of segments) {
+    if (!segment.code) {
+      continue;
+    }
+    code.push(segment.code);
+    for (const mapping of segment.mappings) {
+      lineMappings.set(nextLine + mapping.generatedLine - 1, {
+        sourceLine: mapping.sourceLine,
+        sourceColumn: mapping.sourceColumn,
+      });
+    }
+    nextLine += countLines(segment.code);
+  }
+
+  return {
+    code: code.join('\n'),
+    lineMappings,
+  };
+}
+
+function blankReplacement(sourceFile: ts.SourceFile, node: ts.Node): RunJSSourceReplacement {
+  const start = node.getStart(sourceFile);
+  const original = sourceFile.text.slice(start, node.end);
+  return {
+    start,
+    end: node.end,
+    content: preserveNewlines(original),
+  };
+}
+
+function preserveNewlines(value: string): string {
+  return value.replace(/[^\n]/gu, ' ');
+}
+
+function preserveLineCount(original: string, replacement: string): string {
+  const missingLines = countLines(original) - countLines(replacement);
+  if (missingLines <= 0) {
+    return replacement;
+  }
+  return `${replacement}${'\n'.repeat(missingLines)}`;
+}
+
+function applySourceReplacements(source: string, replacements: RunJSSourceReplacement[]): string {
+  let output = source;
+  for (const replacement of [...replacements].sort((left, right) => right.start - left.start)) {
+    output = `${output.slice(0, replacement.start)}${replacement.content}${output.slice(replacement.end)}`;
+  }
+  return output;
+}
+
+function normalizeModuleSource(file: RunJSContentFile): string {
+  if (file.extension === '.json') {
+    return file.content;
+  }
+  const sourceFile = ts.createSourceFile(
+    file.path,
+    file.content,
+    ts.ScriptTarget.Latest,
+    true,
+    getScriptKind(file.path),
+  );
+  const replacements: RunJSSourceReplacement[] = [];
+  for (const statement of sourceFile.statements) {
+    if (!ts.isImportDeclaration(statement) || !isEmptyRuntimeImport(statement)) {
+      continue;
+    }
+    const specifier = getStringLiteralText(statement.moduleSpecifier);
+    if (!specifier) {
+      continue;
+    }
+    const original = sourceFile.text.slice(statement.getStart(sourceFile), statement.end);
+    replacements.push({
+      start: statement.getStart(sourceFile),
+      end: statement.end,
+      content: preserveLineCount(original, `import ${JSON.stringify(specifier)};`),
+    });
+  }
+  return applySourceReplacements(file.content, replacements);
+}
+
+function collectModulePolicyDiagnostics(file: RunJSContentFile, isEntry: boolean): RunJSCompileDiagnostic[] {
+  if (file.extension === '.json') {
+    return [];
+  }
+
+  const sourceFile = ts.createSourceFile(
+    file.path,
+    file.content,
+    ts.ScriptTarget.Latest,
+    true,
+    getScriptKind(file.path),
+  );
+  const diagnostics: RunJSCompileDiagnostic[] = [];
+  if (isEntry) {
+    diagnostics.push(...collectEntryImportBindingCollisionDiagnostics(sourceFile));
+  }
+  const visit = (node: ts.Node) => {
+    if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword) {
       diagnostics.push(
-        diagnosticAt(sourceFile, statement.getStart(sourceFile), {
+        diagnosticAt(sourceFile, node.getStart(sourceFile), {
+          code: 'RUNJS_DYNAMIC_IMPORT_UNSUPPORTED',
+          path: file.path,
+          message: 'Dynamic import(...) is not supported in RunJS modules',
+        }),
+      );
+      return;
+    }
+    if (ts.isImportEqualsDeclaration(node)) {
+      diagnostics.push(
+        diagnosticAt(sourceFile, node.getStart(sourceFile), {
           code: 'RUNJS_IMPORT_NOT_ALLOWED',
           path: file.path,
           message: 'TypeScript import equals declarations are not supported in RunJS modules',
         }),
       );
-      continue;
+      return;
     }
-    collectExportDeclaration(statement, sourceFile, moduleInfo, diagnostics);
-  }
-
-  if (moduleInfo.builtInImports.length) {
-    const ctxBinding = findTopLevelRuntimeBinding(sourceFile, 'ctx');
-    if (ctxBinding) {
+    if (ts.isExportAssignment(node) && node.isExportEquals) {
       diagnostics.push(
-        diagnosticAt(sourceFile, ctxBinding.getStart(sourceFile), {
+        diagnosticAt(sourceFile, node.getStart(sourceFile), {
           code: 'RUNJS_COMPILE_FAILED',
           path: file.path,
-          message:
-            'Built-in module imports cannot be compiled in a module that declares a top-level "ctx" runtime binding. Rename the binding because "ctx" is reserved for the RunJS context.',
+          message: 'CommonJS export assignments are not supported in RunJS modules',
         }),
       );
-    }
-  }
-
-  return moduleInfo;
-}
-
-function collectImportDeclaration(
-  statement: ts.ImportDeclaration,
-  sourceFile: ts.SourceFile,
-  moduleInfo: RunJSModuleInfo,
-  diagnostics: RunJSCompileDiagnostic[],
-): void {
-  if (!isRuntimeImportDeclaration(statement)) {
-    return;
-  }
-  const specifier = getStringLiteralText(statement.moduleSpecifier);
-  if (!specifier) {
-    diagnostics.push(
-      diagnosticAt(sourceFile, statement.getStart(sourceFile), {
-        code: 'RUNJS_IMPORT_NOT_ALLOWED',
-        path: moduleInfo.file.path,
-        message: 'Dynamic import specifiers are not supported in RunJS modules',
-      }),
-    );
-    return;
-  }
-  if (!isRelativeImportSpecifier(specifier)) {
-    const ctxLibName = resolveRunJSBuiltInModule(specifier);
-    if (ctxLibName && collectBuiltInImportDeclaration(statement, sourceFile, moduleInfo, ctxLibName, diagnostics)) {
       return;
     }
-    diagnostics.push(
-      diagnosticAt(sourceFile, statement.moduleSpecifier.getStart(sourceFile), {
-        code: 'RUNJS_IMPORT_NOT_ALLOWED',
-        path: moduleInfo.file.path,
-        message: `Import "${specifier}" is not allowed`,
-      }),
-    );
-    return;
-  }
-
-  const importClause = statement.importClause;
-  const importBinding: ImportBinding = {
-    specifier,
-    start: statement.moduleSpecifier.getStart(sourceFile),
-    defaultName: importClause?.name?.text,
-    named: [],
+    if (ts.isCallExpression(node) && isRequireCallExpression(node.expression)) {
+      const specifier = node.arguments[0] ? getStringLiteralText(node.arguments[0]) : null;
+      diagnostics.push(
+        diagnosticAt(sourceFile, node.getStart(sourceFile), {
+          code: 'RUNJS_IMPORT_NOT_ALLOWED',
+          path: file.path,
+          message: specifier
+            ? `require("${specifier}") is not supported in RunJS modules`
+            : 'require(...) is not supported in RunJS modules',
+        }),
+      );
+      return;
+    }
+    if (isRequirePropertyAccess(node) || isRequireElementAccess(node) || isFreeRequireIdentifier(node)) {
+      diagnostics.push(
+        diagnosticAt(sourceFile, node.getStart(sourceFile), {
+          code: 'RUNJS_IMPORT_NOT_ALLOWED',
+          path: file.path,
+          message: 'require is not supported in RunJS modules',
+        }),
+      );
+      return;
+    }
+    if (isCommonJSExportRuntimeReference(node)) {
+      diagnostics.push(
+        diagnosticAt(sourceFile, node.getStart(sourceFile), {
+          code: 'RUNJS_COMPILE_FAILED',
+          path: file.path,
+          message: 'CommonJS exports are not supported in RunJS modules',
+        }),
+      );
+      return;
+    }
+    ts.forEachChild(node, visit);
   };
 
-  if (importClause?.namedBindings) {
-    if (ts.isNamespaceImport(importClause.namedBindings)) {
-      diagnostics.push(
-        diagnosticAt(sourceFile, importClause.namedBindings.getStart(sourceFile), {
-          code: 'RUNJS_IMPORT_NOT_ALLOWED',
-          path: moduleInfo.file.path,
-          message: 'Namespace imports are not supported in RunJS modules',
-        }),
-      );
-      return;
-    }
+  sourceFile.statements.forEach(visit);
+  return deduplicateDiagnostics(diagnostics);
+}
 
-    for (const element of importClause.namedBindings.elements) {
-      if (element.isTypeOnly) {
+function collectEntryImportBindingCollisionDiagnostics(sourceFile: ts.SourceFile): RunJSCompileDiagnostic[] {
+  const importedNames = new Set<string>();
+  for (const statement of sourceFile.statements) {
+    if (!ts.isImportDeclaration(statement) || statement.importClause?.isTypeOnly) {
+      continue;
+    }
+    const importClause = statement.importClause;
+    if (importClause?.name) {
+      importedNames.add(importClause.name.text);
+    }
+    if (importClause?.namedBindings && ts.isNamespaceImport(importClause.namedBindings)) {
+      importedNames.add(importClause.namedBindings.name.text);
+    }
+    if (importClause?.namedBindings && ts.isNamedImports(importClause.namedBindings)) {
+      for (const element of importClause.namedBindings.elements) {
+        if (!element.isTypeOnly) {
+          importedNames.add(element.name.text);
+        }
+      }
+    }
+  }
+
+  const diagnostics: RunJSCompileDiagnostic[] = [];
+  for (const name of importedNames) {
+    for (const statement of sourceFile.statements) {
+      if (ts.isImportDeclaration(statement)) {
         continue;
       }
-      const imported = element.propertyName?.text || element.name.text;
-      const local = element.name.text;
-      if (imported === 'default') {
-        importBinding.defaultName = local;
-      } else {
-        importBinding.named.push({ imported, local });
+      const binding =
+        findDirectTopLevelRuntimeBinding(statement, name) || findFunctionScopedVarBinding(statement, name);
+      if (!binding) {
+        continue;
       }
+      diagnostics.push(
+        diagnosticAt(sourceFile, binding.getStart(sourceFile), {
+          code: 'RUNJS_COMPILE_FAILED',
+          path: sourceFile.fileName,
+          message: `Identifier "${name}" has already been declared`,
+        }),
+      );
+      break;
     }
   }
-
-  moduleInfo.imports.push(importBinding);
+  return diagnostics;
 }
 
-function collectBuiltInImportDeclaration(
-  statement: ts.ImportDeclaration,
-  sourceFile: ts.SourceFile,
-  moduleInfo: RunJSModuleInfo,
-  ctxLibName: string,
-  diagnostics: RunJSCompileDiagnostic[],
-): boolean {
-  const importClause = statement.importClause;
-  if (!importClause || importClause.isTypeOnly) return false;
-  const binding: BuiltInImportBinding = {
-    ctxLibName,
-    start: statement.moduleSpecifier.getStart(sourceFile),
-    defaultName: importClause.name?.text,
-    named: [],
-  };
-  if (importClause.namedBindings) {
-    if (ts.isNamespaceImport(importClause.namedBindings)) {
-      binding.namespaceName = importClause.namedBindings.name.text;
-    } else {
-      for (const element of importClause.namedBindings.elements) {
-        if (element.isTypeOnly) continue;
-        binding.named.push({
-          imported: element.propertyName?.text || element.name.text,
-          local: element.name.text,
-        });
-      }
+function deduplicateDiagnostics(diagnostics: RunJSCompileDiagnostic[]): RunJSCompileDiagnostic[] {
+  const seen = new Set<string>();
+  return diagnostics.filter((diagnostic) => {
+    const key = `${diagnostic.code}:${diagnostic.path}:${diagnostic.line}:${diagnostic.column}:${diagnostic.message}`;
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
+}
+
+function resolveRelativeRunJSImport(
+  fromPath: string,
+  specifier: string,
+  files: Map<string, RunJSContentFile>,
+): ResolveImportResult {
+  const directory = pathPosix.dirname(fromPath);
+  const joinedPath = pathPosix.normalize(pathPosix.join(directory === '.' ? '' : directory, specifier));
+  if (
+    pathPosix.isAbsolute(joinedPath) ||
+    windowsDrivePrefix.test(joinedPath) ||
+    joinedPath === '..' ||
+    joinedPath.startsWith('../')
+  ) {
+    return {
+      status: 'blocked',
+      message: `Import "${specifier}" escapes the RunJS workspace`,
+    };
+  }
+
+  const exactFile = files.get(joinedPath);
+  if (exactFile && !isImportableExtension(exactFile.path)) {
+    return {
+      status: 'blocked',
+      message: `Import "${specifier}" targets unsupported file "${exactFile.path}"`,
+    };
+  }
+  if (exactFile) {
+    return { status: 'resolved', path: exactFile.path };
+  }
+  if (pathPosix.extname(joinedPath)) {
+    return { status: 'notFound' };
+  }
+
+  for (const extension of resolvableExtensions) {
+    const candidate = `${joinedPath}${extension}`;
+    if (files.has(candidate)) {
+      return { status: 'resolved', path: candidate };
     }
   }
-  if (!binding.defaultName && !binding.namespaceName && !binding.named.length) {
-    diagnostics.push(
-      diagnosticAt(sourceFile, statement.getStart(sourceFile), {
-        code: 'RUNJS_IMPORT_NOT_ALLOWED',
-        path: moduleInfo.file.path,
-        message: 'Side-effect imports are not supported for RunJS built-in modules',
-      }),
-    );
-    return true;
+  for (const extension of resolvableExtensions) {
+    const candidate = pathPosix.join(joinedPath, `index${extension}`);
+    if (files.has(candidate)) {
+      return { status: 'resolved', path: candidate };
+    }
   }
-  moduleInfo.builtInImports.push(binding);
-  return true;
+
+  return { status: 'notFound' };
+}
+
+function findModuleSpecifierLocation(
+  file: RunJSContentFile | undefined,
+  specifier: string,
+): Pick<RunJSCompileDiagnostic, 'line' | 'column'> {
+  if (!file || file.extension === '.json') {
+    return {};
+  }
+  const sourceFile = ts.createSourceFile(
+    file.path,
+    file.content,
+    ts.ScriptTarget.Latest,
+    true,
+    getScriptKind(file.path),
+  );
+  for (const statement of sourceFile.statements) {
+    if (
+      (ts.isImportDeclaration(statement) || ts.isExportDeclaration(statement)) &&
+      statement.moduleSpecifier &&
+      getStringLiteralText(statement.moduleSpecifier) === specifier
+    ) {
+      const position = sourceFile.getLineAndCharacterOfPosition(statement.moduleSpecifier.getStart(sourceFile));
+      return { line: position.line + 1, column: position.character + 1 };
+    }
+    if (
+      ts.isImportEqualsDeclaration(statement) &&
+      ts.isExternalModuleReference(statement.moduleReference) &&
+      statement.moduleReference.expression &&
+      getStringLiteralText(statement.moduleReference.expression) === specifier
+    ) {
+      const position = sourceFile.getLineAndCharacterOfPosition(
+        statement.moduleReference.expression.getStart(sourceFile),
+      );
+      return { line: position.line + 1, column: position.character + 1 };
+    }
+  }
+  return {};
+}
+
+function convertSourceMap(
+  standardSourceMap: string,
+  files: Map<string, RunJSContentFile>,
+  entryPath: string,
+  entryAdaptation: RunJSEntryAdaptation,
+  sourceURL: string,
+): RunJSSourceMapPayload {
+  const traceMap = new TraceMap(standardSourceMap);
+  const mappings: RunJSSourceMapPayload['mappings'] = [];
+  const mappedGeneratedLines = new Set<number>();
+
+  eachMapping(traceMap, (mapping) => {
+    if (
+      mappedGeneratedLines.has(mapping.generatedLine) ||
+      !mapping.source ||
+      mapping.originalLine === null ||
+      mapping.originalColumn === null
+    ) {
+      return;
+    }
+    const source = normalizeVirtualSourcePath(mapping.source);
+    if (!files.has(source)) {
+      return;
+    }
+
+    const entryMapping = source === entryPath ? entryAdaptation.lineMappings.get(mapping.originalLine) : undefined;
+    if (source === entryPath && !entryMapping) {
+      return;
+    }
+    mappings.push({
+      generatedLine: mapping.generatedLine,
+      source,
+      sourceLine: entryMapping?.sourceLine || mapping.originalLine,
+      sourceColumn: entryMapping?.sourceColumn || mapping.originalColumn + 1,
+    });
+    mappedGeneratedLines.add(mapping.generatedLine);
+  });
+
+  return {
+    version: 1,
+    kind: 'runjs-line-map',
+    sourceURL,
+    entryPath,
+    generatedCodeLineOffset: jsRunnerGeneratedCodeLineOffset,
+    mappings,
+  };
+}
+
+function buildRuntimeRequirePreamble(): string {
+  const cases = Object.entries(runJSBuiltInModules)
+    .map(([specifier, ctxLibName]) => `    case ${JSON.stringify(specifier)}: return ctx.libs.${ctxLibName};`)
+    .join('\n');
+  return [
+    'const __runjs_require__ = (specifier) => {',
+    '  switch (specifier) {',
+    cases,
+    '    default: throw new Error(`RunJS module "${specifier}" is not available`);',
+    '  }',
+    '};',
+    'const require = __runjs_require__;',
+  ].join('\n');
+}
+
+function diagnosticToEsbuildMessage(diagnostic: RunJSCompileDiagnostic): PartialMessage {
+  return {
+    text: diagnostic.message,
+    detail: { runjsDiagnostic: diagnostic } satisfies RunJSEsbuildMessageDetail,
+    location:
+      diagnostic.path && diagnostic.line && diagnostic.column
+        ? {
+            file: diagnostic.path,
+            line: diagnostic.line,
+            column: diagnostic.column - 1,
+            length: 1,
+            lineText: '',
+          }
+        : undefined,
+  };
+}
+
+function esbuildFailureToDiagnostics(
+  error: unknown,
+  fallbackPath: string,
+  entryAdaptation: RunJSEntryAdaptation,
+): RunJSCompileDiagnostic[] {
+  if (isEsbuildFailure(error)) {
+    return error.errors.map((message) => esbuildMessageToDiagnostic(message, fallbackPath, entryAdaptation));
+  }
+  const message = error instanceof Error && error.message ? error.message : 'RunJS bundling failed';
+  return [
+    {
+      severity: 'error',
+      code: 'RUNJS_COMPILE_FAILED',
+      path: fallbackPath,
+      message,
+    },
+  ];
+}
+
+function isEsbuildFailure(error: unknown): error is { errors: Message[] } {
+  return Boolean(error) && typeof error === 'object' && Array.isArray((error as { errors?: unknown }).errors);
+}
+
+function esbuildMessageToDiagnostic(
+  message: Message,
+  fallbackPath: string,
+  entryAdaptation?: RunJSEntryAdaptation,
+): RunJSCompileDiagnostic {
+  const detail = message.detail;
+  if (isRunJSEsbuildMessageDetail(detail)) {
+    return detail.runjsDiagnostic;
+  }
+
+  const source = normalizeVirtualSourcePath(message.location?.file || fallbackPath);
+  const entryMapping =
+    source === fallbackPath ? entryAdaptation?.lineMappings.get(message.location?.line || 0) : undefined;
+  return {
+    severity: 'error',
+    code: 'RUNJS_COMPILE_FAILED',
+    path: filesafeDiagnosticPath(source, fallbackPath),
+    line: entryMapping?.sourceLine || message.location?.line,
+    column: entryMapping?.sourceColumn || (message.location ? message.location.column + 1 : undefined),
+    message: message.text,
+  };
+}
+
+function isRunJSEsbuildMessageDetail(value: unknown): value is RunJSEsbuildMessageDetail {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+  const diagnostic = (value as { runjsDiagnostic?: unknown }).runjsDiagnostic;
+  return (
+    Boolean(diagnostic) &&
+    typeof diagnostic === 'object' &&
+    typeof (diagnostic as { message?: unknown }).message === 'string'
+  );
+}
+
+function filesafeDiagnosticPath(path: string, fallbackPath: string): string {
+  if (!path || path === launcherPath || path === entryModuleSpecifier) {
+    return fallbackPath;
+  }
+  return path;
+}
+
+function collectRuntimeSyntaxDiagnostics(
+  code: string,
+  entryPath: string,
+  surfaceStyle: RunJSSurfaceStyle,
+  diagnostics: RunJSCompileDiagnostic[],
+): void {
+  try {
+    new asyncFunctionConstructor(code);
+  } catch (error) {
+    const message = error instanceof Error && error.message ? error.message : 'Invalid JavaScript syntax';
+    diagnostics.push({
+      severity: 'error',
+      code: 'RUNJS_COMPILE_FAILED',
+      path: entryPath,
+      message: `${
+        surfaceStyle === 'workflow' ? 'Workflow JavaScript' : 'RunJS'
+      } artifact has invalid syntax: ${message}`,
+    });
+  }
+}
+
+function loaderForPath(path: string): Loader {
+  if (path.endsWith('.tsx')) return 'tsx';
+  if (path.endsWith('.jsx')) return 'jsx';
+  if (path.endsWith('.js')) return 'js';
+  if (path.endsWith('.json')) return 'json';
+  return 'ts';
+}
+
+function getScriptKind(path: string): ts.ScriptKind {
+  if (path.endsWith('.tsx')) return ts.ScriptKind.TSX;
+  if (path.endsWith('.jsx')) return ts.ScriptKind.JSX;
+  if (path.endsWith('.js')) return ts.ScriptKind.JS;
+  return ts.ScriptKind.TS;
+}
+
+function normalizeVirtualSourcePath(path: string): string {
+  const withoutNamespace = path.startsWith(`${sourceNamespace}:`) ? path.slice(sourceNamespace.length + 1) : path;
+  const withoutRoot = withoutNamespace.replace(/^\/+/, '');
+  try {
+    return decodeURIComponent(withoutRoot);
+  } catch {
+    return withoutRoot;
+  }
+}
+
+function removeSourceMapComment(code: string): string {
+  return code.replace(/\n?\/\/# sourceMappingURL=[^\n]*\s*$/u, '');
 }
 
 function resolveRunJSBuiltInModule(specifier: string): string | undefined {
@@ -532,52 +1094,54 @@ function resolveRunJSBuiltInModule(specifier: string): string | undefined {
     : undefined;
 }
 
-function findTopLevelRuntimeBinding(sourceFile: ts.SourceFile, name: string): ts.Node | undefined {
-  for (const statement of sourceFile.statements) {
-    if (hasModifier(statement, ts.SyntaxKind.DeclareKeyword)) {
-      continue;
-    }
+function isRelativeImportSpecifier(specifier: string): boolean {
+  return specifier.startsWith('./') || specifier.startsWith('../');
+}
 
-    const directBinding = findDirectTopLevelRuntimeBinding(statement, name);
-    if (directBinding) {
-      return directBinding;
-    }
+function isImportableExtension(path: string): boolean {
+  return importableExtensions.has(pathPosix.extname(path));
+}
 
-    const functionScopedBinding = findFunctionScopedVarBinding(statement, name);
-    if (functionScopedBinding) {
-      return functionScopedBinding;
-    }
-  }
+function getStringLiteralText(node: ts.Expression): string | null {
+  return ts.isStringLiteral(node) || node.kind === ts.SyntaxKind.NoSubstitutionTemplateLiteral
+    ? (node as ts.StringLiteralLike).text
+    : null;
+}
 
-  return undefined;
+function hasExportModifier(statement: ts.Statement): boolean {
+  return hasModifier(statement, ts.SyntaxKind.ExportKeyword);
+}
+
+function hasDefaultModifier(statement: ts.Statement): boolean {
+  return hasModifier(statement, ts.SyntaxKind.DefaultKeyword);
+}
+
+function hasModifier(statement: ts.Statement, kind: ts.SyntaxKind): boolean {
+  return Boolean(
+    ts.canHaveModifiers(statement) && ts.getModifiers(statement)?.some((modifier) => modifier.kind === kind),
+  );
+}
+
+function isEmptyRuntimeImport(statement: ts.ImportDeclaration): boolean {
+  const importClause = statement.importClause;
+  return Boolean(
+    importClause &&
+      !importClause.isTypeOnly &&
+      !importClause.name &&
+      importClause.namedBindings &&
+      ts.isNamedImports(importClause.namedBindings) &&
+      importClause.namedBindings.elements.length === 0,
+  );
 }
 
 function findDirectTopLevelRuntimeBinding(statement: ts.Statement, name: string): ts.Node | undefined {
-  if (ts.isImportDeclaration(statement) && isRuntimeImportDeclaration(statement)) {
-    const importClause = statement.importClause;
-    if (importClause?.name?.text === name) {
-      return importClause.name;
-    }
-    const namedBindings = importClause?.namedBindings;
-    if (namedBindings && ts.isNamespaceImport(namedBindings) && namedBindings.name.text === name) {
-      return namedBindings.name;
-    }
-    if (namedBindings && ts.isNamedImports(namedBindings)) {
-      return namedBindings.elements.find((element) => !element.isTypeOnly && element.name.text === name)?.name;
-    }
-    return undefined;
-  }
-
   if (ts.isVariableStatement(statement)) {
     for (const declaration of statement.declarationList.declarations) {
       const binding = findBindingIdentifier(declaration.name, name);
-      if (binding) {
-        return binding;
-      }
+      if (binding) return binding;
     }
     return undefined;
   }
-
   if (
     (ts.isFunctionDeclaration(statement) ||
       ts.isClassDeclaration(statement) ||
@@ -589,7 +1153,6 @@ function findDirectTopLevelRuntimeBinding(statement: ts.Statement, name: string)
   ) {
     return statement.name;
   }
-
   return undefined;
 }
 
@@ -602,13 +1165,10 @@ function findFunctionScopedVarBinding(node: ts.Node, name: string): ts.Identifie
   ) {
     return undefined;
   }
-
   if (ts.isVariableDeclarationList(node) && !(node.flags & ts.NodeFlags.BlockScoped)) {
     for (const declaration of node.declarations) {
       const binding = findBindingIdentifier(declaration.name, name);
-      if (binding) {
-        return binding;
-      }
+      if (binding) return binding;
     }
   }
 
@@ -623,872 +1183,78 @@ function findBindingIdentifier(bindingName: ts.BindingName, name: string): ts.Id
   if (ts.isIdentifier(bindingName)) {
     return bindingName.text === name ? bindingName : undefined;
   }
-
   for (const element of bindingName.elements) {
-    if (ts.isOmittedExpression(element)) {
-      continue;
-    }
+    if (ts.isOmittedExpression(element)) continue;
     const binding = findBindingIdentifier(element.name, name);
-    if (binding) {
-      return binding;
-    }
+    if (binding) return binding;
   }
-
   return undefined;
 }
 
-function collectExportDeclaration(
-  statement: ts.Statement,
-  sourceFile: ts.SourceFile,
-  moduleInfo: RunJSModuleInfo,
-  diagnostics: RunJSCompileDiagnostic[],
-): void {
-  if (ts.isExportDeclaration(statement)) {
-    if (statement.isTypeOnly) {
-      return;
-    }
-    diagnostics.push(
-      diagnosticAt(sourceFile, statement.getStart(sourceFile), {
-        code: 'RUNJS_COMPILE_FAILED',
-        path: moduleInfo.file.path,
-        message: 'Export lists and re-exports are not supported in RunJS modules',
-      }),
-    );
-    return;
-  }
-
-  if (ts.isExportAssignment(statement)) {
-    if (statement.isExportEquals) {
-      diagnostics.push(
-        diagnosticAt(sourceFile, statement.getStart(sourceFile), {
-          code: 'RUNJS_COMPILE_FAILED',
-          path: moduleInfo.file.path,
-          message: 'CommonJS export assignments are not supported in RunJS modules',
-        }),
-      );
-      return;
-    }
-    moduleInfo.hasDefaultExport = true;
-    return;
-  }
-
-  if (!hasExportModifier(statement)) {
-    return;
-  }
-
-  if (hasDefaultModifier(statement)) {
-    if (ts.isFunctionDeclaration(statement) || ts.isClassDeclaration(statement)) {
-      moduleInfo.hasDefaultExport = true;
-      return;
-    }
-    diagnostics.push(
-      diagnosticAt(sourceFile, statement.getStart(sourceFile), {
-        code: 'RUNJS_COMPILE_FAILED',
-        path: moduleInfo.file.path,
-        message: 'Only default function, class, or expression exports are supported in RunJS modules',
-      }),
-    );
-    return;
-  }
-
-  if (ts.isVariableStatement(statement)) {
-    if (
-      statement.declarationList.flags & ts.NodeFlags.Let ||
-      (statement.declarationList.flags & ts.NodeFlags.Const) === 0
-    ) {
-      diagnostics.push(
-        diagnosticAt(sourceFile, statement.declarationList.getStart(sourceFile), {
-          code: 'RUNJS_COMPILE_FAILED',
-          path: moduleInfo.file.path,
-          message: 'Only exported const variable declarations are supported in RunJS modules',
-        }),
-      );
-      return;
-    }
-    for (const declaration of statement.declarationList.declarations) {
-      if (ts.isIdentifier(declaration.name)) {
-        moduleInfo.namedExports.add(declaration.name.text);
-        continue;
-      }
-      diagnostics.push(
-        diagnosticAt(sourceFile, declaration.name.getStart(sourceFile), {
-          code: 'RUNJS_COMPILE_FAILED',
-          path: moduleInfo.file.path,
-          message: 'Destructured exported variables are not supported in RunJS modules',
-        }),
-      );
-    }
-    return;
-  }
-
-  if (ts.isFunctionDeclaration(statement) || ts.isClassDeclaration(statement) || ts.isEnumDeclaration(statement)) {
-    if (statement.name) {
-      moduleInfo.namedExports.add(statement.name.text);
-      return;
-    }
-  }
-
-  if (ts.isInterfaceDeclaration(statement) || ts.isTypeAliasDeclaration(statement)) {
-    return;
-  }
-
-  diagnostics.push(
-    diagnosticAt(sourceFile, statement.getStart(sourceFile), {
-      code: 'RUNJS_COMPILE_FAILED',
-      path: moduleInfo.file.path,
-      message: 'This export form is not supported in RunJS modules',
-    }),
+function isFunctionLikeScope(node: ts.Node): boolean {
+  return (
+    ts.isFunctionDeclaration(node) ||
+    ts.isFunctionExpression(node) ||
+    ts.isArrowFunction(node) ||
+    ts.isMethodDeclaration(node) ||
+    ts.isConstructorDeclaration(node) ||
+    ts.isGetAccessorDeclaration(node) ||
+    ts.isSetAccessorDeclaration(node)
   );
 }
 
-function collectDynamicImportDiagnostics(sourceFile: ts.SourceFile, diagnostics: RunJSCompileDiagnostic[]): void {
-  const visit = (node: ts.Node) => {
-    if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword) {
-      diagnostics.push(
-        diagnosticAt(sourceFile, node.getStart(sourceFile), {
-          code: 'RUNJS_DYNAMIC_IMPORT_UNSUPPORTED',
-          path: sourceFile.fileName,
-          message: 'Dynamic import(...) is not supported in RunJS modules',
-        }),
-      );
-      return;
-    }
-    ts.forEachChild(node, visit);
-  };
-
-  ts.forEachChild(sourceFile, visit);
-}
-
-function collectRequireImportDiagnostics(sourceFile: ts.SourceFile, diagnostics: RunJSCompileDiagnostic[]): void {
-  const visit = (node: ts.Node) => {
-    if (ts.isCallExpression(node) && isRequireCallExpression(node.expression)) {
-      const specifier = node.arguments[0] ? getStringLiteralText(node.arguments[0]) : null;
-      diagnostics.push(
-        diagnosticAt(sourceFile, node.getStart(sourceFile), {
-          code: 'RUNJS_IMPORT_NOT_ALLOWED',
-          path: sourceFile.fileName,
-          message: specifier
-            ? `require("${specifier}") is not supported in RunJS modules`
-            : 'require(...) is not supported in RunJS modules',
-        }),
-      );
-      return;
-    }
-    if (isRequirePropertyAccess(node) || isRequireElementAccess(node) || isFreeRequireIdentifier(node)) {
-      diagnostics.push(
-        diagnosticAt(sourceFile, node.getStart(sourceFile), {
-          code: 'RUNJS_IMPORT_NOT_ALLOWED',
-          path: sourceFile.fileName,
-          message: 'require is not supported in RunJS modules',
-        }),
-      );
-      return;
-    }
-    ts.forEachChild(node, visit);
-  };
-
-  ts.forEachChild(sourceFile, visit);
-}
-
-function collectCommonJSExportDiagnostics(sourceFile: ts.SourceFile, diagnostics: RunJSCompileDiagnostic[]): void {
-  const visit = (node: ts.Node) => {
-    if (isCommonJSExportMutation(node) || isCommonJSExportRuntimeReference(node)) {
-      diagnostics.push(
-        diagnosticAt(sourceFile, node.getStart(sourceFile), {
-          code: 'RUNJS_COMPILE_FAILED',
-          path: sourceFile.fileName,
-          message: 'CommonJS exports are not supported in RunJS modules',
-        }),
-      );
-      return;
-    }
-    ts.forEachChild(node, visit);
-  };
-
-  ts.forEachChild(sourceFile, visit);
-}
-
-function collectNonEntryTopLevelReturnDiagnostics(
+function diagnosticAt(
   sourceFile: ts.SourceFile,
-  diagnostics: RunJSCompileDiagnostic[],
-): void {
-  const visit = (node: ts.Node) => {
-    if (ts.isReturnStatement(node)) {
-      diagnostics.push(
-        diagnosticAt(sourceFile, node.getStart(sourceFile), {
-          code: 'RUNJS_COMPILE_FAILED',
-          path: sourceFile.fileName,
-          message: 'Top-level return is only supported in the RunJS entry module',
-        }),
-      );
-      return;
-    }
-    if (isFunctionLikeScope(node)) {
-      return;
-    }
-    ts.forEachChild(node, visit);
-  };
-
-  for (const statement of sourceFile.statements) {
-    visit(statement);
-  }
-}
-
-function collectJsonDiagnostics(file: RunJSContentFile, diagnostics: RunJSCompileDiagnostic[]): void {
-  try {
-    JSON.parse(file.content);
-  } catch (error) {
-    const message = error instanceof Error && error.message ? error.message : 'Invalid JSON';
-    diagnostics.push({
-      severity: 'error',
-      code: 'RUNJS_COMPILE_FAILED',
-      path: file.path,
-      ...jsonErrorLocation(file.content, message),
-      message: `JSON file "${file.path}" is invalid: ${message}`,
-    });
-  }
-}
-
-function collectRuntimeSyntaxDiagnostics(
-  code: string,
-  entryPath: string,
-  surfaceStyle: RunJSSurfaceStyle,
-  diagnostics: RunJSCompileDiagnostic[],
-): void {
-  const syntaxSource = transpileArtifactForSyntaxCheck(code, entryPath, diagnostics);
-  if (hasErrorDiagnostic(diagnostics)) {
-    return;
-  }
-
-  try {
-    parseFunctionBody(syntaxSource);
-  } catch (error) {
-    const message = error instanceof Error && error.message ? error.message : 'Invalid JavaScript syntax';
-    diagnostics.push({
-      severity: 'error',
-      code: 'RUNJS_COMPILE_FAILED',
-      path: entryPath,
-      message: `${
-        surfaceStyle === 'workflow' ? 'Workflow JavaScript' : 'RunJS'
-      } artifact has invalid syntax: ${message}`,
-    });
-  }
-}
-
-function transpileArtifactForSyntaxCheck(source: string, path: string, diagnostics: RunJSCompileDiagnostic[]): string {
-  const result = ts.transpileModule(source, {
-    compilerOptions: {
-      jsx: ts.JsxEmit.React,
-      jsxFactory: 'ctx.React.createElement',
-      jsxFragmentFactory: 'ctx.React.Fragment',
-      module: ts.ModuleKind.None,
-      target: ts.ScriptTarget.ES2020,
-    },
-    fileName: getTranspileFileName(path),
-    reportDiagnostics: true,
-  });
-
-  diagnostics.push(
-    ...(result.diagnostics || [])
-      .filter((diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error)
-      .map((diagnostic) => tsDiagnosticToRunJSDiagnostic(diagnostic, path)),
-  );
-
-  return result.outputText;
-}
-
-function validateImportBindings(modules: Map<string, RunJSModuleInfo>, diagnostics: RunJSCompileDiagnostic[]): void {
-  for (const moduleInfo of modules.values()) {
-    for (const importBinding of moduleInfo.imports) {
-      if (!importBinding.targetPath) {
-        continue;
-      }
-      const target = modules.get(importBinding.targetPath);
-      if (!target) {
-        continue;
-      }
-
-      if (importBinding.defaultName && !target.hasDefaultExport) {
-        diagnostics.push(
-          diagnosticAt(moduleInfo.sourceFile, importBinding.start, {
-            code: 'RUNJS_COMPILE_FAILED',
-            path: moduleInfo.file.path,
-            message: `Import "${importBinding.specifier}" does not provide a default export`,
-          }),
-        );
-      }
-
-      if (target.isJson) {
-        continue;
-      }
-      for (const namedImport of importBinding.named) {
-        if (target.namedExports.has(namedImport.imported)) {
-          continue;
-        }
-        diagnostics.push(
-          diagnosticAt(moduleInfo.sourceFile, importBinding.start, {
-            code: 'RUNJS_COMPILE_FAILED',
-            path: moduleInfo.file.path,
-            message: `Import "${importBinding.specifier}" does not export "${namedImport.imported}"`,
-          }),
-        );
-      }
-    }
-  }
-}
-
-function buildRuntimeCode(
-  orderedPaths: string[],
-  modules: Map<string, RunJSModuleInfo>,
-  entryPath: string,
-  diagnostics: RunJSCompileDiagnostic[],
-  options: {
-    entryPath: string;
-    sourceURL: string;
-  },
-): RunJSRuntimeCodeBuildResult {
-  const chunks: string[] = [];
-  const mappings: RunJSTransformedLineMapping[] = [];
-  let nextChunkStartLine = 1;
-
-  for (const path of orderedPaths) {
-    const moduleInfo = modules.get(path);
-    if (!moduleInfo) {
-      continue;
-    }
-    const transformed = transformModuleSource(moduleInfo, modules, path === entryPath);
-    const transpiled = transpileRuntimeCode(transformed.code, moduleInfo.file.path, diagnostics);
-    const chunk = transpiled.code.trim();
-    if (!chunk) {
-      continue;
-    }
-    if (chunks.length > 0) {
-      nextChunkStartLine += 1;
-    }
-    const transformedMappings = new Map(
-      transformed.mappings.map((mapping) => [mapping.generatedLine, mapping] as const),
-    );
-    for (const emittedMapping of transpiled.mappings) {
-      const mapping = transformedMappings.get(emittedMapping.transformedLine);
-      if (!mapping) {
-        continue;
-      }
-      mappings.push({
-        ...mapping,
-        generatedLine: nextChunkStartLine + emittedMapping.generatedLine - 1,
-      });
-    }
-    chunks.push(chunk);
-    nextChunkStartLine += countLines(chunk);
-  }
-
+  start: number,
+  input: Pick<RunJSCompileDiagnostic, 'code' | 'path' | 'message'>,
+): RunJSCompileDiagnostic {
+  const position = sourceFile.getLineAndCharacterOfPosition(start);
   return {
-    code: chunks.filter(Boolean).join('\n\n'),
-    sourceMap: {
-      version: 1,
-      kind: 'runjs-line-map',
-      sourceURL: options.sourceURL,
-      entryPath: options.entryPath,
-      generatedCodeLineOffset: jsRunnerGeneratedCodeLineOffset,
-      mappings,
-    },
+    severity: 'error',
+    code: input.code,
+    path: input.path,
+    line: position.line + 1,
+    column: position.character + 1,
+    message: input.message,
   };
 }
 
-function transformModuleSource(
-  moduleInfo: RunJSModuleInfo,
-  modules: Map<string, RunJSModuleInfo>,
-  isEntry: boolean,
-): RunJSTransformedCode {
-  if (moduleInfo.isJson) {
-    return transformJsonModuleSource(moduleInfo, isEntry);
-  }
-
-  const sourceFile = moduleInfo.sourceFile as ts.SourceFile;
-  const body: RunJSTransformedCode[] = [
-    createBuiltInImportAliasDeclarations(moduleInfo),
-    createImportAliasDeclarations(moduleInfo, modules),
-  ];
-
-  for (const statement of sourceFile.statements) {
-    if (
-      ts.isImportDeclaration(statement) ||
-      ts.isImportEqualsDeclaration(statement) ||
-      ts.isExportDeclaration(statement)
-    ) {
-      continue;
-    }
-    body.push(transformStatement(sourceFile, statement, moduleInfo));
-  }
-
-  if (isEntry) {
-    return joinTransformedSegments(body);
-  }
-
-  const exportAssignments = createExportAssignments(moduleInfo);
-  const bodyCode = joinTransformedSegments(body);
-  return joinTransformedSegments([
-    transformedGeneratedCode(`const ${moduleInfo.moduleSymbol} = (() => {`),
-    transformedGeneratedCode('const __runjs_exports = {};'),
-    indentTransformedCode(bodyCode),
-    indentTransformedCode(transformedGeneratedCode(exportAssignments)),
-    transformedGeneratedCode('return __runjs_exports;'),
-    transformedGeneratedCode('})();'),
-  ]);
+function buildInternalSymbol(prefix: string, path: string): string {
+  return `${prefix}_${sha256Hex(path).slice(0, 12)}`;
 }
 
-function transformJsonModuleSource(moduleInfo: RunJSModuleInfo, isEntry: boolean): RunJSTransformedCode {
-  const parsed = JSON.parse(moduleInfo.file.content);
-  const jsonLiteral = JSON.stringify(parsed, null, 2);
-  const defaultDeclaration = `const ${moduleInfo.defaultExportSymbol} = ${jsonLiteral};`;
-  if (isEntry) {
-    return transformedSourceCode(defaultDeclaration, moduleInfo.file.path, 1, 1);
-  }
-
-  return joinTransformedSegments([
-    transformedGeneratedCode(`const ${moduleInfo.moduleSymbol} = (() => {`),
-    transformedGeneratedCode('const __runjs_exports = {};'),
-    indentTransformedCode(transformedSourceCode(defaultDeclaration, moduleInfo.file.path, 1, 1)),
-    indentTransformedCode(transformedGeneratedCode(`__runjs_exports.default = ${moduleInfo.defaultExportSymbol};`)),
-    transformedGeneratedCode('return __runjs_exports;'),
-    transformedGeneratedCode('})();'),
-  ]);
+function resolveArtifactVersion(surfaceStyle: RunJSSurfaceStyle, runtimeVersion?: string): string {
+  return surfaceStyle === 'workflow' ? 'workflow-js' : runtimeVersion || runtimeVersionDefault;
 }
 
-function transformedGeneratedCode(code: string): RunJSTransformedCode {
-  return {
-    code,
-    mappings: [],
-  };
+function hasErrorDiagnostic(diagnostics: RunJSCompileDiagnostic[]): boolean {
+  return diagnostics.some((diagnostic) => diagnostic.severity === 'error');
 }
 
-function transformedSourceCode(
-  code: string,
-  source: string,
-  sourceLine: number,
-  sourceColumn?: number,
-): RunJSTransformedCode {
-  return {
-    code,
-    mappings: code.split('\n').map((_, index) => ({
-      generatedLine: index + 1,
-      source,
-      sourceLine: Math.max(1, sourceLine + index),
-      sourceColumn: index === 0 ? sourceColumn : 1,
-    })),
-  };
+function getFailureCode(diagnostics: RunJSCompileDiagnostic[]): RunJSCompileFailureCode | undefined {
+  const firstError = diagnostics.find((diagnostic) => diagnostic.severity === 'error');
+  if (!firstError) return undefined;
+  if (
+    firstError.code === 'RUNJS_ENTRY_NOT_FOUND' ||
+    firstError.code === 'RUNJS_IMPORT_NOT_ALLOWED' ||
+    firstError.code === 'RUNJS_IMPORT_NOT_FOUND' ||
+    firstError.code === 'RUNJS_DYNAMIC_IMPORT_UNSUPPORTED'
+  ) {
+    return firstError.code;
+  }
+  return 'RUNJS_COMPILE_FAILED';
 }
 
-function joinTransformedSegments(segments: RunJSTransformedCode[]): RunJSTransformedCode {
-  const codeParts: string[] = [];
-  const mappings: RunJSTransformedLineMapping[] = [];
-  let nextLine = 1;
-
-  for (const segment of segments) {
-    if (!segment.code) {
-      continue;
-    }
-    codeParts.push(segment.code);
-    for (const mapping of segment.mappings) {
-      mappings.push({
-        ...mapping,
-        generatedLine: nextLine + mapping.generatedLine - 1,
-      });
-    }
-    nextLine += countLines(segment.code);
-  }
-
-  return {
-    code: codeParts.join('\n'),
-    mappings,
-  };
+function countLines(content: string): number {
+  return content ? content.split('\n').length : 0;
 }
 
-function indentTransformedCode(input: RunJSTransformedCode): RunJSTransformedCode {
-  return {
-    code: indent(input.code),
-    mappings: input.mappings,
-  };
+function buildRunJSSourceURL(filesHash: string): string {
+  return `${runJSSourceURLPrefix}${sha256Hex(filesHash).slice(0, 16)}.js`;
 }
 
-function transformStatement(
-  sourceFile: ts.SourceFile,
-  statement: ts.Statement,
-  moduleInfo: RunJSModuleInfo,
-): RunJSTransformedCode {
-  const sourcePosition = sourceFile.getLineAndCharacterOfPosition(statement.getStart(sourceFile));
-  if (ts.isExportAssignment(statement)) {
-    return transformedSourceCode(
-      `const ${moduleInfo.defaultExportSymbol} = ${statement.expression.getText(sourceFile)};`,
-      moduleInfo.file.path,
-      sourcePosition.line + 1,
-      sourcePosition.character + 1,
-    );
-  }
-
-  let code: string;
-  if (hasExportModifier(statement)) {
-    code = transformExportedStatement(sourceFile, statement, moduleInfo);
-  } else {
-    code = getStatementSource(sourceFile, statement);
-  }
-
-  return transformedSourceCode(code, moduleInfo.file.path, sourcePosition.line + 1, sourcePosition.character + 1);
-}
-
-function transformExportedStatement(
-  sourceFile: ts.SourceFile,
-  statement: ts.Statement,
-  moduleInfo: RunJSModuleInfo,
-): string {
-  if (hasDefaultModifier(statement) && (ts.isFunctionDeclaration(statement) || ts.isClassDeclaration(statement))) {
-    if (statement.name) {
-      return [
-        removeStatementModifiers(sourceFile, statement, [ts.SyntaxKind.ExportKeyword, ts.SyntaxKind.DefaultKeyword]),
-        `const ${moduleInfo.defaultExportSymbol} = ${statement.name.text};`,
-      ].join('\n');
-    }
-
-    return replaceAnonymousDefaultDeclaration(sourceFile, statement, moduleInfo.defaultExportSymbol);
-  }
-
-  return removeStatementModifiers(sourceFile, statement, [ts.SyntaxKind.ExportKeyword]);
-}
-
-function replaceAnonymousDefaultDeclaration(
-  sourceFile: ts.SourceFile,
-  statement: ts.FunctionDeclaration | ts.ClassDeclaration,
-  defaultExportSymbol: string,
-): string {
-  const text = sourceFile.text.slice(statement.getStart(sourceFile), statement.end);
-  if (ts.isFunctionDeclaration(statement)) {
-    return `${text.replace(
-      /^export\s+default\s+(async\s+)?function\b/,
-      (_match: string, asyncModifier: string | undefined) =>
-        `const ${defaultExportSymbol} = ${asyncModifier || ''}function`,
-    )};`;
-  }
-
-  return `${text.replace(/^export\s+default\s+class\b/, `const ${defaultExportSymbol} = class`)};`;
-}
-
-function createImportAliasDeclarations(
-  moduleInfo: RunJSModuleInfo,
-  modules: Map<string, RunJSModuleInfo>,
-): RunJSTransformedCode {
-  const aliases: RunJSTransformedCode[] = [];
-  const sourceFile = moduleInfo.sourceFile as ts.SourceFile | undefined;
-
-  for (const importBinding of moduleInfo.imports) {
-    if (!importBinding.targetPath) {
-      continue;
-    }
-    const target = modules.get(importBinding.targetPath);
-    if (!target) {
-      continue;
-    }
-    const position =
-      sourceFile && typeof importBinding.start === 'number'
-        ? sourceFile.getLineAndCharacterOfPosition(importBinding.start)
-        : null;
-    const sourceLine = position ? position.line + 1 : 1;
-    const sourceColumn = position ? position.character + 1 : 1;
-    if (importBinding.defaultName) {
-      aliases.push(
-        transformedSourceCode(
-          `const ${importBinding.defaultName} = ${target.moduleSymbol}.default;`,
-          moduleInfo.file.path,
-          sourceLine,
-          sourceColumn,
-        ),
-      );
-    }
-    for (const namedImport of importBinding.named) {
-      const access =
-        target.isJson && namedImport.imported !== 'default'
-          ? `${target.moduleSymbol}.default.${namedImport.imported}`
-          : `${target.moduleSymbol}.${namedImport.imported}`;
-      aliases.push(
-        transformedSourceCode(
-          `const ${namedImport.local} = ${access};`,
-          moduleInfo.file.path,
-          sourceLine,
-          sourceColumn,
-        ),
-      );
-    }
-  }
-
-  return joinTransformedSegments(aliases);
-}
-
-function createBuiltInImportAliasDeclarations(moduleInfo: RunJSModuleInfo): RunJSTransformedCode {
-  const aliases: RunJSTransformedCode[] = [];
-  const sourceFile = moduleInfo.sourceFile;
-  for (const binding of moduleInfo.builtInImports) {
-    const position = sourceFile.getLineAndCharacterOfPosition(binding.start);
-    const sourceLine = position.line + 1;
-    const sourceColumn = position.character + 1;
-    const source = `ctx.libs.${binding.ctxLibName}`;
-    if (binding.defaultName) {
-      aliases.push(
-        transformedSourceCode(
-          `const ${binding.defaultName} = ${source};`,
-          moduleInfo.file.path,
-          sourceLine,
-          sourceColumn,
-        ),
-      );
-    }
-    if (binding.namespaceName) {
-      aliases.push(
-        transformedSourceCode(
-          `const ${binding.namespaceName} = ${source};`,
-          moduleInfo.file.path,
-          sourceLine,
-          sourceColumn,
-        ),
-      );
-    }
-    for (const namedImport of binding.named) {
-      if (namedImport.imported !== 'default') {
-        continue;
-      }
-      aliases.push(
-        transformedSourceCode(
-          `const ${namedImport.local} = ${source};`,
-          moduleInfo.file.path,
-          sourceLine,
-          sourceColumn,
-        ),
-      );
-    }
-    const namedImports = binding.named.filter((namedImport) => namedImport.imported !== 'default');
-    if (namedImports.length) {
-      const names = namedImports
-        .map(({ imported, local }) => (imported === local ? imported : `${imported}: ${local}`))
-        .join(', ');
-      aliases.push(
-        transformedSourceCode(`const { ${names} } = ${source};`, moduleInfo.file.path, sourceLine, sourceColumn),
-      );
-    }
-  }
-  return joinTransformedSegments(aliases);
-}
-
-function createExportAssignments(moduleInfo: RunJSModuleInfo): string {
-  const assignments = Array.from(moduleInfo.namedExports)
-    .sort()
-    .map((name) => `__runjs_exports.${name} = ${name};`);
-
-  if (moduleInfo.hasDefaultExport) {
-    assignments.push(`__runjs_exports.default = ${moduleInfo.defaultExportSymbol};`);
-  }
-
-  return assignments.join('\n');
-}
-
-function transpileRuntimeCode(
-  source: string,
-  path: string,
-  diagnostics: RunJSCompileDiagnostic[],
-): RunJSTranspiledCode {
-  const result = ts.transpileModule(source, {
-    compilerOptions: {
-      jsx: ts.JsxEmit.Preserve,
-      module: ts.ModuleKind.None,
-      sourceMap: true,
-      target: ts.ScriptTarget.ES2020,
-    },
-    fileName: getTranspileFileName(path),
-    reportDiagnostics: true,
-  });
-
-  diagnostics.push(
-    ...(result.diagnostics || [])
-      .filter((diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error)
-      .map((diagnostic) => tsDiagnosticToRunJSDiagnostic(diagnostic, path)),
-  );
-
-  return {
-    code: removeTranspileSourceMapComment(result.outputText),
-    mappings: parseTranspiledLineMappings(result.sourceMapText),
-  };
-}
-
-function removeTranspileSourceMapComment(code: string): string {
-  return code.replace(/\n?\/\/# sourceMappingURL=[^\n]*\s*$/, '');
-}
-
-function parseTranspiledLineMappings(sourceMapText: string | undefined): RunJSEmittedLineMapping[] {
-  if (!sourceMapText) {
-    return [];
-  }
-
-  let sourceMap: unknown;
-  try {
-    sourceMap = JSON.parse(sourceMapText);
-  } catch {
-    return [];
-  }
-  if (!sourceMap || typeof sourceMap !== 'object' || Array.isArray(sourceMap)) {
-    return [];
-  }
-
-  const mappings = (sourceMap as Record<string, unknown>).mappings;
-  if (typeof mappings !== 'string') {
-    return [];
-  }
-
-  const result: RunJSEmittedLineMapping[] = [];
-  let previousSource = 0;
-  let previousOriginalLine = 0;
-
-  for (const [generatedLineIndex, line] of mappings.split(';').entries()) {
-    let selectedTransformedLine: number | undefined;
-
-    for (const encodedSegment of line.split(',')) {
-      if (!encodedSegment) {
-        continue;
-      }
-      const segment = decodeSourceMapVlqSegment(encodedSegment);
-      if (!segment || segment.length < 4) {
-        continue;
-      }
-
-      previousSource += segment[1];
-      previousOriginalLine += segment[2];
-
-      if (selectedTransformedLine === undefined && previousSource === 0) {
-        selectedTransformedLine = previousOriginalLine + 1;
-      }
-    }
-
-    if (selectedTransformedLine !== undefined) {
-      result.push({
-        generatedLine: generatedLineIndex + 1,
-        transformedLine: selectedTransformedLine,
-      });
-    }
-  }
-
-  return result;
-}
-
-function decodeSourceMapVlqSegment(encoded: string): number[] | null {
-  const values: number[] = [];
-  let value = 0;
-  let shift = 0;
-
-  for (const character of encoded) {
-    const digit = sourceMapBase64Value(character);
-    if (digit < 0) {
-      return null;
-    }
-
-    value += (digit & 31) << shift;
-    if (digit & 32) {
-      shift += 5;
-      continue;
-    }
-
-    const negative = (value & 1) === 1;
-    const decoded = value >> 1;
-    values.push(negative ? -decoded : decoded);
-    value = 0;
-    shift = 0;
-  }
-
-  return shift === 0 ? values : null;
-}
-
-function sourceMapBase64Value(character: string): number {
-  const code = character.charCodeAt(0);
-  if (code >= 65 && code <= 90) {
-    return code - 65;
-  }
-  if (code >= 97 && code <= 122) {
-    return code - 97 + 26;
-  }
-  if (code >= 48 && code <= 57) {
-    return code - 48 + 52;
-  }
-  if (character === '+') {
-    return 62;
-  }
-  if (character === '/') {
-    return 63;
-  }
-  return -1;
-}
-
-function resolveRelativeRunJSImport(
-  fromPath: string,
-  specifier: string,
-  files: Map<string, RunJSContentFile>,
-): ResolveImportResult {
-  if (!isRelativeImportSpecifier(specifier)) {
-    return {
-      status: 'blocked',
-      message: `Import "${specifier}" is not allowed`,
-    };
-  }
-
-  const directory = pathPosix.dirname(fromPath);
-  const rawJoinedPath = pathPosix.join(directory === '.' ? '' : directory, specifier);
-  let joinedPath: string;
-  try {
-    joinedPath = normalizePath(pathPosix.normalize(rawJoinedPath));
-  } catch {
-    return {
-      status: 'blocked',
-      message: `Import "${specifier}" escapes the RunJS workspace`,
-    };
-  }
-
-  const exactFile = files.get(joinedPath);
-  if (exactFile && !isImportableExtension(exactFile.path)) {
-    return {
-      status: 'blocked',
-      path: exactFile.path,
-      message: `Import "${specifier}" targets unsupported file "${exactFile.path}"`,
-    };
-  }
-  if (exactFile) {
-    return {
-      status: 'resolved',
-      path: exactFile.path,
-    };
-  }
-
-  if (pathPosix.extname(joinedPath)) {
-    return {
-      status: 'notFound',
-    };
-  }
-
-  for (const extension of resolvableExtensions) {
-    const candidate = `${joinedPath}${extension}`;
-    if (files.has(candidate)) {
-      return {
-        status: 'resolved',
-        path: candidate,
-      };
-    }
-  }
-  for (const extension of resolvableExtensions) {
-    const candidate = pathPosix.join(joinedPath, `index${extension}`);
-    if (files.has(candidate)) {
-      return {
-        status: 'resolved',
-        path: candidate,
-      };
-    }
-  }
-
-  return {
-    status: 'notFound',
-  };
+function appendRunJSSourceURL(code: string, sourceURL: string): string {
+  return code ? `${code}\n//# sourceURL=${sourceURL}` : code;
 }
 
 function isRequireCallExpression(expression: ts.Expression): boolean {
@@ -1515,78 +1281,27 @@ function isRequireElementAccess(node: ts.Node): node is ts.ElementAccessExpressi
   );
 }
 
-function isCommonJSExportMutation(node: ts.Node): boolean {
-  if (ts.isBinaryExpression(node)) {
-    return isAssignmentOperator(node.operatorToken.kind) && isCommonJSExportTarget(node.left);
-  }
-  if (ts.isPrefixUnaryExpression(node) || ts.isPostfixUnaryExpression(node)) {
-    return isCommonJSExportTarget(node.operand);
-  }
-
-  return false;
-}
-
-function isCommonJSExportRuntimeReference(node: ts.Node): boolean {
-  if (isTypeOnlyRequireReference(node)) {
-    return false;
-  }
-  if (ts.isPropertyAccessExpression(node) || ts.isElementAccessExpression(node)) {
-    return isCommonJSExportTarget(node) || isCommonJSExportObject(node) || isCommonJSModuleObject(node);
-  }
-
-  return isFreeCommonJSIdentifier(node, 'exports') || isFreeCommonJSIdentifier(node, 'module');
-}
-
-function isAssignmentOperator(kind: ts.SyntaxKind): boolean {
-  return (
-    kind === ts.SyntaxKind.EqualsToken ||
-    kind === ts.SyntaxKind.PlusEqualsToken ||
-    kind === ts.SyntaxKind.MinusEqualsToken ||
-    kind === ts.SyntaxKind.AsteriskEqualsToken ||
-    kind === ts.SyntaxKind.AsteriskAsteriskEqualsToken ||
-    kind === ts.SyntaxKind.SlashEqualsToken ||
-    kind === ts.SyntaxKind.PercentEqualsToken ||
-    kind === ts.SyntaxKind.LessThanLessThanEqualsToken ||
-    kind === ts.SyntaxKind.GreaterThanGreaterThanEqualsToken ||
-    kind === ts.SyntaxKind.GreaterThanGreaterThanGreaterThanEqualsToken ||
-    kind === ts.SyntaxKind.AmpersandEqualsToken ||
-    kind === ts.SyntaxKind.BarEqualsToken ||
-    kind === ts.SyntaxKind.CaretEqualsToken ||
-    kind === ts.SyntaxKind.BarBarEqualsToken ||
-    kind === ts.SyntaxKind.AmpersandAmpersandEqualsToken ||
-    kind === ts.SyntaxKind.QuestionQuestionEqualsToken
-  );
-}
-
 function isFreeRequireIdentifier(node: ts.Node): node is ts.Identifier {
-  if (!ts.isIdentifier(node) || node.text !== 'require') {
-    return false;
-  }
+  if (!ts.isIdentifier(node) || node.text !== 'require') return false;
   const parent = node.parent;
-  if (!parent) {
-    return true;
-  }
-  if (ts.isPropertyAccessExpression(parent) && parent.name === node) {
-    return false;
-  }
-  if (ts.isElementAccessExpression(parent) && parent.argumentExpression === node) {
-    return false;
-  }
-  if (ts.isPropertyAssignment(parent) && parent.name === node) {
-    return false;
-  }
-  if (ts.isShorthandPropertyAssignment(parent)) {
-    return true;
-  }
-  if (isDeclarationName(node) || isTypeOnlyRequireReference(node)) {
-    return false;
-  }
-
+  if (!parent) return true;
+  if (ts.isPropertyAccessExpression(parent) && parent.name === node) return false;
+  if (ts.isElementAccessExpression(parent) && parent.argumentExpression === node) return false;
+  if (ts.isPropertyAssignment(parent) && parent.name === node) return false;
+  if (isDeclarationName(node) || isTypeOnlyReference(node)) return false;
   return true;
 }
 
 function isCommonJSRequireHost(expression: ts.Expression): boolean {
   return ts.isIdentifier(expression) && commonJSRequireHosts.has(expression.text);
+}
+
+function isCommonJSExportRuntimeReference(node: ts.Node): boolean {
+  if (isTypeOnlyReference(node)) return false;
+  if (ts.isPropertyAccessExpression(node) || ts.isElementAccessExpression(node)) {
+    return isCommonJSExportTarget(node) || isCommonJSExportObject(node) || isCommonJSModuleObject(node);
+  }
+  return isFreeCommonJSIdentifier(node, 'exports') || isFreeCommonJSIdentifier(node, 'module');
 }
 
 function isCommonJSExportTarget(expression: ts.Expression): boolean {
@@ -1596,7 +1311,6 @@ function isCommonJSExportTarget(expression: ts.Expression): boolean {
   if (ts.isElementAccessExpression(expression)) {
     return isModuleExportsElementAccess(expression) || isCommonJSExportObject(expression.expression);
   }
-
   return false;
 }
 
@@ -1605,41 +1319,22 @@ function isCommonJSExportObject(expression: ts.Expression): boolean {
 }
 
 function isCommonJSExportsObject(expression: ts.Expression): boolean {
-  if (ts.isIdentifier(expression)) {
-    return expression.text === 'exports';
-  }
-  if (ts.isPropertyAccessExpression(expression)) {
-    return isCommonJSGlobalPropertyAccess(expression, 'exports');
-  }
-  if (ts.isElementAccessExpression(expression)) {
-    return isCommonJSGlobalElementAccess(expression, 'exports');
-  }
-
+  if (ts.isIdentifier(expression)) return expression.text === 'exports';
+  if (ts.isPropertyAccessExpression(expression)) return isCommonJSGlobalPropertyAccess(expression, 'exports');
+  if (ts.isElementAccessExpression(expression)) return isCommonJSGlobalElementAccess(expression, 'exports');
   return false;
 }
 
 function isCommonJSModuleObject(expression: ts.Expression): boolean {
-  if (ts.isIdentifier(expression)) {
-    return expression.text === 'module';
-  }
-  if (ts.isPropertyAccessExpression(expression)) {
-    return isCommonJSGlobalPropertyAccess(expression, 'module');
-  }
-  if (ts.isElementAccessExpression(expression)) {
-    return isCommonJSGlobalElementAccess(expression, 'module');
-  }
-
+  if (ts.isIdentifier(expression)) return expression.text === 'module';
+  if (ts.isPropertyAccessExpression(expression)) return isCommonJSGlobalPropertyAccess(expression, 'module');
+  if (ts.isElementAccessExpression(expression)) return isCommonJSGlobalElementAccess(expression, 'module');
   return false;
 }
 
 function isCommonJSModuleExportsObject(expression: ts.Expression): boolean {
-  if (ts.isPropertyAccessExpression(expression)) {
-    return isModuleExportsExpression(expression);
-  }
-  if (ts.isElementAccessExpression(expression)) {
-    return isModuleExportsElementAccess(expression);
-  }
-
+  if (ts.isPropertyAccessExpression(expression)) return isModuleExportsExpression(expression);
+  if (ts.isElementAccessExpression(expression)) return isModuleExportsElementAccess(expression);
   return false;
 }
 
@@ -1670,25 +1365,9 @@ function isCommonJSGlobalHost(expression: ts.Expression): boolean {
   );
 }
 
-function isFunctionLikeScope(node: ts.Node): boolean {
-  return (
-    ts.isFunctionDeclaration(node) ||
-    ts.isFunctionExpression(node) ||
-    ts.isArrowFunction(node) ||
-    ts.isMethodDeclaration(node) ||
-    ts.isConstructorDeclaration(node) ||
-    ts.isGetAccessorDeclaration(node) ||
-    ts.isSetAccessorDeclaration(node)
-  );
-}
-
 function isFreeCommonJSIdentifier(node: ts.Node, text: 'exports' | 'module'): boolean {
-  if (!ts.isIdentifier(node) || node.text !== text) {
-    return false;
-  }
-  if (isDeclarationName(node) || isTypeOnlyRequireReference(node)) {
-    return false;
-  }
+  if (!ts.isIdentifier(node) || node.text !== text) return false;
+  if (isDeclarationName(node) || isTypeOnlyReference(node)) return false;
   const parent = node.parent;
   if (
     parent &&
@@ -1698,7 +1377,6 @@ function isFreeCommonJSIdentifier(node: ts.Node, text: 'exports' | 'module'): bo
   ) {
     return false;
   }
-
   return true;
 }
 
@@ -1714,7 +1392,7 @@ function isDeclarationName(node: ts.Identifier): boolean {
   );
 }
 
-function isTypeOnlyRequireReference(node: ts.Node): boolean {
+function isTypeOnlyReference(node: ts.Node): boolean {
   let current: ts.Node | undefined = node;
   while (current) {
     if (
@@ -1727,243 +1405,5 @@ function isTypeOnlyRequireReference(node: ts.Node): boolean {
     }
     current = current.parent;
   }
-
   return false;
-}
-
-function isRuntimeImportDeclaration(statement: ts.ImportDeclaration): boolean {
-  const importClause = statement.importClause;
-  if (!importClause) {
-    return true;
-  }
-  if (importClause.isTypeOnly) {
-    return false;
-  }
-  const namedBindings = importClause.namedBindings;
-  if (!importClause.name && namedBindings && ts.isNamedImports(namedBindings)) {
-    return namedBindings.elements.length === 0 || namedBindings.elements.some((element) => !element.isTypeOnly);
-  }
-
-  return true;
-}
-
-function getScriptKind(path: string): ts.ScriptKind {
-  if (path.endsWith('.tsx')) {
-    return ts.ScriptKind.TSX;
-  }
-  if (path.endsWith('.jsx')) {
-    return ts.ScriptKind.JSX;
-  }
-  if (path.endsWith('.js')) {
-    return ts.ScriptKind.JS;
-  }
-
-  return ts.ScriptKind.TS;
-}
-
-function getTranspileFileName(path: string): string {
-  if (path.endsWith('.json')) {
-    return `${path}.ts`;
-  }
-
-  return path;
-}
-
-function getStringLiteralText(node: ts.Expression): string | null {
-  if (ts.isStringLiteral(node) || isNoSubstitutionTemplateLiteral(node)) {
-    return node.text;
-  }
-
-  return null;
-}
-
-function isNoSubstitutionTemplateLiteral(node: ts.Node): node is ts.NoSubstitutionTemplateLiteral {
-  return node.kind === ts.SyntaxKind.NoSubstitutionTemplateLiteral;
-}
-
-function getSourceFileParseDiagnostics(sourceFile: ts.SourceFile): readonly ts.Diagnostic[] {
-  return (sourceFile as SourceFileWithParseDiagnostics).parseDiagnostics || [];
-}
-
-function parseFunctionBody(source: string): (...args: unknown[]) => Promise<unknown> {
-  return new asyncFunctionConstructor(source);
-}
-
-function isRelativeImportSpecifier(specifier: string): boolean {
-  return specifier.startsWith('./') || specifier.startsWith('../');
-}
-
-function isImportableExtension(path: string): boolean {
-  return importableExtensions.has(pathPosix.extname(path));
-}
-
-function hasExportModifier(statement: ts.Statement): boolean {
-  return hasModifier(statement, ts.SyntaxKind.ExportKeyword);
-}
-
-function hasDefaultModifier(statement: ts.Statement): boolean {
-  return hasModifier(statement, ts.SyntaxKind.DefaultKeyword);
-}
-
-function hasModifier(statement: ts.Statement, kind: ts.SyntaxKind): boolean {
-  return Boolean(
-    ts.canHaveModifiers(statement) && ts.getModifiers(statement)?.some((modifier) => modifier.kind === kind),
-  );
-}
-
-function removeStatementModifiers(
-  sourceFile: ts.SourceFile,
-  statement: ts.Statement,
-  modifierKinds: ts.SyntaxKind[],
-): string {
-  if (!ts.canHaveModifiers(statement)) {
-    return getStatementSource(sourceFile, statement);
-  }
-
-  const modifiers = ts.getModifiers(statement) || [];
-  const ranges = modifiers
-    .filter((modifier) => modifierKinds.includes(modifier.kind))
-    .map((modifier) => ({
-      start: modifier.getStart(sourceFile),
-      end: modifier.end,
-    }));
-
-  return removeSourceRanges(sourceFile.text, statement.getStart(sourceFile), statement.end, ranges);
-}
-
-function removeSourceRanges(
-  source: string,
-  start: number,
-  end: number,
-  ranges: Array<{ start: number; end: number }>,
-): string {
-  let cursor = start;
-  let output = '';
-  for (const range of ranges.sort((left, right) => left.start - right.start)) {
-    output += source.slice(cursor, range.start);
-    cursor = range.end;
-  }
-  output += source.slice(cursor, end);
-
-  return output;
-}
-
-function getStatementSource(sourceFile: ts.SourceFile, statement: ts.Statement): string {
-  return sourceFile.text.slice(statement.getStart(sourceFile), statement.end);
-}
-
-function diagnosticAt(
-  sourceFile: ts.SourceFile | undefined,
-  start: number | undefined,
-  input: Pick<RunJSCompileDiagnostic, 'code' | 'path' | 'message'>,
-): RunJSCompileDiagnostic {
-  const lineAndColumn =
-    sourceFile && typeof start === 'number' ? sourceFile.getLineAndCharacterOfPosition(start) : null;
-
-  return {
-    severity: 'error',
-    code: input.code,
-    path: input.path,
-    line: lineAndColumn ? lineAndColumn.line + 1 : undefined,
-    column: lineAndColumn ? lineAndColumn.character + 1 : undefined,
-    message: input.message,
-  };
-}
-
-function tsDiagnosticToRunJSDiagnostic(diagnostic: ts.Diagnostic, fallbackPath: string): RunJSCompileDiagnostic {
-  const position =
-    diagnostic.file && typeof diagnostic.start === 'number'
-      ? diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start)
-      : null;
-
-  return {
-    severity: 'error',
-    code: 'RUNJS_COMPILE_FAILED',
-    path: fallbackPath,
-    line: position ? position.line + 1 : undefined,
-    column: position ? position.character + 1 : undefined,
-    message: ts.flattenDiagnosticMessageText(diagnostic.messageText, ' '),
-  };
-}
-
-function jsonErrorLocation(content: string, message: string): Pick<RunJSCompileDiagnostic, 'line' | 'column'> {
-  const match = message.match(/position\s+(\d+)/i);
-  if (!match) {
-    return {};
-  }
-  const position = Number(match[1]);
-  if (!Number.isFinite(position) || position < 0) {
-    return {};
-  }
-
-  const before = normalizeText(content.slice(0, position));
-  const lines = before.split('\n');
-  return {
-    line: lines.length,
-    column: lines[lines.length - 1].length + 1,
-  };
-}
-
-function buildInternalSymbol(prefix: string, path: string): string {
-  return `${prefix}_${sha256Hex(path).slice(0, 12)}`;
-}
-
-function resolveArtifactVersion(surfaceStyle: RunJSSurfaceStyle, runtimeVersion?: string): string {
-  if (surfaceStyle === 'workflow') {
-    return 'workflow-js';
-  }
-
-  return runtimeVersion || runtimeVersionDefault;
-}
-
-function hasErrorDiagnostic(diagnostics: RunJSCompileDiagnostic[]): boolean {
-  return diagnostics.some((diagnostic) => diagnostic.severity === 'error');
-}
-
-function getFailureCode(diagnostics: RunJSCompileDiagnostic[]): RunJSCompileFailureCode | undefined {
-  const firstError = diagnostics.find((diagnostic) => diagnostic.severity === 'error');
-  if (!firstError) {
-    return undefined;
-  }
-  if (
-    firstError.code === 'RUNJS_ENTRY_NOT_FOUND' ||
-    firstError.code === 'RUNJS_IMPORT_NOT_ALLOWED' ||
-    firstError.code === 'RUNJS_IMPORT_NOT_FOUND' ||
-    firstError.code === 'RUNJS_DYNAMIC_IMPORT_UNSUPPORTED'
-  ) {
-    return firstError.code;
-  }
-
-  return 'RUNJS_COMPILE_FAILED';
-}
-
-function countLines(content: string): number {
-  if (!content) {
-    return 0;
-  }
-
-  return content.split('\n').length;
-}
-
-function buildRunJSSourceURL(filesHash: string): string {
-  return `${runJSSourceURLPrefix}${sha256Hex(filesHash).slice(0, 16)}.js`;
-}
-
-function appendRunJSSourceURL(code: string, sourceURL: string): string {
-  if (!code) {
-    return code;
-  }
-
-  return `${code}\n//# sourceURL=${sourceURL}`;
-}
-
-function indent(content: string): string {
-  if (!content) {
-    return '';
-  }
-
-  return content
-    .split('\n')
-    .map((line) => (line ? `  ${line}` : line))
-    .join('\n');
 }

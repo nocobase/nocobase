@@ -181,7 +181,7 @@ const actionRunners: Record<RunJSSourceActionName, RunJSSourceActionRunner> = {
       const runtimeVersion = legacy.version;
 
       assertRunJSCompileInputLimits(compileFiles);
-      const compiled = compileRunJSSourceWorkspace({
+      const compiled = await compileRunJSSourceWorkspace({
         files: compileFiles,
         entry: entryPath,
         runtimeVersion,
@@ -289,7 +289,7 @@ const actionRunners: Record<RunJSSourceActionName, RunJSSourceActionRunner> = {
         )
       : previewInput.files;
     assertRunJSCompileInputLimits(compileFiles);
-    const compiled = compileRunJSSourceWorkspace({
+    const compiled = await compileRunJSSourceWorkspace({
       files: compileFiles,
       entry: selectEntryPath(compileFiles, previewInput.entryPath),
       runtimeVersion: previewInput.version || legacy.version,
@@ -379,7 +379,7 @@ const actionRunners: Record<RunJSSourceActionName, RunJSSourceActionRunner> = {
         serviceCtx,
       );
       assertRunJSCompileInputLimits(compileFiles);
-      const compiled = compileRunJSSourceWorkspace({
+      const compiled = await compileRunJSSourceWorkspace({
         files: compileFiles,
         entry: entryPath,
         runtimeVersion,

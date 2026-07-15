@@ -17,6 +17,15 @@ import { LIGHT_EXTENSION_AUTHORING_SURFACES } from '../services/LightExtensionCo
 import { LightExtensionPermissionService } from '../services/LightExtensionPermissionService';
 import { LightExtensionWorkspaceCompilerBridge } from '../services/LightExtensionWorkspaceCompilerBridge';
 
+type AsyncFunctionConstructor = new (...args: string[]) => (...args: unknown[]) => Promise<unknown>;
+
+const asyncFunctionConstructor = Object.getPrototypeOf(async function runJSArtifactTest() {})
+  .constructor as AsyncFunctionConstructor;
+
+async function executeArtifact(code: string, ctx: unknown): Promise<unknown> {
+  return new asyncFunctionConstructor('ctx', code)(ctx);
+}
+
 describe('plugin-light-extension workspace compiler bridge', () => {
   let bridge: LightExtensionWorkspaceCompilerBridge;
   let recordCompileEvent: ReturnType<typeof vi.fn>;
@@ -70,8 +79,14 @@ describe('plugin-light-extension workspace compiler bridge', () => {
         compilerSurfaceStyle: 'render',
       },
     });
-    expect(result.artifact.code).toContain("const title = 'Sales KPI';");
-    expect(result.artifact.code).toContain('ctx.render(<div>{title}</div>);');
+    const rendered: unknown[] = [];
+    const React = { createElement: (type: unknown, props: unknown, child: unknown) => ({ type, props, child }) };
+    await executeArtifact(result.artifact.code, {
+      libs: {},
+      React,
+      render: (value: unknown) => rendered.push(value),
+    });
+    expect(rendered).toEqual([{ type: 'div', props: null, child: 'Sales KPI' }]);
     expect(result.artifact.sourceMap).toBeTruthy();
 
     expect(recordCompileEvent).toHaveBeenCalledWith(
@@ -130,7 +145,7 @@ describe('plugin-light-extension workspace compiler bridge', () => {
     expect(result.artifact.code).not.toContain('@nocobase/light-extension-sdk/client');
   });
 
-  it('compiles built-in React imports to ctx.libs declarations', async () => {
+  it('maps built-in React imports to ctx.libs at runtime', async () => {
     const result = await bridge.compileEntry({
       repoId: 'ler_sales',
       entryId: 'lee_react_hooks',
@@ -153,9 +168,21 @@ describe('plugin-light-extension workspace compiler bridge', () => {
 
     expect(result.accepted).toBe(true);
     expect(result.diagnostics).toEqual([]);
-    expect(result.artifact.code).toContain('const React = ctx.libs.React;');
-    expect(result.artifact.code).toContain('const { useEffect, useState: useLocalState } = ctx.libs.React;');
-    expect(result.artifact.code).toContain('const ReactDOM = ctx.libs.ReactDOM;');
+    const React = {
+      createElement: (type: unknown, props: unknown, child: unknown) => ({ type, props, child }),
+      useEffect: () => undefined,
+      useState: () => [0, () => undefined] as const,
+    };
+    const ReactDOM = { createRoot: () => undefined };
+    const rendered: unknown[] = [];
+    await executeArtifact(result.artifact.code, {
+      libs: { React, ReactDOM },
+      React,
+      render: (value: unknown) => rendered.push(value),
+    });
+    expect(rendered).toHaveLength(1);
+    expect(result.artifact.code).toContain('case "react": return ctx.libs.React;');
+    expect(result.artifact.code).toContain('case "react-dom/client": return ctx.libs.ReactDOM;');
     expect(result.artifact.code).not.toContain(`from 'react'`);
   });
 

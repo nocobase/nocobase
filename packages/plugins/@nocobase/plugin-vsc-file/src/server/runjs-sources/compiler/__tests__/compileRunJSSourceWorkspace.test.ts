@@ -12,9 +12,18 @@ import { describe, expect, it } from 'vitest';
 import { compileRunJSSourceWorkspace } from '..';
 import type { RunJSCompileDiagnostic } from '../../../../shared/runjs-source-types';
 
+type AsyncFunctionConstructor = new (...args: string[]) => (...args: unknown[]) => Promise<unknown>;
+
+const asyncFunctionConstructor = Object.getPrototypeOf(async function runJSArtifactTest() {})
+  .constructor as AsyncFunctionConstructor;
+
+async function executeArtifact(code: string, ctx: unknown): Promise<unknown> {
+  return new asyncFunctionConstructor('ctx', code)(ctx);
+}
+
 describe('compileRunJSSourceWorkspace', () => {
-  it('compiles named imports and exports into one RunJS artifact', () => {
-    const result = compileRunJSSourceWorkspace({
+  it('compiles named imports and exports into one RunJS artifact', async () => {
+    const result = await compileRunJSSourceWorkspace({
       entry: 'src/main.tsx',
       runtimeVersion: 'v2',
       surfaceStyle: 'render',
@@ -32,14 +41,20 @@ describe('compileRunJSSourceWorkspace', () => {
 
     expect(result.failureCode).toBeUndefined();
     expect(result.artifact.diagnostics).toEqual([]);
-    expect(result.artifact.code).toContain("const message = 'Hello';");
-    expect(result.artifact.code).toContain('ctx.render(<div>{message}</div>);');
+    const rendered: unknown[] = [];
+    const React = { createElement: (type: unknown, props: unknown, child: unknown) => ({ type, props, child }) };
+    await executeArtifact(result.artifact.code, {
+      libs: {},
+      React,
+      render: (value: unknown) => rendered.push(value),
+    });
+    expect(rendered).toEqual([{ type: 'div', props: null, child: 'Hello' }]);
     expect(result.artifact.code).not.toContain('import ');
-    expect(result.artifact.code).not.toContain('export ');
+    expect(result.artifact.code).not.toContain('export const message');
   });
 
-  it('emits a debug line map for runtime stack mapping', () => {
-    const result = compileRunJSSourceWorkspace({
+  it('emits a debug line map for runtime stack mapping', async () => {
+    const result = await compileRunJSSourceWorkspace({
       entry: 'src/main.tsx',
       runtimeVersion: 'v2',
       surfaceStyle: 'action',
@@ -83,8 +98,8 @@ describe('compileRunJSSourceWorkspace', () => {
     expect(result.artifact.code.split('\n')[(throwMapping?.generatedLine || 1) - 1]).toContain('throw new Error');
   });
 
-  it('keeps runtime line mappings aligned after TypeScript-only lines are erased', () => {
-    const result = compileRunJSSourceWorkspace({
+  it('keeps runtime line mappings aligned after TypeScript-only lines are erased', async () => {
+    const result = await compileRunJSSourceWorkspace({
       entry: 'src/main.ts',
       runtimeVersion: 'v2',
       surfaceStyle: 'action',
@@ -116,8 +131,8 @@ describe('compileRunJSSourceWorkspace', () => {
     );
   });
 
-  it('compiles default exports and default imports', () => {
-    const result = compileRunJSSourceWorkspace({
+  it('compiles default exports and default imports', async () => {
+    const result = await compileRunJSSourceWorkspace({
       entry: 'src/main.ts',
       runtimeVersion: 'v2',
       surfaceStyle: 'action',
@@ -135,13 +150,16 @@ describe('compileRunJSSourceWorkspace', () => {
 
     expect(result.failureCode).toBeUndefined();
     expect(result.artifact.diagnostics).toEqual([]);
-    expect(result.artifact.code).toContain('function getMessage()');
-    expect(result.artifact.code).toContain('const getMessage = __runjs_module_');
-    expect(result.artifact.code).toContain('.default;');
+    const messages: unknown[] = [];
+    await executeArtifact(result.artifact.code, {
+      libs: {},
+      message: { info: (value: unknown) => messages.push(value) },
+    });
+    expect(messages).toEqual(['Hello']);
   });
 
-  it('resolves directory index imports', () => {
-    const result = compileRunJSSourceWorkspace({
+  it('resolves directory index imports', async () => {
+    const result = await compileRunJSSourceWorkspace({
       entry: 'src/main.ts',
       runtimeVersion: 'v2',
       surfaceStyle: 'action',
@@ -159,11 +177,16 @@ describe('compileRunJSSourceWorkspace', () => {
 
     expect(result.failureCode).toBeUndefined();
     expect(result.artifact.diagnostics).toEqual([]);
-    expect(result.artifact.code).toContain("const message = 'Hello';");
+    const messages: unknown[] = [];
+    await executeArtifact(result.artifact.code, {
+      libs: {},
+      message: { info: (value: unknown) => messages.push(value) },
+    });
+    expect(messages).toEqual(['Hello']);
   });
 
-  it('keeps empty named imports as side-effect imports', () => {
-    const result = compileRunJSSourceWorkspace({
+  it('keeps empty named imports as side-effect imports', async () => {
+    const result = await compileRunJSSourceWorkspace({
       entry: 'src/main.ts',
       runtimeVersion: 'v2',
       surfaceStyle: 'render',
@@ -181,11 +204,19 @@ describe('compileRunJSSourceWorkspace', () => {
 
     expect(result.failureCode).toBeUndefined();
     expect(result.artifact.diagnostics).toEqual([]);
-    expect(result.artifact.code).toContain("globalThis.sideEffect = 'ready';");
+    const runtimeGlobal = globalThis as typeof globalThis & { sideEffect?: string };
+    delete runtimeGlobal.sideEffect;
+    const rendered: unknown[] = [];
+    await executeArtifact(result.artifact.code, {
+      libs: {},
+      render: (value: unknown) => rendered.push(value),
+    });
+    expect(rendered).toEqual(['ready']);
+    delete runtimeGlobal.sideEffect;
   });
 
-  it('compiles anonymous async default function exports', () => {
-    const result = compileRunJSSourceWorkspace({
+  it('compiles anonymous async default function exports', async () => {
+    const result = await compileRunJSSourceWorkspace({
       entry: 'src/main.ts',
       runtimeVersion: 'v2',
       surfaceStyle: 'action',
@@ -203,12 +234,17 @@ describe('compileRunJSSourceWorkspace', () => {
 
     expect(result.failureCode).toBeUndefined();
     expect(result.artifact.diagnostics).toEqual([]);
-    expect(result.artifact.code).toContain('async function ()');
-    expect(result.artifact.code).not.toContain('export default');
+    const messages: unknown[] = [];
+    await executeArtifact(result.artifact.code, {
+      libs: {},
+      message: { info: (value: unknown) => messages.push(value) },
+    });
+    expect(messages[0]).toEqual(expect.any(Function));
+    await expect((messages[0] as () => Promise<string>)()).resolves.toBe('Hello');
   });
 
-  it('reports missing relative imports with source location', () => {
-    const result = compileRunJSSourceWorkspace({
+  it('reports missing relative imports with source location', async () => {
+    const result = await compileRunJSSourceWorkspace({
       entry: 'src/main.ts',
       runtimeVersion: 'v2',
       surfaceStyle: 'action',
@@ -230,19 +266,19 @@ describe('compileRunJSSourceWorkspace', () => {
     });
   });
 
-  it('rejects package imports and dynamic imports', () => {
-    const packageImport = compileRunJSSourceWorkspace({
+  it('rejects package imports and dynamic imports', async () => {
+    const packageImport = await compileRunJSSourceWorkspace({
       entry: 'src/main.ts',
       runtimeVersion: 'v2',
       surfaceStyle: 'action',
       files: [
         {
           path: 'src/main.ts',
-          content: "import lodash from 'lodash';\nctx.message.info(lodash);",
+          content: "import value from 'unsupported-package';\nctx.message.info(value);",
         },
       ],
     });
-    const dynamicImport = compileRunJSSourceWorkspace({
+    const dynamicImport = await compileRunJSSourceWorkspace({
       entry: 'src/main.ts',
       runtimeVersion: 'v2',
       surfaceStyle: 'action',
@@ -262,11 +298,11 @@ describe('compileRunJSSourceWorkspace', () => {
     expect(dynamicImport.failureCode).toBe('RUNJS_DYNAMIC_IMPORT_UNSUPPORTED');
   });
 
-  it('rejects CommonJS require calls', () => {
+  it('rejects CommonJS require calls', async () => {
     const blockedSpecifiers = ['fs', 'node:fs', 'lodash'];
 
     for (const specifier of blockedSpecifiers) {
-      const result = compileRunJSSourceWorkspace({
+      const result = await compileRunJSSourceWorkspace({
         entry: 'src/main.ts',
         runtimeVersion: 'v2',
         surfaceStyle: 'action',
@@ -289,7 +325,7 @@ describe('compileRunJSSourceWorkspace', () => {
     }
   });
 
-  it('rejects CommonJS require aliases and properties on workflow surfaces', () => {
+  it('rejects CommonJS require aliases and properties on workflow surfaces', async () => {
     const blockedSources = [
       "const r = require;\nconst fs = r('fs');\nreturn Boolean(fs);",
       "const fs = globalThis.require('fs');\nreturn Boolean(fs);",
@@ -297,7 +333,7 @@ describe('compileRunJSSourceWorkspace', () => {
     ];
 
     for (const content of blockedSources) {
-      const result = compileRunJSSourceWorkspace({
+      const result = await compileRunJSSourceWorkspace({
         entry: 'src/main.js',
         runtimeVersion: 'workflow-js',
         surfaceStyle: 'workflow',
@@ -314,7 +350,7 @@ describe('compileRunJSSourceWorkspace', () => {
     }
   });
 
-  it('rejects CommonJS export assignments', () => {
+  it('rejects CommonJS export assignments', async () => {
     const blockedSources = [
       {
         surfaceStyle: 'action' as const,
@@ -367,7 +403,7 @@ describe('compileRunJSSourceWorkspace', () => {
     ];
 
     for (const source of blockedSources) {
-      const result = compileRunJSSourceWorkspace({
+      const result = await compileRunJSSourceWorkspace({
         entry: 'src/main.js',
         runtimeVersion: source.surfaceStyle === 'workflow' ? 'workflow-js' : 'v2',
         surfaceStyle: source.surfaceStyle,
@@ -389,8 +425,8 @@ describe('compileRunJSSourceWorkspace', () => {
     }
   });
 
-  it('rejects mutable named exports because imports are not live bindings', () => {
-    const result = compileRunJSSourceWorkspace({
+  it('supports mutable named exports with live bindings', async () => {
+    const result = await compileRunJSSourceWorkspace({
       entry: 'src/main.ts',
       runtimeVersion: 'v2',
       surfaceStyle: 'action',
@@ -406,17 +442,17 @@ describe('compileRunJSSourceWorkspace', () => {
       ],
     });
 
-    expect(result.failureCode).toBe('RUNJS_COMPILE_FAILED');
-    expect(result.artifact.code).toBe('');
-    expect(result.artifact.diagnostics[0]).toMatchObject({
-      code: 'RUNJS_COMPILE_FAILED',
-      path: 'src/counter.ts',
-      message: 'Only exported const variable declarations are supported in RunJS modules',
+    expect(result.failureCode, JSON.stringify(result.artifact.diagnostics, null, 2)).toBeUndefined();
+    const messages: unknown[] = [];
+    await executeArtifact(result.artifact.code, {
+      libs: {},
+      message: { info: (value: unknown) => messages.push(value) },
     });
+    expect(messages).toEqual([1]);
   });
 
-  it('rejects top-level returns in imported modules', () => {
-    const result = compileRunJSSourceWorkspace({
+  it('rejects top-level returns in imported modules', async () => {
+    const result = await compileRunJSSourceWorkspace({
       entry: 'src/main.ts',
       runtimeVersion: 'v2',
       surfaceStyle: 'action',
@@ -437,12 +473,12 @@ describe('compileRunJSSourceWorkspace', () => {
     expect(result.artifact.diagnostics[0]).toMatchObject({
       code: 'RUNJS_COMPILE_FAILED',
       path: 'src/helper.ts',
-      message: 'Top-level return is only supported in the RunJS entry module',
+      message: expect.stringContaining('Top-level return'),
     });
   });
 
-  it('supports JSON default and named imports', () => {
-    const result = compileRunJSSourceWorkspace({
+  it('supports JSON default and named imports', async () => {
+    const result = await compileRunJSSourceWorkspace({
       entry: 'src/main.ts',
       runtimeVersion: 'v2',
       surfaceStyle: 'value',
@@ -459,13 +495,11 @@ describe('compileRunJSSourceWorkspace', () => {
     });
 
     expect(result.failureCode).toBeUndefined();
-    expect(result.artifact.code).toContain('__runjs_exports.default =');
-    expect(result.artifact.code).toContain('const title = __runjs_module_');
-    expect(result.artifact.code).toContain('.default.title;');
+    await expect(executeArtifact(result.artifact.code, { libs: {} })).resolves.toBe('Dashboard:3');
   });
 
-  it('returns diagnostics for circular imports and unsupported export forms', () => {
-    const circular = compileRunJSSourceWorkspace({
+  it('rejects imports back into the entry while accepting standard re-exports', async () => {
+    const circular = await compileRunJSSourceWorkspace({
       entry: 'src/a.ts',
       runtimeVersion: 'v2',
       surfaceStyle: 'action',
@@ -480,7 +514,7 @@ describe('compileRunJSSourceWorkspace', () => {
         },
       ],
     });
-    const unsupportedExport = compileRunJSSourceWorkspace({
+    const unsupportedExport = await compileRunJSSourceWorkspace({
       entry: 'src/main.ts',
       runtimeVersion: 'v2',
       surfaceStyle: 'action',
@@ -496,14 +530,15 @@ describe('compileRunJSSourceWorkspace', () => {
       ],
     });
 
-    expect(circular.failureCode).toBe('RUNJS_COMPILE_FAILED');
+    expect(circular.failureCode).toBe('RUNJS_IMPORT_NOT_ALLOWED');
     expect(circular.artifact.code).toBe('');
-    expect(unsupportedExport.failureCode).toBe('RUNJS_COMPILE_FAILED');
-    expect(unsupportedExport.artifact.code).toBe('');
-    expect(unsupportedExport.artifact.diagnostics[0].message).toContain('Export lists and re-exports');
+    expect(
+      unsupportedExport.failureCode,
+      JSON.stringify(unsupportedExport.artifact.diagnostics, null, 2),
+    ).toBeUndefined();
   });
 
-  it('keeps workflow artifacts out of browser authoring inspection', () => {
+  it('keeps workflow artifacts out of browser authoring inspection', async () => {
     const diagnostics: RunJSCompileDiagnostic[] = [
       {
         severity: 'error',
@@ -511,7 +546,7 @@ describe('compileRunJSSourceWorkspace', () => {
         message: 'browser validation should not run',
       },
     ];
-    const result = compileRunJSSourceWorkspace({
+    const result = await compileRunJSSourceWorkspace({
       entry: 'src/main.js',
       runtimeVersion: 'workflow-js',
       surfaceStyle: 'workflow',
@@ -529,8 +564,8 @@ describe('compileRunJSSourceWorkspace', () => {
     expect(result.artifact.diagnostics).toEqual([]);
   });
 
-  it('reports workflow syntax errors after module transform', () => {
-    const result = compileRunJSSourceWorkspace({
+  it('reports workflow syntax errors after module transform', async () => {
+    const result = await compileRunJSSourceWorkspace({
       entry: 'src/main.js',
       runtimeVersion: 'workflow-js',
       surfaceStyle: 'workflow',
@@ -551,11 +586,11 @@ describe('compileRunJSSourceWorkspace', () => {
       code: 'RUNJS_COMPILE_FAILED',
       path: 'src/main.js',
     });
-    expect(result.artifact.diagnostics[0].message).toContain('invalid syntax');
+    expect(result.artifact.diagnostics[0].message).toContain('already been declared');
   });
 
-  it('reports browser surface syntax errors after module transform', () => {
-    const result = compileRunJSSourceWorkspace({
+  it('reports browser surface syntax errors after module transform', async () => {
+    const result = await compileRunJSSourceWorkspace({
       entry: 'src/main.js',
       runtimeVersion: 'v2',
       surfaceStyle: 'action',
@@ -576,11 +611,11 @@ describe('compileRunJSSourceWorkspace', () => {
       code: 'RUNJS_COMPILE_FAILED',
       path: 'src/main.js',
     });
-    expect(result.artifact.diagnostics[0].message).toContain('invalid syntax');
+    expect(result.artifact.diagnostics[0].message).toContain('already been declared');
   });
 
-  it('adds authoring diagnostics for browser surfaces', () => {
-    const result = compileRunJSSourceWorkspace({
+  it('adds authoring diagnostics for browser surfaces', async () => {
+    const result = await compileRunJSSourceWorkspace({
       entry: 'src/main.ts',
       runtimeVersion: 'v2',
       surfaceStyle: 'action',
@@ -609,8 +644,8 @@ describe('compileRunJSSourceWorkspace', () => {
     });
   });
 
-  it('rejects unknown runtime globals in the compiler layer', () => {
-    const result = compileRunJSSourceWorkspace({
+  it('rejects unknown runtime globals in the compiler layer', async () => {
+    const result = await compileRunJSSourceWorkspace({
       entry: 'src/main.tsx',
       runtimeVersion: 'v2',
       surfaceStyle: 'render',
@@ -642,8 +677,8 @@ describe('compileRunJSSourceWorkspace', () => {
     expect(result.artifact.diagnostics[0].message).not.toContain('flowSurfaces authoring');
   });
 
-  it('accepts local bindings, imports, and chart event globals while rejecting missing type names', () => {
-    const localBindings = compileRunJSSourceWorkspace({
+  it('accepts local bindings, imports, and chart event globals while rejecting missing type names', async () => {
+    const localBindings = await compileRunJSSourceWorkspace({
       entry: 'src/main.tsx',
       runtimeVersion: 'v2',
       surfaceStyle: 'render',
@@ -663,7 +698,7 @@ describe('compileRunJSSourceWorkspace', () => {
         },
       ],
     });
-    const chartEvents = compileRunJSSourceWorkspace({
+    const chartEvents = await compileRunJSSourceWorkspace({
       entry: 'src/main.ts',
       runtimeVersion: 'v2',
       surfaceStyle: 'action',
@@ -692,14 +727,14 @@ describe('compileRunJSSourceWorkspace', () => {
     expect(chartEvents.artifact.diagnostics).toEqual([]);
   });
 
-  it('enforces value and render surface contracts without Flow Surface validation', () => {
-    const invalidValue = compileRunJSSourceWorkspace({
+  it('enforces value and render surface contracts without Flow Surface validation', async () => {
+    const invalidValue = await compileRunJSSourceWorkspace({
       entry: 'src/main.ts',
       runtimeVersion: 'v2',
       surfaceStyle: 'value',
       files: [{ path: 'src/main.ts', content: 'ctx.render(null);' }],
     });
-    const invalidRender = compileRunJSSourceWorkspace({
+    const invalidRender = await compileRunJSSourceWorkspace({
       entry: 'src/main.tsx',
       runtimeVersion: 'v2',
       surfaceStyle: 'render',

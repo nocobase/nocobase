@@ -93,7 +93,7 @@ export class LightExtensionWorkspaceCompilerBridge {
     }
     const compilerSurfaceStyle = surface.compilerSurfaceStyle;
     const runtimeFiles = filterCurrentEntryDescriptor(input);
-    const compiled = compileRunJSSourceWorkspace({
+    const compiled = await compileRunJSSourceWorkspace({
       files: prepareLightExtensionCompileFiles(runtimeFiles),
       entry: input.entryPath,
       runtimeVersion: input.runtimeVersion || 'v2',
