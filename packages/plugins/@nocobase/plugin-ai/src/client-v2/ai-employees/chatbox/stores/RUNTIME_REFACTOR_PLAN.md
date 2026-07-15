@@ -358,7 +358,7 @@ Tests:
 
 ### T7. Final Regression Pass
 
-Status: `Pending`
+Status: `Done`
 
 Dependencies: T6
 
@@ -375,6 +375,26 @@ Tests:
 - `yarn eslint --fix <all touched source/test files>`
 - Related `yarn test <test-file>` commands for modified tests.
 - Manual smoke notes if performed.
+- Verification on 2026-07-15:
+  - `rg "useChatBoxStore|useChatMessagesStore|useChatToolCallStore|useChatToolsStore" packages/plugins/@nocobase/plugin-ai/src/client-v2 -g '*.ts' -g '*.tsx'`: no matches.
+  - `rg "@formily/reactive" packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/tools packages/plugins/@nocobase/plugin-ai/src/client-v2/block -g '*.ts' -g '*.tsx'`: no matches.
+  - `yarn eslint --fix <all touched source/test files>`: passed.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/chatbox-models.test.ts --run --reporter=verbose`: passed, 6 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/chatbox-runtime.test.tsx --run --reporter=verbose`: passed, 6 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/chatbox-global-behavior.test.tsx --run --reporter=verbose`: passed, 1 test.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/chatbox-stores.test.ts --run --reporter=verbose`: passed, 4 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/global-store.test.ts --run --reporter=verbose`: passed, 3 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/__tests__/utils.test.ts --run --reporter=verbose`: passed, 3 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/business-report-card.test.tsx --run --reporter=verbose`: passed, 2 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/suggestions-options-card.test.tsx --run --reporter=verbose`: passed, 2 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/public-api-contract.test.ts --run --reporter=verbose`: passed, 2 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/AIEmployeeShortcut.test.tsx --run --reporter=verbose`: passed, 2 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/tools-registration.test.ts --run --reporter=verbose`: passed, 4 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/sub-agent-dispatch-card.test.tsx --run --reporter=verbose`: passed, 2 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/form-filler/tools.test.ts --run --reporter=verbose`: passed, 3 tests.
+  - `yarn eslint --fix packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/RUNTIME_REFACTOR_PLAN.md`: attempted, but the current ESLint configuration parses `.md` as JavaScript and fails at line 1 with `Parsing error: Invalid character`.
+  - Manual v2 UI smoke test was not performed because no local NocoBase dev server was started for this final pass.
+  - No AI chat box block production implementation, conversation server API, scope semantics, or database schema changes were included in this phase.
 - Update this document status and commit after tests pass.
 
 ## Completion Rule
