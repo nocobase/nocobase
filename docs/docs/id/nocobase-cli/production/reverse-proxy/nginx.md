@@ -122,7 +122,7 @@ Jika Anda ingin menambahkan konfigurasi Nginx tingkat situs, seperti batasan saa
 
 Jika aplikasi Anda tidak dihosting CLI, atau Anda secara eksplisit ingin mempertahankan sendiri konfigurasi Nginx yang lengkap, Anda juga dapat menulisnya dengan tangan.
 
-Namun, untuk NocoBase, proksi balik produksi biasanya lebih dari sekadar `proxy_pass`. Selain meneruskan permintaan API ke aplikasi backend, konfigurasi yang lengkap dan dapat digunakan biasanya perlu menangani direktori unggahan, sumber daya statis front-end, WebSocket, rute `.well-known`, dan halaman fallback SPA.
+Namun, untuk NocoBase, reverse proxy produksi biasanya lebih dari sekadar `proxy_pass`. Selain meneruskan permintaan API ke aplikasi backend, konfigurasi yang lengkap juga perlu menangani direktori unggahan, aset statis front-end, rute akses file `/files/`, WebSocket, route `.well-known`, serta halaman fallback SPA.
 
 Mengambil `test2` sebagai contoh, file dan direktori utama yang terkait dengan Nginx biasanya mencakup:
 
@@ -138,6 +138,7 @@ Dengan kata lain, konfigurasi tulisan tangan biasanya perlu mencakup setidaknya 
 - `uploads`: Menampilkan direktori unggahan melalui `alias`
 - `dist`: Mengekspos direktori produk build front-end melalui `alias`
 - `well-known`: Menangani jalur penemuan terkait OAuth/OpenID
+- `files`: meneruskan permintaan akses file di bawah `/files/` ke aplikasi backend
 - `api`: meneruskan permintaan `/api/` ke aplikasi backend
 - `ws`: meneruskan permintaan WebSocket ke aplikasi backend
 - `spa`: Menyediakan entri front-end dan `try_files` cadangan untuk `/` dan `/v/`
@@ -176,6 +177,11 @@ server {
 
     location ~ ^/\\.well-known/(?<well_known>oauth-authorization-server|openid-configuration)/(?<resource_path>.+)$ {
         rewrite ^ /$resource_path/.well-known/$well_known break;
+        proxy_pass http://127.0.0.1:56575;
+        include NB_CLI_ROOT/.nocobase/proxy/nginx/snippets/proxy-location.conf;
+    }
+
+    location ^~ /files/ {
         proxy_pass http://127.0.0.1:56575;
         include NB_CLI_ROOT/.nocobase/proxy/nginx/snippets/proxy-location.conf;
     }
@@ -229,7 +235,15 @@ Pendekatan yang lebih bijaksana biasanya adalah:
 2. Konfirmasikan struktur perutean dan jalur sebenarnya berdasarkan hasil yang dihasilkan.
 3. Kemudian lakukan penyesuaian manual sesuai dengan nama domain Anda, mode pengoperasian, dan jalur pemasangan.
 
-Hal ini biasanya lebih kecil kemungkinannya untuk melewatkan detail terkait WebSockets, sumber daya statis, direktori unggahan, atau halaman cadangan SPA dibandingkan dengan menulis konfigurasi dari awal dengan tangan.
+Cara ini biasanya lebih kecil kemungkinannya melewatkan detail terkait `/files/`, WebSocket, aset statis, direktori unggahan, atau halaman fallback SPA dibanding menulis konfigurasi dari nol.
+
+:::warning Perhatian
+
+`/files/` adalah rute aplikasi yang harus melalui otorisasi NocoBase. Jangan menanganinya sebagai direktori statis atau membiarkannya masuk ke fallback SPA. Teruskan rute ini ke backend NocoBase dan letakkan rule sebelum `location /` serta rule fallback frontend lainnya.
+
+Jika `APP_PUBLIC_PATH=/nocobase/` dikonfigurasi, teruskan juga `/nocobase/files/`. Pertahankan rule `/files/` di root untuk kompatibilitas dengan URL file yang sudah ada.
+
+:::
 
 ## Cara menangani HTTPS
 
