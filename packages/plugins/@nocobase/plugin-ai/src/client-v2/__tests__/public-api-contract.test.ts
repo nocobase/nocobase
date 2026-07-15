@@ -15,6 +15,7 @@ import PluginAIClientV2, {
   AIEmployeeShortcut,
   ChatBox,
   ChatBoxLayout,
+  ChatBoxRuntimeProvider,
   ChatButton,
   AIPluginFeatureManagerImpl,
   ModelSwitcher,
@@ -23,6 +24,7 @@ import PluginAIClientV2, {
   createModelSettingsForm,
   defaultVectorStorePropForm,
   formatModelLabel,
+  getGlobalChatBoxRuntime,
   ModelSelect,
   OptionsFields,
   useAIConfigRepository,
@@ -51,6 +53,7 @@ describe('plugin-ai client-v2 public API contract', () => {
     expect(AIEmployeeProfileCard).toBeDefined();
     expect(ChatBox).toBeDefined();
     expect(ChatBoxLayout).toBeDefined();
+    expect(ChatBoxRuntimeProvider).toBeDefined();
     expect(ChatButton).toBeDefined();
     expect(AIEmployeeSwitcher).toBeDefined();
     expect(ModelSwitcher).toBeDefined();
@@ -66,6 +69,7 @@ describe('plugin-ai client-v2 public API contract', () => {
     expect(useAIConfigRepository).toBeDefined();
     expect(useChatConversationsStore).toBeDefined();
     expect(useChatBoxActions).toBeDefined();
+    expect(getGlobalChatBoxRuntime).toBeDefined();
   });
 
   it('keeps the exported type surface available', () => {

@@ -39,6 +39,11 @@ export { useAIConfigRepository } from './repositories/hooks/useAIConfigRepositor
 export { useChatConversationsStore } from './ai-employees/chatbox/stores/chat-conversations';
 export { useChatBoxActions } from './ai-employees/chatbox/hooks/useChatBoxActions';
 export {
+  ChatBoxRuntimeProvider,
+  getGlobalChatBoxRuntime,
+  type ChatBoxRuntime,
+} from './ai-employees/chatbox/stores/runtime';
+export {
   ChatBox,
   ChatBoxLayout,
   ChatButton,
