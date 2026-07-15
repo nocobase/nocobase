@@ -7,16 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  CodeOutlined,
-  DeleteOutlined,
-  DownOutlined,
-  EditOutlined,
-  PlusOutlined,
-  ReloadOutlined,
-  SaveOutlined,
-  UploadOutlined,
-} from '@ant-design/icons';
+import { DownOutlined, PlusOutlined, ReloadOutlined, SaveOutlined, UploadOutlined } from '@ant-design/icons';
 import {
   CollectionFilter,
   DEFAULT_PAGE_SIZE,
@@ -80,6 +71,7 @@ type DetailPanel = 'source';
 const entryKinds = ['js-block', 'js-action', 'js-field', 'js-item'] as const;
 const LIGHT_EXTENSION_REPO_FILTER_COLLECTION = 'lightExtensionRepoFilters';
 const SOURCE_DRAWER_WIDTH = 'min(1280px, calc(100vw - 64px))';
+const TABLE_ACTION_BUTTON_STYLE: React.CSSProperties = { height: 'auto', paddingInline: 0 };
 export const LIGHT_EXTENSION_REPO_FILTER_FIELD_NAMES = [
   'name',
   'description',
@@ -589,29 +581,38 @@ function LightExtensionListPageInner() {
       {
         title: t('Actions'),
         key: 'actions',
-        width: 130,
+        width: 240,
         render: (_value, repo) => (
-          <Space size={4} onClick={(event) => event.stopPropagation()}>
+          <Space size="small" onClick={(event) => event.stopPropagation()}>
             <Button
-              aria-label={t('Open source')}
-              icon={<CodeOutlined />}
+              aria-label={t('Edit code')}
               onClick={() => selectRepo(repo.id, { panel: 'source' })}
               size="small"
-            />
+              style={TABLE_ACTION_BUTTON_STYLE}
+              type="link"
+            >
+              {t('Edit code')}
+            </Button>
             <Button
-              aria-label={`${t('Edit')} ${repo.title || repo.name}`}
-              icon={<EditOutlined />}
+              aria-label={`${t('Edit details')} ${repo.title || repo.name}`}
               onClick={() => openEditDrawer(repo)}
               size="small"
-            />
+              style={TABLE_ACTION_BUTTON_STYLE}
+              type="link"
+            >
+              {t('Edit details')}
+            </Button>
             <Button
               aria-label={t('Remove')}
               danger
-              icon={<DeleteOutlined />}
               loading={removingRepoIds.has(repo.id)}
               onClick={() => setRemoveTarget(repo)}
               size="small"
-            />
+              style={TABLE_ACTION_BUTTON_STYLE}
+              type="link"
+            >
+              {t('Remove')}
+            </Button>
           </Space>
         ),
       },

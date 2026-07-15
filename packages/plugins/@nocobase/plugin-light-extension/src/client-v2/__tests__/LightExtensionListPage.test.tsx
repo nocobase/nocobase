@@ -263,6 +263,23 @@ describe('LightExtensionListPage', () => {
     expect(screen.queryByRole('columnheader', { name: 'Status' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'View details' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Reference contract diagnostics' })).not.toBeInTheDocument();
+
+    const row = screen.getByText('Sales widgets').closest('tr');
+    if (!row) {
+      throw new Error('Expected the light extension table row to be rendered');
+    }
+    const sourceAction = within(row).getByRole('button', { name: 'Edit code' });
+    const editAction = within(row).getByRole('button', { name: 'Edit details Sales widgets' });
+    const removeAction = within(row).getByRole('button', { name: 'Remove' });
+    expect(sourceAction).toHaveClass('ant-btn-link');
+    expect(sourceAction).toHaveTextContent('Edit code');
+    expect(editAction).toHaveClass('ant-btn-link');
+    expect(editAction).toHaveTextContent('Edit details');
+    expect(removeAction).toHaveClass('ant-btn-link');
+    expect(removeAction).toHaveTextContent('Remove');
+    expect(sourceAction.querySelector('.anticon')).not.toBeInTheDocument();
+    expect(editAction.querySelector('.anticon')).not.toBeInTheDocument();
+    expect(removeAction.querySelector('.anticon')).not.toBeInTheDocument();
   });
 
   it('edits the repository display name and description in a drawer and refreshes the row immediately', async () => {
@@ -294,7 +311,7 @@ describe('LightExtensionListPage', () => {
     });
     renderListPage();
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Edit Sales widgets' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Edit details Sales widgets' }));
 
     const drawer = await screen.findByRole('dialog', { name: 'Edit light extension' });
     const titleInput = within(drawer).getByLabelText('Title');
@@ -333,7 +350,7 @@ describe('LightExtensionListPage', () => {
     ]);
     renderListPage();
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Edit Sales widgets' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Edit details Sales widgets' }));
 
     const drawer = await screen.findByRole('dialog', { name: 'Edit light extension' });
     await userEvent.clear(within(drawer).getByLabelText('Title'));
@@ -368,7 +385,7 @@ describe('LightExtensionListPage', () => {
     });
     renderListPage();
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Edit Sales widgets' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Edit details Sales widgets' }));
 
     const drawer = await screen.findByRole('dialog', { name: 'Edit light extension' });
     await userEvent.clear(within(drawer).getByLabelText('Description'));
