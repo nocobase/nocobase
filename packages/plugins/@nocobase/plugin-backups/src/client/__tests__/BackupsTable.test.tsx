@@ -10,7 +10,6 @@
 import * as nocobaseClient from '@nocobase/client';
 import { render, screen, userEvent, waitFor } from '@nocobase/test/client';
 import { App } from 'antd';
-import { saveAs } from 'file-saver';
 import React from 'react';
 import { describe, vi } from 'vitest';
 import { BackupFile, BackupsTable } from '../components/BackupsTable';
@@ -33,18 +32,11 @@ const mockedData = {
   ],
 };
 
-vi.mock('file-saver', async () => {
-  return {
-    saveAs: vi.fn(),
-  };
-});
-
 describe('BackupsTable', () => {
-  const { Wrapper, mockRequest } = createMockAppWrapper();
+  const { Wrapper, apiClient, mockRequest } = createMockAppWrapper();
 
   beforeEach(() => {
     mockRequest.reset();
-    vi.spyOn(nocobaseClient, 'useCurrentAppInfo').mockReturnValue(undefined as any);
     mockRequest.onGet(`${NAMESPACE}:appInfo`).reply(200, {
       data: {
         database: {
@@ -60,7 +52,6 @@ describe('BackupsTable', () => {
 
   const MockedTable = () => {
     mockRequest.onGet('backups:list').reply(200, mockedData);
-    mockRequest.onGet('backups:download').reply(200, 'mocked-backup-content');
     mockRequest.onPost('backups:destroy').reply(200, {});
 
     const useRequestValues = nocobaseClient.useRequest<{ data: BackupFile[] }>({
@@ -84,28 +75,29 @@ describe('BackupsTable', () => {
   });
 
   test('should handle download action', async () => {
+    const temporaryUrl =
+      '/api/backups:download?filterByTk=backup_20240818_182301_9056.nbdata&_code=test-code&__appName=sub1';
+    const createAccessCodeSpy = vi.spyOn(apiClient.auth, 'createAccessCode').mockResolvedValue('test-code');
+    vi.spyOn(apiClient, 'getHeaders').mockReturnValue({ 'X-App': 'sub1' });
+    const anchorClickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
     const user = userEvent.setup();
     render(<MockedTable />, { wrapper: Wrapper });
-    await waitFor(() => {
-      expect(screen.getAllByText('Download')[0]).toBeInTheDocument();
-    });
+    const downloadButton = await screen.findByRole('button', { name: 'Download' });
 
-    await user.click(screen.getAllByText('Download')[0]);
+    await user.click(downloadButton);
 
     await waitFor(() => {
-      expect(mockRequest.history.get).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            url: 'backups:download',
-            responseType: 'blob',
-            params: {
-              filterByTk: 'backup_20240818_182301_9056.nbdata',
-            },
-          }),
-        ]),
-      );
-      expect(saveAs).toHaveBeenCalledWith(expect.any(Blob), 'backup_20240818_182301_9056.nbdata');
+      expect(createAccessCodeSpy).toHaveBeenCalledTimes(1);
+      expect(createAccessCodeSpy).toHaveBeenCalledWith({
+        url: 'backups:download?filterByTk=backup_20240818_182301_9056.nbdata',
+      });
+      expect(anchorClickSpy).toHaveBeenCalledTimes(1);
     });
+
+    const link = anchorClickSpy.mock.instances[0] as HTMLAnchorElement;
+    expect(link.getAttribute('href')).toBe(temporaryUrl);
+    expect(link.download).toBe('backup_20240818_182301_9056.nbdata');
+    expect(link).not.toBeInTheDocument();
   });
 
   test('should handle delete action', async () => {

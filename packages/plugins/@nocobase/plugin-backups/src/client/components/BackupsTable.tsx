@@ -7,11 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DatePicker, useRequest, useAPIClient, useCurrentAppInfo } from '@nocobase/client';
+import { DatePicker, useAPIClient, useRequest } from '@nocobase/client';
 import type { TableColumnsType } from 'antd';
-import { App, Divider, message, Space, Table } from 'antd';
-import { saveAs } from 'file-saver';
-import React from 'react';
+import { App, Button, Divider, message, Space, Table } from 'antd';
+import React, { useState } from 'react';
 import { NAMESPACE } from '../constants';
 import { useBackupsContext } from '../contexts';
 import { useT } from '../locale';
@@ -27,8 +26,8 @@ export interface BackupFile {
 export const BackupsTable = () => {
   const t = useT();
   const api = useAPIClient();
-  const currentAppInfo = useCurrentAppInfo();
   const { modal } = App.useApp();
+  const [downloadingFileName, setDownloadingFileName] = useState<string | null>(null);
   const { data, loading, refreshAsync: refresh } = useBackupsContext();
   const { runAsync: destroy } = useRequest<{ data: BackupFile[] }>(
     {
@@ -51,21 +50,36 @@ export const BackupsTable = () => {
   };
 
   const handleDownload = async (fileData: BackupFile) => {
-    const appName = currentAppInfo?.data?.['name'];
-    const params: Record<string, string> = {
-      filterByTk: fileData.name,
-    };
-    if (appName) {
-      params.__appName = appName;
+    setDownloadingFileName(fileData.name);
+
+    try {
+      const targetParams = new URLSearchParams({ filterByTk: fileData.name });
+      const code = await api.auth.createAccessCode({
+        url: `backups:download?${targetParams}`,
+      });
+      const appName = api.getHeaders()['X-App'];
+      const baseURL = api.axios.defaults.baseURL?.replace(/\/+$/, '') || '/api';
+      const url = api.axios.getUri({
+        baseURL: '',
+        url: `${baseURL}/backups:download`,
+        params: {
+          filterByTk: fileData.name,
+          _code: code,
+          ...(appName && appName !== 'main' ? { __appName: appName } : {}),
+        },
+      });
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileData.name;
+      link.hidden = true;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch {
+      // API request errors are displayed by the client's notification middleware.
+    } finally {
+      setDownloadingFileName(null);
     }
-    const response = await api.request({
-      url: 'backups:download',
-      method: 'get',
-      params,
-      responseType: 'blob',
-    });
-    const blob = new Blob([response.data]);
-    saveAs(blob, fileData.name);
   };
 
   const hideCellWhenInProgress = (data: BackupFile) => (data.inProgress ? { colSpan: 0 } : {});
@@ -110,14 +124,20 @@ export const BackupsTable = () => {
       render: (_, record) => (
         <Space split={<Divider type="vertical" />}>
           <RestoreFromBackup backup={record} />
-          <a
+          <Button
             type="link"
+            htmlType="button"
+            aria-label={t('Download')}
+            aria-busy={downloadingFileName === record.name}
+            loading={downloadingFileName === record.name}
+            disabled={downloadingFileName !== null}
+            style={{ height: 'auto', padding: 0 }}
             onClick={() => {
               handleDownload(record);
             }}
           >
             {t('Download')}
-          </a>
+          </Button>
           <a onClick={() => handleDestory(record)}>{t('Delete')}</a>
         </Space>
       ),

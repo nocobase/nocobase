@@ -13,17 +13,23 @@ import { InstallOptions, Plugin } from '@nocobase/server';
 import { tval } from '@nocobase/utils';
 import { defaultTokenPolicyConfig, tokenPolicyCollectionName, tokenPolicyRecordKey } from '../constants';
 import { namespace, presetAuthType, presetAuthenticator } from '../preset';
-import authActions from './actions/auth';
+import authActions, { createAccessCodeAction } from './actions/auth';
 import authenticatorsActions from './actions/authenticators';
 import { BasicAuth } from './basic-auth';
 import { AuthModel } from './model/authenticator';
 import { Storer } from './storer';
+import {
+  createTemporaryAccessCodeCache,
+  resolveTemporaryAccessCode,
+  TemporaryAccessCodeService,
+} from './temporary-access-code';
 import { TokenBlacklistService } from './token-blacklist';
 import { TokenController } from './token-controller';
 
 export class PluginAuthServer extends Plugin {
   cache: Cache;
   storer: Storer;
+  temporaryAccessCodeService: TemporaryAccessCodeService;
 
   afterAdd() {
     this.app.on('afterLoad', async () => {
@@ -68,6 +74,14 @@ export class PluginAuthServer extends Plugin {
     });
     this.storer = storer;
     this.app.authManager.setStorer(storer);
+
+    const temporaryAccessCodeCache = await createTemporaryAccessCodeCache(this.app.cacheManager);
+    this.temporaryAccessCodeService = new TemporaryAccessCodeService(temporaryAccessCodeCache, this.app.name);
+    this.app.use(resolveTemporaryAccessCode(this.temporaryAccessCodeService), {
+      tag: 'temporaryAccessCode',
+      after: 'dataWrapping',
+      before: 'dataSource',
+    });
 
     if (!this.app.authManager.jwt.blacklist) {
       // If blacklist service is not set, should configure default blacklist service
@@ -115,12 +129,17 @@ export class PluginAuthServer extends Plugin {
     Object.entries(authActions).forEach(
       ([action, handler]) => this.app.resourceManager.getResource('auth')?.addAction(action, handler),
     );
+    this.app.resourceManager
+      .getResource('auth')
+      ?.addAction('createAccessCode', createAccessCodeAction(this.temporaryAccessCodeService));
     Object.entries(authenticatorsActions).forEach(([action, handler]) =>
       this.app.resourceManager.registerActionHandler(`authenticators:${action}`, handler),
     );
     // Set up ACL
     ['signIn', 'signUp'].forEach((action) => this.app.acl.allow('auth', action));
-    ['check', 'signOut', 'changePassword'].forEach((action) => this.app.acl.allow('auth', action, 'loggedIn'));
+    ['check', 'signOut', 'changePassword', 'createAccessCode'].forEach((action) =>
+      this.app.acl.allow('auth', action, 'loggedIn'),
+    );
     ['lostPassword', 'resetPassword', 'checkResetToken'].forEach((action) =>
       this.app.acl.allow('auth', action, 'public'),
     );
@@ -290,6 +309,17 @@ export class PluginAuthServer extends Plugin {
             targetRecordUK: ctx.auth.user.id,
           };
         },
+      },
+      {
+        name: 'auth:createAccessCode',
+        getMetaData: async () => ({
+          request: {
+            body: {},
+          },
+          response: {
+            body: {},
+          },
+        }),
       },
       'auth:signOut',
     ]);

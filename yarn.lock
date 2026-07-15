@@ -9974,11 +9974,6 @@
     "@types/qs" "*"
     "@types/serve-static" "*"
 
-"@types/file-saver@^2.0.7":
-  version "2.0.7"
-  resolved "https://registry.npmjs.org/@types/file-saver/-/file-saver-2.0.7.tgz#8dbb2f24bdc7486c54aa854eb414940bbd056f7d"
-  integrity sha512-dNKVfHd/jk0SkR/exKGj2ggkB45MAkzvWCaqLUUgkyjITkGNzH8H+yUwr+BLJUBjZOe9w8X3wgmXhZDRg1ED6A==
-
 "@types/fs-extra@11.0.1":
   version "11.0.1"
   resolved "https://registry.npmmirror.com/@types/fs-extra/-/fs-extra-11.0.1.tgz#f542ec47810532a8a252127e6e105f487e0a6ea5"

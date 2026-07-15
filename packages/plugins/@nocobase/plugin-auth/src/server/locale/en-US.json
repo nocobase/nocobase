@@ -4,5 +4,8 @@
   "The password is incorrect, please re-enter": "The password is incorrect, please re-enter",
   "Not a valid cellphone number, please re-enter": "Not a valid cellphone number, please re-enter",
   "The phone number has been registered, please login directly": "The phone number has been registered, please login directly",
-  "The phone number is not registered, please register first": "The phone number is not registered, please register first"
+  "The phone number is not registered, please register first": "The phone number is not registered, please register first",
+  "Invalid or expired temporary access code.": "Invalid or expired temporary access code.",
+  "Invalid temporary access URL.": "Invalid temporary access URL.",
+  "Temporary access codes can only be created with a user session.": "Temporary access codes can only be created with a user session."
 }

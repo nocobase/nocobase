@@ -168,6 +168,62 @@ export default {
         },
       },
     },
+    '/auth:createAccessCode': {
+      post: {
+        description:
+          'Create a reusable 30-second access code bound to an app-local URL pattern. Use it with X-Temp-Code or the _code query parameter.',
+        tags: ['Auth'],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['url'],
+                properties: {
+                  url: {
+                    type: 'string',
+                    description: 'API base-relative URL. The * character matches any sequence of characters.',
+                    example: 'backups:download?filterByTk=*',
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: 'Access code created',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    data: {
+                      type: 'object',
+                      properties: {
+                        code: {
+                          type: 'string',
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          400: {
+            description: 'Invalid URL pattern',
+          },
+          401: {
+            description: 'Unauthorized',
+          },
+          403: {
+            description: 'The credential is not an interactive user session',
+          },
+        },
+      },
+    },
     // '/auth:lostPassword': {
     //   post: {
     //     description: 'Lost password',

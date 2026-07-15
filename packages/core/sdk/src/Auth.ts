@@ -11,6 +11,10 @@ import { AxiosRequestConfig, AxiosResponse } from 'axios';
 import { APIClient } from './APIClient';
 import { hasHeaderValue } from './headers';
 
+export interface CreateAccessCodeOptions {
+  url: string;
+}
+
 export class Auth {
   protected api: APIClient;
 
@@ -237,5 +241,14 @@ export class Auth {
       data: values,
     });
     return response;
+  }
+
+  async createAccessCode(options: CreateAccessCodeOptions): Promise<string> {
+    const response = await this.api.request<{ data: { code: string } }>({
+      method: 'post',
+      url: 'auth:createAccessCode',
+      data: options,
+    });
+    return response.data.data.code;
   }
 }

@@ -8,14 +8,13 @@
  */
 
 import { css } from '@emotion/css';
-import { Table, useCurrentAppInfo } from '@nocobase/client-v2';
+import { Table } from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
-import { App, Divider, Space, theme } from 'antd';
+import { App, Button, Divider, Space, theme } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
-import { saveAs } from 'file-saver';
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { NAMESPACE } from '../constants';
 import { useBackupsContext } from '../contexts';
 import { useT } from '../locale';
@@ -28,13 +27,6 @@ export interface BackupFile {
   inProgress: boolean;
 }
 
-type AppInfo = {
-  name?: string;
-  data?: {
-    name?: string;
-  };
-};
-
 type ResourceResponse<T> = {
   data?: T;
 };
@@ -42,8 +34,8 @@ type ResourceResponse<T> = {
 export const BackupsTable = () => {
   const t = useT();
   const ctx = useFlowContext();
-  const currentAppInfo = useCurrentAppInfo<AppInfo>();
   const { token } = theme.useToken();
+  const [downloadingFileName, setDownloadingFileName] = useState<string | null>(null);
   const backupsTableClassName = useMemo(
     () => css`
       .ant-table-tbody > tr > td {
@@ -84,23 +76,38 @@ export const BackupsTable = () => {
 
   const handleDownload = useCallback(
     async (fileData: BackupFile) => {
-      const appName = currentAppInfo?.name ?? currentAppInfo?.data?.name;
-      const params: Record<string, string> = {
-        filterByTk: fileData.name,
-      };
-      if (appName) {
-        params.__appName = appName;
+      setDownloadingFileName(fileData.name);
+
+      try {
+        const targetParams = new URLSearchParams({ filterByTk: fileData.name });
+        const code = await ctx.api.auth.createAccessCode({
+          url: `backups:download?${targetParams}`,
+        });
+        const appName = ctx.api.getHeaders()['X-App'];
+        const baseURL = ctx.api.axios.defaults.baseURL?.replace(/\/+$/, '') || '/api';
+        const url = ctx.api.axios.getUri({
+          baseURL: '',
+          url: `${baseURL}/backups:download`,
+          params: {
+            filterByTk: fileData.name,
+            _code: code,
+            ...(appName && appName !== 'main' ? { __appName: appName } : {}),
+          },
+        });
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileData.name;
+        link.hidden = true;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      } catch {
+        message.error(t('Failed to create download link. Please try again.'));
+      } finally {
+        setDownloadingFileName(null);
       }
-      const response = await ctx.api.request({
-        url: 'backups:download',
-        method: 'get',
-        params,
-        responseType: 'blob',
-      });
-      const blob = new Blob([response.data]);
-      saveAs(blob, fileData.name);
     },
-    [ctx.api, currentAppInfo?.data?.name, currentAppInfo?.name],
+    [ctx.api, message, t],
   );
 
   const hideCellWhenInProgress = (record: BackupFile) => (record.inProgress ? { colSpan: 0 } : {});
@@ -147,19 +154,26 @@ export const BackupsTable = () => {
         render: (_: unknown, record) => (
           <Space split={<Divider type="vertical" />}>
             <RestoreFromBackup backup={record} />
-            <a
+            <Button
+              type="link"
+              htmlType="button"
+              aria-label={t('Download')}
+              aria-busy={downloadingFileName === record.name}
+              loading={downloadingFileName === record.name}
+              disabled={downloadingFileName !== null}
+              style={{ height: 'auto', padding: 0 }}
               onClick={() => {
                 handleDownload(record);
               }}
             >
               {t('Download')}
-            </a>
+            </Button>
             <a onClick={() => handleDestroy(record)}>{t('Delete')}</a>
           </Space>
         ),
       },
     ],
-    [handleDestroy, handleDownload, t, token.colorText],
+    [downloadingFileName, handleDestroy, handleDownload, t, token.colorText],
   );
 
   return (
