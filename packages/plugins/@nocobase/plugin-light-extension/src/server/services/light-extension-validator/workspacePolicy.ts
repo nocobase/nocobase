@@ -51,6 +51,12 @@ const entryFileRules: Record<LightExtensionKind, EntryFileRule> = {
     metadataFiles: [LIGHT_EXTENSION_ENTRY_DESCRIPTOR_FILE],
     allowedExtensions: ['.ts', '.tsx', '.js', '.jsx', '.json', '.md'],
   },
+  runjs: {
+    root: 'src/client/runjs',
+    indexFiles: ['index.tsx', 'index.ts', 'index.jsx', 'index.js'],
+    metadataFiles: [LIGHT_EXTENSION_ENTRY_DESCRIPTOR_FILE],
+    allowedExtensions: ['.ts', '.tsx', '.js', '.jsx', '.json', '.md'],
+  },
 };
 
 const allowedRepoRootFiles = new Set(['README.md', 'light-extension.json', 'tsconfig.json']);

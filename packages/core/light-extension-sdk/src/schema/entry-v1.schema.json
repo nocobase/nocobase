@@ -7,10 +7,6 @@
   "additionalProperties": false,
   "required": ["schemaVersion", "key"],
   "properties": {
-    "$schema": {
-      "const": "https://schemas.nocobase.com/light-extension/entry-v1.schema.json",
-      "description": "Canonical public schema identifier."
-    },
     "schemaVersion": {
       "const": 1,
       "description": "Descriptor contract version."
@@ -46,9 +42,18 @@
     "sort": {
       "type": "integer"
     },
-    "settingsSchema": {
-      "description": "Settings form schema for this light extension Entry.",
-      "$ref": "#/definitions/rootSettingsSchema"
+    "settings": {
+      "description": "Settings field definitions for this light extension Entry. Each property becomes an independent settings menu.",
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[A-Za-z_][A-Za-z0-9_-]{0,63}$",
+        "not": {
+          "enum": ["__proto__", "prototype", "constructor"]
+        }
+      },
+      "additionalProperties": {
+        "$ref": "#/definitions/settingsSchema"
+      }
     }
   },
   "definitions": {
@@ -182,11 +187,6 @@
         }
       ]
     },
-    "noDirectVisibleCondition": {
-      "properties": {
-        "x-visible-when": false
-      }
-    },
     "noVisibleConditionSubtree": {
       "properties": {
         "x-visible-when": false,
@@ -200,16 +200,6 @@
           "$ref": "#/definitions/noVisibleConditionSubtree"
         }
       }
-    },
-    "rootSettingsSchema": {
-      "allOf": [
-        {
-          "$ref": "#/definitions/settingsSchema"
-        },
-        {
-          "$ref": "#/definitions/noDirectVisibleCondition"
-        }
-      ]
     },
     "arraySettingsSchema": {
       "allOf": [
@@ -244,12 +234,20 @@
           }
         },
         "required": {
-          "type": "array",
-          "uniqueItems": true,
-          "items": {
-            "type": "string",
-            "pattern": "^[A-Za-z_][A-Za-z0-9_-]{0,63}$"
-          }
+          "description": "Use true on a field to require it. Object schemas may also use a property-name array.",
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z0-9_-]{0,63}$"
+              }
+            }
+          ]
         },
         "properties": {
           "type": "object",
@@ -312,27 +310,24 @@
   },
   "examples": [
     {
-      "$schema": "https://schemas.nocobase.com/light-extension/entry-v1.schema.json",
       "schemaVersion": 1,
       "key": "sales-kpi",
       "title": "Sales KPI",
-      "settingsSchema": {
-        "type": "object",
-        "properties": {
-          "mode": {
-            "type": "integer",
-            "enum": [1, 2],
-            "default": 1,
-            "x-component": "Select"
-          },
-          "title": {
-            "type": "string",
-            "x-component": "Input",
-            "x-visible-when": {
-              "path": "mode",
-              "operator": "$eq",
-              "value": 1
-            }
+      "settings": {
+        "mode": {
+          "type": "integer",
+          "enum": [1, 2],
+          "default": 1,
+          "required": true,
+          "x-component": "Select"
+        },
+        "title": {
+          "type": "string",
+          "x-component": "Input",
+          "x-visible-when": {
+            "path": "mode",
+            "operator": "$eq",
+            "value": 1
           }
         }
       }

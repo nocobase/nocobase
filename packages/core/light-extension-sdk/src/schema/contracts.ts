@@ -90,3 +90,82 @@ export type LightExtensionSettingsCondition =
       logic: LightExtensionSettingsConditionLogic;
       items: LightExtensionSettingsCondition[];
     };
+
+export function buildLightExtensionSettingsSchema(settings: Record<string, unknown>): Record<string, unknown> {
+  const normalized = normalizeSettingsProperties(settings);
+  return {
+    type: 'object',
+    ...(normalized.required.length ? { required: normalized.required } : {}),
+    properties: normalized.properties,
+  };
+}
+
+function normalizeSettingsProperties(settings: Record<string, unknown>): {
+  properties: Record<string, unknown>;
+  required: string[];
+} {
+  const required: string[] = [];
+  const properties = Object.fromEntries(
+    Object.entries(settings).map(([name, schema]) => {
+      if (!isRecord(schema)) {
+        return [name, cloneJsonValue(schema)];
+      }
+      if (schema.required === true) {
+        required.push(name);
+      }
+      return [name, normalizeSettingsSchemaNode(schema)];
+    }),
+  );
+  return { properties, required };
+}
+
+function normalizeSettingsSchemaNode(schema: Record<string, unknown>): Record<string, unknown> {
+  const entries = Object.entries(schema)
+    .filter(([key]) => key !== 'required' && key !== 'properties' && key !== 'items')
+    .map(([key, value]) => [key, cloneJsonValue(value)] as const);
+  const normalized = Object.fromEntries(entries);
+  const properties = schema.properties;
+  const items = schema.items;
+  const explicitRequired = schema.required;
+
+  if (isRecord(properties)) {
+    const nested = normalizeSettingsProperties(properties);
+    normalized.properties = nested.properties;
+    if (Array.isArray(explicitRequired)) {
+      normalized.required = [
+        ...explicitRequired.map((item) => cloneJsonValue(item)),
+        ...nested.required.filter((name) => !explicitRequired.includes(name)),
+      ];
+    } else if (nested.required.length) {
+      normalized.required = nested.required;
+    } else if (typeof explicitRequired !== 'undefined' && typeof explicitRequired !== 'boolean') {
+      normalized.required = cloneJsonValue(explicitRequired);
+    }
+  } else {
+    if (typeof properties !== 'undefined') {
+      normalized.properties = cloneJsonValue(properties);
+    }
+    if (typeof explicitRequired !== 'undefined' && typeof explicitRequired !== 'boolean') {
+      normalized.required = cloneJsonValue(explicitRequired);
+    }
+  }
+
+  if (isRecord(items)) {
+    normalized.items = normalizeSettingsSchemaNode(items);
+  } else if (typeof items !== 'undefined') {
+    normalized.items = cloneJsonValue(items);
+  }
+
+  return normalized;
+}
+
+function cloneJsonValue<T>(value: T): T {
+  if (typeof value === 'undefined') {
+    return value;
+  }
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}

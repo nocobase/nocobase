@@ -7,7 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export type LightExtensionClientTypegenKind = 'js-block' | 'js-field' | 'js-action' | 'js-item';
+import { buildLightExtensionSettingsSchema } from '../schema/contracts';
+
+export type LightExtensionClientTypegenKind = 'js-block' | 'js-field' | 'js-action' | 'js-item' | 'runjs';
 
 export interface LightExtensionSettingsTypegenSourceFile {
   path: string;
@@ -78,6 +80,7 @@ const clientKindRoots: Array<{ kind: LightExtensionClientTypegenKind; root: stri
   { kind: 'js-field', root: 'src/client/js-fields' },
   { kind: 'js-action', root: 'src/client/js-actions' },
   { kind: 'js-item', root: 'src/client/js-items' },
+  { kind: 'runjs', root: 'src/client/runjs' },
 ];
 
 const contextTypes: Record<LightExtensionClientTypegenKind, string> = {
@@ -85,6 +88,7 @@ const contextTypes: Record<LightExtensionClientTypegenKind, string> = {
   'js-field': 'JSFieldContext',
   'js-action': 'JSActionContext',
   'js-item': 'JSItemContext',
+  runjs: 'RunJSContext',
 };
 
 export function generateClientSettingsTypes(input: {
@@ -224,12 +228,22 @@ function parseEntryDescriptor(
     if (!isRecord(value) || typeof value.key !== 'string' || !isValidEntryName(value.key)) {
       throw new Error('entry.json must contain a valid key to generate settings types');
     }
+    if (typeof value.settings !== 'undefined' && !isRecord(value.settings)) {
+      throw new Error('entry.json settings must be an object');
+    }
     if (typeof value.settingsSchema !== 'undefined' && !isRecord(value.settingsSchema)) {
       throw new Error('entry.json settingsSchema must be an object');
     }
+    if (typeof value.settings !== 'undefined' && typeof value.settingsSchema !== 'undefined') {
+      throw new Error('entry.json must not define both settings and settingsSchema');
+    }
     return {
       key: value.key,
-      settingsSchema: isRecord(value.settingsSchema) ? value.settingsSchema : null,
+      settingsSchema: isRecord(value.settings)
+        ? buildLightExtensionSettingsSchema(value.settings)
+        : isRecord(value.settingsSchema)
+          ? value.settingsSchema
+          : null,
     };
   } catch (error) {
     diagnostics.push({

@@ -284,7 +284,7 @@ describe('plugin-light-extension saveSource runtime compile', () => {
         ...entryFiles('empty-schema', 'Initial empty schema', {
           schemaVersion: 1,
           key: 'empty-schema',
-          settingsSchema: {},
+          settings: {},
         }),
       ],
     });
@@ -315,7 +315,7 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     expect(noSchema?.get('settingsSchema')).toBeNull();
     expect(noSchema?.get('settingsSchemaHash')).toBeNull();
     expect(noSchema?.get('settingsDefaultsHash')).toBeNull();
-    expect(emptySchema?.get('settingsSchema')).toEqual({});
+    expect(emptySchema?.get('settingsSchema')).toEqual({ type: 'object', properties: {} });
     expect(emptySchema?.get('settingsSchemaHash')).toMatch(/^[a-f0-9]{64}$/u);
     expect(emptySchema?.get('settingsDefaultsHash')).toMatch(/^[a-f0-9]{64}$/u);
     await expect(runtimeResolveService.listSelectableEntries({ repoId: repo.id })).resolves.toEqual(
@@ -328,7 +328,7 @@ describe('plugin-light-extension saveSource runtime compile', () => {
         }),
         expect.objectContaining({
           entryName: 'empty-schema',
-          settingsSchema: {},
+          settingsSchema: { type: 'object', properties: {} },
           settingsSchemaHash: expect.stringMatching(/^[a-f0-9]{64}$/u),
           settingsDefaultsHash: expect.stringMatching(/^[a-f0-9]{64}$/u),
         }),
@@ -397,14 +397,11 @@ describe('plugin-light-extension saveSource runtime compile', () => {
             content: JSON.stringify({
               schemaVersion: 1,
               key: 'sales-kpi',
-              settingsSchema: {
-                type: 'object',
-                properties: {
-                  mode: { type: 'integer' },
-                  region: {
-                    type: 'string',
-                    'x-visible-when': { path: 'mode', operator: '$in', value: 1 },
-                  },
+              settings: {
+                mode: { type: 'integer' },
+                region: {
+                  type: 'string',
+                  'x-visible-when': { path: 'mode', operator: '$in', value: 1 },
                 },
               },
             }),
@@ -455,7 +452,7 @@ describe('plugin-light-extension saveSource runtime compile', () => {
                 schemaVersion: 1,
                 key: 'stable-sales-kpi',
                 title: 'Sales KPI',
-                settingsSchema: { type: 'object', properties: {} },
+                settings: {},
               }),
             }
           : file,
@@ -480,7 +477,7 @@ describe('plugin-light-extension saveSource runtime compile', () => {
             schemaVersion: 1,
             key: 'stable-sales-kpi',
             title: 'Sales KPI',
-            settingsSchema: { type: 'object', properties: {} },
+            settings: {},
           }),
           language: 'json',
         },
@@ -775,13 +772,10 @@ function validSalesKpiFiles() {
       content: JSON.stringify({
         schemaVersion: 1,
         key: 'sales-kpi',
-        settingsSchema: {
-          type: 'object',
-          properties: {
-            region: {
-              type: 'string',
-              default: 'APAC',
-            },
+        settings: {
+          region: {
+            type: 'string',
+            default: 'APAC',
           },
         },
       }),
@@ -840,10 +834,7 @@ function salesKpiDescriptor(input: {
     schemaVersion: 1,
     key: 'sales-kpi',
     title: input.descriptorTitle,
-    settingsSchema: {
-      type: 'object',
-      properties,
-    },
+    settings: properties,
   };
 }
 

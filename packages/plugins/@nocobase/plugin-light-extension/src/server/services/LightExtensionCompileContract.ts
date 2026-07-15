@@ -50,4 +50,11 @@ export const LIGHT_EXTENSION_AUTHORING_SURFACES: Record<LightExtensionKind, Ligh
     modelUse: 'JSItemActionModel',
     surface: 'js-model.render',
   },
+  runjs: {
+    kind: 'runjs',
+    surfaceStyle: 'value',
+    compilerSurfaceStyle: 'value',
+    modelUse: 'RunJSValue',
+    surface: 'runjs.value',
+  },
 };

@@ -1595,7 +1595,7 @@ describe('LightExtensionWorkspacePage', () => {
         {
           path: 'src/client/js-blocks/product-list/entry.json',
           content:
-            '{"schemaVersion":1,"key":"product-list","settingsSchema":{"type":"object","properties":{"title":{"type":"string","default":"Products"},"pageSize":{"type":"integer","default":5}}}}',
+            '{"schemaVersion":1,"key":"product-list","settings":{"title":{"type":"string","default":"Products"},"pageSize":{"type":"integer","default":5}}}',
           language: 'json',
         },
         {
@@ -1606,7 +1606,7 @@ describe('LightExtensionWorkspacePage', () => {
         {
           path: 'src/client/js-blocks/order-list/entry.json',
           content:
-            '{"schemaVersion":1,"key":"order-list","settingsSchema":{"type":"object","properties":{"orderStatus":{"type":"string"},"limit":{"type":"integer"}}}}',
+            '{"schemaVersion":1,"key":"order-list","settings":{"orderStatus":{"type":"string"},"limit":{"type":"integer"}}}',
           language: 'json',
         },
       ],
@@ -1683,8 +1683,7 @@ describe('LightExtensionWorkspacePage', () => {
         },
         {
           path: 'src/client/js-blocks/product-list/entry.json',
-          content:
-            '{"schemaVersion":1,"key":"product-list","settingsSchema":{"type":"object","properties":{"title":{"type":"string"}}}}',
+          content: '{"schemaVersion":1,"key":"product-list","settings":{"title":{"type":"string"}}}',
           language: 'json',
         },
       ],

@@ -52,6 +52,7 @@ const ENTRY_ROOTS: Record<LightExtensionKind, string> = {
   'js-field': 'src/client/js-fields',
   'js-action': 'src/client/js-actions',
   'js-item': 'src/client/js-items',
+  runjs: 'src/client/runjs',
 };
 
 export interface MoveSourceServiceContext extends LightExtensionServiceContext {
@@ -410,6 +411,9 @@ function normalizeWorkspacePath(value: string): string {
 }
 
 function resolveLightExtensionKind(locator: RunJSSourceLocator, legacy: RunJSLegacySource): LightExtensionKind {
+  if (locator.kind === 'flowModel.nestedRunJS') {
+    return 'runjs';
+  }
   if (locator.kind !== 'flowModel.step') {
     throw unsupportedLocator(locator);
   }

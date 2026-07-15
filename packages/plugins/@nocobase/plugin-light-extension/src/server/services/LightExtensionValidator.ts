@@ -343,6 +343,7 @@ export function buildCapabilities(limits: LightExtensionValidationLimits): Light
         'src/client/js-fields/**',
         'src/client/js-actions/**',
         'src/client/js-items/**',
+        'src/client/runjs/**',
       ],
       entries: buildEntryAllowedPaths(),
     },

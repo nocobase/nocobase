@@ -137,7 +137,7 @@ describe('plugin-light-extension settings condition validator', () => {
   });
 
   it('rejects duplicate required names and oversized component props', () => {
-    const result = validateSettings({
+    const result = validateLegacySettingsSchema({
       type: 'object',
       required: ['title', 'title'],
       properties: {
@@ -175,8 +175,7 @@ describe('plugin-light-extension settings condition validator', () => {
     const incompleteObject = validateSettings(
       requiredConditional({
         type: 'object',
-        properties: { title: { type: 'string' } },
-        required: ['title'],
+        properties: { title: { type: 'string', required: true } },
         default: {},
         'x-visible-when': { path: 'enabled', operator: '$eq', value: true },
       }),
@@ -184,8 +183,7 @@ describe('plugin-light-extension settings condition validator', () => {
     const unknownObjectProperty = validateSettings(
       requiredConditional({
         type: 'object',
-        properties: { title: { type: 'string' } },
-        required: ['title'],
+        properties: { title: { type: 'string', required: true } },
         default: { title: 'Sales', extra: true },
         'x-visible-when': { path: 'enabled', operator: '$eq', value: true },
       }),
@@ -200,8 +198,7 @@ describe('plugin-light-extension settings condition validator', () => {
     );
     const inferredIncompleteObject = validateSettings(
       requiredConditional({
-        properties: { title: { type: 'string' } },
-        required: ['title'],
+        properties: { title: { type: 'string', required: true } },
         default: {},
         'x-visible-when': { path: 'enabled', operator: '$eq', value: true },
       }),
@@ -209,8 +206,7 @@ describe('plugin-light-extension settings condition validator', () => {
     const valid = validateSettings(
       requiredConditional({
         type: 'object',
-        properties: { title: { type: 'string' } },
-        required: ['title'],
+        properties: { title: { type: 'string', required: true } },
         default: { title: 'Sales' },
         'x-visible-when': { path: 'enabled', operator: '$eq', value: true },
       }),
@@ -234,12 +230,24 @@ describe('plugin-light-extension settings condition validator', () => {
 });
 
 function validateSettings(settingsSchema: Record<string, unknown>) {
+  const properties = settingsSchema.properties;
+  if (!properties || typeof properties !== 'object' || Array.isArray(properties)) {
+    throw new Error('Expected a root object schema with properties');
+  }
+  return validateDescriptorSettings({ settings: properties });
+}
+
+function validateLegacySettingsSchema(settingsSchema: Record<string, unknown>) {
+  return validateDescriptorSettings({ settingsSchema });
+}
+
+function validateDescriptorSettings(descriptorSettings: Record<string, unknown>) {
   return new LightExtensionValidator().validateWorkspace({
     files: [
       { path: 'src/client/js-blocks/sales/index.tsx', content: 'ctx.render(null);\n' },
       {
         path: 'src/client/js-blocks/sales/entry.json',
-        content: JSON.stringify({ schemaVersion: 1, key: 'sales', settingsSchema }),
+        content: JSON.stringify({ schemaVersion: 1, key: 'sales', ...descriptorSettings }),
       },
     ],
   });
@@ -270,10 +278,9 @@ function nestedCondition(depth: number): unknown {
 function requiredConditional(propertySchema: Record<string, unknown>) {
   return {
     type: 'object',
-    required: ['target'],
     properties: {
       enabled: { type: 'boolean', default: true },
-      target: propertySchema,
+      target: { ...propertySchema, required: true },
     },
   };
 }

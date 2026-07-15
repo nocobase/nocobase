@@ -29,21 +29,25 @@ describe('JSON language service', () => {
   it('provides canonical Entry property and condition completions', async () => {
     const topLevel = await getCompletionLabels('{\n  "ti"\n}', 'ti');
     expect(topLevel).toEqual(expect.arrayContaining(['title', 'tags']));
+    const allTopLevel = await getCompletionLabels('{\n  ""\n}', '"', 1);
+    expect(allTopLevel).toContain('settings');
+    expect(allTopLevel).not.toContain('$schema');
+    expect(allTopLevel).not.toContain('settingsSchema');
 
     const settingsProperty = await getCompletionLabels(
-      '{"schemaVersion":1,"key":"demo","settingsSchema":{"type":"object","properties":{"mode":{"ty"}}}}',
+      '{"schemaVersion":1,"key":"demo","settings":{"mode":{"ty"}}}',
       'ty',
     );
     expect(settingsProperty).toEqual(expect.arrayContaining(['type', 'x-component', 'x-visible-when']));
 
     const condition = await getCompletionLabels(
-      '{"schemaVersion":1,"key":"demo","settingsSchema":{"type":"object","properties":{"mode":{"type":"string","x-visible-when":{"pa"}}}}}',
+      '{"schemaVersion":1,"key":"demo","settings":{"mode":{"type":"string","x-visible-when":{"pa"}}}}',
       'pa',
     );
     expect(condition).toEqual(expect.arrayContaining(['path', 'operator', 'value', 'logic', 'items']));
 
     const operator = await getCompletionLabels(
-      '{"schemaVersion":1,"key":"demo","settingsSchema":{"type":"object","properties":{"mode":{"type":"string","x-visible-when":{"operator":""}}}}}',
+      '{"schemaVersion":1,"key":"demo","settings":{"mode":{"type":"string","x-visible-when":{"operator":""}}}}',
       'operator":"',
       'operator":"'.length,
     );
@@ -51,7 +55,7 @@ describe('JSON language service', () => {
   });
 
   it('keeps quoted completion ranges reusable while a property name is being typed', async () => {
-    const text = '{"schemaVersion":1,"key":"demo","settingsSchema":{"en"}}';
+    const text = '{"schemaVersion":1,"key":"demo","settings":{"mode":{"en"}}}';
     const position = text.lastIndexOf('en') + 'en'.length;
     const result = await getJsonLanguageCompletions(text, position, entryJsonSchema);
     const validFor = result?.validFor;
@@ -83,20 +87,17 @@ describe('JSON language service', () => {
       JSON.stringify({
         schemaVersion: 1,
         key: 'demo',
-        settingsSchema: {
-          type: 'object',
-          properties: {
-            mode: {
-              type: 'string',
-              'x-visible-when': { path: 'mode', operator: '$in', value: 'not-an-array' },
-            },
+        settings: {
+          mode: {
+            type: 'string',
+            'x-visible-when': { path: 'mode', operator: '$in', value: 'not-an-array' },
           },
         },
       }),
       entryJsonSchema,
     );
     expect(conditionDiagnostics.map((diagnostic) => diagnostic.message)).toContain(
-      '$.settingsSchema.properties.mode["x-visible-when"].value: Incorrect type. Expected "array".',
+      '$.settings.mode["x-visible-when"].value: Incorrect type. Expected "array".',
     );
   });
 
@@ -104,23 +105,20 @@ describe('JSON language service', () => {
     const text = JSON.stringify({
       schemaVersion: 1,
       key: 'demo',
-      settingsSchema: {
-        type: 'object',
-        properties: {
-          mode: {
-            type: 'string',
-            'x-visible-when': { operator: '$empty', path: 'mode' },
-          },
+      settings: {
+        mode: {
+          type: 'string',
+          'x-visible-when': { operator: '$empty', path: 'mode' },
         },
       },
     });
 
     const keyHover = await getJsonLanguageHover(text, text.indexOf('key') + 1, entryJsonSchema);
-    const settingsHover = await getJsonLanguageHover(text, text.indexOf('settingsSchema') + 1, entryJsonSchema);
+    const settingsHover = await getJsonLanguageHover(text, text.indexOf('settings') + 1, entryJsonSchema);
     const conditionHover = await getJsonLanguageHover(text, text.indexOf('x-visible-when') + 1, entryJsonSchema);
 
     expect(keyHover?.contents).toContain('Stable technical identity');
-    expect(settingsHover?.contents).toContain('Settings form schema');
+    expect(settingsHover?.contents).toContain('Settings field definitions');
     expect(conditionHover?.contents).toContain('controls whether this settings field is visible');
   });
 

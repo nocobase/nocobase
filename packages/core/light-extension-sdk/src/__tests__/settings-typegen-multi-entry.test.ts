@@ -38,7 +38,7 @@ function entry(kindRoot: string, directoryName: string, key: string, propertyNam
     path: `src/client/${kindRoot}/${directoryName}/entry.json`,
     content: JSON.stringify({
       key,
-      settingsSchema: { type: 'object', properties: { [propertyName]: { type: 'string' } } },
+      settings: { [propertyName]: { type: 'string' } },
     }),
   };
 }

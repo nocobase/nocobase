@@ -186,14 +186,11 @@ describe('plugin-light-extension compile preview', () => {
           content: JSON.stringify({
             schemaVersion: 1,
             key: 'sales-kpi',
-            settingsSchema: {
-              type: 'object',
-              properties: {
-                mode: { type: 'integer' },
-                target: {
-                  type: 'string',
-                  'x-visible-when': { path: 'mode', operator: '$in', value: 1 },
-                },
+            settings: {
+              mode: { type: 'integer' },
+              target: {
+                type: 'string',
+                'x-visible-when': { path: 'mode', operator: '$in', value: 1 },
               },
             },
           }),
@@ -420,7 +417,7 @@ describe('plugin-light-extension compile preview', () => {
     const fileService = createFileServiceStub(repo, [
       {
         path: 'src/client/js-items/customer-menu/index.tsx',
-        content: 'ctx.render(<button>{ctx.record.name}</button>);\n',
+        content: 'ctx.render(<button>{String(ctx.record.name)}</button>);\n',
       },
       {
         path: 'src/client/js-items/customer-menu/entry.json',

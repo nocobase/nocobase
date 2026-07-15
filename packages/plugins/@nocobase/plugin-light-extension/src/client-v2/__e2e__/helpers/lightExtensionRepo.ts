@@ -18,72 +18,69 @@ import { createLightExtensionBaseTemplate } from '../../../shared/default-templa
 import type { LightExtensionPullResult, LightExtensionTreeEntryInput } from '../../../shared/types';
 import { assertApiResponseOk, getErrorMessage, isRecord, readApiResponse, type RootApiSession } from './api';
 
-export const LIGHT_EXTENSION_ACCEPTANCE_SETTINGS_SCHEMA: Record<string, unknown> = {
-  type: 'object',
-  properties: {
-    outputLabel: {
-      type: 'string',
-      title: 'Output label',
-      default: 'Initial output',
+export const LIGHT_EXTENSION_ACCEPTANCE_SETTINGS: Record<string, unknown> = {
+  outputLabel: {
+    type: 'string',
+    title: 'Output label',
+    default: 'Initial output',
+  },
+  mode: {
+    type: 'integer',
+    title: 'Mode',
+    enum: [1, 2],
+    default: 1,
+  },
+  mode1Options: {
+    type: 'object',
+    title: 'Mode 1 settings',
+    'x-visible-when': {
+      path: 'mode',
+      operator: '$eq',
+      value: 1,
     },
-    mode: {
-      type: 'integer',
-      title: 'Mode',
-      enum: [1, 2],
-      default: 1,
-    },
-    mode1Options: {
-      type: 'object',
-      title: 'Mode 1 settings',
-      'x-visible-when': {
-        path: 'mode',
-        operator: '$eq',
-        value: 1,
-      },
-      properties: {
-        message: {
-          type: 'string',
-          title: 'Mode 1 message',
-          default: 'Mode 1',
-        },
+    properties: {
+      message: {
+        type: 'string',
+        title: 'Mode 1 message',
+        default: 'Mode 1',
       },
     },
-    mode2Options: {
-      type: 'object',
-      title: 'Mode 2 settings',
-      'x-visible-when': {
-        path: 'mode',
-        operator: '$eq',
-        value: 2,
-      },
-      properties: {
-        color: {
-          type: 'string',
-          title: 'Mode 2 color',
-          default: '#1677ff',
-        },
+  },
+  mode2Options: {
+    type: 'object',
+    title: 'Mode 2 settings',
+    'x-visible-when': {
+      path: 'mode',
+      operator: '$eq',
+      value: 2,
+    },
+    properties: {
+      color: {
+        type: 'string',
+        title: 'Mode 2 color',
+        default: '#1677ff',
       },
     },
-    displayOptions: {
-      type: 'object',
-      title: 'Display settings',
-      properties: {
-        enableColor: {
-          type: 'boolean',
-          title: 'Enable color',
-          default: false,
-        },
-        advancedColor: {
-          type: 'string',
-          title: 'Advanced color',
-          default: '#f5222d',
-          'x-visible-when': {
-            logic: '$and',
-            items: [
-              { path: 'mode', operator: '$eq', value: 2 },
-              { path: 'displayOptions.enableColor', operator: '$eq', value: true },
-            ],
-          },
+  },
+  displayOptions: {
+    type: 'object',
+    title: 'Display settings',
+    properties: {
+      enableColor: {
+        type: 'boolean',
+        title: 'Enable color',
+        default: false,
+      },
+      advancedColor: {
+        type: 'string',
+        title: 'Advanced color',
+        default: '#f5222d',
+        'x-visible-when': {
+          logic: '$and',
+          items: [
+            { path: 'mode', operator: '$eq', value: 2 },
+            { path: 'displayOptions.enableColor', operator: '$eq', value: true },
+          ],
         },
       },
     },
@@ -234,7 +231,7 @@ function createEntryFiles(): LightExtensionTreeEntryInput[] {
             schemaVersion: LIGHT_EXTENSION_ENTRY_SCHEMA_VERSION,
             key: entryName,
             title: definition.title,
-            settingsSchema: LIGHT_EXTENSION_ACCEPTANCE_SETTINGS_SCHEMA,
+            settings: LIGHT_EXTENSION_ACCEPTANCE_SETTINGS,
           },
           null,
           2,

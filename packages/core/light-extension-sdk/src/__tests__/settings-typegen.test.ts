@@ -16,7 +16,7 @@ import {
 } from '../typegen';
 
 describe('light extension settings typegen', () => {
-  it('generates nested object, array, enum and required types only from entry.json', () => {
+  it('generates nested object, array, enum and required types from the entry.json settings field map', () => {
     const result = generateClientSettingsTypes({
       files: [
         {
@@ -24,18 +24,14 @@ describe('light extension settings typegen', () => {
           content: JSON.stringify({
             schemaVersion: 1,
             key: 'sales-kpi',
-            settingsSchema: {
-              type: 'object',
-              required: ['mode'],
-              properties: {
-                mode: { type: 'integer', enum: [1, 2] },
-                title: { type: 'string', default: 'Sales' },
-                display: {
-                  type: 'object',
-                  properties: {
-                    showTotal: { type: 'boolean' },
-                    tags: { type: 'array', items: { type: 'string' } },
-                  },
+            settings: {
+              mode: { type: 'integer', enum: [1, 2], required: true },
+              title: { type: 'string', default: 'Sales' },
+              display: {
+                type: 'object',
+                properties: {
+                  showTotal: { type: 'boolean' },
+                  tags: { type: 'array', items: { type: 'string' } },
                 },
               },
             },
@@ -64,7 +60,7 @@ describe('light extension settings typegen', () => {
         files: [
           {
             path: `src/client/js-blocks/${directoryName}/entry.json`,
-            content: JSON.stringify({ key: 'stable-sales', settingsSchema: { type: 'object', properties: {} } }),
+            content: JSON.stringify({ key: 'stable-sales', settings: {} }),
           },
         ],
       }).entries[0];
@@ -72,6 +68,35 @@ describe('light extension settings typegen', () => {
     expect(generate('before').virtualImport).toBe('light-extension:settings/client/js-block/stable-sales');
     expect(generate('after').virtualImport).toBe(generate('before').virtualImport);
     expect(generate('after').outputPath).toBe(generate('before').outputPath);
+  });
+
+  it('keeps legacy settingsSchema type generation isolated from the preferred settings field', () => {
+    const legacy = generateClientSettingsTypes({
+      files: [
+        {
+          path: 'src/client/js-blocks/legacy/entry.json',
+          content: JSON.stringify({
+            key: 'legacy',
+            settingsSchema: { type: 'object', required: ['mode'], properties: { mode: { type: 'string' } } },
+          }),
+        },
+      ],
+    });
+    const mixed = generateClientSettingsTypes({
+      files: [
+        {
+          path: 'src/client/js-blocks/mixed/entry.json',
+          content: JSON.stringify({ key: 'mixed', settings: {}, settingsSchema: {} }),
+        },
+      ],
+    });
+
+    expect(legacy.diagnostics).toEqual([]);
+    expect(legacy.files.find((file) => file.path.endsWith('/legacy.d.ts'))?.content).toContain('mode: string;');
+    expect(mixed.entries).toEqual([]);
+    expect(mixed.diagnostics).toContainEqual(
+      expect.objectContaining({ message: 'entry.json must not define both settings and settingsSchema' }),
+    );
   });
 
   it('replaces the active Entry context shim and types ctx.settings', () => {
@@ -123,7 +148,7 @@ function descriptor(kindRoot: string, directoryName: string, key: string, proper
     path: `src/client/${kindRoot}/${directoryName}/entry.json`,
     content: JSON.stringify({
       key,
-      settingsSchema: { type: 'object', properties: { [propertyName]: { type: propertyType } } },
+      settings: { [propertyName]: { type: propertyType } },
     }),
   };
 }

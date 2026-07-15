@@ -212,8 +212,8 @@ function getReferenceRunnerSkipReason(): string | undefined {
   return undefined;
 }
 
-function createPressureSettingsSchema(): Record<string, unknown> {
-  const properties: Record<string, unknown> = {
+function createPressureSettings(): Record<string, unknown> {
+  const settings: Record<string, unknown> = {
     mode: {
       type: 'integer',
       title: 'Perf mode',
@@ -222,18 +222,18 @@ function createPressureSettingsSchema(): Record<string, unknown> {
     },
   };
   for (let index = 1; index <= 5; index += 1) {
-    properties[`static${index}`] = {
+    settings[`static${index}`] = {
       type: 'string',
       title: `Perf static ${index}`,
       default: `static-${index}`,
     };
-    properties[`branchB${index}`] = {
+    settings[`branchB${index}`] = {
       type: 'string',
       title: `Perf B ${index}`,
       default: `branch-b-${index}`,
       'x-visible-when': { path: 'mode', operator: '$eq', value: 1 },
     };
-    properties[`branchC${index}`] = {
+    settings[`branchC${index}`] = {
       type: 'string',
       title: `Perf C ${index}`,
       default: `branch-c-${index}`,
@@ -241,7 +241,7 @@ function createPressureSettingsSchema(): Record<string, unknown> {
     };
   }
   for (let objectIndex = 1; objectIndex <= 4; objectIndex += 1) {
-    properties[`object${objectIndex}`] = {
+    settings[`object${objectIndex}`] = {
       type: 'object',
       title: `Perf object ${objectIndex}`,
       properties: {
@@ -275,17 +275,12 @@ function createPressureSettingsSchema(): Record<string, unknown> {
       },
     };
   }
-  const schema = { type: 'object', properties };
-  assertPressureSettingsSchemaShape(schema);
-  return schema;
+  assertPressureSettingsShape(settings);
+  return settings;
 }
 
-function assertPressureSettingsSchemaShape(schema: Record<string, unknown>): void {
-  const properties = schema.properties;
-  if (!isRecord(properties)) {
-    throw new Error('Reference performance settings schema does not contain properties');
-  }
-  const definitions = Object.values(properties);
+function assertPressureSettingsShape(settings: Record<string, unknown>): void {
+  const definitions = Object.values(settings);
   const dynamicDefinitions = definitions.filter(
     (definition) => isRecord(definition) && Object.prototype.hasOwnProperty.call(definition, 'x-visible-when'),
   );
@@ -345,7 +340,7 @@ async function installPressureJsBlockEntry(
       if (!isRecord(parsed)) {
         throw new Error('Reference performance js-block entry descriptor is invalid');
       }
-      content = `${JSON.stringify({ ...parsed, settingsSchema: createPressureSettingsSchema() }, null, 2)}\n`;
+      content = `${JSON.stringify({ ...parsed, settings: createPressureSettings() }, null, 2)}\n`;
     }
     return {
       path: file.path,

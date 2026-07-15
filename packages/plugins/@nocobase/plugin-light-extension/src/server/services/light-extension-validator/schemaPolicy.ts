@@ -7,7 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { LIGHT_EXTENSION_SETTINGS_PROPERTY_PATTERN } from '@nocobase/light-extension-sdk/schema';
+import {
+  buildLightExtensionSettingsSchema,
+  LIGHT_EXTENSION_SETTINGS_PROPERTY_PATTERN,
+} from '@nocobase/light-extension-sdk/schema';
 
 import { LIGHT_EXTENSION_ENTRY_SCHEMA_URL, LIGHT_EXTENSION_ENTRY_SCHEMA_VERSION } from '../../../constants';
 import type { LightExtensionCapabilities, LightExtensionDiagnostic } from '../../../shared/types';
@@ -93,6 +96,7 @@ export class LightExtensionSchemaValidator {
       'icon',
       'tags',
       'sort',
+      'settings',
       'settingsSchema',
     ]);
     for (const key of Object.keys(json)) {
@@ -131,7 +135,21 @@ export class LightExtensionSchemaValidator {
       );
     }
     const key = requiredSlugField(json, 'key', diagnostics, descriptorTarget);
-    const settingsSchema = this.validateSettingsSchema(json.settingsSchema, diagnostics, descriptorTarget);
+    const hasSettings = Object.prototype.hasOwnProperty.call(json, 'settings');
+    const hasLegacySettingsSchema = Object.prototype.hasOwnProperty.call(json, 'settingsSchema');
+    if (hasSettings && hasLegacySettingsSchema) {
+      diagnostics.push(
+        diagnostic(
+          'entry_descriptor_settings_conflict',
+          'error',
+          'entry.json must not define both settings and settingsSchema',
+          descriptorTarget,
+        ),
+      );
+    }
+    const settingsSchema = hasSettings
+      ? this.validateSettings(json.settings, diagnostics, descriptorTarget)
+      : this.validateLegacySettingsSchema(json.settingsSchema, diagnostics, descriptorTarget);
     if (!key) {
       return null;
     }
@@ -148,7 +166,50 @@ export class LightExtensionSchemaValidator {
     };
   }
 
-  private validateSettingsSchema(
+  private validateSettings(
+    value: unknown,
+    diagnostics: LightExtensionDiagnostic[],
+    target: DiagnosticTarget,
+  ): Record<string, unknown> | null {
+    if (typeof value === 'undefined') {
+      return null;
+    }
+    if (!isPlainRecord(value)) {
+      diagnostics.push(
+        diagnostic('settings_schema_invalid', 'error', 'entry.json settings must be a field definition object', target),
+      );
+      return null;
+    }
+
+    const rootSchema = buildLightExtensionSettingsSchema(value);
+    const properties = isPlainRecord(rootSchema.properties) ? rootSchema.properties : {};
+    const required = Array.isArray(rootSchema.required)
+      ? rootSchema.required.filter((item): item is string => typeof item === 'string')
+      : [];
+    const conditionOwners = new Map<string, ConditionOwner>();
+    this.validateObjectProperties(
+      properties,
+      required,
+      {
+        filePath: target.path || '',
+        schemaPath: '$.settings',
+        propertyPath: null,
+        depth: 0,
+        diagnostics,
+        target,
+        rootSchema,
+        conditionOwners,
+        insideArray: false,
+      },
+      target,
+      '$.settings',
+    );
+    this.validateConditionCycles(conditionOwners, diagnostics, target);
+
+    return rootSchema;
+  }
+
+  private validateLegacySettingsSchema(
     value: unknown,
     diagnostics: LightExtensionDiagnostic[],
     target: DiagnosticTarget,
@@ -224,7 +285,7 @@ export class LightExtensionSchemaValidator {
 
     if (input.depth > this.capabilities.limits.maxSettingsSchemaDepth) {
       input.diagnostics.push(
-        diagnostic('settings_schema_too_deep', 'error', 'entry.json settingsSchema is too deeply nested', {
+        diagnostic('settings_schema_too_deep', 'error', 'entry.json settings schema is too deeply nested', {
           ...schemaTarget,
           details: {
             schemaPath: input.schemaPath,
@@ -241,7 +302,7 @@ export class LightExtensionSchemaValidator {
           diagnostic(
             'settings_schema_keyword_not_allowed',
             'error',
-            `entry.json settingsSchema keyword "${key}" is not supported`,
+            `entry.json settings schema keyword "${key}" is not supported`,
             {
               ...schemaTarget,
               details: { schemaPath: input.schemaPath, keyword: key },
@@ -257,7 +318,7 @@ export class LightExtensionSchemaValidator {
           diagnostic(
             'settings_expression_not_allowed',
             'error',
-            'entry.json settingsSchema expressions are not supported',
+            'entry.json settings schema expressions are not supported',
             {
               ...schemaTarget,
               details: { schemaPath: `${input.schemaPath}.${key}`, keyword: key },
@@ -280,7 +341,7 @@ export class LightExtensionSchemaValidator {
     if (typeof node.type !== 'undefined') {
       if (typeof node.type !== 'string' || !this.capabilities.schemaSubset.allowedTypes.includes(node.type)) {
         input.diagnostics.push(
-          diagnostic('settings_schema_type_not_allowed', 'error', 'entry.json settingsSchema type is not supported', {
+          diagnostic('settings_schema_type_not_allowed', 'error', 'entry.json settings schema type is not supported', {
             ...schemaTarget,
             details: { schemaPath: input.schemaPath, type: node.type },
           }),
@@ -305,7 +366,7 @@ export class LightExtensionSchemaValidator {
           diagnostic(
             'settings_x_component_not_allowed',
             'error',
-            'entry.json settingsSchema x-component is not allowed',
+            'entry.json settings schema x-component is not allowed',
             {
               ...schemaTarget,
               details: { schemaPath: input.schemaPath, component: node['x-component'] },
@@ -335,7 +396,7 @@ export class LightExtensionSchemaValidator {
     const required = this.validateRequired(node, input, schemaTarget);
     if (typeof node.enum !== 'undefined' && !Array.isArray(node.enum)) {
       input.diagnostics.push(
-        diagnostic('settings_enum_invalid', 'error', 'entry.json settingsSchema enum must be an array', {
+        diagnostic('settings_enum_invalid', 'error', 'entry.json settings schema enum must be an array', {
           ...schemaTarget,
           details: { schemaPath: input.schemaPath },
         }),
@@ -349,10 +410,15 @@ export class LightExtensionSchemaValidator {
     if (typeof node.properties !== 'undefined') {
       if (!isPlainRecord(node.properties)) {
         input.diagnostics.push(
-          diagnostic('settings_properties_invalid', 'error', 'entry.json settingsSchema properties must be an object', {
-            ...schemaTarget,
-            details: { schemaPath: input.schemaPath },
-          }),
+          diagnostic(
+            'settings_properties_invalid',
+            'error',
+            'entry.json settings schema properties must be an object',
+            {
+              ...schemaTarget,
+              details: { schemaPath: input.schemaPath },
+            },
+          ),
         );
       } else {
         this.validateObjectProperties(node.properties, required, input, schemaTarget);
@@ -362,7 +428,7 @@ export class LightExtensionSchemaValidator {
     if (typeof node.items !== 'undefined') {
       if (!isPlainRecord(node.items)) {
         input.diagnostics.push(
-          diagnostic('settings_items_invalid', 'error', 'entry.json settingsSchema items must be a schema object', {
+          diagnostic('settings_items_invalid', 'error', 'entry.json settings schema items must be a schema object', {
             ...schemaTarget,
             details: { schemaPath: input.schemaPath },
           }),
@@ -395,7 +461,7 @@ export class LightExtensionSchemaValidator {
         diagnostic(
           'settings_required_invalid',
           'error',
-          'entry.json settingsSchema required must be a property array',
+          'entry.json settings schema required must be a property array',
           {
             ...schemaTarget,
             details: { schemaPath: input.schemaPath },
@@ -409,7 +475,7 @@ export class LightExtensionSchemaValidator {
         diagnostic(
           'settings_required_invalid',
           'error',
-          'entry.json settingsSchema required must not contain duplicates',
+          'entry.json settings schema required must not contain duplicates',
           {
             ...schemaTarget,
             details: { schemaPath: input.schemaPath },
@@ -426,6 +492,7 @@ export class LightExtensionSchemaValidator {
     required: string[],
     input: SettingsSchemaValidationInput,
     schemaTarget: DiagnosticTarget,
+    propertiesSchemaPath = `${input.schemaPath}.properties`,
   ): void {
     for (const requiredProperty of required) {
       if (!Object.prototype.hasOwnProperty.call(properties, requiredProperty)) {
@@ -433,7 +500,7 @@ export class LightExtensionSchemaValidator {
           diagnostic(
             'settings_required_invalid',
             'error',
-            'entry.json settingsSchema required property is not defined',
+            'entry.json settings schema required property is not defined',
             {
               ...schemaTarget,
               details: { schemaPath: `${input.schemaPath}.required`, propertyName: requiredProperty },
@@ -444,10 +511,10 @@ export class LightExtensionSchemaValidator {
     }
 
     for (const [propertyName, propertySchema] of Object.entries(properties)) {
-      const propertySchemaPath = `${input.schemaPath}.properties.${propertyName}`;
+      const propertySchemaPath = `${propertiesSchemaPath}.${propertyName}`;
       if (!settingsPropertyPattern.test(propertyName) || unsafePathSegments.has(propertyName)) {
         input.diagnostics.push(
-          diagnostic('settings_property_name_invalid', 'error', 'entry.json settingsSchema property name is invalid', {
+          diagnostic('settings_property_name_invalid', 'error', 'entry.json settings property name is invalid', {
             ...schemaTarget,
             details: { schemaPath: propertySchemaPath, propertyName },
           }),
@@ -459,7 +526,7 @@ export class LightExtensionSchemaValidator {
           diagnostic(
             'settings_property_schema_invalid',
             'error',
-            'entry.json settingsSchema property schema must be an object',
+            'entry.json settings field schema must be an object',
             {
               ...schemaTarget,
               details: { schemaPath: propertySchemaPath },
@@ -757,7 +824,7 @@ export class LightExtensionSchemaValidator {
     const schemaTarget = { ...input.target, path: input.filePath };
     if (input.depth > this.capabilities.limits.maxSettingsSchemaDepth) {
       input.diagnostics.push(
-        diagnostic('settings_schema_too_deep', 'error', 'entry.json settingsSchema is too deeply nested', {
+        diagnostic('settings_schema_too_deep', 'error', 'entry.json settings schema is too deeply nested', {
           ...schemaTarget,
           details: { schemaPath: input.schemaPath, maxDepth: this.capabilities.limits.maxSettingsSchemaDepth },
         }),
@@ -770,7 +837,7 @@ export class LightExtensionSchemaValidator {
           diagnostic(
             'settings_expression_not_allowed',
             'error',
-            'entry.json settingsSchema expressions are not supported',
+            'entry.json settings schema expressions are not supported',
             {
               ...schemaTarget,
               details: { schemaPath: input.schemaPath },
@@ -1069,7 +1136,7 @@ function validateOptionalString(
       diagnostic(
         'settings_field_invalid',
         'error',
-        `entry.json settingsSchema field "${key}" must be a string`,
+        `entry.json settings schema field "${key}" must be a string`,
         target,
       ),
     );
@@ -1087,7 +1154,7 @@ function validateOptionalNumber(
       diagnostic(
         'settings_field_invalid',
         'error',
-        `entry.json settingsSchema field "${key}" must be a number`,
+        `entry.json settings schema field "${key}" must be a number`,
         target,
       ),
     );
@@ -1106,7 +1173,7 @@ function validateOptionalNonNegativeInteger(
       diagnostic(
         'settings_field_invalid',
         'error',
-        `entry.json settingsSchema field "${key}" must be a non-negative integer`,
+        `entry.json settings schema field "${key}" must be a non-negative integer`,
         target,
       ),
     );

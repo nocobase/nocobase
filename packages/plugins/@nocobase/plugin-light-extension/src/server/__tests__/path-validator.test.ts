@@ -19,7 +19,7 @@ describe('plugin-light-extension path validator', () => {
         },
         {
           path: 'src/client/js-blocks/sales-kpi/entry.json',
-          content: '{"schemaVersion":1,"key":"sales-kpi","settingsSchema":{"type":"object","properties":{}}}',
+          content: '{"schemaVersion":1,"key":"sales-kpi","settings":{}}',
         },
         {
           path: 'README.md',

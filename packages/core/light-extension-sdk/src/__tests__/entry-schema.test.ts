@@ -12,6 +12,7 @@ import fs from 'fs';
 import path from 'path';
 
 import {
+  buildLightExtensionSettingsSchema,
   LIGHT_EXTENSION_ENTRY_KEY_PATTERN,
   LIGHT_EXTENSION_ENTRY_SCHEMA_URI,
   LIGHT_EXTENSION_ENTRY_SCHEMA_VERSION,
@@ -46,7 +47,10 @@ describe('@nocobase/light-extension-sdk entry.json schema', () => {
     expect(schema.$id).toBe(LIGHT_EXTENSION_ENTRY_SCHEMA_URI);
     expect(schema.properties.schemaVersion.const).toBe(LIGHT_EXTENSION_ENTRY_SCHEMA_VERSION);
     expect(schema.properties.key.pattern).toBe(LIGHT_EXTENSION_ENTRY_KEY_PATTERN);
-    expect(schema.properties.settingsSchema.description).toContain('Settings form schema');
+    expect(schema.properties).not.toHaveProperty('$schema');
+    expect(schema.properties).not.toHaveProperty('settingsSchema');
+    expect(schema.properties.settings.description).toContain('Settings field definitions');
+    expect(schema.properties.settings.additionalProperties.$ref).toBe('#/definitions/settingsSchema');
     expect(settingsSchema.properties.type.enum).toEqual(LIGHT_EXTENSION_SETTINGS_SCHEMA_TYPES);
     expect(Object.keys(settingsSchema.properties)).toEqual(LIGHT_EXTENSION_SETTINGS_SCHEMA_KEYWORDS);
     expect(settingsSchema.properties['x-component'].enum).toEqual(LIGHT_EXTENSION_X_COMPONENT_WHITELIST);
@@ -72,15 +76,26 @@ describe('@nocobase/light-extension-sdk entry.json schema', () => {
       validate({
         schemaVersion: 1,
         key: 'sales',
-        settingsSchema: {
-          type: 'object',
-          properties: {
-            mode: {
-              type: 'string',
-              'x-visible-when': { path: 'enabled', operator: '$contains', value: true },
-            },
+        settings: {
+          mode: {
+            type: 'string',
+            'x-visible-when': { path: 'enabled', operator: '$contains', value: true },
           },
         },
+      }),
+    ).toBe(false);
+    expect(
+      validate({
+        schemaVersion: 1,
+        key: 'sales',
+        $schema: LIGHT_EXTENSION_ENTRY_SCHEMA_URI,
+      }),
+    ).toBe(false);
+    expect(
+      validate({
+        schemaVersion: 1,
+        key: 'sales',
+        settingsSchema: { type: 'object', properties: {} },
       }),
     ).toBe(false);
     expect(lightExtensionEntryV1SchemaJson).not.toMatch(/meta\.json|settings\.json|"runjs"|\$not"/u);
@@ -91,10 +106,9 @@ describe('@nocobase/light-extension-sdk entry.json schema', () => {
       validate({
         schemaVersion: 1,
         key: 'root-condition',
-        settingsSchema: {
-          type: 'object',
+        settings: {
           'x-visible-when': { path: 'enabled', operator: '$eq', value: true },
-          properties: { enabled: { type: 'boolean' } },
+          enabled: { type: 'boolean' },
         },
       }),
     ).toBe(false);
@@ -102,19 +116,16 @@ describe('@nocobase/light-extension-sdk entry.json schema', () => {
       validate({
         schemaVersion: 1,
         key: 'array-condition',
-        settingsSchema: {
-          type: 'object',
-          properties: {
-            enabled: { type: 'boolean' },
-            rows: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  title: {
-                    type: 'string',
-                    'x-visible-when': { path: 'enabled', operator: '$eq', value: true },
-                  },
+        settings: {
+          enabled: { type: 'boolean' },
+          rows: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                title: {
+                  type: 'string',
+                  'x-visible-when': { path: 'enabled', operator: '$eq', value: true },
                 },
               },
             },
@@ -122,5 +133,51 @@ describe('@nocobase/light-extension-sdk entry.json schema', () => {
         },
       }),
     ).toBe(false);
+  });
+
+  it('normalizes required flags recursively through objects and array items', () => {
+    expect(
+      buildLightExtensionSettingsSchema({
+        mode: { type: 'string', required: true },
+        groups: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              label: { type: 'string', required: true },
+              options: {
+                type: 'object',
+                properties: {
+                  enabled: { type: 'boolean', required: true },
+                },
+              },
+            },
+          },
+        },
+      }),
+    ).toEqual({
+      type: 'object',
+      required: ['mode'],
+      properties: {
+        mode: { type: 'string' },
+        groups: {
+          type: 'array',
+          items: {
+            type: 'object',
+            required: ['label'],
+            properties: {
+              label: { type: 'string' },
+              options: {
+                type: 'object',
+                required: ['enabled'],
+                properties: {
+                  enabled: { type: 'boolean' },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
   });
 });

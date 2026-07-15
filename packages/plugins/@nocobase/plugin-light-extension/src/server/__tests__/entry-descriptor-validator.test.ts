@@ -11,7 +11,7 @@ import { LIGHT_EXTENSION_ENTRY_DESCRIPTOR_MAX_BYTES, LIGHT_EXTENSION_ENTRY_SCHEM
 import { LightExtensionValidator } from '../services/LightExtensionValidator';
 
 describe('plugin-light-extension entry descriptor validator', () => {
-  it('projects metadata and settingsSchema from entry.json', () => {
+  it('projects metadata and normalizes direct settings fields from entry.json', () => {
     const settingsSchema = {
       type: 'object',
       required: ['threshold'],
@@ -25,7 +25,6 @@ describe('plugin-light-extension entry descriptor validator', () => {
     };
     const result = new LightExtensionValidator().validateWorkspace({
       files: entryFiles({
-        $schema: LIGHT_EXTENSION_ENTRY_SCHEMA_URL,
         schemaVersion: 1,
         key: 'sales-overview',
         title: 'Sales KPI',
@@ -34,7 +33,12 @@ describe('plugin-light-extension entry descriptor validator', () => {
         icon: 'BarChartOutlined',
         tags: ['sales', 'kpi'],
         sort: 10,
-        settingsSchema,
+        settings: {
+          threshold: {
+            ...settingsSchema.properties.threshold,
+            required: true,
+          },
+        },
       }),
     });
 
@@ -53,6 +57,22 @@ describe('plugin-light-extension entry descriptor validator', () => {
     });
   });
 
+  it('accepts legacy schema fields for existing repositories', () => {
+    const settingsSchema = { type: 'object', properties: { title: { type: 'string' } } };
+    const result = new LightExtensionValidator().validateWorkspace({
+      files: entryFiles({
+        $schema: LIGHT_EXTENSION_ENTRY_SCHEMA_URL,
+        schemaVersion: 1,
+        key: 'sales-kpi',
+        settingsSchema,
+      }),
+    });
+
+    expect(result.accepted).toBe(true);
+    expect(result.entries[0].settingsSchema).toEqual(settingsSchema);
+    expect(result.diagnostics).toEqual([]);
+  });
+
   it.each([
     [{ key: 'sales-kpi' }, 'entry_descriptor_schema_version_required'],
     [{ schemaVersion: 2, key: 'sales-kpi' }, 'entry_descriptor_schema_version_unsupported'],
@@ -62,6 +82,7 @@ describe('plugin-light-extension entry descriptor validator', () => {
       { schemaVersion: 1, key: 'sales-kpi', $schema: 'https://example.com/entry.json' },
       'entry_descriptor_schema_url_unsupported',
     ],
+    [{ schemaVersion: 1, key: 'sales-kpi', settings: {}, settingsSchema: {} }, 'entry_descriptor_settings_conflict'],
     [{ schemaVersion: 1, key: 'sales-kpi', unknown: true }, 'entry_descriptor_unknown_field'],
   ])('rejects invalid descriptor contract %j', (descriptor, code) => {
     const result = new LightExtensionValidator().validateWorkspace({ files: entryFiles(descriptor) });
@@ -132,19 +153,16 @@ describe('plugin-light-extension entry descriptor validator', () => {
     expect(accepted.accepted).toBe(true);
   });
 
-  it('validates settingsSchema in entry.json', () => {
+  it('validates settings field definitions in entry.json', () => {
     const result = new LightExtensionValidator().validateWorkspace({
       files: entryFiles({
         schemaVersion: 1,
         key: 'sales-kpi',
-        settingsSchema: {
-          type: 'object',
-          'x-reactions': '{{ dangerous }}',
-          properties: {
-            title: {
-              type: 'string',
-              'x-component': 'DangerWidget',
-            },
+        settings: {
+          title: {
+            type: 'string',
+            'x-reactions': '{{ dangerous }}',
+            'x-component': 'DangerWidget',
           },
         },
       }),
