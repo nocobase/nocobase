@@ -290,6 +290,7 @@
   "This workflow has configuration issues and may not work properly.": "该工作流配置存在问题，可能无法正常使用",
   "Workflow title": "工作流名称",
   "Workflow canvas editor is being migrated to the new UI.": "工作流画布编辑器正在迁移到新版界面。",
+  "Workflow not executed": "工作流未执行",
   "Workflow executed, the result status is <1>{{statusText}}</1><2>View the execution</2>": "工作流已执行，结果状态为 <1>{{statusText}}</1><2>查看执行详情</2>",
   "Workflow was not triggered because the current request did not meet the trigger requirements.": "当前请求未满足触发要求，工作流未触发。",
   "Workflow of execution is not existed": "执行计划对应的工作流不存在",

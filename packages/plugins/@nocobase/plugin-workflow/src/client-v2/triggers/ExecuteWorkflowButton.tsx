@@ -87,8 +87,9 @@ function ExecuteWorkflowForm({
       });
       const result = response?.data?.data;
       message.open({
-        type: result?.execution ? 'info' : 'error',
+        type: result?.execution ? 'info' : 'warning',
         content: <ExecutedMessage execution={result?.execution} />,
+        duration: 5,
       });
       await view.close();
       if (result?.newVersionId) {
