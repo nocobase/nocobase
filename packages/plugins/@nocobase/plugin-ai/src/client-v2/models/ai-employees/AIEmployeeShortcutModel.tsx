@@ -16,6 +16,7 @@ import { useRequest } from 'ahooks';
 import { AIEmployeeShortcut } from '../../ai-employees/AIEmployeeShortcut';
 import { AddContextButton } from '../../ai-employees/AddContextButton';
 import { ContextItem as WorkContextItem } from '../../ai-employees/chatbox/components/ContextItem';
+import { getGlobalChatBoxRuntime } from '../../ai-employees/chatbox/stores/runtime';
 import { avatars } from '../../ai-employees/avatars';
 import { getAIEmployeeModels, getAllModels } from '../../ai-employees/chatbox/model';
 import { dialogController } from '../../ai-employees/stores/dialog-controller';
@@ -49,14 +50,21 @@ export class AIEmployeeShortcutModel extends FlowModel {
 
   render() {
     const { style, ...props } = this.props;
-    return <AIEmployeeShortcut {...props} size={style?.size} mask={style?.mask} />;
+    return <AIEmployeeShortcut {...props} runtime={getGlobalChatBoxRuntime()} size={style?.size} mask={style?.mask} />;
   }
 }
 
 export class AIEmployeeButtonModel extends AIEmployeeShortcutModel {
   render() {
     const { style, ...props } = this.props;
-    return <AIEmployeeShortcut {...props} size={style?.size ?? 40} mask={style?.mask ?? false} />;
+    return (
+      <AIEmployeeShortcut
+        {...props}
+        runtime={getGlobalChatBoxRuntime()}
+        size={style?.size ?? 40}
+        mask={style?.mask ?? false}
+      />
+    );
   }
 }
 
@@ -223,7 +231,7 @@ export const WorkContext: React.FC<{
           />
         ))}
       </Space>
-      <AddContextButton contextItems={items} onAdd={onAdd} onRemove={onRemove} />
+      <AddContextButton contextItems={items} onAdd={onAdd} onRemove={onRemove} runtime={getGlobalChatBoxRuntime()} />
     </Space>
   );
 };

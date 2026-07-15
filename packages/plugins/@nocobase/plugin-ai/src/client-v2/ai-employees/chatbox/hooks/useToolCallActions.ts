@@ -11,16 +11,17 @@ import { DecisionActions, ToolCall, useApp } from '@nocobase/client-v2';
 import { useChatConversationsStore } from '../stores/chat-conversations';
 import { useChatMessageActions } from './useChatMessageActions';
 import { UserDecision } from '../../types';
-import { useChatBoxRuntime } from '../stores/runtime';
+import { type ChatBoxRuntime, useResolvedChatBoxRuntime } from '../stores/runtime';
 
 const getErrorMessage = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
-export const useToolCallActions = ({ messageId }: { messageId: string }) => {
+export const useToolCallActions = ({ messageId, runtime }: { messageId: string; runtime?: ChatBoxRuntime }) => {
   const app = useApp();
   const api = app.apiClient;
-  const { chatBoxModel, chatToolCallModel } = useChatBoxRuntime();
+  const resolvedRuntime = useResolvedChatBoxRuntime(runtime);
+  const { chatBoxModel, chatToolCallModel } = resolvedRuntime;
   const sessionId = useChatConversationsStore.use.currentConversation();
-  const { resumeToolCall } = useChatMessageActions();
+  const { resumeToolCall } = useChatMessageActions(resolvedRuntime);
 
   const { toolsManager } = app.aiManager;
   const toolsMap = toolsManager.useTools();

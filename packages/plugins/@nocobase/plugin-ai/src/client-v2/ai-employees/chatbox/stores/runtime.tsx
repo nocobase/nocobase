@@ -47,3 +47,12 @@ export const useChatBoxRuntime = () => {
   }
   return runtime;
 };
+
+export const useResolvedChatBoxRuntime = (runtime?: ChatBoxRuntime) => {
+  const contextRuntime = useContext(ChatBoxContext);
+  const resolvedRuntime = runtime ?? contextRuntime;
+  if (!resolvedRuntime) {
+    throw new Error('ChatBox runtime is missing. Pass runtime or wrap chatbox UI with ChatBoxRuntimeProvider.');
+  }
+  return resolvedRuntime;
+};

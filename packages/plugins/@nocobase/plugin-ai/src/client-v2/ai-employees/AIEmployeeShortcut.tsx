@@ -17,6 +17,7 @@ import { useChat } from './chatbox/hooks/useChat';
 import { useChatBoxActions } from './chatbox/hooks/useChatBoxActions';
 import { useChatMessageActions } from './chatbox/hooks/useChatMessageActions';
 import { useChatConversationsStore } from './chatbox/stores/chat-conversations';
+import type { ChatBoxRuntime } from './chatbox/stores/runtime';
 import type { AIEmployee, ContextItem, Task } from './types';
 
 type ShortcutAIEmployee = Pick<AIEmployee, 'username'> & Partial<AIEmployee>;
@@ -37,6 +38,7 @@ export const AIEmployeeShortcut: React.FC<{
   onTaskClick?: (task: Task) => void;
   taskLoadingTitle?: string;
   loadingTaskTitle?: string;
+  runtime?: ChatBoxRuntime;
 }> = ({
   aiEmployee,
   tasks,
@@ -49,6 +51,7 @@ export const AIEmployeeShortcut: React.FC<{
   onTaskClick,
   taskLoadingTitle,
   loadingTaskTitle,
+  runtime,
 }) => {
   const ctx = useFlowContext<FlowModelContext>();
   const [focus, setFocus] = useState(false);
@@ -57,9 +60,9 @@ export const AIEmployeeShortcut: React.FC<{
     return response?.data?.data || [];
   });
   const currentConversation = useChatConversationsStore.use.currentConversation();
-  const chat = useChat(currentConversation);
-  const { clear, triggerTask } = useChatBoxActions();
-  const { syncContextAttachments } = useChatMessageActions();
+  const chat = useChat(currentConversation, runtime);
+  const { clear, triggerTask } = useChatBoxActions(runtime);
+  const { syncContextAttachments } = useChatMessageActions(runtime);
   const resolvedAIEmployee = useMemo(() => {
     return aiEmployees.find((item) => item.username === aiEmployee?.username);
   }, [aiEmployee, aiEmployees]);

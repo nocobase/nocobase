@@ -21,7 +21,7 @@ import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRe
 import { ensureModel, getAllModels, isSameModel, isValidModel } from '../model';
 import { FlowUtils } from '../../flow';
 import { UploadFieldModel } from '@nocobase/plugin-file-manager/client-v2';
-import { useChatBoxRuntime } from '../stores/runtime';
+import { type ChatBoxRuntime, useResolvedChatBoxRuntime } from '../stores/runtime';
 
 const STREAM_UPDATE_INTERVAL = 50;
 
@@ -97,17 +97,18 @@ const getErrorMessage = (error: unknown) => (error instanceof Error ? error.mess
 
 const getErrorName = (error: unknown) => (error instanceof Error ? error.name : undefined);
 
-export const useChatMessageActions = () => {
+export const useChatMessageActions = (runtime?: ChatBoxRuntime) => {
   const app = useApp();
   const t = useT();
   const api = app.apiClient;
   const aiConfigRepository = useAIConfigRepository();
-  const { chatBoxModel, chatToolCallModel } = useChatBoxRuntime();
+  const resolvedRuntime = useResolvedChatBoxRuntime(runtime);
+  const { chatBoxModel, chatToolCallModel } = resolvedRuntime;
 
   const currentConversation = useChatConversationsStore.use.currentConversation?.();
   const setConversationUnreadCount = useChatConversationsStore.use.setUnreadCount();
   const markConversationRead = useChatConversationsStore.use.markConversationRead();
-  const chat = useChat(currentConversation);
+  const chat = useChat(currentConversation, resolvedRuntime);
 
   const getSessionChat = useCallback((sessionId?: string) => chat.for(sessionId).getState(), [chat]);
   const getConversationModel = useCallback(

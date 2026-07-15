@@ -12,7 +12,13 @@ import { act, render, renderHook, screen } from '@testing-library/react';
 import { observer } from '@nocobase/flow-engine';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ChatBoxLayout } from '../../components/ChatBoxLayout';
-import { ChatBoxRuntimeProvider, createChatBoxRuntime, getGlobalChatBoxRuntime, useChatBoxRuntime } from '../runtime';
+import {
+  ChatBoxRuntimeProvider,
+  createChatBoxRuntime,
+  getGlobalChatBoxRuntime,
+  useChatBoxRuntime,
+  useResolvedChatBoxRuntime,
+} from '../runtime';
 
 const mocks = vi.hoisted(() => ({
   eventBus: {
@@ -119,6 +125,25 @@ describe('chatbox runtime context', () => {
     } finally {
       consoleError.mockRestore();
     }
+  });
+
+  it('resolves an explicit runtime without a provider', () => {
+    const runtime = createChatBoxRuntime();
+
+    const { result } = renderHook(() => useResolvedChatBoxRuntime(runtime));
+
+    expect(result.current).toBe(runtime);
+  });
+
+  it('resolves the context runtime when no runtime is passed', () => {
+    const runtime = createChatBoxRuntime();
+    const wrapper: React.FC<{ children?: React.ReactNode }> = ({ children }) => (
+      <ChatBoxRuntimeProvider runtime={runtime}>{children}</ChatBoxRuntimeProvider>
+    );
+
+    const { result } = renderHook(() => useResolvedChatBoxRuntime(), { wrapper });
+
+    expect(result.current).toBe(runtime);
   });
 
   it('keeps the global runtime stable across repeated access', () => {

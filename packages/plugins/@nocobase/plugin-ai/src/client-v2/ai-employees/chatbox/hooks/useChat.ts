@@ -15,7 +15,7 @@ import {
   ChatSessionState,
   getChatSessionKey,
 } from '../stores/chat-messages';
-import { useChatBoxRuntime } from '../stores/runtime';
+import { type ChatBoxRuntime, useResolvedChatBoxRuntime } from '../stores/runtime';
 
 const selectSessionState = (model: ChatMessageModel, sessionId?: string) =>
   model.sessions[getChatSessionKey(sessionId)] ?? CHAT_EMPTY_SESSION_STATE;
@@ -141,8 +141,8 @@ const createChatFacade = (chatMessageModel: ChatMessageModel, sessionId?: string
   };
 };
 
-export const useChat = (sessionId?: string) => {
-  const { chatMessageModel } = useChatBoxRuntime();
+export const useChat = (sessionId?: string, runtime?: ChatBoxRuntime) => {
+  const { chatMessageModel } = useResolvedChatBoxRuntime(runtime);
   const sessionKey = getChatSessionKey(sessionId);
   return useMemo(() => createChatFacade(chatMessageModel, sessionKey), [chatMessageModel, sessionKey]);
 };

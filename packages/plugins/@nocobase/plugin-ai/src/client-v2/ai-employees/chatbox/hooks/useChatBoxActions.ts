@@ -21,25 +21,26 @@ import { aiEmployeeRole } from '../roles';
 import { useWorkflowTasksStore } from '../stores/workflow-tasks';
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
 import { getAllModels, isSameModel, isValidModel, resolveModel } from '../model';
-import { useChatBoxRuntime } from '../stores/runtime';
+import { type ChatBoxRuntime, useResolvedChatBoxRuntime } from '../stores/runtime';
 
-export const useChatBoxActions = () => {
+export const useChatBoxActions = (runtime?: ChatBoxRuntime) => {
   const app = useApp();
   const api = app.apiClient;
   const aiConfigRepository = useAIConfigRepository();
   const t = useT();
-  const { chatBoxModel, chatToolModel } = useChatBoxRuntime();
+  const resolvedRuntime = useResolvedChatBoxRuntime(runtime);
+  const { chatBoxModel, chatToolModel } = resolvedRuntime;
 
   const setCurrentConversation = useChatConversationsStore.use.setCurrentConversation();
   const currentConversation = useChatConversationsStore.use.currentConversation();
   const setWebSearch = useChatConversationsStore.use.setWebSearch();
-  const chat = useChat(currentConversation);
-  const draftChat = useChat();
+  const chat = useChat(currentConversation, resolvedRuntime);
+  const draftChat = useChat(undefined, resolvedRuntime);
 
   const setCurrentWorkflowTask = useWorkflowTasksStore.use.setCurrentWorkflowTask();
 
   const { refresh: refreshConversations } = useChatConversationActions();
-  const { sendMessages, syncContextAttachments } = useChatMessageActions();
+  const { sendMessages, syncContextAttachments } = useChatMessageActions(resolvedRuntime);
 
   const clear = useCallback(
     (

@@ -15,7 +15,6 @@ import {
   useChatBoxActions,
   AIEmployeeProfileCard,
   avatars,
-  ChatBoxRuntimeProvider,
   getGlobalChatBoxRuntime,
   type ChatEditorRef,
   type Task,
@@ -33,10 +32,11 @@ const DaraButtonInner: React.FC<DaraButtonProps> = observer(({ ctx }) => {
   const aiConfigRepository = useAIConfigRepository();
   const aiEmployees = aiConfigRepository.aiEmployees;
   const aiEmployee = aiEmployees?.find((e) => e.username === 'dara');
-  const { chatBoxModel, chatMessageModel } = getGlobalChatBoxRuntime();
+  const runtime = getGlobalChatBoxRuntime();
+  const { chatBoxModel, chatMessageModel } = runtime;
   const open = chatBoxModel.open;
   const currentEmployee = chatBoxModel.currentEmployee;
-  const { triggerTask } = useChatBoxActions();
+  const { triggerTask } = useChatBoxActions(runtime);
 
   const uid = ctx.model.uid;
 
@@ -190,10 +190,6 @@ const DaraButtonInner: React.FC<DaraButtonProps> = observer(({ ctx }) => {
   );
 });
 
-export const DaraButton: React.FC<DaraButtonProps> = (props) => (
-  <ChatBoxRuntimeProvider runtime={getGlobalChatBoxRuntime()}>
-    <DaraButtonInner {...props} />
-  </ChatBoxRuntimeProvider>
-);
+export const DaraButton: React.FC<DaraButtonProps> = (props) => <DaraButtonInner {...props} />;
 
 export default DaraButton;

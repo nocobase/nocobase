@@ -15,7 +15,7 @@ import { useAIConfigRepository } from '../../repositories/hooks/useAIConfigRepos
 import { avatars } from '../avatars';
 import { useChat } from '../chatbox/hooks/useChat';
 import { useChatBoxActions } from '../chatbox/hooks/useChatBoxActions';
-import { useChatBoxRuntime } from '../chatbox/stores/runtime';
+import { getGlobalChatBoxRuntime } from '../chatbox/stores/runtime';
 import { AIEmployeeProfileCard } from '../ProfileCard';
 import type { AIEmployee } from '../types';
 import { observer } from '@nocobase/flow-engine';
@@ -55,11 +55,12 @@ const AIButton = observer(() => {
   const { data: aiEmployees = [] } = useRequest<AIEmployee[], []>(async () => {
     return aiConfigRepository.getAIEmployees();
   });
-  const { chatBoxModel } = useChatBoxRuntime();
+  const runtime = getGlobalChatBoxRuntime();
+  const { chatBoxModel } = runtime;
   const open = chatBoxModel.open;
-  const chat = useChat();
+  const chat = useChat(undefined, runtime);
   const currentEmployee = chatBoxModel.currentEmployee;
-  const { switchAIEmployee } = useChatBoxActions();
+  const { switchAIEmployee } = useChatBoxActions(runtime);
 
   const aiEmployee = aiEmployees.find((e) => isDataModelingAssistant(e));
 

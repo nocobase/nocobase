@@ -397,6 +397,40 @@ Tests:
   - No AI chat box block production implementation, conversation server API, scope semantics, or database schema changes were included in this phase.
 - Update this document status and commit after tests pass.
 
+### T8. Support Explicit Runtime Injection For Provider-less Entrypoints
+
+Status: `Done`
+
+Dependencies: T7
+
+Problem:
+
+- Some AI employee entrypoints are rendered by Flow models or external plugins in arbitrary UI locations, such as `AIEmployeeShortcutModel`, `AIEmployeeButtonModel`, and data-visualization's `DaraButton`.
+- These entrypoints can call chatbox hooks before or outside any `ChatBoxRuntimeProvider`.
+- The fix must not make `useChatBoxRuntime()` silently fall back to the global runtime, because future block chatboxes need missing providers to fail loudly instead of writing into the wrong runtime.
+
+Design decision:
+
+- Keep `useChatBoxRuntime()` strict for chatbox-internal components.
+- Add `useResolvedChatBoxRuntime(runtime?)` for hooks/actions. It directly reads `ChatBoxContext`, prefers an explicitly passed runtime, then the context runtime, and throws if neither exists.
+- Do not add a separate `useOptionalChatBoxRuntime` wrapper unless multiple call sites need optional context reads.
+- Update chatbox hooks/actions to accept an optional `ChatBoxRuntime` parameter and resolve through `useResolvedChatBoxRuntime(runtime)`.
+- Update provider-less entrypoints to pass `getGlobalChatBoxRuntime()` explicitly. Future embedded chatbox blocks can pass their block runtime explicitly or provide it through `ChatBoxRuntimeProvider`.
+
+Tests:
+
+- Run touched-file eslint.
+- Run related chatbox runtime and AI employee shortcut tests.
+- Run data-visualization dirty refresh tests for the `DaraButton` integration.
+- Verification on 2026-07-16:
+  - `yarn eslint --fix packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/AIEmployeeShortcut.tsx packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/AddContextButton.tsx packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/ai-coding/AICodingButton.tsx packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/hooks/useChat.ts packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/hooks/useChatBoxActions.ts packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/hooks/useChatMessageActions.ts packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/hooks/useToolCallActions.ts packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/runtime.tsx packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/chatbox-runtime.test.tsx packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/data-modeling/setup.tsx packages/plugins/@nocobase/plugin-ai/src/client-v2/models/ai-employees/AIEmployeeShortcutModel.tsx packages/plugins/@nocobase/plugin-data-visualization/src/client-v2/flow/components/DaraButton.tsx`: passed.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/chatbox-runtime.test.tsx --run --reporter=verbose`: passed, 8 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/AIEmployeeShortcut.test.tsx --run --reporter=verbose`: passed, 2 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-data-visualization/src/client-v2/flow/models/__tests__/ChartBlockModel.dirtyRefresh.test.ts --run --reporter=verbose`: passed, 16 tests.
+  - `rg "useChatBoxStore|useChatMessagesStore|useChatToolCallStore|useChatToolsStore|useOptionalChatBoxRuntime" packages/plugins/@nocobase/plugin-ai/src/client-v2 packages/plugins/@nocobase/plugin-data-visualization/src/client-v2 -g '*.ts' -g '*.tsx'`: no matches.
+  - `yarn eslint --fix packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/RUNTIME_REFACTOR_PLAN.md`: attempted, but the current ESLint configuration parses `.md` as JavaScript and fails at line 1 with `Parsing error: Invalid character`.
+- Update this document status and commit after tests pass.
+
 ## Completion Rule
 
 Each task must be completed independently:
