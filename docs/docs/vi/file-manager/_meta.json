@@ -61,11 +61,6 @@
   },
   {
     "type": "custom-link",
-    "label": "URL ổn định",
-    "link": "/file-manager/stable-url"
-  },
-  {
-    "type": "custom-link",
     "label": "Xem trước file",
     "items": [
       {

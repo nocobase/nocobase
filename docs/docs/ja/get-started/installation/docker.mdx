@@ -627,7 +627,7 @@ app-postgres-app-1  | 🚀 NocoBase server running at: http://localhost:13000/
 
 次の設定では、ドメインへのリクエストを `http://127.0.0.1:13000/` にプロキシします。
 
-```nginx
+```bash
 server {
     listen 80;
     server_name your_domain.com;  # your_domain.com を自分のドメインに置き換えてください
@@ -658,8 +658,6 @@ server {
 
 HTTPS も有効にする場合は、ホスト側の Nginx で `443` と証明書を設定してください。NocoBase コンテナ側で証明書を個別に処理する必要はありません。
 
-このルートパス構成の `location /` は、`/api/`、`/ws`、`/files/` もプロキシします。静的リソースとアプリケーションルートを分離する場合も、`/files/` を静的ディレクトリとして扱わず、NocoBase に転送してください。
-
 ### サブパスへのデプロイ
 
 アプリを `https://your_domain.com/nocobase/` のようなサブパスにデプロイする場合は、先に `APP_PUBLIC_PATH` 環境変数を設定します。
@@ -676,7 +674,7 @@ services:
 
 続いて、ホスト側の Nginx でも同じサブパスでプロキシを設定します。
 
-```nginx
+```bash
 server {
     listen 80;
     server_name your_domain.com;  # your_domain.com を自分のドメインに置き換えてください
@@ -702,32 +700,10 @@ server {
         send_timeout 600;
         proxy_buffering off;
     }
-
-    # ルート形式のファイルアクセス URL との互換性を維持します。
-    location ^~ /files/ {
-        proxy_pass http://127.0.0.1:13000;
-        proxy_http_version 1.1;
-
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $upstream_x_forwarded_proto;
-        proxy_set_header Host $final_host;
-        proxy_set_header Referer $http_referer;
-        proxy_set_header User-Agent $http_user_agent;
-
-        add_header Cache-Control "no-cache, no-store" always;
-
-        proxy_connect_timeout 600;
-        proxy_send_timeout 600;
-        proxy_read_timeout 600;
-        send_timeout 600;
-    }
 }
 ```
 
-次の点に注意してください。
-
-- `APP_PUBLIC_PATH` と `proxy_pass` のパスを一致させます。どちらかで `/nocobase/` が抜けると、静的アセットやルーティングが正しく動かないことがあります
-- `/nocobase/files/` は `location /nocobase/` で転送されます。互換用のルートパス `/files/` は別途 NocoBase に転送する必要があります
+重要なのは、`APP_PUBLIC_PATH` と `proxy_pass` のパスを一致させることです。どちらかで `/nocobase/` が抜けると、静的アセットやルーティングが正しく動かないことがあります。
 
 ### その他の方法
 

@@ -8,93 +8,10 @@
  */
 
 import { useFieldSchema, useField } from '@formily/react';
-import { matchMimetype, useCollectionField, useDataSourceKey, useDesignable, useRequest } from '@nocobase/client';
-import { getPermanentFilePreviewUrl } from '@nocobase/plugin-file-manager/client-v2';
+import { useCollectionField, useDesignable, useRequest } from '@nocobase/client';
 import { cloneDeep, uniqBy } from 'lodash';
-import { useCallback, useRef } from 'react';
+import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-
-const isPlainObject = (value: unknown): value is Record<string, unknown> =>
-  !!value && typeof value === 'object' && !Array.isArray(value);
-export { getPermanentFilePreviewUrl };
-
-const getResponseFileRecord = (response: unknown) => {
-  if (!isPlainObject(response)) {
-    return null;
-  }
-
-  const candidate = isPlainObject(response.data) ? response.data : response;
-  return ['id', 'url', 'preview', 'filename', 'extname', 'mimetype'].some((key) => key in candidate) ? candidate : null;
-};
-
-const normalizeAttachmentUrlFileRecord = (record: Record<string, unknown>, url: string) => {
-  const preview = typeof record.preview === 'string' ? record.preview : getPermanentFilePreviewUrl(url);
-  const mimetype = typeof record.mimetype === 'string' ? record.mimetype : undefined;
-  const isImage = matchMimetype(
-    {
-      ...record,
-      uid: String(record.id ?? url),
-      name: typeof record.filename === 'string' ? record.filename : url,
-      url,
-    },
-    'image/*',
-  );
-  return {
-    ...record,
-    ...(mimetype ? { type: mimetype } : {}),
-    uid: record.id ?? url,
-    id: record.id ?? url,
-    url,
-    ...(isImage && preview ? { preview, thumbUrl: preview } : {}),
-  };
-};
-
-export const normalizeAttachmentUrlValue = (
-  value: unknown,
-  fileMetaByUrl: Map<string, Record<string, unknown>> = new Map(),
-) => {
-  if (typeof value === 'string') {
-    const cachedFile = fileMetaByUrl.get(value);
-    if (cachedFile) {
-      return normalizeAttachmentUrlFileRecord(cachedFile, value);
-    }
-    const preview = getPermanentFilePreviewUrl(value);
-    if (!preview) {
-      return value;
-    }
-    const isImage = matchMimetype({ uid: value, name: value, url: value }, 'image/*');
-    return {
-      uid: value,
-      id: value,
-      url: value,
-      ...(isImage && preview ? { preview, thumbUrl: preview } : {}),
-    };
-  }
-  return value;
-};
-
-export const toAttachmentUrlValueItem = (data: unknown) => {
-  const record = getResponseFileRecord(data);
-  if (!record) {
-    return undefined;
-  }
-
-  const url = record.thumbnailRule ? `${record.url}${record.thumbnailRule}` : record.url;
-  if (typeof url !== 'string') {
-    return undefined;
-  }
-
-  return url;
-};
-
-export const getAttachmentUrlFileCollection = (target?: string, dataSourceKey?: string) => {
-  return target
-    ? {
-        dataSourceKey: dataSourceKey || 'main',
-        collectionName: target,
-      }
-    : undefined;
-};
 
 function useStorageRules(storage) {
   const name = storage ?? '';
@@ -110,25 +27,16 @@ function useStorageRules(storage) {
 }
 export function useAttachmentUrlFieldProps(props) {
   const field = useCollectionField();
-  const dataSourceKey = useDataSourceKey();
   const rules = useStorageRules(field?.storage);
-  const fileMetaByUrlRef = useRef(new Map<string, Record<string, unknown>>());
   return {
     ...props,
-    value: normalizeAttachmentUrlValue(props.value, fileMetaByUrlRef.current),
     rules,
     action: `${field.target}:create${field.storage ? `?attachmentField=${field.collectionName}.${field.name}` : ''}`,
-    fileCollection: getAttachmentUrlFileCollection(field?.target, dataSourceKey),
     toValueItem: (data) => {
-      const url = toAttachmentUrlValueItem(data);
-      const record = getResponseFileRecord(data);
-      if (url && record) {
-        fileMetaByUrlRef.current.set(url, record);
-      }
-      return url;
+      return data?.thumbnailRule ? `${data?.url}${data?.thumbnailRule}` : data?.url;
     },
     getThumbnailURL: (file) => {
-      return file?.thumbUrl || file?.preview || getPermanentFilePreviewUrl(file?.url) || file?.url;
+      return file?.url;
     },
   };
 }

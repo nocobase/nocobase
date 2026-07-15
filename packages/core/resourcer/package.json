@@ -8,14 +8,10 @@
   "dependencies": {
     "@nocobase/utils": "2.2.0-alpha.8",
     "deepmerge": "^4.2.2",
-    "koa": "^3.2.0",
     "koa-compose": "^4.1.0",
     "lodash": "^4.17.21",
     "path-to-regexp": "^6.3.0",
     "qs": "^6.9.4"
-  },
-  "devDependencies": {
-    "@types/koa": "^2.15.0"
   },
   "repository": {
     "type": "git",

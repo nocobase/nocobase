@@ -69,16 +69,6 @@ Jika Anda terjebak di sini "Mengapa Anda memerlukan `nb app autostart`", lanjutk
 - Jika Anda akan terhubung ke proxy terbalik, `appPort` telah disimpan di env
 - Jika Anda siap membukanya secara resmi ke dunia luar, Anda sudah merencanakan nama domain, port masuk, dan solusi HTTPS.
 
-:::warning Perhatian
-
-Gunakan `hostname` yang berbeda, seperti subdomain terpisah, untuk setiap layanan NocoBase yang independen. Jangan hanya membedakan layanan berdasarkan port. Cookie browser tidak diisolasi berdasarkan port, sehingga layanan di bawah `hostname` yang sama dapat menimpa status login dan memengaruhi otorisasi [URL stabil](../../file-manager/stable-url.md).
-
-Sub-app dalam deployment NocoBase yang sama dibedakan berdasarkan nama aplikasi dan tidak memerlukan hostname terpisah. Namun, jika layanan NocoBase independen lain berjalan pada port berbeda di bawah `hostname` yang sama dan memiliki aplikasi utama atau sub-app dengan nama yang sama, cookie tetap dapat mengalami konflik.
-
-Misalnya, gunakan `app1.example.com` dan `app2.example.com`, bukan `example.com:13000` dan `example.com:14000`.
-
-:::
-
 Jika Anda belum menyelesaikan instalasi CLI atau inisialisasi env, kembali ke [Instalasi menggunakan CLI (disarankan)](../installation/cli.md).
 
 Jika perintah meminta env hilang `appPort`, jalankan dulu [`nb env update`](../../api/cli/env/update.md) untuk mengisinya.

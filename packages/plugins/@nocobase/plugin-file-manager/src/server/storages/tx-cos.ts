@@ -10,7 +10,7 @@
 import { promisify } from 'util';
 import { Transform, TransformCallback } from 'stream';
 import urlJoin from 'url-join';
-import { AttachmentModel, getDownloadContentDisposition, GetFileURLOptions, StorageType } from '.';
+import { AttachmentModel, StorageType } from '.';
 import { STORAGE_TYPE_TX_COS } from '../../constants';
 import { cloudFilenameGetter, getFileKey } from '../utils';
 
@@ -147,34 +147,6 @@ export default class extends StorageType {
       config: this.storage.options,
       baseUrl: this.storage.baseUrl,
       filename: cloudFilenameGetter(this.storage),
-    });
-  }
-
-  async getFileURL(file: AttachmentModel, preview = false, options: GetFileURLOptions = {}) {
-    if (!options.download) {
-      return super.getFileURL(file, preview, options);
-    }
-    const { cos } = this.make();
-    return new Promise<string>((resolve, reject) => {
-      cos.getObjectUrl(
-        {
-          Region: this.storage.options.Region,
-          Bucket: this.storage.options.Bucket,
-          Key: getFileKey(file),
-          Sign: true,
-          Expires: this.storage.options.signedUrlExpires || 900,
-          Query: {
-            'response-content-disposition': getDownloadContentDisposition(file.filename),
-          },
-        },
-        (error, data) => {
-          if (error) {
-            reject(error);
-            return;
-          }
-          resolve(data.Url);
-        },
-      );
     });
   }
 

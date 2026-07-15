@@ -15,14 +15,6 @@ function stripQueryAndHash(pathname = '') {
   return pathname.split('?')[0].split('#')[0];
 }
 
-function shouldDownload(pathname = '') {
-  const query = pathname.split('?')[1]?.split('#')[0];
-  if (!query) {
-    return false;
-  }
-  return new URLSearchParams(query).get('download') === '1';
-}
-
 export function hasActiveContentExtension(pathname = '') {
   const ext = path.extname(stripQueryAndHash(pathname)).toLowerCase();
   return ACTIVE_CONTENT_EXTENSIONS.has(ext);
@@ -33,7 +25,7 @@ export function getStorageUploadSecurityHeaders(pathname = '') {
     'X-Content-Type-Options': 'nosniff',
   };
 
-  if (hasActiveContentExtension(pathname) || shouldDownload(pathname)) {
+  if (hasActiveContentExtension(pathname)) {
     headers['Content-Disposition'] = 'attachment';
   }
 

@@ -7,20 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-interface UploadPlaceholderWindow {
-  __nocobase_public_path__?: string;
-  __webpack_public_path__?: string;
-}
-
-export function getUploadPlaceholderUrl(path: string, browserWindow?: UploadPlaceholderWindow) {
-  const runtimeWindow =
-    browserWindow || (typeof window === 'undefined' ? undefined : (window as UploadPlaceholderWindow));
-  const assetPublicPath = runtimeWindow?.__webpack_public_path__;
-  const appPublicPath = runtimeWindow?.__nocobase_public_path__;
-  const publicPath =
-    assetPublicPath && assetPublicPath !== '/' ? assetPublicPath : appPublicPath || assetPublicPath || '/';
-  return `${publicPath.replace(/\/+$/g, '')}/${path.replace(/^\//, '')}`;
-}
+const publicPath = window['__nocobase_dev_public_path__'] || window['__nocobase_public_path__'] || '/';
 
 export const UPLOAD_PLACEHOLDER = [
   {
@@ -82,8 +69,8 @@ export const UPLOAD_PLACEHOLDER = [
 ].map((item) => {
   return {
     ext: item.ext,
-    icon: getUploadPlaceholderUrl(item.icon),
+    icon: publicPath + item.icon.slice(1),
   };
 });
 
-export const UNKNOWN_FILE_ICON = getUploadPlaceholderUrl('/file-placeholder/unknown-200-200.png');
+export const UNKNOWN_FILE_ICON = publicPath + 'file-placeholder/unknown-200-200.png';

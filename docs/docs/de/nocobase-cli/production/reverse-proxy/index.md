@@ -9,7 +9,7 @@ keywords: "NocoBase, NB-Proxy-Nginx, NB-Proxy-Caddy, Reverse-Proxy, Nginx, Caddy
 
 Dieser Artikel gilt nur für Anwendungen, die mit `nb init` installiert wurden.
 
-In NocoBase leistet der Reverse-Proxy der Produktionsumgebung mehr als nur die Weiterleitung von Anfragen an den Anwendungsprozess. Er muss auch WebSockets, Unterpfade, statische Front-End-Ressourcen, Upload-Verzeichnisse, die Dateizugriffsroute `/files/` und SPA-Fallback-Seiten verarbeiten.
+In NocoBase leistet der Reverse-Proxy der Produktionsumgebung mehr als nur die Weiterleitung von Anfragen an den Anwendungsprozess. Oftmals werden auch die Details von WebSockets, Unterpfaden, statischen Front-End-Ressourcen, Upload-Verzeichnissen und SPA-Fallback-Seiten gleichzeitig behandelt.
 
 Die Funktion von `nb proxy` besteht darin, diese leicht übersehenen Details in einem stabilen Satz von Befehlseinträgen zusammenzufassen.
 

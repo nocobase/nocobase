@@ -122,7 +122,7 @@ nb proxy nginx reload
 
 アプリケーションが CLI でホストされていない場合、または完全な Nginx 構成を自分で明示的に保守したい場合は、手動で記述することもできます。
 
-ただし、NocoBase の本番環境リバースプロキシは、単純な `proxy_pass` だけではありません。API リクエストの転送に加えて、アップロードディレクトリ、フロントエンド静的リソース、ファイルアクセスルート `/files/`、WebSocket、`.well-known` ルート、SPA フォールバックページも処理する必要があります。
+ただし、NocoBase の場合、実稼働リバース プロキシは通常、単純な `proxy_pass` 以上のものです。 API リクエストをバックエンド アプリケーションに転送することに加えて、完全で使用可能な構成では、通常、アップロード ディレクトリ、フロントエンド静的リソース、WebSocket、`.well-known` ルート、および SPA フォールバック ページを処理する必要があります。
 
 `test2` を例にとると、Nginx に関連する主要なファイルとディレクトリには通常、次のものが含まれます。
 
@@ -138,7 +138,6 @@ nb proxy nginx reload
 - `uploads`: `alias` を通じてアップロード ディレクトリを公開します
 - `dist`: `alias` を通じてフロントエンド ビルド製品ディレクトリを公開します。
 - `well-known`: OAuth / OpenID 関連の検出パスを処理します。
-- `files`: `/files/` 配下のファイルアクセスリクエストをバックエンドアプリケーションへ転送します
 - `api`: `/api/` リクエストをバックエンド アプリケーションに転送します
 - `ws`: WebSocket リクエストをバックエンド アプリケーションに転送します。
 - `spa`: `/` および `/v/` のフロントエンド エントリと `try_files` フォールバックを提供します
@@ -177,11 +176,6 @@ server {
 
     location ~ ^/\\.well-known/(?<well_known>oauth-authorization-server|openid-configuration)/(?<resource_path>.+)$ {
         rewrite ^ /$resource_path/.well-known/$well_known break;
-        proxy_pass http://127.0.0.1:56575;
-        include NB_CLI_ROOT/.nocobase/proxy/nginx/snippets/proxy-location.conf;
-    }
-
-    location ^~ /files/ {
         proxy_pass http://127.0.0.1:56575;
         include NB_CLI_ROOT/.nocobase/proxy/nginx/snippets/proxy-location.conf;
     }
@@ -235,15 +229,7 @@ nb proxy nginx generate --env test2 --host c.local.nocobase.com
 2. 生成された結果に基づいて、ルーティング構造と実際のパスを確認します。
 3. 次に、ドメイン名、実行モード、マウント パスに従って手動で調整します。
 
-通常、この方法では、構成を最初から手書きするよりも、`/files/`、WebSocket、静的リソース、アップロードディレクトリ、SPA フォールバックページに関連する詳細を見逃しにくくなります。
-
-:::warning 注意
-
-`/files/` は NocoBase の認証を通す必要があるアプリケーションルートです。静的ディレクトリとして処理したり、SPA フォールバックへ流したりしないでください。NocoBase バックエンドへ転送し、`location /` などのフロントエンドフォールバックルールより前に配置します。
-
-`APP_PUBLIC_PATH=/nocobase/` を設定している場合は、`/nocobase/files/` も転送してください。既存のファイル URL との互換性のため、ルートの `/files/` ルールも残します。
-
-:::
+通常、この方法では、構成を最初から手書きするよりも、WebSocket、静的リソース、アップロード ディレクトリ、または SPA フォールバック ページに関連する詳細を見逃す可能性が低くなります。
 
 ## HTTPS の処理方法
 

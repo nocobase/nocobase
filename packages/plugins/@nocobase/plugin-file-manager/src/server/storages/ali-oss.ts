@@ -11,7 +11,7 @@ import { promisify } from 'util';
 import Path from 'path';
 import crypto from 'crypto';
 
-import { AttachmentModel, getDownloadContentDisposition, GetFileURLOptions, StorageType } from '.';
+import { AttachmentModel, StorageType } from '.';
 import { STORAGE_TYPE_ALI_OSS } from '../../constants';
 import { cloudFilenameGetter, getFileKey } from '../utils';
 
@@ -109,19 +109,6 @@ export default class extends StorageType {
     return new AliYunOssStorage({
       config: { timeout: 600_000, ...this.storage.options },
       filename: cloudFilenameGetter(this.storage),
-    });
-  }
-
-  async getFileURL(file: AttachmentModel, preview = false, options: GetFileURLOptions = {}) {
-    if (!options.download) {
-      return super.getFileURL(file, preview, options);
-    }
-    const { client } = this.make();
-    return client.signatureUrl(getFileKey(file), {
-      expires: this.storage.options.signedUrlExpires || 900,
-      response: {
-        'content-disposition': getDownloadContentDisposition(file.filename),
-      },
     });
   }
 

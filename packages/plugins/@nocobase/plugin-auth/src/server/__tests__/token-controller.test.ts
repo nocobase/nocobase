@@ -11,7 +11,6 @@ import { BaseAuth } from '@nocobase/auth';
 import { Database, Model } from '@nocobase/database';
 import { MockServer, createMockServer } from '@nocobase/test';
 import { AuthErrorType } from '@nocobase/auth';
-import { getAuthCookieName } from '@nocobase/utils';
 import { RENEWED_JTI_CACHE_MS } from '../../constants';
 function sleep(ms) {
   return new Promise((resolve) => {
@@ -37,14 +36,6 @@ class MockContext {
       return this.header.get(key);
     },
   };
-  cookies = {
-    values: new Map<string, string>(),
-    set: (name: string, value: string) => {
-      this.cookies.values.set(name, value);
-    },
-  };
-  protocol = 'http';
-  headers = {};
   t = (s) => s;
   setToken(token: string) {
     this.token = token;
@@ -131,9 +122,7 @@ describe('auth', () => {
     ctx.setToken(token);
     await sleep(3000);
     await auth.check();
-    const newToken = ctx.res.getHeader('x-new-token') as string;
-    expect(typeof newToken).toBe('string');
-    expect(ctx.cookies.values.get(getAuthCookieName('authToken', app.name))).toBe(newToken);
+    expect(typeof ctx.res.getHeader('x-new-token')).toBe('string');
   });
 
   it('when exceed logintime, throw Unauthorized', async () => {

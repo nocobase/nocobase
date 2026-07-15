@@ -74,15 +74,12 @@ describe('storage:ali-oss', () => {
       // 文件上传和解析是否正常
       expect(body.data).toMatchObject(matcher);
       // 文件的 url 是否正常生成
-      expect(body.data.url).toBe(`/files/main/main/attachments/${body.data.id}`);
-      expect(await plugin.getFileURL(body.data)).toBe(
-        `${attachment.storage.baseUrl}/${body.data.path}/${body.data.filename}`,
-      );
+      expect(body.data.url).toBe(`${attachment.storage.baseUrl}/${body.data.path}/${body.data.filename}`);
       // 文件的数据是否正常保存
       expect(attachment).toMatchObject(matcher);
 
       // 通过 url 是否能正确访问
-      const content = await requestFile(await plugin.getFileURL(attachment), agent);
+      const content = await requestFile(attachment.url, agent);
 
       expect(content.text).toBe('Hello world!\n');
     });
@@ -93,9 +90,8 @@ describe('storage:ali-oss', () => {
       const { body } = await agent.resource('attachments').create({
         [FILE_FIELD_NAME]: path.resolve(__dirname, '../files/text.txt'),
       });
-      const storageUrl = await plugin.getFileURL(body.data);
       // 通过 url 是否能正确访问
-      const content1 = await requestFile(storageUrl, agent);
+      const content1 = await requestFile(body.data.url, agent);
       expect(content1.text).toBe('Hello world!\n');
 
       const res = await agent.resource('attachments').destroy({
@@ -106,7 +102,7 @@ describe('storage:ali-oss', () => {
       const count = await AttachmentRepo.count();
       expect(count).toBe(0);
 
-      const content2 = await requestFile(storageUrl, agent);
+      const content2 = await requestFile(body.data.url, agent);
       expect(content2.status).toBe(404);
     });
 
@@ -124,9 +120,8 @@ describe('storage:ali-oss', () => {
       const { body } = await agent.resource('attachments').create({
         [FILE_FIELD_NAME]: path.resolve(__dirname, '../files/text.txt'),
       });
-      const storageUrl = await plugin.getFileURL(body.data);
       // 通过 url 是否能正确访问
-      const content1 = await requestFile(storageUrl, agent);
+      const content1 = await requestFile(body.data.url, agent);
       expect(content1.text).toBe('Hello world!\n');
 
       const res = await agent.resource('attachments').destroy({
@@ -137,7 +132,7 @@ describe('storage:ali-oss', () => {
       const count = await AttachmentRepo.count();
       expect(count).toBe(0);
 
-      const content2 = await requestFile(storageUrl, agent);
+      const content2 = await requestFile(body.data.url, agent);
       expect(content2.status).toBe(200);
     });
   });
@@ -158,9 +153,8 @@ describe('storage:ali-oss', () => {
         [FILE_FIELD_NAME]: path.resolve(__dirname, '../files/text.txt'),
       });
 
-      const url = await plugin.getFileURL(body.data);
-      expect(url).toBe(await plugin.getFileURL(body.data));
-      expect(body.data.url).toBe(`/files/main/main/attachments/${body.data.id}`);
+      const url = plugin.getFileURL(body.data);
+      expect(url).toBe(`${options.baseUrl}/${body.data.path}/${body.data.filename}`);
 
       // 通过 url 是否能正确访问
       const content1 = await requestFile(url, agent);

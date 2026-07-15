@@ -69,16 +69,6 @@ Si vous êtes bloqué ici "Pourquoi avez-vous besoin de `nb app autostart`", con
 - Si vous allez vous connecter au proxy inverse, `appPort` a été enregistré dans env
 - Si vous êtes prêt à l'ouvrir officiellement au monde extérieur, vous avez déjà prévu le nom de domaine, le port d'entrée et la solution HTTPS.
 
-:::warning Attention
-
-Utilisez un `hostname` différent, comme un sous-domaine séparé, pour chaque service NocoBase indépendant. Ne distinguez pas les services uniquement par leur port. Les cookies du navigateur ne sont pas isolés par port ; des services sous le même `hostname` peuvent donc écraser l'état de connexion et affecter l'autorisation des [URL stables](../../file-manager/stable-url.md).
-
-Les sous-applications d'un même déploiement NocoBase sont distinguées par leur nom d'application et ne nécessitent pas de hostnames séparés. Toutefois, si un autre service NocoBase indépendant s'exécute sur un autre port sous le même `hostname` et contient une application principale ou une sous-application portant le même nom, les cookies peuvent encore entrer en conflit.
-
-Utilisez par exemple `app1.example.com` et `app2.example.com` plutôt que `example.com:13000` et `example.com:14000`.
-
-:::
-
 Si vous n'avez pas terminé l'installation CLI ou l'initialisation de l'environnement, revenez à [Installation à l'aide de CLI (recommandé)] (../installation/cli.md).
 
 Si la commande indique qu'il manque `appPort` env, exécutez d'abord [`nb env update`](../../api/cli/env/update.md) pour le remplir.

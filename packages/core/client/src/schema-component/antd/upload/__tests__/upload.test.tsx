@@ -107,9 +107,9 @@ describe('Upload', () => {
     await userEvent.upload(document.querySelector('input[type="file"]'), file);
 
     await waitFor(() => {
-      expect(document.querySelector('.ant-upload-list-item')).toHaveClass('ant-upload-list-item-done');
-      expect(document.querySelector('.ant-upload-list-item-thumbnail')?.closest('a')).toHaveAttribute(
-        'href',
+      expect(document.querySelector('.ant-upload-list-item-image')).toBeInTheDocument();
+      expect(document.querySelector('.ant-upload-list-item-image')).toHaveAttribute(
+        'src',
         'https://zos.alipayobjects.com/rmsportal/jkjgkEfvpUPVyRjUImniVslZfWPnJuuZ.png',
       );
     });

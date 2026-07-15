@@ -7,20 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  CopyObjectCommand,
-  DeleteObjectCommand,
-  GetObjectCommand,
-  HeadObjectCommand,
-  S3Client,
-} from '@aws-sdk/client-s3';
+import { CopyObjectCommand, DeleteObjectCommand, HeadObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import urlJoin from 'url-join';
 import { isURL } from '@nocobase/utils';
 import crypto from 'crypto';
 import { Transform, TransformCallback } from 'stream';
-import { AttachmentModel, getDownloadContentDisposition, GetFileURLOptions, StorageModel, StorageType } from '.';
+import { AttachmentModel, StorageModel, StorageType } from '.';
 import { STORAGE_TYPE_S3 } from '../../constants';
 import { cloudFilenameGetter, ensureUrlEncoded } from '../utils';
 
@@ -74,20 +67,6 @@ export default class extends StorageType {
     this.client = new S3Client(params);
     this.client.middlewareStack.remove('flexibleChecksumsMiddleware');
     this.client.middlewareStack.remove('flexibleChecksumsInputMiddleware');
-  }
-
-  async getFileURL(file: AttachmentModel, preview = false, options: GetFileURLOptions = {}) {
-    if (!options.download) {
-      return super.getFileURL(file, preview, options);
-    }
-    const command = new GetObjectCommand({
-      Bucket: this.storage.options.bucket,
-      Key: this.getFileKey(file),
-      ResponseContentDisposition: getDownloadContentDisposition(file.filename),
-    });
-    return getSignedUrl(this.client, command, {
-      expiresIn: this.storage.options.signedUrlExpires || 900,
-    });
   }
 
   make() {

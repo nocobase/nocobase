@@ -9,7 +9,7 @@ keywords: "NocoBase,nb proxy nginx,nb proxy caddy, proxy reverso, Nginx, Caddy, 
 
 Este artigo se aplica apenas a aplicativos instalados usando `nb init`.
 
-No NocoBase, o proxy reverso do ambiente de produção faz mais do que encaminhar solicitações para o processo da aplicação. Ele também precisa tratar WebSockets, subcaminhos, recursos estáticos de front-end, diretórios de upload, a rota de acesso a arquivos `/files/` e as páginas de fallback da SPA.
+No NocoBase, o proxy reverso do ambiente de produção faz mais do que simplesmente encaminhar solicitações para o processo de aplicação. Freqüentemente, os detalhes de WebSockets, subcaminhos, recursos estáticos de front-end, diretórios de upload e páginas substitutas de SPA também são tratados ao mesmo tempo.
 
 A função de `nb proxy` é coletar esses detalhes facilmente perdidos em um conjunto estável de entradas de comando.
 

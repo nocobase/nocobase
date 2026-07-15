@@ -10,9 +10,10 @@
 import { css } from '@emotion/css';
 import { DetailsItemModel, FieldModel, TableColumnModel } from '@nocobase/client-v2';
 import { tExpr, DisplayItemModel } from '@nocobase/flow-engine';
-import { Image, Space, Tooltip } from 'antd';
+import { Image, Space, Tooltip, message } from 'antd';
 import { castArray } from 'lodash';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   FilePreviewRenderer,
   getDownloadFileName,
@@ -20,65 +21,10 @@ import {
   getFileName,
   getPreviewThumbnailUrl,
   getPreviewFileUrl,
-  matchMimetype,
   normalizePreviewFile,
-  triggerFileDownload,
 } from '../previewer/filePreviewTypes';
 
-const isPlainRecord = (value: unknown): value is Record<string, unknown> =>
-  !!value && typeof value === 'object' && !Array.isArray(value);
-
-const isString = (value: unknown): value is string => typeof value === 'string' && value.length > 0;
-
-type FileCollectionLike = {
-  dataSourceKey?: string;
-  name: string;
-  template?: string;
-};
-
-type FileCollectionFieldLike = {
-  interface?: string;
-  target?: string;
-  targetCollection?: FileCollectionLike;
-};
-
-export const getFileCollectionReference = (
-  collectionField?: FileCollectionFieldLike,
-  currentCollection?: FileCollectionLike,
-) => {
-  if (collectionField?.interface === 'attachmentURL' && collectionField.target) {
-    return {
-      dataSourceKey: currentCollection?.dataSourceKey || 'main',
-      collectionName: collectionField.target,
-    };
-  }
-
-  const fileCollection =
-    collectionField?.targetCollection || (currentCollection?.template === 'file' ? currentCollection : null);
-  return fileCollection
-    ? { dataSourceKey: fileCollection.dataSourceKey || 'main', collectionName: fileCollection.name }
-    : undefined;
-};
-
-const mergeCurrentFileRecordMeta = (file: unknown, record: unknown) => {
-  if (!isString(file) || !isPlainRecord(record)) {
-    return file;
-  }
-
-  const url = record.url;
-  const preview = record.preview;
-  if (url !== file && preview !== file) {
-    return file;
-  }
-
-  return {
-    ...record,
-    url: isString(url) ? url : file,
-    preview: isString(preview) ? preview : file,
-  };
-};
-
-export const FilePreview = ({
+const FilePreview = ({
   file,
   size,
   showFileName,
@@ -97,14 +43,6 @@ export const FilePreview = ({
   const fileName = getFileName(previewFile, src);
   const fallback = getFallbackIcon(previewFile, src);
   const thumbnail = getPreviewThumbnailUrl(previewFile) || fallback;
-  const imageStyle: React.CSSProperties = {
-    border: '1px solid #d9d9d9',
-    padding: 2,
-    borderRadius: 4,
-    objectFit: 'cover',
-    boxShadow: '0 0 0 2px #fff',
-  };
-  const isImage = matchMimetype(previewFile, 'image/*');
   const imageNode = (
     <div
       className={css`
@@ -114,11 +52,18 @@ export const FilePreview = ({
         }
       `}
     >
-      {isImage ? (
-        <img src={thumbnail} alt={fileName} width={size} height={size} style={imageStyle} />
-      ) : (
-        <Image src={thumbnail} fallback={fallback} width={size} height={size} preview={false} style={imageStyle} />
-      )}
+      <Image
+        src={thumbnail}
+        fallback={fallback}
+        width={size}
+        height={size}
+        preview={false}
+        style={{
+          borderRadius: 4,
+          objectFit: 'cover',
+          boxShadow: '0 0 0 2px #fff',
+        }}
+      />
     </div>
   );
   return (
@@ -153,17 +98,17 @@ export const FilePreview = ({
 };
 
 const Preview = (props) => {
-  const { value = [], size = 28, showFileName, record, fileCollection } = props;
+  const { value = [], size = 28, showFileName } = props;
+  const { t } = useTranslation();
   const [current, setCurrent] = React.useState(0);
   const [previewOpen, setPreviewOpen] = React.useState(false);
   const list = React.useMemo(
     () =>
       castArray(value)
         .filter(Boolean)
-        .map((file) => mergeCurrentFileRecordMeta(file, record))
         .map(normalizePreviewFile)
         .filter((file) => getPreviewFileUrl(file)),
-    [record, value],
+    [value],
   );
   React.useEffect(() => {
     if (current >= list.length && list.length) {
@@ -175,8 +120,10 @@ const Preview = (props) => {
       setPreviewOpen(false);
     }
   }, [list.length, previewOpen]);
+  const DOWNLOAD_REVOKE_DELAY = 1000; // delay to avoid revoking URL too early during download
+
   const onDownload = React.useCallback(
-    (fileOverride?: any) => {
+    async (fileOverride?: any) => {
       const file = fileOverride || list[current];
       if (!file) {
         return;
@@ -186,9 +133,41 @@ const Preview = (props) => {
       if (!url) {
         return;
       }
-      triggerFileDownload(url, getDownloadFileName(file, url));
+      const downloadName = getDownloadFileName(file, url);
+      let blobUrl: string | undefined;
+      let link: HTMLAnchorElement | undefined;
+
+      try {
+        const response = await fetch(url);
+
+        if (!response.ok) {
+          throw new Error(`Download failed with status ${response.status}`);
+        }
+
+        const blob = await response.blob();
+        blobUrl = URL.createObjectURL(blob);
+
+        link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = downloadName;
+        document.body.appendChild(link);
+        link.click();
+      } catch (error) {
+        console.error('File download failed:', error);
+        message.error(t('file-manager:File download failed'));
+      } finally {
+        if (link) {
+          link.remove();
+        }
+
+        if (blobUrl) {
+          setTimeout(() => {
+            URL.revokeObjectURL(blobUrl!);
+          }, DOWNLOAD_REVOKE_DELAY);
+        }
+      }
     },
-    [current, list],
+    [current, list, t],
   );
   const onOpenAtIndex = React.useCallback((index: number) => {
     setCurrent(index);
@@ -222,7 +201,6 @@ const Preview = (props) => {
           file={list[current]}
           index={current}
           list={list}
-          fileCollection={fileCollection}
           onOpenChange={setPreviewOpen}
           onClose={() => setPreviewOpen(false)}
           onSwitchIndex={onSwitchIndex}
@@ -236,21 +214,11 @@ export class DisplayPreviewFieldModel extends FieldModel {
   disableTitleField = true;
   render(): any {
     const { value, titleField, template, target } = this.props;
-    const record = this.context.record;
-    const collectionField = this.context.collectionField;
-    const currentCollection = this.context.collection;
-    const fileCollectionReference = getFileCollectionReference(collectionField, currentCollection);
     if (titleField && template !== 'file' && target !== 'attachments') {
       return castArray(value).flatMap((v, idx) => {
         const result = v?.[titleField];
         const content = result ? (
-          <Preview
-            key={idx}
-            {...this.props}
-            fileCollection={fileCollectionReference}
-            record={v}
-            value={castArray(result).filter(Boolean)}
-          />
+          <Preview key={idx} {...this.props} value={castArray(result).filter(Boolean)} />
         ) : (
           <span key={idx}>N/A</span>
         );
@@ -258,14 +226,7 @@ export class DisplayPreviewFieldModel extends FieldModel {
         return idx === 0 ? [content] : [<span key={`sep-${idx}`}>, </span>, content];
       });
     } else {
-      return (
-        <Preview
-          {...this.props}
-          fileCollection={fileCollectionReference}
-          record={record}
-          value={castArray(value).filter(Boolean)}
-        />
-      );
+      return <Preview {...this.props} value={castArray(value).filter(Boolean)} />;
     }
   }
 }
