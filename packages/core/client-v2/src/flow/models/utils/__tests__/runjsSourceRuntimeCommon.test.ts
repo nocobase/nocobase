@@ -25,6 +25,31 @@ import {
   stableSerialize,
 } from '../runjsSourceRuntimeCommon';
 
+function createDataSourceContext() {
+  const users = {
+    name: 'users',
+    title: 'Users',
+    getFields: () => [
+      { name: 'username', title: 'Username' },
+      { name: 'nickname', title: 'Nickname' },
+      { name: 'hiddenField', title: 'Hidden field', options: { hidden: true } },
+    ],
+  };
+  const orders = { name: 'orders', title: 'Orders', getFields: () => [] };
+  const hidden = { name: 'hidden', title: 'Hidden', hidden: true, getFields: () => [] };
+  const dataSource = {
+    key: 'main',
+    getCollections: () => [users, orders, hidden],
+    getCollection: (name: string) => [users, orders, hidden].find((collection) => collection.name === name),
+  };
+  return {
+    dataSourceManager: {
+      getDataSource: (key: string) => (key === 'main' ? dataSource : undefined),
+      getDataSources: () => [dataSource],
+    },
+  } as never;
+}
+
 describe('runjsSourceRuntimeCommon', () => {
   beforeEach(() => {
     RunJSSourceResolverRegistry.clear();
@@ -118,6 +143,78 @@ describe('runjsSourceRuntimeCommon', () => {
 
     expect(step.uiMode).toEqual({ type: 'switch', key: 'value' });
     expect(step.defaultParams?.({} as never)).toEqual({ value: true });
+  });
+
+  it('renders collection settings as an inline searchable select with all visible collections', async () => {
+    const [, step] = createLightExtensionSettingStep<FlowModel>({
+      entryId: 'entry_collection',
+      fieldName: 'collectionName',
+      fieldSchema: {
+        type: 'string',
+        title: 'Collection',
+        'x-component': 'CollectionSelect',
+      },
+      required: true,
+      stepKey: 'collection-name',
+      defaultValue: 'users',
+      sort: 700,
+      component: 'SettingsSingleField',
+      rootSchema: { type: 'object' },
+      descriptorDefaults: {},
+      savedRootValue: { collectionName: 'users' },
+      syncValue: () => undefined,
+      afterParamsSave: async () => undefined,
+    });
+    const uiMode = typeof step.uiMode === 'function' ? await step.uiMode(createDataSourceContext()) : step.uiMode;
+
+    expect(uiMode).toEqual({
+      type: 'select',
+      key: 'value',
+      props: {
+        allowClear: true,
+        optionFilterProp: 'label',
+        showSearch: true,
+        options: [
+          { label: 'Users', value: 'users' },
+          { label: 'Orders', value: 'orders' },
+        ],
+      },
+    });
+  });
+
+  it('renders collection field settings from the selected collection as an inline select', async () => {
+    const [, step] = createLightExtensionSettingStep<FlowModel>({
+      entryId: 'entry_collection_field',
+      fieldName: 'displayField',
+      fieldSchema: {
+        type: 'string',
+        title: 'Display field',
+        'x-component': 'CollectionFieldSelect',
+        'x-component-props': { collectionField: 'collectionName' },
+      },
+      required: true,
+      stepKey: 'display-field',
+      defaultValue: 'username',
+      sort: 701,
+      component: 'SettingsSingleField',
+      rootSchema: { type: 'object' },
+      descriptorDefaults: {},
+      savedRootValue: { collectionName: 'users', displayField: 'username' },
+      syncValue: () => undefined,
+      afterParamsSave: async () => undefined,
+    });
+    const uiMode = typeof step.uiMode === 'function' ? await step.uiMode(createDataSourceContext()) : step.uiMode;
+
+    expect(uiMode).toMatchObject({
+      type: 'select',
+      key: 'value',
+      props: {
+        options: [
+          { label: 'Username', value: 'username' },
+          { label: 'Nickname', value: 'nickname' },
+        ],
+      },
+    });
   });
 
   it('rejects light extension source saves when the settings descriptor is unavailable', () => {

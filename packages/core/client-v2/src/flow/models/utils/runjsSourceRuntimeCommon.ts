@@ -10,6 +10,7 @@
 import {
   FlowCancelSaveException,
   type FlowModel,
+  type FlowRuntimeContext,
   type RuntimeFlowSettingDiagnosticPayload,
   type FlowSettingsContext,
   type StepDefinition,
@@ -79,6 +80,38 @@ type PendingLightExtensionBindingSettings = {
   entryId: string;
   missingRequiredPaths: string[];
   schema: JsonSchemaLike;
+};
+
+type LightExtensionSelectOption = {
+  label: string;
+  value: string;
+};
+
+type LightExtensionCollectionField = {
+  name?: unknown;
+  title?: unknown;
+  hidden?: unknown;
+  options?: unknown;
+};
+
+type LightExtensionCollection = {
+  name?: unknown;
+  title?: unknown;
+  hidden?: unknown;
+  options?: unknown;
+  getFields?: () => LightExtensionCollectionField[];
+};
+
+type LightExtensionDataSource = {
+  key?: unknown;
+  name?: unknown;
+  getCollections?: () => LightExtensionCollection[];
+  getCollection?: (name: string) => LightExtensionCollection | undefined;
+};
+
+type LightExtensionDataSourceManager = {
+  getDataSources?: () => LightExtensionDataSource[];
+  getDataSource?: (key: string) => LightExtensionDataSource | undefined;
 };
 
 const pendingLightExtensionBindingSettings = new WeakMap<object, PendingLightExtensionBindingSettings>();
@@ -315,6 +348,10 @@ export function createLightExtensionSettingStep<TModel extends FlowModel>(option
   const title = getSchemaTitle(fieldSchema, fieldName);
   const visibilityCondition = fieldSchema['x-visible-when'];
   const fieldType = normalizeSchemaType(fieldSchema) || 'string';
+  const inlineSelect = createLightExtensionInlineSelectUIMode<TModel>({
+    fieldSchema,
+    savedRootValue: options.savedRootValue,
+  });
   return [
     stepKey,
     {
@@ -330,6 +367,7 @@ export function createLightExtensionSettingStep<TModel extends FlowModel>(option
             },
           }
         : {}),
+      ...(inlineSelect ? { uiMode: inlineSelect } : {}),
       uiSchema: {
         value: {
           type: fieldType,
@@ -393,6 +431,127 @@ export function createLightExtensionSettingStep<TModel extends FlowModel>(option
       afterParamsSave: options.afterParamsSave,
     },
   ];
+}
+
+function createLightExtensionInlineSelectUIMode<TModel extends FlowModel>(options: {
+  fieldSchema: JsonSchemaLike;
+  savedRootValue: Record<string, unknown>;
+}): StepDefinition<TModel>['uiMode'] | undefined {
+  const component = toNonEmptyString(options.fieldSchema['x-component']);
+  if (component !== 'CollectionSelect' && component !== 'CollectionFieldSelect') {
+    return undefined;
+  }
+
+  return (ctx: FlowRuntimeContext<TModel>) => ({
+    type: 'select',
+    key: 'value',
+    props: {
+      allowClear: true,
+      showSearch: true,
+      optionFilterProp: 'label',
+      options: buildLightExtensionSettingSelectOptions({
+        component,
+        fieldSchema: options.fieldSchema,
+        savedRootValue: options.savedRootValue,
+        ctx,
+      }),
+    },
+  });
+}
+
+function buildLightExtensionSettingSelectOptions<TModel extends FlowModel>(options: {
+  component: 'CollectionSelect' | 'CollectionFieldSelect';
+  fieldSchema: JsonSchemaLike;
+  savedRootValue: Record<string, unknown>;
+  ctx: FlowRuntimeContext<TModel>;
+}): LightExtensionSelectOption[] {
+  const manager = resolveLightExtensionDataSourceManager(options.ctx);
+  const dataSource = resolveLightExtensionDataSource(manager, options.fieldSchema, options.savedRootValue, options.ctx);
+  if (!dataSource) {
+    return [];
+  }
+  if (options.component === 'CollectionSelect') {
+    return toLightExtensionSelectOptions(dataSource.getCollections?.() || []);
+  }
+
+  const collectionName = resolveLightExtensionCollectionName(options.fieldSchema, options.savedRootValue);
+  if (!collectionName) {
+    return [];
+  }
+  return toLightExtensionSelectOptions(dataSource.getCollection?.(collectionName)?.getFields?.() || []);
+}
+
+function resolveLightExtensionDataSourceManager<TModel extends FlowModel>(
+  ctx: FlowRuntimeContext<TModel>,
+): LightExtensionDataSourceManager | undefined {
+  const modelContext = getRecordProperty(getRecordProperty(ctx, 'model'), 'context');
+  const manager =
+    getRecordProperty(ctx, 'dataSourceManager') ||
+    getRecordProperty(modelContext, 'dataSourceManager') ||
+    getRecordProperty(getRecordProperty(ctx, 'app'), 'dataSourceManager');
+  if (
+    isRecord(manager) &&
+    (typeof manager.getDataSource === 'function' || typeof manager.getDataSources === 'function')
+  ) {
+    return manager as LightExtensionDataSourceManager;
+  }
+  return undefined;
+}
+
+function resolveLightExtensionDataSource<TModel extends FlowModel>(
+  manager: LightExtensionDataSourceManager | undefined,
+  fieldSchema: JsonSchemaLike,
+  savedRootValue: Record<string, unknown>,
+  ctx: FlowRuntimeContext<TModel>,
+): LightExtensionDataSource | undefined {
+  if (!manager) {
+    return undefined;
+  }
+  const componentProps = isRecord(fieldSchema['x-component-props']) ? fieldSchema['x-component-props'] : {};
+  const dataSourceField = toNonEmptyString(componentProps.dataSourceField) || 'dataSource';
+  const preferredKey =
+    toNonEmptyString(componentProps.dataSource) ||
+    toNonEmptyString(savedRootValue[dataSourceField]) ||
+    toNonEmptyString(getRecordProperty(ctx, 'dataSourceKey'));
+  if (preferredKey) {
+    const preferred = manager.getDataSource?.(preferredKey);
+    if (preferred) {
+      return preferred;
+    }
+  }
+  const main = manager.getDataSource?.('main');
+  if (main) {
+    return main;
+  }
+  return manager.getDataSources?.()[0];
+}
+
+function resolveLightExtensionCollectionName(
+  fieldSchema: JsonSchemaLike,
+  savedRootValue: Record<string, unknown>,
+): string | undefined {
+  const componentProps = isRecord(fieldSchema['x-component-props']) ? fieldSchema['x-component-props'] : {};
+  return (
+    toNonEmptyString(componentProps.collection) ||
+    toNonEmptyString(componentProps.collectionName) ||
+    toNonEmptyString(savedRootValue[toNonEmptyString(componentProps.collectionField) || 'collection'])
+  );
+}
+
+function toLightExtensionSelectOptions(
+  items: Array<LightExtensionCollection | LightExtensionCollectionField>,
+): LightExtensionSelectOption[] {
+  return items.flatMap((item) => {
+    const options = isRecord(item.options) ? item.options : {};
+    if (item.hidden === true || options.hidden === true) {
+      return [];
+    }
+    const value = toNonEmptyString(item.name) || toNonEmptyString(options.name);
+    if (!value) {
+      return [];
+    }
+    return [{ label: toNonEmptyString(item.title) || toNonEmptyString(options.title) || value, value }];
+  });
 }
 
 export function createLightExtensionSettingSteps<TModel extends FlowModel>(options: {

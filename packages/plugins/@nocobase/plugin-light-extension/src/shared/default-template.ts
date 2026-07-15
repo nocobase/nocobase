@@ -177,7 +177,7 @@ try {
   "settings": {
     "title": { "type": "string", "title": "Title", "default": "Recent records", "x-component": "Input" },
     "collectionName": { "type": "string", "title": "Collection", "default": "users", "required": true, "x-component": "CollectionSelect" },
-    "displayField": { "type": "string", "title": "Display field", "default": "username", "required": true, "x-component": "Input" },
+    "displayField": { "type": "string", "title": "Display field", "default": "username", "required": true, "x-component": "CollectionFieldSelect", "x-component-props": { "collectionField": "collectionName" } },
     "pageSize": { "type": "integer", "title": "Page size", "default": 5, "minimum": 1, "maximum": 20, "x-component": "InputNumber" },
     "emptyText": { "type": "string", "title": "Empty text", "default": "No data", "x-component": "Input" }
   }

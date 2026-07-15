@@ -97,6 +97,13 @@ describe('plugin-light-extension default source template', () => {
     const collectionSummary = files.find((file) => file.path === 'src/client/js-blocks/collection-summary/index.tsx');
     expect(collectionSummary?.content).toContain("ctx.initResource('MultiRecordResource');");
     expect(collectionSummary?.content).toContain('const resource = ctx.resource;');
+    const collectionSummaryDescriptor = files.find(
+      (file) => file.path === 'src/client/js-blocks/collection-summary/entry.json',
+    );
+    expect(JSON.parse(collectionSummaryDescriptor?.content || '{}').settings.displayField).toMatchObject({
+      'x-component': 'CollectionFieldSelect',
+      'x-component-props': { collectionField: 'collectionName' },
+    });
     expect(DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES).toHaveLength(26);
   });
 
