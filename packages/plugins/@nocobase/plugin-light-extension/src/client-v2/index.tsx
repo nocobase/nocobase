@@ -16,5 +16,11 @@ export {
   JSItemLightExtensionSourceField,
 } from './components/JSBlockLightExtensionSourceField';
 export { createLightExtensionRunJSResolver } from './resolvers/LightExtensionRunJSResolver';
+export {
+  createLightExtensionModelMenuProvider,
+  type LightExtensionModelMenuOptions,
+  type LightExtensionModelMenuTarget,
+} from './modelMenu/createLightExtensionModelMenuProvider';
+export { registerLightExtensionModelMenus } from './modelMenu/registerLightExtensionModelMenus';
 export { PluginLightExtensionClientV2 } from './plugin';
 export { default } from './plugin';

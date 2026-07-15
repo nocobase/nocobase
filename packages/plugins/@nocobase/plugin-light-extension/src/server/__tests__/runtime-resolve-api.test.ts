@@ -316,14 +316,20 @@ describe('plugin-light-extension runtime resolve API', () => {
   });
 
   it('returns the schema hash independently from the defaults hash', async () => {
-    const { service } = createRuntimeResolveService();
+    const { service, entriesRepository } = createRuntimeResolveService({ category: 'examples' });
 
     await expect(service.listSelectableEntries()).resolves.toEqual([
       expect.objectContaining({
+        category: 'examples',
         settingsSchemaHash: 'schema_hash_1',
         settingsDefaultsHash: 'defaults_hash_1',
       }),
     ]);
+    expect(entriesRepository.find).toHaveBeenCalledWith(
+      expect.objectContaining({
+        fields: expect.arrayContaining(['category']),
+      }),
+    );
   });
 
   it('keeps no-schema entries selectable when both settings hashes are null', async () => {
@@ -754,6 +760,7 @@ function createRuntimeResolveService(
     settingsSchema?: Record<string, unknown> | null;
     settingsSchemaHash?: string | null;
     settingsDefaultsHash?: string | null;
+    category?: string | null;
     apiBasePath?: string;
   } = {},
 ) {
@@ -843,7 +850,7 @@ function createEntryRecord(
     descriptorPath: 'src/client/js-blocks/sales-kpi/entry.json',
     title: 'Sales KPI',
     description: null,
-    category: null,
+    category: typeof input.category === 'undefined' ? null : input.category,
     icon: null,
     tags: null,
     sort: null,

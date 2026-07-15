@@ -705,6 +705,7 @@ describe('RunJSLightExtensionEditorProvider', () => {
                 entryName: 'stable-example',
                 entryPath: 'src/client/js-blocks/renamed-example/index.tsx',
                 title: 'Example refreshed',
+                category: null,
                 settingsSchema: {
                   type: 'object',
                   properties: {
@@ -743,6 +744,7 @@ describe('RunJSLightExtensionEditorProvider', () => {
         entryName: 'stable-example',
         entryPath: 'src/client/js-blocks/old-example/index.tsx',
         title: 'Old example',
+        category: null,
         settingsSchema: {
           type: 'object',
           properties: {

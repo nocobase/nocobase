@@ -18,6 +18,9 @@ import {
   JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
   JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
   PluginFlowEngine,
+  clearActionGroupMenuItemProviders,
+  clearBlockGridSelectSceneAddBlockProviders,
+  clearFieldMenuItemProviders,
 } from '@nocobase/client-v2';
 import { RunJSEditorRegistry, RunJSSourceResolverRegistry } from '@nocobase/client-v2';
 import { afterEach, vi } from 'vitest';
@@ -34,6 +37,9 @@ describe('PluginLightExtensionClientV2', () => {
   afterEach(() => {
     RunJSEditorRegistry.clear();
     RunJSSourceResolverRegistry.clear();
+    clearBlockGridSelectSceneAddBlockProviders();
+    clearActionGroupMenuItemProviders();
+    clearFieldMenuItemProviders();
     vi.restoreAllMocks();
     vi.clearAllMocks();
   });

@@ -32,6 +32,7 @@ import {
 import { SettingsSingleField } from '../client-v2/components/SettingsAutoForm';
 import { createRunJSLightExtensionEditorProvider } from '../client-v2/components/RunJSLightExtensionEditorProvider';
 import { createMoveSourceToLightExtensionContribution } from '../client-v2/components/MoveSourceToLightExtension';
+import { registerLightExtensionModelMenus } from '../client-v2/modelMenu/registerLightExtensionModelMenus';
 import LightExtensionListPage from '../client-v2/pages/LightExtensionListPage';
 import { createLightExtensionRunJSResolver } from '../client-v2/resolvers/LightExtensionRunJSResolver';
 
@@ -89,6 +90,8 @@ export class PluginLightExtensionClient {
 
   private unregisterRunJSToolbar?: () => void;
 
+  private unregisterModelMenus?: () => void;
+
   constructor(
     public readonly options: LightExtensionLegacyClientOptions = {},
     protected readonly app?: LegacyApp,
@@ -103,6 +106,8 @@ export class PluginLightExtensionClient {
     this.unregisterRunJSResolver = undefined;
     this.unregisterRunJSToolbar?.();
     this.unregisterRunJSToolbar = undefined;
+    this.unregisterModelMenus?.();
+    this.unregisterModelMenus = undefined;
   }
 
   async load() {
@@ -121,6 +126,7 @@ export class PluginLightExtensionClient {
     );
 
     if (this.app?.apiClient) {
+      this.unregisterModelMenus = registerLightExtensionModelMenus(this.app.apiClient);
       this.unregisterRunJSResolver = RunJSSourceResolverRegistry.registerResolver(
         createLightExtensionRunJSResolver(this.app.apiClient),
       );

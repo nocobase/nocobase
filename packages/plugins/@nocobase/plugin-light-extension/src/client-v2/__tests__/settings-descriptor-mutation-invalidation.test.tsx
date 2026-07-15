@@ -102,6 +102,7 @@ function primeDescriptor(): void {
       entryName: 'sales-kpi',
       entryPath: 'src/sales-kpi/index.tsx',
       title: 'Sales KPI',
+      category: null,
       settingsSchema: {
         type: 'object',
         properties: {

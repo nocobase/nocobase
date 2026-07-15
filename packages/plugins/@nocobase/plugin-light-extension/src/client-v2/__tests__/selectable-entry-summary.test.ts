@@ -20,6 +20,7 @@ describe('light extension selectable entry summary', () => {
       entryName: 'example',
       entryPath: 'src/client/js-blocks/example/index.tsx',
       title: 'Example',
+      category: 'examples',
       settingsSchema: null,
       settingsSchemaHash: null,
       settingsDefaultsHash: null,

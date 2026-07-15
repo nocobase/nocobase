@@ -201,6 +201,7 @@ function createPrimedResolver(request: (options: ApiRequestOptions) => Promise<u
       entryName: 'example',
       entryPath: 'src/client/js-actions/example/index.ts',
       title: 'Example',
+      category: null,
       settingsSchema: {
         type: 'object',
         properties: {

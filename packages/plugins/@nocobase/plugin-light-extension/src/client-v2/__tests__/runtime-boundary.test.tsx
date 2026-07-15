@@ -111,17 +111,17 @@ describe('plugin-light-extension client-v2 boundary', () => {
     expect(fs.existsSync(path.join(pluginRoot, 'server.js'))).toBe(true);
   });
 
-  it('keeps authoring-only pages out of the legacy client while sharing runtime JS block bridges', () => {
+  it('keeps authoring-only pages out of the legacy client while sharing runtime model-menu bridges', () => {
     const pluginSource = fs.readFileSync(path.resolve(__dirname, '../plugin.tsx'), 'utf8');
 
     expect(pluginSource).toContain('createLightExtensionRunJSResolver');
-    expect(pluginSource).not.toContain('registerBlockGridSelectSceneAddBlockProvider');
+    expect(pluginSource).toContain('registerLightExtensionModelMenus');
     expect(pluginSource).not.toContain('EntryReferencesPanel');
 
     const legacySource = fs.readFileSync(path.resolve(__dirname, '../../client/index.ts'), 'utf8');
     expect(legacySource).toContain('createLightExtensionRunJSResolver');
     expect(legacySource).toContain('RunJSSourceResolverRegistry');
-    expect(legacySource).not.toContain('registerBlockGridSelectSceneAddBlockProvider');
+    expect(legacySource).toContain('registerLightExtensionModelMenus');
     expect(legacySource).toContain('JS_BLOCK_LIGHT_EXTENSION_FULL_SOURCE_FIELD');
     expect(legacySource).not.toContain('EntryReferencesPanel');
   });

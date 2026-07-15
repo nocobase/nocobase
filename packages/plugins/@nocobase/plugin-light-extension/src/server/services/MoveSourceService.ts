@@ -123,12 +123,14 @@ export class MoveSourceService {
     assertOwnerFingerprint(input.expectedOwnerFingerprint, legacy.ownerFingerprint);
 
     const kind = resolveLightExtensionKind(input.locator, legacy);
+    const category = resolveMovedEntryCategory(kind, legacy);
     const entryFiles = relocateRunJSWorkspace({
       files: input.files,
       entryPath: input.entryPath,
       kind,
       entryName: input.entryName,
       entryTitle: input.entryTitle,
+      category,
     });
     const commitMessage = buildMoveCommitMessage(input);
 
@@ -265,6 +267,7 @@ export function relocateRunJSWorkspace(input: {
   kind: LightExtensionKind;
   entryName: string;
   entryTitle?: string | null;
+  category?: string | null;
 }): LightExtensionFileChange[] {
   if (!LIGHT_EXTENSION_ENTRY_KEY_PATTERN.test(input.entryName)) {
     throw new LightExtensionError('LIGHT_EXTENSION_INVALID_INPUT', 'Entry name must be a lowercase slug');
@@ -318,7 +321,13 @@ export function relocateRunJSWorkspace(input: {
     };
   });
 
-  upsertEntryDescriptor(relocated, entryRoot, input.entryName, input.entryTitle?.trim() || null);
+  upsertEntryDescriptor(
+    relocated,
+    entryRoot,
+    input.entryName,
+    input.entryTitle?.trim() || null,
+    input.category?.trim() || null,
+  );
 
   return relocated;
 }
@@ -429,6 +438,13 @@ function resolveLightExtensionKind(locator: RunJSSourceLocator, legacy: RunJSLeg
   return ownerAdapter.kind;
 }
 
+function resolveMovedEntryCategory(kind: LightExtensionKind, legacy: RunJSLegacySource): string | null {
+  if (kind !== 'js-field') {
+    return null;
+  }
+  return legacy.metadata?.modelUse === 'JSColumnModel' ? 'js-column' : 'js-field';
+}
+
 function buildSourceBinding(
   repo: LightExtensionMoveSourceResult['repo'],
   entry: LightExtensionEntryRecord,
@@ -508,10 +524,15 @@ function upsertEntryDescriptor(
   entryRoot: string,
   key: string,
   title: string | null,
+  category: string | null,
 ): void {
   const descriptorPath = `${entryRoot}/entry.json`;
   const existing = files.find((file) => file.path === descriptorPath);
-  const content = `${JSON.stringify({ schemaVersion: 1, key, ...(title ? { title } : {}) }, null, 2)}\n`;
+  const content = `${JSON.stringify(
+    { schemaVersion: 1, key, ...(title ? { title } : {}), ...(category ? { category } : {}) },
+    null,
+    2,
+  )}\n`;
   if (!existing) {
     files.push({
       path: descriptorPath,

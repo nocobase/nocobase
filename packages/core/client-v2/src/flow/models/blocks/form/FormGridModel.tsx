@@ -14,6 +14,7 @@ import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
 import { GridModel } from '../../base/GridModel';
 import { FormBlockModel } from './FormBlockModel';
+import { resolveFieldMenuItems } from '../../menuItemProviders';
 
 export type DefaultFormGridStructure = {
   parent: FormBlockModel;
@@ -59,6 +60,7 @@ export class FormGridModel<T extends DefaultFormGridStructure = DefaultFormGridS
           this.context.getModelClassName('FormCustomItemModel'),
           this.context.getModelClassName('FormJSFieldItemModel'),
         ].filter(Boolean)}
+        items={(ctx) => resolveFieldMenuItems({ surface: 'form-field', model: this, ctx })}
         model={this}
         keepDropdownOpen
       >

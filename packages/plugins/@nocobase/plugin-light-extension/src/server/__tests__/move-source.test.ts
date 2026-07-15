@@ -223,6 +223,15 @@ describe('MoveSourceService', () => {
         }),
         expect.objectContaining({ transaction }),
       );
+      const savedFiles = saveSource.mock.calls[0][0].files as Array<{ path: string; content: string }>;
+      const descriptor = JSON.parse(
+        savedFiles.find((file) => file.path === `${entryRoot}/sales-kpi/entry.json`)?.content || '{}',
+      );
+      if (kind === 'js-field') {
+        expect(descriptor.category).toBe(modelUse === 'JSColumnModel' ? 'js-column' : 'js-field');
+      } else {
+        expect(descriptor).not.toHaveProperty('category');
+      }
       expect(writeExternalBinding).toHaveBeenCalledWith(
         expect.objectContaining({
           baseOwnerFingerprint: 'owner_before',

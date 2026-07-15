@@ -347,6 +347,7 @@ export interface LightExtensionSelectableEntrySummary {
   entryName: string;
   entryPath: string;
   title: string | null;
+  category: string | null;
   settingsSchema: Record<string, unknown> | null;
   settingsSchemaHash: string | null;
   settingsDefaultsHash: string | null;

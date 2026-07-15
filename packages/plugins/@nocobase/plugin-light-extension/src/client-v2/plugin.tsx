@@ -34,6 +34,7 @@ import {
 import { createRunJSLightExtensionEditorProvider } from './components/RunJSLightExtensionEditorProvider';
 import { createMoveSourceToLightExtensionContribution } from './components/MoveSourceToLightExtension';
 import { SettingsSingleField } from './components/SettingsAutoForm';
+import { registerLightExtensionModelMenus } from './modelMenu/registerLightExtensionModelMenus';
 import { createLightExtensionRunJSResolver } from './resolvers/LightExtensionRunJSResolver';
 
 let activeLightExtensionClientV2Instance: PluginLightExtensionClientV2 | null = null;
@@ -68,6 +69,7 @@ export class PluginLightExtensionClientV2 extends Plugin<Record<string, never>, 
     this.disposers.push(
       runJSStudioToolbarRegistry.register(createMoveSourceToLightExtensionContribution(this.app.apiClient)),
     );
+    this.disposers.push(registerLightExtensionModelMenus(this.app.apiClient));
     activeLightExtensionClientV2Instance = this;
 
     const title = this.t('Light extensions');

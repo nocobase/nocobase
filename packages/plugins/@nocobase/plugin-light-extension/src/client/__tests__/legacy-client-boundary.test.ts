@@ -21,6 +21,9 @@ import {
   JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
   RunJSEditorRegistry,
   RunJSSourceResolverRegistry,
+  clearActionGroupMenuItemProviders,
+  clearBlockGridSelectSceneAddBlockProviders,
+  clearFieldMenuItemProviders,
 } from '@nocobase/client-v2';
 import { runJSStudioToolbarRegistry } from '@nocobase/plugin-vsc-file/client-v2';
 
@@ -37,6 +40,9 @@ describe('plugin-light-extension legacy client boundary', () => {
   afterEach(() => {
     RunJSEditorRegistry.clear();
     RunJSSourceResolverRegistry.clear();
+    clearBlockGridSelectSceneAddBlockProviders();
+    clearActionGroupMenuItemProviders();
+    clearFieldMenuItemProviders();
     vi.restoreAllMocks();
     vi.clearAllMocks();
   });

@@ -8,7 +8,7 @@
  */
 
 // ActionGroupModel.test.tsx
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FlowEngine } from '@nocobase/flow-engine';
 import { ActionGroupModel, ActionModel, ActionSceneEnum } from '../../..'; // 可解决循环依赖问题
 
@@ -20,6 +20,10 @@ describe('ActionGroupModel.registerActionModels', () => {
 
   beforeEach(() => {
     TestActionGroupModel = class extends ActionGroupModel {};
+  });
+
+  afterEach(() => {
+    ActionGroupModel.clearMenuItemProviders();
   });
 
   it('registers action models and sets their names', () => {
@@ -196,5 +200,36 @@ describe('ActionGroupModel.registerActionModels', () => {
     const items = await TestCollectionActionGroupModel.defineChildren(ctx);
 
     expect(items.map((item: any) => item.useModel)).toEqual(['NeutralActionModel']);
+  });
+
+  it('merges, sorts and disposes async menu item providers', async () => {
+    class BuiltInActionModel extends ActionModel {}
+    BuiltInActionModel.define({ label: 'Built in', sort: 20 });
+
+    class TestProviderActionGroupModel extends ActionGroupModel {
+      static baseClass = ActionModel;
+    }
+
+    const engine = new FlowEngine();
+    engine.registerModels({ ActionModel, BuiltInActionModel });
+    const provider = vi.fn(async ({ groupModelClass, items }) => {
+      expect(groupModelClass).toBe(TestProviderActionGroupModel);
+      expect(items.map((item) => item.useModel)).toEqual(['BuiltInActionModel']);
+      return {
+        key: 'provided-action',
+        useModel: 'ProvidedActionModel',
+        label: 'Provided',
+        sort: 10,
+      };
+    });
+    const dispose = TestProviderActionGroupModel.registerMenuItemProvider('test-provider', provider);
+
+    const items = await TestProviderActionGroupModel.defineChildren({ engine } as any);
+    expect(items.map((item) => item.key)).toEqual(['provided-action', 'BuiltInActionModel']);
+    expect(provider).toHaveBeenCalledOnce();
+
+    dispose();
+    const itemsAfterDispose = await TestProviderActionGroupModel.defineChildren({ engine } as any);
+    expect(itemsAfterDispose.map((item) => item.key)).toEqual(['BuiltInActionModel']);
   });
 });

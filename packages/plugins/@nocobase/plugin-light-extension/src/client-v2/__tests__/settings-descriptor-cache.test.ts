@@ -275,6 +275,7 @@ function createEntry(options: {
     entryName: options.entryId || 'sales-kpi',
     entryPath: `src/${options.entryId || 'sales-kpi'}/index.tsx`,
     title: options.entryId || 'Sales KPI',
+    category: null,
     settingsSchema: options.settingsSchema,
     settingsSchemaHash: options.schemaHash,
     settingsDefaultsHash: `defaults-${options.schemaHash}`,

@@ -74,6 +74,7 @@ export class RuntimeResolveService {
         'entryName',
         'entryPath',
         'title',
+        'category',
         'settingsSchema',
         'settingsSchemaHash',
         'compiledCommitId',
@@ -405,6 +406,7 @@ interface SelectableEntryProjection {
   entryName: string;
   entryPath: string;
   title: string | null;
+  category: string | null;
   settingsSchema: Record<string, unknown> | null;
   settingsSchemaHash: string | null;
   compiledCommitId: string | null;
@@ -425,6 +427,7 @@ function selectableEntryFromModel(record: Model): SelectableEntryProjection {
     entryName: String(record.get('entryName')),
     entryPath: String(record.get('entryPath')),
     title: nullableString(record.get('title')),
+    category: nullableString(record.get('category')),
     settingsSchema: nullableRecord(record.get('settingsSchema')),
     settingsSchemaHash: nullableString(record.get('settingsSchemaHash')),
     compiledCommitId: nullableString(record.get('compiledCommitId')),
@@ -446,6 +449,7 @@ function toSelectableEntrySummary(entry: SelectableEntryProjection): LightExtens
     entryName: entry.entryName,
     entryPath: entry.entryPath,
     title: entry.title,
+    category: entry.category,
     settingsSchema: entry.settingsSchema,
     settingsSchemaHash: entry.settingsSchemaHash,
     settingsDefaultsHash: entry.settingsDefaultsHash,

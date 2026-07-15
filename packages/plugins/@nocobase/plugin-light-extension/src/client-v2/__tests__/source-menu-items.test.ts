@@ -19,6 +19,7 @@ const selectableEntry = {
   entryName: 'order-total',
   entryPath: 'src/client/js-blocks/order-total/index.tsx',
   title: 'Order total calculator',
+  category: null,
   settingsSchema: {
     type: 'object',
     properties: {
