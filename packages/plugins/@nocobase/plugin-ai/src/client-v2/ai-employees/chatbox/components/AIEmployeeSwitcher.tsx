@@ -16,9 +16,13 @@ import { useChatBoxStore } from '../stores/chat-box';
 
 export const AIEmployeeSwitcher: React.FC<{
   disabled?: boolean;
-}> = observer(({ disabled }) => {
+  allowedUsernames?: string[];
+}> = observer(({ disabled, allowedUsernames }) => {
   const repository = useAIConfigRepository();
-  const aiEmployees = repository.aiEmployees;
+  const allowedUsernameSet = allowedUsernames?.length ? new Set(allowedUsernames) : null;
+  const aiEmployees = allowedUsernameSet
+    ? repository.aiEmployees.filter((employee) => allowedUsernameSet.has(employee.username))
+    : repository.aiEmployees;
   const currentEmployee = useChatBoxStore.use.currentEmployee();
   const { switchAIEmployee } = useChatBoxActions();
 

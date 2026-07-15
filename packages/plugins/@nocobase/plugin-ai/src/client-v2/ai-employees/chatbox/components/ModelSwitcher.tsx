@@ -29,7 +29,8 @@ import { AddLLMModal } from './AddLLMModal';
 
 export const ModelSwitcher: React.FC<{
   disabled?: boolean;
-}> = observer(({ disabled }) => {
+  allowedModelKeys?: string[];
+}> = observer(({ disabled, allowedModelKeys }) => {
   const t = useT();
   const app = useApp();
   const { message } = AntdApp.useApp();
@@ -59,10 +60,24 @@ export const ModelSwitcher: React.FC<{
     () => getAIEmployeeModelServices(currentEmployee, llmServices),
     [currentEmployee, llmServices],
   );
-  const scopedModels = useMemo(() => getAllModels(scopedServices), [scopedServices]);
+  const visibleServices = useMemo(() => {
+    if (!allowedModelKeys?.length) {
+      return scopedServices;
+    }
+    const allowedSet = new Set(allowedModelKeys);
+    return scopedServices
+      .map((service) => ({
+        ...service,
+        enabledModels: service.enabledModels.filter((item) =>
+          allowedSet.has(getModelKey({ llmService: service.llmService, model: item.value })),
+        ),
+      }))
+      .filter((service) => service.enabledModels.length > 0);
+  }, [allowedModelKeys, scopedServices]);
+  const scopedModels = useMemo(() => getAllModels(visibleServices), [visibleServices]);
   const servicesWithModels = useMemo(
-    () => scopedServices.filter((service) => Array.isArray(service.enabledModels) && service.enabledModels.length > 0),
-    [scopedServices],
+    () => visibleServices.filter((service) => Array.isArray(service.enabledModels) && service.enabledModels.length > 0),
+    [visibleServices],
   );
 
   useEffect(() => {

@@ -196,7 +196,7 @@ const Information: React.FC = observer(() => {
   );
 });
 
-const WorkContext: React.FC<{
+export const WorkContext: React.FC<{
   value?: ContextItem[];
   onChange?: (value: ContextItem[]) => void;
 }> = ({ value, onChange }) => {
