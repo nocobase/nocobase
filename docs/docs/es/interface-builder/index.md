@@ -12,11 +12,11 @@ Modo de edición:
 
 ![20251023215951](https://static-docs.nocobase.com/20251023215951.png)
 
-## Plantilla de Diseño
+## Diseño de UI
 
-NocoBase incluye una plantilla de diseño predeterminada: la navegación se encuentra en la parte superior y a la izquierda, mientras que el área de contenido está a la derecha.
+NocoBase ofrece diseños de escritorio y móvil. El diseño de escritorio resulta adecuado para las tareas habituales de administración y adapta la navegación y el contenido en pantallas estrechas. El diseño móvil ofrece una navegación y páginas específicas para dispositivos móviles. Consulta [Diseño de UI](./ui-layout/index.md) para obtener más información.
 
-![未命名.002](https://static-docs.nocobase.com/未命名.002.jpeg)
+<!-- Se necesita una captura comparativa de una misma página de negocio, con los diseños de escritorio y móvil uno al lado del otro y las diferencias de navegación resaltadas -->
 
 ## Opciones de Configuración
 
@@ -41,3 +41,7 @@ Opciones de configuración de la acción:
 Opciones de configuración de la columna de la tabla:
 
 ![20251023221814](https://static-docs.nocobase.com/20251023221814.png)
+
+## Enlaces relacionados
+
+- [Diseño de UI](./ui-layout/index.md) — Conoce los diseños de escritorio y móvil

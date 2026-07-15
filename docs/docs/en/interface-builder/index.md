@@ -16,12 +16,11 @@ Edit mode:
 ![20251023215951](https://static-docs.nocobase.com/20251023215951.png)
 
 
-## Layout Template
+## UI Layout
 
-NocoBase ships with a default layout template: navigation on the top and left, and a content area on the right.
+NocoBase provides desktop and mobile layouts. The desktop layout works well for standard administration and adapts its navigation and page content on narrow screens. The mobile layout provides separate mobile navigation and page configuration. See [UI Layout](./ui-layout/index.md) for details.
 
-
-![未命名.002](https://static-docs.nocobase.com/未命名.002.jpeg)
+<!-- Add a side-by-side comparison screenshot of the same business page in desktop and mobile layouts, highlighting their navigation differences -->
 
 
 ## Configuration Options
@@ -56,3 +55,7 @@ Table column configuration options:
 
 
 ![20251023221814](https://static-docs.nocobase.com/20251023221814.png)
+
+## Related links
+
+- [UI Layout](./ui-layout/index.md) — Learn about desktop and mobile layouts

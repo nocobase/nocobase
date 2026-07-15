@@ -1,7 +1,7 @@
 ---
 title: "Tổng quan về xây dựng giao diện"
-description: "Xây dựng giao diện NocoBase: chế độ cấu hình what-you-see-is-what-you-get, mẫu bố cục, Trang, Block, Action, cấu hình cột Table, tùy chỉnh giao diện không cần lập trình, hỗ trợ chuyển đổi giữa chế độ cấu hình và chế độ sử dụng."
-keywords: "xây dựng giao diện, what-you-see-is-what-you-get, Block, cấu hình Trang, mẫu bố cục, cấu hình Action, cột Table, NocoBase"
+description: "Xây dựng giao diện NocoBase: chế độ cấu hình what-you-see-is-what-you-get, bố cục UI desktop và mobile, Trang, Block, Field và Action."
+keywords: "xây dựng giao diện,what-you-see-is-what-you-get,bố cục UI,bố cục desktop,bố cục mobile,Block,cấu hình Trang,NocoBase"
 ---
 
 # Xây dựng giao diện
@@ -18,11 +18,11 @@ Chế độ cấu hình:
 
 ![20251023215951](https://static-docs.nocobase.com/20251023215951.png)
 
-## Mẫu bố cục
+## Bố cục UI
 
-NocoBase tích hợp sẵn một mẫu bố cục, phía trên và bên trái là khu vực điều hướng, bên phải là khu vực nội dung.
+NocoBase cung cấp bố cục desktop và bố cục mobile. Bố cục desktop phù hợp với các thao tác quản lý thông thường và có thể tự điều chỉnh điều hướng cùng nội dung Trang trên màn hình hẹp. Bố cục mobile cung cấp điều hướng và cấu hình Trang riêng cho thiết bị mobile. Xem giới thiệu chi tiết tại [Bố cục UI](./ui-layout/index.md).
 
-![未命名.002](https://static-docs.nocobase.com/未命名.002.jpeg)
+<!-- Cần ảnh chụp đặt cạnh nhau của cùng một Trang nghiệp vụ trong bố cục desktop và bố cục mobile, làm nổi bật sự khác biệt về điều hướng -->
 
 ## Cấu hình
 
@@ -47,3 +47,7 @@ Cấu hình Action:
 Cấu hình cột Table:
 
 ![20251023221814](https://static-docs.nocobase.com/20251023221814.png)
+
+## Liên kết liên quan
+
+- [Bố cục UI](./ui-layout/index.md) — Tìm hiểu bố cục desktop và bố cục mobile
