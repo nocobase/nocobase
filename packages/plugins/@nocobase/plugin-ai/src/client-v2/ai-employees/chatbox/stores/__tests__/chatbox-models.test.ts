@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { autorun } from '@nocobase/flow-engine';
 import { describe, expect, it } from 'vitest';
 import type { AIEmployee, ContextItem, Message, ToolCall } from '../../../types';
 import { ChatBoxModel } from '../chat-box';
@@ -107,21 +108,45 @@ describe('chatbox runtime models', () => {
     expect(model.getSessionState('session-b').messages.map((message) => message.key)).toEqual(['message-b']);
   });
 
-  it('replaces shallow ChatMessageModel session containers on updates and migrates draft state', () => {
+  it('keeps ChatMessageModel session objects reactive and isolated while migrating draft state', () => {
     const model = new ChatMessageModel();
     const initialSessions = model.sessions;
     const initialDefaultSession = model.sessions[CHAT_DEFAULT_SESSION_KEY];
+    let messageCount = -1;
+    const dispose = autorun(() => {
+      messageCount = model.sessions[CHAT_DEFAULT_SESSION_KEY].messages.length;
+    });
 
     model.addSessionMessage(undefined, textMessage('draft-message'));
 
-    expect(model.sessions).not.toBe(initialSessions);
-    expect(model.sessions[CHAT_DEFAULT_SESSION_KEY]).not.toBe(initialDefaultSession);
+    expect(model.sessions).toBe(initialSessions);
+    expect(model.sessions[CHAT_DEFAULT_SESSION_KEY]).toBe(initialDefaultSession);
+    expect(messageCount).toBe(1);
     expect(model.getSessionState().messages.map((message) => message.key)).toEqual(['draft-message']);
 
     model.migrateSessionState(undefined, 'created-session');
+    dispose();
 
     expect(model.getSessionState('created-session').messages.map((message) => message.key)).toEqual(['draft-message']);
     expect(model.getSessionState().messages).toEqual([]);
+  });
+
+  it('does not replace other ChatMessageModel sessions when one session field changes', () => {
+    const model = new ChatMessageModel();
+    model.addSessionMessage('session-a', textMessage('message-a'));
+    model.addSessionMessage('session-b', textMessage('message-b'));
+
+    const sessions = model.sessions;
+    const sessionA = model.sessions['session-a'];
+    const sessionB = model.sessions['session-b'];
+
+    model.setSessionMessagesLoading('session-a', true);
+
+    expect(model.sessions).toBe(sessions);
+    expect(model.sessions['session-a']).toBe(sessionA);
+    expect(model.sessions['session-b']).toBe(sessionB);
+    expect(model.sessions['session-a'].messagesLoading).toBe(true);
+    expect(model.sessions['session-b'].messagesLoading).toBe(false);
   });
 
   it('updates ChatMessageModel sub-agent conversation state on the last message', () => {
@@ -162,12 +187,18 @@ describe('chatbox runtime models', () => {
 
     model.updateToolCallInvokeStatus('draft-session', 'message-a', 'tool-a', 'interrupted');
     model.updateToolCallInvokeStatus('other-session', 'message-a', 'tool-a', 'waiting');
+    const sessions = model.sessions;
+    const draftSession = model.sessions['draft-session'];
+    const otherSession = model.sessions['other-session'];
 
     expect(draftSnapshot.toolCalls).toEqual({});
     expect(model.isInterrupted('draft-session', 'message-a', 'tool-a')).toBe(true);
     expect(model.isAllWaiting('draft-session', 'message-a')).toBe(false);
 
     model.updateToolCallInvokeStatus('draft-session', 'message-a', 'tool-a', 'waiting');
+    expect(model.sessions).toBe(sessions);
+    expect(model.sessions['draft-session']).toBe(draftSession);
+    expect(model.sessions['other-session']).toBe(otherSession);
     expect(model.isAllWaiting('draft-session', 'message-a')).toBe(true);
 
     model.migrateSessionState('draft-session', 'created-session');

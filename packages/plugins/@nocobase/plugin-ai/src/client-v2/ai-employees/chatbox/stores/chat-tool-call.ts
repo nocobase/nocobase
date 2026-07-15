@@ -24,6 +24,12 @@ const createInitialSessionState = (): ChatToolCallSessionState => ({
   toolCalls: {},
 });
 
+const createObservableSessionState = (state?: Partial<ChatToolCallSessionState>): ChatToolCallSessionState =>
+  observable.shallow({
+    ...createInitialSessionState(),
+    ...(state ?? {}),
+  });
+
 const cloneSessionState = (session: ChatToolCallSessionState): ChatToolCallSessionState => ({
   ...session,
   toolCalls: Object.entries(session.toolCalls).reduce<Record<string, ToolCallInvokeState[]>>((result, [key, list]) => {
@@ -45,19 +51,30 @@ export class ChatToolCallModel {
   }
 
   private resolveSessionState(sessionId: string) {
-    return this.sessions[getChatSessionKey(sessionId)] ?? createInitialSessionState();
+    return this.sessions[getChatSessionKey(sessionId)] ?? createObservableSessionState();
+  }
+
+  private ensureSessionState(sessionId: string) {
+    const key = getChatSessionKey(sessionId);
+    const session = this.sessions[key];
+    if (session) {
+      return session;
+    }
+
+    const nextSession = createObservableSessionState();
+    this.sessions = {
+      ...this.sessions,
+      [key]: nextSession,
+    };
+    return nextSession;
   }
 
   private updateSessionState(
     sessionId: string,
     updater: (session: ChatToolCallSessionState) => ChatToolCallSessionState,
   ) {
-    const key = getChatSessionKey(sessionId);
-    const nextSession = updater(this.resolveSessionState(key));
-    this.sessions = {
-      ...this.sessions,
-      [key]: nextSession,
-    };
+    const session = this.ensureSessionState(sessionId);
+    Object.assign(session, updater(session));
   }
 
   getSessionState = (sessionId: string) => cloneSessionState(this.resolveSessionState(sessionId));
@@ -74,7 +91,7 @@ export class ChatToolCallModel {
     }
 
     const sourceSession = this.resolveSessionState(fromKey);
-    const nextSessions = { ...this.sessions, [toKey]: cloneSessionState(sourceSession) };
+    const nextSessions = { ...this.sessions, [toKey]: createObservableSessionState(cloneSessionState(sourceSession)) };
     delete nextSessions[fromKey];
     this.sessions = nextSessions;
   };

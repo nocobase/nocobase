@@ -55,6 +55,12 @@ const createInitialSessionState = (): ChatSessionState => ({
   ...CHAT_EMPTY_SESSION_STATE,
 });
 
+const createObservableSessionState = (state?: Partial<ChatSessionState>): ChatSessionState =>
+  observable.shallow({
+    ...createInitialSessionState(),
+    ...(state ?? {}),
+  });
+
 const cloneSessionState = (session: ChatSessionState): ChatSessionState => ({
   ...session,
   messages: [...session.messages],
@@ -65,7 +71,7 @@ const cloneSessionState = (session: ChatSessionState): ChatSessionState => ({
 
 export class ChatMessageModel {
   sessions: Record<string, ChatSessionState> = observable.shallow({
-    [CHAT_DEFAULT_SESSION_KEY]: createInitialSessionState(),
+    [CHAT_DEFAULT_SESSION_KEY]: createObservableSessionState(),
   });
   editorRef: Record<string, ChatEditorRef | null> = observable.shallow({});
   currentEditorRefUid: string | null | undefined = null;
@@ -112,16 +118,27 @@ export class ChatMessageModel {
   }
 
   private resolveSessionState(sessionId?: string) {
-    return this.sessions[getChatSessionKey(sessionId)] ?? createInitialSessionState();
+    return this.sessions[getChatSessionKey(sessionId)] ?? createObservableSessionState();
   }
 
-  private updateSessionState(sessionId: string | undefined, updater: (session: ChatSessionState) => ChatSessionState) {
+  private ensureSessionState(sessionId?: string) {
     const key = getChatSessionKey(sessionId);
-    const nextSession = updater(this.resolveSessionState(key));
+    const session = this.sessions[key];
+    if (session) {
+      return session;
+    }
+
+    const nextSession = createObservableSessionState();
     this.sessions = {
       ...this.sessions,
       [key]: nextSession,
     };
+    return nextSession;
+  }
+
+  private updateSessionState(sessionId: string | undefined, updater: (session: ChatSessionState) => ChatSessionState) {
+    const session = this.ensureSessionState(sessionId);
+    Object.assign(session, updater(session));
   }
 
   setEditorRef = (uid: string, editorRef: ChatEditorRef | null) => {
@@ -153,9 +170,9 @@ export class ChatMessageModel {
     }
 
     const sourceSession = this.resolveSessionState(fromKey);
-    const nextSessions = { ...this.sessions, [toKey]: cloneSessionState(sourceSession) };
+    const nextSessions = { ...this.sessions, [toKey]: createObservableSessionState(cloneSessionState(sourceSession)) };
     if (fromKey === CHAT_DEFAULT_SESSION_KEY) {
-      nextSessions[CHAT_DEFAULT_SESSION_KEY] = createInitialSessionState();
+      nextSessions[CHAT_DEFAULT_SESSION_KEY] = createObservableSessionState();
       this.sessions = nextSessions;
       return;
     }
