@@ -1,12 +1,12 @@
 {
   "name": "@nocobase/resourcer",
-  "version": "2.1.21",
+  "version": "2.1.24",
   "description": "",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "license": "Apache-2.0",
   "dependencies": {
-    "@nocobase/utils": "2.1.21",
+    "@nocobase/utils": "2.1.24",
     "deepmerge": "^4.2.2",
     "koa": "^3.2.0",
     "koa-compose": "^4.1.0",

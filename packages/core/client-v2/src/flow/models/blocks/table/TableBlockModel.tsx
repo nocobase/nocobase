@@ -300,7 +300,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
                 transform: translateY(-50%);
               }
               &:hover {
-                background: rgba(24, 144, 255, 0.1) !important;
+                box-shadow: inset 0 0 0 9999px rgba(24, 144, 255, 0.1);
               }
               &:hover .edit-icon {
                 display: inline-flex;
