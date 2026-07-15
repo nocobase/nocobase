@@ -123,6 +123,14 @@ const packCount = manifest.length;
 const declarationGraphCount = declarationGraphHashes.size;
 const packsShareDeclarationGraphs = declarationGraphCount < packCount;
 const declarationGraphChunksMatchManifest = declarationGraphOutputs.length === declarationGraphCount;
+const budgetsPassed =
+  declarationGraphChunksMatchManifest &&
+  declarationGraphOutputs.length <= declarationGraphChunkBudget &&
+  declarationGraphGzipBytes <= declarationGraphGzipBudgetBytes &&
+  declarationGraphRawBytes <= declarationGraphRawBudgetBytes &&
+  declarationBodiesExcludedFromInitialChunk &&
+  initialGzipIncrementBytes <= initialGzipIncrementBudgetBytes &&
+  packsShareDeclarationGraphs;
 
 console.info(
   JSON.stringify(
@@ -174,3 +182,5 @@ console.info(
     2,
   ),
 );
+
+if (!budgetsPassed) process.exitCode = 1;

@@ -19,12 +19,6 @@ export type RunJSTypeLibraryPackLoader = (
   request: RunJSTypeLibraryRequest,
 ) => Promise<RunJSTypeLibraryPack> | RunJSTypeLibraryPack;
 
-export interface RunJSTypeLibraryLoadObserver {
-  now(): number;
-  onCacheHit(packId: string): void;
-  onLoadEnd(packId: string, durationMs: number): void;
-}
-
 export interface RunJSTypeLibraryCompletionCatalogEntry {
   label: string;
   detail?: string;
@@ -113,10 +107,7 @@ export class RunJSTypeLibraryRegistry {
     });
   }
 
-  async loadPacks(
-    requests: readonly RunJSTypeLibraryRequest[],
-    observer?: RunJSTypeLibraryLoadObserver,
-  ): Promise<RunJSTypeLibraryPack[]> {
+  async loadPacks(requests: readonly RunJSTypeLibraryRequest[]): Promise<RunJSTypeLibraryPack[]> {
     this.assertActive();
     const packs = new Map<string, RunJSTypeLibraryPack>();
     const loadedFullPackIds = new Map<string, string>();
@@ -128,7 +119,7 @@ export class RunJSTypeLibraryRegistry {
       .filter((request) => this.has(request.packId))
       .sort((left, right) => left.packId.localeCompare(right.packId));
     for (const request of registeredRequests) {
-      await this.collectPackWithDependencies(request, new Set<string>(), packs, observer);
+      await this.collectPackWithDependencies(request, new Set<string>(), packs);
     }
     return [...packs.values()].sort((left, right) => left.id.localeCompare(right.id));
   }
@@ -138,19 +129,14 @@ export class RunJSTypeLibraryRegistry {
    * the main-thread registry cache. Dependency traversal and caching belong to
    * the worker in this mode.
    */
-  async loadPackForWorker(
-    request: RunJSTypeLibraryRequest,
-    observer?: RunJSTypeLibraryLoadObserver,
-  ): Promise<RunJSTypeLibraryPack> {
+  async loadPackForWorker(request: RunJSTypeLibraryRequest): Promise<RunJSTypeLibraryPack> {
     this.assertActive();
     const owner = this.registrations.has(request.packId) ? this : this.parent;
-    if (owner && owner !== this) return await owner.loadPackForWorker(request, observer);
+    if (owner && owner !== this) return await owner.loadPackForWorker(request);
     const registration = this.registrations.get(request.packId);
     if (!registration) throw new Error(`RunJS TypeScript library pack loader is not registered: ${request.packId}`);
-    const startedAt = observer?.now();
     const pack = await registration.loader(request);
     assertRegistrationMatches(registration, pack);
-    if (typeof startedAt === 'number') observer?.onLoadEnd(request.packId, Math.max(0, observer.now() - startedAt));
     return pack;
   }
 
@@ -208,42 +194,33 @@ export class RunJSTypeLibraryRegistry {
     request: RunJSTypeLibraryRequest,
     ancestors: ReadonlySet<string>,
     packs: Map<string, RunJSTypeLibraryPack>,
-    observer?: RunJSTypeLibraryLoadObserver,
   ): Promise<void> {
     if (packs.has(request.packId) || ancestors.has(request.packId)) return;
-    const pack = await this.loadPack(request, observer);
+    const pack = await this.loadPack(request);
     const nextAncestors = new Set(ancestors);
     nextAncestors.add(pack.id);
     for (const dependency of [...pack.dependencies].sort((left, right) => left.id.localeCompare(right.id))) {
       if (nextAncestors.has(dependency.id)) continue;
       const dependencyRequest = toDependencyRequest(dependency);
-      await this.collectPackWithDependencies(dependencyRequest, nextAncestors, packs, observer);
+      await this.collectPackWithDependencies(dependencyRequest, nextAncestors, packs);
       const dependencyPack = packs.get(dependency.id);
       if (dependencyPack) assertDependencyMatches(dependency, dependencyPack);
     }
     packs.set(pack.id, pack);
   }
 
-  private async loadPack(
-    request: RunJSTypeLibraryRequest,
-    observer?: RunJSTypeLibraryLoadObserver,
-  ): Promise<RunJSTypeLibraryPack> {
+  private async loadPack(request: RunJSTypeLibraryRequest): Promise<RunJSTypeLibraryPack> {
     const owner = this.registrations.has(request.packId) ? this : this.parent;
-    if (owner && owner !== this) return await owner.loadPack(request, observer);
+    if (owner && owner !== this) return await owner.loadPack(request);
     const registration = this.registrations.get(request.packId);
     if (!registration) throw new Error(`RunJS TypeScript library pack loader is not registered: ${request.packId}`);
     const existing = this.loadingPacks.get(request.packId);
-    if (existing) {
-      observer?.onCacheHit(request.packId);
-      return await existing;
-    }
-    const startedAt = observer?.now();
+    if (existing) return await existing;
     const loading = Promise.resolve()
       .then(() => registration.loader(request))
       .then((pack) => {
         assertRegistrationMatches(registration, pack);
         if (request.kind === 'full') this.loadedFullPacks.set(request.libraryName, pack);
-        if (typeof startedAt === 'number') observer?.onLoadEnd(request.packId, Math.max(0, observer.now() - startedAt));
         return pack;
       })
       .catch((error: unknown) => {

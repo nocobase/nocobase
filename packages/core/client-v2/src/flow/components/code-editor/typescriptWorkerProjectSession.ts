@@ -11,7 +11,6 @@ import type { Completion, CompletionResult } from '@codemirror/autocomplete';
 import type { RunJSTypeLibraryRequest } from '@nocobase/runjs/client-v2';
 
 import { getDefaultRunJSTypeLibraryRegistry, type RunJSTypeLibraryRegistry } from './typescriptLibraryRegistry';
-import type { RunJSTypeScriptMetrics } from './typescriptMetrics';
 import { ensureGeneratedRunJSTypeLibraryPackLoadersRegistered } from './type-packs';
 import type {
   CodeEditorTypeScriptProject,
@@ -180,13 +179,11 @@ class TypeScriptWorkerClient {
   private pending = new Map<number, PendingRequest>();
   private requestId = 0;
   private registry: RunJSTypeLibraryRegistry | null = getDefaultRunJSTypeLibraryRegistry();
-  private metrics: RunJSTypeScriptMetrics | undefined;
 
   constructor(private readonly factory: TypeScriptWorkerFactory) {}
 
-  setRegistry(registry: RunJSTypeLibraryRegistry, metrics?: RunJSTypeScriptMetrics): void {
+  setRegistry(registry: RunJSTypeLibraryRegistry): void {
     this.registry = registry;
-    this.metrics = metrics;
   }
 
   async request(request: TypeScriptWorkerClientRequest): Promise<TypeScriptWorkerResponse> {
@@ -207,7 +204,6 @@ class TypeScriptWorkerClient {
     this.worker?.terminate();
     this.worker = null;
     this.registry = null;
-    this.metrics = undefined;
     const error = new Error(reason);
     for (const pending of this.pending.values()) pending.reject(error);
     this.pending.clear();
@@ -246,14 +242,8 @@ class TypeScriptWorkerClient {
     };
     try {
       const registry = this.registry;
-      const metrics = this.metrics;
       if (!registry) throw new Error('TypeScript worker registry is no longer available.');
-      metrics?.recordPackRequests([message.request.packId]);
-      response.pack = await registry.loadPackForWorker(
-        message.request as RunJSTypeLibraryRequest,
-        metrics?.createLibraryLoadObserver(),
-      );
-      metrics?.recordPreparedPacks([response.pack]);
+      response.pack = await registry.loadPackForWorker(message.request as RunJSTypeLibraryRequest);
     } catch (error: unknown) {
       response.error = error instanceof Error ? error.message : String(error);
     }
@@ -282,8 +272,6 @@ export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScrip
   private latestRequestIds = new Map<'completion' | 'diagnostics' | 'hover', number>();
   private requestSequence = 0;
   private stateKey = '';
-  private workerCacheHitCursor = 0;
-  private workerPackRequestCursor = 0;
 
   constructor(factory: TypeScriptWorkerFactory = defaultWorkerFactory) {
     this.client = new TypeScriptWorkerClient(factory);
@@ -295,7 +283,6 @@ export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScrip
     currentFileContent?: string,
     explicit = false,
   ): Promise<CompletionResult | null> {
-    const startedAt = project.metrics?.now();
     const requestId = this.begin('completion');
     try {
       await this.sync(project, currentFileContent);
@@ -322,8 +309,6 @@ export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScrip
     } catch (error: unknown) {
       this.report(project, error);
       return null;
-    } finally {
-      if (typeof startedAt === 'number') project.metrics?.recordDuration('completion', startedAt);
     }
   }
 
@@ -331,7 +316,6 @@ export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScrip
     project: CodeEditorTypeScriptProject,
     currentFileContent?: string,
   ): Promise<CodeEditorTypeScriptDiagnostic[]> {
-    const startedAt = project.metrics?.now();
     const requestId = this.begin('diagnostics');
     try {
       await this.sync(project, currentFileContent);
@@ -346,13 +330,10 @@ export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScrip
     } catch (error: unknown) {
       this.report(project, error);
       return [];
-    } finally {
-      if (typeof startedAt === 'number') project.metrics?.recordDuration('diagnostics', startedAt);
     }
   }
 
   async getHover(project: CodeEditorTypeScriptProject, position: number, currentFileContent?: string) {
-    const startedAt = project.metrics?.now();
     const requestId = this.begin('hover');
     try {
       await this.sync(project, currentFileContent);
@@ -367,8 +348,6 @@ export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScrip
     } catch (error: unknown) {
       this.report(project, error);
       return null;
-    } finally {
-      if (typeof startedAt === 'number') project.metrics?.recordDuration('hover', startedAt);
     }
   }
 
@@ -431,7 +410,7 @@ export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScrip
     const registry = project.typeLibraryRegistry || getDefaultRunJSTypeLibraryRegistry();
     const snapshot = projectSnapshot(project, currentFileContent);
     const key = snapshotKey(snapshot);
-    this.client.setRegistry(registry, project.metrics);
+    this.client.setRegistry(registry);
     if (!force && key === this.stateKey) return;
     this.stateKey = key;
     this.documentVersion += 1;
@@ -459,14 +438,14 @@ export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScrip
   ): Promise<TypeScriptWorkerResponse> {
     try {
       const response = await this.client.request(request);
-      await this.refreshDebugState(project.metrics);
+      await this.refreshDebugState();
       return response;
     } catch (_) {
       this.resetWorkerState('Rebuilding TypeScript worker after failure.');
       await this.sync(project, currentFileContent, true);
       const recoveredRequest = { ...request, documentVersion: this.documentVersion };
       const response = await this.client.request(recoveredRequest);
-      await this.refreshDebugState(project.metrics);
+      await this.refreshDebugState();
       return response;
     }
   }
@@ -475,37 +454,18 @@ export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScrip
     this.client.reset(reason);
     this.stateKey = '';
     this.lastSnapshot = null;
-    this.workerCacheHitCursor = 0;
-    this.workerPackRequestCursor = 0;
     this.lastDebugState = { ...this.lastDebugState, languageServiceCreationCount: 0 };
   }
 
-  private async refreshDebugState(metrics?: RunJSTypeScriptMetrics): Promise<void> {
+  private async refreshDebugState(): Promise<void> {
+    if (process.env.NODE_ENV !== 'test') return;
     const response = await this.client.request({
       documentVersion: this.documentVersion,
       kind: 'debug',
       projectId: this.projectId,
     });
     if (response.kind !== 'debug-result') return;
-    const previousCreationCount = this.lastDebugState.languageServiceCreationCount;
     this.lastDebugState = response.result as TypeScriptWorkerDebugState;
-    const workerDebug = response.result as TypeScriptWorkerDebugState;
-    const languageServiceCreationCount = Math.max(0, workerDebug.languageServiceCreationCount - previousCreationCount);
-    const cacheHitIds = workerDebug.cacheHitIds.slice(this.workerCacheHitCursor);
-    const packRequestIds = workerDebug.packRequestIds.slice(this.workerPackRequestCursor);
-    this.workerCacheHitCursor = workerDebug.cacheHitIds.length;
-    this.workerPackRequestCursor = workerDebug.packRequestIds.length;
-    metrics?.recordWorkerState({
-      cacheHitIds,
-      dependencyFileCount: workerDebug.dependencyFileCount,
-      immutableCacheCharacterCount: workerDebug.immutableCacheCharacterCount,
-      immutableCacheFileCount: workerDebug.immutableFileCount,
-      languageServiceCreationCount,
-      languageServiceRebuildCount: previousCreationCount > 0 ? languageServiceCreationCount : 0,
-      packRequestIds,
-      peakDeclarationCharacterCount: workerDebug.peakDeclarationCharacterCount,
-      programSourceFileCount: workerDebug.programSourceFileCount,
-    });
   }
 
   private report(project: CodeEditorTypeScriptProject, error: unknown): void {
