@@ -100,6 +100,12 @@ describe('RunJS type-pack generator', () => {
     expect([...second.keys()].some((fileName) => fileName.startsWith('packs/'))).toBe(false);
     expect(second.get('loaders.ts')).not.toMatch(/import\(`[^`]*\$\{/u);
     expect(second.get('manifest.ts')).not.toContain('interface CSSProperties');
+    expect(
+      second
+        .get('manifest.ts')
+        ?.split('\n')
+        .filter((line) => line.startsWith('  {"id":')),
+    ).toHaveLength(result.manifest.length);
   });
 
   it('shares identical declaration graphs while keeping pack contracts isolated', async () => {

@@ -64,7 +64,7 @@ module.exports = (cli) => {
         return;
       }
       if (hasCorePackages()) {
-        await run('yarn', ['workspace', '@nocobase/runjs', 'generate:type-packs']);
+        await run('yarn', ['workspace', '@nocobase/runjs', 'generate']);
       }
       const cwd = process.cwd();
       if (!existsSync(resolve(cwd, '.env')) && existsSync(resolve(cwd, '.env.example'))) {

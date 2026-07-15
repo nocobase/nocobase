@@ -1,3 +1,7 @@
 /node_modules
-/src/flow/components/code-editor/type-packs/generated/loaders.ts
-/src/flow/components/code-editor/type-packs/generated/graphs/
+!/lib/
+!/lib/**
+!/es/
+!/es/**
+/src/flow/components/code-editor/completion-catalogs/generated/
+/src/flow/components/code-editor/type-packs/generated/

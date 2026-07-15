@@ -152,7 +152,7 @@ export async function build(pkgs: string[]) {
       });
       await runProfiledStage(profile, 'app client-v2 shell', async () => {
         if (!clientV2Core || process.argv.includes('--only-tar')) {
-          await runScript(['workspace', '@nocobase/runjs', 'generate:type-packs'], ROOT_PATH);
+          await runScript(['workspace', '@nocobase/runjs', 'generate'], ROOT_PATH);
         }
         await runScript(
           ['rsbuild', 'build', '--config', path.join(CORE_APP, 'client-v2', 'rsbuild.config.ts')],

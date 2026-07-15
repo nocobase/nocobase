@@ -48,21 +48,8 @@ export async function runCompletionCatalogGeneratorCli(
     if (!options.outputDirectory) {
       const sharedOutputFile = path.join(projectRoot, 'packages/core/runjs/src/completion-catalog/generated.ts');
       const sharedSource = renderRunJSCompletionCatalogDataModule(result.catalogs);
-      if (check) {
-        let actual: string | undefined;
-        try {
-          actual = await fs.readFile(sharedOutputFile, 'utf8');
-        } catch (error) {
-          if (!error || typeof error !== 'object' || !('code' in error) || error.code !== 'ENOENT') throw error;
-        }
-        if (actual !== sharedSource) {
-          io.error('Generated RunJS completion catalog data is out of date: completion-catalog/generated.ts');
-          return 1;
-        }
-      } else {
-        await fs.mkdir(path.dirname(sharedOutputFile), { recursive: true });
-        await fs.writeFile(sharedOutputFile, sharedSource, 'utf8');
-      }
+      await fs.mkdir(path.dirname(sharedOutputFile), { recursive: true });
+      await fs.writeFile(sharedOutputFile, sharedSource, 'utf8');
     }
     io.log(
       check

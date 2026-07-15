@@ -593,11 +593,8 @@ function renderGraphModule(records: readonly GeneratedPackRecord[]): string {
 }
 
 function renderManifestModule(entries: readonly GeneratedRunJSTypeLibraryPackManifestEntry[]): string {
-  return `${licenseHeader()}\n${generatedMarker}\n${generatedEslintDisable}\n\nexport interface GeneratedRunJSTypeLibraryPackManifestEntry {\n  id: string;\n  libraryName: string;\n  version: string;\n  entry: string;\n  sourcePackage: string;\n  dependencies: readonly { id: string; version: string; contentHash: string }[];\n  triggers: readonly string[];\n  contentHash: string;\n  graphHash: string;\n  fileCount: number;\n  rootFileCount: number;\n  dependencyFileCount: number;\n  graphRawBytes: number;\n  rawBytes: number;\n}\n\nexport const generatedRunJSTypeLibraryPackManifest: readonly GeneratedRunJSTypeLibraryPackManifestEntry[] = ${JSON.stringify(
-    entries,
-    null,
-    2,
-  )};\n`;
+  const renderedEntries = entries.map((entry) => `  ${JSON.stringify(entry)}`).join(',\n');
+  return `${licenseHeader()}\n${generatedMarker}\n${generatedEslintDisable}\n\nexport interface GeneratedRunJSTypeLibraryPackManifestEntry {\n  id: string;\n  libraryName: string;\n  version: string;\n  entry: string;\n  sourcePackage: string;\n  dependencies: readonly { id: string; version: string; contentHash: string }[];\n  triggers: readonly string[];\n  contentHash: string;\n  graphHash: string;\n  fileCount: number;\n  rootFileCount: number;\n  dependencyFileCount: number;\n  graphRawBytes: number;\n  rawBytes: number;\n}\n\nexport const generatedRunJSTypeLibraryPackManifest: readonly GeneratedRunJSTypeLibraryPackManifestEntry[] = [\n${renderedEntries}\n];\n`;
 }
 
 function renderLoadersModule(records: readonly GeneratedPackRecord[]): string {

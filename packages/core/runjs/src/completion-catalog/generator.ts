@@ -132,7 +132,14 @@ export async function generateRunJSCompletionCatalogs(
 
   const artifacts = buildArtifacts(records);
   if (options.check) {
-    const staleArtifacts = await findStaleArtifacts(options.outputDirectory, artifacts);
+    const manifestArtifact = artifacts.get('manifest.ts');
+    if (!manifestArtifact) {
+      throw new Error('Missing generated RunJS completion catalog manifest artifact');
+    }
+    const staleArtifacts = await findStaleArtifacts(
+      options.outputDirectory,
+      new Map([['manifest.ts', manifestArtifact]]),
+    );
     if (staleArtifacts.length) {
       throw new RunJSCompletionCatalogArtifactsOutOfDateError(staleArtifacts);
     }
@@ -335,10 +342,8 @@ function renderLoadersModule(records: readonly CatalogRecord[]): string {
 }
 
 async function findStaleArtifacts(outputDirectory: string, expected: ReadonlyMap<string, string>): Promise<string[]> {
-  const existingPaths = await listFiles(outputDirectory);
-  const paths = new Set([...expected.keys(), ...existingPaths]);
   const stale: string[] = [];
-  for (const relativePath of [...paths].sort()) {
+  for (const relativePath of [...expected.keys()].sort()) {
     let actual: string | undefined;
     try {
       actual = await fs.readFile(path.join(outputDirectory, relativePath), 'utf8');
@@ -359,26 +364,6 @@ async function writeArtifacts(outputDirectory: string, artifacts: ReadonlyMap<st
     await fs.mkdir(path.dirname(fileName), { recursive: true });
     await fs.writeFile(fileName, content, 'utf8');
   }
-}
-
-async function listFiles(directory: string): Promise<string[]> {
-  let entries: Awaited<ReturnType<typeof fs.readdir>>;
-  try {
-    entries = await fs.readdir(directory, { withFileTypes: true, encoding: 'utf8' });
-  } catch (error) {
-    if (isMissingFileError(error)) return [];
-    throw error;
-  }
-  const files: string[] = [];
-  for (const entry of entries) {
-    const entryPath = path.join(directory, entry.name);
-    if (entry.isDirectory()) {
-      files.push(...(await listFiles(entryPath)).map((fileName) => path.posix.join(entry.name, fileName)));
-    } else if (entry.isFile()) {
-      files.push(entry.name);
-    }
-  }
-  return files.sort();
 }
 
 function getOwningPackageJsonPath(fileName: string): string | undefined {

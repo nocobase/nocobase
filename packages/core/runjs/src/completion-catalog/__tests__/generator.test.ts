@@ -95,7 +95,7 @@ describe('RunJS completion catalog generator', () => {
     ).rejects.toBeInstanceOf(RunJSCompletionCatalogArtifactsOutOfDateError);
   });
 
-  it('returns non-zero from --check and identifies the stale catalog artifact', async () => {
+  it('checks the tracked manifest without requiring ignored catalog artifacts', async () => {
     const directory = await createTemporaryDirectory();
     const outputDirectory = path.join(directory, 'generated');
     const messages: string[] = [];
@@ -109,11 +109,18 @@ describe('RunJS completion catalog generator', () => {
     };
 
     expect(await runCompletionCatalogGeneratorCli([], { projectRoot: repositoryRoot, outputDirectory, io })).toBe(0);
-    await fs.writeFile(path.join(outputDirectory, 'antd.ts'), '// stale\n', 'utf8');
+    await fs.rm(path.join(outputDirectory, 'antd.ts'), { force: true });
+    await fs.rm(path.join(outputDirectory, 'icons.ts'), { force: true });
+    await fs.rm(path.join(outputDirectory, 'loaders.ts'), { force: true });
+    expect(
+      await runCompletionCatalogGeneratorCli(['--check'], { projectRoot: repositoryRoot, outputDirectory, io }),
+    ).toBe(0);
+
+    await fs.writeFile(path.join(outputDirectory, 'manifest.ts'), '// stale\n', 'utf8');
     expect(
       await runCompletionCatalogGeneratorCli(['--check'], { projectRoot: repositoryRoot, outputDirectory, io }),
     ).toBe(1);
-    expect(messages.join('\n')).toContain('antd.ts');
+    expect(messages.join('\n')).toContain('manifest.ts');
   });
 
   it('keeps an over-budget Icons catalog in an independent async Rsbuild chunk', async () => {

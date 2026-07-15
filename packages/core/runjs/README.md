@@ -33,23 +33,18 @@ silently override generated packs. Small interfaces such as the top-level `ctx.m
 
 ## Generated artifacts
 
-Run all generators from the repository root after changing a type dependency, pack definition, bridge, or completion
-definition:
+Run the unified generator from the repository root after changing a type dependency, pack definition, bridge, or
+completion definition. It always generates completion catalogs first, then the DOM bridge, then type packs:
 
 ```bash
-yarn workspace @nocobase/runjs generate:type-packs
-yarn workspace @nocobase/runjs generate:dom-type-bridge
-yarn workspace @nocobase/runjs generate:completion-catalogs
+yarn workspace @nocobase/runjs generate
 ```
 
-CI and pre-commit verification must use check mode. Check mode reads and compares tracked artifacts without rewriting
-them; for type packs it validates the committed manifest while the ignored loaders and graphs are recreated by the
-build lifecycle:
+CI and pre-commit verification must use check mode. Completion and type-pack checks compare their committed manifests;
+the DOM check compares its committed bridge. Ignored build inputs are recreated by the build lifecycle:
 
 ```bash
-yarn workspace @nocobase/runjs generate:type-packs --check
-yarn workspace @nocobase/runjs generate:dom-type-bridge --check
-yarn workspace @nocobase/runjs generate:completion-catalogs --check
+yarn workspace @nocobase/runjs generate:check
 ```
 
 The generators own these outputs:
@@ -60,9 +55,9 @@ The generators own these outputs:
 - Ignored browser build inputs under the same generated directory: `loaders.ts` and content-addressed `graphs/`
   modules. They are recreated from the locked npm declarations during dependency installation and client builds; they
   are not source artifacts or npm package source files.
-- Browser completion catalogs under
+- A committed completion manifest plus ignored browser catalogs and loaders under
   `packages/core/client-v2/src/flow/components/code-editor/completion-catalogs/generated/`.
-- Shared Node completion data in `src/completion-catalog/generated.ts`.
+- Ignored shared Node completion data in `src/completion-catalog/generated.ts`.
 - The DOM type-only bridge in `src/generated/dom-type-only-bridge.ts`.
 
 Never edit generated files by hand. Change the source definition or generator, regenerate, and review the manifest
@@ -171,23 +166,22 @@ After source changes, run `yarn eslint --fix` on touched files and run the relev
 
 ## Performance and production build checks
 
-The ordinary editor path must not include third-party declaration bodies. Measure the split initial chunk with:
+The ordinary editor path must not include third-party declaration bodies. The chunk measurement enforces graph count,
+raw/gzip graph size, graph sharing, and initial-chunk budgets:
 
 ```bash
 node packages/core/client-v2/src/flow/components/code-editor/__tests__/measure-runjs-typescript-chunk.mjs
 ```
 
-Run the Chromium benchmark with 20 cold and 20 hot samples per scenario:
+Use the lightweight baseline probe when comparing TypeScript timing or Language Service creation behavior. It reports
+measurements without enforcing unstable machine-specific latency thresholds:
 
 ```bash
-node packages/core/client-v2/src/flow/components/code-editor/__tests__/runjs-typescript-performance-benchmark.mjs --samples 20
+yarn test:client packages/core/client-v2/src/flow/components/code-editor/__tests__/runjsTypeScriptBaseline.bench.ts --run --reporter=verbose
 ```
 
-Reports are written by default to `node_modules/.cache/runjs-typescript-performance/`. Pass `--output-dir` only when an
-intentional, reviewable report snapshot is needed; routine benchmark runs must not dirty the source tree. Treat a
-regression in initial gzip size, unique declaration-graph bytes, graph chunk count, cold/hot latency, stale work, or
-main-thread long tasks as a release blocker unless the budget and rationale are deliberately reviewed. The current
-graph budgets are 60 chunks, 8 MiB raw, and 2 MiB gzip while retaining all 109 logical packs.
+Treat a chunk-budget failure as a release blocker unless the budget and rationale are deliberately reviewed. The
+current graph budgets are 60 chunks, 8 MiB raw, and 2 MiB gzip while retaining all 109 logical packs.
 
 Build once with a non-root public path before release:
 
@@ -226,11 +220,11 @@ When upgrading React, ReactDOM, Ant Design, icons, dayjs, lodash, mathjs, Formul
 1. Update dependencies and confirm runtime/declaration major-version compatibility.
 2. Regenerate the logical pack manifest and declaration graphs, the DOM bridge when TypeScript DOM declarations
    changed, and completion catalogs when exports changed.
-3. Run all three generators with `--check` and ensure the working tree remains unchanged.
+3. Run `yarn workspace @nocobase/runjs generate:check` and ensure the working tree remains unchanged.
 4. Review manifest versions, pack and graph hashes, dependency closures, unique graph sizes, removed or added virtual
    files, symbol grouping, and completion changes.
-5. Run the shared Node/browser diagnostic matrix, registry conflict tests, DOM boundary tests, performance benchmark,
-   and non-root production build.
+5. Run the shared Node/browser diagnostic matrix, registry conflict tests, DOM boundary tests, baseline probe, chunk
+   budget measurement, and non-root production build.
 6. Test upgrading an already opened application so cached old chunks cannot silently satisfy new manifest requests.
 
 ## Troubleshooting
