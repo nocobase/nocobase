@@ -118,7 +118,7 @@ async function createLocalRuntime(
     ].join(''),
   );
 
-  return ({
+  return {
     kind: 'local',
     envName: 'demo',
     source: 'npm',
@@ -135,7 +135,7 @@ async function createLocalRuntime(
         version,
       },
     },
-  } as unknown) as Extract<ManagedAppRuntime, { kind: 'local' }>;
+  } as unknown as Extract<ManagedAppRuntime, { kind: 'local' }>;
 }
 
 test('buildEnvProxyNginxBundle renders app.conf and index HTML with CDN-prefixed assets', async () => {
@@ -164,11 +164,6 @@ test('buildEnvProxyNginxBundle renders app.conf and index HTML with CDN-prefixed
   expect(bundle.appConfigContent).toContain('return 302 /console$uri$is_args$args;');
   expect(bundle.appConfigContent).toContain('location = /console/api {');
   expect(bundle.appConfigContent).toContain('return 308 /console/api/$is_args$args;');
-  expect(bundle.appConfigContent).toContain('location ^~ /console/files/ {');
-  expect(bundle.appConfigContent).toContain('location ^~ /files/ {');
-  expect(bundle.appConfigContent.indexOf('location ^~ /console/files/ {')).toBeLessThan(
-    bundle.appConfigContent.indexOf('location ^~ /console/ {'),
-  );
   expect(bundle.appConfigContent.indexOf('location = /console/api {')).toBeLessThan(
     bundle.appConfigContent.indexOf('location ^~ /console/api/ {'),
   );
@@ -208,8 +203,6 @@ test('buildEnvProxyNginxBundle omits the root redirect block for root-mounted ap
 
   expect(bundle.appConfigContent).toContain('location ^~ / {');
   expect(bundle.appConfigContent).toContain('location ^~ /v/ {');
-  expect(bundle.appConfigContent).toContain('location ^~ /files/ {');
-  expect(bundle.appConfigContent.match(/location \^~ \/files\//g)).toHaveLength(1);
   expect(bundle.appConfigContent).toContain('try_files $uri /index-v1.html =404;');
   expect(bundle.appConfigContent).not.toContain('return 302 /$is_args$args;');
 });
@@ -499,11 +492,6 @@ test('buildEnvProxyConfig renders explicit Caddy redirects when app public path 
   expect(result.content).toContain('redir * /nocobase/ 302');
   expect(result.content).toContain('redir * /nocobase/v/ 302');
   expect(result.content).toContain('redir * /nocobase{uri} 302');
-  expect(result.content).toContain('handle /nocobase/files/* {');
-  expect(result.content).toContain('handle /files/* {');
-  expect(result.content.indexOf('handle /nocobase/files/* {')).toBeLessThan(
-    result.content.indexOf('handle_path /nocobase/* {'),
-  );
 });
 
 test('buildEnvProxyCaddyBundle renders app.caddy and index HTML files', async () => {
@@ -526,8 +514,6 @@ test('buildEnvProxyCaddyBundle renders app.caddy and index HTML files', async ()
   expect(bundle.indexV2Path).toBe(path.join(root, '.nocobase', 'proxy', 'caddy', 'demo', 'public', 'index-v2.html'));
   expect(bundle.appConfigContent).toContain(':80 {');
   expect(bundle.appConfigContent).not.toContain('route {');
-  expect(bundle.appConfigContent).toContain('handle /console/files/* {');
-  expect(bundle.appConfigContent).toContain('handle /files/* {');
   expect(bundle.appConfigContent).toContain('handle_path /console/admin/* {');
   expect(bundle.appConfigContent).toContain('try_files {path} /index-v2.html');
   expect(bundle.appConfigContent).toContain('root * /workspace/.nocobase/proxy/caddy/demo/public');

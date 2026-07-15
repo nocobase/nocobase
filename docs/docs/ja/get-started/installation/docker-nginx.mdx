@@ -96,7 +96,6 @@ services:
 - `NOCOBASE_PROXY_UPSTREAM_HOST=app` により、Nginx コンテナは Compose ネットワーク経由で `app` サービスへ接続します
 - `./storage` は `app` と `nginx` の両方にマウントし、プロキシ設定、静的アセット、アップロードファイルを共有できるようにします
 - `nginx` コンテナは `nocobase.conf` が生成されるまで待機し、その後 `ln -sf` で `/etc/nginx/conf.d/default.conf` にリンクしてから起動します
-- 自動生成される設定は、`APP_PUBLIC_PATH` 配下の `/files/` とルートの `/files/` の両方を NocoBase に転送し、認証付きのファイルプレビューとダウンロードを処理します
 - 外部 Nginx コンテナを使う場合は、ホスト側のポートマッピングを `nginx` コンテナで処理します。テスト時は `13000:80` から始められますが、本番環境では通常ホストの `80` と `443` を直接公開し、`app` サービスはホストへポートを公開する必要はありません
 
 ## ホストにインストールした Nginx を使う場合
@@ -171,8 +170,6 @@ sudo systemctl reload nginx
 ```
 
 ホスト側の Nginx が `conf.d` ディレクトリを使っていない場合は、リンク先を自分の設定パスに置き換えてください。通常は `nocobase.conf` を `http {}` から include するファイルとしてそのまま使うほうが安全で、内容を手で分解してコピーするのはおすすめしません。
-
-自動生成された設定を使わずに Nginx を自分で管理する場合は、`/files/` と `APP_PUBLIC_PATH` 配下の対応するルートを、SPA フォールバックルールより前で NocoBase に転送してください。完全な例は [Nginx リバースプロキシ](../../nocobase-cli/production/reverse-proxy/nginx.md)を参照してください。
 
 ## 関連リンク
 

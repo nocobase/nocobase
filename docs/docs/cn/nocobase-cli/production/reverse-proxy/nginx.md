@@ -122,7 +122,7 @@ nb proxy nginx reload
 
 如果你的应用不是 CLI 托管的，或者你明确要自己维护完整的 Nginx 配置，也可以手写。
 
-不过对于 NocoBase 来说，生产环境反向代理通常不只是一个简单的 `proxy_pass`。除了把 API 请求转发到后端应用之外，一份完整可用的配置通常还需要同时处理上传目录、前端静态资源、文件访问入口 `/files/`、WebSocket、`.well-known` 路由，以及 SPA 回退页。
+不过对于 NocoBase 来说，生产环境反向代理通常不只是一个简单的 `proxy_pass`。除了把 API 请求转发到后端应用之外，一份完整可用的配置通常还需要同时处理上传目录、前端静态资源、WebSocket、`.well-known` 路由，以及 SPA 回退页。
 
 以 `test2` 为例，和 Nginx 相关的关键文件与目录通常包括：
 
@@ -138,7 +138,6 @@ nb proxy nginx reload
 - `uploads`：通过 `alias` 暴露上传目录
 - `dist`：通过 `alias` 暴露前端构建产物目录
 - `well-known`：处理 OAuth / OpenID 相关发现路径
-- `files`：把 `/files/` 下的文件访问请求转发到后端应用
 - `api`：转发 `/api/` 请求到后端应用
 - `ws`：转发 WebSocket 请求到后端应用
 - `spa`：为 `/` 和 `/v/` 提供前端入口及 `try_files` 回退
@@ -177,11 +176,6 @@ server {
 
     location ~ ^/\\.well-known/(?<well_known>oauth-authorization-server|openid-configuration)/(?<resource_path>.+)$ {
         rewrite ^ /$resource_path/.well-known/$well_known break;
-        proxy_pass http://127.0.0.1:56575;
-        include NB_CLI_ROOT/.nocobase/proxy/nginx/snippets/proxy-location.conf;
-    }
-
-    location ^~ /files/ {
         proxy_pass http://127.0.0.1:56575;
         include NB_CLI_ROOT/.nocobase/proxy/nginx/snippets/proxy-location.conf;
     }
@@ -235,15 +229,7 @@ nb proxy nginx generate --env test2 --host c.local.nocobase.com
 2. 以生成结果作为基准确认路由结构和实际路径
 3. 再根据你的域名、运行方式和挂载路径做手工调整
 
-这样通常比从零手写一份配置更不容易漏掉 `/files/`、WebSocket、静态资源、上传目录或 SPA 回退页相关的细节。
-
-:::warning 注意
-
-`/files/` 是需要经过 NocoBase 鉴权的应用路由，不能作为静态目录处理，也不能落入 SPA 回退页。手写配置时，需要把它转发到 NocoBase 后端，并放在 `location /` 等前端回退规则之前。
-
-如果配置了 `APP_PUBLIC_PATH=/nocobase/`，还需要转发 `/nocobase/files/`。为了兼容已有的根路径文件地址，建议同时保留 `/files/` 转发规则。
-
-:::
+这样通常比从零手写一份配置更不容易漏掉 WebSocket、静态资源、上传目录或 SPA 回退页相关的细节。
 
 ## HTTPS 怎么处理
 

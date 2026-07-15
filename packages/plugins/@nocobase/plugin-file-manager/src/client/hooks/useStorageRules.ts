@@ -46,21 +46,11 @@ export function useStorageRules(storage) {
 
 export function useAttachmentFieldProps() {
   const field = useCollectionField();
-  const dataSourceKey = useDataSourceKey();
   const action = `${field?.target}:create${
     field?.storage ? `?attachmentField=${field.collectionName}.${field.name}` : ''
   }`;
   const storageUploadProps = useStorageUploadProps({ action });
-  return {
-    action,
-    fileCollection: field?.target
-      ? {
-          dataSourceKey: dataSourceKey || 'main',
-          collectionName: field.target,
-        }
-      : undefined,
-    ...storageUploadProps,
-  };
+  return { action, ...storageUploadProps };
 }
 
 export function useFileCollectionStorageRules() {

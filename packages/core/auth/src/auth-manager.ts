@@ -8,7 +8,7 @@
  */
 
 import { Context, Next } from '@nocobase/actions';
-import { getAuthCookieName, getAuthCookieOptions, Registry, storagePathJoin } from '@nocobase/utils';
+import { Registry, storagePathJoin } from '@nocobase/utils';
 import { Auth, AuthExtend } from './auth';
 import { JwtOptions, JwtService } from './base/jwt-service';
 import { ITokenBlacklistService } from './base/token-blacklist-service';
@@ -37,8 +37,6 @@ export type AuthManagerOptions = {
   default?: string;
   jwt?: JwtOptions;
 };
-
-const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
 type AuthConfig = {
   auth: AuthExtend<Auth>; // The authentication class.
@@ -164,34 +162,18 @@ export class AuthManager {
     const self = this;
 
     return async function AuthManagerMiddleware(ctx: Context & { auth: Auth }, next: Next) {
-      const headerAuthenticator = ctx.get(self.options.authKey);
-      const cookieName = getAuthCookieName('authenticator', ctx.app.name);
-      const cookieAuthenticator = headerAuthenticator ? null : ctx.cookies.get(cookieName);
-      const name = headerAuthenticator || cookieAuthenticator || self.options.default;
+      const name = ctx.get(self.options.authKey) || self.options.default;
       let authenticator: Auth;
       try {
         authenticator = await ctx.app.authManager.get(name, ctx);
         ctx.auth = authenticator;
       } catch (err) {
-        if (cookieAuthenticator && !headerAuthenticator && self.options.default && name !== self.options.default) {
-          ctx.cookies.set(cookieName, null, getAuthCookieOptions(ctx));
-          try {
-            authenticator = await ctx.app.authManager.get(self.options.default, ctx);
-            ctx.auth = authenticator;
-          } catch (defaultErr) {
-            ctx.auth = {} as Auth;
-            ctx.logger.warn(defaultErr.message, { method: 'check', authenticator: self.options.default });
-            return next();
-          }
-        } else {
-          ctx.auth = {} as Auth;
-          ctx.logger.warn(err.message, { method: 'check', authenticator: name });
-          return next();
-        }
+        ctx.auth = {} as Auth;
+        ctx.logger.warn(err.message, { method: 'check', authenticator: name });
+        return next();
       }
 
       if (!authenticator) {
-        ctx.auth = {} as Auth;
         return next();
       }
 
@@ -199,42 +181,7 @@ export class AuthManager {
         return next();
       }
 
-      let user;
-      try {
-        user = await ctx.auth.check();
-      } catch (err) {
-        if (
-          ctx.state?.optionalAuth === true &&
-          ctx.state?.pendingAuthTokenSource === 'cookie' &&
-          (err.status === 401 || err.statusCode === 401)
-        ) {
-          const authTokenCookieName = getAuthCookieName('authToken', ctx.app.name);
-          const authCookieOptions = getAuthCookieOptions(ctx);
-          ctx.cookies.set(authTokenCookieName, null, authCookieOptions);
-          // Cookies written by older deployments may carry the raw APP_PUBLIC_PATH (with a
-          // trailing slash) as path; that variant shadows the canonical cookie in browsers,
-          // so it has to be expired explicitly as well.
-          const rawPublicPath = process.env.APP_PUBLIC_PATH;
-          if (rawPublicPath && rawPublicPath !== authCookieOptions.path) {
-            ctx.cookies.set(authTokenCookieName, null, { ...authCookieOptions, path: rawPublicPath });
-          }
-          ctx.state.currentUser = undefined;
-          ctx.state.authTokenSource = undefined;
-          ctx.state.pendingAuthTokenSource = undefined;
-          try {
-            return await next();
-          } catch (anonymousErr) {
-            // koa's onerror strips response headers from unhandled errors; re-attach the
-            // cookie cleanup so it still reaches the browser on error responses.
-            const setCookieHeader = ctx.res.getHeader('set-cookie');
-            if (setCookieHeader) {
-              anonymousErr.headers = { ...anonymousErr.headers, 'set-cookie': setCookieHeader };
-            }
-            throw anonymousErr;
-          }
-        }
-        throw err;
-      }
+      const user = await ctx.auth.check();
       if (user) {
         ctx.auth.user = user;
       }
@@ -264,22 +211,4 @@ export class AuthManager {
     fs.writeFileSync(jwtSecretPath, key, { mode: 0o600 });
     return key;
   }
-}
-
-export async function csrfMiddleware(ctx: Context, next: Next) {
-  if (SAFE_METHODS.has(ctx.method)) {
-    return next();
-  }
-
-  if (ctx.state?.authTokenSource !== 'cookie' || !ctx.state?.currentUser) {
-    return next();
-  }
-
-  const cookieToken = ctx.cookies.get(getAuthCookieName('csrfToken', ctx.app.name));
-  const headerToken = ctx.get('X-CSRF-Token');
-  if (!cookieToken || cookieToken.length < 16 || headerToken !== cookieToken) {
-    return ctx.throw(403, ctx.t('Invalid CSRF token', { ns: 'auth' }));
-  }
-
-  await next();
 }

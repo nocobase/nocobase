@@ -69,7 +69,6 @@
   "The username or email is incorrect, please re-enter": "사용자 이름 또는 이메일이 올바르지 않습니다. 다시 입력해 주세요.",
   "The username/email or password is incorrect, please re-enter": "사용자 이름/이메일 또는 비밀번호가 올바르지 않습니다. 다시 입력해 주세요.",
   "The validity period of each issued API Token. After the Token expires, if it is within the session validity period and has not exceeded the refresh limit, the server will automatically issue a new Token to maintain the user session, otherwise the user is required to log in again. (Each Token can only be refreshed once)": "각 발급된 API 토큰의 유효 기간입니다. 토큰이 만료된 후 세션 유효 기간 내이고 갱신 한도에 도달하지 않았다면, 서버는 사용자 세션 유지를 위해 자동으로 새 토큰을 발급합니다. 그렇지 않은 경우 사용자는 다시 로그인해야 합니다. (각 토큰은 한 번만 갱신할 수 있습니다)",
-  "Invalid sign-in origin": "로그인 출처가 올바르지 않습니다",
   "Token expired": "토큰이 만료되었습니다",
   "Token policy": "토큰 정책",
   "Token validity period": "토큰 유효 기간",

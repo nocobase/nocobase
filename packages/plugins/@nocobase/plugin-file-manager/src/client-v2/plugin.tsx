@@ -26,19 +26,6 @@ type UploadFileResult = {
   data?: unknown;
 };
 
-const withLocalStorageFlag = (result: UploadFileResult, storageType?: string): UploadFileResult => {
-  if (!storageType || !result?.data || typeof result.data !== 'object') {
-    return result;
-  }
-  return {
-    ...result,
-    data: {
-      ...result.data,
-      local: storageType === STORAGE_TYPE_LOCAL,
-    },
-  };
-};
-
 type StorageUploadOptions = {
   file: File;
   apiClient: Application['apiClient'];
@@ -334,7 +321,7 @@ export class PluginFileManagerClientV2 extends Plugin<Record<string, never>, App
     };
 
     if (storageTypeObject?.upload) {
-      const result = await storageTypeObject.upload({
+      return await storageTypeObject.upload({
         file,
         apiClient: this.app.apiClient,
         storageType,
@@ -344,7 +331,6 @@ export class PluginFileManagerClientV2 extends Plugin<Record<string, never>, App
         fileCollectionName,
         query: uploadQuery,
       });
-      return withLocalStorageFlag(result, storageType);
     }
 
     try {
@@ -362,7 +348,7 @@ export class PluginFileManagerClientV2 extends Plugin<Record<string, never>, App
         data: formData,
       });
 
-      return withLocalStorageFlag({ data: response.data?.data }, storageType);
+      return { data: response.data?.data };
     } catch (error) {
       return {
         errorMessage: error instanceof Error ? error.message : 'Upload failed',

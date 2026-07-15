@@ -33,10 +33,5 @@ describe('static file security', () => {
     expect(getStorageUploadSecurityHeaders('/storage/uploads/a.txt')).toEqual({
       'X-Content-Type-Options': 'nosniff',
     });
-
-    expect(getStorageUploadSecurityHeaders('/storage/uploads/a.txt?download=1')).toEqual({
-      'Content-Disposition': 'attachment',
-      'X-Content-Type-Options': 'nosniff',
-    });
   });
 });

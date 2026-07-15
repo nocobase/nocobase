@@ -86,39 +86,6 @@ API_BASE_PATH=/api/
 
 ### API_BASE_URL
 
-URL de base utilisée par le frontend pour accéder à l'API NocoBase. Elle est vide par défaut, ce qui signifie que `${APP_PUBLIC_PATH}api/` du même origin est utilisé.
-
-```bash
-API_BASE_URL=
-```
-
-Ne la configurez avec l'adresse complète de l'API que lorsque les pages et le service API sont sur des origins différents (protocole, domaine ou port différents) :
-
-```bash
-API_BASE_URL=https://api.example.com/api/
-```
-
-:::warning{title="Déploiements cross-origin"}
-NocoBase utilise des cookies pour conserver l'état de connexion et autoriser l'accès aux [URL de fichiers stables](../../file-manager/stable-url.md). Lorsque `API_BASE_URL` pointe vers un origin différent de celui des pages :
-
-- L'origin des pages doit être ajouté à [`CORS_ORIGIN_WHITELIST`](#cors_origin_whitelist). Sinon, le navigateur ignorera `Set-Cookie` dans les réponses API, le cookie de connexion ne sera pas enregistré et les fonctions dépendantes des cookies, comme l'aperçu et le téléchargement de fichiers, échoueront avec `403`.
-- Les cookies sont stockés par `hostname`. Si les pages et l'API utilisent des domaines totalement différents, les requêtes vers les URL stables sous `/files/` depuis le domaine des pages n'enverront pas le cookie de connexion stocké sous le domaine de l'API ; l'accès au fichier échouera donc toujours.
-
-Il est recommandé de servir les pages et l'API depuis le même origin via un proxy inverse et de laisser `API_BASE_URL` vide.
-:::
-
-### CORS_ORIGIN_WHITELIST
-
-Liste blanche des origins autorisés à accéder à l'API en cross-origin avec des identifiants (cookies). Plusieurs origins sont séparés par des virgules. Vide par défaut.
-
-```bash
-CORS_ORIGIN_WHITELIST=https://www.example.com,https://admin.example.com
-```
-
-- Lorsqu'elle n'est pas configurée, seules les requêtes du même origin sont considérées comme fiables ; les requêtes cross-origin peuvent encore appeler l'API anonymement, mais le navigateur ne peut pas lire ni écrire de cookies pour elles.
-- Lorsqu'elle est configurée, les origins de la liste blanche reçoivent un `Access-Control-Allow-Origin` qui reprend exactement l'origin ainsi que `Access-Control-Allow-Credentials: true`, ce qui permet au navigateur d'envoyer et de stocker les cookies de connexion sur les requêtes cross-origin.
-- L'API de connexion valide les en-têtes `Origin` et `Referer` de la requête ; les requêtes de connexion cross-origin provenant d'origins hors liste blanche sont rejetées avec `403`.
-
 ### CLUSTER_MODE
 
 > `v1.6.0+`

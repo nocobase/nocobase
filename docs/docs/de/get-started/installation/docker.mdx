@@ -629,7 +629,7 @@ Wenn du das Image mit integriertem Nginx verwendest, ist es normalerweise besser
 
 Die folgende Konfiguration leitet Anfragen an die Domain an `http://127.0.0.1:13000/` weiter:
 
-```nginx
+```bash
 server {
     listen 80;
     server_name your_domain.com;  # Ersetze your_domain.com durch deine Domain
@@ -660,8 +660,6 @@ server {
 
 Wenn du auch HTTPS aktivieren möchtest, konfiguriere `443` und das Zertifikat im Nginx auf dem Host. Der NocoBase-Container muss Zertifikate nicht separat verarbeiten.
 
-Der Block `location /` in dieser Root-Pfad-Konfiguration leitet auch `/api/`, `/ws` und `/files/` weiter. Wenn du statische Ressourcen und Anwendungsrouten trennst, stelle weiterhin sicher, dass `/files/` an NocoBase weitergeleitet und nicht als statisches Verzeichnis behandelt wird.
-
 ### Bereitstellung unter einem Unterpfad
 
 Wenn du die Anwendung unter einem Unterpfad bereitstellen möchtest, etwa `https://your_domain.com/nocobase/`, konfiguriere zuerst die Umgebungsvariable `APP_PUBLIC_PATH`:
@@ -678,7 +676,7 @@ Behalte den führenden und abschließenden `/` im Pfad bei. Nach der Konfigurati
 
 Konfiguriere anschließend Nginx auf dem Host mit demselben Unterpfad:
 
-```nginx
+```bash
 server {
     listen 80;
     server_name your_domain.com;  # Ersetze your_domain.com durch deine Domain
@@ -704,32 +702,10 @@ server {
         send_timeout 600;
         proxy_buffering off;
     }
-
-    # Kompatibilität mit Dateizugriffs-URLs auf Root-Ebene beibehalten.
-    location ^~ /files/ {
-        proxy_pass http://127.0.0.1:13000;
-        proxy_http_version 1.1;
-
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $upstream_x_forwarded_proto;
-        proxy_set_header Host $final_host;
-        proxy_set_header Referer $http_referer;
-        proxy_set_header User-Agent $http_user_agent;
-
-        add_header Cache-Control "no-cache, no-store" always;
-
-        proxy_connect_timeout 600;
-        proxy_send_timeout 600;
-        proxy_read_timeout 600;
-        send_timeout 600;
-    }
 }
 ```
 
-Beachte dabei:
-
-- `APP_PUBLIC_PATH` und der Pfad in `proxy_pass` müssen übereinstimmen. Wenn auf einer Seite `/nocobase/` fehlt, funktionieren statische Dateien und Routing normalerweise nicht korrekt
-- `/nocobase/files/` wird durch `location /nocobase/` weitergeleitet; die kompatible Root-Route `/files/` muss separat an NocoBase weitergeleitet werden
+Wichtig ist, dass `APP_PUBLIC_PATH` und der Pfad in `proxy_pass` übereinstimmen. Wenn auf einer Seite `/nocobase/` fehlt, funktionieren statische Dateien und Routing normalerweise nicht korrekt.
 
 ### Weitere Optionen
 

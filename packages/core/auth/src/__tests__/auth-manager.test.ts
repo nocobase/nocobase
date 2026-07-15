@@ -10,8 +10,6 @@
 import { Context } from '@nocobase/actions';
 import { Auth, AuthManager } from '@nocobase/auth';
 import { Model } from '@nocobase/database';
-import { getAuthCookieName } from '@nocobase/utils';
-import { vi } from 'vitest';
 
 class MockStorer {
   elements: Map<string, any> = new Map();
@@ -26,10 +24,6 @@ class MockStorer {
 
 class BasicAuth extends Auth {
   public user: Model;
-
-  async skipCheck() {
-    return true;
-  }
 
   async check() {
     return null;
@@ -99,69 +93,5 @@ describe('auth-manager', () => {
   it('should get auth config', () => {
     authManager.registerTypes('basic', { auth: BasicAuth, title: 'Basic' });
     expect(authManager.getAuthConfig('basic')).toEqual({ auth: BasicAuth, title: 'Basic' });
-  });
-
-  it('should get authenticator from cookie before default authenticator', async () => {
-    authManager = new AuthManager({
-      authKey: 'X-Authenticator',
-      default: 'basic-test',
-    });
-    authManager.registerTypes('basic', { auth: BasicAuth });
-    storer = new MockStorer();
-    storer.set('basic-test', { name: 'basic-test', authType: 'basic', options: {} });
-    storer.set('cookie-test', { name: 'cookie-test', authType: 'basic', options: {} });
-    authManager.setStorer(storer);
-
-    const ctx = {
-      get: (name: string) => (name === 'X-Authenticator' ? '' : undefined),
-      cookies: {
-        get: (name: string) => (name === getAuthCookieName('authenticator', 'main') ? 'cookie-test' : undefined),
-        set: vi.fn(),
-      },
-      app: { name: 'main', authManager, options: { acl: false } },
-      logger: { warn: vi.fn() },
-    } as any;
-    const next = vi.fn();
-
-    await authManager.middleware()(ctx, next);
-
-    expect(ctx.auth).toBeInstanceOf(BasicAuth);
-    expect(ctx.auth.authenticator.name).toBe('cookie-test');
-    expect(next).toHaveBeenCalled();
-  });
-
-  it('should clear invalid authenticator cookie and fallback to default authenticator', async () => {
-    authManager = new AuthManager({
-      authKey: 'X-Authenticator',
-      default: 'basic-test',
-    });
-    authManager.registerTypes('basic', { auth: BasicAuth });
-    storer = new MockStorer();
-    storer.set('basic-test', { name: 'basic-test', authType: 'basic', options: {} });
-    authManager.setStorer(storer);
-
-    const ctx = {
-      get: (name: string) => (name === 'X-Authenticator' ? '' : undefined),
-      cookies: {
-        get: (name: string) => (name === getAuthCookieName('authenticator', 'main') ? 'missing-test' : undefined),
-        set: vi.fn(),
-      },
-      app: { name: 'main', authManager, options: { acl: false } },
-      headers: {},
-      protocol: 'http',
-      logger: { warn: vi.fn() },
-    } as any;
-    const next = vi.fn();
-
-    await authManager.middleware()(ctx, next);
-
-    expect(ctx.cookies.set).toHaveBeenCalledWith(
-      getAuthCookieName('authenticator', 'main'),
-      null,
-      expect.objectContaining({ path: '/', sameSite: 'lax', httpOnly: true }),
-    );
-    expect(ctx.auth).toBeInstanceOf(BasicAuth);
-    expect(ctx.auth.authenticator.name).toBe('basic-test');
-    expect(next).toHaveBeenCalled();
   });
 });

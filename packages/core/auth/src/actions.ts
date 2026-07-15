@@ -8,32 +8,7 @@
  */
 
 /* istanbul ignore file -- @preserve */
-import type { Handlers } from '@nocobase/resourcer';
-import { getOrigin, isTrustedOrigin } from '@nocobase/utils';
-
-const localeNamespace = 'auth';
-
-type AuthActionContext = Parameters<Handlers[string]>[0];
-
-function assertTrustedSignInOrigin(ctx: AuthActionContext) {
-  const originContext = {
-    protocol: ctx.protocol,
-    headers: ctx.headers,
-    get: (name: string) => ctx.get(name),
-  };
-  const origin = ctx.get('origin');
-  if (origin) {
-    if (!isTrustedOrigin(originContext, origin)) {
-      ctx.throw(403, ctx.t('Invalid sign-in origin', { ns: localeNamespace }));
-    }
-    return;
-  }
-
-  const refererOrigin = getOrigin(ctx.get('referer'));
-  if (refererOrigin && !isTrustedOrigin(originContext, refererOrigin)) {
-    ctx.throw(403, ctx.t('Invalid sign-in origin', { ns: localeNamespace }));
-  }
-}
+import { Handlers } from '@nocobase/resourcer';
 
 function filterHiddenFields(ctx, user) {
   if (!user) {
@@ -57,7 +32,6 @@ function filterHiddenFields(ctx, user) {
 
 export const actions = {
   signIn: async (ctx, next) => {
-    assertTrustedSignInOrigin(ctx);
     ctx.body = await ctx.auth.signIn();
     await next();
   },
@@ -72,10 +46,6 @@ export const actions = {
   },
   check: async (ctx, next) => {
     ctx.body = filterHiddenFields(ctx, ctx.auth.user);
-    await next();
-  },
-  syncCookies: async (ctx, next) => {
-    ctx.body = await ctx.auth.syncCookies();
     await next();
   },
 } as Handlers;
