@@ -35,7 +35,7 @@ function ExecutedMessage({ execution }: { execution?: { id?: string | number; st
   const { getWorkflowExecutionPath } = useWorkflowRuntimePaths();
   const option = execution ? EXECUTION_STATUS_OPTIONS_MAP[String(execution.status)] : null;
   if (!option) {
-    return <span>{t('Workflow executed')}</span>;
+    return <span>{t('Workflow not executed')}</span>;
   }
   const statusText = t(option.label);
   return (
@@ -86,7 +86,10 @@ function ExecuteWorkflowForm({
         ...(!executed && autoRevision ? { autoRevision: 1 } : {}),
       });
       const result = response?.data?.data;
-      message.open({ type: 'info', content: <ExecutedMessage execution={result?.execution} /> });
+      message.open({
+        type: result?.execution ? 'info' : 'error',
+        content: <ExecutedMessage execution={result?.execution} />,
+      });
       await view.close();
       if (result?.newVersionId) {
         ctx.router.navigate(getWorkflowCanvasPath(result.newVersionId));
