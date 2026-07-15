@@ -55,6 +55,7 @@ describe('nocobase buildin plugin auth redirect', () => {
   const originalLocation = globalThis.window.location;
 
   beforeEach(() => {
+    globalThis.window.localStorage.clear();
     // These fixtures mount the modern client under the `v2` segment; tell the
     // runtime-prefix helper so v2-runtime detection matches (server injects it
     // in production).
@@ -75,6 +76,7 @@ describe('nocobase buildin plugin auth redirect', () => {
   });
 
   afterEach(() => {
+    globalThis.window.localStorage.clear();
     delete (globalThis.window as any).__nocobase_modern_client_prefix__;
     Object.defineProperty(globalThis.window, 'location', {
       configurable: true,
@@ -116,6 +118,7 @@ describe('nocobase buildin plugin auth redirect', () => {
       plugins: [NocoBaseBuildInPlugin as any],
       router: { type: 'memory', initialEntries: ['/v2/admin'] },
     });
+    app.apiClient.auth.setToken('test-token');
     app.apiMock.onGet('app:getLang').reply(200, {
       data: { lang: 'en-US', resources: { client: {} }, cron: {} },
     });
@@ -130,6 +133,7 @@ describe('nocobase buildin plugin auth redirect', () => {
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(app.router.router.state.location.pathname).toBe('/v2/admin');
     expect(app.router.router.state.location.search).toBe('');
+    expect(app.apiMock.history.post.filter((request) => request.url === 'auth:syncCookies')).toHaveLength(0);
   });
 
   it('should redirect unauthenticated v2 root access to v2 signin via <Navigate />', async () => {
@@ -326,6 +330,7 @@ describe('nocobase buildin plugin auth redirect', () => {
       data: { lang: 'en-US', resources: { client: {} }, cron: {} },
     });
     app.apiMock.onGet('/auth:check').reply(200, { data: { id: 1 } });
+    app.apiMock.onPost('auth:syncCookies').reply(200, { data: { synced: true } });
     const ensureLoaded = vi.spyOn(app.dataSourceManager, 'ensureLoaded').mockResolvedValue(undefined);
 
     const Root = app.getRootComponent();
@@ -333,6 +338,29 @@ describe('nocobase buildin plugin auth redirect', () => {
 
     expect(await screen.findByText('secure page')).toBeInTheDocument();
     expect(ensureLoaded).toHaveBeenCalledTimes(1);
+    expect(app.apiMock.history.post.filter((request) => request.url === 'auth:syncCookies')).toHaveLength(1);
+  });
+
+  it('should keep authenticated v2 startup working when cookie bootstrap fails', async () => {
+    const app = createMockClient({
+      publicPath: '/v2/',
+      plugins: [NocoBaseBuildInPlugin as any, AuthBootstrapRoutePlugin as any],
+      router: { type: 'memory', initialEntries: ['/v2/secure'] },
+    });
+    app.apiClient.auth.setToken('test-token');
+    app.apiMock.onGet('app:getLang').reply(200, {
+      data: { lang: 'en-US', resources: { client: {} }, cron: {} },
+    });
+    app.apiMock.onGet('/auth:check').reply(200, { data: { id: 1 } });
+    app.apiMock.onPost('auth:syncCookies').reply(500, { errors: [{ message: 'cookie sync failed' }] });
+    const ensureLoaded = vi.spyOn(app.dataSourceManager, 'ensureLoaded').mockResolvedValue(undefined);
+
+    const Root = app.getRootComponent();
+    render(<Root />);
+
+    expect(await screen.findByText('secure page')).toBeInTheDocument();
+    expect(ensureLoaded).toHaveBeenCalledTimes(1);
+    expect(app.apiMock.history.post.filter((request) => request.url === 'auth:syncCookies')).toHaveLength(1);
   });
 
   it('should not auth-check or bootstrap authCheck false routes', async () => {

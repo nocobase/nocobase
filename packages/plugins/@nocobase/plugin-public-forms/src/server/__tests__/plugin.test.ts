@@ -647,8 +647,14 @@ describe('PluginPublicFormsServer', () => {
   });
 
   it('authorizes only files listed in a public form cookie', async () => {
+    const findOne = vi.fn(async () => ({
+      get: (key: string) => key === 'enabled',
+    }));
     const plugin = createRuntimePlugin({
       name: 'main',
+      db: {
+        getRepository: vi.fn(() => ({ findOne })),
+      },
       authManager: {
         jwt: {
           decode: vi.fn(async () => ({
@@ -685,11 +691,24 @@ describe('PluginPublicFormsServer', () => {
         preview: false,
       }),
     ).resolves.toBe(false);
+    expect(findOne).toHaveBeenCalledTimes(1);
+    expect(findOne).toHaveBeenCalledWith({
+      filter: {
+        key: 'pf1',
+      },
+    });
   });
 
   it('checks every public form cookie value when duplicate cookie names are sent', async () => {
     const plugin = createRuntimePlugin({
       name: 'main',
+      db: {
+        getRepository: vi.fn(() => ({
+          findOne: vi.fn(async () => ({
+            get: (key: string) => key === 'enabled',
+          })),
+        })),
+      },
       authManager: {
         jwt: {
           decode: vi.fn(async (token: string) => {
@@ -740,6 +759,46 @@ describe('PluginPublicFormsServer', () => {
           decode: vi.fn(async () => ({
             v: 1,
             appName: 'subapp',
+            formKey: 'pf1',
+            collectionName: 'orders',
+            targetCollections: [],
+            files: {
+              'main/attachments': [123],
+            },
+          })),
+        },
+      },
+    });
+    const ctx = {
+      get: vi.fn(() => `nb_pf_legacy=public-form-cookie`),
+    };
+
+    await expect(
+      plugin.authorizePublicFormFileAccess(ctx, {
+        appName: 'main',
+        dataSourceKey: 'main',
+        collectionName: 'attachments',
+        id: '123',
+        preview: true,
+      }),
+    ).resolves.toBe(false);
+  });
+
+  it('rejects a previously authorized file after its public form is disabled', async () => {
+    const plugin = createRuntimePlugin({
+      name: 'main',
+      db: {
+        getRepository: vi.fn(() => ({
+          findOne: vi.fn(async () => ({
+            get: vi.fn(() => false),
+          })),
+        })),
+      },
+      authManager: {
+        jwt: {
+          decode: vi.fn(async () => ({
+            v: 1,
+            appName: 'main',
             formKey: 'pf1',
             collectionName: 'orders',
             targetCollections: [],

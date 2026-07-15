@@ -9,7 +9,6 @@
 
 import { Context } from '@nocobase/actions';
 import { Cache } from '@nocobase/cache';
-import { Repository } from '@nocobase/database';
 import { getAuthCookieName, getAuthCookieOptions } from '@nocobase/utils';
 import { UNION_ROLE_KEY } from '../constants';
 import { SystemRoleMode } from '../enum';
@@ -49,7 +48,7 @@ async function loadCurrentUserRoles(options: {
   }
 
   return cache.wrap(`roles:${userId}`, async () => {
-    const repository = mainDb?.getRepository?.('users.roles', userId) as Repository | undefined;
+    const repository = mainDb?.getRepository?.('users.roles', userId);
     if (repository) {
       return repository.find({
         raw: true,

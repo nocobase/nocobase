@@ -581,7 +581,14 @@ export class PluginPublicFormsServer extends Plugin {
           continue;
         }
         if (payload.files[fileKey]?.some((id) => String(id) === String(params.id))) {
-          return true;
+          const instance = await this.db.getRepository('publicForms').findOne({
+            filter: {
+              key: payload.formKey,
+            },
+          });
+          if (instance?.get('enabled')) {
+            return true;
+          }
         }
       } catch {
         continue;
