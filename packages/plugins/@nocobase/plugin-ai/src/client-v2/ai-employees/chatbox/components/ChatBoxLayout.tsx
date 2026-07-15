@@ -32,10 +32,21 @@ import {
   normalizeTriggerTaskOptions,
   type RunJSAIEmployeeTriggerTaskOptions,
 } from '../utils/normalizeTriggerTaskOptions';
+import { ChatBoxRuntimeProvider, getGlobalChatBoxRuntime } from '../stores/runtime';
 
 const { Text } = Typography;
 
 export const ChatBoxLayout: React.FC<{
+  children?: React.ReactNode;
+}> = ({ children }) => {
+  return (
+    <ChatBoxRuntimeProvider runtime={getGlobalChatBoxRuntime()}>
+      <ChatBoxLayoutContent>{children}</ChatBoxLayoutContent>
+    </ChatBoxRuntimeProvider>
+  );
+};
+
+const ChatBoxLayoutContent: React.FC<{
   children?: React.ReactNode;
 }> = ({ children }) => {
   const app = useApp();

@@ -220,7 +220,7 @@ Tests:
 
 ### T3. Add Runtime Context
 
-Status: `Pending`
+Status: `Done`
 
 Dependencies: T2
 
@@ -243,6 +243,14 @@ Tests:
 - Add a test verifying the global runtime is stable across repeated access.
 - Add a test verifying `ChatBoxLayout` renders with the provider in place.
 - Run touched-file eslint and related tests.
+- Verification on 2026-07-15:
+  - `yarn eslint --fix packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/runtime.tsx packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/components/ChatBoxLayout.tsx packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/chatbox-runtime.test.tsx`: passed.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/chatbox-runtime.test.tsx --run --reporter=verbose`: passed, 4 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/chatbox-models.test.ts --run --reporter=verbose`: passed, 6 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/chatbox-stores.test.ts --run --reporter=verbose`: passed, 6 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/global-store.test.ts --run --reporter=verbose`: passed, 3 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/observable-store.test.tsx --run --reporter=verbose`: passed, 3 tests.
+  - `yarn eslint --fix packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/RUNTIME_REFACTOR_PLAN.md`: attempted, but the current ESLint configuration parses `.md` as JavaScript and fails at line 1 with `Parsing error: Invalid character`.
 - Update this document status and commit after tests pass.
 
 ### T4. Migrate Store Consumers To Runtime Models
