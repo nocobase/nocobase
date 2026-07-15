@@ -69,16 +69,6 @@ Wenn Sie bei der Frage „Warum brauchen Sie `nb app autostart`“ nicht weiterk
 – Wenn Sie eine Verbindung zum Reverse-Proxy herstellen möchten, wurde `appPort` in env gespeichert
 - Wenn Sie bereit sind, es offiziell für die Außenwelt zu öffnen, haben Sie bereits den Domainnamen, den Eingangsport und die HTTPS-Lösung geplant.
 
-:::warning Hinweis
-
-Verwenden Sie für jeden unabhängigen NocoBase-Dienst einen eigenen `hostname`, etwa eine separate Subdomain, und unterscheiden Sie die Dienste nicht nur über Ports. Browser-Cookies werden nicht nach Port getrennt. Dienste unter demselben `hostname` können daher den Anmeldestatus überschreiben und die Autorisierung von [stabilen URLs](../../file-manager/stable-url.md) beeinträchtigen.
-
-Unteranwendungen innerhalb derselben NocoBase-Bereitstellung werden anhand des Anwendungsnamens unterschieden und benötigen keine eigenen Hostnames. Läuft jedoch ein weiterer unabhängiger NocoBase-Dienst auf einem anderen Port unter demselben `hostname` und enthält er eine gleichnamige Haupt- oder Unteranwendung, können die Cookies weiterhin kollidieren.
-
-Verwenden Sie beispielsweise `app1.example.com` und `app2.example.com` anstelle von `example.com:13000` und `example.com:14000`.
-
-:::
-
 Wenn Sie die CLI-Installation oder Env-Initialisierung noch nicht abgeschlossen haben, kehren Sie zu [Installation mit CLI (empfohlen)](../installation/cli.md) zurück.
 
 Wenn der Befehl anzeigt, dass in der Umgebung `appPort` fehlt, führen Sie zunächst [`nb env update`](../../api/cli/env/update.md) aus, um es auszufüllen.

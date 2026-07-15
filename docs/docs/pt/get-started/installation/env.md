@@ -86,39 +86,6 @@ API_BASE_PATH=/api/
 
 ### API_BASE_URL
 
-URL base que o frontend usa para acessar a API do NocoBase. Fica vazia por padrão, o que significa usar `${APP_PUBLIC_PATH}api/` na mesma origem.
-
-```bash
-API_BASE_URL=
-```
-
-Configure-a com o endereço completo da API apenas quando as páginas e o serviço de API estiverem em origens diferentes (protocolo, domínio ou porta diferentes):
-
-```bash
-API_BASE_URL=https://api.example.com/api/
-```
-
-:::warning{title="Implantações entre origens"}
-O NocoBase usa cookies para manter o estado de login e autorizar o acesso a [URLs estáveis de arquivo](../../file-manager/stable-url.md). Quando `API_BASE_URL` aponta para uma origem diferente da das páginas:
-
-- A origem da página deve ser adicionada a [`CORS_ORIGIN_WHITELIST`](#cors_origin_whitelist). Caso contrário, o navegador ignorará `Set-Cookie` nas respostas da API, o cookie de login não será armazenado e recursos que dependem de cookie, como visualização e download de arquivos, falharão com `403`.
-- Os cookies são armazenados por `hostname`. Se as páginas e a API usarem domínios totalmente diferentes, requisições para URLs estáveis em `/files/` a partir do domínio da página não enviarão o cookie de login armazenado no domínio da API, então o acesso ao arquivo continuará falhando.
-
-Prefira servir as páginas e a API na mesma origem por meio de um proxy reverso e deixar `API_BASE_URL` vazio.
-:::
-
-### CORS_ORIGIN_WHITELIST
-
-Lista de origens autorizadas a acessar a API entre origens com credenciais (cookies). Separe várias origens com vírgulas. Vazia por padrão.
-
-```bash
-CORS_ORIGIN_WHITELIST=https://www.example.com,https://admin.example.com
-```
-
-- Quando não configurada, apenas requisições da mesma origem são tratadas como confiáveis; requisições entre origens ainda podem chamar a API anonimamente, mas o navegador não pode ler nem gravar cookies para elas.
-- Quando configurada, as origens na lista recebem `Access-Control-Allow-Origin` refletindo exatamente a origem e `Access-Control-Allow-Credentials: true`, permitindo que o navegador envie e armazene cookies de login em requisições entre origens.
-- A API de login valida `Origin` e `Referer` da requisição; requisições de login entre origens vindas de fora da lista são rejeitadas com `403`.
-
 ### CLUSTER_MODE
 
 > `v1.6.0+`

@@ -233,7 +233,6 @@ describe('modeling apply actions', () => {
 
     const files = app.db.getCollection('files');
     expect(files).toBeDefined();
-    expect(files.getField('local').options).toMatchObject({ type: 'virtual', hidden: true });
     expect(files.hasField('meta')).toBe(true);
     expect(files.getField('meta').options.interface).toBe('json');
     expect(files.getField('meta').options.type).toBe('jsonb');

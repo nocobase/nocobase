@@ -12,7 +12,6 @@ import { dayjs } from './dayjs';
 import { getDayRangeByParams, getOffsetRangeByParams } from './dateRangeUtils';
 export * from './collections-graph';
 export * from './common';
-export * from './auth-cookie-name';
 export * from './date';
 export * from './forEach';
 export * from './getValuesByPath';

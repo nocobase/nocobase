@@ -14,17 +14,13 @@ import supertest from 'supertest';
 import { STORAGE_TYPE_LOCAL } from '../../constants';
 import { getDocumentRoot } from '../storages/local';
 
-export async function getApp(options: Record<string, unknown> & { plugins?: string[] } = {}): Promise<MockServer> {
-  const { keepApiBaseUrl, plugins = [], ...appOptions } = options;
-  if (!keepApiBaseUrl) {
-    delete process.env.API_BASE_URL;
-  }
+export async function getApp(options = {}): Promise<MockServer> {
   const app = await createMockServer({
-    ...appOptions,
+    ...options,
     cors: {
       origin: '*',
     },
-    plugins: ['field-sort', 'users', 'auth', 'file-manager', ...plugins],
+    plugins: ['field-sort', 'users', 'auth', 'file-manager'],
   });
 
   app.use(async (ctx, next) => {

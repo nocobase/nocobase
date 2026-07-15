@@ -68,7 +68,6 @@
   "The username or email is incorrect, please re-enter": "Имя пользователя или email неверны, пожалуйста, введите снова",
   "The username/email or password is incorrect, please re-enter": "Имя пользователя/email или пароль неверны, пожалуйста, введите снова",
   "The validity period of each issued API Token. After the Token expires, if it is within the session validity period and has not exceeded the refresh limit, the server will automatically issue a new Token to maintain the user session, otherwise the user is required to log in again. (Each Token can only be refreshed once)": "Срок действия каждого выданного API-токена. После истечения срока токена, если он находится в пределах срока действия сессии и не превысил лимит обновления, сервер автоматически выдаст новый токен для поддержания сессии, иначе пользователю потребуется войти снова. (Каждый токен может быть обновлен только один раз)",
-  "Invalid sign-in origin": "Недопустимый источник входа",
   "Token expired": "Токен истек",
   "Token policy": "Политика токенов",
   "Token validity period": "Срок действия токена",

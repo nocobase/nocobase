@@ -114,7 +114,7 @@ describe('list action with acl', () => {
       ],
     });
 
-    app.resourceManager.use(
+    app.resourcer.use(
       (ctx, next) => {
         ctx.state.currentRole = 'user';
         ctx.state.currentUser = {
@@ -125,7 +125,7 @@ describe('list action with acl', () => {
       },
       {
         before: 'acl',
-        after: 'setCurrentRole',
+        after: 'auth',
       },
     );
 

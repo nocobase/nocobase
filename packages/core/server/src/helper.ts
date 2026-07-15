@@ -10,7 +10,7 @@
 import cors from '@koa/cors';
 import { requestLogger } from '@nocobase/logger';
 import { Resourcer } from '@nocobase/resourcer';
-import { getAuthCookieName, getCorsWhitelist, getDateVars, isTrustedOrigin, uid } from '@nocobase/utils';
+import { getDateVars, uid } from '@nocobase/utils';
 import { Command } from 'commander';
 import { randomUUID } from 'crypto';
 import fs from 'fs';
@@ -39,34 +39,31 @@ export function createResourcer(options: ApplicationOptions) {
   return new Resourcer({ ...options.resourcer });
 }
 
-function isWhitelistedCorsOrigin(ctx: any) {
-  const origin = ctx.get('origin');
-  const whitelist = getCorsWhitelist();
-
-  if (!origin) {
-    return false;
-  }
-
-  if (!whitelist) {
-    return isTrustedOrigin(ctx, origin);
-  }
-
-  return whitelist.has(origin);
-}
-
 function resolveCorsOrigin(ctx: any) {
   const origin = ctx.get('origin');
   const disallowNoOrigin = process.env.CORS_DISALLOW_NO_ORIGIN === 'true';
+  const whitelistString = process.env.CORS_ORIGIN_WHITELIST;
 
   if (!origin && disallowNoOrigin) {
     return false;
   }
 
-  if (isWhitelistedCorsOrigin(ctx)) {
+  if (!whitelistString) {
     return origin;
   }
 
-  return getCorsWhitelist() ? false : origin;
+  const whitelist = new Set(
+    whitelistString
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean),
+  );
+
+  if (whitelist.has(origin)) {
+    return origin;
+  }
+
+  return false;
 }
 
 export function registerMiddlewares(app: Application, options: ApplicationOptions) {
@@ -84,7 +81,6 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
 
   app.use(
     cors({
-      credentials: isWhitelistedCorsOrigin,
       exposeHeaders: ['content-disposition'],
       origin: resolveCorsOrigin,
       ...options.cors,
@@ -113,18 +109,8 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
 
   app.use(async function getBearerToken(ctx, next) {
     ctx.getBearerToken = () => {
-      const authorization = ctx.get('Authorization');
-      if (authorization) {
-        ctx.state.pendingAuthTokenSource = 'authorization';
-        return authorization.replace(/^Bearer\s+/gi, '');
-      }
-      if (ctx.query.token) {
-        ctx.state.pendingAuthTokenSource = 'query';
-        return ctx.query.token;
-      }
-      const cookieToken = ctx.cookies.get(getAuthCookieName('authToken', app.name));
-      ctx.state.pendingAuthTokenSource = cookieToken ? 'cookie' : undefined;
-      return cookieToken;
+      const token = ctx.get('Authorization').replace(/^Bearer\s+/gi, '');
+      return token || ctx.query.token;
     };
     await next();
   });

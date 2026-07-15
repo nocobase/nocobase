@@ -70,16 +70,9 @@ export const CurrentUserProvider = (props) => {
         skipNotify: true,
         skipAuth: true,
       })
-      .then(async (res) => {
-        const currentUser = res?.data?.data;
-        if (currentUser?.id == null) {
+      .then((res) => {
+        if (res?.data?.data?.id == null) {
           navigate('/signin?redirect=' + location.pathname + location.search);
-        } else {
-          try {
-            await api.auth.syncCookies();
-          } catch {
-            // Cookie bootstrap is best-effort; auth:check remains the source of truth for the current page load.
-          }
         }
         const userMeta = createCollectionContextMeta(
           () => runtimeFlowEngine.context.dataSourceManager.getDataSource('main')?.getCollection('users'),

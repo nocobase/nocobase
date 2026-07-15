@@ -86,39 +86,6 @@ API_BASE_PATH=/api/
 
 ### API_BASE_URL
 
-Базовый URL, который фронтенд использует для доступа к API NocoBase. По умолчанию пустой, что означает использование same-origin `${APP_PUBLIC_PATH}api/`.
-
-```bash
-API_BASE_URL=
-```
-
-Указывайте полный адрес API только тогда, когда страницы и сервис API находятся на разных origin (отличается протокол, домен или порт):
-
-```bash
-API_BASE_URL=https://api.example.com/api/
-```
-
-:::warning{title="Кросс-origin развёртывания"}
-NocoBase использует cookies для сохранения состояния входа и авторизации доступа к [stable file URL](../../file-manager/stable-url.md). Когда `API_BASE_URL` указывает на origin, отличный от origin страниц:
-
-- Origin страницы должен быть добавлен в [`CORS_ORIGIN_WHITELIST`](#cors_origin_whitelist). Иначе браузер проигнорирует `Set-Cookie` в ответах API, cookie входа не будет сохранена, а функции, зависящие от cookies, например предпросмотр и скачивание файлов, будут завершаться `403`.
-- Cookies хранятся по `hostname`. Если страницы и API используют полностью разные домены, запросы к stable URL в `/files/` с домена страницы не отправят cookie входа, сохранённую для домена API, поэтому доступ к файлу всё равно не сработает.
-
-Поэтому рекомендуется отдавать страницы и API с одного origin через обратный прокси и оставлять `API_BASE_URL` пустым.
-:::
-
-### CORS_ORIGIN_WHITELIST
-
-Белый список origin, которым разрешён кросс-origin доступ к API с учётными данными (cookies). Несколько origin указываются через запятую. По умолчанию пусто.
-
-```bash
-CORS_ORIGIN_WHITELIST=https://www.example.com,https://admin.example.com
-```
-
-- Если список не настроен, доверенными считаются только same-origin запросы; кросс-origin запросы всё ещё могут анонимно вызывать API, но браузеру не разрешается читать или записывать для них cookies.
-- Если список настроен, origin из белого списка получают точный `Access-Control-Allow-Origin` и `Access-Control-Allow-Credentials: true`, что позволяет браузеру отправлять и сохранять cookies входа в кросс-origin запросах.
-- API входа проверяет `Origin` / `Referer` запроса; кросс-origin запросы на вход с origin вне белого списка отклоняются с `403`.
-
 ### CLUSTER_MODE
 
 > `v1.6.0+`

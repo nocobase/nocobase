@@ -39,13 +39,9 @@ import {
   FILE_SIZE_LIMIT_DEFAULT,
   attachmentFileTypes,
   getFileDownloadName,
-  getLocalPreviewUrl,
   getThumbnailPlaceholderURL,
   matchMimetype,
   normalizeFile,
-  rememberLocalPreviewUrl,
-  revokeLocalPreviewUrl,
-  revokeLocalPreviewUrls,
   toFileList,
   toValueItem as toValueItemDefault,
   useBeforeUpload,
@@ -65,15 +61,14 @@ attachmentFileTypes.add({
     return matchMimetype(file, 'image/*');
   },
   getThumbnailURL(file) {
-    const localPreviewUrl = getLocalPreviewUrl(file);
-    if (localPreviewUrl) {
-      return localPreviewUrl;
-    }
     if (file.preview) {
       return file.preview;
     }
     if (file.url) {
       return file.url;
+    }
+    if (file.originFileObj) {
+      return URL.createObjectURL(file.originFileObj);
     }
     return null;
   },
@@ -97,8 +92,6 @@ attachmentFileTypes.add({
         isPatchingRef.current = false;
       }, 0);
     }, []);
-
-    const getPreviewUrl = useCallback((file) => getLocalPreviewUrl(file) || file?.url, []);
 
     const onDownload = useCallback(
       (e) => {
@@ -140,9 +133,9 @@ attachmentFileTypes.add({
         <LightBoxGlobalStyle />
         <LightBox
           // discourageDownloads={true}
-          mainSrc={getPreviewUrl(list[index])}
-          nextSrc={getPreviewUrl(list[(index + 1) % list.length])}
-          prevSrc={getPreviewUrl(list[(index + list.length - 1) % list.length])}
+          mainSrc={list[index]?.url}
+          nextSrc={list[(index + 1) % list.length]?.url}
+          prevSrc={list[(index + list.length - 1) % list.length]?.url}
           onCloseRequest={() => onSwitchIndex(null)}
           onMovePrevRequest={() => {
             setAngle(0);
@@ -198,7 +191,7 @@ const iframePreviewSupportedTypes = ['audio/*', 'image/*', 'video/*', 'text/plai
 function IframePreviewer({ index, list, onSwitchIndex }) {
   const { t } = useTranslation();
   const file = list[index];
-  const url = getLocalPreviewUrl(file) || file.url;
+  const url = file.url;
   const onOpen = useCallback(
     (e) => {
       e.preventDefault();
@@ -429,31 +422,19 @@ function AttachmentListItem(props) {
   );
 }
 
-function Previewer({ index, onSwitchIndex, list, fileCollection }) {
+function Previewer({ index, onSwitchIndex, list }) {
   if (index == null) {
     return null;
   }
   const file = list[index];
   const { Previewer: Component = IframePreviewer } = attachmentFileTypes.getTypeByFile(file) ?? {};
-  return <Component index={index} list={list} fileCollection={fileCollection} onSwitchIndex={onSwitchIndex} />;
+  return <Component index={index} list={list} onSwitchIndex={onSwitchIndex} />;
 }
 
 export function AttachmentList(props) {
-  const { disabled, multiple, value, onChange, readPretty, showFileName, fileCollection } = props;
+  const { disabled, multiple, value, onChange, readPretty, showFileName } = props;
   const [fileList, setFileList] = useState<any[]>([]);
-  const fileListRef = useRef<any[]>([]);
   const [preview, setPreview] = useState<number>(null);
-
-  useEffect(() => {
-    fileListRef.current = fileList;
-  }, [fileList]);
-
-  useEffect(() => {
-    return () => {
-      revokeLocalPreviewUrls(fileListRef.current);
-    };
-  }, []);
-
   useEffect(() => {
     const list = toFileList(value);
     setFileList(list);
@@ -469,7 +450,6 @@ export function AttachmentList(props) {
 
   const onDelete = useCallback(
     (file) => {
-      revokeLocalPreviewUrl(file);
       if (multiple) {
         const result = value.filter((item) => item.id !== file.id);
         if (result.length === 0) {
@@ -497,7 +477,7 @@ export function AttachmentList(props) {
           showFileName={showFileName}
         />
       ))}
-      <Previewer index={preview} onSwitchIndex={setPreview} list={fileList} fileCollection={fileCollection} />
+      <Previewer index={preview} onSwitchIndex={setPreview} list={fileList} />
     </>
   );
 }
@@ -506,8 +486,6 @@ export function Uploader({ rules, ...props }: UploadProps) {
   const { disabled, multiple, value, onChange, toValueItem = toValueItemDefault } = props;
   const [uploadedList, setUploadedList] = useState<any[]>([]);
   const [pendingList, setPendingList] = useState<any[]>([]);
-  const uploadedListRef = useRef<any[]>([]);
-  const pendingListRef = useRef<any[]>([]);
   const { t } = useTranslation();
   const { componentCls: prefixCls } = useStyles();
   const field = useField<Field>();
@@ -515,20 +493,6 @@ export function Uploader({ rules, ...props }: UploadProps) {
   const uploadProps = useUploadProps(props);
 
   const beforeUpload = useBeforeUpload(rules);
-
-  useEffect(() => {
-    uploadedListRef.current = uploadedList;
-  }, [uploadedList]);
-
-  useEffect(() => {
-    pendingListRef.current = pendingList;
-  }, [pendingList]);
-
-  useEffect(() => {
-    return () => {
-      revokeLocalPreviewUrls([...uploadedListRef.current, ...pendingListRef.current]);
-    };
-  }, []);
 
   useEffect(() => {
     if (pendingList.length) {
@@ -550,12 +514,7 @@ export function Uploader({ rules, ...props }: UploadProps) {
       if (multiple) {
         const uploaded = info.fileList.filter((file) => file.status === 'done');
         if (uploaded.length) {
-          const uploadedValues = uploaded.map((file) => {
-            const valueItem = toValueItem(file.response?.data);
-            rememberLocalPreviewUrl(valueItem, file);
-            return valueItem;
-          });
-          const valueList = [...uploadedList, ...uploadedValues];
+          const valueList = [...uploadedList, ...uploaded.map((v) => toValueItem(v.response?.data))];
           if (pendingFiles.length) {
             setUploadedList(valueList);
           } else {
@@ -567,9 +526,7 @@ export function Uploader({ rules, ...props }: UploadProps) {
         // NOTE: 用 fileList 里的才有附加的验证状态信息，file 没有（不清楚为何）
         const file = info.fileList.find((f) => f.uid === info.file.uid);
         if (file.status === 'done') {
-          const valueItem = toValueItem(file.response?.data);
-          rememberLocalPreviewUrl(valueItem, file);
-          onChange?.(valueItem);
+          onChange?.(toValueItem(file.response?.data));
           setPendingList([]);
         }
       }
@@ -578,7 +535,6 @@ export function Uploader({ rules, ...props }: UploadProps) {
   );
 
   const onDeletePending = useCallback((file) => {
-    revokeLocalPreviewUrl(file);
     setPendingList((prevPendingList) => {
       const index = prevPendingList.indexOf(file);
       prevPendingList.splice(index, 1);
@@ -587,7 +543,6 @@ export function Uploader({ rules, ...props }: UploadProps) {
   }, []);
 
   const onDeleteUploaded = useCallback((file) => {
-    revokeLocalPreviewUrl(file);
     setUploadedList((prevUploadedList) => {
       const index = prevUploadedList.indexOf(file);
       prevUploadedList.splice(index, 1);
@@ -648,13 +603,12 @@ export function Uploader({ rules, ...props }: UploadProps) {
 }
 
 function Attachment(props: UploadProps) {
-  const { fileCollection, ...uploadProps } = props;
   const { wrapSSR, hashId, componentCls: prefixCls } = useStyles();
   return wrapSSR(
     <div className={cls(`${prefixCls}-wrapper`, `${prefixCls}-picture-card-wrapper`, 'nb-upload', hashId)}>
       <div className={cls(`${prefixCls}-list`, `${prefixCls}-list-picture-card`)}>
-        <AttachmentList {...props} fileCollection={fileCollection} />
-        <Uploader {...uploadProps} />
+        <AttachmentList {...props} />
+        <Uploader {...props} />
       </div>
     </div>,
   );

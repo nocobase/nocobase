@@ -94,7 +94,6 @@ services:
 - `NOCOBASE_PROXY_UPSTREAM_HOST=app` cho phép container Caddy truy cập dịch vụ `app` qua mạng Compose
 - `./storage` cần được mount vào cả `app` và `caddy` để cùng dùng cấu hình proxy, tài nguyên tĩnh và tệp tải lên
 - Container `caddy` cần chờ `nocobase.caddy` được tạo xong, sau đó dùng `ln -sf` liên kết nó tới `/etc/caddy/Caddyfile`
-- Cấu hình được tạo tự động chuyển tiếp cả route `/files/` dưới `APP_PUBLIC_PATH` và route `/files/` ở root đến NocoBase để xử lý xem trước và tải file có xác thực
 - Chỉ cần publish cổng của container Caddy ra host. Khi kiểm thử, bạn có thể bắt đầu với `13000:80`; trong production, thường mở trực tiếp các cổng `80` và `443` của host, còn dịch vụ `app` không cần mở cổng ra host
 
 ## Nếu dùng Caddy cài trực tiếp trên máy host
@@ -169,8 +168,6 @@ sudo systemctl reload caddy
 ```
 
 Nếu Caddy trên host của bạn không dùng `/etc/caddy/Caddyfile`, hãy thay đường dẫn đích bằng đường dẫn cấu hình thực tế của bạn. Thông thường, giữ `nocobase.caddy` như file đầu vào chính sẽ an toàn hơn là chép thủ công nội dung của nó.
-
-Nếu bạn tự quản lý Caddy thay vì dùng cấu hình được tạo tự động, hãy bảo đảm `/files/*` và route tương ứng dưới `APP_PUBLIC_PATH` được chuyển tiếp đến NocoBase trước các rule fallback SPA. Xem [Proxy ngược Caddy](../../nocobase-cli/production/reverse-proxy/caddy.md) để tham khảo ví dụ đầy đủ.
 
 ## Liên kết liên quan
 
