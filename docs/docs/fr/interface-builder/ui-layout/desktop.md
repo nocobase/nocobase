@@ -6,22 +6,13 @@ keywords: "mise en page bureau,mise en page de l'interface,écran étroit,mise e
 
 # Mise en page bureau
 
-Dans NocoBase, la **mise en page bureau** est l'interface par défaut de l'application. Elle convient à la gestion des données, à la saisie de formulaires, à la configuration des processus et aux opérations quotidiennes sur ordinateur. Elle peut aussi adapter la navigation et le contenu des pages aux écrans étroits.
+Dans NocoBase, la **mise en page bureau** est l'interface par défaut de l'application. Elle convient à la gestion des données, à la saisie de formulaires, à la configuration des processus et aux opérations quotidiennes sur ordinateur. Elle peut aussi être utilisée sur les appareils mobiles.
 
 La mise en page bureau est accessible par défaut via `/admin`. Si l'application utilise un préfixe d'accès spécifique, celui-ci est automatiquement ajouté à l'adresse réelle.
 
-<!-- Une capture d'écran d'une page complète avec la navigation supérieure, la navigation latérale et la zone de contenu est nécessaire -->
+![20260715224020](https://static-docs.nocobase.com/20260715224020.png)
 
-## Caractéristiques de la mise en page
-
-La mise en page bureau comprend principalement les zones suivantes :
-
-- **Navigation supérieure** — affiche le changement d'application et les actions globales.
-- **Navigation latérale** — affiche les pages et les liens du groupe actuel.
-- **Zone de contenu de la page** — affiche les onglets, les blocs, les champs et les actions.
-- **UI Editor** — active la construction de l'interface pour ajuster les menus et le contenu des pages.
-
-La navigation supérieure et la navigation latérale conservent la route actuelle sélectionnée. Lorsque vous changez de page, le contenu s'affiche dans la zone de droite. L'état des pages déjà ouvertes est généralement conservé.
+![20260715224603](https://static-docs.nocobase.com/20260715224603.png)
 
 ## Construire une page
 
@@ -29,13 +20,13 @@ La navigation supérieure et la navigation latérale conservent la route actuell
 
 Accédez à `/admin` pour ouvrir la mise en page bureau. En général, l'application ouvre aussi directement cette zone après la connexion.
 
-<!-- Une capture d'écran de la page affichée après l'ouverture de la mise en page bureau est nécessaire -->
+![20260715225049](https://static-docs.nocobase.com/20260715225049.png)
 
 ### Deuxième étape : ouvrir UI Editor
 
 Cliquez sur « UI Editor » en haut à droite de la page pour activer la construction de l'interface. Les menus, les pages, les blocs, les champs et les actions affichent alors leurs points d'accès à la configuration.
 
-<!-- Une capture d'écran montrant l'emplacement du bouton « UI Editor » et la page après son activation est nécessaire -->
+![20260715225155_rec_](https://static-docs.nocobase.com/20260715225155_rec_.gif)
 
 ### Troisième étape : créer des menus et des pages
 
@@ -43,17 +34,17 @@ Vous pouvez ajouter des groupes, des pages ou des liens dans la zone de navigati
 
 La construction du contenu suit le même principe que dans les autres interfaces : ajoutez d'abord des [blocs](../blocks/index.md), puis configurez les [champs](../fields/index.md) et les [actions](../actions/index.md) selon vos besoins.
 
-<!-- Une vidéo montrant l'ajout d'un menu, la création d'une page et l'ouverture de cette page est nécessaire -->
+![20260715225316_rec_](https://static-docs.nocobase.com/20260715225316_rec_.gif)
 
 ### Quatrième étape : configurer le contenu de la page
 
 Ajoutez des blocs de tableau, de formulaire, de détails, de filtre ou d'autres types. Ajustez ensuite la disposition des champs, des actions et des blocs. Toutes les modifications apparaissent directement sur la page actuelle.
 
-<!-- Une capture d'écran d'une page bureau en mode construction, avec les points d'accès à la configuration des blocs, champs et actions, est nécessaire -->
+![20260715225424_rec_](https://static-docs.nocobase.com/20260715225424_rec_.gif)
 
 ## Gérer les routes et les menus
 
-Le menu et les routes du bureau utilisent la même configuration. Lorsque vous ajoutez une page ou un lien dans la zone de navigation, l'élément correspondant apparaît aussi dans le [Gestionnaire de routes](../../routes/index.md). Les modifications effectuées dans le Gestionnaire de routes mettent également le menu à jour.
+Lorsque vous ajoutez une page ou un lien dans la zone de navigation, l'élément correspondant apparaît aussi dans le [Gestionnaire de routes](../../routes/index.md). Les modifications effectuées dans le Gestionnaire de routes mettent également le menu à jour.
 
 La mise en page bureau prend en charge les types de routes courants suivants :
 
@@ -64,25 +55,23 @@ La mise en page bureau prend en charge les types de routes courants suivants :
 
 Dans le Gestionnaire de routes, vous pouvez ajouter, modifier, supprimer, afficher ou masquer des routes. Il est particulièrement pratique lorsque vous devez réorganiser toute la structure du menu depuis un seul endroit.
 
-<!-- Une capture d'écran de la page « Centre de configuration / Routes / Routes bureau » est nécessaire -->
+![20260715225711_rec_](https://static-docs.nocobase.com/20260715225711_rec_.gif)
 
 ## Adaptation aux écrans étroits
 
-La mise en page bureau peut être utilisée directement sur un téléphone ou dans une fenêtre de navigateur étroite. Dans cet affichage, elle continue d'utiliser les routes et les pages du bureau et ne bascule pas automatiquement vers la mise en page mobile.
+La mise en page bureau peut être utilisée directement sur un téléphone ou dans une fenêtre de navigateur étroite. Dans cet affichage, elle utilise toujours les routes et les pages d'origine du bureau et ne bascule pas automatiquement vers la mise en page mobile.
 
 ### Changements de la mise en page
 
 Le menu de navigation est replié, et les actions de la partie supérieure sont regroupées dans un accès plus compact. Les marges de la page et les espacements entre les blocs diminuent aussi. La zone de contenu s'adapte à la hauteur visible du navigateur mobile.
 
-UI Editor n'est pas disponible sur les écrans étroits. Pour modifier les menus ou les pages, revenez dans un navigateur sur ordinateur.
+UI Editor n'est pas disponible sur les écrans étroits. Pour modifier les menus ou les pages, vous devez revenir dans un navigateur sur ordinateur.
 
-<!-- Une vidéo montrant la même page bureau passer d'un écran large à un écran étroit est nécessaire -->
+![20260715224603](https://static-docs.nocobase.com/20260715224603.png)
 
 ### Adaptation du contenu de la page
 
-Les mises en page et composants courants s'adaptent aussi aux écrans étroits. Les blocs à plusieurs colonnes favorisent ainsi une lecture verticale, les tableaux permettent de faire défiler horizontalement les colonnes qui dépassent de l'écran, et la pagination comme les actions deviennent plus compactes. Les sélections, les champs de date et d'heure, les filtres et les sous-pages utilisent également des interactions mieux adaptées aux petits écrans.
-
-Le comportement supplémentaire des autres blocs sur écran étroit dépend de leur propre prise en charge. Les tableaux restent des tableaux et ne sont pas automatiquement transformés en cartes.
+Les composants courants adaptent aussi leurs interactions aux écrans étroits afin d'être plus faciles à utiliser sur un téléphone. Les blocs à plusieurs colonnes passent ainsi à une seule colonne, les tableaux permettent de faire défiler horizontalement les colonnes qui dépassent de l'écran, et la pagination comme les actions deviennent plus compactes. Les sélections, les champs de date et d'heure, les filtres et les sous-pages utilisent également des interactions mieux adaptées aux téléphones.
 
 :::tip Mise en page bureau responsive et mise en page mobile
 

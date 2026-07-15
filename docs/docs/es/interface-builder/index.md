@@ -14,9 +14,7 @@ Modo de edición:
 
 ## Diseño de UI
 
-NocoBase ofrece diseños de escritorio y móvil. El diseño de escritorio resulta adecuado para las tareas habituales de administración y adapta la navegación y el contenido en pantallas estrechas. El diseño móvil ofrece una navegación y páginas específicas para dispositivos móviles. Consulta [Diseño de UI](./ui-layout/index.md) para obtener más información.
-
-<!-- Se necesita una captura comparativa de una misma página de negocio, con los diseños de escritorio y móvil uno al lado del otro y las diferencias de navegación resaltadas -->
+NocoBase ofrece diseños de escritorio y móvil. El diseño de escritorio resulta adecuado para las tareas habituales de administración y adapta la navegación y el contenido en teléfonos. El diseño móvil ofrece una navegación y páginas específicas para dispositivos móviles. Consulta [Diseño de UI](./ui-layout/index.md) para obtener más información.
 
 ## Opciones de Configuración
 

@@ -6,22 +6,13 @@ keywords: "diseño de escritorio,diseño de UI,pantalla estrecha,diseño adaptab
 
 # Diseño de escritorio
 
-En NocoBase, el **diseño de escritorio** es la interfaz predeterminada de la aplicación. Resulta adecuado para administrar datos, introducir información en formularios, configurar procesos de negocio y realizar el trabajo diario desde un ordenador. También ajusta la navegación y el contenido de las páginas en pantallas estrechas.
+En NocoBase, el **diseño de escritorio** es la interfaz predeterminada de la aplicación. Resulta adecuado para administrar datos, introducir información en formularios, configurar procesos de negocio y realizar el trabajo diario desde un ordenador. También puede usarse en dispositivos móviles.
 
 El diseño de escritorio está disponible en `/admin` de forma predeterminada. Si la aplicación tiene un prefijo de acceso propio, la URL real incluirá ese prefijo automáticamente.
 
-<!-- Se necesita una captura completa del diseño de escritorio que muestre la navegación superior, la navegación lateral y el área de contenido -->
+![20260715224020](https://static-docs.nocobase.com/20260715224020.png)
 
-## Características del diseño
-
-El diseño de escritorio se compone principalmente de las siguientes áreas:
-
-- **Navegación superior** — Muestra el selector de aplicaciones y las acciones globales.
-- **Navegación lateral** — Muestra las páginas y los enlaces del grupo actual.
-- **Área de contenido** — Muestra las pestañas de página, los bloques, los campos y las acciones.
-- **UI Editor** — Abre el modo de diseño para ajustar los menús y el contenido de las páginas.
-
-La navegación superior y lateral mantienen seleccionada la ruta actual. Al cambiar de página, el contenido aparece en el área de la derecha y, por lo general, se conserva el estado de las páginas abiertas anteriormente.
+![20260715224603](https://static-docs.nocobase.com/20260715224603.png)
 
 ## Crear una página
 
@@ -29,13 +20,13 @@ La navegación superior y lateral mantienen seleccionada la ruta actual. Al camb
 
 Accede a `/admin` para abrir el diseño de escritorio. Por lo general, la aplicación también abre esta vista directamente después de iniciar sesión.
 
-<!-- Se necesita una captura del diseño de escritorio después de abrirlo -->
+![20260715225049](https://static-docs.nocobase.com/20260715225049.png)
 
 ### Paso 2: abrir UI Editor
 
 Haz clic en «UI Editor» en la esquina superior derecha de la página para entrar en el modo de diseño. Aparecerán opciones de configuración junto a los menús, las páginas, los bloques, los campos y las acciones.
 
-<!-- Se necesita una captura que muestre la ubicación del botón «UI Editor» y el aspecto de la página después de activarlo -->
+![20260715225155_rec_](https://static-docs.nocobase.com/20260715225155_rec_.gif)
 
 ### Paso 3: crear menús y páginas
 
@@ -43,17 +34,17 @@ Puedes añadir grupos, páginas o enlaces en el área de navegación, y activar 
 
 El contenido se crea del mismo modo que en otras interfaces: primero añade [bloques](../blocks/index.md) y después configura los [campos](../fields/index.md) y las [acciones](../actions/index.md) según las necesidades del negocio.
 
-<!-- Se necesita un vídeo que muestre cómo añadir un menú, crear una página y abrirla -->
+![20260715225316_rec_](https://static-docs.nocobase.com/20260715225316_rec_.gif)
 
 ### Paso 4: configurar el contenido de la página
 
 Añade bloques de tabla, formulario, detalles, filtro u otros tipos, y después ajusta los campos, las acciones y la disposición de los bloques. Los cambios se reflejan directamente en la página actual.
 
-<!-- Se necesita una captura de una página de escritorio en modo de diseño que muestre las opciones de configuración de bloques, campos y acciones -->
+![20260715225424_rec_](https://static-docs.nocobase.com/20260715225424_rec_.gif)
 
 ## Administrar rutas y menús
 
-Los menús y las rutas de escritorio utilizan la misma configuración. Al añadir una página o un enlace desde la navegación, también aparecerá en el [Administrador de Rutas](../../routes/index.md). Los cambios realizados en el Administrador de Rutas también actualizan el menú.
+Al añadir una página o un enlace desde la navegación, también aparecerá en el [Administrador de Rutas](../../routes/index.md). Los cambios realizados en el Administrador de Rutas también actualizan el menú.
 
 El diseño de escritorio admite estos tipos de ruta habituales:
 
@@ -64,25 +55,23 @@ El diseño de escritorio admite estos tipos de ruta habituales:
 
 En el Administrador de Rutas puedes añadir, editar, eliminar, mostrar u ocultar rutas. Cuando necesites reorganizar toda la estructura del menú, suele resultar más cómodo hacerlo allí.
 
-<!-- Se necesita una captura de «Configuración / Rutas / Rutas de escritorio» -->
+![20260715225711_rec_](https://static-docs.nocobase.com/20260715225711_rec_.gif)
 
 ## Adaptación a pantallas estrechas
 
-El diseño de escritorio puede usarse directamente en un teléfono o en una ventana estrecha del navegador. En este modo se siguen usando las mismas rutas y páginas de escritorio. No cambia automáticamente al diseño móvil.
+El diseño de escritorio puede usarse directamente en un teléfono o en una ventana estrecha del navegador. En este modo sigue usando las rutas y páginas de escritorio originales. No cambia automáticamente al diseño móvil.
 
 ### Cambios en el diseño
 
 El menú de navegación se contrae y las acciones superiores se agrupan en una opción más compacta. Los márgenes de la página y el espacio entre bloques también se reducen, mientras que el área de contenido se adapta a la altura visible del navegador móvil.
 
-UI Editor no está disponible en pantallas estrechas. Para cambiar menús o páginas, vuelve al navegador del ordenador y realiza allí los ajustes.
+UI Editor no está disponible en pantallas estrechas. Para cambiar menús o páginas, es necesario volver al navegador del ordenador y realizar allí los ajustes.
 
-<!-- Se necesita un vídeo que muestre cómo una misma página de escritorio cambia de una pantalla ancha a una estrecha -->
+![20260715224603](https://static-docs.nocobase.com/20260715224603.png)
 
 ### Adaptación del contenido
 
-Los diseños y componentes habituales también se ajustan a las pantallas estrechas. Por ejemplo, los bloques con varias columnas se organizan para facilitar la lectura vertical, las tablas permiten desplazarse horizontalmente para ver las columnas que no caben, y la paginación y las acciones se vuelven más compactas. Las selecciones, las fechas y horas, los filtros y las subpáginas también utilizan interacciones más adecuadas para una pantalla pequeña.
-
-El comportamiento adicional en pantallas estrechas depende de la compatibilidad de cada bloque. Las tablas siguen mostrándose como tablas y no se convierten automáticamente en tarjetas.
+Los componentes habituales también ajustan sus interacciones en pantallas estrechas para facilitar el uso desde un teléfono. Por ejemplo, los bloques con varias columnas pasan a una sola columna, las tablas permiten desplazarse horizontalmente para ver las columnas que no caben, y la paginación y las acciones se vuelven más compactas. Las selecciones, las fechas y horas, los filtros y las subpáginas también utilizan interacciones más adecuadas para teléfonos.
 
 :::tip Diseño adaptable de escritorio y diseño móvil
 

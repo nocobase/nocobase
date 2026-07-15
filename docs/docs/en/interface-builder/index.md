@@ -18,9 +18,7 @@ Edit mode:
 
 ## UI Layout
 
-NocoBase provides desktop and mobile layouts. The desktop layout works well for standard administration and adapts its navigation and page content on narrow screens. The mobile layout provides separate mobile navigation and page configuration. See [UI Layout](./ui-layout/index.md) for details.
-
-<!-- Add a side-by-side comparison screenshot of the same business page in desktop and mobile layouts, highlighting their navigation differences -->
+NocoBase provides desktop and mobile layouts. The desktop layout works well for standard administration and adapts its navigation and page content on phones. The mobile layout provides separate mobile navigation and page configuration. See [UI Layout](./ui-layout/index.md) for details.
 
 
 ## Configuration Options

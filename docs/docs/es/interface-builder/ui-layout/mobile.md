@@ -6,7 +6,7 @@ keywords: "diseño móvil,páginas móviles,navegación inferior,vista previa m�
 
 # Diseño móvil
 
-En NocoBase, el **diseño móvil** permite crear una navegación y páginas específicas para dispositivos móviles. Está disponible en `/mobile` de forma predeterminada y utiliza una barra de pestañas inferior como navegación principal. Resulta adecuado para introducir y consultar datos, aprobar solicitudes y gestionar tareas desde un teléfono.
+En NocoBase, el **diseño móvil** permite crear una navegación y páginas independientes para dispositivos móviles. Está disponible en `/mobile` de forma predeterminada y utiliza una barra de pestañas inferior como navegación principal. Resulta adecuado para introducir y consultar datos, aprobar solicitudes y gestionar tareas desde un teléfono.
 
 Los diseños móvil y de escritorio utilizan las mismas fuentes de datos y los mismos datos de negocio, pero sus menús, rutas y páginas se configuran por separado. Así puedes reorganizar las páginas según el uso móvil sin depender de la estructura de las páginas de escritorio.
 
@@ -14,7 +14,7 @@ Los diseños móvil y de escritorio utilizan las mismas fuentes de datos y los m
 
 ## Abrir y previsualizar el diseño móvil
 
-Después de activar el plugin de Diseño de UI, haz clic en «Móvil» en la configuración para abrirlo. También puedes acceder directamente a `/mobile`.
+De forma predeterminada, puedes hacer clic en «Móvil» en la configuración para abrirlo. También puedes acceder directamente a `/mobile`.
 
 Es recomendable crear las páginas desde el navegador del ordenador. En esta vista aparece un área de previsualización móvil y una barra de herramientas superior:
 
@@ -23,7 +23,7 @@ Es recomendable crear las páginas desde el navegador del ordenador. En esta vis
 - «Vista previa móvil» restaura el área de previsualización con el tamaño de un teléfono.
 - «Código QR» abre la dirección móvil actual en un teléfono.
 
-<!-- Se necesita una captura de la vista previa móvil en el navegador del ordenador, señalando UI Editor, Vista previa de tableta, Vista previa móvil y Código QR -->
+![20260715221712](https://static-docs.nocobase.com/20260715221712.png)
 
 Después de crear las páginas en el ordenador, escanea el código QR y comprueba el resultado en un dispositivo físico. Revisa especialmente la navegación, el desplazamiento, la entrada de datos, las páginas emergentes y las áreas seguras.
 
@@ -39,7 +39,7 @@ El diseño móvil utiliza una barra de pestañas inferior como navegación princ
 4. Introduce el título de la página y selecciona un icono.
 5. Guarda la configuración para abrir la nueva página y continúa añadiendo su contenido.
 
-<!-- Se necesita un vídeo que muestre cómo añadir una página móvil a la barra de pestañas inferior -->
+![20260715221823_rec_](https://static-docs.nocobase.com/20260715221823_rec_.gif)
 
 ### Añadir un enlace
 
@@ -47,7 +47,7 @@ Si necesitas abrir una dirección interna o externa, selecciona «Enlace» y con
 
 El enlace puede abrirse en la ventana actual o en una nueva, según su configuración.
 
-<!-- Se necesita una captura de la configuración de un enlace móvil -->
+![20260715221950](https://static-docs.nocobase.com/20260715221950.png)
 
 ### Ordenar la navegación
 
@@ -55,7 +55,7 @@ En el modo de diseño puedes arrastrar las pestañas inferiores para cambiar su 
 
 Para consultar, mostrar, ocultar o eliminar las rutas móviles desde un mismo lugar, abre «Configuración / Rutas / Rutas móviles».
 
-<!-- Se necesita una captura del menú de configuración de las pestañas inferiores y de la ordenación mediante arrastre -->
+![20260715222113_rec_](https://static-docs.nocobase.com/20260715222113_rec_.gif)
 
 ## Crear una página móvil
 
@@ -69,7 +69,7 @@ Crea y abre una página móvil antes de añadirle bloques. El planteamiento para
 4. Selecciona una tabla, un formulario, un bloque de detalles, un filtro u otro tipo de bloque.
 5. Continúa configurando los campos, las acciones y los ajustes del bloque.
 
-<!-- Se necesita un vídeo que muestre cómo abrir una página móvil y añadir un bloque -->
+![20260715222230_rec_](https://static-docs.nocobase.com/20260715222230_rec_.gif)
 
 ### Usar pestañas de página
 
@@ -82,11 +82,11 @@ Una página móvil también puede utilizar pestañas. Si varios contenidos deben
 
 Si la página móvil contiene poco contenido, utiliza una sola página. No es necesario activar las pestañas.
 
-<!-- Se necesita una captura que muestre las pestañas de página activadas, la adición de una nueva pestaña y la ubicación del botón «Añadir pestaña» -->
+![20260715222354_rec_](https://static-docs.nocobase.com/20260715222354_rec_.gif)
 
 ### Interacciones móviles de los componentes habituales
 
-Los componentes habituales ajustan su disposición e interacción al diseño móvil. Por ejemplo, el contenido con varias columnas facilita la lectura vertical, los campos de selección y fecha y hora utilizan selectores adaptados al móvil, y los filtros, la selección de registros asociados y las subpáginas usan interfaces pensadas para la interacción táctil.
+Los componentes habituales ajustan su disposición e interacción al diseño móvil. Por ejemplo, el contenido con varias columnas pasa automáticamente a una sola columna que facilita la lectura vertical, los campos de selección y fecha y hora utilizan selectores adaptados al móvil, y los filtros, la selección de registros asociados y las subpáginas usan interfaces pensadas para la interacción táctil.
 
 Las tablas siguen mostrándose como tablas en el móvil, con desplazamiento horizontal para las columnas que no caben en la pantalla. El comportamiento móvil adicional depende de la compatibilidad de cada bloque.
 
@@ -94,11 +94,11 @@ Las tablas siguen mostrándose como tablas en el móvil, con desplazamiento hori
 
 El contenido que se abre desde acciones como ver, editar o seleccionar registros asociados aparece como una subpágina móvil. La subpágina incluye un botón para volver a la página anterior.
 
-Al abrir una subpágina más profunda, la barra de pestañas inferior se oculta temporalmente para dejar más espacio al contenido actual. Vuelve a aparecer al cerrar la subpágina o regresar al nivel anterior.
+Al abrir una subpágina más profunda, la barra de pestañas inferior se oculta para dejar más espacio al contenido actual. Vuelve a aparecer al cerrar la subpágina o regresar al nivel anterior.
 
-Al cambiar entre las pestañas inferiores, por lo general se conserva el estado de las páginas abiertas. Así puedes alternar con facilidad entre varias tareas móviles.
+Al cambiar entre las pestañas inferiores, se conserva el estado de las páginas abiertas. Así puedes alternar con facilidad entre varias tareas móviles.
 
-<!-- Se necesita un vídeo que muestre cómo se abre una subpágina, se oculta la barra de pestañas inferior y se vuelve a la página anterior -->
+![20260715222828_rec_](https://static-docs.nocobase.com/20260715222828_rec_.gif)
 
 ## Administrar rutas y permisos
 
@@ -106,19 +106,19 @@ Las rutas móviles se pueden administrar desde el [Administrador de Rutas](../..
 
 Los permisos de acceso a las rutas móviles se configuran por separado de los permisos de escritorio. En los permisos del rol, abre «Rutas móviles» y selecciona las páginas a las que puede acceder el rol actual. Consulta [Configuración de permisos](../../users-permissions/acl/permissions.md) para obtener más información.
 
-<!-- Se necesita una captura de la página de administración de «Configuración / Rutas / Rutas móviles» -->
+![20260715223016_rec_](https://static-docs.nocobase.com/20260715223016_rec_.gif)
 
-<!-- Se necesita una captura de «Rutas móviles» en los permisos del rol -->
+![20260715223106_rec_](https://static-docs.nocobase.com/20260715223106_rec_.gif)
 
 ## Relación con el diseño de escritorio
 
-Puedes crear páginas de escritorio y móvil diferentes a partir de una misma colección. Por ejemplo, la página de escritorio puede usar una tabla con muchos campos para procesar datos, mientras que la página móvil utiliza una lista o un formulario más sencillo para introducir datos sobre el terreno.
+Puedes crear páginas de escritorio y móvil diferentes a partir de una misma tabla de datos. Por ejemplo, la página de escritorio puede usar una tabla con muchos campos para procesar datos, mientras que la página móvil utiliza una lista o un formulario más sencillo para introducir datos sobre el terreno.
 
 Las páginas de ambos diseños no se sincronizan automáticamente. Los cambios en las páginas, los menús o las rutas de escritorio no actualizan la configuración móvil, y los cambios móviles tampoco afectan al escritorio.
 
 :::tip Recomendación
 
-Si desde el móvil solo necesitas consultar ocasionalmente las páginas de escritorio, prueba primero el [diseño de escritorio](./desktop.md) adaptable. Crea un diseño móvil independiente solo cuando necesites una navegación y flujos de página específicos para móviles.
+Si desde el móvil solo necesitas consultar ocasionalmente las páginas de escritorio, prueba primero el [diseño de escritorio](./desktop.md) adaptable. Crea un diseño móvil independiente solo cuando necesites una navegación y flujos de página propios para dispositivos móviles.
 
 :::
 

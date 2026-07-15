@@ -8,9 +8,7 @@ keywords: "bố cục UI,bố cục desktop,bố cục mobile,bố cục respons
 
 NocoBase cung cấp bố cục desktop và bố cục mobile. Cả hai đều có thể sử dụng tính năng xây dựng giao diện để tạo Trang, sau đó cấu hình Block, Field và Action trên Trang.
 
-Bố cục desktop là lựa chọn mặc định, phù hợp để quản lý và xử lý dữ liệu hằng ngày trên máy tính. Nếu cần điều hướng và Trang riêng cho thiết bị mobile, bạn có thể xây dựng thêm bố cục mobile.
-
-<!-- Cần ảnh chụp tổng thể để so sánh bố cục desktop và bố cục mobile -->
+Bố cục desktop là lựa chọn mặc định, phù hợp để quản lý và xử lý dữ liệu hằng ngày trên máy tính. Nếu cần điều hướng và Trang độc lập cho thiết bị mobile, bạn có thể xây dựng thêm bố cục mobile.
 
 ## Bố cục desktop
 
@@ -18,7 +16,7 @@ Bố cục desktop là lựa chọn mặc định, phù hợp để quản lý v
 
 Bố cục desktop cũng hỗ trợ responsive trên màn hình hẹp. Khi Trang được hiển thị trong màn hình nhỏ hơn, điều hướng, khoảng cách và các thành phần thường dùng sẽ được điều chỉnh cho phù hợp, trong khi vẫn sử dụng menu và Trang desktop ban đầu.
 
-<!-- Cần ảnh chụp toàn bộ Trang trong bố cục desktop -->
+![20260715224020](https://static-docs.nocobase.com/20260715224020.png)
 
 ## Bố cục mobile
 
@@ -26,7 +24,7 @@ Bố cục desktop cũng hỗ trợ responsive trên màn hình hẹp. Khi Trang
 
 Bố cục mobile phù hợp với các công việc thường xuyên thực hiện trên điện thoại, như nhập dữ liệu tại hiện trường, xử lý phê duyệt, xử lý nhiệm vụ và tra cứu dữ liệu. Bạn có thể xây dựng và xem trước Trang trong trình duyệt máy tính, sau đó dùng mã QR để kiểm tra trên điện thoại thật.
 
-<!-- Cần ảnh chụp toàn bộ Trang trong bố cục mobile -->
+![20260715230725](https://static-docs.nocobase.com/20260715230725.png)
 
 ## Cách lựa chọn
 
@@ -40,7 +38,7 @@ Mặc định, chỉ cần dùng bố cục desktop.
 
 ## Mối quan hệ giữa các cấu hình
 
-Bố cục desktop và bố cục mobile sử dụng chung nguồn dữ liệu, collection và dữ liệu nghiệp vụ. Bạn có thể dựa trên cùng một collection để xây dựng các Trang riêng phù hợp với từng loại thiết bị.
+Bố cục desktop và bố cục mobile sử dụng chung nguồn dữ liệu và dữ liệu nghiệp vụ. Bạn có thể dựa trên cùng một bảng dữ liệu để xây dựng các Trang riêng phù hợp với từng loại thiết bị.
 
 Menu, route và cấu hình Trang được quản lý riêng. Thay đổi Trang desktop không tự động cập nhật Trang mobile, và thay đổi điều hướng mobile cũng không ảnh hưởng đến điều hướng desktop. [Quyền truy cập route](../../users-permissions/acl/permissions.md) của hai bố cục cũng cần được cấu hình riêng.
 

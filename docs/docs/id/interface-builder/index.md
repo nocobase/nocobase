@@ -20,9 +20,7 @@ Mode konfigurasi:
 
 ## Layout UI
 
-NocoBase menyediakan layout desktop dan layout mobile. Layout desktop cocok untuk pengelolaan umum serta dapat menyesuaikan navigasi dan konten halaman di layar sempit. Layout mobile menyediakan navigasi dan konfigurasi halaman khusus mobile. Penjelasan lengkap dapat dilihat di [Layout UI](./ui-layout/index.md).
-
-<!-- Diperlukan screenshot berdampingan dari halaman bisnis yang sama dalam layout desktop dan layout mobile, dengan perbedaan navigasi kedua layout ditonjolkan -->
+NocoBase menyediakan layout desktop dan layout mobile. Layout desktop cocok untuk pengelolaan umum serta dapat menyesuaikan navigasi dan konten halaman di ponsel. Layout mobile menyediakan navigasi dan konfigurasi halaman khusus perangkat mobile. Penjelasan lengkap dapat dilihat di [Layout UI](./ui-layout/index.md).
 
 ## Item Konfigurasi
 

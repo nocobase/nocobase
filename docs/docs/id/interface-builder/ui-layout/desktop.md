@@ -6,22 +6,13 @@ keywords: "layout desktop,layout UI,responsif layar sempit,pembuatan halaman,pen
 
 # Layout desktop
 
-Di NocoBase, **layout desktop** adalah antarmuka aplikasi default. Layout ini cocok untuk mengelola data, memasukkan data melalui Form, mengonfigurasi proses bisnis, dan melakukan pekerjaan sehari-hari di komputer. Navigasi dan konten halamannya juga dapat menyesuaikan diri di perangkat berlayar sempit.
+Di NocoBase, **layout desktop** adalah antarmuka aplikasi default. Layout ini cocok untuk mengelola data, memasukkan data melalui Form, mengonfigurasi proses bisnis, dan melakukan pekerjaan sehari-hari di komputer. Layout ini juga dapat digunakan di perangkat mobile.
 
 Layout desktop dapat diakses melalui `/admin` secara default. Jika aplikasi memiliki prefiks akses khusus, alamat sebenarnya akan otomatis menyertakan prefiks tersebut.
 
-<!-- Diperlukan screenshot halaman lengkap layout desktop yang menampilkan navigasi atas, navigasi samping, dan area konten -->
+![20260715224020](https://static-docs.nocobase.com/20260715224020.png)
 
-## Karakteristik layout
-
-Layout desktop terdiri atas beberapa area utama:
-
-- **Navigasi atas** — Menampilkan perpindahan aplikasi dan akses Action global.
-- **Navigasi samping** — Menampilkan Page dan Link dalam Group saat ini.
-- **Area konten halaman** — Menampilkan Tab halaman, Block, Field, dan Action.
-- **UI Editor** — Membuka mode interface builder untuk menyesuaikan menu dan konten halaman.
-
-Navigasi atas dan samping mempertahankan status terpilih berdasarkan route saat ini. Saat berpindah halaman, konten akan ditampilkan di area kanan dan status halaman yang sudah dibuka biasanya tetap dipertahankan.
+![20260715224603](https://static-docs.nocobase.com/20260715224603.png)
 
 ## Membuat halaman
 
@@ -29,13 +20,13 @@ Navigasi atas dan samping mempertahankan status terpilih berdasarkan route saat 
 
 Akses `/admin` untuk masuk ke layout desktop. Biasanya, aplikasi juga langsung membuka halaman ini setelah login berhasil.
 
-<!-- Diperlukan screenshot halaman setelah masuk ke layout desktop -->
+![20260715225049](https://static-docs.nocobase.com/20260715225049.png)
 
 ### Langkah 2: Aktifkan UI Editor
 
 Klik «UI Editor» di sudut kanan atas halaman untuk masuk ke mode interface builder. Setelah aktif, titik konfigurasi akan muncul di sekitar menu, Page, Block, Field, dan Action.
 
-<!-- Diperlukan screenshot lokasi tombol «UI Editor» dan tampilan halaman setelah diaktifkan -->
+![20260715225155_rec_](https://static-docs.nocobase.com/20260715225155_rec_.gif)
 
 ### Langkah 3: Buat menu dan halaman
 
@@ -43,17 +34,17 @@ Kamu dapat menambahkan Group, Page, atau Link di area navigasi, serta mengaktifk
 
 Konten halaman dibuat dengan cara yang sama seperti antarmuka lainnya: tambahkan [Block](../blocks/index.md), lalu konfigurasikan [Field](../fields/index.md) dan [Action](../actions/index.md) sesuai kebutuhan bisnis.
 
-<!-- Diperlukan video yang menampilkan proses menambahkan menu, membuat Page, dan masuk ke Page tersebut -->
+![20260715225316_rec_](https://static-docs.nocobase.com/20260715225316_rec_.gif)
 
 ### Langkah 4: Konfigurasikan konten halaman
 
 Tambahkan Block seperti Table, Form, Detail, dan Filter, lalu sesuaikan susunan Field, Action, dan Block. Semua perubahan akan langsung terlihat di halaman saat ini.
 
-<!-- Diperlukan screenshot halaman desktop dalam mode interface builder yang menampilkan titik konfigurasi Block, Field, dan Action -->
+![20260715225424_rec_](https://static-docs.nocobase.com/20260715225424_rec_.gif)
 
 ## Mengelola route dan menu
 
-Menu dan route desktop menggunakan konfigurasi yang sama. Setelah Page atau Link ditambahkan di area navigasi, item terkait juga akan muncul di [Routes Manager](../../routes/index.md). Perubahan route di Routes Manager juga akan memperbarui menu.
+Setelah Page atau Link ditambahkan di area navigasi, item terkait juga akan muncul di [Routes Manager](../../routes/index.md). Perubahan route di Routes Manager juga akan memperbarui menu.
 
 Layout desktop mendukung beberapa jenis route umum:
 
@@ -64,25 +55,23 @@ Layout desktop mendukung beberapa jenis route umum:
 
 Di Routes Manager, kamu dapat menambah, mengedit, menghapus, menampilkan, atau menyembunyikan route. Gunakan Routes Manager jika perlu merapikan struktur menu secara terpusat.
 
-<!-- Diperlukan screenshot halaman «Pusat Pengaturan / Route / Route desktop» -->
+![20260715225711_rec_](https://static-docs.nocobase.com/20260715225711_rec_.gif)
 
 ## Responsif di layar sempit
 
-Layout desktop dapat langsung digunakan di ponsel atau jendela browser yang sempit. Dalam kondisi ini, layout tetap menggunakan route dan Page desktop yang sama dan tidak otomatis beralih menjadi layout mobile.
+Layout desktop dapat langsung digunakan di ponsel atau jendela browser yang sempit. Dalam kondisi ini, layout tetap menggunakan route dan Page desktop yang asli dan tidak otomatis beralih menjadi layout mobile.
 
 ### Perubahan layout
 
 Menu navigasi akan menjadi ringkas dan Action di bagian atas dipindahkan ke akses yang lebih padat. Margin halaman serta jarak antar-Block juga mengecil, sedangkan area konten menyesuaikan tinggi tampilan browser mobile.
 
-UI Editor tidak tersedia di layar sempit. Jika perlu mengubah menu atau halaman, lakukan melalui browser komputer.
+UI Editor tidak tersedia di layar sempit. Jika perlu mengubah menu atau halaman, kamu harus melakukannya melalui browser komputer.
 
-<!-- Diperlukan video yang menampilkan perubahan Page desktop yang sama dari layar lebar ke layar sempit -->
+![20260715224603](https://static-docs.nocobase.com/20260715224603.png)
 
 ### Penyesuaian konten halaman
 
-Layout dan komponen umum di dalam halaman juga menyesuaikan diri untuk layar sempit. Sebagai contoh, konten multikolom menjadi lebih nyaman dibaca secara vertikal, Table dapat digulir secara horizontal untuk melihat kolom di luar layar, dan pagination serta akses Action menjadi lebih ringkas. Pemilih nilai, tanggal dan waktu, Filter, serta halaman anak juga menggunakan interaksi yang lebih sesuai untuk layar kecil.
-
-Perilaku tambahan Block lain di layar sempit bergantung pada dukungan masing-masing Block. Table tetap berbentuk Table dan tidak otomatis berubah menjadi kartu.
+Komponen umum di dalam halaman juga menyesuaikan interaksi untuk layar sempit agar lebih mudah digunakan di ponsel. Sebagai contoh, konten multikolom berubah menjadi satu kolom, Table dapat digulir secara horizontal untuk melihat kolom di luar layar, dan pagination serta akses Action menjadi lebih ringkas. Pemilih nilai, tanggal dan waktu, Filter, serta halaman anak juga menggunakan interaksi yang lebih sesuai untuk ponsel.
 
 :::tip Responsif desktop dan layout mobile
 

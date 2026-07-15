@@ -14,9 +14,7 @@ Konfigurationsmodus:
 
 ## UI-Layout
 
-NocoBase bietet ein Desktop-Layout und ein Mobil-Layout. Das Desktop-Layout eignet sich für typische Verwaltungsaufgaben und passt Navigation sowie Seiteninhalte an schmale Bildschirme an. Das Mobil-Layout bietet eine eigenständige mobile Navigation und getrennt konfigurierte Seiten. Weitere Informationen finden Sie unter [UI-Layout](./ui-layout/index.md).
-
-<!-- Benötigt wird ein nebeneinander angeordneter Screenshot derselben Geschäftsseite im Desktop- und Mobil-Layout, der die Unterschiede der Navigation hervorhebt -->
+NocoBase bietet ein Desktop-Layout und ein Mobil-Layout. Das Desktop-Layout eignet sich für typische Verwaltungsaufgaben und passt Navigation sowie Seiteninhalte auf Smartphones an. Das Mobil-Layout bietet eine eigenständige Navigation und getrennt konfigurierte Seiten für Mobilgeräte. Weitere Informationen finden Sie unter [UI-Layout](./ui-layout/index.md).
 
 ## Konfigurationsoptionen
 

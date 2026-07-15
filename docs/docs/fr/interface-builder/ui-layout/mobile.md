@@ -6,7 +6,7 @@ keywords: "mise en page mobile,page mobile,navigation inférieure,prévisualisat
 
 # Mise en page mobile
 
-Dans NocoBase, la **mise en page mobile** sert à construire une navigation et des pages mobiles indépendantes. Elle est accessible par défaut via `/mobile`, utilise une barre d'onglets inférieure comme navigation principale et convient mieux à la saisie et à la consultation de données, aux approbations et au traitement des tâches sur téléphone.
+Dans NocoBase, la **mise en page mobile** sert à construire une navigation et des pages indépendantes pour les appareils mobiles. Elle est accessible par défaut via `/mobile`, utilise une barre d'onglets inférieure comme navigation principale et convient mieux à la saisie et à la consultation de données, aux approbations et au traitement des tâches sur téléphone.
 
 Les mises en page mobile et bureau utilisent les mêmes sources de données et les mêmes données métier. Les menus, les routes et le contenu des pages sont toutefois configurés séparément. Vous pouvez ainsi réorganiser les pages selon l'usage mobile sans rester lié à la structure des pages bureau.
 
@@ -14,7 +14,7 @@ Les mises en page mobile et bureau utilisent les mêmes sources de données et l
 
 ## Ouvrir et prévisualiser la mise en page mobile
 
-Après avoir activé le plugin UI Layout, cliquez sur « Mobile » dans le Centre de configuration ou accédez directement à `/mobile`.
+Par défaut, cliquez sur « Mobile » dans le Centre de configuration ou accédez directement à `/mobile`.
 
 Il est préférable de construire les pages dans le navigateur de votre ordinateur. Vous y trouverez une zone de prévisualisation mobile et une barre d'outils supérieure, avec les fonctions suivantes :
 
@@ -23,7 +23,7 @@ Il est préférable de construire les pages dans le navigateur de votre ordinate
 - « Aperçu mobile » rétablit la zone de prévisualisation à la taille d'un téléphone.
 - « Code QR » ouvre l'adresse mobile actuelle sur un téléphone.
 
-<!-- Une capture d'écran de la prévisualisation mobile dans le navigateur de l'ordinateur, indiquant UI Editor, l'aperçu tablette, l'aperçu mobile et le code QR, est nécessaire -->
+![20260715221712](https://static-docs.nocobase.com/20260715221712.png)
 
 Après avoir terminé la construction sur ordinateur, utilisez le code QR pour vérifier le résultat sur un appareil réel. Contrôlez en priorité la navigation, le défilement, la saisie dans les formulaires, les pages superposées et les zones de sécurité de l'écran.
 
@@ -39,7 +39,7 @@ La mise en page mobile utilise une barre d'onglets inférieure comme navigation 
 4. Saisissez le titre de la page et choisissez une icône.
 5. Après validation, ouvrez la nouvelle page et continuez à ajouter son contenu.
 
-<!-- Une vidéo montrant l'ajout d'une page mobile dans la barre d'onglets inférieure est nécessaire -->
+![20260715221823_rec_](https://static-docs.nocobase.com/20260715221823_rec_.gif)
 
 ### Ajouter un lien
 
@@ -47,7 +47,7 @@ Pour ouvrir une adresse interne ou externe, sélectionnez « Lien », puis confi
 
 Le lien peut s'ouvrir dans la fenêtre actuelle ou dans une nouvelle fenêtre. Le comportement dépend de la configuration du lien.
 
-<!-- Une capture d'écran de la configuration d'ajout d'un lien mobile est nécessaire -->
+![20260715221950](https://static-docs.nocobase.com/20260715221950.png)
 
 ### Ajuster la navigation
 
@@ -55,7 +55,7 @@ Dans le mode de construction de l'interface, vous pouvez réorganiser les onglet
 
 Pour consulter, afficher, masquer ou supprimer les routes mobiles depuis un seul endroit, ouvrez « Centre de configuration / Routes / Routes mobiles ».
 
-<!-- Une capture d'écran du menu de configuration des onglets inférieurs et du tri par glisser-déposer est nécessaire -->
+![20260715222113_rec_](https://static-docs.nocobase.com/20260715222113_rec_.gif)
 
 ## Construire une page mobile
 
@@ -69,7 +69,7 @@ Commencez par créer et ouvrir une page mobile, puis ajoutez-y des blocs. Le con
 4. Sélectionnez un tableau, un formulaire, des détails, un filtre ou un autre bloc.
 5. Continuez à configurer les champs, les actions et les paramètres du bloc.
 
-<!-- Une vidéo montrant l'ouverture d'une page mobile et l'ajout d'un bloc est nécessaire -->
+![20260715222230_rec_](https://static-docs.nocobase.com/20260715222230_rec_.gif)
 
 ### Utiliser les onglets de page
 
@@ -82,11 +82,11 @@ Une page mobile peut aussi utiliser des onglets. Les contenus placés sous la m�
 
 Si la page mobile contient peu d'éléments, une seule page suffit. Il n'est alors pas nécessaire d'activer des onglets.
 
-<!-- Une capture d'écran montrant l'activation des onglets de page, l'ajout d'un nouvel onglet et l'emplacement du bouton d'ajout est nécessaire -->
+![20260715222354_rec_](https://static-docs.nocobase.com/20260715222354_rec_.gif)
 
 ### Interactions mobiles des composants courants
 
-Les composants courants adaptent leur disposition et leurs interactions à la mise en page mobile. Les contenus à plusieurs colonnes favorisent ainsi une lecture verticale, les champs de sélection, de date et d'heure utilisent des sélecteurs mobiles, et les filtres, les enregistrements associés ainsi que les sous-pages adoptent une interface mieux adaptée au toucher.
+Les composants courants adaptent leur disposition et leurs interactions à la mise en page mobile. Les contenus à plusieurs colonnes passent ainsi automatiquement à une seule colonne, plus adaptée à la lecture verticale, les champs de sélection, de date et d'heure utilisent des sélecteurs mobiles, et les filtres, les enregistrements associés ainsi que les sous-pages adoptent une interface mieux adaptée au toucher.
 
 Les tableaux restent des tableaux et permettent de faire défiler horizontalement les colonnes qui dépassent de l'écran. Le comportement mobile supplémentaire des autres blocs dépend de leur propre prise en charge.
 
@@ -94,11 +94,11 @@ Les tableaux restent des tableaux et permettent de faire défiler horizontalemen
 
 Le contenu ouvert depuis les actions d'affichage, de modification ou de sélection d'enregistrements associés apparaît sous la forme d'une sous-page mobile. La sous-page fournit un bouton de retour vers la page précédente.
 
-Lorsque vous ouvrez une sous-page plus profonde, la barre d'onglets inférieure est temporairement masquée afin de libérer davantage d'espace pour le contenu actuel. Elle réapparaît lorsque vous fermez la sous-page ou revenez au niveau précédent.
+Lorsque vous ouvrez une sous-page plus profonde, la barre d'onglets inférieure est masquée afin de libérer davantage d'espace pour le contenu actuel. Elle réapparaît lorsque vous fermez la sous-page ou revenez au niveau précédent.
 
-Lorsque vous passez d'un onglet inférieur à un autre, l'état des pages déjà ouvertes est généralement conservé. Vous pouvez ainsi basculer entre plusieurs tâches mobiles sans perdre le contexte.
+Lorsque vous passez d'un onglet inférieur à un autre, l'état des pages déjà ouvertes est conservé. Vous pouvez ainsi basculer entre plusieurs tâches mobiles sans perdre le contexte.
 
-<!-- Une vidéo montrant l'ouverture d'une sous-page, le masquage de la barre d'onglets inférieure et le retour est nécessaire -->
+![20260715222828_rec_](https://static-docs.nocobase.com/20260715222828_rec_.gif)
 
 ## Gérer les routes et les autorisations
 
@@ -106,19 +106,19 @@ Les routes mobiles peuvent être gérées depuis le [Gestionnaire de routes](../
 
 Les autorisations d'accès aux routes mobiles sont configurées séparément de celles des routes bureau. Dans les autorisations du rôle, ouvrez « Routes mobiles » et sélectionnez les pages accessibles au rôle actuel. Pour plus de détails, consultez la [Configuration des autorisations](../../users-permissions/acl/permissions.md).
 
-<!-- Une capture d'écran de la page de gestion « Centre de configuration / Routes / Routes mobiles » est nécessaire -->
+![20260715223016_rec_](https://static-docs.nocobase.com/20260715223016_rec_.gif)
 
-<!-- Une capture d'écran de la page « Routes mobiles » dans les autorisations du rôle est nécessaire -->
+![20260715223106_rec_](https://static-docs.nocobase.com/20260715223106_rec_.gif)
 
 ## Liens avec la mise en page bureau
 
-Les mises en page bureau et mobile peuvent proposer des pages différentes à partir de la même collection. Par exemple, le bureau peut utiliser un tableau comportant davantage de champs pour traiter les données, tandis que le mobile utilise une liste ou un formulaire plus simple pour la saisie sur le terrain.
+Les mises en page bureau et mobile peuvent proposer des pages différentes à partir de la même table de données. Par exemple, le bureau peut utiliser un tableau comportant davantage de champs pour traiter les données, tandis que le mobile utilise une liste ou un formulaire plus simple pour la saisie sur le terrain.
 
 Les pages des deux mises en page ne sont pas synchronisées automatiquement. Modifier une page, un menu ou une route du bureau ne met pas à jour la configuration mobile. De même, les modifications apportées à la mise en page mobile n'affectent pas le bureau.
 
 :::tip Recommandation
 
-Si vous avez seulement besoin de consulter occasionnellement une page bureau depuis un téléphone, commencez par utiliser l'adaptation aux écrans étroits de la [mise en page bureau](./desktop.md). Configurez une mise en page mobile distincte uniquement lorsque vous avez besoin d'une navigation et de parcours mobiles indépendants.
+Si vous avez seulement besoin de consulter occasionnellement une page bureau depuis un téléphone, commencez par utiliser l'adaptation aux écrans étroits de la [mise en page bureau](./desktop.md). Configurez une mise en page mobile distincte uniquement lorsque vous avez besoin d'une navigation et de parcours indépendants pour les appareils mobiles.
 
 :::
 

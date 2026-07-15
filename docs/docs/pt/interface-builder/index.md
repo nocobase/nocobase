@@ -14,9 +14,7 @@ Modo de edição:
 
 ## Layout da interface
 
-O NocoBase oferece layouts para desktop e dispositivos móveis. O layout para desktop atende às operações comuns de administração e também adapta a navegação e o conteúdo das páginas a telas estreitas. O layout para dispositivos móveis oferece navegação e páginas configuradas de forma independente. Consulte [Layout da interface](./ui-layout/index.md) para obter mais informações.
-
-<!-- É necessária uma captura de tela lado a lado da mesma página de negócio nos layouts para desktop e dispositivos móveis, destacando a diferença entre as navegações -->
+O NocoBase oferece layouts para desktop e dispositivos móveis. O layout para desktop atende às operações comuns de administração e também adapta a navegação e o conteúdo das páginas em celulares. O layout para dispositivos móveis oferece navegação e páginas configuradas de forma independente. Consulte [Layout da interface](./ui-layout/index.md) para obter mais informações.
 
 ## Opções de Configuração
 

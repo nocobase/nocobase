@@ -8,9 +8,7 @@ keywords: "UI layout,desktop layout,mobile layout,responsive layout,mobile pages
 
 NocoBase provides desktop and mobile layouts. Both layouts support UI building, so you can create pages and configure blocks, fields, and actions within them.
 
-The desktop layout is the default choice and works well for everyday administration and data processing on a computer. If you need separate mobile navigation and mobile pages, you can build a mobile layout as well.
-
-<!-- Add an overview screenshot comparing the desktop and mobile layouts -->
+The desktop layout is the default choice and works well for everyday administration and data processing on a computer. If you need dedicated navigation and pages for mobile devices, you can build a mobile layout as well.
 
 ## Desktop layout
 
@@ -18,7 +16,7 @@ The [desktop layout](./desktop.md) is available at `/admin` by default. It consi
 
 The desktop layout also supports responsive behavior on narrow screens. When a page is displayed on a smaller screen, the navigation, spacing, and common components adjust to fit while continuing to use the existing desktop menus and pages.
 
-<!-- Add a full-page screenshot of the desktop layout -->
+![20260715224020](https://static-docs.nocobase.com/20260715224020.png)
 
 ## Mobile layout
 
@@ -26,7 +24,7 @@ The [mobile layout](./mobile.md) is available at `/mobile` by default. It uses a
 
 The mobile layout works well for frequent phone-based tasks such as on-site data entry, mobile approvals, task processing, and data lookup. You can build and preview pages in a desktop browser, then use a QR code to check the result on a physical device.
 
-<!-- Add a full-page screenshot of the mobile layout -->
+![20260715230725](https://static-docs.nocobase.com/20260715230725.png)
 
 ## Which layout should I use?
 
@@ -40,7 +38,7 @@ Use the desktop layout by default.
 
 ## How the configurations relate
 
-The desktop and mobile layouts use the same data sources, collections, and business data. You can use the same collection to build separate pages for different devices.
+The desktop and mobile layouts use the same data sources and business data. You can use the same data table to build separate pages for different devices.
 
 Menus, routes, and page configurations are maintained separately. Changes to a desktop page do not automatically update its mobile counterpart, and changes to mobile navigation do not affect desktop navigation. [Route access permissions](../../users-permissions/acl/permissions.md) also need to be configured separately for each layout.
 

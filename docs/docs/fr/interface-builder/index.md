@@ -14,9 +14,7 @@ Mode d'édition :
 
 ## Mise en page de l'interface
 
-NocoBase propose une mise en page bureau et une mise en page mobile. La mise en page bureau convient aux opérations courantes d'administration et adapte aussi la navigation et le contenu des pages aux écrans étroits. La mise en page mobile offre une navigation et des pages configurées séparément. Consultez [Mise en page de l'interface](./ui-layout/index.md) pour plus de détails.
-
-<!-- Une capture d'écran côte à côte de la même page métier dans les mises en page bureau et mobile est nécessaire, en mettant en évidence les différences de navigation -->
+NocoBase propose une mise en page bureau et une mise en page mobile. La mise en page bureau convient aux opérations courantes d'administration et adapte aussi la navigation et le contenu des pages sur les téléphones. La mise en page mobile offre une navigation et des pages propres aux appareils mobiles. Consultez [Mise en page de l'interface](./ui-layout/index.md) pour plus de détails.
 
 ## Options de configuration
 

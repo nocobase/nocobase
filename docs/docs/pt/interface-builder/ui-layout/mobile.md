@@ -6,7 +6,7 @@ keywords: "layout para dispositivos móveis,página móvel,navegação inferior,
 
 # Layout para dispositivos móveis
 
-No NocoBase, o **layout para dispositivos móveis** serve para construir uma navegação e páginas móveis independentes. Ele é acessado por padrão em `/mobile`, usa uma barra de abas inferior como navegação principal e é mais adequado ao registro e à consulta de dados, às aprovações e ao tratamento de tarefas no celular.
+No NocoBase, o **layout para dispositivos móveis** serve para construir uma navegação e páginas independentes para dispositivos móveis. Ele é acessado por padrão em `/mobile`, usa uma barra de abas inferior como navegação principal e é mais adequado ao registro e à consulta de dados, às aprovações e ao tratamento de tarefas no celular.
 
 Os layouts para dispositivos móveis e desktop usam as mesmas fontes e os mesmos dados de negócio, mas menus, rotas e conteúdo das páginas são configurados separadamente. Assim, você pode reorganizar as páginas para a forma de uso no celular sem ficar limitado pela estrutura das páginas do desktop.
 
@@ -14,7 +14,7 @@ Os layouts para dispositivos móveis e desktop usam as mesmas fontes e os mesmos
 
 ## Entrar e visualizar o layout para dispositivos móveis
 
-Depois de ativar o plugin UI Layout, clique em «Dispositivos móveis» na Central de Configurações ou acesse `/mobile` diretamente.
+Por padrão, clique em «Dispositivos móveis» na Central de Configurações ou acesse `/mobile` diretamente.
 
 É melhor construir as páginas no navegador do computador. Nesse modo, são exibidos uma área de visualização móvel e uma barra de ferramentas superior, em que:
 
@@ -23,7 +23,7 @@ Depois de ativar o plugin UI Layout, clique em «Dispositivos móveis» na Centr
 - «Visualização móvel» restaura a área de visualização para o tamanho de um celular.
 - «Código QR» abre o endereço móvel atual em um celular.
 
-<!-- É necessária uma captura de tela da visualização móvel no navegador do computador, indicando UI Editor, visualização em tablet, visualização móvel e código QR -->
+![20260715221712](https://static-docs.nocobase.com/20260715221712.png)
 
 Depois de concluir a construção no computador, use o código QR para conferir o resultado em um aparelho real. Verifique principalmente a navegação, a rolagem, a entrada de dados em formulários, as páginas sobrepostas e a área segura da tela.
 
@@ -39,7 +39,7 @@ O layout para dispositivos móveis usa uma barra de abas inferior como navegaç�
 4. Preencha o título da página e escolha um ícone.
 5. Depois de enviar, entre na nova página e continue adicionando o conteúdo.
 
-<!-- É necessário um vídeo mostrando como adicionar uma página móvel à barra de abas inferior -->
+![20260715221823_rec_](https://static-docs.nocobase.com/20260715221823_rec_.gif)
 
 ### Adicionar um link
 
@@ -47,7 +47,7 @@ Se precisar abrir um endereço interno ou externo, selecione «Link» e configur
 
 O link pode ser aberto na janela atual ou em uma nova janela. O comportamento depende da configuração do link.
 
-<!-- É necessária uma captura de tela da configuração para adicionar um link móvel -->
+![20260715221950](https://static-docs.nocobase.com/20260715221950.png)
 
 ### Ajustar a navegação
 
@@ -55,7 +55,7 @@ No modo de construção da interface, arraste as abas inferiores para alterar a 
 
 Para visualizar, exibir, ocultar ou excluir rotas móveis em um só lugar, abra «Central de Configurações / Rotas / Rotas móveis».
 
-<!-- É necessária uma captura de tela do menu de configuração das abas inferiores e da ordenação por arrastar e soltar -->
+![20260715222113_rec_](https://static-docs.nocobase.com/20260715222113_rec_.gif)
 
 ## Construir uma página móvel
 
@@ -69,7 +69,7 @@ Primeiro crie e abra uma página móvel e, em seguida, adicione blocos a ela. A 
 4. Selecione uma tabela, um formulário, detalhes, filtro ou outro bloco.
 5. Continue configurando campos, ações e definições do bloco.
 
-<!-- É necessário um vídeo mostrando como entrar em uma página móvel e adicionar um bloco -->
+![20260715222230_rec_](https://static-docs.nocobase.com/20260715222230_rec_.gif)
 
 ### Usar abas de página
 
@@ -82,11 +82,11 @@ Uma página móvel também pode ter abas. Conteúdos que pertencem à mesma entr
 
 Se a página móvel tiver pouco conteúdo, use uma única página. Nesse caso, não é necessário ativar abas.
 
-<!-- É necessária uma captura de tela mostrando como ativar as abas da página, adicionar uma nova aba e localizar o botão de adição -->
+![20260715222354_rec_](https://static-docs.nocobase.com/20260715222354_rec_.gif)
 
 ### Interações móveis dos componentes mais usados
 
-Os componentes mais usados ajustam a organização e a interação no layout para dispositivos móveis. Por exemplo, conteúdos em várias colunas passam a favorecer a leitura vertical; campos de seleção, data e hora usam seletores móveis; filtros, registros associados e subpáginas adotam interfaces mais adequadas ao toque.
+Os componentes mais usados ajustam a organização e a interação no layout para dispositivos móveis. Por exemplo, conteúdos em várias colunas passam automaticamente para uma única coluna, mais adequada à leitura vertical; campos de seleção, data e hora usam seletores móveis; filtros, registros associados e subpáginas adotam interfaces mais adequadas ao toque.
 
 As tabelas continuam sendo exibidas como tabelas e permitem rolar horizontalmente para ver as colunas que ultrapassam a tela. O comportamento móvel adicional de outros blocos depende do suporte de cada bloco.
 
@@ -94,11 +94,11 @@ As tabelas continuam sendo exibidas como tabelas e permitem rolar horizontalment
 
 O conteúdo aberto por ações de visualização, edição ou seleção de registros associados aparece como uma subpágina móvel. A subpágina oferece um botão para voltar à página anterior.
 
-Ao entrar em uma subpágina mais profunda, a barra de abas inferior é ocultada temporariamente para liberar mais espaço para o conteúdo atual. Ao fechar a subpágina ou voltar ao nível anterior, a barra volta a aparecer.
+Ao entrar em uma subpágina mais profunda, a barra de abas inferior é ocultada para liberar mais espaço para o conteúdo atual. Ao fechar a subpágina ou voltar ao nível anterior, a barra volta a aparecer.
 
-Ao alternar entre as abas inferiores, o estado das páginas já abertas geralmente é preservado. Assim, você pode mudar entre várias tarefas móveis sem perder o contexto.
+Ao alternar entre as abas inferiores, o estado das páginas já abertas é preservado. Assim, você pode mudar entre várias tarefas móveis sem perder o contexto.
 
-<!-- É necessário um vídeo mostrando a abertura de uma subpágina, a ocultação da barra de abas inferior e o retorno -->
+![20260715222828_rec_](https://static-docs.nocobase.com/20260715222828_rec_.gif)
 
 ## Gerenciar rotas e permissões
 
@@ -106,19 +106,19 @@ As rotas móveis podem ser mantidas em um só lugar no [Gerenciador de Rotas](..
 
 As permissões de acesso às rotas móveis são configuradas separadamente das rotas do desktop. Nas permissões da função, abra «Rotas móveis» e selecione as páginas que a função pode acessar. Consulte a [Configuração de permissões](../../users-permissions/acl/permissions.md) para obter mais informações.
 
-<!-- É necessária uma captura de tela da página de gerenciamento «Central de Configurações / Rotas / Rotas móveis» -->
+![20260715223016_rec_](https://static-docs.nocobase.com/20260715223016_rec_.gif)
 
-<!-- É necessária uma captura de tela da página «Rotas móveis» nas permissões da função -->
+![20260715223106_rec_](https://static-docs.nocobase.com/20260715223106_rec_.gif)
 
 ## Relação com o layout para desktop
 
-Os layouts para desktop e dispositivos móveis podem ter páginas diferentes baseadas na mesma coleção. Por exemplo, o desktop pode usar uma tabela com mais campos para tratar os dados, enquanto o celular usa uma lista ou um formulário mais simples para registros em campo.
+Os layouts para desktop e dispositivos móveis podem ter páginas diferentes baseadas na mesma tabela de dados. Por exemplo, o desktop pode usar uma tabela com mais campos para tratar os dados, enquanto o celular usa uma lista ou um formulário mais simples para registros em campo.
 
 As páginas dos dois layouts não são sincronizadas automaticamente. Alterar uma página, um menu ou uma rota do desktop não atualiza a configuração móvel, e alterações feitas no layout móvel também não afetam o desktop.
 
 :::tip Recomendação de uso
 
-Se você só precisa consultar ocasionalmente uma página do desktop pelo celular, comece usando a responsividade em telas estreitas do [layout para desktop](./desktop.md). Configure um layout móvel separado apenas quando precisar de navegação e fluxos de página próprios para dispositivos móveis.
+Se você só precisa consultar ocasionalmente uma página do desktop pelo celular, comece usando a responsividade em telas estreitas do [layout para desktop](./desktop.md). Configure um layout móvel separado apenas quando precisar de navegação e fluxos de página independentes para dispositivos móveis.
 
 :::
 

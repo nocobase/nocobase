@@ -8,9 +8,7 @@ keywords: "layout UI,layout desktop,layout mobile,layout responsif,halaman mobil
 
 NocoBase menyediakan layout desktop dan layout mobile. Keduanya dapat menggunakan fitur interface builder untuk membuat halaman serta mengonfigurasi Block, Field, dan Action di dalamnya.
 
-Layout desktop merupakan pilihan default dan cocok untuk pengelolaan serta pemrosesan data sehari-hari di komputer. Jika membutuhkan navigasi dan halaman khusus untuk perangkat mobile, kamu dapat menyiapkan layout mobile secara terpisah.
-
-<!-- Diperlukan screenshot perbandingan keseluruhan antara layout desktop dan layout mobile -->
+Layout desktop merupakan pilihan default dan cocok untuk pengelolaan serta pemrosesan data sehari-hari di komputer. Jika membutuhkan navigasi dan halaman independen untuk perangkat mobile, kamu dapat menyiapkan layout mobile secara terpisah.
 
 ## Layout desktop
 
@@ -18,7 +16,7 @@ Layout desktop merupakan pilihan default dan cocok untuk pengelolaan serta pemro
 
 Layout desktop juga mendukung tampilan responsif untuk layar sempit. Saat halaman dibuka di layar yang lebih sempit, navigasi, jarak, dan komponen umum akan disesuaikan agar lebih nyaman digunakan, sementara menu dan halaman desktop tetap sama.
 
-<!-- Diperlukan screenshot halaman lengkap layout desktop -->
+![20260715224020](https://static-docs.nocobase.com/20260715224020.png)
 
 ## Layout mobile
 
@@ -26,7 +24,7 @@ Layout desktop juga mendukung tampilan responsif untuk layar sempit. Saat halama
 
 Layout mobile cocok untuk aktivitas yang sering dilakukan melalui ponsel, seperti memasukkan data di lapangan, memproses persetujuan, menangani tugas, dan mencari data. Kamu dapat membuat dan meninjau halaman di browser komputer, lalu menggunakan kode QR untuk memeriksa hasilnya di ponsel.
 
-<!-- Diperlukan screenshot halaman lengkap layout mobile -->
+![20260715230725](https://static-docs.nocobase.com/20260715230725.png)
 
 ## Cara memilih
 
@@ -40,7 +38,7 @@ Secara default, gunakan layout desktop.
 
 ## Hubungan antar-konfigurasi
 
-Layout desktop dan layout mobile menggunakan sumber data, collection, dan data bisnis yang sama. Kamu dapat membuat halaman berbeda dari collection yang sama agar sesuai untuk setiap jenis perangkat.
+Layout desktop dan layout mobile menggunakan sumber data serta data bisnis yang sama. Kamu dapat membuat halaman berbeda dari tabel data yang sama agar sesuai untuk setiap jenis perangkat.
 
 Menu, route, dan konfigurasi halaman dikelola secara terpisah. Perubahan pada halaman desktop tidak otomatis memperbarui halaman mobile, dan perubahan navigasi mobile tidak memengaruhi navigasi desktop. [Izin akses route](../../users-permissions/acl/permissions.md) untuk kedua layout juga perlu dikonfigurasi secara terpisah.
 

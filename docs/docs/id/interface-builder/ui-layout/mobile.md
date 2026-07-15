@@ -6,7 +6,7 @@ keywords: "layout mobile,halaman mobile,navigasi bawah,pratinjau mobile,route mo
 
 # Layout mobile
 
-Di NocoBase, **layout mobile** digunakan untuk membuat navigasi dan halaman khusus mobile. Layout ini dapat diakses melalui `/mobile` secara default, menggunakan bilah Tab bawah sebagai navigasi tingkat pertama, dan cocok untuk memasukkan serta mencari data, memproses persetujuan, dan menangani tugas melalui ponsel.
+Di NocoBase, **layout mobile** digunakan untuk membuat navigasi dan halaman independen untuk perangkat mobile. Layout ini dapat diakses melalui `/mobile` secara default, menggunakan bilah Tab bawah sebagai navigasi tingkat pertama, dan cocok untuk memasukkan serta mencari data, memproses persetujuan, dan menangani tugas melalui ponsel.
 
 Layout mobile dan layout desktop menggunakan sumber data serta data bisnis yang sama, tetapi menu, route, dan konten halamannya dikonfigurasi secara terpisah. Dengan begitu, kamu dapat menyusun ulang halaman berdasarkan cara kerja di perangkat mobile tanpa dibatasi struktur halaman desktop.
 
@@ -14,7 +14,7 @@ Layout mobile dan layout desktop menggunakan sumber data serta data bisnis yang 
 
 ## Masuk dan meninjau layout mobile
 
-Setelah plugin Layout UI diaktifkan, klik «Mobile» di Pusat Pengaturan atau langsung akses `/mobile`.
+Secara default, klik «Mobile» di Pusat Pengaturan atau langsung akses `/mobile`.
 
 Sebaiknya buat halaman melalui browser komputer. Browser akan menampilkan area pratinjau mobile dan toolbar atas, dengan fungsi berikut:
 
@@ -23,7 +23,7 @@ Sebaiknya buat halaman melalui browser komputer. Browser akan menampilkan area p
 - «Pratinjau mobile» digunakan untuk mengembalikan area pratinjau ke ukuran ponsel.
 - «Kode QR» digunakan untuk membuka alamat mobile saat ini di ponsel.
 
-<!-- Diperlukan screenshot pratinjau mobile di browser komputer yang menandai UI Editor, pratinjau tablet, pratinjau mobile, dan kode QR -->
+![20260715221712](https://static-docs.nocobase.com/20260715221712.png)
 
 Setelah selesai membuat halaman di komputer, gunakan kode QR untuk memeriksanya di perangkat asli. Periksa terutama navigasi, scroll, input Form, halaman popup, dan area aman layar.
 
@@ -39,7 +39,7 @@ Layout mobile menggunakan bilah Tab bawah sebagai navigasi tingkat pertama. Saat
 4. Isi judul Page dan pilih ikon.
 5. Setelah disimpan, masuk ke Page baru dan lanjutkan dengan menambahkan konten.
 
-<!-- Diperlukan video yang menampilkan proses menambahkan Page mobile ke bilah Tab bawah -->
+![20260715221823_rec_](https://static-docs.nocobase.com/20260715221823_rec_.gif)
 
 ### Menambahkan Link
 
@@ -47,7 +47,7 @@ Jika perlu berpindah ke alamat internal atau eksternal, pilih «Link», lalu kon
 
 Link dapat dibuka di jendela saat ini atau jendela baru, tergantung konfigurasinya.
 
-<!-- Diperlukan screenshot konfigurasi penambahan Link mobile -->
+![20260715221950](https://static-docs.nocobase.com/20260715221950.png)
 
 ### Menyesuaikan navigasi
 
@@ -55,7 +55,7 @@ Dalam mode interface builder, Tab pada bilah bawah dapat diseret untuk mengubah 
 
 Untuk melihat, menampilkan, menyembunyikan, atau menghapus route mobile secara terpusat, buka «Pusat Pengaturan / Route / Route mobile».
 
-<!-- Diperlukan screenshot menu konfigurasi Tab bawah mobile dan pengurutan dengan drag-and-drop -->
+![20260715222113_rec_](https://static-docs.nocobase.com/20260715222113_rec_.gif)
 
 ## Membuat halaman mobile
 
@@ -69,7 +69,7 @@ Buat dan masuk ke Page mobile terlebih dahulu, lalu tambahkan Block di dalamnya.
 4. Pilih Table, Form, Detail, Filter, atau Block lainnya.
 5. Lanjutkan dengan mengonfigurasi Field, Action, dan pengaturan Block.
 
-<!-- Diperlukan video yang menampilkan proses masuk ke Page mobile dan menambahkan Block -->
+![20260715222230_rec_](https://static-docs.nocobase.com/20260715222230_rec_.gif)
 
 ### Menggunakan Tab halaman
 
@@ -82,11 +82,11 @@ Sebuah Page mobile juga dapat menggunakan Tab. Konten yang berada dalam satu aks
 
 Jika konten Page mobile tidak banyak, cukup gunakan satu Page tanpa mengaktifkan Tab.
 
-<!-- Diperlukan screenshot yang menampilkan pengaktifan Tab halaman, penambahan Tab baru, dan posisi tombol tambah -->
+![20260715222354_rec_](https://static-docs.nocobase.com/20260715222354_rec_.gif)
 
 ### Interaksi mobile pada komponen umum
 
-Komponen umum di dalam Page akan menyesuaikan susunan dan cara interaksinya dengan layout mobile. Sebagai contoh, konten multikolom menjadi lebih nyaman dilihat secara vertikal, Field pilihan serta tanggal dan waktu menggunakan pemilih mobile, sedangkan Filter, record asosiasi, dan halaman anak memakai antarmuka yang lebih sesuai untuk sentuhan.
+Komponen umum di dalam Page akan menyesuaikan susunan dan cara interaksinya dengan layout mobile. Sebagai contoh, konten multikolom otomatis berubah menjadi satu kolom yang lebih nyaman dilihat secara vertikal, Field pilihan serta tanggal dan waktu menggunakan pemilih mobile, sedangkan Filter, record asosiasi, dan halaman anak memakai antarmuka yang lebih sesuai untuk sentuhan.
 
 Table tetap berbentuk Table di layout mobile dan dapat digulir secara horizontal untuk melihat kolom di luar layar. Perilaku mobile tambahan pada Block lainnya bergantung pada dukungan masing-masing Block.
 
@@ -94,11 +94,11 @@ Table tetap berbentuk Table di layout mobile dan dapat digulir secara horizontal
 
 Konten yang dibuka dari Action seperti View, Edit, dan memilih record asosiasi akan ditampilkan sebagai halaman anak mobile. Halaman anak menyediakan tombol kembali untuk kembali ke Page sebelumnya.
 
-Saat masuk ke halaman anak yang lebih dalam, bilah Tab bawah akan disembunyikan sementara agar tersedia lebih banyak ruang untuk konten. Setelah halaman anak ditutup atau kembali ke tingkat sebelumnya, bilah Tab bawah akan muncul kembali.
+Saat masuk ke halaman anak yang lebih dalam, bilah Tab bawah akan disembunyikan agar tersedia lebih banyak ruang untuk konten. Setelah halaman anak ditutup atau kembali ke tingkat sebelumnya, bilah Tab bawah akan muncul kembali.
 
-Ketika berpindah antar-Tab bawah, status Page yang sudah dibuka biasanya tetap dipertahankan agar kamu dapat beralih di antara beberapa tugas mobile.
+Ketika berpindah antar-Tab bawah, status Page yang sudah dibuka tetap dipertahankan agar kamu dapat beralih di antara beberapa tugas mobile.
 
-<!-- Diperlukan video yang menampilkan proses membuka halaman anak, menyembunyikan bilah Tab bawah, dan kembali -->
+![20260715222828_rec_](https://static-docs.nocobase.com/20260715222828_rec_.gif)
 
 ## Mengelola route dan izin
 
@@ -106,19 +106,19 @@ Route mobile dapat dikelola secara terpusat melalui [Routes Manager](../../route
 
 Izin akses route mobile dikonfigurasi secara terpisah dari route desktop. Pada izin role, buka «Route mobile» lalu pilih Page yang dapat diakses oleh role saat ini. Penjelasan lengkap dapat dilihat di [Konfigurasi izin](../../users-permissions/acl/permissions.md).
 
-<!-- Diperlukan screenshot halaman pengelolaan «Pusat Pengaturan / Route / Route mobile» -->
+![20260715223016_rec_](https://static-docs.nocobase.com/20260715223016_rec_.gif)
 
-<!-- Diperlukan screenshot halaman konfigurasi «Route mobile» pada izin role -->
+![20260715223106_rec_](https://static-docs.nocobase.com/20260715223106_rec_.gif)
 
 ## Hubungan dengan layout desktop
 
-Layout desktop dan layout mobile dapat menggunakan collection yang sama untuk membuat halaman masing-masing. Sebagai contoh, desktop dapat menggunakan Table dengan banyak Field untuk memproses data, sedangkan mobile menggunakan List atau Form yang lebih sederhana untuk memasukkan data di lapangan.
+Layout desktop dan layout mobile dapat menggunakan tabel data yang sama untuk membuat halaman masing-masing. Sebagai contoh, desktop dapat menggunakan Table dengan banyak Field untuk memproses data, sedangkan mobile menggunakan List atau Form yang lebih sederhana untuk memasukkan data di lapangan.
 
 Page pada kedua layout tidak otomatis disinkronkan. Perubahan Page, menu, atau route desktop tidak mengubah konfigurasi mobile, dan perubahan mobile juga tidak memengaruhi desktop.
 
 :::tip Saran penggunaan
 
-Jika perangkat mobile hanya digunakan untuk sesekali melihat Page desktop, gunakan responsif layar sempit dari [layout desktop](./desktop.md) terlebih dahulu. Layout mobile terpisah hanya diperlukan jika kamu membutuhkan navigasi dan alur Page khusus mobile.
+Jika perangkat mobile hanya digunakan untuk sesekali melihat Page desktop, gunakan responsif layar sempit dari [layout desktop](./desktop.md) terlebih dahulu. Layout mobile terpisah hanya diperlukan jika kamu membutuhkan navigasi dan alur Page independen untuk perangkat mobile.
 
 :::
 

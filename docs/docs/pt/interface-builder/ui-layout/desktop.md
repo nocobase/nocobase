@@ -6,22 +6,13 @@ keywords: "layout para desktop,layout da interface,tela estreita,layout responsi
 
 # Layout para desktop
 
-No NocoBase, o **layout para desktop** é a interface padrão da aplicação. Ele atende ao gerenciamento de dados, preenchimento de formulários, configuração de processos e tarefas diárias no computador, e também ajusta a navegação e o conteúdo das páginas em telas estreitas.
+No NocoBase, o **layout para desktop** é a interface padrão da aplicação. Ele atende ao gerenciamento de dados, preenchimento de formulários, configuração de processos e tarefas diárias no computador, e também pode ser usado em dispositivos móveis.
 
 O layout para desktop é acessado por padrão em `/admin`. Se a aplicação tiver um prefixo de acesso próprio, o endereço real receberá esse prefixo automaticamente.
 
-<!-- É necessária uma captura de tela de uma página completa no layout para desktop, mostrando a navegação superior, a navegação lateral e a área de conteúdo -->
+![20260715224020](https://static-docs.nocobase.com/20260715224020.png)
 
-## Características do layout
-
-O layout para desktop é composto principalmente pelas seguintes áreas:
-
-- **Navegação superior** — exibe a troca de aplicações e os acessos às ações globais.
-- **Navegação lateral** — exibe as páginas e os links do grupo atual.
-- **Área de conteúdo da página** — exibe abas de página, blocos, campos e ações.
-- **UI Editor** — ativa o modo de construção da interface para ajustar menus e o conteúdo das páginas.
-
-A navegação superior e a lateral mantêm o item da rota atual selecionado. Ao trocar de página, o conteúdo aparece na área à direita, e o estado das páginas já abertas geralmente é preservado.
+![20260715224603](https://static-docs.nocobase.com/20260715224603.png)
 
 ## Construir uma página
 
@@ -29,13 +20,13 @@ A navegação superior e a lateral mantêm o item da rota atual selecionado. Ao 
 
 Acesse `/admin` para abrir o layout para desktop. Normalmente, a aplicação também abre essa área logo após o login.
 
-<!-- É necessária uma captura de tela da página exibida ao entrar no layout para desktop -->
+![20260715225049](https://static-docs.nocobase.com/20260715225049.png)
 
 ### Segundo passo: abrir o UI Editor
 
 Clique em «UI Editor» no canto superior direito da página para entrar no modo de construção da interface. Depois de ativá-lo, os menus, as páginas, os blocos, os campos e as ações passam a exibir os respectivos acessos de configuração.
 
-<!-- É necessária uma captura de tela mostrando a posição do botão «UI Editor» e a página depois de ativá-lo -->
+![20260715225155_rec_](https://static-docs.nocobase.com/20260715225155_rec_.gif)
 
 ### Terceiro passo: criar menus e páginas
 
@@ -43,17 +34,17 @@ Você pode adicionar grupos, páginas ou links na área de navegação e também
 
 A construção do conteúdo segue o mesmo fluxo das demais interfaces: primeiro adicione [blocos](../blocks/index.md) e depois configure [campos](../fields/index.md) e [ações](../actions/index.md) de acordo com o processo de negócio.
 
-<!-- É necessário um vídeo mostrando como adicionar um menu, criar uma página e entrar nela -->
+![20260715225316_rec_](https://static-docs.nocobase.com/20260715225316_rec_.gif)
 
 ### Quarto passo: configurar o conteúdo da página
 
 Adicione à página blocos de tabela, formulário, detalhes, filtro ou outros tipos. Depois, ajuste a organização dos campos, das ações e dos blocos. Todas as alterações aparecem diretamente na página atual.
 
-<!-- É necessária uma captura de tela de uma página para desktop no modo de construção, mostrando os acessos de configuração de blocos, campos e ações -->
+![20260715225424_rec_](https://static-docs.nocobase.com/20260715225424_rec_.gif)
 
 ## Gerenciar rotas e menus
 
-O menu e as rotas do desktop usam a mesma configuração. Ao adicionar uma página ou um link na área de navegação, o item correspondente também aparece no [Gerenciador de Rotas](../../routes/index.md). Da mesma forma, alterações feitas no Gerenciador de Rotas atualizam o menu.
+Ao adicionar uma página ou um link na área de navegação, o item correspondente também aparece no [Gerenciador de Rotas](../../routes/index.md). Da mesma forma, alterações feitas no Gerenciador de Rotas atualizam o menu.
 
 O desktop aceita os seguintes tipos de rota mais usados:
 
@@ -64,25 +55,23 @@ O desktop aceita os seguintes tipos de rota mais usados:
 
 No Gerenciador de Rotas, você pode adicionar, editar, excluir, exibir ou ocultar rotas. Quando precisar reorganizar toda a estrutura do menu, esse é o lugar mais prático para fazer os ajustes.
 
-<!-- É necessária uma captura de tela da página «Central de Configurações / Rotas / Rotas do desktop» -->
+![20260715225711_rec_](https://static-docs.nocobase.com/20260715225711_rec_.gif)
 
 ## Responsividade em telas estreitas
 
-O layout para desktop pode ser usado diretamente em um celular ou em uma janela estreita do navegador. Quando entra no modo de exibição para telas estreitas, ele continua usando as rotas e as páginas originais do desktop e não muda automaticamente para o layout móvel.
+O layout para desktop pode ser usado diretamente em um celular ou em uma janela estreita do navegador. Quando entra no modo de exibição para telas estreitas, ele ainda usa as rotas e as páginas originais do desktop e não muda automaticamente para o layout móvel.
 
 ### Alterações no layout
 
 O menu de navegação é recolhido, e as ações superiores passam para um acesso mais compacto. As margens da página e os espaços entre os blocos também diminuem, e a área de conteúdo se ajusta à altura visível do navegador móvel.
 
-O UI Editor não fica disponível em telas estreitas. Para alterar menus ou páginas, é melhor voltar ao navegador do computador.
+O UI Editor não fica disponível em telas estreitas. Para alterar menus ou páginas, é necessário voltar ao navegador do computador.
 
-<!-- É necessário um vídeo mostrando a mesma página do desktop mudando de uma tela larga para uma tela estreita -->
+![20260715224603](https://static-docs.nocobase.com/20260715224603.png)
 
 ### Adaptação do conteúdo da página
 
-Layouts e componentes comuns da página também se ajustam a telas estreitas. Por exemplo, blocos em várias colunas passam a favorecer a leitura vertical; tabelas permitem visualizar horizontalmente as colunas que ultrapassam a tela; paginação e ações ficam mais compactas. Seleções, data e hora, filtros e subpáginas também adotam interações mais adequadas a telas pequenas.
-
-O comportamento adicional de outros blocos em telas estreitas depende do suporte de cada bloco. As tabelas continuam sendo exibidas como tabelas e não são convertidas automaticamente em cartões.
+Os componentes mais usados também ajustam a interação em telas estreitas para facilitar o uso no celular. Por exemplo, blocos em várias colunas passam para uma única coluna; tabelas permitem visualizar horizontalmente as colunas que ultrapassam a tela; paginação e ações ficam mais compactas. Seleções, data e hora, filtros e subpáginas também adotam interações mais adequadas ao celular.
 
 :::tip Layout responsivo para desktop e layout móvel
 

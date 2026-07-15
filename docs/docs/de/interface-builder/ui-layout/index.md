@@ -8,9 +8,7 @@ keywords: "UI-Layout,Desktop-Layout,Mobil-Layout,responsives Layout,mobile Seite
 
 NocoBase bietet ein Desktop-Layout und ein Mobil-Layout. In beiden Layouts können Sie mit der Oberflächengestaltung Seiten erstellen und darin Blöcke, Felder und Aktionen konfigurieren.
 
-Das Desktop-Layout ist die Standardauswahl und eignet sich für die tägliche Verwaltung und Datenverarbeitung am Computer. Wenn Sie eine eigenständige mobile Navigation und eigene mobile Seiten benötigen, können Sie zusätzlich das Mobil-Layout einrichten.
-
-<!-- Benötigt wird ein Screenshot, der Desktop-Layout und Mobil-Layout im direkten Vergleich zeigt -->
+Das Desktop-Layout ist die Standardauswahl und eignet sich für die tägliche Verwaltung und Datenverarbeitung am Computer. Wenn Sie eine eigenständige Navigation und eigene Seiten für Mobilgeräte benötigen, können Sie zusätzlich das Mobil-Layout einrichten.
 
 ## Desktop-Layout
 
@@ -18,7 +16,7 @@ Das [Desktop-Layout](./desktop.md) ist standardmäßig unter `/admin` erreichbar
 
 Das Desktop-Layout passt sich auch an schmale Bildschirme an. Wird eine Seite auf einem schmaleren Bildschirm angezeigt, werden Navigation, Abstände und häufig verwendete Komponenten für den verfügbaren Platz optimiert. Dabei werden weiterhin die ursprünglichen Desktop-Menüs und -Seiten verwendet.
 
-<!-- Benötigt wird ein Screenshot einer vollständigen Seite im Desktop-Layout -->
+![20260715224020](https://static-docs.nocobase.com/20260715224020.png)
 
 ## Mobil-Layout
 
@@ -26,7 +24,7 @@ Das [Mobil-Layout](./mobile.md) ist standardmäßig unter `/mobile` erreichbar. 
 
 Das Mobil-Layout eignet sich für Abläufe, die häufig auf dem Smartphone ausgeführt werden, etwa Erfassungen vor Ort, mobile Freigaben, Aufgabenbearbeitung und Datenabfragen. Sie können die Seiten im Desktop-Browser erstellen und in der Vorschau prüfen und das Ergebnis anschließend über einen QR-Code auf einem echten Gerät kontrollieren.
 
-<!-- Benötigt wird ein Screenshot einer vollständigen Seite im Mobil-Layout -->
+![20260715230725](https://static-docs.nocobase.com/20260715230725.png)
 
 ## Das passende Layout wählen
 
@@ -40,7 +38,7 @@ Verwenden Sie standardmäßig das Desktop-Layout.
 
 ## Zusammenhang der Konfigurationen
 
-Desktop-Layout und Mobil-Layout verwenden dieselben Datenquellen, Collections und Geschäftsdaten. Auf Grundlage derselben Collection können Sie daher in beiden Layouts jeweils passende Seiten für unterschiedliche Geräte erstellen.
+Desktop-Layout und Mobil-Layout verwenden dieselben Datenquellen und Geschäftsdaten. Auf Grundlage derselben Datentabelle können Sie daher in beiden Layouts jeweils passende Seiten für unterschiedliche Geräte erstellen.
 
 Menüs, Routen und Seitenkonfigurationen werden getrennt verwaltet. Änderungen an einer Desktop-Seite aktualisieren die mobile Seite nicht automatisch, und Änderungen an der mobilen Navigation haben keine Auswirkungen auf die Desktop-Navigation. Auch die [Zugriffsrechte für Routen](../../users-permissions/acl/permissions.md) müssen für beide Layouts getrennt konfiguriert werden.
 

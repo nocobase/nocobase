@@ -20,9 +20,7 @@ Chế độ cấu hình:
 
 ## Bố cục UI
 
-NocoBase cung cấp bố cục desktop và bố cục mobile. Bố cục desktop phù hợp với các thao tác quản lý thông thường và có thể tự điều chỉnh điều hướng cùng nội dung Trang trên màn hình hẹp. Bố cục mobile cung cấp điều hướng và cấu hình Trang riêng cho thiết bị mobile. Xem giới thiệu chi tiết tại [Bố cục UI](./ui-layout/index.md).
-
-<!-- Cần ảnh chụp đặt cạnh nhau của cùng một Trang nghiệp vụ trong bố cục desktop và bố cục mobile, làm nổi bật sự khác biệt về điều hướng -->
+NocoBase cung cấp bố cục desktop và bố cục mobile. Bố cục desktop phù hợp với các thao tác quản lý thông thường và có thể tự điều chỉnh điều hướng cùng nội dung Trang trên điện thoại. Bố cục mobile cung cấp điều hướng và cấu hình Trang riêng cho thiết bị mobile. Xem giới thiệu chi tiết tại [Bố cục UI](./ui-layout/index.md).
 
 ## Cấu hình
 

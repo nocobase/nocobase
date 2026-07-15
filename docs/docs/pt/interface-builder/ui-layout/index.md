@@ -8,9 +8,7 @@ keywords: "layout da interface,layout para desktop,layout móvel,layout responsi
 
 O NocoBase oferece layouts para desktop e dispositivos móveis. Nos dois layouts, você pode usar o Construtor de Interface para criar páginas e configurar blocos, campos e ações.
 
-O layout para desktop é a opção padrão e atende às tarefas diárias de administração e tratamento de dados no computador. Se você precisar de uma navegação e de páginas próprias para dispositivos móveis, poderá configurar também o layout móvel.
-
-<!-- É necessária uma captura de tela comparando os layouts para desktop e dispositivos móveis -->
+O layout para desktop é a opção padrão e atende às tarefas diárias de administração e tratamento de dados no computador. Se você precisar de navegação e páginas independentes para dispositivos móveis, poderá configurar também o layout móvel.
 
 ## Layout para desktop
 
@@ -18,7 +16,7 @@ O [layout para desktop](./desktop.md) é acessado por padrão em `/admin`. Ele �
 
 O layout para desktop também é responsivo em telas estreitas. Quando a página é exibida em uma tela menor, a navegação, os espaçamentos e os componentes mais usados assumem uma forma mais adequada ao espaço disponível, sem deixar de usar os menus e as páginas originais do desktop.
 
-<!-- É necessária uma captura de tela de uma página completa no layout para desktop -->
+![20260715224020](https://static-docs.nocobase.com/20260715224020.png)
 
 ## Layout para dispositivos móveis
 
@@ -26,7 +24,7 @@ O [layout para dispositivos móveis](./mobile.md) é acessado por padrão em `/m
 
 Esse layout atende a cenários com uso frequente no celular, como registros em campo, aprovações, tratamento de tarefas e consultas de dados. Você pode construir e visualizar as páginas no navegador do computador e depois conferir o resultado em um aparelho usando o código QR.
 
-<!-- É necessária uma captura de tela de uma página completa no layout para dispositivos móveis -->
+![20260715230725](https://static-docs.nocobase.com/20260715230725.png)
 
 ## Como escolher
 
@@ -40,7 +38,7 @@ Por padrão, use o layout para desktop.
 
 ## Relação entre as configurações
 
-Os layouts para desktop e dispositivos móveis usam as mesmas fontes de dados, coleções e dados de negócio. Assim, você pode criar em cada layout páginas diferentes com base na mesma coleção, ajustadas ao dispositivo em que serão usadas.
+Os layouts para desktop e dispositivos móveis usam as mesmas fontes de dados e os mesmos dados de negócio. Assim, você pode criar em cada layout páginas diferentes com base na mesma tabela de dados, ajustadas ao dispositivo em que serão usadas.
 
 Menus, rotas e páginas são mantidos separadamente. Alterar uma página do desktop não atualiza automaticamente a página móvel, e alterações na navegação móvel não afetam a navegação do desktop. As [permissões de acesso às rotas](../../users-permissions/acl/permissions.md) também precisam ser configuradas separadamente nos dois layouts.
 
