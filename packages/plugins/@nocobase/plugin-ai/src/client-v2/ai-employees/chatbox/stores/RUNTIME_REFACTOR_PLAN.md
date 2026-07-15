@@ -288,7 +288,7 @@ Tests:
 
 ### T5. Preserve Global Chatbox Behavior
 
-Status: `Pending`
+Status: `Done`
 
 Dependencies: T4
 
@@ -307,6 +307,18 @@ Tests:
 - Run all related existing tests for chatbox stores, hooks, and components.
 - Add regression tests for any behavior not covered by existing tests.
 - Run touched-file eslint and related tests.
+- Verification on 2026-07-15:
+  - `yarn eslint --fix packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/chatbox-runtime.test.tsx packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/chatbox-global-behavior.test.tsx`: passed.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/chatbox-global-behavior.test.tsx --run --reporter=verbose`: passed, 1 test.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/chatbox-runtime.test.tsx --run --reporter=verbose`: passed, 6 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/chatbox-models.test.ts --run --reporter=verbose`: passed, 6 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/chatbox-stores.test.ts --run --reporter=verbose`: passed, 6 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/global-store.test.ts --run --reporter=verbose`: passed, 3 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/observable-store.test.tsx --run --reporter=verbose`: passed, 3 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/suggestions-options-card.test.tsx --run --reporter=verbose`: passed, 2 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/business-report-card.test.tsx --run --reporter=verbose`: passed, 2 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/__tests__/utils.test.ts --run --reporter=verbose`: passed, 3 tests.
+  - `yarn eslint --fix packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/RUNTIME_REFACTOR_PLAN.md`: attempted, but the current ESLint configuration parses `.md` as JavaScript and fails at line 1 with `Parsing error: Invalid character`.
 - Update this document status and commit after tests pass.
 
 ### T6. Remove Obsolete Store Infrastructure

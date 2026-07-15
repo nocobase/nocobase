@@ -66,7 +66,13 @@ vi.mock('../../../AISelectionControl', () => ({
 afterEach(() => {
   mocks.eventBus.addEventListener.mockClear();
   mocks.eventBus.removeEventListener.mockClear();
-  getGlobalChatBoxRuntime().chatBoxModel.setSenderValue('');
+  const runtime = getGlobalChatBoxRuntime();
+  runtime.chatBoxModel.setOpen(false);
+  runtime.chatBoxModel.setExpanded(false);
+  runtime.chatBoxModel.setShowDebugPanel(false);
+  runtime.chatBoxModel.setSenderValue('');
+  runtime.chatToolModel.setActiveTool(null);
+  runtime.chatToolModel.setOpenToolModal(false);
 });
 
 const RuntimeReader: React.FC = () => {
@@ -135,6 +141,43 @@ describe('chatbox runtime context', () => {
 
     expect(screen.getByTestId('runtime-reader').textContent).toBe('layout-runtime');
     expect(screen.getByTestId('chat-button')).toBeTruthy();
+  });
+
+  it('renders global floating surfaces from runtime state', () => {
+    const runtime = getGlobalChatBoxRuntime();
+
+    render(<ChatBoxLayout />);
+
+    expect(screen.queryByTestId('chat-box')).toBeNull();
+    expect(screen.queryByTestId('tool-modal')).toBeNull();
+    expect(screen.queryByTestId('debug-panel')).toBeNull();
+
+    act(() => {
+      runtime.chatBoxModel.setOpen(true);
+    });
+
+    expect(screen.getByTestId('chat-box')).toBeTruthy();
+
+    act(() => {
+      runtime.chatBoxModel.setShowDebugPanel(true);
+      runtime.chatToolModel.setActiveTool({
+        id: 'tool-a',
+        type: 'function',
+        name: 'getSkill',
+        invokeStatus: 'done',
+        auto: false,
+        args: {},
+      });
+    });
+
+    expect(screen.getByTestId('debug-panel')).toBeTruthy();
+    expect(screen.getByTestId('tool-modal')).toBeTruthy();
+
+    act(() => {
+      runtime.chatBoxModel.setExpanded(true);
+    });
+
+    expect(screen.getByTestId('chat-box')).toBeTruthy();
   });
 
   it('tracks runtime model reads through observer rendering', () => {
