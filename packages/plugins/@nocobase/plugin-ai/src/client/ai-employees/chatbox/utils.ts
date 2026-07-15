@@ -15,6 +15,23 @@ import PluginAIClient from '../..';
 
 dayjs.extend(duration);
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+export function normalizeAIFileUploadAttachment(fileData: unknown, status: string) {
+  if (!isRecord(fileData)) {
+    return fileData;
+  }
+  const meta = isRecord(fileData.meta) ? fileData.meta : undefined;
+  const source = isRecord(meta?.source) ? meta.source : undefined;
+  return {
+    ...fileData,
+    ...(source ? { source } : {}),
+    status,
+  };
+}
+
 async function replaceVariables(template, variables, localVariables = {}) {
   const regex = /\{\{\s*(.*?)\s*\}\}/g;
   let result = template;
