@@ -52,14 +52,14 @@ type PageModelContextWithRoute = {
 
 type RequestedTabKey = {
   key?: string;
-  source: 'url' | 'local' | 'props' | 'none';
+  source: 'url' | 'implicit' | 'props' | 'none';
 };
 
 type TabActiveResolution = RequestedTabKey & {
   status: 'unspecified' | 'visible' | 'hidden' | 'unknown';
   effectiveKey?: string;
   allTabs: BasePageTabModel[];
-  visibleTabs: BasePageTabModel[];
+  unhiddenTabs: BasePageTabModel[];
 };
 
 type TabActiveKeySyncState = {
@@ -106,7 +106,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
   private dirtyRefreshScheduled = false;
   private unmounted = false;
   private documentTitleUpdateVersion = 0;
-  private preferImplicitLocalActiveKey = false;
+  private implicitActiveKey?: string;
   private locallyCommittedTabTransition?: LocallyCommittedTabTransition;
 
   /**
@@ -130,9 +130,8 @@ export class PageModel extends FlowModel<PageModelStructure> {
     return this.subModels?.tabs || [];
   }
 
-  private getRuntimeVisibleTabs(): BasePageTabModel[] {
-    const tabs = this.getAllTabs();
-    return this.context.flowSettingsEnabled ? tabs : tabs.filter((tab) => !tab.hidden);
+  private getUnhiddenTabs(): BasePageTabModel[] {
+    return this.getAllTabs().filter((tab) => !tab.hidden);
   }
 
   private getRequestedTabKey(): RequestedTabKey {
@@ -140,56 +139,69 @@ export class PageModel extends FlowModel<PageModelStructure> {
     if (viewParams) {
       const urlKey = typeof viewParams.tabUid === 'string' && viewParams.tabUid ? viewParams.tabUid : undefined;
       if (urlKey) {
-        this.preferImplicitLocalActiveKey = false;
+        this.implicitActiveKey = undefined;
         return { key: urlKey, source: 'url' };
       }
 
-      const localKey =
+      const activeKey =
         typeof this.props.tabActiveKey === 'string' && this.props.tabActiveKey ? this.props.tabActiveKey : undefined;
-      if (this.preferImplicitLocalActiveKey && localKey) {
-        return { key: localKey, source: 'local' };
+      if (activeKey && activeKey === this.implicitActiveKey) {
+        return { key: activeKey, source: 'implicit' };
       }
       return { source: 'none' };
     }
 
-    const localKey =
+    const activeKey =
       typeof this.props.tabActiveKey === 'string' && this.props.tabActiveKey ? this.props.tabActiveKey : undefined;
-    return localKey ? { key: localKey, source: 'props' } : { source: 'none' };
+    if (!activeKey) {
+      return { source: 'none' };
+    }
+    return { key: activeKey, source: activeKey === this.implicitActiveKey ? 'implicit' : 'props' };
   }
 
   private resolveTabActiveState(): TabActiveResolution {
     const allTabs = this.getAllTabs();
-    const visibleTabs = this.getRuntimeVisibleTabs();
+    const unhiddenTabs = this.getUnhiddenTabs();
     const requested = this.getRequestedTabKey();
 
     if (!requested.key) {
       return {
         ...requested,
         status: 'unspecified',
-        effectiveKey: visibleTabs[0]?.uid,
+        effectiveKey: unhiddenTabs[0]?.uid,
         allTabs,
-        visibleTabs,
+        unhiddenTabs,
       };
     }
 
     const requestedTab = allTabs.find((tab) => tab.uid === requested.key);
+    if (requested.source === 'implicit' && (!requestedTab || requestedTab.hidden)) {
+      return {
+        ...requested,
+        status: 'unspecified',
+        effectiveKey: unhiddenTabs[0]?.uid,
+        allTabs,
+        unhiddenTabs,
+      };
+    }
+
     if (!requestedTab) {
       return {
         ...requested,
         status: 'unknown',
         effectiveKey: requested.key,
         allTabs,
-        visibleTabs,
+        unhiddenTabs,
       };
     }
 
-    if (visibleTabs.some((tab) => tab.uid === requested.key)) {
+    if (unhiddenTabs.some((tab) => tab.uid === requested.key)) {
       return {
         ...requested,
         status: 'visible',
         effectiveKey: requested.key,
         allTabs,
-        visibleTabs,
+        unhiddenTabs,
       };
     }
 
@@ -198,7 +210,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
       status: 'hidden',
       effectiveKey: requested.key,
       allTabs,
-      visibleTabs,
+      unhiddenTabs,
     };
   }
 
@@ -214,15 +226,15 @@ export class PageModel extends FlowModel<PageModelStructure> {
 
   private getTabActiveKeySyncDependency() {
     const allTabs = this.getAllTabs();
-    const visibleTabs = this.getRuntimeVisibleTabs();
+    const unhiddenTabs = this.getUnhiddenTabs();
     const viewParams = this.context.view?.navigation?.viewParams;
     return JSON.stringify([
       !!this.context.flowSettingsEnabled,
       viewParams ? viewParams.tabUid || null : null,
       this.props.tabActiveKey || null,
       allTabs.map((tab) => tab.uid),
-      visibleTabs.map((tab) => tab.uid),
-      this.preferImplicitLocalActiveKey,
+      unhiddenTabs.map((tab) => tab.uid),
+      this.implicitActiveKey || null,
     ]);
   }
 
@@ -233,7 +245,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
   }
 
   private rememberImplicitActiveKey(activeKey: string) {
-    this.preferImplicitLocalActiveKey = true;
+    this.implicitActiveKey = activeKey;
     if (this.props.tabActiveKey !== activeKey) {
       this.setProps('tabActiveKey', activeKey);
     }
@@ -244,19 +256,15 @@ export class PageModel extends FlowModel<PageModelStructure> {
     options: {
       previousActiveKey?: string;
       navigate: boolean;
-      preserveImplicitLocalKey?: boolean;
+      preserveImplicitKey?: boolean;
       rememberLocalTransition?: boolean;
     },
   ) {
-    const { previousActiveKey, navigate, preserveImplicitLocalKey = false, rememberLocalTransition = false } = options;
+    const { previousActiveKey, navigate, preserveImplicitKey = false, rememberLocalTransition = false } = options;
     if (rememberLocalTransition && activeKey) {
       this.locallyCommittedTabTransition = { activeKey, previousActiveKey };
     }
-    if (preserveImplicitLocalKey && activeKey) {
-      this.preferImplicitLocalActiveKey = true;
-    } else if (navigate || !activeKey) {
-      this.preferImplicitLocalActiveKey = false;
-    }
+    this.implicitActiveKey = activeKey && preserveImplicitKey ? activeKey : undefined;
 
     if (navigate) {
       this.context.view?.navigation?.changeTo?.({ tabUid: activeKey });
@@ -292,17 +300,13 @@ export class PageModel extends FlowModel<PageModelStructure> {
 
   private synchronizeTabActiveKey = (state: TabActiveKeySyncState): TabActiveKeySyncState => {
     const resolution = this.resolveTabActiveState();
-    const allHidden = resolution.allTabs.length > 0 && resolution.visibleTabs.length === 0;
+    const allHidden = resolution.allTabs.length > 0 && resolution.unhiddenTabs.length === 0;
     const createNextState = (effectiveActiveKey: string | undefined, lastCorrectionSignature?: string) => ({
       previousEffectiveActiveKey: effectiveActiveKey,
       effectiveActiveKey,
       previousAllHidden: allHidden,
       lastCorrectionSignature,
     });
-
-    if (this.context.flowSettingsEnabled) {
-      return createNextState(resolution.effectiveKey);
-    }
 
     if (resolution.status === 'unknown') {
       return createNextState(resolution.effectiveKey);
@@ -322,7 +326,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
           this.commitTabActiveKey(activeKey, {
             previousActiveKey: state.previousEffectiveActiveKey,
             navigate: false,
-            preserveImplicitLocalKey: resolution.source !== 'url',
+            preserveImplicitKey: resolution.source === 'implicit',
           });
         }
         return createNextState(activeKey, signature);
@@ -341,7 +345,6 @@ export class PageModel extends FlowModel<PageModelStructure> {
           this.commitTabActiveKey(activeKey, {
             previousActiveKey: state.previousEffectiveActiveKey,
             navigate: false,
-            preserveImplicitLocalKey: resolution.source !== 'url',
           });
         }
         return createNextState(activeKey, signature);
@@ -352,11 +355,21 @@ export class PageModel extends FlowModel<PageModelStructure> {
     const activeKey = resolution.effectiveKey;
     if (!activeKey) {
       if (!allHidden) {
-        return createNextState(undefined);
+        if (resolution.source !== 'implicit' || !resolution.key) {
+          return createNextState(undefined);
+        }
+        const signature = `implicit-missing:${state.previousEffectiveActiveKey || ''}`;
+        if (signature !== state.lastCorrectionSignature) {
+          this.commitTabActiveKey(undefined, {
+            previousActiveKey: state.previousEffectiveActiveKey,
+            navigate: false,
+          });
+        }
+        return createNextState(undefined, signature);
       }
       const signature = `all-hidden:${state.previousEffectiveActiveKey || ''}`;
       if (!state.previousAllHidden && signature !== state.lastCorrectionSignature) {
-        this.preferImplicitLocalActiveKey = false;
+        this.implicitActiveKey = undefined;
         if (this.props.tabActiveKey || state.previousEffectiveActiveKey) {
           this.commitTabActiveKey(undefined, {
             previousActiveKey: state.previousEffectiveActiveKey,
@@ -376,7 +389,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
       this.commitTabActiveKey(activeKey, {
         previousActiveKey: state.previousEffectiveActiveKey,
         navigate: false,
-        preserveImplicitLocalKey: true,
+        preserveImplicitKey: true,
       });
     } else {
       this.rememberImplicitActiveKey(activeKey);
@@ -417,6 +430,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
   onMount(): void {
     super.onMount();
     this.unmounted = false;
+    this.implicitActiveKey = undefined;
     this.setProps('tabActiveKey', this.context.view.inputArgs?.tabUid);
     if (this.context?.pageInfo) this.context.pageInfo.version = 'v2';
     this.requestDocumentTitleUpdate();
@@ -537,12 +551,9 @@ export class PageModel extends FlowModel<PageModelStructure> {
       }
     };
 
-    const allTabs = this.getAllTabs();
-    const visibleTabs = this.getRuntimeVisibleTabs();
+    const unhiddenTabs = this.getUnhiddenTabs();
     const activeTabKey = preferredActiveTabKey || this.getActiveTabKey();
-    const shouldUsePageTitle =
-      !this.getEnableTabs() ||
-      (!activeTabKey && !this.context.flowSettingsEnabled && allTabs.length > 0 && visibleTabs.length === 0);
+    const shouldUsePageTitle = !this.getEnableTabs() || (!activeTabKey && unhiddenTabs.length === 0);
 
     let nextTitle = '';
     if (!shouldUsePageTitle) {
@@ -702,7 +713,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
           }
           onChange={(activeKey) => {
             const previousActiveKey = this.getActiveTabKey();
-            this.preferImplicitLocalActiveKey = false;
+            this.implicitActiveKey = undefined;
             this.commitTabActiveKey(activeKey, {
               previousActiveKey,
               navigate: !!this.context.view?.navigation,
