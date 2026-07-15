@@ -109,5 +109,7 @@ export abstract class Auth implements IAuth {
   async signIn(): Promise<any> {}
   async signUp(): Promise<any> {}
   async signOut(): Promise<any> {}
-  async syncCookies(): Promise<unknown> {}
+  async syncCookies(): Promise<unknown> {
+    return undefined;
+  }
 }

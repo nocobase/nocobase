@@ -8,23 +8,29 @@
  */
 
 /* istanbul ignore file -- @preserve */
-import type { Context } from '@nocobase/actions';
-import { Handlers } from '@nocobase/resourcer';
+import type { Handlers } from '@nocobase/resourcer';
 import { getOrigin, isTrustedOrigin } from '@nocobase/utils';
 
 const localeNamespace = 'auth';
 
-function assertTrustedSignInOrigin(ctx: Context) {
+type AuthActionContext = Parameters<Handlers[string]>[0];
+
+function assertTrustedSignInOrigin(ctx: AuthActionContext) {
+  const originContext = {
+    protocol: ctx.protocol,
+    headers: ctx.headers,
+    get: (name: string) => ctx.get(name),
+  };
   const origin = ctx.get('origin');
   if (origin) {
-    if (!isTrustedOrigin(ctx, origin)) {
+    if (!isTrustedOrigin(originContext, origin)) {
       ctx.throw(403, ctx.t('Invalid sign-in origin', { ns: localeNamespace }));
     }
     return;
   }
 
   const refererOrigin = getOrigin(ctx.get('referer'));
-  if (refererOrigin && !isTrustedOrigin(ctx, refererOrigin)) {
+  if (refererOrigin && !isTrustedOrigin(originContext, refererOrigin)) {
     ctx.throw(403, ctx.t('Invalid sign-in origin', { ns: localeNamespace }));
   }
 }

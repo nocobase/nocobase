@@ -83,8 +83,8 @@ export class BaseAuth extends Auth {
       getAuthCookieOptions(this.ctx, false, maxAge),
     );
 
-    let roleName: string | undefined;
-    roleName = typeof this.ctx.state.currentRole === 'string' ? this.ctx.state.currentRole : this.ctx.get('X-Role');
+    const currentRole = this.ctx.state?.currentRole;
+    let roleName = typeof currentRole === 'string' ? currentRole : this.ctx.get?.('X-Role');
     const userId = typeof user.get === 'function' ? user.get('id') : user.id;
 
     if (!roleName) {
