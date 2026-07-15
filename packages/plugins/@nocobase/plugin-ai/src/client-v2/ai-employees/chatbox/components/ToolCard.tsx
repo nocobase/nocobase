@@ -30,7 +30,6 @@ import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRe
 import type { ToolCall } from '../../types';
 import { useChat } from '../hooks/useChat';
 import { useToolCallActions } from '../hooks/useToolCallActions';
-import { useChatConversationsStore } from '../stores/chat-conversations';
 import { useChatBoxRuntime } from '../stores/runtime';
 import { isCurrentLiveMessage } from '../utils';
 
@@ -53,10 +52,11 @@ ${keyframes`
 
 export const ToolCard: React.FC<ToolCardProps> = observer(({ toolCalls, messageId = '', inlineActions }) => {
   const repository = useAIConfigRepository();
-  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const runtime = useChatBoxRuntime();
+  const currentConversation = runtime.chatConversationModel.currentConversation;
   const toolItems = useMemo(() => (Array.isArray(toolCalls) ? toolCalls : []), [toolCalls]);
   const toolsMap = useMemo(() => toToolsMap(repository.aiTools), [repository.aiTools]);
-  const { getDecisionActions } = useToolCallActions({ messageId });
+  const { getDecisionActions } = useToolCallActions({ messageId, runtime });
 
   useEffect(() => {
     repository.getAITools(currentConversation).catch(console.error);
@@ -126,9 +126,10 @@ const CallButton: React.FC<{
 }> = observer(({ messageId, toolCalls }) => {
   const t = useT();
   const { token } = theme.useToken();
-  const { getDecisionActions } = useToolCallActions({ messageId });
   const [loading, setLoading] = useState(false);
-  const { chatBoxModel } = useChatBoxRuntime();
+  const runtime = useChatBoxRuntime();
+  const { chatBoxModel } = runtime;
+  const { getDecisionActions } = useToolCallActions({ messageId, runtime });
   const readonly = chatBoxModel.readonly;
 
   return (
@@ -305,8 +306,9 @@ const DefaultToolCard: React.FC<{
   inlineActions?: React.ReactNode;
 }> = observer(({ messageId, tools, toolCalls, inlineActions }) => {
   const toolsMap = useMemo(() => toToolsMap(tools), [tools]);
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-  const chat = useChat(currentConversation);
+  const runtime = useChatBoxRuntime();
+  const currentConversation = runtime.chatConversationModel.currentConversation;
+  const chat = useChat(currentConversation, runtime);
   const messages = chat.use.messages();
   const responseLoading = chat.use.responseLoading();
   const latestMessageId = messages[messages.length - 1]?.content?.messageId;

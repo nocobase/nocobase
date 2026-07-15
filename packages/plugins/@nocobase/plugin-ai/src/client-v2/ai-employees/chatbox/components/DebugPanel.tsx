@@ -13,7 +13,6 @@ import { CopyOutlined, DownloadOutlined, DownOutlined, RightOutlined } from '@an
 import { observer } from '@nocobase/flow-engine';
 import { useT } from '../../../locale';
 import { aiDebugLogger, type LogEntry, type LogType } from '../../../debug-logger';
-import { useChatConversationsStore } from '../stores/chat-conversations';
 import { useChatBoxRuntime } from '../stores/runtime';
 
 const { Search } = Input;
@@ -51,9 +50,9 @@ const LOG_TYPE_OPTIONS = [
 export const DebugPanel: React.FC = observer(() => {
   const t = useT();
   const { token } = theme.useToken();
-  const { chatBoxModel } = useChatBoxRuntime();
+  const { chatBoxModel, chatConversationModel } = useChatBoxRuntime();
   const showDebugPanel = chatBoxModel.showDebugPanel;
-  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const currentConversation = chatConversationModel.currentConversation;
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [filterType, setFilterType] = useState<string>('all');
   const [searchText, setSearchText] = useState('');

@@ -15,7 +15,6 @@ import type { ToolsUIProperties } from '@nocobase/client-v2';
 import { observer } from '@nocobase/flow-engine';
 import { useT } from '../../locale';
 import { useChat } from '../chatbox/hooks/useChat';
-import { useChatConversationsStore } from '../chatbox/stores/chat-conversations';
 import { useChatBoxRuntime } from '../chatbox/stores/runtime';
 import { BusinessReport, BusinessReportRenderState, normalizeBusinessReport } from './business-report-utils';
 
@@ -59,10 +58,11 @@ const loadingBar = keyframes`
 export const BusinessReportCard: React.FC<ToolsUIProperties<BusinessReport>> = observer(({ messageId, toolCall }) => {
   const t = useT();
   const { token } = theme.useToken();
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-  const chat = useChat(currentConversation);
+  const runtime = useChatBoxRuntime();
+  const currentConversation = runtime.chatConversationModel.currentConversation;
+  const chat = useChat(currentConversation, runtime);
   const responseLoading = chat.use.responseLoading();
-  const { chatToolModel } = useChatBoxRuntime();
+  const { chatToolModel } = runtime;
   const report = useMemo<Partial<BusinessReportRenderState>>(
     () => normalizeBusinessReport((toolCall.args as BusinessReport) || {}),
     [toolCall.args],

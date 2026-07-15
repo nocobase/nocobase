@@ -10,17 +10,16 @@
 import { useEffect } from 'react';
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
 import { aiEmployeeRole, defaultRoles } from '../roles';
-import { useChatConversationsStore } from '../stores/chat-conversations';
 import { useChatBoxRuntime } from '../stores/runtime';
 
 export const useChatBoxEffect = () => {
   const aiConfigRepository = useAIConfigRepository();
   const aiEmployees = aiConfigRepository.aiEmployees;
-  const { chatBoxModel } = useChatBoxRuntime();
+  const { chatBoxModel, chatConversationModel } = useChatBoxRuntime();
   const open = chatBoxModel.open;
   const senderRef = chatBoxModel.senderRef;
   const currentEmployee = chatBoxModel.currentEmployee;
-  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const currentConversation = chatConversationModel.currentConversation;
 
   useEffect(() => {
     aiConfigRepository.getAIEmployees().catch(console.error);

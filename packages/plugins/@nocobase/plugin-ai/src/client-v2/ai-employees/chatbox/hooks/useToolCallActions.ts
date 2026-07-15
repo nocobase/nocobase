@@ -8,7 +8,6 @@
  */
 
 import { DecisionActions, ToolCall, useApp } from '@nocobase/client-v2';
-import { useChatConversationsStore } from '../stores/chat-conversations';
 import { useChatMessageActions } from './useChatMessageActions';
 import { UserDecision } from '../../types';
 import { type ChatBoxRuntime, useResolvedChatBoxRuntime } from '../stores/runtime';
@@ -19,8 +18,8 @@ export const useToolCallActions = ({ messageId, runtime }: { messageId: string; 
   const app = useApp();
   const api = app.apiClient;
   const resolvedRuntime = useResolvedChatBoxRuntime(runtime);
-  const { chatBoxModel, chatToolCallModel } = resolvedRuntime;
-  const sessionId = useChatConversationsStore.use.currentConversation();
+  const { chatBoxModel, chatConversationModel, chatToolCallModel } = resolvedRuntime;
+  const sessionId = chatConversationModel.currentConversation;
   const { resumeToolCall } = useChatMessageActions(resolvedRuntime);
 
   const { toolsManager } = app.aiManager;

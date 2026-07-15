@@ -19,7 +19,6 @@ import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRe
 import { useChat } from '../hooks/useChat';
 import { useChatBoxActions } from '../hooks/useChatBoxActions';
 import { useChatMessageActions } from '../hooks/useChatMessageActions';
-import { useChatConversationsStore } from '../stores/chat-conversations';
 import { useChatBoxRuntime } from '../stores/runtime';
 import { FileCardList } from './Attachments';
 import { Actions } from './Actions';
@@ -214,11 +213,12 @@ export const AIMessage: React.FC<{
   const aiConfigRepository = useAIConfigRepository();
   const toolsLoading = aiConfigRepository.aiToolsLoading;
   const toolsMap = useMemo(() => toToolsMap(aiConfigRepository.aiTools || []), [aiConfigRepository.aiTools]);
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-  const { chatBoxModel } = useChatBoxRuntime();
+  const runtime = useChatBoxRuntime();
+  const { chatBoxModel, chatConversationModel } = runtime;
+  const currentConversation = chatConversationModel.currentConversation;
   const currentEmployee = chatBoxModel.currentEmployee;
   const readonly = chatBoxModel.readonly;
-  const { resendMessages } = useChatMessageActions();
+  const { resendMessages } = useChatMessageActions(runtime);
   const footerButtonStyle: React.CSSProperties = {
     color: token.colorTextSecondary,
     fontSize: token.fontSizeSM,
@@ -323,10 +323,11 @@ export const UserMessage: React.FC<{
 }> = observer(({ msg }) => {
   const t = useT();
   const { token } = theme.useToken();
-  const { chatBoxModel } = useChatBoxRuntime();
+  const runtime = useChatBoxRuntime();
+  const { chatBoxModel } = runtime;
   const senderRef = chatBoxModel.senderRef;
   const readonly = chatBoxModel.readonly;
-  const { startEditingMessage } = useChatMessageActions();
+  const { startEditingMessage } = useChatMessageActions(runtime);
   const footerButtonStyle: React.CSSProperties = {
     color: token.colorTextSecondary,
     fontSize: token.fontSizeSM,
@@ -430,12 +431,13 @@ UserMessage.displayName = 'UserMessage';
 export const ErrorMessage: React.FC<{
   msg: MessagePayload;
 }> = observer(({ msg }) => {
-  const { chatBoxModel } = useChatBoxRuntime();
+  const runtime = useChatBoxRuntime();
+  const { chatBoxModel, chatConversationModel } = runtime;
   const currentEmployee = chatBoxModel.currentEmployee;
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-  const chat = useChat(currentConversation);
+  const currentConversation = chatConversationModel.currentConversation;
+  const chat = useChat(currentConversation, runtime);
   const messages = chat.use.messages();
-  const { resendMessages } = useChatMessageActions();
+  const { resendMessages } = useChatMessageActions(runtime);
   const showAlert = msg.content !== 'GraphRecursionError';
 
   useEffect(() => {
@@ -495,10 +497,11 @@ export const TaskMessage: React.FC<{
   const t = useT();
   const rawTasks = msg.content;
   const tasks: Task[] = Array.isArray(rawTasks) ? rawTasks : rawTasks ? [rawTasks as Task] : [];
-  const { chatBoxModel } = useChatBoxRuntime();
+  const runtime = useChatBoxRuntime();
+  const { chatBoxModel } = runtime;
   const taskVariables = chatBoxModel.taskVariables;
   const currentEmployee = chatBoxModel.currentEmployee;
-  const { triggerTask } = useChatBoxActions();
+  const { triggerTask } = useChatBoxActions(runtime);
   const taskItems = tasks
     .map((task, index) => ({ ...task, title: task.title || `${t('Task')} ${index + 1}` }))
     .sort((a, b) => (b.title?.length ?? 0) - (a.title?.length ?? 0));
@@ -534,8 +537,9 @@ TaskMessage.displayName = 'TaskMessage';
 export const AIThinking: React.FC<{ nickname?: string }> = observer(({ nickname }) => {
   const t = useT();
   const { token } = theme.useToken();
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-  const chat = useChat(currentConversation);
+  const runtime = useChatBoxRuntime();
+  const currentConversation = runtime.chatConversationModel.currentConversation;
+  const chat = useChat(currentConversation, runtime);
   const webSearching = chat.use.webSearching();
 
   return (

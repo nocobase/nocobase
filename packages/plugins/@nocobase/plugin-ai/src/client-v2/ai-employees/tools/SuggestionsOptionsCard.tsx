@@ -14,7 +14,6 @@ import type { ToolsUIProperties } from '@nocobase/client-v2';
 import { observer } from '@nocobase/flow-engine';
 import { useT } from '../../locale';
 import { useChat } from '../chatbox/hooks/useChat';
-import { useChatConversationsStore } from '../chatbox/stores/chat-conversations';
 import { useChatBoxRuntime } from '../chatbox/stores/runtime';
 import { isCurrentLiveMessage } from '../chatbox/utils';
 
@@ -64,11 +63,12 @@ const SuggestionsOptionsCardBase: React.FC<ToolsUIProperties<SuggestionsArgs>> =
   decisions,
 }) => {
   const t = useT();
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-  const chat = useChat(currentConversation);
+  const runtime = useChatBoxRuntime();
+  const currentConversation = runtime.chatConversationModel.currentConversation;
+  const chat = useChat(currentConversation, runtime);
   const responseLoading = chat.use.responseLoading();
   const messages = chat.use.messages();
-  const { chatBoxModel } = useChatBoxRuntime();
+  const { chatBoxModel } = runtime;
   const readonly = chatBoxModel.readonly;
   const [disabled, setDisabled] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);

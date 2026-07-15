@@ -12,7 +12,7 @@ import type { FlowContext } from '@nocobase/flow-engine';
 import { getSnippetBody } from '@nocobase/flow-engine';
 import { applyPatch } from 'diff';
 import { useChat } from '../chatbox/hooks/useChat';
-import { useChatConversationsStore } from '../chatbox/stores/chat-conversations';
+import { useChatBoxRuntime } from '../chatbox/stores/runtime';
 import type { ChatEditorRef } from '../types';
 
 type FlowInfoContext = FlowContext & {
@@ -35,13 +35,18 @@ type FlowEditorToolState = FlowContextToolState & EditorToolState;
 
 const editorVersions = new Map<string, number>();
 
+function useCurrentRuntimeChat() {
+  const runtime = useChatBoxRuntime();
+  const currentConversation = runtime.chatConversationModel.currentConversation;
+  return useChat(currentConversation, runtime);
+}
+
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error);
 }
 
 function useEditorToolState<T extends EditorToolState>(state: T) {
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-  const chat = useChat(currentConversation);
+  const chat = useCurrentRuntimeChat();
   const editorRefMap = chat.use.editorRef() ?? {};
   const currentEditorRefUid = chat.use.currentEditorRefUid();
   state.currentEditorRefUid = currentEditorRefUid;
@@ -174,8 +179,7 @@ export const getContextApisTool: [string, ToolsOptions] = [
       return result ?? {};
     },
     useHooks(this: FlowContextToolState) {
-      const currentConversation = useChatConversationsStore.use.currentConversation();
-      const chat = useChat(currentConversation);
+      const chat = useCurrentRuntimeChat();
       this.flowContext = chat.use.flowContext() as FlowInfoContext | undefined;
       return this;
     },
@@ -190,8 +194,7 @@ export const getContextEnvsTool: [string, ToolsOptions] = [
       return result ?? {};
     },
     useHooks(this: FlowContextToolState) {
-      const currentConversation = useChatConversationsStore.use.currentConversation();
-      const chat = useChat(currentConversation);
+      const chat = useCurrentRuntimeChat();
       this.flowContext = chat.use.flowContext() as FlowInfoContext | undefined;
       return this;
     },
@@ -209,8 +212,7 @@ export const getContextVarsTool: [string, ToolsOptions] = [
       return result ?? {};
     },
     useHooks(this: FlowContextToolState) {
-      const currentConversation = useChatConversationsStore.use.currentConversation();
-      const chat = useChat(currentConversation);
+      const chat = useCurrentRuntimeChat();
       this.flowContext = chat.use.flowContext() as FlowInfoContext | undefined;
       return this;
     },
@@ -383,8 +385,7 @@ export const lintAndTestJSTool: [string, ToolsOptions] = [
       }
     },
     useHooks(this: FlowEditorToolState) {
-      const currentConversation = useChatConversationsStore.use.currentConversation();
-      const chat = useChat(currentConversation);
+      const chat = useCurrentRuntimeChat();
       this.flowContext = chat.use.flowContext() as FlowInfoContext | undefined;
       return useEditorToolState(this);
     },

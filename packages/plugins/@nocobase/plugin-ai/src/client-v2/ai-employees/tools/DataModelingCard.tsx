@@ -14,7 +14,6 @@ import type { ToolsUIProperties } from '@nocobase/client-v2';
 import { observer } from '@nocobase/flow-engine';
 import { useT } from '../../locale';
 import { useChat } from '../chatbox/hooks/useChat';
-import { useChatConversationsStore } from '../chatbox/stores/chat-conversations';
 import { useChatBoxRuntime } from '../chatbox/stores/runtime';
 import { isCurrentLiveMessage } from '../chatbox/utils';
 import type { CollectionDataType, DataModelingArgs } from './data-modeling/types';
@@ -38,11 +37,12 @@ function normalizeCollections(collections: DataModelingArgs['collections']): Col
 export const DataModelingCard: React.FC<ToolsUIProperties<DataModelingArgs>> = observer(({ messageId, toolCall }) => {
   const t = useT();
   const { token } = theme.useToken();
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-  const chat = useChat(currentConversation);
+  const runtime = useChatBoxRuntime();
+  const currentConversation = runtime.chatConversationModel.currentConversation;
+  const chat = useChat(currentConversation, runtime);
   const responseLoading = chat.use.responseLoading();
   const messages = chat.use.messages();
-  const { chatToolModel } = useChatBoxRuntime();
+  const { chatToolModel } = runtime;
   const toolsByMessageId = chatToolModel.toolsByMessageId;
   const version = toolsByMessageId[messageId]?.[toolCall.id]?.version;
   const latestMessageId = messages[messages.length - 1]?.content?.messageId;

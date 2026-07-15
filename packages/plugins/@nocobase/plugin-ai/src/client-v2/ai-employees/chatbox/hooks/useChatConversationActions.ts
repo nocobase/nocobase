@@ -10,19 +10,16 @@
 import { useApp } from '@nocobase/client-v2';
 import { useRequest } from 'ahooks';
 import { Conversation } from '../../types';
-import { useChatConversationsStore } from '../stores/chat-conversations';
 import { useCallback, useRef } from 'react';
 import { useLoadMoreObserver } from './useLoadMoreObserver';
-import { useWorkflowTasksStore } from '../stores/workflow-tasks';
+import { type ChatBoxRuntime, useResolvedChatBoxRuntime } from '../stores/runtime';
 
-export const useChatConversationActions = () => {
+export const useChatConversationActions = (runtime?: ChatBoxRuntime) => {
   const app = useApp();
   const api = app.apiClient;
-  const setConversations = useChatConversationsStore.use.setConversations();
-  const keyword = useChatConversationsStore.use.keyword();
-  const unreadCount = useChatConversationsStore.use.unreadCount();
-  const setUnreadCount = useChatConversationsStore.use.setUnreadCount();
-  const setWorkflowTaskUnreadCount = useWorkflowTasksStore.use.setUnreadCount();
+  const { chatConversationModel, workflowTaskModel } = useResolvedChatBoxRuntime(runtime);
+  const keyword = chatConversationModel.keyword;
+  const unreadCount = chatConversationModel.unreadCount;
 
   const conversationsService = useRequest<
     {
@@ -58,9 +55,9 @@ export const useChatConversationActions = () => {
           return;
         }
         if (!page || page === 1) {
-          setConversations(data.data);
+          chatConversationModel.setConversations(data.data);
         } else {
-          setConversations((prev) => [...prev, ...data.data]);
+          chatConversationModel.setConversations((prev) => [...prev, ...data.data]);
         }
       },
     },
@@ -80,9 +77,9 @@ export const useChatConversationActions = () => {
   const loadUnreadCounts = useCallback(async () => {
     const res = await api.resource('aiConversations').unreadCounts();
     const data = res?.data?.data;
-    setUnreadCount(data?.conversationUnreadCount || 0);
-    setWorkflowTaskUnreadCount(data?.workflowTaskUnreadCount || 0);
-  }, [api, setUnreadCount, setWorkflowTaskUnreadCount]);
+    chatConversationModel.setUnreadCount(data?.conversationUnreadCount || 0);
+    workflowTaskModel.setUnreadCount(data?.workflowTaskUnreadCount || 0);
+  }, [api, chatConversationModel, workflowTaskModel]);
 
   const runSearch = (keyword = '') => conversationsService.run(1, keyword);
   const refresh = useCallback(() => {

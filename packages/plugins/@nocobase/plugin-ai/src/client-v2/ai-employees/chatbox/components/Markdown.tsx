@@ -44,7 +44,7 @@ import { observer } from '@nocobase/flow-engine';
 import { useT } from '../../../locale';
 import type { Message } from '../../types';
 import { useChat } from '../hooks/useChat';
-import { useChatConversationsStore } from '../stores/chat-conversations';
+import { useChatBoxRuntime } from '../stores/runtime';
 import { Actions } from './Actions';
 
 const downloadIconPath =
@@ -161,8 +161,9 @@ export const Code: React.FC<CodeProps> = observer(({ children, className, node, 
   const { message } = App.useApp();
   const { isDarkTheme } = useGlobalTheme();
   const t = useT();
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-  const chat = useChat(currentConversation);
+  const runtime = useChatBoxRuntime();
+  const currentConversation = runtime.chatConversationModel.currentConversation;
+  const chat = useChat(currentConversation, runtime);
   const editorRefMap = chat.use.editorRef();
   const currentEditorRefUid = chat.use.currentEditorRefUid();
   const editorRef = currentEditorRefUid ? editorRefMap?.[currentEditorRefUid] : null;
@@ -413,8 +414,9 @@ const Echarts: React.FC<EchartsProps> = observer(
       const { token } = theme.useToken();
       const { isDarkTheme } = useGlobalTheme();
       const t = useT();
-      const currentConversation = useChatConversationsStore.use.currentConversation();
-      const chat = useChat(currentConversation);
+      const runtime = useChatBoxRuntime();
+      const currentConversation = runtime.chatConversationModel.currentConversation;
+      const chat = useChat(currentConversation, runtime);
       const responseLoading = chat.use.responseLoading();
       const optionSource = React.Children.toArray(children).join('');
       let option: Record<string, unknown> = {};

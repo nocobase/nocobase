@@ -15,7 +15,6 @@ import type { AIManager } from '../../../manager/ai-manager';
 import { useT } from '../../../locale';
 import type { ActionOptions, ContextItem, Message } from '../../types';
 import { useChat } from '../hooks/useChat';
-import { useChatConversationsStore } from '../stores/chat-conversations';
 import { useChatBoxRuntime } from '../stores/runtime';
 
 type AIPluginLike = {
@@ -30,11 +29,12 @@ export const Actions: React.FC<{
   const app = useApp();
   const t = useT();
   const { token } = theme.useToken();
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-  const chat = useChat(currentConversation);
+  const runtime = useChatBoxRuntime();
+  const currentConversation = runtime.chatConversationModel.currentConversation;
+  const chat = useChat(currentConversation, runtime);
   const responseLoading = chat.use.responseLoading();
   const messages = chat.use.messages();
-  const { chatBoxModel } = useChatBoxRuntime();
+  const { chatBoxModel } = runtime;
   const currentEmployee = chatBoxModel.currentEmployee;
   const plugin = app.pm.get('ai') as AIPluginLike | undefined;
 

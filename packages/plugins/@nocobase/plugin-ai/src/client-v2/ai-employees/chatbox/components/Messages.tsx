@@ -18,7 +18,6 @@ import type { Message } from '../../types';
 import { useChat } from '../hooks/useChat';
 import { useChatMessageActions } from '../hooks/useChatMessageActions';
 import { useWorkflowTasks } from '../hooks/useWorkflowTasks';
-import { useChatConversationsStore } from '../stores/chat-conversations';
 import { useChatBoxRuntime } from '../stores/runtime';
 import { flattenMessages, formatConversationDuration, type RenderedItem } from '../utils';
 import { createAIEmployeeRole, defaultMessageRoles } from './MessageRenderers';
@@ -53,9 +52,10 @@ export const Messages: React.FC = observer(() => {
   const t = useT();
   const { token } = theme.useToken();
   const app = useApp();
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-  const chat = useChat(currentConversation);
-  const { chatBoxModel, chatToolModel } = useChatBoxRuntime();
+  const runtime = useChatBoxRuntime();
+  const { chatBoxModel, chatConversationModel, chatToolModel } = runtime;
+  const currentConversation = chatConversationModel.currentConversation;
+  const chat = useChat(currentConversation, runtime);
   const roles = chatBoxModel.roles;
   const currentEmployee = chatBoxModel.currentEmployee;
   const messages = chat.use.messages();
@@ -67,9 +67,9 @@ export const Messages: React.FC = observer(() => {
   const [collapsedConversationKeys, setCollapsedConversationKeys] = useState<Record<string, boolean>>({});
   const containerRef = useRef<HTMLDivElement | null>(null);
   const shouldStickToBottomRef = useRef(true);
-  const { loadMessages, lastMessageRef } = useChatMessageActions();
+  const { loadMessages, lastMessageRef } = useChatMessageActions(runtime);
   const setResponseLoading = chat.setResponseLoading;
-  const { updateReadonly } = useWorkflowTasks();
+  const { updateReadonly } = useWorkflowTasks(runtime);
 
   useEffect(() => {
     chatToolModel.updateTools(messages);
@@ -291,11 +291,12 @@ export const Messages: React.FC = observer(() => {
 
 const BackgroundWorkingHint: React.FC = observer(() => {
   const t = useT();
-  const { loadMessages, getConversationLLMActiveState } = useChatMessageActions();
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-  const { chatBoxModel } = useChatBoxRuntime();
+  const runtime = useChatBoxRuntime();
+  const { loadMessages, getConversationLLMActiveState } = useChatMessageActions(runtime);
+  const currentConversation = runtime.chatConversationModel.currentConversation;
+  const { chatBoxModel } = runtime;
   const currentEmployee = chatBoxModel.currentEmployee;
-  const chat = useChat(currentConversation);
+  const chat = useChat(currentConversation, runtime);
   const messages = chat.use.messages();
   const backgroundWorking = chat.use.backgroundWorking();
   const resumeStreamFailed = chat.use.resumeStreamFailed();

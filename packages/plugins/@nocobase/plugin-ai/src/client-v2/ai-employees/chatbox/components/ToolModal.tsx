@@ -13,7 +13,6 @@ import { observer } from '@nocobase/flow-engine';
 import { toToolsMap, ToolsUIProperties, useApp } from '@nocobase/client-v2';
 import { useT } from '../../../locale';
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
-import { useChatConversationsStore } from '../stores/chat-conversations';
 import { useChatMessageActions } from '../hooks/useChatMessageActions';
 import { useToolCallActions } from '../hooks/useToolCallActions';
 import { useChatBoxRuntime } from '../stores/runtime';
@@ -32,9 +31,10 @@ export const ToolModal: React.FC = observer(() => {
   const aiConfigRepository = useAIConfigRepository();
   const tools = aiConfigRepository.aiTools;
   const toolsMap = toToolsMap(tools);
-  const { chatBoxModel, chatToolModel } = useChatBoxRuntime();
+  const runtime = useChatBoxRuntime();
+  const { chatBoxModel, chatConversationModel, chatToolModel } = runtime;
 
-  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const currentConversation = chatConversationModel.currentConversation;
   useEffect(() => {
     aiConfigRepository.getAITools(currentConversation).catch(console.error);
   }, [aiConfigRepository, currentConversation]);
@@ -46,7 +46,7 @@ export const ToolModal: React.FC = observer(() => {
   const toolsByName = chatToolModel.toolsByName;
   const readonly = chatBoxModel.readonly;
 
-  const { updateToolArgs } = useChatMessageActions();
+  const { updateToolArgs } = useChatMessageActions(runtime);
 
   const resolvedActiveTool =
     (activeMessageId && activeTool?.id ? toolsByMessageId[activeMessageId]?.[activeTool.id] : null) || activeTool;
@@ -59,7 +59,7 @@ export const ToolModal: React.FC = observer(() => {
   const modalProps = modal?.props;
 
   const adjustArgs = chatToolModel.adjustArgs;
-  const { getDecisionActions } = useToolCallActions({ messageId: activeMessageId });
+  const { getDecisionActions } = useToolCallActions({ messageId: activeMessageId, runtime });
   const decisions = getDecisionActions(resolvedActiveTool);
   const { onOk } = useOnOk(decisions, adjustArgs);
 

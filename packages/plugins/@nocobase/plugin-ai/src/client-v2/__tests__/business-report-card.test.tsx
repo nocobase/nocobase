@@ -33,16 +33,11 @@ vi.mock('../ai-employees/chatbox/hooks/useChat', () => ({
   }),
 }));
 
-vi.mock('../ai-employees/chatbox/stores/chat-conversations', () => ({
-  useChatConversationsStore: {
-    use: {
-      currentConversation: () => 'conversation-1',
-    },
-  },
-}));
-
 vi.mock('../ai-employees/chatbox/stores/runtime', () => ({
   useChatBoxRuntime: () => ({
+    chatConversationModel: {
+      currentConversation: 'conversation-1',
+    },
     chatToolModel: {
       setOpenToolModal: mocks.setOpenToolModal,
       setActiveTool: mocks.setActiveTool,

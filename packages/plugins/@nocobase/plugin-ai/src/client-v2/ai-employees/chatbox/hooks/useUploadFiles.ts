@@ -10,9 +10,9 @@
 import { useApp } from '@nocobase/client-v2';
 import { useRequest } from 'ahooks';
 import { useChat } from '../hooks/useChat';
-import { useChatConversationsStore } from '../stores/chat-conversations';
 import type { Attachment } from '../../types';
 import { normalizeAIFileUploadAttachment } from '../utils';
+import { type ChatBoxRuntime, useResolvedChatBoxRuntime } from '../stores/runtime';
 
 type StorageBasicInfo = {
   rules?: Record<string, unknown>;
@@ -104,9 +104,10 @@ export function useUploadProps(props: Record<string, unknown>) {
   };
 }
 
-export const useUploadFiles = () => {
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-  const chat = useChat(currentConversation);
+export const useUploadFiles = (runtime?: ChatBoxRuntime) => {
+  const resolvedRuntime = useResolvedChatBoxRuntime(runtime);
+  const currentConversation = resolvedRuntime.chatConversationModel.currentConversation;
+  const chat = useChat(currentConversation, resolvedRuntime);
   const setAttachments = chat.setAttachments;
 
   const uploadProps = {

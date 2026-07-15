@@ -38,15 +38,10 @@ vi.mock('../ai-employees/chatbox/stores/runtime', () => ({
     chatBoxModel: {
       readonly: false,
     },
-  }),
-}));
-
-vi.mock('../ai-employees/chatbox/stores/chat-conversations', () => ({
-  useChatConversationsStore: {
-    use: {
-      currentConversation: () => undefined,
+    chatConversationModel: {
+      currentConversation: undefined,
     },
-  },
+  }),
 }));
 
 const createProps = () => ({

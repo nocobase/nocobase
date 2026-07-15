@@ -38,8 +38,6 @@ import { useChatConversationActions } from '../hooks/useChatConversationActions'
 import { useChatMessageActions } from '../hooks/useChatMessageActions';
 import { useWorkflowTasks } from '../hooks/useWorkflowTasks';
 import { type ModelRef } from '../stores/chat-box';
-import { useChatConversationsStore } from '../stores/chat-conversations';
-import { useWorkflowTasksStore } from '../stores/workflow-tasks';
 import type { WorkflowTask } from '../stores/workflow-tasks';
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
 import { observer } from '@nocobase/flow-engine';
@@ -60,23 +58,20 @@ export const Conversations: React.FC = observer(() => {
   const [pendingWorkflowTask, setPendingWorkflowTask] = useState<string>();
   const aiConfigRepository = useAIConfigRepository();
   const aiEmployeesMap = aiConfigRepository.getAIEmployeesMap();
-  const conversations = useChatConversationsStore.use.conversations();
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-  const conversationSegmented = useChatConversationsStore.use.conversationSegmented();
-  const setConversationSegmented = useChatConversationsStore.use.setConversationSegmented();
-  const keyword = useChatConversationsStore.use.keyword();
-  const setKeyword = useChatConversationsStore.use.setKeyword();
-  const setCurrentConversation = useChatConversationsStore.use.setCurrentConversation();
-  const { chatBoxModel } = useChatBoxRuntime();
+  const runtime = useChatBoxRuntime();
+  const { chatBoxModel, chatConversationModel, workflowTaskModel } = runtime;
+  const conversations = chatConversationModel.conversations;
+  const currentConversation = chatConversationModel.currentConversation;
+  const conversationSegmented = chatConversationModel.conversationSegmented;
+  const keyword = chatConversationModel.keyword;
   const expanded = chatBoxModel.expanded;
-  const setCurrentWorkflowTask = useWorkflowTasksStore.use.setCurrentWorkflowTask();
   const {
     refresh,
     runSearch: runSearchConversations,
     conversationsService,
     lastConversationRef,
     unreadCount: unreadConversationCount,
-  } = useChatConversationActions();
+  } = useChatConversationActions(runtime);
   const {
     refresh: refreshWorkflowTasks,
     runSearch: runSearchWorkflowTasks,
@@ -90,10 +85,10 @@ export const Conversations: React.FC = observer(() => {
     unreadCount: unreadWorkflowTaskCount,
     acceptWorkflowTask,
     getWorkflowTaskBySession,
-  } = useWorkflowTasks();
-  const { loadMessages, getConversationLLMActiveState, resumeStream } = useChatMessageActions();
-  const { startNewConversation, clear } = useChatBoxActions();
-  const chat = useChat(currentConversation);
+  } = useWorkflowTasks(runtime);
+  const { loadMessages, getConversationLLMActiveState, resumeStream } = useChatMessageActions(runtime);
+  const { startNewConversation, clear } = useChatBoxActions(runtime);
+  const chat = useChat(currentConversation, runtime);
   const latestOpenVersionRef = useRef(0);
 
   const hasActiveStream = useCallback(
@@ -115,7 +110,7 @@ export const Conversations: React.FC = observer(() => {
         !aiEmployee ||
         hasActiveStream(sessionId) ||
         latestOpenVersionRef.current !== openVersion ||
-        useChatConversationsStore.getState().currentConversation !== sessionId
+        chatConversationModel.currentConversation !== sessionId
       ) {
         return;
       }
@@ -124,7 +119,7 @@ export const Conversations: React.FC = observer(() => {
       if (
         hasActiveStream(sessionId) ||
         latestOpenVersionRef.current !== openVersion ||
-        useChatConversationsStore.getState().currentConversation !== sessionId ||
+        chatConversationModel.currentConversation !== sessionId ||
         llmActiveState !== 'streaming'
       ) {
         return;
@@ -135,7 +130,7 @@ export const Conversations: React.FC = observer(() => {
         aiEmployee,
       });
     },
-    [aiEmployeesMap, getConversationLLMActiveState, hasActiveStream, loadMessages, resumeStream],
+    [aiEmployeesMap, chatConversationModel, getConversationLLMActiveState, hasActiveStream, loadMessages, resumeStream],
   );
 
   useEffect(() => {
@@ -179,7 +174,7 @@ export const Conversations: React.FC = observer(() => {
       }
 
       const conversation = conversations.find((item) => item.sessionId === sessionId);
-      setCurrentConversation(sessionId);
+      chatConversationModel.setCurrentConversation(sessionId);
       const aiEmployee = username ? aiEmployeesMap[username] : conversation?.aiEmployee;
       if (username) {
         chatBoxModel.setCurrentEmployee(aiEmployee);
@@ -221,7 +216,7 @@ export const Conversations: React.FC = observer(() => {
       expanded,
       hasActiveStream,
       resumeAfterLoad,
-      setCurrentConversation,
+      chatConversationModel,
     ],
   );
 
@@ -329,7 +324,7 @@ export const Conversations: React.FC = observer(() => {
         <Input.Search
           value={keyword}
           onChange={(event) => {
-            setKeyword(event.target.value);
+            chatConversationModel.setKeyword(event.target.value);
           }}
           placeholder={t('Search')}
           onSearch={(value) => {
@@ -373,7 +368,7 @@ export const Conversations: React.FC = observer(() => {
           ]}
           value={conversationSegmented}
           onChange={(value) => {
-            setConversationSegmented(String(value));
+            chatConversationModel.setConversationSegmented(String(value));
           }}
         />
       </div>
@@ -394,7 +389,7 @@ export const Conversations: React.FC = observer(() => {
             items={items}
             onActiveChange={(sessionId) => {
               chatBoxModel.setReadonly(false);
-              setCurrentWorkflowTask(undefined);
+              workflowTaskModel.setCurrentWorkflowTask(undefined);
               const conversation = conversations.find((item) => item.sessionId === sessionId);
               openConversation(sessionId, conversation?.aiEmployee?.username, getConversationModel(conversation));
             }}

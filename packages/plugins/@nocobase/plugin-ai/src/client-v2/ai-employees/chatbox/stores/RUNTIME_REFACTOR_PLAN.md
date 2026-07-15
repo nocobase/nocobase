@@ -551,7 +551,7 @@ Tests:
 
 ### T11. Migrate Conversation And Workflow Consumers To Runtime Models
 
-Status: `Pending`
+Status: `Done`
 
 Dependencies: T10
 
@@ -580,6 +580,24 @@ Tests:
 - Run chatbox runtime/model tests.
 - Run tests covering conversations, messages, sender, workflow tasks, AI employee shortcuts, and data-visualization integration.
 - Add focused regression tests if the existing suite does not cover conversation/workflow state changes through runtime models.
+- Verification on 2026-07-16:
+  - `yarn eslint --fix <touched T11 TS/TSX files>`: passed.
+  - `rg "useChatConversationsStore|useWorkflowTasksStore" packages/plugins/@nocobase/plugin-ai/src/client-v2 packages/plugins/@nocobase/plugin-data-visualization/src/client-v2 -g '*.ts' -g '*.tsx'`: only public export, compatibility store files, and old store tests remain; production consumers no longer read selector stores.
+  - `rg "@formily/reactive" packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/tools packages/plugins/@nocobase/plugin-ai/src/client-v2/block -g '*.ts' -g '*.tsx'`: no matches.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/chatbox-runtime.test.tsx --run --reporter=verbose`: passed, 9 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/chatbox-models.test.ts --run --reporter=verbose`: passed, 9 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/chatbox-global-behavior.test.tsx --run --reporter=verbose`: passed, 1 test.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/chatbox-stores.test.ts --run --reporter=verbose`: passed, 4 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/__tests__/utils.test.ts --run --reporter=verbose`: passed, 3 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/AIEmployeeShortcut.test.tsx --run --reporter=verbose`: passed, 2 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/suggestions-options-card.test.tsx --run --reporter=verbose`: passed, 2 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/business-report-card.test.tsx --run --reporter=verbose`: passed, 2 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/sub-agent-dispatch-card.test.tsx --run --reporter=verbose`: passed, 2 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/tools-registration.test.ts --run --reporter=verbose`: passed, 4 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/form-filler/tools.test.ts --run --reporter=verbose`: passed, 3 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/public-api-contract.test.ts --run --reporter=verbose`: passed, 2 tests.
+  - `yarn test packages/plugins/@nocobase/plugin-data-visualization/src/client-v2/flow/models/__tests__/ChartBlockModel.dirtyRefresh.test.ts --run --reporter=verbose`: passed, 16 tests.
+  - `yarn eslint --fix packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/RUNTIME_REFACTOR_PLAN.md`: attempted, but the current ESLint configuration parses `.md` as JavaScript and fails at line 1 with `Parsing error: Invalid character`.
 - Commit after tests pass.
 
 ### T12. Remove Obsolete Conversation And Workflow Selector Stores

@@ -19,7 +19,6 @@ import { useChat } from '../hooks/useChat';
 import { useChatBoxActions } from '../hooks/useChatBoxActions';
 import { useChatMessageActions } from '../hooks/useChatMessageActions';
 import { useUploadFiles } from '../hooks/useUploadFiles';
-import { useChatConversationsStore } from '../stores/chat-conversations';
 import { useChatBoxRuntime } from '../stores/runtime';
 import { AIEmployeeSwitcher } from './AIEmployeeSwitcher';
 import { AddContextButton } from '../../AddContextButton';
@@ -53,23 +52,24 @@ const senderClassName = css`
 export const Sender: React.FC = observer(() => {
   const t = useT();
   const senderRef = useRef<SenderRef | null>(null);
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-  const { chatBoxModel } = useChatBoxRuntime();
+  const runtime = useChatBoxRuntime();
+  const { chatBoxModel, chatConversationModel } = runtime;
+  const currentConversation = chatConversationModel.currentConversation;
   const currentEmployee = chatBoxModel.currentEmployee;
   const senderValue = chatBoxModel.senderValue;
   const readonly = chatBoxModel.readonly;
   const isEditingMessage = chatBoxModel.isEditingMessage;
   const editingMessageId = chatBoxModel.editingMessageId;
-  const webSearch = useChatConversationsStore.use.webSearch();
-  const chat = useChat(currentConversation);
+  const webSearch = chatConversationModel.webSearch;
+  const chat = useChat(currentConversation, runtime);
   const attachments = chat.use.attachments();
   const contextItems = chat.use.contextItems();
   const systemMessage = chat.use.systemMessage();
   const responseLoading = chat.use.responseLoading();
   const skillSettings = chat.use.skillSettings();
-  const uploadProps = useUploadFiles();
-  const { send } = useChatBoxActions();
-  const { cancelRequest, finishEditingMessage } = useChatMessageActions();
+  const uploadProps = useUploadFiles(runtime);
+  const { send } = useChatBoxActions(runtime);
+  const { cancelRequest, finishEditingMessage } = useChatMessageActions(runtime);
   const [value, setValue] = useState(senderValue);
 
   useEffect(() => {
@@ -207,8 +207,9 @@ const SenderHeader: React.FC = observer(() => {
   const isEditingMessage = chatBoxModel.isEditingMessage;
   const isShowSenderHint = chatBoxModel.isShowSenderHint;
   const readonly = chatBoxModel.readonly;
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-  const chat = useChat(currentConversation);
+  const runtime = useChatBoxRuntime();
+  const currentConversation = runtime.chatConversationModel.currentConversation;
+  const chat = useChat(currentConversation, runtime);
   const contextItems = chat.use.contextItems();
   const attachments = chat.use.attachments();
 
@@ -246,10 +247,11 @@ const SenderFooter: React.FC<{
 }> = observer(({ components, handleSubmit }) => {
   const { SendButton, LoadingButton } = components;
   const senderButtonRef = useRef<GetRef<typeof Button> | null>(null);
-  const { chatBoxModel } = useChatBoxRuntime();
+  const runtime = useChatBoxRuntime();
+  const { chatBoxModel } = runtime;
   const currentEmployee = chatBoxModel.currentEmployee;
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-  const chat = useChat(currentConversation);
+  const currentConversation = runtime.chatConversationModel.currentConversation;
+  const chat = useChat(currentConversation, runtime);
   const readonly = chatBoxModel.readonly;
   const loading = chat.use.responseLoading();
   const addContextItems = chat.addContextItems;
@@ -313,11 +315,12 @@ const SenderFooter: React.FC<{
 
 const UploadFiles: React.FC<{ disabled?: boolean }> = observer(({ disabled }) => {
   const t = useT();
-  const uploadProps = useUploadFiles();
-  const { chatBoxModel } = useChatBoxRuntime();
+  const runtime = useChatBoxRuntime();
+  const uploadProps = useUploadFiles(runtime);
+  const { chatBoxModel } = runtime;
   const chatBoxRef = chatBoxModel.chatBoxRef;
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-  const chat = useChat(currentConversation);
+  const currentConversation = runtime.chatConversationModel.currentConversation;
+  const chat = useChat(currentConversation, runtime);
   const attachments = chat.use.attachments();
   const items = useAttachmentFileCards(attachments);
 
@@ -354,8 +357,9 @@ const UploadFiles: React.FC<{ disabled?: boolean }> = observer(({ disabled }) =>
 });
 
 const ContextItemsHeader: React.FC = observer(() => {
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-  const chat = useChat(currentConversation);
+  const runtime = useChatBoxRuntime();
+  const currentConversation = runtime.chatConversationModel.currentConversation;
+  const chat = useChat(currentConversation, runtime);
   const contextItems = chat.use.contextItems();
   const removeContextItem = chat.removeContextItem;
 
@@ -387,8 +391,9 @@ const ContextItemsHeader: React.FC = observer(() => {
 });
 
 const AttachmentsHeader: React.FC<{ readonly: boolean }> = observer(({ readonly }) => {
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-  const chat = useChat(currentConversation);
+  const runtime = useChatBoxRuntime();
+  const currentConversation = runtime.chatConversationModel.currentConversation;
+  const chat = useChat(currentConversation, runtime);
   const attachments = chat.use.attachments();
 
   return (
@@ -427,10 +432,11 @@ const HintMessageHeader: React.FC = () => {
 const EditMessageHeader: React.FC = observer(() => {
   const t = useT();
   const { token } = theme.useToken();
-  const { chatBoxModel } = useChatBoxRuntime();
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-  const chat = useChat(currentConversation);
-  const { loadMessages, finishEditingMessage } = useChatMessageActions();
+  const runtime = useChatBoxRuntime();
+  const { chatBoxModel } = runtime;
+  const currentConversation = runtime.chatConversationModel.currentConversation;
+  const chat = useChat(currentConversation, runtime);
+  const { loadMessages, finishEditingMessage } = useChatMessageActions(runtime);
 
   return (
     <Alert

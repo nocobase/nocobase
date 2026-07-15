@@ -24,7 +24,6 @@ import {
   resolveModel,
 } from '../model';
 import { type ModelRef } from '../stores/chat-box';
-import { useChatConversationsStore } from '../stores/chat-conversations';
 import { useChatBoxRuntime } from '../stores/runtime';
 import { AddLLMModal } from './AddLLMModal';
 
@@ -38,10 +37,10 @@ export const ModelSwitcher: React.FC<{
   const { token } = theme.useToken();
   const [isOpen, setIsOpen] = useState(false);
   const repository = useAIConfigRepository();
-  const { chatBoxModel } = useChatBoxRuntime();
+  const { chatBoxModel, chatConversationModel } = useChatBoxRuntime();
   const currentEmployee = chatBoxModel.currentEmployee;
   const currentEmployeeUsername = currentEmployee?.username;
-  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const currentConversation = chatConversationModel.currentConversation;
   const model = chatBoxModel.model;
   const llmServices = repository.llmServices;
   const [addModalOpen, setAddModalOpen] = useState(false);

@@ -12,6 +12,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AIEmployee, Task } from '../ai-employees/types';
 import { AIEmployeeShortcut } from '../ai-employees/AIEmployeeShortcut';
+import { getGlobalChatBoxRuntime } from '../ai-employees/chatbox/stores/runtime';
 
 const triggerTask = vi.fn().mockResolvedValue(undefined);
 const clear = vi.fn();
@@ -85,27 +86,28 @@ vi.mock('../ai-employees/chatbox/hooks/useChat', () => ({
   }),
 }));
 
-vi.mock('../ai-employees/chatbox/stores/chat-conversations', () => ({
-  useChatConversationsStore: {
-    use: {
-      currentConversation: () => undefined,
-    },
-  },
-}));
-
 describe('AIEmployeeShortcut', () => {
   beforeEach(() => {
     triggerTask.mockClear();
     clear.mockClear();
     addContextItems.mockClear();
     syncContextAttachments.mockClear();
+    getGlobalChatBoxRuntime().chatConversationModel.setCurrentConversation(undefined);
   });
 
   it('triggers a popover task like v1 without inheriting shortcut auto=false', async () => {
     const task: Task = { title: 'Analyze record' };
     const workContext = [{ type: 'flow-model' as const, uid: 'block-1' }];
 
-    render(<AIEmployeeShortcut aiEmployee={employee} tasks={[task]} context={{ workContext }} auto={false} />);
+    render(
+      <AIEmployeeShortcut
+        aiEmployee={employee}
+        tasks={[task]}
+        context={{ workContext }}
+        auto={false}
+        runtime={getGlobalChatBoxRuntime()}
+      />,
+    );
 
     fireEvent.click(screen.getByText('Analyze record'));
 
@@ -125,7 +127,14 @@ describe('AIEmployeeShortcut', () => {
     const task: Task = { title: 'Analyze record', autoSend: true };
     const workContext = [{ type: 'flow-model' as const, uid: 'block-1' }];
 
-    const { container } = render(<AIEmployeeShortcut aiEmployee={employee} tasks={[task]} context={{ workContext }} />);
+    const { container } = render(
+      <AIEmployeeShortcut
+        aiEmployee={employee}
+        tasks={[task]}
+        context={{ workContext }}
+        runtime={getGlobalChatBoxRuntime()}
+      />,
+    );
 
     const shortcut = container.querySelector('.ant-avatar');
     expect(shortcut).toBeTruthy();

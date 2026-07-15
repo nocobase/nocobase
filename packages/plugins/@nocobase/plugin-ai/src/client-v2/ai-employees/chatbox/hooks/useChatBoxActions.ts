@@ -11,14 +11,12 @@ import { useCallback } from 'react';
 import { AIEmployee, Attachment, ClearOptions, Message, SendOptions, TriggerTaskOptions } from '../../types';
 import { useApp } from '@nocobase/client-v2';
 import { randomId } from '@nocobase/flow-engine';
-import { useChatConversationsStore } from '../stores/chat-conversations';
 import { useChat } from '../hooks/useChat';
 import { useChatConversationActions } from './useChatConversationActions';
 import { useChatMessageActions } from './useChatMessageActions';
 import { useT } from '../../../locale';
 import { parseTask } from '../utils';
 import { aiEmployeeRole } from '../roles';
-import { useWorkflowTasksStore } from '../stores/workflow-tasks';
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
 import { getAllModels, isSameModel, isValidModel, resolveModel } from '../model';
 import { type ChatBoxRuntime, useResolvedChatBoxRuntime } from '../stores/runtime';
@@ -29,24 +27,17 @@ export const useChatBoxActions = (runtime?: ChatBoxRuntime) => {
   const aiConfigRepository = useAIConfigRepository();
   const t = useT();
   const resolvedRuntime = useResolvedChatBoxRuntime(runtime);
-  const { chatBoxModel, chatToolModel } = resolvedRuntime;
+  const { chatBoxModel, chatConversationModel, chatToolModel, workflowTaskModel } = resolvedRuntime;
 
-  const setCurrentConversation = useChatConversationsStore.use.setCurrentConversation();
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-  const setWebSearch = useChatConversationsStore.use.setWebSearch();
+  const currentConversation = chatConversationModel.currentConversation;
   const chat = useChat(currentConversation, resolvedRuntime);
   const draftChat = useChat(undefined, resolvedRuntime);
 
-  const setCurrentWorkflowTask = useWorkflowTasksStore.use.setCurrentWorkflowTask();
-
-  const { refresh: refreshConversations } = useChatConversationActions();
+  const { refresh: refreshConversations } = useChatConversationActions(resolvedRuntime);
   const { sendMessages, syncContextAttachments } = useChatMessageActions(resolvedRuntime);
 
   const clear = useCallback(
-    (
-      options?: ClearOptions,
-      sessionId: string | undefined = useChatConversationsStore.getState().currentConversation,
-    ) => {
+    (options?: ClearOptions, sessionId: string | undefined = chatConversationModel.currentConversation) => {
       const sessionChat = chat.for(sessionId);
       const {
         sender,
@@ -87,7 +78,7 @@ export const useChatBoxActions = (runtime?: ChatBoxRuntime) => {
         sessionChat.setSkillSettings(undefined);
       }
     },
-    [chat, chatBoxModel, chatToolModel],
+    [chat, chatBoxModel, chatConversationModel, chatToolModel],
   );
 
   const send = useCallback(
@@ -95,14 +86,14 @@ export const useChatBoxActions = (runtime?: ChatBoxRuntime) => {
       const sendOptions = {
         ...options,
         onConversationCreate: (sessionId: string) => {
-          setCurrentConversation(sessionId);
+          chatConversationModel.setCurrentConversation(sessionId);
           refreshConversations();
         },
       };
       clear();
       sendMessages(sendOptions);
     },
-    [clear, refreshConversations, sendMessages, setCurrentConversation],
+    [chatConversationModel, clear, refreshConversations, sendMessages],
   );
 
   const updateRole = useCallback(
@@ -160,8 +151,8 @@ export const useChatBoxActions = (runtime?: ChatBoxRuntime) => {
   const startNewConversation = useCallback(() => {
     const currentEmployee = chatBoxModel.currentEmployee;
     if (!currentEmployee) {
-      setCurrentConversation(undefined);
-      setCurrentWorkflowTask(undefined);
+      chatConversationModel.setCurrentConversation(undefined);
+      workflowTaskModel.setCurrentWorkflowTask(undefined);
       clear(undefined, undefined);
       draftChat.setMessages([]);
       return;
@@ -174,18 +165,18 @@ export const useChatBoxActions = (runtime?: ChatBoxRuntime) => {
         content: currentEmployee.greeting || t('Default greeting message', { nickname: currentEmployee.nickname }),
       },
     };
-    setCurrentConversation(undefined);
-    setCurrentWorkflowTask(undefined);
+    chatConversationModel.setCurrentConversation(undefined);
+    workflowTaskModel.setCurrentWorkflowTask(undefined);
     clear(undefined, undefined);
     draftChat.setMessages([greetingMsg]);
     chatBoxModel.senderRef?.current?.focus();
-  }, [chatBoxModel, clear, draftChat, setCurrentConversation, setCurrentWorkflowTask, t]);
+  }, [chatBoxModel, chatConversationModel, clear, draftChat, t, workflowTaskModel]);
 
   const switchAIEmployee = useCallback(
     (aiEmployee: AIEmployee, options?: { clear?: ClearOptions }) => {
       chatBoxModel.setCurrentEmployee(aiEmployee);
-      setCurrentConversation(undefined);
-      setCurrentWorkflowTask(undefined);
+      chatConversationModel.setCurrentConversation(undefined);
+      workflowTaskModel.setCurrentWorkflowTask(undefined);
       clear(options?.clear, undefined);
       chatBoxModel.setModel(null);
       if (aiEmployee) {
@@ -203,7 +194,7 @@ export const useChatBoxActions = (runtime?: ChatBoxRuntime) => {
         draftChat.setMessages([]);
       }
     },
-    [chatBoxModel, clear, draftChat, setCurrentConversation, setCurrentWorkflowTask, t],
+    [chatBoxModel, chatConversationModel, clear, draftChat, t, workflowTaskModel],
   );
 
   const triggerTask = useCallback(
@@ -221,9 +212,9 @@ export const useChatBoxActions = (runtime?: ChatBoxRuntime) => {
       if (options.open !== false && !chatBoxModel.open) {
         chatBoxModel.setOpen(true);
       }
-      if (useChatConversationsStore.getState().currentConversation) {
-        setCurrentConversation(undefined);
-        setCurrentWorkflowTask(undefined);
+      if (chatConversationModel.currentConversation) {
+        chatConversationModel.setCurrentConversation(undefined);
+        workflowTaskModel.setCurrentWorkflowTask(undefined);
         draftChat.setMessages([]);
       }
       chatBoxModel.setCurrentEmployee(aiEmployee);
@@ -261,7 +252,7 @@ export const useChatBoxActions = (runtime?: ChatBoxRuntime) => {
         );
         const resolvedWebSearch =
           service?.supportWebSearch === false ? false : typeof webSearch === 'boolean' ? webSearch : false;
-        setWebSearch(resolvedWebSearch);
+        chatConversationModel.setWebSearch(resolvedWebSearch);
         if (userMessage && userMessage.type === 'text') {
           chatBoxModel.setSenderValue(userMessage.content);
         } else {
@@ -313,12 +304,11 @@ export const useChatBoxActions = (runtime?: ChatBoxRuntime) => {
       aiConfigRepository,
       resolveTaskModel,
       send,
-      setCurrentConversation,
-      setCurrentWorkflowTask,
-      setWebSearch,
+      chatConversationModel,
       syncContextAttachments,
       t,
       updateRole,
+      workflowTaskModel,
     ],
   );
 

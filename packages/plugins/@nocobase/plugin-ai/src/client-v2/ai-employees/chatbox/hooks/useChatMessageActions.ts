@@ -14,7 +14,6 @@ import { randomId } from '@nocobase/flow-engine';
 import { AIEmployee, Attachment, ContextItem, Message, ResendOptions, SendOptions, ToolCall } from '../../types';
 import { useLoadMoreObserver } from './useLoadMoreObserver';
 import { useT } from '../../../locale';
-import { useChatConversationsStore } from '../stores/chat-conversations';
 import { flattenMessages, parseWorkContext } from '../utils';
 import { aiDebugLogger } from '../../../debug-logger'; // [AI_DEBUG]
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
@@ -103,11 +102,9 @@ export const useChatMessageActions = (runtime?: ChatBoxRuntime) => {
   const api = app.apiClient;
   const aiConfigRepository = useAIConfigRepository();
   const resolvedRuntime = useResolvedChatBoxRuntime(runtime);
-  const { chatBoxModel, chatToolCallModel } = resolvedRuntime;
+  const { chatBoxModel, chatConversationModel, chatToolCallModel } = resolvedRuntime;
 
-  const currentConversation = useChatConversationsStore.use.currentConversation?.();
-  const setConversationUnreadCount = useChatConversationsStore.use.setUnreadCount();
-  const markConversationRead = useChatConversationsStore.use.markConversationRead();
+  const currentConversation = chatConversationModel.currentConversation;
   const chat = useChat(currentConversation, resolvedRuntime);
 
   const getSessionChat = useCallback((sessionId?: string) => chat.for(sessionId).getState(), [chat]);
@@ -192,12 +189,12 @@ export const useChatMessageActions = (runtime?: ChatBoxRuntime) => {
     (items: ContextItem | ContextItem[]) => {
       const attachments = extractContextAttachments(items);
       if (attachments.length) {
-        const sessionChat = getSessionChat(useChatConversationsStore.getState().currentConversation);
+        const sessionChat = getSessionChat(chatConversationModel.currentConversation);
         sessionChat.addAttachments(attachments);
       }
       return attachments;
     },
-    [extractContextAttachments, getSessionChat],
+    [chatConversationModel, extractContextAttachments, getSessionChat],
   );
 
   const loadMessages = useCallback(
@@ -209,7 +206,7 @@ export const useChatMessageActions = (runtime?: ChatBoxRuntime) => {
       sessionChat.setMessagesLoading(true);
       sessionChat.setMessagesError(null);
       try {
-        const activeConversation = useChatConversationsStore.getState().currentConversation;
+        const activeConversation = chatConversationModel.currentConversation;
         const chatBoxOpen = chatBoxModel.open;
         const res = await api.resource('aiConversations').getMessages({
           sessionId,
@@ -218,7 +215,7 @@ export const useChatMessageActions = (runtime?: ChatBoxRuntime) => {
           updateRead: sessionId === activeConversation && chatBoxOpen,
         });
         if (sessionId === activeConversation && chatBoxOpen) {
-          markConversationRead(sessionId);
+          chatConversationModel.markConversationRead(sessionId);
         }
 
         const data = res?.data as MessagesResponse | undefined;
@@ -298,9 +295,9 @@ export const useChatMessageActions = (runtime?: ChatBoxRuntime) => {
       aiConfigRepository,
       chatBoxModel,
       chatToolCallModel,
+      chatConversationModel,
       getConversationModel,
       getSessionChat,
-      markConversationRead,
     ],
   );
 
@@ -906,7 +903,7 @@ export const useChatMessageActions = (runtime?: ChatBoxRuntime) => {
         url: 'aiConversations:resendMessages',
         method: 'POST',
         headers: { Accept: 'text/event-stream' },
-        data: { sessionId, messageId, model, important, webSearch: useChatConversationsStore.getState().webSearch },
+        data: { sessionId, messageId, model, important, webSearch: chatConversationModel.webSearch },
         responseType: 'stream',
         adapter: 'fetch',
         signal: controller?.signal,
@@ -985,7 +982,7 @@ export const useChatMessageActions = (runtime?: ChatBoxRuntime) => {
   );
 
   const cancelRequest = useCallback(async () => {
-    const activeConversation = useChatConversationsStore.getState().currentConversation;
+    const activeConversation = chatConversationModel.currentConversation;
     const sessionChat = getSessionChat(activeConversation);
     const controller = sessionChat.abortController;
     if (!controller) {
@@ -1002,7 +999,7 @@ export const useChatMessageActions = (runtime?: ChatBoxRuntime) => {
     await new Promise((resolve) => setTimeout(resolve, 500));
     await loadMessages(activeConversation);
     sessionChat.setResponseLoading(false);
-  }, [api, getSessionChat, loadMessages]);
+  }, [api, chatConversationModel, getSessionChat, loadMessages]);
 
   const resumeToolCall = useCallback(
     async ({
@@ -1041,7 +1038,7 @@ export const useChatMessageActions = (runtime?: ChatBoxRuntime) => {
             toolCallIds,
             toolCallResults,
             model,
-            webSearch: useChatConversationsStore.getState().webSearch,
+            webSearch: chatConversationModel.webSearch,
           },
           responseType: 'stream',
           adapter: 'fetch',
@@ -1066,7 +1063,7 @@ export const useChatMessageActions = (runtime?: ChatBoxRuntime) => {
         sessionChat.setAbortController(null);
       }
     },
-    [api, chatBoxModel.model, ensureModelFromStore, getSessionChat, processStreamResponse],
+    [api, chatBoxModel.model, chatConversationModel, ensureModelFromStore, getSessionChat, processStreamResponse],
   );
 
   const loadMoreMessages = useCallback(async () => {
@@ -1094,7 +1091,7 @@ export const useChatMessageActions = (runtime?: ChatBoxRuntime) => {
 
   const startEditingMessage = useCallback(
     (msg: { messageId: string; attachments?: Attachment[]; workContext?: ContextItem[] }) => {
-      const activeConversation = useChatConversationsStore.getState().currentConversation;
+      const activeConversation = chatConversationModel.currentConversation;
       const sessionChat = getSessionChat(activeConversation);
       const currentMessages = sessionChat.messages;
       const index = currentMessages.findIndex((m) => m.key === msg.messageId);
@@ -1108,17 +1105,17 @@ export const useChatMessageActions = (runtime?: ChatBoxRuntime) => {
         sessionChat.setContextItems(msg.workContext);
       }
     },
-    [chatBoxModel, getSessionChat],
+    [chatBoxModel, chatConversationModel, getSessionChat],
   );
 
   const finishEditingMessage = useCallback(() => {
-    const activeConversation = useChatConversationsStore.getState().currentConversation;
+    const activeConversation = chatConversationModel.currentConversation;
     const sessionChat = getSessionChat(activeConversation);
     chatBoxModel.setIsEditingMessage(false);
     chatBoxModel.setEditingMessageId(undefined);
     sessionChat.setAttachments([]);
     sessionChat.setContextItems([]);
-  }, [chatBoxModel, getSessionChat]);
+  }, [chatBoxModel, chatConversationModel, getSessionChat]);
 
   return {
     syncContextAttachments,

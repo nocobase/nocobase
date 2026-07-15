@@ -16,13 +16,8 @@ import { useRequest } from 'ahooks';
 import { useT } from '../../locale';
 import { Markdown } from '../chatbox/components/Markdown';
 import { useWorkflowTasks } from '../chatbox/hooks/useWorkflowTasks';
-import { useChatConversationsStore } from '../chatbox/stores/chat-conversations';
 import { useChatBoxRuntime } from '../chatbox/stores/runtime';
-import {
-  useWorkflowTasksStore,
-  type WorkflowTaskDetail,
-  type WorkflowTaskOutputSchema,
-} from '../chatbox/stores/workflow-tasks';
+import { type WorkflowTaskDetail, type WorkflowTaskOutputSchema } from '../chatbox/stores/workflow-tasks';
 
 type WorkflowTaskOutputArgs = {
   result?: Record<string, unknown>;
@@ -67,11 +62,12 @@ const WorkflowTaskOutputCardBase: React.FC<ToolsUIProperties<WorkflowTaskOutputA
   const { token } = theme.useToken();
   const app = useApp();
   const api = app.apiClient;
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-  const currentWorkflowTask = useWorkflowTasksStore.use.currentWorkflowTask();
-  const { getWorkflowTaskBySession } = useWorkflowTasks();
+  const runtime = useChatBoxRuntime();
+  const { chatBoxModel, chatConversationModel, workflowTaskModel } = runtime;
+  const currentConversation = chatConversationModel.currentConversation;
+  const currentWorkflowTask = workflowTaskModel.currentWorkflowTask;
+  const { getWorkflowTaskBySession } = useWorkflowTasks(runtime);
   const [action, setAction] = useState<'approve' | 'reject' | 'revise' | null>(null);
-  const { chatBoxModel } = useChatBoxRuntime();
   const readonly = chatBoxModel.readonly;
   const disabled = toolCall.invokeStatus !== 'interrupted' || Boolean(action) || readonly;
   const senderRef = chatBoxModel.senderRef;

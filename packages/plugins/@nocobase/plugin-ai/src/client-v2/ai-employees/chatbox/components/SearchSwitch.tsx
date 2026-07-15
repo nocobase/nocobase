@@ -13,15 +13,13 @@ import { GlobalOutlined } from '@ant-design/icons';
 import { observer } from '@nocobase/flow-engine';
 import { useT } from '../../../locale';
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
-import { useChatConversationsStore } from '../stores/chat-conversations';
 import { useChatBoxRuntime } from '../stores/runtime';
 
 export const SearchSwitch: React.FC<{ disabled?: boolean }> = observer(({ disabled }) => {
   const t = useT();
   const repository = useAIConfigRepository();
-  const webSearch = useChatConversationsStore.use.webSearch();
-  const setWebSearch = useChatConversationsStore.use.setWebSearch();
-  const { chatBoxModel } = useChatBoxRuntime();
+  const { chatBoxModel, chatConversationModel } = useChatBoxRuntime();
+  const webSearch = chatConversationModel.webSearch;
   const model = chatBoxModel.model;
   const services = repository.llmServices;
 
@@ -40,13 +38,13 @@ export const SearchSwitch: React.FC<{ disabled?: boolean }> = observer(({ disabl
 
   useEffect(() => {
     if (!supportWebSearch && webSearch) {
-      setWebSearch(false);
+      chatConversationModel.setWebSearch(false);
     }
-  }, [setWebSearch, supportWebSearch, webSearch]);
+  }, [chatConversationModel, supportWebSearch, webSearch]);
 
   const switchChecked = () => {
     if (supportWebSearch) {
-      setWebSearch(!webSearch);
+      chatConversationModel.setWebSearch(!webSearch);
     }
   };
 
