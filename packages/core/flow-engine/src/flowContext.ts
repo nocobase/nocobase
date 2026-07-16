@@ -3750,6 +3750,9 @@ export class FlowModelContext extends BaseFlowModelContext {
       let model: FlowModel | null = null;
       model = await this.engine.loadModel({ uid });
       if (!model) {
+        if (this.model.isNew) {
+          await this.model.save();
+        }
         model = this.engine.createModel({
           uid, // 注意： 新建的 model 应该使用 ${parentModel.uid}-xxx 形式的 uid
           use: 'PopupActionModel',

@@ -12,6 +12,21 @@ import { FlowEngine } from '../flowEngine';
 import { FlowModel } from '../models/flowModel';
 
 describe('FlowModelContext.openView - navigation enforcement', () => {
+  function createPopupStub() {
+    return {
+      uid: 'popup-uid',
+      stepParams: {},
+      context: {
+        defineProperty: vi.fn(),
+      },
+      getStepParams: vi.fn(() => undefined),
+      setStepParams: vi.fn(),
+      setParent: vi.fn(),
+      save: vi.fn(async () => undefined),
+      dispatchEvent: vi.fn(async (_event: string, _params?: any) => undefined),
+    };
+  }
+
   function setup() {
     const engine = new FlowEngine();
     const parent = engine.createModel({ use: 'FlowModel', uid: 'parent-uid' });
@@ -131,5 +146,56 @@ describe('FlowModelContext.openView - navigation enforcement', () => {
 
     expect(child.dispatchEvent).toHaveBeenCalledTimes(1);
     expect(child.dispatchEvent.mock.calls[0][2]).toBeUndefined();
+  });
+
+  it('saves a new parent before creating and saving its popup', async () => {
+    const engine = new FlowEngine();
+    const parent = engine.createModel({ use: 'FlowModel', uid: 'parent-uid' });
+    const popup = createPopupStub();
+    const saveOrder: string[] = [];
+
+    parent.isNew = true;
+    vi.spyOn(parent, 'save').mockImplementation(async () => {
+      saveOrder.push('parent');
+    });
+    popup.save.mockImplementation(async () => {
+      saveOrder.push('popup');
+    });
+    vi.spyOn(engine, 'loadModel').mockResolvedValue(null);
+    vi.spyOn(engine, 'createModel').mockReturnValue(popup as any);
+
+    await (parent.context as any).openView('popup-uid', { mode: 'drawer' });
+
+    expect(saveOrder).toEqual(['parent', 'popup']);
+  });
+
+  it('does not save a persisted parent before creating its popup', async () => {
+    const engine = new FlowEngine();
+    const parent = engine.createModel({ use: 'FlowModel', uid: 'parent-uid' });
+    const popup = createPopupStub();
+    const parentSave = vi.spyOn(parent, 'save');
+
+    vi.spyOn(engine, 'loadModel').mockResolvedValue(null);
+    vi.spyOn(engine, 'createModel').mockReturnValue(popup as any);
+
+    await (parent.context as any).openView('popup-uid', { mode: 'drawer' });
+
+    expect(parentSave).not.toHaveBeenCalled();
+    expect(popup.save).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not create a popup when saving its new parent fails', async () => {
+    const engine = new FlowEngine();
+    const parent = engine.createModel({ use: 'FlowModel', uid: 'parent-uid' });
+    const createModel = vi.spyOn(engine, 'createModel');
+
+    parent.isNew = true;
+    vi.spyOn(parent, 'save').mockRejectedValue(new Error('parent save failed'));
+    vi.spyOn(engine, 'loadModel').mockResolvedValue(null);
+
+    await expect((parent.context as any).openView('popup-uid', { mode: 'drawer' })).rejects.toThrow(
+      'parent save failed',
+    );
+    expect(createModel).not.toHaveBeenCalled();
   });
 });
