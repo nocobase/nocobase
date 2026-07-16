@@ -35,6 +35,7 @@ import {
 } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { NAMESPACE, useT } from '../../../locale';
+import { Messages } from '../../../ai-employees/chatbox/components/Messages';
 import { useChatBoxActions } from '../../../ai-employees/chatbox/hooks/useChatBoxActions';
 import { useChatBoxRuntime } from '../../../ai-employees/chatbox/stores/runtime';
 import type { AIChatBoxBlockModel } from '../AIChatBoxBlockModel';
@@ -305,8 +306,23 @@ const BodySlot: React.FC<{
 
 const SidePanel: React.FC<{
   title: string;
-}> = ({ title }) => {
+  children?: React.ReactNode;
+}> = ({ title, children }) => {
   const { token } = theme.useToken();
+  if (children) {
+    return (
+      <Flex
+        vertical
+        style={{
+          height: '100%',
+          minHeight: 0,
+          padding: `0 ${token.paddingSM}px`,
+        }}
+      >
+        {children}
+      </Flex>
+    );
+  }
   return (
     <Flex
       vertical
@@ -389,7 +405,9 @@ export const AIChatBoxView: React.FC<{
               overflow: 'hidden',
             }}
           >
-            <SidePanel title={showConversations ? t('Conversation list') : t('Messages')} />
+            <SidePanel title={showConversations ? t('Conversation list') : t('Messages')}>
+              {showMessagesPanel ? <Messages /> : null}
+            </SidePanel>
           </div>
         </>
       ) : null}

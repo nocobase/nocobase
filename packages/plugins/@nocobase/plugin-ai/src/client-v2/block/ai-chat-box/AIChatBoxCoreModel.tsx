@@ -11,6 +11,8 @@ import React from 'react';
 import { Flex, Typography, theme } from 'antd';
 import { FlowModel } from '@nocobase/flow-engine';
 import { tExpr, useT } from '../../locale';
+import type { AIChatBoxBlockModel } from './AIChatBoxBlockModel';
+import { MessagesAndSender } from './components/MessagesAndSender';
 
 const AIChatBoxCorePlaceholder: React.FC = () => {
   const t = useT();
@@ -35,7 +37,8 @@ const AIChatBoxCorePlaceholder: React.FC = () => {
 
 export class AIChatBoxCoreModel extends FlowModel {
   render() {
-    return <AIChatBoxCorePlaceholder />;
+    const parent = this.parent as AIChatBoxBlockModel | undefined;
+    return parent ? <MessagesAndSender model={parent} /> : <AIChatBoxCorePlaceholder />;
   }
 }
 

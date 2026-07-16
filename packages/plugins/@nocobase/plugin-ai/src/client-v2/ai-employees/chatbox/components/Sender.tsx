@@ -14,7 +14,7 @@ import { EditOutlined, InfoCircleOutlined, PaperClipOutlined } from '@ant-design
 import { css } from '@emotion/css';
 import { observer } from '@nocobase/flow-engine';
 import { useT } from '../../../locale';
-import type { Attachment } from '../../types';
+import type { AIEmployee, Attachment, ContextItem, SendOptions, SkillSettings } from '../../types';
 import { useChat } from '../hooks/useChat';
 import { useChatBoxActions } from '../hooks/useChatBoxActions';
 import { useChatMessageActions } from '../hooks/useChatMessageActions';
@@ -49,7 +49,101 @@ const senderClassName = css`
   }
 `;
 
-export const Sender: React.FC = observer(() => {
+export type SenderOptions = {
+  placeholder?: string;
+  showContextSelector?: boolean;
+  showUpload?: boolean;
+  showWebSearch?: boolean;
+  showEmployeeSelect?: boolean;
+  showModelSelect?: boolean;
+  defaultSystemMessage?: string;
+  defaultUserMessage?: string;
+  defaultWorkContext?: ContextItem[];
+  allowedAIEmployees?: string[];
+  allowedModels?: string[];
+};
+
+export type BuildSenderSendOptionsInput = {
+  content: string;
+  currentConversation?: string;
+  currentEmployee?: AIEmployee;
+  systemMessage?: string;
+  attachments?: Attachment[];
+  contextItems?: ContextItem[];
+  defaultSystemMessage?: string;
+  defaultUserMessage?: string;
+  defaultWorkContext?: ContextItem[];
+  isEditingMessage?: boolean;
+  editingMessageId?: string | null;
+  skillSettings?: SkillSettings | null;
+  webSearch?: boolean;
+  uploadEnabled?: boolean;
+  contextSelectorEnabled?: boolean;
+  webSearchEnabled?: boolean;
+};
+
+export const mergeSenderContextItems = (defaultWorkContext?: ContextItem[], contextItems?: ContextItem[]) => {
+  const seen = new Set<string>();
+  return [...(defaultWorkContext || []), ...(contextItems || [])].filter((item) => {
+    const key = `${item.type}:${item.uid}`;
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
+};
+
+export const buildSenderSendOptions = ({
+  content,
+  currentConversation,
+  currentEmployee,
+  systemMessage,
+  attachments,
+  contextItems,
+  defaultSystemMessage,
+  defaultUserMessage,
+  defaultWorkContext,
+  isEditingMessage,
+  editingMessageId,
+  skillSettings,
+  webSearch,
+  uploadEnabled = true,
+  contextSelectorEnabled = true,
+  webSearchEnabled = true,
+}: BuildSenderSendOptionsInput): SendOptions | null => {
+  if (!currentEmployee) {
+    return null;
+  }
+  const resolvedContent = content || defaultUserMessage || '';
+  const resolvedContextItems = mergeSenderContextItems(
+    defaultWorkContext,
+    contextSelectorEnabled ? contextItems : undefined,
+  );
+
+  if (!resolvedContent && !resolvedContextItems.length) {
+    return null;
+  }
+
+  return {
+    sessionId: currentConversation,
+    aiEmployee: currentEmployee,
+    systemMessage: systemMessage || defaultSystemMessage,
+    messages: [
+      {
+        type: 'text',
+        content: resolvedContent,
+      },
+    ],
+    attachments: uploadEnabled ? attachments?.filter((attachment) => attachment.status === 'done') : undefined,
+    workContext: resolvedContextItems,
+    editingMessageId: isEditingMessage && editingMessageId ? editingMessageId : undefined,
+    skillSettings: skillSettings || undefined,
+    webSearch: webSearchEnabled ? webSearch : false,
+  };
+};
+
+export const Sender: React.FC<SenderOptions> = observer((options) => {
   const t = useT();
   const senderRef = useRef<SenderRef | null>(null);
   const runtime = useChatBoxRuntime();
@@ -71,6 +165,10 @@ export const Sender: React.FC = observer(() => {
   const { send } = useChatBoxActions(runtime);
   const { cancelRequest, finishEditingMessage } = useChatMessageActions(runtime);
   const [value, setValue] = useState(senderValue);
+  const showContextSelector = options.showContextSelector !== false;
+  const showUpload = options.showUpload !== false;
+  const showWebSearch = options.showWebSearch !== false;
+  const placeholder = options.placeholder || 'Enter your question';
 
   useEffect(() => {
     chatSenderModel.setSenderRef(senderRef);
@@ -83,29 +181,41 @@ export const Sender: React.FC = observer(() => {
     setValue(senderValue);
   }, [senderValue]);
 
+  useEffect(() => {
+    if (!showWebSearch && webSearch) {
+      chatConversationModel.setWebSearch(false);
+    }
+  }, [chatConversationModel, showWebSearch, webSearch]);
+
   const submit = (content: string) => {
-    if ((!content && !contextItems.length) || !currentEmployee || responseLoading || readonly) {
+    if (responseLoading || readonly) {
+      return;
+    }
+    const sendOptions = buildSenderSendOptions({
+      content,
+      currentConversation,
+      currentEmployee,
+      systemMessage,
+      attachments,
+      contextItems,
+      defaultSystemMessage: options.defaultSystemMessage,
+      defaultUserMessage: options.defaultUserMessage,
+      defaultWorkContext: options.defaultWorkContext,
+      isEditingMessage,
+      editingMessageId,
+      skillSettings,
+      webSearch,
+      uploadEnabled: showUpload,
+      contextSelectorEnabled: showContextSelector,
+      webSearchEnabled: showWebSearch,
+    });
+    if (!sendOptions) {
       return;
     }
     chatSenderModel.setShowSenderHint(false);
     setValue('');
     chatSenderModel.setSenderValue('');
-    send({
-      sessionId: currentConversation,
-      aiEmployee: currentEmployee,
-      systemMessage,
-      messages: [
-        {
-          type: 'text',
-          content,
-        },
-      ],
-      attachments: attachments.filter((attachment) => attachment.status === 'done'),
-      workContext: contextItems,
-      editingMessageId: isEditingMessage ? editingMessageId : undefined,
-      skillSettings,
-      webSearch,
-    });
+    send(sendOptions);
 
     if (isEditingMessage) {
       finishEditingMessage();
@@ -113,6 +223,9 @@ export const Sender: React.FC = observer(() => {
   };
 
   const handlePaste = (event: React.ClipboardEvent) => {
+    if (!showUpload) {
+      return;
+    }
     const pastedFile = Array.from(event.clipboardData.items)
       .find((item) => item.kind === 'file')
       ?.getAsFile();
@@ -189,11 +302,11 @@ export const Sender: React.FC = observer(() => {
         onBlur={() => {
           chatSenderModel.setShowSenderHint(false);
         }}
-        header={<SenderHeader />}
+        header={<SenderHeader options={options} />}
         loading={responseLoading}
-        footer={({ components }) => <SenderFooter components={components} handleSubmit={submit} />}
+        footer={({ components }) => <SenderFooter components={components} handleSubmit={submit} options={options} />}
         disabled={!currentEmployee || readonly}
-        placeholder={t('Enter your question')}
+        placeholder={t(placeholder)}
         actions={false}
         autoSize={{ minRows: 2, maxRows: 8 }}
       />
@@ -201,7 +314,9 @@ export const Sender: React.FC = observer(() => {
   );
 });
 
-const SenderHeader: React.FC = observer(() => {
+const SenderHeader: React.FC<{
+  options: SenderOptions;
+}> = observer(({ options }) => {
   const { chatBoxModel, chatSenderModel } = useChatBoxRuntime();
   const currentEmployee = chatBoxModel.currentEmployee;
   const isEditingMessage = chatSenderModel.isEditingMessage;
@@ -213,8 +328,10 @@ const SenderHeader: React.FC = observer(() => {
   const contextItems = chat.use.contextItems();
   const attachments = chat.use.attachments();
 
-  const hasContextItems = !!contextItems?.length;
-  const hasAttachments = !!attachments?.length;
+  const showContextItems = options.showContextSelector !== false;
+  const showAttachments = options.showUpload !== false;
+  const hasContextItems = showContextItems && !!contextItems?.length;
+  const hasAttachments = showAttachments && !!attachments?.length;
 
   if (!isShowSenderHint && !isEditingMessage && (!currentEmployee || (!hasContextItems && !hasAttachments))) {
     return null;
@@ -232,8 +349,8 @@ const SenderHeader: React.FC = observer(() => {
           <EditMessageHeader />
         </div>
       ) : null}
-      {currentEmployee ? <ContextItemsHeader /> : null}
-      {currentEmployee ? <AttachmentsHeader readonly={readonly} /> : null}
+      {currentEmployee && showContextItems ? <ContextItemsHeader /> : null}
+      {currentEmployee && showAttachments ? <AttachmentsHeader readonly={readonly} /> : null}
     </div>
   );
 });
@@ -244,7 +361,8 @@ const SenderFooter: React.FC<{
     LoadingButton: React.ComponentType<React.ComponentProps<typeof Button>>;
   };
   handleSubmit: (content: string) => void;
-}> = observer(({ components, handleSubmit }) => {
+  options: SenderOptions;
+}> = observer(({ components, handleSubmit, options }) => {
   const { SendButton, LoadingButton } = components;
   const senderButtonRef = useRef<GetRef<typeof Button> | null>(null);
   const runtime = useChatBoxRuntime();
@@ -260,8 +378,9 @@ const SenderFooter: React.FC<{
   const contextItems = chat.use.contextItems();
   const senderRef = chatSenderModel.senderRef as React.MutableRefObject<SenderRef | null> | null;
   const disabled = !currentEmployee || readonly;
+  const showContextSelector = options.showContextSelector !== false;
   const handleEmptySubmit = () => {
-    if (!senderValue && contextItems.length) {
+    if (!senderValue && (contextItems.length || options.defaultUserMessage || options.defaultWorkContext?.length)) {
       handleSubmit('');
     }
   };
@@ -291,16 +410,22 @@ const SenderFooter: React.FC<{
   return (
     <Flex justify="space-between" align="center">
       <Flex gap="middle" align="center">
-        <AddContextButton
-          onAdd={addContextItems}
-          onRemove={removeContextItem}
-          disabled={disabled}
-          ignore={(key) => key === 'flow-model.variable'}
-        />
-        <UploadFiles disabled={disabled} />
-        <SearchSwitch disabled={disabled} />
-        <AIEmployeeSwitcher disabled={readonly} />
-        <ModelSwitcher disabled={disabled} />
+        {showContextSelector ? (
+          <AddContextButton
+            onAdd={addContextItems}
+            onRemove={removeContextItem}
+            disabled={disabled}
+            ignore={(key) => key === 'flow-model.variable'}
+          />
+        ) : null}
+        {options.showUpload !== false ? <UploadFiles disabled={disabled} /> : null}
+        {options.showWebSearch !== false ? <SearchSwitch disabled={disabled} /> : null}
+        {options.showEmployeeSelect !== false ? (
+          <AIEmployeeSwitcher disabled={readonly} allowedUsernames={options.allowedAIEmployees} />
+        ) : null}
+        {options.showModelSelect !== false ? (
+          <ModelSwitcher disabled={disabled} allowedModelKeys={options.allowedModels} />
+        ) : null}
       </Flex>
       <Flex align="center" gap="middle">
         {loading ? (

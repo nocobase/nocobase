@@ -11,7 +11,6 @@ import type { FlowModel } from '@nocobase/flow-engine';
 import type { ContextItem } from '../../ai-employees/types';
 import type { AIChatBoxBlockModel } from './AIChatBoxBlockModel';
 import type { AIChatBoxBlockProps, AIChatBoxSettings } from './types';
-import { AIChatBoxCoreModel } from './AIChatBoxCoreModel';
 
 const isContextItem = (value: unknown): value is ContextItem => {
   return (
@@ -82,10 +81,21 @@ export const normalizeAIChatBoxWorkContext = (
   });
 };
 
+const getModelUse = (model: FlowModel) => {
+  try {
+    return model.use;
+  } catch {
+    return undefined;
+  }
+};
+
+const isAIChatBoxCoreModel = (model: FlowModel) =>
+  model.constructor.name === 'AIChatBoxCoreModel' || getModelUse(model) === 'AIChatBoxCoreModel';
+
 export const getAIChatBoxBodyContextItems = (model: AIChatBoxBlockModel): ContextItem[] => {
   return model
     .mapSubModels('bodyBlocks', (subModel: FlowModel) => subModel)
-    .filter((subModel) => !(subModel instanceof AIChatBoxCoreModel))
+    .filter((subModel) => !isAIChatBoxCoreModel(subModel))
     .map((subModel) => ({
       type: 'flow-model',
       uid: subModel.uid,
