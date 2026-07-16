@@ -61,8 +61,10 @@ Metadaten und Formular sollten im selben JS-Block gepflegt werden.
 
 Fügen Sie einen [JS-Block](/interface-builder/blocks/other-blocks/js-block) hinzu, öffnen Sie den JavaScript-Editor und fügen Sie das vollständige Beispiel ein.
 
+### Vollständiger Beispielcode
+
 <details>
-<summary>Vollständigen Beispielcode anzeigen</summary>
+<summary>Zum Aufklappen und Kopieren klicken</summary>
 
 ```jsx
 const React = ctx.libs.React;
@@ -262,6 +264,8 @@ const FORM_FIELDS = [
     type: 'string',
   },
 ];
+
+ctx.model.setTitle('Event Planning Request');
 
 ctx.model.setProps({
   aiForm: {
@@ -847,6 +851,57 @@ useEffect(() => {
   };
 }, [form]);
 ```
+
+### Den in „Block auswählen“ angezeigten Namen festlegen
+
+JS-Blöcke werden in „Block auswählen“ standardmäßig als `JS block` angezeigt. Mit `ctx.model.setTitle()` können Sie einen leichter erkennbaren Namen festlegen:
+
+```jsx
+ctx.model.setTitle('Event Planning Request');
+```
+
+Anschließend sehen Benutzer bei der Kontextauswahl `Event Planning Request`. Dadurch lässt sich das Zielformular auf Seiten mit mehreren Blöcken leichter finden.
+
+Verwenden Sie für jeden JS-Block einen kurzen, aussagekräftigen Namen und behalten Sie diese Zeile im vollständigen Beispiel bei.
+
+### Formularinformationen für das Werkzeug „Formular ausfüllen“ bereitstellen
+
+`ctx.model.form` stellt die Form-Instanz bereit, die Feldwerte empfängt. Das Werkzeug muss außerdem wissen, welche Felder vorhanden sind und welche Regeln beim Ausfüllen gelten.
+
+Stellen Sie diese Informationen mit `ctx.model.setProps()` für den aktuellen JS-Block bereit:
+
+```jsx
+ctx.model.setProps({
+  aiForm: {
+    prompt: `This is a fillable Event Planning Request form. Use the Fill form tool when the user asks to populate it. Use the current block UID as the form target: ${ctx.model.uid}. Always use enum values instead of labels, use YYYY-MM-DD for date fields, and use an array for services.`,
+    fields: FORM_FIELDS,
+  },
+});
+```
+
+`aiForm` enthält zwei Bestandteile:
+
+- `prompt` beschreibt Zweck, Zielblock-UID und Regeln für Enumerationen, Datums- und Mehrfachauswahlfelder;
+- `fields` stellt über `FORM_FIELDS` Feldnamen, Typen, Pflichtangaben und verfügbare Werte bereit.
+
+Wenn der Benutzer diesen JS-Block als Kontext hinzufügt, liest das Werkzeug diese Informationen und bestimmt, welche Felder im Zielblock ausgefüllt werden sollen.
+
+Beide Integrationspunkte sind erforderlich:
+
+```jsx
+// Das Formular für das Werkzeug beschreiben
+ctx.model.setProps({
+  aiForm: {
+    prompt: '...',
+    fields: FORM_FIELDS,
+  },
+});
+
+// Die Ant-Design-Form-Instanz zum Empfangen der Werte bereitstellen
+ctx.model.form = form;
+```
+
+Wenn Optionen aus einer API stammen, laden und konvertieren Sie sie vor der Definition von `FORM_FIELDS` und dem Aufruf von `ctx.model.setProps()`. So stimmen die für das Werkzeug verfügbaren `enum`-Werte mit den auf der Seite angezeigten Optionen überein.
 
 ### Komplexe Formularfelder beschreiben
 

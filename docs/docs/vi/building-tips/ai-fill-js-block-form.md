@@ -61,8 +61,10 @@ Sau đó cung cấp metadata về tên trường, kiểu dữ liệu, giá trị
 
 Thêm một [khối JS](/interface-builder/blocks/other-blocks/js-block), mở trình soạn thảo JavaScript và dán ví dụ đầy đủ.
 
+### Mã ví dụ đầy đủ
+
 <details>
-<summary>Xem mã ví dụ đầy đủ</summary>
+<summary>Nhấp để mở rộng và sao chép</summary>
 
 ```jsx
 const React = ctx.libs.React;
@@ -262,6 +264,8 @@ const FORM_FIELDS = [
     type: 'string',
   },
 ];
+
+ctx.model.setTitle('Event Planning Request');
 
 ctx.model.setProps({
   aiForm: {
@@ -847,6 +851,57 @@ useEffect(() => {
   };
 }, [form]);
 ```
+
+### Đặt tên hiển thị trong Chọn khối
+
+Theo mặc định, khối JS được hiển thị là `JS block` trong Chọn khối. Sử dụng `ctx.model.setTitle()` để đặt một tên dễ nhận biết hơn:
+
+```jsx
+ctx.model.setTitle('Event Planning Request');
+```
+
+Sau khi thiết lập, người dùng sẽ thấy `Event Planning Request` khi chọn ngữ cảnh, giúp dễ tìm biểu mẫu đích trên trang có nhiều khối.
+
+Hãy dùng tên ngắn gọn, rõ ràng cho từng khối JS và giữ dòng này trong ví dụ đầy đủ.
+
+### Cung cấp thông tin biểu mẫu cho công cụ Điền biểu mẫu
+
+`ctx.model.form` cung cấp instance Form nhận giá trị trường. Công cụ cũng cần biết biểu mẫu có những trường nào và phải tuân theo quy tắc gì khi điền.
+
+Sử dụng `ctx.model.setProps()` để cung cấp thông tin này cho khối JS hiện tại:
+
+```jsx
+ctx.model.setProps({
+  aiForm: {
+    prompt: `This is a fillable Event Planning Request form. Use the Fill form tool when the user asks to populate it. Use the current block UID as the form target: ${ctx.model.uid}. Always use enum values instead of labels, use YYYY-MM-DD for date fields, and use an array for services.`,
+    fields: FORM_FIELDS,
+  },
+});
+```
+
+`aiForm` gồm hai phần:
+
+- `prompt` mô tả mục đích biểu mẫu, UID khối đích và quy tắc cho enum, ngày và trường nhiều lựa chọn;
+- `fields` cung cấp tên, kiểu, trạng thái bắt buộc và giá trị khả dụng thông qua `FORM_FIELDS`.
+
+Khi người dùng thêm khối JS này làm ngữ cảnh, công cụ sẽ đọc thông tin để xác định những trường cần điền trong khối đích.
+
+Cần có cả hai điểm tích hợp:
+
+```jsx
+// Mô tả biểu mẫu cho công cụ
+ctx.model.setProps({
+  aiForm: {
+    prompt: '...',
+    fields: FORM_FIELDS,
+  },
+});
+
+// Cung cấp instance Ant Design Form nhận giá trị
+ctx.model.form = form;
+```
+
+Nếu tùy chọn đến từ API, hãy tải và chuyển đổi dữ liệu trước khi định nghĩa `FORM_FIELDS` và gọi `ctx.model.setProps()`. Điều này giữ cho các giá trị `enum` mà công cụ sử dụng khớp với tùy chọn hiển thị trên trang.
 
 ### Mô tả các trường phức tạp
 

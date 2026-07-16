@@ -61,8 +61,10 @@ Keep the metadata and the form in the same JS block so they can be updated toget
 
 Add a [JS block](/interface-builder/blocks/other-blocks/js-block), open the JavaScript editor, and paste the complete example below.
 
+### Complete example code
+
 <details>
-<summary>View the complete example code</summary>
+<summary>Click to expand and copy</summary>
 
 ```jsx
 const React = ctx.libs.React;
@@ -262,6 +264,8 @@ const FORM_FIELDS = [
     type: 'string',
   },
 ];
+
+ctx.model.setTitle('Event Planning Request');
 
 ctx.model.setProps({
   aiForm: {
@@ -847,6 +851,57 @@ useEffect(() => {
   };
 }, [form]);
 ```
+
+### Set the name shown in Pick block
+
+JS blocks are shown as `JS block` by default in Pick block. Use `ctx.model.setTitle()` to provide a name that is easier to recognize:
+
+```jsx
+ctx.model.setTitle('Event Planning Request');
+```
+
+After this is set, users will see `Event Planning Request` when selecting context, making the target form easier to find when a page contains multiple blocks.
+
+Use a short, descriptive name for each JS block and keep this line in the complete example.
+
+### Provide form information to the Fill form tool
+
+`ctx.model.form` provides the Form instance that receives field values. The tool also needs to know which fields the form contains and which rules apply when filling them.
+
+Use `ctx.model.setProps()` to provide this information for the current JS block:
+
+```jsx
+ctx.model.setProps({
+  aiForm: {
+    prompt: `This is a fillable Event Planning Request form. Use the Fill form tool when the user asks to populate it. Use the current block UID as the form target: ${ctx.model.uid}. Always use enum values instead of labels, use YYYY-MM-DD for date fields, and use an array for services.`,
+    fields: FORM_FIELDS,
+  },
+});
+```
+
+`aiForm` contains two parts:
+
+- `prompt` describes the form purpose, target block UID, and rules for enum, date, and multi-select fields;
+- `fields` provides field names, types, required states, and available values through `FORM_FIELDS`.
+
+When the user adds this JS block as AI employee context, the Fill form tool reads this information to determine which fields should be filled in the target block.
+
+Both integration points are required:
+
+```jsx
+// Describe the form to the tool
+ctx.model.setProps({
+  aiForm: {
+    prompt: '...',
+    fields: FORM_FIELDS,
+  },
+});
+
+// Provide the Ant Design Form instance that receives values
+ctx.model.form = form;
+```
+
+If options come from an API, load and convert them before defining `FORM_FIELDS` and calling `ctx.model.setProps()`. This keeps the enum values available to the tool aligned with the options shown on the page.
 
 ### Describe complex form fields
 

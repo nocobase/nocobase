@@ -61,8 +61,10 @@ Simpan metadata dan formulir dalam blok JS yang sama agar dapat diperbarui bersa
 
 Tambahkan [blok JS](/interface-builder/blocks/other-blocks/js-block), buka editor JavaScript, lalu tempel contoh lengkap.
 
+### Kode contoh lengkap
+
 <details>
-<summary>Lihat kode contoh lengkap</summary>
+<summary>Klik untuk membuka dan menyalin</summary>
 
 ```jsx
 const React = ctx.libs.React;
@@ -262,6 +264,8 @@ const FORM_FIELDS = [
     type: 'string',
   },
 ];
+
+ctx.model.setTitle('Event Planning Request');
 
 ctx.model.setProps({
   aiForm: {
@@ -847,6 +851,57 @@ useEffect(() => {
   };
 }, [form]);
 ```
+
+### Menetapkan nama yang ditampilkan di Pilih blok
+
+Secara default, blok JS ditampilkan sebagai `JS block` di Pilih blok. Gunakan `ctx.model.setTitle()` untuk menetapkan nama yang lebih mudah dikenali:
+
+```jsx
+ctx.model.setTitle('Event Planning Request');
+```
+
+Setelah ditetapkan, pengguna akan melihat `Event Planning Request` saat memilih konteks, sehingga formulir target lebih mudah ditemukan pada halaman yang memiliki beberapa blok.
+
+Gunakan nama yang singkat dan jelas untuk setiap blok JS, lalu pertahankan baris ini dalam contoh lengkap.
+
+### Memberikan informasi formulir kepada alat Isi formulir
+
+`ctx.model.form` menyediakan instance Form yang menerima nilai kolom. Alat ini juga perlu mengetahui kolom yang tersedia dan aturan yang harus diikuti saat mengisinya.
+
+Gunakan `ctx.model.setProps()` untuk memberikan informasi tersebut kepada blok JS saat ini:
+
+```jsx
+ctx.model.setProps({
+  aiForm: {
+    prompt: `This is a fillable Event Planning Request form. Use the Fill form tool when the user asks to populate it. Use the current block UID as the form target: ${ctx.model.uid}. Always use enum values instead of labels, use YYYY-MM-DD for date fields, and use an array for services.`,
+    fields: FORM_FIELDS,
+  },
+});
+```
+
+`aiForm` berisi dua bagian:
+
+- `prompt` menjelaskan tujuan formulir, UID blok target, serta aturan untuk enum, tanggal, dan pilihan jamak;
+- `fields` menyediakan nama, tipe, status wajib, dan nilai yang tersedia melalui `FORM_FIELDS`.
+
+Saat pengguna menambahkan blok JS ini sebagai konteks, alat akan membaca informasi tersebut untuk menentukan kolom mana yang harus diisi pada blok target.
+
+Kedua titik integrasi diperlukan:
+
+```jsx
+// Menjelaskan formulir kepada alat
+ctx.model.setProps({
+  aiForm: {
+    prompt: '...',
+    fields: FORM_FIELDS,
+  },
+});
+
+// Menyediakan instance Ant Design Form yang menerima nilai
+ctx.model.form = form;
+```
+
+Jika opsi berasal dari API, muat dan konversikan data sebelum mendefinisikan `FORM_FIELDS` dan memanggil `ctx.model.setProps()`. Dengan demikian, nilai `enum` yang tersedia bagi alat akan sesuai dengan opsi yang ditampilkan di halaman.
 
 ### Mendeskripsikan kolom kompleks
 

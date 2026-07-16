@@ -67,8 +67,10 @@ ctx.model.form = form;
 
 在页面中添加一个 [JS 区块](/interface-builder/blocks/other-blocks/js-block)，打开 JavaScript 编辑器，然后粘贴下面的完整代码。
 
+### 完整示例代码
+
 <details>
-<summary>查看完整示例代码</summary>
+<summary>点击展开，可直接复制</summary>
 
 ```jsx
 const React = ctx.libs.React;
@@ -268,6 +270,8 @@ const FORM_FIELDS = [
     type: 'string',
   },
 ];
+
+ctx.model.setTitle('Event Planning Request');
 
 ctx.model.setProps({
   aiForm: {
@@ -857,6 +861,57 @@ useEffect(() => {
 它让 AI 员工可以通过当前 JS 区块填写这份 Ant Design Form。
 
 清理函数用于在组件卸载或重新渲染时恢复原来的值，避免后续填写到已经关闭的表单。
+
+### 设置“选择区块”中的名称
+
+JS 区块在“选择区块”中默认显示为 `JS block`。可以使用 `ctx.model.setTitle()` 设置一个更容易识别的名称：
+
+```jsx
+ctx.model.setTitle('Event Planning Request');
+```
+
+设置后，用户选择上下文时会看到 `Event Planning Request`，更容易在同一页面的多个区块中找到目标表单。
+
+建议为不同的 JS 区块设置简短且明确的名称，并将这行代码保留在完整示例中。
+
+### 向“填写表单”工具提供表单信息
+
+`ctx.model.form` 提供了实际接收字段值的 Form 实例，工具还需要知道当前表单包含哪些字段，以及填写这些字段时应遵循哪些规则。
+
+示例通过 `ctx.model.setProps()` 将这些信息写入当前 JS 区块的 model：
+
+```jsx
+ctx.model.setProps({
+  aiForm: {
+    prompt: `This is a fillable Event Planning Request form. Use the Fill form tool when the user asks to populate it. Use the current block UID as the form target: ${ctx.model.uid}. Always use enum values instead of labels, use YYYY-MM-DD for date fields, and use an array for services.`,
+    fields: FORM_FIELDS,
+  },
+});
+```
+
+`aiForm` 中包含两项内容：
+
+- `prompt`：说明表单的用途、目标区块 UID，以及枚举、日期和多选字段的填写规则；
+- `fields`：提供完整的字段名称、类型、必填状态和可选值，具体结构由 `FORM_FIELDS` 定义。
+
+当用户把这个 JS 区块添加为 AI 员工的上下文时，“填写表单”工具会读取这些信息，判断应该向哪个区块填写哪些字段。
+
+因此，两段接入代码承担不同职责，缺一不可：
+
+```jsx
+// 告诉工具如何理解这份表单
+ctx.model.setProps({
+  aiForm: {
+    prompt: '...',
+    fields: FORM_FIELDS,
+  },
+});
+
+// 提供实际读写字段值的 Ant Design Form 实例
+ctx.model.form = form;
+```
+
+如果字段选项来自接口，应先完成请求并生成 options，再定义 `FORM_FIELDS` 和调用 `ctx.model.setProps()`，确保工具读取到的 `enum` 与页面显示的选项一致。
 
 ### 描述复杂表单字段
 
