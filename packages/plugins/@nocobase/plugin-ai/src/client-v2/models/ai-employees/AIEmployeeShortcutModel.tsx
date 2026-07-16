@@ -518,6 +518,18 @@ AIEmployeeShortcutModel.registerFlow({
                     tooltip: tExpr('Label for task selection buttons when multiple tasks exist'),
                   },
                 },
+                chatBoxUid: {
+                  type: 'string',
+                  title: tExpr('Chat box uid'),
+                  'x-decorator': 'FormItem',
+                  'x-decorator-props': {
+                    labelStyle,
+                  },
+                  'x-component': 'Input',
+                  'x-component-props': {
+                    allowClear: true,
+                  },
+                },
                 message: {
                   type: 'object',
                   properties: {

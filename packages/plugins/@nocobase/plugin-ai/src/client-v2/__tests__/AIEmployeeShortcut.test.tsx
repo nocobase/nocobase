@@ -13,11 +13,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AIEmployee, Task } from '../ai-employees/types';
 import { AIEmployeeShortcut } from '../ai-employees/AIEmployeeShortcut';
 import { getGlobalChatBoxRuntime } from '../ai-employees/chatbox/stores/runtime';
+import { clearMountedChatBoxes, registerMountedChatBox } from '../ai-employees/chatbox/stores/mounted-chat-boxes';
 
 const triggerTask = vi.fn().mockResolvedValue(undefined);
 const clear = vi.fn();
 const addContextItems = vi.fn();
 const syncContextAttachments = vi.fn();
+const messageError = vi.fn();
 
 const employee: AIEmployee = {
   username: 'atlas',
@@ -63,9 +65,16 @@ vi.mock('@nocobase/flow-engine', async () => {
       model: {
         parent: undefined,
       },
+      message: {
+        error: messageError,
+      },
     }),
   };
 });
+
+vi.mock('../locale', () => ({
+  useT: () => (text: string, params?: { uid?: string }) => (params?.uid ? `${text}:${params.uid}` : text),
+}));
 
 vi.mock('../ai-employees/chatbox/hooks/useChatBoxActions', () => ({
   useChatBoxActions: () => ({
@@ -92,6 +101,8 @@ describe('AIEmployeeShortcut', () => {
     clear.mockClear();
     addContextItems.mockClear();
     syncContextAttachments.mockClear();
+    messageError.mockClear();
+    clearMountedChatBoxes();
     getGlobalChatBoxRuntime().chatConversationModel.setCurrentConversation(undefined);
   });
 
@@ -151,5 +162,54 @@ describe('AIEmployeeShortcut', () => {
     expect(syncContextAttachments).toHaveBeenCalledWith(workContext);
     expect(clear).toHaveBeenCalledWith(undefined, undefined);
     expect(addContextItems.mock.invocationCallOrder[0]).toBeLessThan(clear.mock.invocationCallOrder[0]);
+  });
+
+  it('routes a task to the mounted AI chat box selected by chatBoxUid', async () => {
+    const task: Task = { title: 'Analyze in block', chatBoxUid: 'chat-box-1' };
+    const workContext = [{ type: 'flow-model' as const, uid: 'block-1' }];
+    const targetTriggerTask = vi.fn().mockResolvedValue(undefined);
+    const targetClear = vi.fn();
+    const targetSyncContextItems = vi.fn();
+    registerMountedChatBox({
+      uid: 'chat-box-1',
+      runtime: getGlobalChatBoxRuntime(),
+      triggerTask: targetTriggerTask,
+      clear: targetClear,
+      syncContextItems: targetSyncContextItems,
+    });
+
+    render(
+      <AIEmployeeShortcut
+        aiEmployee={employee}
+        tasks={[task]}
+        context={{ workContext }}
+        runtime={getGlobalChatBoxRuntime()}
+      />,
+    );
+
+    fireEvent.click(screen.getByText('Analyze in block'));
+
+    await waitFor(() => {
+      expect(targetTriggerTask).toHaveBeenCalledWith({
+        aiEmployee: employee,
+        tasks: [task],
+      });
+    });
+    expect(triggerTask).not.toHaveBeenCalled();
+    expect(targetSyncContextItems).toHaveBeenCalledWith(workContext);
+    expect(addContextItems).not.toHaveBeenCalled();
+  });
+
+  it('reports a missing target AI chat box without falling back to the global chatbox', async () => {
+    const task: Task = { title: 'Analyze in missing block', chatBoxUid: 'missing-chat-box' };
+
+    render(<AIEmployeeShortcut aiEmployee={employee} tasks={[task]} runtime={getGlobalChatBoxRuntime()} />);
+
+    fireEvent.click(screen.getByText('Analyze in missing block'));
+
+    await waitFor(() => {
+      expect(messageError).toHaveBeenCalledWith('AI chat box not found:missing-chat-box');
+    });
+    expect(triggerTask).not.toHaveBeenCalled();
   });
 });

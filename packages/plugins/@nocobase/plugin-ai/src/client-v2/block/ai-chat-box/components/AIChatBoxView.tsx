@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   AddSubModelButton,
   DndProvider,
@@ -36,7 +36,10 @@ import {
 import { css } from '@emotion/css';
 import { NAMESPACE, useT } from '../../../locale';
 import { Messages } from '../../../ai-employees/chatbox/components/Messages';
+import { useChat } from '../../../ai-employees/chatbox/hooks/useChat';
 import { useChatBoxActions } from '../../../ai-employees/chatbox/hooks/useChatBoxActions';
+import { useChatMessageActions } from '../../../ai-employees/chatbox/hooks/useChatMessageActions';
+import { registerMountedChatBox } from '../../../ai-employees/chatbox/stores/mounted-chat-boxes';
 import { useChatBoxRuntime } from '../../../ai-employees/chatbox/stores/runtime';
 import type { AIChatBoxBlockModel } from '../AIChatBoxBlockModel';
 import { AIChatBoxCoreModel } from '../AIChatBoxCoreModel';
@@ -345,7 +348,10 @@ export const AIChatBoxView: React.FC<{
   const t = useT();
   const { token } = theme.useToken();
   const runtime = useChatBoxRuntime();
-  const { startNewConversation } = useChatBoxActions(runtime);
+  const { clear, startNewConversation, triggerTask } = useChatBoxActions(runtime);
+  const { syncContextAttachments } = useChatMessageActions(runtime);
+  const currentConversation = runtime.chatConversationModel.currentConversation;
+  const chat = useChat(currentConversation, runtime);
   const [showConversations, setShowConversations] = useState(false);
   const [showMessagesPanel, setShowMessagesPanel] = useState(false);
   const flowSettingsEnabled = !!model.context.flowSettingsEnabled;
@@ -359,6 +365,22 @@ export const AIChatBoxView: React.FC<{
     setShowConversations(false);
     setShowMessagesPanel(false);
   };
+
+  useEffect(() => {
+    return registerMountedChatBox({
+      uid: model.uid,
+      runtime,
+      triggerTask,
+      clear,
+      syncContextItems: (items) => {
+        if (!items.length) {
+          return;
+        }
+        chat.addContextItems(items);
+        syncContextAttachments(items);
+      },
+    });
+  }, [chat, clear, model.uid, runtime, syncContextAttachments, triggerTask]);
 
   return (
     <Layout

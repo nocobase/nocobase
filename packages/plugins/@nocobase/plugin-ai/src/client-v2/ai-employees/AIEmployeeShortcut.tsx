@@ -16,13 +16,22 @@ import { AIEmployeeProfileCard } from './ProfileCard';
 import { useChat } from './chatbox/hooks/useChat';
 import { useChatBoxActions } from './chatbox/hooks/useChatBoxActions';
 import { useChatMessageActions } from './chatbox/hooks/useChatMessageActions';
+import { getMountedChatBox, type MountedChatBoxEntry } from './chatbox/stores/mounted-chat-boxes';
 import { type ChatBoxRuntime, useResolvedChatBoxRuntime } from './chatbox/stores/runtime';
+import { useT } from '../locale';
 import type { AIEmployee, ContextItem, Task } from './types';
 
 type ShortcutAIEmployee = Pick<AIEmployee, 'username'> & Partial<AIEmployee>;
 
 type ShortcutContext = {
   workContext?: ContextItem[];
+};
+
+const getTargetChatBoxUid = (taskOptions?: Task[]) => {
+  if (taskOptions?.length !== 1) {
+    return undefined;
+  }
+  return taskOptions[0]?.chatBoxUid;
 };
 
 export const AIEmployeeShortcut: React.FC<{
@@ -55,6 +64,7 @@ export const AIEmployeeShortcut: React.FC<{
   }) => {
     const resolvedRuntime = useResolvedChatBoxRuntime(runtime);
     const ctx = useFlowContext<FlowModelContext>();
+    const t = useT();
     const [focus, setFocus] = useState(false);
     const { data: aiEmployees = [], loading } = useRequest(async (): Promise<AIEmployee[]> => {
       const response = await ctx.app.apiClient.resource('aiEmployees').listByUser();
@@ -108,29 +118,54 @@ export const AIEmployeeShortcut: React.FC<{
       return nextWorkContext;
     }, [context?.workContext, ctx.engine, ctx.model.parent]);
 
-    const syncShortcutContext = useCallback(() => {
-      const shortcutContext = getShortcutContext();
-      if (!shortcutContext.length) {
-        return;
-      }
-      chat.addContextItems(shortcutContext);
-      syncContextAttachments(shortcutContext);
-    }, [chat, getShortcutContext, syncContextAttachments]);
+    const syncShortcutContext = useCallback(
+      (targetChatBox?: MountedChatBoxEntry) => {
+        const shortcutContext = getShortcutContext();
+        if (!shortcutContext.length) {
+          return;
+        }
+        if (targetChatBox) {
+          targetChatBox.syncContextItems(shortcutContext);
+          return;
+        }
+        chat.addContextItems(shortcutContext);
+        syncContextAttachments(shortcutContext);
+      },
+      [chat, getShortcutContext, syncContextAttachments],
+    );
 
-    const openGlobalChatBox = useCallback(
+    const showChatBoxNotFound = useCallback(
+      (chatBoxUid: string) => {
+        ctx.message?.error?.(t('AI chat box not found', { uid: chatBoxUid }));
+      },
+      [ctx.message, t],
+    );
+
+    const openChatBox = useCallback(
       async (taskOptions?: Task[]) => {
         if (!resolvedAIEmployee) {
           return;
         }
         const resolvedTasks = taskOptions ?? tasks;
+        const targetChatBoxUid = getTargetChatBoxUid(resolvedTasks);
+        const targetChatBox = targetChatBoxUid ? getMountedChatBox(targetChatBoxUid) : undefined;
+        if (targetChatBoxUid && !targetChatBox) {
+          showChatBoxNotFound(targetChatBoxUid);
+          return;
+        }
         const shouldClearShortcutContext = resolvedTasks?.length === 1 && auto !== false && resolvedTasks[0]?.autoSend;
-        await triggerTask({ aiEmployee: resolvedAIEmployee, tasks: resolvedTasks, auto });
-        syncShortcutContext();
+        const taskOptionsPayload = { aiEmployee: resolvedAIEmployee, tasks: resolvedTasks, auto };
+        await (targetChatBox ? targetChatBox.triggerTask(taskOptionsPayload) : triggerTask(taskOptionsPayload));
+        syncShortcutContext(targetChatBox);
         if (shouldClearShortcutContext) {
-          clear(undefined, undefined);
+          if (targetChatBox) {
+            targetChatBox.clear(undefined, undefined);
+          } else {
+            clear(undefined, undefined);
+          }
         }
       },
-      [auto, clear, resolvedAIEmployee, syncShortcutContext, tasks, triggerTask],
+      [auto, clear, resolvedAIEmployee, showChatBoxNotFound, syncShortcutContext, tasks, triggerTask],
     );
 
     const handleTaskClick = useCallback(
@@ -142,10 +177,17 @@ export const AIEmployeeShortcut: React.FC<{
         if (!resolvedAIEmployee) {
           return;
         }
-        syncShortcutContext();
-        triggerTask({ aiEmployee: resolvedAIEmployee, tasks: [task] }).catch(console.error);
+        const targetChatBoxUid = task.chatBoxUid;
+        const targetChatBox = targetChatBoxUid ? getMountedChatBox(targetChatBoxUid) : undefined;
+        if (targetChatBoxUid && !targetChatBox) {
+          showChatBoxNotFound(targetChatBoxUid);
+          return;
+        }
+        syncShortcutContext(targetChatBox);
+        const taskOptions = { aiEmployee: resolvedAIEmployee, tasks: [task] };
+        (targetChatBox ? targetChatBox.triggerTask(taskOptions) : triggerTask(taskOptions)).catch(console.error);
       },
-      [onTaskClick, resolvedAIEmployee, syncShortcutContext, triggerTask],
+      [onTaskClick, resolvedAIEmployee, showChatBoxNotFound, syncShortcutContext, triggerTask],
     );
 
     const handleClick = useCallback(() => {
@@ -153,8 +195,8 @@ export const AIEmployeeShortcut: React.FC<{
         onClick();
         return;
       }
-      openGlobalChatBox().catch(console.error);
-    }, [onClick, openGlobalChatBox]);
+      openChatBox().catch(console.error);
+    }, [onClick, openChatBox]);
 
     if (loading || !resolvedAIEmployee) {
       return null;

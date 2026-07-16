@@ -53,6 +53,32 @@ describe('AI employee v2 action models', () => {
     expect(flow?.getStep('editTasks')).toBeDefined();
   });
 
+  it('adds chat box uid to shortcut task settings', async () => {
+    const step = AIEmployeeShortcutModel.globalFlowRegistry.getFlow('shortcutSettings')?.getStep('editTasks');
+    const uiSchema = step?.serialize().uiSchema as (ctx: FlowModelContext) => Promise<{
+      tasks?: {
+        items?: {
+          properties?: Record<string, { title?: unknown; ['x-component']?: string }>;
+        };
+      };
+    }>;
+    const ctx = {
+      model: {
+        context: {},
+      },
+      aiConfigRepository: {
+        getAIEmployees: vi.fn().mockResolvedValue([]),
+      },
+    } as unknown as FlowModelContext;
+
+    const schema = await uiSchema(ctx);
+
+    expect(schema.tasks?.items?.properties?.chatBoxUid).toMatchObject({
+      title: expect.anything(),
+      'x-component': 'Input',
+    });
+  });
+
   it('hides the task settings dialog while selecting work context', () => {
     const step = AIEmployeeShortcutModel.globalFlowRegistry.getFlow('shortcutSettings')?.getStep('editTasks');
     const uiMode = step?.serialize().uiMode as () => {

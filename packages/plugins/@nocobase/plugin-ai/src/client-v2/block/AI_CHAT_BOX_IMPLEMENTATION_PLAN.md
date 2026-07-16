@@ -473,7 +473,7 @@ AI employee task 需要支持 `Chat box uid`：
 
 ### T9. AI employee task 定向 AI chat box
 
-状态：`Pending`
+状态：`Done`
 
 依赖：T8
 
@@ -494,6 +494,19 @@ AI employee task 需要支持 `Chat box uid`：
 - Work context 不合并测试。
 - unmount 清理 registry 测试。
 - 运行 touched files eslint。
+
+测试结果：
+
+- `yarn eslint --fix` touched T9 TS/TSX files 通过。
+- `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/mounted-chat-boxes.test.ts --run --reporter=verbose` 通过。
+- `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/block/ai-chat-box/__tests__/AIChatBoxView.registry.test.tsx --run --reporter=verbose` 通过。
+- `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/AIEmployeeShortcut.test.tsx --run --reporter=verbose` 通过。
+- `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/ai-employee-action-model.test.ts --run --reporter=verbose` 通过。
+- `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/block/ai-chat-box/__tests__/AIChatBoxView.test.ts --run --reporter=verbose` 通过。
+- `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/hooks/__tests__/chatbox-actions.test.tsx --run --reporter=verbose` 通过。
+- `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/block/ai-chat-box/__tests__/MessagesAndSender.test.tsx --run --reporter=verbose` 通过。
+- `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/chatbox-global-behavior.test.tsx --run --reporter=verbose` 通过。
+- `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/public-api-contract.test.ts --run --reporter=verbose` 通过。
 
 ### T10. 最终回归与验收
 

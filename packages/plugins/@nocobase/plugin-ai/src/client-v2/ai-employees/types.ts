@@ -200,6 +200,7 @@ export type TaskMessage = {
 
 export type Task = {
   title?: string;
+  chatBoxUid?: string;
   message?: TaskMessage;
   autoSend?: boolean;
   skillSettings?: SkillSettings;
