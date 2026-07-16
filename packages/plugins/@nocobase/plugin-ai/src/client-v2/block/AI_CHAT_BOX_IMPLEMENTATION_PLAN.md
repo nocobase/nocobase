@@ -214,7 +214,7 @@ AI employee task 需要支持 `Chat box uid`：
 
 ### T1. runtime mode 与 ChatSenderModel 基础能力
 
-状态：`Pending`
+状态：`Done`
 
 依赖：T0
 
@@ -234,6 +234,16 @@ AI employee task 需要支持 `Chat box uid`：
 - 覆盖 `ChatSenderModel` 状态读写、reset、隔离。
 - 覆盖 `Messages` 在 `block` mode 下不调用 workflow-task readonly 刷新。
 - 运行 touched files eslint。
+
+测试结果：
+
+- `yarn eslint --fix` touched T1 files 通过。
+- `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/chatbox-runtime.test.tsx --run --reporter=verbose` 通过。
+- `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/chatbox-models.test.ts --run --reporter=verbose` 通过。
+- `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/components/__tests__/Messages.test.tsx --run --reporter=verbose` 通过。
+- `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/public-api-contract.test.ts --run --reporter=verbose` 通过。
+- `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/chatbox-global-behavior.test.tsx --run --reporter=verbose` 通过。
+- `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/AIEmployeeShortcut.test.tsx --run --reporter=verbose` 通过。
 
 ### T2. 生产 AIChatBox 模型和文件骨架
 

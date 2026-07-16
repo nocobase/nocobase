@@ -53,13 +53,13 @@ export const Sender: React.FC = observer(() => {
   const t = useT();
   const senderRef = useRef<SenderRef | null>(null);
   const runtime = useChatBoxRuntime();
-  const { chatBoxModel, chatConversationModel } = runtime;
+  const { chatBoxModel, chatConversationModel, chatSenderModel } = runtime;
   const currentConversation = chatConversationModel.currentConversation;
   const currentEmployee = chatBoxModel.currentEmployee;
-  const senderValue = chatBoxModel.senderValue;
+  const senderValue = chatSenderModel.senderValue;
   const readonly = chatBoxModel.readonly;
-  const isEditingMessage = chatBoxModel.isEditingMessage;
-  const editingMessageId = chatBoxModel.editingMessageId;
+  const isEditingMessage = chatSenderModel.isEditingMessage;
+  const editingMessageId = chatSenderModel.editingMessageId;
   const webSearch = chatConversationModel.webSearch;
   const chat = useChat(currentConversation, runtime);
   const attachments = chat.use.attachments();
@@ -73,11 +73,11 @@ export const Sender: React.FC = observer(() => {
   const [value, setValue] = useState(senderValue);
 
   useEffect(() => {
-    chatBoxModel.setSenderRef(senderRef);
+    chatSenderModel.setSenderRef(senderRef);
     return () => {
-      chatBoxModel.setSenderRef(null);
+      chatSenderModel.setSenderRef(null);
     };
-  }, [chatBoxModel]);
+  }, [chatSenderModel]);
 
   useEffect(() => {
     setValue(senderValue);
@@ -87,9 +87,9 @@ export const Sender: React.FC = observer(() => {
     if ((!content && !contextItems.length) || !currentEmployee || responseLoading || readonly) {
       return;
     }
-    chatBoxModel.setShowSenderHint(false);
+    chatSenderModel.setShowSenderHint(false);
     setValue('');
-    chatBoxModel.setSenderValue('');
+    chatSenderModel.setSenderValue('');
     send({
       sessionId: currentConversation,
       aiEmployee: currentEmployee,
@@ -181,13 +181,13 @@ export const Sender: React.FC = observer(() => {
         ref={senderRef}
         onChange={(nextValue) => {
           setValue(nextValue);
-          chatBoxModel.setSenderValue(nextValue);
+          chatSenderModel.setSenderValue(nextValue);
         }}
         onPaste={handlePaste}
         onSubmit={submit}
         onCancel={cancelRequest}
         onBlur={() => {
-          chatBoxModel.setShowSenderHint(false);
+          chatSenderModel.setShowSenderHint(false);
         }}
         header={<SenderHeader />}
         loading={responseLoading}
@@ -202,10 +202,10 @@ export const Sender: React.FC = observer(() => {
 });
 
 const SenderHeader: React.FC = observer(() => {
-  const { chatBoxModel } = useChatBoxRuntime();
+  const { chatBoxModel, chatSenderModel } = useChatBoxRuntime();
   const currentEmployee = chatBoxModel.currentEmployee;
-  const isEditingMessage = chatBoxModel.isEditingMessage;
-  const isShowSenderHint = chatBoxModel.isShowSenderHint;
+  const isEditingMessage = chatSenderModel.isEditingMessage;
+  const isShowSenderHint = chatSenderModel.isShowSenderHint;
   const readonly = chatBoxModel.readonly;
   const runtime = useChatBoxRuntime();
   const currentConversation = runtime.chatConversationModel.currentConversation;
@@ -248,7 +248,7 @@ const SenderFooter: React.FC<{
   const { SendButton, LoadingButton } = components;
   const senderButtonRef = useRef<GetRef<typeof Button> | null>(null);
   const runtime = useChatBoxRuntime();
-  const { chatBoxModel } = runtime;
+  const { chatBoxModel, chatSenderModel } = runtime;
   const currentEmployee = chatBoxModel.currentEmployee;
   const currentConversation = runtime.chatConversationModel.currentConversation;
   const chat = useChat(currentConversation, runtime);
@@ -256,9 +256,9 @@ const SenderFooter: React.FC<{
   const loading = chat.use.responseLoading();
   const addContextItems = chat.addContextItems;
   const removeContextItem = chat.removeContextItem;
-  const senderValue = chatBoxModel.senderValue;
+  const senderValue = chatSenderModel.senderValue;
   const contextItems = chat.use.contextItems();
-  const senderRef = chatBoxModel.senderRef as React.MutableRefObject<SenderRef | null> | null;
+  const senderRef = chatSenderModel.senderRef as React.MutableRefObject<SenderRef | null> | null;
   const disabled = !currentEmployee || readonly;
   const handleEmptySubmit = () => {
     if (!senderValue && contextItems.length) {
@@ -433,7 +433,7 @@ const EditMessageHeader: React.FC = observer(() => {
   const t = useT();
   const { token } = theme.useToken();
   const runtime = useChatBoxRuntime();
-  const { chatBoxModel } = runtime;
+  const { chatBoxModel, chatSenderModel } = runtime;
   const currentConversation = runtime.chatConversationModel.currentConversation;
   const chat = useChat(currentConversation, runtime);
   const { loadMessages, finishEditingMessage } = useChatMessageActions(runtime);
@@ -452,7 +452,7 @@ const EditMessageHeader: React.FC = observer(() => {
       closable
       onClose={() => {
         finishEditingMessage();
-        chatBoxModel.setSenderValue('');
+        chatSenderModel.setSenderValue('');
         chat.setMessages([]);
         loadMessages(currentConversation).catch(console.error);
       }}

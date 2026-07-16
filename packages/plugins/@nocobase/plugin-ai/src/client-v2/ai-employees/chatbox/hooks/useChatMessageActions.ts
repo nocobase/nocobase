@@ -102,7 +102,7 @@ export const useChatMessageActions = (runtime?: ChatBoxRuntime) => {
   const api = app.apiClient;
   const aiConfigRepository = useAIConfigRepository();
   const resolvedRuntime = useResolvedChatBoxRuntime(runtime);
-  const { chatBoxModel, chatConversationModel, chatToolCallModel } = resolvedRuntime;
+  const { chatBoxModel, chatConversationModel, chatSenderModel, chatToolCallModel } = resolvedRuntime;
 
   const currentConversation = chatConversationModel.currentConversation;
   const chat = useChat(currentConversation, resolvedRuntime);
@@ -758,7 +758,7 @@ export const useChatMessageActions = (runtime?: ChatBoxRuntime) => {
       attachments: index === 0 ? attachments : undefined,
       workContext: index === 0 ? parsedWorkContext : undefined,
     }));
-    if (lastRenderedMessage?.type === 'conversation-group' && !chatBoxModel.isEditingMessage) {
+    if (lastRenderedMessage?.type === 'conversation-group' && !chatSenderModel.isEditingMessage) {
       sessionChat.addSubAgentMessages(
         lastRenderedMessage.key,
         sendMsgs.map((msg, index) => ({
@@ -813,7 +813,7 @@ export const useChatMessageActions = (runtime?: ChatBoxRuntime) => {
     sessionChat.setWebSearching(null);
     sessionChat.setResponseLoading(true);
 
-    if (lastRenderedMessage?.type === 'conversation-group' && !chatBoxModel.isEditingMessage) {
+    if (lastRenderedMessage?.type === 'conversation-group' && !chatSenderModel.isEditingMessage) {
       sessionChat.addSubAgentMessage(lastRenderedMessage.key, {
         key: randomId(),
         role: lastRenderedMessage.roleName,
@@ -1095,8 +1095,8 @@ export const useChatMessageActions = (runtime?: ChatBoxRuntime) => {
       const sessionChat = getSessionChat(activeConversation);
       const currentMessages = sessionChat.messages;
       const index = currentMessages.findIndex((m) => m.key === msg.messageId);
-      chatBoxModel.setIsEditingMessage(true);
-      chatBoxModel.setEditingMessageId(msg.messageId);
+      chatSenderModel.setIsEditingMessage(true);
+      chatSenderModel.setEditingMessageId(msg.messageId);
       sessionChat.setMessages(currentMessages.slice(0, index));
       if (msg.attachments) {
         sessionChat.setAttachments(msg.attachments);
@@ -1105,17 +1105,17 @@ export const useChatMessageActions = (runtime?: ChatBoxRuntime) => {
         sessionChat.setContextItems(msg.workContext);
       }
     },
-    [chatBoxModel, chatConversationModel, getSessionChat],
+    [chatConversationModel, chatSenderModel, getSessionChat],
   );
 
   const finishEditingMessage = useCallback(() => {
     const activeConversation = chatConversationModel.currentConversation;
     const sessionChat = getSessionChat(activeConversation);
-    chatBoxModel.setIsEditingMessage(false);
-    chatBoxModel.setEditingMessageId(undefined);
+    chatSenderModel.setIsEditingMessage(false);
+    chatSenderModel.setEditingMessageId(undefined);
     sessionChat.setAttachments([]);
     sessionChat.setContextItems([]);
-  }, [chatBoxModel, chatConversationModel, getSessionChat]);
+  }, [chatConversationModel, chatSenderModel, getSessionChat]);
 
   return {
     syncContextAttachments,

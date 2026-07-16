@@ -13,6 +13,7 @@ import type { AIEmployee, ContextItem, Conversation, Message, ToolCall } from '.
 import { ChatBoxModel } from '../chat-box';
 import { ChatConversationModel } from '../chat-conversations';
 import { ChatMessageModel, CHAT_DEFAULT_SESSION_KEY } from '../chat-messages';
+import { ChatSenderModel } from '../chat-sender';
 import { ChatToolCallModel } from '../chat-tool-call';
 import { ChatToolModel } from '../chat-tools';
 import { WorkflowTaskModel, type WorkflowTask } from '../workflow-tasks';
@@ -106,6 +107,77 @@ describe('chatbox runtime models', () => {
     expect(model.roles).toHaveProperty('atlas');
     expect(model.model).toEqual({ llmService: 'openai', model: 'gpt' });
     expect(model.readonly).toBe(true);
+  });
+
+  it('proxies legacy ChatBoxModel sender access to an attached ChatSenderModel', () => {
+    const chatBoxModel = new ChatBoxModel();
+    const chatSenderModel = new ChatSenderModel();
+
+    chatBoxModel.attachSenderModel(chatSenderModel);
+    chatBoxModel.setSenderValue('proxied draft');
+    chatBoxModel.setShowSenderHint(true);
+    chatBoxModel.setIsEditingMessage(true);
+    chatBoxModel.setEditingMessageId('message-a');
+
+    expect(chatSenderModel.senderValue).toBe('proxied draft');
+    expect(chatSenderModel.isShowSenderHint).toBe(true);
+    expect(chatSenderModel.isEditingMessage).toBe(true);
+    expect(chatSenderModel.editingMessageId).toBe('message-a');
+
+    chatSenderModel.setSenderValue('sender draft');
+    expect(chatBoxModel.senderValue).toBe('sender draft');
+  });
+
+  it('updates ChatSenderModel composer state and resets transient values', () => {
+    const model = new ChatSenderModel();
+
+    model.setSenderValue('draft');
+    model.setSenderPlaceholder('Ask');
+    model.setShowSenderHint(true);
+    model.setIsEditingMessage(true);
+    model.setEditingMessageId('message-a');
+    model.setSystemMessage('system');
+    model.setSkillSettings({ skills: ['skill-a'] });
+    model.addAttachments([{ filename: 'a.txt' }, { filename: 'b.txt' }]);
+    model.removeAttachment('a.txt');
+    model.addContextItems([contextItem('record', '1'), contextItem('record', '1')]);
+    model.addContextItems(contextItem('record', '2'));
+
+    expect(model.senderValue).toBe('draft');
+    expect(model.senderPlaceholder).toBe('Ask');
+    expect(model.isShowSenderHint).toBe(true);
+    expect(model.isEditingMessage).toBe(true);
+    expect(model.editingMessageId).toBe('message-a');
+    expect(model.systemMessage).toBe('system');
+    expect(model.skillSettings).toEqual({ skills: ['skill-a'] });
+    expect(model.attachments).toEqual([{ filename: 'b.txt' }]);
+    expect(model.contextItems).toEqual([contextItem('record', '1'), contextItem('record', '2')]);
+
+    model.reset();
+
+    expect(model.senderValue).toBe('');
+    expect(model.senderPlaceholder).toBe('');
+    expect(model.senderRef).toEqual({ current: null });
+    expect(model.isShowSenderHint).toBe(false);
+    expect(model.isEditingMessage).toBe(false);
+    expect(model.editingMessageId).toBeUndefined();
+    expect(model.attachments).toEqual([]);
+    expect(model.contextItems).toEqual([]);
+    expect(model.systemMessage).toBe('');
+    expect(model.skillSettings).toBeUndefined();
+  });
+
+  it('keeps ChatSenderModel state isolated per instance', () => {
+    const first = new ChatSenderModel();
+    const second = new ChatSenderModel();
+
+    first.setSenderValue('first');
+    first.addAttachments({ filename: 'first.txt' });
+    first.addContextItems(contextItem('record', '1'));
+
+    expect(second.senderValue).toBe('');
+    expect(second.attachments).toEqual([]);
+    expect(second.contextItems).toEqual([]);
   });
 
   it('keeps ChatMessageModel session state isolated and returns cloned snapshots', () => {

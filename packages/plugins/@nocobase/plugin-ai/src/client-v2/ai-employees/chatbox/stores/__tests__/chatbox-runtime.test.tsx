@@ -76,7 +76,7 @@ afterEach(() => {
   runtime.chatBoxModel.setOpen(false);
   runtime.chatBoxModel.setExpanded(false);
   runtime.chatBoxModel.setShowDebugPanel(false);
-  runtime.chatBoxModel.setSenderValue('');
+  runtime.chatSenderModel.setSenderValue('');
   runtime.chatToolModel.setActiveTool(null);
   runtime.chatToolModel.setOpenToolModal(false);
   runtime.chatConversationModel.setCurrentConversation(undefined);
@@ -88,16 +88,16 @@ afterEach(() => {
 
 const RuntimeReader: React.FC = () => {
   const runtime = useChatBoxRuntime();
-  return <div data-testid="runtime-reader">{runtime.chatBoxModel.senderValue || 'empty'}</div>;
+  return <div data-testid="runtime-reader">{runtime.chatSenderModel.senderValue || 'empty'}</div>;
 };
 
 const ObservedRuntimeReader: React.FC = observer(() => {
-  const { chatBoxModel, chatMessageModel, chatToolModel } = useChatBoxRuntime();
+  const { chatBoxModel, chatMessageModel, chatSenderModel, chatToolModel } = useChatBoxRuntime();
   const sessionState = chatMessageModel.getSessionState('session-a');
   return (
     <div data-testid="observed-runtime-reader">
       {[
-        chatBoxModel.senderValue || 'empty',
+        chatSenderModel.senderValue || 'empty',
         chatBoxModel.currentEmployee?.username || 'no-employee',
         chatBoxModel.model?.model || 'no-model',
         sessionState.messages.length,
@@ -110,7 +110,7 @@ const ObservedRuntimeReader: React.FC = observer(() => {
 describe('chatbox runtime context', () => {
   it('returns the provided runtime from ChatBoxRuntimeProvider', () => {
     const runtime = createChatBoxRuntime();
-    runtime.chatBoxModel.setSenderValue('provided');
+    runtime.chatSenderModel.setSenderValue('provided');
     const wrapper: React.FC<{ children?: React.ReactNode }> = ({ children }) => (
       <ChatBoxRuntimeProvider runtime={runtime}>{children}</ChatBoxRuntimeProvider>
     );
@@ -118,7 +118,14 @@ describe('chatbox runtime context', () => {
     const { result } = renderHook(() => useChatBoxRuntime(), { wrapper });
 
     expect(result.current).toBe(runtime);
+    expect(result.current.chatSenderModel.senderValue).toBe('provided');
     expect(result.current.chatBoxModel.senderValue).toBe('provided');
+  });
+
+  it('defaults new runtimes to global mode and supports block mode', () => {
+    expect(createChatBoxRuntime().mode).toBe('global');
+    expect(createChatBoxRuntime({ mode: 'block' }).mode).toBe('block');
+    expect(getGlobalChatBoxRuntime().mode).toBe('global');
   });
 
   it('throws a clear error when used without a provider', () => {
@@ -157,15 +164,17 @@ describe('chatbox runtime context', () => {
 
     expect(secondRuntime).toBe(firstRuntime);
     expect(secondRuntime.chatBoxModel).toBe(firstRuntime.chatBoxModel);
+    expect(secondRuntime.chatSenderModel).toBe(firstRuntime.chatSenderModel);
     expect(secondRuntime.chatConversationModel).toBe(firstRuntime.chatConversationModel);
     expect(secondRuntime.chatMessageModel).toBe(firstRuntime.chatMessageModel);
     expect(secondRuntime.workflowTaskModel).toBe(firstRuntime.workflowTaskModel);
   });
 
-  it('creates isolated conversation and workflow models per runtime', () => {
+  it('creates isolated sender, conversation, and workflow models per runtime', () => {
     const firstRuntime = createChatBoxRuntime();
     const secondRuntime = createChatBoxRuntime();
 
+    firstRuntime.chatSenderModel.setSenderValue('first draft');
     firstRuntime.chatConversationModel.setCurrentConversation('session-a');
     firstRuntime.chatConversationModel.setUnreadCount(1);
     firstRuntime.workflowTaskModel.setWorkflowTasks([
@@ -178,6 +187,7 @@ describe('chatbox runtime context', () => {
       },
     ]);
 
+    expect(secondRuntime.chatSenderModel.senderValue).toBe('');
     expect(secondRuntime.chatConversationModel.currentConversation).toBeUndefined();
     expect(secondRuntime.chatConversationModel.unreadCount).toBe(0);
     expect(secondRuntime.workflowTaskModel.workflowTasks).toEqual([]);
@@ -185,7 +195,7 @@ describe('chatbox runtime context', () => {
   });
 
   it('provides the global runtime from ChatBoxLayout', () => {
-    getGlobalChatBoxRuntime().chatBoxModel.setSenderValue('layout-runtime');
+    getGlobalChatBoxRuntime().chatSenderModel.setSenderValue('layout-runtime');
 
     render(
       <ChatBoxLayout>
@@ -246,7 +256,7 @@ describe('chatbox runtime context', () => {
     expect(screen.getByTestId('observed-runtime-reader').textContent).toBe('empty|no-employee|no-model|0|tool-closed');
 
     act(() => {
-      runtime.chatBoxModel.setSenderValue('draft');
+      runtime.chatSenderModel.setSenderValue('draft');
       runtime.chatBoxModel.setCurrentEmployee({ username: 'atlas', nickname: 'Atlas' });
       runtime.chatBoxModel.setModel({ llmService: 'openai', model: 'gpt-4.1' });
       runtime.chatMessageModel.addSessionMessage('session-a', {

@@ -11,6 +11,7 @@ import type { Bubble, Sender } from '@ant-design/x';
 import type { GetProp, GetRef } from 'antd';
 import { action, define, observable } from '@nocobase/flow-engine';
 import type { AIEmployee } from '../../types';
+import type { ChatSenderModel } from './chat-sender';
 
 type RolesType = GetProp<typeof Bubble.List, 'roles'>;
 type ChatBoxTaskVariables = {
@@ -24,6 +25,16 @@ export interface ModelRef {
 }
 
 export class ChatBoxModel {
+  private senderModel?: ChatSenderModel;
+  private legacySenderValue = '';
+  private legacySenderPlaceholder = '';
+  private legacyIsEditingMessage = false;
+  private legacyEditingMessageId: string | null | undefined = null;
+  private legacySenderRef: React.MutableRefObject<GetRef<typeof Sender> | null> | null = {
+    current: null,
+  };
+  private legacyIsShowSenderHint = false;
+
   open = false;
   expanded = false;
   collapsed = false;
@@ -31,18 +42,10 @@ export class ChatBoxModel {
   minimize = false;
 
   currentEmployee: AIEmployee | null | undefined = null;
-  senderValue = '';
-  senderPlaceholder = '';
   roles: RolesType = observable.shallow({});
   taskVariables: ChatBoxTaskVariables = observable.shallow({});
 
-  isEditingMessage = false;
-  editingMessageId: string | null | undefined = null;
-
   chatBoxRef: React.MutableRefObject<HTMLDivElement | null> | null = {
-    current: null,
-  };
-  senderRef: React.MutableRefObject<GetRef<typeof Sender> | null> | null = {
     current: null,
   };
   showCodeHistory = false;
@@ -51,7 +54,6 @@ export class ChatBoxModel {
 
   showDebugPanel = false;
   readonly = false;
-  isShowSenderHint = false;
 
   constructor() {
     define(this, {
@@ -61,19 +63,20 @@ export class ChatBoxModel {
       showConversations: observable.ref,
       minimize: observable.ref,
       currentEmployee: observable.ref,
-      senderValue: observable.ref,
-      senderPlaceholder: observable.ref,
+      legacySenderValue: observable.ref,
+      legacySenderPlaceholder: observable.ref,
       roles: observable.shallow,
       taskVariables: observable.shallow,
-      isEditingMessage: observable.ref,
-      editingMessageId: observable.ref,
+      legacyIsEditingMessage: observable.ref,
+      legacyEditingMessageId: observable.ref,
       chatBoxRef: observable.ref,
-      senderRef: observable.ref,
+      legacySenderRef: observable.ref,
       showCodeHistory: observable.ref,
       model: observable.ref,
       showDebugPanel: observable.ref,
       readonly: observable.ref,
-      isShowSenderHint: observable.ref,
+      legacyIsShowSenderHint: observable.ref,
+      attachSenderModel: action,
       setOpen: action,
       setExpanded: action,
       setCollapsed: action,
@@ -96,6 +99,82 @@ export class ChatBoxModel {
       setShowSenderHint: action,
     });
   }
+
+  get senderValue() {
+    return this.senderModel?.senderValue ?? this.legacySenderValue;
+  }
+
+  set senderValue(value: string) {
+    if (this.senderModel) {
+      this.senderModel.setSenderValue(value);
+      return;
+    }
+    this.legacySenderValue = value;
+  }
+
+  get senderPlaceholder() {
+    return this.senderModel?.senderPlaceholder ?? this.legacySenderPlaceholder;
+  }
+
+  set senderPlaceholder(placeholder: string) {
+    if (this.senderModel) {
+      this.senderModel.setSenderPlaceholder(placeholder);
+      return;
+    }
+    this.legacySenderPlaceholder = placeholder;
+  }
+
+  get isEditingMessage() {
+    return this.senderModel?.isEditingMessage ?? this.legacyIsEditingMessage;
+  }
+
+  set isEditingMessage(isEditing: boolean) {
+    if (this.senderModel) {
+      this.senderModel.setIsEditingMessage(isEditing);
+      return;
+    }
+    this.legacyIsEditingMessage = isEditing;
+  }
+
+  get editingMessageId() {
+    return this.senderModel?.editingMessageId ?? this.legacyEditingMessageId;
+  }
+
+  set editingMessageId(id: string | null | undefined) {
+    if (this.senderModel) {
+      this.senderModel.setEditingMessageId(id);
+      return;
+    }
+    this.legacyEditingMessageId = id;
+  }
+
+  get senderRef() {
+    return this.senderModel?.senderRef ?? this.legacySenderRef;
+  }
+
+  set senderRef(ref: React.MutableRefObject<GetRef<typeof Sender> | null> | null) {
+    if (this.senderModel) {
+      this.senderModel.setSenderRef(ref);
+      return;
+    }
+    this.legacySenderRef = ref;
+  }
+
+  get isShowSenderHint() {
+    return this.senderModel?.isShowSenderHint ?? this.legacyIsShowSenderHint;
+  }
+
+  set isShowSenderHint(isShowSenderHint: boolean) {
+    if (this.senderModel) {
+      this.senderModel.setShowSenderHint(isShowSenderHint);
+      return;
+    }
+    this.legacyIsShowSenderHint = isShowSenderHint;
+  }
+
+  attachSenderModel = (senderModel: ChatSenderModel) => {
+    this.senderModel = senderModel;
+  };
 
   setOpen = (open: boolean) => {
     this.open = open;

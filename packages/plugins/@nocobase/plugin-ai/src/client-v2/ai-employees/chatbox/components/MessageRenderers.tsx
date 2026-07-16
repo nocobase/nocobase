@@ -324,8 +324,8 @@ export const UserMessage: React.FC<{
   const t = useT();
   const { token } = theme.useToken();
   const runtime = useChatBoxRuntime();
-  const { chatBoxModel } = runtime;
-  const senderRef = chatBoxModel.senderRef;
+  const { chatBoxModel, chatSenderModel } = runtime;
+  const senderRef = chatSenderModel.senderRef;
   const readonly = chatBoxModel.readonly;
   const { startEditingMessage } = useChatMessageActions(runtime);
   const footerButtonStyle: React.CSSProperties = {
@@ -369,7 +369,7 @@ export const UserMessage: React.FC<{
                       ...msg,
                       messageId: msg.messageId,
                     });
-                    chatBoxModel.setSenderValue(stringifyContent(msg.content));
+                    chatSenderModel.setSenderValue(stringifyContent(msg.content));
                     senderRef?.current?.focus();
                   }}
                 />

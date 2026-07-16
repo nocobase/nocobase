@@ -63,14 +63,14 @@ const WorkflowTaskOutputCardBase: React.FC<ToolsUIProperties<WorkflowTaskOutputA
   const app = useApp();
   const api = app.apiClient;
   const runtime = useChatBoxRuntime();
-  const { chatBoxModel, chatConversationModel, workflowTaskModel } = runtime;
+  const { chatBoxModel, chatConversationModel, chatSenderModel, workflowTaskModel } = runtime;
   const currentConversation = chatConversationModel.currentConversation;
   const currentWorkflowTask = workflowTaskModel.currentWorkflowTask;
   const { getWorkflowTaskBySession } = useWorkflowTasks(runtime);
   const [action, setAction] = useState<'approve' | 'reject' | 'revise' | null>(null);
   const readonly = chatBoxModel.readonly;
   const disabled = toolCall.invokeStatus !== 'interrupted' || Boolean(action) || readonly;
-  const senderRef = chatBoxModel.senderRef;
+  const senderRef = chatSenderModel.senderRef;
 
   const cachedWorkflowTask =
     currentWorkflowTask && currentWorkflowTask.sessionId === currentConversation ? currentWorkflowTask : undefined;
@@ -157,7 +157,7 @@ const WorkflowTaskOutputCardBase: React.FC<ToolsUIProperties<WorkflowTaskOutputA
           onClick={async () => {
             setAction('revise');
             try {
-              chatBoxModel.setShowSenderHint(true);
+              chatSenderModel.setShowSenderHint(true);
               senderRef?.current?.focus?.();
             } finally {
               setAction(null);

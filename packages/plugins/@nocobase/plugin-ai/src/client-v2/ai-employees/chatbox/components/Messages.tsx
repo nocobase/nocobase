@@ -134,10 +134,12 @@ export const Messages: React.FC = observer(() => {
       if (currentConversation && currentConversation === sessionId && status !== 'processing') {
         loadMessages(sessionId);
         setResponseLoading(false);
-        updateReadonly(sessionId).catch(console.error);
+        if (runtime.mode === 'global') {
+          updateReadonly(sessionId).catch(console.error);
+        }
       }
     },
-    [currentConversation, loadMessages, setResponseLoading, updateReadonly],
+    [currentConversation, loadMessages, runtime.mode, setResponseLoading, updateReadonly],
   );
 
   useEffect(() => {

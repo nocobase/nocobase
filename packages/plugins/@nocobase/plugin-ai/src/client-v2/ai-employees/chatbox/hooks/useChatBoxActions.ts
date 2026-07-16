@@ -27,7 +27,7 @@ export const useChatBoxActions = (runtime?: ChatBoxRuntime) => {
   const aiConfigRepository = useAIConfigRepository();
   const t = useT();
   const resolvedRuntime = useResolvedChatBoxRuntime(runtime);
-  const { chatBoxModel, chatConversationModel, chatToolModel, workflowTaskModel } = resolvedRuntime;
+  const { chatBoxModel, chatConversationModel, chatSenderModel, chatToolModel, workflowTaskModel } = resolvedRuntime;
 
   const currentConversation = chatConversationModel.currentConversation;
   const chat = useChat(currentConversation, resolvedRuntime);
@@ -51,7 +51,7 @@ export const useChatBoxActions = (runtime?: ChatBoxRuntime) => {
         skillSettings,
       } = options ?? {};
       if (sender !== false) {
-        chatBoxModel.setSenderValue('');
+        chatSenderModel.setSenderValue('');
       }
       if (systemMessage !== false) {
         sessionChat.setSystemMessage('');
@@ -78,7 +78,7 @@ export const useChatBoxActions = (runtime?: ChatBoxRuntime) => {
         sessionChat.setSkillSettings(undefined);
       }
     },
-    [chat, chatBoxModel, chatConversationModel, chatToolModel],
+    [chat, chatBoxModel, chatConversationModel, chatSenderModel, chatToolModel],
   );
 
   const send = useCallback(
@@ -169,8 +169,8 @@ export const useChatBoxActions = (runtime?: ChatBoxRuntime) => {
     workflowTaskModel.setCurrentWorkflowTask(undefined);
     clear(undefined, undefined);
     draftChat.setMessages([greetingMsg]);
-    chatBoxModel.senderRef?.current?.focus();
-  }, [chatBoxModel, chatConversationModel, clear, draftChat, t, workflowTaskModel]);
+    chatSenderModel.senderRef?.current?.focus();
+  }, [chatBoxModel, chatConversationModel, chatSenderModel, clear, draftChat, t, workflowTaskModel]);
 
   const switchAIEmployee = useCallback(
     (aiEmployee: AIEmployee, options?: { clear?: ClearOptions }) => {
@@ -188,13 +188,13 @@ export const useChatBoxActions = (runtime?: ChatBoxRuntime) => {
             content: aiEmployee.greeting || t('Default greeting message', { nickname: aiEmployee.nickname }),
           },
         };
-        chatBoxModel.senderRef?.current?.focus();
+        chatSenderModel.senderRef?.current?.focus();
         draftChat.setMessages([greetingMsg]);
       } else {
         draftChat.setMessages([]);
       }
     },
-    [chatBoxModel, chatConversationModel, clear, draftChat, t, workflowTaskModel],
+    [chatBoxModel, chatConversationModel, chatSenderModel, clear, draftChat, t, workflowTaskModel],
   );
 
   const triggerTask = useCallback(
@@ -219,7 +219,7 @@ export const useChatBoxActions = (runtime?: ChatBoxRuntime) => {
       }
       chatBoxModel.setCurrentEmployee(aiEmployee);
       await ensureModel(aiEmployee);
-      chatBoxModel.senderRef?.current?.focus();
+      chatSenderModel.senderRef?.current?.focus();
       const msgs: Message[] = [
         {
           key: randomId(),
@@ -254,9 +254,9 @@ export const useChatBoxActions = (runtime?: ChatBoxRuntime) => {
           service?.supportWebSearch === false ? false : typeof webSearch === 'boolean' ? webSearch : false;
         chatConversationModel.setWebSearch(resolvedWebSearch);
         if (userMessage && userMessage.type === 'text') {
-          chatBoxModel.setSenderValue(userMessage.content);
+          chatSenderModel.setSenderValue(userMessage.content);
         } else {
-          chatBoxModel.setSenderValue('');
+          chatSenderModel.setSenderValue('');
         }
         let contextAttachments: Attachment[] = [];
         if (workContext) {
@@ -302,6 +302,7 @@ export const useChatBoxActions = (runtime?: ChatBoxRuntime) => {
       draftChat,
       ensureModel,
       aiConfigRepository,
+      chatSenderModel,
       resolveTaskModel,
       send,
       chatConversationModel,

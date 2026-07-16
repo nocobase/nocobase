@@ -15,9 +15,9 @@ import { useChatBoxRuntime } from '../stores/runtime';
 export const useChatBoxEffect = () => {
   const aiConfigRepository = useAIConfigRepository();
   const aiEmployees = aiConfigRepository.aiEmployees;
-  const { chatBoxModel, chatConversationModel } = useChatBoxRuntime();
+  const { chatBoxModel, chatConversationModel, chatSenderModel } = useChatBoxRuntime();
   const open = chatBoxModel.open;
-  const senderRef = chatBoxModel.senderRef;
+  const senderRef = chatSenderModel.senderRef;
   const currentEmployee = chatBoxModel.currentEmployee;
   const currentConversation = chatConversationModel.currentConversation;
 
