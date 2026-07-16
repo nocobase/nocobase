@@ -351,6 +351,7 @@ exports.genTsConfigPaths = function genTsConfigPaths() {
       paths[`${packageJsonName}/typegen`] = [`${relativePath}/src/typegen`];
     }
     if (packageJsonName === '@nocobase/runjs') {
+      paths[`${packageJsonName}/compiler`] = [`${relativePath}/src/compiler`];
       paths[`${packageJsonName}/settings`] = [`${relativePath}/src/settings`];
     }
   });
