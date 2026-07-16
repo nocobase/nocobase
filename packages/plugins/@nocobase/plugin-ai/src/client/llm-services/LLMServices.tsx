@@ -149,6 +149,7 @@ const providerDescriptions: Record<string, string> = {
   xai: 'Grok models by xAI',
   ollama: 'Local models',
   mimo: 'Xiaomi MIMO',
+  minimax: 'MiniMax (OpenAI-compatible; Anthropic via Anthropic provider)',
   mistral: 'Mistral models',
   orcarouter: 'OrcaRouter (model routing gateway)',
 };
@@ -160,6 +161,7 @@ const providerSortOrder: string[] = [
   'deepseek',
   'dashscope',
   'kimi',
+  'minimax',
   'mistral',
   'orcarouter',
   'openai-completions',
