@@ -26,7 +26,7 @@ features:
         link: /ai/install-nocobase-app
       - title: Tutoriais
         details: Comece do zero e siga os tutoriais para construir um projeto real passo a passo.
-        link: /tutorials/v2/
+        link: /tutorials/
   - title: AI
     details: 'Uma nova forma de começar impulsionada por IA — complete a construção, o uso e o desenvolvimento em linguagem natural.'
     items:

@@ -81,6 +81,35 @@ const saveUserMessages = async (ctx: Context, sessionId: string, messages: AIMes
   });
 };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+function normalizeIncomingMessageAttachments(ctx: Context, messages: AIMessageInput[]) {
+  for (const message of messages) {
+    if (message.attachments == null) {
+      continue;
+    }
+    if (!Array.isArray(message.attachments)) {
+      throw new ResourceActionError(400, ctx.t('Invalid attachment'));
+    }
+    message.attachments = message.attachments.map((attachment) => {
+      if (!isRecord(attachment) || !isRecord(attachment.source)) {
+        throw new ResourceActionError(400, ctx.t('Invalid attachment'));
+      }
+      const source = { ...attachment.source };
+      delete source.trustworthy;
+      if (typeof source.collectionName !== 'string' || !source.collectionName) {
+        throw new ResourceActionError(400, ctx.t('Invalid attachment'));
+      }
+      return {
+        ...attachment,
+        source,
+      };
+    });
+  }
+}
+
 export default {
   name: 'aiConversations',
   middlewares: [
@@ -328,6 +357,7 @@ export default {
         if (!Array.isArray(messages)) {
           throw new ResourceActionError(400, ctx.t('messages must be an array'));
         }
+        normalizeIncomingMessageAttachments(ctx, messages);
         const userMessage = messages.find((message: any) => message.role === 'user');
         if (!userMessage) {
           throw new ResourceActionError(400, ctx.t('user message is required'));
@@ -665,6 +695,15 @@ export default {
         ctx.throw(400);
       }
 
+      const messageConversation = await plugin.aiConversationsManager.getConversation({
+        sessionId: message.sessionId,
+        userId,
+      });
+
+      if (!messageConversation) {
+        ctx.throw(400);
+      }
+
       const toolCalls = message.toolCalls;
       if (!toolCalls?.length) {
         ctx.throw(400);
@@ -703,7 +742,7 @@ export default {
           },
         },
       });
-      const toolMessageMap = new Map<string, any>(
+      const toolMessageMap = new Map<string, Model>(
         toolMessages.map((toolMessage: Model) => [toolMessage.toolCallId, toolMessage]),
       );
 
@@ -774,6 +813,15 @@ export default {
           return next();
         }
 
+        const messageConversation = await plugin.aiConversationsManager.getConversation({
+          sessionId: message.sessionId,
+          userId,
+        });
+        if (!messageConversation) {
+          sendErrorResponse(ctx, 'conversation not found');
+          return next();
+        }
+
         const tools = message.toolCalls;
         if (!tools?.length) {
           sendErrorResponse(ctx, 'No tool calls found');
@@ -792,7 +840,7 @@ export default {
           model: resolvedModel,
         });
 
-        const userDecisions = await plugin.aiConversationsManager.getUserDecisions(messageId);
+        const userDecisions = await plugin.aiConversationsManager.getUserDecisions(message.messageId);
         await aiEmployee.stream({
           userDecisions,
         });
