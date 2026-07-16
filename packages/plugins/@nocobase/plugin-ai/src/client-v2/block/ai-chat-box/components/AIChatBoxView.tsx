@@ -43,7 +43,7 @@ import { registerMountedChatBox } from '../../../ai-employees/chatbox/stores/mou
 import { useChatBoxRuntime } from '../../../ai-employees/chatbox/stores/runtime';
 import type { AIChatBoxBlockModel } from '../AIChatBoxBlockModel';
 import { AIChatBoxCoreModel } from '../AIChatBoxCoreModel';
-import { getAIChatBoxSettings, getExpandedAIChatBoxHeightAfterBodyBlockAdd } from '../utils';
+import { getAIChatBoxSettings } from '../utils';
 import { Conversations } from './Conversations';
 
 const { Header } = Layout;
@@ -186,16 +186,6 @@ export const moveAddedBlockBeforeCore = async (model: AIChatBoxBlockModel, added
   await model.flowEngine.moveModel(addedModel.uid, coreBlock.uid, { persist: false });
 };
 
-export const handleAIChatBoxBodyBlockAdd = async (model: AIChatBoxBlockModel, addedModel: FlowModel) => {
-  await moveAddedBlockBeforeCore(model, addedModel);
-
-  const settings = getAIChatBoxSettings(model.props);
-  const height = getExpandedAIChatBoxHeightAfterBodyBlockAdd(settings.height);
-  if (height !== settings.height) {
-    model.setProps({ height });
-  }
-};
-
 const ActionAddButton: React.FC<{
   model: AIChatBoxBlockModel;
 }> = ({ model }) => {
@@ -218,7 +208,7 @@ const BodyAddButton: React.FC<{
       model={model}
       subModelKey="bodyBlocks"
       items={getAIChatBoxBodyBlockItems}
-      afterSubModelAdd={(addedModel) => handleAIChatBoxBodyBlockAdd(model, addedModel)}
+      afterSubModelAdd={(addedModel) => moveAddedBlockBeforeCore(model, addedModel)}
     >
       <FlowSettingsButton icon={<PlusOutlined />}>{t('Add block')}</FlowSettingsButton>
     </AddSubModelButton>

@@ -12,11 +12,6 @@ import type { ContextItem } from '../../ai-employees/types';
 import type { AIChatBoxBlockModel } from './AIChatBoxBlockModel';
 import type { AIChatBoxBlockProps, AIChatBoxSettings } from './types';
 
-export const AI_CHAT_BOX_DEFAULT_HEIGHT = 640;
-export const AI_CHAT_BOX_MIN_HEIGHT = 420;
-export const AI_CHAT_BOX_MAX_HEIGHT = 1600;
-export const AI_CHAT_BOX_ADDED_BODY_BLOCK_HEIGHT_INCREMENT = 240;
-
 const isContextItem = (value: unknown): value is ContextItem => {
   return (
     value !== null &&
@@ -28,7 +23,7 @@ const isContextItem = (value: unknown): value is ContextItem => {
 };
 
 export const getDefaultAIChatBoxSettings = (): AIChatBoxSettings => ({
-  height: AI_CHAT_BOX_DEFAULT_HEIGHT,
+  height: 640,
   scope: undefined,
   systemPrompt: '',
   defaultUserMessage: '',
@@ -60,17 +55,7 @@ export const getAIChatBoxSettings = (props: AIChatBoxBlockProps = {}): AIChatBox
 };
 
 export const normalizeAIChatBoxHeight = (height: unknown) => {
-  if (typeof height !== 'number' || !Number.isFinite(height)) {
-    return AI_CHAT_BOX_DEFAULT_HEIGHT;
-  }
-  return Math.min(AI_CHAT_BOX_MAX_HEIGHT, Math.max(AI_CHAT_BOX_MIN_HEIGHT, height));
-};
-
-export const getExpandedAIChatBoxHeightAfterBodyBlockAdd = (height: unknown) => {
-  return Math.min(
-    AI_CHAT_BOX_MAX_HEIGHT,
-    normalizeAIChatBoxHeight(height) + AI_CHAT_BOX_ADDED_BODY_BLOCK_HEIGHT_INCREMENT,
-  );
+  return typeof height === 'number' && Number.isFinite(height) ? Math.max(420, height) : 640;
 };
 
 export const getAIChatBoxScope = (model: AIChatBoxBlockModel) => {

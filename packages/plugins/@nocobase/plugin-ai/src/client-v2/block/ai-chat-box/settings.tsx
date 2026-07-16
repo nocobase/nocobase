@@ -14,8 +14,6 @@ import { WorkContext } from '../../models/ai-employees/AIEmployeeShortcutModel';
 import type { LLMServiceItem } from '../../repositories/AIConfigRepository';
 import type { AIChatBoxBlockModel } from './AIChatBoxBlockModel';
 import {
-  AI_CHAT_BOX_MAX_HEIGHT,
-  AI_CHAT_BOX_MIN_HEIGHT,
   getAIChatBoxBodyContextItems,
   getAIChatBoxManualSelectedBlocks,
   getAIChatBoxSettings,
@@ -183,8 +181,8 @@ export const registerAIChatBoxBlockSettings = (ModelClass: AIChatBoxBlockModelCo
               'x-decorator': 'FormItem',
               'x-component': 'InputNumber',
               'x-component-props': {
-                min: AI_CHAT_BOX_MIN_HEIGHT,
-                max: AI_CHAT_BOX_MAX_HEIGHT,
+                min: 420,
+                max: 1600,
                 step: 20,
                 style: {
                   width: '100%',

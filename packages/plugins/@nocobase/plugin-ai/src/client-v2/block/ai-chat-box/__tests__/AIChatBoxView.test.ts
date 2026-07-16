@@ -15,7 +15,6 @@ import {
   AI_CHAT_BOX_ACTION_MODEL_NAMES,
   filterNestedAIChatBoxBlockItems,
   getAIChatBoxActionItems,
-  handleAIChatBoxBodyBlockAdd,
   isAIChatBoxCoreModel,
   moveAddedBlockBeforeCore,
 } from '../components/AIChatBoxView';
@@ -81,20 +80,15 @@ describe('AIChatBoxView helpers', () => {
 
   it('identifies the core model and moves newly added blocks before it', async () => {
     const moveModel = vi.fn(async () => undefined);
-    const setProps = vi.fn();
     const core = Object.assign(Object.create(AIChatBoxCoreModel.prototype), { uid: 'core' }) as FlowModel;
     const added = Object.assign(Object.create(FlowModel.prototype), { uid: 'added' }) as FlowModel;
     const model = {
-      props: {
-        height: 640,
-      },
       subModels: {
         bodyBlocks: [added, core],
       },
       flowEngine: {
         moveModel,
       },
-      setProps,
     } as unknown as AIChatBoxBlockModel;
 
     expect(isAIChatBoxCoreModel(core)).toBe(true);
@@ -105,27 +99,5 @@ describe('AIChatBoxView helpers', () => {
 
     expect(moveModel).toHaveBeenCalledTimes(1);
     expect(moveModel).toHaveBeenCalledWith('added', 'core', { persist: false });
-  });
-
-  it('expands chat box height when adding body blocks', async () => {
-    const moveModel = vi.fn(async () => undefined);
-    const setProps = vi.fn();
-    const core = Object.assign(Object.create(AIChatBoxCoreModel.prototype), { uid: 'core' }) as FlowModel;
-    const added = Object.assign(Object.create(FlowModel.prototype), { uid: 'added' }) as FlowModel;
-    const model = {
-      props: {},
-      subModels: {
-        bodyBlocks: [added, core],
-      },
-      flowEngine: {
-        moveModel,
-      },
-      setProps,
-    } as unknown as AIChatBoxBlockModel;
-
-    await handleAIChatBoxBodyBlockAdd(model, added);
-
-    expect(moveModel).toHaveBeenCalledWith('added', 'core', { persist: false });
-    expect(setProps).toHaveBeenCalledWith({ height: 880 });
   });
 });
