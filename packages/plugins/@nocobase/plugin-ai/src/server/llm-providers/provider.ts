@@ -219,7 +219,9 @@ export abstract class LLMProvider {
   }
 
   async parseAttachment(ctx: Context, attachment: AttachmentModel): Promise<ParsedAttachmentResult> {
-    if (!attachment?.storageId || !attachment?.filename) {
+    const dataSourceKey = attachment?.source?.dataSourceKey;
+    const isExternalAttachment = Boolean(dataSourceKey && dataSourceKey !== 'main');
+    if ((!attachment?.storageId && !isExternalAttachment) || !attachment?.filename) {
       return {
         placement: 'system',
         content:

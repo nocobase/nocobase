@@ -6,6 +6,27 @@
   },
   {
     "type": "custom-link",
+    "label": "Макеты UI",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Обзор",
+        "link": "/interface-builder/ui-layout/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Для компьютера",
+        "link": "/interface-builder/ui-layout/desktop"
+      },
+      {
+        "type": "custom-link",
+        "label": "Для мобильных устройств",
+        "link": "/interface-builder/ui-layout/mobile"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
     "label": "Блоки",
     "items": [
       {

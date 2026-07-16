@@ -23,8 +23,14 @@ function appendUploadDataSourceKey(url: string, dataSourceKey?: string) {
     return url;
   }
 
-  const separator = url.includes('?') ? '&' : '?';
-  return `${url}${separator}uploadDataSourceKey=${encodeURIComponent(dataSourceKey)}`;
+  const [path, search] = url.split('?');
+  const params = new URLSearchParams(search);
+  params.set('uploadDataSourceKey', dataSourceKey);
+  return `${path}?${params.toString()}`;
+}
+
+function getUploadDataSourceHeaders(dataSourceKey?: string) {
+  return dataSourceKey && dataSourceKey !== 'main' ? { 'X-Data-Source': dataSourceKey } : {};
 }
 
 export function useStorage(storage) {
@@ -66,15 +72,29 @@ export function useStorageUploadProps(props) {
   const dataSourceKey = useDataSourceKey();
   const { storage, storageType } = useStorageCfg();
   const useStorageTypeUploadProps = storageType?.useUploadProps;
-  const storageTypeUploadProps = useStorageTypeUploadProps?.({ storage, rules: storage.rules, ...props }) || {};
+  const action = appendUploadDataSourceKey(props.action, dataSourceKey);
+  const dataSourceHeaders = getUploadDataSourceHeaders(dataSourceKey);
+  const storageTypeUploadProps =
+    useStorageTypeUploadProps?.({
+      storage,
+      rules: storage.rules,
+      ...props,
+      action,
+      dataSourceKey,
+      headers: {
+        ...props.headers,
+        ...dataSourceHeaders,
+      },
+    }) || {};
   const headers = {
     ...storageTypeUploadProps.headers,
+    ...dataSourceHeaders,
   };
 
   return {
-    action: appendUploadDataSourceKey(props.action, dataSourceKey),
     rules: storage?.rules,
     ...storageTypeUploadProps,
+    action: appendUploadDataSourceKey(storageTypeUploadProps.action || action, dataSourceKey),
     headers,
   };
 }
