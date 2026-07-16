@@ -1,14 +1,14 @@
 ---
-pkg: "@nocobase/plugin-field-china-region"
+title: "中国の行政区画"
+description: "中国の行政区画フィールド。省・市・区の3階層連動選択に対応し、住所や出身地などの用途に適しています。"
+keywords: "中国の行政区画,省・市・区,行政区画フィールド,3階層連動,NocoBase"
 ---
 
+# 中国の行政区画
 
-pkg: "@nocobase/plugin-field-china-region"
----
+<PluginInfo name="field-china-region"></PluginInfo>
 
-# 中国行政区
-
-## はじめに
+## 紹介
 
 ## フィールド設定
 
@@ -16,4 +16,4 @@ pkg: "@nocobase/plugin-field-china-region"
 
 ## 例
 
-追記予定です。
+後日追加予定です。
