@@ -11,6 +11,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Bubble } from '@ant-design/x';
 import { Button, Divider, Layout, Space, Spin, theme, Typography } from 'antd';
 import { DownOutlined, LoadingOutlined, RightOutlined } from '@ant-design/icons';
+import { css } from '@emotion/css';
 import { useApp } from '@nocobase/client-v2';
 import { observer } from '@nocobase/flow-engine';
 import { useT } from '../../../locale';
@@ -25,6 +26,33 @@ import { createAIEmployeeRole, defaultMessageRoles } from './MessageRenderers';
 const { Link, Text } = Typography;
 
 const STICKY_BOTTOM_THRESHOLD = 48;
+
+export const messagesScrollClassName = css`
+  scrollbar-color: var(--colorBgScrollBar) var(--colorBgScrollTrack);
+  scrollbar-width: thin;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: var(--colorBgScrollTrack);
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--colorBgScrollBar);
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: var(--colorBgScrollBarHover);
+  }
+
+  &::-webkit-scrollbar-thumb:active {
+    background: var(--colorBgScrollBarActive);
+  }
+`;
 
 const isSameMessageContent = (prev: Message['content'], next: Message['content']) =>
   prev === next ||
@@ -253,6 +281,7 @@ export const Messages: React.FC = observer(() => {
 
   return (
     <Layout.Content
+      className={messagesScrollClassName}
       ref={containerRef}
       onScroll={handleScroll}
       style={{

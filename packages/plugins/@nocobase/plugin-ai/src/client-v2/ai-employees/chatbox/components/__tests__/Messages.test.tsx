@@ -11,7 +11,7 @@ import React from 'react';
 import { render, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ChatBoxRuntimeProvider, createChatBoxRuntime, type ChatBoxRuntime } from '../../stores/runtime';
-import { Messages } from '../Messages';
+import { Messages, messagesScrollClassName } from '../Messages';
 
 const mocks = vi.hoisted(() => ({
   listeners: new Map<string, EventListener>(),
@@ -117,5 +117,6 @@ describe('Messages runtime mode', () => {
     expect(content?.style.flex).toBe('1 1 auto');
     expect(content?.style.minHeight).toBe('0');
     expect(content?.style.overflow).toBe('auto');
+    expect(content?.classList.contains(messagesScrollClassName)).toBe(true);
   });
 });
