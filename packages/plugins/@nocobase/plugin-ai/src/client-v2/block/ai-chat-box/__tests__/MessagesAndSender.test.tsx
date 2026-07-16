@@ -144,10 +144,7 @@ describe('MessagesAndSender', () => {
       allowedModels: ['openai:gpt'],
       defaultSystemMessage: 'Use sales tone',
       defaultUserMessage: 'Summarize this block',
-      defaultWorkContext: [
-        { type: 'flow-model', uid: 'external-1', title: 'External' },
-        { type: 'flow-model', uid: 'body-1', title: 'Body one' },
-      ],
+      defaultWorkContext: [{ type: 'flow-model', uid: 'external-1', title: 'External' }],
       scope: 'chat-box-1',
     });
 

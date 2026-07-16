@@ -14,10 +14,9 @@ import { WorkContext } from '../../models/ai-employees/AIEmployeeShortcutModel';
 import type { LLMServiceItem } from '../../repositories/AIConfigRepository';
 import type { AIChatBoxBlockModel } from './AIChatBoxBlockModel';
 import {
-  getAIChatBoxBodyContextItems,
-  getAIChatBoxManualSelectedBlocks,
   getAIChatBoxSettings,
   getAIChatBoxWorkContext,
+  normalizeAIChatBoxWorkContext,
   normalizeAIChatBoxScopeForSave,
 } from './utils';
 import type { AIChatBoxBlockProps, AIChatBoxSettings } from './types';
@@ -219,14 +218,13 @@ export const registerAIChatBoxBlockSettings = (ModelClass: AIChatBoxBlockModelCo
           };
         },
         handler(ctx: AIChatBoxFlowContext, params: AIChatBoxSettingsParams) {
-          const bodyContextItems = getAIChatBoxBodyContextItems(ctx.model);
           ctx.model.setProps({
             scope: normalizeAIChatBoxScopeForSave(params.scope, ctx.model.uid),
             systemPrompt: params.systemPrompt || '',
             defaultUserMessage: params.defaultUserMessage || '',
             allowedAIEmployees: Array.isArray(params.allowedAIEmployees) ? params.allowedAIEmployees : [],
             allowedModels: Array.isArray(params.allowedModels) ? params.allowedModels : [],
-            selectedBlocks: getAIChatBoxManualSelectedBlocks(params.selectedBlocks, bodyContextItems),
+            selectedBlocks: normalizeAIChatBoxWorkContext(params.selectedBlocks),
           });
         },
       },

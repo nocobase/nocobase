@@ -7,18 +7,38 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowModel, type FlowModelContext, type ModelConstructor, type SubModelItem } from '@nocobase/flow-engine';
+import {
+  FlowEngine,
+  FlowModel,
+  type FlowModelContext,
+  type ModelConstructor,
+  type SubModelItem,
+} from '@nocobase/flow-engine';
 import { describe, expect, it, vi } from 'vitest';
 import type { AIChatBoxBlockModel } from '../AIChatBoxBlockModel';
 import { AIChatBoxCoreModel } from '../AIChatBoxCoreModel';
 import {
   AI_CHAT_BOX_ACTION_MODEL_NAMES,
+  AI_CHAT_BOX_BODY_BLOCK_MODEL_NAMES,
   filterNestedAIChatBoxBlockItems,
   getAIChatBoxActionItems,
+  getAIChatBoxBodyBlockItems,
   getAIChatBoxViewHeight,
   isAIChatBoxCoreModel,
   moveAddedBlockBeforeCore,
 } from '../components/AIChatBoxView';
+
+class JSBlockModel extends FlowModel {}
+JSBlockModel.define({ label: 'JS block', sort: 30 });
+
+class IframeBlockModel extends FlowModel {}
+IframeBlockModel.define({ label: 'Iframe', sort: 10 });
+
+class MarkdownBlockModel extends FlowModel {}
+MarkdownBlockModel.define({ label: 'Markdown', sort: 20 });
+
+class TableBlockModel extends FlowModel {}
+TableBlockModel.define({ label: 'Table', sort: 5 });
 
 class JSActionModel extends FlowModel {}
 class AIEmployeeActionModel extends FlowModel {}
@@ -77,6 +97,23 @@ describe('AIChatBoxView helpers', () => {
     expect(getModelClassAsync.mock.calls.map(([name]) => name)).toEqual(['JSActionModel', 'AIEmployeeActionModel']);
     expect(items.map((item) => item.useModel)).toEqual(['JSActionModel', 'AIEmployeeActionModel']);
     expect(items[1].label).toBe('t:AI employee');
+  });
+
+  it('only allows read-only display blocks in the chat body', async () => {
+    expect(AI_CHAT_BOX_BODY_BLOCK_MODEL_NAMES).toEqual(['JSBlockModel', 'IframeBlockModel', 'MarkdownBlockModel']);
+
+    const engine = new FlowEngine();
+    engine.registerModels({
+      JSBlockModel,
+      IframeBlockModel,
+      MarkdownBlockModel,
+      TableBlockModel,
+    });
+
+    const items = await getAIChatBoxBodyBlockItems(engine.context);
+
+    expect(items.map((item) => item.useModel)).toEqual(['JSBlockModel', 'IframeBlockModel', 'MarkdownBlockModel']);
+    expect(items.map((item) => item.useModel)).not.toContain('TableBlockModel');
   });
 
   it('identifies the core model and moves newly added blocks before it', async () => {

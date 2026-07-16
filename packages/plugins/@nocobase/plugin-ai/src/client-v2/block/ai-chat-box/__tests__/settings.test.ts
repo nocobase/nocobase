@@ -16,8 +16,6 @@ import { AIChatBoxBlockModel } from '../AIChatBoxBlockModel';
 import { AIChatBoxCoreModel } from '../AIChatBoxCoreModel';
 import { AI_CHAT_BOX_BLOCK_SETTINGS_FLOW_KEY } from '../settings';
 import {
-  getAIChatBoxBodyContextItems,
-  getAIChatBoxManualSelectedBlocks,
   getAIChatBoxScope,
   getAIChatBoxWorkContext,
   normalizeAIChatBoxHeight,
@@ -92,31 +90,22 @@ describe('AI chat box settings helpers', () => {
     expect(normalizeAIChatBoxScopeForSave('shared-sales', 'chat-box-1')).toBe('shared-sales');
   });
 
-  it('normalizes configured and body block work context without duplicate items', () => {
+  it('normalizes configured work context without duplicate items', () => {
     const selectedBlocks: TestContextItem[] = [
       { type: 'flow-model', uid: 'external-1', title: 'External' },
       { type: 'flow-model', uid: 'body-1', title: 'Manual body title' },
       { type: 'datasource', uid: 'collection-1', title: 'Collection' },
       { type: 'flow-model', uid: 'external-1', title: 'Duplicate external' },
     ];
-    const bodyBlocks: TestContextItem[] = [
-      { type: 'flow-model', uid: 'body-1', title: 'Body one' },
-      { type: 'flow-model', uid: 'body-2', title: 'Body two' },
-    ];
 
-    expect(normalizeAIChatBoxWorkContext(selectedBlocks, bodyBlocks)).toEqual([
+    expect(normalizeAIChatBoxWorkContext(selectedBlocks)).toEqual([
       { type: 'flow-model', uid: 'external-1', title: 'External' },
       { type: 'flow-model', uid: 'body-1', title: 'Manual body title' },
-      { type: 'datasource', uid: 'collection-1', title: 'Collection' },
-      { type: 'flow-model', uid: 'body-2', title: 'Body two' },
-    ]);
-    expect(getAIChatBoxManualSelectedBlocks(selectedBlocks, bodyBlocks)).toEqual([
-      { type: 'flow-model', uid: 'external-1', title: 'External' },
       { type: 'datasource', uid: 'collection-1', title: 'Collection' },
     ]);
   });
 
-  it('derives body block work context from non-core body blocks', () => {
+  it('keeps display body blocks out of work context', () => {
     const bodyOne = makeFlowModel('body-1', 'Body one');
     const bodyTwo = makeFlowModel('body-2', 'Body two');
     const model = makeModel(
@@ -126,15 +115,7 @@ describe('AI chat box settings helpers', () => {
       [bodyOne, makeCoreModel(), bodyTwo],
     );
 
-    expect(getAIChatBoxBodyContextItems(model)).toEqual([
-      { type: 'flow-model', uid: 'body-1', title: 'Body one' },
-      { type: 'flow-model', uid: 'body-2', title: 'Body two' },
-    ]);
-    expect(getAIChatBoxWorkContext(model)).toEqual([
-      { type: 'flow-model', uid: 'external-1', title: 'External' },
-      { type: 'flow-model', uid: 'body-1', title: 'Body one' },
-      { type: 'flow-model', uid: 'body-2', title: 'Body two' },
-    ]);
+    expect(getAIChatBoxWorkContext(model)).toEqual([{ type: 'flow-model', uid: 'external-1', title: 'External' }]);
   });
 });
 
@@ -182,10 +163,7 @@ describe('AI chat box settings flow', () => {
 
     expect(editStep?.defaultParams?.(ctx)).toMatchObject({
       scope: 'chat-box-1',
-      selectedBlocks: [
-        { type: 'flow-model', uid: 'external-1', title: 'External' },
-        { type: 'flow-model', uid: 'body-1', title: 'Body one' },
-      ],
+      selectedBlocks: [{ type: 'flow-model', uid: 'external-1', title: 'External' }],
     });
 
     const schema = await editStep?.uiSchema?.(ctx);
@@ -214,7 +192,10 @@ describe('AI chat box settings flow', () => {
       scope: '',
       systemPrompt: 'Background',
       defaultUserMessage: 'Hello',
-      selectedBlocks: [{ type: 'flow-model', uid: 'external-1', title: 'External' }],
+      selectedBlocks: [
+        { type: 'flow-model', uid: 'external-1', title: 'External' },
+        { type: 'flow-model', uid: 'body-1', title: 'Body one' },
+      ],
       allowedAIEmployees: ['sales'],
       allowedModels: ['openai:gpt'],
     });

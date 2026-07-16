@@ -17,8 +17,8 @@ import {
   FlowModelRenderer,
   FlowSettingsButton,
   FlowsFloatContextMenu,
-  buildSubModelGroups,
   buildSubModelItem,
+  buildSubModelItems,
   observer,
   type FlowModelContext,
   type SubModelItem,
@@ -49,6 +49,7 @@ import { Conversations } from './Conversations';
 const { Header } = Layout;
 
 export const AI_CHAT_BOX_ACTION_MODEL_NAMES = ['JSActionModel', 'AIEmployeeActionModel'] as const;
+export const AI_CHAT_BOX_BODY_BLOCK_MODEL_NAMES = ['JSBlockModel', 'IframeBlockModel', 'MarkdownBlockModel'] as const;
 
 const nestedChatBoxModelNames = new Set(['AIChatBoxBlockModel', 'AIChatDemoBlockModel']);
 
@@ -156,8 +157,13 @@ export const filterNestedAIChatBoxBlockItems = (items: SubModelItem[]): SubModel
 };
 
 export const getAIChatBoxBodyBlockItems = async (ctx: FlowModelContext): Promise<SubModelItem[]> => {
-  const items = await buildSubModelGroups(['DataBlockModel', 'FilterBlockModel', 'BlockModel'])(ctx);
-  return filterNestedAIChatBoxBlockItems(items);
+  return (
+    await Promise.all(
+      AI_CHAT_BOX_BODY_BLOCK_MODEL_NAMES.filter((modelName) => Boolean(ctx.engine.getModelClass(modelName))).map(
+        (modelName) => buildSubModelItems(modelName)(ctx),
+      ),
+    )
+  ).flat();
 };
 
 export const getAIChatBoxActionItems = async (ctx: FlowModelContext): Promise<SubModelItem[]> => {

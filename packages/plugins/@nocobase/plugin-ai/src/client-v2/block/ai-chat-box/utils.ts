@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { FlowModel } from '@nocobase/flow-engine';
 import type { ContextItem } from '../../ai-employees/types';
 import type { AIChatBoxBlockModel } from './AIChatBoxBlockModel';
 import type { AIChatBoxBlockProps, AIChatBoxSettings } from './types';
@@ -70,11 +69,8 @@ export const normalizeAIChatBoxScopeForSave = (scope: string | undefined, defaul
   return scope;
 };
 
-export const normalizeAIChatBoxWorkContext = (
-  selectedBlocks: ContextItem[] | undefined,
-  bodyBlocks: ContextItem[] | undefined,
-) => {
-  const items = [...(Array.isArray(selectedBlocks) ? selectedBlocks.filter(isContextItem) : []), ...(bodyBlocks || [])];
+export const normalizeAIChatBoxWorkContext = (selectedBlocks: ContextItem[] | undefined) => {
+  const items = Array.isArray(selectedBlocks) ? selectedBlocks.filter(isContextItem) : [];
   const seen = new Set<string>();
   return items.filter((item) => {
     const key = `${item.type}:${item.uid}`;
@@ -86,39 +82,6 @@ export const normalizeAIChatBoxWorkContext = (
   });
 };
 
-const getModelUse = (model: FlowModel) => {
-  try {
-    return model.use;
-  } catch {
-    return undefined;
-  }
-};
-
-const isAIChatBoxCoreModel = (model: FlowModel) =>
-  model.constructor.name === 'AIChatBoxCoreModel' || getModelUse(model) === 'AIChatBoxCoreModel';
-
-export const getAIChatBoxBodyContextItems = (model: AIChatBoxBlockModel): ContextItem[] => {
-  return model
-    .mapSubModels('bodyBlocks', (subModel: FlowModel) => subModel)
-    .filter((subModel) => !isAIChatBoxCoreModel(subModel))
-    .map((subModel) => ({
-      type: 'flow-model',
-      uid: subModel.uid,
-      title: subModel.title,
-    }));
-};
-
 export const getAIChatBoxWorkContext = (model: AIChatBoxBlockModel) => {
-  return normalizeAIChatBoxWorkContext(
-    getAIChatBoxSettings(model.props).selectedBlocks,
-    getAIChatBoxBodyContextItems(model),
-  );
-};
-
-export const getAIChatBoxManualSelectedBlocks = (
-  selectedBlocks: ContextItem[] | undefined,
-  bodyBlocks: ContextItem[] | undefined,
-) => {
-  const bodyKeys = new Set((bodyBlocks || []).map((item) => `${item.type}:${item.uid}`));
-  return normalizeAIChatBoxWorkContext(selectedBlocks, []).filter((item) => !bodyKeys.has(`${item.type}:${item.uid}`));
+  return normalizeAIChatBoxWorkContext(getAIChatBoxSettings(model.props).selectedBlocks);
 };
