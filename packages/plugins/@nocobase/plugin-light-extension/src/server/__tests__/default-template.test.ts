@@ -34,6 +34,11 @@ const EXPECTED_ENTRY_PATHS = [
   'src/client/js-blocks/welcome-card/index.tsx',
   'src/client/js-blocks/collection-summary/index.tsx',
   'src/client/js-blocks/collection-table/index.tsx',
+  'src/client/js-blocks/create-form/index.tsx',
+  'src/client/js-blocks/edit-form/index.tsx',
+  'src/client/js-blocks/details/index.tsx',
+  'src/client/js-blocks/collection-list/index.tsx',
+  'src/client/js-blocks/collection-grid-card/index.tsx',
   'src/client/js-actions/refresh-data/index.ts',
   'src/client/js-actions/confirm-action/index.ts',
   'src/client/js-fields/status-tag/index.tsx',
@@ -56,6 +61,34 @@ const COLLECTION_TABLE_SUPPORT_PATHS = [
   'src/client/js-blocks/collection-table/useCollectionTableData.ts',
   'src/client/js-blocks/collection-table/CollectionTable.tsx',
 ] as const;
+const COLLECTION_BLOCK_COMMON_PATHS = [
+  'src/shared/collection-block/types.ts',
+  'src/shared/collection-block/collection-utils.ts',
+  'src/shared/collection-block/settings-persistence.ts',
+  'src/shared/collection-block/FieldManager.tsx',
+  'src/shared/collection-block/DisplayValue.tsx',
+  'src/shared/collection-block/FormField.tsx',
+  'src/shared/collection-block/useCollectionRecords.ts',
+] as const;
+const CREATE_FORM_ENTRY_PATH = 'src/client/js-blocks/create-form/index.tsx';
+const EDIT_FORM_ENTRY_PATH = 'src/client/js-blocks/edit-form/index.tsx';
+const DETAILS_ENTRY_PATH = 'src/client/js-blocks/details/index.tsx';
+const COLLECTION_LIST_ENTRY_PATH = 'src/client/js-blocks/collection-list/index.tsx';
+const COLLECTION_GRID_CARD_ENTRY_PATH = 'src/client/js-blocks/collection-grid-card/index.tsx';
+const ENTRY_SUPPORT_PATHS: Record<string, readonly string[]> = {
+  [COLLECTION_TABLE_ENTRY_PATH]: COLLECTION_TABLE_SUPPORT_PATHS,
+  [CREATE_FORM_ENTRY_PATH]: ['src/client/js-blocks/create-form/CreateForm.tsx'],
+  [EDIT_FORM_ENTRY_PATH]: ['src/client/js-blocks/edit-form/EditForm.tsx'],
+  [DETAILS_ENTRY_PATH]: ['src/client/js-blocks/details/DetailsBlock.tsx'],
+  [COLLECTION_LIST_ENTRY_PATH]: [
+    'src/client/js-blocks/collection-list/ListRecord.tsx',
+    'src/client/js-blocks/collection-list/CollectionList.tsx',
+  ],
+  [COLLECTION_GRID_CARD_ENTRY_PATH]: [
+    'src/client/js-blocks/collection-grid-card/GridCardRecord.tsx',
+    'src/client/js-blocks/collection-grid-card/CollectionGridCard.tsx',
+  ],
+};
 
 describe('plugin-light-extension default source template', () => {
   it('contains configurable examples for every supported surface and passes source validation', () => {
@@ -67,9 +100,8 @@ describe('plugin-light-extension default source template', () => {
       'tsconfig.json',
       ...EXPECTED_ENTRY_PATHS.flatMap((path) => {
         const descriptorPath = path.replace(/\/index\.[^.]+$/u, '/entry.json');
-        return path === COLLECTION_TABLE_ENTRY_PATH
-          ? [path, ...COLLECTION_TABLE_SUPPORT_PATHS, descriptorPath]
-          : [path, descriptorPath];
+        const entryPaths = [path, ...(ENTRY_SUPPORT_PATHS[path] || []), descriptorPath];
+        return path === COLLECTION_TABLE_ENTRY_PATH ? [...entryPaths, ...COLLECTION_BLOCK_COMMON_PATHS] : entryPaths;
       }),
     ];
 
@@ -240,7 +272,7 @@ describe('plugin-light-extension default source template', () => {
     expect(second[0].content).toBe(DEFAULT_LIGHT_EXTENSION_README);
   });
 
-  it('compiles every default example entry and exercises the collection table runtime', async () => {
+  it('compiles every default example entry and exercises the collection block runtimes', async () => {
     const auditService = new LightExtensionAuditService({} as Database);
     vi.spyOn(auditService, 'recordCompileEvent').mockResolvedValue(undefined);
     const bridge = new LightExtensionWorkspaceCompilerBridge(
@@ -268,8 +300,11 @@ describe('plugin-light-extension default source template', () => {
         true,
       );
       expect(result.diagnostics, `${item.kind}:${item.entryPath}`).toEqual([]);
-      if (item.entryPath === COLLECTION_TABLE_ENTRY_PATH && result.artifact) {
-        await expectCollectionTableRuntime(result.artifact.code);
+      const runtimeExpectation = getEntryRuntimeExpectation(item.entryPath);
+      if (runtimeExpectation) {
+        const artifactCode = result.artifact?.code;
+        expect(artifactCode).toEqual(expect.any(String));
+        if (typeof artifactCode === 'string') await runtimeExpectation(artifactCode);
       }
     }
   });
@@ -285,6 +320,25 @@ function getKindFromEntryPath(entryPath: string): LightExtensionKind {
 
 async function executeArtifact(code: string, ctx: unknown): Promise<unknown> {
   return new asyncFunctionConstructor('ctx', code)(ctx);
+}
+
+function getEntryRuntimeExpectation(entryPath: string): ((code: string) => Promise<void>) | undefined {
+  switch (entryPath) {
+    case COLLECTION_TABLE_ENTRY_PATH:
+      return expectCollectionTableRuntime;
+    case CREATE_FORM_ENTRY_PATH:
+      return expectCreateFormRuntime;
+    case EDIT_FORM_ENTRY_PATH:
+      return expectEditFormRuntime;
+    case DETAILS_ENTRY_PATH:
+      return expectDetailsRuntime;
+    case COLLECTION_LIST_ENTRY_PATH:
+      return expectCollectionListRuntime;
+    case COLLECTION_GRID_CARD_ENTRY_PATH:
+      return expectCollectionGridCardRuntime;
+    default:
+      return undefined;
+  }
 }
 
 function isTestElement(value: unknown): value is TestElement {
@@ -467,4 +521,246 @@ async function expectCollectionTableRuntime(code: string) {
   const titledRuntime = createCollectionTableRuntime({ collectionName: 'users', title: 'Members' });
   await executeArtifact(code, titledRuntime.ctx);
   expect(findElements(titledRuntime.rendered.at(-1), 'Typography.Title').map(readElementText)).toEqual(['Members']);
+}
+
+function createCollectionBlockRuntime(settings: Record<string, unknown>) {
+  const effects: Array<() => unknown> = [];
+  const rendered: unknown[] = [];
+  const createComponent =
+    (type: string) =>
+    (props: Record<string, unknown>): TestElement => ({ props, type });
+  const form = {
+    resetFields: vi.fn(),
+    setFieldsValue: vi.fn(),
+    validateFields: vi.fn(async (_fieldNames?: string[]) => ({ name: 'Updated user' })),
+  };
+  const Form = Object.assign(createComponent('Form'), {
+    Item: createComponent('Form.Item'),
+    useForm: () => [form],
+  });
+  const Input = Object.assign(createComponent('Input'), { TextArea: createComponent('Input.TextArea') });
+  const List = Object.assign(createComponent('List'), { Item: createComponent('List.Item') });
+  const Descriptions = Object.assign(createComponent('Descriptions'), {
+    Item: createComponent('Descriptions.Item'),
+  });
+  const Space = Object.assign(createComponent('Space'), { Compact: createComponent('Space.Compact') });
+  const React = {
+    Fragment: 'Fragment',
+    createElement: (type: unknown, props: unknown, ...children: unknown[]) => {
+      const nextProps = props && typeof props === 'object' ? { ...(props as Record<string, unknown>) } : {};
+      if (children.length) nextProps.children = children.length === 1 ? children[0] : children;
+      return typeof type === 'function'
+        ? (type as (componentProps: Record<string, unknown>) => unknown)(nextProps)
+        : { props: nextProps, type };
+    },
+    useEffect: (effect: () => unknown, _dependencies: unknown[]) => effects.push(effect),
+    useMemo: <T>(factory: () => T) => factory(),
+    useRef: <T>(initialValue: T) => ({ current: initialValue }),
+    useState: <T>(initialValue: T | (() => T)) => {
+      const value = typeof initialValue === 'function' ? (initialValue as () => T)() : initialValue;
+      return [value, (_nextValue: T) => undefined] as const;
+    },
+  };
+  const antd = {
+    Alert: createComponent('Alert'),
+    Button: createComponent('Button'),
+    Card: createComponent('Card'),
+    Checkbox: createComponent('Checkbox'),
+    DatePicker: createComponent('DatePicker'),
+    Descriptions,
+    Empty: createComponent('Empty'),
+    Form,
+    Input,
+    InputNumber: createComponent('InputNumber'),
+    List,
+    Popover: createComponent('Popover'),
+    Select: createComponent('Select'),
+    Space,
+    Spin: createComponent('Spin'),
+    Switch: createComponent('Switch'),
+    Tag: createComponent('Tag'),
+    TimePicker: createComponent('TimePicker'),
+    Typography: {
+      Text: createComponent('Typography.Text'),
+      Title: createComponent('Typography.Title'),
+    },
+    theme: {
+      useToken: () => ({ token: { marginLG: 24, marginSM: 8 } }),
+    },
+  };
+  const runAction = vi.fn(async (action: string, _options: Record<string, unknown>) => {
+    if (action === 'list') {
+      return { data: [{ id: 1, name: 'Existing user' }], meta: { count: 1, page: 1 } };
+    }
+    return { data: { id: 1, name: action === 'get' ? 'Existing user' : 'Updated user' } };
+  });
+  const resource = {
+    runAction,
+    setDataSourceKey: (_key: string) => resource,
+    setResourceName: (_name: string) => resource,
+  };
+  const runJs = {
+    settings,
+    sourceBinding: { entryId: 'lee_collection_block', kind: 'js-block', repoId: 'ler_default', type: 'entry' },
+    sourceMode: 'light-extension',
+  };
+  const setTitle = vi.fn();
+  type FakeFlowModel = {
+    __lightExtensionCollectionBlockPersistStates?: Record<string, unknown>;
+    flowEngine: { getModel: (uid: string) => unknown };
+    getStepParams: (flowKey: string, stepKey: string) => unknown;
+    saveStepParams: () => Promise<unknown>;
+    setTitle: (title: string) => void;
+    setStepParams: (flowKey: string, stepKey: string, params: Record<string, unknown>) => void;
+    uid: string;
+  };
+  const flowModel: FakeFlowModel = {
+    flowEngine: { getModel: () => flowModel },
+    getStepParams: () => runJs,
+    saveStepParams: async () => undefined,
+    setTitle,
+    setStepParams: () => undefined,
+    uid: 'collection-block-model',
+  };
+  const dayjs = (_value: unknown) => ({ format: () => '2026-07-16 09:00', isValid: () => true });
+  const ctx = {
+    React,
+    dataSourceManager: {
+      getCollection: () => ({
+        filterTargetKey: 'id',
+        getFields: () => [
+          { interface: 'integer', name: 'id', primaryKey: true, title: 'ID', type: 'bigInt' },
+          { interface: 'input', name: 'name', title: 'Name', type: 'string' },
+          { name: 'internal', title: 'Internal', type: 'string' },
+        ],
+        titleField: 'name',
+      }),
+    },
+    flowSettingsEnabled: false,
+    libs: {
+      React,
+      antd,
+      antdIcons: {
+        DownOutlined: createComponent('DownOutlined'),
+        ReloadOutlined: createComponent('ReloadOutlined'),
+        SaveOutlined: createComponent('SaveOutlined'),
+        SettingOutlined: createComponent('SettingOutlined'),
+        UndoOutlined: createComponent('UndoOutlined'),
+        UpOutlined: createComponent('UpOutlined'),
+      },
+      dayjs,
+    },
+    locale: 'en-US',
+    makeResource: () => resource,
+    message: { error: vi.fn(), success: vi.fn(), warning: vi.fn() },
+    model: flowModel,
+    render: (value: unknown) => rendered.push(value),
+    runJsSource: { sourceBinding: runJs.sourceBinding, sourceMode: runJs.sourceMode },
+    settings,
+    t: (text: string) => text,
+  };
+
+  const flushEffects = async () => {
+    effects.forEach((effect) => effect());
+    await Promise.resolve();
+    await Promise.resolve();
+  };
+
+  return { ctx, flushEffects, rendered, runAction, setTitle };
+}
+
+async function expectUnconfiguredCollectionBlockRuntime(code: string, title: string) {
+  const runtime = createCollectionBlockRuntime({});
+  await executeArtifact(code, runtime.ctx);
+  expect(runtime.setTitle).toHaveBeenCalledTimes(1);
+  expect(runtime.setTitle).toHaveBeenCalledWith(title);
+  expect(runtime.runAction).not.toHaveBeenCalled();
+}
+
+async function invokeElementHandler(handler: unknown, argument?: unknown) {
+  expect(handler).toEqual(expect.any(Function));
+  if (typeof handler === 'function') {
+    await Promise.resolve((handler as (value?: unknown) => unknown)(argument));
+  }
+}
+
+async function expectCreateFormRuntime(code: string) {
+  await expectUnconfiguredCollectionBlockRuntime(code, 'JS Add Form');
+
+  const runtime = createCollectionBlockRuntime({ collectionName: 'users' });
+  await executeArtifact(code, runtime.ctx);
+  expect(runtime.setTitle).toHaveBeenCalledWith('JS Add Form: users');
+  expect(runtime.runAction).not.toHaveBeenCalled();
+  const form = findElements(runtime.rendered.at(-1), 'Form');
+  expect(form).toHaveLength(1);
+  await invokeElementHandler(form[0].props.onFinish, { name: 'Updated user' });
+  expect(runtime.runAction).toHaveBeenCalledTimes(1);
+  expect(runtime.runAction).toHaveBeenCalledWith('create', { data: { name: 'Updated user' } });
+}
+
+async function expectEditFormRuntime(code: string) {
+  await expectUnconfiguredCollectionBlockRuntime(code, 'JS Edit Form');
+
+  const runtime = createCollectionBlockRuntime({ collectionName: 'users', recordId: '1' });
+  await executeArtifact(code, runtime.ctx);
+  expect(runtime.setTitle).toHaveBeenCalledWith('JS Edit Form: users');
+  await runtime.flushEffects();
+  await vi.waitFor(() => expect(runtime.runAction).toHaveBeenCalledTimes(1));
+  expect(runtime.runAction).toHaveBeenNthCalledWith(1, 'get', {
+    method: 'get',
+    params: { fields: ['id', 'name'], filterByTk: '1', page: 1, pageSize: 1, sort: ['name'] },
+  });
+  const form = findElements(runtime.rendered.at(-1), 'Form');
+  expect(form).toHaveLength(1);
+  await invokeElementHandler(form[0].props.onFinish, { name: 'Updated user' });
+  expect(runtime.runAction).toHaveBeenNthCalledWith(2, 'update', {
+    data: { name: 'Updated user' },
+    params: { filterByTk: '1' },
+  });
+  expect(runtime.runAction).toHaveBeenNthCalledWith(3, 'get', {
+    method: 'get',
+    params: { fields: ['id', 'name'], filterByTk: '1', page: 1, pageSize: 1, sort: ['name'] },
+  });
+}
+
+async function expectDetailsRuntime(code: string) {
+  await expectUnconfiguredCollectionBlockRuntime(code, 'JS Details');
+
+  const runtime = createCollectionBlockRuntime({ collectionName: 'users', recordId: '1' });
+  await executeArtifact(code, runtime.ctx);
+  expect(runtime.setTitle).toHaveBeenCalledWith('JS Details: users');
+  await runtime.flushEffects();
+  await vi.waitFor(() => expect(runtime.runAction).toHaveBeenCalledTimes(1));
+  expect(runtime.runAction).toHaveBeenCalledWith('get', {
+    method: 'get',
+    params: { fields: ['id', 'name'], filterByTk: '1', page: 1, pageSize: 1, sort: ['name'] },
+  });
+}
+
+async function expectCollectionListRuntime(code: string) {
+  await expectUnconfiguredCollectionBlockRuntime(code, 'JS List');
+
+  const runtime = createCollectionBlockRuntime({ collectionName: 'users' });
+  await executeArtifact(code, runtime.ctx);
+  expect(runtime.setTitle).toHaveBeenCalledWith('JS List: users');
+  await runtime.flushEffects();
+  await vi.waitFor(() => expect(runtime.runAction).toHaveBeenCalledTimes(1));
+  expect(runtime.runAction).toHaveBeenCalledWith('list', {
+    method: 'get',
+    params: { fields: ['id', 'name'], page: 1, pageSize: 20 },
+  });
+}
+
+async function expectCollectionGridCardRuntime(code: string) {
+  await expectUnconfiguredCollectionBlockRuntime(code, 'JS Grid Card');
+
+  const runtime = createCollectionBlockRuntime({ collectionName: 'users' });
+  await executeArtifact(code, runtime.ctx);
+  expect(runtime.setTitle).toHaveBeenCalledWith('JS Grid Card: users');
+  await runtime.flushEffects();
+  await vi.waitFor(() => expect(runtime.runAction).toHaveBeenCalledTimes(1));
+  expect(runtime.runAction).toHaveBeenCalledWith('list', {
+    method: 'get',
+    params: { fields: ['id', 'name'], page: 1, pageSize: 12 },
+  });
 }

@@ -9,6 +9,8 @@
 
 import type { LightExtensionTreeEntryInput } from './types';
 
+import { DEFAULT_COLLECTION_BLOCK_TEMPLATE_FILES } from './default-template-collection-blocks';
+
 export const DEFAULT_LIGHT_EXTENSION_README = `# Light extension source
 
 Put each reusable entry in its own directory:
@@ -1632,6 +1634,7 @@ export async function mountCollectionTable() {
 `,
     language: 'json',
   },
+  ...DEFAULT_COLLECTION_BLOCK_TEMPLATE_FILES,
   {
     path: 'src/client/js-actions/refresh-data/index.ts',
     content: `const resource = ctx.resource;
