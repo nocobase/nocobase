@@ -160,7 +160,6 @@ export { AIEmployeeActionModel } from '../client-v2/models/ai-employees/AIEmploy
 export { useChat } from '../client-v2/ai-employees/chatbox/hooks/useChat';
 export { useChatBoxActions } from '../client-v2/ai-employees/chatbox/hooks/useChatBoxActions';
 export { getGlobalChatBoxRuntime } from '../client-v2/ai-employees/chatbox/stores/runtime';
-export { useChatConversationsStore } from '../client-v2/ai-employees/chatbox/stores/chat-conversations';
 export { useAIConfigRepository } from '../client-v2/repositories/hooks/useAIConfigRepository';
 export { AIEmployeeProfileCard as ProfileCard } from '../client-v2/ai-employees/ProfileCard';
 export { avatars } from '../client-v2/ai-employees/avatars';
