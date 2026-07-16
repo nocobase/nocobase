@@ -101,7 +101,7 @@ Las colecciones generales se pueden utilizar en la mayoría de los bloques de da
 | [Bloque de calendario](../../interface-builder/blocks/data-blocks/calendar.md) | Mostrar registros por fecha o intervalo de tiempo. |
 | [Bloque de gráficos](../../interface-builder/blocks/data-blocks/chart.md) | Generar gráficos estadísticos a partir de los registros. |
 | [Bloque de mapa](../../interface-builder/blocks/data-blocks/map.md) | Mostrar registros según su ubicación geográfica. |
-| [Bloque de diagrama de Gantt](../../interface-builder/blocks/data-blocks/gantt.md) | Mostrar planes de proyectos y programación de tareas según las fechas de inicio y finalización. |
+| [Bloque de diagrama de Gantt](../../plugins/@nocobase/plugin-gantt/index.md) | Mostrar planes de proyectos y programación de tareas según las fechas de inicio y finalización. |
 | [Bloque de filtro de formulario](../../interface-builder/blocks/filter-blocks/form.md) | Utilizar condiciones de formulario para filtrar los bloques de datos de la página. |
 | [Bloque de filtro de árbol](../../interface-builder/blocks/filter-blocks/tree.md) | Utilizar una estructura de árbol para filtrar los bloques de datos de la página; se usa habitualmente para filtros jerárquicos de categorías, organizaciones, regiones, etc. |
 

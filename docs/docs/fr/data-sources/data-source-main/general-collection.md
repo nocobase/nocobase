@@ -101,7 +101,7 @@ Les tables ordinaires peuvent être utilisées avec la plupart des blocs de donn
 | [Bloc de calendrier](../../interface-builder/blocks/data-blocks/calendar.md) | Afficher les enregistrements selon une date ou une période. |
 | [Bloc de graphiques](../../interface-builder/blocks/data-blocks/chart.md) | Générer des graphiques statistiques à partir des enregistrements. |
 | [Bloc de carte](../../interface-builder/blocks/data-blocks/map.md) | Afficher les enregistrements selon leur position géographique. |
-| [Bloc de diagramme de Gantt](../../interface-builder/blocks/data-blocks/gantt.md) | Afficher les plans de projet et la planification des tâches selon les dates de début et de fin. |
+| [Bloc de diagramme de Gantt](../../plugins/@nocobase/plugin-gantt/index.md) | Afficher les plans de projet et la planification des tâches selon les dates de début et de fin. |
 | [Bloc de filtrage par formulaire](../../interface-builder/blocks/filter-blocks/form.md) | Filtrer les données des blocs de la page à l’aide de critères de formulaire. |
 | [Bloc de filtrage arborescent](../../interface-builder/blocks/filter-blocks/tree.md) | Filtrer les données des blocs de la page à l’aide d’une structure arborescente, notamment pour les catégories, les organisations ou les zones géographiques. |
 

@@ -101,7 +101,7 @@ As tabelas comuns podem ser usadas na maioria dos blocos de dados e blocos de fi
 | [Bloco de calendário](../../interface-builder/blocks/data-blocks/calendar.md) | Exibir registros por data ou intervalo de tempo. |
 | [Bloco de gráfico](../../interface-builder/blocks/data-blocks/chart.md) | Gerar gráficos estatísticos com base nos registros. |
 | [Bloco de mapa](../../interface-builder/blocks/data-blocks/map.md) | Exibir registros por localização geográfica. |
-| [Bloco de gráfico de Gantt](../../interface-builder/blocks/data-blocks/gantt.md) | Exibir planos de projeto e cronogramas de tarefas por data de início e término. |
+| [Bloco de gráfico de Gantt](../../plugins/@nocobase/plugin-gantt/index.md) | Exibir planos de projeto e cronogramas de tarefas por data de início e término. |
 | [Bloco de filtragem por formulário](../../interface-builder/blocks/filter-blocks/form.md) | Usar condições de formulário para filtrar os blocos de dados da página. |
 | [Bloco de filtragem por árvore](../../interface-builder/blocks/filter-blocks/tree.md) | Usar uma estrutura em árvore para filtrar os blocos de dados da página, geralmente em filtros hierárquicos de categorias, organizações, regiões e outros. |
 

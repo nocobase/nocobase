@@ -101,7 +101,7 @@ Tabel umum dapat digunakan untuk sebagian besar blok data dan blok pemfilteran.
 | [Blok kalender](../../interface-builder/blocks/data-blocks/calendar.md) | Menampilkan record berdasarkan tanggal atau rentang waktu. |
 | [Blok grafik](../../interface-builder/blocks/data-blocks/chart.md) | Membuat grafik statistik berdasarkan record. |
 | [Blok peta](../../interface-builder/blocks/data-blocks/map.md) | Menampilkan record berdasarkan lokasi geografis. |
-| [Blok Gantt](../../interface-builder/blocks/data-blocks/gantt.md) | Menampilkan rencana proyek dan jadwal tugas berdasarkan waktu mulai dan selesai. |
+| [Blok Gantt](../../plugins/@nocobase/plugin-gantt/index.md) | Menampilkan rencana proyek dan jadwal tugas berdasarkan waktu mulai dan selesai. |
 | [Blok filter formulir](../../interface-builder/blocks/filter-blocks/form.md) | Memfilter blok data pada halaman menggunakan kondisi formulir. |
 | [Blok filter pohon](../../interface-builder/blocks/filter-blocks/tree.md) | Memfilter blok data pada halaman menggunakan struktur pohon, yang umumnya digunakan untuk pemfilteran hierarkis berdasarkan kategori, organisasi, wilayah, dan sebagainya. |
 
