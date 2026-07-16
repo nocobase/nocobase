@@ -65,6 +65,7 @@ export const MessagesAndSender: React.FC<{
     <Layout
       style={{
         height: '100%',
+        maxHeight: '100%',
         minHeight: 0,
         display: 'flex',
         flexDirection: 'column',

@@ -88,7 +88,7 @@ describe('MessagesAndSender', () => {
       { username: 'support', nickname: 'Support assistant', category: 'business' },
     ]);
 
-    render(
+    const { container } = render(
       <MessagesAndSender
         model={makeModel({
           showMessages: false,
@@ -108,6 +108,7 @@ describe('MessagesAndSender', () => {
       />,
     );
 
+    expect(container.querySelector('.ant-layout')?.getAttribute('style')).toContain('max-height: 100%');
     expect(screen.queryByTestId('messages')).toBeNull();
     expect(screen.getByTestId('sender')).toBeInTheDocument();
     expect(mocks.senderProps).toMatchObject({

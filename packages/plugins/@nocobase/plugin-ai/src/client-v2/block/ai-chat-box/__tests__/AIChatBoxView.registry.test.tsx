@@ -104,7 +104,9 @@ describe('AIChatBoxView mounted registry', () => {
     const { container, unmount } = render(<AIChatBoxView model={makeModel({ height: 720 })} />);
     const entry = getMountedChatBox('chat-box-1');
 
-    expect(container.querySelector('.ant-layout')?.getAttribute('style')).toContain('height: 720px');
+    const layouts = container.querySelectorAll('.ant-layout');
+    expect(layouts[0]?.getAttribute('style')).toContain('height: 720px');
+    expect(layouts[1]?.getAttribute('style')).toContain('height: 100%');
     expect(entry).toMatchObject({
       uid: 'chat-box-1',
       runtime: mocks.runtime,
