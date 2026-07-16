@@ -13,5 +13,10 @@
     "type": "custom-link",
     "label": "Lina: Localization Translation",
     "link": "/ai-employees/scenarios/localization-hy-mt"
+  },
+  {
+    "type": "custom-link",
+    "label": "Let AI employees fill custom forms in JS blocks",
+    "link": "/building-tips/ai-fill-js-block-form"
   }
 ]

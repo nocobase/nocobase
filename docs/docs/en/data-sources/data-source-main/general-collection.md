@@ -84,7 +84,7 @@ General collections can be used by most data and filter blocks.
 | [Calendar](../../interface-builder/blocks/data-blocks/calendar.md) | Display records by date or time range. |
 | [Chart](../../interface-builder/blocks/data-blocks/chart.md) | Create statistics charts from records. |
 | [Map](../../interface-builder/blocks/data-blocks/map.md) | Display records by geographic location. |
-| [Gantt](../../interface-builder/blocks/data-blocks/gantt.md) | Display project plans and task schedules by start and end time. |
+| [Gantt](../../plugins/@nocobase/plugin-gantt/index.md) | Display project plans and task schedules by start and end time. |
 | [Form filter](../../interface-builder/blocks/filter-blocks/form.md) | Filter data blocks with form conditions. |
 | [Tree filter](../../interface-builder/blocks/filter-blocks/tree.md) | Filter data blocks by hierarchy, such as category, organization, or region. |
 

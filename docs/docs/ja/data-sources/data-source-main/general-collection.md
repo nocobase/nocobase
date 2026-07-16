@@ -101,7 +101,7 @@ ID フィールドの Interface にマウスカーソルを合わせると、別
 | [カレンダーブロック](../../interface-builder/blocks/data-blocks/calendar.md) | 日付または期間ごとにレコードを表示します。 |
 | [チャートブロック](../../interface-builder/blocks/data-blocks/chart.md) | レコードをもとに統計チャートを作成します。 |
 | [マップブロック](../../interface-builder/blocks/data-blocks/map.md) | 地理的位置ごとにレコードを表示します。 |
-| [ガントチャートブロック](../../interface-builder/blocks/data-blocks/gantt.md) | 開始日時と終了日時をもとに、プロジェクト計画やタスクのスケジュールを表示します。 |
+| [ガントチャートブロック](../../plugins/@nocobase/plugin-gantt/index.md) | 開始日時と終了日時をもとに、プロジェクト計画やタスクのスケジュールを表示します。 |
 | [フォーム絞り込みブロック](../../interface-builder/blocks/filter-blocks/form.md) | フォームの条件を使用して、ページ内のデータブロックを絞り込みます。 |
 | [ツリー絞り込みブロック](../../interface-builder/blocks/filter-blocks/tree.md) | ツリー構造を使用してページ内のデータブロックを絞り込みます。分類、組織、地域などの階層的な絞り込みによく使用されます。 |
 

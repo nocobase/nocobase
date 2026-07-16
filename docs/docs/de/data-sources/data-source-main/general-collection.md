@@ -101,7 +101,7 @@ Normale Tabellen können für die meisten Daten- und Filterblöcke verwendet wer
 | [Kalenderblock](../../interface-builder/blocks/data-blocks/calendar.md) | Datensätze nach Datum oder Zeitraum anzeigen. |
 | [Diagrammblock](../../interface-builder/blocks/data-blocks/chart.md) | Statistische Diagramme auf Grundlage der Datensätze erstellen. |
 | [Kartenblock](../../interface-builder/blocks/data-blocks/map.md) | Datensätze nach geografischem Standort anzeigen. |
-| [Gantt-Diagrammblock](../../interface-builder/blocks/data-blocks/gantt.md) | Projektpläne und Aufgabenplanung anhand von Start- und Endzeit anzeigen. |
+| [Gantt-Diagrammblock](../../plugins/@nocobase/plugin-gantt/index.md) | Projektpläne und Aufgabenplanung anhand von Start- und Endzeit anzeigen. |
 | [Formularfilterblock](../../interface-builder/blocks/filter-blocks/form.md) | Datenblöcke auf der Seite anhand von Formularbedingungen filtern. |
 | [Baumfilterblock](../../interface-builder/blocks/filter-blocks/tree.md) | Datenblöcke auf der Seite anhand einer Baumstruktur filtern, etwa nach Kategorien, Organisationen oder Regionen. |
 

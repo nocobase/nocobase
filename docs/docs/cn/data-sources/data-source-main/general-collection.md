@@ -101,7 +101,7 @@ keywords: "普通表,General Collection,系统字段,数据表,NocoBase"
 | [日历区块](../../interface-builder/blocks/data-blocks/calendar.md) | 按日期或时间范围展示记录。 |
 | [图表区块](../../interface-builder/blocks/data-blocks/chart.md) | 基于记录生成统计图表。 |
 | [地图区块](../../interface-builder/blocks/data-blocks/map.md) | 按地理位置展示记录。 |
-| [甘特图区块](../../interface-builder/blocks/data-blocks/gantt.md) | 按开始、结束时间展示项目计划、任务排期。 |
+| [甘特图区块](../../plugins/@nocobase/plugin-gantt/index.md) | 按开始、结束时间展示项目计划、任务排期。 |
 | [表单筛选区块](../../interface-builder/blocks/filter-blocks/form.md) | 使用表单条件筛选页面中的数据区块。 |
 | [树筛选区块](../../interface-builder/blocks/filter-blocks/tree.md) | 使用树结构筛选页面中的数据区块，常用于分类、组织、地区等层级筛选。 |
 
