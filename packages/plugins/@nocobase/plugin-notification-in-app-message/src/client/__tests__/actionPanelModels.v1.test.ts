@@ -52,6 +52,7 @@ describe('PluginNotificationInAppClient action panel models', () => {
       expect.objectContaining({
         NotificationEmbeddedPageModel: expect.any(Function),
         NotificationEntryActionModel: expect.any(Function),
+        NotificationPageMenuModel: expect.any(Function),
       }),
     );
 

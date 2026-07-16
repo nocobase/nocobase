@@ -15,6 +15,7 @@ const holder = vi.hoisted(() => ({
   navigate: vi.fn(),
   back: vi.fn(),
   close: vi.fn(),
+  preventClose: false,
   flowUserId: 1 as number | string | null,
   channelStatusFilterObs: { value: 'all' },
   selectedChannelNameObs: { value: null as string | null },
@@ -77,6 +78,7 @@ vi.mock('@nocobase/flow-engine', () => ({
     },
     view: {
       close: holder.close,
+      preventClose: holder.preventClose,
       navigation: {
         back: holder.back,
       },
@@ -113,6 +115,7 @@ describe('MobileNotificationContent', () => {
     holder.navigate.mockClear();
     holder.back.mockClear();
     holder.close.mockClear();
+    holder.preventClose = false;
     holder.flowUserId = 1;
     holder.channelStatusFilterObs.value = 'all';
     holder.selectedChannelNameObs.value = null;
@@ -218,6 +221,15 @@ describe('MobileNotificationContent', () => {
 
     expect(holder.close).toHaveBeenCalledTimes(1);
     expect(holder.back).not.toHaveBeenCalled();
+  });
+
+  it('hides the embedded back button for a non-closable root page', () => {
+    holder.preventClose = true;
+
+    render(<MobileNotificationContent />);
+
+    expect(screen.queryByRole('button', { name: 'Back' })).not.toBeInTheDocument();
+    expect(screen.getByRole('tablist', { name: 'Notification' })).toBeInTheDocument();
   });
 
   it('opens a channel message list and marks messages read before mobile navigation', async () => {

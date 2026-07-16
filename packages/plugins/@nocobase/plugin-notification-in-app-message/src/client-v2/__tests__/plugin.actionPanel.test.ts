@@ -47,6 +47,10 @@ describe('PluginNotificationInAppMessageClientV2 action panel entry', () => {
           extends: 'ChildPageModel',
           loader: expect.any(Function),
         }),
+        NotificationPageMenuModel: expect.objectContaining({
+          extends: 'BasePageMenuModel',
+          loader: expect.any(Function),
+        }),
       }),
     );
     expect(app.entryActionManager.register).toHaveBeenCalledWith(

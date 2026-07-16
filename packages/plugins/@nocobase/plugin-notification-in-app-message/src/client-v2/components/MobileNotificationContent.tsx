@@ -50,6 +50,7 @@ type MobileNotificationFlowContext = {
   };
   view?: {
     close?: unknown;
+    preventClose?: boolean;
     navigation?: {
       back?: unknown;
     };
@@ -64,6 +65,9 @@ function normalizeUserId(value: unknown) {
 
 function getEmbeddedViewBack(ctx: MobileNotificationFlowContext) {
   const view = ctx.view;
+  if (view?.preventClose) {
+    return undefined;
+  }
   if (view && typeof view.close === 'function') {
     return () => (view.close as () => void).call(view);
   }

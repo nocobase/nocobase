@@ -11,7 +11,7 @@ import { CloseOutlined, LoadingOutlined } from '@ant-design/icons';
 import { useFormLayout } from '@formily/antd-v5';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { isValid } from '@formily/shared';
-import { Icon as CoreIcon, hasIcon, icons } from '@nocobase/client-v2';
+import { Icon as CoreIcon, hasIcon, icons, isFlowPageRoute as isCoreFlowPageRoute } from '@nocobase/client-v2';
 import { Button, Empty, Flex, Input, Popover, Radio, Space, theme } from 'antd';
 import { debounce, groupBy } from 'lodash';
 import React, { useContext, useMemo, useState } from 'react';
@@ -27,6 +27,8 @@ export enum NocoBaseDesktopRouteType {
   tabs = 'tabs',
   flowPage = 'flowPage',
 }
+
+export type NocoBaseDesktopRouteTypeValue = NocoBaseDesktopRouteType | (string & {});
 
 export interface NocoBaseDesktopRouteOptions {
   hasPersistedMenuInstanceFlow?: boolean;
@@ -44,7 +46,7 @@ export interface NocoBaseDesktopRoute {
   menuSchemaUid?: string;
   tabSchemaName?: string;
   pageSchemaUid?: string;
-  type?: NocoBaseDesktopRouteType;
+  type?: NocoBaseDesktopRouteTypeValue;
   options?: NocoBaseDesktopRouteOptions;
   sort?: number;
   hideInMenu?: boolean;
@@ -58,6 +60,10 @@ export interface NocoBaseDesktopRoute {
   updatedAt?: string;
   createdBy?: unknown;
   updatedBy?: unknown;
+}
+
+export function isFlowPageRoute(route: NocoBaseDesktopRoute | undefined) {
+  return isCoreFlowPageRoute(route);
 }
 
 export const zIndexContext = React.createContext(100);

@@ -20,7 +20,7 @@ import {
   type BaseLayoutRouteCoordinatorOptions,
   type RoutePageMeta,
 } from './BaseLayoutRouteCoordinator';
-import { NocoBaseDesktopRouteType } from '../../flow-compat';
+import { isPageMenuRoute, NocoBaseDesktopRouteType } from '../../flow-compat';
 import type { LayoutDefinition } from '../../layout-manager/types';
 import { isLayoutContentRouteName } from '../../layout-manager/utils';
 
@@ -124,7 +124,7 @@ const isLegacyLayoutContentRouteName = (routeName: string, targetRouteName?: str
   );
 };
 
-const isStandardLayoutRelativePath = (relativePath: string) => {
+const isStandardLayoutRelativePath = (relativePath: string, allowRootExtensions = false) => {
   if (!relativePath) {
     return true;
   }
@@ -163,7 +163,7 @@ const isStandardLayoutRelativePath = (relativePath: string) => {
       continue;
     }
 
-    if (isChildView && isExtensionViewParamName(segment) && segments[i + 1]) {
+    if ((isChildView || allowRootExtensions) && isExtensionViewParamName(segment) && segments[i + 1]) {
       i += 2;
       continue;
     }
@@ -320,7 +320,14 @@ export class BaseLayoutModel<
       };
     }
 
-    if (!isStandardLayoutRelativePath(relativePath)) {
+    const pageUidFromPath = relativePath.split('/').filter(Boolean)[0];
+    const routeRepository = this.flowEngine.context.routeRepository;
+    const schemaRoute = pageUidFromPath ? routeRepository?.getRouteBySchemaUid?.(pageUidFromPath) : undefined;
+
+    const shouldDeferRootExtensionValidation = !schemaRoute && routeRepository?.isAccessibleLoaded?.() === false;
+    if (
+      !isStandardLayoutRelativePath(relativePath, isPageMenuRoute(schemaRoute) || shouldDeferRootExtensionValidation)
+    ) {
       return {
         type: 'notFound',
         pathname,
@@ -341,8 +348,6 @@ export class BaseLayoutModel<
       };
     }
 
-    const routeRepository = this.flowEngine.context.routeRepository;
-    const schemaRoute = routeRepository?.getRouteBySchemaUid?.(pageUid);
     const route = schemaRoute ? undefined : routeRepository?.getRouteById?.(pageUid);
     if (!schemaRoute && route?.type === NocoBaseDesktopRouteType.group) {
       return {

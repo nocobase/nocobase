@@ -8,6 +8,7 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
+import { WorkflowTasksPageMenuModel } from '../models/WorkflowTasksPageMenuModel';
 import PluginWorkflowClient from '../index';
 
 type RegisteredWorkflowEntryAction = {
@@ -57,10 +58,12 @@ describe('PluginWorkflowClient action panel models', () => {
     expect(registerModels).toHaveBeenCalledWith(
       expect.objectContaining({
         WorkflowTasksEntryActionModel: expect.any(Function),
+        WorkflowTasksPageMenuModel: expect.any(Function),
       }),
     );
 
     const registeredModels = registerModels.mock.calls[0][0] as Record<string, RegisteredWorkflowEntryAction>;
+    expect(registeredModels.WorkflowTasksPageMenuModel).toBe(WorkflowTasksPageMenuModel);
     expect(registeredModels).not.toHaveProperty('WorkflowTasksEmbeddedPageModel');
 
     const EntryActionModel = registeredModels.WorkflowTasksEntryActionModel;

@@ -56,6 +56,10 @@ export class PluginNotificationInAppMessageClientV2 extends Plugin<Record<string
         extends: 'ChildPageModel',
         loader: () => import('./models/NotificationEmbeddedPageModel'),
       },
+      NotificationPageMenuModel: {
+        extends: 'BasePageMenuModel',
+        loader: () => import('./models/NotificationPageMenuModel'),
+      },
     });
 
     this.registerNotificationEntryAction();

@@ -305,6 +305,10 @@ export class PluginWorkflowClientV2 extends Plugin {
         extends: 'ChildPageModel',
         loader: () => import('./models/WorkflowTasksEmbeddedPageModel'),
       },
+      WorkflowTasksPageMenuModel: {
+        extends: 'BasePageMenuModel',
+        loader: () => import('./models/WorkflowTasksPageMenuModel'),
+      },
     });
   }
 

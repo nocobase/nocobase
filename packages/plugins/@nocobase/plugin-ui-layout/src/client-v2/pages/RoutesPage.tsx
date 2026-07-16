@@ -17,8 +17,14 @@ import {
   PlusOutlined,
   ReloadOutlined,
 } from '@ant-design/icons';
-import { Table } from '@nocobase/client-v2';
-import { randomId, useFlowContext } from '@nocobase/flow-engine';
+import {
+  buildPageMenuRoute,
+  isPageMenuRoute,
+  resolvePageMenuModels,
+  Table,
+  type ResolvedPageMenuModel,
+} from '@nocobase/client-v2';
+import { randomId, useFlowContext, useFlowEngine } from '@nocobase/flow-engine';
 import {
   Button,
   Card,
@@ -52,6 +58,8 @@ type RouteLayoutConfig = {
   mobile?: boolean;
 };
 
+type RouteType = NonNullable<NocoBaseDesktopRoute['type']>;
+
 type RouteFormValues = {
   enableTabs?: boolean;
   icon?: string;
@@ -59,7 +67,7 @@ type RouteFormValues = {
   routePath?: string;
   showInMenu?: boolean;
   title: string;
-  type: NocoBaseDesktopRouteType;
+  type: RouteType;
 };
 
 type RouteSearchParameter = {
@@ -175,7 +183,7 @@ function getLinkRouteParams(route: NocoBaseDesktopRoute): RouteSearchParameter[]
   }, []);
 }
 
-function getRouteTypeLabel(type: NocoBaseDesktopRouteType | undefined) {
+function getRouteTypeLabel(type: RouteType | undefined) {
   if (type === NocoBaseDesktopRouteType.group) {
     return 'Group';
   }
@@ -191,7 +199,10 @@ function getRouteTypeLabel(type: NocoBaseDesktopRouteType | undefined) {
   return 'Unknown';
 }
 
-function getRouteTypeColor(type: NocoBaseDesktopRouteType | undefined) {
+function getRouteTypeColor(type: RouteType | undefined, pageMenuModel?: ResolvedPageMenuModel) {
+  if (pageMenuModel) {
+    return 'purple';
+  }
   if (type === NocoBaseDesktopRouteType.flowPage || type === NocoBaseDesktopRouteType.page) {
     return 'purple';
   }
@@ -204,6 +215,29 @@ function getRouteTypeColor(type: NocoBaseDesktopRouteType | undefined) {
   return 'default';
 }
 
+function findPageMenuModel(pageMenuModels: ResolvedPageMenuModel[], type: RouteType | undefined) {
+  return pageMenuModels.find((definition) => definition.routeType === type);
+}
+
+function getAvailablePageMenuModel(route: NocoBaseDesktopRoute, pageMenuModels: ResolvedPageMenuModel[]) {
+  if (!isPageMenuRoute(route)) {
+    return undefined;
+  }
+  const definition = findPageMenuModel(pageMenuModels, route.type);
+  return definition && route.options?.pageMenuModelClass === definition.modelClass ? definition : undefined;
+}
+
+function getPageMenuModelLabel(
+  definition: ResolvedPageMenuModel,
+  t: (key: string, options?: Record<string, unknown>) => string,
+) {
+  return typeof definition.label === 'string' ? t(definition.label) : definition.routeType;
+}
+
+function isUnavailablePageMenuRoute(route: NocoBaseDesktopRoute, pageMenuModels: ResolvedPageMenuModel[]) {
+  return isPageMenuRoute(route) && !getAvailablePageMenuModel(route, pageMenuModels);
+}
+
 function canRouteHaveChildren(route: NocoBaseDesktopRoute) {
   if (route.type === NocoBaseDesktopRouteType.group) {
     return true;
@@ -214,7 +248,7 @@ function canRouteHaveChildren(route: NocoBaseDesktopRoute) {
   return false;
 }
 
-function isPageRouteType(type: NocoBaseDesktopRouteType | undefined) {
+function isPageRouteType(type: RouteType | undefined) {
   return type === NocoBaseDesktopRouteType.page || type === NocoBaseDesktopRouteType.flowPage;
 }
 
@@ -230,7 +264,11 @@ function getDefaultRouteType(options: { mobile?: boolean; parentRoute?: NocoBase
 
 function getRouteTypeOptions(
   t: (key: string, options?: Record<string, unknown>) => string,
-  options: { mobile?: boolean; parentRoute?: NocoBaseDesktopRoute | null },
+  options: {
+    mobile?: boolean;
+    pageMenuModels: ResolvedPageMenuModel[];
+    parentRoute?: NocoBaseDesktopRoute | null;
+  },
 ) {
   if (
     options.parentRoute?.type === NocoBaseDesktopRouteType.page ||
@@ -258,6 +296,10 @@ function getRouteTypeOptions(
         label: t('Link'),
         value: NocoBaseDesktopRouteType.link,
       },
+      ...options.pageMenuModels.map((definition) => ({
+        label: getPageMenuModelLabel(definition, t),
+        value: definition.routeType,
+      })),
     ];
   }
 
@@ -278,6 +320,10 @@ function getRouteTypeOptions(
       label: t('Link'),
       value: NocoBaseDesktopRouteType.link,
     },
+    ...options.pageMenuModels.map((definition) => ({
+      label: getPageMenuModelLabel(definition, t),
+      value: definition.routeType,
+    })),
   ];
 }
 
@@ -370,6 +416,8 @@ function normalizeRouteValues(
   route?: NocoBaseDesktopRoute,
   options?: {
     mobile?: boolean;
+    pageMenuModels?: ResolvedPageMenuModel[];
+    parentId?: number;
     withInitialPageTab?: boolean;
   },
 ): Partial<NocoBaseDesktopRoute> {
@@ -379,10 +427,33 @@ function normalizeRouteValues(
   });
   const shouldPersistPageSchemaUid = isPageRouteType(values.type);
   const shouldPersistTabSchemaUid = values.type === NocoBaseDesktopRouteType.tabs;
+  const pageMenuModel = findPageMenuModel(options?.pageMenuModels ?? [], values.type);
+  const existingPageMenuRoute = !!route && isPageMenuRoute(route);
+  const shouldBuildPageMenuRoute = !!pageMenuModel && (!route || !!getAvailablePageMenuModel(route, [pageMenuModel]));
+
+  if (pageMenuModel && shouldBuildPageMenuRoute) {
+    const pageMenuRoute = buildPageMenuRoute(pageMenuModel, {
+      icon: values.icon,
+      parentId: options?.parentId,
+      schemaUid: route?.schemaUid || randomId(),
+      title: (values.title ?? '').trim(),
+    });
+    return {
+      ...pageMenuRoute,
+      hideInMenu: values.showInMenu === false,
+      options: {
+        ...route?.options,
+        ...pageMenuRoute.options,
+      },
+    };
+  }
+
   const routeValues: Partial<NocoBaseDesktopRoute> = {
     ...(shouldPersistPageSchemaUid || shouldPersistTabSchemaUid ? { schemaUid: route?.schemaUid || randomId() } : {}),
+    ...(existingPageMenuRoute && route?.schemaUid ? { schemaUid: route.schemaUid } : {}),
     ...(shouldPersistTabSchemaUid ? { tabSchemaName: route?.tabSchemaName || randomId() } : {}),
     ...(shouldPersistPageSchemaUid ? { enableTabs: !!values.enableTabs } : {}),
+    ...(options?.parentId !== undefined ? { parentId: options.parentId } : {}),
     hideInMenu: values.showInMenu === false,
     icon: values.icon,
     title: (values.title ?? '').trim(),
@@ -395,6 +466,12 @@ function normalizeRouteValues(
       ...restOptions,
       ...(routePath ? { [options?.mobile ? 'url' : 'href']: routePath } : {}),
       ...(params.length ? { params } : {}),
+    };
+  }
+
+  if (existingPageMenuRoute && route?.options) {
+    routeValues.options = {
+      ...route.options,
     };
   }
 
@@ -416,9 +493,15 @@ function normalizeRouteValues(
   return routeValues;
 }
 
-function RouteTypeTag({ type }: { type: NocoBaseDesktopRouteType | undefined }) {
+function RouteTypeTag(props: { pageMenuModels: ResolvedPageMenuModel[]; route: NocoBaseDesktopRoute }) {
   const t = useT();
-  return <Tag color={getRouteTypeColor(type)}>{t(getRouteTypeLabel(type))}</Tag>;
+  const pageMenuModel = getAvailablePageMenuModel(props.route, props.pageMenuModels);
+  const label = pageMenuModel
+    ? getPageMenuModelLabel(pageMenuModel, t)
+    : isPageMenuRoute(props.route)
+      ? t('Unavailable ({{type}})', { type: props.route.type })
+      : t(getRouteTypeLabel(props.route.type));
+  return <Tag color={getRouteTypeColor(props.route.type, pageMenuModel)}>{label}</Tag>;
 }
 
 function RouteEditorDrawer(props: {
@@ -428,6 +511,7 @@ function RouteEditorDrawer(props: {
   onCancel: () => void;
   onSubmit: (values: RouteFormValues) => Promise<void>;
   open: boolean;
+  pageMenuModels: ResolvedPageMenuModel[];
   parentRoute?: NocoBaseDesktopRoute | null;
   title: string;
 }) {
@@ -437,8 +521,13 @@ function RouteEditorDrawer(props: {
   const watchedRouteType = Form.useWatch('type', form);
   const routeType = props.initialRoute?.type ?? watchedRouteType;
   const routeTypeOptions = useMemo(
-    () => getRouteTypeOptions(t, { mobile: props.mobile, parentRoute: props.parentRoute }),
-    [props.mobile, props.parentRoute, t],
+    () =>
+      getRouteTypeOptions(t, {
+        mobile: props.mobile,
+        pageMenuModels: props.pageMenuModels,
+        parentRoute: props.parentRoute,
+      }),
+    [props.mobile, props.pageMenuModels, props.parentRoute, t],
   );
   const titleRules = useMemo(
     () =>
@@ -498,7 +587,7 @@ function RouteEditorDrawer(props: {
               <Input />
             </Form.Item>
             <Form.Item label={t('Type')}>
-              <RouteTypeTag type={routeType} />
+              <RouteTypeTag pageMenuModels={props.pageMenuModels} route={props.initialRoute} />
             </Form.Item>
           </>
         ) : (
@@ -641,6 +730,7 @@ function RoutesFilterButton(props: { onApply: (values: RouteFilterValues) => voi
 
 function RoutesTable({ layout }: { layout: RouteLayoutConfig }) {
   const ctx = useFlowContext<RoutesPageFlowContext>();
+  const flowEngine = useFlowEngine();
   const t = useT();
   const tRef = useRef(t);
   const { modal } = AntdApp.useApp();
@@ -652,12 +742,31 @@ function RoutesTable({ layout }: { layout: RouteLayoutConfig }) {
   const [parentRoute, setParentRoute] = useState<NocoBaseDesktopRoute | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
   const [filterValues, setFilterValues] = useState<RouteFilterValues>({});
+  const [pageMenuModels, setPageMenuModels] = useState<ResolvedPageMenuModel[]>([]);
   const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
   const desktopRoutesResource = useMemo(() => ctx.api.resource('desktopRoutes'), [ctx.api]);
 
   useEffect(() => {
     tRef.current = t;
   }, [t]);
+
+  useEffect(() => {
+    let active = true;
+    resolvePageMenuModels(flowEngine, flowEngine.context)
+      .then((definitions) => {
+        if (active) {
+          setPageMenuModels(definitions);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setPageMenuModels([]);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [flowEngine]);
 
   const loadRoutes = useCallback(async () => {
     setLoading(true);
@@ -735,7 +844,7 @@ function RoutesTable({ layout }: { layout: RouteLayoutConfig }) {
           await desktopRoutesResource.update({
             filterByTk: editingRoute.id,
             layout: layout.uid,
-            values: normalizeRouteValues(values, editingRoute, { mobile: layout.mobile }),
+            values: normalizeRouteValues(values, editingRoute, { mobile: layout.mobile, pageMenuModels }),
           });
           if (shouldSyncTabVisibility) {
             for (const childRoute of getDirectTabRouteChildren(editingRoute)) {
@@ -755,10 +864,12 @@ function RoutesTable({ layout }: { layout: RouteLayoutConfig }) {
         } else {
           await desktopRoutesResource.create({
             layout: layout.uid,
-            values: {
-              ...normalizeRouteValues(values, undefined, { mobile: layout.mobile, withInitialPageTab: true }),
-              ...(parentRoute?.id !== undefined ? { parentId: parentRoute.id } : {}),
-            },
+            values: normalizeRouteValues(values, undefined, {
+              mobile: layout.mobile,
+              pageMenuModels,
+              parentId: parentRoute?.id,
+              withInitialPageTab: true,
+            }),
           });
           ctx.message?.success?.(t('Saved successfully'));
         }
@@ -775,6 +886,7 @@ function RoutesTable({ layout }: { layout: RouteLayoutConfig }) {
       editingRoute,
       layout.mobile,
       layout.uid,
+      pageMenuModels,
       parentRoute,
       refreshRoutesAfterMutation,
       t,
@@ -877,7 +989,7 @@ function RoutesTable({ layout }: { layout: RouteLayoutConfig }) {
         dataIndex: 'type',
         title: t('Type'),
         width: 160,
-        render: (value) => <RouteTypeTag type={value as NocoBaseDesktopRouteType | undefined} />,
+        render: (_value, route) => <RouteTypeTag pageMenuModels={pageMenuModels} route={route} />,
       },
       {
         dataIndex: 'hideInMenu',
@@ -912,7 +1024,9 @@ function RoutesTable({ layout }: { layout: RouteLayoutConfig }) {
         width: 260,
         render: (_value, route) => {
           const routeTitle = getRouteTitle(route, t);
-          const accessPath = getRouteAccessPath(route, layout, routes);
+          const accessPath = isUnavailablePageMenuRoute(route, pageMenuModels)
+            ? ''
+            : getRouteAccessPath(route, layout, routes);
           const accessHref = accessPath ? getUiLayoutRouteUrl(ctx.app, accessPath) : '';
           const addChildDisabled = !canRouteHaveChildren(route);
           return (
@@ -967,6 +1081,7 @@ function RoutesTable({ layout }: { layout: RouteLayoutConfig }) {
       openAddChildModal,
       openDeleteRouteConfirm,
       openEditModal,
+      pageMenuModels,
       routes,
       t,
       token.colorError,
@@ -1038,6 +1153,7 @@ function RoutesTable({ layout }: { layout: RouteLayoutConfig }) {
         onCancel={closeEditor}
         onSubmit={handleSubmit}
         open={editorOpen}
+        pageMenuModels={pageMenuModels}
         parentRoute={parentRoute}
         title={editingRoute ? t('Edit route') : parentRoute ? t('Add child route') : t('Add new')}
       />

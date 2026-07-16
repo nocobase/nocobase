@@ -20,10 +20,12 @@ import {
   APIClient,
   CollectionRecordProvider,
   css,
+  ExtendCollectionsProvider,
   PinnedPluginListProvider,
   SchemaComponent,
   SchemaComponentContext,
   SchemaComponentOptions,
+  SchemaComponentProvider,
   SchemaInitializerItemType,
   useAPIClient,
   useApp,
@@ -48,6 +50,14 @@ import {
 
 import PluginWorkflowClient from '.';
 import { lang, NAMESPACE } from './locale';
+import {
+  useWorkflowTasksPageMenuRouteAdapter,
+  WorkflowTasksPageMenuItemRouteScope,
+  WorkflowTasksPageMenuRouteProvider,
+  type WorkflowTasksPageMenuRouteTarget,
+} from './workflowTasksPageMenuRoute';
+
+export { WorkflowTasksPageMenuRouteProvider };
 
 const layoutClass = css`
   height: 100%;
@@ -80,22 +90,77 @@ export function useTasksCountsContext() {
   return useContext(TasksCountsContext);
 }
 
-function MenuLink({ type }: any) {
-  const workflowPlugin = usePlugin(PluginWorkflowClient);
-  const compile = useCompile();
-  const { title } = workflowPlugin.taskTypes.get(type);
-  const { counts } = useContext(TasksCountsContext);
-  const typeTitle = compile(title);
-  const mobilePage = useMobilePage();
+const TASK_STATUS = {
+  ALL: 'all',
+  PENDING: 'pending',
+  COMPLETED: 'completed',
+};
+
+type WorkflowTasksRouteState = {
+  taskType?: string;
+  status: string;
+  popupId?: string;
+};
+
+function useWorkflowTasksRouteState(): WorkflowTasksRouteState {
+  const adapter = useWorkflowTasksPageMenuRouteAdapter();
+  const { taskType, status, popupId } = useParams();
 
   return (
-    <Link
-      replace
-      to={
-        mobilePage
-          ? `/page/workflow-tasks/${type}/${TASK_STATUS.PENDING}`
-          : `/admin/workflow/tasks/${type}/${TASK_STATUS.PENDING}`
-      }
+    adapter?.route ?? {
+      taskType,
+      status: status || TASK_STATUS.PENDING,
+      popupId,
+    }
+  );
+}
+
+function buildStandaloneWorkflowTasksPath(route: WorkflowTasksPageMenuRouteTarget, mobilePage: boolean) {
+  const segments = [mobilePage ? '/page/workflow-tasks' : '/admin/workflow/tasks'];
+
+  if (route.taskType) {
+    segments.push(encodeURIComponent(route.taskType));
+  }
+  if (route.taskType || route.status) {
+    segments.push(encodeURIComponent(route.status || TASK_STATUS.PENDING));
+  }
+  if (route.popupId !== undefined && route.popupId !== null && route.popupId !== '') {
+    segments.push(encodeURIComponent(String(route.popupId)));
+  }
+
+  return segments.join('/');
+}
+
+function useWorkflowTasksPathBuilder() {
+  const adapter = useWorkflowTasksPageMenuRouteAdapter();
+  const mobilePage = Boolean(useMobilePage());
+  const currentRoute = useWorkflowTasksRouteState();
+  const { popupId, status, taskType } = currentRoute;
+
+  return useCallback(
+    (nextRoute: WorkflowTasksPageMenuRouteTarget) => {
+      const route = {
+        taskType,
+        status,
+        popupId,
+        ...nextRoute,
+      };
+
+      return adapter?.buildPath(route) ?? buildStandaloneWorkflowTasksPath(route, mobilePage);
+    },
+    [adapter, mobilePage, popupId, status, taskType],
+  );
+}
+
+function TaskTypeLabel({ type }: { type: string }) {
+  const workflowPlugin = usePlugin(PluginWorkflowClient);
+  const compile = useCompile();
+  const { title } = workflowPlugin.taskTypes.get(type) || {};
+  const { counts } = useContext(TasksCountsContext);
+  const typeTitle = compile(title || type);
+
+  return (
+    <span
       className={css`
         display: flex;
         gap: 0.5em;
@@ -112,19 +177,24 @@ function MenuLink({ type }: any) {
     >
       <span>{typeTitle}</span>
       <Badge count={counts[type]?.pending || 0} size="small" />
+    </span>
+  );
+}
+
+function MenuLink({ type }: { type: string }) {
+  const buildPath = useWorkflowTasksPathBuilder();
+
+  return (
+    <Link replace to={buildPath({ taskType: type, status: TASK_STATUS.PENDING, popupId: undefined })}>
+      <TaskTypeLabel type={type} />
     </Link>
   );
 }
 
-const TASK_STATUS = {
-  ALL: 'all',
-  PENDING: 'pending',
-  COMPLETED: 'completed',
-};
-
 function StatusTabs() {
   const navigate = useNavigate();
-  const { taskType, status = TASK_STATUS.PENDING } = useParams();
+  const { status } = useWorkflowTasksRouteState();
+  const buildPath = useWorkflowTasksPathBuilder();
   const type = useCurrentTaskType();
   const { isMobileLayout } = useMobileLayout();
   const mobilePage = useMobilePage();
@@ -133,9 +203,9 @@ function StatusTabs() {
       if (!type?.key) {
         return;
       }
-      navigate(mobilePage ? `/page/workflow-tasks/${type.key}/${key}` : `/admin/workflow/tasks/${type.key}/${key}`);
+      navigate(buildPath({ taskType: type.key, status: key, popupId: undefined }));
     },
-    [navigate, mobilePage, type],
+    [buildPath, navigate, type],
   );
   const isMobile = Boolean(mobilePage || isMobileLayout);
   const { Actions } = type;
@@ -203,27 +273,32 @@ function useTaskTypeItems() {
 }
 
 function useAvailableTaskTypeItems() {
+  const keys = useAvailableTaskTypeKeys();
+
+  return useMemo(
+    () =>
+      keys.map((key: string) => ({
+        key,
+        label: <MenuLink type={key} />,
+      })),
+    [keys],
+  );
+}
+
+function useAvailableTaskTypeKeys() {
   const workflowPlugin = usePlugin(PluginWorkflowClient);
   const types = useTaskTypeItems();
   const { counts } = useContext(TasksCountsContext);
 
   return useMemo(
-    () =>
-      types
-        .filter((key: string) => workflowPlugin.taskTypes.get(key)?.alwaysShow || Boolean(counts[key]?.all))
-        .map((key: string) => {
-          return {
-            key,
-            label: <MenuLink type={key} />,
-          };
-        }),
+    () => types.filter((key: string) => workflowPlugin.taskTypes.get(key)?.alwaysShow || Boolean(counts[key]?.all)),
     [counts, types, workflowPlugin.taskTypes],
   );
 }
 
 function useCurrentTaskType() {
   const workflowPlugin = usePlugin(PluginWorkflowClient);
-  const { taskType } = useParams();
+  const { taskType } = useWorkflowTasksRouteState();
   const items = useTaskTypeItems();
   return useMemo<any>(
     () => workflowPlugin.taskTypes.get(taskType ?? items[0]) ?? {},
@@ -232,23 +307,21 @@ function useCurrentTaskType() {
 }
 
 function PopupContext(props: any) {
-  const { taskType, status = TASK_STATUS.PENDING, popupId } = useParams();
+  const { taskType, status, popupId } = useWorkflowTasksRouteState();
   const { record } = usePopupRecordContext();
   const navigate = useNavigate();
-  const mobilePage = useMobilePage();
+  const buildPath = useWorkflowTasksPathBuilder();
   const setVisible = useCallback(
     (visible: boolean) => {
       if (!visible) {
         if (window.history.state.idx) {
           navigate(-1);
         } else {
-          navigate(
-            mobilePage ? `/page/workflow-tasks/${taskType}/${status}` : `/admin/workflow/tasks/${taskType}/${status}`,
-          );
+          navigate(buildPath({ taskType, status, popupId: undefined }));
         }
       }
     },
-    [mobilePage, navigate, status, taskType],
+    [buildPath, navigate, status, taskType],
   );
   if (!popupId) {
     return null;
@@ -266,15 +339,25 @@ export function usePopupRecordContext() {
   return useContext(PopupRecordContext);
 }
 
+function WorkflowTaskItem() {
+  const { Item } = useCurrentTaskType();
+
+  return Item ? (
+    <WorkflowTasksPageMenuItemRouteScope>
+      <Item />
+    </WorkflowTasksPageMenuItemRouteScope>
+  ) : null;
+}
+
 function TaskPageContent() {
   const apiClient = useAPIClient();
-  const { taskType, status = TASK_STATUS.PENDING, popupId } = useParams();
+  const { taskType, status, popupId } = useWorkflowTasksRouteState();
   const mobilePage = useMobilePage();
   const [currentRecord, setCurrentRecord] = useState<any>(null);
 
   const { token } = theme.useToken();
   const type = useCurrentTaskType();
-  const { title, collection, action = 'list', useActionParams, Item, Detail, getPopupRecord } = type;
+  const { title, collection, action = 'list', useActionParams, Detail, getPopupRecord } = type;
   const params = useActionParams?.(status);
 
   // useEffect(() => {
@@ -370,120 +453,156 @@ function TaskPageContent() {
   `;
 
   return type?.key ? (
-    <PopupRecordContext.Provider
-      value={{
-        record: currentRecord,
-        setRecord: setCurrentRecord,
-      }}
-    >
-      <SchemaComponentContext.Provider value={{ designable: false }}>
-        <SchemaComponent
-          components={{
-            Layout,
-            PageHeader,
-            StatusTabs,
-          }}
-          schema={{
-            name: `${taskType}-${status}`,
-            type: 'void',
-            'x-decorator': 'List.Decorator',
-            'x-decorator-props': {
-              collection,
-              action,
-              params: {
-                pageSize: 20,
-                sort: ['-createdAt'],
-                ...params,
-              },
-            },
-            properties: {
-              header: {
-                type: 'void',
-                'x-component': 'PageHeader',
-                'x-component-props': {
-                  className: classnames(
-                    'pageHeaderCss',
-                    css`
-                      .ant-page-header-content {
-                        padding-top: 0;
-                      }
-                    `,
-                  ),
-                  style: {
-                    position: 'sticky',
-                    background: token.colorBgContainer,
-                    padding: isMobile
-                      ? '8px'
-                      : `${token.paddingContentVertical}px ${token.paddingContentHorizontalLG}px 0 ${token.paddingContentHorizontalLG}px`,
-                    borderBottom: isMobile ? `1px solid ${token.colorBorderSecondary}` : null,
-                  },
-                  title: isMobile ? null : title,
-                },
-                properties: {
-                  tabs: {
-                    type: 'void',
-                    'x-component': 'StatusTabs',
-                  },
+    <>
+      <PopupRecordContext.Provider
+        value={{
+          record: currentRecord,
+          setRecord: setCurrentRecord,
+        }}
+      >
+        <SchemaComponentContext.Provider value={{ designable: false }}>
+          <SchemaComponent
+            components={{
+              Layout,
+              PageHeader,
+              StatusTabs,
+            }}
+            schema={{
+              name: `${taskType}-${status}`,
+              type: 'void',
+              'x-decorator': 'List.Decorator',
+              'x-decorator-props': {
+                collection,
+                action,
+                params: {
+                  pageSize: 20,
+                  sort: ['-createdAt'],
+                  ...params,
                 },
               },
-              content: {
-                type: 'void',
-                'x-component': 'Layout.Content',
-                'x-component-props': {
-                  className: contentClass,
-                },
-                properties: {
-                  list: {
-                    type: 'array',
-                    'x-component': 'List',
-                    'x-component-props': {
-                      locale: {
-                        emptyText: `{{ t("No data yet", { ns: "${NAMESPACE}" }) }}`,
-                      },
+              properties: {
+                header: {
+                  type: 'void',
+                  'x-component': 'PageHeader',
+                  'x-component-props': {
+                    className: classnames(
+                      'pageHeaderCss',
+                      css`
+                        .ant-page-header-content {
+                          padding-top: 0;
+                        }
+                      `,
+                    ),
+                    style: {
+                      position: 'sticky',
+                      background: token.colorBgContainer,
+                      padding: isMobile
+                        ? '8px'
+                        : `${token.paddingContentVertical}px ${token.paddingContentHorizontalLG}px 0 ${token.paddingContentHorizontalLG}px`,
+                      borderBottom: isMobile ? `1px solid ${token.colorBorderSecondary}` : null,
                     },
-                    properties: {
-                      item: {
-                        type: 'object',
-                        'x-decorator': 'List.Item',
-                        'x-component': Item,
-                        'x-read-pretty': true,
-                      },
+                    title: isMobile ? null : title,
+                  },
+                  properties: {
+                    tabs: {
+                      type: 'void',
+                      'x-component': 'StatusTabs',
                     },
                   },
                 },
+                content: {
+                  type: 'void',
+                  'x-component': 'Layout.Content',
+                  'x-component-props': {
+                    className: contentClass,
+                  },
+                  properties: {
+                    list: {
+                      type: 'array',
+                      'x-component': 'List',
+                      'x-component-props': {
+                        locale: {
+                          emptyText: `{{ t("No data yet", { ns: "${NAMESPACE}" }) }}`,
+                        },
+                      },
+                      properties: {
+                        item: {
+                          type: 'object',
+                          'x-decorator': 'List.Item',
+                          'x-component': WorkflowTaskItem,
+                          'x-read-pretty': true,
+                        },
+                      },
+                    },
+                  },
+                },
+                popup: {
+                  type: 'void',
+                  'x-decorator': PopupContext,
+                  'x-component': Detail,
+                },
               },
-              popup: {
-                type: 'void',
-                'x-decorator': PopupContext,
-                'x-component': Detail,
-              },
-            },
-          }}
-        />
-      </SchemaComponentContext.Provider>
-    </PopupRecordContext.Provider>
+            }}
+          />
+        </SchemaComponentContext.Provider>
+      </PopupRecordContext.Provider>
+    </>
   ) : (
     <Result status="error" title={lang('Task type {{type}} is invalid', { type: taskType })} />
   );
 }
 
-function TaskMenu() {
-  const { taskType, status = TASK_STATUS.PENDING } = useParams();
+type TaskTypeNavigation = 'sider' | 'tabs';
+
+function TaskMenu(props: { navigation?: TaskTypeNavigation }) {
+  const { navigation = 'sider' } = props;
+  const { taskType, status } = useWorkflowTasksRouteState();
   const { token } = useToken();
   const items = useAvailableTaskTypeItems();
-  const typeKey = taskType ?? items[0]?.key;
+  const taskTypeKeys = useAvailableTaskTypeKeys();
+  const typeKey = taskType ?? taskTypeKeys[0];
 
   const { isMobileLayout } = useMobileLayout();
   const navigate = useNavigate();
+  const buildPath = useWorkflowTasksPathBuilder();
 
   useEffect(() => {
-    if (!items.length) {
+    if (!taskTypeKeys.length) {
       return;
     }
     if (!taskType) {
-      navigate(`/admin/workflow/tasks/${typeKey}/${status}`, { replace: true });
+      navigate(buildPath({ taskType: typeKey, status, popupId: undefined }), { replace: true });
     }
-  }, [items, navigate, status, taskType, typeKey]);
+  }, [buildPath, navigate, status, taskType, taskTypeKeys.length, typeKey]);
+
+  if (navigation === 'tabs') {
+    return (
+      <Layout.Header
+        style={{
+          background: token.colorBgContainer,
+          height: 'auto',
+          lineHeight: 'normal',
+          padding: `0 ${token.paddingContentHorizontalLG}px`,
+        }}
+      >
+        <Tabs
+          activeKey={typeKey}
+          items={taskTypeKeys.map((key) => ({
+            key,
+            label: <TaskTypeLabel type={key} />,
+          }))}
+          onChange={(key) => {
+            navigate(buildPath({ taskType: key, status: TASK_STATUS.PENDING, popupId: undefined }));
+          }}
+          className={css`
+            > .ant-tabs-nav {
+              margin-bottom: 0;
+            }
+          `}
+        />
+      </Layout.Header>
+    );
+  }
 
   return isMobileLayout ? (
     <Layout.Header style={{ background: token.colorBgContainer, padding: 0, height: '3em', lineHeight: '3em' }}>
@@ -496,21 +615,23 @@ function TaskMenu() {
   );
 }
 
-export function WorkflowTasks() {
+function useWorkflowTasksDocumentTitle() {
   const compile = useCompile();
   const { setTitle } = useDocumentTitle();
-  const { taskType, status = TASK_STATUS.PENDING } = useParams();
+  const { taskType, status } = useWorkflowTasksRouteState();
 
   const { title } = useCurrentTaskType();
 
   useEffect(() => {
     setTitle?.(`${lang('Workflow todos')}${title ? `: ${compile(title)}` : ''}`);
   }, [taskType, status, setTitle, title, compile]);
+}
 
+function WorkflowTasksContent(props: { taskTypeNavigation?: TaskTypeNavigation }) {
   return (
     <Layout className={layoutClass}>
       <TasksCountsProvider>
-        <TaskMenu />
+        <TaskMenu navigation={props.taskTypeNavigation} />
       </TasksCountsProvider>
       <Layout
         className={css`
@@ -534,6 +655,33 @@ export function WorkflowTasks() {
       </Layout>
     </Layout>
   );
+}
+
+export function WorkflowTasksPageMenuContent() {
+  const app = useApp();
+  const workflowCollections = useMemo(() => {
+    const dataSource = app.flowEngine.dataSourceManager.getDataSource('main');
+
+    return Array.from(dataSource?.collectionManager.collections.values() || [])
+      .filter((collection) => collection.hidden)
+      .map((collection) => {
+        const { hidden, ...options } = collection.options;
+        return options;
+      });
+  }, [app.flowEngine.dataSourceManager]);
+  useWorkflowTasksDocumentTitle();
+  return (
+    <ExtendCollectionsProvider collections={workflowCollections}>
+      <SchemaComponentProvider designable={false} components={app.components} scope={app.scopes}>
+        <WorkflowTasksContent taskTypeNavigation="tabs" />
+      </SchemaComponentProvider>
+    </ExtendCollectionsProvider>
+  );
+}
+
+export function WorkflowTasks() {
+  useWorkflowTasksDocumentTitle();
+  return <WorkflowTasksContent />;
 }
 
 function WorkflowTasksBadge() {

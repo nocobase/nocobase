@@ -57,6 +57,11 @@ import {
   parseWorkflowTasksEmbeddedRoute,
   type WorkflowTasksEmbeddedRoute,
 } from './workflowTasksEmbeddedRoute';
+import {
+  buildWorkflowTasksPageMenuPath,
+  isWorkflowTasksPageMenuPathname,
+  parseWorkflowTasksPageMenuRoute,
+} from './workflowTasksPageMenuRoute';
 
 interface WorkflowTasksRouteParams {
   taskType?: string;
@@ -226,6 +231,54 @@ export function WorkflowTasksEmbeddedRouteProvider({ children }: { children: Rea
   return <WorkflowTasksRouteContext.Provider value={value}>{children}</WorkflowTasksRouteContext.Provider>;
 }
 
+export function WorkflowTasksPageMenuRouteProvider({
+  children,
+  pageUid,
+}: {
+  children: React.ReactNode;
+  pageUid?: string;
+}) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const route = useMemo<WorkflowTasksRouteState>(() => {
+    const pageMenuRoute = parseWorkflowTasksPageMenuRoute({
+      pathname: location.pathname,
+      search: location.search,
+      hash: location.hash,
+      pageUid,
+    });
+    return {
+      ...pageMenuRoute,
+      isMobileRoute: false,
+    };
+  }, [location.hash, location.pathname, location.search, pageUid]);
+  const navigateToRoute = useMemoizedFn((target: WorkflowTasksRouteTarget, options?: { replace?: boolean }) => {
+    if (!pageUid || !isWorkflowTasksPageMenuPathname(location.pathname, pageUid)) {
+      return;
+    }
+    const path = buildWorkflowTasksPageMenuPath({
+      pathname: location.pathname,
+      pageUid,
+      route: target,
+    });
+    const nextPath = `${path}${location.search || ''}${location.hash || ''}`;
+    if (options) {
+      navigate(nextPath, options);
+      return;
+    }
+    navigate(nextPath);
+  });
+  const value = useMemo(
+    () => ({
+      route,
+      navigate: navigateToRoute,
+    }),
+    [navigateToRoute, route],
+  );
+
+  return <WorkflowTasksRouteContext.Provider value={value}>{children}</WorkflowTasksRouteContext.Provider>;
+}
+
 function useWorkflowTasksRouteAdapter() {
   const context = useContext(WorkflowTasksRouteContext);
   const reactRouterAdapter = useReactRouterWorkflowTasksRouteAdapter();
@@ -278,10 +331,10 @@ function TaskTypeMenu(props: {
   taskTypes: ReturnType<typeof getWorkflowTaskRegistry>;
   counts: ReturnType<typeof useWorkflowTaskCounts>['counts'];
   selectedKey?: string;
-  status: WorkflowTaskStatus;
   mobile: boolean;
+  desktopNavigation: 'sidebar' | 'tabs';
 }) {
-  const { taskTypes, counts, selectedKey, status, mobile } = props;
+  const { taskTypes, counts, selectedKey, mobile, desktopNavigation } = props;
   const t = useT();
   const { token } = theme.useToken();
   const route = useWorkflowTasksRoute();
@@ -368,6 +421,22 @@ function TaskTypeMenu(props: {
       }),
     [counts, t, taskTypeKeys, taskTypes, token.marginSM],
   );
+  const tabItems = useMemo(
+    () =>
+      taskTypeKeys.map((key) => {
+        const type = taskTypes?.get(key);
+        return {
+          key,
+          label: (
+            <Flex align="center" gap={token.marginXS}>
+              <span>{type?.title ? t(type.title) : key}</span>
+              <Badge count={counts[key]?.pending || 0} size="small" />
+            </Flex>
+          ),
+        };
+      }),
+    [counts, t, taskTypeKeys, taskTypes, token.marginXS],
+  );
 
   const handleMenuClick = useMemoizedFn(({ key }: { key: string }) => {
     routeAdapter.navigate({ taskType: key, status: TASK_STATUS.PENDING });
@@ -387,7 +456,7 @@ function TaskTypeMenu(props: {
     }
   }, [mobile, selectedKey, taskTypeKeys]);
 
-  if (!items?.length) {
+  if (!taskTypeKeys.length) {
     return null;
   }
 
@@ -424,6 +493,18 @@ function TaskTypeMenu(props: {
           );
         })}
       </div>
+    );
+  }
+
+  if (desktopNavigation === 'tabs') {
+    return (
+      <Tabs
+        activeKey={selectedKey}
+        data-testid="workflow-task-type-menu"
+        items={tabItems}
+        onChange={handleMobileTaskTypeClick}
+        tabBarStyle={{ marginBottom: 0 }}
+      />
     );
   }
 
@@ -752,7 +833,13 @@ function WorkflowTaskMobileDetailPage(props: { children: React.ReactNode; onClos
   );
 }
 
-export function WorkflowTasksContent({ forceMobile = false }: { forceMobile?: boolean } = {}) {
+export function WorkflowTasksContent({
+  desktopTaskTypeNavigation = 'sidebar',
+  forceMobile = false,
+}: {
+  desktopTaskTypeNavigation?: 'sidebar' | 'tabs';
+  forceMobile?: boolean;
+} = {}) {
   const ctx = useFlowContext() as WorkflowTaskFlowContext | undefined;
   const taskTypes = getWorkflowTaskRegistry(ctx);
   const countsState = useWorkflowTaskCounts(ctx, taskTypes);
@@ -1103,21 +1190,39 @@ export function WorkflowTasksContent({ forceMobile = false }: { forceMobile?: bo
                   taskTypes={taskTypes}
                   counts={counts}
                   selectedKey={currentTaskTypeKey}
-                  status={route.status}
                   mobile
+                  desktopNavigation={desktopTaskTypeNavigation}
                 />
               </div>
             </div>
             <div style={{ padding: token.paddingSM }}>{header}</div>
           </Flex>
         </Layout.Header>
-      ) : mobile ? null : (
+      ) : mobile ? null : desktopTaskTypeNavigation === 'tabs' ? (
+        <Layout.Header
+          style={{
+            background: token.colorBgContainer,
+            borderBottom: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}`,
+            height: 'auto',
+            lineHeight: 'normal',
+            padding: `0 ${token.paddingLG}px`,
+          }}
+        >
+          <TaskTypeMenu
+            taskTypes={taskTypes}
+            counts={counts}
+            selectedKey={currentTaskTypeKey}
+            mobile={false}
+            desktopNavigation={desktopTaskTypeNavigation}
+          />
+        </Layout.Header>
+      ) : (
         <TaskTypeMenu
           taskTypes={taskTypes}
           counts={counts}
           selectedKey={currentTaskTypeKey}
-          status={route.status}
           mobile={false}
+          desktopNavigation={desktopTaskTypeNavigation}
         />
       )}
       <Layout style={{ background: token.colorBgLayout }}>

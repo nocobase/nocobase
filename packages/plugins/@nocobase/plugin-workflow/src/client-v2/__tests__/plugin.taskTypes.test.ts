@@ -84,6 +84,10 @@ describe('PluginWorkflowClientV2 task type registry', () => {
           extends: 'ChildPageModel',
           loader: expect.any(Function),
         }),
+        WorkflowTasksPageMenuModel: expect.objectContaining({
+          extends: 'BasePageMenuModel',
+          loader: expect.any(Function),
+        }),
       }),
     );
     expect(app.entryActionManager.register).toHaveBeenCalledWith(
@@ -113,6 +117,10 @@ describe('PluginWorkflowClientV2 task type registry', () => {
       expect.any(Function),
     );
     await expect(modelLoaders.WorkflowTasksEmbeddedPageModel.loader()).resolves.toHaveProperty(
+      'default',
+      expect.any(Function),
+    );
+    await expect(modelLoaders.WorkflowTasksPageMenuModel.loader()).resolves.toHaveProperty(
       'default',
       expect.any(Function),
     );

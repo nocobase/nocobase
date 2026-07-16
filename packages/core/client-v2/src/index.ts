@@ -47,6 +47,8 @@ export type { CodeEditorExtra, CodeEditorExtraRegistry, EditorRef } from './flow
 export {
   DEFAULT_DATA_SOURCE_KEY,
   IconPicker,
+  isFlowPageRoute,
+  isPageMenuRoute,
   isTitleField,
   isTitleFieldInterface,
   NocoBaseDesktopRouteType,

@@ -15,6 +15,7 @@ import { FlowContextProvider, FlowEngine, FlowEngineProvider, type FlowModel } f
 import FlowRoute from '../components/FlowRoute';
 import { RouteRepository } from '../../RouteRepository';
 import { NocoBaseDesktopRouteType } from '../../flow-compat';
+import { BasePageMenuModel } from '../models/base/PageModel';
 
 type MockAdminLayoutModel = FlowModel & {
   registerRoutePage: ReturnType<typeof vi.fn>;
@@ -512,6 +513,64 @@ describe('FlowRoute', () => {
     });
   });
 
+  it('should reject deferred root extensions after an ordinary flow page route loads', async () => {
+    const engine = new FlowEngine();
+    let accessibleLoaded = false;
+    const ensureAccessibleLoaded = vi.fn(async () => {
+      accessibleLoaded = true;
+    });
+    const routeRepository = {
+      refreshAccessible: hookState.refresh,
+      isAccessibleLoaded: () => accessibleLoaded,
+      ensureAccessibleLoaded,
+      getRouteBySchemaUid: vi.fn(() =>
+        accessibleLoaded ? { type: NocoBaseDesktopRouteType.flowPage, schemaUid: 'test-page' } : undefined,
+      ),
+    };
+    engine.context.defineProperty('routeRepository', {
+      value: routeRepository,
+    });
+    engine.context.defineProperty('app', {
+      value: {
+        getPublicPath: () => '/v2/',
+        router: {
+          getBasename: () => '/v2',
+        },
+      },
+    });
+
+    const adminLayoutModel: MockAdminLayoutModel & {
+      resolveLayoutRoute: ReturnType<typeof vi.fn>;
+    } = Object.assign(engine.createModel({ uid: 'admin-layout-model', use: 'FlowModel' }), {
+      registerRoutePage: vi.fn(),
+      updateRoutePage: vi.fn(),
+      unregisterRoutePage: vi.fn(),
+      resolveLayoutRoute: vi.fn(() => ({
+        type: 'notFound',
+        pathname: '/admin/test-page/tasktype/approval-apply/status/pending',
+        basePathname: '/admin',
+        relativePath: 'test-page/tasktype/approval-apply/status/pending',
+      })),
+    });
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <MemoryRouter initialEntries={['/admin/test-page/tasktype/approval-apply/status/pending']}>
+          <Routes>
+            <Route path="/admin/:name/*" element={<FlowRoute />} />
+          </Routes>
+        </MemoryRouter>
+      </FlowEngineProvider>,
+    );
+
+    expect(await screen.findByText('404')).toBeInTheDocument();
+    expect(ensureAccessibleLoaded).toHaveBeenCalledTimes(1);
+    expect(adminLayoutModel.resolveLayoutRoute).toHaveBeenCalledWith({
+      pathname: '/admin/test-page/tasktype/approval-apply/status/pending',
+    });
+    expect(adminLayoutModel.registerRoutePage).not.toHaveBeenCalled();
+  });
+
   it('should not rerun accessible guard when layout reference changes but fields stay the same', async () => {
     const engine = new FlowEngine();
     const ensureAccessibleLoaded = vi.fn().mockResolvedValue([]);
@@ -643,6 +702,109 @@ describe('FlowRoute', () => {
         value: originalLocation,
       });
     }
+  });
+
+  it('should render not found when a page menu model is unavailable', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ BasePageMenuModel });
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        refreshAccessible: hookState.refresh,
+        isAccessibleLoaded: () => true,
+        ensureAccessibleLoaded: vi.fn().mockResolvedValue([]),
+        getRouteBySchemaUid: vi.fn(() => ({
+          type: 'customPage',
+          schemaUid: 'custom-page',
+          options: {
+            pageMenuModelClass: 'MissingPageMenuModel',
+          },
+        })),
+      },
+    });
+    engine.context.defineProperty('app', {
+      value: {
+        getPublicPath: () => '/v2/',
+        router: {
+          getBasename: () => '/v2',
+        },
+      },
+    });
+
+    const adminLayoutModel: MockAdminLayoutModel = Object.assign(
+      engine.createModel({ uid: 'admin-layout-model', use: 'FlowModel' }),
+      {
+        registerRoutePage: vi.fn(),
+        updateRoutePage: vi.fn(),
+        unregisterRoutePage: vi.fn(),
+      },
+    );
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <MemoryRouter initialEntries={['/flow/custom-page']}>
+          <Routes>
+            <Route path="/flow/:name" element={<FlowRoute />} />
+          </Routes>
+        </MemoryRouter>
+      </FlowEngineProvider>,
+    );
+
+    expect(await screen.findByText('404')).toBeInTheDocument();
+    expect(adminLayoutModel.registerRoutePage).not.toHaveBeenCalled();
+  });
+
+  it('should bridge an available page menu model', async () => {
+    class DemoPageMenuModel extends BasePageMenuModel {}
+    DemoPageMenuModel.define({ label: 'Demo page', routeType: 'customPage' });
+
+    const engine = new FlowEngine();
+    engine.registerModels({ BasePageMenuModel, DemoPageMenuModel });
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        refreshAccessible: hookState.refresh,
+        isAccessibleLoaded: () => true,
+        ensureAccessibleLoaded: vi.fn().mockResolvedValue([]),
+        getRouteBySchemaUid: vi.fn(() => ({
+          type: 'customPage',
+          schemaUid: 'custom-page',
+          options: {
+            pageMenuModelClass: 'DemoPageMenuModel',
+          },
+        })),
+      },
+    });
+    engine.context.defineProperty('app', {
+      value: {
+        getPublicPath: () => '/v2/',
+        router: {
+          getBasename: () => '/v2',
+        },
+      },
+    });
+
+    const adminLayoutModel: MockAdminLayoutModel = Object.assign(
+      engine.createModel({ uid: 'admin-layout-model', use: 'FlowModel' }),
+      {
+        registerRoutePage: vi.fn(),
+        updateRoutePage: vi.fn(),
+        unregisterRoutePage: vi.fn(),
+      },
+    );
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <MemoryRouter initialEntries={['/flow/custom-page']}>
+          <Routes>
+            <Route path="/flow/:name" element={<FlowRoute />} />
+          </Routes>
+        </MemoryRouter>
+      </FlowEngineProvider>,
+    );
+
+    await waitFor(() => {
+      expect(adminLayoutModel.registerRoutePage).toHaveBeenCalledWith('custom-page', expect.any(Object));
+    });
+    expect(screen.queryByText('404')).not.toBeInTheDocument();
   });
 
   it('should render not found for legacy page when behavior is notFound', async () => {
@@ -937,7 +1099,7 @@ describe('FlowRoute', () => {
       <FlowEngineProvider engine={engine}>
         <MemoryRouter initialEntries={['/admin/371750686228480']}>
           <Routes>
-            <Route path="/admin/:name" element={<FlowRoute />} />
+            <Route path="/admin/:name/*" element={<FlowRoute />} />
           </Routes>
         </MemoryRouter>
       </FlowEngineProvider>,
@@ -1925,7 +2087,7 @@ describe('FlowRoute', () => {
     }
   });
 
-  it('should not redirect or loop when ensureAccessibleLoaded rejects', async () => {
+  it('should fail closed when ensureAccessibleLoaded rejects', async () => {
     const originalLocation = window.location;
     const replace = vi.fn();
     Object.defineProperty(window, 'location', {
@@ -1975,10 +2137,9 @@ describe('FlowRoute', () => {
         </FlowEngineProvider>,
       );
 
-      await waitFor(() => {
-        expect(adminLayoutModel.registerRoutePage).toHaveBeenCalled();
-      });
+      expect(await screen.findByText('404')).toBeInTheDocument();
       expect(ensureAccessibleLoaded).toHaveBeenCalledTimes(1);
+      expect(adminLayoutModel.registerRoutePage).not.toHaveBeenCalled();
       expect(replace).not.toHaveBeenCalled();
     } finally {
       Object.defineProperty(window, 'location', {

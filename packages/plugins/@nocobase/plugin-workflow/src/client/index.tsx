@@ -59,6 +59,7 @@ import workflowStats from '../common/collections/workflowStats';
 import workflowVersionStats from '../common/collections/workflowVersionStats';
 import { NodeDetailsGridModel } from '../client-v2/models/NodeDetailsGridModel';
 import { WorkflowTasksEntryActionModel } from './models/WorkflowTasksEntryActionModel';
+import { WorkflowTasksPageMenuModel } from './models/WorkflowTasksPageMenuModel';
 
 const workflowConfigSettings = {
   Component: BindWorkflowConfig,
@@ -262,6 +263,7 @@ export default class PluginWorkflowClient extends Plugin {
       NodeValueModel,
       TaskCardCommonItemModel,
       WorkflowTasksEntryActionModel,
+      WorkflowTasksPageMenuModel,
     });
 
     this.registerCollectionsToDataSource([

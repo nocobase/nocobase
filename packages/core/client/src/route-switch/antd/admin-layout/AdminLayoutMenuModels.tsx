@@ -8,7 +8,13 @@
  */
 
 import React from 'react';
-import { ADMIN_LAYOUT_MODEL_UID } from '@nocobase/client-v2';
+import {
+  ADMIN_LAYOUT_MODEL_UID,
+  buildPageMenuRoute,
+  isFlowPageRoute,
+  isPageMenuRoute,
+  resolvePageMenuModelByRouteType,
+} from '@nocobase/client-v2';
 import { FlowModel } from '@nocobase/flow-engine';
 import type { FlowSettingsContext } from '@nocobase/flow-engine';
 import { uid } from '@nocobase/utils/client';
@@ -364,8 +370,13 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
   }
 
   async createMenuFromMeta(meta: AdminLayoutMenuCreationMeta, values: AdminLayoutMenuCreationParams) {
-    const routeType =
-      meta.menuType === 'flowPage'
+    const pageMenuDefinition = await resolvePageMenuModelByRouteType(this.flowEngine, meta.menuType, this.context);
+    if (!pageMenuDefinition && !['flowPage', 'page', 'group', 'link'].includes(meta.menuType)) {
+      throw new Error(`Unknown or unavailable menu type '${meta.menuType}'.`);
+    }
+    const routeType = pageMenuDefinition
+      ? pageMenuDefinition.routeType
+      : meta.menuType === 'flowPage'
         ? NocoBaseDesktopRouteType.flowPage
         : meta.menuType === 'page'
           ? NocoBaseDesktopRouteType.page
@@ -404,6 +415,17 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
           openInNewWindow: values.openInNewWindow,
         },
       });
+      return;
+    }
+
+    if (pageMenuDefinition) {
+      await createRoute(
+        buildPageMenuRoute(pageMenuDefinition, {
+          title: values.title,
+          icon: values.icon,
+          schemaUid: uid(),
+        }),
+      );
       return;
     }
 
@@ -561,7 +583,7 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
 
     await Promise.all([
       this.getRouteRepository().deleteRoute(route.id),
-      route.schemaUid
+      route.schemaUid && !isPageMenuRoute(route)
         ? this.context.api.resource('uiSchemas')[`remove/${route.schemaUid}`]?.()
         : Promise.resolve(undefined),
     ]);
@@ -609,7 +631,7 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
       };
     }
 
-    if (route.type === NocoBaseDesktopRouteType.page || route.type === NocoBaseDesktopRouteType.flowPage) {
+    if (route.type === NocoBaseDesktopRouteType.page || isFlowPageRoute(route)) {
       return {
         name,
         icon,

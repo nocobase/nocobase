@@ -426,6 +426,86 @@ describe('AdminLayoutModel runtime', () => {
     });
   });
 
+  it('should allow custom lowercase route params after a page menu root uid', async () => {
+    const engine = new FlowEngine();
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        getRouteBySchemaUid: (pageUid: string) =>
+          pageUid === 'custom-page'
+            ? {
+                type: 'customPage',
+                schemaUid: pageUid,
+                options: {
+                  pageMenuModelClass: 'DemoPageMenuModel',
+                },
+              }
+            : { type: NocoBaseDesktopRouteType.flowPage, schemaUid: pageUid },
+      },
+    });
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <TestAdminLayoutHost />
+      </FlowEngineProvider>,
+    );
+    const model = engine.getModel<TestAdminLayoutModel>('admin-layout-model');
+    expect(model).toBeTruthy();
+
+    expect(
+      model.resolveLayoutRoute({
+        name: getLayoutPageRouteName('admin'),
+        pathname: '/admin/custom-page/section/recent/filter/pending/recordid/123',
+        layoutBasePathname: '/admin',
+      }),
+    ).toMatchObject({
+      type: 'page',
+      pageUid: 'custom-page',
+      pathname: '/admin/custom-page/section/recent/filter/pending/recordid/123',
+      viewStack: [{ viewUid: 'custom-page' }],
+    });
+
+    expect(
+      model.resolveLayoutRoute({
+        name: getLayoutPageRouteName('admin'),
+        pathname: '/admin/page-1/section/recent/filter/pending',
+        layoutBasePathname: '/admin',
+      }),
+    ).toMatchObject({
+      type: 'notFound',
+    });
+  });
+
+  it('should defer custom root route validation while accessible routes are loading', async () => {
+    const engine = new FlowEngine();
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        getRouteBySchemaUid: () => undefined,
+        isAccessibleLoaded: () => false,
+      },
+    });
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <TestAdminLayoutHost />
+      </FlowEngineProvider>,
+    );
+    const model = engine.getModel<TestAdminLayoutModel>('admin-layout-model');
+    expect(model).toBeTruthy();
+
+    expect(
+      model.resolveLayoutRoute({
+        name: getLayoutPageRouteName('admin'),
+        pathname: '/admin/custom-page/tasktype/approval-apply/status/pending',
+        layoutBasePathname: '/admin',
+      }),
+    ).toMatchObject({
+      type: 'page',
+      pageUid: 'custom-page',
+      pathname: '/admin/custom-page/tasktype/approval-apply/status/pending',
+      viewStack: [{ viewUid: 'custom-page' }],
+    });
+  });
+
   it('should reject malformed RunJS openView route params', async () => {
     const wrongViewToken = encodeOpenViewRouteState('other-popup', { mode: 'dialog', size: 'large' });
     if (!wrongViewToken) {

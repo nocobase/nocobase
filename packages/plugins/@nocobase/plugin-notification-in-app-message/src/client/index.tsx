@@ -22,6 +22,7 @@ import { MobileMessagePage } from './components/mobile/MessagePage';
 import { MobileTabBarMessageItem } from './components/mobile/MobileTabBarMessageItem';
 import { setApiClient } from '../client-v2/apiClient';
 import { NotificationEmbeddedPageModel } from '../client-v2/models/NotificationEmbeddedPageModel';
+import { NotificationPageMenuModel } from '../client-v2/models/NotificationPageMenuModel';
 import { NotificationEntryActionModel } from './models/NotificationEntryActionModel';
 export class PluginNotificationInAppClient extends Plugin {
   async afterAdd() {}
@@ -34,6 +35,7 @@ export class PluginNotificationInAppClient extends Plugin {
     this.flowEngine.registerModels({
       NotificationEmbeddedPageModel,
       NotificationEntryActionModel,
+      NotificationPageMenuModel,
     });
     this.app.use(MessageManagerProvider);
     const notification = this.pm.get(NotificationManager);
