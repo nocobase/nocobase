@@ -1,41 +1,41 @@
 ---
-pkg: "@nocobase/plugin-file-manager"
+title: "Administrador de archivos"
+description: "Tablas de archivos, campos de adjuntos y motores de almacenamiento de archivos, con compatibilidad para almacenamiento local, Alibaba Cloud OSS, Amazon S3 y Tencent Cloud COS; gestión de metadatos y cargas de archivos."
+keywords: "Administrador de archivos, tablas de archivos, campos de adjuntos, motores de almacenamiento, OSS, S3, COS, NocoBase"
 ---
 
+# Administrador de archivos
 
-pkg: "@nocobase/plugin-file-manager"
----
-
-# Gestor de Archivos
+<PluginInfo name="file-manager"></PluginInfo>
 
 ## Introducción
 
-El plugin Gestor de Archivos le proporciona una colección de archivos, campos de adjunto y motores de almacenamiento de archivos para gestionar sus archivos de forma eficaz. Los archivos son registros en un tipo especial de colección, conocida como colección de archivos, que almacena los metadatos de los archivos y se puede gestionar a través del Gestor de Archivos. Los campos de adjunto son campos de relación específicos asociados a la colección de archivos. El plugin admite múltiples métodos de almacenamiento. Actualmente, los motores de almacenamiento de archivos compatibles incluyen el almacenamiento local, Alibaba Cloud OSS, Amazon S3 y Tencent Cloud COS.
+El complemento Administrador de archivos proporciona tablas de archivos, campos de adjuntos y motores de almacenamiento de archivos para gestionar los archivos de forma eficaz. Los archivos son registros de tablas de datos con una estructura específica. Las tablas de datos con esta estructura específica se denominan tablas de archivos y se utilizan para almacenar los metadatos de los archivos, que pueden gestionarse mediante el Administrador de archivos. Los campos de adjuntos son campos de relación específicos asociados a las tablas de archivos. Los archivos admiten varios métodos de almacenamiento. Actualmente, los motores de almacenamiento de archivos compatibles incluyen el almacenamiento local, Alibaba Cloud OSS, Amazon S3 y Tencent Cloud COS.
 
-## Manual de Usuario
+## Manual de uso
 
-### Colección de Archivos
+### Tablas de archivos
 
-Se incluye una colección de adjuntos integrada para almacenar todos los archivos asociados a los campos de adjunto. Además, puede crear nuevas colecciones de archivos para almacenar archivos específicos.
+Se incluye una tabla attachments integrada para almacenar los archivos asociados a todos los campos de adjuntos. Además, se pueden crear nuevas tablas de archivos para almacenar archivos específicos.
 
-[Obtenga más información en la documentación de la Colección de Archivos](/data-sources/file-manager/file-collection)
+[Para obtener más información sobre el uso, consulta la documentación de introducción a las tablas de archivos](/data-sources/file-manager/file-collection)
 
-### Campo de Adjunto
+### Campos de adjuntos
 
-Los campos de adjunto son campos de relación específicos relacionados con la colección de archivos, que puede crear a través del tipo de campo "Adjunto" o configurar mediante un campo de "Relación".
+Los campos de adjuntos son campos de relación específicos asociados a las tablas de archivos. Se pueden crear mediante un «campo de tipo adjunto» o configurar mediante un «campo de relación».
 
-[Obtenga más información en la documentación del Campo de Adjunto](/data-sources/file-manager/field-attachment)
+[Para obtener más información sobre el uso, consulta la documentación de introducción a los campos de adjuntos](/data-sources/file-manager/field-attachment)
 
-### Motor de Almacenamiento de Archivos
+### Motores de almacenamiento de archivos
 
-El motor de almacenamiento de archivos se utiliza para guardar archivos en servicios específicos, incluido el almacenamiento local (guardado en el disco duro del servidor), el almacenamiento en la nube, etc.
+Los motores de almacenamiento de archivos se utilizan para guardar archivos en servicios específicos, incluido el almacenamiento local (que guarda los archivos en el disco duro del servidor) y el almacenamiento en la nube.
 
-[Obtenga más información en la documentación del Motor de Almacenamiento de Archivos](./storage/index.md)
+[Para obtener más información, consulta la introducción a los motores de almacenamiento de archivos](./storage/index.md)
 
 ### API HTTP
 
-Las cargas de archivos se pueden gestionar a través de la API HTTP. Consulte la [API HTTP](./http-api.md).
+La carga de archivos puede realizarse mediante la API HTTP. Consulta [API HTTP](./http-api.md).
 
-## Desarrollo
+## Desarrollo de extensiones
 
 *
