@@ -20,6 +20,7 @@ import {
   getAIChatBoxManualSelectedBlocks,
   getAIChatBoxScope,
   getAIChatBoxWorkContext,
+  getExpandedAIChatBoxHeightAfterBodyBlockAdd,
   normalizeAIChatBoxHeight,
   normalizeAIChatBoxScopeForSave,
   normalizeAIChatBoxWorkContext,
@@ -79,6 +80,9 @@ describe('AI chat box settings helpers', () => {
     expect(normalizeAIChatBoxHeight(undefined)).toBe(640);
     expect(normalizeAIChatBoxHeight(360)).toBe(420);
     expect(normalizeAIChatBoxHeight(720)).toBe(720);
+    expect(normalizeAIChatBoxHeight(2000)).toBe(1600);
+    expect(getExpandedAIChatBoxHeightAfterBodyBlockAdd(undefined)).toBe(880);
+    expect(getExpandedAIChatBoxHeightAfterBodyBlockAdd(1500)).toBe(1600);
   });
 
   it('resolves scope as default uid, empty unscoped value, or explicit shared value', () => {
