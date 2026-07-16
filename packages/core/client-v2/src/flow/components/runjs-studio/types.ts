@@ -23,6 +23,16 @@ export type RunJSWorkspaceJsonSchemaResolver = (
   files: RunJSWorkspaceFileLike[],
 ) => CodeEditorJsonSchema | undefined;
 
+export interface RunJSWorkspaceTypeScriptContext {
+  declarationFiles?: RunJSWorkspaceFileLike[];
+  globalContextType?: string;
+}
+
+export type RunJSWorkspaceTypeScriptContextResolver = (
+  path: string,
+  files: RunJSWorkspaceFileLike[],
+) => RunJSWorkspaceTypeScriptContext | undefined;
+
 export type RunJSSourceLocator =
   | {
       kind: 'flowModel.step';
@@ -105,6 +115,7 @@ export interface RunJSEditorFieldProps {
   containerStyle?: React.CSSProperties;
   editorChrome?: 'standalone' | 'embedded';
   workspaceJsonSchemaResolver?: RunJSWorkspaceJsonSchemaResolver;
+  workspaceTypeScriptContextResolver?: RunJSWorkspaceTypeScriptContextResolver;
   onEmbeddedEditorControllerChange?: (controller: EmbeddedRunJSEditorController | null) => void;
 }
 

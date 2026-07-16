@@ -12,6 +12,7 @@ import ts from 'typescript';
 import {
   createActiveEntryContextType,
   generateClientSettingsTypes,
+  generateInlineClientSettingsTypes,
   LIGHT_EXTENSION_ACTIVE_ENTRY_CONTEXT_PATH,
 } from '../typegen';
 
@@ -146,6 +147,51 @@ describe('light extension settings typegen', () => {
     ]);
     expect(ordersDiagnostics.some((message) => /mode/.test(message))).toBe(true);
     expect(ordersDiagnostics.some((message) => /confirm/.test(message))).toBe(false);
+  });
+
+  it('generates the active settings context from an inline src/client/entry.json file', () => {
+    const result = generateInlineClientSettingsTypes({
+      files: [
+        { path: 'src/client/index.tsx', content: 'ctx.settings.columns; ctx.settings.missing;' },
+        {
+          path: 'src/client/entry.json',
+          content: JSON.stringify({
+            schemaVersion: 1,
+            key: 'collection-table',
+            settings: {
+              columns: { type: 'array', items: { type: 'object' } },
+              pageSize: { type: 'integer' },
+            },
+          }),
+        },
+      ],
+      kind: 'js-block',
+    });
+    const active = createActiveEntryContextType({
+      activePath: 'src/client/index.tsx',
+      entries: result.entries,
+    });
+
+    expect(result.diagnostics).toEqual([]);
+    expect(result.entries[0]).toMatchObject({
+      descriptorPath: 'src/client/entry.json',
+      sourceRoot: 'src/client',
+      virtualImport: 'light-extension:settings/client/js-block/collection-table',
+    });
+    expect(result.files.find((file) => file.path.endsWith('/collection-table.d.ts'))?.content).toContain(
+      'columns?: Array<{}>;',
+    );
+    if (!active.file) {
+      throw new Error('Expected inline active Entry context declaration');
+    }
+    const diagnostics = getTypeScriptDiagnostics([
+      ...result.files,
+      active.file,
+      runJSContextDeclaration(),
+      { path: 'src/client/index.tsx', content: 'ctx.settings.columns; ctx.settings.missing;' },
+    ]);
+    expect(diagnostics.some((message) => /columns/.test(message))).toBe(false);
+    expect(diagnostics.some((message) => /missing/.test(message))).toBe(true);
   });
 });
 

@@ -50,6 +50,7 @@ import LightExtensionWorkspacePage, {
   type LightExtensionWorkspaceFooterActions,
 } from '../pages/LightExtensionWorkspacePage';
 import type { LightExtensionWorkspaceScope } from '../workspace/lightExtensionWorkspaceAccess';
+import { createInlineLightExtensionWorkspaceTypeScriptContextResolver } from '../workspace/inlineLightExtensionWorkspaceTypeScript';
 import { resolveInlineLightExtensionWorkspaceJsonSchema } from '../workspace/lightExtensionWorkspaceJsonSchema';
 import { RunJSLightExtensionSourceField } from './JSBlockLightExtensionSourceField';
 import { SettingsAutoForm } from './SettingsAutoForm';
@@ -648,11 +649,18 @@ export function createRunJSLightExtensionEditorProvider(): RunJSEditorProvider {
     renderEditor(props) {
       const locator = props.sourceLocator || props.locator;
       if (locator?.kind === 'flowModel.step') {
+        const lightExtensionKind = getLightExtensionKind(props.sourceMetadata);
         return props.value.sourceMode === LIGHT_EXTENSION_SOURCE_MODE ? (
           <LightExtensionSourceWorkspaceEditor {...props} />
         ) : (
           props.renderNext?.({
             workspaceJsonSchemaResolver: resolveInlineLightExtensionWorkspaceJsonSchema,
+            ...(lightExtensionKind
+              ? {
+                  workspaceTypeScriptContextResolver:
+                    createInlineLightExtensionWorkspaceTypeScriptContextResolver(lightExtensionKind),
+                }
+              : {}),
           })
         );
       }
@@ -662,13 +670,17 @@ export function createRunJSLightExtensionEditorProvider(): RunJSEditorProvider {
 }
 
 function isLightExtensionSourceMetadata(value: unknown): boolean {
+  return Boolean(getLightExtensionKind(value));
+}
+
+function getLightExtensionKind(value: unknown): LightExtensionKind | undefined {
   if (!isRecord(value)) {
-    return false;
+    return undefined;
   }
-  return (
-    typeof value.lightExtensionKind === 'string' &&
-    (LIGHT_EXTENSION_SUPPORTED_KINDS as readonly string[]).includes(value.lightExtensionKind)
-  );
+  const kind = value.lightExtensionKind;
+  return typeof kind === 'string' && (LIGHT_EXTENSION_SUPPORTED_KINDS as readonly string[]).includes(kind)
+    ? (kind as LightExtensionKind)
+    : undefined;
 }
 
 function getEntryWorkspaceScope(binding: LightExtensionRuntimeSourceBinding): LightExtensionEntryWorkspaceScope | null {

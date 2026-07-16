@@ -577,8 +577,11 @@ function isRunJSTypeScriptWorkspaceFile(path: string): boolean {
 export function buildRunJSTypeScriptProject(
   files: RunJSWorkspaceFile[],
   activeFile?: RunJSWorkspaceFile,
-  modelUse?: string,
-  globalContextType?: string,
+  context: {
+    declarationFiles?: RunJSWorkspaceFile[];
+    globalContextType?: string;
+    modelUse?: string;
+  } = {},
 ): CodeEditorTypeScriptProject | undefined {
   if (!activeFile || !isRunJSTypeScriptProjectFile(activeFile.path)) {
     return undefined;
@@ -595,7 +598,17 @@ export function buildRunJSTypeScriptProject(
         content: file.content,
         path: file.path,
       })),
-    ...(modelUse || globalContextType ? { runJSContext: { modelUse, globalContextType } } : {}),
+    ...(context.declarationFiles?.length
+      ? {
+          declarationFiles: context.declarationFiles.map((file) => ({
+            content: file.content,
+            path: file.path,
+          })),
+        }
+      : {}),
+    ...(context.modelUse || context.globalContextType
+      ? { runJSContext: { modelUse: context.modelUse, globalContextType: context.globalContextType } }
+      : {}),
   };
 }
 

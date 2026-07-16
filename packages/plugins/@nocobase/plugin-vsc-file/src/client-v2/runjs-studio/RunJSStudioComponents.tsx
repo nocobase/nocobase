@@ -26,7 +26,12 @@ import {
   UploadOutlined,
   CopyOutlined,
 } from '@ant-design/icons';
-import { CodeEditor, type CodeEditorFullscreenControl, type CodeEditorJsonSchema } from '@nocobase/client-v2';
+import {
+  CodeEditor,
+  type CodeEditorFullscreenControl,
+  type CodeEditorJsonSchema,
+  type RunJSWorkspaceTypeScriptContextResolver,
+} from '@nocobase/client-v2';
 import {
   Alert,
   Button,
@@ -844,6 +849,7 @@ export function CodeTab(props: {
   readOnly: boolean;
   runJSModelUse?: string;
   runJSGlobalContextType?: string;
+  workspaceTypeScriptContextResolver?: RunJSWorkspaceTypeScriptContextResolver;
   savedFiles: RunJSWorkspaceFile[];
   scene?: string;
   showRunButton?: boolean;
@@ -872,6 +878,7 @@ export function CodeTab(props: {
     readOnly,
     runJSModelUse,
     runJSGlobalContextType,
+    workspaceTypeScriptContextResolver,
     savedFiles,
     scene,
     showRunButton = true,
@@ -886,9 +893,18 @@ export function CodeTab(props: {
     .map((path) => workspaceFiles.find((file) => file.path === path))
     .filter((file): file is RunJSWorkspaceFile => Boolean(file));
   const moduleImportCompletions = useRunJSImportModuleCompletions(workspaceFiles, activeFile?.path);
+  const workspaceTypeScriptContext = useMemo(
+    () => (activeFile ? workspaceTypeScriptContextResolver?.(activeFile.path, workspaceFiles) : undefined),
+    [activeFile, workspaceFiles, workspaceTypeScriptContextResolver],
+  );
   const typescriptProject = useMemo(
-    () => buildRunJSTypeScriptProject(workspaceFiles, activeFile, runJSModelUse, runJSGlobalContextType),
-    [activeFile, runJSGlobalContextType, runJSModelUse, workspaceFiles],
+    () =>
+      buildRunJSTypeScriptProject(workspaceFiles, activeFile, {
+        declarationFiles: workspaceTypeScriptContext?.declarationFiles,
+        globalContextType: workspaceTypeScriptContext?.globalContextType || runJSGlobalContextType,
+        modelUse: runJSModelUse,
+      }),
+    [activeFile, runJSGlobalContextType, runJSModelUse, workspaceFiles, workspaceTypeScriptContext],
   );
   const jsonSchema = useMemo(
     () => (activeFile ? jsonSchemaResolver?.(activeFile.path, workspaceFiles) : undefined),

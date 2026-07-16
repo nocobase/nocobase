@@ -94,13 +94,45 @@ const contextTypes: Record<LightExtensionClientTypegenKind, string> = {
 export function generateClientSettingsTypes(input: {
   files: LightExtensionSettingsTypegenSourceFile[];
 }): LightExtensionSettingsTypegenResult {
-  const sourceFiles = input.files.map((file) => ({
-    path: normalizeSourcePath(file.path),
-    content: typeof file.content === 'string' ? file.content : '',
-  }));
+  const sourceFiles = normalizeSourceFiles(input.files);
   const diagnostics: LightExtensionSettingsTypegenDiagnostic[] = [];
   const entries = collectClientSettingsEntries(sourceFiles, diagnostics);
 
+  return buildSettingsTypegenResult(entries, diagnostics);
+}
+
+export function generateInlineClientSettingsTypes(input: {
+  descriptorPath?: string;
+  files: LightExtensionSettingsTypegenSourceFile[];
+  kind: LightExtensionClientTypegenKind;
+  sourceRoot?: string;
+}): LightExtensionSettingsTypegenResult {
+  const sourceFiles = normalizeSourceFiles(input.files);
+  const diagnostics: LightExtensionSettingsTypegenDiagnostic[] = [];
+  const descriptorPath = normalizeSourcePath(input.descriptorPath || 'src/client/entry.json');
+  const descriptorFile = sourceFiles.find((file) => file.path === descriptorPath);
+  const descriptor = descriptorFile
+    ? parseEntryDescriptor(descriptorFile, { kind: input.kind, directoryName: 'inline' }, diagnostics)
+    : null;
+  const entries = descriptor
+    ? [
+        createClientSettingsTypegenEntry({
+          descriptor,
+          descriptorPath,
+          directoryName: 'inline',
+          kind: input.kind,
+          sourceRoot: normalizeSourcePath(input.sourceRoot || descriptorPath.replace(/\/[^/]+$/u, '')),
+        }),
+      ]
+    : [];
+
+  return buildSettingsTypegenResult(entries, diagnostics);
+}
+
+function buildSettingsTypegenResult(
+  entries: LightExtensionSettingsTypegenEntry[],
+  diagnostics: LightExtensionSettingsTypegenDiagnostic[],
+): LightExtensionSettingsTypegenResult {
   return {
     entries,
     files: buildGeneratedFiles(entries),
@@ -199,23 +231,42 @@ function collectClientSettingsEntries(
     }
     seenEntryKeys.add(entryKey);
 
-    const schema = descriptor.settingsSchema || emptySettingsSchema;
-    entries.push({
-      target: 'client',
-      kind: parsed.kind,
-      directoryName: parsed.directoryName,
-      entryName: descriptor.key,
-      entryKey,
-      descriptorPath: file.path,
-      sourceRoot: `${parsed.root}/${parsed.directoryName}`,
-      virtualImport: `${LIGHT_EXTENSION_SETTINGS_IMPORT_PREFIX}${entryKey}`,
-      outputPath: `${LIGHT_EXTENSION_GENERATED_TYPES_ROOT}/client/${parsed.kind}/${descriptor.key}.d.ts`,
-      schema,
-      schemaHash: shortHash(stableSerialize(schema)),
-    });
+    entries.push(
+      createClientSettingsTypegenEntry({
+        descriptor,
+        descriptorPath: file.path,
+        directoryName: parsed.directoryName,
+        kind: parsed.kind,
+        sourceRoot: `${parsed.root}/${parsed.directoryName}`,
+      }),
+    );
   }
 
   return entries.sort((left, right) => left.entryKey.localeCompare(right.entryKey));
+}
+
+function createClientSettingsTypegenEntry(input: {
+  descriptor: { key: string; settingsSchema: Record<string, unknown> | null };
+  descriptorPath: string;
+  directoryName: string;
+  kind: LightExtensionClientTypegenKind;
+  sourceRoot: string;
+}): LightExtensionSettingsTypegenEntry {
+  const schema = input.descriptor.settingsSchema || emptySettingsSchema;
+  const entryKey = `client/${input.kind}/${input.descriptor.key}`;
+  return {
+    target: 'client',
+    kind: input.kind,
+    directoryName: input.directoryName,
+    entryName: input.descriptor.key,
+    entryKey,
+    descriptorPath: input.descriptorPath,
+    sourceRoot: input.sourceRoot,
+    virtualImport: `${LIGHT_EXTENSION_SETTINGS_IMPORT_PREFIX}${entryKey}`,
+    outputPath: `${LIGHT_EXTENSION_GENERATED_TYPES_ROOT}/client/${input.kind}/${input.descriptor.key}.d.ts`,
+    schema,
+    schemaHash: shortHash(stableSerialize(schema)),
+  };
 }
 
 function parseEntryDescriptor(
@@ -452,6 +503,15 @@ function normalizeSourcePath(path: string): string {
     .replace(/\/+/g, '/')
     .replace(/^\.\/+/, '')
     .replace(/^\/+|\/+$/g, '');
+}
+
+function normalizeSourceFiles(
+  files: LightExtensionSettingsTypegenSourceFile[],
+): Array<Required<LightExtensionSettingsTypegenSourceFile>> {
+  return files.map((file) => ({
+    path: normalizeSourcePath(file.path),
+    content: typeof file.content === 'string' ? file.content : '',
+  }));
 }
 
 function stableSerialize(value: unknown): string {

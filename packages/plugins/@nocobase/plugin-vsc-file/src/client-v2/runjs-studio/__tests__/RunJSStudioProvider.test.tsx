@@ -63,13 +63,18 @@ vi.mock('@nocobase/client-v2', () => ({
     fullscreenControl?: { isFullscreen: boolean; toggleFullscreen: () => void };
     enableLinter?: boolean;
     language?: string;
-    typescriptProject?: { runJSContext?: { modelUse?: string } };
+    typescriptProject?: {
+      declarationFiles?: Array<{ content: string; path: string }>;
+      runJSContext?: { globalContextType?: string; modelUse?: string };
+    };
     jsonSchema?: { uri?: string };
   }) => (
     <div
       data-enable-linter={String(Boolean(enableLinter))}
       data-json-schema-uri={jsonSchema?.uri}
       data-language={language}
+      data-runjs-declaration-files={typescriptProject?.declarationFiles?.map((file) => file.path).join(',')}
+      data-runjs-global-context-type={typescriptProject?.runJSContext?.globalContextType}
       data-runjs-model-use={typescriptProject?.runJSContext?.modelUse}
       data-testid="mock-code-editor"
     >
@@ -735,6 +740,55 @@ describe('runJSStudioProvider', () => {
     expect(screen.getByTestId('mock-code-editor')).toHaveAttribute(
       'data-json-schema-uri',
       'https://schemas.nocobase.com/light-extension/entry-v1.schema.json',
+    );
+  });
+
+  it('forwards workspace-derived TypeScript declarations to source editors', async () => {
+    mocks.request.mockImplementation(({ url }: { url: string }) => {
+      if (url === 'runJSSources:open') {
+        return Promise.resolve({
+          data: {
+            data: {
+              ...openResult,
+              files: [
+                ...openResult.files,
+                {
+                  path: 'src/client/entry.json',
+                  content: '{"schemaVersion":1,"key":"welcome"}\n',
+                  language: 'json',
+                  mode: '100644',
+                },
+              ],
+            },
+          },
+        });
+      }
+      return Promise.resolve({ data: { data: {} } });
+    });
+    const workspaceTypeScriptContextResolver = vi.fn(() => ({
+      declarationFiles: [
+        {
+          path: '.light-extension/types/__active-entry-context.d.ts',
+          content: 'type LightExtensionActiveEntryContext = RunJSContext & { settings: { title?: string } };',
+        },
+      ],
+      globalContextType: 'LightExtensionActiveEntryContext',
+    }));
+
+    renderEditor(vi.fn(), { workspaceTypeScriptContextResolver });
+
+    await screen.findByLabelText('Edit file content');
+    expect(workspaceTypeScriptContextResolver).toHaveBeenCalledWith(
+      'src/client/index.tsx',
+      expect.arrayContaining([expect.objectContaining({ path: 'src/client/entry.json' })]),
+    );
+    expect(screen.getByTestId('mock-code-editor')).toHaveAttribute(
+      'data-runjs-global-context-type',
+      'LightExtensionActiveEntryContext',
+    );
+    expect(screen.getByTestId('mock-code-editor')).toHaveAttribute(
+      'data-runjs-declaration-files',
+      '.light-extension/types/__active-entry-context.d.ts',
     );
   });
 

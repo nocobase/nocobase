@@ -53,8 +53,15 @@ describe('buildRunJSTypeScriptProject', () => {
   it('forwards the RunJS model and global context types to the editor project', () => {
     const activeFile = workspaceFile('src/main.ts', 'ctx.model;');
 
-    expect(buildRunJSTypeScriptProject([activeFile], activeFile, 'JSFieldModel', 'CustomRunJSContext')).toEqual({
+    expect(
+      buildRunJSTypeScriptProject([activeFile], activeFile, {
+        declarationFiles: [workspaceFile('types/context.d.ts', 'type CustomRunJSContext = RunJSContext;')],
+        globalContextType: 'CustomRunJSContext',
+        modelUse: 'JSFieldModel',
+      }),
+    ).toEqual({
       currentFilePath: 'src/main.ts',
+      declarationFiles: [{ content: 'type CustomRunJSContext = RunJSContext;', path: 'types/context.d.ts' }],
       rewriteBuiltInAutoImports: true,
       typeLibraryIds: ['react'],
       files: [{ content: 'ctx.model;', path: 'src/main.ts' }],

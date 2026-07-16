@@ -187,9 +187,19 @@ try {
   },
   {
     path: 'src/client/js-blocks/collection-table/index.tsx',
-    content: `type JsonRecord = Record<string, unknown>;
-type FormatterKey = 'auto' | 'text' | 'number' | 'date' | 'boolean' | 'relation' | 'json';
-type ColumnConfig = {
+    content: `import { mountCollectionTable } from './CollectionTable';
+
+const { Alert } = ctx.libs.antd;
+ctx.render(<Alert type="info" showIcon message={ctx.t('Loading table')} />);
+await mountCollectionTable();
+`,
+    language: 'typescript',
+  },
+  {
+    path: 'src/client/js-blocks/collection-table/types.ts',
+    content: `export type JsonRecord = Record<string, unknown>;
+export type FormatterKey = 'auto' | 'text' | 'number' | 'date' | 'boolean' | 'relation' | 'json';
+export type ColumnConfig = {
   field: string;
   scope: string;
   title?: string;
@@ -197,8 +207,8 @@ type ColumnConfig = {
   visible: boolean;
   formatter: FormatterKey;
 };
-type SortConfig = { field: string; dir: 'asc' | 'desc'; scope?: string };
-type CollectionFieldLike = JsonRecord & {
+export type SortConfig = { field: string; dir: 'asc' | 'desc'; scope?: string };
+export type CollectionFieldLike = JsonRecord & {
   name?: string;
   title?: string;
   type?: string;
@@ -208,13 +218,13 @@ type CollectionFieldLike = JsonRecord & {
   options?: JsonRecord;
   isAssociationField?: () => boolean;
 };
-type CollectionLike = JsonRecord & {
+export type CollectionLike = JsonRecord & {
   filterTargetKey?: string | string[];
   titleField?: string;
   options?: JsonRecord;
   getFields?: () => CollectionFieldLike[];
 };
-type FieldMeta = {
+export type FieldMeta = {
   name: string;
   title: string;
   type: string;
@@ -222,18 +232,18 @@ type FieldMeta = {
   association: boolean;
   defaultFormatter: FormatterKey;
 };
-type MultiRecordResourceLike = {
+export type MultiRecordResourceLike = {
   setDataSourceKey?: (key: string) => MultiRecordResourceLike;
   setResourceName?: (name: string) => MultiRecordResourceLike;
   runAction?: (action: string, options: JsonRecord) => Promise<unknown>;
 };
-type PaginationState = {
+export type PaginationState = {
   current: number;
   pageSize: number;
   total: number;
   totalKnown: boolean;
 };
-type PersistState = {
+export type PersistState = {
   scope: string;
   flushScheduled: boolean;
   saving: boolean;
@@ -241,7 +251,7 @@ type PersistState = {
   savedRevision: number;
   patch: JsonRecord;
 };
-type TableFlowModel = {
+export type TableFlowModel = {
   uid: string;
   flowEngine?: {
     getModel?: (uid: string) => unknown;
@@ -251,189 +261,68 @@ type TableFlowModel = {
   saveStepParams: () => Promise<unknown>;
   __lightExtensionCollectionTablePersistState?: PersistState;
 };
-type TableRuntimeContext = {
+export type TableRuntimeContext = {
   flowSettingsEnabled?: unknown;
   dataSourceManager?: {
     getCollection?: (dataSourceKey: string, collectionName: string) => CollectionLike | undefined;
   };
 };
+export type PersistenceContext = {
+  message: { error: (message: string) => void };
+  runJsSource?: unknown;
+  t: (text: string) => string;
+};
+`,
+    language: 'typescript',
+  },
+  {
+    path: 'src/client/js-blocks/collection-table/table-utils.ts',
+    content: `import type {
+  CollectionLike,
+  ColumnConfig,
+  FieldMeta,
+  FormatterKey,
+  JsonRecord,
+  SortConfig,
+} from './types';
 
-const React = ctx.libs.React;
-const {
-  Alert,
-  Button,
-  Checkbox,
-  Popover,
-  Select,
-  Space,
-  Table,
-  Tag,
-  theme,
-  Tooltip,
-  Typography,
-} = ctx.libs.antd;
-const { HolderOutlined, ReloadOutlined, SettingOutlined } = ctx.libs.antdIcons;
-const dayjs = ctx.libs.dayjs;
-
-const isRecord = (value: unknown): value is JsonRecord =>
+export const isRecord = (value: unknown): value is JsonRecord =>
   Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-const cloneJson = <T,>(value: T): T => {
+
+export const cloneJson = <T,>(value: T): T => {
   try {
     return JSON.parse(JSON.stringify(value)) as T;
   } catch {
     return value;
   }
 };
-const readProperty = (value: unknown, key: string): unknown => {
+
+export const readProperty = (value: unknown, key: string): unknown => {
   if (!value || typeof value !== 'object') return undefined;
   const record = value as JsonRecord;
   if (record[key] !== undefined) return record[key];
   return isRecord(record.options) ? record.options[key] : undefined;
 };
-const toNonEmptyString = (value: unknown): string | undefined =>
+
+export const toNonEmptyString = (value: unknown): string | undefined =>
   typeof value === 'string' && value.trim() ? value.trim() : undefined;
-const toPositiveInteger = (value: unknown, fallback: number, min: number, max: number): number => {
+
+export const toPositiveInteger = (value: unknown, fallback: number, min: number, max: number): number => {
   const parsed = typeof value === 'number' ? value : Number(value);
   return Number.isFinite(parsed) ? Math.min(max, Math.max(min, Math.round(parsed))) : fallback;
 };
-const sameJson = (left: unknown, right: unknown): boolean => JSON.stringify(left) === JSON.stringify(right);
-const formatterKeys = new Set<FormatterKey>(['auto', 'text', 'number', 'date', 'boolean', 'relation', 'json']);
 
-const settings = isRecord(ctx.settings) ? ctx.settings : {};
-const dataSourceKey = toNonEmptyString(settings.dataSourceKey) || 'main';
-const collectionName = toNonEmptyString(settings.collectionName);
-const tableDataScope = dataSourceKey + ':' + (collectionName || '');
-const runtimeContext = ctx as unknown as TableRuntimeContext;
-const configurable = Boolean(runtimeContext.flowSettingsEnabled);
-const pageSize = toPositiveInteger(settings.pageSize, 20, 5, 200);
-const tableHeight = toPositiveInteger(settings.height, 480, 240, 1200);
-const maxInitialColumns = toPositiveInteger(settings.maxInitialColumns, 8, 1, 20);
-const flowModel = ctx.model as unknown as TableFlowModel;
-const getSourceIdentity = (runJs: JsonRecord): string => {
-  const sourceBinding = isRecord(runJs.sourceBinding) ? runJs.sourceBinding : {};
-  return [runJs.sourceMode, sourceBinding.type, sourceBinding.repoId, sourceBinding.entryId, sourceBinding.kind]
-    .map((value) => String(value || ''))
-    .join(':');
-};
-const buildPersistScope = (runJs: JsonRecord, runSettings: JsonRecord): string =>
-  [
-    toNonEmptyString(runSettings.dataSourceKey) || 'main',
-    toNonEmptyString(runSettings.collectionName) || '',
-    getSourceIdentity(runJs),
-  ].join('|');
-const initialRunJsValue = flowModel.getStepParams('jsSettings', 'runJs');
-const initialRunJs = isRecord(initialRunJsValue) ? initialRunJsValue : {};
-const initialSourceInfo: JsonRecord = isRecord(ctx.runJsSource) ? ctx.runJsSource : {};
-const runJsForScope = isRecord(initialRunJs.sourceBinding)
-  ? initialRunJs
-  : {
-      ...initialRunJs,
-      sourceMode: initialRunJs.sourceMode || initialSourceInfo.sourceMode,
-      sourceBinding: initialSourceInfo.sourceBinding,
-    };
-const persistScope = buildPersistScope(runJsForScope, settings);
+export const sameJson = (left: unknown, right: unknown): boolean => JSON.stringify(left) === JSON.stringify(right);
 
-const getPersistState = (): PersistState => {
-  const current = flowModel.__lightExtensionCollectionTablePersistState;
-  if (!current || current.scope !== persistScope) {
-    flowModel.__lightExtensionCollectionTablePersistState = {
-      scope: persistScope,
-      flushScheduled: false,
-      saving: false,
-      revision: 0,
-      savedRevision: 0,
-      patch: {},
-    };
-  }
-  return flowModel.__lightExtensionCollectionTablePersistState;
-};
-const persistState = getPersistState();
-
-const isCurrentPersistState = (state: PersistState): boolean =>
-  flowModel.__lightExtensionCollectionTablePersistState === state;
-const isFlowModelActive = (): boolean => {
-  const getModel = flowModel.flowEngine?.getModel;
-  return typeof getModel !== 'function' || flowModel.flowEngine?.getModel?.(flowModel.uid) === flowModel;
-};
-const saveStableStepParams = async () => {
-  await flowModel.saveStepParams();
-  while (isFlowModelActive()) {
-    const beforeSave = cloneJson(flowModel.getStepParams('jsSettings', 'runJs'));
-    await flowModel.saveStepParams();
-    const afterSave = flowModel.getStepParams('jsSettings', 'runJs');
-    if (sameJson(beforeSave, afterSave)) return;
-  }
-};
-
-const reportPersistError = (error: unknown) => {
-  const message = error instanceof Error ? error.message : String(error);
-  ctx.message.error(ctx.t('Failed to save table configuration') + ': ' + message);
-};
-
-const flushSettingsPatch = async (state: PersistState) => {
-  if (
-    !isCurrentPersistState(state) ||
-    !isFlowModelActive() ||
-    state.saving ||
-    state.savedRevision >= state.revision
-  ) {
-    return;
-  }
-  state.saving = true;
-  let failed = false;
-
-  try {
-    while (isCurrentPersistState(state) && isFlowModelActive() && state.savedRevision < state.revision) {
-      const targetRevision = state.revision;
-      const patch = cloneJson(state.patch);
-      const runJsValue = flowModel.getStepParams('jsSettings', 'runJs');
-      const runJs = isRecord(runJsValue) ? runJsValue : {};
-      const currentSettings = isRecord(runJs.settings) ? runJs.settings : {};
-      const currentScope = buildPersistScope(runJs, currentSettings);
-      if (currentScope !== state.scope) {
-        state.savedRevision = state.revision;
-        state.patch = {};
-        break;
-      }
-      const nextSettings = { ...currentSettings, ...patch };
-
-      if (!sameJson(currentSettings, nextSettings)) {
-        flowModel.setStepParams('jsSettings', 'runJs', { settings: nextSettings });
-        await saveStableStepParams();
-        if (!isCurrentPersistState(state) || !isFlowModelActive()) break;
-        const latestRunJsValue = flowModel.getStepParams('jsSettings', 'runJs');
-        const latestRunJs = isRecord(latestRunJsValue) ? latestRunJsValue : {};
-        const latestSettings = isRecord(latestRunJs.settings) ? latestRunJs.settings : {};
-        if (buildPersistScope(latestRunJs, latestSettings) !== state.scope) break;
-      }
-      state.savedRevision = targetRevision;
-    }
-    state.patch = {};
-  } catch (error) {
-    failed = true;
-    reportPersistError(error);
-  } finally {
-    state.saving = false;
-    if (!failed && isCurrentPersistState(state) && isFlowModelActive() && state.savedRevision < state.revision) {
-      flushSettingsPatch(state).catch(reportPersistError);
-    }
-  }
-};
-
-const scheduleSettingsPatch = (patch: JsonRecord) => {
-  if (!configurable || !isCurrentPersistState(persistState) || !isFlowModelActive()) return;
-  const state = persistState;
-  state.patch = { ...state.patch, ...cloneJson(patch) };
-  state.revision += 1;
-  if (state.flushScheduled) return;
-  state.flushScheduled = true;
-  Promise.resolve()
-    .then(() => {
-      state.flushScheduled = false;
-      return flushSettingsPatch(state);
-    })
-    .catch(reportPersistError);
-};
+export const formatterKeys = new Set<FormatterKey>([
+  'auto',
+  'text',
+  'number',
+  'date',
+  'boolean',
+  'relation',
+  'json',
+]);
 
 const resolveDefaultFormatter = (type: string, interfaceName: string, association: boolean): FormatterKey => {
   if (association) return 'relation';
@@ -445,14 +334,15 @@ const resolveDefaultFormatter = (type: string, interfaceName: string, associatio
   return 'text';
 };
 
-const getFieldMetas = (collection: CollectionLike): FieldMeta[] => {
+export const getFieldMetas = (collection: CollectionLike, translate: (text: string) => string): FieldMeta[] => {
   const fields = typeof collection.getFields === 'function' ? collection.getFields() : [];
   return fields.flatMap((field) => {
     const name = toNonEmptyString(readProperty(field, 'name'));
     const type = toNonEmptyString(readProperty(field, 'type')) || '';
-    const interfaceName = toNonEmptyString(readProperty(field, 'interface')) || '';
+    const interfaceName = toNonEmptyString(readProperty(field, 'interface'));
     if (
       !name ||
+      !interfaceName ||
       readProperty(field, 'hidden') === true ||
       (interfaceName + ' ' + type).toLowerCase().includes('password')
     ) {
@@ -464,7 +354,7 @@ const getFieldMetas = (collection: CollectionLike): FieldMeta[] => {
       (typeof field.isAssociationField === 'function' && field.isAssociationField()) ||
       Boolean(target) ||
       associationTypes.includes(type);
-    const title = ctx.t(String(readProperty(field, 'title') || name));
+    const title = translate(String(readProperty(field, 'title') || name));
     return [
       {
         name,
@@ -478,12 +368,13 @@ const getFieldMetas = (collection: CollectionLike): FieldMeta[] => {
   });
 };
 
-const normalizeColumns = (
+export const normalizeColumns = (
   fields: FieldMeta[],
   rawColumns: unknown,
   primaryKeys: string[],
   titleField: string | undefined,
   expectedScope: string,
+  maxInitialColumns: number,
 ): ColumnConfig[] => {
   const fieldMap = new Map(fields.map((field) => [field.name, field]));
   const savedColumns = Array.isArray(rawColumns) ? rawColumns : [];
@@ -535,7 +426,11 @@ const normalizeColumns = (
   return output;
 };
 
-const normalizeSort = (value: unknown, fields: Map<string, FieldMeta>, expectedScope?: string): SortConfig[] => {
+export const normalizeSort = (
+  value: unknown,
+  fields: Map<string, FieldMeta>,
+  expectedScope?: string,
+): SortConfig[] => {
   if (!Array.isArray(value)) return [];
   return value.flatMap((item) => {
     if (!isRecord(item)) return [];
@@ -547,7 +442,7 @@ const normalizeSort = (value: unknown, fields: Map<string, FieldMeta>, expectedS
   });
 };
 
-const normalizeAntdSort = (
+export const normalizeAntdSort = (
   value: unknown,
   fields: Map<string, FieldMeta>,
   expectedScope: string,
@@ -564,7 +459,7 @@ const normalizeAntdSort = (
     .slice(0, 1);
 };
 
-const valueToText = (value: unknown): string => {
+export const valueToText = (value: unknown): string => {
   if (value === null || value === undefined || value === '') return '-';
   if (Array.isArray(value)) return value.map(valueToText).join(', ');
   if (isRecord(value)) {
@@ -574,47 +469,723 @@ const valueToText = (value: unknown): string => {
   return String(value);
 };
 
-const renderCellValue = (config: ColumnConfig, field: FieldMeta, value: unknown) => {
-  const formatter = config.formatter === 'auto' ? field.defaultFormatter : config.formatter;
-  if (value === null || value === undefined || value === '' || (Array.isArray(value) && value.length === 0)) {
-    return <Typography.Text type="secondary">-</Typography.Text>;
-  }
-  if (formatter === 'boolean') {
-    const checked =
-      value === true || value === 1 || value === '1' || (typeof value === 'string' && value.toLowerCase() === 'true');
-    return <Tag color={checked ? 'success' : 'default'}>{checked ? ctx.t('Yes') : ctx.t('No')}</Tag>;
-  }
+export const getCollectionString = (collection: CollectionLike, key: string): string | undefined =>
+  toNonEmptyString(readProperty(collection, key));
+`,
+    language: 'typescript',
+  },
+  {
+    path: 'src/client/js-blocks/collection-table/TableCell.tsx',
+    content: `import { valueToText } from './table-utils';
+import type { ColumnConfig, FieldMeta } from './types';
 
-  let text = valueToText(value);
-  if (formatter === 'number') {
-    const numberValue = typeof value === 'number' ? value : Number(value);
-    text = Number.isFinite(numberValue) ? new Intl.NumberFormat(ctx.locale).format(numberValue) : '-';
-  } else if (formatter === 'date') {
-    const dateValue = value === null || value === undefined ? null : dayjs(value as string | number | Date);
-    text = dateValue?.isValid?.() ? dateValue.format('YYYY-MM-DD HH:mm') : '-';
-  } else if (formatter === 'json') {
-    try {
-      text = value === undefined ? '-' : JSON.stringify(value);
-    } catch {
-      text = valueToText(value);
-    }
-  }
-
-  return (
-    <Typography.Text
-      code={formatter === 'json'}
-      ellipsis={{ tooltip: text }}
-      style={{ display: 'block', maxWidth: '100%' }}
-    >
-      {text}
-    </Typography.Text>
-  );
+type CreateTableCellRendererOptions = {
+  React: typeof ctx.libs.React;
+  Tag: typeof ctx.libs.antd.Tag;
+  Typography: typeof ctx.libs.antd.Typography;
+  dayjs: typeof ctx.libs.dayjs;
+  locale: typeof ctx.locale;
+  t: typeof ctx.t;
 };
 
-const getCollectionString = (collection: CollectionLike, key: string): string | undefined =>
-  toNonEmptyString(readProperty(collection, key));
+export const createTableCellRenderer = ({
+  React,
+  Tag,
+  Typography,
+  dayjs,
+  locale,
+  t,
+}: CreateTableCellRendererOptions) => {
+  return (config: ColumnConfig, field: FieldMeta, value: unknown) => {
+    const formatter = config.formatter === 'auto' ? field.defaultFormatter : config.formatter;
+    if (value === null || value === undefined || value === '' || (Array.isArray(value) && value.length === 0)) {
+      return <Typography.Text type="secondary">-</Typography.Text>;
+    }
+    if (formatter === 'boolean') {
+      const checked =
+        value === true || value === 1 || value === '1' || (typeof value === 'string' && value.toLowerCase() === 'true');
+      return <Tag color={checked ? 'success' : 'default'}>{checked ? t('Yes') : t('No')}</Tag>;
+    }
+
+    let text = valueToText(value);
+    if (formatter === 'number') {
+      const numberValue = typeof value === 'number' ? value : Number(value);
+      text = Number.isFinite(numberValue) ? new Intl.NumberFormat(locale).format(numberValue) : '-';
+    } else if (formatter === 'date') {
+      const dateValue = value === null || value === undefined ? null : dayjs(value as string | number | Date);
+      text = dateValue?.isValid?.() ? dateValue.format('YYYY-MM-DD HH:mm') : '-';
+    } else if (formatter === 'json') {
+      try {
+        text = value === undefined ? '-' : JSON.stringify(value);
+      } catch {
+        text = valueToText(value);
+      }
+    }
+
+    return (
+      <Typography.Text
+        code={formatter === 'json'}
+        ellipsis={{ tooltip: text }}
+        style={{ display: 'block', maxWidth: '100%' }}
+      >
+        {text}
+      </Typography.Text>
+    );
+  };
+};
+`,
+    language: 'typescript',
+  },
+  {
+    path: 'src/client/js-blocks/collection-table/column-interactions.ts',
+    content: `import { toPositiveInteger } from './table-utils';
+import type { ColumnConfig, JsonRecord } from './types';
+
+type RefLike<T> = { current: T };
+type ColumnResizeStartEvent = {
+  clientX: number;
+  preventDefault: () => void;
+  stopPropagation: () => void;
+};
+type CreateColumnInteractionsOptions = {
+  columnsRef: RefLike<ColumnConfig[]>;
+  configurable: boolean;
+  mountedRef: RefLike<boolean>;
+  resizeCleanupRef: RefLike<(() => void) | null>;
+  scheduleSettingsPatch: (patch: JsonRecord) => void;
+  syncColumns: (columns: ColumnConfig[]) => void;
+};
+
+export const createColumnInteractions = ({
+  columnsRef,
+  configurable,
+  mountedRef,
+  resizeCleanupRef,
+  scheduleSettingsPatch,
+  syncColumns,
+}: CreateColumnInteractionsOptions) => {
+  const moveColumn = (sourceField: string, targetField: string) => {
+    if (!configurable || sourceField === targetField) return;
+    const currentColumns = columnsRef.current;
+    const sourceIndex = currentColumns.findIndex((column) => column.field === sourceField);
+    const targetIndex = currentColumns.findIndex((column) => column.field === targetField);
+    if (sourceIndex < 0 || targetIndex < 0) return;
+    const nextColumns = [...currentColumns];
+    const [movedColumn] = nextColumns.splice(sourceIndex, 1);
+    if (!movedColumn) return;
+    nextColumns.splice(targetIndex, 0, movedColumn);
+    syncColumns(nextColumns);
+    scheduleSettingsPatch({ columns: nextColumns });
+  };
+
+  const moveColumnByOffset = (fieldName: string, offset: -1 | 1) => {
+    const visibleColumns = columnsRef.current.filter((column) => column.visible);
+    const sourceIndex = visibleColumns.findIndex((column) => column.field === fieldName);
+    const target = visibleColumns[sourceIndex + offset];
+    if (sourceIndex < 0 || !target) return;
+    moveColumn(fieldName, target.field);
+  };
+
+  const resizeColumnByKeyboard = (fieldName: string, delta: number) => {
+    const nextColumns = columnsRef.current.map((column) =>
+      column.field === fieldName
+        ? { ...column, width: toPositiveInteger(column.width + delta, column.width, 60, 1000) }
+        : column,
+    );
+    syncColumns(nextColumns);
+    scheduleSettingsPatch({ columns: nextColumns });
+  };
+
+  const beginColumnResize = (event: ColumnResizeStartEvent, fieldName: string) => {
+    if (!configurable) return;
+    const currentColumn = columnsRef.current.find((column) => column.field === fieldName);
+    if (!currentColumn) return;
+    event.preventDefault();
+    event.stopPropagation();
+    resizeCleanupRef.current?.();
+
+    const startX = event.clientX;
+    const startWidth = currentColumn.width;
+    const previousCursor = document.body.style.cursor;
+    const previousUserSelect = document.body.style.userSelect;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    let nextWidth = startWidth;
+    let animationFrame: number | null = null;
+
+    const applyWidth = () => {
+      animationFrame = null;
+      const nextColumns = columnsRef.current.map((column) =>
+        column.field === fieldName ? { ...column, width: nextWidth } : column,
+      );
+      syncColumns(nextColumns);
+    };
+    const restoreBodyStyle = () => {
+      document.body.style.cursor = previousCursor;
+      document.body.style.userSelect = previousUserSelect;
+    };
+    const onPointerMove = (moveEvent: PointerEvent) => {
+      nextWidth = toPositiveInteger(startWidth + moveEvent.clientX - startX, startWidth, 60, 1000);
+      if (animationFrame === null) animationFrame = window.requestAnimationFrame(applyWidth);
+    };
+    const removeListeners = () => {
+      document.removeEventListener('pointermove', onPointerMove);
+      document.removeEventListener('pointerup', finishResize);
+      document.removeEventListener('pointercancel', cancelResize);
+      if (animationFrame !== null) {
+        window.cancelAnimationFrame(animationFrame);
+        animationFrame = null;
+      }
+      restoreBodyStyle();
+    };
+    const finishResize = () => {
+      removeListeners();
+      applyWidth();
+      resizeCleanupRef.current = null;
+      scheduleSettingsPatch({ columns: columnsRef.current });
+    };
+    const cancelResize = () => {
+      removeListeners();
+      resizeCleanupRef.current = null;
+      if (!mountedRef.current) return;
+      const restoredColumns = columnsRef.current.map((column) =>
+        column.field === fieldName ? { ...column, width: startWidth } : column,
+      );
+      syncColumns(restoredColumns);
+    };
+
+    document.addEventListener('pointermove', onPointerMove);
+    document.addEventListener('pointerup', finishResize);
+    document.addEventListener('pointercancel', cancelResize);
+    resizeCleanupRef.current = cancelResize;
+  };
+
+  return { beginColumnResize, moveColumn, moveColumnByOffset, resizeColumnByKeyboard };
+};
+`,
+    language: 'typescript',
+  },
+  {
+    path: 'src/client/js-blocks/collection-table/ColumnHeaderCell.tsx',
+    content: `import { isRecord, toNonEmptyString } from './table-utils';
+import type { ColumnConfig, JsonRecord } from './types';
+
+type RefLike<T> = { current: T };
+type CreateColumnHeaderCellOptions = {
+  React: typeof ctx.libs.React;
+  HolderOutlined: typeof ctx.libs.antdIcons.HolderOutlined;
+  Tooltip: typeof ctx.libs.antd.Tooltip;
+  beginColumnResize: (
+    event: { clientX: number; preventDefault: () => void; stopPropagation: () => void },
+    fieldName: string,
+  ) => void;
+  columnsRef: RefLike<ColumnConfig[]>;
+  configurable: boolean;
+  dragFieldRef: RefLike<string | null>;
+  getColumnTitle: (fieldName: string) => string;
+  headerFieldById: Map<string, string>;
+  moveColumn: (sourceField: string, targetField: string) => void;
+  moveColumnByOffset: (fieldName: string, offset: -1 | 1) => void;
+  resizeColumnByKeyboard: (fieldName: string, delta: number) => void;
+  t: typeof ctx.t;
+  tokenRef: RefLike<{ colorTextQuaternary?: unknown }>;
+};
+
+export const createColumnHeaderCell = ({
+  React,
+  HolderOutlined,
+  Tooltip,
+  beginColumnResize,
+  columnsRef,
+  configurable,
+  dragFieldRef,
+  getColumnTitle,
+  headerFieldById,
+  moveColumn,
+  moveColumnByOffset,
+  resizeColumnByKeyboard,
+  t,
+  tokenRef,
+}: CreateColumnHeaderCellOptions) => {
+  const ColumnHeaderCell = (props: JsonRecord) => {
+    const fieldName = headerFieldById.get(toNonEmptyString(props.id) || '');
+    const children = props.children;
+    const style = isRecord(props.style) ? props.style : {};
+    const paddingLeft =
+      typeof style.paddingLeft === 'number' || typeof style.paddingLeft === 'string' ? style.paddingLeft : undefined;
+    const rest = { ...props };
+    delete rest.children;
+    delete rest.style;
+    const columnTitle = fieldName ? getColumnTitle(fieldName) : '';
+    const dragLabel = t('Drag column') + (columnTitle ? ': ' + columnTitle : '');
+    const resizeLabel = t('Resize column') + (columnTitle ? ': ' + columnTitle : '');
+
+    return (
+      <th
+        {...rest}
+        data-column-field={fieldName}
+        style={{
+          ...style,
+          paddingLeft: configurable && fieldName ? 36 : paddingLeft,
+          position: 'relative',
+        }}
+        onDragOver={(dragEvent) => {
+          if (!configurable || !fieldName) return;
+          dragEvent.preventDefault();
+          dragEvent.dataTransfer.dropEffect = 'move';
+        }}
+        onDrop={(dropEvent) => {
+          if (!configurable || !fieldName) return;
+          dropEvent.preventDefault();
+          dropEvent.stopPropagation();
+          const sourceField = dragFieldRef.current || dropEvent.dataTransfer.getData('text/plain');
+          dragFieldRef.current = null;
+          if (sourceField) moveColumn(sourceField, fieldName);
+        }}
+      >
+        {children as never}
+        {configurable && fieldName ? (
+          <>
+            <Tooltip title={dragLabel}>
+              <span
+                role="button"
+                aria-label={dragLabel}
+                data-column-drag-handle={fieldName}
+                draggable
+                tabIndex={0}
+                style={{
+                  alignItems: 'center',
+                  color: String(tokenRef.current.colorTextQuaternary || '#8c8c8c'),
+                  cursor: 'grab',
+                  display: 'inline-flex',
+                  height: 24,
+                  justifyContent: 'center',
+                  left: 8,
+                  position: 'absolute',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  width: 20,
+                  zIndex: 2,
+                }}
+                onClick={(clickEvent) => clickEvent.stopPropagation()}
+                onDragStart={(dragEvent) => {
+                  dragFieldRef.current = fieldName;
+                  dragEvent.dataTransfer.effectAllowed = 'move';
+                  dragEvent.dataTransfer.setData('text/plain', fieldName);
+                  dragEvent.stopPropagation();
+                }}
+                onDragEnd={() => {
+                  dragFieldRef.current = null;
+                }}
+                onKeyDown={(keyEvent) => {
+                  keyEvent.stopPropagation();
+                  if (keyEvent.key !== 'ArrowLeft' && keyEvent.key !== 'ArrowRight') return;
+                  keyEvent.preventDefault();
+                  moveColumnByOffset(fieldName, keyEvent.key === 'ArrowLeft' ? -1 : 1);
+                }}
+              >
+                <HolderOutlined />
+              </span>
+            </Tooltip>
+            <Tooltip title={resizeLabel}>
+              <span
+                role="separator"
+                aria-label={resizeLabel}
+                aria-orientation="vertical"
+                aria-valuemin={60}
+                aria-valuemax={1000}
+                aria-valuenow={columnsRef.current.find((column) => column.field === fieldName)?.width || 160}
+                data-column-resize-handle={fieldName}
+                tabIndex={0}
+                style={{
+                  bottom: 0,
+                  cursor: 'col-resize',
+                  position: 'absolute',
+                  right: -4,
+                  top: 0,
+                  width: 8,
+                  zIndex: 3,
+                }}
+                onClick={(clickEvent) => clickEvent.stopPropagation()}
+                onPointerDown={(pointerEvent) => beginColumnResize(pointerEvent, fieldName)}
+                onKeyDown={(keyEvent) => {
+                  keyEvent.stopPropagation();
+                  if (keyEvent.key !== 'ArrowLeft' && keyEvent.key !== 'ArrowRight') return;
+                  keyEvent.preventDefault();
+                  resizeColumnByKeyboard(fieldName, keyEvent.key === 'ArrowLeft' ? -10 : 10);
+                }}
+              />
+            </Tooltip>
+          </>
+        ) : null}
+      </th>
+    );
+  };
+
+  return ColumnHeaderCell;
+};
+`,
+    language: 'typescript',
+  },
+  {
+    path: 'src/client/js-blocks/collection-table/persistence.ts',
+    content: `import type { JsonRecord, PersistState, PersistenceContext, TableFlowModel } from './types';
+import { cloneJson, isRecord, sameJson, toNonEmptyString } from './table-utils';
+
+type CreateTableSettingsPersistenceOptions = {
+  configurable: boolean;
+  ctx: PersistenceContext;
+  flowModel: TableFlowModel;
+  settings: JsonRecord;
+};
+
+export const createTableSettingsPersistence = ({
+  configurable,
+  ctx,
+  flowModel,
+  settings,
+}: CreateTableSettingsPersistenceOptions) => {
+  const getSourceIdentity = (runJs: JsonRecord): string => {
+    const sourceBinding = isRecord(runJs.sourceBinding) ? runJs.sourceBinding : {};
+    return [runJs.sourceMode, sourceBinding.type, sourceBinding.repoId, sourceBinding.entryId, sourceBinding.kind]
+      .map((value) => String(value || ''))
+      .join(':');
+  };
+  const buildPersistScope = (runJs: JsonRecord, runSettings: JsonRecord): string =>
+    [
+      toNonEmptyString(runSettings.dataSourceKey) || 'main',
+      toNonEmptyString(runSettings.collectionName) || '',
+      getSourceIdentity(runJs),
+    ].join('|');
+  const initialRunJsValue = flowModel.getStepParams('jsSettings', 'runJs');
+  const initialRunJs = isRecord(initialRunJsValue) ? initialRunJsValue : {};
+  const initialSourceInfo: JsonRecord = isRecord(ctx.runJsSource) ? ctx.runJsSource : {};
+  const runJsForScope = isRecord(initialRunJs.sourceBinding)
+    ? initialRunJs
+    : {
+        ...initialRunJs,
+        sourceMode: initialRunJs.sourceMode || initialSourceInfo.sourceMode,
+        sourceBinding: initialSourceInfo.sourceBinding,
+      };
+  const persistScope = buildPersistScope(runJsForScope, settings);
+
+  const getPersistState = (): PersistState => {
+    const current = flowModel.__lightExtensionCollectionTablePersistState;
+    if (!current || current.scope !== persistScope) {
+      flowModel.__lightExtensionCollectionTablePersistState = {
+        scope: persistScope,
+        flushScheduled: false,
+        saving: false,
+        revision: 0,
+        savedRevision: 0,
+        patch: {},
+      };
+    }
+    return flowModel.__lightExtensionCollectionTablePersistState;
+  };
+  const persistState = getPersistState();
+
+  const isCurrentPersistState = (state: PersistState): boolean =>
+    flowModel.__lightExtensionCollectionTablePersistState === state;
+  const isFlowModelActive = (): boolean => {
+    const getModel = flowModel.flowEngine?.getModel;
+    return typeof getModel !== 'function' || flowModel.flowEngine?.getModel?.(flowModel.uid) === flowModel;
+  };
+  const saveStableStepParams = async () => {
+    await flowModel.saveStepParams();
+    while (isFlowModelActive()) {
+      const beforeSave = cloneJson(flowModel.getStepParams('jsSettings', 'runJs'));
+      await flowModel.saveStepParams();
+      const afterSave = flowModel.getStepParams('jsSettings', 'runJs');
+      if (sameJson(beforeSave, afterSave)) return;
+    }
+  };
+
+  const reportPersistError = (error: unknown) => {
+    const message = error instanceof Error ? error.message : String(error);
+    ctx.message.error(ctx.t('Failed to save table configuration') + ': ' + message);
+  };
+
+  const flushSettingsPatch = async (state: PersistState) => {
+    if (
+      !isCurrentPersistState(state) ||
+      !isFlowModelActive() ||
+      state.saving ||
+      state.savedRevision >= state.revision
+    ) {
+      return;
+    }
+    state.saving = true;
+    let failed = false;
+
+    try {
+      while (isCurrentPersistState(state) && isFlowModelActive() && state.savedRevision < state.revision) {
+        const targetRevision = state.revision;
+        const patch = cloneJson(state.patch);
+        const runJsValue = flowModel.getStepParams('jsSettings', 'runJs');
+        const runJs = isRecord(runJsValue) ? runJsValue : {};
+        const currentSettings = isRecord(runJs.settings) ? runJs.settings : {};
+        const currentScope = buildPersistScope(runJs, currentSettings);
+        if (currentScope !== state.scope) {
+          state.savedRevision = state.revision;
+          state.patch = {};
+          break;
+        }
+        const nextSettings = { ...currentSettings, ...patch };
+
+        if (!sameJson(currentSettings, nextSettings)) {
+          flowModel.setStepParams('jsSettings', 'runJs', { settings: nextSettings });
+          await saveStableStepParams();
+          if (!isCurrentPersistState(state) || !isFlowModelActive()) break;
+          const latestRunJsValue = flowModel.getStepParams('jsSettings', 'runJs');
+          const latestRunJs = isRecord(latestRunJsValue) ? latestRunJsValue : {};
+          const latestSettings = isRecord(latestRunJs.settings) ? latestRunJs.settings : {};
+          if (buildPersistScope(latestRunJs, latestSettings) !== state.scope) break;
+        }
+        state.savedRevision = targetRevision;
+      }
+      state.patch = {};
+    } catch (error) {
+      failed = true;
+      reportPersistError(error);
+    } finally {
+      state.saving = false;
+      if (!failed && isCurrentPersistState(state) && isFlowModelActive() && state.savedRevision < state.revision) {
+        flushSettingsPatch(state).catch(reportPersistError);
+      }
+    }
+  };
+
+  return (patch: JsonRecord) => {
+    if (!configurable || !isCurrentPersistState(persistState) || !isFlowModelActive()) return;
+    const state = persistState;
+    state.patch = { ...state.patch, ...cloneJson(patch) };
+    state.revision += 1;
+    if (state.flushScheduled) return;
+    state.flushScheduled = true;
+    Promise.resolve()
+      .then(() => {
+        state.flushScheduled = false;
+        return flushSettingsPatch(state);
+      })
+      .catch(reportPersistError);
+  };
+};
+`,
+    language: 'typescript',
+  },
+  {
+    path: 'src/client/js-blocks/collection-table/useCollectionTableData.ts',
+    content: `import { isRecord, toPositiveInteger } from './table-utils';
+import type {
+  ColumnConfig,
+  FieldMeta,
+  JsonRecord,
+  MultiRecordResourceLike,
+  PaginationState,
+  SortConfig,
+} from './types';
+
+type UseCollectionTableDataOptions = {
+  React: typeof ctx.libs.React;
+  fieldMap: Map<string, FieldMeta>;
+  initialColumns: ColumnConfig[];
+  initialSort: SortConfig[];
+  pageSize: number;
+  primaryKeys: string[];
+  resource: MultiRecordResourceLike;
+  t: typeof ctx.t;
+};
+
+export const useCollectionTableData = ({
+  React,
+  fieldMap,
+  initialColumns,
+  initialSort,
+  pageSize,
+  primaryKeys,
+  resource,
+  t,
+}: UseCollectionTableDataOptions) => {
+  const mountedRef = React.useRef(true);
+  const requestRevisionRef = React.useRef(0);
+  const paginationRef = React.useRef<PaginationState>({
+    current: 1,
+    pageSize,
+    total: 0,
+    totalKnown: false,
+  });
+  const [pagination, setPagination] = React.useState<PaginationState>({
+    current: 1,
+    pageSize,
+    total: 0,
+    totalKnown: false,
+  });
+  const [rows, setRows] = React.useState<JsonRecord[]>([]);
+  const [loading, setLoading] = React.useState(false);
+  const [runtimeError, setRuntimeError] = React.useState<string | null>(null);
+
+  const syncPagination = (nextPagination: PaginationState) => {
+    paginationRef.current = nextPagination;
+    setPagination(nextPagination);
+  };
+
+  const loadRows = async (
+    nextPage: number,
+    nextPageSize: number,
+    nextSort: SortConfig[],
+    nextColumns: ColumnConfig[],
+  ) => {
+    const requestRevision = requestRevisionRef.current + 1;
+    requestRevisionRef.current = requestRevision;
+    if (mountedRef.current) {
+      setLoading(true);
+      setRuntimeError(null);
+    }
+
+    const visibleFields = nextColumns
+      .filter((column) => column.visible)
+      .map((column) => fieldMap.get(column.field))
+      .filter((field): field is FieldMeta => Boolean(field));
+    const scalarFields = Array.from(
+      new Set([...primaryKeys, ...visibleFields.filter((field) => !field.association).map((field) => field.name)]),
+    );
+    const appends = visibleFields.filter((field) => field.association).map((field) => field.name);
+    const requestSort = nextSort.map((item) => (item.dir === 'desc' ? '-' + item.field : item.field));
+    const requestParams: JsonRecord = {
+      page: nextPage,
+      pageSize: nextPageSize,
+      fields: scalarFields,
+    };
+    if (appends.length) requestParams.appends = appends;
+    if (requestSort.length) requestParams.sort = requestSort;
+
+    if (typeof resource.runAction !== 'function') {
+      if (mountedRef.current) {
+        setRuntimeError(t('Unable to initialize collection resource'));
+        setLoading(false);
+      }
+      return;
+    }
+
+    try {
+      const result = await resource.runAction('list', { method: 'get', params: requestParams });
+      if (!mountedRef.current || requestRevisionRef.current !== requestRevision) return;
+      const resultRecord = isRecord(result) ? result : {};
+      const nextRows = Array.isArray(resultRecord.data) ? resultRecord.data.filter(isRecord) : [];
+      const meta = isRecord(resultRecord.meta) ? resultRecord.meta : {};
+      const currentPage = toPositiveInteger(meta.page, nextPage, 1, Number.MAX_SAFE_INTEGER);
+      const countValue = Number(meta.count);
+      const hasCount = Number.isFinite(countValue) && countValue >= 0;
+      const totalPageValue = Number(meta.totalPage);
+      const hasTotalPage = Number.isFinite(totalPageValue) && totalPageValue >= 1;
+      const hasNext = meta.hasNext === true;
+      const totalPage = hasTotalPage
+        ? toPositiveInteger(totalPageValue, currentPage, 1, Number.MAX_SAFE_INTEGER)
+        : currentPage;
+      const inferredTotal = hasTotalPage
+        ? Math.max(
+            nextRows.length,
+            (totalPage - 1) * nextPageSize + (currentPage === totalPage ? nextRows.length : nextPageSize),
+          )
+        : (currentPage - 1) * nextPageSize + nextRows.length + (hasNext ? 1 : 0);
+      const total = hasCount ? Math.round(countValue) : inferredTotal;
+
+      setRows(nextRows);
+      syncPagination({
+        current: currentPage,
+        pageSize: nextPageSize,
+        total,
+        totalKnown: hasCount,
+      });
+    } catch (error) {
+      if (!mountedRef.current || requestRevisionRef.current !== requestRevision) return;
+      setRuntimeError(error instanceof Error ? error.message : String(error));
+    } finally {
+      if (mountedRef.current && requestRevisionRef.current === requestRevision) setLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    mountedRef.current = true;
+    loadRows(1, pageSize, initialSort, initialColumns);
+    return () => {
+      mountedRef.current = false;
+      requestRevisionRef.current += 1;
+    };
+  }, []);
+
+  return { loadRows, loading, mountedRef, pagination, paginationRef, rows, runtimeError, syncPagination };
+};
+`,
+    language: 'typescript',
+  },
+  {
+    path: 'src/client/js-blocks/collection-table/CollectionTable.tsx',
+    content: `import { createColumnHeaderCell } from './ColumnHeaderCell';
+import { createColumnInteractions } from './column-interactions';
+import { createTableSettingsPersistence } from './persistence';
+import { createTableCellRenderer } from './TableCell';
+import { useCollectionTableData } from './useCollectionTableData';
+import {
+  getCollectionString,
+  getFieldMetas,
+  isRecord,
+  normalizeAntdSort,
+  normalizeColumns,
+  normalizeSort,
+  readProperty,
+  sameJson,
+  toNonEmptyString,
+  toPositiveInteger,
+} from './table-utils';
+import type {
+  ColumnConfig,
+  FormatterKey,
+  JsonRecord,
+  MultiRecordResourceLike,
+  SortConfig,
+  TableFlowModel,
+  TableRuntimeContext,
+} from './types';
 
 async function runCollectionTable() {
+  const React = ctx.libs.React;
+  const {
+    Alert,
+    Button,
+    Checkbox,
+    Popover,
+    Select,
+    Space,
+    Table,
+    Tag,
+    theme,
+    Tooltip,
+    Typography,
+  } = ctx.libs.antd;
+  const { HolderOutlined, ReloadOutlined, SettingOutlined } = ctx.libs.antdIcons;
+  const dayjs = ctx.libs.dayjs;
+  const settings = ctx.settings;
+  const dataSourceKey = toNonEmptyString(settings.dataSourceKey) || 'main';
+  const collectionName = toNonEmptyString(settings.collectionName);
+  const tableDataScope = dataSourceKey + ':' + (collectionName || '');
+  const runtimeContext = ctx as unknown as TableRuntimeContext;
+  const configurable = Boolean(runtimeContext.flowSettingsEnabled);
+  const pageSize = toPositiveInteger(settings.pageSize, 20, 5, 200);
+  const tableHeight = toPositiveInteger(settings.height, 480, 240, 1200);
+  const maxInitialColumns = toPositiveInteger(settings.maxInitialColumns, 8, 1, 20);
+  const flowModel = ctx.model as unknown as TableFlowModel;
+  const scheduleSettingsPatch = createTableSettingsPersistence({ configurable, ctx, flowModel, settings });
+  const renderCellValue = createTableCellRenderer({
+    React,
+    Tag,
+    Typography,
+    dayjs,
+    locale: ctx.locale,
+    t: (text) => ctx.t(text),
+  });
+
   if (!collectionName) {
     ctx.render(
       <Alert
@@ -641,7 +1212,7 @@ async function runCollectionTable() {
     return;
   }
 
-  const fields = getFieldMetas(collection);
+  const fields = getFieldMetas(collection, (text) => ctx.t(text));
   if (!fields.length) {
     ctx.render(<Alert type="warning" showIcon message={ctx.t('No fields are available for this collection')} />);
     return;
@@ -658,7 +1229,14 @@ async function runCollectionTable() {
   const headerIdPrefix = 'light-extension-table-' + flowModel.uid.replace(/[^A-Za-z0-9_-]/g, '-');
   const headerIdByField = new Map(fields.map((field, index) => [field.name, headerIdPrefix + '-' + index]));
   const headerFieldById = new Map(Array.from(headerIdByField, ([fieldName, id]) => [id, fieldName]));
-  const initialColumns = normalizeColumns(fields, settings.columns, primaryKeys, titleField, tableDataScope);
+  const initialColumns = normalizeColumns(
+    fields,
+    settings.columns,
+    primaryKeys,
+    titleField,
+    tableDataScope,
+    maxInitialColumns,
+  );
   const initialSort = normalizeSort(settings.sort, fieldMap, tableDataScope);
   const resource = ctx.makeResource('MultiRecordResource') as unknown as MultiRecordResourceLike;
   resource.setDataSourceKey?.(dataSourceKey);
@@ -675,34 +1253,18 @@ async function runCollectionTable() {
   ];
   const getColumnTitle = (column: ColumnConfig): string =>
     column.title || fieldMap.get(column.field)?.title || column.field;
+  const tableTitle = toNonEmptyString(settings.title);
 
   const CollectionTable = () => {
     const { token } = theme.useToken();
     const tokenRef = React.useRef(token);
     tokenRef.current = token;
-    const mountedRef = React.useRef(true);
-    const requestRevisionRef = React.useRef(0);
     const resizeCleanupRef = React.useRef<(() => void) | null>(null);
     const dragFieldRef = React.useRef<string | null>(null);
     const columnsRef = React.useRef<ColumnConfig[]>(initialColumns);
     const sortRef = React.useRef<SortConfig[]>(initialSort);
-    const paginationRef = React.useRef<PaginationState>({
-      current: 1,
-      pageSize,
-      total: 0,
-      totalKnown: false,
-    });
     const [columns, setColumns] = React.useState<ColumnConfig[]>(initialColumns);
     const [sort, setSort] = React.useState<SortConfig[]>(initialSort);
-    const [pagination, setPagination] = React.useState<PaginationState>({
-      current: 1,
-      pageSize,
-      total: 0,
-      totalKnown: false,
-    });
-    const [rows, setRows] = React.useState<JsonRecord[]>([]);
-    const [loading, setLoading] = React.useState(false);
-    const [runtimeError, setRuntimeError] = React.useState<string | null>(null);
 
     const syncColumns = (nextColumns: ColumnConfig[]) => {
       columnsRef.current = nextColumns;
@@ -712,319 +1274,73 @@ async function runCollectionTable() {
       sortRef.current = nextSort;
       setSort(nextSort);
     };
-    const syncPagination = (nextPagination: PaginationState) => {
-      paginationRef.current = nextPagination;
-      setPagination(nextPagination);
-    };
+    const {
+      loadRows,
+      loading,
+      mountedRef,
+      pagination,
+      paginationRef,
+      rows,
+      runtimeError,
+      syncPagination,
+    } = useCollectionTableData({
+      React,
+      fieldMap,
+      initialColumns,
+      initialSort,
+      pageSize,
+      primaryKeys,
+      resource,
+      t: (text) => ctx.t(text),
+    });
 
-    const loadRows = async (
-      nextPage: number,
-      nextPageSize: number,
-      nextSort: SortConfig[],
-      nextColumns: ColumnConfig[],
-    ) => {
-      const requestRevision = requestRevisionRef.current + 1;
-      requestRevisionRef.current = requestRevision;
-      if (mountedRef.current) {
-        setLoading(true);
-        setRuntimeError(null);
-      }
+    const { beginColumnResize, moveColumn, moveColumnByOffset, resizeColumnByKeyboard } = React.useMemo(
+      () =>
+        createColumnInteractions({
+          columnsRef,
+          configurable,
+          mountedRef,
+          resizeCleanupRef,
+          scheduleSettingsPatch,
+          syncColumns,
+        }),
+      [],
+    );
+    const HeaderCell = React.useMemo(
+      () =>
+        createColumnHeaderCell({
+          React,
+          HolderOutlined,
+          Tooltip,
+          beginColumnResize,
+          columnsRef,
+          configurable,
+          dragFieldRef,
+          getColumnTitle: (fieldName) =>
+            getColumnTitle({
+              field: fieldName,
+              scope: tableDataScope,
+              width: 160,
+              visible: true,
+              formatter: 'auto',
+            }),
+          headerFieldById,
+          moveColumn,
+          moveColumnByOffset,
+          resizeColumnByKeyboard,
+          t: (text) => ctx.t(text),
+          tokenRef,
+        }),
+      [],
+    );
 
-      const visibleFields = nextColumns
-        .filter((column) => column.visible)
-        .map((column) => fieldMap.get(column.field))
-        .filter((field): field is FieldMeta => Boolean(field));
-      const scalarFields = Array.from(
-        new Set([...primaryKeys, ...visibleFields.filter((field) => !field.association).map((field) => field.name)]),
-      );
-      const appends = visibleFields.filter((field) => field.association).map((field) => field.name);
-      const requestSort = nextSort.map((item) => (item.dir === 'desc' ? '-' + item.field : item.field));
-      const requestParams: JsonRecord = {
-        page: nextPage,
-        pageSize: nextPageSize,
-        fields: scalarFields,
-      };
-      if (appends.length) requestParams.appends = appends;
-      if (requestSort.length) requestParams.sort = requestSort;
-
-      if (typeof resource.runAction !== 'function') {
-        if (mountedRef.current) {
-          setRuntimeError(ctx.t('Unable to initialize collection resource'));
-          setLoading(false);
-        }
-        return;
-      }
-
-      try {
-        const result = await resource.runAction('list', { method: 'get', params: requestParams });
-        if (!mountedRef.current || requestRevisionRef.current !== requestRevision) return;
-        const resultRecord = isRecord(result) ? result : {};
-        const nextRows = Array.isArray(resultRecord.data) ? resultRecord.data.filter(isRecord) : [];
-        const meta = isRecord(resultRecord.meta) ? resultRecord.meta : {};
-        const currentPage = toPositiveInteger(meta.page, nextPage, 1, Number.MAX_SAFE_INTEGER);
-        const countValue = Number(meta.count);
-        const hasCount = Number.isFinite(countValue) && countValue >= 0;
-        const totalPageValue = Number(meta.totalPage);
-        const hasTotalPage = Number.isFinite(totalPageValue) && totalPageValue >= 1;
-        const hasNext = meta.hasNext === true;
-        const totalPage = hasTotalPage
-          ? toPositiveInteger(totalPageValue, currentPage, 1, Number.MAX_SAFE_INTEGER)
-          : currentPage;
-        const inferredTotal = hasTotalPage
-          ? Math.max(
-              nextRows.length,
-              (totalPage - 1) * nextPageSize + (currentPage === totalPage ? nextRows.length : nextPageSize),
-            )
-          : (currentPage - 1) * nextPageSize + nextRows.length + (hasNext ? 1 : 0);
-        const total = hasCount ? Math.round(countValue) : inferredTotal;
-
-        setRows(nextRows);
-        syncPagination({
-          current: currentPage,
-          pageSize: nextPageSize,
-          total,
-          totalKnown: hasCount,
-        });
-      } catch (error) {
-        if (!mountedRef.current || requestRevisionRef.current !== requestRevision) return;
-        setRuntimeError(error instanceof Error ? error.message : String(error));
-      } finally {
-        if (mountedRef.current && requestRevisionRef.current === requestRevision) setLoading(false);
-      }
-    };
-
-    const moveColumn = (sourceField: string, targetField: string) => {
-      if (!configurable || sourceField === targetField) return;
-      const currentColumns = columnsRef.current;
-      const sourceIndex = currentColumns.findIndex((column) => column.field === sourceField);
-      const targetIndex = currentColumns.findIndex((column) => column.field === targetField);
-      if (sourceIndex < 0 || targetIndex < 0) return;
-      const nextColumns = [...currentColumns];
-      const [movedColumn] = nextColumns.splice(sourceIndex, 1);
-      if (!movedColumn) return;
-      nextColumns.splice(targetIndex, 0, movedColumn);
-      syncColumns(nextColumns);
-      scheduleSettingsPatch({ columns: nextColumns });
-    };
-
-    const moveColumnByOffset = (fieldName: string, offset: -1 | 1) => {
-      const visibleColumns = columnsRef.current.filter((column) => column.visible);
-      const sourceIndex = visibleColumns.findIndex((column) => column.field === fieldName);
-      const target = visibleColumns[sourceIndex + offset];
-      if (sourceIndex < 0 || !target) return;
-      moveColumn(fieldName, target.field);
-    };
-
-    const resizeColumnByKeyboard = (fieldName: string, delta: number) => {
-      const nextColumns = columnsRef.current.map((column) =>
-        column.field === fieldName
-          ? { ...column, width: toPositiveInteger(column.width + delta, column.width, 60, 1000) }
-          : column,
-      );
-      syncColumns(nextColumns);
-      scheduleSettingsPatch({ columns: nextColumns });
-    };
-
-    const beginColumnResize = (
-      event: { clientX: number; preventDefault: () => void; stopPropagation: () => void },
-      fieldName: string,
-    ) => {
-      if (!configurable) return;
-      const currentColumn = columnsRef.current.find((column) => column.field === fieldName);
-      if (!currentColumn) return;
-      event.preventDefault();
-      event.stopPropagation();
-      resizeCleanupRef.current?.();
-
-      const startX = event.clientX;
-      const startWidth = currentColumn.width;
-      const previousCursor = document.body.style.cursor;
-      const previousUserSelect = document.body.style.userSelect;
-      document.body.style.cursor = 'col-resize';
-      document.body.style.userSelect = 'none';
-      let nextWidth = startWidth;
-      let animationFrame: number | null = null;
-
-      const applyWidth = () => {
-        animationFrame = null;
-        const nextColumns = columnsRef.current.map((column) =>
-          column.field === fieldName ? { ...column, width: nextWidth } : column,
-        );
-        syncColumns(nextColumns);
-      };
-      const restoreBodyStyle = () => {
-        document.body.style.cursor = previousCursor;
-        document.body.style.userSelect = previousUserSelect;
-      };
-      const onPointerMove = (moveEvent: PointerEvent) => {
-        nextWidth = toPositiveInteger(startWidth + moveEvent.clientX - startX, startWidth, 60, 1000);
-        if (animationFrame === null) animationFrame = window.requestAnimationFrame(applyWidth);
-      };
-      const removeListeners = () => {
-        document.removeEventListener('pointermove', onPointerMove);
-        document.removeEventListener('pointerup', finishResize);
-        document.removeEventListener('pointercancel', cancelResize);
-        if (animationFrame !== null) {
-          window.cancelAnimationFrame(animationFrame);
-          animationFrame = null;
-        }
-        restoreBodyStyle();
-      };
-      const finishResize = () => {
-        removeListeners();
-        applyWidth();
-        resizeCleanupRef.current = null;
-        scheduleSettingsPatch({ columns: columnsRef.current });
-      };
-      const cancelResize = () => {
-        removeListeners();
-        resizeCleanupRef.current = null;
-        if (!mountedRef.current) return;
-        const restoredColumns = columnsRef.current.map((column) =>
-          column.field === fieldName ? { ...column, width: startWidth } : column,
-        );
-        syncColumns(restoredColumns);
-      };
-
-      document.addEventListener('pointermove', onPointerMove);
-      document.addEventListener('pointerup', finishResize);
-      document.addEventListener('pointercancel', cancelResize);
-      resizeCleanupRef.current = cancelResize;
-    };
-
-    const HeaderCell = React.useMemo(() => {
-      const StableHeaderCell = (props: JsonRecord) => {
-        const fieldName = headerFieldById.get(toNonEmptyString(props.id) || '');
-        const children = props.children;
-        const style = isRecord(props.style) ? props.style : {};
-        const paddingLeft =
-          typeof style.paddingLeft === 'number' || typeof style.paddingLeft === 'string'
-            ? style.paddingLeft
-            : undefined;
-        const rest = { ...props };
-        delete rest.children;
-        delete rest.style;
-        const columnTitle = fieldName
-          ? getColumnTitle({ field: fieldName, scope: tableDataScope, width: 160, visible: true, formatter: 'auto' })
-          : '';
-        const dragLabel = ctx.t('Drag column') + (columnTitle ? ': ' + columnTitle : '');
-        const resizeLabel = ctx.t('Resize column') + (columnTitle ? ': ' + columnTitle : '');
-
-        return (
-          <th
-            {...rest}
-            data-column-field={fieldName}
-            style={{
-              ...style,
-              paddingLeft: configurable && fieldName ? 36 : paddingLeft,
-              position: 'relative',
-            }}
-            onDragOver={(dragEvent) => {
-              if (!configurable || !fieldName) return;
-              dragEvent.preventDefault();
-              dragEvent.dataTransfer.dropEffect = 'move';
-            }}
-            onDrop={(dropEvent) => {
-              if (!configurable || !fieldName) return;
-              dropEvent.preventDefault();
-              dropEvent.stopPropagation();
-              const sourceField = dragFieldRef.current || dropEvent.dataTransfer.getData('text/plain');
-              dragFieldRef.current = null;
-              if (sourceField) moveColumn(sourceField, fieldName);
-            }}
-          >
-            {children as never}
-            {configurable && fieldName ? (
-              <>
-                <Tooltip title={dragLabel}>
-                  <span
-                    role="button"
-                    aria-label={dragLabel}
-                    data-column-drag-handle={fieldName}
-                    draggable
-                    tabIndex={0}
-                    style={{
-                      alignItems: 'center',
-                      color: String(tokenRef.current.colorTextQuaternary || '#8c8c8c'),
-                      cursor: 'grab',
-                      display: 'inline-flex',
-                      height: 24,
-                      justifyContent: 'center',
-                      left: 8,
-                      position: 'absolute',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      width: 20,
-                      zIndex: 2,
-                    }}
-                    onClick={(clickEvent) => clickEvent.stopPropagation()}
-                    onDragStart={(dragEvent) => {
-                      dragFieldRef.current = fieldName;
-                      dragEvent.dataTransfer.effectAllowed = 'move';
-                      dragEvent.dataTransfer.setData('text/plain', fieldName);
-                      dragEvent.stopPropagation();
-                    }}
-                    onDragEnd={() => {
-                      dragFieldRef.current = null;
-                    }}
-                    onKeyDown={(keyEvent) => {
-                      keyEvent.stopPropagation();
-                      if (keyEvent.key !== 'ArrowLeft' && keyEvent.key !== 'ArrowRight') return;
-                      keyEvent.preventDefault();
-                      moveColumnByOffset(fieldName, keyEvent.key === 'ArrowLeft' ? -1 : 1);
-                    }}
-                  >
-                    <HolderOutlined />
-                  </span>
-                </Tooltip>
-                <Tooltip title={resizeLabel}>
-                  <span
-                    role="separator"
-                    aria-label={resizeLabel}
-                    aria-orientation="vertical"
-                    aria-valuemin={60}
-                    aria-valuemax={1000}
-                    aria-valuenow={columnsRef.current.find((column) => column.field === fieldName)?.width || 160}
-                    data-column-resize-handle={fieldName}
-                    tabIndex={0}
-                    style={{
-                      bottom: 0,
-                      cursor: 'col-resize',
-                      position: 'absolute',
-                      right: -4,
-                      top: 0,
-                      width: 8,
-                      zIndex: 3,
-                    }}
-                    onClick={(clickEvent) => clickEvent.stopPropagation()}
-                    onPointerDown={(pointerEvent) => beginColumnResize(pointerEvent, fieldName)}
-                    onKeyDown={(keyEvent) => {
-                      keyEvent.stopPropagation();
-                      if (keyEvent.key !== 'ArrowLeft' && keyEvent.key !== 'ArrowRight') return;
-                      keyEvent.preventDefault();
-                      resizeColumnByKeyboard(fieldName, keyEvent.key === 'ArrowLeft' ? -10 : 10);
-                    }}
-                  />
-                </Tooltip>
-              </>
-            ) : null}
-          </th>
-        );
-      };
-
-      return StableHeaderCell;
-    }, []);
-
-    React.useEffect(() => {
-      mountedRef.current = true;
-      loadRows(1, pageSize, initialSort, initialColumns);
-      return () => {
-        mountedRef.current = false;
-        requestRevisionRef.current += 1;
+    React.useEffect(
+      () => () => {
         resizeCleanupRef.current?.();
         resizeCleanupRef.current = null;
-      };
-    }, []);
+      },
+      [],
+    );
 
     const toggleColumn = (fieldName: string, visible: boolean) => {
       if (!visible && columnsRef.current.filter((column) => column.visible).length <= 1) {
@@ -1080,7 +1396,7 @@ async function runCollectionTable() {
       loadRows(nextPage, nextPageSize, nextSort, columnsRef.current);
     };
 
-    const reloadTable = () => {
+    const refreshTable = () => {
       loadRows(
         paginationRef.current.current,
         paginationRef.current.pageSize,
@@ -1175,13 +1491,15 @@ async function runCollectionTable() {
           wrap
           style={{
             display: 'flex',
-            justifyContent: 'space-between',
+            justifyContent: tableTitle ? 'space-between' : 'flex-end',
             marginBottom: token.marginSM,
           }}
         >
-          <Typography.Title level={5} style={{ margin: 0 }}>
-            {ctx.t(String(settings.title || 'Collection table'))}
-          </Typography.Title>
+          {tableTitle ? (
+            <Typography.Title level={5} style={{ margin: 0 }}>
+              {ctx.t(tableTitle)}
+            </Typography.Title>
+          ) : null}
           <Space>
             {configurable && settings.showColumnManager !== false ? (
               <Popover content={columnChooser} placement="bottomRight" trigger="click">
@@ -1190,8 +1508,8 @@ async function runCollectionTable() {
                 </Button>
               </Popover>
             ) : null}
-            <Button icon={<ReloadOutlined />} size="small" onClick={reloadTable}>
-              {ctx.t('Reload')}
+            <Button icon={<ReloadOutlined />} loading={loading} size="small" onClick={refreshTable}>
+              {ctx.t('Refresh')}
             </Button>
           </Space>
         </Space>
@@ -1237,12 +1555,14 @@ async function runCollectionTable() {
   ctx.render(<CollectionTable />);
 }
 
-ctx.render(<Alert type="info" showIcon message={ctx.t('Loading table')} />);
-try {
-  await runCollectionTable();
-} catch (error) {
-  const message = error instanceof Error ? error.message : String(error);
-  ctx.render(<Alert type="error" showIcon message={ctx.t('Failed to initialize table')} description={message} />);
+export async function mountCollectionTable() {
+  try {
+    await runCollectionTable();
+  } catch (error) {
+    const { Alert } = ctx.libs.antd;
+    const message = error instanceof Error ? error.message : String(error);
+    ctx.render(<Alert type="error" showIcon message={ctx.t('Failed to initialize table')} description={message} />);
+  }
 }
 `,
     language: 'typescript',
@@ -1258,7 +1578,7 @@ try {
   "tags": ["JS Block", "Collection", "Table", "Ant Design"],
   "sort": 30,
   "settings": {
-    "title": { "type": "string", "title": "Title", "default": "Collection table", "x-component": "Input" },
+    "title": { "type": "string", "title": "Title", "default": "", "x-component": "Input" },
     "dataSourceKey": { "type": "string", "title": "Data source", "default": "main", "required": true, "x-component": "DataSourceSelect" },
     "collectionName": { "type": "string", "title": "Collection", "x-component": "CollectionSelect", "x-component-props": { "dataSourceField": "dataSourceKey" } },
     "pageSize": { "type": "integer", "title": "Page size", "default": 20, "minimum": 5, "maximum": 200, "x-component": "InputNumber" },

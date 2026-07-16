@@ -1906,6 +1906,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
                         toolbarActions={toolbarActions}
                         version={value.version}
                         workspaceFiles={files}
+                        workspaceTypeScriptContextResolver={props.workspaceTypeScriptContextResolver}
                       />
                     </div>
 

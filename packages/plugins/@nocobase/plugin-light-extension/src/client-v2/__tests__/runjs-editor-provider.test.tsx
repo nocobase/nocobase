@@ -9,7 +9,11 @@
 
 import React from 'react';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { ApplicationContext, RunJSSourceResolverRegistry } from '@nocobase/client-v2';
+import {
+  ApplicationContext,
+  RunJSSourceResolverRegistry,
+  type RunJSEditorProviderRenderProps,
+} from '@nocobase/client-v2';
 import { FlowContext, FlowContextProvider, FlowEngine, FlowModel } from '@nocobase/flow-engine';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -623,7 +627,7 @@ describe('RunJSLightExtensionEditorProvider', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it('wraps inline light-extension-capable flow steps with the entry.json schema resolver', () => {
+  it('wraps inline light-extension-capable flow steps with entry.json schema and settings type resolvers', () => {
     const provider = createRunJSLightExtensionEditorProvider();
     const renderNext = vi.fn(() => <div>inline studio</div>);
     const props = {
@@ -648,10 +652,28 @@ describe('RunJSLightExtensionEditorProvider', () => {
     render(<>{provider.renderEditor(props)}</>);
 
     expect(screen.getByText('inline studio')).toBeInTheDocument();
-    expect(renderNext).toHaveBeenCalledWith({
-      workspaceJsonSchemaResolver: resolveInlineLightExtensionWorkspaceJsonSchema,
-    });
+    const overrides = renderNext.mock.calls[0]?.[0] as Partial<RunJSEditorProviderRenderProps>;
+    expect(overrides.workspaceJsonSchemaResolver).toBe(resolveInlineLightExtensionWorkspaceJsonSchema);
+    expect(overrides.workspaceTypeScriptContextResolver).toEqual(expect.any(Function));
     expect(resolveInlineLightExtensionWorkspaceJsonSchema('src/client/entry.json')).toBeTruthy();
+    const typeScriptContext = overrides.workspaceTypeScriptContextResolver?.('src/client/index.tsx', [
+      { path: 'src/client/index.tsx', content: 'ctx.settings.columns;' },
+      {
+        path: 'src/client/entry.json',
+        content: JSON.stringify({
+          schemaVersion: 1,
+          key: 'collection-table',
+          settings: {
+            columns: { type: 'array', items: { type: 'object' } },
+            pageSize: { type: 'integer' },
+          },
+        }),
+      },
+    ]);
+    expect(typeScriptContext?.globalContextType).toBe('LightExtensionActiveEntryContext');
+    expect(
+      typeScriptContext?.declarationFiles?.find((file) => file.path.endsWith('/collection-table.d.ts'))?.content,
+    ).toContain('columns?: Array<{}>;');
   });
 
   it('offers move to inline for JS column light extension entries', async () => {
