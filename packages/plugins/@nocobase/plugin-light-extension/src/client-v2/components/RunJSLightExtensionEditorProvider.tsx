@@ -50,6 +50,7 @@ import LightExtensionWorkspacePage, {
   type LightExtensionWorkspaceFooterActions,
 } from '../pages/LightExtensionWorkspacePage';
 import type { LightExtensionWorkspaceScope } from '../workspace/lightExtensionWorkspaceAccess';
+import { resolveInlineLightExtensionWorkspaceJsonSchema } from '../workspace/lightExtensionWorkspaceJsonSchema';
 import { RunJSLightExtensionSourceField } from './JSBlockLightExtensionSourceField';
 import { SettingsAutoForm } from './SettingsAutoForm';
 
@@ -494,7 +495,7 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
       };
       previewAppliedRef.current = false;
       persistedPreviewValueRef.current = nextValue;
-      (props.onPersistedChange || props.onChange)?.(nextValue);
+      await (props.onPersistedChange || props.onChange)?.(nextValue);
       await closeEditorViewWithoutRestore();
     },
     [
@@ -635,19 +636,39 @@ export function createRunJSLightExtensionEditorProvider(): RunJSEditorProvider {
     priority: 100,
     canHandle(props) {
       const locator = props.sourceLocator || props.locator;
-      if (locator?.kind === 'flowModel.step' && props.value.sourceMode === LIGHT_EXTENSION_SOURCE_MODE) {
-        return true;
+      if (locator?.kind === 'flowModel.step') {
+        return (
+          props.value.sourceMode === LIGHT_EXTENSION_SOURCE_MODE ||
+          (normalizeSourceMode(props.value.sourceMode) === INLINE_SOURCE_MODE &&
+            isLightExtensionSourceMetadata(props.sourceMetadata))
+        );
       }
       return props.surfaceStyle === 'value' && locator?.kind === 'flowModel.nestedRunJS';
     },
     renderEditor(props) {
       const locator = props.sourceLocator || props.locator;
       if (locator?.kind === 'flowModel.step') {
-        return <LightExtensionSourceWorkspaceEditor {...props} />;
+        return props.value.sourceMode === LIGHT_EXTENSION_SOURCE_MODE ? (
+          <LightExtensionSourceWorkspaceEditor {...props} />
+        ) : (
+          props.renderNext?.({
+            workspaceJsonSchemaResolver: resolveInlineLightExtensionWorkspaceJsonSchema,
+          })
+        );
       }
       return <RunJSLightExtensionEditor {...props} />;
     },
   };
+}
+
+function isLightExtensionSourceMetadata(value: unknown): boolean {
+  if (!isRecord(value)) {
+    return false;
+  }
+  return (
+    typeof value.lightExtensionKind === 'string' &&
+    (LIGHT_EXTENSION_SUPPORTED_KINDS as readonly string[]).includes(value.lightExtensionKind)
+  );
 }
 
 function getEntryWorkspaceScope(binding: LightExtensionRuntimeSourceBinding): LightExtensionEntryWorkspaceScope | null {

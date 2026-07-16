@@ -18,6 +18,7 @@ import {
   JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
   JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
   RunJSEditorRegistry,
+  RunJSSettingsDescriptorProviderRegistry,
   RunJSSourceResolverRegistry,
 } from '@nocobase/client-v2';
 import { runJSStudioToolbarRegistry } from '@nocobase/plugin-vsc-file/client-v2';
@@ -35,6 +36,7 @@ import { createMoveSourceToLightExtensionContribution } from '../client-v2/compo
 import { registerLightExtensionModelMenus } from '../client-v2/modelMenu/registerLightExtensionModelMenus';
 import LightExtensionListPage from '../client-v2/pages/LightExtensionListPage';
 import { createLightExtensionRunJSResolver } from '../client-v2/resolvers/LightExtensionRunJSResolver';
+import { createInlineLightExtensionSettingsDescriptorProvider } from '../client-v2/resolvers/InlineLightExtensionSettingsDescriptorProvider';
 
 interface LightExtensionLegacyClientOptions {
   name?: string;
@@ -88,6 +90,8 @@ export class PluginLightExtensionClient {
 
   private unregisterRunJSResolver?: () => void;
 
+  private unregisterRunJSSettingsDescriptor?: () => void;
+
   private unregisterRunJSToolbar?: () => void;
 
   private unregisterModelMenus?: () => void;
@@ -104,6 +108,8 @@ export class PluginLightExtensionClient {
     this.unregisterRunJSEditor = undefined;
     this.unregisterRunJSResolver?.();
     this.unregisterRunJSResolver = undefined;
+    this.unregisterRunJSSettingsDescriptor?.();
+    this.unregisterRunJSSettingsDescriptor = undefined;
     this.unregisterRunJSToolbar?.();
     this.unregisterRunJSToolbar = undefined;
     this.unregisterModelMenus?.();
@@ -129,6 +135,9 @@ export class PluginLightExtensionClient {
       this.unregisterModelMenus = registerLightExtensionModelMenus(this.app.apiClient);
       this.unregisterRunJSResolver = RunJSSourceResolverRegistry.registerResolver(
         createLightExtensionRunJSResolver(this.app.apiClient),
+      );
+      this.unregisterRunJSSettingsDescriptor = RunJSSettingsDescriptorProviderRegistry.registerProvider(
+        createInlineLightExtensionSettingsDescriptorProvider(this.app.apiClient),
       );
       this.unregisterRunJSToolbar = runJSStudioToolbarRegistry.register(
         createMoveSourceToLightExtensionContribution(this.app.apiClient),

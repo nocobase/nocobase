@@ -345,6 +345,60 @@ describe('RunJSEditorRegistry', () => {
     });
   });
 
+  it('passes inline sourceRef and complete settings to flowModel step editor providers', () => {
+    const engine = new FlowEngine();
+    const model = new FlowModel({ uid: 'fm_inline', flowEngine: engine });
+    const flowContext = new FlowRuntimeContext(model, 'jsSettings', 'settings');
+    const settings = {
+      enabled: false,
+      count: 0,
+      label: '',
+      nested: { hiddenValue: 'keep-me' },
+    };
+    const sourceRef = {
+      type: 'vsc-file',
+      repoId: 'repo_inline',
+      commitId: 'commit_2',
+      entry: 'src/client/index.tsx',
+    };
+    let capturedValue: unknown;
+
+    RunJSEditorRegistry.registerProvider({
+      key: 'inline-workspace-provider',
+      canHandle: (props) => props.locator?.kind === 'flowModel.step',
+      renderEditor: (props) => {
+        capturedValue = props.value;
+        return <div>inline workspace</div>;
+      },
+    });
+
+    render(
+      <FlowContextProvider context={flowContext}>
+        <FlowStepContext.Provider
+          value={{
+            params: {
+              code: 'ctx.render(<div />);',
+              version: 'v2',
+              sourceMode: 'inline',
+              sourceRef,
+              settings,
+            },
+            path: 'fm_inline_jsSettings_runJs',
+          }}
+        >
+          <RunJSEditorField locatorFactory="flowModel.step" surfaceStyle="render" value="ctx.render(<div />);" />
+        </FlowStepContext.Provider>
+      </FlowContextProvider>,
+    );
+
+    expect(screen.getByText('inline workspace')).toBeInTheDocument();
+    expect(capturedValue).toMatchObject({
+      sourceMode: 'inline',
+      sourceRef,
+      settings,
+    });
+  });
+
   it('does not generate or sync unsafe FlowModel step paths', () => {
     const engine = new FlowEngine();
     const model = new FlowModel({ uid: 'fm_1', flowEngine: engine });

@@ -175,7 +175,7 @@ export function createRunJSSourceCascadeMenuUIMode(options: RunJSSourceCascadeMe
                 ...params,
                 sourceMode: INLINE_RUNJS_SOURCE_MODE,
                 sourceBinding: undefined,
-                settings: {},
+                settings: cloneRecord(params.settings),
               };
             },
           },

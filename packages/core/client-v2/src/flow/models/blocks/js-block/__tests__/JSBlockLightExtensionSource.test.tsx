@@ -16,9 +16,14 @@ import {
   FlowEngineProvider,
   FlowModelRenderer,
   FlowRuntimeContext,
+  resolveRuntimeFlowSettingSteps,
   type FlowSettingsContext,
 } from '@nocobase/flow-engine';
-import { RunJSSourceResolverRegistry, type RunJSSourceSettingsDescriptor } from '../../../../components/runjs-source';
+import {
+  RunJSSettingsDescriptorProviderRegistry,
+  RunJSSourceResolverRegistry,
+  type RunJSSourceSettingsDescriptor,
+} from '../../../../components/runjs-source';
 import { PluginFlowEngine } from '../../../../index';
 import { createMockClient } from '../../../../../MockApplication';
 import { assertLightExtensionSettingsHostContract } from '../../../utils/__tests__/lightExtensionSettingsHostContract';
@@ -88,6 +93,7 @@ function renderJSBlock(stepParams: Record<string, unknown>) {
 
 describe('JSBlockModel light extension source', () => {
   afterEach(() => {
+    RunJSSettingsDescriptorProviderRegistry.clear();
     RunJSSourceResolverRegistry.clear();
   });
 
@@ -432,6 +438,97 @@ describe('JSBlockModel light extension source', () => {
     });
 
     await expect(model.getRuntimeFlowSettingSteps('jsSettings')).resolves.toBeUndefined();
+  });
+
+  it('generates inline runtime settings steps from src/client/entry.json while preserving falsy values', async () => {
+    const getSettingsDescriptor = vi.fn(async () => SETTINGS_DESCRIPTOR);
+    RunJSSettingsDescriptorProviderRegistry.registerProvider({
+      key: 'inline-light-extension',
+      canHandle: (input) => input.sourceMode === 'inline',
+      getSettingsDescriptor,
+    });
+    const engine = new FlowEngine();
+    engine.registerModels({ JSBlockModel });
+    const model = engine.createModel<JSBlockModel>({
+      use: 'JSBlockModel',
+      uid: 'js-block-inline-runtime-settings',
+      stepParams: {
+        jsSettings: {
+          runJs: {
+            code: 'ctx.render(<div />);',
+            version: 'v2',
+            sourceMode: 'inline',
+            sourceRef: {
+              type: 'vsc-file',
+              repoId: 'repo_inline',
+              commitId: 'commit_inline',
+              entry: 'src/client/index.tsx',
+            },
+            settings: {
+              message: '',
+              pageSize: 0,
+              enabled: false,
+            },
+          },
+        },
+      },
+    });
+
+    const steps = await model.getRuntimeFlowSettingSteps('jsSettings');
+
+    expect(Object.values(steps || {}).map((step) => step.title)).toEqual(['Message', 'Page size', 'Enabled']);
+    expect(
+      Object.fromEntries(
+        Object.values(steps || {}).map((step) => [
+          step.title,
+          typeof step.defaultParams === 'function' ? step.defaultParams({} as never).value : undefined,
+        ]),
+      ),
+    ).toEqual({ Message: '', 'Page size': 0, Enabled: false });
+    expect(getSettingsDescriptor).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sourceMode: 'inline',
+        sourceRef: expect.objectContaining({ repoId: 'repo_inline', commitId: 'commit_inline' }),
+        locator: {
+          kind: 'flowModel.step',
+          modelUid: 'js-block-inline-runtime-settings',
+          flowKey: 'jsSettings',
+          stepKey: 'runJs',
+          paramPath: ['code'],
+          versionPath: ['version'],
+        },
+      }),
+    );
+  });
+
+  it('keeps static settings available when the inline descriptor request fails', async () => {
+    RunJSSettingsDescriptorProviderRegistry.registerProvider({
+      key: 'inline-light-extension',
+      getSettingsDescriptor: async () => {
+        throw new Error('workspace unavailable');
+      },
+    });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const engine = new FlowEngine();
+    engine.registerModels({ JSBlockModel });
+    const model = engine.createModel<JSBlockModel>({
+      use: 'JSBlockModel',
+      uid: 'js-block-inline-settings-failure',
+      stepParams: {
+        jsSettings: {
+          runJs: {
+            sourceMode: 'inline',
+            sourceRef: { type: 'vsc-file', repoId: 'repo_inline', commitId: 'commit_inline' },
+          },
+        },
+      },
+    });
+
+    await expect(resolveRuntimeFlowSettingSteps(model, 'jsSettings')).resolves.toEqual({});
+    expect(warn).toHaveBeenCalledWith(
+      "FlowSettings: failed to resolve runtime setting steps for flow 'jsSettings'.",
+      expect.objectContaining({ message: 'workspace unavailable' }),
+    );
   });
 
   it('generates runtime settings steps from the light extension active settings schema', async () => {

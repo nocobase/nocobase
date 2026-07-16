@@ -28,3 +28,9 @@ export function resolveLightExtensionWorkspaceJsonSchema(path: string): CodeEdit
   const entryRoot = normalizedPath.slice(0, -suffix.length);
   return getManagedLightExtensionEntryRoot(entryRoot) ? LIGHT_EXTENSION_ENTRY_JSON_SCHEMA : undefined;
 }
+
+export function resolveInlineLightExtensionWorkspaceJsonSchema(path: string): CodeEditorJsonSchema | undefined {
+  return normalizeWorkspacePath(path) === `src/client/${LIGHT_EXTENSION_ENTRY_DESCRIPTOR_FILE}`
+    ? LIGHT_EXTENSION_ENTRY_JSON_SCHEMA
+    : undefined;
+}

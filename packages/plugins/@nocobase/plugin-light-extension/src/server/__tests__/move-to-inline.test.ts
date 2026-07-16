@@ -9,7 +9,13 @@
 
 import type { Context } from '@nocobase/actions';
 import type { Database, Transaction } from '@nocobase/database';
-import type { RunJSSourceAdapterRegistry, VscFileService } from '@nocobase/plugin-vsc-file';
+import {
+  buildRunJSFilesHash,
+  type RunJSSourceAdapterRegistry,
+  type VscFileChange,
+  type VscFileService,
+} from '@nocobase/plugin-vsc-file';
+import { createHash } from 'crypto';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { LightExtensionEntryRecord } from '../../shared/types';
@@ -79,7 +85,20 @@ describe('MoveToInlineService', () => {
     expect(isMoveToInlineHostSupported(kind, modelUse)).toBe(expected);
   });
 
-  it('copies only runtime-reachable entry and shared modules', () => {
+  it('copies the entry descriptor together with runtime-reachable entry and shared modules', () => {
+    const canonicalDescriptorContent = `${JSON.stringify(
+      {
+        schemaVersion: 1,
+        key: 'sales',
+        title: 'Sales',
+        settings: {
+          showCard: { type: 'boolean', default: false },
+        },
+      },
+      null,
+      2,
+    )}\n`;
+    const descriptorContent = `\ufeff${canonicalDescriptorContent.replace(/\n/gu, '\r\n')}`;
     const files = collectAndRelocateInlineFiles({
       entryPath: entry.entryPath,
       files: [
@@ -92,6 +111,11 @@ describe('MoveToInlineService', () => {
             "export { reexported } from '../../../shared/reexported';",
             'ctx.render(<div />);',
           ].join('\n'),
+        },
+        {
+          path: entry.descriptorPath,
+          content: descriptorContent,
+          language: 'json',
         },
         {
           path: 'src/client/js-blocks/sales/local.ts',
@@ -111,6 +135,7 @@ describe('MoveToInlineService', () => {
     });
 
     expect(files.map((file) => file.path)).toEqual([
+      'src/client/entry.json',
       'src/client/index.tsx',
       'src/client/local.ts',
       'src/shared/export-type-only.ts',
@@ -119,6 +144,11 @@ describe('MoveToInlineService', () => {
       'src/shared/type-only.ts',
       'src/shared/used.ts',
     ]);
+    expect(files.find((file) => file.path === 'src/client/entry.json')).toEqual({
+      path: 'src/client/entry.json',
+      content: descriptorContent,
+      language: 'json',
+    });
     expect(files.find((file) => file.path === 'src/client/index.tsx')?.content).toContain(
       "export { reexported } from '../shared/reexported'",
     );
@@ -243,6 +273,35 @@ describe('MoveToInlineService', () => {
 
   it('persists the inline RunJS workspace, clears the binding, and rebuilds references in one transaction', async () => {
     const transaction = { LOCK: { UPDATE: 'UPDATE' } } as unknown as Transaction;
+    const currentSettings = {
+      enabled: false,
+      retryCount: 0,
+      label: '',
+      nested: {
+        visibleValue: 'kept',
+        hiddenBranch: {
+          enabled: false,
+          threshold: 0,
+          note: '',
+        },
+      },
+      items: [{ key: 'first', active: false }],
+    };
+    const canonicalDescriptorContent = `${JSON.stringify(
+      {
+        schemaVersion: 1,
+        key: 'sales',
+        title: 'Sales',
+        settings: {
+          enabled: { type: 'boolean', default: true },
+          retryCount: { type: 'integer', default: 1 },
+          label: { type: 'string', default: 'Sales' },
+        },
+      },
+      null,
+      2,
+    )}\n`;
+    const descriptorContent = `\ufeff${canonicalDescriptorContent.replace(/\n/gu, '\r\n')}`;
     const flowModel = {
       uid: locator.modelUid,
       use: 'JSBlockModel',
@@ -253,7 +312,7 @@ describe('MoveToInlineService', () => {
             version: 'v2',
             sourceMode: 'light-extension',
             sourceBinding: { ...binding },
-            settings: { color: 'blue' },
+            settings: currentSettings,
           },
         },
       },
@@ -365,7 +424,11 @@ describe('MoveToInlineService', () => {
         commit: null,
         tree: null,
         unchanged: false,
-        files: [{ path: 'src/client/old.ts' }],
+        files: [
+          { path: 'src/client/entry.json', language: 'json', mode: '100644' },
+          { path: 'src/client/index.tsx', language: 'tsx', mode: '100755' },
+          { path: 'src/client/old.ts', language: 'typescript', mode: '100644' },
+        ],
       })),
       push,
     } as unknown as VscFileService;
@@ -391,6 +454,7 @@ describe('MoveToInlineService', () => {
             path: entry.entryPath,
             content: "import { used } from '../../../shared/used';\nctx.render(String(used));\n",
           },
+          { path: entry.descriptorPath, content: descriptorContent, language: 'json' },
           { path: 'src/shared/used.ts', content: 'export const used = true;\n' },
           { path: 'src/shared/unused.ts', content: 'export const unused = true;\n' },
         ],
@@ -405,6 +469,7 @@ describe('MoveToInlineService', () => {
       expect.objectContaining({
         entryPath: 'src/client/index.tsx',
         files: expect.arrayContaining([
+          expect.objectContaining({ path: 'src/client/entry.json', content: descriptorContent }),
           expect.objectContaining({ path: 'src/client/index.tsx' }),
           expect.objectContaining({ path: 'src/shared/used.ts' }),
         ]),
@@ -417,11 +482,29 @@ describe('MoveToInlineService', () => {
         allowEmptyCommit: true,
         files: expect.arrayContaining([
           expect.objectContaining({ path: '.nocobase/runjs-source.json', operation: 'upsert' }),
+          expect.objectContaining({
+            path: 'src/client/entry.json',
+            content: canonicalDescriptorContent,
+            language: 'json',
+            mode: '100644',
+            operation: 'upsert',
+          }),
+          expect.objectContaining({
+            path: 'src/client/index.tsx',
+            language: 'tsx',
+            mode: '100755',
+            operation: 'upsert',
+          }),
           expect.objectContaining({ path: 'src/client/old.ts', operation: 'delete' }),
         ]),
       }),
       expect.objectContaining({ transaction }),
     );
+    const pushedFiles = push.mock.calls[0][0].files as VscFileChange[];
+    const canonicalFiles = pushedFiles.filter((file) => file.operation === 'upsert');
+    expect(result.filesHash).toBe(buildRunJSFilesHash(canonicalFiles));
+    const sourceId = createHash('sha256').update(result.filesHash).digest('hex').slice(0, 16);
+    expect(result.code).toContain(`nocobase-runjs://bundle/${sourceId}.js`);
     expect(ensureRepository).toHaveBeenCalledWith(
       expect.any(Object),
       expect.objectContaining({
@@ -440,6 +523,8 @@ describe('MoveToInlineService', () => {
         baseOwnerFingerprint: 'owner_before',
         commitId: 'runjs_new_commit',
         artifact: expect.objectContaining({
+          filesHash: result.filesHash,
+          code: expect.stringContaining(`nocobase-runjs://bundle/${sourceId}.js`),
           metadata: expect.objectContaining({ repoId: 'runjs_repo' }),
         }),
       }),
@@ -447,8 +532,8 @@ describe('MoveToInlineService', () => {
     expect(flowModel.stepParams.jsSettings.runJs).toMatchObject({
       code: 'ctx.render("old");',
       sourceMode: 'inline',
-      settings: { color: 'blue' },
     });
+    expect(flowModel.stepParams.jsSettings.runJs.settings).toEqual(currentSettings);
     expect(flowModel.stepParams.jsSettings.runJs).not.toHaveProperty('sourceBinding');
     expect(syncReferences).toHaveBeenCalledWith(
       { rootUid: locator.modelUid, action: 'lightExtensions.moveToInline' },
@@ -459,7 +544,7 @@ describe('MoveToInlineService', () => {
       runJSRepoId: 'runjs_repo',
       commitId: 'runjs_new_commit',
       ownerFingerprint: 'owner_after',
-      code: 'ctx.render("inline");',
+      code: expect.stringContaining(`nocobase-runjs://bundle/${sourceId}.js`),
       sourceRef: {
         type: 'vsc-file',
         repoId: 'runjs_repo',

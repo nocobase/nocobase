@@ -21,6 +21,7 @@ import type { ApiClientLike } from '../api/lightExtensionEntriesRequests';
 import { createLightExtensionRunJSResolver } from '../resolvers/LightExtensionRunJSResolver';
 import { getOrCreateLightExtensionRuntimeCache } from '../resolvers/LightExtensionRuntimeCacheRegistry';
 import { getLightExtensionSettingsDescriptorCache } from '../resolvers/LightExtensionSettingsDescriptorCache';
+import { resolveInlineLightExtensionWorkspaceJsonSchema } from '../workspace/lightExtensionWorkspaceJsonSchema';
 
 vi.mock('../pages/LightExtensionWorkspacePage', () => {
   const MockLightExtensionWorkspacePage = ({
@@ -620,6 +621,37 @@ describe('RunJSLightExtensionEditorProvider', () => {
       sourceRef,
     });
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('wraps inline light-extension-capable flow steps with the entry.json schema resolver', () => {
+    const provider = createRunJSLightExtensionEditorProvider();
+    const renderNext = vi.fn(() => <div>inline studio</div>);
+    const props = {
+      value: {
+        code: 'ctx.render(<div />);',
+        version: 'v2',
+        sourceMode: 'inline',
+        settings: { title: 'Revenue' },
+      },
+      locator: {
+        kind: 'flowModel.step' as const,
+        modelUid: 'model_1',
+        flowKey: 'jsSettings',
+        stepKey: 'runJs',
+        paramPath: ['code'],
+      },
+      sourceMetadata: { lightExtensionKind: 'js-block' },
+      renderNext,
+    };
+
+    expect(provider.canHandle?.(props)).toBe(true);
+    render(<>{provider.renderEditor(props)}</>);
+
+    expect(screen.getByText('inline studio')).toBeInTheDocument();
+    expect(renderNext).toHaveBeenCalledWith({
+      workspaceJsonSchemaResolver: resolveInlineLightExtensionWorkspaceJsonSchema,
+    });
+    expect(resolveInlineLightExtensionWorkspaceJsonSchema('src/client/entry.json')).toBeTruthy();
   });
 
   it('offers move to inline for JS column light extension entries', async () => {

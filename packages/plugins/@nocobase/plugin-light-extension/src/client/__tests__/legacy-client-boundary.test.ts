@@ -20,6 +20,7 @@ import {
   JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
   JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
   RunJSEditorRegistry,
+  RunJSSettingsDescriptorProviderRegistry,
   RunJSSourceResolverRegistry,
   clearActionGroupMenuItemProviders,
   clearBlockGridSelectSceneAddBlockProviders,
@@ -39,6 +40,7 @@ vi.mock('react-i18next', () => ({
 describe('plugin-light-extension legacy client boundary', () => {
   afterEach(() => {
     RunJSEditorRegistry.clear();
+    RunJSSettingsDescriptorProviderRegistry.clear();
     RunJSSourceResolverRegistry.clear();
     clearBlockGridSelectSceneAddBlockProviders();
     clearActionGroupMenuItemProviders();
@@ -86,6 +88,9 @@ describe('plugin-light-extension legacy client boundary', () => {
       }),
     );
     expect(RunJSSourceResolverRegistry.getResolver('light-extension')).toBeTruthy();
+    expect(RunJSSettingsDescriptorProviderRegistry.getProviders().map((provider) => provider.key)).toContain(
+      '@nocobase/plugin-light-extension/inline-settings-descriptor',
+    );
     expect(RunJSEditorRegistry.getProviders().map((provider) => provider.key)).toContain('light-extension-runjs-value');
     expect(registerToolbar).toHaveBeenCalledWith(
       expect.objectContaining({ key: '@nocobase/plugin-light-extension/move-source' }),
@@ -105,6 +110,7 @@ describe('plugin-light-extension legacy client boundary', () => {
     );
     await expect(plugin.beforeLoad()).resolves.toBeUndefined();
     expect(RunJSSourceResolverRegistry.getResolver('light-extension')).toBeNull();
+    expect(RunJSSettingsDescriptorProviderRegistry.getProviders()).toHaveLength(0);
     expect(RunJSEditorRegistry.getProviders()).toHaveLength(0);
     expect(unregisterToolbar).toHaveBeenCalledTimes(1);
 

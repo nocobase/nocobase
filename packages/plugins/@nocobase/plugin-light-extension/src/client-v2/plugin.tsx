@@ -20,6 +20,7 @@ import {
   JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
   Plugin,
   RunJSSourceResolverRegistry,
+  RunJSSettingsDescriptorProviderRegistry,
   RunJSEditorRegistry,
 } from '@nocobase/client-v2';
 
@@ -36,6 +37,7 @@ import { createMoveSourceToLightExtensionContribution } from './components/MoveS
 import { SettingsSingleField } from './components/SettingsAutoForm';
 import { registerLightExtensionModelMenus } from './modelMenu/registerLightExtensionModelMenus';
 import { createLightExtensionRunJSResolver } from './resolvers/LightExtensionRunJSResolver';
+import { createInlineLightExtensionSettingsDescriptorProvider } from './resolvers/InlineLightExtensionSettingsDescriptorProvider';
 
 let activeLightExtensionClientV2Instance: PluginLightExtensionClientV2 | null = null;
 
@@ -64,6 +66,11 @@ export class PluginLightExtensionClientV2 extends Plugin<Record<string, never>, 
     );
     this.disposers.push(
       RunJSSourceResolverRegistry.registerResolver(createLightExtensionRunJSResolver(this.app.apiClient)),
+    );
+    this.disposers.push(
+      RunJSSettingsDescriptorProviderRegistry.registerProvider(
+        createInlineLightExtensionSettingsDescriptorProvider(this.app.apiClient),
+      ),
     );
     this.disposers.push(RunJSEditorRegistry.registerProvider(createRunJSLightExtensionEditorProvider()));
     this.disposers.push(

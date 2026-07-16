@@ -44,6 +44,7 @@ import { LightExtensionRepoService } from './LightExtensionRepoService';
 import { LightExtensionRuntimeCompileService } from './LightExtensionRuntimeCompileService';
 
 const RUNJS_MANIFEST_PATH = '.nocobase/runjs-source.json';
+const INLINE_ENTRY_DESCRIPTOR_PATH = 'src/client/entry.json';
 const CODE_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx'] as const;
 const RESOLVABLE_EXTENSIONS = [...CODE_EXTENSIONS, '.json'] as const;
 
@@ -297,7 +298,9 @@ export function relocateRunJSWorkspace(input: {
     const targetPath =
       file.path === normalizedEntryPath
         ? `${entryRoot}/index${entryExtension}`
-        : buildRelocatedPath(entryRoot, sourceBasePath, file.path);
+        : file.path === INLINE_ENTRY_DESCRIPTOR_PATH
+          ? `${entryRoot}/entry.json`
+          : buildRelocatedPath(entryRoot, sourceBasePath, file.path);
     if (targetPaths.has(targetPath)) {
       throw new LightExtensionError('LIGHT_EXTENSION_INVALID_INPUT', 'RunJS workspace files collide after relocation', {
         details: { path: targetPath },
@@ -528,11 +531,28 @@ function upsertEntryDescriptor(
 ): void {
   const descriptorPath = `${entryRoot}/entry.json`;
   const existing = files.find((file) => file.path === descriptorPath);
-  const content = `${JSON.stringify(
-    { schemaVersion: 1, key, ...(title ? { title } : {}), ...(category ? { category } : {}) },
-    null,
-    2,
-  )}\n`;
+  const sourceDescriptor = existing ? parseEntryDescriptor(existing.content, descriptorPath) : {};
+  const descriptor: Record<string, unknown> = {
+    schemaVersion: 1,
+    key,
+  };
+  if (title) {
+    descriptor.title = title;
+  }
+  if (Object.prototype.hasOwnProperty.call(sourceDescriptor, 'description')) {
+    descriptor.description = sourceDescriptor.description;
+  }
+  if (category) {
+    descriptor.category = category;
+  } else if (Object.prototype.hasOwnProperty.call(sourceDescriptor, 'category')) {
+    descriptor.category = sourceDescriptor.category;
+  }
+  for (const field of ['icon', 'tags', 'sort', 'settings'] as const) {
+    if (Object.prototype.hasOwnProperty.call(sourceDescriptor, field)) {
+      descriptor[field] = sourceDescriptor[field];
+    }
+  }
+  const content = `${JSON.stringify(descriptor, null, 2)}\n`;
   if (!existing) {
     files.push({
       path: descriptorPath,
@@ -546,6 +566,23 @@ function upsertEntryDescriptor(
   existing.content = content;
   existing.language = 'json';
   existing.operation = 'upsert';
+}
+
+function parseEntryDescriptor(content: string, path: string): Record<string, unknown> {
+  let descriptor: unknown;
+  try {
+    descriptor = JSON.parse(content);
+  } catch {
+    throw new LightExtensionError('LIGHT_EXTENSION_INVALID_INPUT', 'RunJS entry descriptor is invalid JSON', {
+      details: { path },
+    });
+  }
+  if (!descriptor || typeof descriptor !== 'object' || Array.isArray(descriptor)) {
+    throw new LightExtensionError('LIGHT_EXTENSION_INVALID_INPUT', 'RunJS entry descriptor must be a JSON object', {
+      details: { path },
+    });
+  }
+  return { ...(descriptor as Record<string, unknown>) };
 }
 
 function supportsExternalBinding(adapter: RunJSSourceAdapter): adapter is ExternalBindingAdapter {

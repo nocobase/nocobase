@@ -578,6 +578,14 @@ async function getLightExtensionSettingsDescriptor(model: JSBlockModel, params: 
     ownerKind: 'flowModel.blockSettings',
     ownerLocator: { modelUid: model.uid },
     params,
+    sourceLocator: {
+      kind: 'flowModel.step',
+      modelUid: model.uid,
+      flowKey: 'jsSettings',
+      stepKey: 'runJs',
+      paramPath: ['code'],
+      versionPath: ['version'],
+    },
   });
 }
 

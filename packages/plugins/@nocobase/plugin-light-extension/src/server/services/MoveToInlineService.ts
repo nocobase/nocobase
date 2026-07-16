@@ -10,9 +10,10 @@
 import type { Database, Transaction } from '@nocobase/database';
 import {
   assertRunJSCompileInputLimits,
-  buildRunJSFilesHash,
   buildRunJSRuntimeCodeHash,
   buildRunJSSourceRepositoryIdentity,
+  canonicalizeRunJSCompileFiles,
+  compileRunJSSourceWorkspace,
   isVscError,
   type RunJSSourceAdapterContext,
   type RunJSSourceAdapterRegistry,
@@ -47,6 +48,7 @@ import {
 const RUNJS_MANIFEST_PATH = '.nocobase/runjs-source.json';
 const RUNJS_ENTRY_ROOT = 'src/client';
 const LIGHT_EXTENSION_SHARED_ROOT = 'src/shared';
+const LIGHT_EXTENSION_ENTRY_DESCRIPTOR_FILE = 'entry.json';
 const CODE_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx'] as const;
 const RESOLVABLE_EXTENSIONS = [...CODE_EXTENSIONS, '.json'] as const;
 const UNSAFE_PATH_SEGMENTS = new Set(['__proto__', 'constructor', 'prototype']);
@@ -218,7 +220,6 @@ export class MoveToInlineService {
       compileResult.artifact.version,
       legacy.surfaceStyle,
     );
-    assertRunJSCompileInputLimits(desiredFiles);
     const currentFiles = (
       await vscFileService.pull(
         {
@@ -228,15 +229,45 @@ export class MoveToInlineService {
         vscContext,
       )
     ).files;
-    const changes = buildOverwriteChanges(currentFiles || [], desiredFiles);
+    const canonicalFiles = canonicalizeRunJSCompileFiles(desiredFiles, currentFiles || []);
+    assertRunJSCompileInputLimits(canonicalFiles);
+    const canonicalCompileResult = await compileRunJSSourceWorkspace({
+      files: canonicalFiles,
+      entry: entryPath,
+      runtimeVersion: compileResult.artifact.version,
+      surfaceStyle: legacy.surfaceStyle,
+      locator,
+      legacy: {
+        version: legacy.version,
+        surfaceStyle: legacy.surfaceStyle,
+        language: legacy.language,
+        metadata: legacy.metadata,
+      },
+    });
+    const canonicalCompileErrors = canonicalCompileResult.artifact.diagnostics.filter(
+      (diagnostic) => diagnostic.severity === 'error',
+    );
+    if (canonicalCompileErrors.length > 0) {
+      throw new LightExtensionError('LIGHT_EXTENSION_VALIDATION_FAILED', 'Inline source could not be compiled', {
+        status: 422,
+        details: {
+          repoId: input.repoId,
+          entryId: input.entryId,
+          diagnostics: canonicalCompileErrors,
+          failureCode: canonicalCompileResult.failureCode,
+        },
+      });
+    }
+    const changes = buildOverwriteChanges(currentFiles || [], canonicalFiles);
     const artifact = {
       ...compileResult.artifact,
+      ...canonicalCompileResult.artifact,
       entryPath,
-      filesHash: buildRunJSFilesHash(desiredFiles),
       metadata: {
+        ...canonicalCompileResult.artifact.metadata,
         ...compileResult.artifact.metadata,
         repoId: repository.id,
-        runtimeCodeHash: buildRunJSRuntimeCodeHash(compileResult.artifact.code),
+        runtimeCodeHash: buildRunJSRuntimeCodeHash(canonicalCompileResult.artifact.code),
       },
     };
     const runtimeCodeHash = buildRunJSRuntimeCodeHash(artifact.code);
@@ -330,6 +361,10 @@ export function collectAndRelocateInlineFiles(input: {
   }
   const entryRoot = pathPosix.dirname(entryPath);
   const selectedPaths = collectReachablePaths(sourceFiles, entryPath, entryRoot);
+  const descriptorPath = `${entryRoot}/${LIGHT_EXTENSION_ENTRY_DESCRIPTOR_FILE}`;
+  if (sourceFiles.has(descriptorPath)) {
+    selectedPaths.add(descriptorPath);
+  }
   const targetBySource = new Map<string, string>();
   for (const sourcePath of selectedPaths) {
     const targetPath =

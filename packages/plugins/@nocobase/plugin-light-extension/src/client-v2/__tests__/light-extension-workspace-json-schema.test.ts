@@ -10,7 +10,10 @@
 import { LIGHT_EXTENSION_ENTRY_SCHEMA_URI, lightExtensionEntryV1Schema } from '@nocobase/light-extension-sdk/schema';
 import { describe, expect, it } from 'vitest';
 
-import { resolveLightExtensionWorkspaceJsonSchema } from '../workspace/lightExtensionWorkspaceJsonSchema';
+import {
+  resolveInlineLightExtensionWorkspaceJsonSchema,
+  resolveLightExtensionWorkspaceJsonSchema,
+} from '../workspace/lightExtensionWorkspaceJsonSchema';
 
 describe('resolveLightExtensionWorkspaceJsonSchema', () => {
   it.each([
@@ -37,5 +40,13 @@ describe('resolveLightExtensionWorkspaceJsonSchema', () => {
     'src/client/js-blocks/sales-kpi/index.tsx',
   ])('does not bind the Entry Schema to ordinary workspace files: %s', (path) => {
     expect(resolveLightExtensionWorkspaceJsonSchema(path)).toBeUndefined();
+  });
+
+  it('binds the canonical Schema only to the inline RunJS descriptor path', () => {
+    expect(resolveInlineLightExtensionWorkspaceJsonSchema('src/client/entry.json')).toEqual({
+      schema: lightExtensionEntryV1Schema,
+      uri: LIGHT_EXTENSION_ENTRY_SCHEMA_URI,
+    });
+    expect(resolveInlineLightExtensionWorkspaceJsonSchema('src/client/nested/entry.json')).toBeUndefined();
   });
 });

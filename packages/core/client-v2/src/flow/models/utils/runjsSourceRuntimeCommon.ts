@@ -32,6 +32,7 @@ import {
   getSettingsSchemaProperties,
   getSettingsSchemaRequired,
   normalizeSchemaType,
+  RunJSSettingsDescriptorProviderRegistry,
   RunJSSourceResolverRegistry,
   validateRunJSSettings,
   validateRunJSSettingValue,
@@ -40,7 +41,7 @@ import {
   type RunJSSourceSettings,
   type RunJSSourceSettingsDescriptor,
 } from '../../components/runjs-source';
-import { RunJSEditorField } from '../../components/runjs-studio';
+import { RunJSEditorField, type RunJSSourceLocator } from '../../components/runjs-studio';
 
 export const INLINE_SOURCE_MODE = 'inline';
 export const LIGHT_EXTENSION_SOURCE_MODE = 'light-extension';
@@ -264,28 +265,46 @@ export async function getLightExtensionSettingsDescriptor(options: {
   ownerKind: string;
   ownerLocator: Record<string, unknown>;
   params: Record<string, unknown>;
+  sourceLocator?: RunJSSourceLocator;
 }): Promise<RunJSSourceSettingsDescriptor | null> {
   const { params } = options;
-  if (
-    normalizeLightExtensionSourceMode(params.sourceMode) !== LIGHT_EXTENSION_SOURCE_MODE ||
-    !isRecord(params.sourceBinding)
-  ) {
-    return null;
+  const sourceMode = normalizeLightExtensionSourceMode(params.sourceMode);
+  const settings = isRecord(params.settings) ? (params.settings as RunJSSourceSettings) : undefined;
+  const context = {
+    modelUid: options.modelUid,
+    ownerKind: options.ownerKind,
+    ownerLocator: options.ownerLocator,
+  };
+  let descriptor: RunJSSourceSettingsDescriptor | undefined;
+  if (sourceMode === LIGHT_EXTENSION_SOURCE_MODE) {
+    if (!isRecord(params.sourceBinding)) {
+      return null;
+    }
+    const resolver = RunJSSourceResolverRegistry.getResolver(LIGHT_EXTENSION_SOURCE_MODE);
+    if (typeof resolver?.getSettingsDescriptor !== 'function') {
+      return null;
+    }
+    descriptor = await resolver.getSettingsDescriptor({
+      sourceMode: LIGHT_EXTENSION_SOURCE_MODE,
+      sourceBinding: params.sourceBinding as RunJSSourceBinding,
+      settings,
+      context,
+    });
+  } else {
+    descriptor = await RunJSSettingsDescriptorProviderRegistry.getSettingsDescriptor({
+      sourceMode: INLINE_SOURCE_MODE,
+      sourceRef: isRecord(params.sourceRef) ? params.sourceRef : undefined,
+      settings,
+      runJs: {
+        code: typeof params.code === 'string' ? params.code : '',
+        version: typeof params.version === 'string' && params.version ? params.version : 'v2',
+        sourceMode: INLINE_SOURCE_MODE,
+        ...(settings ? { settings } : {}),
+      },
+      locator: options.sourceLocator,
+      context,
+    });
   }
-  const resolver = RunJSSourceResolverRegistry.getResolver(LIGHT_EXTENSION_SOURCE_MODE);
-  if (typeof resolver?.getSettingsDescriptor !== 'function') {
-    return null;
-  }
-  const descriptor = await resolver.getSettingsDescriptor({
-    sourceMode: LIGHT_EXTENSION_SOURCE_MODE,
-    sourceBinding: params.sourceBinding as RunJSSourceBinding,
-    settings: isRecord(params.settings) ? (params.settings as RunJSSourceSettings) : undefined,
-    context: {
-      modelUid: options.modelUid,
-      ownerKind: options.ownerKind,
-      ownerLocator: options.ownerLocator,
-    },
-  });
   if (!isRecord(descriptor) || !toNonEmptyString(descriptor.entryId)) {
     return null;
   }
@@ -610,7 +629,15 @@ export function normalizeLightExtensionSourceSettingsForBinding(options: {
   nextSettings?: unknown;
   descriptor?: RunJSSourceSettingsDescriptor | null;
 }): { settings: Record<string, unknown>; missingRequiredPaths: string[] } {
-  if (options.nextSourceMode !== LIGHT_EXTENSION_SOURCE_MODE || !options.nextSourceBinding) {
+  if (options.nextSourceMode !== LIGHT_EXTENSION_SOURCE_MODE) {
+    return {
+      settings: isRecord(options.nextSettings)
+        ? cloneRecord(options.nextSettings)
+        : getCanonicalRunJSSettings(options.currentRunJs),
+      missingRequiredPaths: [],
+    };
+  }
+  if (!options.nextSourceBinding) {
     return { settings: {}, missingRequiredPaths: [] };
   }
   if (!options.descriptor) {

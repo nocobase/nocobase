@@ -22,7 +22,11 @@ import {
   clearBlockGridSelectSceneAddBlockProviders,
   clearFieldMenuItemProviders,
 } from '@nocobase/client-v2';
-import { RunJSEditorRegistry, RunJSSourceResolverRegistry } from '@nocobase/client-v2';
+import {
+  RunJSEditorRegistry,
+  RunJSSettingsDescriptorProviderRegistry,
+  RunJSSourceResolverRegistry,
+} from '@nocobase/client-v2';
 import { afterEach, vi } from 'vitest';
 
 import { LIGHT_EXTENSION_ACL_SNIPPET, LIGHT_EXTENSION_SETTINGS_KEY, NAMESPACE } from '../../constants';
@@ -36,6 +40,7 @@ import PluginLightExtensionClientV2 from '../plugin';
 describe('PluginLightExtensionClientV2', () => {
   afterEach(() => {
     RunJSEditorRegistry.clear();
+    RunJSSettingsDescriptorProviderRegistry.clear();
     RunJSSourceResolverRegistry.clear();
     clearBlockGridSelectSceneAddBlockProviders();
     clearActionGroupMenuItemProviders();
@@ -88,6 +93,9 @@ describe('PluginLightExtensionClientV2', () => {
     expect(app.flowEngine.flowSettings.components.SettingsAutoForm).toBeUndefined();
     expect(warn.mock.calls.flat().join('\n')).not.toContain('JSBlockLightExtensionSourceField');
     expect(RunJSSourceResolverRegistry.getResolver('light-extension')).toBeTruthy();
+    expect(RunJSSettingsDescriptorProviderRegistry.getProviders().map((provider) => provider.key)).toContain(
+      '@nocobase/plugin-light-extension/inline-settings-descriptor',
+    );
     expect(RunJSEditorRegistry.getProviders().map((provider) => provider.key)).toContain('light-extension-runjs-value');
   });
 
@@ -156,6 +164,7 @@ describe('PluginLightExtensionClientV2', () => {
     await nextApp.load();
 
     expect(RunJSSourceResolverRegistry.getResolvers()).toHaveLength(1);
+    expect(RunJSSettingsDescriptorProviderRegistry.getProviders()).toHaveLength(1);
     expect(RunJSEditorRegistry.getProviders()).toHaveLength(1);
     expect(RunJSSourceResolverRegistry.getResolver('light-extension')).toBeTruthy();
     expect(RunJSSourceResolverRegistry.getResolver('light-extension')).not.toBe(firstResolver);

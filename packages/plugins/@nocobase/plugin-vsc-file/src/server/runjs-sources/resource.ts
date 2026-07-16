@@ -52,6 +52,7 @@ import type { VscPermissionHookRegistry, VscPermissionRequestMetadata } from '..
 import { VscFileService, type PulledFile, type VscServiceContext } from '../services/VscFileService';
 import type { RunJSSourceAuthoringInspectorRegistry } from './RunJSSourceAuthoringInspectorRegistry';
 import type { RunJSSourceAdapterRegistry } from './RunJSSourceAdapterRegistry';
+import { canonicalizeRunJSCompileFile } from './canonicalCompileFiles';
 import { compileRunJSSourceWorkspace, type CompileRunJSSourceWorkspaceResult } from './compiler';
 
 export const runJSSourceActionNames = [
@@ -1547,19 +1548,7 @@ async function materializeRunJSCompileFiles(
 }
 
 function canonicalCompileFileChange(file: SaveCompileFile): VscFileChange {
-  const change: VscFileChange = {
-    path: file.path,
-    operation: 'upsert',
-    content: file.content,
-  };
-  if (file.language) {
-    change.language = file.language;
-  }
-  if (file.mode) {
-    change.mode = file.mode;
-  }
-
-  return change;
+  return canonicalizeRunJSCompileFile(file);
 }
 
 async function loadCommitFilesForCompile(

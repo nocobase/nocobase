@@ -8,6 +8,7 @@
  */
 
 export * from './RunJSSourceResolverRegistry';
+export * from './RunJSSettingsDescriptorProviderRegistry';
 export * from './resolveRuntimeRunJS';
 export * from './runJSRuntime';
 export * from './runtimeSettingsValidation';

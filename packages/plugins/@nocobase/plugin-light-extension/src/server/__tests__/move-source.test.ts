@@ -106,21 +106,48 @@ describe('MoveSourceService', () => {
   });
 
   it.each([
-    ['js-block', 'src/client/js-blocks'],
-    ['js-field', 'src/client/js-fields'],
-    ['js-action', 'src/client/js-actions'],
-    ['js-item', 'src/client/js-items'],
-  ] as const)('generates only a minimal entry.json descriptor for %s', (kind, root) => {
+    ['js-block', 'src/client/js-blocks', null],
+    ['js-field', 'src/client/js-fields', 'js-field'],
+    ['js-action', 'src/client/js-actions', null],
+    ['js-item', 'src/client/js-items', null],
+  ] as const)('preserves entry.json configuration when relocating %s', (kind, root, category) => {
+    const settings = {
+      enabled: { type: 'boolean', default: false },
+      retryCount: { type: 'integer', default: 0 },
+      label: { type: 'string', default: '' },
+      advanced: {
+        type: 'object',
+        properties: {
+          hiddenValue: { type: 'string', default: 'kept' },
+        },
+      },
+    };
     const files = relocateRunJSWorkspace({
       kind,
       entryName: 'normalize-order',
       entryTitle: 'Normalize order',
-      entryPath: 'src/main.ts',
+      category,
+      entryPath: 'src/client/nested/index.ts',
       files: [
-        { path: 'src/main.ts', content: 'return input;' },
-        { path: 'src/entry.json', content: JSON.stringify({ settingsSchema: { type: 'object' }, unknown: true }) },
-        { path: 'src/meta.json', content: '{"key":"legacy"}' },
-        { path: 'src/settings.json', content: '{"type":"object"}' },
+        { path: 'src/client/nested/index.ts', content: 'return input;' },
+        {
+          path: 'src/client/entry.json',
+          content: JSON.stringify({
+            schemaVersion: 99,
+            key: 'old-key',
+            title: 'Old title',
+            description: 'Keep this description',
+            category: 'old-category',
+            icon: 'CodeOutlined',
+            tags: ['inline', 'configuration'],
+            sort: 20,
+            settings,
+            settingsSchema: { type: 'object', properties: { legacy: { type: 'string' } } },
+            unknown: true,
+          }),
+        },
+        { path: 'src/client/nested/meta.json', content: '{"key":"legacy"}' },
+        { path: 'src/client/nested/settings.json', content: '{"type":"object"}' },
       ],
     });
 
@@ -132,6 +159,12 @@ describe('MoveSourceService', () => {
       schemaVersion: 1,
       key: 'normalize-order',
       title: 'Normalize order',
+      description: 'Keep this description',
+      category: category || 'old-category',
+      icon: 'CodeOutlined',
+      tags: ['inline', 'configuration'],
+      sort: 20,
+      settings,
     });
   });
 

@@ -9,6 +9,19 @@
 
 import type React from 'react';
 import type { RunJSValue } from '@nocobase/flow-engine';
+import type { CodeEditorJsonSchema } from '../code-editor';
+
+export interface RunJSWorkspaceFileLike {
+  path: string;
+  content: string;
+  language?: string;
+  mode?: string;
+}
+
+export type RunJSWorkspaceJsonSchemaResolver = (
+  path: string,
+  files: RunJSWorkspaceFileLike[],
+) => CodeEditorJsonSchema | undefined;
 
 export type RunJSSourceLocator =
   | {
@@ -91,6 +104,7 @@ export interface RunJSEditorFieldProps {
   disabled?: boolean;
   containerStyle?: React.CSSProperties;
   editorChrome?: 'standalone' | 'embedded';
+  workspaceJsonSchemaResolver?: RunJSWorkspaceJsonSchemaResolver;
   onEmbeddedEditorControllerChange?: (controller: EmbeddedRunJSEditorController | null) => void;
 }
 

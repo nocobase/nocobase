@@ -1884,6 +1884,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
                         activePath={activePath}
                         diffRows={lineDiffRows}
                         isDiff={showDiff}
+                        jsonSchemaResolver={props.workspaceJsonSchemaResolver}
                         filesCollapsed={filesCollapsed}
                         fullscreenControl={{
                           isFullscreen: workspaceFullscreen.isFullscreen,

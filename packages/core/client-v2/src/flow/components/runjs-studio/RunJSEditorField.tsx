@@ -99,16 +99,29 @@ function normalizeEditorValue(value: unknown, fallbackVersion: string): RunJSVal
   return { code: '', version: fallbackVersion };
 }
 
-function mergeRunJSValueWithStepParams(value: RunJSValue, stepParams: unknown): RunJSValue {
-  if (!isRecord(stepParams) || stepParams.sourceMode !== 'light-extension') {
+function mergeRunJSValueWithStepParams(
+  value: RunJSValue,
+  stepParams: unknown,
+  paramPath: readonly string[],
+): SavedRunJSValue {
+  if (!isRecord(stepParams)) {
     return value;
   }
 
+  const sourceConfigPath = paramPath.slice(0, -1);
+  const sourceConfig = sourceConfigPath.length ? getAtPath(stepParams, sourceConfigPath) : stepParams;
+  if (!isRecord(sourceConfig)) {
+    return value;
+  }
+  const sourceMode = typeof sourceConfig.sourceMode === 'string' ? sourceConfig.sourceMode : undefined;
+  const sourceRef = getAtPath(stepParams, resolveSourceRefPath(paramPath));
+
   return {
     ...value,
-    sourceMode: 'light-extension',
-    ...(isRecord(stepParams.sourceBinding) ? { sourceBinding: cloneRecord(stepParams.sourceBinding) } : {}),
-    settings: isRecord(stepParams.settings) ? cloneRecord(stepParams.settings) : {},
+    ...(sourceMode ? { sourceMode } : {}),
+    ...(isRecord(sourceConfig.sourceBinding) ? { sourceBinding: cloneRecord(sourceConfig.sourceBinding) } : {}),
+    ...(isRecord(sourceConfig.settings) ? { settings: cloneRecord(sourceConfig.settings) } : {}),
+    ...(isRecord(sourceRef) ? { sourceRef: cloneRecord(sourceRef) } : {}),
   };
 }
 
@@ -372,6 +385,7 @@ export const RunJSEditorField: React.FC<RunJSEditorFieldProps> = (props) => {
   const current = mergeRunJSValueWithStepParams(
     normalizeEditorValue(value, resolveFallbackVersion(flowStep?.params, fieldVersionPath)),
     resolveCurrentStepParams(flowContext, generatedLocator, flowStep?.params),
+    fieldParamPath,
   );
   const locator = props.sourceLocator ?? props.locator ?? generatedLocator;
   const label = props.sourceLabel ?? props.label;

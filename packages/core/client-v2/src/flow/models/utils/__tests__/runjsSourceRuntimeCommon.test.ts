@@ -14,7 +14,7 @@ import { render, screen } from '@testing-library/react';
 import type { FlowModel } from '@nocobase/flow-engine';
 import React from 'react';
 
-import { RunJSSourceResolverRegistry } from '../../../components/runjs-source';
+import { RunJSSettingsDescriptorProviderRegistry, RunJSSourceResolverRegistry } from '../../../components/runjs-source';
 import {
   createLightExtensionSettingStep,
   createRuntimeRunTracker,
@@ -53,10 +53,12 @@ function createDataSourceContext() {
 describe('runjsSourceRuntimeCommon', () => {
   beforeEach(() => {
     RunJSSourceResolverRegistry.clear();
+    RunJSSettingsDescriptorProviderRegistry.clear();
   });
 
   afterEach(() => {
     RunJSSourceResolverRegistry.clear();
+    RunJSSettingsDescriptorProviderRegistry.clear();
   });
 
   it('tracks the latest run per model independently', () => {
@@ -257,6 +259,87 @@ describe('runjsSourceRuntimeCommon', () => {
       defaults: {},
       settingsSchemaHash: null,
     });
+  });
+
+  it('loads inline settings descriptors with the persisted source reference and exact locator', async () => {
+    const getSettingsDescriptor = vi.fn(async () => ({
+      entryId: 'inline:repo_1:welcome',
+      settingsSchemaHash: 'commit_2:schema_1',
+      schema: {
+        type: 'object',
+        properties: {
+          title: { type: 'string', default: 'Welcome' },
+        },
+      },
+      defaults: { title: 'Welcome' },
+    }));
+    RunJSSettingsDescriptorProviderRegistry.registerProvider({
+      key: 'inline-light-extension',
+      canHandle: (input) => input.sourceMode === 'inline',
+      getSettingsDescriptor,
+    });
+    const sourceLocator = {
+      kind: 'flowModel.step' as const,
+      modelUid: 'model_1',
+      flowKey: 'jsSettings',
+      stepKey: 'runJs',
+      paramPath: ['code'],
+      versionPath: ['version'],
+    };
+
+    await expect(
+      getLightExtensionSettingsDescriptor({
+        modelUid: 'model_1',
+        ownerKind: 'flowModel.blockSettings',
+        ownerLocator: { modelUid: 'model_1' },
+        sourceLocator,
+        params: {
+          code: 'ctx.render(<div />);',
+          version: 'v2',
+          sourceMode: 'inline',
+          sourceRef: {
+            type: 'vsc-file',
+            repoId: 'repo_1',
+            commitId: 'commit_2',
+            entry: 'src/client/index.tsx',
+          },
+          settings: { title: 'Revenue' },
+        },
+      }),
+    ).resolves.toMatchObject({
+      entryId: 'inline:repo_1:welcome',
+      defaults: { title: 'Welcome' },
+    });
+    expect(getSettingsDescriptor).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sourceMode: 'inline',
+        sourceRef: expect.objectContaining({ repoId: 'repo_1', commitId: 'commit_2' }),
+        settings: { title: 'Revenue' },
+        runJs: expect.objectContaining({ code: 'ctx.render(<div />);', version: 'v2' }),
+        locator: sourceLocator,
+      }),
+    );
+  });
+
+  it('preserves complete settings when switching to inline source mode', () => {
+    const settings = {
+      enabled: false,
+      count: 0,
+      label: '',
+      nested: { visible: false, hiddenValue: 'keep-me' },
+    };
+
+    expect(
+      normalizeLightExtensionSourceSettingsForBinding({
+        currentRunJs: {
+          sourceMode: 'light-extension',
+          sourceBinding: { entryId: 'entry_1' },
+          settings,
+        },
+        nextSourceMode: 'inline',
+        nextSettings: settings,
+      }),
+    ).toEqual({ settings, missingRequiredPaths: [] });
   });
 
   it('rejects binding settings when the entry declares no settings schema', () => {

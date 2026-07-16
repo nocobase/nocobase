@@ -52,6 +52,7 @@ vi.mock('@nocobase/client-v2', () => ({
     enableLinter,
     language,
     typescriptProject,
+    jsonSchema,
   }: {
     value?: string;
     onChange?: (value: string) => void;
@@ -63,9 +64,11 @@ vi.mock('@nocobase/client-v2', () => ({
     enableLinter?: boolean;
     language?: string;
     typescriptProject?: { runJSContext?: { modelUse?: string } };
+    jsonSchema?: { uri?: string };
   }) => (
     <div
       data-enable-linter={String(Boolean(enableLinter))}
+      data-json-schema-uri={jsonSchema?.uri}
       data-language={language}
       data-runjs-model-use={typescriptProject?.runJSContext?.modelUse}
       data-testid="mock-code-editor"
@@ -685,6 +688,54 @@ describe('runJSStudioProvider', () => {
     expect(screen.getByTestId('mock-code-editor')).toHaveAttribute('data-language', 'json');
     expect(screen.getByTestId('mock-code-editor')).toHaveAttribute('data-enable-linter', 'false');
     expect((screen.getByLabelText('Edit file content') as HTMLTextAreaElement).value).toContain('"type": "object"');
+  });
+
+  it('forwards the host workspace JSON schema resolver to entry.json editors', async () => {
+    mocks.request.mockImplementation(({ url }: { url: string }) => {
+      if (url === 'runJSSources:open') {
+        return Promise.resolve({
+          data: {
+            data: {
+              ...openResult,
+              files: [
+                ...openResult.files,
+                {
+                  path: 'src/client/entry.json',
+                  content: '{"schemaVersion":1,"key":"welcome"}\n',
+                  language: 'json',
+                  mode: '100644',
+                },
+              ],
+            },
+          },
+        });
+      }
+      return Promise.resolve({ data: { data: {} } });
+    });
+    const workspaceJsonSchemaResolver = vi.fn((path: string) =>
+      path === 'src/client/entry.json'
+        ? {
+            uri: 'https://schemas.nocobase.com/light-extension/entry-v1.schema.json',
+            schema: { type: 'object' },
+          }
+        : undefined,
+    );
+
+    renderEditor(vi.fn(), { workspaceJsonSchemaResolver });
+
+    await screen.findByLabelText('Edit file content');
+    fireEvent.click(screen.getByRole('button', { name: 'Expand files' }));
+    const filesPanel = screen.getByLabelText('File resource manager');
+    fireEvent.click(within(filesPanel).getByRole('button', { name: 'src/client/entry.json' }));
+
+    expect(workspaceJsonSchemaResolver).toHaveBeenCalledWith(
+      'src/client/entry.json',
+      expect.arrayContaining([expect.objectContaining({ path: 'src/client/entry.json' })]),
+    );
+    expect(screen.getByTestId('mock-code-editor')).toHaveAttribute(
+      'data-json-schema-uri',
+      'https://schemas.nocobase.com/light-extension/entry-v1.schema.json',
+    );
   });
 
   it('creates folders under src/client and moves files into them', async () => {

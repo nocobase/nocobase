@@ -441,6 +441,14 @@ async function getLightExtensionSettingsDescriptor(model: JSItemRuntimeModel, pa
     ownerKind: JS_ITEM_OWNER_KIND,
     ownerLocator: buildJSItemOwnerLocator(model),
     params,
+    sourceLocator: {
+      kind: 'flowModel.step',
+      modelUid: model.uid,
+      flowKey: 'jsSettings',
+      stepKey: 'runJs',
+      paramPath: ['code'],
+      versionPath: ['version'],
+    },
   });
 }
 
