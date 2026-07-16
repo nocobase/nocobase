@@ -357,6 +357,7 @@ export const AIChatBoxView: React.FC<{
   const flowSettingsEnabled = !!model.context.flowSettingsEnabled;
   const settings = getAIChatBoxSettings(model.props);
   const minWidth = model.props.minWidth ?? 300;
+  const height = settings.height;
   const conversationPanelWidth = 300;
   const messagesPanelWidth = 420;
   const headerHeight = 48;
@@ -387,6 +388,7 @@ export const AIChatBoxView: React.FC<{
       style={{
         width: '100%',
         minWidth,
+        height,
         minHeight: 420,
         overflow: 'hidden',
         position: 'relative',

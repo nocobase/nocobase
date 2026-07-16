@@ -66,6 +66,9 @@ export const MessagesAndSender: React.FC<{
       style={{
         height: '100%',
         minHeight: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
         backgroundColor: 'transparent',
       }}
     >
@@ -74,6 +77,7 @@ export const MessagesAndSender: React.FC<{
         style={{
           backgroundColor: 'transparent',
           padding: 0,
+          flex: '0 0 auto',
         }}
       >
         <Sender

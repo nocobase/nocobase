@@ -80,10 +80,10 @@ vi.mock('../components/Conversations', () => ({
   Conversations: () => <div data-testid="conversations" />,
 }));
 
-const makeModel = (): AIChatBoxBlockModel => {
+const makeModel = (props: AIChatBoxBlockModel['props'] = {}): AIChatBoxBlockModel => {
   return {
     uid: 'chat-box-1',
-    props: {},
+    props,
     context: {
       flowSettingsEnabled: false,
     },
@@ -101,9 +101,10 @@ describe('AIChatBoxView mounted registry', () => {
   });
 
   it('registers the mounted block runtime and removes it on unmount', () => {
-    const { unmount } = render(<AIChatBoxView model={makeModel()} />);
+    const { container, unmount } = render(<AIChatBoxView model={makeModel({ height: 720 })} />);
     const entry = getMountedChatBox('chat-box-1');
 
+    expect(container.querySelector('.ant-layout')?.getAttribute('style')).toContain('height: 720px');
     expect(entry).toMatchObject({
       uid: 'chat-box-1',
       runtime: mocks.runtime,

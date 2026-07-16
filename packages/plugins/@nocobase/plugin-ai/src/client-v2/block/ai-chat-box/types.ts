@@ -20,6 +20,7 @@ export type AIChatBoxBlockStructure = {
 
 export type AIChatBoxBlockProps = {
   minWidth?: number;
+  height?: number;
   showMessages?: boolean;
   scope?: string;
   systemPrompt?: string;
@@ -40,6 +41,7 @@ export type AIChatBoxSettings = Required<
   Pick<
     AIChatBoxBlockProps,
     | 'showMessages'
+    | 'height'
     | 'systemPrompt'
     | 'defaultUserMessage'
     | 'selectedBlocks'

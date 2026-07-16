@@ -23,6 +23,7 @@ const isContextItem = (value: unknown): value is ContextItem => {
 };
 
 export const getDefaultAIChatBoxSettings = (): AIChatBoxSettings => ({
+  height: 640,
   scope: undefined,
   systemPrompt: '',
   defaultUserMessage: '',
@@ -51,6 +52,10 @@ export const getAIChatBoxSettings = (props: AIChatBoxBlockProps = {}): AIChatBox
     allowedAIEmployees: Array.isArray(settings.allowedAIEmployees) ? settings.allowedAIEmployees : [],
     allowedModels: Array.isArray(settings.allowedModels) ? settings.allowedModels : [],
   };
+};
+
+export const normalizeAIChatBoxHeight = (height: unknown) => {
+  return typeof height === 'number' && Number.isFinite(height) ? Math.max(420, height) : 640;
 };
 
 export const getAIChatBoxScope = (model: AIChatBoxBlockModel) => {

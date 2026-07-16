@@ -20,6 +20,7 @@ import {
   getAIChatBoxManualSelectedBlocks,
   getAIChatBoxScope,
   getAIChatBoxWorkContext,
+  normalizeAIChatBoxHeight,
   normalizeAIChatBoxScopeForSave,
   normalizeAIChatBoxWorkContext,
 } from '../utils';
@@ -74,6 +75,12 @@ const readLocale = (locale: 'en-US' | 'zh-CN') => {
 };
 
 describe('AI chat box settings helpers', () => {
+  it('normalizes chat box height with a larger default than the minimum', () => {
+    expect(normalizeAIChatBoxHeight(undefined)).toBe(640);
+    expect(normalizeAIChatBoxHeight(360)).toBe(420);
+    expect(normalizeAIChatBoxHeight(720)).toBe(720);
+  });
+
   it('resolves scope as default uid, empty unscoped value, or explicit shared value', () => {
     expect(getAIChatBoxScope(makeModel())).toBe('chat-box-1');
     expect(getAIChatBoxScope(makeModel({ scope: '' }))).toBe('');
@@ -175,6 +182,7 @@ describe('AI chat box settings flow', () => {
 
     expect(editStep?.defaultParams?.(ctx)).toMatchObject({
       scope: 'chat-box-1',
+      height: 640,
       selectedBlocks: [
         { type: 'flow-model', uid: 'external-1', title: 'External' },
         { type: 'flow-model', uid: 'body-1', title: 'Body one' },
@@ -184,6 +192,7 @@ describe('AI chat box settings flow', () => {
     const schema = await editStep?.uiSchema?.(ctx);
     expect(Object.keys(schema ?? {})).toEqual([
       'scope',
+      'height',
       'systemPrompt',
       'defaultUserMessage',
       'selectedBlocks',
@@ -193,6 +202,7 @@ describe('AI chat box settings flow', () => {
 
     editStep?.handler?.(ctx, {
       scope: '',
+      height: 720,
       systemPrompt: 'Background',
       defaultUserMessage: 'Hello',
       selectedBlocks: [
@@ -205,6 +215,7 @@ describe('AI chat box settings flow', () => {
 
     expect(model.setProps).toHaveBeenCalledWith({
       scope: '',
+      height: 720,
       systemPrompt: 'Background',
       defaultUserMessage: 'Hello',
       selectedBlocks: [{ type: 'flow-model', uid: 'external-1', title: 'External' }],
@@ -239,6 +250,7 @@ describe('AI chat box settings flow', () => {
       'Title & description',
       'Edit chat box',
       'Scope',
+      'Height',
       'Background',
       'Default user message',
       'Work context',

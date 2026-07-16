@@ -256,6 +256,8 @@ export const Messages: React.FC = observer(() => {
       ref={containerRef}
       onScroll={handleScroll}
       style={{
+        flex: '1 1 auto',
+        minHeight: 0,
         margin: '16px 0',
         overflow: 'auto',
         position: 'relative',
