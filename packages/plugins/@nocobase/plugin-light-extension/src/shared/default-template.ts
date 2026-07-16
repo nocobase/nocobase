@@ -1440,12 +1440,20 @@ async function runCollectionTable() {
         ];
       });
 
-    const getRowKey = (record: JsonRecord, index?: number): string => {
+    const getRowKey = (record: JsonRecord): string => {
       const parts = primaryKeys.flatMap((key) => {
         const value = record[key];
         return value === undefined || value === null || value === '' ? [] : [String(value)];
       });
-      return parts.length ? parts.join('|') : String(index ?? 0);
+      if (parts.length) return parts.join('|');
+      try {
+        return JSON.stringify(record);
+      } catch {
+        return Object.keys(record)
+          .sort()
+          .map((key) => key + ':' + String(record[key]))
+          .join('|');
+      }
     };
 
     const columnChooser = (

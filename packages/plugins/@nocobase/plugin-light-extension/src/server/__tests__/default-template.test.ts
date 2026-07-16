@@ -192,6 +192,7 @@ describe('plugin-light-extension default source template', () => {
     expect(collectionTableSource.match(/await flowModel\.saveStepParams\(\);/g)).toHaveLength(2);
     expect(collectionTableSource).toContain("ctx.t('Refresh')");
     expect(collectionTableSource).not.toContain("ctx.t('Reload')");
+    expect(collectionTableSource).not.toContain('getRowKey = (record: JsonRecord, index?: number)');
     expect(collectionTableSource).not.toContain("settings.title || 'Collection table'");
     expect(collectionTableSource).not.toContain('setTimeout(');
     expect(collectionTableSource).not.toContain('Tabulator');
@@ -307,6 +308,7 @@ function readElementText(value: unknown): string {
 }
 
 function createCollectionTableRuntime(settings: Record<string, unknown>) {
+  const effects: Array<() => unknown> = [];
   const rendered: unknown[] = [];
   const React = {
     Fragment: 'Fragment',
@@ -317,7 +319,7 @@ function createCollectionTableRuntime(settings: Record<string, unknown>) {
         ? (type as (componentProps: Record<string, unknown>) => unknown)(nextProps)
         : { props: nextProps, type };
     },
-    useEffect: (_effect: () => unknown, _dependencies: unknown[]) => undefined,
+    useEffect: (effect: () => unknown, _dependencies: unknown[]) => effects.push(effect),
     useMemo: <T>(factory: () => T) => factory(),
     useRef: <T>(initialValue: T) => ({ current: initialValue }),
     useState: <T>(initialValue: T | (() => T)) => {
@@ -406,12 +408,20 @@ function createCollectionTableRuntime(settings: Record<string, unknown>) {
     t: (text: string) => text,
   };
 
-  return { ctx, rendered, runAction };
+  const flushEffects = async () => {
+    effects.forEach((effect) => effect());
+    await Promise.resolve();
+    await Promise.resolve();
+  };
+
+  return { ctx, flushEffects, rendered, runAction };
 }
 
 async function expectCollectionTableRuntime(code: string) {
-  const defaultRuntime = createCollectionTableRuntime({ collectionName: 'users', title: '' });
+  const defaultRuntime = createCollectionTableRuntime({ collectionName: 'users' });
   await executeArtifact(code, defaultRuntime.ctx);
+  await defaultRuntime.flushEffects();
+  expect(defaultRuntime.runAction).toHaveBeenCalledTimes(1);
   const defaultTree = defaultRuntime.rendered.at(-1);
   expect(findElements(defaultTree, 'Typography.Title')).toEqual([]);
 
@@ -430,8 +440,8 @@ async function expectCollectionTableRuntime(code: string) {
   const refreshButton = buttons.find((button) => readElementText(button) === 'Refresh');
   expect(typeof refreshButton?.props.onClick).toBe('function');
   (refreshButton?.props.onClick as () => void)();
-  await vi.waitFor(() => expect(defaultRuntime.runAction).toHaveBeenCalledTimes(1));
-  expect(defaultRuntime.runAction).toHaveBeenCalledWith('list', {
+  await vi.waitFor(() => expect(defaultRuntime.runAction).toHaveBeenCalledTimes(2));
+  expect(defaultRuntime.runAction).toHaveBeenLastCalledWith('list', {
     method: 'get',
     params: { fields: ['id', 'name'], page: 1, pageSize: 20 },
   });
