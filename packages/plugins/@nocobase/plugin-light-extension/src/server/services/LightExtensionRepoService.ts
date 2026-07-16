@@ -51,6 +51,13 @@ export interface LightExtensionRemoteSyncLifecycleGate {
   assertRepositoryIdle(repoId: string, transaction?: Transaction): Promise<void>;
 }
 
+export interface LightExtensionCreateMetadata {
+  name: string;
+  normalizedName: string;
+  title: string | null | undefined;
+  description: string | null | undefined;
+}
+
 export class LightExtensionRepoService {
   private vscFileService: VscFileService;
 
@@ -91,13 +98,13 @@ export class LightExtensionRepoService {
     ctx: LightExtensionServiceContext = {},
   ): Promise<LightExtensionRepoRecord> {
     const requestId = getRequestId(ctx);
-    const normalizedName = normalizeRepoName(input.name);
+    const metadata = this.normalizeCreateMetadata(input);
     const repoId = `ler_${uid()}`;
     const initialFiles = input.initialFiles?.length ? input.initialFiles : createDefaultLightExtensionTemplate();
     this.assertValidInitialFiles(initialFiles);
 
     return this.withTransaction(ctx.transaction, async (transaction) => {
-      await this.assertRepoNameAvailable(input.name.trim(), normalizedName, transaction);
+      await this.assertRepoNameAvailable(metadata.name, metadata.normalizedName, transaction);
 
       const vscResult = await this.runVsc(repoId, () =>
         this.vscFileService.createRepository(
@@ -129,10 +136,10 @@ export class LightExtensionRepoService {
         {
           id: repoId,
           vscRepoId: vscResult.repository.id,
-          name: input.name.trim(),
-          normalizedName,
-          title: optionalTrim(input.title),
-          description: optionalTrim(input.description),
+          name: metadata.name,
+          normalizedName: metadata.normalizedName,
+          title: metadata.title,
+          description: metadata.description,
           headCommitId: vscResult.repository.headCommitId || null,
         },
         transaction,
@@ -172,6 +179,18 @@ export class LightExtensionRepoService {
 
       return repo;
     });
+  }
+
+  normalizeCreateMetadata(
+    input: Pick<LightExtensionCreateRepoInput, 'name' | 'title' | 'description'>,
+  ): LightExtensionCreateMetadata {
+    const name = input.name.trim();
+    return {
+      name,
+      normalizedName: normalizeRepoName(name),
+      title: optionalTrim(input.title),
+      description: optionalTrim(input.description),
+    };
   }
 
   private assertValidInitialFiles(files: LightExtensionTreeEntryInput[] | undefined): void {

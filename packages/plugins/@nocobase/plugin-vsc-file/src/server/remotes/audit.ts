@@ -78,6 +78,7 @@ export const lightExtensionSyncAuditActionNames = [
   'plan',
   'pull',
   'push',
+  'createFromGit',
 ] as const;
 
 export function createRemoteSyncAuditActions(): RemoteSyncAuditAction[] {

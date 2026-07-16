@@ -120,7 +120,7 @@ export interface LightExtensionReferenceAuditInput {
 }
 
 export interface LightExtensionSyncAuditInput {
-  repoId: string;
+  repoId?: string;
   action:
     | 'syncConfigure'
     | 'syncDisconnect'
@@ -128,6 +128,7 @@ export interface LightExtensionSyncAuditInput {
     | 'syncPlan'
     | 'syncPull'
     | 'syncPush'
+    | 'syncCreateFromGit'
     | 'syncConflict';
   result: 'success' | 'blocked';
   requestId: string;
@@ -138,6 +139,7 @@ export interface LightExtensionSyncAuditInput {
   localCommitId?: string | null;
   state?: string;
   syncAction?: string;
+  fileCount?: number;
   reasonCode?: string;
   message: string;
   transaction?: Transaction;
@@ -295,6 +297,7 @@ export class LightExtensionAuditService {
           localCommitId: sanitizeText(input.localCommitId),
           state: sanitizeText(input.state),
           syncAction: sanitizeText(input.syncAction),
+          fileCount: input.fileCount,
         }),
         createdAt: new Date(),
       },

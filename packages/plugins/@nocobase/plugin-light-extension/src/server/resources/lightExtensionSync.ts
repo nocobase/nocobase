@@ -16,11 +16,13 @@ import type {
   VscRemoteSyncPlan,
 } from '@nocobase/plugin-vsc-file';
 import { RemoteSyncError } from '@nocobase/plugin-vsc-file';
+import { randomUUID } from 'crypto';
 
 import type { LightExtensionAclAction } from '../../constants';
 import { LightExtensionError, isLightExtensionError, mapRemoteSyncErrorToLightExtension } from '../../shared/errors';
 import type {
   LightExtensionSyncConfigureResult,
+  LightExtensionSyncCreateFromGitResult,
   LightExtensionSyncDisconnectResult,
   LightExtensionSyncGetResult,
   LightExtensionSyncOperationResult,
@@ -29,6 +31,7 @@ import type {
   LightExtensionSyncTestConnectionResult,
 } from '../../shared/types';
 import { LightExtensionAuditService } from '../services/LightExtensionAuditService';
+import { LightExtensionCreateFromRemoteService } from '../services/LightExtensionCreateFromRemoteService';
 import { LightExtensionPermissionService } from '../services/LightExtensionPermissionService';
 import { LightExtensionRemotePullService } from '../services/LightExtensionRemotePullService';
 import type { LightExtensionServiceContext } from '../services/LightExtensionRepoService';
@@ -51,6 +54,7 @@ export const lightExtensionSyncActionNames = [
   'plan',
   'pull',
   'push',
+  'createFromGit',
 ] as const;
 
 type LightExtensionSyncActionName = (typeof lightExtensionSyncActionNames)[number];
@@ -78,6 +82,7 @@ const actionPermissions: Record<LightExtensionSyncActionName, readonly LightExte
   plan: ['manageSyncSource', 'pullFromSyncSource', 'pushToSyncSource'],
   pull: ['pullFromSyncSource'],
   push: ['pushToSyncSource'],
+  createFromGit: ['create', 'manageSyncSource', 'pullFromSyncSource'],
 };
 
 const actionAllowedKeys: Record<LightExtensionSyncActionName, readonly string[]> = {
@@ -102,6 +107,7 @@ const actionAllowedKeys: Record<LightExtensionSyncActionName, readonly string[]>
     'expectedRemoteTargetVersion',
     'planFingerprint',
   ],
+  createFromGit: ['provider', 'config', 'name', 'title', 'description', 'authRef'],
 };
 
 const actionRunners: Record<LightExtensionSyncActionName, SyncActionRunner> = {
@@ -112,6 +118,7 @@ const actionRunners: Record<LightExtensionSyncActionName, SyncActionRunner> = {
   plan: (services, input, ctx) => planSync(services, input, ctx),
   pull: (services, input, ctx) => pullSync(services, input, ctx),
   push: (services, input, ctx) => pushSync(services, input, ctx),
+  createFromGit: (services, input, ctx) => createFromGit(services, input, ctx),
 };
 
 export function createLightExtensionSyncResource(services: SyncActionServices): ResourceOptions {
@@ -137,12 +144,68 @@ function createSyncAction(
     getServiceContext: (ctx) => ({ ...getServiceContext(ctx), can: ctx.can }),
     run: async (currentServices, input, ctx) => {
       assertOnlyKeys(input, actionAllowedKeys[actionName]);
+      if (actionName === 'createFromGit') {
+        await assertAllPermissions(ctx, actionPermissions.createFromGit);
+        return deepFreeze(await run(currentServices, input, ctx));
+      }
       const repoId = requireRepoId(input);
       await assertScopedPermission(currentServices.db, ctx, repoId, actionPermissions[actionName]);
       return deepFreeze(await run(currentServices, input, ctx));
     },
     transformError: (error) => normalizeSyncError(error),
   });
+}
+
+async function createFromGit(
+  services: SyncActionServices,
+  input: ResourceActionInput,
+  ctx: LightExtensionServiceContext,
+): Promise<LightExtensionSyncCreateFromGitResult> {
+  const requestId = ctx.requestId || `syncCreateFromGit:${randomUUID()}`;
+  let provider: VscRemoteProvider | undefined;
+  try {
+    provider = requireProvider(input.provider);
+    const authRef = typeof input.authRef === 'undefined' ? null : requireNullableAuthRef(input.authRef);
+    const createService = new LightExtensionCreateFromRemoteService(
+      services.db,
+      services.auditService,
+      services.repoService,
+      services.runtimeCompileService,
+      services.getRemoteSyncRuntime,
+    );
+    const created = await createService.create(
+      {
+        provider,
+        config: requireRecord(input.config, 'config'),
+        authRef,
+        name: requireString(input.name, 'name'),
+        title: optionalNullableString(input.title, 'title'),
+        description: optionalNullableString(input.description, 'description'),
+      },
+      { ...ctx, requestId },
+    );
+    return {
+      repo: created.repo,
+      source: toSourceSummary(created.remote, created.revision),
+      plan: created.plan,
+    };
+  } catch (error) {
+    const safeError = normalizeSyncError(error);
+    try {
+      await services.auditService.recordSyncEvent({
+        action: 'syncCreateFromGit',
+        result: 'blocked',
+        requestId,
+        actorUserId: ctx.actorUserId,
+        provider,
+        reasonCode: isLightExtensionError(safeError) ? safeError.code : 'LIGHT_EXTENSION_SYNC_REMOTE_UNAVAILABLE',
+        message: 'syncCreateFromGit failed',
+      });
+    } catch {
+      // The safe create error contract must not depend on audit persistence availability.
+    }
+    throw safeError;
+  }
 }
 
 async function getSyncSource(
@@ -389,6 +452,21 @@ async function assertScopedPermission(
   throw permissionDenied(actions);
 }
 
+async function assertAllPermissions(
+  ctx: LightExtensionServiceContext,
+  actions: readonly LightExtensionAclAction[],
+): Promise<void> {
+  if (!ctx.can) {
+    throw permissionDenied(actions);
+  }
+  for (const action of actions) {
+    const permission = await ctx.can({ resource: 'lightExtension', action });
+    if (!permission) {
+      throw permissionDenied(actions);
+    }
+  }
+}
+
 async function permissionIncludesRepo(db: Database, permission: unknown, repoId: string): Promise<boolean> {
   if (!permission) {
     return false;
@@ -579,6 +657,17 @@ function requireRecord(value: unknown, label: string): Record<string, unknown> {
     throw invalidInput(`${label} must be an object`);
   }
   return value as Record<string, unknown>;
+}
+
+function optionalNullableString(value: unknown, label: string): string | null | undefined {
+  if (typeof value === 'undefined' || value === null) {
+    return value;
+  }
+  if (typeof value !== 'string') {
+    throw invalidInput(`${label} must be a string or null`);
+  }
+  const normalized = value.trim();
+  return normalized || null;
 }
 
 function assertOnlyKeys(input: ResourceActionInput, allowedKeys: readonly string[]): void {

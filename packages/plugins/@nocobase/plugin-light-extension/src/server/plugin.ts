@@ -343,6 +343,7 @@ export class PluginLightExtensionServer extends Plugin {
       plan: ['manageSyncSource', 'pullFromSyncSource', 'pushToSyncSource'],
       pull: ['pullFromSyncSource'],
       push: ['pushToSyncSource'],
+      createFromGit: ['create', 'manageSyncSource', 'pullFromSyncSource'],
     } as const;
     for (const actionName of lightExtensionSyncActionNames) {
       app.acl?.allow?.('lightExtensionSync', actionName, async (ctx) => {
@@ -351,11 +352,15 @@ export class PluginLightExtensionServer extends Plugin {
         }
         for (const action of permissions[actionName]) {
           const permission = await ctx.can({ resource: 'lightExtension', action });
-          if (permission !== false && permission !== null && typeof permission !== 'undefined') {
+          const allowed = permission !== false && permission !== null && typeof permission !== 'undefined';
+          if (actionName === 'createFromGit' && !allowed) {
+            return false;
+          }
+          if (actionName !== 'createFromGit' && allowed) {
             return true;
           }
         }
-        return false;
+        return actionName === 'createFromGit';
       });
     }
   }

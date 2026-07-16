@@ -28,6 +28,8 @@ import { RemoteSyncAdapterRegistry } from './RemoteSyncAdapterRegistry';
 import type {
   RemoteSyncConfigureInput,
   RemoteSyncContext,
+  RemoteSyncEstablishInitialBaselineInput,
+  RemoteSyncEstablishInitialBaselineResult,
   RemoteSyncExecutionInput,
   RemoteSyncExecutionResult,
   RemoteSyncPullCoordinator,
@@ -37,10 +39,11 @@ import type {
 } from './RemoteSyncRuntime';
 import { RemoteStore } from './RemoteStore';
 import type { RemoteCredentialResolver } from './security/RemoteCredentialResolver';
+import { SyncJobStore } from './SyncJobStore';
 import { SyncStatePlanner } from './SyncStatePlanner';
 import { VscRemotePullDiscoveryService } from './VscRemotePullDiscoveryService';
 import { loadVscSnapshot, toRemoteSyncError, VscRemotePushService } from './VscRemotePushService';
-import { computeRemoteSnapshotContentHash } from './snapshot';
+import { computeRemoteSnapshotContentHash, normalizeRemoteSnapshotFiles } from './snapshot';
 import type { RemoteSyncAuditEmitter } from './audit';
 
 const blockingJobStatuses = ['pending', 'running', 'finalize-pending'] as const;
@@ -63,6 +66,8 @@ export class RemoteSyncRuntimeService implements RemoteSyncRuntime {
   private readonly mapStore: ExternalCommitMapStore;
 
   private readonly planner: SyncStatePlanner;
+
+  private readonly jobStore: SyncJobStore;
 
   private readonly commitService: CommitService;
 
@@ -92,6 +97,7 @@ export class RemoteSyncRuntimeService implements RemoteSyncRuntime {
     this.remoteStore = new RemoteStore(db);
     this.mapStore = new ExternalCommitMapStore(db);
     this.planner = new SyncStatePlanner();
+    this.jobStore = new SyncJobStore(db);
     this.commitService = new CommitService(db);
     this.treeService = new TreeService(db);
     this.repositoryService = new RepositoryService(db);
@@ -296,6 +302,142 @@ export class RemoteSyncRuntimeService implements RemoteSyncRuntime {
         metadata: probe.metadata,
       },
     });
+  }
+
+  async fetchTarget(input: RemoteSyncTestTargetInput): Promise<RemoteSyncTestTargetResult> {
+    const tested = await this.testTarget(input);
+    const adapter = this.adapterRegistry.require(tested.provider);
+    const snapshot = validateFetchedSnapshot(
+      await adapter.fetchSnapshot({
+        provider: tested.provider,
+        config: tested.config,
+        authRef: input.authRef,
+      }),
+    );
+    return cloneFrozen({
+      provider: tested.provider,
+      config: tested.config,
+      snapshot,
+    });
+  }
+
+  async establishInitialBaseline(
+    input: RemoteSyncEstablishInitialBaselineInput,
+    transaction: Transaction,
+  ): Promise<RemoteSyncEstablishInitialBaselineResult> {
+    const config = this.adapterRegistry.normalizeConfig(input.provider, input.config);
+    const revision = requireInitialRemoteRevision(input.snapshot.revision);
+    const contentHash = computeRemoteSnapshotContentHash(input.snapshot.files);
+    if (contentHash !== input.snapshot.contentHash) {
+      throw new RemoteSyncError('UNSAFE_CONTENT', 'Remote snapshot content hash is invalid', {
+        details: { reasonCode: 'snapshot-content-hash-mismatch' },
+      });
+    }
+    const repository = await this.repositoryService.getRepositoryForUpdate(input.repoId, transaction);
+    if (repository.headCommitId !== input.localCommitId) {
+      throw new RemoteSyncError('LOCAL_OUTDATED', 'Local repository Head changed before baseline creation', {
+        details: {
+          reasonCode: 'initial-local-head-changed',
+          expectedHeadCommitId: input.localCommitId,
+          currentHeadCommitId: repository.headCommitId,
+        },
+      });
+    }
+    const localSnapshot = await loadVscSnapshot(
+      this.db,
+      this.commitService,
+      this.treeService,
+      repository.id,
+      repository.headCommitId,
+      transaction,
+    );
+    if (localSnapshot.contentHash !== contentHash) {
+      throw new RemoteSyncError('LOCAL_OUTDATED', 'Local repository content does not match the fetched snapshot', {
+        details: { reasonCode: 'initial-local-content-mismatch' },
+      });
+    }
+
+    const remote = await this.remoteStore.create(
+      {
+        repoId: input.repoId,
+        name: input.name,
+        provider: input.provider,
+        config,
+        authRef: input.authRef,
+      },
+      transaction,
+    );
+    const baseline = {
+      remoteTargetVersion: remote.version,
+      lastLocalCommitId: input.localCommitId,
+      lastRemoteRevision: revision,
+      lastSyncedContentHash: contentHash,
+    };
+    const adapter = this.adapterRegistry.require(remote.provider);
+    const plan = this.planner.plan({
+      configured: true,
+      remoteId: remote.id,
+      provider: remote.provider,
+      remoteTargetVersion: remote.version,
+      direction: 'bidirectional',
+      capabilities: {
+        canPull: adapter.capabilities.fetch,
+        canPush: adapter.capabilities.publish && !adapter.capabilities.readOnly,
+      },
+      local: { headCommitId: input.localCommitId, contentHash },
+      remote: { revision, contentHash, contentHashKnown: true },
+      baseline,
+    });
+    const createdJob = await this.jobStore.createOrGet(
+      {
+        remoteId: remote.id,
+        remoteTargetVersion: remote.version,
+        operation: 'pull',
+        idempotencyKey: `initial-pull:${remote.id}:${revision}:${input.localCommitId}`,
+        planFingerprint: plan.fingerprint,
+        expectedLocalCommitId: input.localCommitId,
+        expectedRemoteRevision: revision,
+        maxAttempts: 1,
+      },
+      transaction,
+    );
+    const claimedJob = await this.jobStore.claim(
+      createdJob.job.id,
+      { leaseOwner: 'initial-baseline', leaseDurationMs: 60_000 },
+      transaction,
+    );
+    if (!claimedJob?.claimToken) {
+      throw new RemoteSyncError('BUSY', 'Initial synchronization job could not be claimed', {
+        details: { reasonCode: 'initial-job-claim-failed' },
+      });
+    }
+    await this.mapStore.record(
+      {
+        remoteId: remote.id,
+        remoteTargetVersion: remote.version,
+        localCommitId: input.localCommitId,
+        remoteRevision: revision,
+        contentHash,
+      },
+      transaction,
+    );
+    const job = await this.jobStore.succeed(
+      claimedJob.id,
+      claimedJob.claimToken,
+      {
+        resultLocalCommitId: input.localCommitId,
+        resultRemoteRevision: revision,
+        contentHash,
+      },
+      transaction,
+    );
+    const syncedRemote = await this.remoteStore.recordSync(
+      remote.id,
+      { remoteTargetVersion: remote.version, lastErrorCode: null },
+      transaction,
+    );
+
+    return cloneFrozen({ remote: syncedRemote, job, plan });
   }
 
   async probeRemote(remoteId: string): Promise<VscRemoteSnapshot> {
@@ -566,6 +708,65 @@ function toAdapterTarget(remote: VscFileRemoteRecord) {
 function readProbeBranch(metadata: Record<string, unknown>): string | null {
   const branch = metadata.branch;
   return typeof branch === 'string' && branch ? branch : null;
+}
+
+function requireInitialRemoteRevision(revision: string | null): string {
+  if (!revision) {
+    throw new RemoteSyncError('REMOTE_NOT_FOUND', 'Remote branch has no revision', {
+      details: { reasonCode: 'remote-branch-empty' },
+    });
+  }
+  return revision;
+}
+
+function validateFetchedSnapshot(snapshot: VscRemoteSnapshot): VscRemoteSnapshot {
+  if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)) {
+    throw new RemoteSyncError('UNSAFE_CONTENT', 'Remote snapshot is invalid', {
+      details: { reasonCode: 'invalid-snapshot' },
+    });
+  }
+  if (snapshot.revision !== null && (typeof snapshot.revision !== 'string' || !snapshot.revision.trim())) {
+    throw new RemoteSyncError('UNSAFE_CONTENT', 'Remote snapshot revision is invalid', {
+      details: { reasonCode: 'invalid-snapshot-revision' },
+    });
+  }
+  if (!Array.isArray(snapshot.files)) {
+    throw new RemoteSyncError('UNSAFE_CONTENT', 'Remote snapshot files are invalid', {
+      details: { reasonCode: 'invalid-snapshot-files' },
+    });
+  }
+  for (const file of snapshot.files) {
+    if (!file || typeof file !== 'object' || typeof file.path !== 'string' || typeof file.content !== 'string') {
+      throw new RemoteSyncError('UNSAFE_CONTENT', 'Remote snapshot file is invalid', {
+        details: { reasonCode: 'invalid-snapshot-file' },
+      });
+    }
+  }
+  const files = normalizeRemoteSnapshotFiles(snapshot.files);
+  const contentHash = computeRemoteSnapshotContentHash(files);
+  if (typeof snapshot.contentHash !== 'string' || snapshot.contentHash !== contentHash) {
+    throw new RemoteSyncError('UNSAFE_CONTENT', 'Remote snapshot content hash is invalid', {
+      details: { reasonCode: 'snapshot-content-hash-mismatch' },
+    });
+  }
+  if (!snapshot.metadata || typeof snapshot.metadata !== 'object' || Array.isArray(snapshot.metadata)) {
+    throw new RemoteSyncError('UNSAFE_CONTENT', 'Remote snapshot metadata is invalid', {
+      details: { reasonCode: 'invalid-snapshot-metadata' },
+    });
+  }
+  for (const value of Object.values(snapshot.metadata)) {
+    if (value !== null && !['string', 'number', 'boolean'].includes(typeof value)) {
+      throw new RemoteSyncError('UNSAFE_CONTENT', 'Remote snapshot metadata is invalid', {
+        details: { reasonCode: 'invalid-snapshot-metadata' },
+      });
+    }
+  }
+  return {
+    revision: snapshot.revision,
+    contentHash,
+    files,
+    metadata: { ...snapshot.metadata },
+  };
 }
 
 function readRecoveryJobId(requestId: string | undefined): string | undefined {

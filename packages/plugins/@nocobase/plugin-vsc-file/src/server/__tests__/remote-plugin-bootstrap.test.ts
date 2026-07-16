@@ -360,4 +360,100 @@ describe('vsc-file remote runtime bootstrap', () => {
       await app.destroy();
     }
   });
+
+  it('fetches a candidate target and establishes its initial baseline in the caller transaction', async () => {
+    const app = await createMockServer({ plugins: [PluginVscFileServer] });
+    try {
+      const initialFiles = [{ path: 'index.ts', content: 'export default 1;\n', language: 'typescript' }];
+      const repository = await new VscFileService(app.db, new VscPermissionHookRegistry()).createRepository({
+        ownerType: 'plugin',
+        ownerId: 'runtime-initial-baseline',
+        name: 'source',
+        initialFiles,
+      });
+      const adapterRegistry = new RemoteSyncAdapterRegistry();
+      adapterRegistry.register(
+        new DeterministicRemoteAdapter({
+          initialFiles,
+          initialRevision: 'remote-initial',
+          initialMetadata: { branch: 'main' },
+        }),
+      );
+      const runtime = new RemoteSyncRuntimeService(app.db, {
+        adapterRegistry,
+        credentialResolver: { validate: vi.fn() },
+        permissionHooks: new VscPermissionHookRegistry(),
+      });
+      const fetched = await runtime.fetchTarget({
+        provider: 'github',
+        config: { owner: 'nocobase', repository: 'demo', branch: '', subdirectory: null },
+        authRef: null,
+      });
+
+      const established = await app.db.sequelize.transaction((transaction) =>
+        runtime.establishInitialBaseline(
+          {
+            repoId: repository.repository.id,
+            name: 'origin',
+            provider: fetched.provider,
+            config: fetched.config,
+            authRef: null,
+            localCommitId: repository.repository.headCommitId as string,
+            snapshot: fetched.snapshot,
+          },
+          transaction,
+        ),
+      );
+
+      expect(fetched).toMatchObject({
+        config: { branch: 'main' },
+        snapshot: { revision: 'remote-initial', files: initialFiles },
+      });
+      expect(established).toMatchObject({
+        remote: { repoId: repository.repository.id, lastSyncedAt: expect.any(String) },
+        job: {
+          operation: 'pull',
+          status: 'succeeded',
+          resultLocalCommitId: repository.repository.headCommitId,
+          resultRemoteRevision: 'remote-initial',
+        },
+        plan: { state: 'in-sync', action: 'noop' },
+      });
+      expect(Object.isFrozen(established)).toBe(true);
+      await expect(app.db.getRepository('vscFileExternalCommitMaps').count()).resolves.toBe(1);
+      await expect(app.db.getRepository('vscFileSyncJobs').count()).resolves.toBe(1);
+
+      await expect(
+        app.db.sequelize.transaction(async (transaction) => {
+          const secondRepository = await new VscFileService(app.db, new VscPermissionHookRegistry()).createRepository(
+            {
+              ownerType: 'plugin',
+              ownerId: 'runtime-initial-baseline-rollback',
+              name: 'source',
+              initialFiles,
+            },
+            { transaction },
+          );
+          await runtime.establishInitialBaseline(
+            {
+              repoId: secondRepository.repository.id,
+              name: 'origin',
+              provider: fetched.provider,
+              config: fetched.config,
+              authRef: null,
+              localCommitId: secondRepository.repository.headCommitId as string,
+              snapshot: fetched.snapshot,
+            },
+            transaction,
+          );
+          throw new Error('rollback initial baseline');
+        }),
+      ).rejects.toThrow('rollback initial baseline');
+      await expect(app.db.getRepository('vscFileRemotes').count()).resolves.toBe(1);
+      await expect(app.db.getRepository('vscFileExternalCommitMaps').count()).resolves.toBe(1);
+      await expect(app.db.getRepository('vscFileSyncJobs').count()).resolves.toBe(1);
+    } finally {
+      await app.destroy();
+    }
+  });
 });

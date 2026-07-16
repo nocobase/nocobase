@@ -66,6 +66,22 @@ export interface RemoteSyncTestTargetResult {
   snapshot: VscRemoteSnapshot;
 }
 
+export interface RemoteSyncEstablishInitialBaselineInput {
+  repoId: string;
+  name: string;
+  provider: VscRemoteProvider;
+  config: VscRemoteNormalizedConfig;
+  authRef: string | null;
+  localCommitId: string;
+  snapshot: VscRemoteSnapshot;
+}
+
+export interface RemoteSyncEstablishInitialBaselineResult {
+  remote: VscFileRemoteRecord;
+  job: VscFileSyncJobRecord;
+  plan: VscRemoteSyncPlan;
+}
+
 /** Server-only owner apply boundary. Claim tokens and source snapshots must never be returned by a client Resource. */
 export interface RemoteSyncPullCoordinator {
   discover(
@@ -89,6 +105,11 @@ export interface RemoteSyncRuntime {
   configureRemote(input: RemoteSyncConfigureInput): Promise<VscFileRemoteRecord>;
   disconnectRemote(remoteId: string): Promise<void>;
   testTarget(input: RemoteSyncTestTargetInput): Promise<RemoteSyncTestTargetResult>;
+  fetchTarget(input: RemoteSyncTestTargetInput): Promise<RemoteSyncTestTargetResult>;
+  establishInitialBaseline(
+    input: RemoteSyncEstablishInitialBaselineInput,
+    transaction: Transaction,
+  ): Promise<RemoteSyncEstablishInitialBaselineResult>;
   probeRemote(remoteId: string): Promise<VscRemoteSnapshot>;
   fetchRemoteSnapshot(remoteId: string): Promise<VscRemoteSnapshot>;
   planRemote(remoteId: string): Promise<VscRemoteSyncPlan>;
