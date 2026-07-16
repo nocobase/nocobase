@@ -157,7 +157,7 @@ describe('LightExtensionListPage', () => {
     renderListPage('/admin/settings/light-extension?create=1');
 
     const dialog = await screen.findByRole('dialog', { name: 'Create light extension' });
-    expect((within(dialog).getByLabelText('Technical name') as HTMLInputElement).value).toMatch(/^l_[a-z0-9]+$/);
+    expect((within(dialog).getByLabelText('Name') as HTMLInputElement).value).toMatch(/^l_[a-z0-9]+$/);
     await userEvent.type(within(dialog).getByLabelText('Title'), 'Browser smoke');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Create' }));
 
@@ -184,9 +184,9 @@ describe('LightExtensionListPage', () => {
 
     const dialog = await screen.findByRole('dialog', { name: 'Create light extension' });
     expect(within(dialog).getByLabelText('Title')).toBeRequired();
-    expect((within(dialog).getByLabelText('Technical name') as HTMLInputElement).value).toMatch(/^l_[a-z0-9]+$/);
+    expect((within(dialog).getByLabelText('Name') as HTMLInputElement).value).toMatch(/^l_[a-z0-9]+$/);
     expect(
-      within(dialog).getByText('The technical name is generated automatically and can be changed if needed.'),
+      within(dialog).getByText('The name is generated automatically and can be changed if needed.'),
     ).toBeInTheDocument();
     expect(within(dialog).getByText('Source ZIP (optional)')).toBeInTheDocument();
     expect(screen.queryByText('Create empty')).not.toBeInTheDocument();
@@ -223,7 +223,7 @@ describe('LightExtensionListPage', () => {
 
     await userEvent.upload(input, file);
     await waitFor(() =>
-      expect((within(dialog).getByLabelText('Technical name') as HTMLInputElement).value).toMatch(/^l_[a-z0-9]+$/),
+      expect((within(dialog).getByLabelText('Name') as HTMLInputElement).value).toMatch(/^l_[a-z0-9]+$/),
     );
     await userEvent.type(within(dialog).getByLabelText('Title'), 'Imported smoke');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Create' }));

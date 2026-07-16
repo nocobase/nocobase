@@ -717,6 +717,17 @@ function LightExtensionListPageInner() {
       >
         <Form form={form} layout="vertical">
           <Form.Item
+            extra={t('The name is generated automatically and can be changed if needed.')}
+            label={t('Name')}
+            name="name"
+            rules={[
+              { required: true, message: t('Name is required') },
+              { pattern: /^[a-z][a-z0-9._-]*$/, message: t('Name format is invalid') },
+            ]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
             label={t('Title')}
             name="title"
             rules={[{ required: true, whitespace: true, message: t('Title is required') }]}
@@ -725,17 +736,6 @@ function LightExtensionListPageInner() {
           </Form.Item>
           <Form.Item label={t('Description')} name="description">
             <Input.TextArea rows={3} />
-          </Form.Item>
-          <Form.Item
-            extra={t('The technical name is generated automatically and can be changed if needed.')}
-            label={t('Technical name')}
-            name="name"
-            rules={[
-              { required: true, message: t('Name is required') },
-              { pattern: /^[a-z][a-z0-9._-]*$/, message: t('Technical name format is invalid') },
-            ]}
-          >
-            <Input />
           </Form.Item>
           <Form.Item label={t('Source ZIP (optional)')}>
             <Upload.Dragger
