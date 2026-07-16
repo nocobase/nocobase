@@ -1,0 +1,17 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Automatisierte Unternehmensrecherche",
+    "link": "/ai-employees/scenarios/company-background-research"
+  },
+  {
+    "type": "custom-link",
+    "label": "Geschäftsanalysebericht erstellen",
+    "link": "/ai-employees/scenarios/business-report"
+  },
+  {
+    "type": "custom-link",
+    "label": "Lina: Lokalisierungsübersetzung",
+    "link": "/ai-employees/scenarios/localization-hy-mt"
+  }
+]

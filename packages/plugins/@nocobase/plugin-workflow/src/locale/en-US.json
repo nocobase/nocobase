@@ -282,6 +282,7 @@
   "This workflow has configuration issues and may not work properly.": "This workflow has configuration issues and may not work properly.",
   "Workflow title": "Workflow title",
   "Workflow canvas editor is being migrated to the new UI.": "Workflow canvas editor is being migrated to the new UI.",
+  "Workflow not executed": "Workflow not executed",
   "Workflow executed, the result status is <1>{{statusText}}</1><2>View the execution</2>": "Workflow executed, the result status is <1>{{statusText}}</1><2>View the execution</2>",
   "Workflow was not triggered because the current request did not meet the trigger requirements.": "Workflow was not triggered because the current request did not meet the trigger requirements.",
   "Workflow of execution is not existed": "Workflow of execution is not existed",

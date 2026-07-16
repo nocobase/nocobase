@@ -13,6 +13,28 @@ import { ContextItem, SkillSettings, TaskMessage, Message } from '../types';
 
 dayjs.extend(duration);
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+export function normalizeAIFileUploadAttachment<T extends Record<string, unknown>>(
+  fileData: T,
+  status: string,
+): T & { source?: Record<string, unknown>; status: string };
+export function normalizeAIFileUploadAttachment<T>(fileData: T, status: string): T;
+export function normalizeAIFileUploadAttachment(fileData: unknown, status: string) {
+  if (!isRecord(fileData)) {
+    return fileData;
+  }
+  const meta = isRecord(fileData.meta) ? fileData.meta : undefined;
+  const source = isRecord(meta?.source) ? meta.source : undefined;
+  return {
+    ...fileData,
+    ...(source ? { source } : {}),
+    status,
+  };
+}
+
 export function isCurrentLiveMessage(
   latestMessageId: string | undefined,
   messageId?: string,

@@ -26,7 +26,9 @@
   },
   "peerDependencies": {
     "@nocobase/client": "2.x",
+    "@nocobase/client-v2": "2.x",
     "@nocobase/database": "2.x",
+    "@nocobase/flow-engine": "2.x",
     "@nocobase/plugin-data-source-main": "2.x",
     "@nocobase/plugin-mobile": "2.x",
     "@nocobase/plugin-users": "2.x",

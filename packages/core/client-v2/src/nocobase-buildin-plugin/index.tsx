@@ -240,6 +240,16 @@ const CurrentUserProvider: FC = ({ children }) => {
           return;
         }
 
+        try {
+          await app.apiClient.auth.syncCookies();
+        } catch {
+          // Cookie bootstrap is best-effort; auth:check remains the source of truth for the current page load.
+        }
+
+        if (!mounted) {
+          return;
+        }
+
         const userMeta = createCollectionContextMeta(
           () => app.flowEngine.context.dataSourceManager?.getDataSource('main')?.getCollection('users') || null,
           app.flowEngine.translate('Current user'),
@@ -297,6 +307,8 @@ const CurrentUserProvider: FC = ({ children }) => {
 
   return <CurrentUserContext.Provider value={contextValue}>{children}</CurrentUserContext.Provider>;
 };
+
+CurrentUserProvider.displayName = 'CurrentUserProvider';
 
 const RootRedirect: FC = () => {
   const app = useApp<Application>();

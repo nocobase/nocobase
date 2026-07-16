@@ -124,7 +124,7 @@ Wenn Sie die Caddy-Konfiguration auf Site-Ebene ausgleichen möchten, z. B. zus�
 
 Wenn Ihre Anwendung nicht CLI-gehostet ist oder Sie die komplette Caddy-Konfiguration ausdrücklich selbst pflegen möchten, können Sie diese auch manuell schreiben.
 
-Für NocoBase ist der Produktionsumgebungseintrag jedoch normalerweise nicht nur ein einfacher `reverse_proxy`. Neben der Weiterleitung von API-Anfragen an die Backend-Anwendung muss eine vollständige und funktionierende Caddy-Konfiguration in der Regel auch das Upload-Verzeichnis, statische Front-End-Ressourcen, `.well-known`-Routing, WebSocket und SPA-Fallback-Seite verwalten.
+Für NocoBase ist der Produktionsumgebungseintrag jedoch normalerweise nicht nur ein einfacher `reverse_proxy`. Neben der Weiterleitung von API-Anfragen an die Backend-Anwendung muss eine vollständige und funktionierende Caddy-Konfiguration in der Regel auch das Upload-Verzeichnis, statische Front-End-Ressourcen, die Dateizugriffsroute `/files/`, `.well-known`-Routing, WebSocket und SPA-Fallback-Seiten verwalten.
 
 Am Beispiel von `test2` umfassen die wichtigsten Verzeichnisse im Zusammenhang mit Caddy normalerweise:
 
@@ -139,6 +139,7 @@ Mit anderen Worten: Die handschriftliche Konfiguration muss in der Regel mindest
 - `dist`: Stellen Sie das Front-End-Build-Produktverzeichnis bereit
 - `oauth well-known`: Behandelt OAuth-Erkennungspfade
 - `openid well-known`: Behandelt OpenID-Erkennungspfade
+- `files`: Leitet Dateizugriffsanfragen unter `/files/` an die Backend-Anwendung weiter
 - `api`: `/api/`-Anfrage an die Backend-Anwendung weiterleiten
 - `ws`: WebSocket-Anfragen an die Backend-Anwendung weiterleiten
 - `spa v2`: Bietet eine Front-End-Eingabe- und Rückgabeseite für `/v/`
@@ -184,6 +185,10 @@ c.local.nocobase.com {
     @openid path_regexp openid ^/\\.well-known/openid-configuration/(.+)$
     handle @openid {
         rewrite * /{re.openid.1}/.well-known/openid-configuration
+        reverse_proxy host.docker.internal:56575
+    }
+
+    handle /files/* {
         reverse_proxy host.docker.internal:56575
     }
 
@@ -249,7 +254,15 @@ Ein umsichtigerer Ansatz ist normalerweise:
 2. Bestätigen Sie die Routing-Struktur und den tatsächlichen Pfad basierend auf den generierten Ergebnissen.
 3. Nehmen Sie dann manuelle Anpassungen entsprechend Ihrem Domainnamen, Ausführungsmodus und Bereitstellungspfad vor.
 
-Dabei ist es normalerweise weniger wahrscheinlich, dass Details zu WebSockets, statischen Ressourcen, Upload-Verzeichnissen, `.well-known`-Routen oder SPA-Fallback-Seiten übersehen werden, als wenn Sie eine Konfiguration von Grund auf neu schreiben.
+Dabei ist es normalerweise weniger wahrscheinlich, dass Details zu `/files/`, WebSockets, statischen Ressourcen, Upload-Verzeichnissen, `.well-known`-Routen oder SPA-Fallback-Seiten übersehen werden, als wenn Sie eine Konfiguration von Grund auf neu schreiben.
+
+:::warning Hinweis
+
+`/files/` ist eine Anwendungsroute, die die NocoBase-Autorisierung durchlaufen muss. Behandeln Sie sie nicht als statisches Verzeichnis und lassen Sie sie nicht in den SPA-Fallback fallen. Leiten Sie die Route an das NocoBase-Backend weiter und platzieren Sie die Regel vor `handle_path /*` und anderen Front-End-Fallback-Regeln.
+
+Wenn `APP_PUBLIC_PATH=/nocobase/` konfiguriert ist, leiten Sie zusätzlich `/nocobase/files/*` weiter. Behalten Sie die Root-Regel `/files/*` zur Kompatibilität mit vorhandenen Datei-URLs bei.
+
+:::
 
 ## Konfiguration prüfen und neu laden
 

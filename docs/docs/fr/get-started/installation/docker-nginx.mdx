@@ -95,6 +95,7 @@ services:
 - `NOCOBASE_PROXY_UPSTREAM_HOST=app` permet au conteneur Nginx d'accéder au service `app` via le réseau Compose
 - `./storage` doit être monté dans `app` et `nginx` afin de partager la configuration du proxy, les ressources statiques et les fichiers téléversés
 - Le conteneur `nginx` doit attendre que `nocobase.conf` soit généré, puis créer un lien vers `/etc/nginx/conf.d/default.conf` avec `ln -sf`
+- La configuration générée transmet à NocoBase la route `/files/` sous `APP_PUBLIC_PATH` ainsi que la route `/files/` à la racine, afin d'assurer l'aperçu et le téléchargement authentifiés des fichiers
 - Si vous utilisez un conteneur Nginx externe, laissez le conteneur `nginx` gérer le mappage du port hôte. Pour les tests, vous pouvez commencer avec `13000:80`; en production, exposez généralement directement les ports `80` et `443` de l'hôte, tandis que le service `app` n'a pas besoin d'exposer son port à l'hôte
 
 ## Si vous utilisez un Nginx local sur l'hôte
@@ -169,6 +170,8 @@ sudo systemctl reload nginx
 ```
 
 Si votre Nginx local n'utilise pas le répertoire `conf.d`, remplacez la cible du lien par votre propre chemin de configuration. En général, il est plus sûr de garder `nocobase.conf` comme un fichier inclus depuis le contexte `http {}` plutôt que d'en recopier le contenu manuellement.
+
+Si vous gérez Nginx vous-même au lieu d'utiliser la configuration générée, vérifiez que `/files/` et la route correspondante sous `APP_PUBLIC_PATH` sont transmises à NocoBase avant les règles de fallback de la SPA. Consultez [Proxy inverse Nginx](../../nocobase-cli/production/reverse-proxy/nginx.md) pour un exemple complet.
 
 ## Liens associés
 

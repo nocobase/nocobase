@@ -289,6 +289,11 @@
       },
       {
         "type": "custom-link",
+        "label": "公司背景调研自动化",
+        "link": "/ai-employees/scenarios/company-background-research"
+      },
+      {
+        "type": "custom-link",
         "label": "Viz: CRM 场景配置",
         "link": "/ai-employees/scenarios/viz-crm"
       },

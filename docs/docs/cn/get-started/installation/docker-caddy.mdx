@@ -95,6 +95,7 @@ services:
 - `NOCOBASE_PROXY_UPSTREAM_HOST=app` 表示让 Caddy 容器通过 Compose 网络访问 `app` 服务
 - `./storage` 需要同时挂载到 `app` 和 `caddy` 容器，方便共享代理配置、静态资源和上传文件
 - `caddy` 容器启动前需要等待 `nocobase.caddy` 生成，再通过 `ln -sf` 链接到 `/etc/caddy/Caddyfile`
+- 自动生成的配置会把 `APP_PUBLIC_PATH` 下的 `/files/` 和根路径 `/files/` 转发到 NocoBase，用于登录鉴权后的文件预览和下载
 - 只需要对外暴露 Caddy 容器端口。测试时可以先用 `13000:80`，生产环境通常直接暴露宿主机的 `80` 和 `443`，而 `app` 服务不需要对宿主机暴露端口
 
 ## 如果使用宿主机本地 Caddy
@@ -169,6 +170,8 @@ sudo systemctl reload caddy
 ```
 
 如果你的宿主机 Caddy 没有使用 `/etc/caddy/Caddyfile`，需要把链接路径改成你自己的配置路径。通常来说，保持 `nocobase.caddy` 作为主入口文件会更稳妥，不建议手动拆开后再复制内容。
+
+如果你没有使用自动生成的配置，而是自行维护 Caddy，请确认 `/files/*` 及 `APP_PUBLIC_PATH` 下对应的文件路径会转发到 NocoBase，并且这些规则位于 SPA 回退规则之前。完整示例见 [Caddy 反向代理](../../nocobase-cli/production/reverse-proxy/caddy.md)。
 
 ## 相关链接
 

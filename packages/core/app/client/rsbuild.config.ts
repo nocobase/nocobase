@@ -105,6 +105,7 @@ export default defineConfig(({ command }) => {
   const appPublicPath = isBuild ? APP_PUBLIC_PATH_TEMPLATE : resolvedAppPublicPath;
   const htmlPublicPath = isDev ? '/' : appPublicPath;
   const apiBasePath = ensurePublicPath(process.env.API_BASE_PATH, '/api/');
+  const fileBasePath = ensurePublicPath(`${resolvedAppPublicPath}files/`, '/files/');
   const localStorageBasePath = ensurePublicPath(`${resolvedAppPublicPath}storage/uploads/`, '/storage/uploads/');
   const staticBasePath = ensurePublicPath(`${resolvedAppPublicPath}static/`, '/static/');
   const wsBasePath = ensurePublicPath(process.env.WS_PATH, '/ws/');
@@ -226,6 +227,10 @@ export default defineConfig(({ command }) => {
           },
         },
         [localStorageBasePath]: {
+          target: proxyTargetUrl,
+          changeOrigin: true,
+        },
+        [fileBasePath]: {
           target: proxyTargetUrl,
           changeOrigin: true,
         },
