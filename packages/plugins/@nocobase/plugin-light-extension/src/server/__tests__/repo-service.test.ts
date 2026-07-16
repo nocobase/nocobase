@@ -7,8 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import PluginVscFileServer from '@nocobase/plugin-vsc-file';
+import PluginVscFileServer, { RemoteSyncError } from '@nocobase/plugin-vsc-file';
 import { MockServer, createMockServer } from '@nocobase/test';
+import { vi } from 'vitest';
 
 import { LightExtensionError } from '../../shared/errors';
 import { DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES } from '../../shared/default-template';
@@ -286,6 +287,26 @@ describe('plugin-light-extension repo service', () => {
     });
 
     expect(archivedBlockedLog).toBeTruthy();
+  });
+
+  it('blocks archive and delete while the shared remote lifecycle gate reports an active job', async () => {
+    const repo = await service.createRepo({ name: 'Lifecycle Busy' }, { requestId: 'req_lifecycle_busy_create' });
+    const assertRepositoryIdle = vi.fn(async () => {
+      throw new RemoteSyncError('BUSY', 'Repository has an active synchronization job', {
+        details: { reasonCode: 'active-sync-job' },
+      });
+    });
+    service.useRemoteSyncLifecycleGate({ assertRepositoryIdle });
+
+    await expect(service.archiveRepo({ repoId: repo.id })).rejects.toMatchObject({
+      code: 'LIGHT_EXTENSION_SYNC_BUSY',
+      status: 409,
+    });
+    await expect(service.deleteRepo({ repoId: repo.id })).rejects.toMatchObject({
+      code: 'LIGHT_EXTENSION_SYNC_BUSY',
+      status: 409,
+    });
+    expect(assertRepositoryIdle).toHaveBeenCalledTimes(2);
   });
 
   it('allows lifecycle changes after source writes without a repo version precondition', async () => {

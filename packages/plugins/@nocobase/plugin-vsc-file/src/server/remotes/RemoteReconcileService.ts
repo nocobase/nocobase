@@ -40,6 +40,13 @@ export interface RemoteReconcileResult {
 export interface RemoteReconcileContext {
   leaseOwner?: string;
   leaseDurationMs?: number;
+  onRecoveryResult?: (event: RemoteReconcileRecoveryEvent) => Promise<void>;
+}
+
+export interface RemoteReconcileRecoveryEvent {
+  job: VscFileSyncJobRecord;
+  result?: RemoteReconcileResult;
+  errorCode?: RemoteSyncErrorCode;
 }
 
 export interface RemoteReconcileServiceOptions {
@@ -96,6 +103,11 @@ export class RemoteReconcileService {
     const leaseOwner = ctx.leaseOwner ?? this.leaseOwner;
     const leaseDurationMs = ctx.leaseDurationMs ?? this.leaseDurationMs;
     const initial = await this.jobStore.get(jobId);
+    if (initial.operation !== 'push') {
+      throw new RemoteSyncError('CONFIG_INVALID', 'Only Push jobs can be handled by the Push reconciler', {
+        details: { reasonCode: 'push-reconcile-operation-mismatch' },
+      });
+    }
     if (initial.status === 'succeeded' || initial.status === 'failed') {
       return { job: initial, decision: 'already-terminal', published: false };
     }
@@ -229,16 +241,34 @@ export class RemoteReconcileService {
   }
 
   async reconcileRecoverable(ctx: RemoteReconcileContext = {}): Promise<RemoteReconcileResult[]> {
-    const jobs = await this.jobStore.listRecoverable();
+    const jobs = (await this.jobStore.listRecoverable()).filter((job) => job.operation === 'push');
     const results: RemoteReconcileResult[] = [];
     for (const job of jobs) {
       try {
-        results.push(await this.reconcile(job.id, ctx));
-      } catch {
+        const result = await this.reconcile(job.id, ctx);
+        results.push(result);
+        await this.notifyRecoveryResult(ctx, { job: result.job, result });
+      } catch (error) {
+        const safeError = toRemoteSyncError(error);
+        let currentJob = job;
+        try {
+          currentJob = await this.jobStore.get(job.id);
+        } catch {
+          // Preserve the scanned job when the latest durable state cannot be reloaded for audit.
+        }
+        await this.notifyRecoveryResult(ctx, { job: currentJob, errorCode: safeError.code });
         // Recovery is best-effort per durable job. One unavailable provider or live lease must not block later jobs.
       }
     }
     return results;
+  }
+
+  private async notifyRecoveryResult(ctx: RemoteReconcileContext, event: RemoteReconcileRecoveryEvent): Promise<void> {
+    try {
+      await ctx.onRecoveryResult?.(event);
+    } catch {
+      // Durable recovery scanning must not depend on audit delivery.
+    }
   }
 
   private async claim(

@@ -120,9 +120,7 @@ export class RemoteStore {
       validateAuthRef(input.authRef);
       const targetChanged = current.provider !== input.provider || !sameConfig(current.config, config);
 
-      if (targetChanged || current.authRef !== input.authRef) {
-        await this.assertNoBlockingJobs(remoteId, currentTransaction);
-      }
+      await this.assertNoBlockingJobs(remoteId, currentTransaction);
 
       const authRefChanged = current.authRef !== input.authRef;
       const clearsCredentialError = authRefChanged && isCredentialError(current.lastErrorCode);

@@ -8,10 +8,22 @@
  */
 
 import type { Context } from '@nocobase/actions';
+import { randomUUID } from 'crypto';
 
 export interface RemoteSyncAuditAction {
   name: string;
   getMetaData: (ctx: Context) => Promise<Record<string, unknown>>;
+}
+
+export type RemoteSyncAuditEventName = (typeof remoteSyncAuditActionNames)[number];
+
+export type RemoteSyncAuditEmitter = (
+  actionName: RemoteSyncAuditEventName,
+  payload: Record<string, unknown>,
+) => Promise<void>;
+
+interface RemoteSyncAuditManager {
+  output: (ctx: Context, reqId: string) => Promise<void>;
 }
 
 type RemoteSyncAuditContext = Context & {
@@ -39,15 +51,76 @@ const safeAuditFields = [
   'resultRemoteRevision',
   'contentHash',
   'jobId',
+  'status',
+  'decision',
+  'remoteTargetVersion',
   'fileCount',
   'result',
   'reasonCode',
 ] as const;
 
+export const remoteSyncAuditActionNames = [
+  'configure',
+  'disconnect',
+  'probe',
+  'push',
+  'pull',
+  'job',
+  'conflict',
+  'reconcile',
+] as const;
+
+export const lightExtensionSyncAuditActionNames = [
+  'get',
+  'configure',
+  'disconnect',
+  'testConnection',
+  'plan',
+  'pull',
+  'push',
+] as const;
+
+export function createRemoteSyncAuditActions(): RemoteSyncAuditAction[] {
+  return [
+    ...remoteSyncAuditActionNames.map((actionName) => createRemoteSyncAuditAction(`vscRemote:${actionName}`)),
+    ...lightExtensionSyncAuditActionNames.map((actionName) =>
+      createRemoteSyncAuditAction(`lightExtensionSync:${actionName}`),
+    ),
+  ];
+}
+
 export function createRemoteSyncAuditAction(name: string): RemoteSyncAuditAction {
   return {
     name,
     getMetaData: async (ctx) => sanitizeRemoteSyncAuditMetadata(ctx),
+  };
+}
+
+export function createRemoteSyncAuditEmitter(auditManager: RemoteSyncAuditManager): RemoteSyncAuditEmitter {
+  return async (actionName, payload) => {
+    const reqId = randomUUID();
+    const context = {
+      reqId,
+      status: 200,
+      body: { data: payload },
+      action: {
+        resourceName: 'vscRemote',
+        actionName,
+        params: { values: payload },
+      },
+      request: {
+        params: {},
+        query: {},
+        body: payload,
+        path: `internal:vscRemote:${actionName}`,
+        header: {},
+        headers: {},
+        ip: '',
+      },
+      response: { status: 200 },
+      state: { currentRole: 'system' },
+    } as unknown as Context;
+    await auditManager.output(context, reqId);
   };
 }
 

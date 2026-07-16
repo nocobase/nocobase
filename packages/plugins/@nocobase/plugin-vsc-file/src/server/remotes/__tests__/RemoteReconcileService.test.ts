@@ -16,7 +16,7 @@ import { VscFileService } from '../../services/VscFileService';
 import { CommitService } from '../../services/CommitService';
 import { TreeService } from '../../services/TreeService';
 import { ExternalCommitMapStore } from '../ExternalCommitMapStore';
-import { RemoteReconcileService } from '../RemoteReconcileService';
+import { RemoteReconcileService, type RemoteReconcileRecoveryEvent } from '../RemoteReconcileService';
 import { RemoteSyncError } from '../RemoteSyncAdapter';
 import { RemoteSyncAdapterRegistry } from '../RemoteSyncAdapterRegistry';
 import { RemoteStore } from '../RemoteStore';
@@ -180,7 +180,13 @@ describe('RemoteReconcileService', () => {
       return fetch(target);
     });
 
-    const results = await createReconciler().reconcileRecoverable({ leaseDurationMs: 1_000 });
+    const recoveryEvents: RemoteReconcileRecoveryEvent[] = [];
+    const results = await createReconciler().reconcileRecoverable({
+      leaseDurationMs: 1_000,
+      onRecoveryResult: async (event) => {
+        recoveryEvents.push(event);
+      },
+    });
     expect(results).toEqual([
       expect.objectContaining({ job: expect.objectContaining({ id: second.jobId, status: 'succeeded' }) }),
     ]);
@@ -189,6 +195,16 @@ describe('RemoteReconcileService', () => {
       lastErrorCode: 'REMOTE_UNAVAILABLE',
     });
     expect(adapter.getPublishCount()).toBe(1);
+    expect(recoveryEvents).toEqual([
+      expect.objectContaining({
+        job: expect.objectContaining({ id: first.jobId, status: 'failed' }),
+        errorCode: 'REMOTE_UNAVAILABLE',
+      }),
+      expect.objectContaining({
+        job: expect.objectContaining({ id: second.jobId, status: 'succeeded' }),
+        result: expect.objectContaining({ decision: 'retried-publication' }),
+      }),
+    ]);
     fetchSpy.mockRestore();
   });
 

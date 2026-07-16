@@ -101,7 +101,7 @@ export class LightExtensionRemotePullService {
     input: LightExtensionRemotePullInput,
     ctx: LightExtensionServiceContext = {},
   ): Promise<LightExtensionRemotePullResult> {
-    await this.permissionService.assertActionAllowed({ action: 'writeSource', ctx });
+    await this.permissionService.assertActionAllowed({ action: 'pullFromSyncSource', ctx });
     const initialRepo = await this.repoService.getInternalRepo(input.repoId, ctx);
     assertRepoWritable(initialRepo);
     const requestId = ctx.requestId || `remote-pull:${input.remoteId}`;
@@ -126,7 +126,7 @@ export class LightExtensionRemotePullService {
             allowedActions: ['pull'],
             actorUserId: ctx.actorUserId,
             lightExtensionRepoId: input.repoId,
-            aclAction: 'writeSource',
+            aclAction: 'pullFromSyncSource',
             requestSource: ctx.requestSource || 'light-extension-remote-pull',
           }),
         },
