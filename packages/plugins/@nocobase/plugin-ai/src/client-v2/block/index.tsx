@@ -45,7 +45,12 @@ import {
 import type { ButtonProps } from 'antd';
 import { AIEmployeeSwitcher } from '../ai-employees/chatbox/components/AIEmployeeSwitcher';
 import { useChatBoxActions } from '../ai-employees/chatbox/hooks/useChatBoxActions';
-import { useChatBoxRuntime } from '../ai-employees/chatbox/stores/runtime';
+import {
+  ChatBoxRuntimeProvider,
+  createChatBoxRuntime,
+  type ChatBoxRuntime,
+  useChatBoxRuntime,
+} from '../ai-employees/chatbox/stores/runtime';
 import { ModelSwitcher } from '../ai-employees/chatbox/components/ModelSwitcher';
 import type { AIEmployee, ContextItem } from '../ai-employees/types';
 import type { LLMServiceItem } from '../repositories/AIConfigRepository';
@@ -181,6 +186,10 @@ type AIChatDemoFlowContext = FlowModelContext & {
 type SettingsSectionProps = {
   title?: React.ReactNode;
   children?: React.ReactNode;
+};
+
+type ChatBoxRuntimeOwner = {
+  chatBoxRuntime?: ChatBoxRuntime;
 };
 
 const SettingsSection: React.FC<SettingsSectionProps> = ({ title, children }) => (
@@ -663,11 +672,21 @@ const AIChatDemoDrawerSlot: React.FC<{
   model: AIChatDemoBlockModel;
 }> = ({ model }) => <AIChatDemoConversations scope={getChatBoxScope(model)} />;
 
+const getOrCreateDemoRuntime = (model: ChatBoxRuntimeOwner) => {
+  model.chatBoxRuntime ??= createChatBoxRuntime();
+  return model.chatBoxRuntime;
+};
+
 export class AIChatDemoBlockModel extends BlockModel<AIChatDemoBlockStructure> {
   declare props: AIChatDemoBlockProps;
+  chatBoxRuntime?: ChatBoxRuntime;
 
   renderComponent() {
-    return <AIChatDemoBlockView model={this} />;
+    return (
+      <ChatBoxRuntimeProvider runtime={getOrCreateDemoRuntime(this)}>
+        <AIChatDemoBlockView model={this} />
+      </ChatBoxRuntimeProvider>
+    );
   }
 }
 
@@ -1238,8 +1257,14 @@ const AIChatDemoMessageBubble: React.FC<{
 };
 
 export class AIChatDemoSenderBlockModel extends FlowModel {
+  chatBoxRuntime?: ChatBoxRuntime;
+
   render() {
-    return <AIChatDemoSender settings={getDefaultChatBoxSettings()} />;
+    return (
+      <ChatBoxRuntimeProvider runtime={getOrCreateDemoRuntime(this)}>
+        <AIChatDemoSender settings={getDefaultChatBoxSettings()} />
+      </ChatBoxRuntimeProvider>
+    );
   }
 }
 
@@ -1254,10 +1279,11 @@ const AIChatDemoSender: React.FC<{
   const t = useT();
   const { message } = AntdApp.useApp();
   const [value, setValue] = useState('');
-  const { chatBoxModel } = useChatBoxRuntime();
+  const runtime = useChatBoxRuntime();
+  const { chatBoxModel } = runtime;
   const currentEmployee = chatBoxModel.currentEmployee;
   const aiConfigRepository = useAIConfigRepository();
-  const { switchAIEmployee } = useChatBoxActions();
+  const { switchAIEmployee } = useChatBoxActions(runtime);
   const allowedAIEmployees = settings.allowedAIEmployees;
   const allowedModels = settings.allowedModels;
 

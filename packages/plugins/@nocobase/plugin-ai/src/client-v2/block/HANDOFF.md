@@ -16,7 +16,11 @@ It is already registered from `packages/plugins/@nocobase/plugin-ai/src/client-v
 - `AIChatDemoConversationListBlockModel`
 - `AIChatDemoNewActionModel`
 
-The block can be added from the page block picker and currently focuses on interaction and visual fidelity. It uses some real chatbox pieces, such as `AIEmployeeSwitcher`, `ModelSwitcher`, `useChatBoxActions`, `useChatBoxStore`, `useAIConfigRepository`, and the `WorkContext` selector, but the message list, conversation list, new conversation, and send behavior are still mostly mock/prototype behavior.
+The block can be added from the page block picker and currently focuses on interaction and visual fidelity. It uses some real chatbox pieces, such as `AIEmployeeSwitcher`, `ModelSwitcher`, `useChatBoxRuntime`, `useChatBoxActions`, `useAIConfigRepository`, and the `WorkContext` selector, but the message list, conversation list, new conversation, and send behavior are still mostly mock/prototype behavior.
+
+`useChatBoxRuntime()` is now strict. Any prototype or production surface that renders chatbox components using this hook must be under `ChatBoxRuntimeProvider` or pass an explicit `ChatBoxRuntime` through runtime-aware hooks. Do not add an implicit global fallback.
+
+The current demo has been adapted for this strict runtime mode: `AIChatDemoBlockModel` and the standalone `AIChatDemoSenderBlockModel` each create and provide their own demo `ChatBoxRuntime`.
 
 ## Prototype preservation rules
 
@@ -181,19 +185,52 @@ Likely changes:
 - Make `useChatBoxActions` support an embedded mode or create block-specific action hooks that reuse `sendMessages`, upload, edit, resend, cancel, resume stream, and new conversation behavior.
 - Avoid coupling embedded blocks to global floating chatbox state such as `open`, `expanded`, global `showConversations`, or `chatBoxRef`.
 
-## Store isolation risk
+## Runtime and store state after refactor
 
-The current chatbox stores are global:
+The chatbox state management refactor is complete enough for the real AI chat box block to build on top of it. The old selector stores are no longer production APIs:
 
-- `useChatBoxStore`
-- `useChatConversationsStore`
-- `useChatMessagesStore`
-- `useChatToolsStore`
-- `useWorkflowTasksStore`
+- do not import or reintroduce `useChatConversationsStore`
+- do not import or reintroduce `useWorkflowTasksStore`
+- do not add a `useOptionalChatBoxRuntime`
+- keep all reactive APIs imported from `@nocobase/flow-engine`, not from `@formily/reactive`
 
-The real AI chat box must support multiple instances on the same page. Do not blindly reuse the global store as-is if it makes two AI chat boxes fight over:
+The current runtime/store layer is:
 
-- current conversation
+- `ChatBoxRuntime` in `ai-employees/chatbox/stores/runtime.tsx`
+- `createChatBoxRuntime()` creates an isolated runtime object
+- `getGlobalChatBoxRuntime()` returns the stable global floating chatbox runtime only
+- `ChatBoxRuntimeProvider` provides a runtime through React context
+- `useChatBoxRuntime()` is strict and throws without a provider
+- `useResolvedChatBoxRuntime(runtime?)` prefers an explicit runtime, then context, and throws if neither exists
+
+The runtime owns these model instances:
+
+- `ChatBoxModel`
+- `ChatConversationModel`
+- `ChatMessageModel`
+- `ChatToolCallModel`
+- `ChatToolModel`
+- `WorkflowTaskModel`
+
+Runtime-aware hooks/actions now resolve through runtime instead of hidden global selector stores:
+
+- `useChatBoxActions(runtime?)`
+- `useChatConversationActions(runtime?)`
+- `useChatMessageActions(runtime?)`
+- `useWorkflowTasks(runtime?)`
+- `useChat(sessionId?, runtime?)`
+- `useUploadFiles(runtime?)`
+- `useToolCallActions(runtime?)`
+
+Provider-less global chatbox entrypoints must keep passing `getGlobalChatBoxRuntime()` explicitly where needed. Embedded AI chat box blocks should not use the global runtime. Create one runtime per mounted block instance, for example with `createChatBoxRuntime()`, then either:
+
+- wrap the embedded chat UI in `ChatBoxRuntimeProvider`, or
+- pass the runtime explicitly through every runtime-aware hook/component.
+
+Prefer the provider approach for the embedded block because several existing chatbox components still call `useChatBoxRuntime()` directly. Components such as `Sender`, `Conversations`, and `AIEmployeeSwitcher` read from the current runtime context; their internal hooks already pass the resolved runtime onward where needed.
+
+The real AI chat box must still support multiple instances on the same page. Do not let two AI chat boxes share a runtime unless that is an explicit product decision. A shared conversation `scope` may make blocks show the same conversation list, but it should not automatically share UI state such as:
+
 - current AI employee
 - model
 - sender draft
@@ -203,11 +240,9 @@ The real AI chat box must support multiple instances on the same page. Do not bl
 - readonly/editing state
 - conversation list keyword
 
-Recommended direction:
+Message, tool-call, conversation, and workflow state already live under the runtime models. Message and tool-call state remain keyed by `sessionId` inside their models, while the owning runtime isolates the "current" state and draft/UI state for each chatbox instance.
 
-- Introduce a scoped store/session layer keyed by AI chat box `uid` or another stable instance key.
-- Keep message state keyed by `sessionId` where it already is, but isolate draft state and "current" state per chat box instance.
-- Keep the global floating chatbox behavior unchanged.
+The old public `useChatConversationsStore` export was removed from both v2 and legacy client entrypoints. If any build or test still references it, migrate that code to an explicit `ChatBoxRuntime` or delete obsolete selector-store tests.
 
 ## Server/API work likely needed
 
@@ -285,14 +320,14 @@ All user-facing strings must use `tExpr()` / `useT()` and be present in:
 1. Preserve the demo as-is or move it into a clearly demo-only location with compatibility exports.
 2. Create production `AIChatBox*` models and components without importing demo components.
 3. Extract configurable embedded chat UI from existing production chatbox code (`ChatBox`, `Messages`, `Sender`, and `Conversations`) rather than from the demo.
-4. Introduce instance-scoped state for embedded AI chat boxes.
+4. Create one `ChatBoxRuntime` per production AI chat box instance and wrap the embedded chat UI with `ChatBoxRuntimeProvider`.
 5. Add conversation scope persistence and filtering on server/client.
 6. Wire real new conversation, conversation list, message loading, send, cancel, edit, copy, and stream resume.
 7. Wire default AI chat box settings into direct sends.
 8. Wire AI employee task routing by `Chat box uid`, with task config overriding AI chat box defaults.
 9. Keep `Actions` limited to `JS Action` and `AI Employee`.
 10. Keep demo and production implementations simultaneously usable until production acceptance.
-11. Add focused tests around scope filtering, instance isolation, send payload construction, and task override precedence.
+11. Add focused tests around scope filtering, runtime instance isolation, send payload construction, and task override precedence.
 12. Run eslint on touched files and the related chatbox/block tests.
 
 ## Acceptance checklist
@@ -311,6 +346,7 @@ All user-facing strings must use `tExpr()` / `useT()` and be present in:
 - `Enable employee select`, `Enable model select`, `Enable add context`, `Enable upload files`, `Enable web search`, and `Show disclaimer` control sender UI only.
 - `Show messages = false` hides inline messages and shows a right-side messages drawer button.
 - Conversation list only shows conversations, no workflow task tab.
+- Multiple AI chat box instances on one page use separate `ChatBoxRuntime` instances and do not share current conversation, sender draft, selected employee/model, attachments, or context items.
 - Header spacing and sender spacing remain visually consistent with existing chatbox.
 - Existing global chatbox behavior is not regressed.
 
@@ -318,35 +354,4 @@ All user-facing strings must use `tExpr()` / `useT()` and be present in:
 
 - Prototype Feishu doc: https://nocobase.feishu.cn/docx/IHHIdS3k3oTvp0xMHwgc0Xzen16
 - Local product draft: `storage/ai-chat-box-doc/ai-chat-box-plan.md`
-
-## Prompt for next session
-
-Use this prompt to continue in a new session:
-
-```text
-我们现在要把 `packages/plugins/@nocobase/plugin-ai/src/client-v2/block` 里的 AI chat box 从交互原型开发成真实可用版本。
-
-请先阅读：
-- 根目录 `AGENTS.md`，如果有 `AGENTS.local.md` 也要读
-- `packages/plugins/@nocobase/plugin-ai/src/client-v2/block/HANDOFF.md`
-- 当前 prototype：`packages/plugins/@nocobase/plugin-ai/src/client-v2/block/index.tsx`
-- 现有 chatbox：`packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/components/{ChatBox,Messages,Sender,Conversations}.tsx`
-- chatbox hooks/stores：`packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/hooks` 和 `stores`
-- AI employee task 设置：`packages/plugins/@nocobase/plugin-ai/src/client-v2/models/ai-employees/AIEmployeeShortcutModel.tsx`
-- conversation server/resource/collection：`packages/plugins/@nocobase/plugin-ai/src/server/resource/aiConversations.ts` 和 `src/server/collections/ai-conversations.ts`
-
-目标：
-- 当前 demo 不要直接改坏。需要调整结构时，可以把 demo 重命名或移动到 demo-only 目录，但必须保持现有 demo 可用。
-- 新成品不能依赖当前原型里的任何代码或组件。`AIChatDemo*` 只能作为行为参考，不作为生产实现依赖。
-- 施工完成前，demo 和成品要能同时在系统中添加/使用。
-- 保留当前 AI chat box 的交互和样式，但接入真实 chatbox 消息、会话、发送、上传、上下文、模型/员工选择、流式响应等能力。
-- 支持多个 AI chat box 实例，不要让它们共用全局 current conversation / sender draft / context / attachment 等状态导致互相影响。
-- Add block 添加的区块默认进入当前 AI chat box 的 Work context，并且可以和 messages-and-sender 整体上下拖拽排序。
-- Actions 只能添加 JS Action 和 AI Employee，不要恢复 JS Item。
-- Show messages=false 时，右上角消息按钮从右侧划入 messages。
-- 会话列表只保留 conversations，不要 workflow task tab。
-- Scope 默认是当前 block uid；scope 清空表示不按 scope 过滤，显示所有相关会话。
-- AI employee task 的配置优先级高于 AI chat box 默认配置，直接覆盖，不合并。尤其是 Work context 不能把任务和 AI chat box 两边合并。
-
-请先给出实现计划和需要确认的产品决策。得到确认后再改代码。改代码后按仓库规则跑 touched files eslint 和相关测试。
-```
+- Runtime/store refactor notes: `packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/RUNTIME_REFACTOR_PLAN.md`
