@@ -1,45 +1,43 @@
 ---
 pkg: "@nocobase/plugin-field-m2m-array"
-title: "Muitos para muitos (array)"
-description: "Usa um campo de array para armazenar várias chaves exclusivas da tabela de destino, estabelecendo uma relação muitos para muitos, como artigo-tags, sem precisar de uma tabela intermediária."
-keywords: "muitos para muitos array,M2M Array,associação por array,BelongsToMany,NocoBase"
 ---
-# Muitos para muitos (array)
+
+# Muitos-para-Muitos (Array)
 
 ## Introdução
 
-É possível usar um campo de array na tabela de dados para armazenar várias chaves exclusivas da tabela de destino e, assim, estabelecer uma relação muitos para muitos com ela. Por exemplo: existem duas entidades, artigos e tags. Um artigo pode estar associado a várias tags; na tabela de artigos, um campo de array armazena os IDs dos registros correspondentes na tabela de tags.
+Este recurso permite que você use campos de array em uma **coleção** de dados para armazenar múltiplas chaves únicas da tabela de destino, estabelecendo assim um relacionamento de muitos-para-muitos entre as duas tabelas. Por exemplo, considere as entidades Artigos e Tags. Um artigo pode ser vinculado a várias tags, e a tabela de artigos armazena os IDs dos registros correspondentes da tabela de tags em um campo de array.
 
-:::warning{title=Observação}
+:::warning{title=Atenção}
 
-- Sempre que possível, use uma tabela intermediária para estabelecer uma relação padrão de [muitos para muitos](../data-modeling/collection-fields/associations/m2m/index.md) e evite usar esse tipo de relação.
-- Para relações muitos para muitos estabelecidas com campos de array, atualmente somente o PostgreSQL permite filtrar os dados da tabela de origem usando campos da tabela de destino. Por exemplo: no caso acima, é possível usar outros campos da tabela de tags, como o título, para filtrar os artigos.
+- Sempre que possível, é recomendado usar uma **coleção** de junção para estabelecer um relacionamento [muitos-para-muitos](../data-modeling/collection-fields/associations/m2m/index.md) padrão, em vez de depender deste método.
+- Atualmente, apenas o PostgreSQL oferece suporte à filtragem de dados da **coleção** de origem usando campos da tabela de destino para relacionamentos muitos-para-muitos estabelecidos com campos de array. Por exemplo, no cenário acima, você pode filtrar artigos com base em outros campos da tabela de tags, como o título.
   :::
 
-### Configuração do campo
+### Configuração do Campo
 
-![configuração do campo muitos para muitos (array)](https://static-docs.nocobase.com/202407051108180.png)
+![Configuração do campo muitos-para-muitos (array)](https://static-docs.nocobase.com/202407051108180.png)
 
-## Descrição dos parâmetros
+## Descrição dos Parâmetros
 
-### Tabela de origem
+### Coleção de Origem
 
-A tabela de origem, ou seja, a tabela onde o campo atual está localizado.
+A **coleção** de origem, ou seja, a tabela onde o campo atual reside.
 
-### Tabela de destino
+### Coleção de Destino
 
-A tabela à qual a associação será estabelecida.
+A **coleção** de destino com a qual o relacionamento é estabelecido.
 
-### Chave estrangeira
+### Chave Estrangeira
 
-O campo de array que armazena, na tabela de origem, a chave do destino Target key.
+O campo de array na **coleção** de origem que armazena a `Target key` da tabela de destino.
 
-Correspondência entre os tipos de campo de array:
+As relações correspondentes para os tipos de campo de array são as seguintes:
 
 | NocoBase | PostgreSQL | MySQL  | SQLite |
 | -------- | ---------- | ------ | ------ |
 | `set`    | `array`    | `JSON` | `JSON` |
 
-### Chave do destino
+### Chave de Destino
 
-O campo correspondente aos valores armazenados no campo de array da tabela de origem, que deve ser exclusivo.
+O campo na **coleção** de destino que corresponde aos valores armazenados no campo de array da tabela de origem. Este campo deve ser único.

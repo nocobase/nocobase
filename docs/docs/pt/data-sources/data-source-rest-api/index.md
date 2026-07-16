@@ -1,34 +1,33 @@
 ---
-title: "Fonte de dados REST API"
-description: "Conecte dados de uma fonte REST API, mapeie recursos RESTful para Collections, configure o mapeamento das interfaces List/Get/Create/Update/Destroy e ofereça suporte a operações CRUD."
-keywords: "Fonte de dados REST API,API externa,mapeamento de interfaces,mapeamento de Collection,NocoBase"
+pkg: "@nocobase/plugin-data-source-rest-api"
 ---
 
-# Fonte de dados REST API
 
-<PluginInfo commercial="true" name="data-source-rest-api"></PluginInfo>
+# Fonte de Dados REST API
 
 ## Introdução
 
-Usado para conectar dados provenientes de uma REST API.
+Este plugin permite que você integre dados de fontes REST API de forma fluida.
 
 ## Instalação
 
-Este plugin é comercial. Para obter detalhes sobre como ativá-lo, consulte: [Guia de ativação de plugins comerciais](https://www.nocobase.com/cn/blog/nocobase-commercial-license-activation-guide)
+Por ser um plugin comercial, você precisará fazer o upload e ativá-lo através do gerenciador de plugins.
 
-## Adicionar uma fonte REST API
+![20240323162741](https://static-docs.nocobase.com/20240323162741.png)
 
-Depois de ativar o plugin, selecione REST API no menu suspenso Add new do gerenciamento de fontes de dados.
+## Adicionando uma Fonte de Dados REST API
+
+Após ativar o plugin, você pode adicionar uma fonte de dados REST API selecionando-a no menu suspenso "Adicionar novo" na seção de gerenciamento de fontes de dados.
 
 ![20240721171420](https://static-docs.nocobase.com/20240721171420.png)
 
-Configurar uma fonte REST API
+Configure a fonte de dados REST API.
 
 ![20240721171507](https://static-docs.nocobase.com/20240721171507.png)
 
-## Adicionar uma Collection
+## Adicionando uma Coleção
 
-Os recursos RESTful correspondem às Collections do NocoBase, como o recurso Users.
+No NocoBase, um recurso RESTful é mapeado para uma coleção, como um recurso de Usuários.
 
 ```bash
 GET /users
@@ -38,7 +37,7 @@ PUT /users/1
 DELETE /users/1
 ```
 
-A configuração correspondente na API do NocoBase é
+Esses endpoints de API são mapeados no NocoBase da seguinte forma:
 
 ```bash
 GET /users:list
@@ -48,196 +47,182 @@ POST /users:update?filterByTk=1
 POST /users:destroy?filterByTk=1
 ```
 
-Para consultar a especificação completa de design da API do NocoBase, consulte a documentação da API.
+Para um guia completo sobre as especificações de design da API do NocoBase, consulte a documentação da API.
 
 ![20240716213344](https://static-docs.nocobase.com/20240716213344.png)
 
-Consulte a seção “NocoBase API - Core”
+Consulte o capítulo "NocoBase API - Core" para informações detalhadas.
 
 ![20240716213258](https://static-docs.nocobase.com/20240716213258.png)
 
-A configuração da Collection da fonte de dados REST API é a seguinte
+A configuração da coleção para uma fonte de dados REST API inclui o seguinte:
 
-### List
+### Listar
 
-Configure o mapeamento da interface para consultar a lista de recursos
+Mapeie a interface para visualizar uma lista de recursos.
 
-![20251201162457](https://static-docs.nocobase.com/20251201162457.png)
+![20240716211351](https://static-docs.nocobase.com/20240716211351.png)
 
-### Get
+### Obter
 
-Configure o mapeamento da interface para consultar os detalhes de um recurso
+Mapeie a interface para visualizar os detalhes de um recurso.
 
-![20251201162744](https://static-docs.nocobase.com/20251201162744.png)
+![20240716211532](https://static-docs.nocobase.com/20240716211532.png)
 
-### Create
+### Criar
 
-Configure o mapeamento da interface para criar um recurso
+Mapeie a interface para criar um recurso.
 
-![20251201163000](https://static-docs.nocobase.com/20251201163000.png)
+![20240716211634](https://static-docs.nocobase.com/20240716211634.png)
 
-### Update
+### Atualizar
 
-Configure o mapeamento da interface para atualizar um recurso
-![20251201163058](https://static-docs.nocobase.com/20251201163058.png)
+Mapeie a interface para atualizar um recurso.
+![20240716211733](https://static-docs.nocobase.com/20240716211733.png)
 
-### Destroy
+### Excluir
 
-Configure o mapeamento da interface para excluir um recurso
+Mapeie a interface para excluir um recurso.
 
-![20251201163204](https://static-docs.nocobase.com/20251201163204.png)
+![20240716211808](https://static-docs.nocobase.com/20240716211808.png)
 
-As interfaces List e Get são obrigatórias.
-## Depurar a API
+As interfaces Listar e Obter são de configuração obrigatória.
 
-### Integração dos parâmetros da solicitação
+## Depurando a API
 
-Exemplo: configure parâmetros de paginação para a interface List (se a API de terceiros não oferecer suporte à paginação, os dados da lista obtidos serão paginados).
+### Integração de parâmetros de requisição
 
-![20251201163500](https://static-docs.nocobase.com/20251201163500.png)
+Exemplo: Configure os parâmetros de paginação para a API Listar. Se a API de terceiros não suportar paginação nativamente, o NocoBase fará a paginação com base nos dados da lista recuperada.
 
-Observe que somente as variáveis já adicionadas à interface entrarão em vigor.
+![20241121205229](https://static-docs.nocobase.com/20241121205229.png)
 
-| Nome do parâmetro de integração da API de terceiros | Parâmetro do NocoBase       |
-| --------------------------------------------------- | --------------------------- |
-| page                                                | {{request.params.page}}     |
-| limit                                               | {{request.params.pageSize}} |
+Observe que apenas as variáveis adicionadas na interface terão efeito.
 
-Clique em Try it out para depurar e visualizar o resultado da resposta.
+| Nome do parâmetro da API de terceiros | Parâmetro NocoBase                |
+| ------------------------------------- | --------------------------------- |
+| page                                  | {{request.params.page}}           |
+| limit                                 | {{request.params.pageSize}}       |
 
-![20251201163635](https://static-docs.nocobase.com/20251201163635.png)
+Você pode clicar em "Experimentar" (Try it out) para depurar e visualizar a resposta.
+
+![20241121210320](https://static-docs.nocobase.com/20241121210320.png)
 
 <video width="100%" height="440" controls>
       <source src="https://static-docs.nocobase.com/20241121211034.mp4" type="video/mp4">
 </video>
 
-### Conversão do formato da resposta
+### Transformação do formato de resposta
 
-O formato da resposta da API de terceiros pode não estar em conformidade com o padrão do NocoBase. É necessário convertê-lo para que seja exibido corretamente no frontend.
+O formato de resposta da API de terceiros pode não estar no padrão NocoBase, e precisa ser transformado antes de ser exibido corretamente no frontend.
 
-![20251201164529](https://static-docs.nocobase.com/20251201164529.png)
+![20241121214638](https://static-docs.nocobase.com/20241121214638.png)
 
-Ajuste as regras de conversão de acordo com o formato da resposta da API de terceiros, para que estejam em conformidade com o padrão de saída do NocoBase.
+Ajuste as regras de conversão com base no formato de resposta da API de terceiros para garantir que a saída esteja em conformidade com o padrão NocoBase.
 
-![20251201164629](https://static-docs.nocobase.com/20251201164629.png)
+![20241121215100](https://static-docs.nocobase.com/20241121215100.png)
 
 Descrição do processo de depuração
 
 ![20240717110051](https://static-docs.nocobase.com/20240717110051.png)
 
-### Conversão das informações de erro
-
-Quando ocorre um erro na API de terceiros, o formato das informações de erro na resposta pode não estar em conformidade com o padrão do NocoBase. É necessário convertê-lo para que seja exibido corretamente no frontend.
-
-![20251201170545](https://static-docs.nocobase.com/20251201170545.png)
-
-Quando a conversão das informações de erro não está configurada, por padrão elas são convertidas em informações de erro que incluem o código de status HTTP.
-
-![20251201170732](https://static-docs.nocobase.com/20251201170732.png)
-
-Depois de configurar a conversão das informações de erro, elas passam a estar em conformidade com o padrão de saída do NocoBase, permitindo que o frontend exiba corretamente as informações de erro da API de terceiros.
-
-![20251201170946](https://static-docs.nocobase.com/20251201170946.png)
-![20251201171113](https://static-docs.nocobase.com/20251201171113.png)
-
 ## Variáveis
 
-A fonte de dados REST API fornece três tipos de variáveis para a integração com as interfaces
+A fonte de dados REST API oferece três tipos de variáveis para a integração da API:
 
 - Variáveis personalizadas da fonte de dados
-- Solicitação do NocoBase
-- Resposta de terceiros
+- Variáveis de requisição do NocoBase
+- Variáveis de resposta de terceiros
 
-### Variáveis personalizadas da fonte de dados
+### Variáveis Personalizadas da Fonte de Dados
 
 ![20240716221937](https://static-docs.nocobase.com/20240716221937.png)
 
 ![20240716221858](https://static-docs.nocobase.com/20240716221858.png)
 
-### Solicitação do NocoBase
+### Requisição NocoBase
 
-- Params: parâmetros de consulta da URL (Search Params); os Params variam de acordo com a interface;
-- Headers: corpo da solicitação, usado principalmente para fornecer algumas informações personalizadas do NocoBase com o prefixo X-;
-- Body: corpo da solicitação;
-- Token: token de API da solicitação atual do NocoBase.
+- Params: Parâmetros de consulta da URL (Search Params), que variam dependendo da interface.
+- Headers: Cabeçalhos de requisição personalizados, fornecendo principalmente informações X- específicas do NocoBase.
+- Body: O corpo da requisição.
+- Token: O token da API para a requisição atual do NocoBase.
 
-![20251201164833](https://static-docs.nocobase.com/20251201164833.png)
+![20240716222042](https://static-docs.nocobase.com/20240716222042.png)
 
-### Resposta de terceiros
+### Respostas de Terceiros
 
-Atualmente, somente o Body da resposta é fornecido
+Atualmente, apenas o corpo da resposta está disponível.
 
-![20251201164915](https://static-docs.nocobase.com/20251201164915.png)
+![20240716222303](https://static-docs.nocobase.com/20240716222303.png)
 
-As variáveis disponíveis para a integração com cada interface são as seguintes:
+Abaixo estão as variáveis disponíveis para cada interface:
 
-### List
+### Listar
 
-| Parâmetro                | Descrição                                                    |
-| ------------------------ | ------------------------------------------------------------ |
-| request.params.page     | Número da página atual                                       |
-| request.params.pageSize | Quantidade de itens por página                               |
-| request.params.filter   | Condição de filtragem (deve estar no formato Filter do NocoBase) |
-| request.params.sort     | Regra de ordenação (deve estar no formato Sort do NocoBase)  |
-| request.params.appends  | Campos carregados conforme necessário, geralmente usados para o carregamento sob demanda de campos relacionais |
-| request.params.fields   | Quais campos a interface deve retornar (lista de permissões) |
-| request.params.except   | Quais campos devem ser excluídos (lista de bloqueio)       |
+| Parâmetro               | Descrição                                                  |
+| ----------------------- | ---------------------------------------------------------- |
+| request.params.page     | Página atual                                               |
+| request.params.pageSize | Número de itens por página                                 |
+| request.params.filter   | Critérios de filtro (devem seguir o formato de Filtro do NocoBase) |
+| request.params.sort     | Critérios de ordenação (devem seguir o formato de Ordenação do NocoBase) |
+| request.params.appends  | Campos a serem carregados sob demanda, geralmente para campos de associação |
+| request.params.fields   | Campos a serem incluídos (lista de permissões)             |
+| request.params.except   | Campos a serem excluídos (lista de bloqueios)              |
 
-### Get
+### Obter
 
-| Parâmetro                  | Descrição                                                    |
-| -------------------------- | ------------------------------------------------------------ |
-| request.params.filterByTk | Obrigatório, geralmente o ID dos dados atuais               |
-| request.params.filter     | Condição de filtragem (deve estar no formato Filter do NocoBase) |
-| request.params.appends    | Campos carregados conforme necessário, geralmente usados para o carregamento sob demanda de campos relacionais |
-| request.params.fields     | Quais campos a interface deve retornar (lista de permissões) |
-| request.params.except     | Quais campos devem ser excluídos (lista de bloqueio)       |
+| Parâmetro                 | Descrição                                                  |
+| ------------------------- | ---------------------------------------------------------- |
+| request.params.filterByTk | Obrigatório, geralmente o ID do registro atual             |
+| request.params.filter     | Critérios de filtro (devem seguir o formato de Filtro do NocoBase) |
+| request.params.appends    | Campos a serem carregados sob demanda, geralmente para campos de associação |
+| request.params.fields     | Campos a serem incluídos (lista de permissões)             |
+| request.params.except     | Campos a serem excluídos (lista de bloqueios)              |
 
-### Create
+### Criar
 
-| Parâmetro                | Descrição                 |
-| ------------------------ | ------------------------- |
-| request.params.whiteList | Lista de permissões        |
-| request.params.blacklist | Lista de bloqueio          |
-| request.body             | Dados iniciais para criação |
+| Parâmetro                | Descrição                      |
+| ------------------------ | ------------------------------ |
+| request.params.whiteList | Lista de permissões            |
+| request.params.blacklist | Lista de bloqueios             |
+| request.body             | Dados iniciais para criação    |
 
-### Update
+### Atualizar
 
-| Parâmetro                  | Descrição                                                    |
-| -------------------------- | ------------------------------------------------------------ |
-| request.params.filterByTk | Obrigatório, geralmente o ID dos dados atuais               |
-| request.params.filter     | Condição de filtragem (deve estar no formato Filter do NocoBase) |
-| request.params.whiteList  | Lista de permissões                                          |
-| request.params.blacklist  | Lista de bloqueio                                            |
-| request.body              | Dados a serem atualizados                                    |
+| Parâmetro                 | Descrição                                                  |
+| ------------------------- | ---------------------------------------------------------- |
+| request.params.filterByTk | Obrigatório, geralmente o ID do registro atual             |
+| request.params.filter     | Critérios de filtro (devem seguir o formato de Filtro do NocoBase) |
+| request.params.whiteList  | Lista de permissões                                        |
+| request.params.blacklist  | Lista de bloqueios                                         |
+| request.body              | Dados para atualização                                     |
 
-### Destroy
+### Excluir
 
-| Parâmetro                  | Descrição                                                    |
-| -------------------------- | ------------------------------------------------------------ |
-| request.params.filterByTk | Obrigatório, geralmente o ID dos dados atuais               |
-| request.params.filter     | Condição de filtragem (deve estar no formato Filter do NocoBase) |
+| Parâmetro                 | Descrição                                                  |
+| ------------------------- | ---------------------------------------------------------- |
+| request.params.filterByTk | Obrigatório, geralmente o ID do registro atual             |
+| request.params.filter     | Critérios de filtro (devem seguir o formato de Filtro do NocoBase) |
 
-## Configurar campos
+## Configuração de Campos
 
-Extraia os metadados dos campos (Fields) dos dados das interfaces CRUD do recurso adaptado e use-os como campos da collection.
+Os metadados dos campos (Fields) são extraídos dos dados da interface CRUD do recurso adaptado para servir como os campos da coleção.
 
 ![20240716223636](https://static-docs.nocobase.com/20240716223636.png)
 
 Extrair metadados dos campos.
 
-![20251201165133](https://static-docs.nocobase.com/20251201165133.png)
+![20241121230436](https://static-docs.nocobase.com/20241121230436.png)
 
-Campos e visualização.
+Campos e pré-visualização.
 
 ![20240716224403](https://static-docs.nocobase.com/20240716224403.png)
 
-Editar campos (de forma semelhante a outras fontes de dados).
+Edite os campos (de forma similar a outras fontes de dados).
 
 ![20240716224704](https://static-docs.nocobase.com/20240716224704.png)
 
-## Adicionar um bloco da fonte de dados REST API
+## Adicionando Blocos da Fonte de Dados REST API
 
-Depois de configurar a Collection, você poderá adicionar blocos à interface.
+Depois que a coleção estiver configurada, você poderá adicionar blocos à interface.
 
 ![20240716225120](https://static-docs.nocobase.com/20240716225120.png)

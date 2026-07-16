@@ -1,65 +1,59 @@
----
-title: "Motores de armazenamento de arquivos"
-description: "Motores de armazenamento do campo de anexos: armazenamento local, Alibaba Cloud OSS, Amazon S3, Tencent Cloud COS, S3 Pro; configuração do título, caminho, URL de acesso etc."
-keywords: "Armazenamento de arquivos,Storage,OSS,S3,COS,Armazenamento local,Armazenamento em nuvem,NocoBase"
----
+# Visão Geral
 
-# Visão geral
+## Motores Integrados
 
-## Motores integrados
+Atualmente, o NocoBase oferece suporte aos seguintes tipos de motores integrados:
 
-Atualmente, o NocoBase oferece suporte integrado aos seguintes tipos de motores:
-
-- [Armazenamento local](./local.md)
+- [Armazenamento Local](./local.md)
 - [Alibaba Cloud OSS](./aliyun-oss.md)
 - [Amazon S3](./amazon-s3.md)
 - [Tencent Cloud COS](./tencent-cos.md)
 
-Durante a instalação do sistema, um motor de armazenamento local é adicionado automaticamente e pode ser usado diretamente. Também é possível adicionar novos motores ou editar os parâmetros dos motores existentes.
+Um motor de armazenamento local é adicionado automaticamente durante a instalação do sistema e pode ser usado diretamente. Você também pode adicionar novos motores ou editar os parâmetros dos existentes.
 
-## Parâmetros gerais do motor
+## Parâmetros Comuns do Motor
 
-Além dos parâmetros específicos de cada categoria de motor, os parâmetros a seguir são comuns a todos (usando o armazenamento local como exemplo):
+Além dos parâmetros específicos para cada tipo de motor, as seções a seguir descrevem os parâmetros comuns (usando o armazenamento local como exemplo):
 
-![Exemplo de configuração do motor de armazenamento de arquivos](https://static-docs.nocobase.com/20240529115151.png)
+![Exemplo de Configuração do Motor de Armazenamento de Arquivos](https://static-docs.nocobase.com/20240529115151.png)
 
 ### Título
 
-Nome do motor de armazenamento, usado para identificação manual.
+O nome do motor de armazenamento, usado para identificação humana.
 
-### Nome do sistema
+### Nome do Sistema
 
-Nome do sistema do motor de armazenamento, usado para identificação pelo sistema. Deve ser exclusivo no sistema; se não for preenchido, será gerado aleatoriamente pelo sistema.
+O nome do sistema do motor de armazenamento, usado para identificação pelo sistema. Deve ser único em todo o sistema. Se deixado em branco, será gerado automaticamente de forma aleatória pelo sistema.
 
-### URL de acesso base
+### URL Base de Acesso
 
-Parte do prefixo da URL pela qual o arquivo pode ser acessado externamente. Pode ser a URL de acesso base de uma CDN, por exemplo: “`https://cdn.nocobase.com/app`” (não é necessário incluir o “`/`” final).
+O prefixo do endereço URL para acesso externo ao arquivo. Pode ser a URL base de um CDN, por exemplo: "`https://cdn.nocobase.com/app`" (sem a barra final "`/`").
 
 ### Caminho
 
-Caminho relativo usado ao armazenar os arquivos. Ao acessá-los, essa parte também será concatenada automaticamente à URL final. Por exemplo: “`user/avatar`” (não é necessário incluir o “`/`” no início nem no final).
+O caminho relativo usado ao armazenar arquivos. Esta parte também será automaticamente concatenada à URL final quando o arquivo for acessado. Por exemplo: "`user/avatar`" (sem a barra inicial ou final "`/``).
 
-### Limite de tamanho do arquivo
+### Limite de Tamanho do Arquivo
 
-Limite de tamanho para o upload de arquivos neste motor de armazenamento. Arquivos que excederem o tamanho definido não poderão ser enviados. O limite padrão do sistema é de 20 MB, podendo ser ajustado até o limite máximo de 1 GB.
+O limite de tamanho para arquivos enviados a este motor de armazenamento. Arquivos que excederem este tamanho não poderão ser enviados. O limite padrão do sistema é de 20MB, e o limite máximo ajustável é de 1GB.
 
-### Tipo de arquivo
+### Tipo de Arquivo
 
-É possível restringir os tipos de arquivos enviados usando o formato descrito pela sintaxe [MIME](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types). Por exemplo: `image/*` representa arquivos de imagem. Vários tipos podem ser separados por vírgulas em inglês, como em: `image/*, application/pdf`, que permite arquivos de imagem e PDF.
+Permite limitar os tipos de arquivos que podem ser enviados, utilizando o formato de descrição de sintaxe [MIME](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types). Por exemplo, `image/*` representa arquivos de imagem. Vários tipos podem ser separados por vírgulas, como: `image/*, application/pdf` para permitir arquivos de imagem e PDF.
 
-### Motor de armazenamento padrão
+### Motor de Armazenamento Padrão
 
-Marque esta opção para defini-lo como o motor de armazenamento padrão do sistema. Quando nenhum motor de armazenamento for especificado no campo de anexos ou na tabela de arquivos, os arquivos enviados serão salvos no motor de armazenamento padrão. O motor de armazenamento padrão não pode ser excluído.
+Ao marcar esta opção, ele será definido como o motor de armazenamento padrão do sistema. Quando um campo de anexo ou uma **coleção** de arquivos não especificar um motor de armazenamento, os arquivos enviados serão salvos no motor de armazenamento padrão. O motor de armazenamento padrão não pode ser excluído.
 
-### Manter arquivos ao excluir registros
+### Manter Arquivos ao Excluir Registros
 
-Quando marcada, os arquivos já enviados ao motor de armazenamento serão mantidos mesmo quando os registros de dados da tabela de anexos ou da tabela de arquivos forem excluídos. Por padrão, a opção não fica marcada; nesse caso, os arquivos do motor de armazenamento também serão excluídos ao excluir os registros.
+Ao marcar esta opção, os arquivos enviados no motor de armazenamento serão mantidos mesmo quando os registros de dados na **coleção** de anexos ou arquivos forem excluídos. Por padrão, esta opção não está marcada, o que significa que os arquivos no motor de armazenamento serão excluídos junto com os registros.
 
-:::info{title=Aviso}
-Após o upload do arquivo, o caminho de acesso final será formado pela concatenação de várias partes:
+:::info{title=Dica}
+Após o envio de um arquivo, o caminho de acesso final é construído pela concatenação de várias partes:
 
 ```
-<访问 URL 基础>/<路径>/<文件名><后缀名>
+<URL Base de Acesso>/<Caminho>/<Nome do Arquivo><Extensão>
 ```
 
 Por exemplo: `https://cdn.nocobase.com/app/user/avatar/20240529115151.png`.

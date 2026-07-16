@@ -1,56 +1,50 @@
----
-title: "Muitos-para-muitos"
-description: "Campo de relação muitos-para-muitos (M2M), associação muitos-para-muitos entre entidades de duas tabelas, geralmente requer uma tabela intermediária, como aluno-curso."
-keywords: "Muitos-para-muitos,M2M,BelongsToMany,tabela intermediária,campo de associação,NocoBase"
----
+# Muitos para Muitos
 
-# Muitos-para-muitos
+Em um sistema de matrícula de cursos, existem duas entidades: alunos e cursos. Um aluno pode se matricular em várias disciplinas, e uma disciplina pode ter vários alunos matriculados, o que configura um relacionamento de muitos para muitos. Em um banco de dados relacional, para representar o relacionamento de muitos para muitos entre alunos e cursos, geralmente usamos uma **coleção** intermediária, como uma **coleção** de matrículas. Essa **coleção** pode registrar quais disciplinas cada aluno escolheu e quais alunos se matricularam em cada disciplina. Esse design representa de forma eficaz o relacionamento de muitos para muitos entre alunos e cursos.
 
-Em um sistema de seleção de disciplinas, há duas entidades: alunos e cursos. Um aluno pode se matricular em vários cursos, e um curso também pode ter vários alunos matriculados, formando uma relação muitos-para-muitos. Em bancos de dados relacionais, para representar a relação muitos-para-muitos entre alunos e cursos, normalmente é usada uma tabela intermediária, como uma tabela de matrículas. Essa tabela pode registrar quais cursos cada aluno escolheu e quais alunos estão matriculados em cada curso. Esse modelo representa bem a relação muitos-para-muitos entre alunos e cursos.
+Diagrama ER:
 
-A relação ER é apresentada a seguir
+![alt text](https://static-docs.nocobase.com/0e9921228e1ee375dc639431bb89782c.png)
 
-![texto alternativo](https://static-docs.nocobase.com/0e9921228e1ee375dc639431bb89782c.png)
+Configuração do Campo:
 
-Configuração dos campos
+![alt text](https://static-docs.nocobase.com/8e2739ac5d44fb46f30e2da42ca87a82.png)
 
-![texto alternativo](https://static-docs.nocobase.com/8e2739ac5d44fb46f30e2da42ca87a82.png)
+## Descrição dos Parâmetros
 
-## Descrição dos parâmetros
+### Coleção de Origem
 
-### Source collection
+A **coleção** de origem, que é a **coleção** onde o campo atual está localizado.
 
-Tabela de origem, ou seja, a tabela na qual o campo atual está localizado.
+### Coleção de Destino
 
-### Target collection
+A **coleção** de destino, que é a **coleção** a ser associada.
 
-Tabela de destino, à qual a associação é estabelecida.
+### Coleção Intermediária
 
-### Through collection
+A **coleção** intermediária, usada quando existe um relacionamento de muitos para muitos entre duas entidades. A **coleção** intermediária possui duas chaves estrangeiras que são usadas para manter a associação entre as duas entidades.
 
-Tabela intermediária. Quando existe uma relação muitos-para-muitos entre duas entidades, é necessário usar uma tabela intermediária para armazenar essa relação. A tabela intermediária possui duas chaves estrangeiras, usadas para armazenar a associação entre as duas entidades.
+### Chave de Origem
 
-### Source key
+O campo na **coleção** de origem que é referenciado pela chave estrangeira. Ele deve ser único.
 
-Campo referenciado pela restrição de chave estrangeira, que deve ser exclusivo.
+### Chave Estrangeira 1
 
-### Foreign key 1
+O campo na **coleção** intermediária que estabelece a associação com a **coleção** de origem.
 
-Campo da tabela intermediária usado para estabelecer a associação com a tabela de origem.
+### Chave Estrangeira 2
 
-### Foreign key 2
+O campo na **coleção** intermediária que estabelece a associação com a **coleção** de destino.
 
-Campo da tabela intermediária usado para estabelecer a associação com a tabela de destino.
+### Chave de Destino
 
-### Target key
-
-Campo referenciado pela restrição de chave estrangeira, que deve ser exclusivo.
+O campo na **coleção** de destino que é referenciado pela chave estrangeira. Ele deve ser único.
 
 ### ON DELETE
 
-ON DELETE refere-se à regra de operação sobre as referências de chaves estrangeiras na tabela filha quando um registro é excluído da tabela pai. É uma opção usada na definição de restrições de chave estrangeira. As opções ON DELETE mais comuns incluem:
+`ON DELETE` refere-se às regras aplicadas às referências de chave estrangeira em **coleções** filhas relacionadas quando registros na **coleção** pai são excluídos. É uma opção usada ao definir uma restrição de chave estrangeira. As opções comuns de `ON DELETE` incluem:
 
-- CASCADE: ao excluir um registro da tabela pai, exclui automaticamente todos os registros associados na tabela filha.
-- SET NULL: ao excluir um registro da tabela pai, define como NULL o valor da chave estrangeira associada na tabela filha.
-- RESTRICT: opção padrão. Ao tentar excluir um registro da tabela pai, a exclusão é rejeitada se houver registros associados na tabela filha.
-- NO ACTION: semelhante a RESTRICT; se houver registros associados na tabela filha, a exclusão do registro da tabela pai será rejeitada.
+- **CASCADE**: Quando um registro na **coleção** pai é excluído, todos os registros relacionados na **coleção** filha são automaticamente excluídos.
+- **SET NULL**: Quando um registro na **coleção** pai é excluído, os valores da chave estrangeira nos registros relacionados da **coleção** filha são definidos como `NULL`.
+- **RESTRICT**: A opção padrão, impede a exclusão de um registro da **coleção** pai se houver registros relacionados na **coleção** filha.
+- **NO ACTION**: Semelhante a `RESTRICT`, impede a exclusão de um registro da **coleção** pai se houver registros relacionados na **coleção** filha.

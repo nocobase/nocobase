@@ -2,37 +2,35 @@
 pkg: "@nocobase/plugin-field-signature"
 ---
 
-# Collection field: Handwritten signature
+# Collection field: Signature
 
 ## Introduction
 
-The Handwritten signature field lets users write a signature on a canvas with a mouse or touch screen. After saving, the signature image is written to the selected **File collection** and uses the file-upload and storage flow provided by **File manager**.
+The handwritten signature field lets users draw a signature on the canvas (mouse or touch). After saving, the signature image is stored in the selected **file collection** and uses the file upload and storage pipeline provided by **File manager**.
 
 ## Installation
 
-1. Confirm that the current environment is Professional edition or higher and has a valid license.
-2. Open **Plugin manager**, find **Collection field: Handwritten signature** (`@nocobase/plugin-field-signature`), and enable it.
-3. Enable **File manager** (`@nocobase/plugin-file-manager`). The Handwritten signature field depends on its File collection, upload, and storage capabilities; it cannot save signature images when File manager is disabled.
+1. Confirm your deployment is on **Professional edition or above** and the license is valid.
+2. Open **Plugin manager**, find **Collection field: Handwritten Signature** (`@nocobase/plugin-field-signature`), and enable it.
+3. Ensure **File manager** (`@nocobase/plugin-file-manager`) is enabled. The handwritten signature field depends on it to provide file collections, uploads, and storage capabilities; without it, signature images cannot be saved.
 
 ## Usage
 
-### Add a field
+### Add the field
 
-Open **Data source** -> select a collection -> **Configure fields** -> **Add field**, then choose **Handwritten signature** in the Media group.
+In **Data sources** → select a collection → **Configure fields** → **Add field** → choose **Handwritten Signature** (under the media group).
 
-### Field configuration
+### Field options
 
-- **File collection**: Required. Select a File collection used to store files, such as `attachments`; signature images are saved there
-- The storage configuration and upload rules used by signature images are determined by the selected File collection
+- **File collection**: required. Select a file collection used to store files (for example, `attachments`), and the signature image will be saved there.
+- The actual storage used is determined by the selected file collection's own configuration.
 
-### Interface configuration
+### UI configuration
 
-- After adding a Handwritten signature field to a form, adjust **Signature settings** in the field interface settings, including stroke color, background color, signature-canvas width and height, and thumbnail width and height
-- In read-only display scenarios, adjust thumbnail width and height to control the display size of signature images
+- After adding the handwritten signature field to a form, you can adjust **Signature settings** in the field UI configuration, including pen color, background color, canvas width, canvas height, thumbnail width, and thumbnail height.
+- In read-only display scenarios, you can also adjust the thumbnail width and height to control the rendered size of the signature image.
 
-### Interface operations
+### In the UI
 
-- Click the field area to open the signature canvas. After writing, confirm the signature to upload and relate the corresponding file record
-- On small-screen devices, use a landscape or full-screen signature interface for easier writing
-
-![Handwritten signature](https://static-docs.nocobase.com/20260709232226.png)
+- Click the field to open the signature canvas, draw, then confirm to upload and link the corresponding file record.
+- On small screens, a full-screen / landscape signing experience may be used for easier drawing.

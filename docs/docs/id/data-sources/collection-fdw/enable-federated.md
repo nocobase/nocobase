@@ -1,12 +1,12 @@
 ---
-title: "Cara mengaktifkan mesin federated di MySQL"
-description: "Mengaktifkan mesin penyimpanan federated di MySQL: mengubah konfigurasi my.cnf dan mengatur Docker volumes untuk menghubungkan FDW ke tabel MySQL/MariaDB jarak jauh."
-keywords: "MySQL federated,mesin federated,FDW,koneksi tabel jarak jauh,NocoBase"
+title: "Cara Mengaktifkan Engine federated di MySQL"
+description: "Mengaktifkan storage engine federated di MySQL: ubah konfigurasi my.cnf, konfigurasi Docker volumes, untuk koneksi FDW ke tabel MySQL/MariaDB remote."
+keywords: "MySQL federated,engine federated,FDW,koneksi tabel remote,NocoBase"
 ---
 
-# Cara mengaktifkan mesin federated di MySQL
+# Cara Mengaktifkan Engine federated di MySQL
 
-Basis data MySQL secara default tidak mengaktifkan modul federated. Anda perlu mengubah konfigurasi my.cnf. Jika menggunakan versi Docker, Anda dapat menangani ekstensi melalui volumes:
+Database MySQL secara default tidak mengaktifkan modul federated, Anda perlu mengubah konfigurasi my.cnf. Jika menggunakan versi docker, Anda dapat menangani perluasan melalui volumes:
 
 ```yml
 mysql:
@@ -23,20 +23,20 @@ mysql:
     - nocobase
 ```
 
-Buat file `./storage/mysql-conf/federated.cnf` baru
+Buat file baru `./storage/mysql-conf/federated.cnf`
 
 ```ini
 [mysqld]
 federated
 ```
 
-Mulai ulang mysql
+Restart mysql
 
 ```bash
 docker compose up -d mysql
 ```
 
-Periksa apakah federated sudah diaktifkan
+Periksa apakah federated sudah aktif
 
 ```sql
 show engines

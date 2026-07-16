@@ -1,166 +1,163 @@
 ---
 pkg: "@nocobase/plugin-field-sort"
-title: "Sort field"
-description: "Sort fields order collection records and support grouped ordering for custom record display order."
-keywords: "Sort field,Sort field,grouped sorting,sort,NocoBase"
 ---
 
-# Sort field
+# Sort Field
 
 ## Introduction
 
-In NocoBase, the **Sort** field records the sort value of collection records. It is commonly used for drag-and-drop ordering in blocks such as Tables and Kanban.
+Sort fields are used to sort records in a collection, supporting sorting within groups.
 
-Sort fields support ungrouped sorting and grouped sorting. Grouped sorting is suitable when records must be ordered independently inside each group, such as students ordered by class or tasks ordered by Kanban status.
-
-:::warning Note
-
-Because a Sort field is a field in the same collection, grouped sorting does not support the same record appearing in multiple groups at the same time.
-
+:::warning
+Since the sort field is part of the same collection, a record cannot be assigned to multiple groups when using group sorting.
 :::
 
 ## Installation
 
-The Sort field is provided by a built-in plugin and does not require separate installation.
+Built-in plugin, no separate installation required.
 
-## Create a Sort field
+## User Manual
 
-On the collection's **Configure fields** page, click **Add field** and select **Sort**.
+### Create a Sort Field
 
-![Create a Sort field](https://static-docs.nocobase.com/20240409091123_rec_.gif)
 
-When creating a Sort field, NocoBase initializes sort values:
+![20240409091123_rec_](https://static-docs.nocobase.com/20240409091123_rec_.gif)
 
-- Without grouped sorting, it initializes values according to the primary key and Created at fields
-- With grouped sorting, it groups records first, then initializes values according to the primary key and Created at fields
 
-:::warning Note
+When creating sort fields, the sort values will be initialized:
 
-If sort-value initialization fails during field creation, the Sort field is not created. Within a range, when one record moves from position A to B, the sort values of all records between A and B change. If updating any one record fails, the move fails and none of the related sort values change.
+- If group sorting is not selected, initialization will be based on the primary key field and creation date field.
+- If group sorting is selected, the data will be grouped first, and then initialization will be based on the primary key field and creation date field.
 
+:::warning{title="Explanation of Transaction Consistency"}
+- When creating a field, if the sort value initialization fails, the sort field will not be created.
+- Within a certain range, if a record moves from position A to position B, the sort values of all records between A and B will change. If any part of this update fails, the entire move operation is rolled back, and the sort values of the related records will not change.
 :::
 
-### Create an ungrouped Sort field
+#### Example 1: Create the sort1 field
 
-The following example creates a `sort1` field without grouped sorting.
+The sort1 field is not grouped.
 
-![Create an ungrouped Sort field](https://static-docs.nocobase.com/20240409091510.png)
 
-Each record's Sort field is initialized according to its primary key and Created at field.
+![20240409091510](https://static-docs.nocobase.com/20240409091510.png)
 
-![Initialized ungrouped Sort values](https://static-docs.nocobase.com/20240409092305.png)
 
-### Create a grouped Sort field
+The sort fields of each record will be initialized based on the primary key field and creation date field.
 
-The following example creates a `sort2` field grouped by `Class ID`.
 
-![Create a grouped Sort field](https://static-docs.nocobase.com/20240409092620.png)
+![20240409092305](https://static-docs.nocobase.com/20240409092305.png)
 
-All records in the collection are first grouped by `Class ID`, then their Sort field values are initialized.
 
-![Initialized grouped Sort values](https://static-docs.nocobase.com/20240409092847.png)
+#### Example 2: Create a sort2 field based on Class ID grouping
 
-## Drag-and-drop sorting
 
-Sort fields are primarily used for drag-and-drop ordering of records in blocks. Table and Kanban blocks currently support drag-and-drop sorting.
+![20240409092620](https://static-docs.nocobase.com/20240409092620.png)
 
-:::warning Note
 
-- Using the same Sort field for drag-and-drop sorting in multiple blocks can disrupt existing ordering
-- A Table block cannot use a grouped Sort field for drag-and-drop sorting
-- In a one-to-many relation Table block, the foreign key can be used as the group
-- Only Kanban blocks currently support grouped drag-and-drop sorting
+At this time, all records in the collection will be grouped first (grouped by Class ID), and then the sort field (sort2) will be initialized. The initial values of each record are:
 
+
+![20240409092847](https://static-docs.nocobase.com/20240409092847.png)
+
+
+### Drag-and-Drop Sorting
+
+Sort fields are mainly used for drag-and-drop sorting of records in various blocks. The blocks that currently support drag-and-drop sorting include tables and boards.
+
+:::warning
+- When the same sort field is used for drag-and-drop sorting, using it across multiple blocks may disrupt the existing order.
+- The field for table drag-and-drop sorting cannot be a sort field with a grouping rule.
+  - Exception: In a one-to-many relationship table block, the foreign key can serve as a group.
+- Currently, only the board block supports drag-and-drop sorting within groups.
 :::
 
-### Drag-and-drop Table rows
+#### Drag-and-Drop Sorting of Table Rows
 
-Table blocks can use Sort fields to adjust record order by drag and drop.
+Table block
 
-![Drag-and-drop Table rows](https://static-docs.nocobase.com/20240409104621_rec_.gif)
 
-Relation Table blocks can also use Sort fields for drag-and-drop ordering.
+![20240409104621_rec_](https://static-docs.nocobase.com/20240409104621_rec_.gif)
 
-<video controls width="100%" src="https://static-docs.nocobase.com/20240409111903_rec_.mp4" title="Drag-and-drop sorting in a relation Table block"></video>
 
-:::warning Note
+Relationship table block
 
-In a one-to-many relation block, when an ungrouped Sort field is selected, all records can participate in sorting. When records are grouped by the foreign key before sorting, the rule affects only data in the current group. The final display can look the same, but the set of records participating in the sort differs.
+<video controls width="100%" src="https://static-docs.nocobase.com/20240409111903_rec_.mp4" title="Title"></video>
 
+:::warning
+In a one-to-many relationship block:
+
+- If an ungrouped sort field is selected, all records may participate in the sorting.
+- If records are first grouped by the foreign key and then sorted, the sorting rule will only affect the data within the current group.
+
+The final effect is consistent, but the number of records participating in the sort is different. For more details, see [Sorting Rule Explanation](#sorting-rule-explanation).
 :::
 
-### Drag-and-drop Kanban cards
+#### Drag-and-Drop Sorting of Board Cards
 
-Kanban blocks can use Sort fields to adjust card order by drag and drop.
 
-![Drag-and-drop Kanban cards](https://static-docs.nocobase.com/20240409110423_rec_.gif)
+![20240409110423_rec_](https://static-docs.nocobase.com/20240409110423_rec_.gif)
 
-## Sorting rules
 
-### Moving ungrouped records
+### Sorting Rule Explanation
 
-Suppose records are ordered as follows:
+#### Displacement between ungrouped (or same-group) elements
 
-```text
+Suppose there is a set of data:
+
+```
 [1,2,3,4,5,6,7,8,9]
 ```
 
-When 5 moves forward to the position of 3, only the positions of 3, 4, and 5 change. Record 5 takes the position of 3, and 3 and 4 each move one position backward.
+When an element, say 5, moves forward to the position of 3, only the positions of items 3, 4, and 5 change. Item 5 takes the position of 3, and items 3 and 4 each shift back one position.
 
-```text
+```
 [1,2,5,3,4,6,7,8,9]
 ```
 
-Then move 6 backward to the position of 8. Record 6 takes the position of 8, and 7 and 8 each move one position forward.
+If we then move item 6 backward to the position of 8, item 6 takes the position of 8, and items 7 and 8 each shift forward one position.
 
-```text
+```
 [1,2,5,3,4,7,8,6,9]
 ```
 
-### Moving between groups
+#### Movement of elements between different groups
 
-With grouped sorting, when a record moves to another group, its own group also changes. Suppose there are two groups:
+When sorting by group, if a record is moved to another group, its group assignment will also change. For example:
 
-```text
+```
 A: [1,2,3,4]
 B: [5,6,7,8]
 ```
 
-When 1 moves after 6, its group changes from A to B.
+When item 1 is moved after item 6 (the default behavior), its group will also change from A to B.
 
-```text
+```
 A: [2,3,4]
 B: [5,6,1,7,8]
 ```
 
-### Sorting changes are independent of displayed records
+#### Sort changes are unrelated to the data displayed on the interface
 
-Suppose records are ordered as follows:
+For example, consider a set of data:
 
-```text
+```
 [1,2,3,4,5,6,7,8,9]
 ```
 
-The interface displays only:
+The interface only displays a filtered view:
 
-```text
+```
 [1,5,9]
 ```
 
-When 1 moves to the position of 9, the positions of 2, 3, 4, 5, 6, 7, and 8 also change.
+When item 1 is moved to the position of item 9, the positions of all intermediate items (2, 3, 4, 5, 6, 7, 8) will also change, even though they are not visible.
 
-```text
+```
 [2,3,4,5,6,7,8,9,1]
 ```
 
-The interface finally displays:
+The interface now displays the new order based on the filtered items:
 
-```text
+```
 [5,9,1]
 ```
-
-## Related links
-
-- [Fields](../data-modeling/collection-fields/index.md) - Learn about field types and field mapping.
-- [Table block](../../interface-builder/blocks/data-blocks/table.md) - Use drag-and-drop sorting in a Table.
-- [Kanban block](../../interface-builder/blocks/data-blocks/kanban.md) - Use drag-and-drop sorting in Kanban.
