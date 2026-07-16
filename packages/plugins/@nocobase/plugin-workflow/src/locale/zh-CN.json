@@ -270,6 +270,7 @@
   "Will be executed in the background as a queued task.": "将作为队列任务在后台执行。",
   "Workflow": "工作流",
   "Workflow executed, the result status is <1>{{statusText}}</1><2>View the execution</2>": "工作流已执行，结果状态为 <1>{{statusText}}</1><2>查看执行详情</2>",
+  "Workflow was not triggered because the current request did not meet the trigger requirements.": "当前请求未满足触发要求，工作流未触发。",
   "Workflow of execution is not existed": "执行计划对应的工作流不存在",
   "Workflow tasks": "流程待办",
   "Workflow todos": "流程待办",

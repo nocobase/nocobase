@@ -1,66 +1,119 @@
 ---
 pkg: "@nocobase/plugin-comments"
+title: "Comment collection"
+description: "A Comment collection stores comments, replies, and feedback for business records. It supports rich-text content, user tracking, multi-level comments, and Comment blocks."
+keywords: "Comment collection,comments,rich text comments,multi-level comments,Collection Comment,NocoBase"
 ---
 
-# Comment Collection
+# Comment collection
 
 ## Introduction
 
-Comment collection is a specialized data table template designed for storing user comments and feedback. With the comment feature, you can add commenting capabilities to any data table, allowing users to discuss, provide feedback, or annotate specific records. The comment collection supports rich text editing, providing flexible content creation capabilities.
+Comment collections are suitable for storing discussions, feedback, and annotations around business records. For example, you can use a Comment collection for task comments, approval opinions, article comments, and customer feedback.
 
-![comment-collection-2025-11-01-00-39-01](https://static-docs.nocobase.com/comment-collection-2025-11-01-00-39-01.png)
+A Comment collection is usually not used as an independent main business collection. A more common approach is to create a Comment collection, configure a relation field in the business collection, and then add a Comment block to the details page or popup for business records.
 
-## Features
+![Comment collection workflow](https://static-docs.nocobase.com/comment-collection-2025-11-01-00-39-01.png)
 
-- **Rich Text Editing**: Includes Markdown (vditor) editor by default, supporting rich text content creation
-- **Link to Any Data Table**: Can associate comments with records in any data table through relationship fields
-- **Multi-level Comments**: Supports replying to comments, building a comment tree structure
-- **User Tracking**: Automatically records comment creator and creation time
+## Use cases
 
-## User Guide
+Comment collections are suitable for these business scenarios:
 
-### Creating a Comment Collection
+- Collaboration discussions on tasks, requirements, and defects
+- Processing opinions on approval forms, work orders, and contracts
+- Comments on articles, knowledge bases, and announcements
+- Customer feedback, after-sales follow-up, and internal notes
 
-![comment-collection-2025-11-01-00-37-10](https://static-docs.nocobase.com/comment-collection-2025-11-01-00-37-10.png)
+## Usage flow
 
-1. Go to the data table management page
-2. Click the "Create Collection" button
-3. Select the "Comment Collection" template
-4. Enter the table name (e.g., "Task Comments", "Article Comments", etc.)
-5. The system will automatically create a comment table with the following default fields:
-   - Comment content (Markdown vditor type)
-   - Created by (linked to user table)
-   - Created at (datetime type)
+Comment collections are typically used together with a business collection and a Comment block:
 
-### Configuring Relationships
+1. Create a Comment collection to store comment content, reply relations, creators, creation time, and other information.
+2. Create a relation field in the business collection and relate it to the Comment collection. For example, relate a `Task comments` collection to the `Tasks` collection.
+3. Add a Comment block to a details page or popup for the business collection.
+4. When users post or reply in the Comment block, comment data is written to the Comment collection and related to the current business record.
+5. Configure Comment collection permissions as needed to control who can view, create, or delete comments.
 
-To link comments to a target data table, you need to configure relationship fields:
+## Create and configure
+
+In the main data source, click **Create collection** and select **Comment collection** to create a Comment collection.
+
+![Create a Comment collection](https://static-docs.nocobase.com/comment-collection-2025-11-01-00-37-10.png)
+
+| Setting | Description |
+| --- | --- |
+| Collection display name | The name displayed for the collection, such as `Task comments`, `Approval opinions`, or `Article comments`. |
+| Collection name | The collection identifier used internally by APIs, relation fields, permissions, and workflows. |
+| Inherits | Select a parent collection to inherit. This setting is visible only when the main database is PostgreSQL. |
+| Categories | Collection categories affect only organization in Data source management; they do not change the collection structure. |
+| Description | A description of the collection. State which business object it serves, who maintains it, and how comment permissions are designed. |
+| Preset fields | Preset fields. Keep system fields and Comment collection built-in fields when creating a Comment collection. |
+
+### Built-in fields
+
+After a Comment collection is created, it usually includes the following built-in fields. Comment blocks mainly use `content`, `createdBy`, and `createdAt` to display comment text, commenter, and comment time.
+
+| Field | Field name | Description |
+| --- | --- | --- |
+| ID | `id` | The default primary key that uniquely identifies a comment record. |
+| Comment content | `content` | Stores the comment text entered by users. It uses the Markdown Vditor interface by default. |
+| Created at | `createdAt` | Automatically records when the comment was created. Comment blocks use it to display the comment time. |
+| Created by | `createdBy` | Automatically records the user who posted the comment. Comment blocks use it to display the commenter. |
+| Updated at | `updatedAt` | Automatically records when the comment was last updated. |
+| Updated by | `updatedBy` | Automatically records the user who last updated the comment. |
+| Space | `space` | Available after enabling the [Multi-space plugin](../../multi-app/multi-space/index.md). It isolates data by space and does not appear when Multi-space is not enabled. |
+
+:::warning Note
+
+Comment collection built-in fields are normally maintained by Comment blocks and should not be deleted or repurposed casually. To store information such as comment category or processing status, add business fields instead.
+
+:::
+
+### Primary key field
+
+Like a general collection, a Comment collection needs a primary key. Comment blocks use the primary key to locate comment records and reply relationships.
+
+If a Comment collection has no primary key, set **Record unique key** when editing the collection. Otherwise, Comment blocks might not view, reply to, or delete comments correctly.
+
+## Create a relation
+
+Create a relation field in the business collection and relate it to the Comment collection.
 
 ![](https://static-docs.nocobase.com/Solution/demoE3v1-19N.gif)
 
-1. Add a "Many-to-One" relationship field in the comment table
-2. Select the target data table to link to (e.g., tasks table, articles table, etc.)
-3. Set the field name (e.g., "Belongs to Task", "Belongs to Article", etc.)
+## Use in pages
 
-### Using Comment Blocks on Pages
+Comment collections are usually used through Comment blocks. Add a Comment block to a details page, popup, or record page of a business collection to let users comment on the current record.
 
-![Enable Comments Collection](https://static-docs.nocobase.com/Solution/demoE3v1-20.gif)
+![Enable the Comments collection](https://static-docs.nocobase.com/Solution/demoE3v1-20.gif)
 
-1. Go to the page where you want to add comment functionality
-2. Add a block in the details or popup of the target record
-3. Select the "Comments" block type
-4. Choose the comment collection you just created
+| Configuration location | Use |
+| --- | --- |
+| [Details block](../../interface-builder/blocks/data-blocks/details.md) | Shows a comment entry in business-record details. |
+| [Form block](../../interface-builder/blocks/data-blocks/form.md) | Uses the comment relation field in business-collection editing flows. |
+| Comment block | Displays the comment list and lets users post and reply to comments. |
 
+## Edit configuration
 
-### Typical Use Cases
+In the collection list, click **Edit** next to a Comment collection to change its display name, category, description, simple pagination mode, **Record unique key**, and other settings.
 
-- **Task Management Systems**: Team members discuss and provide feedback on tasks
-- **Content Management Systems**: Readers comment and interact with articles
-- **Approval Workflows**: Approvers annotate and provide opinions on application forms
-- **Customer Feedback**: Collect customer reviews of products or services
+After a Comment collection is in use, do not casually change its comment-content field or reply-relation field. Comment blocks, permissions, workflows, and APIs might depend on these fields.
 
-## Notes
+## Delete a collection
 
-- Comment collection is a commercial plugin feature and requires the comments plugin to be enabled
-- It's recommended to set appropriate permissions for the comment table to control who can view, create, and delete comments
-- For scenarios with a large number of comments, it's recommended to enable pagination for better performance
+In the collection list, click **Delete** next to a Comment collection to delete it.
+
+Deleting a Comment collection deletes comment records, reply relations, and related collection metadata. Before deleting it, confirm whether relation fields in business collections, Comment blocks, permissions, workflows, or APIs still depend on it.
+
+:::danger Warning
+
+Deleting a Comment collection removes comment data from existing business records. Comments often contain collaboration history and processing opinions. Confirm whether the data needs to be backed up or archived before proceeding.
+
+:::
+
+## Related links
+
+- [General collection](../data-source-main/general-collection.md) - General configuration and block usage.
+- [Relation fields](../data-modeling/collection-fields/associations/index.md) - Learn how business collections relate to Comment collections.
+- [Comments plugin](../../plugins/@nocobase/plugin-comments/index.md) - Learn about Comment blocks and commenting capabilities.
+- [Multi-space](../../multi-app/multi-space/index.md) - Learn about the Space field and data isolation by space.

@@ -20,6 +20,7 @@ import { useChatMessageActions } from './hooks/useChatMessageActions';
 import { useChatBoxStore } from './stores/chat-box';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
 import { useUploadFiles } from './hooks/useUploadFiles';
+import { normalizeAIFileUploadAttachment } from './utils';
 import _ from 'lodash';
 
 const useSendMessage = () => {
@@ -168,10 +169,7 @@ export const Sender: React.FC = () => {
                     response,
                   };
                 }
-                return {
-                  ...fileData,
-                  status: 'done',
-                };
+                return normalizeAIFileUploadAttachment(fileData, 'done');
               }
               return item;
             }),

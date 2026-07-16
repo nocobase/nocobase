@@ -19,7 +19,7 @@ import { loadXlsx } from './xlsx';
 type ParsePayload = {
   extname: string;
   mimeType?: string;
-  buffer: Uint8Array;
+  filePath: string;
 };
 
 type WorkerResponse = {
@@ -27,54 +27,51 @@ type WorkerResponse = {
   error?: string;
 };
 
-const loadPdf = async (blob: Blob): Promise<Document[]> => {
-  const loader = new PDFLoader(blob);
+const loadPdf = async (filePath: string): Promise<Document[]> => {
+  const loader = new PDFLoader(filePath);
   return loader.load();
 };
 
-const loadDoc = async (blob: Blob, type: 'docx' | 'doc'): Promise<Document[]> => {
-  const loader = new DocxLoader(blob, { type });
+const loadDoc = async (filePath: string, type: 'docx' | 'doc'): Promise<Document[]> => {
+  const loader = new DocxLoader(filePath, { type });
   return loader.load();
 };
 
-const loadPpt = async (blob: Blob): Promise<Document[]> => {
-  const loader = new PPTXLoader(blob);
+const loadPpt = async (filePath: string): Promise<Document[]> => {
+  const loader = new PPTXLoader(filePath);
   return loader.load();
 };
 
-const loadTxt = async (blob: Blob): Promise<Document[]> => {
-  const loader = new TextLoader(blob);
+const loadTxt = async (filePath: string): Promise<Document[]> => {
+  const loader = new TextLoader(filePath);
   return loader.load();
 };
 
-const loadCsv = async (blob: Blob): Promise<Document[]> => {
-  const loader = new CSVLoader(blob);
+const loadCsv = async (filePath: string): Promise<Document[]> => {
+  const loader = new CSVLoader(filePath);
   return loader.load();
 };
 
 const loadByExtname = async (payload: ParsePayload): Promise<Document[]> => {
-  // @ts-ignore
-  const blob = new Blob([Buffer.from(payload.buffer)], { type: payload.mimeType ?? 'application/octet-stream' });
-
   switch (payload.extname) {
     case '.pdf':
-      return loadPdf(blob);
+      return loadPdf(payload.filePath);
     case '.ppt':
     case '.pptx':
-      return loadPpt(blob);
+      return loadPpt(payload.filePath);
     case '.doc':
-      return loadDoc(blob, 'doc');
+      return loadDoc(payload.filePath, 'doc');
     case '.docx':
-      return loadDoc(blob, 'docx');
+      return loadDoc(payload.filePath, 'docx');
     case '.csv':
-      return loadCsv(blob);
+      return loadCsv(payload.filePath);
     case '.xls':
     case '.xlsx':
-      return loadXlsx(blob);
+      return loadXlsx(payload.filePath, payload.mimeType);
     case '.json':
     case '.md':
     case '.txt':
-      return loadTxt(blob);
+      return loadTxt(payload.filePath);
     default:
       return [];
   }

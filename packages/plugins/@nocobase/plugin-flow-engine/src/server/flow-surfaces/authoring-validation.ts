@@ -74,15 +74,33 @@ import type { FlowSurfaceContextResponse, FlowSurfaceContextVarInfo } from './ty
 import {
   assertFlowSurfaceFilterGroupShape,
   FLOW_SURFACE_DATE_FILTER_OPERATORS,
+  FLOW_SURFACE_EMPTY_FILTER_GROUP,
   isFlowSurfaceDateLikeFieldMeta,
   normalizeFlowSurfaceDateConditionValue,
   assertFlowSurfaceFilterOperator,
   FLOW_SURFACE_FILTER_GROUP_EXAMPLE,
+  normalizeFlowSurfaceCompatibleFilterGroupValue,
 } from './filter-group';
 
 export type FlowSurfaceAuthoringWriteAction = 'applyBlueprint' | 'compose' | 'addBlock' | 'addBlocks' | 'configure';
 
 type AuthoringErrorInput = Omit<FlowSurfaceErrorItemInput, 'message'> & { message: string };
+
+const FLOW_SURFACE_DATA_SCOPE_DATE_EMPTY_OPERATORS = new Set(['$empty', '$notEmpty']);
+const FLOW_SURFACE_DATA_SCOPE_DATE_ALLOWED_OPERATORS = new Set([
+  ...FLOW_SURFACE_DATE_FILTER_OPERATORS,
+  ...FLOW_SURFACE_DATA_SCOPE_DATE_EMPTY_OPERATORS,
+]);
+const FLOW_SURFACE_DATA_SCOPE_DATE_UI_INCOMPATIBLE_OPERATORS = new Set([
+  '$eq',
+  '$ne',
+  '$lt',
+  '$lte',
+  '$gt',
+  '$gte',
+  '$in',
+  '$notIn',
+]);
 
 export interface FlowSurfaceAuthoringValidationContext {
   authoringActionName?: FlowSurfaceAuthoringWriteAction;
@@ -5173,6 +5191,7 @@ async function collectConfigureErrors(
   collectGridCardSettingsErrors(changes, hostBlockType, '$.changes', errors, { directSettings: true });
   collectAssignValuesErrors(changes.assignValues, '$.changes.assignValues', errors, changesBlock, context);
   collectTriggerWorkflowsErrors(changes.triggerWorkflows, '$.changes.triggerWorkflows', errors);
+  collectLinkageRulesErrors(changes.linkageRules, '$.changes.linkageRules', errors);
   collectFieldListInternalKeyErrors(changes.fields, '$.changes.fields', errors);
   const connectFieldsTargets = collectTreeConnectFieldsErrors(changes.connectFields, '$.changes.connectFields', errors);
   await collectTreeConnectFieldsLiveErrors(connectFieldsTargets, changes, '$.changes.connectFields', errors, context);
@@ -5308,6 +5327,95 @@ function collectDefaultFilterDateValueError(
       details,
     });
   }
+}
+
+function collectPublicDataScopeDateOperatorError(
+  operator: any,
+  value: any,
+  path: string,
+  errors: AuthoringErrorInput[],
+  fieldContext?: FlowSurfaceDateConditionFieldContext | null,
+) {
+  const fieldMeta = getDateConditionFieldContextMeta(fieldContext);
+  if (!isFlowSurfaceDateLikeFieldMeta(fieldMeta)) {
+    return;
+  }
+  const normalizedOperator = typeof operator === 'string' ? operator.trim() : '';
+  if (FLOW_SURFACE_DATA_SCOPE_DATE_ALLOWED_OPERATORS.has(normalizedOperator)) {
+    return;
+  }
+
+  const isComparisonOperator = FLOW_SURFACE_DATA_SCOPE_DATE_UI_INCOMPATIBLE_OPERATORS.has(normalizedOperator);
+  const suggestedOperator = isComparisonOperator
+    ? getSuggestedPublicDataScopeDateOperator(normalizedOperator)
+    : undefined;
+  const suggestedValue = getSuggestedPublicDataScopeDateValue(value);
+  pushAuthoringError(errors, {
+    path,
+    ruleId: 'dataScope-date-operator-ui-incompatible',
+    message: `flowSurfaces authoring ${path} cannot use operator '${normalizedOperator}' for a date/datetime DataScope condition`,
+    details: {
+      fieldPath: fieldContext?.fieldPath,
+      fieldType: fieldMeta.type,
+      fieldInterface: fieldMeta.interface,
+      invalidOperator: normalizedOperator,
+      invalidValue: value,
+      allowedOperators: Array.from(FLOW_SURFACE_DATA_SCOPE_DATE_ALLOWED_OPERATORS),
+      ...(suggestedOperator ? { suggestedOperator } : {}),
+      ...(typeof suggestedValue !== 'undefined' ? { suggestedValue } : {}),
+      repairHint:
+        'For public settings.dataScope date/datetime fields, use UI date operators such as $dateOn with UI date values like "2026-07-05"; do not move fixed data-range conditions to defaultFilter.',
+      repairExample: {
+        logic: '$and',
+        items: [
+          {
+            path: fieldContext?.fieldPath || 'createdAt',
+            operator: suggestedOperator || '$dateOn',
+            value: typeof suggestedValue !== 'undefined' ? suggestedValue : '2026-07-05',
+          },
+        ],
+      },
+      agentInstruction:
+        'Replace date/datetime DataScope comparison operators with $dateOn/$dateNotOn/$dateBefore/$dateAfter/$dateNotBefore/$dateNotAfter/$dateBetween and UI date values. Keep the condition in dataScope when it is a fixed data range.',
+    },
+  });
+}
+
+function getSuggestedPublicDataScopeDateOperator(operator: string) {
+  switch (operator) {
+    case '$eq':
+      return '$dateOn';
+    case '$ne':
+      return '$dateNotOn';
+    case '$lt':
+      return '$dateBefore';
+    case '$lte':
+      return '$dateNotAfter';
+    case '$gt':
+      return '$dateAfter';
+    case '$gte':
+      return '$dateNotBefore';
+    default:
+      return undefined;
+  }
+}
+
+function getSuggestedPublicDataScopeDateValue(value: any) {
+  if (typeof value === 'string') {
+    const match = /^(\d{4}-\d{2}-\d{2})/.exec(value.trim());
+    if (match) {
+      return match[1];
+    }
+  }
+  if (Array.isArray(value)) {
+    const suggested = value
+      .map((item) => (typeof item === 'string' ? /^(\d{4}-\d{2}-\d{2})/.exec(item.trim())?.[1] : undefined))
+      .filter(Boolean);
+    if (suggested.length === value.length && suggested.length > 0) {
+      return suggested;
+    }
+  }
+  return undefined;
 }
 
 function collectTopLevelLayoutErrors(
@@ -7294,13 +7402,9 @@ function collectFilterGroupDateConditionErrors(
     return;
   }
   const fieldPath = String(value.path || value.field || '').trim();
-  collectDefaultFilterDateValueError(
-    value.operator,
-    value.value,
-    `${path}.value`,
-    errors,
-    fieldPath ? resolveDefaultFilterDateConditionField(fieldPath, block, context) : undefined,
-  );
+  const fieldContext = fieldPath ? resolveDefaultFilterDateConditionField(fieldPath, block, context) : undefined;
+  collectPublicDataScopeDateOperatorError(value.operator, value.value, `${path}.operator`, errors, fieldContext);
+  collectDefaultFilterDateValueError(value.operator, value.value, `${path}.value`, errors, fieldContext);
 }
 
 function collectGridCardSettingsErrors(
@@ -7648,6 +7752,7 @@ function collectActionErrors(
   collectApplyBlueprintScriptAssetReferenceErrors(action, path, errors, context);
   collectAssignValuesErrors(action.settings?.assignValues, `${path}.settings.assignValues`, errors, block, context);
   collectTriggerWorkflowsErrors(action.settings?.triggerWorkflows, `${path}.settings.triggerWorkflows`, errors);
+  collectLinkageRulesErrors(action.settings?.linkageRules, `${path}.settings.linkageRules`, errors);
   if (hasOwn(action, 'assignValues')) {
     pushAuthoringError(errors, {
       path: `${path}.assignValues`,
@@ -8024,6 +8129,70 @@ function collectTriggerWorkflowsErrors(value: any, path: string, errors: Authori
         path: `${path}[${index}].context`,
         ruleId: 'triggerWorkflows-invalid-shape',
         message: `flowSurfaces authoring ${path}[${index}].context must be a string`,
+      });
+    }
+  });
+}
+
+function collectLinkageRulesErrors(value: any, path: string, errors: AuthoringErrorInput[]) {
+  if (_.isUndefined(value)) {
+    return;
+  }
+  if (!Array.isArray(value)) {
+    pushAuthoringError(errors, {
+      path,
+      ruleId: 'linkageRules-invalid-shape',
+      message: `flowSurfaces authoring ${path} must be an array`,
+    });
+    return;
+  }
+  value.forEach((rule, index) => {
+    const rulePath = `${path}[${index}]`;
+    if (!_.isPlainObject(rule)) {
+      pushAuthoringError(errors, {
+        path: rulePath,
+        ruleId: 'linkageRules-rule-invalid-shape',
+        message: `flowSurfaces authoring ${rulePath} must be an object`,
+      });
+      return;
+    }
+
+    const conditionPath = hasOwn(rule, 'condition')
+      ? `${rulePath}.condition`
+      : hasOwn(rule, 'when')
+        ? `${rulePath}.when`
+        : `${rulePath}.condition`;
+    const conditionValue = hasOwn(rule, 'condition')
+      ? rule.condition
+      : hasOwn(rule, 'when')
+        ? rule.when
+        : FLOW_SURFACE_EMPTY_FILTER_GROUP;
+    try {
+      normalizeFlowSurfaceCompatibleFilterGroupValue(
+        conditionValue,
+        `flowSurfaces authoring ${conditionPath} expects FilterGroup or backend query filter like ${FLOW_SURFACE_FILTER_GROUP_EXAMPLE}`,
+        { strictDateValues: true },
+      );
+    } catch (error) {
+      pushAuthoringError(errors, {
+        path: conditionPath,
+        ruleId: 'linkageRules-condition-invalid-shape',
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+
+    if (hasOwn(rule, 'actions') && !Array.isArray(rule.actions)) {
+      pushAuthoringError(errors, {
+        path: `${rulePath}.actions`,
+        ruleId: 'linkageRules-actions-invalid-shape',
+        message: `flowSurfaces authoring ${rulePath}.actions must be an array`,
+      });
+    }
+    if (hasOwn(rule, 'then') && !Array.isArray(rule.then)) {
+      pushAuthoringError(errors, {
+        path: `${rulePath}.then`,
+        ruleId: 'linkageRules-actions-invalid-shape',
+        message: `flowSurfaces authoring ${rulePath}.then must be an array`,
       });
     }
   });

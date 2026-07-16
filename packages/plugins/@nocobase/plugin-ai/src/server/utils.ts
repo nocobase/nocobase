@@ -8,12 +8,11 @@
  */
 
 import { Model } from '@nocobase/database';
-import path from 'path';
-import fs from 'fs';
 import { getDateVars, parse, serverRequest } from '@nocobase/utils';
 import { Context } from '@nocobase/actions';
 import { ToolsEntry } from '@nocobase/ai';
 import { tool } from 'langchain';
+import type { Readable } from 'stream';
 
 export function sendSSEError(ctx: Context, error: Error | string, errorName?: string) {
   const body = typeof error === 'string' ? error : error.message || 'Unknown error';
@@ -57,14 +56,8 @@ export function parseResponseMessage(row: Model) {
   };
 }
 
-export async function encodeLocalFile(url: string) {
-  if (process.env.APP_PUBLIC_PATH && url.startsWith(process.env.APP_PUBLIC_PATH)) {
-    url = url.slice(process.env.APP_PUBLIC_PATH.length);
-  }
-  url = path.join(process.cwd(), url);
-
-  const data = await fs.promises.readFile(url);
-  return Buffer.from(data).toString('base64');
+export async function encodeLocalFile(_url: string) {
+  throw new Error('Local file path is not allowed');
 }
 
 export async function encodeFile(ctx: Context, url: string) {
@@ -84,6 +77,14 @@ export async function encodeFile(ctx: Context, url: string) {
     },
   });
   return Buffer.from(response.data).toString('base64');
+}
+
+export async function encodeReadableStream(stream: Readable) {
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+  return Buffer.concat(chunks).toString('base64');
 }
 
 async function getUser(ctx: Context, fields: string[]) {
