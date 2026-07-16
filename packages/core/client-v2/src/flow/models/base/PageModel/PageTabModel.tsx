@@ -7,9 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowModel, FlowModelRenderer, observable, tExpr } from '@nocobase/flow-engine';
+import { FlowModel, FlowModelRenderer, observable, type ParamObject, tExpr } from '@nocobase/flow-engine';
 import { Icon, type NocoBaseDesktopRoute } from '../../../../flow-compat';
 import { useRequest } from 'ahooks';
+import _ from 'lodash';
 import React from 'react';
 import { SkeletonFallback } from '../../../components/SkeletonFallback';
 import { TextAreaWithContextSelector } from '../../../components/TextAreaWithContextSelector';
@@ -50,6 +51,24 @@ function normalizePersistedRoute(payload: unknown): Partial<NocoBaseDesktopRoute
     return payload as Partial<NocoBaseDesktopRoute>;
   }
   return undefined;
+}
+
+type PersistedFlowModelAnchor = Record<string, unknown> & {
+  uid?: unknown;
+  stepParams?: unknown;
+  subModels?: unknown;
+};
+
+type LinkageRulesStepParams = ParamObject & {
+  value?: unknown;
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isLinkageRulesStepParams(value: unknown): value is LinkageRulesStepParams {
+  return isRecord(value);
 }
 
 export class BasePageTabModel extends FlowModel<{
@@ -139,13 +158,100 @@ BasePageTabModel.registerFlow({
         ctx.model.setProps('title', translate(params.title, { ns: 'lm-desktop-routes' }));
         ctx.model.setProps('icon', params.icon);
         const pageModel = ctx.engine.getModel(ctx.model.parentId) as { updateDocumentTitle?: () => Promise<void> };
-        void pageModel?.updateDocumentTitle?.();
+        await pageModel?.updateDocumentTitle?.();
       },
+    },
+    linkageRules: {
+      use: 'tabLinkageRules',
     },
   },
 });
 
 export class RootPageTabModel extends BasePageTabModel {
+  private persistedLinkageRulesHydrated = false;
+  private persistedLinkageRulesHydrating?: Promise<void>;
+
+  onInit(options) {
+    super.onInit(options);
+    if (this.shouldHydratePersistedLinkageRules()) {
+      this.hydratePersistedLinkageRules().catch((error) => {
+        console.warn('[RootPageTabModel] Failed to hydrate tab linkage rules', error);
+      });
+    }
+  }
+
+  private hasExplicitLinkageRulesStep() {
+    const pageTabSettings = this.stepParams?.pageTabSettings;
+    return isRecord(pageTabSettings) && Object.prototype.hasOwnProperty.call(pageTabSettings, 'linkageRules');
+  }
+
+  private shouldHydratePersistedLinkageRules() {
+    return !!this.context.flowSettingsEnabled || this.props.route?.options?.hasPersistedPageTabFlowModel === true;
+  }
+
+  private async fetchPersistedAnchor(): Promise<PersistedFlowModelAnchor | undefined> {
+    const response = await this.context.api.request({
+      url: 'flowModels:findOne',
+      params: { uid: this.uid },
+    });
+    const anchor = response?.data?.data;
+    return isRecord(anchor) ? anchor : undefined;
+  }
+
+  private async performPersistedLinkageRulesHydrate() {
+    if (this.hasExplicitLinkageRulesStep()) {
+      return;
+    }
+
+    const anchor = await this.fetchPersistedAnchor();
+    if (this.hasExplicitLinkageRulesStep()) {
+      return;
+    }
+
+    const stepParams = isRecord(anchor?.stepParams) ? anchor.stepParams : undefined;
+    const pageTabSettings = isRecord(stepParams?.pageTabSettings) ? stepParams.pageTabSettings : undefined;
+    const linkageRules = pageTabSettings?.linkageRules;
+    if (!isLinkageRulesStepParams(linkageRules)) {
+      return;
+    }
+
+    this.setStepParams('pageTabSettings', 'linkageRules', _.cloneDeep(linkageRules));
+    this.invalidateFlowCache('beforeRender', true);
+    await this.rerender();
+  }
+
+  private hydratePersistedLinkageRules(): Promise<void> {
+    if (this.persistedLinkageRulesHydrated) {
+      return Promise.resolve();
+    }
+    if (this.persistedLinkageRulesHydrating) {
+      return this.persistedLinkageRulesHydrating;
+    }
+
+    const hydration = this.performPersistedLinkageRulesHydrate();
+    this.persistedLinkageRulesHydrating = hydration;
+    hydration
+      .then(() => {
+        if (this.persistedLinkageRulesHydrating === hydration) {
+          this.persistedLinkageRulesHydrated = true;
+          this.persistedLinkageRulesHydrating = undefined;
+        }
+      })
+      .catch(() => {
+        if (this.persistedLinkageRulesHydrating === hydration) {
+          this.persistedLinkageRulesHydrating = undefined;
+        }
+      });
+    return hydration;
+  }
+
+  async openFlowSettings(options?: Parameters<FlowModel['openFlowSettings']>[0]) {
+    if (options?.flowKey === 'pageTabSettings' && options?.stepKey === 'linkageRules') {
+      await this.hydratePersistedLinkageRules();
+    }
+    return super.openFlowSettings(options);
+  }
+
   renderChildren() {
     return (
       <PageTabChildrenRenderer
@@ -162,7 +268,15 @@ export class RootPageTabModel extends BasePageTabModel {
   }
 
   async saveStepParams() {
-    return this.save();
+    const hasExplicitLinkageRulesStep = this.hasExplicitLinkageRulesStep();
+    const linkageRules = hasExplicitLinkageRulesStep
+      ? (_.cloneDeep(this.stepParams.pageTabSettings.linkageRules) as LinkageRulesStepParams)
+      : undefined;
+
+    await this.save();
+    if (hasExplicitLinkageRulesStep && linkageRules) {
+      await this.persistLinkageRulesToAnchor(linkageRules);
+    }
   }
 
   async save() {
@@ -179,6 +293,7 @@ export class RootPageTabModel extends BasePageTabModel {
         title: this.getTabTitle(''),
         icon: this.getTabIcon(),
         options: {
+          ...(this.props.route?.options || {}),
           flowRegistry: json.flowRegistry,
           documentTitle,
         },
@@ -197,6 +312,72 @@ export class RootPageTabModel extends BasePageTabModel {
         },
       });
     }
+  }
+
+  private buildAnchorPayload(latestAnchor: PersistedFlowModelAnchor | undefined, linkageRules: LinkageRulesStepParams) {
+    const hasPersistedAnchor = typeof latestAnchor?.uid === 'string' && latestAnchor.uid.length > 0;
+    const anchorRoot: PersistedFlowModelAnchor = hasPersistedAnchor
+      ? _.cloneDeep(latestAnchor)
+      : { uid: this.uid, use: 'RouteModel' };
+    delete anchorRoot.subModels;
+
+    const latestStepParams = isRecord(anchorRoot.stepParams) ? anchorRoot.stepParams : {};
+    const latestPageTabSettings = isRecord(latestStepParams.pageTabSettings) ? latestStepParams.pageTabSettings : {};
+
+    return {
+      ...anchorRoot,
+      stepParams: {
+        ...latestStepParams,
+        pageTabSettings: {
+          ...latestPageTabSettings,
+          linkageRules: _.cloneDeep(linkageRules),
+        },
+      },
+    };
+  }
+
+  private async persistLinkageRulesToAnchor(linkageRules: LinkageRulesStepParams) {
+    const latestAnchor = await this.fetchPersistedAnchor();
+    const anchorPayload = this.buildAnchorPayload(latestAnchor, linkageRules);
+    await this.context.api.request({
+      method: 'post',
+      url: 'flowModels:save',
+      data: anchorPayload,
+    });
+
+    const hasRules = Array.isArray(linkageRules.value) && linkageRules.value.length > 0;
+    await this.syncPersistedPageTabFlowModelMarker(hasRules);
+    this.persistedLinkageRulesHydrated = true;
+  }
+
+  private async syncPersistedPageTabFlowModelMarker(hasRules: boolean) {
+    const route = this.props.route;
+    if (route?.id == null) {
+      throw new Error('Cannot persist page tab FlowModel marker before the desktop route is saved.');
+    }
+    if (typeof this.context.routeRepository?.updateRoute !== 'function') {
+      throw new Error('Route repository is unavailable while persisting the page tab FlowModel marker.');
+    }
+
+    const nextOptions = {
+      ...(route.options || {}),
+    };
+    if (hasRules) {
+      nextOptions.hasPersistedPageTabFlowModel = true;
+    } else {
+      delete nextOptions.hasPersistedPageTabFlowModel;
+    }
+    const persistedOptions = Object.keys(nextOptions).length > 0 ? nextOptions : undefined;
+
+    await this.context.routeRepository.updateRoute(
+      route.id,
+      { options: persistedOptions },
+      { refreshAfterMutation: false },
+    );
+    this.setProps('route', {
+      ...route,
+      options: persistedOptions,
+    });
   }
 
   async destroy() {
