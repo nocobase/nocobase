@@ -12,26 +12,7 @@ import { action, define, observable } from '@nocobase/flow-engine';
 
 type ChatConversationStateUpdater<T> = T | ((prev: T) => T);
 
-export interface ChatConversationsState {
-  currentConversation?: string;
-  conversations: Conversation[];
-  keyword: string;
-  webSearch: boolean;
-  conversationSegmented: string;
-  unreadCount: number;
-}
-
-export interface ChatConversationsActions {
-  setCurrentConversation: (id: string | undefined) => void;
-  setKeyword: (keyword: string) => void;
-  setConversations: (conversations: Conversation[] | ((prev: Conversation[]) => Conversation[])) => void;
-  markConversationRead: (sessionId: string) => void;
-  setWebSearch: (webSearch: boolean) => void;
-  setConversationSegmented: (conversationSegmented: string) => void;
-  setUnreadCount: (unreadCount: number | ((prev: number) => number)) => void;
-}
-
-export class ChatConversationModel implements ChatConversationsState, ChatConversationsActions {
+export class ChatConversationModel {
   currentConversation: string | undefined = undefined;
   conversations: Conversation[] = observable.shallow([]);
   keyword = '';

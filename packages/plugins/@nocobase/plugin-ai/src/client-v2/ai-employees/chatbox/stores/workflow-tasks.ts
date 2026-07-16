@@ -47,27 +47,6 @@ export type WorkflowTaskDetail = WorkflowTask & {
 
 type WorkflowTaskStateUpdater<T> = T | ((prev: T) => T);
 
-export type WorkflowTasksState = {
-  workflowTasks: WorkflowTask[];
-  currentWorkflowTask?: WorkflowTaskDetail;
-  unreadCount: number;
-  loading: boolean;
-  keyword: string;
-  selectedJobStatus?: number;
-};
-
-export type WorkflowTasksActions = {
-  setWorkflowTasks: (workflowTasks: WorkflowTask[] | ((prev: WorkflowTask[]) => WorkflowTask[])) => void;
-  setCurrentWorkflowTask: (
-    workflowTask: WorkflowTaskDetail | undefined | ((prev?: WorkflowTaskDetail) => WorkflowTaskDetail | undefined),
-  ) => void;
-  setUnreadCount: (unreadCount: number | ((prev: number) => number)) => void;
-  markWorkflowTaskRead: (sessionId: string) => void;
-  setLoading: (loading: boolean) => void;
-  setKeyword: (keyword: string) => void;
-  setSelectedJobStatus: (selectedJobStatus: number | undefined) => void;
-};
-
 export const JOB_STATUS = {
   PENDING: 0,
   RESOLVED: 1,
@@ -103,7 +82,7 @@ export const normalizeWorkflowTask = (workflowTask: WorkflowTask): WorkflowTask 
   };
 };
 
-export class WorkflowTaskModel implements WorkflowTasksState, WorkflowTasksActions {
+export class WorkflowTaskModel {
   workflowTasks: WorkflowTask[] = observable.shallow([]);
   currentWorkflowTask: WorkflowTaskDetail | undefined = undefined;
   unreadCount = 0;
