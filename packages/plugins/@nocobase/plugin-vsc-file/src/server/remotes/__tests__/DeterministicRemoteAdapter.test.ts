@@ -108,6 +108,16 @@ describe('DeterministicRemoteAdapter', () => {
     ).rejects.toMatchObject({ code: 'REMOTE_CHANGED' });
   });
 
+  it('keeps immutable snapshots addressable after the remote advances', async () => {
+    const adapter = new DeterministicRemoteAdapter({
+      initialFiles: [{ path: 'index.ts', content: 'base\n' }],
+    });
+    const planned = await adapter.fetchSnapshot(target);
+    adapter.advanceRemote([{ path: 'index.ts', content: 'new Head\n' }]);
+
+    await expect(adapter.fetchSnapshot(target, planned.revision)).resolves.toEqual(planned);
+  });
+
   it('enforces read-only capability at publish time', async () => {
     const adapter = new DeterministicRemoteAdapter({ readOnly: true });
 

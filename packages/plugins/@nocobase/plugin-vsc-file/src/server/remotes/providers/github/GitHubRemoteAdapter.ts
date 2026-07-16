@@ -140,14 +140,20 @@ export class GitHubRemoteAdapter implements RemoteSyncAdapter {
     };
   }
 
-  async fetchSnapshot(target: RemoteSyncAdapterTarget): Promise<VscRemoteSnapshot> {
+  async fetchSnapshot(target: RemoteSyncAdapterTarget, expectedRevision?: string | null): Promise<VscRemoteSnapshot> {
     const context = await this.createContext(target, 'optional');
+    if (typeof expectedRevision === 'string') {
+      return (await this.fetchRevision(context, expectedRevision)).snapshot;
+    }
     const reference = await this.api.getRef(
       context.config.owner,
       context.config.repository,
       context.branch,
       context.credential,
     );
+    if (expectedRevision === null && reference) {
+      throw remoteChanged(null, getReferenceRevision(reference), 'head-mismatch');
+    }
     if (!reference) {
       const files: VscRemoteSnapshotFile[] = [];
       return {

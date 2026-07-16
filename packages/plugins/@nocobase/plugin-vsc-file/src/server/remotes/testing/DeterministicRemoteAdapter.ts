@@ -59,6 +59,8 @@ export class DeterministicRemoteAdapter implements RemoteSyncAdapter {
 
   private snapshot: VscRemoteSnapshot;
 
+  private readonly snapshotsByRevision = new Map<string, VscRemoteSnapshot>();
+
   private revisionSequence = 0;
 
   private publishCount = 0;
@@ -95,6 +97,7 @@ export class DeterministicRemoteAdapter implements RemoteSyncAdapter {
       files,
       metadata: cloneMetadata(options.initialMetadata || {}),
     };
+    this.rememberSnapshot(this.snapshot);
   }
 
   normalizeConfig(input: unknown) {
@@ -110,9 +113,33 @@ export class DeterministicRemoteAdapter implements RemoteSyncAdapter {
     };
   }
 
-  async fetchSnapshot(target: RemoteSyncAdapterTarget): Promise<VscRemoteSnapshot> {
+  async fetchSnapshot(target: RemoteSyncAdapterTarget, expectedRevision?: string | null): Promise<VscRemoteSnapshot> {
     this.assertTarget(target);
     this.throwConfiguredFailure('fetch');
+    if (expectedRevision === null && this.snapshot.revision !== null) {
+      throw new RemoteSyncError('REMOTE_CHANGED', 'Deterministic remote revision changed', {
+        details: {
+          provider: this.provider,
+          operation: 'fetch',
+          expectedRemoteRevision: null,
+          currentRemoteRevision: this.snapshot.revision,
+        },
+      });
+    }
+    if (typeof expectedRevision === 'string') {
+      const snapshot = this.snapshotsByRevision.get(expectedRevision);
+      if (!snapshot) {
+        throw new RemoteSyncError('REMOTE_CHANGED', 'Deterministic remote revision is unavailable', {
+          details: {
+            provider: this.provider,
+            operation: 'fetch',
+            expectedRemoteRevision,
+            currentRemoteRevision: this.snapshot.revision,
+          },
+        });
+      }
+      return cloneSnapshot(snapshot);
+    }
     return cloneSnapshot(this.snapshot);
   }
 
@@ -156,6 +183,7 @@ export class DeterministicRemoteAdapter implements RemoteSyncAdapter {
       files,
       metadata: cloneMetadata(snapshot.metadata),
     };
+    this.rememberSnapshot(this.snapshot);
     this.publishCount += 1;
     return {
       revision,
@@ -173,6 +201,7 @@ export class DeterministicRemoteAdapter implements RemoteSyncAdapter {
       files: normalizedFiles,
       metadata: cloneMetadata(metadata),
     };
+    this.rememberSnapshot(this.snapshot);
     return cloneSnapshot(this.snapshot);
   }
 
@@ -215,5 +244,11 @@ export class DeterministicRemoteAdapter implements RemoteSyncAdapter {
   private createRevision(contentHash: string): string {
     this.revisionSequence += 1;
     return `deterministic:${this.revisionSequence}:${contentHash.slice('sha256:'.length)}`;
+  }
+
+  private rememberSnapshot(snapshot: VscRemoteSnapshot): void {
+    if (snapshot.revision) {
+      this.snapshotsByRevision.set(snapshot.revision, cloneSnapshot(snapshot));
+    }
   }
 }

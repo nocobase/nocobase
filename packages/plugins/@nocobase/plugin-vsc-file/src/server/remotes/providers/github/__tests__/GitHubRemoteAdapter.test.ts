@@ -183,6 +183,17 @@ describe('GitHubRemoteAdapter config and probe', () => {
 });
 
 describe('GitHubRemoteAdapter fetch', () => {
+  it('fetches an explicitly pinned commit without rereading the branch Head', async () => {
+    const api = createApi();
+    const adapter = createAdapter(api);
+
+    const snapshot = await adapter.fetchSnapshot(createTarget(), 'planned-commit');
+
+    expect(snapshot.revision).toBe('planned-commit');
+    expect(api.getRef).not.toHaveBeenCalled();
+    expect(api.getCommit).toHaveBeenCalledWith('nocobase', 'extensions', 'planned-commit', null);
+  });
+
   it('fetches a fixed commit snapshot, strips the subdirectory, ignores outside files, and hashes content', async () => {
     const api = createApi();
     const insideContent = 'export const value = 1;\n';

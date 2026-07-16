@@ -109,7 +109,7 @@ export interface RemoteSyncAdapter {
   readonly capabilities: RemoteSyncAdapterCapabilities;
   normalizeConfig(input: unknown): VscRemoteNormalizedConfig;
   probe(target: RemoteSyncAdapterTarget): Promise<RemoteSyncProbeResult>;
-  fetchSnapshot(target: RemoteSyncAdapterTarget): Promise<VscRemoteSnapshot>;
+  fetchSnapshot(target: RemoteSyncAdapterTarget, revision?: string | null): Promise<VscRemoteSnapshot>;
   publishSnapshot(
     target: RemoteSyncAdapterTarget,
     snapshot: VscRemoteSnapshot,
