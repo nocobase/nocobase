@@ -7,15 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { createContext, useContext, useMemo } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import mergeWith from 'lodash/mergeWith';
 import isPlainObject from 'lodash/isPlainObject';
-import * as echarts from 'echarts';
 import type { EChartsOption, EChartsType } from 'echarts';
 // 必须从 @nocobase/client-v2 取全局主题（v2 运行时），
 // 不能从 @nocobase/client（v1）导入 —— v2 客户端禁止反向依赖 v1。
 // client-v2 内已有先例：flow/components/CodeEditor.tsx 即如此使用。
 import { useGlobalTheme } from '@nocobase/client-v2';
+import { ECHARTS_DARK_THEME, ensureEChartsThemesRegistered } from '../flow/echarts/echartsThemes';
+import { loadStoredEChartsConfig, saveStoredEChartsConfig } from '../flow/echarts/echartsConfigStorage';
 
 export interface EChartsGlobalConfig {
   /**
@@ -39,59 +40,72 @@ export interface EChartsGlobalConfig {
   onRefReady?: (chart: EChartsType) => void;
 }
 
-// echarts 没有内建 dark 主题，必须 register 一次才能 echarts.init(el, 'nocobase-dark')。
-// 模块级只执行一次。
-let darkThemeRegistered = false;
-function ensureDarkThemeRegistered() {
-  if (darkThemeRegistered) {
-    return;
-  }
-  darkThemeRegistered = true;
-  echarts.registerTheme('nocobase-dark', {
-    backgroundColor: 'transparent',
-    textStyle: { color: '#d0d0d0' },
-    title: { textStyle: { color: '#d0d0d0' } },
-    legend: { textStyle: { color: '#d0d0d0' } },
-    tooltip: {
-      backgroundColor: 'rgba(0,0,0,0.75)',
-      borderColor: '#555',
-      textStyle: { color: '#fff' },
-    },
-  });
+// dark / vintage / macarons 等具名主题必须在任何 <ECharts> init 之前注册，
+// 否则 echarts.init(el, name) 会静默回退浅色。模块级执行一次。
+ensureEChartsThemesRegistered();
+
+interface EChartsConfigContextValue {
+  config: EChartsGlobalConfig;
+  setConfig: (next: EChartsGlobalConfig) => void;
 }
 
-// 模块级执行一次，确保在任何 <ECharts> 实例初始化之前 dark theme 已注册。
-// 不能只放在 EChartsConfigProvider 里——无 Provider 时 useEChartsTheme 也会推导出
-// 'nocobase-dark'，若未注册则 echarts.init(el, 'nocobase-dark') 会静默回退浅色。
-ensureDarkThemeRegistered();
-
-const EChartsConfigContext = createContext<EChartsGlobalConfig | undefined>(undefined);
+const EChartsConfigContext = createContext<EChartsConfigContextValue | undefined>(undefined);
 EChartsConfigContext.displayName = 'EChartsConfigContext';
 
 export interface EChartsConfigProviderProps {
-  value: EChartsGlobalConfig;
   children: React.ReactNode;
 }
 
-export const EChartsConfigProvider: React.FC<EChartsConfigProviderProps> = ({ value, children }) => {
-  // 仅当字段引用变化时才更新 context 值，避免父组件每次 render 都触发全树重渲染。
-  // 提示：调用方应 memo 化 value（见下方示例），否则每次 render 仍会重渲消费者。
-  const stableValue = useMemo(
-    () => value,
-    [value.option, value.theme, value.onRefReady],
+/**
+ * 运行时全局 ECharts 配置 Provider。
+ *
+ * 有状态（uncontrolled）：内部用 useState 持有 config，初始值从 localStorage 读取
+ * （用户级个性化配置，真值即 localStorage）。暴露 setConfig 供 settings 页写入，
+ * setConfig 会同步写回 localStorage 并更新内部 state，使全树 <ECharts> 立即重渲染。
+ *
+ * 用法（应用根部注入一次；plugin.tsx 已通过 app.use 挂载）：
+ * ```tsx
+ * <EChartsConfigProvider>
+ *   <App />
+ * </EChartsConfigProvider>
+ * ```
+ */
+export const EChartsConfigProvider: React.FC<EChartsConfigProviderProps> = ({ children }) => {
+  const [config, setConfigState] = useState<EChartsGlobalConfig>(
+    () => loadStoredEChartsConfig() ?? {},
   );
-  return React.createElement(EChartsConfigContext.Provider, { value: stableValue }, children);
+
+  const setConfig = useCallback((next: EChartsGlobalConfig) => {
+    setConfigState(next);
+    saveStoredEChartsConfig(next);
+  }, []);
+
+  const value = useMemo<EChartsConfigContextValue>(() => ({ config, setConfig }), [config, setConfig]);
+
+  return React.createElement(EChartsConfigContext.Provider, { value }, children);
 };
 
+/** 读取当前全局 ECharts 配置（无 Provider 时返回空对象，向后兼容）。 */
 export function useEChartsGlobalConfig(): EChartsGlobalConfig {
-  return useContext(EChartsConfigContext) ?? {};
+  return useContext(EChartsConfigContext)?.config ?? {};
 }
+
+/**
+ * 获取修改全局配置的 setter（settings 页用）。
+ * 无 Provider 时返回一个 no-op，不抛错。
+ */
+export function useSetEChartsGlobalConfig(): (next: EChartsGlobalConfig) => void {
+  const ctx = useContext(EChartsConfigContext);
+  return ctx?.setConfig ?? noop;
+}
+
+const noop: (next: EChartsGlobalConfig) => void = () => {};
 
 /**
  * 推导最终 echarts 主题名，优先级：
  *   1. 本地 theme prop 显式传入 → 最高
  *   2. 全局 config.theme → 其次
- *   3. 继承 antd 全局主题（useGlobalTheme().isDarkTheme）→ dark 用 'nocobase-dark'，light 用 undefined（echarts 默认浅色）
+ *   3. 继承 antd 全局主题（useGlobalTheme().isDarkTheme）→ dark 用 ECHARTS_DARK_THEME，light 用 undefined
  *
  * 用 ?? 而非 ||：theme='' 表示「显式清空全局主题」（echarts 对 '' 等同无主题，不报错），
  * 不应被 falsy 回退吞掉；想继承全局就传 undefined。
@@ -99,7 +113,7 @@ export function useEChartsGlobalConfig(): EChartsGlobalConfig {
 export function useEChartsTheme(themeProp?: string): string | undefined {
   const { isDarkTheme } = useGlobalTheme();
   const { theme: globalTheme } = useEChartsGlobalConfig();
-  return themeProp ?? globalTheme ?? (isDarkTheme ? 'nocobase-dark' : undefined);
+  return themeProp ?? globalTheme ?? (isDarkTheme ? ECHARTS_DARK_THEME : undefined);
 }
 
 /**

@@ -16,23 +16,12 @@ import './chartBlock.css';
 /**
  * 使用示例：
  *
- * 1. 在应用根部注入一次全局配置（plugin 入口 / settings 页面）：
+ * 1. Provider 已在 plugin.tsx 通过 app.use(EChartsConfigProvider) 挂在应用根部，
+ *    并从 localStorage 读取 admin 在 settings 页保存的配置。运行时修改走
+ *    useSetEChartsGlobalConfig()（settings 页即用此路径）：
  * ```tsx
- * import { EChartsConfigProvider } from '@nocobase/plugin-data-visualization/client-v2';
- *
- * // 建议 memo 化 value，避免父组件每次 render 触发全树重渲染
- * const echartsConfig = useMemo(() => ({
- *   option: {
- *     color: ['#5470c6', '#91cc75', '#fac858'],
- *     tooltip: { trigger: 'axis' },
- *     grid: { containLabel: true },
- *   },
- *   onRefReady: (chart) => { console.log('ECharts instance ready', chart); },
- * }), []);
- *
- * <EChartsConfigProvider value={echartsConfig}>
- *   <App />
- * </EChartsConfigProvider>
+ * const setConfig = useSetEChartsGlobalConfig();
+ * setConfig({ theme: 'nocobase-dark', option: { color: ['#5470c6', '#91cc75'] } });
  * ```
  *
  * 2. 任意 <ECharts> 自动合入全局配置，无需重复编写：
