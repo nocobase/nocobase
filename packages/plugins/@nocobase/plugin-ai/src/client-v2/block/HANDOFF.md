@@ -22,6 +22,22 @@ The block can be added from the page block picker and currently focuses on inter
 
 The current demo has been adapted for this strict runtime mode: `AIChatDemoBlockModel` and the standalone `AIChatDemoSenderBlockModel` each create and provide their own demo `ChatBoxRuntime`.
 
+## Production implementation status
+
+The production AI chat box implementation now lives under `packages/plugins/@nocobase/plugin-ai/src/client-v2/block/ai-chat-box/` and is registered side by side with the demo implementation:
+
+- `AIChatBoxBlockModel` creates one isolated `ChatBoxRuntime` per block instance with `mode: 'block'`.
+- `AIChatBoxCoreModel` renders the real messages and sender surface.
+- Production settings support scope, background, default user message, work context, allowed employees/models, sender placeholder, sender controls, and disclaimer visibility.
+- Direct sends use the real `Sender`, `Messages`, streaming, cancel, resume, edit, attachments, and work-context logic against the block runtime.
+- The block conversation list is implemented separately from the floating chatbox conversation list and only shows conversations.
+- Conversation scope is persisted on `aiConversations.scope`; list filters only when a non-empty scope is explicitly supplied.
+- AI employee tasks can target a mounted production AI chat box by `Chat box uid`; missing targets show an error and do not fall back to the global chatbox.
+
+The demo remains available through the `AIChatDemo*` models and should still be treated as a separate prototype/reference surface until product explicitly removes it.
+
+Automated verification has covered the production block helpers/settings, runtime isolation, sender payloads, conversations, server scope resource behavior, AI employee task routing, public exports, and global floating chatbox behavior. Manual browser verification of adding/using the global chatbox, demo block, and production block was not executed in this CLI-only pass.
+
 ## Prototype preservation rules
 
 Do not modify the current prototype in place while building the real version.
