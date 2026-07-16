@@ -186,6 +186,14 @@ export const moveAddedBlockBeforeCore = async (model: AIChatBoxBlockModel, added
   await model.flowEngine.moveModel(addedModel.uid, coreBlock.uid, { persist: false });
 };
 
+export const getAIChatBoxViewHeight = (model: AIChatBoxBlockModel, fallbackHeight: number) => {
+  const heightMode = model.decoratorProps?.heightMode;
+  if (heightMode === 'specifyValue' || heightMode === 'fullHeight') {
+    return '100%';
+  }
+  return fallbackHeight;
+};
+
 const ActionAddButton: React.FC<{
   model: AIChatBoxBlockModel;
 }> = ({ model }) => {
@@ -368,7 +376,7 @@ export const AIChatBoxView: React.FC<{
   const flowSettingsEnabled = !!model.context.flowSettingsEnabled;
   const settings = getAIChatBoxSettings(model.props);
   const minWidth = model.props.minWidth ?? 300;
-  const height = settings.height;
+  const height = getAIChatBoxViewHeight(model, settings.height);
   const conversationPanelWidth = 300;
   const messagesPanelWidth = 420;
   const headerHeight = 48;

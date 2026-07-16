@@ -139,7 +139,7 @@ describe('AI chat box settings helpers', () => {
 });
 
 describe('AI chat box settings flow', () => {
-  it('registers production settings without block height settings', () => {
+  it('registers production settings with the common block height menu', () => {
     const settingsFlow = AIChatBoxBlockModel.globalFlowRegistry.getFlow(AI_CHAT_BOX_BLOCK_SETTINGS_FLOW_KEY);
     const cardSettingsFlow = AIChatBoxBlockModel.globalFlowRegistry.getFlow('cardSettings');
 
@@ -152,7 +152,7 @@ describe('AI chat box settings flow', () => {
     expect(settingsFlow?.getStep('showEmployeeSelect')).toBeDefined();
     expect(settingsFlow?.getStep('showModelSelect')).toBeDefined();
     expect(settingsFlow?.getStep('showDisclaimer')).toBeDefined();
-    expect(cardSettingsFlow?.getStep('blockHeight')).toBeUndefined();
+    expect(cardSettingsFlow?.getStep('blockHeight')).toBeDefined();
   });
 
   it('uses default scope for editing and stores cleared scope without falling back to uid', async () => {
@@ -182,7 +182,6 @@ describe('AI chat box settings flow', () => {
 
     expect(editStep?.defaultParams?.(ctx)).toMatchObject({
       scope: 'chat-box-1',
-      height: 640,
       selectedBlocks: [
         { type: 'flow-model', uid: 'external-1', title: 'External' },
         { type: 'flow-model', uid: 'body-1', title: 'Body one' },
@@ -192,7 +191,6 @@ describe('AI chat box settings flow', () => {
     const schema = await editStep?.uiSchema?.(ctx);
     expect(Object.keys(schema ?? {})).toEqual([
       'scope',
-      'height',
       'systemPrompt',
       'defaultUserMessage',
       'selectedBlocks',
@@ -202,7 +200,6 @@ describe('AI chat box settings flow', () => {
 
     editStep?.handler?.(ctx, {
       scope: '',
-      height: 720,
       systemPrompt: 'Background',
       defaultUserMessage: 'Hello',
       selectedBlocks: [
@@ -215,7 +212,6 @@ describe('AI chat box settings flow', () => {
 
     expect(model.setProps).toHaveBeenCalledWith({
       scope: '',
-      height: 720,
       systemPrompt: 'Background',
       defaultUserMessage: 'Hello',
       selectedBlocks: [{ type: 'flow-model', uid: 'external-1', title: 'External' }],
@@ -250,7 +246,6 @@ describe('AI chat box settings flow', () => {
       'Title & description',
       'Edit chat box',
       'Scope',
-      'Height',
       'Background',
       'Default user message',
       'Work context',

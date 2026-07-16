@@ -15,6 +15,7 @@ import {
   AI_CHAT_BOX_ACTION_MODEL_NAMES,
   filterNestedAIChatBoxBlockItems,
   getAIChatBoxActionItems,
+  getAIChatBoxViewHeight,
   isAIChatBoxCoreModel,
   moveAddedBlockBeforeCore,
 } from '../components/AIChatBoxView';
@@ -99,5 +100,19 @@ describe('AIChatBoxView helpers', () => {
 
     expect(moveModel).toHaveBeenCalledTimes(1);
     expect(moveModel).toHaveBeenCalledWith('added', 'core', { persist: false });
+  });
+
+  it('uses the common block height modes when rendering the chat box view', () => {
+    const model = {
+      decoratorProps: {},
+    } as unknown as AIChatBoxBlockModel;
+
+    expect(getAIChatBoxViewHeight(model, 640)).toBe(640);
+
+    model.decoratorProps.heightMode = 'specifyValue';
+    expect(getAIChatBoxViewHeight(model, 640)).toBe('100%');
+
+    model.decoratorProps.heightMode = 'fullHeight';
+    expect(getAIChatBoxViewHeight(model, 640)).toBe('100%');
   });
 });

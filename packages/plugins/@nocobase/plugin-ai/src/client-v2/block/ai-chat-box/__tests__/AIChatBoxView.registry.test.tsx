@@ -80,10 +80,14 @@ vi.mock('../components/Conversations', () => ({
   Conversations: () => <div data-testid="conversations" />,
 }));
 
-const makeModel = (props: AIChatBoxBlockModel['props'] = {}): AIChatBoxBlockModel => {
+const makeModel = (
+  props: AIChatBoxBlockModel['props'] = {},
+  decoratorProps: AIChatBoxBlockModel['decoratorProps'] = {},
+): AIChatBoxBlockModel => {
   return {
     uid: 'chat-box-1',
     props,
+    decoratorProps,
     context: {
       flowSettingsEnabled: false,
     },
@@ -121,5 +125,11 @@ describe('AIChatBoxView mounted registry', () => {
     unmount();
 
     expect(getMountedChatBox('chat-box-1')).toBeUndefined();
+  });
+
+  it('fills the common block height container when height mode is fixed', () => {
+    const { container } = render(<AIChatBoxView model={makeModel({}, { heightMode: 'specifyValue', height: 720 })} />);
+
+    expect(container.querySelector('.ant-layout')?.getAttribute('style')).toContain('height: 100%');
   });
 });

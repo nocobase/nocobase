@@ -18,7 +18,6 @@ import {
   getAIChatBoxManualSelectedBlocks,
   getAIChatBoxSettings,
   getAIChatBoxWorkContext,
-  normalizeAIChatBoxHeight,
   normalizeAIChatBoxScopeForSave,
 } from './utils';
 import type { AIChatBoxBlockProps, AIChatBoxSettings } from './types';
@@ -134,6 +133,9 @@ export const registerAIChatBoxBlockSettings = (ModelClass: AIChatBoxBlockModelCo
       linkageRules: {
         use: 'blockLinkageRules',
       },
+      blockHeight: {
+        use: 'blockHeight',
+      },
     },
   });
 
@@ -158,7 +160,6 @@ export const registerAIChatBoxBlockSettings = (ModelClass: AIChatBoxBlockModelCo
           return {
             ...settings,
             scope: settings.scope === undefined ? model.uid : settings.scope,
-            height: normalizeAIChatBoxHeight(settings.height),
             selectedBlocks: getAIChatBoxWorkContext(model),
           };
         },
@@ -174,20 +175,6 @@ export const registerAIChatBoxBlockSettings = (ModelClass: AIChatBoxBlockModelCo
               title: tExpr('Scope'),
               'x-decorator': 'FormItem',
               'x-component': 'Input',
-            },
-            height: {
-              type: 'number',
-              title: tExpr('Height'),
-              'x-decorator': 'FormItem',
-              'x-component': 'InputNumber',
-              'x-component-props': {
-                min: 420,
-                max: 1600,
-                step: 20,
-                style: {
-                  width: '100%',
-                },
-              },
             },
             systemPrompt: {
               type: 'string',
@@ -235,7 +222,6 @@ export const registerAIChatBoxBlockSettings = (ModelClass: AIChatBoxBlockModelCo
           const bodyContextItems = getAIChatBoxBodyContextItems(ctx.model);
           ctx.model.setProps({
             scope: normalizeAIChatBoxScopeForSave(params.scope, ctx.model.uid),
-            height: normalizeAIChatBoxHeight(params.height),
             systemPrompt: params.systemPrompt || '',
             defaultUserMessage: params.defaultUserMessage || '',
             allowedAIEmployees: Array.isArray(params.allowedAIEmployees) ? params.allowedAIEmployees : [],
