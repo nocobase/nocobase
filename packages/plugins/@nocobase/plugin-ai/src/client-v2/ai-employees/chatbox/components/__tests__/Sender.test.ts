@@ -46,6 +46,7 @@ describe('Sender options helpers', () => {
         defaultWorkContext: [context('default-1')],
         skillSettings: null,
         webSearch: true,
+        scope: 'chat-box-1',
       }),
     ).toMatchObject({
       sessionId: undefined,
@@ -55,6 +56,7 @@ describe('Sender options helpers', () => {
       attachments: [{ filename: 'draft.txt', status: 'done' }],
       workContext: [context('default-1'), context('manual-1')],
       webSearch: true,
+      scope: 'chat-box-1',
     });
   });
 

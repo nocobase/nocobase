@@ -61,6 +61,7 @@ export type SenderOptions = {
   defaultWorkContext?: ContextItem[];
   allowedAIEmployees?: string[];
   allowedModels?: string[];
+  scope?: string;
 };
 
 export type BuildSenderSendOptionsInput = {
@@ -77,6 +78,7 @@ export type BuildSenderSendOptionsInput = {
   editingMessageId?: string | null;
   skillSettings?: SkillSettings | null;
   webSearch?: boolean;
+  scope?: string;
   uploadEnabled?: boolean;
   contextSelectorEnabled?: boolean;
   webSearchEnabled?: boolean;
@@ -108,6 +110,7 @@ export const buildSenderSendOptions = ({
   editingMessageId,
   skillSettings,
   webSearch,
+  scope,
   uploadEnabled = true,
   contextSelectorEnabled = true,
   webSearchEnabled = true,
@@ -140,6 +143,7 @@ export const buildSenderSendOptions = ({
     editingMessageId: isEditingMessage && editingMessageId ? editingMessageId : undefined,
     skillSettings: skillSettings || undefined,
     webSearch: webSearchEnabled ? webSearch : false,
+    scope,
   };
 };
 
@@ -205,6 +209,7 @@ export const Sender: React.FC<SenderOptions> = observer((options) => {
       editingMessageId,
       skillSettings,
       webSearch,
+      scope: options.scope,
       uploadEnabled: showUpload,
       contextSelectorEnabled: showContextSelector,
       webSearchEnabled: showWebSearch,

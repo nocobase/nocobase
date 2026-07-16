@@ -230,6 +230,7 @@ export type SendOptions = {
   editingMessageId?: string;
   skillSettings?: SkillSettings;
   webSearch?: boolean;
+  scope?: string;
   model?: {
     llmService: string;
     model: string;

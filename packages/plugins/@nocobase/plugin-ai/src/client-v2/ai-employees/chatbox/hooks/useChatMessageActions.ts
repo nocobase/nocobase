@@ -714,6 +714,7 @@ export const useChatMessageActions = (runtime?: ChatBoxRuntime) => {
     onConversationCreate,
     skillSettings,
     webSearch,
+    scope,
     model: inputModel,
   }: SendOptions & {
     onConversationCreate?: (sessionId: string) => void;
@@ -791,6 +792,7 @@ export const useChatMessageActions = (runtime?: ChatBoxRuntime) => {
           aiEmployee,
           systemMessage,
           skillSettings,
+          scope,
           modelSettings: model
             ? {
                 llmService: model.llmService,

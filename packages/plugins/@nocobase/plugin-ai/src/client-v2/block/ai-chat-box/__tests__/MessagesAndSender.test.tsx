@@ -125,6 +125,7 @@ describe('MessagesAndSender', () => {
         { type: 'flow-model', uid: 'external-1', title: 'External' },
         { type: 'flow-model', uid: 'body-1', title: 'Body one' },
       ],
+      scope: 'chat-box-1',
     });
 
     await waitFor(() => expect(mocks.switchAIEmployee).toHaveBeenCalled());

@@ -408,7 +408,7 @@ AI employee task 需要支持 `Chat box uid`：
 
 ### T7. conversation scope 服务端与客户端接入
 
-状态：`Pending`
+状态：`Done`
 
 依赖：T6
 
@@ -418,7 +418,7 @@ AI employee task 需要支持 `Chat box uid`：
 - T7.2 conversation create 保存 scope。
 - T7.3 conversation list 支持 scope 过滤。
 - T7.4 清空 scope 表示不过滤 scope。
-- T7.5 全局 chatbox 默认不显示 scoped block conversations，除非明确请求。
+- T7.5 全局 chatbox 默认不按 scope 过滤，继续显示 scoped 与 unscoped conversations；只有明确传入非空 scope 时才过滤。
 - T7.6 更新 client hooks/action 参数。
 
 测试：
@@ -426,8 +426,17 @@ AI employee task 需要支持 `Chat box uid`：
 - server resource list scope 过滤测试。
 - create 保存 scope 测试。
 - 清空 scope 不过滤测试。
-- 全局 chatbox scoped conversation 隔离测试。
+- 全局 chatbox 不传 scope 时不过滤 scoped conversations 测试。
 - 运行 touched files eslint 和相关 server/client tests。
+
+测试结果：
+
+- `yarn eslint --fix` touched T7 TS/TSX files 通过。
+- `yarn test packages/plugins/@nocobase/plugin-ai/src/server/__tests__/ai-conversations-scope.test.ts --run --reporter=verbose` 通过。
+- `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/components/__tests__/Sender.test.ts --run --reporter=verbose` 通过。
+- `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/block/ai-chat-box/__tests__/MessagesAndSender.test.tsx --run --reporter=verbose` 通过。
+- `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/block/ai-chat-box/__tests__/Conversations.test.tsx --run --reporter=verbose` 通过。
+- `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/chatbox-global-behavior.test.tsx --run --reporter=verbose` 通过。
 
 ### T8. 新会话、发送、取消、恢复流式响应完整联调
 

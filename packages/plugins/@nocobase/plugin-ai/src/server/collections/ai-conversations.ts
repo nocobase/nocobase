@@ -37,6 +37,11 @@ export default defineCollection({
       allowNull: false,
     },
     {
+      name: 'scope',
+      type: 'string',
+      index: true,
+    },
+    {
       name: 'user',
       type: 'belongsTo',
       target: 'users',

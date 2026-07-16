@@ -17,7 +17,7 @@ import { Sender } from '../../../ai-employees/chatbox/components/Sender';
 import { useChatBoxActions } from '../../../ai-employees/chatbox/hooks/useChatBoxActions';
 import { useChatBoxRuntime } from '../../../ai-employees/chatbox/stores/runtime';
 import type { AIChatBoxBlockModel } from '../AIChatBoxBlockModel';
-import { getAIChatBoxSettings, getAIChatBoxWorkContext } from '../utils';
+import { getAIChatBoxScope, getAIChatBoxSettings, getAIChatBoxWorkContext } from '../utils';
 
 const { Footer } = Layout;
 
@@ -32,6 +32,7 @@ export const MessagesAndSender: React.FC<{
   const { switchAIEmployee } = useChatBoxActions(runtime);
   const settings = getAIChatBoxSettings(model.props);
   const defaultWorkContext = getAIChatBoxWorkContext(model);
+  const scope = getAIChatBoxScope(model);
   const allowedAIEmployees = settings.allowedAIEmployees;
   const currentEmployee = chatBoxModel.currentEmployee;
 
@@ -87,6 +88,7 @@ export const MessagesAndSender: React.FC<{
           defaultSystemMessage={settings.systemPrompt}
           defaultUserMessage={settings.defaultUserMessage}
           defaultWorkContext={defaultWorkContext}
+          scope={scope}
         />
         {settings.showDisclaimer ? (
           <Typography.Text
