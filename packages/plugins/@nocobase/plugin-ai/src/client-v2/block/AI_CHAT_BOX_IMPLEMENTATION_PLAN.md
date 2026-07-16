@@ -440,7 +440,7 @@ AI employee task 需要支持 `Chat box uid`：
 
 ### T8. 新会话、发送、取消、恢复流式响应完整联调
 
-状态：`Pending`
+状态：`Done`
 
 依赖：T7
 
@@ -460,6 +460,16 @@ AI employee task 需要支持 `Chat box uid`：
 - 流式响应进入正确 session 测试。
 - cancel/resume/edit 回归测试。
 - 运行 touched files eslint。
+
+测试结果：
+
+- `yarn eslint --fix packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/hooks/__tests__/chatbox-actions.test.tsx` 通过。
+- `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/hooks/__tests__/chatbox-actions.test.tsx --run --reporter=verbose` 通过。
+- `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/components/__tests__/Sender.test.ts --run --reporter=verbose` 通过。
+- `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/block/ai-chat-box/__tests__/MessagesAndSender.test.tsx --run --reporter=verbose` 通过。
+- `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/block/ai-chat-box/__tests__/Conversations.test.tsx --run --reporter=verbose` 通过。
+- `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/components/__tests__/Messages.test.tsx --run --reporter=verbose` 通过。
+- `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/chatbox-global-behavior.test.tsx --run --reporter=verbose` 通过。
 
 ### T9. AI employee task 定向 AI chat box
 
