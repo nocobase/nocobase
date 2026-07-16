@@ -26,6 +26,10 @@ const { Link, Text } = Typography;
 
 const STICKY_BOTTOM_THRESHOLD = 48;
 
+type MessagesProps = {
+  disableHorizontalScroll?: boolean;
+};
+
 const isSameMessageContent = (prev: Message['content'], next: Message['content']) =>
   prev === next ||
   (prev?.messageId === next?.messageId &&
@@ -48,7 +52,7 @@ const MemoBubble = React.memo(Bubble, (prevProps, nextProps) => {
   );
 });
 
-export const Messages: React.FC = observer(() => {
+export const Messages: React.FC<MessagesProps> = observer(({ disableHorizontalScroll }) => {
   const t = useT();
   const { token } = theme.useToken();
   const app = useApp();
@@ -258,6 +262,7 @@ export const Messages: React.FC = observer(() => {
       style={{
         margin: '16px 0',
         overflow: 'auto',
+        overflowX: disableHorizontalScroll ? 'hidden' : undefined,
         position: 'relative',
       }}
     >

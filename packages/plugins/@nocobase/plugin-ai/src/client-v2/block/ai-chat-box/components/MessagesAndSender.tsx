@@ -73,7 +73,7 @@ export const MessagesAndSender: React.FC<{
     >
       {settings.showMessages ? (
         <div style={{ flex: '1 1 0', minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <Messages />
+          <Messages disableHorizontalScroll />
         </div>
       ) : null}
       <div

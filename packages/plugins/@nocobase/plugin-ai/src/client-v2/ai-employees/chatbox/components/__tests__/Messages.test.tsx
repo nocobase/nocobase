@@ -60,11 +60,11 @@ vi.mock('../../hooks/useWorkflowTasks', () => ({
   }),
 }));
 
-const renderMessages = (runtime: ChatBoxRuntime) => {
+const renderMessages = (runtime: ChatBoxRuntime, props: React.ComponentProps<typeof Messages> = {}) => {
   runtime.chatConversationModel.setCurrentConversation('session-a');
   return render(
     <ChatBoxRuntimeProvider runtime={runtime}>
-      <Messages />
+      <Messages {...props} />
     </ChatBoxRuntimeProvider>,
   );
 };
@@ -115,5 +115,14 @@ describe('Messages runtime mode', () => {
     const content = container.querySelector('.ant-layout-content') as HTMLElement | null;
 
     expect(content?.style.overflow).toBe('auto');
+    expect(content?.style.overflowX).toBe('');
+  });
+
+  it('can disable horizontal scrolling for nested block layouts', () => {
+    const { container } = renderMessages(createChatBoxRuntime({ mode: 'block' }), { disableHorizontalScroll: true });
+    const content = container.querySelector('.ant-layout-content') as HTMLElement | null;
+
+    expect(content?.style.overflow).toBe('auto');
+    expect(content?.style.overflowX).toBe('hidden');
   });
 });

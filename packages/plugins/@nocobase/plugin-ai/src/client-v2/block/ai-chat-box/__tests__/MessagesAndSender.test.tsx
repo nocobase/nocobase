@@ -17,6 +17,7 @@ import { MessagesAndSender } from '../components/MessagesAndSender';
 import type { AIChatBoxBlockProps } from '../types';
 
 const mocks = vi.hoisted(() => ({
+  messagesProps: undefined as { disableHorizontalScroll?: boolean } | undefined,
   senderProps: undefined as SenderOptions | undefined,
   switchAIEmployee: vi.fn(),
   getAIEmployees: vi.fn(),
@@ -48,7 +49,10 @@ vi.mock('../../../ai-employees/chatbox/stores/runtime', () => ({
 }));
 
 vi.mock('../../../ai-employees/chatbox/components/Messages', () => ({
-  Messages: () => <div data-testid="messages" />,
+  Messages: (props: { disableHorizontalScroll?: boolean }) => {
+    mocks.messagesProps = props;
+    return <div data-testid="messages" />;
+  },
 }));
 
 vi.mock('../../../ai-employees/chatbox/components/Sender', () => ({
@@ -81,6 +85,7 @@ const makeModel = (props: AIChatBoxBlockProps): AIChatBoxBlockModel => {
 
 describe('MessagesAndSender', () => {
   it('keeps messages in a bounded flex region above the sender', () => {
+    mocks.messagesProps = undefined;
     mocks.getAIEmployees.mockResolvedValue([]);
 
     const { container } = render(
@@ -97,6 +102,7 @@ describe('MessagesAndSender', () => {
     const senderRegion = screen.getByTestId('sender').parentElement;
     expect(messagesRegion?.getAttribute('style')).toContain('flex: 1 1 0');
     expect(messagesRegion?.getAttribute('style')).toContain('overflow: hidden');
+    expect(mocks.messagesProps?.disableHorizontalScroll).toBe(true);
     expect(senderRegion?.tagName).toBe('DIV');
     expect(senderRegion?.getAttribute('style')).toContain('flex: 0 0 auto');
     expect(senderRegion?.getAttribute('style')).toContain('position: relative');
