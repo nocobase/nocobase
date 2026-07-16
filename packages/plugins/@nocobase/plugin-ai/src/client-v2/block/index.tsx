@@ -84,11 +84,22 @@ const bodyMessageListItemClassName = css`
   flex: 1 1 0;
   min-height: 0;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 
   > div,
   > div > div,
-  > div > div > div {
+  > div > div > div,
+  > div > div > div > div {
+    flex: 1 1 auto;
     height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .ant-layout {
     min-height: 0;
   }
 `;
@@ -547,13 +558,22 @@ const AIChatDemoBlockView: React.FC<{
           </div>
         </>
       ) : null}
-      <Layout style={{ minHeight: 0 }}>
+      <Layout
+        style={{
+          height: '100%',
+          minHeight: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}
+      >
         <Header
           className={compactHeaderClassName}
           style={{
             backgroundColor: token.colorBgContainer,
             borderBottom: `1px solid ${token.colorBorder}`,
             height: headerHeight,
+            flex: '0 0 auto',
             lineHeight: `${headerHeight}px`,
             padding: '0 4px',
             display: 'flex',
@@ -1030,13 +1050,15 @@ const AIChatDemoMessagesAndSender: React.FC<{
     <div
       style={{
         height: '100%',
+        maxHeight: '100%',
         minHeight: 0,
         display: 'flex',
         flexDirection: 'column',
+        overflow: 'hidden',
       }}
     >
       {settings.showMessages ? (
-        <div style={{ flex: '1 1 0', minHeight: 0, overflow: 'hidden' }}>
+        <div style={{ flex: '1 1 0', minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <AIChatDemoMessages />
         </div>
       ) : null}
@@ -1317,6 +1339,7 @@ const AIChatDemoSender: React.FC<{
       style={{
         backgroundColor: 'transparent',
         padding: 0,
+        flex: '0 0 auto',
         flexShrink: 0,
       }}
     >
