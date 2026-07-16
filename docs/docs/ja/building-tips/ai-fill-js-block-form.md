@@ -61,8 +61,10 @@ ctx.model.form = form;
 
 [JS ブロック](/interface-builder/blocks/other-blocks/js-block)を追加し、JavaScript エディターに以下の完全なコードを貼り付けます。
 
+### 完全なサンプルコード
+
 <details>
-<summary>完全なサンプルコードを表示</summary>
+<summary>クリックして展開し、コピー</summary>
 
 ```jsx
 const React = ctx.libs.React;
@@ -262,6 +264,8 @@ const FORM_FIELDS = [
     type: 'string',
   },
 ];
+
+ctx.model.setTitle('Event Planning Request');
 
 ctx.model.setProps({
   aiForm: {
@@ -847,6 +851,57 @@ useEffect(() => {
   };
 }, [form]);
 ```
+
+### 「ブロックを選択」に表示する名前を設定する
+
+JS ブロックは「ブロックを選択」で既定では `JS block` と表示されます。`ctx.model.setTitle()` を使うと、識別しやすい名前を設定できます。
+
+```jsx
+ctx.model.setTitle('Event Planning Request');
+```
+
+設定後は、コンテキストを選択するときに `Event Planning Request` と表示され、同じページに複数のブロックがある場合でも対象フォームを見つけやすくなります。
+
+JS ブロックごとに短く明確な名前を付け、この行を完全なサンプルコードに残してください。
+
+### 「フォーム入力」ツールにフォーム情報を提供する
+
+`ctx.model.form` はフィールド値を受け取る Form インスタンスを提供します。さらに、フォームに含まれるフィールドと入力時のルールをツールへ伝える必要があります。
+
+`ctx.model.setProps()` を使って、現在の JS ブロックにこの情報を設定します。
+
+```jsx
+ctx.model.setProps({
+  aiForm: {
+    prompt: `This is a fillable Event Planning Request form. Use the Fill form tool when the user asks to populate it. Use the current block UID as the form target: ${ctx.model.uid}. Always use enum values instead of labels, use YYYY-MM-DD for date fields, and use an array for services.`,
+    fields: FORM_FIELDS,
+  },
+});
+```
+
+`aiForm` には次の二つを設定します。
+
+- `prompt`：フォームの用途、対象ブロック UID、列挙値、日付、複数選択の入力ルールを説明します。
+- `fields`：`FORM_FIELDS` を通じてフィールド名、型、必須状態、選択肢を提供します。
+
+ユーザーがこの JS ブロックを AI 従業員のコンテキストへ追加すると、「フォーム入力」ツールはこれらの情報を読み取り、対象ブロックのどのフィールドへ入力するかを判断します。
+
+二つの接続コードが必要です。
+
+```jsx
+// ツールにフォームの構造を伝える
+ctx.model.setProps({
+  aiForm: {
+    prompt: '...',
+    fields: FORM_FIELDS,
+  },
+});
+
+// 値を受け取る Ant Design Form インスタンスを提供する
+ctx.model.form = form;
+```
+
+選択肢を API から取得する場合は、リクエストと options の変換を完了してから `FORM_FIELDS` を定義し、`ctx.model.setProps()` を呼び出します。これにより、ツールが参照する `enum` と画面の選択肢を一致させられます。
 
 ### 複雑なフォームフィールドを記述する
 

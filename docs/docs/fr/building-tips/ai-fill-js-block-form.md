@@ -61,8 +61,10 @@ Conservez les métadonnées et le formulaire dans le même bloc JS afin de les m
 
 Ajoutez un [bloc JS](/interface-builder/blocks/other-blocks/js-block), ouvrez l’éditeur JavaScript et collez l’exemple complet.
 
+### Code complet de l’exemple
+
 <details>
-<summary>Afficher le code complet de l’exemple</summary>
+<summary>Cliquer pour développer et copier</summary>
 
 ```jsx
 const React = ctx.libs.React;
@@ -262,6 +264,8 @@ const FORM_FIELDS = [
     type: 'string',
   },
 ];
+
+ctx.model.setTitle('Event Planning Request');
 
 ctx.model.setProps({
   aiForm: {
@@ -847,6 +851,57 @@ useEffect(() => {
   };
 }, [form]);
 ```
+
+### Définir le nom affiché dans Sélectionner un bloc
+
+Par défaut, les blocs JS apparaissent sous le nom `JS block` dans Sélectionner un bloc. Utilisez `ctx.model.setTitle()` pour définir un nom plus facile à reconnaître :
+
+```jsx
+ctx.model.setTitle('Event Planning Request');
+```
+
+Les utilisateurs verront ensuite `Event Planning Request` lors de la sélection du contexte, ce qui facilite l’identification du formulaire lorsque la page contient plusieurs blocs.
+
+Utilisez un nom court et explicite pour chaque bloc JS et conservez cette ligne dans l’exemple complet.
+
+### Fournir les informations du formulaire à l’outil Remplir le formulaire
+
+`ctx.model.form` fournit l’instance Form qui reçoit les valeurs. L’outil doit également connaître les champs disponibles et les règles à respecter lors du remplissage.
+
+Utilisez `ctx.model.setProps()` pour fournir ces informations au bloc JS actuel :
+
+```jsx
+ctx.model.setProps({
+  aiForm: {
+    prompt: `This is a fillable Event Planning Request form. Use the Fill form tool when the user asks to populate it. Use the current block UID as the form target: ${ctx.model.uid}. Always use enum values instead of labels, use YYYY-MM-DD for date fields, and use an array for services.`,
+    fields: FORM_FIELDS,
+  },
+});
+```
+
+`aiForm` contient deux éléments :
+
+- `prompt` décrit l’objectif, l’UID du bloc cible et les règles pour les énumérations, les dates et les sélections multiples ;
+- `fields` fournit, via `FORM_FIELDS`, les noms, types, états obligatoires et valeurs disponibles.
+
+Lorsque l’utilisateur ajoute ce bloc JS comme contexte, l’outil lit ces informations afin de déterminer quels champs remplir dans le bloc cible.
+
+Les deux points d’intégration sont nécessaires :
+
+```jsx
+// Décrire le formulaire pour l’outil
+ctx.model.setProps({
+  aiForm: {
+    prompt: '...',
+    fields: FORM_FIELDS,
+  },
+});
+
+// Fournir l’instance Ant Design Form qui reçoit les valeurs
+ctx.model.form = form;
+```
+
+Si les options proviennent d’une API, chargez-les et convertissez-les avant de définir `FORM_FIELDS` et d’appeler `ctx.model.setProps()`. Les valeurs `enum` disponibles pour l’outil resteront ainsi alignées sur les options affichées.
 
 ### Décrire les champs complexes
 

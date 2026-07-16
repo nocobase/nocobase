@@ -61,8 +61,10 @@ ctx.model.form = form;
 
 Добавьте [JS-блок](/interface-builder/blocks/other-blocks/js-block), откройте редактор JavaScript и вставьте полный пример.
 
+### Полный код примера
+
 <details>
-<summary>Показать полный код примера</summary>
+<summary>Нажмите, чтобы развернуть и скопировать</summary>
 
 ```jsx
 const React = ctx.libs.React;
@@ -262,6 +264,8 @@ const FORM_FIELDS = [
     type: 'string',
   },
 ];
+
+ctx.model.setTitle('Event Planning Request');
 
 ctx.model.setProps({
   aiForm: {
@@ -847,6 +851,57 @@ useEffect(() => {
   };
 }, [form]);
 ```
+
+### Настройка имени в списке выбора блоков
+
+По умолчанию JS-блок отображается в списке выбора блоков как `JS block`. С помощью `ctx.model.setTitle()` можно задать более понятное имя:
+
+```jsx
+ctx.model.setTitle('Event Planning Request');
+```
+
+После этого при выборе контекста пользователь увидит `Event Planning Request`, что упрощает поиск нужной формы на странице с несколькими блоками.
+
+Используйте для каждого JS-блока короткое и понятное имя и сохраните эту строку в полном примере.
+
+### Передача информации о форме инструменту заполнения
+
+`ctx.model.form` предоставляет экземпляр Form, который принимает значения полей. Инструменту также необходимо знать, какие поля содержит форма и какие правила нужно соблюдать.
+
+Передайте эту информацию текущему JS-блоку с помощью `ctx.model.setProps()`:
+
+```jsx
+ctx.model.setProps({
+  aiForm: {
+    prompt: `This is a fillable Event Planning Request form. Use the Fill form tool when the user asks to populate it. Use the current block UID as the form target: ${ctx.model.uid}. Always use enum values instead of labels, use YYYY-MM-DD for date fields, and use an array for services.`,
+    fields: FORM_FIELDS,
+  },
+});
+```
+
+`aiForm` содержит две части:
+
+- `prompt` описывает назначение формы, UID целевого блока и правила для перечислений, дат и множественного выбора;
+- `fields` передаёт через `FORM_FIELDS` имена и типы полей, обязательность и доступные значения.
+
+Когда пользователь добавляет этот JS-блок в контекст, инструмент читает информацию и определяет, какие поля нужно заполнить в целевом блоке.
+
+Необходимы обе точки подключения:
+
+```jsx
+// Описать форму для инструмента
+ctx.model.setProps({
+  aiForm: {
+    prompt: '...',
+    fields: FORM_FIELDS,
+  },
+});
+
+// Предоставить экземпляр Ant Design Form для получения значений
+ctx.model.form = form;
+```
+
+Если варианты загружаются через API, сначала выполните запрос и преобразуйте options, затем определите `FORM_FIELDS` и вызовите `ctx.model.setProps()`. Это обеспечит соответствие значений `enum` вариантам, отображаемым на странице.
 
 ### Описание сложных полей
 
