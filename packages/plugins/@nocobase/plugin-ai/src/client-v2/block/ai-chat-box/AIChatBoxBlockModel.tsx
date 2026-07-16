@@ -16,6 +16,7 @@ import {
 } from '../../ai-employees/chatbox/stores/runtime';
 import { tExpr } from '../../locale';
 import { AIChatBoxView } from './components/AIChatBoxView';
+import { registerAIChatBoxBlockSettings } from './settings';
 import { getDefaultAIChatBoxSettings } from './utils';
 import type { AIChatBoxBlockProps, AIChatBoxBlockStructure } from './types';
 
@@ -56,3 +57,5 @@ AIChatBoxBlockModel.define({
     },
   },
 });
+
+registerAIChatBoxBlockSettings(AIChatBoxBlockModel);

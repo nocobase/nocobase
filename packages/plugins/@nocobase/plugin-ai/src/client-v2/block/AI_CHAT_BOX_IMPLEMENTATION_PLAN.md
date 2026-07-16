@@ -306,7 +306,7 @@ AI employee task 需要支持 `Chat box uid`：
 
 ### T4. Settings 与 Work context 归一化
 
-状态：`Pending`
+状态：`Done`
 
 依赖：T3
 
@@ -327,6 +327,14 @@ AI employee task 需要支持 `Chat box uid`：
 - 设置保存测试。
 - i18n key 检查。
 - 运行 touched files eslint。
+
+测试结果：
+
+- `yarn eslint --fix` touched T4 TS/TSX files 通过。
+- `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/block/ai-chat-box/__tests__/settings.test.ts --run --reporter=verbose` 通过。
+- `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/block/ai-chat-box/__tests__/AIChatBoxView.test.ts --run --reporter=verbose` 通过。
+- `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/settings-registration.test.ts --run --reporter=verbose` 通过。
+- `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/public-api-contract.test.ts --run --reporter=verbose` 通过。
 
 ### T5. Sender 和 Messages 接入真实 runtime
 

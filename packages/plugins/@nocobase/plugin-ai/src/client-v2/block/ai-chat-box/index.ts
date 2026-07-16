@@ -10,5 +10,14 @@
 export { AIChatBoxBlockModel } from './AIChatBoxBlockModel';
 export { AIChatBoxCoreModel } from './AIChatBoxCoreModel';
 export { AI_CHAT_BOX_BLOCK_SETTINGS_FLOW_KEY } from './settings';
-export { getAIChatBoxScope, getAIChatBoxSettings, getDefaultAIChatBoxSettings } from './utils';
+export {
+  getAIChatBoxBodyContextItems,
+  getAIChatBoxManualSelectedBlocks,
+  getAIChatBoxScope,
+  getAIChatBoxSettings,
+  getAIChatBoxWorkContext,
+  getDefaultAIChatBoxSettings,
+  normalizeAIChatBoxScopeForSave,
+  normalizeAIChatBoxWorkContext,
+} from './utils';
 export type { AIChatBoxBlockProps, AIChatBoxBlockStructure, AIChatBoxSettings } from './types';

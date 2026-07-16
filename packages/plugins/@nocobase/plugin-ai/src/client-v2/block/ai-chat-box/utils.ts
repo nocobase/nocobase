@@ -7,9 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { FlowModel } from '@nocobase/flow-engine';
 import type { ContextItem } from '../../ai-employees/types';
 import type { AIChatBoxBlockModel } from './AIChatBoxBlockModel';
 import type { AIChatBoxBlockProps, AIChatBoxSettings } from './types';
+import { AIChatBoxCoreModel } from './AIChatBoxCoreModel';
 
 const isContextItem = (value: unknown): value is ContextItem => {
   return (
@@ -55,4 +57,53 @@ export const getAIChatBoxSettings = (props: AIChatBoxBlockProps = {}): AIChatBox
 export const getAIChatBoxScope = (model: AIChatBoxBlockModel) => {
   const settings = getAIChatBoxSettings(model.props);
   return settings.scope === undefined ? model.uid : settings.scope;
+};
+
+export const normalizeAIChatBoxScopeForSave = (scope: string | undefined, defaultScope: string) => {
+  if (scope === undefined || scope === defaultScope) {
+    return undefined;
+  }
+  return scope;
+};
+
+export const normalizeAIChatBoxWorkContext = (
+  selectedBlocks: ContextItem[] | undefined,
+  bodyBlocks: ContextItem[] | undefined,
+) => {
+  const items = [...(Array.isArray(selectedBlocks) ? selectedBlocks.filter(isContextItem) : []), ...(bodyBlocks || [])];
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    const key = `${item.type}:${item.uid}`;
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
+};
+
+export const getAIChatBoxBodyContextItems = (model: AIChatBoxBlockModel): ContextItem[] => {
+  return model
+    .mapSubModels('bodyBlocks', (subModel: FlowModel) => subModel)
+    .filter((subModel) => !(subModel instanceof AIChatBoxCoreModel))
+    .map((subModel) => ({
+      type: 'flow-model',
+      uid: subModel.uid,
+      title: subModel.title,
+    }));
+};
+
+export const getAIChatBoxWorkContext = (model: AIChatBoxBlockModel) => {
+  return normalizeAIChatBoxWorkContext(
+    getAIChatBoxSettings(model.props).selectedBlocks,
+    getAIChatBoxBodyContextItems(model),
+  );
+};
+
+export const getAIChatBoxManualSelectedBlocks = (
+  selectedBlocks: ContextItem[] | undefined,
+  bodyBlocks: ContextItem[] | undefined,
+) => {
+  const bodyKeys = new Set((bodyBlocks || []).map((item) => `${item.type}:${item.uid}`));
+  return normalizeAIChatBoxWorkContext(selectedBlocks, []).filter((item) => !bodyKeys.has(`${item.type}:${item.uid}`));
 };
