@@ -1,4 +1,8 @@
-# Markdown (Vditor)
+---
+pkg: "@nocobase/plugin-field-markdown-vditor"
+---
+
+# Редактор Markdown (Vditor)
 
 ## Введение
 
@@ -8,4 +12,4 @@
 
 ## Пример
 
-Будет дополнено.
+Скоро появится.

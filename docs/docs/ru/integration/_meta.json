@@ -1,47 +1,47 @@
 [
   {
     "type": "custom-link",
-    "label": "Обзор",
+    "label": "Обзор (Overview)",
     "link": "/integration/"
   },
   {
     "type": "custom-link",
-    "label": "API",
+    "label": "API (API)",
     "items": [
       {
         "type": "custom-link",
-        "label": "Ключи API",
+        "label": "Ключи API (API Keys)",
         "link": "/integration/api-keys/"
       },
       {
         "type": "custom-link",
-        "label": "Документация API",
+        "label": "Документация API (API Documentation)",
         "link": "/integration/api-doc/"
       },
       {
         "type": "custom-link",
-        "label": "Сценарии использования",
+        "label": "Сценарии использования (Usage Scenarios)",
         "link": "/integration/api-keys/usage"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "SSO",
+    "label": "SSO (SSO)",
     "link": "/integration/sso/"
   },
   {
     "type": "custom-link",
-    "label": "Workflow",
+    "label": "Рабочий процесс",
     "items": [
       {
         "type": "custom-link",
-        "label": "Webhook",
+        "label": "Вебхук",
         "link": "/integration/workflow-webhook/"
       },
       {
         "type": "custom-link",
-        "label": "HTTP-запрос",
+        "label": "HTTP-запрос (HTTP Request)",
         "link": "/integration/workflow-http-request/"
       }
     ]
@@ -62,14 +62,14 @@
       },
       {
         "type": "custom-link",
-        "label": "Включение MySQL Federated",
+        "label": "Включить MySQL Federated",
         "link": "/integration/fdw/enable-federated"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "Встраиваемый контент",
+    "label": "Встроенный контент",
     "items": [
       {
         "type": "custom-link",

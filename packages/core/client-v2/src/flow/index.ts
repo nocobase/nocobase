@@ -133,6 +133,7 @@ export * from './FlowPage';
 export * from './models';
 export * from './utils';
 export * from './actions';
+export { FieldAssignValueInput } from './components/FieldAssignValueInput';
 export * from './system-settings';
 export * from './admin-shell/admin-layout';
 export * from './admin-shell/BaseLayoutModel';

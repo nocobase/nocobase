@@ -6,15 +6,15 @@ pkg: "@nocobase/plugin-data-source-external-oracle"
 
 ## Введение
 
-Этот плагин позволяет использовать внешнюю базу данных Oracle в качестве источника данных. Поддерживаются версии Oracle >= 11g.
+Этот плагин позволяет использовать внешнюю базу данных Oracle как источник данных. Поддерживаются версии Oracle >= 11g.
 
 ## Установка
 
-### Установка клиента Oracle
+### Установка Oracle Client
 
-Для версий сервера Oracle ниже 12.1 необходимо установить клиент Oracle.
+Для версий Oracle Server ниже 12.1 необходимо установить Oracle client.
 
-![Установка клиента Oracle](https://static-docs.nocobase.com/20241204164359.png)
+![Установка Oracle Client](https://static-docs.nocobase.com/20241204164359.png)
 
 Пример для Linux:
 
@@ -27,9 +27,9 @@ echo /opt/instantclient_19_25 > /etc/ld.so.conf.d/oracle-instantclient.conf
 ldconfig
 ```
 
-Если клиент установлен не так, как описано выше, вам потребуется указать путь к нему (подробнее см. в [документации node-oracledb](https://node-oracledb.readthedocs.io/en/latest/user_guide/initialization.html)).
+Если клиент установлен не так, как описано выше, потребуется указать путь к клиенту (подробности см. в [документации node-oracledb](https://node-oracledb.readthedocs.io/en/latest/user_guide/initialization.html)).
 
-![Настройка пути к клиенту Oracle](https://static-docs.nocobase.com/20241204165940.png)
+![Настройка пути Oracle Client](https://static-docs.nocobase.com/20241204165940.png)
 
 ### Установка плагина
 

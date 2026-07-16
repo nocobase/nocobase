@@ -68,4 +68,17 @@ describe('FormItem', () => {
       titleField: 'name',
     });
   });
+
+  it('does not forward model-internal globalSort props to field children', () => {
+    const Field = vi.fn(() => <input aria-label="field" />);
+
+    render(
+      <FormItem globalSort={['title']} placeholder="Title">
+        <Field />
+      </FormItem>,
+    );
+
+    expect(Field).toHaveBeenCalledWith(expect.not.objectContaining({ globalSort: expect.anything() }), {});
+    expect(Field).toHaveBeenCalledWith(expect.objectContaining({ placeholder: 'Title' }), {});
+  });
 });

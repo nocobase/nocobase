@@ -114,6 +114,24 @@ vi.mock('react-router-dom', async (importOriginal) => {
   };
 });
 
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { message?: string }> {
+  state: { message?: string } = {};
+
+  static getDerivedStateFromError(error: Error) {
+    return {
+      message: error.message,
+    };
+  }
+
+  render() {
+    if (this.state.message) {
+      return <div data-testid="guard-error">{this.state.message}</div>;
+    }
+
+    return this.props.children;
+  }
+}
+
 describe('EmbedAccessGuard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -123,6 +141,7 @@ describe('EmbedAccessGuard', () => {
     mocks.app.flowEngine.context.dataSourceManager.ensureLoaded.mockResolvedValue(undefined);
     mocks.app.flowEngine.context.routeRepository.ensureAccessibleLoaded.mockResolvedValue(undefined);
     mocks.app.flowEngine.context.routeRepository.getRouteBySchemaUid.mockReturnValue({ uid: 'test-page' });
+    mocks.createAclSnippetAllow.mockReturnValue(() => true);
     mocks.aclStore.data = {};
     mocks.aclStore.meta = {};
     mocks.pageUid = 'test-page';
@@ -220,6 +239,82 @@ describe('EmbedAccessGuard', () => {
     });
   });
 
+  it('refreshes ACL from context and disables flow settings when ui snippets are not allowed', async () => {
+    mocks.createAclSnippetAllow.mockReturnValue(() => false);
+    mocks.app.apiClient.request
+      .mockResolvedValueOnce({
+        data: {
+          data: {
+            id: 1,
+            roles: [{ name: 'admin', title: 'Admin' }],
+          },
+        },
+      })
+      .mockResolvedValueOnce({
+        data: {
+          data: {
+            role: 'admin',
+            snippets: [],
+          },
+          meta: {},
+        },
+      });
+    const { EmbedAccessGuard } = await import('../EmbedAccessGuard');
+    const { ACLContext } = await import('@nocobase/client-v2');
+    const RefreshAclButton = () => {
+      const acl = React.useContext(
+        ACLContext as React.Context<{
+          refresh: () => Promise<void>;
+        } | null>,
+      );
+
+      return (
+        <button
+          type="button"
+          onClick={() => {
+            acl?.refresh();
+          }}
+        >
+          refresh acl
+        </button>
+      );
+    };
+
+    render(
+      <EmbedAccessGuard>
+        <div data-testid="embed-content" />
+        <RefreshAclButton />
+      </EmbedAccessGuard>,
+    );
+
+    expect(await screen.findByTestId('embed-content')).toBeInTheDocument();
+    expect(mocks.app.flowEngine.flowSettings.disable).toHaveBeenCalledTimes(1);
+
+    mocks.app.apiClient.request.mockResolvedValueOnce({
+      data: {
+        data: {
+          role: 'member',
+          snippets: [],
+        },
+        meta: {
+          refreshed: true,
+        },
+      },
+    });
+
+    screen.getByRole('button', { name: 'refresh acl' }).click();
+
+    await waitFor(() => {
+      expect(mocks.aclStore.setData).toHaveBeenCalledWith({
+        role: 'member',
+        snippets: [],
+      });
+      expect(mocks.aclStore.setMeta).toHaveBeenCalledWith({
+        refreshed: true,
+      });
+    });
+  });
+
   it('falls back to flow engine data source runtime for v1 compatible app', async () => {
     const originalEnsureLoaded = mocks.app.dataSourceManager.ensureLoaded;
     (
@@ -288,6 +383,58 @@ describe('EmbedAccessGuard', () => {
     expect(mocks.app.flowEngine.context.routeRepository.getRouteBySchemaUid).toHaveBeenCalledWith('test-page');
     expect(mocks.app.apiClient.request).toHaveBeenCalledTimes(1);
     expect(mocks.aclStore.setData).not.toHaveBeenCalledWith(expect.objectContaining({ role: 'member' }));
+  });
+
+  it('resets ACL and renders 403 when auth check returns unauthorized', async () => {
+    mocks.app.apiClient.request.mockRejectedValueOnce({
+      response: {
+        status: 401,
+      },
+    });
+    const { EmbedAccessGuard } = await import('../EmbedAccessGuard');
+
+    render(
+      <EmbedAccessGuard>
+        <div data-testid="embed-content" />
+      </EmbedAccessGuard>,
+    );
+
+    expect(await screen.findByText('403')).toBeInTheDocument();
+    expect(screen.queryByTestId('embed-content')).not.toBeInTheDocument();
+    expect(mocks.aclStore.setData).toHaveBeenCalledWith({});
+    expect(mocks.aclStore.setMeta).toHaveBeenCalledWith({});
+    expect(mocks.app.pluginSettingsManager.setAclSnippets).toHaveBeenCalledWith([]);
+    expect(mocks.app.apiClient.auth.setRole).toHaveBeenCalledWith(null);
+  });
+
+  it('throws non authorization errors through the render boundary', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    mocks.app.apiClient.request
+      .mockResolvedValueOnce({
+        data: {
+          data: {
+            id: 1,
+            roles: [{ name: 'admin', title: 'Admin' }],
+          },
+        },
+      })
+      .mockRejectedValueOnce(new Error('roles check failed'));
+    const { EmbedAccessGuard } = await import('../EmbedAccessGuard');
+
+    try {
+      render(
+        <ErrorBoundary>
+          <EmbedAccessGuard>
+            <div data-testid="embed-content" />
+          </EmbedAccessGuard>
+        </ErrorBoundary>,
+      );
+
+      expect(await screen.findByTestId('guard-error')).toHaveTextContent('roles check failed');
+      expect(screen.queryByTestId('embed-content')).not.toBeInTheDocument();
+    } finally {
+      consoleError.mockRestore();
+    }
   });
 
   it('ignores stale failures from the previous page guard run', async () => {

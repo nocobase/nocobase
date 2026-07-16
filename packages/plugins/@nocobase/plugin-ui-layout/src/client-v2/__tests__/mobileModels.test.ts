@@ -19,7 +19,7 @@ import {
   useLayoutRoutePage,
 } from '@nocobase/client-v2';
 import { NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from '@nocobase/client-v2/flow-compat';
-import { App as AntdApp, Card, ConfigProvider, theme as antdTheme, type ThemeConfig } from 'antd';
+import { App as AntdApp, Card, ConfigProvider, Tabs, theme as antdTheme, type ThemeConfig } from 'antd';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
@@ -4786,8 +4786,14 @@ describe('plugin-ui-layout mobile models', () => {
     });
     const rootPageModel = new MobileRootPageModel({ flowEngine } as never);
     const childPageModel = new MobileChildPageModel({ flowEngine } as never);
-    const rootTabsElement = (rootPageModel.renderTabs() as React.ReactElement).props.children;
-    const childTabsElement = (childPageModel.renderTabs() as React.ReactElement).props.children;
+    const isTabsElement = (child: React.ReactNode): child is React.ReactElement<React.ComponentProps<typeof Tabs>> =>
+      React.isValidElement(child) && child.type === Tabs;
+    const rootTabsElement = React.Children.toArray(
+      (rootPageModel.renderTabs() as React.ReactElement).props.children,
+    ).find(isTabsElement);
+    const childTabsElement = React.Children.toArray(
+      (childPageModel.renderTabs() as React.ReactElement).props.children,
+    ).find(isTabsElement);
     const rootAddTabWrapper = rootPageModel.tabBarExtraContent.right as React.ReactElement;
     const childAddTabWrapper = childPageModel.tabBarExtraContent.right as React.ReactElement;
     const rootLeftSpacer = rootPageModel.tabBarExtraContent.left as React.ReactElement;
@@ -4806,8 +4812,8 @@ describe('plugin-ui-layout mobile models', () => {
     expect(childAddTabButton.props['aria-label']).toBe('Add tab');
     expect(rootAddTabButton.props.children).toBeNull();
     expect(childAddTabButton.props.children).toBeNull();
-    expect(rootTabsElement.props.tabBarExtraContent.right).toBeTruthy();
-    expect(childTabsElement.props.tabBarExtraContent.right).toBeTruthy();
+    expect(rootTabsElement?.props.tabBarExtraContent).toMatchObject({ right: expect.anything() });
+    expect(childTabsElement?.props.tabBarExtraContent).toMatchObject({ right: expect.anything() });
   });
 
   it('should scope mobile page tabs to the current mobile UI layout', () => {

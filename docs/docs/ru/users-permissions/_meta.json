@@ -6,21 +6,21 @@
   },
   {
     "type": "custom-link",
-    "label": "Роли и права доступа",
+    "label": "Роли и права",
     "items": [
       {
         "type": "custom-link",
-        "label": "Настройка ролей",
+        "label": "Роли",
         "link": "/users-permissions/acl/role"
       },
       {
         "type": "custom-link",
-        "label": "Настройка прав доступа",
+        "label": "Права",
         "link": "/users-permissions/acl/permissions"
       },
       {
         "type": "custom-link",
-        "label": "Применение в UI",
+        "label": "Применение в интерфейсе",
         "link": "/users-permissions/acl/ui"
       },
       {
@@ -30,12 +30,12 @@
       },
       {
         "type": "dir",
-        "label": "Руководство для разработчиков",
+        "label": "Разработка",
         "collapsed": true,
         "items": [
           {
             "type": "custom-link",
-            "label": "Расширение панели настройки прав",
+            "label": "Расширение вкладок конфигурации прав",
             "link": "/users-permissions/acl/dev/permission-tab"
           }
         ]
@@ -48,19 +48,19 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Управление отделами",
-        "link": "/users-permissions/departments/"
+        "label": "Отделы",
+        "link": "/users-permissions/departments"
       },
       {
         "type": "custom-link",
-        "label": "Управление ролями отделов",
+        "label": "Роли отделов",
         "link": "/users-permissions/departments/role"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "Синхронизация данных пользователей",
+    "label": "Синхронизация пользовательских данных",
     "items": [
       {
         "type": "custom-link",
@@ -69,7 +69,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Источники данных",
+        "label": "Источник данных",
         "items": [
           {
             "type": "custom-link",
@@ -78,24 +78,24 @@
           },
           {
             "type": "custom-link",
-            "label": "HTTP API",
+            "label": "Интерфейс HTTP API",
             "link": "/users-permissions/sync/sources/api"
           }
         ]
       },
       {
         "type": "dir",
-        "label": "Руководство для разработчиков",
+        "label": "Разработка",
         "collapsed": true,
         "items": [
           {
             "type": "custom-link",
-            "label": "Расширение источников данных для синхронизации",
+            "label": "Расширение источников синхронизируемых данных",
             "link": "/users-permissions/sync/dev/source"
           },
           {
             "type": "custom-link",
-            "label": "Расширение целевых ресурсов для синхронизации",
+            "label": "Расширение целевых ресурсов синхронизации",
             "link": "/users-permissions/sync/dev/resource"
           }
         ]

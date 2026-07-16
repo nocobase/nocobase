@@ -30,6 +30,8 @@ export interface CollectionFilterPanelProps {
   collection: Collection | undefined;
   /** Previously compiled filter param used to seed the editable filter group. */
   initialValue?: CompiledFilter;
+  /** Default compiled filter used both for initial empty state and Reset. */
+  defaultValue?: CompiledFilter;
   /** Called when the condition group structure changes or `reset()` is invoked. */
   onChange?: (filter: CompiledFilter) => void;
   /** Translator. Defaults to identity. */
@@ -51,6 +53,7 @@ export const CollectionFilterPanel = forwardRef<CollectionFilterPanelRef, Collec
   const {
     collection,
     initialValue,
+    defaultValue,
     onChange,
     t = identity,
     filterableFieldNames,
@@ -61,6 +64,7 @@ export const CollectionFilterPanel = forwardRef<CollectionFilterPanelRef, Collec
   const filterAction = useFilterActionProps({
     collection,
     initialValue,
+    defaultValue,
     filterableFieldNames,
     nonfilterableFieldNames,
     noIgnore,

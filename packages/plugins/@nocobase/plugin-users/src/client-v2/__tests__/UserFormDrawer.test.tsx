@@ -79,8 +79,12 @@ vi.mock('@nocobase/client-v2', async () => {
         {children}
         <button
           onClick={async () => {
-            await onSubmit?.();
-            await close();
+            try {
+              await onSubmit?.();
+              await close();
+            } catch {
+              // Keep the drawer open when validation or submit flow interrupts submission.
+            }
           }}
         >
           {submitText ?? 'Submit'}
@@ -284,6 +288,29 @@ describe('UserFormDrawer', () => {
         },
       });
     });
+  });
+
+  it('should keep the drawer open and avoid refresh when the submit flow does not save values', async () => {
+    submit.mockResolvedValue(undefined);
+    const onSubmitted = vi.fn();
+
+    render(<UserFormDrawer onSubmitted={onSubmitted} />);
+
+    await waitFor(() => {
+      expect(createModelAsync).toHaveBeenCalled();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() => {
+      expect(submit).toHaveBeenCalled();
+    });
+
+    expect(create).not.toHaveBeenCalled();
+    expect(update).not.toHaveBeenCalled();
+    expect(success).not.toHaveBeenCalled();
+    expect(onSubmitted).not.toHaveBeenCalled();
+    expect(close).not.toHaveBeenCalled();
   });
 
   it('should persist the create form model without password defaults', async () => {

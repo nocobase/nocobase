@@ -20,6 +20,7 @@ export interface RunJSValueEditorProps {
   t?: (key: string) => string;
   value?: unknown;
   onChange?: (value: RunJSValue) => void;
+  disabled?: boolean;
   height?: string;
   scene?: string;
   locator?: RunJSSourceLocator;
@@ -36,6 +37,7 @@ export const RunJSValueEditor: React.FC<RunJSValueEditorProps> = (props) => {
     t,
     value,
     onChange,
+    disabled,
     height = '200px',
     scene = 'formValue',
     containerStyle = { flex: 1, minWidth: 0 },
@@ -57,6 +59,7 @@ export const RunJSValueEditor: React.FC<RunJSValueEditorProps> = (props) => {
       sourceLabel={props.sourceLabel}
       surfaceStyle={props.surfaceStyle}
       containerStyle={containerStyle}
+      disabled={disabled}
       editorChrome={props.editorChrome}
       onEmbeddedEditorControllerChange={props.onEmbeddedEditorControllerChange}
     />

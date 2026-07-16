@@ -11,28 +11,38 @@ import { useFlowContext } from '@nocobase/flow-engine';
 import { Spin } from 'antd';
 import React, { lazy, Suspense, useMemo } from 'react';
 import PluginNotificationManagerClientV2 from '../plugin';
-import type { ContentConfigFormProps } from '../notification-manager';
+import type { ContentConfigFormProps, LoaderOf, RegisterChannelOptions } from '../notification-manager';
+
+type NotificationManagerLike = {
+  channelTypes: {
+    get: (key: string) => RegisterChannelOptions | undefined;
+  };
+};
 
 export function ContentConfigForm(props: ContentConfigFormProps & { channelType?: string }) {
-  const { variableOptions, channelType } = props;
+  const { variableOptions, channelType, namePrefix } = props;
   const ctx = useFlowContext();
-  const plugin = ctx.app.pm.get(PluginNotificationManagerClientV2);
-
-  const ContentConfigFormLoader = useMemo(
-    () => (channelType ? plugin?.channelTypes.get(channelType)?.components?.ContentConfigFormLoader : undefined),
-    [plugin, channelType],
+  const plugin =
+    (ctx.app.pm.get(PluginNotificationManagerClientV2) as NotificationManagerLike | undefined) ??
+    (ctx.app.pm.get('notification-manager') as NotificationManagerLike | undefined);
+  const registration = useMemo(
+    () => (channelType ? plugin?.channelTypes.get(channelType) : undefined),
+    [channelType, plugin],
   );
+  const ContentConfigFormLoader = registration?.components?.ContentConfigFormLoader;
 
-  const Body = useMemo(
-    () => (ContentConfigFormLoader ? lazy(ContentConfigFormLoader) : null),
-    [ContentConfigFormLoader],
-  );
+  const Body = useMemo(() => {
+    if (ContentConfigFormLoader) {
+      return lazy(ContentConfigFormLoader as LoaderOf<ContentConfigFormProps>);
+    }
+    return null;
+  }, [ContentConfigFormLoader]);
 
   if (!Body) return null;
 
   return (
     <Suspense fallback={<Spin />}>
-      <Body variableOptions={variableOptions} />
+      <Body variableOptions={variableOptions} namePrefix={namePrefix} />
     </Suspense>
   );
 }

@@ -1,12 +1,12 @@
 # ctx.initResource()
 
-**Инициализирует** ресурс для текущего контекста. Если `ctx.resource` еще не существует, метод создает ресурс указанного типа и привязывает его к контексту; если он уже существует, используется текущий экземпляр. После этого к нему можно обращаться через `ctx.resource`.
+**Инициализирует** ресурс текущего контекста: если `ctx.resource` отсутствует, создаёт ресурс указанного типа и привязывает его; если уже есть — использует существующий. После этого можно работать с `ctx.resource`.
 
 ## Сценарии использования
 
-Обычно используется в сценариях **JSBlock** (независимый блок). Большинство блоков, всплывающих окон и других компонентов имеют предварительно привязанный `ctx.resource`, поэтому ручной вызов не требуется. В JSBlock по умолчанию ресурс отсутствует, поэтому необходимо вызвать `ctx.initResource(type)` перед загрузкой данных через `ctx.resource`.
+Обычно применяется только в **JS-блоке** (автономный блок). В большинстве блоков и всплывающих окон `ctx.resource` уже привязан; в **JS-блоке** — нет, поэтому сначала вызовите `ctx.initResource(type)`, затем используйте `ctx.resource`.
 
-## Определение типов
+## Тип
 
 ```ts
 initResource(
@@ -15,21 +15,21 @@ initResource(
 ```
 
 | Параметр | Тип | Описание |
-|----------|------|-------------|
+|----------|-----|----------|
 | `type` | `string` | Тип ресурса: `'APIResource'`, `'SingleRecordResource'`, `'MultiRecordResource'`, `'SQLResource'` |
 
-**Возвращаемое значение**: Экземпляр ресурса в текущем контексте (т. е. `ctx.resource`).
+**Возвращает**: экземпляр ресурса текущего контекста (то есть `ctx.resource`).
 
-## Отличие от ctx.makeResource()
+## Связь с ctx.makeResource()
 
 | Метод | Поведение |
-|--------|----------|
-| `ctx.initResource(type)` | Создает и привязывает ресурс, если `ctx.resource` не существует; возвращает существующий, если он есть. Гарантирует доступность `ctx.resource`. |
-| `ctx.makeResource(type)` | Только создает и возвращает новый экземпляр, **не** записывая его в `ctx.resource`. Подходит для сценариев, требующих нескольких независимых ресурсов или временного использования. |
+|-------|-----------|
+| `ctx.initResource(type)` | Создаёт и привязывает ресурс, если `ctx.resource` отсутствует; иначе возвращает существующий. Гарантирует, что `ctx.resource` задан |
+| `ctx.makeResource(type)` | Создаёт новый экземпляр и возвращает его; **не** присваивает его в `ctx.resource`. Используется для нескольких ресурсов или временного ресурса |
 
 ## Примеры
 
-### Данные списка (MultiRecordResource)
+### Список данных (MultiRecordResource)
 
 ```ts
 ctx.initResource('MultiRecordResource');
@@ -39,12 +39,12 @@ const rows = ctx.resource.getData();
 ctx.render(<pre>{JSON.stringify(rows, null, 2)}</pre>);
 ```
 
-### Одиночная запись (SingleRecordResource)
+### Одна запись (SingleRecordResource)
 
 ```ts
 ctx.initResource('SingleRecordResource');
 ctx.resource.setResourceName('users');
-ctx.resource.setFilterByTk(1); // Указание первичного ключа
+ctx.resource.setFilterByTk(1);
 await ctx.resource.refresh();
 const record = ctx.resource.getData();
 ```
@@ -60,15 +60,15 @@ await ctx.resource.refresh();
 
 ## Примечания
 
-- В большинстве сценариев блоков (формы, таблицы, детализация и т. д.) и всплывающих окон `ctx.resource` уже предварительно привязан средой выполнения, поэтому вызывать `ctx.initResource` не нужно.
-- Ручная инициализация требуется только в таких контекстах, как JSBlock, где по умолчанию ресурс отсутствует.
-- После инициализации необходимо вызвать `setResourceName(name)`, чтобы указать коллекцию, а затем вызвать `refresh()` для загрузки данных.
+- В большинстве блоков (форма, таблица, блок деталей и т. д.) и всплывающих окон `ctx.resource` уже привязан; `ctx.initResource` вызывать не нужно.
+- Инициализация обычно нужна в контекстах вроде **JS-блока**, где ресурс по умолчанию не создаётся.
+- После инициализации вызовите `setResourceName(name)`, затем `refresh()`, чтобы загрузить данные.
 
-## Связанные разделы
+## Связанные материалы
 
-- [ctx.resource](./resource.md) — Экземпляр ресурса в текущем контексте
-- [ctx.makeResource()](./make-resource.md) — Создание нового экземпляра ресурса без привязки к `ctx.resource`
-- [MultiRecordResource](../resource/multi-record-resource.md) — Несколько записей / Список
-- [SingleRecordResource](../resource/single-record-resource.md) — Одиночная запись
-- [APIResource](../resource/api-resource.md) — Общий API-ресурс
-- [SQLResource](../resource/sql-resource.md) — Ресурс SQL-запроса
+- [ctx.resource](./resource.md): ресурс текущего контекста
+- [ctx.makeResource()](./make-resource.md): создаёт ресурс без привязки к `ctx.resource`
+- [MultiRecordResource](../resource/multi-record-resource.md): несколько записей
+- [SingleRecordResource](../resource/single-record-resource.md)
+- [APIResource](../resource/api-resource.md): одиночная запись
+- [SQLResource](../resource/sql-resource.md): SQL

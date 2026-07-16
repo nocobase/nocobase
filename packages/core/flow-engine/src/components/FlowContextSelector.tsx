@@ -40,6 +40,18 @@ type SelectedPathInfo = {
   meta?: ContextSelectorItem['meta'];
 };
 
+type MetaNodeTooltipOptions = { tooltip?: React.ReactNode };
+
+function getMetaNodeTooltip(meta?: ContextSelectorItem['meta']): React.ReactNode {
+  if (!meta) {
+    return undefined;
+  }
+
+  const metaWithTooltip = meta as ContextSelectorItem['meta'] & MetaNodeTooltipOptions;
+  const options = meta.options as MetaNodeTooltipOptions | undefined;
+  return metaWithTooltip.tooltip ?? options?.tooltip;
+}
+
 const normalizePath = (path: unknown): string[] | undefined => {
   if (!Array.isArray(path)) {
     return undefined;
@@ -85,6 +97,7 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
   value,
   onChange,
   children,
+  active,
   metaTree,
   showSearch = false,
   parseValueToPath: customParseValueToPath = parseValueToPath,
@@ -92,6 +105,7 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
   open,
   onlyLeafSelectable = false,
   ignoreFieldNames,
+  dropdownFooter,
   ...cascaderProps
 }) => {
   const { token } = theme.useToken();
@@ -119,17 +133,28 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
 
         // 文本国际化：仅当 label 为字符串时进行翻译
         const baseLabel = typeof o.label === 'string' ? flowCtx.t(o.label) : o.label;
+        const labelText = typeof baseLabel === 'string' ? baseLabel : String(o.value);
+        const tooltip = getMetaNodeTooltip(meta);
+        const tooltipTitle = disabled
+          ? disabledReason || tooltip || flowCtx.t('This variable is not available')
+          : tooltip;
 
-        const label = disabled ? (
+        const label = tooltipTitle ? (
           <span>
             {baseLabel}
             <Tooltip
-              title={disabledReason || flowCtx.t('This variable is not available')}
-              placement="right"
-              overlayClassName="flow-variable-disabled-tip"
+              title={typeof tooltipTitle === 'string' ? flowCtx.t(tooltipTitle) : tooltipTitle}
+              placement="top"
+              classNames={{ root: 'flow-variable-tip' }}
               destroyTooltipOnHide
             >
-              <QuestionCircleOutlined style={{ marginLeft: 6, color: 'rgba(0,0,0,0.35)' }} />
+              <QuestionCircleOutlined
+                aria-label={`${labelText} tooltip`}
+                style={{
+                  marginLeft: token.marginXXS,
+                  color: disabled ? token.colorTextDisabled : token.colorTextDescription,
+                }}
+              />
             </Tooltip>
           </span>
         ) : (
@@ -144,7 +169,7 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
         };
       });
     },
-    [flowCtx],
+    [flowCtx, token.colorTextDescription, token.colorTextDisabled, token.marginXXS],
   );
 
   // 用于强制重新渲染的状态
@@ -265,13 +290,13 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
 
   // 默认按钮组件
   const defaultChildren = useMemo(() => {
-    const hasSelected = currentPath && currentPath.length > 0;
+    const hasSelected = active ?? Boolean(currentPath && currentPath.length > 0);
     return (
-      <Button type={hasSelected ? 'primary' : 'default'} style={defaultButtonStyle}>
+      <Button type={hasSelected ? 'primary' : 'default'} style={defaultButtonStyle} disabled={cascaderProps.disabled}>
         x
       </Button>
     );
-  }, [currentPath]);
+  }, [active, cascaderProps.disabled, currentPath]);
 
   // 处理选择变化事件
   const handleChange = useCallback(
@@ -360,12 +385,41 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
     [cascaderOnDropdownVisibleChange, open],
   );
 
+  // Footer hint at the bottom of the dropdown. Defaults to the "double click to choose entire object" hint whenever
+  // non-leaf selection is allowed (double-clicking a non-leaf selects the whole object). Callers can override with
+  // their own node, or pass `null` to hide it.
+  const footerNode = useMemo(() => {
+    if (dropdownFooter !== undefined) {
+      return dropdownFooter;
+    }
+    if (onlyLeafSelectable) {
+      return null;
+    }
+    return (
+      <div
+        className={css`
+          padding: 6px 12px;
+          color: ${token.colorTextDescription};
+          border-top: 1px solid ${token.colorSplit};
+          font-size: ${token.fontSizeSM}px;
+        `}
+      >
+        {flowCtx.t('Double click to choose entire object')}
+      </div>
+    );
+  }, [dropdownFooter, onlyLeafSelectable, token, flowCtx]);
+
   const renderDropdown = useCallback(
     (menu: React.ReactElement) => {
       const cascaderMenuNode = cascaderDropdownRender ? cascaderDropdownRender(menu) : menu;
       const cascaderMenu = React.isValidElement(cascaderMenuNode) ? cascaderMenuNode : <>{cascaderMenuNode}</>;
       if (!isSearchEnabled || children === null) {
-        return cascaderMenu;
+        return (
+          <>
+            {cascaderMenu}
+            {footerNode}
+          </>
+        );
       }
 
       return (
@@ -381,10 +435,11 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
             />
           </div>
           {cascaderMenu}
+          {footerNode}
         </>
       );
     },
-    [cascaderDropdownRender, cascaderSearchInputClassName, children, flowCtx, isSearchEnabled, searchText],
+    [cascaderDropdownRender, cascaderSearchInputClassName, children, flowCtx, isSearchEnabled, searchText, footerNode],
   );
 
   const inlinePlaceholder =

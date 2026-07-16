@@ -359,6 +359,11 @@
         "type": "custom-link",
         "label": "API-Referenz",
         "link": "/workflow/development/api"
+      },
+      {
+        "type": "custom-link",
+        "label": "v1 zu v2 Migrationsanleitung",
+        "link": "/workflow/development/migration"
       }
     ]
   }

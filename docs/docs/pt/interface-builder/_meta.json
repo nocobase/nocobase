@@ -6,6 +6,27 @@
   },
   {
     "type": "custom-link",
+    "label": "Layout da interface",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Visão geral",
+        "link": "/interface-builder/ui-layout/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Desktop",
+        "link": "/interface-builder/ui-layout/desktop"
+      },
+      {
+        "type": "custom-link",
+        "label": "Dispositivos móveis",
+        "link": "/interface-builder/ui-layout/mobile"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
     "label": "Bloco",
     "items": [
       {
@@ -67,6 +88,11 @@
             "type": "custom-link",
             "label": "Gantt",
             "link": "/interface-builder/blocks/data-blocks/gantt"
+          },
+          {
+            "type": "custom-link",
+            "label": "Comentários",
+            "link": "/interface-builder/blocks/data-blocks/comment"
           }
         ]
       },

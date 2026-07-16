@@ -67,7 +67,7 @@ const formItemPropKeys = [
 ];
 
 const formItemPropKeySet = new Set<string>(formItemPropKeys);
-const localOnlyPropKeySet = new Set<string>(['asterisk']);
+const localOnlyPropKeySet = new Set<string>(['asterisk', 'globalSort']);
 
 function splitFormItemProps(props: ExtendedFormItemProps & ChildExtraProps) {
   const formItemProps: Record<string, unknown> = {};

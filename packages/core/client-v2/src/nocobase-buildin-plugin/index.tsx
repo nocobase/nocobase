@@ -308,6 +308,8 @@ const CurrentUserProvider: FC<React.PropsWithChildren> = ({ children }) => {
   return <CurrentUserContext.Provider value={contextValue}>{children}</CurrentUserContext.Provider>;
 };
 
+CurrentUserProvider.displayName = 'CurrentUserProvider';
+
 const RootRedirect: FC = () => {
   const app = useApp<Application>();
   const hasToken = !!app?.apiClient?.auth?.token;

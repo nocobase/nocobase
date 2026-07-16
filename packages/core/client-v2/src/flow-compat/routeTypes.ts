@@ -22,6 +22,7 @@ export type V2PageType = typeof JS_PAGE_TYPE;
 export interface NocoBaseDesktopRouteOptions {
   hasPersistedMenuInstanceFlow?: boolean;
   pageType?: V2PageType;
+  hasPersistedPageTabFlowModel?: boolean;
   [key: string]: any;
 }
 

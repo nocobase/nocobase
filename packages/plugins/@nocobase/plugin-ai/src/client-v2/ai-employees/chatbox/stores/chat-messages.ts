@@ -8,10 +8,9 @@
  */
 
 import { randomId } from '@nocobase/flow-engine';
-import { create } from 'zustand';
 import type { Attachment, ChatEditorRef, ContextItem, Message, SkillSettings, WebSearching } from '../../types';
-import { createSelectors } from './create-selectors';
-import { getOrCreateGlobalStore } from './global-store';
+import { getOrCreateGlobalStore } from '../../stores/global-store';
+import { createObservableStore } from './create-selectors';
 
 export const CHAT_DEFAULT_SESSION_KEY = '__draft__';
 
@@ -141,8 +140,8 @@ export interface ChatMessagesActions {
   ) => void;
 }
 
-const store = getOrCreateGlobalStore('@nocobase/plugin-ai/chat-messages-store', () =>
-  create<ChatMessagesState & ChatMessagesActions>((set, get) => {
+export const useChatMessagesStore = getOrCreateGlobalStore('@nocobase/plugin-ai/chat-messages-store', () =>
+  createObservableStore<ChatMessagesState & ChatMessagesActions>((set, get) => {
     const defaultSession = createInitialSessionState();
 
     return {
@@ -469,5 +468,3 @@ const store = getOrCreateGlobalStore('@nocobase/plugin-ai/chat-messages-store', 
     };
   }),
 );
-
-export const useChatMessagesStore = createSelectors(store);

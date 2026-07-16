@@ -43,6 +43,12 @@ import { normalizeFilterValueByOperator } from '../models/blocks/filter-form/val
 import { FieldAssignExactDatePicker, type ExactDatePickerMode } from './FieldAssignExactDatePicker';
 import { limitAssociationMetaTree } from './filter/metaTreeAssociationDepth';
 
+type VariableInputConverters = {
+  renderInputComponent?: (metaTreeNode: MetaTreeNode | null) => React.ComponentType<any> | null;
+  resolvePathFromValue?: (value: any) => string[] | undefined;
+  resolveValueFromPath?: (metaTreeNode: MetaTreeNode) => any;
+};
+
 const DATE_FIELD_INTERFACES = new Set(['date', 'datetime', 'datetimeNoTz', 'createdAt', 'updatedAt', 'unixTimestamp']);
 
 const TZ_AWARE_DATE_INTERFACES = new Set(['datetime', 'createdAt', 'updatedAt', 'unixTimestamp']);
@@ -342,11 +348,15 @@ interface Props {
    * 默认 false，保持历史行为。
    */
   enableDateVariableAsConstant?: boolean;
+  /** 是否允许在变量选择器中使用 RunJS。默认 true，保持历史行为。 */
+  allowRunJS?: boolean;
   maxAssociationFieldDepth?: number;
   sourceLocator?: RunJSSourceLocator;
   sourceLabel?: string;
   surfaceStyle?: RunJSSurfaceStyle;
   onEmbeddedEditorControllerChange?: (controller: EmbeddedRunJSEditorController | null) => void;
+  disabled?: boolean;
+  variableConverters?: VariableInputConverters;
 }
 
 type ResolvedFieldContext = {
@@ -717,11 +727,14 @@ export const FieldAssignValueInput: React.FC<Props> = ({
   preferFormItemFieldModel,
   associationFieldNamesOverride,
   enableDateVariableAsConstant = false,
+  allowRunJS = true,
   maxAssociationFieldDepth = 2,
   sourceLocator,
   sourceLabel,
   surfaceStyle,
   onEmbeddedEditorControllerChange,
+  disabled = false,
+  variableConverters,
 }) => {
   const flowCtx = useFlowContext<FlowModelContext>();
   const normalizeEventValue = React.useCallback((eventOrValue: unknown) => {
@@ -1085,7 +1098,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       fm.setStepParams('selectSettings', 'fieldNames', { label: overrideLabel });
     }
     fm?.setProps?.({
-      disabled: false,
+      disabled,
       readPretty: false,
       pattern: 'editable',
       updateAssociation: false,
@@ -1148,6 +1161,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
     preferFormItemFieldModel,
     associationFieldNamesOverride?.label,
     associationFieldNamesOverride?.value,
+    disabled,
   ]);
 
   // 当传入 operator / operatorMetaList 时，按 operator schema 适配临时字段的输入组件与 props。
@@ -1200,6 +1214,9 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       React.useEffect(() => {
         const coercedValue = coerceEmptyValueForRenderer(inputProps?.value);
         const handleChange = (ev: any) => {
+          if (inputProps?.disabled) {
+            return;
+          }
           const nextRaw = normalizeEventValue(ev);
           const normalizedForStore = operator ? normalizeFilterValueByOperator(operator, nextRaw) : nextRaw;
           const nextValue = coerceEmptyValueForRenderer(normalizedForStore);
@@ -1231,6 +1248,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
             value={inputProps?.value}
             onChange={(e) => inputProps?.onChange?.(normalizeEventValue(e))}
             placeholder={placeholder}
+            disabled={inputProps?.disabled}
             style={withFullWidthStyle(wrapperStyle)}
           />
         );
@@ -1249,6 +1267,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
     const C: React.FC<any> = (inputProps) => {
       const wrapperStyle = pickStyle(inputProps?.style);
       const raw = inputProps?.value;
+      const isDisabled = Boolean(inputProps?.disabled);
       const parsed = isCtxDateExpression(raw) ? parseCtxDateExpression(raw) : raw;
       const parsedValue = typeof parsed === 'undefined' ? undefined : parsed;
       const { token } = theme.useToken();
@@ -1273,6 +1292,9 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       });
 
       const handleSelect = (val: string) => {
+        if (isDisabled) {
+          return;
+        }
         setOpen(false);
         if (val === 'exact') {
           inputProps?.onChange?.('');
@@ -1287,10 +1309,16 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       };
 
       const handleExactSingleChange = (nextValue: any) => {
+        if (isDisabled) {
+          return;
+        }
         inputProps?.onChange?.(nextValue || '');
       };
 
       const handleExactRangeChange = (nextValue: any) => {
+        if (isDisabled) {
+          return;
+        }
         inputProps?.onChange?.(nextValue || '');
       };
 
@@ -1335,7 +1363,11 @@ export const FieldAssignValueInput: React.FC<Props> = ({
           <Select
             options={options}
             open={open}
-            onDropdownVisibleChange={setOpen}
+            onDropdownVisibleChange={(nextOpen) => {
+              if (!isDisabled) {
+                setOpen(nextOpen);
+              }
+            }}
             allowClear={false}
             style={{
               width: '100%',
@@ -1345,13 +1377,18 @@ export const FieldAssignValueInput: React.FC<Props> = ({
             value={selectedType}
             onChange={handleSelect}
             dropdownRender={dropdownRender}
+            disabled={isDisabled}
           />
           {['past', 'next'].includes(selectedType) && [
             <InputNumber
               key="number"
               style={{ flex: 1 }}
               value={(parsedValue as any)?.number}
+              disabled={isDisabled}
               onChange={(nextNumber) => {
+                if (isDisabled) {
+                  return;
+                }
                 inputProps?.onChange?.({
                   ...(parsedValue as any),
                   type: selectedType,
@@ -1364,7 +1401,11 @@ export const FieldAssignValueInput: React.FC<Props> = ({
               key="unit"
               value={(parsedValue as any)?.unit}
               style={{ minWidth: 130, maxWidth: 140 }}
+              disabled={isDisabled}
               onChange={(nextUnit) => {
+                if (isDisabled) {
+                  return;
+                }
                 inputProps?.onChange?.({
                   ...(parsedValue as any),
                   type: selectedType,
@@ -1387,6 +1428,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
               isRange={isRange}
               value={isRange ? exactRangeValue : exactSingleValue}
               onChange={isRange ? handleExactRangeChange : handleExactSingleChange}
+              disabled={isDisabled}
               style={{ flex: 1 }}
             />
           )}
@@ -1405,11 +1447,12 @@ export const FieldAssignValueInput: React.FC<Props> = ({
   }, [flowCtx]);
 
   const RunJSComponent = React.useMemo(() => {
-    const C = (inputProps: Pick<RunJSValueEditorProps, 'value' | 'onChange'>): JSX.Element => (
+    const C = (inputProps: Pick<RunJSValueEditorProps, 'value' | 'onChange' | 'disabled'>): JSX.Element => (
       <RunJSValueEditor
         t={flowCtx.t}
         value={inputProps?.value}
         onChange={inputProps?.onChange}
+        disabled={inputProps?.disabled}
         sourceLocator={sourceLocator}
         sourceLabel={sourceLabel}
         surfaceStyle={surfaceStyle || 'value'}
@@ -1438,11 +1481,13 @@ export const FieldAssignValueInput: React.FC<Props> = ({
           render: ConstantEditor,
         },
         { title: tExpr('Null'), name: 'null', type: 'object', paths: ['null'], render: NullComponent },
-        { title: tExpr('RunJS'), name: 'runjs', type: 'object', paths: ['runjs'], render: RunJSComponent },
+        ...(allowRunJS
+          ? [{ title: tExpr('RunJS'), name: 'runjs', type: 'object', paths: ['runjs'], render: RunJSComponent }]
+          : []),
         ...limitedBase,
       ];
     };
-  }, [flowCtx, ConstantEditor, NullComponent, RunJSComponent, maxAssociationFieldDepth]);
+  }, [flowCtx, ConstantEditor, NullComponent, RunJSComponent, allowRunJS, maxAssociationFieldDepth]);
 
   const displayValue = React.useMemo(() => {
     if (!useDateVariableConstant) {
@@ -1459,6 +1504,10 @@ export const FieldAssignValueInput: React.FC<Props> = ({
 
   const handleVariableInputChange = React.useCallback(
     (nextValue: any) => {
+      if (disabled) {
+        return;
+      }
+
       if (!useDateVariableConstant) {
         onChange(nextValue);
         return;
@@ -1466,7 +1515,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
 
       onChange(normalizeDateVariableOutput(nextValue, dateVariableComponentProps));
     },
-    [dateVariableComponentProps, onChange, useDateVariableConstant],
+    [dateVariableComponentProps, disabled, onChange, useDateVariableConstant],
   );
 
   if (!fieldPath) {
@@ -1481,26 +1530,40 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       metaTree={metaTree}
       style={{ width: '100%' }}
       clearValue={''}
+      disabled={disabled}
       converters={{
+        ...variableConverters,
         renderInputComponent: (meta) => {
+          const external = variableConverters?.renderInputComponent?.(meta ?? null);
+          if (external) {
+            return external;
+          }
           const firstPath = meta?.paths?.[0];
           if (firstPath === 'constant') return ConstantEditor;
           if (firstPath === 'null') return NullComponent;
-          if (firstPath === 'runjs') return RunJSComponent;
+          if (allowRunJS && firstPath === 'runjs') return RunJSComponent;
           return null;
         },
         resolveValueFromPath: (item) => {
+          const external = variableConverters?.resolveValueFromPath?.(item);
+          if (external !== undefined) {
+            return external;
+          }
           const firstPath = item?.paths?.[0];
           if (firstPath === 'constant') {
             return useDateVariableConstant ? { type: 'today' } : '';
           }
           if (firstPath === 'null') return null;
-          if (firstPath === 'runjs') return { code: '', version: 'v2' };
+          if (allowRunJS && firstPath === 'runjs') return { code: '', version: 'v2' };
           return undefined;
         },
         resolvePathFromValue: (currentValue) => {
+          const external = variableConverters?.resolvePathFromValue?.(currentValue);
+          if (external !== undefined) {
+            return external;
+          }
           if (currentValue === null) return ['null'];
-          if (isRunJSValue(currentValue)) return ['runjs'];
+          if (allowRunJS && isRunJSValue(currentValue)) return ['runjs'];
           if (useDateVariableConstant && isCtxDateExpression(currentValue)) {
             return ['constant'];
           }
