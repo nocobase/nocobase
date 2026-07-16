@@ -15,6 +15,11 @@ import { getChartBuilderResourceInit } from './chart-config';
 import { throwBadRequest } from './errors';
 import { SurfaceLocator } from './locator';
 import {
+  isRouteBackedPageUse,
+  supportsPageBlockAuthoring,
+  throwJSPageOperationUnsupported,
+} from './page-surface-contract';
+import {
   getApprovalDefaultGridUse,
   getApprovalFieldWrapperUse,
   isApprovalTaskCardGridUse,
@@ -170,6 +175,9 @@ export class FlowSurfaceContextResolver {
     const resolved = await this.locator.resolve(target, { transaction });
     const node =
       resolved.node || (await this.repository.findModelById(resolved.uid, { transaction, includeAsyncNode: true }));
+    if (isRouteBackedPageUse(node?.use) && !supportsPageBlockAuthoring(node?.use)) {
+      throwJSPageOperationUnsupported('addBlock', node.use);
+    }
     const normalizedUse = normalizeApprovalSemanticUse(node?.use);
     if (node?.use?.endsWith('GridModel')) {
       if (isApprovalTaskCardGridUse(node.use)) {

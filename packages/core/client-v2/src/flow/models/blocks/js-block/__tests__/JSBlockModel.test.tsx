@@ -52,6 +52,27 @@ function renderBlock(engine: FlowEngine, model: JSBlockModel) {
 }
 
 describe('JSBlockModel', () => {
+  it('cleans the RunJS root when unmounted', async () => {
+    const { engine, model } = createJSBlock('js-block-unmount');
+    const view = renderBlock(engine, model);
+    const element = model.context.ref.current;
+    if (!element) {
+      throw new Error('JS Block runtime element was not mounted');
+    }
+    const unmountRoot = vi.fn();
+    const runJSGlobal = globalThis as typeof globalThis & {
+      __nbRunjsRoots?: WeakMap<object, { root: { unmount: () => void } }>;
+    };
+    runJSGlobal.__nbRunjsRoots = new WeakMap([[element, { root: { unmount: unmountRoot } }]]);
+
+    view.unmount();
+    await Promise.resolve();
+
+    expect(unmountRoot).toHaveBeenCalledOnce();
+    expect(runJSGlobal.__nbRunjsRoots.has(element)).toBe(false);
+    delete runJSGlobal.__nbRunjsRoots;
+  });
+
   it('renders with the outer block card by default', () => {
     const { engine, model } = createJSBlock('js-block-with-card');
     const { container } = renderBlock(engine, model);

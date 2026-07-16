@@ -9,7 +9,7 @@
 
 import { buildLightExtensionSettingsSchema } from '../schema/contracts';
 
-export type LightExtensionClientTypegenKind = 'js-block' | 'js-field' | 'js-action' | 'js-item' | 'runjs';
+export type LightExtensionClientTypegenKind = 'js-block' | 'js-page' | 'js-field' | 'js-action' | 'js-item' | 'runjs';
 
 export interface LightExtensionSettingsTypegenSourceFile {
   path: string;
@@ -77,6 +77,7 @@ const emptySettingsSchema: Record<string, unknown> = { type: 'object', propertie
 
 const clientKindRoots: Array<{ kind: LightExtensionClientTypegenKind; root: string }> = [
   { kind: 'js-block', root: 'src/client/js-blocks' },
+  { kind: 'js-page', root: 'src/client/js-pages' },
   { kind: 'js-field', root: 'src/client/js-fields' },
   { kind: 'js-action', root: 'src/client/js-actions' },
   { kind: 'js-item', root: 'src/client/js-items' },
@@ -85,6 +86,7 @@ const clientKindRoots: Array<{ kind: LightExtensionClientTypegenKind; root: stri
 
 const contextTypes: Record<LightExtensionClientTypegenKind, string> = {
   'js-block': 'JSBlockContext',
+  'js-page': 'JSPageContext',
   'js-field': 'JSFieldContext',
   'js-action': 'JSActionContext',
   'js-item': 'JSItemContext',
@@ -402,6 +404,8 @@ declare module "@nocobase/light-extension-sdk/client" {
     render?: (node: unknown) => void;
     i18n?: { t: (key: string, options?: Record<string, unknown>) => string };
   }
+  export interface JSPageRuntimeFacade { readonly uid: string; readonly active: boolean; refresh(): Promise<void>; setDocumentTitle(title: string): void; }
+  export interface JSPageContext<TSettings = unknown> extends JSBlockContext<TSettings> { page: JSPageRuntimeFacade; }
   export interface JSFieldContext<TSettings = unknown, TValue = unknown> extends LightExtensionDataContext<TSettings> { value?: TValue; }
   export interface JSActionContext<TSettings = unknown> extends LightExtensionDataContext<TSettings> { event?: unknown; formValues?: LightExtensionRecord; }
   export interface JSItemContext<TSettings = unknown, TValue = unknown> extends LightExtensionDataContext<TSettings> { value?: TValue; }

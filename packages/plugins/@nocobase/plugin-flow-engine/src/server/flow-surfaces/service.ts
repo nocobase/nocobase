@@ -156,6 +156,14 @@ import { executeComposeRuntime } from './compose-runtime';
 import type { FlowSurfaceComposeRuntimeBlockState } from './compose-runtime';
 import { SurfaceLocator } from './locator';
 import { isPageModelUse, isPopupHostUse } from './placement';
+import {
+  isRouteBackedPageUse,
+  JS_PAGE_MODEL_USE,
+  supportsPageBlockAuthoring,
+  supportsPageTabs,
+  supportsStandardPageBlueprint,
+  throwJSPageOperationUnsupported,
+} from './page-surface-contract';
 import { FlowSurfaceRouteSync } from './route-sync';
 import { FlowSurfaceContextResolver } from './surface-context';
 import { buildFlowSurfaceContextResponse, isBareFlowContextPath } from './context';
@@ -2612,8 +2620,11 @@ export class FlowSurfacesService {
     if (this.readRouteField(route, 'type') !== 'flowPage') {
       return false;
     }
-    if (structure.pageModel?.use !== 'RootPageModel') {
+    if (!isRouteBackedPageUse(structure.pageModel?.use)) {
       return false;
+    }
+    if (structure.pageModel?.use === JS_PAGE_MODEL_USE) {
+      return true;
     }
     if (!structure.tabRoutes.length) {
       return false;
@@ -4893,6 +4904,7 @@ export class FlowSurfacesService {
     }
 
     const pageSchemaUid = this.resolveExportBlueprintPageSchemaUid(request.target, resolved);
+    await this.assertStandardPageBlueprintTarget('exportBlueprint', pageSchemaUid, options.transaction);
     await this.assertExportBlueprintRootTarget(request.target, resolved, pageSchemaUid, options.transaction);
     const rawNode = await this.decorateTemplateReadbackTree(
       this.normalizePopupTreeShape(
@@ -5388,6 +5400,13 @@ export class FlowSurfacesService {
       options.transaction,
     );
     const document = await this.resolveApplyBlueprintCreatePageIdentity(groupResolvedDocument, options.transaction);
+    if (document.mode === 'replace' && document.target?.pageSchemaUid) {
+      await this.assertStandardPageBlueprintTarget(
+        'applyBlueprint',
+        document.target.pageSchemaUid,
+        options.transaction,
+      );
+    }
     await this.prepareApplyBlueprintKanbanBlocks(document, options.transaction, createdKanbanSortFields);
     const replaceTarget =
       document.mode === 'replace' && document.target
@@ -6123,6 +6142,11 @@ export class FlowSurfacesService {
     values: Record<string, any>,
     options: { transaction?: any; currentRoles?: FlowSurfaceRequestRoles } = {},
   ) {
+    await this.assertStandardPageBlueprintTarget(
+      'applyBlueprint',
+      String(values?.target?.pageSchemaUid || '').trim(),
+      options.transaction,
+    );
     if (options.transaction) {
       const createdKanbanSortFields: FlowSurfaceApplyBlueprintKanbanCreatedSortField[] = [];
       const cleanupCreatedKanbanSortFields = async (transaction?: any) => {
@@ -8399,8 +8423,17 @@ export class FlowSurfacesService {
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
     const composeValues = this.prepareComposeChartAssetSettings(values);
     const target = await this.prepareWriteTarget('compose', composeValues?.target, composeValues, options);
+    const resolvedTarget = await this.locator.resolve(target, options);
+    const targetNode = await this.loadResolvedNode(resolvedTarget, options.transaction, {
+      persistCalendarPopupHosts: false,
+    });
+    if (isRouteBackedPageUse(targetNode?.use) && !supportsPageBlockAuthoring(targetNode.use)) {
+      throwJSPageOperationUnsupported('compose', targetNode.use);
+    }
     const authoringContext = await this.buildTargetAuthoringContext({
       target,
+      resolved: resolvedTarget,
+      targetNode,
       transaction: options.transaction,
     });
     await assertFlowSurfaceAuthoringPayload('compose', composeValues, {
@@ -8692,7 +8725,7 @@ export class FlowSurfacesService {
     };
 
     if (resolved.kind === 'page' && resolved.pageRoute) {
-      return this.configurePage(target, changes, options);
+      return this.configurePage(target, current?.use, changes, options);
     }
     if (resolved.kind === 'tab' && resolved.tabRoute) {
       return this.configureTab(target, changes, options);
@@ -10124,6 +10157,9 @@ export class FlowSurfacesService {
     let targetNode = await this.loadResolvedNode(resolvedTarget, options.transaction, {
       ensureManagedPopupTemplateTargets: true,
     });
+    if (isRouteBackedPageUse(targetNode?.use) && !supportsPageBlockAuthoring(targetNode.use)) {
+      throwJSPageOperationUnsupported('addBlock', targetNode.use);
+    }
     const targetOpenView = this.resolvePopupHostOpenView(targetNode);
     if (this.isPopupFieldHostUse(targetNode?.use) && !targetOpenView) {
       await this.ensureLocalFieldPopupSurface('addBlock', target.uid, options, { popup: {} });
@@ -18477,10 +18513,13 @@ export class FlowSurfacesService {
             includeAsyncNode: true,
           })
         : null);
+    if (isRouteBackedPageUse(pageModel?.use) && !supportsPageTabs(pageModel?.use) && actionName === 'addTab') {
+      throwJSPageOperationUnsupported(actionName, pageModel.use);
+    }
     if (
       resolved.kind !== 'page' ||
       !pageSchemaUid ||
-      pageModel?.use !== 'RootPageModel' ||
+      !isRouteBackedPageUse(pageModel?.use) ||
       resolved.uid !== pageModel.uid
     ) {
       if (actionName === 'addTab') {
@@ -18517,6 +18556,9 @@ export class FlowSurfacesService {
         transaction,
         includeAsyncNode: true,
       }));
+    if (exactNode?.use === JS_PAGE_MODEL_USE) {
+      throwJSPageOperationUnsupported(actionName, exactNode.use);
+    }
     const routeSchemaUid = route?.get?.('schemaUid') || route?.schemaUid;
     const routeType = route?.get?.('type') || route?.type;
     if (
@@ -18534,6 +18576,9 @@ export class FlowSurfacesService {
     const parentRouteId = route?.get?.('parentId') ?? route?.parentId;
     const parentRoute = parentRouteId ? await this.findMenuRouteById(parentRouteId, transaction) : null;
     const structure = parentRoute ? await this.loadRouteBackedPageStructure(parentRoute, transaction) : null;
+    if (structure?.pageModel?.use === JS_PAGE_MODEL_USE) {
+      throwJSPageOperationUnsupported(actionName, structure.pageModel.use);
+    }
     if (!parentRoute || !structure || !this.isRouteBackedPageInitialized(parentRoute, structure)) {
       throwBadRequest(
         `flowSurfaces ${actionName} requires an initialized page; call createPage(menuRouteId=...) before using tab lifecycle APIs`,
@@ -18624,7 +18669,8 @@ export class FlowSurfacesService {
   private assertRemoveNodeResolvedTarget(resolved: FlowSurfaceResolvedTarget, node?: any) {
     if (
       resolved.kind === 'page' ||
-      ['RootPageModel', 'ChildPageModel'].includes(normalizeApprovalSemanticUse(node?.use) || '')
+      isRouteBackedPageUse(node?.use) ||
+      normalizeApprovalSemanticUse(node?.use) === 'ChildPageModel'
     ) {
       throwBadRequest(`flowSurfaces removeNode does not support page surfaces; use destroyPage`);
     }
@@ -18784,6 +18830,20 @@ export class FlowSurfacesService {
       return;
     }
     throwBadRequest(FLOW_SURFACE_EXPORT_BLUEPRINT_ROOT_ONLY_MESSAGE);
+  }
+
+  private async assertStandardPageBlueprintTarget(action: string, pageSchemaUid: string, transaction?: any) {
+    if (!pageSchemaUid) {
+      return;
+    }
+    const pageModel = await this.repository.findModelByParentId(pageSchemaUid, {
+      transaction,
+      subKey: 'page',
+      includeAsyncNode: false,
+    });
+    if (pageModel?.use === JS_PAGE_MODEL_USE && !supportsStandardPageBlueprint(pageModel.use)) {
+      throwJSPageOperationUnsupported(action, pageModel.use);
+    }
   }
 
   private normalizeContextPath(path?: string) {
@@ -20942,11 +21002,13 @@ export class FlowSurfacesService {
 
   private async configurePage(
     target: FlowSurfaceWriteTarget,
+    use: string | undefined,
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
     const allowedKeys = getConfigureOptionKeysForResolvedNode({
       kind: 'page',
+      use,
     });
     assertSupportedSimpleChanges('page', changes, allowedKeys);
     return this.updateSettings(
@@ -29788,7 +29850,11 @@ export class FlowSurfacesService {
   ) {
     let node: any;
     if (resolved?.kind === 'page' && resolved?.pageRoute) {
-      node = await this.routeSync.buildPageTree(resolved.pageRoute, transaction);
+      const persistedPage = resolved.pageModel || resolved.node;
+      node =
+        persistedPage?.use === JS_PAGE_MODEL_USE
+          ? persistedPage
+          : await this.routeSync.buildPageTree(resolved.pageRoute, transaction);
     } else if (resolved?.kind === 'tab' && resolved?.tabRoute) {
       node = await this.routeSync.buildTabAnchor(resolved.tabRoute, transaction);
     } else if (resolved?.node?.uid) {

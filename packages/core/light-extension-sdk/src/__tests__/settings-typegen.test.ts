@@ -193,6 +193,31 @@ describe('light extension settings typegen', () => {
     expect(diagnostics.some((message) => /columns/.test(message))).toBe(false);
     expect(diagnostics.some((message) => /missing/.test(message))).toBe(true);
   });
+
+  it('generates JS Page settings with the page-specific context', () => {
+    const result = generateClientSettingsTypes({
+      files: [descriptor('js-pages', 'orders-dir', 'orders', 'title', 'string')],
+    });
+    const entry = result.entries[0];
+    const active = createActiveEntryContextType({
+      activePath: 'src/client/js-pages/orders-dir/index.tsx',
+      entries: result.entries,
+    });
+
+    expect(result.diagnostics).toEqual([]);
+    expect(entry).toMatchObject({
+      kind: 'js-page',
+      sourceRoot: 'src/client/js-pages/orders-dir',
+      virtualImport: 'light-extension:settings/client/js-page/orders',
+    });
+    expect(result.files.find((file) => file.path.endsWith('/js-page/orders.d.ts'))?.content).toContain(
+      'export type Context = JSPageContext<Settings>;',
+    );
+    expect(active.file?.content).toContain('type LightExtensionActiveEntryContext = RunJSContext & Context;');
+    expect(result.files.find((file) => file.path.endsWith('/sdk.d.ts'))?.content).toContain(
+      'export interface JSPageContext',
+    );
+  });
 });
 
 function descriptor(kindRoot: string, directoryName: string, key: string, propertyName: string, propertyType: string) {

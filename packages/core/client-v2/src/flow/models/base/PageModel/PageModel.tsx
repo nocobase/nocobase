@@ -28,7 +28,7 @@ import {
   VIEW_ACTIVATED_EVENT,
 } from '@nocobase/flow-engine';
 import { Tabs } from 'antd';
-import React, { ReactNode } from 'react';
+import React, { CSSProperties, ReactNode } from 'react';
 import { commonConditionHandler, ConditionBuilder } from '../../../components/ConditionBuilder';
 import { TextAreaWithContextSelector } from '../../../components/TextAreaWithContextSelector';
 import { confirmUnsavedChangesHandler } from './closeGuard';
@@ -40,13 +40,14 @@ type PageModelStructure = {
   };
 };
 
-type CurrentRouteWithTabs = {
+export type CurrentRoute = {
   id?: string | number | null;
   enableTabs?: boolean;
+  title?: string;
 };
 
-type PageModelContextWithRoute = {
-  currentRoute?: CurrentRouteWithTabs | null;
+export type PageModelContextWithRoute = {
+  currentRoute?: CurrentRoute | null;
 };
 
 export class PageModel extends FlowModel<PageModelStructure> {
@@ -62,6 +63,9 @@ export class PageModel extends FlowModel<PageModelStructure> {
    * 根页面标签页开关以路由表为准，避免 flow model 里的旧配置覆盖路由管理设置。
    */
   private getEnableTabs(): boolean {
+    if (!this.supportsPageTabs()) {
+      return false;
+    }
     const currentRoute = (this.context as PageModelContextWithRoute).currentRoute;
     const routeId = this.props.routeId;
     if (
@@ -73,6 +77,10 @@ export class PageModel extends FlowModel<PageModelStructure> {
       return currentRoute.enableTabs;
     }
     return !!this.props.enableTabs;
+  }
+
+  supportsPageTabs(): boolean {
+    return true;
   }
 
   private getActiveTabKey(): string | undefined {
@@ -396,9 +404,9 @@ export class PageModel extends FlowModel<PageModelStructure> {
     );
   }
 
-  render() {
+  renderPageHeader() {
     const token = this.context.themeToken;
-    const headerStyle = { ...this.props.headerStyle } as Record<string, any>;
+    const headerStyle = { ...this.props.headerStyle } as CSSProperties;
     if (token) {
       headerStyle.paddingBlock = token.paddingSM;
       headerStyle.paddingInline = token.paddingLG;
@@ -407,10 +415,18 @@ export class PageModel extends FlowModel<PageModelStructure> {
     if (enableTabs) {
       headerStyle.paddingBottom = 0;
     }
+    return this.props.displayTitle && <PageHeader title={this.props.title} style={headerStyle} />;
+  }
+
+  renderPageContent() {
+    return this.getEnableTabs() ? this.renderTabs() : this.renderFirstTab();
+  }
+
+  render() {
     return (
       <>
-        {this.props.displayTitle && <PageHeader title={this.props.title} style={headerStyle} />}
-        {enableTabs ? this.renderTabs() : this.renderFirstTab()}
+        {this.renderPageHeader()}
+        {this.renderPageContent()}
       </>
     );
   }
@@ -453,7 +469,7 @@ PageModel.registerFlow({
   steps: {
     general: {
       title: tExpr('Edit page'),
-      uiSchema: {
+      uiSchema: (ctx) => ({
         title: {
           type: 'string',
           title: tExpr('Page title'),
@@ -487,13 +503,17 @@ PageModel.registerFlow({
           'x-decorator': 'FormItem',
           'x-component': 'Switch',
         },
-        enableTabs: {
-          type: 'boolean',
-          title: tExpr('Enable tabs'),
-          'x-decorator': 'FormItem',
-          'x-component': 'Switch',
-        },
-      },
+        ...((ctx.model as PageModel).supportsPageTabs()
+          ? {
+              enableTabs: {
+                type: 'boolean',
+                title: tExpr('Enable tabs'),
+                'x-decorator': 'FormItem',
+                'x-component': 'Switch',
+              },
+            }
+          : {}),
+      }),
       defaultParams(ctx) {
         return {
           displayTitle: true,
@@ -505,10 +525,12 @@ PageModel.registerFlow({
         if (ctx.model.context.closable) {
           ctx.model.setProps('title', ctx.t(params.title, { ns: 'lm-desktop-routes' }));
         } else {
-          const routeTitle = (ctx.model.context as any)?.currentRoute?.title;
+          const routeTitle = (ctx.model.context as PageModelContextWithRoute).currentRoute?.title;
           ctx.model.setProps('title', ctx.t(params.title || routeTitle, { ns: 'lm-desktop-routes' }));
         }
-        ctx.model.setProps('enableTabs', params.enableTabs);
+        if ((ctx.model as PageModel).supportsPageTabs()) {
+          ctx.model.setProps('enableTabs', params.enableTabs);
+        }
 
         if (ctx.view.type === 'embed') {
           ctx.model.setProps('headerStyle', {

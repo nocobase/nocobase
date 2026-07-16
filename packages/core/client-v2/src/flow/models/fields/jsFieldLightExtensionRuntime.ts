@@ -9,6 +9,7 @@
 
 import {
   FlowCancelSaveException,
+  resetRunJSRuntimeElement,
   type FlowRuntimeContext,
   type RunJSValue,
   type FlowSettingsContext,
@@ -75,14 +76,6 @@ type JSFieldRuntimeError = RuntimeErrorInfo;
 type RunJSExecutionResult = {
   success?: boolean;
   error?: unknown;
-};
-
-type RunJSRootEntry = {
-  root?: {
-    unmount?: () => void;
-  };
-  disposeTheme?: () => void;
-  unmount?: () => void;
 };
 
 const jsFieldRuntimeRunTracker = createRuntimeRunTracker();
@@ -277,16 +270,7 @@ export function renderJSFieldRuntimeError(element: HTMLElement, error: unknown, 
 }
 
 export function resetJSFieldRuntimeElement(element: HTMLElement): void {
-  const globalWithRunJsRoots = globalThis as typeof globalThis & {
-    __nbRunjsRoots?: WeakMap<object, RunJSRootEntry>;
-  };
-  const rootMap = globalWithRunJsRoots.__nbRunjsRoots;
-  const existingEntry = rootMap?.get(element);
-  if (existingEntry) {
-    disposeRunJSRootEntry(existingEntry);
-    rootMap?.delete(element);
-  }
-  element.innerHTML = '';
+  resetRunJSRuntimeElement(element);
 }
 
 export function buildJSFieldOwnerLocator(model: JSFieldRuntimeModel): Record<string, unknown> {
@@ -392,24 +376,6 @@ function normalizeRuntimeError(error: unknown): JSFieldRuntimeError {
     outdatedHint: 'Refresh the field settings and choose the current entry.',
     invalidSettingsHint: 'Open the field settings and fix the light extension settings.',
   });
-}
-
-function disposeRunJSRootEntry(entry: RunJSRootEntry): void {
-  if (typeof entry.disposeTheme === 'function') {
-    try {
-      entry.disposeTheme();
-    } catch {
-      // ignore cleanup failures
-    }
-  }
-  const root = entry.root || entry;
-  if (typeof root.unmount === 'function') {
-    try {
-      root.unmount();
-    } catch {
-      // ignore cleanup failures
-    }
-  }
 }
 
 function getCollectionFieldSignature(value: unknown): unknown {

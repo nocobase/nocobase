@@ -211,6 +211,12 @@ const PAGE_OPTIONS: FlowSurfaceConfigureOptions = {
   enableHeader: booleanOption('Whether to display the page header', { example: true }),
 };
 
+const JS_PAGE_OPTIONS: FlowSurfaceConfigureOptions = {
+  title: PAGE_OPTIONS.title,
+  documentTitle: PAGE_OPTIONS.documentTitle,
+  displayTitle: PAGE_OPTIONS.displayTitle,
+};
+
 const TAB_OPTIONS: FlowSurfaceConfigureOptions = {
   title: stringOption('Tab title', { example: 'Overview' }),
   icon: stringOption('Icon', { example: 'TableOutlined' }),
@@ -804,6 +810,7 @@ const GLOBAL_FLOW_CONTEXT_OPTION_KEYS = new Set([
 
 const FLOW_CONTEXT_OPTION_KEYS_BY_USE: Record<string, string[]> = {
   RootPageModel: ['documentTitle'],
+  JSPageModel: ['documentTitle'],
   RootPageTabModel: ['documentTitle'],
   TriggerChildPageModel: ['documentTitle'],
   ApprovalChildPageModel: ['documentTitle'],
@@ -968,6 +975,9 @@ export function getConfigureOptionsForUse(use?: string): FlowSurfaceConfigureOpt
     case 'RootPageModel':
       options = cloneOptions(PAGE_OPTIONS);
       break;
+    case 'JSPageModel':
+      options = cloneOptions(JS_PAGE_OPTIONS);
+      break;
     case 'RootPageTabModel':
       options = cloneOptions(TAB_OPTIONS);
       break;
@@ -1074,7 +1084,9 @@ export function getConfigureOptionsForResolvedNode(input: {
   use?: string;
 }): FlowSurfaceConfigureOptions {
   if (input.kind === 'page') {
-    return annotateFlowContextSupport('RootPageModel', cloneOptions(PAGE_OPTIONS));
+    return input.use === 'JSPageModel'
+      ? annotateFlowContextSupport(input.use, cloneOptions(JS_PAGE_OPTIONS))
+      : annotateFlowContextSupport('RootPageModel', cloneOptions(PAGE_OPTIONS));
   }
   if (input.kind === 'tab') {
     return annotateFlowContextSupport('RootPageTabModel', cloneOptions(TAB_OPTIONS));

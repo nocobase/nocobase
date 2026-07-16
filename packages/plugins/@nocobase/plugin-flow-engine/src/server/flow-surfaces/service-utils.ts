@@ -713,6 +713,7 @@ export function toFlowSurfaceBatchItemError(error: any) {
     message: normalized.message,
     status: normalized.status,
     type: normalized.type,
+    ...normalized.options,
   };
 }
 

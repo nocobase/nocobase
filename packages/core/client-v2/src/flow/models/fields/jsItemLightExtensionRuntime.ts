@@ -10,6 +10,7 @@
 import {
   ElementProxy,
   FlowCancelSaveException,
+  resetRunJSRuntimeElement,
   type FlowModel,
   type FlowRuntimeContext,
   type RunJSValue,
@@ -77,14 +78,6 @@ type JSItemRuntimeError = RuntimeErrorInfo;
 type RunJSExecutionResult = {
   success?: boolean;
   error?: unknown;
-};
-
-type RunJSRootEntry = {
-  root?: {
-    unmount?: () => void;
-  };
-  disposeTheme?: () => void;
-  unmount?: () => void;
 };
 
 const jsItemRuntimeRunTracker = createRuntimeRunTracker();
@@ -367,18 +360,7 @@ export function renderJSItemRuntimeError(element: HTMLElement, error: unknown, t
 
 export function resetJSItemRuntimeElement(element: HTMLElement): void {
   disposeJSItemRuntimeElementState(element);
-  const globalWithRunJsRoots = globalThis as typeof globalThis & {
-    __nbRunjsRoots?: WeakMap<object, RunJSRootEntry>;
-  };
-  const rootMap = globalWithRunJsRoots.__nbRunjsRoots;
-  const existingEntry = rootMap?.get(element);
-  if (existingEntry) {
-    disposeRunJSRootEntry(existingEntry);
-    rootMap?.delete(element);
-  }
-  if (element.isConnected || element.ownerDocument?.contains(element)) {
-    element.innerHTML = '';
-  }
+  resetRunJSRuntimeElement(element);
 }
 
 export function buildJSItemOwnerLocator(model: JSItemRuntimeModel): Record<string, unknown> {
@@ -481,24 +463,6 @@ function normalizeRuntimeError(error: unknown): JSItemRuntimeError {
     outdatedHint: 'Refresh the item settings and choose the current entry.',
     invalidSettingsHint: 'Open the item settings and fix the light extension settings.',
   });
-}
-
-function disposeRunJSRootEntry(entry: RunJSRootEntry): void {
-  if (typeof entry.disposeTheme === 'function') {
-    try {
-      entry.disposeTheme();
-    } catch {
-      // ignore cleanup failures
-    }
-  }
-  const root = entry.root || entry;
-  if (typeof root.unmount === 'function') {
-    try {
-      root.unmount();
-    } catch {
-      // ignore cleanup failures
-    }
-  }
 }
 
 function createJSItemRuntimeErrorDom(error: unknown, testId: string): HTMLElement {

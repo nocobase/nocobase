@@ -11,6 +11,7 @@ export * from './RunJSSourceResolverRegistry';
 export * from './RunJSSettingsDescriptorProviderRegistry';
 export * from './resolveRuntimeRunJS';
 export * from './runJSRuntime';
+export * from './runJSRuntimeError';
 export * from './runtimeSettingsValidation';
 export * from './RunJSSourceModeField';
 export * from './runJSSourceMenu';

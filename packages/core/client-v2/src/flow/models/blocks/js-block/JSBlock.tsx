@@ -12,6 +12,7 @@ import { Alert, Spin } from 'antd';
 import {
   ElementProxy,
   FlowCancelSaveException,
+  resetRunJSRuntimeElement,
   tExpr,
   type FlowRuntimeContext,
   type FlowSettingsContext,
@@ -24,6 +25,7 @@ import { resolveRunJsParams } from '../../utils/resolveRunJsParams';
 import { RunJSEditorField } from '../../../components/runjs-studio';
 import {
   resolveRuntimeRunJS,
+  readRunJSRuntimeError,
   createRunJSSourceCascadeMenuUIMode,
   type RunJSSourceSettings,
 } from '../../../components/runjs-source';
@@ -74,20 +76,6 @@ type JSBlockRuntimeState = {
 type RunJSExecutionResult = {
   success?: boolean;
   error?: unknown;
-};
-
-type RunJSRootEntry = {
-  root?: {
-    unmount?: () => void;
-  };
-  disposeTheme?: () => void;
-  unmount?: () => void;
-};
-
-type ServerErrorShape = {
-  code?: string;
-  status?: number;
-  message?: string;
 };
 
 const getRootElement = (element: HTMLElement | null) => {
@@ -144,86 +132,12 @@ function cloneJsonValue<T>(value: T): T {
   }
 }
 
-function resetJSBlockRuntimeElement(element: HTMLElement): void {
-  const globalWithRunJSRoots = globalThis as typeof globalThis & {
-    __nbRunjsRoots?: WeakMap<object, RunJSRootEntry>;
-  };
-  const rootMap = globalWithRunJSRoots.__nbRunjsRoots;
-  const entry = rootMap?.get(element);
-  if (entry) {
-    if (typeof entry.disposeTheme === 'function') {
-      try {
-        entry.disposeTheme();
-      } catch {
-        // ignore cleanup failures
-      }
-    }
-    const root = entry.root || entry;
-    if (typeof root.unmount === 'function') {
-      try {
-        root.unmount();
-      } catch {
-        // ignore cleanup failures
-      }
-    }
-    rootMap?.delete(element);
-  }
-  element.innerHTML = '';
-}
-
 function toNonEmptyString(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim() ? value.trim() : undefined;
 }
 
-function toNumber(value: unknown): number | undefined {
-  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
-}
-
-function getFirstServerError(value: unknown): ServerErrorShape | null {
-  if (!isRecord(value)) {
-    return null;
-  }
-
-  if (Array.isArray(value.errors)) {
-    const first = value.errors.find((item) => isRecord(item));
-    return isRecord(first) ? first : null;
-  }
-
-  return isRecord(value.error) ? value.error : null;
-}
-
-function getRuntimeErrorSource(error: unknown): ServerErrorShape {
-  if (isRecord(error)) {
-    const response = isRecord(error.response) ? error.response : null;
-    const serverError = getFirstServerError(response?.data) || getFirstServerError(error);
-    if (serverError) {
-      return {
-        code: toNonEmptyString(serverError.code),
-        status: toNumber(serverError.status) ?? toNumber(response?.status),
-        message: toNonEmptyString(serverError.message),
-      };
-    }
-
-    return {
-      code: toNonEmptyString(error.code),
-      status: toNumber(error.status) ?? toNumber(response?.status),
-      message: toNonEmptyString(error.message),
-    };
-  }
-
-  if (error instanceof Error) {
-    return {
-      message: error.message,
-    };
-  }
-
-  return {
-    message: typeof error === 'string' ? error : undefined,
-  };
-}
-
 function normalizeRuntimeError(error: unknown): JSBlockRuntimeError {
-  const source = getRuntimeErrorSource(error);
+  const source = readRunJSRuntimeError(error);
   const code = source.code;
   const normalizedCode = code?.toLowerCase() || '';
   const status = source.status;
@@ -360,7 +274,7 @@ const JSBlockPlainHost = ({
   height?: number;
   beforeContent?: React.ReactNode;
   afterContent?: React.ReactNode;
-  contentRef: React.RefObject<HTMLDivElement>;
+  contentRef: React.Ref<HTMLDivElement>;
   marginBlock: number;
 }) => {
   const hostRef = React.useRef<HTMLDivElement | null>(null);
@@ -391,6 +305,23 @@ const JSBlockPlainHost = ({
 export class JSBlockModel extends BlockModel {
   // Avoid double-run on first mount; only rerun after remounts
   private _mountedOnce = false;
+  private _runtimeElement: HTMLDivElement | null = null;
+  private readonly runtimeElementRef = (element: HTMLDivElement | null) => {
+    (this.context.ref as React.MutableRefObject<HTMLDivElement | null>).current = element;
+    if (element) {
+      this._runtimeElement = element;
+      return;
+    }
+    const previousElement = this._runtimeElement;
+    this._runtimeElement = null;
+    if (previousElement) {
+      queueMicrotask(() => {
+        if (this._runtimeElement !== previousElement) {
+          resetRunJSRuntimeElement(previousElement);
+        }
+      });
+    }
+  };
   readonly runtimeState: JSBlockRuntimeState = observable({
     loading: false,
     error: null,
@@ -494,7 +425,7 @@ export class JSBlockModel extends BlockModel {
   }
 
   renderComponent(): React.ReactNode {
-    return <div ref={this.context.ref} />;
+    return <div ref={this.runtimeElementRef} />;
   }
   render() {
     const decoratorProps = this.decoratorProps || {};
@@ -524,7 +455,7 @@ export class JSBlockModel extends BlockModel {
           style={style}
           beforeContent={this.mergeBeforeContent(beforeContent)}
           afterContent={afterContent}
-          contentRef={this.context.ref}
+          contentRef={this.runtimeElementRef}
           marginBlock={this.context.themeToken?.marginBlock ?? 0}
         />
       );
@@ -548,7 +479,7 @@ export class JSBlockModel extends BlockModel {
         {...cardProps}
       >
         {this.renderRuntimeShell()}
-        <div ref={this.context.ref} />
+        <div ref={this.runtimeElementRef} />
       </BlockItemCard>
     );
   }
@@ -866,7 +797,7 @@ ctx.render(\`
             if (!model.isCurrentRuntimeRun(runId)) {
               return;
             }
-            resetJSBlockRuntimeElement(element);
+            resetRunJSRuntimeElement(element);
             ctx.defineProperty('element', {
               get: () => new ElementProxy(element),
               info: {
@@ -915,7 +846,7 @@ ctx.render(\`
 
           run().catch((error) => {
             if (model.isCurrentRuntimeRun(runId)) {
-              resetJSBlockRuntimeElement(element);
+              resetRunJSRuntimeElement(element);
             }
             model.failRuntimeRun(runId, error);
           });

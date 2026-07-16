@@ -12,7 +12,7 @@ import { reaction } from '@nocobase/flow-engine';
 import type { FlowModel } from '@nocobase/flow-engine';
 import type { NocoBaseDesktopRoute } from '../../../../flow-compat';
 import _ from 'lodash';
-import { PageModel } from './PageModel';
+import { PageModel, type PageModelContextWithRoute } from './PageModel';
 
 export class RootPageModel extends PageModel {
   mounted = false;
@@ -21,7 +21,10 @@ export class RootPageModel extends PageModel {
    * 打开页面设置前，把标签页开关表单值同步为路由表中的当前状态。
    */
   private syncPageSettingsEnableTabsFromRoute() {
-    const routeEnableTabs = (this.context as any)?.currentRoute?.enableTabs;
+    if (!this.supportsPageTabs()) {
+      return;
+    }
+    const routeEnableTabs = (this.context as PageModelContextWithRoute).currentRoute?.enableTabs;
     if (typeof routeEnableTabs !== 'boolean') {
       return;
     }
@@ -34,7 +37,7 @@ export class RootPageModel extends PageModel {
    * 保存页面设置后立即同步当前页面状态，让标签页显隐无需等路由列表刷新或页面重载。
    */
   private syncEnableTabsToCurrentPage(enableTabs: boolean) {
-    const currentRoute = (this.context as any)?.currentRoute;
+    const currentRoute = (this.context as PageModelContextWithRoute).currentRoute;
     const routeId = this.props.routeId;
     if (currentRoute && (routeId == null || currentRoute.id == null || String(currentRoute.id) === String(routeId))) {
       currentRoute.enableTabs = enableTabs;
@@ -93,7 +96,7 @@ export class RootPageModel extends PageModel {
   async saveStepParams() {
     await super.saveStepParams();
 
-    if (this.stepParams.pageSettings) {
+    if (this.stepParams.pageSettings && this.supportsPageTabs()) {
       const enableTabs = !!this.stepParams.pageSettings.general.enableTabs;
       // 更新路由
       await this.context.api.request({

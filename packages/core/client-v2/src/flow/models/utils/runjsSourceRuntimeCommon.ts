@@ -32,6 +32,7 @@ import {
   getSettingsSchemaProperties,
   getSettingsSchemaRequired,
   normalizeSchemaType,
+  readRunJSRuntimeError,
   RunJSSettingsDescriptorProviderRegistry,
   RunJSSourceResolverRegistry,
   validateRunJSSettings,
@@ -225,7 +226,7 @@ export function createLightExtensionSourceBindingStep(options: {
 }
 
 export function createLightExtensionRunJsUISchema(options: {
-  kind: 'js-action' | 'js-field' | 'js-item';
+  kind: 'js-action' | 'js-field' | 'js-item' | 'js-page';
   scene: string;
   surfaceStyle: 'action' | 'render' | 'value';
   minHeight?: string;
@@ -807,7 +808,7 @@ export function setCanonicalLightExtensionSource(
 }
 
 export function normalizeLightExtensionRuntimeError(error: unknown, labels: RuntimeErrorLabels): RuntimeErrorInfo {
-  const source = getRuntimeErrorSource(error);
+  const source = readRunJSRuntimeError(error);
   const code = source.code;
   const normalizedCode = code?.toLowerCase() || '';
   const status = source.status;
@@ -952,38 +953,4 @@ export function stableSerializeWithCircular(value: unknown): string {
   } catch {
     return String(value);
   }
-}
-
-function getFirstServerError(value: unknown): Record<string, unknown> | null {
-  if (!isRecord(value)) {
-    return null;
-  }
-  if (Array.isArray(value.errors)) {
-    const first = value.errors.find((item) => isRecord(item));
-    return isRecord(first) ? first : null;
-  }
-  return isRecord(value.error) ? value.error : null;
-}
-
-function getRuntimeErrorSource(error: unknown): { code?: string; status?: number; message?: string } {
-  if (isRecord(error)) {
-    const response = isRecord(error.response) ? error.response : null;
-    const serverError = getFirstServerError(response?.data) || getFirstServerError(error);
-    if (serverError) {
-      return {
-        code: toNonEmptyString(serverError.code),
-        status: toNumber(serverError.status) ?? toNumber(response?.status),
-        message: toNonEmptyString(serverError.message),
-      };
-    }
-    return {
-      code: toNonEmptyString(error.code),
-      status: toNumber(error.status) ?? toNumber(response?.status),
-      message: toNonEmptyString(error.message),
-    };
-  }
-  if (error instanceof Error) {
-    return { message: error.message };
-  }
-  return { message: typeof error === 'string' ? error : undefined };
 }
