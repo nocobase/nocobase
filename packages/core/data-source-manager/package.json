@@ -1,16 +1,16 @@
 {
   "name": "@nocobase/data-source-manager",
-  "version": "2.2.0-alpha.8",
+  "version": "2.3.0-alpha.1",
   "description": "",
   "license": "Apache-2.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "dependencies": {
-    "@nocobase/actions": "2.2.0-alpha.8",
-    "@nocobase/cache": "2.2.0-alpha.8",
-    "@nocobase/database": "2.2.0-alpha.8",
-    "@nocobase/resourcer": "2.2.0-alpha.8",
-    "@nocobase/utils": "2.2.0-alpha.8",
+    "@nocobase/actions": "2.3.0-alpha.1",
+    "@nocobase/cache": "2.3.0-alpha.1",
+    "@nocobase/database": "2.3.0-alpha.1",
+    "@nocobase/resourcer": "2.3.0-alpha.1",
+    "@nocobase/utils": "2.3.0-alpha.1",
     "@types/jsonwebtoken": "^8.5.8",
     "jsonwebtoken": "^9.0.2"
   },
