@@ -1,6 +1,5 @@
 ---
-title: "Field Sort"
-description: "Konfigurasi tipe field Sort, digunakan untuk pengurutan record."
-keywords: "field sort,sort,tipe field,pengurutan record,NocoBase"
+title: "Bidang pengurutan"
+description: "Konfigurasi tipe bidang pengurutan, digunakan untuk mencatat urutan."
+keywords: "Bidang pengurutan,sort,tipe bidang,pengurutan catatan,NocoBase"
 ---
-

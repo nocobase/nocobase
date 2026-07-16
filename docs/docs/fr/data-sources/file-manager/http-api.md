@@ -1,14 +1,20 @@
+---
+title: "API HTTP du gestionnaire de fichiers"
+description: "Les champs de pièces jointes et les tables de fichiers permettent de téléverser des fichiers via l’API HTTP, avec téléversement côté serveur (S3/OSS/COS), téléversement direct côté client, authentification JWT et sélection du moteur de stockage."
+keywords: "téléversement de fichiers API HTTP,attachments create,téléversement côté serveur,téléversement direct côté client,NocoBase"
+---
+
 # API HTTP
 
-Les téléchargements de fichiers, qu'il s'agisse de champs de pièce jointe ou de collections de fichiers, peuvent être gérés via l'API HTTP. La méthode d'appel varie en fonction du moteur de stockage utilisé par la pièce jointe ou la collection de fichiers.
+Le téléversement de fichiers des champs de pièces jointes et des tables de fichiers peut être effectué via l’API HTTP. Selon le moteur de stockage utilisé par la pièce jointe ou la table de fichiers, la méthode d’appel diffère.
 
-## Téléchargement côté serveur
+## Téléversement côté serveur
 
-Pour les moteurs de stockage open source intégrés (tels que S3, OSS et COS), l'API HTTP utilise la même logique que la fonctionnalité de téléchargement de l'interface utilisateur, où les fichiers sont téléchargés via le serveur. Les appels API nécessitent la transmission d'un jeton JWT (basé sur l'authentification de l'utilisateur) dans l'en-tête de requête `Authorization` ; sans cela, l'accès sera refusé.
+Pour les moteurs de stockage open source intégrés au projet, tels que S3, OSS et COS, l’API HTTP utilise le même mécanisme que la fonction de téléversement de l’interface utilisateur : les fichiers sont téléversés via le serveur. Les appels d’API doivent transmettre dans l’en-tête `Authorization` un jeton JWT basé sur la connexion de l’utilisateur ; dans le cas contraire, l’accès sera refusé.
 
 ### Champ de pièce jointe
 
-Lancez une action `create` sur la ressource `attachments` (la collection de pièces jointes) en envoyant une requête POST et téléchargez le contenu binaire via le champ `file`. Après cet appel, le fichier sera téléchargé vers le moteur de stockage par défaut.
+Envoyez une requête POST en lançant l’opération `create` sur la ressource de la table des pièces jointes (`attachments`), puis téléversez le contenu binaire via le champ file. Après l’appel, le fichier est téléversé vers le moteur de stockage par défaut.
 
 ```shell
 curl -X POST \
@@ -17,7 +23,7 @@ curl -X POST \
     "http://localhost:3000/api/attachments:create"
 ```
 
-Pour télécharger des fichiers vers un moteur de stockage différent, vous pouvez utiliser le paramètre `attachmentField` afin de spécifier le moteur de stockage configuré pour le champ de la collection. S'il n'est pas configuré, le fichier sera téléchargé vers le moteur de stockage par défaut.
+Pour téléverser le fichier vers un autre moteur de stockage, utilisez le paramètre attachmentField afin de spécifier le moteur de stockage configuré pour le champ de la table concernée (s’il n’est pas configuré, le fichier sera téléversé vers le moteur de stockage par défaut).
 
 ```shell
 curl -X POST \
@@ -26,9 +32,9 @@ curl -X POST \
     "http://localhost:3000/api/attachments:create?attachmentField=<collection_name>.<field_name>"
 ```
 
-### Collection de fichiers
+### Table de fichiers
 
-Le téléchargement vers une collection de fichiers générera automatiquement un enregistrement de fichier. Lancez une action `create` sur la ressource de la collection de fichiers en envoyant une requête POST et téléchargez le contenu binaire via le champ `file`.
+Le téléversement vers une table de fichiers génère automatiquement un enregistrement de fichier. Envoyez une requête POST en lançant l’opération `create` sur la ressource de la table de fichiers, puis téléversez le contenu binaire via le champ file.
 
 ```shell
 curl -X POST \
@@ -37,24 +43,24 @@ curl -X POST \
     "http://localhost:3000/api/<file_collection_name>:create"
 ```
 
-Lors du téléchargement vers une collection de fichiers, il n'est pas nécessaire de spécifier un moteur de stockage ; le fichier sera téléchargé vers le moteur de stockage configuré pour cette collection.
+Pour le téléversement vers une table de fichiers, il n’est pas nécessaire de spécifier le moteur de stockage : le fichier sera téléversé vers le moteur de stockage configuré pour cette table.
 
-## Téléchargement côté client
+## Téléversement côté client
 
-Pour les moteurs de stockage compatibles S3, fournis via le plugin commercial S3-Pro, le téléchargement via l'API HTTP nécessite plusieurs étapes.
+Pour les moteurs de stockage compatibles avec S3 fournis par le plug-in commercial S3-Pro, le téléversement via l’API HTTP doit être effectué en plusieurs étapes.
 
 ### Champ de pièce jointe
 
 1.  Obtenir les informations du moteur de stockage
 
-    Lancez une action `getBasicInfo` sur la collection `storages` (les stockages), en incluant le nom du stockage, pour demander les informations de configuration du moteur de stockage.
+    Lancez l’opération getBasicInfo sur la table de stockage (storages) tout en transmettant l’identifiant de l’espace de stockage (storage name), afin d’obtenir les informations de configuration du moteur de stockage.
 
     ```shell
     curl 'http://localhost:13000/api/storages:getBasicInfo/<storage_name>' \
       -H 'Authorization: Bearer <JWT>'
     ```
 
-    Exemple d'informations de configuration du moteur de stockage renvoyées :
+    Exemple d’informations de configuration renvoyées par le moteur de stockage :
 
     ```json
     {
@@ -66,9 +72,9 @@ Pour les moteurs de stockage compatibles S3, fournis via le plugin commercial S3
     }
     ```
 
-2.  Obtenir l'URL pré-signée du fournisseur de services
+2.  Obtenir les informations pré-signées du fournisseur
 
-    Lancez une action `createPresignedUrl` sur la ressource `fileStorageS3` en envoyant une requête POST avec les informations relatives au fichier dans le corps de la requête, afin d'obtenir les informations de téléchargement pré-signées.
+    Lancez l’opération createPresignedUrl sur la ressource fileStorageS3 en envoyant une requête POST et en incluant dans le body les informations relatives au fichier, afin d’obtenir les informations de téléversement pré-signées.
 
     ```shell
     curl 'http://localhost:13000/api/fileStorageS3:createPresignedUrl' \
@@ -81,11 +87,11 @@ Pour les moteurs de stockage compatibles S3, fournis via le plugin commercial S3
 
     > Remarque :
     >
-    > *   `name` : Nom du fichier
-    > *   `size` : Taille du fichier (en octets)
-    > *   `type` : Le type MIME du fichier. Vous pouvez consulter les [types MIME courants](https://developer.mozilla.org/fr/docs/Web/HTTP/MIME_types/Common_types)
-    > *   `storageId` : L'ID du moteur de stockage (le champ `id` renvoyé à l'étape 1).
-    > *   `storageType` : Le type du moteur de stockage (le champ `type` renvoyé à l'étape 1).
+    > * name : nom du fichier
+    > * size : taille du fichier (en bytes)
+    > * type : type MIME du fichier. Consultez : [Types MIME courants](https://developer.mozilla.org/zh-CN/docs/Web/HTTP/MIME_types/Common_types)
+    > * storageId : identifiant du moteur de stockage (champ `id` renvoyé à la première étape)
+    > * storageType : type de moteur de stockage (champ type renvoyé à la première étape)
     >
     > Exemple de données de requête :
     >
@@ -93,7 +99,7 @@ Pour les moteurs de stockage compatibles S3, fournis via le plugin commercial S3
     > --data-raw '{"name":"a.png","size":4405,"type":"image/png","storageId":2,"storageType":"s3-compatible"}'
     > ```
 
-    La structure des données des informations pré-signées obtenues est la suivante :
+    La structure des informations pré-signées obtenues est la suivante :
 
     ```json
     {
@@ -111,9 +117,9 @@ Pour les moteurs de stockage compatibles S3, fournis via le plugin commercial S3
     }
     ```
 
-3.  Télécharger le fichier
+3.  Téléverser le fichier
 
-    Utilisez l'URL `putUrl` renvoyée pour effectuer une requête `PUT`, en téléchargeant le fichier comme corps de la requête.
+    Utilisez putUrl renvoyé pour lancer une requête PUT et téléverser le fichier dans le body.
 
     ```shell
     curl '<putUrl>' \
@@ -121,8 +127,8 @@ Pour les moteurs de stockage compatibles S3, fournis via le plugin commercial S3
       -T <file_path>
     ```
     > Remarque :
-    > *   `putUrl` : Le champ `putUrl` renvoyé à l'étape précédente.
-    > *   `file_path` : Le chemin local du fichier à télécharger.
+    > * putUrl : champ putUrl renvoyé à l’étape précédente
+    > * file_path : chemin d’accès au fichier local à téléverser
     >
     > Exemple de données de requête :
     > ```
@@ -131,9 +137,9 @@ Pour les moteurs de stockage compatibles S3, fournis via le plugin commercial S3
     >  -T /Users/Downloads/a.png
     > ```
 
-4.  Créer l'enregistrement du fichier
+4.  Créer un enregistrement de fichier
 
-    Après un téléchargement réussi, créez l'enregistrement du fichier en lançant une action `create` sur la ressource `attachments` (la collection de pièces jointes) avec une requête POST.
+    Une fois le téléversement réussi, lancez l’opération create sur la ressource de la table des pièces jointes (attachments) en envoyant une requête POST afin de créer l’enregistrement du fichier.
 
     ```shell
     curl 'http://localhost:13000/api/attachments:create?attachmentField=<collection_name>.<field_name>' \
@@ -144,25 +150,25 @@ Pour les moteurs de stockage compatibles S3, fournis via le plugin commercial S3
       --data-raw '{"title":<title>,"filename":<filename>,"extname":<extname>,"path":"","size":<size>,"url":"","mimetype":<mimetype>,"meta":<meta>,"storageId":<storageId>}'
     ```
 
-    > Explication des données dépendantes dans `data-raw` :
-    > *   `title` : Le champ `fileInfo.title` renvoyé à l'étape précédente.
-    > *   `filename` : Le champ `fileInfo.key` renvoyé à l'étape précédente.
-    > *   `extname` : Le champ `fileInfo.extname` renvoyé à l'étape précédente.
-    > *   `path` : Vide par défaut.
-    > *   `size` : Le champ `fileInfo.size` renvoyé à l'étape précédente.
-    > *   `url` : Vide par défaut.
-    > *   `mimetype` : Le champ `fileInfo.mimetype` renvoyé à l'étape précédente.
-    > *   `meta` : Le champ `fileInfo.meta` renvoyé à l'étape précédente.
-    > *   `storageId` : Le champ `id` renvoyé à l'étape 1.
+    > Description des données requises dans data-raw :
+    > * title : champ `fileInfo.title` renvoyé à l’étape précédente
+    > * filename : champ `fileInfo.key` renvoyé à l’étape précédente
+    > * extname : champ `fileInfo.extname` renvoyé à l’étape précédente
+    > * path : vide par défaut
+    > * size : champ `fileInfo.size` renvoyé à l’étape précédente
+    > * url : vide par défaut
+    > * mimetype : champ `fileInfo.mimetype` renvoyé à l’étape précédente
+    > * meta : champ `fileInfo.meta` renvoyé à l’étape précédente
+    > * storageId : champ `id` renvoyé à la première étape
     >
     > Exemple de données de requête :
     > ```
     >   --data-raw '{"title":"ATT00001","filename":"ATT00001-8nuuxkuz4jn.png","extname":".png","path":"","size":4405,"url":"","mimetype":"image/png","meta":{},"storageId":2}'
     > ```
 
-### Collection de fichiers
+### Table de fichiers
 
-Les trois premières étapes sont identiques à celles du téléchargement vers un champ de pièce jointe. Cependant, à la quatrième étape, vous devez créer l'enregistrement du fichier en lançant une action `create` sur la ressource de la collection de fichiers avec une requête POST, et en téléchargeant les informations du fichier dans le corps de la requête.
+Les trois premières étapes sont identiques à celles du téléversement vers un champ de pièce jointe. À la quatrième étape, il faut créer l’enregistrement du fichier en lançant l’opération create sur la ressource de la table de fichiers, en envoyant une requête POST et les informations du fichier dans le body.
 
 ```shell
 curl 'http://localhost:13000/api/<file_collection_name>:create' \
@@ -171,16 +177,16 @@ curl 'http://localhost:13000/api/<file_collection_name>:create' \
   --data-raw '{"title":<title>,"filename":<filename>,"extname":<extname>,"path":"","size":<size>,"url":"","mimetype":<mimetype>,"meta":<meta>,"storageId":<storageId>}'
 ```
 
-> Explication des données dépendantes dans `data-raw` :
-> *   `title` : Le champ `fileInfo.title` renvoyé à l'étape précédente.
-> *   `filename` : Le champ `fileInfo.key` renvoyé à l'étape précédente.
-> *   `extname` : Le champ `fileInfo.extname` renvoyé à l'étape précédente.
-> *   `path` : Vide par défaut.
-> *   `size` : Le champ `fileInfo.size` renvoyé à l'étape précédente.
-> *   `url` : Vide par défaut.
-> *   `mimetype` : Le champ `fileInfo.mimetype` renvoyé à l'étape précédente.
-> *   `meta` : Le champ `fileInfo.meta` renvoyé à l'étape précédente.
-> *   `storageId` : Le champ `id` renvoyé à l'étape 1.
+> Description des données requises dans data-raw :
+> * title : champ fileInfo.title renvoyé à l’étape précédente
+> * filename : champ fileInfo.key renvoyé à l’étape précédente
+> * extname : champ fileInfo.extname renvoyé à l’étape précédente
+> * path : vide par défaut
+> * size : champ fileInfo.size renvoyé à l’étape précédente
+> * url : vide par défaut
+> * mimetype : champ fileInfo.mimetype renvoyé à l’étape précédente
+> * meta : champ fileInfo.meta renvoyé à l’étape précédente
+> * storageId : champ id renvoyé à la première étape
 >
 > Exemple de données de requête :
 > ```

@@ -1,14 +1,20 @@
+---
+title: "API HTTP del gestor de archivos"
+description: "Los campos de adjuntos y las tablas de archivos permiten cargar archivos mediante la API HTTP, con carga desde el servidor (S3/OSS/COS), carga directa desde el cliente, autenticación JWT y especificación del motor de almacenamiento."
+keywords: "API HTTP de carga de archivos,attachments create,carga desde el servidor,carga directa desde el cliente,NocoBase"
+---
+
 # API HTTP
 
-La carga de archivos para los campos de adjunto y las colecciones de archivos se puede gestionar a través de la API HTTP. La forma de invocar el proceso varía según el motor de almacenamiento que utilice el adjunto o la colección de archivos.
+La carga de archivos de los campos de adjuntos y las tablas de archivos admite el procesamiento mediante la API HTTP. Según el motor de almacenamiento utilizado por los adjuntos o la tabla de archivos, existen diferentes formas de realizar las llamadas.
 
 ## Carga desde el servidor
 
-Para los motores de almacenamiento de código abierto integrados, como S3, OSS y COS, la API HTTP funciona de la misma manera que la carga desde la interfaz de usuario, es decir, los archivos se cargan a través del servidor. Las llamadas a la API requieren que se pase un token JWT (basado en el inicio de sesión del usuario) en el encabezado de solicitud `Authorization`; de lo contrario, se denegará el acceso.
+Para los motores de almacenamiento de código abierto integrados en el proyecto, como S3, OSS y COS, la API HTTP utiliza la misma función de llamada que la carga desde la interfaz de usuario; todos los archivos se cargan a través del servidor. Para llamar a la interfaz, es necesario transmitir en el encabezado de solicitud `Authorization` un token JWT basado en el inicio de sesión del usuario; de lo contrario, se rechazará el acceso.
 
-### Campo de adjunto
+### Campo de adjuntos
 
-Inicie una operación `create` en el recurso de adjuntos (`attachments`) enviando una solicitud POST y cargue el contenido binario a través del campo `file`. Después de la llamada, el archivo se cargará en el motor de almacenamiento predeterminado.
+Inicia la operación `create` sobre el recurso de la tabla de adjuntos (`attachments`), envía la solicitud mediante POST y carga el contenido binario a través del campo file. Tras la llamada, el archivo se cargará en el motor de almacenamiento predeterminado.
 
 ```shell
 curl -X POST \
@@ -17,7 +23,7 @@ curl -X POST \
     "http://localhost:3000/api/attachments:create"
 ```
 
-Si necesita cargar archivos en un motor de almacenamiento diferente, puede usar el parámetro `attachmentField` para especificar el motor de almacenamiento configurado para el campo de la colección. Si no está configurado, el archivo se cargará en el motor de almacenamiento predeterminado.
+Si necesitas cargar el archivo en otro motor de almacenamiento, puedes especificar mediante el parámetro attachmentField el motor de almacenamiento configurado para el campo de la tabla de datos correspondiente (si no está configurado, se cargará en el motor de almacenamiento predeterminado).
 
 ```shell
 curl -X POST \
@@ -26,9 +32,9 @@ curl -X POST \
     "http://localhost:3000/api/attachments:create?attachmentField=<collection_name>.<field_name>"
 ```
 
-### Colección de archivos
+### Tabla de archivos
 
-Al cargar en una colección de archivos, se generará automáticamente un registro de archivo. Inicie una operación `create` en el recurso de la colección de archivos enviando una solicitud POST y cargando el contenido binario a través del campo `file`.
+La carga en una tabla de archivos generará automáticamente un registro de archivo. Inicia la operación `create` sobre el recurso de la tabla de archivos, envía la solicitud mediante POST y carga el contenido binario a través del campo file.
 
 ```shell
 curl -X POST \
@@ -37,24 +43,24 @@ curl -X POST \
     "http://localhost:3000/api/<file_collection_name>:create"
 ```
 
-Al cargar en una colección de archivos, no es necesario especificar un motor de almacenamiento; el archivo se cargará en el motor de almacenamiento configurado para esa colección.
+No es necesario especificar el motor de almacenamiento al cargar en una tabla de archivos; el archivo se cargará en el motor de almacenamiento configurado para dicha tabla.
 
 ## Carga desde el cliente
 
-Para los motores de almacenamiento compatibles con S3, proporcionados a través del plugin comercial S3-Pro, la carga mediante la API HTTP requiere varios pasos.
+Para los motores de almacenamiento compatibles con S3 proporcionados por el complemento comercial S3-Pro, la carga mediante la API HTTP requiere varias llamadas que deben realizarse por pasos.
 
-### Campo de adjunto
+### Campo de adjuntos
 
 1.  Obtener información del motor de almacenamiento
 
-    Inicie una operación `getBasicInfo` en la colección de almacenamientos (`storages`), incluyendo el nombre del almacenamiento, para solicitar la información de configuración del motor de almacenamiento.
+    Inicia la operación getBasicInfo sobre la tabla de almacenamiento (storages), incluyendo el identificador del espacio de almacenamiento (storage name), para solicitar la información de configuración del motor de almacenamiento.
 
     ```shell
     curl 'http://localhost:13000/api/storages:getBasicInfo/<storage_name>' \
       -H 'Authorization: Bearer <JWT>'
     ```
 
-    Ejemplo de información de configuración del motor de almacenamiento devuelta:
+    Ejemplo de la información de configuración del motor de almacenamiento devuelta:
 
     ```json
     {
@@ -66,9 +72,9 @@ Para los motores de almacenamiento compatibles con S3, proporcionados a través 
     }
     ```
 
-2.  Obtener la información de URL pre-firmada del proveedor de servicios
+2.  Obtener la información prefirmada del proveedor
 
-    Inicie una operación `createPresignedUrl` en el recurso `fileStorageS3` enviando una solicitud POST con información relacionada con el archivo en el cuerpo para obtener la información de carga pre-firmada.
+    Inicia la operación createPresignedUrl sobre el recurso fileStorageS3, envía la solicitud mediante POST e incluye en el body la información relacionada con el archivo para obtener la información de carga prefirmada.
 
     ```shell
     curl 'http://localhost:13000/api/fileStorageS3:createPresignedUrl' \
@@ -79,21 +85,21 @@ Para los motores de almacenamiento compatibles con S3, proporcionados a través 
       --data-raw '{"name":<name>,"size":<size>,"type":<type>,"storageId":<storageId>,"storageType":<storageType>}'
     ```
 
-    > Nota:
+    > Descripción:
     >
-    > *   `name`: Nombre del archivo
-    > *   `size`: Tamaño del archivo (en bytes)
-    > *   `type`: El tipo MIME del archivo. Puede consultar: [Tipos MIME comunes](https://developer.mozilla.org/zh-CN/docs/Web/HTTP/MIME_types/Common_types)
-    > *   `storageId`: El ID del motor de almacenamiento (el campo `id` devuelto en el paso 1).
-    > *   `storageType`: El tipo de motor de almacenamiento (el campo `type` devuelto en el paso 1).
+    > * name: nombre del archivo
+    > * size: tamaño del archivo (en bytes)
+    > * type: tipo MIME del archivo; consulta：[Tipos MIME comunes](https://developer.mozilla.org/zh-CN/docs/Web/HTTP/MIME_types/Common_types)
+    > * storageId: ID del motor de almacenamiento (campo `id` devuelto en el primer paso)
+    > * storageType: tipo de motor de almacenamiento (campo type devuelto en el primer paso)
     >
-    > Ejemplo de datos de solicitud:
+    > Datos de solicitud de ejemplo:
     >
     > ```
     > --data-raw '{"name":"a.png","size":4405,"type":"image/png","storageId":2,"storageType":"s3-compatible"}'
     > ```
 
-    La estructura de datos de la información pre-firmada obtenida es la siguiente:
+    La estructura de los datos de la información prefirmada obtenida es la siguiente:
 
     ```json
     {
@@ -111,30 +117,29 @@ Para los motores de almacenamiento compatibles con S3, proporcionados a través 
     }
     ```
 
-3.  Cargar el archivo
+3.  Carga de archivos
 
-    Utilice la `putUrl` devuelta para realizar una solicitud `PUT`, cargando el archivo como cuerpo de la solicitud.
+    Utiliza putUrl devuelto para iniciar una solicitud PUT y cargar el archivo como body.
 
     ```shell
     curl '<putUrl>' \
       -X 'PUT' \
       -T <file_path>
     ```
-
-    > Nota:
-    > *   `putUrl`: El campo `putUrl` devuelto en el paso anterior.
-    > *   `file_path`: La ruta local del archivo a cargar.
+    > Descripción:
+    > * putUrl: campo putUrl devuelto en el paso anterior
+    > * file_path: ruta del archivo local que se va a cargar
     >
-    > Ejemplo de datos de solicitud:
+    > Datos de solicitud de ejemplo:
     > ```
     > curl 'https://xxxxxxx' \
     >  -X 'PUT' \
     >  -T /Users/Downloads/a.png
     > ```
 
-4.  Crear el registro del archivo
+4.  Crear un registro de archivo
 
-    Después de una carga exitosa, cree el registro del archivo iniciando una operación `create` en el recurso de adjuntos (`attachments`) con una solicitud POST.
+    Tras cargar correctamente el archivo, inicia la operación create sobre el recurso de la tabla de adjuntos (attachments), envía la solicitud mediante POST y crea el registro de archivo.
 
     ```shell
     curl 'http://localhost:13000/api/attachments:create?attachmentField=<collection_name>.<field_name>' \
@@ -145,25 +150,25 @@ Para los motores de almacenamiento compatibles con S3, proporcionados a través 
       --data-raw '{"title":<title>,"filename":<filename>,"extname":<extname>,"path":"","size":<size>,"url":"","mimetype":<mimetype>,"meta":<meta>,"storageId":<storageId>}'
     ```
 
-    > Explicación de los datos dependientes en `data-raw`:
-    > *   `title`: El campo `fileInfo.title` devuelto en el paso anterior.
-    > *   `filename`: El campo `fileInfo.key` devuelto en el paso anterior.
-    > *   `extname`: El campo `fileInfo.extname` devuelto en el paso anterior.
-    > *   `path`: Vacío por defecto.
-    > *   `size`: El campo `fileInfo.size` devuelto en el paso anterior.
-    > *   `url`: Vacío por defecto.
-    > *   `mimetype`: El campo `fileInfo.mimetype` devuelto en el paso anterior.
-    > *   `meta`: El campo `fileInfo.meta` devuelto en el paso anterior.
-    > *   `storageId`: El campo `id` devuelto en el paso 1.
+    > Descripción de los datos dependientes en data-raw:
+    > * title: campo `fileInfo.title` devuelto en el paso anterior
+    > * filename: campo `fileInfo.key` devuelto en el paso anterior
+    > * extname: campo `fileInfo.extname` devuelto en el paso anterior
+    > * path: vacío de forma predeterminada
+    > * size: campo `fileInfo.size` devuelto en el paso anterior
+    > * url: vacío de forma predeterminada
+    > * mimetype: campo `fileInfo.mimetype` devuelto en el paso anterior
+    > * meta: campo `fileInfo.meta` devuelto en el paso anterior
+    > * storageId: campo `id` devuelto en el primer paso
     >
-    > Ejemplo de datos de solicitud:
+    > Datos de solicitud de ejemplo:
     > ```
     >   --data-raw '{"title":"ATT00001","filename":"ATT00001-8nuuxkuz4jn.png","extname":".png","path":"","size":4405,"url":"","mimetype":"image/png","meta":{},"storageId":2}'
     > ```
 
-### Colección de archivos
+### Tabla de archivos
 
-Los tres primeros pasos son los mismos que para la carga en un campo de adjunto. Sin embargo, en el cuarto paso, debe crear el registro del archivo iniciando una operación `create` en el recurso de la colección de archivos con una solicitud POST y cargando la información del archivo en el cuerpo.
+Las tres primeras operaciones son iguales que en la carga de campos de adjuntos, pero en el cuarto paso es necesario crear un registro de archivo. Para ello, inicia la operación create sobre el recurso de la tabla de archivos, envía la solicitud mediante POST y carga la información del archivo en el body.
 
 ```shell
 curl 'http://localhost:13000/api/<file_collection_name>:create' \
@@ -172,18 +177,18 @@ curl 'http://localhost:13000/api/<file_collection_name>:create' \
   --data-raw '{"title":<title>,"filename":<filename>,"extname":<extname>,"path":"","size":<size>,"url":"","mimetype":<mimetype>,"meta":<meta>,"storageId":<storageId>}'
 ```
 
-> Explicación de los datos dependientes en `data-raw`:
-> *   `title`: El campo `fileInfo.title` devuelto en el paso anterior.
-> *   `filename`: El campo `fileInfo.key` devuelto en el paso anterior.
-> *   `extname`: El campo `fileInfo.extname` devuelto en el paso anterior.
-> *   `path`: Vacío por defecto.
-> *   `size`: El campo `fileInfo.size` devuelto en el paso anterior.
-> *   `url`: Vacío por defecto.
-> *   `mimetype`: El campo `fileInfo.mimetype` devuelto en el paso anterior.
-> *   `meta`: El campo `fileInfo.meta` devuelto en el paso anterior.
-> *   `storageId`: El campo `id` devuelto en el paso 1.
+> Descripción de los datos dependientes en data-raw:
+> * title: campo fileInfo.title devuelto en el paso anterior
+> * filename: campo fileInfo.key devuelto en el paso anterior
+> * extname: campo fileInfo.extname devuelto en el paso anterior
+> * path: vacío de forma predeterminada
+> * size: campo fileInfo.size devuelto en el paso anterior
+> * url: vacío de forma predeterminada
+> * mimetype: campo fileInfo.mimetype devuelto en el paso anterior
+> * meta: campo fileInfo.meta devuelto en el paso anterior
+> * storageId: campo id devuelto en el primer paso
 >
-> Ejemplo de datos de solicitud:
+> Datos de solicitud de ejemplo:
 > ```
 >   --data-raw '{"title":"ATT00001","filename":"ATT00001-8nuuxkuz4jn.png","extname":".png","path":"","size":4405,"url":"","mimetype":"image/png","meta":{},"storageId":2}'
 > ```

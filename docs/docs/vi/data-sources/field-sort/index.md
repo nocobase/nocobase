@@ -1,151 +1,166 @@
 ---
 pkg: "@nocobase/plugin-field-sort"
-title: "Field Sort"
-description: "Field sort sắp xếp bản ghi của Collection, hỗ trợ phân nhóm trước rồi sắp xếp (sort1), dùng để tùy chỉnh thứ tự hiển thị bản ghi."
-keywords: "Field sort,Sort field,Phân nhóm sắp xếp,sort1,NocoBase"
+title: "Trường sắp xếp"
+description: "Trường sắp xếp dùng để sắp xếp các bản ghi trong bảng dữ liệu, hỗ trợ nhóm trước rồi sắp xếp, dùng để tùy chỉnh thứ tự hiển thị bản ghi."
+keywords: "Trường sắp xếp,Trường Sort,sắp xếp theo nhóm,sort,NocoBase"
 ---
-# Field Sort
+
+# Trường sắp xếp
 
 ## Giới thiệu
 
-Field sort dùng để sắp xếp các bản ghi trong Collection, hỗ trợ phân nhóm trước rồi sắp xếp (sort1).
+Trong NocoBase, **trường sắp xếp (Sort)** dùng để ghi lại giá trị sắp xếp của các bản ghi trong bảng dữ liệu. Trường này thường được sử dụng để kéo thả sắp xếp trong các khối như bảng và kanban.
 
-:::warning
-Vì field sort là field cùng bảng, nên khi phân nhóm sắp xếp, không hỗ trợ một bản ghi được phân vào nhiều nhóm.
+Trường sắp xếp hỗ trợ sắp xếp không theo nhóm, cũng như nhóm trước rồi sắp xếp. Sắp xếp theo nhóm phù hợp với các trường hợp “sắp xếp độc lập trong cùng một nhóm”, chẳng hạn như sắp xếp học sinh theo lớp hoặc sắp xếp nhiệm vụ theo trạng thái kanban.
+
+:::warning Lưu ý
+
+Vì trường sắp xếp là một trường trong cùng bảng, nên khi sắp xếp theo nhóm, không hỗ trợ việc cùng một bản ghi xuất hiện đồng thời trong nhiều nhóm.
+
 :::
 
 ## Cài đặt
 
-Plugin tích hợp sẵn, không cần cài đặt riêng.
+Trường sắp xếp được cung cấp bởi plugin tích hợp sẵn, không cần cài đặt riêng.
 
-## Hướng dẫn sử dụng
+## Tạo trường sắp xếp
 
-### Tạo field sort
+Trong trang 「Configure fields」 của bảng dữ liệu, nhấp vào 「Add field」 rồi chọn 「排序」 để tạo trường sắp xếp.
 
 ![20240409091123_rec_](https://static-docs.nocobase.com/20240409091123_rec_.gif)
 
-Khi tạo field sort, giá trị sort sẽ được khởi tạo:
+Khi tạo trường sắp xếp, NocoBase sẽ khởi tạo giá trị sắp xếp:
 
-- Nếu không chọn phân nhóm sắp xếp, sẽ khởi tạo dựa trên field khóa chính và field thời gian tạo.
-- Nếu chọn phân nhóm sắp xếp, sẽ phân nhóm dữ liệu trước, rồi khởi tạo dựa trên field khóa chính và field thời gian tạo.
+- Nếu không chọn sắp xếp theo nhóm, hệ thống sẽ khởi tạo dựa trên trường khóa chính và trường ngày tạo
+- Nếu chọn sắp xếp theo nhóm, hệ thống sẽ nhóm dữ liệu trước, sau đó khởi tạo dựa trên trường khóa chính và trường ngày tạo
 
-:::warning{title="Mô tả về tính nhất quán giao dịch"}
-- Khi tạo field, nếu khởi tạo giá trị sort thất bại, thì sẽ không tạo field sort;
-- Trong một phạm vi, một bản ghi di chuyển từ vị trí A sang vị trí B, giá trị sort của tất cả bản ghi trong khoảng AB đều sẽ thay đổi, nếu một bản ghi thất bại, di chuyển sẽ thất bại, giá trị sort của các bản ghi liên quan đều không thay đổi.
+:::warning Lưu ý
+
+Khi tạo trường, nếu khởi tạo giá trị sắp xếp thất bại thì trường sắp xếp sẽ không được tạo. Trong một phạm vi nhất định, nếu một bản ghi được di chuyển từ vị trí A đến vị trí B, giá trị sắp xếp của tất cả bản ghi trong khoảng AB sẽ thay đổi; nếu một bản ghi trong đó bị lỗi, thao tác di chuyển sẽ thất bại và giá trị sắp xếp của các bản ghi liên quan sẽ không thay đổi.
+
 :::
 
-#### Ví dụ 1: Tạo field sort1
+### Tạo trường sắp xếp không theo nhóm
 
-Field sort1 không có phân nhóm
+Dưới đây là ví dụ tạo trường `sort1`, trường này không sử dụng sắp xếp theo nhóm.
 
 ![20240409091510](https://static-docs.nocobase.com/20240409091510.png)
 
-Field sort của mỗi bản ghi sẽ được khởi tạo dựa trên field khóa chính và field thời gian tạo:
+Trường sắp xếp của mỗi bản ghi sẽ được khởi tạo dựa trên trường khóa chính và trường ngày tạo.
 
 ![20240409092305](https://static-docs.nocobase.com/20240409092305.png)
 
-#### Ví dụ 2: Tạo field sort2 phân nhóm dựa trên Class ID
+### Tạo trường sắp xếp theo nhóm
+
+Dưới đây là ví dụ tạo trường dựa trên nhóm `Class ID` là `sort2`.
 
 ![20240409092620](https://static-docs.nocobase.com/20240409092620.png)
 
-Lúc này sẽ phân nhóm tất cả bản ghi trong Collection trước (theo Class ID), rồi khởi tạo field sort (sort2), giá trị khởi tạo của các bản ghi:
+Lúc này, tất cả bản ghi trong bảng dữ liệu sẽ được nhóm theo `Class ID` trước, sau đó khởi tạo trường sắp xếp.
 
 ![20240409092847](https://static-docs.nocobase.com/20240409092847.png)
 
-### Drag-and-drop sắp xếp
+## Sắp xếp bằng cách kéo thả
 
-Field sort chủ yếu dùng cho việc drag-and-drop sắp xếp các bản ghi trong block, các block hiện hỗ trợ drag-and-drop sắp xếp gồm Table và Kanban.
+Trường sắp xếp chủ yếu được sử dụng để kéo thả sắp xếp bản ghi trong nhiều loại khối. Hiện tại, các khối hỗ trợ kéo thả sắp xếp gồm bảng và kanban.
 
-:::warning
-- Khi cùng một field sort được dùng làm drag-and-drop sắp xếp, việc dùng chung trong nhiều block có thể phá vỡ thứ tự sắp xếp đã có;
-- Field drag-and-drop sắp xếp của Table không thể chọn field sort có quy tắc phân nhóm;
-  - Ngoại lệ: Trong block Table quan hệ OneToMany, khóa ngoại có thể làm phân nhóm;
-- Hiện chỉ block Kanban hỗ trợ drag-and-drop sắp xếp có phân nhóm.
+:::warning Lưu ý
+
+- Sử dụng cùng một trường sắp xếp để kéo thả sắp xếp ở nhiều khối có thể làm hỏng thứ tự sắp xếp hiện có
+- Trường dùng để kéo thả sắp xếp trong bảng không thể là trường sắp xếp có quy tắc nhóm
+- Trong khối bảng quan hệ một-nhiều, khóa ngoại có thể được dùng làm nhóm
+- Hiện tại chỉ khối kanban hỗ trợ kéo thả sắp xếp theo nhóm
+
 :::
 
-#### Drag-and-drop sắp xếp dòng Table
+### Sắp xếp bằng cách kéo thả các hàng trong bảng
 
-Block Table
+Khối bảng có thể sử dụng trường sắp xếp để kéo thả điều chỉnh thứ tự bản ghi.
 
 ![20240409104621_rec_](https://static-docs.nocobase.com/20240409104621_rec_.gif)
 
-Block Table quan hệ
+Khối bảng quan hệ cũng có thể sử dụng trường sắp xếp để kéo thả sắp xếp.
 
-<video controls width="100%" src="https://static-docs.nocobase.com/20240409111903_rec_.mp4" title="Title"></video>
+<video controls width="100%" src="https://static-docs.nocobase.com/20240409111903_rec_.mp4" title="Kéo thả sắp xếp trong khối bảng quan hệ"></video>
 
-:::warning
-Trong block quan hệ OneToMany
+:::warning Lưu ý
 
-- Nếu chọn field sort không phân nhóm, thì tất cả bản ghi đều có thể tham gia sắp xếp;
-- Nếu phân nhóm trước dựa trên khóa ngoại rồi sắp xếp, thì quy tắc sắp xếp chỉ ảnh hưởng đến dữ liệu trong nhóm hiện tại.
+Trong khối quan hệ một-nhiều, nếu chọn trường sắp xếp không theo nhóm thì tất cả bản ghi đều có thể tham gia sắp xếp; nếu nhóm theo khóa ngoại trước rồi sắp xếp, quy tắc sắp xếp chỉ ảnh hưởng đến dữ liệu trong nhóm hiện tại. Hiệu quả cuối cùng có thể trông giống nhau, nhưng phạm vi bản ghi tham gia sắp xếp khác nhau.
 
-Hiệu quả cuối cùng giống nhau, nhưng số bản ghi tham gia sắp xếp khác nhau, xem mô tả thêm tại [Mô tả quy tắc sắp xếp](#mô-tả-quy-tắc-sắp-xếp)
 :::
 
-#### Drag-and-drop sắp xếp card Kanban
+### Sắp xếp bằng cách kéo thả các thẻ kanban
+
+Khối kanban có thể sử dụng trường sắp xếp để kéo thả điều chỉnh thứ tự thẻ.
 
 ![20240409110423_rec_](https://static-docs.nocobase.com/20240409110423_rec_.gif)
 
-### Mô tả quy tắc sắp xếp
+## Mô tả quy tắc sắp xếp
 
-#### Di chuyển giữa các phần tử không phân nhóm (hoặc cùng nhóm)
+### Di chuyển giữa các bản ghi không theo nhóm
 
-Giả sử có một mảng dữ liệu
+Giả sử có một nhóm dữ liệu:
 
-```
+```text
 [1,2,3,4,5,6,7,8,9]
 ```
 
-Khi một phần tử, ví dụ 5 di chuyển về phía trước đến vị trí của 3, lúc này, chỉ có số thứ tự của 3,4,5 thay đổi, 5 chiếm vị trí của 3, 3,4 mỗi cái di chuyển lùi một vị trí.
+Khi di chuyển 5 lên vị trí của 3, chỉ số thứ tự của 3, 4, 5 thay đổi. 5 chiếm vị trí của 3, còn 3 và 4 lần lượt lùi lại một vị trí.
 
-```
+```text
 [1,2,5,3,4,6,7,8,9]
 ```
 
-Lúc này tiếp tục 6 di chuyển về phía sau đến vị trí của 8, 6 chiếm vị trí của 8, 7,8 mỗi cái di chuyển lên trước một vị trí.
+Tiếp tục di chuyển 6 lùi đến vị trí của 8, 6 chiếm vị trí của 8, còn 7 và 8 lần lượt tiến lên một vị trí.
 
-```
+```text
 [1,2,5,3,4,7,8,6,9]
 ```
 
-#### Di chuyển phần tử giữa các nhóm khác nhau
+### Di chuyển giữa các nhóm khác nhau
 
-Khi phân nhóm sắp xếp, khi một bản ghi di chuyển sang nhóm khác, nhóm của nó cũng sẽ thay đổi. Ví dụ như sau:
+Khi sắp xếp theo nhóm, nếu một bản ghi được di chuyển sang nhóm khác thì nhóm chứa bản ghi đó cũng sẽ thay đổi. Giả sử có hai nhóm dữ liệu:
 
-```
+```text
 A: [1,2,3,4]
 B: [5,6,7,8]
 ```
 
-Khi 1 di chuyển đến 6 (mặc định ở phía sau), nhóm của 1 cũng sẽ chuyển từ A sang B
+Khi di chuyển 1 đến phía sau 6, nhóm chứa 1 cũng sẽ thay đổi từ A thành B.
 
-```
+```text
 A: [2,3,4]
 B: [5,6,1,7,8]
 ```
 
-#### Việc thay đổi sắp xếp không liên quan đến dữ liệu hiển thị trên giao diện
+### Thay đổi thứ tự không liên quan đến dữ liệu hiển thị trên giao diện
 
-Ví dụ có một mảng dữ liệu
+Giả sử có một nhóm dữ liệu:
 
-```
+```text
 [1,2,3,4,5,6,7,8,9]
 ```
 
-Giao diện chỉ hiển thị
+Giao diện chỉ hiển thị:
 
-```
+```text
 [1,5,9]
 ```
 
-Khi 1 di chuyển đến vị trí của 9, vị trí của 2,3,4,5,6,7,8 ở giữa đều sẽ thay đổi
+Khi di chuyển 1 đến vị trí của 9, vị trí của các bản ghi 2, 3, 4, 5, 6, 7, 8 ở giữa cũng sẽ thay đổi.
 
-```
+```text
 [2,3,4,5,6,7,8,9,1]
 ```
 
-Giao diện hiển thị
+Giao diện cuối cùng hiển thị:
 
-```
+```text
 [5,9,1]
 ```
+
+## Liên kết liên quan
+
+- [Các trường của bảng dữ liệu](../index.md) — Xem mô tả về loại trường và ánh xạ trường
+- [Khối bảng](../../interface-builder/blocks/data-blocks/table.md) — Sử dụng kéo thả sắp xếp trong bảng
+- [Khối kanban](../../interface-builder/blocks/data-blocks/kanban.md) — Sử dụng kéo thả sắp xếp trong kanban
