@@ -6,6 +6,27 @@
   },
   {
     "type": "custom-link",
+    "label": "UI-Layout",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Überblick",
+        "link": "/interface-builder/ui-layout/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Desktop",
+        "link": "/interface-builder/ui-layout/desktop"
+      },
+      {
+        "type": "custom-link",
+        "label": "Mobil",
+        "link": "/interface-builder/ui-layout/mobile"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
     "label": "Blöcke",
     "items": [
       {
