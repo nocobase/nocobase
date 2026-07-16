@@ -32,26 +32,45 @@ function options(use: string, sourceMode: string, settings: Record<string, unkno
   };
 }
 
+const JS_OWNER_USES = [
+  'JSBlockModel',
+  'JSItemModel',
+  'FormJSFieldItemModel',
+  'JSItemActionModel',
+  'JSFieldModel',
+  'JSEditableFieldModel',
+  'JSColumnModel',
+  'JSActionModel',
+  'JSRecordActionModel',
+  'JSCollectionActionModel',
+  'JSFormActionModel',
+  'FilterFormJSActionModel',
+];
+
+function inlineCodeOptions(use: string, code: string) {
+  const groupKey = resolveRunJsSettingsGroupKey(use);
+  if (!groupKey) {
+    throw new Error(`Missing RunJS settings group for ${use}`);
+  }
+  return {
+    use,
+    stepParams: {
+      [groupKey]: {
+        runJs: {
+          code,
+          version: 'v2',
+        },
+      },
+    },
+  };
+}
+
 describe('flowSurfaces light-extension reference sync', () => {
   it('maps every public JS owner use to its canonical settings group', () => {
-    for (const use of [
-      'JSBlockModel',
-      'JSItemModel',
-      'FormJSFieldItemModel',
-      'JSItemActionModel',
-      'JSFieldModel',
-      'JSEditableFieldModel',
-      'JSColumnModel',
-    ]) {
+    for (const use of JS_OWNER_USES.slice(0, 7)) {
       expect(resolveRunJsSettingsGroupKey(use), use).toBe('jsSettings');
     }
-    for (const use of [
-      'JSActionModel',
-      'JSRecordActionModel',
-      'JSCollectionActionModel',
-      'JSFormActionModel',
-      'FilterFormJSActionModel',
-    ]) {
+    for (const use of JS_OWNER_USES.slice(7)) {
       expect(resolveRunJsSettingsGroupKey(use), use).toBe('clickSettings');
     }
   });
@@ -96,6 +115,18 @@ describe('flowSurfaces light-extension reference sync', () => {
       ),
     ).toBe(false);
     expect(shouldSyncLightExtensionReferences({ use: 'InputFieldModel' }, { use: 'InputFieldModel' })).toBe(false);
+  });
+
+  it('does not enter reference integration for inline code-only updates on any JS owner use', () => {
+    for (const use of JS_OWNER_USES) {
+      expect(
+        shouldSyncLightExtensionReferences(
+          inlineCodeOptions(use, 'return "before";'),
+          inlineCodeOptions(use, 'return "after";'),
+        ),
+        use,
+      ).toBe(false);
+    }
   });
 
   it('is a safe no-op without the plugin and delegates when the provider is enabled', async () => {

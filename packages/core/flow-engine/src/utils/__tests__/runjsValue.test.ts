@@ -16,6 +16,13 @@ describe('runjsValue utils', () => {
     expect(isRunJSValue({ code: 'return 1', version: 'v1' })).toBe(true);
     expect(
       isRunJSValue({
+        code: 'return 1',
+        version: 'v1',
+        sourceRef: { type: 'vsc-file', path: 'legacy/runjs.ts' },
+      }),
+    ).toBe(true);
+    expect(
+      isRunJSValue({
         code: '',
         version: 'v2',
         sourceMode: 'light-extension',
@@ -30,6 +37,7 @@ describe('runjsValue utils', () => {
     expect(isRunJSValue({ version: 'v1' })).toBe(false);
     expect(isRunJSValue({ code: 1 })).toBe(false);
     expect(isRunJSValue({ code: 'return 1', foo: 1 })).toBe(false);
+    expect(isRunJSValue({ code: 'return 1', sourceRef: [] })).toBe(false);
     expect(isRunJSValue({ code: 'return 1', sourceBinding: [] })).toBe(false);
     expect(isRunJSValue({ code: 'return 1', settings: [] })).toBe(false);
     expect(isRunJSValue([])).toBe(false);
@@ -52,6 +60,21 @@ describe('runjsValue utils', () => {
       sourceMode: 'light-extension',
       sourceBinding: { type: 'light-extension-entry' },
       settings: { currency: 'USD' },
+    });
+  });
+
+  it('normalizeRunJSValue: keeps legacy sourceRef without requiring sourceMode', () => {
+    const sourceRef = { type: 'vsc-file', path: 'legacy/runjs.ts' };
+
+    expect(
+      normalizeRunJSValue({
+        code: 'return ctx.api;',
+        sourceRef,
+      }),
+    ).toEqual({
+      code: 'return ctx.api;',
+      version: 'v1',
+      sourceRef,
     });
   });
 

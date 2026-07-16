@@ -71,6 +71,7 @@ type RunJSFormValues = {
   sourceMode: string;
   code: string;
   version: string;
+  sourceRef?: Record<string, unknown>;
   sourceBinding?: LightExtensionRuntimeSourceBinding;
 };
 
@@ -86,6 +87,7 @@ function renderSourceField() {
       sourceMode: 'inline',
       code: 'ctx.render("inline");',
       version: 'v2',
+      sourceRef: { type: 'vsc-file', path: 'legacy/js-block.tsx' },
     },
   });
 
@@ -125,7 +127,7 @@ describe('JSBlockLightExtensionSourceField inline preservation', () => {
     });
   });
 
-  it('does not clear inline code when switching to light-extension mode', async () => {
+  it('does not clear inline fallback code or legacy sourceRef when switching to light-extension mode', async () => {
     const form = renderSourceField();
 
     await waitFor(() => {
@@ -139,12 +141,16 @@ describe('JSBlockLightExtensionSourceField inline preservation', () => {
       const codeSource = screen.getByRole('combobox', { name: 'Code source' });
       fireEvent.mouseDown(codeSource);
       fireEvent.change(codeSource, { target: { value: 'Sales' } });
-      fireEvent.click(await screen.findByText('Sales'));
+      fireEvent.click(await screen.findByText('sales'));
     });
 
     expect(form.values.sourceMode).toBe('light-extension');
     expect(form.values.sourceBinding?.entryId).toBe('entry_sales');
     expect(form.values.code).toBe('ctx.render("inline");');
     expect(form.values.version).toBe('v2');
+    expect(form.values.sourceRef).toEqual({ type: 'vsc-file', path: 'legacy/js-block.tsx' });
+    expect(mocks.request.mock.calls.every(([options]) => options.url === 'lightExtensionEntries:listSelectable')).toBe(
+      true,
+    );
   });
 });

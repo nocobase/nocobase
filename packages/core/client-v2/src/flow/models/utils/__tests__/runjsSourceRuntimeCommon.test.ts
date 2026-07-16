@@ -22,6 +22,7 @@ import {
   normalizeLightExtensionRuntimeError,
   normalizeLightExtensionSourceSettings,
   normalizeLightExtensionSourceSettingsForBinding,
+  setCanonicalLightExtensionSource,
   stableSerialize,
 } from '../runjsSourceRuntimeCommon';
 
@@ -340,6 +341,42 @@ describe('runjsSourceRuntimeCommon', () => {
         nextSettings: settings,
       }),
     ).toEqual({ settings, missingRequiredPaths: [] });
+  });
+
+  it('preserves legacy inline fallback fields when binding a light extension', () => {
+    const setStepParams = vi.fn();
+    const sourceRef = { type: 'vsc-file', path: 'legacy/runjs.ts' };
+    const model = {
+      getStepParams: () => ({
+        code: 'ctx.render("legacy inline");',
+        version: 'v1',
+        sourceRef,
+      }),
+      setStepParams,
+    } as never;
+    const sourceBinding = {
+      type: 'light-extension-entry',
+      repoId: 'repo_1',
+      entryId: 'entry_1',
+      kind: 'js-block',
+    };
+
+    setCanonicalLightExtensionSource(model, 'jsSettings', {
+      sourceMode: 'light-extension',
+      sourceBinding,
+      settings: { region: 'APAC' },
+    });
+
+    expect(setStepParams).toHaveBeenCalledWith('jsSettings', {
+      runJs: {
+        code: 'ctx.render("legacy inline");',
+        version: 'v1',
+        sourceRef,
+        sourceMode: 'light-extension',
+        sourceBinding,
+        settings: { region: 'APAC' },
+      },
+    });
   });
 
   it('rejects binding settings when the entry declares no settings schema', () => {
