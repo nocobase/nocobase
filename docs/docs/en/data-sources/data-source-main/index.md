@@ -1,130 +1,100 @@
 ---
-title: "Main database"
-description: "The NocoBase main database stores system and business data. It supports MySQL, PostgreSQL, MariaDB, KingbaseES, and OceanBase, table synchronization, and collection creation."
-keywords: "main database,MySQL,PostgreSQL,MariaDB,KingbaseES,OceanBase,table synchronization,NocoBase"
+pkg: "@nocobase/plugin-data-source-main"
 ---
 
-# Main database
+# Main DataBase
 
 ## Introduction
 
-The database configured when [deploying NocoBase](/ai/install-nocobase-app) stores NocoBase system tables and can also store application business tables.
+NocoBase's main database can be used to store both business data and the metadata of the application, including system table data and custom table data. The main database supports relational databases such as MySQL, PostgreSQL, etc. During the installation of the NocoBase application, the main database must be installed synchronously and cannot be deleted.
 
-| Database | Supported version | Community | Standard | Professional | Enterprise |
-| --- | --- | --- | --- | --- | --- |
-| MySQL | >= 8.0.17 | Yes | Yes | Yes | Yes |
-| PostgreSQL | >= 10 | Yes | Yes | Yes | Yes |
-| MariaDB | >= 10.9 | Yes | Yes | Yes | Yes |
-| KingbaseES | >= V9 | No | No | Yes | Yes |
-| OceanBase | >= 4.3 | No | No | No | Yes |
+## Installation
 
-:::tip Tip
+This is a built-in plugin, no separate installation is required.
 
-KingbaseES supports only PostgreSQL compatibility mode. OceanBase supports only MySQL compatibility mode.
+## Collection Management
 
-:::
+The main data source provides complete collection management functionality, allowing you to create new tables through NocoBase and sync existing table structures from the database.
 
-## Plugin installation
+![20240322230134](https://static-docs.nocobase.com/20240322230134.png)
 
-| Database | Plugin | Installation |
-| --- | --- | --- |
-| MySQL | None | Built in; no separate installation is required. |
-| PostgreSQL | None | Built in; no separate installation is required. |
-| MariaDB | None | Built in; no separate installation is required. |
-| KingbaseES | `@nocobase/plugin-data-source-kingbase` | Requires a commercial license and is enabled after installation. |
-| OceanBase | `@nocobase/plugin-data-source-oceanbase` | Requires a commercial license and is enabled after installation. |
+### Syncing Existing Tables from Database
 
-## Access the main data source
+![nocobase_doc-2025-10-29-19-46-34](https://static-docs.nocobase.com/nocobase_doc-2025-10-29-19-46-34.png)
 
-1. Open the **Data sources** menu.
-2. Select **Main** in the data-source list and click **Configure** to manage the main database.
+An important feature of the main data source is the ability to sync tables that already exist in the database into NocoBase for management. This means:
 
-![Configure the main data source](https://static-docs.nocobase.com/configure_main_datasource.png)
+- **Protect Existing Investment**: If you already have numerous business tables in your database, there's no need to recreate them - you can sync and use them directly
+- **Flexible Integration**: Tables created through other tools (such as SQL scripts, database management tools, etc.) can be brought under NocoBase management
+- **Progressive Migration**: Support for gradually migrating existing systems to NocoBase, rather than all-at-once refactoring
 
-## Main data-source management
+Through the "Load from Database" feature, you can:
+1. Browse all tables in the database
+2. Select the tables you need to sync
+3. Automatically identify table structures and field types
+4. Import them into NocoBase for management with one click
 
-The main database manages collections and fields. You can:
+### Support for Multiple Collection Types
 
-- **Filter**: search collections managed by the NocoBase main database.
-- **Create collection**: add a business collection.
-- **Edit**: change business collection metadata.
-- **Delete**: delete a business collection.
-- **Sync from database**: synchronize the structure of an existing database table.
-- **Configure fields**: create, change, and delete collection fields.
-- **+**: create, edit, and delete collection categories from the collection tabs.
+![nocobase_doc-2025-10-29-19-47-14](https://static-docs.nocobase.com/nocobase_doc-2025-10-29-19-47-14.png)
 
-![Main data source management](https://static-docs.nocobase.com/main_datasource_management.png)
+NocoBase supports creating and managing various types of collections:
+- **General collection**: built-in commonly used system fields
+- **Inheritance collection**: allows creation of a parent table from which child tables can be derived. Child tables inherit the parent table's structure and can define their own columns
+- **Tree collection**: tree-structured table, currently only supports adjacency list design
+- **Calendar collection**: for creating calendar-related event tables
+- **File collection**: for managing file storage
+- **Expression collection**: for dynamic expression scenarios in workflows
+- **SQL Collection**: not an actual database table, but quickly presents SQL queries in a structured manner
+- **Database View collection**: connects to existing database views
+- **FDW collection**: allows the database system to directly access and query data in external data sources, based on FDW technology
 
-### Synchronize existing tables from the database
+### Supporting Classification Management of Collections
 
-![Synchronize existing tables](https://static-docs.nocobase.com/nocobase_doc-2025-10-29-19-46-34.png)
+![20240322231520](https://static-docs.nocobase.com/20240322231520.png)
 
-Synchronizing existing database tables lets you manage them in NocoBase without recreating them.
+### Rich Field Types
 
-- **Protect existing investment**: use existing business tables directly.
-- **Flexible integration**: bring in tables created by SQL scripts or database-management tools.
-- **Gradual migration**: migrate an existing system to NocoBase step by step rather than refactoring everything at once.
+![nocobase_doc-2025-10-29-19-48-51](https://static-docs.nocobase.com/nocobase_doc-2025-10-29-19-48-51.png)
 
-With **Load from database**, you can:
+#### Flexible Field Type Conversion
 
-1. Browse all tables in the database.
-2. Select the tables to synchronize.
-3. Identify table structures and field types automatically.
-4. Import them into NocoBase for management.
+NocoBase supports flexible field type conversion based on the same database type.
 
-### Supported collection types
+**Example: String Type Field Conversion Options**
 
-![Collection types](https://static-docs.nocobase.com/nocobase_doc-2025-10-29-19-47-14.png)
+When a database field is of String type, it can be converted to any of the following forms in NocoBase:
 
-NocoBase supports creating and managing these collection types:
+- **Basic**: Single line text, Long text, Phone, Email, URL, Password, Color, Icon
+- **Choices**: Single select, Radio group
+- **Media**: Markdown, Markdown(Vditor), Rich Text, Attachment (URL)
+- **Date & Time**: Datetime (with time zone), Datetime (without time zone)
+- **Advanced**: Sequence, Collection selector, Encryption
 
-- **General collection**: includes commonly used system fields.
-- **Inheritance collection**: derives child collections from a parent collection. Child collections inherit the parent structure and can define their own fields.
-- **Tree collection**: a hierarchical collection that currently supports the adjacency-list design.
-- **Calendar collection**: stores calendar-related event records.
-- **File collection**: manages file storage.
-- **SQL collection**: presents an SQL query result in a structured form; it is not a real database table.
-- **Database view collection**: connects an existing database view.
+This flexible conversion mechanism means:
+- **No Database Structure Modification Required**: The field's underlying storage type remains unchanged; only its representation in NocoBase changes
+- **Adapt to Business Changes**: As business needs evolve, you can quickly adjust field display and interaction methods
+- **Data Safety**: The conversion process does not affect the integrity of existing data
 
-### Collection categories
+### Flexible Field-Level Synchronization
 
-![Collection categories](https://static-docs.nocobase.com/20240322231520.png)
+NocoBase not only syncs entire tables but also supports granular field-level sync management:
 
-### Rich field types
+![nocobase_doc-2025-10-29-19-49-56](https://static-docs.nocobase.com/nocobase_doc-2025-10-29-19-49-56.png)
 
-![Field types](https://static-docs.nocobase.com/nocobase_doc-2025-10-29-19-48-51.png)
+#### Field Synchronization Features:
 
-#### Flexible field type conversion
+1. **Real-time Sync**: When the database table structure changes, newly added fields can be synced at any time
+2. **Selective Sync**: You can selectively sync the fields you need, rather than all fields
+3. **Automatic Type Recognition**: Automatically identifies database field types and maps them to NocoBase field types
+4. **Maintain Data Integrity**: The sync process does not affect existing data
 
-NocoBase supports flexible Field interface conversion when the underlying database type is compatible.
+#### Use Cases:
 
-For example, a database string field can be presented as:
+- **Database Schema Evolution**: When business needs change and new fields need to be added to the database, they can be quickly synced to NocoBase
+- **Team Collaboration**: When other team members or DBAs add fields to the database, they can be synced promptly
+- **Hybrid Management Mode**: Some fields managed through NocoBase, others through traditional methods - flexible combinations
 
-- **Basic types**: Single line text, Multiline text, Phone, Email, URL, Password, Color, or Icon.
-- **Choice types**: Select or Radio group.
-- **Media types**: Markdown, Markdown (Vditor), Rich text, or Attachment URL.
-- **Date and time types**: Date time with timezone or Date time without timezone.
-- **Advanced types**: Sequence, Collection selector, or Encryption.
+This flexible synchronization mechanism allows NocoBase to integrate well into existing technical architectures, without requiring changes to existing database management practices, while still enjoying the convenience of low-code development that NocoBase provides.
 
-This conversion does not change the underlying database storage type. It lets you adjust presentation and interaction as business requirements change while preserving existing data.
-
-### Field-level synchronization
-
-NocoBase can synchronize fields individually as well as synchronize an entire collection.
-
-![Field-level synchronization](https://static-docs.nocobase.com/nocobase_doc-2025-10-29-19-49-56.png)
-
-#### Field synchronization behavior
-
-1. Synchronize newly added fields after the database schema changes.
-2. Select only the fields you need rather than synchronizing every field.
-3. Identify database field types and map them to NocoBase Field types automatically.
-4. Preserve existing data during synchronization.
-
-#### Use cases
-
-- **Database schema evolution**: synchronize fields added for new business requirements.
-- **Team collaboration**: synchronize fields added by another team member or DBA.
-- **Hybrid management**: combine fields managed in NocoBase with fields managed by traditional database tools.
-
-See [Collection fields](../data-modeling/collection-fields/index.md) for details.
+See more in the [Collection Fields / Overview](/data-sources/data-modeling/collection-fields) section.

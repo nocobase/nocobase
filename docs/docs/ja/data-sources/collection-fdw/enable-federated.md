@@ -1,12 +1,6 @@
----
-title: "MySQL で federated エンジンを有効にする方法"
-description: "MySQL で federated ストレージエンジンを有効にする方法：my.cnf の変更や Docker の volumes 設定を行い、リモート MySQL/MariaDB テーブルへの FDW 接続に使用します。"
-keywords: "MySQL federated,federated エンジン,FDW,リモートテーブル接続,NocoBase"
----
+# MySQLでFederatedエンジンを有効にする方法
 
-# MySQL で federated エンジンを有効にする方法
-
-MySQL データベースでは、デフォルトで federated モジュールが有効になっていないため、my.cnf の設定を変更する必要があります。Docker 版の場合は、volumes を使用して拡張機能を設定できます。
+MySQLデータベースでは、デフォルトでfederatedモジュールが有効になっていません。my.cnfの設定を変更する必要があります。Docker版をご利用の場合は、volumesを使って拡張に対応できます。
 
 ```yml
 mysql:
@@ -23,23 +17,23 @@ mysql:
     - nocobase
 ```
 
-新しい `./storage/mysql-conf/federated.cnf` ファイルを作成します
+新しく`./storage/mysql-conf/federated.cnf`ファイルを作成します。
 
 ```ini
 [mysqld]
 federated
 ```
 
-mysql を再起動します
+MySQLを再起動します。
 
 ```bash
 docker compose up -d mysql
 ```
 
-federated が有効になっているか確認します
+federatedが有効になっているか確認します。
 
 ```sql
 show engines
 ```
 
-![代替テキスト](https://static-docs.nocobase.com/ac5d97cf902ad164e141633a41a23e46.png)
+![Alt text](https://static-docs.nocobase.com/ac5d97cf902ad164e141633a41a23e46.png)

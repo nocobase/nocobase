@@ -6,52 +6,21 @@
   },
   {
     "type": "custom-link",
-    "label": "Nguồn dữ liệu",
+    "label": "Data Source",
     "items": [
       {
         "type": "custom-link",
-        "label": "Quản lý nguồn dữ liệu",
+        "label": "Quản lý Data Source",
         "link": "/data-sources/data-source-manager/"
       },
       {
         "type": "custom-link",
-        "label": "Nguồn dữ liệu chính",
-        "items": [
-          {
-            "type": "custom-link",
-            "label": "Giới thiệu",
-            "link": "/data-sources/data-source-main/"
-          },
-          {
-            "type": "custom-link",
-            "label": "PostgreSQL",
-            "link": "/data-sources/main/postgresql"
-          },
-          {
-            "type": "custom-link",
-            "label": "MySQL",
-            "link": "/data-sources/main/mysql"
-          },
-          {
-            "type": "custom-link",
-            "label": "MariaDB",
-            "link": "/data-sources/main/mariadb"
-          },
-          {
-            "type": "custom-link",
-            "label": "KingbaseES",
-            "link": "/data-sources/main/kingbase"
-          },
-          {
-            "type": "custom-link",
-            "label": "OceanBase",
-            "link": "/data-sources/main/oceanbase"
-          }
-        ]
+        "label": "Data Source chính",
+        "link": "/data-sources/data-source-main/"
       },
       {
         "type": "custom-link",
-        "label": "Nguồn dữ liệu bên ngoài",
+        "label": "Data Source bên ngoài (Database)",
         "items": [
           {
             "type": "custom-link",
@@ -60,66 +29,56 @@
           },
           {
             "type": "custom-link",
-            "label": "PostgreSQL",
-            "link": "/data-sources/data-source-external-postgres/"
-          },
-          {
-            "type": "custom-link",
-            "label": "MySQL",
+            "label": "MySQL bên ngoài",
             "link": "/data-sources/data-source-external-mysql/"
           },
           {
             "type": "custom-link",
-            "label": "MariaDB",
+            "label": "MariaDB bên ngoài",
             "link": "/data-sources/data-source-external-mariadb/"
           },
           {
             "type": "custom-link",
-            "label": "MSSQL",
+            "label": "PostgreSQL bên ngoài",
+            "link": "/data-sources/data-source-external-postgres/"
+          },
+          {
+            "type": "custom-link",
+            "label": "MSSQL bên ngoài",
             "link": "/data-sources/data-source-external-mssql/"
           },
           {
             "type": "custom-link",
-            "label": "KingbaseES",
-            "link": "/data-sources/data-source-kingbase/"
-          },
-          {
-            "type": "custom-link",
-            "label": "OceanBase",
-            "link": "/data-sources/external/oceanbase"
-          },
-          {
-            "type": "custom-link",
-            "label": "Oracle",
+            "label": "Oracle bên ngoài",
             "link": "/data-sources/data-source-external-oracle/"
-          },
-          {
-            "type": "custom-link",
-            "label": "ClickHouse",
-            "link": "/data-sources/external/clickhouse"
-          },
-          {
-            "type": "custom-link",
-            "label": "Doris",
-            "link": "/data-sources/external/doris"
-          },
-          {
-            "type": "custom-link",
-            "label": "Nguồn dữ liệu REST API",
-            "link": "/data-sources/data-source-rest-api/"
-          },
-          {
-            "type": "custom-link",
-            "label": "Nguồn dữ liệu NocoBase bên ngoài",
-            "link": "/data-sources/data-source-external-nocobase/"
           }
         ]
+      },
+      {
+        "type": "custom-link",
+        "label": "So sánh Database chính và bên ngoài",
+        "link": "/data-sources/data-modeling/main-vs-external-data-sources"
+      },
+      {
+        "type": "custom-link",
+        "label": "Data Source REST API",
+        "link": "/data-sources/data-source-rest-api/"
+      },
+      {
+        "type": "custom-link",
+        "label": "NocoBase bên ngoài",
+        "link": "/data-sources/data-source-external-nocobase/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Data Source KingbaseES",
+        "link": "/data-sources/data-source-kingbase/"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "Bảng dữ liệu",
+    "label": "Collection",
     "items": [
       {
         "type": "custom-link",
@@ -130,6 +89,16 @@
         "type": "custom-link",
         "label": "Bảng thông thường",
         "link": "/data-sources/data-source-main/general-collection"
+      },
+      {
+        "type": "custom-link",
+        "label": "Bảng kế thừa",
+        "link": "/data-sources/data-source-main/inheritance-collection"
+      },
+      {
+        "type": "custom-link",
+        "label": "Bảng tệp",
+        "link": "/data-sources/file-manager/file-collection"
       },
       {
         "type": "custom-link",
@@ -148,13 +117,8 @@
       },
       {
         "type": "custom-link",
-        "label": "Bảng tệp",
-        "link": "/data-sources/file-manager/file-collection"
-      },
-      {
-        "type": "custom-link",
-        "label": "Bảng chế độ xem",
-        "link": "/data-sources/collection-view/"
+        "label": "Bảng biểu thức",
+        "link": "/data-sources/collection-expression/collection"
       },
       {
         "type": "custom-link",
@@ -163,14 +127,14 @@
       },
       {
         "type": "custom-link",
-        "label": "Bảng kế thừa",
-        "link": "/data-sources/data-source-main/inheritance-collection"
+        "label": "Database View",
+        "link": "/data-sources/collection-view/"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "Trường bảng dữ liệu",
+    "label": "Field của Collection",
     "items": [
       {
         "type": "custom-link",
@@ -179,7 +143,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Xác thực trường",
+        "label": "Xác thực Field",
         "link": "/data-sources/data-modeling/collection-fields/validation"
       },
       {
@@ -249,33 +213,28 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "Tích chọn",
+            "label": "Checkbox",
             "link": "/data-sources/data-modeling/collection-fields/choices/checkbox"
           },
           {
             "type": "custom-link",
-            "label": "Menu thả xuống (chọn một)",
+            "label": "Dropdown (chọn một)",
             "link": "/data-sources/data-modeling/collection-fields/choices/select"
           },
           {
             "type": "custom-link",
-            "label": "Menu thả xuống (chọn nhiều)",
+            "label": "Dropdown (chọn nhiều)",
             "link": "/data-sources/data-modeling/collection-fields/choices/multiple-select"
           },
           {
             "type": "custom-link",
-            "label": "Nút radio",
+            "label": "Radio",
             "link": "/data-sources/data-modeling/collection-fields/choices/radio-group"
           },
           {
             "type": "custom-link",
-            "label": "Hộp kiểm",
+            "label": "Nhóm Checkbox",
             "link": "/data-sources/data-modeling/collection-fields/choices/checkbox-group"
-          },
-          {
-            "type": "custom-link",
-            "label": "Khu vực hành chính Trung Quốc (đã ngừng sử dụng)",
-            "link": "/data-sources/data-modeling/collection-fields/choices/china-region"
           }
         ]
       },
@@ -295,12 +254,12 @@
           },
           {
             "type": "custom-link",
-            "label": "Văn bản có định dạng",
+            "label": "Văn bản giàu định dạng",
             "link": "/data-sources/data-modeling/collection-fields/media/rich-text"
           },
           {
             "type": "custom-link",
-            "label": "Tệp đính kèm (đã ngừng sử dụng)",
+            "label": "Tệp đính kèm (Quan hệ)",
             "link": "/data-sources/file-manager/field-attachment"
           },
           {
@@ -317,26 +276,26 @@
       },
       {
         "type": "custom-link",
-        "label": "Ngày & giờ",
+        "label": "Ngày & Giờ",
         "items": [
           {
             "type": "custom-link",
-            "label": "Giới thiệu",
+            "label": "Tổng quan",
             "link": "/data-sources/data-modeling/collection-fields/datetime/"
           },
           {
             "type": "custom-link",
-            "label": "Ngày giờ (có múi giờ)",
+            "label": "Datetime (có múi giờ)",
             "link": "/data-sources/data-modeling/collection-fields/datetime/datetime"
           },
           {
             "type": "custom-link",
-            "label": "Ngày giờ (không có múi giờ)",
+            "label": "Datetime (không có múi giờ)",
             "link": "/data-sources/data-modeling/collection-fields/datetime/datetime-without-tz"
           },
           {
             "type": "custom-link",
-            "label": "Dấu thời gian Unix",
+            "label": "Unix Timestamp",
             "link": "/data-sources/data-modeling/collection-fields/datetime/unix-timestamp"
           },
           {
@@ -353,42 +312,6 @@
       },
       {
         "type": "custom-link",
-        "label": "Kiểu quan hệ",
-        "items": [
-          {
-            "type": "custom-link",
-            "label": "Giới thiệu",
-            "link": "/data-sources/data-modeling/collection-fields/associations/"
-          },
-          {
-            "type": "custom-link",
-            "label": "Một-một",
-            "link": "/data-sources/data-modeling/collection-fields/associations/o2o/"
-          },
-          {
-            "type": "custom-link",
-            "label": "Một-nhiều",
-            "link": "/data-sources/data-modeling/collection-fields/associations/o2m/"
-          },
-          {
-            "type": "custom-link",
-            "label": "Nhiều-một",
-            "link": "/data-sources/data-modeling/collection-fields/associations/m2o/"
-          },
-          {
-            "type": "custom-link",
-            "label": "Nhiều-nhiều",
-            "link": "/data-sources/data-modeling/collection-fields/associations/m2m/"
-          },
-          {
-            "type": "custom-link",
-            "label": "Nhiều-nhiều (mảng)",
-            "link": "/data-sources/field-m2m-array/"
-          }
-        ]
-      },
-      {
-        "type": "custom-link",
         "label": "Hình học",
         "items": [
           {
@@ -398,12 +321,12 @@
           },
           {
             "type": "custom-link",
-            "label": "Đường",
+            "label": "Đường thẳng",
             "link": "/data-sources/data-modeling/collection-fields/geometric/line"
           },
           {
             "type": "custom-link",
-            "label": "Đường tròn",
+            "label": "Hình tròn",
             "link": "/data-sources/data-modeling/collection-fields/geometric/circle"
           },
           {
@@ -439,18 +362,23 @@
           },
           {
             "type": "custom-link",
-            "label": "Công thức tính toán",
+            "label": "Công thức",
             "link": "/data-sources/field-formula/"
           },
           {
             "type": "custom-link",
-            "label": "Mã tự động",
+            "label": "Mã hóa tự động",
             "link": "/data-sources/field-sequence/"
           },
           {
             "type": "custom-link",
             "label": "JSON",
             "link": "/data-sources/data-modeling/collection-fields/advanced/json"
+          },
+          {
+            "type": "custom-link",
+            "label": "Bộ chọn Collection",
+            "link": "/data-sources/data-modeling/collection-fields/advanced/collection-select"
           },
           {
             "type": "custom-link",
@@ -475,7 +403,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Ngày sửa đổi cuối cùng",
+            "label": "Ngày cập nhật cuối",
             "link": "/data-sources/data-modeling/collection-fields/system-info/updated-at"
           },
           {
@@ -485,13 +413,54 @@
           },
           {
             "type": "custom-link",
-            "label": "Người sửa đổi cuối cùng",
+            "label": "Người cập nhật cuối",
             "link": "/data-sources/data-modeling/collection-fields/system-info/updated-by"
           },
           {
             "type": "custom-link",
             "label": "Không gian",
             "link": "/data-sources/data-modeling/collection-fields/system-info/space"
+          },
+          {
+            "type": "custom-link",
+            "label": "Table OID",
+            "link": "/data-sources/data-modeling/collection-fields/system-info/table-oid"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Kiểu quan hệ",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Tổng quan",
+            "link": "/data-sources/data-modeling/collection-fields/associations/"
+          },
+          {
+            "type": "custom-link",
+            "label": "OneToOne",
+            "link": "/data-sources/data-modeling/collection-fields/associations/o2o/"
+          },
+          {
+            "type": "custom-link",
+            "label": "OneToMany",
+            "link": "/data-sources/data-modeling/collection-fields/associations/o2m/"
+          },
+          {
+            "type": "custom-link",
+            "label": "ManyToOne",
+            "link": "/data-sources/data-modeling/collection-fields/associations/m2o/"
+          },
+          {
+            "type": "custom-link",
+            "label": "ManyToMany",
+            "link": "/data-sources/data-modeling/collection-fields/associations/m2m/"
+          },
+          {
+            "type": "custom-link",
+            "label": "ManyToMany (mảng)",
+            "link": "/data-sources/field-m2m-array/"
           }
         ]
       }
@@ -499,7 +468,13 @@
   },
   {
     "type": "custom-link",
-    "label": "Phát triển mở rộng",
-    "link": "/development/"
+    "label": "Phát triển",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Tổng quan",
+        "link": "/data-sources/development/"
+      }
+    ]
   }
 ]

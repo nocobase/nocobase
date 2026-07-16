@@ -1,13 +1,13 @@
 ---
 title: "Amazon S3"
-description: "Cấu hình công cụ lưu trữ Amazon S3: Bucket, Region, AccessKey, tương thích với lưu trữ đối tượng sử dụng giao thức S3."
-keywords: "Amazon S3,Lưu trữ đối tượng S3,Lưu trữ đám mây,Lưu trữ đối tượng,NocoBase"
+description: "Cấu hình Amazon S3 storage engine: Bucket, Region, AccessKey, object storage tương thích với giao thức S3."
+keywords: "Amazon S3,S3 Object Storage,Cloud storage,Object storage,NocoBase"
 ---
 
 # Amazon S3
 
 :::warning
-Tài liệu đang được bổ sung
+Tài liệu sẽ được bổ sung sau
 :::
 
 <!--

@@ -1,11 +1,11 @@
 ---
-title: "Ekstensi Sumber Data"
-description: "Pengembangan ekstensi plugin sumber data untuk mengintegrasikan database atau platform API kustom, serta mengimplementasikan antarmuka DataSource dan pengelolaan Collection."
-keywords: "ekstensi sumber data, pengembangan DataSource, pengembangan plugin, sumber data kustom, NocoBase"
+title: "Ekstensi Data Source"
+description: "Pengembangan ekstensi plugin data source, mengintegrasikan database custom atau platform API, mengimplementasikan interface DataSource dan manajemen Collection."
+keywords: "ekstensi data source,Pengembangan DataSource,pengembangan plugin,data source custom,NocoBase"
 ---
 
-# Pengembangan Sumber Data
+# Ekstensi Data Source
 
 :::tip
-Konten akan dilengkapi
+Konten akan ditambahkan
 :::

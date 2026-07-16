@@ -1,12 +1,6 @@
----
-title: "So aktivieren Sie die FEDERATED-Engine in MySQL"
-description: "Aktivieren der FEDERATED-Speicher-Engine in MySQL: my.cnf anpassen und Docker-Volumes konfigurieren, um über FDW eine Verbindung zu entfernten MySQL-/MariaDB-Tabellen herzustellen."
-keywords: "MySQL federated,FEDERATED-Engine,FDW,Verbindung zu entfernten Tabellen,NocoBase"
----
+# So aktivieren Sie die Federated Engine in MySQL
 
-# So aktivieren Sie die FEDERATED-Engine in MySQL
-
-Das FEDERATED-Modul ist in MySQL standardmäßig nicht aktiviert. Sie müssen die Konfiguration in my.cnf anpassen. Bei Verwendung der Docker-Version können Sie Erweiterungen über Volumes einbinden:
+Die MySQL-Datenbank aktiviert das Federated-Modul standardmäßig nicht. Sie müssen die `my.cnf`-Konfiguration anpassen. Wenn Sie die Docker-Version verwenden, können Sie diese Erweiterung über Volumes handhaben:
 
 ```yml
 mysql:
@@ -23,23 +17,23 @@ mysql:
     - nocobase
 ```
 
-Neue `./storage/mysql-conf/federated.cnf`-Datei erstellen
+Erstellen Sie eine neue Datei `./storage/mysql-conf/federated.cnf`:
 
 ```ini
 [mysqld]
 federated
 ```
 
-MySQL neu starten
+Starten Sie MySQL neu:
 
 ```bash
 docker compose up -d mysql
 ```
 
-Prüfen, ob FEDERATED bereits aktiviert ist
+Prüfen Sie, ob Federated aktiviert ist:
 
 ```sql
 show engines
 ```
 
-![Alternativtext](https://static-docs.nocobase.com/ac5d97cf902ad164e141633a41a23e46.png)
+![Alt text](https://static-docs.nocobase.com/ac5d97cf902ad164e141633a41a23e46.png)

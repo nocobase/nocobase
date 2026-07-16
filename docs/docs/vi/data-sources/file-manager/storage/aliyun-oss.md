@@ -1,37 +1,37 @@
 ---
-title: "OSS Alibaba Cloud"
-description: "Cấu hình công cụ lưu trữ OSS Alibaba Cloud: Bucket, Endpoint, AccessKey, hỗ trợ truy cập qua mạng công cộng và mạng nội bộ."
-keywords: "OSS Alibaba Cloud,Lưu trữ đối tượng Alibaba Cloud,Lưu trữ OSS,Lưu trữ đám mây,NocoBase"
+title: "Aliyun OSS"
+description: "Cấu hình Aliyun OSS storage engine: Bucket, Endpoint, AccessKey, hỗ trợ truy cập public và intranet."
+keywords: "Aliyun OSS,Aliyun Object Storage,OSS Storage,Cloud storage,NocoBase"
 ---
 
-# OSS Alibaba Cloud
+# Aliyun OSS
 
-Công cụ lưu trữ dựa trên OSS Alibaba Cloud, cần chuẩn bị tài khoản và quyền liên quan trước khi sử dụng.
+Storage engine dựa trên Aliyun OSS, trước khi sử dụng cần chuẩn bị tài khoản và quyền liên quan.
 
-## Các tham số cấu hình
+## Tham số cấu hình
 
-![Ví dụ cấu hình công cụ lưu trữ OSS Alibaba Cloud](https://static-docs.nocobase.com/20240712220011.png)
+![Ví dụ cấu hình Aliyun OSS Storage Engine](https://static-docs.nocobase.com/20240712220011.png)
 
-:::info{title=Gợi ý}
-Chỉ giới thiệu các tham số chuyên dụng của công cụ lưu trữ OSS Alibaba Cloud. Để biết các tham số chung, vui lòng tham khảo[tham số chung của công cụ](./index.md#引擎通用参数).
+:::info{title=Mẹo}
+Chỉ giới thiệu các tham số chuyên dụng của Aliyun OSS storage engine, các tham số chung vui lòng tham khảo [Tham số chung của engine](./index.md#tham-số-chung-của-engine).
 :::
 
-### Khu vực
+### Region
 
-Nhập khu vực lưu trữ OSS, ví dụ: `oss-cn-hangzhou`.
+Điền region của OSS storage, ví dụ: `oss-cn-hangzhou`.
 
-:::info{title=Gợi ý}
-Bạn có thể xem thông tin khu vực của không gian lưu trữ trong[trang quản trị OSS Alibaba Cloud](https://oss.console.aliyun.com/). Chỉ cần lấy phần tiền tố của khu vực (không cần tên miền đầy đủ).
+:::info{title=Mẹo}
+Bạn có thể xem thông tin region của storage space tại [Aliyun OSS Console](https://oss.console.aliyun.com/), và chỉ cần lấy phần tiền tố region (không cần domain đầy đủ).
 :::
 
 ### AccessKey ID
 
-Nhập ID của khóa truy cập được Alibaba Cloud cấp quyền.
+Điền ID của Access Key ủy quyền truy cập Aliyun.
 
 ### AccessKey Secret
 
-Nhập Secret của khóa truy cập được Alibaba Cloud cấp quyền.
+Điền Secret của Access Key ủy quyền truy cập Aliyun.
 
 ### Bucket
 
-Nhập tên Bucket của bộ nhớ lưu trữ OSS.
+Điền tên bucket của OSS storage.

@@ -1,16 +1,16 @@
 ---
 title: "Amazon S3"
-description: "Konfigurasi mesin penyimpanan Amazon S3: Bucket, Region, AccessKey, kompatibel dengan penyimpanan objek yang menggunakan protokol S3."
-keywords: "Amazon S3,Penyimpanan objek S3,Penyimpanan cloud,Penyimpanan objek,NocoBase"
+description: "Konfigurasi storage engine Amazon S3: Bucket, Region, AccessKey, object storage yang kompatibel dengan protokol S3."
+keywords: "Amazon S3,S3 object storage,cloud storage,object storage,NocoBase"
 ---
 
 # Amazon S3
 
 :::warning
-Dokumentasi belum dilengkapi
+Dokumentasi akan ditambahkan
 :::
 
 <!--
-## Pengenalan
+## Pengantar
 
-## Panduan penggunaan -->
+## Panduan Penggunaan -->

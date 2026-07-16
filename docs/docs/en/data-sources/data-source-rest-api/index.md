@@ -1,34 +1,35 @@
 ---
-title: "REST API data source"
-description: "Connect REST API data and map RESTful resources to collections. Configure List, Get, Create, Update, and Destroy API mappings to support CRUD operations."
-keywords: "REST API data source,external API,API mapping,collection mapping,NocoBase"
+pkg: "@nocobase/plugin-data-source-rest-api"
 ---
 
-# REST API data source
-
-<PluginInfo commercial="true" name="data-source-rest-api"></PluginInfo>
+# REST API Data Source
 
 ## Introduction
 
-Use this data source to connect data provided by REST APIs.
+This plugin allows you to integrate data from REST API sources seamlessly.
 
 ## Installation
 
-This is a commercial plugin. For activation instructions, see the [Commercial plugin activation guide](https://www.nocobase.com/en/blog/nocobase-commercial-license-activation-guide).
+This is a commercial plugin. For detailed activation instructions, please refer to: [Commercial Plugin Activation Guide](https://www.nocobase.com/en/blog/nocobase-commercial-license-activation-guide)
 
-## Add a REST API source
 
-After activating the plugin, choose **REST API** from the **Add new** menu in Data source management.
+## Adding a REST API Source
 
-![Choose the REST API data source](https://static-docs.nocobase.com/20240721171420.png)
+After activating the plugin, you can add a REST API source by selecting it from the Add new dropdown menu in the data source management section.
+
+
+![20240721171420](https://static-docs.nocobase.com/20240721171420.png)
+
 
 Configure the REST API source.
 
-![Configure the REST API source](https://static-docs.nocobase.com/20240721171507.png)
 
-## Add a collection
+![20240721171507](https://static-docs.nocobase.com/20240721171507.png)
 
-A RESTful resource maps to a NocoBase collection. For example, consider a Users resource:
+
+## Adding a Collection
+
+In NocoBase, a RESTful resource is mapped to a Collection, such as a Users resource.
 
 ```bash
 GET /users
@@ -38,7 +39,7 @@ PUT /users/1
 DELETE /users/1
 ```
 
-It maps to the following NocoBase API configuration:
+These API endpoints are mapped in NocoBase as follows:
 
 ```bash
 GET /users:list
@@ -48,198 +49,235 @@ POST /users:update?filterByTk=1
 POST /users:destroy?filterByTk=1
 ```
 
-For the complete NocoBase API design specification, see the API documentation.
+For a comprehensive guide on NocoBase API design specifications, refer to the API documentation.
 
-![API documentation entry](https://static-docs.nocobase.com/20240716213344.png)
 
-See the **NocoBase API - Core** section.
+![20240716213344](https://static-docs.nocobase.com/20240716213344.png)
 
-![NocoBase API - Core](https://static-docs.nocobase.com/20240716213258.png)
 
-The REST API data-source collection is configured as follows.
+Check the "NocoBase API - Core" chapter for detailed information.
+
+
+![20240716213258](https://static-docs.nocobase.com/20240716213258.png)
+
+
+The Collection configuration for a REST API data source includes the following:
 
 ### List
 
-Configure the API mapping for retrieving a resource list.
+Map the interface for viewing a list of resources.
 
-![Configure the List API](https://static-docs.nocobase.com/20251201162457.png)
+
+![20251201162457](https://static-docs.nocobase.com/20251201162457.png)
+
 
 ### Get
 
-Configure the API mapping for retrieving resource details.
+Map the interface for viewing resource details.
 
-![Configure the Get API](https://static-docs.nocobase.com/20251201162744.png)
+
+![20251201162744](https://static-docs.nocobase.com/20251201162744.png)
+
 
 ### Create
 
-Configure the API mapping for creating a resource.
+Map the interface for creating a resource.
 
-![Configure the Create API](https://static-docs.nocobase.com/20251201163000.png)
+
+![20251201163000](https://static-docs.nocobase.com/20251201163000.png)
+
 
 ### Update
 
-Configure the API mapping for updating a resource.
+Map the interface for updating a resource.
 
-![Configure the Update API](https://static-docs.nocobase.com/20251201163058.png)
+
+![20251201163058](https://static-docs.nocobase.com/20251201163058.png)
+
 
 ### Destroy
 
-Configure the API mapping for deleting a resource.
+Map the interface for deleting a resource.
 
-![Configure the Destroy API](https://static-docs.nocobase.com/20251201163204.png)
 
-List and Get are required API mappings.
+![20251201163204](https://static-docs.nocobase.com/20251201163204.png)
 
-## Debug APIs
+
+Both the List and Get interfaces are required to be configured.
+
+## Debugging the API
 
 ### Request parameter integration
 
-For example, configure pagination parameters for the List API. If the third-party API itself does not support pagination, NocoBase paginates the returned list data.
+Example: Configure pagination parameters for the List API. If the third-party API does not support pagination natively, NocoBase will paginate based on the retrieved list data.
 
-![Configure List pagination parameters](https://static-docs.nocobase.com/20251201163500.png)
 
-Only variables added to the API take effect.
+![20251201163500](https://static-docs.nocobase.com/20251201163500.png)
 
-| Third-party API parameter | NocoBase parameter |
-| --- | --- |
-| page | {{request.params.page}} |
-| limit | {{request.params.pageSize}} |
 
-Click **Try it out** to debug the API and inspect the response.
+Please note that only variables added in the interface will take effect.
 
-![Debug an API request](https://static-docs.nocobase.com/20251201163635.png)
+| Third-party API params name | NocoBase params             |
+| --------------------------- | --------------------------- |
+| page                        | {{request.params.page}}     |
+| limit                       | {{request.params.pageSize}} |
+
+You can click Try it out to debug and view the response.
+
+
+![20251201163635](https://static-docs.nocobase.com/20251201163635.png)
 
 <video width="100%" height="440" controls>
       <source src="https://static-docs.nocobase.com/20241121211034.mp4" type="video/mp4">
 </video>
 
-### Response format conversion
+### Response format transformation
 
-The response format of a third-party API might not match the NocoBase standard. Convert it before it can be displayed correctly in the client.
+The response format of the third-party API may not be in NocoBase standard, and it needs to be transformed before it can be correctly displayed on the front end.
 
-![Configure response conversion](https://static-docs.nocobase.com/20251201164529.png)
 
-Adjust the conversion rules according to the third-party API response so that it matches the NocoBase output standard.
+![20251201164529](https://static-docs.nocobase.com/20251201164529.png)
 
-![Response conversion rules](https://static-docs.nocobase.com/20251201164629.png)
+Adjust the conversion rules based on the response format of the third-party API to ensure the output conforms to the NocoBase standard.
 
-Debugging flow.
 
-![Response conversion debugging flow](https://static-docs.nocobase.com/20240717110051.png)
+![20251201164629](https://static-docs.nocobase.com/20251201164629.png)
 
-### Error information conversion
 
-When a third-party API returns an error, its error response might not match the NocoBase standard. Convert it before the client can display it correctly.
+Debugging process description
 
-![Configure error conversion](https://static-docs.nocobase.com/20251201170545.png)
 
-When error conversion is not configured, the error is converted by default to an error message that includes the HTTP status code.
+![20250418085020](https://static-docs.nocobase.com/20250418085020.png)
 
-![Default error conversion](https://static-docs.nocobase.com/20251201170732.png)
+### Extract error message
 
-After configuring error conversion to match the NocoBase output standard, the client can display third-party API error information correctly.
+When a third-party API throws an exception, its response format may not follow NocoBase’s standard. In such cases, the error message needs to be transformed before it can be correctly displayed on the frontend.
 
-![Error conversion rules](https://static-docs.nocobase.com/20251201170946.png)
-![Converted third-party API error](https://static-docs.nocobase.com/20251201171113.png)
+![20251201170545](https://static-docs.nocobase.com/20251201170545.png)
+
+If no error message transformer is configured, NocoBase will apply the default transformation, converting the error into a message that contains the HTTP status code.
+
+![20251201170732](https://static-docs.nocobase.com/20251201170732.png)
+
+After configuring an error message transformer to match NocoBase’s output standard, the frontend will be able to properly display the exception messages returned by the third-party API.
+
+![20251201170946](https://static-docs.nocobase.com/20251201170946.png)
+![20251201171113](https://static-docs.nocobase.com/20251201171113.png)
 
 ## Variables
 
-The REST API data source provides three variable categories for API integration:
+The REST API data source supports three types of variables for API integration:
 
-- Data-source custom variables
-- NocoBase requests
-- Third-party responses
+- Custom data source variables
+- NocoBase request variables
+- Third-party response variables
 
-### Data-source custom variables
+### Custom Data Source Variables
 
-![Data-source custom variables](https://static-docs.nocobase.com/20240716221937.png)
 
-![Configure a data-source custom variable](https://static-docs.nocobase.com/20240716221858.png)
+![20240716221937](https://static-docs.nocobase.com/20240716221937.png)
 
-### NocoBase requests
 
-- Params: URL query parameters (Search Params). The available Params differ between APIs
-- Headers: request headers, primarily providing NocoBase custom `X-` information
-- Body: the request body
-- Token: the API token of the current NocoBase request
 
-![NocoBase request variables](https://static-docs.nocobase.com/20251201164833.png)
+![20240716221858](https://static-docs.nocobase.com/20240716221858.png)
 
-### Third-party responses
 
-Currently, only the response Body is available.
+### NocoBase Request
 
-![Third-party response variables](https://static-docs.nocobase.com/20251201164915.png)
+- Params: URL query parameters (Search Params), which vary depending on the interface.
+- Headers: Custom request headers, primarily providing specific X- information from NocoBase.
+- Body: The request body.
+- Token: The API token for the current NocoBase request.
 
-The available variables for each API integration are as follows.
+
+![20251201164833](https://static-docs.nocobase.com/20251201164833.png)
+
+### Third-Party Responses
+
+Currently, only the response body is available.
+
+
+![20251201164915](https://static-docs.nocobase.com/20251201164915.png)
+
+
+Below are the variables available for each interface:
 
 ### List
 
-| Parameter | Description |
-| --- | --- |
-| request.params.page | Current page number |
-| request.params.pageSize | Number of records per page |
-| request.params.filter | Filter conditions. They must use the NocoBase Filter format. |
-| request.params.sort | Sorting rules. They must use the NocoBase Sort format. |
-| request.params.appends | Fields loaded on demand, typically for loading relationship fields on demand |
-| request.params.fields | Fields that the API returns, as an allowlist |
-| request.params.except | Fields to exclude, as a denylist |
+| Parameter               | Description                                                |
+| ----------------------- | ---------------------------------------------------------- |
+| request.params.page     | Current page                                               |
+| request.params.pageSize | Number of items per page                                   |
+| request.params.filter   | Filter criteria (must meet NocoBase Filter format)         |
+| request.params.sort     | Sorting criteria (must meet NocoBase Sort format)          |
+| request.params.appends  | Fields to load on demand, typically for association fields |
+| request.params.fields   | Fields to include (whitelist)                              |
+| request.params.except   | Fields to exclude (blacklist)                              |
 
 ### Get
 
-| Parameter | Description |
-| --- | --- |
-| request.params.filterByTk | Required. Usually the ID of the current record |
-| request.params.filter | Filter conditions. They must use the NocoBase Filter format. |
-| request.params.appends | Fields loaded on demand, typically for loading relationship fields on demand |
-| request.params.fields | Fields that the API returns, as an allowlist |
-| request.params.except | Fields to exclude, as a denylist |
+| Parameter                 | Description                                                |
+| ------------------------- | ---------------------------------------------------------- |
+| request.params.filterByTk | Required, typically the current record ID                  |
+| request.params.filter     | Filter criteria (must meet NocoBase Filter format)         |
+| request.params.appends    | Fields to load on demand, typically for association fields |
+| request.params.fields     | Fields to include (whitelist)                              |
+| request.params.except     | Fields to exclude (blacklist)                              |
 
 ### Create
 
-| Parameter | Description |
-| --- | --- |
-| request.params.whiteList | Allowlist |
-| request.params.blacklist | Denylist |
-| request.body | Initial data for creating the record |
+| Parameter                | Description               |
+| ------------------------ | ------------------------- |
+| request.params.whiteList | Whitelist                 |
+| request.params.blacklist | Blacklist                 |
+| request.body             | Initial data for creation |
 
 ### Update
 
-| Parameter | Description |
-| --- | --- |
-| request.params.filterByTk | Required. Usually the ID of the current record |
-| request.params.filter | Filter conditions. They must use the NocoBase Filter format. |
-| request.params.whiteList | Allowlist |
-| request.params.blacklist | Denylist |
-| request.body | Data to update |
+| Parameter                 | Description                                        |
+| ------------------------- | -------------------------------------------------- |
+| request.params.filterByTk | Required, typically the current record ID          |
+| request.params.filter     | Filter criteria (must meet NocoBase Filter format) |
+| request.params.whiteList  | Whitelist                                          |
+| request.params.blacklist  | Blacklist                                          |
+| request.body              | Data for update                                    |
 
 ### Destroy
 
-| Parameter | Description |
-| --- | --- |
-| request.params.filterByTk | Required. Usually the ID of the current record |
-| request.params.filter | Filter conditions. They must use the NocoBase Filter format. |
+| Parameter                 | Description                                        |
+| ------------------------- | -------------------------------------------------- |
+| request.params.filterByTk | Required, typically the current record ID          |
+| request.params.filter     | Filter criteria (must meet NocoBase Filter format) |
 
-## Configure fields
+## Field Configuration
 
-Extract field metadata (Fields) from data returned by the adapted resource CRUD APIs and use it as the fields of the collection.
+Field metadata (Fields) is extracted from the CRUD interface data of the adapted resource to serve as the fields of the collection.
 
-![Extract collection fields](https://static-docs.nocobase.com/20240716223636.png)
+
+![20250418085048](https://static-docs.nocobase.com/20250418085048.png)
+
 
 Extract field metadata.
 
-![Extract field metadata](https://static-docs.nocobase.com/20251201165133.png)
+
+![20251201165133](https://static-docs.nocobase.com/20251201165133.png)
+
 
 Fields and preview.
 
-![Fields and preview](https://static-docs.nocobase.com/20240716224403.png)
 
-Edit fields in the same way as for other data sources.
+![20240716224403](https://static-docs.nocobase.com/20240716224403.png)
 
-![Edit REST API fields](https://static-docs.nocobase.com/20240716224704.png)
 
-## Add REST API data-source blocks
+Edit fields (similar to other data sources).
 
-After configuring the collection, you can add blocks to pages.
 
-![Add a REST API data-source block](https://static-docs.nocobase.com/20240716225120.png)
+![20240716224704](https://static-docs.nocobase.com/20240716224704.png)
+
+
+## Adding REST API Data Source Blocks
+
+Once the collection is configured, you can add blocks to the interface.
+
+
+![20240716225120](https://static-docs.nocobase.com/20240716225120.png)

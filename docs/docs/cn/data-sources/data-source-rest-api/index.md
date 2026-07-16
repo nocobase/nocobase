@@ -28,7 +28,7 @@ keywords: "REST API 数据源,外部 API,接口映射,Collection 映射,NocoBase
 
 ## 添加 Collection
 
-RESTful 的资源就是 NocoBase 的 Collection，比如 Users 资源。
+RESTful 的资源就是 NocoBase 的 Collection，例如 Users 资源
 
 ```bash
 GET /users

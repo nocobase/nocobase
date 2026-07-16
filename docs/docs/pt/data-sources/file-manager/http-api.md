@@ -1,20 +1,14 @@
----
-title: "API HTTP do gerenciador de arquivos"
-description: "Os campos de anexos e as tabelas de arquivos fazem upload de arquivos por meio da API HTTP, com upload pelo servidor (S3/OSS/COS), upload direto pelo cliente e suporte à autenticação JWT e à especificação do mecanismo de armazenamento."
-keywords: "API HTTP de upload de arquivos,attachments create,upload pelo servidor,upload direto pelo cliente,NocoBase"
----
-
 # API HTTP
 
-O upload de arquivos dos campos de anexos e das tabelas de arquivos pode ser processado por meio da API HTTP. Dependendo do mecanismo de armazenamento utilizado pelo anexo ou pela tabela de arquivos, há diferentes formas de chamada.
+O upload de arquivos para campos de anexo e coleções de arquivos pode ser feito via API HTTP. A forma de invocação difere dependendo do motor de armazenamento usado pelo anexo ou pela coleção de arquivos.
 
-## Upload pelo servidor
+## Upload pelo Servidor
 
-Para mecanismos de armazenamento de código aberto integrados ao projeto, como S3, OSS e COS, a API HTTP utiliza a mesma chamada da função de upload da interface do usuário, e todos os arquivos são enviados pelo servidor. As chamadas à API devem incluir, no cabeçalho de requisição `Authorization`, um token JWT baseado no login do usuário; caso contrário, o acesso será recusado.
+Para motores de armazenamento de código aberto integrados, como S3, OSS e COS, a chamada da API HTTP é a mesma usada pelo recurso de upload da interface do usuário, onde os arquivos são enviados pelo servidor. As chamadas da API exigem que um token JWT baseado no login do usuário seja passado no cabeçalho `Authorization`; caso contrário, o acesso será negado.
 
-### Campo de anexos
+### Campo de Anexo
 
-Envie uma requisição POST ao recurso da tabela de anexos (`attachments`), executando a operação `create`, e faça o upload do conteúdo binário por meio do campo `file`. Após a chamada, o arquivo será enviado ao mecanismo de armazenamento padrão.
+Inicie uma ação `create` no recurso de anexos (`attachments`) enviando uma requisição POST e faça o upload do conteúdo binário através do campo `file`. Após a chamada, o arquivo será enviado para o motor de armazenamento padrão.
 
 ```shell
 curl -X POST \
@@ -23,7 +17,7 @@ curl -X POST \
     "http://localhost:3000/api/attachments:create"
 ```
 
-Para enviar o arquivo a um mecanismo de armazenamento diferente, use o parâmetro `attachmentField` para especificar o mecanismo de armazenamento configurado para o campo da tabela de dados (se não estiver configurado, o arquivo será enviado ao mecanismo de armazenamento padrão).
+Para fazer o upload de arquivos para um motor de armazenamento diferente, você pode usar o parâmetro `attachmentField` para especificar o motor de armazenamento configurado para o campo da **coleção**. Se não for configurado, o arquivo será enviado para o motor de armazenamento padrão.
 
 ```shell
 curl -X POST \
@@ -32,9 +26,9 @@ curl -X POST \
     "http://localhost:3000/api/attachments:create?attachmentField=<collection_name>.<field_name>"
 ```
 
-### Tabela de arquivos
+### Coleção de Arquivos
 
-O upload para uma tabela de arquivos gera automaticamente um registro de arquivo. Envie uma requisição POST ao recurso da tabela de arquivos, executando a operação `create`, e faça o upload do conteúdo binário por meio do campo `file`.
+O upload para uma **coleção** de arquivos gerará automaticamente um registro de arquivo. Inicie uma ação `create` no recurso da **coleção** de arquivos enviando uma requisição POST e faça o upload do conteúdo binário através do campo `file`.
 
 ```shell
 curl -X POST \
@@ -43,24 +37,24 @@ curl -X POST \
     "http://localhost:3000/api/<file_collection_name>:create"
 ```
 
-Não é necessário especificar o mecanismo de armazenamento ao fazer upload para uma tabela de arquivos; o arquivo será enviado ao mecanismo de armazenamento configurado para essa tabela.
+Ao fazer o upload para uma **coleção** de arquivos, não é necessário especificar um motor de armazenamento; o arquivo será enviado para o motor de armazenamento configurado para aquela **coleção**.
 
-## Upload pelo cliente
+## Upload pelo Cliente
 
-Para mecanismos de armazenamento compatíveis com S3 fornecidos pelo plug-in comercial S3-Pro, o upload pela API HTTP precisa ser realizado em várias etapas.
+Para motores de armazenamento compatíveis com S3, fornecidos através do **plugin** comercial S3-Pro, o upload via API HTTP requer vários passos.
 
-### Campo de anexos
+### Campo de Anexo
 
-1.  Obter informações do mecanismo de armazenamento
+1.  Obter informações do motor de armazenamento
 
-    Execute a operação `getBasicInfo` no recurso da tabela de armazenamento (storages), incluindo o identificador do espaço de armazenamento (storage name), para solicitar as informações de configuração do mecanismo de armazenamento.
+    Inicie uma ação `getBasicInfo` na **coleção** de armazenamentos (`storages`), incluindo o nome do armazenamento (`storage name`), para solicitar as informações de configuração do motor de armazenamento.
 
     ```shell
     curl 'http://localhost:13000/api/storages:getBasicInfo/<storage_name>' \
       -H 'Authorization: Bearer <JWT>'
     ```
 
-    Exemplo das informações de configuração retornadas pelo mecanismo de armazenamento:
+    Exemplo de informações de configuração do motor de armazenamento retornadas:
 
     ```json
     {
@@ -72,9 +66,9 @@ Para mecanismos de armazenamento compatíveis com S3 fornecidos pelo plug-in com
     }
     ```
 
-2.  Obter informações pré-assinadas do provedor
+2.  Obter a URL pré-assinada do provedor de serviço
 
-    Envie uma requisição POST ao recurso `fileStorageS3`, executando a operação `createPresignedUrl`, e inclua no body as informações relacionadas ao arquivo para obter as informações de upload pré-assinado.
+    Inicie uma ação `createPresignedUrl` no recurso `fileStorageS3` enviando uma requisição POST com informações relacionadas ao arquivo no corpo para obter as informações de upload pré-assinadas.
 
     ```shell
     curl 'http://localhost:13000/api/fileStorageS3:createPresignedUrl' \
@@ -87,11 +81,11 @@ Para mecanismos de armazenamento compatíveis com S3 fornecidos pelo plug-in com
 
     > Observação:
     >
-    > * name: nome do arquivo
-    > * size: tamanho do arquivo (em bytes)
-    > * type: tipo MIME do arquivo. Consulte: [Tipos MIME comuns](https://developer.mozilla.org/zh-CN/docs/Web/HTTP/MIME_types/Common_types)
-    > * storageId: ID do mecanismo de armazenamento (campo `id` retornado na primeira etapa)
-    > * storageType: tipo do mecanismo de armazenamento (campo `type` retornado na primeira etapa)
+    > *   `name`: Nome do arquivo
+    > *   `size`: Tamanho do arquivo (em bytes)
+    > *   `type`: O tipo MIME do arquivo. Você pode consultar: [Tipos MIME comuns](https://developer.mozilla.org/zh-CN/docs/Web/HTTP/MIME_types/Common_types)
+    > *   `storageId`: O ID do motor de armazenamento (o campo `id` retornado na etapa 1).
+    > *   `storageType`: O tipo do motor de armazenamento (o campo `type` retornado na etapa 1).
     >
     > Exemplo de dados da requisição:
     >
@@ -99,7 +93,7 @@ Para mecanismos de armazenamento compatíveis com S3 fornecidos pelo plug-in com
     > --data-raw '{"name":"a.png","size":4405,"type":"image/png","storageId":2,"storageType":"s3-compatible"}'
     > ```
 
-    A estrutura dos dados das informações pré-assinadas obtidas é a seguinte:
+    A estrutura de dados das informações pré-assinadas obtidas é a seguinte:
 
     ```json
     {
@@ -119,7 +113,7 @@ Para mecanismos de armazenamento compatíveis com S3 fornecidos pelo plug-in com
 
 3.  Upload do arquivo
 
-    Use o `putUrl` retornado para fazer uma requisição `PUT` e envie o arquivo como body.
+    Use a `putUrl` retornada para fazer uma requisição `PUT`, enviando o arquivo como corpo da requisição.
 
     ```shell
     curl '<putUrl>' \
@@ -127,8 +121,8 @@ Para mecanismos de armazenamento compatíveis com S3 fornecidos pelo plug-in com
       -T <file_path>
     ```
     > Observação:
-    > * putUrl: campo `putUrl` retornado na etapa anterior
-    > * file_path: caminho do arquivo local a ser enviado
+    > * `putUrl`: O campo `putUrl` retornado na etapa anterior.
+    > * `file_path`: O caminho local do arquivo a ser enviado.
     >
     > Exemplo de dados da requisição:
     > ```
@@ -139,7 +133,7 @@ Para mecanismos de armazenamento compatíveis com S3 fornecidos pelo plug-in com
 
 4.  Criar o registro do arquivo
 
-    Após o upload ser concluído, envie uma requisição POST ao recurso da tabela de anexos (`attachments`), executando a operação `create`, para criar o registro do arquivo.
+    Após um upload bem-sucedido, crie o registro do arquivo iniciando uma ação `create` no recurso de anexos (`attachments`) com uma requisição POST.
 
     ```shell
     curl 'http://localhost:13000/api/attachments:create?attachmentField=<collection_name>.<field_name>' \
@@ -150,25 +144,26 @@ Para mecanismos de armazenamento compatíveis com S3 fornecidos pelo plug-in com
       --data-raw '{"title":<title>,"filename":<filename>,"extname":<extname>,"path":"","size":<size>,"url":"","mimetype":<mimetype>,"meta":<meta>,"storageId":<storageId>}'
     ```
 
-    > Descrição dos dados necessários em data-raw:
-    > * title: campo `fileInfo.title` retornado na etapa anterior
-    > * filename: campo `fileInfo.key` retornado na etapa anterior
-    > * extname: campo `fileInfo.extname` retornado na etapa anterior
-    > * path: vazio por padrão
-    > * size: campo `fileInfo.size` retornado na etapa anterior
-    > * url: vazio por padrão
-    > * mimetype: campo `fileInfo.mimetype` retornado na etapa anterior
-    > * meta: campo `fileInfo.meta` retornado na etapa anterior
-    > * storageId: campo `id` retornado na primeira etapa
+    > Explicação dos dados dependentes em `data-raw`:
+    > *   `title`: O campo `fileInfo.title` retornado na etapa anterior.
+    > *   `filename`: O campo `fileInfo.key` retornado na etapa anterior.
+    > *   `extname`: O campo `fileInfo.extname` retornado na etapa anterior.
+    > *   `path`: Vazio por padrão.
+    > *   `size`: O campo `fileInfo.size` retornado na etapa anterior.
+    > *   `url`: Vazio por padrão.
+    > *   `mimetype`: O campo `fileInfo.mimetype` retornado na etapa anterior.
+    > *   `meta`: O campo `fileInfo.meta` retornado na etapa anterior.
+    > *   `storageId`: O campo `id` retornado na etapa 1.
     >
     > Exemplo de dados da requisição:
+    >
     > ```
     >   --data-raw '{"title":"ATT00001","filename":"ATT00001-8nuuxkuz4jn.png","extname":".png","path":"","size":4405,"url":"","mimetype":"image/png","meta":{},"storageId":2}'
     > ```
 
-### Tabela de arquivos
+### Coleção de Arquivos
 
-As três primeiras etapas são iguais às do upload de um campo de anexos, mas na quarta etapa é necessário criar o registro do arquivo. Envie uma requisição POST ao recurso da tabela de arquivos, executando a operação create, e envie as informações do arquivo no body.
+As três primeiras etapas são as mesmas do upload para um campo de anexo. No entanto, na quarta etapa, você precisa criar o registro do arquivo iniciando uma ação `create` no recurso da **coleção** de arquivos com uma requisição POST, enviando as informações do arquivo no corpo.
 
 ```shell
 curl 'http://localhost:13000/api/<file_collection_name>:create' \
@@ -177,18 +172,19 @@ curl 'http://localhost:13000/api/<file_collection_name>:create' \
   --data-raw '{"title":<title>,"filename":<filename>,"extname":<extname>,"path":"","size":<size>,"url":"","mimetype":<mimetype>,"meta":<meta>,"storageId":<storageId>}'
 ```
 
-> Descrição dos dados necessários em data-raw:
-> * title: campo `fileInfo.title` retornado na etapa anterior
-> * filename: campo `fileInfo.key` retornado na etapa anterior
-> * extname: campo `fileInfo.extname` retornado na etapa anterior
-> * path: vazio por padrão
-> * size: campo `fileInfo.size` retornado na etapa anterior
-> * url: vazio por padrão
-> * mimetype: campo `fileInfo.mimetype` retornado na etapa anterior
-> * meta: campo `fileInfo.meta` retornado na etapa anterior
-> * storageId: campo `id` retornado na primeira etapa
+> Explicação dos dados dependentes em `data-raw`:
+> *   `title`: O campo `fileInfo.title` retornado na etapa anterior.
+> *   `filename`: O campo `fileInfo.key` retornado na etapa anterior.
+> *   `extname`: O campo `fileInfo.extname` retornado na etapa anterior.
+> *   `path`: Vazio por padrão.
+> *   `size`: O campo `fileInfo.size` retornado na etapa anterior.
+> *   `url`: Vazio por padrão.
+> *   `mimetype`: O campo `fileInfo.mimetype` retornado na etapa anterior.
+> *   `meta`: O campo `fileInfo.meta` retornado na etapa anterior.
+> *   `storageId`: O campo `id` retornado na etapa 1.
 >
 > Exemplo de dados da requisição:
+>
 > ```
 >   --data-raw '{"title":"ATT00001","filename":"ATT00001-8nuuxkuz4jn.png","extname":".png","path":"","size":4405,"url":"","mimetype":"image/png","meta":{},"storageId":2}'
 > ```
