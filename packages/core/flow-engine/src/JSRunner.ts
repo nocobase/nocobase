@@ -11,6 +11,7 @@ import 'ses';
 import { FlowExitAllException, FlowExitException } from './utils/exceptions';
 
 export interface JSRunnerOptions {
+  /** Maximum execution time in milliseconds. Defaults to 30 seconds. */
   timeoutMs?: number;
   globals?: Record<string, any>;
   version?: string;
@@ -21,6 +22,8 @@ export interface JSRunnerOptions {
    */
   preprocessTemplates?: boolean;
 }
+
+export const DEFAULT_RUNJS_TIMEOUT_MS = 30_000;
 
 /**
  * Decide whether RunJS `{{ ... }}` compatibility preprocessing should run.
@@ -220,7 +223,7 @@ export class JSRunner {
       ...liftedGlobals,
       ...providedGlobals,
     };
-    this.timeoutMs = options.timeoutMs ?? 5000; // 默认 5 秒超时
+    this.timeoutMs = options.timeoutMs ?? DEFAULT_RUNJS_TIMEOUT_MS;
   }
 
   /**
@@ -253,11 +256,12 @@ export class JSRunner {
 
     const compartment = new Compartment(this.globals);
 
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
     try {
       const task = compartment.evaluate(wrapped);
-      const timeoutPromise = new Promise((_resolve, reject) =>
-        setTimeout(() => reject(new Error('Execution timed out')), this.timeoutMs),
-      );
+      const timeoutPromise = new Promise<never>((_resolve, reject) => {
+        timeoutId = setTimeout(() => reject(new Error('Execution timed out')), this.timeoutMs);
+      });
       const result = await Promise.race([task, timeoutPromise]);
       return { success: true, value: result };
     } catch (err) {
@@ -275,6 +279,10 @@ export class JSRunner {
         error: outErr,
         timeout: (outErr as any)?.message === 'Execution timed out',
       };
+    } finally {
+      if (typeof timeoutId !== 'undefined') {
+        clearTimeout(timeoutId);
+      }
     }
   }
 }

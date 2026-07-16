@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { JSRunner, shouldPreprocessRunJSTemplates } from '../JSRunner';
+import { DEFAULT_RUNJS_TIMEOUT_MS, JSRunner, shouldPreprocessRunJSTemplates } from '../JSRunner';
 
 describe('JSRunner', () => {
   let originalSearch: string;
@@ -139,6 +139,28 @@ describe('JSRunner', () => {
     `);
     expect(result.success).toBe(true);
     expect(result.value).toBe('ok');
+  });
+
+  it('allows default executions to run longer than five seconds and clears the timeout timer', async () => {
+    vi.useFakeTimers();
+    try {
+      const runner = new JSRunner();
+      const resultPromise = runner.run(`
+        return new Promise((resolve) => {
+          setTimeout(() => resolve('ok'), 6000);
+        });
+      `);
+
+      await vi.advanceTimersByTimeAsync(6000);
+      const result = await resultPromise;
+
+      expect(DEFAULT_RUNJS_TIMEOUT_MS).toBe(30_000);
+      expect(result.success).toBe(true);
+      expect(result.value).toBe('ok');
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('handles thrown errors and marks as non-timeout', async () => {
