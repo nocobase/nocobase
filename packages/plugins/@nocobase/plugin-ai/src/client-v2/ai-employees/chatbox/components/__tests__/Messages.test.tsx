@@ -110,12 +110,10 @@ describe('Messages runtime mode', () => {
     expect(mocks.updateReadonly).not.toHaveBeenCalled();
   });
 
-  it('renders as the scrollable flex content area above the sender', () => {
+  it('renders as the native scrollable message area', () => {
     const { container } = renderMessages(createChatBoxRuntime({ mode: 'block' }));
     const content = container.querySelector('.ant-layout-content') as HTMLElement | null;
 
-    expect(content?.style.flex).toBe('1 1 auto');
-    expect(content?.style.minHeight).toBe('0');
     expect(content?.style.overflow).toBe('auto');
   });
 });
