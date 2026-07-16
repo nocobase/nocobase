@@ -12,10 +12,11 @@ import { createMockClient, type CompiledFilter } from '@nocobase/client-v2';
 import { FlowEngineProvider } from '@nocobase/flow-engine';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { vi } from 'vitest';
 
 import type { UseLightExtensionRepoResult } from '../hooks/useLightExtensionRepo';
+import type { UseLightExtensionSyncResult } from '../hooks/useLightExtensionSync';
 import LightExtensionListPage, {
   LIGHT_EXTENSION_REPO_FILTER_FIELD_NAMES,
   lightExtensionRepoFilterCollection,
@@ -32,6 +33,16 @@ const mocks = vi.hoisted(() => ({
     deleteRepo: vi.fn(),
     listCommits: vi.fn(),
     pull: vi.fn(),
+  },
+  sync: {
+    get: vi.fn(),
+    configure: vi.fn(),
+    disconnect: vi.fn(),
+    testConnection: vi.fn(),
+    plan: vi.fn(),
+    pull: vi.fn(),
+    push: vi.fn(),
+    createFromGit: vi.fn(),
   },
 }));
 
@@ -51,6 +62,59 @@ vi.mock('../hooks/useLightExtensionRepo', async (importOriginal) => {
     ...actual,
     useLightExtensionRepo: () => mocks.api as unknown as UseLightExtensionRepoResult,
   };
+});
+
+vi.mock('../hooks/useLightExtensionSync', () => ({
+  useLightExtensionSync: () => mocks.sync as unknown as UseLightExtensionSyncResult,
+}));
+
+vi.mock('../components/LightExtensionSyncDrawer', async () => {
+  const React = await import('react');
+
+  interface MockSyncDrawerProps {
+    open: boolean;
+    repo: {
+      id: string;
+      name: string;
+      normalizedName: string;
+      title: string;
+      description: string | null;
+      lifecycleStatus: 'enabled' | 'disabled' | 'archived';
+      healthStatus: 'pending' | 'ready' | 'warning' | 'error';
+      headCommitId: string | null;
+    };
+    configurationPanel?: React.ReactNode;
+    onClose: () => void;
+    onRepoUpdated: (repo: MockSyncDrawerProps['repo'] & { entryCount: number }) => void;
+  }
+
+  const MockLightExtensionSyncDrawer = (props: MockSyncDrawerProps) => {
+    if (!props.open) {
+      return null;
+    }
+
+    return React.createElement(
+      'div',
+      { 'aria-label': 'Sync code', role: 'dialog' },
+      props.configurationPanel,
+      React.createElement(
+        'button',
+        {
+          onClick: () =>
+            props.onRepoUpdated({
+              ...props.repo,
+              headCommitId: 'head-after-pull',
+              entryCount: 3,
+            }),
+          type: 'button',
+        },
+        'Mock Pull result',
+      ),
+      React.createElement('button', { onClick: props.onClose, type: 'button' }, 'Close sync'),
+    );
+  };
+
+  return { default: MockLightExtensionSyncDrawer };
 });
 
 vi.mock('../pages/LightExtensionWorkspacePage', async () => {
@@ -104,9 +168,14 @@ function renderListPage(
     <FlowEngineProvider engine={app.flowEngine}>
       <MemoryRouter initialEntries={[initialEntry]}>
         <LightExtensionListPage />
+        <LocationSearch />
       </MemoryRouter>
     </FlowEngineProvider>,
   );
+}
+
+function LocationSearch() {
+  return <output data-testid="location-search">{useLocation().search}</output>;
 }
 
 describe('LightExtensionListPage', () => {
@@ -151,6 +220,48 @@ describe('LightExtensionListPage', () => {
       healthStatus: 'pending',
       headCommitId: null,
     });
+    mocks.sync.createFromGit.mockResolvedValue({
+      repo: {
+        id: 'ler_github',
+        name: 'github-smoke',
+        normalizedName: 'github-smoke',
+        title: 'GitHub smoke',
+        description: null,
+        lifecycleStatus: 'enabled',
+        healthStatus: 'ready',
+        headCommitId: 'github-head',
+      },
+      source: {
+        provider: 'github',
+        config: { owner: 'nocobase', repository: 'example', branch: '', subdirectory: null },
+        status: 'active',
+        remoteTargetVersion: 1,
+        revision: 'github-head',
+        credentialConfigured: false,
+        authRefDisplay: null,
+      },
+      plan: {},
+    });
+    mocks.sync.testConnection.mockResolvedValue({
+      ok: true,
+      provider: 'github',
+      config: { owner: 'nocobase', repository: 'example', branch: '', subdirectory: null },
+      revision: 'github-head',
+      credentialConfigured: false,
+      authRefDisplay: null,
+    });
+    mocks.sync.configure.mockResolvedValue({
+      repoId: 'ler_browser_smoke',
+      source: {
+        provider: 'github',
+        config: { owner: 'nocobase', repository: 'example', branch: '', subdirectory: null },
+        status: 'active',
+        remoteTargetVersion: 1,
+        revision: 'github-head',
+        credentialConfigured: false,
+        authRefDisplay: null,
+      },
+    });
   });
 
   it('opens the create dialog from the query parameter', async () => {
@@ -167,9 +278,9 @@ describe('LightExtensionListPage', () => {
         name: expect.stringMatching(/^l_[a-z0-9]+$/),
         title: 'Browser smoke',
         description: null,
-        zipBase64: undefined,
       }),
     );
+    expect(mocks.api.createRepo.mock.calls[0][0]).not.toHaveProperty('zipBase64');
     expect(await screen.findByText('Repository created and compiled')).toBeInTheDocument();
   });
 
@@ -188,7 +299,9 @@ describe('LightExtensionListPage', () => {
     expect(
       within(dialog).getByText('The name is generated automatically and can be changed if needed.'),
     ).toBeInTheDocument();
-    expect(within(dialog).getByText('Source ZIP (optional)')).toBeInTheDocument();
+    expect(within(dialog).getByRole('radio', { name: 'Template' })).toBeChecked();
+    expect(within(dialog).getByRole('radio', { name: 'ZIP file' })).not.toBeChecked();
+    expect(within(dialog).getByRole('radio', { name: 'GitHub source' })).not.toBeChecked();
     expect(screen.queryByText('Create empty')).not.toBeInTheDocument();
     expect(screen.queryByText('Add new from import')).not.toBeInTheDocument();
   });
@@ -218,6 +331,7 @@ describe('LightExtensionListPage', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: /Add new/ }));
     const dialog = await screen.findByRole('dialog', { name: 'Create light extension' });
+    await userEvent.click(within(dialog).getByText('ZIP file'));
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
     const file = new File(['zip-source'], 'imported-smoke.zip', { type: 'application/zip' });
 
@@ -237,6 +351,52 @@ describe('LightExtensionListPage', () => {
       }),
     );
     expect(await screen.findByText('Repository imported and compiled')).toBeInTheDocument();
+  });
+
+  it('creates from GitHub with an exclusive safe source payload and updates the URL', async () => {
+    renderListPage();
+
+    await userEvent.click(await screen.findByRole('button', { name: /Add new/ }));
+    const dialog = await screen.findByRole('dialog', { name: 'Create light extension' });
+    await userEvent.type(within(dialog).getByLabelText('Title'), 'GitHub smoke');
+    await userEvent.click(within(dialog).getByText('GitHub source'));
+    await userEvent.type(within(dialog).getByRole('textbox', { name: 'GitHub repository' }), 'nocobase/example');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Create' }));
+
+    await waitFor(() => expect(mocks.sync.createFromGit).toHaveBeenCalledTimes(1));
+    expect(mocks.sync.createFromGit).toHaveBeenCalledWith({
+      name: expect.stringMatching(/^l_[a-z0-9]+$/),
+      title: 'GitHub smoke',
+      description: null,
+      provider: 'github',
+      config: {
+        owner: 'nocobase',
+        repository: 'example',
+        branch: '',
+        subdirectory: null,
+      },
+    });
+    expect(mocks.sync.createFromGit.mock.calls[0][0]).not.toHaveProperty('zipBase64');
+    expect(mocks.api.createRepo).not.toHaveBeenCalled();
+    expect(await screen.findByText('GitHub smoke')).toBeInTheDocument();
+    expect(screen.getByTestId('location-search')).toHaveTextContent('repoId=ler_github');
+  });
+
+  it('keeps GitHub create configuration in the modal when the request fails', async () => {
+    mocks.sync.createFromGit.mockRejectedValueOnce(new Error('GitHub source could not be created'));
+    renderListPage();
+
+    await userEvent.click(await screen.findByRole('button', { name: /Add new/ }));
+    const dialog = await screen.findByRole('dialog', { name: 'Create light extension' });
+    await userEvent.type(within(dialog).getByLabelText('Title'), 'GitHub smoke');
+    await userEvent.click(within(dialog).getByText('GitHub source'));
+    const repositoryInput = within(dialog).getByRole('textbox', { name: 'GitHub repository' });
+    await userEvent.type(repositoryInput, 'nocobase/example');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Create' }));
+
+    expect(await screen.findByText('GitHub source could not be created')).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Create light extension' })).toBeInTheDocument();
+    expect(repositoryInput).toHaveValue('nocobase/example');
   });
 
   it('shows repository details directly in the table without detail or diagnostics actions', async () => {
@@ -277,17 +437,120 @@ describe('LightExtensionListPage', () => {
       throw new Error('Expected the light extension table row to be rendered');
     }
     const sourceAction = within(row).getByRole('button', { name: 'Edit code' });
+    const syncAction = within(row).getByRole('button', { name: 'Sync code' });
     const editAction = within(row).getByRole('button', { name: 'Edit details Sales widgets' });
     const removeAction = within(row).getByRole('button', { name: 'Remove' });
     expect(sourceAction).toHaveClass('ant-btn-link');
     expect(sourceAction).toHaveTextContent('Edit code');
+    expect(syncAction).toHaveClass('ant-btn-link');
+    expect(syncAction).toHaveTextContent('Sync code');
     expect(editAction).toHaveClass('ant-btn-link');
     expect(editAction).toHaveTextContent('Edit details');
     expect(removeAction).toHaveClass('ant-btn-link');
     expect(removeAction).toHaveTextContent('Remove');
     expect(sourceAction.querySelector('.anticon')).not.toBeInTheDocument();
+    expect(syncAction.querySelector('.anticon')).not.toBeInTheDocument();
     expect(editAction.querySelector('.anticon')).not.toBeInTheDocument();
     expect(removeAction.querySelector('.anticon')).not.toBeInTheDocument();
+    expect(
+      within(row)
+        .getAllByRole('button')
+        .map((button) => button.textContent),
+    ).toEqual(['Edit code', 'Sync code', 'Edit details', 'Remove']);
+  });
+
+  it('restores the Sync code drawer directly from URL state', async () => {
+    mocks.api.listRepos.mockResolvedValueOnce([
+      {
+        id: 'ler_browser_smoke',
+        name: 'browser-smoke',
+        normalizedName: 'browser-smoke',
+        title: 'Browser smoke',
+        description: null,
+        lifecycleStatus: 'enabled',
+        healthStatus: 'pending',
+        headCommitId: 'commit-1',
+      },
+    ]);
+
+    renderListPage('/admin/settings/light-extension?repoId=ler_browser_smoke&panel=sync');
+
+    expect(await screen.findByRole('dialog', { name: 'Sync code' })).toBeInTheDocument();
+    expect(screen.queryByText('Mock source workspace')).not.toBeInTheDocument();
+  });
+
+  it('opens Sync code from its row action, preserves unrelated query values, and wires GitHub configuration', async () => {
+    mocks.api.listRepos.mockResolvedValueOnce([
+      {
+        id: 'ler_browser_smoke',
+        name: 'browser-smoke',
+        normalizedName: 'browser-smoke',
+        title: 'Browser smoke',
+        description: null,
+        lifecycleStatus: 'enabled',
+        healthStatus: 'pending',
+        headCommitId: 'commit-1',
+      },
+    ]);
+    renderListPage('/admin/settings/light-extension?view=compact');
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Sync code' }));
+    const drawer = await screen.findByRole('dialog', { name: 'Sync code' });
+    expect(screen.getByTestId('location-search')).toHaveTextContent('view=compact');
+    expect(screen.getByTestId('location-search')).toHaveTextContent('repoId=ler_browser_smoke');
+    expect(screen.getByTestId('location-search')).toHaveTextContent('panel=sync');
+
+    await userEvent.type(within(drawer).getByRole('textbox', { name: 'GitHub repository' }), 'nocobase/example');
+    await userEvent.click(within(drawer).getByRole('button', { name: 'Test connection' }));
+    await waitFor(() =>
+      expect(mocks.sync.testConnection).toHaveBeenCalledWith({
+        repoId: 'ler_browser_smoke',
+        provider: 'github',
+        config: { owner: 'nocobase', repository: 'example', branch: '', subdirectory: null },
+      }),
+    );
+    expect(await within(drawer).findByText('Connection successful')).toBeInTheDocument();
+
+    await userEvent.click(within(drawer).getByRole('button', { name: 'Configure' }));
+    await waitFor(() => expect(mocks.sync.configure).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.getByRole('textbox', { name: 'GitHub repository' })).toHaveValue(''));
+
+    const refreshedDrawer = await screen.findByRole('dialog', { name: 'Sync code' });
+    await userEvent.click(within(refreshedDrawer).getByRole('button', { name: 'Close sync' }));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Sync code' })).not.toBeInTheDocument());
+    expect(screen.getByTestId('location-search')).toHaveTextContent('view=compact');
+    expect(screen.getByTestId('location-search')).toHaveTextContent('repoId=ler_browser_smoke');
+    expect(screen.getByTestId('location-search')).not.toHaveTextContent('panel=sync');
+  });
+
+  it('refreshes list summaries from the server after a sync operation returns an updated repository', async () => {
+    const originalRepo = {
+      id: 'ler_browser_smoke',
+      name: 'browser-smoke',
+      normalizedName: 'browser-smoke',
+      title: 'Browser smoke',
+      description: null,
+      lifecycleStatus: 'enabled' as const,
+      healthStatus: 'ready' as const,
+      headCommitId: 'commit-1',
+      entryCount: 1,
+      entryKinds: { 'js-block': 1 },
+    };
+    mocks.api.listRepos.mockResolvedValueOnce([originalRepo]).mockResolvedValueOnce([
+      {
+        ...originalRepo,
+        headCommitId: 'head-after-pull',
+        entryCount: 3,
+        entryKinds: { 'js-block': 3 },
+      },
+    ]);
+    renderListPage();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Sync code' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Mock Pull result' }));
+
+    await waitFor(() => expect(mocks.api.listRepos).toHaveBeenCalledTimes(2));
+    expect(await screen.findByText('js-block 3')).toBeInTheDocument();
   });
 
   it('edits the repository display name and description in a drawer and refreshes the row immediately', async () => {

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DownOutlined, PlusOutlined, ReloadOutlined, SaveOutlined, UploadOutlined } from '@ant-design/icons';
+import { DownOutlined, PlusOutlined, ReloadOutlined, SaveOutlined } from '@ant-design/icons';
 import {
   CollectionFilter,
   DEFAULT_PAGE_SIZE,
@@ -34,19 +34,30 @@ import {
   Tag,
   theme,
   Typography,
-  Upload,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { MenuProps } from 'antd';
-import type { RcFile } from 'rc-upload/lib/interface';
-import type { UploadFile } from 'antd/es/upload/interface';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 import { NAMESPACE } from '../../constants';
-import type { LightExtensionRepoLifecycleStatus, LightExtensionRepoRecord } from '../../shared/types';
+import type {
+  LightExtensionRepoLifecycleStatus,
+  LightExtensionRepoRecord,
+  LightExtensionSyncSourceSummary,
+} from '../../shared/types';
+import LightExtensionCreateSourceSelector, {
+  type LightExtensionCreateSource,
+} from '../components/LightExtensionCreateSourceSelector';
+import LightExtensionGitSourceFields, {
+  createEmptyLightExtensionGitSourceDraft,
+  type LightExtensionGitHubSourceValue,
+  type LightExtensionGitSourceDraft,
+} from '../components/LightExtensionGitSourceFields';
+import LightExtensionSyncDrawer from '../components/LightExtensionSyncDrawer';
 import { useLightExtensionRepo } from '../hooks/useLightExtensionRepo';
+import { useLightExtensionSync } from '../hooks/useLightExtensionSync';
 import { useT } from '../locale';
 import LightExtensionWorkspacePage, { type LightExtensionWorkspaceFooterActions } from './LightExtensionWorkspacePage';
 
@@ -67,7 +78,8 @@ type Notice = {
 };
 
 type ToggleLifecycleStatus = 'enabled' | 'disabled';
-type DetailPanel = 'source';
+type DetailPanel = 'source' | 'sync';
+type SyncConfigurationRequest = 'test' | 'configure';
 
 const entryKinds = ['js-block', 'js-action', 'js-field', 'js-item', 'runjs'] as const;
 const LIGHT_EXTENSION_REPO_FILTER_COLLECTION = 'lightExtensionRepoFilters';
@@ -160,6 +172,7 @@ function LightExtensionListPageInner() {
     listRepos,
     updateRepo: updateRepoRequest,
   } = useLightExtensionRepo();
+  const { createFromGit: createFromGitRequest } = useLightExtensionSync();
   const [searchParams, setSearchParams] = useSearchParams();
   const [form] = Form.useForm<CreateRepoFormValues>();
   const [editForm] = Form.useForm<EditRepoFormValues>();
@@ -174,9 +187,9 @@ function LightExtensionListPageInner() {
   const [changingRepoIds, setChangingRepoIds] = useState<Set<string>>(() => new Set());
   const [removingRepoIds, setRemovingRepoIds] = useState<Set<string>>(() => new Set());
   const [removeTarget, setRemoveTarget] = useState<LightExtensionRepoRecord | null>(null);
-  const [sourceFileList, setSourceFileList] = useState<UploadFile[]>([]);
-  const [sourceZipBase64, setSourceZipBase64] = useState<string>();
-  const [sourceFileError, setSourceFileError] = useState<string | null>(null);
+  const [createSource, setCreateSource] = useState<LightExtensionCreateSource | undefined>({ mode: 'template' });
+  const [createSourceKey, setCreateSourceKey] = useState(0);
+  const [syncDrawerVersion, setSyncDrawerVersion] = useState(0);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [filterPayload, setFilterPayload] = useState<CompiledFilter>();
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
@@ -185,13 +198,13 @@ function LightExtensionListPageInner() {
   const urlPanel = parseDetailPanel(searchParams.get('panel'));
   const [activePanel, setActivePanel] = useState<DetailPanel | null>(urlPanel);
   const detailDrawerOpen = activePanel === 'source' && Boolean(selectedRepoId);
+  const syncDrawerOpen = activePanel === 'sync' && Boolean(selectedRepoId);
 
   const resetCreateForm = useCallback(() => {
     form.resetFields();
     form.setFieldsValue({ name: createLightExtensionRepoName() });
-    setSourceFileList([]);
-    setSourceZipBase64(undefined);
-    setSourceFileError(null);
+    setCreateSource({ mode: 'template' });
+    setCreateSourceKey((current) => current + 1);
   }, [form]);
 
   const loadRepos = useCallback(async () => {
@@ -248,16 +261,13 @@ function LightExtensionListPageInner() {
 
   const closeCreateModal = useCallback(() => {
     setCreateOpen(false);
-    setSourceFileList([]);
-    setSourceZipBase64(undefined);
-    setSourceFileError(null);
-    form.resetFields();
+    resetCreateForm();
     if (searchParams.has('create')) {
       const nextSearchParams = new URLSearchParams(searchParams);
       nextSearchParams.delete('create');
       setSearchParams(nextSearchParams, { replace: true });
     }
-  }, [form, searchParams, setSearchParams]);
+  }, [resetCreateForm, searchParams, setSearchParams]);
 
   const openCreateModal = useCallback(() => {
     resetCreateForm();
@@ -308,14 +318,30 @@ function LightExtensionListPageInner() {
 
   const createRepo = async () => {
     const values = await form.validateFields();
+    if (!createSource) {
+      return;
+    }
     setCreating(true);
     try {
-      const repo = await createRepoRequest({
+      const metadata = {
         name: values.name.trim(),
         title: values.title.trim(),
         description: values.description?.trim() || null,
-        zipBase64: sourceZipBase64,
-      });
+      };
+      const repo =
+        createSource.mode === 'github'
+          ? (
+              await createFromGitRequest({
+                ...metadata,
+                provider: createSource.provider,
+                config: createSource.config,
+                ...(createSource.authRef ? { authRef: createSource.authRef } : {}),
+              })
+            ).repo
+          : await createRepoRequest({
+              ...metadata,
+              ...(createSource.mode === 'zip' ? { zipBase64: createSource.zipBase64 } : {}),
+            });
       setRepos((current) => [repo, ...current.filter((item) => item.id !== repo.id)]);
       setSelectedRepoId(repo.id);
       const nextSearchParams = new URLSearchParams(searchParams);
@@ -323,13 +349,17 @@ function LightExtensionListPageInner() {
       nextSearchParams.set('repoId', repo.id);
       setSearchParams(nextSearchParams, { replace: true });
       setCreateOpen(false);
-      setSourceFileList([]);
-      setSourceZipBase64(undefined);
-      setSourceFileError(null);
       form.resetFields();
+      setCreateSource({ mode: 'template' });
+      setCreateSourceKey((current) => current + 1);
       setNotice({
         type: 'success',
-        message: sourceZipBase64 ? t('Repository imported and compiled') : t('Repository created and compiled'),
+        message:
+          createSource.mode === 'github'
+            ? t('Repository created from GitHub and compiled')
+            : createSource.mode === 'zip'
+              ? t('Repository imported and compiled')
+              : t('Repository created and compiled'),
       });
     } catch (error) {
       setNotice({ type: 'error', message: error instanceof Error ? error.message : t('Failed to create repository') });
@@ -337,28 +367,6 @@ function LightExtensionListPageInner() {
       setCreating(false);
     }
   };
-
-  const readSourceZip = useCallback(
-    async (file: RcFile) => {
-      setSourceFileError(null);
-      try {
-        const zipBase64 = await readFileAsBase64(file, t('Failed to read source ZIP'));
-        setSourceZipBase64(zipBase64);
-        setSourceFileList([
-          {
-            uid: file.uid,
-            name: file.name,
-            status: 'done',
-          },
-        ]);
-      } catch (error) {
-        setSourceZipBase64(undefined);
-        setSourceFileList([]);
-        setSourceFileError(error instanceof Error ? error.message : t('Failed to read source ZIP'));
-      }
-    },
-    [t],
-  );
 
   const batchChangeLifecycle = useCallback(
     async (lifecycleStatus: ToggleLifecycleStatus) => {
@@ -498,6 +506,31 @@ function LightExtensionListPageInner() {
     [editForm, editTarget, t, updateRepoRequest],
   );
 
+  const handleSyncRepoUpdated = useCallback(
+    (updatedRepo: LightExtensionRepoRecord) => {
+      setRepos((current) => current.map((repo) => (repo.id === updatedRepo.id ? updatedRepo : repo)));
+      loadRepos();
+    },
+    [loadRepos],
+  );
+
+  const handleSyncConfigured = useCallback(
+    (_source: LightExtensionSyncSourceSummary) => {
+      setSyncDrawerVersion((current) => current + 1);
+      setNotice({ type: 'success', message: t('Sync source configured') });
+    },
+    [t],
+  );
+
+  const handleSyncSourceChanged = useCallback(
+    (source: LightExtensionSyncSourceSummary | null) => {
+      if (!source) {
+        setNotice({ type: 'success', message: t('Sync source disconnected') });
+      }
+    },
+    [t],
+  );
+
   const columns = useMemo<ColumnsType<LightExtensionRepoRecord>>(
     () => [
       {
@@ -585,7 +618,7 @@ function LightExtensionListPageInner() {
       {
         title: t('Actions'),
         key: 'actions',
-        width: 240,
+        width: 340,
         render: (_value, repo) => (
           <Space size="small" onClick={(event) => event.stopPropagation()}>
             <Button
@@ -596,6 +629,15 @@ function LightExtensionListPageInner() {
               type="link"
             >
               {t('Edit code')}
+            </Button>
+            <Button
+              aria-label={t('Sync code')}
+              onClick={() => selectRepo(repo.id, { panel: 'sync' })}
+              size="small"
+              style={TABLE_ACTION_BUTTON_STYLE}
+              type="link"
+            >
+              {t('Sync code')}
             </Button>
             <Button
               aria-label={`${t('Edit details')} ${repo.title || repo.name}`}
@@ -703,12 +745,13 @@ function LightExtensionListPageInner() {
           selectedRowKeys,
           onChange: setSelectedRowKeys,
         }}
-        scroll={{ x: 1030 }}
+        scroll={{ x: 1130 }}
         showIndex={false}
       />
 
       <Modal
         confirmLoading={creating}
+        okButtonProps={{ disabled: !createSource }}
         okText={t('Create')}
         onCancel={closeCreateModal}
         onOk={createRepo}
@@ -737,31 +780,7 @@ function LightExtensionListPageInner() {
           <Form.Item label={t('Description')} name="description">
             <Input.TextArea rows={3} />
           </Form.Item>
-          <Form.Item label={t('Source ZIP (optional)')}>
-            <Upload.Dragger
-              accept=".zip,application/zip,application/x-zip-compressed"
-              beforeUpload={async (file) => {
-                await readSourceZip(file);
-                return false;
-              }}
-              fileList={sourceFileList}
-              maxCount={1}
-              onRemove={() => {
-                setSourceFileList([]);
-                setSourceZipBase64(undefined);
-                setSourceFileError(null);
-                return true;
-              }}
-            >
-              <p className="ant-upload-drag-icon">
-                <UploadOutlined />
-              </p>
-              <p className="ant-upload-text">{t('Click or drag a source ZIP file to this area')}</p>
-            </Upload.Dragger>
-            {sourceFileError ? (
-              <Alert message={sourceFileError} showIcon style={{ marginTop: token.marginSM }} type="error" />
-            ) : null}
-          </Form.Item>
+          <LightExtensionCreateSourceSelector disabled={creating} key={createSourceKey} onChange={setCreateSource} />
         </Form>
       </Modal>
 
@@ -861,7 +880,90 @@ function LightExtensionListPageInner() {
       >
         {detailDrawerOpen ? renderDrawerContent() : null}
       </Drawer>
+
+      {selectedRepo ? (
+        <LightExtensionSyncDrawer
+          configurationPanel={
+            <LightExtensionSyncConfigurationPanel onConfigured={handleSyncConfigured} repoId={selectedRepo.id} />
+          }
+          key={`${selectedRepo.id}:${syncDrawerVersion}`}
+          onClose={closeDetailDrawer}
+          onRepoUpdated={handleSyncRepoUpdated}
+          onSyncSourceChanged={handleSyncSourceChanged}
+          open={syncDrawerOpen}
+          repo={selectedRepo}
+        />
+      ) : null}
     </Card>
+  );
+}
+
+interface LightExtensionSyncConfigurationPanelProps {
+  repoId: string;
+  onConfigured: (source: LightExtensionSyncSourceSummary) => void;
+}
+
+function LightExtensionSyncConfigurationPanel({ repoId, onConfigured }: LightExtensionSyncConfigurationPanelProps) {
+  const t = useT();
+  const sync = useLightExtensionSync();
+  const [draft, setDraft] = useState<LightExtensionGitSourceDraft>(createEmptyLightExtensionGitSourceDraft);
+  const [source, setSource] = useState<LightExtensionGitHubSourceValue>();
+  const [request, setRequest] = useState<SyncConfigurationRequest>();
+  const [feedback, setFeedback] = useState<Notice | null>(null);
+  const disabled = Boolean(request);
+
+  const testConnection = async () => {
+    if (!source) {
+      return;
+    }
+    setRequest('test');
+    setFeedback(null);
+    try {
+      await sync.testConnection({ repoId, ...source });
+      setFeedback({ type: 'success', message: t('Connection successful') });
+    } catch {
+      setFeedback({ type: 'error', message: t('Unable to test connection') });
+    } finally {
+      setRequest(undefined);
+    }
+  };
+
+  const configure = async () => {
+    if (!source) {
+      return;
+    }
+    setRequest('configure');
+    setFeedback(null);
+    try {
+      const result = await sync.configure({ repoId, ...source });
+      onConfigured(result.source);
+    } catch {
+      setFeedback({ type: 'error', message: t('Unable to configure sync source') });
+    } finally {
+      setRequest(undefined);
+    }
+  };
+
+  return (
+    <Space direction="vertical" size="middle" style={{ display: 'flex' }}>
+      {feedback ? <Alert message={feedback.message} role="alert" showIcon type={feedback.type} /> : null}
+      <Form layout="vertical">
+        <LightExtensionGitSourceFields
+          disabled={disabled}
+          onChange={setDraft}
+          onValidSourceChange={setSource}
+          value={draft}
+        />
+      </Form>
+      <Space wrap>
+        <Button disabled={!source || disabled} loading={request === 'test'} onClick={testConnection}>
+          {t('Test connection')}
+        </Button>
+        <Button disabled={!source || disabled} loading={request === 'configure'} onClick={configure} type="primary">
+          {t('Configure')}
+        </Button>
+      </Space>
+    </Space>
   );
 }
 
@@ -904,11 +1006,11 @@ function useLightExtensionRepoFilterCollection(): Collection | undefined {
 }
 
 function parseDetailPanel(value: string | null): DetailPanel | null {
-  return value === 'source' ? value : null;
+  return value === 'source' || value === 'sync' ? value : null;
 }
 
 function detailPanelTitle(t: (key: string) => string, panel: DetailPanel): string {
-  return panel === 'source' ? t('Source') : '';
+  return panel === 'source' ? t('Source') : t('Sync code');
 }
 
 function formatDate(value?: string | null): string {
@@ -1143,23 +1245,6 @@ export function matchesLightExtensionRepoFilter(repo: LightExtensionRepoRecord, 
   }
 
   return results.length ? results.every(Boolean) : true;
-}
-
-function readFileAsBase64(file: Blob, errorMessage: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = String(reader.result ?? '');
-      const separatorIndex = result.indexOf(',');
-      if (separatorIndex < 0) {
-        reject(new Error(errorMessage));
-        return;
-      }
-      resolve(result.slice(separatorIndex + 1));
-    };
-    reader.onerror = () => reject(new Error(errorMessage));
-    reader.readAsDataURL(file);
-  });
 }
 
 export function createLightExtensionRepoName(): string {
