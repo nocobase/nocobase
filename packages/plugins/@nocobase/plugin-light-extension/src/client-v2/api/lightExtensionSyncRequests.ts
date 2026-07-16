@@ -100,6 +100,7 @@ export async function requestLightExtensionSync<TAction extends LightExtensionSy
     url: syncActionUrls[action],
     method: 'post',
     data: input,
+    skipNotify: true,
   });
   return unwrapResourceResponse(response);
 }

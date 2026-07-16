@@ -215,10 +215,11 @@ async function getSyncSource(
 ): Promise<LightExtensionSyncGetResult> {
   const repo = await services.repoService.getInternalRepo(requireRepoId(input), ctx);
   const remote = await services.getRemoteSyncRuntime().getRemote(repo.vscRepoId, remoteName);
-  const revision = remote ? await services.getRemoteSyncRuntime().getLatestMappedRevision(remote.id) : null;
+  const activeRemote = remote?.status === 'active' ? remote : null;
+  const revision = activeRemote ? await services.getRemoteSyncRuntime().getLatestMappedRevision(activeRemote.id) : null;
   return {
     repoId: repo.id,
-    source: remote ? toSourceSummary(remote, revision) : null,
+    source: activeRemote ? toSourceSummary(activeRemote, revision) : null,
   };
 }
 
@@ -315,17 +316,18 @@ async function planSync(
 ): Promise<LightExtensionSyncPlanResult> {
   const repo = await services.repoService.getInternalRepo(requireRepoId(input), ctx);
   const remote = await services.getRemoteSyncRuntime().getRemote(repo.vscRepoId, remoteName);
+  const activeRemote = remote?.status === 'active' ? remote : null;
   return runSyncAudit(services, ctx, repo.id, 'syncPlan', async () => {
-    const plan = remote
-      ? await services.getRemoteSyncRuntime().planRemote(remote.id)
+    const plan = activeRemote
+      ? await services.getRemoteSyncRuntime().planRemote(activeRemote.id)
       : await services.getRemoteSyncRuntime().planUnconfigured(repo.vscRepoId);
     return {
       result: {
         repoId: repo.id,
-        source: remote ? toSourceSummary(remote, plan.remote.revision) : null,
+        source: activeRemote ? toSourceSummary(activeRemote, plan.remote.revision) : null,
         plan,
       },
-      audit: planAudit(remote, plan),
+      audit: planAudit(activeRemote, plan),
     };
   });
 }

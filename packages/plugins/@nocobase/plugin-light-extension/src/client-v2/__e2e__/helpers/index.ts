@@ -11,3 +11,4 @@ export * from './api';
 export * from './flowHosts';
 export * from './hostSettings';
 export * from './lightExtensionRepo';
+export * from './lightExtensionSync';

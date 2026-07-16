@@ -221,6 +221,7 @@ describe('LightExtensionSyncDrawer', () => {
     ['LIGHT_EXTENSION_SYNC_AUTH_FAILED', 'GitHub authentication failed'],
     ['LIGHT_EXTENSION_SYNC_REMOTE_UNAVAILABLE', 'The sync provider is unavailable'],
     ['LIGHT_EXTENSION_SYNC_RATE_LIMITED', 'GitHub rate limit reached'],
+    ['LIGHT_EXTENSION_PERMISSION_DENIED', 'You do not have permission to perform this sync operation'],
   ])('maps safe error plan code %s to a user-facing message', async (reasonCode, label) => {
     setPlanResult(createPlan('error', { reasonCode }));
     renderDrawer();

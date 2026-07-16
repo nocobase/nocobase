@@ -80,6 +80,28 @@ describe('lightExtensionSync resource', () => {
     expect(serialized).not.toContain('"authRef":');
   });
 
+  it('treats a soft-disabled remote as unconfigured while retaining its internal baseline', async () => {
+    const disabledRemote = { ...remote, status: 'disabled' as const, authRef: null };
+    const fixture = createFixture({ remote: disabledRemote });
+    const unconfiguredPlan = {
+      ...plan,
+      state: 'unconfigured' as const,
+      action: 'configure' as const,
+      remoteTargetVersion: null,
+      remote: { revision: null, contentHash: null, contentHashKnown: true },
+      baseline: null,
+    };
+    vi.mocked(fixture.runtime.planUnconfigured).mockResolvedValueOnce(unconfiguredPlan);
+
+    const get = await runAction(fixture, 'get', { repoId: repo.id }, ['manageSyncSource']);
+    const planned = await runAction(fixture, 'plan', { repoId: repo.id }, ['manageSyncSource']);
+
+    expect(get.body).toEqual({ repoId: repo.id, source: null });
+    expect(planned.body).toMatchObject({ repoId: repo.id, source: null, plan: { state: 'unconfigured' } });
+    expect(fixture.runtime.planRemote).not.toHaveBeenCalled();
+    expect(fixture.runtime.planUnconfigured).toHaveBeenCalledWith(repo.vscRepoId);
+  });
+
   it('enforces strict input allowlists before calling the runtime', async () => {
     const fixture = createFixture();
     const ctx = await runAction(

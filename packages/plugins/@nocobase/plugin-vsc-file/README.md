@@ -50,3 +50,29 @@ Regression coverage lives in `plugin-vsc-file`'s `RunJSStudioProvider.test.tsx` 
 - Package imports, dynamic imports, namespace imports, CommonJS export assignments, export lists/re-exports, and circular module graphs are rejected.
 - Compilation validates syntax and the RunJS authoring contract, then emits the runtime artifact. It does not create a TypeScript `Program`, resolve external declaration packages, or provide full semantic type checking.
 - The generated line map composes the module transform with TypeScript's transpile source map at line granularity. Synthetic wrapper/import/export lines and column-level locations remain best-effort.
+
+## Remote sync boundary
+
+This package owns the provider-neutral remote synchronization framework used by domain plugins:
+
+- `vscFileRemotes`, `vscFileSyncJobs`, `vscFileExternalCommitMaps`, and `vscFileConflicts` persist remote targets, durable work, synchronization baselines, and unresolved divergence.
+- `RemoteSyncAdapterRegistry` isolates provider implementations. The built-in GitHub adapter and its HTTP client do not participate in local save or compile paths.
+- `SyncStatePlanner` compares the local snapshot, remote snapshot, and last mapped baseline without selecting a domain-specific merge policy.
+- `VscRemotePushService` publishes with compare-and-set semantics and never force-pushes.
+- `VscRemotePullDiscoveryService` pins and validates inbound snapshots, then hands them to an owner-specific apply callback. The owner plugin remains responsible for compiling and committing the snapshot through its normal transaction path.
+- `RemoteReconcileService` recovers durable Push work after interruption. Owner plugins recover Pull apply work because only they can safely rebuild their runtime artifacts.
+
+Domain plugins integrate through `RemoteSyncRuntime`. They must not use the remote collections, internal Resources, provider clients, job claims, or Pull handles as public APIs. Credentials are stored only as `authRef` expressions and are resolved at execution time from a Variables and secrets record whose type is `secret`.
+
+The first provider supports GitHub.com snapshot synchronization for one branch and an optional subdirectory. GitHub Enterprise, GitLab, SSH, Git LFS, submodules, Webhooks, schedules, automatic merging, force push, and full Git history mirroring are outside the first-release contract. See [the remote sync roadmap](./docs/future-runjs-remote-roadmap.md) for the boundary and future work.
+
+Primary assertion coverage:
+
+```bash
+yarn test packages/plugins/@nocobase/plugin-vsc-file/src/server/remotes/__tests__/RemoteSyncAdapterRegistry.test.ts --run
+yarn test packages/plugins/@nocobase/plugin-vsc-file/src/server/remotes/__tests__/SyncStatePlanner.test.ts --run
+yarn test packages/plugins/@nocobase/plugin-vsc-file/src/server/remotes/__tests__/VscRemotePushService.test.ts --run
+yarn test packages/plugins/@nocobase/plugin-vsc-file/src/server/remotes/__tests__/VscRemotePullDiscoveryService.test.ts --run
+yarn test packages/plugins/@nocobase/plugin-vsc-file/src/server/remotes/providers/github/__tests__/GitHubRemoteAdapter.test.ts --run
+yarn test packages/plugins/@nocobase/plugin-vsc-file/src/server/__tests__/remote-plugin-bootstrap.test.ts --run
+```

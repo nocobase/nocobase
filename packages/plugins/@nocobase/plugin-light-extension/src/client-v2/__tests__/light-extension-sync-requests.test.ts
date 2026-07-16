@@ -66,6 +66,7 @@ describe('light-extension sync requests', () => {
       url: `lightExtensionSync:${action}`,
       method: 'post',
       data: input,
+      skipNotify: true,
     });
     expect(request.mock.calls[0][0].url).not.toMatch(/vscFile(?:Remotes|SyncJobs|ExternalCommitMaps|Conflicts)/);
   });
