@@ -569,9 +569,13 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
     }
     if (fieldPath.includes('.')) {
       // 关系数据
+      const collection = this.collection;
+      if (!collection) {
+        return;
+      }
       const [field1, field2] = fieldPath.split('.');
       const associationField = this.context.dataSourceManager.getCollectionField(
-        `${this.collection.dataSourceKey}.${this.collection.name}.${field1}`,
+        `${collection.dataSourceKey}.${collection.name}.${field1}`,
       ) as CollectionField;
       if (!associationField) {
         return;
@@ -583,7 +587,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
       }
 
       const collectionField = this.context.dataSourceManager.getCollectionField(
-        `${this.collection.dataSourceKey}.${targetCollectionName}.${field2}`,
+        `${collection.dataSourceKey}.${targetCollectionName}.${field2}`,
       ) as CollectionField;
 
       if (collectionField && collectionField.isAssociationField()) {
