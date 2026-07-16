@@ -50,6 +50,7 @@ const { Header } = Layout;
 
 export const AI_CHAT_BOX_ACTION_MODEL_NAMES = ['JSActionModel', 'AIEmployeeActionModel'] as const;
 export const AI_CHAT_BOX_BODY_BLOCK_MODEL_NAMES = ['JSBlockModel', 'IframeBlockModel', 'MarkdownBlockModel'] as const;
+export const AI_CHAT_BOX_CORE_MIN_WIDTH = 450;
 
 const nestedChatBoxModelNames = new Set(['AIChatBoxBlockModel', 'AIChatDemoBlockModel']);
 
@@ -305,7 +306,11 @@ const BodySlot: React.FC<{
     const className = isCore ? bodyCoreItemClassName : bodySubModelItemClassName;
 
     return (
-      <div key={subModel.uid} className={className}>
+      <div
+        key={subModel.uid}
+        className={className}
+        style={isCore ? { minWidth: AI_CHAT_BOX_CORE_MIN_WIDTH } : undefined}
+      >
         <Droppable model={subModel}>{renderer}</Droppable>
       </div>
     );

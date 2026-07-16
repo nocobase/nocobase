@@ -13,7 +13,8 @@ import type { FlowModel } from '@nocobase/flow-engine';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { clearMountedChatBoxes, getMountedChatBox } from '../../../ai-employees/chatbox/stores/mounted-chat-boxes';
 import type { AIChatBoxBlockModel } from '../AIChatBoxBlockModel';
-import { AIChatBoxView } from '../components/AIChatBoxView';
+import { AIChatBoxCoreModel } from '../AIChatBoxCoreModel';
+import { AI_CHAT_BOX_CORE_MIN_WIDTH, AIChatBoxView } from '../components/AIChatBoxView';
 
 const mocks = vi.hoisted(() => ({
   runtime: {
@@ -83,6 +84,7 @@ vi.mock('../components/Conversations', () => ({
 const makeModel = (
   props: AIChatBoxBlockModel['props'] = {},
   decoratorProps: AIChatBoxBlockModel['decoratorProps'] = {},
+  bodyBlocks: FlowModel[] = [],
 ): AIChatBoxBlockModel => {
   return {
     uid: 'chat-box-1',
@@ -91,8 +93,15 @@ const makeModel = (
     context: {
       flowSettingsEnabled: false,
     },
-    mapSubModels: (_subKey: string, _callback: (model: FlowModel, index: number) => React.ReactNode) => [],
+    mapSubModels: (subKey: string, callback: (model: FlowModel, index: number) => React.ReactNode) =>
+      subKey === 'bodyBlocks' ? bodyBlocks.map((bodyBlock, index) => callback(bodyBlock, index)) : [],
   } as AIChatBoxBlockModel;
+};
+
+const makeCoreModel = () => {
+  const core = Object.create(AIChatBoxCoreModel.prototype) as FlowModel;
+  Object.defineProperty(core, 'uid', { value: 'core-1' });
+  return core;
 };
 
 describe('AIChatBoxView mounted registry', () => {
@@ -131,5 +140,11 @@ describe('AIChatBoxView mounted registry', () => {
     const { container } = render(<AIChatBoxView model={makeModel({}, { heightMode: 'specifyValue', height: 720 })} />);
 
     expect(container.querySelector('.ant-layout')?.getAttribute('style')).toContain('height: 100%');
+  });
+
+  it('keeps the chat box core wide enough for horizontal scrolling', () => {
+    const { getByTestId } = render(<AIChatBoxView model={makeModel({}, {}, [makeCoreModel()])} />);
+
+    expect(getByTestId('flow-model-renderer').parentElement?.style.minWidth).toBe(`${AI_CHAT_BOX_CORE_MIN_WIDTH}px`);
   });
 });
