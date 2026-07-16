@@ -95,6 +95,7 @@ services:
 - `NOCOBASE_PROXY_UPSTREAM_HOST=app` により、Caddy コンテナは Compose ネットワーク経由で `app` サービスへ接続します
 - `./storage` は `app` と `caddy` の両方にマウントし、プロキシ設定、静的アセット、アップロードファイルを共有できるようにします
 - `caddy` コンテナは `nocobase.caddy` が生成されるまで待機し、その後 `ln -sf` で `/etc/caddy/Caddyfile` にリンクしてから起動します
+- 自動生成される設定は、`APP_PUBLIC_PATH` 配下の `/files/` とルートの `/files/` の両方を NocoBase に転送し、認証付きのファイルプレビューとダウンロードを処理します
 - ホストへ公開するのは Caddy コンテナのポートだけで十分です。テスト時は `13000:80` から始められますが、本番環境では通常ホストの `80` と `443` を直接公開し、`app` サービスはホストへポートを公開する必要はありません
 
 ## ホストにインストールした Caddy を使う場合
@@ -169,6 +170,8 @@ sudo systemctl reload caddy
 ```
 
 ホスト側の Caddy が `/etc/caddy/Caddyfile` を使っていない場合は、リンク先を自分の設定パスに置き換えてください。通常は `nocobase.caddy` を主入口ファイルとしてそのまま使うほうが安全で、内容を手で分解してコピーするのはおすすめしません。
+
+自動生成された設定を使わずに Caddy を自分で管理する場合は、`/files/*` と `APP_PUBLIC_PATH` 配下の対応するルートを、SPA フォールバックルールより前で NocoBase に転送してください。完全な例は [Caddy リバースプロキシ](../../nocobase-cli/production/reverse-proxy/caddy.md)を参照してください。
 
 ## 関連リンク
 

@@ -12,6 +12,7 @@ import { useRequest } from 'ahooks';
 import { useChat } from '../hooks/useChat';
 import { useChatConversationsStore } from '../stores/chat-conversations';
 import type { Attachment } from '../../types';
+import { normalizeAIFileUploadAttachment } from '../utils';
 
 type StorageBasicInfo = {
   rules?: Record<string, unknown>;
@@ -39,10 +40,6 @@ type UploadFileItem = Attachment & {
 type UploadChangeInfo = {
   fileList: UploadFileItem[];
 };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
-}
 
 export function useStorage(storage?: string) {
   const app = useApp();
@@ -121,13 +118,7 @@ export const useUploadFiles = () => {
             if (!file?.response?.data) {
               return file;
             }
-            const meta = file.response.data.meta;
-            const source = isRecord(meta) ? meta.source : undefined;
-            return {
-              ...file.response.data,
-              ...(source ? { source } : {}),
-              status: file.status,
-            };
+            return normalizeAIFileUploadAttachment(file.response.data, file.status);
           }
           return file;
         }),

@@ -9,6 +9,7 @@
 
 import { importModule, Toposort, ToposortOptions } from '@nocobase/utils';
 import glob from 'glob';
+import type * as Koa from 'koa';
 import compose from 'koa-compose';
 import _ from 'lodash';
 import { pathToRegexp } from 'path-to-regexp';
@@ -21,6 +22,8 @@ export interface ResourcerContext {
   action?: Action;
   [key: string]: any;
 }
+
+export interface ResourcerActionContext extends ResourcerContext, Pick<Koa.Context, 'throw'> {}
 
 export interface KoaMiddlewareOptions {
   skipIfDataSourceExists?: boolean;
@@ -140,7 +143,7 @@ export interface ExecuteOptions {
   action: ActionName;
 }
 
-export type HandlerType = (ctx: ResourcerContext, next: () => Promise<any>) => any;
+export type HandlerType = (ctx: ResourcerActionContext, next: () => Promise<any>) => any;
 
 export interface Handlers {
   [key: string]: HandlerType;

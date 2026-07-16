@@ -9,12 +9,103 @@
 
 import { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
 import { Plugin } from '@nocobase/server';
+import { getAuthCookieOptions } from '@nocobase/utils';
+import crypto from 'crypto';
 import { fillParentFields, parseAssociationNames } from './hook';
 
 class PasswordError extends Error {}
 
+const PUBLIC_FORM_COOKIE_PREFIX = 'nb_pf_';
+const PUBLIC_FORM_TOKEN_EXPIRES_IN = '1h';
+const PUBLIC_FORM_COOKIE_MAX_AGE = 60 * 60 * 1000;
+
+type PublicFormTokenPayload = {
+  collectionName: string;
+  formKey: string;
+  targetCollections: string[];
+  exp?: number;
+};
+
+type PublicFormCookiePayload = PublicFormTokenPayload & {
+  v: 1;
+  appName?: string;
+  files: Record<string, Array<string | number>>;
+};
+
+type FileAccessAuthorizeParams = {
+  appName: string;
+  dataSourceKey: string;
+  collectionName: string;
+  id: string;
+  preview: boolean;
+};
+
+type FileAccessAuthorizerPlugin = {
+  registerFileAccessAuthorizer?: (authorizer: {
+    name: string;
+    authorize: (ctx, params: FileAccessAuthorizeParams) => Promise<boolean>;
+  }) => void;
+};
+
+function parseCookieHeader(header: string | undefined) {
+  const cookies: Array<[string, string]> = [];
+  if (!header) {
+    return cookies;
+  }
+
+  for (const item of header.split(';')) {
+    const index = item.indexOf('=');
+    if (index < 0) {
+      continue;
+    }
+    const name = item.slice(0, index).trim();
+    const value = item.slice(index + 1).trim();
+    if (!name) {
+      continue;
+    }
+    try {
+      cookies.push([name, decodeURIComponent(value)]);
+    } catch {
+      cookies.push([name, value]);
+    }
+  }
+
+  return cookies;
+}
+
+function normalizeFiles(value: unknown) {
+  const files: Record<string, Array<string | number>> = {};
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return files;
+  }
+
+  for (const [key, ids] of Object.entries(value)) {
+    if (typeof key !== 'string' || !Array.isArray(ids)) {
+      continue;
+    }
+    files[key] = ids.filter((id): id is string | number => typeof id === 'string' || typeof id === 'number');
+  }
+
+  return files;
+}
+
+function getResponseRecordId(body: unknown) {
+  const responseBody = body && typeof body === 'object' && 'data' in body ? body.data : body;
+  if (!responseBody || typeof responseBody !== 'object') {
+    return null;
+  }
+  if ('get' in responseBody && typeof responseBody.get === 'function') {
+    return responseBody.get('id');
+  }
+  if ('id' in responseBody) {
+    return responseBody.id;
+  }
+  return null;
+}
+
 export class PluginPublicFormsServer extends Plugin {
   protected associationFieldTypes = ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany', 'belongsToArray'];
+  protected fileAccessAuthorizerRegistered = false;
 
   async parseCollectionData(dataSourceKey, formCollection, appends) {
     const dataSource = this.app.dataSourceManager.dataSources.get(dataSourceKey);
@@ -240,26 +331,80 @@ export class PluginPublicFormsServer extends Plugin {
       ]),
     ];
     const collections = await this.parseCollectionData(dataSourceKey, collectionName, appends);
+    const tokenPayload: PublicFormTokenPayload = {
+      collectionName,
+      formKey: filterByTk,
+      targetCollections: appends,
+    };
     return {
       dataSource: {
         key: dataSourceKey,
         displayName: dataSourceKey,
         collections,
       },
-      token: this.app.authManager.jwt.sign(
-        {
-          collectionName,
-          formKey: filterByTk,
-          targetCollections: appends,
-        },
-        {
-          expiresIn: '1h',
-        },
-      ),
+      token: this.app.authManager.jwt.sign(tokenPayload, {
+        expiresIn: PUBLIC_FORM_TOKEN_EXPIRES_IN,
+      }),
       schema,
       flowModel,
       title,
     };
+  }
+
+  getPublicFormCookieName(formKey: string) {
+    const appName = this.app.name || 'main';
+    const hash = crypto.createHash('sha256').update(`${appName}:${formKey}`).digest('hex').slice(0, 32);
+    return `${PUBLIC_FORM_COOKIE_PREFIX}${hash}`;
+  }
+
+  async decodePublicFormCookie(value?: string | null): Promise<PublicFormCookiePayload | null> {
+    if (!value) {
+      return null;
+    }
+    const decoded = await this.app.authManager.jwt.decode(value);
+    if (
+      decoded?.v !== 1 ||
+      typeof decoded.formKey !== 'string' ||
+      typeof decoded.collectionName !== 'string' ||
+      !Array.isArray(decoded.targetCollections)
+    ) {
+      return null;
+    }
+    return {
+      v: 1,
+      appName: typeof decoded.appName === 'string' ? decoded.appName : undefined,
+      formKey: decoded.formKey,
+      collectionName: decoded.collectionName,
+      targetCollections: decoded.targetCollections.filter((name) => typeof name === 'string'),
+      files: normalizeFiles(decoded.files),
+      exp: typeof decoded.exp === 'number' ? decoded.exp : undefined,
+    };
+  }
+
+  async readPublicFormCookie(ctx, formKey: string) {
+    try {
+      return await this.decodePublicFormCookie(ctx.cookies?.get(this.getPublicFormCookieName(formKey)));
+    } catch {
+      return null;
+    }
+  }
+
+  setPublicFormCookie(ctx, payload: PublicFormCookiePayload, maxAge = PUBLIC_FORM_COOKIE_MAX_AGE) {
+    ctx.cookies?.set(
+      this.getPublicFormCookieName(payload.formKey),
+      this.app.authManager.jwt.sign(
+        {
+          v: 1,
+          appName: this.app.name || 'main',
+          formKey: payload.formKey,
+          collectionName: payload.collectionName,
+          targetCollections: payload.targetCollections,
+          files: normalizeFiles(payload.files),
+        },
+        { expiresIn: Math.max(1, Math.floor(maxAge / 1000)) },
+      ),
+      getAuthCookieOptions(ctx, true, maxAge),
+    );
   }
 
   // TODO
@@ -267,7 +412,18 @@ export class PluginPublicFormsServer extends Plugin {
     const token = ctx.get('X-Form-Token');
     const { filterByTk, password } = ctx.action.params;
     try {
+      const existingCookie = password === undefined ? await this.readPublicFormCookie(ctx, filterByTk) : null;
       ctx.body = await this.getMetaByTk(filterByTk, { password, token });
+      if (ctx.body?.token && (password !== undefined || !existingCookie)) {
+        const tokenPayload = (await this.app.authManager.jwt.decode(ctx.body.token)) as PublicFormTokenPayload;
+        this.setPublicFormCookie(ctx, {
+          v: 1,
+          formKey: tokenPayload.formKey,
+          collectionName: tokenPayload.collectionName,
+          targetCollections: tokenPayload.targetCollections,
+          files: existingCookie?.formKey === tokenPayload.formKey ? existingCookie.files : {},
+        });
+      }
     } catch (error) {
       if (error instanceof PasswordError) {
         ctx.throw(401, error.message);
@@ -307,6 +463,7 @@ export class PluginPublicFormsServer extends Plugin {
           collectionName: tokenData.collectionName,
           formKey: tokenData.formKey,
           targetCollections: tokenData.targetCollections,
+          exp: tokenData.exp,
         };
 
         const publicForms = this.db.getRepository('publicForms');
@@ -346,7 +503,7 @@ export class PluginPublicFormsServer extends Plugin {
       };
     } else if (
       (['list', 'get'].includes(actionName) && ctx.PublicForm['targetCollections'].includes(resourceName)) ||
-      (collection?.options.template === 'file' && actionName === 'create') ||
+      (collection?.options.template === 'file' && ['create', 'upload'].includes(actionName)) ||
       (resourceName === 'storages' && ['getBasicInfo', 'createPresignedUrl', 'check'].includes(actionName)) ||
       (resourceName === 'vditor' && ['check'].includes(actionName)) ||
       (resourceName === 'map-configuration' && actionName === 'get')
@@ -357,6 +514,106 @@ export class PluginPublicFormsServer extends Plugin {
     }
     await next();
   };
+
+  appendUploadedFileToPublicFormCookie = async (ctx, next) => {
+    await next();
+
+    if (!ctx.PublicForm || !['create', 'upload'].includes(ctx.action?.actionName)) {
+      return;
+    }
+
+    const collection =
+      ctx.dataSource?.collectionManager?.getCollection(ctx.action.resourceName) ||
+      ctx.db?.getCollection?.(ctx.action.resourceName);
+    if (collection?.options?.template !== 'file') {
+      return;
+    }
+
+    const id = getResponseRecordId(ctx.body);
+    if (id === null || id === undefined || id === '') {
+      return;
+    }
+
+    const formKey = ctx.PublicForm.formKey;
+    const existingCookie = await this.readPublicFormCookie(ctx, formKey);
+    const files = normalizeFiles(existingCookie?.files);
+    const dataSourceKey = ctx.dataSource?.name || ctx.action.params?.dataSourceKey || 'main';
+    const fileKey = `${dataSourceKey}/${collection.name}`;
+    const ids = files[fileKey] || [];
+    if (!ids.some((existingId) => String(existingId) === String(id))) {
+      ids.push(id);
+    }
+    files[fileKey] = ids;
+
+    const expiresAt = existingCookie?.exp || ctx.PublicForm.exp;
+    const maxAge = expiresAt ? expiresAt * 1000 - Date.now() : PUBLIC_FORM_COOKIE_MAX_AGE;
+    if (maxAge <= 0) {
+      return;
+    }
+
+    this.setPublicFormCookie(
+      ctx,
+      {
+        v: 1,
+        formKey,
+        collectionName: ctx.PublicForm.collectionName,
+        targetCollections: ctx.PublicForm.targetCollections || [],
+        files,
+      },
+      maxAge,
+    );
+  };
+
+  authorizePublicFormFileAccess = async (ctx, params: FileAccessAuthorizeParams) => {
+    const cookies = parseCookieHeader(ctx.get?.('cookie'));
+    const fileKey = `${params.dataSourceKey}/${params.collectionName}`;
+
+    for (const [name, value] of cookies) {
+      if (!name.startsWith(PUBLIC_FORM_COOKIE_PREFIX)) {
+        continue;
+      }
+      try {
+        const payload = await this.decodePublicFormCookie(value);
+        if (!payload) {
+          continue;
+        }
+        if (payload.appName && payload.appName !== params.appName) {
+          continue;
+        }
+        if (payload.files[fileKey]?.some((id) => String(id) === String(params.id))) {
+          const instance = await this.db.getRepository('publicForms').findOne({
+            filter: {
+              key: payload.formKey,
+            },
+          });
+          if (instance?.get('enabled')) {
+            return true;
+          }
+        }
+      } catch {
+        continue;
+      }
+    }
+
+    return false;
+  };
+
+  registerFileAccessAuthorizer() {
+    if (this.fileAccessAuthorizerRegistered) {
+      return;
+    }
+    const fileManager = (this.app.pm.get('file-manager') || this.app.pm.get('@nocobase/plugin-file-manager')) as
+      | FileAccessAuthorizerPlugin
+      | undefined;
+    if (typeof fileManager?.registerFileAccessAuthorizer !== 'function') {
+      return;
+    }
+    fileManager.registerFileAccessAuthorizer({
+      name: 'public-forms',
+      authorize: this.authorizePublicFormFileAccess,
+    });
+    this.fileAccessAuthorizerRegistered = true;
+  }
 
   async load() {
     this.app.acl.registerSnippet({
@@ -369,9 +626,16 @@ export class PluginPublicFormsServer extends Plugin {
       'publicForms:getMeta': this.getPublicFormsMeta,
       'publicForms:getFlowModel': this.getPublicFormFlowModel,
     });
+    this.registerFileAccessAuthorizer();
+    this.app.on('afterLoad', () => {
+      this.registerFileAccessAuthorizer();
+    });
     this.app.dataSourceManager.afterAddDataSource((dataSource) => {
       dataSource.resourceManager.use(this.parseToken, {
         before: 'auth',
+      });
+      dataSource.resourceManager.use(this.appendUploadedFileToPublicFormCookie, {
+        after: 'acl',
       });
       dataSource.acl.use(this.parseACL, {
         before: 'core',
