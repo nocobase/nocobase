@@ -127,14 +127,20 @@ export default class PostgresQueryInterface extends QueryInterface {
     return await this.db.sequelize.query(sql, { type: 'SELECT' });
   }
 
-  async viewDef(viewName: string) {
-    const [schema, name] = viewName.split('.');
+  async viewDef(options: { viewName: string; schema?: string }) {
+    const { viewName, schema = this.db.options.schema || 'public' } = options;
 
     const viewDefQuery = await this.db.sequelize.query(
       `
-    select pg_get_viewdef(format('%I.%I', '${schema}', '${name}')::regclass, true) as definition
+    select pg_get_viewdef(format('%I.%I', :schema, :viewName)::regclass, true) as definition
     `,
-      { type: 'SELECT' },
+      {
+        replacements: {
+          schema,
+          viewName,
+        },
+        type: 'SELECT',
+      },
     );
 
     return lodash.trim(viewDefQuery[0]['definition']);
@@ -146,7 +152,7 @@ export default class PostgresQueryInterface extends QueryInterface {
     });
   }
 
-  async viewColumnUsage(options): Promise<{
+  async viewColumnUsage(options: { viewName: string; schema?: string }): Promise<{
     [view_column_name: string]: {
       column_name: string;
       table_name: string;
@@ -157,17 +163,23 @@ export default class PostgresQueryInterface extends QueryInterface {
     const sql = `
       SELECT *
       FROM information_schema.view_column_usage
-      WHERE view_schema = '${schema}'
-        AND view_name = '${viewName}';
+      WHERE view_schema = :schema
+        AND view_name = :viewName;
     `;
 
-    const columnUsages = (await this.db.sequelize.query(sql, { type: 'SELECT' })) as Array<{
+    const columnUsages = (await this.db.sequelize.query(sql, {
+      replacements: {
+        schema,
+        viewName,
+      },
+      type: 'SELECT',
+    })) as Array<{
       column_name: string;
       table_name: string;
       table_schema: string;
     }>;
 
-    const def = await this.viewDef(`${schema}.${viewName}`);
+    const def = await this.viewDef({ schema, viewName });
 
     try {
       const { ast } = this.parseSQL(def);

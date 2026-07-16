@@ -155,4 +155,40 @@ describe('view inference', function () {
 
     await db.sequelize.query(dropViewSQL);
   });
+
+  it('should safely infer fields from a view name with SQL metacharacters', async () => {
+    const UserCollection = db.collection({
+      name: 'users',
+      fields: [
+        {
+          name: 'name',
+          type: 'string',
+          interface: 'test',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    const viewName = "x.v1' UNION SELECT 1,2,3,4,5,6,7--";
+    const viewSchema = db.inDialect('postgres') ? 'public' : undefined;
+    const tableName = viewSchema ? db.utils.addSchema(viewName, viewSchema) : viewName;
+    const quotedViewName = db.utils.quoteTable(tableName);
+    const dropViewSQL = `DROP VIEW IF EXISTS ${quotedViewName}`;
+
+    await db.sequelize.query(dropViewSQL);
+    await db.sequelize.query(
+      `CREATE VIEW ${quotedViewName} AS SELECT users.name AS safe_name FROM ${UserCollection.quotedTableName()} AS users`,
+    );
+
+    const inferredFields = await ViewFieldInference.inferFields({
+      db,
+      viewName,
+      viewSchema,
+    });
+
+    expect(inferredFields.safe_name).toBeDefined();
+
+    await db.sequelize.query(dropViewSQL);
+  });
 });

@@ -27,7 +27,7 @@ export default abstract class QueryInterface {
 
   abstract listViews(options?: { schema?: string });
 
-  abstract viewDef(viewName: string): Promise<string>;
+  abstract viewDef(options: { viewName: string; schema?: string }): Promise<string>;
 
   abstract viewColumnUsage(options: { viewName: string; schema?: string }): Promise<{
     [view_column_name: string]: {
