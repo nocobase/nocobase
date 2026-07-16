@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { RemoteSyncErrorCode } from '@nocobase/plugin-vsc-file';
+
 export type LightExtensionErrorCode =
   | 'LIGHT_EXTENSION_INVALID_INPUT'
   | 'LIGHT_EXTENSION_REPO_CONFLICT'
@@ -23,7 +25,20 @@ export type LightExtensionErrorCode =
   | 'LIGHT_EXTENSION_SETTINGS_INVALID'
   | 'LIGHT_EXTENSION_PERMISSION_DENIED'
   | 'LIGHT_EXTENSION_VALIDATION_FAILED'
-  | 'LIGHT_EXTENSION_SOURCE_ERROR';
+  | 'LIGHT_EXTENSION_SOURCE_ERROR'
+  | 'LIGHT_EXTENSION_SYNC_UNSUPPORTED_PROVIDER'
+  | 'LIGHT_EXTENSION_SYNC_CREDENTIAL_UNAVAILABLE'
+  | 'LIGHT_EXTENSION_SYNC_AUTH_FAILED'
+  | 'LIGHT_EXTENSION_SYNC_REMOTE_NOT_FOUND'
+  | 'LIGHT_EXTENSION_SYNC_RATE_LIMITED'
+  | 'LIGHT_EXTENSION_SYNC_REMOTE_CHANGED'
+  | 'LIGHT_EXTENSION_SYNC_DIVERGED'
+  | 'LIGHT_EXTENSION_SYNC_BUSY'
+  | 'LIGHT_EXTENSION_SYNC_UNSAFE_CONTENT'
+  | 'LIGHT_EXTENSION_SYNC_REMOTE_UNAVAILABLE'
+  | 'LIGHT_EXTENSION_SYNC_LOCAL_OUTDATED'
+  | 'LIGHT_EXTENSION_SYNC_CONFIG_INVALID'
+  | 'LIGHT_EXTENSION_SYNC_AUTH_REF_INVALID';
 
 export interface LightExtensionErrorOptions {
   details?: Record<string, unknown>;
@@ -47,7 +62,77 @@ const defaultStatusByCode: Record<LightExtensionErrorCode, number> = {
   LIGHT_EXTENSION_PERMISSION_DENIED: 403,
   LIGHT_EXTENSION_VALIDATION_FAILED: 422,
   LIGHT_EXTENSION_SOURCE_ERROR: 500,
+  LIGHT_EXTENSION_SYNC_UNSUPPORTED_PROVIDER: 422,
+  LIGHT_EXTENSION_SYNC_CREDENTIAL_UNAVAILABLE: 422,
+  LIGHT_EXTENSION_SYNC_AUTH_FAILED: 422,
+  LIGHT_EXTENSION_SYNC_REMOTE_NOT_FOUND: 404,
+  LIGHT_EXTENSION_SYNC_RATE_LIMITED: 429,
+  LIGHT_EXTENSION_SYNC_REMOTE_CHANGED: 409,
+  LIGHT_EXTENSION_SYNC_DIVERGED: 409,
+  LIGHT_EXTENSION_SYNC_BUSY: 409,
+  LIGHT_EXTENSION_SYNC_UNSAFE_CONTENT: 422,
+  LIGHT_EXTENSION_SYNC_REMOTE_UNAVAILABLE: 502,
+  LIGHT_EXTENSION_SYNC_LOCAL_OUTDATED: 409,
+  LIGHT_EXTENSION_SYNC_CONFIG_INVALID: 422,
+  LIGHT_EXTENSION_SYNC_AUTH_REF_INVALID: 422,
 };
+
+export const LIGHT_EXTENSION_SYNC_ERROR_CODE_BY_REMOTE_CODE = {
+  UNSUPPORTED_PROVIDER: 'LIGHT_EXTENSION_SYNC_UNSUPPORTED_PROVIDER',
+  CREDENTIAL_UNAVAILABLE: 'LIGHT_EXTENSION_SYNC_CREDENTIAL_UNAVAILABLE',
+  AUTH_FAILED: 'LIGHT_EXTENSION_SYNC_AUTH_FAILED',
+  REMOTE_NOT_FOUND: 'LIGHT_EXTENSION_SYNC_REMOTE_NOT_FOUND',
+  RATE_LIMITED: 'LIGHT_EXTENSION_SYNC_RATE_LIMITED',
+  REMOTE_CHANGED: 'LIGHT_EXTENSION_SYNC_REMOTE_CHANGED',
+  DIVERGED: 'LIGHT_EXTENSION_SYNC_DIVERGED',
+  BUSY: 'LIGHT_EXTENSION_SYNC_BUSY',
+  UNSAFE_CONTENT: 'LIGHT_EXTENSION_SYNC_UNSAFE_CONTENT',
+  REMOTE_UNAVAILABLE: 'LIGHT_EXTENSION_SYNC_REMOTE_UNAVAILABLE',
+  PERMISSION_DENIED: 'LIGHT_EXTENSION_PERMISSION_DENIED',
+  REPO_ARCHIVED: 'LIGHT_EXTENSION_REPO_ARCHIVED',
+  LOCAL_OUTDATED: 'LIGHT_EXTENSION_SYNC_LOCAL_OUTDATED',
+  CONFIG_INVALID: 'LIGHT_EXTENSION_SYNC_CONFIG_INVALID',
+  AUTH_REF_INVALID: 'LIGHT_EXTENSION_SYNC_AUTH_REF_INVALID',
+} as const satisfies Record<RemoteSyncErrorCode, LightExtensionErrorCode>;
+
+type LightExtensionSyncErrorDetailValue = string | number | boolean | null;
+
+export interface RemoteSyncErrorLike {
+  code: RemoteSyncErrorCode;
+  message?: string;
+  details?: Record<string, unknown>;
+}
+
+const safeRemoteDetailKeys = new Set([
+  'provider',
+  'operation',
+  'reasonCode',
+  'retryAfterSeconds',
+  'remoteTargetVersion',
+  'expectedRemoteRevision',
+  'currentRemoteRevision',
+  'expectedHeadCommitId',
+  'currentHeadCommitId',
+]);
+
+function sanitizeRemoteSyncErrorDetails(
+  error: RemoteSyncErrorLike,
+): Record<string, LightExtensionSyncErrorDetailValue> {
+  const details: Record<string, LightExtensionSyncErrorDetailValue> = {
+    sourceCode: error.code,
+  };
+
+  for (const [key, value] of Object.entries(error.details || {})) {
+    if (!safeRemoteDetailKeys.has(key)) {
+      continue;
+    }
+    if (value === null || ['string', 'number', 'boolean'].includes(typeof value)) {
+      details[key] = value as LightExtensionSyncErrorDetailValue;
+    }
+  }
+
+  return details;
+}
 
 export class LightExtensionError extends Error {
   public readonly code: LightExtensionErrorCode;
@@ -61,7 +146,7 @@ export class LightExtensionError extends Error {
     this.name = 'LightExtensionError';
     this.code = code;
     this.details = options.details;
-    this.status = options.status || defaultStatusByCode[code];
+    this.status = options.status ?? defaultStatusByCode[code];
   }
 
   toResponseBody() {
@@ -80,4 +165,17 @@ export class LightExtensionError extends Error {
 
 export function isLightExtensionError(error: unknown): error is LightExtensionError {
   return error instanceof LightExtensionError;
+}
+
+/**
+ * Convert the provider-neutral VSC error into the stable light-extension facade contract. Authentication failures
+ * intentionally use a domain 422 response instead of a bare 401, so clients do not mistake a provider credential
+ * failure for an expired NocoBase login. Raw provider errors, causes, requests, responses, headers, and configs are
+ * never copied across this boundary.
+ */
+export function mapRemoteSyncErrorToLightExtension(error: RemoteSyncErrorLike): LightExtensionError {
+  const code = LIGHT_EXTENSION_SYNC_ERROR_CODE_BY_REMOTE_CODE[error.code];
+  return new LightExtensionError(code, code, {
+    details: sanitizeRemoteSyncErrorDetails(error),
+  });
 }

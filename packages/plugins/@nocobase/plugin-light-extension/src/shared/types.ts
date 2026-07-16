@@ -14,7 +14,16 @@ import type {
   LIGHT_EXTENSION_REFERENCE_RESOLVED_STATUSES,
   LightExtensionKind,
 } from '../constants';
-import type { RunJSSourceLocator } from '@nocobase/plugin-vsc-file';
+import type {
+  RunJSSourceLocator,
+  VscGitHubRemoteConfig,
+  VscRemotePlannerAction,
+  VscRemotePlannerLocalSummary,
+  VscRemotePlannerRemoteSummary,
+  VscRemotePlannerState,
+  VscRemoteProvider,
+  VscRemoteSyncPlan,
+} from '@nocobase/plugin-vsc-file';
 
 export type { LightExtensionKind } from '../constants';
 
@@ -554,3 +563,152 @@ export interface LightExtensionReferenceRebuildResult {
   statusCounts: Partial<Record<LightExtensionReferenceResolvedStatus, number>>;
   items?: LightExtensionReferenceRebuildItem[];
 }
+
+/**
+ * The provider-neutral remote framework, snapshots, jobs, mappings, and conflicts belong to plugin-vsc-file. This
+ * facade deliberately exposes only a light-extension repository id and safe remote summaries. The internal VSC
+ * repository remains the authoritative local source, while synchronization exchanges source snapshots rather than
+ * attempting to mirror provider history.
+ */
+export type LightExtensionSyncProvider = VscRemoteProvider;
+
+export type LightExtensionSyncState = VscRemotePlannerState;
+
+export type LightExtensionSyncAction = VscRemotePlannerAction;
+
+export type LightExtensionSyncSourceStatus = 'active' | 'disabled';
+
+export interface LightExtensionSyncRemoteTarget {
+  provider: LightExtensionSyncProvider;
+  config: VscGitHubRemoteConfig;
+}
+
+export interface LightExtensionSyncSourceSummary extends LightExtensionSyncRemoteTarget {
+  status: LightExtensionSyncSourceStatus;
+  remoteTargetVersion: number;
+  revision: string | null;
+  credentialConfigured: boolean;
+  authRefDisplay: string | null;
+  lastSyncedAt?: string | null;
+}
+
+export interface LightExtensionSyncGetInput {
+  repoId: string;
+}
+
+export interface LightExtensionSyncGetResult {
+  repoId: string;
+  source: LightExtensionSyncSourceSummary | null;
+}
+
+export interface LightExtensionSyncConfigureInput extends LightExtensionSyncGetInput, LightExtensionSyncRemoteTarget {
+  authRef?: string;
+}
+
+export interface LightExtensionSyncConfigureResult {
+  repoId: string;
+  source: LightExtensionSyncSourceSummary;
+}
+
+export type LightExtensionSyncDisconnectInput = LightExtensionSyncGetInput;
+
+export interface LightExtensionSyncDisconnectResult {
+  repoId: string;
+  source: null;
+}
+
+export interface LightExtensionSyncTestConnectionInput extends LightExtensionSyncGetInput {
+  provider?: LightExtensionSyncProvider;
+  config?: VscGitHubRemoteConfig;
+  authRef?: string;
+}
+
+export interface LightExtensionSyncTestConnectionResult {
+  ok: true;
+  provider: LightExtensionSyncProvider;
+  config: VscGitHubRemoteConfig;
+  revision: string | null;
+  credentialConfigured: boolean;
+  authRefDisplay: string | null;
+}
+
+export type LightExtensionSyncPlanInput = LightExtensionSyncGetInput;
+
+export type LightExtensionSyncPlanLocalSummary = VscRemotePlannerLocalSummary;
+
+export type LightExtensionSyncPlanRemoteSummary = VscRemotePlannerRemoteSummary;
+
+export type LightExtensionSyncPlan = VscRemoteSyncPlan;
+
+export interface LightExtensionSyncPlanResult {
+  repoId: string;
+  source: LightExtensionSyncSourceSummary | null;
+  plan: LightExtensionSyncPlan;
+}
+
+export interface LightExtensionSyncExecutionInput extends LightExtensionSyncGetInput {
+  expectedHeadCommitId: string | null;
+  expectedRemoteRevision: string | null;
+  expectedRemoteTargetVersion: number;
+  planFingerprint: string;
+}
+
+export type LightExtensionSyncPullInput = LightExtensionSyncExecutionInput;
+
+export type LightExtensionSyncPushInput = LightExtensionSyncExecutionInput;
+
+export interface LightExtensionSyncOperationResult {
+  repo: LightExtensionRepoRecord;
+  source: LightExtensionSyncSourceSummary;
+  plan: LightExtensionSyncPlan;
+}
+
+export type LightExtensionSyncPullResult = LightExtensionSyncOperationResult;
+
+export type LightExtensionSyncPushResult = LightExtensionSyncOperationResult;
+
+export interface LightExtensionSyncCreateFromGitInput extends LightExtensionSyncRemoteTarget {
+  name: string;
+  title?: string | null;
+  description?: string | null;
+  authRef?: string;
+}
+
+export type LightExtensionSyncCreateFromGitResult = LightExtensionSyncOperationResult;
+
+export interface LightExtensionSyncActionContract {
+  get: {
+    input: LightExtensionSyncGetInput;
+    result: LightExtensionSyncGetResult;
+  };
+  configure: {
+    input: LightExtensionSyncConfigureInput;
+    result: LightExtensionSyncConfigureResult;
+  };
+  disconnect: {
+    input: LightExtensionSyncDisconnectInput;
+    result: LightExtensionSyncDisconnectResult;
+  };
+  testConnection: {
+    input: LightExtensionSyncTestConnectionInput;
+    result: LightExtensionSyncTestConnectionResult;
+  };
+  plan: {
+    input: LightExtensionSyncPlanInput;
+    result: LightExtensionSyncPlanResult;
+  };
+  pull: {
+    input: LightExtensionSyncPullInput;
+    result: LightExtensionSyncPullResult;
+  };
+  push: {
+    input: LightExtensionSyncPushInput;
+    result: LightExtensionSyncPushResult;
+  };
+  createFromGit: {
+    input: LightExtensionSyncCreateFromGitInput;
+    result: LightExtensionSyncCreateFromGitResult;
+  };
+}
+
+export type LightExtensionSyncActionName = keyof LightExtensionSyncActionContract;
