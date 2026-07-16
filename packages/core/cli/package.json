@@ -244,6 +244,32 @@
               "gt": "1.0.20"
             }
           }
+        },
+        {
+          "code": "RUN_JS_SOURCES_OLD_APP_NEW_SKILLS_UNSUPPORTED",
+          "target": {
+            "commandPrefix": "run-js-sources"
+          },
+          "when": {
+            "appByChannel": {
+              "stable": {
+                "lt": "2.2.0"
+              },
+              "beta": {
+                "lt": "2.2.0-beta.16"
+              },
+              "alpha": {
+                "lt": "2.2.0-alpha.9"
+              },
+              "rc": {
+                "lt": "2.2.0"
+              },
+              "unknownPrerelease": "block"
+            },
+            "skills": {
+              "gt": "1.0.20"
+            }
+          }
         }
       ]
     }

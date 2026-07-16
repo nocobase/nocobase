@@ -1297,11 +1297,12 @@ function exportSimpleBlockSettings(block: FlowSurfaceExportNode, type: string) {
     const jsSettings = getByPath<Record<string, unknown>>(block, ['stepParams', 'jsSettings']) || {};
     const runJs = clonePlainObject(jsSettings.runJs);
     const showBlockCard = getByPath(block, ['stepParams', 'jsSettings', 'showBlockCard', 'showBlockCard']);
-    const sourceBinding = clonePlainObject(jsSettings.sourceBinding);
-    const instanceSettings = clonePlainObject(jsSettings.settings);
+    const sourceMode = readString(runJs?.sourceMode) || readString(jsSettings.sourceMode);
+    const sourceBinding = clonePlainObject(runJs?.sourceBinding) || clonePlainObject(jsSettings.sourceBinding);
+    const instanceSettings = clonePlainObject(runJs?.settings) || clonePlainObject(jsSettings.settings);
     const settings = buildDefinedPayload({
       ...(runJs || {}),
-      sourceMode: readString(jsSettings.sourceMode),
+      sourceMode,
       sourceBinding,
       settings: instanceSettings,
       showBlockCard: showBlockCard === false ? false : undefined,

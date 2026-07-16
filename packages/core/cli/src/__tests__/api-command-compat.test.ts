@@ -549,3 +549,44 @@ test('published CLI package allows light-extension commands at the app floor and
     }),
   ).toBeUndefined();
 });
+
+test('published CLI package guards RunJS source authoring on old apps with new skills', () => {
+  const packageJson = JSON.parse(readFileSync(resolve('packages/core/cli/package.json'), 'utf8')) as unknown;
+
+  const violation = findApiCommandCompatViolation({
+    packageJson,
+    commandId: 'run-js-sources save',
+    cliVersion: '2.2.0-beta.16',
+    appVersion: '2.2.0-beta.15',
+    skillsVersion: '1.0.21',
+  });
+
+  expect(violation?.rule.code).toBe('RUN_JS_SOURCES_OLD_APP_NEW_SKILLS_UNSUPPORTED');
+  if (!violation) {
+    throw new Error('Expected a RunJS source compatibility violation.');
+  }
+  expect(formatApiCommandCompatViolation(violation)).toContain('upgrade the app to >= 2.2.0-beta.16');
+});
+
+test('published CLI package allows RunJS source authoring at the app floor and with legacy skills', () => {
+  const packageJson = JSON.parse(readFileSync(resolve('packages/core/cli/package.json'), 'utf8')) as unknown;
+
+  expect(
+    findApiCommandCompatViolation({
+      packageJson,
+      commandId: 'run-js-sources save',
+      cliVersion: '2.2.0-beta.16',
+      appVersion: '2.2.0-beta.16',
+      skillsVersion: '1.0.21',
+    }),
+  ).toBeUndefined();
+  expect(
+    findApiCommandCompatViolation({
+      packageJson,
+      commandId: 'run-js-sources compile-preview',
+      cliVersion: '2.2.0-beta.16',
+      appVersion: '2.2.0-beta.15',
+      skillsVersion: '1.0.20',
+    }),
+  ).toBeUndefined();
+});

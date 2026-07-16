@@ -2,6 +2,31 @@
   "name": "@nocobase/plugin-vsc-file",
   "version": "2.2.0-beta.11",
   "main": "dist/server/index.js",
+  "exports": {
+    ".": {
+      "types": "./server.d.ts",
+      "import": "./dist/server/index.js",
+      "require": "./dist/server/index.js"
+    },
+    "./client": {
+      "types": "./client.d.ts",
+      "import": "./client.js",
+      "require": "./client.js"
+    },
+    "./client-v2": {
+      "types": "./client-v2.d.ts",
+      "import": "./client-v2.js",
+      "require": "./client-v2.js"
+    },
+    "./server": {
+      "types": "./server.d.ts",
+      "import": "./server.js",
+      "require": "./server.js"
+    },
+    "./package.json": "./package.json",
+    "./dist/*": "./dist/*",
+    "./src/*": "./src/*"
+  },
   "devDependencies": {
     "jszip": "^3.10.1",
     "typescript": "^5.x"

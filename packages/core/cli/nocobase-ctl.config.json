@@ -11,6 +11,10 @@
     {
       "match": ["@nocobase/plugin-light-extension"],
       "module": "light-extension"
+    },
+    {
+      "match": ["@nocobase/plugin-vsc-file"],
+      "module": "run-js"
     }
   ],
   "modules": {
@@ -218,6 +222,30 @@
             "name": "flow-surfaces",
             "description": "Compose and mutate page, tab, block, field, and action surfaces.",
             "topLevel": true
+          }
+        }
+      }
+    },
+    "run-js": {
+      "name": "run-js",
+      "description": "Open, preview, and save owner-aware RunJS Studio source workspaces.",
+      "include": true,
+      "resources": {
+        "includes": ["runJSSources"],
+        "excludes": [],
+        "overrides": {
+          "runJSSources": {
+            "name": "run-js-sources",
+            "description": "Author one ordinary RunJS owner's complete multi-file workspace.",
+            "topLevel": true,
+            "operations": {
+              "includes": [
+                "runJSSources:open",
+                "runJSSources:openLatest",
+                "runJSSources:compilePreview",
+                "runJSSources:save"
+              ]
+            }
           }
         }
       }
