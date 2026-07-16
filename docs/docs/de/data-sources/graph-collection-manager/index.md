@@ -1,18 +1,17 @@
 ---
 pkg: "@nocobase/plugin-graph-collection-manager"
-title: "Visuelle Verwaltung von Datentabellen"
-description: "Ein visuelles Tool zur Verwaltung von Datentabellen ähnlich einem ER-Diagramm. Es unterstützt die Hauptdatenbank, stellt Entitäten und Beziehungen übersichtlich dar und leitet Datenmodelle aus Geschäftsanforderungen ab."
-keywords: "ER-Diagramm,visuelle Datentabellen,Datenmodellierung,Entity-Relationship-Diagramm,Graph Collection,NocoBase"
 ---
-# Visuelle Verwaltung von Datentabellen
+
+
+# Visuelle Sammlungsverwaltung
 
 ## Einführung
 
-Ein Tool ähnlich einem ER-Diagramm, das derzeit nur die Hauptdatenbank unterstützt.
+Dieses Tool ähnelt ER-Diagrammen und unterstützt aktuell nur die Hauptdatenbank.
 
 ## Installation
 
-Ein vorinstalliertes Plugin, das vor der Verwendung aktiviert werden muss.
+Dieses vorinstallierte Plugin muss vor der Verwendung aktiviert werden.
 
 ![20240322221627](https://static-docs.nocobase.com/20240322221627.png)
 

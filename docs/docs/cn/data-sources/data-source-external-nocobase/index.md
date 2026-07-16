@@ -18,10 +18,10 @@ keywords: '外部 NocoBase,NocoBase 数据源,数据源管理,工作流,NocoBase
 
 | 配置项   | 说明                                                                                           |
 | -------- | ---------------------------------------------------------------------------------------------- |
-| API 地址 | 远端 NocoBase 应用的完整 API 地址，比如 `https://example.com/api`                              |
-| Origin   | 远端 NocoBase 应用的访问源，比如 `https://example.com`，主要用于处理远端应用的本地文件预览地址 |
+| API 地址 | 远端 NocoBase 应用的完整 API 地址，例如 `https://example.com/api`                              |
+| Origin   | 远端 NocoBase 应用的访问源，例如 `https://example.com`，主要用于处理远端应用的本地文件预览地址 |
 | API key  | 当前应用访问远端 NocoBase 时使用的凭证                                                         |
-| 请求头   | 需要额外传给远端应用的请求头，比如空间等信息                                                   |
+| 请求头   | 需要额外传给远端应用的请求头，例如空间等信息                                                   |
 | 超时时间 | 访问远端应用的请求超时时间                                                                     |
 
 启用数据源后，系统会加载远端应用的数据表。
@@ -65,7 +65,7 @@ keywords: '外部 NocoBase,NocoBase 数据源,数据源管理,工作流,NocoBase
 
 文件会上传到远端应用使用的存储中。当前应用负责发起上传、预览和下载请求，文件本身不保存到当前应用。
 
-Origin 主要用于处理远端应用本地存储文件的预览地址。如果远端返回的是相对路径，当前应用会使用 Origin 补全文件访问地址。Origin 应填写远端 NocoBase 应用的公开访问地址，比如：
+Origin 主要用于处理远端应用本地存储文件的预览地址。如果远端返回的是相对路径，当前应用会使用 Origin 补全文件访问地址。Origin 应填写远端 NocoBase 应用的公开访问地址，例如：
 
 ```text
 https://example.com

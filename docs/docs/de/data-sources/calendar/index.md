@@ -1,37 +1,34 @@
 ---
 pkg: "@nocobase/plugin-calendar"
-title: "Kalenderblock"
-description: "Der Kalenderblock zeigt Ereignis- und Datumsdaten in einer Kalenderansicht an und eignet sich für die Planung von Besprechungen und Aktivitäten. Konfigurierbar sind Titelfeld, Start-/Endzeit, Mondkalender und Datenbereich."
-keywords: "Kalenderblock, Kalenderansicht, Ereignis, Besprechungsplanung, Calendar, NocoBase"
 ---
-# Kalenderblock
+
+# Kalender-Block
 
 ## Einführung
 
-Der Kalenderblock zeigt ereignis- und datumsbezogene Daten in einer Kalenderansicht an und eignet sich für Szenarien wie die Planung von Besprechungen und Aktivitäten.
+Der Kalender-Block bietet eine optimierte Möglichkeit, Ereignisse und datumsbezogene Daten in einem Kalenderformat anzuzeigen und zu verwalten. Er eignet sich hervorragend für die Terminplanung, Veranstaltungsplanung und effiziente Zeitverwaltung.
 
 ## Installation
 
-Integriertes Plugin, keine Installation erforderlich.
+Dieses Plugin ist vorinstalliert, sodass keine zusätzliche Einrichtung erforderlich ist.
 
-## Block hinzufügen
+## Blöcke hinzufügen
 
 ![20250403220300](https://static-docs.nocobase.com/20250403220300.png)
 
-1. Titelfeld: Die Informationen, die in der Kalenderleiste angezeigt werden; derzeit werden die Feldtypen `input`, `select`, `phone`, `email`, `radioGroup` und `sequence` unterstützt. Die unterstützten Titelfeldtypen des Kalenderblocks können über Plugins erweitert werden.
-2. Startzeit: Die Startzeit der Aufgabe;
-3. Endzeit: Die Endzeit der Aufgabe;
+1.  **Titel-Feld**: Dient zur Anzeige von Informationen in den Kalenderbalken. Derzeit werden Feldtypen wie `input`, `select`, `phone`, `email`, `radioGroup` und `sequence` unterstützt. Die unterstützten Titel-Feldtypen können durch Plugins erweitert werden.
+2.  **Startzeit**: Zeigt an, wann die Aufgabe beginnt.
+3.  **Endzeit**: Markiert, wann die Aufgabe endet.
 
 <video width="100%" height="440" controls>
       <source src="https://static-docs.nocobase.com/20240419201640.mp4" type="video/mp4">
 </video>
 
-
-Klicken Sie auf die Aufgabenleiste. Die entsprechende Aufgabenleiste wird hervorgehoben und ein Popup-Fenster wird angezeigt.
+Wenn Sie auf einen Aufgabenbalken klicken, wird die Auswahl hervorgehoben und ein detailliertes Pop-up-Fenster geöffnet.
 
 ![20240408171928](https://static-docs.nocobase.com/20240408171928.png)
 
-## Blockkonfiguration
+## Block-Konfiguration
 
 ![20240419203321](https://static-docs.nocobase.com/20240419203321.png)
 
@@ -39,57 +36,55 @@ Klicken Sie auf die Aufgabenleiste. Die entsprechende Aufgabenleiste wird hervor
 
 ![20240419203603](https://static-docs.nocobase.com/20240419203603.png)
 
--
--
-
 ### Datenbereich festlegen
 
 ![20240419203751](https://static-docs.nocobase.com/20240419203751.png)
 
-Weitere Informationen finden Sie unter
+Weitere Informationen finden Sie unter 
 
-### Blockhöhe festlegen
+### Block-Höhe festlegen
 
-Beispiel: Passen Sie die Höhe des Bestellkalenderblocks an, damit innerhalb des Kalenderblocks keine Bildlaufleiste angezeigt wird.
+Beispiel: Passen Sie die Höhe des Kalender-Blocks für Bestellungen an. Im Kalender-Block wird kein Scrollbalken angezeigt.
 
 ![20240605215742](https://static-docs.nocobase.com/20240605215742.gif)
 
-Weitere Informationen finden Sie unter
+Weitere Informationen finden Sie unter 
 
-### Feld für Hintergrundfarbe
+### Hintergrundfarben-Feld
 
-:::info{title=Hinweis}
-Erfordert NocoBase v1.4.0-beta oder höher.
+:::info{title=Tipp}
+Die NocoBase-Version muss v1.4.0-beta oder höher sein.
 :::
 
-Mit dieser Option kann die Hintergrundfarbe von Kalenderereignissen konfiguriert werden. Gehen Sie dazu wie folgt vor:
+Diese Option kann verwendet werden, um die Hintergrundfarbe von Kalenderereignissen zu konfigurieren. So verwenden Sie sie:
 
-1. Die Tabelle mit den Kalenderdaten muss ein Feld vom Typ **Einzelauswahl (Single select)** oder **Optionsfeldgruppe (Radio group)** enthalten. Für dieses Feld muss eine Farbe konfiguriert sein.
-2. Kehren Sie anschließend zur Konfigurationsoberfläche des Kalenderblocks zurück und wählen Sie unter **Feld für Hintergrundfarbe** das soeben mit einer Farbe konfigurierte Feld aus.
-3. Wählen Sie abschließend für ein Kalenderereignis eine Farbe aus und klicken Sie auf „Absenden“. Die Farbe wird daraufhin angezeigt.
+1.  Die Kalender-Datenbanktabelle muss ein Feld vom Typ **Einzelauswahl (Single select)** oder **Optionsgruppe (Radio group)** enthalten, und dieses Feld muss mit Farben konfiguriert sein.
+2.  Kehren Sie dann zur Konfigurations-Oberfläche des Kalender-Blocks zurück und wählen Sie im Feld **Hintergrundfarben-Feld** das Feld aus, das Sie gerade mit Farben konfiguriert haben.
+3.  Wählen Sie abschließend eine Farbe für ein Kalenderereignis aus und klicken Sie auf „Senden“. Sie werden sehen, dass die Farbe wirksam geworden ist.
 
 ![20240914192017_rec_](https://static-docs.nocobase.com/20240914192017_rec_.gif)
 
-### Erster Wochentag
+### Wochenstart-Tag
 
-> Unterstützt ab v1.7.7
+> Unterstützt ab Version v1.7.7
 
-Der Kalenderblock unterstützt die Einstellung des ersten Wochentags. Sie können **Sonntag** oder **Montag** als ersten Tag der Woche auswählen.
-Standardmäßig ist **Montag** als erster Wochentag festgelegt. So können Benutzer die Kalenderanzeige an die regionalen Gewohnheiten anpassen und besser auf ihre tatsächlichen Anforderungen abstimmen.
+Der Kalender-Block unterstützt die Festlegung des Wochenstart-Tages. Sie können **Sonntag** oder **Montag** als ersten Tag der Woche auswählen.
+Der Standard-Starttag ist **Montag**, was es Benutzern erleichtert, die Kalenderanzeige an regionale Gewohnheiten anzupassen und so ein besseres Benutzererlebnis zu bieten.
 
 ![20250707165958](https://static-docs.nocobase.com/20250707165958.png)
-## Konfigurationsaktionen
+
+## Aktionen konfigurieren
 
 ![20240419203424](https://static-docs.nocobase.com/20240419203424.png)
 
 ### Heute
 
-Die Schaltfläche „Heute“ des Kalenderblocks bietet eine praktische Navigationsfunktion. Nachdem Benutzer zu anderen Datumsangaben gewechselt haben, können sie schnell zur Kalenderseite mit dem aktuellen Datum zurückkehren.
+Die Schaltfläche „Heute“ im Kalender-Block bietet eine schnelle Navigation, mit der Benutzer nach dem Erkunden anderer Daten sofort zum aktuellen Datum zurückkehren können.
 
 ![20240419203514](https://static-docs.nocobase.com/20240419203514.png)
 
 ### Ansicht wechseln
 
-Standardmäßig ist die Monatsansicht eingestellt.
+Die Standardansicht ist auf Monat eingestellt.
 
 ![20240419203349](https://static-docs.nocobase.com/20240419203349.png)

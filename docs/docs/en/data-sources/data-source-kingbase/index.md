@@ -1,42 +1,29 @@
 ---
 pkg: "@nocobase/plugin-data-source-kingbase"
-title: "Main data source - KingbaseES"
-description: "Learn KingbaseES version support, installation, environment variables, Docker deployment, usage, and field mapping for the NocoBase main database."
-keywords: "main data source,KingbaseES,main database,PostgreSQL compatibility mode,field mapping,NocoBase"
 ---
 
-# KingbaseES
+# Data Source - KingbaseES Database
 
 ## Introduction
 
-KingbaseES can be used as the NocoBase main database. It stores NocoBase system-table data and business data in the main data source. Configure it when deploying NocoBase; it cannot be deleted after the application is running.
+KingbaseES can be used as a data source, either as the primary database or an external database.
 
-To connect an existing KingbaseES database as an external database, see [External KingbaseES](../external/kingbase.md).
-
-| Setting | Description |
-| --- | --- |
-| Supported version | >= V9. |
-| Commercial editions | Professional and Enterprise. |
-| Database type | PostgreSQL compatibility mode. |
-
-:::warning Note
-
-Only KingbaseES databases running in PostgreSQL compatibility mode are supported.
-
+:::warning
+Currently, only KingbaseES databases running in pg mode are supported.
 :::
 
 ## Installation
 
-### Use as the main database
+### Using as the Primary Database
 
-Follow [Install a NocoBase application](/ai/install-nocobase-app). The main difference is the database environment variables.
+Refer to the Installation documentation for the setup procedures, the difference is mainly due to the environment variables.
 
-#### Environment variables
+#### Environment Variables
 
-Add or update these database variables in `.env`:
+Edit the .env file to add or modify the following environment variable configurations:
 
 ```bash
-# Adjust DB parameters for your environment.
+# Adjust DB parameters as needed
 DB_DIALECT=kingbase
 DB_HOST=localhost
 DB_PORT=54321
@@ -45,7 +32,7 @@ DB_USER=nocobase
 DB_PASSWORD=nocobase
 ```
 
-#### Docker installation
+#### Docker Installation
 
 ```yml
 networks:
@@ -54,94 +41,81 @@ networks:
 
 services:
   app:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest
+    image: nocobase/nocobase:latest
     restart: always
-    networks: [nocobase]
-    depends_on: [kingbase]
+    networks:
+      - nocobase
+    depends_on:
+      - kingbase
     environment:
+      # Application key for generating user tokens, etc.
+      # Changing APP_KEY invalidates old tokens
+      # Use a random string and keep it confidential
       - APP_KEY=your-secret-key
+      # Database type
       - DB_DIALECT=kingbase
+      # Database host, replace with existing database server IP if needed
       - DB_HOST=kingbase
       - DB_PORT=54321
+      # Database name
       - DB_DATABASE=kingbase
+      # Database user
       - DB_USER=nocobase
+      # Database password
       - DB_PASSWORD=nocobase
+      # Timezone
       - TZ=UTC
     volumes:
       - ./storage:/app/nocobase/storage
     ports:
       - "11000:80"
 
+  # Kingbase service for testing purposes only
   kingbase:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/kingbase:v009r001c001b0030_single_x86
+    image: nocobase/kingbase:v009r001c001b0030_single_x86
     platform: linux/amd64
     restart: always
     privileged: true
-    networks: [nocobase]
+    networks:
+      - nocobase
     volumes:
       - ./storage/db/kingbase:/home/kingbase/userdata
     environment:
-      ENABLE_CI: no
+      ENABLE_CI: no # Must be set to no
       DB_USER: nocobase
       DB_PASSWORD: nocobase
-      DB_MODE: pg
+      DB_MODE: pg  # pg only
       NEED_START: yes
     command: ["/usr/sbin/init"]
 ```
 
-`APP_KEY` is used for user tokens and similar application secrets. Changing it invalidates existing tokens; use a random value and store it safely. The `kingbase` service is intended only for local evaluation. `DB_MODE` must be `pg`.
-
-#### Install with create-nocobase-app
+#### Installation Using create-nocobase-app
 
 ```bash
 yarn create nocobase-app my-nocobase-app -d kingbase \
-  -e DB_HOST=localhost \
-  -e DB_PORT=54321 \
-  -e DB_DATABASE=kingbase \
-  -e DB_USER=nocobase \
-  -e DB_PASSWORD=nocobase \
-  -e TZ=Asia/Shanghai
+   -e DB_HOST=localhost \
+   -e DB_PORT=54321 \
+   -e DB_DATABASE=kingbase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=UTC
 ```
 
-### Use as an external database
+### Using as an External Database
 
-For configuration entry points, connection parameters, and synchronization rules when using KingbaseES as an external database, see [External KingbaseES](../external/kingbase.md).
+Execute the installation or upgrade command
 
-## Usage
+```bash
+yarn nocobase install
+# or
+yarn nocobase upgrade
+```
 
-KingbaseES main data sources use PostgreSQL compatibility mode. For everyday management, see [PostgreSQL main data source](../main/postgresql.md).
+Activate the Plugin
 
-1. Select or enter KingbaseES connection settings when deploying NocoBase.
-2. After NocoBase starts, open **Data source management**, select **Main**, and manage collections and fields.
-3. Use **Sync from database** to connect tables that already exist in the main database.
-4. Use [Collections](../data-modeling/collection.md) and [Collection fields](../data-modeling/collection-fields/index.md) to choose Field types and Field interfaces.
+![20241024121815](https://static-docs.nocobase.com/20241024121815.png)
 
-## Field type mapping
+## User Guide
 
-When you create a field in NocoBase, NocoBase creates the corresponding KingbaseES field. When you synchronize an existing table, NocoBase applies PostgreSQL-compatible mapping to select a Field type and Field interface.
-
-| KingbaseES type | NocoBase Field type | Available Field interfaces |
-| --- | --- | --- |
-| `BOOLEAN` | `boolean` | Checkbox, Switch. |
-| `SMALLINT`, `INTEGER` | `integer`, `sort` | Integer, Sort, Select, Radio group. |
-| `BIGINT` | `bigInt`, `snowflakeId`, `unixTimestamp`, `sort` | Integer, Sort, Unix timestamp, Created at, Updated at. |
-| `REAL`, `DOUBLE PRECISION` | `float` | Number, Percent. |
-| `DECIMAL`, `NUMERIC` | `decimal` | Number, Percent, Currency. |
-| `VARCHAR`, `CHAR` | `string`, `uuid`, `nanoid`, `encryption`, `datetimeNoTz` | Input, Email, Phone, Password, Color, Icon, Select, Radio group, UUID, Nano ID. |
-| `TEXT` | `text` | Textarea, Markdown, Vditor, Rich text, URL. |
-| `UUID` | `uuid` | UUID. |
-| `JSON`, `JSONB` | `json`, `array` | JSON. |
-| `TIMESTAMP WITHOUT TIME ZONE` | `datetimeNoTz` | Date, Time, Created at, Updated at. |
-| `TIMESTAMP WITH TIME ZONE` | `datetimeTz`, `date` | Date, Time, Created at, Updated at. |
-| `DATE` | `dateOnly` | Date. |
-| `TIME WITHOUT TIME ZONE` | `time` | Time. |
-| `POINT`, `PATH`, `POLYGON`, `CIRCLE` | `json` | JSON. |
-| `ARRAY` | `array` | Multiple select, Checkbox group, JSON. |
-
-:::warning Note
-
-Unsupported KingbaseES types are shown separately in field configuration. They require development support before they can be used as normal NocoBase fields.
-
-:::
-
-For common configuration, see [Main database](./index.md).
+- Primary Database: Refer to the [Main data source](/data-sources/data-source-main/index.md)
+- External Database: See [Data Source / External Database](/data-sources/data-source-manager/external-database)

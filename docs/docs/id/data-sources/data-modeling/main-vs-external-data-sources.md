@@ -1,20 +1,20 @@
 ---
 title: "Perbandingan Database Utama dan Eksternal"
-description: "Perbedaan antara database utama dan eksternal: perbandingan dukungan jenis database, jenis tabel data, jenis field, serta kemampuan pencadangan, pemulihan, dan migrasi."
-keywords: "database utama,database eksternal,perbandingan sumber data,koneksi hanya-baca,sinkronisasi tabel data,NocoBase"
+description: "Perbedaan antara database utama dan database eksternal: dukungan tipe database, tipe Collection, tipe field, perbandingan kemampuan backup restore migration."
+keywords: "database utama,database eksternal,perbandingan data source,koneksi read-only,sinkronisasi Collection,NocoBase"
 ---
 
 # Perbandingan Database Utama dan Eksternal
 
-Perbedaan antara database utama dan eksternal di NocoBase terutama terlihat dalam empat aspek berikut: dukungan jenis database, dukungan jenis tabel data, dukungan jenis field, serta pencadangan, pemulihan, dan migrasi.
+Perbedaan antara database utama dan database eksternal di NocoBase terutama terletak pada empat aspek berikut: dukungan tipe database, dukungan tipe Collection, dukungan tipe field, dan backup restore migration.
 
-## I. Dukungan Jenis Database
+## I. Dukungan Tipe Database
 
-Untuk detail selengkapnya, lihat [Manajemen sumber data](https://docs.nocobase.com/data-sources/data-source-manager)
+Untuk detail lebih lanjut, lihat: [Manajemen Data Source](https://docs.nocobase.com/data-sources/data-source-manager)
 
-### Jenis Database
+### Tipe Database
 
-| Jenis database | Didukung database utama | Didukung database eksternal |
+| Tipe Database | Dukungan Database Utama | Dukungan Database Eksternal |
 |-----------|-------------|--------------|
 | PostgreSQL | ✅ | ✅ |
 | MySQL | ✅ | ✅ |
@@ -23,149 +23,149 @@ Untuk detail selengkapnya, lihat [Manajemen sumber data](https://docs.nocobase.c
 | MSSQL | ❌ | ✅ |
 | Oracle | ❌ | ✅ |
 
-### Manajemen Tabel Data
+### Manajemen Collection
 
-| Manajemen tabel data | Didukung database utama | Didukung database eksternal |
+| Manajemen Collection | Dukungan Database Utama | Dukungan Database Eksternal |
 |-----------|-------------|--------------|
-| Manajemen dasar | ✅ | ✅ |
-| Manajemen visual | ✅ | ❌ |
+| Manajemen Dasar | ✅ | ✅ |
+| Manajemen Visual | ✅ | ❌ |
 
-## II. Dukungan Jenis Tabel Data
+## II. Dukungan Tipe Collection
 
-Untuk detail selengkapnya, lihat [Tabel data](https://docs.nocobase.com/data-sources/data-modeling/collection)
+Untuk detail lebih lanjut, lihat: [Collection](https://docs.nocobase.com/data-sources/data-modeling/collection)
 
-| Jenis tabel data | Database utama | Database eksternal | Keterangan |
+| Tipe Collection | Database Utama | Database Eksternal | Deskripsi |
 |-----------|---------|-----------|------|
-| Tabel biasa | ✅ | ✅ | Tabel data dasar |
-| Tabel view | ✅ | ✅ | View sumber data |
-| Tabel turunan | ✅ | ❌ | Mendukung pewarisan model data, hanya didukung sumber data utama |
-| Tabel file | ✅ | ❌ | Mendukung pengunggahan file, hanya didukung sumber data utama |
-| Tabel komentar | ✅ | ❌ | Sistem komentar bawaan, hanya didukung sumber data utama |
-| Tabel kalender | ✅ | ❌ | Tabel data untuk tampilan kalender |
-| Tabel ekspresi | ✅ | ❌ | Mendukung perhitungan formula |
-| Tabel hierarki | ✅ | ❌ | Untuk pemodelan data berstruktur pohon |
-| Tabel SQL | ✅ | ❌ | Tabel data yang dapat didefinisikan melalui SQL |
-| Tabel data eksternal terhubung | ✅ | ❌ | Tabel koneksi ke sumber data eksternal, dengan fungsi terbatas |
+| Collection Umum | ✅ | ✅ | Collection dasar |
+| Collection View | ✅ | ✅ | Database view |
+| Collection Inheritance | ✅ | ❌ | Mendukung pewarisan model data, hanya didukung oleh data source utama |
+| Collection File | ✅ | ❌ | Mendukung upload file, hanya didukung oleh data source utama |
+| Collection Comment | ✅ | ❌ | Sistem komentar bawaan, hanya didukung oleh data source utama |
+| Collection Calendar | ✅ | ❌ | Collection untuk tampilan kalender |
+| Collection Expression | ✅ | ❌ | Mendukung komputasi formula |
+| Collection Tree | ✅ | ❌ | Untuk pemodelan data struktur tree |
+| Collection SQL | ✅ | ❌ | Collection yang dapat didefinisikan via SQL |
+| Collection Eksternal | ✅ | ❌ | Tabel koneksi data source eksternal, fungsi terbatas |
 
-## III. Dukungan Jenis Field
+## III. Dukungan Tipe Field
 
-Untuk detail selengkapnya, lihat [Field tabel data](https://docs.nocobase.com/data-sources/data-modeling/collection-fields)
+Untuk detail lebih lanjut, lihat: [Field Collection](https://docs.nocobase.com/data-sources/data-modeling/collection-fields)
 
-### Jenis Dasar
+### Tipe Dasar
 
-| Jenis field | Database utama | Database eksternal |
+| Tipe Field | Database Utama | Database Eksternal |
 |---------|---------|-----------|
-| Teks satu baris | ✅ | ✅ |
-| Teks multi-baris | ✅ | ✅ |
-| Nomor ponsel | ✅ | ✅ |
+| Teks Satu Baris | ✅ | ✅ |
+| Teks Multi Baris | ✅ | ✅ |
+| Nomor Telepon | ✅ | ✅ |
 | Email | ✅ | ✅ |
 | URL | ✅ | ✅ |
-| Bilangan bulat | ✅ | ✅ |
-| Angka | ✅ | ✅ |
-| Persentase | ✅ | ✅ |
-| Kata sandi | ✅ | ✅ |
+| Integer | ✅ | ✅ |
+| Number | ✅ | ✅ |
+| Persen | ✅ | ✅ |
+| Password | ✅ | ✅ |
 | Warna | ✅ | ✅ |
 | Ikon | ✅ | ✅ |
 
-### Jenis Pilihan
+### Tipe Pilihan
 
-| Jenis field | Database utama | Database eksternal |
+| Tipe Field | Database Utama | Database Eksternal |
 |---------|---------|-----------|
-| Kotak centang | ✅ | ✅ |
-| Menu dropdown (pilihan tunggal) | ✅ | ✅ |
-| Menu dropdown (pilihan ganda) | ✅ | ✅ |
-| Tombol radio | ✅ | ✅ |
-| Kotak centang ganda | ✅ | ✅ |
-| Wilayah administratif Tiongkok | ✅ | ❌ |
+| Centang | ✅ | ✅ |
+| Dropdown (Pilihan Tunggal) | ✅ | ✅ |
+| Dropdown (Multi Pilihan) | ✅ | ✅ |
+| Radio Button | ✅ | ✅ |
+| Checkbox Group | ✅ | ✅ |
+| Wilayah Administratif Tiongkok | ✅ | ❌ |
 
-### Jenis Multimedia
+### Tipe Multimedia
 
-| Jenis field | Database utama | Database eksternal |
+| Tipe Field | Database Utama | Database Eksternal |
 |---------|---------|-----------|
 | Multimedia | ✅ | ✅ |
 | Markdown | ✅ | ✅ |
 | Markdown (Vditor) | ✅ | ✅ |
-| Teks kaya | ✅ | ✅ |
-| Lampiran (relasi) | ✅ | ❌ |
+| Rich Text | ✅ | ✅ |
+| Lampiran (Relasi) | ✅ | ❌ |
 | Lampiran (URL) | ✅ | ✅ |
 
-### Jenis Tanggal dan Waktu
+### Tipe Datetime
 
-| Jenis field | Database utama | Database eksternal |
+| Tipe Field | Database Utama | Database Eksternal |
 |---------|---------|-----------|
-| Tanggal dan waktu (dengan zona waktu) | ✅ | ✅ |
-| Tanggal dan waktu (tanpa zona waktu) | ✅ | ✅ |
-| Stempel waktu Unix | ✅ | ✅ |
-| Tanggal (tanpa waktu) | ✅ | ✅ |
+| Datetime (dengan Timezone) | ✅ | ✅ |
+| Datetime (tanpa Timezone) | ✅ | ✅ |
+| Unix Timestamp | ✅ | ✅ |
+| Tanggal (tanpa Waktu) | ✅ | ✅ |
 | Waktu | ✅ | ✅ |
 
-### Jenis Geometri
+### Tipe Bentuk Geometri
 
-| Jenis field | Database utama | Database eksternal |
+| Tipe Field | Database Utama | Database Eksternal |
 |---------|---------|-----------|
 | Titik | ✅ | ✅ |
 | Garis | ✅ | ✅ |
 | Lingkaran | ✅ | ✅ |
-| Poligon | ✅ | ✅ |
+| Polygon | ✅ | ✅ |
 
-### Jenis Lanjutan
+### Tipe Lanjutan
 
-| Jenis field | Database utama | Database eksternal |
+| Tipe Field | Database Utama | Database Eksternal |
 |---------|---------|-----------|
 | UUID | ✅ | ✅ |
 | Nano ID | ✅ | ✅ |
-| Pengurutan | ✅ | ✅ |
-| Formula perhitungan | ✅ | ✅ |
-| Pembuatan kode otomatis | ✅ | ✅ |
+| Sort | ✅ | ✅ |
+| Formula | ✅ | ✅ |
+| Auto Sequence | ✅ | ✅ |
 | JSON | ✅ | ✅ |
-| Pemilih tabel data | ✅ | ❌ |
+| Collection Selector | ✅ | ❌ |
 | Enkripsi | ✅ | ✅ |
 
 ### Field Informasi Sistem
 
-| Jenis field | Database utama | Database eksternal |
+| Tipe Field | Database Utama | Database Eksternal |
 |---------|---------|-----------|
-| Tanggal dibuat | ✅ | ✅ |
-| Tanggal terakhir diubah | ✅ | ✅ |
+| Tanggal Pembuatan | ✅ | ✅ |
+| Tanggal Modifikasi Terakhir | ✅ | ✅ |
 | Pembuat | ✅ | ❌ |
-| Pengubah terakhir | ✅ | ❌ |
+| Modifikator Terakhir | ✅ | ❌ |
 | Table OID | ✅ | ❌ |
 
-### Jenis Relasi
+### Tipe Relasi
 
-| Jenis field | Database utama | Database eksternal |
+| Tipe Field | Database Utama | Database Eksternal |
 |---------|---------|-----------|
-| Satu-ke-satu | ✅ | ✅ |
-| Satu-ke-banyak | ✅ | ✅ |
-| Banyak-ke-satu | ✅ | ✅ |
-| Banyak-ke-banyak | ✅ | ✅ |
-| Banyak-ke-banyak (array) | ✅ | ✅ |
+| One to One | ✅ | ✅ |
+| One to Many | ✅ | ✅ |
+| Many to One | ✅ | ✅ |
+| Many to Many | ✅ | ✅ |
+| Many to Many (Array) | ✅ | ✅ |
 
 :::info
-Field lampiran bergantung pada tabel file, sedangkan tabel file hanya didukung oleh database utama. Oleh karena itu, database eksternal untuk sementara tidak mendukung field lampiran.
+Field lampiran bergantung pada Collection file, dan Collection file hanya didukung oleh database utama, sehingga database eksternal sementara tidak mendukung field lampiran.
 :::
 
-## IV. Perbandingan Dukungan Pencadangan dan Migrasi
+## IV. Perbandingan Dukungan Backup dan Migration
 
-| Fitur | Database utama | Database eksternal |
+| Fitur | Database Utama | Database Eksternal |
 |-----|---------|-----------|
-| Pencadangan dan pemulihan | ✅ | ❌ (harus ditangani sendiri) |
-| Manajemen migrasi | ✅ | ❌ (harus ditangani sendiri) |
+| Backup Restore | ✅ | ❌ (perlu ditangani sendiri) |
+| Manajemen Migration | ✅ | ❌ (perlu ditangani sendiri) |
 
 :::info
-NocoBase menyediakan kemampuan pencadangan, pemulihan, dan migrasi struktur untuk database utama. Untuk database eksternal, operasi ini harus diselesaikan sendiri oleh pengguna sesuai dengan lingkungan database masing-masing, karena NocoBase tidak menyediakan dukungan bawaan.
+NocoBase menyediakan kemampuan backup, restore, dan migrasi struktur untuk database utama. Untuk database eksternal, operasi ini perlu dilakukan oleh pengguna secara mandiri sesuai dengan environment database masing-masing. NocoBase tidak menyediakan dukungan bawaan.
 :::
 
-## Rangkuman Perbandingan
+## Ringkasan Perbandingan
 
-| Aspek perbandingan | Database utama | Database eksternal |
+| Item Perbandingan | Database Utama | Database Eksternal |
 |-------|---------|-----------|
-| Jenis database | PostgreSQL、MySQL、MariaDB、KingbaseES | PostgreSQL、MySQL、MariaDB、MSSQL、Oracle、KingbaseES |
-| Dukungan jenis tabel | Semua jenis tabel | Hanya mendukung tabel biasa dan tabel view |
-| Dukungan jenis field | Semua jenis field | Semua jenis field selain field lampiran |
-| Pencadangan dan migrasi | Dukungan bawaan | Harus ditangani sendiri |
+| Tipe Database | PostgreSQL, MySQL, MariaDB, KingbaseES | PostgreSQL, MySQL, MariaDB, MSSQL, Oracle, KingbaseES |
+| Dukungan Tipe Tabel | Semua tipe tabel | Hanya mendukung Collection umum dan Collection view |
+| Dukungan Tipe Field | Semua tipe field | Tipe field selain field lampiran |
+| Backup dan Migration | Dukungan bawaan | Perlu ditangani sendiri |
 
 ## Saran
 
-- **Jika Anda menggunakan NocoBase untuk membangun sistem bisnis baru**, gunakan **database utama** agar dapat menggunakan seluruh fitur NocoBase.
-- **Jika Anda menggunakan NocoBase untuk menghubungkan database sistem lain guna menerapkan operasi dasar tambah, lihat, ubah, dan hapus data**, gunakan **database eksternal**.
+- **Jika menggunakan NocoBase untuk membangun sistem bisnis baru sepenuhnya**, gunakan **Database Utama**, sehingga Anda dapat menggunakan fitur lengkap NocoBase.
+- **Jika menggunakan NocoBase untuk mengintegrasikan database sistem lain dan melakukan operasi CRUD dasar**, gunakan **Database Eksternal**.

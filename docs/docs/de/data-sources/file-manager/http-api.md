@@ -1,20 +1,14 @@
----
-title: "Dateimanager HTTP API"
-description: "Dateien über HTTP API mittels Anhangsfeldern und Dateitabellen hochladen, serverseitiger Upload (S3/OSS/COS), direkter Client-Upload, mit JWT-Authentifizierung und Angabe der Speicher-Engine."
-keywords: "Datei-Upload HTTP API,attachments create,serverseitiger Upload,direkter Client-Upload,NocoBase"
----
-
 # HTTP API
 
-Datei-Uploads für Anhangsfelder und Dateitabellen können über die HTTP API verarbeitet werden. Je nach Speicher-Engine, die vom Anhang oder der Dateitabelle verwendet wird, gibt es unterschiedliche Aufrufmethoden.
+Dateiuploads für Anhangsfelder und Dateisammlungen können über die HTTP API abgewickelt werden. Die Aufrufmethode variiert je nach dem von der Anlage oder Dateisammlung verwendeten Speicher-Engine.
 
 ## Serverseitiger Upload
 
-Für integrierte Open-Source-Speicher-Engines wie S3, OSS und COS wird für die HTTP API dieselbe Upload-Funktion wie in der Benutzeroberfläche verwendet; alle Dateien werden über den Server hochgeladen. Beim Aufruf der Schnittstelle muss ein JWT-Token basierend auf der Benutzeranmeldung über den Anfrage-Header `Authorization` übergeben werden, andernfalls wird der Zugriff verweigert.
+Für integrierte Open-Source-Speicher-Engines wie S3, OSS und COS ist der HTTP API-Aufruf identisch mit dem, der von der Benutzeroberfläche für Uploads verwendet wird. Die Dateien werden dabei serverseitig hochgeladen. API-Aufrufe erfordern die Übergabe eines benutzerbasierten JWT-Tokens im `Authorization`-Request-Header; andernfalls wird der Zugriff verweigert.
 
 ### Anhangsfeld
 
-Führen Sie für die Anhangstabelle (`attachments`) die Operation `create` aus, senden Sie die Anfrage als POST und laden Sie den Binärinhalt über das Feld `file` hoch. Nach dem Aufruf wird die Datei in die Standard-Speicher-Engine hochgeladen.
+Führen Sie eine `create`-Aktion für die `attachments`-Ressource (Anhangs-Sammlung) aus, indem Sie eine POST-Anfrage senden und den binären Inhalt über das `file`-Feld hochladen. Nach dem Aufruf wird die Datei in die Standard-Speicher-Engine hochgeladen.
 
 ```shell
 curl -X POST \
@@ -23,7 +17,7 @@ curl -X POST \
     "http://localhost:3000/api/attachments:create"
 ```
 
-Wenn Sie die Datei in eine andere Speicher-Engine hochladen möchten, können Sie mit dem Parameter `attachmentField` die Speicher-Engine angeben, die für das Datenbankfeld konfiguriert ist (falls keine konfiguriert wurde, erfolgt der Upload in die Standard-Speicher-Engine).
+Um Dateien in eine andere Speicher-Engine hochzuladen, können Sie den Parameter `attachmentField` verwenden, um die für das Sammlungsfeld konfigurierte Speicher-Engine anzugeben. Ist keine konfiguriert, wird die Datei in die Standard-Speicher-Engine hochgeladen.
 
 ```shell
 curl -X POST \
@@ -32,9 +26,9 @@ curl -X POST \
     "http://localhost:3000/api/attachments:create?attachmentField=<collection_name>.<field_name>"
 ```
 
-### Dateitabelle
+### Dateisammlung
 
-Beim Upload in eine Dateitabelle wird automatisch ein Dateidatensatz erstellt. Führen Sie für die Ressource der Dateitabelle die Operation `create` aus, senden Sie die Anfrage als POST und laden Sie den Binärinhalt über das Feld `file` hoch.
+Beim Hochladen in eine Dateisammlung wird automatisch ein Dateieintrag generiert. Führen Sie eine `create`-Aktion für die Dateisammlungs-Ressource aus, indem Sie eine POST-Anfrage senden und den binären Inhalt über das `file`-Feld hochladen.
 
 ```shell
 curl -X POST \
@@ -43,24 +37,24 @@ curl -X POST \
     "http://localhost:3000/api/<file_collection_name>:create"
 ```
 
-Für Uploads in eine Dateitabelle muss keine Speicher-Engine angegeben werden; die Datei wird in die für diese Tabelle konfigurierte Speicher-Engine hochgeladen.
+Beim Hochladen in eine Dateisammlung müssen Sie keine Speicher-Engine angeben; die Datei wird in die für diese Sammlung konfigurierte Speicher-Engine hochgeladen.
 
 ## Clientseitiger Upload
 
-Für S3-kompatible Speicher-Engines, die über das kommerzielle Plugin S3-Pro bereitgestellt werden, muss der Upload über die HTTP API in mehreren Schritten erfolgen.
+Für S3-kompatible Speicher-Engines, die über das kommerzielle S3-Pro Plugin bereitgestellt werden, erfordert der HTTP API-Upload mehrere Schritte.
 
 ### Anhangsfeld
 
-1.  Informationen zur Speicher-Engine abrufen
+1.  Speicher-Engine-Informationen abrufen
 
-    Führen Sie für die Speichertabelle (`storages`) die Operation `getBasicInfo` aus und übergeben Sie zugleich die Speicherkennung (storage name), um die Konfigurationsinformationen der Speicher-Engine anzufordern.
+    Führen Sie eine `getBasicInfo`-Aktion für die `storages`-Sammlung aus und übergeben Sie dabei den Speichernamen, um die Konfigurationsinformationen der Speicher-Engine anzufordern.
 
     ```shell
     curl 'http://localhost:13000/api/storages:getBasicInfo/<storage_name>' \
       -H 'Authorization: Bearer <JWT>'
     ```
 
-    Beispiel für die zurückgegebenen Konfigurationsinformationen der Speicher-Engine:
+    Beispiel der zurückgegebenen Konfigurationsinformationen der Speicher-Engine:
 
     ```json
     {
@@ -72,9 +66,9 @@ Für S3-kompatible Speicher-Engines, die über das kommerzielle Plugin S3-Pro be
     }
     ```
 
-2.  Vorab signierte Informationen des Anbieters abrufen
+2.  Vorab signierte URL vom Dienstanbieter abrufen
 
-    Führen Sie für die Ressource `fileStorageS3` die Operation `createPresignedUrl` aus, senden Sie die Anfrage als POST und übergeben Sie die dateibezogenen Informationen im Body, um Informationen für den vorab signierten Upload abzurufen.
+    Führen Sie eine `createPresignedUrl`-Aktion für die `fileStorageS3`-Ressource aus, indem Sie eine POST-Anfrage mit dateibezogenen Informationen im Body senden, um die vorab signierten Upload-Informationen zu erhalten.
 
     ```shell
     curl 'http://localhost:13000/api/fileStorageS3:createPresignedUrl' \
@@ -85,13 +79,13 @@ Für S3-kompatible Speicher-Engines, die über das kommerzielle Plugin S3-Pro be
       --data-raw '{"name":<name>,"size":<size>,"type":<type>,"storageId":<storageId>,"storageType":<storageType>}'
     ```
 
-    > Hinweise:
+    > Hinweis:
     >
-    > * name: Dateiname
-    > * size: Dateigröße (in Bytes)
-    > * type: MIME-Typ der Datei, siehe: [Gängige MIME-Typen](https://developer.mozilla.org/zh-CN/docs/Web/HTTP/MIME_types/Common_types)
-    > * storageId: ID der Speicher-Engine (das im ersten Schritt zurückgegebene Feld `id`)
-    > * storageType: Typ der Speicher-Engine (das im ersten Schritt zurückgegebene Feld `type`)
+    > *   `name`: Dateiname
+    > *   `size`: Dateigröße (in Bytes)
+    > *   `type`: Der MIME-Typ der Datei. Siehe: [Häufige MIME-Typen](https://developer.mozilla.org/zh-CN/docs/Web/HTTP/MIME_types/Common_types)
+    > *   `storageId`: Die ID der Speicher-Engine (das `id`-Feld, das in Schritt 1 zurückgegeben wurde).
+    > *   `storageType`: Der Typ der Speicher-Engine (das `type`-Feld, das in Schritt 1 zurückgegeben wurde).
     >
     > Beispiel-Anfragedaten:
     >
@@ -99,7 +93,7 @@ Für S3-kompatible Speicher-Engines, die über das kommerzielle Plugin S3-Pro be
     > --data-raw '{"name":"a.png","size":4405,"type":"image/png","storageId":2,"storageType":"s3-compatible"}'
     > ```
 
-    Die Datenstruktur der erhaltenen vorab signierten Informationen lautet wie folgt:
+    Die Datenstruktur der erhaltenen vorab signierten Informationen ist wie folgt:
 
     ```json
     {
@@ -119,16 +113,16 @@ Für S3-kompatible Speicher-Engines, die über das kommerzielle Plugin S3-Pro be
 
 3.  Datei hochladen
 
-    Verwenden Sie die zurückgegebene `putUrl`, um eine `PUT`-Anfrage zu senden und die Datei als Body hochzuladen.
+    Verwenden Sie die zurückgegebene `putUrl`, um eine `PUT`-Anfrage zu stellen und die Datei als Body hochzuladen.
 
     ```shell
     curl '<putUrl>' \
       -X 'PUT' \
       -T <file_path>
     ```
-    > Hinweise:
-    > * putUrl: Das im vorherigen Schritt zurückgegebene Feld `putUrl`
-    > * file_path: Lokaler Pfad der hochzuladenden Datei
+    > Hinweis:
+    > *   `putUrl`: Das in dem vorherigen Schritt zurückgegebene `putUrl`-Feld.
+    > *   `file_path`: Der lokale Pfad der hochzuladenden Datei.
     >
     > Beispiel-Anfragedaten:
     > ```
@@ -137,9 +131,9 @@ Für S3-kompatible Speicher-Engines, die über das kommerzielle Plugin S3-Pro be
     >  -T /Users/Downloads/a.png
     > ```
 
-4.  Dateidatensatz erstellen
+4.  Dateieintrag erstellen
 
-    Nach erfolgreichem Upload führen Sie für die Anhangstabelle (`attachments`) die Operation `create` aus, senden Sie die Anfrage als POST und erstellen Sie den Dateidatensatz.
+    Nach einem erfolgreichen Upload erstellen Sie den Dateieintrag, indem Sie eine `create`-Aktion für die `attachments`-Ressource (Anhangs-Sammlung) mit einer POST-Anfrage ausführen.
 
     ```shell
     curl 'http://localhost:13000/api/attachments:create?attachmentField=<collection_name>.<field_name>' \
@@ -150,25 +144,25 @@ Für S3-kompatible Speicher-Engines, die über das kommerzielle Plugin S3-Pro be
       --data-raw '{"title":<title>,"filename":<filename>,"extname":<extname>,"path":"","size":<size>,"url":"","mimetype":<mimetype>,"meta":<meta>,"storageId":<storageId>}'
     ```
 
-    > Erläuterung der abhängigen Daten in data-raw:
-    > * title: Das im vorherigen Schritt zurückgegebene Feld `fileInfo.title`
-    > * filename: Das im vorherigen Schritt zurückgegebene Feld `fileInfo.key`
-    > * extname: Das im vorherigen Schritt zurückgegebene Feld `fileInfo.extname`
-    > * path: Standardmäßig leer
-    > * size: Das im vorherigen Schritt zurückgegebene Feld `fileInfo.size`
-    > * url: Standardmäßig leer
-    > * mimetype: Das im vorherigen Schritt zurückgegebene Feld `fileInfo.mimetype`
-    > * meta: Das im vorherigen Schritt zurückgegebene Feld `fileInfo.meta`
-    > * storageId: Das im ersten Schritt zurückgegebene Feld `id`
+    > Erläuterung der abhängigen Daten in `data-raw`:
+    > *   `title`: Das `fileInfo.title`-Feld, das im vorherigen Schritt zurückgegeben wurde.
+    > *   `filename`: Das `fileInfo.key`-Feld, das im vorherigen Schritt zurückgegeben wurde.
+    > *   `extname`: Das `fileInfo.extname`-Feld, das im vorherigen Schritt zurückgegeben wurde.
+    > *   `path`: Standardmäßig leer.
+    > *   `size`: Das `fileInfo.size`-Feld, das im vorherigen Schritt zurückgegeben wurde.
+    > *   `url`: Standardmäßig leer.
+    > *   `mimetype`: Das `fileInfo.mimetype`-Feld, das im vorherigen Schritt zurückgegeben wurde.
+    > *   `meta`: Das `fileInfo.meta`-Feld, das im vorherigen Schritt zurückgegeben wurde.
+    > *   `storageId`: Das `id`-Feld, das in Schritt 1 zurückgegeben wurde.
     >
     > Beispiel-Anfragedaten:
     > ```
     >   --data-raw '{"title":"ATT00001","filename":"ATT00001-8nuuxkuz4jn.png","extname":".png","path":"","size":4405,"url":"","mimetype":"image/png","meta":{},"storageId":2}'
     > ```
 
-### Dateitabelle
+### Dateisammlung
 
-Die ersten drei Schritte entsprechen dem Upload für Anhangsfelder. Im vierten Schritt muss jedoch ein Dateidatensatz erstellt werden: Führen Sie für die Ressource der Dateitabelle die Operation create aus, senden Sie die Anfrage als POST und übergeben Sie die Dateiinformationen im Body.
+Die ersten drei Schritte sind identisch mit dem Upload in ein Anhangsfeld. Im vierten Schritt müssen Sie jedoch den Dateieintrag erstellen, indem Sie eine `create`-Aktion für die Dateisammlungs-Ressource mit einer POST-Anfrage ausführen und die Dateiinformationen im Body hochladen.
 
 ```shell
 curl 'http://localhost:13000/api/<file_collection_name>:create' \
@@ -177,16 +171,16 @@ curl 'http://localhost:13000/api/<file_collection_name>:create' \
   --data-raw '{"title":<title>,"filename":<filename>,"extname":<extname>,"path":"","size":<size>,"url":"","mimetype":<mimetype>,"meta":<meta>,"storageId":<storageId>}'
 ```
 
-> Erläuterung der abhängigen Daten in data-raw:
-> * title: Das im vorherigen Schritt zurückgegebene Feld `fileInfo.title`
-> * filename: Das im vorherigen Schritt zurückgegebene Feld `fileInfo.key`
-> * extname: Das im vorherigen Schritt zurückgegebene Feld `fileInfo.extname`
-> * path: Standardmäßig leer
-> * size: Das im vorherigen Schritt zurückgegebene Feld `fileInfo.size`
-> * url: Standardmäßig leer
-> * mimetype: Das im vorherigen Schritt zurückgegebene Feld `fileInfo.mimetype`
-> * meta: Das im vorherigen Schritt zurückgegebene Feld `fileInfo.meta`
-> * storageId: Das im ersten Schritt zurückgegebene Feld `id`
+> Erläuterung der abhängigen Daten in `data-raw`:
+> *   `title`: Das `fileInfo.title`-Feld, das im vorherigen Schritt zurückgegeben wurde.
+> *   `filename`: Das `fileInfo.key`-Feld, das im vorherigen Schritt zurückgegeben wurde.
+> *   `extname`: Das `fileInfo.extname`-Feld, das im vorherigen Schritt zurückgegeben wurde.
+> *   `path`: Standardmäßig leer.
+> *   `size`: Das `fileInfo.size`-Feld, das im vorherigen Schritt zurückgegeben wurde.
+> *   `url`: Standardmäßig leer.
+> *   `mimetype`: Das `fileInfo.mimetype`-Feld, das im vorherigen Schritt zurückgegeben wurde.
+> *   `meta`: Das `fileInfo.meta`-Feld, das im vorherigen Schritt zurückgegeben wurde.
+> *   `storageId`: Das `id`-Feld, das in Schritt 1 zurückgegeben wurde.
 >
 > Beispiel-Anfragedaten:
 > ```

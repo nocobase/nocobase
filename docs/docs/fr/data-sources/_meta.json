@@ -1,7 +1,7 @@
 [
   {
     "type": "custom-link",
-    "label": "Vue d’ensemble",
+    "label": "Aperçu",
     "link": "/data-sources/"
   },
   {
@@ -16,42 +16,11 @@
       {
         "type": "custom-link",
         "label": "Source de données principale",
-        "items": [
-          {
-            "type": "custom-link",
-            "label": "Introduction",
-            "link": "/data-sources/data-source-main/"
-          },
-          {
-            "type": "custom-link",
-            "label": "PostgreSQL",
-            "link": "/data-sources/main/postgresql"
-          },
-          {
-            "type": "custom-link",
-            "label": "MySQL",
-            "link": "/data-sources/main/mysql"
-          },
-          {
-            "type": "custom-link",
-            "label": "MariaDB",
-            "link": "/data-sources/main/mariadb"
-          },
-          {
-            "type": "custom-link",
-            "label": "KingbaseES",
-            "link": "/data-sources/main/kingbase"
-          },
-          {
-            "type": "custom-link",
-            "label": "OceanBase",
-            "link": "/data-sources/main/oceanbase"
-          }
-        ]
+        "link": "/data-sources/data-source-main/"
       },
       {
         "type": "custom-link",
-        "label": "Sources de données externes",
+        "label": "Source de données externe (Base de données)",
         "items": [
           {
             "type": "custom-link",
@@ -60,60 +29,50 @@
           },
           {
             "type": "custom-link",
-            "label": "PostgreSQL",
-            "link": "/data-sources/data-source-external-postgres/"
-          },
-          {
-            "type": "custom-link",
-            "label": "MySQL",
+            "label": "MySQL externe",
             "link": "/data-sources/data-source-external-mysql/"
           },
           {
             "type": "custom-link",
-            "label": "MariaDB",
+            "label": "MariaDB externe",
             "link": "/data-sources/data-source-external-mariadb/"
           },
           {
             "type": "custom-link",
-            "label": "MSSQL",
+            "label": "PostgreSQL externe",
+            "link": "/data-sources/data-source-external-postgres/"
+          },
+          {
+            "type": "custom-link",
+            "label": "MSSQL externe",
             "link": "/data-sources/data-source-external-mssql/"
           },
           {
             "type": "custom-link",
-            "label": "KingbaseES",
-            "link": "/data-sources/data-source-kingbase/"
-          },
-          {
-            "type": "custom-link",
-            "label": "OceanBase",
-            "link": "/data-sources/external/oceanbase"
-          },
-          {
-            "type": "custom-link",
-            "label": "Oracle",
+            "label": "Oracle externe",
             "link": "/data-sources/data-source-external-oracle/"
-          },
-          {
-            "type": "custom-link",
-            "label": "ClickHouse",
-            "link": "/data-sources/external/clickhouse"
-          },
-          {
-            "type": "custom-link",
-            "label": "Doris",
-            "link": "/data-sources/external/doris"
-          },
-          {
-            "type": "custom-link",
-            "label": "Source de données d’API REST",
-            "link": "/data-sources/data-source-rest-api/"
-          },
-          {
-            "type": "custom-link",
-            "label": "Source de données NocoBase externe",
-            "link": "/data-sources/data-source-external-nocobase/"
           }
         ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Comparaison des bases de données principale et externes",
+        "link": "/data-sources/data-modeling/main-vs-external-data-sources"
+      },
+      {
+        "type": "custom-link",
+        "label": "Source de données REST API",
+        "link": "/data-sources/data-source-rest-api/"
+      },
+      {
+        "type": "custom-link",
+        "label": "NocoBase externe",
+        "link": "/data-sources/data-source-external-nocobase/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Source de données KingbaseES",
+        "link": "/data-sources/data-source-kingbase/"
       }
     ]
   },
@@ -123,13 +82,23 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Vue d’ensemble",
+        "label": "Aperçu",
         "link": "/data-sources/data-modeling/collection"
       },
       {
         "type": "custom-link",
         "label": "Table standard",
         "link": "/data-sources/data-source-main/general-collection"
+      },
+      {
+        "type": "custom-link",
+        "label": "Table héritée",
+        "link": "/data-sources/data-source-main/inheritance-collection"
+      },
+      {
+        "type": "custom-link",
+        "label": "Table de fichiers",
+        "link": "/data-sources/file-manager/file-collection"
       },
       {
         "type": "custom-link",
@@ -148,13 +117,8 @@
       },
       {
         "type": "custom-link",
-        "label": "Table de fichiers",
-        "link": "/data-sources/file-manager/file-collection"
-      },
-      {
-        "type": "custom-link",
-        "label": "Table de vue",
-        "link": "/data-sources/collection-view/"
+        "label": "Table d'expressions",
+        "link": "/data-sources/collection-expression/collection"
       },
       {
         "type": "custom-link",
@@ -163,23 +127,23 @@
       },
       {
         "type": "custom-link",
-        "label": "Table héritée",
-        "link": "/data-sources/data-source-main/inheritance-collection"
+        "label": "Vue de base de données",
+        "link": "/data-sources/collection-view/"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "Champs des tables de données",
+    "label": "Champs de table de données",
     "items": [
       {
         "type": "custom-link",
-        "label": "Vue d’ensemble",
+        "label": "Aperçu",
         "link": "/data-sources/data-modeling/collection-fields/"
       },
       {
         "type": "custom-link",
-        "label": "Validation des champs",
+        "label": "Validation de champ",
         "link": "/data-sources/data-modeling/collection-fields/validation"
       },
       {
@@ -188,12 +152,12 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "Texte sur une ligne",
+            "label": "Texte (ligne unique)",
             "link": "/data-sources/data-modeling/collection-fields/basic/input"
           },
           {
             "type": "custom-link",
-            "label": "Texte multiligne",
+            "label": "Texte (multiligne)",
             "link": "/data-sources/data-modeling/collection-fields/basic/textarea"
           },
           {
@@ -203,7 +167,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Adresse e-mail",
+            "label": "E-mail",
             "link": "/data-sources/data-modeling/collection-fields/basic/email"
           },
           {
@@ -269,13 +233,8 @@
           },
           {
             "type": "custom-link",
-            "label": "Groupe de cases à cocher",
+            "label": "Cases à cocher",
             "link": "/data-sources/data-modeling/collection-fields/choices/checkbox-group"
-          },
-          {
-            "type": "custom-link",
-            "label": "Région administrative chinoise (obsolète)",
-            "link": "/data-sources/data-modeling/collection-fields/choices/china-region"
           }
         ]
       },
@@ -290,17 +249,17 @@
           },
           {
             "type": "custom-link",
-            "label": "Markdown(Vditor)",
+            "label": "Markdown (Vditor)",
             "link": "/data-sources/field-markdown-vditor/"
           },
           {
             "type": "custom-link",
-            "label": "Texte enrichi",
+            "label": "Texte riche",
             "link": "/data-sources/data-modeling/collection-fields/media/rich-text"
           },
           {
             "type": "custom-link",
-            "label": "Pièce jointe (obsolète)",
+            "label": "Pièce jointe (relation)",
             "link": "/data-sources/file-manager/field-attachment"
           },
           {
@@ -317,11 +276,11 @@
       },
       {
         "type": "custom-link",
-        "label": "Date et heure",
+        "label": "Date & Heure",
         "items": [
           {
             "type": "custom-link",
-            "label": "Introduction",
+            "label": "Aperçu",
             "link": "/data-sources/data-modeling/collection-fields/datetime/"
           },
           {
@@ -353,43 +312,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Types de relations",
-        "items": [
-          {
-            "type": "custom-link",
-            "label": "Introduction",
-            "link": "/data-sources/data-modeling/collection-fields/associations/"
-          },
-          {
-            "type": "custom-link",
-            "label": "Un-à-un",
-            "link": "/data-sources/data-modeling/collection-fields/associations/o2o/"
-          },
-          {
-            "type": "custom-link",
-            "label": "Un-à-plusieurs",
-            "link": "/data-sources/data-modeling/collection-fields/associations/o2m/"
-          },
-          {
-            "type": "custom-link",
-            "label": "Plusieurs-à-un",
-            "link": "/data-sources/data-modeling/collection-fields/associations/m2o/"
-          },
-          {
-            "type": "custom-link",
-            "label": "Plusieurs-à-plusieurs",
-            "link": "/data-sources/data-modeling/collection-fields/associations/m2m/"
-          },
-          {
-            "type": "custom-link",
-            "label": "Plusieurs-à-plusieurs (tableau)",
-            "link": "/data-sources/field-m2m-array/"
-          }
-        ]
-      },
-      {
-        "type": "custom-link",
-        "label": "Formes géométriques",
+        "label": "Géométrie",
         "items": [
           {
             "type": "custom-link",
@@ -439,12 +362,12 @@
           },
           {
             "type": "custom-link",
-            "label": "Formule de calcul",
+            "label": "Formule calculée",
             "link": "/data-sources/field-formula/"
           },
           {
             "type": "custom-link",
-            "label": "Codage automatique",
+            "label": "Numérotation automatique",
             "link": "/data-sources/field-sequence/"
           },
           {
@@ -454,12 +377,17 @@
           },
           {
             "type": "custom-link",
-            "label": "Chiffrement",
+            "label": "Sélecteur de table de données",
+            "link": "/data-sources/data-modeling/collection-fields/advanced/collection-select"
+          },
+          {
+            "type": "custom-link",
+            "label": "Chiffré",
             "link": "/data-sources/field-encryption/"
           },
           {
             "type": "custom-link",
-            "label": "Région administrative chinoise",
+            "label": "Régions administratives chinoises",
             "link": "/data-sources/data-modeling/collection-fields/advanced/china-region"
           }
         ]
@@ -480,18 +408,59 @@
           },
           {
             "type": "custom-link",
-            "label": "Créateur",
+            "label": "Créé par",
             "link": "/data-sources/data-modeling/collection-fields/system-info/created-by"
           },
           {
             "type": "custom-link",
-            "label": "Dernier modificateur",
+            "label": "Modifié par",
             "link": "/data-sources/data-modeling/collection-fields/system-info/updated-by"
           },
           {
             "type": "custom-link",
             "label": "Espace",
             "link": "/data-sources/data-modeling/collection-fields/system-info/space"
+          },
+          {
+            "type": "custom-link",
+            "label": "Table OID",
+            "link": "/data-sources/data-modeling/collection-fields/system-info/table-oid"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Types de relation",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Aperçu",
+            "link": "/data-sources/data-modeling/collection-fields/associations/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Un-à-un",
+            "link": "/data-sources/data-modeling/collection-fields/associations/o2o/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Un-à-plusieurs",
+            "link": "/data-sources/data-modeling/collection-fields/associations/o2m/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Plusieurs-à-un",
+            "link": "/data-sources/data-modeling/collection-fields/associations/m2o/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Plusieurs-à-plusieurs",
+            "link": "/data-sources/data-modeling/collection-fields/associations/m2m/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Plusieurs-à-plusieurs (tableau)",
+            "link": "/data-sources/field-m2m-array/"
           }
         ]
       }
@@ -499,7 +468,13 @@
   },
   {
     "type": "custom-link",
-    "label": "Développement d’extensions",
-    "link": "/development/"
+    "label": "Développement",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Aperçu",
+        "link": "/data-sources/development/"
+      }
+    ]
   }
 ]

@@ -1,12 +1,9 @@
 ---
-title: "Chinesische Verwaltungsregionen"
-description: "Feld für chinesische Verwaltungsregionen mit einer dreistufigen Auswahl von Provinzen, Städten und Bezirken, geeignet für Adressen, Herkunftsorte und ähnliche Szenarien."
-keywords: "Chinesische Verwaltungsregionen, Provinz-Stadt-Bezirk, Feld für Verwaltungsregionen, dreistufige Verknüpfung, NocoBase"
+pkg: "@nocobase/plugin-field-china-region"
 ---
 
-# Chinesische Verwaltungsregionen
 
-<PluginInfo name="field-china-region"></PluginInfo>
+# China-Region
 
 ## Einführung
 
@@ -14,6 +11,6 @@ keywords: "Chinesische Verwaltungsregionen, Provinz-Stadt-Bezirk, Feld für Verw
 
 ![20240512180305](https://static-docs.nocobase.com/20240512180305.png)
 
-## Beispiel
+## Beispiele
 
-Wird ergänzt
+Wird noch ergänzt.

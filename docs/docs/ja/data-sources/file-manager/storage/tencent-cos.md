@@ -1,37 +1,31 @@
----
-title: "Tencent Cloud COS"
-description: "Tencent Cloud COSストレージエンジンの設定：Bucket、Region、SecretId、オブジェクトストレージへのファイルアップロード。"
-keywords: "Tencent Cloud COS,Tencent Cloudオブジェクトストレージ,COSストレージ,クラウドストレージ,NocoBase"
----
+# Tencent COS
 
-# Tencent Cloud COS
+Tencent Cloud COS をベースにしたストレージエンジンです。ご利用の前に、関連するアカウントと権限をご準備ください。
 
-Tencent Cloud COSに基づくストレージエンジンです。使用する前に、関連するアカウントと権限を準備する必要があります。
+## 設定オプション
 
-## 設定パラメーター
-
-![Tencent Cloud COSストレージエンジンの設定例](https://static-docs.nocobase.com/20240712222125.png)
+![Tencent COS ストレージエンジンの設定例](https://static-docs.nocobase.com/20240712222125.png)
 
 :::info{title=ヒント}
-Tencent Cloud COSストレージエンジン専用のパラメーターのみを説明します。共通パラメーターについては、[エンジン共通パラメーター](./index.md#引擎通用参数)を参照してください。
+ここではTencent Cloud COS ストレージエンジン固有のパラメータのみを説明しています。共通パラメータについては、[エンジンの共通パラメータ](./index.md#エンジンの共通パラメータ)をご参照ください。
 :::
 
 ### リージョン
 
-COSストレージのリージョンを入力します。例：`ap-chengdu`。
+COS ストレージのリージョンを入力します。例: `ap-chengdu`
 
 :::info{title=ヒント}
-[腾讯云 COSコンソール](https://console.cloud.tencent.com/cos)でバケットのリージョン情報を確認できます。リージョンのプレフィックス部分のみを抜き出して入力してください（完全なドメイン名を入力する必要はありません）。
+[Tencent Cloud COS コンソール](https://console.cloud.tencent.com/cos)でストレージバケットのリージョン情報を確認できます。リージョンのプレフィックス部分のみを抽出してください（完全なドメイン名は不要です）。
 :::
 
 ### SecretId
 
-Tencent Cloudへのアクセスを許可するアクセスキーのIDを入力します。
+Tencent Cloud 認証アクセスキーの ID を入力します。
 
 ### SecretKey
 
-Tencent Cloudへのアクセスを許可するアクセスキーのSecretを入力します。
+Tencent Cloud 認証アクセスキーの Secret を入力します。
 
 ### バケット
 
-COSストレージのバケット名を入力します。例：`qing-cdn-1234189398`。
+COS ストレージのバケット名を入力します。例: `qing-cdn-1234189398`

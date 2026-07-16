@@ -1,27 +1,21 @@
----
-title: "Alibaba Cloud OSS"
-description: "Configuración del motor de almacenamiento Alibaba Cloud OSS: Bucket, Endpoint y AccessKey, con compatibilidad para acceso público y acceso interno."
-keywords: "Alibaba Cloud OSS, almacenamiento de objetos de Alibaba Cloud, almacenamiento OSS, almacenamiento en la nube, NocoBase"
----
+# Aliyun OSS
 
-# Alibaba Cloud OSS
+Motor de almacenamiento basado en Aliyun OSS. Antes de usarlo, necesita preparar las cuentas y permisos relevantes.
 
-Motor de almacenamiento basado en Alibaba Cloud OSS. Antes de utilizarlo, es necesario preparar las cuentas y los permisos correspondientes.
+## Configuración
 
-## Parámetros de configuración
-
-![Ejemplo de configuración del motor de almacenamiento Alibaba Cloud OSS](https://static-docs.nocobase.com/20240712220011.png)
+![Ejemplo de configuración de Aliyun OSS](https://static-docs.nocobase.com/20240712220011.png)
 
 :::info{title=Nota}
-Solo se presentan los parámetros específicos del motor de almacenamiento Alibaba Cloud OSS. Para consultar los parámetros generales, véase [Parámetros generales del motor](./index.md#引擎通用参数).
+Aquí solo se presentan los parámetros específicos del motor de almacenamiento de Aliyun OSS. Para los parámetros generales, consulte [Parámetros Generales del Motor](./index.md#common-engine-parameters).
 :::
 
 ### Región
 
-Introduzca la región del almacenamiento OSS, por ejemplo: `oss-cn-hangzhou`.
+Especifique la región de almacenamiento de OSS, por ejemplo: `oss-cn-hangzhou`.
 
 :::info{title=Nota}
-Puede consultar la información de la región del espacio de almacenamiento en la [consola de Alibaba Cloud OSS](https://oss.console.aliyun.com/). Solo es necesario extraer el prefijo de la región (no es necesario incluir el nombre de dominio completo).
+Puede ver la información de la región del bucket de almacenamiento en la [consola de Aliyun OSS](https://oss.console.aliyun.com/). Solo necesita usar la parte del prefijo de la región (sin el nombre de dominio completo).
 :::
 
 ### AccessKey ID
@@ -34,4 +28,4 @@ Introduzca el secreto de la clave de acceso autorizada de Alibaba Cloud.
 
 ### Bucket
 
-Introduzca el nombre del bucket del almacenamiento OSS.
+Introduzca el nombre del bucket de OSS.

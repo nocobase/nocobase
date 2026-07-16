@@ -1,48 +1,42 @@
----
-title: "Um-para-muitos"
-description: "Campo de relação um-para-muitos (O2M), no qual uma entidade está associada a várias entidades filhas, como autor e artigos."
-keywords: "Um-para-muitos,O2M,HasMany,associação,NocoBase"
----
+# Um para Muitos
 
-# Um-para-muitos
+A relação entre uma turma e seus alunos é um exemplo de um relacionamento um para muitos: uma turma pode ter vários alunos, mas cada aluno pertence a apenas uma turma.
 
-A relação entre uma turma e seus alunos: uma turma pode ter vários alunos, mas cada aluno só pode pertencer a uma turma. Nesse caso, a relação entre a turma e os alunos é uma relação um-para-muitos.
+Diagrama ER:
 
-A relação ER é apresentada abaixo
+![alt text](https://static-docs.nocobase.com/9475f044d123d28ac8e56a077411f8dc.png)
 
-![texto alternativo](https://static-docs.nocobase.com/9475f044d123d28ac8e56a077411f8dc.png)
+Configuração do Campo:
 
-Configuração do campo
+![alt text](https://static-docs.nocobase.com/a608ce54821172dad7e8ab760107ff4e.png)
 
-![texto alternativo](https://static-docs.nocobase.com/a608ce54821172dad7e8ab760107ff4e.png)
+## Descrição dos Parâmetros
 
-## Descrição dos parâmetros
+### Coleção de Origem
 
-### Source collection
+A coleção de origem, que é a coleção onde o campo atual está.
 
-A tabela de origem, ou seja, a tabela na qual o campo atual está localizado.
+### Coleção de Destino
 
-### Target collection
+A coleção de destino, ou seja, a coleção com a qual você quer associar.
 
-A tabela de destino à qual a associação é estabelecida.
+### Chave de Origem
 
-### Source key
+O campo da coleção de origem que é referenciado pela chave estrangeira. Ele precisa ser único.
 
-O campo referenciado pela restrição de chave estrangeira, que deve ser exclusivo.
+### Chave Estrangeira
 
-### Foreign key
+O campo da coleção de destino que é usado para estabelecer a associação entre as duas coleções.
 
-O campo da tabela de destino usado para estabelecer a associação entre as duas tabelas.
+### Chave de Destino
 
-### Target key
-
-O campo da tabela de destino usado para visualizar cada registro no bloco de relação; geralmente, é um campo com valor exclusivo.
+O campo da coleção de destino usado para visualizar cada registro no bloco de relacionamento, geralmente um campo único.
 
 ### ON DELETE
 
-ON DELETE define a regra de operação sobre as referências de chave estrangeira na tabela filha relacionada quando um registro é excluído da tabela pai. É uma opção usada na definição de restrições de chave estrangeira. As opções ON DELETE comuns incluem:
+ON DELETE se refere às regras aplicadas às referências de chave estrangeira em coleções filhas relacionadas quando você exclui registros da coleção pai. É uma opção usada ao definir uma restrição de chave estrangeira. As opções comuns de ON DELETE incluem:
 
-- CASCADE: ao excluir um registro da tabela pai, exclui automaticamente todos os registros relacionados na tabela filha.
-- SET NULL: ao excluir um registro da tabela pai, define como NULL o valor da chave estrangeira relacionada na tabela filha.
-- RESTRICT: opção padrão; ao tentar excluir um registro da tabela pai, a exclusão é rejeitada se houver registros relacionados na tabela filha.
-- NO ACTION: semelhante a RESTRICT; se houver registros relacionados na tabela filha, a exclusão do registro da tabela pai será rejeitada.
+- **CASCADE**: Quando um registro na coleção pai é excluído, todos os registros relacionados na coleção filha são automaticamente excluídos.
+- **SET NULL**: Quando um registro na coleção pai é excluído, os valores da chave estrangeira nos registros relacionados da coleção filha são definidos como NULL.
+- **RESTRICT**: A opção padrão, ela impede a exclusão de um registro da coleção pai se houver registros relacionados na coleção filha.
+- **NO ACTION**: Semelhante a RESTRICT, impede a exclusão de um registro da coleção pai se houver registros relacionados na coleção filha.

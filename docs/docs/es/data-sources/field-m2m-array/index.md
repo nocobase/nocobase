@@ -1,40 +1,39 @@
 ---
 pkg: "@nocobase/plugin-field-m2m-array"
-title: "Muchos a muchos (matriz)"
-description: "Utiliza un campo de tipo matriz para guardar varias claves únicas de la tabla de destino y establecer una relación de muchos a muchos, como la relación muchos a muchos entre artículos y etiquetas, sin necesidad de una tabla intermedia."
-keywords: "muchos a muchos matriz,M2M Array,relación mediante matriz,BelongsToMany,NocoBase"
 ---
-# Muchos a muchos (matriz)
+
+# Muchos a Muchos (Array)
 
 ## Introducción
 
-Permite utilizar un campo de tipo matriz en una tabla de datos para guardar varias claves únicas de la tabla de destino y establecer así una relación de muchos a muchos con ella. Por ejemplo: existen dos entidades, artículos y etiquetas. Un artículo puede estar asociado a varias etiquetas; en la tabla de artículos, se utiliza un campo de tipo matriz para guardar los ID de los registros correspondientes de la tabla de etiquetas.
+Esta característica le permite usar campos de tipo array en una **colección** de datos para almacenar múltiples claves únicas de la tabla de destino, estableciendo así una relación de muchos a muchos entre ambas tablas. Por ejemplo, imagine las entidades Artículos y Etiquetas. Un artículo puede estar vinculado a múltiples etiquetas, y la tabla de artículos almacena los IDs de los registros correspondientes de la tabla de etiquetas en un campo de tipo array.
 
 :::warning{title=Nota}
 
-- Siempre que sea posible, utiliza una tabla intermedia para establecer una relación estándar de [muchos a muchos](../data-modeling/collection-fields/associations/m2m/index.md) y evita utilizar este tipo de relación.
-- En las relaciones de muchos a muchos establecidas mediante campos de tipo matriz, actualmente solo PostgreSQL admite filtrar los datos de la tabla de origen utilizando los campos de la tabla de destino. Por ejemplo: en el caso anterior, puedes utilizar otros campos de la tabla de etiquetas, como el título, para filtrar los artículos.
+- Siempre que sea posible, le recomendamos usar una **colección** intermedia para establecer una relación estándar de [muchos a muchos](../data-modeling/collection-fields/associations/m2m/index.md), en lugar de depender de este método.
+- Actualmente, solo PostgreSQL soporta filtrar datos de la **colección** de origen usando campos de la tabla de destino para relaciones de muchos a muchos establecidas con campos de tipo array. Por ejemplo, en el escenario anterior, usted podría filtrar artículos basándose en otros campos de la tabla de etiquetas, como el título.
+
   :::
 
-### Configuración del campo
+### Configuración del Campo
 
 ![many-to-many(array) field configuration](https://static-docs.nocobase.com/202407051108180.png)
 
-## Descripción de los parámetros
+## Descripción de Parámetros
 
 ### Colección de origen
 
-La tabla de origen, es decir, la tabla en la que se encuentra el campo actual.
+La **colección** de origen, donde reside el campo actual.
 
 ### Colección de destino
 
-La tabla de destino con la que se establece la relación.
+La **colección** de destino con la que se establece la relación.
 
 ### Clave foránea
 
-El campo de tipo matriz que almacena en la tabla de origen las claves de destino de Target key.
+El campo de tipo array en la **colección** de origen que almacena la clave de destino de la tabla de destino.
 
-Correspondencia de los tipos de campos de tipo matriz:
+Las relaciones correspondientes para los tipos de campo array son las siguientes:
 
 | NocoBase | PostgreSQL | MySQL  | SQLite |
 | -------- | ---------- | ------ | ------ |
@@ -42,4 +41,4 @@ Correspondencia de los tipos de campos de tipo matriz:
 
 ### Clave de destino
 
-El campo cuyos valores se almacenan en el campo de tipo matriz de la tabla de origen; debe ser único.
+El campo en la **colección** de destino que corresponde a los valores almacenados en el campo de tipo array de la tabla de origen. Este campo debe ser único.
