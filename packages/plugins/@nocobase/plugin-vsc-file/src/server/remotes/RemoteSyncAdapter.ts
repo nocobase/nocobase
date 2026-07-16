@@ -154,17 +154,20 @@ export function normalizeGitHubRemoteConfig(input: unknown): VscGitHubRemoteConf
     });
   }
 
-  const subdirectory = input.subdirectory ?? null;
-  if (subdirectory !== null && (typeof subdirectory !== 'string' || subdirectory.trim() !== subdirectory)) {
-    throw new RemoteSyncError('CONFIG_INVALID', 'GitHub subdirectory must be a trimmed string or null', {
-      details: { provider: 'github', reasonCode: 'invalid-subdirectory' },
-    });
+  let subdirectory: string | null = null;
+  if (input.subdirectory !== undefined && input.subdirectory !== null) {
+    if (typeof input.subdirectory !== 'string' || input.subdirectory.trim() !== input.subdirectory) {
+      throw new RemoteSyncError('CONFIG_INVALID', 'GitHub subdirectory must be a trimmed string or null', {
+        details: { provider: 'github', reasonCode: 'invalid-subdirectory' },
+      });
+    }
+    subdirectory = input.subdirectory || null;
   }
 
   return {
     owner: requireRemoteSegment(input.owner, 'owner'),
     repository: requireRemoteSegment(input.repository, 'repository'),
     branch: requireRemoteBranch(input.branch),
-    subdirectory: subdirectory || null,
+    subdirectory,
   };
 }

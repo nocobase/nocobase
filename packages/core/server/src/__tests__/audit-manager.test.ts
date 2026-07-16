@@ -402,5 +402,15 @@ describe('audit manager', () => {
         },
       },
     });
+
+    const token = 'github_pat_012345678901234567890123456789';
+    ctx.reqId = 'req-2';
+    ctx.request.header['x-request-source'] = token;
+    ctx.request.headers['x-request-source'] = token;
+    await app.auditManager.output(ctx, ctx.reqId);
+
+    expect(logs[1].requestSource).toBeUndefined();
+    expect(logs[1].metadata.request.headers['x-request-source']).toBeUndefined();
+    expect(JSON.stringify(logs[1])).not.toContain(token);
   });
 });
