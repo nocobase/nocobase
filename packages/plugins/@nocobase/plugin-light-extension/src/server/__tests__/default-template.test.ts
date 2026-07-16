@@ -24,6 +24,7 @@ import { LightExtensionWorkspaceCompilerBridge } from '../services/LightExtensio
 const EXPECTED_ENTRY_PATHS = [
   'src/client/js-blocks/welcome-card/index.tsx',
   'src/client/js-blocks/collection-summary/index.tsx',
+  'src/client/js-blocks/collection-table/index.tsx',
   'src/client/js-actions/refresh-data/index.ts',
   'src/client/js-actions/confirm-action/index.ts',
   'src/client/js-fields/status-tag/index.tsx',
@@ -37,7 +38,7 @@ const EXPECTED_ENTRY_PATHS = [
 ] as const;
 
 describe('plugin-light-extension default source template', () => {
-  it('contains two configurable examples for every supported surface and passes source validation', () => {
+  it('contains configurable examples for every supported surface and passes source validation', () => {
     const files = createDefaultLightExtensionTemplate();
     const paths = files.map((file) => file.path);
     const diagnostics = new LightExtensionValidator().validateInitialFiles({ files });
@@ -104,7 +105,69 @@ describe('plugin-light-extension default source template', () => {
       'x-component': 'CollectionFieldSelect',
       'x-component-props': { collectionField: 'collectionName' },
     });
-    expect(DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES).toHaveLength(26);
+    const collectionTable = files.find((file) => file.path === 'src/client/js-blocks/collection-table/index.tsx');
+    expect(collectionTable?.content).toContain("ctx.makeResource('MultiRecordResource')");
+    expect(collectionTable?.content).toContain('} = ctx.libs.antd;');
+    expect(collectionTable?.content).toContain('} = ctx.libs.antdIcons;');
+    expect(collectionTable?.content).toContain('<Table');
+    expect(collectionTable?.content).toContain('normalizeAntdSort(sorterValue, fieldMap, tableDataScope)');
+    expect(collectionTable?.content).toContain(
+      'components={configurable ? { header: { cell: HeaderCell } } : undefined}',
+    );
+    expect(collectionTable?.content).toContain('const HeaderCell = React.useMemo(() =>');
+    expect(collectionTable?.content).toContain('onPointerDown={(pointerEvent) =>');
+    expect(collectionTable?.content).toContain('onDrop={(dropEvent) =>');
+    expect(collectionTable?.content).toContain('data-column-drag-handle={fieldName}');
+    expect(collectionTable?.content).toContain('data-column-resize-handle={fieldName}');
+    expect(collectionTable?.content).toContain('id: headerIdByField.get(column.field)');
+    expect(collectionTable?.content).toContain("headerFieldById.get(toNonEmptyString(props.id) || '')");
+    expect(collectionTable?.content).toContain('requestParams.appends = appends');
+    expect(collectionTable?.content).toContain('requestParams.sort = requestSort');
+    expect(collectionTable?.content).toContain('requestRevisionRef.current !== requestRevision');
+    expect(collectionTable?.content).toContain('const hidesSortedColumn =');
+    expect(collectionTable?.content).toContain(
+      'column.field === fieldName ? { ...column, width: startWidth } : column',
+    );
+    expect(collectionTable?.content).toContain('(Array.isArray(value) && value.length === 0)');
+    expect(collectionTable?.content).toContain("value.toLowerCase() === 'true'");
+    expect(collectionTable?.content).toContain('sourceBinding.entryId');
+    expect(collectionTable?.content).toContain('flowModel.saveStepParams()');
+    expect(collectionTable?.content).toContain('const persistState = getPersistState();');
+    expect(collectionTable?.content).toContain('!isCurrentPersistState(persistState)');
+    expect(collectionTable?.content).toContain('const saveStableStepParams = async () =>');
+    expect(collectionTable?.content).toContain('while (isFlowModelActive())');
+    expect(collectionTable?.content?.match(/await flowModel\.saveStepParams\(\);/g)).toHaveLength(2);
+    expect(collectionTable?.content).not.toContain('setTimeout(');
+    expect(collectionTable?.content).not.toContain('Tabulator');
+    expect(collectionTable?.content).not.toContain('tabulator-tables');
+    expect(collectionTable?.content).not.toContain('ctx.loadCSS');
+    expect(collectionTable?.content).not.toContain('ctx.importAsync');
+    expect(collectionTable?.content).not.toContain("from 'tabulator-tables'");
+    const collectionTableDescriptor = files.find(
+      (file) => file.path === 'src/client/js-blocks/collection-table/entry.json',
+    );
+    const parsedCollectionTableDescriptor = JSON.parse(collectionTableDescriptor?.content || '{}');
+    expect(parsedCollectionTableDescriptor.description).toContain('Ant Design table');
+    expect(parsedCollectionTableDescriptor.tags).toEqual(['JS Block', 'Collection', 'Table', 'Ant Design']);
+    const collectionTableSettings = parsedCollectionTableDescriptor.settings;
+    expect(collectionTableSettings.collectionName).toMatchObject({
+      'x-component': 'CollectionSelect',
+      'x-component-props': { dataSourceField: 'dataSourceKey' },
+    });
+    expect(collectionTableSettings.collectionName.required).not.toBe(true);
+    expect(collectionTableSettings.columns).toMatchObject({
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          field: { type: 'string' },
+          width: { type: 'integer' },
+          visible: { type: 'boolean' },
+          formatter: { type: 'string' },
+        },
+      },
+    });
+    expect(DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES).toHaveLength(28);
   });
 
   it('returns a fresh file array for each repository', () => {

@@ -202,7 +202,10 @@ function bindRunJsToFieldItems(items: SubModelItem[], runJs: ReturnType<typeof c
         const resolved = (
           typeof resolveOptions === 'function' ? await resolveOptions(ctx) : resolveOptions
         ) as CreateModelOptions;
-        const field = resolved.subModels?.field || {};
+        const field = resolved.subModels?.field;
+        if (!isCreateModelOptions(field)) {
+          return resolved;
+        }
         const fieldStepParams = field.stepParams || {};
         return {
           ...resolved,
@@ -254,6 +257,9 @@ function createEntryModelOptions(
 }
 
 function getModelUse(options: LightExtensionModelMenuOptions): string {
+  if (options.target === 'field') {
+    throw new Error('modelUse is not available for Light extension field menus');
+  }
   const modelUse = options.modelUse || defaultModelUses[options.target];
   if (!modelUse) {
     throw new Error(`modelUse is required for Light extension ${options.target} menus`);
@@ -287,4 +293,8 @@ function getEntryLabel(entry: LightExtensionSelectableEntrySummary): string {
 
 function translate(ctx: FlowModelContext, key: string): string {
   return ctx.t(key, { ns: [NAMESPACE, 'client'], nsMode: 'fallback' });
+}
+
+function isCreateModelOptions(value: unknown): value is CreateModelOptions {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value) && 'use' in value;
 }

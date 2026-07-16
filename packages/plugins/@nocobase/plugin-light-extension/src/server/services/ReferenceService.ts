@@ -1610,8 +1610,8 @@ function hasFlowRegistryStep(
   flowKey: string,
   stepKey: string,
 ): boolean {
-  const flow = isPlainRecord(flowRegistry) && isPlainRecord(flowRegistry[flowKey]) ? flowRegistry[flowKey] : null;
-  const steps = flow && isPlainRecord(flow.steps) ? flow.steps : null;
+  const flow = isPlainRecord(flowRegistry) ? flowRegistry[flowKey] : null;
+  const steps = isPlainRecord(flow) && isPlainRecord(flow.steps) ? flow.steps : null;
   return Boolean(steps && Object.prototype.hasOwnProperty.call(steps, stepKey));
 }
 
