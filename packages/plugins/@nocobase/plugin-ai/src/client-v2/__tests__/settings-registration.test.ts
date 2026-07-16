@@ -10,6 +10,8 @@
 import { createMockClient } from '@nocobase/client-v2';
 import { createJSRunnerWithVersion, FlowContext, getRunJSDocFor, setupRunJSContexts } from '@nocobase/flow-engine';
 import { describe, expect, it, vi } from 'vitest';
+import { AIChatBoxBlockModel, AIChatBoxCoreModel } from '../block/ai-chat-box';
+import { AIChatDemoBlockModel } from '../block';
 import PluginAIClientV2, {
   registerPluginAIPermissionsTab,
   registerPluginAIRunJSContextContribution,
@@ -87,7 +89,7 @@ describe('plugin-ai v2 settings registration', () => {
     ).not.toThrow();
   });
 
-  it('does not register the deprecated datasource work context in v2', async () => {
+  it('registers v2 work contexts and AI chat box models', async () => {
     const app = createMockClient({ publicPath: '/v/' });
 
     await app.pm.add(PluginAIClientV2);
@@ -108,6 +110,9 @@ describe('plugin-ai v2 settings registration', () => {
     expect(context.ai?.triggerTask).toEqual(expect.any(Function));
     expect(context.ai?.triggerModelTask).toEqual(expect.any(Function));
     expect(context.ai?.onChatBoxMounted).toBeUndefined();
+    expect(app.flowEngine.getModelClass('AIChatBoxBlockModel')).toBe(AIChatBoxBlockModel);
+    expect(app.flowEngine.getModelClass('AIChatBoxCoreModel')).toBe(AIChatBoxCoreModel);
+    expect(app.flowEngine.getModelClass('AIChatDemoBlockModel')).toBe(AIChatDemoBlockModel);
   });
 
   it('registers RunJS docs for ctx.ai.triggerTask and ctx.ai.triggerModelTask', async () => {

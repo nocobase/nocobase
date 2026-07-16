@@ -30,6 +30,7 @@ import {
   AIChatDemoNewActionModel,
   AIChatDemoSenderBlockModel,
 } from './block';
+import { AIChatBoxBlockModel, AIChatBoxCoreModel } from './block/ai-chat-box';
 
 type AIFlowContext = {
   aiConfigRepository?: AIConfigRepository;
@@ -138,6 +139,8 @@ export class PluginAIClientV2 extends Plugin<object, Application> {
     this.aiManager.registerWorkContext('chart-config', chartConfigWorkContext);
     setupAICoding();
     this.flowEngine.registerModels({
+      AIChatBoxBlockModel,
+      AIChatBoxCoreModel,
       AIChatDemoBlockModel,
       AIChatDemoMessagesAndSenderBlockModel,
       AIChatDemoChatContentBlockModel,

@@ -691,7 +691,7 @@ export class AIChatDemoBlockModel extends BlockModel<AIChatDemoBlockStructure> {
 }
 
 AIChatDemoBlockModel.define({
-  label: tExpr('AI chat box'),
+  label: tExpr('AI chat box demo'),
   sort: 360,
   createModelOptions: {
     use: 'AIChatDemoBlockModel',

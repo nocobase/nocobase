@@ -247,7 +247,7 @@ AI employee task 需要支持 `Chat box uid`：
 
 ### T2. 生产 AIChatBox 模型和文件骨架
 
-状态：`Pending`
+状态：`Done`
 
 依赖：T1
 
@@ -265,6 +265,13 @@ AI employee task 需要支持 `Chat box uid`：
 - 模型注册相关测试，如已有 FlowEngine model 注册测试则补充。
 - 手动或自动验证生产模型可以创建，demo 仍可渲染。
 - 运行 touched files eslint。
+
+测试结果：
+
+- `yarn eslint --fix` touched T2 files 通过。
+- `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/settings-registration.test.ts --run --reporter=verbose` 通过。
+- `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/public-api-contract.test.ts --run --reporter=verbose` 通过。
+- `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/ai-employee-action-model.test.ts --run --reporter=verbose` 通过。
 
 ### T3. AIChatBoxBlockView 布局与 Add block 行为
 
