@@ -80,6 +80,25 @@ const makeModel = (props: AIChatBoxBlockProps): AIChatBoxBlockModel => {
 };
 
 describe('MessagesAndSender', () => {
+  it('keeps messages in a bounded flex region above the sender', () => {
+    mocks.getAIEmployees.mockResolvedValue([]);
+
+    const { container } = render(
+      <MessagesAndSender
+        model={makeModel({
+          showMessages: true,
+          showDisclaimer: false,
+        })}
+      />,
+    );
+
+    const messages = screen.getByTestId('messages');
+    const messagesRegion = messages.parentElement;
+    expect(messagesRegion?.getAttribute('style')).toContain('flex: 1 1 0');
+    expect(messagesRegion?.getAttribute('style')).toContain('overflow: hidden');
+    expect(container.querySelector('footer')).toContainElement(screen.getByTestId('sender'));
+  });
+
   it('passes AI chat box settings to the real sender and switches to an allowed employee', async () => {
     mocks.senderProps = undefined;
     mocks.switchAIEmployee.mockReset();

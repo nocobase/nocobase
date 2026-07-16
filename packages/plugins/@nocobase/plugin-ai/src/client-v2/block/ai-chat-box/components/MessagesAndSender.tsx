@@ -73,7 +73,11 @@ export const MessagesAndSender: React.FC<{
         backgroundColor: 'transparent',
       }}
     >
-      {settings.showMessages ? <Messages /> : null}
+      {settings.showMessages ? (
+        <div style={{ flex: '1 1 0', minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <Messages />
+        </div>
+      ) : null}
       <Footer
         style={{
           backgroundColor: 'transparent',
