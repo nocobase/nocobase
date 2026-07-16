@@ -195,6 +195,88 @@ describe('plugin-light-extension references service', () => {
     ]);
   });
 
+  it('indexes FormJSFieldItemModel as a JS item reference owner', async () => {
+    const formJsItem = createJsItemNode({ uid: 'flow_form_js_item' });
+    formJsItem.use = 'FormJSFieldItemModel';
+    const { service, repositories } = createReferenceServiceFixture({
+      flowModelTrees: {
+        flow_form_js_item: formJsItem,
+      },
+      repos: [createRepoRecord({ id: 'ler_items' })],
+      entries: [createJsItemEntryRecord()],
+    });
+
+    const result = await service.syncFlowModelReferencesForNodeTree({
+      rootUid: 'flow_form_js_item',
+      action: 'flowSurfaces.updateSettings',
+    });
+
+    expect(result).toMatchObject({
+      scanned: 1,
+      upserted: 1,
+      statusCounts: {
+        active: 1,
+      },
+    });
+    expect(repositories.lightExtensionReferences.records[0].toJSON()).toMatchObject({
+      kind: 'js-item',
+      ownerLocator: expect.objectContaining({
+        use: 'FormJSFieldItemModel',
+      }),
+    });
+  });
+
+  it('records repo_missing and binding_outdated without blocking reference synchronization', async () => {
+    const missingRepoFixture = createReferenceServiceFixture({
+      flowModelTrees: {
+        flow_js_field: createJsFieldNode(),
+      },
+      repos: [],
+      entries: [],
+    });
+    await expect(
+      missingRepoFixture.service.syncFlowModelReferencesForNodeTree({
+        rootUid: 'flow_js_field',
+        action: 'flowSurfaces.updateSettings',
+      }),
+    ).resolves.toMatchObject({
+      statusCounts: {
+        repo_missing: 1,
+      },
+    });
+    expect(missingRepoFixture.repositories.lightExtensionReferences.records[0].toJSON()).toMatchObject({
+      resolvedStatus: 'repo_missing',
+    });
+
+    const outdatedFixture = createReferenceServiceFixture({
+      flowModelTrees: {
+        flow_js_field: createJsFieldNode({
+          sourceBinding: {
+            type: 'light-extension-entry',
+            repoId: 'ler_fields',
+            entryId: 'lee_fields',
+            kind: 'js-action',
+          },
+        }),
+      },
+      repos: [createRepoRecord({ id: 'ler_fields' })],
+      entries: [],
+    });
+    await expect(
+      outdatedFixture.service.syncFlowModelReferencesForNodeTree({
+        rootUid: 'flow_js_field',
+        action: 'flowSurfaces.updateSettings',
+      }),
+    ).resolves.toMatchObject({
+      statusCounts: {
+        binding_outdated: 1,
+      },
+    });
+    expect(outdatedFixture.repositories.lightExtensionReferences.records[0].toJSON()).toMatchObject({
+      resolvedStatus: 'binding_outdated',
+    });
+  });
+
   it('removes a RunJS host reference after the value switches back to inline source', async () => {
     const { service, repositories } = createReferenceServiceFixture({
       flowModelTrees: {

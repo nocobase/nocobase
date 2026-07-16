@@ -1,0 +1,373 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+function schemaRef(name: string) {
+  return {
+    $ref: `#/components/schemas/${name}`,
+  };
+}
+
+function jsonContent(name: string) {
+  return {
+    'application/json': {
+      schema: schemaRef(name),
+    },
+  };
+}
+
+function errorResponse(description: string) {
+  return {
+    description,
+    content: jsonContent('LightExtensionErrorResponse'),
+  };
+}
+
+export const lightExtensionPaths = {
+  '/lightExtensionRepos:list': {
+    post: {
+      tags: ['lightExtensionRepos'],
+      summary: 'List light-extension source repositories',
+      description: 'List existing light-extension repositories that the current author can manage.',
+      responses: {
+        200: {
+          description: 'Repository list.',
+          content: jsonContent('LightExtensionRepoListEnvelope'),
+        },
+        403: errorResponse('The current user cannot read light-extension repositories.'),
+      },
+    },
+  },
+  '/lightExtensionRepos:get': {
+    post: {
+      tags: ['lightExtensionRepos'],
+      summary: 'Get one light-extension source repository',
+      description: 'Get repository metadata and the current Head commit used for optimistic source editing.',
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              required: ['repoId'],
+              properties: {
+                repoId: {
+                  type: 'string',
+                  description: 'Light-extension repository id.',
+                },
+              },
+            },
+          },
+        },
+      },
+      responses: {
+        200: {
+          description: 'Repository metadata.',
+          content: jsonContent('LightExtensionRepoEnvelope'),
+        },
+        403: errorResponse('The current user cannot read this repository.'),
+        404: errorResponse('The repository does not exist.'),
+      },
+    },
+  },
+  '/lightExtensionEntries:get': {
+    post: {
+      tags: ['lightExtensionEntries'],
+      summary: 'Get one light-extension entry',
+      description: 'Get the entry descriptor, source identity, health, compile metadata, and diagnostics.',
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              required: ['entryId'],
+              properties: {
+                entryId: {
+                  type: 'string',
+                  description: 'Persisted light-extension entry id.',
+                },
+              },
+            },
+          },
+        },
+      },
+      responses: {
+        200: {
+          description: 'Entry metadata.',
+          content: jsonContent('LightExtensionEntryEnvelope'),
+        },
+        403: errorResponse('The current user cannot read this entry.'),
+        404: errorResponse('The entry does not exist.'),
+      },
+    },
+  },
+  '/lightExtensionReferences:readReferences': {
+    post: {
+      tags: ['lightExtensionReferences'],
+      summary: 'Read visible light-extension references',
+      description:
+        'Read reference-index rows filtered by repository, entry, or owner locator. References whose owners are not visible to the current user are omitted.',
+      requestBody: {
+        required: false,
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                repoId: {
+                  type: 'string',
+                },
+                entryId: {
+                  type: 'string',
+                },
+                ownerLocator: {
+                  $ref: '#/components/schemas/LightExtensionReferenceOwnerLocator',
+                },
+              },
+            },
+          },
+        },
+      },
+      responses: {
+        200: {
+          description: 'Visible references.',
+          content: jsonContent('LightExtensionReferenceListEnvelope'),
+        },
+        403: errorResponse('The current user cannot read light-extension references.'),
+      },
+    },
+  },
+  '/lightExtensionFiles:pull': {
+    post: {
+      tags: ['lightExtensionFiles'],
+      summary: 'Pull a light-extension source workspace',
+      description:
+        'Read the repository Head, tree, and optionally file contents. Use the returned repo.headCommitId as expectedHeadCommitId for the next saveSource call.',
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              required: ['repoId'],
+              properties: {
+                repoId: {
+                  type: 'string',
+                },
+                ref: {
+                  type: 'string',
+                  enum: ['head'],
+                },
+                knownTreeHash: {
+                  type: 'string',
+                  description: 'Known tree hash used to return unchanged=true when source has not changed.',
+                },
+                includeContent: {
+                  type: 'string',
+                  enum: ['none', 'selected', 'all'],
+                  default: 'none',
+                },
+                selectedPaths: {
+                  type: 'array',
+                  items: {
+                    type: 'string',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      responses: {
+        200: {
+          description: 'Current source workspace.',
+          content: jsonContent('LightExtensionPullEnvelope'),
+        },
+        403: errorResponse('The current user cannot read repository source.'),
+        404: errorResponse('The repository does not exist.'),
+        409: errorResponse('The repository is archived or the source backend is unavailable.'),
+      },
+    },
+  },
+  '/lightExtensionFiles:getFile': {
+    post: {
+      tags: ['lightExtensionFiles'],
+      summary: 'Read one light-extension source file',
+      description: 'Read the complete UTF-8 content and immutable metadata for one source path at repository Head.',
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              required: ['repoId', 'path'],
+              properties: {
+                repoId: {
+                  type: 'string',
+                },
+                ref: {
+                  type: 'string',
+                  enum: ['head'],
+                },
+                path: {
+                  type: 'string',
+                  description: 'Repository-relative POSIX source path.',
+                },
+              },
+            },
+          },
+        },
+      },
+      responses: {
+        200: {
+          description: 'Source file.',
+          content: jsonContent('LightExtensionFileEnvelope'),
+        },
+        403: errorResponse('The current user cannot read repository source.'),
+        404: errorResponse('The repository or source file does not exist.'),
+        409: errorResponse('The repository is archived or the source backend is unavailable.'),
+      },
+    },
+  },
+  '/lightExtensionFiles:saveSource': {
+    post: {
+      tags: ['lightExtensionFiles'],
+      summary: 'Save and compile an incremental light-extension source patch',
+      description: [
+        'Apply files as an incremental patch, create one source commit, validate the final workspace, and compile runtime artifacts atomically.',
+        'files is a delta: include only changed upserts and deletes, not an implicit complete-workspace replacement. expectedHeadCommitId is required and must exactly match the current repository Head; pass null only for a repository without a Head.',
+        'Use --body-file for multi-file source payloads so newlines, Unicode, quotes, template strings, and expectedHeadCommitId: null are preserved exactly. HTTP 422 returns compiler or validator diagnostics. HTTP 409 returns LIGHT_EXTENSION_SOURCE_OUTDATED with expected and current Head values. Failed saves do not advance Head.',
+      ].join('\n\n'),
+      requestBody: {
+        required: true,
+        description:
+          'Root business payload consumed directly by lightExtensionFiles:saveSource; do not wrap it in values.',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              required: ['repoId', 'expectedHeadCommitId', 'message', 'files'],
+              properties: {
+                repoId: {
+                  type: 'string',
+                },
+                expectedHeadCommitId: {
+                  $ref: '#/components/schemas/LightExtensionExpectedHeadCommitId',
+                },
+                message: {
+                  type: 'string',
+                  minLength: 1,
+                  description: 'Source commit message.',
+                },
+                files: {
+                  type: 'array',
+                  description: 'Incremental source patch. Omitted existing paths remain unchanged.',
+                  items: {
+                    $ref: '#/components/schemas/LightExtensionFileChange',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      responses: {
+        200: {
+          description: 'Source committed and runtime compilation completed successfully.',
+          content: jsonContent('LightExtensionSaveSourceEnvelope'),
+        },
+        403: errorResponse('The current user cannot write repository source.'),
+        409: {
+          description:
+            'The source Head is stale (LIGHT_EXTENSION_SOURCE_OUTDATED), the repository is archived, or the source backend rejected the write.',
+          content: {
+            'application/json': {
+              schema: {
+                oneOf: [
+                  schemaRef('LightExtensionSourceOutdatedErrorResponse'),
+                  schemaRef('LightExtensionErrorResponse'),
+                ],
+              },
+            },
+          },
+        },
+        422: errorResponse(
+          'The final workspace failed validation or compilation. diagnostics are preserved in the response body.',
+        ),
+      },
+    },
+  },
+  '/lightExtensions:compileWorkspacePreview': {
+    post: {
+      tags: ['lightExtensions'],
+      summary: 'Compile an unsaved light-extension workspace preview',
+      description: [
+        'Validate and compile the supplied complete unsaved workspace without creating a source commit or changing repository Head.',
+        'Use --body-file for multi-file payloads. HTTP 200 means every requested entry was accepted. HTTP 207 means a whole-workspace preview compiled at least one entry and rejected at least one. HTTP 422 means the targeted entry or every workspace entry was rejected. All three statuses preserve diagnostics, including path, line, and column.',
+      ].join('\n\n'),
+      requestBody: {
+        required: true,
+        description:
+          'Root business payload consumed directly by lightExtensions:compileWorkspacePreview; files is the complete unsaved workspace and must not be wrapped in values.',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              required: ['repoId', 'files'],
+              properties: {
+                repoId: {
+                  type: 'string',
+                },
+                entryId: {
+                  type: 'string',
+                  nullable: true,
+                  description: 'Optional persisted entry id for targeted preview audit context.',
+                },
+                kind: {
+                  $ref: '#/components/schemas/LightExtensionKind',
+                },
+                entryPath: {
+                  type: 'string',
+                  description: 'Target entry path. kind and entryPath must be supplied together for targeted preview.',
+                },
+                runtimeVersion: {
+                  type: 'string',
+                },
+                files: {
+                  type: 'array',
+                  minItems: 1,
+                  description: 'Complete current unsaved workspace used only for preview compilation.',
+                  items: {
+                    $ref: '#/components/schemas/LightExtensionWorkspaceFile',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      responses: {
+        200: {
+          description: 'Every requested preview entry was accepted.',
+          content: jsonContent('LightExtensionWorkspacePreviewEnvelope'),
+        },
+        207: {
+          description: 'Some whole-workspace preview entries were accepted and some were rejected.',
+          content: jsonContent('LightExtensionWorkspacePreviewEnvelope'),
+        },
+        403: errorResponse('The current user cannot compile light-extension previews.'),
+        422: {
+          description:
+            'The targeted entry or every whole-workspace entry was rejected. Inspect diagnostics before retrying.',
+          content: jsonContent('LightExtensionWorkspacePreviewEnvelope'),
+        },
+      },
+    },
+  },
+};

@@ -114,6 +114,136 @@
               "gt": "1.0.20"
             }
           }
+        },
+        {
+          "code": "LIGHT_EXTENSION_OLD_APP_NEW_SKILLS_UNSUPPORTED",
+          "target": {
+            "commandPrefix": "light-extension-repos"
+          },
+          "when": {
+            "appByChannel": {
+              "stable": {
+                "lt": "2.2.0"
+              },
+              "beta": {
+                "lt": "2.2.0-beta.16"
+              },
+              "alpha": {
+                "lt": "2.2.0-alpha.9"
+              },
+              "rc": {
+                "lt": "2.2.0"
+              },
+              "unknownPrerelease": "block"
+            },
+            "skills": {
+              "gt": "1.0.20"
+            }
+          }
+        },
+        {
+          "code": "LIGHT_EXTENSION_OLD_APP_NEW_SKILLS_UNSUPPORTED",
+          "target": {
+            "commandPrefix": "light-extension-entries"
+          },
+          "when": {
+            "appByChannel": {
+              "stable": {
+                "lt": "2.2.0"
+              },
+              "beta": {
+                "lt": "2.2.0-beta.16"
+              },
+              "alpha": {
+                "lt": "2.2.0-alpha.9"
+              },
+              "rc": {
+                "lt": "2.2.0"
+              },
+              "unknownPrerelease": "block"
+            },
+            "skills": {
+              "gt": "1.0.20"
+            }
+          }
+        },
+        {
+          "code": "LIGHT_EXTENSION_OLD_APP_NEW_SKILLS_UNSUPPORTED",
+          "target": {
+            "commandPrefix": "light-extension-references"
+          },
+          "when": {
+            "appByChannel": {
+              "stable": {
+                "lt": "2.2.0"
+              },
+              "beta": {
+                "lt": "2.2.0-beta.16"
+              },
+              "alpha": {
+                "lt": "2.2.0-alpha.9"
+              },
+              "rc": {
+                "lt": "2.2.0"
+              },
+              "unknownPrerelease": "block"
+            },
+            "skills": {
+              "gt": "1.0.20"
+            }
+          }
+        },
+        {
+          "code": "LIGHT_EXTENSION_OLD_APP_NEW_SKILLS_UNSUPPORTED",
+          "target": {
+            "commandPrefix": "light-extension-files"
+          },
+          "when": {
+            "appByChannel": {
+              "stable": {
+                "lt": "2.2.0"
+              },
+              "beta": {
+                "lt": "2.2.0-beta.16"
+              },
+              "alpha": {
+                "lt": "2.2.0-alpha.9"
+              },
+              "rc": {
+                "lt": "2.2.0"
+              },
+              "unknownPrerelease": "block"
+            },
+            "skills": {
+              "gt": "1.0.20"
+            }
+          }
+        },
+        {
+          "code": "LIGHT_EXTENSION_OLD_APP_NEW_SKILLS_UNSUPPORTED",
+          "target": {
+            "commandPrefix": "light-extensions"
+          },
+          "when": {
+            "appByChannel": {
+              "stable": {
+                "lt": "2.2.0"
+              },
+              "beta": {
+                "lt": "2.2.0-beta.16"
+              },
+              "alpha": {
+                "lt": "2.2.0-alpha.9"
+              },
+              "rc": {
+                "lt": "2.2.0"
+              },
+              "unknownPrerelease": "block"
+            },
+            "skills": {
+              "gt": "1.0.20"
+            }
+          }
         }
       ]
     }

@@ -877,6 +877,16 @@ export const flowSurfaceExamples = {
           showBlockCard: true,
           version: '1.0.0',
           code: "ctx.render('<div>Hello from JS block</div>');",
+          sourceMode: 'light-extension',
+          sourceBinding: {
+            type: 'light-extension-entry',
+            repoId: 'repo_users',
+            entryId: 'entry_custom_hero',
+            kind: 'js-block',
+          },
+          settings: {
+            segment: 'active',
+          },
         },
       },
     ],
@@ -1000,6 +1010,16 @@ export const flowSurfaceExamples = {
       type: 'primary',
       version: '1.0.1',
       code: 'ctx.console.log("diagnostics");',
+      sourceMode: 'light-extension',
+      sourceBinding: {
+        type: 'light-extension-entry',
+        repoId: 'repo_users',
+        entryId: 'entry_run_diagnostics',
+        kind: 'js-action',
+      },
+      settings: {
+        severity: 'info',
+      },
     },
   },
   configureJsItemAction: {
@@ -1011,6 +1031,16 @@ export const flowSurfaceExamples = {
       type: 'default',
       version: '1.0.1',
       code: 'const { Button } = ctx.antd;\n\nfunction JsItemAction() {\n  return <Button onClick={() => ctx.message.success("Item diagnostics complete")}>Run item diagnostics</Button>;\n}\n\nctx.render(<JsItemAction />);',
+      sourceMode: 'light-extension',
+      sourceBinding: {
+        type: 'light-extension-entry',
+        repoId: 'repo_users',
+        entryId: 'entry_item_diagnostics',
+        kind: 'js-item',
+      },
+      settings: {
+        compact: true,
+      },
     },
   },
   configureJsField: {
@@ -1021,6 +1051,16 @@ export const flowSurfaceExamples = {
       label: 'Custom renderer',
       version: '1.0.1',
       code: "ctx.render(String(ctx.record?.nickname?.toUpperCase?.() || ''));",
+      sourceMode: 'light-extension',
+      sourceBinding: {
+        type: 'light-extension-entry',
+        repoId: 'repo_users',
+        entryId: 'entry_nickname_field',
+        kind: 'js-field',
+      },
+      settings: {
+        emptyText: '-',
+      },
     },
   },
   configureJsColumn: {
@@ -1033,6 +1073,16 @@ export const flowSurfaceExamples = {
       fixed: 'left',
       version: '1.0.1',
       code: "ctx.render(String(ctx.record?.username || ''));",
+      sourceMode: 'light-extension',
+      sourceBinding: {
+        type: 'light-extension-entry',
+        repoId: 'repo_users',
+        entryId: 'entry_username_column',
+        kind: 'js-field',
+      },
+      settings: {
+        emptyText: '-',
+      },
     },
   },
   configureJsItem: {
@@ -1045,6 +1095,16 @@ export const flowSurfaceExamples = {
       labelWidth: 120,
       version: '1.0.1',
       code: "ctx.render(String(ctx.record?.nickname || ''));",
+      sourceMode: 'light-extension',
+      sourceBinding: {
+        type: 'light-extension-entry',
+        repoId: 'repo_users',
+        entryId: 'entry_nickname_item',
+        kind: 'js-item',
+      },
+      settings: {
+        showAvatar: true,
+      },
     },
   },
   configurePage: {
@@ -1355,6 +1415,16 @@ export const flowSurfaceExamples = {
       label: 'Nickname (JS)',
       code: "ctx.render(String(ctx.value?.toUpperCase?.() || ctx.value || ''));",
       version: '1.0.0',
+      sourceMode: 'light-extension',
+      sourceBinding: {
+        type: 'light-extension-entry',
+        repoId: 'repo_users',
+        entryId: 'entry_nickname_field',
+        kind: 'js-field',
+      },
+      settings: {
+        emptyText: '-',
+      },
     },
   },
   addAssociationField: {
@@ -1391,6 +1461,16 @@ export const flowSurfaceExamples = {
       width: 240,
       version: '1.0.0',
       code: "ctx.render(String(ctx.record?.nickname || ''));",
+      sourceMode: 'light-extension',
+      sourceBinding: {
+        type: 'light-extension-entry',
+        repoId: 'repo_users',
+        entryId: 'entry_nickname_column',
+        kind: 'js-field',
+      },
+      settings: {
+        emptyText: '-',
+      },
     },
   },
   addJsItem: {
@@ -1403,6 +1483,16 @@ export const flowSurfaceExamples = {
       showLabel: true,
       version: '1.0.0',
       code: "ctx.render(String(ctx.record?.nickname || ''));",
+      sourceMode: 'light-extension',
+      sourceBinding: {
+        type: 'light-extension-entry',
+        repoId: 'repo_users',
+        entryId: 'entry_nickname_item',
+        kind: 'js-item',
+      },
+      settings: {
+        showAvatar: true,
+      },
     },
   },
   addFieldPopupTemplate: {
@@ -1522,6 +1612,16 @@ export const flowSurfaceExamples = {
       type: 'primary',
       version: '1.0.0',
       code: 'ctx.console.log("hello");',
+      sourceMode: 'light-extension',
+      sourceBinding: {
+        type: 'light-extension-entry',
+        repoId: 'repo_users',
+        entryId: 'entry_run_js',
+        kind: 'js-action',
+      },
+      settings: {
+        severity: 'info',
+      },
     },
   },
   addJsItemAction: {
@@ -1534,6 +1634,16 @@ export const flowSurfaceExamples = {
       type: 'default',
       version: '1.0.0',
       code: 'const { Button } = ctx.antd;\n\nfunction JsItemAction() {\n  return <Button onClick={() => ctx.message.success("Item JS complete")}>Run item JS</Button>;\n}\n\nctx.render(<JsItemAction />);',
+      sourceMode: 'light-extension',
+      sourceBinding: {
+        type: 'light-extension-entry',
+        repoId: 'repo_users',
+        entryId: 'entry_run_item_js',
+        kind: 'js-item',
+      },
+      settings: {
+        compact: true,
+      },
     },
   },
   addAIEmployeeAction: {

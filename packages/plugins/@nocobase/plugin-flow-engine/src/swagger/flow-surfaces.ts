@@ -111,6 +111,13 @@ const RECORD_ACTION_TYPE_ENUM = [
   'delete',
   'updateRecord',
 ];
+const NON_JS_NON_RECORD_ACTION_TYPE_ENUM = NON_RECORD_ACTION_TYPE_ENUM.filter(
+  (item) => item !== 'js' && item !== 'jsItem',
+);
+const NON_JS_RECORD_ACTION_TYPE_ENUM = RECORD_ACTION_TYPE_ENUM.filter((item) => item !== 'js' && item !== 'jsItem');
+const NON_JS_APPLY_BLUEPRINT_ACTION_TYPE_ENUM = APPLY_BLUEPRINT_ACTION_TYPE_ENUM.filter(
+  (item) => item !== 'js' && item !== 'jsItem',
+);
 const APPLY_BLUEPRINT_BLOCK_TYPE_ENUM = [
   'table',
   'calendar',
@@ -184,6 +191,153 @@ const APPLY_BLUEPRINT_POPUP_SAVE_AS_TEMPLATE_DESCRIPTION =
 function ref(name: string) {
   return {
     $ref: `#/components/schemas/${name}`,
+  };
+}
+
+function objectSchemaRef(name: string, description?: string) {
+  return {
+    type: 'object',
+    allOf: [ref(name)],
+    ...(description ? { description } : {}),
+  };
+}
+
+function buildJsActionTypeSettingsVariants(nonJsTypes: string[], allowMissingType = false) {
+  return [
+    ...(allowMissingType
+      ? [
+          {
+            not: {
+              required: ['type'],
+            },
+          },
+        ]
+      : []),
+    {
+      required: ['type'],
+      properties: {
+        type: {
+          type: 'string',
+          enum: nonJsTypes,
+        },
+        settings: ANY_OBJECT_SCHEMA,
+      },
+    },
+    {
+      required: ['type'],
+      properties: {
+        type: {
+          type: 'string',
+          enum: ['js'],
+        },
+        settings: objectSchemaRef('FlowSurfaceJsActionSettings'),
+      },
+    },
+    {
+      required: ['type'],
+      properties: {
+        type: {
+          type: 'string',
+          enum: ['jsItem'],
+        },
+        settings: objectSchemaRef('FlowSurfaceJsItemSettings'),
+      },
+    },
+  ];
+}
+
+function buildJsFieldTypeSettingsVariants(fieldKey: 'fieldPath' | 'field', allowTemplate = false) {
+  return [
+    ...(allowTemplate ? [{ required: ['template'] }] : []),
+    {
+      required: [fieldKey],
+      not: {
+        anyOf: [{ required: ['renderer'] }, { required: ['type'] }, { required: ['template'] }],
+      },
+    },
+    {
+      required: [fieldKey, 'renderer'],
+      not: {
+        anyOf: [{ required: ['type'] }, { required: ['template'] }],
+      },
+      properties: {
+        renderer: {
+          type: 'string',
+          enum: ['js'],
+        },
+        settings: objectSchemaRef('FlowSurfaceJsFieldSettings'),
+      },
+    },
+    {
+      required: ['type'],
+      not: {
+        anyOf: [{ required: [fieldKey] }, { required: ['renderer'] }, { required: ['template'] }],
+      },
+      properties: {
+        type: {
+          type: 'string',
+          enum: ['jsColumn'],
+        },
+        settings: objectSchemaRef('FlowSurfaceJsFieldSettings'),
+      },
+    },
+    {
+      required: ['type'],
+      not: {
+        anyOf: [{ required: [fieldKey] }, { required: ['renderer'] }, { required: ['template'] }],
+      },
+      properties: {
+        type: {
+          type: 'string',
+          enum: ['jsItem'],
+        },
+        settings: objectSchemaRef('FlowSurfaceJsItemSettings'),
+      },
+    },
+  ];
+}
+
+function buildRunJsSourceBindingSchema(kind: 'js-block' | 'js-field' | 'js-action' | 'js-item') {
+  return {
+    type: 'object',
+    required: ['type', 'repoId', 'entryId', 'kind'],
+    properties: {
+      type: {
+        type: 'string',
+        enum: ['light-extension-entry'],
+      },
+      repoId: { type: 'string' },
+      entryId: { type: 'string' },
+      kind: {
+        type: 'string',
+        enum: [kind],
+      },
+    },
+    additionalProperties: false,
+  };
+}
+
+function buildRunJsSettingsSchema(sourceBinding: Record<string, any>) {
+  return {
+    type: 'object',
+    properties: {
+      code: {
+        type: 'string',
+        description: 'Legacy inline code or inline fallback retained alongside a light-extension binding.',
+      },
+      version: { type: 'string' },
+      sourceMode: {
+        type: 'string',
+        enum: ['inline', 'light-extension'],
+      },
+      sourceBinding,
+      settings: {
+        type: 'object',
+        description: 'Instance settings passed to the resolved light-extension source.',
+        additionalProperties: true,
+      },
+    },
+    additionalProperties: true,
   };
 }
 
@@ -801,23 +955,23 @@ const actionDocs: Record<string, any> = {
               value: examples.configureJsBlock,
             },
             jsActionSettings: {
-              summary: 'Configure a JS action with button text and runJs code/version',
+              summary: 'Configure a JS action with inline fallback and light-extension source settings',
               value: examples.configureJsAction,
             },
             jsItemActionSettings: {
-              summary: 'Configure a form JS item action with button text and runJs code/version',
+              summary: 'Configure a form JS item action with inline fallback and light-extension source settings',
               value: examples.configureJsItemAction,
             },
             jsFieldSettings: {
-              summary: 'Configure a JS field wrapper and inner JS field with code/version',
+              summary: 'Configure a JS field wrapper and inner field with light-extension source settings',
               value: examples.configureJsField,
             },
             jsColumnSettings: {
-              summary: 'Configure a JS column with width/fixed/code/version',
+              summary: 'Configure a JS column with js-field light-extension source settings',
               value: examples.configureJsColumn,
             },
             jsItemSettings: {
-              summary: 'Configure a JS item with label and runJs code/version',
+              summary: 'Configure a JS item with js-item light-extension source settings',
               value: examples.configureJsItem,
             },
             pageHeaderSettings: {
@@ -1360,6 +1514,28 @@ const parameters = {
 };
 
 const schemas = {
+  FlowSurfaceJsBlockSourceBinding: buildRunJsSourceBindingSchema('js-block'),
+  FlowSurfaceJsFieldSourceBinding: buildRunJsSourceBindingSchema('js-field'),
+  FlowSurfaceJsActionSourceBinding: buildRunJsSourceBindingSchema('js-action'),
+  FlowSurfaceJsItemSourceBinding: buildRunJsSourceBindingSchema('js-item'),
+  FlowSurfaceJsBlockSettings: buildRunJsSettingsSchema(ref('FlowSurfaceJsBlockSourceBinding')),
+  FlowSurfaceJsFieldSettings: buildRunJsSettingsSchema(ref('FlowSurfaceJsFieldSourceBinding')),
+  FlowSurfaceJsActionSettings: buildRunJsSettingsSchema(ref('FlowSurfaceJsActionSourceBinding')),
+  FlowSurfaceJsItemSettings: buildRunJsSettingsSchema(ref('FlowSurfaceJsItemSourceBinding')),
+  FlowSurfaceJsFieldOrItemSettings: buildRunJsSettingsSchema({
+    oneOf: [ref('FlowSurfaceJsFieldSourceBinding'), ref('FlowSurfaceJsItemSourceBinding')],
+  }),
+  FlowSurfaceJsActionOrItemSettings: buildRunJsSettingsSchema({
+    oneOf: [ref('FlowSurfaceJsActionSourceBinding'), ref('FlowSurfaceJsItemSourceBinding')],
+  }),
+  FlowSurfaceJsConfigureChanges: buildRunJsSettingsSchema({
+    oneOf: [
+      ref('FlowSurfaceJsBlockSourceBinding'),
+      ref('FlowSurfaceJsFieldSourceBinding'),
+      ref('FlowSurfaceJsActionSourceBinding'),
+      ref('FlowSurfaceJsItemSourceBinding'),
+    ],
+  }),
   FlowSurfaceMutateKey: {
     type: 'object',
     required: ['key'],
@@ -2537,6 +2713,23 @@ const schemas = {
       {
         type: 'object',
         required: ['fieldPath'],
+        oneOf: [
+          {
+            not: {
+              required: ['renderer'],
+            },
+          },
+          {
+            required: ['renderer'],
+            properties: {
+              renderer: {
+                type: 'string',
+                enum: ['js'],
+              },
+              settings: objectSchemaRef('FlowSurfaceJsFieldSettings'),
+            },
+          },
+        ],
         properties: {
           key: {
             type: 'string',
@@ -2564,7 +2757,10 @@ const schemas = {
             type: 'string',
             description: 'Reference to another compose block key, typically used by filter-form fields.',
           },
-          settings: ANY_OBJECT_SCHEMA,
+          settings: objectSchemaRef(
+            'FlowSurfaceJsFieldSettings',
+            'Public field settings. Bound JS fields use sourceBinding.kind="js-field".',
+          ),
           popup: ref('FlowSurfaceComposeRequestFieldPopup'),
         },
         additionalProperties: false,
@@ -2572,6 +2768,26 @@ const schemas = {
       {
         type: 'object',
         required: ['type'],
+        oneOf: [
+          {
+            properties: {
+              type: {
+                type: 'string',
+                enum: ['jsColumn'],
+              },
+              settings: objectSchemaRef('FlowSurfaceJsFieldSettings'),
+            },
+          },
+          {
+            properties: {
+              type: {
+                type: 'string',
+                enum: ['jsItem'],
+              },
+              settings: objectSchemaRef('FlowSurfaceJsItemSettings'),
+            },
+          },
+        ],
         properties: {
           key: {
             type: 'string',
@@ -2582,7 +2798,10 @@ const schemas = {
             enum: ['jsColumn', 'jsItem'],
             description: 'Standalone synthetic public field capability. Does not accept fieldPath.',
           },
-          settings: ANY_OBJECT_SCHEMA,
+          settings: objectSchemaRef(
+            'FlowSurfaceJsFieldOrItemSettings',
+            'Standalone jsColumn uses sourceBinding.kind="js-field"; jsItem uses sourceBinding.kind="js-item".',
+          ),
         },
         additionalProperties: false,
       },
@@ -2778,6 +2997,7 @@ const schemas = {
       {
         type: 'object',
         required: ['type'],
+        oneOf: buildJsActionTypeSettingsVariants(NON_JS_NON_RECORD_ACTION_TYPE_ENUM),
         properties: {
           key: {
             type: 'string',
@@ -2786,7 +3006,10 @@ const schemas = {
             type: 'string',
             enum: NON_RECORD_ACTION_TYPE_ENUM,
           },
-          settings: ANY_OBJECT_SCHEMA,
+          settings: objectSchemaRef(
+            'FlowSurfaceJsActionOrItemSettings',
+            'JS actions use sourceBinding.kind="js-action"; JS item actions use sourceBinding.kind="js-item".',
+          ),
           popup: ref('FlowSurfaceComposeRequestActionPopup'),
         },
         additionalProperties: false,
@@ -2825,6 +3048,7 @@ const schemas = {
       {
         type: 'object',
         required: ['type'],
+        oneOf: buildJsActionTypeSettingsVariants(NON_JS_RECORD_ACTION_TYPE_ENUM),
         properties: {
           key: {
             type: 'string',
@@ -2833,7 +3057,7 @@ const schemas = {
             type: 'string',
             enum: RECORD_ACTION_TYPE_ENUM,
           },
-          settings: ANY_OBJECT_SCHEMA,
+          settings: objectSchemaRef('FlowSurfaceJsActionOrItemSettings'),
           popup: ref('FlowSurfaceComposeRequestActionPopup'),
         },
         additionalProperties: false,
@@ -2854,7 +3078,10 @@ const schemas = {
       },
       template: ref('FlowSurfaceBlockTemplateRef'),
       resource: ref('FlowSurfaceBlockResourceInput'),
-      settings: ANY_OBJECT_SCHEMA,
+      settings: objectSchemaRef(
+        'FlowSurfaceJsBlockSettings',
+        'Public block settings. JS blocks use sourceBinding.kind="js-block".',
+      ),
       defaultFilter: {
         allOf: [ref('FlowSurfaceFilterGroup')],
         description: PUBLIC_DATA_SURFACE_BLOCK_DEFAULT_FILTER_DESCRIPTION,
@@ -2896,7 +3123,7 @@ const schemas = {
       },
       template: ref('FlowSurfaceBlockTemplateRef'),
       resource: ref('FlowSurfaceBlockResourceInput'),
-      settings: ANY_OBJECT_SCHEMA,
+      settings: objectSchemaRef('FlowSurfaceJsBlockSettings'),
       fields: {
         type: 'array',
         items: ref('FlowSurfaceComposeFieldSpec'),
@@ -4041,6 +4268,53 @@ const schemas = {
       },
       {
         type: 'object',
+        oneOf: [
+          {
+            required: ['field'],
+            not: {
+              anyOf: [{ required: ['renderer'] }, { required: ['type'] }],
+            },
+          },
+          {
+            required: ['field', 'renderer'],
+            not: {
+              required: ['type'],
+            },
+            properties: {
+              renderer: {
+                type: 'string',
+                enum: ['js'],
+              },
+              settings: objectSchemaRef('FlowSurfaceJsFieldSettings'),
+            },
+          },
+          {
+            required: ['type'],
+            not: {
+              anyOf: [{ required: ['field'] }, { required: ['renderer'] }],
+            },
+            properties: {
+              type: {
+                type: 'string',
+                enum: ['jsColumn'],
+              },
+              settings: objectSchemaRef('FlowSurfaceJsFieldSettings'),
+            },
+          },
+          {
+            required: ['type'],
+            not: {
+              anyOf: [{ required: ['field'] }, { required: ['renderer'] }],
+            },
+            properties: {
+              type: {
+                type: 'string',
+                enum: ['jsItem'],
+              },
+              settings: objectSchemaRef('FlowSurfaceJsItemSettings'),
+            },
+          },
+        ],
         properties: {
           key: { type: 'string' },
           field: { type: 'string' },
@@ -4059,7 +4333,10 @@ const schemas = {
             type: 'string',
             description: 'String block key on the same tab or popup scope, typically used by filter-form fields.',
           },
-          settings: ANY_OBJECT_SCHEMA,
+          settings: objectSchemaRef(
+            'FlowSurfaceJsFieldOrItemSettings',
+            'Bound JS fields and jsColumn use sourceBinding.kind="js-field"; jsItem uses sourceBinding.kind="js-item".',
+          ),
           popup: ref('FlowSurfaceApplyBlueprintPopup'),
           script: {
             type: 'string',
@@ -4080,6 +4357,7 @@ const schemas = {
       {
         type: 'object',
         required: ['type'],
+        oneOf: buildJsActionTypeSettingsVariants(NON_JS_APPLY_BLUEPRINT_ACTION_TYPE_ENUM),
         properties: {
           key: { type: 'string' },
           type: {
@@ -4088,7 +4366,7 @@ const schemas = {
             description: `Action type. On record-capable blocks (\`table\`, \`details\`, \`list\`, \`gridCard\`), record actions such as \`view\`, \`edit\`, \`updateRecord\`, \`delete\`, and \`duplicate\` should normally be authored under \`recordActions\`; applyBlueprint also auto-promotes those common record actions from \`actions\` for convenience. ${APPLY_BLUEPRINT_ADD_CHILD_NOTE} For custom \`edit\` popups, include exactly one \`editForm\` block inside popup.blocks.`,
           },
           title: { type: 'string' },
-          settings: ANY_OBJECT_SCHEMA,
+          settings: objectSchemaRef('FlowSurfaceJsActionOrItemSettings'),
           popup: ref('FlowSurfaceApplyBlueprintPopup'),
           script: {
             type: 'string',
@@ -4109,6 +4387,7 @@ const schemas = {
       {
         type: 'object',
         required: ['type'],
+        oneOf: buildJsActionTypeSettingsVariants(NON_JS_RECORD_ACTION_TYPE_ENUM),
         properties: {
           key: { type: 'string' },
           type: {
@@ -4117,7 +4396,7 @@ const schemas = {
             description: `Record-action type for record-capable blocks such as \`table\`, \`details\`, \`list\`, and \`gridCard\`. ${ADD_CHILD_TREE_TABLE_NOTE} For custom \`edit\` popups, include exactly one \`editForm\` block inside popup.blocks.`,
           },
           title: { type: 'string' },
-          settings: ANY_OBJECT_SCHEMA,
+          settings: objectSchemaRef('FlowSurfaceJsActionOrItemSettings'),
           popup: ref('FlowSurfaceApplyBlueprintPopup'),
           script: {
             type: 'string',
@@ -4165,7 +4444,7 @@ const schemas = {
       },
       resource: ref('FlowSurfaceBlockResourceInput'),
       template: ref('FlowSurfaceBlockTemplateRef'),
-      settings: ANY_OBJECT_SCHEMA,
+      settings: objectSchemaRef('FlowSurfaceJsBlockSettings'),
       defaultFilter: {
         allOf: [ref('FlowSurfaceFilterGroup')],
         description: APPLY_BLUEPRINT_DATA_SURFACE_BLOCK_DEFAULT_FILTER_DESCRIPTION,
@@ -4714,7 +4993,10 @@ const schemas = {
     required: ['target', 'changes'],
     properties: {
       target: ref('FlowSurfaceWriteTarget'),
-      changes: ANY_OBJECT_SCHEMA,
+      changes: objectSchemaRef(
+        'FlowSurfaceJsConfigureChanges',
+        'Semantic configure changes. For JS surfaces, sourceMode/sourceBinding/settings stay alongside legacy code/version.',
+      ),
       defaults: ref('FlowSurfaceApplyBlueprintDefaults'),
     },
     additionalProperties: false,
@@ -5227,7 +5509,7 @@ const schemas = {
         items: ref('FlowSurfaceComposeFieldSpec'),
       },
       fieldsLayout: ref('FlowSurfaceComposeLayout'),
-      settings: ANY_OBJECT_SCHEMA,
+      settings: objectSchemaRef('FlowSurfaceJsBlockSettings'),
       defaultFilter: {
         allOf: [ref('FlowSurfaceFilterGroup')],
         description: PUBLIC_DATA_SURFACE_BLOCK_DEFAULT_FILTER_DESCRIPTION,
@@ -5285,14 +5567,7 @@ const schemas = {
   FlowSurfaceAddFieldRequest: {
     type: 'object',
     required: ['target'],
-    oneOf: [
-      {
-        required: ['template'],
-      },
-      {
-        anyOf: [{ required: ['fieldPath'] }, { required: ['type'] }],
-      },
-    ],
+    oneOf: buildJsFieldTypeSettingsVariants('fieldPath', true),
     properties: {
       target: ref('FlowSurfaceWriteTarget'),
       template: ref('FlowSurfaceTemplateRef'),
@@ -5336,7 +5611,7 @@ const schemas = {
         type: 'string',
         description: 'Optional filter-form target selection key. This is not the same field as `target.uid`.',
       },
-      settings: ANY_OBJECT_SCHEMA,
+      settings: objectSchemaRef('FlowSurfaceJsFieldOrItemSettings'),
       popup: ref('FlowSurfaceComposeFieldPopup'),
     },
     additionalProperties: false,
@@ -5398,6 +5673,7 @@ const schemas = {
   FlowSurfaceAddActionRequest: {
     type: 'object',
     required: ['target'],
+    oneOf: buildJsActionTypeSettingsVariants(NON_JS_NON_RECORD_ACTION_TYPE_ENUM, true),
     properties: {
       target: ref('FlowSurfaceWriteTarget'),
       type: {
@@ -5408,7 +5684,7 @@ const schemas = {
         type: 'string',
       },
       resourceInit: ref('FlowSurfaceResourceInit'),
-      settings: ANY_OBJECT_SCHEMA,
+      settings: objectSchemaRef('FlowSurfaceJsActionOrItemSettings'),
       popup: ref('FlowSurfaceComposeActionPopup'),
     },
     additionalProperties: false,
@@ -5446,6 +5722,7 @@ const schemas = {
   FlowSurfaceAddRecordActionRequest: {
     type: 'object',
     required: ['target'],
+    oneOf: buildJsActionTypeSettingsVariants(NON_JS_RECORD_ACTION_TYPE_ENUM, true),
     properties: {
       target: ref('FlowSurfaceWriteTarget'),
       type: {
@@ -5456,7 +5733,7 @@ const schemas = {
         type: 'string',
       },
       resourceInit: ref('FlowSurfaceResourceInit'),
-      settings: ANY_OBJECT_SCHEMA,
+      settings: objectSchemaRef('FlowSurfaceJsActionOrItemSettings'),
       popup: ref('FlowSurfaceComposeActionPopup'),
     },
     additionalProperties: false,
@@ -5515,7 +5792,7 @@ const schemas = {
         items: ref('FlowSurfaceComposeFieldSpec'),
       },
       fieldsLayout: ref('FlowSurfaceComposeLayout'),
-      settings: ANY_OBJECT_SCHEMA,
+      settings: objectSchemaRef('FlowSurfaceJsBlockSettings'),
       defaultFilter: {
         allOf: [ref('FlowSurfaceFilterGroup')],
         description: PUBLIC_DATA_SURFACE_BLOCK_DEFAULT_FILTER_DESCRIPTION,
@@ -5526,14 +5803,7 @@ const schemas = {
   },
   FlowSurfaceAddFieldItem: {
     type: 'object',
-    oneOf: [
-      {
-        required: ['template'],
-      },
-      {
-        anyOf: [{ required: ['fieldPath'] }, { required: ['type'] }],
-      },
-    ],
+    oneOf: buildJsFieldTypeSettingsVariants('fieldPath', true),
     properties: {
       key: {
         type: 'string',
@@ -5575,13 +5845,14 @@ const schemas = {
       targetUid: {
         type: 'string',
       },
-      settings: ANY_OBJECT_SCHEMA,
+      settings: objectSchemaRef('FlowSurfaceJsFieldOrItemSettings'),
       popup: ref('FlowSurfaceComposeFieldPopup'),
     },
     additionalProperties: false,
   },
   FlowSurfaceAddActionItem: {
     type: 'object',
+    oneOf: buildJsActionTypeSettingsVariants(NON_JS_NON_RECORD_ACTION_TYPE_ENUM, true),
     properties: {
       key: {
         type: 'string',
@@ -5594,13 +5865,14 @@ const schemas = {
         type: 'string',
       },
       resourceInit: ref('FlowSurfaceResourceInit'),
-      settings: ANY_OBJECT_SCHEMA,
+      settings: objectSchemaRef('FlowSurfaceJsActionOrItemSettings'),
       popup: ref('FlowSurfaceComposeActionPopup'),
     },
     additionalProperties: false,
   },
   FlowSurfaceAddRecordActionItem: {
     type: 'object',
+    oneOf: buildJsActionTypeSettingsVariants(NON_JS_RECORD_ACTION_TYPE_ENUM, true),
     properties: {
       key: {
         type: 'string',
@@ -5613,7 +5885,7 @@ const schemas = {
         type: 'string',
       },
       resourceInit: ref('FlowSurfaceResourceInit'),
-      settings: ANY_OBJECT_SCHEMA,
+      settings: objectSchemaRef('FlowSurfaceJsActionOrItemSettings'),
       popup: ref('FlowSurfaceComposeActionPopup'),
     },
     additionalProperties: false,
