@@ -40,6 +40,11 @@ describe('registerLightExtensionModelMenus', () => {
       surface: 'form-field',
       model: {} as never,
       ctx: createContext(),
+      items: [
+        { key: 'display-fields', sort: 100 },
+        { key: 'js-field', sort: 110 },
+        { key: 'association-fields', sort: 1000 },
+      ],
     });
     const columnItems = await resolveFieldMenuItems({
       surface: 'table-column',
@@ -50,6 +55,12 @@ describe('registerLightExtensionModelMenus', () => {
     expect(blockItems).toContainEqual(expect.objectContaining({ key: 'light-extension' }));
     expect(actionItems).toContainEqual(expect.objectContaining({ key: 'light-extension' }));
     expect(fieldItems).toContainEqual(expect.objectContaining({ key: 'light-extension' }));
+    expect(fieldItems.map((item) => item.key)).toEqual([
+      'display-fields',
+      'js-field',
+      'light-extension',
+      'association-fields',
+    ]);
     expect(columnItems).toContainEqual(expect.objectContaining({ key: 'light-extension' }));
 
     dispose();

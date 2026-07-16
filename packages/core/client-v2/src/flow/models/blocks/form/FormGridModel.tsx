@@ -8,7 +8,7 @@
  */
 
 import { SettingOutlined } from '@ant-design/icons';
-import { AddSubModelButton, DragOverlayConfig, FlowSettingsButton } from '@nocobase/flow-engine';
+import { AddSubModelButton, buildSubModelGroups, DragOverlayConfig, FlowSettingsButton } from '@nocobase/flow-engine';
 import { Skeleton } from 'antd';
 import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
@@ -51,16 +51,23 @@ export class FormGridModel<T extends DefaultFormGridStructure = DefaultFormGridS
     },
   };
   renderAddSubModelButton() {
+    const subModelBaseClasses = [
+      this.context.getModelClassName('FormItemModel'),
+      this.context.getModelClassName('FormAssociationFieldGroupModel'),
+      this.context.getModelClassName('FormCustomItemModel'),
+      this.context.getModelClassName('FormJSFieldItemModel'),
+    ].filter(Boolean);
     return (
       <AddSubModelButton
         subModelKey="items"
-        subModelBaseClasses={[
-          this.context.getModelClassName('FormItemModel'),
-          this.context.getModelClassName('FormAssociationFieldGroupModel'),
-          this.context.getModelClassName('FormCustomItemModel'),
-          this.context.getModelClassName('FormJSFieldItemModel'),
-        ].filter(Boolean)}
-        items={(ctx) => resolveFieldMenuItems({ surface: 'form-field', model: this, ctx })}
+        items={async (ctx) =>
+          resolveFieldMenuItems({
+            surface: 'form-field',
+            model: this,
+            ctx,
+            items: await buildSubModelGroups(subModelBaseClasses)(ctx),
+          })
+        }
         model={this}
         keepDropdownOpen
       >

@@ -62,6 +62,7 @@ export function createLightExtensionModelMenuProvider(
     {
       key: 'light-extension',
       label: translate(ctx, 'Light extension'),
+      sort: options.target === 'field' ? 111 : undefined,
       useModel: options.target === 'action' ? getModelUse(options) : undefined,
       searchable: true,
       children: async (childrenContext) => {
