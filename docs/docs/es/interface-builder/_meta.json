@@ -6,6 +6,27 @@
   },
   {
     "type": "custom-link",
+    "label": "Diseño de UI",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Visión general",
+        "link": "/interface-builder/ui-layout/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Escritorio",
+        "link": "/interface-builder/ui-layout/desktop"
+      },
+      {
+        "type": "custom-link",
+        "label": "Móvil",
+        "link": "/interface-builder/ui-layout/mobile"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
     "label": "Bloques",
     "items": [
       {
