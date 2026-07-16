@@ -22,6 +22,7 @@ type PublicFormLayoutRuntimeModel = FlowModel & {
   getPageUidFromLayoutRoute?: (match: unknown) => string;
   context: FlowModel['context'] & {
     dataSourceManager?: DataSourceManager;
+    publicFormDataSourceManager?: DataSourceManager;
   };
 };
 
@@ -91,6 +92,10 @@ export class PublicFormPageModel extends ChildPageModel {
   }
 
   private getPublicFormDataSourceManager() {
+    if (this.context.publicFormDataSourceManager) {
+      return this.context.publicFormDataSourceManager;
+    }
+
     const layoutModel = this.flowEngine.getModel<PublicFormLayoutRuntimeModel>(PUBLIC_FORM_LAYOUT_UID, true);
     const routePageUid = this.parent?.uid;
     const layoutPageUid = layoutModel?.getPageUidFromLayoutRoute?.(layoutModel.currentLayoutRoute);

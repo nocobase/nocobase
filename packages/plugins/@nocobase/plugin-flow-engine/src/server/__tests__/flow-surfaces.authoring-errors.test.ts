@@ -1888,6 +1888,29 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
     );
   });
 
+  it('should allow plugin-contributed ctx.ai RunJS APIs on JS block authoring paths', () => {
+    const errors = inspectRunJsAuthoringCode({
+      code: [
+        'ctx.ai.triggerTask({ aiEmployee: "viz", tasks: [{ title: "Daily handoff" }], open: true });',
+        'ctx.ai.triggerModelTask("flow-model-uid", 0, { open: true });',
+        'ctx.render(null);',
+      ].join('\n'),
+      path: '$.blocks[0].settings.code',
+      modelUse: 'JSBlockModel',
+    });
+
+    expect(errors).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-ctx-root-unknown',
+        }),
+        expect.objectContaining({
+          ruleId: 'runjs-dynamic-ctx-member-unresolved',
+        }),
+      ]),
+    );
+  });
+
   it('should reject builder chart assets that use association fields directly', async () => {
     const employerGroupsCollection = {
       dataSourceKey: 'main',

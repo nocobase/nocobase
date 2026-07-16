@@ -9,7 +9,7 @@
 
 /* eslint-env jest */
 
-const { buildAppDevForwardArgs, forwardDevToAppDev } = require('../commands/dev')._test;
+const { buildAppDevForwardArgs, forwardDevToAppDev, resolveDevRuntimeMode } = require('../commands/dev')._test;
 
 describe('cli-v1 dev command', () => {
   test('buildAppDevForwardArgs rewrites dev argv to app-dev while preserving extra args', () => {
@@ -30,5 +30,32 @@ describe('cli-v1 dev command', () => {
     });
 
     expect(calls).toEqual([['nocobase-v1', ['app-dev', '--port', '13000', '--db-sync']]]);
+  });
+
+  test('resolveDevRuntimeMode keeps both clients in legacy-default', () => {
+    expect(resolveDevRuntimeMode({ appClientEntryMode: 'legacy-default' })).toMatchObject({
+      useModernOnlyEntryMode: false,
+      shouldRunClient: true,
+      shouldRunClientV2: true,
+      shouldRunServer: true,
+    });
+  });
+
+  test('resolveDevRuntimeMode only runs v2 client and server in modern-only', () => {
+    expect(resolveDevRuntimeMode({ appClientEntryMode: 'modern-only' })).toMatchObject({
+      useModernOnlyEntryMode: true,
+      shouldRunClient: false,
+      shouldRunClientV2: true,
+      shouldRunServer: true,
+    });
+  });
+
+  test('resolveDevRuntimeMode preserves explicit client-v2-only flag behavior', () => {
+    expect(resolveDevRuntimeMode({ clientV2Only: true, appClientEntryMode: 'legacy-default' })).toMatchObject({
+      useModernOnlyEntryMode: false,
+      shouldRunClient: false,
+      shouldRunClientV2: true,
+      shouldRunServer: false,
+    });
   });
 });

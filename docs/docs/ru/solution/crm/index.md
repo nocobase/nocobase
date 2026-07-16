@@ -1,142 +1,142 @@
-# NocoBase CRM 2.0 Solution
+# Решение NocoBase CRM 2.0
 
-> A modular sales management system built on the NocoBase low-code platform, with AI employee assistance
+> Модульная система управления продажами, построенная на платформе NocoBase с минимумом кода, с поддержкой ИИ-сотрудников.
 
-## 1. Background
+## 1. Контекст
 
-### Challenges Sales Teams Face
+### Проблемы, с которыми сталкиваются отделы продаж
 
-Sales teams commonly encounter these problems: inconsistent lead quality makes fast screening difficult, opportunity follow-ups slip through the cracks, customer information is scattered across emails and multiple systems, sales forecasts rely on gut feeling, and quote approval processes are ad hoc.
+Отделы продаж часто сталкиваются с такими проблемами: нестабильное качество лидов затрудняет быстрый отбор, задачи по сделкам «теряются», данные о клиентах разбросаны по письмам и разным системам, прогнозы продаж строятся «на глаз», а согласование коммерческих предложений происходит хаотично.
 
-**Typical scenarios:** rapid lead evaluation and assignment, opportunity health monitoring, customer churn alerts, multi-level quote approvals, linking emails to customers and opportunities.
+**Типичные сценарии:** быстрая оценка и распределение лидов, мониторинг «здоровья» сделок, предупреждения об оттоке клиентов, многоуровневое согласование КП, привязка писем к клиентам и сделкам.
 
-### Target Users
+### Целевые пользователи
 
-B2B sales, project-based sales, and cross-border trade teams at small-to-mid and mid-to-large enterprises. These organizations are graduating from Excel/email management to systematic operations and have high requirements for customer data security.
+B2B-продажи, проектные продажи и команды трансграничной торговли в компаниях малого и среднего, а также среднего и крупного бизнеса. Такие организации переходят от учёта в Excel и почте к системным процессам и предъявляют высокие требования к безопасности данных клиентов.
 
-### Limitations of Existing Solutions
+### Ограничения существующих решений
 
-- **High cost**: Salesforce/HubSpot charge per seat, which is unaffordable for most SMEs
-- **Feature overload**: Enterprise CRMs are bloated; less than 20% of features are actually used, yet learning costs are high
-- **Hard to customize**: SaaS systems cannot easily adapt to your own business processes — even changing a field requires a ticket
-- **Data security**: Customer data stored on third-party servers creates compliance and security risks
-- **Expensive to build in-house**: Custom development has long cycles and high maintenance costs; adapting to business changes is slow
-
----
-
-## 2. Differentiated Advantages
-
-**Competing products on the market:** Salesforce, HubSpot, Zoho CRM, Fxiaoke, Odoo CRM, SuiteCRM, etc.
-
-**Platform-level advantages:**
-
-- **Configuration-first**: Data models, page layouts, and business processes are all configurable via UI — no code required
-- **Low-code rapid deployment**: Faster than custom development, more flexible than SaaS
-- **Modular and decomposable**: Modules are independently designed and can be toggled as needed; minimum viable setup requires only Customer + Opportunity
-
-**What traditional CRMs can't do, or can only do at prohibitive cost:**
-
-- **Data sovereignty**: Self-hosted deployment — your customer data stays on your own servers, meeting compliance requirements
-- **Native AI employee integration**: AI employees are deeply embedded in business pages and automatically read data context — not just "an AI button"
-- **All designs are reproducible**: Users can extend the solution template independently, without vendor dependency
+- **Высокая стоимость**: большинство платформ тарифицируют по местам — для большинства малых и средних предприятий это неподъёмно
+- **Перегруз функциями**: корпоративные CRM раздуты; реально используется меньше 20% возможностей, а стоимость обучения высока
+- **Сложная кастомизация**: облачные системы по модели SaaS неудобно подстраивать под свои процессы — даже смена поля часто требует обращения в поддержку
+- **Безопасность данных**: хранение данных клиентов на сторонних серверах создаёт риски для соответствия требованиям и безопасности
+- **Дорогая внутренняя разработка**: кастомная разработка — долгие циклы и высокая стоимость сопровождения; адаптация к изменениям в бизнесе идёт медленно
 
 ---
 
-## 3. Design Principles
+## 2. Уникальные преимущества решения
 
-- **Low cognitive load**: Clean interface, core features are immediately visible
-- **Business before technology**: Focus on sales scenarios, not technical showmanship
-- **Evolvable**: Supports phased rollout and incremental improvement
-- **Configuration over code**: If it can be configured, don't write code
-- **Human-AI collaboration**: AI employees assist decision-making; they don't replace salespeople's judgment
+**Конкурирующие продукты на рынке:** Salesforce, HubSpot, Zoho CRM, Fxiaoke, Odoo CRM, SuiteCRM и др.
+
+**Преимущества на уровне платформы:**
+
+- **Сначала конфигурация**: модели данных, макеты страниц и бизнес-процессы настраиваются в интерфейсе — без кода
+- **Быстрое внедрение с минимумом кода**: быстрее, чем заказная разработка, и более гибко, чем типовой SaaS
+- **Модульность и разборность**: модули спроектированы независимо и включаются по необходимости; минимальный жизнеспособный набор — только Клиент + Сделка
+
+**Чего традиционные CRM не умеют или умеют только за непомерные деньги:**
+
+- **Суверенитет данных**: развёртывание на собственной инфраструктуре — данные клиентов остаются на ваших серверах, что соответствует требованиям соответствия
+- **Нативная интеграция ИИ-сотрудников**: ИИ-сотрудники глубоко встроены в бизнес-страницы и автоматически читают контекст данных — это не просто «кнопка ИИ»
+- **Воспроизводимость всех решений**: пользователи могут самостоятельно расширять шаблон решения без привязки к вендору
 
 ---
 
-## 4. Solution Overview
+## 3. Принципы проектирования
 
-### Core Capabilities
+- **Низкая когнитивная нагрузка**: чистый интерфейс, ключевые функции видны сразу
+- **Сначала бизнес, потом технологии**: фокус на сценариях продаж, а не на технических «фишках»
+- **Эволюционируемость**: поддерживается поэтапное внедрение и пошаговое улучшение
+- **Конфигурация вместо кода**: если можно настроить — не пишите код
+- **Совместная работа человека и ИИ**: ИИ-сотрудники помогают принимать решения, но не заменяют суждение продавцов
 
-- **End-to-end pipeline**: Lead → Opportunity → Quotation → Order → Customer Success
-- **Modular**: Full version has 7 modules; minimum viable setup needs only 2 core modules
-- **Multi-currency**: CNY/USD/EUR/GBP/JPY with automatic conversion
-- **AI assistance**: Lead scoring, win probability prediction, next-best-action suggestions
+---
 
-### Core Modules
+## 4. Обзор решения
 
-| Module | Required | Description | AI Assistance |
+### Ключевые возможности
+
+- **Сквозная воронка**: лид → сделка → КП → заказ → успех клиента
+- **Модульность**: полная версия — 7 модулей; минимальный набор — только 2 базовых модуля
+- **Мультивалютность**: CNY/USD/EUR/GBP/JPY с автоматической конвертацией
+- **Помощь ИИ**: скоринг лидов, прогноз вероятности успеха, рекомендации следующего лучшего действия
+
+### Ключевые модули
+
+| Модуль | Обязательно | Описание | Поддержка ИИ |
 |--------|:--------:|-------------|--------------|
-| Customer Management | ✅ | Customer profiles, contacts, account hierarchy | Health scoring, churn alerts |
-| Opportunity Management | ✅ | Sales funnel, stage progression, activity log | Win probability, next-step suggestions |
-| Lead Management | — | Lead entry, status flow, conversion tracking | Smart scoring |
-| Quotation Management | — | Multi-currency, version control, approval workflow | — |
-| Order Management | — | Order creation, payment tracking | — |
-| Product Management | — | Product catalog, categories, tiered pricing | — |
-| Email Integration | — | Send/receive emails, CRM association | Sentiment analysis, summary generation |
+| Управление клиентами | ✅ | Профили клиентов, контакты, иерархия аккаунтов | Оценка здоровья клиента, предупреждения об оттоке |
+| Управление сделками | ✅ | Воронка продаж, переходы между стадиями, лог активности | Вероятность успеха, рекомендации следующих шагов |
+| Управление лидами | — | Ввод лидов, поток статусов, отслеживание конверсии | Умная оценка |
+| Управление коммерческими предложениями | — | Мультивалютность, контроль версий, процесс согласования | — |
+| Управление заказами | — | Создание заказов, отслеживание оплат | — |
+| Управление продуктами | — | Каталог продуктов, категории, многоуровневое ценообразование | — |
+| Интеграция почты | — | Отправка и получение писем, связывание с CRM | Анализ тональности, генерация сводок |
 
-### Solution Editions
+### Редакции решения
 
-- **Enterprise** (all 7 modules): Full-process B2B sales teams
-- **Standard** (Customer + Opportunity + Quotation + Order + Product): SME sales management
-- **Lite** (Customer + Opportunity): Simple customer and opportunity tracking
-- **Trade** (Customer + Opportunity + Quotation + Email): Cross-border trade teams
+- **Enterprise** (все 7 модулей): полноценные B2B-команды продаж
+- **Standard** (клиент + сделка + КП + заказ + продукт): продажи для МСП
+- **Lite** (клиент + сделка): простой учёт клиентов и сделок
+- **Trade** (клиент + сделка + КП + почта): команды трансграничной торговли
 
 ---
 
-## 5. AI Employees
+## 5. ИИ-сотрудники
 
-The CRM comes pre-loaded with 5 AI employees, deeply embedded in business pages. Unlike generic AI chat tools, they automatically recognize the data you're currently viewing — whether a lead list, opportunity details, or email thread — no copy-pasting required.
+В CRM из коробки загружены 5 ИИ-сотрудников, глубоко встроенных в бизнес-страницы. В отличие от универсальных чатов с ИИ, они автоматически распознают данные, которые вы сейчас просматриваете — список лидов, карточку сделки или цепочку писем — копировать и вставлять ничего не нужно.
 
-**How to use**: Click the AI floating button in the lower-right corner of any page, or click the AI icon next to a block to summon the corresponding employee. You can also pre-configure common tasks for each employee and trigger them with a single click next time.
+**Как использовать:** нажмите плавающую кнопку ИИ в правом нижнем углу любой страницы или значок ИИ рядом с блоком, чтобы вызвать соответствующего сотрудника. Также можно заранее задать типовые задачи для каждого сотрудника и в следующий раз запускать их одним щелчком.
 
-| Employee | Role | Typical Use in CRM |
+| Сотрудник | Роль | Типичное использование в CRM |
 |----------|------|--------------------|
-| **Viz** | Insight Analyst | Lead channel analysis, sales trends, pipeline health |
-| **Ellis** | Email Expert | Draft follow-up emails, generate communication summaries |
-| **Lexi** | Translation Assistant | Multilingual emails, cross-border customer communication |
-| **Dara** | Visualization Expert | Configure report charts, build dashboards |
-| **Orin** | Task Planner | Daily priorities, next-step action suggestions |
+| **Viz** | ИИ-аналитик инсайтов | Анализ каналов лидов, трендов продаж, «здоровья» воронки |
+| **Ellis** | Эксперт по почте | Черновики писем для повторного контакта, сводки переписки |
+| **Lexi** | Помощник по переводу | Многоязычные письма, общение с зарубежными клиентами |
+| **Dara** | Эксперт по визуализации данных | Настройка графиков отчётов, настраиваемые панели |
+| **Orin** | Планировщик задач | Приоритеты на день, рекомендации следующих шагов |
 
-### Business Value of AI Employees
+### Бизнес-ценность ИИ-сотрудников
 
-| Value Dimension | Specific Impact |
+| Измерение ценности | Конкретный эффект |
 |-----------------|----------------|
-| Efficiency | Lead scoring done automatically, saving manual screening time; follow-up emails drafted in one click |
-| Empowerment | Sales data analysis always at your fingertips — no waiting for the data team |
-| Communication quality | Professional emails + AI polish; cross-border teams communicate fluently in multiple languages |
-| Decision support | Real-time win probability and next-step suggestions reduce deals lost to missed follow-ups |
+| Эффективность | Скоринг лидов выполняется автоматически, экономится время ручного отбора; письма для повторного контакта пишутся в один клик |
+| Усиление команды | Аналитика по продажам всегда под рукой — не нужно ждать отдел аналитики |
+| Качество коммуникаций | Профессиональные письма с доработкой ИИ; трансграничные команды свободно общаются на нескольких языках |
+| Поддержка решений | Вероятность успеха и рекомендации следующих шагов в реальном времени снижают потери из-за пропущенных повторных контактов |
 
 ---
 
-## 6. Highlights
+## 6. Ключевые преимущества
 
-**Modular** — Each module is independently designed and can be toggled on or off. The minimum setup needs only Customer + Opportunity. Start lean, grow as needed.
+**Модульность** — каждый модуль спроектирован отдельно и может быть включён или отключён. Минимальная конфигурация — только клиент + сделка. Начинайте компактно и масштабируйтесь по мере роста.
 
-**Complete sales loop** — Lead → Opportunity → Quotation → Order → Payment → Customer Success. Full end-to-end data flow with no need to switch between systems.
+**Полный цикл продаж** — лид → сделка → КП → заказ → оплата → успех клиента. Сквозной поток данных без переключения между системами.
 
-**Native AI employee integration** — Not just "an AI button." 5 AI employees are embedded in every business page, automatically reading current data context and delivering analysis and suggestions with one click.
+**Нативная интеграция ИИ-сотрудников** — не просто «кнопка ИИ»: 5 сотрудников встроены в каждую бизнес-страницу, автоматически читают текущий контекст данных и за один клик дают анализ и рекомендации.
 
-**Deep email integration** — Emails are automatically linked to customers, contacts, and opportunities. Supports Gmail and Outlook. Multiple English email templates cover common sales scenarios.
+**Глубокая интеграция почты** — письма автоматически связываются с клиентами, контактами и сделками. Поддержка Gmail и Outlook. Несколько англоязычных шаблонов писем покрывают типовые сценарии продаж.
 
-**Multi-currency trade support** — Supports CNY/USD/EUR/GBP/JPY with configurable exchange rate conversion, designed for cross-border and international sales teams.
-
----
-
-## 7. Getting Started
-
-Deploy the CRM package to your target environment using NocoBase's migration manager for one-click import.
-
-**Ready out of the box:** Pre-built collections, workflows, and dashboards. Multi-role views (Sales Manager / Sales Rep / Executive). 37 email templates covering common sales scenarios.
+**Поддержка мультивалютной торговли** — CNY/USD/EUR/GBP/JPY с настраиваемой конвертацией по курсу; ориентир на трансграничные и международные продажи.
 
 ---
 
-## 8. Roadmap
+## 7. Начало работы
 
-- **Opportunity automation**: Stage progression triggers notifications; stagnant opportunities auto-alert, reducing manual oversight
-- **Approval workflows**: Multi-level quote approval with mobile approval support
-- **AI automation**: AI employees embedded in workflows for unattended background execution — automated lead scoring and opportunity analysis
-- **Mobile-friendly**: Mobile-optimized interface for on-the-go customer follow-up
-- **Multi-tenant support**: Horizontal scaling across workspaces/apps, distributing to independent sales teams
+Разверните пакет CRM в целевом окружении, используя менеджер миграций NocoBase для импорта в один клик.
+
+**Готовое решение из коробки:** готовые таблицы данных, рабочие процессы и настраиваемые панели. Представления для нескольких ролей: руководитель продаж, менеджер по продажам, топ-менеджмент. 37 шаблонов писем для типовых сценариев продаж.
 
 ---
 
-*Document Version: v2.0 | Last Updated: 2026-02-06*
+## 8. Дорожная карта
+
+- **Автоматизация сделок**: переходы между стадиями инициируют уведомления; «застрявшие» сделки автоматически попадают в оповещения — меньше ручного контроля
+- **Процессы согласования**: многоуровневое согласование КП с поддержкой мобильного утверждения
+- **Автоматизация с ИИ**: ИИ-сотрудники встроены в рабочие процессы для фонового выполнения без участия пользователя — автоматический скоринг лидов и анализ сделок
+- **Удобство на мобильных**: интерфейс, оптимизированный для работы с клиентами в дороге
+- **Работа в режиме общего доступа**: горизонтальное масштабирование между пространствами и приложениями, распределение по независимым командам продаж
+
+---
+
+*Версия документа: v2.0 | Последнее обновление: 2026-02-06*

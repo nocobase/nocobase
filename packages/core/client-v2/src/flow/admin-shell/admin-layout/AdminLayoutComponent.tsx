@@ -712,7 +712,6 @@ export const AdminLayoutComponent = observer((props: any) => {
         <MobileMenuControlContext.Provider value={{ closeMobileMenu }}>
           <DndProvider collisionDetection={menuCollisionDetection} onDragEnd={handleMenuDragEnd}>
             <ProLayout
-              key={`admin-layout-menu-${menuRouteRefreshVersion}`}
               {...props}
               contentStyle={contentStyle}
               siderWidth={customToken.siderWidth || 200}

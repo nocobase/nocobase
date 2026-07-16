@@ -182,7 +182,9 @@ export class AIEmployee {
 
   // === Chat flow ===
   private buildState(messages: AIMessage[]) {
+    const toolCallMessage = messages.findLast((message) => message.toolCalls?.length);
     return {
+      messageId: toolCallMessage?.messageId,
       lastMessageIndex: {
         lastHumanMessageIndex: messages.filter((m) => m.role === 'user').length,
         lastAIMessageIndex: messages.filter((m) => m.role === this.employee.username).length,
@@ -896,6 +898,7 @@ export class AIEmployee {
       knowledgeBase,
       availableSkills,
       availableAIEmployees,
+      webSearch: this.webSearch,
     });
 
     const { important } = this.ctx.action?.params?.values || {};

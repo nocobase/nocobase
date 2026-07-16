@@ -1,12 +1,12 @@
 # ctx.requireAsync()
 
-Асинхронно загружает скрипты **UMD/AMD** или скрипты, монтируемые в глобальную область видимости, по URL, а также **CSS**. Подходит для сценариев RunJS, где требуются библиотеки UMD/AMD, такие как ECharts, Chart.js, FullCalendar (версия UMD) или плагины jQuery. Если библиотека также предоставляет версию ESM, отдавайте приоритет [ctx.importAsync()](./import-async.md).
+Асинхронно загружает **UMD/AMD** или глобальные скрипты по URL; также поддерживает загрузку **CSS**. Используется в RunJS для ECharts, Chart.js, FullCalendar (UMD), jQuery-плагинов и т. д. URL с `.css` загружает и внедряет стили. Если библиотека предоставляет ESM, предпочтительнее [ctx.importAsync()](./import-async.md).
 
-## Область применения
+## Сценарии использования
 
-Может использоваться в любом сценарии RunJS, где требуется загрузка скриптов UMD/AMD/global или CSS по требованию, например: JSBlock, JSField, JSItem, JSColumn, рабочий процесс, JSAction и др. Типичные примеры: ECharts, Chart.js, FullCalendar (UMD), dayjs (UMD), плагины jQuery и т. д.
+Используйте, когда RunJS нужно загрузить UMD/AMD-скрипты, глобальные скрипты или CSS: JS-блок, поле JS, элемент JS, JS-столбец таблицы, поток событий, действие JS и т. д. Типичные примеры: ECharts, Chart.js, FullCalendar (UMD), dayjs (UMD), jQuery-плагины.
 
-## Определение типа
+## Тип
 
 ```ts
 requireAsync<T = any>(url: string): Promise<T>;
@@ -15,24 +15,24 @@ requireAsync<T = any>(url: string): Promise<T>;
 ## Параметры
 
 | Параметр | Тип | Описание |
-|-----------|------|-------------|
-| `url` | `string` | Адрес скрипта или CSS. Поддерживает **сокращенный путь** `<имя_пакета>@<версия>/<путь_к_файлу>` (при разрешении через ESM CDN добавляется `?raw` для получения исходного UMD-файла) или **полный URL**. При передаче `.css` загружает и внедряет стили. |
+|----------|-----|----------|
+| `url` | `string` | URL скрипта или CSS. Поддерживается **сокращённая запись** `<package>@<version>/<path>` (ESM CDN добавляет `?raw` для сырого UMD) или **полный URL**. URL с `.css` загружает и внедряет стили. |
 
 ## Возвращаемое значение
 
-- Загруженный объект библиотеки (первое значение модуля из обратного вызова UMD/AMD). Многие UMD-библиотеки прикрепляются к `window` (например, `window.echarts`), поэтому возвращаемое значение может быть `undefined`. В таких случаях обращайтесь к глобальной переменной в соответствии с документацией библиотеки.
-- Возвращает результат `loadCSS` при передаче файла `.css`.
+- Загруженный объект библиотеки (первое значение модуля из UMD/AMD callback). Многие UMD-библиотеки вешаются в `window` (например, `window.echarts`), поэтому возвращаемое значение может быть `undefined` — ориентируйтесь на документацию библиотеки.
+- Для URL с `.css` возвращается результат `loadCSS`.
 
-## Описание формата URL
+## Формат URL
 
-- **Сокращенный путь**: например, `echarts@5/dist/echarts.min.js`. В ESM CDN по умолчанию (esm.sh) будет выполнен запрос к `https://esm.sh/echarts@5/dist/echarts.min.js?raw`. Параметр `?raw` используется для получения оригинального UMD-файла вместо ESM-обертки.
-- **Полный URL**: можно напрямую указать любой адрес CDN, например `https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js`.
-- **CSS**: URL, заканчивающийся на `.css`, будет загружен, а стили внедрены на страницу.
+- **Сокращённая запись**: например, `echarts@5/dist/echarts.min.js`; при стандартном ESM CDN (esm.sh) преобразуется в `https://esm.sh/echarts@5/dist/echarts.min.js?raw`; `?raw` запрашивает сырой UMD-файл.
+- **Полный URL**: любой URL CDN, например `https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js`.
+- **CSS**: URL, оканчивающиеся на `.css`, загружаются и внедряются как стили.
 
-## Отличие от ctx.importAsync()
+## Сравнение с ctx.importAsync()
 
-- **ctx.requireAsync()**: загружает скрипты **UMD/AMD/global**. Подходит для ECharts, Chart.js, FullCalendar (UMD), плагинов jQuery и т. д. Библиотеки часто прикрепляются к `window` после загрузки; возвращаемое значение может быть объектом библиотеки или `undefined`.
-- **ctx.importAsync()**: загружает **ESM-модули** и возвращает пространство имен модуля. Если библиотека предоставляет ESM, используйте `ctx.importAsync()` для лучшей семантики модулей и Tree-shaking.
+- **ctx.requireAsync()**: загрузка **UMD/AMD/глобальных** скриптов; подходит для ECharts, Chart.js, FullCalendar (UMD), jQuery-плагинов; библиотека часто оказывается в `window`; результат может быть как объект библиотеки, так и `undefined`.
+- **ctx.importAsync()**: загрузка **ESM**; возвращает пространство имён модуля. Если библиотека поддерживает ESM, используйте `ctx.importAsync()` ради лучшей модульности и удаления мёртвого кода.
 
 ## Примеры
 
@@ -49,7 +49,7 @@ const dayjs = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/dayjs@1/dayjs
 await ctx.requireAsync('https://cdn.example.com/theme.css');
 ```
 
-### График ECharts
+### ECharts
 
 ```javascript
 const container = document.createElement('div');
@@ -58,23 +58,23 @@ container.style.width = '100%';
 ctx.render(container);
 
 const echarts = await ctx.requireAsync('echarts@5/dist/echarts.min.js');
-if (!echarts) throw new Error('Библиотека ECharts не загружена');
+if (!echarts) throw new Error('ECharts library not loaded');
 
 const chart = echarts.init(container);
 chart.setOption({
-  title: { text: ctx.t('Обзор продаж') },
+  title: { text: ctx.t('Sales overview') },
   series: [{ type: 'pie', data: [{ value: 1, name: ctx.t('A') }] }],
 });
 chart.resize();
 ```
 
-### Гистограмма Chart.js
+### Chart.js bar- столбчатая диаграмма
 
 ```javascript
 async function renderChart() {
   const loaded = await ctx.requireAsync('chart.js@4.4.0/dist/chart.umd.min.js');
   const Chart = loaded?.Chart || loaded?.default?.Chart || loaded?.default;
-  if (!Chart) throw new Error('Chart.js не загружен');
+  if (!Chart) throw new Error('Chart.js not loaded');
 
   const container = document.createElement('canvas');
   ctx.render(container);
@@ -83,7 +83,7 @@ async function renderChart() {
     type: 'bar',
     data: {
       labels: ['A', 'B', 'C'],
-      datasets: [{ label: ctx.t('Количество'), data: [12, 19, 3] }],
+      datasets: [{ label: ctx.t('Count'), data: [12, 19, 3] }],
     },
   });
 }
@@ -99,12 +99,12 @@ console.log(dayjs?.default || dayjs);
 
 ## Примечания
 
-- **Формат возвращаемого значения**: способы экспорта UMD различаются; возвращаемое значение может быть объектом библиотеки или `undefined`. Если оно `undefined`, обратитесь к нему через `window` согласно документации библиотеки.
-- **Зависимость от сети**: требуется доступ к CDN. В средах внутренней сети можно использовать переменную **ESM_CDN_BASE_URL**, указывающую на собственный сервис.
-- **Выбор между importAsync**: если библиотека предоставляет и ESM, и UMD, отдавайте приоритет `ctx.importAsync()`.
+- **Форма возвращаемого значения**: у UMD-библиотек поведение отличается; результат может быть объектом библиотеки или `undefined`. Если `undefined`, проверяйте документацию (часто доступ через `window`).
+- **Сеть**: требуется доступ к CDN; для интрасети можно настроить свой сервис через **ESM_CDN_BASE_URL**.
+- **Выбор API**: если библиотека поддерживает и ESM, и UMD, предпочтительнее `ctx.importAsync()`.
 
-## Связанные разделы
+## Связанные материалы
 
-- [ctx.importAsync()](./import-async.md) — загрузка ESM-модулей, подходит для Vue, dayjs (ESM) и т. д.
-- [ctx.render()](./render.md) — рендеринг графиков и других компонентов в контейнер.
-- [ctx.libs](./libs.md) — встроенные React, antd, dayjs и др., не требующие асинхронной загрузки.
+- [ctx.importAsync()](./import-async.md): загрузка ESM; удобно для Vue, dayjs (ESM) и т. д.
+- [ctx.render()](./render.md): рендер графиков и другого контента в контейнер
+- [ctx.libs](./libs.md): встроенные React, antd, dayjs; без асинхронной загрузки

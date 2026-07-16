@@ -10,3 +10,4 @@ Las extensiones se dividen principalmente en dos partes:
 ## Otros contenidos
 
 - [Referencia de la API](./api.md)
+- [Guía de migración de v1 a v2 del lado del cliente](./migration.md)

@@ -1,6 +1,6 @@
-# IField
+# IField - Интерфейс поля
 
-`IField` определяет интерфейс, который должно реализовать поле.
+`IField` определяет интерфейс, который должно реализовывать поле.
 
 ```typescript
 export type FieldOptions = {
@@ -29,4 +29,4 @@ export interface IField {
 
 ### options
 
-- **Тип**: `FieldOptions`
+- **Type**: `FieldOptions`

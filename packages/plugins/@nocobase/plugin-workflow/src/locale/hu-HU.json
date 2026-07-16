@@ -102,6 +102,9 @@
   "Executed at": "Végrehajtás időpontja",
   "Executed workflow cannot be modified. Could be copied to a new version to modify.": "A végrehajtott munkafolyamat nem módosítható. Másolható új verzióba a módosításhoz.",
   "Execution history": "Végrehajtási előzmények",
+  "Version ID": "Verzióazonosító",
+  "Parent execution ID": "Szülő végrehajtás azonosító",
+  "Triggered manually": "Kézzel kiváltva",
   "Timeout settings": "Időkorlát beállításai",
   "0 means unlimited. If you set any other value and the execution is still not completed when the timeout is reached, the execution plan will be terminated and the remaining nodes will not be executed. Time spent in queue is not counted; timing starts only after it first enters a processor.": "A 0 korlátlant jelent. Ha bármilyen más értéket állít be, és a végrehajtás az időkorlát elérésekor még nem fejeződött be, a végrehajtási terv leáll, és a hátralévő csomópontok nem futnak le. A várólistán töltött idő nem számít bele; az időmérés csak azután kezdődik, hogy a végrehajtás először belép egy processzorba.",
   "Exit when query result is null": "Kilépés, ha a lekérdezés eredménye null",
@@ -251,6 +254,7 @@
   "When no condition matches": "When no condition matches",
   "Will be executed in the background as a queued task.": "A háttérben sorba állított feladatként kerül végrehajtásra.",
   "Workflow": "Munkafolyamat",
+  "Workflow not executed": "A munkafolyamat nem lett végrehajtva",
   "Workflow executed, the result status is <1>{{statusText}}</1><2>View the execution</2>": "Munkafolyamat végrehajtva, az eredmény állapota: <1>{{statusText}}</1><2>Végrehajtás megtekintése</2>",
   "Workflow was not triggered because the current request did not meet the trigger requirements.": "A munkafolyamat nem indult el, mert az aktuális kérés nem felelt meg az indítási feltételeknek.",
   "Workflow is not exists": "Workflow is not exists",
@@ -268,5 +272,14 @@
   "Impacted dependent node variables": "A jelenlegi csomópont változóira hivatkozó csomópontok",
   "Keep variable references": "Változóhivatkozások megtartása",
   "Keeping variable references requires manual adjustment, otherwise workflow may fail.": "A változóhivatkozások megtartása kézi beállítást igényel, különben a munkafolyamat sikertelen lehet.",
-  "Failed to update node variables": "A csomópont változóinak frissítése sikertelen"
+  "Failed to update node variables": "A csomópont változóinak frissítése sikertelen",
+  "Unsupported node": "Unsupported node",
+  "This node type is not available in the new canvas yet.": "This node type is not available in the new canvas yet.",
+  "This node's configuration has not been migrated to the new canvas yet.": "This node's configuration has not been migrated to the new canvas yet.",
+  "Node title": "Node title",
+  "Failed to add node": "Failed to add node",
+  "Failed to delete node": "Failed to delete node",
+  "Failed to save node": "Failed to save node",
+  "Failed to run": "Failed to run",
+  "Copied node": "Copied node"
 }

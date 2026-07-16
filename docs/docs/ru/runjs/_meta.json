@@ -11,7 +11,7 @@
   },
   {
     "type": "custom-link",
-    "label": "Рендеринг в контейнере",
+    "label": "Рендер в контейнере",
     "link": "/runjs/render"
   },
   {
@@ -32,6 +32,11 @@
         "type": "custom-link",
         "label": "ctx",
         "items": [
+          {
+            "type": "custom-link",
+            "label": "ctx.ai",
+            "link": "/runjs/context/ai"
+          },
           {
             "type": "custom-link",
             "label": "ctx.blockModel",

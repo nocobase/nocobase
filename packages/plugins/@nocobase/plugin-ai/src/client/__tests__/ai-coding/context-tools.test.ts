@@ -14,13 +14,13 @@ import {
   patchJSCodeTool,
   readJSCodeTool,
   writeJSCodeTool,
-} from '../../ai-employees/ai-coding/tools/context-tools';
+} from '../../../client-v2/ai-employees/tools/ai-coding';
 import {
   buildToolCodeBlock,
   compactPatchForDisplay,
   shouldSkipCodeToolCardRender,
-} from '../../ai-employees/ai-coding/ui/CodeToolCard';
-import { useChatMessagesStore } from '../../ai-employees/chatbox/stores/chat-messages';
+} from '../../../client-v2/ai-employees/tools/CodeToolCard';
+import { useChatMessagesStore } from '../../../client-v2/ai-employees/chatbox/stores/chat-messages';
 
 describe('ai coding context tools', () => {
   it('applies a model-generated hunk by searching old lines instead of trusting the hunk line number', () => {

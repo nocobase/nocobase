@@ -1,17 +1,17 @@
 ---
 title: "Workflow: Approval"
 keywords: "Workflow"
-displayName: "Workflow: Approval"
+displayName: "Рабочий процесс: согласование"
 packageName: '@nocobase/plugin-workflow-approval'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Triggered when an approval request is initiated through an action button or API. Dedicated to the approval process, with exclusive approval node and block for managing documents and tracking processing processes.
+  Срабатывает при запуске запроса на согласование через кнопку действия или API. Предназначен для процессов согласования: отдельный узел и блок для документов и отслеживания хода обработки.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# Workflow: Approval
+# Рабочий процесс: согласование

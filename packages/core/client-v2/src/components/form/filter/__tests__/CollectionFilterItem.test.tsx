@@ -244,4 +244,42 @@ describe('CollectionFilterItem', () => {
       expect(value.path).toBe('username');
     });
   });
+
+  it('keeps default widths at 200/120 and honours explicit width/placeholder overrides', () => {
+    const value = observable({ path: 'username', operator: '$eq', value: '' });
+    const collection = buildStubCollection([{ name: 'username', title: 'Username' }]);
+
+    const { container, rerender } = render(<CollectionFilterItem value={value} collection={collection} />);
+
+    let selects = container.querySelectorAll('.ant-select');
+    expect(selects[0]).toHaveStyle({ width: '200px' });
+    expect(selects[1]).toHaveStyle({ minWidth: '120px' });
+
+    rerender(
+      <CollectionFilterItem
+        value={observable({ path: '', operator: '', value: '' })}
+        collection={collection}
+        fieldWidth={160}
+        operatorMinWidth={110}
+        fieldPlaceholder="Choose field"
+        operatorPlaceholder="Choose operator"
+      />,
+    );
+
+    selects = container.querySelectorAll('.ant-select');
+    expect(selects[0]).toHaveStyle({ width: '160px' });
+    expect(selects[1]).toHaveStyle({ minWidth: '110px' });
+    expect(screen.getByText('Choose field')).toBeInTheDocument();
+  });
+
+  it('lets callers suppress the fallback value placeholder', () => {
+    const value = observable({ path: 'username', operator: '$eq', value: '' });
+    const collection = buildStubCollection([{ name: 'username', title: 'Username' }]);
+
+    const { rerender } = render(<CollectionFilterItem value={value} collection={collection} />);
+    expect(screen.getByPlaceholderText('Enter value')).toBeInTheDocument();
+
+    rerender(<CollectionFilterItem value={value} collection={collection} valuePlaceholder={null} />);
+    expect(screen.queryByPlaceholderText('Enter value')).not.toBeInTheDocument();
+  });
 });

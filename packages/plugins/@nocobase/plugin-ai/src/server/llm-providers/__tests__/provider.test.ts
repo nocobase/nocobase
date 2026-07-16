@@ -11,12 +11,16 @@ import { describe, expect, it, afterEach } from 'vitest';
 import type { Application } from '@nocobase/server';
 import type { EmbeddingsInterface } from '@langchain/core/embeddings';
 import { AIMessage, AIMessageChunk } from '@langchain/core/messages';
-import { EmbeddingProvider, LLMProvider } from '../provider';
+import { EmbeddingProvider, LLMProvider, ReasoningOptions, ResolvedReasoningOptions } from '../provider';
 import { injectMistralReasoningEffort, MistralProvider } from '../mistral';
 import type { AIMessageInput } from '../../types';
 import { Readable } from 'node:stream';
 import type { Context } from '@nocobase/actions';
 import type { AttachmentModel } from '@nocobase/plugin-file-manager';
+import { KimiProvider } from '../kimi/provider';
+import { DeepSeekProvider } from '../deepseek';
+import { OpenAICompletionsProvider } from '../openai/completions';
+import { OpenAIResponsesProvider } from '../openai/responses';
 
 class TestLLMProvider extends LLMProvider {
   get baseURL(): string {
@@ -47,6 +51,30 @@ class TestEmbeddingProvider extends EmbeddingProvider {
 
   getResolvedURL() {
     return this.baseURL;
+  }
+}
+
+class CapturingReasoningProvider extends LLMProvider {
+  createModel() {
+    return {
+      modelOptions: this.modelOptions,
+      reasoningOptions: this.resolveReasoningOptions(this.modelReasoningOptions),
+    };
+  }
+
+  protected resolveReasoningOptions(reasoning?: ReasoningOptions): ResolvedReasoningOptions {
+    if (reasoning?.mode !== 'off') {
+      return {};
+    }
+    return {
+      modelKwargs: {
+        providerOnly: true,
+        shared: 'provider',
+      },
+      modelRequestParams: {
+        providerParam: 'off',
+      },
+    };
   }
 }
 
@@ -141,6 +169,81 @@ describe('LLM provider baseURL guard', () => {
     expect(provider.getResolvedURL()).toBe('https://api.example.com/v1');
   });
 
+  it('extracts model reasoning options without leaking them to provider model options', () => {
+    const provider = new CapturingReasoningProvider({
+      app: createApp(),
+      modelOptions: {
+        model: 'test-model',
+        temperature: 0.1,
+        _reasoning: { mode: 'off' },
+      },
+    });
+
+    expect(provider.chatModel.modelOptions).toEqual({
+      model: 'test-model',
+      temperature: 0.1,
+    });
+    expect(provider.chatModel.reasoningOptions).toEqual({
+      modelKwargs: {
+        providerOnly: true,
+        shared: 'provider',
+      },
+      modelRequestParams: {
+        providerParam: 'off',
+      },
+    });
+  });
+
+  it('maps OpenAI chat completions reasoning off to reasoning_effort none', () => {
+    process.env.SERVER_REQUEST_WHITELIST = 'api.openai.com';
+
+    const provider = new OpenAICompletionsProvider({
+      app: createApp({ apiKey: 'test-key' }),
+      modelOptions: { model: 'gpt-5', _reasoning: { mode: 'off' } },
+    });
+
+    expect(provider.chatModel.invocationParams()).toMatchObject({
+      reasoning_effort: 'none',
+    });
+  });
+
+  it('maps OpenAI responses reasoning off to reasoning effort none', () => {
+    process.env.SERVER_REQUEST_WHITELIST = 'api.openai.com';
+
+    const provider = new OpenAIResponsesProvider({
+      app: createApp({ apiKey: 'test-key' }),
+      modelOptions: { model: 'gpt-5', _reasoning: { mode: 'off' } },
+    });
+
+    expect(provider.chatModel.invocationParams()).toMatchObject({
+      reasoning: {
+        effort: 'none',
+      },
+    });
+  });
+
+  it('maps OpenAI reasoning effort values for chat completions and responses', () => {
+    process.env.SERVER_REQUEST_WHITELIST = 'api.openai.com';
+
+    const completionsProvider = new OpenAICompletionsProvider({
+      app: createApp({ apiKey: 'test-key' }),
+      modelOptions: { model: 'gpt-5', _reasoning: { mode: 'minimal' } },
+    });
+    const responsesProvider = new OpenAIResponsesProvider({
+      app: createApp({ apiKey: 'test-key' }),
+      modelOptions: { model: 'gpt-5', _reasoning: { mode: 'xhigh' } },
+    });
+
+    expect(completionsProvider.chatModel.invocationParams()).toMatchObject({
+      reasoning_effort: 'minimal',
+    });
+    expect(responsesProvider.chatModel.invocationParams()).toMatchObject({
+      reasoning: {
+        effort: 'xhigh',
+      },
+    });
+  });
+
   it('normalizes Mistral SDK serverURL to the API root', () => {
     process.env.SERVER_REQUEST_WHITELIST = 'api.mistral.ai';
 
@@ -170,6 +273,124 @@ describe('LLM provider baseURL guard', () => {
     expect(body).toMatchObject({
       reasoning_effort: 'high',
       model: 'mistral-small-latest',
+    });
+  });
+
+  it('disables Mistral reasoning effort when reasoning mode is off', async () => {
+    process.env.SERVER_REQUEST_WHITELIST = 'api.mistral.ai';
+
+    const provider = new MistralProvider({
+      app: createApp({ apiKey: 'test-key' }),
+      modelOptions: { model: 'mistral-small-latest', _reasoning: { mode: 'off' } },
+    });
+    const params = provider.chatModel.invocationParams();
+    const request = new Request('https://api.mistral.ai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        ...params,
+        reasoning_effort: 'high',
+        messages: [{ role: 'user', content: 'hello' }],
+      }),
+    });
+
+    const nextRequest = await injectMistralReasoningEffort(request);
+    const body = await (nextRequest as Request).json();
+
+    expect(body).toMatchObject({
+      model: 'mistral-small-latest',
+    });
+    expect(body.reasoning_effort).toBeUndefined();
+    expect(body.__nb_reasoning_mode).toBeUndefined();
+  });
+
+  it('honors requested Mistral reasoning effort', async () => {
+    process.env.SERVER_REQUEST_WHITELIST = 'api.mistral.ai';
+
+    const provider = new MistralProvider({
+      app: createApp({ apiKey: 'test-key' }),
+      modelOptions: { model: 'mistral-small-latest', _reasoning: { mode: 'low' } },
+    });
+    const params = provider.chatModel.invocationParams();
+    const request = new Request('https://api.mistral.ai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        ...params,
+        messages: [{ role: 'user', content: 'hello' }],
+      }),
+    });
+
+    const nextRequest = await injectMistralReasoningEffort(request);
+    const body = await (nextRequest as Request).json();
+
+    expect(body).toMatchObject({
+      reasoning_effort: 'low',
+      model: 'mistral-small-latest',
+    });
+    expect(body.__nb_reasoning_mode).toBeUndefined();
+  });
+
+  it('disables Kimi thinking for models that support the thinking switch', () => {
+    process.env.SERVER_REQUEST_WHITELIST = 'api.moonshot.cn';
+
+    const provider = new KimiProvider({
+      app: createApp({ apiKey: 'test-key' }),
+      modelOptions: { model: 'kimi-k2.5', _reasoning: { mode: 'off' } },
+    });
+
+    expect(provider.chatModel.invocationParams()).toMatchObject({
+      thinking: {
+        type: 'disabled',
+      },
+    });
+  });
+
+  it('skips Kimi thinking switch for models that do not support disabling thinking', () => {
+    process.env.SERVER_REQUEST_WHITELIST = 'api.moonshot.cn';
+
+    const provider = new KimiProvider({
+      app: createApp({ apiKey: 'test-key' }),
+      modelOptions: { model: 'kimi-k2.7-code', _reasoning: { mode: 'off' } },
+    });
+
+    expect(provider.chatModel.invocationParams().thinking).toBeUndefined();
+  });
+
+  it('maps DeepSeek reasoning off to disabled thinking without reasoning effort', () => {
+    process.env.SERVER_REQUEST_WHITELIST = 'api.deepseek.com';
+
+    const provider = new DeepSeekProvider({
+      app: createApp({ apiKey: 'test-key' }),
+      modelOptions: { model: 'deepseek-v4-pro', _reasoning: { mode: 'off' } },
+    });
+    const params = provider.chatModel.invocationParams();
+
+    expect(params).toMatchObject({
+      thinking: {
+        type: 'disabled',
+      },
+    });
+    expect(params.reasoning_effort).toBeUndefined();
+  });
+
+  it('maps DeepSeek reasoning effort when thinking is enabled', () => {
+    process.env.SERVER_REQUEST_WHITELIST = 'api.deepseek.com';
+
+    const provider = new DeepSeekProvider({
+      app: createApp({ apiKey: 'test-key' }),
+      modelOptions: { model: 'deepseek-v4-pro', _reasoning: { mode: 'high' } },
+    });
+
+    expect(provider.chatModel.invocationParams()).toMatchObject({
+      thinking: {
+        type: 'enabled',
+      },
+      reasoning_effort: 'high',
     });
   });
 

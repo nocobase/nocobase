@@ -10,6 +10,8 @@
 import { Registry } from '@nocobase/utils/client';
 import { ComponentType } from 'react';
 
+type LoaderOf<P = Record<string, never>> = () => Promise<{ default: ComponentType<P> }>;
+
 export type RegisterChannelOptions = {
   title: string;
   type: string;
@@ -17,6 +19,9 @@ export type RegisterChannelOptions = {
     ChannelConfigForm: ComponentType;
     MessageConfigForm?: ComponentType<{ variableOptions: any }>;
     ContentConfigForm?: ComponentType<{ variableOptions?: any }>;
+    ChannelConfigFormLoader?: LoaderOf;
+    MessageConfigFormLoader?: LoaderOf<{ variableOptions: any }>;
+    ContentConfigFormLoader?: LoaderOf<{ variableOptions?: any }>;
   };
   meta?: {
     creatable?: boolean;

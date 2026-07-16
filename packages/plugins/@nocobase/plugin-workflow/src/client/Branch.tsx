@@ -8,28 +8,11 @@
  */
 
 import React from 'react';
-import { CloseOutlined } from '@ant-design/icons';
-import { Tooltip } from 'antd';
-
-import { cx } from '@nocobase/client';
-
-import { AddNodeSlot } from './AddNodeContext';
-import { BranchContext } from './BranchContext';
 import { useGetAriaLabelOfAddButton } from './hooks/useGetAriaLabelOfAddButton';
 import { Node } from './nodes';
-import useStyles from './style';
+import { Branch as SharedBranch } from '../client-v2/canvas/Branch';
 
 export { useBranchContext, useBranchIndex } from './BranchContext';
-
-function EndSign({ title }: { title?: React.ReactNode }) {
-  const content = (
-    <div className="end-sign">
-      <CloseOutlined />
-    </div>
-  );
-
-  return title ? <Tooltip title={title}>{content}</Tooltip> : content;
-}
 
 export function Branch({
   from = null,
@@ -56,27 +39,23 @@ export function Branch({
   startTitle?: React.ReactNode;
   dashed?: boolean;
 }) {
-  const { styles } = useStyles();
   const { getAriaLabel } = useGetAriaLabelOfAddButton(from, branchIndex);
-  const list: any[] = [];
-  for (let node = entry; node; node = node.downstream) {
-    list.push(node);
-  }
 
   return (
-    <BranchContext.Provider value={{ branchIndex, addable, syncOnly }}>
-      <div className={cx('workflow-branch', styles.branchClass, className, { 'workflow-branch-dashed': dashed })}>
-        <div className="workflow-branch-lines" />
-        {controller ? <div className="workflow-branch-controller">{controller}</div> : null}
-        <div className="workflow-node-list">
-          {start ? <EndSign title={startTitle} /> : null}
-          {addable ? <AddNodeSlot aria-label={getAriaLabel()} upstream={from} branchIndex={branchIndex} /> : null}
-          {list.map((item) => (
-            <Node data={item} key={item.id} />
-          ))}
-        </div>
-        {end === true ? <EndSign /> : end}
-      </div>
-    </BranchContext.Provider>
+    <SharedBranch
+      from={from}
+      entry={entry}
+      branchIndex={branchIndex}
+      controller={controller}
+      className={className}
+      end={end}
+      addable={addable}
+      syncOnly={syncOnly}
+      start={start}
+      startTitle={startTitle}
+      dashed={dashed}
+      NodeComponent={Node}
+      addButtonAriaLabel={getAriaLabel()}
+    />
   );
 }

@@ -8,7 +8,17 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { buildFormFillerPatches, formFillerTool, normalizeFormFillerData } from '../../ai-employees/form-filler/tools';
+import {
+  buildFormFillerPatches,
+  formFillerTool,
+  normalizeFormFillerData,
+} from '../../../client-v2/ai-employees/form-filler/tools';
+
+type FormFillerInvoke = NonNullable<(typeof formFillerTool)[1]['invoke']>;
+
+const invokeFormFillerTool = (app: unknown, params: Parameters<FormFillerInvoke>[1]) => {
+  return formFillerTool[1].invoke?.(app as Parameters<FormFillerInvoke>[0], params);
+};
 
 describe('formFillerTool', () => {
   const subTablePaths = new Set(['roles']);
@@ -79,7 +89,7 @@ describe('formFillerTool', () => {
       },
     };
 
-    await formFillerTool[1].invoke?.(app, {
+    await invokeFormFillerTool(app, {
       form: 'form-1',
       data: {
         roles: [{ name: 'Admin' }],
@@ -139,7 +149,7 @@ describe('formFillerTool', () => {
       },
     };
 
-    await formFillerTool[1].invoke?.(app, {
+    await invokeFormFillerTool(app, {
       form: 'form-1',
       data: {
         roles: [{ name: 'Admin' }],

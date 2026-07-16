@@ -37,8 +37,8 @@ export default class extends Instruction {
       otherwise: Joi.forbidden().allow(null),
     }),
     params: Joi.object({
-      field: Joi.string(),
-      filter: Joi.object(),
+      field: Joi.string().required(),
+      filter: Joi.object().allow(null).optional(),
     }),
     precision: Joi.number().integer().min(0).max(14).default(2),
   });

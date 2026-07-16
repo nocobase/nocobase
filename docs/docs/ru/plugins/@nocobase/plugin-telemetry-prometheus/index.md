@@ -7,7 +7,7 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Integrate Prometheus with NocoBase telemetry.
+  Интеграция Prometheus с телеметрией NocoBase.
 isFree: false
 builtIn: false
 defaultEnabled: false

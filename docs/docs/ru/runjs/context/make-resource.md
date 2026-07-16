@@ -1,18 +1,18 @@
 # ctx.makeResource()
 
-**Создает** и возвращает новый экземпляр ресурса, **не** записывая и не изменяя `ctx.resource`. Подходит для сценариев, требующих нескольких независимых ресурсов или временного использования.
+**Создаёт** новый экземпляр ресурса и возвращает его; при этом **не** устанавливает и не изменяет `ctx.resource`. Используется, когда нужны несколько ресурсов или временный ресурс.
 
-## Применимость
+## Сценарии использования
 
 | Сценарий | Описание |
-|------|------|
-| **Несколько ресурсов** | Одновременная загрузка нескольких источников данных (например, список пользователей + список заказов), где каждый использует отдельный ресурс. |
-| **Временные запросы** | Одноразовые запросы, которые не используются повторно и не требуют привязки к `ctx.resource`. |
-| **Вспомогательные данные** | Использование `ctx.resource` для основных данных и `makeResource` для создания экземпляров дополнительных данных. |
+|----------|----------|
+| **Несколько ресурсов** | Загрузка нескольких источников данных (например, users + orders), у каждого свой ресурс |
+| **Разовый запрос** | Разовый запрос без привязки к `ctx.resource` |
+| **Вспомогательные данные** | Основные данные в `ctx.resource`, дополнительные — через экземпляр из `makeResource` |
 
-Если вам нужен только один ресурс и вы хотите привязать его к `ctx.resource`, целесообразнее использовать [ctx.initResource()](./init-resource.md).
+Если нужен только один ресурс и он должен быть доступен как `ctx.resource`, используйте [ctx.initResource()](./init-resource.md).
 
-## Определение типов
+## Тип
 
 ```ts
 makeResource<T = FlowResource>(
@@ -21,28 +21,28 @@ makeResource<T = FlowResource>(
 ```
 
 | Параметр | Тип | Описание |
-|------|------|------|
-| `resourceType` | `string` | Тип ресурса: `'APIResource'`, `'SingleRecordResource'`, `'MultiRecordResource'`, `'SQLResource'` |
+|----------|-----|----------|
+| `resourceType` | `string` | `'APIResource'`, `'SingleRecordResource'`, `'MultiRecordResource'`, `'SQLResource'` |
 
-**Возвращаемое значение**: Новый созданный экземпляр ресурса.
+**Возвращает**: новый экземпляр ресурса.
 
-## Отличие от ctx.initResource()
+## Связь с ctx.initResource()
 
 | Метод | Поведение |
-|------|------|
-| `ctx.makeResource(type)` | Только создает и возвращает новый экземпляр, **не** записывая его в `ctx.resource`. Можно вызывать несколько раз для получения нескольких независимых ресурсов. |
-| `ctx.initResource(type)` | Создает и привязывает, если `ctx.resource` не существует; возвращает его напрямую, если он уже существует. Гарантирует доступность `ctx.resource`. |
+|-------|-----------|
+| `ctx.makeResource(type)` | Создаёт и возвращает ресурс; **не** присваивает в `ctx.resource`; можно вызывать многократно для нескольких ресурсов |
+| `ctx.initResource(type)` | Создаёт и привязывает, если ресурса нет; иначе возвращает существующий. Гарантирует, что `ctx.resource` задан |
 
 ## Примеры
 
-### Одиночный ресурс
+### Один ресурс
 
 ```ts
 const listRes = ctx.makeResource('MultiRecordResource');
 listRes.setResourceName('users');
 await listRes.refresh();
 const users = listRes.getData();
-// ctx.resource сохраняет свое исходное значение (если оно было)
+// ctx.resource не изменяется (если уже существовал)
 ```
 
 ### Несколько ресурсов
@@ -58,13 +58,13 @@ await ordersRes.refresh();
 
 ctx.render(
   <div>
-    <p>Количество пользователей: {usersRes.getData().length}</p>
-    <p>Количество заказов: {ordersRes.getData().length}</p>
+    <p>Users: {usersRes.getData().length}</p>
+    <p>Orders: {ordersRes.getData().length}</p>
   </div>
 );
 ```
 
-### Временный запрос
+### Разовый запрос
 
 ```ts
 // Одноразовый запрос, не засоряющий ctx.resource
@@ -77,14 +77,14 @@ const record = tempRes.getData();
 
 ## Примечания
 
-- Для вновь созданного ресурса необходимо вызвать `setResourceName(name)`, чтобы указать коллекцию, а затем загрузить данные с помощью `refresh()`.
-- Каждый экземпляр ресурса независим и не влияет на другие; подходит для параллельной загрузки нескольких источников данных.
+- Для загрузки данных сначала вызовите `setResourceName(name)`, затем `refresh()`.
+- Каждый экземпляр независим; удобно для параллельной загрузки нескольких источников данных.
 
-## Связанные разделы
+## Связанные материалы
 
-- [ctx.initResource()](./init-resource.md): Инициализация и привязка к `ctx.resource`
-- [ctx.resource](./resource.md): Экземпляр ресурса в текущем контексте
-- [MultiRecordResource](../resource/multi-record-resource) — Несколько записей / Список
-- [SingleRecordResource](../resource/single-record-resource) — Одна запись
-- [APIResource](../resource/api-resource) — Общий API-ресурс
-- [SQLResource](../resource/sql-resource) — Ресурс SQL-запроса
+- [ctx.initResource()](./init-resource.md): инициализация и привязка к `ctx.resource`
+- [ctx.resource](./resource.md): ресурс текущего контекста
+- [MultiRecordResource](../resource/multi-record-resource.md)
+- [SingleRecordResource](../resource/single-record-resource.md)
+- [APIResource](../resource/api-resource.md)
+- [SQLResource](../resource/sql-resource.md)
