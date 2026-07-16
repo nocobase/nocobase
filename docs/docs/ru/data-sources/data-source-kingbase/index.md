@@ -1,29 +1,42 @@
 ---
 pkg: "@nocobase/plugin-data-source-kingbase"
+title: "Основной источник данных — KingbaseES"
+description: "Поддерживаемые версии KingbaseES в качестве основной базы данных NocoBase, установка плагина, переменные окружения, развёртывание через Docker, инструкции по использованию и сопоставление полей."
+keywords: "основной источник данных,人大金仓,KingbaseES,основная база данных,режим совместимости с PostgreSQL,сопоставление полей,NocoBase"
 ---
 
-# Источник данных - база данных KingbaseES
+# KingbaseES
 
 ## Введение
 
-KingbaseES может использоваться как источник данных: как основная база данных или как внешняя база данных.
+KingbaseES можно использовать в качестве основной базы данных NocoBase для хранения данных системных таблиц NocoBase и бизнес-данных основного источника данных. Основная база данных настраивается при развёртывании NocoBase и не может быть удалена после запуска приложения.
 
-:::warning
-Сейчас поддерживаются только базы данных KingbaseES, работающие в режиме pg.
+Чтобы подключить существующую базу данных KingbaseES в качестве внешней базы данных, обратитесь к разделу [Внешний KingbaseES](../external/kingbase.md).
+
+| Параметр конфигурации | Описание |
+| --- | --- |
+| Поддерживаемая версия | >= V9. |
+| Коммерческие версии | Поддерживаются профессиональная и корпоративная версии. |
+| Тип базы данных | Режим совместимости с PostgreSQL. |
+
+:::warning Внимание
+
+В настоящее время поддерживаются только базы данных KingbaseES, работающие в режиме совместимости с PostgreSQL.
+
 :::
 
 ## Установка
 
-### Использование как основной базы данных
+### Использование в качестве основной базы данных
 
-Порядок настройки см. в документации по установке; основное отличие связано с переменными окружения.
+Процесс установки описан в разделе [Установка приложения NocoBase](/ai/install-nocobase-app); основное отличие заключается в переменных окружения базы данных.
 
 #### Переменные окружения
 
-Отредактируйте файл `.env`, добавив или изменив следующие параметры переменных окружения:
+Измените файл `.env` и добавьте или измените следующие переменные окружения, связанные с базой данных:
 
 ```bash
-# При необходимости скорректируйте параметры БД
+# 根据实际情况调整 DB 相关参数
 DB_DIALECT=kingbase
 DB_HOST=localhost
 DB_PORT=54321
@@ -48,29 +61,28 @@ services:
     depends_on:
       - kingbase
     environment:
-      # Ключ приложения для генерации пользовательских токенов и т.д.
-      # При изменении APP_KEY старые токены станут недействительны
-      # Используйте случайную строку и храните ее в секрете
+      # 用于生成用户 token 等内容的应用密钥。
+      # 修改 APP_KEY 会导致旧 token 失效，请使用随机字符串并妥善保存。
       - APP_KEY=your-secret-key
-      # Тип базы данных
+      # 数据库类型
       - DB_DIALECT=kingbase
-      # Хост базы данных, при необходимости замените на IP существующего сервера БД
+      # 数据库地址，如果使用已有数据库服务，可以替换为对应 IP。
       - DB_HOST=kingbase
       - DB_PORT=54321
-      # Имя базы данных
+      # 数据库名称
       - DB_DATABASE=kingbase
-      # Пользователь базы данных
+      # 数据库用户
       - DB_USER=nocobase
-      # Пароль базы данных
+      # 数据库密码
       - DB_PASSWORD=nocobase
-      # Часовой пояс
+      # 时区
       - TZ=UTC
     volumes:
       - ./storage:/app/nocobase/storage
     ports:
       - "11000:80"
 
-  # Сервис Kingbase только для целей тестирования
+  # Kingbase 测试服务，仅用于本地体验。
   kingbase:
     image: registry.cn-shanghai.aliyuncs.com/nocobase/kingbase:v009r001c001b0030_single_x86
     platform: linux/amd64
@@ -81,15 +93,15 @@ services:
     volumes:
       - ./storage/db/kingbase:/home/kingbase/userdata
     environment:
-      ENABLE_CI: no # Должно быть установлено в no
+      ENABLE_CI: no # Must be set to no
       DB_USER: nocobase
       DB_PASSWORD: nocobase
-      DB_MODE: pg  # Только pg
+      DB_MODE: pg  # 仅支持 pg 模式
       NEED_START: yes
     command: ["/usr/sbin/init"]
 ```
 
-#### Установка через create-nocobase-app
+#### Установка с помощью create-nocobase-app
 
 ```bash
 yarn create nocobase-app my-nocobase-app -d kingbase \
@@ -98,24 +110,50 @@ yarn create nocobase-app my-nocobase-app -d kingbase \
    -e DB_DATABASE=kingbase \
    -e DB_USER=nocobase \
    -e DB_PASSWORD=nocobase \
-   -e TZ=UTC
+   -e TZ=Asia/Shanghai
 ```
 
-### Использование как внешней базы данных
+### Использование в качестве внешней базы данных
 
-Выполните команду установки или обновления
+Чтобы подключить KingbaseES в качестве внешней базы данных, обратитесь к разделу [Внешний KingbaseES](../external/kingbase.md), где описаны точка входа для настройки, параметры подключения и правила синхронизации.
 
-```bash
-yarn nocobase install
-# или
-yarn nocobase upgrade
-```
+## Инструкции по использованию
 
-Активируйте плагин
+Основной источник данных KingbaseES совместим с режимом PostgreSQL. Для повседневного управления можно обратиться к разделу [Основной источник данных PostgreSQL](../main/postgresql.md).
 
-![20241024121815](https://static-docs.nocobase.com/20241024121815.png)
+1. При развёртывании NocoBase в настройках подключения к базе данных выберите или укажите соответствующие параметры подключения KingbaseES.
+2. После запуска NocoBase откройте источник данных «Main» в разделе «Управление источниками данных», чтобы управлять таблицами и полями основной базы данных.
+3. Если необходимо подключить уже существующие в базе данных таблицы, на странице управления основной базой данных можно использовать функцию «Синхронизация из базы данных».
+4. При настройке полей таблицы можно обратиться к каталогам [Таблицы данных](../data-modeling/collection.md) и [Поля](../data-modeling/collection-fields/index.md), чтобы выбрать типы полей и компоненты полей.
 
-## Руководство пользовател
+## Сопоставление типов полей
 
-- Основная база данных: см. [Основной источник данных](/data-sources/data-source-main/)
-- Внешняя база данных: см. [Источники данных / Внешняя база данных](/data-sources/data-source-manager/external-database)
+При создании поля через страницу NocoBase в основной базе данных NocoBase создаёт соответствующее поле KingbaseES на основе настроек поля. При подключении существующей таблицы с помощью функции «Синхронизация из базы данных» NocoBase распознаёт типы полей KingbaseES по логике совместимости с PostgreSQL и автоматически сопоставляет их с подходящими типами Field type и интерфейсами Field interface. Способ отображения в интерфейсе можно изменить в настройках поля.
+
+Распространённые варианты сопоставления:
+
+| Тип поля KingbaseES | Field type NocoBase | Доступный Field interface |
+| --- | --- | --- |
+| `BOOLEAN` | `boolean` | Checkbox, Switch. |
+| `SMALLINT`、`INTEGER` | `integer`、`sort` | Integer, Sort, Select, Radio group. |
+| `BIGINT` | `bigInt`、`snowflakeId`、`unixTimestamp`、`sort` | Integer, Sort, Unix timestamp, Created at, Updated at. |
+| `REAL`、`DOUBLE PRECISION` | `float` | Number, Percent. |
+| `DECIMAL`、`NUMERIC` | `decimal` | Number, Percent, Currency. |
+| `VARCHAR`、`CHAR` | `string`、`uuid`、`nanoid`、`encryption`、`datetimeNoTz` | Input, Email, Phone, Password, Color, Icon, Select, Radio group, UUID, Nano ID. |
+| `TEXT` | `text` | Textarea, Markdown, Vditor, Rich text, URL. |
+| `UUID` | `uuid` | UUID. |
+| `JSON`、`JSONB` | `json`、`array` | JSON. |
+| `TIMESTAMP WITHOUT TIME ZONE` | `datetimeNoTz` | Date, Time, Created at, Updated at. |
+| `TIMESTAMP WITH TIME ZONE` | `datetimeTz`、`date` | Date, Time, Created at, Updated at. |
+| `DATE` | `dateOnly` | Date. |
+| `TIME WITHOUT TIME ZONE` | `time` | Time. |
+| `POINT`、`PATH`、`POLYGON`、`CIRCLE` | `json` | JSON. |
+| `ARRAY` | `array` | Multiple select, Checkbox group, JSON. |
+
+:::warning Внимание
+
+Неподдерживаемые типы полей KingbaseES будут отображаться отдельно в настройках полей. Чтобы использовать такие поля в NocoBase как обычные, необходимо предварительно разработать адаптацию.
+
+:::
+
+Дополнительные общие настройки см. в разделе [Обзор основного источника данных](./index.md).
