@@ -8,7 +8,6 @@
  */
 
 import { Plugin } from '@nocobase/client';
-import React from 'react';
 import {
   ChartV2Block,
   ChartV2BlockDesigner,
@@ -138,14 +137,6 @@ class PluginDataVisualiztionClient extends Plugin {
     this.app.schemaInitializerManager.addItem('popup:common:addBlock', 'dataBlocks.charts', {
       title: '{{t("Charts")}}',
       Component: 'ChartV2BlockInitializer',
-    });
-
-    // 个人中心（右上角头像 → 设置）注册 ECharts 个性化配置 tab。
-    // 这是用户级个性化配置，不挂 ACL、不进 admin 后台。组件来自 client-v2（v1 允许引用 v2）。
-    this.app.addUserCenterSettingsItem({
-      name: 'echarts',
-      sort: 320,
-      Component: React.lazy(() => import('../client-v2/settings/EChartsSettingsPage')),
     });
   }
 }

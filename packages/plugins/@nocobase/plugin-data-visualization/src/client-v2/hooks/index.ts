@@ -8,4 +8,3 @@
  */
 
 export * from './useSetChartSize';
-export * from './useEChartsGlobalConfig';

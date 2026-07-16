@@ -10,7 +10,6 @@
 import { Plugin } from '@nocobase/client-v2';
 
 import { ChartGroup } from './chart';
-import { EChartsConfigProvider } from './hooks';
 import { translateExpr } from './locale';
 
 type FieldInterfaceConfig = {
@@ -54,11 +53,6 @@ export class PluginDataVisualizationClient extends Plugin {
         loader: () => import('./flow/models/ChartBlockModel'),
       },
     });
-
-    // 应用根部挂一次全局 ECharts 配置 Provider（配置从 localStorage 读取，
-    // 这是用户级个性化配置，非平台级 admin 设置）。全站 <ECharts> 自动套用，
-    // settings 页（挂在个人中心）通过 useSetEChartsGlobalConfig() 写入并即时刷新。
-    this.app.use(EChartsConfigProvider);
   }
 }
 
