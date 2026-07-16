@@ -377,7 +377,7 @@ AI employee task 需要支持 `Chat box uid`：
 
 ### T6. 区块 Conversations 单独实现
 
-状态：`Pending`
+状态：`Done`
 
 依赖：T5
 
@@ -397,6 +397,14 @@ AI employee task 需要支持 `Chat box uid`：
 - 打开会话只更新当前 runtime 测试。
 - 搜索/重命名/删除行为测试。
 - 运行 touched files eslint。
+
+测试结果：
+
+- `yarn eslint --fix` touched T6 TS/TSX files 通过。
+- `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/block/ai-chat-box/__tests__/Conversations.test.tsx --run --reporter=verbose` 通过。
+- `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/block/ai-chat-box/__tests__/AIChatBoxView.test.ts --run --reporter=verbose` 通过。
+- `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/chatbox-global-behavior.test.tsx --run --reporter=verbose` 通过。
+- `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/components/__tests__/Messages.test.tsx --run --reporter=verbose` 通过。
 
 ### T7. conversation scope 服务端与客户端接入
 

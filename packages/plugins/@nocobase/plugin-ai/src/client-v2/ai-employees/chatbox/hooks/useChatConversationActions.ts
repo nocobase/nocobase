@@ -14,12 +14,17 @@ import { useCallback, useRef } from 'react';
 import { useLoadMoreObserver } from './useLoadMoreObserver';
 import { type ChatBoxRuntime, useResolvedChatBoxRuntime } from '../stores/runtime';
 
-export const useChatConversationActions = (runtime?: ChatBoxRuntime) => {
+type ChatConversationActionOptions = {
+  scope?: string;
+};
+
+export const useChatConversationActions = (runtime?: ChatBoxRuntime, options?: ChatConversationActionOptions) => {
   const app = useApp();
   const api = app.apiClient;
   const { chatConversationModel, workflowTaskModel } = useResolvedChatBoxRuntime(runtime);
   const keyword = chatConversationModel.keyword;
   const unreadCount = chatConversationModel.unreadCount;
+  const scope = options?.scope;
 
   const conversationsService = useRequest<
     {
@@ -43,6 +48,7 @@ export const useChatConversationActions = (runtime?: ChatBoxRuntime) => {
           appends: ['aiEmployee'],
           page,
           pageSize: 50,
+          ...(scope !== undefined ? { scope } : {}),
           filter,
         })
         .then((res) => res?.data);

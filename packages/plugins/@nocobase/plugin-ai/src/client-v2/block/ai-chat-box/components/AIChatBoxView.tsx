@@ -41,6 +41,7 @@ import { useChatBoxRuntime } from '../../../ai-employees/chatbox/stores/runtime'
 import type { AIChatBoxBlockModel } from '../AIChatBoxBlockModel';
 import { AIChatBoxCoreModel } from '../AIChatBoxCoreModel';
 import { getAIChatBoxSettings } from '../utils';
+import { Conversations } from './Conversations';
 
 const { Header } = Layout;
 
@@ -406,6 +407,7 @@ export const AIChatBoxView: React.FC<{
             }}
           >
             <SidePanel title={showConversations ? t('Conversation list') : t('Messages')}>
+              {showConversations ? <Conversations model={model} onOpen={closeSidePanel} /> : null}
               {showMessagesPanel ? <Messages /> : null}
             </SidePanel>
           </div>
