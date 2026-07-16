@@ -2,6 +2,146 @@
   {
     "type": "custom-link",
     "label": "概述",
+    "link": "/data-sources/overview"
+  },
+  {
+    "type": "custom-link",
+    "label": "主数据源",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "主数据库",
+        "link": "/data-sources/main/database"
+      },
+      {
+        "type": "custom-link",
+        "label": "连接数据库视图",
+        "link": "/data-sources/main/collection-view"
+      },
+      {
+        "type": "custom-link",
+        "label": "创建 SQL 数据表",
+        "link": "/data-sources/main/collection-sql"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "外部据源",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "外部数据库",
+        "link": "/data-sources/external/database"
+      },
+      {
+        "type": "custom-link",
+        "label": "REST API",
+        "link": "/data-sources/external/rest-api"
+      },
+      {
+        "type": "custom-link",
+        "label": "外部 NocoBase ",
+        "link": "/data-sources/external/nocobase"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "数据表与字段",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "数据表",
+        "link": "/data-sources/collection/collection"
+      },
+      {
+        "type": "custom-link",
+        "label": "字段",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "概述",
+            "link": "/data-sources/collection/field-overview"
+          },
+          {
+            "type": "custom-link",
+            "label": "文本",
+            "link": "/data-sources/collection/field-text"
+          },
+          {
+            "type": "custom-link",
+            "label": "富文本",
+            "link": "/data-sources/collection/field-rich-text"
+          },
+          {
+            "type": "custom-link",
+            "label": "数字",
+            "link": "/data-sources/collection/field-number"
+          },
+          {
+            "type": "custom-link",
+            "label": "日期和时间",
+            "link": "/data-sources/collection/field-datetime"
+          },
+          {
+            "type": "custom-link",
+            "label": "状态和选项",
+            "link": "/data-sources/collection/field-status-options"
+          },
+          {
+            "type": "custom-link",
+            "label": "附件",
+            "link": "/data-sources/collection/field-attachment"
+          },
+          {
+            "type": "custom-link",
+            "label": "关系字段",
+            "link": "/data-sources/collection/field-relation"
+          },
+          {
+            "type": "custom-link",
+            "label": "标识和编码",
+            "link": "/data-sources/collection/field-identifier"
+          },
+          {
+            "type": "custom-link",
+            "label": "几何图形",
+            "link": "/data-sources/collection/field-geometry"
+          },
+          {
+            "type": "custom-link",
+            "label": "系统字段",
+            "link": "/data-sources/collection/field-system"
+          },
+          {
+            "type": "custom-link",
+            "label": "其他",
+            "link": "/data-sources/collection/field-other"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "主数据库vs外部数据库",
+    "link": "/data-sources/main-vs-external-database"
+  },
+  {
+    "type": "custom-link",
+    "label": "扩展开发",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "概述",
+        "link": "/data-sources/development/"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "概述",
     "link": "/data-sources/"
   },
   {

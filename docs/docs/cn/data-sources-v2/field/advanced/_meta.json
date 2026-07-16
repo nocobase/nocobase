@@ -1,0 +1,52 @@
+[
+  {
+    "type": "custom-link",
+    "label": "UUID",
+    "link": "/data-sources-v2/field/advanced/uuid"
+  },
+  {
+    "type": "custom-link",
+    "label": "Nano ID",
+    "link": "/data-sources-v2/field/advanced/nano-id"
+  },
+  {
+    "type": "custom-link",
+    "label": "Snowflake ID",
+    "link": "/data-sources-v2/field/advanced/snowflake-id"
+  },
+  {
+    "type": "custom-link",
+    "label": "排序",
+    "link": "/data-sources-v2/field/advanced/sort"
+  },
+  {
+    "type": "custom-link",
+    "label": "JSON",
+    "link": "/data-sources-v2/field/advanced/json"
+  },
+  {
+    "type": "custom-link",
+    "label": "数据表选择器",
+    "link": "/data-sources-v2/field/advanced/collection-select"
+  },
+  {
+    "type": "custom-link",
+    "label": "中国行政区",
+    "link": "/data-sources-v2/field/advanced/china-region"
+  },
+  {
+    "type": "custom-link",
+    "label": "自动编码",
+    "link": "/data-sources-v2/field/advanced/sequence"
+  },
+  {
+    "type": "custom-link",
+    "label": "公式",
+    "link": "/data-sources-v2/field/advanced/formula"
+  },
+  {
+    "type": "custom-link",
+    "label": "加密",
+    "link": "/data-sources-v2/field/advanced/encryption"
+  }
+]

@@ -1,0 +1,37 @@
+[
+  {
+    "type": "custom-link",
+    "label": "介绍",
+    "link": "/data-sources-v2/field/relation/"
+  },
+  {
+    "type": "custom-link",
+    "label": "多对一",
+    "link": "/data-sources-v2/field/relation/m2o/"
+  },
+  {
+    "type": "custom-link",
+    "label": "一对多",
+    "link": "/data-sources-v2/field/relation/o2m/"
+  },
+  {
+    "type": "custom-link",
+    "label": "一对一",
+    "link": "/data-sources-v2/field/relation/o2o/"
+  },
+  {
+    "type": "custom-link",
+    "label": "多对多",
+    "link": "/data-sources-v2/field/relation/m2m/"
+  },
+  {
+    "type": "custom-link",
+    "label": "多对多数组",
+    "link": "/data-sources-v2/field/relation/m2m-array"
+  },
+  {
+    "type": "custom-link",
+    "label": "数据表选择器",
+    "link": "/data-sources-v2/field/relation/collection-select"
+  }
+]

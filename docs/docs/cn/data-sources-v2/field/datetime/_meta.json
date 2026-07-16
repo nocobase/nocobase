@@ -1,0 +1,32 @@
+[
+  {
+    "type": "custom-link",
+    "label": "介绍",
+    "link": "/data-sources-v2/field/datetime/"
+  },
+  {
+    "type": "custom-link",
+    "label": "日期时间（含时区）",
+    "link": "/data-sources-v2/field/datetime/datetime"
+  },
+  {
+    "type": "custom-link",
+    "label": "日期时间（不含时区）",
+    "link": "/data-sources-v2/field/datetime/datetime-without-tz"
+  },
+  {
+    "type": "custom-link",
+    "label": "日期",
+    "link": "/data-sources-v2/field/datetime/date"
+  },
+  {
+    "type": "custom-link",
+    "label": "时间",
+    "link": "/data-sources-v2/field/datetime/time"
+  },
+  {
+    "type": "custom-link",
+    "label": "Unix 时间戳",
+    "link": "/data-sources-v2/field/datetime/unix-timestamp"
+  }
+]
