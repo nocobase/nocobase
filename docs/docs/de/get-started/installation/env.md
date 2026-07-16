@@ -358,7 +358,7 @@ SERVER_REQUEST_WHITELIST=api.example.com,*.trusted.com,10.0.0.0/8,127.0.0.1
 
 **Nicht konfiguriert**: Alle ausgehenden `http` / `https`-Anfragen bleiben aus Kompatibilitätsgründen erlaubt. Wenn das Ziel jedoch eine Loopback-, private, link-local- oder Metadata-Adresse ist oder eine Domain auf eine solche Adresse auflöst, schreibt der Server eine Warnung ins Log.
 
-**Konfiguriert**: Nur Anfragen, deren Host einem Whitelist-Eintrag entspricht, sind erlaubt; nicht übereinstimmende Anfragen führen zu einem Fehler. Zukünftige Versionen können das Standardverhalten schrittweise verschärfen. Wenn deine Bereitstellung interne Dienste erreichen muss, konfiguriere vorab eine explizite Whitelist.
+**Konfiguriert**: Die ursprüngliche Anfrage und jedes Weiterleitungsziel müssen der Whitelist entsprechen. Bei fehlender Übereinstimmung erzeugt NocoBase einen Fehler, bevor die nächste Anfrage gesendet wird. Zukünftige Versionen können das Standardverhalten schrittweise verschärfen. Wenn deine Bereitstellung interne Dienste erreichen muss, konfiguriere vorab eine explizite Whitelist.
 
 Unterstützte Formate:
 
