@@ -8,7 +8,7 @@
  */
 
 import React, { useEffect } from 'react';
-import { Layout, Typography, theme } from 'antd';
+import { Typography, theme } from 'antd';
 import { observer } from '@nocobase/flow-engine';
 import { useT } from '../../../locale';
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
@@ -18,8 +18,6 @@ import { useChatBoxActions } from '../../../ai-employees/chatbox/hooks/useChatBo
 import { useChatBoxRuntime } from '../../../ai-employees/chatbox/stores/runtime';
 import type { AIChatBoxBlockModel } from '../AIChatBoxBlockModel';
 import { getAIChatBoxScope, getAIChatBoxSettings, getAIChatBoxWorkContext } from '../utils';
-
-const { Footer } = Layout;
 
 export const MessagesAndSender: React.FC<{
   model: AIChatBoxBlockModel;
@@ -62,7 +60,7 @@ export const MessagesAndSender: React.FC<{
   }, [aiConfigRepository, allowedAIEmployees, chatBoxModel, currentEmployee, switchAIEmployee]);
 
   return (
-    <Layout
+    <div
       style={{
         height: '100%',
         maxHeight: '100%',
@@ -78,11 +76,12 @@ export const MessagesAndSender: React.FC<{
           <Messages />
         </div>
       ) : null}
-      <Footer
+      <div
         style={{
           backgroundColor: 'transparent',
           padding: 0,
           flex: '0 0 auto',
+          position: 'relative',
         }}
       >
         <Sender
@@ -113,7 +112,7 @@ export const MessagesAndSender: React.FC<{
             {t('AI disclaimer')}
           </Typography.Text>
         ) : null}
-      </Footer>
-    </Layout>
+      </div>
+    </div>
   );
 });

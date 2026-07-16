@@ -94,9 +94,12 @@ describe('MessagesAndSender', () => {
 
     const messages = screen.getByTestId('messages');
     const messagesRegion = messages.parentElement;
+    const senderRegion = screen.getByTestId('sender').parentElement;
     expect(messagesRegion?.getAttribute('style')).toContain('flex: 1 1 0');
     expect(messagesRegion?.getAttribute('style')).toContain('overflow: hidden');
-    expect(container.querySelector('footer')).toContainElement(screen.getByTestId('sender'));
+    expect(senderRegion?.tagName).toBe('DIV');
+    expect(senderRegion?.getAttribute('style')).toContain('flex: 0 0 auto');
+    expect(senderRegion?.getAttribute('style')).toContain('position: relative');
   });
 
   it('passes AI chat box settings to the real sender and switches to an allowed employee', async () => {
@@ -127,7 +130,7 @@ describe('MessagesAndSender', () => {
       />,
     );
 
-    expect(container.querySelector('.ant-layout')?.getAttribute('style')).toContain('max-height: 100%');
+    expect(container.firstElementChild?.getAttribute('style')).toContain('max-height: 100%');
     expect(screen.queryByTestId('messages')).toBeNull();
     expect(screen.getByTestId('sender')).toBeInTheDocument();
     expect(mocks.senderProps).toMatchObject({
