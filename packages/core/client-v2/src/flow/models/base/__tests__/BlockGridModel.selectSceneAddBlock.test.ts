@@ -94,11 +94,10 @@ describe('BlockGridModel - select scene add block menu', () => {
     expect(childKeys).not.toContain('ReferenceBlockModel');
   });
 
-  it('includes registered select-scene add-block provider groups', async () => {
+  it('includes registered select-scene add-block provider items under other blocks', async () => {
     registerBlockGridSelectSceneAddBlockProvider('test-light-extension', () => [
       {
         key: 'select-scene-light-extension-js-blocks',
-        type: 'group',
         label: 'From light extension',
         sort: 900,
         children: [
@@ -137,16 +136,15 @@ describe('BlockGridModel - select scene add block menu', () => {
       throw new Error('Expected select scene add-block items source');
     }
     const items = await itemsSource(model.context);
-    const providerGroup = items.find((item) => item.key === 'select-scene-light-extension-js-blocks');
-    const providerGroupIndex = items.findIndex((item) => item.key === 'select-scene-light-extension-js-blocks');
-    const otherBlocksIndex = items.findIndex((item) => item.key === 'select-scene-other-blocks');
+    const otherBlocks = items.find((item) => item.key === 'select-scene-other-blocks');
+    const otherBlockChildren = Array.isArray(otherBlocks?.children) ? otherBlocks.children : [];
+    const providerGroup = otherBlockChildren.find((item) => item.key === 'select-scene-light-extension-js-blocks');
     const leaf = Array.isArray(providerGroup?.children) ? providerGroup.children[0] : null;
 
     expect(providerGroup).toMatchObject({
-      type: 'group',
       label: 'From light extension',
     });
-    expect(providerGroupIndex).toBeLessThan(otherBlocksIndex);
+    expect(items).not.toContainEqual(expect.objectContaining({ key: 'select-scene-light-extension-js-blocks' }));
     expect(leaf?.createModelOptions).toMatchObject({
       use: 'JSBlockModel',
       stepParams: {
@@ -168,11 +166,10 @@ describe('BlockGridModel - select scene add block menu', () => {
     });
   });
 
-  it('includes registered light extension groups in regular block grids', async () => {
+  it('includes registered light extension items under other blocks in regular block grids', async () => {
     registerBlockGridSelectSceneAddBlockProvider('test-light-extension', () => [
       {
         key: 'select-scene-light-extension-js-blocks',
-        type: 'group',
         label: 'From light extension',
         sort: 900,
         children: [
@@ -195,16 +192,18 @@ describe('BlockGridModel - select scene add block menu', () => {
       throw new Error('Expected regular add-block items source');
     }
     const items = await itemsSource(model.context);
-    const providerGroup = items.find((item) => item.key === 'select-scene-light-extension-js-blocks');
+    const otherBlocks = items.find((item) => item.key === 'BlockModel');
+    const otherBlockChildren = Array.isArray(otherBlocks?.children) ? otherBlocks.children : [];
+    const providerGroup = otherBlockChildren.find((item) => item.key === 'select-scene-light-extension-js-blocks');
     const dataBlocks = items.find((item) => item.key === 'DataBlockModel');
     const filterBlocks = items.find((item) => item.key === 'FilterBlockModel');
 
     expect(dataBlocks).toBeTruthy();
     expect(filterBlocks).toBeTruthy();
     expect(providerGroup).toMatchObject({
-      type: 'group',
       label: 'From light extension',
     });
     expect(Array.isArray(providerGroup?.children)).toBe(true);
+    expect(items).not.toContainEqual(expect.objectContaining({ key: 'select-scene-light-extension-js-blocks' }));
   });
 });

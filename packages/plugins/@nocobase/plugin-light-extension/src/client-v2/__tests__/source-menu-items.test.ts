@@ -108,10 +108,10 @@ describe('light extension source menu items', () => {
     expect(lightExtensionItem?.label).toBe('Light extensions');
     expect(lightExtensionItem?.disabled).toBe(true);
     expect(lightExtensionItem?.children).toBeUndefined();
-    expect(repoItem?.label).toBe('orders');
+    expect(repoItem?.label).toBe('Orders');
     expect(repoItem?.children).toHaveLength(1);
     expect(entryItem?.label).toBe('order-total');
-    expect(entryItem?.searchText).toContain('orders');
+    expect(entryItem?.searchText).toContain('Orders');
     expect(entryItem?.searchText).toContain('order-total');
 
     const selectedParams = await entryItem?.onSelect?.({
@@ -132,7 +132,7 @@ describe('light extension source menu items', () => {
       sourceMode: 'light-extension',
       sourceBinding: {
         repoId: 'repo_orders',
-        repoTitle: 'orders',
+        repoTitle: 'Orders',
         entryId: 'entry_order_total',
         entryTitle: 'order-total',
         entryName: 'order-total',
@@ -155,7 +155,7 @@ describe('light extension source menu items', () => {
           kind: 'js-block',
         },
       }),
-    ).resolves.toBe('orders / order-total');
+    ).resolves.toBe('Orders / order-total');
   });
 
   it('keeps a repository submenu when a repository has multiple entries', async () => {
@@ -185,7 +185,7 @@ describe('light extension source menu items', () => {
     const repoItem = items?.[1];
 
     expect(items?.[0]?.label).toBe('Light extensions');
-    expect(repoItem?.label).toBe('orders');
+    expect(repoItem?.label).toBe('Orders');
     expect(repoItem?.children?.map((item) => item.label)).toEqual(['order-total', 'order-chart']);
     expect(repoItem?.searchText).toContain('order-chart');
   });

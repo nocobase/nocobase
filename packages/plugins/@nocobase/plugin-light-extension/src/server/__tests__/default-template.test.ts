@@ -192,6 +192,9 @@ describe('plugin-light-extension default source template', () => {
     expect(collectionTableSource.match(/await flowModel\.saveStepParams\(\);/g)).toHaveLength(2);
     expect(collectionTableSource).toContain("ctx.t('Refresh')");
     expect(collectionTableSource).not.toContain("ctx.t('Reload')");
+    expect(collectionTableSource).toContain(
+      "flowModel.setTitle(collectionName ? ctx.t('JS Table') + ': ' + collectionName : ctx.t('JS Table'));",
+    );
     expect(collectionTableSource).not.toContain('getRowKey = (record: JsonRecord, index?: number)');
     expect(collectionTableSource).not.toContain("settings.title || 'Collection table'");
     expect(collectionTableSource).not.toContain('setTimeout(');
@@ -204,6 +207,7 @@ describe('plugin-light-extension default source template', () => {
       (file) => file.path === 'src/client/js-blocks/collection-table/entry.json',
     );
     const parsedCollectionTableDescriptor = JSON.parse(collectionTableDescriptor?.content || '{}');
+    expect(parsedCollectionTableDescriptor.title).toBe('Table');
     expect(parsedCollectionTableDescriptor.description).toContain('Ant Design table');
     expect(parsedCollectionTableDescriptor.tags).toEqual(['JS Block', 'Collection', 'Table', 'Ant Design']);
     const collectionTableSettings = parsedCollectionTableDescriptor.settings;
@@ -359,10 +363,12 @@ function createCollectionTableRuntime(settings: Record<string, unknown>) {
     sourceBinding: { entryId: 'lee_collection_table', kind: 'js-block', repoId: 'ler_default', type: 'entry' },
     sourceMode: 'light-extension',
   };
+  const setTitle = vi.fn();
   type FakeFlowModel = {
     flowEngine: { getModel: (uid: string) => unknown };
     getStepParams: (flowKey: string, stepKey: string) => unknown;
     saveStepParams: () => Promise<unknown>;
+    setTitle: (title: string) => void;
     setStepParams: (flowKey: string, stepKey: string, params: Record<string, unknown>) => void;
     uid: string;
   };
@@ -370,6 +376,7 @@ function createCollectionTableRuntime(settings: Record<string, unknown>) {
     flowEngine: { getModel: () => flowModel },
     getStepParams: () => runJs,
     saveStepParams: async () => undefined,
+    setTitle,
     setStepParams: () => undefined,
     uid: 'collection-table-model',
   };
@@ -414,12 +421,20 @@ function createCollectionTableRuntime(settings: Record<string, unknown>) {
     await Promise.resolve();
   };
 
-  return { ctx, flushEffects, rendered, runAction };
+  return { ctx, flushEffects, rendered, runAction, setTitle };
 }
 
 async function expectCollectionTableRuntime(code: string) {
+  const unconfiguredRuntime = createCollectionTableRuntime({});
+  await executeArtifact(code, unconfiguredRuntime.ctx);
+  expect(unconfiguredRuntime.setTitle).toHaveBeenCalledTimes(1);
+  expect(unconfiguredRuntime.setTitle).toHaveBeenCalledWith('JS Table');
+  expect(unconfiguredRuntime.runAction).not.toHaveBeenCalled();
+
   const defaultRuntime = createCollectionTableRuntime({ collectionName: 'users' });
   await executeArtifact(code, defaultRuntime.ctx);
+  expect(defaultRuntime.setTitle).toHaveBeenCalledTimes(1);
+  expect(defaultRuntime.setTitle).toHaveBeenCalledWith('JS Table: users');
   await defaultRuntime.flushEffects();
   expect(defaultRuntime.runAction).toHaveBeenCalledTimes(1);
   const defaultTree = defaultRuntime.rendered.at(-1);
@@ -438,6 +453,9 @@ async function expectCollectionTableRuntime(code: string) {
   expect(buttons.map(readElementText)).toContain('Refresh');
   expect(buttons.map(readElementText)).not.toContain('Reload');
   const refreshButton = buttons.find((button) => readElementText(button) === 'Refresh');
+  const columnsButton = buttons.find((button) => readElementText(button) === 'Columns');
+  expect(columnsButton?.props.size).toBeUndefined();
+  expect(refreshButton?.props.size).toBeUndefined();
   expect(typeof refreshButton?.props.onClick).toBe('function');
   (refreshButton?.props.onClick as () => void)();
   await vi.waitFor(() => expect(defaultRuntime.runAction).toHaveBeenCalledTimes(2));

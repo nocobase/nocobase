@@ -17,6 +17,7 @@ import {
 } from '@nocobase/client-v2';
 import { useFlowEngine, type Collection, type CollectionOptions } from '@nocobase/flow-engine';
 import { getDayRangeByParams } from '@nocobase/utils/client';
+import { uid } from '@nocobase/utils/client';
 import {
   Alert,
   Button,
@@ -51,7 +52,7 @@ import LightExtensionWorkspacePage, { type LightExtensionWorkspaceFooterActions 
 
 interface CreateRepoFormValues {
   name: string;
-  title?: string;
+  title: string;
   description?: string;
 }
 
@@ -89,7 +90,7 @@ export const lightExtensionRepoFilterCollection: CollectionOptions = {
       interface: 'input',
       uiSchema: {
         type: 'string',
-        title: 'Name',
+        title: 'Title',
         'x-component': 'Input',
       },
     },
@@ -185,6 +186,14 @@ function LightExtensionListPageInner() {
   const [activePanel, setActivePanel] = useState<DetailPanel | null>(urlPanel);
   const detailDrawerOpen = activePanel === 'source' && Boolean(selectedRepoId);
 
+  const resetCreateForm = useCallback(() => {
+    form.resetFields();
+    form.setFieldsValue({ name: createLightExtensionRepoName() });
+    setSourceFileList([]);
+    setSourceZipBase64(undefined);
+    setSourceFileError(null);
+  }, [form]);
+
   const loadRepos = useCallback(async () => {
     setLoading(true);
     setNotice(null);
@@ -215,9 +224,10 @@ function LightExtensionListPageInner() {
 
   useEffect(() => {
     if (searchParams.get('create') === '1') {
+      resetCreateForm();
       setCreateOpen(true);
     }
-  }, [searchParams]);
+  }, [resetCreateForm, searchParams]);
 
   useEffect(() => {
     if (activePanel !== 'source') {
@@ -250,12 +260,9 @@ function LightExtensionListPageInner() {
   }, [form, searchParams, setSearchParams]);
 
   const openCreateModal = useCallback(() => {
-    form.resetFields();
-    setSourceFileList([]);
-    setSourceZipBase64(undefined);
-    setSourceFileError(null);
+    resetCreateForm();
     setCreateOpen(true);
-  }, [form]);
+  }, [resetCreateForm]);
 
   const openEditDrawer = useCallback(
     (repo: LightExtensionRepoRecord) => {
@@ -304,9 +311,9 @@ function LightExtensionListPageInner() {
     setCreating(true);
     try {
       const repo = await createRepoRequest({
-        name: values.name,
-        title: values.title || null,
-        description: values.description || null,
+        name: values.name.trim(),
+        title: values.title.trim(),
+        description: values.description?.trim() || null,
         zipBase64: sourceZipBase64,
       });
       setRepos((current) => [repo, ...current.filter((item) => item.id !== repo.id)]);
@@ -344,16 +351,13 @@ function LightExtensionListPageInner() {
             status: 'done',
           },
         ]);
-        if (!form.getFieldValue('name')) {
-          form.setFieldValue('name', toRepoName(file.name.replace(/\.zip$/i, '')));
-        }
       } catch (error) {
         setSourceZipBase64(undefined);
         setSourceFileList([]);
         setSourceFileError(error instanceof Error ? error.message : t('Failed to read source ZIP'));
       }
     },
-    [form, t],
+    [t],
   );
 
   const batchChangeLifecycle = useCallback(
@@ -497,7 +501,7 @@ function LightExtensionListPageInner() {
   const columns = useMemo<ColumnsType<LightExtensionRepoRecord>>(
     () => [
       {
-        title: t('Name'),
+        title: t('Title'),
         dataIndex: 'name',
         sorter: (left, right) =>
           compareText(left.title || left.name, right.title || right.name) || compareText(left.name, right.name),
@@ -713,20 +717,25 @@ function LightExtensionListPageInner() {
       >
         <Form form={form} layout="vertical">
           <Form.Item
-            label={t('Name')}
-            name="name"
-            rules={[
-              { required: true, message: t('Name is required') },
-              { pattern: /^[a-z0-9][a-z0-9-]*$/, message: t('Name must be a lowercase slug') },
-            ]}
+            label={t('Title')}
+            name="title"
+            rules={[{ required: true, whitespace: true, message: t('Title is required') }]}
           >
             <Input autoFocus />
           </Form.Item>
-          <Form.Item label={t('Title')} name="title">
-            <Input />
-          </Form.Item>
           <Form.Item label={t('Description')} name="description">
             <Input.TextArea rows={3} />
+          </Form.Item>
+          <Form.Item
+            extra={t('The technical name is generated automatically and can be changed if needed.')}
+            label={t('Technical name')}
+            name="name"
+            rules={[
+              { required: true, message: t('Name is required') },
+              { pattern: /^[a-z][a-z0-9._-]*$/, message: t('Technical name format is invalid') },
+            ]}
+          >
+            <Input />
           </Form.Item>
           <Form.Item label={t('Source ZIP (optional)')}>
             <Upload.Dragger
@@ -1153,13 +1162,8 @@ function readFileAsBase64(file: Blob, errorMessage: string): Promise<string> {
   });
 }
 
-function toRepoName(value: string): string {
-  const normalized = value
-    .replace(/[^a-zA-Z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .toLowerCase();
-
-  return normalized || 'light-extension';
+export function createLightExtensionRepoName(): string {
+  return `l_${uid()}`;
 }
 
 export default LightExtensionListPage;

@@ -62,6 +62,41 @@ async function resolveSelectSceneExtensionItems(ctx: FlowModelContext): Promise<
   return items.sort((a, b) => (a.sort ?? 1000) - (b.sort ?? 1000));
 }
 
+function appendOtherBlockItems(
+  items: SubModelItem[],
+  extensionItems: SubModelItem[],
+  ctx: FlowModelContext,
+  groupKey = 'BlockModel',
+) {
+  if (extensionItems.length === 0) {
+    return;
+  }
+
+  const otherBlocks = items.find((item) => item.key === groupKey);
+  if (!otherBlocks) {
+    items.push({
+      key: groupKey,
+      type: 'group',
+      label: ctx.t('Other blocks'),
+      sort: 1000,
+      children: extensionItems,
+    });
+    return;
+  }
+
+  const originalChildren = otherBlocks.children;
+  if (typeof originalChildren === 'function') {
+    otherBlocks.children = async (childrenContext) => {
+      const children = await originalChildren(childrenContext);
+      return [...children, ...extensionItems].sort((a, b) => (a.sort ?? 1000) - (b.sort ?? 1000));
+    };
+    return;
+  }
+
+  const children = Array.isArray(originalChildren) ? originalChildren : [];
+  otherBlocks.children = [...children, ...extensionItems].sort((a, b) => (a.sort ?? 1000) - (b.sort ?? 1000));
+}
+
 export class BlockGridModel extends GridModel {
   dragOverlayConfig: DragOverlayConfig = {
     // 列内插入
@@ -109,17 +144,12 @@ export class BlockGridModel extends GridModel {
       if (!isSelectScene) {
         const items = await buildSubModelGroups(this.subModelBaseClasses)(ctx);
         const extensionItems = await resolveSelectSceneExtensionItems(ctx);
-        if (extensionItems.length > 0) {
-          items.push(...extensionItems);
-        }
+        appendOtherBlockItems(items, extensionItems, ctx);
         return items.sort((a, b) => (a.sort ?? 1000) - (b.sort ?? 1000));
       }
 
       const items = await buildSubModelGroups(['DataBlockModel', 'FilterBlockModel'])(ctx);
       const extensionItems = await resolveSelectSceneExtensionItems(ctx);
-      if (extensionItems.length > 0) {
-        items.push(...extensionItems);
-      }
       const allowedOtherBlockModels = SELECT_SCENE_ALLOWED_OTHER_BLOCK_MODELS.filter((modelName) =>
         Boolean(ctx.engine.getModelClass(modelName)),
       );
@@ -129,15 +159,12 @@ export class BlockGridModel extends GridModel {
         .flat()
         .sort((a, b) => (a.sort ?? 1000) - (b.sort ?? 1000));
 
-      if (otherBlockItems.length > 0) {
-        items.push({
-          key: 'select-scene-other-blocks',
-          type: 'group',
-          label: ctx.t('Other blocks'),
-          sort: 1000,
-          children: otherBlockItems,
-        } satisfies SubModelItem);
-      }
+      appendOtherBlockItems(
+        items,
+        [...otherBlockItems, ...extensionItems].sort((a, b) => (a.sort ?? 1000) - (b.sort ?? 1000)),
+        ctx,
+        'select-scene-other-blocks',
+      );
 
       return items.sort((a, b) => (a.sort ?? 1000) - (b.sort ?? 1000));
     };

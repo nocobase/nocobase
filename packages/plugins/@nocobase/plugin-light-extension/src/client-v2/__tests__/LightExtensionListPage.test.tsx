@@ -157,14 +157,14 @@ describe('LightExtensionListPage', () => {
     renderListPage('/admin/settings/light-extension?create=1');
 
     const dialog = await screen.findByRole('dialog', { name: 'Create light extension' });
-    await userEvent.type(within(dialog).getByLabelText('Name'), 'browser-smoke');
+    expect((within(dialog).getByLabelText('Technical name') as HTMLInputElement).value).toMatch(/^l_[a-z0-9]+$/);
     await userEvent.type(within(dialog).getByLabelText('Title'), 'Browser smoke');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Create' }));
 
     await waitFor(() => expect(mocks.api.createRepo).toHaveBeenCalledTimes(1));
     expect(mocks.api.createRepo).toHaveBeenCalledWith(
       expect.objectContaining({
-        name: 'browser-smoke',
+        name: expect.stringMatching(/^l_[a-z0-9]+$/),
         title: 'Browser smoke',
         description: null,
         zipBase64: undefined,
@@ -183,7 +183,11 @@ describe('LightExtensionListPage', () => {
     await userEvent.click(screen.getByRole('button', { name: /Add new/ }));
 
     const dialog = await screen.findByRole('dialog', { name: 'Create light extension' });
-    expect(within(dialog).getByLabelText('Name')).toBeInTheDocument();
+    expect(within(dialog).getByLabelText('Title')).toBeRequired();
+    expect((within(dialog).getByLabelText('Technical name') as HTMLInputElement).value).toMatch(/^l_[a-z0-9]+$/);
+    expect(
+      within(dialog).getByText('The technical name is generated automatically and can be changed if needed.'),
+    ).toBeInTheDocument();
     expect(within(dialog).getByText('Source ZIP (optional)')).toBeInTheDocument();
     expect(screen.queryByText('Create empty')).not.toBeInTheDocument();
     expect(screen.queryByText('Add new from import')).not.toBeInTheDocument();
@@ -218,14 +222,16 @@ describe('LightExtensionListPage', () => {
     const file = new File(['zip-source'], 'imported-smoke.zip', { type: 'application/zip' });
 
     await userEvent.upload(input, file);
-    await waitFor(() => expect(within(dialog).getByLabelText('Name')).toHaveValue('imported-smoke'));
+    await waitFor(() =>
+      expect((within(dialog).getByLabelText('Technical name') as HTMLInputElement).value).toMatch(/^l_[a-z0-9]+$/),
+    );
     await userEvent.type(within(dialog).getByLabelText('Title'), 'Imported smoke');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Create' }));
 
     await waitFor(() => expect(mocks.api.createRepo).toHaveBeenCalledTimes(1));
     expect(mocks.api.createRepo).toHaveBeenCalledWith(
       expect.objectContaining({
-        name: 'imported-smoke',
+        name: expect.stringMatching(/^l_[a-z0-9]+$/),
         title: 'Imported smoke',
         zipBase64: 'emlwLXNvdXJjZQ==',
       }),
@@ -439,7 +445,7 @@ describe('LightExtensionListPage', () => {
     expect(document.querySelectorAll('th.ant-table-column-has-sorters')).toHaveLength(5);
     expect(screen.getByRole('columnheader', { name: 'Actions' })).not.toHaveClass('ant-table-column-has-sorters');
 
-    await userEvent.click(screen.getByText('Name'));
+    await userEvent.click(screen.getByText('Title'));
 
     await waitFor(() => {
       const dataRows = screen.getAllByRole('row').slice(1);

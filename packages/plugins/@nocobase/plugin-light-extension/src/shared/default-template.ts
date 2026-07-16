@@ -253,6 +253,7 @@ export type PersistState = {
 };
 export type TableFlowModel = {
   uid: string;
+  setTitle: (title: string) => void;
   flowEngine?: {
     getModel?: (uid: string) => unknown;
   };
@@ -1176,6 +1177,7 @@ async function runCollectionTable() {
   const tableHeight = toPositiveInteger(settings.height, 480, 240, 1200);
   const maxInitialColumns = toPositiveInteger(settings.maxInitialColumns, 8, 1, 20);
   const flowModel = ctx.model as unknown as TableFlowModel;
+  flowModel.setTitle(collectionName ? ctx.t('JS Table') + ': ' + collectionName : ctx.t('JS Table'));
   const scheduleSettingsPatch = createTableSettingsPersistence({ configurable, ctx, flowModel, settings });
   const renderCellValue = createTableCellRenderer({
     React,
@@ -1511,12 +1513,12 @@ async function runCollectionTable() {
           <Space>
             {configurable && settings.showColumnManager !== false ? (
               <Popover content={columnChooser} placement="bottomRight" trigger="click">
-                <Button icon={<SettingOutlined />} size="small">
+                <Button icon={<SettingOutlined />}>
                   {ctx.t('Columns')}
                 </Button>
               </Popover>
             ) : null}
-            <Button icon={<ReloadOutlined />} loading={loading} size="small" onClick={refreshTable}>
+            <Button icon={<ReloadOutlined />} loading={loading} onClick={refreshTable}>
               {ctx.t('Refresh')}
             </Button>
           </Space>
@@ -1580,7 +1582,7 @@ export async function mountCollectionTable() {
     content: `{
   "schemaVersion": 1,
   "key": "collection-table",
-  "title": "Collection table",
+  "title": "Table",
   "description": "A lightweight Ant Design table with collection binding, column management, remote sorting, pagination, drag-to-reorder columns, resize handles, and FlowModel persistence.",
   "category": "examples",
   "tags": ["JS Block", "Collection", "Table", "Ant Design"],

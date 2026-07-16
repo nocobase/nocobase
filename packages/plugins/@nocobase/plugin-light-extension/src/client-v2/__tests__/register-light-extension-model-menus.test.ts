@@ -52,7 +52,7 @@ describe('registerLightExtensionModelMenus', () => {
       ctx: createContext(),
     });
 
-    expect(blockItems).toContainEqual(expect.objectContaining({ key: 'light-extension' }));
+    expect(getOtherBlockChildren(blockItems)).toContainEqual(expect.objectContaining({ key: 'light-extension' }));
     expect(actionItems).toContainEqual(expect.objectContaining({ key: 'light-extension' }));
     expect(fieldItems).toContainEqual(expect.objectContaining({ key: 'light-extension' }));
     expect(fieldItems.map((item) => item.key)).toEqual([
@@ -64,7 +64,9 @@ describe('registerLightExtensionModelMenus', () => {
     expect(columnItems).toContainEqual(expect.objectContaining({ key: 'light-extension' }));
 
     dispose();
-    expect(await resolveBlockItems()).not.toContainEqual(expect.objectContaining({ key: 'light-extension' }));
+    expect(getOtherBlockChildren(await resolveBlockItems())).not.toContainEqual(
+      expect.objectContaining({ key: 'light-extension' }),
+    );
     expect(await TestActionGroupModel.defineChildren(createContext())).not.toContainEqual(
       expect.objectContaining({ key: 'light-extension' }),
     );
@@ -79,11 +81,17 @@ describe('registerLightExtensionModelMenus', () => {
     const disposeFirst = registerLightExtensionModelMenus(firstApi);
     const disposeSecond = registerLightExtensionModelMenus(secondApi);
 
-    expect(await resolveBlockItems()).toContainEqual(expect.objectContaining({ key: 'light-extension' }));
+    expect(getOtherBlockChildren(await resolveBlockItems())).toContainEqual(
+      expect.objectContaining({ key: 'light-extension' }),
+    );
     disposeSecond();
-    expect(await resolveBlockItems()).toContainEqual(expect.objectContaining({ key: 'light-extension' }));
+    expect(getOtherBlockChildren(await resolveBlockItems())).toContainEqual(
+      expect.objectContaining({ key: 'light-extension' }),
+    );
     disposeFirst();
-    expect(await resolveBlockItems()).not.toContainEqual(expect.objectContaining({ key: 'light-extension' }));
+    expect(getOtherBlockChildren(await resolveBlockItems())).not.toContainEqual(
+      expect.objectContaining({ key: 'light-extension' }),
+    );
   });
 });
 
@@ -94,6 +102,11 @@ async function resolveBlockItems(): Promise<SubModelItem[]> {
   const model = engine.createModel<BlockGridModel>({ use: 'BlockGridModel' });
   const source = model.addBlockItems;
   return typeof source === 'function' ? source(model.context) : source || [];
+}
+
+function getOtherBlockChildren(items: SubModelItem[]): SubModelItem[] {
+  const otherBlocks = items.find((item) => item.key === 'BlockModel');
+  return Array.isArray(otherBlocks?.children) ? otherBlocks.children : [];
 }
 
 function createContext(): FlowModelContext {

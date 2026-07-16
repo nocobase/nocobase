@@ -453,7 +453,7 @@ function createRuntimeSourceBinding(
 }
 
 function getRepoLabel(repo: LightExtensionRepoRecord): string {
-  return repo.name || repo.id;
+  return repo.title?.trim() || repo.name || repo.id;
 }
 
 function getKindLabel(kind: LightExtensionKind | string, t: (key: string) => string): string {
