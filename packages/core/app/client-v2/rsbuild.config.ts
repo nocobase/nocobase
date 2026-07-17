@@ -288,6 +288,12 @@ export default defineConfig(({ command }) => {
       rspack(config) {
         config.resolve = config.resolve || {};
         config.resolve.symlinks = false;
+        // `resolve.symlinks = false` keeps module resolution on the symlinked path so shared deps (react, antd,
+        // @nocobase/client-v2) resolve to a single instance in the source workspace. But it also means watchpack
+        // watches the symlink path, while macOS fsevents reports changes under the real path — so edits to
+        // symlinked plugins (nb links `plugins/*` into `source/packages/plugins/*`) never trigger a rebuild.
+        // `followSymlinks` makes the watcher follow the link and watch the real files, restoring HMR for them.
+        config.watchOptions = { ...config.watchOptions, followSymlinks: true };
         config.target = ['web', 'es2020'];
         config.output.module = isBuild;
         config.output.chunkFormat = isBuild ? 'module' : 'array-push';
