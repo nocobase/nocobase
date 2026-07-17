@@ -14,4 +14,5 @@ export * from './PageTabModel';
 export * from './RootPageModel';
 export * from './SubPageModel';
 export * from './jsPageContracts';
+export * from './jsPageRuntime';
 //

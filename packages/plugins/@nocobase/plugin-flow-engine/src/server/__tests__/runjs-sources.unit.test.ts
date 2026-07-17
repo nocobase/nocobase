@@ -110,6 +110,54 @@ describe('flow-engine RunJS source registration', () => {
     });
   });
 
+  it('treats a JS Page RunJS step as an uninitialized render source', async () => {
+    const registrar = createRegistrar();
+    const db = {
+      getCollection: () => ({
+        repository: {
+          findModelById: async () => ({
+            uid: 'js-page-model',
+            use: 'JSPageModel',
+            stepParams: {},
+          }),
+        },
+      }),
+    } as unknown as Database;
+    registerFlowModelRunJSSourceAdapters({
+      db,
+      app: {
+        pm: {
+          get: () => registrar,
+        },
+      },
+    });
+
+    const stepAdapter = registrar.adapters.find((adapter) => adapter.kind === 'flowModel.step');
+
+    await expect(
+      stepAdapter?.readLegacy({
+        locator: {
+          kind: 'flowModel.step',
+          modelUid: 'js-page-model',
+          flowKey: 'jsSettings',
+          stepKey: 'runJs',
+          paramPath: ['code'],
+        },
+        ctx: {},
+      }),
+    ).resolves.toMatchObject({
+      code: '',
+      version: 'v2',
+      surfaceStyle: 'render',
+      entryPath: 'src/main.tsx',
+      entry: 'src/main.tsx',
+      uninitialized: true,
+      metadata: {
+        modelUse: 'JSPageModel',
+      },
+    });
+  });
+
   it('rejects an unknown FlowModel step locator when the persisted step is missing', async () => {
     const registrar = createRegistrar();
     const db = {

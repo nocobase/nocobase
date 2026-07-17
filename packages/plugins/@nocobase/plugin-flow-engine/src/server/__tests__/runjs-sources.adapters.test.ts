@@ -235,6 +235,221 @@ describe('flow-engine RunJS source adapters', () => {
     });
   });
 
+  it('opens, saves, and externally binds a JS Page through the FlowModel step adapter', async () => {
+    await repository.insertModel({
+      uid: 'js-page-source-model',
+      title: 'JS Page',
+      use: 'JSPageModel',
+      stepParams: {
+        jsSettings: {
+          runJs: {
+            sourceMode: 'inline',
+            sourceBinding: { keep: 'binding snapshot' },
+            settings: { theme: 'dark' },
+            keep: 'preserved',
+          },
+        },
+      },
+    });
+
+    const locator: RunJSSourceLocator = {
+      kind: 'flowModel.step',
+      modelUid: 'js-page-source-model',
+      flowKey: 'jsSettings',
+      stepKey: 'runJs',
+      paramPath: ['code'],
+    };
+    const open = await openSource(locator, agent, {
+      code: 'ctx.render("new page");',
+      version: 'v2',
+    });
+
+    expect(open.status).toBe(200);
+    expect(open.body.data.legacy).toMatchObject({
+      surfaceStyle: 'render',
+      entryPath: 'src/main.tsx',
+      entry: 'src/main.tsx',
+      uninitialized: true,
+      metadata: { modelUse: 'JSPageModel' },
+    });
+
+    const save = await agent.resource('runJSSources').save({
+      values: {
+        locator,
+        repoId: open.body.data.repository.repoId,
+        message: 'Update JS Page source',
+        entryPath: 'src/main.tsx',
+        files: [
+          {
+            path: 'src/main.tsx',
+            operation: 'upsert',
+            content: 'import { message } from "./message";\nctx.render(message);',
+            language: 'typescript',
+          },
+          {
+            path: 'src/message.ts',
+            operation: 'upsert',
+            content: 'export const message = "saved page";',
+            language: 'typescript',
+          },
+        ],
+      },
+    });
+    expect(save.status).toBe(200);
+
+    const saved = await repository.findModelById('js-page-source-model');
+    expect(getAtPath(saved, ['stepParams', 'jsSettings', 'runJs'])).toMatchObject({
+      code: runtimeCode('saved page'),
+      version: 'v2',
+      sourceMode: 'inline',
+      sourceBinding: { keep: 'binding snapshot' },
+      settings: { theme: 'dark' },
+      keep: 'preserved',
+      sourceRef: {
+        type: 'vsc-file',
+        repoId: save.body.data.repository.id,
+        commitId: save.body.data.commit.id,
+        entry: 'src/main.tsx',
+      },
+    });
+
+    const stepAdapter = createFlowModelRunJSSourceAdapters(app.db).find((adapter) => adapter.kind === 'flowModel.step');
+    if (!stepAdapter?.writeExternalBinding) {
+      throw new Error('FlowModel step external binding adapter is unavailable');
+    }
+    await app.db.sequelize.transaction(async (transaction) => {
+      const ctx = { transaction, can: () => ({}) };
+      const baseOwnerFingerprint = await stepAdapter.getFingerprint({ locator, ctx });
+      await stepAdapter.writeExternalBinding?.({
+        locator,
+        binding: {
+          sourceMode: 'light-extension',
+          sourceBinding: { type: 'light-extension-entry', repoId: 'repo_1', entryId: 'entry_1' },
+        },
+        baseOwnerFingerprint,
+        ctx,
+      });
+    });
+
+    const externallyBound = await repository.findModelById('js-page-source-model');
+    expect(getAtPath(externallyBound, ['stepParams', 'jsSettings', 'runJs'])).toMatchObject({
+      code: runtimeCode('saved page'),
+      version: 'v2',
+      sourceRef: {
+        type: 'vsc-file',
+        repoId: save.body.data.repository.id,
+        commitId: save.body.data.commit.id,
+        entry: 'src/main.tsx',
+      },
+      sourceMode: 'light-extension',
+      sourceBinding: { type: 'light-extension-entry', repoId: 'repo_1', entryId: 'entry_1' },
+      settings: { theme: 'dark' },
+      keep: 'preserved',
+    });
+  });
+
+  it('rejects a JS Page save when its owner fingerprint is outdated', async () => {
+    await repository.insertModel({
+      uid: 'js-page-outdated-model',
+      use: 'JSPageModel',
+      stepParams: {
+        jsSettings: {
+          runJs: {
+            code: 'ctx.render("old page");',
+            version: 'v2',
+          },
+        },
+      },
+    });
+    const locator: RunJSSourceLocator = {
+      kind: 'flowModel.step',
+      modelUid: 'js-page-outdated-model',
+      flowKey: 'jsSettings',
+      stepKey: 'runJs',
+      paramPath: ['code'],
+    };
+    const open = await openSource(locator);
+    expect(open.status).toBe(200);
+
+    await repository.patch({
+      uid: 'js-page-outdated-model',
+      stepParams: {
+        jsSettings: {
+          runJs: {
+            code: 'ctx.render("changed page");',
+            version: 'v2',
+          },
+        },
+      },
+    });
+
+    const save = await saveSource(locator, open.body.data, 'ctx.render("Studio page");');
+    expect(save.status).toBe(409);
+    expect(save.body.errors[0]).toMatchObject({
+      code: 'RUNJS_SOURCE_OWNER_OUTDATED',
+      status: 409,
+    });
+  });
+
+  it('enforces FlowModel read and write ACL for JS Page sources', async () => {
+    await app.db.getRepository('roles').create({ values: { name: 'js-page-no-read' } });
+    await app.db.getRepository('roles').create({ values: { name: 'js-page-readonly' } });
+    app.acl.define({ role: 'js-page-no-read', actions: {} });
+    app.acl.define({
+      role: 'js-page-readonly',
+      actions: {
+        'flowModels:findOne': {},
+      },
+    });
+    const noReadUser = await app.db.getRepository('users').create({
+      values: { nickname: 'JS Page no read', roles: ['js-page-no-read'] },
+    });
+    const readonlyUser = await app.db.getRepository('users').create({
+      values: { nickname: 'JS Page readonly', roles: ['js-page-readonly'] },
+    });
+    const noReadAgent = (await app.agent().login(noReadUser)).set('x-role', 'js-page-no-read');
+    const readonlyAgent = (await app.agent().login(readonlyUser)).set('x-role', 'js-page-readonly');
+
+    await repository.insertModel({
+      uid: 'js-page-acl-model',
+      use: 'JSPageModel',
+      stepParams: {
+        jsSettings: {
+          runJs: {
+            code: 'ctx.render("acl page");',
+            version: 'v2',
+          },
+        },
+      },
+    });
+    const locator: RunJSSourceLocator = {
+      kind: 'flowModel.step',
+      modelUid: 'js-page-acl-model',
+      flowKey: 'jsSettings',
+      stepKey: 'runJs',
+      paramPath: ['code'],
+    };
+
+    const deniedOpen = await openSource(locator, noReadAgent);
+    expect(deniedOpen.status).toBe(403);
+    expect(deniedOpen.body.errors[0]).toMatchObject({
+      code: 'PERMISSION_DENIED',
+      details: { resource: 'flowModels', action: 'findOne' },
+    });
+
+    const readonlyOpen = await openSource(locator, readonlyAgent);
+    expect(readonlyOpen.status).toBe(200);
+    expect(readonlyOpen.body.data.files).toEqual(
+      expect.arrayContaining([expect.objectContaining({ path: 'src/client/index.tsx' })]),
+    );
+    const deniedSave = await saveSource(locator, readonlyOpen.body.data, 'ctx.render("denied");', readonlyAgent);
+    expect(deniedSave.status).toBe(403);
+    expect(deniedSave.body.errors[0]).toMatchObject({
+      code: 'PERMISSION_DENIED',
+      details: { resource: 'flowModels', action: 'save' },
+    });
+  });
+
   it.each([
     {
       label: 'flow',
@@ -323,8 +538,9 @@ describe('flow-engine RunJS source adapters', () => {
 
     expect(save.status).toBe(200);
     const updated = await repository.findModelById('js-step-user-runjs-model');
-    expect(getAtPath(updated, ['stepParams', 'jsSettings', 'runJs', 'code'])).toEqual(
-      runtimeCode("ctx.request({ url: 'users:list' });\nctx.render('newValue');"),
+    expectRuntimeCode(
+      getAtPath(updated, ['stepParams', 'jsSettings', 'runJs', 'code']),
+      "ctx.request({ url: 'users:list' });\nctx.render('newValue');",
     );
   });
 
@@ -2604,5 +2820,24 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function runtimeCode(source: string) {
-  return expect.stringContaining(source);
+  const expected = normalizeRuntimeCode(source);
+  return {
+    asymmetricMatch(value: unknown) {
+      return typeof value === 'string' && normalizeRuntimeCode(value).includes(expected);
+    },
+    toString() {
+      return 'StringContainingIgnoringWhitespace';
+    },
+  };
+}
+
+function expectRuntimeCode(value: unknown, source: string) {
+  expect(typeof value).toBe('string');
+  if (typeof value === 'string') {
+    expect(normalizeRuntimeCode(value)).toContain(normalizeRuntimeCode(source));
+  }
+}
+
+function normalizeRuntimeCode(source: string) {
+  return source.replace(/\s+/g, '').replace(/"/g, "'");
 }

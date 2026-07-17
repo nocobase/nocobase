@@ -39,6 +39,7 @@ type FlowModelNestedStorage = {
 
 const RENDER_MODEL_USES = new Set([
   'JSBlockModel',
+  'JSPageModel',
   'JSFieldModel',
   'JSEditableFieldModel',
   'JSItemModel',

@@ -33,6 +33,7 @@
     "@formily/shared": "^2.2.27",
     "@nocobase/evaluators": "2.2.0-beta.15",
     "@nocobase/flow-engine": "2.2.0-beta.15",
+    "@nocobase/light-extension-sdk": "2.2.0-beta.13",
     "@nocobase/runjs": "2.2.0-beta.13",
     "@nocobase/sdk": "2.2.0-beta.15",
     "@nocobase/shared": "2.2.0-beta.15",

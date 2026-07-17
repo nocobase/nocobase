@@ -180,6 +180,61 @@ describe('flowSurfaces JS page contract', () => {
     expect(readErrorMessage(rejectedConfigure)).toContain('enableTabs');
   });
 
+  it('keeps synthetic get and lazy-created get on JSPageModel without writing during read', async () => {
+    const pageSchemaUid = uid();
+    const pageUid = uid();
+    const pageRoute = await context.routesRepo.create({
+      values: {
+        type: 'flowPage',
+        title: 'Lazy JS page',
+        schemaUid: pageSchemaUid,
+        enableTabs: false,
+        options: {
+          pageType: 'js-page',
+        },
+      },
+    });
+    await context.routesRepo.create({
+      values: {
+        type: 'tabs',
+        title: 'Hidden tab',
+        schemaUid: uid(),
+        parentId: pageRoute.get('id'),
+        hidden: true,
+      },
+    });
+
+    const synthetic = getData(
+      await context.rootAgent.resource('flowSurfaces').get({
+        pageSchemaUid,
+      }),
+    );
+    expect(synthetic.tree.use).toBe('JSPageModel');
+    expect(
+      await context.flowRepo.findModelByParentId(pageSchemaUid, {
+        subKey: 'page',
+        includeAsyncNode: true,
+      }),
+    ).toBeNull();
+
+    await context.flowRepo.upsertModel({
+      uid: pageUid,
+      parentId: pageSchemaUid,
+      subKey: 'page',
+      subType: 'object',
+      use: 'JSPageModel',
+      props: {
+        routeId: pageRoute.get('id'),
+      },
+    });
+    const persisted = getData(
+      await context.rootAgent.resource('flowSurfaces').get({
+        pageSchemaUid,
+      }),
+    );
+    expect(persisted.tree.use).toBe(synthetic.tree.use);
+  });
+
   it('rejects tab, block, compose and blueprint authoring with a stable JS page error', async () => {
     const page = await createJSPage(context, `Guarded JS page ${Date.now()}`);
     const residualTabUid = await createResidualJSPageTab(context, page.routeId);

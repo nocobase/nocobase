@@ -86,7 +86,7 @@ export type AdminLayoutMenuMovePositionOption = {
 
 export type AdminLayoutMenuInsertPosition = 'beforeBegin' | 'afterEnd' | 'beforeEnd';
 
-export type AdminLayoutMenuCreationType = 'group' | 'page' | 'flowPage' | 'link';
+export type AdminLayoutMenuCreationType = 'group' | 'page' | 'flowPage' | 'jsPage' | 'link';
 
 export type AdminLayoutMenuCreationSource = 'header' | 'sider' | 'insert';
 
@@ -348,6 +348,7 @@ const translateByModel = (model: FlowModel, value: any) => {
 const MENU_TYPE_ITEMS: Array<{ key: string; label: string; menuType: AdminLayoutMenuCreationType }> = [
   { key: 'group', label: 'Group', menuType: 'group' },
   { key: 'flow-page', label: 'Page', menuType: 'flowPage' },
+  { key: 'js-page', label: 'JavaScript page', menuType: 'jsPage' },
   { key: 'link', label: 'Link', menuType: 'link' },
 ];
 

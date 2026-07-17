@@ -10,6 +10,7 @@
 import _ from 'lodash';
 import FlowModelRepository from '../repository';
 import { buildSyntheticRootPageTabModel } from './builder';
+import { JS_PAGE_MODEL_USE } from './page-surface-contract';
 
 type PageRoutePatch = {
   title?: unknown;
@@ -77,9 +78,13 @@ export class FlowSurfaceRouteSync {
       };
     }
 
+    const use = readRouteOptions(pageRoute).pageType === 'js-page' ? JS_PAGE_MODEL_USE : 'RootPageModel';
+    if (use === JS_PAGE_MODEL_USE) {
+      routeBacked.enableTabs = false;
+    }
     return {
       uid: pageSchemaUid,
-      use: 'RootPageModel',
+      use,
       props: {
         routeId: pageRoute?.get?.('id') || pageRoute?.id,
         ...routeBacked,
@@ -440,7 +445,8 @@ function readRouteProp(route: any, key: string) {
 }
 
 function readRouteOptions(route: any) {
-  return route?.get?.('options') || route?.options || {};
+  const options = route?.get?.('options') ?? route?.options ?? route?.dataValues?.options;
+  return _.isPlainObject(options) ? options : {};
 }
 
 function firstDefined<T>(...values: T[]): T | undefined {

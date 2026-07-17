@@ -23,6 +23,7 @@ export async function setupRunJSContexts() {
   // Lazy import to avoid circular dependencies during module initialization
   const [
     { JSBlockRunJSContext },
+    { JSPageRunJSContext },
     { JSFieldRunJSContext },
     { JSEditableFieldRunJSContext },
     { JSItemRunJSContext },
@@ -32,6 +33,7 @@ export async function setupRunJSContexts() {
     { JSCollectionActionRunJSContext },
   ] = await Promise.all([
     import('./contexts/JSBlockRunJSContext'),
+    import('./contexts/JSPageRunJSContext'),
     import('./contexts/JSFieldRunJSContext'),
     import('./contexts/JSEditableFieldRunJSContext'),
     import('./contexts/JSItemRunJSContext'),
@@ -44,6 +46,7 @@ export async function setupRunJSContexts() {
   const registerBuiltins = (version: 'v1' | 'v2') => {
     RunJSContextRegistry.register(version, '*', FlowRunJSContext);
     RunJSContextRegistry.register(version, 'JSBlockModel', JSBlockRunJSContext, { scenes: ['block'] });
+    RunJSContextRegistry.register(version, 'JSPageModel', JSPageRunJSContext, { scenes: ['page'] });
     RunJSContextRegistry.register(version, 'JSFieldModel', JSFieldRunJSContext, { scenes: ['detail'] });
     RunJSContextRegistry.register(version, 'JSEditableFieldModel', JSEditableFieldRunJSContext, { scenes: ['form'] });
     RunJSContextRegistry.register(version, 'JSItemModel', JSItemRunJSContext, { scenes: ['form'] });

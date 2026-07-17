@@ -42,6 +42,7 @@ export {
 } from './runjs-context/helpers';
 export { RunJSContextRegistry, getModelClassName } from './runjs-context/registry';
 export { setupRunJSContexts } from './runjs-context/setup';
+export { JSPageRunJSContext } from './runjs-context/contexts/JSPageRunJSContext';
 export type { RunJSContextContribution, RunJSContextContributionApi } from './runjs-context/contributions';
 export { registerRunJSContextContribution } from './runjs-context/contributions';
 export type { RunJSSnippetLoader } from './runjs-context/snippets';
