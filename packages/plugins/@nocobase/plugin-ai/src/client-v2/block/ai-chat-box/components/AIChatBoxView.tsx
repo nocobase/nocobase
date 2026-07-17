@@ -51,6 +51,7 @@ const { Header } = Layout;
 export const AI_CHAT_BOX_ACTION_MODEL_NAMES = ['JSActionModel', 'AIEmployeeActionModel'] as const;
 export const AI_CHAT_BOX_BODY_BLOCK_MODEL_NAMES = ['JSBlockModel', 'IframeBlockModel', 'MarkdownBlockModel'] as const;
 export const AI_CHAT_BOX_CORE_MIN_WIDTH = 400;
+export const AI_CHAT_BOX_CORE_MIN_HEIGHT = 420;
 
 const nestedChatBoxModelNames = new Set(['AIChatBoxBlockModel', 'AIChatDemoBlockModel']);
 
@@ -104,8 +105,8 @@ const bodySubModelItemClassName = css`
 `;
 
 const bodyCoreItemClassName = css`
-  flex: 1 1 0;
-  min-height: 0;
+  flex: 1 0 auto;
+  min-height: ${AI_CHAT_BOX_CORE_MIN_HEIGHT}px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -321,7 +322,7 @@ const BodySlot: React.FC<{
       <div
         key={subModel.uid}
         className={className}
-        style={isCore ? { minWidth: AI_CHAT_BOX_CORE_MIN_WIDTH } : undefined}
+        style={isCore ? { minWidth: AI_CHAT_BOX_CORE_MIN_WIDTH, minHeight: AI_CHAT_BOX_CORE_MIN_HEIGHT } : undefined}
       >
         <Droppable model={subModel}>
           {isCore ? <div className={bodyCoreRendererClassName}>{renderer}</div> : renderer}

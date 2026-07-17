@@ -14,7 +14,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { clearMountedChatBoxes, getMountedChatBox } from '../../../ai-employees/chatbox/stores/mounted-chat-boxes';
 import type { AIChatBoxBlockModel } from '../AIChatBoxBlockModel';
 import { AIChatBoxCoreModel } from '../AIChatBoxCoreModel';
-import { AI_CHAT_BOX_CORE_MIN_WIDTH, AIChatBoxView } from '../components/AIChatBoxView';
+import { AI_CHAT_BOX_CORE_MIN_HEIGHT, AI_CHAT_BOX_CORE_MIN_WIDTH, AIChatBoxView } from '../components/AIChatBoxView';
 
 type ToolbarItem = {
   key?: React.Key;
@@ -119,6 +119,12 @@ const makeCoreModel = () => {
   return core;
 };
 
+const makeBodyModel = () => {
+  return {
+    uid: 'body-1',
+  } as FlowModel;
+};
+
 describe('AIChatBoxView mounted registry', () => {
   afterEach(() => {
     clearMountedChatBoxes();
@@ -174,5 +180,16 @@ describe('AIChatBoxView mounted registry', () => {
     render(<AIChatBoxView model={makeModel({}, {}, [makeCoreModel()], true)} />);
 
     expect(mocks.coreContextMenuExtraToolbarItems).toBeUndefined();
+  });
+
+  it('lets added body blocks push the chat core down inside the scrollable body area', () => {
+    const { getAllByTestId } = render(<AIChatBoxView model={makeModel({}, {}, [makeBodyModel(), makeCoreModel()])} />);
+    const [bodyRenderer, coreRenderer] = getAllByTestId('flow-model-renderer');
+    const bodyItem = bodyRenderer.parentElement;
+    const coreItem = coreRenderer.closest(`[style*="min-width: ${AI_CHAT_BOX_CORE_MIN_WIDTH}px"]`);
+
+    expect(bodyItem).toBeTruthy();
+    expect(bodyItem?.getAttribute('style') || '').not.toContain('max-height');
+    expect(coreItem?.getAttribute('style')).toContain(`min-height: ${AI_CHAT_BOX_CORE_MIN_HEIGHT}px`);
   });
 });
