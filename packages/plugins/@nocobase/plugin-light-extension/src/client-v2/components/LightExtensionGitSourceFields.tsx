@@ -215,7 +215,7 @@ export function LightExtensionGitSourceFields(props: LightExtensionGitSourceFiel
     setAuthValidation(validation);
   }, []);
 
-  const repositoryError = repositoryTouched && !locator.valid ? getRepositoryError(locator.reason, t) : undefined;
+  const repositoryError = repositoryTouched && 'reason' in locator ? getRepositoryError(locator.reason, t) : undefined;
   const branchError = branchTouched && !branchValidation.valid ? t('GitHub branch is invalid') : undefined;
   const subdirectoryError =
     subdirectoryTouched && !subdirectoryValidation.valid ? t('GitHub subdirectory is invalid') : undefined;

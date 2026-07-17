@@ -662,8 +662,11 @@ function requireRecord(value: unknown, label: string): Record<string, unknown> {
 }
 
 function optionalNullableString(value: unknown, label: string): string | null | undefined {
-  if (typeof value === 'undefined' || value === null) {
-    return value;
+  if (typeof value === 'undefined') {
+    return undefined;
+  }
+  if (value === null) {
+    return null;
   }
   if (typeof value !== 'string') {
     throw invalidInput(`${label} must be a string or null`);

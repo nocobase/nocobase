@@ -100,7 +100,7 @@ type LightExtensionSyncErrorDetailValue = string | number | boolean | null;
 export interface RemoteSyncErrorLike {
   code: RemoteSyncErrorCode;
   message?: string;
-  details?: Record<string, unknown>;
+  details?: unknown;
 }
 
 const safeRemoteDetailKeys = new Set([
@@ -122,7 +122,8 @@ function sanitizeRemoteSyncErrorDetails(
     sourceCode: error.code,
   };
 
-  for (const [key, value] of Object.entries(error.details || {})) {
+  const remoteDetails = isRecord(error.details) ? error.details : {};
+  for (const [key, value] of Object.entries(remoteDetails)) {
     if (!safeRemoteDetailKeys.has(key)) {
       continue;
     }
@@ -132,6 +133,10 @@ function sanitizeRemoteSyncErrorDetails(
   }
 
   return details;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
 export class LightExtensionError extends Error {

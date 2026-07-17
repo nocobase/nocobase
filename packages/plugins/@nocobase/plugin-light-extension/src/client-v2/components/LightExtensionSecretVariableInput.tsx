@@ -214,7 +214,7 @@ function getValidationMessage(
   validation: LightExtensionCredentialValidation,
   t: (key: string) => string,
 ): string | undefined {
-  if (validation.valid || !validation.reason) {
+  if (!('reason' in validation) || !validation.reason) {
     return undefined;
   }
   if (validation.reason === 'invalid-expression' || validation.reason === 'secret-not-found') {

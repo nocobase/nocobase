@@ -306,7 +306,7 @@ export function LightExtensionSyncDrawer(props: LightExtensionSyncDrawerProps) {
     <>
       <Drawer
         aria-label={t('Sync code')}
-        destroyOnHidden
+        destroyOnClose
         onClose={onClose}
         open={open}
         title={t('Sync code')}
