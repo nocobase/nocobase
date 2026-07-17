@@ -207,6 +207,34 @@ describe('lightExtensionSync resource', () => {
     expect(JSON.stringify(fixture.auditService.recordSyncEvent.mock.calls)).not.toContain('GITHUB_TOKEN');
   });
 
+  it('ignores an undefined framework filterByTk while rejecting a supplied createFromGit filterByTk', async () => {
+    const allowedFixture = createFixture();
+    const allowed = await runAction(
+      allowedFixture,
+      'createFromGit',
+      createFromGitInput(),
+      ['create', 'manageSyncSource', 'pullFromSyncSource'],
+      true,
+      { filterByTk: undefined },
+    );
+
+    expect(allowed.status).toBeUndefined();
+    expect(allowedFixture.runtime.fetchTarget).toHaveBeenCalledTimes(1);
+
+    const rejectedFixture = createFixture();
+    const rejected = await runAction(
+      rejectedFixture,
+      'createFromGit',
+      createFromGitInput(),
+      ['create', 'manageSyncSource', 'pullFromSyncSource'],
+      true,
+      { filterByTk: 'unexpected-repository-id' },
+    );
+
+    expect(rejected.status).toBe(400);
+    expect(rejectedFixture.runtime.fetchTarget).not.toHaveBeenCalled();
+  });
+
   it.each([{ token: 'ghp_secret' }, { vscRepoId: repo.vscRepoId }, { remoteId: remote.id }])(
     'rejects forbidden createFromGit input before remote access',
     async (forbidden) => {
@@ -458,13 +486,14 @@ async function runAction(
   values: Record<string, unknown>,
   allowedActions: string[],
   scopeMatches = true,
+  actionParams: Record<string, unknown> = {},
 ) {
   const handler = (fixture.resource.actions as Record<string, HandlerType>)[actionName];
   const ctx = {
     action: {
       resourceName: 'lightExtensionSync',
       actionName,
-      params: { values },
+      params: { ...actionParams, values },
     },
     can: ({ action }: { resource: string; action: string }) =>
       allowedActions.includes(action)

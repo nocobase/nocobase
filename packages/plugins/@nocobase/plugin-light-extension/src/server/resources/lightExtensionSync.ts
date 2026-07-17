@@ -674,7 +674,7 @@ function optionalNullableString(value: unknown, label: string): string | null | 
 
 function assertOnlyKeys(input: ResourceActionInput, allowedKeys: readonly string[]): void {
   const allowed = new Set([...allowedKeys, 'resourceName', 'actionName']);
-  const unexpected = Object.keys(input).filter((key) => !allowed.has(key));
+  const unexpected = Object.keys(input).filter((key) => typeof input[key] !== 'undefined' && !allowed.has(key));
   if (unexpected.length) {
     throw invalidInput(`Unexpected sync input field: ${unexpected.sort()[0]}`);
   }
