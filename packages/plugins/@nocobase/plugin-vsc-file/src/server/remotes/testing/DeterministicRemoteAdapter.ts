@@ -133,7 +133,7 @@ export class DeterministicRemoteAdapter implements RemoteSyncAdapter {
           details: {
             provider: this.provider,
             operation: 'fetch',
-            expectedRemoteRevision,
+            expectedRemoteRevision: expectedRevision,
             currentRemoteRevision: this.snapshot.revision,
           },
         });
