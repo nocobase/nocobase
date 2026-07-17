@@ -28,6 +28,10 @@ const mocks = vi.hoisted(() => ({
   currentConversation: undefined as string | undefined,
   draftMessages: [] as Array<{ key: string; role?: string }>,
   setContextItems: vi.fn(),
+  senderValue: '',
+  setSenderValue: vi.fn((value: string) => {
+    mocks.senderValue = value;
+  }),
 }));
 
 vi.mock('../../../locale', () => ({
@@ -54,7 +58,9 @@ vi.mock('../../../ai-employees/chatbox/stores/runtime', () => ({
       currentEmployee: mocks.currentEmployee,
       open: false,
       roles: {},
+      senderValue: mocks.senderValue,
       setRoles: mocks.setRoles,
+      setSenderValue: mocks.setSenderValue,
     },
     chatConversationModel: {
       currentConversation: mocks.currentConversation,
@@ -252,6 +258,45 @@ describe('MessagesAndSender', () => {
     );
 
     expect(mocks.setContextItems).not.toHaveBeenCalled();
+  });
+
+  it('injects the default user message into the draft sender once', () => {
+    mocks.senderValue = '';
+    mocks.setSenderValue.mockClear();
+    mocks.senderProps = undefined;
+    mocks.currentConversation = undefined;
+    mocks.draftMessages = [{ key: 'draft-greeting' }];
+    mocks.setContextItems.mockReset();
+    mocks.setRoles.mockReset();
+    mocks.refreshAITools.mockReset();
+    mocks.aiEmployees = [];
+    mocks.getAIEmployees.mockResolvedValue([]);
+
+    const { rerender } = render(
+      <MessagesAndSender
+        model={makeModel({
+          showMessages: false,
+          showDisclaimer: false,
+          defaultUserMessage: 'Summarize this block',
+        })}
+      />,
+    );
+
+    expect(mocks.setSenderValue).toHaveBeenCalledWith('Summarize this block');
+    mocks.setSenderValue.mockClear();
+    mocks.senderValue = '';
+
+    rerender(
+      <MessagesAndSender
+        model={makeModel({
+          showMessages: false,
+          showDisclaimer: false,
+          defaultUserMessage: 'Summarize this block',
+        })}
+      />,
+    );
+
+    expect(mocks.setSenderValue).not.toHaveBeenCalled();
   });
 
   it('registers AI employee roles on the block runtime so sub-agent messages can render', async () => {

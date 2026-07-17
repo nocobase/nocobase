@@ -36,6 +36,7 @@ type ShortcutStyle = {
 export type AIEmployeeShortcutModelProps = {
   aiEmployee: Pick<AIEmployee, 'username'> & Partial<AIEmployee>;
   tasks?: Task[];
+  defaultTaskChatBoxUid?: string;
   showNotice?: boolean;
   builtIn?: boolean;
   style?: ShortcutStyle;
@@ -49,14 +50,14 @@ export class AIEmployeeShortcutModel extends FlowModel {
   declare props: AIEmployeeShortcutModelProps;
 
   render() {
-    const { style, ...props } = this.props;
+    const { defaultTaskChatBoxUid, style, ...props } = this.props;
     return <AIEmployeeShortcut {...props} runtime={getGlobalChatBoxRuntime()} size={style?.size} mask={style?.mask} />;
   }
 }
 
 export class AIEmployeeButtonModel extends AIEmployeeShortcutModel {
   render() {
-    const { style, ...props } = this.props;
+    const { defaultTaskChatBoxUid, style, ...props } = this.props;
     return (
       <AIEmployeeShortcut
         {...props}
@@ -489,6 +490,7 @@ AIEmployeeShortcutModel.registerFlow({
       uiSchema: async (ctx: AIShortcutFlowContext) => {
         await ctx.aiConfigRepository?.getAIEmployees();
         const token = ctx.model?.context?.themeToken;
+        const defaultTaskChatBoxUid = ctx.model?.props?.defaultTaskChatBoxUid;
         const labelStyle = {
           fontWeight: token?.fontWeightStrong,
         };
@@ -521,6 +523,7 @@ AIEmployeeShortcutModel.registerFlow({
                 chatBoxUid: {
                   type: 'string',
                   title: tExpr('Chat box uid'),
+                  default: defaultTaskChatBoxUid,
                   'x-decorator': 'FormItem',
                   'x-decorator-props': {
                     labelStyle,

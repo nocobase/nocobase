@@ -60,7 +60,12 @@ describe('AI employee v2 action models', () => {
         items?: {
           properties?: Record<
             string,
-            { title?: unknown; ['x-component']?: string; ['x-decorator-props']?: { tooltip?: unknown } }
+            {
+              default?: unknown;
+              title?: unknown;
+              ['x-component']?: string;
+              ['x-decorator-props']?: { tooltip?: unknown };
+            }
           >;
         };
       };
@@ -68,6 +73,9 @@ describe('AI employee v2 action models', () => {
     const ctx = {
       model: {
         context: {},
+        props: {
+          defaultTaskChatBoxUid: 'chat-box-1',
+        },
       },
       aiConfigRepository: {
         getAIEmployees: vi.fn().mockResolvedValue([]),
@@ -82,6 +90,7 @@ describe('AI employee v2 action models', () => {
       'x-decorator-props': {
         tooltip: expect.anything(),
       },
+      default: 'chat-box-1',
     });
   });
 
@@ -183,6 +192,44 @@ describe('AI employee v2 action models', () => {
           context: {
             workContext: [{ type: 'flow-model', uid: 'block-1' }],
           },
+          auto: false,
+        },
+      },
+    });
+  });
+
+  it('defaults AI chat box shortcut tasks to the owning chat box uid', async () => {
+    const engine = new FlowEngine();
+    const ctx = {
+      engine,
+      model: {
+        uid: 'actions-1',
+        parent: {
+          uid: 'chat-box-1',
+          use: 'AIChatBoxBlockModel',
+        },
+      },
+      aiConfigRepository: {
+        getAIEmployees: vi.fn().mockResolvedValue([{ username: 'business', nickname: 'Business' }]),
+      },
+    } as unknown as FlowModelContext & {
+      aiConfigRepository: {
+        getAIEmployees: ReturnType<typeof vi.fn>;
+      };
+    };
+
+    const children = await AIEmployeeActionModel.defineChildren(ctx);
+
+    expect(children).toHaveLength(1);
+    expect(children[0]).toMatchObject({
+      createModelOptions: {
+        props: {
+          aiEmployee: { username: 'business' },
+          context: {
+            workContext: [{ type: 'flow-model', uid: 'actions-1' }],
+          },
+          defaultTaskChatBoxUid: 'chat-box-1',
+          tasks: [{ chatBoxUid: 'chat-box-1' }],
           auto: false,
         },
       },

@@ -200,6 +200,37 @@ describe('AIEmployeeShortcut', () => {
     expect(addContextItems).not.toHaveBeenCalled();
   });
 
+  it('routes direct avatar clicks to the mounted AI chat box when its default task has chatBoxUid', async () => {
+    const task: Task = { chatBoxUid: 'chat-box-1' };
+    const targetTriggerTask = vi.fn().mockResolvedValue(undefined);
+    const targetClear = vi.fn();
+    const targetSyncContextItems = vi.fn();
+    registerMountedChatBox({
+      uid: 'chat-box-1',
+      runtime: getGlobalChatBoxRuntime(),
+      triggerTask: targetTriggerTask,
+      clear: targetClear,
+      syncContextItems: targetSyncContextItems,
+    });
+
+    const { container } = render(
+      <AIEmployeeShortcut aiEmployee={employee} tasks={[task]} runtime={getGlobalChatBoxRuntime()} />,
+    );
+
+    const shortcut = container.querySelector('.ant-avatar');
+    expect(shortcut).toBeTruthy();
+    fireEvent.click(shortcut);
+
+    await waitFor(() => {
+      expect(targetTriggerTask).toHaveBeenCalledWith({
+        aiEmployee: employee,
+        tasks: [task],
+        auto: undefined,
+      });
+    });
+    expect(triggerTask).not.toHaveBeenCalled();
+  });
+
   it('reports a missing target AI chat box without falling back to the global chatbox', async () => {
     const task: Task = { title: 'Analyze in missing block', chatBoxUid: 'missing-chat-box' };
 

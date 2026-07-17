@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { Typography, theme } from 'antd';
 import { observer } from '@nocobase/flow-engine';
 import { useT } from '../../../locale';
@@ -43,6 +43,11 @@ export const MessagesAndSender: React.FC<{
   const draftMessages = draftChat.use.messages();
   const draftMessageKey = draftMessages.map((message) => message.key).join('|');
   const hasDraftUserMessage = draftMessages.some((message) => message.role === 'user');
+  const defaultUserMessageStateRef = useRef<{
+    draftKey?: string;
+    value?: string;
+    applied?: boolean;
+  }>({});
   useChatBoxEffect(runtime);
 
   useEffect(() => {
@@ -92,6 +97,39 @@ export const MessagesAndSender: React.FC<{
     draftMessageKey,
     hasDraftUserMessage,
   ]);
+
+  useEffect(() => {
+    const defaultUserMessage = settings.defaultUserMessage;
+    if (currentConversation || hasDraftUserMessage || !defaultUserMessage) {
+      defaultUserMessageStateRef.current = {};
+      return;
+    }
+
+    const draftKey = draftMessageKey || 'draft';
+    const state = defaultUserMessageStateRef.current;
+    const senderValue = chatBoxModel.senderValue;
+    const isNewDefaultState = state.draftKey !== draftKey || state.value !== defaultUserMessage;
+    if (isNewDefaultState) {
+      const shouldApply = !senderValue || senderValue === state.value;
+      defaultUserMessageStateRef.current = {
+        draftKey,
+        value: defaultUserMessage,
+        applied: shouldApply,
+      };
+      if (shouldApply) {
+        chatBoxModel.setSenderValue(defaultUserMessage);
+      }
+      return;
+    }
+
+    if (!state.applied && !senderValue) {
+      chatBoxModel.setSenderValue(defaultUserMessage);
+      defaultUserMessageStateRef.current = {
+        ...state,
+        applied: true,
+      };
+    }
+  }, [chatBoxModel, currentConversation, draftMessageKey, hasDraftUserMessage, settings.defaultUserMessage]);
 
   return (
     <div

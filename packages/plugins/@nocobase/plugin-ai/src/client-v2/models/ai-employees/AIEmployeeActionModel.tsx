@@ -16,11 +16,11 @@ import {
   PopupSubTableFormActionGroupModel,
   RecordActionGroupModel,
 } from '@nocobase/client-v2';
-import { type FlowModelContext } from '@nocobase/flow-engine';
+import { type FlowModel, type FlowModelContext } from '@nocobase/flow-engine';
 import { Avatar, Flex, Popover, theme } from 'antd';
 import { AIEmployeeProfileCard } from '../../ai-employees/ProfileCard';
 import { avatars } from '../../ai-employees/avatars';
-import type { AIEmployee } from '../../ai-employees/types';
+import type { AIEmployee, Task } from '../../ai-employees/types';
 import { tExpr } from '../../locale';
 
 const isHiddenEmployee = (aiEmployee: AIEmployee) =>
@@ -66,12 +66,40 @@ type AIConfigContext = FlowModelContext & {
   };
 };
 
+const AI_CHAT_BOX_BLOCK_MODEL = 'AIChatBoxBlockModel';
+
+const isAIChatBoxBlockModel = (model: FlowModel | null | undefined) =>
+  model?.use === AI_CHAT_BOX_BLOCK_MODEL || model?.constructor.name === AI_CHAT_BOX_BLOCK_MODEL;
+
+const getOwningAIChatBoxUid = (model: FlowModel | null | undefined) => {
+  let current = model;
+  while (current) {
+    if (isAIChatBoxBlockModel(current)) {
+      return current.uid;
+    }
+    current = current.parent;
+  }
+  return undefined;
+};
+
+const getDefaultTaskProps = (model: FlowModel): { defaultTaskChatBoxUid?: string; tasks?: Task[] } => {
+  const chatBoxUid = getOwningAIChatBoxUid(model);
+  if (!chatBoxUid) {
+    return {};
+  }
+  return {
+    defaultTaskChatBoxUid: chatBoxUid,
+    tasks: [{ chatBoxUid }],
+  };
+};
+
 export class AIEmployeeActionModel extends ActionModel {
   static scene = ActionSceneEnum.all;
 
   static async defineChildren(ctx: FlowModelContext) {
     const aiContext = ctx as AIConfigContext;
     const aiEmployees = await aiContext.aiConfigRepository.getAIEmployees();
+    const defaultTaskProps = getDefaultTaskProps(ctx.model);
 
     return aiEmployees
       ?.filter((aiEmployee) => !isHiddenEmployee(aiEmployee))
@@ -87,6 +115,7 @@ export class AIEmployeeActionModel extends ActionModel {
             context: {
               workContext: [{ type: 'flow-model', uid: ctx.model.uid }],
             },
+            ...defaultTaskProps,
             auto: false,
           },
         },
