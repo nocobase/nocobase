@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import PluginMarkdownClient from '../';
+
 vi.mock('../../client-v2', () => {
   class MarkdownVditorRuntime {
     name = 'vditor';
@@ -19,17 +21,8 @@ vi.mock('../../client-v2', () => {
   }
 
   function getMarkdownRegistry(ctx: MarkdownContext) {
-    if (ctx.markdown) {
-      return ctx.markdown;
-    }
-    const engines = new Map<string, unknown>();
     const registry = {
-      register(engine: { name: string }) {
-        engines.set(engine.name, engine);
-      },
-      getEngine(name?: string) {
-        return engines.get(name || 'vditor');
-      },
+      register: vi.fn(),
     };
     ctx.defineProperty('markdown', {
       get: () => registry,
@@ -37,79 +30,49 @@ vi.mock('../../client-v2', () => {
     return registry;
   }
 
-  function registerMarkdownVditorContext(ctx: MarkdownContext, runtime: MarkdownVditorRuntime) {
-    ctx.defineProperty('markdownVditor', {
-      get: () => runtime,
-    });
-    ctx.defineProperty('markdownVditorDependencies', {
-      get: () => ({
-        getCDN: () => runtime.getCDN(),
-        initVditorDependency: () => runtime.initVditorDependency(),
-      }),
-    });
+  function registerMarkdownVditorContext(ctx: MarkdownContext) {
+    ctx.defineProperty('markdownVditor', { get: () => ({}) });
+    ctx.defineProperty('markdownVditorDependencies', { get: () => ({}) });
   }
 
   return {
     DisplayVditorFieldModel: class DisplayVditorFieldModel {},
     getMarkdownRegistry,
     MarkdownBlockModel: class MarkdownBlockModel {},
-    MarkdownVditor: () => null,
-    MarkdownVditorFieldInterface: class MarkdownVditorFieldInterface {},
     MarkdownVditorRuntime,
     registerMarkdownVditorContext,
     VditorFieldModel: class VditorFieldModel {},
   };
 });
 
-import PluginMarkdownClient, { MarkdownBlockModel } from '../';
-
 type MarkdownContext = {
-  markdown?: {
-    getEngine: (name?: string) => unknown;
-  };
-  markdownVditor?: unknown;
-  markdownVditorDependencies?: unknown;
   defineProperty: (key: string, options: { get?: () => unknown }) => void;
 };
-
-function createMarkdownContext(): MarkdownContext {
-  return {
-    defineProperty(key, options) {
-      Object.defineProperty(this, key, {
-        configurable: true,
-        get: options.get,
-      });
-    },
-  };
-}
 
 describe('PluginMarkdownClient legacy entry', () => {
   it('should expose the minimal plugin lifecycle shape', async () => {
     const plugin = new PluginMarkdownClient({ name: 'markdown' });
 
     expect(plugin.options.name).toBe('markdown');
-    expect(MarkdownBlockModel).toBeDefined();
-    expect(plugin.getCDN()).toBe('https://cdn.jsdelivr.net/npm/vditor@3.11.2');
+    expect(plugin.getCDN()).toBeUndefined();
     expect(plugin.initVditorDependency()).toBeUndefined();
     await expect(plugin.afterAdd()).resolves.toBeUndefined();
     await expect(plugin.beforeLoad()).resolves.toBeUndefined();
     await expect(plugin.load()).resolves.toBeUndefined();
   });
 
-  it('should register legacy components, interfaces, markdown runtime, and models', async () => {
-    const context = createMarkdownContext();
-    const registeredComponents: Record<string, unknown> = {};
+  it('should register embedded v2 models without registering legacy field interfaces', async () => {
     const registeredInterfaces: unknown[] = [];
     const registeredModels: Record<string, unknown> = {};
+    const context: MarkdownContext = {
+      defineProperty(key, options) {
+        Object.defineProperty(this, key, {
+          configurable: true,
+          get: options.get,
+        });
+      },
+    };
     const app = {
-      requirejs: {
-        require: Object.assign(() => {}, {
-          config: () => {},
-        }),
-      },
-      addComponents(components: Record<string, unknown>) {
-        Object.assign(registeredComponents, components);
-      },
       dataSourceManager: {
         addFieldInterfaces(interfaces: unknown[]) {
           registeredInterfaces.push(...interfaces);
@@ -127,13 +90,11 @@ describe('PluginMarkdownClient legacy entry', () => {
 
     await plugin.load();
 
-    expect(context.markdown?.getEngine('vditor')).toBeDefined();
-    expect(context.markdownVditor).toBeDefined();
-    expect(context.markdownVditorDependencies).toBeDefined();
-    expect(registeredComponents.MarkdownVditor).toBeDefined();
-    expect(registeredInterfaces).toHaveLength(1);
-    expect(registeredModels.MarkdownBlockModel).toBeDefined();
-    expect(registeredModels.VditorFieldModel).toBeDefined();
-    expect(registeredModels.DisplayVditorFieldModel).toBeDefined();
+    expect(registeredInterfaces).toEqual([]);
+    expect(registeredModels).toEqual({
+      MarkdownBlockModel: expect.any(Function),
+      VditorFieldModel: expect.any(Function),
+      DisplayVditorFieldModel: expect.any(Function),
+    });
   });
 });
