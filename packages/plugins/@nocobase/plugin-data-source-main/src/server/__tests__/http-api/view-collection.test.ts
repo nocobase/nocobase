@@ -207,7 +207,9 @@ SELECT * FROM numbers;
       });
 
       expect(response.status).toBe(200);
-      expect(response.body.data.fields.map((field) => field.name)).toEqual(['safe_field']);
+      expect(
+        [...response.body.data.fields, ...response.body.data.unsupportedFields].map((field) => field.name),
+      ).toEqual(['safe_field']);
     } finally {
       await db.sequelize.query(dropViewSQL);
     }
