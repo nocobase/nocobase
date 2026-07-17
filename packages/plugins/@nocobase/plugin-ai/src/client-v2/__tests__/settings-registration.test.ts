@@ -11,7 +11,6 @@ import { createMockClient } from '@nocobase/client-v2';
 import { createJSRunnerWithVersion, FlowContext, getRunJSDocFor, setupRunJSContexts } from '@nocobase/flow-engine';
 import { describe, expect, it, vi } from 'vitest';
 import { AIChatBoxBlockModel, AIChatBoxCoreModel } from '../block/ai-chat-box';
-import { AIChatDemoBlockModel } from '../block';
 import PluginAIClientV2, {
   registerPluginAIPermissionsTab,
   registerPluginAIRunJSContextContribution,
@@ -112,7 +111,6 @@ describe('plugin-ai v2 settings registration', () => {
     expect(context.ai?.onChatBoxMounted).toBeUndefined();
     expect(app.flowEngine.getModelClass('AIChatBoxBlockModel')).toBe(AIChatBoxBlockModel);
     expect(app.flowEngine.getModelClass('AIChatBoxCoreModel')).toBe(AIChatBoxCoreModel);
-    expect(app.flowEngine.getModelClass('AIChatDemoBlockModel')).toBe(AIChatDemoBlockModel);
   });
 
   it('registers RunJS docs for ctx.ai.triggerTask and ctx.ai.triggerModelTask', async () => {

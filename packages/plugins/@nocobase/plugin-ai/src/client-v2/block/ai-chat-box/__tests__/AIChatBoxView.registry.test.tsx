@@ -20,6 +20,13 @@ type ToolbarItem = {
   key?: React.Key;
 };
 
+type FlowModelRendererProps = {
+  model?: FlowModel;
+  showFlowSettings?: unknown;
+  hideRemoveInSettings?: boolean;
+  extraToolbarItems?: ToolbarItem[];
+};
+
 const mocks = vi.hoisted(() => ({
   runtime: {
     scope: undefined as string | undefined,
@@ -38,7 +45,7 @@ const mocks = vi.hoisted(() => ({
   refreshConversations: vi.fn(),
   addContextItems: vi.fn(),
   syncContextAttachments: vi.fn(),
-  coreContextMenuExtraToolbarItems: undefined as ToolbarItem[] | undefined,
+  flowModelRendererProps: [] as FlowModelRendererProps[],
 }));
 
 vi.mock('@nocobase/client-v2', async (importOriginal) => ({
@@ -57,18 +64,11 @@ vi.mock('@nocobase/flow-engine', async () => {
     DndProvider: Passthrough,
     DragHandler: () => <span data-testid="drag-handler" />,
     Droppable: Passthrough,
-    FlowModelRenderer: () => <div data-testid="flow-model-renderer" />,
-    FlowSettingsButton: ({ children }: { children?: React.ReactNode }) => <button>{children}</button>,
-    FlowsFloatContextMenu: ({
-      children,
-      extraToolbarItems,
-    }: {
-      children?: React.ReactNode;
-      extraToolbarItems?: ToolbarItem[];
-    }) => {
-      mocks.coreContextMenuExtraToolbarItems = extraToolbarItems;
-      return <>{children}</>;
+    FlowModelRenderer: (props: FlowModelRendererProps) => {
+      mocks.flowModelRendererProps.push(props);
+      return <div data-testid="flow-model-renderer" />;
     },
+    FlowSettingsButton: ({ children }: { children?: React.ReactNode }) => <button>{children}</button>,
   };
 });
 
@@ -156,7 +156,7 @@ describe('AIChatBoxView mounted registry', () => {
     mocks.refreshConversations.mockClear();
     mocks.addContextItems.mockClear();
     mocks.syncContextAttachments.mockClear();
-    mocks.coreContextMenuExtraToolbarItems = undefined;
+    mocks.flowModelRendererProps = [];
     mocks.runtime.scope = undefined;
     mocks.runtime.chatConversationModel.conversations = [];
     mocks.runtime.chatConversationModel.unreadCount = 0;
@@ -235,9 +235,15 @@ describe('AIChatBoxView mounted registry', () => {
   });
 
   it('does not render a drag handle for the chat box core itself', () => {
-    render(<AIChatBoxView model={makeModel({}, {}, [makeCoreModel()], true)} />);
+    const core = makeCoreModel();
 
-    expect(mocks.coreContextMenuExtraToolbarItems).toBeUndefined();
+    render(<AIChatBoxView model={makeModel({}, {}, [core], true)} />);
+
+    const coreRendererProps = mocks.flowModelRendererProps.find((props) => props.model === core);
+
+    expect(coreRendererProps?.showFlowSettings).toBe(false);
+    expect(coreRendererProps?.hideRemoveInSettings).toBe(true);
+    expect(coreRendererProps?.extraToolbarItems).toEqual([]);
   });
 
   it('lets added body blocks push the chat core down inside the scrollable body area', () => {

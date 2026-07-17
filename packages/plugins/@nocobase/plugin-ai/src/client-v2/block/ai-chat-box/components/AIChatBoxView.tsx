@@ -17,7 +17,6 @@ import {
   FlowModel,
   FlowModelRenderer,
   FlowSettingsButton,
-  FlowsFloatContextMenu,
   buildSubModelItem,
   buildSubModelItems,
   observer,
@@ -60,7 +59,7 @@ export const AI_CHAT_BOX_BODY_BLOCK_MODEL_NAMES = ['JSBlockModel', 'IframeBlockM
 export const AI_CHAT_BOX_CORE_MIN_WIDTH = 400;
 export const AI_CHAT_BOX_CORE_MIN_HEIGHT = 420;
 
-const nestedChatBoxModelNames = new Set(['AIChatBoxBlockModel', 'AIChatDemoBlockModel']);
+const nestedChatBoxModelNames = new Set(['AIChatBoxBlockModel']);
 
 const compactHeaderClassName = css`
   .ant-btn {
@@ -296,33 +295,24 @@ const BodySlot: React.FC<{
     : false;
   const nodes = model.mapSubModels('bodyBlocks', (subModel) => {
     const isCore = isAIChatBoxCoreModel(subModel);
-    const renderer =
-      flowSettings && isCore ? (
-        <FlowsFloatContextMenu
-          model={subModel}
-          showBackground={false}
-          showBorder={false}
-          toolbarPosition="inside"
-          showDeleteButton={false}
-          showCopyUidButton={false}
-          showDynamicFlowsEditor={false}
-        >
-          <FlowModelRenderer model={subModel} showFlowSettings={false} />
-        </FlowsFloatContextMenu>
-      ) : (
-        <FlowModelRenderer
-          model={subModel}
-          showFlowSettings={flowSettings}
-          hideRemoveInSettings={isCore}
-          extraToolbarItems={[
-            {
-              key: 'drag-handler',
-              component: DragHandler,
-              sort: 1,
-            },
-          ]}
-        />
-      );
+    const renderer = (
+      <FlowModelRenderer
+        model={subModel}
+        showFlowSettings={isCore ? false : flowSettings}
+        hideRemoveInSettings={isCore}
+        extraToolbarItems={
+          isCore
+            ? []
+            : [
+                {
+                  key: 'drag-handler',
+                  component: DragHandler,
+                  sort: 1,
+                },
+              ]
+        }
+      />
+    );
     const className = isCore ? bodyCoreItemClassName : bodySubModelItemClassName;
 
     return (

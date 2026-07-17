@@ -46,14 +46,13 @@ class AIEmployeeActionModel extends FlowModel {}
 const subModelItem = (item: Partial<SubModelItem> & { key: string }): SubModelItem => item as SubModelItem;
 
 describe('AIChatBoxView helpers', () => {
-  it('filters production and demo AI chat box entries from nested Add block items', async () => {
+  it('filters AI chat box entries from nested Add block items', async () => {
     const filtered = filterNestedAIChatBoxBlockItems([
       subModelItem({
         key: 'BlockModel',
         type: 'group',
         children: [
           subModelItem({ key: 'AIChatBoxBlockModel', useModel: 'AIChatBoxBlockModel' }),
-          subModelItem({ key: 'AIChatDemoBlockModel', useModel: 'AIChatDemoBlockModel' }),
           subModelItem({ key: 'PlainBlockModel', useModel: 'PlainBlockModel' }),
         ],
       }),

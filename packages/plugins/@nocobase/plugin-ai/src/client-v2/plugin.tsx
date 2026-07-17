@@ -21,15 +21,6 @@ import { builtinLLMProviderOptions } from './llm-providers';
 import { registerPluginAIWorkflow } from './workflow/register';
 import { setupAICoding } from './ai-employees/ai-coding/setup';
 import { registerPluginAIRunJSFacade } from './runjs/registerAIEmployeeRunJSFacade';
-import {
-  AIChatDemoBlockModel,
-  AIChatDemoChatContentBlockModel,
-  AIChatDemoConversationListBlockModel,
-  AIChatDemoMessageListBlockModel,
-  AIChatDemoMessagesAndSenderBlockModel,
-  AIChatDemoNewActionModel,
-  AIChatDemoSenderBlockModel,
-} from './block';
 import { AIChatBoxBlockModel, AIChatBoxCoreModel } from './block/ai-chat-box';
 
 type AIFlowContext = {
@@ -141,13 +132,6 @@ export class PluginAIClientV2 extends Plugin<object, Application> {
     this.flowEngine.registerModels({
       AIChatBoxBlockModel,
       AIChatBoxCoreModel,
-      AIChatDemoBlockModel,
-      AIChatDemoMessagesAndSenderBlockModel,
-      AIChatDemoChatContentBlockModel,
-      AIChatDemoMessageListBlockModel,
-      AIChatDemoSenderBlockModel,
-      AIChatDemoConversationListBlockModel,
-      AIChatDemoNewActionModel,
     });
     this.flowEngine.registerModelLoaders({
       AIEmployeeShortcutModel: {
