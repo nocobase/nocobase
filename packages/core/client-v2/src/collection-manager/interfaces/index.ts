@@ -22,7 +22,6 @@ export * from './integer';
 export * from './json';
 export * from './m2m';
 export * from './m2o';
-export * from './markdown';
 export * from './multipleSelect';
 export * from './number';
 export * from './obo';

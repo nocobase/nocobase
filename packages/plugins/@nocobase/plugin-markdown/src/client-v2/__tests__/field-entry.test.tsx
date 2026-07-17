@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { MarkdownFieldInterface } from '@nocobase/client-v2';
 import { DisplayItemModel, EditableItemModel } from '@nocobase/flow-engine';
 import { describe, expect, it, vi } from 'vitest';
 import { MarkdownVditorFieldInterface } from '../interface';
@@ -29,9 +28,6 @@ vi.mock('@nocobase/client-v2', () => ({
   FieldModel: class FieldModel {
     static define = vi.fn();
     static registerFlow = vi.fn();
-  },
-  MarkdownFieldInterface: class MarkdownFieldInterface {
-    hidden = true;
   },
   Plugin: class Plugin {
     app: unknown;
@@ -133,11 +129,6 @@ describe('Markdown v2 field entry', () => {
     expect(fieldInterface.configure?.items?.[1]?.options).not.toEqual(
       expect.arrayContaining([expect.objectContaining({ value: 'preview' })]),
     );
-
-    const legacyMarkdownFieldInterface = new MarkdownFieldInterface(
-      {} as ConstructorParameters<typeof MarkdownFieldInterface>[0],
-    );
-    expect(legacyMarkdownFieldInterface.hidden).toBe(true);
   });
 
   it('keeps historical markdown fields bound to the same Vditor models', () => {
