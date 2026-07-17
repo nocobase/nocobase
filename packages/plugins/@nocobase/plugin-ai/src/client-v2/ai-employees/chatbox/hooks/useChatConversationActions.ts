@@ -21,10 +21,11 @@ type ChatConversationActionOptions = {
 export const useChatConversationActions = (runtime?: ChatBoxRuntime, options?: ChatConversationActionOptions) => {
   const app = useApp();
   const api = app.apiClient;
-  const { chatConversationModel, workflowTaskModel } = useResolvedChatBoxRuntime(runtime);
+  const resolvedRuntime = useResolvedChatBoxRuntime(runtime);
+  const { chatConversationModel, workflowTaskModel } = resolvedRuntime;
   const keyword = chatConversationModel.keyword;
   const unreadCount = chatConversationModel.unreadCount;
-  const scope = options?.scope;
+  const scope = options?.scope ?? resolvedRuntime.scope;
 
   const conversationsService = useRequest<
     {

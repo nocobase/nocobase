@@ -35,6 +35,7 @@ import {
 } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { NAMESPACE, useT } from '../../../locale';
+import { Conversations } from '../../../ai-employees/chatbox/components/Conversations';
 import { Messages } from '../../../ai-employees/chatbox/components/Messages';
 import { useChat } from '../../../ai-employees/chatbox/hooks/useChat';
 import { useChatBoxActions } from '../../../ai-employees/chatbox/hooks/useChatBoxActions';
@@ -43,14 +44,13 @@ import { registerMountedChatBox } from '../../../ai-employees/chatbox/stores/mou
 import { useChatBoxRuntime } from '../../../ai-employees/chatbox/stores/runtime';
 import type { AIChatBoxBlockModel } from '../AIChatBoxBlockModel';
 import { AIChatBoxCoreModel } from '../AIChatBoxCoreModel';
-import { getAIChatBoxSettings } from '../utils';
-import { Conversations } from './Conversations';
+import { DEFAULT_AI_CHAT_BOX_WIDTH, getAIChatBoxScope, getAIChatBoxSettings } from '../utils';
 
 const { Header } = Layout;
 
 export const AI_CHAT_BOX_ACTION_MODEL_NAMES = ['JSActionModel', 'AIEmployeeActionModel'] as const;
 export const AI_CHAT_BOX_BODY_BLOCK_MODEL_NAMES = ['JSBlockModel', 'IframeBlockModel', 'MarkdownBlockModel'] as const;
-export const AI_CHAT_BOX_CORE_MIN_WIDTH = 450;
+export const AI_CHAT_BOX_CORE_MIN_WIDTH = 400;
 
 const nestedChatBoxModelNames = new Set(['AIChatBoxBlockModel', 'AIChatDemoBlockModel']);
 
@@ -93,7 +93,9 @@ const bodySubModelsClassName = css`
   min-height: 0;
   display: flex;
   flex-direction: column;
-  overflow: auto;
+  gap: 8px;
+  overflow-y: auto;
+  overflow-x: hidden;
 `;
 
 const bodySubModelItemClassName = css`
@@ -109,9 +111,7 @@ const bodyCoreItemClassName = css`
   flex-direction: column;
 
   > div,
-  > div > div,
-  > div > div > div,
-  > div > div > div > div {
+  > div > div {
     flex: 1 1 auto;
     height: 100%;
     min-height: 0;
@@ -122,6 +122,25 @@ const bodyCoreItemClassName = css`
 
   .ant-layout {
     min-height: 0;
+  }
+`;
+
+const bodyCoreRendererClassName = css`
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  > div,
+  > div > div {
+    flex: 1 1 auto;
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
 `;
 
@@ -279,13 +298,6 @@ const BodySlot: React.FC<{
           showDeleteButton={false}
           showCopyUidButton={false}
           showDynamicFlowsEditor={false}
-          extraToolbarItems={[
-            {
-              key: 'drag-handler',
-              component: DragHandler,
-              sort: 1,
-            },
-          ]}
         >
           <FlowModelRenderer model={subModel} showFlowSettings={false} />
         </FlowsFloatContextMenu>
@@ -311,7 +323,9 @@ const BodySlot: React.FC<{
         className={className}
         style={isCore ? { minWidth: AI_CHAT_BOX_CORE_MIN_WIDTH } : undefined}
       >
-        <Droppable model={subModel}>{renderer}</Droppable>
+        <Droppable model={subModel}>
+          {isCore ? <div className={bodyCoreRendererClassName}>{renderer}</div> : renderer}
+        </Droppable>
       </div>
     );
   });
@@ -386,10 +400,11 @@ export const AIChatBoxView: React.FC<{
   const [showMessagesPanel, setShowMessagesPanel] = useState(false);
   const flowSettingsEnabled = !!model.context.flowSettingsEnabled;
   const settings = getAIChatBoxSettings(model.props);
-  const minWidth = model.props.minWidth ?? 300;
+  runtime.scope = getAIChatBoxScope(model);
+  const minWidth = Math.max(model.props.minWidth ?? DEFAULT_AI_CHAT_BOX_WIDTH, AI_CHAT_BOX_CORE_MIN_WIDTH);
   const height = getAIChatBoxViewHeight(model, settings.height);
   const conversationPanelWidth = 300;
-  const messagesPanelWidth = 420;
+  const messagesPanelWidth = 350;
   const headerHeight = 48;
   const isSidePanelOpen = showConversations || showMessagesPanel;
   const closeSidePanel = () => {
@@ -461,7 +476,7 @@ export const AIChatBoxView: React.FC<{
             }}
           >
             <SidePanel title={showConversations ? t('Conversation list') : t('Messages')}>
-              {showConversations ? <Conversations model={model} onOpen={closeSidePanel} /> : null}
+              {showConversations ? <Conversations onOpen={closeSidePanel} /> : null}
               {showMessagesPanel ? <Messages /> : null}
             </SidePanel>
           </div>

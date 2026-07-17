@@ -7,17 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Typography, theme } from 'antd';
 import { observer } from '@nocobase/flow-engine';
 import { useT } from '../../../locale';
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
 import { Messages } from '../../../ai-employees/chatbox/components/Messages';
 import { Sender } from '../../../ai-employees/chatbox/components/Sender';
+import { useChat } from '../../../ai-employees/chatbox/hooks/useChat';
 import { useChatBoxActions } from '../../../ai-employees/chatbox/hooks/useChatBoxActions';
 import { useChatBoxRuntime } from '../../../ai-employees/chatbox/stores/runtime';
 import type { AIChatBoxBlockModel } from '../AIChatBoxBlockModel';
-import { getAIChatBoxScope, getAIChatBoxSettings, getAIChatBoxWorkContext } from '../utils';
+import { getAIChatBoxSettings, normalizeAIChatBoxWorkContext } from '../utils';
 
 export const MessagesAndSender: React.FC<{
   model: AIChatBoxBlockModel;
@@ -25,14 +26,22 @@ export const MessagesAndSender: React.FC<{
   const t = useT();
   const { token } = theme.useToken();
   const runtime = useChatBoxRuntime();
-  const { chatBoxModel } = runtime;
+  const { chatBoxModel, chatConversationModel } = runtime;
   const aiConfigRepository = useAIConfigRepository();
   const { switchAIEmployee } = useChatBoxActions(runtime);
   const settings = getAIChatBoxSettings(model.props);
-  const defaultWorkContext = getAIChatBoxWorkContext(model);
-  const scope = getAIChatBoxScope(model);
+  const selectedBlocks = model.props.selectedBlocks;
+  const configuredWorkContext = useMemo(() => normalizeAIChatBoxWorkContext(selectedBlocks), [selectedBlocks]);
+  const configuredWorkContextKey = configuredWorkContext
+    .map((item) => `${item.type}:${item.uid}:${item.title || ''}`)
+    .join('|');
   const allowedAIEmployees = settings.allowedAIEmployees;
   const currentEmployee = chatBoxModel.currentEmployee;
+  const currentConversation = chatConversationModel.currentConversation;
+  const draftChat = useChat(undefined, runtime);
+  const draftMessages = draftChat.use.messages();
+  const draftMessageKey = draftMessages.map((message) => message.key).join('|');
+  const hasDraftUserMessage = draftMessages.some((message) => message.role === 'user');
 
   useEffect(() => {
     if (currentEmployee && (!allowedAIEmployees.length || allowedAIEmployees.includes(currentEmployee.username))) {
@@ -59,6 +68,29 @@ export const MessagesAndSender: React.FC<{
       .catch(console.error);
   }, [aiConfigRepository, allowedAIEmployees, chatBoxModel, currentEmployee, switchAIEmployee]);
 
+  useEffect(() => {
+    if (currentConversation || hasDraftUserMessage || !configuredWorkContext.length) {
+      return;
+    }
+    draftChat.setContextItems((items) => {
+      const map = new Map<string, (typeof configuredWorkContext)[number]>();
+      for (const item of items) {
+        map.set(`${item.type}:${item.uid}`, item);
+      }
+      for (const item of configuredWorkContext) {
+        map.set(`${item.type}:${item.uid}`, item);
+      }
+      return Array.from(map.values());
+    });
+  }, [
+    currentConversation,
+    configuredWorkContext,
+    configuredWorkContextKey,
+    draftChat,
+    draftMessageKey,
+    hasDraftUserMessage,
+  ]);
+
   return (
     <div
       style={{
@@ -73,7 +105,7 @@ export const MessagesAndSender: React.FC<{
     >
       {settings.showMessages ? (
         <div style={{ flex: '1 1 0', minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <Messages disableHorizontalScroll />
+          <Messages />
         </div>
       ) : null}
       <div
@@ -85,18 +117,18 @@ export const MessagesAndSender: React.FC<{
         }}
       >
         <Sender
+          containerStyle={{ margin: '8px 0' }}
           placeholder={settings.senderPlaceholder}
           showContextSelector={settings.showContextSelector}
           showUpload={settings.showUpload}
           showWebSearch={settings.showWebSearch}
           showEmployeeSelect={settings.showEmployeeSelect}
           showModelSelect={settings.showModelSelect}
+          sendContextItems
           allowedAIEmployees={settings.allowedAIEmployees}
           allowedModels={settings.allowedModels}
           defaultSystemMessage={settings.systemPrompt}
           defaultUserMessage={settings.defaultUserMessage}
-          defaultWorkContext={defaultWorkContext}
-          scope={scope}
         />
         {settings.showDisclaimer ? (
           <Typography.Text
@@ -104,7 +136,7 @@ export const MessagesAndSender: React.FC<{
             style={{
               display: 'block',
               textAlign: 'center',
-              margin: '10px 0',
+              margin: 0,
               fontSize: token.fontSizeSM,
               color: token.colorTextTertiary,
             }}

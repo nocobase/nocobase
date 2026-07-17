@@ -20,7 +20,7 @@ chatbox 底层 runtime/store 已完成基础重构：
 - 新增生产版 `AIChatBox*` 模型和组件，与 `AIChatDemo*` 并存。
 - 每个 AI chat box 实例拥有独立 `ChatBoxRuntime`，不共享 current conversation、sender draft、员工、模型、附件、上下文等 UI 状态。
 - 复用现有真实 chatbox 的 `Messages`、`Sender`、发送、上传、上下文、流式响应、取消、恢复、编辑等能力。
-- 区块内会话列表单独实现，只显示 conversations，不显示 workflow task tab。
+- 区块内会话列表复用全局 floating chatbox 的 `Conversations` 组件，通过 runtime mode 隐藏 workflow task tab。
 - 支持 conversation scope：默认当前 block uid，清空 scope 表示不过滤，非空 scope 按 scope 过滤。
 - 支持 Add block：新增普通区块默认进入当前 AI chat box 的 Work context，并能和核心区块上下拖拽排序。
 - 支持 AI employee task 定向 AI chat box，并确保 task 配置优先级高于 AI chat box 默认配置，直接覆盖，不合并。
@@ -51,7 +51,7 @@ chatbox 底层 runtime/store 已完成基础重构：
 
 - `Messages` 根据 runtime mode 判断是否执行 workflow-task readonly 刷新：`global` 保持原行为，`block` 禁用该刷新。
 - Sender 状态需要抽出独立 `ChatSenderModel` 放入 runtime。它承载 sender/composer 相关实例状态，避免同一 session 在多个 UI 中共享输入草稿和待发送附件/上下文。
-- 区块版 Conversations 单独实现，不复用全局 floating chatbox 的 `Conversations` 组件。
+- 区块版 Conversations 复用全局 floating chatbox 的 `Conversations` 组件，避免重复维护打开、删除、重命名、续流等逻辑。
 - 新增用户可见字符串必须走 `tExpr()` / `useT()`，并补 `en-US.json`、`zh-CN.json`。
 - 新增数据库字段按仓库规则通过 collection schema 同步；只有需要数据回填或行为迁移时才加 migration。
 - 提交前必须确认 staged diff，只提交当前任务相关文件，不 stage/revert 无关 dirty。
@@ -124,13 +124,12 @@ chatbox 底层 runtime/store 已完成基础重构：
 
 ### Conversations
 
-区块版 Conversations 单独实现：
+区块版 Conversations 复用全局 floating chatbox 的 `Conversations` 组件：
 
-- 只显示 conversations。
-- 不显示 workflow task tab。
-- 不显示旧红点。
-- 支持 search、打开、重命名、删除。
+- `runtime.mode === 'block'` 时只显示 conversations，不显示 workflow task tab。
+- 通过 runtime scope 按区块作用域过滤 conversations。
 - 打开会话只写当前 block runtime，不影响全局 chatbox 或其他 block。
+- 支持 search、打开、重命名、删除。
 
 ### AI employee task
 
@@ -388,7 +387,7 @@ AI employee task 需要支持 `Chat box uid`：
 - T6.3 不显示 workflow task tab。
 - T6.4 不显示旧 unread 红点。
 - T6.5 打开会话时只更新当前 block runtime。
-- T6.6 根据 scope 参数请求会话列表。
+- T6.6 根据 runtime scope 请求会话列表。
 - T6.7 左侧面板按 prototype 行为打开/关闭。
 
 测试：
@@ -549,6 +548,56 @@ AI employee task 需要支持 `Chat box uid`：
 - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/public-api-contract.test.ts --run --reporter=verbose` 通过。
 - CLI-only pass 未执行浏览器手动验证；`HANDOFF.md` 已记录该限制。
 
+### T11. AI chat box 区块补充体验修复
+
+状态：`In Progress`
+
+依赖：T10
+
+当前状态：
+
+- 已实现并完成本轮相关自动化验证。
+- 当前改动尚未提交，因此按本文档状态定义仍保持 `In Progress`。
+- 工作区仍存在本任务之外的 dirty 文件，尤其 `yarn.lock`，提交前需要再次确认 staged diff。
+
+已完成：
+
+- 在 `packages/plugins/@nocobase/plugin-ai/src/client/index.tsx` 注册 `AIChatBoxBlockModel` 和 `AIChatBoxCoreModel`，保证 legacy 插件入口加载时也能注册生产 AI Chat box 区块模型。该改动只做模型注册，不新增 v1 实现。
+- 抽出 `llm-services/model-select.tsx`，复用模型多选的 value 解析、分组 options、tagRender 和多选组件。
+- `Edit AI employee` 的 Model settings 改用 `LLMModelMultiSelect`。
+- `Edit chat box` 的 Models 设置复用同一套模型选项和 tag 样式，和 `Edit AI employee` 的 Model settings 保持一致。
+- `Edit chat box` 每个配置项补充 tooltip，并补充 `en-US.json`、`zh-CN.json`。
+- `Edit chat box` 打开 Work context 选择区块或 Datasource 时，通过 `dialogController` 隐藏当前编辑弹窗，行为对齐 AI 员工任务里的 Work context 选择逻辑。
+- 调整 AI Chat box 默认尺寸：默认宽度 `400`、默认高度 `650`、新建区块默认占 `6/24` 栅格宽度，并在新建时自动补空列。
+- 收紧区块内部布局：核心聊天区最小宽度 `400`，侧边消息面板宽度 `350`，body 只纵向滚动并隐藏横向滚动。
+- 移除 core 自身额外拖拽 handle，避免核心区块工具条出现多余拖拽入口。
+- 修复用户消息显示不完整相关布局问题：`Messages` 支持 `containerStyle` 覆盖，区块内不再强行传 `disableHorizontalScroll`，核心聊天区使用稳定 flex/overflow 容器。
+- 区块里的 `Messages` 不再额外增加 margin/padding，去掉核心聊天区顶部 `padding-top: 92px` 的安全距离。
+- `Sender` 支持 `containerStyle`，区块内 sender margin 调整为 `8px 0`。
+- `disclaimer` 上下 margin 调整为 `0`。
+- `Sender` 移除 `defaultWorkContext` 发送路径；发送 payload 只读取当前 chat 的 `contextItems`。
+- AI Chat box 配置中的 Work context 只在新建/草稿会话时注入 sender context；已有会话或 draft 中已经有用户消息时不再自动注入，因此不会每次发送消息都带上配置的 Work context。
+- `Sender` 新增 `sendContextItems` 选项，使区块可以隐藏 Add context 控件但仍发送已经注入的 draft context。
+- 按产品调整，移除区块内重复实现的 `Conversations` 组件，改为复用全局 floating chatbox 的 `Conversations`；由 `runtime.mode === 'block'` 决定隐藏 workflow task tab，并通过 runtime scope 过滤区块会话。
+- 区块 scope 写入当前 `ChatBoxRuntime`，共享 `Conversations`、conversation actions 和 `Sender` 默认从 runtime 读取 scope，不再通过区块组件链路逐层传递。
+
+测试结果：
+
+- `yarn eslint --fix packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/components/Sender.tsx packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/components/__tests__/Sender.test.ts packages/plugins/@nocobase/plugin-ai/src/client-v2/block/ai-chat-box/components/MessagesAndSender.tsx packages/plugins/@nocobase/plugin-ai/src/client-v2/block/ai-chat-box/__tests__/MessagesAndSender.test.tsx` 通过。
+- `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/block/ai-chat-box/__tests__/MessagesAndSender.test.tsx --run --reporter=verbose` 通过，4 个测试通过。
+- `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/components/__tests__/Sender.test.ts --run --reporter=verbose` 通过，4 个测试通过。
+- `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/block/ai-chat-box/__tests__/AIChatBoxView.registry.test.tsx --run --reporter=verbose` 已在本轮补充修复过程中通过。
+- `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/block/ai-chat-box/__tests__/Conversations.test.tsx --run --reporter=verbose` 通过，3 个测试通过，覆盖 block mode 隐藏 workflow task tab、global mode 显示 workflow task tab、区块 runtime scope。
+- `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/block/ai-chat-box/__tests__/AIChatBoxView.test.ts --run --reporter=verbose` 通过，5 个测试通过。
+- `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/chatbox-runtime.test.tsx --run --reporter=verbose` 通过，10 个测试通过。
+- `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/chatbox-global-behavior.test.tsx --run --reporter=verbose` 通过，1 个测试通过。
+- `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/block/ai-chat-box/__tests__/settings.test.ts --run --reporter=verbose` 已在本轮补充修复过程中通过。
+- `git diff --check` 通过。
+
+提交前待确认：
+
+- 是否将 `yarn.lock` 纳入本次提交；当前看起来不属于本轮 AI Chat box 补充修复。
+
 ## 已确认产品决策
 
 - D1：demo 入口改名，避免和生产 `AI chat box` 同名混淆。
@@ -556,6 +605,7 @@ AI employee task 需要支持 `Chat box uid`：
 - D3：scope 清空后的 “所有相关 conversations” 包含全局 unscoped conversations 和其他 scoped block conversations。
 - D4：task 指定 `Chat box uid` 但目标未挂载时，提示找不到目标，不回退全局 chatbox。
 - D5：Add block 自动进入 Work context 后，不提供单独排除该 block 的能力；删除 block 才移除默认上下文。
+- D6：区块会话列表不再单独实现，复用全局 floating chatbox 的 `Conversations` 组件；是否显示 workflow task tab 由 runtime mode 决定。
 
 ## 执行规则
 

@@ -9,16 +9,14 @@
 
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import type { FlowModel } from '@nocobase/flow-engine';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Conversation } from '../../../ai-employees/types';
 import type { ChatBoxRuntime } from '../../../ai-employees/chatbox/stores/runtime';
-import type { AIChatBoxBlockModel } from '../AIChatBoxBlockModel';
 import {
   Conversations,
-  getAIChatBoxConversationItems,
-  getAIChatBoxConversationModel,
-} from '../components/Conversations';
+  getConversationItems,
+  getConversationModel,
+} from '../../../ai-employees/chatbox/components/Conversations';
 
 const mocks = vi.hoisted(() => ({
   refresh: vi.fn(),
@@ -26,17 +24,23 @@ const mocks = vi.hoisted(() => ({
   lastConversationRef: vi.fn(),
   useChatConversationActions: vi.fn(),
   runtime: {
+    mode: 'block',
+    scope: undefined as string | undefined,
     chatBoxModel: {
+      expanded: false,
       setReadonly: vi.fn(),
       setCurrentEmployee: vi.fn(),
       setModel: vi.fn(),
+      setShowConversations: vi.fn(),
     },
     chatConversationModel: {
       conversations: [] as Conversation[],
       currentConversation: undefined as string | undefined,
+      conversationSegmented: 'workflowTasks',
       keyword: '',
       setKeyword: vi.fn(),
       setCurrentConversation: vi.fn(),
+      setConversationSegmented: vi.fn(),
     },
     workflowTaskModel: {
       setCurrentWorkflowTask: vi.fn(),
@@ -73,6 +77,23 @@ vi.mock('../../../ai-employees/chatbox/stores/runtime', () => ({
 vi.mock('../../../ai-employees/chatbox/hooks/useChatConversationActions', () => ({
   useChatConversationActions: (runtime: ChatBoxRuntime, options?: { scope?: string }) =>
     mocks.useChatConversationActions(runtime, options),
+}));
+
+vi.mock('../../../ai-employees/chatbox/hooks/useWorkflowTasks', () => ({
+  useWorkflowTasks: () => ({
+    refresh: vi.fn(),
+    runSearch: vi.fn(),
+    runJobStatusFilter: vi.fn(),
+    workflowTasks: [],
+    loading: false,
+    selectedJobStatus: undefined,
+    hasMore: false,
+    loadMoreWorkflowTasks: vi.fn(),
+    lastWorkflowTaskRef: vi.fn(),
+    unreadCount: 0,
+    acceptWorkflowTask: vi.fn(),
+    getWorkflowTaskBySession: vi.fn(),
+  }),
 }));
 
 vi.mock('../../../ai-employees/chatbox/hooks/useChatMessageActions', () => ({
@@ -124,16 +145,23 @@ vi.mock('@ant-design/x', async (importOriginal) => {
   };
 });
 
-const makeModel = (scope?: string): AIChatBoxBlockModel => {
-  return {
-    uid: 'chat-box-1',
-    props: { scope },
-    mapSubModels: (_subKey: string, _callback: (model: FlowModel, index: number) => unknown) => [],
-  } as AIChatBoxBlockModel;
-};
-
 describe('AI chat box Conversations', () => {
-  it('builds conversation items without unread dot and resolves conversation model', () => {
+  beforeEach(() => {
+    mocks.runtime.mode = 'block';
+    mocks.runtime.scope = undefined;
+    mocks.runtime.chatConversationModel.conversations = [];
+    mocks.runtime.chatConversationModel.currentConversation = undefined;
+    mocks.runtime.chatConversationModel.conversationSegmented = 'workflowTasks';
+    mocks.useChatConversationActions.mockReset();
+    mocks.useChatConversationActions.mockReturnValue({
+      refresh: mocks.refresh,
+      runSearch: mocks.runSearch,
+      conversationsService: { loading: false },
+      lastConversationRef: mocks.lastConversationRef,
+    });
+  });
+
+  it('uses shared conversation items and resolves conversation model', () => {
     const conversation: Conversation = {
       sessionId: 'session-1',
       title: 'Sales summary',
@@ -148,21 +176,22 @@ describe('AI chat box Conversations', () => {
       },
     };
 
-    expect(getAIChatBoxConversationItems([conversation], (key) => key)).toEqual([
-      {
-        key: 'session-1',
-        title: 'Sales summary',
-        label: 'Sales summary',
-        timestamp: new Date('2026-01-01T00:00:00.000Z').getTime(),
-      },
-    ]);
-    expect(getAIChatBoxConversationModel(conversation)).toEqual({
+    const items = getConversationItems([conversation], (key) => key);
+    expect(items?.[0]).toMatchObject({
+      key: 'session-1',
+      title: 'Sales summary',
+      label: 'Sales summary',
+      timestamp: new Date('2026-01-01T00:00:00.000Z').getTime(),
+    });
+    expect(items?.[0]?.icon).toBeTruthy();
+    expect(getConversationModel(conversation)).toEqual({
       llmService: 'openai',
       model: 'gpt',
     });
   });
 
-  it('renders only conversations and passes scope to conversation actions', () => {
+  it('renders only conversations and lets conversation actions read scope from runtime', () => {
+    mocks.runtime.scope = 'scope-a';
     mocks.runtime.chatConversationModel.conversations = [
       {
         sessionId: 'session-1',
@@ -179,11 +208,20 @@ describe('AI chat box Conversations', () => {
       lastConversationRef: mocks.lastConversationRef,
     });
 
-    render(<Conversations model={makeModel('scope-a')} />);
+    render(<Conversations />);
 
-    expect(mocks.useChatConversationActions).toHaveBeenCalledWith(mocks.runtime, { scope: 'scope-a' });
+    expect(mocks.useChatConversationActions).toHaveBeenCalledWith(mocks.runtime, undefined);
     expect(screen.getByTestId('conversation-list')).toHaveTextContent('Scoped conversation');
     expect(screen.queryByText('Workflow tasks')).toBeNull();
-    expect(screen.queryByTestId('unread-icon')).toBeNull();
+    expect(screen.getByTestId('unread-icon')).toBeInTheDocument();
+  });
+
+  it('shows the workflow task tab in global mode', () => {
+    mocks.runtime.mode = 'global';
+    mocks.runtime.chatConversationModel.conversationSegmented = 'conversations';
+
+    render(<Conversations />);
+
+    expect(screen.getByText('Workflow tasks')).toBeInTheDocument();
   });
 });

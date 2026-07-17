@@ -51,14 +51,15 @@ const senderClassName = css`
 
 export type SenderOptions = {
   placeholder?: string;
+  containerStyle?: React.CSSProperties;
   showContextSelector?: boolean;
   showUpload?: boolean;
   showWebSearch?: boolean;
   showEmployeeSelect?: boolean;
   showModelSelect?: boolean;
+  sendContextItems?: boolean;
   defaultSystemMessage?: string;
   defaultUserMessage?: string;
-  defaultWorkContext?: ContextItem[];
   allowedAIEmployees?: string[];
   allowedModels?: string[];
   scope?: string;
@@ -73,7 +74,6 @@ export type BuildSenderSendOptionsInput = {
   contextItems?: ContextItem[];
   defaultSystemMessage?: string;
   defaultUserMessage?: string;
-  defaultWorkContext?: ContextItem[];
   isEditingMessage?: boolean;
   editingMessageId?: string | null;
   skillSettings?: SkillSettings | null;
@@ -84,9 +84,9 @@ export type BuildSenderSendOptionsInput = {
   webSearchEnabled?: boolean;
 };
 
-export const mergeSenderContextItems = (defaultWorkContext?: ContextItem[], contextItems?: ContextItem[]) => {
+export const mergeSenderContextItems = (contextItems?: ContextItem[]) => {
   const seen = new Set<string>();
-  return [...(defaultWorkContext || []), ...(contextItems || [])].filter((item) => {
+  return [...(contextItems || [])].filter((item) => {
     const key = `${item.type}:${item.uid}`;
     if (seen.has(key)) {
       return false;
@@ -105,7 +105,6 @@ export const buildSenderSendOptions = ({
   contextItems,
   defaultSystemMessage,
   defaultUserMessage,
-  defaultWorkContext,
   isEditingMessage,
   editingMessageId,
   skillSettings,
@@ -119,10 +118,7 @@ export const buildSenderSendOptions = ({
     return null;
   }
   const resolvedContent = content || defaultUserMessage || '';
-  const resolvedContextItems = mergeSenderContextItems(
-    defaultWorkContext,
-    contextSelectorEnabled ? contextItems : undefined,
-  );
+  const resolvedContextItems = contextSelectorEnabled ? mergeSenderContextItems(contextItems) : [];
 
   if (!resolvedContent && !resolvedContextItems.length) {
     return null;
@@ -172,7 +168,9 @@ export const Sender: React.FC<SenderOptions> = observer((options) => {
   const showContextSelector = options.showContextSelector !== false;
   const showUpload = options.showUpload !== false;
   const showWebSearch = options.showWebSearch !== false;
+  const sendContextItems = options.sendContextItems ?? showContextSelector;
   const placeholder = options.placeholder || 'Enter your question';
+  const scope = options.scope ?? runtime.scope;
 
   useEffect(() => {
     chatSenderModel.setSenderRef(senderRef);
@@ -204,14 +202,13 @@ export const Sender: React.FC<SenderOptions> = observer((options) => {
       contextItems,
       defaultSystemMessage: options.defaultSystemMessage,
       defaultUserMessage: options.defaultUserMessage,
-      defaultWorkContext: options.defaultWorkContext,
       isEditingMessage,
       editingMessageId,
       skillSettings,
       webSearch,
-      scope: options.scope,
+      scope,
       uploadEnabled: showUpload,
-      contextSelectorEnabled: showContextSelector,
+      contextSelectorEnabled: sendContextItems,
       webSearchEnabled: showWebSearch,
     });
     if (!sendOptions) {
@@ -291,6 +288,7 @@ export const Sender: React.FC<SenderOptions> = observer((options) => {
     <div
       style={{
         margin: '8px 16px',
+        ...options.containerStyle,
       }}
     >
       <AntSender
@@ -385,7 +383,7 @@ const SenderFooter: React.FC<{
   const disabled = !currentEmployee || readonly;
   const showContextSelector = options.showContextSelector !== false;
   const handleEmptySubmit = () => {
-    if (!senderValue && (contextItems.length || options.defaultUserMessage || options.defaultWorkContext?.length)) {
+    if (!senderValue && (contextItems.length || options.defaultUserMessage)) {
       handleSubmit('');
     }
   };

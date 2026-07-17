@@ -17,11 +17,14 @@ import { MessagesAndSender } from '../components/MessagesAndSender';
 import type { AIChatBoxBlockProps } from '../types';
 
 const mocks = vi.hoisted(() => ({
-  messagesProps: undefined as { disableHorizontalScroll?: boolean } | undefined,
+  messagesRendered: false,
   senderProps: undefined as SenderOptions | undefined,
   switchAIEmployee: vi.fn(),
   getAIEmployees: vi.fn(),
   currentEmployee: { username: 'legacy', nickname: 'Legacy' },
+  currentConversation: undefined as string | undefined,
+  draftMessages: [] as Array<{ key: string; role?: string }>,
+  setContextItems: vi.fn(),
 }));
 
 vi.mock('../../../locale', () => ({
@@ -45,12 +48,24 @@ vi.mock('../../../ai-employees/chatbox/stores/runtime', () => ({
     chatBoxModel: {
       currentEmployee: mocks.currentEmployee,
     },
+    chatConversationModel: {
+      currentConversation: mocks.currentConversation,
+    },
+  }),
+}));
+
+vi.mock('../../../ai-employees/chatbox/hooks/useChat', () => ({
+  useChat: () => ({
+    setContextItems: mocks.setContextItems,
+    use: {
+      messages: () => mocks.draftMessages,
+    },
   }),
 }));
 
 vi.mock('../../../ai-employees/chatbox/components/Messages', () => ({
-  Messages: (props: { disableHorizontalScroll?: boolean }) => {
-    mocks.messagesProps = props;
+  Messages: () => {
+    mocks.messagesRendered = true;
     return <div data-testid="messages" />;
   },
 }));
@@ -85,7 +100,10 @@ const makeModel = (props: AIChatBoxBlockProps): AIChatBoxBlockModel => {
 
 describe('MessagesAndSender', () => {
   it('keeps messages in a bounded flex region above the sender', () => {
-    mocks.messagesProps = undefined;
+    mocks.messagesRendered = false;
+    mocks.currentConversation = undefined;
+    mocks.draftMessages = [];
+    mocks.setContextItems.mockReset();
     mocks.getAIEmployees.mockResolvedValue([]);
 
     const { container } = render(
@@ -102,7 +120,7 @@ describe('MessagesAndSender', () => {
     const senderRegion = screen.getByTestId('sender').parentElement;
     expect(messagesRegion?.getAttribute('style')).toContain('flex: 1 1 0');
     expect(messagesRegion?.getAttribute('style')).toContain('overflow: hidden');
-    expect(mocks.messagesProps?.disableHorizontalScroll).toBe(true);
+    expect(mocks.messagesRendered).toBe(true);
     expect(senderRegion?.tagName).toBe('DIV');
     expect(senderRegion?.getAttribute('style')).toContain('flex: 0 0 auto');
     expect(senderRegion?.getAttribute('style')).toContain('position: relative');
@@ -111,6 +129,9 @@ describe('MessagesAndSender', () => {
   it('passes AI chat box settings to the real sender and switches to an allowed employee', async () => {
     mocks.senderProps = undefined;
     mocks.switchAIEmployee.mockReset();
+    mocks.currentConversation = undefined;
+    mocks.draftMessages = [{ key: 'draft-greeting' }];
+    mocks.setContextItems.mockReset();
     mocks.getAIEmployees.mockResolvedValue([
       { username: 'sales', nickname: 'Sales assistant', category: 'business' },
       { username: 'support', nickname: 'Support assistant', category: 'business' },
@@ -140,19 +161,24 @@ describe('MessagesAndSender', () => {
     expect(screen.queryByTestId('messages')).toBeNull();
     expect(screen.getByTestId('sender')).toBeInTheDocument();
     expect(mocks.senderProps).toMatchObject({
+      containerStyle: { margin: '8px 0' },
       placeholder: 'Ask sales',
       showContextSelector: false,
       showUpload: false,
       showWebSearch: false,
       showEmployeeSelect: false,
       showModelSelect: false,
+      sendContextItems: true,
       allowedAIEmployees: ['sales'],
       allowedModels: ['openai:gpt'],
       defaultSystemMessage: 'Use sales tone',
       defaultUserMessage: 'Summarize this block',
-      defaultWorkContext: [{ type: 'flow-model', uid: 'external-1', title: 'External' }],
-      scope: 'chat-box-1',
     });
+    expect(mocks.setContextItems).toHaveBeenCalledWith(expect.any(Function));
+    expect(mocks.setContextItems.mock.calls[0][0]([{ type: 'flow-model', uid: 'manual-1', title: 'Manual' }])).toEqual([
+      { type: 'flow-model', uid: 'manual-1', title: 'Manual' },
+      { type: 'flow-model', uid: 'external-1', title: 'External' },
+    ]);
 
     await waitFor(() => expect(mocks.switchAIEmployee).toHaveBeenCalled());
     expect(mocks.switchAIEmployee.mock.calls[0][0]).toMatchObject({ username: 'sales' });
@@ -163,5 +189,44 @@ describe('MessagesAndSender', () => {
         contextItems: false,
       },
     });
+  });
+
+  it('does not inject configured work context into existing conversations', () => {
+    mocks.senderProps = undefined;
+    mocks.currentConversation = 'session-1';
+    mocks.draftMessages = [{ key: 'session-message' }];
+    mocks.setContextItems.mockReset();
+    mocks.getAIEmployees.mockResolvedValue([]);
+
+    render(
+      <MessagesAndSender
+        model={makeModel({
+          showMessages: false,
+          showDisclaimer: false,
+          selectedBlocks: [{ type: 'flow-model', uid: 'external-1', title: 'External' }],
+        })}
+      />,
+    );
+    expect(mocks.setContextItems).not.toHaveBeenCalled();
+  });
+
+  it('does not inject configured work context again after the draft has user messages', () => {
+    mocks.senderProps = undefined;
+    mocks.currentConversation = undefined;
+    mocks.draftMessages = [{ key: 'draft-user-message', role: 'user' }];
+    mocks.setContextItems.mockReset();
+    mocks.getAIEmployees.mockResolvedValue([]);
+
+    render(
+      <MessagesAndSender
+        model={makeModel({
+          showMessages: false,
+          showDisclaimer: false,
+          selectedBlocks: [{ type: 'flow-model', uid: 'external-1', title: 'External' }],
+        })}
+      />,
+    );
+
+    expect(mocks.setContextItems).not.toHaveBeenCalled();
   });
 });

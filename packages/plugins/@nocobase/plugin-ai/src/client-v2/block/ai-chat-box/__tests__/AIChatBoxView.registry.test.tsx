@@ -16,6 +16,10 @@ import type { AIChatBoxBlockModel } from '../AIChatBoxBlockModel';
 import { AIChatBoxCoreModel } from '../AIChatBoxCoreModel';
 import { AI_CHAT_BOX_CORE_MIN_WIDTH, AIChatBoxView } from '../components/AIChatBoxView';
 
+type ToolbarItem = {
+  key?: React.Key;
+};
+
 const mocks = vi.hoisted(() => ({
   runtime: {
     chatConversationModel: {
@@ -26,6 +30,7 @@ const mocks = vi.hoisted(() => ({
   triggerTask: vi.fn().mockResolvedValue(undefined),
   addContextItems: vi.fn(),
   syncContextAttachments: vi.fn(),
+  coreContextMenuExtraToolbarItems: undefined as ToolbarItem[] | undefined,
 }));
 
 vi.mock('@nocobase/flow-engine', async () => {
@@ -39,7 +44,16 @@ vi.mock('@nocobase/flow-engine', async () => {
     Droppable: Passthrough,
     FlowModelRenderer: () => <div data-testid="flow-model-renderer" />,
     FlowSettingsButton: ({ children }: { children?: React.ReactNode }) => <button>{children}</button>,
-    FlowsFloatContextMenu: Passthrough,
+    FlowsFloatContextMenu: ({
+      children,
+      extraToolbarItems,
+    }: {
+      children?: React.ReactNode;
+      extraToolbarItems?: ToolbarItem[];
+    }) => {
+      mocks.coreContextMenuExtraToolbarItems = extraToolbarItems;
+      return <>{children}</>;
+    },
   };
 });
 
@@ -77,7 +91,7 @@ vi.mock('../../../ai-employees/chatbox/components/Messages', () => ({
   Messages: () => <div data-testid="messages" />,
 }));
 
-vi.mock('../components/Conversations', () => ({
+vi.mock('../../../ai-employees/chatbox/components/Conversations', () => ({
   Conversations: () => <div data-testid="conversations" />,
 }));
 
@@ -85,13 +99,14 @@ const makeModel = (
   props: AIChatBoxBlockModel['props'] = {},
   decoratorProps: AIChatBoxBlockModel['decoratorProps'] = {},
   bodyBlocks: FlowModel[] = [],
+  flowSettingsEnabled = false,
 ): AIChatBoxBlockModel => {
   return {
     uid: 'chat-box-1',
     props,
     decoratorProps,
     context: {
-      flowSettingsEnabled: false,
+      flowSettingsEnabled,
     },
     mapSubModels: (subKey: string, callback: (model: FlowModel, index: number) => React.ReactNode) =>
       subKey === 'bodyBlocks' ? bodyBlocks.map((bodyBlock, index) => callback(bodyBlock, index)) : [],
@@ -111,6 +126,7 @@ describe('AIChatBoxView mounted registry', () => {
     mocks.triggerTask.mockClear();
     mocks.addContextItems.mockClear();
     mocks.syncContextAttachments.mockClear();
+    mocks.coreContextMenuExtraToolbarItems = undefined;
   });
 
   it('registers the mounted block runtime and removes it on unmount', () => {
@@ -143,8 +159,20 @@ describe('AIChatBoxView mounted registry', () => {
   });
 
   it('keeps the chat box core wide enough for horizontal scrolling', () => {
-    const { getByTestId } = render(<AIChatBoxView model={makeModel({}, {}, [makeCoreModel()])} />);
+    const { container, getByTestId } = render(<AIChatBoxView model={makeModel({}, {}, [makeCoreModel()])} />);
+    const coreItem = getByTestId('flow-model-renderer').closest(
+      `[style*="min-width: ${AI_CHAT_BOX_CORE_MIN_WIDTH}px"]`,
+    );
 
-    expect(getByTestId('flow-model-renderer').parentElement?.style.minWidth).toBe(`${AI_CHAT_BOX_CORE_MIN_WIDTH}px`);
+    expect(container.querySelector('.ant-layout')?.getAttribute('style')).toContain(
+      `min-width: ${AI_CHAT_BOX_CORE_MIN_WIDTH}px`,
+    );
+    expect(coreItem).toBeTruthy();
+  });
+
+  it('does not render a drag handle for the chat box core itself', () => {
+    render(<AIChatBoxView model={makeModel({}, {}, [makeCoreModel()], true)} />);
+
+    expect(mocks.coreContextMenuExtraToolbarItems).toBeUndefined();
   });
 });

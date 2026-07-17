@@ -23,13 +23,10 @@ const context = (uid: string, title?: string): ContextItem => ({
 });
 
 describe('Sender options helpers', () => {
-  it('deduplicates default and manually added context items in send order', () => {
+  it('deduplicates context items in send order', () => {
     expect(
-      mergeSenderContextItems(
-        [context('default-1'), context('shared', 'Default shared')],
-        [context('shared', 'Manual shared'), context('manual-1')],
-      ),
-    ).toEqual([context('default-1'), context('shared', 'Default shared'), context('manual-1')]);
+      mergeSenderContextItems([context('manual-1'), context('shared', 'First shared'), context('shared', 'Ignored')]),
+    ).toEqual([context('manual-1'), context('shared', 'First shared')]);
   });
 
   it('builds direct send payload from AI chat box defaults', () => {
@@ -43,7 +40,6 @@ describe('Sender options helpers', () => {
         contextItems: [context('manual-1')],
         defaultSystemMessage: 'Use sales tone',
         defaultUserMessage: 'Summarize this block',
-        defaultWorkContext: [context('default-1')],
         skillSettings: null,
         webSearch: true,
         scope: 'chat-box-1',
@@ -54,7 +50,7 @@ describe('Sender options helpers', () => {
       systemMessage: 'Use sales tone',
       messages: [{ type: 'text', content: 'Summarize this block' }],
       attachments: [{ filename: 'draft.txt', status: 'done' }],
-      workContext: [context('default-1'), context('manual-1')],
+      workContext: [context('manual-1')],
       webSearch: true,
       scope: 'chat-box-1',
     });
@@ -67,7 +63,6 @@ describe('Sender options helpers', () => {
         currentEmployee: employee,
         attachments: [{ filename: 'draft.txt', status: 'done' }],
         contextItems: [context('manual-1')],
-        defaultWorkContext: [context('default-1')],
         webSearch: true,
         uploadEnabled: false,
         contextSelectorEnabled: false,
@@ -76,7 +71,7 @@ describe('Sender options helpers', () => {
     ).toMatchObject({
       messages: [{ type: 'text', content: 'Hello' }],
       attachments: undefined,
-      workContext: [context('default-1')],
+      workContext: [],
       webSearch: false,
     });
   });

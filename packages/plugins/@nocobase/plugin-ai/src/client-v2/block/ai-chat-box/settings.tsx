@@ -10,8 +10,14 @@
 import type { FlowModelContext } from '@nocobase/flow-engine';
 import { NAMESPACE, tExpr } from '../../locale';
 import type { AIEmployee } from '../../ai-employees/types';
+import { dialogController } from '../../ai-employees/stores/dialog-controller';
 import { WorkContext } from '../../models/ai-employees/AIEmployeeShortcutModel';
 import type { LLMServiceItem } from '../../repositories/AIConfigRepository';
+import {
+  createLLMModelTagRender,
+  getLLMModelSelectLabelMap,
+  getLLMModelSelectOptions,
+} from '../../llm-services/model-select';
 import type { AIChatBoxBlockModel } from './AIChatBoxBlockModel';
 import {
   getAIChatBoxSettings,
@@ -57,16 +63,6 @@ const getAIEmployeeOptions = async (ctx: AIChatBoxFlowContext) => {
       label: employee.nickname || employee.username,
       value: employee.username,
     }));
-};
-
-const getModelOptions = async (ctx: AIChatBoxFlowContext) => {
-  const services = (await ctx.aiConfigRepository?.getLLMServices()) || [];
-  return services.flatMap((service) =>
-    service.enabledModels.map((model) => ({
-      label: `${service.llmServiceTitle} / ${model.label}`,
-      value: `${service.llmService}:${model.value}`,
-    })),
-  );
 };
 
 const getSwitchDefaultParams = (ctx: AIChatBoxFlowContext, key: BooleanSettingKey) => ({
@@ -150,6 +146,10 @@ export const registerAIChatBoxBlockSettings = (ModelClass: AIChatBoxBlockModelCo
             type: 'dialog' as const,
             props: {
               width: 720,
+              styles: {
+                mask: { zIndex: dialogController.shouldHide ? -1 : 9999 },
+                wrapper: { zIndex: dialogController.shouldHide ? -1 : 9999 },
+              },
             },
           };
         },
@@ -163,40 +163,63 @@ export const registerAIChatBoxBlockSettings = (ModelClass: AIChatBoxBlockModelCo
           };
         },
         uiSchema: async (ctx: AIChatBoxFlowContext) => {
-          const [aiEmployeeOptions, modelOptions] = await Promise.all([
+          const [aiEmployeeOptions, llmServices] = await Promise.all([
             getAIEmployeeOptions(ctx),
-            getModelOptions(ctx),
+            ctx.aiConfigRepository?.getLLMServices() || [],
           ]);
+          const modelOptions = getLLMModelSelectOptions(llmServices);
+          const modelLabelMap = getLLMModelSelectLabelMap(modelOptions);
 
           return {
             scope: {
               type: 'string',
               title: tExpr('Scope'),
               'x-decorator': 'FormItem',
+              'x-decorator-props': {
+                tooltip: tExpr(
+                  'Controls which chat boxes share conversations. The default value isolates this chat box.',
+                ),
+              },
               'x-component': 'Input',
             },
             systemPrompt: {
               type: 'string',
               title: tExpr('Background'),
               'x-decorator': 'FormItem',
+              'x-decorator-props': {
+                tooltip: tExpr(
+                  'Additional system prompt appended to the AI employee’s definition, used to refine instructions',
+                ),
+              },
               'x-component': 'FlowSettingsVariableTextArea',
             },
             defaultUserMessage: {
               type: 'string',
               title: tExpr('Default user message'),
               'x-decorator': 'FormItem',
+              'x-decorator-props': {
+                tooltip: tExpr('Prefill the sender input when the chat box starts a new conversation.'),
+              },
               'x-component': 'FlowSettingsVariableTextArea',
             },
             selectedBlocks: {
               type: 'array',
               title: tExpr('Work context'),
               'x-decorator': 'FormItem',
+              'x-decorator-props': {
+                tooltip: tExpr('Select blocks or data sources that are sent as default work context.'),
+              },
               'x-component': WorkContext,
             },
             allowedAIEmployees: {
               type: 'array',
               title: tExpr('AI employees'),
               'x-decorator': 'FormItem',
+              'x-decorator-props': {
+                tooltip: tExpr(
+                  'Restrict this chat box to selected AI employees. Leave empty to allow all business AI employees.',
+                ),
+              },
               'x-component': 'Select',
               'x-component-props': {
                 mode: 'multiple',
@@ -208,11 +231,17 @@ export const registerAIChatBoxBlockSettings = (ModelClass: AIChatBoxBlockModelCo
               type: 'array',
               title: tExpr('Models'),
               'x-decorator': 'FormItem',
+              'x-decorator-props': {
+                tooltip: tExpr('Restrict this chat box to selected models. Leave empty to allow all available models.'),
+              },
               'x-component': 'Select',
               'x-component-props': {
                 mode: 'multiple',
                 allowClear: true,
                 options: modelOptions,
+                optionFilterProp: 'label',
+                showSearch: true,
+                tagRender: createLLMModelTagRender(modelLabelMap),
               },
             },
           };

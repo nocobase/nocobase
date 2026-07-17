@@ -10,12 +10,16 @@
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { FlowModel, type FlowModelContext } from '@nocobase/flow-engine';
+import { EMPTY_COLUMN_UID, FlowModel, type FlowModelContext, type GridLayoutV2 } from '@nocobase/flow-engine';
 import { describe, expect, it, vi } from 'vitest';
+import { dialogController } from '../../../ai-employees/stores/dialog-controller';
 import { AIChatBoxBlockModel } from '../AIChatBoxBlockModel';
 import { AIChatBoxCoreModel } from '../AIChatBoxCoreModel';
 import { AI_CHAT_BOX_BLOCK_SETTINGS_FLOW_KEY } from '../settings';
 import {
+  DEFAULT_AI_CHAT_BOX_HEIGHT,
+  DEFAULT_AI_CHAT_BOX_GRID_WIDTH,
+  DEFAULT_AI_CHAT_BOX_WIDTH,
   getAIChatBoxScope,
   getAIChatBoxWorkContext,
   normalizeAIChatBoxHeight,
@@ -74,7 +78,7 @@ const readLocale = (locale: 'en-US' | 'zh-CN') => {
 
 describe('AI chat box settings helpers', () => {
   it('normalizes chat box height with a larger default than the minimum', () => {
-    expect(normalizeAIChatBoxHeight(undefined)).toBe(640);
+    expect(normalizeAIChatBoxHeight(undefined)).toBe(DEFAULT_AI_CHAT_BOX_HEIGHT);
     expect(normalizeAIChatBoxHeight(360)).toBe(420);
     expect(normalizeAIChatBoxHeight(720)).toBe(720);
   });
@@ -120,6 +124,56 @@ describe('AI chat box settings helpers', () => {
 });
 
 describe('AI chat box settings flow', () => {
+  it('creates new production blocks with the default size', () => {
+    expect(AIChatBoxBlockModel.meta?.createModelOptions).toMatchObject({
+      props: {
+        minWidth: DEFAULT_AI_CHAT_BOX_WIDTH,
+        height: DEFAULT_AI_CHAT_BOX_HEIGHT,
+      },
+    });
+  });
+
+  it('resizes newly added production blocks in the parent grid', async () => {
+    const model = Object.create(AIChatBoxBlockModel.prototype) as AIChatBoxBlockModel;
+    const layout: GridLayoutV2 = {
+      version: 2,
+      rows: [
+        {
+          id: 'row-1',
+          cells: [{ id: 'row-1:cell:0', items: ['chat-box-1'] }],
+          sizes: [24],
+        },
+      ],
+    };
+    const saveGridLayout = vi.fn();
+    const parent = {
+      getGridLayout: vi.fn(() => layout),
+      saveGridLayout,
+    } as unknown as FlowModel;
+
+    Object.defineProperties(model, {
+      uid: { value: 'chat-box-1' },
+      parent: { value: parent },
+      _options: { value: { subKey: 'items' } },
+    });
+
+    await model.afterAddAsSubModel();
+
+    expect(saveGridLayout).toHaveBeenCalledWith({
+      version: 2,
+      rows: [
+        {
+          id: 'row-1',
+          cells: [
+            { id: 'row-1:cell:0', items: ['chat-box-1'] },
+            { id: 'row-1:cell:empty', items: [EMPTY_COLUMN_UID] },
+          ],
+          sizes: [DEFAULT_AI_CHAT_BOX_GRID_WIDTH, 24 - DEFAULT_AI_CHAT_BOX_GRID_WIDTH],
+        },
+      ],
+    });
+  });
+
   it('registers production settings with the common block height menu', () => {
     const settingsFlow = AIChatBoxBlockModel.globalFlowRegistry.getFlow(AI_CHAT_BOX_BLOCK_SETTINGS_FLOW_KEY);
     const cardSettingsFlow = AIChatBoxBlockModel.globalFlowRegistry.getFlow('cardSettings');
@@ -175,6 +229,29 @@ describe('AI chat box settings flow', () => {
       'allowedAIEmployees',
       'allowedModels',
     ]);
+    expect(
+      Object.values(schema ?? {}).every((item) => {
+        return (
+          typeof item === 'object' &&
+          item !== null &&
+          'x-decorator-props' in item &&
+          !!(item as { 'x-decorator-props'?: { tooltip?: unknown } })['x-decorator-props']?.tooltip
+        );
+      }),
+    ).toBe(true);
+    expect(schema?.allowedModels?.['x-component-props']).toMatchObject({
+      mode: 'multiple',
+      allowClear: true,
+      optionFilterProp: 'label',
+      showSearch: true,
+      options: [
+        {
+          label: 'OpenAI',
+          options: [{ label: 'OpenAI / GPT', value: 'openai:gpt' }],
+        },
+      ],
+    });
+    expect(schema?.allowedModels?.['x-component-props']?.tagRender).toEqual(expect.any(Function));
 
     editStep?.handler?.(ctx, {
       scope: '',
@@ -199,6 +276,24 @@ describe('AI chat box settings flow', () => {
       allowedAIEmployees: ['sales'],
       allowedModels: ['openai:gpt'],
     });
+  });
+
+  it('hides the edit chat box dialog while selecting work context', () => {
+    const flow = AIChatBoxBlockModel.globalFlowRegistry.getFlow(AI_CHAT_BOX_BLOCK_SETTINGS_FLOW_KEY);
+    const editStep = flow?.getStep('editChatBox')?.serialize();
+
+    dialogController.resume();
+    expect(editStep?.uiMode?.().props.styles).toMatchObject({
+      mask: { zIndex: 9999 },
+      wrapper: { zIndex: 9999 },
+    });
+
+    dialogController.hide();
+    expect(editStep?.uiMode?.().props.styles).toMatchObject({
+      mask: { zIndex: -1 },
+      wrapper: { zIndex: -1 },
+    });
+    dialogController.resume();
   });
 
   it('keeps sender placeholder dialog field unlabeled and stores switch settings', () => {
@@ -227,11 +322,16 @@ describe('AI chat box settings flow', () => {
       'Title & description',
       'Edit chat box',
       'Scope',
+      'Controls which chat boxes share conversations. The default value isolates this chat box.',
       'Background',
       'Default user message',
+      'Prefill the sender input when the chat box starts a new conversation.',
       'Work context',
+      'Select blocks or data sources that are sent as default work context.',
       'AI employees',
+      'Restrict this chat box to selected AI employees. Leave empty to allow all business AI employees.',
       'Models',
+      'Restrict this chat box to selected models. Leave empty to allow all available models.',
       'Show messages',
       'Sender placeholder',
       'Enable add context',

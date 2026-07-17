@@ -21,6 +21,7 @@ export type ChatBoxRuntimeMode = 'global' | 'block';
 
 export type ChatBoxRuntime = {
   mode: ChatBoxRuntimeMode;
+  scope?: string;
   chatBoxModel: ChatBoxModel;
   chatSenderModel: ChatSenderModel;
   chatConversationModel: ChatConversationModel;
@@ -37,6 +38,7 @@ export const createChatBoxRuntime = (runtime?: Partial<ChatBoxRuntime>): ChatBox
 
   return {
     mode: runtime?.mode ?? 'global',
+    scope: runtime?.scope,
     chatBoxModel,
     chatSenderModel,
     chatConversationModel: runtime?.chatConversationModel ?? new ChatConversationModel(),

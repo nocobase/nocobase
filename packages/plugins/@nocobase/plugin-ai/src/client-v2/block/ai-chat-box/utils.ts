@@ -11,6 +11,10 @@ import type { ContextItem } from '../../ai-employees/types';
 import type { AIChatBoxBlockModel } from './AIChatBoxBlockModel';
 import type { AIChatBoxBlockProps, AIChatBoxSettings } from './types';
 
+export const DEFAULT_AI_CHAT_BOX_WIDTH = 400;
+export const DEFAULT_AI_CHAT_BOX_HEIGHT = 650;
+export const DEFAULT_AI_CHAT_BOX_GRID_WIDTH = 6;
+
 const isContextItem = (value: unknown): value is ContextItem => {
   return (
     value !== null &&
@@ -22,7 +26,7 @@ const isContextItem = (value: unknown): value is ContextItem => {
 };
 
 export const getDefaultAIChatBoxSettings = (): AIChatBoxSettings => ({
-  height: 640,
+  height: DEFAULT_AI_CHAT_BOX_HEIGHT,
   scope: undefined,
   systemPrompt: '',
   defaultUserMessage: '',
@@ -54,7 +58,7 @@ export const getAIChatBoxSettings = (props: AIChatBoxBlockProps = {}): AIChatBox
 };
 
 export const normalizeAIChatBoxHeight = (height: unknown) => {
-  return typeof height === 'number' && Number.isFinite(height) ? Math.max(420, height) : 640;
+  return typeof height === 'number' && Number.isFinite(height) ? Math.max(420, height) : DEFAULT_AI_CHAT_BOX_HEIGHT;
 };
 
 export const getAIChatBoxScope = (model: AIChatBoxBlockModel) => {

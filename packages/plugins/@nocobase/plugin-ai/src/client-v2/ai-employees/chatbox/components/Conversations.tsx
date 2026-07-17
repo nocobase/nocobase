@@ -27,7 +27,7 @@ import {
   theme,
 } from 'antd';
 import { DeleteOutlined, EditOutlined, FilterOutlined } from '@ant-design/icons';
-import { Conversations as AntConversations, type ConversationsProps } from '@ant-design/x';
+import { Conversations as AntConversations, type ConversationsProps as AntConversationsProps } from '@ant-design/x';
 import { useApp } from '@nocobase/client-v2';
 import { dayjs } from '@nocobase/utils/client';
 import { useT } from '../../../locale';
@@ -48,7 +48,27 @@ type RenameTarget = {
   title: string;
 } | null;
 
-export const Conversations: React.FC = observer(() => {
+export const getConversationItems = (
+  conversations: Conversation[],
+  t: (key: string) => string,
+): AntConversationsProps['items'] => {
+  return conversations.map((item) => {
+    const title = item.title || t('New conversation');
+    return {
+      key: item.sessionId,
+      title,
+      label: title,
+      icon: !item.read ? <Badge dot offset={[-3, 0]} /> : undefined,
+      timestamp: item.updatedAt ? new Date(item.updatedAt).getTime() : undefined,
+    };
+  });
+};
+
+export type ConversationsProps = {
+  onOpen?: () => void;
+};
+
+export const Conversations: React.FC<ConversationsProps> = observer(({ onOpen }) => {
   const t = useT();
   const app = useApp();
   const { modal, message } = AntdApp.useApp();
@@ -60,9 +80,12 @@ export const Conversations: React.FC = observer(() => {
   const aiEmployeesMap = aiConfigRepository.getAIEmployeesMap();
   const runtime = useChatBoxRuntime();
   const { chatBoxModel, chatConversationModel, workflowTaskModel } = runtime;
+  const showWorkflowTasks = runtime.mode !== 'block';
+  const scope = runtime.scope;
   const conversations = chatConversationModel.conversations;
   const currentConversation = chatConversationModel.currentConversation;
   const conversationSegmented = chatConversationModel.conversationSegmented;
+  const activeSegmented = showWorkflowTasks ? conversationSegmented : 'conversations';
   const keyword = chatConversationModel.keyword;
   const expanded = chatBoxModel.expanded;
   const {
@@ -138,12 +161,12 @@ export const Conversations: React.FC = observer(() => {
   }, [aiConfigRepository]);
 
   useEffect(() => {
-    if (conversationSegmented === 'conversations') {
+    if (activeSegmented === 'conversations') {
       refresh();
     } else {
       refreshWorkflowTasks();
     }
-  }, [conversationSegmented, refresh, refreshWorkflowTasks]);
+  }, [activeSegmented, refresh, refreshWorkflowTasks, scope]);
 
   useEffect(() => {
     const lastItem = listRef.current?.querySelector('.ant-conversations-item:last-child');
@@ -167,9 +190,10 @@ export const Conversations: React.FC = observer(() => {
   }, [currentConversation, pendingWorkflowTask]);
 
   const openConversation = useCallback(
-    (sessionId: string, username?: string, model?: ModelRef) => {
+    (sessionId: string, username?: string, model?: ModelRef | null) => {
       if (sessionId === currentConversation) {
         chatBoxModel.setShowConversations(false);
+        onOpen?.();
         return;
       }
 
@@ -205,6 +229,7 @@ export const Conversations: React.FC = observer(() => {
       if (!expanded) {
         chatBoxModel.setShowConversations(false);
       }
+      onOpen?.();
     },
     [
       aiEmployeesMap,
@@ -215,6 +240,7 @@ export const Conversations: React.FC = observer(() => {
       currentConversation,
       expanded,
       hasActiveStream,
+      onOpen,
       resumeAfterLoad,
       chatConversationModel,
     ],
@@ -261,18 +287,8 @@ export const Conversations: React.FC = observer(() => {
     [deleteConversation, modal, t],
   );
 
-  const items = useMemo<ConversationsProps['items']>(
-    () =>
-      conversations.map((item) => {
-        const title = item.title || t('New conversation');
-        return {
-          key: item.sessionId,
-          title,
-          label: title,
-          icon: !item.read ? <Badge dot offset={[-3, 0]} /> : undefined,
-          timestamp: item.updatedAt ? new Date(item.updatedAt).getTime() : undefined,
-        };
-      }),
+  const items = useMemo<AntConversationsProps['items']>(
+    () => getConversationItems(conversations, t),
     [conversations, t],
   );
 
@@ -328,14 +344,14 @@ export const Conversations: React.FC = observer(() => {
           }}
           placeholder={t('Search')}
           onSearch={(value) => {
-            if (conversationSegmented === 'conversations') {
+            if (activeSegmented === 'conversations') {
               runSearchConversations(value);
             } else {
               runSearchWorkflowTasks(value);
             }
           }}
           onClear={() => {
-            if (conversationSegmented === 'conversations') {
+            if (activeSegmented === 'conversations') {
               runSearchConversations('');
             } else {
               runSearchWorkflowTasks('');
@@ -343,34 +359,36 @@ export const Conversations: React.FC = observer(() => {
           }}
           allowClear
         />
-        <Segmented
-          style={{ width: '100%', marginTop: 8 }}
-          className="ai-chatbox-conversations-segmented"
-          options={[
-            {
-              label: (
-                <Space>
-                  {t('Conversations')}
-                  <Badge count={unreadConversationCount} size="small" />
-                </Space>
-              ),
-              value: 'conversations',
-            },
-            {
-              label: (
-                <Space>
-                  {t('Workflow tasks')}
-                  <Badge count={unreadWorkflowTaskCount} size="small" />
-                </Space>
-              ),
-              value: 'workflowTasks',
-            },
-          ]}
-          value={conversationSegmented}
-          onChange={(value) => {
-            chatConversationModel.setConversationSegmented(String(value));
-          }}
-        />
+        {showWorkflowTasks ? (
+          <Segmented
+            style={{ width: '100%', marginTop: 8 }}
+            className="ai-chatbox-conversations-segmented"
+            options={[
+              {
+                label: (
+                  <Space>
+                    {t('Conversations')}
+                    <Badge count={unreadConversationCount} size="small" />
+                  </Space>
+                ),
+                value: 'conversations',
+              },
+              {
+                label: (
+                  <Space>
+                    {t('Workflow tasks')}
+                    <Badge count={unreadWorkflowTaskCount} size="small" />
+                  </Space>
+                ),
+                value: 'workflowTasks',
+              },
+            ]}
+            value={conversationSegmented}
+            onChange={(value) => {
+              chatConversationModel.setConversationSegmented(String(value));
+            }}
+          />
+        ) : null}
       </div>
       <div
         ref={listRef}
@@ -381,8 +399,8 @@ export const Conversations: React.FC = observer(() => {
           overflowX: 'hidden',
         }}
       >
-        {conversationSegmented === 'conversations' && conversationsService.loading ? <Spin /> : null}
-        {conversationSegmented === 'conversations' && items.length ? (
+        {activeSegmented === 'conversations' && conversationsService.loading ? <Spin /> : null}
+        {activeSegmented === 'conversations' && items.length ? (
           <AntConversations
             className="ai-chatbox-conversations-list"
             activeKey={currentConversation}
@@ -421,7 +439,7 @@ export const Conversations: React.FC = observer(() => {
             })}
           />
         ) : null}
-        {conversationSegmented === 'workflowTasks' ? (
+        {showWorkflowTasks && activeSegmented === 'workflowTasks' ? (
           <WorkflowTasksList
             currentConversation={currentConversation}
             pendingConversation={pendingWorkflowTask}
@@ -435,9 +453,7 @@ export const Conversations: React.FC = observer(() => {
             onOpen={openWorkflowTask}
           />
         ) : null}
-        {conversationSegmented === 'conversations' && !items.length ? (
-          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
-        ) : null}
+        {activeSegmented === 'conversations' && !items.length ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} /> : null}
       </div>
       <Modal
         title={t('Rename conversation')}
@@ -459,8 +475,8 @@ export const Conversations: React.FC = observer(() => {
   );
 });
 
-function getConversationModel(conversation: Conversation): ModelRef | null {
-  const modelSettings = conversation.options?.modelSettings;
+export function getConversationModel(conversation?: Conversation): ModelRef | null {
+  const modelSettings = conversation?.options?.modelSettings;
   if (!modelSettings?.llmService || !modelSettings.model) {
     return null;
   }
