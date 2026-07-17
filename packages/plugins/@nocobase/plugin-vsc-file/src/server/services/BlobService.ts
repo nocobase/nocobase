@@ -19,6 +19,11 @@ export interface EnsureBlobOptions {
   transaction?: Transaction;
 }
 
+export interface VscStoredBlobMetadata {
+  hash: VscStoredBlob['hash'];
+  size: number;
+}
+
 export class BlobService {
   constructor(private readonly db: Database) {}
 
@@ -34,6 +39,57 @@ export class BlobService {
     });
 
     return blobFromRecord(record);
+  }
+
+  async loadBlobMetadata(
+    hashes: readonly string[],
+    options: EnsureBlobOptions = {},
+  ): Promise<Map<string, VscStoredBlobMetadata>> {
+    const uniqueHashes = [...new Set(hashes)];
+    if (!uniqueHashes.length) {
+      return new Map();
+    }
+
+    const records = await this.db.getRepository('vscFileBlobs').find({
+      filter: {
+        hash: { $in: uniqueHashes },
+      },
+      fields: ['hash', 'size'],
+      transaction: options.transaction,
+    });
+    const blobs = new Map<string, VscStoredBlobMetadata>(
+      records.map((record) => {
+        const blob = blobMetadataFromRecord(record);
+        return [blob.hash, blob];
+      }),
+    );
+
+    assertRequestedBlobsExist(uniqueHashes, blobs);
+    return blobs;
+  }
+
+  async loadBlobs(hashes: readonly string[], options: EnsureBlobOptions = {}): Promise<Map<string, VscStoredBlob>> {
+    const uniqueHashes = [...new Set(hashes)];
+    if (!uniqueHashes.length) {
+      return new Map();
+    }
+
+    const records = await this.db.getRepository('vscFileBlobs').find({
+      filter: {
+        hash: { $in: uniqueHashes },
+      },
+      fields: ['hash', 'size', 'content'],
+      transaction: options.transaction,
+    });
+    const blobs = new Map<string, VscStoredBlob>(
+      records.map((record) => {
+        const blob = blobFromRecord(record);
+        return [blob.hash, blob];
+      }),
+    );
+
+    assertRequestedBlobsExist(uniqueHashes, blobs);
+    return blobs;
   }
 }
 
@@ -60,4 +116,18 @@ function blobFromRecord(record: Model<VscStoredBlob>): VscStoredBlob {
     size: record.get('size') as number,
     content: record.get('content') as string,
   };
+}
+
+function blobMetadataFromRecord(record: Model<VscStoredBlobMetadata>): VscStoredBlobMetadata {
+  return {
+    hash: record.get('hash') as string,
+    size: record.get('size') as number,
+  };
+}
+
+function assertRequestedBlobsExist(hashes: readonly string[], blobs: ReadonlyMap<string, VscStoredBlobMetadata>): void {
+  const missingHash = hashes.find((hash) => !blobs.has(hash));
+  if (missingHash) {
+    throw new VscError('BLOB_NOT_FOUND', `Blob "${missingHash}" was not found`);
+  }
 }

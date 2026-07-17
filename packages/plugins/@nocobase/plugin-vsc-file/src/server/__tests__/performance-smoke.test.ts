@@ -94,7 +94,7 @@ describe('vsc-file performance smoke tests', () => {
     expect(pull.files?.every((file) => !Object.prototype.hasOwnProperty.call(file, 'content'))).toBe(true);
   });
 
-  it('records the current all, selected, and none content-loading query baseline', async () => {
+  it('loads all, selected, and no blob content with constant collection queries', async () => {
     const metrics = createMetricsCollector();
     const { repository, initialCommit } = await service.createRepository(
       {
@@ -115,7 +115,15 @@ describe('vsc-file performance smoke tests', () => {
       treeNormalizationCount: 3,
     });
 
-    const blobFindOne = vi.spyOn(db.getRepository('vscFileBlobs'), 'findOne');
+    const smallRepository = await service.createRepository({
+      ownerType: 'plugin',
+      ownerId: 'performance-content-query-small',
+      name: 'main',
+      initialFiles: createFiles(smallRepoFileCount, smallRepoFileSize, 'content-query-small'),
+    });
+    const blobRepository = db.getRepository('vscFileBlobs');
+    const blobFind = vi.spyOn(blobRepository, 'find');
+    const blobFindOne = vi.spyOn(blobRepository, 'findOne');
     metrics.reset();
 
     const metadataOnly = await service.pull(
@@ -125,6 +133,7 @@ describe('vsc-file performance smoke tests', () => {
 
     expect(metadataOnly.files).toHaveLength(mediumRepoFileCount);
     expect(metadataOnly.files?.every((file) => !Object.prototype.hasOwnProperty.call(file, 'content'))).toBe(true);
+    expect(blobFind).toHaveBeenCalledTimes(0);
     expect(blobFindOne).toHaveBeenCalledTimes(0);
     expect(metrics.counters).toEqual({
       blobContentQueryCount: 0,
@@ -132,6 +141,7 @@ describe('vsc-file performance smoke tests', () => {
       treeNormalizationCount: 0,
     });
 
+    blobFind.mockClear();
     blobFindOne.mockClear();
     metrics.reset();
     const selectedPaths = ['content-query/file-003.txt', 'content-query/file-042.txt', 'content-query/missing.txt'];
@@ -145,13 +155,28 @@ describe('vsc-file performance smoke tests', () => {
     );
 
     expect(selected.files?.filter((file) => Object.prototype.hasOwnProperty.call(file, 'content'))).toHaveLength(2);
-    expect(blobFindOne).toHaveBeenCalledTimes(2);
+    expect(blobFind).toHaveBeenCalledTimes(1);
+    expect(blobFind).toHaveBeenCalledWith(
+      expect.objectContaining({
+        filter: {
+          hash: {
+            $in: expect.arrayContaining([
+              selected.files?.find((file) => file.path === selectedPaths[0])?.blobHash,
+              selected.files?.find((file) => file.path === selectedPaths[1])?.blobHash,
+            ]),
+          },
+        },
+        fields: ['hash', 'size', 'content'],
+      }),
+    );
+    expect(blobFindOne).toHaveBeenCalledTimes(0);
     expect(metrics.counters).toEqual({
-      blobContentQueryCount: 2,
+      blobContentQueryCount: 1,
       blobContentRowCount: 2,
       treeNormalizationCount: 0,
     });
 
+    blobFind.mockClear();
     blobFindOne.mockClear();
     metrics.reset();
     const withAllContent = await service.pull(
@@ -161,16 +186,130 @@ describe('vsc-file performance smoke tests', () => {
 
     expect(withAllContent.files).toHaveLength(mediumRepoFileCount);
     expect(withAllContent.files?.every((file) => typeof file.content === 'string')).toBe(true);
-    expect(blobFindOne).toHaveBeenCalledTimes(mediumRepoFileCount);
+    expect(blobFind).toHaveBeenCalledTimes(1);
+    expect(blobFindOne).toHaveBeenCalledTimes(0);
     expect(metrics.counters).toEqual({
-      blobContentQueryCount: mediumRepoFileCount,
+      blobContentQueryCount: 1,
       blobContentRowCount: mediumRepoFileCount,
       treeNormalizationCount: 0,
     });
 
+    blobFind.mockClear();
     blobFindOne.mockClear();
-    await service.pull({ repoId: repository.id, includeContent: 'all' });
-    expect(blobFindOne).toHaveBeenCalledTimes(mediumRepoFileCount);
+    const smallWithAllContent = await service.pull({
+      repoId: smallRepository.repository.id,
+      includeContent: 'all',
+    });
+    expect(smallWithAllContent.files).toHaveLength(smallRepoFileCount);
+    expect(blobFind).toHaveBeenCalledTimes(1);
+    expect(blobFindOne).toHaveBeenCalledTimes(0);
+
+    blobFind.mockClear();
+    const selectedMiss = await service.pull({
+      repoId: repository.id,
+      includeContent: 'selected',
+      selectedPaths: ['content-query/missing.txt'],
+    });
+    expect(selectedMiss.files?.every((file) => !Object.prototype.hasOwnProperty.call(file, 'content'))).toBe(true);
+    expect(blobFind).toHaveBeenCalledTimes(0);
+    expect(blobFindOne).toHaveBeenCalledTimes(0);
+  });
+
+  it('deduplicates shared hashes and restores pullCommit files in tree order', async () => {
+    const sharedContent = '\ufeff共享\r\nline 2\rline 3';
+    const { repository, initialCommit } = await service.createRepository({
+      ownerType: 'plugin',
+      ownerId: 'performance-shared-blob',
+      name: 'main',
+      initialFiles: [
+        { path: 'z-last.txt', content: sharedContent },
+        { path: 'a-first.txt', content: sharedContent },
+      ],
+    });
+    if (!initialCommit) {
+      throw new Error('Expected an initial commit');
+    }
+
+    const blobRepository = db.getRepository('vscFileBlobs');
+    const blobFind = vi.spyOn(blobRepository, 'find');
+    const blobFindOne = vi.spyOn(blobRepository, 'findOne');
+    const metrics = createMetricsCollector();
+    const transaction = await db.sequelize.transaction();
+    const pull = await service.pullCommit(
+      {
+        repoId: repository.id,
+        commitId: initialCommit.id,
+        includeContent: 'all',
+      },
+      { transaction, metricsCollector: metrics.collector },
+    );
+
+    expect(pull.files?.map((file) => file.path)).toEqual(['a-first.txt', 'z-last.txt']);
+    expect(pull.files?.map((file) => file.content)).toEqual(['共享\nline 2\nline 3', '共享\nline 2\nline 3']);
+    expect(blobFind).toHaveBeenCalledTimes(1);
+    expect(blobFind.mock.calls[0]?.[0]).toMatchObject({
+      filter: {
+        hash: { $in: [pull.files?.[0].blobHash] },
+      },
+      fields: ['hash', 'size', 'content'],
+      transaction,
+    });
+    expect(blobFindOne).toHaveBeenCalledTimes(0);
+    expect(metrics.counters).toEqual({
+      blobContentQueryCount: 1,
+      blobContentRowCount: 1,
+      treeNormalizationCount: 0,
+    });
+
+    blobFind.mockClear();
+    metrics.reset();
+    const selected = await service.pullCommit(
+      {
+        repoId: repository.id,
+        commitId: initialCommit.id,
+        includeContent: 'selected',
+        selectedPaths: ['z-last.txt', 'missing.txt'],
+      },
+      { transaction, metricsCollector: metrics.collector },
+    );
+    expect(selected.files?.filter((file) => typeof file.content === 'string')).toHaveLength(1);
+    expect(blobFind).toHaveBeenCalledTimes(1);
+    expect(blobFindOne).toHaveBeenCalledTimes(0);
+    expect(metrics.counters).toEqual({
+      blobContentQueryCount: 1,
+      blobContentRowCount: 1,
+      treeNormalizationCount: 0,
+    });
+
+    await transaction.rollback();
+  });
+
+  it('rejects a pull before exposing files when any referenced blob is missing', async () => {
+    const { repository } = await service.createRepository({
+      ownerType: 'plugin',
+      ownerId: 'performance-missing-blob',
+      name: 'main',
+      initialFiles: [
+        { path: 'present.txt', content: 'present\n' },
+        { path: 'missing.txt', content: 'missing\n' },
+      ],
+    });
+    const metadata = await service.pull({ repoId: repository.id });
+    const missingEntry = metadata.files?.find((file) => file.path === 'missing.txt');
+    if (!missingEntry) {
+      throw new Error('Expected missing.txt metadata');
+    }
+    await db.getRepository('vscFileBlobs').destroy({ filterByTk: missingEntry.blobHash });
+
+    await expect(
+      service.pull({
+        repoId: repository.id,
+        includeContent: 'all',
+      }),
+    ).rejects.toMatchObject<VscError>({
+      code: 'BLOB_NOT_FOUND',
+      message: `Blob "${missingEntry.blobHash}" was not found`,
+    });
   });
 
   it('ignores collector failures without changing pull results', async () => {

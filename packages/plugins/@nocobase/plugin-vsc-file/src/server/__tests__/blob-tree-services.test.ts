@@ -9,6 +9,7 @@
 
 import { Database, createMockDatabase } from '@nocobase/database';
 import path from 'path';
+import { vi } from 'vitest';
 
 import { VscError } from '../../shared/errors';
 import { BlobService } from '../services/BlobService';
@@ -49,6 +50,69 @@ describe('vsc-file blob and tree services', () => {
 
     expect(lf.hash).toBe(crlf.hash);
     expect(await db.getRepository('vscFileBlobs').count()).toBe(1);
+  });
+
+  it('loads unique blob content and metadata in one collection query', async () => {
+    const first = await blobService.ensureBlob('\ufeff你好\r\nline 2\rline 3');
+    const second = await blobService.ensureBlob('second\n');
+    const blobFind = vi.spyOn(db.getRepository('vscFileBlobs'), 'find');
+    const transaction = await db.sequelize.transaction();
+
+    const blobs = await blobService.loadBlobs([first.hash, second.hash, first.hash], { transaction });
+
+    expect(blobFind).toHaveBeenCalledTimes(1);
+    expect(blobFind).toHaveBeenCalledWith({
+      filter: {
+        hash: { $in: [first.hash, second.hash] },
+      },
+      fields: ['hash', 'size', 'content'],
+      transaction,
+    });
+    expect([...blobs.keys()]).toEqual(expect.arrayContaining([first.hash, second.hash]));
+    expect(blobs.get(first.hash)).toEqual(first);
+    expect(blobs.get(second.hash)).toEqual(second);
+    expect(blobs.get(first.hash)?.content).toBe('你好\nline 2\nline 3');
+    expect(blobs.get(first.hash)?.size).toBe(Buffer.byteLength('你好\nline 2\nline 3', 'utf8'));
+
+    blobFind.mockClear();
+    const metadata = await blobService.loadBlobMetadata([second.hash, first.hash, second.hash], { transaction });
+
+    expect(blobFind).toHaveBeenCalledTimes(1);
+    expect(blobFind).toHaveBeenCalledWith({
+      filter: {
+        hash: { $in: [second.hash, first.hash] },
+      },
+      fields: ['hash', 'size'],
+      transaction,
+    });
+    expect(metadata.get(first.hash)).toEqual({ hash: first.hash, size: first.size });
+    expect(metadata.get(second.hash)).toEqual({ hash: second.hash, size: second.size });
+    expect(metadata.get(first.hash)).not.toHaveProperty('content');
+
+    await transaction.rollback();
+  });
+
+  it('does not query blobs for empty batch inputs', async () => {
+    const blobFind = vi.spyOn(db.getRepository('vscFileBlobs'), 'find');
+
+    await expect(blobService.loadBlobs([])).resolves.toEqual(new Map());
+    await expect(blobService.loadBlobMetadata([])).resolves.toEqual(new Map());
+
+    expect(blobFind).toHaveBeenCalledTimes(0);
+  });
+
+  it('rejects incomplete content and metadata batches before returning partial results', async () => {
+    const stored = await blobService.ensureBlob('stored\n');
+    const missingHash = 'a'.repeat(64);
+
+    await expect(blobService.loadBlobs([stored.hash, missingHash])).rejects.toMatchObject<VscError>({
+      code: 'BLOB_NOT_FOUND',
+      message: `Blob "${missingHash}" was not found`,
+    });
+    await expect(blobService.loadBlobMetadata([missingHash, stored.hash])).rejects.toMatchObject<VscError>({
+      code: 'BLOB_NOT_FOUND',
+      message: `Blob "${missingHash}" was not found`,
+    });
   });
 
   it('keeps tree hashes stable regardless of input order', async () => {

@@ -119,7 +119,6 @@
   "Source changed remotely. Refresh the latest source and reapply your changes.": "远程源码已更新，请刷新最新源码后重新应用本地修改。",
   "Entry descriptor is missing": "缺少 Entry 描述文件",
   "Entry descriptor key is invalid": "Entry 描述文件的 key 无效",
-  "Source validation failed": "源码校验失败",
   "File already exists": "文件已存在",
   "Filter": "筛选",
   "Folder already exists": "文件夹已存在",

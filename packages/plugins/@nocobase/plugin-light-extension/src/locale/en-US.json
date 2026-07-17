@@ -119,7 +119,6 @@
   "Source changed remotely. Refresh the latest source and reapply your changes.": "Source changed remotely. Refresh the latest source and reapply your changes.",
   "Entry descriptor is missing": "Entry descriptor is missing",
   "Entry descriptor key is invalid": "Entry descriptor key is invalid",
-  "Source validation failed": "Source validation failed",
   "File already exists": "File already exists",
   "Filter": "Filter",
   "Folder already exists": "Folder already exists",

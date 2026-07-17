@@ -654,25 +654,32 @@ export class VscFileService {
     const selectedPathSet =
       includeContent === 'selected' ? new Set((input.selectedPaths || []).map((path) => normalizePath(path))) : null;
     const entries = await this.treeService.loadTreeEntries(treeHash, { transaction });
-    const files: PulledFile[] = [];
-
-    for (const entry of entries) {
-      const shouldLoadContent = includeContent === 'all' || selectedPathSet?.has(entry.path);
-      if (!shouldLoadContent) {
-        files.push(entry);
-        continue;
-      }
-
+    const entriesWithContent = entries.filter((entry) => includeContent === 'all' || selectedPathSet?.has(entry.path));
+    let blobs = new Map<string, VscStoredBlob>();
+    if (entriesWithContent.length) {
       incrementVscFileMetric(metricsCollector, 'blobContentQueryCount');
-      const blob = await this.getBlob(entry.blobHash, transaction);
-      incrementVscFileMetric(metricsCollector, 'blobContentRowCount');
-      files.push({
-        ...entry,
-        content: blob.content,
-      });
+      blobs = await this.blobService.loadBlobs(
+        entriesWithContent.map((entry) => entry.blobHash),
+        { transaction },
+      );
+      incrementVscFileMetric(metricsCollector, 'blobContentRowCount', blobs.size);
     }
 
-    return files;
+    return entries.map((entry) => {
+      const shouldLoadContent = includeContent === 'all' || selectedPathSet?.has(entry.path);
+      if (!shouldLoadContent) {
+        return entry;
+      }
+
+      const blob = blobs.get(entry.blobHash);
+      if (!blob) {
+        throw new VscError('BLOB_NOT_FOUND', `Blob "${entry.blobHash}" was not found`);
+      }
+      return {
+        ...entry,
+        content: blob.content,
+      };
+    });
   }
 
   private async findTreeEntry(

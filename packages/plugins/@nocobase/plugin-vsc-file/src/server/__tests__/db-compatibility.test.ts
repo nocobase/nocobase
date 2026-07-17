@@ -127,14 +127,16 @@ describe('vsc-file database compatibility', () => {
   });
 
   it('stores long text blobs without truncation', async () => {
-    const longContent = `${'0123456789abcdef\n'.repeat(8192)}tail\n`;
+    const longContent = `\ufeff${'多字节-text\r\n'.repeat(8192)}tail\r`;
     const blob = await blobService.ensureBlob(longContent);
-    const record = await db.getRepository('vscFileBlobs').findOne({
-      filterByTk: blob.hash,
-    });
+    const loaded = await blobService.loadBlobs([blob.hash, blob.hash]);
+    const metadata = await blobService.loadBlobMetadata([blob.hash]);
+    const normalizedContent = `${'多字节-text\n'.repeat(8192)}tail\n`;
 
-    expect(record?.get('size')).toBe(Buffer.byteLength(longContent, 'utf8'));
-    expect(record?.get('content')).toBe(longContent);
+    expect(loaded.get(blob.hash)).toEqual(blob);
+    expect(loaded.get(blob.hash)?.content).toBe(normalizedContent);
+    expect(loaded.get(blob.hash)?.size).toBe(Buffer.byteLength(normalizedContent, 'utf8'));
+    expect(metadata.get(blob.hash)).toEqual({ hash: blob.hash, size: blob.size });
   });
 
   it('rolls back repository, ref, tree, commit, and blob writes in one transaction', async () => {

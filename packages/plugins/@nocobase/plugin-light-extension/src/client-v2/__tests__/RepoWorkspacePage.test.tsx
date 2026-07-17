@@ -333,10 +333,6 @@ vi.mock('../hooks/useLightExtensionRepo', async (importOriginal) => {
   return {
     ...actual,
     useLightExtensionRepo: () => ({ ...mocks.api }) as unknown as UseLightExtensionRepoResult,
-    getLightExtensionErrorDiagnostics: (error: unknown) =>
-      error && typeof error === 'object' && Array.isArray((error as { diagnostics?: unknown }).diagnostics)
-        ? (error as { diagnostics: unknown[] }).diagnostics
-        : [],
   };
 });
 
@@ -481,7 +477,7 @@ describe('LightExtensionWorkspacePage', () => {
     expect(await screen.findByTestId('runjs-files-panel')).toHaveAttribute('data-collapsed', 'false');
   });
 
-  it('loads files and saves edited source through the light extension API', async () => {
+  it('saves only dirty source changes without compiling a workspace preview first', async () => {
     render(
       <MemoryRouter initialEntries={['/admin/settings/light-extension?panel=source&repoId=ler_sales']}>
         <LightExtensionWorkspacePage />
@@ -499,16 +495,7 @@ describe('LightExtensionWorkspacePage', () => {
     await confirmSaveVersion('Update sales KPI');
 
     await waitFor(() => expect(mocks.api.saveSource).toHaveBeenCalledTimes(1));
-    expect(mocks.api.compileWorkspacePreview).toHaveBeenCalledWith({
-      repoId: 'ler_sales',
-      runtimeVersion: 'v2',
-      files: expect.arrayContaining([
-        expect.objectContaining({
-          path: 'src/client/js-blocks/sales-kpi/index.tsx',
-          content: 'export default function SalesKpi() { return "ok"; }\n',
-        }),
-      ]),
-    });
+    expect(mocks.api.compileWorkspacePreview).not.toHaveBeenCalled();
     expect(mocks.api.saveSource).toHaveBeenCalledWith(
       expect.objectContaining({
         repoId: 'ler_sales',
@@ -530,23 +517,31 @@ describe('LightExtensionWorkspacePage', () => {
     expect(screen.queryByText('Source saved and compiled')).not.toBeInTheDocument();
   });
 
-  it('does not save when the authoritative workspace preview rejects the unsaved source', async () => {
-    mocks.api.compileWorkspacePreview.mockResolvedValueOnce({
-      accepted: false,
-      failureCode: 'RUNJS_COMPILE_FAILED',
-      diagnostics: [
-        {
-          code: 'RUNJS_COMPILE_FAILED',
-          severity: 'error',
-          path: 'src/client/js-blocks/sales-kpi/index.tsx',
-          message: "Type 'string' is not assignable to type 'number'.",
+  it('keeps local edits open and shows diagnostics when saveSource rejects invalid source with 422', async () => {
+    const onRequestClose = vi.fn();
+    const onSaved = vi.fn();
+    mocks.api.saveSource.mockRejectedValueOnce(
+      new LightExtensionHookError({
+        operation: 'saveSource',
+        code: 'RUNJS_COMPILE_FAILED',
+        status: 422,
+        message: 'Light extension source cannot be compiled',
+        details: {
+          diagnostics: [
+            {
+              code: 'RUNJS_COMPILE_FAILED',
+              severity: 'error',
+              path: 'src/client/js-blocks/sales-kpi/index.tsx',
+              message: "Type 'string' is not assignable to type 'number'.",
+            },
+          ],
         },
-      ],
-    });
+      }),
+    );
 
     render(
       <MemoryRouter initialEntries={['/admin/settings/light-extension?panel=source&repoId=ler_sales']}>
-        <LightExtensionWorkspacePage />
+        <LightExtensionWorkspacePage onRequestClose={onRequestClose} onSaved={onSaved} />
       </MemoryRouter>,
     );
 
@@ -557,11 +552,21 @@ describe('LightExtensionWorkspacePage', () => {
     fireEvent.click(screen.getByRole('button', { name: /Save/ }));
     await confirmSaveVersion('Invalid source');
 
-    expect(await screen.findByText('Source validation failed')).toBeInTheDocument();
-    expect(mocks.api.saveSource).not.toHaveBeenCalled();
+    expect(await screen.findByText('Light extension source cannot be compiled')).toBeInTheDocument();
+    expect(screen.getByText("Type 'string' is not assignable to type 'number'.")).toBeInTheDocument();
+    expect(screen.getByLabelText('Edit file content')).toHaveValue(
+      "const count: number = 'invalid';\nctx.render(<div>{count}</div>);\n",
+    );
+    expect(screen.getByRole('button', { name: /Save/ })).toBeEnabled();
+    expect(mocks.api.saveSource).toHaveBeenCalledTimes(1);
+    expect(mocks.api.compileWorkspacePreview).not.toHaveBeenCalled();
+    expect(onSaved).not.toHaveBeenCalled();
+    expect(onRequestClose).not.toHaveBeenCalled();
   });
 
   it('keeps local edits and shows refresh guidance when the source head is outdated', async () => {
+    const onRequestClose = vi.fn();
+    const onSaved = vi.fn();
     mocks.api.saveSource.mockRejectedValueOnce(
       new LightExtensionHookError({
         operation: 'saveSource',
@@ -573,7 +578,7 @@ describe('LightExtensionWorkspacePage', () => {
 
     render(
       <MemoryRouter initialEntries={['/admin/settings/light-extension?panel=source&repoId=ler_sales']}>
-        <LightExtensionWorkspacePage />
+        <LightExtensionWorkspacePage onRequestClose={onRequestClose} onSaved={onSaved} />
       </MemoryRouter>,
     );
 
@@ -591,7 +596,71 @@ describe('LightExtensionWorkspacePage', () => {
       'export default function SalesKpi() { return "local edit"; }\n',
     );
     expect(mocks.api.saveSource).toHaveBeenCalledWith(expect.objectContaining({ expectedHeadCommitId: 'commit-1' }));
+    expect(mocks.api.compileWorkspacePreview).not.toHaveBeenCalled();
     expect(mocks.api.pull).toHaveBeenCalledTimes(1);
+    expect(onSaved).not.toHaveBeenCalled();
+    expect(onRequestClose).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: /Save/ }));
+    await confirmSaveVersion('Retry stale workspace');
+
+    await waitFor(() => expect(mocks.api.saveSource).toHaveBeenCalledTimes(2));
+    expect(mocks.api.saveSource.mock.calls[1][0]).toEqual(
+      expect.objectContaining({ expectedHeadCommitId: 'commit-1' }),
+    );
+    await waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));
+    expect(onRequestClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('restores save controls after a network error and rejects the embedded save request without closing', async () => {
+    let footerActions: LightExtensionWorkspaceFooterActions | null = null;
+    let rejectSave: ((reason?: unknown) => void) | undefined;
+    const onRequestClose = vi.fn();
+    const onSaved = vi.fn();
+    const pendingSave = new Promise<ReturnType<typeof createSaveResult>>((_resolve, reject) => {
+      rejectSave = reject;
+    });
+    mocks.api.saveSource.mockReturnValueOnce(pendingSave);
+
+    render(
+      <MemoryRouter>
+        <LightExtensionWorkspacePage
+          embedded
+          onFooterActionsChange={(actions) => {
+            footerActions = actions;
+          }}
+          onRequestClose={onRequestClose}
+          onSaved={onSaved}
+          repoId="ler_sales"
+        />
+      </MemoryRouter>,
+    );
+
+    await screen.findByTestId('runjs-code-tab');
+    fireEvent.change(screen.getByLabelText('Edit file content'), {
+      target: { value: 'export default function SalesKpi() { return "offline edit"; }\n' },
+    });
+    await waitFor(() => expect(footerActions?.disabled).toBe(false));
+    let hostSavePromise: ReturnType<LightExtensionWorkspaceFooterActions['requestSave']> | undefined;
+    act(() => {
+      hostSavePromise = footerActions?.requestSave();
+    });
+    await confirmSaveVersion('Save while offline');
+
+    await act(async () => {
+      rejectSave?.(new Error('Network unavailable'));
+      await expect(hostSavePromise).rejects.toThrow('Network unavailable');
+    });
+    expect(await screen.findByText('Network unavailable')).toBeInTheDocument();
+    expect(screen.getByLabelText('Edit file content')).toHaveValue(
+      'export default function SalesKpi() { return "offline edit"; }\n',
+    );
+    await waitFor(() => expect(footerActions?.loading).toBe(false));
+    expect(footerActions?.disabled).toBe(false);
+    expect(mocks.api.saveSource).toHaveBeenCalledTimes(1);
+    expect(mocks.api.compileWorkspacePreview).not.toHaveBeenCalled();
+    expect(onSaved).not.toHaveBeenCalled();
+    expect(onRequestClose).not.toHaveBeenCalled();
   });
 
   it('compiles and previews the current unsaved entry workspace without saving it', async () => {
@@ -914,6 +983,8 @@ describe('LightExtensionWorkspacePage', () => {
     expect(await screen.findByRole('dialog', { name: 'Saving changes' })).toBeInTheDocument();
     expect(screen.getByText('Saving source files')).toBeInTheDocument();
     expect(screen.getByText('Compiling light extension')).toBeInTheDocument();
+    expect(mocks.api.saveSource).toHaveBeenCalledTimes(1);
+    expect(mocks.api.compileWorkspacePreview).not.toHaveBeenCalled();
     expect(onRequestClose).not.toHaveBeenCalled();
 
     await act(async () => {
@@ -1719,17 +1790,23 @@ describe('LightExtensionWorkspacePage', () => {
 
   it('shows persisted save diagnostics after validation failure', async () => {
     mocks.api.saveSource.mockRejectedValueOnce(
-      Object.assign(new Error('Light extension source cannot be compiled'), {
-        diagnostics: [
-          {
-            code: 'import_not_allowed',
-            severity: 'error',
-            message: 'Import "react" is not allowed',
-            path: 'src/client/js-blocks/sales-kpi/index.tsx',
-            kind: 'js-block',
-            entryName: 'sales-kpi',
-          },
-        ],
+      new LightExtensionHookError({
+        operation: 'saveSource',
+        code: 'RUNJS_COMPILE_FAILED',
+        status: 422,
+        message: 'Light extension source cannot be compiled',
+        details: {
+          diagnostics: [
+            {
+              code: 'import_not_allowed',
+              severity: 'error',
+              message: 'Import "react" is not allowed',
+              path: 'src/client/js-blocks/sales-kpi/index.tsx',
+              kind: 'js-block',
+              entryName: 'sales-kpi',
+            },
+          ],
+        },
       }),
     );
 
@@ -1753,19 +1830,25 @@ describe('LightExtensionWorkspacePage', () => {
 
   it('opens diagnostic source locations after save validation failure', async () => {
     mocks.api.saveSource.mockRejectedValueOnce(
-      Object.assign(new Error('Light extension source workspace is invalid'), {
-        diagnostics: [
-          {
-            code: 'RUNJS_IMPORT_NOT_FOUND',
-            severity: 'error',
-            message: 'Import target was not found',
-            path: 'src/client/js-blocks/sales-kpi/index.tsx',
-            line: 1,
-            column: 8,
-            kind: 'js-block',
-            entryName: 'sales-kpi',
-          },
-        ],
+      new LightExtensionHookError({
+        operation: 'saveSource',
+        code: 'LIGHT_EXTENSION_SOURCE_INVALID',
+        status: 422,
+        message: 'Light extension source workspace is invalid',
+        details: {
+          diagnostics: [
+            {
+              code: 'RUNJS_IMPORT_NOT_FOUND',
+              severity: 'error',
+              message: 'Import target was not found',
+              path: 'src/client/js-blocks/sales-kpi/index.tsx',
+              line: 1,
+              column: 8,
+              kind: 'js-block',
+              entryName: 'sales-kpi',
+            },
+          ],
+        },
       }),
     );
 
