@@ -12,9 +12,9 @@ import { Form, Input } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useT } from '../locale';
-import LightExtensionSecretVariableInput, {
+import LightExtensionCredentialInput, {
   type LightExtensionEnvironmentVariableRecord,
-  type LightExtensionSecretAuthRefValidation,
+  type LightExtensionCredentialValidation,
 } from './LightExtensionSecretVariableInput';
 
 const GITHUB_OWNER_PATTERN = /^(?!-)(?!.*--)[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?$/;
@@ -172,7 +172,7 @@ export function LightExtensionGitSourceFields(props: LightExtensionGitSourceFiel
   const [repositoryTouched, setRepositoryTouched] = useState(false);
   const [branchTouched, setBranchTouched] = useState(false);
   const [subdirectoryTouched, setSubdirectoryTouched] = useState(false);
-  const [authValidation, setAuthValidation] = useState<LightExtensionSecretAuthRefValidation>(() =>
+  const [authValidation, setAuthValidation] = useState<LightExtensionCredentialValidation>(() =>
     value.authRef.trim() ? { valid: false } : { valid: true },
   );
   const locator = useMemo(() => parseGitHubRepositoryLocator(value.repositoryLocator), [value.repositoryLocator]);
@@ -211,7 +211,7 @@ export function LightExtensionGitSourceFields(props: LightExtensionGitSourceFiel
     [onChange, value],
   );
 
-  const handleAuthValidationChange = useCallback((validation: LightExtensionSecretAuthRefValidation) => {
+  const handleAuthValidationChange = useCallback((validation: LightExtensionCredentialValidation) => {
     setAuthValidation(validation);
   }, []);
 
@@ -268,9 +268,12 @@ export function LightExtensionGitSourceFields(props: LightExtensionGitSourceFiel
           value={value.subdirectory}
         />
       </Form.Item>
-      <Form.Item extra={t('Optional for public repositories')} label={t('Token secret')}>
-        <LightExtensionSecretVariableInput
-          aria-label={t('Token secret')}
+      <Form.Item
+        extra={t('Optional for public repositories. Choose a secret variable or enter a token directly.')}
+        label={t('GitHub token')}
+      >
+        <LightExtensionCredentialInput
+          aria-label={t('GitHub token')}
           disabled={disabled}
           loadEnvironmentVariables={loadEnvironmentVariables}
           onChange={(nextValue) => {
@@ -278,6 +281,7 @@ export function LightExtensionGitSourceFields(props: LightExtensionGitSourceFiel
             updateField('authRef', nextValue);
           }}
           onValidationChange={handleAuthValidationChange}
+          placeholder={t('Select a secret variable or enter a GitHub token')}
           value={value.authRef}
         />
       </Form.Item>

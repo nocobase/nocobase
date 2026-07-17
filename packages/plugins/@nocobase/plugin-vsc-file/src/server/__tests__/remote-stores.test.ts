@@ -70,6 +70,21 @@ describe('vsc-file remote stores', () => {
     expect(JSON.stringify(remote)).not.toMatch(/privateKey|credential|authorization|password|secret|token/i);
   });
 
+  it('stores a direct literal credential in authRef for later synchronization', async () => {
+    const repoId = await createRepository('direct-credential');
+    const store = new RemoteStore(db);
+    const remote = await store.create({
+      repoId,
+      name: 'origin',
+      provider: 'github',
+      config: normalizedConfig,
+      authRef: 'github_pat_test_direct_123',
+    });
+
+    expect(remote.authRef).toBe('github_pat_test_direct_123');
+    await expect(store.get(remote.id)).resolves.toMatchObject({ authRef: 'github_pat_test_direct_123' });
+  });
+
   it('preserves mappings across auth rotation and isolates old target versions', async () => {
     const repoId = await createRepository('target-version');
     const remoteStore = new RemoteStore(db);

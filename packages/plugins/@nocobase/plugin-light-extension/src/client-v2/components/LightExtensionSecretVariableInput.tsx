@@ -9,12 +9,15 @@
 
 import { useFlowContext } from '@nocobase/flow-engine';
 import { AutoComplete, Input, Spin, Typography } from 'antd';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 
 import { useT } from '../locale';
 
 const SECRET_AUTH_REF_PATTERN = /^\{\{ \$env\.([A-Za-z_][A-Za-z0-9_]*) \}\}$/;
 const ENVIRONMENT_VARIABLE_NAME_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
+const MAX_LITERAL_CREDENTIAL_LENGTH = 255;
+
+type CredentialInputLoadState = 'loading' | 'ready' | 'failed';
 
 export interface LightExtensionEnvironmentVariableRecord {
   name: string;
@@ -26,18 +29,18 @@ export interface LightExtensionSecretVariableCandidate {
   authRef: string;
 }
 
-export type LightExtensionSecretAuthRefValidation =
+export type LightExtensionCredentialValidation =
   | { valid: true; authRef?: string }
-  | { valid: false; reason?: 'invalid-expression' | 'secret-not-found' | 'load-failed' };
+  | { valid: false; reason?: 'invalid-expression' | 'secret-not-found' | 'invalid-token' | 'load-failed' };
 
 interface EnvironmentVariablesApi {
   request(options: { url: string; method: 'get'; params: { paginate: false }; skipNotify: true }): Promise<unknown>;
 }
 
-export interface LightExtensionSecretVariableInputProps {
+export interface LightExtensionCredentialInputProps {
   value?: string;
   onChange?: (value: string) => void;
-  onValidationChange?: (validation: LightExtensionSecretAuthRefValidation) => void;
+  onValidationChange?: (validation: LightExtensionCredentialValidation) => void;
   disabled?: boolean;
   placeholder?: string;
   'aria-label'?: string;
@@ -48,24 +51,39 @@ export function formatLightExtensionSecretAuthRef(name: string): string {
   return `{{ $env.${name} }}`;
 }
 
-export function validateLightExtensionSecretAuthRef(
+export function validateLightExtensionCredential(
   value: string | undefined,
   candidates: readonly LightExtensionSecretVariableCandidate[],
-): LightExtensionSecretAuthRefValidation {
-  if (!value?.trim()) {
+  loadState: CredentialInputLoadState = 'ready',
+): LightExtensionCredentialValidation {
+  const input = value?.trim() || '';
+  if (!input) {
     return { valid: true };
   }
 
-  const match = SECRET_AUTH_REF_PATTERN.exec(value);
-  if (!match) {
+  const match = SECRET_AUTH_REF_PATTERN.exec(input);
+  if (match) {
+    if (loadState === 'loading') {
+      return { valid: false };
+    }
+    if (loadState === 'failed') {
+      return { valid: false, reason: 'load-failed' };
+    }
+    if (!candidates.some((candidate) => candidate.name === match[1] && candidate.authRef === input)) {
+      return { valid: false, reason: 'secret-not-found' };
+    }
+
+    return { valid: true, authRef: input };
+  }
+
+  if (input.includes('{{') || input.includes('}}')) {
     return { valid: false, reason: 'invalid-expression' };
   }
-
-  if (!candidates.some((candidate) => candidate.name === match[1] && candidate.authRef === value)) {
-    return { valid: false, reason: 'secret-not-found' };
+  if (input.length > MAX_LITERAL_CREDENTIAL_LENGTH || hasControlCharacter(input)) {
+    return { valid: false, reason: 'invalid-token' };
   }
 
-  return { valid: true, authRef: value };
+  return { valid: true, authRef: input };
 }
 
 export async function fetchLightExtensionSecretVariables(
@@ -85,7 +103,7 @@ export async function fetchLightExtensionSecretVariables(
   return data.filter(isEnvironmentVariableRecord);
 }
 
-export function LightExtensionSecretVariableInput(props: LightExtensionSecretVariableInputProps) {
+export function LightExtensionCredentialInput(props: LightExtensionCredentialInputProps) {
   const {
     value,
     onChange,
@@ -97,9 +115,10 @@ export function LightExtensionSecretVariableInput(props: LightExtensionSecretVar
   } = props;
   const ctx = useFlowContext();
   const t = useT();
+  const validationMessageId = useId();
   const onValidationChangeRef = useRef(onValidationChange);
   const [records, setRecords] = useState<LightExtensionEnvironmentVariableRecord[]>([]);
-  const [loadState, setLoadState] = useState<'loading' | 'ready' | 'failed'>('loading');
+  const [loadState, setLoadState] = useState<CredentialInputLoadState>('loading');
 
   useEffect(() => {
     let active = true;
@@ -136,18 +155,10 @@ export function LightExtensionSecretVariableInput(props: LightExtensionSecretVar
     [records],
   );
 
-  const validation = useMemo<LightExtensionSecretAuthRefValidation>(() => {
-    if (!value?.trim()) {
-      return { valid: true };
-    }
-    if (loadState === 'loading') {
-      return { valid: false };
-    }
-    if (loadState === 'failed') {
-      return { valid: false, reason: 'load-failed' };
-    }
-    return validateLightExtensionSecretAuthRef(value, candidates);
-  }, [candidates, loadState, value]);
+  const validation = useMemo<LightExtensionCredentialValidation>(
+    () => validateLightExtensionCredential(value, candidates, loadState),
+    [candidates, loadState, value],
+  );
 
   useEffect(() => {
     onValidationChangeRef.current = onValidationChange;
@@ -162,6 +173,16 @@ export function LightExtensionSecretVariableInput(props: LightExtensionSecretVar
     () => candidates.map((candidate) => ({ label: candidate.name, value: candidate.authRef })),
     [candidates],
   );
+  const showsSecretReference = Boolean(value?.trim() && SECRET_AUTH_REF_PATTERN.test(value.trim()));
+  const inputProps = {
+    'aria-describedby': errorMessage ? validationMessageId : undefined,
+    'aria-invalid': errorMessage ? true : undefined,
+    'aria-label': ariaLabel || t('GitHub token'),
+    autoComplete: showsSecretReference ? 'off' : 'new-password',
+    disabled,
+    placeholder: placeholder || t('Select a secret variable or enter a GitHub token'),
+    status: errorMessage ? ('error' as const) : undefined,
+  };
 
   return (
     <div>
@@ -178,15 +199,10 @@ export function LightExtensionSecretVariableInput(props: LightExtensionSecretVar
         options={options}
         value={value || ''}
       >
-        <Input
-          aria-label={ariaLabel || t('Token secret')}
-          disabled={disabled}
-          placeholder={placeholder || t('Select a secret variable')}
-          status={errorMessage ? 'error' : undefined}
-        />
+        {showsSecretReference ? <Input {...inputProps} /> : <Input.Password {...inputProps} />}
       </AutoComplete>
       {errorMessage ? (
-        <Typography.Text role="alert" type="danger">
+        <Typography.Text id={validationMessageId} role="alert" type="danger">
           {errorMessage}
         </Typography.Text>
       ) : null}
@@ -195,19 +211,29 @@ export function LightExtensionSecretVariableInput(props: LightExtensionSecretVar
 }
 
 function getValidationMessage(
-  validation: LightExtensionSecretAuthRefValidation,
+  validation: LightExtensionCredentialValidation,
   t: (key: string) => string,
 ): string | undefined {
   if (validation.valid || !validation.reason) {
     return undefined;
   }
-  if (validation.reason === 'invalid-expression') {
-    return t('Token secret must be a complete environment variable expression');
+  if (validation.reason === 'invalid-expression' || validation.reason === 'secret-not-found') {
+    return t('Select an existing secret variable or enter a GitHub token');
   }
-  if (validation.reason === 'secret-not-found') {
-    return t('Token secret must reference an existing secret variable');
+  if (validation.reason === 'invalid-token') {
+    return t('GitHub token is invalid');
   }
   return t('Failed to load secret variables');
+}
+
+function hasControlCharacter(value: string): boolean {
+  for (const character of value) {
+    const code = character.charCodeAt(0);
+    if (code <= 0x1f || code === 0x7f) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -218,4 +244,4 @@ function isEnvironmentVariableRecord(value: unknown): value is LightExtensionEnv
   return isRecord(value) && typeof value.name === 'string' && typeof value.type === 'string';
 }
 
-export default LightExtensionSecretVariableInput;
+export default LightExtensionCredentialInput;

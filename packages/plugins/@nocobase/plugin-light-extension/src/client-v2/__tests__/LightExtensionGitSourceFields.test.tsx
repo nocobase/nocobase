@@ -122,7 +122,7 @@ describe('LightExtensionGitSourceFields', () => {
     await user.type(screen.getByRole('textbox', { name: 'Branch' }), ' feature/sync ');
     await user.type(screen.getByRole('textbox', { name: 'Subdirectory' }), ' packages/light-extension ');
 
-    const tokenInput = screen.getByRole('combobox', { name: 'Token secret' });
+    const tokenInput = screen.getByRole('combobox', { name: 'GitHub token' });
     await user.click(tokenInput);
     await user.click(await screen.findByText('SYNC_SECRET'));
 
@@ -158,6 +158,30 @@ describe('LightExtensionGitSourceFields', () => {
         },
       }),
     );
+  });
+
+  it('emits a direct token from a password input without adding a token field to the source DTO', async () => {
+    const user = userEvent.setup();
+    const onValidSourceChange = renderFields();
+
+    await user.type(screen.getByRole('textbox', { name: 'GitHub repository' }), 'nocobase/private-example');
+    const tokenInput = screen.getByRole('combobox', { name: 'GitHub token' });
+    expect(tokenInput).toHaveAttribute('type', 'password');
+    await user.type(tokenInput, 'github_pat_test_direct_123');
+
+    await waitFor(() =>
+      expect(onValidSourceChange).toHaveBeenLastCalledWith({
+        provider: 'github',
+        config: {
+          owner: 'nocobase',
+          repository: 'private-example',
+          branch: '',
+          subdirectory: null,
+        },
+        authRef: 'github_pat_test_direct_123',
+      }),
+    );
+    expect(onValidSourceChange.mock.calls.at(-1)?.[0]).not.toHaveProperty('token');
   });
 
   it('keeps invalid locator feedback until the locator is corrected', async () => {

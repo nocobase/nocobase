@@ -12,6 +12,7 @@ import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { NAMESPACE } from '../../constants';
+import type { LightExtensionErrorCode } from '../../shared/errors';
 import type {
   LightExtensionSyncActionContract,
   LightExtensionSyncActionName,
@@ -45,6 +46,27 @@ type SyncActionResult<TAction extends LightExtensionSyncActionName> =
 type FlowContextWithApi = {
   api: ApiClientLike;
 };
+
+const errorTranslationKeys: Partial<Record<LightExtensionErrorCode, string>> = {
+  LIGHT_EXTENSION_SYNC_CREDENTIAL_UNAVAILABLE: 'The configured credential is unavailable',
+  LIGHT_EXTENSION_SYNC_AUTH_FAILED: 'GitHub authentication failed',
+  LIGHT_EXTENSION_SYNC_RATE_LIMITED: 'GitHub API rate limit reached. Try again later or configure a GitHub token.',
+  LIGHT_EXTENSION_SYNC_REMOTE_UNAVAILABLE: 'The sync provider is unavailable',
+  LIGHT_EXTENSION_SYNC_UNSUPPORTED_PROVIDER: 'The sync provider is unsupported',
+  LIGHT_EXTENSION_SYNC_REMOTE_NOT_FOUND: 'The remote repository or path was not found',
+  LIGHT_EXTENSION_SYNC_REMOTE_CHANGED: 'The remote source changed; refresh the plan and try again',
+  LIGHT_EXTENSION_SYNC_DIVERGED: 'Local and remote changes have diverged',
+  LIGHT_EXTENSION_SYNC_BUSY: 'Another sync operation is in progress',
+  LIGHT_EXTENSION_SYNC_UNSAFE_CONTENT: 'The remote source contains unsupported content',
+  LIGHT_EXTENSION_SYNC_LOCAL_OUTDATED: 'The local source changed; refresh the plan and try again',
+  LIGHT_EXTENSION_SYNC_CONFIG_INVALID: 'The sync configuration is invalid',
+  LIGHT_EXTENSION_SYNC_AUTH_REF_INVALID: 'The credential reference is invalid',
+  LIGHT_EXTENSION_PERMISSION_DENIED: 'You do not have permission to perform this sync operation',
+};
+
+export function getLightExtensionSyncErrorTranslationKey(code?: string | null): string | undefined {
+  return code ? errorTranslationKeys[code as LightExtensionErrorCode] : undefined;
+}
 
 interface LightExtensionSyncHookErrorOptions {
   operation: LightExtensionSyncActionName;

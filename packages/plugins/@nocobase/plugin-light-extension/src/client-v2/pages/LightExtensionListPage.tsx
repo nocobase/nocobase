@@ -57,7 +57,11 @@ import LightExtensionGitSourceFields, {
 } from '../components/LightExtensionGitSourceFields';
 import LightExtensionSyncDrawer from '../components/LightExtensionSyncDrawer';
 import { useLightExtensionRepo } from '../hooks/useLightExtensionRepo';
-import { useLightExtensionSync } from '../hooks/useLightExtensionSync';
+import {
+  getLightExtensionSyncErrorTranslationKey,
+  LightExtensionSyncHookError,
+  useLightExtensionSync,
+} from '../hooks/useLightExtensionSync';
 import { useT } from '../locale';
 import LightExtensionWorkspacePage, { type LightExtensionWorkspaceFooterActions } from './LightExtensionWorkspacePage';
 
@@ -362,7 +366,18 @@ function LightExtensionListPageInner() {
               : t('Repository created and compiled'),
       });
     } catch (error) {
-      setNotice({ type: 'error', message: error instanceof Error ? error.message : t('Failed to create repository') });
+      const syncErrorKey =
+        error instanceof LightExtensionSyncHookError
+          ? getLightExtensionSyncErrorTranslationKey(error.code) || 'Failed to create repository'
+          : undefined;
+      setNotice({
+        type: 'error',
+        message: syncErrorKey
+          ? t(syncErrorKey)
+          : error instanceof Error
+            ? error.message
+            : t('Failed to create repository'),
+      });
     } finally {
       setCreating(false);
     }

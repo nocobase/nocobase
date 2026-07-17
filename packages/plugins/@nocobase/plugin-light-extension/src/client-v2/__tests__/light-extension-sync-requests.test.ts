@@ -54,6 +54,7 @@ describe('light-extension sync requests', () => {
         name: 'sales',
         provider: 'github',
         config: { owner: 'nocobase', repository: 'extensions', branch: '', subdirectory: 'sales' },
+        authRef: 'github_pat_test_direct_123',
       },
     ],
   ] as const)('calls only the facade action for %s', async (action, input) => {
@@ -71,7 +72,7 @@ describe('light-extension sync requests', () => {
     expect(request.mock.calls[0][0].url).not.toMatch(/vscFile(?:Remotes|SyncJobs|ExternalCommitMaps|Conflicts)/);
   });
 
-  it('rejects raw or misplaced credential fields before calling the API', async () => {
+  it('rejects misplaced credential fields and invalid authRef values before calling the API', async () => {
     const request = vi.fn();
     const api: ApiClientLike = { request };
     const rawCredentialInput = {
@@ -89,14 +90,6 @@ describe('light-extension sync requests', () => {
         repoId: 'repo-1',
         authRef: '{{ $env.GITHUB_SYNC }}',
       } as unknown as { repoId: string }),
-    ).rejects.toBeInstanceOf(LightExtensionSyncRequestInputError);
-    await expect(
-      requestLightExtensionSync(api, 'configure', {
-        repoId: 'repo-1',
-        provider: 'github',
-        config: { owner: 'nocobase', repository: 'extensions', branch: 'main', subdirectory: null },
-        authRef: 'literal-value',
-      }),
     ).rejects.toBeInstanceOf(LightExtensionSyncRequestInputError);
     await expect(
       requestLightExtensionSync(api, 'configure', {
@@ -125,7 +118,15 @@ describe('light-extension sync requests', () => {
         repoId: 'repo-1',
         provider: 'github',
         config: { owner: 'nocobase', repository: 'extensions', branch: 'main', subdirectory: null },
-        authRef: '',
+        authRef: 'invalid\ncredential',
+      }),
+    ).rejects.toBeInstanceOf(LightExtensionSyncRequestInputError);
+    await expect(
+      requestLightExtensionSync(api, 'configure', {
+        repoId: 'repo-1',
+        provider: 'github',
+        config: { owner: 'nocobase', repository: 'extensions', branch: 'main', subdirectory: null },
+        authRef: 'x'.repeat(256),
       }),
     ).rejects.toBeInstanceOf(LightExtensionSyncRequestInputError);
     expect(request).not.toHaveBeenCalled();

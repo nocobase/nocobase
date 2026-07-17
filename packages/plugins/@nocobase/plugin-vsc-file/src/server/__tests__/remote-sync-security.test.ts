@@ -67,11 +67,17 @@ describe('remote sync server security acceptance', () => {
     await expect(fixture.db.getRepository('vscFileRemotes').count()).resolves.toBe(0);
   });
 
-  it('accepts only a complete secret authRef expression and rejects literal, mixed, missing, and non-secret values', async () => {
+  it('accepts a secret expression or direct credential and rejects mixed, missing, and non-secret references', async () => {
     expect(parseVscRemoteAuthRef('{{ $env.GITHUB_SYNC }}')).toMatchObject({ name: 'GITHUB_SYNC' });
-    for (const invalid of ['ghp_literal', 'prefix {{ $env.GITHUB_SYNC }}', '{{ $env.MISSING }} suffix', '']) {
+    expect(parseVscRemoteAuthRef('github_pat_test_direct_123')).toMatchObject({
+      value: 'github_pat_test_direct_123',
+    });
+    for (const invalid of ['prefix {{ $env.GITHUB_SYNC }}', '{{ $env.MISSING }} suffix', '']) {
       expect(() => parseVscRemoteAuthRef(invalid)).toThrowError(RemoteSyncError);
     }
+    await expect(validateVscRemoteAuthRef('github_pat_test_direct_123', async () => null)).resolves.toMatchObject({
+      value: 'github_pat_test_direct_123',
+    });
     await expect(validateVscRemoteAuthRef('{{ $env.MISSING }}', async () => null)).rejects.toMatchObject({
       code: 'AUTH_REF_INVALID',
     });

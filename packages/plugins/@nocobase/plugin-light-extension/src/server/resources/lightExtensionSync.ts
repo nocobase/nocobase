@@ -596,7 +596,7 @@ function toAuthRefDisplay(authRef: string | null): string | null {
   }
   const match = /^\{\{\s*\$env\.([A-Za-z_][A-Za-z0-9_]*)\s*\}\}$/.exec(authRef);
   if (!match) {
-    return 'configured';
+    return '********';
   }
   const name = match[1];
   const visible = name.length <= 2 ? name[0] : name.slice(0, 2);

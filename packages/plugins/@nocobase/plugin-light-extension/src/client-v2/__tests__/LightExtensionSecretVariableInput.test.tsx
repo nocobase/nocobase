@@ -14,10 +14,11 @@ import { FlowEngineProvider } from '@nocobase/flow-engine';
 import React, { useState } from 'react';
 import { vi } from 'vitest';
 
-import LightExtensionSecretVariableInput, {
+import LightExtensionCredentialInput, {
   formatLightExtensionSecretAuthRef,
-  validateLightExtensionSecretAuthRef,
-  type LightExtensionSecretAuthRefValidation,
+  validateLightExtensionCredential,
+  type LightExtensionCredentialValidation,
+  type LightExtensionEnvironmentVariableRecord,
 } from '../components/LightExtensionSecretVariableInput';
 
 const variables = [
@@ -31,11 +32,14 @@ function renderWithEngine(node: React.ReactNode) {
   return render(<FlowEngineProvider engine={app.flowEngine}>{node}</FlowEngineProvider>);
 }
 
-function ControlledSecretInput(props: { onValidationChange?: (value: LightExtensionSecretAuthRefValidation) => void }) {
+function ControlledCredentialInput(props: {
+  onValidationChange?: (value: LightExtensionCredentialValidation) => void;
+  loadEnvironmentVariables?: () => Promise<LightExtensionEnvironmentVariableRecord[]>;
+}) {
   const [value, setValue] = useState('');
   return (
-    <LightExtensionSecretVariableInput
-      loadEnvironmentVariables={loadVariables}
+    <LightExtensionCredentialInput
+      loadEnvironmentVariables={props.loadEnvironmentVariables || loadVariables}
       onChange={setValue}
       onValidationChange={props.onValidationChange}
       value={value}
@@ -43,55 +47,123 @@ function ControlledSecretInput(props: { onValidationChange?: (value: LightExtens
   );
 }
 
-describe('LightExtensionSecretVariableInput', () => {
-  it('shows only secret candidates and emits an EnvVariableInput-compatible expression', async () => {
+describe('LightExtensionCredentialInput', () => {
+  it('uses one input to show only secret candidates and emit an environment expression', async () => {
     const user = userEvent.setup();
-    renderWithEngine(<ControlledSecretInput />);
+    renderWithEngine(<ControlledCredentialInput />);
 
-    const input = screen.getByRole('combobox', { name: 'Token secret' });
+    const input = screen.getByRole('combobox', { name: 'GitHub token' });
+    expect(input).toHaveAttribute('type', 'password');
     await user.click(input);
 
     expect(await screen.findByText('SYNC_SECRET')).toBeInTheDocument();
     expect(screen.queryByText('PUBLIC_SETTING')).not.toBeInTheDocument();
 
     await user.click(screen.getByText('SYNC_SECRET'));
-    expect(input).toHaveValue('{{ $env.SYNC_SECRET }}');
+    const selectedInput = screen.getByRole('combobox', { name: 'GitHub token' });
+    expect(selectedInput).toHaveValue('{{ $env.SYNC_SECRET }}');
+    expect(selectedInput).not.toHaveAttribute('type', 'password');
   });
 
-  it('rejects literals, ordinary variables, and references that are not in the secret candidates', async () => {
+  it('accepts a directly entered token from the same password input', async () => {
     const user = userEvent.setup();
     const onValidationChange = vi.fn();
-    renderWithEngine(<ControlledSecretInput onValidationChange={onValidationChange} />);
+    renderWithEngine(<ControlledCredentialInput onValidationChange={onValidationChange} />);
 
-    const input = screen.getByRole('combobox', { name: 'Token secret' });
-    await user.type(input, 'literal-value');
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Token secret must be a complete environment variable expression',
+    const input = screen.getByRole('combobox', { name: 'GitHub token' });
+    await user.type(input, 'github_pat_test_direct_123');
+
+    await waitFor(() =>
+      expect(onValidationChange).toHaveBeenLastCalledWith({
+        valid: true,
+        authRef: 'github_pat_test_direct_123',
+      }),
     );
+    expect(input).toHaveAttribute('type', 'password');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
 
-    await user.clear(input);
+  it('rejects ordinary variables, missing secrets, and mixed expressions', async () => {
+    const onValidationChange = vi.fn();
+    renderWithEngine(<ControlledCredentialInput onValidationChange={onValidationChange} />);
+
+    let input = screen.getByRole('combobox', { name: 'GitHub token' });
     fireEvent.change(input, { target: { value: '{{ $env.PUBLIC_SETTING }}' } });
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Token secret must reference an existing secret variable',
+      'Select an existing secret variable or enter a GitHub token',
     );
 
+    input = screen.getByRole('combobox', { name: 'GitHub token' });
     fireEvent.change(input, { target: { value: '{{ $env.MISSING_SECRET }}' } });
     await waitFor(() =>
       expect(onValidationChange).toHaveBeenLastCalledWith({ valid: false, reason: 'secret-not-found' }),
     );
+
+    input = screen.getByRole('combobox', { name: 'GitHub token' });
+    fireEvent.change(input, { target: { value: 'Bearer {{ $env.SYNC_SECRET }}' } });
+    await waitFor(() =>
+      expect(onValidationChange).toHaveBeenLastCalledWith({ valid: false, reason: 'invalid-expression' }),
+    );
   });
 
-  it('validates empty public-repository auth and exact secret references', () => {
+  it('keeps direct token input available when secret variables fail to load', async () => {
+    const user = userEvent.setup();
+    const onValidationChange = vi.fn();
+    const loadEnvironmentVariables = vi.fn(async (): Promise<LightExtensionEnvironmentVariableRecord[]> => {
+      throw new Error('load failed');
+    });
+    renderWithEngine(
+      <ControlledCredentialInput
+        loadEnvironmentVariables={loadEnvironmentVariables}
+        onValidationChange={onValidationChange}
+      />,
+    );
+
+    const input = screen.getByRole('combobox', { name: 'GitHub token' });
+    await user.type(input, 'github_pat_test_direct_123');
+    await waitFor(() =>
+      expect(onValidationChange).toHaveBeenLastCalledWith({
+        valid: true,
+        authRef: 'github_pat_test_direct_123',
+      }),
+    );
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+
+    fireEvent.change(input, { target: { value: '{{ $env.SYNC_SECRET }}' } });
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('Failed to load secret variables');
+    const expressionInput = screen.getByRole('combobox', { name: 'GitHub token' });
+    expect(expressionInput).toHaveAttribute('aria-invalid', 'true');
+    expect(expressionInput).toHaveAttribute('aria-describedby', alert.id);
+  });
+
+  it('validates empty values, exact secret references, and literal tokens independently of secret loading', () => {
     const candidates = [{ name: 'SYNC_SECRET', authRef: formatLightExtensionSecretAuthRef('SYNC_SECRET') }];
 
-    expect(validateLightExtensionSecretAuthRef('', candidates)).toEqual({ valid: true });
-    expect(validateLightExtensionSecretAuthRef('{{ $env.SYNC_SECRET }}', candidates)).toEqual({
+    expect(validateLightExtensionCredential('', candidates)).toEqual({ valid: true });
+    expect(validateLightExtensionCredential('{{ $env.SYNC_SECRET }}', candidates)).toEqual({
       valid: true,
       authRef: '{{ $env.SYNC_SECRET }}',
     });
-    expect(validateLightExtensionSecretAuthRef('prefix {{ $env.SYNC_SECRET }}', candidates)).toEqual({
+    expect(validateLightExtensionCredential(' github_pat_test_direct_123 ', candidates, 'failed')).toEqual({
+      valid: true,
+      authRef: 'github_pat_test_direct_123',
+    });
+    expect(validateLightExtensionCredential('{{ $env.SYNC_SECRET }}', candidates, 'failed')).toEqual({
+      valid: false,
+      reason: 'load-failed',
+    });
+    expect(validateLightExtensionCredential('prefix {{ $env.SYNC_SECRET }}', candidates)).toEqual({
       valid: false,
       reason: 'invalid-expression',
+    });
+    expect(validateLightExtensionCredential('x'.repeat(256), candidates)).toEqual({
+      valid: false,
+      reason: 'invalid-token',
+    });
+    expect(validateLightExtensionCredential('unsafe\nvalue', candidates)).toEqual({
+      valid: false,
+      reason: 'invalid-token',
     });
   });
 });

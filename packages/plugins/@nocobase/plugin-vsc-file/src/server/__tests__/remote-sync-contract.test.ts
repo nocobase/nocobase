@@ -44,7 +44,7 @@ describe('remote sync contract', () => {
     );
   });
 
-  it('accepts only complete authRef expressions backed by secret records', async () => {
+  it('accepts complete secret expressions or direct literal credentials', async () => {
     expect(parseVscRemoteAuthRef('{{ $env.GITHUB_SYNC }}')).toEqual({
       expression: '{{ $env.GITHUB_SYNC }}',
       name: 'GITHUB_SYNC',
@@ -55,8 +55,18 @@ describe('remote sync contract', () => {
     await expect(
       validateVscRemoteAuthRef('{{ $env.PUBLIC_VALUE }}', async (name) => ({ name, type: 'string' })),
     ).rejects.toMatchObject({ code: 'AUTH_REF_INVALID' });
+    expect(parseVscRemoteAuthRef('github_pat_test_direct_123')).toEqual({
+      expression: 'github_pat_test_direct_123',
+      value: 'github_pat_test_direct_123',
+    });
+    await expect(
+      validateVscRemoteAuthRef('github_pat_test_direct_123', async () => {
+        throw new Error('Literal credentials must not query Variables and secrets');
+      }),
+    ).resolves.toMatchObject({ value: 'github_pat_test_direct_123' });
+    expect(() => parseVscRemoteAuthRef('x'.repeat(256))).toThrowError(RemoteSyncError);
     expect(() => parseVscRemoteAuthRef('prefix {{ $env.GITHUB_SYNC }}')).toThrowError(RemoteSyncError);
-    expect(() => parseVscRemoteAuthRef('literal-value')).toThrowError(RemoteSyncError);
+    expect(() => parseVscRemoteAuthRef('')).toThrowError(RemoteSyncError);
   });
 
   it('normalizes provider config from unknown and rejects extra fields', () => {
@@ -88,7 +98,7 @@ describe('remote sync contract', () => {
     expect(snapshot.revision).toBeNull();
   });
 
-  it('keeps raw credentials, database objects, and domain services out of adapter inputs', () => {
+  it('keeps credential values, database objects, and domain services out of adapter capabilities', () => {
     const adapter = {
       provider: 'github',
       title: 'GitHub',

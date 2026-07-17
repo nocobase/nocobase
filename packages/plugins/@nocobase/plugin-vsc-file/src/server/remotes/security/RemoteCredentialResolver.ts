@@ -35,7 +35,9 @@ export class RemoteCredentialResolver {
 
   async validate(authRef: unknown): Promise<VscRemoteAuthRef> {
     const parsed = parseVscRemoteAuthRef(authRef);
-    await this.requireSecretRecord(parsed.name);
+    if ('name' in parsed) {
+      await this.requireSecretRecord(parsed.name);
+    }
     return parsed;
   }
 
@@ -48,6 +50,9 @@ export class RemoteCredentialResolver {
     }
 
     const parsed = parseVscRemoteAuthRef(authRef);
+    if ('value' in parsed) {
+      return parsed.value;
+    }
     await this.requireSecretRecord(parsed.name);
 
     let variables: unknown;

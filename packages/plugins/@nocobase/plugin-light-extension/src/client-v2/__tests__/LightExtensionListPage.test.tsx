@@ -16,7 +16,7 @@ import { MemoryRouter, useLocation } from 'react-router-dom';
 import { vi } from 'vitest';
 
 import type { UseLightExtensionRepoResult } from '../hooks/useLightExtensionRepo';
-import type { UseLightExtensionSyncResult } from '../hooks/useLightExtensionSync';
+import { LightExtensionSyncHookError, type UseLightExtensionSyncResult } from '../hooks/useLightExtensionSync';
 import LightExtensionListPage, {
   LIGHT_EXTENSION_REPO_FILTER_FIELD_NAMES,
   lightExtensionRepoFilterCollection,
@@ -64,9 +64,13 @@ vi.mock('../hooks/useLightExtensionRepo', async (importOriginal) => {
   };
 });
 
-vi.mock('../hooks/useLightExtensionSync', () => ({
-  useLightExtensionSync: () => mocks.sync as unknown as UseLightExtensionSyncResult,
-}));
+vi.mock('../hooks/useLightExtensionSync', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../hooks/useLightExtensionSync')>();
+  return {
+    ...actual,
+    useLightExtensionSync: () => mocks.sync as unknown as UseLightExtensionSyncResult,
+  };
+});
 
 vi.mock('../components/LightExtensionSyncDrawer', async () => {
   const React = await import('react');
@@ -397,6 +401,30 @@ describe('LightExtensionListPage', () => {
     expect(await screen.findByText('GitHub source could not be created')).toBeInTheDocument();
     expect(screen.getByRole('dialog', { name: 'Create light extension' })).toBeInTheDocument();
     expect(repositoryInput).toHaveValue('nocobase/example');
+  });
+
+  it('shows an actionable message instead of a raw GitHub rate-limit error code', async () => {
+    mocks.sync.createFromGit.mockRejectedValueOnce(
+      new LightExtensionSyncHookError({
+        operation: 'createFromGit',
+        code: 'LIGHT_EXTENSION_SYNC_RATE_LIMITED',
+        status: 429,
+        message: 'LIGHT_EXTENSION_SYNC_RATE_LIMITED',
+      }),
+    );
+    renderListPage();
+
+    await userEvent.click(await screen.findByRole('button', { name: /Add new/ }));
+    const dialog = await screen.findByRole('dialog', { name: 'Create light extension' });
+    await userEvent.type(within(dialog).getByLabelText('Title'), 'GitHub rate limit');
+    await userEvent.click(within(dialog).getByText('GitHub source'));
+    await userEvent.type(within(dialog).getByRole('textbox', { name: 'GitHub repository' }), 'nocobase/example');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Create' }));
+
+    expect(
+      await screen.findByText('GitHub API rate limit reached. Try again later or configure a GitHub token.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('LIGHT_EXTENSION_SYNC_RATE_LIMITED')).not.toBeInTheDocument();
   });
 
   it('shows repository details directly in the table without detail or diagnostics actions', async () => {

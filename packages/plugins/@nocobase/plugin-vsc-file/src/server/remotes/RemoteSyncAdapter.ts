@@ -100,8 +100,9 @@ export interface RemoteSyncPublishResult {
 }
 
 /**
- * Provider adapters exchange snapshots only. Database, transaction, light-extension services, provider SDK errors,
- * and raw credential values are deliberately absent from this contract.
+ * Provider adapters exchange snapshots only. Database, transaction, light-extension services, and provider SDK
+ * errors are deliberately absent from this contract. Credential material must remain confined to target resolution
+ * and must never be copied into snapshots or safe metadata.
  */
 export interface RemoteSyncAdapter {
   readonly provider: VscRemoteProvider;

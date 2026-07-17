@@ -80,6 +80,34 @@ describe('lightExtensionSync resource', () => {
     expect(serialized).not.toContain('"authRef":');
   });
 
+  it('persists a direct token through authRef and returns only a masked credential summary', async () => {
+    const directToken = 'github_pat_test_direct_123';
+    const directRemote = { ...remote, authRef: directToken };
+    const fixture = createFixture();
+    vi.mocked(fixture.runtime.configureRemote).mockResolvedValueOnce(directRemote);
+    const ctx = await runAction(
+      fixture,
+      'configure',
+      {
+        repoId: repo.id,
+        provider: 'github',
+        config: remote.config,
+        authRef: directToken,
+      },
+      ['manageSyncSource'],
+    );
+
+    expect(fixture.runtime.configureRemote).toHaveBeenCalledWith(expect.objectContaining({ authRef: directToken }));
+    expect(ctx.body).toMatchObject({
+      source: {
+        credentialConfigured: true,
+        authRefDisplay: '********',
+      },
+    });
+    expect(JSON.stringify(ctx.body)).not.toContain(directToken);
+    expect(JSON.stringify(ctx.body)).not.toContain('"authRef":');
+  });
+
   it('treats a soft-disabled remote as unconfigured while retaining its internal baseline', async () => {
     const disabledRemote = { ...remote, status: 'disabled' as const, authRef: null };
     const fixture = createFixture({ remote: disabledRemote });
