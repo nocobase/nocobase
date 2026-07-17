@@ -44,8 +44,16 @@ type UploadRequestOptions = {
 };
 
 const senderClassName = css`
+  width: 100%;
+  min-width: 0;
+
   .ant-sender-content {
     padding: 16px;
+    min-width: 0;
+  }
+
+  .ant-sender-footer {
+    min-width: 0;
   }
 `;
 
@@ -288,6 +296,7 @@ export const Sender: React.FC<SenderOptions> = observer((options) => {
     <div
       style={{
         margin: '8px 16px',
+        minWidth: 0,
         ...options.containerStyle,
       }}
     >
@@ -411,8 +420,8 @@ const SenderFooter: React.FC<{
   }, [contextItems, senderRef, senderValue]);
 
   return (
-    <Flex justify="space-between" align="center">
-      <Flex gap="middle" align="center">
+    <Flex justify="space-between" align="center" gap={8} style={{ minWidth: 0 }}>
+      <Flex gap="middle" align="center" wrap style={{ minWidth: 0 }}>
         {showContextSelector ? (
           <AddContextButton
             onAdd={addContextItems}

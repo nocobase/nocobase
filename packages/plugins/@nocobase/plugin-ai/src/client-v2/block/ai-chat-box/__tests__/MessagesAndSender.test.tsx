@@ -161,7 +161,7 @@ describe('MessagesAndSender', () => {
     expect(screen.queryByTestId('messages')).toBeNull();
     expect(screen.getByTestId('sender')).toBeInTheDocument();
     expect(mocks.senderProps).toMatchObject({
-      containerStyle: { margin: '8px 0' },
+      containerStyle: { margin: '8px 0', minWidth: 0 },
       placeholder: 'Ask sales',
       showContextSelector: false,
       showUpload: false,

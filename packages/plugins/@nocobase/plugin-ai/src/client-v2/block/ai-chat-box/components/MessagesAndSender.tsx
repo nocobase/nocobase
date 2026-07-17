@@ -117,7 +117,7 @@ export const MessagesAndSender: React.FC<{
         }}
       >
         <Sender
-          containerStyle={{ margin: '8px 0' }}
+          containerStyle={{ margin: '8px 0', minWidth: 0 }}
           placeholder={settings.senderPlaceholder}
           showContextSelector={settings.showContextSelector}
           showUpload={settings.showUpload}
