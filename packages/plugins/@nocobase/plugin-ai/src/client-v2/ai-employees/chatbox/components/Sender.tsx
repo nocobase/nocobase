@@ -14,7 +14,7 @@ import { EditOutlined, InfoCircleOutlined, PaperClipOutlined } from '@ant-design
 import { css } from '@emotion/css';
 import { observer } from '@nocobase/flow-engine';
 import { useT } from '../../../locale';
-import type { AIEmployee, Attachment, ContextItem, SendOptions, SkillSettings } from '../../types';
+import type { AIEmployee, Attachment, ContextItem as AIContextItem, SendOptions, SkillSettings } from '../../types';
 import { useChat } from '../hooks/useChat';
 import { useChatBoxActions } from '../hooks/useChatBoxActions';
 import { useChatMessageActions } from '../hooks/useChatMessageActions';
@@ -79,7 +79,7 @@ export type BuildSenderSendOptionsInput = {
   currentEmployee?: AIEmployee;
   systemMessage?: string;
   attachments?: Attachment[];
-  contextItems?: ContextItem[];
+  contextItems?: AIContextItem[];
   defaultSystemMessage?: string;
   defaultUserMessage?: string;
   isEditingMessage?: boolean;
@@ -92,7 +92,7 @@ export type BuildSenderSendOptionsInput = {
   webSearchEnabled?: boolean;
 };
 
-export const mergeSenderContextItems = (contextItems?: ContextItem[]) => {
+export const mergeSenderContextItems = (contextItems?: AIContextItem[]) => {
   const seen = new Set<string>();
   return [...(contextItems || [])].filter((item) => {
     const key = `${item.type}:${item.uid}`;

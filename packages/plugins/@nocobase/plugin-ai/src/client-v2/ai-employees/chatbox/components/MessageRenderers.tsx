@@ -29,7 +29,10 @@ import { ToolCard } from './ToolCard';
 const { Link, Paragraph, Text } = Typography;
 
 type MessagePayload = Message['content'];
-type ChatBubbleRole = Omit<React.ComponentProps<typeof Bubble>, 'content' | 'messageRender' | 'loadingRender'> & {
+export type ChatBubbleRole = Omit<
+  React.ComponentProps<typeof Bubble>,
+  'content' | 'messageRender' | 'loadingRender'
+> & {
   nickname?: string;
   content?: MessagePayload;
   messageRender?: (content: MessagePayload) => React.ReactNode;

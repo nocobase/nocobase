@@ -155,7 +155,7 @@ export const isAIChatBoxCoreModel = (model: FlowModel) => model instanceof AICha
 
 export const filterNestedAIChatBoxBlockItems = (items: SubModelItem[]): SubModelItem[] => {
   return items
-    .map((item) => {
+    .map((item): SubModelItem | undefined => {
       if (nestedChatBoxModelNames.has(String(item.key)) || nestedChatBoxModelNames.has(String(item.useModel))) {
         return undefined;
       }

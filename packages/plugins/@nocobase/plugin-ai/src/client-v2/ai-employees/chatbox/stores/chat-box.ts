@@ -7,13 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { Bubble, Sender } from '@ant-design/x';
-import type { GetProp, GetRef } from 'antd';
+import type { Sender } from '@ant-design/x';
+import type { GetRef } from 'antd';
 import { action, define, observable } from '@nocobase/flow-engine';
 import type { AIEmployee } from '../../types';
+import type { ChatBubbleRole } from '../components/MessageRenderers';
 import type { ChatSenderModel } from './chat-sender';
 
-type RolesType = GetProp<typeof Bubble.List, 'roles'>;
+type RoleMap = Record<string, ChatBubbleRole>;
 type ChatBoxTaskVariables = {
   variables?: Record<string, unknown>;
   localVariables?: Record<string, unknown>;
@@ -26,14 +27,14 @@ export interface ModelRef {
 
 export class ChatBoxModel {
   private senderModel?: ChatSenderModel;
-  private legacySenderValue = '';
-  private legacySenderPlaceholder = '';
-  private legacyIsEditingMessage = false;
-  private legacyEditingMessageId: string | null | undefined = null;
-  private legacySenderRef: React.MutableRefObject<GetRef<typeof Sender> | null> | null = {
+  legacySenderValue = '';
+  legacySenderPlaceholder = '';
+  legacyIsEditingMessage = false;
+  legacyEditingMessageId: string | null | undefined = null;
+  legacySenderRef: React.MutableRefObject<GetRef<typeof Sender> | null> | null = {
     current: null,
   };
-  private legacyIsShowSenderHint = false;
+  legacyIsShowSenderHint = false;
 
   open = false;
   expanded = false;
@@ -42,7 +43,7 @@ export class ChatBoxModel {
   minimize = false;
 
   currentEmployee: AIEmployee | null | undefined = null;
-  roles: RolesType = observable.shallow({});
+  roles: RoleMap = observable.shallow({});
   taskVariables: ChatBoxTaskVariables = observable.shallow({});
 
   chatBoxRef: React.MutableRefObject<HTMLDivElement | null> | null = {
@@ -220,15 +221,15 @@ export class ChatBoxModel {
     this.taskVariables = variables;
   };
 
-  setRoles = (roles: RolesType | ((prev: RolesType) => RolesType)) => {
+  setRoles = (roles: RoleMap | ((prev: RoleMap) => RoleMap)) => {
     this.roles = typeof roles === 'function' ? roles(this.roles) : roles;
   };
 
-  addRole = (name: string, role: unknown) => {
+  addRole = (name: string, role: RoleMap[string]) => {
     this.roles = {
       ...(this.roles ?? {}),
       [name]: role,
-    } as RolesType;
+    };
   };
 
   setIsEditingMessage = (isEditing: boolean) => {
