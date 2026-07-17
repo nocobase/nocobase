@@ -49,7 +49,7 @@ export const MobilePopup: FC<MobilePopupProps> = (props) => {
     };
   }, [bodyStyles?.height, bodyStyles?.maxHeight, bodyStyles?.minHeight, defaultMaxHeight, minHeight]);
 
-  const bodyStyle = useMemo(() => {
+  const bodyStyle = useMemo<React.CSSProperties>(() => {
     return {
       padding: 0,
       maxHeight: defaultMaxHeight,
