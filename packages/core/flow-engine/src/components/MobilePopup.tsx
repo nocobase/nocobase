@@ -26,26 +26,38 @@ interface MobilePopupProps {
   footer?: ReactNode;
 }
 
+const getMobilePopupMaxHeight = () => {
+  if (typeof CSS !== 'undefined' && CSS.supports?.('height', '100dvh')) {
+    return 'calc(100dvh - var(--nb-mobile-page-header-height, 46px))';
+  }
+
+  return 'calc(100vh - var(--nb-mobile-page-header-height, 46px))';
+};
+
 export const MobilePopup: FC<MobilePopupProps> = (props) => {
   const { title, visible, onClose: closePopup, children, minHeight, className, footer } = props;
   const { t } = useTranslation();
   const { componentCls, hashId } = useMobileActionDrawerStyle();
 
   const bodyStyles = (props as MobilePopupProps & { styles?: { body?: React.CSSProperties } }).styles?.body;
+  const defaultMaxHeight = getMobilePopupMaxHeight();
   const popupStyle = useMemo(() => {
     return {
       minHeight: bodyStyles?.minHeight ?? minHeight,
       height: bodyStyles?.height,
-      maxHeight: bodyStyles?.maxHeight,
+      maxHeight: bodyStyles?.maxHeight ?? defaultMaxHeight,
     };
-  }, [bodyStyles?.height, bodyStyles?.maxHeight, bodyStyles?.minHeight, minHeight]);
+  }, [bodyStyles?.height, bodyStyles?.maxHeight, bodyStyles?.minHeight, defaultMaxHeight, minHeight]);
 
-  const bodyStyle = useMemo(() => {
+  const bodyStyle = useMemo<React.CSSProperties>(() => {
     return {
       padding: 0,
+      maxHeight: defaultMaxHeight,
+      overflowY: 'auto',
+      overflowX: 'hidden',
       ...bodyStyles,
     };
-  }, [bodyStyles]);
+  }, [bodyStyles, defaultMaxHeight]);
 
   const handleCloseKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLSpanElement>) => {
