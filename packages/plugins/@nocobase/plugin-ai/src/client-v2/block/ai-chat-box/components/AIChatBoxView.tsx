@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useApp } from '@nocobase/client-v2';
 import {
   AddSubModelButton,
   DndProvider,
@@ -24,7 +25,7 @@ import {
   type SubModelItem,
   type SubModelItemsType,
 } from '@nocobase/flow-engine';
-import { Empty, Button, Flex, Layout, Tooltip, theme, Typography } from 'antd';
+import { Badge, Empty, Button, Flex, Layout, Tooltip, theme, Typography } from 'antd';
 import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
@@ -39,6 +40,7 @@ import { Conversations } from '../../../ai-employees/chatbox/components/Conversa
 import { Messages } from '../../../ai-employees/chatbox/components/Messages';
 import { useChat } from '../../../ai-employees/chatbox/hooks/useChat';
 import { useChatBoxActions } from '../../../ai-employees/chatbox/hooks/useChatBoxActions';
+import { useChatConversationActions } from '../../../ai-employees/chatbox/hooks/useChatConversationActions';
 import { useChatMessageActions } from '../../../ai-employees/chatbox/hooks/useChatMessageActions';
 import { registerMountedChatBox } from '../../../ai-employees/chatbox/stores/mounted-chat-boxes';
 import { useChatBoxRuntime } from '../../../ai-employees/chatbox/stores/runtime';
@@ -390,6 +392,7 @@ const SidePanel: React.FC<{
 export const AIChatBoxView: React.FC<{
   model: AIChatBoxBlockModel;
 }> = observer(({ model }) => {
+  const app = useApp();
   const t = useT();
   const { token } = theme.useToken();
   const runtime = useChatBoxRuntime();
@@ -402,6 +405,8 @@ export const AIChatBoxView: React.FC<{
   const flowSettingsEnabled = !!model.context.flowSettingsEnabled;
   const settings = getAIChatBoxSettings(model.props);
   runtime.scope = getAIChatBoxScope(model);
+  const { refresh: refreshConversations } = useChatConversationActions(runtime);
+  const hasUnreadConversations = runtime.chatConversationModel.conversations.some((conversation) => !conversation.read);
   const minWidth = Math.max(model.props.minWidth ?? DEFAULT_AI_CHAT_BOX_WIDTH, AI_CHAT_BOX_CORE_MIN_WIDTH);
   const height = getAIChatBoxViewHeight(model, settings.height);
   const conversationPanelWidth = 300;
@@ -412,6 +417,9 @@ export const AIChatBoxView: React.FC<{
     setShowConversations(false);
     setShowMessagesPanel(false);
   };
+  const refreshBlockConversations = useCallback(() => {
+    refreshConversations();
+  }, [refreshConversations]);
 
   useEffect(() => {
     return registerMountedChatBox({
@@ -428,6 +436,14 @@ export const AIChatBoxView: React.FC<{
       },
     });
   }, [chat, clear, model.uid, runtime, syncContextAttachments, triggerTask]);
+
+  useEffect(() => {
+    refreshBlockConversations();
+    app.eventBus.addEventListener('ws:message:ai-conversations:read', refreshBlockConversations);
+    return () => {
+      app.eventBus.removeEventListener('ws:message:ai-conversations:read', refreshBlockConversations);
+    };
+  }, [app.eventBus, refreshBlockConversations, runtime.scope]);
 
   return (
     <Layout
@@ -508,16 +524,18 @@ export const AIChatBoxView: React.FC<{
         >
           <Flex align="center" gap={0}>
             <Tooltip title={t('Conversation list')}>
-              <Button
-                aria-label={t('Conversation list')}
-                icon={showConversations ? <MenuFoldOutlined /> : <MenuUnfoldOutlined />}
-                type="text"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  setShowMessagesPanel(false);
-                  setShowConversations(!showConversations);
-                }}
-              />
+              <Badge dot={hasUnreadConversations} offset={[-4, 4]}>
+                <Button
+                  aria-label={t('Conversation list')}
+                  icon={showConversations ? <MenuFoldOutlined /> : <MenuUnfoldOutlined />}
+                  type="text"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setShowMessagesPanel(false);
+                    setShowConversations(!showConversations);
+                  }}
+                />
+              </Badge>
             </Tooltip>
           </Flex>
           <Flex className={headerActionsClassName} align="center" gap={6}>

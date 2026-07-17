@@ -254,7 +254,7 @@ describe('chatbox action integration', () => {
       sessionId: 'session-1',
       cursor: undefined,
       paginate: false,
-      updateRead: false,
+      updateRead: true,
     });
 
     await result.current.resumeStream({
@@ -270,5 +270,49 @@ describe('chatbox action integration', () => {
         },
       }),
     );
+  });
+
+  it('marks unread conversations as read when loading the current block conversation', async () => {
+    const runtime = createChatBoxRuntime({ mode: 'block' });
+    runtime.chatConversationModel.setCurrentConversation('session-1');
+    runtime.chatConversationModel.setConversations([
+      {
+        sessionId: 'session-1',
+        title: 'Unread conversation',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+        aiEmployee: employee,
+        read: false,
+      },
+    ]);
+    runtime.chatConversationModel.setUnreadCount(1);
+    const getMessages = vi.fn().mockResolvedValue({
+      data: {
+        data: [],
+        meta: {},
+      },
+    });
+    mocks.resource.mockImplementation((name: string) => {
+      if (name === 'aiConversations') {
+        return {
+          getMessages,
+        };
+      }
+      throw new Error(`Unexpected resource: ${name}`);
+    });
+
+    const { result } = renderHook(() => useChatMessageActions(runtime));
+
+    await act(async () => {
+      await result.current.loadMessages('session-1');
+    });
+
+    expect(getMessages).toHaveBeenCalledWith({
+      sessionId: 'session-1',
+      cursor: undefined,
+      paginate: false,
+      updateRead: true,
+    });
+    expect(runtime.chatConversationModel.conversations[0].read).toBe(true);
+    expect(runtime.chatConversationModel.unreadCount).toBe(0);
   });
 });

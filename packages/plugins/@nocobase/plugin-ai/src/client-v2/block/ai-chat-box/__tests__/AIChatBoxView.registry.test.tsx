@@ -24,13 +24,27 @@ const mocks = vi.hoisted(() => ({
   runtime: {
     chatConversationModel: {
       currentConversation: undefined as string | undefined,
+      conversations: [] as Array<{ sessionId: string; read: boolean }>,
+      unreadCount: 0,
     },
+  },
+  eventBus: {
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
   },
   clear: vi.fn(),
   triggerTask: vi.fn().mockResolvedValue(undefined),
+  refreshConversations: vi.fn(),
   addContextItems: vi.fn(),
   syncContextAttachments: vi.fn(),
   coreContextMenuExtraToolbarItems: undefined as ToolbarItem[] | undefined,
+}));
+
+vi.mock('@nocobase/client-v2', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@nocobase/client-v2')>()),
+  useApp: () => ({
+    eventBus: mocks.eventBus,
+  }),
 }));
 
 vi.mock('@nocobase/flow-engine', async () => {
@@ -72,6 +86,12 @@ vi.mock('../../../ai-employees/chatbox/hooks/useChatBoxActions', () => ({
     clear: mocks.clear,
     startNewConversation: vi.fn(),
     triggerTask: mocks.triggerTask,
+  }),
+}));
+
+vi.mock('../../../ai-employees/chatbox/hooks/useChatConversationActions', () => ({
+  useChatConversationActions: () => ({
+    refresh: mocks.refreshConversations,
   }),
 }));
 
@@ -130,9 +150,14 @@ describe('AIChatBoxView mounted registry', () => {
     clearMountedChatBoxes();
     mocks.clear.mockClear();
     mocks.triggerTask.mockClear();
+    mocks.eventBus.addEventListener.mockClear();
+    mocks.eventBus.removeEventListener.mockClear();
+    mocks.refreshConversations.mockClear();
     mocks.addContextItems.mockClear();
     mocks.syncContextAttachments.mockClear();
     mocks.coreContextMenuExtraToolbarItems = undefined;
+    mocks.runtime.chatConversationModel.conversations = [];
+    mocks.runtime.chatConversationModel.unreadCount = 0;
   });
 
   it('registers the mounted block runtime and removes it on unmount', () => {
@@ -156,6 +181,15 @@ describe('AIChatBoxView mounted registry', () => {
     unmount();
 
     expect(getMountedChatBox('chat-box-1')).toBeUndefined();
+    expect(mocks.refreshConversations).toHaveBeenCalledTimes(1);
+    expect(mocks.eventBus.addEventListener).toHaveBeenCalledWith(
+      'ws:message:ai-conversations:read',
+      expect.any(Function),
+    );
+    expect(mocks.eventBus.removeEventListener).toHaveBeenCalledWith(
+      'ws:message:ai-conversations:read',
+      expect.any(Function),
+    );
   });
 
   it('fills the common block height container when height mode is fixed', () => {
@@ -191,5 +225,22 @@ describe('AIChatBoxView mounted registry', () => {
     expect(bodyItem).toBeTruthy();
     expect(bodyItem?.getAttribute('style') || '').not.toContain('max-height');
     expect(coreItem?.getAttribute('style')).toContain(`min-height: ${AI_CHAT_BOX_CORE_MIN_HEIGHT}px`);
+  });
+
+  it('shows an unread dot on the conversation toggle for unread block conversations', () => {
+    mocks.runtime.chatConversationModel.conversations = [{ sessionId: 'session-1', read: false }];
+
+    const { container } = render(<AIChatBoxView model={makeModel()} />);
+
+    expect(container.querySelector('.ant-badge-dot')).toBeTruthy();
+  });
+
+  it('does not show an unread dot when only other scopes have unread conversations', () => {
+    mocks.runtime.chatConversationModel.unreadCount = 1;
+    mocks.runtime.chatConversationModel.conversations = [{ sessionId: 'session-1', read: true }];
+
+    const { container } = render(<AIChatBoxView model={makeModel()} />);
+
+    expect(container.querySelector('.ant-badge-dot')).toBeFalsy();
   });
 });

@@ -21,6 +21,9 @@ const mocks = vi.hoisted(() => ({
   senderProps: undefined as SenderOptions | undefined,
   switchAIEmployee: vi.fn(),
   getAIEmployees: vi.fn(),
+  refreshAITools: vi.fn(),
+  setRoles: vi.fn(),
+  aiEmployees: [] as Array<{ username: string; nickname?: string; category?: string }>,
   currentEmployee: { username: 'legacy', nickname: 'Legacy' },
   currentConversation: undefined as string | undefined,
   draftMessages: [] as Array<{ key: string; role?: string }>,
@@ -33,7 +36,9 @@ vi.mock('../../../locale', () => ({
 
 vi.mock('../../../repositories/hooks/useAIConfigRepository', () => ({
   useAIConfigRepository: () => ({
+    aiEmployees: mocks.aiEmployees,
     getAIEmployees: mocks.getAIEmployees,
+    refreshAITools: mocks.refreshAITools,
   }),
 }));
 
@@ -47,11 +52,18 @@ vi.mock('../../../ai-employees/chatbox/stores/runtime', () => ({
   useChatBoxRuntime: () => ({
     chatBoxModel: {
       currentEmployee: mocks.currentEmployee,
+      open: false,
+      roles: {},
+      setRoles: mocks.setRoles,
     },
     chatConversationModel: {
       currentConversation: mocks.currentConversation,
     },
+    chatSenderModel: {
+      senderRef: undefined,
+    },
   }),
+  useResolvedChatBoxRuntime: (runtime?: unknown) => runtime,
 }));
 
 vi.mock('../../../ai-employees/chatbox/hooks/useChat', () => ({
@@ -104,6 +116,9 @@ describe('MessagesAndSender', () => {
     mocks.currentConversation = undefined;
     mocks.draftMessages = [];
     mocks.setContextItems.mockReset();
+    mocks.setRoles.mockReset();
+    mocks.refreshAITools.mockReset();
+    mocks.aiEmployees = [];
     mocks.getAIEmployees.mockResolvedValue([]);
 
     const { container } = render(
@@ -132,6 +147,9 @@ describe('MessagesAndSender', () => {
     mocks.currentConversation = undefined;
     mocks.draftMessages = [{ key: 'draft-greeting' }];
     mocks.setContextItems.mockReset();
+    mocks.setRoles.mockReset();
+    mocks.refreshAITools.mockReset();
+    mocks.aiEmployees = [];
     mocks.getAIEmployees.mockResolvedValue([
       { username: 'sales', nickname: 'Sales assistant', category: 'business' },
       { username: 'support', nickname: 'Support assistant', category: 'business' },
@@ -196,6 +214,9 @@ describe('MessagesAndSender', () => {
     mocks.currentConversation = 'session-1';
     mocks.draftMessages = [{ key: 'session-message' }];
     mocks.setContextItems.mockReset();
+    mocks.setRoles.mockReset();
+    mocks.refreshAITools.mockReset();
+    mocks.aiEmployees = [];
     mocks.getAIEmployees.mockResolvedValue([]);
 
     render(
@@ -215,6 +236,9 @@ describe('MessagesAndSender', () => {
     mocks.currentConversation = undefined;
     mocks.draftMessages = [{ key: 'draft-user-message', role: 'user' }];
     mocks.setContextItems.mockReset();
+    mocks.setRoles.mockReset();
+    mocks.refreshAITools.mockReset();
+    mocks.aiEmployees = [];
     mocks.getAIEmployees.mockResolvedValue([]);
 
     render(
@@ -228,5 +252,47 @@ describe('MessagesAndSender', () => {
     );
 
     expect(mocks.setContextItems).not.toHaveBeenCalled();
+  });
+
+  it('registers AI employee roles on the block runtime so sub-agent messages can render', async () => {
+    mocks.senderProps = undefined;
+    mocks.switchAIEmployee.mockReset();
+    mocks.setRoles.mockReset();
+    mocks.currentConversation = undefined;
+    mocks.draftMessages = [];
+    mocks.setContextItems.mockReset();
+    mocks.refreshAITools.mockReset();
+    mocks.aiEmployees = [
+      { username: 'sales', nickname: 'Sales assistant', category: 'business' },
+      { username: 'support', nickname: 'Support assistant', category: 'business' },
+    ];
+    mocks.getAIEmployees.mockResolvedValue(mocks.aiEmployees);
+
+    render(
+      <MessagesAndSender
+        model={makeModel({
+          showMessages: true,
+          showDisclaimer: false,
+        })}
+      />,
+    );
+
+    await waitFor(() => expect(mocks.setRoles).toHaveBeenCalled());
+    const roleUpdater = mocks.setRoles.mock.calls[0][0] as (roles: Record<string, unknown>) => Record<string, unknown>;
+
+    expect(roleUpdater({})).toEqual(
+      expect.objectContaining({
+        sales: expect.objectContaining({
+          placement: 'start',
+          variant: 'borderless',
+          messageRender: expect.any(Function),
+        }),
+        support: expect.objectContaining({
+          placement: 'start',
+          variant: 'borderless',
+          messageRender: expect.any(Function),
+        }),
+      }),
+    );
   });
 });

@@ -16,6 +16,7 @@ import { Messages } from '../../../ai-employees/chatbox/components/Messages';
 import { Sender } from '../../../ai-employees/chatbox/components/Sender';
 import { useChat } from '../../../ai-employees/chatbox/hooks/useChat';
 import { useChatBoxActions } from '../../../ai-employees/chatbox/hooks/useChatBoxActions';
+import { useChatBoxEffect } from '../../../ai-employees/chatbox/hooks/useChatBoxEffect';
 import { useChatBoxRuntime } from '../../../ai-employees/chatbox/stores/runtime';
 import type { AIChatBoxBlockModel } from '../AIChatBoxBlockModel';
 import { getAIChatBoxSettings, normalizeAIChatBoxWorkContext } from '../utils';
@@ -42,6 +43,7 @@ export const MessagesAndSender: React.FC<{
   const draftMessages = draftChat.use.messages();
   const draftMessageKey = draftMessages.map((message) => message.key).join('|');
   const hasDraftUserMessage = draftMessages.some((message) => message.role === 'user');
+  useChatBoxEffect(runtime);
 
   useEffect(() => {
     if (currentEmployee && (!allowedAIEmployees.length || allowedAIEmployees.includes(currentEmployee.username))) {

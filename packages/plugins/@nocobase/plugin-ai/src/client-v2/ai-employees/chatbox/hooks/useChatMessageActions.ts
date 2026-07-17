@@ -207,14 +207,15 @@ export const useChatMessageActions = (runtime?: ChatBoxRuntime) => {
       sessionChat.setMessagesError(null);
       try {
         const activeConversation = chatConversationModel.currentConversation;
-        const chatBoxOpen = chatBoxModel.open;
+        const shouldUpdateRead =
+          sessionId === activeConversation && (chatBoxModel.open || resolvedRuntime.mode === 'block');
         const res = await api.resource('aiConversations').getMessages({
           sessionId,
           cursor,
           paginate: false,
-          updateRead: sessionId === activeConversation && chatBoxOpen,
+          updateRead: shouldUpdateRead,
         });
-        if (sessionId === activeConversation && chatBoxOpen) {
+        if (shouldUpdateRead) {
           chatConversationModel.markConversationRead(sessionId);
         }
 
@@ -298,6 +299,7 @@ export const useChatMessageActions = (runtime?: ChatBoxRuntime) => {
       chatConversationModel,
       getConversationModel,
       getSessionChat,
+      resolvedRuntime.mode,
     ],
   );
 
