@@ -44,6 +44,7 @@ export interface EntryReferenceFingerprint {
 
 export interface EntryReconcileChange {
   entry: LightExtensionEntryRecord;
+  previousEntry?: LightExtensionEntryRecord | null;
   before: EntryReferenceFingerprint | null;
   after: EntryReferenceFingerprint;
   created: boolean;
@@ -389,6 +390,7 @@ function createReconcileChange(input: {
   const metadataChanged = Boolean(input.beforeEntry && input.changedFields.some((field) => METADATA_FIELDS.has(field)));
   return {
     entry: input.entry,
+    previousEntry: input.beforeEntry,
     before: input.beforeEntry ? createEntryReferenceFingerprint(input.beforeEntry, input.repoHeadCommitId) : null,
     after: createEntryReferenceFingerprint(input.entry, input.repoHeadCommitId),
     created,
@@ -476,6 +478,8 @@ function compareEntries(left: LightExtensionEntryRecord, right: LightExtensionEn
 function emptyRuntimeFields() {
   return {
     compiledCommitId: null,
+    compiledInputKey: null,
+    compilerBuildId: null,
     runtimeArtifact: null,
     runtimeVersion: null,
     surfaceStyle: null,
@@ -504,6 +508,8 @@ export function entryFromModel(record: Model): LightExtensionEntryRecord {
     settingsSchema: normalizeRecord(record.get('settingsSchema')),
     settingsSchemaHash: nullableString(record.get('settingsSchemaHash')),
     compiledCommitId: nullableString(record.get('compiledCommitId')),
+    compiledInputKey: nullableString(record.get('compiledInputKey')),
+    compilerBuildId: nullableString(record.get('compilerBuildId')),
     runtimeArtifact: normalizeRuntimeArtifact(record.get('runtimeArtifact')),
     runtimeVersion: nullableString(record.get('runtimeVersion')),
     surfaceStyle: nullableString(record.get('surfaceStyle')),

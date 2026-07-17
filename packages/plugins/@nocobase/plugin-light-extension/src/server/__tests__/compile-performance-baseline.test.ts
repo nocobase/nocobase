@@ -100,7 +100,13 @@ describe('plugin-light-extension complete save performance baseline', () => {
     });
     expectedHeadCommitId = privateSave.commit.id;
     expect(privateSave.compile.entries).toHaveLength(fixture.parameters.entryCount);
-    expectCompleteSaveSummaries(metricsSummaries, fixture, repoByteSize, 'success');
+    expectCompleteSaveSummaries(metricsSummaries, fixture, repoByteSize, 'success', {
+      affected: 1,
+      compiled: 1,
+      reused: fixture.parameters.entryCount - 1,
+      hits: fixture.parameters.entryCount - 1,
+      misses: 1,
+    });
 
     metricsSummaries = [];
     const beforeShared = new Map(
@@ -123,7 +129,13 @@ describe('plugin-light-extension complete save performance baseline', () => {
     expect(
       afterShared.filter((entry) => entry.artifactHash !== beforeShared.get(entry.entryName)?.artifactHash),
     ).toHaveLength(fixture.parameters.entryCount);
-    expectCompleteSaveSummaries(metricsSummaries, fixture, repoByteSize, 'success');
+    expectCompleteSaveSummaries(metricsSummaries, fixture, repoByteSize, 'success', {
+      affected: fixture.parameters.entryCount,
+      compiled: fixture.parameters.entryCount,
+      reused: 0,
+      hits: 0,
+      misses: fixture.parameters.entryCount,
+    });
 
     metricsSummaries = [];
     const descriptorPath = 'src/client/js-blocks/entry-01/entry.json';
@@ -147,7 +159,13 @@ describe('plugin-light-extension complete save performance baseline', () => {
       compiledCommitId: descriptorSave.commit.id,
       title: 'Updated display metadata',
     });
-    expectCompleteSaveSummaries(metricsSummaries, fixture, repoByteSize, 'success');
+    expectCompleteSaveSummaries(metricsSummaries, fixture, repoByteSize, 'success', {
+      affected: 0,
+      compiled: 0,
+      reused: fixture.parameters.entryCount,
+      hits: fixture.parameters.entryCount,
+      misses: 0,
+    });
 
     metricsSummaries = [];
     const beforeReadme = await readEntryRuntimeStates(repo.id);
@@ -164,7 +182,13 @@ describe('plugin-light-extension complete save performance baseline', () => {
       beforeReadme.map(({ entryName, artifactHash }) => ({ entryName, artifactHash })),
     );
     expect(afterReadme.every((entry) => entry.compiledCommitId === readmeSave.commit.id)).toBe(true);
-    expectCompleteSaveSummaries(metricsSummaries, fixture, repoByteSize, 'success');
+    expectCompleteSaveSummaries(metricsSummaries, fixture, repoByteSize, 'success', {
+      affected: 0,
+      compiled: 0,
+      reused: fixture.parameters.entryCount,
+      hits: fixture.parameters.entryCount,
+      misses: 0,
+    });
   });
 
   it('rolls back the Head, compiled commit, and current artifact when one entry fails to compile', async () => {
@@ -221,7 +245,13 @@ describe('plugin-light-extension complete save performance baseline', () => {
       artifactCountBeforeFailure,
     );
     expect(await readEntryRuntimeStates(repo.id)).toEqual(beforeFailure);
-    expectCompleteSaveSummaries(metricsSummaries, fixture, failedRepoByteSize, 'rejected');
+    expectCompleteSaveSummaries(metricsSummaries, fixture, failedRepoByteSize, 'rejected', {
+      affected: 1,
+      compiled: 1,
+      reused: 0,
+      hits: 0,
+      misses: 1,
+    });
   });
 
   it('commits exactly one same-Head concurrent save and records the other request as outdated', async () => {
@@ -296,7 +326,13 @@ describe('plugin-light-extension complete save performance baseline', () => {
       summaryWithResult(saveSummaries, 'success'),
       'saveSource',
       'success',
-      expectedSaveCounters(fixture, fixture.parameters.totalBytes + firstChange.byteDelta),
+      expectedSaveCounters(fixture, fixture.parameters.totalBytes + firstChange.byteDelta, {
+        affected: fixture.parameters.entryCount,
+        compiled: fixture.parameters.entryCount,
+        reused: 0,
+        hits: 0,
+        misses: fixture.parameters.entryCount,
+      }),
       [
         'total',
         'push',
@@ -310,15 +346,19 @@ describe('plugin-light-extension complete save performance baseline', () => {
         'transaction',
       ],
     );
-    expectSummary(runtimeSummaries[0], 'runtimeCompile', 'success', expectedRuntimeCounters(fixture), [
-      'total',
-      'treePrepare',
-      'entryReconcile',
-      'compilePlan',
-      'compileEntries',
-      'artifactPersist',
-      'transaction',
-    ]);
+    expectSummary(
+      runtimeSummaries[0],
+      'runtimeCompile',
+      'success',
+      expectedRuntimeCounters(fixture, {
+        affected: fixture.parameters.entryCount,
+        compiled: fixture.parameters.entryCount,
+        reused: 0,
+        hits: 0,
+        misses: fixture.parameters.entryCount,
+      }),
+      ['total', 'treePrepare', 'entryReconcile', 'compilePlan', 'compileEntries', 'artifactPersist', 'transaction'],
+    );
     expectSummary(summaryWithResult(saveSummaries, 'outdated'), 'saveSource', 'outdated', expectedOutdatedCounters(), [
       'total',
       'push',
@@ -367,13 +407,15 @@ function expectCompleteSaveSummaries(
   fixture: CompilePerformanceFixture,
   repoByteSize: number,
   result: 'success' | 'rejected',
+  counts: ExpectedCompileCounts,
 ): void {
   const saveSummaries = summariesFor('saveSource', summaries);
   const runtimeSummaries = summariesFor('runtimeCompile', summaries);
   expect(saveSummaries).toHaveLength(1);
   expect(runtimeSummaries).toHaveLength(1);
-  const artifactPersistStage = result === 'success' ? ['artifactPersist'] : [];
-  expectSummary(saveSummaries[0], 'saveSource', result, expectedSaveCounters(fixture, repoByteSize), [
+  const compileEntriesStage = counts.compiled > 0 ? ['compileEntries'] : [];
+  const artifactPersistStage = result === 'success' && fixture.parameters.entryCount > 0 ? ['artifactPersist'] : [];
+  expectSummary(saveSummaries[0], 'saveSource', result, expectedSaveCounters(fixture, repoByteSize, counts), [
     'total',
     'push',
     'snapshotMaterialize',
@@ -381,16 +423,16 @@ function expectCompleteSaveSummaries(
     'workspaceValidation',
     'entryReconcile',
     'compilePlan',
-    'compileEntries',
+    ...compileEntriesStage,
     ...artifactPersistStage,
     'transaction',
   ]);
-  expectSummary(runtimeSummaries[0], 'runtimeCompile', result, expectedRuntimeCounters(fixture), [
+  expectSummary(runtimeSummaries[0], 'runtimeCompile', result, expectedRuntimeCounters(fixture, counts), [
     'total',
     'treePrepare',
     'entryReconcile',
     'compilePlan',
-    'compileEntries',
+    ...compileEntriesStage,
     ...artifactPersistStage,
     'transaction',
   ]);
@@ -399,6 +441,7 @@ function expectCompleteSaveSummaries(
 function expectedSaveCounters(
   fixture: CompilePerformanceFixture,
   repoByteSize: number,
+  counts: ExpectedCompileCounts,
 ): Record<LightExtensionCompileMetricCounter, number> {
   const { entryCount, fileCount } = fixture.parameters;
   return {
@@ -406,11 +449,13 @@ function expectedSaveCounters(
     repoByteSize,
     changedFileCount: 1,
     entryCount,
-    affectedEntryCount: entryCount,
-    compiledEntryCount: entryCount,
-    reusedEntryCount: 0,
+    affectedEntryCount: counts.affected,
+    compiledEntryCount: counts.compiled,
+    reusedEntryCount: counts.reused,
     skippedEntryCount: 0,
-    compileCacheHitCount: 0,
+    compileCacheHitCount: counts.hits,
+    compileCacheMissCount: counts.misses,
+    compileCacheCorruptCount: 0,
     blobContentQueryCount: fileCount > 1 ? 1 : 0,
     blobContentRowCount: Math.max(fileCount - 1, 0),
     snapshotMaterializationCount: 1,
@@ -421,18 +466,21 @@ function expectedSaveCounters(
 
 function expectedRuntimeCounters(
   fixture: CompilePerformanceFixture,
+  counts: ExpectedCompileCounts,
 ): Record<LightExtensionCompileMetricCounter, number> {
   const { entryCount } = fixture.parameters;
   return {
     repoFileCount: 0,
     repoByteSize: 0,
     changedFileCount: 0,
-    entryCount: 0,
-    affectedEntryCount: entryCount,
-    compiledEntryCount: entryCount,
-    reusedEntryCount: 0,
+    entryCount,
+    affectedEntryCount: counts.affected,
+    compiledEntryCount: counts.compiled,
+    reusedEntryCount: counts.reused,
     skippedEntryCount: 0,
-    compileCacheHitCount: 0,
+    compileCacheHitCount: counts.hits,
+    compileCacheMissCount: counts.misses,
+    compileCacheCorruptCount: 0,
     blobContentQueryCount: 0,
     blobContentRowCount: 0,
     snapshotMaterializationCount: 0,
@@ -452,12 +500,22 @@ function expectedOutdatedCounters(): Record<LightExtensionCompileMetricCounter, 
     reusedEntryCount: 0,
     skippedEntryCount: 0,
     compileCacheHitCount: 0,
+    compileCacheMissCount: 0,
+    compileCacheCorruptCount: 0,
     blobContentQueryCount: 0,
     blobContentRowCount: 0,
     snapshotMaterializationCount: 0,
     treeNormalizationCount: 0,
     referenceScanCount: 0,
   };
+}
+
+interface ExpectedCompileCounts {
+  affected: number;
+  compiled: number;
+  reused: number;
+  hits: number;
+  misses: number;
 }
 
 function expectSummary(

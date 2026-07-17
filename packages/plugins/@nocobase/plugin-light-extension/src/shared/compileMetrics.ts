@@ -37,6 +37,8 @@ export const LIGHT_EXTENSION_COMPILE_METRIC_COUNTERS = [
   'reusedEntryCount',
   'skippedEntryCount',
   'compileCacheHitCount',
+  'compileCacheMissCount',
+  'compileCacheCorruptCount',
   'blobContentQueryCount',
   'blobContentRowCount',
   'snapshotMaterializationCount',

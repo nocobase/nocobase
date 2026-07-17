@@ -198,6 +198,8 @@ export interface LightExtensionEntryRecord {
   settingsSchema: Record<string, unknown> | null;
   settingsSchemaHash: string | null;
   compiledCommitId: string | null;
+  compiledInputKey: string | null;
+  compilerBuildId: string | null;
   runtimeArtifact: LightExtensionEntryRuntimeArtifact | null;
   runtimeVersion: string | null;
   surfaceStyle: string | null;
@@ -222,6 +224,7 @@ export interface LightExtensionSaveSourceCompileEntryResult {
   kind: string;
   entryPath: string;
   status: LightExtensionCompileEntryStatus;
+  execution?: 'compiled' | 'reused' | 'skipped';
   diagnostics: LightExtensionDiagnostic[];
   artifact?: LightExtensionCompilePreviewArtifactSummary;
   failureCode?: string;

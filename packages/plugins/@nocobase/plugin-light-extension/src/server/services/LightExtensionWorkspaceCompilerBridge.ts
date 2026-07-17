@@ -19,7 +19,9 @@ import { isLightExtensionError } from '../../shared/errors';
 import type { LightExtensionDiagnostic } from '../../shared/types';
 import { LightExtensionAuditService } from './LightExtensionAuditService';
 import {
+  LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY,
   LIGHT_EXTENSION_AUTHORING_SURFACES,
+  type LightExtensionCompilerBuildIdentity,
   type LightExtensionAuthoringSurfaceSpec,
   type LightExtensionSurfaceStyle,
 } from './LightExtensionCompileContract';
@@ -65,6 +67,10 @@ export class LightExtensionWorkspaceCompilerBridge {
     private readonly auditService: LightExtensionAuditService,
     private readonly permissionService: LightExtensionPermissionService,
   ) {}
+
+  getCompilerBuildIdentity(): LightExtensionCompilerBuildIdentity {
+    return LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY;
+  }
 
   async compileEntry(
     input: LightExtensionWorkspaceCompileInput,

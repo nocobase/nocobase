@@ -213,6 +213,8 @@ function createEntryValues(): Record<string, unknown> {
     settingsSchema: null,
     settingsSchemaHash: null,
     compiledCommitId: null,
+    compiledInputKey: null,
+    compilerBuildId: null,
     runtimeArtifact: null,
     runtimeVersion: null,
     surfaceStyle: null,

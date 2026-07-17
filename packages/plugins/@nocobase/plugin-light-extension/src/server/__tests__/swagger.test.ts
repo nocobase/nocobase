@@ -67,6 +67,15 @@ describe('light-extension swagger', () => {
     expect(schemas.LightExtensionCompileEntryResult.properties.artifact).toEqual({
       $ref: '#/components/schemas/LightExtensionCompileArtifactSummary',
     });
+    expect(schemas.LightExtensionSaveSourceEntryResult.properties.execution).toMatchObject({
+      enum: ['compiled', 'reused', 'skipped'],
+    });
+    expect(schemas.LightExtensionEntry.properties).toEqual(
+      expect.objectContaining({
+        compiledInputKey: expect.objectContaining({ nullable: true }),
+        compilerBuildId: expect.objectContaining({ nullable: true }),
+      }),
+    );
     expect(schemas.LightExtensionDiagnostic.required).toEqual(['code', 'severity', 'message']);
     expect(schemas.LightExtensionDiagnostic.properties).toEqual(
       expect.objectContaining({

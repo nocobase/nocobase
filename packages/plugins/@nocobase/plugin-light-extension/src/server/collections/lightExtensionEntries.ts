@@ -35,6 +35,9 @@ export default defineCollection({
     {
       fields: ['artifactHash'],
     },
+    {
+      fields: ['compiledInputKey'],
+    },
   ],
   fields: [
     {
@@ -117,6 +120,14 @@ export default defineCollection({
     {
       type: 'string',
       name: 'compiledCommitId',
+    },
+    {
+      type: 'string',
+      name: 'compiledInputKey',
+    },
+    {
+      type: 'string',
+      name: 'compilerBuildId',
     },
     {
       type: 'json',

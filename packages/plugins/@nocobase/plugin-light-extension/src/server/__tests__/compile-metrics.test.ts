@@ -48,6 +48,8 @@ describe('light extension compile metrics', () => {
       'reusedEntryCount',
       'skippedEntryCount',
       'compileCacheHitCount',
+      'compileCacheMissCount',
+      'compileCacheCorruptCount',
       'blobContentQueryCount',
       'blobContentRowCount',
       'snapshotMaterializationCount',

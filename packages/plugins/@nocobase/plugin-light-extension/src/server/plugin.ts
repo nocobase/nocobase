@@ -73,6 +73,7 @@ type PluginManagerLike = {
 type PluginLoadListener = (plugin: unknown, options?: unknown) => void;
 
 type AppWithPluginEvents = {
+  log?: unknown;
   pm?: PluginManagerLike;
   resourceManager?: {
     define?: (resource: unknown) => void;
@@ -197,7 +198,9 @@ export class PluginLightExtensionServer extends Plugin {
     this.auditService = new LightExtensionAuditService(db);
     this.permissionService = new LightExtensionPermissionService(this.auditService);
     this.validator = new LightExtensionValidator();
-    const compileMetricsCollector = createLightExtensionCompileMetricsLoggerCollector(this.log);
+    const compileMetricsCollector = (this.app as unknown as AppWithPluginEvents).log
+      ? createLightExtensionCompileMetricsLoggerCollector(this.log)
+      : undefined;
     this.workspaceCompilerBridge = new LightExtensionWorkspaceCompilerBridge(this.auditService, this.permissionService);
     const sharedVscPermissionHooks = findVscPermissionHookRegistry((this.app as unknown as AppWithPluginEvents).pm);
     this.repoService = new LightExtensionRepoService(

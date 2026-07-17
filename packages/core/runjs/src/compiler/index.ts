@@ -44,6 +44,7 @@ import {
 export * from './source-inspection';
 export * from './node-type-library';
 export * from './portable';
+export * from './build-identity';
 export * from '../completion-catalog/generator';
 export * from '../type-packs/generator';
 export type { RunJSCompileFailureCode } from '..';

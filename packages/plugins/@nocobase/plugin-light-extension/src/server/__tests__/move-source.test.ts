@@ -49,6 +49,8 @@ const entry: LightExtensionEntryRecord = {
   settingsSchema: null,
   settingsSchemaHash: null,
   compiledCommitId: 'commit_2',
+  compiledInputKey: 'compile_key',
+  compilerBuildId: 'compiler_build',
   runtimeArtifact: { code: 'return 1;', version: 'v2', entryPath: 'src/client/js-blocks/sales-kpi/index.ts' },
   runtimeVersion: 'v2',
   surfaceStyle: 'render',

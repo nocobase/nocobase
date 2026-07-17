@@ -182,6 +182,8 @@ function createReconcileChange(entryId: string, overrides: Partial<EntryReconcil
       settingsSchema: null,
       settingsSchemaHash: fingerprint.settingsSchemaHash,
       compiledCommitId: 'commit_1',
+      compiledInputKey: 'compile_key',
+      compilerBuildId: 'compiler_build',
       runtimeArtifact: null,
       runtimeVersion: 'v2',
       surfaceStyle: 'render',

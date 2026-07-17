@@ -356,6 +356,8 @@ export const lightExtensionSchemas = {
       },
       settingsSchemaHash: nullableString,
       compiledCommitId: nullableString,
+      compiledInputKey: nullableString,
+      compilerBuildId: nullableString,
       runtimeVersion: nullableString,
       surfaceStyle: nullableString,
       runtimeCodeHash: nullableString,
@@ -694,6 +696,11 @@ export const lightExtensionSchemas = {
       status: {
         type: 'string',
         enum: ['success', 'failed', 'skipped'],
+      },
+      execution: {
+        type: 'string',
+        enum: ['compiled', 'reused', 'skipped'],
+        description: 'Optional server execution detail without changing the compatible status enum.',
       },
       diagnostics: {
         type: 'array',

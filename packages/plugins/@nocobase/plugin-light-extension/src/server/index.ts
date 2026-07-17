@@ -11,6 +11,7 @@ export { PluginLightExtensionServer } from './plugin';
 export * from './services/AffectedEntryCompilePlanner';
 export * from './services/LightExtensionAuditService';
 export * from './services/LightExtensionCompileContract';
+export * from './services/LightExtensionCompileKey';
 export * from './services/LightExtensionCompileMetrics';
 export * from './services/LightExtensionCompilePreviewService';
 export * from './services/LightExtensionEntryService';
