@@ -76,7 +76,7 @@ type InstallStatics = {
   resolveAvailableDefaultPort: (defaultPort: string) => Promise<string>;
   buildAppPromptInitialValues: (params: {
     envName?: string;
-    flags: { 'app-port'?: string; 'app-root-path'?: string; 'storage-path'?: string };
+    flags: { 'app-port'?: string; 'app-path'?: string; 'app-root-path'?: string; 'storage-path'?: string };
   }) => Promise<Record<string, unknown>>;
   buildDbPromptInitialValues: (params: {
     flags: { 'db-port'?: string };
@@ -1247,6 +1247,37 @@ test('install seeds app port initial values unless the user provided --app-port'
         flags: { 'app-port': '14000', 'app-root-path': './custom/source/', 'storage-path': './custom/storage/' },
       }),
     ).toEqual({});
+  } finally {
+    resolveAvailableDefaultPort.mockRestore();
+  }
+});
+
+test('install does not seed env-name legacy path defaults when --app-path is provided', async () => {
+  const installStatics = Install as unknown as InstallStatics;
+  const resolveAvailableDefaultPort = vi
+    .spyOn(
+      Install as unknown as {
+        resolveAvailableDefaultPort: (
+          defaultPort: string,
+          options?: { label?: string; warn?: boolean },
+        ) => Promise<string>;
+      },
+      'resolveAvailableDefaultPort',
+    )
+    .mockResolvedValueOnce('61522');
+
+  try {
+    // With --app-path present (but no --app-root-path / --storage-path), the env-name defaults for
+    // appRootPath/storagePath must NOT be seeded: seeding appRootPath would hide the appPath prompt
+    // and silently drop the provided --app-path value. Regression test for that path being lost.
+    const initialValues = await installStatics.buildAppPromptInitialValues({
+      envName: 'demo',
+      flags: { 'app-path': './work/cli-test/demo' },
+    });
+    expect(initialValues.appPath).toBeUndefined();
+    expect(initialValues.appRootPath).toBeUndefined();
+    expect(initialValues.storagePath).toBeUndefined();
+    expect(initialValues.appPort).toBe('61522');
   } finally {
     resolveAvailableDefaultPort.mockRestore();
   }

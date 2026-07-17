@@ -1637,16 +1637,22 @@ export default class Install extends Command {
   }): Promise<PromptInitialValues> {
     const initialValues: PromptInitialValues = {};
     const envName = params.envName ?? DEFAULT_INSTALL_ENV_NAME;
+    const hasAppPath = params.flags['app-path'] !== undefined;
+    const hasAppRootPath = params.flags['app-root-path'] !== undefined;
 
-    if (params.flags['app-path'] === undefined && params.flags['app-root-path'] === undefined) {
+    if (!hasAppPath && !hasAppRootPath) {
       initialValues.appPath = defaultInstallAppPath(envName);
     }
 
-    if (params.flags['app-root-path'] === undefined) {
+    // Only seed the legacy env-name defaults for `appRootPath`/`storagePath` when the modern
+    // `--app-path` flag is absent. When `--app-path` is provided, seeding `appRootPath` here would
+    // satisfy the `appPath` prompt's `hidden` predicate and silently drop the provided `--app-path`
+    // value; the source/storage paths are derived from `appPath` downstream instead.
+    if (!hasAppRootPath && !hasAppPath) {
       initialValues.appRootPath = defaultInstallAppRootPath(envName);
     }
 
-    if (params.flags['storage-path'] === undefined) {
+    if (params.flags['storage-path'] === undefined && !hasAppPath) {
       initialValues.storagePath = defaultInstallStoragePath(envName);
     }
 
