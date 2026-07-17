@@ -1514,6 +1514,9 @@ If information is missing, clearly state it in the summary.</Important>`;
     }
     const baseTools = await this.getAIEmployeeTools();
     const toolMap = await this.getToolsMap();
+    for (const tool of baseTools) {
+      toolMap.set(tool.definition.name, tool);
+    }
     const availableSkills = await this.getAvailableSkills();
     const skillOwnedToolNames = new Set(availableSkills.flatMap((it) => it.tools ?? []));
     const baseToolNames = new Set(

@@ -8,6 +8,7 @@
  */
 
 import type { Context } from '@nocobase/actions';
+import { z } from 'zod';
 import {
   EXECUTE_FRONTEND_TOOL_NAME,
   FRONTEND_TOOL_RUNTIME_APPROVAL_INSTRUCTION,
@@ -146,10 +147,13 @@ export const prepareToolsForFrontendConversation = <T extends { definition: { na
   }
 
   const catalog = frontendTools.map(({ id, name, title, description }) => ({ id, name, title, description }));
+  const toolIds = frontendTools.map((tool) => tool.id) as [string, ...string[]];
+  const toolIdSchema = z.enum(toolIds).describe(`Use an exact tool id from this catalog: ${JSON.stringify(catalog)}`);
   return tools.map((tool) => {
-    if (tool.definition.name !== LOAD_FRONTEND_TOOL_NAME) {
+    if (tool.definition.name !== LOAD_FRONTEND_TOOL_NAME && tool.definition.name !== EXECUTE_FRONTEND_TOOL_NAME) {
       return tool;
     }
+    const isLoader = tool.definition.name === LOAD_FRONTEND_TOOL_NAME;
     return {
       ...tool,
       definition: {
@@ -157,6 +161,12 @@ export const prepareToolsForFrontendConversation = <T extends { definition: { na
         description: `${tool.definition.description}\n\nfrontendToolCatalog: ${JSON.stringify(
           catalog,
         )}\n${FRONTEND_TOOL_RUNTIME_APPROVAL_INSTRUCTION}`,
+        schema: isLoader
+          ? z.object({ toolId: toolIdSchema })
+          : z.object({
+              toolId: toolIdSchema,
+              args: z.record(z.string(), z.unknown()).default({}),
+            }),
       },
     };
   });

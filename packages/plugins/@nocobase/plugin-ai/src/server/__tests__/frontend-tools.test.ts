@@ -60,7 +60,13 @@ describe('frontend tools', () => {
     expect(prepared[1].definition.description).toContain('frontendToolCatalog');
     expect(prepared[1].definition.description).toContain(frontendTool.id);
     expect(prepared[1].definition.description).toContain('Do not ask the user for a separate confirmation');
-    expect(prepared[2]).toBe(tools[2]);
+    expect(prepared[1].definition.schema.safeParse({ toolId: frontendTool.id }).success).toBe(true);
+    expect(prepared[1].definition.schema.safeParse({ toolId: 'block-1' }).success).toBe(false);
+    expect(prepared[1].definition.schema.safeParse({ toolId: '__catalog__' }).success).toBe(false);
+    expect(
+      prepared[2].definition.schema.safeParse({ toolId: frontendTool.id, args: { riskLevel: 'high' } }).success,
+    ).toBe(true);
+    expect(prepared[2].definition.schema.safeParse({ toolId: '__catalog__', args: {} }).success).toBe(false);
   });
 
   it('extracts valid manifests but keeps tool metadata out of work context content', async () => {
