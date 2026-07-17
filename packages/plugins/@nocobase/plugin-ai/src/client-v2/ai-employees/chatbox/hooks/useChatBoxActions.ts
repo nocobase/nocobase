@@ -282,6 +282,7 @@ export const useChatBoxActions = (runtime?: ChatBoxRuntime) => {
             workContext: workContext ?? [],
             skillSettings,
             webSearch: resolvedWebSearch,
+            scope: resolvedRuntime.scope,
             model: resolvedModel,
           });
         }
@@ -305,6 +306,7 @@ export const useChatBoxActions = (runtime?: ChatBoxRuntime) => {
       chatSenderModel,
       resolveTaskModel,
       send,
+      resolvedRuntime.scope,
       chatConversationModel,
       syncContextAttachments,
       t,

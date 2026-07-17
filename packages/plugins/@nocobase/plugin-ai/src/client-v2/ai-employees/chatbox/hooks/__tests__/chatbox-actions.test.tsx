@@ -184,6 +184,54 @@ describe('chatbox action integration', () => {
     );
   });
 
+  it('uses the block runtime scope when auto-sending a routed task', async () => {
+    const runtime = createChatBoxRuntime({ mode: 'block', scope: 'chat-box-1' });
+    const createConversation = vi.fn().mockResolvedValue({
+      data: {
+        data: {
+          sessionId: 'task-session',
+        },
+      },
+    });
+    mocks.resource.mockImplementation((name: string) => {
+      if (name === 'aiConversations') {
+        return {
+          create: createConversation,
+        };
+      }
+      throw new Error(`Unexpected resource: ${name}`);
+    });
+    mocks.request.mockResolvedValue({});
+
+    const { result } = renderHook(() => useChatBoxActions(runtime));
+
+    await act(async () => {
+      await result.current.triggerTask({
+        aiEmployee: employee,
+        tasks: [
+          {
+            title: 'Analyze in block',
+            message: {
+              user: 'Summarize this block',
+            },
+            autoSend: true,
+          },
+        ],
+      });
+    });
+
+    await waitFor(() => expect(createConversation).toHaveBeenCalled());
+    expect(createConversation).toHaveBeenCalledWith({
+      values: {
+        aiEmployee: employee,
+        systemMessage: undefined,
+        skillSettings: undefined,
+        scope: 'chat-box-1',
+        modelSettings: undefined,
+      },
+    });
+  });
+
   it('runs edit, cancel, and resume actions against the provided runtime session', async () => {
     vi.useFakeTimers();
     const runtime = createChatBoxRuntime({ mode: 'block' });

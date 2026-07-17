@@ -83,6 +83,7 @@
   "Charts": "Charts",
   "Chat error warning": "Failed to send message. Please contact the administrator or try again later.",
   "Chat box uid": "Chat box uid",
+  "Leave empty to open the global chat box. Enter an AI chat box block uid to run this task in that block.": "Leave empty to open the global chat box. Enter an AI chat box block uid to run this task in that block.",
   "Cite {{count}} pieces of information as references": "Cite {{count}} pieces of information as references",
   "Code history": "Code history",
   "Code review": "Code review",

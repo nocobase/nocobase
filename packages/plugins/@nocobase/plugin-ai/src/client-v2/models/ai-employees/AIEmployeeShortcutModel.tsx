@@ -524,6 +524,9 @@ AIEmployeeShortcutModel.registerFlow({
                   'x-decorator': 'FormItem',
                   'x-decorator-props': {
                     labelStyle,
+                    tooltip: tExpr(
+                      'Leave empty to open the global chat box. Enter an AI chat box block uid to run this task in that block.',
+                    ),
                   },
                   'x-component': 'Input',
                   'x-component-props': {

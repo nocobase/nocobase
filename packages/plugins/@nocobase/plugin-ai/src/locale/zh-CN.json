@@ -83,6 +83,7 @@
   "Charts": "图表",
   "Chat error warning": "发送消息失败，请联系管理员或稍后再试。",
   "Chat box uid": "Chat box uid",
+  "Leave empty to open the global chat box. Enter an AI chat box block uid to run this task in that block.": "留空时打开全局聊天框。填写 AI chat box 区块 uid 后，会在该区块中触发此任务。",
   "Cite {{count}} pieces of information as references": "引用 {{count}} 篇资料作为参考",
   "Code history": "代码历史记录",
   "Code review": "代码审查",

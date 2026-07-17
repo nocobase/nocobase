@@ -58,7 +58,10 @@ describe('AI employee v2 action models', () => {
     const uiSchema = step?.serialize().uiSchema as (ctx: FlowModelContext) => Promise<{
       tasks?: {
         items?: {
-          properties?: Record<string, { title?: unknown; ['x-component']?: string }>;
+          properties?: Record<
+            string,
+            { title?: unknown; ['x-component']?: string; ['x-decorator-props']?: { tooltip?: unknown } }
+          >;
         };
       };
     }>;
@@ -76,6 +79,9 @@ describe('AI employee v2 action models', () => {
     expect(schema.tasks?.items?.properties?.chatBoxUid).toMatchObject({
       title: expect.anything(),
       'x-component': 'Input',
+      'x-decorator-props': {
+        tooltip: expect.anything(),
+      },
     });
   });
 
