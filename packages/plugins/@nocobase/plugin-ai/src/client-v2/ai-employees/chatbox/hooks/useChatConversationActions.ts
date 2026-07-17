@@ -35,11 +35,14 @@ export const useChatConversationActions = (runtime?: ChatBoxRuntime, options?: C
     [number?, string?]
   >(
     (page = 1, keyword = '') => {
-      const filter: { title?: { $includes: string } } = {};
+      const filter: { title?: { $includes: string }; scope?: string } = {};
 
       // Filter by keyword
       if (keyword) {
         filter.title = { $includes: keyword };
+      }
+      if (scope) {
+        filter.scope = scope;
       }
 
       return api
@@ -49,7 +52,6 @@ export const useChatConversationActions = (runtime?: ChatBoxRuntime, options?: C
           appends: ['aiEmployee'],
           page,
           pageSize: 50,
-          ...(scope !== undefined ? { scope } : {}),
           filter,
         })
         .then((res) => res?.data);

@@ -22,6 +22,7 @@ type ToolbarItem = {
 
 const mocks = vi.hoisted(() => ({
   runtime: {
+    scope: undefined as string | undefined,
     chatConversationModel: {
       currentConversation: undefined as string | undefined,
       conversations: [] as Array<{ sessionId: string; read: boolean }>,
@@ -156,6 +157,7 @@ describe('AIChatBoxView mounted registry', () => {
     mocks.addContextItems.mockClear();
     mocks.syncContextAttachments.mockClear();
     mocks.coreContextMenuExtraToolbarItems = undefined;
+    mocks.runtime.scope = undefined;
     mocks.runtime.chatConversationModel.conversations = [];
     mocks.runtime.chatConversationModel.unreadCount = 0;
   });
@@ -171,9 +173,13 @@ describe('AIChatBoxView mounted registry', () => {
       uid: 'chat-box-1',
       runtime: mocks.runtime,
       clear: mocks.clear,
-      triggerTask: mocks.triggerTask,
     });
 
+    entry?.triggerTask({ aiEmployee: { username: 'sales' } });
+    expect(mocks.triggerTask).toHaveBeenCalledWith({
+      aiEmployee: { username: 'sales' },
+      scope: 'chat-box-1',
+    });
     entry?.syncContextItems([{ type: 'flow-model', uid: 'block-1' }]);
     expect(mocks.addContextItems).toHaveBeenCalledWith([{ type: 'flow-model', uid: 'block-1' }]);
     expect(mocks.syncContextAttachments).toHaveBeenCalledWith([{ type: 'flow-model', uid: 'block-1' }]);
@@ -190,6 +196,24 @@ describe('AIChatBoxView mounted registry', () => {
       'ws:message:ai-conversations:read',
       expect.any(Function),
     );
+  });
+
+  it('uses the block uid for conversation queries by default', () => {
+    render(<AIChatBoxView model={makeModel()} />);
+
+    expect(mocks.runtime.scope).toBe('chat-box-1');
+  });
+
+  it('keeps explicitly blank scope unfiltered for conversation queries', () => {
+    render(<AIChatBoxView model={makeModel({ scope: '' })} />);
+
+    expect(mocks.runtime.scope).toBeUndefined();
+  });
+
+  it('uses explicit scope for conversation queries', () => {
+    render(<AIChatBoxView model={makeModel({ scope: 'shared-sales' })} />);
+
+    expect(mocks.runtime.scope).toBe('shared-sales');
   });
 
   it('fills the common block height container when height mode is fixed', () => {

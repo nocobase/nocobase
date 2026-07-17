@@ -19,7 +19,7 @@ import { useChatBoxActions } from '../../../ai-employees/chatbox/hooks/useChatBo
 import { useChatBoxEffect } from '../../../ai-employees/chatbox/hooks/useChatBoxEffect';
 import { useChatBoxRuntime } from '../../../ai-employees/chatbox/stores/runtime';
 import type { AIChatBoxBlockModel } from '../AIChatBoxBlockModel';
-import { getAIChatBoxSettings, normalizeAIChatBoxWorkContext } from '../utils';
+import { getAIChatBoxCreateScope, getAIChatBoxSettings, normalizeAIChatBoxWorkContext } from '../utils';
 
 export const MessagesAndSender: React.FC<{
   model: AIChatBoxBlockModel;
@@ -31,6 +31,7 @@ export const MessagesAndSender: React.FC<{
   const aiConfigRepository = useAIConfigRepository();
   const { switchAIEmployee } = useChatBoxActions(runtime);
   const settings = getAIChatBoxSettings(model.props);
+  const conversationCreateScope = getAIChatBoxCreateScope(model);
   const selectedBlocks = model.props.selectedBlocks;
   const configuredWorkContext = useMemo(() => normalizeAIChatBoxWorkContext(selectedBlocks), [selectedBlocks]);
   const configuredWorkContextKey = configuredWorkContext
@@ -167,6 +168,7 @@ export const MessagesAndSender: React.FC<{
           sendContextItems
           allowedAIEmployees={settings.allowedAIEmployees}
           allowedModels={settings.allowedModels}
+          scope={conversationCreateScope}
           defaultSystemMessage={settings.systemPrompt}
           defaultUserMessage={settings.defaultUserMessage}
         />

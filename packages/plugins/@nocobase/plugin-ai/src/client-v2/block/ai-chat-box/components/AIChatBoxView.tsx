@@ -46,7 +46,12 @@ import { registerMountedChatBox } from '../../../ai-employees/chatbox/stores/mou
 import { useChatBoxRuntime } from '../../../ai-employees/chatbox/stores/runtime';
 import type { AIChatBoxBlockModel } from '../AIChatBoxBlockModel';
 import { AIChatBoxCoreModel } from '../AIChatBoxCoreModel';
-import { DEFAULT_AI_CHAT_BOX_WIDTH, getAIChatBoxScope, getAIChatBoxSettings } from '../utils';
+import {
+  DEFAULT_AI_CHAT_BOX_WIDTH,
+  getAIChatBoxConversationScope,
+  getAIChatBoxCreateScope,
+  getAIChatBoxSettings,
+} from '../utils';
 
 const { Header } = Layout;
 
@@ -404,7 +409,8 @@ export const AIChatBoxView: React.FC<{
   const [showMessagesPanel, setShowMessagesPanel] = useState(false);
   const flowSettingsEnabled = !!model.context.flowSettingsEnabled;
   const settings = getAIChatBoxSettings(model.props);
-  runtime.scope = getAIChatBoxScope(model);
+  const conversationCreateScope = getAIChatBoxCreateScope(model);
+  runtime.scope = getAIChatBoxConversationScope(model);
   const { refresh: refreshConversations } = useChatConversationActions(runtime);
   const hasUnreadConversations = runtime.chatConversationModel.conversations.some((conversation) => !conversation.read);
   const minWidth = Math.max(model.props.minWidth ?? DEFAULT_AI_CHAT_BOX_WIDTH, AI_CHAT_BOX_CORE_MIN_WIDTH);
@@ -425,7 +431,7 @@ export const AIChatBoxView: React.FC<{
     return registerMountedChatBox({
       uid: model.uid,
       runtime,
-      triggerTask,
+      triggerTask: (options) => triggerTask({ ...options, scope: conversationCreateScope }),
       clear,
       syncContextItems: (items) => {
         if (!items.length) {
@@ -435,7 +441,7 @@ export const AIChatBoxView: React.FC<{
         syncContextAttachments(items);
       },
     });
-  }, [chat, clear, model.uid, runtime, syncContextAttachments, triggerTask]);
+  }, [chat, clear, conversationCreateScope, model.uid, runtime, syncContextAttachments, triggerTask]);
 
   useEffect(() => {
     refreshBlockConversations();

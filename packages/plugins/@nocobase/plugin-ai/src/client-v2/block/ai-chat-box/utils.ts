@@ -61,9 +61,14 @@ export const normalizeAIChatBoxHeight = (height: unknown) => {
   return typeof height === 'number' && Number.isFinite(height) ? Math.max(420, height) : DEFAULT_AI_CHAT_BOX_HEIGHT;
 };
 
-export const getAIChatBoxScope = (model: AIChatBoxBlockModel) => {
+export const getAIChatBoxConversationScope = (model: AIChatBoxBlockModel) => {
   const settings = getAIChatBoxSettings(model.props);
-  return settings.scope === undefined ? model.uid : settings.scope;
+  return settings.scope === undefined ? model.uid : settings.scope || undefined;
+};
+
+export const getAIChatBoxCreateScope = (model: AIChatBoxBlockModel) => {
+  const settings = getAIChatBoxSettings(model.props);
+  return settings.scope || model.uid;
 };
 
 export const normalizeAIChatBoxScopeForSave = (scope: string | undefined, defaultScope: string) => {

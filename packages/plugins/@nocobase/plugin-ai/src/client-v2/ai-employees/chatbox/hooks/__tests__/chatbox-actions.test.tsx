@@ -185,7 +185,7 @@ describe('chatbox action integration', () => {
   });
 
   it('uses the block runtime scope when auto-sending a routed task', async () => {
-    const runtime = createChatBoxRuntime({ mode: 'block', scope: 'chat-box-1' });
+    const runtime = createChatBoxRuntime({ mode: 'block' });
     const createConversation = vi.fn().mockResolvedValue({
       data: {
         data: {
@@ -208,6 +208,7 @@ describe('chatbox action integration', () => {
     await act(async () => {
       await result.current.triggerTask({
         aiEmployee: employee,
+        scope: 'chat-box-1',
         tasks: [
           {
             title: 'Analyze in block',

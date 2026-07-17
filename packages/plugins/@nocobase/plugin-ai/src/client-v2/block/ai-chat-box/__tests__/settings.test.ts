@@ -20,7 +20,8 @@ import {
   DEFAULT_AI_CHAT_BOX_HEIGHT,
   DEFAULT_AI_CHAT_BOX_GRID_WIDTH,
   DEFAULT_AI_CHAT_BOX_WIDTH,
-  getAIChatBoxScope,
+  getAIChatBoxConversationScope,
+  getAIChatBoxCreateScope,
   getAIChatBoxWorkContext,
   normalizeAIChatBoxHeight,
   normalizeAIChatBoxScopeForSave,
@@ -83,10 +84,13 @@ describe('AI chat box settings helpers', () => {
     expect(normalizeAIChatBoxHeight(720)).toBe(720);
   });
 
-  it('resolves scope as default uid, empty unscoped value, or explicit shared value', () => {
-    expect(getAIChatBoxScope(makeModel())).toBe('chat-box-1');
-    expect(getAIChatBoxScope(makeModel({ scope: '' }))).toBe('');
-    expect(getAIChatBoxScope(makeModel({ scope: 'shared-sales' }))).toBe('shared-sales');
+  it('resolves query scope separately from conversation create scope', () => {
+    expect(getAIChatBoxConversationScope(makeModel())).toBe('chat-box-1');
+    expect(getAIChatBoxConversationScope(makeModel({ scope: '' }))).toBeUndefined();
+    expect(getAIChatBoxConversationScope(makeModel({ scope: 'shared-sales' }))).toBe('shared-sales');
+    expect(getAIChatBoxCreateScope(makeModel())).toBe('chat-box-1');
+    expect(getAIChatBoxCreateScope(makeModel({ scope: '' }))).toBe('chat-box-1');
+    expect(getAIChatBoxCreateScope(makeModel({ scope: 'shared-sales' }))).toBe('shared-sales');
 
     expect(normalizeAIChatBoxScopeForSave(undefined, 'chat-box-1')).toBeUndefined();
     expect(normalizeAIChatBoxScopeForSave('chat-box-1', 'chat-box-1')).toBeUndefined();

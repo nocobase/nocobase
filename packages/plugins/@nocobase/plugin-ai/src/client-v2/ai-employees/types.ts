@@ -216,6 +216,7 @@ export type TriggerTaskOptions = {
   tasks?: Task[];
   auto?: boolean;
   open?: boolean;
+  scope?: string;
 };
 
 export type SendOptions = {

@@ -195,6 +195,7 @@ describe('MessagesAndSender', () => {
       sendContextItems: true,
       allowedAIEmployees: ['sales'],
       allowedModels: ['openai:gpt'],
+      scope: 'chat-box-1',
       defaultSystemMessage: 'Use sales tone',
       defaultUserMessage: 'Summarize this block',
     });

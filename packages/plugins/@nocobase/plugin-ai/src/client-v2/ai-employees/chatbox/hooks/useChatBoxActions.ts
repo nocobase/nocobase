@@ -83,8 +83,10 @@ export const useChatBoxActions = (runtime?: ChatBoxRuntime) => {
 
   const send = useCallback(
     (options: SendOptions) => {
+      const scope = options.scope === undefined ? resolvedRuntime.scope : options.scope;
       const sendOptions = {
         ...options,
+        scope,
         onConversationCreate: (sessionId: string) => {
           chatConversationModel.setCurrentConversation(sessionId);
           refreshConversations();
@@ -93,7 +95,7 @@ export const useChatBoxActions = (runtime?: ChatBoxRuntime) => {
       clear();
       sendMessages(sendOptions);
     },
-    [chatConversationModel, clear, refreshConversations, sendMessages],
+    [chatConversationModel, clear, refreshConversations, resolvedRuntime.scope, sendMessages],
   );
 
   const updateRole = useCallback(
@@ -282,7 +284,7 @@ export const useChatBoxActions = (runtime?: ChatBoxRuntime) => {
             workContext: workContext ?? [],
             skillSettings,
             webSearch: resolvedWebSearch,
-            scope: resolvedRuntime.scope,
+            scope: options.scope === undefined ? resolvedRuntime.scope : options.scope,
             model: resolvedModel,
           });
         }
