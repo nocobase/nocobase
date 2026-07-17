@@ -7,17 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ChildPageModel, RootPageModel } from '@nocobase/client-v2';
+import { ChildPageModel, JSPageModel, RootPageModel } from '@nocobase/client-v2';
 import type { CreateModelOptions, FlowEngine, FlowModel, ResolveUseResult } from '@nocobase/flow-engine';
-import { MobileChildPageModel, MobileRootPageModel } from './models/MobilePageModels';
+import { MobileChildPageModel, MobileJSPageModel, MobileRootPageModel } from './models/MobilePageModels';
 
 const mobilePageResolutionPatched = Symbol.for('nocobase.plugin-ui-layout.mobilePageResolutionPatched');
 
-type PageModelClass = (typeof RootPageModel | typeof ChildPageModel) & {
+type PageModelClass = (typeof RootPageModel | typeof ChildPageModel | typeof JSPageModel) & {
   [mobilePageResolutionPatched]?: boolean;
   resolveUse?: (options: CreateModelOptions, engine: FlowEngine, parent?: FlowModel) => ResolveUseResult | void;
 };
-type MobilePageModelClass = typeof MobileRootPageModel | typeof MobileChildPageModel;
+type MobilePageModelClass = typeof MobileRootPageModel | typeof MobileChildPageModel | typeof MobileJSPageModel;
 
 type MobileLayoutRuntimeContext = {
   isMobileLayout?: boolean;
@@ -105,7 +105,7 @@ function hasResolvedTarget(result: ResolveUseResult | void) {
 }
 
 function patchPageModelResolution(ModelClass: PageModelClass, MobileModelClass: MobilePageModelClass) {
-  if (ModelClass[mobilePageResolutionPatched]) {
+  if (Object.prototype.hasOwnProperty.call(ModelClass, mobilePageResolutionPatched)) {
     return;
   }
 
@@ -130,4 +130,5 @@ function patchPageModelResolution(ModelClass: PageModelClass, MobileModelClass: 
 export function registerMobilePageModelResolution() {
   patchPageModelResolution(RootPageModel, MobileRootPageModel);
   patchPageModelResolution(ChildPageModel, MobileChildPageModel);
+  patchPageModelResolution(JSPageModel, MobileJSPageModel);
 }

@@ -10,6 +10,7 @@
 import {
   BaseLayoutModel,
   ChildPageModel,
+  JSPageModel,
   KeepAlive,
   linkageSetMenuItemProps,
   menuLinkageRules,
@@ -52,6 +53,7 @@ import {
 } from '../models/MobileLayoutModel';
 import {
   MobileChildPageModel as ExportedMobileChildPageModel,
+  MobileJSPageModel as ExportedMobileJSPageModel,
   MobileLayoutModel as ExportedMobileLayoutModel,
   MobileRootPageModel as ExportedMobileRootPageModel,
 } from '@nocobase/plugin-ui-layout/client-v2';
@@ -62,7 +64,7 @@ import {
   MobileMenuSettingsIconPicker,
 } from '../models/MobileMenuModels';
 import { getMobileMenuItemUid } from '../models/MobileMenuUtils';
-import { MobileChildPageModel, MobileRootPageModel } from '../models/MobilePageModels';
+import { MobileChildPageModel, MobileJSPageModel, MobileRootPageModel } from '../models/MobilePageModels';
 import { registerMobilePageModelResolution } from '../mobilePageModelResolution';
 import enUS from '../../locale/en-US.json';
 import zhCN from '../../locale/zh-CN.json';
@@ -108,6 +110,7 @@ describe('plugin-ui-layout mobile models', () => {
     expect(ExportedMobileLayoutModel).toBe(MobileLayoutModel);
     expect(ExportedMobileRootPageModel).toBe(MobileRootPageModel);
     expect(ExportedMobileChildPageModel).toBe(MobileChildPageModel);
+    expect(ExportedMobileJSPageModel).toBe(MobileJSPageModel);
   });
 
   beforeEach(() => {
@@ -362,6 +365,84 @@ describe('plugin-ui-layout mobile models', () => {
     expect(MobileLayoutModel.prototype).toBeInstanceOf(BaseLayoutModel);
     expect(MobileRootPageModel.prototype).toBeInstanceOf(RootPageModel);
     expect(MobileChildPageModel.prototype).toBeInstanceOf(ChildPageModel);
+    expect(MobileJSPageModel.prototype).toBeInstanceOf(JSPageModel);
+    expect(MobileJSPageModel.prototype).not.toBeInstanceOf(MobileRootPageModel);
+  });
+
+  it('should resolve JS pages only to the dedicated mobile JS page model inside mobile layouts', () => {
+    registerMobilePageModelResolution();
+
+    const engine = new FlowEngine();
+    engine.registerModels({
+      JSPageModel,
+      MobileJSPageModel,
+      RouteModel,
+    });
+    const desktopRoute = engine.createModel<RouteModel>({
+      uid: 'desktop-js-page-parent',
+      use: 'RouteModel',
+    });
+    const mobileRoute = engine.createModel<RouteModel>({
+      uid: 'mobile-js-page-parent',
+      use: 'RouteModel',
+    });
+    mobileRoute.context.defineProperty('isMobileLayout', {
+      value: true,
+    });
+
+    const desktopPage = engine.createModel({
+      uid: 'desktop-js-page',
+      parentId: desktopRoute.uid,
+      subKey: 'page',
+      subType: 'object',
+      use: 'JSPageModel',
+    });
+    const mobilePage = engine.createModel({
+      uid: 'mobile-js-page',
+      parentId: mobileRoute.uid,
+      subKey: 'page',
+      subType: 'object',
+      use: 'JSPageModel',
+    });
+
+    expect(desktopPage.constructor).toBe(JSPageModel);
+    expect(mobilePage.constructor).toBe(MobileJSPageModel);
+    expect(mobilePage).not.toBeInstanceOf(MobileRootPageModel);
+    expect(mobilePage.context.isMobileLayout).toBe(true);
+  });
+
+  it('should render the dedicated mobile JS page surface without tabs', () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ MobileJSPageModel });
+    engine.context.defineProperty('t', {
+      value: (key: string) => key,
+    });
+    engine.context.defineProperty('view', {
+      value: {
+        type: 'embed',
+        inputArgs: {},
+        close: vi.fn(),
+      },
+    });
+    engine.context.defineProperty('themeToken', {
+      value: {
+        marginBlock: 16,
+      },
+    });
+    const model = engine.createModel<MobileJSPageModel>({
+      uid: 'mobile-js-page-surface',
+      use: 'MobileJSPageModel',
+    });
+
+    const { container } = render(
+      React.createElement(FlowEngineProvider, { engine }, MobileJSPageModel.prototype.render.call(model)),
+    );
+
+    expect(screen.getByRole('button', { name: 'Back' })).toBeInTheDocument();
+    expect(screen.getByLabelText('JavaScript page content')).toBeInTheDocument();
+    expect(container.querySelector('.nb-ui-layout-mobile-surface')).toBeInTheDocument();
+    expect(container.querySelector('.ant-tabs')).not.toBeInTheDocument();
+    expect(screen.queryByText('Add tab')).not.toBeInTheDocument();
   });
 
   it('should resolve persisted root and child pages to mobile page models inside mobile layouts', () => {
