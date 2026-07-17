@@ -55,12 +55,14 @@ const resourceActionRunners: Record<LightExtensionFileActionName, ResourceAction
     services.fileService.readArchivedSource(normalizeGetFileInput(input), currentUser),
   saveSource: (services, input, currentUser) =>
     services.runtimeCompileService.saveSource(
-      {
+      compactObject({
         repoId: requireRepoId(input),
         expectedHeadCommitId: requireNullableString(input, 'expectedHeadCommitId'),
         message: requireString(input, 'message'),
         files: requireArray(input, 'files', normalizeFileChange),
-      },
+        previewTicket: optionalNonEmptyString(input, 'previewTicket'),
+        requirePreviewTicket: optionalBoolean(input, 'requirePreviewTicket'),
+      }),
       currentUser,
     ),
   listCommits: (services, input, currentUser) =>
@@ -202,6 +204,28 @@ function optionalString(input: ResourceActionInput, key: string, label = key): s
     throw invalidInput(`${label} must be a string`);
   }
 
+  return value;
+}
+
+function optionalNonEmptyString(input: ResourceActionInput, key: string, label = key): string | undefined {
+  const value = optionalString(input, key, label);
+  if (typeof value === 'undefined') {
+    return undefined;
+  }
+  if (!value.trim()) {
+    throw invalidInput(`${label} must not be empty`);
+  }
+  return value.trim();
+}
+
+function optionalBoolean(input: ResourceActionInput, key: string, label = key): boolean | undefined {
+  const value = input[key];
+  if (typeof value === 'undefined') {
+    return undefined;
+  }
+  if (typeof value !== 'boolean') {
+    throw invalidInput(`${label} must be a boolean`);
+  }
   return value;
 }
 

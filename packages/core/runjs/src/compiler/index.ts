@@ -10,6 +10,10 @@
 import { eachMapping, TraceMap } from '@jridgewell/trace-mapping';
 import {
   build as esbuild,
+  context as createEsbuildContext,
+  type BuildContext,
+  type BuildOptions,
+  type BuildResult,
   type Loader,
   type Message,
   type OnResolveArgs,
@@ -31,7 +35,9 @@ import {
   type RunJSSourceLocator,
   type RunJSSurfaceStyle,
 } from '..';
-import { inspectRunJSSourceWorkspace } from './source-inspection';
+import type { NodeRunJSTypeLibraryRegistry } from './node-type-library';
+import { inspectRunJSSourceWorkspace, RunJSSourceWorkspaceInspector } from './source-inspection';
+import { RunJSCompilerSessionError, type RunJSCompilerSessionMetricObserver } from './session';
 import {
   isRunJSImportablePath,
   resolveRunJSBuiltInModule,
@@ -45,6 +51,8 @@ export * from './source-inspection';
 export * from './node-type-library';
 export * from './portable';
 export * from './build-identity';
+export * from './session';
+export * from './typescript-project';
 export * from '../completion-catalog/generator';
 export * from '../type-packs/generator';
 export type { RunJSCompileFailureCode } from '..';
@@ -59,6 +67,9 @@ export interface CompileRunJSSourceWorkspaceInput {
   locator?: RunJSSourceLocator;
   legacy?: RunJSSourceAuthoringLegacyInfo;
   inspectAuthoring?: RunJSSourceAuthoringInspector;
+  additionalAllowedGlobals?: Iterable<string>;
+  typeLibraryIds?: readonly string[];
+  typeLibraryRegistry?: NodeRunJSTypeLibraryRegistry;
 }
 
 export interface CompileRunJSSourceWorkspaceResult {
@@ -118,6 +129,41 @@ interface RunJSBundleOutput {
   warnings: RunJSCompileDiagnostic[];
 }
 
+interface RunJSWorkspacePluginState {
+  files: Map<string, RunJSContentFile>;
+  entryPath: string;
+  entryAdaptation: RunJSEntryAdaptation;
+}
+
+interface RunJSCompileStrategy {
+  buildBundle: (
+    files: Map<string, RunJSContentFile>,
+    entryPath: string,
+    entryAdaptation: RunJSEntryAdaptation,
+    sourceURL: string,
+  ) => Promise<RunJSBundleOutput>;
+  inspectWorkspace: (input: CompileRunJSSourceWorkspaceInput & { entry: string }) => RunJSCompileDiagnostic[];
+}
+
+export interface RunJSEntryCompilerSessionOptions {
+  entryPath: string;
+  contractFingerprint: string;
+  metricObserver?: RunJSCompilerSessionMetricObserver;
+  esbuildContextFactory?: (options: BuildOptions) => Promise<BuildContext>;
+}
+
+export interface RunJSEntryCompilerSessionDebugState {
+  disposed: boolean;
+  contractFingerprint: string;
+  contextCreateCount: number;
+  rebuildCount: number;
+  estimatedFileBytes: number;
+  typeScriptProjectCreateCount: number;
+  typeScriptProjectReuseCount: number;
+  typeScriptProjectVersion: number;
+  typeScriptProjectUpdateCount: number;
+}
+
 interface RunJSEsbuildMessageDetail {
   runjsDiagnostic: RunJSCompileDiagnostic;
 }
@@ -138,6 +184,172 @@ const asyncFunctionConstructor = Object.getPrototypeOf(async function runJSWorkf
 
 export async function compileRunJSSourceWorkspace(
   input: CompileRunJSSourceWorkspaceInput,
+): Promise<CompileRunJSSourceWorkspaceResult> {
+  return compileRunJSSourceWorkspaceWithStrategy(input, {
+    buildBundle: buildRunJSBundle,
+    inspectWorkspace: (inspectionInput) => inspectRunJSSourceWorkspace(toSourceInspectionInput(inspectionInput)),
+  });
+}
+
+export class RunJSEntryCompilerSession {
+  private readonly entryPath: string;
+
+  private readonly contractFingerprint: string;
+
+  private readonly metricObserver?: RunJSCompilerSessionMetricObserver;
+
+  private readonly esbuildContextFactory: (options: BuildOptions) => Promise<BuildContext>;
+
+  private readonly sourceInspector = new RunJSSourceWorkspaceInspector();
+
+  private readonly pluginState: RunJSWorkspacePluginState;
+
+  private context?: BuildContext;
+
+  private contextCreateCount = 0;
+
+  private rebuildCount = 0;
+
+  private estimatedFileBytes = 0;
+
+  private disposed = false;
+
+  private operationQueue: Promise<void> = Promise.resolve();
+
+  private disposePromise?: Promise<void>;
+
+  constructor(options: RunJSEntryCompilerSessionOptions) {
+    this.entryPath = normalizePath(options.entryPath);
+    this.contractFingerprint = normalizeRequiredString(
+      options.contractFingerprint,
+      'Compiler session contract fingerprint',
+    );
+    this.metricObserver = options.metricObserver;
+    this.esbuildContextFactory = options.esbuildContextFactory || createEsbuildContext;
+    this.pluginState = {
+      files: new Map(),
+      entryPath: this.entryPath,
+      entryAdaptation: { code: '', lineMappings: new Map() },
+    };
+  }
+
+  compile(input: CompileRunJSSourceWorkspaceInput): Promise<CompileRunJSSourceWorkspaceResult> {
+    if (this.disposed) {
+      return Promise.reject(new Error('RunJS compiler session has been disposed.'));
+    }
+    const run = this.operationQueue.then(() => this.compileNow(input));
+    this.operationQueue = run.then(
+      () => undefined,
+      () => undefined,
+    );
+    return run;
+  }
+
+  getDebugState(): RunJSEntryCompilerSessionDebugState {
+    const typeScriptState = this.sourceInspector.getDebugState();
+    return {
+      disposed: this.disposed,
+      contractFingerprint: this.contractFingerprint,
+      contextCreateCount: this.contextCreateCount,
+      rebuildCount: this.rebuildCount,
+      estimatedFileBytes: this.estimatedFileBytes,
+      typeScriptProjectCreateCount: typeScriptState.projectCreateCount,
+      typeScriptProjectReuseCount: typeScriptState.projectReuseCount,
+      typeScriptProjectVersion: typeScriptState.projectVersion,
+      typeScriptProjectUpdateCount: typeScriptState.projectUpdateCount,
+    };
+  }
+
+  dispose(): Promise<void> {
+    if (this.disposePromise) {
+      return this.disposePromise;
+    }
+    this.disposed = true;
+    this.disposePromise = this.operationQueue.then(async () => {
+      const context = this.context;
+      this.context = undefined;
+      this.sourceInspector.dispose();
+      this.pluginState.files.clear();
+      this.estimatedFileBytes = 0;
+      await context?.dispose();
+    });
+    return this.disposePromise;
+  }
+
+  private async compileNow(input: CompileRunJSSourceWorkspaceInput): Promise<CompileRunJSSourceWorkspaceResult> {
+    const entryPath = normalizePath(input.entry);
+    if (entryPath !== this.entryPath) {
+      throw new TypeError(
+        `RunJS compiler session entry mismatch: expected "${this.entryPath}", received "${entryPath}"`,
+      );
+    }
+    return compileRunJSSourceWorkspaceWithStrategy(input, {
+      buildBundle: (files, currentEntryPath, entryAdaptation, sourceURL) =>
+        this.rebuildBundle(files, currentEntryPath, entryAdaptation, sourceURL),
+      inspectWorkspace: (inspectionInput) => {
+        const startedAt = Date.now();
+        try {
+          return this.sourceInspector.inspect(toSourceInspectionInput(inspectionInput));
+        } catch (error) {
+          throw new RunJSCompilerSessionError('typescript', error);
+        } finally {
+          const debugState = this.sourceInspector.getDebugState();
+          this.metricObserver?.({
+            name: 'compile.entry.typescript.incremental',
+            durationMs: Date.now() - startedAt,
+            count: 1,
+            reused: debugState.projectReuseCount > 0,
+          });
+        }
+      },
+    });
+  }
+
+  private async rebuildBundle(
+    files: Map<string, RunJSContentFile>,
+    entryPath: string,
+    entryAdaptation: RunJSEntryAdaptation,
+    sourceURL: string,
+  ): Promise<RunJSBundleOutput> {
+    replaceContentFiles(this.pluginState.files, files);
+    this.pluginState.entryPath = entryPath;
+    this.pluginState.entryAdaptation = entryAdaptation;
+    this.estimatedFileBytes = estimateContentFileBytes(files);
+    if (!this.context) {
+      try {
+        this.context = await this.esbuildContextFactory(
+          createRunJSBuildOptions(createRunJSWorkspacePlugin(this.pluginState)),
+        );
+        this.contextCreateCount += 1;
+      } catch (error) {
+        throw new RunJSCompilerSessionError('context', error);
+      }
+    }
+
+    const startedAt = Date.now();
+    this.rebuildCount += 1;
+    try {
+      const result = await this.context.rebuild();
+      return bundleOutputFromBuildResult(result, files, entryPath, entryAdaptation, sourceURL);
+    } catch (error) {
+      if (isEsbuildFailure(error)) {
+        throw error;
+      }
+      throw new RunJSCompilerSessionError('rebuild', error);
+    } finally {
+      this.metricObserver?.({
+        name: 'compile.entry.esbuild.rebuild',
+        durationMs: Date.now() - startedAt,
+        count: 1,
+        reused: this.rebuildCount > 1,
+      });
+    }
+  }
+}
+
+async function compileRunJSSourceWorkspaceWithStrategy(
+  input: CompileRunJSSourceWorkspaceInput,
+  strategy: RunJSCompileStrategy,
 ): Promise<CompileRunJSSourceWorkspaceResult> {
   const entryPath = normalizePath(input.entry);
   const files = contentFilesFromChanges(input.files);
@@ -166,23 +378,18 @@ export async function compileRunJSSourceWorkspace(
   if (!hasErrorDiagnostic(diagnostics) && entry) {
     const entryAdaptation = adaptRunJSEntry(entry);
     try {
-      bundled = await buildRunJSBundle(files, entryPath, entryAdaptation, sourceURL);
+      bundled = await strategy.buildBundle(files, entryPath, entryAdaptation, sourceURL);
       diagnostics.push(...bundled.warnings);
     } catch (error) {
+      if (error instanceof RunJSCompilerSessionError) {
+        throw error;
+      }
       diagnostics.push(...esbuildFailureToDiagnostics(error, entryPath, entryAdaptation));
     }
   }
 
   if (!hasErrorDiagnostic(diagnostics)) {
-    diagnostics.push(
-      ...inspectRunJSSourceWorkspace({
-        files: input.files,
-        entry: entryPath,
-        surfaceStyle: input.surfaceStyle,
-        locator: input.locator,
-        legacy: input.legacy,
-      }),
-    );
+    diagnostics.push(...strategy.inspectWorkspace({ ...input, entry: entryPath }));
   }
 
   let code = '';
@@ -249,13 +456,56 @@ function contentFilesFromChanges(files: RunJSCompileFileInput[]): Map<string, Ru
   return contentFiles;
 }
 
+function replaceContentFiles(
+  target: Map<string, RunJSContentFile>,
+  source: ReadonlyMap<string, RunJSContentFile>,
+): void {
+  for (const path of target.keys()) {
+    if (!source.has(path)) {
+      target.delete(path);
+    }
+  }
+  for (const [path, file] of source) {
+    target.set(path, file);
+  }
+}
+
+function estimateContentFileBytes(files: ReadonlyMap<string, RunJSContentFile>): number {
+  let bytes = 0;
+  for (const file of files.values()) {
+    bytes += Buffer.byteLength(file.path, 'utf8') + Buffer.byteLength(file.content, 'utf8');
+  }
+  return bytes;
+}
+
+function toSourceInspectionInput(
+  input: CompileRunJSSourceWorkspaceInput & { entry: string },
+): Parameters<typeof inspectRunJSSourceWorkspace>[0] {
+  return {
+    files: input.files,
+    entry: input.entry,
+    surfaceStyle: input.surfaceStyle,
+    locator: input.locator,
+    legacy: input.legacy,
+    additionalAllowedGlobals: input.additionalAllowedGlobals,
+    typeLibraryIds: input.typeLibraryIds,
+    typeLibraryRegistry: input.typeLibraryRegistry,
+  };
+}
+
 async function buildRunJSBundle(
   files: Map<string, RunJSContentFile>,
   entryPath: string,
   entryAdaptation: RunJSEntryAdaptation,
   sourceURL: string,
 ): Promise<RunJSBundleOutput> {
-  const result = await esbuild({
+  const state: RunJSWorkspacePluginState = { files, entryPath, entryAdaptation };
+  const result = await esbuild(createRunJSBuildOptions(createRunJSWorkspacePlugin(state)));
+  return bundleOutputFromBuildResult(result, files, entryPath, entryAdaptation, sourceURL);
+}
+
+function createRunJSBuildOptions(plugin: Plugin): BuildOptions {
+  return {
     absWorkingDir: '/',
     banner: {
       js: buildRuntimeRequirePreamble(),
@@ -271,14 +521,22 @@ async function buildRunJSBundle(
     logLevel: 'silent',
     outfile: '/runjs-bundle.js',
     platform: 'neutral',
-    plugins: [createRunJSWorkspacePlugin(files, entryPath, entryAdaptation)],
+    plugins: [plugin],
     sourcemap: 'external',
     sourcesContent: true,
     target: 'es2020',
     treeShaking: true,
     write: false,
-  });
+  };
+}
 
+function bundleOutputFromBuildResult(
+  result: BuildResult,
+  files: Map<string, RunJSContentFile>,
+  entryPath: string,
+  entryAdaptation: RunJSEntryAdaptation,
+  sourceURL: string,
+): RunJSBundleOutput {
   const outputFiles = result.outputFiles || [];
   const javascript = outputFiles.find((file) => file.path.endsWith('.js'))?.text;
   const standardSourceMap = outputFiles.find((file) => file.path.endsWith('.js.map'))?.text;
@@ -296,11 +554,7 @@ async function buildRunJSBundle(
   };
 }
 
-function createRunJSWorkspacePlugin(
-  files: Map<string, RunJSContentFile>,
-  entryPath: string,
-  entryAdaptation: RunJSEntryAdaptation,
-): Plugin {
+function createRunJSWorkspacePlugin(state: RunJSWorkspacePluginState): Plugin {
   return {
     name: 'nocobase-runjs-workspace',
     setup(build) {
@@ -309,13 +563,13 @@ function createRunJSWorkspacePlugin(
           return { path: launcherPath, namespace: launcherNamespace };
         }
         if (args.namespace === launcherNamespace && args.path === entryModuleSpecifier) {
-          return { path: entryPath, namespace: sourceNamespace };
+          return { path: state.entryPath, namespace: sourceNamespace };
         }
         if (args.namespace !== sourceNamespace) {
           return undefined;
         }
 
-        return resolveWorkspaceImport(args, files, entryPath);
+        return resolveWorkspaceImport(args, state.files, state.entryPath);
       });
 
       build.onLoad({ filter: /.*/, namespace: launcherNamespace }, () => ({
@@ -327,7 +581,7 @@ function createRunJSWorkspacePlugin(
       }));
 
       build.onLoad({ filter: /.*/, namespace: sourceNamespace }, (args) => {
-        const file = files.get(args.path);
+        const file = state.files.get(args.path);
         if (!file) {
           return {
             errors: [
@@ -341,7 +595,7 @@ function createRunJSWorkspacePlugin(
           };
         }
 
-        const policyDiagnostics = collectModulePolicyDiagnostics(file, file.path === entryPath);
+        const policyDiagnostics = collectModulePolicyDiagnostics(file, file.path === state.entryPath);
         if (policyDiagnostics.length) {
           return {
             errors: policyDiagnostics.map(diagnosticToEsbuildMessage),
@@ -349,7 +603,7 @@ function createRunJSWorkspacePlugin(
         }
 
         return {
-          contents: file.path === entryPath ? entryAdaptation.code : normalizeModuleSource(file),
+          contents: file.path === state.entryPath ? state.entryAdaptation.code : normalizeModuleSource(file),
           loader: loaderForPath(file.path),
           resolveDir: `/${runJSVirtualDirname(file.path)}`,
         };
@@ -1346,4 +1600,12 @@ function isTypeOnlyReference(node: ts.Node): boolean {
     current = current.parent;
   }
   return false;
+}
+
+function normalizeRequiredString(value: string, label: string): string {
+  const normalized = String(value || '').trim();
+  if (!normalized) {
+    throw new TypeError(`${label} is required`);
+  }
+  return normalized;
 }

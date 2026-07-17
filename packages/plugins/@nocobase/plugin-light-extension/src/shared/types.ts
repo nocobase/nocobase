@@ -200,6 +200,8 @@ export interface LightExtensionEntryRecord {
   compiledCommitId: string | null;
   compiledInputKey: string | null;
   compilerBuildId: string | null;
+  dependencyManifest?: unknown | null;
+  dependencyManifestHash?: string | null;
   runtimeArtifact: LightExtensionEntryRuntimeArtifact | null;
   runtimeVersion: string | null;
   surfaceStyle: string | null;
@@ -214,7 +216,10 @@ export interface LightExtensionEntryRecord {
   updatedAt?: string | null;
 }
 
-export type LightExtensionSaveSourceInput = Omit<LightExtensionPushInput, 'allowEmptyCommit'>;
+export interface LightExtensionSaveSourceInput extends Omit<LightExtensionPushInput, 'allowEmptyCommit'> {
+  previewTicket?: string;
+  requirePreviewTicket?: boolean;
+}
 
 export type LightExtensionCompileEntryStatus = 'success' | 'failed' | 'skipped';
 
@@ -336,11 +341,18 @@ export interface LightExtensionWorkspacePreviewFile {
 
 export interface LightExtensionWorkspacePreviewInput {
   repoId: string;
+  expectedHeadCommitId?: string | null;
+  issueSaveTicket?: boolean;
   entryId?: string | null;
   kind?: LightExtensionKind;
   entryPath?: string;
   runtimeVersion?: string;
   files: LightExtensionWorkspacePreviewFile[];
+}
+
+export interface TrustedPreviewTicketSummary {
+  ticket: string;
+  expiresAt: string;
 }
 
 export interface LightExtensionWorkspacePreviewResult {
@@ -350,6 +362,7 @@ export interface LightExtensionWorkspacePreviewResult {
   failureCode?: string;
   artifact?: LightExtensionEntryRuntimeArtifact;
   entries?: LightExtensionCompilePreviewEntryResult[];
+  ticket?: TrustedPreviewTicketSummary;
 }
 
 export interface LightExtensionSelectableEntrySummary {

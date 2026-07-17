@@ -66,6 +66,8 @@ describe('plugin-light-extension collections', () => {
       'compiledCommitId',
       'compiledInputKey',
       'compilerBuildId',
+      'dependencyManifest',
+      'dependencyManifestHash',
       'runtimeArtifact',
       'runtimeVersion',
       'surfaceStyle',
@@ -95,6 +97,8 @@ describe('plugin-light-extension collections', () => {
       'filesHash',
       'artifactFilesHash',
       'inputManifest',
+      'dependencyManifest',
+      'dependencyManifestHash',
       'diagnostics',
       'compiledAt',
     ]);

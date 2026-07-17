@@ -9,12 +9,28 @@
 
 import { posix as pathPosix } from 'path';
 
+import {
+  matchRunJSUnresolvedDependencyCandidate,
+  stableSerialize,
+  validateRunJSEntryDependencyManifest,
+  type RunJSEntryDependencyManifestV1,
+  type RunJSEntryDependencyManifestValidationFailure,
+} from '@nocobase/runjs';
+
 import { LIGHT_EXTENSION_SUPPORTED_KINDS, type LightExtensionKind } from '../../constants';
 import { classifySourcePath, getEntryRootPath, normalizeSourcePath } from './light-extension-validator/workspacePolicy';
 
 export const AFFECTED_ENTRY_PLAN_REASONS = [
   'entry_private',
   'shared_conservative',
+  'runtime_dependency',
+  'type_dependency',
+  'unresolved_candidate',
+  'conservative_manifest_missing',
+  'conservative_manifest_invalid',
+  'conservative_manifest_version',
+  'conservative_build_mismatch',
+  'conservative_unresolved',
   'entry_added',
   'entry_removed',
   'entry_moved',
@@ -39,12 +55,22 @@ export interface EntryPlanSnapshot {
   settingsSchemaHash: string | null;
   settingsDefaultsHash: string | null;
   metadataFingerprint: string;
+  compilerBuildId?: string | null;
+  dependencyManifest?: unknown;
+  dependencyManifestHash?: string | null;
+}
+
+export interface AffectedEntryPathChange {
+  path: string;
+  operation: 'added' | 'modified' | 'deleted' | 'unknown';
 }
 
 export interface AffectedEntryPlanInput {
   changedPaths: readonly string[];
+  pathChanges?: readonly AffectedEntryPathChange[];
   previousEntries: readonly EntryPlanSnapshot[];
   candidateEntries: readonly EntryPlanSnapshot[];
+  compilerBuildId?: string;
 }
 
 export interface EntryPlanIdentity {
@@ -116,6 +142,14 @@ interface MutableEntryChange {
 const compileReasons = new Set<AffectedEntryPlanReason>([
   'entry_private',
   'shared_conservative',
+  'runtime_dependency',
+  'type_dependency',
+  'unresolved_candidate',
+  'conservative_manifest_missing',
+  'conservative_manifest_invalid',
+  'conservative_manifest_version',
+  'conservative_build_mismatch',
+  'conservative_unresolved',
   'entry_added',
   'entry_moved',
   'entrypoint_changed',
@@ -126,13 +160,14 @@ const compileReasons = new Set<AffectedEntryPlanReason>([
 const supportedKinds = new Set<string>(LIGHT_EXTENSION_SUPPORTED_KINDS);
 
 export function createAffectedEntryCompilePlan(input: AffectedEntryPlanInput): CompilePlan {
-  const changedPaths = normalizeChangedPaths(input.changedPaths);
+  const pathChanges = normalizePathChanges(input.changedPaths, input.pathChanges);
+  const changedPaths = [...pathChanges.keys()];
   const previousEntries = createEntryMap(input.previousEntries, 'previous');
   const candidateEntries = createEntryMap(input.candidateEntries, 'candidate');
   const changes = createMutableChanges(previousEntries, candidateEntries);
 
   classifySnapshotChanges(changes);
-  classifyChangedPaths(changedPaths, changes);
+  classifyChangedPaths(pathChanges, changes, input.compilerBuildId);
 
   const finalizedChanges = [...changes.values()].map(finalizeChange).sort(compareEntryChanges);
   const compileCandidates = toPlannedEntries(finalizedChanges, 'compile');
@@ -160,6 +195,32 @@ export function getEntryPlanIdentity(entry: EntryPlanIdentity): string {
 
 function normalizeChangedPaths(paths: readonly string[]): string[] {
   return [...new Set(paths.map(normalizeSourcePath))].sort(compareText);
+}
+
+function normalizePathChanges(
+  changedPaths: readonly string[],
+  changes: readonly AffectedEntryPathChange[] = [],
+): Map<string, AffectedEntryPathChange['operation']> {
+  const operations = new Map<string, AffectedEntryPathChange['operation']>();
+  for (const path of normalizeChangedPaths(changedPaths)) {
+    operations.set(path, 'unknown');
+  }
+  for (const change of changes) {
+    const path = normalizeSourcePath(change.path);
+    const existing = operations.get(path);
+    operations.set(path, mergePathOperations(existing, change.operation));
+  }
+  return new Map([...operations].sort(([left], [right]) => compareText(left, right)));
+}
+
+function mergePathOperations(
+  left: AffectedEntryPathChange['operation'] | undefined,
+  right: AffectedEntryPathChange['operation'],
+): AffectedEntryPathChange['operation'] {
+  if (!left || left === 'unknown') {
+    return right;
+  }
+  return left === right ? left : 'unknown';
 }
 
 function createEntryMap(entries: readonly EntryPlanSnapshot[], source: 'previous' | 'candidate') {
@@ -191,6 +252,9 @@ function normalizeEntry(entry: EntryPlanSnapshot): EntryPlanSnapshot {
     settingsSchemaHash: entry.settingsSchemaHash,
     settingsDefaultsHash: entry.settingsDefaultsHash,
     metadataFingerprint: entry.metadataFingerprint,
+    compilerBuildId: entry.compilerBuildId ?? null,
+    dependencyManifest: entry.dependencyManifest ?? null,
+    dependencyManifestHash: entry.dependencyManifestHash ?? null,
   };
 }
 
@@ -206,6 +270,9 @@ function serializeEntry(entry: EntryPlanSnapshot): string {
     entry.settingsSchemaHash,
     entry.settingsDefaultsHash,
     entry.metadataFingerprint,
+    entry.compilerBuildId,
+    entry.dependencyManifestHash,
+    stableSerialize(entry.dependencyManifest),
   ]);
 }
 
@@ -283,18 +350,22 @@ function classifySnapshotChanges(changes: ReadonlyMap<string, MutableEntryChange
   }
 }
 
-function classifyChangedPaths(paths: readonly string[], changes: ReadonlyMap<string, MutableEntryChange>): void {
+function classifyChangedPaths(
+  paths: ReadonlyMap<string, AffectedEntryPathChange['operation']>,
+  changes: ReadonlyMap<string, MutableEntryChange>,
+  compilerBuildId?: string,
+): void {
   const previousRoots = indexPhysicalRoots(changes, 'previousEntry');
   const candidateRoots = indexPhysicalRoots(changes, 'candidateEntry');
   const unknownPaths: string[] = [];
 
-  for (const path of paths) {
+  for (const [path, operation] of paths) {
     const pathKind = classifySourcePath(path);
     if (pathKind.status === 'ignored') {
       continue;
     }
     if (pathKind.status === 'shared') {
-      addReasonToReadyCandidates(changes, 'shared_conservative', path);
+      classifySharedPath(path, operation, changes, compilerBuildId);
       continue;
     }
     if (pathKind.status !== 'enabled') {
@@ -330,6 +401,87 @@ function classifyChangedPaths(paths: readonly string[], changes: ReadonlyMap<str
   for (const path of unknownPaths) {
     addReasonToReadyCandidates(changes, 'conservative_unknown', path);
   }
+}
+
+function classifySharedPath(
+  path: string,
+  operation: AffectedEntryPathChange['operation'],
+  changes: ReadonlyMap<string, MutableEntryChange>,
+  compilerBuildId?: string,
+): void {
+  if (!compilerBuildId) {
+    addReasonToReadyCandidates(changes, 'shared_conservative', path);
+    return;
+  }
+
+  const manifests = new Map<MutableEntryChange, RunJSEntryDependencyManifestV1>();
+  for (const change of changes.values()) {
+    const previous = change.previousEntry;
+    const candidate = change.candidateEntry;
+    if (!previous || !candidate || candidate.healthStatus !== 'ready' || !supportedKinds.has(candidate.kind)) {
+      continue;
+    }
+    if (change.reasons.has('entry_moved') || change.reasons.has('entrypoint_changed')) {
+      continue;
+    }
+    const validation = validateRunJSEntryDependencyManifest({
+      value: previous.dependencyManifest,
+      expectedCompilerBuildId: compilerBuildId,
+      expectedEntryPath: previous.entryPath,
+      expectedManifestHash: previous.dependencyManifestHash || undefined,
+    });
+    if (!validation.valid) {
+      addReasonToReadyCandidates(changes, fallbackReasonForManifest(validation.reason), path);
+      return;
+    }
+    manifests.set(change, validation.manifest);
+  }
+
+  if (operation === 'added' || operation === 'unknown') {
+    for (const manifest of manifests.values()) {
+      if (
+        manifest.unresolved.some(
+          (dependency) => matchRunJSUnresolvedDependencyCandidate(path, dependency) === 'unknown',
+        )
+      ) {
+        addReasonToReadyCandidates(changes, 'conservative_unresolved', path);
+        return;
+      }
+    }
+  }
+
+  for (const [change, manifest] of manifests) {
+    const runtimeDependency = manifest.runtime.files.some((file) => file.path === path);
+    const typeDependency = !runtimeDependency && manifest.types.files.some((file) => file.path === path);
+    const unresolvedCandidate =
+      (operation === 'added' || operation === 'unknown') &&
+      manifest.unresolved.some((dependency) => matchRunJSUnresolvedDependencyCandidate(path, dependency) === 'match');
+    const reason = runtimeDependency
+      ? 'runtime_dependency'
+      : typeDependency
+        ? 'type_dependency'
+        : unresolvedCandidate
+          ? 'unresolved_candidate'
+          : undefined;
+    if (!reason) {
+      continue;
+    }
+    change.reasons.add(reason);
+    change.changedPaths.add(path);
+  }
+}
+
+function fallbackReasonForManifest(reason: RunJSEntryDependencyManifestValidationFailure): AffectedEntryPlanReason {
+  if (reason === 'missing') {
+    return 'conservative_manifest_missing';
+  }
+  if (reason === 'unsupported_version') {
+    return 'conservative_manifest_version';
+  }
+  if (reason === 'compiler_build_mismatch') {
+    return 'conservative_build_mismatch';
+  }
+  return 'conservative_manifest_invalid';
 }
 
 function getClassifiedPhysicalRoot(path: string): string {

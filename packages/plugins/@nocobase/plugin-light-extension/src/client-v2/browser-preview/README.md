@@ -34,9 +34,25 @@ Stable degradation codes cover Worker unavailability/crash, protocol mismatch, W
 wrong MIME, WASM compile/initialize failure, workspace version errors, build failure, and cancellation. Any such error
 only disables local preview; Save continues through the unchanged canonical server workflow.
 
+The local contract suite exercises root-path and sub-path URL overrides, the default bundler-resolved Worker/WASM
+URLs, HTTP 404, network/CORS/CSP-style fetch rejection, accepted and rejected MIME types, protocol mismatch filtering,
+and the sandbox CSP/opaque-origin/object-URL cleanup rules. These tests verify deterministic application behavior;
+reverse-proxy headers and browser CSP console behavior still require a deployed browser environment.
+
+## Benchmark
+
+`browserPreviewBenchmark.ts` provides a deterministic 20 Entry / 200 file workspace plus JSON and Markdown report
+serializers. The client benchmark test records WASM download and initialization, one cold build, and 20 single-file
+delta builds distributed across the 20 entries. Reports include fixture bytes and cold/warm min, p50, p95, and max.
+
+The benchmark deliberately has no absolute timing assertion. Machine and browser measurements are rollout evidence,
+not a brittle unit-test gate; the feature remains default-off if the deployed-browser warm p95 does not meet the
+rollout target.
+
 ## Verification boundary
 
 Unit tests cover the actual 0.27.7 WASM initialization/build path, source maps, metafiles, VFS delta/rename behavior,
-stale response rejection, one-time Worker restart, sub-path URL overrides, and default-off behavior. Root/sub-path
-production bundles, reverse-proxy headers, browser-specific CSP consoles, offline/slow-network behavior, and p50/p95
-benchmarks still require deployment/E2E verification before enabling the rollout flag.
+stale response rejection, one-time Worker restart, root/sub-path URL resolution, failure-code mapping, sandbox policy,
+default-off behavior, and the reproducible p50/p95 report shape. Production bundles, reverse-proxy headers,
+browser-specific CSP consoles, offline/slow-network behavior, and benchmark results on the supported browser matrix
+still require deployment/E2E verification before enabling the rollout flag.

@@ -18,7 +18,7 @@ type SandboxResponse = {
   message?: string;
 };
 
-const SANDBOX_SOURCE = `<!doctype html>
+export const PROVISIONAL_PREVIEW_SANDBOX_SOURCE = `<!doctype html>
 <html>
   <head>
     <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' blob:; connect-src 'none'; img-src data: blob:; style-src 'unsafe-inline'">
@@ -114,7 +114,7 @@ export class ProvisionalPreviewSandbox {
     const iframe = document.createElement('iframe');
     iframe.setAttribute('aria-hidden', 'true');
     iframe.setAttribute('sandbox', 'allow-scripts');
-    iframe.srcdoc = SANDBOX_SOURCE;
+    iframe.srcdoc = PROVISIONAL_PREVIEW_SANDBOX_SOURCE;
     iframe.style.display = 'none';
     this.iframeReady = new Promise((resolve) => {
       const timeout = setTimeout(resolve, 1000);

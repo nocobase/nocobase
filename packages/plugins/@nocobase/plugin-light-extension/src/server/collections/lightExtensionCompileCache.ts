@@ -53,6 +53,14 @@ export default defineCollection({
     },
     {
       type: 'json',
+      name: 'dependencyManifest',
+    },
+    {
+      type: 'string',
+      name: 'dependencyManifestHash',
+    },
+    {
+      type: 'json',
       name: 'diagnostics',
       allowNull: false,
       defaultValue: [],

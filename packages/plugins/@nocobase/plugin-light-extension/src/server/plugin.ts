@@ -34,16 +34,24 @@ import {
 } from './resources/lightExtensionReferences';
 import { createLightExtensionsResource, lightExtensionActionNames } from './resources/lightExtensions';
 import { LightExtensionAuditService } from './services/LightExtensionAuditService';
+import { LightExtensionCanonicalWorkspaceBuilder } from './services/LightExtensionCanonicalWorkspace';
 import { LightExtensionCompilePreviewService } from './services/LightExtensionCompilePreviewService';
 import { createLightExtensionCompileMetricsLoggerCollector } from './services/LightExtensionCompileMetrics';
 import { LightExtensionEntryService } from './services/LightExtensionEntryService';
 import { LightExtensionFileService } from './services/LightExtensionFileService';
 import { LightExtensionPermissionService } from './services/LightExtensionPermissionService';
+import {
+  LIGHT_EXTENSION_PREVIEW_TICKET_CACHE_NAME,
+  LIGHT_EXTENSION_PREVIEW_TICKET_CACHE_PREFIX,
+  LightExtensionPreviewTicketStore,
+  LightExtensionPreviewTicketVerifier,
+} from './services/LightExtensionPreviewTicket';
 import { LightExtensionRemotePullService } from './services/LightExtensionRemotePullService';
 import { LightExtensionRepoService } from './services/LightExtensionRepoService';
 import { LightExtensionRuntimeCompileService } from './services/LightExtensionRuntimeCompileService';
 import { LightExtensionValidator } from './services/LightExtensionValidator';
 import { LightExtensionWorkspaceCompilerBridge } from './services/LightExtensionWorkspaceCompilerBridge';
+import { LightExtensionTrustedCompileCacheService } from './services/LightExtensionTrustedCompileCacheService';
 import { RuntimeResolveService } from './services/RuntimeResolveService';
 import { ReferenceService } from './services/ReferenceService';
 import { MoveSourceService } from './services/MoveSourceService';
@@ -75,6 +83,13 @@ type PluginLoadListener = (plugin: unknown, options?: unknown) => void;
 type AppWithPluginEvents = {
   log?: unknown;
   pm?: PluginManagerLike;
+  cacheManager?: {
+    createCache?: (options: { name: string; prefix?: string }) => Promise<{
+      set(key: string, value: unknown, ttl?: number): Promise<void>;
+      get<T>(key: string): Promise<T | undefined>;
+      del(key: string): Promise<void>;
+    }>;
+  };
   resourceManager?: {
     define?: (resource: unknown) => void;
     options?: {
@@ -142,6 +157,8 @@ export class PluginLightExtensionServer extends Plugin {
 
   private compilePreviewService?: LightExtensionCompilePreviewService;
 
+  private previewTicketVerifier?: LightExtensionPreviewTicketVerifier;
+
   private runtimeResolveService?: RuntimeResolveService;
 
   private runtimeCompileService?: LightExtensionRuntimeCompileService;
@@ -176,6 +193,10 @@ export class PluginLightExtensionServer extends Plugin {
     return this.referenceService?.markFlowModelReferencesOwnerMissingForNodeTree(input, ctx);
   }
 
+  getPreviewTicketVerifier(): LightExtensionPreviewTicketVerifier | undefined {
+    return this.previewTicketVerifier;
+  }
+
   async beforeLoad() {
     const db = this.db;
     if (!db || this.options.packageName || db.hasCollection('lightExtensionRepos')) {
@@ -202,6 +223,18 @@ export class PluginLightExtensionServer extends Plugin {
       ? createLightExtensionCompileMetricsLoggerCollector(this.log)
       : undefined;
     this.workspaceCompilerBridge = new LightExtensionWorkspaceCompilerBridge(this.auditService, this.permissionService);
+    const app = this.app as unknown as AppWithPluginEvents;
+    const trustedCompileCache = new LightExtensionTrustedCompileCacheService(db);
+    const previewTicketCache = await app.cacheManager?.createCache?.({
+      name: LIGHT_EXTENSION_PREVIEW_TICKET_CACHE_NAME,
+      prefix: LIGHT_EXTENSION_PREVIEW_TICKET_CACHE_PREFIX,
+    });
+    const previewTicketStore = previewTicketCache
+      ? new LightExtensionPreviewTicketStore(previewTicketCache)
+      : undefined;
+    this.previewTicketVerifier = previewTicketStore
+      ? new LightExtensionPreviewTicketVerifier(previewTicketStore, trustedCompileCache)
+      : undefined;
     const sharedVscPermissionHooks = findVscPermissionHookRegistry((this.app as unknown as AppWithPluginEvents).pm);
     this.repoService = new LightExtensionRepoService(
       db,
@@ -227,6 +260,11 @@ export class PluginLightExtensionServer extends Plugin {
       this.workspaceCompilerBridge,
       this.validator,
       compileMetricsCollector,
+      {
+        canonicalWorkspaceBuilder: new LightExtensionCanonicalWorkspaceBuilder(db),
+        previewTicketStore,
+        trustedCompileCache,
+      },
     );
     this.referenceService = new ReferenceService(db, this.auditService, this.permissionService);
     const apiBasePath = (this.app as unknown as AppWithPluginEvents).resourceManager?.options?.prefix;

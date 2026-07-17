@@ -11,7 +11,8 @@ import type { Database, Model } from '@nocobase/database';
 import { randomUUID } from 'crypto';
 import { posix as pathPosix } from 'path';
 
-import { isLightExtensionError } from '../../shared/errors';
+import { LIGHT_EXTENSION_RUNTIME_ARTIFACT_CONTRACT } from '../../constants';
+import { LightExtensionError, isLightExtensionError } from '../../shared/errors';
 import type {
   LightExtensionCompilePreviewArtifactSummary,
   LightExtensionCompilePreviewEntryResult,
@@ -24,6 +25,16 @@ import type {
 } from '../../shared/types';
 import { LightExtensionAuditService } from './LightExtensionAuditService';
 import {
+  LightExtensionCanonicalWorkspaceBuilder,
+  type CanonicalPreviewWorkspace,
+  type CanonicalPreviewWorkspaceFile,
+} from './LightExtensionCanonicalWorkspace';
+import { buildLightExtensionCompileKey } from './LightExtensionCompileKey';
+import {
+  LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY,
+  type LightExtensionCompilerBuildIdentity,
+} from './LightExtensionCompileContract';
+import {
   classifyLightExtensionCompileMetricsError,
   combineLightExtensionCompileMetricsRecorders,
   LightExtensionCompileMetricsProbe,
@@ -32,6 +43,11 @@ import {
 import { entryFromModel } from './LightExtensionEntryService';
 import { LightExtensionFileService } from './LightExtensionFileService';
 import { LightExtensionPermissionService } from './LightExtensionPermissionService';
+import {
+  LightExtensionPreviewTicketStore,
+  type TrustedPreviewTicketEntry,
+  type TrustedPreviewTicketIssueInput,
+} from './LightExtensionPreviewTicket';
 import type { LightExtensionServiceContext } from './LightExtensionRepoService';
 import {
   LightExtensionEntryValidationResult,
@@ -43,6 +59,7 @@ import {
   toValidatorFiles,
 } from './LightExtensionValidator';
 import { LightExtensionWorkspaceCompilerBridge } from './LightExtensionWorkspaceCompilerBridge';
+import { LightExtensionTrustedCompileCacheService } from './LightExtensionTrustedCompileCacheService';
 
 export interface LightExtensionCompilePreviewInput {
   repoId: string;
@@ -61,7 +78,28 @@ interface LightExtensionCompilePreviewTarget {
   missingReason?: 'entry_missing' | 'entry_not_found';
 }
 
+export interface LightExtensionCompilePreviewServiceOptions {
+  canonicalWorkspaceBuilder?: LightExtensionCanonicalWorkspaceBuilder;
+  previewTicketStore?: LightExtensionPreviewTicketStore;
+  trustedCompileCache?: LightExtensionTrustedCompileCacheService;
+  compilerBuildIdentity?: LightExtensionCompilerBuildIdentity;
+}
+
+interface TrustedWorkspacePreviewContext {
+  workspace: CanonicalPreviewWorkspace;
+  baseFiles: readonly LightExtensionPulledFile[];
+  baseHeadCommitId: string | null;
+  actorId: string;
+  ticketStore: LightExtensionPreviewTicketStore;
+  compileCache: LightExtensionTrustedCompileCacheService;
+  compilerBuildIdentity: LightExtensionCompilerBuildIdentity;
+}
+
 export class LightExtensionCompilePreviewService {
+  private readonly canonicalWorkspaceBuilder: LightExtensionCanonicalWorkspaceBuilder;
+
+  private readonly options: LightExtensionCompilePreviewServiceOptions;
+
   constructor(
     private readonly db: Database,
     private readonly auditService: LightExtensionAuditService,
@@ -70,7 +108,12 @@ export class LightExtensionCompilePreviewService {
     private readonly compilerBridge: LightExtensionWorkspaceCompilerBridge,
     private readonly validator = new LightExtensionValidator(),
     private readonly metricsCollector?: LightExtensionCompileMetricsCollector,
-  ) {}
+    options: LightExtensionCompilePreviewServiceOptions = {},
+  ) {
+    this.options = options;
+    this.canonicalWorkspaceBuilder =
+      options.canonicalWorkspaceBuilder || new LightExtensionCanonicalWorkspaceBuilder(db);
+  }
 
   async compilePreview(
     input: LightExtensionCompilePreviewInput,
@@ -218,27 +261,31 @@ export class LightExtensionCompilePreviewService {
       throw error;
     }
 
-    previewContext.compileMetrics?.set('repoFileCount', input.files.length);
+    const trustedPreview = input.issueSaveTicket
+      ? await this.prepareTrustedWorkspacePreview(input, previewContext)
+      : undefined;
+    const previewFiles = trustedPreview?.workspace.files || input.files;
+    previewContext.compileMetrics?.set('repoFileCount', previewFiles.length);
     previewContext.compileMetrics?.set(
       'repoByteSize',
-      input.files.reduce((total, file) => total + Buffer.byteLength(file.content, 'utf8'), 0),
+      previewFiles.reduce((total, file) => total + Buffer.byteLength(file.content, 'utf8'), 0),
     );
     previewContext.compileMetrics?.increment('snapshotMaterializationCount');
     const validation = previewContext.compileMetrics
       ? previewContext.compileMetrics.measure('workspaceValidation', () =>
           this.validator.validateWorkspace({
-            files: input.files.map((file) => ({ ...file })),
+            files: previewFiles.map((file) => ({ ...file })),
           }),
         )
       : this.validator.validateWorkspace({
-          files: input.files.map((file) => ({ ...file })),
+          files: previewFiles.map((file) => ({ ...file })),
         });
     previewContext.compileMetrics?.set('entryCount', validation.entries.length);
     const targetKind = input.kind;
     const targetEntryPath = input.entryPath?.trim();
     if (!targetKind && !targetEntryPath) {
       previewContext.compileMetrics?.set('affectedEntryCount', validation.entries.length);
-      return this.compileWholeWorkspacePreview(input, validation, previewContext);
+      return this.compileWholeWorkspacePreview(input, validation, previewFiles, previewContext, trustedPreview);
     }
     if (!targetKind || !targetEntryPath) {
       previewContext.compileMetrics?.set('affectedEntryCount', 0);
@@ -317,7 +364,7 @@ export class LightExtensionCompilePreviewService {
           entryName: validationEntry.entryName,
           entryPath: validationEntry.entryPath,
           runtimeVersion: input.runtimeVersion,
-          files: getEntryCompileFiles(input.files, validationEntry),
+          files: getEntryCompileFiles(previewFiles, validationEntry),
         },
         previewContext,
       );
@@ -348,7 +395,9 @@ export class LightExtensionCompilePreviewService {
   private async compileWholeWorkspacePreview(
     input: LightExtensionWorkspacePreviewInput,
     validation: LightExtensionWorkspaceValidationResult,
+    files: readonly CanonicalPreviewWorkspaceFile[] | LightExtensionWorkspacePreviewInput['files'],
     ctx: LightExtensionServiceContext,
+    trustedPreview?: TrustedWorkspacePreviewContext,
   ): Promise<LightExtensionWorkspacePreviewResult> {
     const workspaceDiagnostics = getWorkspaceLevelDiagnostics(validation.diagnostics);
     const persistedEntries = await this.listPersistedEntries(input.repoId, ctx);
@@ -356,10 +405,14 @@ export class LightExtensionCompilePreviewService {
       persistedEntries.map((entry) => [`${entry.kind}:${entry.entryName}`, entry.id] as const),
     );
     const entries: LightExtensionCompilePreviewEntryResult[] = [];
+    const ticketEntries: TrustedPreviewTicketEntry[] = [];
 
     for (const validationEntry of validation.entries) {
       const validationDiagnostics = sortUniqueDiagnostics([...workspaceDiagnostics, ...validationEntry.diagnostics]);
       const entryId = persistedEntryIds.get(`${validationEntry.kind}:${validationEntry.entryName}`) || null;
+      const persistedEntry = persistedEntries.find(
+        (entry) => entry.kind === validationEntry.kind && entry.entryName === validationEntry.entryName,
+      );
       if (hasErrorDiagnostic(validationDiagnostics)) {
         ctx.compileMetrics?.increment('skippedEntryCount');
         entries.push({
@@ -378,6 +431,7 @@ export class LightExtensionCompilePreviewService {
       }
 
       ctx.compileMetrics?.increment('compiledEntryCount');
+      const runtimeVersion = input.runtimeVersion || persistedEntry?.runtimeVersion || 'v2';
       const compileEntry = () =>
         this.compilerBridge.compileEntry(
           {
@@ -387,8 +441,8 @@ export class LightExtensionCompilePreviewService {
             kind: validationEntry.kind,
             entryName: validationEntry.entryName,
             entryPath: validationEntry.entryPath,
-            runtimeVersion: input.runtimeVersion,
-            files: getEntryCompileFiles(input.files, validationEntry),
+            runtimeVersion,
+            files: getEntryCompileFiles(files, validationEntry),
           },
           ctx,
         );
@@ -396,6 +450,39 @@ export class LightExtensionCompilePreviewService {
         ? await ctx.compileMetrics.measureAsync('compileEntries', compileEntry)
         : await compileEntry();
       const diagnostics = sortUniqueDiagnostics([...validationDiagnostics, ...compiled.diagnostics]);
+      const accepted = compiled.accepted && !hasErrorDiagnostic(diagnostics);
+      if (accepted && trustedPreview) {
+        const compileInput = buildLightExtensionCompileKey({
+          entry: {
+            target: 'client',
+            kind: validationEntry.kind,
+            entryPath: validationEntry.entryPath,
+            descriptorPath: validationEntry.descriptorPath,
+          },
+          files: trustedPreview.workspace.files,
+          runtimeVersion,
+          compilerBuildIdentity: trustedPreview.compilerBuildIdentity,
+        });
+        const persisted = await trustedPreview.compileCache.persistAcceptedCompile({
+          compileKey: compileInput.compileKey,
+          filesHash: compileInput.filesHash,
+          inputManifest: compileInput.inputManifest,
+          artifact: compiled.artifact,
+          diagnostics,
+        });
+        ticketEntries.push({
+          target: 'client',
+          kind: validationEntry.kind,
+          entryName: validationEntry.entryName,
+          entryId,
+          entryPath: validationEntry.entryPath,
+          compileKey: compileInput.compileKey,
+          filesHash: compileInput.filesHash,
+          artifactHash: persisted.artifactHash,
+          artifactFilesHash: persisted.artifactFilesHash,
+          runtimeVersion,
+        });
+      }
       entries.push({
         entryId,
         repoId: input.repoId,
@@ -404,7 +491,7 @@ export class LightExtensionCompilePreviewService {
         entryName: validationEntry.entryName,
         entryPath: validationEntry.entryPath,
         status: compiled.accepted ? 'success' : 'failed',
-        accepted: compiled.accepted && !hasErrorDiagnostic(diagnostics),
+        accepted,
         diagnostics,
         failureCode: compiled.failureCode,
         artifact: compiled.accepted ? summarizeArtifact(compiled.artifact, validationEntry.entryPath) : undefined,
@@ -416,15 +503,84 @@ export class LightExtensionCompilePreviewService {
       ...entries.flatMap((entry) => entry.diagnostics),
     ]);
     const accepted = !hasErrorDiagnostic(diagnostics) && entries.every((entry) => entry.accepted);
+    const ticket =
+      accepted && trustedPreview && ticketEntries.length === validation.entries.length
+        ? await trustedPreview.ticketStore.issue(
+            buildTicketIssueInput({
+              input,
+              trustedPreview,
+              persistedEntries,
+              validation,
+              ticketEntries,
+              diagnostics,
+            }),
+          )
+        : undefined;
 
     return {
       accepted,
       httpStatus: accepted ? 200 : entries.some((entry) => entry.accepted) ? 207 : 422,
       diagnostics,
       entries,
+      ticket,
       failureCode: accepted
         ? undefined
         : entries.find((entry) => !entry.accepted)?.failureCode || 'LIGHT_EXTENSION_VALIDATION_FAILED',
+    };
+  }
+
+  private async prepareTrustedWorkspacePreview(
+    input: LightExtensionWorkspacePreviewInput,
+    ctx: LightExtensionServiceContext,
+  ): Promise<TrustedWorkspacePreviewContext> {
+    if (input.kind || input.entryPath) {
+      throw new LightExtensionError(
+        'LIGHT_EXTENSION_INVALID_INPUT',
+        'Trusted preview tickets are available only for whole-workspace preview',
+      );
+    }
+    if (typeof input.expectedHeadCommitId === 'undefined') {
+      throw new LightExtensionError(
+        'LIGHT_EXTENSION_INVALID_INPUT',
+        'expectedHeadCommitId is required when issueSaveTicket is true',
+      );
+    }
+    if (!ctx.actorUserId) {
+      throw new LightExtensionError(
+        'LIGHT_EXTENSION_PERMISSION_DENIED',
+        'Trusted preview tickets require an authenticated actor',
+      );
+    }
+    const ticketStore = this.options.previewTicketStore;
+    const compileCache = this.options.trustedCompileCache;
+    if (!ticketStore || !compileCache) {
+      throw new LightExtensionError(
+        'LIGHT_EXTENSION_RUNTIME_UNAVAILABLE',
+        'Trusted preview ticket service is unavailable',
+      );
+    }
+
+    const base = await this.fileService.pull(
+      {
+        repoId: input.repoId,
+        includeContent: 'none',
+      },
+      ctx,
+    );
+    assertExpectedPreviewHead(input.expectedHeadCommitId, base.repo.headCommitId, input.repoId);
+    const workspace = await this.canonicalWorkspaceBuilder.build(input.files);
+    return {
+      workspace,
+      baseFiles: base.files || [],
+      baseHeadCommitId: input.expectedHeadCommitId,
+      actorId: ctx.actorUserId,
+      ticketStore,
+      compileCache,
+      compilerBuildIdentity:
+        this.options.compilerBuildIdentity ||
+        (typeof this.compilerBridge.getCompilerBuildIdentity === 'function'
+          ? this.compilerBridge.getCompilerBuildIdentity()
+          : LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY),
     };
   }
 
@@ -692,9 +848,8 @@ function buildWorkspaceBlockedEntryResult(
 }
 
 function getEntryCompileFiles(
-  files: Array<
-    Pick<LightExtensionPulledFile, 'content' | 'path'> & Partial<Pick<LightExtensionPulledFile, 'language'>>
-  >,
+  files: readonly (Pick<LightExtensionPulledFile, 'content' | 'path'> &
+    Partial<Pick<LightExtensionPulledFile, 'language'>>)[],
   entry: LightExtensionEntryValidationResult,
 ) {
   const rootPath = getEntryRootPath(entry);
@@ -710,6 +865,109 @@ function getEntryCompileFiles(
       content: file.content,
       language: file.language,
     }));
+}
+
+function buildTicketIssueInput(input: {
+  input: LightExtensionWorkspacePreviewInput;
+  trustedPreview: TrustedWorkspacePreviewContext;
+  persistedEntries: LightExtensionEntryRecord[];
+  validation: LightExtensionWorkspaceValidationResult;
+  ticketEntries: TrustedPreviewTicketEntry[];
+  diagnostics: LightExtensionDiagnostic[];
+}): TrustedPreviewTicketIssueInput {
+  const validationIdentities = input.validation.entries.map(toTrustedEntryIdentity).sort(compareTrustedIdentities);
+  const validationIdentityKeys = new Set(validationIdentities.map(trustedIdentityKey));
+  const removedEntries = input.persistedEntries
+    .filter((entry) => !validationIdentityKeys.has(trustedIdentityKey(entry)))
+    .map(toTrustedEntryIdentity)
+    .sort(compareTrustedIdentities);
+  const changedPaths = collectChangedPaths(input.trustedPreview.baseFiles, input.trustedPreview.workspace.files);
+  return {
+    repoId: input.input.repoId,
+    baseHeadCommitId: input.trustedPreview.baseHeadCommitId,
+    actorId: input.trustedPreview.actorId,
+    workspaceDigest: input.trustedPreview.workspace.workspaceDigest,
+    candidateTreeHash: input.trustedPreview.workspace.treeHash,
+    compilerBuildId: input.trustedPreview.compilerBuildIdentity.compilerBuildId,
+    runtimeContract: LIGHT_EXTENSION_RUNTIME_ARTIFACT_CONTRACT,
+    compilePlan: {
+      changedFileCount: changedPaths.length,
+      affectedEntryCount: validationIdentities.length,
+      compileCandidates: validationIdentities,
+      metadataOnlyEntries: [],
+      removedEntries,
+    },
+    entries: [...input.ticketEntries].sort(compareTrustedIdentities),
+    diagnostics: input.diagnostics.map((diagnostic) => ({
+      code: diagnostic.code,
+      severity: diagnostic.severity,
+      path: diagnostic.path,
+      kind: diagnostic.kind,
+      entryName: diagnostic.entryName,
+    })),
+  };
+}
+
+function collectChangedPaths(
+  baseFiles: readonly Pick<LightExtensionPulledFile, 'path' | 'blobHash' | 'language' | 'mode'>[],
+  candidateFiles: readonly Pick<CanonicalPreviewWorkspaceFile, 'path' | 'blobHash' | 'language' | 'mode'>[],
+): string[] {
+  const baseByPath = new Map(baseFiles.map((file) => [file.path, file] as const));
+  const candidateByPath = new Map(candidateFiles.map((file) => [file.path, file] as const));
+  const paths = new Set([...baseByPath.keys(), ...candidateByPath.keys()]);
+  return [...paths]
+    .filter((path) => {
+      const base = baseByPath.get(path);
+      const candidate = candidateByPath.get(path);
+      return (
+        !base ||
+        !candidate ||
+        base.blobHash !== candidate.blobHash ||
+        base.language !== candidate.language ||
+        base.mode !== candidate.mode
+      );
+    })
+    .sort();
+}
+
+function toTrustedEntryIdentity(entry: { target?: string; kind: string; entryName: string }) {
+  return {
+    target: 'client' as const,
+    kind: entry.kind as TrustedPreviewTicketEntry['kind'],
+    entryName: entry.entryName,
+  };
+}
+
+function compareTrustedIdentities(
+  left: { target: string; kind: string; entryName: string },
+  right: { target: string; kind: string; entryName: string },
+): number {
+  return trustedIdentityKey(left).localeCompare(trustedIdentityKey(right));
+}
+
+function trustedIdentityKey(entry: { target?: string; kind: string; entryName: string }): string {
+  return `${entry.target || 'client'}\0${entry.kind}\0${entry.entryName}`;
+}
+
+function assertExpectedPreviewHead(
+  expectedHeadCommitId: string | null,
+  currentHeadCommitId: string | null,
+  repoId: string,
+): void {
+  if (expectedHeadCommitId === currentHeadCommitId) {
+    return;
+  }
+  throw new LightExtensionError(
+    'LIGHT_EXTENSION_SOURCE_OUTDATED',
+    'Light extension source changed after the workspace was opened',
+    {
+      details: {
+        repoId,
+        expectedHeadCommitId,
+        currentHeadCommitId,
+      },
+    },
+  );
 }
 
 function getEntryRootPath(entry: LightExtensionEntryValidationResult): string {

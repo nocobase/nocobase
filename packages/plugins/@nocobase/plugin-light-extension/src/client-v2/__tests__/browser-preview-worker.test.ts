@@ -19,13 +19,17 @@ import {
   type BrowserPreviewWorkerFactory,
 } from '../browser-preview/BrowserPreviewSession';
 import {
+  isBrowserPreviewWorkerResponse,
   LIGHT_EXTENSION_BROWSER_PREVIEW_COMPILER_BUILD_ID,
   LIGHT_EXTENSION_BROWSER_PREVIEW_PROTOCOL_VERSION,
   type BrowserPreviewWorkerRequest,
   type BrowserPreviewWorkerResponse,
   type ProvisionalCompileResult,
 } from '../browser-preview/protocol';
-import { ProvisionalPreviewSandbox } from '../browser-preview/ProvisionalPreviewSandbox';
+import {
+  PROVISIONAL_PREVIEW_SANDBOX_SOURCE,
+  ProvisionalPreviewSandbox,
+} from '../browser-preview/ProvisionalPreviewSandbox';
 import { useBrowserProvisionalPreview } from '../browser-preview/useBrowserProvisionalPreview';
 import { BrowserPreviewVirtualFileSystem } from '../browser-preview/virtualFileSystem';
 
@@ -182,6 +186,28 @@ afterEach(() => {
 });
 
 describe('esbuild-wasm provisional compiler capability spike', () => {
+  it.each([
+    {
+      name: 'HTTP 404',
+      fetchCompiler: vi.fn(async () => new Response('missing', { status: 404 })),
+    },
+    {
+      name: 'network, CORS, or CSP rejection',
+      fetchCompiler: vi.fn(async () => {
+        throw new TypeError('Failed to fetch');
+      }),
+    },
+  ])('reports a stable fetch diagnostic for $name', async ({ fetchCompiler }) => {
+    const { BrowserProvisionalCompiler } = await loadBrowserCompiler();
+    vi.stubGlobal('fetch', fetchCompiler);
+    const compiler = new BrowserProvisionalCompiler();
+
+    await expect(compiler.initialize('/assets/esbuild.wasm')).rejects.toMatchObject({
+      code: 'PREVIEW_WASM_FETCH_FAILED',
+      recoverable: true,
+    });
+  });
+
   it('reports a stable diagnostic code for a wrong WASM MIME type', async () => {
     const { BrowserProvisionalCompiler } = await loadBrowserCompiler();
     vi.stubGlobal(
@@ -192,6 +218,23 @@ describe('esbuild-wasm provisional compiler capability spike', () => {
 
     await expect(compiler.initialize('/assets/esbuild.wasm')).rejects.toMatchObject({
       code: 'PREVIEW_WASM_MIME_INVALID',
+      recoverable: true,
+    });
+  });
+
+  it.each([
+    { name: 'missing content type', headers: {} },
+    { name: 'generic binary content type', headers: { 'content-type': 'application/octet-stream' } },
+  ])('accepts $name before validating the WASM bytes', async ({ headers }) => {
+    const { BrowserProvisionalCompiler } = await loadBrowserCompiler();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(new ArrayBuffer(1), { status: 200, headers })),
+    );
+    const compiler = new BrowserProvisionalCompiler();
+
+    await expect(compiler.initialize('/assets/esbuild.wasm')).rejects.toMatchObject({
+      code: 'PREVIEW_WASM_COMPILE_FAILED',
       recoverable: true,
     });
   });
@@ -257,13 +300,11 @@ async function loadBrowserCompiler() {
 }
 
 describe('browser provisional preview protocol and VFS', () => {
-  it('keeps requests JSON serializable and deployment URLs overrideable for sub-path assets', () => {
+  it('keeps requests JSON serializable and deployment URLs overrideable for root and sub-path assets', () => {
     const globals = globalThis as typeof globalThis & {
       __NOCOBASE_LIGHT_EXTENSION_PREVIEW_WORKER_URL__?: string;
       __NOCOBASE_LIGHT_EXTENSION_PREVIEW_WASM_URL__?: string;
     };
-    globals.__NOCOBASE_LIGHT_EXTENSION_PREVIEW_WORKER_URL__ = '/nocobase/v/assets/preview-worker.js';
-    globals.__NOCOBASE_LIGHT_EXTENSION_PREVIEW_WASM_URL__ = '/nocobase/v/assets/esbuild.wasm';
     const request: BrowserPreviewWorkerRequest = {
       type: 'build',
       protocolVersion: LIGHT_EXTENSION_BROWSER_PREVIEW_PROTOCOL_VERSION,
@@ -273,8 +314,31 @@ describe('browser provisional preview protocol and VFS', () => {
     };
 
     expect(JSON.parse(JSON.stringify(request))).toEqual(request);
+    globals.__NOCOBASE_LIGHT_EXTENSION_PREVIEW_WORKER_URL__ = '/assets/preview-worker.js';
+    globals.__NOCOBASE_LIGHT_EXTENSION_PREVIEW_WASM_URL__ = '/assets/esbuild.wasm';
+    expect(resolveBrowserPreviewWorkerUrl()).toBe('/assets/preview-worker.js');
+    expect(resolveBrowserPreviewWasmUrl()).toContain('/assets/esbuild.wasm');
+    globals.__NOCOBASE_LIGHT_EXTENSION_PREVIEW_WORKER_URL__ = '/nocobase/v/assets/preview-worker.js';
+    globals.__NOCOBASE_LIGHT_EXTENSION_PREVIEW_WASM_URL__ = '/nocobase/v/assets/esbuild.wasm';
     expect(resolveBrowserPreviewWorkerUrl()).toBe('/nocobase/v/assets/preview-worker.js');
     expect(resolveBrowserPreviewWasmUrl()).toContain('/nocobase/v/assets/esbuild.wasm');
+  });
+
+  it('uses bundler-resolved URLs by default and rejects mismatched protocol responses', () => {
+    const workerURL = resolveBrowserPreviewWorkerUrl();
+    const wasmURL = resolveBrowserPreviewWasmUrl();
+
+    expect(workerURL).toBeInstanceOf(URL);
+    expect(String(workerURL)).toContain('browserPreview.worker.ts');
+    expect(wasmURL).toContain('.wasm');
+    expect(wasmURL).not.toBe('/esbuild.wasm');
+    expect(
+      isBrowserPreviewWorkerResponse({
+        protocolVersion: LIGHT_EXTENSION_BROWSER_PREVIEW_PROTOCOL_VERSION + 1,
+        requestId: 'initialize-1',
+        type: 'ready',
+      }),
+    ).toBe(false);
   });
 
   it('applies create, update, delete, and rename deltas without replacing the workspace', () => {
@@ -316,6 +380,25 @@ describe('browser provisional preview protocol and VFS', () => {
       { operation: 'rename', path: 'src/old.ts', nextPath: 'src/new.ts' },
       { operation: 'upsert', file: { path: 'src/update.ts', content: 'after', language: undefined } },
     ]);
+  });
+});
+
+describe('ProvisionalPreviewSandbox security contract', () => {
+  it('uses an opaque-origin script-only iframe with restrictive CSP and revokes bundle URLs', async () => {
+    const sandbox = new ProvisionalPreviewSandbox();
+    const execution = sandbox.execute('globalThis.__nocobaseProvisionalPreviewRun__ = async () => undefined;', 0);
+    const iframe = document.querySelector('iframe');
+
+    expect(iframe).not.toBeNull();
+    expect(iframe?.getAttribute('sandbox')).toBe('allow-scripts');
+    expect(iframe?.getAttribute('sandbox')).not.toContain('allow-same-origin');
+    expect(PROVISIONAL_PREVIEW_SANDBOX_SOURCE).toContain("connect-src 'none'");
+    expect(PROVISIONAL_PREVIEW_SANDBOX_SOURCE).not.toContain('unsafe-eval');
+    expect(PROVISIONAL_PREVIEW_SANDBOX_SOURCE.match(/URL\.revokeObjectURL\(bundleURL\)/gu)).toHaveLength(2);
+    iframe?.dispatchEvent(new Event('load'));
+    await expect(execution).resolves.toMatchObject({ accepted: false });
+    sandbox.dispose();
+    expect(document.querySelector('iframe')).toBeNull();
   });
 });
 
