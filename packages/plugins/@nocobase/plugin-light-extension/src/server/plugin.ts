@@ -8,12 +8,13 @@
  */
 
 import { LIGHT_EXTENSION_ENTRY_SCHEMA_LOCAL_PATH } from '@nocobase/light-extension-sdk/schema';
-import type { RunJSSourceAdapterRegistry, VscPermissionHook } from '@nocobase/plugin-vsc-file';
+import type { RemoteSyncRuntime, RunJSSourceAdapterRegistry, VscPermissionHook } from '@nocobase/plugin-vsc-file';
 import { VscFileService, VscPermissionHookRegistry } from '@nocobase/plugin-vsc-file';
 import { Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 
 import { LIGHT_EXTENSION_ACL_ACTIONS, LIGHT_EXTENSION_ACL_SNIPPET } from '../constants';
+import { LightExtensionError } from '../shared/errors';
 import { lightExtensionEntryV1SchemaFileContent } from './lightExtensionEntrySchema';
 import {
   createLightExtensionCapabilitiesResource,
@@ -22,6 +23,7 @@ import {
 import { createLightExtensionEntriesResource, lightExtensionEntryActionNames } from './resources/lightExtensionEntries';
 import { createLightExtensionFilesResource, lightExtensionFileActionNames } from './resources/lightExtensionFiles';
 import { createLightExtensionReposResource, lightExtensionRepoActionNames } from './resources/lightExtensionRepos';
+import { createLightExtensionSyncResource, lightExtensionSyncActionNames } from './resources/lightExtensionSync';
 import {
   createLightExtensionRuntimeResource,
   lightExtensionRuntimeActionNames,
@@ -36,6 +38,7 @@ import { LightExtensionCompilePreviewService } from './services/LightExtensionCo
 import { LightExtensionEntryService } from './services/LightExtensionEntryService';
 import { LightExtensionFileService } from './services/LightExtensionFileService';
 import { LightExtensionPermissionService } from './services/LightExtensionPermissionService';
+import { LightExtensionRemotePullService } from './services/LightExtensionRemotePullService';
 import { LightExtensionRepoService } from './services/LightExtensionRepoService';
 import { LightExtensionRuntimeCompileService } from './services/LightExtensionRuntimeCompileService';
 import { LightExtensionValidator } from './services/LightExtensionValidator';
@@ -57,6 +60,10 @@ type RunJSSourceAdapterRegistryProvider = {
   getRunJSSourceAdapterRegistry: () => RunJSSourceAdapterRegistry;
 };
 
+type RemoteSyncRuntimeProvider = {
+  getRemoteSyncRuntime: () => RemoteSyncRuntime;
+};
+
 type PluginManagerLike = {
   get?: (name: string) => unknown;
   getPlugins?: () => Map<unknown, unknown>;
@@ -73,12 +80,23 @@ type AppWithPluginEvents = {
     };
   };
   acl?: {
-    allow?: (resource: string, actions: string | string[], condition: string) => void;
+    allow?: (
+      resource: string,
+      actions: string | string[],
+      condition:
+        | string
+        | ((ctx: {
+            can?: (input: { resource: string; action: string }) => unknown | Promise<unknown>;
+          }) => boolean | Promise<boolean>),
+    ) => void;
     registerSnippet?: (snippet: { name: string; actions: string[] }) => void;
   };
-  on?: (eventName: 'afterLoadPlugin', listener: PluginLoadListener) => unknown;
-  off?: (eventName: 'afterLoadPlugin', listener: PluginLoadListener) => unknown;
-  removeListener?: (eventName: 'afterLoadPlugin', listener: PluginLoadListener) => unknown;
+  on?: (eventName: 'afterLoadPlugin' | 'afterStart', listener: PluginLoadListener | (() => Promise<void>)) => unknown;
+  off?: (eventName: 'afterLoadPlugin' | 'afterStart', listener: PluginLoadListener | (() => Promise<void>)) => unknown;
+  removeListener?: (
+    eventName: 'afterLoadPlugin' | 'afterStart',
+    listener: PluginLoadListener | (() => Promise<void>),
+  ) => unknown;
   use?: (
     middleware: (ctx: LightExtensionRouteContext, next: () => Promise<void>) => Promise<void>,
     options?: unknown,
@@ -138,6 +156,10 @@ export class PluginLightExtensionServer extends Plugin {
 
   private pendingVscPluginListener?: PluginLoadListener;
 
+  private remotePullRecoveryListener?: () => Promise<void>;
+
+  private remotePullRecoveryPromise?: Promise<void>;
+
   async syncFlowModelReferencesForNodeTree(
     input: { rootUid: string; action?: string },
     ctx: Parameters<ReferenceService['syncFlowModelReferencesForNodeTree']>[1] = {},
@@ -168,6 +190,8 @@ export class PluginLightExtensionServer extends Plugin {
     if (!db) {
       return;
     }
+
+    this.unregisterVscPermissionHookWhenNeeded();
 
     this.auditService = new LightExtensionAuditService(db);
     this.permissionService = new LightExtensionPermissionService(this.auditService);
@@ -208,6 +232,13 @@ export class PluginLightExtensionServer extends Plugin {
       this.workspaceCompilerBridge,
     );
     this.repoService.useReferenceService(this.referenceService);
+    this.repoService.useRemoteSyncLifecycleGate({
+      assertRepositoryIdle: (repoId, transaction) =>
+        requireRemoteSyncRuntime((this.app as unknown as AppWithPluginEvents).pm).assertRepositoryIdle(
+          repoId,
+          transaction,
+        ),
+    });
     this.runtimeCompileService.useReferenceService(this.referenceService);
     this.moveSourceService = new MoveSourceService(
       db,
@@ -250,6 +281,16 @@ export class PluginLightExtensionServer extends Plugin {
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
       createLightExtensionCapabilitiesResource(this.validator),
     );
+    (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
+      createLightExtensionSyncResource({
+        db,
+        auditService: this.auditService,
+        permissionService: this.permissionService,
+        repoService: this.repoService,
+        runtimeCompileService: this.runtimeCompileService,
+        getRemoteSyncRuntime: () => requireRemoteSyncRuntime((this.app as unknown as AppWithPluginEvents).pm),
+      }),
+    );
     this.registerCapabilitiesHttpRoute();
     this.registerEntrySchemaHttpRoute();
     this.registerCompilePreviewHttpRoute();
@@ -257,20 +298,28 @@ export class PluginLightExtensionServer extends Plugin {
     this.registerRuntimeArtifactHttpRoute();
     this.registerAclActions();
     this.registerVscPermissionHookWhenAvailable();
+    this.registerRemotePullRecoveryListener();
   }
 
   async afterDisable() {
     this.unregisterVscPermissionHookWhenNeeded();
+    this.removeRemotePullRecoveryListener();
+  }
+
+  async afterEnable() {
+    await this.runRemotePullRecovery();
   }
 
   async remove() {
     this.unregisterVscPermissionHookWhenNeeded();
+    this.removeRemotePullRecoveryListener();
   }
 
   private registerAclActions() {
     const app = this.app as unknown as AppWithPluginEvents;
     app.acl?.allow?.('lightExtensionRuntime', [...lightExtensionRuntimeActionNames], 'loggedIn');
     app.acl?.allow?.('lightExtensionCapabilities', [...lightExtensionCapabilitiesActionNames], 'public');
+    this.registerSyncAcl(app);
     app.acl?.registerSnippet?.({
       name: LIGHT_EXTENSION_ACL_SNIPPET,
       actions: [
@@ -283,6 +332,37 @@ export class PluginLightExtensionServer extends Plugin {
         ...lightExtensionCapabilitiesActionNames.map((action) => `lightExtensionCapabilities:${action}`),
       ],
     });
+  }
+
+  private registerSyncAcl(app: AppWithPluginEvents) {
+    const permissions = {
+      get: ['manageSyncSource', 'pullFromSyncSource', 'pushToSyncSource'],
+      configure: ['manageSyncSource'],
+      disconnect: ['manageSyncSource'],
+      testConnection: ['manageSyncSource'],
+      plan: ['manageSyncSource', 'pullFromSyncSource', 'pushToSyncSource'],
+      pull: ['pullFromSyncSource'],
+      push: ['pushToSyncSource'],
+      createFromGit: ['create', 'manageSyncSource', 'pullFromSyncSource'],
+    } as const;
+    for (const actionName of lightExtensionSyncActionNames) {
+      app.acl?.allow?.('lightExtensionSync', actionName, async (ctx) => {
+        if (!ctx.can) {
+          return false;
+        }
+        for (const action of permissions[actionName]) {
+          const permission = await ctx.can({ resource: 'lightExtension', action });
+          const allowed = permission !== false && permission !== null && typeof permission !== 'undefined';
+          if (actionName === 'createFromGit' && !allowed) {
+            return false;
+          }
+          if (actionName !== 'createFromGit' && allowed) {
+            return true;
+          }
+        }
+        return actionName === 'createFromGit';
+      });
+    }
   }
 
   private registerCompilePreviewHttpRoute() {
@@ -500,6 +580,111 @@ export class PluginLightExtensionServer extends Plugin {
     this.unregisterVscPermissionHook = undefined;
   }
 
+  private registerRemotePullRecoveryListener() {
+    this.removeRemotePullRecoveryListener();
+    const app = this.app as unknown as AppWithPluginEvents;
+    if (!app.on) {
+      return;
+    }
+    const listener = async () => {
+      await this.runRemotePullRecovery();
+    };
+    this.remotePullRecoveryListener = listener;
+    app.on('afterStart', listener);
+  }
+
+  private removeRemotePullRecoveryListener() {
+    if (!this.remotePullRecoveryListener) {
+      return;
+    }
+    const app = this.app as unknown as AppWithPluginEvents;
+    if (app.off) {
+      app.off('afterStart', this.remotePullRecoveryListener);
+    } else {
+      app.removeListener?.('afterStart', this.remotePullRecoveryListener);
+    }
+    this.remotePullRecoveryListener = undefined;
+  }
+
+  private async recoverPullJobs(): Promise<void> {
+    if (!this.repoService || !this.permissionService || !this.runtimeCompileService || !this.auditService) {
+      return;
+    }
+    const runtime = findRemoteSyncRuntime((this.app as unknown as AppWithPluginEvents).pm);
+    if (!runtime) {
+      return;
+    }
+    const jobs = await runtime.getPullCoordinator().listRecoverablePullJobs();
+    const pullService = new LightExtensionRemotePullService(
+      this.permissionService,
+      this.repoService,
+      this.runtimeCompileService,
+      runtime.getPullCoordinator(),
+    );
+    for (const job of jobs) {
+      let repoId: string | null = null;
+      try {
+        if (!job.planFingerprint) {
+          continue;
+        }
+        const remote = await runtime.getRemoteById(job.remoteId);
+        const repoRecord = await this.db.getRepository('lightExtensionRepos').findOne({
+          filter: { vscRepoId: remote.repoId },
+        });
+        if (!repoRecord) {
+          continue;
+        }
+        repoId = String(repoRecord.get('id'));
+        await pullService.pull(
+          {
+            repoId,
+            remoteId: remote.id,
+            expectedLocalCommitId: job.expectedLocalCommitId,
+            expectedRemoteRevision: job.expectedRemoteRevision,
+            expectedRemoteTargetVersion: job.remoteTargetVersion,
+            planFingerprint: job.planFingerprint,
+            idempotencyKey: job.idempotencyKey,
+          },
+          {
+            requestId: `recover:${job.id}`,
+            requestSource: 'light-extension-pull-recovery',
+          },
+        );
+      } catch (error) {
+        if (!repoId) {
+          continue;
+        }
+        try {
+          await this.auditService.recordSyncEvent({
+            repoId,
+            action: 'syncPull',
+            result: 'blocked',
+            requestId: `recover:${job.id}`,
+            reasonCode: error instanceof Error ? error.name : 'pull-recovery-failed',
+            message: 'syncPull recovery failed',
+          });
+        } catch {
+          // Pull recovery and its durable job state must not depend on light-extension audit persistence.
+        }
+      }
+    }
+  }
+
+  private async runRemotePullRecovery(): Promise<void> {
+    if (this.remotePullRecoveryPromise) {
+      return this.remotePullRecoveryPromise;
+    }
+    const recovery = this.recoverPullJobs();
+    this.remotePullRecoveryPromise = recovery;
+    try {
+      await recovery;
+    } finally {
+      if (this.remotePullRecoveryPromise === recovery) {
+        this.remotePullRecoveryPromise = undefined;
+      }
+    }
+  }
+
   private removePendingVscPluginListener() {
     if (!this.pendingVscPluginListener) {
       return;
@@ -667,6 +852,38 @@ function findRunJSSourceAdapterRegistry(pm?: PluginManagerLike): RunJSSourceAdap
   return null;
 }
 
+function findRemoteSyncRuntime(pm?: PluginManagerLike): RemoteSyncRuntime | null {
+  if (!pm) {
+    return null;
+  }
+
+  for (const alias of VSC_FILE_PLUGIN_ALIASES) {
+    const plugin = pm.get?.(alias);
+    if (isRemoteSyncRuntimeProvider(plugin)) {
+      return plugin.getRemoteSyncRuntime();
+    }
+  }
+
+  const plugins = pm.getPlugins?.();
+  if (!plugins) {
+    return null;
+  }
+  for (const plugin of plugins.values()) {
+    if (isRemoteSyncRuntimeProvider(plugin)) {
+      return plugin.getRemoteSyncRuntime();
+    }
+  }
+  return null;
+}
+
+function requireRemoteSyncRuntime(pm?: PluginManagerLike): RemoteSyncRuntime {
+  const runtime = findRemoteSyncRuntime(pm);
+  if (!runtime) {
+    throw new LightExtensionError('LIGHT_EXTENSION_RUNTIME_UNAVAILABLE', 'Remote sync runtime is unavailable');
+  }
+  return runtime;
+}
+
 function isVscPermissionHookRegistrar(value: unknown): value is VscPermissionHookRegistrar {
   return (
     Boolean(value) &&
@@ -688,6 +905,14 @@ function isRunJSSourceAdapterRegistryProvider(value: unknown): value is RunJSSou
     Boolean(value) &&
     typeof value === 'object' &&
     typeof (value as { getRunJSSourceAdapterRegistry?: unknown }).getRunJSSourceAdapterRegistry === 'function'
+  );
+}
+
+function isRemoteSyncRuntimeProvider(value: unknown): value is RemoteSyncRuntimeProvider {
+  return (
+    Boolean(value) &&
+    typeof value === 'object' &&
+    typeof (value as { getRemoteSyncRuntime?: unknown }).getRemoteSyncRuntime === 'function'
   );
 }
 

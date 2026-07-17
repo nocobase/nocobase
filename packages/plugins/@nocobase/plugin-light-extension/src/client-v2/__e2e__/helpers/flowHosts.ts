@@ -421,12 +421,9 @@ export async function destroyFlowHostAcceptancePage(
   session: RootApiSession,
   fixture: Pick<FlowHostAcceptancePage, 'pageUid' | 'collectionName' | 'hosts'>,
 ): Promise<void> {
+  await switchAcceptanceHostsToInline(page, session, fixture.hosts);
+
   const failures: string[] = [];
-  try {
-    await switchAcceptanceHostsToInline(page, session, fixture.hosts);
-  } catch (error) {
-    failures.push(getErrorMessage(error));
-  }
   try {
     await destroyFlowPage(page, session, fixture.pageUid);
   } catch (error) {

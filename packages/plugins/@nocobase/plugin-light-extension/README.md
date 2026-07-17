@@ -206,6 +206,40 @@ yarn test packages/plugins/@nocobase/plugin-light-extension/src/client-v2/__test
 yarn test packages/plugins/@nocobase/plugin-vsc-file/src/client-v2/runjs-studio/__tests__/RunJSStudioToolbarRegistry.test.tsx --run --reporter=verbose
 ```
 
+## Remote Sync Facade
+
+Light-extension remote synchronization is exposed through the `lightExtensionSync` Resource. It is the public domain facade over `plugin-vsc-file`'s `RemoteSyncRuntime`; raw VSC remote collections and internal Resources are deliberately denied to clients.
+
+The facade supports `get`, `configure`, `disconnect`, `testConnection`, `plan`, `pull`, `push`, and `createFromGit`. Requests use the light-extension repository id and strict input allowlists. Responses contain safe source summaries, masked credential-reference displays, and planner results without raw tokens, internal VSC repository ids, remote ids, job claims, or inbound snapshot handles.
+
+Ownership is split as follows:
+
+- `plugin-vsc-file` owns adapters, normalized provider configuration, durable jobs, commit mappings, conflicts, planning, Push, Pull discovery, and recovery primitives.
+- `plugin-light-extension` owns remote-to-light-extension validation, compilation, atomic Head advancement, runtime artifact replacement, reference rebuilds, and Pull recovery.
+- The local light-extension VSC repository remains the runtime source. Remote synchronization exchanges snapshots; it does not expose or reproduce full Git history.
+
+The synchronization ACL actions are scoped independently:
+
+- `manageSyncSource` controls configuration, connection tests, and disconnect, and also grants `get`/Plan visibility.
+- `pullFromSyncSource` controls Pull and grants `get`/Plan visibility.
+- `pushToSyncSource` controls Push and grants `get`/Plan visibility.
+- `createFromGit` requires `create`, `manageSyncSource`, and `pullFromSyncSource`.
+
+Repository configuration, disconnect, archive, and delete are rejected with `LIGHT_EXTENSION_SYNC_BUSY` while a remote job is `pending`, `running`, or `finalize-pending`. Push and Pull also require the exact Head, remote revision, remote-target version, and plan fingerprint returned by the latest Plan.
+
+GitHub credentials are optional for public Pull discovery. Private Pull and all Push operations require a complete `{{ $env.NAME }}` reference to an existing Variables and secrets record with `type=secret`. Raw credential values are never stored in light-extension configuration or returned to clients.
+
+Primary assertion coverage:
+
+```bash
+yarn test packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__/sync-contract.test.ts --run
+yarn test packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__/sync-resource.test.ts --run
+yarn test packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__/create-from-remote.test.ts --run
+yarn test packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__/remote-pull-service.test.ts --run
+yarn test packages/plugins/@nocobase/plugin-light-extension/src/client-v2/__tests__/LightExtensionSyncDrawer.test.tsx --run
+yarn test packages/plugins/@nocobase/plugin-light-extension/src/client-v2/__tests__/LightExtensionGitSourceFields.test.tsx --run
+```
+
 ## Compatibility and Rollout
 
 - Existing inline JS surfaces require no migration. Missing `sourceMode` continues to mean inline.

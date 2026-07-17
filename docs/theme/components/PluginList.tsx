@@ -1,9 +1,5 @@
-import { useFrontmatter, useLang, useNavigate, usePages } from '@rspress/core/runtime';
+import { useFrontmatter, useLang, usePages } from '@rspress/core/runtime';
 import { PluginCard } from './PluginCard';
-import { PluginPrice } from './PluginPrice';
-import { type PluginInfoFrontmatter } from './PluginInfo';
-import { EditionLevels } from './EditionLevels';
-import { Badge, renderHtmlOrText } from '@rspress/core/theme';
 import './PluginList.scss';
 
 export function PluginList() {
