@@ -163,6 +163,23 @@ server {
         send_timeout 600;
     }
 
+    # File access URLs are application routes. Keep them above the SPA
+    # locations so Nginx forwards them to the NocoBase gateway.
+    location ^~ {{publicPath}}files/ {
+        proxy_pass http://127.0.0.1:{{apiPort}};
+        proxy_http_version 1.1;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $upstream_x_forwarded_proto;
+        proxy_set_header Host $final_host;
+        proxy_set_header Referer $http_referer;
+        proxy_set_header User-Agent $http_user_agent;
+        add_header Cache-Control 'no-cache, no-store';
+        proxy_connect_timeout 600;
+        proxy_send_timeout 600;
+        proxy_read_timeout 600;
+        send_timeout 600;
+    }
+
 
 
     location {{publicPath}} {

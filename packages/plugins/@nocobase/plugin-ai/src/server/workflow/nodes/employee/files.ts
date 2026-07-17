@@ -16,7 +16,7 @@ import axios from 'axios';
 import PluginFileManagerServer from '@nocobase/plugin-file-manager';
 import { Plugin } from '@nocobase/server';
 import { resolveContentType, resolveFileIdentity } from '../../utils';
-import { type AttachmentSource } from '../../../attachments';
+import { getAttachmentSource, type AttachmentSource } from '../../../attachments';
 
 function appendSource(record: unknown, source: AttachmentSource) {
   if (!record || typeof record !== 'object' || Array.isArray(record)) {
@@ -36,6 +36,7 @@ export abstract class Files {
         .flatMap((it) => (_.isArray(it.value) ? it.value : [it.value]))
         .map((attachment) =>
           appendSource(attachment, {
+            ...(getAttachmentSource(attachment) ?? {}),
             trustworthy: true,
           }),
         );

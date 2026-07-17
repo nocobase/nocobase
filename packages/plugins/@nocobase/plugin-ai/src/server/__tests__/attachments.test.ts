@@ -193,12 +193,14 @@ describe('message attachment lookup', () => {
         source: {
           dataSourceKey: 'main',
           collectionName: 'aiFiles',
+          documentCache: false,
           trustworthy: true,
         },
       }),
     ).toEqual({
       dataSourceKey: 'main',
       collectionName: 'aiFiles',
+      documentCache: false,
       trustworthy: true,
     });
   });

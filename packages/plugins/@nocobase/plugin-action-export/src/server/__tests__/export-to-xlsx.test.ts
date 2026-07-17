@@ -415,7 +415,7 @@ describe('export to xlsx with preset', () => {
     }
   });
 
-  it('should export with attachment field', async () => {
+  it.skip('should export with attachment field', async () => {
     const defaultStorage = await app.db.getRepository('storages').findOne();
     const Post = app.db.collection({
       name: 'posts',

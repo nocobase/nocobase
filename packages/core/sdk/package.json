@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/sdk",
-  "version": "2.2.0-alpha.8",
+  "version": "2.2.0-alpha.9",
   "license": "Apache-2.0",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -9,6 +9,7 @@
     "qs": "^6.10.1"
   },
   "devDependencies": {
+    "@nocobase/utils": "2.x",
     "axios-mock-adapter": "^1.20.0"
   },
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1"

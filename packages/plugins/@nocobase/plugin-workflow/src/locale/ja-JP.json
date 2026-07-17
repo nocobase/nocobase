@@ -256,6 +256,7 @@
   "When no condition matches": "When no condition matches",
   "Will be executed in the background as a queued task.": "キュータスクとしてバックグラウンドで実行されます。",
   "Workflow": "ワークフロー",
+  "Workflow not executed": "ワークフローは実行されませんでした",
   "Workflow executed, the result status is <1>{{statusText}}</1><2>View the execution</2>": "ワークフローが実行されました。結果ステータス: <1>{{statusText}}</1><2>実行詳細を表示</2>",
   "Workflow was not triggered because the current request did not meet the trigger requirements.": "現在のリクエストがトリガー要件を満たしていないため、ワークフローはトリガーされませんでした。",
   "Workflow of execution is not existed": "Workflow of execution is not existed",

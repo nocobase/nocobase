@@ -143,13 +143,13 @@ describe('vditor:check', () => {
     `);
   });
 
-  it('should return s3 storage and not support upload when s3 collection without baseUrl is provided', async () => {
+  it('should return s3 storage and support upload when s3 collection without baseUrl is provided', async () => {
     const response = await agent.resource('vditor').check({
       fileCollectionName: 'file-collection-s3',
     });
 
     expect(response.status).toBe(200);
-    expect(response.body.data.isSupportToUploadFiles).toBe(false);
+    expect(response.body.data.isSupportToUploadFiles).toBe(true);
     expect(response.body.data.storage).toMatchInlineSnapshot(`
       {
         "id": ${storage2.id},
@@ -197,7 +197,7 @@ describe('vditor:check', () => {
     `);
   });
 
-  it('should handle s3 storage with baseUrl but not public attribute', async () => {
+  it('should support s3 storage with baseUrl but not public attribute', async () => {
     // 创建测试所需的非公开 s3 存储
     const storage = await db.getRepository('storages').create({
       values: {
@@ -230,7 +230,7 @@ describe('vditor:check', () => {
     });
 
     expect(response.status).toBe(200);
-    expect(response.body.data.isSupportToUploadFiles).toBe(false);
+    expect(response.body.data.isSupportToUploadFiles).toBe(true);
     expect(response.body.data.storage).toMatchInlineSnapshot(`
       {
         "id": ${storage.id},

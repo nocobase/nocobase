@@ -33,7 +33,7 @@ export type SSEData = {
   data: Message;
 };
 export interface InAppMessageFormValues {
-  receivers: string[];
+  receivers: Array<number | string | { filter?: Record<string, unknown> }>;
   content: string;
   senderName: string;
   senderId: string;
