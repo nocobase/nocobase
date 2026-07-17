@@ -58,6 +58,24 @@ afterEach(() => {
 });
 
 describe('JSPageRuntimeController', () => {
+  it('runs an idle refresh and settles after that run', async () => {
+    const pendingExecute = deferred<void>();
+    const { controller } = createController({
+      execute: async () => pendingExecute.promise,
+    });
+    let settled = false;
+
+    const refresh = controller.refresh().then(() => {
+      settled = true;
+    });
+    await Promise.resolve();
+
+    expect(settled).toBe(false);
+    pendingExecute.resolve();
+    await refresh;
+    expect(settled).toBe(true);
+  });
+
   it('owns the runtime element and disposes its root once', async () => {
     const disposeTheme = vi.fn();
     const unmount = vi.fn();

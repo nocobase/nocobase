@@ -8,7 +8,7 @@
  */
 
 import { act, render, screen, waitFor } from '@testing-library/react';
-import { FlowEngine, FlowEngineProvider, type FlowModel } from '@nocobase/flow-engine';
+import { DATA_SOURCE_DIRTY_EVENT, FlowEngine, FlowEngineProvider, type FlowModel } from '@nocobase/flow-engine';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_JS_PAGE_CODE, JSPageModel } from '../JSPageModel';
@@ -180,7 +180,49 @@ describe('JSPageModel', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('broken page');
     expect(host).not.toHaveTextContent('old');
 
+    const openSettings = vi.spyOn(engine.flowSettings, 'open').mockResolvedValue(undefined);
+    await model.openFlowSettings({ flowKey: 'jsSettings', stepKey: 'runJs' });
+    expect(openSettings).toHaveBeenCalledWith({ model, flowKey: 'jsSettings', stepKey: 'runJs' });
+
     act(() => rendered.unmount());
     await waitFor(() => expect(host.childElementCount).toBe(0));
+  });
+
+  it('reruns on activation and dirty events while preserving inactive content', async () => {
+    const engine = createEngine();
+    const model = createModel(engine, { jsSettings: { runJs: { code: 'ctx.render("first")' } } });
+    renderModel(engine, model);
+    const host = screen.getByLabelText('JavaScript page content');
+    await waitFor(() => expect(host).toHaveTextContent('first'));
+
+    model.setStepParams('jsSettings', 'runJs', { code: 'ctx.render("activated")' });
+    await act(async () => {
+      model.activateCurrentTab();
+      await Promise.resolve();
+    });
+    await waitFor(() => expect(host).toHaveTextContent('activated'));
+
+    model.setStepParams('jsSettings', 'runJs', { code: 'ctx.render("dirty")' });
+    act(() => engine.emitter.emit(DATA_SOURCE_DIRTY_EVENT, { dataSourceKey: 'main', resourceNames: ['posts'] }));
+    await waitFor(() => expect(host).toHaveTextContent('dirty'));
+
+    act(() => {
+      model.context.pageActive.value = false;
+      model.deactivateCurrentTab();
+    });
+    expect(host).toHaveTextContent('dirty');
+    model.setStepParams('jsSettings', 'runJs', { code: 'ctx.render("inactive")' });
+    await act(async () => {
+      model.activateCurrentTab();
+      await Promise.resolve();
+    });
+    expect(host).toHaveTextContent('dirty');
+
+    await act(async () => {
+      model.context.pageActive.value = true;
+      model.activateCurrentTab();
+      await Promise.resolve();
+    });
+    await waitFor(() => expect(host).toHaveTextContent('inactive'));
   });
 });

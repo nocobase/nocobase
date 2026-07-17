@@ -8,12 +8,28 @@
  */
 
 import { FlowEngine } from '@nocobase/flow-engine';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { createTypeScriptProjectSession } from '../../../../components/code-editor/typescriptProject';
 import { RunJSEditorField } from '../../../../components/runjs-studio';
-import { JSPageModel } from '../JSPageModel';
+import { DEFAULT_JS_PAGE_CODE, JSPageModel } from '../JSPageModel';
 import { JS_PAGE_LIGHT_EXTENSION_FULL_SOURCE_FIELD } from '../JSPageSourceModeField';
 
 describe('JSPageModel source authoring', () => {
+  it('typechecks the default template with the JS Page authoring context', async () => {
+    const session = createTypeScriptProjectSession();
+    const diagnostics = await session.getDiagnostics(
+      {
+        currentFilePath: 'src/main.tsx',
+        files: [{ path: 'src/main.tsx', content: DEFAULT_JS_PAGE_CODE }],
+        runJSContext: { modelUse: 'JSPageModel' },
+      },
+      DEFAULT_JS_PAGE_CODE,
+    );
+    session.dispose();
+
+    expect(diagnostics.filter((diagnostic) => diagnostic.severity === 'error')).toEqual([]);
+  });
+
   it('uses the replaceable source field and embedded RunJS Studio', () => {
     const engine = new FlowEngine();
     engine.registerModels({ JSPageModel });
@@ -63,5 +79,18 @@ describe('JSPageModel source authoring', () => {
       sourceBinding: { entryId: 'entry-1' },
       settings: { color: 'blue' },
     });
+  });
+
+  it('reruns the page once after Studio saves', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ JSPageModel });
+    const model = engine.createModel<JSPageModel>({ uid: 'js-page-save', use: 'JSPageModel' });
+    const rerender = vi.spyOn(model, 'rerender').mockResolvedValue(undefined);
+    const afterParamsSave = model.getFlow('jsSettings')?.steps?.runJs?.afterParamsSave;
+
+    expect(afterParamsSave).toBeTypeOf('function');
+    await afterParamsSave?.({ model } as Parameters<NonNullable<typeof afterParamsSave>>[0]);
+
+    expect(rerender).toHaveBeenCalledOnce();
   });
 });

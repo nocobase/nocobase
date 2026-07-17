@@ -196,6 +196,12 @@ interface RunJSSourceInfo {
   readonly sourceMap?: string;
   readonly context?: RunJSUnknownObject;
 }
+interface RunJSPageFacade {
+  readonly uid: string;
+  readonly active: boolean;
+  refresh(): Promise<void>;
+  setDocumentTitle(title: string): void;
+}
 interface RunJSExecutionResult<T = unknown> {
   readonly success: boolean;
   readonly value?: T;
@@ -295,6 +301,12 @@ interface RunJSContext {
 `;
 
 const runJSContextModelDeclarations: Record<string, string> = {
+  JSPageModel: `
+interface RunJSContext {
+  element: RunJSSafeElement;
+  page: RunJSPageFacade;
+}
+`,
   JSBlockModel: `
 interface RunJSContext {
   element: RunJSSafeElement;
@@ -402,6 +414,7 @@ const runJSSourceRuntimeModelUses = new Set([
   'JSFormActionModel',
   'JSItemActionModel',
   'JSItemModel',
+  'JSPageModel',
   'JSRecordActionModel',
 ]);
 

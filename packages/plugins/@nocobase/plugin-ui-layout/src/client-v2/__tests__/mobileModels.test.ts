@@ -367,6 +367,8 @@ describe('plugin-ui-layout mobile models', () => {
     expect(MobileChildPageModel.prototype).toBeInstanceOf(ChildPageModel);
     expect(MobileJSPageModel.prototype).toBeInstanceOf(JSPageModel);
     expect(MobileJSPageModel.prototype).not.toBeInstanceOf(MobileRootPageModel);
+    expect(Object.prototype.hasOwnProperty.call(JSPageModel, 'resolveUse')).toBe(true);
+    expect(JSPageModel.resolveUse).not.toBe(RootPageModel.resolveUse);
   });
 
   it('should resolve JS pages only to the dedicated mobile JS page model inside mobile layouts', () => {
@@ -443,6 +445,8 @@ describe('plugin-ui-layout mobile models', () => {
     expect(container.querySelector('.nb-ui-layout-mobile-surface')).toBeInTheDocument();
     expect(container.querySelector('.ant-tabs')).not.toBeInTheDocument();
     expect(screen.queryByText('Add tab')).not.toBeInTheDocument();
+    expect(model.context.themeToken).toMatchObject({ marginBlock: 12, paddingLG: 16, paddingSM: 8 });
+    expect(model.getFlow('jsSettings')).toBeDefined();
   });
 
   it('should resolve persisted root and child pages to mobile page models inside mobile layouts', () => {

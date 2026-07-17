@@ -62,11 +62,11 @@ function readRunParams(model: JSPageModel): JSPageRunParams {
   return isRecord(params) ? { ...params } : {};
 }
 
-function readRunJSFailure(result: unknown): Error | null {
+function readRunJSFailure(result: unknown, fallbackMessage: string): Error | null {
   if (!isRecord(result) || result.success !== false) {
     return null;
   }
-  return result.error instanceof Error ? result.error : new Error('RunJS execution failed');
+  return result.error instanceof Error ? result.error : new Error(fallbackMessage);
 }
 
 export class JSPageModel extends RootPageModel {
@@ -224,7 +224,7 @@ export class JSPageModel extends RootPageModel {
     const result = await runtimeContext.runjs(resolved.runtime.code, undefined, {
       version: resolved.runtime.version,
     });
-    const failure = readRunJSFailure(result);
+    const failure = readRunJSFailure(result, this.context.t('RunJS execution failed'));
     if (failure) {
       throw failure;
     }
