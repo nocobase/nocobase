@@ -1,45 +1,50 @@
 ---
 pkg: "@nocobase/plugin-data-source-manager"
-title: "Manajemen Data Source"
-description: "Plugin manajemen data source: mengelola database utama dan MySQL/MariaDB/PostgreSQL/MSSQL/Oracle eksternal, sinkronisasi tabel buatan sendiri, mengintegrasikan data source REST API, menyediakan antarmuka manajemen terpadu."
-keywords: "manajemen data source,database utama,database eksternal,sinkronisasi Collection,data source REST API,NocoBase"
+title: "Manajemen sumber data"
+description: "Plugin manajemen sumber data: mengelola database utama, database eksternal, sumber data REST API, dan sumber data NocoBase eksternal, serta menyediakan antarmuka manajemen sumber data terpadu."
+keywords: "manajemen sumber data,database utama,database eksternal,sinkronisasi tabel data,sumber data REST API,NocoBase"
 ---
-# Manajemen Data Source
+# Manajemen sumber data
 
-## Pengantar
+## Pengenalan
 
-NocoBase menyediakan Plugin Manajemen Data Source untuk mengelola data source dan tabel datanya. Plugin manajemen data source hanya menyediakan antarmuka manajemen untuk semua data source, dan tidak menyediakan kemampuan untuk mengakses data source. Plugin ini perlu digunakan bersama dengan berbagai plugin data source. Data source yang saat ini didukung untuk integrasi meliputi:
+NocoBase menyediakan plugin manajemen sumber data untuk mengelola sumber data beserta tabel datanya. Plugin manajemen sumber data hanya menyediakan antarmuka untuk mengelola semua sumber data dan tidak menyediakan kemampuan untuk menghubungkan sumber data. Plugin ini perlu digunakan bersama berbagai plugin sumber data. Saat ini, sumber data yang didukung meliputi:
 
-- [Main Database](/data-sources/data-source-main): Database utama NocoBase, mendukung database relasional seperti MySQL, PostgreSQL, MariaDB, dan lainnya.
-- [External MySQL](/data-sources/data-source-external-mysql): Menggunakan database MySQL eksternal sebagai data source.
-- [External MariaDB](/data-sources/data-source-external-mariadb): Menggunakan database MariaDB eksternal sebagai data source.
-- [External PostgreSQL](/data-sources/data-source-external-postgres): Menggunakan database PostgreSQL eksternal sebagai data source.
-- [External MSSQL](/data-sources/data-source-external-mssql): Menggunakan database MSSQL (SQL Server) eksternal sebagai data source.
-- [External Oracle](/data-sources/data-source-external-oracle): Menggunakan database Oracle eksternal sebagai data source.
-- [NocoBase Eksternal](/data-sources/data-source-external-nocobase/): Menggunakan aplikasi NocoBase lain sebagai data source eksternal melalui API NocoBase jarak jauh.
+- [Database Utama](/data-sources/data-source-main/)：Database utama NocoBase, mendukung MySQL, PostgreSQL, MariaDB, KingbaseES, dan OceanBase.
+- [PostgreSQL Eksternal](/data-sources/data-source-external-postgres/)：Menggunakan database PostgreSQL eksternal sebagai sumber data.
+- [MySQL Eksternal](/data-sources/data-source-external-mysql/)：Menggunakan database MySQL eksternal sebagai sumber data.
+- [MariaDB Eksternal](/data-sources/data-source-external-mariadb/)：Menggunakan database MariaDB eksternal sebagai sumber data.
+- [MSSQL Eksternal](/data-sources/data-source-external-mssql/)：Menggunakan database MSSQL (SQL Server) eksternal sebagai sumber data.
+- [KingbaseES Eksternal](/data-sources/data-source-kingbase/)：Menggunakan database KingbaseES eksternal sebagai sumber data.
+- [OceanBase Eksternal](/data-sources/external/oceanbase)：Menggunakan database OceanBase eksternal sebagai sumber data.
+- [Oracle Eksternal](/data-sources/data-source-external-oracle/)：Menggunakan database Oracle eksternal sebagai sumber data.
+- [ClickHouse Eksternal](/data-sources/external/clickhouse)：Menggunakan database ClickHouse eksternal sebagai sumber data, yang biasanya digunakan untuk kueri, statistik, dan penyajian laporan.
+- [Doris Eksternal](/data-sources/external/doris)：Menggunakan database Doris eksternal sebagai sumber data, yang biasanya digunakan untuk kueri, statistik, dan penyajian laporan.
+- [Sumber data REST API](/data-sources/data-source-rest-api/)：Menghubungkan data dari sumber REST API ke NocoBase.
+- [NocoBase Eksternal](/data-sources/data-source-external-nocobase/)：Menggunakan aplikasi NocoBase lain sebagai sumber data eksternal melalui NocoBase API jarak jauh.
 
-Selain itu, lebih banyak tipe dapat diperluas melalui plugin, dapat berupa berbagai jenis database umum, atau platform yang menyediakan API (SDK).
+Selain itu, lebih banyak jenis sumber data dapat ditambahkan melalui plugin, baik berbagai jenis database umum maupun platform yang menyediakan API (SDK).
 
 ## Instalasi
 
 Plugin bawaan, tidak perlu diinstal secara terpisah.
 
-## Petunjuk Penggunaan
+## Panduan penggunaan
 
-Saat aplikasi diinstal pertama kali, secara default akan disediakan satu data source untuk menyimpan data NocoBase, yang disebut database utama. Untuk lebih lanjut, lihat dokumentasi [Database Utama](/data-sources/data-source-main/index.md).
+Saat aplikasi pertama kali diinstal dan diinisialisasi, secara default akan tersedia sumber data untuk menyimpan data NocoBase, yang disebut database utama. Untuk informasi selengkapnya, lihat dokumentasi [Database utama](/data-sources/data-source-main/index.md).
 
-### Data Source Eksternal
+### Sumber data eksternal
 
-Mendukung database eksternal sebagai data source. Untuk lebih lanjut, lihat dokumentasi [Database Eksternal / Pengantar](/data-sources/data-source-manager/external-database).
+Database eksternal dapat digunakan sebagai sumber data. Untuk informasi selengkapnya, lihat dokumentasi [Database eksternal / Pengenalan](/data-sources/data-source-manager/external-database.md).
 
 ![nocobase_doc-2025-10-29-19-45-33](https://static-docs.nocobase.com/nocobase_doc-2025-10-29-19-45-33.png)
 
-### Mendukung Sinkronisasi Tabel Buatan Sendiri di Database
+### Mendukung sinkronisasi tabel yang dibuat sendiri di database
 
 ![nocobase_doc-2025-10-29-19-46-34](https://static-docs.nocobase.com/nocobase_doc-2025-10-29-19-46-34.png)
 
-Anda juga dapat mengintegrasikan data dari sumber HTTP API. Untuk lebih lanjut, lihat dokumentasi [Data Source REST API](/data-sources/data-source-rest-api/index.md).
+Data dari sumber HTTP API juga dapat dihubungkan. Untuk informasi selengkapnya, lihat dokumentasi [Sumber data REST API](/data-sources/data-source-rest-api/index.md).
 
-### Data Source NocoBase Eksternal
+### Sumber data NocoBase eksternal
 
-Anda dapat menggunakan aplikasi NocoBase lain sebagai data source eksternal melalui API NocoBase jarak jauh. Untuk lebih lanjut, lihat dokumentasi [NocoBase Eksternal](/data-sources/data-source-external-nocobase/).
+Aplikasi NocoBase lain dapat dihubungkan sebagai sumber data eksternal melalui NocoBase API jarak jauh. Untuk informasi selengkapnya, lihat dokumentasi [NocoBase Eksternal](/data-sources/data-source-external-nocobase/index.md).

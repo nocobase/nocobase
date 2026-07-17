@@ -31,6 +31,10 @@ export default function useStyle() {
           zIndex: 1000,
         },
         '.vditor-reset': { fontSize: `${token.fontSize}px !important`, color: 'unset', padding: '10px !important' },
+        '.vditor-reset h2': {
+          borderBottom: 'none !important',
+          boxShadow: 'none !important',
+        },
         '.vditor': { borderRadius: 8, overflow: 'visible' },
         '.vditor .vditor-content': { borderRadius: '0 0 8px 8px', overflow: 'hidden' },
         '.vditor .vditor-toolbar': {
