@@ -11,6 +11,7 @@ import type { Database, Transaction } from '@nocobase/database';
 import type {
   VscCommitRecord,
   VscFileChange,
+  VscFileMetricsCollector,
   VscPermissionAction,
   VscRefName,
   VscRemoteSnapshot,
@@ -421,26 +422,31 @@ export class LightExtensionFileService {
     transaction: Transaction,
     aclAction: LightExtensionAclAction,
   ): Promise<LightExtensionPullResult> {
-    const result = await this.runVsc(repo.id, () =>
-      this.vscFileService.pull(
-        {
-          repoId: repo.vscRepoId,
-          ref: input.ref,
-          knownTreeHash: input.knownTreeHash,
-          includeContent: input.includeContent,
-          selectedPaths: input.selectedPaths,
-        },
-        this.createVscContext({
-          ctx,
-          transaction,
-          requestId: getRequestId(ctx),
-          repoId: repo.id,
-          aclAction,
-          reason: 'read light-extension source tree',
-          allowedActions: ['pull'],
-        }),
-      ),
-    );
+    const pullSource = () =>
+      this.runVsc(repo.id, () =>
+        this.vscFileService.pull(
+          {
+            repoId: repo.vscRepoId,
+            ref: input.ref,
+            knownTreeHash: input.knownTreeHash,
+            includeContent: input.includeContent,
+            selectedPaths: input.selectedPaths,
+          },
+          this.createVscContext({
+            ctx,
+            transaction,
+            requestId: getRequestId(ctx),
+            repoId: repo.id,
+            aclAction,
+            reason: 'read light-extension source tree',
+            allowedActions: ['pull'],
+          }),
+        ),
+      );
+    const result = ctx.compileMetrics
+      ? await ctx.compileMetrics.measureAsync('snapshotMaterialize', pullSource)
+      : await pullSource();
+    recordMaterializedSnapshot(ctx, input.includeContent, result.files);
 
     return {
       repo: stripInternalRepo(repo),
@@ -458,26 +464,31 @@ export class LightExtensionFileService {
     transaction: Transaction,
     aclAction: LightExtensionAclAction,
   ): Promise<LightExtensionPullResult> {
-    const result = await this.runVsc(repo.id, () =>
-      this.vscFileService.pullCommit(
-        {
-          repoId: repo.vscRepoId,
-          commitId: input.commitId,
-          knownTreeHash: input.knownTreeHash,
-          includeContent: input.includeContent,
-          selectedPaths: input.selectedPaths,
-        },
-        this.createVscContext({
-          ctx,
-          transaction,
-          requestId: getRequestId(ctx),
-          repoId: repo.id,
-          aclAction,
-          reason: 'read light-extension source commit tree',
-          allowedActions: ['pull'],
-        }),
-      ),
-    );
+    const pullSource = () =>
+      this.runVsc(repo.id, () =>
+        this.vscFileService.pullCommit(
+          {
+            repoId: repo.vscRepoId,
+            commitId: input.commitId,
+            knownTreeHash: input.knownTreeHash,
+            includeContent: input.includeContent,
+            selectedPaths: input.selectedPaths,
+          },
+          this.createVscContext({
+            ctx,
+            transaction,
+            requestId: getRequestId(ctx),
+            repoId: repo.id,
+            aclAction,
+            reason: 'read light-extension source commit tree',
+            allowedActions: ['pull'],
+          }),
+        ),
+      );
+    const result = ctx.compileMetrics
+      ? await ctx.compileMetrics.measureAsync('snapshotMaterialize', pullSource)
+      : await pullSource();
+    recordMaterializedSnapshot(ctx, input.includeContent, result.files);
 
     return {
       repo: stripInternalRepo(repo),
@@ -537,6 +548,7 @@ export class LightExtensionFileService {
     return {
       transaction: input.transaction,
       authorId: input.ctx.actorUserId || null,
+      metricsCollector: createVscMetricsCollector(input.ctx),
       request: this.permissionService.createInternalVscRequestContext({
         requestId: input.requestId,
         reason: input.reason,
@@ -629,6 +641,35 @@ export class LightExtensionFileService {
 
     return Boolean(repo);
   }
+}
+
+function createVscMetricsCollector(ctx: LightExtensionServiceContext): VscFileMetricsCollector | undefined {
+  if (!ctx.compileMetrics) {
+    return undefined;
+  }
+
+  return {
+    increment(counter, amount) {
+      ctx.compileMetrics?.increment(counter, amount);
+    },
+  };
+}
+
+function recordMaterializedSnapshot(
+  ctx: LightExtensionServiceContext,
+  includeContent: LightExtensionIncludeContentMode | undefined,
+  files: LightExtensionPulledFile[] | undefined,
+): void {
+  if (includeContent !== 'all' || !files) {
+    return;
+  }
+
+  ctx.compileMetrics?.increment('snapshotMaterializationCount');
+  ctx.compileMetrics?.set('repoFileCount', files.length);
+  ctx.compileMetrics?.set(
+    'repoByteSize',
+    files.reduce((total, file) => total + (Number.isSafeInteger(file.size) && file.size >= 0 ? file.size : 0), 0),
+  );
 }
 
 function assertRepoNotArchived(repo: LightExtensionRepoInternalRecord, actionLabel: string) {

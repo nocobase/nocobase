@@ -39,6 +39,7 @@ import type {
 import { RefService } from './RefService';
 import { RepositoryService } from './RepositoryService';
 import { TreeService } from './TreeService';
+import { incrementVscFileMetric, type VscFileMetricsCollector } from './VscFileMetrics';
 import type { VscPermissionAction, VscPermissionHookInput, VscPermissionRequestMetadata } from '../permissions';
 import { VscPermissionHookRegistry } from '../permissions';
 
@@ -46,6 +47,7 @@ export interface VscServiceContext {
   transaction?: Transaction;
   authorId?: string | null;
   request?: VscPermissionRequestMetadata;
+  metricsCollector?: VscFileMetricsCollector;
 }
 
 export interface CreateRepositoryInput extends VscRepositoryIdentity {
@@ -328,7 +330,7 @@ export class VscFileService {
       };
     }
 
-    const files = await this.loadFiles(resolved.commit.treeHash, input, ctx.transaction);
+    const files = await this.loadFiles(resolved.commit.treeHash, input, ctx.transaction, ctx.metricsCollector);
 
     return {
       repository: resolved.repository,
@@ -369,6 +371,7 @@ export class VscFileService {
         selectedPaths: input.selectedPaths,
       },
       ctx.transaction,
+      ctx.metricsCollector,
     );
 
     return {
@@ -520,14 +523,19 @@ export class VscFileService {
         : [];
       const allowedBlobHashes = new Set(baseEntries.map((entry) => entry.blobHash));
       const nextEntries = this.applyFileChanges(baseEntries, input.files, allowedBlobHashes);
-      const nextTreeHash = await this.treeService.hashTree(nextEntries, { transaction });
-      const baseTreeHash = baseCommit ? baseCommit.treeHash : await this.treeService.hashTree([], { transaction });
+      const nextTreeHash = await this.treeService.hashTree(nextEntries, {
+        transaction,
+        metricsCollector: ctx.metricsCollector,
+      });
+      const baseTreeHash = baseCommit
+        ? baseCommit.treeHash
+        : await this.treeService.hashTree([], { transaction, metricsCollector: ctx.metricsCollector });
 
       if (nextTreeHash === baseTreeHash && !input.allowEmptyCommit) {
         throw new VscError('NO_CHANGES', 'Push does not change the repository tree');
       }
 
-      const tree = await this.treeService.ensureTree(nextEntries, transaction);
+      const tree = await this.treeService.ensureTree(nextEntries, transaction, ctx.metricsCollector);
       const commit = await this.commitService.createCommit(
         {
           repoId: repository.id,
@@ -636,7 +644,12 @@ export class VscFileService {
     };
   }
 
-  private async loadFiles(treeHash: string, input: PullInput, transaction?: Transaction): Promise<PulledFile[]> {
+  private async loadFiles(
+    treeHash: string,
+    input: PullInput,
+    transaction?: Transaction,
+    metricsCollector?: VscFileMetricsCollector,
+  ): Promise<PulledFile[]> {
     const includeContent = input.includeContent || 'none';
     const selectedPathSet =
       includeContent === 'selected' ? new Set((input.selectedPaths || []).map((path) => normalizePath(path))) : null;
@@ -650,7 +663,9 @@ export class VscFileService {
         continue;
       }
 
+      incrementVscFileMetric(metricsCollector, 'blobContentQueryCount');
       const blob = await this.getBlob(entry.blobHash, transaction);
+      incrementVscFileMetric(metricsCollector, 'blobContentRowCount');
       files.push({
         ...entry,
         content: blob.content,

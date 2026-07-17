@@ -35,6 +35,7 @@ import {
 import { createLightExtensionsResource, lightExtensionActionNames } from './resources/lightExtensions';
 import { LightExtensionAuditService } from './services/LightExtensionAuditService';
 import { LightExtensionCompilePreviewService } from './services/LightExtensionCompilePreviewService';
+import { createLightExtensionCompileMetricsLoggerCollector } from './services/LightExtensionCompileMetrics';
 import { LightExtensionEntryService } from './services/LightExtensionEntryService';
 import { LightExtensionFileService } from './services/LightExtensionFileService';
 import { LightExtensionPermissionService } from './services/LightExtensionPermissionService';
@@ -196,6 +197,7 @@ export class PluginLightExtensionServer extends Plugin {
     this.auditService = new LightExtensionAuditService(db);
     this.permissionService = new LightExtensionPermissionService(this.auditService);
     this.validator = new LightExtensionValidator();
+    const compileMetricsCollector = createLightExtensionCompileMetricsLoggerCollector(this.log);
     this.workspaceCompilerBridge = new LightExtensionWorkspaceCompilerBridge(this.auditService, this.permissionService);
     const sharedVscPermissionHooks = findVscPermissionHookRegistry((this.app as unknown as AppWithPluginEvents).pm);
     this.repoService = new LightExtensionRepoService(
@@ -221,6 +223,7 @@ export class PluginLightExtensionServer extends Plugin {
       this.permissionService,
       this.workspaceCompilerBridge,
       this.validator,
+      compileMetricsCollector,
     );
     this.referenceService = new ReferenceService(db, this.auditService, this.permissionService);
     const apiBasePath = (this.app as unknown as AppWithPluginEvents).resourceManager?.options?.prefix;
@@ -230,6 +233,7 @@ export class PluginLightExtensionServer extends Plugin {
       this.fileService,
       this.entryService,
       this.workspaceCompilerBridge,
+      compileMetricsCollector,
     );
     this.repoService.useReferenceService(this.referenceService);
     this.repoService.useRemoteSyncLifecycleGate({

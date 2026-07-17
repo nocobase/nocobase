@@ -15,6 +15,7 @@ import { sha256Hex } from '../../shared/hash';
 import { normalizePath, pathHash, pathLowerHash } from '../../shared/path';
 import type { VscNormalizedTreeEntry, VscStoredTree, VscTreeEntryInput } from '../../shared/types';
 import { BlobService, normalizeBlob } from './BlobService';
+import { incrementVscFileMetric, type VscFileMetricsCollector } from './VscFileMetrics';
 
 const defaultFileMode = '100644';
 const maxLanguageLength = 64;
@@ -37,6 +38,7 @@ const languageByExtension: Record<string, string> = {
 
 export interface EnsureTreeOptions {
   transaction?: Transaction;
+  metricsCollector?: VscFileMetricsCollector;
 }
 
 export class TreeService {
@@ -53,15 +55,21 @@ export class TreeService {
     const normalizedEntries = await this.normalizeEntries(entries, {
       persistBlobs: false,
       transaction: options.transaction,
+      metricsCollector: options.metricsCollector,
     });
     return hashNormalizedTree(normalizedEntries);
   }
 
-  async ensureTree(entries: VscTreeEntryInput[], transaction?: Transaction): Promise<VscStoredTree> {
+  async ensureTree(
+    entries: VscTreeEntryInput[],
+    transaction?: Transaction,
+    metricsCollector?: VscFileMetricsCollector,
+  ): Promise<VscStoredTree> {
     return this.withTransaction(transaction, async (activeTransaction) => {
       const normalizedEntries = await this.normalizeEntries(entries, {
         persistBlobs: true,
         transaction: activeTransaction,
+        metricsCollector,
       });
       const hash = hashNormalizedTree(normalizedEntries);
       const treeModel = this.db.getModel<Model<VscStoredTree>>('vscFileTrees');
@@ -114,8 +122,10 @@ export class TreeService {
 
   private async normalizeEntries(
     entries: VscTreeEntryInput[],
-    options: { persistBlobs: boolean; transaction?: Transaction },
+    options: { persistBlobs: boolean; transaction?: Transaction; metricsCollector?: VscFileMetricsCollector },
   ): Promise<VscNormalizedTreeEntry[]> {
+    incrementVscFileMetric(options.metricsCollector, 'treeNormalizationCount');
+
     if (entries.length > maxFilesPerRepo) {
       throw new VscError('REPO_LIMIT_EXCEEDED', `Tree must not exceed ${maxFilesPerRepo} files`, {
         details: { fileCount: entries.length, maxFilesPerRepo },

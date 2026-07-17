@@ -65,9 +65,14 @@ export class LightExtensionEntryService {
         throw new LightExtensionError('LIGHT_EXTENSION_SOURCE_ERROR', 'Light extension source has no commit');
       }
 
-      const validation = this.validator.validateWorkspace({
-        files: toValidatorFiles(pull.files || []),
-      });
+      const validateWorkspace = () =>
+        this.validator.validateWorkspace({
+          files: toValidatorFiles(pull.files || []),
+        });
+      const validation = operationContext.compileMetrics
+        ? operationContext.compileMetrics.measure('workspaceValidation', validateWorkspace)
+        : validateWorkspace();
+      operationContext.compileMetrics?.set('entryCount', validation.entries.length);
       const diagnostics = sortDiagnostics(validation.diagnostics);
       if (hasErrorDiagnostic(diagnostics)) {
         throw new LightExtensionError(
@@ -84,7 +89,10 @@ export class LightExtensionEntryService {
         );
       }
 
-      const entries = await this.reconcileEntries(repoId, validation.entries, transaction);
+      const reconcileEntries = () => this.reconcileEntries(repoId, validation.entries, transaction);
+      const entries = operationContext.compileMetrics
+        ? await operationContext.compileMetrics.measureAsync('entryReconcile', reconcileEntries)
+        : await reconcileEntries();
       return {
         repo: await this.repoService.getRepo(repoId, operationContext),
         commitId,

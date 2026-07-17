@@ -30,6 +30,7 @@ import type {
   LightExtensionUpdateRepoInput,
 } from '../../shared/types';
 import { LightExtensionAuditService } from './LightExtensionAuditService';
+import type { LightExtensionCompileMetricsRecorder } from './LightExtensionCompileMetrics';
 import { LightExtensionPermissionService, type LightExtensionCanFunction } from './LightExtensionPermissionService';
 import type { ReferenceService } from './ReferenceService';
 import { LightExtensionValidator, hasErrorDiagnostic } from './LightExtensionValidator';
@@ -41,6 +42,8 @@ export interface LightExtensionServiceContext {
   requestId?: string;
   requestSource?: string;
   transaction?: Transaction;
+  /** @internal */
+  compileMetrics?: LightExtensionCompileMetricsRecorder;
 }
 
 export interface LightExtensionRepoInternalRecord extends LightExtensionRepoRecord {

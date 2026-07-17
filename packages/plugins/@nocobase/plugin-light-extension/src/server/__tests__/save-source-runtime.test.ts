@@ -11,6 +11,7 @@ import PluginVscFileServer from '@nocobase/plugin-vsc-file';
 import { MockServer, createMockServer } from '@nocobase/test';
 
 import type { LightExtensionSaveSourceInput } from '../../shared/types';
+import type { LightExtensionCompileMetricsSummary } from '../../shared/compileMetrics';
 import PluginLightExtensionServer from '../plugin';
 import { LightExtensionAuditService } from '../services/LightExtensionAuditService';
 import { LightExtensionEntryService } from '../services/LightExtensionEntryService';
@@ -28,6 +29,7 @@ describe('plugin-light-extension saveSource runtime compile', () => {
   let runtimeCompileService: LightExtensionRuntimeCompileService;
   let runtimeResolveService: RuntimeResolveService;
   let compilerBridge: LightExtensionWorkspaceCompilerBridge;
+  let metricsSummaries: LightExtensionCompileMetricsSummary[];
 
   beforeEach(async () => {
     app = await createMockServer({
@@ -47,7 +49,14 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     );
     const entryService = new LightExtensionEntryService(app.db, fileService, repoService, validator);
     compilerBridge = new LightExtensionWorkspaceCompilerBridge(auditService, permissionService);
-    runtimeCompileService = new LightExtensionRuntimeCompileService(app.db, fileService, entryService, compilerBridge);
+    metricsSummaries = [];
+    runtimeCompileService = new LightExtensionRuntimeCompileService(
+      app.db,
+      fileService,
+      entryService,
+      compilerBridge,
+      (summary) => metricsSummaries.push(summary),
+    );
     runtimeResolveService = new RuntimeResolveService(app.db);
   });
 
@@ -112,6 +121,55 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     });
     expect(runtime).not.toHaveProperty('code');
     expect(runtimeArtifact.code).toContain('Sales KPI');
+    expect(metricsSummaries).toHaveLength(2);
+    expect(metricsSummaries).toEqual([
+      expect.objectContaining({
+        schemaVersion: 1,
+        operation: 'runtimeCompile',
+        result: 'success',
+        durationsMs: expect.objectContaining({
+          total: expect.any(Number),
+          treePrepare: expect.any(Number),
+          workspaceValidation: expect.any(Number),
+          entryReconcile: expect.any(Number),
+          compileEntries: expect.any(Number),
+          artifactPersist: expect.any(Number),
+          transaction: expect.any(Number),
+        }),
+        counters: expect.objectContaining({
+          repoFileCount: 2,
+          entryCount: 1,
+          affectedEntryCount: 1,
+          compiledEntryCount: 1,
+          blobContentQueryCount: 4,
+          blobContentRowCount: 4,
+          snapshotMaterializationCount: 2,
+          treeNormalizationCount: 0,
+        }),
+      }),
+      expect.objectContaining({
+        schemaVersion: 1,
+        operation: 'saveSource',
+        result: 'success',
+        durationsMs: expect.objectContaining({
+          total: expect.any(Number),
+          push: expect.any(Number),
+          transaction: expect.any(Number),
+        }),
+        counters: expect.objectContaining({
+          changedFileCount: 2,
+          repoFileCount: 2,
+          entryCount: 1,
+          affectedEntryCount: 1,
+          compiledEntryCount: 1,
+          blobContentQueryCount: 6,
+          blobContentRowCount: 6,
+          snapshotMaterializationCount: 3,
+          treeNormalizationCount: 2,
+        }),
+      }),
+    ]);
+    expect(JSON.stringify(metricsSummaries)).not.toMatch(/repoId|entryId|src\/client|Sales KPI|artifactHash/iu);
   });
 
   it('keeps descriptor hashes isolated from runtime hashes and tracks ordinary JSON modules', async () => {
@@ -346,6 +404,7 @@ describe('plugin-light-extension saveSource runtime compile', () => {
       message: 'compile before descriptor import',
       files: validSalesKpiFiles(),
     });
+    metricsSummaries = [];
     const entryId = first.compile.entries[0].entryId;
     const initialEntry = await app.db.getRepository('lightExtensionEntries').findOne({ filterByTk: entryId });
     const initialArtifactHash = initialEntry?.get('artifactHash');
@@ -519,6 +578,7 @@ describe('plugin-light-extension saveSource runtime compile', () => {
       message: 'initial save',
       files: validSalesKpiFiles(),
     });
+    metricsSummaries = [];
 
     await expect(
       saveCurrentSource({
@@ -568,6 +628,7 @@ describe('plugin-light-extension saveSource runtime compile', () => {
       message: 'initial save',
       files: validSalesKpiFiles(),
     });
+    metricsSummaries = [];
 
     await expect(
       saveCurrentSource({
@@ -608,6 +669,11 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     await expect(repoService.getRepo(repo.id)).resolves.toMatchObject({
       headCommitId: first.commit.id,
     });
+    expect(metricsSummaries).toHaveLength(2);
+    expect(metricsSummaries.map(({ operation, result }) => ({ operation, result }))).toEqual([
+      { operation: 'runtimeCompile', result: 'rejected' },
+      { operation: 'saveSource', result: 'rejected' },
+    ]);
   });
 
   it('rolls back every entry when one entry fails to compile', async () => {
@@ -680,6 +746,7 @@ describe('plugin-light-extension saveSource runtime compile', () => {
       initialFiles: baselineSalesKpiFiles(),
     });
     const expectedHeadCommitId = repo.headCommitId;
+    metricsSummaries = [];
     const firstCompileStarted = createDeferred();
     const secondCompileStarted = createDeferred();
     const releaseFirstCompile = createDeferred();
@@ -757,6 +824,11 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     expect(entry?.get('runtimeArtifact')).toMatchObject({
       code: expect.stringContaining('First serialized runtime'),
     });
+    expect(metricsSummaries.map(({ operation, result }) => ({ operation, result }))).toEqual([
+      { operation: 'runtimeCompile', result: 'success' },
+      { operation: 'saveSource', result: 'success' },
+      { operation: 'saveSource', result: 'outdated' },
+    ]);
   });
 });
 

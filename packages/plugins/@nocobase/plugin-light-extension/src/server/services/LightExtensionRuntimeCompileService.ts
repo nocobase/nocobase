@@ -24,6 +24,12 @@ import type {
   LightExtensionSaveSourceResult,
 } from '../../shared/types';
 import { entryFromModel, LightExtensionEntryService } from './LightExtensionEntryService';
+import {
+  classifyLightExtensionCompileMetricsError,
+  combineLightExtensionCompileMetricsRecorders,
+  LightExtensionCompileMetricsProbe,
+  type LightExtensionCompileMetricsCollector,
+} from './LightExtensionCompileMetrics';
 import { LightExtensionFileService, type LightExtensionReplaceSourceSnapshotInput } from './LightExtensionFileService';
 import type { LightExtensionServiceContext } from './LightExtensionRepoService';
 import { sortDiagnostics } from './LightExtensionValidator';
@@ -50,6 +56,7 @@ export class LightExtensionRuntimeCompileService {
     private readonly fileService: LightExtensionFileService,
     private readonly entryService: LightExtensionEntryService,
     private readonly compilerBridge: LightExtensionWorkspaceCompilerBridge,
+    private readonly metricsCollector?: LightExtensionCompileMetricsCollector,
   ) {}
 
   useReferenceService(referenceService: ReferenceRefreshService): void {
@@ -60,16 +67,32 @@ export class LightExtensionRuntimeCompileService {
     input: LightExtensionSaveSourceInput,
     ctx: LightExtensionServiceContext = {},
   ): Promise<LightExtensionSaveSourceResult> {
-    if (ctx.transaction) {
-      return this.saveSourceInTransaction(input, ctx);
-    }
+    const probe = new LightExtensionCompileMetricsProbe('saveSource', this.metricsCollector);
+    const compileMetrics = combineLightExtensionCompileMetricsRecorders(ctx.compileMetrics, probe);
+    compileMetrics?.set('changedFileCount', input.files.length);
+    let result: 'success' | 'rejected' | 'failed' | 'outdated' = 'failed';
+    try {
+      const save = await probe.measureAsync('transaction', () => {
+        if (ctx.transaction) {
+          return this.saveSourceInTransaction(input, { ...ctx, compileMetrics });
+        }
 
-    return this.db.sequelize.transaction((transaction) =>
-      this.saveSourceInTransaction(input, {
-        ...ctx,
-        transaction,
-      }),
-    );
+        return this.db.sequelize.transaction((transaction) =>
+          this.saveSourceInTransaction(input, {
+            ...ctx,
+            compileMetrics,
+            transaction,
+          }),
+        );
+      });
+      result = 'success';
+      return save;
+    } catch (error) {
+      result = classifyLightExtensionCompileMetricsError(error);
+      throw error;
+    } finally {
+      await probe.finish(result);
+    }
   }
 
   async replaceSourceSnapshot(
@@ -128,20 +151,31 @@ export class LightExtensionRuntimeCompileService {
     input: LightExtensionSaveSourceInput,
     ctx: LightExtensionServiceContext,
   ): Promise<LightExtensionSaveSourceResult> {
-    const push = await this.fileService.push(
-      {
-        ...input,
-        allowEmptyCommit: false,
-      },
-      ctx,
-    );
+    const pushSource = () =>
+      this.fileService.push(
+        {
+          ...input,
+          allowEmptyCommit: false,
+        },
+        ctx,
+      );
+    const push = ctx.compileMetrics ? await ctx.compileMetrics.measureAsync('push', pushSource) : await pushSource();
     const compile = await this.compileCurrentRuntime(input.repoId, push.commit.id, {
       ...ctx,
       requestSource: ctx.requestSource || 'light-extension-save-source',
     });
     const diagnostics = sortDiagnostics(compile.diagnostics);
 
-    await this.referenceService?.refreshReferencesForRepo(input.repoId, ctx);
+    const referenceService = this.referenceService;
+    if (referenceService) {
+      ctx.compileMetrics?.increment('referenceScanCount');
+      const refreshReferences = () => referenceService.refreshReferencesForRepo(input.repoId, ctx);
+      if (ctx.compileMetrics) {
+        await ctx.compileMetrics.measureAsync('referenceRefresh', refreshReferences);
+      } else {
+        await refreshReferences();
+      }
+    }
 
     return {
       repo: compile.repo,
@@ -165,13 +199,27 @@ export class LightExtensionRuntimeCompileService {
       diagnostics: LightExtensionDiagnostic[];
     }
   > {
-    if (ctx.transaction) {
-      return this.compileCurrentRuntimeInTransaction(repoId, commitId, ctx);
-    }
+    const probe = new LightExtensionCompileMetricsProbe('runtimeCompile', this.metricsCollector);
+    const compileMetrics = combineLightExtensionCompileMetricsRecorders(ctx.compileMetrics, probe);
+    let result: 'success' | 'rejected' | 'failed' | 'outdated' = 'failed';
+    try {
+      const compile = await probe.measureAsync('transaction', () => {
+        if (ctx.transaction) {
+          return this.compileCurrentRuntimeInTransaction(repoId, commitId, { ...ctx, compileMetrics });
+        }
 
-    return this.db.sequelize.transaction((transaction) =>
-      this.compileCurrentRuntimeInTransaction(repoId, commitId, { ...ctx, transaction }),
-    );
+        return this.db.sequelize.transaction((transaction) =>
+          this.compileCurrentRuntimeInTransaction(repoId, commitId, { ...ctx, compileMetrics, transaction }),
+        );
+      });
+      result = 'success';
+      return compile;
+    } catch (error) {
+      result = classifyLightExtensionCompileMetricsError(error);
+      throw error;
+    } finally {
+      await probe.finish(result);
+    }
   }
 
   private async compileCurrentRuntimeInTransaction(
@@ -184,7 +232,10 @@ export class LightExtensionRuntimeCompileService {
       diagnostics: LightExtensionDiagnostic[];
     }
   > {
-    const prepared = await this.entryService.prepareEntries(repoId, ctx);
+    const prepareEntries = () => this.entryService.prepareEntries(repoId, ctx);
+    const prepared = ctx.compileMetrics
+      ? await ctx.compileMetrics.measureAsync('treePrepare', prepareEntries)
+      : await prepareEntries();
     if (prepared.commitId !== commitId) {
       throw new Error(
         `Light extension repository head changed before compile: expected=${commitId}, actual=${prepared.commitId}`,
@@ -202,26 +253,33 @@ export class LightExtensionRuntimeCompileService {
       },
     );
     const compileEntries: LightExtensionSaveSourceResult['compile']['entries'] = [];
-    const readyEntries = prepared.entries.filter(
-      (entry) => entry.healthStatus === 'ready' && isSupportedKind(entry.kind),
-    );
+    const planEntries = () =>
+      prepared.entries.filter((entry) => entry.healthStatus === 'ready' && isSupportedKind(entry.kind));
+    const readyEntries = ctx.compileMetrics ? ctx.compileMetrics.measure('compilePlan', planEntries) : planEntries();
+    ctx.compileMetrics?.set('affectedEntryCount', readyEntries.length);
+    ctx.compileMetrics?.set('skippedEntryCount', prepared.entries.length - readyEntries.length);
 
     for (const entry of readyEntries) {
-      const compiled = await this.compilerBridge.compileEntry(
-        {
-          repoId,
-          entryId: entry.id,
-          operation: 'runtimeCompile',
-          kind: entry.kind as LightExtensionKind,
-          entryName: entry.entryName,
-          entryPath: entry.entryPath,
-          files: getEntryCompileFiles(pull.files || [], entry),
-        },
-        {
-          ...ctx,
-          requestSource: ctx.requestSource || 'light-extension-runtime-compile',
-        },
-      );
+      ctx.compileMetrics?.increment('compiledEntryCount');
+      const compileEntry = () =>
+        this.compilerBridge.compileEntry(
+          {
+            repoId,
+            entryId: entry.id,
+            operation: 'runtimeCompile',
+            kind: entry.kind as LightExtensionKind,
+            entryName: entry.entryName,
+            entryPath: entry.entryPath,
+            files: getEntryCompileFiles(pull.files || [], entry),
+          },
+          {
+            ...ctx,
+            requestSource: ctx.requestSource || 'light-extension-runtime-compile',
+          },
+        );
+      const compiled = ctx.compileMetrics
+        ? await ctx.compileMetrics.measureAsync('compileEntries', compileEntry)
+        : await compileEntry();
 
       if (!compiled.accepted) {
         compileEntries.push({
@@ -236,16 +294,20 @@ export class LightExtensionRuntimeCompileService {
         continue;
       }
 
-      const persisted = await this.persistSuccessfulCompile(
-        {
-          entry,
-          commitId,
-          artifact: compiled.artifact,
-          surfaceStyle: compiled.surface.surfaceStyle,
-          diagnostics: compiled.diagnostics,
-        },
-        ctx.transaction,
-      );
+      const persistArtifact = () =>
+        this.persistSuccessfulCompile(
+          {
+            entry,
+            commitId,
+            artifact: compiled.artifact,
+            surfaceStyle: compiled.surface.surfaceStyle,
+            diagnostics: compiled.diagnostics,
+          },
+          ctx.transaction,
+        );
+      const persisted = ctx.compileMetrics
+        ? await ctx.compileMetrics.measureAsync('artifactPersist', persistArtifact)
+        : await persistArtifact();
       compileEntries.push({
         entryId: persisted.id,
         entryName: persisted.entryName,

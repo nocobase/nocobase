@@ -11,6 +11,7 @@ export * from './permissions';
 export * from './config';
 export * from './runjs-sources';
 export * from './services/VscFileService';
+export * from './services/VscFileMetrics';
 export * from './remotes';
 export * from './remotes/snapshot';
 export * from './remotes/credentialRef';

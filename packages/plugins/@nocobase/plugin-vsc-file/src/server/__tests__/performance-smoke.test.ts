@@ -25,6 +25,7 @@ import { sha256Hex } from '../../shared/hash';
 import type { VscCommitRecord, VscTreeEntryInput } from '../../shared/types';
 import { defaultVscFileLimits, vscFileServerDefaults } from '../config';
 import { DiffService } from '../services/DiffService';
+import type { VscFileMetricCounterName, VscFileMetricsCollector } from '../services/VscFileMetrics';
 import { VscFileService } from '../services/VscFileService';
 
 const smallRepoFileCount = 10;
@@ -91,6 +92,107 @@ describe('vsc-file performance smoke tests', () => {
     });
     expect(pull.files).toHaveLength(mediumRepoFileCount);
     expect(pull.files?.every((file) => !Object.prototype.hasOwnProperty.call(file, 'content'))).toBe(true);
+  });
+
+  it('records the current all, selected, and none content-loading query baseline', async () => {
+    const metrics = createMetricsCollector();
+    const { repository, initialCommit } = await service.createRepository(
+      {
+        ownerType: 'plugin',
+        ownerId: 'performance-content-query-baseline',
+        name: 'main',
+        initialFiles: createFiles(mediumRepoFileCount, mediumRepoFileSize, 'content-query'),
+      },
+      { metricsCollector: metrics.collector },
+    );
+    if (!initialCommit) {
+      throw new Error('Expected an initial commit');
+    }
+
+    expect(metrics.counters).toEqual({
+      blobContentQueryCount: 0,
+      blobContentRowCount: 0,
+      treeNormalizationCount: 3,
+    });
+
+    const blobFindOne = vi.spyOn(db.getRepository('vscFileBlobs'), 'findOne');
+    metrics.reset();
+
+    const metadataOnly = await service.pull(
+      { repoId: repository.id, includeContent: 'none' },
+      { metricsCollector: metrics.collector },
+    );
+
+    expect(metadataOnly.files).toHaveLength(mediumRepoFileCount);
+    expect(metadataOnly.files?.every((file) => !Object.prototype.hasOwnProperty.call(file, 'content'))).toBe(true);
+    expect(blobFindOne).toHaveBeenCalledTimes(0);
+    expect(metrics.counters).toEqual({
+      blobContentQueryCount: 0,
+      blobContentRowCount: 0,
+      treeNormalizationCount: 0,
+    });
+
+    blobFindOne.mockClear();
+    metrics.reset();
+    const selectedPaths = ['content-query/file-003.txt', 'content-query/file-042.txt', 'content-query/missing.txt'];
+    const selected = await service.pull(
+      {
+        repoId: repository.id,
+        includeContent: 'selected',
+        selectedPaths,
+      },
+      { metricsCollector: metrics.collector },
+    );
+
+    expect(selected.files?.filter((file) => Object.prototype.hasOwnProperty.call(file, 'content'))).toHaveLength(2);
+    expect(blobFindOne).toHaveBeenCalledTimes(2);
+    expect(metrics.counters).toEqual({
+      blobContentQueryCount: 2,
+      blobContentRowCount: 2,
+      treeNormalizationCount: 0,
+    });
+
+    blobFindOne.mockClear();
+    metrics.reset();
+    const withAllContent = await service.pull(
+      { repoId: repository.id, includeContent: 'all' },
+      { metricsCollector: metrics.collector },
+    );
+
+    expect(withAllContent.files).toHaveLength(mediumRepoFileCount);
+    expect(withAllContent.files?.every((file) => typeof file.content === 'string')).toBe(true);
+    expect(blobFindOne).toHaveBeenCalledTimes(mediumRepoFileCount);
+    expect(metrics.counters).toEqual({
+      blobContentQueryCount: mediumRepoFileCount,
+      blobContentRowCount: mediumRepoFileCount,
+      treeNormalizationCount: 0,
+    });
+
+    blobFindOne.mockClear();
+    await service.pull({ repoId: repository.id, includeContent: 'all' });
+    expect(blobFindOne).toHaveBeenCalledTimes(mediumRepoFileCount);
+  });
+
+  it('ignores collector failures without changing pull results', async () => {
+    const { repository } = await service.createRepository({
+      ownerType: 'plugin',
+      ownerId: 'performance-failing-collector',
+      name: 'main',
+      initialFiles: createFiles(smallRepoFileCount, smallRepoFileSize, 'failing-collector'),
+    });
+    const failingCollector: VscFileMetricsCollector = {
+      increment() {
+        throw new Error('collector failed');
+      },
+    };
+
+    const pull = await service.pull(
+      { repoId: repository.id, includeContent: 'all' },
+      { metricsCollector: failingCollector },
+    );
+
+    expect(pull.files).toHaveLength(smallRepoFileCount);
+    expect(pull.files?.every((file) => typeof file.content === 'string')).toBe(true);
   });
 
   it('fetches getFile content by blob hash after locating the tree entry', async () => {
@@ -445,4 +547,27 @@ function firstInvocationOrder(spy: { mock: { invocationCallOrder: number[] } }):
   }
 
   return order;
+}
+
+function createMetricsCollector() {
+  const counters: Record<VscFileMetricCounterName, number> = {
+    blobContentQueryCount: 0,
+    blobContentRowCount: 0,
+    treeNormalizationCount: 0,
+  };
+  const collector: VscFileMetricsCollector = {
+    increment(counter, value = 1) {
+      counters[counter] += value;
+    },
+  };
+
+  return {
+    collector,
+    counters,
+    reset() {
+      for (const counter of Object.keys(counters) as VscFileMetricCounterName[]) {
+        counters[counter] = 0;
+      }
+    },
+  };
 }
