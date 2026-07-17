@@ -70,6 +70,12 @@ export class PluginAIClient extends Plugin {
       AIChatBoxBlockModel,
       AIChatBoxCoreModel,
     });
+    this.flowEngine.registerModelLoaders({
+      AIEmployeeActionModel: {
+        extends: 'ActionModel',
+        loader: () => import('../client-v2/models/ai-employees'),
+      },
+    });
 
     this.addPluginSettings();
     this.setupAIFeatures();
