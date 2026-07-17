@@ -14,8 +14,31 @@ import SqliteQueryInterface from '../../query-interface/sqlite-query-interface';
 
 const viewName = "x.v1' UNION SELECT 1,2,3,4,5,6,7--";
 
-describe('view definition query interface', () => {
-  it('should parameterize PostgreSQL view metadata queries', async () => {
+describe('view query interfaces', () => {
+  it('should parameterize the PostgreSQL view list schema', async () => {
+    const schema = "public' UNION SELECT current_database(),current_user,version()--";
+    const query = vi.fn().mockResolvedValue([]);
+    const db = {
+      options: {},
+      sequelize: {
+        getQueryInterface: () => ({}),
+        query,
+      },
+    } as unknown as Database;
+    const queryInterface = new PostgresQueryInterface(db);
+
+    await queryInterface.listViews({ schema });
+
+    expect(query).toHaveBeenCalledWith(expect.stringContaining('WHERE schemaname = :targetSchema'), {
+      replacements: {
+        targetSchema: schema,
+      },
+      type: 'SELECT',
+    });
+    expect(query.mock.calls[0][0]).not.toContain(schema);
+  });
+
+  it('should parameterize PostgreSQL view metadata queries with the configured schema', async () => {
     const query = vi.fn().mockImplementation(async (sql: string) => {
       if (sql.includes('view_column_usage')) {
         return [];
@@ -24,7 +47,9 @@ describe('view definition query interface', () => {
       return [{ definition: 'SELECT 1 AS safe_field' }];
     });
     const db = {
-      options: {},
+      options: {
+        schema: 'tenant',
+      },
       sequelize: {
         getQueryInterface: () => ({}),
         query,
@@ -36,30 +61,25 @@ describe('view definition query interface', () => {
     });
 
     await queryInterface.viewColumnUsage({
-      schema: 'public',
       viewName,
     });
 
-    expect(query).toHaveBeenNthCalledWith(
-      1,
-      expect.not.stringContaining(viewName),
-      expect.objectContaining({
-        replacements: {
-          schema: 'public',
-          viewName,
-        },
-      }),
-    );
-    expect(query).toHaveBeenNthCalledWith(
-      2,
-      expect.not.stringContaining(viewName),
-      expect.objectContaining({
-        replacements: {
-          schema: 'public',
-          viewName,
-        },
-      }),
-    );
+    expect(query).toHaveBeenNthCalledWith(1, expect.stringContaining('WHERE view_schema = :schema'), {
+      replacements: {
+        schema: 'tenant',
+        viewName,
+      },
+      type: 'SELECT',
+    });
+    expect(query).toHaveBeenNthCalledWith(2, expect.stringContaining("format('%I.%I', :schema, :viewName)"), {
+      replacements: {
+        schema: 'tenant',
+        viewName,
+      },
+      type: 'SELECT',
+    });
+    expect(query.mock.calls[0][0]).not.toContain(viewName);
+    expect(query.mock.calls[1][0]).not.toContain(viewName);
   });
 
   it('should quote MySQL view identifiers', async () => {
@@ -108,11 +128,12 @@ describe('view definition query interface', () => {
 
     await queryInterface.viewDef({ viewName });
 
-    expect(query).toHaveBeenCalledWith(expect.not.stringContaining(viewName), {
+    expect(query).toHaveBeenCalledWith(expect.stringContaining('WHERE name = :viewName'), {
       replacements: {
         viewName,
       },
       type: 'SELECT',
     });
+    expect(query.mock.calls[0][0]).not.toContain(viewName);
   });
 });

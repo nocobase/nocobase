@@ -110,25 +110,24 @@ export default class PostgresQueryInterface extends QueryInterface {
   async listViews(options?: { schema?: string }) {
     const targetSchema = options?.schema || this.db.options?.schema || 'public';
 
-    const sql = targetSchema
-      ? `
+    const sql = `
       SELECT viewname as name, definition, schemaname as schema
       FROM pg_views
-      WHERE schemaname = '${targetSchema}'
-      ORDER BY viewname;
-    `
-      : `
-      SELECT viewname as name, definition, schemaname as schema
-      FROM pg_views
-      WHERE schemaname NOT IN ('pg_catalog', 'information_schema')
+      WHERE schemaname = :targetSchema
       ORDER BY viewname;
     `;
 
-    return await this.db.sequelize.query(sql, { type: 'SELECT' });
+    return await this.db.sequelize.query(sql, {
+      replacements: {
+        targetSchema,
+      },
+      type: 'SELECT',
+    });
   }
 
   async viewDef(options: { viewName: string; schema?: string }) {
-    const { viewName, schema = this.db.options.schema || 'public' } = options;
+    const { viewName } = options;
+    const schema = options.schema || this.db.options.schema || 'public';
 
     const viewDefQuery = await this.db.sequelize.query(
       `
@@ -159,7 +158,8 @@ export default class PostgresQueryInterface extends QueryInterface {
       table_schema?: string;
     };
   }> {
-    const { viewName, schema = 'public' } = options;
+    const { viewName } = options;
+    const schema = options.schema || this.db.options.schema || 'public';
     const sql = `
       SELECT *
       FROM information_schema.view_column_usage
