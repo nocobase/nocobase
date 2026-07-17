@@ -12,6 +12,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { AI_EMPLOYEE_TRIGGER_TASK_EVENT, AIManager } from '../manager/ai-manager';
 import type { RunJSAIEmployeeTriggerTaskOptions } from '../ai-employees/chatbox/utils/normalizeTriggerTaskOptions';
 import type { ContextItem, Task } from '../ai-employees/types';
+import type { FrontendToolRegistration } from '../manager/frontend-tool-registry';
 import type { LLMProviderOptions, ToolModalProps, ToolOptions } from '../manager/ai-manager';
 
 const ProviderSettingsForm = () => <div />;
@@ -90,6 +91,56 @@ describe('AIManager v2', () => {
     expect(manager.getWorkContext('datasource')?.name).toBe('datasource');
     expect(manager.getWorkContext('datasource.collection')?.name).toBe('collection');
     expect(manager.getWorkContext('unknown.child')).toBeNull();
+  });
+
+  it('registers, executes, lists, and clears frontend tools by block uid', async () => {
+    const manager = new AIManager();
+    const execute = vi.fn().mockResolvedValue({ refreshed: true });
+
+    const manifest = manager.frontendTools.register('block-1', {
+      name: 'refresh_dashboard',
+      description: 'Refresh the current dashboard.',
+      permission: 'ALLOW',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          force: { type: 'boolean' },
+        },
+      },
+      execute,
+    });
+
+    expect(manifest.id).toBe('block-1:refresh_dashboard');
+    expect(manifest.permission).toBe('ALLOW');
+    expect(manager.frontendTools.list('block-1')).toEqual([manifest]);
+    expect(manager.frontendTools.getManifest(manifest.id)).toEqual(manifest);
+    await expect(manager.frontendTools.execute(manifest.id, { force: true })).resolves.toEqual({ refreshed: true });
+    expect(execute).toHaveBeenCalledWith({ force: true });
+
+    manager.frontendTools.clear('block-1');
+    expect(manager.frontendTools.list('block-1')).toEqual([]);
+    expect(() => manager.frontendTools.getManifest(manifest.id)).toThrow('is unavailable');
+    await expect(manager.frontendTools.execute(manifest.id, {})).rejects.toThrow('is unavailable');
+  });
+
+  it('defaults frontend tool permission to ASK and rejects invalid permissions', () => {
+    const manager = new AIManager();
+    const manifest = manager.frontendTools.register('block-1', {
+      name: 'read_dashboard',
+      description: 'Read the current dashboard.',
+      execute: vi.fn(),
+    });
+
+    expect(manifest.permission).toBe('ASK');
+    const invalidRegistration = {
+      name: 'invalid_permission',
+      description: 'Use an invalid permission.',
+      permission: 'DENY',
+      execute: vi.fn(),
+    } as unknown as FrontendToolRegistration;
+    expect(() => manager.frontendTools.register('block-1', invalidRegistration)).toThrow(
+      'Frontend tool permission must be ASK or ALLOW',
+    );
   });
 
   it('exports v2 tool-related public types', () => {

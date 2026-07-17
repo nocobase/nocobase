@@ -7,11 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createMockClient } from '@nocobase/client-v2';
+import { createMockClient, JSBlockModel } from '@nocobase/client-v2';
 import { createJSRunnerWithVersion, FlowContext, getRunJSDocFor, setupRunJSContexts } from '@nocobase/flow-engine';
 import { describe, expect, it, vi } from 'vitest';
 import PluginAIClientV2, {
   registerPluginAIPermissionsTab,
+  registerPluginAIJSBlockToolFlow,
   registerPluginAIRunJSContextContribution,
   registerPluginAISettingsPages,
 } from '../plugin';
@@ -122,7 +123,56 @@ describe('plugin-ai v2 settings registration', () => {
     for (const doc of docs) {
       expect(doc?.properties?.ai?.properties?.triggerTask).toBeDefined();
       expect(doc?.properties?.ai?.properties?.triggerModelTask).toBeDefined();
+      const registerTool = doc?.properties?.ai?.properties?.tools?.properties?.register;
+      expect(registerTool).toBeDefined();
+      expect(registerTool?.detail).toContain("permission?: 'ASK' | 'ALLOW'");
+      expect(registerTool?.completion?.insertText).toContain("permission: 'ASK'");
     }
+  });
+
+  it('exposes frontend tools through the persistent JS block model context', async () => {
+    registerPluginAIJSBlockToolFlow();
+    const flow = JSBlockModel.globalFlowRegistry.getFlow('aiFrontendTools');
+    const handler = flow?.getStep('setup')?.serialize().handler;
+    const clear = vi.fn();
+    const register = vi.fn();
+    const triggerTask = vi.fn();
+    const modelContext = new FlowContext();
+    modelContext.defineProperty('ai', { value: { triggerTask } });
+    const runtimeDefineProperty = vi.fn();
+    const ctx = {
+      app: {
+        pm: {
+          get: vi.fn(() => ({
+            aiManager: {
+              frontendTools: {
+                clear,
+                register,
+              },
+            },
+          })),
+        },
+      },
+      model: {
+        uid: 'block-1',
+        context: modelContext,
+      },
+      defineProperty: runtimeDefineProperty,
+    };
+
+    expect(handler).toEqual(expect.any(Function));
+    await handler?.(ctx, {});
+
+    expect(clear).toHaveBeenCalledWith('block-1');
+    expect(runtimeDefineProperty).not.toHaveBeenCalled();
+    expect(modelContext.ai.triggerTask).toBe(triggerTask);
+    const registration = {
+      name: 'read_dashboard',
+      description: 'Read dashboard',
+      execute: vi.fn(),
+    };
+    modelContext.ai.tools.register(registration);
+    expect(register).toHaveBeenCalledWith('block-1', registration);
   });
 
   it('exposes ctx.ai from the engine context at RunJS runtime', async () => {

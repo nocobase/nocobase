@@ -14,6 +14,7 @@ import type { RunJSAIEmployeeTriggerTaskOptions } from '../ai-employees/chatbox/
 import type { Task } from '../ai-employees/types';
 import type { WorkContextOptions } from '../ai-employees/types';
 import type { AIEmployeeShortcutModel } from '../models/ai-employees/AIEmployeeShortcutModel';
+import { FrontendToolRegistry } from './frontend-tool-registry';
 
 export const AI_EMPLOYEE_TRIGGER_TASK_EVENT = 'ai:employee:trigger-task';
 
@@ -46,6 +47,7 @@ export class AIManager {
   constructor(private readonly app?: AIManagerApp) {}
 
   llmProviders = new Registry<LLMProviderOptions>();
+  frontendTools = new FrontendToolRegistry();
 
   chatSettings = new Map<
     string,

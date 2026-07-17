@@ -47,6 +47,12 @@ import {
   getMessageAttachmentLookupKey,
   shouldSkipAttachmentSourceLookup,
 } from '../attachments';
+import { EXECUTE_FRONTEND_TOOL_NAME, LOAD_FRONTEND_TOOL_NAME } from '../../common/frontend-tools';
+import {
+  listCurrentFrontendTools,
+  prepareToolsForFrontendConversation,
+  shouldAutoExecuteFrontendTool,
+} from '../frontend-tools';
 
 export interface ModelRef {
   llmService: string;
@@ -919,16 +925,22 @@ If information is missing, clearly state it in the summary.</Important>`;
     toolCalls: {
       id: string;
       name: string;
-      args: any;
+      args: unknown;
     }[],
   ): Promise<Model<AIToolMessage>[]> {
     const nowTime = new Date();
     const toolMap = await this.getToolsMap();
+    const currentFrontendTools = toolCalls.some((toolCall) => toolCall.name === EXECUTE_FRONTEND_TOOL_NAME)
+      ? await listCurrentFrontendTools(this.ctx, this.sessionId)
+      : [];
     return await this.aiToolMessagesRepo.create({
       values: toolCalls.map((toolCall) => {
         const toolsExisted = toolMap.has(toolCall.name);
         const tools = toolMap.get(toolCall.name);
-        const auto = this.isAutoCall(tools);
+        const auto =
+          toolCall.name === EXECUTE_FRONTEND_TOOL_NAME
+            ? toolsExisted && shouldAutoExecuteFrontendTool(currentFrontendTools, toolCall.args)
+            : this.isAutoCall(tools);
         return {
           id: this.plugin.snowflake.generate(),
           sessionId: this.sessionId,
@@ -1405,6 +1417,7 @@ If information is missing, clearly state it in the summary.</Important>`;
     if (!this.areToolsEnabled()) {
       return [];
     }
+    const currentFrontendTools = await listCurrentFrontendTools(this.ctx, this.sessionId);
     const tools: ToolsEntry[] = await this.listTools({ scope: 'GENERAL' });
     if (this.webSearch === true) {
       const subAgentWebSearch = await this.toolsManager.getTools(SYSTEM_TOOLS.WEB_SEARCH, { ctx: this.ctx });
@@ -1432,21 +1445,29 @@ If information is missing, clearly state it in the summary.</Important>`;
       }
       tools.push(tool);
     }
-    const systemTools = listSystemTools();
+    const systemTools = [...listSystemTools(), LOAD_FRONTEND_TOOL_NAME, EXECUTE_FRONTEND_TOOL_NAME];
     if (!this.skillSettings) {
-      return tools;
+      return prepareToolsForFrontendConversation(tools, currentFrontendTools);
     } else if (!this.skillSettings.toolsVersion) {
       const toolFilter = this.skillSettings.tools ?? [];
-      return tools.filter(
-        (t) =>
-          toolFilter.length === 0 || systemTools.includes(t.definition.name) || toolFilter.includes(t.definition.name),
+      return prepareToolsForFrontendConversation(
+        tools.filter(
+          (t) =>
+            toolFilter.length === 0 ||
+            systemTools.includes(t.definition.name) ||
+            toolFilter.includes(t.definition.name),
+        ),
+        currentFrontendTools,
       );
     } else {
       const toolFilter = this.skillSettings.tools;
       if (_.isArray(toolFilter)) {
-        return tools.filter((t) => systemTools.includes(t.definition.name) || toolFilter.includes(t.definition.name));
+        return prepareToolsForFrontendConversation(
+          tools.filter((t) => systemTools.includes(t.definition.name) || toolFilter.includes(t.definition.name)),
+          currentFrontendTools,
+        );
       } else {
-        return tools;
+        return prepareToolsForFrontendConversation(tools, currentFrontendTools);
       }
     }
   }
