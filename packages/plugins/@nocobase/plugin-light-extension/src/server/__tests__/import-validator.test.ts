@@ -234,4 +234,52 @@ describe('plugin-light-extension import validator', () => {
     expect(result.accepted).toBe(true);
     expect(result.diagnostics.filter((item) => item.code === 'import_not_allowed')).toHaveLength(0);
   });
+
+  it('allows JS Page entry and shared imports but rejects another JS Page root', () => {
+    const validator = new LightExtensionValidator();
+    const accepted = validator.validateWorkspace({
+      files: [
+        {
+          path: 'src/shared/format.ts',
+          content: 'export const format = (value: string) => value.toUpperCase();\n',
+        },
+        {
+          path: 'src/client/js-pages/orders/index.tsx',
+          content:
+            'import { title } from "./title";\nimport { format } from "../../../shared/format";\nctx.render(<div>{format(title)}</div>);\n',
+        },
+        {
+          path: 'src/client/js-pages/orders/title.ts',
+          content: 'export const title = "Orders";\n',
+        },
+        {
+          path: 'src/client/js-pages/orders/entry.json',
+          content: JSON.stringify({ schemaVersion: 1, key: 'orders' }),
+        },
+      ],
+    });
+    const rejected = validator.validateWorkspace({
+      files: [
+        {
+          path: 'src/client/js-pages/orders/index.tsx',
+          content: 'import { title } from "../other/title";\nctx.render(<div>{title}</div>);\n',
+        },
+        {
+          path: 'src/client/js-pages/orders/entry.json',
+          content: JSON.stringify({ schemaVersion: 1, key: 'orders' }),
+        },
+      ],
+    });
+
+    expect(accepted.accepted).toBe(true);
+    expect(accepted.diagnostics).toEqual([]);
+    expect(rejected.accepted).toBe(false);
+    expect(rejected.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'import_not_allowed',
+        kind: 'js-page',
+        path: 'src/client/js-pages/orders/index.tsx',
+      }),
+    );
+  });
 });

@@ -14,7 +14,10 @@ import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
 
-import { JSBlockLightExtensionSourceField } from '../components/JSBlockLightExtensionSourceField';
+import {
+  JSBlockLightExtensionSourceField,
+  JSPageLightExtensionSourceField,
+} from '../components/JSBlockLightExtensionSourceField';
 
 const mocks = vi.hoisted(() => ({
   request: vi.fn(),
@@ -30,6 +33,7 @@ vi.mock('react-i18next', () => ({
 const SchemaField = createSchemaField({
   components: {
     JSBlockLightExtensionSourceField,
+    JSPageLightExtensionSourceField,
   },
 });
 
@@ -241,6 +245,48 @@ describe('JSBlockLightExtensionSourceField source mode errors', () => {
       }),
     );
   });
+
+  it('requests and displays only js-page entries for the JS Page selector', async () => {
+    mocks.request.mockImplementation((options: { url: string }) => {
+      if (options.url === 'lightExtensionEntries:listSelectable') {
+        return Promise.resolve({
+          data: {
+            data: [
+              createSelectableEntry(),
+              createSelectableEntry({ id: 'entry_page', kind: 'js-page', entryName: 'page-entry' }),
+            ],
+          },
+        });
+      }
+      return Promise.reject(new Error(`Unexpected request: ${options.url}`));
+    });
+    const form = createForm({ initialValues: { sourceMode: 'light-extension' } });
+
+    renderSourceField(form, {}, 'JSPageLightExtensionSourceField');
+
+    await waitFor(() => {
+      expect(mocks.request).toHaveBeenCalledWith({
+        url: 'lightExtensionEntries:listSelectable',
+        method: 'post',
+        data: { kind: 'js-page' },
+      });
+    });
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: 'Code source' }));
+    expect(await screen.findByText('page-entry')).toBeInTheDocument();
+    expect(screen.queryByText('sales')).not.toBeInTheDocument();
+  });
+
+  it('shows translated empty and generic request error states without leaking server details', async () => {
+    mocks.request.mockRejectedValue(new Error('private binding source text'));
+    const form = createForm({ initialValues: { sourceMode: 'light-extension' } });
+
+    renderSourceField(form, {}, 'JSPageLightExtensionSourceField', 'sourceBinding');
+
+    expect(await screen.findByText('Failed to load entries')).toBeInTheDocument();
+    expect(screen.queryByText('private binding source text')).not.toBeInTheDocument();
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: 'Code source' }));
+    expect(await screen.findByText('No light extension entries')).toBeInTheDocument();
+  });
 });
 
 function renderSourceField(
@@ -252,6 +298,8 @@ function renderSourceField(
       submit?: () => void | Promise<void>;
     };
   } = {},
+  component = 'JSBlockLightExtensionSourceField',
+  fieldName = 'sourceMode',
 ) {
   const engine = new FlowEngine();
   engine.context.defineProperty('api', {
@@ -272,9 +320,9 @@ function renderSourceField(
           schema={{
             type: 'object',
             properties: {
-              sourceMode: {
+              [fieldName]: {
                 type: 'string',
-                'x-component': 'JSBlockLightExtensionSourceField',
+                'x-component': component,
               },
             },
           }}
@@ -293,15 +341,18 @@ function createSourceBinding() {
   };
 }
 
-function createSelectableEntry() {
+function createSelectableEntry(options: { id?: string; kind?: 'js-block' | 'js-page'; entryName?: string } = {}) {
+  const id = options.id || 'entry_sales';
+  const kind = options.kind || 'js-block';
+  const entryName = options.entryName || 'sales';
   return {
-    id: 'entry_sales',
+    id,
     repoId: 'repo_sales',
     target: 'client',
-    kind: 'js-block',
-    entryName: 'sales',
-    entryPath: 'src/client/js-blocks/sales/index.tsx',
-    descriptorPath: 'src/client/js-blocks/sales/entry.json',
+    kind,
+    entryName,
+    entryPath: `src/client/${kind}/${entryName}/index.tsx`,
+    descriptorPath: `src/client/${kind}/${entryName}/entry.json`,
     title: 'Sales',
     description: null,
     category: null,

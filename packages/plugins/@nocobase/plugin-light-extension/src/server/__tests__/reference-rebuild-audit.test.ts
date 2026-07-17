@@ -12,6 +12,8 @@ import { vi } from 'vitest';
 import {
   createEntryRecord,
   createJsBlockNode,
+  createJsPageEntryRecord,
+  createJsPageNode,
   createRepository,
   createReferenceRecord,
   createReferenceServiceFixture,
@@ -21,7 +23,70 @@ import {
 import { LightExtensionAuditService } from '../services/LightExtensionAuditService';
 
 describe('plugin-light-extension reference rebuild audit', () => {
-  it('rebuilds the service-side index, removes inline references, and marks non-JSBlock owners missing', async () => {
+  it('rebuilds a JS Page root idempotently and supports dry-run root filtering', async () => {
+    const pageNode = createJsPageNode({
+      uid: 'flow_js_page_rebuild',
+      settings: { threshold: 7, region: 'EMEA' },
+    });
+    const { service, repositories } = createReferenceServiceFixture({
+      flowModelTrees: {
+        flow_js_page_rebuild: pageNode,
+      },
+      repos: [createRepoRecord({ id: 'ler_pages' })],
+      entries: [createJsPageEntryRecord()],
+    });
+    const can = vi.fn(({ resource, action }: { resource: string; action: string }) => {
+      if (resource === 'lightExtension' && action === 'updateReferences') {
+        return {};
+      }
+      return false;
+    });
+
+    const first = await service.rebuildIndex(
+      { rootUid: 'flow_js_page_rebuild' },
+      { requestId: 'req_js_page_rebuild', can },
+    );
+    const second = await service.rebuildIndex(
+      { rootUid: 'flow_js_page_rebuild' },
+      { requestId: 'req_js_page_rebuild_repeat', can },
+    );
+
+    expect(first).toMatchObject({ scanned: 1, upserted: 1, removed: 0, ownerMissing: 0 });
+    expect(second).toMatchObject({ scanned: 1, upserted: 1, removed: 0, ownerMissing: 0 });
+    expect(repositories.lightExtensionReferences.records).toHaveLength(1);
+    expect(repositories.lightExtensionReferences.records[0].toJSON()).toMatchObject({
+      kind: 'js-page',
+      ownerKind: 'flowModel.pageSettings',
+      ownerLocator: {
+        modelUid: 'flow_js_page_rebuild',
+        use: 'JSPageModel',
+        stepPath: ['stepParams', 'jsSettings', 'runJs'],
+      },
+      resolvedStatus: 'active',
+    });
+
+    repositories.lightExtensionReferences.records.splice(0);
+    const dryRun = await service.rebuildIndex(
+      { rootUid: 'flow_js_page_rebuild', dryRun: true },
+      { requestId: 'req_js_page_rebuild_dry_run', can },
+    );
+    expect(dryRun).toMatchObject({
+      dryRun: true,
+      scanned: 1,
+      upserted: 1,
+      items: [
+        expect.objectContaining({
+          action: 'upsert',
+          kind: 'js-page',
+          ownerKind: 'flowModel.pageSettings',
+          resolvedStatus: 'active',
+        }),
+      ],
+    });
+    expect(repositories.lightExtensionReferences.records).toHaveLength(0);
+  });
+
+  it('rebuilds the service-side index and removes owners that are inline or no longer reference adapters', async () => {
     const { service, repositories, recordReferenceEvent } = createReferenceServiceFixture({
       flowModels: [
         {
@@ -78,13 +143,12 @@ describe('plugin-light-extension reference rebuild audit', () => {
     );
 
     expect(result).toMatchObject({
-      scanned: 2,
+      scanned: 3,
       upserted: 1,
-      removed: 1,
-      ownerMissing: 1,
+      removed: 2,
+      ownerMissing: 0,
       statusCounts: {
         active: 1,
-        owner_missing: 1,
       },
     });
     expect(repositories.lightExtensionReferences.records.map((record) => record.toJSON())).toEqual(
@@ -95,22 +159,21 @@ describe('plugin-light-extension reference rebuild audit', () => {
           }),
           resolvedStatus: 'active',
         }),
-        expect.objectContaining({
-          id: 'lef_no_longer_js_block',
-          resolvedStatus: 'owner_missing',
-        }),
       ]),
     );
     expect(repositories.lightExtensionReferences.records.map((record) => record.get('id'))).not.toContain('lef_inline');
+    expect(repositories.lightExtensionReferences.records.map((record) => record.get('id'))).not.toContain(
+      'lef_no_longer_js_block',
+    );
     expect(recordReferenceEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'referenceRebuild',
         result: 'success',
         details: expect.objectContaining({
-          scanned: 2,
+          scanned: 3,
           upserted: 1,
-          removed: 1,
-          ownerMissing: 1,
+          removed: 2,
+          ownerMissing: 0,
         }),
       }),
     );
@@ -188,6 +251,12 @@ describe('plugin-light-extension reference rebuild audit', () => {
         settings: {
           token: 'secret-settings-value',
         },
+        code: 'ctx.render("secret-code-value")',
+        token: 'secret-token-value',
+        sourceBinding: {
+          repoId: 'secret-repo-id',
+          entryId: 'secret-entry-id',
+        },
         nested: {
           settingsSchema: {
             secret: 'secret-schema-value',
@@ -200,6 +269,10 @@ describe('plugin-light-extension reference rebuild audit', () => {
     const serialized = JSON.stringify(persisted);
     expect(serialized).not.toContain('flow_secret_owner');
     expect(serialized).not.toContain('secret-settings-value');
+    expect(serialized).not.toContain('secret-code-value');
+    expect(serialized).not.toContain('secret-token-value');
+    expect(serialized).not.toContain('secret-repo-id');
+    expect(serialized).not.toContain('secret-entry-id');
     expect(serialized).not.toContain('secret-schema-value');
     expect(persisted.details).toMatchObject({
       ownerLocatorHash: 'sha256:canonical-owner-hash',
@@ -207,6 +280,9 @@ describe('plugin-light-extension reference rebuild audit', () => {
       modelUidHash: expect.stringMatching(/^sha256:/),
       ownerLocatorAuditHash: expect.stringMatching(/^sha256:/),
       settingsAuditHash: expect.stringMatching(/^sha256:/),
+      codeAuditHash: expect.stringMatching(/^sha256:/),
+      tokenAuditHash: expect.stringMatching(/^sha256:/),
+      sourceBindingAuditHash: expect.stringMatching(/^sha256:/),
       nested: {
         settingsSchemaAuditHash: expect.stringMatching(/^sha256:/),
       },

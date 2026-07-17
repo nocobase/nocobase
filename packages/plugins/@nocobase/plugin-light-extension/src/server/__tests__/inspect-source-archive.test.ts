@@ -36,6 +36,8 @@ describe('lightExtensionRepos:inspectSourceArchive', () => {
     const zip = new JSZip();
     zip.file('workspace/README.md', '# Inspected\n');
     zip.file('workspace/src/shared/value.ts', 'export const value = 1;\n');
+    zip.file('workspace/src/client/js-pages/orders/entry.json', '{"schemaVersion":1,"key":"orders"}\n');
+    zip.file('workspace/src/client/js-pages/orders/index.tsx', 'ctx.render(ctx.page.uid);\n');
     const ctx = createActionContext({
       repoId: 'ler_inspect',
       zipBase64: await zip.generateAsync({ type: 'base64' }),
@@ -54,6 +56,15 @@ describe('lightExtensionRepos:inspectSourceArchive', () => {
         expect.objectContaining({
           path: 'src/shared/value.ts',
           content: 'export const value = 1;\n',
+          language: 'typescript',
+        }),
+        expect.objectContaining({
+          path: 'src/client/js-pages/orders/entry.json',
+          language: 'json',
+        }),
+        expect.objectContaining({
+          path: 'src/client/js-pages/orders/index.tsx',
+          content: 'ctx.render(ctx.page.uid);\n',
           language: 'typescript',
         }),
       ],

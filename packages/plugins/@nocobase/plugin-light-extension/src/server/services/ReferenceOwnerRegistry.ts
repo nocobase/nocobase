@@ -17,12 +17,13 @@ import type {
 } from '../../shared/types';
 
 export type ReferenceOwnerAdapter = LightExtensionReferenceOwnerAdapterContract & {
-  stepPath?: ['stepParams', 'jsSettings'];
+  stepPath?: ['stepParams', 'jsSettings'] | ['stepParams', 'jsSettings', 'runJs'];
   settingsKey?: 'jsSettings' | 'clickSettings';
   modelUses?: string[];
 };
 
 const JS_BLOCK_STEP_PATH: ['stepParams', 'jsSettings'] = ['stepParams', 'jsSettings'];
+const JS_PAGE_STEP_PATH: ['stepParams', 'jsSettings', 'runJs'] = ['stepParams', 'jsSettings', 'runJs'];
 
 const REFERENCE_OWNER_ADAPTERS: ReferenceOwnerAdapter[] = [
   {
@@ -39,7 +40,7 @@ const REFERENCE_OWNER_ADAPTERS: ReferenceOwnerAdapter[] = [
     title: 'JS Page',
     locatorContract: 'FlowModel JSPageModel page settings locator',
     modelUse: 'JSPageModel',
-    stepPath: JS_BLOCK_STEP_PATH,
+    stepPath: JS_PAGE_STEP_PATH,
   },
   {
     kind: 'js-field',
@@ -139,7 +140,7 @@ export function buildReferenceOwnerLocator(
     modelUid,
     use: normalizeString(modelUse) || adapter.modelUse,
     ...(adapter.stepPath ? { stepPath: adapter.stepPath } : {}),
-    hostPath: hostPath?.length ? hostPath.map(String) : undefined,
+    ...(hostPath?.length ? { hostPath: hostPath.map(String) } : {}),
     descriptor: adapter.locatorContract,
   };
 }

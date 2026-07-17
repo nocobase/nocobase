@@ -9,18 +9,35 @@
 
 import {
   ElementProxy,
+  FlowCancelSaveException,
   FlowContext,
   getPageActive,
   tExpr,
   type CreateModelOptions,
   type ParamObject,
+  type StepDefinition,
 } from '@nocobase/flow-engine';
 import { observable } from '@formily/reactive';
 import React from 'react';
 import { resolveRuntimeRunJS, type ResolvedRuntimeRunJS } from '../../../components/runjs-source';
-import { createLightExtensionRunJsUISchema } from '../../utils/runjsSourceRuntimeCommon';
+import {
+  createLightExtensionRunJsUISchema,
+  createLightExtensionSettingSteps,
+  getLightExtensionSettingsDescriptor,
+  LIGHT_EXTENSION_SOURCE_MODE,
+  normalizeLightExtensionSourceMode,
+  normalizeLightExtensionSourceSettingsForBinding,
+  rememberLightExtensionBindingSettings,
+  setCanonicalLightExtensionSetting,
+  setCanonicalLightExtensionSource,
+  showPendingLightExtensionRequiredSettings,
+} from '../../utils/runjsSourceRuntimeCommon';
 import { RootPageModel } from './RootPageModel';
-import { JS_PAGE_LIGHT_EXTENSION_FULL_SOURCE_FIELD } from './JSPageSourceModeField';
+import {
+  JS_PAGE_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
+  JS_PAGE_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+} from './JSPageSourceModeField';
+import { createJSPageSourceLocator } from './jsPageContracts';
 import { JSPageRuntimeController, type JSPageRuntimeRunContext, type JSPageRuntimeState } from './jsPageRuntime';
 
 export const DEFAULT_JS_PAGE_CODE = `const { Card, Space, Typography } = ctx.libs.antd;
@@ -90,6 +107,28 @@ export class JSPageModel extends RootPageModel {
   });
 
   static resolveUse(): void {}
+
+  public async getRuntimeFlowSettingSteps(flowKey: string): Promise<Record<string, StepDefinition> | undefined> {
+    if (flowKey !== 'jsSettings') {
+      return undefined;
+    }
+
+    const params = readRunParams(this);
+    const descriptor = await getJSPageLightExtensionSettingsDescriptor(this, params);
+    if (!descriptor) {
+      return undefined;
+    }
+    return createLightExtensionSettingSteps<JSPageModel>({
+      descriptor,
+      settings: isRecord(params.settings) ? params.settings : {},
+      component: JS_PAGE_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+      syncValue: (ctx, fieldName, value) =>
+        setCanonicalLightExtensionSetting(ctx.model, 'jsSettings', fieldName, value),
+      afterParamsSave: async (ctx) => {
+        await ctx.model.rerender();
+      },
+    });
+  }
 
   onInit(options: CreateModelOptions) {
     super.onInit(options);
@@ -231,6 +270,16 @@ export class JSPageModel extends RootPageModel {
   }
 }
 
+async function getJSPageLightExtensionSettingsDescriptor(model: JSPageModel, params: Record<string, unknown>) {
+  return getLightExtensionSettingsDescriptor({
+    modelUid: model.uid,
+    ownerKind: 'flowModel.pageSettings',
+    ownerLocator: { modelUid: model.uid },
+    params,
+    sourceLocator: createJSPageSourceLocator(model.uid),
+  });
+}
+
 JSPageModel.define({
   label: tExpr('JavaScript page'),
   createModelOptions: {
@@ -264,17 +313,36 @@ JSPageModel.registerFlow({
           settings: isRecord(params.settings) ? params.settings : {},
         };
       },
-      beforeParamsSave(ctx, params) {
-        const current = readRunParams(ctx.model as JSPageModel);
-        ctx.model.setStepParams('jsSettings', 'runJs', {
-          ...current,
-          sourceMode: params.sourceMode,
-          sourceBinding: params.sourceBinding,
-          settings: isRecord(params.settings) ? params.settings : {},
-        } as unknown as ParamObject);
+      async beforeParamsSave(ctx, params) {
+        const model = ctx.model as JSPageModel;
+        const sourceMode = normalizeLightExtensionSourceMode(params.sourceMode);
+        const sourceBinding = isRecord(params.sourceBinding) ? params.sourceBinding : undefined;
+        if (sourceMode === LIGHT_EXTENSION_SOURCE_MODE && !sourceBinding) {
+          model.context?.message?.error?.(model.context.t('Select a light extension entry'));
+          throw new FlowCancelSaveException('Light extension source binding is required.');
+        }
+        const current = readRunParams(model);
+        const descriptor =
+          sourceMode === LIGHT_EXTENSION_SOURCE_MODE
+            ? await getJSPageLightExtensionSettingsDescriptor(model, { ...params, sourceMode, sourceBinding })
+            : null;
+        const normalized = normalizeLightExtensionSourceSettingsForBinding({
+          currentRunJs: current,
+          nextSourceMode: sourceMode,
+          nextSourceBinding: sourceBinding,
+          nextSettings: params.settings,
+          descriptor,
+        });
+        setCanonicalLightExtensionSource(model, 'jsSettings', {
+          sourceMode,
+          sourceBinding,
+          settings: normalized.settings,
+        });
+        rememberLightExtensionBindingSettings(model, descriptor, normalized.missingRequiredPaths);
       },
       async afterParamsSave(ctx) {
         await ctx.model.rerender();
+        await showPendingLightExtensionRequiredSettings(ctx.model, 'jsSettings');
       },
     },
     runJs: {

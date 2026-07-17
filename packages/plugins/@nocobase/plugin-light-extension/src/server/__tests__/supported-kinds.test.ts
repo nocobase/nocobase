@@ -9,7 +9,11 @@
 
 import { LightExtensionValidator } from '../services/LightExtensionValidator';
 import { LIGHT_EXTENSION_AUTHORING_SURFACES } from '../services/LightExtensionCompileContract';
-import { buildReferenceOwnerLocator, getReferenceOwnerAdapterByUse } from '../services/ReferenceOwnerRegistry';
+import {
+  buildReferenceOwnerLocator,
+  getReferenceOwnerAdapterByUse,
+  hashReferenceOwnerLocator,
+} from '../services/ReferenceOwnerRegistry';
 
 describe('plugin-light-extension supported kinds validator', () => {
   it('uses the JS Page render and reference owner contracts', () => {
@@ -25,13 +29,18 @@ describe('plugin-light-extension supported kinds validator', () => {
       throw new Error('JSPageModel reference owner is not registered');
     }
     expect(owner).toMatchObject({ kind: 'js-page', ownerKind: 'flowModel.pageSettings', modelUse: 'JSPageModel' });
-    expect(buildReferenceOwnerLocator(owner, 'page-1', 'JSPageModel')).toEqual({
+    const locator = buildReferenceOwnerLocator(owner, 'page-1', 'JSPageModel');
+    expect(locator).toEqual({
       kind: 'flowModel.pageSettings',
       modelUid: 'page-1',
       use: 'JSPageModel',
-      stepPath: ['stepParams', 'jsSettings'],
+      stepPath: ['stepParams', 'jsSettings', 'runJs'],
       descriptor: 'FlowModel JSPageModel page settings locator',
     });
+    expect(hashReferenceOwnerLocator(locator)).toBe(
+      hashReferenceOwnerLocator(buildReferenceOwnerLocator(owner, 'page-1', 'JSPageModel')),
+    );
+    expect(getReferenceOwnerAdapterByUse('MobileJSPageModel')).toBeUndefined();
   });
 
   it('accepts every supported client kind', () => {
@@ -101,8 +110,20 @@ describe('plugin-light-extension supported kinds validator', () => {
         'src/client/js-fields/<entryName>/**/*.{ts,tsx,js,jsx,json,md}',
       ]),
     );
+    expect(result.capabilities.allowedPaths.entries['js-page']).toEqual(
+      expect.arrayContaining([
+        'src/client/js-pages/<entryName>/index.tsx',
+        'src/client/js-pages/<entryName>/**/*.{ts,tsx,js,jsx,json,md}',
+      ]),
+    );
     expect(result.capabilities.allowedPaths.repo).toEqual(
-      expect.arrayContaining(['README.md', 'light-extension.json', 'tsconfig.json', 'src/shared/**']),
+      expect.arrayContaining([
+        'README.md',
+        'light-extension.json',
+        'tsconfig.json',
+        'src/shared/**',
+        'src/client/js-pages/**',
+      ]),
     );
   });
 

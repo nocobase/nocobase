@@ -17,6 +17,9 @@ import {
   JS_FIELD_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
   JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
   JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+  JS_PAGE_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
+  JS_PAGE_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+  JSPageSourceModeField,
   PluginFlowEngine,
   clearActionGroupMenuItemProviders,
   clearBlockGridSelectSceneAddBlockProviders,
@@ -34,6 +37,7 @@ import {
   JSActionLightExtensionSourceField,
   JSFieldLightExtensionSourceField,
   JSItemLightExtensionSourceField,
+  JSPageLightExtensionSourceField,
 } from '../components/JSBlockLightExtensionSourceField';
 import PluginLightExtensionClientV2 from '../plugin';
 
@@ -89,6 +93,8 @@ describe('PluginLightExtensionClientV2', () => {
       [JS_FIELD_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: expect.any(Function),
       [JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: expect.any(Function),
       [JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: expect.any(Function),
+      [JS_PAGE_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: expect.any(Function),
+      [JS_PAGE_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: expect.any(Function),
     });
     expect(app.flowEngine.flowSettings.components.SettingsAutoForm).toBeUndefined();
     expect(warn.mock.calls.flat().join('\n')).not.toContain('JSBlockLightExtensionSourceField');
@@ -130,7 +136,33 @@ describe('PluginLightExtensionClientV2', () => {
     expect(app.flowEngine.flowSettings.components[JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD]).toBe(
       JSItemLightExtensionSourceField,
     );
+    expect(app.flowEngine.flowSettings.components[JS_PAGE_LIGHT_EXTENSION_FULL_SOURCE_FIELD]).toBe(
+      JSPageLightExtensionSourceField,
+    );
     expect(warn.mock.calls.flat().join('\n')).not.toContain('LightExtensionFullSourceField');
+  });
+
+  it('restores core JS Page components and global registries on dispose', async () => {
+    const app = createMockClient({
+      plugins: [
+        [PluginFlowEngine, { name: 'flow-engine' }],
+        [PluginLightExtensionClientV2, { name: 'light-extension', packageName: NAMESPACE }],
+      ],
+    });
+
+    await app.load();
+    expect(app.flowEngine.flowSettings.components[JS_PAGE_LIGHT_EXTENSION_FULL_SOURCE_FIELD]).toBe(
+      JSPageLightExtensionSourceField,
+    );
+    expect(app.flowEngine.flowSettings.components[JS_PAGE_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]).toBeTypeOf('function');
+
+    (app.pm.get(PluginLightExtensionClientV2) as PluginLightExtensionClientV2).dispose();
+
+    expect(app.flowEngine.flowSettings.components[JS_PAGE_LIGHT_EXTENSION_FULL_SOURCE_FIELD]).toBe(
+      JSPageSourceModeField,
+    );
+    expect(app.flowEngine.flowSettings.components[JS_PAGE_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]).toBeUndefined();
+    expect(RunJSSourceResolverRegistry.getResolver('light-extension')).toBeNull();
   });
 
   it('cleans previous global registrations before loading a new instance', async () => {

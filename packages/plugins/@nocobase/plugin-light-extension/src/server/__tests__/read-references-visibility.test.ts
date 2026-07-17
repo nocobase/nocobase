@@ -10,7 +10,11 @@
 import { vi } from 'vitest';
 
 import { hashReferenceOwnerLocator, normalizeReferenceOwnerLocator } from '../services/ReferenceOwnerRegistry';
-import { createReferenceRecord, createReferenceServiceFixture } from './reference-test-helpers';
+import {
+  createJsPageReferenceRecord,
+  createReferenceRecord,
+  createReferenceServiceFixture,
+} from './reference-test-helpers';
 
 describe('plugin-light-extension readReferences visibility', () => {
   it('filters references by owner visibility', async () => {
@@ -317,6 +321,67 @@ describe('plugin-light-extension readReferences visibility', () => {
 
     expect(references).toHaveLength(1);
     expect(references[0].ownerLocator.modelUid).toBe('flow_route_visible');
+  });
+
+  it('uses JS Page route visibility when reading page references', async () => {
+    for (const testCase of [
+      { role: 'page-hidden', desktopRoutes: [], visible: false },
+      { role: 'page-reader', desktopRoutes: [{ id: 'route_js_page' }], visible: true },
+    ]) {
+      const { service, recordReferenceEvent } = createReferenceServiceFixture({
+        flowModelTreePaths: [
+          {
+            ancestor: 'js_page_schema',
+            descendant: 'flow_js_page_visible',
+          },
+        ],
+        desktopRoutes: [
+          {
+            id: 'route_js_page',
+            schemaUid: 'js_page_schema',
+          },
+        ],
+        roles: [
+          {
+            name: testCase.role,
+            desktopRoutes: testCase.desktopRoutes,
+          },
+        ],
+        references: [createJsPageReferenceRecord({ modelUid: 'flow_js_page_visible' })],
+      });
+      const can = vi.fn(({ resource, action }: { resource: string; action: string }) => {
+        if (resource === 'lightExtension' && action === 'readReferences') {
+          return {};
+        }
+        return false;
+      });
+
+      const references = await service.readReferences(
+        { repoId: 'ler_pages' },
+        { can, requestId: `req_js_page_${testCase.role}`, state: { currentRoles: [testCase.role] } },
+      );
+
+      expect(references).toHaveLength(testCase.visible ? 1 : 0);
+      if (testCase.visible) {
+        expect(references[0]).toMatchObject({
+          kind: 'js-page',
+          ownerKind: 'flowModel.pageSettings',
+          ownerLocator: {
+            modelUid: 'flow_js_page_visible',
+            use: 'JSPageModel',
+          },
+        });
+      } else {
+        expect(recordReferenceEvent).toHaveBeenCalledWith(
+          expect.objectContaining({
+            action: 'readReferences',
+            result: 'denied',
+            requestId: 'req_js_page_page-hidden',
+            reasonCode: 'owner_not_visible',
+          }),
+        );
+      }
+    }
   });
 
   it('records denied audit when readReferences permission is missing', async () => {

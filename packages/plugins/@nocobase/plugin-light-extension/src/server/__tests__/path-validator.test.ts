@@ -68,6 +68,44 @@ describe('plugin-light-extension path validator', () => {
     expect(result.diagnostics.filter((item) => item.code === 'path_extension_not_allowed')).toEqual([]);
   });
 
+  it('accepts JS Page entry modules without allowing page-specific assets', () => {
+    const validator = new LightExtensionValidator();
+    const accepted = validator.validateWorkspace({
+      files: [
+        {
+          path: 'src/client/js-pages/orders/index.tsx',
+          content: 'import { title } from "./title";\nctx.render(<div>{title}</div>);\n',
+        },
+        { path: 'src/client/js-pages/orders/title.ts', content: 'export const title = "Orders";\n' },
+        {
+          path: 'src/client/js-pages/orders/entry.json',
+          content: JSON.stringify({ schemaVersion: 1, key: 'orders' }),
+        },
+      ],
+    });
+    const rejected = validator.validateWorkspace({
+      files: [{ path: 'src/client/js-pages/orders/style.css', content: '.page { min-height: 100vh; }\n' }],
+    });
+
+    expect(accepted).toMatchObject({
+      accepted: true,
+      entries: [
+        expect.objectContaining({
+          kind: 'js-page',
+          entryName: 'orders',
+          entryPath: 'src/client/js-pages/orders/index.tsx',
+        }),
+      ],
+    });
+    expect(rejected.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'path_extension_not_allowed',
+        kind: 'js-page',
+        path: 'src/client/js-pages/orders/style.css',
+      }),
+    );
+  });
+
   it('selects the entry index path by fixed priority instead of file order', () => {
     const validator = new LightExtensionValidator();
     const first = validator.validateWorkspace({

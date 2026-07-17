@@ -14,6 +14,7 @@ export {
   JSBlockLightExtensionSourceField,
   JSFieldLightExtensionSourceField,
   JSItemLightExtensionSourceField,
+  JSPageLightExtensionSourceField,
 } from './components/JSBlockLightExtensionSourceField';
 export { createLightExtensionRunJSResolver } from './resolvers/LightExtensionRunJSResolver';
 export {

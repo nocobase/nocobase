@@ -17,6 +17,39 @@ import {
 } from '../flow-surfaces/light-extension-reference-integration';
 
 describe('flowSurfaces light-extension reference integration', () => {
+  it('marks a JS Page reference owner missing before the page model is removed', async () => {
+    const transaction = { id: 'trx_destroy_js_page' };
+    const remove = vi.fn(async () => undefined);
+    const markOwnerMissing = vi.fn(async () => undefined);
+    const service = new FlowSurfacesService({} as never);
+    Object.defineProperty(service, 'repository', {
+      value: {
+        findModelById: vi.fn(async () => ({
+          uid: 'flow_js_page',
+          use: 'JSPageModel',
+          subModels: {},
+        })),
+        remove,
+      },
+    });
+    Object.assign(service as unknown as Record<string, unknown>, {
+      removeFlowSqlBindingsForNodeTree: vi.fn(async () => undefined),
+      cleanupNodeBindings: vi.fn(async () => undefined),
+      clearFlowTemplateUsagesForNodeTree: vi.fn(async () => undefined),
+      markLightExtensionReferencesOwnerMissingForNodeTree: markOwnerMissing,
+    });
+
+    await (
+      service as unknown as {
+        removeNodeTreeWithBindings: (uid: string, transaction?: unknown) => Promise<void>;
+      }
+    ).removeNodeTreeWithBindings('flow_js_page', transaction);
+
+    expect(markOwnerMissing).toHaveBeenCalledWith('flow_js_page', 'flowSurfaces.removeNode', { transaction });
+    expect(remove).toHaveBeenCalledWith('flow_js_page', { transaction });
+    expect(markOwnerMissing.mock.invocationCallOrder[0]).toBeLessThan(remove.mock.invocationCallOrder[0]);
+  });
+
   it('resolves the light-extension reference provider through plugin manager aliases', async () => {
     const provider = {
       syncFlowModelReferencesForNodeTree: vi.fn(async () => undefined),

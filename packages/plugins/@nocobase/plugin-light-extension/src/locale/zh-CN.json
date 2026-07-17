@@ -30,6 +30,7 @@
   "Failed to create repository": "创建仓库失败",
   "Failed to update repository": "更新轻插件失败",
   "Failed to load entries": "加载 Entries 失败",
+  "No light extension entries": "没有可用的轻插件条目",
   "Failed to load history": "加载历史失败",
   "Failed to load repositories": "加载仓库列表失败",
   "Failed to read source ZIP": "读取源码 ZIP 失败",

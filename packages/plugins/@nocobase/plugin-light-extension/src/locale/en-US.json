@@ -30,6 +30,7 @@
   "Failed to create repository": "Failed to create repository",
   "Failed to update repository": "Failed to update repository",
   "Failed to load entries": "Failed to load entries",
+  "No light extension entries": "No light extension entries",
   "Failed to load history": "Failed to load history",
   "Failed to load repositories": "Failed to load repositories",
   "Failed to read source ZIP": "Failed to read source ZIP",

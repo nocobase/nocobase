@@ -390,9 +390,18 @@ function sanitizeReferenceAuditDetailValue(value: unknown): unknown {
 }
 
 function isReferenceSensitiveDetailKey(key: string): boolean {
-  return ['modelUid', 'ownerLocator', 'settings', 'resolvedSettings', 'settingsDefaults', 'settingsSchema'].includes(
-    key,
-  );
+  return [
+    'binding',
+    'code',
+    'modelUid',
+    'ownerLocator',
+    'resolvedSettings',
+    'settings',
+    'settingsDefaults',
+    'settingsSchema',
+    'sourceBinding',
+    'token',
+  ].includes(key);
 }
 
 function hashAuditValue(value: unknown): string {

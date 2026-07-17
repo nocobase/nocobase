@@ -461,6 +461,66 @@ describe('plugin-light-extension compile preview', () => {
     );
   });
 
+  it('previews JS Page entries with the render surface and shared helpers', async () => {
+    const repo = createRepo();
+    const { db } = createDbStub([
+      {
+        ...createEntryRecord({ id: 'lee_orders', repoId: repo.id, entryName: 'orders' }),
+        kind: 'js-page',
+        entryPath: 'src/client/js-pages/orders/index.tsx',
+        descriptorPath: 'src/client/js-pages/orders/entry.json',
+      },
+    ]);
+    const fileService = createFileServiceStub(repo, [
+      {
+        path: 'src/shared/format.ts',
+        content: 'export const format = (value: string) => value.toUpperCase();\n',
+      },
+      {
+        path: 'src/client/js-pages/orders/index.tsx',
+        content: 'import { format } from "../../../shared/format";\nctx.render(format(ctx.page.uid));\n',
+      },
+      {
+        path: 'src/client/js-pages/orders/entry.json',
+        content: '{"schemaVersion":1,"key":"orders"}',
+      },
+    ]);
+    const { service, recordCompileEvent } = createPreviewService(db, fileService);
+
+    const result = await service.compilePreview(
+      { repoId: repo.id, entryIds: ['lee_orders'] },
+      { requestId: 'req_compile_preview_js_page' },
+    );
+
+    expect(result).toMatchObject({
+      accepted: true,
+      diagnostics: [],
+      entries: [
+        {
+          entryId: 'lee_orders',
+          kind: 'js-page',
+          status: 'success',
+          accepted: true,
+          artifact: {
+            entryPath: 'src/client/js-pages/orders/index.tsx',
+            metadata: expect.objectContaining({
+              kind: 'js-page',
+              entryName: 'orders',
+              compilerSurfaceStyle: 'render',
+            }),
+          },
+        },
+      ],
+    });
+    expect(recordCompileEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entryId: 'lee_orders',
+        result: 'success',
+        requestId: 'req_compile_preview_js_page',
+      }),
+    );
+  });
+
   it('supports selected entryIds and reports missing selected entries without stopping valid entries', async () => {
     const repo = createRepo();
     const { db } = createDbStub([

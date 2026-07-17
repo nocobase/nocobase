@@ -10,6 +10,7 @@
 import { createRunJSSourceModeField, type RunJSSourceModeFieldProps } from '../../../components/runjs-source';
 
 export const JS_PAGE_LIGHT_EXTENSION_FULL_SOURCE_FIELD = 'JSPageLightExtensionFullSourceField';
+export const JS_PAGE_LIGHT_EXTENSION_SETTINGS_STEP_FIELD = 'JSPageLightExtensionSettingsStepField';
 
 export type JSPageSourceModeFieldProps = RunJSSourceModeFieldProps;
 

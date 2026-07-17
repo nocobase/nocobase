@@ -19,12 +19,16 @@ describe('lightExtensionWorkspaceArchive', () => {
     const blob = await createLightExtensionWorkspaceArchive([
       { path: 'src/shared/value.ts', content: 'export const value = 2;\n' },
       { path: 'src/client/js-blocks/example/index.tsx', content: 'ctx.render(<div>Draft</div>);\n' },
+      { path: 'src/client/js-pages/orders/index.tsx', content: 'ctx.render(<div>{ctx.page.uid}</div>);\n' },
     ]);
     const zip = await JSZip.loadAsync(await readBlobAsArrayBuffer(blob));
 
     await expect(zip.file('src/shared/value.ts')?.async('string')).resolves.toBe('export const value = 2;\n');
     await expect(zip.file('src/client/js-blocks/example/index.tsx')?.async('string')).resolves.toBe(
       'ctx.render(<div>Draft</div>);\n',
+    );
+    await expect(zip.file('src/client/js-pages/orders/index.tsx')?.async('string')).resolves.toBe(
+      'ctx.render(<div>{ctx.page.uid}</div>);\n',
     );
   });
 

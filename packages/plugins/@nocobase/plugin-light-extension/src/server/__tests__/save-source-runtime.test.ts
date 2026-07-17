@@ -114,6 +114,82 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     expect(runtimeArtifact.code).toContain('Sales KPI');
   });
 
+  it('persists and resolves an immutable JS Page render artifact', async () => {
+    const descriptor = {
+      path: 'src/client/js-pages/orders/entry.json',
+      content: JSON.stringify({
+        schemaVersion: 1,
+        key: 'orders',
+        settings: {
+          title: { type: 'string' },
+        },
+      }),
+      language: 'json',
+    };
+    const repo = await repoService.createRepo({
+      name: 'JS Page Runtime',
+      initialFiles: [
+        descriptor,
+        {
+          path: 'src/client/js-pages/orders/index.tsx',
+          content: 'ctx.render(ctx.page.uid);\n',
+          language: 'typescript',
+        },
+      ],
+    });
+
+    const result = await saveCurrentSource({
+      repoId: repo.id,
+      message: 'compile js page runtime',
+      files: [
+        {
+          path: 'src/shared/format.ts',
+          content: 'export const format = (uid: string, title: string) => `${uid}:${title}`;\n',
+          language: 'typescript',
+        },
+        {
+          path: 'src/client/js-pages/orders/index.tsx',
+          content:
+            'import { format } from "../../../shared/format";\nctx.render(format(ctx.page.uid, String(ctx.settings.title)));\n',
+          language: 'typescript',
+        },
+      ],
+    });
+    const compiled = result.compile.entries[0];
+    const entry = await app.db.getRepository('lightExtensionEntries').findOne({ filterByTk: compiled.entryId });
+    const runtime = await runtimeResolveService.resolve({
+      sourceMode: 'light-extension',
+      sourceBinding: {
+        type: 'light-extension-entry',
+        repoId: repo.id,
+        entryId: compiled.entryId,
+        kind: 'js-page',
+      },
+      settings: { title: 'Orders' },
+    });
+    const artifact = await runtimeResolveService.getArtifact(runtime.artifactHash);
+
+    expect(result).toMatchObject({ compile: { status: 'success' }, diagnostics: [] });
+    expect(entry?.get('kind')).toBe('js-page');
+    expect(entry?.get('surfaceStyle')).toBe('render');
+    expect(entry?.get('runtimeArtifact')).toMatchObject({
+      version: 'v2',
+      entryPath: 'src/client/js-pages/orders/index.tsx',
+      metadata: expect.objectContaining({ kind: 'js-page', modelUse: 'JSPageModel' }),
+    });
+    expect(runtime).toMatchObject({
+      entryId: compiled.entryId,
+      version: 'v2',
+      settings: { title: 'Orders' },
+      artifactHash: expect.stringMatching(/^[a-f0-9]{64}$/u),
+    });
+    expect(runtime).not.toHaveProperty('code');
+    expect(artifact).toMatchObject({
+      entryPath: 'src/client/js-pages/orders/index.tsx',
+      runtimeContract: 'light-extension.runtime-artifact.v1',
+    });
+  });
+
   it('keeps descriptor hashes isolated from runtime hashes and tracks ordinary JSON modules', async () => {
     const repo = await repoService.createRepo({
       name: 'Hash Isolation',

@@ -16,8 +16,12 @@ describe('plugin-light-extension source ZIP archive', () => {
   it('reads a normal source ZIP', async () => {
     const zipBase64 = await createZipBase64({
       'README.md': '# Imported\n',
+      'src/shared/title.ts': 'export const title = "Orders";\n',
       'src/client/js-blocks/example/entry.json': '{"schemaVersion":1,"key":"example"}\n',
       'src/client/js-blocks/example/index.jsx': 'ctx.render(<div>Imported</div>);\n',
+      'src/client/js-pages/orders/entry.json': '{"schemaVersion":1,"key":"orders"}\n',
+      'src/client/js-pages/orders/index.tsx':
+        'import { title } from "../../../shared/title";\nctx.render(<div>{title}</div>);\n',
     });
 
     const files = await parseLightExtensionSourceArchive(zipBase64, new LightExtensionValidator());
@@ -26,10 +30,16 @@ describe('plugin-light-extension source ZIP archive', () => {
       expect.arrayContaining([
         expect.objectContaining({ path: 'README.md', content: '# Imported\n' }),
         expect.objectContaining({ path: 'src/client/js-blocks/example/entry.json' }),
+        expect.objectContaining({ path: 'src/client/js-pages/orders/entry.json' }),
         expect.objectContaining({
           path: 'src/client/js-blocks/example/index.jsx',
           content: 'ctx.render(<div>Imported</div>);\n',
         }),
+        expect.objectContaining({
+          path: 'src/client/js-pages/orders/index.tsx',
+          content: 'import { title } from "../../../shared/title";\nctx.render(<div>{title}</div>);\n',
+        }),
+        expect.objectContaining({ path: 'src/shared/title.ts' }),
       ]),
     );
   });
@@ -37,8 +47,8 @@ describe('plugin-light-extension source ZIP archive', () => {
   it('strips one shared top-level directory and ignores macOS metadata', async () => {
     const zipBase64 = await createZipBase64({
       'example-source/README.md': '# Wrapped\n',
-      'example-source/src/client/js-blocks/example/entry.json': '{"schemaVersion":1,"key":"example"}\n',
-      'example-source/src/client/js-blocks/example/index.js': 'ctx.render("example");\n',
+      'example-source/src/client/js-pages/example/entry.json': '{"schemaVersion":1,"key":"example"}\n',
+      'example-source/src/client/js-pages/example/index.js': 'ctx.render(ctx.page.uid);\n',
       'example-source/.DS_Store': 'metadata',
       '__MACOSX/example-source/._README.md': 'metadata',
     });
@@ -47,8 +57,8 @@ describe('plugin-light-extension source ZIP archive', () => {
 
     expect(files.map((file) => file.path)).toEqual([
       'README.md',
-      'src/client/js-blocks/example/entry.json',
-      'src/client/js-blocks/example/index.js',
+      'src/client/js-pages/example/entry.json',
+      'src/client/js-pages/example/index.js',
     ]);
   });
 

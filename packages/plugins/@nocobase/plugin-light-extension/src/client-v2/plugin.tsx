@@ -18,6 +18,8 @@ import {
   JS_FIELD_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
   JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
   JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+  JS_PAGE_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
+  JS_PAGE_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
   Plugin,
   RunJSSourceResolverRegistry,
   RunJSSettingsDescriptorProviderRegistry,
@@ -30,6 +32,7 @@ import {
   JSBlockLightExtensionSourceField,
   JSFieldLightExtensionSourceField,
   JSItemLightExtensionSourceField,
+  JSPageLightExtensionSourceField,
   RunJSLightExtensionSourceField,
 } from './components/JSBlockLightExtensionSourceField';
 import { createRunJSLightExtensionEditorProvider } from './components/RunJSLightExtensionEditorProvider';
@@ -50,20 +53,43 @@ export class PluginLightExtensionClientV2 extends Plugin<Record<string, never>, 
   }
 
   async load() {
-    this.flowEngine.flowSettings.registerComponents(
-      {
-        [JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSActionLightExtensionSourceField,
-        [JS_ACTION_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
-        [JS_BLOCK_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSBlockLightExtensionSourceField,
-        [JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
-        [JS_FIELD_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSFieldLightExtensionSourceField,
-        [JS_FIELD_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
-        [JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSItemLightExtensionSourceField,
-        [JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
-        RunJSLightExtensionSourceField,
-      },
-      { warnOnOverwrite: false },
+    const components = {
+      [JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSActionLightExtensionSourceField,
+      [JS_ACTION_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
+      [JS_BLOCK_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSBlockLightExtensionSourceField,
+      [JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
+      [JS_FIELD_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSFieldLightExtensionSourceField,
+      [JS_FIELD_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
+      [JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSItemLightExtensionSourceField,
+      [JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
+      [JS_PAGE_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSPageLightExtensionSourceField,
+      [JS_PAGE_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
+      RunJSLightExtensionSourceField,
+    };
+    const flowSettings = this.flowEngine.flowSettings;
+    const previousComponents = new Map(
+      Object.keys(components).map((name) => [
+        name,
+        {
+          exists: Object.prototype.hasOwnProperty.call(flowSettings.components, name),
+          value: flowSettings.components[name],
+        },
+      ]),
     );
+    flowSettings.registerComponents(components, { warnOnOverwrite: false });
+    this.disposers.push(() => {
+      for (const [name, component] of Object.entries(components)) {
+        if (flowSettings.components[name] !== component) {
+          continue;
+        }
+        const previous = previousComponents.get(name);
+        if (previous?.exists) {
+          flowSettings.components[name] = previous.value;
+        } else {
+          delete flowSettings.components[name];
+        }
+      }
+    });
     this.disposers.push(
       RunJSSourceResolverRegistry.registerResolver(createLightExtensionRunJSResolver(this.app.apiClient)),
     );

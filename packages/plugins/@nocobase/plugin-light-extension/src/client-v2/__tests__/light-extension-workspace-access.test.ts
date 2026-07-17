@@ -24,6 +24,11 @@ const cases: Array<{ entryPath: string; kind: LightExtensionKind; lockedPath: st
     lockedPath: 'src/client/js-actions/other/index.ts',
   },
   {
+    entryPath: 'src/client/js-pages/current/index.tsx',
+    kind: 'js-page',
+    lockedPath: 'src/client/js-pages/other/index.tsx',
+  },
+  {
     entryPath: 'src/client/js-actions/current/index.ts',
     kind: 'js-action',
     lockedPath: 'src/client/js-items/other/index.tsx',
@@ -91,6 +96,10 @@ describe('light extension entry workspace access', () => {
   });
 
   it('recognizes only managed entry root folders', () => {
+    expect(getManagedLightExtensionEntryRoot('src/client/js-pages/orders')).toEqual({
+      kind: 'js-page',
+      path: 'src/client/js-pages/orders',
+    });
     expect(getManagedLightExtensionEntryRoot('src/client/js-actions/send-email')).toEqual({
       kind: 'js-action',
       path: 'src/client/js-actions/send-email',

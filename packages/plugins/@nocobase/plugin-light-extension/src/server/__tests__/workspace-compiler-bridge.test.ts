@@ -113,6 +113,65 @@ describe('plugin-light-extension workspace compiler bridge', () => {
     });
   });
 
+  it('compiles JS Page entries through the existing render artifact contract', async () => {
+    const result = await bridge.compileEntry(
+      {
+        repoId: 'ler_pages',
+        entryId: 'lee_orders',
+        kind: 'js-page',
+        entryName: 'orders',
+        entryPath: 'src/client/js-pages/orders/index.tsx',
+        surfaceStyle: 'render',
+        files: [
+          {
+            path: 'src/shared/format.ts',
+            content: 'export const format = (uid: string, title: string) => `${uid}:${title}`;\n',
+          },
+          {
+            path: 'src/client/js-pages/orders/index.tsx',
+            content:
+              'import { format } from "../../../shared/format";\nctx.render(format(ctx.page.uid, String(ctx.settings.title)));\n',
+          },
+        ],
+      },
+      { requestId: 'req_compile_js_page' },
+    );
+
+    expect(result).toMatchObject({
+      accepted: true,
+      diagnostics: [],
+      surface: {
+        kind: 'js-page',
+        surfaceStyle: 'render',
+        compilerSurfaceStyle: 'render',
+        modelUse: 'JSPageModel',
+        surface: 'js-model.render',
+      },
+      artifact: {
+        version: 'v2',
+        entryPath: 'src/client/js-pages/orders/index.tsx',
+        metadata: expect.objectContaining({
+          repoId: 'ler_pages',
+          entryId: 'lee_orders',
+          kind: 'js-page',
+          entryName: 'orders',
+          modelUse: 'JSPageModel',
+          surface: 'js-model.render',
+          surfaceStyle: 'render',
+          compilerSurfaceStyle: 'render',
+        }),
+      },
+    });
+    const rendered: unknown[] = [];
+    await executeArtifact(result.artifact.code, {
+      libs: {},
+      page: { uid: 'page-1' },
+      settings: { title: 'Orders' },
+      render: (value: unknown) => rendered.push(value),
+    });
+    expect(rendered).toEqual(['page-1:Orders']);
+  });
+
   it('compiles shared helper imports and zero-runtime SDK helpers for light extension entries', async () => {
     const result = await bridge.compileEntry(
       {

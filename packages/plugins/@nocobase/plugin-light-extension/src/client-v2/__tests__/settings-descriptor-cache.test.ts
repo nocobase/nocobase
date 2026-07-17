@@ -106,6 +106,12 @@ describe('LightExtension settings descriptor cache', () => {
         schemaHash: 'sales-action',
         settingsSchema: createMessageSchema('D'),
       }),
+      createEntry({
+        kind: 'js-page',
+        entryId: 'entry_sales_primary',
+        schemaHash: 'sales-page',
+        settingsSchema: createMessageSchema('Page'),
+      }),
     ];
     const request = vi.fn(async (options: ApiRequestOptions) => {
       const input = options.data as { repoId?: string; kind?: string };
@@ -125,7 +131,11 @@ describe('LightExtension settings descriptor cache', () => {
     await expect(getDescriptor(resolver, {}, 'repo_sales', 'entry_sales_action', 'js-action')).resolves.toMatchObject({
       settingsSchemaHash: 'sales-action',
     });
-    expect(request).toHaveBeenCalledTimes(3);
+    await expect(getDescriptor(resolver, {}, 'repo_sales', 'entry_sales_primary', 'js-page')).resolves.toMatchObject({
+      settingsSchemaHash: 'sales-page',
+      defaults: { message: 'Page' },
+    });
+    expect(request).toHaveBeenCalledTimes(4);
   });
 
   it('deduplicates concurrent cache misses for the same repository and kind', async () => {

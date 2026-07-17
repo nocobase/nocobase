@@ -153,20 +153,6 @@ function getBindingDisplayLabel(binding: LightExtensionRuntimeSourceBinding, sou
   return `${sourceLabel} / ${bindingLabel}`;
 }
 
-function getErrorMessage(error: unknown): string | undefined {
-  if (isRecord(error)) {
-    if (typeof error.message === 'string') {
-      return error.message;
-    }
-    const response = isRecord(error.response) ? error.response : null;
-    const data = isRecord(response?.data) ? response.data : null;
-    if (Array.isArray(data?.errors) && isRecord(data.errors[0]) && typeof data.errors[0].message === 'string') {
-      return data.errors[0].message;
-    }
-  }
-  return undefined;
-}
-
 export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSourceFieldProps> = ({
   value,
   onChange,
@@ -185,6 +171,7 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
   const [sourceEntries, setSourceEntries] = React.useState<LightExtensionSelectableEntrySummary[]>([]);
   const [sourceEntriesLoading, setSourceEntriesLoading] = React.useState(false);
   const [sourceEntriesError, setSourceEntriesError] = React.useState<string | null>(null);
+  const descriptionId = React.useId();
 
   const values = form.values as JSBlockRunJSFormValues;
   const rendersSourceModeControl = typeof value === 'string' || getFieldPath(field) === 'sourceMode';
@@ -286,12 +273,12 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
           return;
         }
         setSourceEntries(entries.filter((entry) => entry.kind === kind && entry.runtimeAvailable === true));
-      } catch (requestError) {
+      } catch {
         if (!mounted) {
           return;
         }
         setSourceEntries([]);
-        setSourceEntriesError(getErrorMessage(requestError) || t('Failed to load entries'));
+        setSourceEntriesError(t('Failed to load entries'));
       } finally {
         if (mounted) {
           setSourceEntriesLoading(false);
@@ -498,6 +485,7 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
       <Space direction="vertical" style={{ width: '100%' }} size={12}>
         <Select
           aria-label={t('Code source')}
+          aria-describedby={descriptionId}
           disabled={disabled}
           loading={sourceEntriesLoading}
           value={sourceSelectValue}
@@ -505,10 +493,13 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
           optionFilterProp="searchText"
           options={sourceSelectOptions.filter((option) => option.value !== INLINE_SOURCE_SELECT_VALUE)}
           onChange={handleSourceSelectChange}
+          notFoundContent={t('No light extension entries')}
           placeholder={t('Select a light extension entry')}
         />
-        {sourceEntriesError ? <Alert type="error" showIcon message={sourceEntriesError} /> : null}
-        {lightExtensionBinding}
+        <div id={descriptionId}>
+          {sourceEntriesError ? <Alert type="error" showIcon message={sourceEntriesError} /> : null}
+          {lightExtensionBinding}
+        </div>
       </Space>
     );
   }
@@ -517,6 +508,7 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
     <Space direction="vertical" style={{ width: '100%' }} size={12}>
       <Select
         aria-label={t('Code source')}
+        aria-describedby={descriptionId}
         disabled={disabled}
         loading={sourceEntriesLoading}
         value={sourceSelectValue}
@@ -524,21 +516,24 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
         optionFilterProp="searchText"
         options={sourceSelectOptions}
         onChange={handleSourceSelectChange}
+        notFoundContent={t('No light extension entries')}
         placeholder={t('Select a light extension entry')}
       />
-      {sourceEntriesError ? <Alert type="error" showIcon message={sourceEntriesError} /> : null}
-      {sourceMode === LIGHT_EXTENSION_SOURCE_MODE ? (
-        lightExtensionBinding
-      ) : (
-        <Button
-          disabled={disabled || !sourceBinding}
-          loading={copying}
-          onClick={copyLightExtensionToInline}
-          style={{ width: 'fit-content' }}
-        >
-          {t('Copy selected light extension code')}
-        </Button>
-      )}
+      <div id={descriptionId}>
+        {sourceEntriesError ? <Alert type="error" showIcon message={sourceEntriesError} /> : null}
+        {sourceMode === LIGHT_EXTENSION_SOURCE_MODE ? (
+          lightExtensionBinding
+        ) : (
+          <Button
+            disabled={disabled || !sourceBinding}
+            loading={copying}
+            onClick={copyLightExtensionToInline}
+            style={{ width: 'fit-content' }}
+          >
+            {t('Copy selected light extension code')}
+          </Button>
+        )}
+      </div>
     </Space>
   );
 };
@@ -554,6 +549,10 @@ export const JSActionLightExtensionSourceField: React.FC<Omit<JSBlockLightExtens
 export const JSItemLightExtensionSourceField: React.FC<Omit<JSBlockLightExtensionSourceFieldProps, 'kind'>> = (
   props,
 ) => <JSBlockLightExtensionSourceField {...props} kind="js-item" />;
+
+export const JSPageLightExtensionSourceField: React.FC<Omit<JSBlockLightExtensionSourceFieldProps, 'kind'>> = (
+  props,
+) => <JSBlockLightExtensionSourceField {...props} kind="js-page" />;
 
 export const RunJSLightExtensionSourceField: React.FC<Omit<JSBlockLightExtensionSourceFieldProps, 'kind'>> = (
   props,

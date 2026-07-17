@@ -340,6 +340,7 @@ export function buildCapabilities(limits: LightExtensionValidationLimits): Light
         'tsconfig.json',
         'src/shared/**',
         'src/client/js-blocks/**',
+        'src/client/js-pages/**',
         'src/client/js-fields/**',
         'src/client/js-actions/**',
         'src/client/js-items/**',

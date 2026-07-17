@@ -16,6 +16,10 @@ import {
   createJsFieldNode,
   createJsItemEntryRecord,
   createJsItemNode,
+  createJsPageEntryRecord,
+  createJsPageNode,
+  createJsPageReferenceRecord,
+  createJsPageSourceBinding,
   createReferenceRecord,
   createReferenceServiceFixture,
   createRepoRecord,
@@ -23,8 +27,204 @@ import {
   createRunJSHostNode,
   stableJsonHash,
 } from './reference-test-helpers';
+import {
+  buildReferenceOwnerLocator,
+  getReferenceOwnerAdapterByUse,
+  hashReferenceOwnerLocator,
+} from '../services/ReferenceOwnerRegistry';
+import type { LightExtensionRuntimeSourceBinding } from '../../shared/types';
 
 describe('plugin-light-extension references service', () => {
+  it('maintains an independent JS Page reference through external updates and return to inline', async () => {
+    const { service, repositories, flowModelTrees } = createReferenceServiceFixture({
+      flowModelTrees: {
+        flow_js_page: createJsPageNode({
+          settings: {
+            threshold: 7,
+            region: 'EMEA',
+          },
+        }),
+      },
+      repos: [createRepoRecord({ id: 'ler_pages' }), createRepoRecord({ id: 'ler_support' })],
+      entries: [createJsPageEntryRecord(), createJsPageEntryRecord({ id: 'lee_support_page', repoId: 'ler_support' })],
+    });
+
+    await service.syncFlowModelReferencesForNodeTree({
+      rootUid: 'flow_js_page',
+      action: 'flowModels.save',
+    });
+
+    const pageAdapter = getReferenceOwnerAdapterByUse('JSPageModel');
+    const blockAdapter = getReferenceOwnerAdapterByUse('JSBlockModel');
+    if (!pageAdapter || !blockAdapter) {
+      throw new Error('Expected JS Page and JS Block reference owner adapters');
+    }
+    const pageLocator = buildReferenceOwnerLocator(pageAdapter, 'flow_js_page', 'JSPageModel');
+    const blockLocator = buildReferenceOwnerLocator(blockAdapter, 'flow_js_page', 'JSBlockModel');
+    expect(pageLocator).toMatchObject({
+      kind: 'flowModel.pageSettings',
+      use: 'JSPageModel',
+      stepPath: ['stepParams', 'jsSettings', 'runJs'],
+    });
+    expect(hashReferenceOwnerLocator(pageLocator)).not.toBe(hashReferenceOwnerLocator(blockLocator));
+    expect(hashReferenceOwnerLocator(pageLocator)).toBe(
+      hashReferenceOwnerLocator(buildReferenceOwnerLocator(pageAdapter, 'flow_js_page', 'JSPageModel')),
+    );
+    expect(repositories.lightExtensionReferences.records[0].toJSON()).toMatchObject({
+      repoId: 'ler_pages',
+      entryId: 'lee_sales_page',
+      kind: 'js-page',
+      ownerKind: 'flowModel.pageSettings',
+      ownerLocator: pageLocator,
+      ownerLocatorHash: hashReferenceOwnerLocator(pageLocator),
+      settingsHash: stableJsonHash({ threshold: 7, region: 'EMEA' }),
+      resolvedStatus: 'active',
+    });
+
+    flowModelTrees.flow_js_page = createJsPageNode({
+      settings: {
+        threshold: 8,
+        region: 'EMEA',
+      },
+    });
+    await service.syncFlowModelReferencesForNodeTree({ rootUid: 'flow_js_page', action: 'flowModels.save' });
+    expect(repositories.lightExtensionReferences.records).toHaveLength(1);
+    expect(repositories.lightExtensionReferences.records[0].get('settingsHash')).toBe(
+      stableJsonHash({ threshold: 8, region: 'EMEA' }),
+    );
+
+    flowModelTrees.flow_js_page = createJsPageNode({
+      sourceBinding: createJsPageSourceBinding({
+        repoId: 'ler_support',
+        entryId: 'lee_support_page',
+      }),
+    });
+    await service.syncFlowModelReferencesForNodeTree({ rootUid: 'flow_js_page', action: 'flowModels.save' });
+    expect(repositories.lightExtensionReferences.records).toHaveLength(1);
+    expect(repositories.lightExtensionReferences.records[0].toJSON()).toMatchObject({
+      repoId: 'ler_support',
+      entryId: 'lee_support_page',
+      resolvedStatus: 'active',
+    });
+
+    flowModelTrees.flow_js_page = createJsPageNode({ sourceMode: 'inline' });
+    const inlineResult = await service.syncFlowModelReferencesForNodeTree({
+      rootUid: 'flow_js_page',
+      action: 'flowModels.save',
+    });
+    expect(inlineResult).toMatchObject({ scanned: 1, removed: 1 });
+    expect(repositories.lightExtensionReferences.records).toHaveLength(0);
+  });
+
+  it('derives JS Page status from repo, entry, runtime, and settings state', async () => {
+    const cases: Array<{
+      name: string;
+      repo: Record<string, unknown>;
+      entry: Record<string, unknown>;
+      settings?: Record<string, unknown>;
+      sourceBinding?: LightExtensionRuntimeSourceBinding;
+      expected: string;
+      reason?: string;
+    }> = [
+      {
+        name: 'repo disabled',
+        repo: createRepoRecord({ id: 'ler_pages', lifecycleStatus: 'disabled' }),
+        entry: createJsPageEntryRecord(),
+        expected: 'repo_disabled',
+      },
+      {
+        name: 'repo archived',
+        repo: createRepoRecord({ id: 'ler_pages', lifecycleStatus: 'archived' }),
+        entry: createJsPageEntryRecord(),
+        expected: 'repo_archived',
+      },
+      {
+        name: 'entry missing',
+        repo: createRepoRecord({ id: 'ler_pages' }),
+        entry: createJsPageEntryRecord({ healthStatus: 'missing' }),
+        expected: 'entry_missing',
+      },
+      {
+        name: 'runtime missing',
+        repo: createRepoRecord({ id: 'ler_pages' }),
+        entry: createJsPageEntryRecord({ compiledCommitId: null, runtimeArtifact: null, runtimeCodeHash: null }),
+        expected: 'runtime_missing',
+      },
+      {
+        name: 'settings invalid',
+        repo: createRepoRecord({ id: 'ler_pages' }),
+        entry: createJsPageEntryRecord(),
+        settings: { threshold: 99, region: 'EMEA' },
+        expected: 'settings_invalid',
+      },
+      {
+        name: 'binding kind mismatch',
+        repo: createRepoRecord({ id: 'ler_pages' }),
+        entry: createJsPageEntryRecord(),
+        sourceBinding: createJsPageSourceBinding({ kind: 'js-block' }),
+        expected: 'binding_outdated',
+        reason: 'kind_mismatch',
+      },
+    ];
+
+    for (const testCase of cases) {
+      const { service, repositories, recordReferenceEvent } = createReferenceServiceFixture({
+        flowModelTrees: {
+          flow_js_page: createJsPageNode({
+            settings: testCase.settings,
+            sourceBinding: testCase.sourceBinding,
+          }),
+        },
+        repos: [testCase.repo],
+        entries: [testCase.entry],
+      });
+
+      await service.syncFlowModelReferencesForNodeTree({ rootUid: 'flow_js_page', action: 'flowModels.save' });
+
+      expect(repositories.lightExtensionReferences.records[0].get('resolvedStatus'), testCase.name).toBe(
+        testCase.expected,
+      );
+      if (testCase.expected === 'settings_invalid') {
+        expect(repositories.lightExtensionReferences.records[0].get('settingsHash')).toBe(
+          stableJsonHash({ threshold: 99, region: 'EMEA' }),
+        );
+      }
+      expect(recordReferenceEvent, testCase.name).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'referenceConflict',
+          ownerKind: 'flowModel.pageSettings',
+          reasonCode: testCase.reason || testCase.expected,
+        }),
+      );
+    }
+  });
+
+  it('refreshes JS Page repo lifecycle status without saving the page and marks deleted pages missing', async () => {
+    const { service, repositories, flowModelTrees } = createReferenceServiceFixture({
+      flowModelTrees: {
+        flow_js_page: createJsPageNode(),
+      },
+      repos: [createRepoRecord({ id: 'ler_pages' })],
+      entries: [createJsPageEntryRecord()],
+      references: [createJsPageReferenceRecord()],
+    });
+
+    await repositories.lightExtensionRepos.records[0].update({ lifecycleStatus: 'disabled' });
+    await service.refreshReferencesForRepo('ler_pages');
+    expect(repositories.lightExtensionReferences.records[0].get('resolvedStatus')).toBe('repo_disabled');
+
+    await repositories.lightExtensionRepos.records[0].update({ lifecycleStatus: 'archived' });
+    await service.refreshReferencesForRepo('ler_pages');
+    expect(repositories.lightExtensionReferences.records[0].get('resolvedStatus')).toBe('repo_archived');
+
+    delete flowModelTrees.flow_js_page;
+    await service.markFlowModelReferencesOwnerMissingForNodeTree({
+      rootUid: 'flow_js_page',
+      action: 'flowSurfaces.destroyPage',
+    });
+    expect(repositories.lightExtensionReferences.records[0].get('resolvedStatus')).toBe('owner_missing');
+  });
+
   it('upserts JS Block references against the entry current runtime and removes them after switching inline', async () => {
     const { service, repositories } = createReferenceServiceFixture({
       flowModelTrees: {

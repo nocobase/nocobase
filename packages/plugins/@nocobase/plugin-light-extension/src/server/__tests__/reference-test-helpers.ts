@@ -210,6 +210,17 @@ export function createJsFieldSourceBinding(
   });
 }
 
+export function createJsPageSourceBinding(
+  input: Partial<LightExtensionRuntimeSourceBinding> = {},
+): LightExtensionRuntimeSourceBinding {
+  return createSourceBinding({
+    repoId: 'ler_pages',
+    entryId: 'lee_sales_page',
+    kind: 'js-page',
+    ...input,
+  });
+}
+
 export function createJsActionSourceBinding(
   input: Partial<LightExtensionRuntimeSourceBinding> = {},
 ): LightExtensionRuntimeSourceBinding {
@@ -259,6 +270,29 @@ export function createJsBlockNode(
         runJs: {
           sourceMode: input.sourceMode || 'light-extension',
           sourceBinding: input.sourceBinding || createSourceBinding(),
+          settings: input.settings || {},
+        },
+      },
+    },
+  };
+}
+
+export function createJsPageNode(
+  input: {
+    uid?: string;
+    sourceMode?: string;
+    sourceBinding?: LightExtensionRuntimeSourceBinding;
+    settings?: Record<string, unknown>;
+  } = {},
+): FlowModelNode {
+  return {
+    uid: input.uid || 'flow_js_page',
+    use: 'JSPageModel',
+    stepParams: {
+      jsSettings: {
+        runJs: {
+          sourceMode: input.sourceMode || 'light-extension',
+          sourceBinding: input.sourceBinding || createJsPageSourceBinding(),
           settings: input.settings || {},
         },
       },
@@ -406,6 +440,16 @@ export function createJsFieldEntryRecord(input: Record<string, unknown> = {}): R
   });
 }
 
+export function createJsPageEntryRecord(input: Record<string, unknown> = {}): Record<string, unknown> {
+  return createEntryRecord({
+    id: 'lee_sales_page',
+    repoId: 'ler_pages',
+    kind: 'js-page',
+    healthStatus: 'ready',
+    ...input,
+  });
+}
+
 export function createJsActionEntryRecord(input: Record<string, unknown> = {}): Record<string, unknown> {
   return createEntryRecord({
     id: 'lee_mark_approved',
@@ -529,6 +573,23 @@ export function createReferenceRecord(input: Record<string, unknown> = {}): Reco
   };
 }
 
+export function createJsPageReferenceRecord(input: Record<string, unknown> = {}): Record<string, unknown> {
+  const modelUid = typeof input.modelUid === 'string' ? input.modelUid : 'flow_js_page';
+  const ownerLocator = isPlainRecord(input.ownerLocator)
+    ? (input.ownerLocator as LightExtensionReferenceOwnerLocator)
+    : createJsPageOwnerLocator(modelUid);
+  return createReferenceRecord({
+    id: `lef_${modelUid}`,
+    repoId: 'ler_pages',
+    entryId: 'lee_sales_page',
+    kind: 'js-page',
+    ownerKind: 'flowModel.pageSettings',
+    ownerLocator,
+    ownerLocatorHash: hashOwnerLocator(ownerLocator),
+    ...input,
+  });
+}
+
 function kindToFolder(kind: string): string {
   if (kind === 'js-field') {
     return 'js-fields';
@@ -542,7 +603,20 @@ function kindToFolder(kind: string): string {
   if (kind === 'runjs') {
     return 'runjs';
   }
+  if (kind === 'js-page') {
+    return 'js-pages';
+  }
   return 'js-blocks';
+}
+
+export function createJsPageOwnerLocator(modelUid: string): LightExtensionReferenceOwnerLocator {
+  return {
+    kind: 'flowModel.pageSettings',
+    modelUid,
+    use: 'JSPageModel',
+    stepPath: ['stepParams', 'jsSettings', 'runJs'],
+    descriptor: 'FlowModel JSPageModel page settings locator',
+  };
 }
 
 export function createOwnerLocator(
