@@ -309,7 +309,6 @@ export class RemoteSyncRuntimeService implements RemoteSyncRuntime {
     const adapter = this.adapterRegistry.require(tested.provider);
     const snapshot = validateFetchedSnapshot(
       await adapter.fetchSnapshot({
-        provider: tested.provider,
         config: tested.config,
         authRef: input.authRef,
       }),
