@@ -27,6 +27,7 @@ vi.mock('@formily/react', () => ({
 vi.mock('@nocobase/client-v2', () => ({
   FieldModel: class FieldModel {
     props: Record<string, unknown> = {};
+    context: Record<string, unknown> = {};
     static define = fieldModelMocks.define;
     static registerFlow = fieldModelMocks.registerFlow;
     dispatchEvent = vi.fn();
@@ -78,6 +79,13 @@ vi.mock('../previewer/filePreviewTypes', () => ({
   ),
   getDownloadFileName: (file: { filename?: string }) => file.filename || 'file',
   getPreviewThumbnailUrl: () => '',
+  revokeLocalPreviewUrls: vi.fn(),
+  triggerFileDownload: (url: string, filename: string) => {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.click();
+  },
 }));
 
 vi.mock('antd', async (importOriginal) => {
@@ -199,7 +207,7 @@ describe('UploadFieldModel', () => {
     await waitFor(() => {
       expect(click).toHaveBeenCalled();
     });
-    expect(fetchMock).toHaveBeenCalledWith('/cover.png');
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('initializes selector events and renders the card upload model', () => {
