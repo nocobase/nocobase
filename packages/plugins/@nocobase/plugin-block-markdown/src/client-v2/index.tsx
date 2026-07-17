@@ -8,4 +8,3 @@
  */
 
 export { default } from './plugin';
-export { MarkdownBlockModel } from './models/MarkdownBlockModel';

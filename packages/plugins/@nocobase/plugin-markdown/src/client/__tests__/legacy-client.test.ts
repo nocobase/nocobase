@@ -7,7 +7,61 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import PluginMarkdownClient from '../';
+vi.mock('../../client-v2', () => {
+  class MarkdownVditorRuntime {
+    name = 'vditor';
+
+    getCDN() {
+      return 'https://cdn.jsdelivr.net/npm/vditor@3.11.2';
+    }
+
+    initVditorDependency() {}
+  }
+
+  function getMarkdownRegistry(ctx: MarkdownContext) {
+    if (ctx.markdown) {
+      return ctx.markdown;
+    }
+    const engines = new Map<string, unknown>();
+    const registry = {
+      register(engine: { name: string }) {
+        engines.set(engine.name, engine);
+      },
+      getEngine(name?: string) {
+        return engines.get(name || 'vditor');
+      },
+    };
+    ctx.defineProperty('markdown', {
+      get: () => registry,
+    });
+    return registry;
+  }
+
+  function registerMarkdownVditorContext(ctx: MarkdownContext, runtime: MarkdownVditorRuntime) {
+    ctx.defineProperty('markdownVditor', {
+      get: () => runtime,
+    });
+    ctx.defineProperty('markdownVditorDependencies', {
+      get: () => ({
+        getCDN: () => runtime.getCDN(),
+        initVditorDependency: () => runtime.initVditorDependency(),
+      }),
+    });
+  }
+
+  return {
+    DisplayVditorFieldModel: class DisplayVditorFieldModel {},
+    getMarkdownRegistry,
+    MarkdownBlockModel: class MarkdownBlockModel {},
+    MarkdownVditor: () => null,
+    MarkdownVditorFieldInterface: class MarkdownVditorFieldInterface {},
+    MarkdownVditorRuntime,
+    registerMarkdownVditorContext,
+    VditorFieldModel: class VditorFieldModel {},
+  };
+});
+
+import PluginMarkdownClient, { MarkdownBlockModel } from '../';
 
 type MarkdownContext = {
   markdown?: {
@@ -34,6 +88,7 @@ describe('PluginMarkdownClient legacy entry', () => {
     const plugin = new PluginMarkdownClient({ name: 'markdown' });
 
     expect(plugin.options.name).toBe('markdown');
+    expect(MarkdownBlockModel).toBeDefined();
     expect(plugin.getCDN()).toBe('https://cdn.jsdelivr.net/npm/vditor@3.11.2');
     expect(plugin.initVditorDependency()).toBeUndefined();
     await expect(plugin.afterAdd()).resolves.toBeUndefined();

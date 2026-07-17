@@ -7,8 +7,22 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import PluginMarkdownServer from '@nocobase/plugin-markdown/server';
+import { Plugin } from '@nocobase/server';
 
-export class PluginFieldMarkdownVditorServer extends PluginMarkdownServer {}
+export class PluginFieldMarkdownVditorServer extends Plugin {
+  async afterAdd() {}
+
+  async beforeLoad() {}
+
+  async load() {}
+
+  async install() {}
+
+  async afterEnable() {}
+
+  async afterDisable() {}
+
+  async remove() {}
+}
 
 export default PluginFieldMarkdownVditorServer;

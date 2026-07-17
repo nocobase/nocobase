@@ -8,5 +8,3 @@
  */
 
 export { default } from './plugin';
-export { MarkdownVditorFieldInterface } from '@nocobase/plugin-markdown/client-v2';
-export * from './models';
