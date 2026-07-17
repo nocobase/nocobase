@@ -12,14 +12,21 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AIEmployee, Task } from '../ai-employees/types';
 import { AIEmployeeShortcut } from '../ai-employees/AIEmployeeShortcut';
-import { getGlobalChatBoxRuntime } from '../ai-employees/chatbox/stores/runtime';
+import {
+  ChatBoxRuntimeProvider,
+  createChatBoxRuntime,
+  getGlobalChatBoxRuntime,
+  type ChatBoxRuntime,
+} from '../ai-employees/chatbox/stores/runtime';
 import { clearMountedChatBoxes, registerMountedChatBox } from '../ai-employees/chatbox/stores/mounted-chat-boxes';
+import { AIEmployeeButtonModel } from '../models/ai-employees';
 
 const triggerTask = vi.fn().mockResolvedValue(undefined);
 const clear = vi.fn();
 const addContextItems = vi.fn();
 const syncContextAttachments = vi.fn();
 const messageError = vi.fn();
+const actionRuntimes: ChatBoxRuntime[] = [];
 
 const employee: AIEmployee = {
   username: 'atlas',
@@ -40,12 +47,16 @@ vi.mock('antd', async () => {
   };
 });
 
-vi.mock('ahooks', () => ({
-  useRequest: () => ({
-    data: [employee],
-    loading: false,
-  }),
-}));
+vi.mock('ahooks', async () => {
+  const actual = await vi.importActual<typeof import('ahooks')>('ahooks');
+  return {
+    ...actual,
+    useRequest: () => ({
+      data: [employee],
+      loading: false,
+    }),
+  };
+});
 
 vi.mock('@nocobase/flow-engine', async () => {
   const actual = await vi.importActual<typeof import('@nocobase/flow-engine')>('@nocobase/flow-engine');
@@ -73,14 +84,18 @@ vi.mock('@nocobase/flow-engine', async () => {
 });
 
 vi.mock('../locale', () => ({
+  tExpr: (text: string) => text,
   useT: () => (text: string, params?: { uid?: string }) => (params?.uid ? `${text}:${params.uid}` : text),
 }));
 
 vi.mock('../ai-employees/chatbox/hooks/useChatBoxActions', () => ({
-  useChatBoxActions: () => ({
-    clear,
-    triggerTask,
-  }),
+  useChatBoxActions: (runtime: ChatBoxRuntime) => {
+    actionRuntimes.push(runtime);
+    return {
+      clear,
+      triggerTask,
+    };
+  },
 }));
 
 vi.mock('../ai-employees/chatbox/hooks/useChatMessageActions', () => ({
@@ -102,6 +117,7 @@ describe('AIEmployeeShortcut', () => {
     addContextItems.mockClear();
     syncContextAttachments.mockClear();
     messageError.mockClear();
+    actionRuntimes.length = 0;
     clearMountedChatBoxes();
     getGlobalChatBoxRuntime().chatConversationModel.setCurrentConversation(undefined);
   });
@@ -229,6 +245,38 @@ describe('AIEmployeeShortcut', () => {
       });
     });
     expect(triggerTask).not.toHaveBeenCalled();
+  });
+
+  it('uses the surrounding block runtime for AI employee buttons inside an AI chat box', async () => {
+    const blockRuntime = createChatBoxRuntime({ mode: 'block', scope: 'chat-box-1' });
+    const model = Object.create(AIEmployeeButtonModel.prototype) as AIEmployeeButtonModel;
+    model.props = {
+      aiEmployee: {
+        username: 'atlas',
+      },
+    };
+    model.parent = {
+      uid: 'chat-box-1',
+      use: 'AIChatBoxBlockModel',
+    } as AIEmployeeButtonModel['parent'];
+
+    const { container } = render(
+      <ChatBoxRuntimeProvider runtime={blockRuntime}>{model.render()}</ChatBoxRuntimeProvider>,
+    );
+
+    const shortcut = container.querySelector('.ant-avatar');
+    expect(shortcut).toBeTruthy();
+    fireEvent.click(shortcut);
+
+    await waitFor(() => {
+      expect(triggerTask).toHaveBeenCalledWith({
+        aiEmployee: employee,
+        tasks: undefined,
+        auto: undefined,
+      });
+    });
+    expect(actionRuntimes).toContain(blockRuntime);
+    expect(actionRuntimes).not.toContain(getGlobalChatBoxRuntime());
   });
 
   it('reports a missing target AI chat box without falling back to the global chatbox', async () => {

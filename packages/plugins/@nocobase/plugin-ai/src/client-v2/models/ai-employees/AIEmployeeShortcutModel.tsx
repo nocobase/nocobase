@@ -28,6 +28,8 @@ import { RemoteSelect } from '../../components/RemoteSelect';
 
 const { Meta } = Card;
 
+const AI_CHAT_BOX_BLOCK_MODEL = 'AIChatBoxBlockModel';
+
 type ShortcutStyle = {
   size?: number;
   mask?: boolean;
@@ -55,17 +57,25 @@ export class AIEmployeeShortcutModel extends FlowModel {
   }
 }
 
+const isAIChatBoxBlockModel = (model: FlowModel | null | undefined) =>
+  model?.use === AI_CHAT_BOX_BLOCK_MODEL || model?.constructor.name === AI_CHAT_BOX_BLOCK_MODEL;
+
+const isWithinAIChatBoxBlock = (model: FlowModel | null | undefined) => {
+  let current = model?.parent;
+  while (current) {
+    if (isAIChatBoxBlockModel(current)) {
+      return true;
+    }
+    current = current.parent;
+  }
+  return false;
+};
+
 export class AIEmployeeButtonModel extends AIEmployeeShortcutModel {
   render() {
     const { defaultTaskChatBoxUid, style, ...props } = this.props;
-    return (
-      <AIEmployeeShortcut
-        {...props}
-        runtime={getGlobalChatBoxRuntime()}
-        size={style?.size ?? 40}
-        mask={style?.mask ?? false}
-      />
-    );
+    const runtime = isWithinAIChatBoxBlock(this) ? undefined : getGlobalChatBoxRuntime();
+    return <AIEmployeeShortcut {...props} runtime={runtime} size={style?.size ?? 40} mask={style?.mask ?? false} />;
   }
 }
 
