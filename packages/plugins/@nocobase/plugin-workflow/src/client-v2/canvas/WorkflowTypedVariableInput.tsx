@@ -8,6 +8,7 @@
  */
 
 import React from 'react';
+import { ConfigProvider } from 'antd';
 import { TypedVariableInput, type TypedConstantSpec, type TypedVariableInputProps } from '@nocobase/client-v2';
 import { useWorkflowVariableOptions, type UseWorkflowVariableOptions } from './useWorkflowVariableOptions';
 import { useHideVariable } from '../components/HideVariableContext';
@@ -21,8 +22,16 @@ export type WorkflowTypedVariableInputProps = Omit<
   variableOptions?: UseWorkflowVariableOptions;
 };
 
-export function WorkflowTypedVariableInput({ variableOptions, ...rest }: WorkflowTypedVariableInputProps) {
+export function WorkflowTypedVariableInput({ variableOptions, disabled, ...rest }: WorkflowTypedVariableInputProps) {
+  const { componentDisabled } = ConfigProvider.useConfig();
   const metaTree = useWorkflowVariableOptions(variableOptions);
   const hideVariable = useHideVariable();
-  return <TypedVariableInput {...rest} hideVariable={hideVariable} metaTree={metaTree} />;
+  return (
+    <TypedVariableInput
+      {...rest}
+      disabled={Boolean(componentDisabled || disabled)}
+      hideVariable={hideVariable}
+      metaTree={metaTree}
+    />
+  );
 }

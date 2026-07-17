@@ -10,12 +10,14 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   EMPLOYEE_PROMPT_VARIABLE_NAMESPACES,
+  buildEmployeeSubmitValues,
   createAIEmployee,
   deleteAIEmployee,
   isKnowledgeBaseEnabled,
   listAIEmployees,
   listKnowledgeBases,
   moveAIEmployee,
+  normalizeSkillSettings,
   updateAIEmployee,
   updateAIEmployeeEnabled,
 } from '../pages/EmployeesPage';
@@ -112,6 +114,73 @@ describe('EmployeesPage request helpers', () => {
         builtIn: true,
         about: 'custom prompt',
       },
+    });
+  });
+
+  it('keeps selected tools when updating an employee', async () => {
+    const update = vi.fn().mockResolvedValue({});
+    const apiClient = {
+      resource: () => ({ update }),
+    };
+
+    await updateAIEmployee(apiClient, {
+      username: 'atlas',
+      builtIn: false,
+      skillSettings: {
+        tools: [{ name: 'external_lookup', autoCall: true }],
+      },
+    });
+
+    expect(update).toHaveBeenCalledWith({
+      filterByTk: 'atlas',
+      values: {
+        username: 'atlas',
+        builtIn: false,
+        skillSettings: {
+          tools: [{ name: 'external_lookup', autoCall: true }],
+        },
+      },
+    });
+  });
+
+  it('keeps model settings from all form values when submitting', () => {
+    expect(
+      buildEmployeeSubmitValues(
+        {
+          username: 'atlas',
+          nickname: 'Atlas',
+        },
+        {
+          username: 'atlas',
+          nickname: 'Atlas',
+          modelSettings: {
+            enabled: true,
+            models: [{ llmService: 'openai', model: 'gpt-4.1' }],
+          },
+        },
+      ),
+    ).toMatchObject({
+      username: 'atlas',
+      nickname: 'Atlas',
+      modelSettings: {
+        enabled: true,
+        models: [{ llmService: 'openai', model: 'gpt-4.1' }],
+      },
+    });
+  });
+
+  it('normalizes saved tool settings for display and submit', () => {
+    expect(
+      normalizeSkillSettings({
+        skills: ['summarize', 123],
+        tools: ['external_lookup', { name: 'notify_user', autoCall: true }, { autoCall: true }],
+      }),
+    ).toEqual({
+      skills: ['summarize'],
+      tools: [
+        { name: 'external_lookup', autoCall: false },
+        { name: 'notify_user', autoCall: true },
+      ],
     });
   });
 

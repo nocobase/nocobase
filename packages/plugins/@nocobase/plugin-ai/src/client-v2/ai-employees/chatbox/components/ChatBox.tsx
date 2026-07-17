@@ -8,16 +8,18 @@
  */
 
 import React, { useEffect, useRef } from 'react';
-import { Button, Divider, Layout, theme, Tooltip, Typography } from 'antd';
+import { Badge, Button, Divider, Layout, theme, Tooltip, Typography } from 'antd';
 import {
   BugOutlined,
   CloseOutlined,
+  CompressOutlined,
   FullscreenExitOutlined,
   FullscreenOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   PlusCircleOutlined,
 } from '@ant-design/icons';
+import { useMobileLayout } from '@nocobase/client-v2';
 import { useT } from '../../../locale';
 import { Conversations } from './Conversations';
 import { Messages } from './Messages';
@@ -25,6 +27,8 @@ import { Sender } from './Sender';
 import { UserPrompt } from './UserPrompt';
 import { useChatBoxActions } from '../hooks/useChatBoxActions';
 import { useChatBoxEffect } from '../hooks/useChatBoxEffect';
+import { useChatConversationActions } from '../hooks/useChatConversationActions';
+import { useWorkflowTasks } from '../hooks/useWorkflowTasks';
 import { useChatBoxStore } from '../stores/chat-box';
 
 const { Header, Footer, Sider } = Layout;
@@ -39,12 +43,17 @@ export const ChatBox: React.FC<{
   const setOpen = useChatBoxStore.use.setOpen();
   const expanded = useChatBoxStore.use.expanded();
   const setExpanded = useChatBoxStore.use.setExpanded();
+  const setMinimize = useChatBoxStore.use.setMinimize();
   const showConversations = useChatBoxStore.use.showConversations();
   const setShowConversations = useChatBoxStore.use.setShowConversations();
   const currentEmployee = useChatBoxStore.use.currentEmployee();
   const showDebugPanel = useChatBoxStore.use.showDebugPanel();
   const setShowDebugPanel = useChatBoxStore.use.setShowDebugPanel();
   const { startNewConversation } = useChatBoxActions();
+  const { unreadCount: unreadConversationCount } = useChatConversationActions();
+  const { unreadCount: unreadWorkflowTaskCount } = useWorkflowTasks();
+  const unreadCount = unreadConversationCount + unreadWorkflowTaskCount;
+  const { isMobileLayout } = useMobileLayout();
   useChatBoxEffect();
 
   useEffect(() => {
@@ -126,15 +135,17 @@ export const ChatBox: React.FC<{
         >
           <div>
             <Tooltip title={t('Conversation list')}>
-              <Button
-                aria-label={t('Conversation list')}
-                icon={showConversations ? <MenuFoldOutlined /> : <MenuUnfoldOutlined />}
-                type="text"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  setShowConversations(!showConversations);
-                }}
-              />
+              <Badge dot={unreadCount > 0} offset={[-4, 4]}>
+                <Button
+                  aria-label={t('Conversation list')}
+                  icon={showConversations ? <MenuFoldOutlined /> : <MenuUnfoldOutlined />}
+                  type="text"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setShowConversations(!showConversations);
+                  }}
+                />
+              </Badge>
             </Tooltip>
           </div>
           <div>
@@ -162,19 +173,32 @@ export const ChatBox: React.FC<{
                 <Divider type="vertical" />
               </>
             ) : null}
-            <Tooltip title={expanded ? t('Collapse panel') : t('Expand panel')}>
-              <Button
-                aria-label={expanded ? t('Collapse panel') : t('Expand panel')}
-                icon={expanded ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
-                type="text"
-                onClick={() => {
-                  if (!expanded) {
-                    setShowDebugPanel(false);
-                  }
-                  setExpanded(!expanded);
-                }}
-              />
-            </Tooltip>
+            {isMobileLayout ? (
+              <Tooltip title={t('Minimize')}>
+                <Button
+                  aria-label={t('Minimize')}
+                  icon={<CompressOutlined />}
+                  type="text"
+                  onClick={() => {
+                    setMinimize(true);
+                  }}
+                />
+              </Tooltip>
+            ) : (
+              <Tooltip title={expanded ? t('Collapse panel') : t('Expand panel')}>
+                <Button
+                  aria-label={expanded ? t('Collapse panel') : t('Expand panel')}
+                  icon={expanded ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
+                  type="text"
+                  onClick={() => {
+                    if (!expanded) {
+                      setShowDebugPanel(false);
+                    }
+                    setExpanded(!expanded);
+                  }}
+                />
+              </Tooltip>
+            )}
             <Tooltip title={t('Close')}>
               <Button
                 aria-label={t('Close')}

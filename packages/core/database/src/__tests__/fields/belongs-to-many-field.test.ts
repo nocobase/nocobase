@@ -73,8 +73,8 @@ describe('belongs to many field', () => {
     console.log(error.message);
   });
 
-  it('should define belongs to many when change alias name', async () => {
-    const Through = db.collection({
+  it('should not define belongs to many when through and target are the same collection', async () => {
+    db.collection({
       name: 't1',
       fields: [
         {
@@ -87,10 +87,6 @@ describe('belongs to many field', () => {
 
     const A = db.collection({
       name: 'a',
-    });
-
-    const B = db.collection({
-      name: 'b',
     });
 
     await db.sync();
@@ -122,7 +118,8 @@ describe('belongs to many field', () => {
       error2 = e;
     }
 
-    expect(error2).not.toBeDefined();
+    expect(error2).toBeDefined();
+    expect(error2.message).toContain('cannot use target collection "t1" as through collection');
   });
 
   it('should define belongs to many relation through exists pivot collection', async () => {

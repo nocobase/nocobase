@@ -1,0 +1,179 @@
+---
+title: "Docker-Installation (externes Nginx)"
+description: "Installiere NocoBase mit Docker und nutze einen externen Nginx-Container als Einstiegspunkt."
+keywords: "Docker,NocoBase,Nginx,Installation,Reverse Proxy"
+---
+
+# Docker-Installation (externes Nginx)
+
+In diesem Setup laufen der NocoBase-App-Container und der Nginx-Container getrennt. Du kannst mit [Docker-Installation (integriertes Nginx)](./docker.mdx) starten und den Einstieg danach auf einen externen Nginx-Container umstellen.
+
+## Wann dieses Setup sinnvoll ist
+
+- Du möchtest NocoBase und den Webserver getrennt betreiben
+- Du möchtest die Nginx-Konfiguration und die freigegebenen Ports selbst verwalten
+- Du möchtest nur den Proxy-Container öffentlich erreichbar machen
+
+## Beispiel für docker-compose.yml
+
+Wenn du das `full`-Image brauchst, ersetze `latest-no-nginx` durch `latest-full-no-nginx`.
+
+Das Mapping `13000:80` ist nur für lokale Tests gedacht, damit die Standardports des Hosts nicht direkt belegt werden. In Produktion wird `13000:80` normalerweise nicht beibehalten; stattdessen mappt der externe Nginx-Container direkt auf die Host-Ports `80` und `443`.
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:latest-no-nginx
+    restart: always
+    depends_on:
+      - postgres
+    networks:
+      - nocobase
+    environment:
+      - APP_KEY=your-secret-key
+      - DB_DIALECT=postgres
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=nocobase
+      - DB_USER=nocobase
+      - DB_PASSWORD=nocobase
+      - TZ=Etc/UTC
+      - NOCOBASE_EXTRACT_CLIENT_ASSETS=true
+      - NOCOBASE_PROXY_PROVIDER=nginx
+      - NOCOBASE_PROXY_STORAGE_PATH=/app/nocobase/storage
+      - NOCOBASE_PROXY_UPSTREAM_HOST=app
+    volumes:
+      - ./storage:/app/nocobase/storage
+
+  nginx:
+    image: nginx:latest
+    restart: always
+    depends_on:
+      - app
+    networks:
+      - nocobase
+    volumes:
+      - ./storage:/app/nocobase/storage
+    command: >
+      /bin/sh -c '
+        while [ ! -f /app/nocobase/storage/.nocobase/proxy/nginx/nocobase.conf ]; do
+          echo "waiting for nocobase.conf..."
+          sleep 1
+        done
+        rm -f /etc/nginx/conf.d/default.conf
+        ln -sf /app/nocobase/storage/.nocobase/proxy/nginx/nocobase.conf /etc/nginx/conf.d/default.conf
+        nginx -g "daemon off;"
+      '
+    ports:
+      # Dies ist nur ein Beispiel für lokale Tests.
+      - "13000:80"
+      # In Produktion normalerweise so ändern:
+      # - "80:80"
+      # - "443:443"
+
+  postgres:
+    image: postgres:16
+    restart: always
+    command: postgres -c wal_level=logical
+    environment:
+      POSTGRES_USER: nocobase
+      POSTGRES_DB: nocobase
+      POSTGRES_PASSWORD: nocobase
+    volumes:
+      - ./storage/db/postgres:/var/lib/postgresql/data
+    networks:
+      - nocobase
+```
+
+## Wichtige Punkte
+
+- `NOCOBASE_EXTRACT_CLIENT_ASSETS=true` extrahiert die Client-Assets und erzeugt die Proxy-Konfiguration
+- `NOCOBASE_PROXY_PROVIDER=nginx` legt fest, dass eine Nginx-Konfiguration erzeugt wird
+- `NOCOBASE_PROXY_UPSTREAM_HOST=app` ermöglicht dem Nginx-Container den Zugriff auf den Dienst `app` über das Compose-Netzwerk
+- `./storage` muss sowohl in `app` als auch in `nginx` gemountet werden, damit Proxy-Konfiguration, statische Dateien und Uploads gemeinsam genutzt werden können
+- Der `nginx`-Container sollte warten, bis `nocobase.conf` erzeugt wurde, und die Datei dann mit `ln -sf` nach `/etc/nginx/conf.d/default.conf` verlinken
+- Die erzeugte Konfiguration leitet sowohl die `/files/`-Route unter `APP_PUBLIC_PATH` als auch die Root-Route `/files/` an NocoBase weiter, damit Dateivorschau und Downloads authentifiziert werden können
+- Wenn du einen externen Nginx-Container verwendest, sollte der `nginx`-Container das Host-Port-Mapping übernehmen. Für Tests kannst du mit `13000:80` beginnen; in Produktion werden normalerweise die Host-Ports `80` und `443` direkt veröffentlicht, während der Dienst `app` keinen Port zum Host veröffentlichen muss
+
+## Wenn du ein lokales Nginx auf dem Host verwendest
+
+Wenn dein Nginx direkt auf dem Host installiert ist und nicht in einem Docker-Container läuft, solltest du besser ein separates `docker-compose.yml` verwenden. Dabei muss der Dienst `app` einen Port zum Host veröffentlichen, und die Proxy-Variablen müssen aus Host-Sicht gesetzt werden.
+
+Du kannst ein `docker-compose.yml` wie dieses verwenden:
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:latest-no-nginx
+    restart: always
+    depends_on:
+      - postgres
+    networks:
+      - nocobase
+    environment:
+      - APP_KEY=your-secret-key
+      - DB_DIALECT=postgres
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=nocobase
+      - DB_USER=nocobase
+      - DB_PASSWORD=nocobase
+      - TZ=Etc/UTC
+      - NOCOBASE_EXTRACT_CLIENT_ASSETS=true
+      - NOCOBASE_PROXY_PROVIDER=nginx
+      - NOCOBASE_PROXY_STORAGE_PATH=/path/to/your-project/storage
+      - NOCOBASE_PROXY_UPSTREAM_HOST=127.0.0.1
+      - NOCOBASE_PROXY_UPSTREAM_PORT=13000
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - "13000:13000"
+
+  postgres:
+    image: postgres:16
+    restart: always
+    command: postgres -c wal_level=logical
+    environment:
+      POSTGRES_USER: nocobase
+      POSTGRES_DB: nocobase
+      POSTGRES_PASSWORD: nocobase
+    volumes:
+      - ./storage/db/postgres:/var/lib/postgresql/data
+    networks:
+      - nocobase
+```
+
+In dieser Variante:
+
+- `NOCOBASE_PROXY_STORAGE_PATH` sollte der absolute Host-Pfad des `storage`-Verzeichnisses sein
+- `NOCOBASE_PROXY_UPSTREAM_HOST` sollte `127.0.0.1` sein
+- Der Dienst `app` muss `ports` behalten, damit das lokale Nginx die Anwendung über `127.0.0.1:13000` erreichen kann
+
+Nachdem der `app`-Container gestartet wurde, warte auf die Generierung der Konfigurationsdatei und verlinke sie dann in das lokale Nginx-Konfigurationsverzeichnis:
+
+```bash
+while [ ! -f ./storage/.nocobase/proxy/nginx/nocobase.conf ]; do
+  echo "waiting for nocobase.conf..."
+  sleep 1
+done
+
+sudo ln -sf "$(pwd)/storage/.nocobase/proxy/nginx/nocobase.conf" /etc/nginx/conf.d/nocobase.conf
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+Wenn dein Host-Nginx kein `conf.d`-Verzeichnis verwendet, ersetze das Link-Ziel durch deinen eigenen Konfigurationspfad. In der Regel ist es sicherer, `nocobase.conf` als Datei zu behalten, die aus dem `http {}`-Kontext eingebunden wird, statt ihren Inhalt manuell zu kopieren.
+
+Wenn du Nginx selbst verwaltest und nicht die erzeugte Konfiguration verwendest, stelle sicher, dass `/files/` und die entsprechende Route unter `APP_PUBLIC_PATH` vor den SPA-Fallback-Regeln an NocoBase weitergeleitet werden. Ein vollständiges Beispiel findest du unter [Nginx-Reverse-Proxy](../../nocobase-cli/production/reverse-proxy/nginx.md).
+
+## Verwandte Links
+
+- [Docker-Installation (integriertes Nginx)](./docker.mdx) — Starte mit dem Single-Container-Setup
+- [Statischer Ressourcen-Proxy mit Nginx](../deployment/static-resource-proxy/nginx.md) — Mehr zur generierten Nginx-Konfiguration

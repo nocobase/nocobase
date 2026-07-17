@@ -12,6 +12,7 @@ import { useRequest } from 'ahooks';
 import { useChat } from '../hooks/useChat';
 import { useChatConversationsStore } from '../stores/chat-conversations';
 import type { Attachment } from '../../types';
+import { normalizeAIFileUploadAttachment } from '../utils';
 
 type StorageBasicInfo = {
   rules?: Record<string, unknown>;
@@ -117,7 +118,7 @@ export const useUploadFiles = () => {
             if (!file?.response?.data) {
               return file;
             }
-            return { ...file.response.data, status: file.status };
+            return normalizeAIFileUploadAttachment(file.response.data, file.status);
           }
           return file;
         }),

@@ -10,8 +10,25 @@
 import { describe, expect, it, vi } from 'vitest';
 import { PluginPublicFormsServer } from '../plugin';
 
+type PublicFormsServerApp = ConstructorParameters<typeof PluginPublicFormsServer>[0];
+
 function createPlugin() {
   return Object.create(PluginPublicFormsServer.prototype) as PluginPublicFormsServer & Record<string, any>;
+}
+
+function createAclPlugin() {
+  return new PluginPublicFormsServer(
+    {
+      db: {
+        getCollection: vi.fn(() => null),
+      },
+    } as unknown as PublicFormsServerApp,
+    { name: 'public-forms' },
+  );
+}
+
+function createRuntimePlugin(app: Partial<PublicFormsServerApp>) {
+  return new PluginPublicFormsServer(app as PublicFormsServerApp, { name: 'public-forms' });
 }
 
 function setupGetMetaPlugin(options: { password?: string; enabled?: boolean } = {}) {
@@ -76,6 +93,23 @@ function setupGetMetaPlugin(options: { password?: string; enabled?: boolean } = 
 
   return { plugin, sign };
 }
+
+type PublicFormAclContext = {
+  PublicForm: {
+    collectionName: string;
+    targetCollections: string[];
+  };
+  action: {
+    resourceName: string;
+    actionName: string;
+    params: {
+      fileCollectionName?: string;
+    };
+  };
+  permission?: {
+    skip: boolean;
+  };
+};
 
 describe('PluginPublicFormsServer', () => {
   it('keeps primary collection options in public form meta', async () => {
@@ -378,5 +412,415 @@ describe('PluginPublicFormsServer', () => {
     expect(plugin.validatePublicFormToken).toHaveBeenCalledWith('pf1', 'token');
     expect(plugin.isFlowModelDescendant).toHaveBeenCalledWith('pf1', 'popup-grid');
     expect(findModelById).toHaveBeenCalledWith('popup-grid', { includeAsyncNode: true });
+  });
+
+  it('allows public form storage checks', async () => {
+    const plugin = createAclPlugin();
+    const ctx: PublicFormAclContext = {
+      PublicForm: {
+        collectionName: 'orders',
+        targetCollections: [],
+      },
+      action: {
+        resourceName: 'storages',
+        actionName: 'check',
+        params: {
+          fileCollectionName: 'publicFiles',
+        },
+      },
+    };
+    const next = vi.fn(async () => undefined);
+
+    await plugin.parseACL(ctx, next);
+
+    expect(ctx.permission).toEqual({ skip: true });
+    expect(next).toHaveBeenCalled();
+  });
+
+  it('sets a public form cookie when returning meta', async () => {
+    const next = vi.fn(async () => undefined);
+    const cookies = {
+      get: vi.fn(() => null),
+      set: vi.fn(),
+    };
+    const sign = vi.fn(() => 'public-form-cookie');
+    const plugin = createRuntimePlugin({
+      name: 'main',
+      authManager: {
+        jwt: {
+          sign,
+          decode: vi.fn(async () => ({
+            formKey: 'pf1',
+            collectionName: 'orders',
+            targetCollections: ['customers'],
+          })),
+        },
+      },
+    });
+    plugin.getMetaByTk = vi.fn(async () => ({
+      token: 'public-form-token',
+      title: 'Public form',
+    }));
+
+    const ctx = {
+      action: {
+        params: {
+          filterByTk: 'pf1',
+        },
+      },
+      body: undefined,
+      cookies,
+      get: vi.fn(() => ''),
+      headers: {},
+      protocol: 'http',
+    };
+
+    await plugin.getPublicFormsMeta(ctx, next);
+
+    expect(ctx.body).toMatchObject({ token: 'public-form-token' });
+    expect(cookies.set).toHaveBeenCalledWith(
+      plugin.getPublicFormCookieName('pf1'),
+      'public-form-cookie',
+      expect.objectContaining({
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+      }),
+    );
+    expect(sign).toHaveBeenCalledWith(
+      {
+        v: 1,
+        appName: 'main',
+        formKey: 'pf1',
+        collectionName: 'orders',
+        targetCollections: ['customers'],
+        files: {},
+      },
+      { expiresIn: 3600 },
+    );
+    expect(next).toHaveBeenCalled();
+  });
+
+  it('does not overwrite an existing public form cookie on normal meta refresh', async () => {
+    const next = vi.fn(async () => undefined);
+    const cookies = {
+      get: vi.fn(() => 'existing-cookie'),
+      set: vi.fn(),
+    };
+    const sign = vi.fn(() => 'public-form-cookie');
+    const plugin = createRuntimePlugin({
+      name: 'main',
+      authManager: {
+        jwt: {
+          sign,
+          decode: vi.fn(async (token: string) => {
+            if (token === 'existing-cookie') {
+              return {
+                v: 1,
+                appName: 'main',
+                formKey: 'pf1',
+                collectionName: 'orders',
+                targetCollections: [],
+                files: {
+                  'main/files': [123],
+                },
+              };
+            }
+            return {
+              formKey: 'pf1',
+              collectionName: 'orders',
+              targetCollections: [],
+            };
+          }),
+        },
+      },
+    });
+    plugin.getMetaByTk = vi.fn(async () => ({
+      token: 'public-form-token',
+      title: 'Public form',
+    }));
+
+    const ctx = {
+      action: {
+        params: {
+          filterByTk: 'pf1',
+        },
+      },
+      body: undefined,
+      cookies,
+      get: vi.fn(() => ''),
+      headers: {},
+      protocol: 'http',
+    };
+
+    await plugin.getPublicFormsMeta(ctx, next);
+
+    expect(ctx.body).toMatchObject({ token: 'public-form-token' });
+    expect(cookies.set).not.toHaveBeenCalled();
+    expect(sign).not.toHaveBeenCalled();
+    expect(next).toHaveBeenCalled();
+  });
+
+  it('appends uploaded file ids to the public form cookie without extending expiry', async () => {
+    const expiresAt = Math.floor(Date.now() / 1000) + 60;
+    const sign = vi.fn(() => 'updated-cookie');
+    const cookies = {
+      get: vi.fn(() => 'existing-cookie'),
+      set: vi.fn(),
+    };
+    const plugin = createRuntimePlugin({
+      name: 'main',
+      authManager: {
+        jwt: {
+          sign,
+          decode: vi.fn(async () => ({
+            v: 1,
+            formKey: 'pf1',
+            collectionName: 'orders',
+            targetCollections: [],
+            files: {},
+            exp: expiresAt,
+          })),
+        },
+      },
+    });
+
+    const ctx = {
+      PublicForm: {
+        formKey: 'pf1',
+        collectionName: 'orders',
+        targetCollections: [],
+        exp: expiresAt,
+      },
+      action: {
+        actionName: 'create',
+        resourceName: 'attachments',
+        params: {},
+      },
+      dataSource: {
+        name: 'external',
+        collectionManager: {
+          getCollection: vi.fn(() => ({
+            name: 'attachments',
+            options: {
+              template: 'file',
+            },
+          })),
+        },
+      },
+      body: {
+        data: {
+          id: 123,
+        },
+      },
+      cookies,
+      headers: {},
+      protocol: 'http',
+    };
+    const next = vi.fn(async () => undefined);
+
+    await plugin.appendUploadedFileToPublicFormCookie(ctx, next);
+
+    expect(sign).toHaveBeenCalledWith(
+      {
+        v: 1,
+        appName: 'main',
+        formKey: 'pf1',
+        collectionName: 'orders',
+        targetCollections: [],
+        files: {
+          'external/attachments': [123],
+        },
+      },
+      expect.objectContaining({
+        expiresIn: expect.any(Number),
+      }),
+    );
+    expect(sign.mock.calls[0][1].expiresIn).toBeLessThanOrEqual(60);
+    expect(cookies.set).toHaveBeenCalledWith(
+      plugin.getPublicFormCookieName('pf1'),
+      'updated-cookie',
+      expect.objectContaining({
+        maxAge: expect.any(Number),
+      }),
+    );
+  });
+
+  it('authorizes only files listed in a public form cookie', async () => {
+    const findOne = vi.fn(async () => ({
+      get: (key: string) => key === 'enabled',
+    }));
+    const plugin = createRuntimePlugin({
+      name: 'main',
+      db: {
+        getRepository: vi.fn(() => ({ findOne })),
+      },
+      authManager: {
+        jwt: {
+          decode: vi.fn(async () => ({
+            v: 1,
+            formKey: 'pf1',
+            collectionName: 'orders',
+            targetCollections: [],
+            files: {
+              'main/attachments': [123],
+            },
+          })),
+        },
+      },
+    });
+    const ctx = {
+      get: vi.fn(() => `nb_pf_legacy=public-form-cookie`),
+    };
+
+    await expect(
+      plugin.authorizePublicFormFileAccess(ctx, {
+        appName: 'main',
+        dataSourceKey: 'main',
+        collectionName: 'attachments',
+        id: '123',
+        preview: true,
+      }),
+    ).resolves.toBe(true);
+    await expect(
+      plugin.authorizePublicFormFileAccess(ctx, {
+        appName: 'main',
+        dataSourceKey: 'main',
+        collectionName: 'attachments',
+        id: '456',
+        preview: false,
+      }),
+    ).resolves.toBe(false);
+    expect(findOne).toHaveBeenCalledTimes(1);
+    expect(findOne).toHaveBeenCalledWith({
+      filter: {
+        key: 'pf1',
+      },
+    });
+  });
+
+  it('checks every public form cookie value when duplicate cookie names are sent', async () => {
+    const plugin = createRuntimePlugin({
+      name: 'main',
+      db: {
+        getRepository: vi.fn(() => ({
+          findOne: vi.fn(async () => ({
+            get: (key: string) => key === 'enabled',
+          })),
+        })),
+      },
+      authManager: {
+        jwt: {
+          decode: vi.fn(async (token: string) => {
+            if (token === 'stale-cookie') {
+              return {
+                v: 1,
+                appName: 'main',
+                formKey: 'pf1',
+                collectionName: 'orders',
+                targetCollections: [],
+                files: {},
+              };
+            }
+            return {
+              v: 1,
+              appName: 'main',
+              formKey: 'pf1',
+              collectionName: 'orders',
+              targetCollections: [],
+              files: {
+                'main/files': [123],
+              },
+            };
+          }),
+        },
+      },
+    });
+    const ctx = {
+      get: vi.fn(() => `nb_pf_same=stale-cookie; nb_pf_same=fresh-cookie`),
+    };
+
+    await expect(
+      plugin.authorizePublicFormFileAccess(ctx, {
+        appName: 'main',
+        dataSourceKey: 'main',
+        collectionName: 'files',
+        id: '123',
+        preview: false,
+      }),
+    ).resolves.toBe(true);
+  });
+
+  it('rejects public form file cookies from another app when the payload carries appName', async () => {
+    const plugin = createRuntimePlugin({
+      name: 'main',
+      authManager: {
+        jwt: {
+          decode: vi.fn(async () => ({
+            v: 1,
+            appName: 'subapp',
+            formKey: 'pf1',
+            collectionName: 'orders',
+            targetCollections: [],
+            files: {
+              'main/attachments': [123],
+            },
+          })),
+        },
+      },
+    });
+    const ctx = {
+      get: vi.fn(() => `nb_pf_legacy=public-form-cookie`),
+    };
+
+    await expect(
+      plugin.authorizePublicFormFileAccess(ctx, {
+        appName: 'main',
+        dataSourceKey: 'main',
+        collectionName: 'attachments',
+        id: '123',
+        preview: true,
+      }),
+    ).resolves.toBe(false);
+  });
+
+  it('rejects a previously authorized file after its public form is disabled', async () => {
+    const plugin = createRuntimePlugin({
+      name: 'main',
+      db: {
+        getRepository: vi.fn(() => ({
+          findOne: vi.fn(async () => ({
+            get: vi.fn(() => false),
+          })),
+        })),
+      },
+      authManager: {
+        jwt: {
+          decode: vi.fn(async () => ({
+            v: 1,
+            appName: 'main',
+            formKey: 'pf1',
+            collectionName: 'orders',
+            targetCollections: [],
+            files: {
+              'main/attachments': [123],
+            },
+          })),
+        },
+      },
+    });
+    const ctx = {
+      get: vi.fn(() => `nb_pf_legacy=public-form-cookie`),
+    };
+
+    await expect(
+      plugin.authorizePublicFormFileAccess(ctx, {
+        appName: 'main',
+        dataSourceKey: 'main',
+        collectionName: 'attachments',
+        id: '123',
+        preview: true,
+      }),
+    ).resolves.toBe(false);
   });
 });

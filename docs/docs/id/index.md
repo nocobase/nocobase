@@ -26,7 +26,7 @@ features:
         link: /ai/install-nocobase-app
       - title: Tutorial
         details: 'Mulai dari nol, ikuti tutorial untuk membangun proyek nyata langkah demi langkah.'
-        link: /tutorials/v2/
+        link: /tutorials/
   - title: AI
     details: 'Cara baru memulai dengan dukungan AI — selesaikan pembangunan, penggunaan, dan pengembangan dengan bahasa alami.'
     items:

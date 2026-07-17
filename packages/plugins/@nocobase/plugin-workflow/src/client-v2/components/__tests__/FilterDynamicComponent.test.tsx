@@ -11,6 +11,7 @@ import React from 'react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
+import { Form } from 'antd';
 import { FilterDynamicComponent } from '../FilterDynamicComponent';
 
 const testState = vi.hoisted(() => ({
@@ -276,10 +277,20 @@ describe('FilterDynamicComponent', () => {
       </FlowEngineProvider>,
     );
 
-    expect(screen.getByDisplayValue('{{ ctx.$jobsMapByNodeKey.n1.title }}')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('{{$jobsMapByNodeKey.n1.title}}')).toBeInTheDocument();
+    const rightVariableConverters = testState.variableFilterItems.at(-1)?.rightVariableConverters;
+    expect(rightVariableConverters?.resolvePathFromValue?.('{{$context.data.id}}')).toEqual(['$context', 'data', 'id']);
+    expect(rightVariableConverters?.resolvePathFromValue?.('{{ ctx.$context.data.id }}')).toEqual([
+      '$context',
+      'data',
+      'id',
+    ]);
+    expect(rightVariableConverters?.resolveValueFromPath?.({ paths: ['$context', 'data', 'id'] })).toBe(
+      '{{$context.data.id}}',
+    );
 
     fireEvent.change(screen.getByTestId('variable-filter-item'), {
-      target: { value: '{{ ctx.$jobsMapByNodeKey.n1.body }}' },
+      target: { value: '{{$jobsMapByNodeKey.n1.body}}' },
     });
 
     await waitFor(() => {
@@ -300,5 +311,46 @@ describe('FilterDynamicComponent', () => {
 
     expect(testState.variableFilterItems).toHaveLength(1);
     expect(testState.variableFilterItems[0].rightAsVariable).toBe(false);
+  });
+
+  it('passes disabled state through to the shared variable filter item', () => {
+    const { engine } = setupEngine();
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <FilterDynamicComponent
+          collection="posts"
+          value={{ $and: [{ title: { $eq: 'foo' } }] }}
+          onChange={() => undefined}
+          disabled
+        />
+      </FlowEngineProvider>,
+    );
+
+    expect(testState.variableFilterItems.length).toBeGreaterThan(0);
+    expect(testState.variableFilterItems.at(-1)?.disabled).toBe(true);
+    expect(screen.getByText('Add condition').closest('button')).toBeDisabled();
+    expect(screen.getByText('Add condition group').closest('button')).toBeDisabled();
+  });
+
+  it('inherits disabled state from the parent form', () => {
+    const { engine } = setupEngine();
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <Form disabled>
+          <FilterDynamicComponent
+            collection="posts"
+            value={{ $and: [{ title: { $eq: 'foo' } }] }}
+            onChange={() => undefined}
+          />
+        </Form>
+      </FlowEngineProvider>,
+    );
+
+    expect(testState.variableFilterItems.length).toBeGreaterThan(0);
+    expect(testState.variableFilterItems.at(-1)?.disabled).toBe(true);
+    expect(screen.getByText('Add condition').closest('button')).toBeDisabled();
+    expect(screen.getByText('Add condition group').closest('button')).toBeDisabled();
   });
 });

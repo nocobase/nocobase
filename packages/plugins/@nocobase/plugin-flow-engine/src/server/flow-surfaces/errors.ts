@@ -56,8 +56,8 @@ export class FlowSurfaceBadRequestError extends FlowSurfaceError {
 }
 
 export class FlowSurfaceForbiddenError extends FlowSurfaceError {
-  constructor(message: string, code = 'FLOW_SURFACE_FORBIDDEN') {
-    super(message, 403, 'forbidden', code);
+  constructor(message: string, code = 'FLOW_SURFACE_FORBIDDEN', options: FlowSurfaceErrorOptions = {}) {
+    super(message, 403, 'forbidden', code, options);
     this.name = 'FlowSurfaceForbiddenError';
   }
 }
@@ -167,8 +167,8 @@ export function throwAggregateBadRequest(errors: FlowSurfaceErrorItemInput[]): n
   throw new FlowSurfaceAggregateError(errors);
 }
 
-export function throwForbidden(message: string, code?: string): never {
-  throw new FlowSurfaceForbiddenError(message, code);
+export function throwForbidden(message: string, code?: string, options: FlowSurfaceErrorOptions = {}): never {
+  throw new FlowSurfaceForbiddenError(message, code, options);
 }
 
 export function throwConflict(message: string, code?: string): never {

@@ -63,6 +63,40 @@ describe('flowSurfaces UI layout integration', () => {
     await app?.destroy();
   });
 
+  it('should keep default Admin navigation available when Multi-portal is absent', async () => {
+    const targets = getData(
+      await rootAgent.resource('flowSurfaces').listNavigationTargets({
+        values: {},
+      }),
+    );
+
+    expect(targets.capabilities).toEqual({ multiPortal: false });
+    expect(targets.targets).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'layout',
+          uid: DEFAULT_ADMIN_UI_LAYOUT_UID,
+          default: true,
+        }),
+      ]),
+    );
+    expect(targets.targets.some((target: any) => target.kind === 'portal')).toBe(false);
+  });
+
+  it('should reject explicit portal targeting when Multi-portal is absent', async () => {
+    const response = await rootAgent.resource('flowSurfaces').createMenu({
+      values: {
+        type: 'group',
+        title: `Unsupported portal group ${Date.now()}`,
+        icon: 'AppstoreOutlined',
+        portalUid: 'missing-portal',
+      },
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body?.errors?.[0]?.ruleId).toBe('navigation-portal-unsupported');
+  });
+
   it('should make applyBlueprint pages accessible inside the parent menu layout', async () => {
     const group = getData(
       await rootAgent.resource('desktopRoutes').create({

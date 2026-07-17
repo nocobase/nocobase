@@ -9,13 +9,19 @@
 
 import { Plugin } from '@nocobase/client-v2';
 import { Registry } from '@nocobase/utils/client';
+import type { ReactNode } from 'react';
 import { NAMESPACE } from './locale';
 import {
   WORKFLOW_CANVAS_ROUTE_NAME,
   WORKFLOW_CANVAS_ROUTE_PATH,
   WORKFLOW_EXECUTION_ROUTE_NAME,
   WORKFLOW_EXECUTION_ROUTE_PATH,
+  WORKFLOW_TASKS_MOBILE_ROUTE_NAME,
+  WORKFLOW_TASKS_MOBILE_ROUTE_PATH,
+  WORKFLOW_TASKS_ROUTE_NAME,
+  WORKFLOW_TASKS_ROUTE_PATH,
 } from './constants';
+import type { TaskTypeOptions } from './taskCenter';
 import type { Instruction } from './canvas/Instruction';
 import type { Trigger } from './triggers';
 import './models/triggerWorkflows';
@@ -35,6 +41,52 @@ import CollectionTrigger from './triggers/collection';
 import ScheduleTrigger from './triggers/schedule';
 
 export type InstructionGroup = { key: string; label: string };
+
+/**
+ * UI location where workflow notices are requested.
+ *
+ * This is a rendering context hint for non-blocking UI notices; it is not a validation surface and providers should
+ * not use it to block workflow execution or saving.
+ */
+export type WorkflowNoticeSurface = 'workflow-list-row' | 'trigger-node-card';
+
+export type WorkflowNotice = {
+  /** Extra explanatory content. List rows render this as tooltip content; compact card surfaces may ignore it. */
+  description?: ReactNode;
+  /** Stable identity for React rendering and provider-level deduplication. */
+  key: string;
+  /** Short user-facing notice title. */
+  message: ReactNode;
+  /** Visual severity. Providers should keep notices informational and side-effect free. */
+  type?: 'error' | 'info' | 'success' | 'warning';
+};
+
+export type WorkflowNoticeProviderContext = {
+  nodes?: Array<Record<string, unknown>>;
+  /** The UI surface requesting notices so providers can return copy and density suitable for that location. */
+  surface: WorkflowNoticeSurface;
+  workflow?: Record<string, unknown> | null;
+};
+
+export type WorkflowNoticeResult = WorkflowNotice | WorkflowNotice[] | null | undefined;
+
+export type WorkflowListNoticeProviderContext = {
+  api?: unknown;
+  surface: 'workflow-list-row';
+  workflows: Array<Record<string, unknown>>;
+};
+
+export type WorkflowListNoticeMap = Record<string, WorkflowNotice | WorkflowNotice[] | null | undefined>;
+
+export type WorkflowNoticeProviderFunction = (context: WorkflowNoticeProviderContext) => WorkflowNoticeResult;
+
+export type WorkflowNoticeProviderObject = {
+  getNotices?: (context: WorkflowNoticeProviderContext) => WorkflowNoticeResult;
+  loadWorkflowListNotices?: (context: WorkflowListNoticeProviderContext) => Promise<WorkflowListNoticeMap>;
+  shouldLoadWorkflowListNotices?: (context: WorkflowListNoticeProviderContext) => boolean;
+};
+
+export type WorkflowNoticeProvider = WorkflowNoticeProviderFunction | WorkflowNoticeProviderObject;
 
 const tpl = (key: string) => `{{t("${key}", { ns: "${NAMESPACE}" })}}`;
 
@@ -67,6 +119,8 @@ export class PluginWorkflowClientV2 extends Plugin {
   instructions = new Registry<Instruction>();
   instructionGroups = new Registry<InstructionGroup>();
   systemVariables = new Registry<SystemVariableOption>();
+  workflowNoticeProviders = new Registry<WorkflowNoticeProvider>();
+  taskTypes = new Registry<TaskTypeOptions>();
 
   /**
    * Register a `$system` scope variable. Mirrors v1's `registerSystemVariable`
@@ -75,6 +129,10 @@ export class PluginWorkflowClientV2 extends Plugin {
    */
   registerSystemVariable(option: SystemVariableOption) {
     this.systemVariables.register(option.key, option);
+  }
+
+  registerTaskType(key: string, option: Omit<TaskTypeOptions, 'key'> | TaskTypeOptions) {
+    this.taskTypes.register(key, { ...option, key });
   }
 
   isWorkflowSync(workflow) {
@@ -117,6 +175,62 @@ export class PluginWorkflowClientV2 extends Plugin {
     return type ? this.triggers.get(type) : undefined;
   }
 
+  /**
+   * Register a workflow notice provider. Providers should be pure readers of the supplied context; they are queried by
+   * UI surfaces such as workflow list rows and trigger node cards.
+   */
+  registerWorkflowNoticeProvider(key: string, provider: WorkflowNoticeProvider) {
+    this.workflowNoticeProviders.register(key, provider);
+  }
+
+  /** Collect notices from registered providers for the current UI surface. */
+  getWorkflowNotices(context: WorkflowNoticeProviderContext) {
+    return Array.from(this.workflowNoticeProviders.getEntities()).flatMap(([, provider]) => {
+      try {
+        const notices = typeof provider === 'function' ? provider(context) : provider.getNotices?.(context);
+        if (!notices) {
+          return [];
+        }
+        return Array.isArray(notices) ? notices : [notices];
+      } catch {
+        return [];
+      }
+    });
+  }
+
+  async loadWorkflowListNotices(context: WorkflowListNoticeProviderContext) {
+    const noticeMap: Record<string, WorkflowNotice[]> = {};
+    const providerNoticeMaps = await Promise.all(
+      Array.from(this.workflowNoticeProviders.getEntities()).map(async ([, provider]) => {
+        try {
+          if (typeof provider === 'function' || !provider.loadWorkflowListNotices) {
+            return {};
+          }
+
+          if (provider.shouldLoadWorkflowListNotices && !provider.shouldLoadWorkflowListNotices(context)) {
+            return {};
+          }
+
+          return await provider.loadWorkflowListNotices(context);
+        } catch {
+          return {};
+        }
+      }),
+    );
+
+    providerNoticeMaps.forEach((providerNoticeMap) => {
+      Object.entries(providerNoticeMap || {}).forEach(([workflowId, notices]) => {
+        if (!notices) {
+          return;
+        }
+        const normalizedNotices = Array.isArray(notices) ? notices : [notices];
+        noticeMap[workflowId] = [...(noticeMap[workflowId] || []), ...normalizedNotices];
+      });
+    });
+
+    return noticeMap;
+  }
+
   async load() {
     this.registerModelLoaders();
     this.registerBuiltinTriggers();
@@ -125,6 +239,7 @@ export class PluginWorkflowClientV2 extends Plugin {
     this.registerSettingsPage();
     this.registerCanvasRoute();
     this.registerExecutionRoute();
+    this.registerTaskCenterRoutes();
   }
 
   // The three fixed `$system` variables (v1 `client/index.tsx`). Self-registered by the workflow plugin — no external
@@ -177,6 +292,10 @@ export class PluginWorkflowClientV2 extends Plugin {
         extends: 'DetailsCustomItemModel',
         loader: () => import('./models/TaskCardCommonItemModel'),
       },
+      WorkflowTasksTopbarActionModel: {
+        extends: 'TopbarActionModel',
+        loader: () => import('./models/WorkflowTasksTopbarActionModel'),
+      },
     });
   }
 
@@ -224,6 +343,19 @@ export class PluginWorkflowClientV2 extends Plugin {
       componentLoader: () => import('./pages/ExecutionViewPage'),
     });
   }
+
+  private registerTaskCenterRoutes() {
+    this.app.router.add(WORKFLOW_TASKS_ROUTE_NAME, {
+      path: WORKFLOW_TASKS_ROUTE_PATH,
+      componentLoader: () => import('./pages/WorkflowTasksPage'),
+    });
+
+    this.app.router.add(WORKFLOW_TASKS_MOBILE_ROUTE_NAME, {
+      path: WORKFLOW_TASKS_MOBILE_ROUTE_PATH,
+      componentLoader: () => import('./pages/WorkflowTasksPage'),
+    });
+  }
 }
 
 export default PluginWorkflowClientV2;
+export type { TaskTypeOptions } from './taskCenter';

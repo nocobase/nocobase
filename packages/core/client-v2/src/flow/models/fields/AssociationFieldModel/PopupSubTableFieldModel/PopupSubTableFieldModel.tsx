@@ -102,7 +102,7 @@ const RenderCell = observer<any>((props) => {
               transform: translateY(-50%);
             }
             &:hover {
-              background: rgba(24, 144, 255, 0.1) !important;
+              box-shadow: inset 0 0 0 9999px rgba(24, 144, 255, 0.1);
             }
             &:hover .edit-icon {
               display: inline-flex;
@@ -126,6 +126,7 @@ const RenderCell = observer<any>((props) => {
                 fieldPath: dataIndex,
                 record: record,
                 fieldProps: { ...columnModel.props, ...columnModel.subModels.field.props },
+                sourceFieldModelUid: columnModel.subModels.field.uid,
                 onOk: (values) => {
                   record[dataIndex] = values[dataIndex];
                   // 仅重渲染单元格

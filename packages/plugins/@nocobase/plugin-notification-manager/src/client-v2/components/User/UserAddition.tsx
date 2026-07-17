@@ -13,8 +13,8 @@ import React, { useCallback, useState } from 'react';
 import { useNotificationTranslation } from '../../locale';
 
 export type UserAdditionProps = {
-  value?: Array<string | { filter?: Record<string, unknown> }>;
-  onChange?: (next: Array<string | { filter?: Record<string, unknown> }>) => void;
+  value?: Array<number | string | { filter?: Record<string, unknown> }>;
+  onChange?: (next: Array<number | string | { filter?: Record<string, unknown> }>) => void;
   disabled?: boolean;
 };
 

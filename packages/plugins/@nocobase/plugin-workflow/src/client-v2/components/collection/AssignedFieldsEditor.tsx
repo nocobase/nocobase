@@ -12,9 +12,10 @@ import { CloseCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { FieldAssignValueInput } from '@nocobase/client-v2';
 import { FlowModelProvider, useFlowEngine, type FlowModel } from '@nocobase/flow-engine';
-import { Button, Dropdown, Empty, Form } from 'antd';
+import { Button, ConfigProvider, Dropdown, Empty, Form } from 'antd';
 import type { MenuProps } from 'antd';
 import { useWorkflowVariableOptions } from '../../canvas/useWorkflowVariableOptions';
+import { formatWorkflowPathToValue, parseWorkflowValueToPath } from '../../canvas/workflowVariableConverters';
 import { useT } from '../../locale';
 import {
   getCollection,
@@ -98,15 +99,19 @@ export function AssignedFieldsEditor({
   onChange,
   fieldFilter = defaultFieldFilter,
   pruneFilteredValues,
+  disabled,
 }: {
   collection?: string;
   value?: AssignedValues;
   onChange?: (value: AssignedValues) => void;
   fieldFilter?: AssignedFieldFilter;
   pruneFilteredValues?: boolean;
+  disabled?: boolean;
 }) {
   const flowEngine = useFlowEngine();
   const t = useT();
+  const { componentDisabled } = ConfigProvider.useConfig();
+  const mergedDisabled = Boolean(componentDisabled || disabled);
   const workflowVariableTree = useWorkflowVariableOptions();
   const contextModel = useCollectionContextModel(collection, workflowVariableTree);
   const allFields = useMemo(
@@ -130,7 +135,7 @@ export function AssignedFieldsEditor({
   );
 
   useEffect(() => {
-    if (!pruneFilteredValues) {
+    if (!pruneFilteredValues || mergedDisabled) {
       return;
     }
 
@@ -142,13 +147,19 @@ export function AssignedFieldsEditor({
     }
 
     onChange?.(Object.fromEntries(nextEntries));
-  }, [fields, normalizedValue, onChange, pruneFilteredValues]);
+  }, [fields, mergedDisabled, normalizedValue, onChange, pruneFilteredValues]);
 
   const updateValue = (fieldName: string, nextValue: unknown) => {
+    if (mergedDisabled) {
+      return;
+    }
     onChange?.({ ...normalizedValue, [fieldName]: nextValue === undefined ? '' : nextValue });
   };
 
   const removeField = (fieldName: string) => {
+    if (mergedDisabled) {
+      return;
+    }
     const { [fieldName]: _, ...rest } = normalizedValue;
     onChange?.(rest);
   };
@@ -156,6 +167,9 @@ export function AssignedFieldsEditor({
   const menu = useMemo<MenuProps>(
     () => ({
       onClick: ({ key }) => {
+        if (mergedDisabled) {
+          return;
+        }
         onChange?.({ ...normalizedValue, [String(key)]: '' });
       },
       style: {
@@ -164,10 +178,11 @@ export function AssignedFieldsEditor({
       },
       items: unassignedFields.map((field) => ({
         key: field.name,
+        disabled: mergedDisabled,
         label: getFieldTitle(field, t),
       })),
     }),
-    [normalizedValue, onChange, t, unassignedFields],
+    [mergedDisabled, normalizedValue, onChange, t, unassignedFields],
   );
 
   if (!collection) {
@@ -196,12 +211,19 @@ export function AssignedFieldsEditor({
                 value={normalizedValue[field.name]}
                 onChange={(nextValue) => updateValue(field.name, nextValue)}
                 allowRunJS={false}
+                disabled={mergedDisabled}
+                variableConverters={{
+                  resolvePathFromValue: (currentValue) =>
+                    typeof currentValue === 'string' ? parseWorkflowValueToPath(currentValue) : undefined,
+                  resolveValueFromPath: (metaTreeNode) => formatWorkflowPathToValue(metaTreeNode),
+                }}
               />
             </Form.Item>
             <Button
               aria-label={t('Remove field')}
               type="link"
               icon={<CloseCircleOutlined />}
+              disabled={mergedDisabled}
               onClick={() => removeField(field.name)}
               style={{
                 position: 'absolute',
@@ -213,8 +235,8 @@ export function AssignedFieldsEditor({
           </div>
         ))}
         {unassignedFields.length ? (
-          <Dropdown menu={menu} trigger={['click']}>
-            <Button aria-label={t('Add field')} icon={<PlusOutlined />}>
+          <Dropdown disabled={mergedDisabled} menu={menu} trigger={['click']}>
+            <Button aria-label={t('Add field')} icon={<PlusOutlined />} disabled={mergedDisabled}>
               {t('Add field')}
             </Button>
           </Dropdown>

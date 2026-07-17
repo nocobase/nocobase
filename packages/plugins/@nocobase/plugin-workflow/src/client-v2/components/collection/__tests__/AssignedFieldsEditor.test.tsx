@@ -43,14 +43,17 @@ const { collection, createModel, mockFieldAssignValueInput, mockFlowEngine, work
         targetPath,
         value,
         onChange,
+        disabled,
       }: {
         targetPath: string;
         value?: unknown;
         onChange?: (value: unknown) => void;
+        disabled?: boolean;
       }) => (
         <input
           aria-label={`value-${targetPath}`}
           value={value == null ? '' : String(value)}
+          disabled={Boolean(disabled)}
           onChange={(event) => onChange?.(event.target.value)}
         />
       ),
@@ -151,5 +154,59 @@ describe('AssignedFieldsEditor', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Add field' }));
     expect(await screen.findByText('Status')).toBeTruthy();
     expect(screen.queryByText('Comments')).toBeNull();
+  });
+
+  it('disables value changes, field removal, and field addition', async () => {
+    const onChange = vi.fn();
+
+    render(<AssignedFieldsEditor collection="posts" value={{ title: 'old' }} onChange={onChange} disabled />);
+
+    await waitFor(() => {
+      expect(mockFieldAssignValueInput).toHaveBeenCalledWith(
+        expect.objectContaining({
+          targetPath: 'title',
+          disabled: true,
+        }),
+        expect.anything(),
+      );
+    });
+
+    fireEvent.change(screen.getByLabelText('value-title'), { target: { value: 'new' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Remove field' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Add field' }));
+
+    expect(screen.getByRole('button', { name: 'Remove field' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Add field' })).toBeDisabled();
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('passes workflow variable converters so stored {{$context...}} values can round-trip', async () => {
+    render(
+      <AssignedFieldsEditor
+        collection="posts"
+        value={{ title: '{{$context.data.updatedAt}}' }}
+        onChange={() => undefined}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(mockFieldAssignValueInput).toHaveBeenCalledWith(
+        expect.objectContaining({
+          targetPath: 'title',
+          variableConverters: expect.objectContaining({
+            resolvePathFromValue: expect.any(Function),
+            resolveValueFromPath: expect.any(Function),
+          }),
+        }),
+        expect.anything(),
+      );
+    });
+
+    const latestCall = mockFieldAssignValueInput.mock.calls.at(-1)?.[0];
+    expect(latestCall.variableConverters.resolvePathFromValue('{{$context.data.updatedAt}}')).toEqual([
+      '$context',
+      'data',
+      'updatedAt',
+    ]);
   });
 });

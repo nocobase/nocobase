@@ -27,19 +27,37 @@ import type { PDFDocumentLoadingTask, PDFDocumentProxy, PDFWorker, RenderTask } 
 import type { DocumentInitParameters } from 'pdfjs-dist/types/src/display/api';
 import { NAMESPACE } from '../../common/constants';
 
-// Static placeholder icons live under the app's public folder, served by the gateway at the
-// runtime public path (`/nocobase/v/` in the modern client, `/nocobase/` in v1). Prefix the bare
-// `/file-placeholder/...` paths so they resolve when APP_PUBLIC_PATH !== '/'. We intentionally
-// read only `__nocobase_public_path__` (not v1's `__nocobase_dev_public_path__`, which is '/'
-// for the v1 dev-server-direct scenario) because this app is always reached through the gateway.
-const PUBLIC_PATH = (typeof window !== 'undefined' && window['__nocobase_public_path__']) || '/';
+type NocoBaseWindow = Window & {
+  __nocobase_api_base_url__?: string;
+  __nocobase_modern_client_prefix__?: string;
+  __nocobase_public_path__?: string;
+  __webpack_public_path__?: string;
+};
 
-const withPublicPath = (path: string) => `${PUBLIC_PATH.replace(/\/$/, '')}/${path.replace(/^\//, '')}`;
+const FILE_ACCESS_SEGMENT = 'files';
+const IDENTIFIER_PATTERN = /^[A-Za-z0-9_][A-Za-z0-9_-]*$/;
+const ABSOLUTE_URL_PATTERN = /^[a-z][a-z\d+.-]*:/i;
+const PROTOCOL_RELATIVE_URL_PATTERN = /^\/\//;
+
+const withPublicPath = (path: string) => {
+  const browserWindow = typeof window === 'undefined' ? undefined : (window as NocoBaseWindow);
+  const assetPublicPath = browserWindow?.__webpack_public_path__;
+  const appPublicPath = browserWindow?.__nocobase_public_path__;
+  const publicPath =
+    assetPublicPath && assetPublicPath !== '/' ? assetPublicPath : appPublicPath || assetPublicPath || '/';
+  return `${publicPath.replace(/\/+$/g, '')}/${path.replace(/^\//, '')}`;
+};
+
+export interface FileCollectionReference {
+  dataSourceKey: string;
+  collectionName: string;
+}
 
 export interface FilePreviewerProps {
   file: any;
   index: number;
   list: any[];
+  fileCollection?: FileCollectionReference;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   onSwitchIndex?: (index: number) => void;
@@ -67,6 +85,18 @@ export class FilePreviewTypes {
 
 export const filePreviewTypes = new FilePreviewTypes();
 
+const isPlainObject = (value: unknown): value is Record<string, unknown> =>
+  !!value && typeof value === 'object' && !Array.isArray(value);
+
+const getResponseFileRecord = (response: unknown) => {
+  if (!isPlainObject(response)) {
+    return null;
+  }
+
+  const candidate = isPlainObject(response.data) ? response.data : response;
+  return ['id', 'url', 'preview', 'filename', 'extname', 'mimetype'].some((key) => key in candidate) ? candidate : null;
+};
+
 export function normalizePreviewFile(file: any) {
   if (!file) {
     return file;
@@ -74,7 +104,144 @@ export function normalizePreviewFile(file: any) {
   if (typeof file === 'string') {
     return { url: file };
   }
+  const responseRecord = getResponseFileRecord(file.response);
+  if (responseRecord) {
+    const normalized = {
+      ...file,
+      ...responseRecord,
+      response: file.response,
+      originFileObj: file.originFileObj,
+    };
+    if (!normalized.name && typeof responseRecord.filename === 'string') {
+      normalized.name = responseRecord.filename;
+    }
+    if (!normalized.type && typeof responseRecord.mimetype === 'string') {
+      normalized.type = responseRecord.mimetype;
+    }
+    return normalized;
+  }
   return file;
+}
+
+const localPreviewUrlByFile = new WeakMap<object, string>();
+const localPreviewUrlByRecordKey = new Map<string, string>();
+
+const getOriginFileObject = (file: any) => {
+  if (file?.originFileObj) {
+    return file.originFileObj;
+  }
+  if (typeof Blob !== 'undefined' && file instanceof Blob) {
+    return file;
+  }
+  return null;
+};
+
+const getUrlRecordKeys = (type: string, value?: string) => {
+  if (!value) {
+    return [];
+  }
+  const keys = [`${type}:${value}`];
+  if (typeof location !== 'undefined') {
+    try {
+      const url = new URL(value, location.origin);
+      keys.push(`${type}:${url.toString()}`);
+      if (url.origin === location.origin) {
+        keys.push(`${type}:${url.pathname}${url.search}${url.hash}`);
+      }
+    } catch (error) {
+      // Keep the original key for non-standard URL values.
+    }
+  }
+  return [...new Set(keys)];
+};
+
+const getLocalPreviewRecordKeys = (file: any) => {
+  if (!file || typeof file !== 'object') {
+    return [];
+  }
+
+  return [
+    ...getUrlRecordKeys('url', file.url),
+    ...getUrlRecordKeys('preview', file.preview),
+    file.id != null ? `id:${String(file.id)}` : '',
+  ].filter(Boolean);
+};
+
+export function getLocalPreviewUrl(file: any) {
+  if (!file || !matchMimetype(file, 'image/*') || typeof URL === 'undefined') {
+    return '';
+  }
+
+  const originFileObj = getOriginFileObject(file);
+  if (originFileObj) {
+    const cachedUrl = localPreviewUrlByFile.get(originFileObj);
+    if (cachedUrl) {
+      return cachedUrl;
+    }
+    if (typeof URL.createObjectURL === 'function') {
+      const url = URL.createObjectURL(originFileObj as Blob);
+      localPreviewUrlByFile.set(originFileObj, url);
+      return url;
+    }
+  }
+
+  for (const key of getLocalPreviewRecordKeys(file)) {
+    const url = localPreviewUrlByRecordKey.get(key);
+    if (url) {
+      return url;
+    }
+  }
+
+  return '';
+}
+
+export function rememberLocalPreviewUrl(file: any, sourceFile: any) {
+  const url = getLocalPreviewUrl(sourceFile);
+  if (!url) {
+    return;
+  }
+
+  getLocalPreviewRecordKeys(file).forEach((key) => {
+    localPreviewUrlByRecordKey.set(key, url);
+  });
+}
+
+export function revokeLocalPreviewUrl(file: any) {
+  const urls = new Set<string>();
+  const originFileObj = getOriginFileObject(file);
+  if (originFileObj) {
+    const url = localPreviewUrlByFile.get(originFileObj);
+    if (url) {
+      urls.add(url);
+      localPreviewUrlByFile.delete(originFileObj);
+    }
+  }
+
+  getLocalPreviewRecordKeys(file).forEach((key) => {
+    const url = localPreviewUrlByRecordKey.get(key);
+    if (url) {
+      urls.add(url);
+      localPreviewUrlByRecordKey.delete(key);
+    }
+  });
+
+  if (!urls.size) {
+    return;
+  }
+
+  for (const [key, value] of localPreviewUrlByRecordKey.entries()) {
+    if (urls.has(value)) {
+      localPreviewUrlByRecordKey.delete(key);
+    }
+  }
+
+  if (typeof URL !== 'undefined' && typeof URL.revokeObjectURL === 'function') {
+    urls.forEach((url) => URL.revokeObjectURL(url));
+  }
+}
+
+export function revokeLocalPreviewUrls(files: any[] = []) {
+  files.forEach((file) => revokeLocalPreviewUrl(file));
 }
 
 export function getPreviewFileUrl(file: any) {
@@ -83,6 +250,10 @@ export function getPreviewFileUrl(file: any) {
   }
   if (typeof file === 'string') {
     return file;
+  }
+  const localPreviewUrl = getLocalPreviewUrl(file);
+  if (localPreviewUrl) {
+    return localPreviewUrl;
   }
   return file.preview || file.url || '';
 }
@@ -127,8 +298,16 @@ const FALLBACK_ICON_MAP: Record<string, string> = {
   default: '/file-placeholder/unknown-200-200.png',
 };
 
-const ACTIVE_CONTENT_MIMETYPES = new Set(['application/pdf', 'application/xhtml+xml', 'image/svg+xml', 'text/html']);
-const ACTIVE_CONTENT_EXTENSIONS = new Set(['htm', 'html', 'pdf', 'svg', 'svgz', 'xhtml']);
+const ACTIVE_CONTENT_MIMETYPES = new Set([
+  'application/pdf',
+  'application/xhtml+xml',
+  'application/xml',
+  'application/xslt+xml',
+  'image/svg+xml',
+  'text/html',
+  'text/xml',
+]);
+const ACTIVE_CONTENT_EXTENSIONS = new Set(['htm', 'html', 'pdf', 'svg', 'svgz', 'xht', 'xhtml', 'xml', 'xsl', 'xslt']);
 
 const stripQueryAndHash = (url: string) => url.split('?')[0].split('#')[0];
 
@@ -177,15 +356,12 @@ export function matchMimetype(file: any, type: string) {
     return false;
   }
   if (file.originFileObj) {
-    return match(file.type, type);
+    return match(file.type || file.originFileObj.type || '', type);
   }
   if (file.mimetype) {
     return match(file.mimetype, type);
   }
-  if (file.url) {
-    return match(EXT_MIMETYPE_MAP[getExtFromName(file.url)] || '', type);
-  }
-  return false;
+  return match(EXT_MIMETYPE_MAP[getFileExt(file, getFileUrl(file))] || '', type);
 }
 
 const getNameFromUrl = (url?: string) => {
@@ -245,6 +421,176 @@ export const isSameOriginUrl = (url?: string) => {
   }
 };
 
+const isRelativeUrlInput = (value?: string) => {
+  return !!value && !ABSOLUTE_URL_PATTERN.test(value) && !PROTOCOL_RELATIVE_URL_PATTERN.test(value);
+};
+
+const getBrowserWindow = () => (typeof window === 'undefined' ? undefined : (window as NocoBaseWindow));
+
+const getCurrentOrigin = () => {
+  const browserWindow = getBrowserWindow();
+  return browserWindow?.location?.origin;
+};
+
+const getTrustedApiOrigin = () => {
+  const browserWindow = getBrowserWindow();
+  const apiBaseURL = browserWindow?.__nocobase_api_base_url__;
+  if (!apiBaseURL) {
+    return undefined;
+  }
+  try {
+    return new URL(apiBaseURL, browserWindow.location.href).origin;
+  } catch (error) {
+    return undefined;
+  }
+};
+
+const getPublicPathname = () => {
+  const browserWindow = getBrowserWindow();
+  const href = browserWindow?.location?.href || 'http://localhost/';
+  return new URL(browserWindow?.__nocobase_public_path__ || '/', href).pathname.replace(/\/+$/g, '');
+};
+
+const stripPublicPath = (pathname: string) => {
+  const publicPath = getPublicPathname();
+  if (publicPath && publicPath !== '/' && (pathname === publicPath || pathname.startsWith(`${publicPath}/`))) {
+    return pathname.slice(publicPath.length) || '/';
+  }
+  return pathname;
+};
+
+const hasTrustedFileUrlOrigin = (url: URL, source?: string) => {
+  if (isRelativeUrlInput(source)) {
+    return true;
+  }
+  const currentOrigin = getCurrentOrigin();
+  const trustedApiOrigin = getTrustedApiOrigin();
+  return (!!currentOrigin && url.origin === currentOrigin) || (!!trustedApiOrigin && url.origin === trustedApiOrigin);
+};
+
+const isIdentifierSegment = (segment: string) => {
+  try {
+    return IDENTIFIER_PATTERN.test(decodeURIComponent(segment));
+  } catch (error) {
+    return false;
+  }
+};
+
+const hasPermanentFilePath = (pathname: string) => {
+  const segments = stripPublicPath(pathname).split('/').filter(Boolean);
+  return (
+    segments.length === 5 &&
+    segments[0] === FILE_ACCESS_SEGMENT &&
+    isIdentifierSegment(segments[1]) &&
+    isIdentifierSegment(segments[2]) &&
+    isIdentifierSegment(segments[3]) &&
+    !!segments[4]
+  );
+};
+
+export const isPermanentFileUrl = (value: string | URL) => {
+  const source = typeof value === 'string' ? value : undefined;
+  const href = getBrowserWindow()?.location?.href || 'http://localhost/';
+  try {
+    const url = value instanceof URL ? value : new URL(value, href);
+    return hasTrustedFileUrlOrigin(url, source) && hasPermanentFilePath(url.pathname);
+  } catch (error) {
+    return false;
+  }
+};
+
+const formatUrlLikeInput = (url: URL, source: string) => {
+  if (!isRelativeUrlInput(source)) {
+    return url.toString();
+  }
+  return `${url.pathname}${url.search}${url.hash}`;
+};
+
+export const getPermanentFilePreviewUrl = (value?: string) => {
+  if (!value || typeof window === 'undefined') {
+    return '';
+  }
+  try {
+    const url = new URL(value, window.location.href);
+    if (!isPermanentFileUrl(value) || url.searchParams.has('temporaryAccessToken')) {
+      return '';
+    }
+    url.searchParams.set('preview', '1');
+    return formatUrlLikeInput(url, value);
+  } catch (error) {
+    return '';
+  }
+};
+
+export const getFileFetchCredentials = (url: string | URL): RequestCredentials => {
+  if (typeof window === 'undefined') {
+    return 'same-origin';
+  }
+
+  try {
+    const target = url instanceof URL ? url : new URL(url, window.location.href);
+    if (target.origin === window.location.origin) {
+      return 'include';
+    }
+    if (isPermanentFileUrl(target)) {
+      return 'include';
+    }
+  } catch (error) {
+    return 'same-origin';
+  }
+
+  return 'same-origin';
+};
+
+export const triggerFileDownload = (url: string, filename: string) => {
+  let downloadUrl = url;
+  try {
+    const target = new URL(url, window.location.href);
+    if (isPermanentFileUrl(url)) {
+      target.searchParams.set('download', '1');
+      downloadUrl = /^[a-z][a-z\d+.-]*:/i.test(url)
+        ? target.toString()
+        : `${target.pathname}${target.search}${target.hash}`;
+    }
+  } catch (error) {
+    downloadUrl = url;
+  }
+  const link = document.createElement('a');
+  link.href = downloadUrl;
+  link.download = filename;
+  link.rel = 'noopener noreferrer';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+};
+
+const getLocalStorageFlag = (file: any) => {
+  if (!file || typeof file === 'string') {
+    return undefined;
+  }
+  const normalized = normalizePreviewFile(file);
+  const local = normalized.local ?? normalized.response?.local ?? normalized.response?.data?.local;
+  return typeof local === 'boolean' ? local : undefined;
+};
+
+export const shouldUsePdfJsPreview = (file: any, src = getFileUrl(file)) => {
+  if (!src || !isSameOriginUrl(src)) {
+    return false;
+  }
+  if (typeof window === 'undefined') {
+    return true;
+  }
+  try {
+    const url = new URL(src, window.location.href);
+    if (!isPermanentFileUrl(url)) {
+      return true;
+    }
+    return getLocalStorageFlag(file) !== false;
+  } catch (error) {
+    return true;
+  }
+};
+
 export const getFileName = (file: any, url?: string) => {
   const nameFromUrl = getNameFromUrl(url || getFileUrl(file));
   if (!file || typeof file === 'string') {
@@ -282,7 +628,7 @@ export const getPreviewThumbnailUrl = (file: any) => {
     return thumbnail;
   }
   if (matchMimetype(previewFile, 'image/*')) {
-    return '';
+    return getPermanentFilePreviewUrl(src);
   }
   return getFallbackIcon(previewFile, src);
 };
@@ -353,7 +699,7 @@ const ImagePreviewer = (props: FilePreviewerProps) => {
   if (typeof open !== 'boolean') {
     return null;
   }
-  const src = getFileUrl(file);
+  const src = getPreviewFileUrl(file);
   if (!src) {
     return null;
   }
@@ -417,12 +763,6 @@ type PdfTextLayer = InstanceType<PdfJs['TextLayer']>;
 
 let pdfjsPromise: Promise<PdfJs> | null = null;
 
-type NocoBaseWindow = Window & {
-  __nocobase_modern_client_prefix__?: string;
-  __nocobase_public_path__?: string;
-  __webpack_public_path__?: string;
-};
-
 const ensureTrailingSlash = (path: string) => (path.endsWith('/') ? path : `${path}/`);
 
 const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -467,7 +807,7 @@ export const getPdfPreviewApiSrc = () => `${getPdfjsBaseUrl()}pdf.min.mjs`;
 
 export const getPdfPreviewWorkerSrc = () => `${getPdfjsBaseUrl()}pdf.worker.min.mjs`;
 
-type PdfPreviewErrorCode = 'resources' | 'file' | 'document';
+type PdfPreviewErrorCode = 'resources' | 'file' | 'document' | 'size';
 
 class PdfPreviewError extends Error {
   code: PdfPreviewErrorCode;
@@ -496,6 +836,8 @@ const loadPdfJs = async () => {
 };
 
 const PDF_SCALE = 1.4;
+const PDF_PREVIEW_MAX_BYTES = 50 * 1024 * 1024;
+const PDF_MAX_CONCURRENT_PAGE_RENDERS = 1;
 
 const PDF_PREVIEW_PAGE_CLASS = css`
   position: relative;
@@ -564,6 +906,7 @@ const PDF_PREVIEW_ERROR_MESSAGES: Record<PdfPreviewErrorCode, string> = {
     'PDF preview resources failed to load. Please refresh the page and check whether plugin static files are deployed correctly.',
   file: 'PDF preview failed to load the file. If the file is stored on another domain, configure CORS for the external storage to allow this site to read the file.',
   document: 'PDF preview failed. Please download the file to preview it.',
+  size: 'PDF file is too large to preview in the browser. Please download it.',
 };
 
 interface PdfMeta {
@@ -585,6 +928,7 @@ interface PdfSession {
   data?: Uint8Array;
   rendered: Set<number>;
   inFlight: Set<number>;
+  pending: Set<number>;
   loadingTasks: PDFDocumentLoadingTask[];
   renderTasks: RenderTask[];
   textLayers: Set<PdfTextLayer>;
@@ -611,6 +955,7 @@ const PdfPreviewer = ({ file }: FilePreviewerProps) => {
       abortController: new AbortController(),
       rendered: new Set(),
       inFlight: new Set(),
+      pending: new Set(),
       loadingTasks: [],
       renderTasks: [],
       textLayers: new Set(),
@@ -642,7 +987,7 @@ const PdfPreviewer = ({ file }: FilePreviewerProps) => {
       let response: Response;
       try {
         response = await fetch(url, {
-          credentials: url.origin === location.origin ? 'include' : 'omit',
+          credentials: getFileFetchCredentials(url),
           signal: session.abortController.signal,
         });
       } catch (error) {
@@ -651,11 +996,18 @@ const PdfPreviewer = ({ file }: FilePreviewerProps) => {
       if (!response.ok) {
         throw new PdfPreviewError('file', `Failed to fetch PDF file: ${response.status}`);
       }
+      const contentLength = Number(response.headers.get('content-length'));
+      if (Number.isFinite(contentLength) && contentLength > PDF_PREVIEW_MAX_BYTES) {
+        throw new PdfPreviewError('size', 'PDF file is too large to preview.');
+      }
       let data: Uint8Array;
       try {
         data = new Uint8Array(await response.arrayBuffer());
       } catch (error) {
         throw new PdfPreviewError('file', 'Failed to read PDF file response.', error);
+      }
+      if (data.byteLength > PDF_PREVIEW_MAX_BYTES) {
+        throw new PdfPreviewError('size', 'PDF file is too large to preview.');
       }
       if (session.cancelled) {
         return;
@@ -868,11 +1220,36 @@ const PdfPreviewer = ({ file }: FilePreviewerProps) => {
       }
     };
 
+    const drainQueue = () => {
+      if (session.cancelled || session.inFlight.size >= PDF_MAX_CONCURRENT_PAGE_RENDERS) {
+        return;
+      }
+      const pageNumber = session.pending.values().next().value;
+      if (!pageNumber) {
+        return;
+      }
+      session.pending.delete(pageNumber);
+      return renderPage(pageNumber).finally(drainQueue);
+    };
+
+    const queuePage = (pageNumber: number) => {
+      if (
+        session.cancelled ||
+        session.rendered.has(pageNumber) ||
+        session.inFlight.has(pageNumber) ||
+        session.pending.has(pageNumber)
+      ) {
+        return;
+      }
+      session.pending.add(pageNumber);
+      drainQueue();
+    };
+
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
           if (entry.isIntersecting) {
-            renderPage(Number((entry.target as HTMLElement).dataset.page));
+            queuePage(Number((entry.target as HTMLElement).dataset.page));
           }
         }
       },
@@ -930,7 +1307,7 @@ const PdfPreviewer = ({ file }: FilePreviewerProps) => {
 
 const PdfHybridPreviewer = (props: FilePreviewerProps) => {
   const src = getFileUrl(props.file);
-  return isSameOriginUrl(src) ? <PdfPreviewer {...props} /> : <IframePreviewer {...props} />;
+  return shouldUsePdfJsPreview(props.file, src) ? <PdfPreviewer {...props} /> : <IframePreviewer {...props} />;
 };
 
 const AudioPreviewer = ({ file }: FilePreviewerProps) => {

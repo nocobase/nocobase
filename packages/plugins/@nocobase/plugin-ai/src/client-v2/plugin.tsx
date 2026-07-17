@@ -14,13 +14,13 @@ import { registerPluginAIClientV2BuiltinTools } from './ai-employees/tools';
 import { FlowModelsContext } from './ai-employees/context/flow-models';
 import { chartConfigWorkContext } from './ai-employees/context/chart-config';
 import { CodeEditorContext } from './ai-employees/context/code-editor';
-import { DatasourceContext } from './ai-employees/context/datasource';
 import { AIManager } from './manager/ai-manager';
 import { AIPluginFeatureManagerImpl } from './manager/ai-feature-manager';
 import { AIConfigRepository } from './repositories/AIConfigRepository';
 import { builtinLLMProviderOptions } from './llm-providers';
 import { registerPluginAIWorkflow } from './workflow/register';
 import { setupAICoding } from './ai-employees/ai-coding/setup';
+import { registerPluginAIRunJSFacade } from './runjs/registerAIEmployeeRunJSFacade';
 
 type AIFlowContext = {
   aiConfigRepository?: AIConfigRepository;
@@ -94,15 +94,6 @@ export const registerPluginAISettingsPages = (
   });
   pluginSettingsManager.addPageTabItem({
     menuKey: 'ai',
-    key: 'datasource',
-    icon: 'CloudServerOutlined',
-    title: t('Datasource'),
-    aclSnippet: 'pm.ai.datasource',
-    componentLoader: () => import('./pages/DatasourceSettingsPage'),
-    sort: 40,
-  });
-  pluginSettingsManager.addPageTabItem({
-    menuKey: 'ai',
     key: 'settings',
     icon: 'SettingOutlined',
     title: t('Settings'),
@@ -114,7 +105,7 @@ export const registerPluginAISettingsPages = (
 
 export class PluginAIClientV2 extends Plugin<object, Application> {
   features = new AIPluginFeatureManagerImpl();
-  aiManager = new AIManager();
+  aiManager = new AIManager(this.app);
 
   async load() {
     const context = this.app.flowEngine.context as AIFlowContext;
@@ -125,6 +116,7 @@ export class PluginAIClientV2 extends Plugin<object, Application> {
         }),
       });
     }
+    registerPluginAIRunJSFacade(context, this.aiManager);
     registerPluginAISettingsPages(this.pluginSettingsManager, this.t.bind(this));
     registerPluginAIPermissionsTab(this.app.pm, this.t.bind(this));
     registerPluginAIWorkflow(this.app.pm);
@@ -133,7 +125,6 @@ export class PluginAIClientV2 extends Plugin<object, Application> {
     });
     registerPluginAIClientV2BuiltinTools(this.ai.toolsManager);
     this.aiManager.registerWorkContext('flow-model', FlowModelsContext);
-    this.aiManager.registerWorkContext('datasource', DatasourceContext);
     this.aiManager.registerWorkContext('code-editor', CodeEditorContext);
     this.aiManager.registerWorkContext('chart-config', chartConfigWorkContext);
     setupAICoding();
@@ -157,3 +148,7 @@ export class PluginAIClientV2 extends Plugin<object, Application> {
 }
 
 export default PluginAIClientV2;
+export {
+  registerPluginAIRunJSContextContribution,
+  registerPluginAIRunJSFacade,
+} from './runjs/registerAIEmployeeRunJSFacade';

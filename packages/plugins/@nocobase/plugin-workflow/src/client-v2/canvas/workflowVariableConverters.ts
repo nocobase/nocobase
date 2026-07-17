@@ -24,7 +24,8 @@ export function parseWorkflowValueToPath(value?: string) {
   if (!match) {
     return undefined;
   }
-  return match[1].split('.');
+  const path = match[1].split('.');
+  return path[0] === 'ctx' && path[1]?.startsWith('$') ? path.slice(1) : path;
 }
 
 export const workflowVariableConverters: VariableHybridInputConverters = {

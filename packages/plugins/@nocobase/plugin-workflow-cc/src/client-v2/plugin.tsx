@@ -9,13 +9,17 @@
 
 import { Plugin, type Application } from '@nocobase/client-v2';
 import { PluginWorkflowClientV2 } from '@nocobase/plugin-workflow/client-v2';
+import type { TaskTypeOptions } from '@nocobase/plugin-workflow/client-v2';
 
+import { TASK_TYPE_CC } from '../common/constants';
 import { registerWorkflowCcModelLoaders } from './models/registerModelLoaders';
 import CCInstruction from './nodes/cc';
+import { ccTaskType } from './tasks';
 import { registerWorkflowCcCollections } from './utils/registerWorkflowCcCollections';
 
 type WorkflowClientLike = {
   registerInstruction?: (type: string, instruction: unknown) => void;
+  registerTaskType?: (key: string, option: TaskTypeOptions) => void;
 };
 
 export class PluginWorkflowCCClientV2 extends Plugin<Record<string, never>, Application> {
@@ -39,6 +43,7 @@ export class PluginWorkflowCCClientV2 extends Plugin<Record<string, never>, Appl
       (this.app.pm.get('workflow') as WorkflowClientLike | undefined);
 
     workflow?.registerInstruction?.('cc', CCInstruction);
+    workflow?.registerTaskType?.(TASK_TYPE_CC, ccTaskType);
   }
 }
 

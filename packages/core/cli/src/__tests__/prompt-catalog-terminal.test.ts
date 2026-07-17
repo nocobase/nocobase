@@ -194,3 +194,33 @@ test('runPromptCatalog throws on missing non-interactive required text by defaul
 
   expect(mocks.input).not.toHaveBeenCalled();
 });
+
+test('runPromptCatalog includes non-catalog initial values when computing prompt defaults', async () => {
+  mocks.input.mockResolvedValue('registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16');
+
+  const { runPromptCatalog } = await import('../lib/prompt-catalog-terminal.ts');
+
+  const result = await runPromptCatalog(
+    {
+      builtinDbImage: {
+        type: 'text',
+        message: 'Built-in database Docker image',
+        initialValue: (values) => String(values.builtinDbImageRegistry ?? '').trim() || 'postgres:16',
+      },
+    },
+    {
+      initialValues: {
+        builtinDbImageRegistry: 'registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16',
+      },
+    },
+  );
+
+  expect(result).toEqual({
+    builtinDbImage: 'registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16',
+  });
+  expect(mocks.input).toHaveBeenCalledWith(
+    expect.objectContaining({
+      default: 'registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16',
+    }),
+  );
+});

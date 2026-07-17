@@ -4,7 +4,7 @@ description: "NocoBase 快速上手：Docker 安装"
 keywords: "docker,NocoBase"
 ---
 
-# Docker 安装
+# Docker 安装（内置 Nginx）
 
 :::tip 前提条件
 
@@ -624,3 +624,120 @@ app-postgres-app-1  | 🚀 NocoBase server running at: http://localhost:13000/
 首次登录后，请及时修改默认密码以确保系统安全。
 
 :::
+
+## 5. 生产环境部署
+
+如果你用的是内置 Nginx 镜像，通常来说不建议直接把 `13000` 暴露给公网。更常见的做法是把容器端口保留在宿主机本地，再由宿主机上的 Nginx 统一处理域名、HTTPS 和反向代理。
+
+### 通过 Nginx 代理根路径
+
+下面这份配置把域名请求代理到 `http://127.0.0.1:13000/`：
+
+```nginx
+server {
+    listen 80;
+    server_name your_domain.com;  # 把 your_domain.com 替换成你的域名
+
+    location / {
+        proxy_pass http://127.0.0.1:13000/;
+        proxy_http_version 1.1;
+
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $upstream_x_forwarded_proto;
+        proxy_set_header Host $final_host;
+        proxy_set_header Referer $http_referer;
+        proxy_set_header User-Agent $http_user_agent;
+
+        add_header Cache-Control "no-cache, no-store" always;
+        proxy_cache_bypass $http_upgrade;
+
+        proxy_connect_timeout 600;
+        proxy_send_timeout 600;
+        proxy_read_timeout 600;
+        send_timeout 600;
+        proxy_buffering off;
+    }
+}
+```
+
+如果你还要启用 HTTPS，可以继续在宿主机 Nginx 上配置 `443` 和证书。NocoBase 容器本身不需要额外处理证书。
+
+这份根路径配置中的 `location /` 会同时代理 `/api/`、`/ws` 和 `/files/`。如果你拆分了静态资源和应用路由，仍需要确保 `/files/` 被转发到 NocoBase，不能把它当作静态目录处理。
+
+### 子路径部署
+
+如果你要把应用部署到子路径，比如 `https://your_domain.com/nocobase/`，那么需要先配置 `APP_PUBLIC_PATH` 环境变量：
+
+```diff
+services:
+  app:
+    image: nocobase/nocobase:latest
+    environment:
++     - APP_PUBLIC_PATH=/nocobase/
+```
+
+这里的路径要保留前后的 `/`。配置完成后，应用的访问地址会变成 `http://127.0.0.1:13000/nocobase/`。
+
+接着把宿主机 Nginx 配置成同样的子路径代理：
+
+```nginx
+server {
+    listen 80;
+    server_name your_domain.com;  # 把 your_domain.com 替换成你的域名
+
+    location /nocobase/ {
+        proxy_pass http://127.0.0.1:13000/nocobase/;
+        proxy_http_version 1.1;
+
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $upstream_x_forwarded_proto;
+        proxy_set_header Host $final_host;
+        proxy_set_header Referer $http_referer;
+        proxy_set_header User-Agent $http_user_agent;
+
+        add_header Cache-Control "no-cache, no-store" always;
+        proxy_cache_bypass $http_upgrade;
+
+        proxy_connect_timeout 600;
+        proxy_send_timeout 600;
+        proxy_read_timeout 600;
+        send_timeout 600;
+        proxy_buffering off;
+    }
+
+    # 兼容根路径形式的文件访问 URL。
+    location ^~ /files/ {
+        proxy_pass http://127.0.0.1:13000;
+        proxy_http_version 1.1;
+
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $upstream_x_forwarded_proto;
+        proxy_set_header Host $final_host;
+        proxy_set_header Referer $http_referer;
+        proxy_set_header User-Agent $http_user_agent;
+
+        add_header Cache-Control "no-cache, no-store" always;
+
+        proxy_connect_timeout 600;
+        proxy_send_timeout 600;
+        proxy_read_timeout 600;
+        send_timeout 600;
+    }
+}
+```
+
+其中：
+
+- `APP_PUBLIC_PATH` 和 `proxy_pass` 里的路径必须保持一致。只要其中一边少了 `/nocobase/`，静态资源和路由通常就会不正常
+- `/nocobase/files/` 会由 `location /nocobase/` 转发；根路径的 `/files/` 兼容入口需要单独转发到 NocoBase
+
+### 其他方案
+
+如果你不想使用内置 Nginx，也可以看这两种单独的代理方案：
+
+- [Docker 安装（外部 Nginx）](./docker-nginx.mdx)
+- [Docker 安装（外部 Caddy）](./docker-caddy.mdx)

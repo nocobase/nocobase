@@ -18,6 +18,8 @@ const JOB_STATUS = {
   FAILED: -1,
 } as const;
 
+const MIN_DURATION = 1;
+
 const DURATION_UNIT_OPTIONS = [
   { value: 1_000, key: 'Seconds' },
   { value: 60_000, key: 'Minutes' },
@@ -45,9 +47,23 @@ export function DelayFieldset() {
               }))}
             />
           </Form.Item>
-          <Form.Item name={['config', 'duration']} noStyle initialValue={1} rules={[{ required: true }]}>
+          <Form.Item
+            name={['config', 'duration']}
+            noStyle
+            initialValue={MIN_DURATION}
+            rules={[
+              { required: true },
+              {
+                validator: async (_, value: unknown) => {
+                  if (typeof value === 'number' && value < MIN_DURATION) {
+                    throw new Error(t('Duration must be at least 1'));
+                  }
+                },
+              },
+            ]}
+          >
             <WorkflowTypedVariableInput
-              types={[['number', { min: 1 }]]}
+              types={[['number', { min: MIN_DURATION }]]}
               nullable={false}
               defaultToFirstConstantTypeWhenUndefined
               placeholder={t('Duration')}

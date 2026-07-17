@@ -1,0 +1,179 @@
+---
+title: "Docker 安装（外部 Caddy）"
+description: "使用 Docker 安装 NocoBase，并通过外部 Caddy 容器作为独立入口。"
+keywords: "Docker,NocoBase,Caddy,安装,反向代理"
+---
+
+# Docker 安装（外部 Caddy）
+
+这种方式里，NocoBase 应用容器和 Caddy 容器分别运行。你可以先按 [Docker 安装（内置 Nginx）](./docker.mdx) 完成基础安装，再把入口切换为外部 Caddy 容器。
+
+## 什么时候用这种方式
+
+- 希望把 NocoBase 和 Web 服务器分开部署
+- 希望用 Caddy 简化反向代理和 HTTPS 配置
+- 希望只对外暴露代理容器，应用容器只在内部网络通信
+
+## docker-compose.yml 示例
+
+下面的示例使用镜像：`nocobase/nocobase:latest-full-no-nginx`。
+
+这里的 `13000:80` 只是为了本地测试方便，避免直接占用宿主机的标准端口。生产环境通常不会继续使用 `13000:80`，而是让外部 Caddy 直接映射宿主机的 `80` 和 `443`。
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:latest-full-no-nginx
+    restart: always
+    depends_on:
+      - postgres
+    networks:
+      - nocobase
+    environment:
+      - APP_KEY=your-secret-key
+      - DB_DIALECT=postgres
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=nocobase
+      - DB_USER=nocobase
+      - DB_PASSWORD=nocobase
+      - TZ=Asia/Shanghai
+      - NOCOBASE_EXTRACT_CLIENT_ASSETS=true
+      - NOCOBASE_PROXY_PROVIDER=caddy
+      - NOCOBASE_PROXY_STORAGE_PATH=/app/nocobase/storage
+      - NOCOBASE_PROXY_UPSTREAM_HOST=app
+    volumes:
+      - ./storage:/app/nocobase/storage
+
+  caddy:
+    image: caddy:2
+    restart: always
+    depends_on:
+      - app
+    networks:
+      - nocobase
+    volumes:
+      - ./storage:/app/nocobase/storage
+    command: >
+      /bin/sh -c '
+        while [ ! -f /app/nocobase/storage/.nocobase/proxy/caddy/nocobase.caddy ]; do
+          echo "waiting for nocobase.caddy..."
+          sleep 1
+        done
+        ln -sf /app/nocobase/storage/.nocobase/proxy/caddy/nocobase.caddy /etc/caddy/Caddyfile
+        caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
+      '
+    ports:
+      # 这里只是本地测试示例。
+      - "13000:80"
+      # 生产环境通常改成下面这样：
+      # - "80:80"
+      # - "443:443"
+
+  postgres:
+    image: postgres:16
+    restart: always
+    command: postgres -c wal_level=logical
+    environment:
+      POSTGRES_USER: nocobase
+      POSTGRES_DB: nocobase
+      POSTGRES_PASSWORD: nocobase
+    volumes:
+      - ./storage/db/postgres:/var/lib/postgresql/data
+    networks:
+      - nocobase
+```
+
+## 关键点
+
+- `NOCOBASE_EXTRACT_CLIENT_ASSETS=true` 用于提取前端静态资源，并生成代理配置
+- `NOCOBASE_PROXY_PROVIDER=caddy` 表示生成 Caddy 配置
+- `NOCOBASE_PROXY_UPSTREAM_HOST=app` 表示让 Caddy 容器通过 Compose 网络访问 `app` 服务
+- `./storage` 需要同时挂载到 `app` 和 `caddy` 容器，方便共享代理配置、静态资源和上传文件
+- `caddy` 容器启动前需要等待 `nocobase.caddy` 生成，再通过 `ln -sf` 链接到 `/etc/caddy/Caddyfile`
+- 自动生成的配置会把 `APP_PUBLIC_PATH` 下的 `/files/` 和根路径 `/files/` 转发到 NocoBase，用于登录鉴权后的文件预览和下载
+- 只需要对外暴露 Caddy 容器端口。测试时可以先用 `13000:80`，生产环境通常直接暴露宿主机的 `80` 和 `443`，而 `app` 服务不需要对宿主机暴露端口
+
+## 如果使用宿主机本地 Caddy
+
+如果你的 Caddy 不是运行在 Docker 容器里，而是直接安装在宿主机上，建议单独使用一份 `docker-compose.yml`。这种情况下，`app` 需要直接对宿主机暴露端口，同时代理相关环境变量也要改成宿主机视角。
+
+可以参考下面的 `docker-compose.yml`：
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:latest-full-no-nginx
+    restart: always
+    depends_on:
+      - postgres
+    networks:
+      - nocobase
+    environment:
+      - APP_KEY=your-secret-key
+      - DB_DIALECT=postgres
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=nocobase
+      - DB_USER=nocobase
+      - DB_PASSWORD=nocobase
+      - TZ=Asia/Shanghai
+      - NOCOBASE_EXTRACT_CLIENT_ASSETS=true
+      - NOCOBASE_PROXY_PROVIDER=caddy
+      - NOCOBASE_PROXY_STORAGE_PATH=/path/to/your-project/storage
+      - NOCOBASE_PROXY_UPSTREAM_HOST=127.0.0.1
+      - NOCOBASE_PROXY_UPSTREAM_PORT=13000
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - "13000:13000"
+
+  postgres:
+    image: postgres:16
+    restart: always
+    command: postgres -c wal_level=logical
+    environment:
+      POSTGRES_USER: nocobase
+      POSTGRES_DB: nocobase
+      POSTGRES_PASSWORD: nocobase
+    volumes:
+      - ./storage/db/postgres:/var/lib/postgresql/data
+    networks:
+      - nocobase
+```
+
+其中：
+
+- `NOCOBASE_PROXY_STORAGE_PATH` 需要写成宿主机上的 `storage` 绝对路径
+- `NOCOBASE_PROXY_UPSTREAM_HOST` 需要改成 `127.0.0.1`
+- `app` 服务需要保留 `ports`，这样宿主机本地 Caddy 才能通过 `127.0.0.1:13000` 访问到应用
+
+启动 `app` 容器后，再在宿主机上等待配置文件生成，并把它链接到本地 Caddy 配置路径：
+
+```bash
+while [ ! -f ./storage/.nocobase/proxy/caddy/nocobase.caddy ]; do
+  echo "waiting for nocobase.caddy..."
+  sleep 1
+done
+
+sudo ln -sf "$(pwd)/storage/.nocobase/proxy/caddy/nocobase.caddy" /etc/caddy/Caddyfile
+sudo caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+sudo systemctl reload caddy
+```
+
+如果你的宿主机 Caddy 没有使用 `/etc/caddy/Caddyfile`，需要把链接路径改成你自己的配置路径。通常来说，保持 `nocobase.caddy` 作为主入口文件会更稳妥，不建议手动拆开后再复制内容。
+
+如果你没有使用自动生成的配置，而是自行维护 Caddy，请确认 `/files/*` 及 `APP_PUBLIC_PATH` 下对应的文件路径会转发到 NocoBase，并且这些规则位于 SPA 回退规则之前。完整示例见 [Caddy 反向代理](../../nocobase-cli/production/reverse-proxy/caddy.md)。
+
+## 相关链接
+
+- [Docker 安装（内置 Nginx）](./docker.mdx) — 从单容器安装开始
+- [Caddy 静态资源代理](../deployment/static-resource-proxy/caddy.md) — 了解生成的 Caddy 配置

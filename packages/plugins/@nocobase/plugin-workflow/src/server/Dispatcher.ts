@@ -45,7 +45,12 @@ export type EventOptions = {
   force?: boolean;
   stack?: Array<number | string>;
   parentExecutionId?: number | string;
-  onTriggerFail?: Function;
+  onTriggerFail?: (
+    workflow: WorkflowModel,
+    context: object,
+    options: EventOptions,
+    error?: unknown,
+  ) => void | Promise<void>;
   [key: string]: any;
 } & Transactionable;
 
@@ -89,12 +94,12 @@ export default class Dispatcher {
     workflow: WorkflowModel,
     context: object,
     options: EventOptions = {},
-  ): void | Promise<Processor | null> {
+  ): void | Promise<Processor | null | void> {
     const logger = this.plugin.getLogger(workflow.id);
     if (!this.ready) {
       logger.warn(`app is not ready, event of workflow ${workflow.id} will be ignored`);
       logger.debug(`ignored event data:`, context);
-      return;
+      return this.handleTriggerFail(workflow, context, options, new Error('app is not ready'));
     }
     if (!options.force && !options.manually && !workflow.enabled) {
       logger.warn(`workflow ${workflow.id} is not enabled, event will be ignored`);
@@ -111,7 +116,7 @@ export default class Dispatcher {
     }
     if (context == null) {
       logger.warn(`workflow ${workflow.id} event data context is null, event will be ignored`);
-      return;
+      return this.handleTriggerFail(workflow, context, options, new Error('event context is null'));
     }
 
     if (options.manually || this.plugin.isWorkflowSync(workflow)) {
@@ -369,6 +374,14 @@ export default class Dispatcher {
     return valid;
   }
 
+  private async handleTriggerFail(workflow: WorkflowModel, context: object, options: EventOptions, error?: unknown) {
+    try {
+      await options.onTriggerFail?.(workflow, context, options, error);
+    } catch (triggerFailError) {
+      this.plugin.getLogger(workflow.id).error(`trigger failure callback failed`, { error: triggerFailError });
+    }
+  }
+
   private async createExecution(
     workflow: WorkflowModel,
     context: object,
@@ -382,22 +395,35 @@ export default class Dispatcher {
       });
       stack = parentExecution ? [...(parentExecution.stack ?? []), parentExecution.id] : [];
     }
-    const valid = await this.validateEvent(workflow, context, { ...options, stack });
+    let valid: boolean;
+    try {
+      valid = await this.validateEvent(workflow, context, { ...options, stack });
+    } catch (error) {
+      await this.handleTriggerFail(workflow, context, options, error);
+      throw error;
+    }
     if (!valid) {
-      options.onTriggerFail?.(workflow, context, options);
-      throw new Error('event is not valid');
+      const error = new Error('event is not valid');
+      await this.handleTriggerFail(workflow, context, options, error);
+      throw error;
     }
 
-    const execution: ExecutionModel = await workflow.createExecution({
-      context,
-      key: workflow.key,
-      eventKey: options.eventKey ?? randomUUID(),
-      stack,
-      parentExecutionId: options.parentExecutionId ?? null,
-      dispatched: deferred ?? false,
-      status: deferred ? EXECUTION_STATUS.STARTED : EXECUTION_STATUS.QUEUEING,
-      manually: options.manually,
-    });
+    let execution: ExecutionModel;
+    try {
+      execution = await workflow.createExecution({
+        context,
+        key: workflow.key,
+        eventKey: options.eventKey ?? randomUUID(),
+        stack,
+        parentExecutionId: options.parentExecutionId ?? null,
+        dispatched: deferred ?? false,
+        status: deferred ? EXECUTION_STATUS.STARTED : EXECUTION_STATUS.QUEUEING,
+        manually: options.manually,
+      });
+    } catch (error) {
+      await this.handleTriggerFail(workflow, context, options, error);
+      throw error;
+    }
 
     this.plugin.getLogger(workflow.id).info(`execution of workflow ${workflow.id} created as ${execution.id}`);
 
@@ -662,7 +688,10 @@ export default class Dispatcher {
       return processor;
     };
 
-    const lock = await this.plugin.app.lockManager.tryAcquire(getExecutionLockKey(execution.id), 60_000);
+    const lockManager = this.plugin.app.lockManager as typeof this.plugin.app.lockManager & {
+      tryAcquire(key: string, timeout?: number): ReturnType<typeof this.plugin.app.lockManager.tryAcquire>;
+    };
+    const lock = await lockManager.tryAcquire(getExecutionLockKey(execution.id), 60_000);
     try {
       return await lock.runExclusive(run, 60_000);
     } catch (error) {

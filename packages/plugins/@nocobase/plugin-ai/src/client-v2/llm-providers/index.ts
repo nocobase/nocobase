@@ -14,9 +14,11 @@ import {
   EmptyProviderSettingsForm,
   googleGenAICompletionFields,
   mistralCompletionFields,
+  orcaRouterCompletionFields,
   ollamaCompletionFields,
   openAICompletionFields,
   openAIResponsesFields,
+  OrcaRouterProviderSettingsForm,
   ProviderSettingsForm,
   qwenCompletionFields,
   xAICompletionFields,
@@ -68,6 +70,10 @@ export const mimoProviderOptions = createProviderOptions(createModelSettingsForm
 
 export const mistralProviderOptions = createProviderOptions(createModelSettingsForm(mistralCompletionFields));
 
+export const orcarouterProviderOptions = createProviderOptions(createModelSettingsForm(orcaRouterCompletionFields), {
+  ProviderSettingsForm: OrcaRouterProviderSettingsForm,
+});
+
 export const ollamaProviderOptions = createProviderOptions(createModelSettingsForm(ollamaCompletionFields), {
   ProviderSettingsForm: EmptyProviderSettingsForm,
 });
@@ -84,6 +90,7 @@ export const builtinLLMProviderOptions: Array<[string, LLMProviderOptions]> = [
   ['xai', xaiProviderOptions],
   ['mimo', mimoProviderOptions],
   ['mistral', mistralProviderOptions],
+  ['orcarouter', orcarouterProviderOptions],
 ];
 
 const builtinLLMProviderModelOptionFields = new Map<string, OptionField[]>([
@@ -98,6 +105,7 @@ const builtinLLMProviderModelOptionFields = new Map<string, OptionField[]>([
   ['xai', xAICompletionFields],
   ['mimo', openAICompletionFields],
   ['mistral', mistralCompletionFields],
+  ['orcarouter', orcaRouterCompletionFields],
 ]);
 
 export const getBuiltinLLMProviderModelOptionFields = (provider?: string): OptionField[] =>

@@ -11,7 +11,7 @@ import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Form } from 'antd';
-import { NodeContext } from '../../canvas/contexts';
+import { CurrentWorkflowContext, NodeContext } from '../../canvas/contexts';
 import { UpdateFieldset } from '../components/update';
 
 vi.mock('../../locale', () => ({
@@ -48,10 +48,12 @@ vi.mock('../../components/collection', () => ({
     collection,
     fieldFilter,
     pruneFilteredValues,
+    disabled,
   }: {
     collection?: string;
     fieldFilter?: (field: MockAssignedField) => boolean;
     pruneFilteredValues?: boolean;
+    disabled?: boolean;
   }) => {
     const fields: MockAssignedField[] = [
       { name: 'title', type: 'string' },
@@ -64,6 +66,7 @@ vi.mock('../../components/collection', () => ({
       <div
         data-testid="assigned-fields"
         data-collection={collection ?? ''}
+        data-disabled={String(Boolean(disabled))}
         data-fields={fields
           .filter((field) => fieldFilter?.(field) ?? true)
           .map((field) => field.name)
@@ -75,8 +78,8 @@ vi.mock('../../components/collection', () => ({
 }));
 
 vi.mock('../../components/FilterDynamicComponent', () => ({
-  FilterDynamicComponent: ({ collection }: { collection?: string }) => (
-    <div data-testid="filter" data-collection={collection ?? ''} />
+  FilterDynamicComponent: ({ collection, disabled }: { collection?: string; disabled?: boolean }) => (
+    <div data-testid="filter" data-collection={collection ?? ''} data-disabled={String(Boolean(disabled))} />
   ),
 }));
 
@@ -106,18 +109,20 @@ vi.mock('../../components/RadioWithTooltip', () => ({
   ),
 }));
 
-function renderWithForm(node: any, initialValues: any) {
+function renderWithForm(node: any, initialValues: any, workflow: any = {}) {
   let formRef: ReturnType<typeof Form.useForm>[0] | undefined;
 
   function Wrapper() {
     const [form] = Form.useForm();
     formRef = form;
     return (
-      <NodeContext.Provider value={node}>
-        <Form form={form} initialValues={initialValues}>
-          <UpdateFieldset />
-        </Form>
-      </NodeContext.Provider>
+      <CurrentWorkflowContext.Provider value={workflow}>
+        <NodeContext.Provider value={node}>
+          <Form form={form} initialValues={initialValues}>
+            <UpdateFieldset />
+          </Form>
+        </NodeContext.Provider>
+      </CurrentWorkflowContext.Provider>
     );
   }
 
@@ -204,6 +209,24 @@ describe('UpdateFieldset', () => {
     await waitFor(() => {
       expect(screen.getByTestId('assigned-fields')).toHaveAttribute('data-fields', 'title,author,comments,tags');
       expect(screen.getByTestId('assigned-fields')).toHaveAttribute('data-prune-filtered-values', 'false');
+    });
+  });
+
+  it('disables assigned fields after the workflow has been executed', async () => {
+    renderWithForm(
+      { id: 1, config: { collection: 'posts' } },
+      {
+        config: {
+          collection: 'posts',
+          params: { individualHooks: false, values: { title: 'new' } },
+        },
+      },
+      { versionStats: { executed: 1 } },
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('assigned-fields')).toHaveAttribute('data-disabled', 'true');
+      expect(screen.getByTestId('filter')).toHaveAttribute('data-disabled', 'true');
     });
   });
 });
