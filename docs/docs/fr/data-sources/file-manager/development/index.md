@@ -1,12 +1,18 @@
-# Développement d'extensions
+---
+title: "Développement d’extensions du gestionnaire de fichiers"
+description: "Étendre les composants de prévisualisation des types de fichiers, les champs de pièces jointes et la logique de téléversement, sur la base des API attachmentFileTypes, mime-match, etc."
+keywords: "extension du gestionnaire de fichiers, extension des champs de pièces jointes, extension de prévisualisation de fichiers, attachmentFileTypes,NocoBase"
+---
 
-## Extension des types de fichiers front-end
+# Développement d’extensions
 
-Pour les fichiers que vous avez téléversés, l'interface utilisateur côté client peut afficher différents aperçus en fonction de leur type. Le champ de pièce jointe du gestionnaire de fichiers intègre une fonction d'aperçu basée sur le navigateur (via un iframe), ce qui permet de visualiser directement la plupart des formats (images, vidéos, audio, PDF, etc.). Si un format de fichier n'est pas pris en charge par l'aperçu intégré du navigateur, ou si vous avez besoin d'une interaction d'aperçu spécifique, vous pouvez étendre les composants d'aperçu en fonction du type de fichier.
+## Types de fichiers côté frontend
+
+Pour les fichiers déjà téléversés, il est possible d’afficher différents contenus de prévisualisation dans l’interface frontend selon le type de fichier. Le champ de pièces jointes du gestionnaire de fichiers intègre une prévisualisation basée sur le navigateur (intégrée dans une iframe), qui prend en charge la prévisualisation directe dans le navigateur de la plupart des formats de fichiers (images, vidéos, fichiers audio et PDF, etc.). Lorsque le format du fichier n’est pas pris en charge par la prévisualisation du navigateur ou que des interactions de prévisualisation particulières sont nécessaires, il est possible de les implémenter en étendant les composants de prévisualisation selon le type de fichier.
 
 ### Exemple
 
-Par exemple, si vous souhaitez étendre un composant de carrousel pour les fichiers image, vous pouvez utiliser le code suivant :
+Par exemple, pour ajouter un composant de carrousel aux fichiers de type image, vous pouvez utiliser le code suivant :
 
 ```ts
 import match from 'mime-match';
@@ -58,11 +64,11 @@ class MyPlugin extends Plugin {
 }
 ```
 
-`attachmentFileTypes` est un objet d'entrée fourni par le package `@nocobase/client` pour étendre les types de fichiers. Vous utilisez sa méthode `add` pour ajouter un descripteur de type de fichier.
+Ici, `attachmentFileTypes` est l’objet d’entrée fourni par le package `@nocobase/client` pour étendre les types de fichiers. Utilisez sa méthode `add` pour étendre un objet de description de type de fichier.
 
-Chaque type de fichier doit implémenter une méthode `match()` pour vérifier s'il répond aux exigences. Dans l'exemple, la méthode fournie par le package `mime-match` est utilisée pour vérifier l'attribut `mimetype` du fichier. Si le type correspond à `image/*`, il est considéré comme un type de fichier à traiter. Si la correspondance échoue, le système reviendra au traitement de type intégré.
+Chaque type de fichier doit implémenter une méthode `match()`, qui vérifie si le type de fichier répond aux exigences. Dans cet exemple, la méthode fournie par le package `mime-match` vérifie la propriété `mimetype` du fichier. Si elle correspond au type `image/*`, le fichier est considéré comme un type à traiter. En cas d’échec de la correspondance, le traitement est rétrogradé vers le gestionnaire de type intégré.
 
-La propriété `Previewer` de l'objet descripteur de type est le composant utilisé pour l'aperçu. Lorsque le type de fichier correspond, ce composant sera rendu pour afficher l'aperçu. Il est généralement recommandé d'utiliser un composant de type modale (comme `<Modal />`) comme conteneur de base, puis d'y placer le contenu de l'aperçu et les éléments interactifs pour implémenter la fonctionnalité d'aperçu.
+La propriété `Previewer` de l’objet de description du type est le composant utilisé pour la prévisualisation. Lorsque le type de fichier correspond, ce composant est rendu pour effectuer la prévisualisation. Il est généralement recommandé d’utiliser un composant de type boîte de dialogue comme conteneur de base (par exemple `<Modal />`), puis d’y placer le contenu de prévisualisation et les éléments interactifs nécessaires afin d’implémenter la fonctionnalité de prévisualisation.
 
 ### API
 
@@ -96,7 +102,7 @@ export class AttachmentFileTypes {
 
 #### `attachmentFileTypes`
 
-`attachmentFileTypes` est une instance globale que vous importez depuis le package `@nocobase/client` :
+`attachmentFileTypes` est une instance globale, importée via `@nocobase/client` :
 
 ```ts
 import { attachmentFileTypes } from '@nocobase/client';
@@ -104,34 +110,34 @@ import { attachmentFileTypes } from '@nocobase/client';
 
 #### `attachmentFileTypes.add()`
 
-Enregistre un nouveau descripteur de type de fichier auprès du registre des types de fichiers. Le type du descripteur est `AttachmentFileType`.
+Enregistre un nouvel objet de description de type de fichier auprès du registre des types de fichiers. Le type de l’objet de description est `AttachmentFileType`.
 
 #### `AttachmentFileType`
 
 ##### `match()`
 
-Une méthode pour faire correspondre les formats de fichiers.
+Méthode de correspondance des formats de fichiers.
 
-Le paramètre `file` est un objet de données pour le fichier téléversé, contenant des propriétés qui peuvent être utilisées pour la vérification du type :
+Le paramètre `file` contient l’objet de données du fichier téléversé et inclut les propriétés pertinentes pouvant être utilisées pour déterminer son type :
 
-*   `mimetype` : La description du mimetype du fichier.
-*   `extname` : L'extension du fichier, incluant le ".".
-*   `path` : Le chemin de stockage relatif du fichier.
-*   `url` : L'URL du fichier.
+* `mimetype` : description du mimetype
+* `extname` : extension du fichier, incluant « . »
+* `path` : chemin relatif de stockage du fichier
+* `url` : URL du fichier
 
-Retourne une valeur de type `boolean`, indiquant le résultat de la correspondance.
+La valeur de retour est de type `boolean` et indique si le fichier correspond.
 
 ##### `Previewer`
 
-Un composant React pour prévisualiser le fichier.
+Composant React utilisé pour prévisualiser le fichier.
 
-Les propriétés (Props) sont :
+Les paramètres Props transmis sont :
 
-*   `index` : L'index du fichier dans la liste des pièces jointes.
-*   `list` : La liste des pièces jointes.
-*   `onSwitchIndex` : Une fonction pour changer l'index du fichier prévisualisé.
+* `index` : index du fichier dans la liste des pièces jointes
+* `list` : liste des pièces jointes
+* `onSwitchIndex` : méthode utilisée pour changer d’index
 
-La fonction `onSwitchIndex` peut être appelée avec n'importe quel index de la `list` pour passer à un autre fichier. Si vous l'appelez avec `null` comme paramètre, le composant d'aperçu sera directement fermé.
+`onSwitchIndex` peut recevoir n’importe quelle valeur d’index de la liste afin de basculer vers un autre fichier. Si `null` est utilisé comme paramètre de changement, le composant de prévisualisation est directement fermé.
 
 ```ts
 onSwitchIndex(null);

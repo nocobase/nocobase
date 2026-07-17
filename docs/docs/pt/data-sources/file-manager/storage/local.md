@@ -1,18 +1,24 @@
-# Armazenamento Local
+---
+title: "Armazenamento local"
+description: "O mecanismo de armazenamento local salva os arquivos no disco rígido do servidor. É adequado para implantações em um único servidor, permitindo configurar o caminho de armazenamento e a URL de acesso."
+keywords: "Armazenamento local,Local Storage,armazenamento de arquivos,disco rígido do servidor,NocoBase"
+---
 
-Os arquivos enviados serão salvos em um diretório local no servidor. Isso é ideal para cenários de pequena escala ou experimentais, onde o volume total de arquivos gerenciados pelo sistema é relativamente pequeno.
+# Armazenamento local
 
-## Opções
+Os arquivos enviados serão salvos em um diretório do disco rígido local do servidor, sendo adequado para cenários em que o volume total de arquivos enviados pelo sistema seja pequeno ou para fins experimentais.
 
-![Exemplo de opções do motor de armazenamento de arquivos](https://static-docs.nocobase.com/20240529115151.png)
+## Parâmetros de configuração
 
-:::info{title=Dica}
-Esta seção aborda apenas os parâmetros específicos do motor de armazenamento local. Para parâmetros comuns, consulte os [Parâmetros Gerais do Motor](./index.md#parâmetros-gerais-do-motor).
+![Exemplo de configuração do mecanismo de armazenamento de arquivos](https://static-docs.nocobase.com/20240529115151.png)
+
+:::info{title=Observação}
+Aqui são apresentados apenas os parâmetros específicos do mecanismo de armazenamento local. Para consultar os parâmetros gerais, veja [Parâmetros gerais do mecanismo](./index.md#引擎通用参数).
 :::
 
-### Caminho
+### Path
 
-O caminho representa tanto o caminho relativo do arquivo armazenado no servidor quanto o caminho de acesso via URL. Por exemplo, "`user/avatar`" (sem as barras "`/`" no início e no fim) representa:
+Representa simultaneamente o caminho relativo onde os arquivos são armazenados no servidor e o caminho de acesso por URL. Por exemplo: “`user/avatar`” (sem o “`/`” no início e no fim), que representa:
 
-1. O caminho relativo do arquivo enviado armazenado no servidor: `/path/to/nocobase-app/storage/uploads/user/avatar`.
-2. O prefixo da URL para acessar o arquivo: `http://localhost:13000/storage/uploads/user/avatar`.
+1. Path relativo onde os arquivos enviados são armazenados no servidor: `/path/to/nocobase-app/storage/uploads/user/avatar`.
+2. Prefixo do endereço URL para acesso: `http://localhost:13000/storage/uploads/user/avatar`.

@@ -1,50 +1,56 @@
-# Plusieurs-à-plusieurs
+---
+title: "Relation plusieurs-à-plusieurs"
+description: "Les champs de relation plusieurs-à-plusieurs (M2M) permettent d'associer deux entités selon une relation plusieurs-à-plusieurs, généralement à l'aide d'une table intermédiaire, comme dans le cas étudiants-cours."
+keywords: "plusieurs-à-plusieurs,M2M,BelongsToMany,table intermédiaire,champ de relation,NocoBase"
+---
 
-Dans un système de gestion des inscriptions aux cours, il existe deux entités : les étudiants et les cours. Un étudiant peut s'inscrire à plusieurs cours, et un cours peut accueillir plusieurs étudiants. Cela constitue une relation plusieurs-à-plusieurs. Dans une base de données relationnelle, pour représenter cette relation plusieurs-à-plusieurs entre les étudiants et les cours, on utilise généralement une `collection` intermédiaire, comme une `collection` d'inscriptions. Cette `collection` peut enregistrer les cours choisis par chaque étudiant et les étudiants inscrits à chaque cours. Cette conception permet de représenter efficacement la relation plusieurs-à-plusieurs entre les étudiants et les cours.
+# Relation plusieurs-à-plusieurs
 
-Diagramme ER :
+Dans un système d'inscription aux cours, il existe deux entités : les étudiants et les cours. Un étudiant peut suivre plusieurs cours, et un cours peut également être suivi par plusieurs étudiants : il s'agit d'une relation plusieurs-à-plusieurs. Dans une base de données relationnelle, une table intermédiaire, par exemple une table d'inscription, est généralement utilisée pour représenter la relation plusieurs-à-plusieurs entre les étudiants et les cours. Cette table permet d'enregistrer les cours choisis par chaque étudiant ainsi que les étudiants inscrits à chaque cours. Cette conception représente efficacement la relation plusieurs-à-plusieurs entre les étudiants et les cours.
 
-![Diagramme ER](https://static-docs.nocobase.com/0e9921228e1ee375dc639431bb89782c.png)
+La relation ER est la suivante
 
-Configuration des champs :
+![texte alternatif](https://static-docs.nocobase.com/0e9921228e1ee375dc639431bb89782c.png)
 
-![Configuration des champs](https://static-docs.nocobase.com/8e2739ac5d44fb46f30e2da42ca87a82.png)
+Configuration des champs
+
+![texte alternatif](https://static-docs.nocobase.com/8e2739ac5d44fb46f30e2da42ca87a82.png)
 
 ## Description des paramètres
 
-### `Collection` source
+### Collection source
 
-La `collection` source est celle où se trouve le champ actuel.
+Table source, c'est-à-dire la table dans laquelle se trouve le champ actuel.
 
-### `Collection` cible
+### Collection cible
 
-La `collection` cible est celle à laquelle vous souhaitez établir une association.
+Table cible, avec laquelle l'association est établie.
 
-### `Collection` intermédiaire
+### Collection intermédiaire
 
-La `collection` intermédiaire est utilisée lorsqu'une relation plusieurs-à-plusieurs existe entre deux entités. Elle sert à stocker cette relation. Une `collection` intermédiaire possède deux clés étrangères qui maintiennent l'association entre les deux entités.
+Table intermédiaire. Lorsqu'une relation plusieurs-à-plusieurs existe entre deux entités, une table intermédiaire est nécessaire pour stocker cette relation. La table intermédiaire contient deux clés étrangères qui permettent d'enregistrer l'association entre les deux entités.
 
 ### Clé source
 
-Le champ de la `collection` source référencé par la clé étrangère. Il doit être unique.
+Champ référencé par la contrainte de clé étrangère, qui doit être unique.
 
 ### Clé étrangère 1
 
-Le champ de la `collection` intermédiaire qui établit l'association avec la `collection` source.
+Champ de la table intermédiaire utilisé pour établir l'association avec la table source.
 
 ### Clé étrangère 2
 
-Le champ de la `collection` intermédiaire qui établit l'association avec la `collection` cible.
+Champ de la table intermédiaire utilisé pour établir l'association avec la table cible.
 
 ### Clé cible
 
-Le champ de la `collection` cible référencé par la clé étrangère. Il doit être unique.
+Champ référencé par la contrainte de clé étrangère, qui doit être unique.
 
 ### ON DELETE
 
-`ON DELETE` fait référence aux règles appliquées aux références de clés étrangères dans les `collections` enfants liées, lorsque des enregistrements sont supprimés dans la `collection` parente. C'est une option utilisée lors de la définition d'une contrainte de clé étrangère. Les options `ON DELETE` courantes sont les suivantes :
+ON DELETE désigne la règle appliquée aux références de clé étrangère dans la table enfant lors de la suppression d'un enregistrement dans la table parent. Il s'agit d'une option utilisée lors de la définition d'une contrainte de clé étrangère. Les options ON DELETE courantes sont les suivantes :
 
--   **CASCADE** : Lorsque vous supprimez un enregistrement dans la `collection` parente, tous les enregistrements liés dans la `collection` enfant sont automatiquement supprimés.
--   **SET NULL** : Lorsque vous supprimez un enregistrement dans la `collection` parente, les valeurs des clés étrangères des enregistrements liés dans la `collection` enfant sont définies sur `NULL`.
--   **RESTRICT** : C'est l'option par défaut. Elle empêche la suppression d'un enregistrement de la `collection` parente s'il existe des enregistrements liés dans la `collection` enfant.
--   **NO ACTION** : Similaire à `RESTRICT`, cette option empêche la suppression d'un enregistrement de la `collection` parente s'il existe des enregistrements liés dans la `collection` enfant.
+- CASCADE : lors de la suppression d'un enregistrement dans la table parent, tous les enregistrements associés de la table enfant sont automatiquement supprimés.
+- SET NULL : lors de la suppression d'un enregistrement dans la table parent, la valeur de la clé étrangère correspondante dans la table enfant est définie sur NULL.
+- RESTRICT : option par défaut. Lorsqu'une tentative de suppression d'un enregistrement dans la table parent est effectuée, la suppression est refusée si des enregistrements associés existent dans la table enfant.
+- NO ACTION : similaire à RESTRICT. Si des enregistrements associés existent dans la table enfant, la suppression de l'enregistrement dans la table parent est refusée.
