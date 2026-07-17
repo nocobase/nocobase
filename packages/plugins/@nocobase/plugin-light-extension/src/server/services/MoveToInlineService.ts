@@ -96,6 +96,7 @@ export class MoveToInlineService {
       const relocatedFiles = collectAndRelocateInlineFiles({
         files: input.files,
         entryPath: input.entryPath,
+        kind: input.kind,
       });
       assertRunJSCompileInputLimits([
         ...relocatedFiles,
@@ -344,6 +345,7 @@ export class MoveToInlineService {
 export function collectAndRelocateInlineFiles(input: {
   files: LightExtensionMoveSourceWorkspaceFile[];
   entryPath: string;
+  kind?: LightExtensionMoveToInlineInput['kind'];
 }): LightExtensionMoveSourceWorkspaceFile[] {
   const sourceFiles = new Map<string, LightExtensionMoveSourceWorkspaceFile>();
   for (const file of input.files) {
@@ -392,12 +394,16 @@ export function collectAndRelocateInlineFiles(input: {
       return {
         ...sourceFile,
         path: targetPath,
-        content: rewriteLightExtensionTypeImportsForInline(targetPath, rewrittenSdkImports),
+        content: rewriteLightExtensionTypeImportsForInline(targetPath, rewrittenSdkImports, input.kind),
       };
     });
 }
 
-function rewriteLightExtensionTypeImportsForInline(path: string, content: string): string {
+function rewriteLightExtensionTypeImportsForInline(
+  path: string,
+  content: string,
+  kind?: LightExtensionMoveToInlineInput['kind'],
+): string {
   if (!isCodeFile(path)) {
     return content;
   }
@@ -410,10 +416,7 @@ function rewriteLightExtensionTypeImportsForInline(path: string, content: string
       continue;
     }
     const specifier = statement.moduleSpecifier.text;
-    if (
-      !LIGHT_EXTENSION_SDK_TYPE_MODULES.has(specifier) &&
-      !specifier.startsWith(LIGHT_EXTENSION_SETTINGS_TYPE_PREFIX)
-    ) {
+    if (!LIGHT_EXTENSION_SDK_TYPE_MODULES.has(specifier) && !isInlineTypeModule(specifier, kind)) {
       continue;
     }
     const importClause = statement.importClause;
@@ -454,10 +457,7 @@ function rewriteLightExtensionTypeImportsForInline(path: string, content: string
   const visitImportTypes = (node: ts.Node) => {
     if (ts.isImportTypeNode(node)) {
       const specifier = getImportTypeSpecifier(node);
-      if (
-        specifier &&
-        (LIGHT_EXTENSION_SDK_TYPE_MODULES.has(specifier) || specifier.startsWith(LIGHT_EXTENSION_SETTINGS_TYPE_PREFIX))
-      ) {
+      if (specifier && isInlineTypeModule(specifier, kind)) {
         replacements.push({
           start: node.getStart(sourceFile),
           end: node.end,
@@ -479,12 +479,19 @@ function rewriteLightExtensionTypeImportsForInline(path: string, content: string
     );
 }
 
+function isInlineTypeModule(specifier: string, kind?: LightExtensionMoveToInlineInput['kind']): boolean {
+  if (LIGHT_EXTENSION_SDK_TYPE_MODULES.has(specifier)) {
+    return true;
+  }
+  return Boolean(kind && specifier.startsWith(`${LIGHT_EXTENSION_SETTINGS_TYPE_PREFIX}client/${kind}/`));
+}
+
 function buildInlineTypeNamespace(localName: string, specifier: string): string {
   if (specifier.startsWith(LIGHT_EXTENSION_SETTINGS_TYPE_PREFIX)) {
     return `declare namespace ${localName} { export type Settings = Record<string, unknown>; export type SettingsSchemaSummary = Record<string, unknown>; export type Context = typeof ctx & { settings: Settings }; export type SettingsContext = Context; }`;
   }
 
-  return `declare namespace ${localName} { export type LightExtensionRecord = Record<string, unknown>; export type LightExtensionSettingsContext<TSettings = Record<string, unknown>> = typeof ctx & { settings: TSettings }; export type LightExtensionDataContext<TSettings = Record<string, unknown>> = LightExtensionSettingsContext<TSettings>; export type JSBlockContext<TSettings = Record<string, unknown>> = LightExtensionDataContext<TSettings>; export type JSFieldContext<TSettings = Record<string, unknown>, TValue = unknown> = LightExtensionDataContext<TSettings> & { value?: TValue }; export type JSActionContext<TSettings = Record<string, unknown>> = LightExtensionDataContext<TSettings>; export type JSItemContext<TSettings = Record<string, unknown>, TValue = unknown> = LightExtensionDataContext<TSettings> & { value?: TValue }; export type RunJSContext<TSettings = Record<string, unknown>, TInput = unknown> = LightExtensionDataContext<TSettings> & { input?: TInput }; export function defineSettings<TSettings>(settings: TSettings): TSettings; export function assertSettings<TSettings>(settings: TSettings): TSettings; }`;
+  return `declare namespace ${localName} { export type LightExtensionRecord = Record<string, unknown>; export type LightExtensionSettingsContext<TSettings = Record<string, unknown>> = typeof ctx & { settings: TSettings }; export type LightExtensionDataContext<TSettings = Record<string, unknown>> = LightExtensionSettingsContext<TSettings>; export type JSBlockContext<TSettings = Record<string, unknown>> = LightExtensionDataContext<TSettings>; export type JSPageContext<TSettings = Record<string, unknown>> = LightExtensionDataContext<TSettings>; export type JSFieldContext<TSettings = Record<string, unknown>, TValue = unknown> = LightExtensionDataContext<TSettings> & { value?: TValue }; export type JSActionContext<TSettings = Record<string, unknown>> = LightExtensionDataContext<TSettings>; export type JSItemContext<TSettings = Record<string, unknown>, TValue = unknown> = LightExtensionDataContext<TSettings> & { value?: TValue }; export type RunJSContext<TSettings = Record<string, unknown>, TInput = unknown> = LightExtensionDataContext<TSettings> & { input?: TInput }; export function defineSettings<TSettings>(settings: TSettings): TSettings; export function assertSettings<TSettings>(settings: TSettings): TSettings; }`;
 }
 
 function getImportTypeSpecifier(node: ts.ImportTypeNode): string | null {
@@ -526,6 +533,9 @@ function buildInlineTypeDeclaration(importedName: string, localName: string, spe
   }
   if (importedName === 'RunJSContext' && localName === 'RunJSContext') {
     return '';
+  }
+  if (importedName === 'JSPageContext') {
+    return `type ${localName}<TSettings = Record<string, unknown>> = typeof ctx & { settings: TSettings };`;
   }
   if (importedName.endsWith('Context')) {
     return `type ${localName}<TSettings = Record<string, unknown>, TValue = unknown> = typeof ctx & { settings: TSettings; value?: TValue };`;
@@ -888,15 +898,11 @@ function bindingOutdated(
 }
 
 function unsupportedLocator(locator: RunJSSourceLocator): LightExtensionError {
-  return new LightExtensionError(
-    'LIGHT_EXTENSION_INVALID_INPUT',
-    'Only JS Block sources can currently be moved to inline code',
-    {
-      details: {
-        locatorKind: locator.kind,
-      },
+  return new LightExtensionError('LIGHT_EXTENSION_INVALID_INPUT', 'This RunJS source cannot be moved to inline code', {
+    details: {
+      locatorKind: locator.kind,
     },
-  );
+  });
 }
 
 function invalidInput(message: string): LightExtensionError {

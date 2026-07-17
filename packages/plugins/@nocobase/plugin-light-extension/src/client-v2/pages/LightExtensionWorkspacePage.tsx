@@ -110,6 +110,8 @@ const LIGHT_EXTENSION_SHARED_ROOT = 'src/shared';
 const LIGHT_EXTENSION_REPO_ROOT_FILE_PATHS = ['README.md', 'tsconfig.json'] as const;
 const LIGHT_EXTENSION_REPO_ROOT_FILES = new Set<string>(LIGHT_EXTENSION_REPO_ROOT_FILE_PATHS);
 const LIGHT_EXTENSION_CLIENT_KIND_TEMPLATE_FILES = [
+  'src/client/js-pages/hello-page/index.tsx',
+  'src/client/js-pages/hello-page/entry.json',
   'src/client/js-fields/status-tag/index.tsx',
   'src/client/js-actions/refresh-data/index.ts',
   'src/client/js-items/form-total-preview/index.tsx',

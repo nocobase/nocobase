@@ -15,7 +15,7 @@ import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
 
-import { JSBlockLightExtensionSourceField } from '../components/JSBlockLightExtensionSourceField';
+import { JSPageLightExtensionSourceField } from '../components/JSBlockLightExtensionSourceField';
 
 const mocks = vi.hoisted(() => ({
   request: vi.fn(),
@@ -32,7 +32,7 @@ vi.mock('react-i18next', () => ({
 
 const SchemaField = createSchemaField({
   components: {
-    JSBlockLightExtensionSourceField,
+    JSPageLightExtensionSourceField,
   },
 });
 
@@ -40,10 +40,10 @@ const entry = {
   id: 'entry_sales',
   repoId: 'repo_sales',
   target: 'client',
-  kind: 'js-block',
+  kind: 'js-page',
   entryName: 'sales',
-  entryPath: 'src/client/js-blocks/sales/index.tsx',
-  descriptorPath: 'src/client/js-blocks/sales-kpi/entry.json',
+  entryPath: 'src/client/js-pages/sales/index.tsx',
+  descriptorPath: 'src/client/js-pages/sales/entry.json',
   title: 'Sales',
   description: null,
   category: null,
@@ -56,7 +56,7 @@ const entry = {
   runtimeArtifact: {
     code: 'ctx.render("sales");',
     version: 'v2',
-    entryPath: 'src/client/js-blocks/sales/index.tsx',
+    entryPath: 'src/client/js-pages/sales/index.tsx',
   },
   runtimeVersion: 'v2',
   surfaceStyle: 'render',
@@ -68,7 +68,7 @@ const entry = {
   diagnostics: [],
 };
 
-describe('JSBlockLightExtensionSourceField copyback', () => {
+describe('JSPageLightExtensionSourceField copyback', () => {
   beforeEach(() => {
     mocks.request.mockImplementation((options: { url: string }) => {
       if (options.url === '/light-extension-runtime/resolve') {
@@ -76,7 +76,7 @@ describe('JSBlockLightExtensionSourceField copyback', () => {
           data: {
             data: {
               entryId: 'entry_sales',
-              entryPath: 'src/client/js-blocks/sales/index.tsx',
+              entryPath: 'src/client/js-pages/sales/index.tsx',
               artifactHash,
               artifactUrl: `/api/light-extension-runtime/artifacts/${artifactHash}`,
               runtimeCodeHash: 'runtime_hash',
@@ -96,7 +96,7 @@ describe('JSBlockLightExtensionSourceField copyback', () => {
             code: 'ctx.render("copied runtime");',
             sourceMap: null,
             version: 'v2',
-            entryPath: 'src/client/js-blocks/sales/index.tsx',
+            entryPath: 'src/client/js-pages/sales/index.tsx',
             runtimeContract: 'light-extension.runtime-artifact.v1',
             byteSize: 64,
           },
@@ -136,9 +136,10 @@ describe('JSBlockLightExtensionSourceField copyback', () => {
           type: 'light-extension-entry',
           repoId: 'repo_sales',
           entryId: 'entry_sales',
-          kind: 'js-block',
+          kind: 'js-page',
         },
-        settings: {},
+        settings: { title: 'Revenue' },
+        sourceRef: { type: 'vsc-file', repoId: 'old_repo', commitId: 'old_commit', entry: 'src/client/index.tsx' },
       },
     });
     const engine = new FlowEngine();
@@ -157,7 +158,7 @@ describe('JSBlockLightExtensionSourceField copyback', () => {
               properties: {
                 sourceMode: {
                   type: 'string',
-                  'x-component': 'JSBlockLightExtensionSourceField',
+                  'x-component': 'JSPageLightExtensionSourceField',
                 },
               },
             }}
@@ -174,6 +175,13 @@ describe('JSBlockLightExtensionSourceField copyback', () => {
       expect(form.values.sourceMode).toBe('inline');
       expect(form.values.code).toBe('ctx.render("copied runtime");');
       expect(form.values.version).toBe('v2');
+      expect(form.values.settings).toEqual({ title: 'Revenue' });
+      expect(form.values.sourceRef).toEqual({
+        type: 'vsc-file',
+        repoId: 'old_repo',
+        commitId: 'old_commit',
+        entry: 'src/client/index.tsx',
+      });
     });
   });
 });

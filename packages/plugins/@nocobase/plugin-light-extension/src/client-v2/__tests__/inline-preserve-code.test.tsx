@@ -15,7 +15,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
 
 import type { LightExtensionRuntimeSourceBinding } from '../../shared/types';
-import { JSBlockLightExtensionSourceField } from '../components/JSBlockLightExtensionSourceField';
+import { JSPageLightExtensionSourceField } from '../components/JSBlockLightExtensionSourceField';
 
 const mocks = vi.hoisted(() => ({
   request: vi.fn(),
@@ -30,7 +30,7 @@ vi.mock('react-i18next', () => ({
 
 const SchemaField = createSchemaField({
   components: {
-    JSBlockLightExtensionSourceField,
+    JSPageLightExtensionSourceField,
   },
 });
 
@@ -38,10 +38,10 @@ const entry = {
   id: 'entry_sales',
   repoId: 'repo_sales',
   target: 'client',
-  kind: 'js-block',
+  kind: 'js-page',
   entryName: 'sales',
-  entryPath: 'src/client/js-blocks/sales/index.tsx',
-  descriptorPath: 'src/client/js-blocks/sales-kpi/entry.json',
+  entryPath: 'src/client/js-pages/sales/index.tsx',
+  descriptorPath: 'src/client/js-pages/sales/entry.json',
   title: 'Sales',
   description: null,
   category: null,
@@ -55,7 +55,7 @@ const entry = {
   runtimeArtifact: {
     code: 'ctx.render("sales");',
     version: 'v2',
-    entryPath: 'src/client/js-blocks/sales/index.tsx',
+    entryPath: 'src/client/js-pages/sales/index.tsx',
   },
   runtimeVersion: 'v2',
   surfaceStyle: 'render',
@@ -72,6 +72,7 @@ type RunJSFormValues = {
   code: string;
   version: string;
   sourceBinding?: LightExtensionRuntimeSourceBinding;
+  sourceRef?: Record<string, unknown>;
 };
 
 function renderSourceField() {
@@ -86,6 +87,7 @@ function renderSourceField() {
       sourceMode: 'inline',
       code: 'ctx.render("inline");',
       version: 'v2',
+      sourceRef: { type: 'vsc-file', repoId: 'inline_repo', commitId: 'inline_commit', entry: 'src/client/index.tsx' },
     },
   });
 
@@ -98,7 +100,7 @@ function renderSourceField() {
             properties: {
               sourceMode: {
                 type: 'string',
-                'x-component': 'JSBlockLightExtensionSourceField',
+                'x-component': 'JSPageLightExtensionSourceField',
               },
             },
           }}
@@ -110,7 +112,7 @@ function renderSourceField() {
   return form;
 }
 
-describe('JSBlockLightExtensionSourceField inline preservation', () => {
+describe('JSPageLightExtensionSourceField inline preservation', () => {
   beforeEach(() => {
     mocks.request.mockImplementation((options: { url: string }) => {
       if (options.url === 'lightExtensionEntries:listSelectable') {
@@ -139,12 +141,18 @@ describe('JSBlockLightExtensionSourceField inline preservation', () => {
       const codeSource = screen.getByRole('combobox', { name: 'Code source' });
       fireEvent.mouseDown(codeSource);
       fireEvent.change(codeSource, { target: { value: 'Sales' } });
-      fireEvent.click(await screen.findByText('Sales'));
+      fireEvent.click(await screen.findByText('sales'));
     });
 
     expect(form.values.sourceMode).toBe('light-extension');
     expect(form.values.sourceBinding?.entryId).toBe('entry_sales');
     expect(form.values.code).toBe('ctx.render("inline");');
     expect(form.values.version).toBe('v2');
+    expect(form.values.sourceRef).toEqual({
+      type: 'vsc-file',
+      repoId: 'inline_repo',
+      commitId: 'inline_commit',
+      entry: 'src/client/index.tsx',
+    });
   });
 });

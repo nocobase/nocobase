@@ -21,6 +21,31 @@ Entry source code should import SDK types with `import type` and receive runtime
 
 The plugin package root remains the server plugin entry. SDK imports use the public `@nocobase/light-extension-sdk/client`, `shared`, and `typegen` exports instead of plugin-local shims.
 
+## JS Page authoring
+
+A JS Page entry lives at `src/client/js-pages/<entry-name>/`. Its `entry.json` defines the stable `key`, metadata, and settings schema, while `index.tsx` renders the page through the injected RunJS context. The authoring workspace generates the settings type from the descriptor, so entry code can use the page-specific context without persisting generated files:
+
+```ts
+import type { JSPageContext, RunJSContext } from '@nocobase/light-extension-sdk/client';
+import type { Settings } from 'light-extension:settings/client/js-page/hello-page';
+
+const pageContext: RunJSContext & JSPageContext<Settings> = ctx;
+await pageContext.page.refresh();
+```
+
+The P1 authoring workflow is:
+
+1. Create an inline JS Page and open its JavaScript editor.
+2. Use **Move to light extension** to create or select a repository and write a `js-page` entry.
+3. Edit the entry workspace and save it; every saved version is validated and compiled before it becomes active.
+4. Use **Move to inline code** to copy the current reachable entry files back into the page and clear the external binding.
+
+Moving a page to a light extension preserves its previous inline `code`, `version`, and `sourceRef` as the last runnable compatibility snapshot. The external entry remains the authoring source of truth while the binding is active; moving back to inline copies the current entry instead of silently restoring that older snapshot. See [Move RunJS Source Contract](#move-runjs-source-contract) for the transaction and fallback guarantees.
+
+JS Page source is trusted administrator code, not a sandbox for untrusted user scripts. Server resource ACL still applies to requests made by the page, and JavaScript cannot bypass the current user's data permissions.
+
+P1 does not include creating a page directly from an Entry, an App Bridge API, or a marketplace/distribution workflow.
+
 ## Source Save Contract
 
 `lightExtensionFiles:saveSource` accepts `repoId`, `message`, and `files`. It performs the VSC commit, workspace validation, entry reconciliation, and runtime compilation in one database transaction. There is no separate scan action or scan state.

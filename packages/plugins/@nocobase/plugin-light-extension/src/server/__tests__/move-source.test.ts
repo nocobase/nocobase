@@ -107,6 +107,7 @@ describe('MoveSourceService', () => {
 
   it.each([
     ['js-block', 'src/client/js-blocks', null],
+    ['js-page', 'src/client/js-pages', null],
     ['js-field', 'src/client/js-fields', 'js-field'],
     ['js-action', 'src/client/js-actions', null],
     ['js-item', 'src/client/js-items', null],
@@ -170,6 +171,7 @@ describe('MoveSourceService', () => {
 
   it.each([
     ['JSBlockModel', 'js-block', 'src/client/js-blocks'],
+    ['JSPageModel', 'js-page', 'src/client/js-pages'],
     ['JSActionModel', 'js-action', 'src/client/js-actions'],
     ['JSFieldModel', 'js-field', 'src/client/js-fields'],
     ['JSColumnModel', 'js-field', 'src/client/js-fields'],
@@ -265,16 +267,15 @@ describe('MoveSourceService', () => {
       } else {
         expect(descriptor).not.toHaveProperty('category');
       }
-      expect(writeExternalBinding).toHaveBeenCalledWith(
-        expect.objectContaining({
-          baseOwnerFingerprint: 'owner_before',
-          binding: expect.objectContaining({
-            sourceMode: 'light-extension',
-            sourceBinding: expect.objectContaining({ repoId: repo.id, entryId: movedEntry.id, kind }),
-          }),
-          ctx: expect.objectContaining({ transaction }),
-        }),
-      );
+      expect(writeExternalBinding).toHaveBeenCalledWith({
+        locator,
+        baseOwnerFingerprint: 'owner_before',
+        binding: {
+          sourceMode: 'light-extension',
+          sourceBinding: expect.objectContaining({ repoId: repo.id, entryId: movedEntry.id, kind }),
+        },
+        ctx: expect.objectContaining({ transaction }),
+      });
       expect(syncReferences).toHaveBeenCalledWith(
         expect.objectContaining({ rootUid: locator.modelUid }),
         expect.objectContaining({ transaction }),
@@ -283,16 +284,28 @@ describe('MoveSourceService', () => {
     },
   );
 
-  it('creates a new repository with only base files and the moved entry', async () => {
+  it('creates a new repository with a compiled JS Page entry before binding it', async () => {
     const createdRepo = { ...repo, id: 'ler_new', name: 'sales-tools', normalizedName: 'sales-tools' };
-    const createdEntry = { ...entry, repoId: createdRepo.id };
+    const createdEntry = {
+      ...entry,
+      repoId: createdRepo.id,
+      kind: 'js-page' as const,
+      entryPath: 'src/client/js-pages/sales-kpi/index.tsx',
+      descriptorPath: 'src/client/js-pages/sales-kpi/entry.json',
+    };
     const createRepo = vi.fn(async () => createdRepo);
-    const compileCurrentRuntime = vi.fn(async () => ({
-      repo: createdRepo,
-      status: 'success',
-      entries: [],
-      diagnostics: [],
-    }));
+    const writeExternalBinding = vi.fn(async () => ({ ownerFingerprint: 'owner_after' }));
+    const syncReferences = vi.fn(async () => undefined);
+    let compiled = false;
+    const compileCurrentRuntime = vi.fn(async () => {
+      compiled = true;
+      return {
+        repo: createdRepo,
+        status: 'success',
+        entries: [createdEntry],
+        diagnostics: [],
+      };
+    });
     const service = new MoveSourceService(
       {
         sequelize: {
@@ -302,9 +315,14 @@ describe('MoveSourceService', () => {
       } as unknown as Database,
       { createRepo } as never,
       {} as never,
-      { listEntries: vi.fn(async () => [createdEntry]) } as never,
+      {
+        listEntries: vi.fn(async () => {
+          expect(compiled).toBe(true);
+          return [createdEntry];
+        }),
+      } as never,
       { compileCurrentRuntime } as never,
-      { syncFlowModelReferencesForNodeTree: vi.fn() } as never,
+      { syncFlowModelReferencesForNodeTree: syncReferences } as never,
       () =>
         ({
           require: () => ({
@@ -313,19 +331,19 @@ describe('MoveSourceService', () => {
             readLegacy: vi.fn(async () => ({
               code: 'return 1;',
               version: 'v2',
-              label: 'JS block',
+              label: 'JavaScript page',
               surfaceStyle: 'render',
               language: 'typescript',
               ownerFingerprint: 'owner_before',
-              metadata: { modelUse: 'JSBlockModel' },
+              metadata: { modelUse: 'JSPageModel' },
             })),
-            writeExternalBinding: vi.fn(async () => ({ ownerFingerprint: 'owner_after' })),
+            writeExternalBinding,
             getFingerprint: vi.fn(async () => 'owner_after'),
           }),
         }) as unknown as RunJSSourceAdapterRegistry,
     );
 
-    await service.moveSource(
+    const result = await service.moveSource(
       {
         locator,
         expectedOwnerFingerprint: 'owner_before',
@@ -345,8 +363,8 @@ describe('MoveSourceService', () => {
     expect(initialPaths.sort()).toEqual(
       [
         'README.md',
-        'src/client/js-blocks/sales-kpi/entry.json',
-        'src/client/js-blocks/sales-kpi/index.tsx',
+        'src/client/js-pages/sales-kpi/entry.json',
+        'src/client/js-pages/sales-kpi/index.tsx',
         'tsconfig.json',
       ].sort(),
     );
@@ -355,6 +373,18 @@ describe('MoveSourceService', () => {
       createdRepo.headCommitId,
       expect.objectContaining({ transaction: expect.anything() }),
     );
+    expect(writeExternalBinding.mock.invocationCallOrder[0]).toBeGreaterThan(
+      compileCurrentRuntime.mock.invocationCallOrder[0],
+    );
+    expect(syncReferences.mock.invocationCallOrder[0]).toBeGreaterThan(
+      writeExternalBinding.mock.invocationCallOrder[0],
+    );
+    expect(result.binding).toMatchObject({
+      repoId: createdRepo.id,
+      entryId: createdEntry.id,
+      entryPath: createdEntry.entryPath,
+      kind: 'js-page',
+    });
   });
 
   it('rejects an existing entry instead of overwriting it', async () => {
@@ -366,7 +396,7 @@ describe('MoveSourceService', () => {
             run({ id: 'tx_conflict' } as unknown as Transaction),
         },
       } as unknown as Database,
-      { lockInternalRepoForUpdate: vi.fn() } as never,
+      { lockInternalRepoForUpdate: vi.fn(async () => repo) } as never,
       {
         pull: vi.fn(async () => ({
           repo,
@@ -505,12 +535,89 @@ describe('MoveSourceService', () => {
     expect(saveSource).not.toHaveBeenCalled();
   });
 
+  it.each([
+    ['disabled', 'LIGHT_EXTENSION_REPO_DISABLED'],
+    ['archived', 'LIGHT_EXTENSION_REPO_ARCHIVED'],
+  ] as const)('rejects a %s destination before writing JS Page state', async (lifecycleStatus, code) => {
+    const saveSource = vi.fn();
+    const writeExternalBinding = vi.fn();
+    const syncReferences = vi.fn();
+    const service = createFailureService({
+      destinationRepo: { ...repo, lifecycleStatus },
+      modelUse: 'JSPageModel',
+      saveSource,
+      writeExternalBinding,
+      syncReferences,
+    });
+
+    await expect(
+      service.moveSource(
+        {
+          locator,
+          expectedOwnerFingerprint: 'owner_before',
+          sourceRepoId: 'runjs_repo',
+          sourceHeadCommitId: 'runjs_commit',
+          entryPath: 'src/main.tsx',
+          version: 'v2',
+          files: [{ path: 'src/main.tsx', content: 'ctx.render(<div>Page</div>);' }],
+          destination: { type: 'existing', repoId: repo.id },
+          entryName: 'sales-page',
+        },
+        { adapterContext: {} },
+      ),
+    ).rejects.toMatchObject({ code });
+    expect(saveSource).not.toHaveBeenCalled();
+    expect(writeExternalBinding).not.toHaveBeenCalled();
+    expect(syncReferences).not.toHaveBeenCalled();
+  });
+
+  it('does not bind or sync references when JS Page compilation fails', async () => {
+    const saveSource = vi.fn(async () => {
+      throw new Error('compile failed');
+    });
+    const writeExternalBinding = vi.fn();
+    const syncReferences = vi.fn();
+    const service = createFailureService({
+      modelUse: 'JSPageModel',
+      saveSource,
+      writeExternalBinding,
+      syncReferences,
+    });
+
+    await expect(
+      service.moveSource(
+        {
+          locator,
+          expectedOwnerFingerprint: 'owner_before',
+          sourceRepoId: 'runjs_repo',
+          sourceHeadCommitId: 'runjs_commit',
+          entryPath: 'src/main.tsx',
+          version: 'v2',
+          files: [{ path: 'src/main.tsx', content: 'ctx.render(<div>Page</div>);' }],
+          destination: { type: 'existing', repoId: repo.id },
+          entryName: 'sales-page',
+        },
+        { adapterContext: {} },
+      ),
+    ).rejects.toThrow('compile failed');
+    expect(writeExternalBinding).not.toHaveBeenCalled();
+    expect(syncReferences).not.toHaveBeenCalled();
+  });
+
   it('keeps destination and host writes under one rejected transaction when binding fails', async () => {
     const transaction = { id: 'tx_rollback' } as unknown as Transaction;
     let committed = false;
     const saveSource = vi.fn(async () => ({ repo, commit: {}, tree: {}, compile: {}, diagnostics: [] }));
+    const movedPageEntry = {
+      ...entry,
+      kind: 'js-page' as const,
+      entryPath: 'src/client/js-pages/sales-kpi/index.ts',
+      descriptorPath: 'src/client/js-pages/sales-kpi/entry.json',
+    };
     const service = createFailureService({
       transaction,
+      modelUse: 'JSPageModel',
+      movedEntry: movedPageEntry,
       saveSource,
       writeExternalBinding: vi.fn(async () => {
         throw new Error('host binding failed');
@@ -545,9 +652,13 @@ function createFailureService(options: {
   ownerFingerprint?: string;
   surfaceStyle?: 'render' | 'action' | 'value';
   transaction?: Transaction;
+  destinationRepo?: LightExtensionRepoRecord;
+  modelUse?: string;
+  movedEntry?: LightExtensionEntryRecord;
   saveSource: ReturnType<typeof vi.fn>;
   writeExternalBinding?: ReturnType<typeof vi.fn>;
   assertCanWrite?: ReturnType<typeof vi.fn>;
+  syncReferences?: ReturnType<typeof vi.fn>;
   onTransactionSuccess?: () => void;
 }): MoveSourceService {
   const transaction = options.transaction || ({ id: 'tx_failure' } as unknown as Transaction);
@@ -561,13 +672,18 @@ function createFailureService(options: {
         },
       },
     } as unknown as Database,
-    { lockInternalRepoForUpdate: vi.fn() } as never,
+    { lockInternalRepoForUpdate: vi.fn(async () => options.destinationRepo || repo) } as never,
     {
       pull: vi.fn(async () => ({ repo, commit: null, tree: null, unchanged: false, files: [] })),
     } as never,
-    { listEntries: vi.fn().mockResolvedValueOnce([]).mockResolvedValueOnce([entry]) } as never,
+    {
+      listEntries: vi
+        .fn()
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([options.movedEntry || entry]),
+    } as never,
     { saveSource: options.saveSource } as never,
-    { syncFlowModelReferencesForNodeTree: vi.fn() } as never,
+    { syncFlowModelReferencesForNodeTree: options.syncReferences || vi.fn() } as never,
     () =>
       ({
         require: () => ({
@@ -580,7 +696,7 @@ function createFailureService(options: {
             surfaceStyle: options.surfaceStyle || 'render',
             language: 'typescript',
             ownerFingerprint: options.ownerFingerprint || 'owner_before',
-            metadata: { modelUse: 'JSBlockModel' },
+            metadata: { modelUse: options.modelUse || 'JSBlockModel' },
           })),
           writeExternalBinding:
             options.writeExternalBinding || vi.fn(async () => ({ ownerFingerprint: 'owner_after' })),

@@ -14,7 +14,10 @@ import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
 
-import { JSBlockLightExtensionSourceField } from '../components/JSBlockLightExtensionSourceField';
+import {
+  JSBlockLightExtensionSourceField,
+  JSPageLightExtensionSourceField,
+} from '../components/JSBlockLightExtensionSourceField';
 
 const mocks = vi.hoisted(() => ({
   request: vi.fn(),
@@ -73,6 +76,7 @@ vi.mock('../pages/LightExtensionWorkspacePage', () => {
 const SchemaField = createSchemaField({
   components: {
     JSBlockLightExtensionSourceField,
+    JSPageLightExtensionSourceField,
   },
 });
 
@@ -138,6 +142,35 @@ describe('JSBlockLightExtensionSourceField save behavior', () => {
     expect(form.values.code).toBe('ctx.render("keep inline");');
     expect(form.values.version).toBe('v2');
   });
+
+  it('keeps the complete JS Page inline snapshot while editing its external binding', async () => {
+    mocks.request.mockResolvedValueOnce({
+      data: {
+        data: [createSelectableEntry('js-page')],
+      },
+    });
+    const form = createForm({
+      initialValues: {
+        sourceMode: 'light-extension',
+        sourceBinding: createSourceBinding('js-page'),
+        settings: { title: 'Kept settings' },
+        code: 'ctx.render(<div>Keep page</div>);',
+        version: 'v2',
+        sourceRef: 'inline-page-ref',
+      },
+    });
+
+    renderSourceBindingField(form, {}, 'JSPageLightExtensionSourceField');
+
+    await waitFor(() => expect(screen.getByText('Required settings are complete')).toBeTruthy());
+
+    expect(form.values).toMatchObject({
+      code: 'ctx.render(<div>Keep page</div>);',
+      version: 'v2',
+      sourceRef: 'inline-page-ref',
+      settings: { title: 'Kept settings' },
+    });
+  });
 });
 
 function renderSourceField(form: ReturnType<typeof createForm>) {
@@ -157,7 +190,11 @@ function renderSourceField(form: ReturnType<typeof createForm>) {
   );
 }
 
-function renderSourceBindingField(form: ReturnType<typeof createForm>, componentProps: Record<string, unknown> = {}) {
+function renderSourceBindingField(
+  form: ReturnType<typeof createForm>,
+  componentProps: Record<string, unknown> = {},
+  component = 'JSBlockLightExtensionSourceField',
+) {
   return renderWithEngine(
     form,
     <SchemaField
@@ -170,7 +207,7 @@ function renderSourceBindingField(form: ReturnType<typeof createForm>, component
           },
           sourceBinding: {
             type: 'object',
-            'x-component': 'JSBlockLightExtensionSourceField',
+            'x-component': component,
             'x-component-props': componentProps,
           },
         },
@@ -194,24 +231,25 @@ function renderWithEngine(form: ReturnType<typeof createForm>, children: React.R
   );
 }
 
-function createSourceBinding() {
+function createSourceBinding(kind: 'js-block' | 'js-page' = 'js-block') {
   return {
     type: 'light-extension-entry',
     repoId: 'repo_sales',
     entryId: 'entry_sales',
-    kind: 'js-block',
+    kind,
   };
 }
 
-function createSelectableEntry() {
+function createSelectableEntry(kind: 'js-block' | 'js-page' = 'js-block') {
+  const root = kind === 'js-page' ? 'js-pages' : 'js-blocks';
   return {
     id: 'entry_sales',
     repoId: 'repo_sales',
     target: 'client',
-    kind: 'js-block',
+    kind,
     entryName: 'sales',
-    entryPath: 'src/client/js-blocks/sales/index.tsx',
-    descriptorPath: 'src/client/js-blocks/sales/entry.json',
+    entryPath: `src/client/${root}/sales/index.tsx`,
+    descriptorPath: `src/client/${root}/sales/entry.json`,
     title: 'Sales',
     description: null,
     category: null,

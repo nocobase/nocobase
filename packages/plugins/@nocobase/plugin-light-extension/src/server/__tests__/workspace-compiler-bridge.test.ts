@@ -286,7 +286,7 @@ describe('plugin-light-extension workspace compiler bridge', () => {
     expect(dataChanged.artifact.code).not.toBe(initial.artifact.code);
   });
 
-  it('rejects SDK type imports when the repository omits its declaration file', async () => {
+  it('erases SDK authoring types while preserving zero-runtime helpers', async () => {
     const result = await bridge.compileEntry({
       repoId: 'ler_sales',
       entryId: 'lee_sales_kpi',
@@ -303,12 +303,30 @@ describe('plugin-light-extension workspace compiler bridge', () => {
       ],
     });
 
+    expect(result.accepted).toBe(true);
+    expect(result.diagnostics).toEqual([]);
+    expect(result.artifact.code).not.toContain('@nocobase/light-extension-sdk/client');
+    expect(result.artifact.code).toContain('function defineSettings');
+  });
+
+  it('keeps unknown SDK authoring types as compile errors', async () => {
+    const result = await bridge.compileEntry({
+      repoId: 'ler_sales',
+      kind: 'js-block',
+      entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+      files: [
+        {
+          path: 'src/client/js-blocks/sales-kpi/index.tsx',
+          content:
+            'import type { MissingContext } from "@nocobase/light-extension-sdk/client";\nctx.render(null as unknown as MissingContext);\n',
+        },
+      ],
+    });
+
     expect(result.accepted).toBe(false);
-    expect(result.failureCode).toBe('RUNJS_COMPILE_FAILED');
     expect(result.diagnostics).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          path: 'src/client/js-blocks/sales-kpi/index.tsx',
           message: expect.stringContaining("Cannot find module '@nocobase/light-extension-sdk/client'"),
         }),
       ]),

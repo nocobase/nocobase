@@ -94,7 +94,7 @@ export class LightExtensionWorkspaceCompilerBridge {
     const compilerSurfaceStyle = surface.compilerSurfaceStyle;
     const runtimeFiles = filterCurrentEntryDescriptor(input);
     const compiled = await compileRunJSSourceWorkspace({
-      files: prepareLightExtensionCompileFiles(runtimeFiles),
+      files: prepareLightExtensionCompileFiles(runtimeFiles, input.kind),
       entry: input.entryPath,
       runtimeVersion: input.runtimeVersion || 'v2',
       surfaceStyle: compilerSurfaceStyle,
@@ -348,6 +348,7 @@ function normalizeSourcePath(path: string): string {
 
 function prepareLightExtensionCompileFiles(
   files: LightExtensionWorkspaceCompileFileInput[],
+  kind: LightExtensionKind,
 ): LightExtensionWorkspaceCompileFileInput[] {
   return files.map((file) => {
     if (!file.content || !isCompileCodeFile(file.path)) {
@@ -356,7 +357,11 @@ function prepareLightExtensionCompileFiles(
 
     return {
       ...file,
-      content: rewriteLightExtensionSdkRuntimeImports(file.path, file.content),
+      content: rewriteLightExtensionSettingsTypeImports(
+        file.path,
+        rewriteLightExtensionSdkRuntimeImports(file.path, file.content),
+        kind,
+      ),
     };
   });
 }
@@ -389,7 +394,7 @@ export function rewriteLightExtensionSdkRuntimeImports(path: string, content: st
     if (!specifier || !allowedCompileSdkImports.has(specifier)) {
       continue;
     }
-    const replacement = buildSdkImportReplacement(statement, sourceFile, specifier);
+    const replacement = buildSdkImportReplacement(statement, sourceFile);
     if (!replacement) {
       continue;
     }
@@ -407,11 +412,7 @@ export function rewriteLightExtensionSdkRuntimeImports(path: string, content: st
   return `${output}${content.slice(cursor)}`;
 }
 
-function buildSdkImportReplacement(
-  statement: ts.ImportDeclaration,
-  sourceFile: ts.SourceFile,
-  specifier: string,
-): string | null {
+function buildSdkImportReplacement(statement: ts.ImportDeclaration, sourceFile: ts.SourceFile): string | null {
   const importClause = statement.importClause;
   if (!importClause || importClause.name || !importClause.namedBindings) {
     return null;
@@ -420,12 +421,16 @@ function buildSdkImportReplacement(
     return null;
   }
 
-  const typeImports: string[] = [];
+  const typeDeclarations: string[] = [];
   const helperDeclarations: string[] = [];
   for (const element of importClause.namedBindings.elements) {
     const importedName = element.propertyName?.text || element.name.text;
     if (importClause.isTypeOnly || element.isTypeOnly) {
-      typeImports.push(formatTypeOnlyImportElement(element));
+      const declaration = buildSdkTypeDeclaration(importedName, element.name.text);
+      if (!declaration) {
+        return null;
+      }
+      typeDeclarations.push(declaration);
       continue;
     }
     if (!allowedCompileSdkRuntimeHelpers.has(importedName)) {
@@ -434,14 +439,12 @@ function buildSdkImportReplacement(
     helperDeclarations.push(`function ${element.name.text}(value) { return value; }`);
   }
 
-  if (!helperDeclarations.length) {
+  if (!typeDeclarations.length && !helperDeclarations.length) {
     return null;
   }
 
   const replacement: string[] = [];
-  if (typeImports.length) {
-    replacement.push(`import type { ${typeImports.join(', ')} } from "${specifier}";`);
-  }
+  replacement.push(...typeDeclarations);
   replacement.push(...helperDeclarations);
 
   return preserveStatementLineCount(
@@ -455,12 +458,87 @@ function preserveStatementLineCount(replacement: string, original: string): stri
   return `${replacement}${'\n'.repeat(originalLineBreaks)}`;
 }
 
-function formatTypeOnlyImportElement(element: ts.ImportSpecifier): string {
-  if (element.propertyName) {
-    return `${element.propertyName.text} as ${element.name.text}`;
+function buildSdkTypeDeclaration(importedName: string, localName: string): string | null {
+  if (importedName === 'LightExtensionRecord') {
+    return `type ${localName} = Record<string, unknown>;`;
+  }
+  if (importedName === 'JSPageRuntimeFacade') {
+    return `type ${localName} = { readonly uid: string; readonly active: boolean; refresh(): Promise<void>; setDocumentTitle(title: string): void };`;
+  }
+  if (importedName === 'JSFieldContext' || importedName === 'JSItemContext') {
+    return `type ${localName}<TSettings = Record<string, unknown>, TValue = unknown> = typeof ctx & { settings: TSettings; value?: TValue };`;
+  }
+  if (importedName === 'RunJSContext') {
+    return `type ${localName}<TSettings = Record<string, unknown>, TInput = unknown> = typeof ctx & { settings: TSettings; input?: TInput };`;
+  }
+  if (
+    importedName === 'LightExtensionSettingsContext' ||
+    importedName === 'LightExtensionDataContext' ||
+    importedName === 'JSBlockContext' ||
+    importedName === 'JSPageContext' ||
+    importedName === 'JSActionContext'
+  ) {
+    return `type ${localName}<TSettings = Record<string, unknown>> = typeof ctx & { settings: TSettings };`;
+  }
+  return null;
+}
+
+function rewriteLightExtensionSettingsTypeImports(path: string, content: string, kind: LightExtensionKind): string {
+  const sourceFile = ts.createSourceFile(
+    path,
+    content,
+    ts.ScriptTarget.Latest,
+    true,
+    path.endsWith('.tsx') ? ts.ScriptKind.TSX : path.endsWith('.jsx') ? ts.ScriptKind.JSX : ts.ScriptKind.TS,
+  );
+  const prefix = `light-extension:settings/client/${kind}/`;
+  const replacements: Array<{ start: number; end: number; value: string }> = [];
+
+  for (const statement of sourceFile.statements) {
+    if (
+      !ts.isImportDeclaration(statement) ||
+      !ts.isStringLiteral(statement.moduleSpecifier) ||
+      !statement.moduleSpecifier.text.startsWith(prefix)
+    ) {
+      continue;
+    }
+    const importClause = statement.importClause;
+    if (!importClause?.isTypeOnly || !importClause.namedBindings || !ts.isNamedImports(importClause.namedBindings)) {
+      continue;
+    }
+    const declarations: string[] = [];
+    let supported = true;
+    for (const element of importClause.namedBindings.elements) {
+      const importedName = element.propertyName?.text || element.name.text;
+      if (importedName === 'Context' || importedName === 'SettingsContext') {
+        declarations.push(`type ${element.name.text} = typeof ctx & { settings: Record<string, unknown> };`);
+      } else if (importedName === 'Settings' || importedName === 'SettingsSchemaSummary') {
+        declarations.push(`type ${element.name.text} = Record<string, unknown>;`);
+      } else {
+        supported = false;
+        break;
+      }
+    }
+    if (!supported) {
+      continue;
+    }
+    replacements.push({
+      start: statement.getStart(sourceFile),
+      end: statement.end,
+      value: preserveStatementLineCount(
+        declarations.join(' '),
+        sourceFile.text.slice(statement.getStart(sourceFile), statement.end),
+      ),
+    });
   }
 
-  return element.name.text;
+  return replacements
+    .sort((left, right) => right.start - left.start)
+    .reduce(
+      (current, replacement) =>
+        `${current.slice(0, replacement.start)}${replacement.value}${current.slice(replacement.end)}`,
+      content,
+    );
 }
 
 function getStringLiteralImportSpecifier(node: ts.Expression): string | null {

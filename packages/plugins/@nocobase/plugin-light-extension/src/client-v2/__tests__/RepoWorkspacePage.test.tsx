@@ -1522,17 +1522,17 @@ describe('LightExtensionWorkspacePage', () => {
 
     await screen.findByTestId('runjs-code-tab');
     fireEvent.click(screen.getByRole('button', { name: 'New default file' }));
-    expect(await screen.findByText('src/client/js-fields/status-tag/index.tsx')).toBeInTheDocument();
+    expect(await screen.findByText('src/client/js-pages/hello-page/index.tsx')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Save/ }));
-    await confirmSaveVersion('Add JS field example');
+    await confirmSaveVersion('Add JS page example');
 
     await waitFor(() => expect(mocks.api.saveSource).toHaveBeenCalledTimes(1));
     expect(mocks.api.saveSource.mock.calls[0][0].files).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          path: 'src/client/js-fields/status-tag/index.tsx',
+          path: 'src/client/js-pages/hello-page/index.tsx',
           content: DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES.find(
-            (file) => file.path === 'src/client/js-fields/status-tag/index.tsx',
+            (file) => file.path === 'src/client/js-pages/hello-page/index.tsx',
           )?.content,
           operation: 'upsert',
         }),
@@ -1578,7 +1578,7 @@ describe('LightExtensionWorkspacePage', () => {
 
     await screen.findByTestId('runjs-code-tab');
     fireEvent.click(screen.getByRole('button', { name: 'New default folder' }));
-    expect(await screen.findByText('src/client/js-fields')).toBeInTheDocument();
+    expect(await screen.findByText('src/client/js-pages')).toBeInTheDocument();
   });
 
   it('injects generated multi-entry settings type files into the source workspace editor', async () => {

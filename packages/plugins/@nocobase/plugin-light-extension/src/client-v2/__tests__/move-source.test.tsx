@@ -13,7 +13,10 @@ import { message } from 'antd';
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { MoveSourceToLightExtension } from '../components/MoveSourceToLightExtension';
+import {
+  createMoveSourceToLightExtensionContribution,
+  MoveSourceToLightExtension,
+} from '../components/MoveSourceToLightExtension';
 
 vi.mock('../locale', () => ({
   useT: () => (key: string) => key,
@@ -22,6 +25,7 @@ vi.mock('../locale', () => ({
 describe('MoveSourceToLightExtension', () => {
   it.each([
     ['JSBlockModel', 'JS Block name'],
+    ['JSPageModel', 'JS page name'],
     ['JSActionModel', 'JS Action name'],
     ['JSRecordActionModel', 'JS Action name'],
     ['JSCollectionActionModel', 'JS Action name'],
@@ -45,6 +49,7 @@ describe('MoveSourceToLightExtension', () => {
 
   it.each([
     ['js-block', 'JS Block name'],
+    ['js-page', 'JS page name'],
     ['js-action', 'JS Action name'],
     ['js-field', 'JS Field name'],
     ['js-item', 'JS Item name'],
@@ -111,6 +116,39 @@ describe('MoveSourceToLightExtension', () => {
     expect(screen.queryByRole('button', { name: 'Move to light extension' })).toBeNull();
   });
 
+  it('only contributes the Move action for writable JS Page sources', () => {
+    const contribution = createMoveSourceToLightExtensionContribution({ request: vi.fn() });
+    const context = createContext(vi.fn());
+    context.workspace.source.metadata = { modelUse: 'JSPageModel' };
+
+    expect(contribution.isVisible?.(context)).toBe(true);
+    context.readOnly = true;
+    expect(contribution.isVisible?.(context)).toBe(false);
+    context.readOnly = false;
+    context.workspace.permissions.canWrite = false;
+    expect(contribution.isVisible?.(context)).toBe(false);
+  });
+
+  it('only offers enabled destination repositories', async () => {
+    const request = vi.fn(async () => ({
+      data: {
+        data: [
+          { ...createRepoSummary('enabled'), id: 'ler_enabled', name: 'enabled-repo' },
+          { ...createRepoSummary('disabled'), id: 'ler_disabled', name: 'disabled-repo' },
+          { ...createRepoSummary('archived'), id: 'ler_archived', name: 'archived-repo' },
+        ],
+      },
+    }));
+
+    render(<MoveSourceToLightExtension api={{ request }} context={createContext(vi.fn())} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Move to light extension' }));
+    fireEvent.mouseDown(await screen.findByRole('combobox'));
+    expect(await screen.findByText('enabled-repo')).toBeTruthy();
+    expect(screen.queryByText('disabled-repo')).toBeNull();
+    expect(screen.queryByText('archived-repo')).toBeNull();
+  });
+
   it('submits the current unsaved workspace to an existing light extension', async () => {
     const onExternalBindingPersisted = vi.fn(async () => undefined);
     const request = vi.fn(async ({ url }: { url: string }) => {
@@ -141,9 +179,9 @@ describe('MoveSourceToLightExtension', () => {
                 type: 'light-extension-entry',
                 repoId: 'ler_existing',
                 entryId: 'lee_sales_kpi',
-                entryName: 'js-block-write-javascript',
-                entryPath: 'src/client/js-blocks/js-block-write-javascript/index.tsx',
-                kind: 'js-block',
+                entryName: 'sales-page',
+                entryPath: 'src/client/js-pages/sales-page/index.tsx',
+                kind: 'js-page',
               },
               ownerFingerprint: 'owner_after',
             },
@@ -153,6 +191,8 @@ describe('MoveSourceToLightExtension', () => {
       throw new Error(`Unexpected request: ${url}`);
     });
     const context = createContext(onExternalBindingPersisted);
+    context.workspace.source.metadata = { modelUse: 'JSPageModel' };
+    context.workspace.source.label = 'JavaScript page / Write JavaScript';
 
     render(<MoveSourceToLightExtension api={{ request }} context={context} />);
 
@@ -160,7 +200,7 @@ describe('MoveSourceToLightExtension', () => {
     await waitFor(() =>
       expect(request).toHaveBeenCalledWith(expect.objectContaining({ url: 'lightExtensionRepos:list' })),
     );
-    fireEvent.change(screen.getByLabelText('JS Block name'), { target: { value: 'Sales KPI' } });
+    fireEvent.change(screen.getByLabelText('JS page name'), { target: { value: 'Sales page' } });
     fireEvent.mouseDown(screen.getByRole('combobox'));
     fireEvent.click(await screen.findByText('Shared tools'));
     fireEvent.click(screen.getByRole('button', { name: 'Move' }));
@@ -175,8 +215,8 @@ describe('MoveSourceToLightExtension', () => {
             sourceHeadCommitId: 'runjs_commit',
             destination: { type: 'existing', repoId: 'ler_existing' },
             files: [expect.objectContaining({ content: 'return unsaved;' })],
-            entryName: 'sales-kpi',
-            entryTitle: 'Sales KPI',
+            entryName: 'sales-page',
+            entryTitle: 'Sales page',
           }),
         }),
       );
@@ -184,7 +224,11 @@ describe('MoveSourceToLightExtension', () => {
     expect(onExternalBindingPersisted).toHaveBeenCalledWith(
       expect.objectContaining({
         sourceMode: 'light-extension',
-        sourceBinding: expect.objectContaining({ entryId: 'lee_sales_kpi' }),
+        sourceBinding: expect.objectContaining({
+          entryId: 'lee_sales_kpi',
+          entryPath: 'src/client/js-pages/sales-page/index.tsx',
+          kind: 'js-page',
+        }),
       }),
     );
   });
@@ -203,9 +247,9 @@ describe('MoveSourceToLightExtension', () => {
                 type: 'light-extension-entry',
                 repoId: 'ler_new',
                 entryId: 'lee_new',
-                entryName: 'js-block-write-javascript',
-                entryPath: 'src/client/js-blocks/js-block-write-javascript/index.tsx',
-                kind: 'js-block',
+                entryName: 'sales-page',
+                entryPath: 'src/client/js-pages/sales-page/index.tsx',
+                kind: 'js-page',
               },
             },
           },
@@ -214,7 +258,10 @@ describe('MoveSourceToLightExtension', () => {
       throw new Error(`Unexpected request: ${url}`);
     });
 
-    render(<MoveSourceToLightExtension api={{ request }} context={createContext(onExternalBindingPersisted)} />);
+    const context = createContext(onExternalBindingPersisted);
+    context.workspace.source.metadata = { modelUse: 'JSPageModel' };
+    context.workspace.source.label = 'JavaScript page / Write JavaScript';
+    render(<MoveSourceToLightExtension api={{ request }} context={context} />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Move to light extension' }));
     await screen.findByLabelText('Light extension name');
@@ -222,7 +269,7 @@ describe('MoveSourceToLightExtension', () => {
     expect(screen.queryByLabelText('Entry name')).toBeNull();
     expect(screen.queryByLabelText('Entry title')).toBeNull();
     fireEvent.change(screen.getByLabelText('Light extension name'), { target: { value: '销售工具' } });
-    fireEvent.change(screen.getByLabelText('JS Block name'), { target: { value: '销售看板' } });
+    fireEvent.change(screen.getByLabelText('JS page name'), { target: { value: '销售页面' } });
     fireEvent.click(screen.getByRole('button', { name: 'Move' }));
 
     await waitFor(() => {
@@ -235,8 +282,8 @@ describe('MoveSourceToLightExtension', () => {
               name: expect.stringMatching(/^light-extension-[a-z0-9]+$/),
               title: '销售工具',
             },
-            entryName: expect.stringMatching(/^js-block-[a-z0-9]+$/),
-            entryTitle: '销售看板',
+            entryName: expect.stringMatching(/^js-page-[a-z0-9]+$/),
+            entryTitle: '销售页面',
           }),
         }),
       );
@@ -343,5 +390,16 @@ function createContext(
     version: 'v2',
     readOnly: false,
     onExternalBindingPersisted,
+  };
+}
+
+function createRepoSummary(lifecycleStatus: 'enabled' | 'disabled' | 'archived') {
+  return {
+    id: `ler_${lifecycleStatus}`,
+    name: `${lifecycleStatus}-repo`,
+    normalizedName: `${lifecycleStatus}-repo`,
+    lifecycleStatus,
+    healthStatus: 'ready' as const,
+    headCommitId: 'commit_1',
   };
 }

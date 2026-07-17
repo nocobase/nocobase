@@ -70,7 +70,8 @@ export function createMoveSourceToLightExtensionContribution(api: ApiClientLike)
   return {
     key: '@nocobase/plugin-light-extension/move-source',
     order: 50,
-    isVisible: (context) => !context.readOnly && Boolean(resolveLightExtensionKind(context)),
+    isVisible: (context) =>
+      !context.readOnly && context.workspace.permissions.canWrite && Boolean(resolveLightExtensionKind(context)),
     component: Contribution,
   };
 }
@@ -93,7 +94,7 @@ export const MoveSourceToLightExtension: React.FC<{
     setLoadingRepos(true);
     try {
       const items = await listLightExtensionRepos(api);
-      setRepos(items.filter((repo) => repo.lifecycleStatus !== 'archived'));
+      setRepos(items.filter((repo) => repo.lifecycleStatus === 'enabled'));
       return items;
     } catch (error) {
       message.error(formatError(error, t('Failed to load repositories')));
@@ -115,7 +116,7 @@ export const MoveSourceToLightExtension: React.FC<{
     });
     setOpen(true);
     const loadedRepos = await loadRepos();
-    const selectableRepos = loadedRepos.filter((repo) => repo.lifecycleStatus !== 'archived');
+    const selectableRepos = loadedRepos.filter((repo) => repo.lifecycleStatus === 'enabled');
     if (selectableRepos.length === 0) {
       form.setFieldValue('destinationType', 'new');
     }

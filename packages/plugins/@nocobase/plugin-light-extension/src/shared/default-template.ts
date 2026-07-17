@@ -10,19 +10,21 @@
 import type { LightExtensionTreeEntryInput } from './types';
 
 import { DEFAULT_COLLECTION_BLOCK_TEMPLATE_FILES } from './default-template-collection-blocks';
+import { DEFAULT_JS_PAGE_TEMPLATE_FILES } from './default-template-js-pages';
 
 export const DEFAULT_LIGHT_EXTENSION_README = `# Light extension source
 
 Put each reusable entry in its own directory:
 
 - JS Block: \`src/client/js-blocks/<entry-name>/index.tsx\`
+- JS Page: \`src/client/js-pages/<entry-name>/index.tsx\`
 - JS Action: \`src/client/js-actions/<entry-name>/index.ts\`
 - JS Field: \`src/client/js-fields/<entry-name>/index.tsx\`
 - JS Item / JS Entry: \`src/client/js-items/<entry-name>/index.tsx\`
 - JS Column: reuse \`src/client/js-fields/<entry-name>/index.tsx\` because JS Field and JS Column share the same light-extension kind
 - RunJS value: \`src/client/runjs/<entry-name>/index.ts\`
 
-Light Extension supports JS Block, JS Field (including JS Column), JS Action, JS Item, and value-return RunJS entries.
+Light Extension supports JS Page, JS Block, JS Field (including JS Column), JS Action, JS Item, and value-return RunJS entries.
 
 An entry can use \`index.ts\`, \`index.tsx\`, \`index.js\`, or \`index.jsx\`. Keep entry-specific modules in the same entry directory. Put modules shared by multiple entries in \`src/shared/\`.
 
@@ -33,6 +35,8 @@ When \`entry.json.settings\` defines fields, every property is shown as an indep
 Do not add a \`$schema\` field. Authoring and runtime validation use the bundled contract directly and never probe a Schema URL over the network.
 
 Use \`@nocobase/light-extension-sdk/client\` and \`@nocobase/light-extension-sdk/shared\` for explicit authoring types. Entry settings types are generated from \`entry.json.settings\` by the authoring workspace.
+
+Wrap runtime-visible strings with \`ctx.t()\`; the hello-page example uses keys supplied by the host application's locale catalog.
 `;
 
 export const LIGHT_EXTENSION_TSCONFIG_CONTENT =
@@ -53,6 +57,7 @@ export const BASE_LIGHT_EXTENSION_TEMPLATE_FILES: readonly LightExtensionTreeEnt
 
 export const DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES: readonly LightExtensionTreeEntryInput[] = [
   ...BASE_LIGHT_EXTENSION_TEMPLATE_FILES,
+  ...DEFAULT_JS_PAGE_TEMPLATE_FILES,
   {
     path: 'src/client/js-blocks/welcome-card/index.tsx',
     content: `const { Card, Space, Tag, Typography } = ctx.libs.antd;

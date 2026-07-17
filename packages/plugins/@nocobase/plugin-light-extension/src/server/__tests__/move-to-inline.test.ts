@@ -79,6 +79,8 @@ describe('MoveToInlineService', () => {
     ['js-field', 'JSColumnModel', true],
     ['js-action', 'JSActionModel', true],
     ['js-item', 'JSItemModel', true],
+    ['js-page', 'JSPageModel', true],
+    ['js-page', 'JSBlockModel', false],
     ['js-block', 'JSColumnModel', false],
     ['runjs', 'JSColumnModel', false],
   ])('checks whether %s can move from %s back to inline code', (kind, modelUse, expected) => {
@@ -162,20 +164,25 @@ describe('MoveToInlineService', () => {
     expect(files.some((file) => file.path.includes('/other/'))).toBe(false);
   });
 
-  it('rewrites supported light extension SDK runtime helpers in copied source', () => {
+  it('rewrites JS Page SDK and settings types without touching other kind imports or source text', () => {
+    const pageEntryPath = 'src/client/js-pages/orders/index.tsx';
     const files = collectAndRelocateInlineFiles({
-      entryPath: entry.entryPath,
+      entryPath: pageEntryPath,
+      kind: 'js-page',
       files: [
         {
-          path: entry.entryPath,
+          path: pageEntryPath,
           content:
-            'import { type JSBlockContext, defineSettings } from "@nocobase/light-extension-sdk/client";\n' +
+            'import { type JSPageContext, defineSettings } from "@nocobase/light-extension-sdk/client";\n' +
             'import type * as SDK from "@nocobase/light-extension-sdk/shared";\n' +
-            'import type { Settings } from "light-extension:settings/client/js-block/sales";\n' +
-            'type ImportedSettings = import("light-extension:settings/client/js-block/sales").Settings;\n' +
-            'type ImportedContext = import("@nocobase/light-extension-sdk/client").JSBlockContext<ImportedSettings>;\n' +
+            'import type { Settings } from "light-extension:settings/client/js-page/orders";\n' +
+            'import type { Settings as BlockSettings } from "light-extension:settings/client/js-block/sales";\n' +
+            'type ImportedSettings = import("light-extension:settings/client/js-page/orders").Settings;\n' +
+            'type ImportedContext = import("@nocobase/light-extension-sdk/client").JSPageContext<ImportedSettings>;\n' +
+            'const untouched = "light-extension:settings/client/js-page/orders";\n' +
+            '// light-extension:settings/client/js-page/orders\n' +
             'const settings = defineSettings({ enabled: true });\n' +
-            'export default function render(context: JSBlockContext<Settings>, shared: SDK.LightExtensionSettingsContext<ImportedSettings>, imported: ImportedContext) { ctx.render([context.settings, shared.settings, imported.settings]); }\n',
+            'export default function render(context: JSPageContext<Settings>, shared: SDK.JSPageContext<ImportedSettings>, imported: ImportedContext, block: BlockSettings) { ctx.render([context.page, shared.page, imported.page, block, untouched]); }\n',
         },
       ],
     });
@@ -184,10 +191,12 @@ describe('MoveToInlineService', () => {
     expect(code).toContain('function defineSettings(value) { return value; }');
     expect(code).not.toContain('import { defineSettings }');
     expect(code).not.toContain('@nocobase/light-extension-sdk/');
-    expect(code).not.toContain('light-extension:settings/');
-    expect(code).toContain('type JSBlockContext<TSettings = Record<string, unknown>, TValue = unknown>');
+    expect(code).toContain('light-extension:settings/client/js-block/sales');
+    expect(code.match(/light-extension:settings\/client\/js-page\/orders/gu)).toHaveLength(2);
+    expect(code).toContain('type JSPageContext<TSettings = Record<string, unknown>>');
     expect(code).toContain('type Settings = Record<string, unknown>;');
     expect(code).toContain('declare namespace SDK');
+    expect(code).toContain('export type JSPageContext<TSettings = Record<string, unknown>>');
     expect(code).toContain('type ImportedSettings = Record<string, unknown>;');
     expect(code).toContain('type ImportedContext = (typeof ctx & { settings: ImportedSettings });');
   });
@@ -271,8 +280,25 @@ describe('MoveToInlineService', () => {
     expect(transaction).toHaveBeenCalledTimes(1);
   });
 
-  it('persists the inline RunJS workspace, clears the binding, and rebuilds references in one transaction', async () => {
+  it('moves a JS Page inline with its snapshot and settings while removing the active reference', async () => {
     const transaction = { LOCK: { UPDATE: 'UPDATE' } } as unknown as Transaction;
+    const pageLocator = { ...locator, modelUid: 'fm_js_page' };
+    const pageBinding = {
+      ...binding,
+      repoId: 'ler_pages',
+      entryId: 'lee_page',
+      kind: 'js-page' as const,
+    };
+    const pageEntry = {
+      ...entry,
+      id: pageBinding.entryId,
+      repoId: pageBinding.repoId,
+      kind: 'js-page' as const,
+      entryName: 'page',
+      entryPath: 'src/client/js-pages/page/index.tsx',
+      descriptorPath: 'src/client/js-pages/page/entry.json',
+      title: 'Page',
+    };
     const currentSettings = {
       enabled: false,
       retryCount: 0,
@@ -303,16 +329,22 @@ describe('MoveToInlineService', () => {
     )}\n`;
     const descriptorContent = `\ufeff${canonicalDescriptorContent.replace(/\n/gu, '\r\n')}`;
     const flowModel = {
-      uid: locator.modelUid,
-      use: 'JSBlockModel',
+      uid: pageLocator.modelUid,
+      use: 'JSPageModel',
       stepParams: {
         jsSettings: {
           runJs: {
             code: 'ctx.render("old");',
             version: 'v2',
             sourceMode: 'light-extension',
-            sourceBinding: { ...binding },
+            sourceBinding: { ...pageBinding },
             settings: currentSettings,
+            sourceRef: {
+              type: 'vsc-file',
+              repoId: 'old_inline_repo',
+              commitId: 'old_inline_commit',
+              entry: 'src/client/index.tsx',
+            },
           },
         },
       },
@@ -351,10 +383,10 @@ describe('MoveToInlineService', () => {
       accepted: true,
       diagnostics: [],
       surface: {
-        surface: 'js-block',
+        surface: 'js-page',
         surfaceStyle: 'render',
         compilerSurfaceStyle: 'render',
-        modelUse: 'JSBlockModel',
+        modelUse: 'JSPageModel',
       },
       artifact: {
         code: 'ctx.render("inline");',
@@ -366,18 +398,33 @@ describe('MoveToInlineService', () => {
       },
     }));
     const syncReferences = vi.fn(async () => undefined);
-    const writeRuntime = vi.fn(async () => ({ ownerFingerprint: 'owner_runtime' }));
+    const writeRuntime = vi.fn(
+      async (input: {
+        artifact: { code: string; version: string; entryPath?: string; metadata?: Record<string, unknown> };
+        commitId: string;
+      }) => {
+        flowModel.stepParams.jsSettings.runJs.code = input.artifact.code;
+        flowModel.stepParams.jsSettings.runJs.version = input.artifact.version;
+        flowModel.stepParams.jsSettings.runJs.sourceRef = {
+          type: 'vsc-file',
+          repoId: String(input.artifact.metadata?.repoId || ''),
+          commitId: input.commitId,
+          entry: String(input.artifact.entryPath || 'src/client/index.tsx'),
+        };
+        return { ownerFingerprint: 'owner_runtime' };
+      },
+    );
     const adapter = {
       kind: 'flowModel.step',
       assertCanWrite: vi.fn(async () => undefined),
       readLegacy: vi.fn(async () => ({
         code: 'ctx.render("old");',
         version: 'v2',
-        label: 'JS block',
+        label: 'JS page',
         surfaceStyle: 'render',
         language: 'typescript',
         ownerFingerprint: 'owner_before',
-        metadata: { modelUse: 'JSBlockModel' },
+        metadata: { modelUse: 'JSPageModel' },
       })),
       writeRuntime,
       getFingerprint: vi.fn(async () => 'owner_after'),
@@ -434,7 +481,7 @@ describe('MoveToInlineService', () => {
     } as unknown as VscFileService;
     const service = new MoveToInlineService(
       db,
-      { getEntry: vi.fn(async () => entry) } as never,
+      { getEntry: vi.fn(async () => pageEntry) } as never,
       { compileEntry } as never,
       { syncFlowModelReferencesForNodeTree: syncReferences } as never,
       () => vscFileService,
@@ -443,18 +490,18 @@ describe('MoveToInlineService', () => {
 
     const result = await service.moveToInline(
       {
-        locator,
-        repoId: binding.repoId,
-        entryId: binding.entryId,
-        entryPath: entry.entryPath,
-        kind: 'js-block',
+        locator: pageLocator,
+        repoId: pageBinding.repoId,
+        entryId: pageBinding.entryId,
+        entryPath: pageEntry.entryPath,
+        kind: 'js-page',
         version: 'v2',
         files: [
           {
-            path: entry.entryPath,
+            path: pageEntry.entryPath,
             content: "import { used } from '../../../shared/used';\nctx.render(String(used));\n",
           },
-          { path: entry.descriptorPath, content: descriptorContent, language: 'json' },
+          { path: pageEntry.descriptorPath, content: descriptorContent, language: 'json' },
           { path: 'src/shared/used.ts', content: 'export const used = true;\n' },
           { path: 'src/shared/unused.ts', content: 'export const unused = true;\n' },
         ],
@@ -530,13 +577,15 @@ describe('MoveToInlineService', () => {
       }),
     );
     expect(flowModel.stepParams.jsSettings.runJs).toMatchObject({
-      code: 'ctx.render("old");',
+      code: result.code,
+      version: result.version,
       sourceMode: 'inline',
+      sourceRef: result.sourceRef,
     });
     expect(flowModel.stepParams.jsSettings.runJs.settings).toEqual(currentSettings);
     expect(flowModel.stepParams.jsSettings.runJs).not.toHaveProperty('sourceBinding');
     expect(syncReferences).toHaveBeenCalledWith(
-      { rootUid: locator.modelUid, action: 'lightExtensions.moveToInline' },
+      { rootUid: pageLocator.modelUid, action: 'lightExtensions.moveToInline' },
       expect.objectContaining({ transaction }),
     );
     expect(updateCommit).toHaveBeenCalledWith(expect.objectContaining({ filterByTk: 'runjs_new_commit' }));

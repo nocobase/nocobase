@@ -217,7 +217,8 @@ export class MoveSourceService {
     commitMessage: string,
     ctx: LightExtensionServiceContext,
   ) {
-    await this.repoService.lockInternalRepoForUpdate(repoId, ctx);
+    const destinationRepo = await this.repoService.lockInternalRepoForUpdate(repoId, ctx);
+    assertDestinationRepoEnabled(destinationRepo);
     const current = await this.fileService.pull({ repoId, includeContent: 'none' }, ctx);
     const entryRoot = getEntryRoot(kind, entryName);
     if ((current.files || []).some((file) => file.path === entryRoot || file.path.startsWith(`${entryRoot}/`))) {
@@ -261,6 +262,24 @@ export class MoveSourceService {
     }
     return entry;
   }
+}
+
+function assertDestinationRepoEnabled(repo: LightExtensionMoveSourceResult['repo']): void {
+  if (repo.lifecycleStatus === 'enabled') {
+    return;
+  }
+  if (repo.lifecycleStatus === 'archived') {
+    throw new LightExtensionError(
+      'LIGHT_EXTENSION_REPO_ARCHIVED',
+      'Archived light extension repositories cannot receive moved source',
+      { details: { repoId: repo.id, lifecycleStatus: repo.lifecycleStatus } },
+    );
+  }
+  throw new LightExtensionError(
+    'LIGHT_EXTENSION_REPO_DISABLED',
+    'Disabled light extension repositories cannot receive moved source',
+    { details: { repoId: repo.id, lifecycleStatus: repo.lifecycleStatus } },
+  );
 }
 
 export function relocateRunJSWorkspace(input: {

@@ -10,6 +10,8 @@
 import type { Database } from '@nocobase/database';
 import { vi } from 'vitest';
 
+import enUS from '../../locale/en-US.json';
+import zhCN from '../../locale/zh-CN.json';
 import {
   DEFAULT_LIGHT_EXTENSION_README,
   DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES,
@@ -31,6 +33,7 @@ const asyncFunctionConstructor = Object.getPrototypeOf(async function runDefault
   .constructor as AsyncFunctionConstructor;
 
 const EXPECTED_ENTRY_PATHS = [
+  'src/client/js-pages/hello-page/index.tsx',
   'src/client/js-blocks/welcome-card/index.tsx',
   'src/client/js-blocks/collection-summary/index.tsx',
   'src/client/js-blocks/collection-table/index.tsx',
@@ -50,6 +53,7 @@ const EXPECTED_ENTRY_PATHS = [
   'src/client/runjs/calculate-subtotal/index.ts',
   'src/client/runjs/calculate-total-with-tax/index.ts',
 ] as const;
+const HELLO_PAGE_ENTRY_PATH = 'src/client/js-pages/hello-page/index.tsx';
 const COLLECTION_TABLE_ENTRY_PATH = 'src/client/js-blocks/collection-table/index.tsx';
 const COLLECTION_TABLE_SUPPORT_PATHS = [
   'src/client/js-blocks/collection-table/types.ts',
@@ -107,6 +111,7 @@ describe('plugin-light-extension default source template', () => {
 
     expect(paths).toEqual(expectedTemplatePaths);
     expect(diagnostics).toEqual([]);
+    expect(DEFAULT_LIGHT_EXTENSION_README).toContain('src/client/js-pages/<entry-name>/index.tsx');
     expect(DEFAULT_LIGHT_EXTENSION_README).toContain('src/client/js-blocks/<entry-name>/index.tsx');
     expect(DEFAULT_LIGHT_EXTENSION_README).toContain('src/client/js-actions/<entry-name>/index.ts');
     expect(DEFAULT_LIGHT_EXTENSION_README).toContain('src/client/js-fields/<entry-name>/index.tsx');
@@ -131,6 +136,7 @@ describe('plugin-light-extension default source template', () => {
         return counts;
       }, {}),
     ).toMatchObject({
+      'js-page': 1,
       'js-field': 2,
       'js-column': 2,
       'js-item': 2,
@@ -153,6 +159,37 @@ describe('plugin-light-extension default source template', () => {
     expect(files.filter((file) => file.path.endsWith('/entry.json')).every((file) => file.language === 'json')).toBe(
       true,
     );
+    const helloPage = files.find((file) => file.path === HELLO_PAGE_ENTRY_PATH);
+    const helloPageSource = helloPage?.content || '';
+    expect(helloPageSource).toContain(
+      "import type { JSPageContext, RunJSContext } from '@nocobase/light-extension-sdk/client';",
+    );
+    expect(helloPageSource).toContain(
+      "import type { Settings } from 'light-extension:settings/client/js-page/hello-page';",
+    );
+    expect(helloPageSource).toContain('RunJSContext & JSPageContext<Settings>');
+    expect(helloPageSource).toContain('ctx.libs.antd');
+    expect(helloPageSource).toContain('const settings = ctx.settings;');
+    expect(helloPageSource).toContain('await ctx.page.refresh();');
+    expect(helloPageSource).toContain('ctx.render(');
+    expect(helloPageSource).toContain("ctx.t('Refresh page')");
+    expect(helloPageSource).not.toMatch(/\b(?:any|Application|FlowModel|definePage|route|router)\b/u);
+    const helloPageDescriptor = JSON.parse(
+      files.find((file) => file.path === 'src/client/js-pages/hello-page/entry.json')?.content || '{}',
+    ) as Record<string, unknown>;
+    expect(helloPageDescriptor).toMatchObject({
+      category: 'js-page',
+      key: 'hello-page',
+      settings: {
+        title: { default: 'Hello from a JS Page', required: true, type: 'string' },
+        showDetails: { default: true, type: 'boolean' },
+        details: {
+          default: 'This page is rendered by a light extension.',
+          type: 'string',
+          'x-visible-when': { operator: '$eq', path: 'showDetails', value: true },
+        },
+      },
+    });
     const collectionSummary = files.find((file) => file.path === 'src/client/js-blocks/collection-summary/index.tsx');
     expect(collectionSummary?.content).toContain("ctx.initResource('MultiRecordResource');");
     expect(collectionSummary?.content).toContain('const resource = ctx.resource;');
@@ -272,6 +309,16 @@ describe('plugin-light-extension default source template', () => {
     expect(second[0].content).toBe(DEFAULT_LIGHT_EXTENSION_README);
   });
 
+  it('keeps the JS Page example locale keys in parity', () => {
+    expect(Object.keys(enUS).sort()).toEqual(Object.keys(zhCN).sort());
+    expect(enUS['Hello from a JS Page']).toBe('Hello from a JS Page');
+    expect(zhCN['Hello from a JS Page']).toBe('来自 JS 页面的问候');
+    expect(enUS['Refresh page']).toBe('Refresh page');
+    expect(zhCN['Refresh page']).toBe('刷新页面');
+    expect(enUS['This page is rendered by a light extension.']).toBe('This page is rendered by a light extension.');
+    expect(zhCN['This page is rendered by a light extension.']).toBe('此页面由轻插件渲染。');
+  });
+
   it('compiles every default example entry and exercises the collection block runtimes', async () => {
     const auditService = new LightExtensionAuditService({} as Database);
     vi.spyOn(auditService, 'recordCompileEvent').mockResolvedValue(undefined);
@@ -311,6 +358,7 @@ describe('plugin-light-extension default source template', () => {
 });
 
 function getKindFromEntryPath(entryPath: string): LightExtensionKind {
+  if (entryPath.startsWith('src/client/js-pages/')) return 'js-page';
   if (entryPath.startsWith('src/client/js-blocks/')) return 'js-block';
   if (entryPath.startsWith('src/client/js-actions/')) return 'js-action';
   if (entryPath.startsWith('src/client/js-fields/')) return 'js-field';

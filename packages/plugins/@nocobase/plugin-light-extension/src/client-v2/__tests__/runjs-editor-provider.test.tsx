@@ -68,6 +68,20 @@ vi.mock('../pages/LightExtensionWorkspacePage', () => {
       await onSaved?.();
       await onRequestClose?.();
     };
+    const moveWorkspaceToInline = async () => {
+      try {
+        await onMoveToInline?.({
+          entryPath: initialPath || '',
+          files: [
+            { path: initialPath || '', content: 'ctx.render(<div>working copy</div>);' },
+            { path: 'src/shared/format.ts', content: 'export const format = () => "ok";' },
+          ],
+          version: 'v2',
+        });
+      } catch {
+        // The real workspace reports copyback failures without closing the editor.
+      }
+    };
 
     React.useEffect(() => {
       onFooterActionsChange?.({
@@ -106,19 +120,7 @@ vi.mock('../pages/LightExtensionWorkspacePage', () => {
           </button>
         ) : null}
         {onMoveToInline ? (
-          <button
-            type="button"
-            onClick={() =>
-              onMoveToInline({
-                entryPath: initialPath || '',
-                files: [
-                  { path: initialPath || '', content: 'ctx.render(<div>working copy</div>);' },
-                  { path: 'src/shared/format.ts', content: 'export const format = () => "ok";' },
-                ],
-                version: 'v2',
-              })
-            }
-          >
+          <button type="button" onClick={moveWorkspaceToInline}>
             move workspace to inline
           </button>
         ) : null}
@@ -511,7 +513,7 @@ describe('RunJSLightExtensionEditorProvider', () => {
     expect(rerender).toHaveBeenCalledTimes(2);
   });
 
-  it('moves the current JS block workspace back to inline code and closes without restoring the old binding', async () => {
+  it('moves a JS Page workspace back to inline once while preserving settings and the new source snapshot', async () => {
     const provider = createRunJSLightExtensionEditorProvider();
     const onPersistedChange = vi.fn();
     const onClose = vi.fn();
@@ -530,8 +532,8 @@ describe('RunJSLightExtensionEditorProvider', () => {
                 id: 'lee_example',
                 repoId: 'ler_example',
                 entryName: 'example',
-                entryPath: 'src/client/js-blocks/example/index.tsx',
-                kind: 'js-block',
+                entryPath: 'src/client/js-pages/example/index.tsx',
+                kind: 'js-page',
                 title: 'Example',
               },
             },
@@ -564,10 +566,16 @@ describe('RunJSLightExtensionEditorProvider', () => {
         type: 'light-extension-entry' as const,
         repoId: 'ler_example',
         entryId: 'lee_example',
-        entryPath: 'src/client/js-blocks/example/index.tsx',
-        kind: 'js-block' as const,
+        entryPath: 'src/client/js-pages/example/index.tsx',
+        kind: 'js-page' as const,
       },
       settings: { title: 'Revenue' },
+      sourceRef: {
+        type: 'vsc-file' as const,
+        repoId: 'old_inline_repo',
+        commitId: 'old_inline_commit',
+        entry: 'src/client/index.tsx',
+      },
     };
 
     render(
@@ -576,11 +584,12 @@ describe('RunJSLightExtensionEditorProvider', () => {
           value,
           locator: {
             kind: 'flowModel.step',
-            modelUid: 'model_1',
+            modelUid: 'page_1',
             flowKey: 'jsSettings',
             stepKey: 'runJs',
             paramPath: ['code'],
           },
+          sourceMetadata: { lightExtensionKind: 'js-page', modelUse: 'JSPageModel' },
           surfaceStyle: 'render',
           onPersistedChange,
         })}
@@ -596,19 +605,19 @@ describe('RunJSLightExtensionEditorProvider', () => {
         data: {
           locator: {
             kind: 'flowModel.step',
-            modelUid: 'model_1',
+            modelUid: 'page_1',
             flowKey: 'jsSettings',
             stepKey: 'runJs',
             paramPath: ['code'],
           },
           repoId: 'ler_example',
           entryId: 'lee_example',
-          entryPath: 'src/client/js-blocks/example/index.tsx',
-          kind: 'js-block',
+          entryPath: 'src/client/js-pages/example/index.tsx',
+          kind: 'js-page',
           version: 'v2',
           files: [
             {
-              path: 'src/client/js-blocks/example/index.tsx',
+              path: 'src/client/js-pages/example/index.tsx',
               content: 'ctx.render(<div>working copy</div>);',
             },
             { path: 'src/shared/format.ts', content: 'export const format = () => "ok";' },
@@ -624,7 +633,74 @@ describe('RunJSLightExtensionEditorProvider', () => {
       sourceBinding: undefined,
       sourceRef,
     });
+    expect(onPersistedChange).toHaveBeenCalledTimes(1);
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the JS Page external binding when copyback fails', async () => {
+    const provider = createRunJSLightExtensionEditorProvider();
+    const onPersistedChange = vi.fn();
+    const onClose = vi.fn();
+    const api: ApiClientLike = {
+      request: vi.fn(async (options) => {
+        if (options.url === 'lightExtensionEntries:get') {
+          return {
+            data: {
+              data: {
+                id: 'lee_page',
+                repoId: 'ler_pages',
+                entryName: 'page',
+                entryPath: 'src/client/js-pages/page/index.tsx',
+                kind: 'js-page',
+              },
+            },
+          };
+        }
+        if (options.url === 'lightExtensions:moveToInline') {
+          throw new Error('copyback failed');
+        }
+        throw new Error(`Unexpected request: ${options.url}`);
+      }),
+    };
+    const value = {
+      code: 'ctx.render(ctx.page.uid);',
+      version: 'v2',
+      sourceMode: 'light-extension',
+      sourceBinding: {
+        type: 'light-extension-entry' as const,
+        repoId: 'ler_pages',
+        entryId: 'lee_page',
+        entryPath: 'src/client/js-pages/page/index.tsx',
+        kind: 'js-page' as const,
+      },
+      settings: { title: 'Page' },
+    };
+
+    render(
+      <EditorViewHarness api={api} onClose={onClose}>
+        {provider.renderEditor({
+          value,
+          locator: {
+            kind: 'flowModel.step',
+            modelUid: 'page_failed',
+            flowKey: 'jsSettings',
+            stepKey: 'runJs',
+            paramPath: ['code'],
+          },
+          sourceMetadata: { lightExtensionKind: 'js-page', modelUse: 'JSPageModel' },
+          surfaceStyle: 'render',
+          onPersistedChange,
+        })}
+      </EditorViewHarness>,
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: 'move workspace to inline' }));
+
+    await waitFor(() => {
+      expect(api.request).toHaveBeenCalledWith(expect.objectContaining({ url: 'lightExtensions:moveToInline' }));
+    });
+    expect(onPersistedChange).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
   });
 
   it('wraps inline light-extension-capable flow steps with entry.json schema and settings type resolvers', () => {
