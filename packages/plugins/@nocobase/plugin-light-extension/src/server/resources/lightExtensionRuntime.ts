@@ -65,11 +65,10 @@ function createLightExtensionArtifactAction(service: RuntimeResolveService, run:
   });
   return async (ctx, next) => {
     await action(ctx, async () => undefined);
-    const response = ctx as RuntimeResponseContext;
-    if (response.status < 400 && isArtifactBody(response.body)) {
-      response.withoutDataWrapping = true;
-      setHeaders(response, {
-        ETag: `"${response.body.artifactHash}"`,
+    if (isRuntimeResponseContext(ctx) && ctx.status < 400 && isArtifactBody(ctx.body)) {
+      ctx.withoutDataWrapping = true;
+      setHeaders(ctx, {
+        ETag: `"${ctx.body.artifactHash}"`,
         'Cache-Control': 'private, max-age=31536000, immutable',
       });
     }
@@ -90,11 +89,15 @@ function isArtifactBody(value: unknown): value is { artifactHash: string } {
   );
 }
 
-interface RuntimeResponseContext extends ResourcerContext {
+type RuntimeResponseContext = ResourcerContext & {
   body: unknown;
   status: number;
   withoutDataWrapping?: boolean;
   set?: (headers: Record<string, string>) => void;
+};
+
+function isRuntimeResponseContext(ctx: ResourcerContext): ctx is RuntimeResponseContext {
+  return 'body' in ctx && 'status' in ctx && typeof ctx.status === 'number';
 }
 
 function setHeaders(ctx: ResourcerContext, headers: Record<string, string>): void {

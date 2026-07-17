@@ -131,7 +131,7 @@ export function buildReferenceOwnerLocator(
       kind: adapter.ownerKind,
       modelUid,
       use: 'JSBlockModel',
-      stepPath: adapter.stepPath || JS_BLOCK_STEP_PATH,
+      stepPath: JS_BLOCK_STEP_PATH,
     };
   }
 
