@@ -163,6 +163,14 @@ const ENTRY_SOURCE_DEFINITIONS: readonly EntrySourceDefinition[] = [
       'ctx.render(<div data-testid="light-extension-acceptance-js-block">{String(ctx.settings.outputLabel)}:{String(ctx.settings.mode)}</div>);\n',
   },
   {
+    kind: 'js-page',
+    directory: 'js-pages',
+    filename: 'index.tsx',
+    title: 'Acceptance JS Page',
+    source:
+      'ctx.render(<div data-testid="light-extension-acceptance-js-page">{ctx.page.uid}:{String(ctx.settings.outputLabel)}</div>);\n',
+  },
+  {
     kind: 'js-field',
     directory: 'js-fields',
     filename: 'index.tsx',
@@ -316,6 +324,7 @@ export async function createLightExtensionAcceptanceRepo(
 
   try {
     const jsBlock = await listAcceptanceEntry(page, session, repoId, 'js-block');
+    const jsPage = await listAcceptanceEntry(page, session, repoId, 'js-page');
     const jsField = await listAcceptanceEntry(page, session, repoId, 'js-field');
     const jsAction = await listAcceptanceEntry(page, session, repoId, 'js-action');
     const jsItem = await listAcceptanceEntry(page, session, repoId, 'js-item');
@@ -326,6 +335,7 @@ export async function createLightExtensionAcceptanceRepo(
       headCommitId: repo.headCommitId,
       entries: {
         'js-block': jsBlock,
+        'js-page': jsPage,
         'js-field': jsField,
         'js-action': jsAction,
         'js-item': jsItem,

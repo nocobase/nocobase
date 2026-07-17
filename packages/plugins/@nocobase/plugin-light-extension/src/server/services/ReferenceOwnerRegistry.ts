@@ -34,6 +34,14 @@ const REFERENCE_OWNER_ADAPTERS: ReferenceOwnerAdapter[] = [
     stepPath: JS_BLOCK_STEP_PATH,
   },
   {
+    kind: 'js-page',
+    ownerKind: 'flowModel.pageSettings',
+    title: 'JS Page',
+    locatorContract: 'FlowModel JSPageModel page settings locator',
+    modelUse: 'JSPageModel',
+    stepPath: JS_BLOCK_STEP_PATH,
+  },
+  {
     kind: 'js-field',
     ownerKind: 'flowModel.fieldSettings',
     title: 'JS Field',
@@ -130,6 +138,7 @@ export function buildReferenceOwnerLocator(
     kind: adapter.ownerKind,
     modelUid,
     use: normalizeString(modelUse) || adapter.modelUse,
+    ...(adapter.stepPath ? { stepPath: adapter.stepPath } : {}),
     hostPath: hostPath?.length ? hostPath.map(String) : undefined,
     descriptor: adapter.locatorContract,
   };

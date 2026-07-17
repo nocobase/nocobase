@@ -50,6 +50,7 @@ const RESOLVABLE_EXTENSIONS = [...CODE_EXTENSIONS, '.json'] as const;
 
 const ENTRY_ROOTS: Record<LightExtensionKind, string> = {
   'js-block': 'src/client/js-blocks',
+  'js-page': 'src/client/js-pages',
   'js-field': 'src/client/js-fields',
   'js-action': 'src/client/js-actions',
   'js-item': 'src/client/js-items',

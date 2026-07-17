@@ -27,6 +27,7 @@ const repo: LightExtensionAcceptanceRepo = {
   headCommitId: 'commit_1',
   entries: {
     'js-block': createEntry('js-block', 'src/client/js-blocks/acceptance-js-block/index.tsx'),
+    'js-page': createEntry('js-page', 'src/client/js-pages/acceptance-js-page/index.tsx'),
     'js-field': createEntry('js-field', 'src/client/js-fields/acceptance-js-field/index.tsx'),
     'js-action': createEntry('js-action', 'src/client/js-actions/acceptance-js-action/index.ts'),
     'js-item': createEntry('js-item', 'src/client/js-items/acceptance-js-item/index.tsx'),
@@ -37,6 +38,8 @@ const pulledFiles = [
   file('README.md', '# Acceptance repo\n', 'markdown'),
   file(repo.entries['js-block'].entryPath, 'ctx.render(<div>Before</div>);\n'),
   file('src/client/js-blocks/acceptance-js-block/entry.json', '{"key":"acceptance-js-block"}\n', 'json'),
+  file(repo.entries['js-page'].entryPath, 'ctx.render(<div>Page</div>);\n'),
+  file('src/client/js-pages/acceptance-js-page/entry.json', '{"key":"acceptance-js-page"}\n', 'json'),
   file(repo.entries['js-field'].entryPath, 'ctx.render(<span>Field</span>);\n'),
   file('src/client/js-fields/acceptance-js-field/entry.json', '{"key":"acceptance-js-field"}\n', 'json'),
   file(

@@ -474,6 +474,7 @@ export interface LightExtensionRuntimeArtifactRecord {
 
 export type LightExtensionReferenceOwnerKind =
   | 'flowModel.step'
+  | 'flowModel.pageSettings'
   | 'flowModel.fieldSettings'
   | 'flowModel.actionSettings'
   | 'flowModel.itemSettings'

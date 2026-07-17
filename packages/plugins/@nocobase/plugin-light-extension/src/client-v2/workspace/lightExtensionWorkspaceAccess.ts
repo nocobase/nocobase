@@ -30,6 +30,7 @@ export interface LightExtensionWorkspacePathAccess {
 const KIND_ROOTS: Record<LightExtensionKind, string> = {
   'js-action': 'src/client/js-actions',
   'js-block': 'src/client/js-blocks',
+  'js-page': 'src/client/js-pages',
   'js-field': 'src/client/js-fields',
   'js-item': 'src/client/js-items',
   runjs: 'src/client/runjs',

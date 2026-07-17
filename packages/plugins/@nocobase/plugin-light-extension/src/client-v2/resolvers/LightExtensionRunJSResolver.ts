@@ -460,6 +460,9 @@ function getKindLabel(kind: LightExtensionKind | string, t: (key: string) => str
   if (kind === 'js-block') {
     return t('JS Block');
   }
+  if (kind === 'js-page') {
+    return t('JS page');
+  }
   if (kind === 'js-field') {
     return t('JS Field');
   }

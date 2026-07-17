@@ -33,6 +33,12 @@ const entryFileRules: Record<LightExtensionKind, EntryFileRule> = {
     metadataFiles: [LIGHT_EXTENSION_ENTRY_DESCRIPTOR_FILE],
     allowedExtensions: ['.ts', '.tsx', '.js', '.jsx', '.json', '.md'],
   },
+  'js-page': {
+    root: 'src/client/js-pages',
+    indexFiles: ['index.tsx', 'index.ts', 'index.jsx', 'index.js'],
+    metadataFiles: [LIGHT_EXTENSION_ENTRY_DESCRIPTOR_FILE],
+    allowedExtensions: ['.ts', '.tsx', '.js', '.jsx', '.json', '.md'],
+  },
   'js-field': {
     root: 'src/client/js-fields',
     indexFiles: ['index.tsx', 'index.ts', 'index.jsx', 'index.js'],

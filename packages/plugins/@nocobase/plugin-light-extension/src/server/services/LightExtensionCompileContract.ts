@@ -29,6 +29,13 @@ export const LIGHT_EXTENSION_AUTHORING_SURFACES: Record<LightExtensionKind, Ligh
     modelUse: 'JSBlockModel',
     surface: 'js-model.render',
   },
+  'js-page': {
+    kind: 'js-page',
+    surfaceStyle: 'render',
+    compilerSurfaceStyle: 'render',
+    modelUse: 'JSPageModel',
+    surface: 'js-model.render',
+  },
   'js-field': {
     kind: 'js-field',
     surfaceStyle: 'render',

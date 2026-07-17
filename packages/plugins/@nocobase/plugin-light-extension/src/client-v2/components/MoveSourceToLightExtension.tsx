@@ -31,6 +31,7 @@ interface MoveSourceFormValues {
 
 const DEFAULT_KIND_NAMES: Record<LightExtensionKind, string> = {
   'js-block': 'JS Block',
+  'js-page': 'JavaScript page',
   'js-action': 'JS Action',
   'js-field': 'JS Field',
   'js-item': 'JS Item',
@@ -39,6 +40,7 @@ const DEFAULT_KIND_NAMES: Record<LightExtensionKind, string> = {
 
 const KIND_NAME_LABELS: Record<LightExtensionKind, string> = {
   'js-block': 'JS Block name',
+  'js-page': 'JS page name',
   'js-action': 'JS Action name',
   'js-field': 'JS Field name',
   'js-item': 'JS Item name',
@@ -47,6 +49,7 @@ const KIND_NAME_LABELS: Record<LightExtensionKind, string> = {
 
 const MODEL_USE_KIND = new Map<string, LightExtensionKind>([
   ['JSBlockModel', 'js-block'],
+  ['JSPageModel', 'js-page'],
   ['JSFieldModel', 'js-field'],
   ['JSEditableFieldModel', 'js-field'],
   ['JSColumnModel', 'js-field'],
@@ -244,7 +247,12 @@ function resolveLightExtensionKind(context: RunJSStudioToolbarContext): LightExt
 
 function isLightExtensionKind(value: unknown): value is LightExtensionKind {
   return (
-    value === 'js-block' || value === 'js-action' || value === 'js-field' || value === 'js-item' || value === 'runjs'
+    value === 'js-block' ||
+    value === 'js-page' ||
+    value === 'js-action' ||
+    value === 'js-field' ||
+    value === 'js-item' ||
+    value === 'runjs'
   );
 }
 

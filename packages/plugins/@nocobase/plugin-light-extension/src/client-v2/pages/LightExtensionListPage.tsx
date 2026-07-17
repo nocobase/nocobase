@@ -69,7 +69,7 @@ type Notice = {
 type ToggleLifecycleStatus = 'enabled' | 'disabled';
 type DetailPanel = 'source';
 
-const entryKinds = ['js-block', 'js-action', 'js-field', 'js-item', 'runjs'] as const;
+const entryKinds = ['js-block', 'js-page', 'js-action', 'js-field', 'js-item', 'runjs'] as const;
 const LIGHT_EXTENSION_REPO_FILTER_COLLECTION = 'lightExtensionRepoFilters';
 const SOURCE_DRAWER_WIDTH = 'min(1280px, calc(100vw - 64px))';
 const TABLE_ACTION_BUTTON_STYLE: React.CSSProperties = { height: 'auto', paddingInline: 0 };

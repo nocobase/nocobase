@@ -8,8 +8,32 @@
  */
 
 import { LightExtensionValidator } from '../services/LightExtensionValidator';
+import { LIGHT_EXTENSION_AUTHORING_SURFACES } from '../services/LightExtensionCompileContract';
+import { buildReferenceOwnerLocator, getReferenceOwnerAdapterByUse } from '../services/ReferenceOwnerRegistry';
 
 describe('plugin-light-extension supported kinds validator', () => {
+  it('uses the JS Page render and reference owner contracts', () => {
+    expect(LIGHT_EXTENSION_AUTHORING_SURFACES['js-page']).toEqual({
+      kind: 'js-page',
+      surfaceStyle: 'render',
+      compilerSurfaceStyle: 'render',
+      modelUse: 'JSPageModel',
+      surface: 'js-model.render',
+    });
+    const owner = getReferenceOwnerAdapterByUse('JSPageModel');
+    if (!owner) {
+      throw new Error('JSPageModel reference owner is not registered');
+    }
+    expect(owner).toMatchObject({ kind: 'js-page', ownerKind: 'flowModel.pageSettings', modelUse: 'JSPageModel' });
+    expect(buildReferenceOwnerLocator(owner, 'page-1', 'JSPageModel')).toEqual({
+      kind: 'flowModel.pageSettings',
+      modelUid: 'page-1',
+      use: 'JSPageModel',
+      stepPath: ['stepParams', 'jsSettings'],
+      descriptor: 'FlowModel JSPageModel page settings locator',
+    });
+  });
+
   it('accepts every supported client kind', () => {
     const validator = new LightExtensionValidator();
     const result = validator.validateWorkspace({
@@ -35,6 +59,11 @@ describe('plugin-light-extension supported kinds validator', () => {
         },
         entryDescriptor('src/client/js-blocks/sales-kpi', 'sales-kpi'),
         {
+          path: 'src/client/js-pages/hello-page/index.tsx',
+          content: 'ctx.render(<div>{ctx.page.uid}</div>);\n',
+        },
+        entryDescriptor('src/client/js-pages/hello-page', 'hello-page'),
+        {
           path: 'src/client/runjs/calculate-total/index.ts',
           content: 'return Number(ctx.input || 0);\n',
         },
@@ -43,12 +72,20 @@ describe('plugin-light-extension supported kinds validator', () => {
     });
 
     expect(result.accepted).toBe(true);
-    expect(result.capabilities.supportedKinds).toEqual(['js-block', 'js-field', 'js-action', 'js-item', 'runjs']);
+    expect(result.capabilities.supportedKinds).toEqual([
+      'js-block',
+      'js-page',
+      'js-field',
+      'js-action',
+      'js-item',
+      'runjs',
+    ]);
     expect(result.entries.map((entry) => `${entry.kind}:${entry.entryName}`)).toEqual([
       'js-action:batch-approve',
       'js-block:sales-kpi',
       'js-field:phone-link',
       'js-item:customer-menu',
+      'js-page:hello-page',
       'runjs:calculate-total',
     ]);
     expect(result.diagnostics).toEqual([]);
