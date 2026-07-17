@@ -18,7 +18,7 @@ import {
 import { tExpr } from '../../locale';
 import { AIChatBoxView } from './components/AIChatBoxView';
 import { registerAIChatBoxBlockSettings } from './settings';
-import { DEFAULT_AI_CHAT_BOX_GRID_WIDTH, DEFAULT_AI_CHAT_BOX_WIDTH, getDefaultAIChatBoxSettings } from './utils';
+import { DEFAULT_AI_CHAT_BOX_GRID_WIDTH, getDefaultAIChatBoxSettings } from './utils';
 import type { AIChatBoxBlockProps, AIChatBoxBlockStructure } from './types';
 
 const getOrCreateBlockRuntime = (model: AIChatBoxBlockModel) => {
@@ -102,7 +102,6 @@ AIChatBoxBlockModel.define({
   createModelOptions: {
     use: 'AIChatBoxBlockModel',
     props: {
-      minWidth: DEFAULT_AI_CHAT_BOX_WIDTH,
       ...getDefaultAIChatBoxSettings(),
     },
     subModels: {

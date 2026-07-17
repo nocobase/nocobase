@@ -41,6 +41,7 @@ export type AIChatBoxSettings = Required<
   Pick<
     AIChatBoxBlockProps,
     | 'showMessages'
+    | 'minWidth'
     | 'height'
     | 'systemPrompt'
     | 'defaultUserMessage'

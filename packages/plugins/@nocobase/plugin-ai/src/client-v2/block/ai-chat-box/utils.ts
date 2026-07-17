@@ -26,6 +26,7 @@ const isContextItem = (value: unknown): value is ContextItem => {
 };
 
 export const getDefaultAIChatBoxSettings = (): AIChatBoxSettings => ({
+  minWidth: DEFAULT_AI_CHAT_BOX_WIDTH,
   height: DEFAULT_AI_CHAT_BOX_HEIGHT,
   scope: undefined,
   systemPrompt: '',

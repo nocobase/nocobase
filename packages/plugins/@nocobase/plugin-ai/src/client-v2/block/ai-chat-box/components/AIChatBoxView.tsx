@@ -45,12 +45,7 @@ import { registerMountedChatBox } from '../../../ai-employees/chatbox/stores/mou
 import { useChatBoxRuntime } from '../../../ai-employees/chatbox/stores/runtime';
 import type { AIChatBoxBlockModel } from '../AIChatBoxBlockModel';
 import { AIChatBoxCoreModel } from '../AIChatBoxCoreModel';
-import {
-  DEFAULT_AI_CHAT_BOX_WIDTH,
-  getAIChatBoxConversationScope,
-  getAIChatBoxCreateScope,
-  getAIChatBoxSettings,
-} from '../utils';
+import { getAIChatBoxConversationScope, getAIChatBoxCreateScope, getAIChatBoxSettings } from '../utils';
 
 const { Header } = Layout;
 
@@ -403,7 +398,7 @@ export const AIChatBoxView: React.FC<{
   runtime.scope = getAIChatBoxConversationScope(model);
   const { refresh: refreshConversations } = useChatConversationActions(runtime);
   const hasUnreadConversations = runtime.chatConversationModel.conversations.some((conversation) => !conversation.read);
-  const minWidth = Math.max(model.props.minWidth ?? DEFAULT_AI_CHAT_BOX_WIDTH, AI_CHAT_BOX_CORE_MIN_WIDTH);
+  const minWidth = Math.max(settings.minWidth, AI_CHAT_BOX_CORE_MIN_WIDTH);
   const height = getAIChatBoxViewHeight(model, settings.height);
   const conversationPanelWidth = 300;
   const messagesPanelWidth = 350;
