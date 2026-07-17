@@ -12,8 +12,9 @@ transpiled for runtime execution; this plugin does not currently perform project
 - There is no persisted draft state and no separate published ref. Unsaved editor changes exist only in browser memory.
 - RunJS save locks the repository at its current `head`, compiles the submitted workspace snapshot, creates the commit,
   writes the runtime artifact to its owning surface, and updates commit metadata in one database transaction.
-- RunJS Studio does not expose stale-editor conflicts. A later save creates the next linear version from the current
-  server head. A save without file changes returns `RUNJS_SAVE_NO_CHANGES`.
+- Existing browser RunJS Studio clients remain backward compatible when they omit Agent concurrency fields. Public
+  Agent authoring must pass the opened repository Head and owner fingerprint; stale evidence returns HTTP 409 instead
+  of silently replacing a newer workspace. A save without file changes returns `RUNJS_SAVE_NO_CHANGES`.
 - After `runJSSources:save` or `runJSSources:importZip` succeeds, the server transaction is the only persistence path.
   The editor may refresh local host state through `onPersistedChange`, but must not issue a second full host-model save.
 - Head advancement also requires the repository to remain `active`. If an archive wins after a writer read an older
@@ -42,6 +43,44 @@ The FlowModel adapter marks only recognized `runJs.code` surfaces as `uninitiali
 
 Regression coverage lives in `plugin-vsc-file`'s `RunJSStudioProvider.test.tsx` and `plugin-flow-engine`'s
 `runjs-sources.adapters.test.ts`.
+
+## Public Agent authoring API
+
+The published `run-js-sources` CLI exposes only owner-aware operations:
+
+```text
+nb api run-js-sources open
+nb api run-js-sources open-latest
+nb api run-js-sources compile-preview
+nb api run-js-sources save
+```
+
+Raw VSC actions, ZIP import/export, and restore actions are intentionally not part of this command group. An active
+light-extension owner is rejected by the permission boundary and must use `plugin-light-extension` APIs.
+
+`open-latest` is a read-only discovery operation. If no persisted workspace exists, it returns a virtual repository
+with empty `id`/`repoId`, `headCommitId: null`, and files materialized from the current inline owner without creating
+repository state. Ordinary inline authoring should continue through Flow Surfaces unless the user explicitly starts
+the separate `open`/restore workflow.
+
+For an existing persisted workspace, repository source is the authoring truth:
+
+- Preview and save the same complete target `files` snapshot. Every existing path omitted from the snapshot is
+  deleted; this is not the light-extension delta-save contract.
+- Preserve `.nocobase/runjs-source.json`, the selected entry path, runtime version, and every unchanged file.
+- `save` requires `baseCommitId` and `baseOwnerFingerprint` from the same `open`/`open-latest` response. Both checks run
+  after the repository is locked. `BASE_COMMIT_OUTDATED` and `RUNJS_SOURCE_OWNER_OUTDATED` return HTTP 409.
+- After a conflict, reopen, rebuild the full snapshot, and preview again. Do not update only the guard values on a
+  stale candidate.
+- Completion requires the returned commit/artifact and the owning Flow Surface runtime code/version/fingerprint to
+  agree.
+
+The planned public command floor is app/CLI `2.2.0-beta.16` (or `2.2.0` stable) with managed skills pack `1.0.21` or
+newer. Hiding the `run-js-sources` include from `nocobase-ctl.config.json` rolls back the public CLI surface without
+deleting repositories or removing the internal browser Studio API.
+
+The coordinated light-extension/RunJS release and rollback checklist is maintained in
+[SOURCE_AUTHORING_ROLLOUT.md](../plugin-light-extension/SOURCE_AUTHORING_ROLLOUT.md).
 
 ## Current module boundary
 

@@ -82,6 +82,57 @@ describe('flow-engine RunJS source adapters', () => {
     });
   });
 
+  it('rejects ordinary RunJS workspace authoring for active external FlowModel step sources', async () => {
+    await repository.insertModel({
+      uid: 'external-source-runjs-model',
+      title: 'External source RunJS model',
+      use: 'JSBlockModel',
+      stepParams: {
+        jsSettings: {
+          runJs: {
+            code: 'ctx.render("inline fallback");',
+            version: 'v2',
+            sourceMode: 'light-extension',
+            sourceBinding: {
+              type: 'light-extension-entry',
+              repoId: 'ler_external_source',
+              entryId: 'lee_external_source',
+            },
+          },
+        },
+      },
+    });
+
+    const locator: RunJSSourceLocator = {
+      kind: 'flowModel.step',
+      modelUid: 'external-source-runjs-model',
+      flowKey: 'jsSettings',
+      stepKey: 'runJs',
+      paramPath: ['code'],
+    };
+    const repositoriesBefore = await app.db.getRepository('vscFileRepositories').count();
+    const open = await openSource(locator);
+    const save = await saveSource(locator, 'no-repository', 'ctx.render("bypass");');
+
+    expect(open.status).toBe(403);
+    expect(save.status).toBe(403);
+    expect(open.body.errors[0]).toMatchObject({
+      code: 'RUNJS_SOURCE_READONLY',
+      details: {
+        kind: 'flowModel.step',
+        sourceMode: 'light-extension',
+      },
+    });
+    expect(save.body.errors[0]).toMatchObject({
+      code: 'RUNJS_SOURCE_READONLY',
+      details: {
+        kind: 'flowModel.step',
+        sourceMode: 'light-extension',
+      },
+    });
+    expect(await app.db.getRepository('vscFileRepositories').count()).toBe(repositoriesBefore);
+  });
+
   it('writes external bindings for FlowModel step and nested RunJS values without removing inline fallback', async () => {
     await repository.insertModel({
       uid: 'external-binding-model',
@@ -160,6 +211,27 @@ describe('flow-engine RunJS source adapters', () => {
         ctx: nestedCtx,
       });
     });
+
+    const repositoriesBefore = await app.db.getRepository('vscFileRepositories').count();
+    const nestedOpen = await openSource(nestedLocator);
+    const nestedSave = await saveSource(nestedLocator, 'no-repository', 'return 2;');
+    expect(nestedOpen.status).toBe(403);
+    expect(nestedSave.status).toBe(403);
+    expect(nestedOpen.body.errors[0]).toMatchObject({
+      code: 'RUNJS_SOURCE_READONLY',
+      details: {
+        kind: 'flowModel.nestedRunJS',
+        sourceMode: 'light-extension',
+      },
+    });
+    expect(nestedSave.body.errors[0]).toMatchObject({
+      code: 'RUNJS_SOURCE_READONLY',
+      details: {
+        kind: 'flowModel.nestedRunJS',
+        sourceMode: 'light-extension',
+      },
+    });
+    expect(await app.db.getRepository('vscFileRepositories').count()).toBe(repositoriesBefore);
 
     const updated = await repository.findModelById('external-binding-model');
     expect(getAtPath(updated, ['stepParams', 'jsSettings', 'runJs'])).toMatchObject({
@@ -324,11 +396,11 @@ describe('flow-engine RunJS source adapters', () => {
     expect(save.status).toBe(200);
     const updated = await repository.findModelById('js-step-user-runjs-model');
     expect(getAtPath(updated, ['stepParams', 'jsSettings', 'runJs', 'code'])).toEqual(
-      runtimeCode("ctx.request({ url: 'users:list' });\nctx.render('newValue');"),
+      runtimeCode('ctx.request({ url: "users:list" });\nctx.render("newValue");'),
     );
   });
 
-  it('allows FlowModel save after light-extension source metadata changes without changing code', async () => {
+  it('rejects RunJS workspace saves after light-extension source metadata changes without changing code', async () => {
     await repository.insertModel({
       uid: 'js-step-light-extension-metadata-model',
       title: 'Light extension metadata JS block',
@@ -367,8 +439,9 @@ describe('flow-engine RunJS source adapters', () => {
       stepKey: 'runJs',
       paramPath: ['code'],
     };
+    const repositoriesBefore = await app.db.getRepository('vscFileRepositories').count();
     const open = await openSource(locator);
-    expect(open.status).toBe(200);
+    expect(open.status).toBe(403);
 
     await repository.patch({
       uid: 'js-step-light-extension-metadata-model',
@@ -399,12 +472,18 @@ describe('flow-engine RunJS source adapters', () => {
       },
     });
 
-    const save = await saveSource(locator, open.body.data, 'ctx.render("newValue");');
-    expect(save.status).toBe(200);
+    const save = await saveSource(locator, 'no-repository', 'ctx.render("newValue");');
+    expect(save.status).toBe(403);
+    expect(save.body.errors[0]).toMatchObject({
+      code: 'RUNJS_SOURCE_READONLY',
+      details: {
+        sourceMode: 'light-extension',
+      },
+    });
 
     const updated = await repository.findModelById('js-step-light-extension-metadata-model');
     expect(getAtPath(updated, ['stepParams', 'jsSettings', 'runJs'])).toMatchObject({
-      code: runtimeCode('ctx.render("newValue");'),
+      code: 'return oldValue;',
       keep: 'preserved',
       sourceBinding: {
         repoId: 'repo_new',
@@ -415,11 +494,12 @@ describe('flow-engine RunJS source adapters', () => {
       },
       sourceRef: {
         type: 'vsc-file',
-        repoId: save.body.data.repository.id,
-        commitId: save.body.data.commit.id,
+        repoId: 'repo_new',
+        commitId: 'commit_new',
         entry: 'src/main.tsx',
       },
     });
+    expect(await app.db.getRepository('vscFileRepositories').count()).toBe(repositoriesBefore);
   });
 
   it('saves against the current FlowModel state and preserves sibling settings changed after open', async () => {
@@ -2604,5 +2684,37 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function runtimeCode(source: string) {
-  return expect.stringContaining(source);
+  let pattern = '';
+  let quote: '"' | "'" | '`' | undefined;
+  for (let index = 0; index < source.length; index += 1) {
+    const character = source[index];
+    if (quote) {
+      pattern += escapeRegExp(character);
+      if (character === '\\' && index + 1 < source.length) {
+        index += 1;
+        pattern += escapeRegExp(source[index]);
+      } else if (character === quote) {
+        quote = undefined;
+      }
+      continue;
+    }
+    if (character === '"' || character === "'" || character === '`') {
+      quote = character;
+      pattern += escapeRegExp(character);
+      continue;
+    }
+    if (/\s/u.test(character)) {
+      while (index + 1 < source.length && /\s/u.test(source[index + 1])) {
+        index += 1;
+      }
+      pattern += '\\s*';
+      continue;
+    }
+    pattern += escapeRegExp(character);
+  }
+  return expect.stringMatching(new RegExp(pattern));
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

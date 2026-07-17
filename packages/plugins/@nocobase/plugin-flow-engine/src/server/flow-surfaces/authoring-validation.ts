@@ -6561,6 +6561,9 @@ function isVisibleDataBlockBusinessResolvedField(field: any, fieldName: string) 
     return false;
   }
   const fieldInterface = String(getFieldInterface(field) || '').trim();
+  if (!fieldInterface) {
+    return false;
+  }
   if (NON_BUSINESS_VISIBLE_FIELD_INTERFACES.has(fieldInterface)) {
     return false;
   }

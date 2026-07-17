@@ -90,14 +90,15 @@ function createFlowModelStepAdapter(db: Database): RunJSSourceAdapter<FlowModelS
     kind: 'flowModel.step',
     async assertCanRead({ locator, ctx }) {
       await assertFlowModelPermission(db, ctx, locator.modelUid, 'findOne', ['stepParams']);
-      await loadFlowModel(db, locator.modelUid, ctx);
+      assertFlowModelStepSourceIsInline(await loadFlowModel(db, locator.modelUid, ctx), locator);
     },
     async assertCanWrite({ locator, ctx }) {
       await assertFlowModelPermission(db, ctx, locator.modelUid, 'save', ['stepParams']);
-      await loadFlowModel(db, locator.modelUid, ctx);
+      assertFlowModelStepSourceIsInline(await loadFlowModel(db, locator.modelUid, ctx), locator);
     },
     async readLegacy({ locator, ctx }) {
       const model = await loadFlowModel(db, locator.modelUid, ctx);
+      assertFlowModelStepSourceIsInline(model, locator);
       const { codeValue, versionValue, sourceMissing } = readFlowModelStepSource(model, locator);
       const code = typeof codeValue === 'string' ? codeValue : '';
       const version = typeof versionValue === 'string' && versionValue ? versionValue : 'v2';
@@ -124,6 +125,7 @@ function createFlowModelStepAdapter(db: Database): RunJSSourceAdapter<FlowModelS
       await lockFlowModelForUpdate(db, locator.modelUid, transaction);
       await assertFlowModelPermission(db, ctx, locator.modelUid, 'save', ['stepParams']);
       const model = await loadFlowModel(db, locator.modelUid, ctx);
+      assertFlowModelStepSourceIsInline(model, locator);
       assertOwnerFingerprintMatches(buildStepFingerprint(locator, model), baseOwnerFingerprint, locator.kind);
       const nextStepParams = cloneJsonRecord(getAtPath(model, ['stepParams']));
       const versionPath = resolveVersionPath(locator.paramPath, locator.versionPath);
@@ -170,15 +172,18 @@ function createFlowModelNestedRunJSAdapter(db: Database): RunJSSourceAdapter<Flo
       await assertFlowModelRecordPermission(db, ctx, locator.modelUid, permission);
       const model = await loadFlowModelForNestedSource(db, locator.modelUid, ctx, permission, 'findOne');
       assertFlowModelPermissionFields(permission, 'findOne', [resolveNestedStorage(model, locator).rootKey]);
+      assertFlowModelNestedSourceIsInline(model, locator);
     },
     async assertCanWrite({ locator, ctx }) {
       const permission = requireFlowModelPermission(ctx, 'save');
       await assertFlowModelRecordPermission(db, ctx, locator.modelUid, permission);
       const model = await loadFlowModelForNestedSource(db, locator.modelUid, ctx, permission, 'save');
       assertFlowModelPermissionFields(permission, 'save', [resolveNestedStorage(model, locator).rootKey]);
+      assertFlowModelNestedSourceIsInline(model, locator);
     },
     async readLegacy({ locator, ctx }) {
       const model = await loadFlowModel(db, locator.modelUid, ctx);
+      assertFlowModelNestedSourceIsInline(model, locator);
       const source = readNestedSource(model, locator);
 
       return {
@@ -201,11 +206,13 @@ function createFlowModelNestedRunJSAdapter(db: Database): RunJSSourceAdapter<Flo
       await assertFlowModelRecordPermission(db, ctx, locator.modelUid, permission);
       const initialModel = await loadFlowModelForNestedSource(db, locator.modelUid, ctx, permission, 'save');
       assertFlowModelPermissionFields(permission, 'save', [resolveNestedStorage(initialModel, locator).rootKey]);
+      assertFlowModelNestedSourceIsInline(initialModel, locator);
       await lockFlowModelForUpdate(db, locator.modelUid, transaction);
       await assertFlowModelRecordPermission(db, ctx, locator.modelUid, permission);
       const model = await loadFlowModel(db, locator.modelUid, ctx);
       const storage = resolveNestedStorage(model, locator);
       assertFlowModelPermissionFields(permission, 'save', [storage.rootKey]);
+      assertFlowModelNestedSourceIsInline(model, locator);
       assertOwnerFingerprintMatches(buildNestedFingerprint(locator, model), baseOwnerFingerprint, locator.kind);
       const nextRoot = cloneJsonRecord(getAtPath(model, [storage.rootKey]));
       const targetPath = storage.targetPath.slice(1);
@@ -627,6 +634,42 @@ function readFlowModelStepSource(model: JsonRecord, locator: FlowModelStepLocato
     versionValue: getAtPath(step, versionPath),
     sourceMissing: false,
   };
+}
+
+function assertFlowModelStepSourceIsInline(model: JsonRecord, locator: FlowModelStepLocator): void {
+  const sourceRootPath: JsonPath = ['stepParams', locator.flowKey, locator.stepKey, ...locator.paramPath.slice(0, -1)];
+  const sourceMode = getAtPath(model, [...sourceRootPath, 'sourceMode']);
+  if (typeof sourceMode === 'undefined' || sourceMode === 'inline') {
+    return;
+  }
+
+  throw new RunJSSourceError('RUNJS_SOURCE_READONLY', 'RunJS workspace authoring is disabled for external source', {
+    details: {
+      kind: locator.kind,
+      sourceMode,
+    },
+  });
+}
+
+function assertFlowModelNestedSourceIsInline(model: JsonRecord, locator: FlowModelNestedLocator): void {
+  const storage = resolveNestedStorage(model, locator);
+  const value = getExistingNestedValue(model, storage.targetPath);
+  const sourceRoot = isRecord(value)
+    ? value
+    : !isNestedRunJSValuePath(locator)
+      ? getAtPath(model, storage.targetPath.slice(0, -1))
+      : undefined;
+  const sourceMode = isRecord(sourceRoot) ? sourceRoot.sourceMode : undefined;
+  if (typeof sourceMode === 'undefined' || sourceMode === 'inline') {
+    return;
+  }
+
+  throw new RunJSSourceError('RUNJS_SOURCE_READONLY', 'RunJS workspace authoring is disabled for external source', {
+    details: {
+      kind: locator.kind,
+      sourceMode,
+    },
+  });
 }
 
 function isInitializableFlowModelRunJSSource(model: JsonRecord, locator: FlowModelStepLocator): boolean {

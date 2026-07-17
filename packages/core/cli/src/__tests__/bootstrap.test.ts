@@ -7,12 +7,103 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { test, expect } from 'vitest';
+import { beforeEach, expect, test, vi } from 'vitest';
+
+const mocks = vi.hoisted(() => ({
+  fetchWithPreservedAuthRedirect: vi.fn(),
+  generateRuntime: vi.fn(),
+  getCurrentEnvName: vi.fn(),
+  getEnv: vi.fn(),
+  hasRuntimeSync: vi.fn(),
+  resolveAccessToken: vi.fn(),
+  saveRuntime: vi.fn(),
+  setEnvRuntime: vi.fn(),
+}));
+
+vi.mock('../lib/auth-store.js', () => ({
+  getCurrentEnvName: mocks.getCurrentEnvName,
+  getEnv: mocks.getEnv,
+  setEnvRuntime: mocks.setEnvRuntime,
+  updateEnvConnection: vi.fn(),
+}));
+
+vi.mock('../lib/env-auth.js', () => ({
+  resolveAccessToken: mocks.resolveAccessToken,
+}));
+
+vi.mock('../lib/http-request.js', () => ({
+  fetchWithPreservedAuthRedirect: mocks.fetchWithPreservedAuthRedirect,
+}));
+
+vi.mock('../lib/runtime-generator.js', () => ({
+  generateRuntime: mocks.generateRuntime,
+}));
+
+vi.mock('../lib/runtime-store.js', () => ({
+  hasRuntimeSync: mocks.hasRuntimeSync,
+  saveRuntime: mocks.saveRuntime,
+}));
+
+vi.mock('../lib/ui.js', () => ({
+  printInfo: vi.fn(),
+  printVerbose: vi.fn(),
+  printWarningBlock: vi.fn(),
+  setVerboseMode: vi.fn(),
+  stopTask: vi.fn(),
+  updateTask: vi.fn(),
+}));
+
+vi.mock('../lib/inquirer.ts', () => ({
+  confirm: vi.fn(),
+}));
+
 import {
+  ensureRuntimeFromArgv,
   formatMissingRuntimeEnvError,
   formatSwaggerSchemaError,
   shouldSkipRuntimeBootstrap,
 } from '../lib/bootstrap.js';
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  mocks.getCurrentEnvName.mockResolvedValue(undefined);
+  mocks.getEnv.mockResolvedValue(undefined);
+  mocks.hasRuntimeSync.mockReturnValue(false);
+  mocks.resolveAccessToken.mockImplementation(async ({ token }) => token);
+  mocks.fetchWithPreservedAuthRedirect.mockResolvedValue(
+    new Response(JSON.stringify({ data: { openapi: '3.0.0', paths: {} } }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    }),
+  );
+  mocks.generateRuntime.mockResolvedValue({
+    version: 'test-runtime',
+    schemaHash: 'test-schema-hash',
+    generatedAt: '2026-07-17T00:00:00.000Z',
+  });
+});
+
+test.each([
+  ['short token flag', ['-t', 'explicit-token']],
+  ['compact short token flag', ['-texplicit-token']],
+  ['inline short token flag', ['-t=explicit-token']],
+  ['long token flag', ['--token', 'explicit-token']],
+  ['inline long token flag', ['--token=explicit-token']],
+])('ensureRuntimeFromArgv forwards the %s while loading Swagger', async (_name, tokenArgs) => {
+  await ensureRuntimeFromArgv(
+    ['api', 'light-extension-files', 'pull', '--api-base-url', 'http://127.0.0.1:23000/api', ...tokenArgs],
+    { configFile: '/tmp/nocobase-ctl.config.json' },
+  );
+
+  expect(mocks.resolveAccessToken).toHaveBeenCalledWith({
+    envName: undefined,
+    baseUrl: 'http://127.0.0.1:23000/api',
+    token: 'explicit-token',
+  });
+  const [url, request] = mocks.fetchWithPreservedAuthRedirect.mock.calls[0];
+  expect(url).toBe('http://127.0.0.1:23000/api/swagger:get');
+  expect(new Headers(request.headers).get('authorization')).toBe('Bearer explicit-token');
+});
 
 test('shouldSkipRuntimeBootstrap skips root help and no-arg invocations', () => {
   expect(shouldSkipRuntimeBootstrap([])).toBe(false);
@@ -87,7 +178,8 @@ test('formatSwaggerSchemaError returns actionable guidance for missing tokens', 
   expect(message).toMatch(/env "app1"/);
   expect(message).toMatch(/EMPTY_TOKEN/);
   expect(message).toMatch(/nb env auth app1/);
-  expect(message).toMatch(/--access-token <api-key>/);
+  expect(message).toMatch(/--token <api-key>/);
+  expect(message).toMatch(/-t <api-key>/);
 });
 
 test('formatSwaggerSchemaError falls back to the raw swagger error for non-auth failures', () => {

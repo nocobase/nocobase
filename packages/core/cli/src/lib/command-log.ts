@@ -127,7 +127,7 @@ export function hasActiveCommandLog(env: NodeJS.ProcessEnv = process.env): boole
 }
 
 export function sanitizeArgv(argv: string[]): string[] {
-  const sensitiveFlags = new Set(['--token', '--access-token', '--password', '--secret']);
+  const sensitiveFlags = new Set(['-t', '--token', '--access-token', '--password', '--secret']);
   const sanitized: string[] = [];
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -141,9 +141,14 @@ export function sanitizeArgv(argv: string[]): string[] {
       continue;
     }
 
-    const matched = token.match(/^(--(?:token|access-token|password|secret))=(.*)$/);
+    const matched = token.match(/^(-t|--(?:token|access-token|password|secret))=(.*)$/);
     if (matched) {
       sanitized.push(`${matched[1]}=***`);
+      continue;
+    }
+
+    if (/^-t.+/.test(token)) {
+      sanitized.push('-t***');
       continue;
     }
 

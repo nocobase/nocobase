@@ -102,41 +102,46 @@ export function getModernFlowPagePath(pageSchemaUid: string, modernClientPrefix?
 }
 
 async function createAcceptanceCollection(page: Page, session: RootApiSession, collectionName: string): Promise<void> {
-  const response = await page.request.post('/api/collections:mock', {
-    headers: session.headers,
-    data: [
+  const collection = {
+    name: collectionName,
+    title: 'Light Extension acceptance records',
+    fields: [
       {
-        name: collectionName,
-        title: 'Light Extension acceptance records',
-        fields: [
-          {
-            name: 'name',
-            type: 'string',
-            interface: 'input',
-            uiSchema: {
-              title: 'Name',
-              type: 'string',
-              'x-component': 'Input',
-            },
-          },
-          {
-            name: 'status',
-            type: 'string',
-            interface: 'select',
-            uiSchema: {
-              title: 'Status',
-              type: 'string',
-              'x-component': 'Select',
-              enum: [
-                { label: 'Draft', value: 'draft' },
-                { label: 'Published', value: 'published' },
-              ],
-            },
-          },
-        ],
+        name: 'name',
+        type: 'string',
+        interface: 'input',
+        uiSchema: {
+          title: 'Name',
+          type: 'string',
+          'x-component': 'Input',
+        },
+      },
+      {
+        name: 'status',
+        type: 'string',
+        interface: 'select',
+        uiSchema: {
+          title: 'Status',
+          type: 'string',
+          'x-component': 'Select',
+          enum: [
+            { label: 'Draft', value: 'draft' },
+            { label: 'Published', value: 'published' },
+          ],
+        },
       },
     ],
+  };
+  let response = await page.request.post('/api/collections:mock', {
+    headers: session.headers,
+    data: [collection],
   });
+  if (response.status() === 404) {
+    response = await page.request.post('/api/collections:create', {
+      headers: session.headers,
+      data: collection,
+    });
+  }
   await assertApiResponseOk(response, 'Create Flow host acceptance collection');
 }
 
@@ -416,9 +421,12 @@ export async function destroyFlowHostAcceptancePage(
   session: RootApiSession,
   fixture: Pick<FlowHostAcceptancePage, 'pageUid' | 'collectionName' | 'hosts'>,
 ): Promise<void> {
-  await switchAcceptanceHostsToInline(page, session, fixture.hosts);
-
   const failures: string[] = [];
+  try {
+    await switchAcceptanceHostsToInline(page, session, fixture.hosts);
+  } catch (error) {
+    failures.push(getErrorMessage(error));
+  }
   try {
     await destroyFlowPage(page, session, fixture.pageUid);
   } catch (error) {

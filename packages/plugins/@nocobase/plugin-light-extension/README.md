@@ -25,6 +25,16 @@ The plugin package root remains the server plugin entry. SDK imports use the pub
 
 `lightExtensionFiles:saveSource` accepts `repoId`, `message`, and `files`. It performs the VSC commit, workspace validation, entry reconciliation, and runtime compilation in one database transaction. There is no separate scan action or scan state.
 
+Public Agent authoring uses a different request shape from RunJS Studio workspaces:
+
+1. Read the bound Entry and visible references, then call `lightExtensionFiles:pull` and retain its Head as `expectedHeadCommitId`.
+2. Build and compile the complete target workspace with `lightExtensions:compileWorkspacePreview`. A whole-workspace preview may return HTTP 207 when only part of the Entry set compiles; HTTP 207 or 422 must not proceed to save.
+3. Call `lightExtensionFiles:saveSource` with only the changed file delta plus the unchanged `expectedHeadCommitId`. Do not send the complete workspace as a replacement snapshot.
+4. On HTTP 409, pull again and rebuild the candidate. Never resolve a conflict by replacing only the expected Head while reusing stale source.
+5. Verify the new Head, all affected Entry artifacts, reference rows, and the bound Flow Surface. Updating a retained inline fallback `code` field does not change the active runtime while `sourceMode` remains `light-extension`.
+
+The public CLI families are `light-extension-repos`, `light-extension-entries`, `light-extension-references`, `light-extension-files`, and `light-extensions`. Raw `vscFile`, `runJSSources`, direct artifact writes, and ZIP round-trips are not alternative save paths for an active light-extension repository. `inspectSourceArchive` remains read-only.
+
 | Case | Result | Persistent state |
 | --- | --- | --- |
 | Valid changed source | Returns the commit, tree, entry compile results, and diagnostics | Repository Head and current runtime artifacts advance together |
@@ -58,6 +68,8 @@ interface LightExtensionInspectSourceArchiveResult {
 `inspectSourceArchive` is read-only: it verifies that the repository exists and is not archived, then reuses `parseLightExtensionSourceArchive()` for ZIP path, symlink, UTF-8, duplicate-path, file-count, byte-budget, and compression-ratio validation. It does not create a VSC commit, change Head, compile runtime artifacts, or update references.
 
 After validation, repository workspaces replace the complete local working copy. Entry-bound workspaces replace only editable paths and preserve other read-only entries. An entry-bound import is rejected when the ZIP contains another managed entry or omits the currently bound `entryPath`. Import never saves automatically; the user must use the drawer footer **Save** action to create and compile a new version.
+
+ZIP is an interactive import/export boundary, not the Agent local-edit workflow for an existing repository. Agent edits must use pull, full-workspace preview, and delta save so concurrency and Entry reconciliation remain explicit.
 
 | Condition | Result |
 | --- | --- |
@@ -193,3 +205,14 @@ yarn test packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__
 yarn test packages/plugins/@nocobase/plugin-light-extension/src/client-v2/__tests__/move-source.test.tsx --run --reporter=verbose
 yarn test packages/plugins/@nocobase/plugin-vsc-file/src/client-v2/runjs-studio/__tests__/RunJSStudioToolbarRegistry.test.tsx --run --reporter=verbose
 ```
+
+## Compatibility and Rollout
+
+- Existing inline JS surfaces require no migration. Missing `sourceMode` continues to mean inline.
+- Active light-extension bindings keep retained inline code only as compatibility fallback; source edits must go through the repository domain.
+- The planned public command floor is app/CLI `2.2.0-beta.16` (or `2.2.0` stable) with managed skills pack `1.0.21` or newer.
+- `plugin-light-extension` must be enabled before light-extension command families are used. Ordinary RunJS workspace authoring additionally requires `plugin-vsc-file`.
+- Roll back Skills first by removing the source-mode router, then hide the CLI command groups through `nocobase-ctl.config.json` if required. Backend actions may remain available for older clients.
+- Do not delete persisted `sourceBinding` data during rollback. Failed saves are transactionally rolled back; successful source versions are reverted by creating a normal new commit from the desired historical source.
+
+The full release order, regression gates, acceptance record, and rollback dry-run are documented in [SOURCE_AUTHORING_ROLLOUT.md](./SOURCE_AUTHORING_ROLLOUT.md).

@@ -309,6 +309,50 @@ describe('flowSurfaces authoring validation unit', () => {
     expect(addBlocksErrors.map((error: any) => error.ruleId)).not.toContain('data-block-visible-fields-minimum');
   });
 
+  it('should exclude fields without an interface from visible-field minimum candidates', async () => {
+    const fields = [
+      { name: 'title', interface: 'input', type: 'string' },
+      { name: 'name', interface: 'input', type: 'string' },
+      ...['description', 'strategy', 'system', 'snippets', 'resources', 'users'].map((name) => ({
+        name,
+        type: 'string',
+      })),
+    ];
+    const fieldsByName = new Map(fields.map((field) => [field.name, field]));
+    const context = {
+      getCollection: (_dataSourceKey: string, collectionName: string) =>
+        collectionName === 'roles'
+          ? {
+              name: 'roles',
+              getField: (fieldName: string) => fieldsByName.get(fieldName),
+              getFields: () => fields,
+              fields: fieldsByName,
+            }
+          : null,
+    };
+
+    const errors = await collectFlowSurfaceAuthoringErrors(
+      'applyBlueprint',
+      {
+        mode: 'create',
+        tabs: [
+          {
+            blocks: [
+              {
+                type: 'details',
+                collection: 'roles',
+                fields: ['title', 'name'],
+              },
+            ],
+          },
+        ],
+      },
+      context,
+    );
+
+    expect(errors.map((error: any) => error.ruleId)).not.toContain('data-block-visible-fields-minimum');
+  });
+
   it('should mention showBlockCard in JS block authoring repair hints', async () => {
     const errors = await collectFlowSurfaceAuthoringErrors('applyBlueprint', {
       mode: 'create',
