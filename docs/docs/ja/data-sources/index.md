@@ -1,55 +1,65 @@
+---
+title: "データソースの概要"
+description: "NocoBase のデータソースとデータモデリング：メインデータベース、外部データベース、REST API、外部 NocoBase、データソース管理、通常テーブル、ツリーテーブル、SQL テーブル、ファイルテーブル。"
+keywords: "データソース,データモデリング,メインデータベース,外部データベース,REST API,外部 NocoBase,Collection,ツリーテーブル,SQL テーブル,NocoBase"
+---
+
 # 概要
 
-データベースを設計する上で、データモデリングは非常に重要なステップです。これは、現実世界の様々なデータとその相互関係を深く分析し、抽象化するプロセスを指します。このプロセスを通じて、データ間の本質的なつながりを明らかにし、データモデルとして形式的に記述することで、情報システムのデータベース構造の基盤を築きます。NocoBaseは、データモデル駆動型のプラットフォームであり、以下の特徴を備えています。
+データモデリングは、データベースを設計する際の重要なステップです。現実世界に存在するさまざまなデータとその相互関係を詳細に分析し、抽象化するプロセスです。このプロセスでは、データ間にある本質的なつながりを明らかにし、それをデータモデルとして形式的に記述することで、情報システムのデータベース構造の基盤を構築します。NocoBase はデータモデル駆動型のプラットフォームで、次のような特徴があります。
 
-## 様々なデータソースへの接続をサポート
+## さまざまなソースのデータに対応
 
-NocoBaseは、一般的な各種データベース、API（SDK）プラットフォーム、ファイルなど、様々なデータソースに接続できます。
+NocoBase のデータソースには、一般的な各種データベース、API（SDK）プラットフォーム、ファイルを利用できます。
 
 ![20240512085558](https://static-docs.nocobase.com/20240512085558.png)
 
-NocoBaseは、各データソースとそのコレクションを管理するための[データソース管理プラグイン](/data-sources/data-source-manager)を提供しています。データソース管理プラグインは、すべてのデータソースの管理インターフェースを提供するだけで、データソースへの直接接続機能は提供しません。様々なデータソースプラグインと組み合わせて使用する必要があります。現在サポートされているデータソースは以下の通りです。
+NocoBase には、各データソースとそのデータテーブルを管理するための[データソース管理プラグイン](./data-source-manager/index.md)が用意されています。データソース管理プラグインは、すべてのデータソースを管理するためのインターフェースを提供するだけで、データソースへの接続機能は提供しません。そのため、各種データソースプラグインと組み合わせて使用する必要があります。現在、次のデータソースに対応しています。
 
-- [メインデータベース](/data-sources/data-source-main)：NocoBaseのメインデータベースで、MySQL、PostgreSQL、MariaDBなどのリレーショナルデータベースをサポートしています。
-- [KingbaseES](/data-sources/data-source-kingbase)：KingbaseESデータベースをデータソースとして使用します。メインデータベースとしても、外部データベースとしても利用できます。
-- [外部MySQL](/data-sources/data-source-external-mysql)：外部のMySQLデータベースをデータソースとして使用します。
-- [外部MariaDB](/data-sources/data-source-external-mariadb)：外部のMariaDBデータベースをデータソースとして使用します。
-- [外部PostgreSQL](/data-sources/data-source-external-postgres)：外部のPostgreSQLデータベースをデータソースとして使用します。
-- [外部MSSQL](/data-sources/data-source-external-mssql)：外部のMSSQL（SQL Server）データベースをデータソースとして使用します。
-- [外部Oracle](/data-sources/data-source-external-oracle)：外部のOracleデータベースをデータソースとして使用します。
+- [メインデータソース](./data-source-main/index.md)：NocoBase のメインデータベース。PostgreSQL、MySQL、MariaDB、KingbaseES、OceanBase に対応しています。
+- [外部 PostgreSQL](./data-source-external-postgres/index.md)：既存の PostgreSQL データベースに接続します。
+- [外部 MySQL](./data-source-external-mysql/index.md)：既存の MySQL データベースに接続します。
+- [外部 MariaDB](./data-source-external-mariadb/index.md)：既存の MariaDB データベースに接続します。
+- [外部 MSSQL](./data-source-external-mssql/index.md)：既存の SQL Server データベースに接続します。
+- [外部 KingbaseES](./data-source-kingbase/index.md)：既存の KingbaseES データベースに接続します。
+- [外部 OceanBase](./external/oceanbase.md)：既存の OceanBase データベースに接続します。
+- [外部 Oracle](./data-source-external-oracle/index.md)：既存の Oracle データベースに接続します。
+- [外部 ClickHouse](./external/clickhouse.md)：既存の ClickHouse データベースに接続します。
+- [外部 Doris](./external/doris.md)：既存の Doris データベースに接続します。
+- [REST API データソース](./data-source-rest-api/index.md)：第三者システムの REST API をデータソースとしてマッピングします。
+- [外部 NocoBase データソース](./data-source-external-nocobase/index.md)：別の NocoBase アプリケーション内のデータテーブルに接続します。
 
 ![20240512083651](https://static-docs.nocobase.com/20240512083651.png)
 
 ## 多様なデータモデリングツールを提供
 
-**シンプルなコレクション管理インターフェース**：様々なモデル（コレクション）の作成や、既存モデルへの接続に利用します。
+**シンプルなデータテーブル管理インターフェース**：さまざまなモデル（データテーブル）を作成したり、既存のモデル（データテーブル）に接続したりできます。
 
 ![20240512090751](https://static-docs.nocobase.com/20240512090751.png)
 
-**ER図のようなビジュアルインターフェース**：ユーザーやビジネス要件からエンティティとその関係を抽出するために使用します。データモデルを直感的で分かりやすい方法で記述でき、ER図を通じてシステム内の主要なデータエンティティとその関連性をより明確に理解できます。
+**ER 図に似たビジュアルインターフェース**：ユーザーや業務の要件からエンティティとその関係を抽出するために使用します。データモデルを直感的かつ分かりやすく表現できるため、ER 図を通して、システム内の主要なデータエンティティとそれらの関係をより明確に理解できます。
 
 ![20240512091042](https://static-docs.nocobase.com/20240410075906.png)
 
-## 様々なタイプのコレクション作成をサポート
+## さまざまなデータテーブルの作成に対応
 
-| コレクション | 説明 |
+| データテーブル | 説明 |
 | - | - |
-| [汎用コレクション](/data-sources/data-source-main/general-collection) | 一般的なシステムフィールドが組み込まれています。 |
-| [カレンダーコレクション](/data-sources/calendar/calendar-collection) | カレンダー関連のイベントコレクションを作成するために使用します。 |
-| コメントコレクション | データに対するコメントやフィードバックを保存するために使用します。 |
-| [ツリー構造コレクション](/data-sources/collection-tree) | ツリー構造のコレクションで、現在は隣接リストモデルのみをサポートしています。 |
-| [ファイルコレクション](/data-sources/file-manager/file-collection) | ファイルストレージの管理に使用します。 |
-| [SQLコレクション](/data-sources/collection-sql) | 実際のデータベースコレクションではなく、SQLクエリを構造化された形式で素早く表示します。 |
-| [データベースビューへの接続](/data-sources/collection-view) | 既存のデータベースビューに接続します。 |
-| 式コレクション | ワークフローにおける動的な式シナリオに利用します。 |
-| [外部データへの接続](/data-sources/collection-fdw) | データベースのFDW技術に基づき、リモートコレクションへの接続を実現します。 |
+| [通常データテーブル](/data-sources/data-source-main/general-collection) | よく使用されるシステムフィールドが組み込まれています |
+| [カレンダーデータテーブル](/data-sources/calendar/calendar-collection) | カレンダー関連のイベントテーブルを作成するために使用します |
+| [コメントテーブル](/data-sources/collection-comment/) | データに対するコメントやフィードバックを保存するために使用します |
+| [ツリー構造テーブル](/data-sources/collection-tree/) | ツリー構造のテーブル。現在は隣接リストによる設計にのみ対応しています |
+| [ファイルデータテーブル](/data-sources/file-manager/file-collection) | ファイルストレージを管理するために使用します |
+| [データベースビューへの接続](/data-sources/collection-view/) | 既存のデータベースビューに接続します |
+| [SQL データテーブル](/data-sources/collection-sql/) | 実際のデータベーステーブルではなく、SQL クエリをすばやく構造化して表示するものです |
+| [外部データへの接続](/data-sources/collection-fdw) | データベースの FDW 技術に基づいて、リモートデータテーブルに接続します |
 
 ![20240512102212](https://static-docs.nocobase.com/20240512102212.png)
 
-詳細については、「[コレクション / 概要](/data-sources/data-modeling/collection)」の章をご覧ください。
+詳しくは「[データテーブル / 概要](/data-sources/data-modeling/collection)」の章を参照してください。
 
 ## 豊富なフィールドタイプを提供
 
 ![20240512110352](https://static-docs.nocobase.com/20240512110352.png)
 
-詳細については、「[コレクションフィールド / 概要](/data-sources/data-modeling/collection-fields)」の章をご覧ください。
+詳しくは「[データテーブルフィールド / 概要](/data-sources/data-modeling/collection-fields/)」の章を参照してください。

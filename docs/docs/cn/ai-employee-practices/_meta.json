@@ -13,5 +13,10 @@
     "type": "custom-link",
     "label": "Lina: 本地化翻译",
     "link": "/ai-employees/scenarios/localization-hy-mt"
+  },
+  {
+    "type": "custom-link",
+    "label": "让 AI 员工填写 JS 区块中的自定义表单",
+    "link": "/building-tips/ai-fill-js-block-form"
   }
 ]

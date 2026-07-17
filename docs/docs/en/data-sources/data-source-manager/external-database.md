@@ -1,101 +1,140 @@
-# External Database
+---
+title: "External databases"
+description: "Connect existing MySQL, PostgreSQL, MariaDB, KingbaseES, OceanBase, MSSQL, Oracle, ClickHouse, and Doris databases to NocoBase, then map their fields and relations."
+keywords: "external database,MySQL,PostgreSQL,MariaDB,KingbaseES,OceanBase,MSSQL,Oracle,ClickHouse,Doris,field mapping,NocoBase"
+---
+
+# External databases
 
 ## Introduction
 
-Use an existing external database as a data source. Currently supported external databases include MySQL, MariaDB, PostgreSQL, MSSQL, and Oracle.
+An **external database** connects an existing business database to NocoBase. NocoBase reads tables, fields, and views so they can be used in page blocks, permissions, workflows, and APIs.
 
-## Usage Instructions
+Unlike the [main database](../data-source-main/index.md), the original system and database tools maintain the external schema. NocoBase reads the structure and views; it does not change real tables in the external database.
 
-### Adding an External Database
+| Database | Supported version | Community | Standard | Professional | Enterprise |
+| --- | --- | --- | --- | --- | --- |
+| MySQL | >= 5.7 | No | Yes | Yes | Yes |
+| PostgreSQL | >= 9.5 | No | Yes | Yes | Yes |
+| MariaDB | >= 10.3 | No | Yes | Yes | Yes |
+| MSSQL | 2014-2019 | No | Yes | Yes | Yes |
+| KingbaseES | >= V9 | No | No | Yes | Yes |
+| OceanBase | >= 4.3 | No | No | No | Yes |
+| Oracle | >= 11g | No | No | No | Yes |
+| ClickHouse | >= 20.2 | No | No | No | Yes |
+| Doris | >= 2.1.0 | No | No | No | Yes |
 
-After activating the plugin, you can select and add it from the "Add new" dropdown menu in data source management.
+:::tip Tip
 
+KingbaseES supports only PostgreSQL compatibility mode. OceanBase, ClickHouse, and Doris support only MySQL compatibility mode.
 
-![20240507204316](https://static-docs.nocobase.com/20240507204316.png)
+:::
 
+Typical use cases include:
 
-Fill in the information for the database you need to connect to.
+- Connect an existing ERP, MES, WMS, or CRM database and build management pages, permissions, workflows, and reports without changing its schema.
+- Add lightweight approval, data-correction, exception-handling, or operations-dashboard capabilities without replacing the original system.
+- Query, analyze, or display existing data for reporting or BI.
+- Migrate a historical system gradually: keep the old database connected first, then put new business data in the main database over time.
+- Leave the database structure to DBAs, migration scripts, or the original system while NocoBase provides pages and data usage.
 
+:::warning Note
 
-![20240507204820](https://static-docs.nocobase.com/20240507204820.png)
+An external database is not the NocoBase system database. NocoBase does not manage its backup, restore, migrations, or schema changes.
 
+:::
 
-### Collection Synchronization
+## Plugin installation
 
-After establishing a connection with an external database, all collections within the data source will be read directly. External databases do not support adding collections or modifying the table structure directly. If modifications are needed, you can perform them through a database client and then click the "Refresh" button in the interface to synchronize.
+Each external database is supplied by a data-source plugin. Install and enable the plugin before its database type appears in **Data source management** > **Add new**.
 
+| Database | Plugin | Installation |
+| --- | --- | --- |
+| MySQL | `@nocobase/plugin-data-source-external-mysql` | Requires a commercial license; install and enable it. |
+| PostgreSQL | `@nocobase/plugin-data-source-external-postgres` | Requires a commercial license; install and enable it. |
+| MariaDB | `@nocobase/plugin-data-source-external-mariadb` | Requires a commercial license; install and enable it. |
+| KingbaseES | `@nocobase/plugin-data-source-kingbase` | Requires a commercial license; install and enable it. |
+| OceanBase | `@nocobase/plugin-data-source-oceanbase` | Requires a commercial license; install and enable it. |
+| MSSQL | `@nocobase/plugin-data-source-external-mssql` | Requires a commercial license; install and enable it. |
+| Oracle | `@nocobase/plugin-data-source-external-oracle` | Requires a commercial license; install and enable it. |
+| ClickHouse | `@nocobase/plugin-data-source-external-clickhouse` | Requires a commercial license; install and enable it. |
+| Doris | `@nocobase/plugin-data-source-external-doris` | Requires a commercial license; install and enable it. |
 
-![20240507204725](https://static-docs.nocobase.com/20240507204725.png)
+![Add a database](https://static-docs.nocobase.com/add_new_database.png)
 
+If a database type is missing from **Add new**, check that its plugin is installed and enabled, the commercial license includes it, and the current user can manage data sources.
 
-### Configuring Fields
+## Usage
 
-The external database will automatically read and display the fields of existing collections. You can quickly view and configure the field's title, data type (Field type), and UI type (Field interface). You can also click the "Edit" button to modify more configurations.
+### Add an external database
 
+After the plugin is activated, choose the database type from **Add new** and provide its connection information.
 
-![20240507210537](https://static-docs.nocobase.com/20240507210537.png)
+![Add an external database](https://static-docs.nocobase.com/20240507204316.png)
 
+![Configure an external database](https://static-docs.nocobase.com/20240507204820.png)
 
-Because external databases do not support modifying the table structure, the only available type when adding a new field is the association field. Association fields are not actual fields but are used to establish connections between collections.
+### Synchronize collections
 
+After an external database is connected, NocoBase reads its collections. It cannot create collections or change the external schema. Make schema changes through database tools, then use the refresh action to synchronize metadata.
 
-![20240507220140](https://static-docs.nocobase.com/20240507220140.png)
+![Synchronize external collections](https://static-docs.nocobase.com/20240507204725.png)
 
+### Configure fields
 
-For more details, see the [Collection Fields/Overview](/data-sources/data-modeling/collection-fields) chapter.
+NocoBase reads and displays existing fields. You can configure their title, **Field type**, and **Field interface**, or use **Edit** for additional configuration.
 
-### Field Type Mapping
+![Configure external fields](https://static-docs.nocobase.com/20240507210537.png)
 
-NocoBase automatically maps the field types from the external database to the corresponding data type (Field type) and UI type (Field Interface).
+Because an external database schema cannot be changed from NocoBase, the only field type you can add is a relation field. A relation field is not a real database column; it connects collections in NocoBase.
 
-- Data type (Field type): Defines the kind, format, and structure of data that a field can store.
-- UI type (Field interface): Refers to the type of control used in the user interface to display and input field values.
+![Add an external relation field](https://static-docs.nocobase.com/20240507220140.png)
 
-| PostgreSQL | MySQL/MariaDB | NocoBase Data Type | NocoBase Interface Type |
-| - | - | - | - |
-| BOOLEAN | BOOLEAN<br/>TINYINT(1) | boolean | checkbox <br/> switch |
-| SMALLINT<br/>INTEGER<br/>SERIAL<br/>SMALLSERIAL | TINYINT<br/>SMALLINT<br/>MEDIUMINT<br/>INTEGER | integer<br/>boolean<br/>sort | integer<br/>sort<br/>checkbox<br/>switch<br/>select<br/>radioGroup |
-| BIGINT<br/>BIGSERIAL | BIGINT | bigInt<br/>sort | integer<br/>sort<br/>checkbox<br/>switch<br/>select<br/>radioGroup<br/>unixTimestamp<br/>createdAt<br/>updatedAt |
-| REAL | FLOAT | float | number<br/>percent |
-| DOUBLE PRECISION | DOUBLE PRECISION | double | number<br/>percent |
-| DECIMAL<br/>NUMERIC | DECIMAL | decimal | number<br/>percent<br/>currency |
-| VARCHAR<br/>CHAR | VARCHAR<br/>CHAR | string<br/>password<br/>uuid<br/>nanoid | input<br/>email<br/>phone<br/>password<br/>color<br/>icon<br/>select<br/>radioGroup<br/>uuid<br/>nanoid |
-| TEXT | TEXT<br/>TINYTEXT<br/>MEDIUMTEXT<br/>LONGTEXT | text<br/>json | textarea<br/>markdown<br/>vditor<br/>richText<br/>url<br/>json |
-| UUID | - | uuid | uuid |
-| JSON<br/>JSONB | JSON | json | json |
-| TIMESTAMP | DATETIME<br/>TIMESTAMP | date | date<br/>time<br/>createdAt<br/>updatedAt |
-| DATE | DATE | dateOnly | datetime |
-| TIME | TIME | time | time |
-| - | YEAR |  | datetime |
-| CIRCLE |  | circle | json<br/>circle |
-| PATH<br/>GEOMETRY(LINESTRING) | LINESTRING | lineString | Json<br/>lineString |
-| POINT<br/>GEOMETRY(POINT) | POINT | point | json<br/>point |
-| POLYGON<br/>GEOMETRY(POLYGON) | POLYGON | polygon | json<br/>polygon |
-| GEOMETRY | GEOMETRY |  -  |  -  |
-| BLOB | BLOB | blob |  -  |
-| ENUM | ENUM | enum | select<br/>radioGroup |
-| ARRAY |  -  | array | multipleSelect<br/>checkboxGroup |
+See [Collection fields](../data-modeling/collection-fields/index.md) for details.
+
+### Field type mapping
+
+NocoBase maps external database types to a corresponding **Field type** and **Field interface**. Field type defines the kind, format, and structure of stored data; Field interface defines the control used to display and enter the value.
+
+| PostgreSQL | MySQL / MariaDB | NocoBase Field type | NocoBase Field interface |
+| --- | --- | --- | --- |
+| BOOLEAN | BOOLEAN, TINYINT(1) | `boolean` | `checkbox`, `switch` |
+| SMALLINT, INTEGER, SERIAL, SMALLSERIAL | TINYINT, SMALLINT, MEDIUMINT, INTEGER | `integer`, `boolean`, `sort` | `integer`, `sort`, `checkbox`, `switch`, `select`, `radioGroup` |
+| BIGINT, BIGSERIAL | BIGINT | `bigInt`, `sort` | `integer`, `sort`, `checkbox`, `switch`, `select`, `radioGroup`, `unixTimestamp`, `createdAt`, `updatedAt` |
+| REAL | FLOAT | `float` | `number`, `percent` |
+| DOUBLE PRECISION | DOUBLE PRECISION | `double` | `number`, `percent` |
+| DECIMAL, NUMERIC | DECIMAL | `decimal` | `number`, `percent`, `currency` |
+| VARCHAR, CHAR | VARCHAR, CHAR | `string`, `password`, `uuid`, `nanoid` | `input`, `email`, `phone`, `password`, `color`, `icon`, `select`, `radioGroup`, `uuid`, `nanoid` |
+| TEXT | TEXT, TINYTEXT, MEDIUMTEXT, LONGTEXT | `text`, `json` | `textarea`, `markdown`, `vditor`, `richText`, `url`, `json` |
+| UUID | - | `uuid` | `uuid` |
+| JSON, JSONB | JSON | `json` | `json` |
+| TIMESTAMP | DATETIME, TIMESTAMP | `date` | `date`, `time`, `createdAt`, `updatedAt` |
+| DATE | DATE | `dateOnly` | `datetime` |
+| TIME | TIME | `time` | `time` |
+| - | YEAR | - | `datetime` |
+| CIRCLE | - | `circle` | `json`, `circle` |
+| POINT, GEOMETRY(POINT) | POINT | `point` | `json`, `point` |
+| PATH, GEOMETRY(LINESTRING) | LINESTRING | `lineString` | `json`, `lineString` |
+| POLYGON, GEOMETRY(POLYGON) | POLYGON | `polygon` | `json`, `polygon` |
+| GEOMETRY | GEOMETRY | - | - |
+| BLOB | BLOB | `blob` | - |
+| ARRAY | - | `array` | `multipleSelect`, `checkboxGroup` |
 | BIT | BIT | - | - |
-| SET | SET | set | multipleSelect<br/>checkboxGroup |
+| SET | SET | `set` | `multipleSelect`, `checkboxGroup` |
 | RANGE | - | - | - |
 
-### Unsupported Field Types
+### Unsupported field types
 
-Unsupported field types are displayed separately. These fields require development adaptation before they can be used.
+Unsupported field types are shown separately. They require development support before they can be used.
 
+![Unsupported field types](https://static-docs.nocobase.com/20240507221854.png)
 
-![20240507221854](https://static-docs.nocobase.com/20240507221854.png)
+### Record unique key
 
+A collection shown in a block needs a **Record unique key** to locate a record, usually a primary key or unique field.
 
-### Filter Target Key
+For a view, table without a primary key, or composite-primary-key table, set the Record unique key manually in the collection configuration. Without a usable unique key, blocks might not be created correctly or might not be able to view and edit records.
 
-Collections displayed as blocks must have a Filter target key configured. The filter target key is used to filter data based on a specific field, and the field value must be unique. By default, the filter target key is the collection's primary key field. For views, collections without a primary key, or collections with a composite primary key, you need to define a custom filter target key.
+![Edit a collection](https://static-docs.nocobase.com/edit_collection.png)
 
-
-![20240507210230](https://static-docs.nocobase.com/20240507210230.png)
-
-
-Only collections that have a filter target key configured can be added to the page.
-
-
-![20240507222827](https://static-docs.nocobase.com/20240507222827.png)
+![Configure a collection](https://static-docs.nocobase.com/edit_collection_configure.png)

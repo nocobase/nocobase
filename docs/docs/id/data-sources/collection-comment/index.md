@@ -1,68 +1,117 @@
 ---
 pkg: "@nocobase/plugin-comments"
-title: "Collection Comment"
-description: "Collection Comment menyimpan komentar dan umpan balik pengguna, mendukung rich text, terhubung ke Collection mana pun, komentar berjenjang, dan pelacakan pengguna, menambahkan kemampuan diskusi pada record data."
-keywords: "collection comment,fitur komentar,komentar rich text,komentar berjenjang,Collection Comment,NocoBase"
+title: "Tabel Komentar"
+description: "Tabel komentar menyimpan komentar, balasan, dan umpan balik pada rekaman bisnis, serta mendukung konten teks kaya, pelacakan pengguna, komentar bertingkat, dan blok komentar."
+keywords: "tabel komentar,fitur komentar,komentar teks kaya,komentar bertingkat,Collection Comment,NocoBase"
 ---
-# Collection Comment
 
-## Pengantar
+# Tabel Komentar
 
-Collection Comment adalah template Collection khusus untuk menyimpan komentar dan umpan balik pengguna. Melalui fitur komentar, Anda dapat menambahkan fungsi komentar ke Collection mana pun, sehingga pengguna dapat berdiskusi, memberikan umpan balik, atau menandai record tertentu. Collection Comment mendukung edit rich text, menyediakan kemampuan kreasi konten yang fleksibel.
+## Pengenalan
 
-![comment-collection-2025-11-01-00-39-01](https://static-docs.nocobase.com/comment-collection-2025-11-01-00-39-01.png)
+Tabel komentar cocok digunakan untuk menyimpan diskusi, umpan balik, dan anotasi yang berkaitan dengan rekaman bisnis. Misalnya, komentar tugas, pendapat dalam persetujuan, komentar artikel, dan umpan balik pelanggan dapat disimpan menggunakan tabel komentar.
 
-## Karakteristik Fitur
+Tabel komentar biasanya tidak digunakan sebagai tabel bisnis utama secara terpisah. Cara yang lebih umum adalah membuat tabel komentar terlebih dahulu, kemudian mengonfigurasi field relasi di tabel bisnis, dan terakhir menambahkan blok komentar di halaman detail atau pop-up rekaman bisnis.
 
-- **Edit Rich Text**: Secara default menyertakan editor Markdown (vditor), mendukung kreasi konten rich text
-- **Terhubung ke Collection mana pun**: Dapat menghubungkan komentar ke record Collection mana pun melalui field relasi
-- **Komentar Berjenjang**: Mendukung balasan terhadap komentar, membentuk struktur tree komentar
-- **Pelacakan Pengguna**: Otomatis mencatat pembuat komentar dan waktu pembuatan
+![komentar-tabel-2025-11-01-00-39-01](https://static-docs.nocobase.com/comment-collection-2025-11-01-00-39-01.png)
 
-## Panduan Penggunaan
+## Skenario penggunaan
 
-### Membuat Collection Comment
+Tabel komentar cocok untuk skenario bisnis berikut:
 
-![comment-collection-2025-11-01-00-37-10](https://static-docs.nocobase.com/comment-collection-2025-11-01-00-37-10.png)
+- Diskusi kolaboratif tentang tugas, kebutuhan, dan bug
+- Pendapat penanganan untuk formulir persetujuan, tiket kerja, dan kontrak
+- Komentar pada artikel, basis pengetahuan, dan pengumuman
+- Umpan balik pelanggan, tindak lanjut purnajual, dan catatan internal
 
-1. Masuk ke halaman manajemen Collection
-2. Klik tombol "Buat Collection Baru"
-3. Pilih template "Collection Comment"
-4. Masukkan nama Collection (misalnya: "Komentar Task", "Komentar Artikel", dan lainnya)
-5. Sistem akan otomatis membuat Collection Comment dengan field default berikut:
-   - Konten komentar (tipe Markdown vditor)
-   - Pembuat (terhubung ke Collection user)
-   - Waktu pembuatan (tipe datetime)
+## Alur penggunaan
 
-### Konfigurasi Relasi
+Tabel komentar biasanya digunakan bersama tabel bisnis dan blok komentar:
 
-Agar komentar dapat terhubung ke Collection target, Anda perlu mengonfigurasi field relasi:
+1. Buat tabel komentar untuk menyimpan konten komentar, hubungan balasan, pembuat, waktu pembuatan, dan informasi lainnya.
+2. Buat field relasi di tabel bisnis untuk menghubungkannya ke tabel komentar. Misalnya, hubungkan tabel 「Tugas」 ke tabel 「Komentar Tugas」.
+3. Tambahkan blok komentar di halaman detail atau pop-up tabel bisnis.
+4. Pengguna dapat memposting komentar atau balasan di blok komentar. Data komentar akan ditulis ke tabel komentar dan dihubungkan ke rekaman bisnis saat ini.
+5. Konfigurasikan izin tabel komentar sesuai kebutuhan bisnis untuk mengontrol siapa yang dapat melihat, membuat, atau menghapus komentar.
 
+## Pembuatan dan konfigurasi
+
+Klik 「Create collection」 di basis data utama, lalu pilih 「Comment collection」 untuk membuat tabel komentar.
+
+![komentar-tabel-2025-11-01-00-37-10](https://static-docs.nocobase.com/comment-collection-2025-11-01-00-37-10.png)
+
+| Konfigurasi | Deskripsi |
+| --- | --- |
+| Collection display name | Nama tabel yang ditampilkan di antarmuka, misalnya 「Komentar Tugas」, 「Pendapat Persetujuan」, atau 「Komentar Artikel」. |
+| Collection name | Nama identifikasi tabel yang digunakan untuk referensi internal seperti API, field relasi, izin, dan alur kerja. |
+| Inherits | Pilih tabel induk yang akan diwarisi. Hanya terlihat jika basis data utama menggunakan PostgreSQL. |
+| Categories | Kategori tabel. Kategori hanya memengaruhi cara pengorganisasian antarmuka pengelolaan tabel, bukan struktur tabel. |
+| Description | Deskripsi tabel. Anda dapat menjelaskan objek bisnis yang dilayani tabel komentar ini, pihak yang memeliharanya, dan cara merancang izin komentar. |
+| Preset fields | Field prasetel. Saat membuat tabel komentar, disarankan untuk mempertahankan field sistem dan field bawaan tabel komentar. |
+
+### Field bawaan
+
+Setelah dibuat, tabel komentar biasanya berisi field bawaan berikut. Blok komentar terutama bergantung pada `content`, `createdBy`, dan `createdAt` untuk menampilkan konten komentar, pemberi komentar, dan waktu komentar.
+
+| Field | Nama field | Deskripsi |
+| --- | --- | --- |
+| ID | `id` | Field kunci utama bawaan yang digunakan untuk mengidentifikasi satu rekaman komentar secara unik. |
+| Konten komentar | `content` | Menyimpan isi komentar yang dimasukkan pengguna, secara default menggunakan komponen Markdown Vditor. |
+| Waktu pembuatan | `createdAt` | Secara otomatis mencatat waktu pembuatan komentar dan digunakan oleh blok komentar untuk menampilkan waktu komentar. |
+| Pembuat | `createdBy` | Secara otomatis mencatat pengguna yang memposting komentar dan digunakan oleh blok komentar untuk menampilkan pemberi komentar. |
+| Waktu pembaruan | `updatedAt` | Secara otomatis mencatat waktu terakhir komentar diperbarui. |
+| Diperbarui oleh | `updatedBy` | Secara otomatis mencatat pengguna yang terakhir memperbarui komentar. |
+| Ruang | `space` | Tersedia setelah [plugin multi-ruang](../../multi-app/multi-space/index.md) diaktifkan dan digunakan untuk mengisolasi data berdasarkan ruang. Field ini tidak akan muncul jika multi-ruang tidak diaktifkan. |
+
+:::warning Perhatian
+
+Field bawaan tabel komentar biasanya dikelola oleh blok komentar. Sebaiknya jangan menghapusnya sembarangan atau mengubahnya menjadi makna bisnis lain. Jika perlu menyimpan kategori komentar, status penanganan, atau informasi lainnya, Anda dapat menambahkan field bisnis baru.
+
+:::
+
+### Field kunci utama
+
+Seperti tabel biasa, tabel komentar juga memerlukan field kunci utama. Blok komentar menggunakan kunci utama untuk menemukan rekaman komentar dan hubungan balasan.
+
+Jika tabel komentar tidak memiliki kunci utama, tetapkan 「Record unique key」 saat mengedit tabel data. Jika tidak, blok komentar mungkin tidak dapat melihat, membalas, atau menghapus komentar dengan benar.
+
+## Membangun hubungan relasi
+Buat field relasi di tabel bisnis untuk menghubungkannya ke tabel komentar
 ![](https://static-docs.nocobase.com/Solution/demoE3v1-19N.gif)
 
-1. Tambahkan field relasi "Many to One" pada Collection Comment
-2. Pilih Collection target yang akan dihubungkan (misalnya: Collection task, Collection artikel, dan lainnya)
-3. Atur nama field (misalnya: "Task Terkait", "Artikel Terkait", dan lainnya)
+## Konfigurasi penggunaan halaman
 
-### Menggunakan Block Komentar di Halaman
+Tabel komentar biasanya digunakan melalui blok komentar. Anda dapat menambahkan blok komentar di halaman detail, pop-up, atau halaman rekaman tabel bisnis agar pengguna dapat memberikan komentar seputar rekaman saat ini.
 
-![Enable Comments Collection](https://static-docs.nocobase.com/Solution/demoE3v1-20.gif)
+![Aktifkan Koleksi Komentar](https://static-docs.nocobase.com/Solution/demoE3v1-20.gif)
 
-1. Masuk ke halaman tempat fungsi komentar perlu ditambahkan
-2. Tambahkan block pada detail atau popup record target
-3. Pilih tipe block "Komentar"
-4. Pilih Collection comment yang baru saja dibuat
+| Lokasi konfigurasi | Kegunaan |
+| --- | --- |
+| [Blok detail](../../interface-builder/blocks/data-blocks/details.md) | Menampilkan akses komentar di detail rekaman bisnis. |
+| [Blok formulir](../../interface-builder/blocks/data-blocks/form.md) | Menggunakan field relasi komentar bersama alur pengeditan tabel bisnis. |
+| Blok komentar | Menampilkan daftar komentar, memposting komentar, dan membalas komentar. |
 
+## Edit konfigurasi
 
-### Skenario Aplikasi Tipikal
+Di daftar tabel data, klik 「Edit」 di sebelah kanan tabel komentar untuk mengubah nama tampilan, kategori, deskripsi, mode paginasi sederhana, 「Record unique key」, dan konfigurasi lainnya.
 
-- **Sistem Manajemen Task**: Anggota tim mendiskusikan dan memberikan umpan balik terhadap task
-- **Sistem Manajemen Konten**: Pembaca berkomentar dan berinteraksi dengan artikel
-- **Alur Approval**: Approver memberikan catatan dan opini terhadap formulir aplikasi
-- **Umpan Balik Pelanggan**: Mengumpulkan evaluasi pelanggan terhadap produk atau layanan
+Setelah tabel komentar digunakan dalam produksi, sebaiknya jangan mengubah field konten komentar dan field hubungan balasan sembarangan. Blok komentar, izin, alur kerja, dan API mungkin bergantung pada field-field tersebut.
 
-## Perhatian
+## Hapus tabel data
 
-- Collection Comment adalah fitur plugin komersial, plugin komentar perlu diaktifkan untuk digunakan
-- Disarankan untuk mengatur izin yang sesuai pada Collection Comment, untuk mengontrol siapa yang dapat melihat, membuat, dan menghapus komentar
-- Untuk skenario komentar dalam jumlah besar, disarankan untuk mengaktifkan paginasi guna meningkatkan performa
+Di daftar tabel data, klik 「Delete」 di sebelah kanan tabel komentar untuk menghapus tabel komentar.
+
+Menghapus tabel komentar akan menghapus rekaman komentar, hubungan balasan, dan metadata Collection terkait. Sebelum menghapus, pastikan apakah field relasi di tabel bisnis, blok komentar, izin, alur kerja, dan API masih bergantung padanya.
+
+:::danger Peringatan
+
+Menghapus tabel komentar akan menyebabkan rekaman bisnis yang ada kehilangan data komentar. Komentar biasanya memuat proses kolaborasi dan pendapat penanganan. Sebelum melakukan tindakan ini, pastikan apakah perlu membuat cadangan atau arsip.
+
+:::
+
+## Tautan terkait
+
+- [Tabel biasa](../data-source-main/general-collection.md) — Lihat konfigurasi umum dan cara menggunakan blok
+- [Field relasi](../data-modeling/collection-fields/associations/index.md) — Pahami cara menghubungkan tabel bisnis dengan tabel komentar
+- [Plugin komentar](../../plugins/@nocobase/plugin-comments/index.md) — Lihat blok komentar dan kemampuan komentar
+- [Multi-ruang](../../multi-app/multi-space/index.md) — Pahami field ruang dan kemampuan isolasi ruang

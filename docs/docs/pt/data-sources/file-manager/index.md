@@ -1,38 +1,41 @@
 ---
-pkg: "@nocobase/plugin-file-manager"
+title: "Gerenciador de arquivos"
+description: "Tabela de arquivos, campo de anexos e mecanismos de armazenamento, com suporte a armazenamento local, Alibaba Cloud OSS, Amazon S3 e Tencent Cloud COS, para gerenciar metadados e uploads de arquivos."
+keywords: "Gerenciador de arquivos,tabela de arquivos,campo de anexos,mecanismo de armazenamento,OSS,S3,COS,NocoBase"
 ---
 
+# Gerenciador de arquivos
 
-# Gerenciador de Arquivos
+<PluginInfo name="file-manager"></PluginInfo>
 
 ## Introdução
 
-O plugin Gerenciador de Arquivos oferece uma coleção de arquivos, campo de anexo e motores de armazenamento de arquivos para gerenciar arquivos de forma eficaz. Arquivos são registros em um tipo especial de coleção, conhecida como coleção de arquivos, que armazena metadados de arquivos e pode ser gerenciada através do Gerenciador de Arquivos. Campos de anexo são campos de associação específicos relacionados à coleção de arquivos. O plugin suporta vários métodos de armazenamento, incluindo armazenamento local, Alibaba Cloud OSS, Amazon S3 e Tencent Cloud COS.
+O plugin Gerenciador de arquivos fornece tabelas de arquivos, campos de anexos e mecanismos de armazenamento de arquivos para gerenciar arquivos de forma eficiente. Um arquivo é um registro de tabela de dados com uma estrutura específica. Essa tabela de dados é chamada de tabela de arquivos e é usada para armazenar os metadados dos arquivos, que podem ser gerenciados pelo Gerenciador de arquivos. Um campo de anexos é um campo de relação específico associado a uma tabela de arquivos. Os arquivos são compatíveis com vários métodos de armazenamento. Atualmente, os mecanismos de armazenamento de arquivos compatíveis incluem armazenamento local, Alibaba Cloud OSS, Amazon S3 e Tencent Cloud COS.
 
-## Manual do Usuário
+## Manual do usuário
 
-### Coleção de Arquivos
+### Tabela de arquivos
 
-Uma coleção de anexos é integrada para armazenar todos os arquivos associados a campos de anexo. Além disso, novas coleções de arquivos podem ser criadas para armazenar arquivos específicos.
+A tabela attachments vem integrada e é usada para armazenar os arquivos associados a todos os campos de anexos. Além disso, também é possível criar novas tabelas de arquivos para armazenar arquivos específicos.
 
-[Saiba mais na documentação da Coleção de Arquivos](/data-sources/file-manager/file-collection)
+[Consulte a documentação de introdução às tabelas de arquivos para obter mais informações](/data-sources/file-manager/file-collection)
 
-### Campo de Anexo
+### Campo de anexos
 
-Campos de anexo são campos de associação específicos relacionados à coleção de arquivos, que podem ser criados através do tipo de campo "Anexo" ou configurados através de um campo de "Associação".
+Um campo de anexos é um campo de relação específico associado a uma tabela de arquivos. Ele pode ser criado por meio de um «campo do tipo anexo» ou configurado por meio de um «campo de relação».
 
-[Saiba mais na documentação do Campo de Anexo](/data-sources/file-manager/field-attachment)
+[Consulte a documentação de introdução aos campos de anexos para obter mais informações](/data-sources/file-manager/field-attachment)
 
-### Motor de Armazenamento de Arquivos
+### Mecanismo de armazenamento de arquivos
 
-O motor de armazenamento de arquivos é usado para salvar arquivos em serviços específicos, incluindo armazenamento local (salvando no disco rígido do servidor), armazenamento em nuvem, etc.
+Os mecanismos de armazenamento de arquivos são usados para salvar arquivos em serviços específicos, incluindo armazenamento local (salvamento no disco rígido do servidor), armazenamento em nuvem e outros.
 
-[Saiba mais na documentação do Motor de Armazenamento de Arquivos](./storage/index.md)
+[Consulte a introdução aos mecanismos de armazenamento de arquivos para obter mais informações](./storage/index.md)
 
 ### API HTTP
 
-Uploads de arquivos podem ser tratados via API HTTP, veja [API HTTP](./http-api.md).
+O upload de arquivos pode ser processado por meio da API HTTP. Consulte [API HTTP](./http-api.md).
 
-## Desenvolvimento
+## Desenvolvimento de extensões
 
 *

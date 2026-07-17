@@ -1,52 +1,58 @@
-# Vue d'ensemble
+---
+title: "Vue d’ensemble"
+description: "Types de champs de date et d’heure : avec ou sans fuseau horaire, date, heure, horodatage Unix, et correspondance entre les types NocoBase/MySQL/PostgreSQL."
+keywords: "date et heure,DateTime,champs temporels,avec fuseau horaire,sans fuseau horaire,horodatage Unix,NocoBase"
+---
 
-## Types de champs de date et heure
+# Vue d’ensemble
 
-Voici les différents types de champs de date et heure :
+## Types de champs de date et d’heure
 
-- **Date et heure (avec fuseau horaire)** : Ces valeurs sont standardisées en temps universel coordonné (UTC) et sont sujettes à des ajustements de fuseau horaire si nécessaire.
-- **Date et heure (sans fuseau horaire)** : Ce type stocke les données de date et d'heure sans inclure d'informations de fuseau horaire.
-- **Date (sans heure)** : Ce format stocke exclusivement les informations de date, en omettant toute composante horaire.
-- **Heure** : Stocke uniquement les informations d'heure, sans inclure la date.
-- **Timestamp Unix** : Ce type représente le nombre de secondes écoulées depuis le 1er janvier 1970 et est stocké en tant que timestamp Unix.
+Les types de champs de date et d’heure comprennent les suivants :
 
-Voici des exemples pour chaque type de champ lié à la date et à l'heure :
+- **Date et heure (avec fuseau horaire)** - La date et l’heure sont converties uniformément en UTC (temps universel coordonné), puis converties dans le fuseau horaire requis le cas échéant ;
+- **Date et heure (sans fuseau horaire)** - Stocke la date et l’heure sans informations de fuseau horaire ;
+- **Date (sans heure)** - Stocke uniquement la date, sans la partie correspondant à l’heure ;
+- **Heure** - Stocke uniquement l’heure, sans la partie correspondant à la date ;
+- **Horodatage Unix** - Stocke un horodatage Unix, généralement sous forme du nombre de secondes écoulées depuis le 1er janvier 1970.
 
-| **Type de champ**                 | **Exemple de valeur**          | **Description**                                            |
-|-----------------------------------|--------------------------------|------------------------------------------------------------|
-| Date et heure (avec fuseau horaire) | 2024-08-24T07:30:00.000Z       | Converti en UTC et peut être ajusté pour les fuseaux horaires |
-| Date et heure (sans fuseau horaire) | 2024-08-24 15:30:00            | Stocke la date et l'heure sans considération de fuseau horaire |
-| Date (sans heure)                 | 2024-08-24                     | Capture uniquement la date, sans information d'heure       |
-| Heure                             | 15:30:00                       | Capture uniquement l'heure, sans détails de date           |
-| Timestamp Unix                    | 1724437800                     | Représente les secondes écoulées depuis le 1er janvier 1970 00:00:00 UTC |
+Exemples pour les différents types de champs liés aux dates :
 
-## Comparaisons des sources de données
+| **Type de champ**         | **Valeur d’exemple**                 | **Description**                                   |
+|--------------------|---------------------------|--------------------------------------------|
+| Date et heure (avec fuseau horaire)    | 2024-08-24T07:30:00.000Z   | La date et l’heure sont converties uniformément en UTC (temps universel coordonné)      |
+| Date et heure (sans fuseau horaire)  | 2024-08-24 15:30:00        | Date et heure sans fuseau horaire, enregistrant uniquement la date et l’heure             |
+| Date (sans heure)     | 2024-08-24                 | Stocke uniquement les informations de date, sans l’heure                     |
+| Heure               | 15:30:00                   | Stocke uniquement les informations d’heure, sans la date                     |
+| Horodatage Unix        | 1724437800                 | Nombre de secondes écoulées depuis le 1er janvier 1970 à 00:00:00 UTC |
 
-Voici un tableau comparatif pour NocoBase, MySQL et PostgreSQL :
+## Correspondance entre les sources de données
 
-| **Type de champ**                 | **NocoBase**               | **MySQL**                  | **PostgreSQL**                         |
-|-----------------------------------|----------------------------|----------------------------|----------------------------------------|
-| Date et heure (avec fuseau horaire) | Datetime with timezone     | TIMESTAMP<br/> DATETIME    | TIMESTAMP WITH TIME ZONE               |
-| Date et heure (sans fuseau horaire) | Datetime without timezone  | DATETIME                   | TIMESTAMP WITHOUT TIME ZONE            |
-| Date (sans heure)                 | Date                       | DATE                       | DATE                                   |
-| Heure                             | Time                       | TIME                       | TIME WITHOUT TIME ZONE                 |
-| Timestamp Unix                    | Unix timestamp             | INTEGER<br/>BIGINT         | INTEGER<br/>BIGINT                     |
-| Heure (avec fuseau horaire)       | -                          | -                          | TIME WITH TIME ZONE                    |
+Tableau de correspondance entre NocoBase, MySQL et PostgreSQL :
 
-**Remarque :**
-- Le type `TIMESTAMP` de MySQL couvre une plage allant du `1970-01-01 00:00:01 UTC` au `2038-01-19 03:14:07 UTC`. Pour les dates et heures en dehors de cette plage, il est recommandé d'utiliser `DATETIME` ou `BIGINT` pour stocker les timestamps Unix.
+| **Type de champ**       | **NocoBase**               | **MySQL**          | **PostgreSQL**                |
+|------------------|-----------------------------|--------------------|-------------------------------|
+| Date et heure (avec fuseau horaire)   | Datetime with timezone    | TIMESTAMP<br/> DATETIME | TIMESTAMP WITH TIME ZONE      |
+| Date et heure (sans fuseau horaire)  | Datetime without timezone  | DATETIME           | TIMESTAMP WITHOUT TIME ZONE   |
+| Date (sans heure)     | Date                      | DATE                 | DATE                          |
+| Heure               | Time                     | TIME                 | TIME WITHOUT TIME ZONE        |
+| Horodatage Unix        | Unix timestamp            | INTEGER<br/>BIGINT   | INTEGER<br/>BIGINT              |
+| Heure (avec fuseau horaire)      | -                         | -                  | TIME WITH TIME ZONE           |
+
+Remarque :
+- La plage de valeurs de TIMESTAMP dans MySQL se situe entre UTC `1970-01-01 00:00:01 ~ 2038-01-19 03:14:07`. Lorsque cette plage est dépassée, il est recommandé d’utiliser DATETIME ou BIGINT pour stocker l’horodatage Unix.
 
 ## Processus de traitement du stockage des dates et heures
 
 ### Avec fuseau horaire
 
-Cela inclut les types `Date et heure (avec fuseau horaire)` et `Timestamp Unix`.
+Comprend`日期时间（不含时区）` et `Unix 时间戳`
 
 ![20240824191933](https://static-docs.nocobase.com/20240824191933.png)
 
-**Remarque :**
-- Afin de prendre en charge une plage de dates plus étendue, NocoBase utilise le type `DATETIME` dans la base de données MySQL pour les champs de date et heure (avec fuseau horaire). La valeur de date stockée est convertie en fonction de la variable d'environnement `TZ` du serveur, ce qui signifie que si cette variable change, la valeur de date et heure stockée sera également modifiée.
-- Étant donné qu'il existe un décalage de fuseau horaire entre l'heure UTC et l'heure locale, afficher directement la valeur UTC brute pourrait induire les utilisateurs en erreur.
+Remarque :
+- Pour prendre en charge une plage de données plus étendue, le champ de date et d’heure (avec fuseau horaire) de NocoBase utilise DATETIME dans la base de données MySQL. La valeur de date stockée est convertie en fonction de la variable d’environnement TZ du serveur. Si la variable d’environnement TZ est modifiée, la valeur stockée de la date et de l’heure change également.
+- L’écart de fuseau horaire entre l’heure UTC et l’heure locale peut entraîner une mauvaise interprétation si la valeur UTC d’origine est affichée directement.
 
 ### Sans fuseau horaire
 
@@ -54,17 +60,17 @@ Cela inclut les types `Date et heure (avec fuseau horaire)` et `Timestamp Unix`.
 
 ## UTC
 
-L'UTC (Temps Universel Coordonné) est le standard horaire mondial utilisé pour coordonner et synchroniser l'heure partout dans le monde. C'est un standard de temps de haute précision, maintenu par des horloges atomiques et synchronisé avec la rotation de la Terre.
+L’UTC (temps universel coordonné, Coordinated Universal Time) est la norme temporelle mondiale utilisée pour coordonner et uniformiser l’heure dans le monde entier. Il s’agit d’une norme temporelle de haute précision fondée sur des horloges atomiques, synchronisée avec la rotation de la Terre.
 
-La différence entre l'heure UTC et l'heure locale peut prêter à confusion lors de l'affichage des valeurs UTC brutes. Par exemple :
+L’heure UTC et l’heure locale présentent un décalage lié au fuseau horaire. Afficher directement la valeur UTC d’origine peut donc prêter à confusion, par exemple :
 
-| **Fuseau horaire** | **Date et heure**             |
-|--------------------|-------------------------------|
-| UTC                | 2024-08-24T07:30:00.000Z      |
-| UTC+8              | 2024-08-24 15:30:00           |
-| UTC+5              | 2024-08-24 12:30:00           |
-| UTC-5              | 2024-08-24 02:30:00           |
-| UTC+0              | 2024-08-24 07:30:00           |
-| UTC-6              | 2024-08-23 01:30:00           |
+| **Fuseau horaire**       | **Date et heure**                      |
+|----------------|----------------------------------|
+| UTC            | 2024-08-24T07:30:00.000Z          |
+| Fuseau UTC+8 | 2024-08-24 15:30:00               |
+| Fuseau UTC+5 | 2024-08-24 12:30:00               |
+| Fuseau UTC-5 | 2024-08-24 02:30:00               |
+| Heure du Royaume-Uni (UTC+0) | 2024-08-24 07:30:00              |
+| Heure du Centre (UTC-6) | 2024-08-23 01:30:00              |
 
-Ces différentes heures correspondent toutes au même instant, simplement exprimées dans des fuseaux horaires variés.
+Toutes les valeurs ci-dessus représentent le même instant ; seul le fuseau horaire diffère.
