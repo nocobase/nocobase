@@ -9,7 +9,7 @@
 
 import type { Database, Model, Transaction } from '@nocobase/database';
 import { UniqueConstraintError } from '@nocobase/database';
-import { VscFileService, VscPermissionHookRegistry } from '@nocobase/plugin-vsc-file';
+import { RemoteSyncError, VscFileService, VscPermissionHookRegistry } from '@nocobase/plugin-vsc-file';
 import { uid } from '@nocobase/utils';
 import { randomUUID } from 'crypto';
 
@@ -19,7 +19,7 @@ import {
   type LightExtensionAclAction,
 } from '../../constants';
 import { createDefaultLightExtensionTemplate } from '../../shared/default-template';
-import { LightExtensionError } from '../../shared/errors';
+import { LightExtensionError, mapRemoteSyncErrorToLightExtension } from '../../shared/errors';
 import type {
   LightExtensionChangeLifecycleInput,
   LightExtensionCreateRepoInput,
@@ -47,10 +47,23 @@ export interface LightExtensionRepoInternalRecord extends LightExtensionRepoReco
   vscRepoId: string;
 }
 
+export interface LightExtensionRemoteSyncLifecycleGate {
+  assertRepositoryIdle(repoId: string, transaction?: Transaction): Promise<void>;
+}
+
+export interface LightExtensionCreateMetadata {
+  name: string;
+  normalizedName: string;
+  title: string | null | undefined;
+  description: string | null | undefined;
+}
+
 export class LightExtensionRepoService {
   private vscFileService: VscFileService;
 
   private referenceService?: ReferenceService;
+
+  private remoteSyncLifecycleGate?: LightExtensionRemoteSyncLifecycleGate;
 
   constructor(
     private readonly db: Database,
@@ -72,6 +85,10 @@ export class LightExtensionRepoService {
     this.referenceService = referenceService;
   }
 
+  useRemoteSyncLifecycleGate(gate: LightExtensionRemoteSyncLifecycleGate): void {
+    this.remoteSyncLifecycleGate = gate;
+  }
+
   getValidator(): LightExtensionValidator {
     return this.validator;
   }
@@ -81,13 +98,13 @@ export class LightExtensionRepoService {
     ctx: LightExtensionServiceContext = {},
   ): Promise<LightExtensionRepoRecord> {
     const requestId = getRequestId(ctx);
-    const normalizedName = normalizeRepoName(input.name);
+    const metadata = this.normalizeCreateMetadata(input);
     const repoId = `ler_${uid()}`;
     const initialFiles = input.initialFiles?.length ? input.initialFiles : createDefaultLightExtensionTemplate();
     this.assertValidInitialFiles(initialFiles);
 
     return this.withTransaction(ctx.transaction, async (transaction) => {
-      await this.assertRepoNameAvailable(input.name.trim(), normalizedName, transaction);
+      await this.assertRepoNameAvailable(metadata.name, metadata.normalizedName, transaction);
 
       const vscResult = await this.runVsc(repoId, () =>
         this.vscFileService.createRepository(
@@ -119,10 +136,10 @@ export class LightExtensionRepoService {
         {
           id: repoId,
           vscRepoId: vscResult.repository.id,
-          name: input.name.trim(),
-          normalizedName,
-          title: optionalTrim(input.title),
-          description: optionalTrim(input.description),
+          name: metadata.name,
+          normalizedName: metadata.normalizedName,
+          title: metadata.title,
+          description: metadata.description,
           headCommitId: vscResult.repository.headCommitId || null,
         },
         transaction,
@@ -162,6 +179,18 @@ export class LightExtensionRepoService {
 
       return repo;
     });
+  }
+
+  normalizeCreateMetadata(
+    input: Pick<LightExtensionCreateRepoInput, 'name' | 'title' | 'description'>,
+  ): LightExtensionCreateMetadata {
+    const name = input.name.trim();
+    return {
+      name,
+      normalizedName: normalizeRepoName(name),
+      title: optionalTrim(input.title),
+      description: optionalTrim(input.description),
+    };
   }
 
   private assertValidInitialFiles(files: LightExtensionTreeEntryInput[] | undefined): void {
@@ -234,6 +263,7 @@ export class LightExtensionRepoService {
 
     return this.withTransaction(ctx.transaction, async (transaction) => {
       const current = await this.lockInternalRepoForUpdate(input.repoId, { ...ctx, transaction });
+
       const description = optionalTrim(input.description);
       if (current.title === title && current.description === description) {
         return stripInternalRepo(current);
@@ -299,6 +329,10 @@ export class LightExtensionRepoService {
 
     return this.withTransaction(ctx.transaction, async (transaction) => {
       const current = await this.lockInternalRepoForUpdate(input.repoId, { ...ctx, transaction });
+
+      if (input.lifecycleStatus === 'archived') {
+        await this.assertRemoteSyncIdle(current.vscRepoId, transaction);
+      }
 
       if (current.lifecycleStatus === 'archived' && input.lifecycleStatus !== 'archived') {
         await this.recordLifecycleBlocked({
@@ -422,6 +456,7 @@ export class LightExtensionRepoService {
     try {
       return await this.withTransaction(ctx.transaction, async (transaction) => {
         const repo = await this.lockInternalRepoForUpdate(input.repoId, { ...ctx, transaction });
+        await this.assertRemoteSyncIdle(repo.vscRepoId, transaction);
         const referenceCount = await this.countRepoReferences(input.repoId, transaction);
 
         if (referenceCount > 0) {
@@ -656,6 +691,20 @@ export class LightExtensionRepoService {
       return await run();
     } catch (error) {
       throw normalizeVscBridgeError(error, repoId);
+    }
+  }
+
+  private async assertRemoteSyncIdle(vscRepoId: string, transaction: Transaction): Promise<void> {
+    if (!this.remoteSyncLifecycleGate) {
+      return;
+    }
+    try {
+      await this.remoteSyncLifecycleGate.assertRepositoryIdle(vscRepoId, transaction);
+    } catch (error) {
+      if (error instanceof RemoteSyncError) {
+        throw mapRemoteSyncErrorToLightExtension(error);
+      }
+      throw error;
     }
   }
 

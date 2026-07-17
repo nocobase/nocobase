@@ -10,7 +10,7 @@
 import PluginVscFileServer, { VscFileService, VscPermissionHookRegistry } from '@nocobase/plugin-vsc-file';
 import { MockServer, createMockServer } from '@nocobase/test';
 
-import { LIGHT_EXTENSION_ACL_SNIPPET } from '../../constants';
+import { LIGHT_EXTENSION_ACL_SNIPPET, LIGHT_EXTENSION_ENTRY_SCHEMA_VERSION } from '../../constants';
 import type { LightExtensionTreeEntryInput } from '../../shared/types';
 import PluginLightExtensionServer from '../plugin';
 import { lightExtensionFileActionNames } from '../resources/lightExtensionFiles';
@@ -218,6 +218,19 @@ describe('plugin-light-extension file service resource bridge', () => {
             content: 'ctx.render(<div>Source workflow</div>);\n',
             language: 'typescript',
           },
+          {
+            path: 'src/client/js-blocks/source-workflow/entry.json',
+            content: `${JSON.stringify(
+              {
+                schemaVersion: LIGHT_EXTENSION_ENTRY_SCHEMA_VERSION,
+                key: 'source-workflow',
+                title: 'Source workflow',
+              },
+              null,
+              2,
+            )}\n`,
+            language: 'json',
+          },
         ],
       },
     });
@@ -255,7 +268,11 @@ describe('plugin-light-extension file service resource bridge', () => {
     expect(firstCommit.parentCommitId).toBe(initialCommitId);
     expect(secondCommit.parentCommitId).toBe(firstCommit.id);
     expect(pullResponse.body.data.files.map((file: { path: string }) => file.path)).toEqual(
-      expect.arrayContaining(['README.md', 'src/client/js-blocks/source-workflow/index.tsx']),
+      expect.arrayContaining([
+        'README.md',
+        'src/client/js-blocks/source-workflow/entry.json',
+        'src/client/js-blocks/source-workflow/index.tsx',
+      ]),
     );
     expect(fileResponse.body.data).toMatchObject({
       path: 'README.md',
@@ -859,7 +876,7 @@ describe('plugin-light-extension file service resource bridge', () => {
       details: {
         diagnostics: expect.arrayContaining([
           expect.objectContaining({
-            code: 'path_not_allowed',
+            code: 'workspace_path_not_allowed',
             path: 'package.json',
           }),
           expect.objectContaining({
@@ -934,10 +951,20 @@ describe('plugin-light-extension file service resource bridge', () => {
         repoId: repo.id,
         expectedHeadCommitId: repo.headCommitId,
         message: 'fill entry budget',
-        files: Array.from({ length: 45 }, (_, index) => ({
-          path: `src/client/js-blocks/entry-${index}/index.tsx`,
-          content: `ctx.render(<div>Entry ${index}</div>);\n`,
-        })),
+        files: Array.from({ length: 32 }, (_, index) => [
+          {
+            path: `src/client/js-blocks/entry-${index}/entry.json`,
+            content: `${JSON.stringify({
+              schemaVersion: LIGHT_EXTENSION_ENTRY_SCHEMA_VERSION,
+              key: `entry-${index}`,
+              title: `Entry ${index}`,
+            })}\n`,
+          },
+          {
+            path: `src/client/js-blocks/entry-${index}/index.tsx`,
+            content: `ctx.render(<div>Entry ${index}</div>);\n`,
+          },
+        ]).flat(),
       },
     });
     const response = await agent.resource('lightExtensionFiles').saveSource({
@@ -946,6 +973,14 @@ describe('plugin-light-extension file service resource bridge', () => {
         expectedHeadCommitId: firstPushResponse.body.data.commit.id,
         message: 'exceed entry budget',
         files: [
+          {
+            path: 'src/client/js-blocks/entry-over-limit/entry.json',
+            content: `${JSON.stringify({
+              schemaVersion: LIGHT_EXTENSION_ENTRY_SCHEMA_VERSION,
+              key: 'entry-over-limit',
+              title: 'Entry over limit',
+            })}\n`,
+          },
           {
             path: 'src/client/js-blocks/entry-over-limit/index.tsx',
             content: 'ctx.render(<div>Entry over limit</div>);\n',
@@ -974,7 +1009,7 @@ describe('plugin-light-extension file service resource bridge', () => {
     const permissionService = new LightExtensionPermissionService(auditService);
     const validator = new LightExtensionValidator({
       limits: {
-        maxRepoBytes: 100,
+        maxRepoBytes: 180,
       },
     });
     const repoService = new LightExtensionRepoService(app.db, auditService, permissionService, undefined, validator);
@@ -1001,6 +1036,14 @@ describe('plugin-light-extension file service resource bridge', () => {
       expectedHeadCommitId: repo.headCommitId,
       message: 'add first source',
       files: [
+        {
+          path: 'src/client/js-blocks/byte-limit/entry.json',
+          content: `${JSON.stringify({
+            schemaVersion: LIGHT_EXTENSION_ENTRY_SCHEMA_VERSION,
+            key: 'byte-limit',
+            title: 'Byte limit',
+          })}\n`,
+        },
         {
           path: 'src/client/js-blocks/byte-limit/index.tsx',
           content: 'ctx.render(<div>Byte limit</div>);\n',

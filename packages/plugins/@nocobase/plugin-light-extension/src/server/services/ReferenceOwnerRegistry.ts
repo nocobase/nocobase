@@ -71,7 +71,7 @@ const REFERENCE_OWNER_ADAPTERS: ReferenceOwnerAdapter[] = [
     title: 'JS Item',
     locatorContract: 'Item model settings locator',
     modelUse: 'JSItemModel',
-    modelUses: ['JSItemModel', 'JSItemActionModel'],
+    modelUses: ['JSItemModel', 'FormJSFieldItemModel', 'JSItemActionModel'],
   },
   {
     kind: 'runjs',

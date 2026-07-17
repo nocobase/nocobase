@@ -52,6 +52,36 @@ describe('resolveRuntimeRunJS', () => {
     });
   });
 
+  it('treats a missing sourceMode as inline even when additive source fields are present', async () => {
+    const resolve = vi.fn(() => ({
+      code: 'return "compiled";',
+      version: 'v2',
+    }));
+    RunJSSourceResolverRegistry.registerResolver({
+      sourceMode: 'light-extension',
+      resolve,
+    });
+
+    await expect(
+      resolveRuntimeRunJS({
+        runJs: {
+          code: 'return "legacy inline";',
+          version: 'v1',
+          sourceRef: { type: 'vsc-file', path: 'legacy/runjs.ts' },
+          sourceBinding: LIGHT_EXTENSION_SOURCE_BINDING,
+          settings: { region: 'APAC' },
+        },
+      }),
+    ).resolves.toEqual({
+      code: 'return "legacy inline";',
+      version: 'v1',
+      sourceMode: 'inline',
+      settings: { region: 'APAC' },
+      context: undefined,
+    });
+    expect(resolve).not.toHaveBeenCalled();
+  });
+
   it('evaluates resolved code through FlowContext.runjs with browser globals', async () => {
     const engine = new FlowEngine();
 
@@ -179,6 +209,37 @@ return {
         },
       }),
     );
+  });
+
+  it('executes the compiled artifact while leaving the inline fallback untouched', async () => {
+    RunJSSourceResolverRegistry.registerResolver({
+      sourceMode: 'light-extension',
+      resolve: () => ({
+        code: 'return "compiled artifact";',
+        version: 'v2',
+      }),
+    });
+    const runJs = {
+      code: 'return "inline fallback";',
+      version: 'v1',
+      sourceRef: { type: 'vsc-file', path: 'legacy/runjs.ts' },
+      sourceMode: 'light-extension',
+      sourceBinding: LIGHT_EXTENSION_SOURCE_BINDING,
+    };
+
+    await expect(resolveRuntimeRunJS({ runJs })).resolves.toMatchObject({
+      code: 'return "compiled artifact";',
+      version: 'v2',
+      sourceMode: 'light-extension',
+      sourceBinding: LIGHT_EXTENSION_SOURCE_BINDING,
+    });
+    expect(runJs).toEqual({
+      code: 'return "inline fallback";',
+      version: 'v1',
+      sourceRef: { type: 'vsc-file', path: 'legacy/runjs.ts' },
+      sourceMode: 'light-extension',
+      sourceBinding: LIGHT_EXTENSION_SOURCE_BINDING,
+    });
   });
 
   it('lets resolver-returned settings override input settings intentionally', async () => {

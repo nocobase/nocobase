@@ -12,6 +12,7 @@ import { head } from 'lodash';
 import Stream from 'stream';
 
 const REQUEST_SOURCE_HEADER = 'x-request-source';
+const GITHUB_TOKEN_PATTERNS = [/\bgh[pousr]_[A-Za-z0-9]{20,}\b/u, /\bgithub_pat_[A-Za-z0-9_]{20,}\b/u];
 
 function isStream(obj) {
   return (
@@ -243,7 +244,7 @@ export class AuditManager {
           'x-authenticator': ctx.request?.headers['x-authenticator'],
           'x-locale': ctx.request?.headers['x-locale'],
           'x-timezone': ctx.request?.headers['x-timezone'],
-          'x-request-source': ctx.request?.headers[REQUEST_SOURCE_HEADER],
+          'x-request-source': sanitizeRequestSource(ctx.request?.headers[REQUEST_SOURCE_HEADER]),
         },
       },
       response: {
@@ -269,7 +270,7 @@ export class AuditManager {
       dataSource: (ctx.request.header['x-data-source'] || 'main') as string,
       resource: resourceName,
       action: ctx.action.actionName,
-      requestSource: ctx.request.header[REQUEST_SOURCE_HEADER] as string,
+      requestSource: sanitizeRequestSource(ctx.request.header[REQUEST_SOURCE_HEADER]),
       userId: ctx.state?.currentUser?.id,
       roleName: ctx.state?.currentRole,
       ip: ips.length > 0 ? ips[0] : ctx.request.ip,
@@ -355,4 +356,17 @@ export class AuditManager {
       }
     };
   }
+}
+
+function sanitizeRequestSource(value: unknown): string | undefined {
+  if (typeof value !== 'string' || !value) {
+    return undefined;
+  }
+  if (
+    /(token|authorization|password|secret|credential|private[\s_-]?key)/i.test(value) ||
+    GITHUB_TOKEN_PATTERNS.some((pattern) => pattern.test(value))
+  ) {
+    return undefined;
+  }
+  return value;
 }

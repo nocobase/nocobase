@@ -244,6 +244,7 @@ import {
   normalizeFieldValueRules,
   validateFieldValueRulesAgainstCapability,
 } from './reaction/field-value';
+import { type RunJsSourceBindingKind, validateRunJsSourceBinding } from './source-binding-authoring';
 import { buildReactionFingerprint } from './reaction/fingerprint';
 import {
   compileActionLinkageCanonicalRules,
@@ -326,6 +327,7 @@ import {
   buildChartCardSettingsFromSemanticChanges,
   buildDefaultFieldState,
   buildDefinedPayload,
+  buildRunJsSourceChanges,
   buildPopupTabTree,
   ensureNoDirectActionScopeKey,
   ensureNoRawDirectAddKeys,
@@ -1319,12 +1321,39 @@ const MOBILE_UI_LAYOUT_TYPE = 'mobile';
 const RUN_JS_SOURCE_SETTING_KEYS = ['sourceMode', 'sourceBinding', 'settings'] as const;
 type RunJsSettingsGroupKey = 'jsSettings' | 'clickSettings';
 
-function resolveRunJsSettingsGroupKey(use: unknown): RunJsSettingsGroupKey | undefined {
+function resolveRunJsSourceBindingKindForUse(use: unknown): RunJsSourceBindingKind | undefined {
+  const normalizedUse = String(use || '').trim();
+  if (normalizedUse === 'JSBlockModel') {
+    return 'js-block';
+  }
+  if (['JSFieldModel', 'JSEditableFieldModel', 'JSColumnModel'].includes(normalizedUse)) {
+    return 'js-field';
+  }
+  if (['JSItemModel', 'FormJSFieldItemModel', 'JSItemActionModel'].includes(normalizedUse)) {
+    return 'js-item';
+  }
+  if (JS_ACTION_USES.has(normalizedUse)) {
+    return 'js-action';
+  }
+  return undefined;
+}
+
+export function resolveRunJsSettingsGroupKey(use: unknown): RunJsSettingsGroupKey | undefined {
   const normalizedUse = String(use || '').trim();
   if (JS_ACTION_USES.has(normalizedUse)) {
     return 'clickSettings';
   }
-  if (normalizedUse === 'JSBlockModel' || normalizedUse === 'JSItemModel' || JS_ITEM_ACTION_USES.has(normalizedUse)) {
+  if (
+    [
+      'JSBlockModel',
+      'JSItemModel',
+      'FormJSFieldItemModel',
+      'JSFieldModel',
+      'JSEditableFieldModel',
+      'JSColumnModel',
+    ].includes(normalizedUse) ||
+    JS_ITEM_ACTION_USES.has(normalizedUse)
+  ) {
     return 'jsSettings';
   }
   return undefined;
@@ -1338,19 +1367,85 @@ function hasLightExtensionSourceMode(stepParams: unknown, groupKey: RunJsSetting
   return _.get(group, ['runJs', 'sourceMode']) === 'light-extension';
 }
 
-function shouldSyncLightExtensionReferences(
+function getRunJsReferenceSourceState(stepParams: unknown, groupKey: RunJsSettingsGroupKey | undefined) {
+  if (!groupKey) {
+    return undefined;
+  }
+  const runJs = _.get(stepParams, [groupKey, 'runJs']);
+  if (!_.isPlainObject(runJs)) {
+    return undefined;
+  }
+  return _.pick(runJs, ['sourceMode', 'sourceBinding', 'settings']);
+}
+
+export function shouldSyncLightExtensionReferences(
   currentOptions: Record<string, unknown>,
   nextOptions: Record<string, unknown>,
 ) {
-  if (currentOptions?.use === 'JSBlockModel' || nextOptions?.use === 'JSBlockModel') {
-    return true;
-  }
   const currentGroupKey = resolveRunJsSettingsGroupKey(currentOptions?.use);
   const nextGroupKey = resolveRunJsSettingsGroupKey(nextOptions?.use);
+  if (!currentGroupKey && !nextGroupKey) {
+    return false;
+  }
   return (
     hasLightExtensionSourceMode(currentOptions?.stepParams, currentGroupKey) ||
-    hasLightExtensionSourceMode(nextOptions?.stepParams, nextGroupKey)
+    hasLightExtensionSourceMode(nextOptions?.stepParams, nextGroupKey) ||
+    !_.isEqual(
+      getRunJsReferenceSourceState(currentOptions?.stepParams, currentGroupKey),
+      getRunJsReferenceSourceState(nextOptions?.stepParams, nextGroupKey),
+    )
   );
+}
+
+function prepareConfigureRunJsAuthoringCurrentNode(current: any, changes: Record<string, any>) {
+  if (changes?.sourceMode !== 'inline') {
+    return current;
+  }
+  const currentUse = String(current?.use || '').trim();
+  const directGroupKey = resolveRunJsSettingsGroupKey(currentUse);
+  const innerField = current?.subModels?.field;
+  const innerGroupKey = resolveRunJsSettingsGroupKey(innerField?.use);
+  if (!directGroupKey && !innerGroupKey) {
+    return current;
+  }
+  const normalized = _.cloneDeep(current);
+  if (directGroupKey) {
+    _.unset(normalized, ['stepParams', directGroupKey, 'runJs', 'sourceBinding']);
+  }
+  if (innerGroupKey) {
+    _.unset(normalized, ['subModels', 'field', 'stepParams', innerGroupKey, 'runJs', 'sourceBinding']);
+  }
+  return normalized;
+}
+
+function prepareConfigureRunJsAuthoringValues(values: FlowSurfaceConfigureValues, current: any) {
+  const changes = values?.changes;
+  if (!_.isPlainObject(changes) || !hasOwnDefined(changes, 'sourceBinding') || hasOwnDefined(changes, 'sourceMode')) {
+    return values;
+  }
+  const modelUse = resolveRunJsSourceBindingKindForUse(current?.use) ? current?.use : current?.subModels?.field?.use;
+  if (!resolveRunJsSourceBindingKindForUse(modelUse)) {
+    return values;
+  }
+  return {
+    ...values,
+    changes: {
+      ...changes,
+      sourceMode: 'light-extension',
+    },
+  };
+}
+
+export function clearInactiveRunJsSourceBinding(
+  use: unknown,
+  submittedStepParams: Record<string, any> | undefined,
+  nextStepParams: Record<string, any> | undefined,
+) {
+  const groupKey = resolveRunJsSettingsGroupKey(use);
+  if (!groupKey || _.get(submittedStepParams, [groupKey, 'runJs', 'sourceMode']) !== 'inline') {
+    return;
+  }
+  _.unset(nextStepParams, [groupKey, 'runJs', 'sourceBinding']);
 }
 
 export class FlowSurfacesService {
@@ -8698,7 +8793,7 @@ export class FlowSurfacesService {
       _.isPlainObject(changes?.resource) && Object.prototype.hasOwnProperty.call(changes.resource, 'binding')
         ? this.buildAuthoringContextFromPopupProfile(popupProfile)
         : {};
-    await assertFlowSurfaceAuthoringPayload('configure', values, {
+    await assertFlowSurfaceAuthoringPayload('configure', prepareConfigureRunJsAuthoringValues(values, current), {
       transaction: options.transaction,
       hostBlockType: current?.use,
       hostDataSourceKey: inheritedResourceInit?.dataSourceKey,
@@ -8707,7 +8802,7 @@ export class FlowSurfacesService {
       enabledPackages,
       getCollection: (dataSourceKey, collectionName) =>
         this.getCollection(dataSourceKey || 'main', collectionName || ''),
-      currentNode: current,
+      currentNode: prepareConfigureRunJsAuthoringCurrentNode(current, changes),
       skipGeneratedPopupDefaultFieldGroups: options.skipConfigureGeneratedDefaultPopup === true,
       findModelById: (uid, findOptions) => this.repository.findModelById(uid, findOptions),
       findOwningBlockGrid: (uid, transaction) => this.findOwningBlockGrid(uid, transaction),
@@ -10598,6 +10693,7 @@ export class FlowSurfacesService {
     if (templateRef) {
       const result = await this.addFieldFromTemplate(values, templateRef, options);
       await this.persistCreatedKeysForAction('addField', values, result, options.transaction);
+      await this.syncLightExtensionReferencesForNodeTree(result.uid, 'flowSurfaces.addField', options);
       return result;
     }
     const target = await this.prepareWriteTarget('addField', values?.target, values, options);
@@ -10633,6 +10729,10 @@ export class FlowSurfacesService {
     });
 
     if (fieldCapability.standaloneUse) {
+      this.assertDirectRunJsSourceSettings(
+        inlineSettings,
+        resolveRunJsSourceBindingKindForUse(fieldCapability.standaloneUse),
+      );
       if (hasOwnDefined(values, 'fieldType')) {
         throwBadRequest('flowSurfaces fieldType is only supported for relation fields');
       }
@@ -10673,6 +10773,7 @@ export class FlowSurfacesService {
       };
       await this.applyInlineStandaloneFieldSettings('addField', result.uid, inlineSettings, options);
       await this.persistCreatedKeysForAction('addField', values, result, options.transaction);
+      await this.syncLightExtensionReferencesForNodeTree(result.uid, 'flowSurfaces.addField', options);
       return result;
     }
 
@@ -10863,6 +10964,10 @@ export class FlowSurfacesService {
         }
       }
     }
+    this.assertDirectRunJsSourceSettings(
+      inlineSettings,
+      resolveRunJsSourceBindingKindForUse(boundFieldCapability.fieldUse),
+    );
     if (inlinePopup && !this.isPopupFieldHostUse(boundFieldCapability.fieldUse)) {
       throwBadRequest(
         withJsPopupGuidance(
@@ -11033,6 +11138,7 @@ export class FlowSurfacesService {
       enabledPackages,
     });
     await this.persistCreatedKeysForAction('addField', values, result, options.transaction);
+    await this.syncLightExtensionReferencesForNodeTree(result.uid, 'flowSurfaces.addField', options);
     return result;
   }
 
@@ -11068,6 +11174,7 @@ export class FlowSurfacesService {
       },
       enabledPackages,
     );
+    this.assertDirectRunJsSourceSettings(inlineSettings, resolveRunJsSourceBindingKindForUse(actionCatalogItem.use));
     const resolvedScope = actionCatalogItem.scope;
     if (!resolvedScope) {
       throwInternalError(
@@ -11106,6 +11213,7 @@ export class FlowSurfacesService {
         ...(await this.collectComposeActionKeys(reusableAction.uid, options.transaction)),
       };
       await this.persistCreatedKeysForAction('addAction', values, result, options.transaction);
+      await this.syncLightExtensionReferencesForNodeTree(result.uid, 'flowSurfaces.addAction', options);
       return result;
     }
     const resourceContext = container.ownerUid
@@ -11181,6 +11289,7 @@ export class FlowSurfacesService {
       ...(await this.collectComposeActionKeys(created, options.transaction)),
     };
     await this.persistCreatedKeysForAction('addAction', values, result, options.transaction);
+    await this.syncLightExtensionReferencesForNodeTree(result.uid, 'flowSurfaces.addAction', options);
     return result;
   }
 
@@ -11212,6 +11321,7 @@ export class FlowSurfacesService {
       },
       enabledPackages,
     );
+    this.assertDirectRunJsSourceSettings(inlineSettings, resolveRunJsSourceBindingKindForUse(actionCatalogItem.use));
     const resolvedScope = actionCatalogItem.scope;
     if (inlinePopup && !POPUP_ACTION_USES.has(actionCatalogItem.use)) {
       throwBadRequest(
@@ -11247,6 +11357,7 @@ export class FlowSurfacesService {
         ...(await this.collectComposeActionKeys(reusableAction.uid, options.transaction)),
       };
       await this.persistCreatedKeysForAction('addRecordAction', values, result, options.transaction);
+      await this.syncLightExtensionReferencesForNodeTree(result.uid, 'flowSurfaces.addRecordAction', options);
       return result;
     }
     const resourceContext = container.ownerUid
@@ -11324,6 +11435,7 @@ export class FlowSurfacesService {
       ...(await this.collectComposeActionKeys(created, options.transaction)),
     };
     await this.persistCreatedKeysForAction('addRecordAction', values, result, options.transaction);
+    await this.syncLightExtensionReferencesForNodeTree(result.uid, 'flowSurfaces.addRecordAction', options);
     return result;
   }
 
@@ -11685,6 +11797,25 @@ export class FlowSurfacesService {
       throwBadRequest(`flowSurfaces ${actionName} settings must be an object`);
     }
     return settings;
+  }
+
+  private assertDirectRunJsSourceSettings(
+    settings: Record<string, any> | undefined,
+    expectedKind: RunJsSourceBindingKind | undefined,
+    path = '$.settings',
+  ) {
+    if (!settings || !expectedKind) {
+      return;
+    }
+    const result = validateRunJsSourceBinding({
+      source: settings,
+      path,
+      expectedKind,
+      requireExplicitSourceModeForBinding: false,
+    });
+    if (result.errors.length) {
+      throwAggregateBadRequest(result.errors);
+    }
   }
 
   private normalizeSingleScopeDataBlockTitleSettings(input: {
@@ -15904,6 +16035,7 @@ export class FlowSurfacesService {
     if (!_.isUndefined(nextPayload.flowRegistry)) {
       nextPayload.flowRegistry = this.normalizeEventFlowRegistry('updateSettings', nextPayload.flowRegistry);
     }
+    clearInactiveRunJsSourceBinding(current?.use, normalizedValues.stepParams, nextPayload.stepParams);
 
     this.replaceExplicitPopupStepParamSubtreesForUpdateSettings(
       current,
@@ -22909,6 +23041,7 @@ export class FlowSurfacesService {
   ) {
     const allowedKeys = getConfigureOptionKeysForUse('JSBlockModel');
     assertSupportedSimpleChanges('jsBlock', changes, allowedKeys);
+    const runJsSourceChanges = buildRunJsSourceChanges(changes);
     return this.updateSettings(
       {
         target,
@@ -22931,21 +23064,13 @@ export class FlowSurfacesService {
                 ...(hasDefinedValue(changes, ['code', 'version', 'sourceRef'])
                   ? {
                       runJs: buildDefinedPayload({
-                        code: changes.code,
-                        version: changes.version,
+                        ...runJsSourceChanges,
                         sourceRef: changes.sourceRef,
-                        sourceMode: changes.sourceMode,
-                        sourceBinding: changes.sourceBinding,
-                        settings: changes.settings,
                       }),
                     }
-                  : hasDefinedValue(changes, ['sourceMode', 'sourceBinding', 'settings'])
+                  : runJsSourceChanges
                     ? {
-                        runJs: buildDefinedPayload({
-                          sourceMode: changes.sourceMode,
-                          sourceBinding: changes.sourceBinding,
-                          settings: changes.settings,
-                        }),
+                        runJs: runJsSourceChanges,
                       }
                     : {}),
                 ...(hasOwnDefined(changes, 'showBlockCard')
@@ -23001,6 +23126,7 @@ export class FlowSurfacesService {
     assertNoJsDeclarativeOpenView('jsColumn', changes, 'JSColumnModel');
     const allowedKeys = getConfigureOptionKeysForUse('JSColumnModel');
     assertSupportedSimpleChanges('jsColumn', changes, allowedKeys);
+    const runJsSourceChanges = buildRunJsSourceChanges(changes);
     return this.updateSettings(
       {
         target,
@@ -23020,13 +23146,10 @@ export class FlowSurfacesService {
                 },
               }
             : {}),
-          ...(hasDefinedValue(changes, ['code', 'version'])
+          ...(runJsSourceChanges
             ? {
                 jsSettings: {
-                  runJs: buildDefinedPayload({
-                    code: changes.code,
-                    version: changes.version,
-                  }),
+                  runJs: runJsSourceChanges,
                 },
               }
             : {}),
@@ -23045,6 +23168,7 @@ export class FlowSurfacesService {
     assertNoJsDeclarativeOpenView('jsItem', changes, currentUse);
     const allowedKeys = getConfigureOptionKeysForUse('JSItemModel');
     assertSupportedSimpleChanges('jsItem', changes, allowedKeys);
+    const runJsSourceChanges = buildRunJsSourceChanges(changes);
     return this.updateSettings(
       {
         target,
@@ -23058,17 +23182,11 @@ export class FlowSurfacesService {
           labelWidth: changes.labelWidth,
           labelWrap: changes.labelWrap,
         }),
-        stepParams: hasDefinedValue(changes, ['code', 'version', 'sourceMode', 'sourceBinding', 'settings'])
+        stepParams: runJsSourceChanges
           ? {
-              jsSettings: buildDefinedPayload({
-                runJs: buildDefinedPayload({
-                  code: changes.code,
-                  version: changes.version,
-                  sourceMode: changes.sourceMode,
-                  sourceBinding: changes.sourceBinding,
-                  settings: changes.settings,
-                }),
-              }),
+              jsSettings: {
+                runJs: runJsSourceChanges,
+              },
             }
           : undefined,
       },
@@ -23124,6 +23242,9 @@ export class FlowSurfacesService {
       'openView',
       'code',
       'version',
+      'sourceMode',
+      'sourceBinding',
+      'settings',
       'fieldType',
       'fields',
       'openMode',
@@ -23372,7 +23493,17 @@ export class FlowSurfacesService {
       );
     }
 
-    if (hasDefinedValue(changes, ['clickToOpen', 'openView', 'code', 'version'])) {
+    if (
+      hasDefinedValue(changes, [
+        'clickToOpen',
+        'openView',
+        'code',
+        'version',
+        'sourceMode',
+        'sourceBinding',
+        'settings',
+      ])
+    ) {
       if (!innerUid) {
         throwConflict(
           `flowSurfaces configure field wrapper '${current?.use}' cannot resolve inner field`,
@@ -23383,7 +23514,16 @@ export class FlowSurfacesService {
         {
           uid: innerUid,
         },
-        _.pick(changes, ['clickToOpen', 'openView', 'displayStyle', 'code', 'version']),
+        _.pick(changes, [
+          'clickToOpen',
+          'openView',
+          'displayStyle',
+          'code',
+          'version',
+          'sourceMode',
+          'sourceBinding',
+          'settings',
+        ]),
         {
           ...options,
           enabledPackages,
@@ -23424,8 +23564,8 @@ export class FlowSurfacesService {
           includeAsyncNode: true,
         })
       : null;
-    if (hasDefinedValue(changes, ['code', 'version']) && !isJsFieldNode) {
-      throwBadRequest(`flowSurfaces configure field '${current?.use}' does not support code/version`);
+    if (hasDefinedValue(changes, ['code', 'version', 'sourceMode', 'sourceBinding', 'settings']) && !isJsFieldNode) {
+      throwBadRequest(`flowSurfaces configure field '${current?.use}' does not support JS source settings`);
     }
     const currentFieldInit =
       current?.stepParams?.fieldSettings?.init || parentWrapper?.stepParams?.fieldSettings?.init || {};
@@ -23524,6 +23664,7 @@ export class FlowSurfacesService {
             },
           }
         : undefined;
+    const runJsSourceChanges = buildRunJsSourceChanges(changes);
     const result = await this.updateSettings(
       {
         target,
@@ -23575,13 +23716,10 @@ export class FlowSurfacesService {
                 },
               }
             : {}),
-          ...(hasDefinedValue(changes, ['code', 'version'])
+          ...(runJsSourceChanges
             ? {
                 jsSettings: {
-                  runJs: buildDefinedPayload({
-                    code: changes.code,
-                    version: changes.version,
-                  }),
+                  runJs: runJsSourceChanges,
                 },
               }
             : {}),
@@ -25453,15 +25591,9 @@ export class FlowSurfacesService {
       if (!JS_ACTION_USES.has(use) && !JS_ITEM_ACTION_USES.has(use)) {
         throwBadRequest(`flowSurfaces configure action '${use}' does not support JS source settings`);
       }
-      const runJsSettings = buildDefinedPayload({
-        runJs: buildDefinedPayload({
-          code: changes.code,
-          version: changes.version,
-          sourceMode: changes.sourceMode,
-          sourceBinding: changes.sourceBinding,
-          settings: changes.settings,
-        }),
-      });
+      const runJsSettings = {
+        runJs: buildRunJsSourceChanges(changes),
+      };
       if (JS_ITEM_ACTION_USES.has(use)) {
         stepParams.jsSettings = runJsSettings;
       } else {

@@ -142,40 +142,56 @@ const JS_VERSION = stringOption('JS code version', {
   example: 'v2',
 });
 
-const JS_BLOCK_SOURCE_MODE = stringOption('JS block source mode', {
+type JS_SOURCE_BINDING_KIND = 'js-block' | 'js-field' | 'js-action' | 'js-item';
+
+const JS_SOURCE_MODE = stringOption('JS source mode', {
   enum: ['inline', 'light-extension'],
   example: 'light-extension',
 });
 
-const JS_BLOCK_SOURCE_BINDING = objectOption('Light-extension repository entry binding', {
-  example: {
-    type: 'light-extension-entry',
+const JS_SOURCE_EXAMPLES: Record<
+  JS_SOURCE_BINDING_KIND,
+  { repoId: string; entryId: string; settings: Record<string, unknown> }
+> = {
+  'js-block': {
     repoId: 'repo_sales',
     entryId: 'entry_kpi_cards',
-    kind: 'js-block',
+    settings: { region: 'APAC' },
   },
-});
-
-const JS_BLOCK_INSTANCE_SETTINGS = objectOption('JS block instance settings passed to the resolved source', {
-  example: {
-    region: 'APAC',
+  'js-field': {
+    repoId: 'repo_customer_fields',
+    entryId: 'entry_customer_level',
+    settings: { vipColor: '#d4380d' },
   },
-});
-
-const JS_ITEM_SOURCE_BINDING = objectOption('JS item light-extension repository entry binding', {
-  example: {
-    type: 'light-extension-entry',
+  'js-action': {
+    repoId: 'repo_sales_actions',
+    entryId: 'entry_refresh_sales_kpi',
+    settings: { region: 'APAC' },
+  },
+  'js-item': {
     repoId: 'repo_customer_items',
     entryId: 'entry_show_level_label',
-    kind: 'js-item',
+    settings: { vipColor: '#d4380d' },
   },
-});
+};
 
-const JS_ITEM_INSTANCE_SETTINGS = objectOption('JS item instance settings passed to the resolved source', {
-  example: {
-    vipColor: '#d4380d',
-  },
-});
+function createJSSourceOptions(kind: JS_SOURCE_BINDING_KIND): FlowSurfaceConfigureOptions {
+  const example = JS_SOURCE_EXAMPLES[kind];
+  return {
+    sourceMode: JS_SOURCE_MODE,
+    sourceBinding: objectOption(`Light-extension repository entry binding for ${kind}`, {
+      example: {
+        type: 'light-extension-entry',
+        repoId: example.repoId,
+        entryId: example.entryId,
+        kind,
+      },
+    }),
+    settings: objectOption('Instance settings passed to the resolved JS source', {
+      example: example.settings,
+    }),
+  };
+}
 
 const JS_BLOCK_LEGACY_SOURCE_REF = objectOption('Legacy JS block sourceRef binding', {
   example: {
@@ -500,9 +516,7 @@ const JS_BLOCK_OPTIONS: FlowSurfaceConfigureOptions = {
   code: JS_CODE,
   version: JS_VERSION,
   sourceRef: JS_BLOCK_LEGACY_SOURCE_REF,
-  sourceMode: JS_BLOCK_SOURCE_MODE,
-  sourceBinding: JS_BLOCK_SOURCE_BINDING,
-  settings: JS_BLOCK_INSTANCE_SETTINGS,
+  ...createJSSourceOptions('js-block'),
 };
 
 const ACTION_COLUMN_OPTIONS: FlowSurfaceConfigureOptions = {
@@ -529,6 +543,7 @@ const TABLE_FIELD_WRAPPER_OPTIONS: FlowSurfaceConfigureOptions = {
   openView: OPEN_VIEW,
   code: JS_CODE,
   version: JS_VERSION,
+  ...createJSSourceOptions('js-field'),
 };
 
 const DETAILS_FIELD_WRAPPER_OPTIONS: FlowSurfaceConfigureOptions = {
@@ -548,6 +563,7 @@ const DETAILS_FIELD_WRAPPER_OPTIONS: FlowSurfaceConfigureOptions = {
   openView: OPEN_VIEW,
   code: JS_CODE,
   version: JS_VERSION,
+  ...createJSSourceOptions('js-field'),
 };
 
 const FILTER_FIELD_WRAPPER_OPTIONS: FlowSurfaceConfigureOptions = {
@@ -595,6 +611,7 @@ const FORM_FIELD_WRAPPER_OPTIONS: FlowSurfaceConfigureOptions = {
   openView: OPEN_VIEW,
   code: JS_CODE,
   version: JS_VERSION,
+  ...createJSSourceOptions('js-field'),
 };
 
 const FIELD_NODE_OPTIONS: FlowSurfaceConfigureOptions = {
@@ -626,6 +643,7 @@ const JS_FIELD_NODE_OPTIONS: FlowSurfaceConfigureOptions = {
   ...omitConfigureOptions(FIELD_NODE_OPTIONS, ['openView']),
   code: JS_CODE,
   version: JS_VERSION,
+  ...createJSSourceOptions('js-field'),
 };
 
 const JS_COLUMN_OPTIONS: FlowSurfaceConfigureOptions = {
@@ -635,6 +653,7 @@ const JS_COLUMN_OPTIONS: FlowSurfaceConfigureOptions = {
   fixed: stringOption('Fixed position', { example: 'right' }),
   code: JS_CODE,
   version: JS_VERSION,
+  ...createJSSourceOptions('js-field'),
 };
 
 const JS_ITEM_OPTIONS: FlowSurfaceConfigureOptions = {
@@ -646,9 +665,7 @@ const JS_ITEM_OPTIONS: FlowSurfaceConfigureOptions = {
   labelWrap: booleanOption('Whether labels should wrap', { example: false }),
   code: JS_CODE,
   version: JS_VERSION,
-  sourceMode: JS_BLOCK_SOURCE_MODE,
-  sourceBinding: JS_ITEM_SOURCE_BINDING,
-  settings: JS_ITEM_INSTANCE_SETTINGS,
+  ...createJSSourceOptions('js-item'),
 };
 
 const DIVIDER_ITEM_OPTIONS: FlowSurfaceConfigureOptions = {
@@ -713,13 +730,13 @@ const FILTER_ACTION_OPTIONS: FlowSurfaceConfigureOptions = {
 const ACTION_JS_OPTIONS: FlowSurfaceConfigureOptions = {
   code: JS_CODE,
   version: JS_VERSION,
+  ...createJSSourceOptions('js-action'),
 };
 
 const ACTION_JS_ITEM_OPTIONS: FlowSurfaceConfigureOptions = {
-  ...ACTION_JS_OPTIONS,
-  sourceMode: JS_BLOCK_SOURCE_MODE,
-  sourceBinding: JS_ITEM_SOURCE_BINDING,
-  settings: JS_ITEM_INSTANCE_SETTINGS,
+  code: JS_CODE,
+  version: JS_VERSION,
+  ...createJSSourceOptions('js-item'),
 };
 
 const APPROVAL_RETURN_ACTION_OPTIONS: FlowSurfaceConfigureOptions = {

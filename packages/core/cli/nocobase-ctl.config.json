@@ -7,6 +7,14 @@
     {
       "match": ["@nocobase/plugin-data-source-main", "@nocobase/plugin-data-source-manager"],
       "module": "data-modeling"
+    },
+    {
+      "match": ["@nocobase/plugin-light-extension"],
+      "module": "light-extension"
+    },
+    {
+      "match": ["@nocobase/plugin-vsc-file"],
+      "module": "run-js"
     }
   ],
   "modules": {
@@ -214,6 +222,87 @@
             "name": "flow-surfaces",
             "description": "Compose and mutate page, tab, block, field, and action surfaces.",
             "topLevel": true
+          }
+        }
+      }
+    },
+    "run-js": {
+      "name": "run-js",
+      "description": "Open, preview, and save owner-aware RunJS Studio source workspaces.",
+      "include": true,
+      "resources": {
+        "includes": ["runJSSources"],
+        "excludes": [],
+        "overrides": {
+          "runJSSources": {
+            "name": "run-js-sources",
+            "description": "Author one ordinary RunJS owner's complete multi-file workspace.",
+            "topLevel": true,
+            "operations": {
+              "includes": [
+                "runJSSources:open",
+                "runJSSources:openLatest",
+                "runJSSources:compilePreview",
+                "runJSSources:save"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "light-extension": {
+      "name": "light-extension",
+      "description": "Discover, inspect, preview, and save existing light-extension source repositories.",
+      "include": true,
+      "resources": {
+        "includes": [
+          "lightExtensionRepos",
+          "lightExtensionEntries",
+          "lightExtensionReferences",
+          "lightExtensionFiles",
+          "lightExtensions"
+        ],
+        "excludes": [],
+        "overrides": {
+          "lightExtensionRepos": {
+            "name": "light-extension-repos",
+            "description": "Discover existing light-extension source repositories.",
+            "topLevel": true,
+            "operations": {
+              "includes": ["lightExtensionRepos:list", "lightExtensionRepos:get"]
+            }
+          },
+          "lightExtensionEntries": {
+            "name": "light-extension-entries",
+            "description": "Inspect persisted light-extension entries.",
+            "topLevel": true,
+            "operations": {
+              "includes": ["lightExtensionEntries:get"]
+            }
+          },
+          "lightExtensionReferences": {
+            "name": "light-extension-references",
+            "description": "Inspect visible light-extension usage references.",
+            "topLevel": true,
+            "operations": {
+              "includes": ["lightExtensionReferences:readReferences"]
+            }
+          },
+          "lightExtensionFiles": {
+            "name": "light-extension-files",
+            "description": "Read and save light-extension source files.",
+            "topLevel": true,
+            "operations": {
+              "includes": ["lightExtensionFiles:pull", "lightExtensionFiles:getFile", "lightExtensionFiles:saveSource"]
+            }
+          },
+          "lightExtensions": {
+            "name": "light-extensions",
+            "description": "Preview unsaved light-extension source compilation.",
+            "topLevel": true,
+            "operations": {
+              "includes": ["lightExtensions:compileWorkspacePreview"]
+            }
           }
         }
       }

@@ -90,13 +90,13 @@ function findLightExtensionReferenceProvider(pm?: PluginManagerLike): LightExten
   }
 
   for (const alias of LIGHT_EXTENSION_PLUGIN_ALIASES) {
-    const plugin = pm.get?.(alias);
+    const plugin = getPluginByAlias(pm, alias);
     if (isLightExtensionReferenceProvider(plugin)) {
       return plugin;
     }
   }
 
-  const plugins = pm.getPlugins?.();
+  const plugins = getInstalledPlugins(pm);
   if (!plugins) {
     return null;
   }
@@ -107,6 +107,22 @@ function findLightExtensionReferenceProvider(pm?: PluginManagerLike): LightExten
   }
 
   return null;
+}
+
+function getPluginByAlias(pm: PluginManagerLike, alias: string): unknown {
+  try {
+    return pm.get?.(alias);
+  } catch {
+    return undefined;
+  }
+}
+
+function getInstalledPlugins(pm: PluginManagerLike): Map<unknown, unknown> | undefined {
+  try {
+    return pm.getPlugins?.();
+  } catch {
+    return undefined;
+  }
 }
 
 function isLightExtensionReferenceProvider(value: unknown): value is LightExtensionReferenceProvider {

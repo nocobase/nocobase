@@ -24,7 +24,7 @@ import type {
   LightExtensionSaveSourceResult,
 } from '../../shared/types';
 import { entryFromModel, LightExtensionEntryService } from './LightExtensionEntryService';
-import { LightExtensionFileService } from './LightExtensionFileService';
+import { LightExtensionFileService, type LightExtensionReplaceSourceSnapshotInput } from './LightExtensionFileService';
 import type { LightExtensionServiceContext } from './LightExtensionRepoService';
 import { sortDiagnostics } from './LightExtensionValidator';
 import { LightExtensionWorkspaceCompilerBridge } from './LightExtensionWorkspaceCompilerBridge';
@@ -32,6 +32,15 @@ import { LightExtensionWorkspaceCompilerBridge } from './LightExtensionWorkspace
 type ReferenceRefreshService = {
   refreshReferencesForRepo: (repoId: string, ctx?: LightExtensionServiceContext) => Promise<void>;
 };
+
+export interface LightExtensionRemoteSnapshotCompileResult {
+  repo: LightExtensionSaveSourceResult['repo'];
+  commitId: string;
+  contentHash: string;
+  changed: boolean;
+  compile: LightExtensionSaveSourceResult['compile'];
+  diagnostics: LightExtensionDiagnostic[];
+}
 
 export class LightExtensionRuntimeCompileService {
   private referenceService?: ReferenceRefreshService;
@@ -61,6 +70,58 @@ export class LightExtensionRuntimeCompileService {
         transaction,
       }),
     );
+  }
+
+  async replaceSourceSnapshot(
+    input: LightExtensionReplaceSourceSnapshotInput,
+    ctx: LightExtensionServiceContext = {},
+  ): Promise<LightExtensionRemoteSnapshotCompileResult> {
+    if (ctx.transaction) {
+      return this.replaceSourceSnapshotInTransaction(input, ctx);
+    }
+
+    return this.db.sequelize.transaction((transaction) =>
+      this.replaceSourceSnapshotInTransaction(input, { ...ctx, transaction }),
+    );
+  }
+
+  private async replaceSourceSnapshotInTransaction(
+    input: LightExtensionReplaceSourceSnapshotInput,
+    ctx: LightExtensionServiceContext,
+  ): Promise<LightExtensionRemoteSnapshotCompileResult> {
+    const replacement = await this.fileService.replaceSourceSnapshot(input, ctx);
+    const commitId = replacement.commit?.id || replacement.repo.headCommitId;
+    if (!commitId) {
+      throw new LightExtensionError('LIGHT_EXTENSION_SOURCE_ERROR', 'Light extension source has no commit after pull');
+    }
+    if (!replacement.changed) {
+      return {
+        repo: replacement.repo,
+        commitId,
+        contentHash: replacement.contentHash,
+        changed: false,
+        compile: { status: 'skipped', entries: [] },
+        diagnostics: [],
+      };
+    }
+
+    const compile = await this.compileCurrentRuntime(input.repoId, commitId, {
+      ...ctx,
+      requestSource: ctx.requestSource || 'light-extension-remote-pull',
+    });
+    await this.referenceService?.refreshReferencesForRepo(input.repoId, ctx);
+
+    return {
+      repo: compile.repo,
+      commitId,
+      contentHash: replacement.contentHash,
+      changed: true,
+      compile: {
+        status: compile.status,
+        entries: compile.entries,
+      },
+      diagnostics: sortDiagnostics(compile.diagnostics),
+    };
   }
 
   private async saveSourceInTransaction(

@@ -111,6 +111,7 @@ const actionRunners: Record<RunJSSourceActionName, RunJSSourceActionRunner> = {
   open: async (db, registry, permissionHooks, _authoringInspectors, input, ctx): Promise<RunJSSourceOpenResult> => {
     return openRunJSWorkspace(db, registry, permissionHooks, input, ctx, {
       assertHeadOwnerFingerprint: true,
+      ensureRepository: true,
     });
   },
   openLatest: async (
@@ -123,6 +124,7 @@ const actionRunners: Record<RunJSSourceActionName, RunJSSourceActionRunner> = {
   ): Promise<RunJSSourceOpenResult> => {
     return openRunJSWorkspace(db, registry, permissionHooks, input, ctx, {
       assertHeadOwnerFingerprint: false,
+      ensureRepository: false,
     });
   },
   restoreFromCode: async (
@@ -344,9 +346,16 @@ const actionRunners: Record<RunJSSourceActionName, RunJSSourceActionRunner> = {
             serviceCtx,
           );
       assertRepositoryMatchesIdentity(repository, repositoryIdentity, saveInput.locator.kind);
+      assertBaseCommitMatches(saveInput.baseCommitId, repository.headCommitId);
       const legacy = await adapter.readLegacy({ locator: saveInput.locator, ctx: adapterCtx });
       const baseCommitId = repository.headCommitId;
       const headOwnerFingerprint = await getHeadOwnerFingerprintForRepository(service, repository, serviceCtx);
+      assertBaseOwnerFingerprintMatches(
+        saveInput.baseOwnerFingerprint,
+        headOwnerFingerprint,
+        legacy.ownerFingerprint,
+        saveInput.locator.kind,
+      );
       assertHeadOwnerFingerprintMatches(headOwnerFingerprint, legacy.ownerFingerprint);
       await assertCurrentOwnerFingerprint(adapter, saveInput.locator, adapterCtx, legacy.ownerFingerprint);
       const validatedOwnerFingerprint = legacy.ownerFingerprint;
@@ -681,6 +690,7 @@ interface RunJSCompileMaterializationInput {
 
 interface OpenRunJSWorkspaceOptions {
   assertHeadOwnerFingerprint: boolean;
+  ensureRepository: boolean;
 }
 
 interface RunJSSourceHistoryResult {
@@ -1014,6 +1024,17 @@ async function openRunJSWorkspace(
         serviceCtx,
       );
       if (!permissions.canSave) {
+        return buildOpenResult({
+          locator,
+          repositoryIdentity,
+          legacy: workspaceLegacy,
+          repository: virtualRepository,
+          files: createLegacyWorkspaceFiles(workspaceLegacy),
+          history: [],
+          permissions,
+        });
+      }
+      if (!options.ensureRepository) {
         return buildOpenResult({
           locator,
           repositoryIdentity,
@@ -1448,13 +1469,14 @@ async function materializeCompilePreviewFiles(
   const repository = await service.getRepository({ repoId: input.repoId }, serviceCtx);
   assertRepositoryMatchesIdentity(repository, buildRunJSSourceRepositoryIdentity(input.locator), input.locator.kind);
   const baseCommitId = input.baseCommitId === undefined ? repository.headCommitId : input.baseCommitId;
+  const overwriteFiles = await buildOverwriteRunJSFileChanges(db, repository.id, baseCommitId, input.files, serviceCtx);
 
   return materializeRunJSCompileFiles(
     db,
     repository.id,
     baseCommitId,
     {
-      files: input.files,
+      files: overwriteFiles,
     },
     serviceCtx,
   );
@@ -1916,11 +1938,51 @@ function normalizeSaveInput(input: ResourceActionInput): RunJSSourceSaveInput {
   return {
     locator: normalizeRunJSSourceLocator(input.locator),
     repoId: optionalString(input, 'repoId'),
+    baseCommitId: optionalNullableString(input, 'baseCommitId'),
+    baseOwnerFingerprint: optionalString(input, 'baseOwnerFingerprint'),
     message: requireCommitMessage(input.message),
     files: requireArray(input, 'files', normalizeRunJSFileChange),
     entryPath: optionalRunJSWorkspacePath(input, 'entryPath'),
     version: optionalString(input, 'version'),
   };
+}
+
+function assertBaseCommitMatches(baseCommitId: string | null | undefined, currentHeadCommitId: string | null): void {
+  if (baseCommitId === undefined || baseCommitId === currentHeadCommitId) {
+    return;
+  }
+
+  throw new VscError('BASE_COMMIT_OUTDATED', 'RunJS workspace Head changed after it was opened', {
+    details: {
+      expected: currentHeadCommitId,
+      received: baseCommitId,
+    },
+  });
+}
+
+function assertBaseOwnerFingerprintMatches(
+  baseOwnerFingerprint: string | undefined,
+  headOwnerFingerprint: string | null,
+  currentOwnerFingerprint: string,
+  kind: RunJSSourceKind,
+): void {
+  if (baseOwnerFingerprint === undefined) {
+    return;
+  }
+
+  const expectedOwnerFingerprint = headOwnerFingerprint || currentOwnerFingerprint;
+  if (baseOwnerFingerprint === expectedOwnerFingerprint && baseOwnerFingerprint === currentOwnerFingerprint) {
+    return;
+  }
+
+  throw new VscError('RUNJS_SOURCE_OWNER_OUTDATED', 'RunJS owner changed after the workspace was opened', {
+    details: {
+      expected: currentOwnerFingerprint,
+      received: baseOwnerFingerprint,
+      headOwnerFingerprint,
+      kind,
+    },
+  });
 }
 
 function createAdapterContext(ctx: RunJSSourceResourceContext, transaction?: unknown): RunJSSourceAdapterContext {

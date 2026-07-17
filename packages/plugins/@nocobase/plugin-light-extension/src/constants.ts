@@ -46,6 +46,9 @@ export const LIGHT_EXTENSION_ACL_ACTIONS = [
   'archive',
   'compilePreview',
   'updateReferences',
+  'manageSyncSource',
+  'pullFromSyncSource',
+  'pushToSyncSource',
 ] as const;
 
 export const LIGHT_EXTENSION_REPO_LIFECYCLE_STATUSES = ['enabled', 'disabled', 'archived'] as const;

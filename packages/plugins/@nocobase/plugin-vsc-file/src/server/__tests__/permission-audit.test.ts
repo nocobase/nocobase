@@ -13,6 +13,8 @@ import { MockServer, createMockServer } from '@nocobase/test';
 import { runJSSourceAuditActionNames, vscFileAuditActionNames } from '../audit';
 import type { VscPermissionHookInput } from '../permissions';
 import PluginVscFileServer from '../plugin';
+import { RemoteStore } from '../remotes/RemoteStore';
+import { SyncJobStore } from '../remotes/SyncJobStore';
 
 type VscFileAgent = ReturnType<MockServer['agent']>;
 
@@ -258,6 +260,44 @@ describe('vsc-file permission hooks and audit registration', () => {
       status: 400,
     });
     expect(JSON.stringify(response.body)).not.toContain('repo-b-secret');
+  });
+
+  it('blocks raw repository archive while a remote job is active', async () => {
+    const repository = await createRepository('archive-busy');
+    const remote = await new RemoteStore(app.db).create({
+      repoId: repository.id,
+      name: 'origin',
+      provider: 'github',
+      config: { owner: 'nocobase', repository: 'demo', branch: 'main', subdirectory: null },
+      authRef: null,
+    });
+    await new SyncJobStore(app.db).createOrGet({
+      remoteId: remote.id,
+      remoteTargetVersion: remote.version,
+      operation: 'push',
+      idempotencyKey: 'archive-busy',
+    });
+
+    const response = await agent.resource('vscFile').archiveRepository({
+      values: { repoId: repository.id },
+    });
+
+    expect(response.status).toBe(409);
+    expect(response.body.errors[0]).toMatchObject({
+      code: 'BUSY',
+      details: { reasonCode: 'active-sync-job' },
+    });
+  });
+
+  it('does not expose remote persistence collections through generic CRUD resources', async () => {
+    for (const resourceName of ['vscFileRemotes', 'vscFileSyncJobs', 'vscFileExternalCommitMaps', 'vscFileConflicts']) {
+      const response = await agent.resource(resourceName).list();
+      expect(response.status).toBe(403);
+      expect(response.body.errors[0]).toMatchObject({
+        code: 'PERMISSION_DENIED',
+        details: { reasonCode: 'remote-internal-resource' },
+      });
+    }
   });
 
   it('registers audit manager actions for vscFile write operations', async () => {

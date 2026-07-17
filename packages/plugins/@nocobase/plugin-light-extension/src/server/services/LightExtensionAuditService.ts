@@ -119,6 +119,32 @@ export interface LightExtensionReferenceAuditInput {
   transaction?: Transaction;
 }
 
+export interface LightExtensionSyncAuditInput {
+  repoId?: string;
+  action:
+    | 'syncConfigure'
+    | 'syncDisconnect'
+    | 'syncTestConnection'
+    | 'syncPlan'
+    | 'syncPull'
+    | 'syncPush'
+    | 'syncCreateFromGit'
+    | 'syncConflict';
+  result: 'success' | 'blocked';
+  requestId: string;
+  actorUserId?: string | null;
+  provider?: string;
+  remoteTargetVersion?: number;
+  remoteRevision?: string | null;
+  localCommitId?: string | null;
+  state?: string;
+  syncAction?: string;
+  fileCount?: number;
+  reasonCode?: string;
+  message: string;
+  transaction?: Transaction;
+}
+
 export class LightExtensionAuditService {
   constructor(private readonly db: Database) {}
 
@@ -246,6 +272,32 @@ export class LightExtensionAuditService {
           settingsHash: sanitizeText(input.settingsHash),
           referenceCount: input.referenceCount,
           ...(input.details ? sanitizeReferenceAuditDetails(input.details) : {}),
+        }),
+        createdAt: new Date(),
+      },
+      transaction: input.transaction,
+    });
+  }
+
+  async recordSyncEvent(input: LightExtensionSyncAuditInput): Promise<void> {
+    await this.db.getRepository('lightExtensionLogs').create({
+      values: {
+        repoId: input.repoId,
+        level: input.result === 'blocked' ? 'warn' : 'info',
+        action: input.action,
+        result: input.result,
+        requestId: input.requestId,
+        actorUserId: input.actorUserId || undefined,
+        reasonCode: sanitizeText(input.reasonCode),
+        message: sanitizeText(input.message),
+        details: compactObject({
+          provider: sanitizeText(input.provider),
+          remoteTargetVersion: input.remoteTargetVersion,
+          remoteRevision: sanitizeText(input.remoteRevision),
+          localCommitId: sanitizeText(input.localCommitId),
+          state: sanitizeText(input.state),
+          syncAction: sanitizeText(input.syncAction),
+          fileCount: input.fileCount,
         }),
         createdAt: new Date(),
       },

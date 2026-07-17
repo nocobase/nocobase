@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { expect, test } from 'vitest';
 import {
   findApiCommandCompatViolation,
@@ -496,4 +498,95 @@ test('formatApiCommandCompatViolation includes concrete skills guidance when ski
 
   expect(formatApiCommandCompatViolation(violation)).toContain('NocoBase AI skills version < 1.0.5');
   expect(formatApiCommandCompatViolation(violation)).toContain('update the NocoBase AI coding skills to >= 1.0.5');
+});
+
+test('published CLI package blocks all light-extension command groups on old apps when new skills are installed', () => {
+  const packageJson = JSON.parse(readFileSync(resolve('packages/core/cli/package.json'), 'utf8')) as unknown;
+  const commandIds = [
+    'light-extension-repos list',
+    'light-extension-entries get',
+    'light-extension-references read-references',
+    'light-extension-files save-source',
+    'light-extensions compile-workspace-preview',
+  ];
+
+  for (const commandId of commandIds) {
+    const violation = findApiCommandCompatViolation({
+      packageJson,
+      commandId,
+      cliVersion: '2.2.0-beta.16',
+      appVersion: '2.2.0-beta.15',
+      skillsVersion: '1.0.21',
+    });
+
+    expect(violation?.rule.code).toBe('LIGHT_EXTENSION_OLD_APP_NEW_SKILLS_UNSUPPORTED');
+    if (!violation) {
+      throw new Error(`Expected a light-extension compatibility violation for ${commandId}.`);
+    }
+    expect(formatApiCommandCompatViolation(violation)).toContain('upgrade the app to >= 2.2.0-beta.16');
+  }
+});
+
+test('published CLI package allows light-extension commands at the app floor and with legacy skills', () => {
+  const packageJson = JSON.parse(readFileSync(resolve('packages/core/cli/package.json'), 'utf8')) as unknown;
+
+  expect(
+    findApiCommandCompatViolation({
+      packageJson,
+      commandId: 'light-extension-files save-source',
+      cliVersion: '2.2.0-beta.16',
+      appVersion: '2.2.0-beta.16',
+      skillsVersion: '1.0.21',
+    }),
+  ).toBeUndefined();
+  expect(
+    findApiCommandCompatViolation({
+      packageJson,
+      commandId: 'light-extensions compile-workspace-preview',
+      cliVersion: '2.2.0-beta.16',
+      appVersion: '2.2.0-beta.15',
+      skillsVersion: '1.0.20',
+    }),
+  ).toBeUndefined();
+});
+
+test('published CLI package guards RunJS source authoring on old apps with new skills', () => {
+  const packageJson = JSON.parse(readFileSync(resolve('packages/core/cli/package.json'), 'utf8')) as unknown;
+
+  const violation = findApiCommandCompatViolation({
+    packageJson,
+    commandId: 'run-js-sources save',
+    cliVersion: '2.2.0-beta.16',
+    appVersion: '2.2.0-beta.15',
+    skillsVersion: '1.0.21',
+  });
+
+  expect(violation?.rule.code).toBe('RUN_JS_SOURCES_OLD_APP_NEW_SKILLS_UNSUPPORTED');
+  if (!violation) {
+    throw new Error('Expected a RunJS source compatibility violation.');
+  }
+  expect(formatApiCommandCompatViolation(violation)).toContain('upgrade the app to >= 2.2.0-beta.16');
+});
+
+test('published CLI package allows RunJS source authoring at the app floor and with legacy skills', () => {
+  const packageJson = JSON.parse(readFileSync(resolve('packages/core/cli/package.json'), 'utf8')) as unknown;
+
+  expect(
+    findApiCommandCompatViolation({
+      packageJson,
+      commandId: 'run-js-sources save',
+      cliVersion: '2.2.0-beta.16',
+      appVersion: '2.2.0-beta.16',
+      skillsVersion: '1.0.21',
+    }),
+  ).toBeUndefined();
+  expect(
+    findApiCommandCompatViolation({
+      packageJson,
+      commandId: 'run-js-sources compile-preview',
+      cliVersion: '2.2.0-beta.16',
+      appVersion: '2.2.0-beta.15',
+      skillsVersion: '1.0.20',
+    }),
+  ).toBeUndefined();
 });

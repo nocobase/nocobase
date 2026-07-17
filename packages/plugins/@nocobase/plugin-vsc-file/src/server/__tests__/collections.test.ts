@@ -37,6 +37,10 @@ describe('vsc-file collections', () => {
       'vscFileTreeEntries',
       'vscFileCommits',
       'vscFileRefs',
+      'vscFileRemotes',
+      'vscFileSyncJobs',
+      'vscFileExternalCommitMaps',
+      'vscFileConflicts',
     ];
 
     for (const name of expectedCollections) {
@@ -49,6 +53,10 @@ describe('vsc-file collections', () => {
     await expectIndex('vscFileCommits', ['repoId', 'seq'], true);
     await expectIndex('vscFileCommits', ['repoId', 'hash'], true);
     await expectIndex('vscFileRefs', ['repoId', 'name'], true);
+    await expectIndex('vscFileRemotes', ['repoId', 'name'], true);
+    await expectIndex('vscFileSyncJobs', ['remoteId', 'remoteTargetVersion', 'idempotencyKey'], true);
+    await expectIndex('vscFileExternalCommitMaps', ['remoteId', 'remoteTargetVersion', 'localCommitId'], true);
+    await expectIndex('vscFileExternalCommitMaps', ['remoteId', 'remoteTargetVersion', 'remoteRevision'], true);
   });
 
   it('rejects duplicate repository owner/name tuples', async () => {

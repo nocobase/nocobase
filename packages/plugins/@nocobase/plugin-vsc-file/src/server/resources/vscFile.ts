@@ -8,13 +8,13 @@
  */
 
 import type { Context } from '@nocobase/actions';
-import type { Database } from '@nocobase/database';
+import type { Database, Model, Transaction } from '@nocobase/database';
 import type { HandlerType, ResourceOptions } from '@nocobase/resourcer';
 
 import { VscError, isVscError } from '../../shared/errors';
 import type { ListCommitsInput } from '../services/CommitService';
 import type { DiffCommitsInput, DiffFileEndpoint, DiffFileInput } from '../services/DiffService';
-import type { VscPermissionHookRegistry, VscPermissionRequestMetadata } from '../permissions';
+import type { VscPermissionAction, VscPermissionHookRegistry, VscPermissionRequestMetadata } from '../permissions';
 import type { ListRefsInput, RestoreCommitInput, RestoreFileInput, UpdateRefInput } from '../services/RefService';
 import type {
   CreateRepositoryInput,
@@ -25,6 +25,8 @@ import type {
   RepositoryIdInput,
 } from '../services/VscFileService';
 import { VscFileService } from '../services/VscFileService';
+import { RepositoryService } from '../services/RepositoryService';
+import { RemoteSyncError } from '../remotes/RemoteSyncAdapter';
 import type { VscFileChange, VscTreeEntryInput } from '../../shared/types';
 
 export const vscFileActionNames = [
@@ -79,6 +81,7 @@ type VscResourceContext = Context & {
 type CurrentUserContext = {
   authorId: string | null;
   request?: VscPermissionRequestMetadata;
+  transaction?: Transaction;
 };
 
 type ResourceActionRunner = (
@@ -115,7 +118,7 @@ export function createVscFileResource(db: Database, permissionHooks?: VscPermiss
     actions: Object.fromEntries(
       vscFileActionNames.map((actionName) => [
         actionName,
-        createVscFileAction(db, resourceActionRunners[actionName], permissionHooks),
+        createVscFileAction(db, actionName, resourceActionRunners[actionName], permissionHooks),
       ]),
     ) as Record<VscFileActionName, HandlerType>,
   };
@@ -123,6 +126,7 @@ export function createVscFileResource(db: Database, permissionHooks?: VscPermiss
 
 function createVscFileAction(
   db: Database,
+  actionName: VscFileActionName,
   run: ResourceActionRunner,
   permissionHooks?: VscPermissionHookRegistry,
 ): HandlerType {
@@ -130,14 +134,25 @@ function createVscFileAction(
     const resourceCtx = ctx as VscResourceContext;
     const service = new VscFileService(db, permissionHooks);
 
+    const input = getActionInput(resourceCtx);
+    const currentUser = {
+      authorId: getCurrentUserId(resourceCtx),
+      request: getRequestMetadata(resourceCtx),
+    };
+
     try {
-      resourceCtx.body = await run(service, getActionInput(resourceCtx), {
-        authorId: getCurrentUserId(resourceCtx),
-        request: getRequestMetadata(resourceCtx),
-      });
+      await preflightProtectedOwner(db, permissionHooks, actionName, input, currentUser);
+      resourceCtx.body =
+        actionName === 'archiveRepository'
+          ? await db.sequelize.transaction(async (transaction) => {
+              const repoId = requireString(input, 'repoId');
+              await assertRepositorySyncIdle(db, repoId, transaction);
+              return run(service, input, { ...currentUser, transaction });
+            })
+          : await run(service, input, currentUser);
       await next();
     } catch (error) {
-      if (!isVscError(error)) {
+      if (!isVscError(error) && !(error instanceof RemoteSyncError)) {
         throw error;
       }
 
@@ -147,6 +162,77 @@ function createVscFileAction(
       resourceCtx.body = error.toResponseBody();
     }
   };
+}
+
+async function preflightProtectedOwner(
+  db: Database,
+  permissionHooks: VscPermissionHookRegistry | undefined,
+  action: VscPermissionAction,
+  input: ResourceActionInput,
+  currentUser: CurrentUserContext,
+): Promise<void> {
+  if (!permissionHooks) {
+    return;
+  }
+  if (action === 'createRepository') {
+    const ownerType = typeof input.ownerType === 'string' ? input.ownerType : undefined;
+    if (ownerType !== 'light-extension' && ownerType !== 'runjs-source') {
+      return;
+    }
+    await permissionHooks.assertAllowed({
+      userId: currentUser.authorId,
+      action,
+      ownerType,
+      ownerId: typeof input.ownerId === 'string' ? input.ownerId : undefined,
+      request: currentUser.request,
+    });
+    return;
+  }
+  const repoId = typeof input.repoId === 'string' ? input.repoId : undefined;
+  if (!repoId) {
+    return;
+  }
+  const repository = await new RepositoryService(db).getRepository(repoId, currentUser.transaction);
+  if (repository.ownerType !== 'light-extension' && repository.ownerType !== 'runjs-source') {
+    return;
+  }
+  await permissionHooks.assertAllowed({
+    userId: currentUser.authorId,
+    action,
+    repoId,
+    repository,
+    ownerType: repository.ownerType,
+    ownerId: repository.ownerId,
+    request: currentUser.request,
+  });
+}
+
+async function assertRepositorySyncIdle(db: Database, repoId: string, transaction: Transaction): Promise<void> {
+  const remotes = await db.getRepository('vscFileRemotes').find({
+    filter: { repoId },
+    fields: ['id'],
+    transaction,
+    lock: transaction.LOCK.UPDATE,
+  });
+  const repository = await db.getModel<Model>('vscFileRepositories').findByPk(repoId, {
+    transaction,
+    lock: transaction.LOCK.UPDATE,
+  });
+  if (!repository || !remotes.length) {
+    return;
+  }
+  const activeJobs = await db.getRepository('vscFileSyncJobs').count({
+    filter: {
+      remoteId: { $in: remotes.map((remote) => String(remote.get('id'))) },
+      status: { $in: ['pending', 'running', 'finalize-pending'] },
+    },
+    transaction,
+  });
+  if (activeJobs > 0) {
+    throw new RemoteSyncError('BUSY', 'Repository has an active synchronization job', {
+      details: { reasonCode: 'active-sync-job' },
+    });
+  }
 }
 
 function getActionInput(ctx: VscResourceContext): ResourceActionInput {

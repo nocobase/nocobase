@@ -155,6 +155,13 @@ describe('flowSurfaces JS block light-extension compatibility', () => {
       }),
     );
 
+    const legacyReadback = await getSurface(rootAgent, { uid: block.uid });
+    expect(legacyReadback.tree.stepParams?.jsSettings?.runJs).toEqual({
+      code: legacyCode,
+      version: 'v1',
+      sourceRef: LEGACY_SOURCE_REF,
+    });
+
     const configureRes = await rootAgent.resource('flowSurfaces').configure({
       values: {
         target: {
@@ -237,5 +244,44 @@ describe('flowSurfaces JS block light-extension compatibility', () => {
         region: 'APAC',
       },
     });
+  });
+
+  it('should keep inline configure active with no light-extension source metadata on readback', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Legacy inline configure page',
+      tabTitle: 'Main',
+    });
+    const block = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: { uid: page.tabSchemaUid },
+          type: 'jsBlock',
+          settings: {
+            code: "ctx.render('before');",
+            version: 'v1',
+          },
+        },
+      }),
+    );
+
+    const configureRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: { uid: block.uid },
+        changes: {
+          code: "ctx.render('after');",
+          version: 'v2',
+        },
+      },
+    });
+    expect(configureRes.status, readErrorMessage(configureRes)).toBe(200);
+
+    const readback = await getSurface(rootAgent, { uid: block.uid });
+    expect(readback.tree.stepParams?.jsSettings?.runJs).toEqual({
+      code: "ctx.render('after');",
+      version: 'v2',
+    });
+    expect(readback.tree.stepParams?.jsSettings?.runJs).not.toHaveProperty('sourceMode');
+    expect(readback.tree.stepParams?.jsSettings?.runJs).not.toHaveProperty('sourceBinding');
+    expect(readback.tree.stepParams?.jsSettings?.runJs).not.toHaveProperty('sourceRef');
   });
 });

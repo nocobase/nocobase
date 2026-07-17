@@ -1,61 +1,49 @@
-# Future Remote Sync Roadmap
+# Remote Sync Roadmap
 
-## Current baseline
+## Implemented contract
 
-The local VSC and RunJS integration described below is implemented today; it is not future work:
+The provider-neutral remote framework is implemented in `plugin-vsc-file`. It adds:
 
-- Versioned repositories with immutable commits, a single `head` ref, raw VSC base-commit checks, history, diff, restore, and archive operations.
-- RunJS source adapters that seed legacy single-file code into a multi-file workspace and save compiled artifacts back to the owning surface.
-- JavaScript and TypeScript parsing/transpilation with static relative modules and explicit compiler diagnostics.
-- ZIP import/export with normalized paths, file-count limits, per-file limits, aggregate uncompressed-size limits, and duplicate-path rejection.
-- RunJS Studio saves are serialized against the current server head; owner/source divergence still has explicit recovery choices.
+- `vscFileRemotes` for normalized provider configuration and credential references.
+- `vscFileSyncJobs` for durable, idempotent Push and Pull work with claims, leases, retries, and recovery phases.
+- `vscFileExternalCommitMaps` for local commit, remote revision, and content-hash baselines.
+- `vscFileConflicts` for divergence and other states that cannot be reconciled safely.
+- `RemoteSyncAdapterRegistry`, `SyncStatePlanner`, `VscRemotePushService`, `VscRemotePullDiscoveryService`, and startup reconciliation.
+- A deterministic adapter for contract tests and a GitHub.com adapter for snapshot discovery and publication.
+- A narrow `RemoteSyncRuntime` facade for owner plugins. Raw remote collections and internal Resources are not public integration APIs.
 
-The responsibility boundary is:
+The planner reports `unconfigured`, `in-sync`, `local-ahead`, `remote-ahead`, `diverged`, or `error`. Push and Pull execute only against the exact local Head, remote revision, remote-target version, and plan fingerprint that the caller reviewed.
 
-- `plugin-vsc-file` owns source workspaces, commits, refs, ZIP transport, raw VSC concurrency guards, serialized RunJS Studio saves, and the shared RunJS compilation orchestration.
-- RunJS source adapters own reading and atomically updating the host record.
-- FlowEngine owns execution and runtime context APIs.
-- The current compiler is intentionally smaller than a full TypeScript project service. See the package README for the exact module and type-checking limits.
+## Ownership boundary
 
-## Remote adapter framework
+`plugin-vsc-file` owns provider-neutral persistence, adapter registration, snapshot hashing, planning, durable jobs, compare-and-set publication, mappings, conflicts, and recovery. Provider SDKs and network clients stay behind the adapter boundary.
 
-Remote synchronization remains future work. It should be added without changing the local write path or making local startup depend on provider SDKs.
+Inbound apply is owner-specific. `VscRemotePullDiscoveryService` can fetch and pin a remote snapshot, but only the owning domain plugin can validate, compile, and commit that snapshot through its normal local transaction path. For light extensions, `plugin-light-extension` performs that apply and returns only safe domain DTOs.
 
-Planned persistence:
+The local VSC repository remains the authoritative runtime source. Synchronization exchanges source snapshots and external revision mappings; it does not mirror complete Git history.
 
-- `vscFileRemotes`: provider-neutral remote configuration for a VSC repository.
-- `vscFileSyncJobs`: durable sync state and retry metadata.
-- `vscFileExternalCommitMaps`: mappings between local and provider commit IDs.
-- `vscFileConflicts`: remote divergence records that cannot be resolved safely.
+## Consistency and recovery semantics
 
-Planned server shape:
+- Remote publication uses compare-and-set against the expected revision, including `null` for an empty branch.
+- Jobs in `pending`, `running`, or `finalize-pending` block remote reconfiguration, disconnect, repository archive, and repository deletion.
+- A remote that advanced after planning is never overwritten. The caller must refresh the plan and retry.
+- `finalize-pending` work is reconciled without repeating a provider-side publication that already succeeded.
+- Pull discovery pins a snapshot before owner-specific validation and apply. Stale claims, expired leases, changed targets, or changed Heads stop the operation.
+- Divergence creates a provider-neutral conflict instead of choosing a winner or merging automatically.
+- Initial binding can map identical content or sync when one side is empty. Different non-empty snapshots produce `initial-ambiguous`.
 
-- Add an adapter registry keyed by provider type.
-- Define provider-neutral push, pull-discovery, commit-mapping, and capability contracts.
-- Add a deterministic mock adapter before enabling real providers.
-- Store credentials only by reference. Remote records must contain an `authRef`, never raw tokens, keys, or refresh secrets.
+Provider SDKs and network access never enter local save, compile, history, ZIP import/export, or runtime resolution paths. A provider outage cannot block local authoring.
 
-## GitHub and GitLab push-only
+## First-release provider scope
 
-The first provider phase should be push-only:
+The first provider is GitHub.com over HTTPS. It supports one repository, one branch, and an optional subdirectory per local repository. Pull and Push synchronize snapshots without force-pushing.
 
-- Advance the target remote ref only when it is a fast-forward.
-- Never force-push or rewrite local history.
-- Reject and surface remote-advanced or local-outdated states.
-- Keep provider API clients outside the local repository and compilation paths.
+The first release does not support GitHub Enterprise, GitLab, SSH, Git Smart HTTP, GitHub Apps, Git LFS, submodules, tags, multiple remotes, Webhooks, scheduled synchronization, automatic merging, or force push.
 
-## Pull and bidirectional sync
+## Future work
 
-Inbound synchronization should follow only after push-only behavior is stable:
-
-- Detect local and remote divergence before applying changes.
-- Preserve existing local commits and refs.
-- Persist conflicts when automatic reconciliation is unsafe.
-- Keep manual conflict UI as a separate client concern backed by provider-neutral conflict records.
-
-## Operational guardrails
-
-- Remote tables and provider SDKs must remain optional.
-- Network failures must not block local editing, compilation, history, ZIP import/export, or saving.
-- Sync jobs must be idempotent and resumable, with bounded retries and explicit cursors.
-- Tokens, keys, and other credentials must never be logged or stored directly in remote configuration.
+- Provider adapters beyond GitHub.com.
+- A dedicated conflict-resolution UI backed by `vscFileConflicts`.
+- Explicit scheduling or Webhook orchestration after retry, permission, and operational policies are defined.
+- Additional reconciliation strategies that preserve the current no-force and owner-specific apply boundaries.
+- Operational inspection tools for jobs, mappings, and conflicts without exposing raw internal Resources to domain users.

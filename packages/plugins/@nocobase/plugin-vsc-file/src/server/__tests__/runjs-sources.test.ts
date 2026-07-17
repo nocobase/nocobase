@@ -122,6 +122,50 @@ describe('runJSSources resource', () => {
     await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCount);
   });
 
+  it('uses openLatest to discover a missing workspace without creating repository state', async () => {
+    const locator = createLocator('fm_open_latest_missing');
+    registerFlowModelAdapter({
+      label: 'JS block / Open latest missing',
+      modelUid: 'fm_open_latest_missing',
+      readCode: () => 'ctx.render("inline only");',
+    });
+    const repositoryCount = await app.db.getRepository('vscFileRepositories').count();
+    const commitCount = await app.db.getRepository('vscFileCommits').count();
+
+    const response = await agent.resource('runJSSources').openLatest({
+      values: { locator },
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body.data).toMatchObject({
+      ownerFingerprint: 'owner:fm_open_latest_missing:v1',
+      repository: {
+        id: '',
+        repoId: '',
+        headCommitId: null,
+        headSeq: 0,
+      },
+      permissions: {
+        canRead: true,
+        canWrite: true,
+        canSave: true,
+      },
+      history: {
+        items: [],
+      },
+    });
+    expect(response.body.data.files).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: 'src/client/index.tsx',
+          content: 'ctx.render("inline only");',
+        }),
+      ]),
+    );
+    await expect(app.db.getRepository('vscFileRepositories').count()).resolves.toBe(repositoryCount);
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCount);
+  });
+
   it('opens, previews, saves, and reads history from the head workspace', async () => {
     let capturedContext: RunJSSourceAdapterContext | null = null;
     const runtimeArtifacts: RunJSRuntimeArtifact[] = [];
@@ -317,6 +361,67 @@ describe('runJSSources resource', () => {
     });
   });
 
+  it('previews files as a complete workspace snapshot when repoId is supplied', async () => {
+    const locator = createLocator('fm_preview_snapshot');
+    registerFlowModelAdapter({
+      label: 'JS block / Preview snapshot',
+      modelUid: 'fm_preview_snapshot',
+      readCode: () => 'ctx.render("legacy");',
+    });
+    const opened = await agent.resource('runJSSources').open({ values: { locator } });
+    const saved = await agent.resource('runJSSources').save({
+      values: {
+        locator,
+        repoId: opened.body.data.repository.id,
+        baseCommitId: opened.body.data.repository.headCommitId,
+        baseOwnerFingerprint: opened.body.data.ownerFingerprint,
+        message: 'Add preview helper',
+        files: [
+          {
+            path: 'src/client/helper.ts',
+            content: 'export const helper = "saved";',
+            language: 'typescript',
+          },
+          {
+            path: 'src/client/index.tsx',
+            content: 'import { helper } from "./helper";\nctx.render(helper);',
+            language: 'typescript',
+          },
+        ],
+        entryPath: 'src/client/index.tsx',
+        version: 'v2',
+      },
+    });
+    expect(saved.status).toBe(200);
+
+    const preview = await agent.resource('runJSSources').compilePreview({
+      values: {
+        locator,
+        repoId: opened.body.data.repository.id,
+        baseCommitId: saved.body.data.commit.id,
+        files: [
+          {
+            path: 'src/client/index.tsx',
+            content: 'import { helper } from "./helper";\nctx.render(helper);',
+            language: 'typescript',
+          },
+        ],
+        entryPath: 'src/client/index.tsx',
+        version: 'v2',
+      },
+    });
+
+    expect(preview.status).toBe(200);
+    expect(preview.body.data.artifact.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'RUNJS_IMPORT_NOT_FOUND',
+          severity: 'error',
+        }),
+      ]),
+    );
+  });
+
   it('saves an independently opened editor snapshot as the next linear version', async () => {
     const runtimeArtifacts: RunJSRuntimeArtifact[] = [];
     const locator = createLocator('fm_overwrite_stale');
@@ -407,6 +512,99 @@ describe('runJSSources resource', () => {
         }),
       ]),
     );
+  });
+
+  it('rejects an explicitly guarded stale full-workspace snapshot', async () => {
+    const locator = createLocator('fm_guarded_stale');
+    registerFlowModelAdapter({
+      label: 'JS block / Guarded stale',
+      modelUid: 'fm_guarded_stale',
+      readCode: () => 'ctx.render("legacy");',
+    });
+    const opened = await agent.resource('runJSSources').open({
+      values: { locator },
+    });
+    const openedHead = opened.body.data.repository.headCommitId;
+    const openedOwnerFingerprint = opened.body.data.ownerFingerprint;
+
+    const firstSave = await agent.resource('runJSSources').save({
+      values: {
+        locator,
+        repoId: opened.body.data.repository.id,
+        baseCommitId: openedHead,
+        baseOwnerFingerprint: openedOwnerFingerprint,
+        message: 'Save guarded first writer',
+        files: [
+          {
+            path: 'src/client/index.tsx',
+            content: 'ctx.render("first writer");',
+            language: 'typescript',
+          },
+        ],
+        entryPath: 'src/client/index.tsx',
+        version: 'v2',
+      },
+    });
+
+    expect(firstSave.status).toBe(200);
+
+    const staleHeadSave = await agent.resource('runJSSources').save({
+      values: {
+        locator,
+        repoId: opened.body.data.repository.id,
+        baseCommitId: openedHead,
+        baseOwnerFingerprint: openedOwnerFingerprint,
+        message: 'Save guarded stale editor',
+        files: [
+          {
+            path: 'src/client/index.tsx',
+            content: 'ctx.render("stale editor");',
+            language: 'typescript',
+          },
+        ],
+        entryPath: 'src/client/index.tsx',
+        version: 'v2',
+      },
+    });
+
+    expect(staleHeadSave.status).toBe(409);
+    expect(staleHeadSave.body.errors[0]).toMatchObject({
+      code: 'BASE_COMMIT_OUTDATED',
+      status: 409,
+      details: {
+        expected: firstSave.body.data.commit.id,
+        received: openedHead,
+      },
+    });
+
+    const staleOwnerSave = await agent.resource('runJSSources').save({
+      values: {
+        locator,
+        repoId: opened.body.data.repository.id,
+        baseCommitId: firstSave.body.data.commit.id,
+        baseOwnerFingerprint: openedOwnerFingerprint,
+        message: 'Save guarded stale owner',
+        files: [
+          {
+            path: 'src/client/index.tsx',
+            content: 'ctx.render("stale owner");',
+            language: 'typescript',
+          },
+        ],
+        entryPath: 'src/client/index.tsx',
+        version: 'v2',
+      },
+    });
+
+    expect(staleOwnerSave.status).toBe(409);
+    expect(staleOwnerSave.body.errors[0]).toMatchObject({
+      code: 'RUNJS_SOURCE_OWNER_OUTDATED',
+      status: 409,
+      details: {
+        received: openedOwnerFingerprint,
+      },
+    });
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(2);
   });
 
   it('rejects save when the host code diverged from the current VSC head', async () => {

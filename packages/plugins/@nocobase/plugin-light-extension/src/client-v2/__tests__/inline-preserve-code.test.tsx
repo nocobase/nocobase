@@ -71,8 +71,8 @@ type RunJSFormValues = {
   sourceMode: string;
   code: string;
   version: string;
-  sourceBinding?: LightExtensionRuntimeSourceBinding;
   sourceRef?: Record<string, unknown>;
+  sourceBinding?: LightExtensionRuntimeSourceBinding;
 };
 
 function renderSourceField() {
@@ -87,7 +87,13 @@ function renderSourceField() {
       sourceMode: 'inline',
       code: 'ctx.render("inline");',
       version: 'v2',
-      sourceRef: { type: 'vsc-file', repoId: 'inline_repo', commitId: 'inline_commit', entry: 'src/client/index.tsx' },
+      sourceRef: {
+        type: 'vsc-file',
+        path: 'legacy/js-block.tsx',
+        repoId: 'inline_repo',
+        commitId: 'inline_commit',
+        entry: 'src/client/index.tsx',
+      },
     },
   });
 
@@ -127,7 +133,7 @@ describe('JSPageLightExtensionSourceField inline preservation', () => {
     });
   });
 
-  it('does not clear inline code when switching to light-extension mode', async () => {
+  it('does not clear inline fallback code or legacy sourceRef when switching to light-extension mode', async () => {
     const form = renderSourceField();
 
     await waitFor(() => {
@@ -150,9 +156,13 @@ describe('JSPageLightExtensionSourceField inline preservation', () => {
     expect(form.values.version).toBe('v2');
     expect(form.values.sourceRef).toEqual({
       type: 'vsc-file',
+      path: 'legacy/js-block.tsx',
       repoId: 'inline_repo',
       commitId: 'inline_commit',
       entry: 'src/client/index.tsx',
     });
+    expect(mocks.request.mock.calls.every(([options]) => options.url === 'lightExtensionEntries:listSelectable')).toBe(
+      true,
+    );
   });
 });

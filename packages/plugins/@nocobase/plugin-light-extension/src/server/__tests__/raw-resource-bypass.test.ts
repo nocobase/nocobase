@@ -96,7 +96,7 @@ describe('plugin-light-extension raw resource bypass guard', () => {
       await agent.resource('vscFile').updateRef({
         values: {
           repoId,
-          name: 'release',
+          name: 'head',
           targetCommitId: 'commit_raw',
         },
       }),
