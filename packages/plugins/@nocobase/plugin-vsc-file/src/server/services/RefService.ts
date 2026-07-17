@@ -126,14 +126,14 @@ export class RefService {
       const normalizedPath = normalizePath(input.path);
       const sourceEntry = sourceEntries.find((entry) => entry.pathHash === pathHash(normalizedPath)) || null;
       const nextEntries = restorePath(baseEntries, normalizedPath, sourceEntry);
-      const nextTreeHash = await this.treeService.hashTree(nextEntries, { transaction });
-      const baseTreeHash = headCommit ? headCommit.treeHash : await this.treeService.hashTree([], { transaction });
+      const preparedTree = await this.treeService.prepareTree(nextEntries, { transaction });
+      const baseTreeHash = headCommit?.treeHash || this.treeService.emptyTreeHash;
 
-      if (nextTreeHash === baseTreeHash) {
+      if (preparedTree.hash === baseTreeHash) {
         throw new VscError('NO_CHANGES', 'Restore does not change the repository tree');
       }
 
-      const tree = await this.treeService.ensureTree(nextEntries, transaction);
+      const tree = await this.treeService.ensurePreparedTree(preparedTree, transaction);
       const commit = await this.commitService.createCommit(
         {
           repoId: repository.id,

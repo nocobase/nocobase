@@ -23,7 +23,11 @@ import type {
   LightExtensionSaveSourceInput,
   LightExtensionSaveSourceResult,
 } from '../../shared/types';
-import { entryFromModel, LightExtensionEntryService } from './LightExtensionEntryService';
+import {
+  entryFromModel,
+  LightExtensionEntryService,
+  type LightExtensionPreparedEntries,
+} from './LightExtensionEntryService';
 import {
   classifyLightExtensionCompileMetricsError,
   combineLightExtensionCompileMetricsRecorders,
@@ -31,6 +35,7 @@ import {
   type LightExtensionCompileMetricsCollector,
 } from './LightExtensionCompileMetrics';
 import { LightExtensionFileService, type LightExtensionReplaceSourceSnapshotInput } from './LightExtensionFileService';
+import { assertPreparedCandidateWorkspace, type PreparedCandidateWorkspace } from './PreparedCandidateWorkspace';
 import type { LightExtensionServiceContext } from './LightExtensionRepoService';
 import { sortDiagnostics } from './LightExtensionValidator';
 import { LightExtensionWorkspaceCompilerBridge } from './LightExtensionWorkspaceCompilerBridge';
@@ -38,6 +43,12 @@ import { LightExtensionWorkspaceCompilerBridge } from './LightExtensionWorkspace
 type ReferenceRefreshService = {
   refreshReferencesForRepo: (repoId: string, ctx?: LightExtensionServiceContext) => Promise<void>;
 };
+
+interface RuntimeCompileSourceFile {
+  path: string;
+  content?: string;
+  language?: string;
+}
 
 export interface LightExtensionRemoteSnapshotCompileResult {
   repo: LightExtensionSaveSourceResult['repo'];
@@ -69,18 +80,25 @@ export class LightExtensionRuntimeCompileService {
   ): Promise<LightExtensionSaveSourceResult> {
     const probe = new LightExtensionCompileMetricsProbe('saveSource', this.metricsCollector);
     const compileMetrics = combineLightExtensionCompileMetricsRecorders(ctx.compileMetrics, probe);
+    const deferredRejectedPushAudits: Array<() => Promise<void>> = [];
+    const operationContext: LightExtensionServiceContext = {
+      ...ctx,
+      compileMetrics,
+    };
+    if (!ctx.transaction) {
+      operationContext.deferredRejectedPushAudits = deferredRejectedPushAudits;
+    }
     compileMetrics?.set('changedFileCount', input.files.length);
     let result: 'success' | 'rejected' | 'failed' | 'outdated' = 'failed';
     try {
       const save = await probe.measureAsync('transaction', () => {
         if (ctx.transaction) {
-          return this.saveSourceInTransaction(input, { ...ctx, compileMetrics });
+          return this.saveSourceInTransaction(input, operationContext);
         }
 
         return this.db.sequelize.transaction((transaction) =>
           this.saveSourceInTransaction(input, {
-            ...ctx,
-            compileMetrics,
+            ...operationContext,
             transaction,
           }),
         );
@@ -89,6 +107,9 @@ export class LightExtensionRuntimeCompileService {
       return save;
     } catch (error) {
       result = classifyLightExtensionCompileMetricsError(error);
+      for (const recordRejectedPush of deferredRejectedPushAudits) {
+        await recordRejectedPush();
+      }
       throw error;
     } finally {
       await probe.finish(result);
@@ -152,15 +173,17 @@ export class LightExtensionRuntimeCompileService {
     ctx: LightExtensionServiceContext,
   ): Promise<LightExtensionSaveSourceResult> {
     const pushSource = () =>
-      this.fileService.push(
+      this.fileService.pushPreparedCandidate(
         {
           ...input,
           allowEmptyCommit: false,
         },
         ctx,
       );
-    const push = ctx.compileMetrics ? await ctx.compileMetrics.measureAsync('push', pushSource) : await pushSource();
-    const compile = await this.compileCurrentRuntime(input.repoId, push.commit.id, {
+    const candidate = ctx.compileMetrics
+      ? await ctx.compileMetrics.measureAsync('push', pushSource)
+      : await pushSource();
+    const compile = await this.compilePreparedCandidate(candidate, {
       ...ctx,
       requestSource: ctx.requestSource || 'light-extension-save-source',
     });
@@ -179,14 +202,52 @@ export class LightExtensionRuntimeCompileService {
 
     return {
       repo: compile.repo,
-      commit: push.commit,
-      tree: push.tree,
+      commit: candidate.commit,
+      tree: candidate.tree,
       compile: {
         status: compile.status,
         entries: compile.entries,
       },
       diagnostics,
     };
+  }
+
+  async compilePreparedCandidate(
+    candidate: PreparedCandidateWorkspace,
+    ctx: LightExtensionServiceContext,
+  ): Promise<
+    Pick<LightExtensionSaveSourceResult['compile'], 'status' | 'entries'> & {
+      repo: LightExtensionSaveSourceResult['repo'];
+      diagnostics: LightExtensionDiagnostic[];
+    }
+  > {
+    const transaction = ctx.transaction;
+    if (!transaction) {
+      throw new LightExtensionError(
+        'LIGHT_EXTENSION_SOURCE_ERROR',
+        'A transaction is required to compile a prepared candidate workspace',
+      );
+    }
+
+    const probe = new LightExtensionCompileMetricsProbe('runtimeCompile', this.metricsCollector);
+    const compileMetrics = combineLightExtensionCompileMetricsRecorders(ctx.compileMetrics, probe);
+    let result: 'success' | 'rejected' | 'failed' | 'outdated' = 'failed';
+    try {
+      const compile = await probe.measureAsync('transaction', () =>
+        this.compilePreparedCandidateInTransaction(candidate, {
+          ...ctx,
+          compileMetrics,
+          transaction,
+        }),
+      );
+      result = 'success';
+      return compile;
+    } catch (error) {
+      result = classifyLightExtensionCompileMetricsError(error);
+      throw error;
+    } finally {
+      await probe.finish(result);
+    }
   }
 
   async compileCurrentRuntime(
@@ -252,6 +313,52 @@ export class LightExtensionRuntimeCompileService {
         requestSource: ctx.requestSource || 'light-extension-runtime-compile',
       },
     );
+
+    return this.compilePreparedEntries(repoId, commitId, prepared, pull.files || [], ctx);
+  }
+
+  private async compilePreparedCandidateInTransaction(
+    candidate: PreparedCandidateWorkspace,
+    ctx: LightExtensionServiceContext,
+  ): Promise<
+    Pick<LightExtensionSaveSourceResult['compile'], 'status' | 'entries'> & {
+      repo: LightExtensionSaveSourceResult['repo'];
+      diagnostics: LightExtensionDiagnostic[];
+    }
+  > {
+    const transaction = ctx.transaction;
+    if (!transaction) {
+      throw new LightExtensionError(
+        'LIGHT_EXTENSION_SOURCE_ERROR',
+        'A transaction is required to compile a prepared candidate workspace',
+      );
+    }
+    assertPreparedCandidateWorkspace(candidate, {
+      transaction,
+      repoId: candidate.repo.id,
+      commitId: candidate.commit.id,
+    });
+
+    const prepareEntries = () => this.entryService.reconcilePreparedCandidate(candidate, ctx);
+    const prepared = ctx.compileMetrics
+      ? await ctx.compileMetrics.measureAsync('treePrepare', prepareEntries)
+      : await prepareEntries();
+
+    return this.compilePreparedEntries(candidate.repo.id, candidate.commit.id, prepared, candidate.files, ctx);
+  }
+
+  private async compilePreparedEntries(
+    repoId: string,
+    commitId: string,
+    prepared: LightExtensionPreparedEntries,
+    files: readonly RuntimeCompileSourceFile[],
+    ctx: LightExtensionServiceContext,
+  ): Promise<
+    Pick<LightExtensionSaveSourceResult['compile'], 'status' | 'entries'> & {
+      repo: LightExtensionSaveSourceResult['repo'];
+      diagnostics: LightExtensionDiagnostic[];
+    }
+  > {
     const compileEntries: LightExtensionSaveSourceResult['compile']['entries'] = [];
     const planEntries = () =>
       prepared.entries.filter((entry) => entry.healthStatus === 'ready' && isSupportedKind(entry.kind));
@@ -270,7 +377,7 @@ export class LightExtensionRuntimeCompileService {
             kind: entry.kind as LightExtensionKind,
             entryName: entry.entryName,
             entryPath: entry.entryPath,
-            files: getEntryCompileFiles(pull.files || [], entry),
+            files: getEntryCompileFiles(files, entry),
           },
           {
             ...ctx,
@@ -427,10 +534,7 @@ export class LightExtensionRuntimeCompileService {
   }
 }
 
-function getEntryCompileFiles(
-  files: Array<{ path: string; content?: string; language?: string }>,
-  entry: LightExtensionEntryRecord,
-) {
+function getEntryCompileFiles(files: readonly RuntimeCompileSourceFile[], entry: LightExtensionEntryRecord) {
   const rootPath = getEntryRootPath(entry.entryPath);
 
   return files

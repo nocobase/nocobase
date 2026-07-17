@@ -20,6 +20,7 @@ import type {
   LightExtensionRepoRecord,
 } from '../../shared/types';
 import { LightExtensionFileService } from './LightExtensionFileService';
+import { assertPreparedCandidateWorkspace, type PreparedCandidateWorkspace } from './PreparedCandidateWorkspace';
 import type { LightExtensionServiceContext } from './LightExtensionRepoService';
 import { LightExtensionRepoService } from './LightExtensionRepoService';
 import {
@@ -29,12 +30,47 @@ import {
   sortDiagnostics,
   toValidatorFiles,
 } from './LightExtensionValidator';
+import { hasUsableRuntimeArtifact } from './runtimeArtifact';
+
+export interface EntryReferenceFingerprint {
+  entryId: string;
+  repoId: string;
+  kind: string;
+  healthStatus: LightExtensionEntryHealthStatus;
+  settingsSchemaHash: string | null;
+  settingsDefaultsHash: string | null;
+  runtimeUsable: boolean;
+}
+
+export interface EntryReconcileChange {
+  entry: LightExtensionEntryRecord;
+  before: EntryReferenceFingerprint | null;
+  after: EntryReferenceFingerprint;
+  created: boolean;
+  restored: boolean;
+  missing: boolean;
+  settingsChanged: boolean;
+  metadataChanged: boolean;
+  unchanged: boolean;
+}
+
+export interface EntryReconcileResult {
+  entries: LightExtensionEntryRecord[];
+  changes: EntryReconcileChange[];
+  createdEntries: EntryReconcileChange[];
+  restoredEntries: EntryReconcileChange[];
+  missingEntries: EntryReconcileChange[];
+  settingsChangedEntries: EntryReconcileChange[];
+  metadataChangedEntries: EntryReconcileChange[];
+  unchangedEntries: EntryReconcileChange[];
+}
 
 export interface LightExtensionPreparedEntries {
   repo: LightExtensionRepoRecord;
   commitId: string;
   diagnostics: LightExtensionDiagnostic[];
   entries: LightExtensionEntryRecord[];
+  reconcile: EntryReconcileResult;
 }
 
 export class LightExtensionEntryService {
@@ -89,17 +125,62 @@ export class LightExtensionEntryService {
         );
       }
 
-      const reconcileEntries = () => this.reconcileEntries(repoId, validation.entries, transaction);
-      const entries = operationContext.compileMetrics
+      const reconcileEntries = () => this.reconcileEntries(repoId, validation.entries, commitId, transaction);
+      const reconcile = operationContext.compileMetrics
         ? await operationContext.compileMetrics.measureAsync('entryReconcile', reconcileEntries)
         : await reconcileEntries();
       return {
         repo: await this.repoService.getRepo(repoId, operationContext),
         commitId,
         diagnostics,
-        entries,
+        entries: reconcile.entries,
+        reconcile,
       };
     });
+  }
+
+  async reconcilePreparedCandidate(
+    candidate: PreparedCandidateWorkspace,
+    ctx: LightExtensionServiceContext,
+  ): Promise<LightExtensionPreparedEntries> {
+    const transaction = ctx.transaction;
+    if (!transaction) {
+      throw new LightExtensionError(
+        'LIGHT_EXTENSION_SOURCE_ERROR',
+        'A transaction is required to reconcile a prepared candidate workspace',
+      );
+    }
+    assertPreparedCandidateWorkspace(candidate, {
+      transaction,
+      repoId: candidate.repo.id,
+      commitId: candidate.commit.id,
+    });
+
+    const diagnostics = sortDiagnostics(candidate.validation.diagnostics);
+    if (hasErrorDiagnostic(diagnostics)) {
+      throw new LightExtensionError('LIGHT_EXTENSION_VALIDATION_FAILED', 'Light extension source cannot be compiled', {
+        status: 422,
+        details: {
+          repoId: candidate.repo.id,
+          commitId: candidate.commit.id,
+          diagnostics,
+        },
+      });
+    }
+
+    const reconcileEntries = () =>
+      this.reconcileEntries(candidate.repo.id, candidate.validation.entries, candidate.commit.id, transaction);
+    const reconcile = ctx.compileMetrics
+      ? await ctx.compileMetrics.measureAsync('entryReconcile', reconcileEntries)
+      : await reconcileEntries();
+
+    return {
+      repo: candidate.repo,
+      commitId: candidate.commit.id,
+      diagnostics,
+      entries: reconcile.entries,
+      reconcile,
+    };
   }
 
   async listEntries(repoId: string, ctx: LightExtensionServiceContext = {}): Promise<LightExtensionEntryRecord[]> {
@@ -129,25 +210,61 @@ export class LightExtensionEntryService {
     return entryFromModel(record);
   }
 
-  private async reconcileEntries(
+  async reconcileEntries(
     repoId: string,
     sourceEntries: LightExtensionEntryValidationResult[],
+    repoHeadCommitId: string | null,
     transaction: Transaction,
-  ): Promise<LightExtensionEntryRecord[]> {
-    const entries: LightExtensionEntryRecord[] = [];
+  ): Promise<EntryReconcileResult> {
+    const repository = this.db.getRepository('lightExtensionEntries');
+    const existingRecords = await repository.find({
+      filter: { repoId },
+      sort: ['target', 'kind', 'entryName'],
+      transaction,
+    });
+    const existingByIdentity = new Map<string, Model>();
+    for (const record of existingRecords) {
+      const identity = getEntryIdentityFromModel(record);
+      if (existingByIdentity.has(identity)) {
+        throw new LightExtensionError(
+          'LIGHT_EXTENSION_ENTRY_CONFLICT',
+          `Duplicate light extension entry identity "${formatEntryIdentity(record)}"`,
+          {
+            details: {
+              repoId,
+              entryIdentity: formatEntryIdentity(record),
+            },
+          },
+        );
+      }
+      existingByIdentity.set(identity, record);
+    }
 
+    const sourceByIdentity = new Map<string, LightExtensionEntryValidationResult>();
     for (const sourceEntry of sourceEntries) {
+      const identity = getEntryIdentity(sourceEntry);
+      if (sourceByIdentity.has(identity)) {
+        throw new LightExtensionError(
+          'LIGHT_EXTENSION_ENTRY_CONFLICT',
+          `Duplicate light extension source entry identity "${formatSourceEntryIdentity(sourceEntry)}"`,
+          {
+            details: {
+              repoId,
+              entryIdentity: formatSourceEntryIdentity(sourceEntry),
+            },
+          },
+        );
+      }
+      sourceByIdentity.set(identity, sourceEntry);
+    }
+
+    const changes: EntryReconcileChange[] = [];
+    const newEntryValues: Record<string, unknown>[] = [];
+    const sortedSourceEntries = [...sourceByIdentity.values()].sort(compareSourceEntries);
+    for (const sourceEntry of sortedSourceEntries) {
       const settingsHashes = buildLightExtensionSettingsHashes(sourceEntry.settingsSchema);
-      const existing = await this.db.getRepository('lightExtensionEntries').findOne({
-        filter: {
-          repoId,
-          target: sourceEntry.target,
-          kind: sourceEntry.kind,
-          entryName: sourceEntry.entryName,
-        },
-        transaction,
-      });
-      const values = {
+      const existing = existingByIdentity.get(getEntryIdentity(sourceEntry));
+      const values: Record<string, unknown> = {
         repoId,
         target: sourceEntry.target,
         kind: sourceEntry.kind,
@@ -168,44 +285,67 @@ export class LightExtensionEntryService {
       };
 
       if (existing) {
-        await existing.update(values, { transaction });
-        entries.push(entryFromModel(existing));
+        const beforeEntry = entryFromModel(existing);
+        const changedValues = getChangedModelValues(existing, values);
+        if (Object.keys(changedValues).length > 0) {
+          await existing.update(changedValues, { transaction });
+        }
+        const entry = entryFromModel(existing);
+        changes.push(
+          createReconcileChange({
+            entry,
+            beforeEntry,
+            repoHeadCommitId,
+            changedFields: Object.keys(changedValues),
+          }),
+        );
         continue;
       }
 
-      const created = await this.db.getRepository('lightExtensionEntries').create({ values, transaction });
-      entries.push(entryFromModel(created));
+      newEntryValues.push(values);
     }
 
-    const sourceKeys = new Set(sourceEntries.map((entry) => `${entry.target}:${entry.kind}:${entry.entryName}`));
-    const existingEntries = await this.db.getRepository('lightExtensionEntries').find({
-      filter: { repoId },
-      sort: ['target', 'kind', 'entryName'],
-      transaction,
-    });
+    if (newEntryValues.length > 0) {
+      const createdRecords = await repository.createMany({ records: newEntryValues, transaction });
+      for (const [index, created] of createdRecords.entries()) {
+        const entry = entryFromModel(created);
+        changes.push(
+          createReconcileChange({
+            entry,
+            beforeEntry: null,
+            repoHeadCommitId,
+            changedFields: Object.keys(newEntryValues[index] || {}),
+          }),
+        );
+      }
+    }
 
-    for (const record of existingEntries) {
-      const key = `${record.get('target')}:${record.get('kind')}:${record.get('entryName')}`;
-      if (sourceKeys.has(key)) {
+    for (const record of existingRecords) {
+      if (sourceByIdentity.has(getEntryIdentityFromModel(record))) {
         continue;
       }
 
-      await record.update(
-        {
-          healthStatus: 'missing',
-          diagnostics: [],
-          ...emptyRuntimeFields(),
-        },
-        { transaction },
+      const beforeEntry = entryFromModel(record);
+      const changedValues = getChangedModelValues(record, {
+        healthStatus: 'missing',
+        diagnostics: [],
+        ...emptyRuntimeFields(),
+      });
+      if (Object.keys(changedValues).length > 0) {
+        await record.update(changedValues, { transaction });
+      }
+      changes.push(
+        createReconcileChange({
+          entry: entryFromModel(record),
+          beforeEntry,
+          repoHeadCommitId,
+          changedFields: Object.keys(changedValues),
+          markedMissing: Object.keys(changedValues).length > 0,
+        }),
       );
-      entries.push(entryFromModel(record));
     }
 
-    return entries.sort((left, right) =>
-      [left.target, left.kind, left.entryName, left.id]
-        .join('\u0000')
-        .localeCompare([right.target, right.kind, right.entryName, right.id].join('\u0000')),
-    );
+    return createEntryReconcileResult(changes);
   }
 
   private async withTransaction<T>(
@@ -218,6 +358,119 @@ export class LightExtensionEntryService {
 
     return this.db.sequelize.transaction(run);
   }
+}
+
+const SETTINGS_FIELDS = new Set(['settingsSchema', 'settingsSchemaHash', 'settingsDefaultsHash']);
+const METADATA_FIELDS = new Set([
+  'entryPath',
+  'descriptorPath',
+  'title',
+  'description',
+  'category',
+  'icon',
+  'tags',
+  'sort',
+  'diagnostics',
+]);
+
+function createReconcileChange(input: {
+  entry: LightExtensionEntryRecord;
+  beforeEntry: LightExtensionEntryRecord | null;
+  repoHeadCommitId: string | null;
+  changedFields: string[];
+  markedMissing?: boolean;
+}): EntryReconcileChange {
+  const created = !input.beforeEntry;
+  const restored = input.beforeEntry?.healthStatus === 'missing' && input.entry.healthStatus === 'ready';
+  const missing = Boolean(
+    input.markedMissing || (input.beforeEntry?.healthStatus !== 'missing' && input.entry.healthStatus === 'missing'),
+  );
+  const settingsChanged = Boolean(input.beforeEntry && input.changedFields.some((field) => SETTINGS_FIELDS.has(field)));
+  const metadataChanged = Boolean(input.beforeEntry && input.changedFields.some((field) => METADATA_FIELDS.has(field)));
+  return {
+    entry: input.entry,
+    before: input.beforeEntry ? createEntryReferenceFingerprint(input.beforeEntry, input.repoHeadCommitId) : null,
+    after: createEntryReferenceFingerprint(input.entry, input.repoHeadCommitId),
+    created,
+    restored,
+    missing,
+    settingsChanged,
+    metadataChanged,
+    unchanged: !created && input.changedFields.length === 0,
+  };
+}
+
+function createEntryReconcileResult(rawChanges: EntryReconcileChange[]): EntryReconcileResult {
+  const changes = [...rawChanges].sort((left, right) => compareEntries(left.entry, right.entry));
+  return {
+    entries: changes.map((change) => change.entry),
+    changes,
+    createdEntries: changes.filter((change) => change.created),
+    restoredEntries: changes.filter((change) => change.restored),
+    missingEntries: changes.filter((change) => change.missing),
+    settingsChangedEntries: changes.filter((change) => change.settingsChanged),
+    metadataChangedEntries: changes.filter((change) => change.metadataChanged),
+    unchangedEntries: changes.filter((change) => change.unchanged),
+  };
+}
+
+export function createEntryReferenceFingerprint(
+  entry: LightExtensionEntryRecord,
+  repoHeadCommitId: string | null,
+): EntryReferenceFingerprint {
+  return {
+    entryId: entry.id,
+    repoId: entry.repoId,
+    kind: entry.kind,
+    healthStatus: entry.healthStatus,
+    settingsSchemaHash: entry.settingsSchemaHash,
+    settingsDefaultsHash: entry.settingsDefaultsHash,
+    runtimeUsable: hasUsableRuntimeArtifact(entry, repoHeadCommitId),
+  };
+}
+
+function getChangedModelValues(record: Model, values: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(values).filter(([field, value]) => !storedValuesEqual(record.get(field), value)),
+  );
+}
+
+function storedValuesEqual(left: unknown, right: unknown): boolean {
+  if (left instanceof Date || right instanceof Date) {
+    return normalizeDate(left) === normalizeDate(right);
+  }
+  return stableSerialize(left) === stableSerialize(right);
+}
+
+function getEntryIdentity(entry: Pick<LightExtensionEntryValidationResult, 'target' | 'kind' | 'entryName'>): string {
+  return [entry.target, entry.kind, entry.entryName].join('\u0000');
+}
+
+function getEntryIdentityFromModel(record: Model): string {
+  return [record.get('target'), record.get('kind'), record.get('entryName')].map(String).join('\u0000');
+}
+
+function formatSourceEntryIdentity(
+  entry: Pick<LightExtensionEntryValidationResult, 'target' | 'kind' | 'entryName'>,
+): string {
+  return `${entry.target}:${entry.kind}:${entry.entryName}`;
+}
+
+function formatEntryIdentity(record: Model): string {
+  return [record.get('target'), record.get('kind'), record.get('entryName')].map(String).join(':');
+}
+
+function compareSourceEntries(
+  left: LightExtensionEntryValidationResult,
+  right: LightExtensionEntryValidationResult,
+): number {
+  return getEntryIdentity(left).localeCompare(getEntryIdentity(right));
+}
+
+function compareEntries(left: LightExtensionEntryRecord, right: LightExtensionEntryRecord): number {
+  return [left.target, left.kind, left.entryName, left.id]
+    .join('\u0000')
+    .localeCompare([right.target, right.kind, right.entryName, right.id].join('\u0000'));
 }
 
 function emptyRuntimeFields() {

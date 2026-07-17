@@ -684,6 +684,7 @@ describe('LightExtensionWorkspacePage', () => {
     );
 
     await screen.findByTestId('runjs-code-tab');
+    expect(screen.queryByText('Building local provisional preview')).not.toBeInTheDocument();
     expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute('data-show-run-button', 'true');
     expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute('data-has-run-preview', 'true');
     fireEvent.change(screen.getByLabelText('Edit file content'), {

@@ -16,7 +16,6 @@ import {
   type PartialMessage,
   type Plugin,
 } from 'esbuild';
-import { posix as pathPosix } from 'path';
 import ts from 'typescript';
 
 import {
@@ -33,9 +32,18 @@ import {
   type RunJSSurfaceStyle,
 } from '..';
 import { inspectRunJSSourceWorkspace } from './source-inspection';
+import {
+  isRunJSImportablePath,
+  resolveRunJSBuiltInModule,
+  resolveRunJSWorkspaceImport,
+  RUNJS_BUILTIN_MODULES,
+  runJSVirtualDirname,
+  runJSVirtualExtname,
+} from './portable';
 
 export * from './source-inspection';
 export * from './node-type-library';
+export * from './portable';
 export * from '../completion-catalog/generator';
 export * from '../type-packs/generator';
 export type { RunJSCompileFailureCode } from '..';
@@ -115,33 +123,15 @@ interface RunJSEsbuildMessageDetail {
 
 type AsyncFunctionConstructor = new (...args: string[]) => (...args: unknown[]) => Promise<unknown>;
 
-type ResolveImportResult =
-  | { status: 'resolved'; path: string }
-  | { status: 'blocked'; message: string }
-  | { status: 'notFound' };
-
 const sourceNamespace = 'runjs-source';
 const launcherNamespace = 'runjs-launcher';
 const launcherPath = '__runjs_launcher__.js';
 const entryModuleSpecifier = '__runjs_entry_module__';
-const importableExtensions = new Set(['.ts', '.tsx', '.js', '.jsx', '.json']);
-const resolvableExtensions = ['.ts', '.tsx', '.js', '.jsx', '.json'];
 const commonJSGlobalHosts = new Set(['globalThis', 'global', 'window']);
 const commonJSRequireHosts = new Set(['globalThis', 'global', 'window', 'module']);
 const runtimeVersionDefault = 'v2';
 const runJSSourceURLPrefix = 'nocobase-runjs://bundle/';
 const jsRunnerGeneratedCodeLineOffset = 2;
-const windowsDrivePrefix = /^[A-Za-z]:\//u;
-const runJSBuiltInModules: Readonly<Record<string, string>> = {
-  react: 'React',
-  'react-dom/client': 'ReactDOM',
-  antd: 'antd',
-  '@ant-design/icons': 'antdIcons',
-  dayjs: 'dayjs',
-  lodash: 'lodash',
-  mathjs: 'math',
-  '@formulajs/formulajs': 'formula',
-};
 const asyncFunctionConstructor = Object.getPrototypeOf(async function runJSWorkflowSyntaxCheck() {})
   .constructor as AsyncFunctionConstructor;
 
@@ -251,7 +241,7 @@ function contentFilesFromChanges(files: RunJSCompileFileInput[]): Map<string, Ru
       path: normalizedPath,
       content: file.content,
       language: file.language,
-      extension: pathPosix.extname(normalizedPath),
+      extension: runJSVirtualExtname(normalizedPath),
     });
   }
 
@@ -360,7 +350,7 @@ function createRunJSWorkspacePlugin(
         return {
           contents: file.path === entryPath ? entryAdaptation.code : normalizeModuleSource(file),
           loader: loaderForPath(file.path),
-          resolveDir: `/${pathPosix.dirname(file.path)}`,
+          resolveDir: `/${runJSVirtualDirname(file.path)}`,
         };
       });
     },
@@ -806,49 +796,8 @@ function resolveRelativeRunJSImport(
   fromPath: string,
   specifier: string,
   files: Map<string, RunJSContentFile>,
-): ResolveImportResult {
-  const directory = pathPosix.dirname(fromPath);
-  const joinedPath = pathPosix.normalize(pathPosix.join(directory === '.' ? '' : directory, specifier));
-  if (
-    pathPosix.isAbsolute(joinedPath) ||
-    windowsDrivePrefix.test(joinedPath) ||
-    joinedPath === '..' ||
-    joinedPath.startsWith('../')
-  ) {
-    return {
-      status: 'blocked',
-      message: `Import "${specifier}" escapes the RunJS workspace`,
-    };
-  }
-
-  const exactFile = files.get(joinedPath);
-  if (exactFile && !isImportableExtension(exactFile.path)) {
-    return {
-      status: 'blocked',
-      message: `Import "${specifier}" targets unsupported file "${exactFile.path}"`,
-    };
-  }
-  if (exactFile) {
-    return { status: 'resolved', path: exactFile.path };
-  }
-  if (pathPosix.extname(joinedPath)) {
-    return { status: 'notFound' };
-  }
-
-  for (const extension of resolvableExtensions) {
-    const candidate = `${joinedPath}${extension}`;
-    if (files.has(candidate)) {
-      return { status: 'resolved', path: candidate };
-    }
-  }
-  for (const extension of resolvableExtensions) {
-    const candidate = pathPosix.join(joinedPath, `index${extension}`);
-    if (files.has(candidate)) {
-      return { status: 'resolved', path: candidate };
-    }
-  }
-
-  return { status: 'notFound' };
+): ReturnType<typeof resolveRunJSWorkspaceImport> {
+  return resolveRunJSWorkspaceImport(fromPath, specifier, files);
 }
 
 function findModuleSpecifierLocation(
@@ -938,7 +887,7 @@ function convertSourceMap(
 }
 
 function buildRuntimeRequirePreamble(): string {
-  const cases = Object.entries(runJSBuiltInModules)
+  const cases = Object.entries(RUNJS_BUILTIN_MODULES)
     .map(([specifier, ctxLibName]) => `    case ${JSON.stringify(specifier)}: return ctx.libs.${ctxLibName};`)
     .join('\n');
   return [
@@ -1084,18 +1033,12 @@ function removeSourceMapComment(code: string): string {
   return code.replace(/\n?\/\/# sourceMappingURL=[^\n]*\s*$/u, '');
 }
 
-function resolveRunJSBuiltInModule(specifier: string): string | undefined {
-  return Object.prototype.hasOwnProperty.call(runJSBuiltInModules, specifier)
-    ? runJSBuiltInModules[specifier]
-    : undefined;
-}
-
 function isRelativeImportSpecifier(specifier: string): boolean {
   return specifier.startsWith('./') || specifier.startsWith('../');
 }
 
 function isImportableExtension(path: string): boolean {
-  return importableExtensions.has(pathPosix.extname(path));
+  return isRunJSImportablePath(path);
 }
 
 function getStringLiteralText(node: ts.Expression): string | null {

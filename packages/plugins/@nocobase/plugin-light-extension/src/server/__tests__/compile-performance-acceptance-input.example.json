@@ -1,0 +1,22 @@
+{
+  "generatedAt": "2026-07-17T00:00:00.000Z",
+  "releaseScope": {
+    "trustedPreviewTicket": false,
+    "optimisticTwoPhaseSave": false,
+    "incrementalCompilerSessions": false,
+    "runtimeAndTypeDependencyGraph": false,
+    "boundedCompilationAndPersistence": false,
+    "browserProvisionalPreview": false
+  },
+  "baseline": [],
+  "target": [],
+  "canary": {
+    "status": "pending",
+    "observationWindow": "pending",
+    "staleRuntimeIncrease": false,
+    "artifactMismatchIncrease": false,
+    "headConflictRateIncrease": false,
+    "sustainedMemoryGrowth": false,
+    "notes": "Replace this template with measured baseline, target, and canary evidence."
+  }
+}

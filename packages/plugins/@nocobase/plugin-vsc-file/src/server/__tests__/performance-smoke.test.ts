@@ -112,7 +112,7 @@ describe('vsc-file performance smoke tests', () => {
     expect(metrics.counters).toEqual({
       blobContentQueryCount: 0,
       blobContentRowCount: 0,
-      treeNormalizationCount: 3,
+      treeNormalizationCount: 1,
     });
 
     const smallRepository = await service.createRepository({
@@ -282,6 +282,54 @@ describe('vsc-file performance smoke tests', () => {
     });
 
     await transaction.rollback();
+  });
+
+  it('prepares a one-file delta in a medium repository once with one metadata query', async () => {
+    const metrics = createMetricsCollector();
+    const { repository, initialCommit } = await service.createRepository({
+      ownerType: 'plugin',
+      ownerId: 'performance-prepared-tree',
+      name: 'main',
+      initialFiles: createFiles(mediumRepoFileCount, mediumRepoFileSize, 'prepared-tree'),
+    });
+    if (!initialCommit) {
+      throw new Error('Expected an initial commit');
+    }
+
+    const blobRepository = db.getRepository('vscFileBlobs');
+    const blobFind = vi.spyOn(blobRepository, 'find');
+    const blobFindOne = vi.spyOn(blobRepository, 'findOne');
+    const changedContent = contentOfSize(mediumRepoFileSize, 'prepared-tree-changed');
+    const pushed = await service.push(
+      {
+        repoId: repository.id,
+        baseCommitId: initialCommit.id,
+        message: 'change one file',
+        files: [{ path: 'prepared-tree/file-042.txt', content: changedContent }],
+      },
+      { metricsCollector: metrics.collector },
+    );
+
+    expect(pushed.tree).toMatchObject({
+      entryCount: mediumRepoFileCount,
+      byteSize: mediumRepoFileCount * mediumRepoFileSize,
+    });
+    expect(blobFind).toHaveBeenCalledTimes(1);
+    expect(blobFind.mock.calls[0]?.[0]).toMatchObject({
+      filter: {
+        hash: { $in: expect.any(Array) },
+      },
+      fields: ['hash', 'size'],
+    });
+    expect((blobFind.mock.calls[0]?.[0] as { filter: { hash: { $in: string[] } } }).filter.hash.$in).toHaveLength(
+      mediumRepoFileCount - 1,
+    );
+    expect(blobFindOne).toHaveBeenCalledTimes(0);
+    expect(metrics.counters).toEqual({
+      blobContentQueryCount: 0,
+      blobContentRowCount: 0,
+      treeNormalizationCount: 1,
+    });
   });
 
   it('rejects a pull before exposing files when any referenced blob is missing', async () => {

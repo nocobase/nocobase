@@ -29,6 +29,9 @@ describe('plugin-light-extension saveSource runtime compile', () => {
   let runtimeCompileService: LightExtensionRuntimeCompileService;
   let runtimeResolveService: RuntimeResolveService;
   let compilerBridge: LightExtensionWorkspaceCompilerBridge;
+  let fileService: LightExtensionFileService;
+  let entryService: LightExtensionEntryService;
+  let validator: LightExtensionValidator;
   let metricsSummaries: LightExtensionCompileMetricsSummary[];
 
   beforeEach(async () => {
@@ -37,9 +40,9 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     });
     const auditService = new LightExtensionAuditService(app.db);
     const permissionService = new LightExtensionPermissionService(auditService);
-    const validator = new LightExtensionValidator();
+    validator = new LightExtensionValidator();
     repoService = new LightExtensionRepoService(app.db, auditService, permissionService, undefined, validator);
-    const fileService = new LightExtensionFileService(
+    fileService = new LightExtensionFileService(
       app.db,
       auditService,
       permissionService,
@@ -47,7 +50,7 @@ describe('plugin-light-extension saveSource runtime compile', () => {
       undefined,
       validator,
     );
-    const entryService = new LightExtensionEntryService(app.db, fileService, repoService, validator);
+    entryService = new LightExtensionEntryService(app.db, fileService, repoService, validator);
     compilerBridge = new LightExtensionWorkspaceCompilerBridge(auditService, permissionService);
     metricsSummaries = [];
     runtimeCompileService = new LightExtensionRuntimeCompileService(
@@ -130,20 +133,17 @@ describe('plugin-light-extension saveSource runtime compile', () => {
         durationsMs: expect.objectContaining({
           total: expect.any(Number),
           treePrepare: expect.any(Number),
-          workspaceValidation: expect.any(Number),
           entryReconcile: expect.any(Number),
           compileEntries: expect.any(Number),
           artifactPersist: expect.any(Number),
           transaction: expect.any(Number),
         }),
         counters: expect.objectContaining({
-          repoFileCount: 2,
-          entryCount: 1,
           affectedEntryCount: 1,
           compiledEntryCount: 1,
-          blobContentQueryCount: 4,
-          blobContentRowCount: 4,
-          snapshotMaterializationCount: 2,
+          blobContentQueryCount: 0,
+          blobContentRowCount: 0,
+          snapshotMaterializationCount: 0,
           treeNormalizationCount: 0,
         }),
       }),
@@ -154,6 +154,8 @@ describe('plugin-light-extension saveSource runtime compile', () => {
         durationsMs: expect.objectContaining({
           total: expect.any(Number),
           push: expect.any(Number),
+          snapshotMaterialize: expect.any(Number),
+          workspaceValidation: expect.any(Number),
           transaction: expect.any(Number),
         }),
         counters: expect.objectContaining({
@@ -162,14 +164,75 @@ describe('plugin-light-extension saveSource runtime compile', () => {
           entryCount: 1,
           affectedEntryCount: 1,
           compiledEntryCount: 1,
-          blobContentQueryCount: 6,
-          blobContentRowCount: 6,
-          snapshotMaterializationCount: 3,
-          treeNormalizationCount: 2,
+          blobContentQueryCount: 0,
+          blobContentRowCount: 0,
+          snapshotMaterializationCount: 1,
+          treeNormalizationCount: 1,
         }),
       }),
     ]);
     expect(JSON.stringify(metricsSummaries)).not.toMatch(/repoId|entryId|src\/client|Sales KPI|artifactHash/iu);
+  });
+
+  it('reuses one canonical candidate for validation, reconcile, and Save compilation', async () => {
+    const repo = await repoService.createRepo({
+      name: 'Canonical Candidate Save',
+      initialFiles: baselineSalesKpiFiles(),
+    });
+    const pullSpy = vi.spyOn(fileService, 'pull');
+    const pullCommitSpy = vi.spyOn(fileService, 'pullCommit');
+    const candidateSpy = vi.spyOn(fileService, 'pushPreparedCandidate');
+    const prepareEntriesSpy = vi.spyOn(entryService, 'prepareEntries');
+    const reconcileCandidateSpy = vi.spyOn(entryService, 'reconcilePreparedCandidate');
+    const validateWorkspaceSpy = vi.spyOn(validator, 'validateWorkspace');
+    const compileEntrySpy = vi.spyOn(compilerBridge, 'compileEntry');
+
+    const result = await saveCurrentSource({
+      repoId: repo.id,
+      message: 'canonical Save',
+      files: [
+        {
+          path: 'src/client/js-blocks/sales-kpi/index.tsx',
+          content: '\uFEFFconst title = "销售指标";\r\nctx.render(<div>{title}</div>);\r',
+          language: 'typescript',
+        },
+      ],
+    });
+    const candidate = await candidateSpy.mock.results[0].value;
+    const canonicalContent = 'const title = "销售指标";\nctx.render(<div>{title}</div>);\n';
+    const candidateFile = candidate.files.find((file) => file.path.endsWith('/index.tsx'));
+    const validatedFile = validateWorkspaceSpy.mock.calls[0][0].files.find((file) => file.path.endsWith('/index.tsx'));
+    const compiledFile = compileEntrySpy.mock.calls[0][0].files.find((file) => file.path.endsWith('/index.tsx'));
+
+    expect(pullSpy).not.toHaveBeenCalled();
+    expect(pullCommitSpy).not.toHaveBeenCalled();
+    expect(prepareEntriesSpy).not.toHaveBeenCalled();
+    expect(candidateSpy).toHaveBeenCalledTimes(1);
+    expect(validateWorkspaceSpy).toHaveBeenCalledTimes(1);
+    expect(reconcileCandidateSpy).toHaveBeenCalledTimes(1);
+    expect(reconcileCandidateSpy.mock.calls[0][0]).toBe(candidate);
+    expect(candidate.changedPaths).toEqual(['src/client/js-blocks/sales-kpi/index.tsx']);
+    expect(candidateFile?.content).toBe(canonicalContent);
+    expect(validatedFile?.content).toBe(canonicalContent);
+    expect(compiledFile?.content).toBe(canonicalContent);
+    expect(candidateFile?.size).toBe(Buffer.byteLength(canonicalContent, 'utf8'));
+    expect(candidate.commit.id).toBe(result.commit.id);
+    expect(candidate.tree.hash).toBe(result.commit.treeHash);
+    expect(result).not.toHaveProperty('candidate');
+    expect(result).not.toHaveProperty('files');
+    expect(metricsSummaries.find((summary) => summary.operation === 'saveSource')?.counters).toMatchObject({
+      snapshotMaterializationCount: 1,
+      blobContentQueryCount: 1,
+      blobContentRowCount: 1,
+    });
+
+    pullCommitSpy.mockRestore();
+    const persisted = await fileService.pullCommit({
+      repoId: repo.id,
+      commitId: result.commit.id,
+      includeContent: 'all',
+    });
+    expect(persisted.files?.find((file) => file.path.endsWith('/index.tsx'))?.content).toBe(canonicalContent);
   });
 
   it('keeps descriptor hashes isolated from runtime hashes and tracks ordinary JSON modules', async () => {

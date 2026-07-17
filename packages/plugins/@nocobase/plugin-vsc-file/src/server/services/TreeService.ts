@@ -13,7 +13,7 @@ import { maxFileSize, maxFilesPerRepo, maxRepoTextSize } from '../../shared/cons
 import { VscError } from '../../shared/errors';
 import { sha256Hex } from '../../shared/hash';
 import { normalizePath, pathHash, pathLowerHash } from '../../shared/path';
-import type { VscNormalizedTreeEntry, VscStoredTree, VscTreeEntryInput } from '../../shared/types';
+import type { VscNormalizedTreeEntry, VscStoredBlob, VscStoredTree, VscTreeEntryInput } from '../../shared/types';
 import { BlobService, normalizeBlob } from './BlobService';
 import { incrementVscFileMetric, type VscFileMetricsCollector } from './VscFileMetrics';
 
@@ -41,8 +41,40 @@ export interface EnsureTreeOptions {
   metricsCollector?: VscFileMetricsCollector;
 }
 
+const preparedTreeBrand = Symbol('vsc-file-prepared-tree');
+
+export interface PreparedTreeBlobMetadata {
+  readonly hash: string;
+  readonly size: number;
+}
+
+export interface PreparedTree {
+  readonly [preparedTreeBrand]: true;
+  readonly entries: readonly Readonly<VscNormalizedTreeEntry>[];
+  readonly hash: string;
+  readonly entryCount: number;
+  readonly byteSize: number;
+  readonly canonicalBlobs: readonly Readonly<VscStoredBlob>[];
+  readonly blobMetadata: readonly Readonly<PreparedTreeBlobMetadata>[];
+}
+
+interface PreparedEntryDraft {
+  readonly path: string;
+  readonly pathHash: string;
+  readonly pathLowerHash: string;
+  readonly blobHash: string;
+  readonly explicitSize?: number;
+  readonly contentBlob?: VscStoredBlob;
+  readonly language: string;
+  readonly mode: string;
+}
+
 export class TreeService {
   private readonly blobService: BlobService;
+
+  private readonly preparedTrees = new WeakSet<object>();
+
+  readonly emptyTreeHash = hashNormalizedTree([]);
 
   constructor(
     private readonly db: Database,
@@ -52,12 +84,7 @@ export class TreeService {
   }
 
   async hashTree(entries: VscTreeEntryInput[], options: EnsureTreeOptions = {}): Promise<string> {
-    const normalizedEntries = await this.normalizeEntries(entries, {
-      persistBlobs: false,
-      transaction: options.transaction,
-      metricsCollector: options.metricsCollector,
-    });
-    return hashNormalizedTree(normalizedEntries);
+    return (await this.prepareTree(entries, options)).hash;
   }
 
   async ensureTree(
@@ -66,21 +93,180 @@ export class TreeService {
     metricsCollector?: VscFileMetricsCollector,
   ): Promise<VscStoredTree> {
     return this.withTransaction(transaction, async (activeTransaction) => {
-      const normalizedEntries = await this.normalizeEntries(entries, {
-        persistBlobs: true,
+      const prepared = await this.prepareTree(entries, {
         transaction: activeTransaction,
         metricsCollector,
       });
-      const hash = hashNormalizedTree(normalizedEntries);
+      return this.ensurePreparedTree(prepared, activeTransaction);
+    });
+  }
+
+  async prepareTree(entries: readonly VscTreeEntryInput[], options: EnsureTreeOptions = {}): Promise<PreparedTree> {
+    incrementVscFileMetric(options.metricsCollector, 'treeNormalizationCount');
+
+    if (entries.length > maxFilesPerRepo) {
+      throw new VscError('REPO_LIMIT_EXCEEDED', `Tree must not exceed ${maxFilesPerRepo} files`, {
+        details: { fileCount: entries.length, maxFilesPerRepo },
+      });
+    }
+
+    const byPath = new Set<string>();
+    const byLowerPathHash = new Map<string, string>();
+    const drafts: PreparedEntryDraft[] = [];
+    const hashOnlyBlobHashes: string[] = [];
+    const canonicalBlobsByHash = new Map<string, VscStoredBlob>();
+
+    for (const entry of entries) {
+      const normalizedPath = normalizePath(entry.path);
+      const normalizedPathHash = pathHash(normalizedPath);
+      const normalizedPathLowerHash = pathLowerHash(normalizedPath);
+      const conflictingPath = byLowerPathHash.get(normalizedPathLowerHash);
+
+      if (byPath.has(normalizedPath)) {
+        throw new VscError('PATH_INVALID', `Duplicate path "${normalizedPath}"`);
+      }
+      if (conflictingPath && conflictingPath !== normalizedPath) {
+        throw new VscError(
+          'PATH_INVALID',
+          `Case-only path conflict between "${conflictingPath}" and "${normalizedPath}"`,
+        );
+      }
+
+      const contentBlob = typeof entry.content === 'string' ? normalizeBlob(entry.content) : undefined;
+      if (!contentBlob && !entry.blobHash) {
+        throw new VscError(
+          'BLOB_NOT_FOUND',
+          `Tree entry "${entry.path}" must include content or an existing blob hash`,
+        );
+      }
+
+      let blobHash: string;
+      if (contentBlob) {
+        blobHash = contentBlob.hash;
+        canonicalBlobsByHash.set(contentBlob.hash, contentBlob);
+      } else {
+        blobHash = entry.blobHash as string;
+        hashOnlyBlobHashes.push(blobHash);
+      }
+
+      byPath.add(normalizedPath);
+      byLowerPathHash.set(normalizedPathLowerHash, normalizedPath);
+      drafts.push({
+        path: normalizedPath,
+        pathHash: normalizedPathHash,
+        pathLowerHash: normalizedPathLowerHash,
+        blobHash,
+        explicitSize: entry.size,
+        contentBlob,
+        language: normalizeEntryMetadata(entry.language, inferLanguage(normalizedPath), 'language', maxLanguageLength),
+        mode: normalizeEntryMetadata(entry.mode, defaultFileMode, 'mode', maxModeLength),
+      });
+    }
+
+    const loadedMetadata = await this.blobService.loadBlobMetadata(hashOnlyBlobHashes, {
+      transaction: options.transaction,
+    });
+    const metadataByHash = new Map<string, PreparedTreeBlobMetadata>();
+    for (const blob of canonicalBlobsByHash.values()) {
+      metadataByHash.set(blob.hash, { hash: blob.hash, size: blob.size });
+    }
+    for (const blob of loadedMetadata.values()) {
+      metadataByHash.set(blob.hash, { hash: blob.hash, size: blob.size });
+    }
+
+    const normalizedEntries = drafts
+      .map((draft): VscNormalizedTreeEntry => {
+        let size: number;
+        if (draft.contentBlob) {
+          size = draft.contentBlob.size;
+        } else {
+          const blobMetadata = loadedMetadata.get(draft.blobHash);
+          if (!blobMetadata) {
+            throw new VscError('INTERNAL_ERROR', `Prepared blob metadata for "${draft.blobHash}" is incomplete`);
+          }
+          size = blobMetadata.size;
+        }
+        assertBlobSizeWithinLimit(size);
+        if (typeof draft.explicitSize === 'number' && draft.explicitSize !== size) {
+          throw new VscError(
+            'PATH_INVALID',
+            `Tree entry "${draft.path}" size does not match blob "${draft.blobHash}"`,
+            {
+              details: {
+                path: draft.path,
+                blobHash: draft.blobHash,
+                size: draft.explicitSize,
+                expectedSize: size,
+              },
+            },
+          );
+        }
+
+        return {
+          path: draft.path,
+          pathHash: draft.pathHash,
+          pathLowerHash: draft.pathLowerHash,
+          blobHash: draft.blobHash,
+          size,
+          language: draft.language,
+          mode: draft.mode,
+        };
+      })
+      .sort(compareEntriesByPath);
+
+    const byteSize = normalizedEntries.reduce((total, entry) => total + entry.size, 0);
+    if (byteSize > maxRepoTextSize) {
+      throw new VscError('REPO_LIMIT_EXCEEDED', `Tree content must not exceed ${maxRepoTextSize} bytes`, {
+        details: { byteSize, maxRepoTextSize },
+      });
+    }
+
+    const frozenEntries = Object.freeze(normalizedEntries.map((entry) => Object.freeze({ ...entry })));
+    const canonicalBlobs = Object.freeze(
+      [...canonicalBlobsByHash.values()]
+        .sort((left, right) => left.hash.localeCompare(right.hash))
+        .map((blob) => Object.freeze({ ...blob })),
+    );
+    const blobMetadata = Object.freeze(
+      [...metadataByHash.values()]
+        .sort((left, right) => left.hash.localeCompare(right.hash))
+        .map((blob) => Object.freeze({ ...blob })),
+    );
+    const prepared: PreparedTree = Object.freeze({
+      [preparedTreeBrand]: true,
+      entries: frozenEntries,
+      hash: hashNormalizedTree(frozenEntries),
+      entryCount: frozenEntries.length,
+      byteSize,
+      canonicalBlobs,
+      blobMetadata,
+    });
+    this.preparedTrees.add(prepared);
+    return prepared;
+  }
+
+  async ensurePreparedTree(prepared: PreparedTree, transaction?: Transaction): Promise<VscStoredTree> {
+    this.assertPreparedTree(prepared);
+
+    return this.withTransaction(transaction, async (activeTransaction) => {
+      const blobModel = this.db.getModel<Model<VscStoredBlob>>('vscFileBlobs');
+      for (const blob of prepared.canonicalBlobs) {
+        await blobModel.findOrCreate({
+          where: { hash: blob.hash },
+          defaults: blob,
+          transaction: activeTransaction,
+        });
+      }
+
       const treeModel = this.db.getModel<Model<VscStoredTree>>('vscFileTrees');
       const [tree, created] = await treeModel.findOrCreate({
         where: {
-          hash,
+          hash: prepared.hash,
         },
         defaults: {
-          hash,
-          entryCount: normalizedEntries.length,
-          byteSize: normalizedEntries.reduce((total, entry) => total + entry.size, 0),
+          hash: prepared.hash,
+          entryCount: prepared.entryCount,
+          byteSize: prepared.byteSize,
         },
         transaction: activeTransaction,
       });
@@ -90,8 +276,8 @@ export class TreeService {
       }
 
       await this.db.getRepository('vscFileTreeEntries').createMany({
-        records: normalizedEntries.map((entry) => ({
-          treeHash: hash,
+        records: prepared.entries.map((entry) => ({
+          treeHash: prepared.hash,
           path: entry.path,
           pathHash: entry.pathHash,
           pathLowerHash: entry.pathLowerHash,
@@ -120,113 +306,10 @@ export class TreeService {
     return records.map(entryFromRecord);
   }
 
-  private async normalizeEntries(
-    entries: VscTreeEntryInput[],
-    options: { persistBlobs: boolean; transaction?: Transaction; metricsCollector?: VscFileMetricsCollector },
-  ): Promise<VscNormalizedTreeEntry[]> {
-    incrementVscFileMetric(options.metricsCollector, 'treeNormalizationCount');
-
-    if (entries.length > maxFilesPerRepo) {
-      throw new VscError('REPO_LIMIT_EXCEEDED', `Tree must not exceed ${maxFilesPerRepo} files`, {
-        details: { fileCount: entries.length, maxFilesPerRepo },
-      });
+  private assertPreparedTree(prepared: PreparedTree): void {
+    if (!prepared || !this.preparedTrees.has(prepared)) {
+      throw new VscError('INTERNAL_ERROR', 'Prepared tree must be created by this TreeService instance');
     }
-
-    const byPath = new Set<string>();
-    const byLowerPathHash = new Map<string, string>();
-    const normalizedEntries: VscNormalizedTreeEntry[] = [];
-
-    for (const entry of entries) {
-      const normalizedPath = normalizePath(entry.path);
-      const normalizedPathHash = pathHash(normalizedPath);
-      const normalizedPathLowerHash = pathLowerHash(normalizedPath);
-      const conflictingPath = byLowerPathHash.get(normalizedPathLowerHash);
-
-      if (byPath.has(normalizedPath)) {
-        throw new VscError('PATH_INVALID', `Duplicate path "${normalizedPath}"`);
-      }
-      if (conflictingPath && conflictingPath !== normalizedPath) {
-        throw new VscError(
-          'PATH_INVALID',
-          `Case-only path conflict between "${conflictingPath}" and "${normalizedPath}"`,
-        );
-      }
-
-      const blob = await this.resolveBlob(entry, options);
-      byPath.add(normalizedPath);
-      byLowerPathHash.set(normalizedPathLowerHash, normalizedPath);
-      normalizedEntries.push({
-        path: normalizedPath,
-        pathHash: normalizedPathHash,
-        pathLowerHash: normalizedPathLowerHash,
-        blobHash: blob.blobHash,
-        size: blob.size,
-        language: normalizeEntryMetadata(entry.language, inferLanguage(normalizedPath), 'language', maxLanguageLength),
-        mode: normalizeEntryMetadata(entry.mode, defaultFileMode, 'mode', maxModeLength),
-      });
-    }
-
-    const byteSize = normalizedEntries.reduce((total, entry) => total + entry.size, 0);
-    if (byteSize > maxRepoTextSize) {
-      throw new VscError('REPO_LIMIT_EXCEEDED', `Tree content must not exceed ${maxRepoTextSize} bytes`, {
-        details: { byteSize, maxRepoTextSize },
-      });
-    }
-
-    return normalizedEntries;
-  }
-
-  private async resolveBlob(
-    entry: VscTreeEntryInput,
-    options: { persistBlobs: boolean; transaction?: Transaction },
-  ): Promise<{ blobHash: string; size: number }> {
-    if (typeof entry.content === 'string') {
-      const blob = options.persistBlobs
-        ? await this.blobService.ensureBlob(entry.content, options)
-        : normalizeBlob(entry.content);
-      return {
-        blobHash: blob.hash,
-        size: blob.size,
-      };
-    }
-
-    if (!entry.blobHash) {
-      throw new VscError('BLOB_NOT_FOUND', `Tree entry "${entry.path}" must include content or an existing blob hash`);
-    }
-
-    const blob = await this.db.getRepository('vscFileBlobs').findOne({
-      filterByTk: entry.blobHash,
-      fields: ['hash', 'size'],
-      transaction: options.transaction,
-    });
-
-    if (!blob) {
-      throw new VscError('BLOB_NOT_FOUND', `Blob "${entry.blobHash}" was not found`);
-    }
-
-    const size = blob.get('size') as number;
-
-    if (size > maxFileSize) {
-      throw new VscError('FILE_TOO_LARGE', `File size must not exceed ${maxFileSize} bytes`, {
-        details: { size, maxFileSize },
-      });
-    }
-
-    if (typeof entry.size === 'number' && entry.size !== size) {
-      throw new VscError('PATH_INVALID', `Tree entry "${entry.path}" size does not match blob "${entry.blobHash}"`, {
-        details: {
-          path: entry.path,
-          blobHash: entry.blobHash,
-          size: entry.size,
-          expectedSize: size,
-        },
-      });
-    }
-
-    return {
-      blobHash: entry.blobHash,
-      size,
-    };
   }
 
   private async withTransaction<T>(
@@ -241,21 +324,31 @@ export class TreeService {
   }
 }
 
-function hashNormalizedTree(entries: VscNormalizedTreeEntry[]): string {
+function hashNormalizedTree(entries: readonly Readonly<VscNormalizedTreeEntry>[]): string {
   const manifest = [...entries]
-    .sort((left, right) => {
-      if (left.path < right.path) {
-        return -1;
-      }
-      if (left.path > right.path) {
-        return 1;
-      }
-      return 0;
-    })
+    .sort(compareEntriesByPath)
     .map((entry) => `${entry.path}\0${entry.blobHash}\0${entry.language}\0${entry.mode}\n`)
     .join('');
 
   return sha256Hex(manifest);
+}
+
+function compareEntriesByPath(left: Readonly<VscNormalizedTreeEntry>, right: Readonly<VscNormalizedTreeEntry>): number {
+  if (left.path < right.path) {
+    return -1;
+  }
+  if (left.path > right.path) {
+    return 1;
+  }
+  return 0;
+}
+
+function assertBlobSizeWithinLimit(size: number): void {
+  if (size > maxFileSize) {
+    throw new VscError('FILE_TOO_LARGE', `File size must not exceed ${maxFileSize} bytes`, {
+      details: { size, maxFileSize },
+    });
+  }
 }
 
 function inferLanguage(path: string): string {

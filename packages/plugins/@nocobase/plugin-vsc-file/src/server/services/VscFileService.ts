@@ -24,6 +24,7 @@ import type {
   VscTreeEntryInput,
 } from '../../shared/types';
 import { BlobService } from './BlobService';
+import { CanonicalCandidateService, type CanonicalCandidateSnapshot } from './CanonicalCandidateService';
 import type { ListCommitsInput } from './CommitService';
 import { CommitService } from './CommitService';
 import type { DiffCommitsInput, DiffFileEndpoint, DiffFileInput, DiffFileResult, FileDiffResult } from './DiffService';
@@ -88,6 +89,17 @@ export interface PushResult {
   tree: VscStoredTree;
 }
 
+export interface PushWithCandidateOptions {
+  validateBaseEntries?: (entries: readonly Readonly<VscNormalizedTreeEntry>[]) => Promise<void> | void;
+  measureCandidateMaterialization?: (
+    materialize: () => Promise<CanonicalCandidateSnapshot>,
+  ) => Promise<CanonicalCandidateSnapshot>;
+}
+
+export interface PushWithCandidateResult extends PushResult {
+  candidate: CanonicalCandidateSnapshot;
+}
+
 export type IncludeContentMode = 'none' | 'selected' | 'all';
 
 export interface PullInput {
@@ -145,8 +157,14 @@ interface PermissionTarget {
   refName?: string;
 }
 
+interface InternalPushResult extends PushResult {
+  candidate?: CanonicalCandidateSnapshot;
+}
+
 export class VscFileService {
   private readonly blobService: BlobService;
+
+  private readonly candidateService: CanonicalCandidateService;
 
   private readonly treeService: TreeService;
 
@@ -163,6 +181,7 @@ export class VscFileService {
     private readonly permissionHooks = new VscPermissionHookRegistry(),
   ) {
     this.blobService = new BlobService(db);
+    this.candidateService = new CanonicalCandidateService(this.blobService);
     this.treeService = new TreeService(db, this.blobService);
     this.repositoryService = new RepositoryService(db);
     this.commitService = new CommitService(db);
@@ -201,7 +220,7 @@ export class VscFileService {
               metadata: input.metadata,
             },
             { ...ctx, transaction },
-            false,
+            { checkPermission: false },
           )
         : null;
 
@@ -244,7 +263,7 @@ export class VscFileService {
           metadata: input.metadata,
         },
         { ...ctx, transaction },
-        false,
+        { checkPermission: false },
       );
 
       return {
@@ -487,13 +506,54 @@ export class VscFileService {
   }
 
   async push(input: PushInput, ctx: VscServiceContext = {}): Promise<PushResult> {
-    return this.pushInternal(input, ctx, true);
+    const result = await this.pushInternal(input, ctx, {
+      checkPermission: true,
+      materializeCandidate: false,
+    });
+
+    return {
+      repository: result.repository,
+      commit: result.commit,
+      tree: result.tree,
+    };
   }
 
-  private async pushInternal(input: PushInput, ctx: VscServiceContext, checkPermission: boolean): Promise<PushResult> {
+  async pushWithCandidate(
+    input: PushInput,
+    ctx: VscServiceContext = {},
+    options: PushWithCandidateOptions = {},
+  ): Promise<PushWithCandidateResult> {
+    const result = await this.pushInternal(input, ctx, {
+      checkPermission: true,
+      materializeCandidate: true,
+      validateBaseEntries: options.validateBaseEntries,
+      measureCandidateMaterialization: options.measureCandidateMaterialization,
+    });
+    if (!result.candidate) {
+      throw new VscError('INTERNAL_ERROR', 'Canonical candidate snapshot was not materialized');
+    }
+
+    return {
+      repository: result.repository,
+      commit: result.commit,
+      tree: result.tree,
+      candidate: result.candidate,
+    };
+  }
+
+  private async pushInternal(
+    input: PushInput,
+    ctx: VscServiceContext,
+    options: {
+      checkPermission: boolean;
+      materializeCandidate?: boolean;
+      validateBaseEntries?: PushWithCandidateOptions['validateBaseEntries'];
+      measureCandidateMaterialization?: PushWithCandidateOptions['measureCandidateMaterialization'];
+    },
+  ): Promise<InternalPushResult> {
     return this.withTransaction(ctx.transaction, async (transaction) => {
       const repository = await this.repositoryService.getRepository(input.repoId, transaction);
-      if (checkPermission) {
+      if (options.checkPermission) {
         await this.assertPermission(
           {
             action: 'push',
@@ -521,21 +581,22 @@ export class VscFileService {
       const baseEntries = baseCommit
         ? await this.treeService.loadTreeEntries(baseCommit.treeHash, { transaction })
         : [];
+      if (options.validateBaseEntries) {
+        await options.validateBaseEntries(Object.freeze(baseEntries.map((entry) => Object.freeze({ ...entry }))));
+      }
       const allowedBlobHashes = new Set(baseEntries.map((entry) => entry.blobHash));
       const nextEntries = this.applyFileChanges(baseEntries, input.files, allowedBlobHashes);
-      const nextTreeHash = await this.treeService.hashTree(nextEntries, {
+      const preparedTree = await this.treeService.prepareTree(nextEntries, {
         transaction,
         metricsCollector: ctx.metricsCollector,
       });
-      const baseTreeHash = baseCommit
-        ? baseCommit.treeHash
-        : await this.treeService.hashTree([], { transaction, metricsCollector: ctx.metricsCollector });
+      const baseTreeHash = baseCommit?.treeHash || this.treeService.emptyTreeHash;
 
-      if (nextTreeHash === baseTreeHash && !input.allowEmptyCommit) {
+      if (preparedTree.hash === baseTreeHash && !input.allowEmptyCommit) {
         throw new VscError('NO_CHANGES', 'Push does not change the repository tree');
       }
 
-      const tree = await this.treeService.ensureTree(nextEntries, transaction, ctx.metricsCollector);
+      const tree = await this.treeService.ensurePreparedTree(preparedTree, transaction);
       const commit = await this.commitService.createCommit(
         {
           repoId: repository.id,
@@ -550,10 +611,31 @@ export class VscFileService {
       );
       const updatedRepository = await this.repositoryService.updateHead(repository, commit.id, commit.seq, transaction);
 
+      const materializeCandidate = () =>
+        this.candidateService.materialize(
+          {
+            baseCommit,
+            baseEntries,
+            commit,
+            tree,
+            preparedTree,
+          },
+          {
+            transaction,
+            metricsCollector: ctx.metricsCollector,
+          },
+        );
+      const candidate = options.materializeCandidate
+        ? options.measureCandidateMaterialization
+          ? await options.measureCandidateMaterialization(materializeCandidate)
+          : await materializeCandidate()
+        : undefined;
+
       return {
         repository: updatedRepository,
         commit,
         tree,
+        candidate,
       };
     });
   }

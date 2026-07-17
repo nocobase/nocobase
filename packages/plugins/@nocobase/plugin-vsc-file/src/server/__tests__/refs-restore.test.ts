@@ -9,9 +9,11 @@
 
 import { Database, createMockDatabase } from '@nocobase/database';
 import path from 'path';
+import { vi } from 'vitest';
 
 import { VscError } from '../../shared/errors';
 import { CommitService } from '../services/CommitService';
+import { TreeService } from '../services/TreeService';
 import { VscFileService } from '../services/VscFileService';
 
 describe('vsc-file refs and restore service', () => {
@@ -30,6 +32,7 @@ describe('vsc-file refs and restore service', () => {
   });
 
   afterEach(async () => {
+    vi.restoreAllMocks();
     await db?.close();
   });
 
@@ -134,6 +137,10 @@ describe('vsc-file refs and restore service', () => {
 
   it('restores one file by creating a new commit on top of head', async () => {
     const history = await createHistory();
+    const prepareTree = vi.spyOn(TreeService.prototype, 'prepareTree');
+    const ensurePreparedTree = vi.spyOn(TreeService.prototype, 'ensurePreparedTree');
+    const hashTree = vi.spyOn(TreeService.prototype, 'hashTree');
+    const ensureTree = vi.spyOn(TreeService.prototype, 'ensureTree');
     const restored = await service.restoreFile({
       repoId: history.repository.id,
       sourceCommitId: history.first.commit.id,
@@ -154,6 +161,10 @@ describe('vsc-file refs and restore service', () => {
     expect(fileContent(pull.files, 'README.md')).toBe('# Demo\n');
     expect(fileContent(pull.files, 'src/index.ts')).toBe('export const value = 2;\n');
     expect(fileContent(pull.files, 'src/extra.ts')).toBe('export const extra = true;\n');
+    expect(prepareTree).toHaveBeenCalledTimes(1);
+    expect(ensurePreparedTree).toHaveBeenCalledTimes(1);
+    expect(hashTree).toHaveBeenCalledTimes(0);
+    expect(ensureTree).toHaveBeenCalledTimes(0);
   });
 
   it('restores a file missing from the source commit by deleting the current file', async () => {

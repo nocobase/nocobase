@@ -44,6 +44,7 @@ import {
   stableJsonHash,
 } from './ReferenceOwnerRegistry';
 import { SettingsResolverService } from './SettingsResolverService';
+import type { ReferenceRefreshPlan } from './ReferenceRefreshPlanner';
 import { getRuntimeSettingsSource, hasUsableRuntimeArtifact } from './runtimeArtifact';
 
 type FlowModelRepositoryLike = {
@@ -98,6 +99,15 @@ type ReferenceUpsertSummary = {
   statusCounts: Partial<Record<LightExtensionReferenceResolvedStatus, number>>;
   items: LightExtensionReferenceRebuildItem[];
 };
+
+export interface ReferenceRefreshResult {
+  mode: ReferenceRefreshPlan['mode'];
+  reason: string;
+  targetEntryCount: number;
+  referenceCount: number;
+  changed: number;
+  statusCounts: Partial<Record<LightExtensionReferenceResolvedStatus, number>>;
+}
 
 type NormalizedJsBlockSource = {
   sourceMode: string;
@@ -178,15 +188,20 @@ export class ReferenceService {
       summary,
       scopeRepoId,
     );
-    await this.removeReferencesForNonAdapterOwners(
+    const nonAdapterOwners = await this.markFlowModelReferencesOwnerMissingForUids(
       modelUids.filter((modelUid) => !templateOwnerUids.has(modelUid)),
-      input.action || 'flowModels.save',
-      requestId,
-      ctx,
-      summary,
-      scopeRepoId,
-      seenOwnerHashes,
+      {
+        action: input.action || 'flowModels.save',
+        requestId,
+      },
+      {
+        ...ctx,
+        scopeRepoId,
+        skipOwnerLocatorHashes: seenOwnerHashes,
+      },
     );
+    summary.ownerMissing += nonAdapterOwners.ownerMissing;
+    mergeStatusCounts(summary, nonAdapterOwners.statusCounts);
     const missingOwners = await this.markMissingReferenceOwners(
       input.action || 'flowModels.save',
       requestId,
@@ -325,16 +340,20 @@ export class ReferenceService {
       summary,
       scopeRepoId,
     );
-    await this.removeUnseenReferencesForOwners(
-      Array.from(existingModelUids),
-      'referenceRebuild',
-      requestId,
-      rebuildContext,
-      summary,
-      scopeRepoId,
-      seenOwnerHashes,
-      'owner_not_reference_adapter',
+    const nonAdapterOwners = await this.markFlowModelReferencesOwnerMissingForUids(
+      Array.from(existingModelUids).filter((modelUid) => !templateOwnerUids.has(modelUid)),
+      {
+        action: 'referenceRebuild',
+        requestId,
+      },
+      {
+        ...rebuildContext,
+        scopeRepoId,
+        skipOwnerLocatorHashes: seenOwnerHashes,
+      },
     );
+    summary.ownerMissing += nonAdapterOwners.ownerMissing;
+    mergeStatusCounts(summary, nonAdapterOwners.statusCounts);
 
     const references = await this.findReferenceModels(scopeRepoId ? { repoId: scopeRepoId } : {}, rebuildContext);
     const missingOwnerUids: string[] = [];
@@ -449,54 +468,105 @@ export class ReferenceService {
     return visible;
   }
 
-  async refreshReferencesForRepo(repoId: string, ctx: ReferenceServiceContext = {}): Promise<void> {
-    const normalizedRepoId = normalizeString(repoId);
+  async refreshReferences(
+    input: { repoId: string; plan: ReferenceRefreshPlan },
+    ctx: ReferenceServiceContext = {},
+  ): Promise<ReferenceRefreshResult> {
+    const normalizedRepoId = normalizeString(input.repoId);
     if (!normalizedRepoId) {
-      return;
+      return emptyReferenceRefreshResult('skip', 'repo_id_missing');
     }
+    const normalizedPlan = normalizeReferenceRefreshPlan(input.plan);
     const requestId = ctx.requestId || randomUUID();
+    if (normalizedPlan.mode === 'skip') {
+      const result = emptyReferenceRefreshResult('skip', normalizedPlan.reason);
+      await this.recordReferenceRefreshAudit(normalizedRepoId, result, requestId, ctx);
+      return result;
+    }
+
+    const targetEntryIds = normalizedPlan.mode === 'entries' ? normalizedPlan.entryIds : [];
     const references = await this.findReferenceModels(
-      {
-        repoId: normalizedRepoId,
-      },
+      normalizedPlan.mode === 'entries'
+        ? { repoId: normalizedRepoId, entryId: { $in: targetEntryIds } }
+        : { repoId: normalizedRepoId },
       ctx,
     );
     const statusCounts: ReferenceUpsertSummary['statusCounts'] = {};
     let changed = 0;
+    let targetEntryCount = normalizedPlan.mode === 'entries' ? targetEntryIds.length : 0;
 
-    for (const reference of references) {
-      const current = referenceFromModel(reference);
-      const resolution = await this.resolveStoredReferenceResolution(current, ctx);
-      statusCounts[resolution.resolvedStatus] = (statusCounts[resolution.resolvedStatus] || 0) + 1;
-      if (resolution.resolvedStatus === current.resolvedStatus && resolution.settingsHash === current.settingsHash) {
-        continue;
-      }
-      await reference.update(
-        {
-          settingsHash: resolution.settingsHash,
-          resolvedStatus: resolution.resolvedStatus,
-        },
-        {
+    if (references.length > 0) {
+      const [repo, entries] = await Promise.all([
+        this.db.getRepository('lightExtensionRepos').findOne({
+          filterByTk: normalizedRepoId,
           transaction: ctx.transaction,
-        },
-      );
-      changed += 1;
+        }),
+        this.db.getRepository('lightExtensionEntries').find({
+          filter:
+            normalizedPlan.mode === 'entries'
+              ? { repoId: normalizedRepoId, id: { $in: targetEntryIds } }
+              : { repoId: normalizedRepoId },
+          transaction: ctx.transaction,
+        }),
+      ]);
+      if (normalizedPlan.mode === 'repo') {
+        targetEntryCount = entries.length;
+      }
+      const entryById = new Map(entries.map((entry) => [normalizeString(entry.get('id')), entry]));
+      const ownerLoads = new Map<string, Promise<FlowModelNode | null>>();
+      const loadOwner = (modelUid: string) => {
+        const cached = ownerLoads.get(modelUid);
+        if (cached) {
+          return cached;
+        }
+        const loaded = this.loadFlowModelTree(modelUid, ctx);
+        ownerLoads.set(modelUid, loaded);
+        return loaded;
+      };
+
+      for (const reference of references) {
+        const current = referenceFromModel(reference);
+        const resolution = await this.resolveStoredReferenceResolutionFromCache(current, repo, entryById, loadOwner);
+        statusCounts[resolution.resolvedStatus] = (statusCounts[resolution.resolvedStatus] || 0) + 1;
+        if (resolution.resolvedStatus === current.resolvedStatus && resolution.settingsHash === current.settingsHash) {
+          continue;
+        }
+        await reference.update(
+          {
+            settingsHash: resolution.settingsHash,
+            resolvedStatus: resolution.resolvedStatus,
+          },
+          {
+            transaction: ctx.transaction,
+          },
+        );
+        changed += 1;
+      }
     }
-    await this.recordReferenceAuditBestEffort({
-      repoId: normalizedRepoId,
-      action: 'referenceRebuild',
-      result: 'success',
-      requestId,
-      actorUserId: ctx.actorUserId,
+
+    const result: ReferenceRefreshResult = {
+      mode: normalizedPlan.mode,
+      reason: normalizedPlan.reason,
+      targetEntryCount,
       referenceCount: references.length,
-      message: 'Light extension reference statuses refreshed for repo',
-      details: {
-        trigger: 'repoLifecycleChange',
-        changed,
-        statusCounts,
+      changed,
+      statusCounts,
+    };
+    await this.recordReferenceRefreshAudit(normalizedRepoId, result, requestId, ctx);
+    return result;
+  }
+
+  async refreshReferencesForRepo(repoId: string, ctx: ReferenceServiceContext = {}): Promise<ReferenceRefreshResult> {
+    return this.refreshReferences(
+      {
+        repoId,
+        plan: {
+          mode: 'repo',
+          reason: 'repo_lifecycle_change',
+        },
       },
-      transaction: ctx.transaction,
-    });
+      ctx,
+    );
   }
 
   private async syncLightExtensionReference(
@@ -625,14 +695,11 @@ export class ReferenceService {
     resolvedStatus: LightExtensionReferenceResolvedStatus;
     conflictReason?: string;
   }> {
-    const fallback = {
-      repoId: sourceBinding.repoId,
-      entryId: sourceBinding.entryId,
-      settingsHash: stableJsonHash(settings),
-    };
     if (sourceBinding.kind !== expectedKind) {
       return {
-        ...fallback,
+        repoId: sourceBinding.repoId,
+        entryId: sourceBinding.entryId,
+        settingsHash: stableJsonHash(settings),
         resolvedStatus: 'binding_outdated',
         conflictReason: 'kind_mismatch',
       };
@@ -641,6 +708,30 @@ export class ReferenceService {
       filterByTk: sourceBinding.repoId,
       transaction: ctx.transaction,
     });
+    const entry = await this.db.getRepository('lightExtensionEntries').findOne({
+      filterByTk: sourceBinding.entryId,
+      transaction: ctx.transaction,
+    });
+    return this.resolveReferenceFromLoadedModels(sourceBinding, settings, repo, entry);
+  }
+
+  private resolveReferenceFromLoadedModels(
+    sourceBinding: LightExtensionRuntimeSourceBinding,
+    settings: Record<string, unknown>,
+    repo: Model | null,
+    entry: Model | null,
+  ): {
+    repoId: string;
+    entryId: string;
+    settingsHash: string;
+    resolvedStatus: LightExtensionReferenceResolvedStatus;
+    conflictReason?: string;
+  } {
+    const fallback = {
+      repoId: sourceBinding.repoId,
+      entryId: sourceBinding.entryId,
+      settingsHash: stableJsonHash(settings),
+    };
     if (!repo) {
       return {
         ...fallback,
@@ -656,11 +747,6 @@ export class ReferenceService {
         conflictReason: lifecycleStatus === 'disabled' ? 'repo_disabled' : 'repo_archived',
       };
     }
-
-    const entry = await this.db.getRepository('lightExtensionEntries').findOne({
-      filterByTk: sourceBinding.entryId,
-      transaction: ctx.transaction,
-    });
     if (!entry) {
       return {
         ...fallback,
@@ -733,15 +819,17 @@ export class ReferenceService {
     };
   }
 
-  private async resolveStoredReferenceResolution(
+  private async resolveStoredReferenceResolutionFromCache(
     reference: LightExtensionReferenceRecord,
-    ctx: ReferenceServiceContext,
+    repo: Model | null,
+    entriesById: ReadonlyMap<string, Model>,
+    loadOwner: (modelUid: string) => Promise<FlowModelNode | null>,
   ): Promise<{
     settingsHash: string;
     resolvedStatus: LightExtensionReferenceResolvedStatus;
   }> {
     const modelUid = getReferenceOwnerModelUid(reference.ownerLocator);
-    const owner = modelUid ? await this.loadFlowModelTree(modelUid, ctx) : null;
+    const owner = modelUid ? await loadOwner(modelUid) : null;
     if (!owner) {
       return {
         settingsHash: reference.settingsHash,
@@ -763,7 +851,12 @@ export class ReferenceService {
         resolvedStatus: 'binding_outdated',
       };
     }
-    const resolution = await this.resolveReferenceFromBinding(binding, source.settings, ctx, reference.kind);
+    const resolution = this.resolveReferenceFromLoadedModels(
+      binding,
+      source.settings,
+      repo,
+      entriesById.get(binding.entryId) || null,
+    );
     return {
       settingsHash: resolution.settingsHash,
       resolvedStatus: resolution.resolvedStatus,
@@ -957,27 +1050,6 @@ export class ReferenceService {
       });
     }
     return references.length;
-  }
-
-  private async removeReferencesForNonAdapterOwners(
-    uids: string[],
-    action: ReferenceSyncAction,
-    requestId: string,
-    ctx: ReferenceServiceContext,
-    summary: ReferenceUpsertSummary,
-    scopeRepoId?: string,
-    seenOwnerHashes: Set<string> = new Set(),
-  ): Promise<void> {
-    await this.removeUnseenReferencesForOwners(
-      uids,
-      action,
-      requestId,
-      ctx,
-      summary,
-      scopeRepoId,
-      seenOwnerHashes,
-      'owner_not_reference_adapter',
-    );
   }
 
   private async removeReferencesForTemplateOwners(
@@ -1406,6 +1478,32 @@ export class ReferenceService {
     }
   }
 
+  private async recordReferenceRefreshAudit(
+    repoId: string,
+    refresh: ReferenceRefreshResult,
+    requestId: string,
+    ctx: ReferenceServiceContext,
+  ): Promise<void> {
+    await this.recordReferenceAuditBestEffort({
+      repoId,
+      action: 'referenceRebuild',
+      result: 'success',
+      requestId,
+      actorUserId: ctx.actorUserId,
+      referenceCount: refresh.referenceCount,
+      message: 'Light extension reference statuses refreshed for repo',
+      details: {
+        mode: refresh.mode,
+        reason: refresh.reason,
+        targetEntryCount: refresh.targetEntryCount,
+        referenceCount: refresh.referenceCount,
+        changed: refresh.changed,
+        statusCounts: refresh.statusCounts,
+      },
+      transaction: ctx.transaction,
+    });
+  }
+
   private async recordReferenceConflict(
     ownerKind: LightExtensionReferenceOwnerLocator['kind'],
     ownerLocatorHash: string,
@@ -1826,6 +1924,34 @@ function normalizeOwnerKind(value: unknown): LightExtensionReferenceRecord['owne
   const normalized = normalizeString(value);
   const adapter = normalized ? listReferenceOwnerAdapters().find((item) => item.ownerKind === normalized) : null;
   return adapter?.ownerKind || JS_BLOCK_REFERENCE_OWNER_ADAPTER.ownerKind;
+}
+
+function normalizeReferenceRefreshPlan(plan: ReferenceRefreshPlan): ReferenceRefreshPlan {
+  if (plan.mode !== 'entries') {
+    return plan;
+  }
+  const entryIds = [...new Set(plan.entryIds.map(normalizeString).filter(Boolean))].sort();
+  if (entryIds.length === 0) {
+    return {
+      mode: 'skip',
+      reason: plan.reason,
+    };
+  }
+  return {
+    ...plan,
+    entryIds,
+  };
+}
+
+function emptyReferenceRefreshResult(mode: ReferenceRefreshResult['mode'], reason: string): ReferenceRefreshResult {
+  return {
+    mode,
+    reason,
+    targetEntryCount: 0,
+    referenceCount: 0,
+    changed: 0,
+    statusCounts: {},
+  };
 }
 
 function emptySummary(): ReferenceUpsertSummary {

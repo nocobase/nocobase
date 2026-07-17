@@ -203,6 +203,10 @@ describe('plugin-light-extension repo service', () => {
 
   it('changes lifecycle without client compare-and-set input and archives the vsc repository', async () => {
     const repo = await service.createRepo({ name: 'Lifecycle Demo' }, { requestId: 'req_lifecycle_create' });
+    const refreshReferences = vi.fn(
+      async (_input: { repoId: string; plan: { mode: 'repo'; reason: string } }) => undefined,
+    );
+    service.useReferenceService({ refreshReferences } as never);
 
     const disabled = await service.changeLifecycle(
       {
@@ -263,6 +267,16 @@ describe('plugin-light-extension repo service', () => {
     );
 
     expect(archivedAgain.lifecycleStatus).toBe('archived');
+    expect(refreshReferences).toHaveBeenCalledTimes(4);
+    expect(refreshReferences.mock.calls.map(([input]) => input)).toEqual(
+      Array.from({ length: 4 }, () => ({
+        repoId: repo.id,
+        plan: {
+          mode: 'repo',
+          reason: 'repo_lifecycle_change',
+        },
+      })),
+    );
     await expect(
       service.changeLifecycle(
         {

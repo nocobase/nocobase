@@ -215,15 +215,17 @@ describe('vsc-file concurrency behavior', () => {
     ]);
     const readmeBlob = await blobService.ensureBlob('# Demo\n');
     const indexBlob = await blobService.ensureBlob('export const value = 1;\n');
+    const firstPreparedTree = await treeService.prepareTree([
+      { path: 'README.md', blobHash: readmeBlob.hash },
+      { path: 'src/index.ts', blobHash: indexBlob.hash },
+    ]);
+    const secondPreparedTree = await treeService.prepareTree([
+      { path: 'src/index.ts', blobHash: indexBlob.hash },
+      { path: 'README.md', blobHash: readmeBlob.hash },
+    ]);
     const [firstTree, secondTree] = await Promise.all([
-      treeService.ensureTree([
-        { path: 'README.md', blobHash: readmeBlob.hash },
-        { path: 'src/index.ts', blobHash: indexBlob.hash },
-      ]),
-      treeService.ensureTree([
-        { path: 'src/index.ts', blobHash: indexBlob.hash },
-        { path: 'README.md', blobHash: readmeBlob.hash },
-      ]),
+      treeService.ensurePreparedTree(firstPreparedTree),
+      treeService.ensurePreparedTree(secondPreparedTree),
     ]);
 
     expect(secondBlob).toEqual(firstBlob);

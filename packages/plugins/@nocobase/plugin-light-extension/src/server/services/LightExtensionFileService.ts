@@ -35,6 +35,7 @@ import type {
 } from '../../shared/types';
 import { LightExtensionAuditService } from './LightExtensionAuditService';
 import { LightExtensionPermissionService } from './LightExtensionPermissionService';
+import { createPreparedCandidateWorkspace, type PreparedCandidateWorkspace } from './PreparedCandidateWorkspace';
 import type { LightExtensionRepoInternalRecord, LightExtensionServiceContext } from './LightExtensionRepoService';
 import { LightExtensionRepoService, stripInternalRepo } from './LightExtensionRepoService';
 import { LightExtensionValidator, hasErrorDiagnostic } from './LightExtensionValidator';
@@ -156,6 +157,19 @@ export class LightExtensionFileService {
     input: LightExtensionPushInput,
     ctx: LightExtensionServiceContext = {},
   ): Promise<LightExtensionPushResult> {
+    const candidate = await this.pushPreparedCandidate(input, ctx);
+
+    return {
+      repo: candidate.repo,
+      commit: candidate.commit,
+      tree: candidate.tree,
+    };
+  }
+
+  async pushPreparedCandidate(
+    input: LightExtensionPushInput,
+    ctx: LightExtensionServiceContext = {},
+  ): Promise<PreparedCandidateWorkspace> {
     const requestId = getRequestId(ctx);
 
     try {
@@ -163,24 +177,10 @@ export class LightExtensionFileService {
         const repo = await this.repoService.lockInternalRepoForUpdate(input.repoId, { ...ctx, transaction });
         assertRepoNotArchived(repo, 'write source');
         assertExpectedHead(input.expectedHeadCommitId, repo.headCommitId, repo.id);
-        const current = await this.pullInternal(
-          repo,
-          {
-            repoId: repo.id,
-            includeContent: 'all',
-          },
-          {
-            ...ctx,
-            requestId,
-          },
-          transaction,
-          'writeSource',
-        );
-        this.assertValidSyncBatch(input.files, current.files || []);
-        this.assertValidWorkspaceAfterPush(current.files || [], input);
+        const compileMetrics = ctx.compileMetrics;
 
         const result = await this.runVsc(repo.id, () =>
-          this.vscFileService.push(
+          this.vscFileService.pushWithCandidate(
             {
               repoId: repo.vscRepoId,
               baseCommitId: repo.headCommitId,
@@ -199,8 +199,45 @@ export class LightExtensionFileService {
               reason: 'write light-extension source files',
               allowedActions: ['push'],
             }),
+            {
+              validateBaseEntries: (entries) =>
+                this.assertValidSyncBatch(
+                  input.files,
+                  entries.map((entry) => entry.path),
+                ),
+              measureCandidateMaterialization: compileMetrics
+                ? (materialize) => compileMetrics.measureAsync('snapshotMaterialize', materialize)
+                : undefined,
+            },
           ),
         );
+        recordPreparedCandidateSnapshot(ctx, result.candidate.files);
+
+        const validateWorkspace = () =>
+          this.validator.validateWorkspace({
+            files: result.candidate.files.map((file) => ({
+              path: file.path,
+              content: file.content,
+              blobHash: file.blobHash,
+              size: file.size,
+              language: file.language,
+            })),
+          });
+        const validation = ctx.compileMetrics
+          ? ctx.compileMetrics.measure('workspaceValidation', validateWorkspace)
+          : validateWorkspace();
+        ctx.compileMetrics?.set('entryCount', validation.entries.length);
+        if (hasErrorDiagnostic(validation.diagnostics)) {
+          throw new LightExtensionError(
+            'LIGHT_EXTENSION_VALIDATION_FAILED',
+            'Light extension source workspace is invalid',
+            {
+              details: {
+                diagnostics: validation.diagnostics,
+              },
+            },
+          );
+        }
 
         await this.db.getRepository('lightExtensionRepos').update({
           filterByTk: repo.id,
@@ -210,6 +247,18 @@ export class LightExtensionFileService {
           transaction,
         });
         const updatedRepo = await this.repoService.getInternalRepo(repo.id, { ...ctx, transaction });
+        const publicRepo = stripInternalRepo(updatedRepo);
+        const publicCommit = toPublicCommit(result.commit, repo.id);
+        const candidate = createPreparedCandidateWorkspace(
+          {
+            repo: publicRepo,
+            commit: publicCommit,
+            tree: result.tree,
+            validation,
+            vscSnapshot: result.candidate,
+          },
+          transaction,
+        );
 
         await this.auditService.recordFileWrite({
           repoId: repo.id,
@@ -227,14 +276,15 @@ export class LightExtensionFileService {
           transaction,
         });
 
-        return {
-          repo: stripInternalRepo(updatedRepo),
-          commit: toPublicCommit(result.commit, repo.id),
-          tree: result.tree,
-        };
+        return candidate;
       });
     } catch (error) {
-      await this.recordRejectedPush(input, ctx, requestId, error);
+      const recordRejectedPush = () => this.recordRejectedPush(input, ctx, requestId, error);
+      if (ctx.deferredRejectedPushAudits) {
+        ctx.deferredRejectedPushAudits.push(recordRejectedPush);
+      } else {
+        await recordRejectedPush();
+      }
       throw normalizeVscBridgeError(error, input.repoId);
     }
   }
@@ -347,13 +397,10 @@ export class LightExtensionFileService {
     }
   }
 
-  private assertValidSyncBatch(
-    files: LightExtensionFileChange[],
-    existingFiles: LightExtensionPulledFile[] = [],
-  ): void {
+  private assertValidSyncBatch(files: LightExtensionFileChange[], existingPaths: Iterable<string> = []): void {
     const diagnostics = this.validator.validateSyncBatch({
       files,
-      existingPaths: existingFiles.map((file) => file.path),
+      existingPaths,
     });
     if (!hasErrorDiagnostic(diagnostics)) {
       return;
@@ -362,25 +409,6 @@ export class LightExtensionFileService {
     throw new LightExtensionError('LIGHT_EXTENSION_VALIDATION_FAILED', 'Light extension source batch is invalid', {
       details: {
         diagnostics,
-      },
-    });
-  }
-
-  private assertValidWorkspaceAfterPush(
-    currentFiles: LightExtensionPulledFile[],
-    input: LightExtensionPushInput,
-  ): void {
-    const validation = this.validator.validateWorkspace({
-      files: applyLightExtensionFileChanges(currentFiles, input.files),
-    });
-
-    if (!hasErrorDiagnostic(validation.diagnostics)) {
-      return;
-    }
-
-    throw new LightExtensionError('LIGHT_EXTENSION_VALIDATION_FAILED', 'Light extension source workspace is invalid', {
-      details: {
-        diagnostics: validation.diagnostics,
       },
     });
   }
@@ -664,6 +692,13 @@ function recordMaterializedSnapshot(
     return;
   }
 
+  recordPreparedCandidateSnapshot(ctx, files);
+}
+
+function recordPreparedCandidateSnapshot(
+  ctx: LightExtensionServiceContext,
+  files: readonly { readonly size: number }[],
+): void {
   ctx.compileMetrics?.increment('snapshotMaterializationCount');
   ctx.compileMetrics?.set('repoFileCount', files.length);
   ctx.compileMetrics?.set(
@@ -738,38 +773,6 @@ function toVscFileChange(file: LightExtensionFileChange): VscFileChange {
     mode: file.mode,
     operation: file.operation,
   };
-}
-
-function applyLightExtensionFileChanges(
-  baseFiles: LightExtensionPulledFile[],
-  changes: LightExtensionFileChange[],
-): LightExtensionPulledFile[] {
-  const filesByPath = new Map<string, LightExtensionPulledFile>();
-
-  for (const file of baseFiles) {
-    filesByPath.set(normalizeLightExtensionFilePath(file.path), file);
-  }
-
-  for (const change of changes) {
-    const path = normalizeLightExtensionFilePath(change.path);
-    if (change.operation === 'delete') {
-      filesByPath.delete(path);
-      continue;
-    }
-
-    filesByPath.set(path, {
-      path,
-      pathHash: '',
-      pathLowerHash: '',
-      blobHash: change.blobHash || '',
-      size: typeof change.content === 'string' ? Buffer.byteLength(change.content, 'utf8') : change.size ?? 0,
-      language: change.language || filesByPath.get(path)?.language || '',
-      mode: change.mode || filesByPath.get(path)?.mode || '',
-      content: change.content,
-    });
-  }
-
-  return [...filesByPath.values()].sort((left, right) => left.path.localeCompare(right.path));
 }
 
 function buildSnapshotReplacementChanges(

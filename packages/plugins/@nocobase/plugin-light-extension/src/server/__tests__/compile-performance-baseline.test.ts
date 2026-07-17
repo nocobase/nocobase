@@ -310,23 +310,15 @@ describe('plugin-light-extension complete save performance baseline', () => {
         'transaction',
       ],
     );
-    expectSummary(
-      runtimeSummaries[0],
-      'runtimeCompile',
-      'success',
-      expectedRuntimeCounters(fixture, fixture.parameters.totalBytes + firstChange.byteDelta),
-      [
-        'total',
-        'snapshotMaterialize',
-        'treePrepare',
-        'workspaceValidation',
-        'entryReconcile',
-        'compilePlan',
-        'compileEntries',
-        'artifactPersist',
-        'transaction',
-      ],
-    );
+    expectSummary(runtimeSummaries[0], 'runtimeCompile', 'success', expectedRuntimeCounters(fixture), [
+      'total',
+      'treePrepare',
+      'entryReconcile',
+      'compilePlan',
+      'compileEntries',
+      'artifactPersist',
+      'transaction',
+    ]);
     expectSummary(summaryWithResult(saveSummaries, 'outdated'), 'saveSource', 'outdated', expectedOutdatedCounters(), [
       'total',
       'push',
@@ -393,11 +385,9 @@ function expectCompleteSaveSummaries(
     ...artifactPersistStage,
     'transaction',
   ]);
-  expectSummary(runtimeSummaries[0], 'runtimeCompile', result, expectedRuntimeCounters(fixture, repoByteSize), [
+  expectSummary(runtimeSummaries[0], 'runtimeCompile', result, expectedRuntimeCounters(fixture), [
     'total',
-    'snapshotMaterialize',
     'treePrepare',
-    'workspaceValidation',
     'entryReconcile',
     'compilePlan',
     'compileEntries',
@@ -421,32 +411,31 @@ function expectedSaveCounters(
     reusedEntryCount: 0,
     skippedEntryCount: 0,
     compileCacheHitCount: 0,
-    blobContentQueryCount: fileCount * 3,
-    blobContentRowCount: fileCount * 3,
-    snapshotMaterializationCount: 3,
-    treeNormalizationCount: 2,
+    blobContentQueryCount: fileCount > 1 ? 1 : 0,
+    blobContentRowCount: Math.max(fileCount - 1, 0),
+    snapshotMaterializationCount: 1,
+    treeNormalizationCount: 1,
     referenceScanCount: 0,
   };
 }
 
 function expectedRuntimeCounters(
   fixture: CompilePerformanceFixture,
-  repoByteSize: number,
 ): Record<LightExtensionCompileMetricCounter, number> {
-  const { entryCount, fileCount } = fixture.parameters;
+  const { entryCount } = fixture.parameters;
   return {
-    repoFileCount: fileCount,
-    repoByteSize,
+    repoFileCount: 0,
+    repoByteSize: 0,
     changedFileCount: 0,
-    entryCount,
+    entryCount: 0,
     affectedEntryCount: entryCount,
     compiledEntryCount: entryCount,
     reusedEntryCount: 0,
     skippedEntryCount: 0,
     compileCacheHitCount: 0,
-    blobContentQueryCount: fileCount * 2,
-    blobContentRowCount: fileCount * 2,
-    snapshotMaterializationCount: 2,
+    blobContentQueryCount: 0,
+    blobContentRowCount: 0,
+    snapshotMaterializationCount: 0,
     treeNormalizationCount: 0,
     referenceScanCount: 0,
   };

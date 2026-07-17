@@ -17598,6 +17598,11 @@ esbuild@^0.23.0:
     "@esbuild/win32-ia32" "0.23.0"
     "@esbuild/win32-x64" "0.23.0"
 
+esbuild-wasm@~0.27.0:
+  version "0.27.7"
+  resolved "https://registry.npmjs.org/esbuild-wasm/-/esbuild-wasm-0.27.7.tgz#4e7cda900c938115f66e639057ed248516342549"
+  integrity sha512-1k03e2/tGz+sLz3/xzoZmUsIqtaGIvJa8k4UqUeqCUry83nHmlxQYZUUES0WBFUYilSQUf7nDUGAciIIklljSg==
+
 esbuild@~0.18.20:
   version "0.18.20"
   resolved "https://registry.npmmirror.com/esbuild/-/esbuild-0.18.20.tgz#4709f5a34801b43b799ab7d6d82f7284a9b7a7a6"
