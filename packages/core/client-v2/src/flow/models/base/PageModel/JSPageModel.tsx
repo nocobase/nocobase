@@ -26,7 +26,7 @@ import { JSPageRuntimeController, type JSPageRuntimeRunContext, type JSPageRunti
 export const DEFAULT_JS_PAGE_CODE = `const { Card, Space, Typography } = ctx.libs.antd;
 
 ctx.render(
-  <Card bordered={false}>
+  <Card variant="borderless">
     <Space direction="vertical" size={8}>
       <Typography.Title level={3}>{ctx.t('JavaScript page is ready')}</Typography.Title>
       <Typography.Text>{ctx.t('Page ID')}: {ctx.page.uid}</Typography.Text>
