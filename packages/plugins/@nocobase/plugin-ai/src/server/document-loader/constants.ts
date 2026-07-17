@@ -17,6 +17,7 @@ export const SUPPORTED_DOCUMENT_EXTNAMES: string[] = [
   '.docx',
   '.xls',
   '.xlsx',
+  '.xlsm',
   '.txt',
   '.md',
   '.json',
