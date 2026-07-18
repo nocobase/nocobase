@@ -12,7 +12,7 @@ import { SortableContext } from '@dnd-kit/sortable';
 import { useFlowEngine, useFlowModel } from '@nocobase/flow-engine';
 import React, { FC } from 'react';
 
-export const Sortable: FC<React.PropsWithChildren<{ targetModelKey: string }>> = (props) => {
+export const Sortable: FC<{ targetModelKey: string }> = (props) => {
   const model = useFlowModel();
   const items = model.mapSubModels(props.targetModelKey, (item) => item.uid);
   const engine = useFlowEngine();

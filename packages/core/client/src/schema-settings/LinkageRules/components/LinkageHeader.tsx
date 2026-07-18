@@ -228,9 +228,7 @@ export const ArrayCollapse: ComposedArrayCollapse = observer(
   { displayName: 'ArrayCollapse' },
 );
 
-const CollapsePanel: React.FC<React.PropsWithChildren<CollapsePanelProps>> = ({
-  children,
-}: React.PropsWithChildren<CollapsePanelProps>) => {
+const CollapsePanel: React.FC<React.PropsWithChildren<CollapsePanelProps>> = ({ children }) => {
   return <Fragment>{children}</Fragment>;
 };
 

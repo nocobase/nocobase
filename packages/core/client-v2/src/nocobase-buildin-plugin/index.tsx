@@ -122,7 +122,7 @@ export function useCurrentRoles(): CurrentRoleOption[] {
   }, [allowAnonymous, engine, rolesRaw]);
 }
 
-const DataSourceBootstrapProvider: FC<React.PropsWithChildren> = ({ children }) => {
+const DataSourceBootstrapProvider: FC = ({ children }) => {
   const app = useApp<Application>();
   const location = useLocation();
   const [loading, setLoading] = useState(true);
@@ -181,7 +181,7 @@ const DataSourceBootstrapProvider: FC<React.PropsWithChildren> = ({ children }) 
   return <>{children}</>;
 };
 
-const CurrentUserProvider: FC<React.PropsWithChildren> = ({ children }) => {
+const CurrentUserProvider: FC = ({ children }) => {
   const app = useApp<Application>();
   const location = useLocation();
   const navigate = useNavigate();

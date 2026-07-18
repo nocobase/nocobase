@@ -31,9 +31,7 @@ export function useNavScreen() {
    * Close screen when the user resizes the window wider than tablet size.
    */
   function closeScreenOnTabletWindow() {
-    if (window.outerWidth >= 768) {
-      closeScreen();
-    }
+    window.outerWidth >= 768 && closeScreen();
   }
 
   return {

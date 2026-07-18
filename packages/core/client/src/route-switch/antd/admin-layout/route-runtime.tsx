@@ -9,17 +9,7 @@
 
 import { RouteRepository } from '@nocobase/client-v2';
 import { useFlowEngineContext } from '@nocobase/flow-engine';
-import React, {
-  createContext,
-  FC,
-  memo,
-  PropsWithChildren,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  useSyncExternalStore,
-} from 'react';
+import React, { createContext, FC, memo, useContext, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { NocoBaseDesktopRoute } from './route-types';
 import { findRouteBySchemaUid } from './route-utils';
 
@@ -28,7 +18,7 @@ const emptyArray: NocoBaseDesktopRoute[] = [];
 export const NocoBaseRouteContext = createContext<NocoBaseDesktopRoute | null>(null);
 NocoBaseRouteContext.displayName = 'NocoBaseRouteContext';
 
-export const CurrentRouteProvider: FC<PropsWithChildren<{ uid: string }>> = memo(({ children, uid }) => {
+export const CurrentRouteProvider: FC<{ uid: string }> = memo(({ children, uid }) => {
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
   const routeNode = useMemo(() => findRouteBySchemaUid(uid, allAccessRoutes), [uid, allAccessRoutes]);
   return <NocoBaseRouteContext.Provider value={routeNode}>{children}</NocoBaseRouteContext.Provider>;
@@ -51,7 +41,7 @@ export const useAllAccessDesktopRoutes = () => {
   return useContext(AllAccessDesktopRoutesContext);
 };
 
-export const RoutesRequestProvider: FC<PropsWithChildren> = ({ children }) => {
+export const RoutesRequestProvider: FC = ({ children }) => {
   const ctx = useFlowEngineContext();
   const routeRepository = ctx.routeRepository as RouteRepository;
   const allAccessRoutes = useSyncExternalStore(

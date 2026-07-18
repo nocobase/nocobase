@@ -20,7 +20,7 @@ import {
 const KeepAliveContext = createContext(true);
 const hidden = { display: 'none' };
 
-export const KeepAliveProvider: FC<React.PropsWithChildren<{ active: boolean; parentActive: boolean }>> = memo(
+export const KeepAliveProvider: FC<{ active: boolean; parentActive: boolean }> = memo(
   ({ children, active, parentActive }) => {
     const currentLocationContext = useContext(UNSAFE_LocationContext);
     const currentRouteContext = useContext(UNSAFE_RouteContext);

@@ -407,7 +407,7 @@ const MenuTitleWithIcon: FC<{ icon: any; title: string }> = (props) => {
   return <>{props.title}</>;
 };
 
-const MenuItemTitle: React.FC<React.PropsWithChildren> = (props) => <>{props.children}</>;
+const MenuItemTitle: React.FC = (props) => <>{props.children}</>;
 const MenuItemTitleWithTooltip = withTooltipComponent(MenuItemTitle);
 
 export const MobileMenuControlContext = React.createContext<{
@@ -552,9 +552,7 @@ export function resolveAdminLayoutMenuDragMoveOptionsFromEvent(
   );
 }
 
-const GroupItem: FC<React.PropsWithChildren<{ item: AdminLayoutMenuNode; options?: AdminLayoutMenuRenderOptions }>> = (
-  props,
-) => {
+const GroupItem: FC<{ item: AdminLayoutMenuNode; options?: AdminLayoutMenuRenderOptions }> = (props) => {
   const { item } = props;
   const badgeCount = useEvaluatedExpression(item._route.options?.badge?.count, item._model?.context);
   const navigate = useNavigateNoUpdate();
@@ -653,9 +651,7 @@ const GroupItem: FC<React.PropsWithChildren<{ item: AdminLayoutMenuNode; options
   );
 };
 
-const WithTooltip: FC<React.PropsWithChildren<{ title: React.ReactNode; hidden: boolean; badgeProps: any }>> = (
-  props,
-) => {
+const WithTooltip: FC<{ title: React.ReactNode; hidden: boolean; badgeProps: any }> = (props) => {
   const { inHeader } = useContext(HeaderContext);
 
   if (props.hidden || inHeader) {
@@ -671,9 +667,7 @@ const WithTooltip: FC<React.PropsWithChildren<{ title: React.ReactNode; hidden: 
   );
 };
 
-const MenuItem: FC<React.PropsWithChildren<{ item: AdminLayoutMenuNode; options?: AdminLayoutMenuRenderOptions }>> = (
-  props,
-) => {
+const MenuItem: FC<{ item: AdminLayoutMenuNode; options?: AdminLayoutMenuRenderOptions }> = (props) => {
   const { item } = props;
   const location = useLocation();
   const badgeCount = useEvaluatedExpression(item._route.options?.badge?.count, item._model?.context);
