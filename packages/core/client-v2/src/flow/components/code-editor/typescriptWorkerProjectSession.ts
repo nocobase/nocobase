@@ -326,7 +326,11 @@ export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScrip
       });
       if (!this.isCurrentResponse('diagnostics', requestId, response) || response.kind !== 'diagnostics-result')
         return [];
-      return response.result;
+      if (!project.ignoredDiagnosticCodes?.length) {
+        return response.result;
+      }
+      const ignoredCodes = new Set(project.ignoredDiagnosticCodes);
+      return response.result.filter((diagnostic) => !ignoredCodes.has(diagnostic.code));
     } catch (error: unknown) {
       this.report(project, error);
       return [];

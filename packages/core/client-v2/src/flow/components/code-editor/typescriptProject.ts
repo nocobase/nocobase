@@ -52,6 +52,7 @@ export interface CodeEditorTypeScriptProject {
   currentFilePath: string;
   files: CodeEditorTypeScriptFile[];
   declarationFiles?: CodeEditorTypeScriptFile[];
+  ignoredDiagnosticCodes?: number[];
   typeLibraryIds?: string[];
   typeLibraryRegistry?: RunJSTypeLibraryRegistry;
   compilerOptions?: Partial<import('typescript').CompilerOptions>;
@@ -753,6 +754,18 @@ function diagnosticsToCodeMirror(
     });
 }
 
+function filterIgnoredDiagnostics(
+  project: CodeEditorTypeScriptProject,
+  diagnostics: CodeEditorTypeScriptDiagnostic[],
+): CodeEditorTypeScriptDiagnostic[] {
+  if (!project.ignoredDiagnosticCodes?.length) {
+    return diagnostics;
+  }
+
+  const ignoredCodes = new Set(project.ignoredDiagnosticCodes);
+  return diagnostics.filter((diagnostic) => !ignoredCodes.has(diagnostic.code));
+}
+
 async function getSyntacticDiagnosticsWithoutTypeLibraries(
   project: CodeEditorTypeScriptProject,
   currentFileContent?: string,
@@ -809,11 +822,14 @@ class TypeScriptProjectSession implements CodeEditorTypeScriptProjectSession {
     try {
       const service = await this.prepareService(project, currentFileContent, request.stateGeneration);
       if (!service || !this.isCurrentRequest('diagnostics', request)) return [];
-      const diagnostics = getDiagnosticsFromService(service);
+      const diagnostics = filterIgnoredDiagnostics(project, getDiagnosticsFromService(service));
       return this.isCurrentRequest('diagnostics', request) ? diagnostics : [];
     } catch (error) {
       this.reportInternalError(project, error);
-      const diagnostics = await getSyntacticDiagnosticsWithoutTypeLibraries(project, currentFileContent);
+      const diagnostics = filterIgnoredDiagnostics(
+        project,
+        await getSyntacticDiagnosticsWithoutTypeLibraries(project, currentFileContent),
+      );
       return this.isCurrentRequest('diagnostics', request) ? diagnostics : [];
     }
   }

@@ -39,6 +39,7 @@ describe('buildRunJSTypeScriptProject', () => {
 
     expect(buildRunJSTypeScriptProject(files, activeFile)).toEqual({
       currentFilePath: 'src/main.tsx',
+      ignoredDiagnosticCodes: [1108],
       rewriteBuiltInAutoImports: true,
       typeLibraryIds: ['react'],
       files: [
@@ -62,6 +63,7 @@ describe('buildRunJSTypeScriptProject', () => {
     ).toEqual({
       currentFilePath: 'src/main.ts',
       declarationFiles: [{ content: 'type CustomRunJSContext = RunJSContext;', path: 'types/context.d.ts' }],
+      ignoredDiagnosticCodes: [1108],
       rewriteBuiltInAutoImports: true,
       typeLibraryIds: ['react'],
       files: [{ content: 'ctx.model;', path: 'src/main.ts' }],

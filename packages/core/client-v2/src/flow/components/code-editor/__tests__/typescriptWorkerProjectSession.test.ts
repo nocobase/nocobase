@@ -298,6 +298,25 @@ void element; void button;
     );
   });
 
+  it('filters diagnostics explicitly ignored by the worker-backed editor project', async () => {
+    const code = 'return ctx.record;';
+    const session = createTypeScriptProjectSession({ workerFactory: inMemoryFactory() });
+    const currentProject = project(code);
+
+    expect(await session.getDiagnostics(currentProject, code)).toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: 1108 })]),
+    );
+    expect(
+      await session.getDiagnostics(
+        {
+          ...currentProject,
+          ignoredDiagnosticCodes: [1108],
+        },
+        code,
+      ),
+    ).toEqual([]);
+  });
+
   it('rewrites built-in worker auto imports to ctx.libs declarations when enabled', async () => {
     const session = createTypeScriptProjectSession({ workerFactory: inMemoryFactory() });
     const code = 'useEff';
