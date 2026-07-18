@@ -15,6 +15,7 @@ import * as process from 'node:process';
 import { resolve } from 'path';
 import { listAppPortals } from './appPortals';
 import { getAntdLocale } from './antd';
+import { registerClientAppGatewayRequestHandler, unregisterClientAppGatewayRequestHandler } from './clientAppGateway';
 import { getCronLocale } from './cron';
 import { getCronstrueLocale } from './cronstrue';
 
@@ -34,6 +35,8 @@ async function getLang(ctx) {
 }
 
 export class PluginClientServer extends Plugin {
+  private clientAppGatewayRegistered = false;
+
   async beforeLoad() {}
 
   async install() {
@@ -191,6 +194,18 @@ export class PluginClientServer extends Plugin {
         });
       }
     });
+
+    if (!this.clientAppGatewayRegistered) {
+      registerClientAppGatewayRequestHandler();
+      this.clientAppGatewayRegistered = true;
+    }
+  }
+
+  async remove() {
+    if (this.clientAppGatewayRegistered) {
+      unregisterClientAppGatewayRequestHandler();
+      this.clientAppGatewayRegistered = false;
+    }
   }
 
   setACL() {

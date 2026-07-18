@@ -12,6 +12,7 @@ import { extractRunJSSettingsDefault } from '@nocobase/runjs/settings';
 import { uid } from '@nocobase/utils';
 import { createHash } from 'crypto';
 
+import { isLightExtensionRunJSKind } from '../../constants';
 import { LightExtensionError } from '../../shared/errors';
 import type {
   LightExtensionDiagnostic,
@@ -234,10 +235,11 @@ export class LightExtensionEntryService {
     baseHeadCommitId: string | null,
   ): Promise<LightExtensionEntryReconcilePlan> {
     const repository = this.db.getRepository('lightExtensionEntries');
-    const existingRecords = await repository.find({
+    const records = await repository.find({
       filter: { repoId },
       sort: ['target', 'kind', 'entryName'],
     });
+    const existingRecords = filterSourceManagedEntryRecords(records);
     const existingByIdentity = indexExistingEntries(repoId, existingRecords);
     const sourceByIdentity = indexSourceEntries(repoId, sourceEntries);
     const changes: EntryReconcileChange[] = [];
@@ -324,7 +326,9 @@ export class LightExtensionEntryService {
       );
     }
     const repository = this.db.getRepository('lightExtensionEntries');
-    const records = await repository.find({ filter: { repoId: plan.repoId }, transaction });
+    const records = filterSourceManagedEntryRecords(
+      await repository.find({ filter: { repoId: plan.repoId }, transaction }),
+    );
     if (createExistingEntriesFingerprint(records) !== plan.existingEntriesFingerprint) {
       throw new LightExtensionError(
         'LIGHT_EXTENSION_SOURCE_OUTDATED',
@@ -363,11 +367,12 @@ export class LightExtensionEntryService {
     transaction: Transaction,
   ): Promise<EntryReconcileResult> {
     const repository = this.db.getRepository('lightExtensionEntries');
-    const existingRecords = await repository.find({
+    const records = await repository.find({
       filter: { repoId },
       sort: ['target', 'kind', 'entryName'],
       transaction,
     });
+    const existingRecords = filterSourceManagedEntryRecords(records);
     const existingByIdentity = new Map<string, Model>();
     for (const record of existingRecords) {
       const identity = getEntryIdentityFromModel(record);
@@ -533,6 +538,10 @@ function indexExistingEntries(repoId: string, records: Model[]): Map<string, Mod
     byIdentity.set(identity, record);
   }
   return byIdentity;
+}
+
+function filterSourceManagedEntryRecords(records: Model[]): Model[] {
+  return records.filter((record) => isLightExtensionRunJSKind(record.get('kind')));
 }
 
 function indexSourceEntries(

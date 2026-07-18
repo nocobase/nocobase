@@ -20,7 +20,7 @@ export const LIGHT_EXTENSION_ACL_SNIPPET = 'pm.light-extension';
 
 export const LIGHT_EXTENSION_OWNER_TYPE = 'light-extension';
 
-export const LIGHT_EXTENSION_SUPPORTED_KINDS = [
+export const LIGHT_EXTENSION_RUNJS_KINDS = [
   'js-block',
   'js-page',
   'js-field',
@@ -28,6 +28,12 @@ export const LIGHT_EXTENSION_SUPPORTED_KINDS = [
   'js-item',
   'runjs',
 ] as const;
+export const LIGHT_EXTENSION_STATIC_KINDS = ['client-app'] as const;
+export const LIGHT_EXTENSION_ENTRY_KINDS = [...LIGHT_EXTENSION_RUNJS_KINDS, ...LIGHT_EXTENSION_STATIC_KINDS] as const;
+
+// Kept as a RunJS-only compatibility alias. Compiler, resolver, source workspace, and typegen call sites must not
+// accept static Entry kinds.
+export const LIGHT_EXTENSION_SUPPORTED_KINDS = LIGHT_EXTENSION_RUNJS_KINDS;
 export const LIGHT_EXTENSION_ENTRY_KEY_PATTERN = new RegExp(LIGHT_EXTENSION_ENTRY_KEY_PATTERN_SOURCE);
 export { LIGHT_EXTENSION_ENTRY_SCHEMA_VERSION };
 export const LIGHT_EXTENSION_ENTRY_SCHEMA_URL = LIGHT_EXTENSION_ENTRY_SCHEMA_URI;
@@ -67,4 +73,19 @@ export const LIGHT_EXTENSION_REFERENCE_RESOLVED_STATUSES = [
 ] as const;
 
 export type LightExtensionAclAction = (typeof LIGHT_EXTENSION_ACL_ACTIONS)[number];
-export type LightExtensionKind = (typeof LIGHT_EXTENSION_SUPPORTED_KINDS)[number];
+export type LightExtensionRunJSKind = (typeof LIGHT_EXTENSION_RUNJS_KINDS)[number];
+export type LightExtensionStaticKind = (typeof LIGHT_EXTENSION_STATIC_KINDS)[number];
+export type LightExtensionEntryKind = (typeof LIGHT_EXTENSION_ENTRY_KINDS)[number];
+export type LightExtensionKind = LightExtensionRunJSKind;
+
+export function isLightExtensionRunJSKind(value: unknown): value is LightExtensionRunJSKind {
+  return typeof value === 'string' && (LIGHT_EXTENSION_RUNJS_KINDS as readonly string[]).includes(value);
+}
+
+export function isLightExtensionStaticKind(value: unknown): value is LightExtensionStaticKind {
+  return typeof value === 'string' && (LIGHT_EXTENSION_STATIC_KINDS as readonly string[]).includes(value);
+}
+
+export function isLightExtensionEntryKind(value: unknown): value is LightExtensionEntryKind {
+  return isLightExtensionRunJSKind(value) || isLightExtensionStaticKind(value);
+}

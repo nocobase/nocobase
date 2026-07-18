@@ -1,5 +1,107 @@
 # NocoBase
 
+## Browser API client
+
+`@nocobase/sdk/client` creates the standard NocoBase `APIClient` for a browser application. It uses the runtime API URL when available, otherwise the same-origin `/api/` endpoint. Authentication uses same-origin cookies, CSRF protection uses the existing CSRF cookie, and temporary sign-in tokens are stored in memory by default.
+
+```ts
+import { createClient } from '@nocobase/sdk/client';
+
+const client = createClient();
+
+const response = await client.request({
+  url: 'orders:list',
+  method: 'get',
+  params: { pageSize: 20 },
+});
+```
+
+The standard runtime globals are optional:
+
+- `window.__nocobase_api_base_url__` supplies the API base URL.
+- `window.__nocobase_public_path__` supplies the deployment root used to infer a sub-application name.
+
+Both values can be overridden explicitly:
+
+```ts
+const client = createClient({
+  appName: 'inventory',
+  baseURL: '/custom-api/',
+  rootPublicPath: '/console/',
+});
+```
+
+Cross-origin authentication is not part of this API. Keep the application and API on the same origin.
+
+### Vite and React
+
+Create one framework-independent client module and import it where requests are needed:
+
+```ts
+// src/client.ts
+import { createClient } from '@nocobase/sdk/client';
+
+export const client = createClient();
+```
+
+```tsx
+// src/Orders.tsx
+import { useEffect, useState } from 'react';
+import { client } from './client';
+
+export function Orders() {
+  const [orders, setOrders] = useState<unknown[]>([]);
+
+  useEffect(() => {
+    client.request<{ data: unknown[] }>({ url: 'orders:list', method: 'get' }).then((response) => {
+      setOrders(response.data.data);
+    });
+  }, []);
+
+  return <pre>{JSON.stringify(orders, null, 2)}</pre>;
+}
+```
+
+The SDK package does not depend on React; the component above is only an integration example.
+
+### Native fetch
+
+Native `fetch` can use the same server-managed cookies. GET and HEAD requests only need same-origin credentials:
+
+```ts
+await fetch('/api/orders:list?pageSize=20', {
+  credentials: 'same-origin',
+});
+```
+
+Unsafe methods must copy the readable CSRF cookie into the `X-CSRF-Token` header. Cookie names are scoped by application name:
+
+```ts
+function readCookie(name: string) {
+  const prefix = `${name}=`;
+  return document.cookie
+    .split(';')
+    .map((item) => item.trim())
+    .find((item) => item.startsWith(prefix))
+    ?.slice(prefix.length);
+}
+
+const appName = 'main';
+const csrfToken = readCookie(`nb_csrf_token_${appName}`);
+
+await fetch('/api/orders:create', {
+  method: 'POST',
+  credentials: 'same-origin',
+  headers: {
+    'Content-Type': 'application/json',
+    ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
+  },
+  body: JSON.stringify({ title: 'New order' }),
+});
+```
+
+Do not copy authentication tokens from browser storage. Access to an application workspace and access to API data are separate server-side checks; passing one does not bypass the other.
+
 <video width="100%" controls>
   <source src="https://github.com/user-attachments/assets/4d11a87b-00e2-48f3-9bf7-389d21072d13" type="video/mp4">
 </video>
