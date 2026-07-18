@@ -9,7 +9,11 @@
 
 import type { Context } from '@nocobase/actions';
 import type { Database, Model } from '@nocobase/database';
-import type { RunJSRuntimeArtifact } from '@nocobase/runjs';
+import {
+  hashRunJSEntryDependencyManifest,
+  type RunJSEntryDependencyManifestV1,
+  type RunJSRuntimeArtifact,
+} from '@nocobase/runjs';
 import { vi } from 'vitest';
 
 import { LIGHT_EXTENSION_RUNTIME_ARTIFACT_CONTRACT } from '../../constants';
@@ -273,6 +277,15 @@ describe('trusted preview ticket reuse foundation', () => {
         entryPath: input.entryPath,
         filesHash: 'compiler-files-hash',
       },
+      dependencyGraph: {
+        runtime: { files: [input.entryPath], edges: [] },
+        types: {
+          files: [input.entryPath],
+          edges: [],
+          contracts: [{ id: 'runjs:surface', version: 'value' }],
+        },
+        unresolved: [],
+      },
     }));
     const bridge = {
       compileEntry,
@@ -311,6 +324,18 @@ describe('trusted preview ticket reuse foundation', () => {
     expect(compileEntry).toHaveBeenCalledTimes(1);
     expect(fake.compileCache.rows).toHaveLength(1);
     expect(fake.runtimeArtifacts.rows).toHaveLength(1);
+    const dependencyManifest = fake.compileCache.rows[0].dependencyManifest as
+      | RunJSEntryDependencyManifestV1
+      | undefined;
+    if (!dependencyManifest) {
+      throw new Error('Expected trusted Preview cache dependency manifest');
+    }
+    expect(dependencyManifest).toMatchObject({
+      version: 1,
+      entryPath: 'src/client/js-blocks/sales/index.tsx',
+      runtime: { files: [expect.objectContaining({ path: 'src/client/js-blocks/sales/index.tsx' })] },
+    });
+    expect(fake.compileCache.rows[0].dependencyManifestHash).toBe(hashRunJSEntryDependencyManifest(dependencyManifest));
     const stored = await ticketStore.read(fixedTicket);
     expect(stored).toMatchObject({
       status: 'found',

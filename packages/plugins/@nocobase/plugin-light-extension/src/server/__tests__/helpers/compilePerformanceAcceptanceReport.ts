@@ -24,6 +24,19 @@ import {
   type CompilePerformanceBenchmarkScenario,
   type CompilePerformanceBenchmarkScenarioId,
 } from './compilePerformanceBenchmarkMatrix';
+import type { CompilePerformanceResourceSoakEvidence } from './compilePerformanceResourceEvidence';
+
+const LEGACY_SCHEMA_V1_ZERO_FILL_COUNTERS = new Set<LightExtensionCompileMetricCounter>([
+  'compileCacheMissCount',
+  'compileCacheCorruptCount',
+  'dependencyGraphRuntimeFileCount',
+  'dependencyGraphTypeFileCount',
+  'dependencyGraphUnresolvedCount',
+  'dependencyGraphByteSize',
+  'dependencyPlanPreciseHitCount',
+  'dependencyPlanConservativeFallbackCount',
+  'dependencyManifestVersionMismatchCount',
+]);
 
 export type CompilePerformanceAcceptanceStatus = 'pending' | 'pass' | 'fail';
 
@@ -36,6 +49,7 @@ export interface CompilePerformanceBenchmarkEnvironment {
   databaseDialect: string;
   databaseVersion: string;
   databaseConfigurationFingerprint: string;
+  compileExecutionPath: 'direct' | 'production-worker';
 }
 
 export interface CompilePerformanceBenchmarkFunctionalEvidence {
@@ -65,6 +79,12 @@ export interface CompilePerformanceBenchmarkRunOutcome {
   rollbackVerified: boolean;
   runtimeArtifactsVerified: boolean;
   referenceConsistencyVerified: boolean;
+  sql: CompilePerformanceSqlMeasurement;
+}
+
+export interface CompilePerformanceSqlMeasurement {
+  queryCount: number;
+  totalDurationMs: number;
 }
 
 export interface CompilePerformanceBenchmarkDataset {
@@ -89,6 +109,7 @@ export interface CompilePerformanceAcceptanceReportInput {
   baseline: CompilePerformanceBenchmarkDataset[];
   target: CompilePerformanceBenchmarkDataset[];
   canary?: CompilePerformanceCanaryEvidence;
+  resources?: CompilePerformanceResourceSoakEvidence[];
 }
 
 export interface CompilePerformanceReleaseScope {
@@ -106,6 +127,11 @@ export interface CompilePerformanceRunGroupSummary {
   result?: LightExtensionCompileMetricResult;
   durationsMs: Partial<Record<LightExtensionCompileMetricStage, CompilePerformanceDurationStatistics>>;
   counters: Record<LightExtensionCompileMetricCounter, number>;
+  sql: {
+    queryCount?: CompilePerformanceDurationStatistics;
+    totalDurationMs?: CompilePerformanceDurationStatistics;
+  };
+  zeroFilledCounters: LightExtensionCompileMetricCounter[];
 }
 
 export interface CompilePerformanceScenarioSummary {
@@ -137,6 +163,7 @@ export interface CompilePerformanceAcceptanceReport {
   target: CompilePerformanceDatasetSummary[];
   checks: CompilePerformanceAcceptanceCheck[];
   canary: CompilePerformanceCanaryEvidence | null;
+  resources: CompilePerformanceResourceSoakEvidence[];
 }
 
 export function createCompilePerformanceAcceptanceReportTemplate(
@@ -151,9 +178,10 @@ export function buildCompilePerformanceAcceptanceReport(
   assertNonEmpty(input.generatedAt, 'generatedAt');
   const matrix = createCompilePerformanceBenchmarkMatrix();
   const releaseScope = normalizeReleaseScope(input.releaseScope);
-  const baseline = input.baseline.map(summarizeDataset);
-  const target = input.target.map(summarizeDataset);
-  const checks = buildAcceptanceChecks(matrix, baseline, target, releaseScope, input.canary);
+  const baseline = input.baseline.map((dataset) => summarizeDataset(dataset, 'baseline'));
+  const target = input.target.map((dataset) => summarizeDataset(dataset, 'target'));
+  const resources = input.resources || [];
+  const checks = buildAcceptanceChecks(matrix, baseline, target, releaseScope, resources, input.canary);
   const status = checks.some((check) => check.status === 'fail')
     ? 'fail'
     : checks.some((check) => check.status === 'pending')
@@ -170,6 +198,7 @@ export function buildCompilePerformanceAcceptanceReport(
     target,
     checks,
     canary: input.canary || null,
+    resources,
   };
 }
 
@@ -212,8 +241,8 @@ export function serializeCompilePerformanceAcceptanceMarkdown(report: CompilePer
     '',
     '## Environments',
     '',
-    '| Revision | Source commit | Harness commit | Node | Database | Database version | Dependency fingerprint | Machine fingerprint |',
-    '| --- | --- | --- | --- | --- | --- | --- | --- |',
+    '| Revision | Source commit | Harness commit | Node | Database | Database version | Database config fingerprint | Compile path | Dependency fingerprint | Machine fingerprint |',
+    '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
     ...environmentRows('Baseline', report.baseline),
     ...environmentRows('Target', report.target),
     '',
@@ -228,10 +257,14 @@ export function serializeCompilePerformanceAcceptanceMarkdown(report: CompilePer
     '',
     '## Measured scenario summary',
     '',
-    '| Revision | Database | Scenario | Temperature | Runs | Total median (ms) | Total p95 (ms) | Affected | Compiled | Reused | Skipped | Blob queries | Snapshot materializations | Tree normalizations | Reference scans |',
-    '| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |',
+    '| Revision | Database | Scenario | Temperature | Runs | Total median (ms) | Total p95 (ms) | SQL queries median | SQL queries p95 | SQL duration median (ms) | SQL duration p95 (ms) | Affected | Compiled | Reused | Skipped | Blob queries | Snapshot materializations | Tree normalizations | Reference scans |',
+    '| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |',
     ...datasetRows('Baseline', report.baseline),
     ...datasetRows('Target', report.target),
+    '',
+    '## Supplemental Session, Worker, and memory evidence',
+    '',
+    ...resourceRows(report.resources),
     '',
     '## Canary',
     '',
@@ -247,14 +280,23 @@ export function serializeCompilePerformanceAcceptanceMarkdown(report: CompilePer
   return `${lines.join('\n')}\n`;
 }
 
-function summarizeDataset(dataset: CompilePerformanceBenchmarkDataset): CompilePerformanceDatasetSummary {
+function summarizeDataset(
+  dataset: CompilePerformanceBenchmarkDataset,
+  revision: 'baseline' | 'target',
+): CompilePerformanceDatasetSummary {
   assertEnvironment(dataset.environment);
   return {
     environment: { ...dataset.environment },
     scenarios: dataset.scenarios.map((scenario) => ({
       scenarioId: scenario.scenarioId,
-      cold: summarizeRuns(scenario.scenarioId, 'cold', scenario.coldRuns),
-      hot: summarizeRuns(scenario.scenarioId, 'hot', scenario.hotRuns),
+      cold: summarizeRuns(
+        scenario.scenarioId,
+        'cold',
+        scenario.coldRuns,
+        scenario.coldOutcomes,
+        revision === 'baseline',
+      ),
+      hot: summarizeRuns(scenario.scenarioId, 'hot', scenario.hotRuns, scenario.hotOutcomes, revision === 'baseline'),
     })),
     functional: { ...dataset.functional },
   };
@@ -264,12 +306,16 @@ function summarizeRuns(
   scenarioId: CompilePerformanceBenchmarkScenarioId,
   temperature: 'cold' | 'hot',
   runs: LightExtensionCompileMetricsSummary[],
+  outcomes?: CompilePerformanceBenchmarkRunOutcome[],
+  allowLegacyMissingCounters = false,
 ): CompilePerformanceRunGroupSummary {
   if (runs.length === 0) {
     return {
       runCount: 0,
       durationsMs: {},
       counters: zeroCounters(),
+      sql: {},
+      zeroFilledCounters: [],
     };
   }
   const [firstRun] = runs;
@@ -289,8 +335,20 @@ function summarizeRuns(
     }
   }
   const counters = {} as Record<LightExtensionCompileMetricCounter, number>;
+  const zeroFilledCounters = new Set<LightExtensionCompileMetricCounter>();
   for (const counter of LIGHT_EXTENSION_COMPILE_METRIC_COUNTERS) {
-    const values = runs.map((run) => run.counters[counter]);
+    const values = runs.map((run) => {
+      const value = run.counters[counter];
+      if (
+        typeof value === 'undefined' &&
+        allowLegacyMissingCounters &&
+        LEGACY_SCHEMA_V1_ZERO_FILL_COUNTERS.has(counter)
+      ) {
+        zeroFilledCounters.add(counter);
+        return 0;
+      }
+      return value;
+    });
     const first = values[0];
     if (!Number.isSafeInteger(first) || first < 0) {
       throw new Error(`Benchmark scenario "${scenarioId}" has an invalid ${temperature} counter "${counter}"`);
@@ -300,7 +358,49 @@ function summarizeRuns(
     }
     counters[counter] = first;
   }
-  return { runCount: runs.length, operation: firstRun.operation, result: firstRun.result, durationsMs, counters };
+  assertSqlOutcomes(scenarioId, temperature, runs.length, outcomes);
+  const sql = {
+    queryCount: calculateDurationStatistics(outcomes.map((outcome) => outcome.sql.queryCount)),
+    totalDurationMs: calculateDurationStatistics(outcomes.map((outcome) => outcome.sql.totalDurationMs)),
+  };
+  return {
+    runCount: runs.length,
+    operation: firstRun.operation,
+    result: firstRun.result,
+    durationsMs,
+    counters,
+    sql,
+    zeroFilledCounters: [...zeroFilledCounters],
+  };
+}
+
+function assertSqlOutcomes(
+  scenarioId: CompilePerformanceBenchmarkScenarioId,
+  temperature: 'cold' | 'hot',
+  runCount: number,
+  outcomes: CompilePerformanceBenchmarkRunOutcome[] | undefined,
+): asserts outcomes is CompilePerformanceBenchmarkRunOutcome[] {
+  if (!outcomes || outcomes.length !== runCount) {
+    throw new Error(
+      `Benchmark scenario "${scenarioId}" has ${
+        outcomes?.length || 0
+      } ${temperature} SQL outcomes for ${runCount} metrics runs`,
+    );
+  }
+  for (const [index, outcome] of outcomes.entries()) {
+    if (
+      outcome.iteration !== index + 1 ||
+      outcome.temperature !== temperature ||
+      !Number.isSafeInteger(outcome.sql?.queryCount) ||
+      outcome.sql.queryCount <= 0 ||
+      !Number.isFinite(outcome.sql?.totalDurationMs) ||
+      outcome.sql.totalDurationMs < 0
+    ) {
+      throw new Error(
+        `Benchmark scenario "${scenarioId}" has an invalid ${temperature} SQL outcome at run ${index + 1}`,
+      );
+    }
+  }
 }
 
 function buildAcceptanceChecks(
@@ -308,13 +408,17 @@ function buildAcceptanceChecks(
   baseline: CompilePerformanceDatasetSummary[],
   target: CompilePerformanceDatasetSummary[],
   releaseScope: CompilePerformanceReleaseScope,
+  resources: CompilePerformanceResourceSoakEvidence[],
   canary?: CompilePerformanceCanaryEvidence,
 ): CompilePerformanceAcceptanceCheck[] {
   const checks = [
     collectionCompletenessCheck(matrix, baseline, target),
+    legacyCounterCompatibilityCheck(baseline),
     databaseCoverageCheck(baseline, target),
     environmentParityCheck(baseline, target),
     structuralChecks(matrix, target, releaseScope),
+    databaseQueryScalingChecks(target),
+    resourceSoakChecks(target, releaseScope, resources),
     functionalChecks(target),
     mediumPrivatePerformanceCheck(baseline, target),
     smallRepositoryRegressionCheck(baseline, target),
@@ -354,6 +458,31 @@ function collectionCompletenessCheck(
         'Every dataset contains at least 1 cold and 20 hot runs for all 8 scenarios.',
       )
     : pendingCheck('collection-complete', 'Fixed matrix collection', `Missing or incomplete: ${missing.join(', ')}`);
+}
+
+function legacyCounterCompatibilityCheck(
+  baseline: CompilePerformanceDatasetSummary[],
+): CompilePerformanceAcceptanceCheck {
+  if (baseline.length === 0) {
+    return pendingCheck('legacy-counter-compatibility', 'Legacy counter compatibility', 'No baseline is available.');
+  }
+  const zeroFilled = [
+    ...new Set(
+      baseline.flatMap((dataset) =>
+        dataset.scenarios.flatMap((scenario) => [
+          ...scenario.cold.zeroFilledCounters,
+          ...scenario.hot.zeroFilledCounters,
+        ]),
+      ),
+    ),
+  ].sort();
+  return passCheck(
+    'legacy-counter-compatibility',
+    'Legacy counter compatibility',
+    zeroFilled.length > 0
+      ? `Legacy schemaVersion 1 baseline counters zero-filled deterministically: ${zeroFilled.join(', ')}.`
+      : 'Baseline already contains every current schemaVersion 1 counter.',
+  );
 }
 
 function databaseCoverageCheck(
@@ -498,6 +627,116 @@ function checkStructuralGroup(
   return failures;
 }
 
+function databaseQueryScalingChecks(target: CompilePerformanceDatasetSummary[]): CompilePerformanceAcceptanceCheck[] {
+  if (target.length === 0) {
+    return [pendingCheck('database-query-scaling', 'Database query scaling', 'No target datasets are available.')];
+  }
+  return target.map((dataset) => {
+    const dialect = normalizeDialect(dataset.environment.databaseDialect);
+    const smallScenario = dataset.scenarios.find((scenario) => scenario.scenarioId === 'small-private-file');
+    const mediumScenario = dataset.scenarios.find((scenario) => scenario.scenarioId === 'medium-private-file');
+    const small = smallScenario?.hot.sql.queryCount;
+    const medium = mediumScenario?.hot.sql.queryCount;
+    if (!smallScenario || !mediumScenario || !small || !medium || small.p95 <= 0) {
+      return pendingCheck(
+        `database-query-scaling-${dialect}`,
+        `Database query scaling (${dialect})`,
+        'Measured Save-only SQL query counts are incomplete.',
+      );
+    }
+    const ratio = medium.p95 / small.p95;
+    const blobCounts = [
+      smallScenario.cold.counters.blobContentQueryCount,
+      smallScenario.hot.counters.blobContentQueryCount,
+      mediumScenario.cold.counters.blobContentQueryCount,
+      mediumScenario.hot.counters.blobContentQueryCount,
+    ];
+    const details = `Small hot p95 ${formatNumber(small.p95)} queries; medium hot p95 ${formatNumber(
+      medium.p95,
+    )} queries; ratio ${formatNumber(ratio)}x for 20x files/Entries; Blob includeContent query counts ${blobCounts.join(
+      '/',
+    )}.`;
+    return ratio < 10 && blobCounts.every((count) => count === 1)
+      ? passCheck(`database-query-scaling-${dialect}`, `Database query scaling (${dialect})`, details)
+      : failCheck(`database-query-scaling-${dialect}`, `Database query scaling (${dialect})`, details);
+  });
+}
+
+function resourceSoakChecks(
+  target: CompilePerformanceDatasetSummary[],
+  releaseScope: CompilePerformanceReleaseScope,
+  resources: CompilePerformanceResourceSoakEvidence[],
+): CompilePerformanceAcceptanceCheck {
+  const required = releaseScope.incrementalCompilerSessions || releaseScope.boundedCompilationAndPersistence;
+  const directTargets = releaseScope.boundedCompilationAndPersistence
+    ? target.filter((dataset) => dataset.environment.compileExecutionPath !== 'production-worker')
+    : [];
+  if (directTargets.length > 0) {
+    return failCheck(
+      'resource-soak',
+      'Session, Worker, and memory soak',
+      directTargets
+        .map((dataset) => `${dataset.environment.databaseDialect} core matrix bypassed the production Worker path`)
+        .join('; '),
+    );
+  }
+  if (!required && resources.length === 0) {
+    return passCheck(
+      'resource-soak',
+      'Session, Worker, and memory soak',
+      'Supplemental resource evidence is not required by the selected release scope.',
+    );
+  }
+  if (resources.length === 0 || target.length === 0) {
+    return pendingCheck(
+      'resource-soak',
+      'Session, Worker, and memory soak',
+      'Acceptance-ready supplemental resource evidence is required.',
+    );
+  }
+  const failures: string[] = [];
+  const pending: string[] = [];
+  for (const dataset of target) {
+    const environment = dataset.environment;
+    const resource = resources.find(
+      (candidate) =>
+        candidate.sourceCommit === environment.sourceCommit &&
+        candidate.harnessCommit === environment.harnessCommit &&
+        candidate.nodeVersion === environment.nodeVersion &&
+        candidate.machineFingerprint === environment.machineFingerprint &&
+        candidate.dependencyFingerprint === environment.dependencyFingerprint,
+    );
+    if (!resource) {
+      const sameRevision = resources.some(
+        (candidate) =>
+          candidate.sourceCommit === environment.sourceCommit && candidate.harnessCommit === environment.harnessCommit,
+      );
+      if (sameRevision) {
+        failures.push(`${environment.databaseDialect} resource environment does not match the measured target`);
+      } else {
+        pending.push(`${environment.sourceCommit}/${environment.harnessCommit}`);
+      }
+      continue;
+    }
+    if (!resource.gate.passed) {
+      failures.push(`${environment.databaseDialect}: ${resource.gate.failures.join(', ')}`);
+    } else if (!resource.gate.acceptanceReady) {
+      pending.push(`${environment.databaseDialect} resource soak has fewer than 20 iterations`);
+    }
+  }
+  if (failures.length > 0) {
+    return failCheck('resource-soak', 'Session, Worker, and memory soak', failures.join('; '));
+  }
+  if (pending.length > 0) {
+    return pendingCheck('resource-soak', 'Session, Worker, and memory soak', pending.join('; '));
+  }
+  return passCheck(
+    'resource-soak',
+    'Session, Worker, and memory soak',
+    'Session limits, TTL/disable/shutdown release, production Workers, and memory growth gates passed.',
+  );
+}
+
 function functionalChecks(target: CompilePerformanceDatasetSummary[]): CompilePerformanceAcceptanceCheck[] {
   if (target.length === 0) {
     return [pendingCheck('functional-regression', 'Functional regression', 'No target datasets are available.')];
@@ -615,13 +854,27 @@ function canaryCheck(canary?: CompilePerformanceCanaryEvidence): CompilePerforma
 }
 
 function assertEnvironment(environment: CompilePerformanceBenchmarkEnvironment): void {
-  for (const [field, value] of Object.entries(environment)) {
-    assertNonEmpty(value, `environment.${field}`);
+  const requiredFields: Array<keyof CompilePerformanceBenchmarkEnvironment> = [
+    'sourceCommit',
+    'harnessCommit',
+    'nodeVersion',
+    'dependencyFingerprint',
+    'machineFingerprint',
+    'databaseDialect',
+    'databaseVersion',
+    'databaseConfigurationFingerprint',
+    'compileExecutionPath',
+  ];
+  for (const field of requiredFields) {
+    assertNonEmpty(environment[field], `environment.${field}`);
+  }
+  if (environment.compileExecutionPath !== 'direct' && environment.compileExecutionPath !== 'production-worker') {
+    throw new Error('Compile performance acceptance report environment.compileExecutionPath is invalid');
   }
 }
 
-function assertNonEmpty(value: string, label: string): void {
-  if (!value.trim()) {
+function assertNonEmpty(value: unknown, label: string): void {
+  if (typeof value !== 'string' || !value.trim()) {
     throw new Error(`Compile performance acceptance report ${label} is required`);
   }
 }
@@ -662,7 +915,9 @@ function failCheck(id: string, title: string, details: string): CompilePerforman
 
 function environmentRows(revision: 'Baseline' | 'Target', datasets: CompilePerformanceDatasetSummary[]): string[] {
   if (datasets.length === 0) {
-    return [`| ${revision} | pending | pending | pending | pending | pending | pending | pending |`];
+    return [
+      `| ${revision} | pending | pending | pending | pending | pending | pending | pending | pending | pending |`,
+    ];
   }
   return datasets.map(
     ({ environment }) =>
@@ -671,9 +926,54 @@ function environmentRows(revision: 'Baseline' | 'Target', datasets: CompilePerfo
       )} | ${escapeMarkdownCell(environment.nodeVersion)} | ${escapeMarkdownCell(
         environment.databaseDialect,
       )} | ${escapeMarkdownCell(environment.databaseVersion)} | ${escapeMarkdownCell(
+        environment.databaseConfigurationFingerprint,
+      )} | ${escapeMarkdownCell(environment.compileExecutionPath)} | ${escapeMarkdownCell(
         environment.dependencyFingerprint,
       )} | ${escapeMarkdownCell(environment.machineFingerprint)} |`,
   );
+}
+
+function resourceRows(resources: CompilePerformanceResourceSoakEvidence[]): string[] {
+  if (resources.length === 0) {
+    return ['Resource soak evidence pending.'];
+  }
+  return [
+    '| Source commit | Harness commit | Iterations | Gate | Session peak repos | Session peak entries | Session peak bytes | Worker threads | Worker max active | Worker max queue | RSS growth | Heap growth |',
+    '| --- | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |',
+    ...resources.map(
+      (resource) =>
+        `| ${escapeMarkdownCell(resource.sourceCommit)} | ${escapeMarkdownCell(resource.harnessCommit)} | ${
+          resource.iterations
+        } | ${resource.gate.acceptanceReady ? 'PASS' : resource.gate.passed ? 'SMOKE' : 'FAIL'} | ${
+          resource.session.peak.activeRepos
+        } | ${resource.session.peak.activeEntries} | ${resource.session.peak.estimatedFileBytes} | ${
+          resource.worker.workerThreadIds.length
+        } | ${resource.worker.observed.maxActive} | ${resource.worker.observed.maxQueueDepth} | ${
+          resource.memory.afterShutdown.rssBytes - resource.memory.start.rssBytes
+        } | ${resource.memory.afterShutdown.heapUsedBytes - resource.memory.start.heapUsedBytes} |`,
+    ),
+    '',
+    ...resources.flatMap((resource) => [
+      `Resource environment: Node ${escapeMarkdownCell(resource.nodeVersion)}, machine ${escapeMarkdownCell(
+        resource.machineFingerprint,
+      )}, dependencies ${escapeMarkdownCell(resource.dependencyFingerprint)}.`,
+      '',
+      `Session limits/peak: repos ${resource.session.peak.activeRepos}/${resource.session.configured.maxRepos}, entries ${resource.session.peak.activeEntries}/${resource.session.configured.maxEntries}, bytes ${resource.session.peak.estimatedFileBytes}/${resource.session.configured.maxEstimatedFileBytes}; TTL released ${resource.session.afterTtl.activeRepos}/${resource.session.afterTtl.activeEntries}/${resource.session.afterTtl.estimatedFileBytes}; disabled retained ${resource.session.disabled.activeRepos}/${resource.session.disabled.activeEntries}/${resource.session.disabled.estimatedFileBytes}; shutdown released ${resource.session.afterShutdown.activeRepos}/${resource.session.afterShutdown.activeEntries}/${resource.session.afterShutdown.estimatedFileBytes}.`,
+      '',
+      `Worker proof: production path ${resource.worker.productionWorkerPath ? 'yes' : 'no'}, thread IDs ${
+        resource.worker.workerThreadIds.join(', ') || 'none'
+      }, configured workers/queue/inflight ${resource.worker.configured.workerCount}/${
+        resource.worker.configured.maxQueueLength
+      }/${resource.worker.configured.maxInflightBytes}, observed inflight peak ${
+        resource.worker.observed.maxInflightBytes
+      }, shutdown workers/active/queue/inflight ${resource.worker.afterShutdown.workerCount}/${
+        resource.worker.afterShutdown.active
+      }/${resource.worker.afterShutdown.queueDepth}/${resource.worker.afterShutdown.inflightBytes}.`,
+      '',
+      `Reproduce: \`${escapeMarkdownCode(resource.reproducibleCommand)}\``,
+      '',
+    ]),
+  ];
 }
 
 function datasetRows(revision: 'Baseline' | 'Target', datasets: CompilePerformanceDatasetSummary[]): string[] {
@@ -693,14 +993,20 @@ function scenarioRow(
   group: CompilePerformanceRunGroupSummary,
 ): string {
   const total = group.durationsMs.total;
+  const sqlQueries = group.sql.queryCount;
+  const sqlDuration = group.sql.totalDurationMs;
   const counters = group.counters;
   return `| ${revision} | ${escapeMarkdownCell(dialect)} | ${scenarioId} | ${temperature} | ${
     group.runCount
-  } | ${formatOptionalNumber(total?.median)} | ${formatOptionalNumber(total?.p95)} | ${counters.affectedEntryCount} | ${
-    counters.compiledEntryCount
-  } | ${counters.reusedEntryCount} | ${counters.skippedEntryCount} | ${counters.blobContentQueryCount} | ${
-    counters.snapshotMaterializationCount
-  } | ${counters.treeNormalizationCount} | ${counters.referenceScanCount} |`;
+  } | ${formatOptionalNumber(total?.median)} | ${formatOptionalNumber(total?.p95)} | ${formatOptionalNumber(
+    sqlQueries?.median,
+  )} | ${formatOptionalNumber(sqlQueries?.p95)} | ${formatOptionalNumber(sqlDuration?.median)} | ${formatOptionalNumber(
+    sqlDuration?.p95,
+  )} | ${counters.affectedEntryCount} | ${counters.compiledEntryCount} | ${counters.reusedEntryCount} | ${
+    counters.skippedEntryCount
+  } | ${counters.blobContentQueryCount} | ${counters.snapshotMaterializationCount} | ${
+    counters.treeNormalizationCount
+  } | ${counters.referenceScanCount} |`;
 }
 
 function canaryRows(canary: CompilePerformanceCanaryEvidence | null): string[] {
@@ -730,4 +1036,8 @@ function formatPercentage(value: number): string {
 
 function escapeMarkdownCell(value: string): string {
   return value.replaceAll('|', '\\|').replaceAll('\n', '<br>');
+}
+
+function escapeMarkdownCode(value: string): string {
+  return value.replaceAll('`', '\\`').replaceAll('\n', ' ');
 }

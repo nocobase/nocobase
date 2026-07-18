@@ -33,12 +33,19 @@ yarn test packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__
 
 ## Real collector
 
-The collector test executes real `saveSource` calls, including compile rejection rollback and two same-Head requests. It is disabled unless `LIGHT_EXTENSION_BENCHMARK_COLLECT=true`. `sourceCommit` identifies the code being measured; `harnessCommit` identifies this collector and must be the same in baseline and target checkouts.
+The collector test executes real `saveSource` calls, including compile rejection rollback and two same-Head requests. It is disabled unless `LIGHT_EXTENSION_BENCHMARK_COLLECT=true`. `sourceCommit` identifies the code being measured; `harnessCommit` identifies this collector and must be the same in baseline and target checkouts. For each scenario, seeding runs in one App instance, that App is destroyed, and measurement starts in a newly created App/Session/Worker runtime against the persisted seed; the first measured run is therefore isolated from seed-time process-local compiler state.
+
+Each measured run records SQL query count and summed SQL duration through request-scoped Sequelize hooks. The scope wraps only the tested Save request(s); repository, Artifact, Reference, and rollback verification queries run after the SQL meter closes and are excluded. Because older evidence lacks this telemetry, baseline and target evidence used by the SQL gate must be recollected. When source revisions have different lockfiles, overlay the target `yarn.lock` in both benchmark worktrees and record the same dependency fingerprint; do not compare environments with different installed dependencies.
+
+The target collector uses the production `LightExtensionCompileWorkerPool` by default. A baseline revision that predates the production pool may run the same harness with `LIGHT_EXTENSION_BENCHMARK_WORKER_PATH=direct`; the report records the selected compile path and requires the target matrix to use `production-worker` when bounded compilation and persistence is in release scope.
+
+Use a freshly created database for every baseline and target collection. For SQLite, remove the database file plus its `-wal` and `-shm` files before each run; the configuration fingerprint records the effective SQLite mode and PRAGMAs rather than the storage pathname. For PostgreSQL, reset the benchmark schema before each run. This keeps table size and disk state symmetric without making environment parity depend on checkout-specific paths.
 
 SQLite acceptance collection:
 
 ```bash
 LIGHT_EXTENSION_BENCHMARK_COLLECT=true \
+LIGHT_EXTENSION_BENCHMARK_REVISION=<baseline-or-target> \
 LIGHT_EXTENSION_BENCHMARK_SOURCE_COMMIT=<measured-source-commit> \
 LIGHT_EXTENSION_BENCHMARK_HARNESS_COMMIT=<shared-harness-commit> \
 LIGHT_EXTENSION_BENCHMARK_OUTPUT=/absolute/path/to/sqlite-evidence.json \
@@ -48,6 +55,8 @@ DB_DIALECT=sqlite \
 DB_STORAGE=/absolute/path/to/compile-performance.sqlite \
 yarn test packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__/compile-performance-benchmark-collector.test.ts --run --reporter=verbose
 ```
+
+Set `LIGHT_EXTENSION_BENCHMARK_REVISION=baseline` and add `LIGHT_EXTENSION_BENCHMARK_WORKER_PATH=direct` to each baseline command when the baseline source predates the production WorkerPool. Baseline evidence may honestly record `uiSingleSavePathVerified=false`; that target-only functional gate is not applied to the baseline wrapper. Use `LIGHT_EXTENSION_BENCHMARK_REVISION=target` and do not set the direct-path override for target commands.
 
 PostgreSQL uses the same command with `DB_DIALECT=postgres` and the normal `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USER`, and `DB_PASSWORD` environment. Run SQLite and PostgreSQL serially, with different output paths. Do not put connection strings or passwords in evidence metadata.
 
@@ -63,6 +72,24 @@ jq -e '.gate.passed == true and .gate.acceptanceReady == true' /absolute/path/to
 ```
 
 Set `LIGHT_EXTENSION_BENCHMARK_UI_SAVE_VERIFIED=true` and `LIGHT_EXTENSION_BENCHMARK_REFERENCES_VERIFIED=true` only after the listed client Save and Reference regression tests pass on the same source commit. Otherwise the collector intentionally writes failing functional evidence.
+
+## Supplemental Session, Worker, and memory soak
+
+Resource evidence is collected separately from the 8-scenario database matrix. It exercises the production `worker_threads` pool, real compiler Session manager capacity/TTL/disable/dispose paths, and process RSS/heap growth. It does not replace SQLite/PostgreSQL evidence and can be reused by both dialect reports when `sourceCommit`, `harnessCommit`, Node, dependency, machine fingerprints match.
+
+```bash
+LIGHT_EXTENSION_RESOURCE_SOAK=true \
+LIGHT_EXTENSION_RESOURCE_SOAK_SOURCE_COMMIT=<measured-source-commit> \
+LIGHT_EXTENSION_RESOURCE_SOAK_HARNESS_COMMIT=<shared-harness-commit> \
+LIGHT_EXTENSION_RESOURCE_SOAK_OUTPUT=/absolute/path/to/resource-soak.json \
+LIGHT_EXTENSION_RESOURCE_SOAK_ITERATIONS=20 \
+LIGHT_EXTENSION_RESOURCE_SOAK_WORKERS=2 \
+yarn test packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__/compile-performance-resource-soak.test.ts --run --reporter=verbose
+
+jq -e '.gate.passed == true and .gate.acceptanceReady == true' /absolute/path/to/resource-soak.json
+```
+
+The evidence records configured and observed Session Repo/Entry/byte caps, LRU and TTL evictions, disabled cold fallback, shutdown disposal, production Worker thread IDs, active/queue/in-flight peaks and limits, post-shutdown zeros, process-wide RSS plus main-isolate heap samples, budgets, and the exact non-secret reproduction command. The collector performs a compiler/Worker warm-up before the memory baseline and forces garbage collection for settled start/after-shutdown samples, so lazy module initialization and reclaimable garbage are not misclassified as sustained soak growth.
 
 ## Final collection protocol
 

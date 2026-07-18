@@ -11,6 +11,8 @@ import { createHash } from 'crypto';
 
 export const RUNJS_ENTRY_DEPENDENCY_MANIFEST_VERSION = 1 as const;
 
+export const RUNJS_ENTRY_DEPENDENCY_MANIFEST_MAX_BYTES = 1024 * 1024;
+
 export type RunJSTypeDependencyEdgeKind = 'runtime' | 'type' | 'reference';
 
 export type RunJSUnresolvedDependencyKind = 'runtime' | 'type' | 'reference' | 'blocked' | 'dynamic';
@@ -104,6 +106,20 @@ export function hashRunJSEntryDependencyManifest(value: RunJSEntryDependencyMani
   return sha256HexDependencyManifest(serializeRunJSEntryDependencyManifest(value));
 }
 
+export function getRunJSEntryDependencyManifestByteSize(value: RunJSEntryDependencyManifestV1): number {
+  return new TextEncoder().encode(serializeRunJSEntryDependencyManifest(value)).byteLength;
+}
+
+export function isRunJSEntryDependencyManifestPersistable(
+  value: RunJSEntryDependencyManifestV1,
+  maxBytes = RUNJS_ENTRY_DEPENDENCY_MANIFEST_MAX_BYTES,
+): boolean {
+  if (!Number.isSafeInteger(maxBytes) || maxBytes <= 0) {
+    throw new TypeError('RunJS entry dependency manifest byte limit must be a positive safe integer');
+  }
+  return getRunJSEntryDependencyManifestByteSize(value) <= maxBytes;
+}
+
 export function validateRunJSEntryDependencyManifest(input: {
   value: unknown;
   expectedCompilerBuildId?: string;
@@ -124,6 +140,9 @@ export function validateRunJSEntryDependencyManifest(input: {
   try {
     manifest = normalizeRunJSEntryDependencyManifest(input.value as unknown as RunJSEntryDependencyManifestV1);
   } catch (_error) {
+    return { valid: false, reason: 'invalid' };
+  }
+  if (!isRunJSEntryDependencyManifestPersistable(manifest)) {
     return { valid: false, reason: 'invalid' };
   }
 

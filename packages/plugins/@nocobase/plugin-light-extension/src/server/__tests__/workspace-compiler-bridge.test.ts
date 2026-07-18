@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { Database } from '@nocobase/database';
+import type { Database, Transaction } from '@nocobase/database';
 import { sha256Hex } from '@nocobase/runjs';
 import { vi } from 'vitest';
 
@@ -79,6 +79,29 @@ describe('plugin-light-extension workspace compiler bridge', () => {
         compilerSurfaceStyle: 'render',
       },
     });
+    expect(result.dependencyGraph).toMatchObject({
+      runtime: {
+        files: ['src/client/js-blocks/sales-kpi/index.tsx', 'src/client/js-blocks/sales-kpi/labels.ts'],
+        edges: [
+          {
+            importer: 'src/client/js-blocks/sales-kpi/index.tsx',
+            imported: 'src/client/js-blocks/sales-kpi/labels.ts',
+          },
+        ],
+      },
+      types: {
+        files: expect.arrayContaining([
+          'src/client/js-blocks/sales-kpi/index.tsx',
+          'src/client/js-blocks/sales-kpi/labels.ts',
+        ]),
+        contracts: expect.arrayContaining([
+          expect.objectContaining({ id: 'runjs:context', contentHash: expect.stringMatching(/^[a-f0-9]{64}$/u) }),
+          expect.objectContaining({ id: 'runjs:surface', version: 'render' }),
+          expect.objectContaining({ id: 'runjs:typescript-environment' }),
+        ]),
+      },
+      unresolved: [],
+    });
     const rendered: unknown[] = [];
     const React = { createElement: (type: unknown, props: unknown, child: unknown) => ({ type, props, child }) };
     await executeArtifact(result.artifact.code, {
@@ -111,6 +134,67 @@ describe('plugin-light-extension workspace compiler bridge', () => {
       surface: 'js-model.render',
       modelUse: 'JSBlockModel',
     });
+  });
+
+  it('defers a successful runtime compile audit until the result is published', async () => {
+    const result = await bridge.compileEntry(
+      {
+        repoId: 'ler_deferred_audit',
+        entryId: 'lee_deferred_audit',
+        operation: 'runtimeCompile',
+        kind: 'js-block',
+        entryName: 'deferred-audit',
+        entryPath: 'src/client/js-blocks/deferred-audit/index.tsx',
+        files: [
+          {
+            path: 'src/client/js-blocks/deferred-audit/index.tsx',
+            content: 'ctx.render(<div>Deferred audit</div>);\n',
+          },
+        ],
+      },
+      {
+        requestId: 'req_deferred_audit',
+        requestSource: 'save-source-prepare',
+        actorUserId: '1',
+        deferSuccessfulCompileAudit: true,
+      },
+    );
+
+    expect(result.accepted).toBe(true);
+    expect(recordCompileEvent).not.toHaveBeenCalled();
+
+    const transaction = {} as Transaction;
+    await bridge.recordPublishedRuntimeCompileAudit(
+      {
+        repoId: 'ler_deferred_audit',
+        entryId: 'lee_deferred_audit',
+        kind: 'js-block',
+        entryName: 'deferred-audit',
+        entryPath: 'src/client/js-blocks/deferred-audit/index.tsx',
+        runtimeVersion: result.artifact.version,
+        requestId: 'req_deferred_audit',
+        diagnostics: result.diagnostics,
+        filesHash: result.artifact.filesHash,
+        artifactEntryPath: result.artifact.entryPath,
+      },
+      {
+        requestSource: 'save-source-publish',
+        actorUserId: '1',
+        transaction,
+      },
+    );
+
+    expect(recordCompileEvent).toHaveBeenCalledTimes(1);
+    expect(recordCompileEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'runtimeCompile',
+        result: 'success',
+        repoId: 'ler_deferred_audit',
+        entryId: 'lee_deferred_audit',
+        requestId: 'req_deferred_audit',
+        transaction,
+      }),
+    );
   });
 
   it('compiles shared helper imports and zero-runtime SDK helpers for light extension entries', async () => {

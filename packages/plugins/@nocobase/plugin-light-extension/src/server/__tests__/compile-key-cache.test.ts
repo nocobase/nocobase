@@ -9,6 +9,7 @@
 
 import type { LightExtensionEntryRecord } from '../../shared/types';
 import PluginVscFileServer from '@nocobase/plugin-vsc-file';
+import { hashRunJSEntryDependencyManifest, type RunJSEntryDependencyManifestV1 } from '@nocobase/runjs';
 import { MockServer, createMockServer } from '@nocobase/test';
 import type { LightExtensionCompileMetricsSummary } from '../../shared/compileMetrics';
 import PluginLightExtensionServer from '../plugin';
@@ -146,18 +147,30 @@ describe('light extension trusted compile cache', () => {
 
   it('compiles only the changed private Entry, advances all ready Entries, and reuses historical keys', async () => {
     const repo = await repoService.createRepo({ name: 'Compile Cache Planner', initialFiles: twoEntryFiles('base') });
-    const compileSpy = vi.spyOn(compilerBridge, 'compileEntry');
 
     const first = await saveCurrent(runtimeCompileService, repoService, repo.id, 'compile v1', twoEntryFiles('v1'));
-    expect(compileSpy).toHaveBeenCalledTimes(2);
     expect(first.compile.entries.map((entry) => entry.execution)).toEqual(['compiled', 'compiled']);
-    compileSpy.mockClear();
+    const firstBindings = new Map(
+      await Promise.all(
+        first.compile.entries.map(
+          async (entry) => [entry.entryName, await expectEntryManifestMatchesCache(app, entry.entryId)] as const,
+        ),
+      ),
+    );
+    expect(firstBindings.get('entry-a')?.compileKey).not.toBe(firstBindings.get('entry-b')?.compileKey);
+    expect(firstBindings.get('entry-a')?.dependencyManifestHash).not.toBe(
+      firstBindings.get('entry-b')?.dependencyManifestHash,
+    );
+    expect(runtimeMetrics(metricsSummaries).counters).toMatchObject({
+      affectedEntryCount: 2,
+      compiledEntryCount: 2,
+      reusedEntryCount: 0,
+    });
     metricsSummaries = [];
 
     const privateChange = await saveCurrent(runtimeCompileService, repoService, repo.id, 'change entry a', [
       codeFile('entry-a', 'v2'),
     ]);
-    expect(compileSpy).toHaveBeenCalledTimes(1);
     expect(privateChange.compile.entries).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ entryName: 'entry-a', execution: 'compiled' }),
@@ -172,14 +185,19 @@ describe('light extension trusted compile cache', () => {
       compileCacheMissCount: 1,
     });
     await expectAllReadyEntriesAtHead(app, repo.id, privateChange.commit.id);
+    const privateEntryB = privateChange.compile.entries.find((entry) => entry.entryName === 'entry-b');
+    if (!privateEntryB) {
+      throw new Error('Expected entry-b compile result');
+    }
+    const privateEntryBBinding = await expectEntryManifestMatchesCache(app, privateEntryB.entryId);
+    expect(privateEntryBBinding.dependencyManifest).toEqual(firstBindings.get('entry-b')?.dependencyManifest);
+    expect(privateEntryBBinding.dependencyManifestHash).toBe(firstBindings.get('entry-b')?.dependencyManifestHash);
     const lastCompiledAt = (await repoService.getRepo(repo.id)).lastCompiledAt;
-    compileSpy.mockClear();
     metricsSummaries = [];
 
     const metadataOnly = await saveCurrent(runtimeCompileService, repoService, repo.id, 'readme only', [
       { path: 'README.md', content: 'Metadata only\n', language: 'markdown' },
     ]);
-    expect(compileSpy).not.toHaveBeenCalled();
     expect(metadataOnly.compile.entries.every((entry) => entry.execution === 'reused')).toBe(true);
     expect(runtimeMetrics(metricsSummaries).counters).toMatchObject({
       affectedEntryCount: 0,
@@ -188,7 +206,6 @@ describe('light extension trusted compile cache', () => {
     });
     await expectAllReadyEntriesAtHead(app, repo.id, metadataOnly.commit.id);
     await expect(repoService.getRepo(repo.id)).resolves.toMatchObject({ lastCompiledAt });
-    compileSpy.mockClear();
 
     const descriptorOnly = await saveCurrent(runtimeCompileService, repoService, repo.id, 'descriptor only', [
       {
@@ -202,28 +219,43 @@ describe('light extension trusted compile cache', () => {
         language: 'json',
       },
     ]);
-    expect(compileSpy).not.toHaveBeenCalled();
     expect(descriptorOnly.compile.entries.every((entry) => entry.execution === 'reused')).toBe(true);
     await expectAllReadyEntriesAtHead(app, repo.id, descriptorOnly.commit.id);
-    compileSpy.mockClear();
 
     const reverted = await saveCurrent(runtimeCompileService, repoService, repo.id, 'revert entry a', [
       codeFile('entry-a', 'v1'),
     ]);
-    expect(compileSpy).not.toHaveBeenCalled();
     expect(reverted.compile.entries.every((entry) => entry.execution === 'reused')).toBe(true);
     await expectAllReadyEntriesAtHead(app, repo.id, reverted.commit.id);
-    compileSpy.mockClear();
+    const revertedEntryA = reverted.compile.entries.find((entry) => entry.entryName === 'entry-a');
+    if (!revertedEntryA) {
+      throw new Error('Expected entry-a compile result');
+    }
+    const revertedEntryABinding = await expectEntryManifestMatchesCache(app, revertedEntryA.entryId);
+    expect(revertedEntryABinding.dependencyManifest).toEqual(firstBindings.get('entry-a')?.dependencyManifest);
+    expect(revertedEntryABinding.dependencyManifestHash).toBe(firstBindings.get('entry-a')?.dependencyManifestHash);
+    metricsSummaries = [];
 
-    const sharedChange = await saveCurrent(runtimeCompileService, repoService, repo.id, 'add shared source', [
-      {
-        path: 'src/shared/value.ts',
-        content: "export const sharedValue = 'shared-v1';\n",
-        language: 'typescript',
-      },
-    ]);
-    expect(compileSpy).toHaveBeenCalledTimes(2);
-    expect(sharedChange.compile.entries.every((entry) => entry.execution === 'compiled')).toBe(true);
+    const sharedChange = await saveCurrent(
+      runtimeCompileService,
+      repoService,
+      repo.id,
+      'add unreferenced shared source',
+      [
+        {
+          path: 'src/shared/value.ts',
+          content: "export const sharedValue = 'shared-v1';\n",
+          language: 'typescript',
+        },
+      ],
+    );
+    expect(sharedChange.compile.entries.every((entry) => entry.execution === 'reused')).toBe(true);
+    expect(runtimeMetrics(metricsSummaries).counters).toMatchObject({
+      affectedEntryCount: 0,
+      compiledEntryCount: 0,
+      reusedEntryCount: 2,
+      compileCacheMissCount: 2,
+    });
     await expectAllReadyEntriesAtHead(app, repo.id, sharedChange.commit.id);
   });
 
@@ -232,16 +264,12 @@ describe('light extension trusted compile cache', () => {
       name: 'Twenty Entry Compile Cache',
       initialFiles: manyEntryFiles('base'),
     });
-    const compileSpy = vi.spyOn(compilerBridge, 'compileEntry');
     await saveCurrent(runtimeCompileService, repoService, repo.id, 'compile twenty entries', manyEntryFiles('v1'));
-    expect(compileSpy).toHaveBeenCalledTimes(20);
-    compileSpy.mockClear();
     metricsSummaries = [];
 
     const saved = await saveCurrent(runtimeCompileService, repoService, repo.id, 'change one of twenty', [
       codeFile('entry-07', 'v2'),
     ]);
-    expect(compileSpy).toHaveBeenCalledTimes(1);
     expect(saved.compile.entries.filter((entry) => entry.execution === 'compiled')).toHaveLength(1);
     expect(saved.compile.entries.filter((entry) => entry.execution === 'reused')).toHaveLength(19);
     expect(runtimeMetrics(metricsSummaries).counters).toMatchObject({
@@ -274,26 +302,28 @@ describe('light extension trusted compile cache', () => {
 
   it('falls back safely for missing artifacts, failed compiles, disabled lookup, and cleared cache', async () => {
     const repo = await repoService.createRepo({ name: 'Compile Cache Recovery', initialFiles: oneEntryFiles('base') });
-    const compileSpy = vi.spyOn(compilerBridge, 'compileEntry');
     const first = await saveCurrent(runtimeCompileService, repoService, repo.id, 'compile v1', oneEntryFiles('v1'));
     const entry = await app.db.getRepository('lightExtensionEntries').findOne({
       filterByTk: first.compile.entries[0].entryId,
     });
     const artifactHash = String(entry?.get('artifactHash'));
     await app.db.getRepository('lightExtensionRuntimeArtifacts').destroy({ filterByTk: artifactHash });
-    compileSpy.mockClear();
     metricsSummaries = [];
 
     const repaired = await saveCurrent(runtimeCompileService, repoService, repo.id, 'repair missing artifact', [
       { path: 'README.md', content: 'Repair cache\n', language: 'markdown' },
     ]);
-    expect(compileSpy).toHaveBeenCalledTimes(1);
+    expect(repaired.compile.entries[0].execution).toBe('compiled');
     expect(runtimeMetrics(metricsSummaries).counters).toMatchObject({
       compileCacheCorruptCount: 1,
       compileCacheMissCount: 1,
       compiledEntryCount: 1,
     });
+    await expect(
+      app.db.getRepository('lightExtensionRuntimeArtifacts').findOne({ filterByTk: artifactHash }),
+    ).resolves.toBeTruthy();
     await expectAllReadyEntriesAtHead(app, repo.id, repaired.commit.id);
+    await expectEntryManifestMatchesCache(app, repaired.compile.entries[0].entryId);
     const cacheRow = await app.db.getRepository('lightExtensionCompileCache').findOne({
       filterByTk: String(
         (await app.db.getRepository('lightExtensionEntries').findOne({ filterByTk: entry?.get('id') }))?.get(
@@ -302,14 +332,14 @@ describe('light extension trusted compile cache', () => {
       ),
     });
     await cacheRow?.update({ runtimeContract: 'corrupt-runtime-contract' });
-    compileSpy.mockClear();
     metricsSummaries = [];
     const contractRepaired = await saveCurrent(runtimeCompileService, repoService, repo.id, 'repair contract', [
       { path: 'README.md', content: 'Repair contract\n', language: 'markdown' },
     ]);
-    expect(compileSpy).toHaveBeenCalledTimes(1);
+    expect(contractRepaired.compile.entries[0].execution).toBe('compiled');
     expect(runtimeMetrics(metricsSummaries).counters).toMatchObject({ compileCacheCorruptCount: 1 });
     await expectAllReadyEntriesAtHead(app, repo.id, contractRepaired.commit.id);
+    await expectEntryManifestMatchesCache(app, contractRepaired.compile.entries[0].entryId);
     const cacheCountBeforeFailure = await app.db.getRepository('lightExtensionCompileCache').count();
 
     await expect(
@@ -325,31 +355,34 @@ describe('light extension trusted compile cache', () => {
     await expect(repoService.getRepo(repo.id)).resolves.toMatchObject({ headCommitId: contractRepaired.commit.id });
 
     runtimeCompileService.setCompileCacheEnabled(false);
-    compileSpy.mockClear();
     const disabled = await saveCurrent(runtimeCompileService, repoService, repo.id, 'cache lookup disabled', [
       { path: 'README.md', content: 'Disabled lookup\n', language: 'markdown' },
     ]);
-    expect(compileSpy).toHaveBeenCalledTimes(1);
+    expect(disabled.compile.entries[0].execution).toBe('compiled');
     await expectAllReadyEntriesAtHead(app, repo.id, disabled.commit.id);
 
     runtimeCompileService.setCompileCacheEnabled(true);
     await runtimeCompileService.clearCompileCache();
     await expect(app.db.getRepository('lightExtensionCompileCache').count()).resolves.toBe(0);
-    compileSpy.mockClear();
     const restored = await saveCurrent(runtimeCompileService, repoService, repo.id, 'restore cleared cache', [
       { path: 'README.md', content: 'Cleared cache\n', language: 'markdown' },
     ]);
-    expect(compileSpy).toHaveBeenCalledTimes(1);
+    expect(restored.compile.entries[0].execution).toBe('compiled');
     await expect(app.db.getRepository('lightExtensionCompileCache').count()).resolves.toBe(1);
     await expectAllReadyEntriesAtHead(app, repo.id, restored.commit.id);
   });
 
   it('rebuilds Entry-specific metadata on cross-repository reuse and misses after a build-id change', async () => {
     const firstRepo = await repoService.createRepo({ name: 'Cache Source Repo', initialFiles: oneEntryFiles('base') });
-    await saveCurrent(runtimeCompileService, repoService, firstRepo.id, 'compile shared input', oneEntryFiles('v1'));
+    const first = await saveCurrent(
+      runtimeCompileService,
+      repoService,
+      firstRepo.id,
+      'compile shared input',
+      oneEntryFiles('v1'),
+    );
+    const firstBinding = await expectEntryManifestMatchesCache(app, first.compile.entries[0].entryId);
     const secondRepo = await repoService.createRepo({ name: 'Cache Target Repo', initialFiles: oneEntryFiles('base') });
-    const compileSpy = vi.spyOn(compilerBridge, 'compileEntry');
-
     const reused = await saveCurrent(
       runtimeCompileService,
       repoService,
@@ -357,11 +390,17 @@ describe('light extension trusted compile cache', () => {
       'reuse cross repo',
       oneEntryFiles('v1'),
     );
-    expect(compileSpy).not.toHaveBeenCalled();
     expect(reused.compile.entries[0].execution).toBe('reused');
     const reusedEntry = await app.db.getRepository('lightExtensionEntries').findOne({
       filterByTk: reused.compile.entries[0].entryId,
     });
+    const reusedBinding = await expectEntryManifestMatchesCache(app, reused.compile.entries[0].entryId);
+    expect(reusedBinding).toMatchObject({
+      compileKey: firstBinding.compileKey,
+      artifactHash: firstBinding.artifactHash,
+      dependencyManifestHash: firstBinding.dependencyManifestHash,
+    });
+    expect(reusedBinding.dependencyManifest).toEqual(firstBinding.dependencyManifest);
     expect(reusedEntry?.get('runtimeArtifact')).toMatchObject({
       metadata: {
         repoId: secondRepo.id,
@@ -382,15 +421,18 @@ describe('light extension trusted compile cache', () => {
       undefined,
       { compilerBuildIdentity: changedBuildIdentity },
     );
-    compileSpy.mockClear();
     const rebuilt = await saveCurrent(buildAwareService, repoService, secondRepo.id, 'new compiler build', [
       { path: 'README.md', content: 'New build identity\n', language: 'markdown' },
     ]);
-    expect(compileSpy).toHaveBeenCalledTimes(1);
+    expect(rebuilt.compile.entries[0].execution).toBe('compiled');
     const rebuiltEntry = await app.db.getRepository('lightExtensionEntries').findOne({
       filterByTk: rebuilt.compile.entries[0].entryId,
     });
+    const rebuiltBinding = await expectEntryManifestMatchesCache(app, rebuilt.compile.entries[0].entryId);
     expect(rebuiltEntry?.get('compilerBuildId')).toBe(changedBuildIdentity.compilerBuildId);
+    expect(rebuiltBinding.dependencyManifest.compilerBuildId).toBe(changedBuildIdentity.compilerBuildId);
+    expect(rebuiltBinding.compileKey).not.toBe(firstBinding.compileKey);
+    expect(rebuiltBinding.dependencyManifestHash).not.toBe(firstBinding.dependencyManifestHash);
   });
 
   it('treats legacy Entry rows without input identity as a one-time cache miss', async () => {
@@ -406,12 +448,11 @@ describe('light extension trusted compile cache', () => {
       filterByTk: first.compile.entries[0].entryId,
     });
     await entry?.update({ compiledInputKey: null, compilerBuildId: null });
-    const compileSpy = vi.spyOn(compilerBridge, 'compileEntry');
 
-    await saveCurrent(runtimeCompileService, repoService, repo.id, 'fill legacy identity', [
+    const filled = await saveCurrent(runtimeCompileService, repoService, repo.id, 'fill legacy identity', [
       { path: 'README.md', content: 'Legacy identity\n', language: 'markdown' },
     ]);
-    expect(compileSpy).toHaveBeenCalledTimes(1);
+    expect(filled.compile.entries[0].execution).toBe('compiled');
     const current = await app.db.getRepository('lightExtensionEntries').findOne({ filterByTk: entry?.get('id') });
     expect(current?.get('compiledInputKey')).toMatch(/^[a-f0-9]{64}$/u);
     expect(current?.get('compilerBuildId')).toMatch(/^[a-f0-9]{64}$/u);
@@ -452,6 +493,49 @@ async function expectAllReadyEntriesAtHead(app: MockServer, repoId: string, comm
     expect(entry.get('compiledInputKey')).toMatch(/^[a-f0-9]{64}$/u);
     expect(entry.get('compilerBuildId')).toMatch(/^[a-f0-9]{64}$/u);
   }
+}
+
+async function expectEntryManifestMatchesCache(app: MockServer, entryId: string) {
+  const entry = await app.db.getRepository('lightExtensionEntries').findOne({ filterByTk: entryId });
+  if (!entry) {
+    throw new Error(`Expected compiled Entry ${entryId}`);
+  }
+  const compileKey = entry.get('compiledInputKey');
+  const compilerBuildId = entry.get('compilerBuildId');
+  const artifactHash = entry.get('artifactHash');
+  const dependencyManifest = entry.get('dependencyManifest') as RunJSEntryDependencyManifestV1 | null;
+  const dependencyManifestHash = entry.get('dependencyManifestHash');
+  if (
+    typeof compileKey !== 'string' ||
+    typeof compilerBuildId !== 'string' ||
+    typeof artifactHash !== 'string' ||
+    !dependencyManifest ||
+    typeof dependencyManifestHash !== 'string'
+  ) {
+    throw new Error(`Expected Entry ${entryId} to have a complete compiled dependency binding`);
+  }
+  const cacheRow = await app.db.getRepository('lightExtensionCompileCache').findOne({ filterByTk: compileKey });
+  if (!cacheRow) {
+    throw new Error(`Expected trusted compile cache row ${compileKey}`);
+  }
+
+  expect(dependencyManifest).toMatchObject({
+    compilerBuildId,
+    entryPath: entry.get('entryPath'),
+  });
+  expect(hashRunJSEntryDependencyManifest(dependencyManifest)).toBe(dependencyManifestHash);
+  expect(cacheRow.get('dependencyManifest')).toEqual(dependencyManifest);
+  expect(cacheRow.get('dependencyManifestHash')).toBe(dependencyManifestHash);
+  expect(cacheRow.get('compilerBuildId')).toBe(compilerBuildId);
+  expect(cacheRow.get('artifactHash')).toBe(artifactHash);
+
+  return {
+    compileKey,
+    compilerBuildId,
+    artifactHash,
+    dependencyManifest,
+    dependencyManifestHash,
+  };
 }
 
 function twoEntryFiles(version: string) {

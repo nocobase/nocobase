@@ -34,10 +34,21 @@ import {
   type RunJSSourceAuthoringLegacyInfo,
   type RunJSSourceLocator,
   type RunJSSurfaceStyle,
+  type RunJSUnresolvedDependency,
 } from '..';
 import type { NodeRunJSTypeLibraryRegistry } from './node-type-library';
-import { inspectRunJSSourceWorkspace, RunJSSourceWorkspaceInspector } from './source-inspection';
+import {
+  inspectRunJSSourceWorkspaceWithDependencies,
+  RunJSSourceWorkspaceInspector,
+  type RunJSSourceWorkspaceInspectionResult,
+} from './source-inspection';
 import { RunJSCompilerSessionError, type RunJSCompilerSessionMetricObserver } from './session';
+import {
+  buildRunJSUnresolvedCandidatePaths,
+  RunJSRuntimeDependencyGraphCollector,
+  type RunJSResolvedDependencyGraph,
+  type RunJSRuntimeDependencyGraph,
+} from './dependency-collector';
 import {
   isRunJSImportablePath,
   resolveRunJSBuiltInModule,
@@ -76,6 +87,7 @@ export interface CompileRunJSSourceWorkspaceInput {
 export interface CompileRunJSSourceWorkspaceResult {
   artifact: RunJSRuntimeArtifact;
   failureCode?: RunJSCompileFailureCode;
+  dependencyGraph?: RunJSResolvedDependencyGraph;
 }
 
 interface RunJSContentFile {
@@ -128,12 +140,26 @@ interface RunJSBundleOutput {
   code: string;
   sourceMap: RunJSSourceMapPayload;
   warnings: RunJSCompileDiagnostic[];
+  runtimeDependencies: RunJSRuntimeDependencyGraph & { unresolved: RunJSUnresolvedDependency[] };
+}
+
+type RunJSRuntimeDependencySnapshot = RunJSBundleOutput['runtimeDependencies'];
+
+class RunJSBundleBuildFailure extends Error {
+  constructor(
+    readonly buildError: { errors: Message[] },
+    readonly runtimeDependencies: RunJSRuntimeDependencySnapshot,
+  ) {
+    super('RunJS bundle build failed');
+    this.name = 'RunJSBundleBuildFailure';
+  }
 }
 
 interface RunJSWorkspacePluginState {
   files: Map<string, RunJSContentFile>;
   entryPath: string;
   entryAdaptation: RunJSEntryAdaptation;
+  runtimeDependencies: RunJSRuntimeDependencyGraphCollector;
 }
 
 interface RunJSCompileStrategy {
@@ -143,7 +169,9 @@ interface RunJSCompileStrategy {
     entryAdaptation: RunJSEntryAdaptation,
     sourceURL: string,
   ) => Promise<RunJSBundleOutput>;
-  inspectWorkspace: (input: CompileRunJSSourceWorkspaceInput & { entry: string }) => RunJSCompileDiagnostic[];
+  inspectWorkspace: (
+    input: CompileRunJSSourceWorkspaceInput & { entry: string },
+  ) => RunJSSourceWorkspaceInspectionResult;
 }
 
 export interface RunJSEntryCompilerSessionOptions {
@@ -188,7 +216,8 @@ export async function compileRunJSSourceWorkspace(
 ): Promise<CompileRunJSSourceWorkspaceResult> {
   return compileRunJSSourceWorkspaceWithStrategy(input, {
     buildBundle: buildRunJSBundle,
-    inspectWorkspace: (inspectionInput) => inspectRunJSSourceWorkspace(toSourceInspectionInput(inspectionInput)),
+    inspectWorkspace: (inspectionInput) =>
+      inspectRunJSSourceWorkspaceWithDependencies(toSourceInspectionInput(inspectionInput)),
   });
 }
 
@@ -231,6 +260,7 @@ export class RunJSEntryCompilerSession {
       files: new Map(),
       entryPath: this.entryPath,
       entryAdaptation: { code: '', lineMappings: new Map() },
+      runtimeDependencies: new RunJSRuntimeDependencyGraphCollector(),
     };
   }
 
@@ -290,7 +320,7 @@ export class RunJSEntryCompilerSession {
       inspectWorkspace: (inspectionInput) => {
         const startedAt = Date.now();
         try {
-          return this.sourceInspector.inspect(toSourceInspectionInput(inspectionInput));
+          return this.sourceInspector.inspectWithDependencies(toSourceInspectionInput(inspectionInput));
         } catch (error) {
           throw new RunJSCompilerSessionError('typescript', error);
         } finally {
@@ -315,6 +345,7 @@ export class RunJSEntryCompilerSession {
     replaceContentFiles(this.pluginState.files, files);
     this.pluginState.entryPath = entryPath;
     this.pluginState.entryAdaptation = entryAdaptation;
+    this.pluginState.runtimeDependencies.reset();
     this.estimatedFileBytes = estimateContentFileBytes(files);
     if (!this.context) {
       try {
@@ -331,10 +362,10 @@ export class RunJSEntryCompilerSession {
     this.rebuildCount += 1;
     try {
       const result = await this.context.rebuild();
-      return bundleOutputFromBuildResult(result, files, entryPath, entryAdaptation, sourceURL);
+      return bundleOutputFromBuildResult(result, files, entryPath, entryAdaptation, sourceURL, this.pluginState);
     } catch (error) {
       if (isEsbuildFailure(error)) {
-        throw error;
+        throw new RunJSBundleBuildFailure(error, this.pluginState.runtimeDependencies.snapshot());
       }
       throw new RunJSCompilerSessionError('rebuild', error);
     } finally {
@@ -376,21 +407,30 @@ async function compileRunJSSourceWorkspaceWithStrategy(
   }
 
   let bundled: RunJSBundleOutput | undefined;
+  let runtimeDependencies: RunJSRuntimeDependencySnapshot | undefined;
   if (!hasErrorDiagnostic(diagnostics) && entry) {
     const entryAdaptation = adaptRunJSEntry(entry);
     try {
       bundled = await strategy.buildBundle(files, entryPath, entryAdaptation, sourceURL);
+      runtimeDependencies = bundled.runtimeDependencies;
       diagnostics.push(...bundled.warnings);
     } catch (error) {
       if (error instanceof RunJSCompilerSessionError) {
         throw error;
       }
-      diagnostics.push(...esbuildFailureToDiagnostics(error, entryPath, entryAdaptation));
+      if (error instanceof RunJSBundleBuildFailure) {
+        runtimeDependencies = error.runtimeDependencies;
+        diagnostics.push(...esbuildFailureToDiagnostics(error.buildError, entryPath, entryAdaptation));
+      } else {
+        diagnostics.push(...esbuildFailureToDiagnostics(error, entryPath, entryAdaptation));
+      }
     }
   }
 
+  let inspection: RunJSSourceWorkspaceInspectionResult | undefined;
   if (!hasErrorDiagnostic(diagnostics)) {
-    diagnostics.push(...strategy.inspectWorkspace({ ...input, entry: entryPath }));
+    inspection = strategy.inspectWorkspace({ ...input, entry: entryPath });
+    diagnostics.push(...inspection.diagnostics);
   }
 
   let code = '';
@@ -430,6 +470,22 @@ async function compileRunJSSourceWorkspaceWithStrategy(
       },
     },
     failureCode: getFailureCode(diagnostics),
+    ...(runtimeDependencies
+      ? {
+          dependencyGraph: {
+            runtime: {
+              files: runtimeDependencies.files,
+              edges: runtimeDependencies.edges,
+            },
+            types: {
+              files: inspection?.typeDependencies.files || [],
+              edges: inspection?.typeDependencies.edges || [],
+              contracts: inspection?.typeDependencies.contracts || [],
+            },
+            unresolved: [...runtimeDependencies.unresolved, ...(inspection?.typeDependencies.unresolved || [])],
+          },
+        }
+      : {}),
   };
 }
 
@@ -500,9 +556,21 @@ async function buildRunJSBundle(
   entryAdaptation: RunJSEntryAdaptation,
   sourceURL: string,
 ): Promise<RunJSBundleOutput> {
-  const state: RunJSWorkspacePluginState = { files, entryPath, entryAdaptation };
-  const result = await esbuild(createRunJSBuildOptions(createRunJSWorkspacePlugin(state)));
-  return bundleOutputFromBuildResult(result, files, entryPath, entryAdaptation, sourceURL);
+  const state: RunJSWorkspacePluginState = {
+    files,
+    entryPath,
+    entryAdaptation,
+    runtimeDependencies: new RunJSRuntimeDependencyGraphCollector(),
+  };
+  try {
+    const result = await esbuild(createRunJSBuildOptions(createRunJSWorkspacePlugin(state)));
+    return bundleOutputFromBuildResult(result, files, entryPath, entryAdaptation, sourceURL, state);
+  } catch (error) {
+    if (isEsbuildFailure(error)) {
+      throw new RunJSBundleBuildFailure(error, state.runtimeDependencies.snapshot());
+    }
+    throw error;
+  }
 }
 
 function createRunJSBuildOptions(plugin: Plugin): BuildOptions {
@@ -537,6 +605,7 @@ function bundleOutputFromBuildResult(
   entryPath: string,
   entryAdaptation: RunJSEntryAdaptation,
   sourceURL: string,
+  state: RunJSWorkspacePluginState,
 ): RunJSBundleOutput {
   const outputFiles = result.outputFiles || [];
   const javascript = outputFiles.find((file) => file.path.endsWith('.js'))?.text;
@@ -552,6 +621,7 @@ function bundleOutputFromBuildResult(
       ...esbuildMessageToDiagnostic(warning, entryPath, entryAdaptation),
       severity: 'warning',
     })),
+    runtimeDependencies: state.runtimeDependencies.snapshot(),
   };
 }
 
@@ -570,7 +640,9 @@ function createRunJSWorkspacePlugin(state: RunJSWorkspacePluginState): Plugin {
           return undefined;
         }
 
-        return resolveWorkspaceImport(args, state.files, state.entryPath);
+        const result = resolveWorkspaceImport(args, state.files, state.entryPath);
+        recordRuntimeResolution(state.runtimeDependencies, args, result);
+        return result;
       });
 
       build.onLoad({ filter: /.*/, namespace: launcherNamespace }, () => ({
@@ -595,6 +667,8 @@ function createRunJSWorkspacePlugin(state: RunJSWorkspacePluginState): Plugin {
             ],
           };
         }
+        state.runtimeDependencies.recordFile(file.path);
+        recordRuntimePolicyDependencies(file, state.runtimeDependencies);
 
         const policyDiagnostics = collectModulePolicyDiagnostics(file, file.path === state.entryPath);
         if (policyDiagnostics.length) {
@@ -611,6 +685,65 @@ function createRunJSWorkspacePlugin(state: RunJSWorkspacePluginState): Plugin {
       });
     },
   };
+}
+
+function recordRuntimeResolution(
+  collector: RunJSRuntimeDependencyGraphCollector,
+  args: OnResolveArgs,
+  result: ReturnType<typeof resolveWorkspaceImport>,
+): void {
+  const importer = normalizeVirtualSourcePath(args.importer);
+  if (result.path && result.namespace === sourceNamespace) {
+    collector.recordEdge({ importer, imported: result.path });
+    return;
+  }
+  if (!result.errors?.length) {
+    return;
+  }
+  const kind =
+    args.kind === 'dynamic-import' ? 'dynamic' : isRelativeImportSpecifier(args.path) ? 'runtime' : 'blocked';
+  collector.recordUnresolved({
+    importer,
+    specifier: args.path,
+    kind,
+    candidatePaths: buildRunJSUnresolvedCandidatePaths(importer, args.path),
+  });
+}
+
+function recordRuntimePolicyDependencies(
+  file: RunJSContentFile,
+  collector: RunJSRuntimeDependencyGraphCollector,
+): void {
+  if (file.extension === '.json') {
+    return;
+  }
+  const sourceFile = ts.createSourceFile(
+    file.path,
+    file.content,
+    ts.ScriptTarget.Latest,
+    true,
+    getScriptKind(file.path),
+  );
+  const record = (specifier: string, kind: 'blocked' | 'dynamic') => {
+    collector.recordUnresolved({
+      importer: file.path,
+      specifier,
+      kind,
+      candidatePaths: buildRunJSUnresolvedCandidatePaths(file.path, specifier),
+    });
+  };
+  const visit = (node: ts.Node) => {
+    if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword) {
+      record((node.arguments[0] && getStringLiteralText(node.arguments[0])) || '<dynamic-import>', 'dynamic');
+      return;
+    }
+    if (ts.isCallExpression(node) && isRequireCallExpression(node.expression)) {
+      record((node.arguments[0] && getStringLiteralText(node.arguments[0])) || '<dynamic-require>', 'blocked');
+      return;
+    }
+    ts.forEachChild(node, visit);
+  };
+  sourceFile.statements.forEach(visit);
 }
 
 function resolveWorkspaceImport(args: OnResolveArgs, files: Map<string, RunJSContentFile>, entryPath: string) {

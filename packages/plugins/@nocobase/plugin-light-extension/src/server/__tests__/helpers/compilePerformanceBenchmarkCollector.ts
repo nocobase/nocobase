@@ -9,6 +9,7 @@
 
 import PluginVscFileServer from '@nocobase/plugin-vsc-file';
 import { createMockServer, type MockServer } from '@nocobase/test';
+import type { IDatabaseOptions } from '@nocobase/database';
 import { createHash, randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { arch, cpus, platform } from 'node:os';
@@ -17,7 +18,6 @@ import { isLightExtensionError } from '../../../shared/errors';
 import type { LightExtensionCompileMetricsSummary } from '../../../shared/compileMetrics';
 import PluginLightExtensionServer from '../../plugin';
 import { LightExtensionAuditService } from '../../services/LightExtensionAuditService';
-import { LightExtensionCompileWorkerPool } from '../../services/LightExtensionCompileWorkerPool';
 import { LightExtensionEntryService } from '../../services/LightExtensionEntryService';
 import { LightExtensionFileService } from '../../services/LightExtensionFileService';
 import { LightExtensionPermissionService } from '../../services/LightExtensionPermissionService';
@@ -45,6 +45,7 @@ import {
   type CompilePerformanceBenchmarkMutation,
   type CompilePerformanceBenchmarkScenario,
 } from './compilePerformanceBenchmarkMatrix';
+import { SaveSqlQueryMeter, type SequelizeQueryHooks } from './compilePerformanceSqlMeter';
 
 interface CollectorContext {
   app: MockServer;
@@ -53,13 +54,14 @@ interface CollectorContext {
   repoService: LightExtensionRepoService;
   fileService: LightExtensionFileService;
   entryService: LightExtensionEntryService;
+  sqlMeter: SaveSqlQueryMeter;
 }
 
 interface CollectorServices extends CollectorContext {
-  compileWorkerPool: LightExtensionCompileWorkerPool;
   runtimeCompileService: LightExtensionRuntimeCompileService;
   runtimeResolveService: RuntimeResolveService;
   metrics: LightExtensionCompileMetricsSummary[];
+  compileWorkerPool?: { shutdown(): Promise<void> };
 }
 
 interface ScenarioRepository {
@@ -75,84 +77,134 @@ interface ScenarioRunResult {
 export async function collectCompilePerformanceBenchmarkEvidence(
   config: CompilePerformanceBenchmarkCollectorConfig,
 ): Promise<CompilePerformanceBenchmarkEvidence> {
-  const context = await createCollectorContext();
-  try {
-    const databaseDialect = context.app.db.sequelize.getDialect();
-    if (databaseDialect !== 'sqlite' && databaseDialect !== 'postgres') {
-      throw new Error(`Compile performance collector supports sqlite and postgres, received ${databaseDialect}`);
-    }
-    const scenarios: CompilePerformanceBenchmarkScenarioEvidence[] = [];
-    for (const scenario of createCompilePerformanceBenchmarkMatrix()) {
-      const seedServices = createRuntimeServices(context);
-      let repository: ScenarioRepository;
-      try {
-        await seedServices.runtimeCompileService.clearCompileCache();
-        repository = await seedScenarioRepository(seedServices, scenario);
-      } finally {
-        await seedServices.compileWorkerPool.shutdown();
+  const scenarios: CompilePerformanceBenchmarkScenarioEvidence[] = [];
+  let databaseDialect: 'sqlite' | 'postgres' | undefined;
+  let measuredDatabaseVersion: string | undefined;
+  let measuredDatabaseConfigurationFingerprint: string | undefined;
+  for (const scenario of createCompilePerformanceBenchmarkMatrix()) {
+    const repository = await seedScenarioWithFreshApp(scenario);
+    const measuredContext = await createCollectorContext(true);
+    try {
+      const currentDialect = measuredContext.app.db.sequelize.getDialect();
+      if (currentDialect !== 'sqlite' && currentDialect !== 'postgres') {
+        throw new Error(`Compile performance collector supports sqlite and postgres, received ${currentDialect}`);
       }
-      const measuredServices = createRuntimeServices(context);
+      databaseDialect = databaseDialect || currentDialect;
+      if (databaseDialect !== currentDialect) {
+        throw new Error(`Compile performance collector database dialect changed during collection`);
+      }
+      measuredDatabaseVersion = measuredDatabaseVersion || (await databaseVersion(measuredContext.app, currentDialect));
+      measuredDatabaseConfigurationFingerprint =
+        measuredDatabaseConfigurationFingerprint ||
+        (await databaseConfigurationFingerprint(measuredContext.app, currentDialect));
+      const measuredServices = await createRuntimeServices(measuredContext, config.productionWorkerPath);
       try {
         scenarios.push(await collectScenario(measuredServices, repository, scenario, config));
       } finally {
-        await measuredServices.compileWorkerPool.shutdown();
+        await measuredServices.compileWorkerPool?.shutdown();
       }
+    } finally {
+      await disposeCollectorContext(measuredContext);
     }
+  }
 
-    const rollbackOutcomes = scenarioOutcomes(scenarios, 'medium-compile-failure');
-    const concurrencyOutcomes = scenarioOutcomes(scenarios, 'medium-concurrent-same-head');
-    const ordinaryOutcomes = scenarios
-      .filter(
-        (scenario) =>
-          scenario.scenarioId !== 'medium-compile-failure' && scenario.scenarioId !== 'medium-concurrent-same-head',
-      )
-      .flatMap((scenario) => [...(scenario.coldOutcomes || []), ...(scenario.hotOutcomes || [])]);
-    const concurrentRuntimeOutcomes = concurrencyOutcomes.filter((outcome) => outcome.successCount === 1);
-    const localReferenceConsistency = [...ordinaryOutcomes, ...concurrentRuntimeOutcomes].every(
-      (outcome) => outcome.referenceConsistencyVerified,
-    );
-    const dataset: CompilePerformanceBenchmarkDataset = {
-      environment: {
-        sourceCommit: config.sourceCommit,
-        harnessCommit: config.harnessCommit,
-        nodeVersion: process.version,
-        dependencyFingerprint: await dependencyFingerprint(),
-        machineFingerprint: machineFingerprint(),
-        databaseDialect,
-        databaseVersion: await databaseVersion(context.app, databaseDialect),
-        databaseConfigurationFingerprint: databaseConfigurationFingerprint(databaseDialect),
-      },
-      scenarios,
-      functional: {
-        uiSingleSavePathVerified: config.uiSingleSavePathVerified,
-        rollbackVerified: rollbackOutcomes.every(
-          (outcome) => outcome.rejectedCount === 1 && outcome.rollbackVerified && !outcome.headAdvanced,
-        ),
-        concurrencyVerified: concurrencyOutcomes.every(
-          (outcome) => outcome.successCount === 1 && outcome.outdatedCount === 1 && outcome.headAdvanced,
-        ),
-        runtimeArtifactsVerified: [...ordinaryOutcomes, ...concurrentRuntimeOutcomes].every(
-          (outcome) => outcome.runtimeArtifactsVerified,
-        ),
-        referenceConsistencyVerified: config.externalReferenceRegressionVerified && localReferenceConsistency,
-      },
-    };
-
-    return createCompilePerformanceBenchmarkEvidence({
-      collectedAt: new Date().toISOString(),
+  if (!databaseDialect || !measuredDatabaseVersion || !measuredDatabaseConfigurationFingerprint) {
+    throw new Error('Compile performance collector did not capture a measured database environment');
+  }
+  const rollbackOutcomes = scenarioOutcomes(scenarios, 'medium-compile-failure');
+  const concurrencyOutcomes = scenarioOutcomes(scenarios, 'medium-concurrent-same-head');
+  const ordinaryOutcomes = scenarios
+    .filter(
+      (scenario) =>
+        scenario.scenarioId !== 'medium-compile-failure' && scenario.scenarioId !== 'medium-concurrent-same-head',
+    )
+    .flatMap((scenario) => [...(scenario.coldOutcomes || []), ...(scenario.hotOutcomes || [])]);
+  const concurrentRuntimeOutcomes = concurrencyOutcomes.filter((outcome) => outcome.successCount === 1);
+  const localReferenceConsistency = [...ordinaryOutcomes, ...concurrentRuntimeOutcomes].every(
+    (outcome) => outcome.referenceConsistencyVerified,
+  );
+  const dataset: CompilePerformanceBenchmarkDataset = {
+    environment: {
       sourceCommit: config.sourceCommit,
       harnessCommit: config.harnessCommit,
+      nodeVersion: process.version,
+      dependencyFingerprint: await dependencyFingerprint(),
+      machineFingerprint: machineFingerprint(),
       databaseDialect,
-      configuredRuns: { cold: config.coldRuns, hot: config.hotRuns },
-      dataset,
-    });
+      databaseVersion: measuredDatabaseVersion,
+      databaseConfigurationFingerprint: measuredDatabaseConfigurationFingerprint,
+      compileExecutionPath: config.productionWorkerPath ? 'production-worker' : 'direct',
+    },
+    scenarios,
+    functional: {
+      uiSingleSavePathVerified: config.uiSingleSavePathVerified,
+      rollbackVerified: rollbackOutcomes.every(
+        (outcome) => outcome.rejectedCount === 1 && outcome.rollbackVerified && !outcome.headAdvanced,
+      ),
+      concurrencyVerified: concurrencyOutcomes.every(
+        (outcome) => outcome.successCount === 1 && outcome.outdatedCount === 1 && outcome.headAdvanced,
+      ),
+      runtimeArtifactsVerified: [...ordinaryOutcomes, ...concurrentRuntimeOutcomes].every(
+        (outcome) => outcome.runtimeArtifactsVerified,
+      ),
+      referenceConsistencyVerified: config.externalReferenceRegressionVerified && localReferenceConsistency,
+    },
+  };
+
+  return createCompilePerformanceBenchmarkEvidence({
+    collectedAt: new Date().toISOString(),
+    revision: config.revision,
+    sourceCommit: config.sourceCommit,
+    harnessCommit: config.harnessCommit,
+    databaseDialect,
+    configuredRuns: { cold: config.coldRuns, hot: config.hotRuns },
+    dataset,
+  });
+}
+
+async function seedScenarioWithFreshApp(scenario: CompilePerformanceBenchmarkScenario): Promise<ScenarioRepository> {
+  const context = await createCollectorContext();
+  try {
+    const services = await createRuntimeServices(context, false);
+    const cacheControl = services.runtimeCompileService as LightExtensionRuntimeCompileService & {
+      clearCompileCache?: () => Promise<void>;
+    };
+    if (cacheControl.clearCompileCache) {
+      await cacheControl.clearCompileCache();
+    }
+    return await seedScenarioRepository(services, scenario);
   } finally {
-    await context.app.destroy();
+    await disposeCollectorContext(context);
   }
 }
 
-async function createCollectorContext(): Promise<CollectorContext> {
-  const app = await createMockServer({ plugins: [PluginVscFileServer, PluginLightExtensionServer] });
+async function disposeCollectorContext(context: CollectorContext): Promise<void> {
+  context.sqlMeter.dispose();
+  await context.app.destroy();
+}
+
+async function createCollectorContext(skipInstall = false): Promise<CollectorContext> {
+  const testPrefix = process.env.DB_TEST_PREFIX;
+  delete process.env.DB_TEST_PREFIX;
+  let app: MockServer;
+  try {
+    app = await createMockServer({
+      database: benchmarkDatabaseOptions(),
+      plugins: [PluginVscFileServer, PluginLightExtensionServer],
+      skipInstall,
+    });
+  } finally {
+    if (typeof testPrefix === 'string') {
+      process.env.DB_TEST_PREFIX = testPrefix;
+    }
+  }
+  if (app.db.sequelize.getDialect() === 'sqlite') {
+    // Full acceptance runs keep one SQLite database alive for hundreds of Save operations. WAL prevents long-lived
+    // readers from starving the audit transaction used by rejected/outdated scenarios, while busy_timeout lets the
+    // single writer finish instead of surfacing an environment-only SQLITE_BUSY failure.
+    await app.db.sequelize.query('PRAGMA journal_mode = WAL');
+    await app.db.sequelize.query('PRAGMA busy_timeout = 60000');
+  }
   const auditService = new LightExtensionAuditService(app.db);
   const permissionService = new LightExtensionPermissionService(auditService);
   const validator = new LightExtensionValidator();
@@ -166,33 +218,66 @@ async function createCollectorContext(): Promise<CollectorContext> {
     validator,
   );
   const entryService = new LightExtensionEntryService(app.db, fileService, repoService, validator);
-  return { app, auditService, permissionService, repoService, fileService, entryService };
+  const sqlMeter = new SaveSqlQueryMeter(app.db.sequelize as unknown as SequelizeQueryHooks);
+  return { app, auditService, permissionService, repoService, fileService, entryService, sqlMeter };
 }
 
-function createRuntimeServices(context: CollectorContext): CollectorServices {
+function benchmarkDatabaseOptions(): IDatabaseOptions {
+  return {
+    dialect: (process.env.DB_DIALECT || 'sqlite') as IDatabaseOptions['dialect'],
+    storage: process.env.DB_STORAGE,
+    database: process.env.DB_DATABASE,
+    username: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT ? Number(process.env.DB_PORT) : undefined,
+    schema: process.env.DB_SCHEMA,
+    timezone: process.env.DB_TIMEZONE,
+    underscored: process.env.DB_UNDERSCORED === 'true',
+  };
+}
+
+async function createRuntimeServices(
+  context: CollectorContext,
+  productionWorkerPath: boolean,
+): Promise<CollectorServices> {
   const compilerBridge = new LightExtensionWorkspaceCompilerBridge(context.auditService, context.permissionService);
-  const compileWorkerPool = new LightExtensionCompileWorkerPool({
-    workerCount: context.app.db.sequelize.getDialect() === 'sqlite' ? 1 : 2,
-  });
   const metrics: LightExtensionCompileMetricsSummary[] = [];
+  const compileWorkerPool = productionWorkerPath ? await createProductionCompileWorkerPool() : undefined;
   const runtimeCompileService = new LightExtensionRuntimeCompileService(
     context.app.db,
     context.fileService,
     context.entryService,
     compilerBridge,
-    (summary) => metrics.push(summary),
-    { compileWorkerPool },
+    (summary) => {
+      metrics.push(summary);
+    },
+    compileWorkerPool ? { compileWorkerPool } : {},
   );
   runtimeCompileService.useReferenceService(
     new ReferenceService(context.app.db, context.auditService, context.permissionService),
   );
   return {
     ...context,
-    compileWorkerPool,
     runtimeCompileService,
     runtimeResolveService: new RuntimeResolveService(context.app.db),
     metrics,
+    ...(compileWorkerPool ? { compileWorkerPool } : {}),
   };
+}
+
+async function createProductionCompileWorkerPool(): Promise<{ shutdown(): Promise<void> }> {
+  const moduleUrl = new URL('../../services/LightExtensionCompileWorkerPool.ts', import.meta.url).href;
+  const workerModule = (await import(/* @vite-ignore */ moduleUrl)) as {
+    LightExtensionCompileWorkerPool?: new () => { shutdown(): Promise<void> };
+    default?: { LightExtensionCompileWorkerPool?: new () => { shutdown(): Promise<void> } };
+  };
+  const WorkerPool =
+    workerModule.LightExtensionCompileWorkerPool || workerModule.default?.LightExtensionCompileWorkerPool;
+  if (!WorkerPool) {
+    throw new Error('Production LightExtensionCompileWorkerPool is unavailable in this source revision');
+  }
+  return new WorkerPool();
 }
 
 async function seedScenarioRepository(
@@ -283,16 +368,18 @@ async function executeSuccessfulRun(
   let rejectedCount = 0;
   let outdatedCount = 0;
   let failedCount = 0;
-  try {
-    await services.runtimeCompileService.saveSource({
+  const capture = await services.sqlMeter.capture(() =>
+    services.runtimeCompileService.saveSource({
       repoId: repository.repoId,
       expectedHeadCommitId: beforeHead,
       message: `benchmark ${temperature} ${iteration}`,
       files: mutation.primary,
-    });
+    }),
+  );
+  if (!capture.error) {
     successCount = 1;
-  } catch (error) {
-    ({ rejectedCount, outdatedCount, failedCount } = classifyRejectedRequest(error));
+  } else {
+    ({ rejectedCount, outdatedCount, failedCount } = classifyRejectedRequest(capture.error));
   }
   const afterHead = (await services.repoService.getRepo(repository.repoId)).headCommitId;
   const runtimeArtifactsVerified = successCount === 1 && (await verifyRuntimeArtifacts(services, repository.repoId));
@@ -311,6 +398,7 @@ async function executeSuccessfulRun(
       rollbackVerified: false,
       runtimeArtifactsVerified,
       referenceConsistencyVerified,
+      sql: capture.sql,
     },
   };
 }
@@ -326,15 +414,16 @@ async function executeFailureRun(
   let rejectedCount = 0;
   let outdatedCount = 0;
   let failedCount = 0;
-  try {
-    await services.runtimeCompileService.saveSource({
+  const capture = await services.sqlMeter.capture(() =>
+    services.runtimeCompileService.saveSource({
       repoId: repository.repoId,
       expectedHeadCommitId: before.headCommitId,
       message: `benchmark rejected ${temperature} ${iteration}`,
       files: mutation.primary,
-    });
-  } catch (error) {
-    ({ rejectedCount, outdatedCount, failedCount } = classifyRejectedRequest(error));
+    }),
+  );
+  if (capture.error) {
+    ({ rejectedCount, outdatedCount, failedCount } = classifyRejectedRequest(capture.error));
   }
   const after = await capturePersistentState(services, repository.repoId);
   return {
@@ -350,6 +439,7 @@ async function executeFailureRun(
       rollbackVerified: JSON.stringify(before) === JSON.stringify(after),
       runtimeArtifactsVerified: true,
       referenceConsistencyVerified: true,
+      sql: capture.sql,
     },
   };
 }
@@ -370,10 +460,12 @@ async function executeConcurrentRun(
       message: `benchmark concurrent ${temperature} ${iteration}/${requestIndex + 1}`,
       files,
     });
-  const results =
+  const capture = await services.sqlMeter.capture(() =>
     services.app.db.sequelize.getDialect() === 'sqlite'
-      ? [await settle(saveRequest(changes[0], 0)), await settle(saveRequest(changes[1], 1))]
-      : await Promise.allSettled(changes.map(saveRequest));
+      ? settleSequentially(changes.map((files, index) => () => saveRequest(files, index)))
+      : Promise.allSettled(changes.map(saveRequest)),
+  );
+  const results = capture.value || [];
   let successCount = 0;
   let rejectedCount = 0;
   let outdatedCount = 0;
@@ -405,6 +497,7 @@ async function executeConcurrentRun(
       rollbackVerified: false,
       runtimeArtifactsVerified,
       referenceConsistencyVerified,
+      sql: capture.sql,
     },
   };
 }
@@ -415,6 +508,14 @@ async function settle<T>(promise: Promise<T>): Promise<PromiseSettledResult<T>> 
   } catch (reason) {
     return { status: 'rejected', reason };
   }
+}
+
+async function settleSequentially<T>(requests: Array<() => Promise<T>>): Promise<Array<PromiseSettledResult<T>>> {
+  const results: Array<PromiseSettledResult<T>> = [];
+  for (const request of requests) {
+    results.push(await settle(request()));
+  }
+  return results;
 }
 
 function selectSaveSummary(
@@ -517,19 +618,64 @@ function machineFingerprint(): string {
   return sha256(Buffer.from(JSON.stringify([platform(), arch(), cpus()[0]?.model || 'unknown'])));
 }
 
-function databaseConfigurationFingerprint(dialect: string): string {
+async function databaseConfigurationFingerprint(app: MockServer, dialect: string): Promise<string> {
+  const dialectConfiguration =
+    dialect === 'sqlite'
+      ? {
+          storageMode: process.env.DB_STORAGE === ':memory:' ? 'memory' : 'file',
+          pragmas: {
+            journalMode: await sqlitePragma(app, 'journal_mode'),
+            busyTimeout: await sqlitePragma(app, 'busy_timeout'),
+            synchronous: await sqlitePragma(app, 'synchronous'),
+            cacheSize: await sqlitePragma(app, 'cache_size'),
+            tempStore: await sqlitePragma(app, 'temp_store'),
+          },
+        }
+      : {
+          host: process.env.DB_HOST || '',
+          port: process.env.DB_PORT || '',
+          database: process.env.DB_DATABASE || '',
+          schema: process.env.DB_SCHEMA || '',
+          user: process.env.DB_USER || '',
+          timezone: process.env.DB_TIMEZONE || '',
+          tablePrefix: process.env.DB_TABLE_PREFIX || '',
+          ssl: {
+            mode: process.env.DB_DIALECT_OPTIONS_SSL_MODE || '',
+            rejectUnauthorized: process.env.DB_DIALECT_OPTIONS_SSL_REJECT_UNAUTHORIZED || '',
+            caConfigured: Boolean(process.env.DB_DIALECT_OPTIONS_SSL_CA),
+            keyConfigured: Boolean(process.env.DB_DIALECT_OPTIONS_SSL_KEY),
+            certConfigured: Boolean(process.env.DB_DIALECT_OPTIONS_SSL_CERT),
+          },
+          pool: {
+            max: process.env.DB_POOL_MAX || '',
+            min: process.env.DB_POOL_MIN || '',
+            idle: process.env.DB_POOL_IDLE || '',
+            acquire: process.env.DB_POOL_ACQUIRE || '',
+            evict: process.env.DB_POOL_EVICT || '',
+            maxUses: process.env.DB_POOL_MAX_USES || '',
+          },
+        };
   return sha256(
     Buffer.from(
       JSON.stringify({
         dialect,
-        host: process.env.DB_HOST || '',
-        port: process.env.DB_PORT || '',
-        database: process.env.DB_DATABASE || process.env.DB_STORAGE || '',
         underscored: process.env.DB_UNDERSCORED || '',
-        timezone: process.env.DB_TIMEZONE || '',
+        configuration: dialectConfiguration,
       }),
     ),
   );
+}
+
+async function sqlitePragma(app: MockServer, pragma: string): Promise<string | number> {
+  const [rows] = await app.db.sequelize.query(`PRAGMA ${pragma}`);
+  if (!Array.isArray(rows) || rows.length === 0 || !isRecord(rows[0])) {
+    throw new Error(`Unable to read SQLite PRAGMA ${pragma}`);
+  }
+  const value = Object.values(rows[0])[0];
+  if (typeof value !== 'string' && typeof value !== 'number') {
+    throw new Error(`SQLite PRAGMA ${pragma} returned an unsupported value`);
+  }
+  return value;
 }
 
 async function databaseVersion(app: MockServer, dialect: 'sqlite' | 'postgres'): Promise<string> {

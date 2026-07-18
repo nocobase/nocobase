@@ -120,6 +120,9 @@ export interface EntryChangeSet {
 export interface CompilePlanMetrics {
   changedFileCount: number;
   affectedEntryCount: number;
+  preciseHitEntryCount: number;
+  conservativeFallbackEntryCount: number;
+  manifestVersionMismatchEntryCount: number;
   reasonCounts: Record<AffectedEntryPlanReason, number>;
 }
 
@@ -157,6 +160,24 @@ const compileReasons = new Set<AffectedEntryPlanReason>([
   'conservative_unknown',
 ]);
 
+const preciseDependencyReasons = new Set<AffectedEntryPlanReason>([
+  'runtime_dependency',
+  'type_dependency',
+  'unresolved_candidate',
+]);
+
+const conservativeFallbackReasons = new Set<AffectedEntryPlanReason>([
+  'shared_conservative',
+  'conservative_manifest_missing',
+  'conservative_manifest_invalid',
+  'conservative_manifest_version',
+  'conservative_build_mismatch',
+  'conservative_unresolved',
+  'conservative_unknown',
+]);
+
+const manifestVersionMismatchReasons = new Set<AffectedEntryPlanReason>(['conservative_manifest_version']);
+
 const supportedKinds = new Set<string>(LIGHT_EXTENSION_SUPPORTED_KINDS);
 
 export function createAffectedEntryCompilePlan(input: AffectedEntryPlanInput): CompilePlan {
@@ -184,9 +205,19 @@ export function createAffectedEntryCompilePlan(input: AffectedEntryPlanInput): C
     metrics: {
       changedFileCount: changedPaths.length,
       affectedEntryCount: compileCandidates.length,
+      preciseHitEntryCount: countEntriesWithReasons(compileCandidates, preciseDependencyReasons),
+      conservativeFallbackEntryCount: countEntriesWithReasons(compileCandidates, conservativeFallbackReasons),
+      manifestVersionMismatchEntryCount: countEntriesWithReasons(compileCandidates, manifestVersionMismatchReasons),
       reasonCounts: countReasons(finalizedChanges),
     },
   };
+}
+
+function countEntriesWithReasons(
+  entries: readonly PlannedEntry[],
+  reasons: ReadonlySet<AffectedEntryPlanReason>,
+): number {
+  return entries.filter((entry) => entry.reasons.some((reason) => reasons.has(reason))).length;
 }
 
 export function getEntryPlanIdentity(entry: EntryPlanIdentity): string {

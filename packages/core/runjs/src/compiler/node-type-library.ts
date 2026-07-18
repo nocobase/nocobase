@@ -9,7 +9,7 @@
 
 import path from 'node:path';
 
-import { sha256Hex, stableSerialize } from '..';
+import { sha256Hex, stableSerialize, type RunJSTypeDependencyContract } from '..';
 import {
   generatedRunJSAntdCompletionCatalog,
   generatedRunJSAntdIconsCompletionCatalog,
@@ -41,6 +41,10 @@ import {
 export interface NodeRunJSTypeLibraryFiles {
   dependencyFiles: readonly RunJSTypeLibraryFile[];
   rootFiles: readonly RunJSTypeLibraryFile[];
+}
+
+export interface NodeRunJSTypeLibraryLoadResult extends NodeRunJSTypeLibraryFiles {
+  contracts: RunJSTypeDependencyContract[];
 }
 
 export interface NodeRunJSTypeLibraryProvider {
@@ -115,6 +119,13 @@ export class NodeRunJSTypeLibraryRegistry {
     requests: readonly RunJSTypeLibraryRequest[],
     typeLibraryIds: readonly string[] = [],
   ): NodeRunJSTypeLibraryFiles {
+    return this.loadWithContracts(requests, typeLibraryIds);
+  }
+
+  loadWithContracts(
+    requests: readonly RunJSTypeLibraryRequest[],
+    typeLibraryIds: readonly string[] = [],
+  ): NodeRunJSTypeLibraryLoadResult {
     this.assertActive();
     const allRequests = new Map(requests.map((request) => [request.packId, request]));
     for (const request of this.createExplicitRequests(typeLibraryIds)) allRequests.set(request.packId, request);
@@ -127,7 +138,30 @@ export class NodeRunJSTypeLibraryRegistry {
     for (const request of selectRunJSTypeLibraryRequests([...allRequests.values()], loadedFullPackIds)) {
       if (this.has(request.packId)) this.collect(request, new Set<string>(), loaded);
     }
-    return loaded.size ? mergePacks(loaded.values()) : emptyFiles;
+    const files = loaded.size ? mergePacks(loaded.values()) : emptyFiles;
+    return {
+      ...files,
+      contracts: [...loaded.entries()]
+        .map(([id, packFiles]) => {
+          const provider = this.resolve(id);
+          return {
+            id: `runjs:type-library:${id}`,
+            ...(provider?.version ? { version: provider.version } : {}),
+            contentHash:
+              provider?.contentHash ||
+              sha256Hex(
+                stableSerialize({
+                  dependencyFiles: packFiles.dependencyFiles.map((file) => ({
+                    path: file.path,
+                    contentHash: file.contentHash,
+                  })),
+                  rootFiles: packFiles.rootFiles.map((file) => ({ path: file.path, contentHash: file.contentHash })),
+                }),
+              ),
+          };
+        })
+        .sort((left, right) => left.id.localeCompare(right.id)),
+    };
   }
 
   dispose(): void {
@@ -325,6 +359,13 @@ export function loadNodeRunJSTypeLibraryFiles(
   options: { registry?: NodeRunJSTypeLibraryRegistry; typeLibraryIds?: readonly string[] } = {},
 ): NodeRunJSTypeLibraryFiles {
   return (options.registry || defaultNodeRunJSTypeLibraryRegistry).load(requests, options.typeLibraryIds);
+}
+
+export function loadNodeRunJSTypeLibraryFilesWithContracts(
+  requests: readonly RunJSTypeLibraryRequest[],
+  options: { registry?: NodeRunJSTypeLibraryRegistry; typeLibraryIds?: readonly string[] } = {},
+): NodeRunJSTypeLibraryLoadResult {
+  return (options.registry || defaultNodeRunJSTypeLibraryRegistry).loadWithContracts(requests, options.typeLibraryIds);
 }
 
 export function buildDefaultNodeRunJSTypeLibraryFingerprint(projectRoot = process.cwd()): string {

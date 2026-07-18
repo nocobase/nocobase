@@ -77,9 +77,9 @@ describe('vsc-file canonical candidate snapshot', () => {
       treeHash: result.tree.hash,
       changedPaths: ['README.md', 'src/new.ts', 'src/update.ts'],
       changes: [
-        { path: 'README.md', operation: 'delete' },
-        { path: 'src/new.ts', operation: 'upsert' },
-        { path: 'src/update.ts', operation: 'upsert' },
+        { path: 'README.md', operation: 'delete', kind: 'deleted' },
+        { path: 'src/new.ts', operation: 'upsert', kind: 'added' },
+        { path: 'src/update.ts', operation: 'upsert', kind: 'modified' },
       ],
     });
     expect(result.candidate.files.map((file) => file.path)).toEqual([...expectedContents.keys()]);

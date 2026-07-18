@@ -8,9 +8,13 @@
  */
 
 import {
+  getRunJSEntryDependencyManifestByteSize,
   hashRunJSEntryDependencyManifest,
+  isRunJSEntryDependencyManifestPersistable,
   matchRunJSUnresolvedDependencyCandidate,
   normalizeRunJSEntryDependencyManifest,
+  RUNJS_ENTRY_DEPENDENCY_MANIFEST_MAX_BYTES,
+  serializeRunJSEntryDependencyManifest,
   validateRunJSEntryDependencyManifest,
   type RunJSEntryDependencyManifestV1,
 } from '../dependency-manifest';
@@ -103,6 +107,29 @@ describe('RunJS entry dependency manifest', () => {
       valid: false,
       reason: 'manifest_hash_mismatch',
     });
+  });
+
+  it('marks oversized manifests unavailable instead of persisting a truncated graph', () => {
+    const manifest = baseManifest();
+    const serialized = serializeRunJSEntryDependencyManifest(manifest);
+
+    expect(getRunJSEntryDependencyManifestByteSize(manifest)).toBe(new TextEncoder().encode(serialized).byteLength);
+    expect(isRunJSEntryDependencyManifestPersistable(manifest)).toBe(true);
+    expect(isRunJSEntryDependencyManifestPersistable(manifest, 1)).toBe(false);
+
+    const oversized = normalizeRunJSEntryDependencyManifest({
+      ...manifest,
+      unresolved: [
+        {
+          importer: manifest.entryPath,
+          specifier: `./${'x'.repeat(RUNJS_ENTRY_DEPENDENCY_MANIFEST_MAX_BYTES)}`,
+          kind: 'runtime',
+          candidatePaths: [],
+        },
+      ],
+    });
+    expect(isRunJSEntryDependencyManifestPersistable(oversized)).toBe(false);
+    expect(validateRunJSEntryDependencyManifest({ value: oversized })).toEqual({ valid: false, reason: 'invalid' });
   });
 
   it('collects transitive runtime inputs, re-exports, JSON, and cycles', () => {

@@ -20,6 +20,7 @@ import {
 } from './compilePerformanceBenchmarkMatrix';
 
 export interface CompilePerformanceBenchmarkCollectorConfig {
+  revision: 'baseline' | 'target';
   sourceCommit: string;
   harnessCommit: string;
   outputPath: string;
@@ -28,6 +29,7 @@ export interface CompilePerformanceBenchmarkCollectorConfig {
   requireAcceptanceRuns: boolean;
   uiSingleSavePathVerified: boolean;
   externalReferenceRegressionVerified: boolean;
+  productionWorkerPath: boolean;
 }
 
 export interface CompilePerformanceBenchmarkEvidenceGate {
@@ -40,6 +42,7 @@ export interface CompilePerformanceBenchmarkEvidenceGate {
 export interface CompilePerformanceBenchmarkEvidence {
   schemaVersion: typeof COMPILE_PERFORMANCE_BENCHMARK_MATRIX_VERSION;
   collectedAt: string;
+  revision: 'baseline' | 'target';
   sourceCommit: string;
   harnessCommit: string;
   databaseDialect: string;
@@ -55,6 +58,7 @@ export function parseCompilePerformanceBenchmarkCollectorConfig(
   env: NodeJS.ProcessEnv,
 ): CompilePerformanceBenchmarkCollectorConfig {
   return {
+    revision: benchmarkRevision(env.LIGHT_EXTENSION_BENCHMARK_REVISION),
     sourceCommit: requiredText(env.LIGHT_EXTENSION_BENCHMARK_SOURCE_COMMIT, 'SOURCE_COMMIT'),
     harnessCommit: requiredText(env.LIGHT_EXTENSION_BENCHMARK_HARNESS_COMMIT, 'HARNESS_COMMIT'),
     outputPath: requiredText(env.LIGHT_EXTENSION_BENCHMARK_OUTPUT, 'OUTPUT'),
@@ -63,6 +67,7 @@ export function parseCompilePerformanceBenchmarkCollectorConfig(
     requireAcceptanceRuns: env.LIGHT_EXTENSION_BENCHMARK_REQUIRE_ACCEPTANCE !== 'false',
     uiSingleSavePathVerified: env.LIGHT_EXTENSION_BENCHMARK_UI_SAVE_VERIFIED === 'true',
     externalReferenceRegressionVerified: env.LIGHT_EXTENSION_BENCHMARK_REFERENCES_VERIFIED === 'true',
+    productionWorkerPath: env.LIGHT_EXTENSION_BENCHMARK_WORKER_PATH !== 'direct',
   };
 }
 
@@ -134,8 +139,12 @@ export function evaluateCompilePerformanceBenchmarkEvidence(
       failures,
     );
   }
+  if (evidence.revision === 'target') {
+    checkDatabaseQueryScaling(dataset, failures);
+  }
 
   const failedFunctionalChecks = Object.entries(dataset.functional)
+    .filter(([name]) => evidence.revision === 'target' || name !== 'uiSingleSavePathVerified')
     .filter(([, verified]) => !verified)
     .map(([name]) => name);
   if (failedFunctionalChecks.length > 0) {
@@ -152,6 +161,14 @@ export function evaluateCompilePerformanceBenchmarkEvidence(
     failures,
     jqAcceptanceExpression: '.gate.passed == true and .gate.acceptanceReady == true',
   };
+}
+
+function benchmarkRevision(value: string | undefined): 'baseline' | 'target' {
+  const normalized = value?.trim() || 'target';
+  if (normalized !== 'baseline' && normalized !== 'target') {
+    throw new Error(`LIGHT_EXTENSION_BENCHMARK_REVISION must be baseline or target, received "${normalized}"`);
+  }
+  return normalized;
 }
 
 export function serializeCompilePerformanceBenchmarkEvidence(evidence: CompilePerformanceBenchmarkEvidence): string {
@@ -201,6 +218,14 @@ function checkOutcome(
   if (outcome.temperature !== temperature || outcome.iteration !== index) {
     failures.push(`${label} outcome iteration metadata is inconsistent`);
   }
+  if (
+    !Number.isSafeInteger(outcome.sql.queryCount) ||
+    outcome.sql.queryCount <= 0 ||
+    !Number.isFinite(outcome.sql.totalDurationMs) ||
+    outcome.sql.totalDurationMs < 0
+  ) {
+    failures.push(`${label} has invalid Save-only SQL measurement`);
+  }
   if (scenarioId === 'medium-compile-failure') {
     if (
       outcome.rejectedCount !== 1 ||
@@ -237,6 +262,44 @@ function checkOutcome(
   ) {
     failures.push(`${label} did not prove a successful consistent save`);
   }
+}
+
+function checkDatabaseQueryScaling(dataset: CompilePerformanceBenchmarkDataset, failures: string[]): void {
+  const small = dataset.scenarios.find((scenario) => scenario.scenarioId === 'small-private-file');
+  const medium = dataset.scenarios.find((scenario) => scenario.scenarioId === 'medium-private-file');
+  const blobQueryCounts = [
+    ...(small?.coldRuns || []),
+    ...(small?.hotRuns || []),
+    ...(medium?.coldRuns || []),
+    ...(medium?.hotRuns || []),
+  ].map((run) => run.counters.blobContentQueryCount);
+  if (blobQueryCounts.length === 0 || blobQueryCounts.some((count) => count !== 1)) {
+    failures.push('small/medium private-file Blob includeContent query counts must remain constant at 1');
+  }
+  const smallHot = (small?.hotOutcomes || []).map((outcome) => outcome.sql.queryCount);
+  const mediumHot = (medium?.hotOutcomes || []).map((outcome) => outcome.sql.queryCount);
+  if (smallHot.length === 0 || mediumHot.length === 0) {
+    failures.push('small/medium hot Save-only SQL measurements are required');
+    return;
+  }
+  const smallP95 = percentile(smallHot, 0.95);
+  const mediumP95 = percentile(mediumHot, 0.95);
+  if (smallP95 <= 0 || mediumP95 / smallP95 >= 10) {
+    failures.push(
+      `medium private-file SQL query p95 ${mediumP95} is not sublinear versus small p95 ${smallP95} (ratio must be below 10x for a 20x fixture)`,
+    );
+  }
+}
+
+function percentile(values: number[], quantile: number): number {
+  const sorted = [...values].sort((left, right) => left - right);
+  const index = (sorted.length - 1) * quantile;
+  const lower = Math.floor(index);
+  const upper = Math.ceil(index);
+  if (lower === upper) {
+    return sorted[lower];
+  }
+  return sorted[lower] + (sorted[upper] - sorted[lower]) * (index - lower);
 }
 
 function requiredText(value: string | undefined, name: string): string {

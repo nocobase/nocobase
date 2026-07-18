@@ -28,6 +28,7 @@ export interface CanonicalCandidateFile extends VscNormalizedTreeEntry {
 export interface CanonicalCandidateChange {
   readonly path: string;
   readonly operation: VscFileOperation;
+  readonly kind: 'added' | 'modified' | 'deleted';
 }
 
 export interface CanonicalCandidateSnapshot {
@@ -136,11 +137,13 @@ function buildCandidateChanges(
     const baseEntry = baseByPath.get(path);
     const candidateEntry = candidateByPath.get(path);
     if (!candidateEntry) {
-      changes.push(Object.freeze({ path, operation: 'delete' }));
+      changes.push(Object.freeze({ path, operation: 'delete', kind: 'deleted' }));
       continue;
     }
     if (!baseEntry || !treeEntriesEqual(baseEntry, candidateEntry)) {
-      changes.push(Object.freeze({ path, operation: 'upsert' }));
+      changes.push(
+        Object.freeze({ path, operation: 'upsert', kind: baseEntry ? ('modified' as const) : ('added' as const) }),
+      );
     }
   }
 

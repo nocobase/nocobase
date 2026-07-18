@@ -10,6 +10,7 @@
   },
   "baseline": [],
   "target": [],
+  "resources": [],
   "canary": {
     "status": "pending",
     "observationWindow": "pending",

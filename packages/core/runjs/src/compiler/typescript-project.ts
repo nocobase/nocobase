@@ -8,9 +8,12 @@
  */
 
 import ts from 'typescript';
+import { posix as pathPosix } from 'path';
 
+import type { RunJSTypeDependencyContract, RunJSTypeDependencyEdge, RunJSUnresolvedDependency } from '..';
 import { RUNJS_TYPESCRIPT_ES_LIB_PATH } from '../typescript-environment';
 import { createRunJSTypeScriptCompilerOptions } from '../typescript-project';
+import { buildRunJSUnresolvedCandidatePaths, type RunJSTypeDependencyGraph } from './dependency-collector';
 
 export interface RunJSTypeScriptProjectFile {
   path: string;
@@ -44,6 +47,8 @@ export class RunJSTypeScriptProject {
   private readonly documentRegistry = ts.createDocumentRegistry(true, '/');
 
   private readonly files = new Map<string, VersionedProjectFile>();
+
+  private readonly resolvedModules = new Map<string, Map<string, string | null>>();
 
   private rootNames: string[] = [];
 
@@ -104,12 +109,14 @@ export class RunJSTypeScriptProject {
 
     for (const path of deleted) {
       this.files.delete(path);
+      this.resolvedModules.delete(path);
     }
     for (const [path, file] of normalized) {
       const current = this.files.get(path);
       if (current && current.content === file.content && current.root === file.root) {
         continue;
       }
+      this.resolvedModules.delete(path);
       this.files.set(path, {
         ...file,
         version: current ? current.version + 1 : 1,
@@ -134,6 +141,92 @@ export class RunJSTypeScriptProject {
     return diagnostics;
   }
 
+  getProgramWorkspacePaths(workspacePaths: readonly string[]): string[] {
+    this.assertActive();
+    const program = this.languageService.getProgram();
+    if (!program) {
+      return [];
+    }
+    return [...new Set(workspacePaths.map(normalizeVirtualPath))]
+      .filter((path) => Boolean(program.getSourceFile(path)))
+      .sort();
+  }
+
+  getDependencyGraph(input: {
+    workspacePaths: readonly string[];
+    contracts: readonly RunJSTypeDependencyContract[];
+  }): RunJSTypeDependencyGraph & { unresolved: RunJSUnresolvedDependency[] } {
+    this.assertActive();
+    const program = this.languageService.getProgram();
+    if (!program) {
+      throw new Error('RunJS TypeScript Program is unavailable after diagnostics');
+    }
+    const workspacePaths = [...new Set(input.workspacePaths.map(normalizeVirtualPath))].sort();
+    const workspacePathSet = new Set(workspacePaths);
+    const files = workspacePaths.filter((path) => Boolean(program.getSourceFile(path))).map(fromVirtualPath);
+    const edges = new Map<string, RunJSTypeDependencyEdge>();
+    const unresolved = new Map<string, RunJSUnresolvedDependency>();
+
+    for (const containingFile of workspacePaths) {
+      const sourceFile = program.getSourceFile(containingFile);
+      if (!sourceFile) {
+        continue;
+      }
+      const resolutions = this.resolvedModules.get(containingFile) || new Map<string, string | null>();
+      for (const reference of collectModuleReferences(sourceFile)) {
+        const resolvedPath = resolutions.get(reference.specifier);
+        if (resolvedPath && workspacePathSet.has(resolvedPath)) {
+          const edge = {
+            importer: fromVirtualPath(containingFile),
+            imported: fromVirtualPath(resolvedPath),
+            kind: reference.kind,
+          };
+          edges.set(`${edge.importer}\u0000${edge.imported}\u0000${edge.kind}`, edge);
+          continue;
+        }
+        if (!resolvedPath) {
+          const importer = fromVirtualPath(containingFile);
+          const dependency = {
+            importer,
+            specifier: reference.specifier,
+            kind: reference.kind,
+            candidatePaths: buildRunJSUnresolvedCandidatePaths(importer, reference.specifier),
+          } satisfies RunJSUnresolvedDependency;
+          unresolved.set(JSON.stringify(dependency), dependency);
+        }
+      }
+      for (const reference of sourceFile.referencedFiles) {
+        const resolvedPath = normalizeVirtualPath(
+          pathPosix.resolve(pathPosix.dirname(containingFile), reference.fileName),
+        );
+        if (workspacePathSet.has(resolvedPath) && program.getSourceFile(resolvedPath)) {
+          const edge = {
+            importer: fromVirtualPath(containingFile),
+            imported: fromVirtualPath(resolvedPath),
+            kind: 'reference' as const,
+          };
+          edges.set(`${edge.importer}\u0000${edge.imported}\u0000${edge.kind}`, edge);
+        } else {
+          const importer = fromVirtualPath(containingFile);
+          const dependency = {
+            importer,
+            specifier: reference.fileName,
+            kind: 'reference' as const,
+            candidatePaths: buildRunJSUnresolvedCandidatePaths(importer, reference.fileName),
+          };
+          unresolved.set(JSON.stringify(dependency), dependency);
+        }
+      }
+    }
+
+    return {
+      files,
+      edges: [...edges.values()].sort(compareTypeEdges),
+      contracts: [...input.contracts].sort(compareContracts),
+      unresolved: [...unresolved.values()].sort(compareUnresolved),
+    };
+  }
+
   getDebugState(): RunJSTypeScriptProjectDebugState {
     return {
       disposed: this.disposed,
@@ -151,6 +244,7 @@ export class RunJSTypeScriptProject {
     this.disposed = true;
     this.languageService.dispose();
     this.files.clear();
+    this.resolvedModules.clear();
     this.rootNames = [];
   }
 
@@ -172,16 +266,22 @@ export class RunJSTypeScriptProject {
       getScriptVersion: (path) => String(this.files.get(normalizeVirtualPath(path))?.version || 0),
       readFile: (path) => this.files.get(normalizeVirtualPath(path))?.content,
       realpath: (path) => normalizeVirtualPath(path),
-      resolveModuleNames: (moduleNames, containingFile) =>
-        moduleNames.map(
-          (moduleName) =>
-            ts.resolveModuleName(moduleName, containingFile, this.compilerOptions, {
-              directoryExists: (path) => this.directoryExists(path),
-              fileExists: (path) => this.files.has(normalizeVirtualPath(path)),
-              readFile: (path) => this.files.get(normalizeVirtualPath(path))?.content,
-              realpath: (path) => normalizeVirtualPath(path),
-            }).resolvedModule,
-        ),
+      resolveModuleNames: (moduleNames, containingFile) => {
+        const normalizedContainingFile = normalizeVirtualPath(containingFile);
+        const resolutions = new Map<string, string | null>();
+        const resolved = moduleNames.map((moduleName) => {
+          const resolution = ts.resolveModuleName(moduleName, containingFile, this.compilerOptions, {
+            directoryExists: (path) => this.directoryExists(path),
+            fileExists: (path) => this.files.has(normalizeVirtualPath(path)),
+            readFile: (path) => this.files.get(normalizeVirtualPath(path))?.content,
+            realpath: (path) => normalizeVirtualPath(path),
+          }).resolvedModule;
+          resolutions.set(moduleName, resolution ? normalizeVirtualPath(resolution.resolvedFileName) : null);
+          return resolution;
+        });
+        this.resolvedModules.set(normalizedContainingFile, resolutions);
+        return resolved;
+      },
       useCaseSensitiveFileNames: () => true,
     };
   }
@@ -200,6 +300,93 @@ export class RunJSTypeScriptProject {
       throw new Error('RunJS TypeScript project has been disposed.');
     }
   }
+}
+
+interface TypeModuleReference {
+  kind: 'runtime' | 'type';
+  specifier: string;
+}
+
+function collectModuleReferences(sourceFile: ts.SourceFile): TypeModuleReference[] {
+  const references: TypeModuleReference[] = [];
+  for (const statement of sourceFile.statements) {
+    if (ts.isImportDeclaration(statement) && ts.isStringLiteralLike(statement.moduleSpecifier)) {
+      references.push({
+        kind: isTypeOnlyImport(statement) ? 'type' : 'runtime',
+        specifier: statement.moduleSpecifier.text,
+      });
+      continue;
+    }
+    if (
+      ts.isExportDeclaration(statement) &&
+      statement.moduleSpecifier &&
+      ts.isStringLiteralLike(statement.moduleSpecifier)
+    ) {
+      references.push({
+        kind: isTypeOnlyExport(statement) ? 'type' : 'runtime',
+        specifier: statement.moduleSpecifier.text,
+      });
+    }
+  }
+  return references;
+}
+
+function isTypeOnlyImport(statement: ts.ImportDeclaration): boolean {
+  const clause = statement.importClause;
+  if (!clause) {
+    return false;
+  }
+  if (clause.isTypeOnly) {
+    return true;
+  }
+  return Boolean(
+    !clause.name &&
+      clause.namedBindings &&
+      ts.isNamedImports(clause.namedBindings) &&
+      clause.namedBindings.elements.length > 0 &&
+      clause.namedBindings.elements.every((element) => element.isTypeOnly),
+  );
+}
+
+function isTypeOnlyExport(statement: ts.ExportDeclaration): boolean {
+  if (statement.isTypeOnly) {
+    return true;
+  }
+  return Boolean(
+    statement.exportClause &&
+      ts.isNamedExports(statement.exportClause) &&
+      statement.exportClause.elements.length > 0 &&
+      statement.exportClause.elements.every((element) => element.isTypeOnly),
+  );
+}
+
+function fromVirtualPath(path: string): string {
+  return normalizeVirtualPath(path).replace(/^\/+/, '');
+}
+
+function compareTypeEdges(left: RunJSTypeDependencyEdge, right: RunJSTypeDependencyEdge): number {
+  return (
+    left.importer.localeCompare(right.importer) ||
+    left.imported.localeCompare(right.imported) ||
+    left.kind.localeCompare(right.kind)
+  );
+}
+
+function compareContracts(left: RunJSTypeDependencyContract, right: RunJSTypeDependencyContract): number {
+  return (
+    left.id.localeCompare(right.id) ||
+    String(left.version || '').localeCompare(String(right.version || '')) ||
+    String(left.contentHash || '').localeCompare(String(right.contentHash || ''))
+  );
+}
+
+function compareUnresolved(left: RunJSUnresolvedDependency, right: RunJSUnresolvedDependency): number {
+  return (
+    left.importer.localeCompare(right.importer) ||
+    left.specifier.localeCompare(right.specifier) ||
+    String(left.kind || '').localeCompare(String(right.kind || '')) ||
+    left.candidatePaths.join('\u0000').localeCompare(right.candidatePaths.join('\u0000'))
+  );
 }
 
 function getScriptKind(path: string): ts.ScriptKind {

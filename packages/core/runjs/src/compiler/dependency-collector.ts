@@ -53,6 +53,58 @@ export interface CollectRunJSWorkspaceDependencyManifestResult {
   manifestHash: string;
 }
 
+export interface RunJSRuntimeDependencyGraph {
+  files: string[];
+  edges: RunJSRuntimeDependencyEdge[];
+}
+
+export interface RunJSTypeDependencyGraph {
+  files: string[];
+  edges: RunJSTypeDependencyEdge[];
+  contracts: RunJSTypeDependencyContract[];
+}
+
+export interface RunJSResolvedDependencyGraph {
+  runtime: RunJSRuntimeDependencyGraph;
+  types: RunJSTypeDependencyGraph;
+  unresolved: RunJSUnresolvedDependency[];
+}
+
+export class RunJSRuntimeDependencyGraphCollector {
+  private readonly files = new Set<string>();
+
+  private readonly edges = new Map<string, RunJSRuntimeDependencyEdge>();
+
+  private readonly unresolved = new Map<string, RunJSUnresolvedDependency>();
+
+  reset(): void {
+    this.files.clear();
+    this.edges.clear();
+    this.unresolved.clear();
+  }
+
+  recordFile(path: string): void {
+    this.files.add(normalizeCollectorPath(path));
+  }
+
+  recordEdge(edge: RunJSRuntimeDependencyEdge): void {
+    const normalized = normalizeRuntimeEdge(edge);
+    this.edges.set(`${normalized.importer}\u0000${normalized.imported}`, normalized);
+  }
+
+  recordUnresolved(dependency: RunJSUnresolvedDependency): void {
+    recordUnresolvedDependency(this.unresolved, dependency);
+  }
+
+  snapshot(): RunJSRuntimeDependencyGraph & { unresolved: RunJSUnresolvedDependency[] } {
+    return {
+      files: [...this.files].sort(compareText),
+      edges: [...this.edges.values()].sort(compareRuntimeEdges),
+      unresolved: [...this.unresolved.values()].sort(compareUnresolved),
+    };
+  }
+}
+
 interface NormalizedCollectorFile extends RunJSDependencyFile {
   content: string;
 }
@@ -168,6 +220,48 @@ export function collectRunJSWorkspaceDependencyManifest(
     runtime: { files: runtime.files, edges: runtime.edges },
     types: { files: types.files, edges: types.edges, contracts: types.contracts },
     unresolved: [...runtime.unresolved, ...types.unresolved],
+  });
+  return { manifest, manifestHash: hashRunJSEntryDependencyManifest(manifest) };
+}
+
+export function buildRunJSEntryDependencyManifestFromGraph(input: {
+  compilerBuildId: string;
+  entryPath: string;
+  files: readonly Array<{ path: string; content?: string; blobHash?: string }>;
+  graph: RunJSResolvedDependencyGraph;
+}): CollectRunJSWorkspaceDependencyManifestResult {
+  const files = new Map(
+    input.files.map((file) => {
+      const path = normalizeCollectorPath(file.path);
+      const blobHash = file.blobHash || (typeof file.content === 'string' ? sha256Hex(file.content) : undefined);
+      if (!blobHash) {
+        throw new TypeError(`RunJS dependency manifest file hash was not provided: ${path}`);
+      }
+      return [path, { path, blobHash }] as const;
+    }),
+  );
+  const dependencyFile = (path: string): RunJSDependencyFile => {
+    const normalizedPath = normalizeCollectorPath(path);
+    const file = files.get(normalizedPath);
+    if (!file) {
+      throw new TypeError(`RunJS dependency graph references a file outside the compile input: ${normalizedPath}`);
+    }
+    return file;
+  };
+  const manifest = normalizeRunJSEntryDependencyManifest({
+    version: 1,
+    compilerBuildId: input.compilerBuildId,
+    entryPath: input.entryPath,
+    runtime: {
+      files: input.graph.runtime.files.map(dependencyFile),
+      edges: input.graph.runtime.edges,
+    },
+    types: {
+      files: input.graph.types.files.map(dependencyFile),
+      edges: input.graph.types.edges,
+      contracts: input.graph.types.contracts,
+    },
+    unresolved: input.graph.unresolved,
   });
   return { manifest, manifestHash: hashRunJSEntryDependencyManifest(manifest) };
 }

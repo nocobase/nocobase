@@ -9,7 +9,14 @@
 
 import ts from 'typescript';
 
-import type { RunJSCompileDiagnostic, RunJSSourceAuthoringLegacyInfo, RunJSSourceLocator, RunJSSurfaceStyle } from '..';
+import type {
+  RunJSCompileDiagnostic,
+  RunJSSourceAuthoringLegacyInfo,
+  RunJSSourceLocator,
+  RunJSSurfaceStyle,
+  RunJSTypeDependencyContract,
+  RunJSUnresolvedDependency,
+} from '..';
 import { normalizePath, sha256Hex, stableSerialize } from '..';
 import {
   buildRunJSTypeScriptEnvironmentFiles,
@@ -22,9 +29,10 @@ import { buildRunJSTypeScriptContextDeclaration, RUNJS_TYPESCRIPT_CONTEXT_PATH }
 import { collectRunJSTypeLibraryUsage } from '../typescript-library-usage';
 import {
   getDefaultNodeRunJSTypeLibraryRegistry,
-  loadNodeRunJSTypeLibraryFiles,
+  loadNodeRunJSTypeLibraryFilesWithContracts,
   type NodeRunJSTypeLibraryRegistry,
 } from './node-type-library';
+import type { RunJSTypeDependencyGraph } from './dependency-collector';
 import { RunJSTypeScriptProject, type RunJSTypeScriptProjectFile } from './typescript-project';
 
 export const RUNJS_COMPILER_ALLOWED_GLOBALS = new Set([
@@ -152,6 +160,12 @@ interface PreparedRunJSTypeScriptProject {
   sourceFiles: Map<string, string>;
   sourceVirtualPaths: string[];
   structureFingerprint: string;
+  contracts: RunJSTypeDependencyContract[];
+}
+
+export interface RunJSSourceWorkspaceInspectionResult {
+  diagnostics: RunJSCompileDiagnostic[];
+  typeDependencies: RunJSTypeDependencyGraph & { unresolved: RunJSUnresolvedDependency[] };
 }
 
 export class RunJSSourceWorkspaceInspector {
@@ -166,9 +180,16 @@ export class RunJSSourceWorkspaceInspector {
   private disposed = false;
 
   inspect(input: InspectRunJSSourceWorkspaceInput): RunJSCompileDiagnostic[] {
+    return this.inspectWithDependencies(input).diagnostics;
+  }
+
+  inspectWithDependencies(input: InspectRunJSSourceWorkspaceInput): RunJSSourceWorkspaceInspectionResult {
     this.assertActive();
     if (input.surfaceStyle === 'workflow') {
-      return [];
+      return {
+        diagnostics: [],
+        typeDependencies: { files: [], edges: [], contracts: [], unresolved: [] },
+      };
     }
 
     const prepared = prepareTypeScriptProject(input);
@@ -181,8 +202,9 @@ export class RunJSSourceWorkspaceInspector {
       this.projectReuseCount += 1;
     }
     this.project.update(prepared.files);
+    const programSourcePaths = this.project.getProgramWorkspacePaths(prepared.sourceVirtualPaths);
     const diagnostics = typeScriptDiagnosticsToRunJS(
-      this.project.getDiagnostics(prepared.sourceVirtualPaths),
+      this.project.getDiagnostics(programSourcePaths),
       prepared.sourceFiles,
     );
     const entryPath = normalizePath(input.entry);
@@ -197,7 +219,13 @@ export class RunJSSourceWorkspaceInspector {
         ),
       );
     }
-    return diagnostics.sort(compareDiagnostics);
+    return {
+      diagnostics: diagnostics.sort(compareDiagnostics),
+      typeDependencies: this.project.getDependencyGraph({
+        workspacePaths: prepared.sourceVirtualPaths,
+        contracts: prepared.contracts,
+      }),
+    };
   }
 
   getDebugState(): RunJSSourceWorkspaceInspectorDebugState {
@@ -252,6 +280,17 @@ export function inspectRunJSSourceWorkspace(input: InspectRunJSSourceWorkspaceIn
   }
 }
 
+export function inspectRunJSSourceWorkspaceWithDependencies(
+  input: InspectRunJSSourceWorkspaceInput,
+): RunJSSourceWorkspaceInspectionResult {
+  const inspector = new RunJSSourceWorkspaceInspector();
+  try {
+    return inspector.inspectWithDependencies(input);
+  } finally {
+    inspector.dispose();
+  }
+}
+
 function collectSourceFiles(files: InspectRunJSSourceWorkspaceInput['files']): Map<string, string> {
   const sourceFiles = new Map<string, string>();
 
@@ -290,24 +329,26 @@ function prepareTypeScriptProject(input: InspectRunJSSourceWorkspaceInput): Prep
   const modelUse = input.legacy?.metadata?.modelUse;
   const virtualFiles = new Map<string, string>();
   const rootNames = new Set<string>();
+  const entryVirtualPath = toVirtualPath(normalizePath(input.entry));
   for (const [path, source] of sourceFiles) {
     const virtualPath = toVirtualPath(path);
     virtualFiles.set(virtualPath, maskTopLevelReturnKeywords(path, source));
-    rootNames.add(virtualPath);
+    if (virtualPath === entryVirtualPath || path.endsWith('.d.ts')) {
+      rootNames.add(virtualPath);
+    }
   }
-  for (const file of getTypeScriptEnvironmentFiles()) {
+  const environmentFiles = getTypeScriptEnvironmentFiles();
+  for (const file of environmentFiles) {
     virtualFiles.set(file.path, file.content);
     rootNames.add(file.path);
   }
-  virtualFiles.set(
-    RUNJS_TYPESCRIPT_CONTEXT_PATH,
-    [
-      buildRunJSTypeScriptContextDeclaration(typeof modelUse === 'string' ? modelUse : undefined),
-      buildAmbientDeclarations(allowedGlobals),
-    ]
-      .filter(Boolean)
-      .join('\n'),
-  );
+  const contextDeclaration = [
+    buildRunJSTypeScriptContextDeclaration(typeof modelUse === 'string' ? modelUse : undefined),
+    buildAmbientDeclarations(allowedGlobals),
+  ]
+    .filter(Boolean)
+    .join('\n');
+  virtualFiles.set(RUNJS_TYPESCRIPT_CONTEXT_PATH, contextDeclaration);
   rootNames.add(RUNJS_TYPESCRIPT_CONTEXT_PATH);
 
   const registry = input.typeLibraryRegistry || getDefaultNodeRunJSTypeLibraryRegistry();
@@ -315,7 +356,7 @@ function prepareTypeScriptProject(input: InspectRunJSSourceWorkspaceInput): Prep
     files: Array.from(sourceFiles, ([path, content]) => ({ path, content })),
     libraries: registry.getUsageDefinitions(),
   });
-  const typeLibraryFiles = loadNodeRunJSTypeLibraryFiles(usageRequests, {
+  const typeLibraryFiles = loadNodeRunJSTypeLibraryFilesWithContracts(usageRequests, {
     registry,
     typeLibraryIds: input.typeLibraryIds,
   });
@@ -339,6 +380,27 @@ function prepareTypeScriptProject(input: InspectRunJSSourceWorkspaceInput): Prep
       .sort((left, right) => left.path.localeCompare(right.path)),
     sourceFiles,
     sourceVirtualPaths,
+    contracts: [
+      {
+        id: 'runjs:typescript-environment',
+        contentHash: sha256Hex(
+          stableSerialize(environmentFiles.map((file) => ({ path: file.path, contentHash: sha256Hex(file.content) }))),
+        ),
+      },
+      { id: 'runjs:context', contentHash: sha256Hex(contextDeclaration) },
+      {
+        id: 'runjs:surface',
+        version: input.surfaceStyle,
+        contentHash: sha256Hex(
+          stableSerialize({
+            allowedGlobals: [...allowedGlobals].sort(),
+            modelUse: typeof modelUse === 'string' ? modelUse : null,
+            surfaceStyle: input.surfaceStyle,
+          }),
+        ),
+      },
+      ...typeLibraryFiles.contracts,
+    ],
     structureFingerprint: sha256Hex(
       stableSerialize({
         files: structureFiles,

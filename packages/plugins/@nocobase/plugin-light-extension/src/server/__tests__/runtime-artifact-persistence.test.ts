@@ -8,7 +8,11 @@
  */
 
 import type { Database, Model, Transaction } from '@nocobase/database';
-import type { RunJSRuntimeArtifact } from '@nocobase/runjs';
+import {
+  hashRunJSEntryDependencyManifest,
+  type RunJSEntryDependencyManifestV1,
+  type RunJSRuntimeArtifact,
+} from '@nocobase/runjs';
 import { createHash } from 'crypto';
 import { vi } from 'vitest';
 
@@ -47,6 +51,22 @@ describe('light extension runtime artifact persistence', () => {
       },
     } as unknown as Database;
     const service = new LightExtensionRuntimeCompileService(db, {} as never, {} as never, {} as never);
+    const dependencyManifest: RunJSEntryDependencyManifestV1 = {
+      version: 1,
+      compilerBuildId: 'compiler-build-1',
+      entryPath: 'src/client/js-actions/example/index.ts',
+      runtime: {
+        files: [{ path: 'src/client/js-actions/example/index.ts', blobHash: 'entry-blob' }],
+        edges: [],
+      },
+      types: {
+        files: [{ path: 'src/client/js-actions/example/index.ts', blobHash: 'entry-blob' }],
+        edges: [],
+        contracts: [{ id: 'runjs:surface', version: 'action' }],
+      },
+      unresolved: [],
+    };
+    const dependencyManifestHash = hashRunJSEntryDependencyManifest(dependencyManifest);
     const persist = service as unknown as {
       persistSuccessfulCompile(
         input: {
@@ -55,6 +75,8 @@ describe('light extension runtime artifact persistence', () => {
           artifact: RunJSRuntimeArtifact;
           surfaceStyle: string;
           diagnostics: [];
+          dependencyManifest?: RunJSEntryDependencyManifestV1;
+          dependencyManifestHash?: string;
         },
         transaction: Transaction,
       ): Promise<LightExtensionEntryRecord>;
@@ -74,6 +96,8 @@ describe('light extension runtime artifact persistence', () => {
         },
         surfaceStyle: 'action',
         diagnostics: [],
+        dependencyManifest,
+        dependencyManifestHash,
       },
       transaction,
     );
@@ -92,6 +116,8 @@ describe('light extension runtime artifact persistence', () => {
     );
     expect(result.artifactHash).toMatch(/^[a-f0-9]{64}$/u);
     expect(result.runtimeCodeHash).toMatch(/^[a-f0-9]{64}$/u);
+    expect(result.dependencyManifest).toEqual(dependencyManifest);
+    expect(result.dependencyManifestHash).toBe(dependencyManifestHash);
     expect(result.settingsSchemaHash).toBeNull();
     expect(result.settingsDefaultsHash).toBeNull();
     expect(result.runtimeArtifact?.metadata).not.toHaveProperty('settingsSchema');

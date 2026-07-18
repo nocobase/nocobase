@@ -46,6 +46,8 @@ export interface LightExtensionServiceContext {
   compileMetrics?: LightExtensionCompileMetricsRecorder;
   /** @internal */
   deferredRejectedPushAudits?: Array<() => Promise<void>>;
+  /** @internal */
+  deferSuccessfulCompileAudit?: boolean;
 }
 
 export interface LightExtensionRepoInternalRecord extends LightExtensionRepoRecord {

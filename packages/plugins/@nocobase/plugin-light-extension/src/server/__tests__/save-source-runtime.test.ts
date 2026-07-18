@@ -8,6 +8,11 @@
  */
 
 import PluginVscFileServer from '@nocobase/plugin-vsc-file';
+import {
+  hashRunJSEntryDependencyManifest,
+  normalizeRunJSEntryDependencyManifest,
+  type RunJSEntryDependencyManifestV1,
+} from '@nocobase/runjs';
 import { MockServer, createMockServer } from '@nocobase/test';
 
 import type { LightExtensionSaveSourceInput } from '../../shared/types';
@@ -21,6 +26,7 @@ import { LightExtensionRepoService } from '../services/LightExtensionRepoService
 import { LightExtensionRuntimeCompileService } from '../services/LightExtensionRuntimeCompileService';
 import { LightExtensionValidator } from '../services/LightExtensionValidator';
 import { LightExtensionWorkspaceCompilerBridge } from '../services/LightExtensionWorkspaceCompilerBridge';
+import { PublishCompiledEntriesService } from '../services/PublishCompiledEntriesService';
 import { RuntimeResolveService } from '../services/RuntimeResolveService';
 
 describe('plugin-light-extension saveSource runtime compile', () => {
@@ -169,6 +175,123 @@ describe('plugin-light-extension saveSource runtime compile', () => {
       }),
     ]);
     expect(JSON.stringify(metricsSummaries)).not.toMatch(/repoId|entryId|src\/client|Sales KPI|artifactHash/iu);
+  });
+
+  it('recompiles only the real shared dependency owner and advances unaffected entries by verified reuse', async () => {
+    const repo = await repoService.createRepo({
+      name: 'Precise Shared Dependency Save',
+      initialFiles: preciseSharedDependencyFiles(),
+    });
+    const initial = await saveCurrentSource({
+      repoId: repo.id,
+      message: 'establish compiler-derived manifests',
+      files: [{ path: 'README.md', content: '# Precise dependency fixture\n', language: 'markdown' }],
+    });
+    const beforeEntries = await app.db.getRepository('lightExtensionEntries').find({
+      filter: { repoId: repo.id },
+      sort: ['entryName'],
+    });
+    expect(initial.compile.entries).toHaveLength(2);
+    expect(initial.compile.entries.every((entry) => entry.execution === 'compiled')).toBe(true);
+    const unaffectedBefore = beforeEntries.find((entry) => entry.get('entryName') === 'independent');
+    const unaffectedCompiledAt = unaffectedBefore?.get('compiledAt');
+
+    metricsSummaries = [];
+    const updated = await saveCurrentSource({
+      repoId: repo.id,
+      message: 'change one shared runtime dependency',
+      files: [
+        {
+          path: 'src/shared/runtime-value.ts',
+          content: 'export const runtimeValue = 2;\n',
+          language: 'typescript',
+        },
+      ],
+    });
+    const byName = new Map(updated.compile.entries.map((entry) => [entry.entryName, entry]));
+    const afterEntries = await app.db.getRepository('lightExtensionEntries').find({
+      filter: { repoId: repo.id },
+      sort: ['entryName'],
+    });
+    const unaffectedAfter = afterEntries.find((entry) => entry.get('entryName') === 'independent');
+
+    expect(byName.get('dependent')).toMatchObject({ status: 'success', execution: 'compiled' });
+    expect(byName.get('independent')).toMatchObject({ status: 'success', execution: 'reused' });
+    expect(afterEntries.every((entry) => entry.get('compiledCommitId') === updated.commit.id)).toBe(true);
+    expect(unaffectedAfter?.get('compiledAt')).toEqual(unaffectedCompiledAt);
+    expect(unaffectedAfter?.get('dependencyManifest')).toEqual(unaffectedBefore?.get('dependencyManifest'));
+    const preciseCompileCounters = metricsSummaries.at(-1)?.counters;
+    expect(preciseCompileCounters).toMatchObject({
+      affectedEntryCount: 1,
+      compiledEntryCount: 1,
+      reusedEntryCount: 1,
+      dependencyGraphRuntimeFileCount: 2,
+      dependencyGraphTypeFileCount: 2,
+      dependencyGraphUnresolvedCount: 0,
+      dependencyPlanPreciseHitCount: 1,
+      dependencyPlanConservativeFallbackCount: 0,
+      dependencyManifestVersionMismatchCount: 0,
+    });
+    expect(preciseCompileCounters?.dependencyGraphByteSize).toBeGreaterThan(0);
+  });
+
+  it('recompiles an Entry when an added canonical shared file satisfies its persisted unresolved candidate', async () => {
+    const repo = await repoService.createRepo({
+      name: 'Unresolved Candidate Save',
+      initialFiles: baselineSalesKpiFiles(),
+    });
+    const initial = await saveCurrentSource({
+      repoId: repo.id,
+      message: 'establish initial dependency manifest',
+      files: [{ path: 'README.md', content: '# Unresolved candidate fixture\n', language: 'markdown' }],
+    });
+    const entry = await app.db.getRepository('lightExtensionEntries').findOne({
+      filterByTk: initial.compile.entries[0].entryId,
+    });
+    const previousManifest = entry?.get('dependencyManifest') as RunJSEntryDependencyManifestV1 | undefined;
+    if (!entry || !previousManifest) {
+      throw new Error('Expected the initial compiler-derived dependency manifest');
+    }
+    const unresolvedManifest = normalizeRunJSEntryDependencyManifest({
+      ...previousManifest,
+      unresolved: [
+        {
+          importer: previousManifest.entryPath,
+          specifier: '../../../shared/future',
+          kind: 'runtime',
+          candidatePaths: ['src/shared/future.ts', 'src/shared/future/index.ts'],
+        },
+      ],
+    });
+    await entry.update({
+      dependencyManifest: unresolvedManifest,
+      dependencyManifestHash: hashRunJSEntryDependencyManifest(unresolvedManifest),
+    });
+
+    metricsSummaries = [];
+    const updated = await saveCurrentSource({
+      repoId: repo.id,
+      message: 'add unresolved shared candidate',
+      files: [
+        {
+          path: 'src/shared/future.ts',
+          content: 'export const futureValue = 1;\n',
+          language: 'typescript',
+        },
+      ],
+    });
+    const current = await app.db.getRepository('lightExtensionEntries').findOne({
+      filterByTk: entry.get('id'),
+    });
+
+    expect(updated.compile.entries[0]).toMatchObject({ status: 'success', execution: 'compiled' });
+    expect(metricsSummaries.at(-1)?.counters).toMatchObject({
+      affectedEntryCount: 1,
+      compiledEntryCount: 1,
+      dependencyPlanPreciseHitCount: 1,
+      dependencyPlanConservativeFallbackCount: 0,
+    });
+    expect(current?.get('dependencyManifest')).toMatchObject({ unresolved: [] });
   });
 
   it('reuses one canonical candidate for validation, reconcile, and Save compilation', async () => {
@@ -688,6 +811,13 @@ describe('plugin-light-extension saveSource runtime compile', () => {
       message: 'initial save',
       files: validSalesKpiFiles(),
     });
+    const entryBeforeFailure = await app.db.getRepository('lightExtensionEntries').findOne({
+      filterByTk: first.compile.entries[0].entryId,
+    });
+    const manifestBeforeFailure = entryBeforeFailure?.get('dependencyManifest');
+    const manifestHashBeforeFailure = entryBeforeFailure?.get('dependencyManifestHash');
+    expect(manifestBeforeFailure).toBeTruthy();
+    expect(manifestHashBeforeFailure).toBe(hashRunJSEntryDependencyManifest(manifestBeforeFailure));
     metricsSummaries = [];
 
     await expect(
@@ -711,6 +841,8 @@ describe('plugin-light-extension saveSource runtime compile', () => {
 
     expect(entry?.get('healthStatus')).toBe('ready');
     expect(entry?.get('compiledCommitId')).toBe(first.commit.id);
+    expect(entry?.get('dependencyManifest')).toEqual(manifestBeforeFailure);
+    expect(entry?.get('dependencyManifestHash')).toBe(manifestHashBeforeFailure);
     expect(entry?.get('runtimeArtifact')).toMatchObject({
       code: expect.stringContaining('Sales KPI'),
     });
@@ -734,6 +866,26 @@ describe('plugin-light-extension saveSource runtime compile', () => {
       { operation: 'runtimeCompile', result: 'rejected' },
       { operation: 'saveSource', result: 'rejected' },
     ]);
+
+    const fixed = await saveCurrentSource({
+      repoId: repo.id,
+      message: 'fixed source',
+      files: [
+        {
+          path: 'src/client/js-blocks/sales-kpi/index.tsx',
+          content: 'const title = "Fixed Sales KPI";\nctx.render(<div>{title}</div>);\n',
+          language: 'typescript',
+        },
+      ],
+    });
+    const entryAfterFix = await app.db.getRepository('lightExtensionEntries').findOne({
+      filterByTk: first.compile.entries[0].entryId,
+    });
+    const manifestAfterFix = entryAfterFix?.get('dependencyManifest');
+
+    expect(entryAfterFix?.get('compiledCommitId')).toBe(fixed.commit.id);
+    expect(entryAfterFix?.get('dependencyManifestHash')).toBe(hashRunJSEntryDependencyManifest(manifestAfterFix));
+    expect(entryAfterFix?.get('dependencyManifestHash')).not.toBe(manifestHashBeforeFailure);
   });
 
   it('rolls back every entry when one entry fails to compile', async () => {
@@ -872,6 +1024,13 @@ describe('plugin-light-extension saveSource runtime compile', () => {
         entryName: 'sales-kpi',
       },
     });
+    const compileLogs = await app.db.getRepository('lightExtensionLogs').find({
+      filter: {
+        repoId: repo.id,
+        action: 'runtimeCompile',
+        result: 'success',
+      },
+    });
 
     expect(secondCompileStartedBeforeRelease).toBe(true);
     expect(successes).toHaveLength(1);
@@ -893,6 +1052,7 @@ describe('plugin-light-extension saveSource runtime compile', () => {
         settled[0].status === 'fulfilled' ? 'First serialized runtime' : 'Second serialized runtime',
       ),
     });
+    expect(compileLogs).toHaveLength(1);
     expect(
       metricsSummaries.filter(({ operation, result }) => operation === 'runtimeCompile' && result === 'success'),
     ).toHaveLength(2);
@@ -902,6 +1062,52 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     expect(
       metricsSummaries.filter(({ operation, result }) => operation === 'saveSource' && result === 'outdated'),
     ).toHaveLength(1);
+  });
+
+  it('rolls back a cache-miss compile success audit when publish fails', async () => {
+    const repo = await repoService.createRepo({
+      name: 'Runtime Compile Audit Rollback',
+      initialFiles: baselineSalesKpiFiles(),
+    });
+    const compileEntry = vi.spyOn(compilerBridge, 'compileEntry');
+    const publisher = PublishCompiledEntriesService.forDatabase(app.db);
+    const publish = publisher.publishCompiledEntries.bind(publisher);
+    vi.spyOn(publisher, 'publishCompiledEntries').mockImplementation(async (batch, transaction) => {
+      await publish(batch, transaction);
+      throw new Error('forced cache-miss publish rollback');
+    });
+    const failingRuntime = new LightExtensionRuntimeCompileService(
+      app.db,
+      fileService,
+      entryService,
+      compilerBridge,
+      undefined,
+      {
+        compileCacheEnabled: false,
+        publishCompiledEntries: publisher,
+      },
+    );
+
+    await expect(
+      failingRuntime.saveSource({
+        repoId: repo.id,
+        expectedHeadCommitId: repo.headCommitId,
+        message: 'rollback runtime compile audit',
+        files: validSalesKpiFiles(),
+      }),
+    ).rejects.toThrow('forced cache-miss publish rollback');
+
+    expect(compileEntry).toHaveBeenCalledTimes(1);
+    await expect(repoService.getRepo(repo.id)).resolves.toMatchObject({ headCommitId: repo.headCommitId });
+    await expect(
+      app.db.getRepository('lightExtensionLogs').count({
+        filter: {
+          repoId: repo.id,
+          action: 'runtimeCompile',
+          result: 'success',
+        },
+      }),
+    ).resolves.toBe(0);
   });
 });
 
@@ -1018,6 +1224,36 @@ function baselineSalesKpiFiles() {
       path: 'src/client/js-blocks/sales-kpi/entry.json',
       content: '{"schemaVersion":1,"key":"sales-kpi"}',
       language: 'json',
+    },
+  ];
+}
+
+function preciseSharedDependencyFiles() {
+  return [
+    {
+      path: 'src/client/js-blocks/dependent/index.tsx',
+      content: `import { runtimeValue } from '../../../shared/runtime-value'; ctx.render(<div>{runtimeValue}</div>);`,
+      language: 'typescript',
+    },
+    {
+      path: 'src/client/js-blocks/dependent/entry.json',
+      content: JSON.stringify({ schemaVersion: 1, key: 'dependent' }),
+      language: 'json',
+    },
+    {
+      path: 'src/client/js-blocks/independent/index.tsx',
+      content: 'ctx.render(<div>Independent</div>);',
+      language: 'typescript',
+    },
+    {
+      path: 'src/client/js-blocks/independent/entry.json',
+      content: JSON.stringify({ schemaVersion: 1, key: 'independent' }),
+      language: 'json',
+    },
+    {
+      path: 'src/shared/runtime-value.ts',
+      content: 'export const runtimeValue = 1;\n',
+      language: 'typescript',
     },
   ];
 }

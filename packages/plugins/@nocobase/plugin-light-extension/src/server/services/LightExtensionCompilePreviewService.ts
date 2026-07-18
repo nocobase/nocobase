@@ -8,7 +8,8 @@
  */
 
 import type { Database, Model } from '@nocobase/database';
-import { collectRunJSWorkspaceDependencyManifest } from '@nocobase/runjs/compiler';
+import { isRunJSEntryDependencyManifestPersistable } from '@nocobase/runjs';
+import { buildRunJSEntryDependencyManifestFromGraph } from '@nocobase/runjs/compiler';
 import { randomUUID } from 'crypto';
 import { posix as pathPosix } from 'path';
 
@@ -464,7 +465,10 @@ export class LightExtensionCompilePreviewService {
           runtimeVersion,
           compilerBuildIdentity: trustedPreview.compilerBuildIdentity,
         });
-        const dependency = collectRunJSWorkspaceDependencyManifest({
+        if (!compiled.dependencyGraph) {
+          throw new Error('RunJS compiler did not return a dependency graph for an accepted preview compile');
+        }
+        const dependency = buildRunJSEntryDependencyManifestFromGraph({
           compilerBuildId: trustedPreview.compilerBuildIdentity.compilerBuildId,
           entryPath: validationEntry.entryPath,
           files: getEntryCompileFiles(trustedPreview.workspace.files, validationEntry).map((file) => ({
@@ -472,15 +476,17 @@ export class LightExtensionCompilePreviewService {
             content: file.content || '',
             blobHash: file.blobHash,
           })),
+          graph: compiled.dependencyGraph,
         });
+        const persistDependencyManifest = isRunJSEntryDependencyManifestPersistable(dependency.manifest);
         const persisted = await trustedPreview.compileCache.persistAcceptedCompile({
           compileKey: compileInput.compileKey,
           filesHash: compileInput.filesHash,
           inputManifest: compileInput.inputManifest,
           artifact: compiled.artifact,
           diagnostics,
-          dependencyManifest: dependency.manifest,
-          dependencyManifestHash: dependency.manifestHash,
+          dependencyManifest: persistDependencyManifest ? dependency.manifest : undefined,
+          dependencyManifestHash: persistDependencyManifest ? dependency.manifestHash : undefined,
         });
         ticketEntries.push({
           target: 'client',

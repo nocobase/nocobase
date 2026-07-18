@@ -108,7 +108,7 @@ describe('@nocobase/runjs incremental compiler session', () => {
     await session.dispose();
   });
 
-  it('updates create, delete, and rename changes without stale bundle or diagnostics state', async () => {
+  it('updates create, delete, and rename changes without stale bundle, diagnostics, or dependency graph state', async () => {
     const identity = buildRunJSCompilerSessionIdentity(baseContract);
     const session = new RunJSEntryCompilerSession({
       entryPath: baseContract.entryPath,
@@ -127,14 +127,33 @@ describe('@nocobase/runjs incremental compiler session', () => {
       compileInput([{ path: baseContract.entryPath, content: `const repaired: string = 'ok'; return repaired;` }]),
     ];
 
+    const results: Awaited<ReturnType<typeof compileRunJSSourceWorkspace>>[] = [];
     for (const input of inputs) {
-      await expect(session.compile(input)).resolves.toEqual(await compileRunJSSourceWorkspace(input));
+      const warm = await session.compile(input);
+      expect(warm).toEqual(await compileRunJSSourceWorkspace(input));
+      results.push(warm);
     }
-    const final = await session.compile(inputs[2]);
+    expect(results[1].dependencyGraph).toMatchObject({
+      runtime: {
+        files: [baseContract.entryPath, 'src/entries/demo/renamed.ts'],
+        edges: [{ importer: baseContract.entryPath, imported: 'src/entries/demo/renamed.ts' }],
+      },
+      types: {
+        files: [baseContract.entryPath, 'src/entries/demo/renamed.ts'],
+        edges: [{ importer: baseContract.entryPath, imported: 'src/entries/demo/renamed.ts', kind: 'runtime' }],
+      },
+      unresolved: [],
+    });
+    const final = results[2];
     expect(final.failureCode).toBeUndefined();
     expect(final.artifact.code).toContain('repaired');
     expect(final.artifact.code).not.toContain('shared');
     expect(final.artifact.code).not.toContain('unused');
+    expect(final.dependencyGraph).toMatchObject({
+      runtime: { files: [baseContract.entryPath], edges: [] },
+      types: { files: [baseContract.entryPath], edges: [] },
+      unresolved: [],
+    });
     await session.dispose();
   });
 
