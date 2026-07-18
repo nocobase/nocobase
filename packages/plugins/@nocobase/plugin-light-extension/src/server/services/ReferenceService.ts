@@ -485,12 +485,14 @@ export class ReferenceService {
     }
 
     const targetEntryIds = normalizedPlan.mode === 'entries' ? normalizedPlan.entryIds : [];
-    const references = await this.findReferenceModels(
-      normalizedPlan.mode === 'entries'
-        ? { repoId: normalizedRepoId, entryId: { $in: targetEntryIds } }
-        : { repoId: normalizedRepoId },
-      ctx,
-    );
+    const references = (
+      await this.findReferenceModels(
+        normalizedPlan.mode === 'entries'
+          ? { repoId: normalizedRepoId, entryId: { $in: targetEntryIds } }
+          : { repoId: normalizedRepoId },
+        ctx,
+      )
+    ).filter((reference) => Boolean(getReferenceOwnerAdapterByOwnerKind(normalizeString(reference.get('ownerKind')))));
     const statusCounts: ReferenceUpsertSummary['statusCounts'] = {};
     let changed = 0;
     let targetEntryCount = normalizedPlan.mode === 'entries' ? targetEntryIds.length : 0;
@@ -1633,7 +1635,7 @@ function collectRunJSReferenceOwners(
   const modelUid = normalizeString(node.uid);
   if (modelUid) {
     const pushOwner = (hostPath: Array<string | number>, source: NormalizedJsBlockSource) => {
-      if (source.sourceMode !== 'light-extension' || source.sourceBinding?.kind !== 'runjs') {
+      if (source.sourceBinding?.kind !== 'runjs') {
         return;
       }
       bucket.push({

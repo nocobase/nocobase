@@ -31,6 +31,8 @@ import type {
 } from '../../shared/types';
 import { LightExtensionAuditService } from './LightExtensionAuditService';
 import type { LightExtensionCompileMetricsRecorder } from './LightExtensionCompileMetrics';
+import type { ClientAppService } from './ClientAppService';
+import type { ExternalReferenceOwnerSummary, ExternalReferenceService } from './ExternalReferenceService';
 import { LightExtensionPermissionService, type LightExtensionCanFunction } from './LightExtensionPermissionService';
 import type { ReferenceService } from './ReferenceService';
 import { LightExtensionValidator, hasErrorDiagnostic } from './LightExtensionValidator';
@@ -70,6 +72,10 @@ export class LightExtensionRepoService {
 
   private referenceService?: ReferenceService;
 
+  private externalReferenceService?: ExternalReferenceService;
+
+  private clientAppService?: Pick<ClientAppService, 'retireClientAppsForRepo'>;
+
   private remoteSyncLifecycleGate?: LightExtensionRemoteSyncLifecycleGate;
 
   constructor(
@@ -90,6 +96,14 @@ export class LightExtensionRepoService {
 
   useReferenceService(referenceService: ReferenceService): void {
     this.referenceService = referenceService;
+  }
+
+  useExternalReferenceService(externalReferenceService: ExternalReferenceService): void {
+    this.externalReferenceService = externalReferenceService;
+  }
+
+  useClientAppService(clientAppService: Pick<ClientAppService, 'retireClientAppsForRepo'>): void {
+    this.clientAppService = clientAppService;
   }
 
   useRemoteSyncLifecycleGate(gate: LightExtensionRemoteSyncLifecycleGate): void {
@@ -476,6 +490,7 @@ export class LightExtensionRepoService {
         const referenceCount = await this.countRepoReferences(input.repoId, transaction);
 
         if (referenceCount > 0) {
+          const owners = await this.externalReferenceService?.listRepoOwners(input.repoId, transaction);
           await this.recordDeleteBlockedByReferences(
             input.repoId,
             requestId,
@@ -483,7 +498,7 @@ export class LightExtensionRepoService {
             repo.lifecycleStatus,
             referenceCount,
           );
-          throw referenceExistsError(input.repoId, referenceCount);
+          throw referenceExistsError(input.repoId, referenceCount, owners);
         }
 
         await this.runVsc(repo.id, () =>
@@ -502,6 +517,7 @@ export class LightExtensionRepoService {
             }),
           ),
         );
+        await this.clientAppService?.retireClientAppsForRepo(input.repoId, transaction);
         await this.db.getRepository('lightExtensionEntries').destroy({
           filter: {
             repoId: input.repoId,
@@ -510,6 +526,7 @@ export class LightExtensionRepoService {
         });
         const finalReferenceCount = await this.countRepoReferences(input.repoId, transaction);
         if (finalReferenceCount > 0) {
+          const owners = await this.externalReferenceService?.listRepoOwners(input.repoId, transaction);
           await this.recordDeleteBlockedByReferences(
             input.repoId,
             requestId,
@@ -517,7 +534,7 @@ export class LightExtensionRepoService {
             repo.lifecycleStatus,
             finalReferenceCount,
           );
-          throw referenceExistsError(input.repoId, finalReferenceCount);
+          throw referenceExistsError(input.repoId, finalReferenceCount, owners);
         }
 
         await this.db.getRepository('lightExtensionRepos').destroy({
@@ -541,8 +558,9 @@ export class LightExtensionRepoService {
     } catch (error) {
       if (isReferenceConstraintError(error)) {
         const referenceCount = await this.countRepoReferences(input.repoId);
+        const owners = await this.externalReferenceService?.listRepoOwners(input.repoId);
         await this.recordDeleteBlockedByReferences(input.repoId, requestId, ctx, null, referenceCount);
-        throw referenceExistsError(input.repoId, referenceCount);
+        throw referenceExistsError(input.repoId, referenceCount, owners);
       }
 
       throw error;
@@ -789,7 +807,11 @@ function repoConflictError(name: string, normalizedName: string): LightExtension
   });
 }
 
-function referenceExistsError(repoId: string, referenceCount: number): LightExtensionError {
+function referenceExistsError(
+  repoId: string,
+  referenceCount: number,
+  owners: ExternalReferenceOwnerSummary[] = [],
+): LightExtensionError {
   return new LightExtensionError(
     'LIGHT_EXTENSION_REFERENCE_EXISTS',
     'Light extension repository is referenced and cannot be deleted',
@@ -797,6 +819,8 @@ function referenceExistsError(repoId: string, referenceCount: number): LightExte
       details: {
         repoId,
         referenceCount,
+        references: owners,
+        workspaces: owners,
       },
     },
   );

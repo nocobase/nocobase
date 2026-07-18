@@ -20,6 +20,7 @@ const DEFAULT_MODERN_CLIENT_PREFIX = 'v';
 type ClientAppPortalMatch = {
   portalUid: string;
   relativePath: string;
+  portalRouteSegments: string[];
 };
 
 function normalizeAbsolutePath(value: string | undefined, fallback: string) {
@@ -117,18 +118,21 @@ function getAppLocalRoute(pathname: string) {
   if (publicPathRelativeSegments[0] !== modernClientPrefix) {
     return;
   }
+  const requestRootSegments = [...publicPathSegments, modernClientPrefix];
 
   const modernClientSegments = publicPathRelativeSegments.slice(1);
   if (modernClientSegments[0] === 'apps' && modernClientSegments[1]) {
     return {
       appName: modernClientSegments[1],
       routeSegments: modernClientSegments.slice(2),
+      requestRootSegments: [...requestRootSegments, 'apps', modernClientSegments[1]],
       appNameFromPath: true,
     };
   }
 
   return {
     routeSegments: modernClientSegments,
+    requestRootSegments,
     appNameFromPath: false,
   };
 }
@@ -228,6 +232,7 @@ function findClientAppPortalMatch(
     match = {
       portalUid,
       relativePath: routeSegments.slice(portalRouteSegments.length).join('/'),
+      portalRouteSegments,
       routeLength,
       segmentCount: portalRouteSegments.length,
     };
@@ -239,7 +244,12 @@ function findClientAppPortalMatch(
   return {
     portalUid: match.portalUid,
     relativePath: match.relativePath,
+    portalRouteSegments: match.portalRouteSegments,
   };
+}
+
+function pathFromSegments(segments: string[]) {
+  return `/${segments.map((segment) => encodeURIComponent(segment)).join('/')}`;
 }
 
 function rejectUnsafePath(res: ServerResponse) {
@@ -254,7 +264,8 @@ export const clientAppGatewayRequestHandler: GatewayRequestHandler = async (req,
     return false;
   }
 
-  const parsedUrl = parse(req.url);
+  const originalRequestUrl = req.url;
+  const parsedUrl = parse(originalRequestUrl);
   const rawPathname = parsedUrl.pathname || '/';
   if (isInfrastructurePath(rawPathname) || !isPotentialModernClientPath(rawPathname)) {
     return false;
@@ -305,6 +316,16 @@ export const clientAppGatewayRequestHandler: GatewayRequestHandler = async (req,
   query.delete('clientAppPath');
   query.append('clientAppPath', match.relativePath);
   const apiBasePath = normalizeAbsolutePath(process.env.API_BASE_PATH, DEFAULT_API_BASE_PATH);
+  const workspacePath = pathFromSegments([...appLocalRoute.requestRootSegments, ...match.portalRouteSegments]);
+  const signinPath = pathFromSegments([...appLocalRoute.requestRootSegments, 'signin']);
+  const apiBaseUrl = appLocalRoute.appNameFromPath
+    ? joinAbsolutePath(apiBasePath, `__app/${encodeURIComponent(appName)}`)
+    : apiBasePath;
+  req.headers['x-nocobase-client-app-request-url'] = originalRequestUrl;
+  req.headers['x-nocobase-client-app-workspace-root'] = workspacePath;
+  req.headers['x-nocobase-client-app-public-path'] = normalizeAbsolutePath(process.env.APP_PUBLIC_PATH, '/');
+  req.headers['x-nocobase-client-app-api-base-url'] = apiBaseUrl;
+  req.headers['x-nocobase-client-app-signin-path'] = signinPath;
   req.url = `${apiBasePath}/multiPortals:serveClientApp/${encodeURIComponent(match.portalUid)}?${query.toString()}`;
   if (appLocalRoute.appNameFromPath) {
     req.headers['x-app'] = appName;

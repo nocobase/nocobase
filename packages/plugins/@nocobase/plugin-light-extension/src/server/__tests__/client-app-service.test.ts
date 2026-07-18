@@ -51,7 +51,12 @@ describe('ClientAppService', () => {
       'index.html': '<html>second</html>',
       'assets/logo.png': Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x01, 0xfe]),
     });
-    const second = await service.upload({ repoId: 'repo-1', zipPath: secondZip });
+    const second = await service.upload({
+      repoId: 'repo-1',
+      zipPath: secondZip,
+      expectedEntryId: first.entryId,
+      expectedContentHash: first.contentHash,
+    });
     expect(second.entryId).toBe(first.entryId);
     expect(second.contentHash).not.toBe(first.contentHash);
     const secondAsset = await service.openClientAppAsset(second.entryId, 'assets/logo.png');
@@ -59,6 +64,65 @@ describe('ClientAppService', () => {
       Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x01, 0xfe]),
     );
     expect(fixture.storage.objectCount()).toBe(second.fileCount);
+  });
+
+  it('rejects a replacement ZIP whose entry key targets a different application', async () => {
+    const fixture = createFixture();
+    const service = fixture.createService();
+    const first = await service.upload({
+      repoId: 'repo-1',
+      zipPath: await createClientAppZip('customer-app', { 'index.html': '<html>first</html>' }),
+    });
+
+    await expect(
+      service.upload({
+        repoId: 'repo-1',
+        zipPath: await createClientAppZip('another-app', { 'index.html': '<html>other</html>' }),
+        expectedEntryId: first.entryId,
+      }),
+    ).rejects.toMatchObject({
+      code: 'LIGHT_EXTENSION_INVALID_INPUT',
+      details: expect.objectContaining({
+        category: 'client-app-replacement',
+        expectedKey: 'customer-app',
+        actualKey: 'another-app',
+      }),
+    });
+    expect(fixture.db.records('lightExtensionClientApps')).toHaveLength(1);
+  });
+
+  it('rejects a replacement based on an outdated content hash', async () => {
+    const fixture = createFixture();
+    const service = fixture.createService();
+    const first = await service.upload({
+      repoId: 'repo-1',
+      zipPath: await createClientAppZip('customer-app', { 'index.html': '<html>first</html>' }),
+    });
+    const current = await service.upload({
+      repoId: 'repo-1',
+      zipPath: await createClientAppZip('customer-app', { 'index.html': '<html>current</html>' }),
+      expectedEntryId: first.entryId,
+      expectedContentHash: first.contentHash,
+    });
+
+    await expect(
+      service.upload({
+        repoId: 'repo-1',
+        zipPath: await createClientAppZip('customer-app', { 'index.html': '<html>stale</html>' }),
+        expectedEntryId: first.entryId,
+        expectedContentHash: first.contentHash,
+      }),
+    ).rejects.toMatchObject({
+      code: 'LIGHT_EXTENSION_SOURCE_OUTDATED',
+      details: expect.objectContaining({
+        category: 'client-app-replacement-stale',
+        expectedContentHash: first.contentHash,
+        currentContentHash: current.contentHash,
+      }),
+    });
+    await expect(service.resolveClientApp(first.entryId)).resolves.toMatchObject({
+      contentHash: current.contentHash,
+    });
   });
 
   it('keeps the current asset set intact when staging or pointer publication fails', async () => {
@@ -238,6 +302,24 @@ describe('ClientAppService', () => {
     });
     expect(fixture.db.records('lightExtensionClientAppAssets')).toEqual([]);
     expect(fixture.storage.objectCount()).toBe(0);
+  });
+
+  it('checks repository references under the repository lock before retiring client apps', async () => {
+    const fixture = createFixture();
+    const service = fixture.createService();
+    const uploaded = await service.upload({
+      repoId: 'repo-1',
+      zipPath: await createClientAppZip('referenced-app', { 'index.html': '<html>current</html>' }),
+    });
+    const guard = vi.fn(async () => {
+      throw new Error('repository is referenced');
+    });
+    service.useRepoDeleteGuard(guard);
+
+    await expect(service.deleteClientAppsForRepo('repo-1')).rejects.toThrow('repository is referenced');
+    expect(guard).toHaveBeenCalledTimes(1);
+    await expect(service.resolveClientApp(uploaded.entryId)).resolves.toMatchObject({ entryId: uploaded.entryId });
+    expect(fixture.storage.objectCount()).toBe(uploaded.fileCount);
   });
 
   it('serializes concurrent replacements so the current pointer references one complete asset set', async () => {

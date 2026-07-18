@@ -18,14 +18,14 @@ import { CLIENT_APP_ARCHIVE_LIMITS } from '../services/ClientAppArchive';
 import { ClientAppService } from '../services/ClientAppService';
 import { getServiceContext, type LightExtensionResourceContext, toRecord } from './resourceAction';
 
-export const lightExtensionClientAppActionNames = ['upload', 'list', 'get'] as const;
+export const lightExtensionClientAppActionNames = ['upload', 'list', 'get', 'delete', 'listReferences'] as const;
 export const CLIENT_APP_UPLOAD_LIMITS = Object.freeze({
   files: 1,
   fileSize: CLIENT_APP_ARCHIVE_LIMITS.compressedBytes,
-  fields: 1,
+  fields: 3,
   fieldNameSize: 64,
   fieldSize: 4 * 1024,
-  parts: 2,
+  parts: 4,
   headerPairs: 32,
 });
 
@@ -36,7 +36,11 @@ type MultipartRequest = NonNullable<LightExtensionResourceContext['request']> & 
   };
 };
 
-export function createLightExtensionClientAppsResource(clientAppService: ClientAppService): ResourceOptions {
+export function createLightExtensionClientAppsResource(
+  clientAppService: ClientAppService,
+  deleteClientApp: (entryId: string) => Promise<void> = (entryId) => clientAppService.deleteClientApp(entryId),
+  listClientAppReferences: (entryId: string) => Promise<unknown> = async () => [],
+): ResourceOptions {
   return {
     name: 'lightExtensionClientApps',
     only: [...lightExtensionClientAppActionNames],
@@ -53,6 +57,16 @@ export function createLightExtensionClientAppsResource(clientAppService: ClientA
             {
               repoId: requireRepoId(ctx, request?.body),
               zipPath,
+              ...(optionalString(request?.body?.expectedEntryId)
+                ? {
+                    expectedEntryId: optionalString(request?.body?.expectedEntryId),
+                  }
+                : {}),
+              ...(optionalString(request?.body?.expectedContentHash)
+                ? {
+                    expectedContentHash: optionalString(request?.body?.expectedContentHash),
+                  }
+                : {}),
             },
             {
               ...getServiceContext(ctx),
@@ -65,6 +79,12 @@ export function createLightExtensionClientAppsResource(clientAppService: ClientA
       }),
       list: createClientAppResourceAction((ctx) => clientAppService.listClientApps(requireRepoId(ctx))),
       get: createClientAppResourceAction((ctx) => clientAppService.resolveClientApp(requireEntryId(ctx))),
+      delete: createClientAppResourceAction(async (ctx) => {
+        const entryId = requireEntryId(ctx);
+        await deleteClientApp(entryId);
+        return { entryId, deleted: true };
+      }),
+      listReferences: createClientAppResourceAction((ctx) => listClientAppReferences(requireEntryId(ctx))),
     },
   };
 }
@@ -160,6 +180,13 @@ function requireString(value: unknown, field: string): string {
     throw invalidInput(`${field} is required`);
   }
   return value.trim();
+}
+
+function optionalString(value: unknown): string | undefined {
+  if (typeof value !== 'string') {
+    return;
+  }
+  return value.trim() || undefined;
 }
 
 function invalidInput(message: string): LightExtensionError {

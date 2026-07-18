@@ -42,6 +42,7 @@
     "esbuild-wasm": "~0.27.0",
     "jszip": "^3.10.1",
     "mime-types": "^3.0.1",
+    "parse5": "^7.1.2",
     "typescript": "^5.x",
     "yauzl": "^3.2.0"
   },

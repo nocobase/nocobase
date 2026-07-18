@@ -39,6 +39,8 @@ export function createReferenceServiceFixture(
     flowModels?: Record<string, unknown>[];
     repos?: Record<string, unknown>[];
     entries?: Record<string, unknown>[];
+    clientApps?: Record<string, unknown>[];
+    clientAppAssets?: Record<string, unknown>[];
     references?: Record<string, unknown>[];
     flowModelTemplates?: Record<string, unknown>[];
     flowModelTreePaths?: Record<string, unknown>[];
@@ -51,6 +53,8 @@ export function createReferenceServiceFixture(
     flowModels: createRepository({ records: input.flowModels || [] }),
     lightExtensionRepos: createRepository({ records: input.repos || [] }),
     lightExtensionEntries: createRepository({ records: input.entries || [] }),
+    lightExtensionClientApps: createRepository({ records: input.clientApps || [] }),
+    lightExtensionClientAppAssets: createRepository({ records: input.clientAppAssets || [] }),
     lightExtensionReferences: createRepository({ records: input.references || [] }),
     lightExtensionLogs: createRepository(),
     flowModelTemplates: createRepository({ records: input.flowModelTemplates || [] }),
@@ -80,11 +84,17 @@ export function createReferenceServiceFixture(
         repository,
       };
     },
+    getModel: (name: keyof typeof repositories) => ({
+      findByPk: async (filterByTk: string) => repositories[name].findOne({ filterByTk }),
+    }),
     sequelize: {
       transaction: async (run: (transaction: unknown) => Promise<unknown>) => {
         const snapshot = snapshotRepositories(repositories);
         try {
-          return await run({ transactionId: 'test_transaction' });
+          return await run({
+            transactionId: 'test_transaction',
+            LOCK: { UPDATE: 'UPDATE' },
+          });
         } catch (error) {
           restoreRepositories(repositories, snapshot);
           throw error;
@@ -687,7 +697,12 @@ function matchesFilterByTk(record: MutableModel, filterByTk?: string | string[])
   if (Array.isArray(filterByTk)) {
     return filterByTk.some((item) => matchesFilterByTk(record, item));
   }
-  return record.get('id') === filterByTk || record.get('uid') === filterByTk || record.get('name') === filterByTk;
+  return (
+    record.get('id') === filterByTk ||
+    record.get('uid') === filterByTk ||
+    record.get('name') === filterByTk ||
+    record.get('entryId') === filterByTk
+  );
 }
 
 function matchesFilter(record: MutableModel, filter: Record<string, unknown> | undefined): boolean {

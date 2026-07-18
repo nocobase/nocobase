@@ -116,6 +116,9 @@ describe('client-app gateway routing', () => {
 
     expect(result).toBe(false);
     expect(req.url).toBe(`/api/multiPortals:serveClientApp/customer-portal?${expectedQuery}`);
+    expect(req.headers['x-nocobase-client-app-workspace-root']).toBe('/v/customer');
+    expect(req.headers['x-nocobase-client-app-api-base-url']).toBe('/api');
+    expect(req.headers['x-nocobase-client-app-signin-path']).toBe('/v/signin');
     expect(getAppManifestItems).toHaveBeenCalledWith('main', 'multi-portal');
   });
 
@@ -167,6 +170,13 @@ describe('client-app gateway routing', () => {
       '/api/multiPortals:serveClientApp/demo-customer-portal?x=1&clientAppPath=orders%2F1',
     );
     expect(subAppRequest.headers['x-app']).toBe('demo');
+    expect(subAppRequest.headers['x-nocobase-client-app-request-url']).toBe(
+      '/nocobase/v/apps/demo/customer/orders/1?x=1',
+    );
+    expect(subAppRequest.headers['x-nocobase-client-app-workspace-root']).toBe('/nocobase/v/apps/demo/customer');
+    expect(subAppRequest.headers['x-nocobase-client-app-public-path']).toBe('/nocobase');
+    expect(subAppRequest.headers['x-nocobase-client-app-api-base-url']).toBe('/api/__app/demo');
+    expect(subAppRequest.headers['x-nocobase-client-app-signin-path']).toBe('/nocobase/v/apps/demo/signin');
     expect(getAppManifestItems).toHaveBeenLastCalledWith('demo', 'multi-portal');
     expect(getRequestHandleAppName).toHaveBeenCalledTimes(1);
 

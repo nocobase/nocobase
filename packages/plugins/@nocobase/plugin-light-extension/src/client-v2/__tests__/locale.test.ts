@@ -32,11 +32,26 @@ const gitSyncKeys = [
   'You do not have permission to perform this sync operation',
 ] as const;
 
+const clientAppKeys = [
+  'Custom frontend',
+  'Upload application',
+  'Replace files',
+  'Current health',
+  'Used by',
+  'You do not have permission to manage light extension applications',
+  'This application is used by a workspace and cannot be removed',
+] as const;
+
 describe('plugin-light-extension client-v2 locale entries', () => {
   it('keeps English and Chinese keys aligned for Git sync settings', () => {
     expect(Object.keys(enUS).sort()).toEqual(Object.keys(zhCN).sort());
 
     for (const key of gitSyncKeys) {
+      expect(enUS[key]).toBeTruthy();
+      expect(zhCN[key]).toBeTruthy();
+    }
+
+    for (const key of clientAppKeys) {
       expect(enUS[key]).toBeTruthy();
       expect(zhCN[key]).toBeTruthy();
     }

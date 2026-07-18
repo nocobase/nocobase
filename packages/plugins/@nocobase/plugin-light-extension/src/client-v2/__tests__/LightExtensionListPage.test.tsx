@@ -160,6 +160,14 @@ vi.mock('../pages/LightExtensionWorkspacePage', async () => {
   };
 });
 
+vi.mock('../components/LightExtensionClientAppsPanel', async () => {
+  const React = await import('react');
+  return {
+    default: ({ repoId }: { repoId: string }) =>
+      React.createElement('div', { 'aria-label': 'Custom frontend applications' }, `Client apps for ${repoId}`),
+  };
+});
+
 function renderListPage(
   initialEntry = '/admin/settings/light-extension',
   setupApp?: (app: ReturnType<typeof createMockClient>) => void,
@@ -466,25 +474,54 @@ describe('LightExtensionListPage', () => {
     }
     const sourceAction = within(row).getByRole('button', { name: 'Edit code' });
     const syncAction = within(row).getByRole('button', { name: 'Sync code' });
+    const clientAppAction = within(row).getByRole('button', { name: 'Custom frontend Sales widgets' });
     const editAction = within(row).getByRole('button', { name: 'Edit details Sales widgets' });
     const removeAction = within(row).getByRole('button', { name: 'Remove' });
     expect(sourceAction).toHaveClass('ant-btn-link');
     expect(sourceAction).toHaveTextContent('Edit code');
     expect(syncAction).toHaveClass('ant-btn-link');
     expect(syncAction).toHaveTextContent('Sync code');
+    expect(clientAppAction).toHaveClass('ant-btn-link');
+    expect(clientAppAction).toHaveTextContent('Custom frontend');
     expect(editAction).toHaveClass('ant-btn-link');
     expect(editAction).toHaveTextContent('Edit details');
     expect(removeAction).toHaveClass('ant-btn-link');
     expect(removeAction).toHaveTextContent('Remove');
     expect(sourceAction.querySelector('.anticon')).not.toBeInTheDocument();
     expect(syncAction.querySelector('.anticon')).not.toBeInTheDocument();
+    expect(clientAppAction.querySelector('.anticon')).not.toBeInTheDocument();
     expect(editAction.querySelector('.anticon')).not.toBeInTheDocument();
     expect(removeAction.querySelector('.anticon')).not.toBeInTheDocument();
     expect(
       within(row)
         .getAllByRole('button')
         .map((button) => button.textContent),
-    ).toEqual(['Edit code', 'Sync code', 'Edit details', 'Remove']);
+    ).toEqual(['Edit code', 'Sync code', 'Custom frontend', 'Edit details', 'Remove']);
+  });
+
+  it('opens client-app management separately from the RunJS source workspace', async () => {
+    mocks.api.listRepos.mockResolvedValueOnce([
+      {
+        id: 'ler_customer',
+        name: 'customer',
+        normalizedName: 'customer',
+        title: 'Customer',
+        description: null,
+        lifecycleStatus: 'enabled',
+        healthStatus: 'ready',
+        headCommitId: 'commit-1',
+      },
+    ]);
+    renderListPage('/admin/settings/light-extension?view=compact');
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Custom frontend Customer' }));
+
+    expect(await screen.findByLabelText('Custom frontend applications')).toHaveTextContent(
+      'Client apps for ler_customer',
+    );
+    expect(screen.queryByText('Mock source workspace')).not.toBeInTheDocument();
+    expect(screen.getByTestId('location-search')).toHaveTextContent('panel=client-apps');
+    expect(screen.getByTestId('location-search')).toHaveTextContent('repoId=ler_customer');
   });
 
   it('restores the Sync code drawer directly from URL state', async () => {

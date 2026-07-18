@@ -19,7 +19,11 @@ import {
   CLIENT_APP_UPLOAD_LIMITS,
   lightExtensionClientAppActionNames,
 } from '../resources/lightExtensionClientApps';
+import { LightExtensionError } from '../../shared/errors';
 import type { ClientAppService } from '../services/ClientAppService';
+import { ExternalReferenceService } from '../services/ExternalReferenceService';
+import { stableJsonHash } from '../services/ReferenceOwnerRegistry';
+import { createReferenceServiceFixture } from './reference-test-helpers';
 
 describe('lightExtensionClientApps resource', () => {
   it('exposes a dedicated multipart upload action and removes the request temporary file', async () => {
@@ -46,14 +50,14 @@ describe('lightExtensionClientApps resource', () => {
       can: async () => true,
       request: {
         headers: { 'x-request-id': 'request-1' },
-        body: { repoId: 'repo-1' },
+        body: { repoId: 'repo-1', expectedEntryId: 'entry-1', expectedContentHash: 'hash-1' },
         file: { path: zipPath },
       },
     });
 
     expect(calls).toEqual([
       {
-        input: { repoId: 'repo-1', zipPath },
+        input: { repoId: 'repo-1', zipPath, expectedEntryId: 'entry-1', expectedContentHash: 'hash-1' },
         context: {
           actorUserId: '7',
           requestId: 'request-1',
@@ -158,6 +162,84 @@ describe('lightExtensionClientApps resource', () => {
     });
     const after = await listUploadTemporaryFiles();
     expect(after.filter((file) => !before.has(file))).toEqual([]);
+  });
+
+  it('deletes an unreferenced client app and preserves reference conflict details', async () => {
+    const service = {
+      upload: vi.fn(),
+      listClientApps: vi.fn(),
+      resolveClientApp: vi.fn(),
+    } as unknown as ClientAppService;
+    const deleteClientApp = vi.fn(async (entryId: string) => {
+      if (entryId === 'entry-referenced') {
+        throw new LightExtensionError(
+          'LIGHT_EXTENSION_REFERENCE_EXISTS',
+          'Client app Entry is referenced and cannot be deleted',
+          {
+            details: {
+              entryId,
+              referenceCount: 1,
+              references: [{ ownerKind: 'multiPortal.frontend', ownerId: 'portal-1' }],
+              workspaces: [{ ownerKind: 'multiPortal.frontend', ownerId: 'portal-1' }],
+            },
+          },
+        );
+      }
+    });
+    const resource = createLightExtensionClientAppsResource(service, deleteClientApp);
+
+    const deleted = await runAction(resource.actions?.delete as HandlerType, {
+      action: { params: { filterByTk: 'entry-free' } },
+    });
+    expect(deleted.body).toEqual({ entryId: 'entry-free', deleted: true });
+
+    const conflict = await runAction(resource.actions?.delete as HandlerType, {
+      action: { params: { values: { entryId: 'entry-referenced' } } },
+    });
+    expect(conflict.status).toBe(409);
+    expect(conflict.body).toEqual({
+      errors: [
+        expect.objectContaining({
+          code: 'LIGHT_EXTENSION_REFERENCE_EXISTS',
+          details: expect.objectContaining({
+            references: [{ ownerKind: 'multiPortal.frontend', ownerId: 'portal-1' }],
+            workspaces: [{ ownerKind: 'multiPortal.frontend', ownerId: 'portal-1' }],
+          }),
+        }),
+      ],
+    });
+  });
+
+  it('lists external workspace references through the client-app resource', async () => {
+    const fixture = createReferenceServiceFixture({
+      references: [
+        {
+          id: 'reference-portal-1',
+          repoId: 'repo-1',
+          entryId: 'entry-1',
+          kind: 'client-app',
+          ownerKind: 'multiPortal.frontend',
+          ownerLocator: { kind: 'multiPortal.frontend', ownerId: 'portal-1' },
+          ownerLocatorHash: stableJsonHash({ kind: 'multiPortal.frontend', ownerId: 'portal-1' }),
+          resolvedStatus: 'ready',
+        },
+      ],
+    });
+    const externalReferences = new ExternalReferenceService(fixture.db);
+    const service = {
+      upload: vi.fn(),
+      listClientApps: vi.fn(),
+      resolveClientApp: vi.fn(),
+    } as unknown as ClientAppService;
+    const resource = createLightExtensionClientAppsResource(service, vi.fn(), (entryId) =>
+      externalReferences.listEntryOwners(entryId),
+    );
+
+    const result = await runAction(resource.actions?.listReferences as HandlerType, {
+      action: { params: { values: { entryId: 'entry-1' } } },
+    });
+
+    expect(result.body).toEqual([{ ownerKind: 'multiPortal.frontend', ownerId: 'portal-1' }]);
   });
 });
 
