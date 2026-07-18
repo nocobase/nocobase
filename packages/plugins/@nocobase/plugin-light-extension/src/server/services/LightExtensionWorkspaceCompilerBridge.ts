@@ -9,7 +9,11 @@
 
 import type { Transaction } from '@nocobase/database';
 import { buildRunJSFilesHash, type RunJSCompileDiagnostic, type RunJSRuntimeArtifact } from '@nocobase/runjs';
-import { compileRunJSSourceWorkspace, type CompileRunJSSourceWorkspaceResult } from '@nocobase/runjs/compiler';
+import {
+  compileRunJSSourceWorkspace,
+  type CompileRunJSSourceWorkspaceResult,
+  type RunJSResolvedDependencyGraph,
+} from '@nocobase/runjs/compiler';
 import { randomUUID } from 'crypto';
 import { posix as pathPosix } from 'path';
 import ts from 'typescript';
@@ -19,7 +23,9 @@ import { isLightExtensionError } from '../../shared/errors';
 import type { LightExtensionDiagnostic } from '../../shared/types';
 import { LightExtensionAuditService } from './LightExtensionAuditService';
 import {
+  LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY,
   LIGHT_EXTENSION_AUTHORING_SURFACES,
+  type LightExtensionCompilerBuildIdentity,
   type LightExtensionAuthoringSurfaceSpec,
   type LightExtensionSurfaceStyle,
 } from './LightExtensionCompileContract';
@@ -58,6 +64,20 @@ export interface LightExtensionWorkspaceCompileResult {
   diagnostics: LightExtensionDiagnostic[];
   failureCode?: string;
   surface: LightExtensionAuthoringSurfaceSpec;
+  dependencyGraph?: RunJSResolvedDependencyGraph;
+}
+
+export interface LightExtensionPublishedRuntimeCompileAuditInput {
+  repoId: string;
+  entryId: string;
+  kind: LightExtensionKind;
+  entryName: string;
+  entryPath: string;
+  runtimeVersion: string;
+  requestId: string;
+  diagnostics: LightExtensionDiagnostic[];
+  filesHash?: string;
+  artifactEntryPath?: string;
 }
 
 export class LightExtensionWorkspaceCompilerBridge {
@@ -65,6 +85,10 @@ export class LightExtensionWorkspaceCompilerBridge {
     private readonly auditService: LightExtensionAuditService,
     private readonly permissionService: LightExtensionPermissionService,
   ) {}
+
+  getCompilerBuildIdentity(): LightExtensionCompilerBuildIdentity {
+    return LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY;
+  }
 
   async compileEntry(
     input: LightExtensionWorkspaceCompileInput,
@@ -112,8 +136,43 @@ export class LightExtensionWorkspaceCompilerBridge {
       },
     });
     const result = this.buildCompileResult(input, surface, compiled);
-    await this.recordCompileAudit(input, ctx, requestId, result, classifyFailureReason(result, compiled.failureCode));
+    if (!result.accepted || !ctx.deferSuccessfulCompileAudit) {
+      await this.recordCompileAudit(input, ctx, requestId, result, classifyFailureReason(result, compiled.failureCode));
+    }
     return result;
+  }
+
+  async recordPublishedRuntimeCompileAudit(
+    input: LightExtensionPublishedRuntimeCompileAuditInput,
+    ctx: LightExtensionServiceContext = {},
+  ): Promise<void> {
+    const surface = getSurfaceSpec(input.kind);
+    await this.recordCompileAudit(
+      {
+        repoId: input.repoId,
+        entryId: input.entryId,
+        operation: 'runtimeCompile',
+        kind: input.kind,
+        entryName: input.entryName,
+        entryPath: input.entryPath,
+        runtimeVersion: input.runtimeVersion,
+        files: [],
+      },
+      ctx,
+      input.requestId,
+      {
+        accepted: true,
+        artifact: {
+          code: '',
+          version: input.runtimeVersion,
+          diagnostics: input.diagnostics,
+          filesHash: input.filesHash,
+          entryPath: input.artifactEntryPath || input.entryPath,
+        },
+        diagnostics: input.diagnostics,
+        surface,
+      },
+    );
   }
 
   private validateCompileInput(
@@ -179,6 +238,7 @@ export class LightExtensionWorkspaceCompilerBridge {
       diagnostics,
       failureCode: compiled.failureCode,
       surface,
+      dependencyGraph: compiled.dependencyGraph,
     };
   }
 

@@ -53,6 +53,11 @@ import type {
   LightExtensionTreeEntryInput,
 } from '../../shared/types';
 import DiagnosticsPanel from '../components/DiagnosticsPanel';
+import { isBrowserProvisionalPreviewEnabled } from '../browser-preview/BrowserPreviewSession';
+import {
+  getLightExtensionPreviewSurfaceStyle,
+  useBrowserProvisionalPreview,
+} from '../browser-preview/useBrowserProvisionalPreview';
 import {
   getLightExtensionErrorDiagnostics,
   LightExtensionHookError,
@@ -77,6 +82,7 @@ import { resolveLightExtensionWorkspaceJsonSchema } from '../workspace/lightExte
 type WorkspaceFile = RunJSWorkspaceFile;
 
 interface LightExtensionWorkspacePageProps {
+  browserProvisionalPreview?: boolean;
   embedded?: boolean;
   defaultFilesCollapsed?: boolean;
   repoId?: string;
@@ -130,6 +136,7 @@ const HISTORY_PAGE_SIZE = 20;
 const REPOSITORY_WORKSPACE_SCOPE: LightExtensionWorkspaceScope = { mode: 'repository' };
 
 function LightExtensionWorkspacePage({
+  browserProvisionalPreview,
   embedded = false,
   defaultFilesCollapsed = false,
   repoId: repoIdProp,
@@ -298,6 +305,31 @@ function LightExtensionWorkspacePage({
   latestPreviewSnapshotRef.current = previewSnapshotKey;
   const canPreview = entryScoped && Boolean(onPreview);
   const canMoveToInline = entryScoped && Boolean(onMoveToInline);
+  const browserPreviewEntry = useMemo(
+    () =>
+      workspaceScope.mode === 'entry'
+        ? {
+            entryPath: workspaceScope.entryPath,
+            kind: workspaceScope.kind,
+            runtimeVersion: 'v2',
+            surfaceStyle: getLightExtensionPreviewSurfaceStyle(workspaceScope.kind),
+          }
+        : undefined,
+    [workspaceScope],
+  );
+  const browserPreviewEnabled = entryScoped && (browserProvisionalPreview ?? isBrowserProvisionalPreviewEnabled());
+  const provisionalPreview = useBrowserProvisionalPreview({
+    enabled: browserPreviewEnabled,
+    files,
+    entry: browserPreviewEntry,
+  });
+  const visibleDiagnostics = useMemo(
+    () =>
+      provisionalPreview.enabled && provisionalPreview.diagnostics.length > 0
+        ? [...provisionalPreview.diagnostics, ...diagnostics]
+        : diagnostics,
+    [diagnostics, provisionalPreview.diagnostics, provisionalPreview.enabled],
+  );
 
   const openFilePath = useCallback((path?: string) => {
     if (!path) {
@@ -622,27 +654,6 @@ function LightExtensionWorkspacePage({
     setSaving(true);
     setNotice(null);
     try {
-      const preview = await compileWorkspacePreview({
-        repoId,
-        runtimeVersion: 'v2',
-        files: filesForSave.map((file) => ({
-          path: file.path,
-          content: file.content,
-          language: file.language,
-          mode: file.mode,
-        })),
-      });
-      setDiagnostics(preview.diagnostics);
-      if (!preview.accepted) {
-        const validationError = new Error(t('Source validation failed'));
-        const request = embeddedSaveRequestRef.current;
-        embeddedSaveRequestRef.current = null;
-        embeddedSavePromiseRef.current = null;
-        request?.reject(validationError);
-        setNotice({ type: 'error', message: validationError.message });
-        return;
-      }
-
       const result = await saveSource({
         repoId,
         expectedHeadCommitId: baseHeadCommitId,
@@ -683,7 +694,6 @@ function LightExtensionWorkspacePage({
   }, [
     baseHeadCommitId,
     dirtyChanges,
-    compileWorkspacePreview,
     filesForSave,
     hasBlockedDirtyChanges,
     loadWorkspace,
@@ -1146,6 +1156,23 @@ function LightExtensionWorkspacePage({
                       {activeFileReadOnly && entryScoped ? (
                         <Alert message={pathRestrictionReason} showIcon style={{ marginBottom: 8 }} type="info" />
                       ) : null}
+                      {provisionalPreview.enabled ? (
+                        <Alert
+                          aria-live="polite"
+                          message={getProvisionalPreviewStatusMessage(provisionalPreview.status, t)}
+                          showIcon
+                          style={{ marginBottom: 8 }}
+                          type={
+                            provisionalPreview.status === 'degraded'
+                              ? 'warning'
+                              : provisionalPreview.status === 'diagnostic'
+                                ? 'info'
+                                : provisionalPreview.status === 'ready'
+                                  ? 'success'
+                                  : 'info'
+                          }
+                        />
+                      ) : null}
                       <CodeTab
                         activeFile={activeFile}
                         activePath={activePath}
@@ -1200,11 +1227,11 @@ function LightExtensionWorkspacePage({
                   maxHeight: workspaceFullscreen.isFullscreen ? '32%' : 160,
                   minHeight: 96,
                   overflowX: 'hidden',
-                  overflowY: diagnostics.length > 0 ? 'auto' : 'hidden',
+                  overflowY: visibleDiagnostics.length > 0 ? 'auto' : 'hidden',
                   padding: 12,
                 }}
               >
-                <DiagnosticsPanel diagnostics={diagnostics} onOpenDiagnostic={openDiagnosticSource} />
+                <DiagnosticsPanel diagnostics={visibleDiagnostics} onOpenDiagnostic={openDiagnosticSource} />
               </div>
             </div>,
             workspaceFullscreen.container,
@@ -1278,6 +1305,22 @@ function LightExtensionWorkspacePage({
       />
     </Flex>
   );
+}
+
+function getProvisionalPreviewStatusMessage(
+  status: ReturnType<typeof useBrowserProvisionalPreview>['status'],
+  t: (key: string) => string,
+): string {
+  if (status === 'degraded') {
+    return t('Local provisional preview is unavailable. Save will continue on the server.');
+  }
+  if (status === 'diagnostic') {
+    return t('Local provisional preview reported diagnostics. Server Save remains authoritative.');
+  }
+  if (status === 'ready') {
+    return t('Local provisional preview is ready. Server Save remains authoritative.');
+  }
+  return t('Building local provisional preview');
 }
 
 function normalizeWorkspaceFiles(files: LightExtensionTreeEntryInput[]): WorkspaceFile[] {

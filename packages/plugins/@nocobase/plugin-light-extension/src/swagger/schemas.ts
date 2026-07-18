@@ -356,6 +356,8 @@ export const lightExtensionSchemas = {
       },
       settingsSchemaHash: nullableString,
       compiledCommitId: nullableString,
+      compiledInputKey: nullableString,
+      compilerBuildId: nullableString,
       runtimeVersion: nullableString,
       surfaceStyle: nullableString,
       runtimeCodeHash: nullableString,
@@ -673,6 +675,23 @@ export const lightExtensionSchemas = {
           $ref: '#/components/schemas/LightExtensionCompileEntryResult',
         },
       },
+      ticket: {
+        $ref: '#/components/schemas/TrustedPreviewTicketSummary',
+      },
+    },
+  },
+  TrustedPreviewTicketSummary: {
+    type: 'object',
+    required: ['ticket', 'expiresAt'],
+    properties: {
+      ticket: {
+        type: 'string',
+        description: 'Opaque, short-lived, actor-bound token. The token does not contain source or Artifact payloads.',
+      },
+      expiresAt: {
+        type: 'string',
+        format: 'date-time',
+      },
     },
   },
   LightExtensionSaveSourceEntryResult: {
@@ -694,6 +713,11 @@ export const lightExtensionSchemas = {
       status: {
         type: 'string',
         enum: ['success', 'failed', 'skipped'],
+      },
+      execution: {
+        type: 'string',
+        enum: ['compiled', 'reused', 'skipped'],
+        description: 'Optional server execution detail without changing the compatible status enum.',
       },
       diagnostics: {
         type: 'array',

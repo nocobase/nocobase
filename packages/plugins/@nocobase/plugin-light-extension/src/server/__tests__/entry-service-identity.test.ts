@@ -100,12 +100,17 @@ describe('LightExtensionEntryService stable source identity', () => {
     });
     expect(entryModel.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        entryName: 'stable-sales',
         entryPath: 'src/client/js-blocks/new-directory/index.tsx',
         descriptorPath: 'src/client/js-blocks/new-directory/entry.json',
-        healthStatus: 'ready',
       }),
       expect.objectContaining({ transaction }),
+    );
+    expect(entryModel.update).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        entryName: 'stable-sales',
+        healthStatus: 'ready',
+      }),
+      expect.anything(),
     );
   });
 });

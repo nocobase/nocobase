@@ -15,6 +15,16 @@
       "import": "./lib/compiler/index.js",
       "require": "./lib/compiler/index.js"
     },
+    "./compiler/portable": {
+      "types": "./lib/compiler/portable.d.ts",
+      "import": "./lib/compiler/portable.js",
+      "require": "./lib/compiler/portable.js"
+    },
+    "./compiler/dependency-collector": {
+      "types": "./lib/compiler/dependency-collector.d.ts",
+      "import": "./lib/compiler/dependency-collector.js",
+      "require": "./lib/compiler/dependency-collector.js"
+    },
     "./client-v2": {
       "types": "./lib/client-v2/index.d.ts",
       "import": "./lib/client-v2/index.js",

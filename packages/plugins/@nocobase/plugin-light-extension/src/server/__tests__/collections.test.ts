@@ -64,6 +64,10 @@ describe('plugin-light-extension collections', () => {
       'settingsSchema',
       'settingsSchemaHash',
       'compiledCommitId',
+      'compiledInputKey',
+      'compilerBuildId',
+      'dependencyManifest',
+      'dependencyManifestHash',
       'runtimeArtifact',
       'runtimeVersion',
       'surfaceStyle',
@@ -84,6 +88,19 @@ describe('plugin-light-extension collections', () => {
       'entryPath',
       'runtimeContract',
       'byteSize',
+    ]);
+    expectCollectionFields('lightExtensionCompileCache', [
+      'compileKey',
+      'artifactHash',
+      'compilerBuildId',
+      'runtimeContract',
+      'filesHash',
+      'artifactFilesHash',
+      'inputManifest',
+      'dependencyManifest',
+      'dependencyManifestHash',
+      'diagnostics',
+      'compiledAt',
     ]);
     expect(app.db.getCollection('lightExtensionEntries')?.getField('validatorVersion')).toBeFalsy();
     expect(app.db.getCollection('lightExtensionEntries')?.getField('metaPath')).toBeFalsy();

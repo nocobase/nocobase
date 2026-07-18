@@ -9,7 +9,7 @@
 
 import path from 'node:path';
 
-import { sha256Hex } from '..';
+import { sha256Hex, stableSerialize, type RunJSTypeDependencyContract } from '..';
 import {
   generatedRunJSAntdCompletionCatalog,
   generatedRunJSAntdIconsCompletionCatalog,
@@ -22,8 +22,11 @@ import type {
   RunJSTypeLibraryUsageDefinition,
 } from '../typescript-library';
 import { selectRunJSTypeLibraryRequests } from '../typescript-library';
-import { createRunJSAntdIconsTypeLibraryPackDefinitions } from '../type-packs/antd-icons';
-import { createRunJSAntdTypeLibraryPackDefinitions } from '../type-packs/antd';
+import {
+  createRunJSAntdIconsTypeLibraryPackDefinitions,
+  RUNJS_ANTD_ICONS_FULL_PACK_ID,
+} from '../type-packs/antd-icons';
+import { createRunJSAntdTypeLibraryPackDefinitions, RUNJS_ANTD_FULL_PACK_ID } from '../type-packs/antd';
 import { RUNJS_DAYJS_TYPE_LIBRARY_PACK_DEFINITION } from '../type-packs/dayjs';
 import { RUNJS_FORMULAJS_TYPE_LIBRARY_PACK_DEFINITION } from '../type-packs/formulajs';
 import { collectRunJSTypeDeclarationGraphSync, type RunJSTypeLibraryPackDefinition } from '../type-packs/generator';
@@ -38,6 +41,10 @@ import {
 export interface NodeRunJSTypeLibraryFiles {
   dependencyFiles: readonly RunJSTypeLibraryFile[];
   rootFiles: readonly RunJSTypeLibraryFile[];
+}
+
+export interface NodeRunJSTypeLibraryLoadResult extends NodeRunJSTypeLibraryFiles {
+  contracts: RunJSTypeDependencyContract[];
 }
 
 export interface NodeRunJSTypeLibraryProvider {
@@ -112,6 +119,13 @@ export class NodeRunJSTypeLibraryRegistry {
     requests: readonly RunJSTypeLibraryRequest[],
     typeLibraryIds: readonly string[] = [],
   ): NodeRunJSTypeLibraryFiles {
+    return this.loadWithContracts(requests, typeLibraryIds);
+  }
+
+  loadWithContracts(
+    requests: readonly RunJSTypeLibraryRequest[],
+    typeLibraryIds: readonly string[] = [],
+  ): NodeRunJSTypeLibraryLoadResult {
     this.assertActive();
     const allRequests = new Map(requests.map((request) => [request.packId, request]));
     for (const request of this.createExplicitRequests(typeLibraryIds)) allRequests.set(request.packId, request);
@@ -124,7 +138,30 @@ export class NodeRunJSTypeLibraryRegistry {
     for (const request of selectRunJSTypeLibraryRequests([...allRequests.values()], loadedFullPackIds)) {
       if (this.has(request.packId)) this.collect(request, new Set<string>(), loaded);
     }
-    return loaded.size ? mergePacks(loaded.values()) : emptyFiles;
+    const files = loaded.size ? mergePacks(loaded.values()) : emptyFiles;
+    return {
+      ...files,
+      contracts: [...loaded.entries()]
+        .map(([id, packFiles]) => {
+          const provider = this.resolve(id);
+          return {
+            id: `runjs:type-library:${id}`,
+            ...(provider?.version ? { version: provider.version } : {}),
+            contentHash:
+              provider?.contentHash ||
+              sha256Hex(
+                stableSerialize({
+                  dependencyFiles: packFiles.dependencyFiles.map((file) => ({
+                    path: file.path,
+                    contentHash: file.contentHash,
+                  })),
+                  rootFiles: packFiles.rootFiles.map((file) => ({ path: file.path, contentHash: file.contentHash })),
+                }),
+              ),
+          };
+        })
+        .sort((left, right) => left.id.localeCompare(right.id)),
+    };
   }
 
   dispose(): void {
@@ -322,6 +359,60 @@ export function loadNodeRunJSTypeLibraryFiles(
   options: { registry?: NodeRunJSTypeLibraryRegistry; typeLibraryIds?: readonly string[] } = {},
 ): NodeRunJSTypeLibraryFiles {
   return (options.registry || defaultNodeRunJSTypeLibraryRegistry).load(requests, options.typeLibraryIds);
+}
+
+export function loadNodeRunJSTypeLibraryFilesWithContracts(
+  requests: readonly RunJSTypeLibraryRequest[],
+  options: { registry?: NodeRunJSTypeLibraryRegistry; typeLibraryIds?: readonly string[] } = {},
+): NodeRunJSTypeLibraryLoadResult {
+  return (options.registry || defaultNodeRunJSTypeLibraryRegistry).loadWithContracts(requests, options.typeLibraryIds);
+}
+
+export function buildDefaultNodeRunJSTypeLibraryFingerprint(projectRoot = process.cwd()): string {
+  const allDefinitions = [
+    reactTypeLibraryDefinition,
+    reactDOMTypeLibraryDefinition,
+    RUNJS_DAYJS_TYPE_LIBRARY_PACK_DEFINITION,
+    RUNJS_LODASH_TYPE_LIBRARY_PACK_DEFINITION,
+    RUNJS_MATHJS_TYPE_LIBRARY_PACK_DEFINITION,
+    RUNJS_FORMULAJS_TYPE_LIBRARY_PACK_DEFINITION,
+    ...antdTypeLibraryDefinitions,
+    ...antdIconsTypeLibraryDefinitions,
+  ];
+  const representativeDefinitions = [
+    reactTypeLibraryDefinition,
+    reactDOMTypeLibraryDefinition,
+    RUNJS_DAYJS_TYPE_LIBRARY_PACK_DEFINITION,
+    RUNJS_LODASH_TYPE_LIBRARY_PACK_DEFINITION,
+    RUNJS_MATHJS_TYPE_LIBRARY_PACK_DEFINITION,
+    RUNJS_FORMULAJS_TYPE_LIBRARY_PACK_DEFINITION,
+    requireDefinition(antdTypeLibraryDefinitions, RUNJS_ANTD_FULL_PACK_ID),
+    requireDefinition(antdIconsTypeLibraryDefinitions, RUNJS_ANTD_ICONS_FULL_PACK_ID),
+  ];
+  return sha256Hex(
+    stableSerialize({
+      definitions: allDefinitions.sort(byId).map((definition) => ({
+        id: definition.id,
+        entry: definition.entry,
+        dependencies: [...(definition.dependencies || [])].sort(),
+        rootFiles: [...(definition.rootFiles || [])]
+          .map((file) => ({ path: file.path, contentHash: sha256Hex(file.content) }))
+          .sort((left, right) => left.path.localeCompare(right.path)),
+        metadata: definition.metadata,
+      })),
+      declarationFiles: mergePacks(
+        representativeDefinitions.map((definition) => loadDeclaration(definition, projectRoot)),
+      ),
+    }),
+  );
+}
+
+function requireDefinition(definitions: RunJSTypeLibraryPackDefinition[], id: string): RunJSTypeLibraryPackDefinition {
+  const definition = definitions.find((item) => item.id === id);
+  if (!definition) {
+    throw new Error(`Node RunJS TypeScript library definition was not found: ${id}`);
+  }
+  return definition;
 }
 
 function mergePacks(packs: Iterable<NodeRunJSTypeLibraryFiles>): NodeRunJSTypeLibraryFiles {

@@ -34,15 +34,25 @@ import {
 } from './resources/lightExtensionReferences';
 import { createLightExtensionsResource, lightExtensionActionNames } from './resources/lightExtensions';
 import { LightExtensionAuditService } from './services/LightExtensionAuditService';
+import { LightExtensionCanonicalWorkspaceBuilder } from './services/LightExtensionCanonicalWorkspace';
 import { LightExtensionCompilePreviewService } from './services/LightExtensionCompilePreviewService';
+import { LightExtensionCompileWorkerPool } from './services/LightExtensionCompileWorkerPool';
+import { createLightExtensionCompileMetricsLoggerCollector } from './services/LightExtensionCompileMetrics';
 import { LightExtensionEntryService } from './services/LightExtensionEntryService';
 import { LightExtensionFileService } from './services/LightExtensionFileService';
 import { LightExtensionPermissionService } from './services/LightExtensionPermissionService';
+import {
+  LIGHT_EXTENSION_PREVIEW_TICKET_CACHE_NAME,
+  LIGHT_EXTENSION_PREVIEW_TICKET_CACHE_PREFIX,
+  LightExtensionPreviewTicketStore,
+  LightExtensionPreviewTicketVerifier,
+} from './services/LightExtensionPreviewTicket';
 import { LightExtensionRemotePullService } from './services/LightExtensionRemotePullService';
 import { LightExtensionRepoService } from './services/LightExtensionRepoService';
 import { LightExtensionRuntimeCompileService } from './services/LightExtensionRuntimeCompileService';
 import { LightExtensionValidator } from './services/LightExtensionValidator';
 import { LightExtensionWorkspaceCompilerBridge } from './services/LightExtensionWorkspaceCompilerBridge';
+import { LightExtensionTrustedCompileCacheService } from './services/LightExtensionTrustedCompileCacheService';
 import { RuntimeResolveService } from './services/RuntimeResolveService';
 import { ReferenceService } from './services/ReferenceService';
 import { MoveSourceService } from './services/MoveSourceService';
@@ -72,7 +82,15 @@ type PluginManagerLike = {
 type PluginLoadListener = (plugin: unknown, options?: unknown) => void;
 
 type AppWithPluginEvents = {
+  log?: unknown;
   pm?: PluginManagerLike;
+  cacheManager?: {
+    createCache?: (options: { name: string; prefix?: string }) => Promise<{
+      set(key: string, value: unknown, ttl?: number): Promise<void>;
+      get<T>(key: string): Promise<T | undefined>;
+      del(key: string): Promise<void>;
+    }>;
+  };
   resourceManager?: {
     define?: (resource: unknown) => void;
     options?: {
@@ -91,10 +109,16 @@ type AppWithPluginEvents = {
     ) => void;
     registerSnippet?: (snippet: { name: string; actions: string[] }) => void;
   };
-  on?: (eventName: 'afterLoadPlugin' | 'afterStart', listener: PluginLoadListener | (() => Promise<void>)) => unknown;
-  off?: (eventName: 'afterLoadPlugin' | 'afterStart', listener: PluginLoadListener | (() => Promise<void>)) => unknown;
+  on?: (
+    eventName: 'afterLoadPlugin' | 'afterStart' | 'beforeStop',
+    listener: PluginLoadListener | (() => Promise<void>),
+  ) => unknown;
+  off?: (
+    eventName: 'afterLoadPlugin' | 'afterStart' | 'beforeStop',
+    listener: PluginLoadListener | (() => Promise<void>),
+  ) => unknown;
   removeListener?: (
-    eventName: 'afterLoadPlugin' | 'afterStart',
+    eventName: 'afterLoadPlugin' | 'afterStart' | 'beforeStop',
     listener: PluginLoadListener | (() => Promise<void>),
   ) => unknown;
   use?: (
@@ -140,9 +164,13 @@ export class PluginLightExtensionServer extends Plugin {
 
   private compilePreviewService?: LightExtensionCompilePreviewService;
 
+  private previewTicketVerifier?: LightExtensionPreviewTicketVerifier;
+
   private runtimeResolveService?: RuntimeResolveService;
 
   private runtimeCompileService?: LightExtensionRuntimeCompileService;
+
+  private compileWorkerPool?: LightExtensionCompileWorkerPool;
 
   private entryService?: LightExtensionEntryService;
 
@@ -160,6 +188,8 @@ export class PluginLightExtensionServer extends Plugin {
 
   private remotePullRecoveryPromise?: Promise<void>;
 
+  private compileShutdownListener?: () => Promise<void>;
+
   async syncFlowModelReferencesForNodeTree(
     input: { rootUid: string; action?: string },
     ctx: Parameters<ReferenceService['syncFlowModelReferencesForNodeTree']>[1] = {},
@@ -172,6 +202,10 @@ export class PluginLightExtensionServer extends Plugin {
     ctx: Parameters<ReferenceService['markFlowModelReferencesOwnerMissingForNodeTree']>[1] = {},
   ) {
     return this.referenceService?.markFlowModelReferencesOwnerMissingForNodeTree(input, ctx);
+  }
+
+  getPreviewTicketVerifier(): LightExtensionPreviewTicketVerifier | undefined {
+    return this.previewTicketVerifier;
   }
 
   async beforeLoad() {
@@ -196,7 +230,22 @@ export class PluginLightExtensionServer extends Plugin {
     this.auditService = new LightExtensionAuditService(db);
     this.permissionService = new LightExtensionPermissionService(this.auditService);
     this.validator = new LightExtensionValidator();
+    const compileMetricsCollector = (this.app as unknown as AppWithPluginEvents).log
+      ? createLightExtensionCompileMetricsLoggerCollector(this.log)
+      : undefined;
     this.workspaceCompilerBridge = new LightExtensionWorkspaceCompilerBridge(this.auditService, this.permissionService);
+    const app = this.app as unknown as AppWithPluginEvents;
+    const trustedCompileCache = new LightExtensionTrustedCompileCacheService(db);
+    const previewTicketCache = await app.cacheManager?.createCache?.({
+      name: LIGHT_EXTENSION_PREVIEW_TICKET_CACHE_NAME,
+      prefix: LIGHT_EXTENSION_PREVIEW_TICKET_CACHE_PREFIX,
+    });
+    const previewTicketStore = previewTicketCache
+      ? new LightExtensionPreviewTicketStore(previewTicketCache)
+      : undefined;
+    this.previewTicketVerifier = previewTicketStore
+      ? new LightExtensionPreviewTicketVerifier(previewTicketStore, trustedCompileCache)
+      : undefined;
     const sharedVscPermissionHooks = findVscPermissionHookRegistry((this.app as unknown as AppWithPluginEvents).pm);
     this.repoService = new LightExtensionRepoService(
       db,
@@ -221,15 +270,28 @@ export class PluginLightExtensionServer extends Plugin {
       this.permissionService,
       this.workspaceCompilerBridge,
       this.validator,
+      compileMetricsCollector,
+      {
+        canonicalWorkspaceBuilder: new LightExtensionCanonicalWorkspaceBuilder(db),
+        previewTicketStore,
+        trustedCompileCache,
+      },
     );
     this.referenceService = new ReferenceService(db, this.auditService, this.permissionService);
     const apiBasePath = (this.app as unknown as AppWithPluginEvents).resourceManager?.options?.prefix;
     this.runtimeResolveService = new RuntimeResolveService(db, typeof apiBasePath === 'string' ? { apiBasePath } : {});
+    this.compileWorkerPool = new LightExtensionCompileWorkerPool();
     this.runtimeCompileService = new LightExtensionRuntimeCompileService(
       db,
       this.fileService,
       this.entryService,
       this.workspaceCompilerBridge,
+      compileMetricsCollector,
+      {
+        trustedCompileCache,
+        previewTicketVerifier: this.previewTicketVerifier,
+        compileWorkerPool: this.compileWorkerPool,
+      },
     );
     this.repoService.useReferenceService(this.referenceService);
     this.repoService.useRemoteSyncLifecycleGate({
@@ -299,6 +361,7 @@ export class PluginLightExtensionServer extends Plugin {
     this.registerAclActions();
     this.registerVscPermissionHookWhenAvailable();
     this.registerRemotePullRecoveryListener();
+    this.registerCompileShutdownListener();
   }
 
   async afterDisable() {
@@ -313,6 +376,42 @@ export class PluginLightExtensionServer extends Plugin {
   async remove() {
     this.unregisterVscPermissionHookWhenNeeded();
     this.removeRemotePullRecoveryListener();
+    await this.shutdownCompileInfrastructure();
+  }
+
+  private registerCompileShutdownListener() {
+    this.removeCompileShutdownListener();
+    const app = this.app as unknown as AppWithPluginEvents;
+    if (!app.on) {
+      return;
+    }
+    const listener = async () => {
+      await this.shutdownCompileInfrastructure();
+    };
+    this.compileShutdownListener = listener;
+    app.on('beforeStop', listener);
+  }
+
+  private removeCompileShutdownListener() {
+    if (!this.compileShutdownListener) {
+      return;
+    }
+    const app = this.app as unknown as AppWithPluginEvents;
+    if (app.off) {
+      app.off('beforeStop', this.compileShutdownListener);
+    } else {
+      app.removeListener?.('beforeStop', this.compileShutdownListener);
+    }
+    this.compileShutdownListener = undefined;
+  }
+
+  private async shutdownCompileInfrastructure(): Promise<void> {
+    this.removeCompileShutdownListener();
+    const pool = this.compileWorkerPool;
+    this.compileWorkerPool = undefined;
+    if (pool) {
+      await pool.shutdown();
+    }
   }
 
   private registerAclActions() {

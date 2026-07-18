@@ -15,6 +15,7 @@ import { VscError } from '../../shared/errors';
 import { pathHash, pathLowerHash } from '../../shared/path';
 import { BlobService } from '../services/BlobService';
 import { RepositoryService } from '../services/RepositoryService';
+import { TreeService } from '../services/TreeService';
 import { VscFileService } from '../services/VscFileService';
 
 // Cross-dialect checks can be repeated by changing DB_DIALECT and DB_* connection variables before this yarn test command.
@@ -22,6 +23,7 @@ describe('vsc-file database compatibility', () => {
   let db: Database;
   let service: VscFileService;
   let blobService: BlobService;
+  let treeService: TreeService;
   let repositoryService: RepositoryService;
 
   beforeEach(async () => {
@@ -34,6 +36,7 @@ describe('vsc-file database compatibility', () => {
 
     service = new VscFileService(db);
     blobService = new BlobService(db);
+    treeService = new TreeService(db, blobService);
     repositoryService = new RepositoryService(db);
   });
 
@@ -127,14 +130,30 @@ describe('vsc-file database compatibility', () => {
   });
 
   it('stores long text blobs without truncation', async () => {
-    const longContent = `${'0123456789abcdef\n'.repeat(8192)}tail\n`;
+    const longContent = `\ufeff${'多字节-text\r\n'.repeat(8192)}tail\r`;
     const blob = await blobService.ensureBlob(longContent);
-    const record = await db.getRepository('vscFileBlobs').findOne({
-      filterByTk: blob.hash,
-    });
+    const loaded = await blobService.loadBlobs([blob.hash, blob.hash]);
+    const metadata = await blobService.loadBlobMetadata([blob.hash]);
+    const normalizedContent = `${'多字节-text\n'.repeat(8192)}tail\n`;
 
-    expect(record?.get('size')).toBe(Buffer.byteLength(longContent, 'utf8'));
-    expect(record?.get('content')).toBe(longContent);
+    expect(loaded.get(blob.hash)).toEqual(blob);
+    expect(loaded.get(blob.hash)?.content).toBe(normalizedContent);
+    expect(loaded.get(blob.hash)?.size).toBe(Buffer.byteLength(normalizedContent, 'utf8'));
+    expect(metadata.get(blob.hash)).toEqual({ hash: blob.hash, size: blob.size });
+  });
+
+  it('reuses prepared tree identity when ensuring the same canonical tree repeatedly', async () => {
+    const prepared = await treeService.prepareTree([
+      { path: 'src/index.ts', content: '\ufeffexport const value = "多字节";\r\n' },
+      { path: 'README.md', content: '# Demo\r' },
+    ]);
+    const first = await treeService.ensurePreparedTree(prepared);
+    const second = await treeService.ensurePreparedTree(prepared);
+
+    expect(second).toEqual(first);
+    expect(await db.getRepository('vscFileTrees').count()).toBe(1);
+    expect(await db.getRepository('vscFileTreeEntries').count()).toBe(2);
+    expect(await db.getRepository('vscFileBlobs').count()).toBe(2);
   });
 
   it('rolls back repository, ref, tree, commit, and blob writes in one transaction', async () => {

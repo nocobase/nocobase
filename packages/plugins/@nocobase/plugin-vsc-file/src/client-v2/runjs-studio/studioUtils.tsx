@@ -589,6 +589,7 @@ export function buildRunJSTypeScriptProject(
 
   return {
     currentFilePath: activeFile.path,
+    ignoredDiagnosticCodes: [1108],
     rewriteBuiltInAutoImports: true,
     typeLibraryIds: ['react'],
     files: files

@@ -110,14 +110,16 @@ function normalizeCompilePreviewInput(input: ResourceActionInput): LightExtensio
 }
 
 function normalizeWorkspacePreviewInput(input: ResourceActionInput): LightExtensionWorkspacePreviewInput {
-  return {
+  return compactObject({
     repoId: requireRepoId(input),
+    expectedHeadCommitId: optionalNullableString(input, 'expectedHeadCommitId'),
+    issueSaveTicket: optionalBoolean(input, 'issueSaveTicket'),
     entryId: optionalNullableString(input, 'entryId'),
     kind: optionalLightExtensionKind(input, 'kind'),
     entryPath: optionalString(input, 'entryPath', 'entryPath'),
     runtimeVersion: optionalString(input, 'runtimeVersion', 'runtimeVersion'),
     files: requireArray(input, 'files', normalizeWorkspacePreviewFile),
-  };
+  });
 }
 
 function normalizeMoveSourceInput(input: ResourceActionInput): LightExtensionMoveSourceInput {
@@ -291,6 +293,17 @@ function optionalString(input: ResourceActionInput, key: string, label: string):
   return value;
 }
 
+function optionalBoolean(input: ResourceActionInput, key: string): boolean | undefined {
+  const value = input[key];
+  if (typeof value === 'undefined') {
+    return undefined;
+  }
+  if (typeof value !== 'boolean') {
+    throw invalidInput(`${key} must be a boolean`);
+  }
+  return value;
+}
+
 function optionalStringArray(input: ResourceActionInput, key: string): string[] | undefined {
   const value = input[key];
   if (typeof value === 'undefined') {
@@ -301,6 +314,10 @@ function optionalStringArray(input: ResourceActionInput, key: string): string[] 
   }
 
   return value.map((item) => item.trim());
+}
+
+function compactObject<T extends Record<string, unknown>>(input: T): T {
+  return Object.fromEntries(Object.entries(input).filter(([, value]) => typeof value !== 'undefined')) as T;
 }
 
 function invalidInput(message: string): LightExtensionError {

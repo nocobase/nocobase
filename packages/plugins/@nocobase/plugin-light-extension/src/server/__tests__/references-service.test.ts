@@ -552,4 +552,112 @@ describe('plugin-light-extension references service', () => {
       }),
     });
   });
+
+  it('skips reference loading entirely when the refresh plan has no reference fingerprint changes', async () => {
+    const { service, repositories, recordReferenceEvent } = createReferenceServiceFixture({
+      flowModelTrees: {
+        flow_js_block: createJsBlockNode(),
+      },
+      repos: [createRepoRecord()],
+      entries: [createEntryRecord()],
+      references: [createReferenceRecord()],
+    });
+
+    const result = await service.refreshReferences({
+      repoId: 'ler_sales',
+      plan: {
+        mode: 'skip',
+        reason: 'reference_fingerprint_unchanged',
+      },
+    });
+
+    expect(result).toEqual({
+      mode: 'skip',
+      reason: 'reference_fingerprint_unchanged',
+      targetEntryCount: 0,
+      referenceCount: 0,
+      changed: 0,
+      statusCounts: {},
+    });
+    expect(repositories.lightExtensionReferences.find).not.toHaveBeenCalled();
+    expect(repositories.lightExtensionRepos.findOne).not.toHaveBeenCalled();
+    expect(repositories.lightExtensionEntries.find).not.toHaveBeenCalled();
+    expect(repositories.flowModels.findModelById).not.toHaveBeenCalled();
+    expect(recordReferenceEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        details: expect.objectContaining({
+          mode: 'skip',
+          reason: 'reference_fingerprint_unchanged',
+          targetEntryCount: 0,
+          referenceCount: 0,
+          changed: 0,
+        }),
+      }),
+    );
+  });
+
+  it('refreshes only target entry references with one repo load, one entry load, and one owner-root load', async () => {
+    const secondEntry = createEntryRecord({
+      id: 'lee_other',
+      entryName: 'other',
+      entryPath: 'src/client/js-blocks/other/index.tsx',
+      descriptorPath: 'src/client/js-blocks/other/entry.json',
+    });
+    const { service, repositories, recordReferenceEvent } = createReferenceServiceFixture({
+      flowModelTrees: {
+        flow_js_block: createJsBlockNode(),
+      },
+      repos: [createRepoRecord({ headCommitId: 'vsc_commit_2' })],
+      entries: [createEntryRecord(), secondEntry],
+      references: [
+        createReferenceRecord({ id: 'lef_target_1' }),
+        createReferenceRecord({ id: 'lef_target_2' }),
+        createReferenceRecord({
+          id: 'lef_other',
+          modelUid: 'flow_other',
+          entryId: 'lee_other',
+        }),
+      ],
+    });
+
+    const result = await service.refreshReferences({
+      repoId: 'ler_sales',
+      plan: {
+        mode: 'entries',
+        entryIds: ['lee_sales_kpi', 'lee_sales_kpi'],
+        reason: 'entry_reference_fingerprint_changed',
+      },
+    });
+
+    expect(result).toMatchObject({
+      mode: 'entries',
+      targetEntryCount: 1,
+      referenceCount: 2,
+      changed: 2,
+      statusCounts: {
+        runtime_missing: 2,
+      },
+    });
+    expect(repositories.lightExtensionReferences.records[0].get('resolvedStatus')).toBe('runtime_missing');
+    expect(repositories.lightExtensionReferences.records[1].get('resolvedStatus')).toBe('runtime_missing');
+    expect(repositories.lightExtensionReferences.records[2].get('resolvedStatus')).toBe('active');
+    expect(repositories.lightExtensionReferences.find).toHaveBeenCalledTimes(1);
+    expect(repositories.lightExtensionRepos.findOne).toHaveBeenCalledTimes(1);
+    expect(repositories.lightExtensionEntries.find).toHaveBeenCalledTimes(1);
+    expect(repositories.flowModels.findModelById).toHaveBeenCalledTimes(1);
+    expect(recordReferenceEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        details: expect.objectContaining({
+          mode: 'entries',
+          reason: 'entry_reference_fingerprint_changed',
+          targetEntryCount: 1,
+          referenceCount: 2,
+          changed: 2,
+          statusCounts: {
+            runtime_missing: 2,
+          },
+        }),
+      }),
+    );
+  });
 });

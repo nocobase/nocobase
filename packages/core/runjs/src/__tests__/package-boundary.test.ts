@@ -37,6 +37,14 @@ describe('@nocobase/runjs package boundary', () => {
 
     expect(violations).toEqual([]);
   });
+
+  it('keeps the portable compiler boundary free of Node and native compiler imports', () => {
+    const portableSource = fs.readFileSync(path.resolve(__dirname, '../compiler/portable.ts'), 'utf8');
+    const importedSpecifiers = collectRuntimeImportSpecifiers(portableSource, 'portable.ts');
+
+    expect([...importedSpecifiers]).toEqual([]);
+    expect(portableSource).not.toMatch(/(?:from|import\()\s*['"](?:node:|crypto|fs|path|esbuild)/u);
+  });
 });
 
 function collectRuntimeImportSpecifiers(source: string, fileName: string): Set<string> {

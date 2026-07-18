@@ -30,6 +30,7 @@ import type {
   LightExtensionUpdateRepoInput,
 } from '../../shared/types';
 import { LightExtensionAuditService } from './LightExtensionAuditService';
+import type { LightExtensionCompileMetricsRecorder } from './LightExtensionCompileMetrics';
 import { LightExtensionPermissionService, type LightExtensionCanFunction } from './LightExtensionPermissionService';
 import type { ReferenceService } from './ReferenceService';
 import { LightExtensionValidator, hasErrorDiagnostic } from './LightExtensionValidator';
@@ -41,6 +42,12 @@ export interface LightExtensionServiceContext {
   requestId?: string;
   requestSource?: string;
   transaction?: Transaction;
+  /** @internal */
+  compileMetrics?: LightExtensionCompileMetricsRecorder;
+  /** @internal */
+  deferredRejectedPushAudits?: Array<() => Promise<void>>;
+  /** @internal */
+  deferSuccessfulCompileAudit?: boolean;
 }
 
 export interface LightExtensionRepoInternalRecord extends LightExtensionRepoRecord {
@@ -413,11 +420,20 @@ export class LightExtensionRepoService {
       }
 
       const next = await this.getInternalRepo(input.repoId, { ...ctx, transaction });
-      await this.referenceService?.refreshReferencesForRepo(input.repoId, {
-        ...ctx,
-        transaction,
-        requestId,
-      });
+      await this.referenceService?.refreshReferences(
+        {
+          repoId: input.repoId,
+          plan: {
+            mode: 'repo',
+            reason: 'repo_lifecycle_change',
+          },
+        },
+        {
+          ...ctx,
+          transaction,
+          requestId,
+        },
+      );
       await this.auditService.recordLifecycleEvent({
         repoId: input.repoId,
         action: 'repoLifecycleChange',

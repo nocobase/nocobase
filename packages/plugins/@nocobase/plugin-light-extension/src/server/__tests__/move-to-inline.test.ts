@@ -59,6 +59,8 @@ const entry: LightExtensionEntryRecord = {
   settingsSchema: null,
   settingsSchemaHash: null,
   compiledCommitId: 'commit_light',
+  compiledInputKey: 'compile_key',
+  compilerBuildId: 'compiler_build',
   runtimeArtifact: null,
   runtimeVersion: 'v2',
   surfaceStyle: 'render',

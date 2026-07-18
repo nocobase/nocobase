@@ -361,6 +361,17 @@ describe('CodeEditor TypeScript project', () => {
     expect(await getTypeScriptProjectDiagnostics(project, code)).toEqual([]);
   });
 
+  it('filters diagnostics explicitly ignored by the editor project', async () => {
+    const code = 'return ctx.record;';
+    const project: CodeEditorTypeScriptProject = {
+      currentFilePath: 'src/main.ts',
+      files: [{ path: 'src/main.ts', content: code }],
+      ignoredDiagnosticCodes: [1108],
+    };
+
+    expect(await getTypeScriptProjectDiagnostics(project, code)).toEqual([]);
+  });
+
   it('provides RunJS ctx completions and reports unknown ctx members', async () => {
     const project = baseProject('ctx.');
     const completion = await getTypeScriptCompletionResult(project, 'ctx.'.length, 'ctx.', true);

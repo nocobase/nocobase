@@ -9,27 +9,31 @@
 
 import ts from 'typescript';
 
-import type { RunJSCompileDiagnostic, RunJSSourceAuthoringLegacyInfo, RunJSSourceLocator, RunJSSurfaceStyle } from '..';
-import { normalizePath } from '..';
+import type {
+  RunJSCompileDiagnostic,
+  RunJSSourceAuthoringLegacyInfo,
+  RunJSSourceLocator,
+  RunJSSurfaceStyle,
+  RunJSTypeDependencyContract,
+  RunJSUnresolvedDependency,
+} from '..';
+import { normalizePath, sha256Hex, stableSerialize } from '..';
 import {
   buildRunJSTypeScriptEnvironmentFiles,
   RUNJS_TYPESCRIPT_DECLARED_GLOBAL_NAMES,
-  RUNJS_TYPESCRIPT_ES_LIB_PATH,
   RUNJS_TYPESCRIPT_LIB_FILE_NAMES,
   type RunJSTypeScriptEnvironmentFile,
   type RunJSTypeScriptLibSource,
 } from '../typescript-environment';
-import {
-  buildRunJSTypeScriptContextDeclaration,
-  createRunJSTypeScriptCompilerOptions,
-  RUNJS_TYPESCRIPT_CONTEXT_PATH,
-} from '../typescript-project';
+import { buildRunJSTypeScriptContextDeclaration, RUNJS_TYPESCRIPT_CONTEXT_PATH } from '../typescript-project';
 import { collectRunJSTypeLibraryUsage } from '../typescript-library-usage';
 import {
   getDefaultNodeRunJSTypeLibraryRegistry,
-  loadNodeRunJSTypeLibraryFiles,
+  loadNodeRunJSTypeLibraryFilesWithContracts,
   type NodeRunJSTypeLibraryRegistry,
 } from './node-type-library';
+import type { RunJSTypeDependencyGraph } from './dependency-collector';
+import { RunJSTypeScriptProject, type RunJSTypeScriptProjectFile } from './typescript-project';
 
 export const RUNJS_COMPILER_ALLOWED_GLOBALS = new Set([
   'ctx',
@@ -142,6 +146,116 @@ export interface InspectRunJSSourceCodeInput {
   typeLibraryRegistry?: NodeRunJSTypeLibraryRegistry;
 }
 
+export interface RunJSSourceWorkspaceInspectorDebugState {
+  disposed: boolean;
+  projectCreateCount: number;
+  projectReuseCount: number;
+  projectVersion: number;
+  projectUpdateCount: number;
+  structureFingerprint?: string;
+}
+
+interface PreparedRunJSTypeScriptProject {
+  files: RunJSTypeScriptProjectFile[];
+  sourceFiles: Map<string, string>;
+  sourceVirtualPaths: string[];
+  structureFingerprint: string;
+  contracts: RunJSTypeDependencyContract[];
+}
+
+export interface RunJSSourceWorkspaceInspectionResult {
+  diagnostics: RunJSCompileDiagnostic[];
+  typeDependencies: RunJSTypeDependencyGraph & { unresolved: RunJSUnresolvedDependency[] };
+}
+
+export class RunJSSourceWorkspaceInspector {
+  private project?: RunJSTypeScriptProject;
+
+  private structureFingerprint?: string;
+
+  private projectCreateCount = 0;
+
+  private projectReuseCount = 0;
+
+  private disposed = false;
+
+  inspect(input: InspectRunJSSourceWorkspaceInput): RunJSCompileDiagnostic[] {
+    return this.inspectWithDependencies(input).diagnostics;
+  }
+
+  inspectWithDependencies(input: InspectRunJSSourceWorkspaceInput): RunJSSourceWorkspaceInspectionResult {
+    this.assertActive();
+    if (input.surfaceStyle === 'workflow') {
+      return {
+        diagnostics: [],
+        typeDependencies: { files: [], edges: [], contracts: [], unresolved: [] },
+      };
+    }
+
+    const prepared = prepareTypeScriptProject(input);
+    if (!this.project || this.structureFingerprint !== prepared.structureFingerprint) {
+      this.project?.dispose();
+      this.project = new RunJSTypeScriptProject();
+      this.structureFingerprint = prepared.structureFingerprint;
+      this.projectCreateCount += 1;
+    } else {
+      this.projectReuseCount += 1;
+    }
+    this.project.update(prepared.files);
+    const programSourcePaths = this.project.getProgramWorkspacePaths(prepared.sourceVirtualPaths);
+    const diagnostics = typeScriptDiagnosticsToRunJS(
+      this.project.getDiagnostics(programSourcePaths),
+      prepared.sourceFiles,
+    );
+    const entryPath = normalizePath(input.entry);
+    const entry = prepared.sourceFiles.get(entryPath);
+    if (entry) {
+      diagnostics.push(
+        ...collectSurfaceContractDiagnostics(
+          entryPath,
+          entry,
+          input.surfaceStyle,
+          input.legacy?.metadata?.kind === 'runjs',
+        ),
+      );
+    }
+    return {
+      diagnostics: diagnostics.sort(compareDiagnostics),
+      typeDependencies: this.project.getDependencyGraph({
+        workspacePaths: prepared.sourceVirtualPaths,
+        contracts: prepared.contracts,
+      }),
+    };
+  }
+
+  getDebugState(): RunJSSourceWorkspaceInspectorDebugState {
+    const projectState = this.project?.getDebugState();
+    return {
+      disposed: this.disposed,
+      projectCreateCount: this.projectCreateCount,
+      projectReuseCount: this.projectReuseCount,
+      projectVersion: projectState?.projectVersion || 0,
+      projectUpdateCount: projectState?.updateCount || 0,
+      structureFingerprint: this.structureFingerprint,
+    };
+  }
+
+  dispose(): void {
+    if (this.disposed) {
+      return;
+    }
+    this.disposed = true;
+    this.project?.dispose();
+    this.project = undefined;
+  }
+
+  private assertActive(): void {
+    if (this.disposed) {
+      throw new Error('RunJS source workspace inspector has been disposed.');
+    }
+  }
+}
+
 export function inspectRunJSSourceCode(input: InspectRunJSSourceCodeInput): RunJSCompileDiagnostic[] {
   const compilerPath = sourceExtensions.has(extensionOf(input.path)) ? input.path : `${input.path}.tsx`;
   return inspectRunJSSourceWorkspace({
@@ -158,34 +272,23 @@ export function inspectRunJSSourceCode(input: InspectRunJSSourceCodeInput): RunJ
 }
 
 export function inspectRunJSSourceWorkspace(input: InspectRunJSSourceWorkspaceInput): RunJSCompileDiagnostic[] {
-  if (input.surfaceStyle === 'workflow') {
-    return [];
+  const inspector = new RunJSSourceWorkspaceInspector();
+  try {
+    return inspector.inspect(input);
+  } finally {
+    inspector.dispose();
   }
+}
 
-  const sourceFiles = collectSourceFiles(input.files);
-  const entryPath = normalizePath(input.entry);
-  const allowedGlobals = resolveAllowedGlobals(input);
-  const diagnostics = collectTypeScriptDiagnostics(
-    sourceFiles,
-    allowedGlobals,
-    input.legacy?.metadata?.modelUse,
-    input.typeLibraryRegistry,
-    input.typeLibraryIds,
-  );
-  const entry = sourceFiles.get(entryPath);
-
-  if (entry) {
-    diagnostics.push(
-      ...collectSurfaceContractDiagnostics(
-        entryPath,
-        entry,
-        input.surfaceStyle,
-        input.legacy?.metadata?.kind === 'runjs',
-      ),
-    );
+export function inspectRunJSSourceWorkspaceWithDependencies(
+  input: InspectRunJSSourceWorkspaceInput,
+): RunJSSourceWorkspaceInspectionResult {
+  const inspector = new RunJSSourceWorkspaceInspector();
+  try {
+    return inspector.inspectWithDependencies(input);
+  } finally {
+    inspector.dispose();
   }
-
-  return diagnostics.sort(compareDiagnostics);
 }
 
 function collectSourceFiles(files: InspectRunJSSourceWorkspaceInput['files']): Map<string, string> {
@@ -220,45 +323,43 @@ function resolveAllowedGlobals(input: InspectRunJSSourceWorkspaceInput): Set<str
   return allowedGlobals;
 }
 
-function collectTypeScriptDiagnostics(
-  files: Map<string, string>,
-  allowedGlobals: Set<string>,
-  modelUse: unknown,
-  typeLibraryRegistry?: NodeRunJSTypeLibraryRegistry,
-  typeLibraryIds: readonly string[] = [],
-): RunJSCompileDiagnostic[] {
-  if (!files.size) {
-    return [];
-  }
-
+function prepareTypeScriptProject(input: InspectRunJSSourceWorkspaceInput): PreparedRunJSTypeScriptProject {
+  const sourceFiles = collectSourceFiles(input.files);
+  const allowedGlobals = resolveAllowedGlobals(input);
+  const modelUse = input.legacy?.metadata?.modelUse;
   const virtualFiles = new Map<string, string>();
   const rootNames = new Set<string>();
-  for (const [path, source] of files) {
+  const entryVirtualPath = toVirtualPath(normalizePath(input.entry));
+  for (const [path, source] of sourceFiles) {
     const virtualPath = toVirtualPath(path);
     virtualFiles.set(virtualPath, maskTopLevelReturnKeywords(path, source));
-    rootNames.add(virtualPath);
+    if (virtualPath === entryVirtualPath || path.endsWith('.d.ts')) {
+      rootNames.add(virtualPath);
+    }
   }
-  for (const file of getTypeScriptEnvironmentFiles()) {
+  const environmentFiles = getTypeScriptEnvironmentFiles();
+  for (const file of environmentFiles) {
     virtualFiles.set(file.path, file.content);
     rootNames.add(file.path);
   }
-  virtualFiles.set(
-    RUNJS_TYPESCRIPT_CONTEXT_PATH,
-    [
-      buildRunJSTypeScriptContextDeclaration(typeof modelUse === 'string' ? modelUse : undefined),
-      buildAmbientDeclarations(allowedGlobals),
-    ]
-      .filter(Boolean)
-      .join('\n'),
-  );
+  const contextDeclaration = [
+    buildRunJSTypeScriptContextDeclaration(typeof modelUse === 'string' ? modelUse : undefined),
+    buildAmbientDeclarations(allowedGlobals),
+  ]
+    .filter(Boolean)
+    .join('\n');
+  virtualFiles.set(RUNJS_TYPESCRIPT_CONTEXT_PATH, contextDeclaration);
   rootNames.add(RUNJS_TYPESCRIPT_CONTEXT_PATH);
 
-  const registry = typeLibraryRegistry || getDefaultNodeRunJSTypeLibraryRegistry();
+  const registry = input.typeLibraryRegistry || getDefaultNodeRunJSTypeLibraryRegistry();
   const usageRequests = collectRunJSTypeLibraryUsage(ts, {
-    files: Array.from(files, ([path, content]) => ({ path, content })),
+    files: Array.from(sourceFiles, ([path, content]) => ({ path, content })),
     libraries: registry.getUsageDefinitions(),
   });
-  const typeLibraryFiles = loadNodeRunJSTypeLibraryFiles(usageRequests, { registry, typeLibraryIds });
+  const typeLibraryFiles = loadNodeRunJSTypeLibraryFilesWithContracts(usageRequests, {
+    registry,
+    typeLibraryIds: input.typeLibraryIds,
+  });
   for (const file of typeLibraryFiles.rootFiles) {
     virtualFiles.set(file.path, file.content);
     rootNames.add(file.path);
@@ -267,22 +368,61 @@ function collectTypeScriptDiagnostics(
     virtualFiles.set(file.path, file.content);
   }
 
-  const compilerOptions = createRunJSTypeScriptCompilerOptions(ts);
-  const host = createVirtualCompilerHost(virtualFiles, compilerOptions);
-  const program = ts.createProgram({
-    rootNames: [...rootNames],
-    options: compilerOptions,
-    host,
-  });
+  const sourceVirtualPaths = [...sourceFiles.keys()].map(toVirtualPath).sort();
+  const sourceVirtualPathSet = new Set(sourceVirtualPaths);
+  const structureFiles = [...virtualFiles]
+    .filter(([path]) => !sourceVirtualPathSet.has(path))
+    .map(([path, content]) => ({ path, contentHash: sha256Hex(content), root: rootNames.has(path) }))
+    .sort((left, right) => left.path.localeCompare(right.path));
+  return {
+    files: [...virtualFiles]
+      .map(([path, content]) => ({ path, content, root: rootNames.has(path) }))
+      .sort((left, right) => left.path.localeCompare(right.path)),
+    sourceFiles,
+    sourceVirtualPaths,
+    contracts: [
+      {
+        id: 'runjs:typescript-environment',
+        contentHash: sha256Hex(
+          stableSerialize(environmentFiles.map((file) => ({ path: file.path, contentHash: sha256Hex(file.content) }))),
+        ),
+      },
+      { id: 'runjs:context', contentHash: sha256Hex(contextDeclaration) },
+      {
+        id: 'runjs:surface',
+        version: input.surfaceStyle,
+        contentHash: sha256Hex(
+          stableSerialize({
+            allowedGlobals: [...allowedGlobals].sort(),
+            modelUse: typeof modelUse === 'string' ? modelUse : null,
+            surfaceStyle: input.surfaceStyle,
+          }),
+        ),
+      },
+      ...typeLibraryFiles.contracts,
+    ],
+    structureFingerprint: sha256Hex(
+      stableSerialize({
+        files: structureFiles,
+        typeLibraryIds: [...new Set(input.typeLibraryIds || [])].sort(),
+      }),
+    ),
+  };
+}
+
+function typeScriptDiagnosticsToRunJS(
+  typeScriptDiagnostics: readonly ts.Diagnostic[],
+  sourceFiles: ReadonlyMap<string, string>,
+): RunJSCompileDiagnostic[] {
   const diagnostics: RunJSCompileDiagnostic[] = [];
   const reported = new Set<string>();
 
-  for (const diagnostic of [...program.getSyntacticDiagnostics(), ...program.getSemanticDiagnostics()]) {
+  for (const diagnostic of typeScriptDiagnostics) {
     if (!diagnostic.file || diagnostic.start === undefined) {
       continue;
     }
     const path = fromVirtualPath(diagnostic.file.fileName);
-    if (!files.has(path)) {
+    if (!sourceFiles.has(path)) {
       continue;
     }
     const location = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
@@ -402,38 +542,6 @@ function maskTopLevelReturnKeywords(path: string, source: string): string {
     }
   });
   return characters.join('');
-}
-
-function createVirtualCompilerHost(files: Map<string, string>, options: ts.CompilerOptions): ts.CompilerHost {
-  const baseHost = ts.createCompilerHost(options, true);
-  const normalizedDirectories = new Set<string>(['/']);
-  for (const path of files.keys()) {
-    const segments = path.split('/').filter(Boolean);
-    let directory = '';
-    for (const segment of segments.slice(0, -1)) {
-      directory += `/${segment}`;
-      normalizedDirectories.add(directory);
-    }
-  }
-  return {
-    ...baseHost,
-    directoryExists: (path) => normalizedDirectories.has(normalizeVirtualPath(path)),
-    fileExists: (path) => files.has(path),
-    getCanonicalFileName: (path) => path,
-    getCurrentDirectory: () => '/',
-    getDefaultLibFileName: () => RUNJS_TYPESCRIPT_ES_LIB_PATH,
-    getNewLine: () => '\n',
-    getSourceFile: (path, languageVersion) => {
-      const source = files.get(path);
-      return source === undefined
-        ? undefined
-        : ts.createSourceFile(path, source, languageVersion, true, getScriptKind(path));
-    },
-    readFile: (path) => files.get(path),
-    realpath: (path) => path,
-    useCaseSensitiveFileNames: () => true,
-    writeFile: () => undefined,
-  };
 }
 
 function buildAmbientDeclarations(allowedGlobals: Set<string>): string {
@@ -569,11 +677,6 @@ function toVirtualPath(path: string): string {
 
 function fromVirtualPath(path: string): string {
   return normalizePath(path.replace(/^\/+/, ''));
-}
-
-function normalizeVirtualPath(path: string): string {
-  const normalized = path.replace(/\\/gu, '/').replace(/\/+$/u, '');
-  return normalized || '/';
 }
 
 function byNodeStart(left: ts.Node, right: ts.Node): number {

@@ -9,9 +9,11 @@
 
 import { Database, createMockDatabase } from '@nocobase/database';
 import path from 'path';
+import { vi } from 'vitest';
 
 import { VscError } from '../../shared/errors';
 import { BlobService } from '../services/BlobService';
+import type { PreparedTree } from '../services/TreeService';
 import { TreeService } from '../services/TreeService';
 
 describe('vsc-file blob and tree services', () => {
@@ -51,6 +53,69 @@ describe('vsc-file blob and tree services', () => {
     expect(await db.getRepository('vscFileBlobs').count()).toBe(1);
   });
 
+  it('loads unique blob content and metadata in one collection query', async () => {
+    const first = await blobService.ensureBlob('\ufeff你好\r\nline 2\rline 3');
+    const second = await blobService.ensureBlob('second\n');
+    const blobFind = vi.spyOn(db.getRepository('vscFileBlobs'), 'find');
+    const transaction = await db.sequelize.transaction();
+
+    const blobs = await blobService.loadBlobs([first.hash, second.hash, first.hash], { transaction });
+
+    expect(blobFind).toHaveBeenCalledTimes(1);
+    expect(blobFind).toHaveBeenCalledWith({
+      filter: {
+        hash: { $in: [first.hash, second.hash] },
+      },
+      fields: ['hash', 'size', 'content'],
+      transaction,
+    });
+    expect([...blobs.keys()]).toEqual(expect.arrayContaining([first.hash, second.hash]));
+    expect(blobs.get(first.hash)).toEqual(first);
+    expect(blobs.get(second.hash)).toEqual(second);
+    expect(blobs.get(first.hash)?.content).toBe('你好\nline 2\nline 3');
+    expect(blobs.get(first.hash)?.size).toBe(Buffer.byteLength('你好\nline 2\nline 3', 'utf8'));
+
+    blobFind.mockClear();
+    const metadata = await blobService.loadBlobMetadata([second.hash, first.hash, second.hash], { transaction });
+
+    expect(blobFind).toHaveBeenCalledTimes(1);
+    expect(blobFind).toHaveBeenCalledWith({
+      filter: {
+        hash: { $in: [second.hash, first.hash] },
+      },
+      fields: ['hash', 'size'],
+      transaction,
+    });
+    expect(metadata.get(first.hash)).toEqual({ hash: first.hash, size: first.size });
+    expect(metadata.get(second.hash)).toEqual({ hash: second.hash, size: second.size });
+    expect(metadata.get(first.hash)).not.toHaveProperty('content');
+
+    await transaction.rollback();
+  });
+
+  it('does not query blobs for empty batch inputs', async () => {
+    const blobFind = vi.spyOn(db.getRepository('vscFileBlobs'), 'find');
+
+    await expect(blobService.loadBlobs([])).resolves.toEqual(new Map());
+    await expect(blobService.loadBlobMetadata([])).resolves.toEqual(new Map());
+
+    expect(blobFind).toHaveBeenCalledTimes(0);
+  });
+
+  it('rejects incomplete content and metadata batches before returning partial results', async () => {
+    const stored = await blobService.ensureBlob('stored\n');
+    const missingHash = 'a'.repeat(64);
+
+    await expect(blobService.loadBlobs([stored.hash, missingHash])).rejects.toMatchObject<VscError>({
+      code: 'BLOB_NOT_FOUND',
+      message: `Blob "${missingHash}" was not found`,
+    });
+    await expect(blobService.loadBlobMetadata([missingHash, stored.hash])).rejects.toMatchObject<VscError>({
+      code: 'BLOB_NOT_FOUND',
+      message: `Blob "${missingHash}" was not found`,
+    });
+  });
+
   it('keeps tree hashes stable regardless of input order', async () => {
     const first = await treeService.ensureTree([
       { path: 'src/index.ts', content: 'export const value = 1;\n' },
@@ -68,6 +133,87 @@ describe('vsc-file blob and tree services', () => {
     expect(second.hash).toBe(first.hash);
     expect(hashOnly).toBe(first.hash);
     expect(await db.getRepository('vscFileTrees').count()).toBe(1);
+  });
+
+  it('prepares canonical entries and persists them without resolving blobs again', async () => {
+    const existing = await blobService.ensureBlob('existing\n');
+    const blobFind = vi.spyOn(db.getRepository('vscFileBlobs'), 'find');
+    const entries = [
+      { path: 'z-existing.txt', blobHash: existing.hash, size: existing.size },
+      { path: 'a-new.txt', content: '\ufeff你好\r\nline 2\r' },
+      { path: 'nested/../invalid.txt', content: 'never reached' },
+    ];
+
+    await expect(treeService.prepareTree(entries)).rejects.toMatchObject<VscError>({ code: 'PATH_INVALID' });
+    expect(blobFind).toHaveBeenCalledTimes(0);
+
+    const prepared = await treeService.prepareTree(entries.slice(0, 2));
+
+    expect(blobFind).toHaveBeenCalledTimes(1);
+    expect(prepared.entries.map((entry) => entry.path)).toEqual(['a-new.txt', 'z-existing.txt']);
+    expect(prepared.canonicalBlobs).toEqual([
+      expect.objectContaining({
+        content: '你好\nline 2\n',
+        size: Buffer.byteLength('你好\nline 2\n', 'utf8'),
+      }),
+    ]);
+    expect(prepared.blobMetadata).toHaveLength(2);
+    expect(prepared).toMatchObject({
+      entryCount: 2,
+      byteSize: existing.size + Buffer.byteLength('你好\nline 2\n', 'utf8'),
+    });
+    expect(Object.isFrozen(prepared)).toBe(true);
+    expect(Object.isFrozen(prepared.entries)).toBe(true);
+    expect(Object.isFrozen(prepared.entries[0])).toBe(true);
+
+    blobFind.mockClear();
+    const tree = await treeService.ensurePreparedTree(prepared);
+    const storedEntries = await treeService.loadTreeEntries(tree.hash);
+
+    expect(blobFind).toHaveBeenCalledTimes(0);
+    expect(tree).toEqual({
+      hash: prepared.hash,
+      entryCount: prepared.entryCount,
+      byteSize: prepared.byteSize,
+    });
+    expect(storedEntries).toEqual(prepared.entries);
+  });
+
+  it('keeps prepared and compatibility entry points canonically equivalent', async () => {
+    const entries = [
+      { path: 'src/index.ts', content: '\ufeffexport const value = "多字节";\r\n', language: ' typescript ' },
+      { path: 'README.md', content: '# Demo\r' },
+    ];
+    const prepared = await treeService.prepareTree(entries);
+    const hash = await treeService.hashTree(entries);
+    const preparedTree = await treeService.ensurePreparedTree(prepared);
+    const compatibilityTree = await treeService.ensureTree(entries);
+
+    expect(hash).toBe(prepared.hash);
+    expect(preparedTree).toEqual(compatibilityTree);
+    expect(prepared.entries.find((entry) => entry.path === 'src/index.ts')).toMatchObject({
+      size: Buffer.byteLength('export const value = "多字节";\n', 'utf8'),
+      language: 'typescript',
+      mode: '100644',
+    });
+    expect(await treeService.loadTreeEntries(prepared.hash)).toEqual(prepared.entries);
+  });
+
+  it('rejects forged prepared trees and explicit content size mismatches', async () => {
+    const prepared = await treeService.prepareTree([{ path: 'README.md', content: '# Demo\n' }]);
+    const otherTreeService = new TreeService(db, blobService);
+
+    await expect(otherTreeService.ensurePreparedTree(prepared)).rejects.toMatchObject<VscError>({
+      code: 'INTERNAL_ERROR',
+    });
+    await expect(treeService.ensurePreparedTree({} as unknown as PreparedTree)).rejects.toMatchObject<VscError>({
+      code: 'INTERNAL_ERROR',
+    });
+    await expect(
+      treeService.prepareTree([{ path: 'README.md', content: '# Demo\n', size: 1 }]),
+    ).rejects.toMatchObject<VscError>({
+      code: 'PATH_INVALID',
+    });
   });
 
   it('rejects case-only duplicate paths in the same tree', async () => {

@@ -41,7 +41,10 @@ import { getReferenceOwnerAdapterByUse } from './ReferenceOwnerRegistry';
 import type { ReferenceService } from './ReferenceService';
 import type { LightExtensionServiceContext } from './LightExtensionRepoService';
 import { LightExtensionRepoService } from './LightExtensionRepoService';
-import { LightExtensionRuntimeCompileService } from './LightExtensionRuntimeCompileService';
+import {
+  LightExtensionRuntimeCompileService,
+  type LightExtensionPreparedSave,
+} from './LightExtensionRuntimeCompileService';
 
 const RUNJS_MANIFEST_PATH = '.nocobase/runjs-source.json';
 const INLINE_ENTRY_DESCRIPTOR_PATH = 'src/client/entry.json';
@@ -88,6 +91,9 @@ export class MoveSourceService {
     ctx: MoveSourceServiceContext,
   ): Promise<LightExtensionMoveSourceResult> {
     try {
+      if (input.destination.type === 'existing') {
+        return await this.moveSourceToExistingRepo(input, ctx);
+      }
       return await this.db.sequelize.transaction((transaction) =>
         this.moveSourceInTransaction(input, ctx, transaction),
       );
@@ -96,11 +102,126 @@ export class MoveSourceService {
     }
   }
 
+  private async moveSourceToExistingRepo(
+    input: LightExtensionMoveSourceInput,
+    ctx: MoveSourceServiceContext,
+  ): Promise<LightExtensionMoveSourceResult> {
+    if (input.destination.type !== 'existing') {
+      throw new LightExtensionError(
+        'LIGHT_EXTENSION_INVALID_INPUT',
+        'Existing light extension destination is required',
+      );
+    }
+    const registry = this.getAdapterRegistry();
+    if (!registry) {
+      throw new LightExtensionError('LIGHT_EXTENSION_RUNTIME_UNAVAILABLE', 'RunJS source service is unavailable');
+    }
+    const adapter = registry.require(input.locator.kind);
+    if (!supportsExternalBinding(adapter)) {
+      throw unsupportedLocator(input.locator);
+    }
+    const prepareAdapterContext: RunJSSourceAdapterContext = { ...ctx.adapterContext };
+    await adapter.assertCanWrite({ locator: input.locator, ctx: prepareAdapterContext });
+    const legacy = await adapter.readLegacy({ locator: input.locator, ctx: prepareAdapterContext });
+    assertOwnerFingerprint(input.expectedOwnerFingerprint, legacy.ownerFingerprint);
+    const kind = resolveLightExtensionKind(input.locator, legacy);
+    const entryFiles = relocateRunJSWorkspace({
+      files: input.files,
+      entryPath: input.entryPath,
+      kind,
+      entryName: input.entryName,
+      entryTitle: input.entryTitle,
+      category: resolveMovedEntryCategory(kind, legacy),
+    });
+    const current = await this.fileService.pull({
+      repoId: input.destination.repoId,
+      includeContent: 'none',
+    });
+    assertDestinationRepoEnabled(current.repo);
+    this.assertDestinationEntryAvailable(
+      input.destination.repoId,
+      kind,
+      input.entryName,
+      entryFiles,
+      current.files || [],
+      await this.entryService.listEntries(input.destination.repoId),
+    );
+    const prepared = await this.runtimeCompileService.prepareSaveSource(
+      {
+        repoId: input.destination.repoId,
+        expectedHeadCommitId: current.commit?.id || null,
+        message: buildMoveCommitMessage(input),
+        files: entryFiles,
+      },
+      {
+        ...ctx,
+        requestSource: ctx.requestSource || 'light-extension-move-source',
+      },
+    );
+    return this.db.sequelize.transaction((transaction) =>
+      this.publishExistingMove(input, ctx, adapter, kind, prepared, transaction),
+    );
+  }
+
+  private async publishExistingMove(
+    input: LightExtensionMoveSourceInput,
+    ctx: MoveSourceServiceContext,
+    adapter: ExternalBindingAdapter,
+    kind: LightExtensionKind,
+    prepared: LightExtensionPreparedSave,
+    transaction: Transaction,
+  ): Promise<LightExtensionMoveSourceResult> {
+    const adapterContext: RunJSSourceAdapterContext = { ...ctx.adapterContext, transaction };
+    const serviceContext: LightExtensionServiceContext = { ...ctx, transaction };
+    await adapter.assertCanWrite({ locator: input.locator, ctx: adapterContext });
+    const currentLegacy = await adapter.readLegacy({ locator: input.locator, ctx: adapterContext });
+    assertOwnerFingerprint(input.expectedOwnerFingerprint, currentLegacy.ownerFingerprint);
+    const saved = await this.runtimeCompileService.publishPreparedSave(prepared, serviceContext);
+    const entry = await this.requireEntry(saved.repo.id, kind, input.entryName, serviceContext);
+    const binding = buildSourceBinding(saved.repo, entry, kind);
+    const writeResult = await adapter.writeExternalBinding({
+      locator: input.locator,
+      binding: { sourceMode: 'light-extension', sourceBinding: { ...binding } },
+      baseOwnerFingerprint: input.expectedOwnerFingerprint,
+      ctx: adapterContext,
+    });
+    const ownerFingerprint =
+      writeResult.ownerFingerprint || (await adapter.getFingerprint({ locator: input.locator, ctx: adapterContext }));
+    await this.referenceService.syncFlowModelReferencesForNodeTree(
+      { rootUid: getFlowModelUid(input.locator), action: 'lightExtensions.moveSource' },
+      serviceContext,
+    );
+    return { repo: saved.repo, entry, binding, ownerFingerprint };
+  }
+
+  private assertDestinationEntryAvailable(
+    repoId: string,
+    kind: LightExtensionKind,
+    entryName: string,
+    entryFiles: LightExtensionFileChange[],
+    currentFiles: Array<{ path: string }>,
+    entries: LightExtensionEntryRecord[],
+  ): void {
+    const entryRoot = getEntryRoot(kind, entryName);
+    if (currentFiles.some((file) => file.path === entryRoot || file.path.startsWith(`${entryRoot}/`))) {
+      throw entryConflict(repoId, kind, entryName);
+    }
+    if (entries.some((entry) => entry.kind === kind && entry.entryName === entryName)) {
+      throw entryConflict(repoId, kind, entryName);
+    }
+    if (!entryFiles.some((file) => file.path.startsWith(`${entryRoot}/`))) {
+      throw new LightExtensionError('LIGHT_EXTENSION_SOURCE_ERROR', 'Moved entry workspace is incomplete');
+    }
+  }
+
   private async moveSourceInTransaction(
     input: LightExtensionMoveSourceInput,
     ctx: MoveSourceServiceContext,
     transaction: Transaction,
   ): Promise<LightExtensionMoveSourceResult> {
+    if (input.destination.type !== 'new') {
+      throw new LightExtensionError('LIGHT_EXTENSION_INVALID_INPUT', 'New light extension destination is required');
+    }
     const registry = this.getAdapterRegistry();
     if (!registry) {
       throw new LightExtensionError('LIGHT_EXTENSION_RUNTIME_UNAVAILABLE', 'RunJS source service is unavailable');
@@ -136,17 +257,7 @@ export class MoveSourceService {
     });
     const commitMessage = buildMoveCommitMessage(input);
 
-    const repo =
-      input.destination.type === 'new'
-        ? await this.createDestinationRepo(input, entryFiles, commitMessage, serviceContext)
-        : await this.updateDestinationRepo(
-            input.destination.repoId,
-            kind,
-            input.entryName,
-            entryFiles,
-            commitMessage,
-            serviceContext,
-          );
+    const repo = await this.createDestinationRepo(input, entryFiles, commitMessage, serviceContext);
 
     const entry = await this.requireEntry(repo.id, kind, input.entryName, serviceContext);
     const binding = buildSourceBinding(repo, entry, kind);
@@ -207,42 +318,6 @@ export class MoveSourceService {
       requestSource: ctx.requestSource || 'light-extension-move-source',
     });
     return compiled.repo;
-  }
-
-  private async updateDestinationRepo(
-    repoId: string,
-    kind: LightExtensionKind,
-    entryName: string,
-    entryFiles: LightExtensionFileChange[],
-    commitMessage: string,
-    ctx: LightExtensionServiceContext,
-  ) {
-    const destinationRepo = await this.repoService.lockInternalRepoForUpdate(repoId, ctx);
-    assertDestinationRepoEnabled(destinationRepo);
-    const current = await this.fileService.pull({ repoId, includeContent: 'none' }, ctx);
-    const entryRoot = getEntryRoot(kind, entryName);
-    if ((current.files || []).some((file) => file.path === entryRoot || file.path.startsWith(`${entryRoot}/`))) {
-      throw entryConflict(repoId, kind, entryName);
-    }
-
-    const entries = await this.entryService.listEntries(repoId, ctx);
-    if (entries.some((entry) => entry.kind === kind && entry.entryName === entryName)) {
-      throw entryConflict(repoId, kind, entryName);
-    }
-
-    const saved = await this.runtimeCompileService.saveSource(
-      {
-        repoId,
-        expectedHeadCommitId: current.commit?.id || null,
-        message: commitMessage,
-        files: entryFiles,
-      },
-      {
-        ...ctx,
-        requestSource: ctx.requestSource || 'light-extension-move-source',
-      },
-    );
-    return saved.repo;
   }
 
   private async requireEntry(
