@@ -160,6 +160,36 @@ describe('@nocobase/runjs compiler golden contracts', () => {
     expect(result.artifact.code).not.toContain(`from 'react'`);
   });
 
+  it('maps the exact client SDK subpath to the shared RunJS runtime module', async () => {
+    const createClient = () => ({
+      auth: { role: 'admin' },
+      request: async () => ({ data: { total: 1 } }),
+    });
+    const result = await compileRunJSSourceWorkspace({
+      files: [
+        {
+          path: 'index.ts',
+          content: [
+            `import { createClient } from '@nocobase/sdk/client';`,
+            `const client = createClient();`,
+            `const response = await client.request<{ total: number }>({ url: 'orders:list' });`,
+            `return [client.auth.role, response.data.total];`,
+          ].join('\n'),
+        },
+      ],
+      entry: 'index.ts',
+      surfaceStyle: 'value',
+    });
+
+    expect(result.failureCode, JSON.stringify(result.artifact.diagnostics, null, 2)).toBeUndefined();
+    await expect(executeArtifact(result.artifact.code, { libs: { clientSdk: { createClient } } })).resolves.toEqual([
+      'admin',
+      1,
+    ]);
+    expect(result.artifact.code).toContain('case "@nocobase/sdk/client": return ctx.libs.clientSdk;');
+    expect(result.artifact.code).not.toContain(`from '@nocobase/sdk/client'`);
+  });
+
   it('treats a named default import as the RunJS ctx library alias', async () => {
     const result = await compileRunJSSourceWorkspace({
       files: [
@@ -200,6 +230,9 @@ describe('@nocobase/runjs compiler golden contracts', () => {
     'react-dom',
     'dayjs/plugin/utc',
     'lodash/get',
+    '@nocobase/sdk',
+    '@nocobase/sdk/server',
+    '@nocobase/sdk/client/typo',
     'node:fs',
     '/absolute/path',
     '__proto__',

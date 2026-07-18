@@ -488,6 +488,51 @@ describe('plugin-light-extension workspace compiler bridge', () => {
     );
   });
 
+  it.each(LIGHT_EXTENSION_SUPPORTED_KINDS)(
+    'compiles the exact client SDK import through the %s compiler surface',
+    async (kind) => {
+      const surface = LIGHT_EXTENSION_AUTHORING_SURFACES[kind];
+      const sourceRootByKind = {
+        'js-block': 'js-blocks',
+        'js-page': 'js-pages',
+        'js-field': 'js-fields',
+        'js-action': 'js-actions',
+        'js-item': 'js-items',
+        runjs: 'runjs',
+      } as const;
+      const extension = surface.compilerSurfaceStyle === 'render' ? 'tsx' : 'ts';
+      const entryPath = `src/client/${sourceRootByKind[kind]}/client-sdk/index.${extension}`;
+      const result = await bridge.compileEntry(
+        {
+          repoId: 'ler_client_sdk',
+          entryId: `lee_client_sdk_${kind}`,
+          kind,
+          entryName: 'client-sdk',
+          entryPath,
+          surfaceStyle: surface.surfaceStyle,
+          files: [
+            {
+              path: entryPath,
+              content: [
+                `import { createClient } from '@nocobase/sdk/client';`,
+                'const client = createClient();',
+                surface.compilerSurfaceStyle === 'render'
+                  ? 'ctx.render(typeof client.request);'
+                  : 'return typeof client.request;',
+              ].join('\n'),
+            },
+          ],
+        },
+        { requestId: `req_compile_client_sdk_${kind}` },
+      );
+
+      expect(result.accepted, JSON.stringify(result.diagnostics, null, 2)).toBe(true);
+      expect(result.diagnostics).toEqual([]);
+      expect(result.artifact.code).toContain('case "@nocobase/sdk/client": return ctx.libs.clientSdk;');
+      expect(result.artifact.code).not.toContain(`from '@nocobase/sdk/client'`);
+    },
+  );
+
   it('compiles JS Field entries through the render surface used by the field runtime', async () => {
     const result = await bridge.compileEntry(
       {

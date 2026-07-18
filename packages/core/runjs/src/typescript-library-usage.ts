@@ -49,6 +49,7 @@ const ctxLibraries: Readonly<Record<string, LibraryName>> = {
   lodash: 'lodash',
   math: 'math',
   formula: 'formula',
+  clientSdk: 'clientSdk',
 };
 
 const builtInUsageDefinitions: readonly RunJSTypeLibraryUsageDefinition[] = Object.entries(ctxLibraries).map(
@@ -698,6 +699,8 @@ function libraryPackId(libraryName: LibraryName): string {
       return 'mathjs';
     case 'formula':
       return 'formulajs';
+    case 'clientSdk':
+      return '@nocobase/sdk/client';
     case 'antd':
       return 'antd/full';
     case 'antdIcons':
@@ -713,6 +716,7 @@ function iconGroup(symbol: string): string {
 }
 
 function moduleTarget(moduleName: string, symbol?: string): UsageTarget | null {
+  if (moduleName === '@nocobase/sdk/client') return { kind: 'library', libraryName: 'clientSdk' };
   if (moduleName === 'react' || moduleName.startsWith('react/')) return { kind: 'library', libraryName: 'React' };
   if (moduleName === 'react-dom' || moduleName === 'react-dom/client') {
     return { kind: 'library', libraryName: 'ReactDOM' };

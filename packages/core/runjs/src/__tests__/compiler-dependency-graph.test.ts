@@ -65,7 +65,7 @@ describe('RunJS compiler-derived dependency graph', () => {
     const files = [
       {
         path: 'src/entry.ts',
-        content: `/// <reference path="./ambient.d.ts" />\nimport type { SharedShape } from './shared-shape';\nimport dayjs from 'dayjs';\nconst value: SharedShape = { id: dayjs().year() }; return value.id;`,
+        content: `/// <reference path="./ambient.d.ts" />\nimport type { SharedShape } from './shared-shape';\nimport dayjs from 'dayjs';\nimport { createClient } from '@nocobase/sdk/client';\nconst client = createClient();\nconst value: SharedShape = { id: dayjs().year() }; return client.auth.role || value.id;`,
       },
       { path: 'src/shared-shape.ts', content: `export interface SharedShape { id: number }` },
       { path: 'src/ambient.d.ts', content: `declare const ambientFlag: boolean;` },
@@ -83,6 +83,7 @@ describe('RunJS compiler-derived dependency graph', () => {
       expect.arrayContaining([
         expect.objectContaining({ id: 'runjs:context', contentHash: expect.stringMatching(/^[a-f0-9]{64}$/u) }),
         expect.objectContaining({ id: 'runjs:surface', version: 'value' }),
+        expect.objectContaining({ id: 'runjs:type-library:@nocobase/sdk/client' }),
         expect.objectContaining({ id: 'runjs:type-library:dayjs' }),
         expect.objectContaining({ id: 'runjs:typescript-environment' }),
       ]),

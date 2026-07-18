@@ -3,6 +3,13 @@
   "version": "2.2.0-beta.13",
   "main": "lib/index.js",
   "types": "./lib/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "compiler/portable": [
+        "lib/compiler/portable.d.ts"
+      ]
+    }
+  },
   "license": "Apache-2.0",
   "exports": {
     ".": {
@@ -39,6 +46,7 @@
   },
   "dependencies": {
     "@jridgewell/trace-mapping": "^0.3.25",
+    "@nocobase/sdk": "2.2.0-beta.15",
     "esbuild": "~0.27.0",
     "typescript": "5.1.3"
   },

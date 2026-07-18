@@ -461,7 +461,7 @@ function classifySharedPath(
       expectedEntryPath: previous.entryPath,
       expectedManifestHash: previous.dependencyManifestHash || undefined,
     });
-    if (!validation.valid) {
+    if (validation.valid === false) {
       addReasonToReadyCandidates(changes, fallbackReasonForManifest(validation.reason), path);
       return;
     }

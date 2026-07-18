@@ -41,11 +41,15 @@
     "@nocobase/light-extension-sdk": "2.2.0-beta.13",
     "esbuild-wasm": "~0.27.0",
     "jszip": "^3.10.1",
-    "typescript": "^5.x"
+    "mime-types": "^3.0.1",
+    "typescript": "^5.x",
+    "yauzl": "^3.2.0"
   },
   "devDependencies": {
     "@formily/core": "2.x",
     "@formily/react": "2.x",
+    "@types/mime-types": "^3.0.1",
+    "@types/yauzl": "^2.10.3",
     "dayjs": "^1.11.10",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.11.2"
@@ -57,6 +61,7 @@
     "@nocobase/client-v2": "2.x",
     "@nocobase/database": "2.x",
     "@nocobase/flow-engine": "2.x",
+    "@nocobase/plugin-file-manager": "2.x",
     "@nocobase/plugin-vsc-file": "2.x",
     "@nocobase/resourcer": "2.x",
     "@nocobase/runjs": "2.x",

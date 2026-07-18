@@ -163,7 +163,9 @@ export class LightExtensionTrustedCompileCacheService {
       filter: { compileKey: { $in: compileKeys } },
       transaction,
     });
-    const cacheByKey = new Map(cacheRows.map((row: Model) => [String(row.get('compileKey')), row]));
+    const cacheByKey = new Map<string, Model>(
+      cacheRows.map((row: Model): [string, Model] => [String(row.get('compileKey')), row]),
+    );
     const artifactHashes = [
       ...new Set(
         cacheRows
@@ -177,7 +179,9 @@ export class LightExtensionTrustedCompileCacheService {
           transaction,
         })
       : [];
-    const artifactByHash = new Map(artifactRows.map((row: Model) => [String(row.get('artifactHash')), row]));
+    const artifactByHash = new Map<string, Model>(
+      artifactRows.map((row: Model): [string, Model] => [String(row.get('artifactHash')), row]),
+    );
     const hits = new Map<string, TrustedCompileArtifact>();
     const missingKeys = new Set<string>();
     const corruptKeys = new Set<string>();
@@ -246,10 +250,10 @@ function validateTrustedCompileArtifact(
     expectedEntryPath: expectation.inputManifest.entryPath,
     expectedManifestHash: dependencyManifestHash,
   });
-  const dependencyManifest =
-    dependencyValidation.valid &&
+  const validatedDependencyManifest =
+    dependencyValidation.valid === true &&
     dependencyManifestMatchesCompileInput(dependencyValidation.manifest, expectation.inputManifest.files)
-      ? dependencyValidation.manifest
+      ? { manifest: dependencyValidation.manifest, manifestHash: dependencyValidation.manifestHash }
       : undefined;
   if (
     cacheRow.get('compileKey') !== expectation.compileKey ||
@@ -296,8 +300,8 @@ function validateTrustedCompileArtifact(
     artifactFilesHash,
     diagnostics,
     compiledAt,
-    dependencyManifest,
-    dependencyManifestHash: dependencyManifest ? dependencyValidation.manifestHash : undefined,
+    dependencyManifest: validatedDependencyManifest?.manifest,
+    dependencyManifestHash: validatedDependencyManifest?.manifestHash,
   };
 }
 

@@ -32,6 +32,8 @@ import { RUNJS_FORMULAJS_TYPE_LIBRARY_PACK_DEFINITION } from '../type-packs/form
 import { collectRunJSTypeDeclarationGraphSync, type RunJSTypeLibraryPackDefinition } from '../type-packs/generator';
 import { RUNJS_MATHJS_TYPE_LIBRARY_PACK_DEFINITION } from '../type-packs/mathjs';
 import {
+  RUNJS_TYPESCRIPT_CLIENT_SDK_BRIDGE_DECLARATION,
+  RUNJS_TYPESCRIPT_CLIENT_SDK_BRIDGE_PATH,
   RUNJS_TYPESCRIPT_REACT_BRIDGE_DECLARATION,
   RUNJS_TYPESCRIPT_REACT_BRIDGE_PATH,
   RUNJS_TYPESCRIPT_REACT_DOM_BRIDGE_DECLARATION,
@@ -238,6 +240,17 @@ const reactDOMTypeLibraryDefinition: RunJSTypeLibraryPackDefinition = {
   dependencies: ['react'],
   rootFiles: [{ content: RUNJS_TYPESCRIPT_REACT_DOM_BRIDGE_DECLARATION, path: RUNJS_TYPESCRIPT_REACT_DOM_BRIDGE_PATH }],
 };
+const clientSdkTypeLibraryDefinition: RunJSTypeLibraryPackDefinition = {
+  id: '@nocobase/sdk/client',
+  libraryName: 'clientSdk',
+  entry: '@nocobase/sdk/client',
+  rootFiles: [
+    {
+      content: RUNJS_TYPESCRIPT_CLIENT_SDK_BRIDGE_DECLARATION,
+      path: RUNJS_TYPESCRIPT_CLIENT_SDK_BRIDGE_PATH,
+    },
+  ],
+};
 
 const declarationCache = new Map<string, NodeRunJSTypeLibraryFiles>();
 
@@ -327,6 +340,12 @@ defaultNodeRunJSTypeLibraryRegistry.register({
   load: () => loadDeclaration(RUNJS_FORMULAJS_TYPE_LIBRARY_PACK_DEFINITION),
   moduleNames: ['@formulajs/formulajs'],
 });
+defaultNodeRunJSTypeLibraryRegistry.register({
+  id: '@nocobase/sdk/client',
+  libraryName: 'clientSdk',
+  load: () => loadDeclaration(clientSdkTypeLibraryDefinition),
+  moduleNames: ['@nocobase/sdk/client'],
+});
 for (const definition of antdTypeLibraryDefinitions) {
   defaultNodeRunJSTypeLibraryRegistry.register({
     id: definition.id,
@@ -372,6 +391,7 @@ export function buildDefaultNodeRunJSTypeLibraryFingerprint(projectRoot = proces
   const allDefinitions: RunJSTypeLibraryPackDefinition[] = [
     reactTypeLibraryDefinition,
     reactDOMTypeLibraryDefinition,
+    clientSdkTypeLibraryDefinition,
     RUNJS_DAYJS_TYPE_LIBRARY_PACK_DEFINITION,
     RUNJS_LODASH_TYPE_LIBRARY_PACK_DEFINITION,
     RUNJS_MATHJS_TYPE_LIBRARY_PACK_DEFINITION,
@@ -382,6 +402,7 @@ export function buildDefaultNodeRunJSTypeLibraryFingerprint(projectRoot = proces
   const representativeDefinitions = [
     reactTypeLibraryDefinition,
     reactDOMTypeLibraryDefinition,
+    clientSdkTypeLibraryDefinition,
     RUNJS_DAYJS_TYPE_LIBRARY_PACK_DEFINITION,
     RUNJS_LODASH_TYPE_LIBRARY_PACK_DEFINITION,
     RUNJS_MATHJS_TYPE_LIBRARY_PACK_DEFINITION,

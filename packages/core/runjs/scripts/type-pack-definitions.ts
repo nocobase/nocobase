@@ -19,6 +19,8 @@ import {
 import { createRunJSAntdIconsTypeLibraryPackDefinitions } from '../src/type-packs/antd-icons';
 import { createRunJSAntdTypeLibraryPackDefinitions } from '../src/type-packs/antd';
 import {
+  RUNJS_TYPESCRIPT_CLIENT_SDK_BRIDGE_DECLARATION,
+  RUNJS_TYPESCRIPT_CLIENT_SDK_BRIDGE_PATH,
   RUNJS_TYPESCRIPT_REACT_BRIDGE_DECLARATION,
   RUNJS_TYPESCRIPT_REACT_BRIDGE_PATH,
   RUNJS_TYPESCRIPT_REACT_DOM_BRIDGE_DECLARATION,
@@ -50,6 +52,18 @@ export const runJSTypeLibraryPackDefinitions: readonly RunJSTypeLibraryPackDefin
       },
     ],
     triggers: ['react-dom/client'],
+  },
+  {
+    id: '@nocobase/sdk/client',
+    libraryName: 'clientSdk',
+    entry: '@nocobase/sdk/client',
+    rootFiles: [
+      {
+        path: RUNJS_TYPESCRIPT_CLIENT_SDK_BRIDGE_PATH,
+        content: RUNJS_TYPESCRIPT_CLIENT_SDK_BRIDGE_DECLARATION,
+      },
+    ],
+    triggers: ['@nocobase/sdk/client'],
   },
   RUNJS_DAYJS_TYPE_LIBRARY_PACK_DEFINITION,
   RUNJS_LODASH_TYPE_LIBRARY_PACK_DEFINITION,

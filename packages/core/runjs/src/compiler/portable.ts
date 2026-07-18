@@ -22,6 +22,7 @@ export const RUNJS_BUILTIN_MODULES: Readonly<Record<string, string>> = Object.fr
   lodash: 'lodash',
   mathjs: 'math',
   '@formulajs/formulajs': 'formula',
+  '@nocobase/sdk/client': 'clientSdk',
 });
 
 export type RunJSPortableDiagnosticSeverity = 'error' | 'warning' | 'info';

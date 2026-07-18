@@ -68,6 +68,62 @@ describe('plugin-light-extension import validator', () => {
     expect(result.diagnostics.filter((item) => item.code === 'import_not_allowed')).toEqual([]);
   });
 
+  it.each([
+    ['js-block', 'src/client/js-blocks/sdk-client/index.tsx'],
+    ['js-page', 'src/client/js-pages/sdk-client/index.tsx'],
+    ['js-field', 'src/client/js-fields/sdk-client/index.tsx'],
+    ['js-action', 'src/client/js-actions/sdk-client/index.ts'],
+    ['js-item', 'src/client/js-items/sdk-client/index.tsx'],
+    ['runjs', 'src/client/runjs/sdk-client/index.ts'],
+  ])('allows the exact client SDK subpath for %s entries', (kind, path) => {
+    const result = new LightExtensionValidator().validateWorkspace({
+      files: [
+        {
+          path,
+          content: [`import { createClient } from '@nocobase/sdk/client';`, 'export default createClient;'].join('\n'),
+        },
+        {
+          path: path.replace(/index\.(?:ts|tsx)$/, 'entry.json'),
+          content: JSON.stringify({ schemaVersion: 1, key: 'sdk-client' }),
+        },
+      ],
+    });
+
+    expect(result.accepted).toBe(true);
+    expect(result.entries).toContainEqual(expect.objectContaining({ kind }));
+    expect(result.diagnostics.filter((item) => item.code === 'import_not_allowed')).toEqual([]);
+  });
+
+  it.each([
+    '@nocobase/sdk',
+    '@nocobase/sdk/server',
+    '@nocobase/sdk/client/index',
+    '@nocobase/sdk/client/runtime',
+    '@nocobase/sdk/clients',
+  ])('rejects other client SDK subpaths: %s', (specifier) => {
+    const result = new LightExtensionValidator().validateWorkspace({
+      files: [
+        {
+          path: 'src/client/js-blocks/unsupported-sdk-subpath/index.tsx',
+          content: `import { createClient } from '${specifier}';\nexport default createClient;`,
+        },
+        {
+          path: 'src/client/js-blocks/unsupported-sdk-subpath/entry.json',
+          content: JSON.stringify({ schemaVersion: 1, key: 'unsupported-sdk-subpath' }),
+        },
+      ],
+    });
+
+    expect(result.accepted).toBe(false);
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'import_not_allowed',
+        message: `Import "${specifier}" is not allowed in light-extension source`,
+        path: 'src/client/js-blocks/unsupported-sdk-subpath/index.tsx',
+      }),
+    );
+  });
+
   it.each([`import 'react';`, `import {} from 'react';`])(
     'rejects built-in runtime imports without bindings: %s',
     (importStatement) => {

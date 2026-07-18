@@ -267,11 +267,12 @@ export class LightExtensionCompilePreviewService {
       ? await this.prepareTrustedWorkspacePreview(input, previewContext)
       : undefined;
     const previewFiles = trustedPreview?.workspace.files || input.files;
+    let previewByteSize = 0;
+    for (const file of previewFiles) {
+      previewByteSize += Buffer.byteLength(file.content, 'utf8');
+    }
     previewContext.compileMetrics?.set('repoFileCount', previewFiles.length);
-    previewContext.compileMetrics?.set(
-      'repoByteSize',
-      previewFiles.reduce((total, file) => total + Buffer.byteLength(file.content, 'utf8'), 0),
-    );
+    previewContext.compileMetrics?.set('repoByteSize', previewByteSize);
     previewContext.compileMetrics?.increment('snapshotMaterializationCount');
     const validation = previewContext.compileMetrics
       ? previewContext.compileMetrics.measure('workspaceValidation', () =>

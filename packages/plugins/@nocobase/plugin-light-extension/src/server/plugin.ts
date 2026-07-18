@@ -20,6 +20,10 @@ import {
   createLightExtensionCapabilitiesResource,
   lightExtensionCapabilitiesActionNames,
 } from './resources/lightExtensionCapabilities';
+import {
+  createLightExtensionClientAppsResource,
+  lightExtensionClientAppActionNames,
+} from './resources/lightExtensionClientApps';
 import { createLightExtensionEntriesResource, lightExtensionEntryActionNames } from './resources/lightExtensionEntries';
 import { createLightExtensionFilesResource, lightExtensionFileActionNames } from './resources/lightExtensionFiles';
 import { createLightExtensionReposResource, lightExtensionRepoActionNames } from './resources/lightExtensionRepos';
@@ -38,6 +42,18 @@ import { LightExtensionCanonicalWorkspaceBuilder } from './services/LightExtensi
 import { LightExtensionCompilePreviewService } from './services/LightExtensionCompilePreviewService';
 import { LightExtensionCompileWorkerPool } from './services/LightExtensionCompileWorkerPool';
 import { createLightExtensionCompileMetricsLoggerCollector } from './services/LightExtensionCompileMetrics';
+import type {
+  ClientAppAsset,
+  ClientAppDescriptor,
+  ClientAppOpenOptions,
+  ClientAppSummary,
+} from './services/ClientAppService';
+import { ClientAppService } from './services/ClientAppService';
+import {
+  ensureClientAppInternalStorage,
+  FileManagerClientAppStorage,
+  findFileManagerPlugin,
+} from './services/ClientAppStorage';
 import { LightExtensionEntryService } from './services/LightExtensionEntryService';
 import { LightExtensionFileService } from './services/LightExtensionFileService';
 import { LightExtensionPermissionService } from './services/LightExtensionPermissionService';
@@ -180,6 +196,8 @@ export class PluginLightExtensionServer extends Plugin {
 
   private moveToInlineService?: MoveToInlineService;
 
+  private clientAppService?: ClientAppService;
+
   private unregisterVscPermissionHook?: () => void;
 
   private pendingVscPluginListener?: PluginLoadListener;
@@ -189,6 +207,32 @@ export class PluginLightExtensionServer extends Plugin {
   private remotePullRecoveryPromise?: Promise<void>;
 
   private compileShutdownListener?: () => Promise<void>;
+
+  private clientAppStorageListener?: () => Promise<void>;
+
+  async resolveClientApp(entryId: string): Promise<ClientAppDescriptor> {
+    return this.requireClientAppService().resolveClientApp(entryId);
+  }
+
+  async openClientAppAsset(
+    entryId: string,
+    relativePath: string,
+    options?: ClientAppOpenOptions,
+  ): Promise<ClientAppAsset | null> {
+    return this.requireClientAppService().openClientAppAsset(entryId, relativePath, options);
+  }
+
+  async listSelectableClientApps(): Promise<ClientAppSummary[]> {
+    return this.requireClientAppService().listSelectableClientApps();
+  }
+
+  async deleteClientApp(entryId: string): Promise<void> {
+    await this.requireClientAppService().deleteClientApp(entryId);
+  }
+
+  async deleteClientAppsForRepo(repoId: string): Promise<void> {
+    await this.requireClientAppService().deleteClientAppsForRepo(repoId);
+  }
 
   async syncFlowModelReferencesForNodeTree(
     input: { rootUid: string; action?: string },
@@ -263,6 +307,20 @@ export class PluginLightExtensionServer extends Plugin {
       this.validator,
     );
     this.entryService = new LightExtensionEntryService(db, this.fileService, this.repoService, this.validator);
+    const fileManager = findFileManagerPlugin((this.app as unknown as AppWithPluginEvents).pm);
+    if (fileManager) {
+      this.clientAppService = new ClientAppService(
+        db,
+        this.repoService,
+        this.permissionService,
+        new FileManagerClientAppStorage(fileManager),
+        {
+          onCleanupError: (error, assetSetId) => {
+            this.log.warn('Failed to retire a replaced client app asset set', { error, assetSetId });
+          },
+        },
+      );
+    }
     this.compilePreviewService = new LightExtensionCompilePreviewService(
       db,
       this.auditService,
@@ -340,6 +398,11 @@ export class PluginLightExtensionServer extends Plugin {
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
       createLightExtensionEntriesResource(this.entryService, this.runtimeResolveService),
     );
+    if (this.clientAppService) {
+      (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
+        createLightExtensionClientAppsResource(this.clientAppService),
+      );
+    }
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
       createLightExtensionCapabilitiesResource(this.validator),
     );
@@ -362,21 +425,70 @@ export class PluginLightExtensionServer extends Plugin {
     this.registerVscPermissionHookWhenAvailable();
     this.registerRemotePullRecoveryListener();
     this.registerCompileShutdownListener();
+    this.registerClientAppStorageListener();
   }
 
   async afterDisable() {
     this.unregisterVscPermissionHookWhenNeeded();
     this.removeRemotePullRecoveryListener();
+    this.removeClientAppStorageListener();
   }
 
   async afterEnable() {
+    await this.ensureClientAppStorage();
     await this.runRemotePullRecovery();
   }
 
   async remove() {
     this.unregisterVscPermissionHookWhenNeeded();
     this.removeRemotePullRecoveryListener();
+    this.removeClientAppStorageListener();
     await this.shutdownCompileInfrastructure();
+  }
+
+  private registerClientAppStorageListener() {
+    this.removeClientAppStorageListener();
+    const app = this.app as unknown as AppWithPluginEvents;
+    if (!app.on) {
+      return;
+    }
+    const listener = async () => {
+      await this.ensureClientAppStorage();
+    };
+    this.clientAppStorageListener = listener;
+    app.on('afterStart', listener);
+  }
+
+  private removeClientAppStorageListener() {
+    if (!this.clientAppStorageListener) {
+      return;
+    }
+    const app = this.app as unknown as AppWithPluginEvents;
+    if (app.off) {
+      app.off('afterStart', this.clientAppStorageListener);
+    } else {
+      app.removeListener?.('afterStart', this.clientAppStorageListener);
+    }
+    this.clientAppStorageListener = undefined;
+  }
+
+  private async ensureClientAppStorage(): Promise<void> {
+    const fileManager = findFileManagerPlugin((this.app as unknown as AppWithPluginEvents).pm);
+    if (!fileManager || !this.db) {
+      return;
+    }
+    await ensureClientAppInternalStorage(this.db, fileManager);
+    await this.clientAppService?.sweepOrphanedAssetSets();
+  }
+
+  private requireClientAppService(): ClientAppService {
+    if (!this.clientAppService) {
+      throw new LightExtensionError(
+        'LIGHT_EXTENSION_RUNTIME_UNAVAILABLE',
+        'Client app storage requires the File Manager plugin',
+      );
+    }
+    return this.clientAppService;
   }
 
   private registerCompileShutdownListener() {
@@ -418,6 +530,7 @@ export class PluginLightExtensionServer extends Plugin {
     const app = this.app as unknown as AppWithPluginEvents;
     app.acl?.allow?.('lightExtensionRuntime', [...lightExtensionRuntimeActionNames], 'loggedIn');
     app.acl?.allow?.('lightExtensionCapabilities', [...lightExtensionCapabilitiesActionNames], 'public');
+    this.registerClientAppAcl(app);
     this.registerSyncAcl(app);
     app.acl?.registerSnippet?.({
       name: LIGHT_EXTENSION_ACL_SNIPPET,
@@ -428,9 +541,30 @@ export class PluginLightExtensionServer extends Plugin {
         ...lightExtensionRepoActionNames.map((action) => `lightExtensionRepos:${action}`),
         ...lightExtensionFileActionNames.map((action) => `lightExtensionFiles:${action}`),
         ...lightExtensionEntryActionNames.map((action) => `lightExtensionEntries:${action}`),
+        ...lightExtensionClientAppActionNames.map((action) => `lightExtensionClientApps:${action}`),
         ...lightExtensionCapabilitiesActionNames.map((action) => `lightExtensionCapabilities:${action}`),
       ],
     });
+  }
+
+  private registerClientAppAcl(app: AppWithPluginEvents) {
+    const permissions = {
+      upload: 'writeSource',
+      list: 'list',
+      get: 'list',
+    } as const;
+    for (const actionName of lightExtensionClientAppActionNames) {
+      app.acl?.allow?.('lightExtensionClientApps', actionName, async (ctx) => {
+        if (!ctx.can) {
+          return false;
+        }
+        const permission = await ctx.can({
+          resource: 'lightExtension',
+          action: permissions[actionName],
+        });
+        return permission !== false && permission !== null && typeof permission !== 'undefined';
+      });
+    }
   }
 
   private registerSyncAcl(app: AppWithPluginEvents) {

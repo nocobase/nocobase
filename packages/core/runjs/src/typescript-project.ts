@@ -28,6 +28,11 @@ interface RunJSReactDOMLibrary extends RunJSOfficialReactDOMClientModule {
   ): import('react-dom/client').Root;
 }
 `;
+export const RUNJS_TYPESCRIPT_CLIENT_SDK_BRIDGE_PATH = '/__runjs__/type-packs/nocobase-client-sdk-bridge.d.ts';
+export const RUNJS_TYPESCRIPT_CLIENT_SDK_BRIDGE_DECLARATION = `
+type RunJSClientSdkModule = typeof import('@nocobase/sdk/client');
+interface RunJSClientSdkLibrary extends RunJSClientSdkModule {}
+`;
 
 export function createRunJSTypeScriptCompilerOptions(ts: TypeScriptModule): CompilerOptions {
   return {
@@ -188,6 +193,7 @@ interface RunJSLibraries {
   lodash: RunJSLodashLibrary;
   math: RunJSMathLibrary;
   formula: RunJSFormulaLibrary;
+  clientSdk: RunJSClientSdkLibrary;
   [libraryName: string]: unknown;
 }
 interface RunJSSourceInfo {

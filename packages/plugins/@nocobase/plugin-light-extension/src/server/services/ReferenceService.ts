@@ -512,7 +512,9 @@ export class ReferenceService {
       if (normalizedPlan.mode === 'repo') {
         targetEntryCount = entries.length;
       }
-      const entryById = new Map(entries.map((entry) => [normalizeString(entry.get('id')), entry]));
+      const entryById = new Map<string, Model>(
+        entries.map((entry: Model): [string, Model] => [normalizeString(entry.get('id')), entry]),
+      );
       const ownerLoads = new Map<string, Promise<FlowModelNode | null>>();
       const loadOwner = (modelUid: string) => {
         const cached = ownerLoads.get(modelUid);

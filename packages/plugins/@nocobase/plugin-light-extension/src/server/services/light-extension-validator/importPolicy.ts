@@ -31,6 +31,7 @@ const allowedRunJSBuiltInImports = new Set([
   'react-dom/client',
   'antd',
   '@ant-design/icons',
+  '@nocobase/sdk/client',
   'dayjs',
   'lodash',
   'mathjs',

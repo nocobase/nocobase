@@ -92,7 +92,7 @@ import { sortDiagnostics } from './LightExtensionValidator';
 import { LightExtensionWorkspaceCompilerBridge } from './LightExtensionWorkspaceCompilerBridge';
 
 type ReferenceRefreshService = {
-  refreshReferencesForRepo: (repoId: string, ctx?: LightExtensionServiceContext) => Promise<void>;
+  refreshReferencesForRepo: (repoId: string, ctx?: LightExtensionServiceContext) => Promise<unknown>;
   refreshReferences?: (
     input: { repoId: string; plan: ReferenceRefreshPlan },
     ctx?: LightExtensionServiceContext,
@@ -157,7 +157,7 @@ export interface LightExtensionPreparedSave {
   readonly entryPlan: LightExtensionEntryReconcilePlan;
   readonly compilePlan: CompilePlan;
   readonly compileResults: readonly LightExtensionCompileSuccessResult[];
-  readonly compileEntries: LightExtensionSaveSourceResult['compile']['entries'];
+  readonly compileEntries: readonly LightExtensionSaveSourceResult['compile']['entries'][number][];
   readonly diagnostics: readonly LightExtensionDiagnostic[];
   readonly referencePlan: ReferenceRefreshPlan;
   readonly previewTicketToConsume?: string;
@@ -251,7 +251,7 @@ export class LightExtensionRuntimeCompileService {
     compileMetrics?.set('changedFileCount', input.files.length);
     let result: 'success' | 'rejected' | 'failed' | 'outdated' = 'failed';
     try {
-      const prepared = await probe.measureAsync('prepare', () => this.prepareSaveSource(input, operationContext));
+      const prepared = await this.prepareSaveSource(input, operationContext);
       const save = await probe.measureAsync('transaction', () =>
         this.db.sequelize.transaction((transaction) =>
           this.publishPreparedSave(prepared, {
@@ -442,7 +442,7 @@ export class LightExtensionRuntimeCompileService {
       tree: candidate.tree,
       compile: {
         status: prepared.compileEntries.length === 0 ? 'skipped' : 'success',
-        entries: prepared.compileEntries,
+        entries: [...prepared.compileEntries],
       },
       diagnostics: [...prepared.diagnostics],
     };
@@ -1220,7 +1220,9 @@ export class LightExtensionRuntimeCompileService {
       filter: { compileKey: { $in: compileKeys } },
       transaction,
     });
-    const cacheByKey = new Map(cacheRows.map((row: Model) => [String(row.get('compileKey')), row]));
+    const cacheByKey = new Map<string, Model>(
+      cacheRows.map((row: Model): [string, Model] => [String(row.get('compileKey')), row]),
+    );
     const artifactHashes = [
       ...new Set(
         cacheRows
@@ -1234,7 +1236,9 @@ export class LightExtensionRuntimeCompileService {
           transaction,
         })
       : [];
-    const artifactByHash = new Map(artifactRows.map((row: Model) => [String(row.get('artifactHash')), row]));
+    const artifactByHash = new Map<string, Model>(
+      artifactRows.map((row: Model): [string, Model] => [String(row.get('artifactHash')), row]),
+    );
     const trusted = new Map<string, TrustedCompileCacheHit>();
     const corruptKeys = new Set<string>();
     for (const input of inputs) {
@@ -1541,7 +1545,7 @@ function toFailedCompileEntryResult(
     status: 'failed',
     execution: 'compiled',
     diagnostics: result.diagnostics,
-    failureCode: result.accepted ? undefined : result.failureCode,
+    failureCode: result.accepted === false ? result.failureCode : undefined,
   };
 }
 
@@ -1675,10 +1679,10 @@ function validateTrustedCompileCache(
     expectedEntryPath: input.inputManifest.entryPath,
     expectedManifestHash: dependencyManifestHash,
   });
-  const dependencyManifest =
-    dependencyValidation.valid &&
+  const validatedDependencyManifest =
+    dependencyValidation.valid === true &&
     dependencyManifestMatchesCompileInput(dependencyValidation.manifest, input.inputManifest.files)
-      ? dependencyValidation.manifest
+      ? { manifest: dependencyValidation.manifest, manifestHash: dependencyValidation.manifestHash }
       : undefined;
   if (
     cacheRow.get('compileKey') !== input.compileKey ||
@@ -1723,8 +1727,8 @@ function validateTrustedCompileCache(
     artifactFilesHash,
     diagnostics,
     compiledAt,
-    dependencyManifest,
-    dependencyManifestHash: dependencyManifest ? dependencyValidation.manifestHash : undefined,
+    dependencyManifest: validatedDependencyManifest?.manifest,
+    dependencyManifestHash: validatedDependencyManifest?.manifestHash,
   };
 }
 
