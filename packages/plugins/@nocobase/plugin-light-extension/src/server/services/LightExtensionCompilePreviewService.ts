@@ -8,6 +8,7 @@
  */
 
 import type { Database, Model } from '@nocobase/database';
+import { collectRunJSWorkspaceDependencyManifest } from '@nocobase/runjs/compiler';
 import { randomUUID } from 'crypto';
 import { posix as pathPosix } from 'path';
 
@@ -463,12 +464,23 @@ export class LightExtensionCompilePreviewService {
           runtimeVersion,
           compilerBuildIdentity: trustedPreview.compilerBuildIdentity,
         });
+        const dependency = collectRunJSWorkspaceDependencyManifest({
+          compilerBuildId: trustedPreview.compilerBuildIdentity.compilerBuildId,
+          entryPath: validationEntry.entryPath,
+          files: getEntryCompileFiles(trustedPreview.workspace.files, validationEntry).map((file) => ({
+            path: file.path,
+            content: file.content || '',
+            blobHash: file.blobHash,
+          })),
+        });
         const persisted = await trustedPreview.compileCache.persistAcceptedCompile({
           compileKey: compileInput.compileKey,
           filesHash: compileInput.filesHash,
           inputManifest: compileInput.inputManifest,
           artifact: compiled.artifact,
           diagnostics,
+          dependencyManifest: dependency.manifest,
+          dependencyManifestHash: dependency.manifestHash,
         });
         ticketEntries.push({
           target: 'client',
@@ -849,7 +861,7 @@ function buildWorkspaceBlockedEntryResult(
 
 function getEntryCompileFiles(
   files: readonly (Pick<LightExtensionPulledFile, 'content' | 'path'> &
-    Partial<Pick<LightExtensionPulledFile, 'language'>>)[],
+    Partial<Pick<LightExtensionPulledFile, 'blobHash' | 'language'>>)[],
   entry: LightExtensionEntryValidationResult,
 ) {
   const rootPath = getEntryRootPath(entry);
@@ -863,6 +875,7 @@ function getEntryCompileFiles(
     .map((file) => ({
       path: file.path,
       content: file.content,
+      blobHash: file.blobHash,
       language: file.language,
     }));
 }

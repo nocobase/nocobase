@@ -14,7 +14,7 @@ import {
   type RunJSCompileDiagnostic,
   type RunJSRuntimeArtifact,
 } from '@nocobase/runjs';
-import { compileRunJSSourceWorkspace } from '@nocobase/runjs/compiler';
+import { collectRunJSWorkspaceDependencyManifest } from '@nocobase/runjs/compiler';
 import { performance } from 'node:perf_hooks';
 import { threadId } from 'node:worker_threads';
 import { posix as pathPosix } from 'path';
@@ -33,6 +33,16 @@ import {
 } from './LightExtensionCompileWorkerProtocol';
 import { hasErrorDiagnostic, sortDiagnostics } from './LightExtensionValidator';
 import { rewriteLightExtensionSdkRuntimeImports } from './LightExtensionWorkspaceCompilerBridge';
+import {
+  buildLightExtensionCompilerSessionContract,
+  LightExtensionCompilerSessionManager,
+} from './LightExtensionCompilerSessionManager';
+
+const compilerSessions = new LightExtensionCompilerSessionManager();
+
+export async function disposeLightExtensionCompileJobExecutor(): Promise<void> {
+  await compilerSessions.dispose();
+}
 
 export async function executeLightExtensionCompileJob(input: {
   job: LightExtensionCompileJob;
@@ -45,7 +55,7 @@ export async function executeLightExtensionCompileJob(input: {
   try {
     assertLightExtensionCompileJob(input.job);
     assertCurrentCompilerBuild(input.job);
-    const compiled = await compileRunJSSourceWorkspace({
+    const compileInput = {
       files: input.job.files.map((file) => ({
         path: file.path,
         content: isCompileCodeFile(file.path)
@@ -62,7 +72,18 @@ export async function executeLightExtensionCompileJob(input: {
         language: inferRunJSLanguage(input.job.entryPath),
         metadata: buildLegacyMetadata(input.job.surface, input.job),
       },
-    });
+    };
+    const compiled = (
+      await compilerSessions.compile({
+        contract: buildLightExtensionCompilerSessionContract({
+          repoId: input.job.repoId,
+          entryIdentity: `${input.job.kind}:${input.job.entryName}`,
+          inputManifest: input.job.inputManifest,
+        }),
+        input: compileInput,
+        workspaceUpdate: 'replace',
+      })
+    ).result;
     const diagnostics = sortDiagnostics(compiled.artifact.diagnostics.map(toLightExtensionDiagnostic));
     if (hasErrorDiagnostic(diagnostics)) {
       return {
@@ -98,12 +119,23 @@ export async function executeLightExtensionCompileJob(input: {
       entryPath,
       runtimeContract: LIGHT_EXTENSION_RUNTIME_ARTIFACT_CONTRACT,
     });
+    const dependency = collectRunJSWorkspaceDependencyManifest({
+      compilerBuildId: input.job.compilerBuildIdentity.compilerBuildId,
+      entryPath: input.job.entryPath,
+      files: input.job.files.map((file) => ({
+        path: file.path,
+        content: file.content,
+        blobHash: file.blobHash,
+      })),
+    });
     return {
       ...buildResultIdentity(input.job, input.workerId, executingThreadId, input.attempt, startedAt, diagnostics),
       accepted: true,
       artifact,
       artifactHash,
       runtimeCodeHash,
+      dependencyManifest: dependency.manifest,
+      dependencyManifestHash: dependency.manifestHash,
     };
   } catch (error) {
     return createLightExtensionCompileInfrastructureFailure({

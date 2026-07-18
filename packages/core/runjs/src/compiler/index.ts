@@ -53,6 +53,7 @@ export * from './portable';
 export * from './build-identity';
 export * from './session';
 export * from './typescript-project';
+export * from './dependency-collector';
 export * from '../completion-catalog/generator';
 export * from '../type-packs/generator';
 export type { RunJSCompileFailureCode } from '..';

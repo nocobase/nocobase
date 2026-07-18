@@ -29,6 +29,7 @@ export const COMPILE_PERFORMANCE_BENCHMARK_SCENARIO_IDS = [
 export type CompilePerformanceBenchmarkScenarioId = (typeof COMPILE_PERFORMANCE_BENCHMARK_SCENARIO_IDS)[number];
 
 export interface CompilePerformanceBenchmarkFixtureRoles {
+  concurrentPrivateFilePath?: string;
   descriptorPath: string;
   failingEntryPath: string;
   privateFilePath: string;
@@ -247,6 +248,7 @@ export function createCompilePerformanceBenchmarkFixture(
     entryNames: [...fixture.entryNames],
     sharedReferences,
     roles: {
+      concurrentPrivateFilePath: profile === 'medium' ? 'src/client/js-blocks/entry-02/private-01.ts' : undefined,
       descriptorPath: 'src/client/js-blocks/entry-01/entry.json',
       failingEntryPath: 'src/client/js-blocks/entry-01/index.tsx',
       privateFilePath: 'src/client/js-blocks/entry-01/private-01.ts',
@@ -339,7 +341,13 @@ export function createCompilePerformanceBenchmarkMutation(
             `export const privateValue = 'benchmark-concurrent-primary-${revision}';\n`,
           ),
         ],
-        concurrent: [createChange(fixture, fixture.roles.readmePath, `# Concurrent benchmark contender ${revision}\n`)],
+        concurrent: [
+          createChange(
+            fixture,
+            requireFixtureRole(fixture.roles.concurrentPrivateFilePath, 'concurrent private file'),
+            `export const privateValue = 'benchmark-concurrent-contender-${revision}';\n`,
+          ),
+        ],
       };
   }
 }

@@ -204,7 +204,9 @@ describe('MoveSourceService', () => {
         writeExternalBinding,
         getFingerprint: vi.fn(async () => 'owner_after'),
       };
-      const saveSource = vi.fn(async () => ({ repo, commit: {}, tree: {}, compile: {}, diagnostics: [] }));
+      const preparedSave = { candidate: { repoId: repo.id } };
+      const prepareSaveSource = vi.fn(async () => preparedSave);
+      const publishPreparedSave = vi.fn(async () => ({ repo, commit: {}, tree: {}, compile: {}, diagnostics: [] }));
       const syncReferences = vi.fn(async () => undefined);
       const listEntries = vi.fn().mockResolvedValueOnce([]).mockResolvedValueOnce([movedEntry]);
       const service = new MoveSourceService(
@@ -226,7 +228,7 @@ describe('MoveSourceService', () => {
           })),
         } as never,
         { listEntries } as never,
-        { saveSource } as never,
+        { prepareSaveSource, publishPreparedSave } as never,
         { syncFlowModelReferencesForNodeTree: syncReferences } as never,
         () => ({ require: () => adapter }) as unknown as RunJSSourceAdapterRegistry,
       );
@@ -250,15 +252,16 @@ describe('MoveSourceService', () => {
         },
       );
 
-      expect(saveSource).toHaveBeenCalledWith(
+      expect(prepareSaveSource).toHaveBeenCalledWith(
         expect.objectContaining({
           repoId: repo.id,
           expectedHeadCommitId: 'commit_2',
           files: expect.arrayContaining([expect.objectContaining({ path: `${entryRoot}/sales-kpi/index.ts` })]),
         }),
-        expect.objectContaining({ transaction }),
+        expect.not.objectContaining({ transaction: expect.anything() }),
       );
-      const savedFiles = saveSource.mock.calls[0][0].files as Array<{ path: string; content: string }>;
+      expect(publishPreparedSave).toHaveBeenCalledWith(preparedSave, expect.objectContaining({ transaction }));
+      const savedFiles = prepareSaveSource.mock.calls[0][0].files as Array<{ path: string; content: string }>;
       const descriptor = JSON.parse(
         savedFiles.find((file) => file.path === `${entryRoot}/sales-kpi/entry.json`)?.content || '{}',
       );
@@ -568,7 +571,10 @@ function createFailureService(options: {
       pull: vi.fn(async () => ({ repo, commit: null, tree: null, unchanged: false, files: [] })),
     } as never,
     { listEntries: vi.fn().mockResolvedValueOnce([]).mockResolvedValueOnce([entry]) } as never,
-    { saveSource: options.saveSource } as never,
+    {
+      prepareSaveSource: vi.fn(async () => ({ candidate: { repoId: repo.id } })),
+      publishPreparedSave: options.saveSource,
+    } as never,
     { syncFlowModelReferencesForNodeTree: vi.fn() } as never,
     () =>
       ({

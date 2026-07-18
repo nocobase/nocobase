@@ -129,6 +129,28 @@ describe('PublishCompiledEntriesService', () => {
     expect(store.bulkUpsertEntries).toHaveBeenCalledWith(expect.any(Array), transaction);
   });
 
+  it('reasserts reused Artifact and cache rows in Phase B while preserving the original compiledAt', async () => {
+    const job = createCompileJob(0);
+    const reusedAt = new Date('2026-07-17T12:00:00.000Z');
+    const result: LightExtensionCompileSuccessResult = {
+      ...createSuccessResult(job),
+      execution: 'reused',
+      compiledAt: reusedAt.toISOString(),
+    };
+    const store = new MockPublishStore([createStoredEntry(job)]);
+    const service = new PublishCompiledEntriesService(store, () => compiledAt);
+
+    await service.publishCompiledEntries({ commitId: 'commit-reused', results: [result] });
+
+    expect(store.bulkUpsertArtifacts.mock.calls[0][0]).toHaveLength(1);
+    expect(store.bulkUpsertCompileCache.mock.calls[0][0]).toEqual([
+      expect.objectContaining({ compileKey: job.compileKey, artifactHash: result.artifactHash, compiledAt: reusedAt }),
+    ]);
+    expect(store.bulkUpsertEntries.mock.calls[0][0]).toEqual([
+      expect.objectContaining({ id: job.entryId, compiledCommitId: 'commit-reused', compiledAt: reusedAt }),
+    ]);
+  });
+
   it('validates all hashes before opening the publish transaction', async () => {
     const job = createCompileJob(0);
     const result = { ...createSuccessResult(job), artifactHash: 'f'.repeat(64) };

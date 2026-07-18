@@ -181,7 +181,8 @@ function createDataset(
 ): CompilePerformanceBenchmarkDataset {
   return {
     environment: {
-      commit,
+      sourceCommit: commit,
+      harnessCommit: 'benchmark-harness-commit',
       nodeVersion: '20.16.0',
       dependencyFingerprint: 'yarn-lock-sha256',
       machineFingerprint: 'darwin-arm64-test-host',

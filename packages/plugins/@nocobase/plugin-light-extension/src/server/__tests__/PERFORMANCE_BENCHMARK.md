@@ -9,6 +9,7 @@ This benchmark harness is intentionally split into deterministic preparation and
 - Medium fixture: 20 Entries and 200 files.
 - Each of the 8 scenarios runs once cold and at least 20 times hot.
 - Baseline and target runs must use the same Node version, dependency fingerprint, machine, database version, and database configuration fingerprint.
+- Record `sourceCommit` for the code under measurement and `harnessCommit` for the collector version. Baseline and target evidence must use the same harness commit.
 - Collect SQLite and at least one paired PostgreSQL, MySQL, or MariaDB dataset.
 - Record the selected Tasks 09–14 in `releaseScope`. Exact single-consumer and unused-shared structural gates are enabled only when Task 12's runtime/type dependency graph is in scope; otherwise those scenarios remain measured against the conservative shared fallback.
 - Do not mix cold and hot samples. Do not retain only the best run.
@@ -23,6 +24,45 @@ yarn test packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__
 ```
 
 This is a pure contract test. It verifies fixture topology, all matrix scenarios, deterministic mutations, pending report behavior, acceptance calculations, and Markdown/JSON serialization. It does not execute the final database benchmark.
+
+The collector configuration and evidence gate also have a pure test:
+
+```bash
+yarn test packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__/compile-performance-benchmark-evidence.test.ts --run --reporter=verbose
+```
+
+## Real collector
+
+The collector test executes real `saveSource` calls, including compile rejection rollback and two same-Head requests. It is disabled unless `LIGHT_EXTENSION_BENCHMARK_COLLECT=true`. `sourceCommit` identifies the code being measured; `harnessCommit` identifies this collector and must be the same in baseline and target checkouts.
+
+SQLite acceptance collection:
+
+```bash
+LIGHT_EXTENSION_BENCHMARK_COLLECT=true \
+LIGHT_EXTENSION_BENCHMARK_SOURCE_COMMIT=<measured-source-commit> \
+LIGHT_EXTENSION_BENCHMARK_HARNESS_COMMIT=<shared-harness-commit> \
+LIGHT_EXTENSION_BENCHMARK_OUTPUT=/absolute/path/to/sqlite-evidence.json \
+LIGHT_EXTENSION_BENCHMARK_UI_SAVE_VERIFIED=true \
+LIGHT_EXTENSION_BENCHMARK_REFERENCES_VERIFIED=true \
+DB_DIALECT=sqlite \
+DB_STORAGE=/absolute/path/to/compile-performance.sqlite \
+yarn test packages/plugins/@nocobase/plugin-light-extension/src/server/__tests__/compile-performance-benchmark-collector.test.ts --run --reporter=verbose
+```
+
+PostgreSQL uses the same command with `DB_DIALECT=postgres` and the normal `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USER`, and `DB_PASSWORD` environment. Run SQLite and PostgreSQL serially, with different output paths. Do not put connection strings or passwords in evidence metadata.
+
+PostgreSQL issues the two same-Head requests concurrently. SQLite executes the two already-stale client intents serially because it is a single-writer database; the evidence still requires exactly one successful commit and one outdated response, while the repository's dedicated concurrency regression test covers overlapping execution.
+
+The default is 1 cold run and 20 hot runs. A shorter smoke collection can override `LIGHT_EXTENSION_BENCHMARK_COLD_RUNS` and `LIGHT_EXTENSION_BENCHMARK_HOT_RUNS` and set `LIGHT_EXTENSION_BENCHMARK_REQUIRE_ACCEPTANCE=false`; its `gate.passed` may be true, but `gate.acceptanceReady` remains false until the fixed minimum is met.
+
+Both Vitest and `jq` provide non-zero gate exits:
+
+```bash
+jq -e '.gate.passed == true and .gate.acceptanceReady == true' /absolute/path/to/sqlite-evidence.json
+jq -e '.gate.passed == true and .gate.acceptanceReady == true' /absolute/path/to/postgres-evidence.json
+```
+
+Set `LIGHT_EXTENSION_BENCHMARK_UI_SAVE_VERIFIED=true` and `LIGHT_EXTENSION_BENCHMARK_REFERENCES_VERIFIED=true` only after the listed client Save and Reference regression tests pass on the same source commit. Otherwise the collector intentionally writes failing functional evidence.
 
 ## Final collection protocol
 

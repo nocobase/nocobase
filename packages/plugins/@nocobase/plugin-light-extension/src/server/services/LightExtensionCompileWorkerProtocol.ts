@@ -7,7 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { sha256Hex, stableSerialize, type RunJSRuntimeArtifact } from '@nocobase/runjs';
+import {
+  sha256Hex,
+  stableSerialize,
+  type RunJSEntryDependencyManifestV1,
+  type RunJSRuntimeArtifact,
+} from '@nocobase/runjs';
 
 import type { LightExtensionKind } from '../../constants';
 import type { LightExtensionDiagnostic } from '../../shared/types';
@@ -80,9 +85,13 @@ interface LightExtensionCompileResultBase {
 
 export interface LightExtensionCompileSuccessResult extends LightExtensionCompileResultBase {
   accepted: true;
+  execution?: 'compiled' | 'reused';
+  compiledAt?: string;
   artifact: RunJSRuntimeArtifact;
   artifactHash: string;
   runtimeCodeHash: string;
+  dependencyManifest?: RunJSEntryDependencyManifestV1;
+  dependencyManifestHash?: string;
 }
 
 export interface LightExtensionCompileFailureResult extends LightExtensionCompileResultBase {
@@ -105,6 +114,14 @@ export interface LightExtensionCompileWorkerRequest {
   job: LightExtensionCompileJob;
 }
 
+export interface LightExtensionCompileWorkerShutdownRequest {
+  type: 'shutdown';
+}
+
+export type LightExtensionCompileWorkerMessage =
+  | LightExtensionCompileWorkerRequest
+  | LightExtensionCompileWorkerShutdownRequest;
+
 export type LightExtensionCompileWorkerResponse =
   | {
       type: 'result';
@@ -113,6 +130,9 @@ export type LightExtensionCompileWorkerResponse =
   | {
       type: 'ready';
       threadId: number;
+    }
+  | {
+      type: 'shutdown-complete';
     };
 
 export function assertLightExtensionCompileJob(job: LightExtensionCompileJob): void {

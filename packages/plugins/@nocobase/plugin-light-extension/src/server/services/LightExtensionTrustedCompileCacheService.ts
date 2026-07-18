@@ -12,7 +12,9 @@ import {
   buildRunJSArtifactHash,
   buildRunJSRuntimeCodeHash,
   stableSerialize,
+  type RunJSEntryDependencyManifestV1,
   type RunJSRuntimeArtifact,
+  validateRunJSEntryDependencyManifest,
 } from '@nocobase/runjs';
 
 import { LIGHT_EXTENSION_RUNTIME_ARTIFACT_CONTRACT } from '../../constants';
@@ -41,6 +43,8 @@ export interface TrustedCompileArtifact {
   artifactFilesHash: string;
   diagnostics: LightExtensionDiagnostic[];
   compiledAt: Date;
+  dependencyManifest?: RunJSEntryDependencyManifestV1;
+  dependencyManifestHash?: string;
 }
 
 export interface TrustedCompileCacheLookup {
@@ -55,6 +59,8 @@ export interface PersistTrustedCompileArtifactInput {
   inputManifest: CompileInputManifest;
   artifact: RunJSRuntimeArtifact;
   diagnostics: LightExtensionDiagnostic[];
+  dependencyManifest?: RunJSEntryDependencyManifestV1;
+  dependencyManifestHash?: string;
 }
 
 /**
@@ -120,6 +126,8 @@ export class LightExtensionTrustedCompileCacheService {
         inputManifest: input.inputManifest,
         diagnostics,
         compiledAt,
+        dependencyManifest: input.dependencyManifest || null,
+        dependencyManifestHash: input.dependencyManifestHash || null,
       },
       transaction,
     });
@@ -137,6 +145,8 @@ export class LightExtensionTrustedCompileCacheService {
       artifactFilesHash,
       diagnostics,
       compiledAt,
+      dependencyManifest: input.dependencyManifest,
+      dependencyManifestHash: input.dependencyManifestHash,
     };
   }
 
@@ -229,6 +239,18 @@ function validateTrustedCompileArtifact(
   const artifactFilesHash = stringValue(cacheRow.get('artifactFilesHash'));
   const compiledAt = dateValue(cacheRow.get('compiledAt'));
   const diagnostics = normalizeDiagnostics(cacheRow.get('diagnostics'));
+  const dependencyManifestHash = nullableString(cacheRow.get('dependencyManifestHash')) || undefined;
+  const dependencyValidation = validateRunJSEntryDependencyManifest({
+    value: cacheRow.get('dependencyManifest'),
+    expectedCompilerBuildId: expectation.inputManifest.compilerBuildId,
+    expectedEntryPath: expectation.inputManifest.entryPath,
+    expectedManifestHash: dependencyManifestHash,
+  });
+  const dependencyManifest =
+    dependencyValidation.valid &&
+    dependencyManifestMatchesCompileInput(dependencyValidation.manifest, expectation.inputManifest.files)
+      ? dependencyValidation.manifest
+      : undefined;
   if (
     cacheRow.get('compileKey') !== expectation.compileKey ||
     cacheRow.get('compilerBuildId') !== expectation.inputManifest.compilerBuildId ||
@@ -274,7 +296,17 @@ function validateTrustedCompileArtifact(
     artifactFilesHash,
     diagnostics,
     compiledAt,
+    dependencyManifest,
+    dependencyManifestHash: dependencyManifest ? dependencyValidation.manifestHash : undefined,
   };
+}
+
+function dependencyManifestMatchesCompileInput(
+  manifest: RunJSEntryDependencyManifestV1,
+  files: CompileInputManifest['files'],
+): boolean {
+  const hashes = new Map(files.map((file) => [file.path, file.blobHash]));
+  return [...manifest.runtime.files, ...manifest.types.files].every((file) => hashes.get(file.path) === file.blobHash);
 }
 
 function normalizeDiagnostics(value: unknown): LightExtensionDiagnostic[] | undefined {

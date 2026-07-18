@@ -28,7 +28,8 @@ import {
 export type CompilePerformanceAcceptanceStatus = 'pending' | 'pass' | 'fail';
 
 export interface CompilePerformanceBenchmarkEnvironment {
-  commit: string;
+  sourceCommit: string;
+  harnessCommit: string;
   nodeVersion: string;
   dependencyFingerprint: string;
   machineFingerprint: string;
@@ -49,6 +50,21 @@ export interface CompilePerformanceBenchmarkScenarioEvidence {
   scenarioId: CompilePerformanceBenchmarkScenarioId;
   coldRuns: LightExtensionCompileMetricsSummary[];
   hotRuns: LightExtensionCompileMetricsSummary[];
+  coldOutcomes?: CompilePerformanceBenchmarkRunOutcome[];
+  hotOutcomes?: CompilePerformanceBenchmarkRunOutcome[];
+}
+
+export interface CompilePerformanceBenchmarkRunOutcome {
+  iteration: number;
+  temperature: 'cold' | 'hot';
+  successCount: number;
+  rejectedCount: number;
+  outdatedCount: number;
+  failedCount: number;
+  headAdvanced: boolean;
+  rollbackVerified: boolean;
+  runtimeArtifactsVerified: boolean;
+  referenceConsistencyVerified: boolean;
 }
 
 export interface CompilePerformanceBenchmarkDataset {
@@ -196,8 +212,8 @@ export function serializeCompilePerformanceAcceptanceMarkdown(report: CompilePer
     '',
     '## Environments',
     '',
-    '| Revision | Commit | Node | Database | Database version | Dependency fingerprint | Machine fingerprint |',
-    '| --- | --- | --- | --- | --- | --- | --- |',
+    '| Revision | Source commit | Harness commit | Node | Database | Database version | Dependency fingerprint | Machine fingerprint |',
+    '| --- | --- | --- | --- | --- | --- | --- | --- |',
     ...environmentRows('Baseline', report.baseline),
     ...environmentRows('Target', report.target),
     '',
@@ -321,12 +337,12 @@ function collectionCompletenessCheck(
     for (const expected of matrix) {
       const scenario = byId.get(expected.id);
       if (!scenario) {
-        missing.push(`${dataset.environment.commit}/${dataset.environment.databaseDialect}/${expected.id}`);
+        missing.push(`${dataset.environment.sourceCommit}/${dataset.environment.databaseDialect}/${expected.id}`);
         continue;
       }
       if (scenario.cold.runCount < expected.coldRuns || scenario.hot.runCount < expected.hotRuns) {
         missing.push(
-          `${dataset.environment.commit}/${dataset.environment.databaseDialect}/${expected.id} (${scenario.cold.runCount} cold, ${scenario.hot.runCount} hot)`,
+          `${dataset.environment.sourceCommit}/${dataset.environment.databaseDialect}/${expected.id} (${scenario.cold.runCount} cold, ${scenario.hot.runCount} hot)`,
         );
       }
     }
@@ -379,6 +395,7 @@ function environmentParityCheck(
     }
     const fields: Array<keyof CompilePerformanceBenchmarkEnvironment> = [
       'nodeVersion',
+      'harnessCommit',
       'dependencyFingerprint',
       'machineFingerprint',
       'databaseVersion',
@@ -645,17 +662,17 @@ function failCheck(id: string, title: string, details: string): CompilePerforman
 
 function environmentRows(revision: 'Baseline' | 'Target', datasets: CompilePerformanceDatasetSummary[]): string[] {
   if (datasets.length === 0) {
-    return [`| ${revision} | pending | pending | pending | pending | pending | pending |`];
+    return [`| ${revision} | pending | pending | pending | pending | pending | pending | pending |`];
   }
   return datasets.map(
     ({ environment }) =>
-      `| ${revision} | ${escapeMarkdownCell(environment.commit)} | ${escapeMarkdownCell(
-        environment.nodeVersion,
-      )} | ${escapeMarkdownCell(environment.databaseDialect)} | ${escapeMarkdownCell(
-        environment.databaseVersion,
-      )} | ${escapeMarkdownCell(environment.dependencyFingerprint)} | ${escapeMarkdownCell(
-        environment.machineFingerprint,
-      )} |`,
+      `| ${revision} | ${escapeMarkdownCell(environment.sourceCommit)} | ${escapeMarkdownCell(
+        environment.harnessCommit,
+      )} | ${escapeMarkdownCell(environment.nodeVersion)} | ${escapeMarkdownCell(
+        environment.databaseDialect,
+      )} | ${escapeMarkdownCell(environment.databaseVersion)} | ${escapeMarkdownCell(
+        environment.dependencyFingerprint,
+      )} | ${escapeMarkdownCell(environment.machineFingerprint)} |`,
   );
 }
 

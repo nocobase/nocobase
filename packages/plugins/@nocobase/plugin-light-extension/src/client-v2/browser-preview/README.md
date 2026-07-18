@@ -49,6 +49,27 @@ The benchmark deliberately has no absolute timing assertion. Machine and browser
 not a brittle unit-test gate; the feature remains default-off if the deployed-browser warm p95 does not meet the
 rollout target.
 
+## Production-asset HTTP acceptance
+
+The standalone Playwright suite under `deployment-e2e/` builds production assets twice and serves them over real HTTP
+at `/` and `/nocobase/`. It does not install or mutate a NocoBase application. The suite verifies hashed Worker/WASM
+requests, WASM 200/MIME, strict CSP with the narrow `wasm-unsafe-eval` token, CSP rejection without that token, HTTP
+404, wrong MIME, browser offline mode, default-off zero requests, and the 20-edit warm p95 rollout gate.
+
+Run the complete acceptance suite:
+
+```bash
+npx playwright test --config=packages/plugins/@nocobase/plugin-light-extension/src/client-v2/browser-preview/deployment-e2e/playwright.config.ts
+```
+
+Override the warm p95 gate or print the benchmark JSON when collecting rollout evidence:
+
+```bash
+BROWSER_PREVIEW_E2E_WARM_P95_MS=1000 BROWSER_PREVIEW_E2E_REPORT=1 npx playwright test \
+  --config=packages/plugins/@nocobase/plugin-light-extension/src/client-v2/browser-preview/deployment-e2e/playwright.config.ts \
+  --grep "records 20 warm edits"
+```
+
 ## Verification boundary
 
 Unit tests cover the actual 0.27.7 WASM initialization/build path, source maps, metafiles, VFS delta/rename behavior,

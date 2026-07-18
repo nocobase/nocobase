@@ -20,6 +20,7 @@ import { buildLightExtensionCompileKey } from '../services/LightExtensionCompile
 import {
   LightExtensionCompilePoolError,
   LightExtensionCompileWorkerPool,
+  resolveLightExtensionCompileWorkerId,
   type LightExtensionCompileWorkerFactory,
   type LightExtensionCompileWorkerHandle,
 } from '../services/LightExtensionCompileWorkerPool';
@@ -48,14 +49,20 @@ describe('LightExtensionCompileWorkerPool', () => {
     }
   }, 60_000);
 
-  it('enforces maximum concurrency and starts queued jobs in FIFO order', async () => {
+  it('enforces maximum concurrency and preserves FIFO order within each worker affinity', async () => {
     const harness = createWorkerHarness();
     const pool = new LightExtensionCompileWorkerPool({
       workerCount: 2,
       maxQueueLength: 2,
       workerFactory: harness.factory,
     });
-    const jobs = [0, 1, 2, 3, 4].map((ordinal) => createCompileJob(ordinal));
+    const jobs = [
+      createCompileJobForWorker(1, 0),
+      createCompileJobForWorker(2, 100),
+      createCompileJobForWorker(1, 200),
+      createCompileJobForWorker(2, 300),
+      createCompileJobForWorker(1, 400),
+    ];
     const promises = jobs.slice(0, 4).map((job) => pool.submit(job));
 
     expect(harness.startedJobIds).toEqual([jobs[0].jobId, jobs[1].jobId]);
@@ -63,9 +70,9 @@ describe('LightExtensionCompileWorkerPool', () => {
       code: 'LIGHT_EXTENSION_COMPILE_QUEUE_CAPACITY_EXCEEDED',
     });
     harness.workers[1].completeCurrent();
-    expect(harness.startedJobIds).toEqual([jobs[0].jobId, jobs[1].jobId, jobs[2].jobId]);
+    expect(harness.startedJobIds).toEqual([jobs[0].jobId, jobs[1].jobId, jobs[3].jobId]);
     harness.workers[0].completeCurrent();
-    expect(harness.startedJobIds).toEqual(jobs.slice(0, 4).map((job) => job.jobId));
+    expect(harness.startedJobIds).toEqual([jobs[0].jobId, jobs[1].jobId, jobs[3].jobId, jobs[2].jobId]);
     harness.workers[0].completeCurrent();
     harness.workers[1].completeCurrent();
 
@@ -261,6 +268,16 @@ function createCompileJob(ordinal: number, suffix = ''): LightExtensionCompileJo
     inputManifest: key.inputManifest,
     files: sourceFiles,
   };
+}
+
+function createCompileJobForWorker(workerId: number, startOrdinal: number): LightExtensionCompileJob {
+  for (let ordinal = startOrdinal; ordinal < startOrdinal + 100; ordinal += 1) {
+    const job = createCompileJob(ordinal);
+    if (resolveLightExtensionCompileWorkerId(job, 2) === workerId) {
+      return job;
+    }
+  }
+  throw new Error(`Unable to create compile job for worker ${workerId}`);
 }
 
 function createFakeResult(request: LightExtensionCompileWorkerRequest): LightExtensionCompileResult {

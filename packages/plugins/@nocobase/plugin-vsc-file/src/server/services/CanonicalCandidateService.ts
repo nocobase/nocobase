@@ -40,6 +40,8 @@ export interface CanonicalCandidateSnapshot {
   readonly files: readonly CanonicalCandidateFile[];
 }
 
+export type PreparedCanonicalCandidateSnapshot = Omit<CanonicalCandidateSnapshot, 'commitId'>;
+
 interface MaterializeCandidateInput {
   baseCommit: VscCommitRecord | null;
   baseEntries: readonly Readonly<VscNormalizedTreeEntry>[];
@@ -51,12 +53,10 @@ interface MaterializeCandidateInput {
 export class CanonicalCandidateService {
   constructor(private readonly blobService: BlobService) {}
 
-  async materialize(
-    input: MaterializeCandidateInput,
+  async materializePrepared(
+    input: Pick<MaterializeCandidateInput, 'baseCommit' | 'baseEntries' | 'preparedTree'>,
     options: { transaction?: Transaction; metricsCollector?: VscFileMetricsCollector } = {},
-  ): Promise<CanonicalCandidateSnapshot> {
-    this.assertIdentity(input);
-
+  ): Promise<PreparedCanonicalCandidateSnapshot> {
     const blobsByHash = new Map<string, Readonly<VscStoredBlob>>(
       input.preparedTree.canonicalBlobs.map((blob) => [blob.hash, blob]),
     );
@@ -96,11 +96,23 @@ export class CanonicalCandidateService {
     return Object.freeze({
       baseCommitId: input.baseCommit?.id || null,
       baseTreeHash: input.baseCommit?.treeHash || null,
-      commitId: input.commit.id,
-      treeHash: input.tree.hash,
+      treeHash: input.preparedTree.hash,
       changedPaths: Object.freeze(changes.map((change) => change.path)),
       changes,
       files,
+    });
+  }
+
+  async materialize(
+    input: MaterializeCandidateInput,
+    options: { transaction?: Transaction; metricsCollector?: VscFileMetricsCollector } = {},
+  ): Promise<CanonicalCandidateSnapshot> {
+    this.assertIdentity(input);
+    const prepared = await this.materializePrepared(input, options);
+
+    return Object.freeze({
+      ...prepared,
+      commitId: input.commit.id,
     });
   }
 

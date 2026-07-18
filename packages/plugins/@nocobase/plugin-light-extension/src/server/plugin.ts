@@ -36,6 +36,7 @@ import { createLightExtensionsResource, lightExtensionActionNames } from './reso
 import { LightExtensionAuditService } from './services/LightExtensionAuditService';
 import { LightExtensionCanonicalWorkspaceBuilder } from './services/LightExtensionCanonicalWorkspace';
 import { LightExtensionCompilePreviewService } from './services/LightExtensionCompilePreviewService';
+import { LightExtensionCompileWorkerPool } from './services/LightExtensionCompileWorkerPool';
 import { createLightExtensionCompileMetricsLoggerCollector } from './services/LightExtensionCompileMetrics';
 import { LightExtensionEntryService } from './services/LightExtensionEntryService';
 import { LightExtensionFileService } from './services/LightExtensionFileService';
@@ -108,10 +109,16 @@ type AppWithPluginEvents = {
     ) => void;
     registerSnippet?: (snippet: { name: string; actions: string[] }) => void;
   };
-  on?: (eventName: 'afterLoadPlugin' | 'afterStart', listener: PluginLoadListener | (() => Promise<void>)) => unknown;
-  off?: (eventName: 'afterLoadPlugin' | 'afterStart', listener: PluginLoadListener | (() => Promise<void>)) => unknown;
+  on?: (
+    eventName: 'afterLoadPlugin' | 'afterStart' | 'beforeStop',
+    listener: PluginLoadListener | (() => Promise<void>),
+  ) => unknown;
+  off?: (
+    eventName: 'afterLoadPlugin' | 'afterStart' | 'beforeStop',
+    listener: PluginLoadListener | (() => Promise<void>),
+  ) => unknown;
   removeListener?: (
-    eventName: 'afterLoadPlugin' | 'afterStart',
+    eventName: 'afterLoadPlugin' | 'afterStart' | 'beforeStop',
     listener: PluginLoadListener | (() => Promise<void>),
   ) => unknown;
   use?: (
@@ -163,6 +170,8 @@ export class PluginLightExtensionServer extends Plugin {
 
   private runtimeCompileService?: LightExtensionRuntimeCompileService;
 
+  private compileWorkerPool?: LightExtensionCompileWorkerPool;
+
   private entryService?: LightExtensionEntryService;
 
   private referenceService?: ReferenceService;
@@ -178,6 +187,8 @@ export class PluginLightExtensionServer extends Plugin {
   private remotePullRecoveryListener?: () => Promise<void>;
 
   private remotePullRecoveryPromise?: Promise<void>;
+
+  private compileShutdownListener?: () => Promise<void>;
 
   async syncFlowModelReferencesForNodeTree(
     input: { rootUid: string; action?: string },
@@ -269,12 +280,18 @@ export class PluginLightExtensionServer extends Plugin {
     this.referenceService = new ReferenceService(db, this.auditService, this.permissionService);
     const apiBasePath = (this.app as unknown as AppWithPluginEvents).resourceManager?.options?.prefix;
     this.runtimeResolveService = new RuntimeResolveService(db, typeof apiBasePath === 'string' ? { apiBasePath } : {});
+    this.compileWorkerPool = new LightExtensionCompileWorkerPool();
     this.runtimeCompileService = new LightExtensionRuntimeCompileService(
       db,
       this.fileService,
       this.entryService,
       this.workspaceCompilerBridge,
       compileMetricsCollector,
+      {
+        trustedCompileCache,
+        previewTicketVerifier: this.previewTicketVerifier,
+        compileWorkerPool: this.compileWorkerPool,
+      },
     );
     this.repoService.useReferenceService(this.referenceService);
     this.repoService.useRemoteSyncLifecycleGate({
@@ -344,6 +361,7 @@ export class PluginLightExtensionServer extends Plugin {
     this.registerAclActions();
     this.registerVscPermissionHookWhenAvailable();
     this.registerRemotePullRecoveryListener();
+    this.registerCompileShutdownListener();
   }
 
   async afterDisable() {
@@ -358,6 +376,42 @@ export class PluginLightExtensionServer extends Plugin {
   async remove() {
     this.unregisterVscPermissionHookWhenNeeded();
     this.removeRemotePullRecoveryListener();
+    await this.shutdownCompileInfrastructure();
+  }
+
+  private registerCompileShutdownListener() {
+    this.removeCompileShutdownListener();
+    const app = this.app as unknown as AppWithPluginEvents;
+    if (!app.on) {
+      return;
+    }
+    const listener = async () => {
+      await this.shutdownCompileInfrastructure();
+    };
+    this.compileShutdownListener = listener;
+    app.on('beforeStop', listener);
+  }
+
+  private removeCompileShutdownListener() {
+    if (!this.compileShutdownListener) {
+      return;
+    }
+    const app = this.app as unknown as AppWithPluginEvents;
+    if (app.off) {
+      app.off('beforeStop', this.compileShutdownListener);
+    } else {
+      app.removeListener?.('beforeStop', this.compileShutdownListener);
+    }
+    this.compileShutdownListener = undefined;
+  }
+
+  private async shutdownCompileInfrastructure(): Promise<void> {
+    this.removeCompileShutdownListener();
+    const pool = this.compileWorkerPool;
+    this.compileWorkerPool = undefined;
+    if (pool) {
+      await pool.shutdown();
+    }
   }
 
   private registerAclActions() {

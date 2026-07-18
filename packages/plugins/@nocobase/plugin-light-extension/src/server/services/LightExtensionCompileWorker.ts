@@ -9,8 +9,12 @@
 
 import { parentPort, threadId } from 'node:worker_threads';
 
-import { executeLightExtensionCompileJob } from './LightExtensionCompileJobExecutor';
+import {
+  disposeLightExtensionCompileJobExecutor,
+  executeLightExtensionCompileJob,
+} from './LightExtensionCompileJobExecutor';
 import type {
+  LightExtensionCompileWorkerMessage,
   LightExtensionCompileWorkerRequest,
   LightExtensionCompileWorkerResponse,
 } from './LightExtensionCompileWorkerProtocol';
@@ -37,8 +41,19 @@ async function handleCompileRequest(message: LightExtensionCompileWorkerRequest)
   workerPort.postMessage(response);
 }
 
-workerPort.on('message', (message: LightExtensionCompileWorkerRequest) => {
-  handleCompileRequest(message).catch((error: unknown) => {
+async function handleWorkerMessage(message: LightExtensionCompileWorkerMessage): Promise<void> {
+  if (message.type === 'shutdown') {
+    await disposeLightExtensionCompileJobExecutor();
+    const response: LightExtensionCompileWorkerResponse = { type: 'shutdown-complete' };
+    workerPort.postMessage(response);
+    workerPort.close();
+    return;
+  }
+  await handleCompileRequest(message);
+}
+
+workerPort.on('message', (message: LightExtensionCompileWorkerMessage) => {
+  handleWorkerMessage(message).catch((error: unknown) => {
     setImmediate(() => {
       throw error;
     });

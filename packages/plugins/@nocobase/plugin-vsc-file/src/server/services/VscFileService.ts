@@ -24,7 +24,11 @@ import type {
   VscTreeEntryInput,
 } from '../../shared/types';
 import { BlobService } from './BlobService';
-import { CanonicalCandidateService, type CanonicalCandidateSnapshot } from './CanonicalCandidateService';
+import {
+  CanonicalCandidateService,
+  type CanonicalCandidateSnapshot,
+  type PreparedCanonicalCandidateSnapshot,
+} from './CanonicalCandidateService';
 import type { ListCommitsInput } from './CommitService';
 import { CommitService } from './CommitService';
 import type { DiffCommitsInput, DiffFileEndpoint, DiffFileInput, DiffFileResult, FileDiffResult } from './DiffService';
@@ -39,7 +43,7 @@ import type {
 } from './RefService';
 import { RefService } from './RefService';
 import { RepositoryService } from './RepositoryService';
-import { TreeService } from './TreeService';
+import { TreeService, type PreparedTree } from './TreeService';
 import { incrementVscFileMetric, type VscFileMetricsCollector } from './VscFileMetrics';
 import type { VscPermissionAction, VscPermissionHookInput, VscPermissionRequestMetadata } from '../permissions';
 import { VscPermissionHookRegistry } from '../permissions';
@@ -98,6 +102,19 @@ export interface PushWithCandidateOptions {
 
 export interface PushWithCandidateResult extends PushResult {
   candidate: CanonicalCandidateSnapshot;
+}
+
+const preparedPushBrand = Symbol('vsc-file-prepared-push');
+
+export interface PreparedPush {
+  readonly [preparedPushBrand]: true;
+  readonly repository: Readonly<VscRepositoryRecord>;
+  readonly baseCommit: Readonly<VscCommitRecord> | null;
+  readonly preparedTree: PreparedTree;
+  readonly candidate: PreparedCanonicalCandidateSnapshot;
+  readonly message: string;
+  readonly authorId: string | null;
+  readonly metadata: Readonly<Record<string, unknown>>;
 }
 
 export type IncludeContentMode = 'none' | 'selected' | 'all';
@@ -175,6 +192,8 @@ export class VscFileService {
   private readonly diffService: DiffService;
 
   private readonly refService: RefService;
+
+  private readonly preparedPushes = new WeakSet<object>();
 
   constructor(
     private readonly db: Database,
@@ -518,6 +537,135 @@ export class VscFileService {
     };
   }
 
+  async preparePush(
+    input: PushInput,
+    ctx: VscServiceContext = {},
+    options: PushWithCandidateOptions = {},
+  ): Promise<PreparedPush> {
+    if (ctx.transaction) {
+      throw new VscError('INTERNAL_ERROR', 'Prepared pushes must be created outside a database transaction');
+    }
+    const repository = await this.repositoryService.getRepository(input.repoId);
+    await this.assertPermission(
+      {
+        action: 'push',
+        repository,
+        actionMetadata: input.metadata,
+      },
+      ctx,
+    );
+    if (repository.status === 'archived') {
+      throw new VscError('REPO_ARCHIVED', `Repository "${repository.id}" is archived`);
+    }
+    if (repository.headCommitId !== input.baseCommitId) {
+      throw new VscError('BASE_COMMIT_OUTDATED', 'Base commit is no longer the repository head', {
+        details: {
+          expected: repository.headCommitId,
+          received: input.baseCommitId,
+        },
+      });
+    }
+
+    const baseCommit = input.baseCommitId
+      ? await this.commitService.getCommit(repository.id, input.baseCommitId)
+      : null;
+    const baseEntries = baseCommit ? await this.treeService.loadTreeEntries(baseCommit.treeHash) : [];
+    if (options.validateBaseEntries) {
+      await options.validateBaseEntries(Object.freeze(baseEntries.map((entry) => Object.freeze({ ...entry }))));
+    }
+    const allowedBlobHashes = new Set(baseEntries.map((entry) => entry.blobHash));
+    const nextEntries = this.applyFileChanges(baseEntries, input.files, allowedBlobHashes);
+    const preparedTree = await this.treeService.prepareTree(nextEntries, {
+      metricsCollector: ctx.metricsCollector,
+    });
+    const baseTreeHash = baseCommit?.treeHash || this.treeService.emptyTreeHash;
+    if (preparedTree.hash === baseTreeHash && !input.allowEmptyCommit) {
+      throw new VscError('NO_CHANGES', 'Push does not change the repository tree');
+    }
+    const materialize = () =>
+      this.candidateService.materializePrepared(
+        {
+          baseCommit,
+          baseEntries,
+          preparedTree,
+        },
+        { metricsCollector: ctx.metricsCollector },
+      );
+    const candidate = options.measureCandidateMaterialization
+      ? await options.measureCandidateMaterialization(materialize)
+      : await materialize();
+    const prepared: PreparedPush = Object.freeze({
+      [preparedPushBrand]: true,
+      repository: Object.freeze({ ...repository }),
+      baseCommit: baseCommit ? Object.freeze({ ...baseCommit, metadata: cloneRecord(baseCommit.metadata) }) : null,
+      preparedTree,
+      candidate,
+      message: input.message,
+      authorId: input.authorId || ctx.authorId || null,
+      metadata: Object.freeze(cloneRecord(input.metadata || {})),
+    });
+    this.preparedPushes.add(prepared);
+    return prepared;
+  }
+
+  async publishPreparedPush(prepared: PreparedPush, ctx: VscServiceContext = {}): Promise<PushWithCandidateResult> {
+    const transaction = ctx.transaction;
+    if (!transaction) {
+      throw new VscError('INTERNAL_ERROR', 'A transaction is required to publish a prepared push');
+    }
+    if (!prepared || !this.preparedPushes.has(prepared)) {
+      throw new VscError('INTERNAL_ERROR', 'Prepared push must be created by this VscFileService instance');
+    }
+    const repository = await this.repositoryService.getRepositoryForUpdate(prepared.repository.id, transaction);
+    await this.assertPermission(
+      {
+        action: 'push',
+        repository,
+        actionMetadata: prepared.metadata,
+      },
+      ctx,
+    );
+    if (repository.status === 'archived') {
+      throw new VscError('REPO_ARCHIVED', `Repository "${repository.id}" is archived`);
+    }
+    if (
+      repository.headCommitId !== prepared.repository.headCommitId ||
+      repository.headSeq !== prepared.repository.headSeq ||
+      prepared.candidate.baseCommitId !== prepared.repository.headCommitId
+    ) {
+      throw new VscError('BASE_COMMIT_OUTDATED', 'Base commit is no longer the repository head', {
+        details: {
+          expected: repository.headCommitId,
+          received: prepared.repository.headCommitId,
+        },
+      });
+    }
+
+    const tree = await this.treeService.ensurePreparedTree(prepared.preparedTree, transaction);
+    const commit = await this.commitService.createCommit(
+      {
+        repoId: repository.id,
+        seq: repository.headSeq + 1,
+        parentCommitId: prepared.baseCommit?.id || null,
+        treeHash: tree.hash,
+        message: prepared.message,
+        authorId: prepared.authorId,
+        metadata: cloneRecord(prepared.metadata),
+      },
+      transaction,
+    );
+    const updatedRepository = await this.repositoryService.updateHead(repository, commit.id, commit.seq, transaction);
+    return {
+      repository: updatedRepository,
+      commit,
+      tree,
+      candidate: Object.freeze({
+        ...prepared.candidate,
+        commitId: commit.id,
+      }),
+    };
+  }
+
   async pushWithCandidate(
     input: PushInput,
     ctx: VscServiceContext = {},
@@ -823,4 +971,8 @@ export class VscFileService {
 
 function isBlobDiffEndpoint(endpoint: DiffFileEndpoint | null | undefined): boolean {
   return endpoint?.type === 'blob';
+}
+
+function cloneRecord(value: Readonly<Record<string, unknown>>): Record<string, unknown> {
+  return JSON.parse(JSON.stringify(value)) as Record<string, unknown>;
 }

@@ -7,12 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { Database, Transaction } from '@nocobase/database';
+import type { Database, Model, Transaction } from '@nocobase/database';
 import type {
   VscCommitRecord,
   VscFileChange,
   VscFileMetricsCollector,
   VscPermissionAction,
+  PreparedPush,
   VscRefName,
   VscRemoteSnapshot,
 } from '@nocobase/plugin-vsc-file';
@@ -38,7 +39,11 @@ import { LightExtensionPermissionService } from './LightExtensionPermissionServi
 import { createPreparedCandidateWorkspace, type PreparedCandidateWorkspace } from './PreparedCandidateWorkspace';
 import type { LightExtensionRepoInternalRecord, LightExtensionServiceContext } from './LightExtensionRepoService';
 import { LightExtensionRepoService, stripInternalRepo } from './LightExtensionRepoService';
-import { LightExtensionValidator, hasErrorDiagnostic } from './LightExtensionValidator';
+import {
+  LightExtensionValidator,
+  hasErrorDiagnostic,
+  type LightExtensionWorkspaceValidationResult,
+} from './LightExtensionValidator';
 import { normalizeVscBridgeError } from './errorContract';
 
 export interface LightExtensionPullInput {
@@ -85,10 +90,24 @@ export interface LightExtensionReplaceSourceSnapshotResult {
   changed: boolean;
 }
 
+const preparedSourceCandidateBrand = Symbol('light-extension-prepared-source-candidate');
+
+export interface LightExtensionPreparedSourceCandidate {
+  readonly [preparedSourceCandidateBrand]: true;
+  readonly repo: Readonly<LightExtensionRepoInternalRecord>;
+  readonly expectedHeadCommitId: string | null;
+  readonly requestId: string;
+  readonly files: readonly Readonly<LightExtensionFileChange>[];
+  readonly validation: LightExtensionWorkspaceValidationResult;
+  readonly vscPreparedPush: PreparedPush;
+}
+
 export class LightExtensionFileService {
   private readonly repoService: LightExtensionRepoService;
 
   private vscFileService: VscFileService;
+
+  private readonly preparedSourceCandidates = new WeakSet<object>();
 
   constructor(
     private readonly db: Database,
@@ -164,6 +183,182 @@ export class LightExtensionFileService {
       commit: candidate.commit,
       tree: candidate.tree,
     };
+  }
+
+  async prepareSourceCandidate(
+    input: LightExtensionPushInput,
+    ctx: LightExtensionServiceContext = {},
+  ): Promise<LightExtensionPreparedSourceCandidate> {
+    if (ctx.transaction) {
+      throw new LightExtensionError(
+        'LIGHT_EXTENSION_SOURCE_ERROR',
+        'Source candidates must be prepared outside a database transaction',
+      );
+    }
+    const requestId = getRequestId(ctx);
+    try {
+      const repo = await this.repoService.getInternalRepo(input.repoId, ctx);
+      assertRepoNotArchived(repo, 'write source');
+      assertExpectedHead(input.expectedHeadCommitId, repo.headCommitId, repo.id);
+      const compileMetrics = ctx.compileMetrics;
+      const vscPreparedPush = await this.runVsc(repo.id, () =>
+        this.vscFileService.preparePush(
+          {
+            repoId: repo.vscRepoId,
+            baseCommitId: repo.headCommitId,
+            message: input.message,
+            files: input.files.map(toVscFileChange),
+            allowEmptyCommit: input.allowEmptyCommit,
+            authorId: ctx.actorUserId || null,
+            metadata: buildSourceCommitMetadata(repo.id, requestId, ctx),
+          },
+          this.createVscContext({
+            ctx,
+            requestId,
+            repoId: repo.id,
+            aclAction: 'writeSource',
+            reason: 'prepare light-extension source files',
+            allowedActions: ['push'],
+          }),
+          {
+            validateBaseEntries: (entries) =>
+              this.assertValidSyncBatch(
+                input.files,
+                entries.map((entry) => entry.path),
+              ),
+            measureCandidateMaterialization: compileMetrics
+              ? (materialize) => compileMetrics.measureAsync('snapshotMaterialize', materialize)
+              : undefined,
+          },
+        ),
+      );
+      recordPreparedCandidateSnapshot(ctx, vscPreparedPush.candidate.files);
+      const validateWorkspace = () =>
+        this.validator.validateWorkspace({
+          files: vscPreparedPush.candidate.files.map((file) => ({
+            path: file.path,
+            content: file.content,
+            blobHash: file.blobHash,
+            size: file.size,
+            language: file.language,
+          })),
+        });
+      const validation = ctx.compileMetrics
+        ? ctx.compileMetrics.measure('workspaceValidation', validateWorkspace)
+        : validateWorkspace();
+      ctx.compileMetrics?.set('entryCount', validation.entries.length);
+      if (hasErrorDiagnostic(validation.diagnostics)) {
+        throw new LightExtensionError(
+          'LIGHT_EXTENSION_VALIDATION_FAILED',
+          'Light extension source workspace is invalid',
+          { details: { diagnostics: validation.diagnostics } },
+        );
+      }
+      const prepared: LightExtensionPreparedSourceCandidate = Object.freeze({
+        [preparedSourceCandidateBrand]: true,
+        repo: Object.freeze({ ...repo }),
+        expectedHeadCommitId: input.expectedHeadCommitId,
+        requestId,
+        files: Object.freeze(input.files.map((file) => Object.freeze({ ...file }))),
+        validation,
+        vscPreparedPush,
+      });
+      this.preparedSourceCandidates.add(prepared);
+      return prepared;
+    } catch (error) {
+      const recordRejectedPush = () => this.recordRejectedPush(input, ctx, requestId, error);
+      if (ctx.deferredRejectedPushAudits) {
+        ctx.deferredRejectedPushAudits.push(recordRejectedPush);
+      } else {
+        await recordRejectedPush();
+      }
+      throw normalizeVscBridgeError(error, input.repoId);
+    }
+  }
+
+  async publishSourceCandidate(
+    prepared: LightExtensionPreparedSourceCandidate,
+    ctx: LightExtensionServiceContext,
+  ): Promise<PreparedCandidateWorkspace> {
+    const transaction = ctx.transaction;
+    if (!transaction) {
+      throw new LightExtensionError(
+        'LIGHT_EXTENSION_SOURCE_ERROR',
+        'A transaction is required to publish a prepared source candidate',
+      );
+    }
+    if (!prepared || !this.preparedSourceCandidates.has(prepared)) {
+      throw new LightExtensionError(
+        'LIGHT_EXTENSION_SOURCE_ERROR',
+        'Prepared source candidate must be created by this file service instance',
+      );
+    }
+    const repo = await this.repoService.lockInternalRepoForUpdate(prepared.repo.id, { ...ctx, transaction });
+    assertRepoNotArchived(repo, 'write source');
+    assertExpectedHead(prepared.expectedHeadCommitId, repo.headCommitId, repo.id);
+    if (repo.vscRepoId !== prepared.repo.vscRepoId) {
+      throw new LightExtensionError('LIGHT_EXTENSION_SOURCE_OUTDATED', 'Light extension source repository changed');
+    }
+    const result = await this.runVsc(repo.id, () =>
+      this.vscFileService.publishPreparedPush(
+        prepared.vscPreparedPush,
+        this.createVscContext({
+          ctx,
+          transaction,
+          requestId: prepared.requestId,
+          repoId: repo.id,
+          aclAction: 'writeSource',
+          reason: 'publish prepared light-extension source files',
+          allowedActions: ['push'],
+        }),
+      ),
+    );
+    const repoModel = this.db.getModel<Model>('lightExtensionRepos');
+    const [updatedCount] = await repoModel.update(
+      { headCommitId: result.commit.id },
+      {
+        where: { id: repo.id, headCommitId: prepared.expectedHeadCommitId },
+        transaction,
+      },
+    );
+    if (updatedCount !== 1) {
+      throw new LightExtensionError(
+        'LIGHT_EXTENSION_SOURCE_OUTDATED',
+        'Light extension source changed after the workspace was opened',
+        {
+          details: {
+            repoId: repo.id,
+            expectedHeadCommitId: prepared.expectedHeadCommitId,
+          },
+        },
+      );
+    }
+    const updatedRepo = await this.repoService.getInternalRepo(repo.id, { ...ctx, transaction });
+    const publicCommit = toPublicCommit(result.commit, repo.id);
+    const candidate = createPreparedCandidateWorkspace(
+      {
+        repo: stripInternalRepo(updatedRepo),
+        commit: publicCommit,
+        tree: result.tree,
+        validation: prepared.validation,
+        vscSnapshot: result.candidate,
+      },
+      transaction,
+    );
+    await this.auditService.recordFileWrite({
+      repoId: repo.id,
+      action: 'sourcePush',
+      result: 'success',
+      requestId: prepared.requestId,
+      actorUserId: ctx.actorUserId,
+      baseCommitId: prepared.expectedHeadCommitId,
+      commitId: result.commit.id,
+      message: 'Light extension source files committed',
+      files: prepared.files.map(summarizeFileChange),
+      details: { treeHash: result.tree.hash },
+      transaction,
+    });
+    return candidate;
   }
 
   async pushPreparedCandidate(

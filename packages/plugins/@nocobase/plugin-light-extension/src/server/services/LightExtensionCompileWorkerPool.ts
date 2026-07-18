@@ -42,6 +42,7 @@ export interface LightExtensionCompileWorkerHandle {
   off(event: 'error', listener: (error: Error) => void): this;
   off(event: 'exit', listener: (code: number) => void): this;
   postMessage(value: LightExtensionCompileWorkerRequest): void;
+  gracefulShutdown?(timeoutMs: number): Promise<void>;
   terminate(): Promise<number>;
 }
 
@@ -115,6 +116,7 @@ interface WorkerSlot {
 
 interface CapacityWaiter {
   byteSize: number;
+  job?: LightExtensionCompileJob;
   signal?: AbortSignal;
   abort?: () => void;
   resolve: () => void;
@@ -207,7 +209,7 @@ export class LightExtensionCompileWorkerPool {
         ),
       );
     }
-    if (!this.hasAdmissionSlot()) {
+    if (!this.hasAdmissionSlot(job)) {
       return this.rejectSubmission(
         new LightExtensionCompilePoolError(
           'LIGHT_EXTENSION_COMPILE_QUEUE_CAPACITY_EXCEEDED',
@@ -231,7 +233,24 @@ export class LightExtensionCompileWorkerPool {
     });
   }
 
-  async waitForCapacity(byteSize: number, signal?: AbortSignal): Promise<void> {
+  async submitWithBackpressure(
+    job: LightExtensionCompileJob,
+    signal?: AbortSignal,
+  ): Promise<LightExtensionCompileResult> {
+    assertLightExtensionCompileJob(job);
+    const byteSize = serialize(job).byteLength;
+    await this.waitForCapacity(byteSize, signal, job);
+    try {
+      return await this.submit(job);
+    } catch (error) {
+      if (!isRetryableAdmissionError(error)) {
+        throw error;
+      }
+      return this.submitWithBackpressure(job, signal);
+    }
+  }
+
+  async waitForCapacity(byteSize: number, signal?: AbortSignal, job?: LightExtensionCompileJob): Promise<void> {
     if (!Number.isSafeInteger(byteSize) || byteSize <= 0 || byteSize > this.options.maxJobBytes) {
       throw new LightExtensionCompilePoolError(
         'LIGHT_EXTENSION_COMPILE_JOB_TOO_LARGE',
@@ -244,7 +263,7 @@ export class LightExtensionCompileWorkerPool {
         'Light extension compile worker pool is shutting down',
       );
     }
-    if (this.canAdmit(byteSize)) {
+    if (this.canAdmit(byteSize, job)) {
       return;
     }
     if (this.capacityWaiters.length >= this.options.maxCapacityWaiters) {
@@ -255,7 +274,7 @@ export class LightExtensionCompileWorkerPool {
     }
 
     await new Promise<void>((resolve, reject) => {
-      const waiter: CapacityWaiter = { byteSize, resolve, reject, signal };
+      const waiter: CapacityWaiter = { byteSize, job, resolve, reject, signal };
       if (signal) {
         waiter.abort = () => {
           this.removeCapacityWaiter(waiter);
@@ -312,7 +331,7 @@ export class LightExtensionCompileWorkerPool {
       this.forceSettleOutstandingTasks();
     }
     const slots = this.slots.splice(0);
-    await Promise.all(slots.map((slot) => this.terminateSlot(slot)));
+    await Promise.all(slots.map((slot) => this.terminateSlot(slot, Math.min(graceMs, 5_000))));
     this.closed = true;
     this.notifyDrain();
   }
@@ -341,12 +360,18 @@ export class LightExtensionCompileWorkerPool {
 
   private dispatch(): void {
     for (const slot of this.slots) {
-      if (slot.task || this.queue.length === 0) {
+      if (slot.task || this.failedWorkers.has(slot.handle) || this.queue.length === 0) {
         continue;
       }
-      const task = this.queue.shift();
+      const taskIndex = this.queue.findIndex(
+        (task) => resolveLightExtensionCompileWorkerId(task.job, this.options.workerCount) === slot.id,
+      );
+      if (taskIndex < 0) {
+        continue;
+      }
+      const [task] = this.queue.splice(taskIndex, 1);
       if (!task) {
-        break;
+        continue;
       }
       task.startedAt = performance.now();
       slot.task = task;
@@ -386,7 +411,7 @@ export class LightExtensionCompileWorkerPool {
     handle: LightExtensionCompileWorkerHandle,
     message: LightExtensionCompileWorkerResponse,
   ): void {
-    if (slot.handle !== handle || message.type === 'ready') {
+    if (slot.handle !== handle || message.type === 'ready' || message.type === 'shutdown-complete') {
       return;
     }
     const task = slot.task;
@@ -556,13 +581,16 @@ export class LightExtensionCompileWorkerPool {
     }
   }
 
-  private async terminateSlot(slot: WorkerSlot): Promise<void> {
+  private async terminateSlot(slot: WorkerSlot, gracefulTimeoutMs = 0): Promise<void> {
     this.failedWorkers.add(slot.handle);
-    this.detachWorker(slot, slot.handle);
     if (slot.timeout) {
       clearTimeout(slot.timeout);
       slot.timeout = undefined;
     }
+    if (gracefulTimeoutMs > 0 && slot.handle.gracefulShutdown) {
+      await slot.handle.gracefulShutdown(gracefulTimeoutMs).catch(() => undefined);
+    }
+    this.detachWorker(slot, slot.handle);
     await slot.handle.terminate().catch(() => -1);
   }
 
@@ -572,12 +600,34 @@ export class LightExtensionCompileWorkerPool {
     handle.off('exit', slot.listeners.exit);
   }
 
-  private hasAdmissionSlot(): boolean {
-    return this.active + this.queue.length < this.options.workerCount + this.options.maxQueueLength;
+  private hasAdmissionSlot(job?: LightExtensionCompileJob): boolean {
+    if (this.queue.length < this.options.maxQueueLength) {
+      return true;
+    }
+    if (!job) {
+      return this.slots.some(
+        (slot) =>
+          !slot.task &&
+          !this.failedWorkers.has(slot.handle) &&
+          !this.queue.some(
+            (task) => resolveLightExtensionCompileWorkerId(task.job, this.options.workerCount) === slot.id,
+          ),
+      );
+    }
+    const workerId = resolveLightExtensionCompileWorkerId(job, this.options.workerCount);
+    const slot = this.slots.find((candidate) => candidate.id === workerId);
+    return Boolean(
+      slot &&
+        !slot.task &&
+        !this.failedWorkers.has(slot.handle) &&
+        !this.queue.some(
+          (task) => resolveLightExtensionCompileWorkerId(task.job, this.options.workerCount) === workerId,
+        ),
+    );
   }
 
-  private canAdmit(byteSize: number): boolean {
-    return this.hasAdmissionSlot() && this.inflightBytes + byteSize <= this.options.maxInFlightBytes;
+  private canAdmit(byteSize: number, job?: LightExtensionCompileJob): boolean {
+    return this.hasAdmissionSlot(job) && this.inflightBytes + byteSize <= this.options.maxInFlightBytes;
   }
 
   private rejectSubmission(error: LightExtensionCompilePoolError): Promise<LightExtensionCompileResult> {
@@ -586,11 +636,14 @@ export class LightExtensionCompileWorkerPool {
   }
 
   private notifyCapacityWaiters(): void {
-    const waiter = this.capacityWaiters[0];
-    if (!waiter || !this.canAdmit(waiter.byteSize)) {
+    const index = this.capacityWaiters.findIndex((waiter) => this.canAdmit(waiter.byteSize, waiter.job));
+    if (index < 0) {
       return;
     }
-    this.capacityWaiters.shift();
+    const [waiter] = this.capacityWaiters.splice(index, 1);
+    if (!waiter) {
+      return;
+    }
     if (waiter.abort && waiter.signal) {
       waiter.signal.removeEventListener('abort', waiter.abort);
     }
@@ -647,6 +700,14 @@ export class LightExtensionCompileWorkerPool {
   }
 }
 
+function isRetryableAdmissionError(error: unknown): boolean {
+  return (
+    error instanceof LightExtensionCompilePoolError &&
+    (error.code === 'LIGHT_EXTENSION_COMPILE_QUEUE_CAPACITY_EXCEEDED' ||
+      error.code === 'LIGHT_EXTENSION_COMPILE_INFLIGHT_BYTES_EXCEEDED')
+  );
+}
+
 function normalizeOptions(options: LightExtensionCompileWorkerPoolOptions): NormalizedPoolOptions {
   const normalized: NormalizedPoolOptions = {
     workerCount: options.workerCount ?? defaultWorkerCount,
@@ -692,7 +753,100 @@ function assertIntegerLimit(label: string, value: number, minimum: number, maxim
 function createDefaultWorker(): LightExtensionCompileWorkerHandle {
   const isTypeScriptRuntime = __filename.endsWith('.ts');
   const workerPath = path.join(__dirname, `LightExtensionCompileWorker.${isTypeScriptRuntime ? 'ts' : 'js'}`);
-  return new Worker(workerPath, {
-    execArgv: isTypeScriptRuntime ? ['--require', 'tsx/cjs'] : undefined,
-  });
+  return new NodeCompileWorkerHandle(
+    new Worker(workerPath, {
+      execArgv: isTypeScriptRuntime ? ['--require', 'tsx/cjs'] : undefined,
+    }),
+  );
+}
+
+class NodeCompileWorkerHandle implements LightExtensionCompileWorkerHandle {
+  constructor(private readonly worker: Worker) {}
+
+  get threadId(): number {
+    return this.worker.threadId;
+  }
+
+  on(event: 'message', listener: (message: LightExtensionCompileWorkerResponse) => void): this;
+  on(event: 'error', listener: (error: Error) => void): this;
+  on(event: 'exit', listener: (code: number) => void): this;
+  on(
+    event: 'message' | 'error' | 'exit',
+    listener:
+      | ((message: LightExtensionCompileWorkerResponse) => void)
+      | ((error: Error) => void)
+      | ((code: number) => void),
+  ): this {
+    this.worker.on(event, listener as never);
+    return this;
+  }
+
+  off(event: 'message', listener: (message: LightExtensionCompileWorkerResponse) => void): this;
+  off(event: 'error', listener: (error: Error) => void): this;
+  off(event: 'exit', listener: (code: number) => void): this;
+  off(
+    event: 'message' | 'error' | 'exit',
+    listener:
+      | ((message: LightExtensionCompileWorkerResponse) => void)
+      | ((error: Error) => void)
+      | ((code: number) => void),
+  ): this {
+    this.worker.off(event, listener as never);
+    return this;
+  }
+
+  postMessage(value: LightExtensionCompileWorkerRequest): void {
+    this.worker.postMessage(value);
+  }
+
+  terminate(): Promise<number> {
+    return this.worker.terminate();
+  }
+
+  async gracefulShutdown(timeoutMs: number): Promise<void> {
+    await new Promise<void>((resolve, reject) => {
+      let settled = false;
+      const finish = (error?: Error) => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        clearTimeout(timeout);
+        this.worker.off('message', onMessage);
+        this.worker.off('error', onError);
+        this.worker.off('exit', onExit);
+        if (error) {
+          reject(error);
+        } else {
+          resolve();
+        }
+      };
+      const onMessage = (message: LightExtensionCompileWorkerResponse) => {
+        if (message.type === 'shutdown-complete') {
+          finish();
+        }
+      };
+      const onError = (error: Error) => finish(error);
+      const onExit = () => finish();
+      const timeout = setTimeout(
+        () => finish(new Error(`Compile worker graceful shutdown timed out after ${timeoutMs}ms`)),
+        timeoutMs,
+      );
+      this.worker.on('message', onMessage);
+      this.worker.on('error', onError);
+      this.worker.on('exit', onExit);
+      this.worker.postMessage({ type: 'shutdown' });
+    });
+  }
+}
+
+export function resolveLightExtensionCompileWorkerId(job: LightExtensionCompileJob, workerCount: number): number {
+  assertIntegerLimit('workerCount', workerCount, 1, LIGHT_EXTENSION_COMPILE_POOL_HARD_LIMITS.workers);
+  const affinityKey = `${job.repoId}\0${job.entryId}`;
+  let hash = 2166136261;
+  for (let index = 0; index < affinityKey.length; index += 1) {
+    hash ^= affinityKey.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return ((hash >>> 0) % workerCount) + 1;
 }

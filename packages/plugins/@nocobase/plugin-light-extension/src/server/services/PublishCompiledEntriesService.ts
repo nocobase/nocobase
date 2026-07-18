@@ -14,6 +14,7 @@ import {
   sha256Hex,
   stableSerialize,
   type RunJSRuntimeArtifact,
+  validateRunJSEntryDependencyManifest,
 } from '@nocobase/runjs';
 import { Buffer } from 'node:buffer';
 
@@ -45,6 +46,8 @@ const compileCacheUpdateFields = [
   'inputManifest',
   'diagnostics',
   'compiledAt',
+  'dependencyManifest',
+  'dependencyManifestHash',
 ] as const;
 const entryUpdateFields = [
   'compiledCommitId',
@@ -59,6 +62,8 @@ const entryUpdateFields = [
   'compiledAt',
   'diagnostics',
   'healthStatus',
+  'dependencyManifest',
+  'dependencyManifestHash',
 ] as const;
 
 export interface PublishCompiledEntriesBatch {
@@ -143,7 +148,12 @@ export class PublishCompiledEntriesService {
       assertStoredEntryMatchesResult(stored, result);
       return {
         ...stored,
-        ...buildEntryPublishValues(stored, result, batch.commitId, prepared.compiledAt),
+        ...buildEntryPublishValues(
+          stored,
+          result,
+          batch.commitId,
+          resolveResultCompiledAt(result, prepared.compiledAt),
+        ),
       };
     });
 
@@ -197,6 +207,22 @@ export class SequelizeCompiledEntriesPublishStore implements CompiledEntriesPubl
     if (rows.length === 0) {
       return;
     }
+    const compileKeys = rows.map((row) => requiredString(row.compileKey, 'Compile cache key'));
+    const existing = await this.db.getModel<Model>('lightExtensionCompileCache').findAll({
+      where: { compileKey: compileKeys },
+      transaction,
+    });
+    const incomingByKey = new Map(rows.map((row) => [requiredString(row.compileKey, 'Compile cache key'), row]));
+    for (const stored of existing) {
+      const compileKey = requiredString(stored.get('compileKey'), 'Stored compile cache key');
+      const incoming = incomingByKey.get(compileKey);
+      if (incoming && stored.get('artifactHash') !== incoming.artifactHash) {
+        throw new LightExtensionError(
+          'LIGHT_EXTENSION_SOURCE_ERROR',
+          `Compile cache key "${compileKey}" maps to a conflicting artifact`,
+        );
+      }
+    }
     await this.db.getModel<Model>('lightExtensionCompileCache').bulkCreate(rows, {
       updateOnDuplicate: [...compileCacheUpdateFields],
       transaction,
@@ -208,6 +234,7 @@ export class SequelizeCompiledEntriesPublishStore implements CompiledEntriesPubl
       return;
     }
     await this.db.getModel<Model>('lightExtensionEntries').bulkCreate(rows, {
+      conflictAttributes: ['id'],
       updateOnDuplicate: [...entryUpdateFields],
       transaction,
     });
@@ -254,9 +281,10 @@ function preparePublishBatch(batch: PublishCompiledEntriesBatch, compiledAt: Dat
       throw new TypeError(`Publish batch contains duplicate entry "${result.entryId}"`);
     }
     entryIds.add(result.entryId);
+    const resultCompiledAt = resolveResultCompiledAt(result, compiledAt);
     const artifactRow = buildArtifactRow(result);
     setConsistentRow(artifacts, result.artifactHash, artifactRow, 'artifactHash');
-    const cacheRow = buildCompileCacheRow(result, compiledAt);
+    const cacheRow = buildCompileCacheRow(result, resultCompiledAt);
     setConsistentRow(compileCache, result.compileKey, cacheRow, 'compileKey');
   }
   return {
@@ -292,6 +320,25 @@ function validateSuccessfulCompileResult(result: LightExtensionCompileSuccessRes
   if (result.artifactHash !== artifactHash) {
     throw new TypeError(`Compiled result artifact hash mismatch for entry "${result.entryId}"`);
   }
+  if (result.dependencyManifest || result.dependencyManifestHash) {
+    const dependency = validateRunJSEntryDependencyManifest({
+      value: result.dependencyManifest,
+      expectedCompilerBuildId: result.inputManifest.compilerBuildId,
+      expectedEntryPath: result.inputManifest.entryPath,
+      expectedManifestHash: result.dependencyManifestHash,
+    });
+    if (!dependency.valid || !dependencyManifestMatchesCompileInput(dependency.manifest, result.inputManifest.files)) {
+      throw new TypeError(`Compiled result dependency manifest mismatch for entry "${result.entryId}"`);
+    }
+  }
+}
+
+function dependencyManifestMatchesCompileInput(
+  manifest: NonNullable<LightExtensionCompileSuccessResult['dependencyManifest']>,
+  files: LightExtensionCompileSuccessResult['inputManifest']['files'],
+): boolean {
+  const hashes = new Map(files.map((file) => [file.path, file.blobHash]));
+  return [...manifest.runtime.files, ...manifest.types.files].every((file) => hashes.get(file.path) === file.blobHash);
 }
 
 function buildArtifactRow(result: LightExtensionCompileSuccessResult): Record<string, unknown> {
@@ -319,6 +366,8 @@ function buildCompileCacheRow(result: LightExtensionCompileSuccessResult, compil
     inputManifest: result.inputManifest,
     diagnostics: sortDiagnostics(result.diagnostics),
     compiledAt,
+    dependencyManifest: result.dependencyManifest || null,
+    dependencyManifestHash: result.dependencyManifestHash || null,
   };
 }
 
@@ -351,7 +400,20 @@ function buildEntryPublishValues(
     compiledAt,
     diagnostics: sortDiagnostics([...existingDiagnostics, ...result.diagnostics]),
     healthStatus: 'ready',
+    dependencyManifest: result.dependencyManifest || null,
+    dependencyManifestHash: result.dependencyManifestHash || null,
   };
+}
+
+function resolveResultCompiledAt(result: LightExtensionCompileSuccessResult, fallback: Date): Date {
+  if (result.execution !== 'reused' || !result.compiledAt) {
+    return fallback;
+  }
+  const parsed = new Date(result.compiledAt);
+  if (!Number.isFinite(parsed.getTime())) {
+    throw new TypeError(`Reused compile result has an invalid compiledAt for entry "${result.entryId}"`);
+  }
+  return parsed;
 }
 
 function buildEntryRuntimeMetadata(

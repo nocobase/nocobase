@@ -132,19 +132,16 @@ describe('plugin-light-extension saveSource runtime compile', () => {
         result: 'success',
         durationsMs: expect.objectContaining({
           total: expect.any(Number),
-          treePrepare: expect.any(Number),
-          entryReconcile: expect.any(Number),
-          compileEntries: expect.any(Number),
-          artifactPersist: expect.any(Number),
-          transaction: expect.any(Number),
+          snapshotMaterialize: expect.any(Number),
+          workspaceValidation: expect.any(Number),
         }),
         counters: expect.objectContaining({
           affectedEntryCount: 1,
           compiledEntryCount: 1,
           blobContentQueryCount: 0,
           blobContentRowCount: 0,
-          snapshotMaterializationCount: 0,
-          treeNormalizationCount: 0,
+          snapshotMaterializationCount: 1,
+          treeNormalizationCount: 1,
         }),
       }),
       expect.objectContaining({
@@ -153,7 +150,7 @@ describe('plugin-light-extension saveSource runtime compile', () => {
         result: 'success',
         durationsMs: expect.objectContaining({
           total: expect.any(Number),
-          push: expect.any(Number),
+          prepare: expect.any(Number),
           snapshotMaterialize: expect.any(Number),
           workspaceValidation: expect.any(Number),
           transaction: expect.any(Number),
@@ -181,9 +178,9 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     });
     const pullSpy = vi.spyOn(fileService, 'pull');
     const pullCommitSpy = vi.spyOn(fileService, 'pullCommit');
-    const candidateSpy = vi.spyOn(fileService, 'pushPreparedCandidate');
+    const candidateSpy = vi.spyOn(fileService, 'prepareSourceCandidate');
     const prepareEntriesSpy = vi.spyOn(entryService, 'prepareEntries');
-    const reconcileCandidateSpy = vi.spyOn(entryService, 'reconcilePreparedCandidate');
+    const reconcileCandidateSpy = vi.spyOn(entryService, 'planReconcileEntries');
     const validateWorkspaceSpy = vi.spyOn(validator, 'validateWorkspace');
     const compileEntrySpy = vi.spyOn(compilerBridge, 'compileEntry');
 
@@ -198,7 +195,8 @@ describe('plugin-light-extension saveSource runtime compile', () => {
         },
       ],
     });
-    const candidate = await candidateSpy.mock.results[0].value;
+    const preparedCandidate = await candidateSpy.mock.results[0].value;
+    const candidate = preparedCandidate.vscPreparedPush.candidate;
     const canonicalContent = 'const title = "销售指标";\nctx.render(<div>{title}</div>);\n';
     const candidateFile = candidate.files.find((file) => file.path.endsWith('/index.tsx'));
     const validatedFile = validateWorkspaceSpy.mock.calls[0][0].files.find((file) => file.path.endsWith('/index.tsx'));
@@ -210,14 +208,13 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     expect(candidateSpy).toHaveBeenCalledTimes(1);
     expect(validateWorkspaceSpy).toHaveBeenCalledTimes(1);
     expect(reconcileCandidateSpy).toHaveBeenCalledTimes(1);
-    expect(reconcileCandidateSpy.mock.calls[0][0]).toBe(candidate);
+    expect(reconcileCandidateSpy.mock.calls[0][0]).toBe(repo.id);
     expect(candidate.changedPaths).toEqual(['src/client/js-blocks/sales-kpi/index.tsx']);
     expect(candidateFile?.content).toBe(canonicalContent);
     expect(validatedFile?.content).toBe(canonicalContent);
     expect(compiledFile?.content).toBe(canonicalContent);
     expect(candidateFile?.size).toBe(Buffer.byteLength(canonicalContent, 'utf8'));
-    expect(candidate.commit.id).toBe(result.commit.id);
-    expect(candidate.tree.hash).toBe(result.commit.treeHash);
+    expect(candidate.treeHash).toBe(result.commit.treeHash);
     expect(result).not.toHaveProperty('candidate');
     expect(result).not.toHaveProperty('files');
     expect(metricsSummaries.find((summary) => summary.operation === 'saveSource')?.counters).toMatchObject({
@@ -854,7 +851,6 @@ describe('plugin-light-extension saveSource runtime compile', () => {
         },
       ],
     });
-    const secondSaveErrorPromise = secondSavePromise.catch((error) => error);
     const secondCompileStartedBeforeRelease = await Promise.race([
       secondCompileStarted.promise.then(() => true),
       delay(250).then(() => false),
@@ -862,8 +858,13 @@ describe('plugin-light-extension saveSource runtime compile', () => {
 
     releaseFirstCompile.resolve();
 
-    const firstSave = await firstSavePromise;
-    const secondSaveError = await secondSaveErrorPromise;
+    const settled = await Promise.allSettled([firstSavePromise, secondSavePromise]);
+    const successes = settled.filter(
+      (result): result is PromiseFulfilledResult<Awaited<typeof firstSavePromise>> => result.status === 'fulfilled',
+    );
+    const failures = settled.filter((result): result is PromiseRejectedResult => result.status === 'rejected');
+    const winner = successes[0]?.value;
+    const loserError = failures[0]?.reason;
     const currentRepo = await repoService.getRepo(repo.id);
     const entry = await app.db.getRepository('lightExtensionEntries').findOne({
       filter: {
@@ -872,26 +873,35 @@ describe('plugin-light-extension saveSource runtime compile', () => {
       },
     });
 
-    expect(secondCompileStartedBeforeRelease).toBe(false);
-    expect(secondSaveError).toMatchObject({
+    expect(secondCompileStartedBeforeRelease).toBe(true);
+    expect(successes).toHaveLength(1);
+    expect(failures).toHaveLength(1);
+    expect(winner).toBeDefined();
+    expect(loserError).toMatchObject({
       code: 'LIGHT_EXTENSION_SOURCE_OUTDATED',
       status: 409,
       details: {
         expectedHeadCommitId,
-        currentHeadCommitId: firstSave.commit.id,
+        currentHeadCommitId: winner?.commit.id,
       },
     });
-    expect(compileCallCount).toBe(1);
-    expect(currentRepo.headCommitId).toBe(firstSave.commit.id);
-    expect(entry?.get('compiledCommitId')).toBe(firstSave.commit.id);
+    expect(compileCallCount).toBe(2);
+    expect(currentRepo.headCommitId).toBe(winner?.commit.id);
+    expect(entry?.get('compiledCommitId')).toBe(winner?.commit.id);
     expect(entry?.get('runtimeArtifact')).toMatchObject({
-      code: expect.stringContaining('First serialized runtime'),
+      code: expect.stringContaining(
+        settled[0].status === 'fulfilled' ? 'First serialized runtime' : 'Second serialized runtime',
+      ),
     });
-    expect(metricsSummaries.map(({ operation, result }) => ({ operation, result }))).toEqual([
-      { operation: 'runtimeCompile', result: 'success' },
-      { operation: 'saveSource', result: 'success' },
-      { operation: 'saveSource', result: 'outdated' },
-    ]);
+    expect(
+      metricsSummaries.filter(({ operation, result }) => operation === 'runtimeCompile' && result === 'success'),
+    ).toHaveLength(2);
+    expect(
+      metricsSummaries.filter(({ operation, result }) => operation === 'saveSource' && result === 'success'),
+    ).toHaveLength(1);
+    expect(
+      metricsSummaries.filter(({ operation, result }) => operation === 'saveSource' && result === 'outdated'),
+    ).toHaveLength(1);
   });
 });
 
