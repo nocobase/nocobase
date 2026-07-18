@@ -63,6 +63,8 @@ Lista de permissões de destinos para requisições HTTP de saída iniciadas pel
 
 Quando essa variável não está configurada, o NocoBase continua permitindo requisições `http` / `https` para manter a compatibilidade com implantações existentes. No entanto, se o destino for um endereço loopback, privado, link-local ou metadata, ou se um domínio resolver para um desses endereços, o servidor registra um warning nos logs. Versões futuras podem tornar o comportamento padrão mais restrito. Se sua implantação precisar acessar serviços internos, configure uma lista de permissões explícita com antecedência.
 
+Quando essa variável está configurada, a requisição inicial e cada destino de redirecionamento devem corresponder a uma entrada da lista de permissões. Se um redirecionamento apontar para um host sem correspondência, o NocoBase interrompe antes de enviar a requisição redirecionada.
+
 Entradas suportadas:
 
 - Endereço IPv4 exato, como `192.168.1.10`

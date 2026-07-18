@@ -63,6 +63,8 @@ Whitelist target untuk request HTTP keluar yang dimulai oleh server. Ini berlaku
 
 Saat variabel ini tidak dikonfigurasi, NocoBase tetap mengizinkan request `http` / `https` untuk menjaga kompatibilitas deployment yang sudah ada. Namun, jika target adalah alamat loopback, private, link-local, metadata, atau domain yang resolve ke salah satu alamat tersebut, server akan menulis warning di log. Versi mendatang dapat memperketat perilaku default secara bertahap. Jika deployment kamu perlu mengakses layanan internal, konfigurasikan whitelist eksplisit lebih awal.
 
+Saat variabel ini dikonfigurasi, request awal dan setiap tujuan redirect harus cocok dengan entri whitelist. Jika redirect mengarah ke host yang tidak cocok, NocoBase berhenti sebelum mengirim request hasil redirect.
+
 Entri yang didukung:
 
 - Alamat IPv4 eksak, seperti `192.168.1.10`
