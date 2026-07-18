@@ -24,6 +24,7 @@ vi.mock('@nocobase/client-v2', () => ({
   DetailsItemModel: previewModelMocks.DetailsItemModel,
   FieldModel: class FieldModel {
     props: Record<string, unknown> = {};
+    context: Record<string, unknown> = {};
     static define = previewModelMocks.define;
     static registerFlow = previewModelMocks.registerFlow;
   },
@@ -148,7 +149,7 @@ describe('DisplayPreviewFieldModel', () => {
     await waitFor(() => {
       expect(click).toHaveBeenCalled();
     });
-    expect(fetchMock).toHaveBeenCalledWith('/avatar.png');
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('renders nested titleField previews with separators and N/A placeholders', () => {
@@ -161,7 +162,7 @@ describe('DisplayPreviewFieldModel', () => {
 
     render(<>{model.render()}</>);
 
-    expect(screen.getByAltText('preview')).toHaveAttribute('src', '/first.png');
+    expect(screen.getByAltText('first.png')).toHaveAttribute('src', '/first.png');
     expect(screen.getByText('N/A')).toBeInTheDocument();
     expect(document.body).toHaveTextContent(', ');
   });
