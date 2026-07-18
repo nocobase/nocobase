@@ -233,7 +233,7 @@ export class TreeService {
         .map((blob) => Object.freeze({ ...blob })),
     );
     const prepared: PreparedTree = Object.freeze({
-      [preparedTreeBrand]: true,
+      [preparedTreeBrand]: true as const,
       entries: frozenEntries,
       hash: hashNormalizedTree(frozenEntries),
       entryCount: frozenEntries.length,

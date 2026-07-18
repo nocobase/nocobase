@@ -100,20 +100,11 @@ import {
   validateRunJSWorkspacePath,
 } from './workspaceUtils';
 
-type SavedRunJSValue = RunJSValue & {
-  sourceRef?: {
-    type: 'vsc-file';
-    repoId: string;
-    commitId: string;
-    entry: string;
-  };
-};
-
 function withSavedSourceRef(
   value: RunJSValue,
   result: { repository: { id: string }; commit: { id: string }; artifact: { entryPath: string | null } },
   locator: RunJSSourceLocator,
-): SavedRunJSValue {
+): RunJSValue {
   if (locator.kind !== 'flowModel.step') {
     return value;
   }

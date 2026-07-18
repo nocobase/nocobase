@@ -95,9 +95,9 @@ export interface PushResult {
 
 export interface PushWithCandidateOptions {
   validateBaseEntries?: (entries: readonly Readonly<VscNormalizedTreeEntry>[]) => Promise<void> | void;
-  measureCandidateMaterialization?: (
-    materialize: () => Promise<CanonicalCandidateSnapshot>,
-  ) => Promise<CanonicalCandidateSnapshot>;
+  measureCandidateMaterialization?: <TCandidate extends PreparedCanonicalCandidateSnapshot>(
+    materialize: () => Promise<TCandidate>,
+  ) => Promise<TCandidate>;
 }
 
 export interface PushWithCandidateResult extends PushResult {
@@ -595,7 +595,7 @@ export class VscFileService {
       ? await options.measureCandidateMaterialization(materialize)
       : await materialize();
     const prepared: PreparedPush = Object.freeze({
-      [preparedPushBrand]: true,
+      [preparedPushBrand]: true as const,
       repository: Object.freeze({ ...repository }),
       baseCommit: baseCommit ? Object.freeze({ ...baseCommit, metadata: cloneRecord(baseCommit.metadata) }) : null,
       preparedTree,
