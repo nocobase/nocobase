@@ -17,17 +17,19 @@ const repositoryRoot = path.resolve(__dirname, '../../../..');
 
 export default defineConfig({
   beforeBuild: async (log) => {
-    const missingDependencies = sourceDependencies.filter((packageName) => !hasBuiltOutput(packageName));
-    if (!missingDependencies.length) {
-      return;
+    const staleDependencies = sourceDependencies.filter((packageName) => !hasFreshBuiltOutput(packageName));
+    if (staleDependencies.length) {
+      log(`building source dependencies: ${staleDependencies.join(', ')}`);
+      await buildSourceDependencies(staleDependencies);
     }
 
-    log(`building source dependencies: ${missingDependencies.join(', ')}`);
-    await buildSourceDependencies(missingDependencies);
+    for (const packageName of sourceDependencies) {
+      clearBundledDependencyCache(packageName);
+    }
   },
 });
 
-function hasBuiltOutput(packageName: string): boolean {
+function hasFreshBuiltOutput(packageName: string): boolean {
   try {
     const packageJsonPath = require.resolve(`${packageName}/package.json`, { paths: [__dirname] });
     const packageJson: unknown = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
@@ -39,13 +41,46 @@ function hasBuiltOutput(packageName: string): boolean {
     collectOutputPaths(packageJson.main, outputPaths);
     collectOutputPaths(packageJson.types, outputPaths);
     collectOutputPaths(packageJson.exports, outputPaths);
-    return (
-      outputPaths.size > 0 &&
-      [...outputPaths].every((outputPath) => fs.existsSync(path.resolve(packageRoot, outputPath)))
+    const builtOutputs = [...outputPaths]
+      .filter((outputPath) => outputPath.replace(/^\.\//u, '').startsWith('lib/'))
+      .map((outputPath) => path.resolve(packageRoot, outputPath));
+    if (!builtOutputs.length || builtOutputs.some((outputPath) => !fs.existsSync(outputPath))) {
+      return false;
+    }
+
+    const newestSourceMtime = Math.max(
+      fs.statSync(packageJsonPath).mtimeMs,
+      newestFileMtime(path.join(packageRoot, 'src')),
+      newestFileMtime(path.join(packageRoot, 'scripts')),
     );
+    const oldestOutputMtime = Math.min(...builtOutputs.map((outputPath) => fs.statSync(outputPath).mtimeMs));
+    return oldestOutputMtime >= newestSourceMtime;
   } catch {
     return false;
   }
+}
+
+function newestFileMtime(directory: string): number {
+  if (!fs.existsSync(directory)) {
+    return 0;
+  }
+  let newestMtime = 0;
+  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+    const entryPath = path.join(directory, entry.name);
+    if (entry.isDirectory()) {
+      newestMtime = Math.max(newestMtime, newestFileMtime(entryPath));
+    } else if (entry.isFile()) {
+      newestMtime = Math.max(newestMtime, fs.statSync(entryPath).mtimeMs);
+    }
+  }
+  return newestMtime;
+}
+
+function clearBundledDependencyCache(packageName: string): void {
+  fs.rmSync(path.join(__dirname, 'dist', 'node_modules', ...packageName.split('/')), {
+    recursive: true,
+    force: true,
+  });
 }
 
 function collectOutputPaths(value: unknown, outputPaths: Set<string>): void {

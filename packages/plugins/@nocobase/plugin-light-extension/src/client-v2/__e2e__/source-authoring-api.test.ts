@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { APIResponse, Page, TestInfo } from '@playwright/test';
+import type { APIResponse, ConsoleMessage, Page, TestInfo } from '@playwright/test';
 import { expect, test } from '@nocobase/test/e2e';
 import JSZip from 'jszip';
 
@@ -28,7 +28,9 @@ import {
   createLightExtensionAcceptanceRepo,
   destroyFlowHostAcceptancePage,
   getAcceptanceSourceBinding,
+  getAcceptanceEntryKinds,
   getErrorMessage,
+  getModernFlowPagePath,
   isRecord,
   readApiResponse,
   removeLightExtensionAcceptanceRepo,
@@ -36,6 +38,7 @@ import {
   unwrapApiData,
   type FlowHostAcceptancePage,
   type LightExtensionAcceptanceRepo,
+  type LightExtensionAcceptanceSourceBinding,
   type RootApiSession,
 } from './helpers';
 
@@ -100,10 +103,18 @@ type SourceAuthoringCleanupReport = {
   runJsOwnerDestroyedWithPage: boolean;
 };
 
+type JSPageAcceptanceHost = {
+  pageUid: string;
+  pageSchemaUid: string;
+  routeId: string;
+  routePath: string;
+};
+
 const SINGLE_FILE_TEST_ID = 'light-extension-source-authoring-single';
 const SHARED_BLOCK_TEST_ID = 'light-extension-source-authoring-shared-block';
 const SHARED_ITEM_TEST_ID = 'light-extension-source-authoring-shared-item';
 const RUNJS_WORKSPACE_TEST_ID = 'runjs-source-authoring-workspace';
+const RUNJS_VALUE_SUBMIT_TITLE = 'RunJS value submit';
 
 test.describe('Light Extension source authoring public API', () => {
   test.describe.configure({ mode: 'serial' });
@@ -115,6 +126,8 @@ test.describe('Light Extension source authoring public API', () => {
     const reports: SourceAuthoringScenarioReport[] = [];
     let repo: LightExtensionAcceptanceRepo | undefined;
     let fixture: FlowHostAcceptancePage | undefined;
+    let jsPageHost: JSPageAcceptanceHost | undefined;
+    let runJSValueSubmitUid: string | undefined;
 
     try {
       repo = await createLightExtensionAcceptanceRepo(page, session, {
@@ -122,6 +135,125 @@ test.describe('Light Extension source authoring public API', () => {
       });
       fixture = await createFlowHostAcceptancePage(page, session, {
         pageTitle: `Source authoring ${Date.now()}`,
+      });
+
+      await test.step('all supported RunJS entries are created, selectable, and compiled', async () => {
+        const supportedKinds = [...getAcceptanceEntryKinds()];
+        expect(Object.keys(repo.entries).sort()).toEqual([...supportedKinds].sort());
+
+        for (const kind of supportedKinds) {
+          const entry = repo.entries[kind];
+          expect(entry.kind).toBe(kind);
+          expect(entry.entryName).toBe(`acceptance-${kind}`);
+          const readback = await readEntry(page, session, entry.id);
+          expect(readback).toMatchObject({
+            id: entry.id,
+            repoId: repo.id,
+            kind,
+            entryName: entry.entryName,
+            entryPath: entry.entryPath,
+            compiledCommitId: repo.headCommitId,
+          });
+          expect(readback.runtimeCodeHash).toEqual(expect.any(String));
+        }
+      });
+
+      await test.step('JS Page entry binds to a created page and executes in the browser', async () => {
+        const entry = repo.entries['js-page'];
+        const binding = getAcceptanceSourceBinding(repo, 'js-page');
+        jsPageHost = await createJSPageAcceptanceHost(page, session, binding);
+
+        const surface = await readFlowRunJs(page, session, jsPageHost.pageUid);
+        expect(surface).toMatchObject({
+          version: 'v2',
+          sourceMode: 'light-extension',
+          sourceBinding: binding,
+          settings: { outputLabel: 'JS page selected', mode: 1 },
+        });
+        await expect
+          .poll(async () => (await readReferences(page, session, repo.id, entry.id)).length)
+          .toBeGreaterThanOrEqual(1);
+
+        const runtimeErrors: string[] = [];
+        const capturePageError = (error: Error) => runtimeErrors.push(error.message);
+        const captureConsoleError = (message: ConsoleMessage) => {
+          if (message.type() === 'error') {
+            runtimeErrors.push(message.text());
+          }
+        };
+        page.on('pageerror', capturePageError);
+        page.on('console', captureConsoleError);
+        try {
+          await page.goto(jsPageHost.routePath);
+          const jsPage = page.getByTestId('light-extension-acceptance-js-page');
+          await expect(jsPage, `JS Page runtime errors: ${runtimeErrors.join('; ')}`).toHaveText(
+            `${jsPageHost.pageUid}:JS page selected`,
+          );
+          await expect(jsPage).toHaveAttribute('data-sdk-get-status', '200');
+          await expect(jsPage).toHaveAttribute('data-sdk-post-status', '200');
+        } finally {
+          page.off('pageerror', capturePageError);
+          page.off('console', captureConsoleError);
+        }
+
+        reports.push({
+          scenario: 'light-extension-js-page-execution',
+          route: 'light-extension',
+          baselineHeadCommitId: repo.headCommitId,
+          saveAttempted: false,
+          savedFiles: [],
+          newHeadCommitId: repo.headCommitId,
+          diagnostics: [],
+          referenceCount: (await readReferences(page, session, repo.id, entry.id)).length,
+          invariants: {
+            pageCreated: true,
+            selectableBinding: binding.entryId === entry.id,
+            compiledCommitId: (await readEntry(page, session, entry.id)).compiledCommitId,
+            uiBehavior: `${jsPageHost.pageUid}:JS page selected`,
+            clientSdkGetStatus: 200,
+            clientSdkPostStatus: 200,
+          },
+        });
+      });
+
+      await test.step('RunJS value entry binds to a form submit value and executes in the browser', async () => {
+        const entry = repo.entries.runjs;
+        const binding = getAcceptanceSourceBinding(repo, 'runjs');
+        const expectedName = 'runjs-value:RunJS selected:2';
+        runJSValueSubmitUid = await createRunJSValueSubmitAction(page, session, fixture, binding);
+        const submitModel = await readFlowModel(page, session, runJSValueSubmitUid);
+        expect(readRunJSAssignedValue(submitModel, 'name')).toMatchObject({
+          version: 'v2',
+          sourceMode: 'light-extension',
+          sourceBinding: binding,
+          settings: { outputLabel: 'RunJS selected', mode: 2 },
+        });
+        await expect
+          .poll(async () => (await readReferences(page, session, repo.id, entry.id)).length)
+          .toBeGreaterThanOrEqual(1);
+
+        await page.goto(fixture.routePath);
+        await page.getByRole('button', { name: RUNJS_VALUE_SUBMIT_TITLE, exact: true }).click();
+        await expect
+          .poll(async () => findAcceptanceRecord(page, session, fixture.collectionName, expectedName))
+          .toMatchObject({ name: expectedName, status: 'published' });
+
+        reports.push({
+          scenario: 'light-extension-runjs-value-execution',
+          route: 'light-extension',
+          baselineHeadCommitId: repo.headCommitId,
+          saveAttempted: false,
+          savedFiles: [],
+          newHeadCommitId: repo.headCommitId,
+          diagnostics: [],
+          referenceCount: (await readReferences(page, session, repo.id, entry.id)).length,
+          invariants: {
+            submitActionCreated: true,
+            selectableBinding: binding.entryId === entry.id,
+            compiledCommitId: (await readEntry(page, session, entry.id)).compiledCommitId,
+            persistedValue: expectedName,
+          },
+        });
       });
 
       await test.step('legacy inline source stays on the Flow Surface route', async () => {
@@ -717,6 +849,20 @@ test.describe('Light Extension source authoring public API', () => {
       });
     } finally {
       const cleanupFailures: string[] = [];
+      if (runJSValueSubmitUid) {
+        try {
+          await switchRunJSValueSubmitActionToInline(page, session, runJSValueSubmitUid);
+        } catch (error) {
+          cleanupFailures.push(getErrorMessage(error));
+        }
+      }
+      if (jsPageHost) {
+        try {
+          await destroyJSPageAcceptanceHost(page, session, jsPageHost);
+        } catch (error) {
+          cleanupFailures.push(getErrorMessage(error));
+        }
+      }
       if (fixture) {
         try {
           await destroyFlowHostAcceptancePage(page, session, fixture);
@@ -910,6 +1056,255 @@ async function readFlowRunJs(page: Page, session: RootApiSession, uid: string): 
   const groupKey = tree.use === 'JSActionModel' ? 'clickSettings' : 'jsSettings';
   const group = isRecord(stepParams[groupKey]) ? stepParams[groupKey] : {};
   return isRecord(group.runJs) ? group.runJs : {};
+}
+
+async function createJSPageAcceptanceHost(
+  page: Page,
+  session: RootApiSession,
+  binding: LightExtensionAcceptanceSourceBinding,
+): Promise<JSPageAcceptanceHost> {
+  const suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const pageUid = `source-authoring-js-page-${suffix}`;
+  const pageSchemaUid = `source-authoring-js-page-schema-${suffix}`;
+  const title = `Source authoring JS Page ${suffix}`;
+  const routeResponse = await page.request.post('/api/desktopRoutes:create', {
+    headers: session.headers,
+    data: {
+      type: 'flowPage',
+      title,
+      icon: 'CodeOutlined',
+      schemaUid: pageSchemaUid,
+      enableTabs: false,
+      displayTitle: false,
+      options: { pageType: 'js-page' },
+      children: [
+        {
+          type: 'tabs',
+          title: 'Hidden JS Page tab',
+          schemaUid: `source-authoring-js-page-tab-${suffix}`,
+          tabSchemaName: `source-authoring-js-page-tab-name-${suffix}`,
+          hidden: true,
+        },
+      ],
+    },
+  });
+  const route = await readApiResponse<unknown>(routeResponse, 'Create source authoring JS Page route');
+  if (!isRecord(route) || (typeof route.id !== 'string' && typeof route.id !== 'number')) {
+    throw new Error('Create source authoring JS Page route response does not contain id');
+  }
+  const routeId = String(route.id);
+  const host = {
+    pageUid,
+    pageSchemaUid,
+    routeId,
+    routePath: getModernFlowPagePath(pageSchemaUid),
+  };
+
+  try {
+    const saveResponse = await page.request.post('/api/flowModels:save', {
+      headers: session.headers,
+      data: {
+        uid: pageUid,
+        parentId: pageSchemaUid,
+        subKey: 'page',
+        subType: 'object',
+        use: 'JSPageModel',
+        props: {
+          routeId,
+          title,
+          displayTitle: false,
+        },
+        stepParams: {
+          pageSettings: {
+            general: {
+              title,
+              displayTitle: false,
+              enableTabs: false,
+            },
+          },
+          jsSettings: {
+            runJs: {
+              code: 'ctx.render(<div>Inline JS Page fallback</div>);',
+              version: 'v2',
+              sourceMode: 'light-extension',
+              sourceBinding: binding,
+              settings: { outputLabel: 'JS page selected', mode: 1 },
+            },
+          },
+        },
+      },
+    });
+    await assertApiResponseOk(saveResponse, 'Save source authoring JS Page model');
+    return host;
+  } catch (error) {
+    const cleanupResponse = await page.request.post('/api/desktopRoutes:destroy', {
+      headers: session.headers,
+      params: { filterByTk: routeId },
+    });
+    if (!cleanupResponse.ok() && cleanupResponse.status() !== 404) {
+      throw new Error(
+        `Create source authoring JS Page failed: ${getErrorMessage(
+          error,
+        )}; route cleanup failed with HTTP ${cleanupResponse.status()}`,
+      );
+    }
+    throw error;
+  }
+}
+
+async function destroyJSPageAcceptanceHost(
+  page: Page,
+  session: RootApiSession,
+  host: JSPageAcceptanceHost,
+): Promise<void> {
+  const failures: string[] = [];
+  try {
+    const model = await readFlowModel(page, session, host.pageUid);
+    const stepParams = isRecord(model.stepParams) ? { ...model.stepParams } : {};
+    const jsSettings = isRecord(stepParams.jsSettings) ? { ...stepParams.jsSettings } : {};
+    const runJs = isRecord(jsSettings.runJs) ? { ...jsSettings.runJs } : {};
+    runJs.sourceMode = 'inline';
+    delete runJs.sourceBinding;
+    delete runJs.settings;
+    jsSettings.runJs = runJs;
+    stepParams.jsSettings = jsSettings;
+    await saveFlowModel(page, session, model, stepParams, `Switch JS Page ${host.pageUid} to Inline`);
+  } catch (error) {
+    failures.push(getErrorMessage(error));
+  }
+
+  try {
+    const response = await page.request.post('/api/flowSurfaces:destroyPage', {
+      headers: session.headers,
+      data: { uid: host.pageUid },
+    });
+    if (response.status() !== 404) {
+      await assertApiResponseOk(response, `Destroy source authoring JS Page ${host.pageUid}`);
+    }
+  } catch (error) {
+    failures.push(getErrorMessage(error));
+  }
+
+  if (failures.length) {
+    throw new Error(failures.join('; '));
+  }
+}
+
+async function createRunJSValueSubmitAction(
+  page: Page,
+  session: RootApiSession,
+  fixture: FlowHostAcceptancePage,
+  binding: LightExtensionAcceptanceSourceBinding,
+): Promise<string> {
+  const response = await page.request.post('/api/flowSurfaces:addAction', {
+    headers: session.headers,
+    data: {
+      target: { uid: fixture.containers.createFormUid },
+      type: 'submit',
+      settings: { title: RUNJS_VALUE_SUBMIT_TITLE },
+    },
+  });
+  const result = await readApiResponse<unknown>(response, 'Create RunJS value submit action');
+  if (!isRecord(result) || (typeof result.uid !== 'string' && typeof result.uid !== 'number')) {
+    throw new Error('Create RunJS value submit action response does not contain uid');
+  }
+  const uid = String(result.uid);
+  const model = await readFlowModel(page, session, uid);
+  const stepParams = isRecord(model.stepParams) ? { ...model.stepParams } : {};
+  const submitSettings = isRecord(stepParams.submitSettings) ? { ...stepParams.submitSettings } : {};
+  const assignFieldValues = isRecord(submitSettings.assignFieldValues) ? { ...submitSettings.assignFieldValues } : {};
+  assignFieldValues.assignedValues = {
+    name: {
+      code: 'return "inline-runjs-value-fallback";',
+      version: 'v2',
+      sourceMode: 'light-extension',
+      sourceBinding: binding,
+      settings: { outputLabel: 'RunJS selected', mode: 2 },
+    },
+    status: 'published',
+  };
+  submitSettings.assignFieldValues = assignFieldValues;
+  stepParams.submitSettings = submitSettings;
+
+  await saveFlowModel(page, session, model, stepParams, 'Bind RunJS value entry to submit action');
+  return uid;
+}
+
+async function switchRunJSValueSubmitActionToInline(page: Page, session: RootApiSession, uid: string): Promise<void> {
+  const model = await readFlowModel(page, session, uid);
+  const stepParams = isRecord(model.stepParams) ? { ...model.stepParams } : {};
+  const submitSettings = isRecord(stepParams.submitSettings) ? { ...stepParams.submitSettings } : {};
+  const assignFieldValues = isRecord(submitSettings.assignFieldValues) ? { ...submitSettings.assignFieldValues } : {};
+  const assignedValues = isRecord(assignFieldValues.assignedValues) ? { ...assignFieldValues.assignedValues } : {};
+  const currentValue = assignedValues.name;
+  if (isRecord(currentValue)) {
+    const inlineValue: Record<string, unknown> = {
+      ...currentValue,
+      sourceMode: 'inline',
+    };
+    assignedValues.name = inlineValue;
+  }
+  assignFieldValues.assignedValues = assignedValues;
+  submitSettings.assignFieldValues = assignFieldValues;
+  stepParams.submitSettings = submitSettings;
+  await saveFlowModel(page, session, model, stepParams, `Switch RunJS value submit action ${uid} to Inline`);
+}
+
+async function saveFlowModel(
+  page: Page,
+  session: RootApiSession,
+  model: Record<string, unknown>,
+  stepParams: Record<string, unknown>,
+  operation: string,
+): Promise<void> {
+  const response = await page.request.post('/api/flowModels:save', {
+    headers: session.headers,
+    data: {
+      ...model,
+      stepParams,
+    },
+  });
+  await assertApiResponseOk(response, operation);
+}
+
+async function readFlowModel(page: Page, session: RootApiSession, uid: string): Promise<Record<string, unknown>> {
+  const response = await page.request.get('/api/flowModels:findOne', {
+    headers: session.headers,
+    params: { uid },
+  });
+  const model = await readApiResponse<unknown>(response, `Read FlowModel ${uid}`);
+  if (!isRecord(model)) {
+    throw new Error(`FlowModel ${uid} response is invalid`);
+  }
+  return model;
+}
+
+function readRunJSAssignedValue(model: Record<string, unknown>, fieldName: string): Record<string, unknown> {
+  const stepParams = isRecord(model.stepParams) ? model.stepParams : {};
+  const submitSettings = isRecord(stepParams.submitSettings) ? stepParams.submitSettings : {};
+  const assignFieldValues = isRecord(submitSettings.assignFieldValues) ? submitSettings.assignFieldValues : {};
+  const assignedValues = isRecord(assignFieldValues.assignedValues) ? assignFieldValues.assignedValues : {};
+  const value = assignedValues[fieldName];
+  if (!isRecord(value)) {
+    throw new Error(`RunJS assigned value ${fieldName} is missing`);
+  }
+  return value;
+}
+
+async function findAcceptanceRecord(
+  page: Page,
+  session: RootApiSession,
+  collectionName: string,
+  expectedName: string,
+): Promise<Record<string, unknown> | null> {
+  const response = await page.request.get(`/api/${encodeURIComponent(collectionName)}:list`, {
+    headers: session.headers,
+    params: { pageSize: 100 },
+  });
+  const result = await readApiResponse<unknown>(response, `List ${collectionName} records`);
+  const rows = Array.isArray(result) ? result : isRecord(result) && Array.isArray(result.rows) ? result.rows : [];
+  const record = rows.find((row) => isRecord(row) && row.name === expectedName);
+  return isRecord(record) ? record : null;
 }
 
 async function addInlineJsBlock(

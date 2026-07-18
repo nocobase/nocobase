@@ -33,10 +33,31 @@ describe('vsc-file remote collections', () => {
     }
 
     await expectIndex('vscFileRemotes', ['repoId', 'name'], true);
-    await expectIndex('vscFileSyncJobs', ['remoteId', 'remoteTargetVersion', 'idempotencyKey'], true);
+    await expectIndex(
+      'vscFileSyncJobs',
+      ['remoteId', 'remoteTargetVersion', 'idempotencyKey'],
+      true,
+      'vsc_file_sync_jobs_remote_id_remote_target_version_idempotency_',
+    );
     await expectIndex('vscFileSyncJobs', ['status', 'leaseExpiresAt'], false);
-    await expectIndex('vscFileExternalCommitMaps', ['remoteId', 'remoteTargetVersion', 'localCommitId'], true);
-    await expectIndex('vscFileExternalCommitMaps', ['remoteId', 'remoteTargetVersion', 'remoteRevision'], true);
+    await expectIndex(
+      'vscFileExternalCommitMaps',
+      ['remoteId', 'remoteTargetVersion', 'localCommitId'],
+      true,
+      'vsc_file_external_commit_maps_remote_id_remote_target_version_l',
+    );
+    await expectIndex(
+      'vscFileExternalCommitMaps',
+      ['remoteId', 'remoteTargetVersion', 'remoteRevision'],
+      true,
+      'vsc_file_external_commit_maps_remote_id_remote_target_version_r',
+    );
+    await expectIndex(
+      'vscFileExternalCommitMaps',
+      ['remoteId', 'remoteTargetVersion', 'createdAt'],
+      false,
+      'vsc_file_external_commit_maps_remote_id_remote_target_version_c',
+    );
     await expectIndex('vscFileConflicts', ['remoteId', 'remoteTargetVersion', 'status'], false);
   });
 
@@ -129,9 +150,10 @@ describe('vsc-file remote collections', () => {
     );
   });
 
-  async function expectIndex(collectionName: string, fields: string[], unique: boolean) {
+  async function expectIndex(collectionName: string, fields: string[], unique: boolean, expectedName?: string) {
     const collection = db.getCollection(collectionName);
     const indexes = (await db.sequelize.getQueryInterface().showIndex(collection.getTableNameWithSchema())) as Array<{
+      name: string;
       unique: boolean;
       fields: Array<{ attribute?: string; name?: string } | string>;
     }>;
@@ -145,7 +167,11 @@ describe('vsc-file remote collections', () => {
           return field.attribute || field.name;
         });
 
-        return index.unique === unique && fields.every((field, index) => attributes[index] === field);
+        return (
+          index.unique === unique &&
+          (!expectedName || index.name === expectedName) &&
+          fields.every((field, index) => attributes[index] === field)
+        );
       }),
     ).toBe(true);
   }

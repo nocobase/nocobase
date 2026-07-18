@@ -15,14 +15,17 @@ export default defineCollection({
   updatedAt: false,
   indexes: [
     {
+      name: 'vsc_file_external_commit_maps_remote_id_remote_target_version_l',
       unique: true,
       fields: ['remoteId', 'remoteTargetVersion', 'localCommitId'],
     },
     {
+      name: 'vsc_file_external_commit_maps_remote_id_remote_target_version_r',
       unique: true,
       fields: ['remoteId', 'remoteTargetVersion', 'remoteRevision'],
     },
     {
+      name: 'vsc_file_external_commit_maps_remote_id_remote_target_version_c',
       fields: ['remoteId', 'remoteTargetVersion', 'createdAt'],
     },
   ],

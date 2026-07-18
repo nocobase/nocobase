@@ -25,7 +25,7 @@ export const CLIENT_APP_UPLOAD_LIMITS = Object.freeze({
   fields: 3,
   fieldNameSize: 64,
   fieldSize: 4 * 1024,
-  parts: 4,
+  parts: 5,
   headerPairs: 32,
 });
 

@@ -167,8 +167,34 @@ const ENTRY_SOURCE_DEFINITIONS: readonly EntrySourceDefinition[] = [
     directory: 'js-pages',
     filename: 'index.tsx',
     title: 'Acceptance JS Page',
-    source:
-      'ctx.render(<div data-testid="light-extension-acceptance-js-page">{ctx.page.uid}:{String(ctx.settings.outputLabel)}</div>);\n',
+    source: [
+      "import { createClient } from '@nocobase/sdk/client';",
+      'const client = createClient();',
+      "let getStatus = 'request-failed';",
+      "let postStatus = 'request-failed';",
+      'try {',
+      "  const response = await client.request({ url: 'app:getInfo', method: 'get' });",
+      '  getStatus = String(response.status);',
+      '} catch (error) {',
+      '  getStatus = `error:${String(error)}`;',
+      '}',
+      'try {',
+      "  const response = await client.request({ url: 'auth:check', method: 'post' });",
+      '  postStatus = String(response.status);',
+      '} catch (error) {',
+      '  postStatus = `error:${String(error)}`;',
+      '}',
+      'ctx.render(',
+      '  <div',
+      '    data-testid="light-extension-acceptance-js-page"',
+      '    data-sdk-get-status={getStatus}',
+      '    data-sdk-post-status={postStatus}',
+      '  >',
+      '    {ctx.page.uid}:{String(ctx.settings.outputLabel)}',
+      '  </div>,',
+      ');',
+      '',
+    ].join('\n'),
   },
   {
     kind: 'js-field',
@@ -193,7 +219,14 @@ const ENTRY_SOURCE_DEFINITIONS: readonly EntrySourceDefinition[] = [
     source:
       'ctx.render(<span data-testid="light-extension-acceptance-js-item">{String(ctx.settings.outputLabel)}:{String(ctx.settings.mode)}</span>);\n',
   },
-];
+  {
+    kind: 'runjs',
+    directory: 'runjs',
+    filename: 'index.ts',
+    title: 'Acceptance RunJS Value',
+    source: 'return `runjs-value:${String(ctx.settings.outputLabel)}:${String(ctx.settings.mode)}`;\n',
+  },
+] as const satisfies readonly EntrySourceDefinition[];
 
 function nextRepoName(): string {
   repoSequence += 1;
@@ -222,6 +255,25 @@ function readRepoRecord(value: unknown, fallbackName: string, fallbackTitle: str
 }
 
 function createEntryFiles(): LightExtensionTreeEntryInput[] {
+  const definitionKinds = new Set<string>();
+  for (const definition of ENTRY_SOURCE_DEFINITIONS) {
+    if (definitionKinds.has(definition.kind)) {
+      throw new Error(`Duplicate Light Extension acceptance entry definition for ${definition.kind}`);
+    }
+    definitionKinds.add(definition.kind);
+  }
+  const missingKinds = LIGHT_EXTENSION_SUPPORTED_KINDS.filter((kind) => !definitionKinds.has(kind));
+  const unsupportedKinds = [...definitionKinds].filter(
+    (kind) => !(LIGHT_EXTENSION_SUPPORTED_KINDS as readonly string[]).includes(kind),
+  );
+  if (missingKinds.length || unsupportedKinds.length) {
+    throw new Error(
+      `Light Extension acceptance entry definitions do not match supported RunJS kinds: missing=${missingKinds.join(
+        ',',
+      )}; unsupported=${unsupportedKinds.join(',')}`,
+    );
+  }
+
   const files = createLightExtensionBaseTemplate();
   for (const definition of ENTRY_SOURCE_DEFINITIONS) {
     const entryName = `acceptance-${definition.kind}`;
@@ -323,23 +375,21 @@ export async function createLightExtensionAcceptanceRepo(
   const repoId = String(repo.id);
 
   try {
-    const jsBlock = await listAcceptanceEntry(page, session, repoId, 'js-block');
-    const jsPage = await listAcceptanceEntry(page, session, repoId, 'js-page');
-    const jsField = await listAcceptanceEntry(page, session, repoId, 'js-field');
-    const jsAction = await listAcceptanceEntry(page, session, repoId, 'js-action');
-    const jsItem = await listAcceptanceEntry(page, session, repoId, 'js-item');
+    const entries: Partial<Record<LightExtensionKind, LightExtensionAcceptanceEntry>> = {};
+    for (const kind of LIGHT_EXTENSION_SUPPORTED_KINDS) {
+      entries[kind] = await listAcceptanceEntry(page, session, repoId, kind);
+    }
+    for (const kind of LIGHT_EXTENSION_SUPPORTED_KINDS) {
+      if (!entries[kind]) {
+        throw new Error(`Selectable ${kind} acceptance entry was not loaded`);
+      }
+    }
     return {
       id: repoId,
       name: repo.name || name,
       title: repo.title || title,
       headCommitId: repo.headCommitId,
-      entries: {
-        'js-block': jsBlock,
-        'js-page': jsPage,
-        'js-field': jsField,
-        'js-action': jsAction,
-        'js-item': jsItem,
-      },
+      entries: entries as Record<LightExtensionKind, LightExtensionAcceptanceEntry>,
     };
   } catch (error) {
     try {

@@ -14,6 +14,7 @@ export default defineCollection({
   autoGenId: false,
   indexes: [
     {
+      name: 'vsc_file_sync_jobs_remote_id_remote_target_version_idempotency_',
       unique: true,
       fields: ['remoteId', 'remoteTargetVersion', 'idempotencyKey'],
     },
