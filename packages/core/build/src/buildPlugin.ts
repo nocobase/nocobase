@@ -689,6 +689,14 @@ export async function buildPluginClient(
           type: 'asset',
         },
         {
+          test: /\.wasm$/i,
+          resourceQuery: /^\?url$/,
+          type: 'asset/resource',
+          generator: {
+            filename: 'assets/[name]-[contenthash:8][ext]',
+          },
+        },
+        {
           test: /\.svg$/i,
           type: 'asset',
           resourceQuery: { not: [/react/] }, // exclude react component if *.svg?react
