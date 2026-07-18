@@ -84,7 +84,10 @@ describe('end-to-end compile performance benchmark preparation', () => {
     const concurrent = createCompilePerformanceBenchmarkMutation(medium, 'medium-concurrent-same-head', 1);
     expect(concurrent.primary).toHaveLength(1);
     expect(concurrent.concurrent).toHaveLength(1);
-    expect(concurrent.concurrent?.[0].path).not.toBe(concurrent.primary[0].path);
+    expect(concurrent.concurrent?.[0].path).toBe(concurrent.primary[0].path);
+    expect(Buffer.byteLength(concurrent.concurrent?.[0].content || '', 'utf8')).toBe(
+      Buffer.byteLength(concurrent.primary[0].content, 'utf8'),
+    );
 
     const compileFailure = createCompilePerformanceBenchmarkMutation(medium, 'medium-compile-failure', 1);
     expect(compileFailure.primary).toEqual([
