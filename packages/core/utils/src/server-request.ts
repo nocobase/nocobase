@@ -247,7 +247,8 @@ export function checkUrlAgainstWhitelist(url?: string): void {
  * Drop-in replacement for `axios.request()` with built-in SSRF protection.
  *
  * Validates `config.url` against {@link checkUrlAgainstWhitelist} before
- * forwarding to axios. Use this instead of calling axios directly for all
+ * forwarding to axios. Every redirect destination is validated before the
+ * next request is sent. Use this instead of calling axios directly for all
  * server-initiated outbound HTTP requests.
  */
 export async function serverRequest<T = any>(config: AxiosRequestConfig): Promise<AxiosResponse<T>> {
@@ -255,5 +256,16 @@ export async function serverRequest<T = any>(config: AxiosRequestConfig): Promis
   // pointing to the same server are not subject to the whitelist.
   checkUrlAgainstWhitelist(config.url);
   await warnIfResolvedSsrfRiskTarget(config.url);
-  return axios.request<T>(config);
+  return axios.request<T>({
+    ...config,
+    // Axios request interceptors do not run again for redirects. In Node.js,
+    // beforeRedirect runs after Location is resolved and before the next hop
+    // is sent, so every redirect destination must be checked here.
+    beforeRedirect: (options) => {
+      if (typeof options.href !== 'string') {
+        throw new Error('Unable to validate redirect destination.');
+      }
+      checkUrlAgainstWhitelist(options.href);
+    },
+  });
 }

@@ -63,6 +63,8 @@ Liste blanche des cibles autorisées pour les requêtes HTTP sortantes initiées
 
 Lorsque cette variable n'est pas configurée, NocoBase continue d'autoriser les requêtes `http` / `https` pour conserver la compatibilité avec les déploiements existants. Toutefois, si la cible est une adresse loopback, privée, link-local ou metadata, ou si un domaine se résout vers l'une de ces adresses, le serveur écrit un warning dans les logs. Les versions futures pourront durcir progressivement le comportement par défaut. Si votre déploiement doit accéder à des services internes, configurez une liste blanche explicite à l'avance.
 
+Lorsque cette variable est configurée, la requête initiale et chaque destination de redirection doivent correspondre à une entrée de la liste blanche. Si une redirection pointe vers un hôte non correspondant, NocoBase s'arrête avant d'envoyer la requête redirigée.
+
 Entrées prises en charge :
 
 - Adresse IPv4 exacte, par exemple `192.168.1.10`

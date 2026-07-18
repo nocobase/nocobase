@@ -369,7 +369,7 @@ SERVER_REQUEST_WHITELIST=api.example.com,*.trusted.com,10.0.0.0/8,127.0.0.1
 
 **Khi không cấu hình**: Tất cả yêu cầu `http` / `https` gửi ra ngoài vẫn được cho qua để giữ khả năng tương thích. Tuy nhiên, nếu mục tiêu là địa chỉ loopback, private, link-local, metadata, hoặc domain resolve đến các địa chỉ này, server sẽ ghi warning vào log.
 
-**Sau khi cấu hình**: Chỉ cho phép các yêu cầu khớp với whitelist, các yêu cầu không khớp sẽ báo lỗi. Các phiên bản sau có thể dần siết chặt hành vi mặc định. Nếu deployment của bạn cần truy cập dịch vụ nội bộ, hãy cấu hình whitelist rõ ràng từ trước.
+**Sau khi cấu hình**: Yêu cầu ban đầu và mọi đích redirect phải khớp với whitelist. Nếu không khớp, NocoBase sẽ báo lỗi trước khi gửi yêu cầu tiếp theo. Các phiên bản sau có thể dần siết chặt hành vi mặc định. Nếu deployment của bạn cần truy cập dịch vụ nội bộ, hãy cấu hình whitelist rõ ràng từ trước.
 
 Các format được hỗ trợ:
 
