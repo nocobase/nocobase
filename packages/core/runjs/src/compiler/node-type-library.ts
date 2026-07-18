@@ -369,7 +369,7 @@ export function loadNodeRunJSTypeLibraryFilesWithContracts(
 }
 
 export function buildDefaultNodeRunJSTypeLibraryFingerprint(projectRoot = process.cwd()): string {
-  const allDefinitions = [
+  const allDefinitions: RunJSTypeLibraryPackDefinition[] = [
     reactTypeLibraryDefinition,
     reactDOMTypeLibraryDefinition,
     RUNJS_DAYJS_TYPE_LIBRARY_PACK_DEFINITION,

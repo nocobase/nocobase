@@ -537,7 +537,7 @@ function estimateContentFileBytes(files: ReadonlyMap<string, RunJSContentFile>):
 
 function toSourceInspectionInput(
   input: CompileRunJSSourceWorkspaceInput & { entry: string },
-): Parameters<typeof inspectRunJSSourceWorkspace>[0] {
+): Parameters<typeof inspectRunJSSourceWorkspaceWithDependencies>[0] {
   return {
     files: input.files,
     entry: input.entry,

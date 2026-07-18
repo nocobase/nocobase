@@ -227,7 +227,7 @@ export function collectRunJSWorkspaceDependencyManifest(
 export function buildRunJSEntryDependencyManifestFromGraph(input: {
   compilerBuildId: string;
   entryPath: string;
-  files: readonly Array<{ path: string; content?: string; blobHash?: string }>;
+  files: readonly { path: string; content?: string; blobHash?: string }[];
   graph: RunJSResolvedDependencyGraph;
 }): CollectRunJSWorkspaceDependencyManifestResult {
   const files = new Map(

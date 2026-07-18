@@ -136,7 +136,7 @@ export function isRunJSImportablePath(path: string): boolean {
 export function resolveRunJSWorkspaceImport(
   fromPath: string,
   specifier: string,
-  availablePaths: ReadonlySet<string>,
+  availablePaths: Pick<ReadonlySet<string>, 'has'>,
 ): RunJSWorkspaceImportResolution {
   const directory = runJSVirtualDirname(fromPath);
   const joinedPath = runJSVirtualJoin(directory === '.' ? '' : directory, specifier);
