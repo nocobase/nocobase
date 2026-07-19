@@ -24,12 +24,11 @@ import { LightExtensionClientAppHookError, useLightExtensionClientApps } from '.
 
 interface LightExtensionClientAppsPanelProps {
   repoId: string;
-  onChanged?: () => void | Promise<void>;
 }
 
 const ACTION_BUTTON_STYLE: React.CSSProperties = { height: 'auto', paddingInline: 0 };
 
-export function LightExtensionClientAppsPanel({ repoId, onChanged }: LightExtensionClientAppsPanelProps) {
+export function LightExtensionClientAppsPanel({ repoId }: LightExtensionClientAppsPanelProps) {
   const { t } = useTranslation(NAMESPACE);
   const { parseAction } = useACLRoleContext();
   const clientApps = useLightExtensionClientApps();
@@ -123,13 +122,12 @@ export function LightExtensionClientAppsPanel({ repoId, onChanged }: LightExtens
       );
       setUploadTarget(undefined);
       setUploadFile(undefined);
-      await onChanged?.();
     } catch (error) {
       setUploadError(getClientAppErrorMessage(error, t));
     } finally {
       setUploading(false);
     }
-  }, [clientApps, onChanged, repoId, t, uploadFile, uploadTarget]);
+  }, [clientApps, repoId, t, uploadFile, uploadTarget]);
 
   const closeRemove = useCallback(() => {
     if (removing) {
@@ -152,14 +150,13 @@ export function LightExtensionClientAppsPanel({ repoId, onChanged }: LightExtens
       setRemoveTarget(undefined);
       setRemoveReferences([]);
       setNotice(t('Light extension application removed'));
-      await onChanged?.();
     } catch (error) {
       setRemoveReferences(getErrorReferences(error));
       setRemoveError(getClientAppErrorMessage(error, t));
     } finally {
       setRemoving(false);
     }
-  }, [clientApps, onChanged, removeTarget, t]);
+  }, [clientApps, removeTarget, t]);
 
   const columns = useMemo<ColumnsType<LightExtensionClientAppDescriptor>>(
     () => [

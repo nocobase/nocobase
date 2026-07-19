@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { Transaction } from '@nocobase/database';
 import fs from 'fs/promises';
 import JSZip from 'jszip';
 import os from 'os';
@@ -87,6 +88,51 @@ describe('ClientAppService', () => {
     expect(storage.objectCount()).toBe(0);
   });
 
+  it('lists client apps for repository management regardless of repository lifecycle', async () => {
+    const { repositories, service } = createFixture([
+      { id: 'app-disabled', repoId: 'repo-disabled', key: 'disabled-app' },
+      { id: 'app-archived', repoId: 'repo-archived', key: 'archived-app' },
+    ]);
+
+    await expect(service.listClientApps('repo-disabled')).resolves.toMatchObject([
+      { entryId: 'app-disabled', repoId: 'repo-disabled', key: 'disabled-app', kind: 'client-app' },
+    ]);
+    await expect(service.listClientApps('repo-archived')).resolves.toMatchObject([
+      { entryId: 'app-archived', repoId: 'repo-archived', key: 'archived-app', kind: 'client-app' },
+    ]);
+    expect(repositories.lightExtensionRepos.findOne).not.toHaveBeenCalled();
+  });
+
+  it('keeps disabled client apps unavailable at runtime', async () => {
+    const { service } = createFixture([{ id: 'app-disabled', repoId: 'repo-1', key: 'disabled-app' }], 'disabled');
+
+    await expect(service.resolveClientApp('app-disabled')).rejects.toMatchObject({
+      code: 'LIGHT_EXTENSION_REPO_DISABLED',
+    });
+  });
+
+  it('uses only the latest client app reference resolver', async () => {
+    const { service } = createFixture([{ id: 'app-1', repoId: 'repo-1', key: 'customer-app' }]);
+    const firstResolver = vi.fn(async () => [
+      { entryId: 'app-1', ownerKind: 'multiPortal.frontend', ownerId: 'portal-1' },
+    ]);
+    const secondResolver = vi.fn(async () => [
+      { entryId: 'app-1', ownerKind: 'multiPortal.frontend', ownerId: 'portal-2' },
+    ]);
+    const unregisterFirst = service.useReferenceResolver(firstResolver);
+    const unregisterSecond = service.useReferenceResolver(secondResolver);
+
+    const references = await service.listReferencesForRepo('repo-1', {} as Transaction);
+
+    expect(firstResolver).not.toHaveBeenCalled();
+    expect(secondResolver).toHaveBeenCalledOnce();
+    expect(references).toEqual([{ entryId: 'app-1', ownerKind: 'multiPortal.frontend', ownerId: 'portal-2' }]);
+    unregisterFirst();
+    await expect(service.listReferencesForRepo('repo-1', {} as Transaction)).resolves.toEqual(references);
+    unregisterSecond();
+    await expect(service.listReferencesForRepo('repo-1', {} as Transaction)).resolves.toEqual([]);
+  });
+
   it('fails closed instead of using public File Manager storage', async () => {
     const uploadFile = vi.fn();
     const storage = new FileManagerClientAppStorage({
@@ -105,17 +151,18 @@ describe('ClientAppService', () => {
     expect(uploadFile).not.toHaveBeenCalled();
   });
 
-  function createFixture() {
+  function createFixture(clientApps: Record<string, unknown>[] = [], lifecycleStatus = 'enabled') {
     const { db, repositories } = createReferenceServiceFixture({
       repos: [
         {
           id: 'repo-1',
           name: 'repo-1',
           title: 'Repository 1',
-          lifecycleStatus: 'enabled',
+          lifecycleStatus,
           healthStatus: 'ready',
         },
       ],
+      clientApps,
     });
     const storage = new MemoryClientAppStorage();
     const repoService = {

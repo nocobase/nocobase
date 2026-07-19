@@ -107,7 +107,7 @@ interface NormalizedClientAppStaticRequest extends ClientAppStaticRequest {
 }
 
 export class ClientAppService {
-  private readonly referenceResolvers = new Set<ClientAppReferenceResolver>();
+  private referenceResolver?: ClientAppReferenceResolver;
 
   constructor(
     private readonly db: Database,
@@ -118,9 +118,11 @@ export class ClientAppService {
   ) {}
 
   useReferenceResolver(resolver: ClientAppReferenceResolver): () => void {
-    this.referenceResolvers.add(resolver);
+    this.referenceResolver = resolver;
     return () => {
-      this.referenceResolvers.delete(resolver);
+      if (this.referenceResolver === resolver) {
+        this.referenceResolver = undefined;
+      }
     };
   }
 
@@ -165,7 +167,7 @@ export class ClientAppService {
   async resolveClientApp(entryId: string): Promise<ClientAppDescriptor> {
     const records = await this.loadClientAppRecords(entryId);
     assertClientAppRecordsAvailable(records, entryId);
-    return recordsToDescriptor(records);
+    return appToDescriptor(records.app);
   }
 
   async openClientAppAsset(
@@ -260,15 +262,11 @@ export class ClientAppService {
   }
 
   async listClientApps(repoId: string): Promise<ClientAppDescriptor[]> {
-    const repo = await this.db.getRepository('lightExtensionRepos').findOne({ filterByTk: repoId });
-    if (!repo || repo.get('lifecycleStatus') !== 'enabled') {
-      return [];
-    }
     const apps = await this.db.getRepository('lightExtensionClientApps').find({
       filter: { repoId },
       sort: ['title', 'key'],
     });
-    return apps.map((app) => recordsToDescriptor({ app, repo }));
+    return apps.map(appToDescriptor);
   }
 
   async deleteClientApp(entryId: string): Promise<void> {
@@ -480,24 +478,11 @@ export class ClientAppService {
     entryIds: readonly string[],
     transaction: Transaction,
   ): Promise<ClientAppReference[]> {
-    if (!entryIds.length || !this.referenceResolvers.size) {
+    if (!entryIds.length || !this.referenceResolver) {
       return [];
     }
-    const references = (
-      await Promise.all([...this.referenceResolvers].map((resolver) => resolver(entryIds, transaction)))
-    ).flat();
-    const unique = new Map<string, ClientAppReference>();
-    for (const reference of references) {
-      if (!entryIds.includes(reference.entryId) || !reference.ownerKind || !reference.ownerId) {
-        continue;
-      }
-      unique.set(`${reference.entryId}\0${reference.ownerKind}\0${reference.ownerId}`, reference);
-    }
-    return [...unique.values()].sort(
-      (left, right) =>
-        left.entryId.localeCompare(right.entryId) ||
-        left.ownerKind.localeCompare(right.ownerKind) ||
-        left.ownerId.localeCompare(right.ownerId),
+    return (await this.referenceResolver(entryIds, transaction)).filter(
+      (reference) => entryIds.includes(reference.entryId) && reference.ownerKind && reference.ownerId,
     );
   }
 
@@ -851,18 +836,18 @@ function assertClientAppRecordsAvailable(records: ClientAppRecords, entryId: str
   }
 }
 
-function recordsToDescriptor(records: ClientAppRecords): ClientAppDescriptor {
+function appToDescriptor(app: Model): ClientAppDescriptor {
   return {
-    entryId: String(records.app.get('id')),
-    repoId: String(records.app.get('repoId')),
-    key: String(records.app.get('key')),
+    entryId: String(app.get('id')),
+    repoId: String(app.get('repoId')),
+    key: String(app.get('key')),
     kind: 'client-app',
-    title: String(records.app.get('title') || records.app.get('key')),
-    entryHtml: String(records.app.get('entryHtml')),
-    contentHash: String(records.app.get('contentHash')),
-    fileCount: Number(records.app.get('fileCount')),
-    byteSize: Number(records.app.get('byteSize')),
-    updatedAt: normalizeDate(records.app.get('updatedAt')),
+    title: String(app.get('title') || app.get('key')),
+    entryHtml: String(app.get('entryHtml')),
+    contentHash: String(app.get('contentHash')),
+    fileCount: Number(app.get('fileCount')),
+    byteSize: Number(app.get('byteSize')),
+    updatedAt: normalizeDate(app.get('updatedAt')),
   };
 }
 

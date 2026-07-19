@@ -73,8 +73,7 @@ describe('LightExtensionClientAppsPanel', () => {
   });
 
   it('uploads the first application with keyboard-operable controls and shows its current state', async () => {
-    const onChanged = vi.fn();
-    render(<LightExtensionClientAppsPanel onChanged={onChanged} repoId="ler_customer" />);
+    render(<LightExtensionClientAppsPanel repoId="ler_customer" />);
 
     const openButton = await screen.findByRole('button', { name: 'Upload application' });
     openButton.focus();
@@ -91,7 +90,6 @@ describe('LightExtensionClientAppsPanel', () => {
     expect(screen.getByText('customer-console')).toBeInTheDocument();
     expect(screen.getByText('dist/application.html')).toBeInTheDocument();
     expect(screen.getByText('4 files')).toBeInTheDocument();
-    expect(onChanged).toHaveBeenCalledTimes(1);
 
     await userEvent.click(screen.getByRole('button', { name: 'Replace files Customer console' }));
     const replaceDialog = await screen.findByRole('dialog', { name: 'Replace application files' });

@@ -715,7 +715,7 @@ function LightExtensionListPageInner() {
     }
 
     if (activePanel === 'client-apps' && selectedRepo) {
-      return <LightExtensionClientAppsPanel onChanged={loadRepos} repoId={selectedRepo.id} />;
+      return <LightExtensionClientAppsPanel repoId={selectedRepo.id} />;
     }
 
     return null;
