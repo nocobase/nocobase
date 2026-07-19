@@ -1,20 +1,27 @@
-# Validación de Campos
-Para asegurar la precisión, seguridad y consistencia de los datos en sus colecciones, NocoBase ofrece la funcionalidad de validación de campos. Esta característica se divide principalmente en dos partes: la configuración de reglas y la aplicación de reglas.
+---
+title: "Validación de campos"
+description: "Reglas de validación de campos: reglas de configuración y validación basadas en Joi, compatibles con longitudes mínimas/máximas, campos obligatorios y otras opciones para tipos como texto, números y fechas."
+keywords: "validación de campos, verificación de campos,Joi,reglas de validación,reglas de configuración,NocoBase"
+---
 
-## Configuración de Reglas
+# Validación de campos
+Para garantizar la precisión, seguridad y coherencia de los datos, NocoBase ofrece funciones de validación de campos. Estas funciones se dividen principalmente en dos partes: reglas de configuración y reglas de validación.
+
+## Reglas de configuración
 ![20250819181342](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819181342.png)
-Los campos del sistema de NocoBase integran las reglas de [Joi](https://joi.dev/api/), con el siguiente soporte:
 
-### Tipo Cadena de Texto (String)
-Los tipos de cadena de texto de Joi corresponden a los siguientes tipos de campo de NocoBase: Texto de una línea, Texto largo, Número de teléfono, Correo electrónico, URL, Contraseña y UUID.
-#### Reglas Comunes
+Los campos del sistema de NocoBase integran reglas de [Joi](https://joi.dev/api/), con la siguiente compatibilidad:
+
+### Tipo texto
+Los tipos de campo de NocoBase correspondientes al tipo texto de Joi incluyen: texto de una sola línea, texto multilínea, número de teléfono, correo electrónico, URL, contraseña y UUID.
+#### Reglas generales
 - Longitud mínima
 - Longitud máxima
 - Longitud
-- Patrón (Expresión regular)
-- Requerido
+- Expresión regular
+- Obligatorio
 
-#### Correo Electrónico
+#### Correo electrónico
 ![20250819192011](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819192011.png)
 [Ver más opciones](https://joi.dev/api/?v=17.13.3#stringemailoptions)
 
@@ -26,66 +33,67 @@ Los tipos de cadena de texto de Joi corresponden a los siguientes tipos de campo
 ![20250819192731](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819192731.png)
 [Ver más opciones](https://joi.dev/api/?v=17.13.3#stringguid---aliases-uuid)
 
-### Tipo Numérico
-Los tipos numéricos de Joi corresponden a los siguientes tipos de campo de NocoBase: Entero, Número y Porcentaje.
-#### Reglas Comunes
+### Tipo numérico
+Los tipos de campo de NocoBase correspondientes al tipo numérico de Joi incluyen: entero, número y porcentaje.
+#### Reglas generales
 - Mayor que
 - Menor que
 - Valor máximo
 - Valor mínimo
-- Múltiplo
+- Múltiplo entero
 
 #### Entero
-Además de las reglas comunes, los campos de tipo entero también admiten la [validación de enteros](https://joi.dev/api/?v=17.13.3#numberinteger) y la [validación de enteros no seguros](https://joi.dev/api/?v=17.13.3#numberunsafeenabled).
+Además de las reglas generales, los campos enteros admiten [validación de enteros](https://joi.dev/api/?v=17.13.3#numberinteger) y [validación de enteros no seguros](https://joi.dev/api/?v=17.13.3#numberunsafeenabled).
 ![20250819193758](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819193758.png)
 
-#### Número y Porcentaje
-Además de las reglas comunes, los campos de tipo número y porcentaje también admiten la [validación de precisión](https://joi.dev/api/?v=17.13.3#numberinteger).
+#### Número y porcentaje
+Además de las reglas generales, los campos numéricos y de porcentaje admiten [validación de precisión](https://joi.dev/api/?v=17.13.3#numberinteger).
 ![20250819193954](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819193954.png)
 
-### Tipo Fecha
-Los tipos de fecha de Joi corresponden a los siguientes tipos de campo de NocoBase: Fecha (con zona horaria), Fecha (sin zona horaria), Solo fecha y Marca de tiempo Unix.
+### Tipo fecha
+Los tipos de campo de NocoBase correspondientes al tipo fecha de Joi incluyen: fecha (con zona horaria), fecha (sin zona horaria), solo fecha y marca de tiempo Unix.
 
-Reglas de validación admitidas:
+Reglas de validación compatibles:
 - Mayor que
 - Menor que
 - Valor máximo
 - Valor mínimo
-- Validación de formato de marca de tiempo
-- Requerido
+- Validación del formato de la marca de tiempo
+- Obligatorio
 
-### Campos de Relación
-Los campos de relación solo admiten la validación de campo requerido. Tenga en cuenta que la validación de campo requerido para los campos de relación actualmente no es compatible en escenarios de subformularios o subtablas.
+### Campos de relación
+Los campos de relación solo admiten la validación de obligatoriedad. Ten en cuenta que la validación de obligatoriedad de los campos de relación todavía no es compatible con los subformularios ni las subt tablas.
 ![20250819184344](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819184344.png)
 
-## Aplicación de Reglas de Validación
-Una vez que haya configurado las reglas para los campos, estas reglas de validación correspondientes se activarán al añadir o modificar datos.
+## Aplicación de las reglas de validación
+Después de configurar las reglas de los campos, las reglas de validación correspondientes se activarán al añadir o modificar datos.
 ![20250819201027](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819201027.png)
 
-Cuando el campo se usa en un formulario, las reglas de validación del campo también se muestran en la configuración de validación del campo. Estas reglas aparecen en **Reglas de validación de campos del lado del servidor** y son de solo lectura en ese lugar. Si necesita cambiarlas, edite el campo en Fuente de datos → Configuración de la colección.
+Cuando un campo se utiliza en un formulario, sus reglas de validación también se muestran en la configuración de validación del campo. Estas reglas aparecen en «Reglas de validación de campos del servidor» y aquí se muestran en modo de solo lectura. Si necesitas modificar estas reglas, vuelve a «Configuración de la fuente de datos / tabla de datos» para editar el campo.
 
-Puede seguir agregando reglas adicionales para el campo de formulario actual en **Reglas de validación del lado del cliente**. Estas reglas solo se aplican al componente de campo actual. El resultado final de validación combina **Reglas de validación de campos del lado del servidor** y **Reglas de validación del lado del cliente**.
+Aún puedes añadir reglas adicionales al campo del formulario actual en «Reglas de validación del cliente». Estas reglas solo afectan al componente del campo actual. Las reglas de validación que finalmente se aplican combinan las «Reglas de validación de campos del servidor» y las «Reglas de validación del cliente».
 
-Las reglas de validación también se aplican a los componentes de subtablas y subformularios:
+Las reglas de validación también se aplican a los componentes de subtabla y subformulario:
 ![20250819202514](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819202514.png)
 
 ![20250819202357](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819202357.png)
 
-Tenga en cuenta que, en escenarios de subformularios o subtablas, la validación de campo requerido para los campos de relación no surte efecto.
+Ten en cuenta que, en los subformularios o subt tablas, la validación de obligatoriedad de los campos de relación todavía no se aplica.
 ![20250819203016](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819203016.png)
 
-## Diferencias entre las Reglas de Validación de Campos del Lado del Servidor y del Lado del Cliente
-Las reglas de validación de campos del lado del servidor y del lado del cliente se configuran en lugares distintos y tienen alcances diferentes.
+## Diferencias entre las reglas de validación de campos del servidor y las reglas de validación del cliente
+Las reglas de validación de campos del servidor y las reglas de validación del cliente se configuran en ubicaciones diferentes y también tienen distintos ámbitos de aplicación.
 
-### Diferencias en el Método de Configuración
-- **Reglas de validación de campos del lado del servidor**: Establezca las reglas de campo en Fuente de datos → Configuración de la colección. Estas reglas son las reglas base del campo.
-- **Reglas de validación del lado del cliente**: Configure reglas adicionales en los ajustes de un campo de formulario. Estas reglas solo afectan al componente de campo actual.
+### Diferencias en la configuración
+- **Reglas de validación de campos del servidor**: se configuran en «Configuración de la fuente de datos / tabla de datos». Estas reglas son las reglas básicas del campo.
+- **Reglas de validación del cliente**: se añaden en la configuración del campo del formulario. Estas reglas solo afectan al componente del campo actual.
 ![20250819203836](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819203836.png)
 
 ![20250819203845](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819203845.png)
 
-### Diferencias en el Momento de Activación de la Validación
-- **Reglas de validación de campos del lado del servidor**: Activan la validación frontend cuando el campo se usa en un formulario y también validan antes de escribir los datos. También se aplican a escenarios que crean o actualizan datos, como flujos de trabajo e importaciones de datos.
-- **Reglas de validación del lado del cliente**: Solo activan la validación frontend en el campo de formulario actual.
-- **Visualización de reglas**: Las reglas de validación de campos del lado del servidor se muestran como reglas heredadas de solo lectura. Las reglas de validación del lado del cliente se muestran por separado y pueden editarse allí.
-- **Mensajes de error**: Las reglas de validación del lado del cliente admiten mensajes de error personalizados, mientras que las reglas de validación de campos del lado del servidor actualmente no los admiten.
+
+### Diferencias en el momento de activación de la validación
+- **Reglas de validación de campos del servidor**: cuando el campo se utiliza en un formulario, se activa la validación en el frontend y también se realiza una validación antes de escribir los datos. Estas reglas también se aplican al añadir o modificar datos mediante flujos de trabajo, importación de datos y otros escenarios.
+- **Reglas de validación del cliente**: la validación en el frontend solo se activa en el campo del formulario actual.
+- **Visualización de las reglas**: las reglas de validación de campos del servidor se muestran como reglas heredadas en modo de solo lectura. Las reglas de validación del cliente se muestran por separado y se pueden editar aquí.
+- **Mensajes de error**: las reglas de validación del cliente permiten personalizar los mensajes de error, mientras que las reglas de validación de campos del servidor todavía no admiten mensajes de error personalizados.

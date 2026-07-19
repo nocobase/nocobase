@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   App,
@@ -467,6 +467,20 @@ export const normalizeSkillSettings = (value: unknown): EmployeeSkillSettings =>
   };
 };
 
+export const buildEmployeeSubmitValues = (
+  values: EmployeeFormValues,
+  allValues: EmployeeFormValues,
+): EmployeeFormValues => {
+  const submitValues: EmployeeFormValues = {
+    ...values,
+    skillSettings: normalizeSkillSettings(allValues.skillSettings),
+  };
+  if (isRecord(allValues.modelSettings)) {
+    submitValues.modelSettings = normalizeModelSettings(allValues.modelSettings);
+  }
+  return submitValues;
+};
+
 const useLLMServices = () => {
   const repo = useAIConfigRepository();
   const [loading, setLoading] = useState(false);
@@ -502,7 +516,7 @@ const useLLMServices = () => {
 const ModelSettings: React.FC = observer(() => {
   const t = useT();
   const form = Form.useFormInstance<EmployeeFormValues>();
-  const watchedModelSettings = Form.useWatch('modelSettings', form);
+  const watchedModelSettings = Form.useWatch('modelSettings', { form, preserve: true });
   const [modelSettings, setModelSettingsState] = useState<EmployeeModelSettings>(() =>
     normalizeModelSettings(form.getFieldValue('modelSettings')),
   );
@@ -1329,16 +1343,16 @@ const AIEmployeeDrawerContent: React.FC<{
   const [saving, setSaving] = useState(false);
   const [activeFormTab, setActiveFormTab] = useState('profile');
   const [formDirty, setFormDirty] = useState(false);
-  const initialValues = useMemo<EmployeeFormValues>(
-    () =>
-      editingRecord
-        ? {
-            ...editingRecord,
-            _aboutMode: editingRecord.builtIn ? (editingRecord.about ? 'custom' : 'system') : undefined,
-          }
-        : createInitialEmployeeValues(t),
-    [editingRecord, t],
-  );
+  const initialValuesRef = useRef<EmployeeFormValues>();
+  if (!initialValuesRef.current) {
+    initialValuesRef.current = editingRecord
+      ? {
+          ...editingRecord,
+          _aboutMode: editingRecord.builtIn ? (editingRecord.about ? 'custom' : 'system') : undefined,
+        }
+      : createInitialEmployeeValues(t);
+  }
+  const initialValues = initialValuesRef.current;
   const { Header, Footer } = ctx.view;
 
   useEffect(() => {
@@ -1358,10 +1372,7 @@ const AIEmployeeDrawerContent: React.FC<{
     setSaving(true);
     try {
       const allValues = form.getFieldsValue(true);
-      const submitValues = {
-        ...values,
-        skillSettings: normalizeSkillSettings(allValues.skillSettings),
-      };
+      const submitValues = buildEmployeeSubmitValues(values, allValues);
       if (editingRecord) {
         await updateAIEmployee(app.apiClient, submitValues);
       } else {

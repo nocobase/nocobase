@@ -39,6 +39,7 @@ import {
   JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
   JSItemSourceModeField,
 } from './models/fields/JSItemSourceModeField';
+import { registerDeviceTypeContext } from './internal/registerDeviceTypeContext';
 
 const PLUGIN_FLOW_ENGINE_LOADED = Symbol.for('nocobase.client-v2.plugin-flow-engine.loaded');
 
@@ -57,6 +58,7 @@ export class PluginFlowEngine<TApp extends BaseApplication<any> = BaseApplicatio
       return;
     }
 
+    registerDeviceTypeContext(this.flowEngine);
     this.app.addComponents({ FlowRoute });
     this.app.flowEngine.setModelRepository(new FlowModelRepository(this.app));
     const filteredModels = Object.fromEntries(

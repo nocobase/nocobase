@@ -70,6 +70,7 @@ vi.mock('antd', async (importOriginal) => {
 
 vi.mock('@nocobase/client-v2', () => ({
   useApp: () => runtime.app,
+  useMobileLayout: () => ({ isMobileLayout: false }),
 }));
 
 vi.mock('../../hooks/useChatConversationActions', () => ({
