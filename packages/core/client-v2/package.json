@@ -59,6 +59,7 @@
     "jsqr": "^1.4.0",
     "lodash": "4.17.21",
     "mathjs": "^15.2.0",
+    "react-device-detect": "2.2.3",
     "react-i18next": "^11.15.1",
     "react-router-dom": "^6.30.1",
     "typescript": "5.1.3",
