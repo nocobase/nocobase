@@ -53,11 +53,10 @@ describe('PublishCompiledEntriesService', () => {
     expect(store.runInTransactionCalls).toBe(0);
     expect(store.loadEntries).not.toHaveBeenCalled();
     expect(store.bulkUpsertArtifacts).not.toHaveBeenCalled();
-    expect(store.bulkUpsertCompileCache).not.toHaveBeenCalled();
     expect(store.bulkUpsertEntries).not.toHaveBeenCalled();
   });
 
-  it('deduplicates artifacts and cache mappings before three bounded bulk writes', async () => {
+  it('deduplicates artifacts before two bounded bulk writes', async () => {
     const firstJob = createCompileJob(0);
     const secondJob = {
       ...firstJob,
@@ -75,7 +74,6 @@ describe('PublishCompiledEntriesService', () => {
 
     expect(result).toEqual({
       artifactCount: 1,
-      compileCacheCount: 1,
       entryCount: 2,
       compiledAt,
       entryIds: ['entry-id-0', 'entry-id-1'],
@@ -84,8 +82,6 @@ describe('PublishCompiledEntriesService', () => {
     expect(store.loadEntries).toHaveBeenCalledTimes(1);
     expect(store.bulkUpsertArtifacts).toHaveBeenCalledTimes(1);
     expect(store.bulkUpsertArtifacts.mock.calls[0][0]).toHaveLength(1);
-    expect(store.bulkUpsertCompileCache).toHaveBeenCalledTimes(1);
-    expect(store.bulkUpsertCompileCache.mock.calls[0][0]).toHaveLength(1);
     expect(store.bulkUpsertEntries).toHaveBeenCalledTimes(1);
     const entryRows = store.bulkUpsertEntries.mock.calls[0][0];
     expect(entryRows).toHaveLength(2);
@@ -95,7 +91,7 @@ describe('PublishCompiledEntriesService', () => {
     );
   });
 
-  it('keeps database calls constant for twenty entries and publishes planner order', async () => {
+  it('keeps database calls constant for twenty entries and publishes ordinal order', async () => {
     const jobs = Array.from({ length: 20 }, (_, ordinal) => createCompileJob(ordinal));
     const results = jobs.map(createSuccessResult).reverse();
     const store = new MockPublishStore(jobs.map(createStoredEntry));
@@ -107,7 +103,6 @@ describe('PublishCompiledEntriesService', () => {
     expect(published.entryIds).toEqual(jobs.map((job) => job.entryId));
     expect(store.loadEntries).toHaveBeenCalledTimes(1);
     expect(store.bulkUpsertArtifacts).toHaveBeenCalledTimes(1);
-    expect(store.bulkUpsertCompileCache).toHaveBeenCalledTimes(1);
     expect(store.bulkUpsertEntries).toHaveBeenCalledTimes(1);
     expect(store.bulkUpsertEntries.mock.calls[0][0]).toHaveLength(20);
   });
@@ -123,30 +118,7 @@ describe('PublishCompiledEntriesService', () => {
     expect(store.runInTransactionCalls).toBe(0);
     expect(store.loadEntries).toHaveBeenCalledWith([job.entryId], transaction);
     expect(store.bulkUpsertArtifacts).toHaveBeenCalledWith(expect.any(Array), transaction);
-    expect(store.bulkUpsertCompileCache).toHaveBeenCalledWith(expect.any(Array), transaction);
     expect(store.bulkUpsertEntries).toHaveBeenCalledWith(expect.any(Array), transaction);
-  });
-
-  it('reasserts reused Artifact and cache rows in Phase B while preserving the original compiledAt', async () => {
-    const job = createCompileJob(0);
-    const reusedAt = new Date('2026-07-17T12:00:00.000Z');
-    const result: LightExtensionCompileSuccessResult = {
-      ...createSuccessResult(job),
-      execution: 'reused',
-      compiledAt: reusedAt.toISOString(),
-    };
-    const store = new MockPublishStore([createStoredEntry(job)]);
-    const service = new PublishCompiledEntriesService(store, () => compiledAt);
-
-    await service.publishCompiledEntries({ commitId: 'commit-reused', results: [result] });
-
-    expect(store.bulkUpsertArtifacts.mock.calls[0][0]).toHaveLength(1);
-    expect(store.bulkUpsertCompileCache.mock.calls[0][0]).toEqual([
-      expect.objectContaining({ compileKey: job.compileKey, artifactHash: result.artifactHash, compiledAt: reusedAt }),
-    ]);
-    expect(store.bulkUpsertEntries.mock.calls[0][0]).toEqual([
-      expect.objectContaining({ id: job.entryId, compiledCommitId: 'commit-reused', compiledAt: reusedAt }),
-    ]);
   });
 
   it('validates all hashes before opening the publish transaction', async () => {
@@ -168,7 +140,6 @@ describe('PublishCompiledEntriesService', () => {
 
     await expect(service.publishCompiledEntries({ commitId: 'commit-empty', results: [] })).resolves.toEqual({
       artifactCount: 0,
-      compileCacheCount: 0,
       entryCount: 0,
       compiledAt,
       entryIds: [],
@@ -185,10 +156,6 @@ class MockPublishStore implements CompiledEntriesPublishStore {
   );
 
   readonly bulkUpsertArtifacts = vi.fn(
-    async (_rows: Array<Record<string, unknown>>, _transaction: Transaction) => undefined,
-  );
-
-  readonly bulkUpsertCompileCache = vi.fn(
     async (_rows: Array<Record<string, unknown>>, _transaction: Transaction) => undefined,
   );
 

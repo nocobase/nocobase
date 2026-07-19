@@ -699,7 +699,7 @@ export const lightExtensionSchemas = {
       },
       execution: {
         type: 'string',
-        enum: ['compiled', 'reused', 'skipped'],
+        enum: ['compiled', 'skipped'],
         description: 'Optional server execution detail without changing the compatible status enum.',
       },
       diagnostics: {

@@ -14,7 +14,6 @@ import {
   sha256Hex,
   stableSerialize,
   type RunJSRuntimeArtifact,
-  validateRunJSEntryDependencyManifest,
 } from '@nocobase/runjs';
 import { Buffer } from 'node:buffer';
 
@@ -37,18 +36,6 @@ const artifactUpdateFields = [
   'runtimeContract',
   'byteSize',
 ] as const;
-const compileCacheUpdateFields = [
-  'artifactHash',
-  'compilerBuildId',
-  'runtimeContract',
-  'filesHash',
-  'artifactFilesHash',
-  'inputManifest',
-  'diagnostics',
-  'compiledAt',
-  'dependencyManifest',
-  'dependencyManifestHash',
-] as const;
 const entryUpdateFields = [
   'compiledCommitId',
   'compiledInputKey',
@@ -62,8 +49,6 @@ const entryUpdateFields = [
   'compiledAt',
   'diagnostics',
   'healthStatus',
-  'dependencyManifest',
-  'dependencyManifestHash',
 ] as const;
 
 export interface PublishCompiledEntriesBatch {
@@ -73,7 +58,6 @@ export interface PublishCompiledEntriesBatch {
 
 export interface PublishCompiledEntriesResult {
   artifactCount: number;
-  compileCacheCount: number;
   entryCount: number;
   compiledAt: Date;
   entryIds: string[];
@@ -83,13 +67,11 @@ export interface CompiledEntriesPublishStore {
   runInTransaction<T>(callback: (transaction: Transaction) => Promise<T>): Promise<T>;
   loadEntries(entryIds: string[], transaction: Transaction): Promise<Array<Record<string, unknown>>>;
   bulkUpsertArtifacts(rows: Array<Record<string, unknown>>, transaction: Transaction): Promise<void>;
-  bulkUpsertCompileCache(rows: Array<Record<string, unknown>>, transaction: Transaction): Promise<void>;
   bulkUpsertEntries(rows: Array<Record<string, unknown>>, transaction: Transaction): Promise<void>;
 }
 
 interface PreparedPublishBatch {
   artifacts: Array<Record<string, unknown>>;
-  compileCache: Array<Record<string, unknown>>;
   compiledAt: Date;
   entryIds: string[];
   results: LightExtensionCompileSuccessResult[];
@@ -113,7 +95,6 @@ export class PublishCompiledEntriesService {
     if (prepared.results.length === 0) {
       return {
         artifactCount: 0,
-        compileCacheCount: 0,
         entryCount: 0,
         compiledAt: prepared.compiledAt,
         entryIds: [],
@@ -148,21 +129,14 @@ export class PublishCompiledEntriesService {
       assertStoredEntryMatchesResult(stored, result);
       return {
         ...stored,
-        ...buildEntryPublishValues(
-          stored,
-          result,
-          batch.commitId,
-          resolveResultCompiledAt(result, prepared.compiledAt),
-        ),
+        ...buildEntryPublishValues(stored, result, batch.commitId, prepared.compiledAt),
       };
     });
 
     await this.store.bulkUpsertArtifacts(prepared.artifacts, transaction);
-    await this.store.bulkUpsertCompileCache(prepared.compileCache, transaction);
     await this.store.bulkUpsertEntries(entryRows, transaction);
     return {
       artifactCount: prepared.artifacts.length,
-      compileCacheCount: prepared.compileCache.length,
       entryCount: entryRows.length,
       compiledAt: prepared.compiledAt,
       entryIds: prepared.entryIds,
@@ -199,32 +173,6 @@ export class SequelizeCompiledEntriesPublishStore implements CompiledEntriesPubl
     }
     await this.db.getModel<Model>('lightExtensionRuntimeArtifacts').bulkCreate(rows, {
       updateOnDuplicate: [...artifactUpdateFields],
-      transaction,
-    });
-  }
-
-  async bulkUpsertCompileCache(rows: Array<Record<string, unknown>>, transaction: Transaction): Promise<void> {
-    if (rows.length === 0) {
-      return;
-    }
-    const compileKeys = rows.map((row) => requiredString(row.compileKey, 'Compile cache key'));
-    const existing = await this.db.getModel<Model>('lightExtensionCompileCache').findAll({
-      where: { compileKey: compileKeys },
-      transaction,
-    });
-    const incomingByKey = new Map(rows.map((row) => [requiredString(row.compileKey, 'Compile cache key'), row]));
-    for (const stored of existing) {
-      const compileKey = requiredString(stored.get('compileKey'), 'Stored compile cache key');
-      const incoming = incomingByKey.get(compileKey);
-      if (incoming && stored.get('artifactHash') !== incoming.artifactHash) {
-        throw new LightExtensionError(
-          'LIGHT_EXTENSION_SOURCE_ERROR',
-          `Compile cache key "${compileKey}" maps to a conflicting artifact`,
-        );
-      }
-    }
-    await this.db.getModel<Model>('lightExtensionCompileCache').bulkCreate(rows, {
-      updateOnDuplicate: [...compileCacheUpdateFields],
       transaction,
     });
   }
@@ -273,7 +221,6 @@ function preparePublishBatch(batch: PublishCompiledEntriesBatch, compiledAt: Dat
     .sort((left, right) => left.ordinal - right.ordinal || left.entryId.localeCompare(right.entryId));
   const entryIds = new Set<string>();
   const artifacts = new Map<string, Record<string, unknown>>();
-  const compileCache = new Map<string, Record<string, unknown>>();
   for (const result of results) {
     assertStructuredClonePlainData(result, 'Compiled entry publish result');
     validateSuccessfulCompileResult(result);
@@ -281,15 +228,11 @@ function preparePublishBatch(batch: PublishCompiledEntriesBatch, compiledAt: Dat
       throw new TypeError(`Publish batch contains duplicate entry "${result.entryId}"`);
     }
     entryIds.add(result.entryId);
-    const resultCompiledAt = resolveResultCompiledAt(result, compiledAt);
     const artifactRow = buildArtifactRow(result);
     setConsistentRow(artifacts, result.artifactHash, artifactRow, 'artifactHash');
-    const cacheRow = buildCompileCacheRow(result, resultCompiledAt);
-    setConsistentRow(compileCache, result.compileKey, cacheRow, 'compileKey');
   }
   return {
     artifacts: [...artifacts.values()],
-    compileCache: [...compileCache.values()],
     compiledAt,
     entryIds: [...entryIds],
     results,
@@ -320,25 +263,6 @@ function validateSuccessfulCompileResult(result: LightExtensionCompileSuccessRes
   if (result.artifactHash !== artifactHash) {
     throw new TypeError(`Compiled result artifact hash mismatch for entry "${result.entryId}"`);
   }
-  if (result.dependencyManifest || result.dependencyManifestHash) {
-    const dependency = validateRunJSEntryDependencyManifest({
-      value: result.dependencyManifest,
-      expectedCompilerBuildId: result.inputManifest.compilerBuildId,
-      expectedEntryPath: result.inputManifest.entryPath,
-      expectedManifestHash: result.dependencyManifestHash,
-    });
-    if (!dependency.valid || !dependencyManifestMatchesCompileInput(dependency.manifest, result.inputManifest.files)) {
-      throw new TypeError(`Compiled result dependency manifest mismatch for entry "${result.entryId}"`);
-    }
-  }
-}
-
-function dependencyManifestMatchesCompileInput(
-  manifest: NonNullable<LightExtensionCompileSuccessResult['dependencyManifest']>,
-  files: LightExtensionCompileSuccessResult['inputManifest']['files'],
-): boolean {
-  const hashes = new Map(files.map((file) => [file.path, file.blobHash]));
-  return [...manifest.runtime.files, ...manifest.types.files].every((file) => hashes.get(file.path) === file.blobHash);
 }
 
 function buildArtifactRow(result: LightExtensionCompileSuccessResult): Record<string, unknown> {
@@ -352,22 +276,6 @@ function buildArtifactRow(result: LightExtensionCompileSuccessResult): Record<st
     runtimeContract: result.inputManifest.runtimeContract,
     byteSize:
       Buffer.byteLength(result.artifact.code, 'utf8') + Buffer.byteLength(result.artifact.sourceMap || '', 'utf8'),
-  };
-}
-
-function buildCompileCacheRow(result: LightExtensionCompileSuccessResult, compiledAt: Date): Record<string, unknown> {
-  return {
-    compileKey: result.compileKey,
-    artifactHash: result.artifactHash,
-    compilerBuildId: result.compilerBuildId,
-    runtimeContract: result.inputManifest.runtimeContract,
-    filesHash: result.filesHash,
-    artifactFilesHash: result.artifact.filesHash || '',
-    inputManifest: result.inputManifest,
-    diagnostics: sortDiagnostics(result.diagnostics),
-    compiledAt,
-    dependencyManifest: result.dependencyManifest || null,
-    dependencyManifestHash: result.dependencyManifestHash || null,
   };
 }
 
@@ -400,20 +308,7 @@ function buildEntryPublishValues(
     compiledAt,
     diagnostics: sortDiagnostics([...existingDiagnostics, ...result.diagnostics]),
     healthStatus: 'ready',
-    dependencyManifest: result.dependencyManifest || null,
-    dependencyManifestHash: result.dependencyManifestHash || null,
   };
-}
-
-function resolveResultCompiledAt(result: LightExtensionCompileSuccessResult, fallback: Date): Date {
-  if (result.execution !== 'reused' || !result.compiledAt) {
-    return fallback;
-  }
-  const parsed = new Date(result.compiledAt);
-  if (!Number.isFinite(parsed.getTime())) {
-    throw new TypeError(`Reused compile result has an invalid compiledAt for entry "${result.entryId}"`);
-  }
-  return parsed;
 }
 
 function buildEntryRuntimeMetadata(

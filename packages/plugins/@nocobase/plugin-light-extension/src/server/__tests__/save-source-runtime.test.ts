@@ -8,17 +8,16 @@
  */
 
 import PluginVscFileServer from '@nocobase/plugin-vsc-file';
-import {
-  hashRunJSEntryDependencyManifest,
-  normalizeRunJSEntryDependencyManifest,
-  type RunJSEntryDependencyManifestV1,
-} from '@nocobase/runjs';
 import { MockServer, createMockServer } from '@nocobase/test';
 
 import type { LightExtensionSaveSourceInput } from '../../shared/types';
 import type { LightExtensionCompileMetricsSummary } from '../../shared/compileMetrics';
 import PluginLightExtensionServer from '../plugin';
 import { LightExtensionAuditService } from '../services/LightExtensionAuditService';
+import {
+  buildLightExtensionCompilerBuildIdentity,
+  LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY_COMPONENTS,
+} from '../services/LightExtensionCompileContract';
 import { LightExtensionEntryService } from '../services/LightExtensionEntryService';
 import { LightExtensionFileService } from '../services/LightExtensionFileService';
 import { LightExtensionPermissionService } from '../services/LightExtensionPermissionService';
@@ -177,24 +176,18 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     expect(JSON.stringify(metricsSummaries)).not.toMatch(/repoId|entryId|src\/client|Sales KPI|artifactHash/iu);
   });
 
-  it('recompiles only the real shared dependency owner and advances unaffected entries by verified reuse', async () => {
+  it('conservatively recompiles every ready Entry after a shared source change', async () => {
     const repo = await repoService.createRepo({
       name: 'Precise Shared Dependency Save',
       initialFiles: preciseSharedDependencyFiles(),
     });
     const initial = await saveCurrentSource({
       repoId: repo.id,
-      message: 'establish compiler-derived manifests',
+      message: 'establish compiled entries',
       files: [{ path: 'README.md', content: '# Precise dependency fixture\n', language: 'markdown' }],
-    });
-    const beforeEntries = await app.db.getRepository('lightExtensionEntries').find({
-      filter: { repoId: repo.id },
-      sort: ['entryName'],
     });
     expect(initial.compile.entries).toHaveLength(2);
     expect(initial.compile.entries.every((entry) => entry.execution === 'compiled')).toBe(true);
-    const unaffectedBefore = beforeEntries.find((entry) => entry.get('entryName') === 'independent');
-    const unaffectedCompiledAt = unaffectedBefore?.get('compiledAt');
 
     metricsSummaries = [];
     const updated = await saveCurrentSource({
@@ -208,90 +201,90 @@ describe('plugin-light-extension saveSource runtime compile', () => {
         },
       ],
     });
-    const byName = new Map(updated.compile.entries.map((entry) => [entry.entryName, entry]));
     const afterEntries = await app.db.getRepository('lightExtensionEntries').find({
       filter: { repoId: repo.id },
       sort: ['entryName'],
     });
-    const unaffectedAfter = afterEntries.find((entry) => entry.get('entryName') === 'independent');
 
-    expect(byName.get('dependent')).toMatchObject({ status: 'success', execution: 'compiled' });
-    expect(byName.get('independent')).toMatchObject({ status: 'success', execution: 'reused' });
+    expect(updated.compile.entries).toHaveLength(2);
+    expect(updated.compile.entries.every((entry) => entry.execution === 'compiled')).toBe(true);
     expect(afterEntries.every((entry) => entry.get('compiledCommitId') === updated.commit.id)).toBe(true);
-    expect(unaffectedAfter?.get('compiledAt')).toEqual(unaffectedCompiledAt);
-    expect(unaffectedAfter?.get('dependencyManifest')).toEqual(unaffectedBefore?.get('dependencyManifest'));
-    const preciseCompileCounters = metricsSummaries.at(-1)?.counters;
-    expect(preciseCompileCounters).toMatchObject({
-      affectedEntryCount: 1,
-      compiledEntryCount: 1,
-      reusedEntryCount: 1,
-      dependencyGraphRuntimeFileCount: 2,
-      dependencyGraphTypeFileCount: 2,
-      dependencyGraphUnresolvedCount: 0,
-      dependencyPlanPreciseHitCount: 1,
-      dependencyPlanConservativeFallbackCount: 0,
-      dependencyManifestVersionMismatchCount: 0,
+    expect(metricsSummaries.at(-1)?.counters).toMatchObject({
+      affectedEntryCount: 2,
+      compiledEntryCount: 2,
     });
-    expect(preciseCompileCounters?.dependencyGraphByteSize).toBeGreaterThan(0);
   });
 
-  it('recompiles an Entry when an added canonical shared file satisfies its persisted unresolved candidate', async () => {
+  it('rebuilds missing or corrupt immutable artifacts and recompiles after a compiler build change', async () => {
     const repo = await repoService.createRepo({
-      name: 'Unresolved Candidate Save',
-      initialFiles: baselineSalesKpiFiles(),
+      name: 'Compile All Recovery',
+      initialFiles: preciseSharedDependencyFiles(),
     });
     const initial = await saveCurrentSource({
       repoId: repo.id,
-      message: 'establish initial dependency manifest',
-      files: [{ path: 'README.md', content: '# Unresolved candidate fixture\n', language: 'markdown' }],
+      message: 'establish immutable artifacts',
+      files: [{ path: 'README.md', content: '# Compile all recovery\n', language: 'markdown' }],
     });
-    const entry = await app.db.getRepository('lightExtensionEntries').findOne({
-      filterByTk: initial.compile.entries[0].entryId,
+    const entries = await app.db.getRepository('lightExtensionEntries').find({
+      filter: { repoId: repo.id },
+      sort: ['entryName'],
     });
-    const previousManifest = entry?.get('dependencyManifest') as RunJSEntryDependencyManifestV1 | undefined;
-    if (!entry || !previousManifest) {
-      throw new Error('Expected the initial compiler-derived dependency manifest');
+    const firstArtifactHash = String(entries[0].get('artifactHash'));
+    const secondArtifactHash = String(entries[1].get('artifactHash'));
+    await app.db.getRepository('lightExtensionRuntimeArtifacts').destroy({ filterByTk: firstArtifactHash });
+    const corruptArtifact = await app.db.getRepository('lightExtensionRuntimeArtifacts').findOne({
+      filterByTk: secondArtifactHash,
+    });
+    if (!corruptArtifact) {
+      throw new Error('Expected the second immutable artifact');
     }
-    const unresolvedManifest = normalizeRunJSEntryDependencyManifest({
-      ...previousManifest,
-      unresolved: [
-        {
-          importer: previousManifest.entryPath,
-          specifier: '../../../shared/future',
-          kind: 'runtime',
-          candidatePaths: ['src/shared/future.ts', 'src/shared/future/index.ts'],
-        },
-      ],
-    });
-    await entry.update({
-      dependencyManifest: unresolvedManifest,
-      dependencyManifestHash: hashRunJSEntryDependencyManifest(unresolvedManifest),
+    await corruptArtifact.update({
+      code: 'corrupt artifact code',
+      entryPath: 'src/client/js-blocks/wrong/index.tsx',
+      runtimeContract: 'corrupt.runtime-contract',
     });
 
     metricsSummaries = [];
-    const updated = await saveCurrentSource({
+    const repaired = await saveCurrentSource({
       repoId: repo.id,
-      message: 'add unresolved shared candidate',
-      files: [
-        {
-          path: 'src/shared/future.ts',
-          content: 'export const futureValue = 1;\n',
-          language: 'typescript',
-        },
-      ],
+      message: 'repair artifacts by recompiling all ready entries',
+      files: [{ path: 'README.md', content: '# Repair artifacts\n', language: 'markdown' }],
     });
-    const current = await app.db.getRepository('lightExtensionEntries').findOne({
-      filterByTk: entry.get('id'),
+    expect(repaired.compile.entries.every((entry) => entry.execution === 'compiled')).toBe(true);
+    await expect(
+      app.db.getRepository('lightExtensionRuntimeArtifacts').findOne({ filterByTk: firstArtifactHash }),
+    ).resolves.toBeTruthy();
+    await expect(
+      app.db.getRepository('lightExtensionRuntimeArtifacts').findOne({ filterByTk: secondArtifactHash }),
+    ).resolves.toMatchObject({
+      entryPath: expect.not.stringContaining('/wrong/'),
+      runtimeContract: 'light-extension.runtime-artifact.v1',
     });
 
-    expect(updated.compile.entries[0]).toMatchObject({ status: 'success', execution: 'compiled' });
-    expect(metricsSummaries.at(-1)?.counters).toMatchObject({
-      affectedEntryCount: 1,
-      compiledEntryCount: 1,
-      dependencyPlanPreciseHitCount: 1,
-      dependencyPlanConservativeFallbackCount: 0,
+    const changedBuildIdentity = buildLightExtensionCompilerBuildIdentity({
+      ...LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY_COMPONENTS,
+      importSecurityPolicy: 'light-extension.import-security.changed',
     });
-    expect(current?.get('dependencyManifest')).toMatchObject({ unresolved: [] });
+    const buildAwareService = new LightExtensionRuntimeCompileService(
+      app.db,
+      fileService,
+      entryService,
+      compilerBridge,
+      undefined,
+      { compilerBuildIdentity: changedBuildIdentity },
+    );
+    const rebuilt = await buildAwareService.saveSource({
+      repoId: repo.id,
+      expectedHeadCommitId: repaired.commit.id,
+      message: 'recompile with changed build identity',
+      files: [{ path: 'README.md', content: '# Changed build\n', language: 'markdown' }],
+    });
+    const rebuiltEntries = await app.db.getRepository('lightExtensionEntries').find({ filter: { repoId: repo.id } });
+
+    expect(rebuilt.compile.entries.every((entry) => entry.execution === 'compiled')).toBe(true);
+    expect(rebuiltEntries.every((entry) => entry.get('compilerBuildId') === changedBuildIdentity.compilerBuildId)).toBe(
+      true,
+    );
   });
 
   it('reuses one canonical candidate for validation, reconcile, and Save compilation', async () => {
@@ -890,10 +883,7 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     const entryBeforeFailure = await app.db.getRepository('lightExtensionEntries').findOne({
       filterByTk: first.compile.entries[0].entryId,
     });
-    const manifestBeforeFailure = entryBeforeFailure?.get('dependencyManifest');
-    const manifestHashBeforeFailure = entryBeforeFailure?.get('dependencyManifestHash');
-    expect(manifestBeforeFailure).toBeTruthy();
-    expect(manifestHashBeforeFailure).toBe(hashRunJSEntryDependencyManifest(manifestBeforeFailure));
+    const artifactHashBeforeFailure = entryBeforeFailure?.get('artifactHash');
     metricsSummaries = [];
 
     await expect(
@@ -917,8 +907,7 @@ describe('plugin-light-extension saveSource runtime compile', () => {
 
     expect(entry?.get('healthStatus')).toBe('ready');
     expect(entry?.get('compiledCommitId')).toBe(first.commit.id);
-    expect(entry?.get('dependencyManifest')).toEqual(manifestBeforeFailure);
-    expect(entry?.get('dependencyManifestHash')).toBe(manifestHashBeforeFailure);
+    expect(entry?.get('artifactHash')).toBe(artifactHashBeforeFailure);
     expect(entry?.get('runtimeArtifact')).toMatchObject({
       code: expect.stringContaining('Sales KPI'),
     });
@@ -957,11 +946,9 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     const entryAfterFix = await app.db.getRepository('lightExtensionEntries').findOne({
       filterByTk: first.compile.entries[0].entryId,
     });
-    const manifestAfterFix = entryAfterFix?.get('dependencyManifest');
 
     expect(entryAfterFix?.get('compiledCommitId')).toBe(fixed.commit.id);
-    expect(entryAfterFix?.get('dependencyManifestHash')).toBe(hashRunJSEntryDependencyManifest(manifestAfterFix));
-    expect(entryAfterFix?.get('dependencyManifestHash')).not.toBe(manifestHashBeforeFailure);
+    expect(entryAfterFix?.get('artifactHash')).not.toBe(artifactHashBeforeFailure);
   });
 
   it('rolls back every entry when one entry fails to compile', async () => {
@@ -1140,7 +1127,7 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     ).toHaveLength(1);
   });
 
-  it('rolls back a cache-miss compile success audit when publish fails', async () => {
+  it('rolls back a compile success audit when publish fails', async () => {
     const repo = await repoService.createRepo({
       name: 'Runtime Compile Audit Rollback',
       initialFiles: baselineSalesKpiFiles(),
@@ -1150,7 +1137,7 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     const publish = publisher.publishCompiledEntries.bind(publisher);
     vi.spyOn(publisher, 'publishCompiledEntries').mockImplementation(async (batch, transaction) => {
       await publish(batch, transaction);
-      throw new Error('forced cache-miss publish rollback');
+      throw new Error('forced compile publish rollback');
     });
     const failingRuntime = new LightExtensionRuntimeCompileService(
       app.db,
@@ -1159,7 +1146,6 @@ describe('plugin-light-extension saveSource runtime compile', () => {
       compilerBridge,
       undefined,
       {
-        compileCacheEnabled: false,
         publishCompiledEntries: publisher,
       },
     );
@@ -1171,7 +1157,7 @@ describe('plugin-light-extension saveSource runtime compile', () => {
         message: 'rollback runtime compile audit',
         files: validSalesKpiFiles(),
       }),
-    ).rejects.toThrow('forced cache-miss publish rollback');
+    ).rejects.toThrow('forced compile publish rollback');
 
     expect(compileEntry).toHaveBeenCalledTimes(1);
     await expect(repoService.getRepo(repo.id)).resolves.toMatchObject({ headCommitId: repo.headCommitId });
@@ -1235,7 +1221,6 @@ describe('plugin-light-extension saveSource runtime compile', () => {
       entryService,
       compilerBridge,
       undefined,
-      { compileCacheEnabled: false },
     );
     failingRuntime.useReferenceService({ refreshReferencesForRepo });
 

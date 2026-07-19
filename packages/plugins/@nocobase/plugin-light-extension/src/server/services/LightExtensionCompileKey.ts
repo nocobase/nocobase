@@ -51,22 +51,6 @@ export interface LightExtensionCompileKeyResult {
   inputManifest: CompileInputManifest;
 }
 
-export type CompileDecisionKind = 'compile' | 'reuse' | 'skip-runtime';
-
-export type CompileDecision =
-  | (LightExtensionCompileKeyResult & {
-      entryId: string;
-      decision: 'compile' | 'reuse';
-      affected: boolean;
-      reason: 'cache-hit' | 'cache-miss' | 'cache-corrupt' | 'cache-disabled';
-    })
-  | {
-      entryId: string;
-      decision: 'skip-runtime';
-      affected: false;
-      reason: 'runtime-unavailable';
-    };
-
 export function buildLightExtensionCompileKey(input: {
   entry: Pick<LightExtensionEntryRecord, 'kind' | 'entryPath' | 'descriptorPath' | 'target'>;
   files: readonly CompileInputManifestSourceFile[];

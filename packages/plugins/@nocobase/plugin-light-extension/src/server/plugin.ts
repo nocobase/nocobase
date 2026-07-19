@@ -50,7 +50,6 @@ import { LightExtensionRepoService } from './services/LightExtensionRepoService'
 import { LightExtensionRuntimeCompileService } from './services/LightExtensionRuntimeCompileService';
 import { LightExtensionValidator } from './services/LightExtensionValidator';
 import { LightExtensionWorkspaceCompilerBridge } from './services/LightExtensionWorkspaceCompilerBridge';
-import { LightExtensionTrustedCompileCacheService } from './services/LightExtensionTrustedCompileCacheService';
 import { RuntimeResolveService } from './services/RuntimeResolveService';
 import { ReferenceService } from './services/ReferenceService';
 import { MoveSourceService } from './services/MoveSourceService';
@@ -227,7 +226,6 @@ export class PluginLightExtensionServer extends Plugin {
       : undefined;
     this.workspaceCompilerBridge = new LightExtensionWorkspaceCompilerBridge(this.auditService, this.permissionService);
     const app = this.app as unknown as AppWithPluginEvents;
-    const trustedCompileCache = new LightExtensionTrustedCompileCacheService(db);
     const sharedVscPermissionHooks = findVscPermissionHookRegistry((this.app as unknown as AppWithPluginEvents).pm);
     this.repoService = new LightExtensionRepoService(
       db,
@@ -265,7 +263,6 @@ export class PluginLightExtensionServer extends Plugin {
       this.workspaceCompilerBridge,
       compileMetricsCollector,
       {
-        trustedCompileCache,
         compileExecutor: this.compileWorkerPool,
       },
     );

@@ -7,13 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  sha256Hex,
-  stableSerialize,
-  type RunJSEntryDependencyManifestV1,
-  type RunJSRuntimeArtifact,
-  type RunJSSurfaceStyle,
-} from '@nocobase/runjs';
+import { sha256Hex, stableSerialize, type RunJSRuntimeArtifact, type RunJSSurfaceStyle } from '@nocobase/runjs';
 import { RUNJS_COMPILER_BUILD_IDENTITY, type RunJSCompilerBuildIdentity } from '@nocobase/runjs/compiler';
 import sdkPackageJson from '@nocobase/light-extension-sdk/package.json';
 
@@ -196,13 +190,9 @@ interface LightExtensionCompileResultBase {
 
 export interface LightExtensionCompileSuccessResult extends LightExtensionCompileResultBase {
   accepted: true;
-  execution?: 'compiled' | 'reused';
-  compiledAt?: string;
   artifact: RunJSRuntimeArtifact;
   artifactHash: string;
   runtimeCodeHash: string;
-  dependencyManifest?: RunJSEntryDependencyManifestV1;
-  dependencyManifestHash?: string;
 }
 
 export interface LightExtensionCompileFailureResult extends LightExtensionCompileResultBase {

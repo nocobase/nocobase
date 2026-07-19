@@ -762,13 +762,7 @@ function createDbStub(entries: Record<string, unknown>[]) {
     update: vi.fn(),
   };
   const persistenceRepositories = Object.fromEntries(
-    [
-      'lightExtensionCompileCache',
-      'lightExtensionRuntimeArtifacts',
-      'lightExtensionRepos',
-      'vscFileCommits',
-      'vscFileTrees',
-    ].map((name) => [
+    ['lightExtensionRuntimeArtifacts', 'lightExtensionRepos', 'vscFileCommits', 'vscFileTrees'].map((name) => [
       name,
       {
         create: vi.fn(),

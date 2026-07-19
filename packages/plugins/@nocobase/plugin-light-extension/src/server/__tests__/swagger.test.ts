@@ -68,7 +68,7 @@ describe('light-extension swagger', () => {
       $ref: '#/components/schemas/LightExtensionCompileArtifactSummary',
     });
     expect(schemas.LightExtensionSaveSourceEntryResult.properties.execution).toMatchObject({
-      enum: ['compiled', 'reused', 'skipped'],
+      enum: ['compiled', 'skipped'],
     });
     expect(schemas.LightExtensionEntry.properties).toEqual(
       expect.objectContaining({

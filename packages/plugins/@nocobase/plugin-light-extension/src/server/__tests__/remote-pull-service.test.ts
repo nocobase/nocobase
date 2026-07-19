@@ -10,7 +10,6 @@
 import type { VscRemoteSnapshotFile } from '@nocobase/plugin-vsc-file';
 import { VscPermissionHookRegistry } from '@nocobase/plugin-vsc-file';
 import PluginVscFileServer from '@nocobase/plugin-vsc-file';
-import { hashRunJSEntryDependencyManifest, type RunJSEntryDependencyManifestV1 } from '@nocobase/runjs';
 import { createMockServer, type MockServer } from '@nocobase/test';
 import { vi } from 'vitest';
 
@@ -120,16 +119,6 @@ describe('LightExtensionRemotePullService', () => {
     });
     expect(entry).toMatchObject({ compiledCommitId: result.commitId });
     expect(entry?.get('runtimeArtifact')).toMatchObject({ code: expect.stringContaining('Pulled runtime') });
-    const dependencyManifest = entry?.get('dependencyManifest') as RunJSEntryDependencyManifestV1 | undefined;
-    if (!dependencyManifest) {
-      throw new Error('Expected remote Pull dependency manifest');
-    }
-    expect(dependencyManifest).toMatchObject({
-      version: 1,
-      entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
-      runtime: { files: [expect.objectContaining({ path: 'src/client/js-blocks/sales-kpi/index.tsx' })] },
-    });
-    expect(entry?.get('dependencyManifestHash')).toBe(hashRunJSEntryDependencyManifest(dependencyManifest));
     await expect(mapStore.findLatest(setup.remote.id)).resolves.toMatchObject({
       localCommitId: result.commitId,
       remoteRevision: adapter.getSnapshot().revision,

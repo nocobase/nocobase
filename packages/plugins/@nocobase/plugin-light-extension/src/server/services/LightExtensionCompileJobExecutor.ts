@@ -10,12 +10,11 @@
 import {
   buildRunJSArtifactHash,
   buildRunJSRuntimeCodeHash,
-  isRunJSEntryDependencyManifestPersistable,
   stableSerialize,
   type RunJSCompileDiagnostic,
   type RunJSRuntimeArtifact,
 } from '@nocobase/runjs';
-import { buildRunJSEntryDependencyManifestFromGraph, compileRunJSSourceWorkspace } from '@nocobase/runjs/compiler';
+import { compileRunJSSourceWorkspace } from '@nocobase/runjs/compiler';
 import { performance } from 'node:perf_hooks';
 import { threadId } from 'node:worker_threads';
 import { posix as pathPosix } from 'path';
@@ -98,32 +97,12 @@ export async function executeLightExtensionCompileJob(input: {
       entryPath,
       runtimeContract: LIGHT_EXTENSION_RUNTIME_ARTIFACT_CONTRACT,
     });
-    if (!compiled.dependencyGraph) {
-      throw new Error('RunJS compiler did not return a dependency graph for an accepted compile');
-    }
-    const dependency = buildRunJSEntryDependencyManifestFromGraph({
-      compilerBuildId: input.job.compilerBuildIdentity.compilerBuildId,
-      entryPath: input.job.entryPath,
-      files: input.job.files.map((file) => ({
-        path: file.path,
-        content: file.content,
-        blobHash: file.blobHash,
-      })),
-      graph: compiled.dependencyGraph,
-    });
-    const persistDependencyManifest = isRunJSEntryDependencyManifestPersistable(dependency.manifest);
     return {
       ...buildResultIdentity(input.job, input.workerId, executingThreadId, input.attempt, startedAt, diagnostics),
       accepted: true,
       artifact,
       artifactHash,
       runtimeCodeHash,
-      ...(persistDependencyManifest
-        ? {
-            dependencyManifest: dependency.manifest,
-            dependencyManifestHash: dependency.manifestHash,
-          }
-        : {}),
     };
   } catch (error) {
     return createLightExtensionCompileInfrastructureFailure({

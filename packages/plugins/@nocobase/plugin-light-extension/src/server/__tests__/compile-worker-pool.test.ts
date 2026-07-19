@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { hashRunJSEntryDependencyManifest, sha256Hex } from '@nocobase/runjs';
+import { sha256Hex } from '@nocobase/runjs';
 import { serialize } from 'node:v8';
 import { threadId as mainThreadId } from 'node:worker_threads';
 import { vi } from 'vitest';
@@ -45,24 +45,7 @@ describe('LightExtensionCompileWorkerPool', () => {
       if (!result.accepted) {
         throw new Error('Expected the real worker compile to be accepted');
       }
-      const dependencyManifest = result.dependencyManifest;
-      expect(dependencyManifest).toMatchObject({
-        version: 1,
-        compilerBuildId: job.compilerBuildIdentity.compilerBuildId,
-        entryPath: job.entryPath,
-        runtime: {
-          files: [{ path: job.entryPath, blobHash: job.files[0].blobHash }],
-        },
-        types: {
-          files: [{ path: job.entryPath, blobHash: job.files[0].blobHash }],
-        },
-        unresolved: [],
-      });
-      expect(result.dependencyManifestHash).toMatch(/^[a-f0-9]{64}$/u);
-      if (!dependencyManifest) {
-        throw new Error('Expected the accepted worker compile to include a dependency manifest');
-      }
-      expect(result.dependencyManifestHash).toBe(hashRunJSEntryDependencyManifest(dependencyManifest));
+      expect(result.artifact.code).toContain('ctx.render');
       expect(pool.getMetrics()).toMatchObject({ active: 0, completed: 1, maxActive: 1 });
     } finally {
       await pool.shutdown();

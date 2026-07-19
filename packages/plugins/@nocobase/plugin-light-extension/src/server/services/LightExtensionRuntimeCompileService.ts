@@ -7,18 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { Database, Model, Transaction } from '@nocobase/database';
-import {
-  buildRunJSArtifactHash,
-  buildRunJSRuntimeCodeHash,
-  isRunJSEntryDependencyManifestPersistable,
-  sha256Hex,
-  stableSerialize,
-  validateRunJSEntryDependencyManifest,
-  type RunJSEntryDependencyManifestV1,
-  type RunJSRuntimeArtifact,
-} from '@nocobase/runjs';
-import { buildRunJSEntryDependencyManifestFromGraph } from '@nocobase/runjs/compiler';
+import type { Database } from '@nocobase/database';
+import { buildRunJSArtifactHash, buildRunJSRuntimeCodeHash } from '@nocobase/runjs';
 import { randomUUID } from 'crypto';
 import { serialize } from 'node:v8';
 import { posix as pathPosix } from 'path';
@@ -36,12 +26,6 @@ import type {
   LightExtensionSaveSourceResult,
 } from '../../shared/types';
 import {
-  createAffectedEntryCompilePlan,
-  type AffectedEntryPathChange,
-  type CompilePlan,
-  type EntryPlanSnapshot,
-} from './AffectedEntryCompilePlanner';
-import {
   entryFromModel,
   LightExtensionEntryService,
   type LightExtensionEntryReconcilePlan,
@@ -58,12 +42,7 @@ import {
   type LightExtensionPreparedSourceCandidate,
   type LightExtensionReplaceSourceSnapshotInput,
 } from './LightExtensionFileService';
-import {
-  buildLightExtensionCompileKey,
-  type CompileDecision,
-  type CompileInputManifest,
-  type LightExtensionCompileKeyResult,
-} from './LightExtensionCompileKey';
+import { buildLightExtensionCompileKey, type LightExtensionCompileKeyResult } from './LightExtensionCompileKey';
 import {
   LIGHT_EXTENSION_AUTHORING_SURFACES,
   LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY,
@@ -77,10 +56,6 @@ import { assertPreparedCandidateWorkspace, type PreparedCandidateWorkspace } fro
 import type { LightExtensionServiceContext } from './LightExtensionRepoService';
 import { executeLightExtensionCompileJob } from './LightExtensionCompileJobExecutor';
 import { PublishCompiledEntriesService } from './PublishCompiledEntriesService';
-import {
-  LightExtensionTrustedCompileCacheService,
-  type TrustedCompileArtifact,
-} from './LightExtensionTrustedCompileCacheService';
 import { sortDiagnostics } from './LightExtensionValidator';
 import { LightExtensionWorkspaceCompilerBridge } from './LightExtensionWorkspaceCompilerBridge';
 
@@ -105,37 +80,15 @@ interface PreparedEntryCompileInput extends LightExtensionCompileKeyResult {
     language?: string;
     mode?: string;
   }>;
-  affected: boolean;
-}
-
-interface TrustedCompileCacheHit {
-  artifactHash: string;
-  runtimeCodeHash: string;
-  code: string;
-  sourceMap?: string;
-  version: string;
-  artifactFilesHash: string;
-  diagnostics: LightExtensionDiagnostic[];
-  compiledAt: Date;
-  dependencyManifest?: RunJSEntryDependencyManifestV1;
-  dependencyManifestHash?: string;
-}
-
-interface TrustedCompileCacheLookup {
-  hits: Map<string, TrustedCompileCacheHit>;
-  corruptKeys: Set<string>;
 }
 
 interface PreparedCompileResults {
   results: LightExtensionCompileResult[];
-  executions: Map<string, 'compiled' | 'reused'>;
   compiledEntryCount: number;
 }
 
 export interface LightExtensionRuntimeCompileServiceOptions {
-  compileCacheEnabled?: boolean;
   compilerBuildIdentity?: LightExtensionCompilerBuildIdentity;
-  trustedCompileCache?: LightExtensionTrustedCompileCacheService;
   compileExecutor?: LightExtensionCompileExecutor;
   publishCompiledEntries?: PublishCompiledEntriesService;
 }
@@ -143,7 +96,6 @@ export interface LightExtensionRuntimeCompileServiceOptions {
 export interface LightExtensionPreparedSave {
   readonly candidate: LightExtensionPreparedSourceCandidate;
   readonly entryPlan: LightExtensionEntryReconcilePlan;
-  readonly compilePlan: CompilePlan;
   readonly compileResults: readonly LightExtensionCompileSuccessResult[];
   readonly compileEntries: LightExtensionSaveSourceResult['compile']['entries'];
   readonly diagnostics: readonly LightExtensionDiagnostic[];
@@ -162,11 +114,7 @@ export interface LightExtensionRemoteSnapshotCompileResult {
 export class LightExtensionRuntimeCompileService {
   private referenceService?: ReferenceRefreshService;
 
-  private compileCacheEnabled: boolean;
-
   private readonly compilerBuildIdentity: LightExtensionCompilerBuildIdentity;
-
-  private readonly trustedCompileCache: LightExtensionTrustedCompileCacheService;
 
   private readonly compileExecutor?: LightExtensionCompileExecutor;
 
@@ -182,35 +130,17 @@ export class LightExtensionRuntimeCompileService {
     private readonly metricsCollector?: LightExtensionCompileMetricsCollector,
     options: LightExtensionRuntimeCompileServiceOptions = {},
   ) {
-    this.compileCacheEnabled =
-      options.compileCacheEnabled ?? process.env.LIGHT_EXTENSION_COMPILE_CACHE_ENABLED !== 'false';
     this.compilerBuildIdentity =
       options.compilerBuildIdentity ||
       (typeof compilerBridge.getCompilerBuildIdentity === 'function'
         ? compilerBridge.getCompilerBuildIdentity()
         : LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY);
-    this.trustedCompileCache = options.trustedCompileCache || new LightExtensionTrustedCompileCacheService(db);
     this.compileExecutor = options.compileExecutor;
     this.publishCompiledEntries = options.publishCompiledEntries || PublishCompiledEntriesService.forDatabase(db);
   }
 
   useReferenceService(referenceService: ReferenceRefreshService): void {
     this.referenceService = referenceService;
-  }
-
-  setCompileCacheEnabled(enabled: boolean): void {
-    this.compileCacheEnabled = enabled;
-  }
-
-  isCompileCacheEnabled(): boolean {
-    return this.compileCacheEnabled;
-  }
-
-  async clearCompileCache(ctx: LightExtensionServiceContext = {}): Promise<void> {
-    await this.db.getRepository('lightExtensionCompileCache').destroy({
-      truncate: true,
-      transaction: ctx.transaction,
-    });
   }
 
   async saveSource(
@@ -304,24 +234,13 @@ export class LightExtensionRuntimeCompileService {
       entries: entryPlan.result.entries,
       reconcile: entryPlan.result,
     };
-    const compilePlan = createCompilePlan(
-      preparedEntries,
-      candidate.vscPreparedPush.candidate.changedPaths,
-      this.compilerBuildIdentity.compilerBuildId,
-      candidate.vscPreparedPush.candidate.changes.map((change) => ({
-        path: change.path,
-        operation: change.kind,
-      })),
-    );
     const readyInputs = prepareEntryCompileInputs(
       preparedEntries.entries,
       candidate.vscPreparedPush.candidate.files,
-      compilePlan,
       this.compilerBuildIdentity,
     );
     ctx.compileMetrics?.set('entryCount', preparedEntries.entries.length);
-    ctx.compileMetrics?.set('affectedEntryCount', compilePlan.metrics.affectedEntryCount);
-    recordDependencyPlanMetrics(compilePlan, ctx.compileMetrics);
+    ctx.compileMetrics?.set('affectedEntryCount', readyInputs.length);
     const compilePreparation = await this.prepareCompileResults(candidate.repo.id, readyInputs, ctx);
     const diagnostics = sortDiagnostics([
       ...preparedEntries.diagnostics,
@@ -339,13 +258,10 @@ export class LightExtensionRuntimeCompileService {
       });
     }
     const successfulResults = compilePreparation.results as LightExtensionCompileSuccessResult[];
-    const compileEntries = successfulResults.map((entry) =>
-      toSuccessfulCompileEntryResult(entry, compilePreparation.executions.get(entry.entryId) || 'compiled'),
-    );
+    const compileEntries = successfulResults.map(toSuccessfulCompileEntryResult);
     const prepared: LightExtensionPreparedSave = Object.freeze({
       candidate,
       entryPlan,
-      compilePlan,
       compileResults: Object.freeze(successfulResults.map((entry) => Object.freeze(entry))),
       compileEntries: Object.freeze(compileEntries),
       diagnostics: Object.freeze(diagnostics),
@@ -410,9 +326,6 @@ export class LightExtensionRuntimeCompileService {
     ctx: LightExtensionServiceContext,
   ): Promise<void> {
     for (const result of results) {
-      if (result.execution === 'reused') {
-        continue;
-      }
       await this.compilerBridge.recordPublishedRuntimeCompileAudit(
         {
           repoId: result.repoId,
@@ -436,98 +349,38 @@ export class LightExtensionRuntimeCompileService {
     readyInputs: PreparedEntryCompileInput[],
     ctx: LightExtensionServiceContext,
   ): Promise<PreparedCompileResults> {
-    const expectations = readyInputs.map((input) => ({
-      compileKey: input.compileKey,
-      filesHash: input.filesHash,
-      inputManifest: input.inputManifest,
-    }));
-    const cacheLookup = this.compileCacheEnabled
-      ? await this.trustedCompileCache.loadVerified(expectations)
-      : {
-          hits: new Map<string, TrustedCompileArtifact>(),
-          missingKeys: new Set<string>(),
-          corruptKeys: new Set<string>(),
-        };
-    const executions = new Map<string, 'compiled' | 'reused'>();
-    const results: Array<LightExtensionCompileResult | undefined> = new Array(readyInputs.length);
-    const compileJobs: Array<{ index: number; input: PreparedEntryCompileInput; job: LightExtensionCompileJob }> = [];
     const requestId = ctx.requestId || randomUUID();
     const correlationId = randomUUID();
-
-    readyInputs.forEach((input, index) => {
-      const legacyEntryNeedsCompile = Boolean(input.entry.artifactHash && !input.entry.compiledInputKey);
-      const cached = legacyEntryNeedsCompile ? undefined : cacheLookup.hits.get(input.compileKey);
-      if (cached) {
-        ctx.compileMetrics?.increment('compileCacheHitCount');
-        ctx.compileMetrics?.increment('reusedEntryCount');
-        executions.set(input.entry.id, 'reused');
-        results[index] = createCompileResultFromTrustedArtifact(input, cached, requestId, correlationId, index);
-        return;
-      }
-      if (cacheLookup.corruptKeys.has(input.compileKey)) {
-        ctx.compileMetrics?.increment('compileCacheCorruptCount');
-      }
-      ctx.compileMetrics?.increment('compileCacheMissCount');
-      const currentCacheMappingMissing =
-        cacheLookup.missingKeys.has(input.compileKey) && input.entry.compiledInputKey === input.compileKey;
-      const currentArtifact =
-        input.affected ||
-        !this.compileCacheEnabled ||
-        cacheLookup.corruptKeys.has(input.compileKey) ||
-        currentCacheMappingMissing
-          ? undefined
-          : buildTrustedArtifactFromCurrentEntry(input);
-      if (currentArtifact) {
-        ctx.compileMetrics?.increment('reusedEntryCount');
-        executions.set(input.entry.id, 'reused');
-        results[index] = createCompileResultFromTrustedArtifact(
-          input,
-          currentArtifact,
-          requestId,
-          correlationId,
-          index,
-        );
-        return;
-      }
-      ctx.compileMetrics?.increment('compiledEntryCount');
-      executions.set(input.entry.id, 'compiled');
-      compileJobs.push({
-        index,
-        input,
-        job: createCompileJob(input, {
-          repoId,
-          requestId,
-          correlationId,
-          ordinal: index,
-          compilerBuildIdentity: this.compilerBuildIdentity,
-        }),
-      });
-    });
+    const compileJobs = readyInputs.map((input, ordinal) => ({
+      input,
+      job: createCompileJob(input, {
+        repoId,
+        requestId,
+        correlationId,
+        ordinal,
+        compilerBuildIdentity: this.compilerBuildIdentity,
+      }),
+    }));
+    ctx.compileMetrics?.increment('compiledEntryCount', compileJobs.length);
 
     const compileExecutor = this.compileExecutor;
+    let results: LightExtensionCompileResult[];
     if (compileExecutor) {
-      const compiled = await Promise.all(compileJobs.map(({ job }) => compileExecutor.submitWithBackpressure(job)));
-      for (const [position, result] of compiled.entries()) {
-        const target = compileJobs[position];
-        results[target.index] = result;
-      }
+      results = await Promise.all(compileJobs.map(({ job }) => compileExecutor.submitWithBackpressure(job)));
     } else {
       // The non-worker compatibility path is intentionally serial so database-backed compile audit hooks remain safe
-      // on SQLite. Production Save uses the bounded Worker Pool for parallel cache misses.
-      for (const { index, job, input } of compileJobs) {
-        results[index] = this.compilerBridge
-          ? await this.compileEntryWithoutWorker(job, input, ctx)
-          : await executeLightExtensionCompileJob({ job, workerId: 0, attempt: 1, executingThreadId: 0 });
+      // on SQLite. Production compile paths use the bounded isolated worker.
+      results = [];
+      for (const { job, input } of compileJobs) {
+        results.push(
+          this.compilerBridge
+            ? await this.compileEntryWithoutWorker(job, input, ctx)
+            : await executeLightExtensionCompileJob({ job, workerId: 0, attempt: 1, executingThreadId: 0 }),
+        );
       }
     }
-    if (results.some((result) => !result)) {
-      throw new LightExtensionError('LIGHT_EXTENSION_SOURCE_ERROR', 'Compile result aggregation is incomplete');
-    }
-    const compileResults = results as LightExtensionCompileResult[];
-    recordDependencyGraphMetrics(compileResults, executions, ctx.compileMetrics);
     return {
-      results: compileResults,
-      executions,
+      results,
       compiledEntryCount: compileJobs.length,
     };
   }
@@ -569,16 +422,6 @@ export class LightExtensionRuntimeCompileService {
       entryPath: compiled.artifact.entryPath || job.entryPath,
       runtimeContract: job.inputManifest.runtimeContract,
     });
-    if (!compiled.dependencyGraph) {
-      throw new Error('RunJS compiler did not return a dependency graph for an accepted compile');
-    }
-    const dependency = buildRunJSEntryDependencyManifestFromGraph({
-      compilerBuildId: job.compilerBuildIdentity.compilerBuildId,
-      entryPath: job.entryPath,
-      files: job.files,
-      graph: compiled.dependencyGraph,
-    });
-    const persistDependencyManifest = isRunJSEntryDependencyManifestPersistable(dependency.manifest);
     return {
       ...compileResultIdentity(job),
       accepted: true,
@@ -586,12 +429,6 @@ export class LightExtensionRuntimeCompileService {
       artifactHash,
       runtimeCodeHash,
       diagnostics: compiled.diagnostics,
-      ...(persistDependencyManifest
-        ? {
-            dependencyManifest: dependency.manifest,
-            dependencyManifestHash: dependency.manifestHash,
-          }
-        : {}),
     };
   }
 
@@ -779,14 +616,7 @@ export class LightExtensionRuntimeCompileService {
       ? await ctx.compileMetrics.measureAsync('treePrepare', prepareEntries)
       : await prepareEntries();
 
-    return this.compilePreparedEntries(
-      candidate.repo.id,
-      candidate.commit.id,
-      prepared,
-      candidate.files,
-      ctx,
-      candidate.changedPaths,
-    );
+    return this.compilePreparedEntries(candidate.repo.id, candidate.commit.id, prepared, candidate.files, ctx);
   }
 
   private async compilePreparedEntries(
@@ -795,369 +625,66 @@ export class LightExtensionRuntimeCompileService {
     prepared: LightExtensionPreparedEntries,
     files: readonly RuntimeCompileSourceFile[],
     ctx: LightExtensionServiceContext,
-    changedPaths?: readonly string[],
   ): Promise<
     Pick<LightExtensionSaveSourceResult['compile'], 'status' | 'entries'> & {
       repo: LightExtensionSaveSourceResult['repo'];
       diagnostics: LightExtensionDiagnostic[];
     }
   > {
-    const compileEntries: LightExtensionSaveSourceResult['compile']['entries'] = [];
-    const buildPlan = () => createCompilePlan(prepared, changedPaths, this.compilerBuildIdentity.compilerBuildId);
-    const compilePlan = ctx.compileMetrics ? ctx.compileMetrics.measure('compilePlan', buildPlan) : buildPlan();
-    const readyInputs = prepareEntryCompileInputs(prepared.entries, files, compilePlan, this.compilerBuildIdentity);
-    const skipRuntimeDecisions = createSkipRuntimeDecisions(prepared.entries);
+    const readyInputs = prepareEntryCompileInputs(prepared.entries, files, this.compilerBuildIdentity);
     ctx.compileMetrics?.set('entryCount', prepared.entries.length);
-    ctx.compileMetrics?.set('affectedEntryCount', compilePlan.metrics.affectedEntryCount);
-    recordDependencyPlanMetrics(compilePlan, ctx.compileMetrics);
-    ctx.compileMetrics?.set('skippedEntryCount', skipRuntimeDecisions.length);
-    const trustedCache = this.compileCacheEnabled
-      ? await this.loadTrustedCompileCache(readyInputs, ctx.transaction, ctx.compileMetrics)
-      : { hits: new Map<string, TrustedCompileCacheHit>(), corruptKeys: new Set<string>() };
-    let compiledEntryCount = 0;
-
-    for (const input of readyInputs) {
-      const { entry } = input;
-      const legacyEntryNeedsCompile = Boolean(entry.artifactHash && !entry.compiledInputKey);
-      const cached = legacyEntryNeedsCompile ? undefined : trustedCache.hits.get(input.compileKey);
-      const decision = createCompileDecision(
-        input,
-        cached,
-        this.compileCacheEnabled,
-        trustedCache.corruptKeys.has(input.compileKey),
-      );
-      if (decision.decision === 'reuse' && cached) {
-        ctx.compileMetrics?.increment('compileCacheHitCount');
-        ctx.compileMetrics?.increment('reusedEntryCount');
-        const persistReuse = () =>
-          this.updateEntryRuntimePointer(
-            {
-              entry,
-              commitId,
-              compileKey: input.compileKey,
-              inputManifest: input.inputManifest,
-              artifact: cached,
-            },
-            ctx.transaction,
-          );
-        const persisted = ctx.compileMetrics
-          ? await ctx.compileMetrics.measureAsync('artifactPersist', persistReuse)
-          : await persistReuse();
-        compileEntries.push(buildSuccessfulCompileEntryResult(persisted, cached, input.inputManifest, 'reused'));
-        continue;
-      }
-
-      ctx.compileMetrics?.increment('compileCacheMissCount');
-      ctx.compileMetrics?.increment('compiledEntryCount');
-      compiledEntryCount += 1;
-      const compileEntry = () =>
-        this.compilerBridge.compileEntry(
-          {
-            repoId,
-            entryId: entry.id,
-            operation: 'runtimeCompile',
-            kind: entry.kind as LightExtensionKind,
-            entryName: entry.entryName,
-            entryPath: entry.entryPath,
-            runtimeVersion: input.inputManifest.runtimeVersion,
-            files: input.compileFiles,
-          },
-          {
-            ...ctx,
-            requestSource: ctx.requestSource || 'light-extension-runtime-compile',
-          },
-        );
-      const compiled = ctx.compileMetrics
-        ? await ctx.compileMetrics.measureAsync('compileEntries', compileEntry)
-        : await compileEntry();
-
-      if (!compiled.accepted) {
-        compileEntries.push({
-          entryId: entry.id,
-          entryName: entry.entryName,
-          kind: entry.kind,
-          entryPath: entry.entryPath,
-          status: 'failed',
-          diagnostics: compiled.diagnostics,
-          failureCode: compiled.failureCode || 'compile_failed',
-          execution: 'compiled',
-        });
-        continue;
-      }
-      if (!compiled.dependencyGraph) {
-        throw new Error('RunJS compiler did not return a dependency graph for an accepted compile');
-      }
-      const dependency = buildRunJSEntryDependencyManifestFromGraph({
-        compilerBuildId: input.inputManifest.compilerBuildId,
-        entryPath: input.inputManifest.entryPath,
-        files: input.compileFiles,
-        graph: compiled.dependencyGraph,
-      });
-      recordDependencyManifestMetrics(dependency.manifest, ctx.compileMetrics);
-      const persistDependencyManifest = isRunJSEntryDependencyManifestPersistable(dependency.manifest);
-
-      const persistArtifact = () =>
-        this.persistSuccessfulCompile(
-          {
-            entry,
-            commitId,
-            artifact: compiled.artifact,
-            surfaceStyle: compiled.surface.surfaceStyle,
-            diagnostics: compiled.diagnostics,
-            compileKey: input.compileKey,
-            filesHash: input.filesHash,
-            inputManifest: input.inputManifest,
-            dependencyManifest: persistDependencyManifest ? dependency.manifest : undefined,
-            dependencyManifestHash: persistDependencyManifest ? dependency.manifestHash : undefined,
-          },
-          ctx.transaction,
-          ctx.compileMetrics,
-        );
-      const persisted = ctx.compileMetrics
-        ? await ctx.compileMetrics.measureAsync('artifactPersist', persistArtifact)
-        : await persistArtifact();
-      compileEntries.push({
-        entryId: persisted.id,
-        entryName: persisted.entryName,
-        kind: persisted.kind,
-        entryPath: persisted.entryPath,
-        status: 'success',
-        execution: 'compiled',
-        diagnostics: compiled.diagnostics,
-        artifact: {
-          version: compiled.artifact.version,
-          entryPath: compiled.artifact.entryPath,
-          filesHash: compiled.artifact.filesHash,
-          metadata: normalizeRecord(compiled.artifact.metadata),
-        },
-      });
-    }
-
-    const failedCount = compileEntries.filter((entry) => entry.status === 'failed').length;
+    ctx.compileMetrics?.set('affectedEntryCount', readyInputs.length);
+    ctx.compileMetrics?.set('skippedEntryCount', prepared.entries.length - readyInputs.length);
+    const compilePreparation = await this.prepareCompileResults(repoId, readyInputs, ctx);
     const diagnostics = sortDiagnostics([
       ...prepared.diagnostics,
-      ...compileEntries.flatMap((entry) => entry.diagnostics),
+      ...compilePreparation.results.flatMap((entry) => entry.diagnostics),
     ]);
-    if (failedCount > 0) {
+    const failures = compilePreparation.results.filter((entry) => !entry.accepted);
+    if (failures.length > 0) {
       throw new LightExtensionError('LIGHT_EXTENSION_VALIDATION_FAILED', 'Light extension source cannot be compiled', {
         status: 422,
         details: {
           repoId,
           commitId,
           diagnostics,
-          entries: compileEntries,
+          entries: failures.map(toFailedCompileEntryResult),
         },
       });
     }
+    const successfulResults = compilePreparation.results as LightExtensionCompileSuccessResult[];
+    await this.publishCompiledEntries.publishCompiledEntries(
+      {
+        commitId,
+        results: successfulResults,
+      },
+      ctx.transaction,
+    );
+    await this.recordPublishedCompileAudits(successfulResults, ctx);
+    const compileEntries = successfulResults.map(toSuccessfulCompileEntryResult);
     await this.db.getRepository('lightExtensionRepos').update({
       filterByTk: repoId,
       values: {
         healthStatus: 'ready',
-        ...(compiledEntryCount > 0 ? { lastCompiledAt: new Date() } : {}),
+        ...(compilePreparation.compiledEntryCount > 0 ? { lastCompiledAt: new Date() } : {}),
       },
       transaction: ctx.transaction,
     });
 
-    const repo = await this.db.getRepository('lightExtensionRepos').findOne({
-      filterByTk: repoId,
-      transaction: ctx.transaction,
-    });
+    const [repo, entryModels] = await Promise.all([
+      this.db.getRepository('lightExtensionRepos').findOne({
+        filterByTk: repoId,
+        transaction: ctx.transaction,
+      }),
+      this.db.getRepository('lightExtensionEntries').find({ filter: { repoId }, transaction: ctx.transaction }),
+    ]);
 
     return {
-      repo: withEntrySummary(repo ? repoFromModelLike(repo) : prepared.repo, prepared.entries),
+      repo: withEntrySummary(repo ? repoFromModelLike(repo) : prepared.repo, entryModels.map(entryFromModel)),
       status: compileEntries.length === 0 ? 'skipped' : 'success',
       entries: compileEntries,
       diagnostics,
     };
-  }
-
-  private async persistSuccessfulCompile(
-    input: {
-      entry: LightExtensionEntryRecord;
-      commitId: string;
-      artifact: RunJSRuntimeArtifact;
-      surfaceStyle: string;
-      diagnostics: LightExtensionDiagnostic[];
-      compileKey?: string;
-      filesHash?: string;
-      inputManifest?: CompileInputManifest;
-      dependencyManifest?: RunJSEntryDependencyManifestV1;
-      dependencyManifestHash?: string;
-    },
-    transaction?: Transaction,
-    compileMetrics?: LightExtensionServiceContext['compileMetrics'],
-  ): Promise<LightExtensionEntryRecord> {
-    const compiledAt = new Date();
-    const runtimeCodeHash = buildRunJSRuntimeCodeHash(input.artifact.code);
-    const entryPath = input.artifact.entryPath || input.entry.entryPath;
-    const artifactHash = buildRunJSArtifactHash({
-      code: input.artifact.code,
-      sourceMap: input.artifact.sourceMap,
-      version: input.artifact.version,
-      entryPath,
-      runtimeContract: LIGHT_EXTENSION_RUNTIME_ARTIFACT_CONTRACT,
-    });
-    await this.db.getRepository('lightExtensionRuntimeArtifacts').updateOrCreate({
-      filterKeys: ['artifactHash'],
-      values: {
-        artifactHash,
-        runtimeCodeHash,
-        code: input.artifact.code,
-        sourceMap: input.artifact.sourceMap || null,
-        version: input.artifact.version,
-        entryPath,
-        runtimeContract: LIGHT_EXTENSION_RUNTIME_ARTIFACT_CONTRACT,
-        byteSize:
-          Buffer.byteLength(input.artifact.code, 'utf8') + Buffer.byteLength(input.artifact.sourceMap || '', 'utf8'),
-      },
-      transaction,
-    });
-    if (input.compileKey && input.filesHash && input.inputManifest) {
-      const existing = await this.db.getRepository('lightExtensionCompileCache').findOne({
-        filterByTk: input.compileKey,
-        transaction,
-      });
-      if (existing && existing.get('artifactHash') !== artifactHash) {
-        compileMetrics?.increment('compileCacheCorruptCount');
-      }
-      await this.db.getRepository('lightExtensionCompileCache').updateOrCreate({
-        filterKeys: ['compileKey'],
-        values: {
-          compileKey: input.compileKey,
-          artifactHash,
-          compilerBuildId: input.inputManifest.compilerBuildId,
-          runtimeContract: input.inputManifest.runtimeContract,
-          filesHash: input.filesHash,
-          artifactFilesHash: input.artifact.filesHash || '',
-          inputManifest: input.inputManifest,
-          diagnostics: sortDiagnostics(input.diagnostics),
-          compiledAt,
-          dependencyManifest: input.dependencyManifest || null,
-          dependencyManifestHash: input.dependencyManifestHash || null,
-        },
-        transaction,
-      });
-    }
-
-    return this.updateEntryRuntimePointer(
-      {
-        entry: input.entry,
-        commitId: input.commitId,
-        compileKey: input.compileKey || null,
-        inputManifest:
-          input.inputManifest ||
-          buildFallbackInputManifest(
-            input.entry,
-            input.artifact.version,
-            input.surfaceStyle,
-            this.compilerBuildIdentity,
-          ),
-        artifact: {
-          artifactHash,
-          runtimeCodeHash,
-          code: input.artifact.code,
-          sourceMap: input.artifact.sourceMap,
-          version: input.artifact.version,
-          artifactFilesHash: input.artifact.filesHash || '',
-          diagnostics: input.diagnostics,
-          compiledAt,
-          dependencyManifest: input.dependencyManifest,
-          dependencyManifestHash: input.dependencyManifestHash,
-        },
-      },
-      transaction,
-    );
-  }
-
-  private async loadTrustedCompileCache(
-    inputs: PreparedEntryCompileInput[],
-    transaction?: Transaction,
-    compileMetrics?: LightExtensionServiceContext['compileMetrics'],
-  ): Promise<TrustedCompileCacheLookup> {
-    if (inputs.length === 0) {
-      return { hits: new Map(), corruptKeys: new Set() };
-    }
-    const compileKeys = [...new Set(inputs.map((input) => input.compileKey))];
-    const cacheRows = await this.db.getRepository('lightExtensionCompileCache').find({
-      filter: { compileKey: { $in: compileKeys } },
-      transaction,
-    });
-    const cacheByKey = new Map(cacheRows.map((row: Model) => [String(row.get('compileKey')), row]));
-    const artifactHashes = [
-      ...new Set(
-        cacheRows
-          .map((row: Model) => row.get('artifactHash'))
-          .filter((value: unknown): value is string => typeof value === 'string' && value.length > 0),
-      ),
-    ];
-    const artifactRows = artifactHashes.length
-      ? await this.db.getRepository('lightExtensionRuntimeArtifacts').find({
-          filter: { artifactHash: { $in: artifactHashes } },
-          transaction,
-        })
-      : [];
-    const artifactByHash = new Map(artifactRows.map((row: Model) => [String(row.get('artifactHash')), row]));
-    const trusted = new Map<string, TrustedCompileCacheHit>();
-    const corruptKeys = new Set<string>();
-    for (const input of inputs) {
-      const cacheRow = cacheByKey.get(input.compileKey);
-      if (!cacheRow) {
-        continue;
-      }
-      const artifactHash = cacheRow.get('artifactHash');
-      const hit = validateTrustedCompileCache(
-        input,
-        cacheRow,
-        typeof artifactHash === 'string' ? artifactByHash.get(artifactHash) : undefined,
-      );
-      if (hit) {
-        trusted.set(input.compileKey, hit);
-      } else {
-        corruptKeys.add(input.compileKey);
-        compileMetrics?.increment('compileCacheCorruptCount');
-      }
-    }
-    return { hits: trusted, corruptKeys };
-  }
-
-  private async updateEntryRuntimePointer(
-    input: {
-      entry: LightExtensionEntryRecord;
-      commitId: string;
-      compileKey: string | null;
-      inputManifest: CompileInputManifest;
-      artifact: TrustedCompileCacheHit;
-    },
-    transaction?: Transaction,
-  ): Promise<LightExtensionEntryRecord> {
-    const entry = await this.db.getRepository('lightExtensionEntries').findOne({
-      filterByTk: input.entry.id,
-      transaction,
-    });
-    if (!entry) {
-      return input.entry;
-    }
-    const runtimeArtifact = buildEntryRuntimeArtifact(input.entry, input.inputManifest, input.artifact);
-    await entry.update(
-      {
-        compiledCommitId: input.commitId,
-        compiledInputKey: input.compileKey,
-        compilerBuildId: input.inputManifest.compilerBuildId,
-        runtimeArtifact,
-        runtimeVersion: input.artifact.version,
-        surfaceStyle: input.inputManifest.surfaceStyle,
-        runtimeCodeHash: input.artifact.runtimeCodeHash,
-        artifactHash: input.artifact.artifactHash,
-        filesHash: input.artifact.artifactFilesHash,
-        compiledAt: input.artifact.compiledAt,
-        dependencyManifest: input.artifact.dependencyManifest || null,
-        dependencyManifestHash: input.artifact.dependencyManifestHash || null,
-        diagnostics: sortDiagnostics([...input.entry.diagnostics, ...input.artifact.diagnostics]),
-        healthStatus: 'ready',
-      },
-      { transaction },
-    );
-    return entryFromModel(entry);
   }
 }
 
@@ -1230,150 +757,8 @@ function compileResultIdentity(job: LightExtensionCompileJob) {
   };
 }
 
-function createCompileResultFromTrustedArtifact(
-  input: PreparedEntryCompileInput,
-  artifact: TrustedCompileArtifact,
-  requestId: string,
-  correlationId: string,
-  ordinal: number,
-): LightExtensionCompileSuccessResult {
-  if (!isSupportedKind(input.entry.kind)) {
-    throw new TypeError(`Unsupported light-extension kind: ${input.entry.kind}`);
-  }
-  return {
-    jobId: `cache:${input.compileKey}`,
-    requestId,
-    correlationId,
-    repoId: input.entry.repoId,
-    entryId: input.entry.id,
-    entryName: input.entry.entryName,
-    ordinal,
-    compileKey: input.compileKey,
-    filesHash: input.filesHash,
-    kind: input.entry.kind,
-    entryPath: input.entry.entryPath,
-    compilerBuildId: input.inputManifest.compilerBuildId,
-    inputManifest: input.inputManifest,
-    diagnostics: artifact.diagnostics,
-    observation: {
-      workerId: 0,
-      threadId: 0,
-      attempt: 0,
-      queueDurationMs: 0,
-      runDurationMs: 0,
-    },
-    accepted: true,
-    execution: 'reused',
-    compiledAt: artifact.compiledAt.toISOString(),
-    artifact: {
-      code: artifact.code,
-      ...(artifact.sourceMap ? { sourceMap: artifact.sourceMap } : {}),
-      version: artifact.version,
-      entryPath: artifact.entryPath,
-      filesHash: artifact.artifactFilesHash,
-      diagnostics: artifact.diagnostics,
-    },
-    artifactHash: artifact.artifactHash,
-    runtimeCodeHash: artifact.runtimeCodeHash,
-    ...(artifact.dependencyManifest ? { dependencyManifest: artifact.dependencyManifest } : {}),
-    ...(artifact.dependencyManifestHash ? { dependencyManifestHash: artifact.dependencyManifestHash } : {}),
-  };
-}
-
-function buildTrustedArtifactFromCurrentEntry(input: PreparedEntryCompileInput): TrustedCompileArtifact | undefined {
-  const entry = input.entry;
-  const artifact = entry.runtimeArtifact;
-  const compiledAt = entry.compiledAt ? new Date(entry.compiledAt) : undefined;
-  const dependency = validateRunJSEntryDependencyManifest({
-    value: entry.dependencyManifest,
-    expectedCompilerBuildId: input.inputManifest.compilerBuildId,
-    expectedEntryPath: input.inputManifest.entryPath,
-    expectedManifestHash: entry.dependencyManifestHash || undefined,
-  });
-  if (
-    !artifact ||
-    !entry.artifactHash ||
-    !entry.runtimeCodeHash ||
-    entry.compilerBuildId !== input.inputManifest.compilerBuildId ||
-    artifact.version !== input.inputManifest.runtimeVersion ||
-    artifact.entryPath !== input.inputManifest.entryPath ||
-    !artifact.filesHash ||
-    !compiledAt ||
-    !Number.isFinite(compiledAt.getTime()) ||
-    !dependency.valid ||
-    !dependencyManifestMatchesCompileInput(dependency.manifest, input.inputManifest.files) ||
-    buildRunJSRuntimeCodeHash(artifact.code) !== entry.runtimeCodeHash ||
-    buildRunJSArtifactHash({
-      code: artifact.code,
-      sourceMap: artifact.sourceMap,
-      version: artifact.version,
-      entryPath: artifact.entryPath,
-      runtimeContract: input.inputManifest.runtimeContract,
-    }) !== entry.artifactHash
-  ) {
-    return undefined;
-  }
-  return {
-    compileKey: input.compileKey,
-    filesHash: input.filesHash,
-    inputManifest: input.inputManifest,
-    artifactHash: entry.artifactHash,
-    runtimeCodeHash: entry.runtimeCodeHash,
-    code: artifact.code,
-    ...(artifact.sourceMap ? { sourceMap: artifact.sourceMap } : {}),
-    version: artifact.version,
-    entryPath: artifact.entryPath,
-    artifactFilesHash: artifact.filesHash,
-    diagnostics: sortDiagnostics(artifact.diagnostics || entry.diagnostics),
-    compiledAt,
-    dependencyManifest: dependency.manifest,
-    dependencyManifestHash: dependency.manifestHash,
-  };
-}
-
-function dependencyManifestMatchesCompileInput(
-  manifest: RunJSEntryDependencyManifestV1,
-  files: CompileInputManifest['files'],
-): boolean {
-  const hashes = new Map(files.map((file) => [file.path, file.blobHash]));
-  return [...manifest.runtime.files, ...manifest.types.files].every((file) => hashes.get(file.path) === file.blobHash);
-}
-
-function recordDependencyPlanMetrics(plan: CompilePlan, metrics: LightExtensionServiceContext['compileMetrics']): void {
-  metrics?.set('dependencyPlanPreciseHitCount', plan.metrics.preciseHitEntryCount);
-  metrics?.set('dependencyPlanConservativeFallbackCount', plan.metrics.conservativeFallbackEntryCount);
-  metrics?.set('dependencyManifestVersionMismatchCount', plan.metrics.manifestVersionMismatchEntryCount);
-}
-
-function recordDependencyGraphMetrics(
-  results: readonly LightExtensionCompileResult[],
-  executions: ReadonlyMap<string, 'compiled' | 'reused'>,
-  metrics: LightExtensionServiceContext['compileMetrics'],
-): void {
-  if (!metrics) {
-    return;
-  }
-  for (const result of results) {
-    if (!result.accepted || executions.get(result.entryId) !== 'compiled' || !result.dependencyManifest) {
-      continue;
-    }
-    recordDependencyManifestMetrics(result.dependencyManifest, metrics);
-  }
-}
-
-function recordDependencyManifestMetrics(
-  manifest: RunJSEntryDependencyManifestV1,
-  metrics: LightExtensionServiceContext['compileMetrics'],
-): void {
-  metrics?.increment('dependencyGraphRuntimeFileCount', manifest.runtime.files.length);
-  metrics?.increment('dependencyGraphTypeFileCount', manifest.types.files.length);
-  metrics?.increment('dependencyGraphUnresolvedCount', manifest.unresolved.length);
-  metrics?.increment('dependencyGraphByteSize', Buffer.byteLength(stableSerialize(manifest), 'utf8'));
-}
-
 function toSuccessfulCompileEntryResult(
   result: LightExtensionCompileSuccessResult,
-  execution: 'compiled' | 'reused',
 ): LightExtensionSaveSourceResult['compile']['entries'][number] {
   return {
     entryId: result.entryId,
@@ -1381,7 +766,7 @@ function toSuccessfulCompileEntryResult(
     kind: result.kind,
     entryPath: result.entryPath,
     status: 'success',
-    execution,
+    execution: 'compiled',
     diagnostics: result.diagnostics,
     artifact: {
       version: result.artifact.version,
@@ -1407,65 +792,11 @@ function toFailedCompileEntryResult(
   };
 }
 
-function createCompilePlan(
-  prepared: LightExtensionPreparedEntries,
-  changedPaths: readonly string[] | undefined,
-  compilerBuildId: string = LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY.compilerBuildId,
-  pathChanges?: readonly AffectedEntryPathChange[],
-): CompilePlan {
-  const previousEntries = prepared.reconcile.changes
-    .map((change) => change.previousEntry)
-    .filter((entry): entry is LightExtensionEntryRecord => Boolean(entry) && entry.healthStatus === 'ready')
-    .map(toEntryPlanSnapshot);
-  const candidateEntries = prepared.entries
-    .filter((entry) => entry.healthStatus === 'ready' && isSupportedKind(entry.kind))
-    .map(toEntryPlanSnapshot);
-  return createAffectedEntryCompilePlan({
-    changedPaths: changedPaths || ['__light_extension_full_runtime_compile__'],
-    pathChanges,
-    previousEntries,
-    candidateEntries,
-    compilerBuildId,
-  });
-}
-
-function toEntryPlanSnapshot(entry: LightExtensionEntryRecord): EntryPlanSnapshot {
-  if (!isSupportedKind(entry.kind)) {
-    throw new TypeError(`Unsupported light-extension kind: ${entry.kind}`);
-  }
-  return {
-    id: entry.id,
-    target: 'client',
-    kind: entry.kind,
-    entryName: entry.entryName,
-    entryPath: entry.entryPath,
-    descriptorPath: entry.descriptorPath,
-    healthStatus: entry.healthStatus,
-    settingsSchemaHash: entry.settingsSchemaHash,
-    settingsDefaultsHash: entry.settingsDefaultsHash,
-    metadataFingerprint: sha256Hex(
-      stableSerialize({
-        title: entry.title,
-        description: entry.description,
-        category: entry.category,
-        icon: entry.icon,
-        tags: entry.tags,
-        sort: entry.sort,
-      }),
-    ),
-    compilerBuildId: entry.compilerBuildId,
-    dependencyManifest: entry.dependencyManifest,
-    dependencyManifestHash: entry.dependencyManifestHash,
-  };
-}
-
 function prepareEntryCompileInputs(
   entries: LightExtensionEntryRecord[],
   files: readonly RuntimeCompileSourceFile[],
-  compilePlan: CompilePlan,
   compilerBuildIdentity: LightExtensionCompilerBuildIdentity,
 ): PreparedEntryCompileInput[] {
-  const affectedEntryIds = new Set(compilePlan.compileCandidates.map((entry) => entry.id).filter(Boolean));
   return entries
     .filter((entry) => entry.healthStatus === 'ready' && isSupportedKind(entry.kind))
     .map((entry) => {
@@ -1479,203 +810,8 @@ function prepareEntryCompileInputs(
         ...compileKey,
         entry,
         compileFiles: getEntryCompileFiles(files, entry),
-        affected: affectedEntryIds.has(entry.id),
       };
     });
-}
-
-function createCompileDecision(
-  input: PreparedEntryCompileInput,
-  cached: TrustedCompileCacheHit | undefined,
-  cacheEnabled: boolean,
-  cacheCorrupt: boolean,
-): CompileDecision {
-  return {
-    entryId: input.entry.id,
-    compileKey: input.compileKey,
-    filesHash: input.filesHash,
-    inputManifest: input.inputManifest,
-    affected: input.affected,
-    decision: cached ? 'reuse' : 'compile',
-    reason: cached ? 'cache-hit' : !cacheEnabled ? 'cache-disabled' : cacheCorrupt ? 'cache-corrupt' : 'cache-miss',
-  };
-}
-
-function createSkipRuntimeDecisions(entries: LightExtensionEntryRecord[]): CompileDecision[] {
-  return entries
-    .filter((entry) => entry.healthStatus !== 'ready' || !isSupportedKind(entry.kind))
-    .map((entry) => ({
-      entryId: entry.id,
-      decision: 'skip-runtime',
-      affected: false,
-      reason: 'runtime-unavailable',
-    }));
-}
-
-function validateTrustedCompileCache(
-  input: PreparedEntryCompileInput,
-  cacheRow: Model,
-  artifactRow: Model | undefined,
-): TrustedCompileCacheHit | undefined {
-  if (!artifactRow) {
-    return undefined;
-  }
-  const artifactHash = stringValue(cacheRow.get('artifactHash'));
-  const code = stringValue(artifactRow.get('code'));
-  const sourceMap = nullableString(artifactRow.get('sourceMap')) || undefined;
-  const version = stringValue(artifactRow.get('version'));
-  const entryPath = stringValue(artifactRow.get('entryPath'));
-  const runtimeContract = stringValue(artifactRow.get('runtimeContract'));
-  const runtimeCodeHash = stringValue(artifactRow.get('runtimeCodeHash'));
-  const artifactFilesHash = stringValue(cacheRow.get('artifactFilesHash'));
-  const compiledAt = dateValue(cacheRow.get('compiledAt'));
-  const inputManifest = cacheRow.get('inputManifest');
-  const dependencyManifestHash = nullableString(cacheRow.get('dependencyManifestHash')) || undefined;
-  const dependencyValidation = validateRunJSEntryDependencyManifest({
-    value: cacheRow.get('dependencyManifest'),
-    expectedCompilerBuildId: input.inputManifest.compilerBuildId,
-    expectedEntryPath: input.inputManifest.entryPath,
-    expectedManifestHash: dependencyManifestHash,
-  });
-  const dependencyManifest =
-    dependencyValidation.valid &&
-    dependencyManifestMatchesCompileInput(dependencyValidation.manifest, input.inputManifest.files)
-      ? dependencyValidation.manifest
-      : undefined;
-  if (
-    cacheRow.get('compileKey') !== input.compileKey ||
-    cacheRow.get('compilerBuildId') !== input.inputManifest.compilerBuildId ||
-    cacheRow.get('runtimeContract') !== input.inputManifest.runtimeContract ||
-    cacheRow.get('filesHash') !== input.filesHash ||
-    stableSerialize(inputManifest) !== stableSerialize(input.inputManifest) ||
-    !artifactHash ||
-    artifactRow.get('artifactHash') !== artifactHash ||
-    !code ||
-    !version ||
-    version !== input.inputManifest.runtimeVersion ||
-    entryPath !== input.inputManifest.entryPath ||
-    runtimeContract !== input.inputManifest.runtimeContract ||
-    !runtimeCodeHash ||
-    runtimeCodeHash !== buildRunJSRuntimeCodeHash(code) ||
-    !artifactFilesHash ||
-    !compiledAt
-  ) {
-    return undefined;
-  }
-  const expectedArtifactHash = buildRunJSArtifactHash({
-    code,
-    sourceMap,
-    version,
-    entryPath,
-    runtimeContract,
-  });
-  if (expectedArtifactHash !== artifactHash) {
-    return undefined;
-  }
-  const diagnostics = normalizeDiagnostics(cacheRow.get('diagnostics'));
-  if (!diagnostics) {
-    return undefined;
-  }
-  return {
-    artifactHash,
-    runtimeCodeHash,
-    code,
-    sourceMap,
-    version,
-    artifactFilesHash,
-    diagnostics,
-    compiledAt,
-    dependencyManifest,
-    dependencyManifestHash: dependencyManifest ? dependencyValidation.manifestHash : undefined,
-  };
-}
-
-function buildSuccessfulCompileEntryResult(
-  entry: LightExtensionEntryRecord,
-  artifact: TrustedCompileCacheHit,
-  manifest: CompileInputManifest,
-  execution: 'compiled' | 'reused',
-): LightExtensionSaveSourceResult['compile']['entries'][number] {
-  return {
-    entryId: entry.id,
-    entryName: entry.entryName,
-    kind: entry.kind,
-    entryPath: entry.entryPath,
-    status: 'success',
-    execution,
-    diagnostics: artifact.diagnostics,
-    artifact: {
-      version: artifact.version,
-      entryPath: manifest.entryPath,
-      filesHash: artifact.artifactFilesHash,
-      metadata: buildEntryRuntimeMetadata(entry, manifest, artifact),
-    },
-  };
-}
-
-function buildEntryRuntimeArtifact(
-  entry: LightExtensionEntryRecord,
-  manifest: CompileInputManifest,
-  artifact: TrustedCompileCacheHit,
-): RunJSRuntimeArtifact {
-  return {
-    code: artifact.code,
-    sourceMap: artifact.sourceMap,
-    version: artifact.version,
-    entryPath: manifest.entryPath,
-    filesHash: artifact.artifactFilesHash,
-    diagnostics: artifact.diagnostics,
-    metadata: buildEntryRuntimeMetadata(entry, manifest, artifact),
-  };
-}
-
-function buildEntryRuntimeMetadata(
-  entry: LightExtensionEntryRecord,
-  manifest: CompileInputManifest,
-  artifact: Pick<TrustedCompileCacheHit, 'artifactHash' | 'runtimeCodeHash'>,
-): Record<string, unknown> {
-  const surface = LIGHT_EXTENSION_AUTHORING_SURFACES[manifest.kind];
-  return {
-    entry: manifest.entryPath,
-    runtimeVersion: manifest.runtimeVersion,
-    target: 'client',
-    repoId: entry.repoId,
-    entryId: entry.id,
-    kind: entry.kind,
-    entryName: entry.entryName,
-    modelUse: manifest.modelUse,
-    surface: surface.surface,
-    surfaceStyle: manifest.surfaceStyle,
-    compilerSurfaceStyle: manifest.compilerSurfaceStyle,
-    runtimeCodeHash: artifact.runtimeCodeHash,
-    artifactHash: artifact.artifactHash,
-    runtimeContract: manifest.runtimeContract,
-    compilerBuildId: manifest.compilerBuildId,
-  };
-}
-
-function buildFallbackInputManifest(
-  entry: LightExtensionEntryRecord,
-  runtimeVersion: string,
-  surfaceStyle: string,
-  compilerBuildIdentity: LightExtensionCompilerBuildIdentity,
-): CompileInputManifest {
-  if (!isSupportedKind(entry.kind)) {
-    throw new TypeError(`Unsupported light-extension kind: ${entry.kind}`);
-  }
-  const surface = LIGHT_EXTENSION_AUTHORING_SURFACES[entry.kind];
-  return {
-    compilerBuildId: compilerBuildIdentity.compilerBuildId,
-    runtimeContract: LIGHT_EXTENSION_RUNTIME_ARTIFACT_CONTRACT,
-    target: 'client',
-    kind: entry.kind,
-    entryPath: entry.entryPath,
-    runtimeVersion,
-    surfaceStyle,
-    compilerSurfaceStyle: surface.compilerSurfaceStyle,
-    modelUse: surface.modelUse,
-    files: [],
-  };
 }
 
 function getEntryCompileFiles(files: readonly RuntimeCompileSourceFile[], entry: LightExtensionEntryRecord) {
@@ -1704,35 +840,6 @@ function getEntryRootPath(entryPath: string): string {
 
 function isSupportedKind(kind: string): kind is LightExtensionKind {
   return (LIGHT_EXTENSION_SUPPORTED_KINDS as readonly string[]).includes(kind);
-}
-
-function stringValue(value: unknown): string {
-  return typeof value === 'string' ? value : '';
-}
-
-function dateValue(value: unknown): Date | undefined {
-  if (value instanceof Date && Number.isFinite(value.getTime())) {
-    return value;
-  }
-  if (typeof value === 'string') {
-    const parsed = new Date(value);
-    return Number.isFinite(parsed.getTime()) ? parsed : undefined;
-  }
-  return undefined;
-}
-
-function normalizeDiagnostics(value: unknown): LightExtensionDiagnostic[] | undefined {
-  if (!Array.isArray(value)) {
-    return undefined;
-  }
-  const diagnostics = value.filter(
-    (item): item is LightExtensionDiagnostic =>
-      Boolean(item) &&
-      typeof item === 'object' &&
-      typeof (item as { code?: unknown }).code === 'string' &&
-      ['error', 'warning'].includes(String((item as { severity?: unknown }).severity)),
-  );
-  return diagnostics.length === value.length ? sortDiagnostics(diagnostics) : undefined;
 }
 
 function normalizeRecord(value: unknown): Record<string, unknown> | undefined {
