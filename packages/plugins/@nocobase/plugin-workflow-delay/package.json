@@ -6,7 +6,7 @@
   "description": "Could be used in workflow parallel branch for waiting other branches.",
   "description.ru-RU": "Может использоваться в параллельных ветках рабочего процесса для ожидания завершения других веток.",
   "description.zh-CN": "可用于工作流并行分支中等待其他分支执行完成。",
-  "version": "2.2.0-beta.10",
+  "version": "2.2.0-beta.15",
   "license": "Apache-2.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/workflow-delay",
@@ -20,8 +20,9 @@
   },
   "peerDependencies": {
     "@nocobase/client": "2.x",
+    "@nocobase/client-v2": "2.x",
     "@nocobase/database": "2.x",
-    "@nocobase/plugin-workflow": ">=0.17.0-alpha.3",
+    "@nocobase/plugin-workflow": "2.x",
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x"
   },

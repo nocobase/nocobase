@@ -704,7 +704,10 @@ export default class Dispatcher {
       return processor;
     };
 
-    const lock = await this.plugin.app.lockManager.tryAcquire(getExecutionLockKey(execution.id), 60_000);
+    const lockManager = this.plugin.app.lockManager as typeof this.plugin.app.lockManager & {
+      tryAcquire(key: string, timeout?: number): ReturnType<typeof this.plugin.app.lockManager.tryAcquire>;
+    };
+    const lock = await lockManager.tryAcquire(getExecutionLockKey(execution.id), 60_000);
     try {
       return await lock.runExclusive(run, 60_000);
     } catch (error) {

@@ -86,6 +86,39 @@ API_BASE_PATH=/api/
 
 ### API_BASE_URL
 
+Die Basis-URL, die das Frontend für den Zugriff auf die NocoBase-API verwendet. Standardmäßig leer, was bedeutet, dass `${APP_PUBLIC_PATH}api/` derselben Origin verwendet wird.
+
+```bash
+API_BASE_URL=
+```
+
+Setzen Sie diesen Wert nur auf die vollständige API-Adresse, wenn Seiten und API-Dienst unterschiedliche Origins haben (abweichendes Protokoll, Domain oder Port):
+
+```bash
+API_BASE_URL=https://api.example.com/api/
+```
+
+:::warning{title="Hinweise zu ursprungsübergreifenden Bereitstellungen"}
+NocoBase verwendet Cookies, um den Anmeldestatus und den Zugriff auf [stabile Datei-URLs](../../file-manager/stable-url.md) zu autorisieren. Wenn `API_BASE_URL` auf eine andere Origin als die Seiten zeigt:
+
+- Der Ursprung der Seiten muss zu [`CORS_ORIGIN_WHITELIST`](#cors_origin_whitelist) hinzugefügt werden. Andernfalls ignoriert der Browser `Set-Cookie` in API-Antworten, das Anmelde-Cookie wird nicht gespeichert und Cookie-abhängige Funktionen wie Dateivorschau und Download schlagen mit `403` fehl.
+- Cookies werden pro `hostname` gespeichert. Wenn Seiten und API vollständig unterschiedliche Domains verwenden, senden Aufrufe stabiler `/files/`-URLs über die Seitendomain nicht das Anmelde-Cookie mit, das unter der API-Domain gespeichert wurde. Dadurch schlägt der Dateizugriff weiterhin fehl.
+
+Es ist empfehlenswert, Seiten und API per Reverse-Proxy unter derselben Origin bereitzustellen und `API_BASE_URL` leer zu lassen.
+:::
+
+### CORS_ORIGIN_WHITELIST
+
+Whitelist von Origins, die ursprungsübergreifend mit Anmeldeinformationen (Cookies) auf die API zugreifen dürfen. Mehrere Origins werden durch Kommas getrennt. Standardmäßig leer.
+
+```bash
+CORS_ORIGIN_WHITELIST=https://www.example.com,https://admin.example.com
+```
+
+- Wenn nichts konfiguriert ist, gelten nur Requests derselben Origin als vertrauenswürdig. Ursprungsübergreifende Requests können die API weiterhin anonym aufrufen, der Browser darf dafür jedoch keine Cookies lesen oder schreiben.
+- Wenn konfiguriert, erhalten Origins in der Whitelist einen exakt zurückgegebenen `Access-Control-Allow-Origin`-Header sowie `Access-Control-Allow-Credentials: true`, sodass der Browser bei ursprungsübergreifenden Requests Anmelde-Cookies senden und speichern kann.
+- Die Anmelde-API prüft `Origin` und `Referer` der Anfrage. Ursprungsübergreifende Anmelde-Requests von Origins außerhalb der Whitelist werden mit `403` abgelehnt.
+
 ### CLUSTER_MODE
 
 > `v1.6.0+`
@@ -358,7 +391,7 @@ SERVER_REQUEST_WHITELIST=api.example.com,*.trusted.com,10.0.0.0/8,127.0.0.1
 
 **Nicht konfiguriert**: Alle ausgehenden `http` / `https`-Anfragen bleiben aus Kompatibilitätsgründen erlaubt. Wenn das Ziel jedoch eine Loopback-, private, link-local- oder Metadata-Adresse ist oder eine Domain auf eine solche Adresse auflöst, schreibt der Server eine Warnung ins Log.
 
-**Konfiguriert**: Nur Anfragen, deren Host einem Whitelist-Eintrag entspricht, sind erlaubt; nicht übereinstimmende Anfragen führen zu einem Fehler. Zukünftige Versionen können das Standardverhalten schrittweise verschärfen. Wenn deine Bereitstellung interne Dienste erreichen muss, konfiguriere vorab eine explizite Whitelist.
+**Konfiguriert**: Die ursprüngliche Anfrage und jedes Weiterleitungsziel müssen der Whitelist entsprechen. Bei fehlender Übereinstimmung erzeugt NocoBase einen Fehler, bevor die nächste Anfrage gesendet wird. Zukünftige Versionen können das Standardverhalten schrittweise verschärfen. Wenn deine Bereitstellung interne Dienste erreichen muss, konfiguriere vorab eine explizite Whitelist.
 
 Unterstützte Formate:
 

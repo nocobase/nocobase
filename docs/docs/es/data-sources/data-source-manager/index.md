@@ -1,43 +1,50 @@
 ---
 pkg: "@nocobase/plugin-data-source-manager"
+title: "Gestión de fuentes de datos"
+description: "Plugin de gestión de fuentes de datos: administra la base de datos principal, bases de datos externas, fuentes de datos de API REST y fuentes de datos de NocoBase externas, y proporciona una interfaz unificada para su gestión."
+keywords: "gestión de fuentes de datos,base de datos principal,bases de datos externas,sincronización de tablas de datos,fuentes de datos de API REST,NocoBase"
 ---
-
-# Gestión de Fuentes de Datos
+# Gestión de fuentes de datos
 
 ## Introducción
 
-NocoBase proporciona un plugin de gestión de fuentes de datos para administrar fuentes de datos y sus colecciones. El plugin de gestión de fuentes de datos solo ofrece una interfaz de administración para todas las fuentes de datos, pero no proporciona la capacidad de acceder a ellas directamente. Necesita ser utilizado en conjunto con varios plugins de fuentes de datos. Actualmente, las fuentes de datos compatibles incluyen:
+NocoBase proporciona un plugin de gestión de fuentes de datos para administrar las fuentes de datos y sus tablas. Este plugin solo ofrece una interfaz de gestión para todas las fuentes de datos; no proporciona la capacidad de conectarse a ellas, por lo que debe utilizarse junto con distintos plugins de fuentes de datos. Actualmente, admite las siguientes fuentes de datos:
 
-- [Base de Datos Principal](/data-sources/data-source-main): La base de datos principal de NocoBase, compatible con bases de datos relacionales como MySQL, PostgreSQL y MariaDB.
-- [MySQL Externo](/data-sources/data-source-external-mysql): Utilice una base de datos MySQL externa como fuente de datos.
-- [MariaDB Externo](/data-sources/data-source-external-mariadb): Utilice una base de datos MariaDB externa como fuente de datos.
-- [PostgreSQL Externo](/data-sources/data-source-external-postgres): Utilice una base de datos PostgreSQL externa como fuente de datos.
-- [MSSQL Externo](/data-sources/data-source-external-mssql): Utilice una base de datos MSSQL (SQL Server) externa como fuente de datos.
-- [Oracle Externo](/data-sources/data-source-external-oracle): Utilice una base de datos Oracle externa como fuente de datos.
-- [NocoBase externo](/data-sources/data-source-external-nocobase/): Utilice otra aplicación NocoBase como fuente de datos externa mediante la API remota de NocoBase.
+- [Base de datos principal](/data-sources/data-source-main/): la base de datos principal de NocoBase, compatible con MySQL, PostgreSQL, MariaDB, KingbaseES y OceanBase.
+- [PostgreSQL externo](/data-sources/data-source-external-postgres/): utiliza una base de datos PostgreSQL externa como fuente de datos.
+- [MySQL externo](/data-sources/data-source-external-mysql/): utiliza una base de datos MySQL externa como fuente de datos.
+- [MariaDB externo](/data-sources/data-source-external-mariadb/): utiliza una base de datos MariaDB externa como fuente de datos.
+- [MSSQL externo](/data-sources/data-source-external-mssql/): utiliza una base de datos MSSQL (SQL Server) externa como fuente de datos.
+- [KingbaseES externo](/data-sources/data-source-kingbase/): utiliza una base de datos KingbaseES externa como fuente de datos.
+- [OceanBase externo](/data-sources/external/oceanbase): utiliza una base de datos OceanBase externa como fuente de datos.
+- [Oracle externo](/data-sources/data-source-external-oracle/): utiliza una base de datos Oracle externa como fuente de datos.
+- [ClickHouse externo](/data-sources/external/clickhouse): utiliza una base de datos ClickHouse externa como fuente de datos, normalmente para consultas, estadísticas y visualización de informes.
+- [Doris externo](/data-sources/external/doris): utiliza una base de datos Doris externa como fuente de datos, normalmente para consultas, estadísticas y visualización de informes.
+- [Fuente de datos de API REST](/data-sources/data-source-rest-api/): integra en NocoBase datos procedentes de una API REST.
+- [NocoBase externo](/data-sources/data-source-external-nocobase/): utiliza otra aplicación de NocoBase como fuente de datos externa mediante la API remota de NocoBase.
 
-Además, puede extender más tipos a través de plugins, que pueden ser bases de datos comunes o plataformas que ofrecen APIs (SDKs).
+Además, es posible ampliar el sistema mediante plugins para admitir más tipos de fuentes de datos, incluidas bases de datos comunes y plataformas que proporcionan API (SDK).
 
 ## Instalación
 
-Es un plugin integrado, por lo que no requiere instalación adicional.
+Plugin integrado; no es necesario instalarlo por separado.
 
-## Instrucciones de Uso
+## Instrucciones de uso
 
-Cuando la aplicación se inicializa e instala, se proporciona por defecto una fuente de datos para almacenar los datos de NocoBase, conocida como la base de datos principal. Para más información, consulte la documentación de la [Base de Datos Principal](/data-sources/data-source-main/index.md).
+Durante la instalación inicial de la aplicación, se proporciona de forma predeterminada una fuente de datos para almacenar los datos de NocoBase, denominada base de datos principal. Para obtener más información, consulta la documentación de [Base de datos principal](/data-sources/data-source-main/index.md).
 
-### Fuentes de Datos Externas
+### Fuentes de datos externas
 
-Se admite el uso de bases de datos externas como fuentes de datos. Para más información, consulte la documentación de [Base de Datos Externa / Introducción](/data-sources/data-source-manager/external-database).
+Se admiten bases de datos externas como fuentes de datos. Para obtener más información, consulta la documentación de [Bases de datos externas / Introducción](/data-sources/data-source-manager/external-database.md).
 
 ![nocobase_doc-2025-10-29-19-45-33](https://static-docs.nocobase.com/nocobase_doc-2025-10-29-19-45-33.png)
 
-### Soporte para Sincronizar Tablas de Base de Datos Personalizadas
+### Admite la sincronización de tablas creadas en la base de datos
 
 ![nocobase_doc-2025-10-29-19-46-34](https://static-docs.nocobase.com/nocobase_doc-2025-10-29-19-46-34.png)
 
-También puede acceder a datos de fuentes de API HTTP. Para más información, consulte la documentación de [Fuente de Datos REST API](/data-sources/data-source-rest-api/index.md).
+También es posible integrar datos procedentes de una API HTTP. Para obtener más información, consulta la documentación de [Fuente de datos de API REST](/data-sources/data-source-rest-api/index.md).
 
-### Fuente de Datos NocoBase Externa
+### Fuentes de datos externas de NocoBase
 
-Puede utilizar otra aplicación NocoBase como fuente de datos externa mediante la API remota de NocoBase. Para más información, consulte la documentación de [NocoBase externo](/data-sources/data-source-external-nocobase/).
+Otra aplicación de NocoBase puede integrarse como fuente de datos externa mediante la API remota de NocoBase. Para obtener más información, consulta la documentación de [NocoBase externo](/data-sources/data-source-external-nocobase/index.md).

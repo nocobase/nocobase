@@ -156,10 +156,30 @@ export class UserDataResourceManager {
     }
   }
 
-  async findOriginRecords({ sourceName, dataType, sourceUks }): Promise<OriginRecord[]> {
-    return await this.syncRecordRepo.find({
+  async findOriginRecords({
+    sourceName,
+    dataType,
+    sourceUks,
+  }: {
+    sourceName: string;
+    dataType: SyncDataType;
+    sourceUks: string[];
+  }): Promise<OriginRecord[]> {
+    const originRecords = await this.syncRecordRepo.find({
       appends: ['resources'],
       filter: { sourceName, dataType, sourceUk: { $in: sourceUks } },
+    });
+    const sourceUkOrder = new Map<string, number>();
+    sourceUks.forEach((sourceUk, index) => {
+      if (!sourceUkOrder.has(sourceUk)) {
+        sourceUkOrder.set(sourceUk, index);
+      }
+    });
+    return originRecords.sort((a, b) => {
+      return (
+        (sourceUkOrder.get(a.sourceUk) ?? Number.MAX_SAFE_INTEGER) -
+        (sourceUkOrder.get(b.sourceUk) ?? Number.MAX_SAFE_INTEGER)
+      );
     });
   }
 

@@ -20,17 +20,41 @@ import { useTranslation } from 'react-i18next';
 
 const FILE_SIZE_LIMIT_DEFAULT = 1024 * 1024 * 20;
 
-function getModelDataSourceKey(model) {
-  return model.context.collection?.dataSourceKey || model.context.blockModel.collection?.dataSourceKey;
+type UploadActionContextModel = {
+  context: {
+    collection?: { dataSourceKey?: string; name?: string };
+    blockModel?: {
+      collection?: { dataSourceKey?: string; name?: string };
+      resource?: { getDataSourceKey?: () => string | undefined };
+    };
+  };
+};
+
+export function getModelDataSourceKey(model: UploadActionContextModel) {
+  return (
+    model.context.blockModel?.resource?.getDataSourceKey?.() ||
+    model.context.blockModel?.collection?.dataSourceKey ||
+    model.context.collection?.dataSourceKey
+  );
 }
 
-function appendUploadDataSourceKey(url: string, dataSourceKey?: string) {
+export function appendUploadDataSourceKey(url: string, dataSourceKey?: string) {
   if (!dataSourceKey || dataSourceKey === 'main') {
     return url;
   }
 
-  const separator = url.includes('?') ? '&' : '?';
-  return `${url}${separator}uploadDataSourceKey=${encodeURIComponent(dataSourceKey)}`;
+  const [path, search] = url.split('?');
+  const params = new URLSearchParams(search);
+  params.set('uploadDataSourceKey', dataSourceKey);
+  return `${path}?${params.toString()}`;
+}
+
+export function getUploadAction(action: string, storageAction: unknown, dataSourceKey?: string) {
+  return appendUploadDataSourceKey(typeof storageAction === 'string' ? storageAction : action, dataSourceKey);
+}
+
+export function getUploadDataSourceHeaders(dataSourceKey?: string) {
+  return dataSourceKey && dataSourceKey !== 'main' ? { 'X-Data-Source': dataSourceKey } : {};
 }
 
 function useSizeHint(size: number) {
@@ -48,7 +72,7 @@ function useUploadProps(props) {
     // in customRequest method can't modify form's status(e.g: form.disabled=true )
     // that will be trigger Upload component（actual Underlying is AjaxUploader component ）'s  componentWillUnmount method
     // which will cause multiple files upload fail
-    customRequest({ action, data, file, filename, headers, onError, onProgress, onSuccess, withCredentials }) {
+    customRequest({ action, data, file, filename, headers, onError, onProgress, onSuccess }) {
       const formData = new FormData();
       if (data) {
         Object.keys(data).forEach((key) => {
@@ -59,7 +83,6 @@ function useUploadProps(props) {
       // eslint-disable-next-line promise/catch-or-return
       ctx.api.axios
         .post(action, formData, {
-          withCredentials,
           headers,
           onUploadProgress: ({ total, loaded }) => {
             onProgress({ percent: Math.round((loaded / total) * 100).toFixed(2) }, file);
@@ -84,7 +107,8 @@ function useUploadProps(props) {
 const useUploadFiles = (model) => {
   const ctx = useFlowContext();
   const action = useMemo(() => {
-    let action = `${model.context.collection.name}:create`;
+    const collectionName = model.context.blockModel.collection?.name || model.context.collection.name;
+    let action = `${collectionName}:create`;
     const associationResourceName = model.context.blockModel.association?.resourceName;
     if (ctx.view?.inputArgs?.sourceId && associationResourceName) {
       const [s, t] = associationResourceName.split('.');
@@ -93,6 +117,7 @@ const useUploadFiles = (model) => {
     return action;
   }, [
     model.context.blockModel.association?.resourceName,
+    model.context.blockModel.collection?.name,
     model.context.collection.name,
     ctx.view?.inputArgs?.sourceId,
   ]);
@@ -176,15 +201,29 @@ export function useStorageCfg(model) {
 export function useStorageUploadProps(props, model) {
   const { storage, storageType, dataSourceKey } = useStorageCfg(model);
   const useStorageTypeUploadProps = storageType?.useUploadProps;
-  const storageTypeUploadProps = useStorageTypeUploadProps?.({ storage, rules: storage.rules, ...props }) || {};
+  const action = appendUploadDataSourceKey(props.action, dataSourceKey);
+  const dataSourceHeaders = getUploadDataSourceHeaders(dataSourceKey);
+  const storageTypeUploadProps =
+    useStorageTypeUploadProps?.({
+      storage,
+      rules: storage.rules,
+      ...props,
+      action,
+      dataSourceKey,
+      headers: {
+        ...props.headers,
+        ...dataSourceHeaders,
+      },
+    }) || {};
   const headers = {
     ...storageTypeUploadProps.headers,
+    ...dataSourceHeaders,
   };
 
   return {
-    action: appendUploadDataSourceKey(props.action, dataSourceKey),
     rules: storage?.rules,
     ...storageTypeUploadProps,
+    action: getUploadAction(action, storageTypeUploadProps.action, dataSourceKey),
     headers,
   };
 }

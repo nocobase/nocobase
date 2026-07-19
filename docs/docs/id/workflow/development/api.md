@@ -134,7 +134,7 @@ Memicu Workflow tertentu. Terutama digunakan dalam Trigger kustom, ketika event 
 | `workflow` | `WorkflowModel` | Objek Workflow yang akan dipicu |
 | `context` | `object` | Data konteks yang disediakan saat pemicuan |
 
-:::info{title=Tips}
+:::info{title=Catatan}
 `context` saat ini wajib, jika tidak disediakan, Workflow tersebut tidak akan dipicu.
 :::
 
@@ -173,7 +173,7 @@ Memulihkan eksekusi Workflow yang dijeda dengan tugas Node tertentu.
 | --------- | ---------- | ---------------------- |
 | `job`     | `JobModel` | Objek tugas yang sudah diperbarui |
 
-:::info{title=Tips}
+:::info{title=Catatan}
 Objek tugas yang diteruskan biasanya adalah objek yang sudah diperbarui, dan biasanya `status` akan diperbarui ke nilai non-`JOB_STATUS.PENDING`, jika tidak akan terus dijeda.
 :::
 
@@ -184,6 +184,10 @@ Lihat detailnya di [source code](https://github.com/nocobase/nocobase/blob/main/
 ### `Trigger`
 
 Kelas dasar Trigger, digunakan untuk memperluas tipe Trigger kustom.
+
+```ts
+import { Trigger } from '@nocobase/plugin-workflow';
+```
 
 | Parameter      | Tipe                                                        | Penjelasan                |
 | -------------- | ----------------------------------------------------------- | ------------------------- |
@@ -197,12 +201,16 @@ Kelas dasar Trigger, digunakan untuk memperluas tipe Trigger kustom.
 
 Kelas dasar tipe instruksi, digunakan untuk memperluas tipe instruksi kustom.
 
+```ts
+import { Instruction } from '@nocobase/plugin-workflow';
+```
+
 | Parameter      | Tipe                                                            | Penjelasan                          |
 | -------------- | --------------------------------------------------------------- | ----------------------------------- |
 | `constructor`  | `(public readonly workflow: PluginWorkflowServer): Instruction` | Konstruktor                         |
 | `run`          | `Runner`                                                        | Logika eksekusi saat pertama kali masuk Node |
 | `resume?`      | `Runner`                                                        | Logika eksekusi setelah masuk Node setelah dipulihkan dari interupsi |
-| `getScope?`    | `(node: FlowNodeModel, data: any, processor: Processor): any`   | Menyediakan konten variabel lokal cabang yang dihasilkan Node yang sesuai |
+| `getScope?`    | `(node: FlowNodeModel, data: any, processor: Processor): any`  | Menyediakan konten variabel lokal cabang yang dihasilkan Node yang sesuai |
 
 **Tipe Terkait**
 
@@ -236,6 +244,10 @@ export class Instruction {
 
 Tabel konstanta status rencana eksekusi Workflow, digunakan untuk mengidentifikasi status saat ini dari rencana eksekusi yang sesuai.
 
+```ts
+import { EXECUTION_STATUS } from '@nocobase/plugin-workflow';
+```
+
 | Nama Konstanta                  | Arti                  |
 | ------------------------------- | -------------------- |
 | `EXECUTION_STATUS.QUEUEING`     | Dalam antrian        |
@@ -254,6 +266,10 @@ Selain tiga yang pertama, lainnya merepresentasikan status gagal, tetapi dapat d
 
 Tabel konstanta status tugas Node Workflow, digunakan untuk mengidentifikasi status saat ini dari tugas Node yang sesuai. Status yang dihasilkan Node juga akan memengaruhi status seluruh rencana eksekusi.
 
+```ts
+import { JOB_STATUS } from '@nocobase/plugin-workflow';
+```
+
 | Nama Konstanta            | Arti                                                |
 | ------------------------- | --------------------------------------------------- |
 | `JOB_STATUS.PENDING`      | Jeda: sudah dieksekusi sampai Node ini, tetapi instruksi meminta jeda menunggu |
@@ -270,13 +286,15 @@ Tabel konstanta status tugas Node Workflow, digunakan untuk mengidentifikasi sta
 API yang tersedia pada struktur paket client seperti yang ditunjukkan kode berikut:
 
 ```ts
-import PluginWorkflowClient, {
+import PluginWorkflowClientV2, {
   Trigger,
   Instruction,
-} from '@nocobase/plugin-workflow/client';
+} from '@nocobase/plugin-workflow/client-v2';
 ```
 
-### `PluginWorkflowClient`
+### `PluginWorkflowClientV2`
+
+Kelas plugin Workflow client. Biasanya diperoleh melalui `this.app.pm.get('workflow')`.
 
 #### `registerTrigger()`
 
@@ -290,7 +308,7 @@ Mendaftarkan panel konfigurasi yang sesuai dengan tipe Trigger.
 
 | Parameter | Tipe                        | Penjelasan                                  |
 | --------- | --------------------------- | ------------------------------------------- |
-| `type`    | `string`                    | Identifier tipe Trigger, konsisten dengan identifier yang digunakan saat pendaftaran |
+| `type`    | `string`                    | Identifier tipe Trigger, konsisten dengan identifier yang didaftarkan di server |
 | `trigger` | `typeof Trigger \| Trigger` | Tipe atau instance Trigger                  |
 
 #### `registerInstruction()`
@@ -305,17 +323,17 @@ Mendaftarkan panel konfigurasi yang sesuai dengan tipe Node.
 
 | Parameter     | Tipe                                | Penjelasan                                |
 | ------------- | ----------------------------------- | ----------------------------------------- |
-| `type`        | `string`                            | Identifier tipe Node, konsisten dengan identifier yang digunakan saat pendaftaran |
+| `type`        | `string`                            | Identifier tipe Node, konsisten dengan identifier yang didaftarkan di server |
 | `instruction` | `typeof Instruction \| Instruction` | Tipe atau instance Node                   |
 
 #### `registerInstructionGroup()`
 
 Mendaftarkan grup tipe Node. NocoBase secara default menyediakan 4 grup tipe Node:
 
-* `'control'`: Kelas kontrol
-* `'collection'`: Kelas operasi tabel data
-* `'manual'`: Kelas penanganan manual
-* `'extended'`: Kelas ekstensi lainnya
+* `'control'`: Kontrol
+* `'collection'`: Operasi tabel data
+* `'manual'`: Penanganan manual
+* `'extended'`: Ekstensi lainnya
 
 Jika perlu memperluas grup lain, Anda dapat menggunakan method ini untuk mendaftarkan.
 
@@ -327,62 +345,220 @@ Jika perlu memperluas grup lain, Anda dapat menggunakan method ini untuk mendaft
 
 | Parameter | Tipe                | Penjelasan                                          |
 | --------- | ------------------- | --------------------------------------------------- |
-| `type`    | `string`            | Identifier grup Node, konsisten dengan identifier yang digunakan saat pendaftaran |
+| `type`    | `string`            | Identifier grup Node |
 | `group`   | `{ label: string }` | Informasi grup, saat ini hanya mengandung judul     |
 
 **Contoh**
 
-```js
-export default class YourPluginClient extends Plugin {
-  load() {
-    const pluginWorkflow = this.app.pm.get(PluginWorkflowClient);
+```ts
+import { Plugin } from '@nocobase/client-v2';
 
+export default class YourPluginClient extends Plugin {
+  async load() {
+    const pluginWorkflow = this.app.pm.get('workflow');
     pluginWorkflow.registerInstructionGroup('ai', { label: `{{t("AI", { ns: "${NAMESPACE}" })}}` });
   }
 }
 ```
 
+#### `isWorkflowSync()`
+
+Menentukan apakah sebuah Workflow dalam mode sinkron.
+
+**Signature**
+
+`isWorkflowSync(workflow: object): boolean`
+
 ### `Trigger`
 
 Kelas dasar Trigger, digunakan untuk memperluas tipe Trigger kustom.
 
-| Parameter        | Tipe                                                             | Penjelasan                                  |
-| ---------------- | ---------------------------------------------------------------- | ------------------------------------------- |
-| `title`          | `string`                                                         | Nama tipe Trigger                           |
-| `fieldset`       | `{ [key: string]: ISchema }`                                     | Koleksi item konfigurasi Trigger            |
-| `scope?`         | `{ [key: string]: any }`                                         | Koleksi objek yang mungkin digunakan dalam Schema item konfigurasi |
-| `components?`    | `{ [key: string]: React.FC }`                                    | Koleksi komponen yang mungkin digunakan dalam Schema item konfigurasi |
-| `useVariables?`  | `(config: any, options: UseVariableOptions ) => VariableOptions` | Pengambil nilai data konteks Trigger        |
+| Parameter | Tipe | Penjelasan |
+| --- | --- | --- |
+| `title` | `string` | Nama tipe Trigger |
+| `description?` | `string` | Deskripsi tipe Trigger |
+| `PresetFieldsetLoader?` | `LoaderOf` | Form konfigurasi preset saat pembuatan (lazy-loaded) |
+| `FieldsetLoader?` | `LoaderOf` | Form konfigurasi Trigger lengkap (lazy-loaded) |
+| `TriggerFieldsetLoader?` | `LoaderOf` | Form input untuk eksekusi manual (lazy-loaded) |
+| `validate` | `(config: Record<string, unknown>) => boolean` | Validasi konfigurasi; mengembalikan `true` jika konfigurasi valid |
+| `createDefaultConfig?` | `() => Record<string, unknown>` | Menyediakan nilai konfigurasi default |
+| `useVariables?` | `(config, options?: UseVariableOptions) => VariableOption[] \| null` | Opsi variable untuk data konteks Trigger |
+| `getCreateModelMenuItem?` | `(args) => SubModelItem \| SubModelItem[] \| null` | Item menu untuk membuat sub-model di kanvas |
+| `useTempAssociationSource?` | `(config, workflow?) => TriggerTempAssociationSource \| null` | Menyediakan sumber data asosiasi sementara |
 
-- `useVariables` jika tidak diatur, artinya tipe Trigger ini tidak menyediakan fungsi pengambilan nilai, di Node alur tidak dapat memilih data konteks Trigger.
+**Tipe Terkait**
+
+```ts
+export type LoaderOf<P = {}> = () => Promise<{ default: ComponentType<P> }>;
+```
+
+- Jika `useVariables` tidak diatur, artinya tipe Trigger ini tidak menyediakan fungsi pengambilan nilai, dan data konteks Trigger tidak dapat dipilih di Node workflow.
 
 ### `Instruction`
 
 Kelas dasar instruksi, digunakan untuk memperluas tipe Node kustom.
 
-| Parameter             | Tipe                                                    | Penjelasan                                                                       |
-| --------------------- | ------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| `group`               | `string`                                                | Identifier grup tipe Node, saat ini opsional: `'control'`/`'collection'`/`'manual'`/`'extended'` |
-| `fieldset`            | `Record<string, ISchema>`                               | Koleksi item konfigurasi Node                                                    |
-| `scope?`              | `Record<string, Function>`                              | Koleksi objek yang mungkin digunakan dalam Schema item konfigurasi               |
-| `components?`         | `Record<string, React.FC>`                              | Koleksi komponen yang mungkin digunakan dalam Schema item konfigurasi            |
-| `Component?`          | `React.FC`                                              | Komponen rendering kustom Node                                                   |
-| `useVariables?`       | `(node, options: UseVariableOptions) => VariableOption` | Method Node menyediakan opsi variabel Node                                       |
-| `useScopeVariables?`  | `(node, options?) => VariableOptions`                   | Method Node menyediakan opsi variabel lokal cabang                               |
-| `useInitializers?`    | `(node) => SchemaInitializerItemType`                   | Method Node menyediakan opsi initializer                                         |
-| `isAvailable?`        | `(ctx: NodeAvailableContext) => boolean`                | Method untuk menentukan apakah Node tersedia                                     |
+| Parameter | Tipe | Penjelasan |
+| --- | --- | --- |
+| `title` | `string` | Nama tipe Node |
+| `type` | `string` | Identifier tipe Node |
+| `group` | `string` | Identifier grup tipe Node, opsi: `'control'`/`'collection'`/`'manual'`/`'extended'` |
+| `description?` | `string` | Deskripsi tipe Node |
+| `icon?` | `JSX.Element` | Ikon Node |
+| `FieldsetLoader?` | `LoaderOf` | Form drawer konfigurasi Node (lazy-loaded) |
+| `PresetFieldsetLoader?` | `LoaderOf` | Form konfigurasi preset saat pembuatan (lazy-loaded) |
+| `ComponentLoader?` | `LoaderOf<{ data: any }>` | Rendering Node kustom pada kanvas (lazy-loaded), digunakan untuk Node cabang dan kasus lain yang membutuhkan rendering khusus |
+| `branching?` | `boolean \| object \| ((config) => boolean \| object)` | Mendeklarasikan apakah Node adalah Node cabang |
+| `end?` | `boolean \| ((node) => boolean)` | Mendeklarasikan apakah Node adalah Node terminal |
+| `testable?` | `boolean` | Mendeklarasikan apakah Node mendukung uji coba |
+| `createDefaultConfig?` | `() => object` | Menyediakan nilai konfigurasi default |
+| `useVariables?` | `(node, options?: UseVariableOptions) => VariableOption` | Method Node menyediakan opsi variable |
+| `useScopeVariables?` | `(node, options?) => VariableOption[] \| MetaTreeNode[]` | Method Node menyediakan opsi variable lokal cabang |
+| `isAvailable?` | `(ctx: NodeAvailableContext) => boolean` | Method untuk menentukan apakah Node tersedia |
+| `getCreateModelMenuItem?` | `({ node, workflow }) => SubModelItem \| null` | Item menu untuk membuat sub-model di kanvas |
+| `useTempAssociationSource?` | `(node) => TempAssociationSource \| null` | Menyediakan sumber data asosiasi sementara |
 
 **Tipe Terkait**
 
 ```ts
 export type NodeAvailableContext = {
+  engine: WorkflowPlugin;
   workflow: object;
   upstream: object;
   branchIndex: number;
 };
 ```
 
-- `useVariables` jika tidak diatur, artinya tipe Node ini tidak menyediakan fungsi pengambilan nilai, di Node alur tidak dapat memilih data hasil tipe Node ini. Jika nilai hasil tunggal (tidak dapat dipilih), maka cukup mengembalikan konten statis yang dapat mengekspresikan informasi yang sesuai (referensi: [source code Node komputasi](https://github.com/nocobase/nocobase/blob/main/packages/plugins/@nocobase/plugin-workflow/src/client/nodes/calculation.tsx#L68)). Jika perlu dapat dipilih (seperti suatu properti dalam Object), Anda dapat menyesuaikan output komponen pemilihan yang sesuai (referensi: [source code Node Tambah Data](https://github.com/nocobase/nocobase/blob/main/packages/plugins/@nocobase/plugin-workflow/src/client/nodes/create.tsx#L41)).
-- `Component` komponen rendering kustom Node, dapat sepenuhnya mengganti rendering default Node ketika tidak terpenuhi, untuk melakukan rendering tampilan Node kustom. Misalnya untuk Node awal tipe cabang yang perlu menyediakan tombol operasi atau interaksi tambahan, perlu menggunakan method ini (referensi: [source code cabang paralel](https://github.com/nocobase/nocobase/blob/main/packages/plugins/@nocobase/plugin-workflow-parallel/src/client/ParallelInstruction.tsx)).
-- `useInitializers` digunakan untuk menyediakan method inisialisasi Block, misalnya pada Node manual dapat menginisialisasi Block pengguna terkait berdasarkan Node hulu. Jika method ini disediakan, akan tersedia saat menginisialisasi Block dalam konfigurasi antarmuka Node manual (referensi: [source code Node Tambah Data](https://github.com/nocobase/nocobase/blob/main/packages/plugins/@nocobase/plugin-workflow/src/client/nodes/create.tsx#L71)).
-- `isAvailable` terutama digunakan untuk menentukan apakah Node dapat digunakan (ditambahkan) di lingkungan saat ini. Lingkungan saat ini termasuk Workflow saat ini, Node hulu, dan indeks cabang saat ini, dll.
+- Jika `useVariables` tidak diatur, artinya tipe Node ini tidak menyediakan fungsi pengambilan nilai, dan data hasil tipe Node ini tidak dapat dipilih di Node workflow. Jika nilai hasil tunggal (tidak dapat dipilih), maka cukup mengembalikan konten statis yang dapat mengekspresikan informasi yang sesuai (lihat: [source code Node komputasi](https://github.com/nocobase/nocobase/blob/develop/packages/plugins/%40nocobase/plugin-workflow/src/client-v2/nodes/calculation.tsx)). Jika perlu dapat dipilih (seperti suatu properti dalam Object), Anda dapat menyesuaikan output komponen pemilihan yang sesuai (lihat: [source code Node query data](https://github.com/nocobase/nocobase/blob/develop/packages/plugins/%40nocobase/plugin-workflow/src/client-v2/nodes/query.tsx)).
+- `ComponentLoader` adalah komponen rendering kustom Node. Saat rendering Node default tidak mencukupi, dapat sepenuhnya di-override untuk rendering tampilan Node kustom. Misalnya untuk menyediakan rendering cabang tambahan pada Node tipe cabang (lihat: [source code Node kondisi](https://github.com/nocobase/nocobase/blob/develop/packages/plugins/%40nocobase/plugin-workflow/src/client-v2/nodes/condition.tsx)).
+- `isAvailable` terutama digunakan untuk menentukan apakah Node dapat digunakan (ditambahkan) di lingkungan saat ini. Lingkungan saat ini termasuk instance plugin Workflow, Workflow saat ini, Node upstream, dan indeks cabang saat ini.
+
+### Komponen Input Variable
+
+Plugin Workflow menyediakan sekumpulan komponen input variable untuk memungkinkan pengguna memilih variable workflow di form konfigurasi Node/Trigger.
+
+```ts
+import {
+  WorkflowVariableInput,
+  WorkflowVariableTextArea,
+  WorkflowTypedVariableInput,
+  WorkflowVariableWrapper,
+} from '@nocobase/plugin-workflow/client-v2';
+```
+
+#### `WorkflowVariableInput`
+
+Input variable yang mendukung pemilihan variable dan melanjutkan mengetik konten. Cocok untuk skenario input satu baris yang membutuhkan campuran referensi variable dan teks bebas.
+
+```tsx
+import { WorkflowVariableInput } from '@nocobase/plugin-workflow/client-v2';
+
+<Form.Item name={['config', 'target']} label="Target">
+  <WorkflowVariableInput />
+</Form.Item>
+```
+
+![WorkflowVariableInput](https://static-docs.nocobase.com/20260701160110.png)
+
+**Props**
+
+| Parameter | Tipe | Penjelasan |
+| --- | --- | --- |
+| `value?` | `string` | Nilai path variable, contoh `{{$jobsMapByNodeKey.xxx.field}}` |
+| `onChange?` | `(value: string) => void` | Callback perubahan nilai |
+| `variableOptions?` | `UseWorkflowVariableOptions` | Opsi filter variable (filter tipe, kedalaman, dll.) |
+| `disabled?` | `boolean` | Apakah dinonaktifkan |
+| `placeholder?` | `string` | Teks placeholder |
+
+#### `WorkflowVariableTextArea`
+
+Area teks multi-baris yang mendukung penyisipan referensi variable di posisi kursor mana pun. Cocok untuk skenario teks bebas seperti HTTP Body, teks template, dll.
+
+```tsx
+import { WorkflowVariableTextArea } from '@nocobase/plugin-workflow/client-v2';
+
+<Form.Item name={['config', 'body']} label="Body">
+  <WorkflowVariableTextArea autoSize={{ minRows: 5 }} />
+</Form.Item>
+```
+
+![WorkflowVariableTextArea](https://static-docs.nocobase.com/20260701160242.png)
+
+**Props**
+
+| Parameter | Tipe | Penjelasan |
+| --- | --- | --- |
+| `value?` | `string` | Nilai teks (mungkin berisi referensi variable) |
+| `onChange?` | `(value: string) => void` | Callback perubahan nilai |
+| `variableOptions?` | `UseWorkflowVariableOptions` | Opsi filter variable |
+| `delimiters?` | `readonly [string, string]` | Delimiter variable, default `['{{', '}}']` |
+
+Mewarisi Props lain dari antd `TextArea` (seperti `autoSize`, `placeholder`, dll.).
+
+#### `WorkflowTypedVariableInput`
+
+Input bertipe yang beralih antara mode "konstanta" dan "referensi variable". Dalam mode variable, hanya dapat memilih variable; tidak dapat melanjutkan mengetik setelah pemilihan. Dalam mode konstanta, lima tipe didukung: `string`, `number`, `boolean`, `date`, dan `object`.
+
+```tsx
+import { WorkflowTypedVariableInput } from '@nocobase/plugin-workflow/client-v2';
+
+<Form.Item name={['config', 'value']} label="Value">
+  <WorkflowTypedVariableInput />
+</Form.Item>
+```
+
+![WorkflowTypedVariableInput](https://static-docs.nocobase.com/20260701160608.png)
+
+**Props**
+
+| Parameter | Tipe | Penjelasan |
+| --- | --- | --- |
+| `variableOptions?` | `UseWorkflowVariableOptions` | Opsi filter variable |
+
+Mewarisi Props lain dari `TypedVariableInput` (tidak termasuk `extraNodes`, `metaTree`, `namespaces` yang digunakan secara internal).
+
+#### `WorkflowVariableWrapper`
+
+Wrapper generik untuk mengganti komponen input berbeda dalam konteks berbeda. Misalnya saat field yang sama memerlukan metode input berbeda di konfigurasi Node Trigger dan drawer konfigurasi Node, Anda dapat menggunakan komponen ini untuk membungkus input native menjadi input yang dapat beralih ke mode variable.
+
+```tsx
+import { WorkflowVariableWrapper } from '@nocobase/plugin-workflow/client-v2';
+
+<Form.Item name={['config', 'timeout']} label="Timeout">
+  <WorkflowVariableWrapper
+    render={({ value, onChange }) => (
+      <InputNumber value={value} onChange={onChange} min={0} />
+    )}
+  />
+</Form.Item>
+```
+
+**Props**
+
+| Parameter | Tipe | Penjelasan |
+| --- | --- | --- |
+| `value?` | `TValue \| string \| null` | Nilai saat ini (nilai konstanta atau string path variable) |
+| `onChange?` | `(value: TValue \| string \| null) => void` | Callback perubahan nilai |
+| `variableOptions?` | `UseWorkflowVariableOptions` | Opsi filter variable |
+| `render` | `(props: { value?, onChange? }) => ReactNode` | Merender komponen input native |
+| `clearValue?` | `TValue \| null` | Nilai awal saat beralih dari mode variable kembali ke mode konstanta, default `null` |
+
+### Komponen Terkait Collection
+
+Plugin Workflow juga menyediakan sekumpulan komponen helper terkait collection:
+
+```ts
+import {
+  CollectionCascader,
+  AppendsSelect,
+  FieldsSelect,
+  SortFieldsInput,
+  PaginationFields,
+} from '@nocobase/plugin-workflow/client-v2';
+```
+
+- `CollectionCascader` — Pemilih collection yang aware terhadap data source (cascader)
+- `AppendsSelect` — Pemilih preloading field asosiasi (tree select)
+- `FieldsSelect` — Pemilih multi field collection
+- `SortFieldsInput` — Input field pengurutan
+- `PaginationFields` — Item form parameter paginasi

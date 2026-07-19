@@ -8,7 +8,7 @@
  */
 
 import { ChatOpenAI } from '@langchain/openai';
-import { LLMProvider } from '../provider';
+import { LLMProvider, ReasoningOptions, ResolvedReasoningOptions } from '../provider';
 
 export class OpenAICompletionsProvider extends LLMProvider {
   declare chatModel: ChatOpenAI;
@@ -21,6 +21,7 @@ export class OpenAICompletionsProvider extends LLMProvider {
     const { apiKey } = this.serviceOptions || {};
     const { responseFormat, structuredOutput } = this.modelOptions || {};
     const { name, schema } = structuredOutput || {};
+    const reasoningOptions = this.resolveReasoningOptions(this.modelReasoningOptions);
     const responseFormatOptions: Record<string, any> = {
       type: responseFormat ?? 'text',
     };
@@ -30,12 +31,28 @@ export class OpenAICompletionsProvider extends LLMProvider {
     return new ChatOpenAI({
       apiKey,
       ...this.modelOptions,
+      ...(reasoningOptions.modelRequestParams || {}),
       modelKwargs: {
         response_format: responseFormatOptions,
+        ...(reasoningOptions.modelKwargs || {}),
       },
       configuration: {
         baseURL: this.getResolvedBaseURL(),
       },
     });
+  }
+
+  protected resolveReasoningOptions(reasoning?: ReasoningOptions): ResolvedReasoningOptions {
+    if (!reasoning || reasoning.mode === 'default') {
+      return {};
+    }
+    const effort = reasoning.mode === 'off' ? 'none' : reasoning.mode;
+    return {
+      modelRequestParams: {
+        reasoning: {
+          effort,
+        },
+      },
+    };
   }
 }

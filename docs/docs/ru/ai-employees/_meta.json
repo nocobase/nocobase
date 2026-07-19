@@ -11,46 +11,46 @@
   },
   {
     "type": "custom-link",
-    "label": "Настройка возможностей",
+    "label": "Возможности",
     "items": [
       {
         "type": "custom-link",
-        "label": "Настройка LLM-сервиса",
+        "label": "Настроить языковую модель",
         "link": "/ai-employees/features/llm-service"
       },
       {
         "type": "custom-link",
-        "label": "Включение AI-сотрудников",
+        "label": "Включить ИИ-сотрудников",
         "link": "/ai-employees/features/enable-ai-employee"
       },
       {
         "type": "custom-link",
-        "label": "Настройка моделей AI-сотрудников",
+        "label": "Настройка моделей ИИ-сотрудников",
         "link": "/ai-employees/features/model-settings"
       },
       {
         "type": "custom-link",
-        "label": "Сотрудничество с AI-сотрудниками",
+        "label": "Работать с ИИ-сотрудниками",
         "link": "/ai-employees/features/collaborate"
       },
       {
         "type": "custom-link",
-        "label": "Добавление контекста — Блоки",
+        "label": "Добавить контекст - блоки",
         "link": "/ai-employees/features/pick-block"
       },
       {
         "type": "custom-link",
-        "label": "Поиск в интернете",
+        "label": "Веб-поиск",
         "link": "/ai-employees/features/web-search"
       },
       {
         "type": "custom-link",
-        "label": "Использование Skills",
+        "label": "Использование навыков",
         "link": "/ai-employees/features/skills"
       },
       {
         "type": "custom-link",
-        "label": "Использование инструментов",
+        "label": "Использовать навыки",
         "link": "/ai-employees/features/tools"
       },
       {
@@ -65,12 +65,12 @@
       },
       {
         "type": "custom-link",
-        "label": "Создание AI-сотрудников",
+        "label": "Новый ИИ-сотрудник",
         "link": "/ai-employees/features/new-ai-employees"
       },
       {
         "type": "custom-link",
-        "label": "Контроль доступа",
+        "label": "Контроль прав доступа",
         "link": "/ai-employees/permission"
       },
       {
@@ -82,7 +82,7 @@
   },
   {
     "type": "custom-link",
-    "label": "Встроенные AI-сотрудники",
+    "label": "Встроенные ИИ-сотрудники",
     "items": [
       {
         "type": "custom-link",
@@ -138,12 +138,12 @@
   },
   {
     "type": "custom-link",
-    "label": "База знаний AI",
+    "label": "База знаний ИИ",
     "items": [
       {
         "type": "custom-link",
         "label": "Обзор",
-        "link": "/ai-employees/knowledge-base/"
+        "link": "/ai-employees/knowledge-base/index"
       },
       {
         "type": "custom-link",
@@ -206,11 +206,11 @@
   },
   {
     "type": "custom-link",
-    "label": "Workflow",
+    "label": "Рабочий процесс",
     "items": [
       {
         "type": "custom-link",
-        "label": "Узел LLM",
+        "label": "Узлы языковой модели",
         "items": [
           {
             "type": "custom-link",
@@ -231,7 +231,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Узел AI-сотрудника",
+        "label": "Узел ИИ-сотрудника",
         "items": [
           {
             "type": "custom-link",
@@ -240,7 +240,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Согласование узла",
+            "label": "Узлел согласоввания",
             "link": "/ai-employees/workflow/nodes/employee/approval"
           }
         ]
@@ -280,7 +280,7 @@
   },
   {
     "type": "custom-link",
-    "label": "Практика применения",
+    "label": "Практические примеры",
     "items": [
       {
         "type": "custom-link",
@@ -289,7 +289,12 @@
       },
       {
         "type": "custom-link",
-        "label": "Viz: Настройка сценария CRM",
+        "label": "Автоматизация проверки информации о компании",
+        "link": "/ai-employees/scenarios/company-background-research"
+      },
+      {
+        "type": "custom-link",
+        "label": "Viz: настройка сценария CRM",
         "link": "/ai-employees/scenarios/viz-crm"
       },
       {
@@ -299,7 +304,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Руководство по промптам",
+        "label": "Руководство по проектированию запросов",
         "link": "/ai-employees/configuration/prompt-engineering-guide"
       }
     ]

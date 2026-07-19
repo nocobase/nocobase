@@ -125,6 +125,7 @@ CommentsBlockModel.registerFlow({
 
 CommentsBlockModel.define({
   label: escapeT('Comments', { ns: 'comments' }),
+  hide: true,
   searchable: true,
   searchPlaceholder: escapeT('Search'),
   createModelOptions: {

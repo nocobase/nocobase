@@ -22,7 +22,7 @@ function MobileSettingsRedirect() {
 }
 
 function getMobileSettingsLink(app: Application) {
-  return app.getRouteUrl?.('/mobile') || '/mobile';
+  return app.getHref('/mobile');
 }
 
 export class PluginUiLayoutClientV2 extends Plugin<Record<string, never>, Application> {

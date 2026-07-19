@@ -39,7 +39,7 @@ describe('PluginUiLayoutClientV2', () => {
           },
         }),
       },
-      getRouteUrl: vi.fn((pathname: string) => `/v/${pathname.replace(/^\/+/, '')}`),
+      getHref: vi.fn((pathname: string) => `/v/${pathname.replace(/^\/+/, '')}`),
       layoutManager: {
         hasLayout: vi.fn(() => false),
         registerLayout: vi.fn(),
@@ -68,6 +68,7 @@ describe('PluginUiLayoutClientV2', () => {
       aclSnippet: 'pm.mobile',
       link: '/v/mobile',
     });
+    expect(app.getHref).toHaveBeenCalledWith('/mobile');
     expect(app.pluginSettingsManager.addPageTabItem).toHaveBeenCalledWith({
       menuKey: 'mobile',
       key: 'index',
@@ -180,6 +181,22 @@ describe('PluginUiLayoutClientV2', () => {
       uid: 'workspace-layout-model',
       layoutModelClass: 'AdminLayoutModel',
       authCheck: true,
+    });
+  });
+
+  it('should preserve the current sub-app path in the mobile settings link', async () => {
+    const { default: PluginUiLayoutClientV2 } = await import('../plugin');
+    const app = createMockClient({
+      name: 'portal',
+      publicPath: '/nocobase/v/',
+      plugins: [PluginUiLayoutClientV2],
+    });
+    app.apiMock.onGet('uiLayouts:listEnabled').reply(200, { data: [] });
+
+    await app.load();
+
+    expect(app.pluginSettingsManager.get('mobile', false)).toMatchObject({
+      link: '/nocobase/v/apps/portal/mobile',
     });
   });
 

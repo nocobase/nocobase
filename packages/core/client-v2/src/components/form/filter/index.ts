@@ -11,5 +11,7 @@
 export { CollectionFilter } from './CollectionFilter';
 export type { CollectionFilterProps } from './CollectionFilter';
 export { CollectionFilterPanel } from './CollectionFilterPanel';
+export { CollectionFilterItem } from './CollectionFilterItem';
+export type { CollectionFilterItemValue } from './CollectionFilterItem';
 export type { CollectionFilterPanelProps, CollectionFilterPanelRef } from './CollectionFilterPanel';
 export type { CompiledFilter } from './useFilterActionProps';

@@ -6,7 +6,7 @@
   "description": "Send notification in workflow.",
   "description.ru-RU": "Отправляет уведомления в рамках рабочего процесса.",
   "description.zh-CN": "可用于在工作流中发送各类通知。",
-  "version": "2.2.0-beta.10",
+  "version": "2.2.0-beta.15",
   "license": "Apache-2.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/workflow-smtp-mailer",
@@ -19,6 +19,7 @@
   },
   "peerDependencies": {
     "@nocobase/client": "2.x",
+    "@nocobase/client-v2": "2.x",
     "@nocobase/database": "2.x",
     "@nocobase/plugin-notification-manager": "2.x",
     "@nocobase/plugin-workflow": ">=0.17.0-alpha.3",

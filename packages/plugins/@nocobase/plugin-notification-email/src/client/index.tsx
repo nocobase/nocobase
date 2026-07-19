@@ -27,6 +27,8 @@ export class PluginNotificationMailClient extends Plugin {
         ChannelConfigForm: ChannelConfigForm,
         MessageConfigForm: MessageConfigForm,
         ContentConfigForm,
+        ChannelConfigFormLoader: () => import('../client-v2/forms/ChannelConfigForm'),
+        MessageConfigFormLoader: () => import('../client-v2/forms/MessageConfigForm'),
       },
     });
   }

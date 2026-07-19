@@ -902,6 +902,38 @@ describe('workflow > triggers > collection', () => {
       expect(e2s[0].toJSON()).toMatchObject(data.execution);
       expect(data.execution.status).toBe(EXECUTION_STATUS.RESOLVED);
     });
+
+    it('should not fail when manually executed data does not match condition', async () => {
+      const workflow = await WorkflowModel.create({
+        type: 'collection',
+        sync: true,
+        config: {
+          mode: 1,
+          collection: 'posts',
+          condition: {
+            id: -1,
+          },
+        },
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      const {
+        status,
+        body: { data },
+      } = await agent.resource('workflows').execute({
+        filterByTk: workflow.id,
+        values: {
+          data: post.toJSON(),
+        },
+      });
+
+      expect(status).toBe(200);
+      expect(data.execution).toBeNull();
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(0);
+    });
   });
 
   describe('cycling trigger', () => {

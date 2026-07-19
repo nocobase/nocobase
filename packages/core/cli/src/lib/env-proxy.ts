@@ -796,6 +796,7 @@ function buildNginxManagedConfigBlock(context: EnvProxyNginxRenderContext): stri
   const v2PublicPathNoTrailingSlash = trimTrailingSlash(context.v2PublicPath);
   const apiBasePathNoTrailingSlash = trimTrailingSlash(context.apiBasePath);
   const appPublicPathNoTrailingSlash = trimTrailingSlash(context.appPublicPath);
+  const fileAccessPath = `${context.appPublicPath}files/`;
   const isRootMounted = context.appPublicPath === '/';
   const appPublicPathRedirectBlock = isRootMounted
     ? ''
@@ -833,6 +834,20 @@ function buildNginxManagedConfigBlock(context: EnvProxyNginxRenderContext): stri
     `        proxy_pass ${context.backendUrl};`,
     `        include ${context.snippetsDir}/proxy-location.conf;`,
     '    }',
+    '',
+    `    location ^~ ${fileAccessPath} {`,
+    `        proxy_pass ${context.backendUrl};`,
+    `        include ${context.snippetsDir}/proxy-location.conf;`,
+    '    }',
+    ...(!isRootMounted
+      ? [
+          '',
+          '    location ^~ /files/ {',
+          `        proxy_pass ${context.backendUrl};`,
+          `        include ${context.snippetsDir}/proxy-location.conf;`,
+          '    }',
+        ]
+      : []),
     '',
     `    location = ${apiBasePathNoTrailingSlash} {`,
     `        return 308 ${context.apiBasePath}$is_args$args;`,
@@ -1441,15 +1456,17 @@ function renderNginxLocationTemplate(context: EnvProxyTemplateContext): string {
         default_type text/markdown;
         add_header Cache-Control "public";
         add_header Content-Disposition "inline";
+        add_header Content-Security-Policy "sandbox" always;
         add_header X-Content-Type-Options "nosniff" always;
         access_log off;
         autoindex off;
     }
 
-    location ~* ^${context.appPublicPath}storage/uploads/(.*\\.(?:htm|html|svg|svgz|xhtml|pdf))$ {
+    location ~* ^${context.appPublicPath}storage/uploads/(.*\\.(?:htm|html|pdf|svg|svgz|xht|xhtml|xml|xsl|xslt))$ {
         alias ${context.uploadsPath}/$1;
         add_header Cache-Control "public";
         add_header Content-Disposition "attachment" always;
+        add_header Content-Security-Policy "sandbox" always;
         add_header X-Content-Type-Options "nosniff" always;
         access_log off;
         autoindex off;
@@ -1458,6 +1475,7 @@ function renderNginxLocationTemplate(context: EnvProxyTemplateContext): string {
     location ${context.appPublicPath}storage/uploads/ {
         alias ${context.uploadsPath}/;
         add_header Cache-Control "public";
+        add_header Content-Security-Policy "sandbox" always;
         add_header X-Content-Type-Options "nosniff" always;
         access_log off;
         autoindex off;
@@ -1544,6 +1562,7 @@ function buildCaddyContextCommentLines(
 
 function renderCaddyAppTemplate(siteAddress: string, context: EnvProxyTemplateContext, publicDir: string): string {
   const uploadsPath = `${context.appPublicPath}storage/uploads/`;
+  const fileAccessPathMatcher = toCaddyPathMatcher(`${context.appPublicPath}files/`);
   const distPathMatcher = toCaddyPathMatcher(context.distPath);
   const uploadsPathMatcher = toCaddyPathMatcher(uploadsPath);
   const apiPathMatcher = toCaddyPathMatcher(context.apiBasePath);
@@ -1589,10 +1608,14 @@ function renderCaddyAppTemplate(siteAddress: string, context: EnvProxyTemplateCo
     `${siteAddress} {`,
     `    encode zstd gzip${rootRedirectBlock}${appPublicPathRedirectBlock}${modernClientRedirectBlock}${shorthandModernClientRedirectBlock}`,
     '',
+    '    @activeUploadedContent path_regexp activeUploadedContent (?i)\\.(?:htm|html|pdf|svg|svgz|xht|xhtml|xml|xsl|xslt)$',
+    '',
     `    handle_path ${uploadsPathMatcher} {`,
     `        root * ${context.uploadsPath}`,
     '        header Cache-Control public',
+    '        header Content-Security-Policy sandbox',
     '        header X-Content-Type-Options nosniff',
+    '        header @activeUploadedContent Content-Disposition attachment',
     '        file_server',
     '    }',
     '',
@@ -1614,7 +1637,19 @@ function renderCaddyAppTemplate(siteAddress: string, context: EnvProxyTemplateCo
     `        reverse_proxy ${context.proxyHost}:${context.apiPort}`,
     '    }',
     '',
-    '    # Keep API and WS routes above the SPA fallbacks.',
+    '    # Keep file, API and WS routes above the SPA fallbacks.',
+    `    handle ${fileAccessPathMatcher} {`,
+    `        reverse_proxy ${context.proxyHost}:${context.apiPort}`,
+    '    }',
+    ...(context.appPublicPath === DEFAULT_APP_PUBLIC_PATH
+      ? []
+      : [
+          '',
+          '    handle /files/* {',
+          `        reverse_proxy ${context.proxyHost}:${context.apiPort}`,
+          '    }',
+        ]),
+    '',
     `    handle ${apiPathMatcher} {`,
     `        reverse_proxy ${context.proxyHost}:${context.apiPort}`,
     '    }',

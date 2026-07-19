@@ -1,62 +1,68 @@
-# Um para Um
+---
+title: "Um para um"
+description: "Campo de relação um para um (O2O), em que duas entidades de tabela correspondem uma à outra, usado para armazenar diferentes aspectos de uma entidade separadamente."
+keywords: "Um para um,O2O,HasOne,BelongsTo,Campos de relação,NocoBase"
+---
 
-Na relação entre funcionários e perfis pessoais, cada funcionário pode ter apenas um registro de perfil pessoal, e cada registro de perfil pessoal pode corresponder a apenas um funcionário. Nesse caso, a relação entre funcionário e perfil pessoal é de um para um.
+# Um para um
 
-A chave estrangeira em uma relação um para um pode ser colocada tanto na **coleção** de origem quanto na **coleção** de destino. Se ela representa "tem um(a)", a chave estrangeira é mais apropriadamente colocada na **coleção** de destino; se representa "pertence a", então a chave estrangeira é melhor colocada na **coleção** de origem.
+A relação entre funcionários e perfis pessoais: cada funcionário pode ter apenas um registro de perfil pessoal, e cada registro de perfil pessoal também pode corresponder a apenas um funcionário. Nesse caso, funcionários e perfis pessoais têm uma relação um para um.
 
-Por exemplo, no caso mencionado acima, onde um funcionário tem apenas um perfil pessoal e o perfil pessoal pertence ao funcionário, é apropriado colocar a chave estrangeira na **coleção** de perfis pessoais.
+A chave estrangeira de uma relação um para um pode ser colocada na tabela de origem ou na tabela de destino. Se a relação representar “tem um”, é mais apropriado colocar a chave estrangeira na tabela de destino; se representar uma “relação de pertencimento”, é mais apropriado colocá-la na tabela de origem.
 
-## Um para Um (Tem Um)
+No exemplo acima, um funcionário tem apenas um perfil pessoal, e o perfil pessoal pertence ao funcionário. Portanto, é mais adequado colocar essa chave estrangeira na tabela de perfis pessoais.
 
-Isso indica que um funcionário tem um registro de perfil pessoal.
+## Um para um (tem um)
+
+Indica que determinado funcionário tem um registro de perfil pessoal
 
 Relação ER
 
-![alt text](https://static-docs.nocobase.com/4359e128936bbd7c9ff51bcff1d646dd.png)
+![texto alternativo](https://static-docs.nocobase.com/4359e128936bbd7c9ff51bcff1d646dd.png)
 
-Configuração do Campo
+Configuração do campo
 
-![alt text](https://static-docs.nocobase.com/7665a87e094b4fb50c9426a108f87105.png)
+![texto alternativo](https://static-docs.nocobase.com/7665a87e094b4fb50c9426a108f87105.png)
 
-## Um para Um (Pertence a)
+## Um para um (relação de pertencimento)
 
-Isso indica que um perfil pessoal pertence a um funcionário específico.
+Indica que determinado registro de perfil pessoal pertence a um funcionário
 
 Relação ER
 
 ![](https://static-docs.nocobase.com/31e7cc3e630220cf1e98753ca24ac72d.png)
 
-Configuração do Campo
+Configuração do campo
 
-![alt text](https://static-docs.nocobase.com/4f09eeb3c7717d61a349842da43c187c.png)
+![texto alternativo](https://static-docs.nocobase.com/4f09eeb3c7717d61a349842da43c187c.png)
 
-## Descrição dos Parâmetros
+## Descrição dos parâmetros
 
-### Source collection
+### Coleção de origem
 
-A **coleção** de origem, que é a **coleção** onde o campo atual está localizado.
+A tabela de origem, ou seja, a tabela onde o campo atual está localizado.
 
-### Target collection
+### Coleção de destino
 
-A **coleção** de destino, a **coleção** que está sendo relacionada.
+A tabela de destino, à qual a relação está associada.
 
-### Foreign key
+### Chave estrangeira
 
-Usada para estabelecer uma relação entre duas **coleções**. Em uma relação um para um, a chave estrangeira pode ser colocada tanto na **coleção** de origem quanto na **coleção** de destino. Se ela representa "tem um(a)", a chave estrangeira é mais apropriadamente colocada na **coleção** de destino; se representa "pertence a", então a chave estrangeira é melhor colocada na **coleção** de origem.
+Usada para estabelecer a relação entre duas tabelas. A chave estrangeira de uma relação um para um pode ser colocada na tabela de origem ou na tabela de destino. Se a relação representar “tem um”, é mais apropriado colocar a chave estrangeira na tabela de destino; se representar uma “relação de pertencimento”, é mais apropriado colocá-la na tabela de origem.
 
-### Source key <- Foreign key (Chave Estrangeira na Coleção de Destino)
+### Chave de origem <- Chave estrangeira (chave estrangeira na tabela de destino)
 
-A chave de origem, ou seja, o campo referenciado pela restrição de chave estrangeira, deve ser único. Quando a chave estrangeira é colocada na **coleção** de destino, ela indica "tem um(a)".
+O campo referenciado pela restrição de chave estrangeira deve ser exclusivo. Quando a chave estrangeira está na tabela de destino, a relação representa “tem um”.
 
-### Target key <- Foreign key (Chave Estrangeira na Coleção de Origem)
+### Chave de destino <- Chave estrangeira (chave estrangeira na tabela de origem)
 
-A chave de destino, ou seja, o campo referenciado pela restrição de chave estrangeira, deve ser único. Quando a chave estrangeira é colocada na **coleção** de origem, ela indica "pertence a".
+O campo referenciado pela restrição de chave estrangeira deve ser exclusivo. Quando a chave estrangeira está na tabela de origem, a relação representa uma “relação de pertencimento”.
 
 ### ON DELETE
 
-ON DELETE se refere às regras de ação para a referência da chave estrangeira na **coleção** filha relacionada ao excluir registros da **coleção** pai. É uma opção definida ao estabelecer uma restrição de chave estrangeira. As opções comuns de ON DELETE incluem:
+ON DELETE refere-se à regra de operação aplicada às referências de chave estrangeira na tabela filha relacionada quando um registro é excluído da tabela pai. É uma opção usada na definição de restrições de chave estrangeira. As opções ON DELETE comuns incluem:
 
-- CASCADE: Ao excluir um registro na **coleção** pai, todos os registros relacionados na **coleção** filha são automaticamente excluídos.
-- SET NULL: Ao excluir um registro na **coleção** pai, o valor da chave estrangeira nos registros relacionados na **coleção** filha é definido como NULL.
-- RESTRICT: Opção padrão, onde a exclusão de um registro da **coleção** pai é recusada se existirem registros relacionados na **coleção** filha.
-- NO ACTION: Semelhante ao RESTRICT, a exclusão de um registro da **coleção** pai é recusada se existirem registros relacionados na **coleção** filha.
+- CASCADE: ao excluir um registro da tabela pai, exclui automaticamente todos os registros relacionados da tabela filha.
+- SET NULL: ao excluir um registro da tabela pai, define como NULL o valor da chave estrangeira relacionada na tabela filha.
+- RESTRICT: opção padrão; ao tentar excluir um registro da tabela pai, recusa a exclusão se houver registros relacionados na tabela filha.
+- NO ACTION: semelhante a RESTRICT; se houver registros relacionados na tabela filha, recusa a exclusão do registro da tabela pai.

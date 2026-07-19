@@ -1,6 +1,12 @@
+---
+title: "Knotentypen erweitern"
+description: "Knotentypen erweitern: benutzerdefinierte Knotenentwicklung, Knotenkonfiguration, Ausführungslogik, API und Lebenszyklus."
+keywords: "Workflow,Knoten erweitern,benutzerdefinierte Knoten,Knotenentwicklung,NocoBase"
+---
+
 # Knotentypen erweitern
 
-Der Typ eines Knotens ist im Wesentlichen eine Anweisungslogik. Verschiedene Anweisungen repräsentieren unterschiedliche Operationen, die im Workflow ausgeführt werden.
+Der Typ eines Knotens ist im Wesentlichen eine Betriebsanweisung. Verschiedene Anweisungen repräsentieren unterschiedliche Operationen, die im Workflow ausgeführt werden.
 
 Ähnlich wie bei Triggern gliedert sich die Erweiterung von Knotentypen in zwei Teile: serverseitig und clientseitig. Der Server muss die Logik für die registrierte Anweisung implementieren, während der Client die Oberflächenkonfiguration für die Parameter des Knotens bereitstellen muss, in dem sich die Anweisung befindet.
 
@@ -41,7 +47,7 @@ export default class MyPlugin extends Plugin {
 
 Der Statuswert (`status`) im Rückgabeobjekt der Anweisung ist obligatorisch und muss ein Wert aus der Konstante `JOB_STATUS` sein. Dieser Wert bestimmt den weiteren Verlauf der Verarbeitung für diesen Knoten im Workflow. Normalerweise wird `JOB_STATUS.RESOVLED` verwendet, was bedeutet, dass der Knoten erfolgreich ausgeführt wurde und die Ausführung mit den nachfolgenden Knoten fortgesetzt wird. Wenn ein Ergebniswert vorab gespeichert werden muss, können Sie auch die Methode `processor.saveJob` aufrufen und deren Rückgabeobjekt zurückgeben. Der Executor generiert basierend auf diesem Objekt einen Ausführungsergebnisdatensatz.
 
-### Knoten-Ergebniswert
+### Knoten-Rückgabewert
 
 Wenn ein spezifisches Ausführungsergebnis vorliegt, insbesondere Daten, die für nachfolgende Knoten vorbereitet werden, kann dieses über die `result`-Eigenschaft zurückgegeben und im Job-Objekt des Knotens gespeichert werden:
 
@@ -111,7 +117,7 @@ export class AsyncInstruction extends Instruction {
     // 2. Explicitly call exit() to flush the task to the database and commit the transaction
     await processor.exit();
 
-    // 3. Initiate the async operation (the transaction is now committed, no longer holding the database connection)
+    // 3. Initiate the async operation (transaction is now committed, no longer holding the DB connection)
     const jobDone: IJob = { status: JOB_STATUS.PENDING };
     try {
       const result = await someAsyncOperation(node.config);
@@ -143,7 +149,7 @@ export class AsyncInstruction extends Instruction {
 Es gibt mehrere wichtige Details zu beachten:
 
 **Warum `processor.exit()` explizit aufrufen, anstatt das ausstehende Task-Objekt zurückzugeben?**  
-`return { status: PENDING }` beendet die `run`-Funktion sofort, was es unmöglich macht, danach noch Code auszuführen. Der Aufruf von `await processor.exit()` schreibt lediglich die Transaktion fest und beendet den Datenbankkontext, während die Funktion selbst weiter ausgeführt wird. Dadurch können Sie im selben Funktionskörper eine zeitaufwändige Operation abwarten und anschließend `resume` aufrufen, wenn sie abgeschlossen ist. Wenn Sie `exit()` überspringen und direkt eine lange Operation abwarten, bevor Sie zurückgeben, hält dies sowohl die Datenbanktransaktion lange offen (was zu Sperrkonflikten führt) als auch wird der Task-Datensatz erst nach Abschluss der Operation beim Transaction-Commit persistiert.
+`return { status: PENDING }` beendet die `run`-Funktion sofort, was es unmöglich macht, danach noch Code auszuführen. Der Aufruf von `await processor.exit()` schreibt lediglich die Transaktion fest und beendet den Datenbankkontext, während die Funktion selbst weiter ausgeführt wird. Dadurch können Sie im selben Funktionskörper eine zeitaufwändige Operation mit `await` abwarten und anschließend `resume` aufrufen, wenn sie abgeschlossen ist. Wenn Sie `exit()` überspringen und direkt eine lange Operation mit `await` abwarten, bevor Sie zurückgeben, hält dies sowohl die Datenbanktransaktion lange offen (was zu Sperrkonflikten führt) als auch wird der Task-Datensatz erst nach Abschluss der Operation beim Transaction-Commit persistiert.
 
 **Warum den Task erneut abfragen, anstatt das von `saveJob` zurückgegebene Objekt zu verwenden?**  
 Das von `saveJob` zurückgegebene Objekt ist eine In-Memory-Modellinstanz, die an die ursprüngliche Transaktion gebunden ist. Nachdem `processor.exit()` aufgerufen wurde, wurde diese Transaktion committet und geschlossen. Das direkte Ändern dieser Instanz und der Aufruf von `resume` führt zu ORM-Zustandsanomalien (veraltete Transaktionsreferenzen, Zustandsinkonsistenzen usw.). Die erneute Abfrage aus der Datenbank über `id` stellt sicher, dass eine saubere, an keine Transaktion gebundene Instanz vorliegt.
@@ -161,13 +167,13 @@ Der Ausführungsstatus eines Knotens beeinflusst den Erfolg oder Misserfolg des 
 
 Wenn ein Knoten während der Ausführung einen fehlgeschlagenen Ausführungsstatus zurückgibt, verarbeitet die Engine dies je nach den folgenden zwei Situationen unterschiedlich:
 
-1.  Befindet sich der Knoten, der einen Fehlerstatus zurückgibt, im Haupt-Workflow, d.h. nicht innerhalb eines von einem vorgelagerten Knoten geöffneten Verzweigungs-Workflows, wird der gesamte Haupt-Workflow als fehlgeschlagen bewertet und der Prozess beendet.
+1.  Befindet sich der Knoten, der einen Fehlerstatus zurückgibt, im Haupt-Workflow, d. h. nicht innerhalb eines von einem vorgelagerten Knoten geöffneten Verzweigungs-Workflows, wird der gesamte Haupt-Workflow als fehlgeschlagen bewertet und der Prozess beendet.
 
 2.  Befindet sich der Knoten, der einen Fehlerstatus zurückgibt, innerhalb eines Verzweigungs-Workflows, wird die Verantwortung für die Bestimmung des nächsten Workflow-Status an den Knoten übergeben, der die Verzweigung geöffnet hat. Die interne Logik dieses Knotens entscheidet über den Status des nachfolgenden Workflows, und diese Entscheidung wird rekursiv auf den Haupt-Workflow übertragen.
 
 Letztendlich wird der nächste Status des gesamten Workflows an den Knoten des Haupt-Workflows bestimmt. Wenn ein Knoten im Haupt-Workflow einen Fehler zurückgibt, endet der gesamte Workflow mit einem Fehlerstatus.
 
-Wenn ein Knoten nach der Ausführung den Status „angehalten“ zurückgibt, wird der gesamte Ausführungsprozess vorübergehend unterbrochen und angehalten, um auf ein vom entsprechenden Knoten definiertes Ereignis zu warten, das die Fortsetzung der Workflow-Ausführung auslöst. Beispielsweise pausiert der manuelle Knoten nach der Ausführung mit dem Status „angehalten“ an diesem Knoten und wartet auf eine manuelle Intervention, um zu entscheiden, ob er genehmigt wird. Wenn der manuell eingegebene Status „genehmigt“ ist, werden die nachfolgenden Workflow-Knoten fortgesetzt; andernfalls wird er gemäß der zuvor beschriebenen Fehlerlogik behandelt.
+Wenn ein Knoten nach der Ausführung den Status "angehalten" zurückgibt, wird der gesamte Ausführungsprozess vorübergehend unterbrochen und angehalten, um auf ein vom entsprechenden Knoten definiertes Ereignis zu warten, das die Fortsetzung der Workflow-Ausführung auslöst. Beispielsweise pausiert der manuelle Knoten nach der Ausführung mit dem Status "angehalten" an diesem Knoten und wartet auf eine manuelle Intervention, um zu entscheiden, ob genehmigt wird. Wenn der manuell eingegebene Status "Genehmigung" ist, werden die nachfolgenden Workflow-Knoten fortgesetzt; andernfalls wird er gemäß der zuvor beschriebenen Fehlerlogik behandelt.
 
 Weitere Informationen zu den Rückgabestatus von Anweisungen finden Sie im Abschnitt Workflow-API-Referenz.
 
@@ -189,7 +195,7 @@ Dies ist der häufigste Fall. Es wird ein Objekt zurückgegeben, das ein obligat
 - `JOB_STATUS.PENDING`: Knoten tritt in einen angehaltenen Zustand ein; der aktuelle Ausführungskontext stoppt und wartet auf ein externes Ereignis, das `resume` auslöst
 - Andere Fehlerstatus (`FAILED`, `ERROR` usw.): Werden an den übergeordneten Verzweigungsknoten weitergegeben oder beenden den gesamten Workflow direkt
 
-Dieser Pfad ist der vollständige Transaktions-Commit-Pfad — der Executor speichert den Task-Datensatz, schreibt in die Datenbank und committet die Transaktion.
+Dieser Pfad ist der vollständige Transaktions-Commit-Pfad -- der Executor speichert den Task-Datensatz, schreibt in die Datenbank und committet die Transaktion.
 
 Beispiel: [ConditionInstruction.ts](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow/src/server/instructions/ConditionInstruction.ts) (gibt ein `job`-Objekt direkt zurück, wenn keine Verzweigung vorhanden ist; siehe den `void`-Fall weiter unten bei Verzweigungen)
 
@@ -197,7 +203,7 @@ Beispiel: [ConditionInstruction.ts](https://github.com/nocobase/nocobase/blob/ma
 
 Wenn `null` zurückgegeben wird, ruft der Executor `processor.exit()` (ohne Argument) auf, mit der Wirkung: **Ausstehende Tasks werden in die Datenbank geschrieben und die Transaktion wird committet, aber der Gesamtausführungsstatus wird nicht aktualisiert**.
 
-Diese Verwendung ist in der `resume`-Methode von Verzweigungssteuerungsknoten üblich: Eine Verzweigung wurde abgeschlossen und der Task-Status des übergeordneten Knotens muss aktualisiert und gespeichert werden (z. B. „Zweig N wurde abgeschlossen"), aber andere Zweige laufen noch, und die Gesamtausführung soll im Status `STARTED` bleiben und auf die verbleibenden Zweige warten — die Rückgabe von `null` beendet den aktuellen Resume-Kontext, ohne den Gesamtausführungsstatus zu beeinflussen.
+Diese Verwendung ist in der `resume`-Methode von Verzweigungssteuerungsknoten üblich: Eine Verzweigung wurde abgeschlossen und der Task-Status des übergeordneten Knotens muss aktualisiert und gespeichert werden (z. B. "Zweig N wurde abgeschlossen"), aber andere Zweige laufen noch, und die Gesamtausführung soll im Status `STARTED` bleiben und auf die verbleibenden Zweige warten -- die Rückgabe von `null` beendet den aktuellen Resume-Kontext, ohne den Gesamtausführungsstatus zu beeinflussen.
 
 Beispiel: [ParallelInstruction.ts](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-parallel/src/server/ParallelInstruction.ts)
 
@@ -239,44 +245,78 @@ Die Definitionen der verschiedenen Parameter zur Definition von Knotentypen find
 
 Alle Anweisungen müssen von der Basisklasse `Instruction` abgeleitet werden. Die zugehörigen Eigenschaften und Methoden dienen der Konfiguration und Nutzung des Knotens.
 
-Wenn wir beispielsweise eine Konfigurationsoberfläche für den oben serverseitig definierten Knotentyp „Zufallszahlzeichenkette“ (`randomString`) bereitstellen müssen, der eine Konfigurationseinstellung `digit` für die Anzahl der Ziffern der Zufallszahl enthält, würden wir in dem Konfigurationsformular ein numerisches Eingabefeld verwenden, um Benutzereingaben zu empfangen.
+Wenn wir beispielsweise eine Konfigurationsoberfläche für den oben serverseitig definierten Knotentyp "Zufallszahlzeichenkette" (`randomString`) bereitstellen möchten, der eine Konfigurationseinstellung `digit` für die Anzahl der Ziffern der Zufallszahl enthält:
 
-```tsx pure
-import WorkflowPlugin, { Instruction, VariableOption } from '@nocobase/workflow/client';
+```ts
+import { Instruction } from '@nocobase/plugin-workflow/client-v2';
 
-class MyInstruction extends Instruction {
+class RandomStringInstruction extends Instruction {
   title = 'Random number string';
   type = 'randomString';
   group = 'extended';
-  fieldset = {
-    'digit': {
-      type: 'number',
-      title: 'Digit',
-      name: 'digit',
-      'x-decorator': 'FormItem',
-      'x-component': 'InputNumber',
-      'x-component-props': {
-        min: 1,
-        max: 10,
-      },
-      default: 6,
-    },
-  };
-  useVariables(node, options): VariableOption {
-    return {
-      value: node.key,
-      label: node.title,
-    };
+
+  // Node config form (lazy-loaded component)
+  FieldsetLoader = () => import('./components/RandomStringConfig');
+
+  useVariables(node, options) {
+    return { value: node.key, label: node.title };
   }
 }
+```
 
-export default class MyPlugin extends Plugin {
-  load() {
-    // get workflow plugin instance
-    const workflowPlugin = this.app.getPlugin<WorkflowPlugin>(WorkflowPlugin);
+Dabei ist `FieldsetLoader` eine Funktion, die `Promise<{ default: ComponentType }>` zurückgibt und über dynamisches `import()` Lazy Loading implementiert. Die Komponente, auf die sie verweist, ist eine Standard-React-Funktionskomponente, die das Formular mit antd's `Form.Item` aufbaut:
 
-    // register instruction
-    workflowPlugin.registerInstruction('randomString', MyInstruction);
+```tsx
+// components/RandomStringConfig.tsx
+import { Form, InputNumber } from 'antd';
+
+export default function RandomStringConfig() {
+  return (
+    <Form.Item
+      name={['config', 'digit']}
+      label="Digit"
+      initialValue={6}
+      rules={[{ required: true }]}
+    >
+      <InputNumber min={1} max={10} />
+    </Form.Item>
+  );
+}
+```
+
+Beachten Sie, dass der `name` des Formularfelds das verschachtelte Array-Format `['config', 'fieldName']` verwendet, was der antd-Form-Standardkonvention entspricht.
+
+### Mehrere Konfigurationsoberflächen
+
+Ein Knoten kann mehrere Konfigurationsoberflächen für verschiedene Szenarien bereitstellen:
+
+- `FieldsetLoader` -- Konfigurationsformular im Knoten-Drawer (am häufigsten verwendet)
+![FieldsetLoader](https://static-docs.nocobase.com/20260701153106.png)
+
+- `PresetFieldsetLoader` -- Voreinstellungsformular beim Erstellen eines Knotens (enthält normalerweise nur Pflichtfelder)
+![PresetFieldsetLoader](https://static-docs.nocobase.com/20260701153041.png)
+
+- `ComponentLoader` -- Benutzerdefiniertes Knoten-Rendering auf der Zeichenfläche (wird für Verzweigungsknoten und andere Fälle verwendet, die ein spezielles Rendering erfordern)
+![ComponentLoader](https://static-docs.nocobase.com/20260701153139.png)
+
+Wenn ein Loader auf einen benannten Export (statt den Standard-Export) in einer Datei verweisen soll, verwenden Sie `.then()` zum Remapping:
+
+```ts
+FieldsetLoader = () => import('./components/MyNodeConfig').then((m) => ({ default: m.MyFieldset }));
+```
+
+### Knoten registrieren
+
+Registrieren Sie den Knotentyp beim Workflow-Plugin innerhalb des Erweiterungs-Plugins:
+
+```ts
+import { Plugin } from '@nocobase/client-v2';
+import RandomStringInstruction from './RandomStringInstruction';
+
+export default class extends Plugin {
+  async load() {
+    const workflow = this.app.pm.get('workflow');
+    workflow.registerInstruction('randomString', RandomStringInstruction);
   }
 }
 ```
@@ -287,7 +327,7 @@ Die clientseitig registrierte Knotentyp-Kennung muss mit der serverseitigen übe
 
 ### Knotenergebnisse als Variablen bereitstellen
 
-Sie werden die `useVariables`-Methode im obigen Beispiel bemerken. Wenn Sie das Ergebnis eines Knotens (den `result`-Teil) als Variable für nachfolgende Knoten verwenden möchten, müssen Sie diese Methode in der geerbten Anweisungsklasse implementieren und ein Objekt zurückgeben, das dem Typ `VariableOption` entspricht. Dieses Objekt dient als strukturelle Beschreibung des Ausführungsergebnisses des Knotens und stellt eine Variablennamen-Zuordnung zur Auswahl und Verwendung in nachfolgenden Knoten bereit.
+Sie werden die `useVariables`-Methode im obigen Beispiel bemerken. Wenn Sie das Ergebnis eines Knotens (den `result`-Teil) als Variable für nachfolgende Knoten verwenden möchten, müssen Sie diese Methode in der abgeleiteten Anweisungsklasse implementieren und ein Objekt zurückgeben, das dem Typ `VariableOption` entspricht. Dieses Objekt dient als strukturelle Beschreibung des Ausführungsergebnisses des Knotens und stellt eine Variablennamen-Zuordnung zur Auswahl und Verwendung in nachfolgenden Knoten bereit.
 
 Der Typ `VariableOption` ist wie folgt definiert:
 
@@ -302,7 +342,7 @@ export type VariableOption = {
 
 Der Kern ist die `value`-Eigenschaft, die den segmentierten Pfadwert des Variablennamens darstellt. `label` wird zur Anzeige in der Benutzeroberfläche verwendet, und `children` dient zur Darstellung einer mehrstufigen Variablenstruktur, die zum Einsatz kommt, wenn das Ergebnis des Knotens ein tief verschachteltes Objekt ist.
 
-Eine verwendbare Variable wird intern im System als Pfad-Template-String dargestellt, der durch `.` getrennt ist, zum Beispiel `{{jobsMapByNodeKey.2dw92cdf.abc}}`. Dabei repräsentiert `jobsMapByNodeKey` die Ergebnismenge aller Knoten (intern definiert, keine weitere Bearbeitung erforderlich), `2dw92cdf` ist der `key` des Knotens und `abc` ist eine benutzerdefinierte Eigenschaft im Ergebnisobjekt des Knotens.
+Eine verwendbare Variable wird intern im System als Pfad-Template-String dargestellt, der durch `.` getrennt ist, zum Beispiel `{{$jobsMapByNodeKey.2dw92cdf.abc}}`. Dabei repräsentiert `$jobsMapByNodeKey` die Ergebnismenge aller Knoten (intern definiert, keine weitere Bearbeitung erforderlich), `2dw92cdf` ist der `key` des Knotens und `abc` ist eine benutzerdefinierte Eigenschaft im Ergebnisobjekt des Knotens.
 
 Da das Ergebnis eines Knotens auch ein einfacher Wert sein kann, muss bei der Bereitstellung von Knotenvariablen die erste Ebene **zwingend** die Beschreibung des Knotens selbst sein:
 
@@ -313,18 +353,18 @@ Da das Ergebnis eines Knotens auch ein einfacher Wert sein kann, muss bei der Be
 }
 ```
 
-Das heißt, die erste Ebene besteht aus dem `key` und dem Titel des Knotens. Zum Beispiel sind bei der Verwendung des Ergebnisses des Berechnungs-Knotens (siehe [Code-Referenz](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow/src/client/nodes/calculation.tsx#L77)) die Optionen in der Benutzeroberfläche wie folgt:
+Das heißt, die erste Ebene besteht aus dem `key` und dem Titel des Knotens. Zum Beispiel sind bei der Verwendung des Ergebnisses des Berechnungs-Knotens (siehe [Code-Referenz](https://github.com/nocobase/nocobase/blob/develop/packages/plugins/%40nocobase/plugin-workflow/src/client-v2/nodes/calculation.tsx)) die Optionen in der Benutzeroberfläche wie folgt:
 
 ![Ergebnis des Berechnungs-Knotens](https://static-docs.nocobase.com/20240514230014.png)
 
-Wenn das Ergebnis des Knotens ein komplexes Objekt ist, können Sie `children` verwenden, um tiefere Eigenschaften zu beschreiben. Beispielsweise könnte eine benutzerdefinierte Anweisung die folgenden JSON-Daten zurückgeben:
+Wenn das Ergebnis des Knotens ein komplexes Objekt ist, können Sie `children` verwenden, um verschachtelte Eigenschaften weiter zu beschreiben. Beispielsweise könnte eine benutzerdefinierte Anweisung die folgenden JSON-Daten zurückgeben:
 
 ```json
 {
   "message": "ok",
   "data": {
     "id": 1,
-    "name": "test",
+    "name": "test"
   }
 }
 ```
@@ -332,7 +372,7 @@ Wenn das Ergebnis des Knotens ein komplexes Objekt ist, können Sie `children` v
 Dann können Sie es über die `useVariables`-Methode wie folgt zurückgeben:
 
 ```ts
-useVariables(node, options): VariableOption {
+useVariables(node, options) {
   return {
     value: node.key,
     label: node.title,
@@ -360,12 +400,12 @@ useVariables(node, options): VariableOption {
 }
 ```
 
-Auf diese Weise können Sie in nachfolgenden Knoten die folgende Benutzeroberfläche verwenden, um die Variablen auszuwählen:
+Auf diese Weise können Sie in nachfolgenden Knoten die folgende Benutzeroberfläche verwenden, um Variablen daraus auszuwählen:
 
 ![Abgebildete Ergebnisvariablen](https://static-docs.nocobase.com/20240514230103.png)
 
 :::info{title="Hinweis"}
-Wenn eine Struktur im Ergebnis ein Array von tief verschachtelten Objekten ist, können Sie ebenfalls `children` verwenden, um den Pfad zu beschreiben, dürfen aber keine Array-Indizes angeben. Dies liegt daran, dass bei der Variablenverarbeitung in NocoBase Workflows die Pfadbeschreibung für ein Array von Objekten bei der Verwendung automatisch zu einem Array von tiefen Werten abgeflacht wird und Sie nicht über einen Index auf einen bestimmten Wert zugreifen können.
+Wenn eine Struktur im Ergebnis ein Array von tief verschachtelten Objekten ist, können Sie ebenfalls `children` verwenden, um den Pfad zu beschreiben, dürfen aber keine Array-Indizes angeben. Dies liegt daran, dass bei der Variablenverarbeitung in NocoBase-Workflows die Pfadbeschreibung für ein Array von Objekten bei der Verwendung automatisch zu einem Array von tiefen Werten abgeflacht wird und Sie nicht über einen Index auf einen bestimmten Wert zugreifen können.
 :::
 
 ### Knotenverfügbarkeit
@@ -373,11 +413,6 @@ Wenn eine Struktur im Ergebnis ein Array von tief verschachtelten Objekten ist, 
 Standardmäßig kann jeder Knoten einem Workflow hinzugefügt werden. In einigen Fällen ist ein Knoten jedoch in bestimmten Workflow-Typen oder Verzweigungen nicht anwendbar. In solchen Situationen können Sie die Verfügbarkeit des Knotens über `isAvailable` konfigurieren:
 
 ```ts
-// Typdefinition
-export abstract class Instruction {
-  isAvailable?(ctx: NodeAvailableContext): boolean;
-}
-
 export type NodeAvailableContext = {
   // Workflow-Plugin-Instanz
   engine: WorkflowPlugin;
@@ -385,7 +420,7 @@ export type NodeAvailableContext = {
   workflow: object;
   // Vorgelagerter Knoten
   upstream: object;
-  // Ist es ein Verzweigungsknoten (Verzweigungsnummer)?
+  // Ist es ein Verzweigungsknoten (Verzweigungsindex)
   branchIndex: number;
 };
 ```
@@ -395,11 +430,17 @@ Die Methode `isAvailable` gibt `true` zurück, wenn der Knoten verfügbar ist, u
 Wenn keine besonderen Anforderungen bestehen, müssen Sie die `isAvailable`-Methode nicht implementieren, da Knoten standardmäßig verfügbar sind. Das häufigste Szenario, das eine Konfiguration erfordert, ist, wenn ein Knoten eine zeitaufwändige Operation sein könnte und nicht für die Ausführung in einem synchronen Workflow geeignet ist. Sie können die `isAvailable`-Methode verwenden, um seine Nutzung einzuschränken. Zum Beispiel:
 
 ```ts
-isAvailable({ engine, workflow, upstream, branchIndex }) {
+isAvailable({ engine, workflow }) {
   return !engine.isWorkflowSync(workflow);
 }
 ```
 
 ### Weitere Informationen
 
-Die Definitionen der verschiedenen Parameter zur Definition von Knotentypen finden Sie im Abschnitt Workflow-API-Referenz.
+Ein vollständiges Praxisbeispiel finden Sie unter: [CalculationInstruction-Quellcode](https://github.com/nocobase/nocobase/blob/develop/packages/plugins/%40nocobase/plugin-workflow/src/client-v2/nodes/calculation.tsx)
+
+Die Definitionen der verschiedenen Parameter zur Definition von Knotentypen finden Sie im Abschnitt [Workflow-API-Referenz](./api).
+
+:::info{title=Hinweis}
+Wenn Sie zuvor den Legacy-Client-Code (v1) verwendet haben und zur neuen v2-Version migrieren möchten, lesen Sie den [Migrationsleitfaden von v1 zu v2](./migration).
+:::

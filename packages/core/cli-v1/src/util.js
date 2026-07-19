@@ -432,6 +432,30 @@ const DEFAULT_MODERN_CLIENT_PREFIX = 'v';
 
 exports.DEFAULT_MODERN_CLIENT_PREFIX = DEFAULT_MODERN_CLIENT_PREFIX;
 
+const DEFAULT_APP_CLIENT_ENTRY_MODE = 'legacy-default';
+const APP_CLIENT_ENTRY_MODES = new Set(['legacy-default', 'modern-default', 'modern-only']);
+
+exports.DEFAULT_APP_CLIENT_ENTRY_MODE = DEFAULT_APP_CLIENT_ENTRY_MODE;
+
+function isAppClientEntryMode(value) {
+  return APP_CLIENT_ENTRY_MODES.has(String(value || '').trim());
+}
+
+exports.isAppClientEntryMode = isAppClientEntryMode;
+
+function normalizeAppClientEntryMode(value) {
+  const normalized = String(value || '').trim();
+  return isAppClientEntryMode(normalized) ? normalized : DEFAULT_APP_CLIENT_ENTRY_MODE;
+}
+
+exports.normalizeAppClientEntryMode = normalizeAppClientEntryMode;
+
+function resolveAppClientEntryMode() {
+  return normalizeAppClientEntryMode(process.env.APP_CLIENT_ENTRY_MODE);
+}
+
+exports.resolveAppClientEntryMode = resolveAppClientEntryMode;
+
 // Normalize APP_MODERN_CLIENT_PREFIX (accepts `v`, `/v`, `/v/`)
 // down to a bare segment like `v`.
 function normalizeModernClientPrefix(value) {
@@ -455,6 +479,13 @@ function isAppDevHtml() {
   return process.argv[2] === 'app-dev' || process.env.NOCOBASE_APP_DEV === 'true';
 }
 
+function shouldRefreshLegacyIndexTemplate(data = '') {
+  return (
+    !data.includes("window['__nocobase_modern_client_prefix__']") ||
+    !data.includes("window['__nocobase_app_client_entry_mode__']")
+  );
+}
+
 function buildIndexHtml(force = false) {
   if (process.env.NOCOBASE_EXTRACT_CLIENT_ASSETS === 'true') {
     return;
@@ -469,11 +500,15 @@ function buildIndexHtml(force = false) {
   }
   if (!fs.existsSync(tpl)) {
     fs.copyFileSync(file, tpl);
+  } else if (shouldRefreshLegacyIndexTemplate(fs.readFileSync(tpl, 'utf-8'))) {
+    fs.copyFileSync(file, tpl);
   }
   const data = fs.readFileSync(tpl, 'utf-8');
   let replacedData = data
     .replace(/\{\{env.CDN_BASE_URL\}\}/g, process.env.CDN_BASE_URL)
     .replace(/\{\{env.APP_PUBLIC_PATH\}\}/g, process.env.APP_PUBLIC_PATH)
+    .replace(/\{\{env.APP_MODERN_CLIENT_PREFIX\}\}/g, normalizeModernClientPrefix(process.env.APP_MODERN_CLIENT_PREFIX))
+    .replace(/\{\{env.APP_CLIENT_ENTRY_MODE\}\}/g, resolveAppClientEntryMode())
     .replace(/\{\{env.API_CLIENT_SHARE_TOKEN\}\}/g, process.env.API_CLIENT_SHARE_TOKEN || 'false')
     .replace(/\{\{env.API_CLIENT_STORAGE_TYPE\}\}/g, process.env.API_CLIENT_STORAGE_TYPE)
     .replace(/\{\{env.API_CLIENT_STORAGE_PREFIX\}\}/g, process.env.API_CLIENT_STORAGE_PREFIX)
@@ -614,6 +649,7 @@ exports.initEnv = function initEnv() {
     CDN_BASE_URL: '',
     APP_PUBLIC_PATH: '/',
     APP_MODERN_CLIENT_PREFIX: DEFAULT_MODERN_CLIENT_PREFIX,
+    APP_CLIENT_ENTRY_MODE: DEFAULT_APP_CLIENT_ENTRY_MODE,
     ESM_CDN_BASE_URL: 'https://esm.sh',
     ESM_CDN_SUFFIX: '',
   };
@@ -664,6 +700,14 @@ exports.initEnv = function initEnv() {
       process.env[key] = env[key];
     }
   }
+
+  const rawAppClientEntryMode = String(process.env.APP_CLIENT_ENTRY_MODE || '').trim();
+  if (rawAppClientEntryMode && !isAppClientEntryMode(rawAppClientEntryMode)) {
+    console.warn(
+      `Unknown APP_CLIENT_ENTRY_MODE "${rawAppClientEntryMode}", falling back to ${DEFAULT_APP_CLIENT_ENTRY_MODE}.`,
+    );
+  }
+  process.env.APP_CLIENT_ENTRY_MODE = normalizeAppClientEntryMode(rawAppClientEntryMode);
 
   if (!process.env.__env_modified__ && process.env.APP_PUBLIC_PATH) {
     const publicPath = process.env.APP_PUBLIC_PATH.replace(/\/$/g, '');

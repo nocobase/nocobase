@@ -145,13 +145,13 @@ describe('InternalCascadeSelect', () => {
     });
     const form = createForm();
 
-    render(
+    const { container } = render(
       <FormProvider form={form}>
         <SchemaField schema={schema} />
       </FormProvider>,
     );
 
-    await userEvent.click(document.querySelector('.ant-select-selector'));
+    await userEvent.click(container.querySelector('.ant-select-selector'));
     await userEvent.click(await screen.findByText('2', { selector: '.ant-select-item-option-content' }));
 
     await waitFor(() => {
@@ -178,13 +178,13 @@ describe('InternalCascadeSelect', () => {
     });
     const form = createForm();
 
-    render(
+    const { container } = render(
       <FormProvider form={form}>
         <SchemaField schema={schema} />
       </FormProvider>,
     );
 
-    await userEvent.click(document.querySelector('.ant-select-selector'));
+    await userEvent.click(container.querySelector('.ant-select-selector'));
     await userEvent.click(await screen.findByText('1', { selector: '.ant-select-item-option-content' }));
 
     await waitFor(() => {
@@ -193,10 +193,10 @@ describe('InternalCascadeSelect', () => {
     });
 
     await waitFor(() => {
-      expect(document.querySelectorAll('.ant-select-selector')).toHaveLength(2);
+      expect(container.querySelectorAll('.ant-select-selector')).toHaveLength(2);
     });
 
-    await userEvent.click(document.querySelectorAll('.ant-select-selector')[1]);
+    await userEvent.click(container.querySelectorAll('.ant-select-selector')[1]);
     await userEvent.click(await screen.findByText('2', { selector: '.ant-select-item-option-content' }));
 
     await waitFor(() => {

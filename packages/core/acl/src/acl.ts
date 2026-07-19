@@ -72,6 +72,24 @@ interface CanArgs {
   roles?: string[];
 }
 
+export interface ResolveActionParamsOptions {
+  resourceName: string;
+  actionName: string;
+  rawResourceName?: string;
+  params?: any;
+  useCurrentRepository?: boolean;
+}
+
+export interface ResolvedActionParams {
+  actionName: string;
+  resourceName: string;
+  rawResourceName: string;
+  can: CanResult | null;
+  rawParams: any;
+  parsedParams?: any;
+  mergedParams: any;
+}
+
 export class ACL extends EventEmitter {
   /**
    * @internal
@@ -374,18 +392,7 @@ export class ACL extends EventEmitter {
 
       const roleName = ctx.state.currentRole || 'anonymous';
       const { resourceName: rawResourceName, actionName } = ctx.action;
-
-      let resourceName = rawResourceName;
-      if (rawResourceName.includes('.')) {
-        resourceName = rawResourceName.split('.').pop();
-      }
-
-      if (ctx.getCurrentRepository) {
-        const currentRepository = ctx.getCurrentRepository();
-        if (currentRepository && currentRepository.targetCollection) {
-          resourceName = ctx.getCurrentRepository().targetCollection.name;
-        }
-      }
+      const resourceName = resolveResourceName(ctx, rawResourceName, true);
 
       ctx.can = (options: Omit<CanArgs, 'role'>) => {
         const roles = ctx.state.currentRoles || [roleName];
@@ -410,20 +417,9 @@ export class ACL extends EventEmitter {
    * @internal
    */
   async getActionParams(ctx) {
-    const roleNames = ctx.state.currentRoles?.length ? ctx.state.currentRoles : 'anonymous';
+    const roleNames = getRoleNames(ctx);
     const { resourceName: rawResourceName, actionName } = ctx.action;
-
-    let resourceName = rawResourceName;
-    if (rawResourceName.includes('.')) {
-      resourceName = rawResourceName.split('.').pop();
-    }
-
-    if (ctx.getCurrentRepository) {
-      const currentRepository = ctx.getCurrentRepository();
-      if (currentRepository && currentRepository.targetCollection) {
-        resourceName = ctx.getCurrentRepository().targetCollection.name;
-      }
-    }
+    const resourceName = resolveResourceName(ctx, rawResourceName, true);
 
     ctx.can = (options: Omit<CanArgs, 'role'>) => {
       const can = this.can({ roles: roleNames, ...options });
@@ -440,6 +436,27 @@ export class ACL extends EventEmitter {
     };
 
     await compose(this.middlewares.nodes)(ctx, async () => {});
+  }
+
+  async resolveActionParams(ctx, options: ResolveActionParamsOptions): Promise<ResolvedActionParams> {
+    const rawResourceName = options.rawResourceName || options.resourceName;
+    const resourceName = resolveResourceName(ctx, options.resourceName, options.useCurrentRepository === true);
+    const roleNames = getRoleNames(ctx);
+    const can = this.can({
+      roles: roleNames,
+      resource: resourceName,
+      action: options.actionName,
+      rawResourceName,
+    });
+
+    return this.resolvePermissionParams(ctx, {
+      actionName: options.actionName,
+      can,
+      params: options.params,
+      rawResourceName,
+      resourceName,
+      skip: false,
+    });
   }
 
   addGeneralFixedParams(merger: GeneralMerger) {
@@ -461,70 +478,25 @@ export class ACL extends EventEmitter {
       async (ctx, next) => {
         const resourcerAction: Action = ctx.action;
         const { resourceName, actionName } = ctx.permission;
-
         const permission = ctx.permission;
 
         ctx.log?.debug && ctx.log.debug('ctx permission', permission);
 
-        if ((!permission.can || typeof permission.can !== 'object') && !permission.skip) {
-          ctx.throw(403, 'No permissions');
-          return;
-        }
-
-        const params = permission.can?.params || acl.fixedParamsManager.getParams(resourceName, actionName);
-
-        ctx.log?.debug && ctx.log.debug('acl params', params);
-
         try {
-          if (params && resourcerAction.mergeParams) {
-            const db = ctx.database ?? ctx.db;
-            const collection = db?.getCollection?.(resourceName);
-            checkFilterParams(collection, params?.filter);
-            const parsedFilter = await parseJsonTemplate(params.filter, {
-              state: ctx.state,
-              timezone: getTimezone(ctx),
-              userProvider: createUserProvider({
-                db: ctx.db,
-                currentUser: ctx.state?.currentUser,
-              }),
-            });
-            const parsedParams = params.filter ? { ...params, filter: parsedFilter ?? params.filter } : params;
+          const result = await acl.resolvePermissionParams(ctx, {
+            actionName,
+            can: permission.can,
+            params: resourcerAction.params,
+            rawResourceName: ctx.action.resourceName,
+            resourceName,
+            skip: permission.skip,
+          });
 
-            ctx.permission.parsedParams = parsedParams;
-            ctx.log?.debug && ctx.log.debug('acl parsedParams', parsedParams);
-            ctx.permission.rawParams = lodash.cloneDeep(resourcerAction.params);
-
-            if (parsedParams.appends && resourcerAction.params.fields) {
-              for (const queryField of resourcerAction.params.fields) {
-                if (parsedParams.appends.indexOf(queryField) !== -1) {
-                  // move field to appends
-                  if (!resourcerAction.params.appends) {
-                    resourcerAction.params.appends = [];
-                  }
-                  resourcerAction.params.appends.push(queryField);
-                  resourcerAction.params.fields = resourcerAction.params.fields.filter((f) => f !== queryField);
-                }
-              }
-            }
-
-            const isEmptyFields = resourcerAction.params.fields && resourcerAction.params.fields.length === 0;
-
-            resourcerAction.mergeParams(parsedParams, {
-              appends: (x, y) => {
-                if (!x) {
-                  return [];
-                }
-                if (!y) {
-                  return x;
-                }
-                return (x as any[]).filter((i) => y.includes(i.split('.').shift()));
-              },
-            });
-
-            if (isEmptyFields) {
-              resourcerAction.params.fields = [];
-            }
-
+          if (result.parsedParams && resourcerAction.mergeParams) {
+            ctx.permission.parsedParams = result.parsedParams;
+            ctx.log?.debug && ctx.log.debug('acl parsedParams', result.parsedParams);
+            ctx.permission.rawParams = result.rawParams;
+            resourcerAction.params = result.mergedParams;
             ctx.permission.mergedParams = lodash.cloneDeep(resourcerAction.params);
           }
         } catch (e) {
@@ -545,9 +517,150 @@ export class ACL extends EventEmitter {
     );
   }
 
+  private async resolvePermissionParams(
+    ctx,
+    options: {
+      actionName: string;
+      can: CanResult | null;
+      params?: any;
+      rawResourceName: string;
+      resourceName: string;
+      skip?: boolean;
+    },
+  ): Promise<ResolvedActionParams> {
+    const { actionName, can, rawResourceName, resourceName } = options;
+    const rawParams = lodash.cloneDeep(options.params || {});
+
+    if ((!can || typeof can !== 'object') && !options.skip) {
+      throw new NoPermissionError('No permissions');
+    }
+
+    const params = can?.params || this.fixedParamsManager.getParams(resourceName, actionName);
+    ctx.log?.debug && ctx.log.debug('acl params', params);
+
+    if (!params) {
+      return {
+        actionName,
+        can,
+        mergedParams: rawParams,
+        rawParams,
+        rawResourceName,
+        resourceName,
+      };
+    }
+
+    const db = ctx.database ?? ctx.db;
+    const collection = db?.getCollection?.(resourceName);
+    checkFilterParams(collection, params?.filter);
+    const parsedFilter = await parseJsonTemplate(params.filter, {
+      state: ctx.state,
+      timezone: getTimezone(ctx),
+      userProvider: createUserProvider({
+        db: ctx.db,
+        currentUser: ctx.state?.currentUser,
+      }),
+    });
+    const parsedParams = params.filter ? { ...params, filter: parsedFilter ?? params.filter } : params;
+    const mergedParams = mergeActionParams(rawParams, parsedParams);
+
+    return {
+      actionName,
+      can,
+      mergedParams,
+      parsedParams,
+      rawParams,
+      rawResourceName,
+      resourceName,
+    };
+  }
+
   protected isAvailableAction(actionName: string) {
     return this.availableActions.has(this.resolveActionAlias(actionName));
   }
+}
+
+function getRoleNames(ctx: any) {
+  if (ctx.state.currentRoles?.length) {
+    return ctx.state.currentRoles;
+  }
+  return [ctx.state.currentRole || 'anonymous'];
+}
+
+function resolveResourceName(ctx: any, rawResourceName: string, useCurrentRepository: boolean) {
+  const repository = resolveResourceRepository(ctx, rawResourceName, useCurrentRepository);
+  const collection = repository?.targetCollection || repository?.collection;
+
+  if (collection?.name) {
+    return collection.name;
+  }
+
+  return rawResourceName.includes('.') ? rawResourceName.split('.').pop() : rawResourceName;
+}
+
+function resolveResourceRepository(ctx: any, resourceName: string, useCurrentRepository: boolean) {
+  if (useCurrentRepository && ctx.getCurrentRepository) {
+    return ctx.getCurrentRepository();
+  }
+
+  const collectionManager = ctx.dataSource?.collectionManager;
+  if (collectionManager?.getRepository) {
+    try {
+      return collectionManager.getRepository(resourceName, ctx.action?.sourceId);
+    } catch (error) {
+      // Fall back to the legacy resource-name normalization below.
+    }
+  }
+
+  const db = ctx.database ?? ctx.db;
+  if (db?.getRepository) {
+    try {
+      return db.getRepository(resourceName, ctx.action?.sourceId);
+    } catch (error) {
+      // Fall back to the legacy resource-name normalization below.
+    }
+  }
+}
+
+function mergeActionParams(rawParams: any, parsedParams: any) {
+  const mergedParams = lodash.cloneDeep(rawParams || {});
+
+  if (parsedParams.appends && mergedParams.fields) {
+    for (const queryField of mergedParams.fields) {
+      if (parsedParams.appends.indexOf(queryField) !== -1) {
+        if (!mergedParams.appends) {
+          mergedParams.appends = [];
+        }
+        mergedParams.appends.push(queryField);
+        mergedParams.fields = mergedParams.fields.filter((f) => f !== queryField);
+      }
+    }
+  }
+
+  const isEmptyFields = mergedParams.fields && mergedParams.fields.length === 0;
+
+  assign(mergedParams, parsedParams, {
+    appends: (x, y) => {
+      if (!x) {
+        return [];
+      }
+      if (!y) {
+        return x;
+      }
+      return (x as any[]).filter((i) => y.includes(i.split('.').shift()));
+    },
+    blacklist: 'intersect',
+    except: 'union',
+    fields: 'intersect',
+    filter: 'andMerge',
+    sort: 'overwrite',
+    whitelist: 'intersect',
+  });
+
+  if (isEmptyFields) {
+    mergedParams.fields = [];
+  }
+
+  return mergedParams;
 }
 
 function getTimezone(ctx: any) {

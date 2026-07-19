@@ -1,7 +1,7 @@
 [
   {
     "type": "section-header",
-    "label": "Файловый менеджер"
+    "label": "Менеджер файлов"
   },
   {
     "type": "custom-link",
@@ -51,13 +51,18 @@
   },
   {
     "type": "custom-link",
-    "label": "Таблица файлов",
+    "label": "Коллекция файлов",
     "link": "/file-manager/file-collection"
   },
   {
     "type": "custom-link",
     "label": "Поле вложения",
     "link": "/file-manager/field-attachment"
+  },
+  {
+    "type": "custom-link",
+    "label": "Стабильный URL",
+    "link": "/file-manager/stable-url"
   },
   {
     "type": "custom-link",
@@ -82,7 +87,7 @@
   },
   {
     "type": "custom-link",
-    "label": "Разработка расширений",
+    "label": "Разработка",
     "link": "/file-manager/development/"
   }
 ]

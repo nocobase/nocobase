@@ -359,6 +359,11 @@
         "type": "custom-link",
         "label": "Tham chiếu API",
         "link": "/workflow/development/api"
+      },
+      {
+        "type": "custom-link",
+        "label": "Hướng dẫn di chuyển v1 sang v2",
+        "link": "/workflow/development/migration"
       }
     ]
   }

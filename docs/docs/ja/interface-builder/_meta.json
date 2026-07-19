@@ -6,6 +6,27 @@
   },
   {
     "type": "custom-link",
+    "label": "UI レイアウト",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "概要",
+        "link": "/interface-builder/ui-layout/"
+      },
+      {
+        "type": "custom-link",
+        "label": "デスクトップ",
+        "link": "/interface-builder/ui-layout/desktop"
+      },
+      {
+        "type": "custom-link",
+        "label": "モバイル",
+        "link": "/interface-builder/ui-layout/mobile"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
     "label": "ブロック",
     "items": [
       {
@@ -67,6 +88,11 @@
             "type": "custom-link",
             "label": "Gantt",
             "link": "/interface-builder/blocks/data-blocks/gantt"
+          },
+          {
+            "type": "custom-link",
+            "label": "コメント",
+            "link": "/interface-builder/blocks/data-blocks/comment"
           }
         ]
       },

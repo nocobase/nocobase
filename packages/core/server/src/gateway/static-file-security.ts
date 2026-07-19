@@ -9,10 +9,29 @@
 
 import path from 'node:path';
 
-const ACTIVE_CONTENT_EXTENSIONS = new Set(['.htm', '.html', '.pdf', '.svg', '.svgz', '.xhtml']);
+const ACTIVE_CONTENT_EXTENSIONS = new Set([
+  '.htm',
+  '.html',
+  '.pdf',
+  '.svg',
+  '.svgz',
+  '.xht',
+  '.xhtml',
+  '.xml',
+  '.xsl',
+  '.xslt',
+]);
 
 function stripQueryAndHash(pathname = '') {
   return pathname.split('?')[0].split('#')[0];
+}
+
+function shouldDownload(pathname = '') {
+  const query = pathname.split('?')[1]?.split('#')[0];
+  if (!query) {
+    return false;
+  }
+  return new URLSearchParams(query).get('download') === '1';
 }
 
 export function hasActiveContentExtension(pathname = '') {
@@ -22,10 +41,11 @@ export function hasActiveContentExtension(pathname = '') {
 
 export function getStorageUploadSecurityHeaders(pathname = '') {
   const headers: Record<string, string> = {
+    'Content-Security-Policy': 'sandbox',
     'X-Content-Type-Options': 'nosniff',
   };
 
-  if (hasActiveContentExtension(pathname)) {
+  if (hasActiveContentExtension(pathname) || shouldDownload(pathname)) {
     headers['Content-Disposition'] = 'attachment';
   }
 

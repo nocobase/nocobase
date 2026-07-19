@@ -14,11 +14,17 @@ import multer from 'multer';
 import path from 'path';
 import type { Readable } from 'stream';
 import urlJoin from 'url-join';
-import { AttachmentModel, StorageType } from '.';
+import { AttachmentModel, GetFileURLOptions, StorageType } from '.';
 import { FILE_SIZE_LIMIT_DEFAULT, STORAGE_TYPE_LOCAL } from '../../constants';
 import { diskFilenameGetter, normalizeDocumentRoot } from '../utils';
 
 const DEFAULT_BASE_URL = '/storage/uploads';
+
+function appendDownloadParam(url: string) {
+  const [urlWithoutHash, hash] = url.split('#', 2);
+  const separator = urlWithoutHash.includes('?') ? '&' : '?';
+  return `${urlWithoutHash}${separator}download=1${hash ? `#${hash}` : ''}`;
+}
 
 function pathError(message: string) {
   const error = new Error(message) as NodeJS.ErrnoException;
@@ -166,12 +172,13 @@ export default class extends StorageType {
 
     return [count, undeleted];
   }
-  async getFileURL(file: AttachmentModel, preview = false) {
-    const url = await super.getFileURL(file, preview);
+  async getFileURL(file: AttachmentModel, preview = false, options: GetFileURLOptions = {}) {
+    const url = await super.getFileURL(file, preview, options);
     if (isURL(url)) {
       return url;
     }
-    return urlJoin(process.env.APP_PUBLIC_PATH, url);
+    const publicUrl = urlJoin(process.env.APP_PUBLIC_PATH, url);
+    return options.download ? appendDownloadParam(publicUrl) : publicUrl;
   }
 
   async getFileStream(file: AttachmentModel): Promise<{ stream: Readable; contentType?: string }> {

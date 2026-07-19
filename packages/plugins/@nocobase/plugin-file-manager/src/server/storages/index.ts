@@ -33,10 +33,18 @@ export interface AttachmentModel {
   id?: number;
   title: string;
   filename: string;
+  extname?: string;
   mimetype?: string;
   path: string;
   url?: string;
-  storageId: number;
+  storageId?: number | null;
+  source?: {
+    dataSourceKey?: string;
+    collectionName?: string;
+    field?: string;
+    documentCache?: boolean;
+    trustworthy?: boolean;
+  };
 }
 
 export abstract class StorageType {
@@ -82,13 +90,13 @@ export abstract class StorageType {
     return data;
   }
 
-  getFileURL(file: AttachmentModel, preview?: boolean): string | Promise<string> {
+  getFileURL(file: AttachmentModel, preview?: boolean, options: GetFileURLOptions = {}): string | Promise<string> {
     // 兼容历史数据
     if (file.url && isURL(file.url)) {
       if (preview && this.storage.options.thumbnailRule) {
         return encodeURL(file.url) + this.storage.options.thumbnailRule;
       }
-      return encodeURL(file.url);
+      return options.download ? appendDownloadResponse(file.url, file.filename) : encodeURL(file.url);
     }
     const keys = [
       this.storage.baseUrl,
@@ -96,7 +104,8 @@ export abstract class StorageType {
       ensureUrlEncoded(file.filename),
       preview && this.storage.options.thumbnailRule,
     ].filter(Boolean);
-    return urlJoin(keys);
+    const url = urlJoin(keys);
+    return options.download ? appendDownloadResponse(url, file.filename) : url;
   }
 
   async getFileStream(
@@ -130,3 +139,27 @@ export type StorageClassType = { new (storage: StorageModel): StorageType } & ty
 export type GetFileStreamOptions = {
   requestOptions?: any;
 };
+
+export type GetFileURLOptions = {
+  download?: boolean;
+};
+
+export function getDownloadContentDisposition(filename: string) {
+  const name = Path.basename(filename || 'file');
+  const fallback = name.replace(/[^\x20-\x7e]/g, '_').replace(/["\\]/g, '_') || 'file';
+  const encoded = encodeURIComponent(name).replace(
+    /['()*]/g,
+    (character) => `%${character.charCodeAt(0).toString(16).toUpperCase()}`,
+  );
+  return `attachment; filename="${fallback}"; filename*=UTF-8''${encoded}`;
+}
+
+export function appendDownloadResponse(url: string, filename: string) {
+  try {
+    const target = new URL(url);
+    target.searchParams.set('response-content-disposition', getDownloadContentDisposition(filename));
+    return target.toString();
+  } catch (error) {
+    return url;
+  }
+}

@@ -86,6 +86,39 @@ API_BASE_PATH=/api/
 
 ### API_BASE_URL
 
+URL de base utilisée par le frontend pour accéder à l'API NocoBase. Elle est vide par défaut, ce qui signifie que `${APP_PUBLIC_PATH}api/` du même origin est utilisé.
+
+```bash
+API_BASE_URL=
+```
+
+Ne la configurez avec l'adresse complète de l'API que lorsque les pages et le service API sont sur des origins différents (protocole, domaine ou port différents) :
+
+```bash
+API_BASE_URL=https://api.example.com/api/
+```
+
+:::warning{title="Déploiements cross-origin"}
+NocoBase utilise des cookies pour conserver l'état de connexion et autoriser l'accès aux [URL de fichiers stables](../../file-manager/stable-url.md). Lorsque `API_BASE_URL` pointe vers un origin différent de celui des pages :
+
+- L'origin des pages doit être ajouté à [`CORS_ORIGIN_WHITELIST`](#cors_origin_whitelist). Sinon, le navigateur ignorera `Set-Cookie` dans les réponses API, le cookie de connexion ne sera pas enregistré et les fonctions dépendantes des cookies, comme l'aperçu et le téléchargement de fichiers, échoueront avec `403`.
+- Les cookies sont stockés par `hostname`. Si les pages et l'API utilisent des domaines totalement différents, les requêtes vers les URL stables sous `/files/` depuis le domaine des pages n'enverront pas le cookie de connexion stocké sous le domaine de l'API ; l'accès au fichier échouera donc toujours.
+
+Il est recommandé de servir les pages et l'API depuis le même origin via un proxy inverse et de laisser `API_BASE_URL` vide.
+:::
+
+### CORS_ORIGIN_WHITELIST
+
+Liste blanche des origins autorisés à accéder à l'API en cross-origin avec des identifiants (cookies). Plusieurs origins sont séparés par des virgules. Vide par défaut.
+
+```bash
+CORS_ORIGIN_WHITELIST=https://www.example.com,https://admin.example.com
+```
+
+- Lorsqu'elle n'est pas configurée, seules les requêtes du même origin sont considérées comme fiables ; les requêtes cross-origin peuvent encore appeler l'API anonymement, mais le navigateur ne peut pas lire ni écrire de cookies pour elles.
+- Lorsqu'elle est configurée, les origins de la liste blanche reçoivent un `Access-Control-Allow-Origin` qui reprend exactement l'origin ainsi que `Access-Control-Allow-Credentials: true`, ce qui permet au navigateur d'envoyer et de stocker les cookies de connexion sur les requêtes cross-origin.
+- L'API de connexion valide les en-têtes `Origin` et `Referer` de la requête ; les requêtes de connexion cross-origin provenant d'origins hors liste blanche sont rejetées avec `403`.
+
 ### CLUSTER_MODE
 
 > `v1.6.0+`
@@ -359,7 +392,7 @@ SERVER_REQUEST_WHITELIST=api.example.com,*.trusted.com,10.0.0.0/8,127.0.0.1
 
 **Non configuré** : Toutes les requêtes sortantes `http` / `https` restent autorisées pour conserver le comportement existant. Toutefois, si la cible est une adresse loopback, privée, link-local ou metadata, ou si un domaine se résout vers l'une de ces adresses, le serveur écrit un warning dans les logs.
 
-**Configuré** : Seules les requêtes dont l'hôte correspond à une entrée de la liste blanche sont autorisées ; les requêtes non correspondantes génèrent une erreur. Les versions futures pourront durcir progressivement le comportement par défaut. Si votre déploiement doit accéder à des services internes, configurez une liste blanche explicite à l'avance.
+**Configuré** : La requête initiale et chaque destination de redirection doivent correspondre à la liste blanche. Sans correspondance, NocoBase génère une erreur avant d'envoyer la requête suivante. Les versions futures pourront durcir progressivement le comportement par défaut. Si votre déploiement doit accéder à des services internes, configurez une liste blanche explicite à l'avance.
 
 Formats pris en charge :
 

@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-public-forms",
-  "version": "2.2.0-beta.10",
+  "version": "2.2.0-beta.15",
   "main": "dist/server/index.js",
   "displayName": "Public forms",
   "displayName.ru-RU": "Публичные формы",
@@ -20,7 +20,8 @@
     "@nocobase/plugin-flow-engine": "2.x",
     "@nocobase/plugin-ui-schema-storage": "2.x",
     "@nocobase/server": "2.x",
-    "@nocobase/test": "2.x"
+    "@nocobase/test": "2.x",
+    "@nocobase/utils": "2.x"
   },
   "devDependencies": {
     "react-device-detect": "2.2.3"

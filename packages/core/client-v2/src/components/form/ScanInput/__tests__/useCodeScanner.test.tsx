@@ -74,13 +74,23 @@ vi.mock('html5-qrcode', () => ({
 
 vi.mock('jsqr', () => jsQrMocks);
 
-function ScannerHost({ scanBoxSize }: { scanBoxSize?: { width: number; height: number } } = {}) {
+function ScannerHost({
+  onCameraStartFailure,
+  onScanFailure,
+  scanBoxSize,
+}: {
+  onCameraStartFailure?: (error: unknown) => void;
+  onScanFailure?: () => void;
+  scanBoxSize?: { width: number; height: number };
+} = {}) {
   const handleScanSuccess = useCallback(() => undefined, []);
 
   useCodeScanner({
     elementId: 'scanner',
     enabled: true,
     scanBoxSize,
+    onCameraStartFailure,
+    onScanFailure,
     onScanSuccess: handleScanSuccess,
   });
 
@@ -192,6 +202,30 @@ describe('useCodeScanner', () => {
       | undefined;
 
     expect(config?.qrbox?.(1200, 844)).toEqual({ width: 319, height: 240 });
+  });
+
+  it('clamps the scan box to the camera viewfinder size', async () => {
+    render(<ScannerHost scanBoxSize={{ width: 319, height: 240 }} />);
+
+    await waitFor(() => expect(mocks.start).toHaveBeenCalled());
+
+    const config = mocks.start.mock.calls[0]?.[1] as
+      | { qrbox?: (width: number, height: number) => { width: number; height: number } }
+      | undefined;
+
+    expect(config?.qrbox?.(200, 160)).toEqual({ width: 200, height: 160 });
+  });
+
+  it('reports camera start failures through the dedicated handler', async () => {
+    const cameraStartError = Object.assign(new Error('Camera failed'), { name: 'NotAllowedError' });
+    const handleCameraStartFailure = vi.fn();
+    const handleScanFailure = vi.fn();
+    mocks.start.mockRejectedValueOnce(cameraStartError);
+
+    render(<ScannerHost onCameraStartFailure={handleCameraStartFailure} onScanFailure={handleScanFailure} />);
+
+    await waitFor(() => expect(handleCameraStartFailure).toHaveBeenCalledWith(cameraStartError));
+    expect(handleScanFailure).not.toHaveBeenCalled();
   });
 
   it('uses jsQR first for Safari uploaded QR images', async () => {

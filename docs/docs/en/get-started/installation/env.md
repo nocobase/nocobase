@@ -86,6 +86,39 @@ API_BASE_PATH=/api/
 
 ### API_BASE_URL
 
+Base URL the frontend uses to access the NocoBase API. Empty by default, which means the same-origin `${APP_PUBLIC_PATH}api/` is used.
+
+```bash
+API_BASE_URL=
+```
+
+Only set it to the full API address when the pages and the API service are on different origins (different protocol, domain, or port):
+
+```bash
+API_BASE_URL=https://api.example.com/api/
+```
+
+:::warning{title="Cross-origin deployments"}
+NocoBase uses cookies to maintain login state and to authorize [stable file URLs](../../file-manager/stable-url.md). When `API_BASE_URL` points to a different origin than the pages:
+
+- The page origin must be added to [`CORS_ORIGIN_WHITELIST`](#cors_origin_whitelist). Otherwise the browser ignores `Set-Cookie` in API responses, the login cookie is never stored, and cookie-dependent features such as file preview and download fail with `403`.
+- Cookies are stored per `hostname`. If the pages and the API use entirely different domains, requests to `/files/` stable URLs from the page domain will not carry the login cookie stored under the API domain, so file access still fails.
+
+Prefer serving the pages and the API from the same origin through a reverse proxy and leaving `API_BASE_URL` empty.
+:::
+
+### CORS_ORIGIN_WHITELIST
+
+Whitelist of origins allowed to access the API cross-origin with credentials (cookies). Multiple origins are separated by commas. Empty by default.
+
+```bash
+CORS_ORIGIN_WHITELIST=https://www.example.com,https://admin.example.com
+```
+
+- When not configured, only same-origin requests are treated as trusted; cross-origin requests can still call the API anonymously, but the browser is not allowed to read or write cookies for them.
+- When configured, whitelisted origins receive an exact `Access-Control-Allow-Origin` echo and `Access-Control-Allow-Credentials: true`, which lets the browser send and store login cookies on cross-origin requests.
+- The sign-in API validates the request `Origin` / `Referer`; cross-origin sign-in requests from origins outside the whitelist are rejected with `403`.
+
 ### CLUSTER_MODE
 
 > `v1.6.0+`
@@ -359,7 +392,7 @@ SERVER_REQUEST_WHITELIST=api.example.com,*.trusted.com,10.0.0.0/8,127.0.0.1
 
 **When not set**: All `http` / `https` outbound requests are allowed to keep existing behavior. However, if the target is a loopback, private, link-local, or metadata address, or if a domain resolves to one of these addresses, the server logs a warning.
 
-**When set**: Only requests whose host matches a whitelist entry are permitted; non-matching requests will raise an error. Future versions may gradually tighten the default behavior. If your deployment needs to access internal services, configure an explicit whitelist in advance.
+**When set**: The initial request and every redirect destination must match a whitelist entry; non-matching requests will raise an error before the next request is sent. Future versions may gradually tighten the default behavior. If your deployment needs to access internal services, configure an explicit whitelist in advance.
 
 Supported formats:
 
