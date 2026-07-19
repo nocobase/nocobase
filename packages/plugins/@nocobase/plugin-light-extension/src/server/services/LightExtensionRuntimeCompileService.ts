@@ -41,6 +41,7 @@ import {
   LIGHT_EXTENSION_AUTHORING_SURFACES,
   LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY,
   type LightExtensionCompileExecutor,
+  type LightExtensionCompileFailureResult,
   type LightExtensionCompileJob,
   type LightExtensionCompileResult,
   type LightExtensionCompileSuccessResult,
@@ -91,7 +92,7 @@ export interface LightExtensionPreparedSave {
   readonly candidate: LightExtensionPreparedSourceCandidate;
   readonly entryPlan: LightExtensionEntryReconcilePlan;
   readonly compileResults: readonly LightExtensionCompileSuccessResult[];
-  readonly compileEntries: LightExtensionSaveSourceResult['compile']['entries'];
+  readonly compileEntries: ReadonlyArray<LightExtensionSaveSourceResult['compile']['entries'][number]>;
   readonly diagnostics: readonly LightExtensionDiagnostic[];
   readonly compiledEntryCount: number;
 }
@@ -282,7 +283,7 @@ export class LightExtensionRuntimeCompileService {
       tree: candidate.tree,
       compile: {
         status: prepared.compileEntries.length === 0 ? 'skipped' : 'success',
-        entries: prepared.compileEntries,
+        entries: [...prepared.compileEntries],
       },
       diagnostics: [...prepared.diagnostics],
     };
@@ -702,7 +703,7 @@ function toSuccessfulCompileEntryResult(
 }
 
 function toFailedCompileEntryResult(
-  result: LightExtensionCompileResult,
+  result: LightExtensionCompileFailureResult,
 ): LightExtensionSaveSourceResult['compile']['entries'][number] {
   return {
     entryId: result.entryId,
@@ -712,7 +713,7 @@ function toFailedCompileEntryResult(
     status: 'failed',
     execution: 'compiled',
     diagnostics: result.diagnostics,
-    failureCode: result.accepted ? undefined : result.failureCode,
+    failureCode: result.failureCode,
   };
 }
 

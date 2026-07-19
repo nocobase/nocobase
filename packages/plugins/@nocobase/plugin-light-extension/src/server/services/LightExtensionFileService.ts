@@ -244,7 +244,7 @@ export class LightExtensionFileService {
         );
       }
       const prepared: LightExtensionPreparedSourceCandidate = Object.freeze({
-        [preparedSourceCandidateBrand]: true,
+        [preparedSourceCandidateBrand]: true as const,
         repo: Object.freeze({ ...repo }),
         expectedHeadCommitId: input.expectedHeadCommitId,
         requestId,
@@ -728,7 +728,7 @@ export class LightExtensionFileService {
 
   private createVscContext(input: {
     ctx: LightExtensionServiceContext;
-    transaction: Transaction;
+    transaction?: Transaction;
     requestId: string;
     repoId: string;
     reason: string;

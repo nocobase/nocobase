@@ -325,7 +325,7 @@ export class LightExtensionEntryService {
         { details: { repoId: plan.repoId, expectedHeadCommitId: plan.baseHeadCommitId } },
       );
     }
-    const byId = new Map(records.map((record: Model) => [String(record.get('id')), record]));
+    const byId = new Map<string, Model>(records.map((record: Model) => [String(record.get('id')), record]));
     const creates = plan.writes.filter((write) => write.create);
     if (creates.length > 0) {
       await repository.createMany({

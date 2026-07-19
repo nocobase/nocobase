@@ -83,10 +83,10 @@ describe('plugin-light-extension default source template', () => {
         expect.objectContaining({
           category: item.category,
           description: expect.any(String),
-          key: expect.any(String),
+          key: expect.stringMatching(/^.*$/u),
           schemaVersion: 1,
           settings: expect.any(Object),
-          title: expect.any(String),
+          title: expect.stringMatching(/^.*$/u),
         }),
       );
       categories.push(String(descriptor.category));
@@ -155,7 +155,7 @@ describe('plugin-light-extension default source template', () => {
         true,
       );
       expect(result.diagnostics).toEqual([]);
-      expect(result.artifact?.code).toEqual(expect.any(String));
+      expect(result.artifact?.code).toEqual(expect.stringMatching(/[\s\S]*/u));
     }
   });
 });

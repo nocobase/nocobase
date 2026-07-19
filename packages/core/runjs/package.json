@@ -3,6 +3,13 @@
   "version": "2.2.0-beta.15",
   "main": "lib/index.js",
   "types": "./lib/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "compiler/portable": [
+        "./lib/compiler/portable.d.ts"
+      ]
+    }
+  },
   "license": "Apache-2.0",
   "exports": {
     ".": {

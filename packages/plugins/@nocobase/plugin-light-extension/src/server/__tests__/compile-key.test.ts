@@ -20,7 +20,7 @@ import {
 } from '../services/LightExtensionCompileContract';
 
 describe('light extension compiler identity and compile key', () => {
-  it('changes the compiler build id when any build component changes', () => {
+  it('changes the compiler build id when a build component changes', () => {
     expect(LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY.compilerBuildId).toMatch(/^[a-f0-9]{64}$/u);
     for (const component of Object.keys(LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY_COMPONENTS) as Array<
       keyof LightExtensionCompilerBuildIdentityComponents
