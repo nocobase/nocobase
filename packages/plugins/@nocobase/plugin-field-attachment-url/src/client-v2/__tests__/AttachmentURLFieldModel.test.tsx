@@ -98,7 +98,13 @@ describe('AttachmentURLFieldModel', () => {
     render(model.render());
 
     expect(screen.getByTestId('attachment-url-upload')).toHaveAttribute('data-list-type', 'picture-card');
-    expect(latestUploadProps().fileList).toEqual([{ url: 'https://example.com/files/report%202026.pdf' }]);
+    expect(latestUploadProps().fileList).toEqual([
+      {
+        uid: 'https://example.com/files/report%202026.pdf',
+        url: 'https://example.com/files/report%202026.pdf',
+        thumbUrl: '/file-placeholder/pdf-200-200.png',
+      },
+    ]);
     expect(screen.getByText('report 2026.pdf')).toBeTruthy();
   });
 
@@ -108,14 +114,26 @@ describe('AttachmentURLFieldModel', () => {
     });
     const { rerender } = render(model.render());
 
-    expect(latestUploadProps().fileList).toEqual([{ url: 'https://example.com/old.png' }]);
+    expect(latestUploadProps().fileList).toEqual([
+      {
+        uid: 'https://example.com/old.png',
+        url: 'https://example.com/old.png',
+        thumbUrl: 'https://example.com/old.png',
+      },
+    ]);
 
     act(() => {
       model.setProps('value', 'https://example.com/new.png');
       rerender(model.render());
     });
 
-    expect(latestUploadProps().fileList).toEqual([{ url: 'https://example.com/new.png' }]);
+    expect(latestUploadProps().fileList).toEqual([
+      {
+        uid: 'https://example.com/new.png',
+        url: 'https://example.com/new.png',
+        thumbUrl: 'https://example.com/new.png',
+      },
+    ]);
   });
 
   it('emits uploaded and cleared attachment URLs', () => {

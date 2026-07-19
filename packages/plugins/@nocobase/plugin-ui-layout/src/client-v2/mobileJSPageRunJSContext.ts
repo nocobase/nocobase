@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { JSPageRunJSContext, registerRunJSContextContribution } from '@nocobase/flow-engine';
+import { registerRunJSContextContribution } from '@nocobase/flow-engine';
 
 let registered = false;
 
@@ -17,6 +17,10 @@ export function registerMobileJSPageRunJSContext() {
   }
   registered = true;
   registerRunJSContextContribution(({ version, RunJSContextRegistry }) => {
-    RunJSContextRegistry.register(version, 'MobileJSPageModel', JSPageRunJSContext, { scenes: ['page'] });
+    const pageContext = RunJSContextRegistry.resolve(version, 'JSPageModel');
+    if (!pageContext) {
+      throw new Error('[plugin-ui-layout] JSPageModel RunJS context is not registered');
+    }
+    RunJSContextRegistry.register(version, 'MobileJSPageModel', pageContext, { scenes: ['page'] });
   });
 }

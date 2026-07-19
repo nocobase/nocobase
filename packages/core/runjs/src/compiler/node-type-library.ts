@@ -120,7 +120,8 @@ export class NodeRunJSTypeLibraryRegistry {
     requests: readonly RunJSTypeLibraryRequest[],
     typeLibraryIds: readonly string[] = [],
   ): NodeRunJSTypeLibraryFiles {
-    return this.loadWithContracts(requests, typeLibraryIds);
+    const { dependencyFiles, rootFiles } = this.loadWithContracts(requests, typeLibraryIds);
+    return { dependencyFiles, rootFiles };
   }
 
   loadWithContracts(

@@ -9,7 +9,7 @@
 
 import { expect, it, vi } from 'vitest';
 
-it('imports the Flow Engine package entry with initialized RunJS context classes', async () => {
+it('imports the Flow Engine package entry without eagerly initializing RunJS context classes', async () => {
   vi.resetModules();
 
   const [{ setupRunJSContexts }, flowEngine] = await Promise.all([
@@ -17,7 +17,8 @@ it('imports the Flow Engine package entry with initialized RunJS context classes
     import('../index'),
   ]);
 
-  expect(flowEngine.JSPageRunJSContext.prototype).toBeInstanceOf(flowEngine.FlowRunJSContext);
   await setupRunJSContexts();
-  expect(flowEngine.RunJSContextRegistry.resolve('v2', 'JSPageModel')).toBe(flowEngine.JSPageRunJSContext);
+  expect(flowEngine.RunJSContextRegistry.resolve('v2', 'JSPageModel')?.prototype).toBeInstanceOf(
+    flowEngine.FlowRunJSContext,
+  );
 });

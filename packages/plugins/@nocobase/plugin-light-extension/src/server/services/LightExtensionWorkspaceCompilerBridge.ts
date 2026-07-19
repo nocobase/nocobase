@@ -537,7 +537,11 @@ function buildSdkTypeDeclaration(importedName: string, localName: string): strin
   return null;
 }
 
-function rewriteLightExtensionSettingsTypeImports(path: string, content: string, kind: LightExtensionKind): string {
+export function rewriteLightExtensionSettingsTypeImports(
+  path: string,
+  content: string,
+  kind: LightExtensionKind,
+): string {
   const sourceFile = ts.createSourceFile(
     path,
     content,

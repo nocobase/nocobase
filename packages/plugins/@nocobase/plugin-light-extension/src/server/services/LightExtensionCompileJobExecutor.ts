@@ -30,7 +30,10 @@ import {
   type LightExtensionCompileResult,
 } from './LightExtensionCompileContract';
 import { hasErrorDiagnostic, sortDiagnostics } from './LightExtensionValidator';
-import { rewriteLightExtensionSdkRuntimeImports } from './LightExtensionWorkspaceCompilerBridge';
+import {
+  rewriteLightExtensionSdkRuntimeImports,
+  rewriteLightExtensionSettingsTypeImports,
+} from './LightExtensionWorkspaceCompilerBridge';
 
 export async function executeLightExtensionCompileJob(input: {
   job: LightExtensionCompileJob;
@@ -47,7 +50,11 @@ export async function executeLightExtensionCompileJob(input: {
       files: input.job.files.map((file) => ({
         path: file.path,
         content: isCompileCodeFile(file.path)
-          ? rewriteLightExtensionSdkRuntimeImports(file.path, file.content)
+          ? rewriteLightExtensionSettingsTypeImports(
+              file.path,
+              rewriteLightExtensionSdkRuntimeImports(file.path, file.content),
+              input.job.kind,
+            )
           : file.content,
         language: file.language,
       })),

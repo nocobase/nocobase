@@ -43,8 +43,9 @@ describe('light extension Git sync integration', () => {
     const credentialedResult = await fixture.createFromRemote('Credentialed Git Source', '{{ $env.GITHUB_SYNC }}');
     const publicResult = await fixture.createFromRemote('Public Git Source');
 
-    expect(fixture.validateCredential).toHaveBeenCalledTimes(1);
-    expect(fixture.validateCredential).toHaveBeenCalledWith('{{ $env.GITHUB_SYNC }}');
+    expect(fixture.validateCredential).toHaveBeenCalledTimes(2);
+    expect(fixture.validateCredential).toHaveBeenNthCalledWith(1, '{{ $env.GITHUB_SYNC }}');
+    expect(fixture.validateCredential).toHaveBeenNthCalledWith(2, '{{ $env.GITHUB_SYNC }}');
     for (const result of [credentialedResult, publicResult]) {
       const internal = await fixture.repoService.getInternalRepo(result.repo.id);
       const remote = await fixture.runtime.getRemote(internal.vscRepoId, 'origin');

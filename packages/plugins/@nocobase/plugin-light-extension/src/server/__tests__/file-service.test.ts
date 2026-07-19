@@ -19,7 +19,7 @@ import { LightExtensionAuditService } from '../services/LightExtensionAuditServi
 import { LightExtensionFileService } from '../services/LightExtensionFileService';
 import { LightExtensionPermissionService } from '../services/LightExtensionPermissionService';
 import { LightExtensionRepoService } from '../services/LightExtensionRepoService';
-import { LightExtensionValidator } from '../services/LightExtensionValidator';
+import { LIGHT_EXTENSION_VALIDATION_LIMITS, LightExtensionValidator } from '../services/LightExtensionValidator';
 
 describe('plugin-light-extension file service resource bridge', () => {
   let app: MockServer;
@@ -946,12 +946,15 @@ describe('plugin-light-extension file service resource bridge', () => {
     });
     const repo = createResponse.body.data;
     const baselineCommitCount = await app.db.getRepository('vscFileCommits').count();
+    const baselineEntryCount = await app.db.getRepository('lightExtensionEntries').count({
+      filter: { repoId: repo.id },
+    });
     const firstPushResponse = await agent.resource('lightExtensionFiles').saveSource({
       values: {
         repoId: repo.id,
         expectedHeadCommitId: repo.headCommitId,
         message: 'fill entry budget',
-        files: Array.from({ length: 32 }, (_, index) => [
+        files: Array.from({ length: LIGHT_EXTENSION_VALIDATION_LIMITS.maxEntries - baselineEntryCount }, (_, index) => [
           {
             path: `src/client/js-blocks/entry-${index}/entry.json`,
             content: `${JSON.stringify({

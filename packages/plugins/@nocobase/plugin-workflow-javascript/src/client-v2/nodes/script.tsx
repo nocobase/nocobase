@@ -8,7 +8,7 @@
  */
 
 import { CodeOutlined } from '@ant-design/icons';
-import { Instruction } from '@nocobase/plugin-workflow/client-v2';
+import { Instruction, type LoaderOf } from '@nocobase/plugin-workflow/client-v2';
 import React from 'react';
 import type { SubModelItem } from '@nocobase/flow-engine';
 
@@ -37,7 +37,7 @@ export default class ScriptInstruction extends Instruction {
   description = tExpr('Execute a piece of JavaScript in an isolated Node.js environment.');
   icon = (<CodeOutlined />);
   testable = true;
-  FieldsetLoader = () => import('./components/script').then((m) => ({ default: m.ScriptFieldset }));
+  FieldsetLoader: LoaderOf = () => import('./components/script');
 
   private translate = (key: string) => key;
 

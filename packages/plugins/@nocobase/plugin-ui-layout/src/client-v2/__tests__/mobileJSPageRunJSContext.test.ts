@@ -26,12 +26,16 @@ describe('MobileJSPageModel RunJS context', () => {
       }
 
       await vi.waitFor(() => {
-        expect(flowEngine.RunJSContextRegistry.resolve('v2', 'MobileJSPageModel')).toBe(flowEngine.JSPageRunJSContext);
+        expect(flowEngine.RunJSContextRegistry.resolve('v2', 'MobileJSPageModel')).toBe(
+          flowEngine.RunJSContextRegistry.resolve('v2', 'JSPageModel'),
+        );
       });
       expect(flowEngine.RunJSContextRegistry.getMeta('v2', 'MobileJSPageModel')).toEqual({ scenes: ['page'] });
 
       registerMobileJSPageRunJSContext();
-      expect(flowEngine.RunJSContextRegistry.resolve('v1', 'MobileJSPageModel')).toBe(flowEngine.JSPageRunJSContext);
+      expect(flowEngine.RunJSContextRegistry.resolve('v1', 'MobileJSPageModel')).toBe(
+        flowEngine.RunJSContextRegistry.resolve('v1', 'JSPageModel'),
+      );
     },
   );
 });

@@ -146,4 +146,8 @@ export function ScriptFieldset({ EditorComponent = CodeEditor }: ScriptFieldsetP
   );
 }
 
-export default ScriptFieldset;
+export function DefaultScriptFieldset() {
+  return <ScriptFieldset />;
+}
+
+export default DefaultScriptFieldset;

@@ -45,7 +45,7 @@ describe('LightExtensionRunJSResolver error state', () => {
         sourceMode: 'light-extension',
         sourceBinding: SOURCE_BINDING,
       }),
-    ).resolves.toBe('sales-tools / sales-kpi');
+    ).resolves.toBe('Sales tools / sales-kpi');
     expect(api.request).toHaveBeenCalledWith({
       url: 'lightExtensionEntries:listSelectable',
       method: 'post',

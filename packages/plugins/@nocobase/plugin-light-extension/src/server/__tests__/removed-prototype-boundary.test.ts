@@ -77,7 +77,7 @@ describe('light-extension production boundary', () => {
       /const JS_BLOCK_RUN_JS_ALLOWED_PATHS = \[\s*\.\.\.RUN_JS_ALLOWED_PATHS,\s*'runJs\.sourceRef\.\*',\s*\.\.\.RUN_JS_SOURCE_ALLOWED_PATHS,?\s*\];/u,
     );
     expect(flowSurfacesCatalog).toMatch(
-      /const JS_ITEM_SETTINGS_GROUP = \{[\s\S]*?allowedPaths: LIGHT_EXTENSION_RUN_JS_SETTINGS_GROUP\.allowedPaths/u,
+      /const JS_ITEM_SETTINGS_GROUP = \{[\s\S]*?allowedPaths: JS_ITEM_RUN_JS_SETTINGS_GROUP\.allowedPaths/u,
     );
   });
 

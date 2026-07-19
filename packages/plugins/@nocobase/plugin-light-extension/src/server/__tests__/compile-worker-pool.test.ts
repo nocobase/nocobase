@@ -19,6 +19,7 @@ import {
   type LightExtensionCompileJob,
   type LightExtensionCompileResult,
 } from '../services/LightExtensionCompileContract';
+import { executeLightExtensionCompileJob } from '../services/LightExtensionCompileJobExecutor';
 import { buildLightExtensionCompileKey } from '../services/LightExtensionCompileKey';
 import {
   LightExtensionCompilePoolError,
@@ -51,6 +52,23 @@ describe('LightExtensionCompileWorkerPool', () => {
       await pool.shutdown();
     }
   }, 60_000);
+
+  it('rewrites generated settings type imports in compile jobs', async () => {
+    const result = await executeLightExtensionCompileJob({
+      job: createCompileJob(0, '', {
+        kind: 'js-page',
+        entryName: 'hello-page',
+        entryPath: 'src/client/js-pages/hello-page/index.tsx',
+        content:
+          "import type { Settings } from 'light-extension:settings/client/js-page/hello-page';\nctx.render(String((ctx.settings as Settings).title || 'Hello'));\n",
+      }),
+      workerId: 1,
+      attempt: 1,
+      executingThreadId: 1,
+    });
+
+    expect(result.accepted).toBe(true);
+  });
 
   it('uses one isolated worker and preserves bounded FIFO execution', async () => {
     const harness = createWorkerHarness();
@@ -223,10 +241,22 @@ describe('LightExtensionCompileWorkerPool', () => {
   });
 });
 
-function createCompileJob(ordinal: number, suffix = ''): LightExtensionCompileJob {
-  const entryName = `entry-${ordinal}`;
-  const entryPath = `src/client/js-blocks/${entryName}/index.tsx`;
-  const content = `ctx.render(<div>${ordinal}${suffix}</div>);\n`;
+function createCompileJob(
+  ordinal: number,
+  suffix = '',
+  source: {
+    kind: LightExtensionCompileJob['kind'];
+    entryName: string;
+    entryPath: string;
+    content: string;
+  } = {
+    kind: 'js-block',
+    entryName: `entry-${ordinal}`,
+    entryPath: `src/client/js-blocks/entry-${ordinal}/index.tsx`,
+    content: `ctx.render(<div>${ordinal}${suffix}</div>);\n`,
+  },
+): LightExtensionCompileJob {
+  const { content, entryName, entryPath, kind } = source;
   const sourceFiles = [
     {
       path: entryPath,
@@ -239,9 +269,9 @@ function createCompileJob(ordinal: number, suffix = ''): LightExtensionCompileJo
   const key = buildLightExtensionCompileKey({
     entry: {
       target: 'client',
-      kind: 'js-block',
+      kind,
       entryPath,
-      descriptorPath: `src/client/js-blocks/${entryName}/entry.json`,
+      descriptorPath: `${entryPath.slice(0, entryPath.lastIndexOf('/'))}/entry.json`,
     },
     files: sourceFiles,
   });
@@ -255,10 +285,10 @@ function createCompileJob(ordinal: number, suffix = ''): LightExtensionCompileJo
     ordinal,
     compileKey: key.compileKey,
     filesHash: key.filesHash,
-    kind: 'js-block',
+    kind,
     entryPath,
     runtimeVersion: 'v2',
-    surface: structuredClone(LIGHT_EXTENSION_AUTHORING_SURFACES['js-block']),
+    surface: structuredClone(LIGHT_EXTENSION_AUTHORING_SURFACES[kind]),
     compilerBuildIdentity: structuredClone(LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY),
     inputManifest: key.inputManifest,
     files: sourceFiles,
