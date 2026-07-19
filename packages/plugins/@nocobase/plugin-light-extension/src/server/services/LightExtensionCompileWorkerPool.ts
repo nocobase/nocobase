@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { availableParallelism } from 'node:os';
 import path from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { serialize } from 'node:v8';
@@ -26,14 +25,11 @@ import type {
 } from './LightExtensionCompileWorkerProtocol';
 
 export const LIGHT_EXTENSION_COMPILE_POOL_HARD_LIMITS = Object.freeze({
-  workers: 8,
   queuedJobs: 1024,
   jobBytes: 64 * 1024 * 1024,
   inflightBytes: 256 * 1024 * 1024,
   capacityWaiters: 1024,
 });
-
-const defaultWorkerCount = Math.min(2, Math.max(1, availableParallelism()));
 
 export interface LightExtensionCompileWorkerHandle {
   readonly threadId: number;
@@ -51,7 +47,6 @@ export interface LightExtensionCompileWorkerHandle {
 export type LightExtensionCompileWorkerFactory = (workerId: number) => LightExtensionCompileWorkerHandle;
 
 export interface LightExtensionCompileWorkerPoolOptions {
-  workerCount?: number;
   maxQueueLength?: number;
   maxJobBytes?: number;
   maxInFlightBytes?: number;
@@ -118,7 +113,6 @@ interface WorkerSlot {
 
 interface CapacityWaiter {
   byteSize: number;
-  job?: LightExtensionCompileJob;
   signal?: AbortSignal;
   abort?: () => void;
   resolve: () => void;
@@ -126,7 +120,6 @@ interface CapacityWaiter {
 }
 
 interface NormalizedPoolOptions {
-  workerCount: number;
   maxQueueLength: number;
   maxJobBytes: number;
   maxInFlightBytes: number;
@@ -175,9 +168,7 @@ export class LightExtensionCompileWorkerPool {
 
   constructor(options: LightExtensionCompileWorkerPoolOptions = {}) {
     this.options = normalizeOptions(options);
-    for (let workerId = 1; workerId <= this.options.workerCount; workerId += 1) {
-      this.slots.push(this.createWorkerSlot(workerId));
-    }
+    this.slots.push(this.createWorkerSlot(1));
   }
 
   submit(job: LightExtensionCompileJob): Promise<LightExtensionCompileResult> {
@@ -211,7 +202,7 @@ export class LightExtensionCompileWorkerPool {
         ),
       );
     }
-    if (!this.hasAdmissionSlot(job)) {
+    if (!this.hasAdmissionSlot()) {
       return this.rejectSubmission(
         new LightExtensionCompilePoolError(
           'LIGHT_EXTENSION_COMPILE_QUEUE_CAPACITY_EXCEEDED',
@@ -241,7 +232,7 @@ export class LightExtensionCompileWorkerPool {
   ): Promise<LightExtensionCompileResult> {
     assertLightExtensionCompileJob(job);
     const byteSize = serialize(job).byteLength;
-    await this.waitForCapacity(byteSize, signal, job);
+    await this.waitForCapacity(byteSize, signal);
     try {
       return await this.submit(job);
     } catch (error) {
@@ -252,7 +243,7 @@ export class LightExtensionCompileWorkerPool {
     }
   }
 
-  async waitForCapacity(byteSize: number, signal?: AbortSignal, job?: LightExtensionCompileJob): Promise<void> {
+  async waitForCapacity(byteSize: number, signal?: AbortSignal): Promise<void> {
     if (!Number.isSafeInteger(byteSize) || byteSize <= 0 || byteSize > this.options.maxJobBytes) {
       throw new LightExtensionCompilePoolError(
         'LIGHT_EXTENSION_COMPILE_JOB_TOO_LARGE',
@@ -265,7 +256,7 @@ export class LightExtensionCompileWorkerPool {
         'Light extension compile worker pool is shutting down',
       );
     }
-    if (this.canAdmit(byteSize, job)) {
+    if (this.canAdmit(byteSize)) {
       return;
     }
     if (this.capacityWaiters.length >= this.options.maxCapacityWaiters) {
@@ -276,7 +267,7 @@ export class LightExtensionCompileWorkerPool {
     }
 
     await new Promise<void>((resolve, reject) => {
-      const waiter: CapacityWaiter = { byteSize, job, resolve, reject, signal };
+      const waiter: CapacityWaiter = { byteSize, resolve, reject, signal };
       if (signal) {
         waiter.abort = () => {
           this.removeCapacityWaiter(waiter);
@@ -365,13 +356,7 @@ export class LightExtensionCompileWorkerPool {
       if (slot.task || this.failedWorkers.has(slot.handle) || this.queue.length === 0) {
         continue;
       }
-      const taskIndex = this.queue.findIndex(
-        (task) => resolveLightExtensionCompileWorkerId(task.job, this.options.workerCount) === slot.id,
-      );
-      if (taskIndex < 0) {
-        continue;
-      }
-      const [task] = this.queue.splice(taskIndex, 1);
+      const task = this.queue.shift();
       if (!task) {
         continue;
       }
@@ -602,34 +587,12 @@ export class LightExtensionCompileWorkerPool {
     handle.off('exit', slot.listeners.exit);
   }
 
-  private hasAdmissionSlot(job?: LightExtensionCompileJob): boolean {
-    if (this.queue.length < this.options.maxQueueLength) {
-      return true;
-    }
-    if (!job) {
-      return this.slots.some(
-        (slot) =>
-          !slot.task &&
-          !this.failedWorkers.has(slot.handle) &&
-          !this.queue.some(
-            (task) => resolveLightExtensionCompileWorkerId(task.job, this.options.workerCount) === slot.id,
-          ),
-      );
-    }
-    const workerId = resolveLightExtensionCompileWorkerId(job, this.options.workerCount);
-    const slot = this.slots.find((candidate) => candidate.id === workerId);
-    return Boolean(
-      slot &&
-        !slot.task &&
-        !this.failedWorkers.has(slot.handle) &&
-        !this.queue.some(
-          (task) => resolveLightExtensionCompileWorkerId(task.job, this.options.workerCount) === workerId,
-        ),
-    );
+  private hasAdmissionSlot(): boolean {
+    return this.queue.length < this.options.maxQueueLength || (this.queue.length === 0 && this.active === 0);
   }
 
-  private canAdmit(byteSize: number, job?: LightExtensionCompileJob): boolean {
-    return this.hasAdmissionSlot(job) && this.inflightBytes + byteSize <= this.options.maxInFlightBytes;
+  private canAdmit(byteSize: number): boolean {
+    return this.hasAdmissionSlot() && this.inflightBytes + byteSize <= this.options.maxInFlightBytes;
   }
 
   private rejectSubmission(error: LightExtensionCompilePoolError): Promise<LightExtensionCompileResult> {
@@ -638,7 +601,7 @@ export class LightExtensionCompileWorkerPool {
   }
 
   private notifyCapacityWaiters(): void {
-    const index = this.capacityWaiters.findIndex((waiter) => this.canAdmit(waiter.byteSize, waiter.job));
+    const index = this.capacityWaiters.findIndex((waiter) => this.canAdmit(waiter.byteSize));
     if (index < 0) {
       return;
     }
@@ -712,7 +675,6 @@ function isRetryableAdmissionError(error: unknown): boolean {
 
 function normalizeOptions(options: LightExtensionCompileWorkerPoolOptions): NormalizedPoolOptions {
   const normalized: NormalizedPoolOptions = {
-    workerCount: options.workerCount ?? defaultWorkerCount,
     maxQueueLength: options.maxQueueLength ?? 64,
     maxJobBytes: options.maxJobBytes ?? 8 * 1024 * 1024,
     maxInFlightBytes: options.maxInFlightBytes ?? 32 * 1024 * 1024,
@@ -721,7 +683,6 @@ function normalizeOptions(options: LightExtensionCompileWorkerPoolOptions): Norm
     shutdownGraceMs: options.shutdownGraceMs ?? 5_000,
     workerFactory: options.workerFactory || createDefaultWorker,
   };
-  assertIntegerLimit('workerCount', normalized.workerCount, 1, LIGHT_EXTENSION_COMPILE_POOL_HARD_LIMITS.workers);
   assertIntegerLimit(
     'maxQueueLength',
     normalized.maxQueueLength,
@@ -840,15 +801,4 @@ class NodeCompileWorkerHandle implements LightExtensionCompileWorkerHandle {
       this.worker.postMessage({ type: 'shutdown' });
     });
   }
-}
-
-export function resolveLightExtensionCompileWorkerId(job: LightExtensionCompileJob, workerCount: number): number {
-  assertIntegerLimit('workerCount', workerCount, 1, LIGHT_EXTENSION_COMPILE_POOL_HARD_LIMITS.workers);
-  const affinityKey = `${job.repoId}\0${job.entryId}`;
-  let hash = 2166136261;
-  for (let index = 0; index < affinityKey.length; index += 1) {
-    hash ^= affinityKey.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
-  return ((hash >>> 0) % workerCount) + 1;
 }

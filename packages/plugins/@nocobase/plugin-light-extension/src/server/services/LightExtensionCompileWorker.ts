@@ -9,10 +9,7 @@
 
 import { parentPort, threadId } from 'node:worker_threads';
 
-import {
-  disposeLightExtensionCompileJobExecutor,
-  executeLightExtensionCompileJob,
-} from './LightExtensionCompileJobExecutor';
+import { executeLightExtensionCompileJob } from './LightExtensionCompileJobExecutor';
 import type {
   LightExtensionCompileWorkerMessage,
   LightExtensionCompileWorkerRequest,
@@ -43,7 +40,6 @@ async function handleCompileRequest(message: LightExtensionCompileWorkerRequest)
 
 async function handleWorkerMessage(message: LightExtensionCompileWorkerMessage): Promise<void> {
   if (message.type === 'shutdown') {
-    await disposeLightExtensionCompileJobExecutor();
     const response: LightExtensionCompileWorkerResponse = { type: 'shutdown-complete' };
     workerPort.postMessage(response);
     workerPort.close();

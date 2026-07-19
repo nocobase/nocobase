@@ -15,7 +15,7 @@ import {
   type RunJSCompileDiagnostic,
   type RunJSRuntimeArtifact,
 } from '@nocobase/runjs';
-import { buildRunJSEntryDependencyManifestFromGraph } from '@nocobase/runjs/compiler';
+import { buildRunJSEntryDependencyManifestFromGraph, compileRunJSSourceWorkspace } from '@nocobase/runjs/compiler';
 import { performance } from 'node:perf_hooks';
 import { threadId } from 'node:worker_threads';
 import { posix as pathPosix } from 'path';
@@ -32,16 +32,6 @@ import {
 } from './LightExtensionCompileContract';
 import { hasErrorDiagnostic, sortDiagnostics } from './LightExtensionValidator';
 import { rewriteLightExtensionSdkRuntimeImports } from './LightExtensionWorkspaceCompilerBridge';
-import {
-  buildLightExtensionCompilerSessionContract,
-  LightExtensionCompilerSessionManager,
-} from './LightExtensionCompilerSessionManager';
-
-const compilerSessions = new LightExtensionCompilerSessionManager();
-
-export async function disposeLightExtensionCompileJobExecutor(): Promise<void> {
-  await compilerSessions.dispose();
-}
 
 export async function executeLightExtensionCompileJob(input: {
   job: LightExtensionCompileJob;
@@ -72,17 +62,7 @@ export async function executeLightExtensionCompileJob(input: {
         metadata: buildLegacyMetadata(input.job.surface, input.job),
       },
     };
-    const compiled = (
-      await compilerSessions.compile({
-        contract: buildLightExtensionCompilerSessionContract({
-          repoId: input.job.repoId,
-          entryIdentity: `${input.job.kind}:${input.job.entryName}`,
-          inputManifest: input.job.inputManifest,
-        }),
-        input: compileInput,
-        workspaceUpdate: 'replace',
-      })
-    ).result;
+    const compiled = await compileRunJSSourceWorkspace(compileInput);
     const diagnostics = sortDiagnostics(compiled.artifact.diagnostics.map(toLightExtensionDiagnostic));
     if (hasErrorDiagnostic(diagnostics)) {
       return {

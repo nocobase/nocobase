@@ -15,7 +15,6 @@ export * from './services/LightExtensionCompileWorkerPool';
 export * from './services/LightExtensionCompileWorkerProtocol';
 export * from './services/LightExtensionCompileKey';
 export * from './services/LightExtensionCompileMetrics';
-export * from './services/LightExtensionCompilerSessionManager';
 export * from './services/LightExtensionCompilePreviewService';
 export * from './services/LightExtensionEntryService';
 export * from './services/LightExtensionPermissionService';

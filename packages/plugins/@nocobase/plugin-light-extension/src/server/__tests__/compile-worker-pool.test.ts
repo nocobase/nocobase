@@ -23,7 +23,6 @@ import { buildLightExtensionCompileKey } from '../services/LightExtensionCompile
 import {
   LightExtensionCompilePoolError,
   LightExtensionCompileWorkerPool,
-  resolveLightExtensionCompileWorkerId,
   type LightExtensionCompileWorkerFactory,
   type LightExtensionCompileWorkerHandle,
 } from '../services/LightExtensionCompileWorkerPool';
@@ -34,7 +33,7 @@ import {
 
 describe('LightExtensionCompileWorkerPool', () => {
   it('runs actual compilation outside the main thread', async () => {
-    const pool = new LightExtensionCompileWorkerPool({ workerCount: 1, jobTimeoutMs: 30_000 });
+    const pool = new LightExtensionCompileWorkerPool({ jobTimeoutMs: 30_000 });
     const job = createCompileJob(0);
     try {
       const result = await pool.submit(job);
@@ -70,35 +69,27 @@ describe('LightExtensionCompileWorkerPool', () => {
     }
   }, 60_000);
 
-  it('enforces maximum concurrency and preserves FIFO order within each worker affinity', async () => {
+  it('uses one isolated worker and preserves bounded FIFO execution', async () => {
     const harness = createWorkerHarness();
     const pool = new LightExtensionCompileWorkerPool({
-      workerCount: 2,
       maxQueueLength: 2,
       workerFactory: harness.factory,
     });
-    const jobs = [
-      createCompileJobForWorker(1, 0),
-      createCompileJobForWorker(2, 100),
-      createCompileJobForWorker(1, 200),
-      createCompileJobForWorker(2, 300),
-      createCompileJobForWorker(1, 400),
-    ];
-    const promises = jobs.slice(0, 4).map((job) => pool.submit(job));
+    const jobs = [createCompileJob(0), createCompileJob(1), createCompileJob(2), createCompileJob(3)];
+    const promises = jobs.slice(0, 3).map((job) => pool.submit(job));
 
-    expect(harness.startedJobIds).toEqual([jobs[0].jobId, jobs[1].jobId]);
-    await expect(pool.submit(jobs[4])).rejects.toMatchObject<Partial<LightExtensionCompilePoolError>>({
+    expect(harness.startedJobIds).toEqual([jobs[0].jobId]);
+    await expect(pool.submit(jobs[3])).rejects.toMatchObject<Partial<LightExtensionCompilePoolError>>({
       code: 'LIGHT_EXTENSION_COMPILE_QUEUE_CAPACITY_EXCEEDED',
     });
-    harness.workers[1].completeCurrent();
-    expect(harness.startedJobIds).toEqual([jobs[0].jobId, jobs[1].jobId, jobs[3].jobId]);
     harness.workers[0].completeCurrent();
-    expect(harness.startedJobIds).toEqual([jobs[0].jobId, jobs[1].jobId, jobs[3].jobId, jobs[2].jobId]);
+    expect(harness.startedJobIds).toEqual([jobs[0].jobId, jobs[1].jobId]);
     harness.workers[0].completeCurrent();
-    harness.workers[1].completeCurrent();
+    expect(harness.startedJobIds).toEqual([jobs[0].jobId, jobs[1].jobId, jobs[2].jobId]);
+    harness.workers[0].completeCurrent();
 
-    await expect(Promise.all(promises)).resolves.toHaveLength(4);
-    expect(pool.getMetrics()).toMatchObject({ maxActive: 2, completed: 4, rejected: 1 });
+    await expect(Promise.all(promises)).resolves.toHaveLength(3);
+    expect(pool.getMetrics()).toMatchObject({ workerCount: 1, maxActive: 1, completed: 3, rejected: 1 });
     await pool.shutdown();
   });
 
@@ -107,7 +98,6 @@ describe('LightExtensionCompileWorkerPool', () => {
     const job = createCompileJob(0);
     const byteSize = serialize(job).byteLength;
     const pool = new LightExtensionCompileWorkerPool({
-      workerCount: 1,
       maxQueueLength: 1,
       maxJobBytes: byteSize + 32,
       maxInFlightBytes: byteSize * 2 - 1,
@@ -126,7 +116,6 @@ describe('LightExtensionCompileWorkerPool', () => {
     await pool.shutdown();
 
     const smallPool = new LightExtensionCompileWorkerPool({
-      workerCount: 1,
       maxJobBytes: byteSize,
       maxInFlightBytes: byteSize,
       workerFactory: createWorkerHarness().factory,
@@ -139,7 +128,7 @@ describe('LightExtensionCompileWorkerPool', () => {
 
   it('rejects functions and process-local objects at the structured-clone boundary', async () => {
     const harness = createWorkerHarness();
-    const pool = new LightExtensionCompileWorkerPool({ workerCount: 1, workerFactory: harness.factory });
+    const pool = new LightExtensionCompileWorkerPool({ workerFactory: harness.factory });
     const invalid = {
       ...createCompileJob(0),
       transaction: { commit: () => undefined },
@@ -147,6 +136,32 @@ describe('LightExtensionCompileWorkerPool', () => {
 
     await expect(pool.submit(invalid)).rejects.toThrow(/structured-clone plain data/u);
     expect(harness.startedJobIds).toEqual([]);
+    await pool.shutdown();
+  });
+
+  it('bounds capacity waiters and removes an aborted waiter', async () => {
+    const harness = createWorkerHarness();
+    const job = createCompileJob(0);
+    const byteSize = serialize(job).byteLength;
+    const pool = new LightExtensionCompileWorkerPool({
+      maxJobBytes: byteSize,
+      maxInFlightBytes: byteSize,
+      maxCapacityWaiters: 1,
+      workerFactory: harness.factory,
+    });
+    const active = pool.submit(job);
+    const controller = new AbortController();
+    const waiting = pool.waitForCapacity(byteSize, controller.signal);
+
+    await expect(pool.waitForCapacity(byteSize)).rejects.toMatchObject<Partial<LightExtensionCompilePoolError>>({
+      code: 'LIGHT_EXTENSION_COMPILE_CAPACITY_WAITERS_EXCEEDED',
+    });
+    const reason = new Error('request aborted');
+    controller.abort(reason);
+    await expect(waiting).rejects.toBe(reason);
+
+    harness.workers[0].completeCurrent();
+    await active;
     await pool.shutdown();
   });
 
@@ -163,7 +178,7 @@ describe('LightExtensionCompileWorkerPool', () => {
       workers.push(worker);
       return worker;
     };
-    const pool = new LightExtensionCompileWorkerPool({ workerCount: 1, workerFactory: factory });
+    const pool = new LightExtensionCompileWorkerPool({ workerFactory: factory });
 
     const result = await pool.submit(createCompileJob(0));
 
@@ -182,7 +197,6 @@ describe('LightExtensionCompileWorkerPool', () => {
       return worker;
     };
     const pool = new LightExtensionCompileWorkerPool({
-      workerCount: 1,
       jobTimeoutMs: 10,
       workerFactory: factory,
     });
@@ -202,7 +216,6 @@ describe('LightExtensionCompileWorkerPool', () => {
   it('stops admission and settles active and queued jobs when shutdown grace expires', async () => {
     const harness = createWorkerHarness({ autoComplete: false });
     const pool = new LightExtensionCompileWorkerPool({
-      workerCount: 1,
       maxQueueLength: 1,
       workerFactory: harness.factory,
     });
@@ -267,16 +280,6 @@ function createCompileJob(ordinal: number, suffix = ''): LightExtensionCompileJo
     inputManifest: key.inputManifest,
     files: sourceFiles,
   };
-}
-
-function createCompileJobForWorker(workerId: number, startOrdinal: number): LightExtensionCompileJob {
-  for (let ordinal = startOrdinal; ordinal < startOrdinal + 100; ordinal += 1) {
-    const job = createCompileJob(ordinal);
-    if (resolveLightExtensionCompileWorkerId(job, 2) === workerId) {
-      return job;
-    }
-  }
-  throw new Error(`Unable to create compile job for worker ${workerId}`);
 }
 
 function createFakeResult(request: LightExtensionCompileWorkerRequest): LightExtensionCompileResult {
