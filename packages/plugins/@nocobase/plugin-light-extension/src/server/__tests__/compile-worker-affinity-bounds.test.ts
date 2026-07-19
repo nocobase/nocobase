@@ -12,8 +12,11 @@ import { availableParallelism } from 'node:os';
 import { vi } from 'vitest';
 
 import {
+  createLightExtensionCompileInfrastructureFailure,
   LIGHT_EXTENSION_AUTHORING_SURFACES,
   LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY,
+  type LightExtensionCompileJob,
+  type LightExtensionCompileResult,
 } from '../services/LightExtensionCompileContract';
 import { buildLightExtensionCompileKey } from '../services/LightExtensionCompileKey';
 import {
@@ -23,9 +26,6 @@ import {
   type LightExtensionCompileWorkerHandle,
 } from '../services/LightExtensionCompileWorkerPool';
 import {
-  createLightExtensionCompileInfrastructureFailure,
-  type LightExtensionCompileJob,
-  type LightExtensionCompileResult,
   type LightExtensionCompileWorkerRequest,
   type LightExtensionCompileWorkerResponse,
 } from '../services/LightExtensionCompileWorkerProtocol';

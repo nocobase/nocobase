@@ -19,8 +19,10 @@ import {
   createLightExtensionCompileInfrastructureFailure,
   type LightExtensionCompileJob,
   type LightExtensionCompileResult,
-  type LightExtensionCompileWorkerRequest,
-  type LightExtensionCompileWorkerResponse,
+} from './LightExtensionCompileContract';
+import type {
+  LightExtensionCompileWorkerRequest,
+  LightExtensionCompileWorkerResponse,
 } from './LightExtensionCompileWorkerProtocol';
 
 export const LIGHT_EXTENSION_COMPILE_POOL_HARD_LIMITS = Object.freeze({

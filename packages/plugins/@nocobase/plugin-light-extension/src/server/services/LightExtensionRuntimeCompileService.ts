@@ -67,17 +67,15 @@ import {
 import {
   LIGHT_EXTENSION_AUTHORING_SURFACES,
   LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY,
+  type LightExtensionCompileExecutor,
+  type LightExtensionCompileJob,
+  type LightExtensionCompileResult,
+  type LightExtensionCompileSuccessResult,
   type LightExtensionCompilerBuildIdentity,
 } from './LightExtensionCompileContract';
 import { assertPreparedCandidateWorkspace, type PreparedCandidateWorkspace } from './PreparedCandidateWorkspace';
 import type { LightExtensionServiceContext } from './LightExtensionRepoService';
-import {
-  type LightExtensionCompileJob,
-  type LightExtensionCompileResult,
-  type LightExtensionCompileSuccessResult,
-} from './LightExtensionCompileWorkerProtocol';
 import { executeLightExtensionCompileJob } from './LightExtensionCompileJobExecutor';
-import { LightExtensionCompileWorkerPool } from './LightExtensionCompileWorkerPool';
 import {
   LightExtensionPreviewTicketVerifier,
   type LightExtensionPreviewTicketVerification,
@@ -148,7 +146,7 @@ export interface LightExtensionRuntimeCompileServiceOptions {
   compilerBuildIdentity?: LightExtensionCompilerBuildIdentity;
   trustedCompileCache?: LightExtensionTrustedCompileCacheService;
   previewTicketVerifier?: LightExtensionPreviewTicketVerifier;
-  compileWorkerPool?: LightExtensionCompileWorkerPool;
+  compileExecutor?: LightExtensionCompileExecutor;
   publishCompiledEntries?: PublishCompiledEntriesService;
 }
 
@@ -184,7 +182,7 @@ export class LightExtensionRuntimeCompileService {
 
   private readonly previewTicketVerifier?: LightExtensionPreviewTicketVerifier;
 
-  private readonly compileWorkerPool?: LightExtensionCompileWorkerPool;
+  private readonly compileExecutor?: LightExtensionCompileExecutor;
 
   private readonly publishCompiledEntries: PublishCompiledEntriesService;
 
@@ -207,7 +205,7 @@ export class LightExtensionRuntimeCompileService {
         : LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY);
     this.trustedCompileCache = options.trustedCompileCache || new LightExtensionTrustedCompileCacheService(db);
     this.previewTicketVerifier = options.previewTicketVerifier;
-    this.compileWorkerPool = options.compileWorkerPool;
+    this.compileExecutor = options.compileExecutor;
     this.publishCompiledEntries = options.publishCompiledEntries || PublishCompiledEntriesService.forDatabase(db);
   }
 
@@ -642,9 +640,9 @@ export class LightExtensionRuntimeCompileService {
       });
     });
 
-    const compileWorkerPool = this.compileWorkerPool;
-    if (compileWorkerPool) {
-      const compiled = await Promise.all(compileJobs.map(({ job }) => compileWorkerPool.submitWithBackpressure(job)));
+    const compileExecutor = this.compileExecutor;
+    if (compileExecutor) {
+      const compiled = await Promise.all(compileJobs.map(({ job }) => compileExecutor.submitWithBackpressure(job)));
       for (const [position, result] of compiled.entries()) {
         const target = compileJobs[position];
         results[target.index] = result;

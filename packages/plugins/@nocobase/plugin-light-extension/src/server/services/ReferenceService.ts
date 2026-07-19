@@ -1630,8 +1630,16 @@ function collectRunJSReferenceOwners(
 
   const modelUid = normalizeString(node.uid);
   if (modelUid) {
+    const modelAdapter = getReferenceOwnerAdapterByUse(normalizeString(node.use));
+    const modelSettingsKey = modelAdapter?.settingsKey || 'jsSettings';
     const pushOwner = (hostPath: Array<string | number>, source: NormalizedJsBlockSource) => {
-      if (source.sourceMode !== 'light-extension' || source.sourceBinding?.kind !== 'runjs') {
+      if (
+        modelAdapter &&
+        hostPath.length === 3 &&
+        hostPath[0] === 'stepParams' &&
+        hostPath[1] === modelSettingsKey &&
+        hostPath[2] === 'runJs'
+      ) {
         return;
       }
       bucket.push({

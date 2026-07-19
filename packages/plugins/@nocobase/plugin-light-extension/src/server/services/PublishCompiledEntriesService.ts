@@ -20,12 +20,12 @@ import { Buffer } from 'node:buffer';
 
 import { LightExtensionError } from '../../shared/errors';
 import type { LightExtensionDiagnostic } from '../../shared/types';
-import { LIGHT_EXTENSION_AUTHORING_SURFACES } from './LightExtensionCompileContract';
 import {
+  LIGHT_EXTENSION_AUTHORING_SURFACES,
   assertStructuredClonePlainData,
   type LightExtensionCompileResult,
   type LightExtensionCompileSuccessResult,
-} from './LightExtensionCompileWorkerProtocol';
+} from './LightExtensionCompileContract';
 import { sortDiagnostics } from './LightExtensionValidator';
 
 const artifactUpdateFields = [

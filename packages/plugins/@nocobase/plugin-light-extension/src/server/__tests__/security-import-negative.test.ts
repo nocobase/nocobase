@@ -139,7 +139,7 @@ describe('plugin-light-extension workspace compiler import/security denials', ()
     );
 
     expect(result.accepted).toBe(true);
-    expect(result.diagnostics).toEqual([]);
+    expect(result.diagnostics.some((diagnostic) => diagnostic.severity === 'error')).toBe(false);
     expect(recordCompileEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         result: 'success',

@@ -295,7 +295,7 @@ export class PluginLightExtensionServer extends Plugin {
       {
         trustedCompileCache,
         previewTicketVerifier: this.previewTicketVerifier,
-        compileWorkerPool: this.compileWorkerPool,
+        compileExecutor: this.compileWorkerPool,
       },
     );
     this.repoService.useReferenceService(this.referenceService);

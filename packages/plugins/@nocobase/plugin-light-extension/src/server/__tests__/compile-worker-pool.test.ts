@@ -13,8 +13,11 @@ import { threadId as mainThreadId } from 'node:worker_threads';
 import { vi } from 'vitest';
 
 import {
+  createLightExtensionCompileInfrastructureFailure,
   LIGHT_EXTENSION_AUTHORING_SURFACES,
   LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY,
+  type LightExtensionCompileJob,
+  type LightExtensionCompileResult,
 } from '../services/LightExtensionCompileContract';
 import { buildLightExtensionCompileKey } from '../services/LightExtensionCompileKey';
 import {
@@ -25,10 +28,6 @@ import {
   type LightExtensionCompileWorkerHandle,
 } from '../services/LightExtensionCompileWorkerPool';
 import {
-  aggregateLightExtensionCompileResults,
-  createLightExtensionCompileInfrastructureFailure,
-  type LightExtensionCompileJob,
-  type LightExtensionCompileResult,
   type LightExtensionCompileWorkerRequest,
   type LightExtensionCompileWorkerResponse,
 } from '../services/LightExtensionCompileWorkerProtocol';
@@ -225,28 +224,6 @@ describe('LightExtensionCompileWorkerPool', () => {
     });
     expect(harness.workers[0].terminate).toHaveBeenCalledTimes(1);
     expect(pool.getMetrics()).toMatchObject({ active: 0, queueDepth: 0, inflightBytes: 0, shuttingDown: true });
-  });
-
-  it('aggregates results in planner order independent of worker completion order', () => {
-    const jobs = [createCompileJob(0), createCompileJob(1), createCompileJob(2)];
-    const results = [jobs[2], jobs[0], jobs[1]].map((job, index) =>
-      createLightExtensionCompileInfrastructureFailure({
-        job,
-        workerId: index + 1,
-        threadId: index + 10,
-        attempt: 1,
-        queueDurationMs: 0,
-        runDurationMs: 1,
-        failureCode: `failure_${job.ordinal}`,
-        message: `failed ${job.ordinal}`,
-      }),
-    );
-
-    const aggregate = aggregateLightExtensionCompileResults(jobs, results);
-
-    expect(aggregate.results.map((result) => result.ordinal)).toEqual([0, 1, 2]);
-    expect(aggregate.diagnostics.map((diagnostic) => diagnostic.message)).toEqual(['failed 0', 'failed 1', 'failed 2']);
-    expect(aggregate.accepted).toBe(false);
   });
 });
 

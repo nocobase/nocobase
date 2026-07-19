@@ -17,7 +17,7 @@ import PluginLightExtensionServer from '../plugin';
 
 describe('plugin-light-extension bootstrap', () => {
   it('declares the vsc-file dependency and keeps lifecycle hooks safe without a full app', async () => {
-    expect(packageJson.peerDependencies['@nocobase/plugin-vsc-file']).toBe('2.x');
+    expect(packageJson.peerDependencies['@nocobase/plugin-vsc-file']).toBe(packageJson.version);
 
     const plugin = new PluginLightExtensionServer({} as Application, {
       name: 'light-extension',

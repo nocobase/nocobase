@@ -13,19 +13,17 @@ import { vi } from 'vitest';
 
 import { LIGHT_EXTENSION_RUNTIME_ARTIFACT_CONTRACT } from '../../constants';
 import {
+  createLightExtensionCompileInfrastructureFailure,
   LIGHT_EXTENSION_AUTHORING_SURFACES,
   LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY,
+  type LightExtensionCompileJob,
+  type LightExtensionCompileSuccessResult,
 } from '../services/LightExtensionCompileContract';
 import { buildLightExtensionCompileKey } from '../services/LightExtensionCompileKey';
 import {
   PublishCompiledEntriesService,
   type CompiledEntriesPublishStore,
 } from '../services/PublishCompiledEntriesService';
-import {
-  createLightExtensionCompileInfrastructureFailure,
-  type LightExtensionCompileJob,
-  type LightExtensionCompileSuccessResult,
-} from '../services/LightExtensionCompileWorkerProtocol';
 
 describe('PublishCompiledEntriesService', () => {
   const compiledAt = new Date('2026-07-18T00:00:00.000Z');

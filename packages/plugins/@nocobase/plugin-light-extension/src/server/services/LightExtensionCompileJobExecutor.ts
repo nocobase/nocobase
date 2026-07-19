@@ -24,14 +24,12 @@ import { LIGHT_EXTENSION_RUNTIME_ARTIFACT_CONTRACT } from '../../constants';
 import type { LightExtensionDiagnostic } from '../../shared/types';
 import {
   LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY,
-  type LightExtensionAuthoringSurfaceSpec,
-} from './LightExtensionCompileContract';
-import {
   assertLightExtensionCompileJob,
   createLightExtensionCompileInfrastructureFailure,
+  type LightExtensionAuthoringSurfaceSpec,
   type LightExtensionCompileJob,
   type LightExtensionCompileResult,
-} from './LightExtensionCompileWorkerProtocol';
+} from './LightExtensionCompileContract';
 import { hasErrorDiagnostic, sortDiagnostics } from './LightExtensionValidator';
 import { rewriteLightExtensionSdkRuntimeImports } from './LightExtensionWorkspaceCompilerBridge';
 import {
