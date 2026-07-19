@@ -164,24 +164,7 @@ yarn test:client packages/core/client-v2/src/flow/components/code-editor/__tests
 
 After source changes, run `yarn eslint --fix` on touched files and run the relevant package type check.
 
-## Performance and production build checks
-
-The ordinary editor path must not include third-party declaration bodies. The chunk measurement enforces graph count,
-raw/gzip graph size, graph sharing, and initial-chunk budgets:
-
-```bash
-node packages/core/client-v2/src/flow/components/code-editor/__tests__/measure-runjs-typescript-chunk.mjs
-```
-
-Use the lightweight baseline probe when comparing TypeScript timing or Language Service creation behavior. It reports
-measurements without enforcing unstable machine-specific latency thresholds:
-
-```bash
-yarn test:client packages/core/client-v2/src/flow/components/code-editor/__tests__/runjsTypeScriptBaseline.bench.ts --run --reporter=verbose
-```
-
-Treat a chunk-budget failure as a release blocker unless the budget and rationale are deliberately reviewed. The
-current graph budgets are 60 chunks, 8 MiB raw, and 2 MiB gzip while retaining all 109 logical packs.
+## Production build checks
 
 Build once with a non-root public path before release:
 
@@ -223,8 +206,7 @@ When upgrading React, ReactDOM, Ant Design, icons, dayjs, lodash, mathjs, Formul
 3. Run `yarn workspace @nocobase/runjs generate:check` and ensure the working tree remains unchanged.
 4. Review manifest versions, pack and graph hashes, dependency closures, unique graph sizes, removed or added virtual
    files, symbol grouping, and completion changes.
-5. Run the shared Node/browser diagnostic matrix, registry conflict tests, DOM boundary tests, baseline probe, chunk
-   budget measurement, and non-root production build.
+5. Run the shared Node/browser diagnostic matrix, registry conflict tests, DOM boundary tests, and non-root production build.
 6. Test upgrading an already opened application so cached old chunks cannot silently satisfy new manifest requests.
 
 ## Troubleshooting

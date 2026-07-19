@@ -22,8 +22,7 @@ const APP_RETRY_TIMEOUT = 120000;
 function readFlag(argv: string[], name: string) {
   const exact = `--${name}`;
   const prefix = `--${name}=`;
-  const alias = name === 'env' ? '-e' : name === 'scope' ? '-s' : name === 'token' ? '-t' : undefined;
-  const aliasPrefix = alias ? `${alias}=` : undefined;
+  const alias = name === 'env' ? '-e' : name === 'scope' ? '-s' : undefined;
 
   for (let index = 0; index < argv.length; index += 1) {
     const value = argv[index];
@@ -32,12 +31,6 @@ function readFlag(argv: string[], name: string) {
     }
     if (alias && value === alias) {
       return argv[index + 1];
-    }
-    if (aliasPrefix && value.startsWith(aliasPrefix)) {
-      return value.slice(aliasPrefix.length);
-    }
-    if (name === 'token' && alias && value.startsWith(alias) && value.length > alias.length) {
-      return value.slice(alias.length);
     }
     if (value.startsWith(prefix)) {
       return value.slice(prefix.length);
@@ -339,8 +332,8 @@ export function formatSwaggerSchemaError(
       .join('\n');
     const envLabel = context.envName ? ` for env "${context.envName}"` : '';
     const tokenHint = context.envName
-      ? `Update the API key with \`nb env update ${context.envName} --token <api-key>\`, log in with \`nb env auth ${context.envName}\`, or rerun the command with \`--token <api-key>\` (\`-t <api-key>\`).`
-      : 'Update the API key with `nb env update <name> --token <api-key>`, log in with `nb env auth <name>`, or rerun the command with `--token <api-key>` (`-t <api-key>`).';
+      ? `Update the API key with \`nb env update ${context.envName} --token <api-key>\`, log in with \`nb env auth ${context.envName}\`, or rerun the command with \`--access-token <api-key>\`.`
+      : 'Update the API key with `nb env update <name> --token <api-key>`, log in with `nb env auth <name>`, or rerun the command with `--access-token <api-key>`.';
     const commandHint = context.commandToken
       ? `If \`${context.commandToken}\` is a runtime command, retry it after updating the token. If it is a typo, run \`nb --help\` to inspect available commands.`
       : 'Run `nb --help` to inspect built-in commands, then retry the original command after updating the token.';

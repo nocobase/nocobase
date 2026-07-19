@@ -44,19 +44,11 @@ The FlowModel adapter marks only recognized `runJs.code` surfaces as `uninitiali
 Regression coverage lives in `plugin-vsc-file`'s `RunJSStudioProvider.test.tsx` and `plugin-flow-engine`'s
 `runjs-sources.adapters.test.ts`.
 
-## Public Agent authoring API
+## RunJS Studio source API
 
-The published `run-js-sources` CLI exposes only owner-aware operations:
-
-```text
-nb api run-js-sources open
-nb api run-js-sources open-latest
-nb api run-js-sources compile-preview
-nb api run-js-sources save
-```
-
-Raw VSC actions, ZIP import/export, and restore actions are intentionally not part of this command group. An active
-light-extension owner is rejected by the permission boundary and must use `plugin-light-extension` APIs.
+The RunJS Studio source API exposes only owner-aware operations. Raw VSC actions, ZIP import/export, and restore
+actions remain internal. An active light-extension owner is rejected by the permission boundary and must use
+`plugin-light-extension` APIs.
 
 `open-latest` is a read-only discovery operation. If no persisted workspace exists, it returns a virtual repository
 with empty `id`/`repoId`, `headCommitId: null`, and files materialized from the current inline owner without creating
@@ -74,13 +66,6 @@ For an existing persisted workspace, repository source is the authoring truth:
   stale candidate.
 - Completion requires the returned commit/artifact and the owning Flow Surface runtime code/version/fingerprint to
   agree.
-
-The planned public command floor is app/CLI `2.2.0-beta.16` (or `2.2.0` stable) with managed skills pack `1.0.21` or
-newer. Hiding the `run-js-sources` include from `nocobase-ctl.config.json` rolls back the public CLI surface without
-deleting repositories or removing the internal browser Studio API.
-
-The coordinated light-extension/RunJS release and rollback checklist is maintained in
-[SOURCE_AUTHORING_ROLLOUT.md](../plugin-light-extension/SOURCE_AUTHORING_ROLLOUT.md).
 
 ## Current module boundary
 
