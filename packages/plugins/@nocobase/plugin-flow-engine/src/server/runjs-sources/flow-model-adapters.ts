@@ -95,11 +95,11 @@ function createFlowModelStepAdapter(db: Database): RunJSSourceAdapter<FlowModelS
     },
     async assertCanWrite({ locator, ctx }) {
       await assertFlowModelPermission(db, ctx, locator.modelUid, 'save', ['stepParams']);
-      assertFlowModelStepSourceIsInline(await loadFlowModel(db, locator.modelUid, ctx), locator);
+      assertFlowModelStepSourceIsInline(await loadFlowModel(db, locator.modelUid, ctx), locator, ctx);
     },
     async readLegacy({ locator, ctx }) {
       const model = await loadFlowModel(db, locator.modelUid, ctx);
-      assertFlowModelStepSourceIsInline(model, locator);
+      assertFlowModelStepSourceIsInline(model, locator, ctx);
       const { codeValue, versionValue, sourceMissing } = readFlowModelStepSource(model, locator);
       const code = typeof codeValue === 'string' ? codeValue : '';
       const version = typeof versionValue === 'string' && versionValue ? versionValue : 'v2';
@@ -126,7 +126,7 @@ function createFlowModelStepAdapter(db: Database): RunJSSourceAdapter<FlowModelS
       await lockFlowModelForUpdate(db, locator.modelUid, transaction);
       await assertFlowModelPermission(db, ctx, locator.modelUid, 'save', ['stepParams']);
       const model = await loadFlowModel(db, locator.modelUid, ctx);
-      assertFlowModelStepSourceIsInline(model, locator);
+      assertFlowModelStepSourceIsInline(model, locator, ctx);
       assertOwnerFingerprintMatches(buildStepFingerprint(locator, model), baseOwnerFingerprint, locator.kind);
       const nextStepParams = cloneJsonRecord(getAtPath(model, ['stepParams']));
       const versionPath = resolveVersionPath(locator.paramPath, locator.versionPath);
@@ -637,10 +637,17 @@ function readFlowModelStepSource(model: JsonRecord, locator: FlowModelStepLocato
   };
 }
 
-function assertFlowModelStepSourceIsInline(model: JsonRecord, locator: FlowModelStepLocator): void {
+function assertFlowModelStepSourceIsInline(
+  model: JsonRecord,
+  locator: FlowModelStepLocator,
+  ctx?: RunJSSourceAdapterContext,
+): void {
   const sourceRootPath: JsonPath = ['stepParams', locator.flowKey, locator.stepKey, ...locator.paramPath.slice(0, -1)];
   const sourceMode = getAtPath(model, [...sourceRootPath, 'sourceMode']);
   if (typeof sourceMode === 'undefined' || sourceMode === 'inline') {
+    return;
+  }
+  if (sourceMode === 'light-extension' && ctx?.sourceTransition === 'external-to-inline') {
     return;
   }
 

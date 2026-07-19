@@ -193,6 +193,12 @@ describe('MoveSourceToLightExtension', () => {
     const context = createContext(onExternalBindingPersisted);
     context.workspace.source.metadata = { modelUse: 'JSPageModel' };
     context.workspace.source.label = 'JavaScript page / Write JavaScript';
+    context.sourceBinding = {
+      type: 'light-extension-entry',
+      repoId: 'ler_origin',
+      entryId: 'lee_origin',
+      kind: 'js-page',
+    };
 
     render(<MoveSourceToLightExtension api={{ request }} context={context} />);
 
@@ -213,6 +219,12 @@ describe('MoveSourceToLightExtension', () => {
             expectedOwnerFingerprint: 'owner_before',
             sourceRepoId: 'runjs_repo',
             sourceHeadCommitId: 'runjs_commit',
+            originBinding: {
+              type: 'light-extension-entry',
+              repoId: 'ler_origin',
+              entryId: 'lee_origin',
+              kind: 'js-page',
+            },
             destination: { type: 'existing', repoId: 'ler_existing' },
             files: [expect.objectContaining({ content: 'return unsaved;' })],
             entryName: 'sales-page',

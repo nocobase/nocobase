@@ -26,11 +26,12 @@ import {
   type LightExtensionKind,
 } from '../../constants';
 import { createLightExtensionBaseTemplate } from '../../shared/default-template';
-import { LightExtensionError } from '../../shared/errors';
+import { isLightExtensionError, LightExtensionError } from '../../shared/errors';
 import type {
   LightExtensionEntryRecord,
   LightExtensionFileChange,
   LightExtensionMoveSourceInput,
+  LightExtensionMoveSourceOriginBinding,
   LightExtensionMoveSourceResult,
   LightExtensionMoveSourceWorkspaceFile,
   LightExtensionRuntimeSourceBinding,
@@ -125,6 +126,7 @@ export class MoveSourceService {
     const legacy = await adapter.readLegacy({ locator: input.locator, ctx: prepareAdapterContext });
     assertOwnerFingerprint(input.expectedOwnerFingerprint, legacy.ownerFingerprint);
     const kind = resolveLightExtensionKind(input.locator, legacy);
+    const originSettingsSchema = await this.loadOriginSettingsSchema(input.originBinding, kind, ctx);
     const entryFiles = relocateRunJSWorkspace({
       files: input.files,
       entryPath: input.entryPath,
@@ -132,6 +134,7 @@ export class MoveSourceService {
       entryName: input.entryName,
       entryTitle: input.entryTitle,
       category: resolveMovedEntryCategory(kind, legacy),
+      settingsSchema: originSettingsSchema,
     });
     const current = await this.fileService.pull({
       repoId: input.destination.repoId,
@@ -247,6 +250,7 @@ export class MoveSourceService {
 
     const kind = resolveLightExtensionKind(input.locator, legacy);
     const category = resolveMovedEntryCategory(kind, legacy);
+    const originSettingsSchema = await this.loadOriginSettingsSchema(input.originBinding, kind, serviceContext);
     const entryFiles = relocateRunJSWorkspace({
       files: input.files,
       entryPath: input.entryPath,
@@ -254,6 +258,7 @@ export class MoveSourceService {
       entryName: input.entryName,
       entryTitle: input.entryTitle,
       category,
+      settingsSchema: originSettingsSchema,
     });
     const commitMessage = buildMoveCommitMessage(input);
 
@@ -337,6 +342,28 @@ export class MoveSourceService {
     }
     return entry;
   }
+
+  private async loadOriginSettingsSchema(
+    originBinding: LightExtensionMoveSourceOriginBinding | undefined,
+    kind: LightExtensionKind,
+    ctx: LightExtensionServiceContext,
+  ): Promise<Record<string, unknown> | null> {
+    if (!originBinding || originBinding.kind !== kind) {
+      return null;
+    }
+    try {
+      const originEntry = await this.entryService.getEntry(originBinding.entryId, ctx);
+      if (originEntry.repoId !== originBinding.repoId || originEntry.kind !== kind) {
+        return null;
+      }
+      return originEntry.settingsSchema;
+    } catch (error) {
+      if (isLightExtensionError(error) && error.code === 'LIGHT_EXTENSION_ENTRY_NOT_FOUND') {
+        return null;
+      }
+      throw error;
+    }
+  }
 }
 
 function assertDestinationRepoEnabled(repo: LightExtensionMoveSourceResult['repo']): void {
@@ -364,6 +391,7 @@ export function relocateRunJSWorkspace(input: {
   entryName: string;
   entryTitle?: string | null;
   category?: string | null;
+  settingsSchema?: Record<string, unknown> | null;
 }): LightExtensionFileChange[] {
   if (!LIGHT_EXTENSION_ENTRY_KEY_PATTERN.test(input.entryName)) {
     throw new LightExtensionError('LIGHT_EXTENSION_INVALID_INPUT', 'Entry name must be a lowercase slug');
@@ -425,6 +453,7 @@ export function relocateRunJSWorkspace(input: {
     input.entryName,
     input.entryTitle?.trim() || null,
     input.category?.trim() || null,
+    input.settingsSchema || null,
   );
 
   return relocated;
@@ -623,6 +652,7 @@ function upsertEntryDescriptor(
   key: string,
   title: string | null,
   category: string | null,
+  fallbackSettingsSchema: Record<string, unknown> | null,
 ): void {
   const descriptorPath = `${entryRoot}/entry.json`;
   const existing = files.find((file) => file.path === descriptorPath);
@@ -642,10 +672,17 @@ function upsertEntryDescriptor(
   } else if (Object.prototype.hasOwnProperty.call(sourceDescriptor, 'category')) {
     descriptor.category = sourceDescriptor.category;
   }
-  for (const field of ['icon', 'tags', 'sort', 'settings'] as const) {
+  for (const field of ['icon', 'tags', 'sort'] as const) {
     if (Object.prototype.hasOwnProperty.call(sourceDescriptor, field)) {
       descriptor[field] = sourceDescriptor[field];
     }
+  }
+  if (Object.prototype.hasOwnProperty.call(sourceDescriptor, 'settings')) {
+    descriptor.settings = sourceDescriptor.settings;
+  } else if (Object.prototype.hasOwnProperty.call(sourceDescriptor, 'settingsSchema')) {
+    descriptor.settingsSchema = sourceDescriptor.settingsSchema;
+  } else if (fallbackSettingsSchema) {
+    descriptor.settingsSchema = fallbackSettingsSchema;
   }
   const content = `${JSON.stringify(descriptor, null, 2)}\n`;
   if (!existing) {

@@ -51,6 +51,7 @@ export interface RunJSSourceAdapterContext {
   timezone?: string;
   transaction?: unknown;
   can?: (input: RunJSSourcePermissionCheck) => RunJSSourcePermissionResult | null;
+  sourceTransition?: 'external-to-inline';
 }
 
 export interface RunJSLegacySource {

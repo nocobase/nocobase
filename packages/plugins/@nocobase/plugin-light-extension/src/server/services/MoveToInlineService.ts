@@ -129,6 +129,7 @@ export class MoveToInlineService {
     const adapter = registry.require(locator.kind);
     const adapterContext: RunJSSourceAdapterContext = {
       ...ctx.adapterContext,
+      sourceTransition: 'external-to-inline',
       transaction,
     };
     const serviceContext: LightExtensionServiceContext = {
