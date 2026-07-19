@@ -41,7 +41,6 @@ import { createLightExtensionsResource, lightExtensionActionNames } from './reso
 import { LightExtensionAuditService } from './services/LightExtensionAuditService';
 import { LightExtensionCompilePreviewService } from './services/LightExtensionCompilePreviewService';
 import { LightExtensionCompileWorkerPool } from './services/LightExtensionCompileWorkerPool';
-import { createLightExtensionCompileMetricsLoggerCollector } from './services/LightExtensionCompileMetrics';
 import { LightExtensionEntryService } from './services/LightExtensionEntryService';
 import { LightExtensionFileService } from './services/LightExtensionFileService';
 import { LightExtensionPermissionService } from './services/LightExtensionPermissionService';
@@ -221,9 +220,6 @@ export class PluginLightExtensionServer extends Plugin {
     this.auditService = new LightExtensionAuditService(db);
     this.permissionService = new LightExtensionPermissionService(this.auditService);
     this.validator = new LightExtensionValidator();
-    const compileMetricsCollector = (this.app as unknown as AppWithPluginEvents).log
-      ? createLightExtensionCompileMetricsLoggerCollector(this.log)
-      : undefined;
     this.workspaceCompilerBridge = new LightExtensionWorkspaceCompilerBridge(this.auditService, this.permissionService);
     const app = this.app as unknown as AppWithPluginEvents;
     const sharedVscPermissionHooks = findVscPermissionHookRegistry((this.app as unknown as AppWithPluginEvents).pm);
@@ -250,7 +246,6 @@ export class PluginLightExtensionServer extends Plugin {
       this.permissionService,
       this.workspaceCompilerBridge,
       this.validator,
-      compileMetricsCollector,
     );
     this.referenceService = new ReferenceService(db, this.auditService, this.permissionService);
     const apiBasePath = (this.app as unknown as AppWithPluginEvents).resourceManager?.options?.prefix;
@@ -261,7 +256,6 @@ export class PluginLightExtensionServer extends Plugin {
       this.fileService,
       this.entryService,
       this.workspaceCompilerBridge,
-      compileMetricsCollector,
       {
         compileExecutor: this.compileWorkerPool,
       },

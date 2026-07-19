@@ -119,14 +119,9 @@ export class LightExtensionEntryService {
         throw new LightExtensionError('LIGHT_EXTENSION_SOURCE_ERROR', 'Light extension source has no commit');
       }
 
-      const validateWorkspace = () =>
-        this.validator.validateWorkspace({
-          files: toValidatorFiles(pull.files || []),
-        });
-      const validation = operationContext.compileMetrics
-        ? operationContext.compileMetrics.measure('workspaceValidation', validateWorkspace)
-        : validateWorkspace();
-      operationContext.compileMetrics?.set('entryCount', validation.entries.length);
+      const validation = this.validator.validateWorkspace({
+        files: toValidatorFiles(pull.files || []),
+      });
       const diagnostics = sortDiagnostics(validation.diagnostics);
       if (hasErrorDiagnostic(diagnostics)) {
         throw new LightExtensionError(
@@ -143,10 +138,7 @@ export class LightExtensionEntryService {
         );
       }
 
-      const reconcileEntries = () => this.reconcileEntries(repoId, validation.entries, commitId, transaction);
-      const reconcile = operationContext.compileMetrics
-        ? await operationContext.compileMetrics.measureAsync('entryReconcile', reconcileEntries)
-        : await reconcileEntries();
+      const reconcile = await this.reconcileEntries(repoId, validation.entries, commitId, transaction);
       return {
         repo: await this.repoService.getRepo(repoId, operationContext),
         commitId,
@@ -186,11 +178,12 @@ export class LightExtensionEntryService {
       });
     }
 
-    const reconcileEntries = () =>
-      this.reconcileEntries(candidate.repo.id, candidate.validation.entries, candidate.commit.id, transaction);
-    const reconcile = ctx.compileMetrics
-      ? await ctx.compileMetrics.measureAsync('entryReconcile', reconcileEntries)
-      : await reconcileEntries();
+    const reconcile = await this.reconcileEntries(
+      candidate.repo.id,
+      candidate.validation.entries,
+      candidate.commit.id,
+      transaction,
+    );
 
     return {
       repo: candidate.repo,

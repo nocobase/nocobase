@@ -11,7 +11,6 @@ import PluginVscFileServer from '@nocobase/plugin-vsc-file';
 import { MockServer, createMockServer } from '@nocobase/test';
 
 import type { LightExtensionSaveSourceInput } from '../../shared/types';
-import type { LightExtensionCompileMetricsSummary } from '../../shared/compileMetrics';
 import PluginLightExtensionServer from '../plugin';
 import { LightExtensionAuditService } from '../services/LightExtensionAuditService';
 import {
@@ -37,7 +36,6 @@ describe('plugin-light-extension saveSource runtime compile', () => {
   let fileService: LightExtensionFileService;
   let entryService: LightExtensionEntryService;
   let validator: LightExtensionValidator;
-  let metricsSummaries: LightExtensionCompileMetricsSummary[];
 
   beforeEach(async () => {
     app = await createMockServer({
@@ -57,14 +55,7 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     );
     entryService = new LightExtensionEntryService(app.db, fileService, repoService, validator);
     compilerBridge = new LightExtensionWorkspaceCompilerBridge(auditService, permissionService);
-    metricsSummaries = [];
-    runtimeCompileService = new LightExtensionRuntimeCompileService(
-      app.db,
-      fileService,
-      entryService,
-      compilerBridge,
-      (summary) => metricsSummaries.push(summary),
-    );
+    runtimeCompileService = new LightExtensionRuntimeCompileService(app.db, fileService, entryService, compilerBridge);
     runtimeResolveService = new RuntimeResolveService(app.db);
   });
 
@@ -129,51 +120,6 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     });
     expect(runtime).not.toHaveProperty('code');
     expect(runtimeArtifact.code).toContain('Sales KPI');
-    expect(metricsSummaries).toHaveLength(2);
-    expect(metricsSummaries).toEqual([
-      expect.objectContaining({
-        schemaVersion: 1,
-        operation: 'runtimeCompile',
-        result: 'success',
-        durationsMs: expect.objectContaining({
-          total: expect.any(Number),
-          snapshotMaterialize: expect.any(Number),
-          workspaceValidation: expect.any(Number),
-        }),
-        counters: expect.objectContaining({
-          affectedEntryCount: 1,
-          compiledEntryCount: 1,
-          blobContentQueryCount: 0,
-          blobContentRowCount: 0,
-          snapshotMaterializationCount: 1,
-          treeNormalizationCount: 1,
-        }),
-      }),
-      expect.objectContaining({
-        schemaVersion: 1,
-        operation: 'saveSource',
-        result: 'success',
-        durationsMs: expect.objectContaining({
-          total: expect.any(Number),
-          prepare: expect.any(Number),
-          snapshotMaterialize: expect.any(Number),
-          workspaceValidation: expect.any(Number),
-          transaction: expect.any(Number),
-        }),
-        counters: expect.objectContaining({
-          changedFileCount: 2,
-          repoFileCount: 2,
-          entryCount: 1,
-          affectedEntryCount: 1,
-          compiledEntryCount: 1,
-          blobContentQueryCount: 0,
-          blobContentRowCount: 0,
-          snapshotMaterializationCount: 1,
-          treeNormalizationCount: 1,
-        }),
-      }),
-    ]);
-    expect(JSON.stringify(metricsSummaries)).not.toMatch(/repoId|entryId|src\/client|Sales KPI|artifactHash/iu);
   });
 
   it('conservatively recompiles every ready Entry after a shared source change', async () => {
@@ -189,7 +135,6 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     expect(initial.compile.entries).toHaveLength(2);
     expect(initial.compile.entries.every((entry) => entry.execution === 'compiled')).toBe(true);
 
-    metricsSummaries = [];
     const updated = await saveCurrentSource({
       repoId: repo.id,
       message: 'change one shared runtime dependency',
@@ -209,10 +154,6 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     expect(updated.compile.entries).toHaveLength(2);
     expect(updated.compile.entries.every((entry) => entry.execution === 'compiled')).toBe(true);
     expect(afterEntries.every((entry) => entry.get('compiledCommitId') === updated.commit.id)).toBe(true);
-    expect(metricsSummaries.at(-1)?.counters).toMatchObject({
-      affectedEntryCount: 2,
-      compiledEntryCount: 2,
-    });
   });
 
   it('rebuilds missing or corrupt immutable artifacts and recompiles after a compiler build change', async () => {
@@ -244,7 +185,6 @@ describe('plugin-light-extension saveSource runtime compile', () => {
       runtimeContract: 'corrupt.runtime-contract',
     });
 
-    metricsSummaries = [];
     const repaired = await saveCurrentSource({
       repoId: repo.id,
       message: 'repair artifacts by recompiling all ready entries',
@@ -270,7 +210,6 @@ describe('plugin-light-extension saveSource runtime compile', () => {
       fileService,
       entryService,
       compilerBridge,
-      undefined,
       { compilerBuildIdentity: changedBuildIdentity },
     );
     const rebuilt = await buildAwareService.saveSource({
@@ -333,11 +272,6 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     expect(candidate.treeHash).toBe(result.commit.treeHash);
     expect(result).not.toHaveProperty('candidate');
     expect(result).not.toHaveProperty('files');
-    expect(metricsSummaries.find((summary) => summary.operation === 'saveSource')?.counters).toMatchObject({
-      snapshotMaterializationCount: 1,
-      blobContentQueryCount: 1,
-      blobContentRowCount: 1,
-    });
 
     pullCommitSpy.mockRestore();
     const persisted = await fileService.pullCommit({
@@ -656,7 +590,6 @@ describe('plugin-light-extension saveSource runtime compile', () => {
       message: 'compile before descriptor import',
       files: validSalesKpiFiles(),
     });
-    metricsSummaries = [];
     const entryId = first.compile.entries[0].entryId;
     const initialEntry = await app.db.getRepository('lightExtensionEntries').findOne({ filterByTk: entryId });
     const initialArtifactHash = initialEntry?.get('artifactHash');
@@ -830,8 +763,6 @@ describe('plugin-light-extension saveSource runtime compile', () => {
       message: 'initial save',
       files: validSalesKpiFiles(),
     });
-    metricsSummaries = [];
-
     await expect(
       saveCurrentSource({
         repoId: repo.id,
@@ -884,8 +815,6 @@ describe('plugin-light-extension saveSource runtime compile', () => {
       filterByTk: first.compile.entries[0].entryId,
     });
     const artifactHashBeforeFailure = entryBeforeFailure?.get('artifactHash');
-    metricsSummaries = [];
-
     await expect(
       saveCurrentSource({
         repoId: repo.id,
@@ -926,12 +855,6 @@ describe('plugin-light-extension saveSource runtime compile', () => {
     await expect(repoService.getRepo(repo.id)).resolves.toMatchObject({
       headCommitId: first.commit.id,
     });
-    expect(metricsSummaries).toHaveLength(2);
-    expect(metricsSummaries.map(({ operation, result }) => ({ operation, result }))).toEqual([
-      { operation: 'runtimeCompile', result: 'rejected' },
-      { operation: 'saveSource', result: 'rejected' },
-    ]);
-
     const fixed = await saveCurrentSource({
       repoId: repo.id,
       message: 'fixed source',
@@ -1021,7 +944,6 @@ describe('plugin-light-extension saveSource runtime compile', () => {
       initialFiles: baselineSalesKpiFiles(),
     });
     const expectedHeadCommitId = repo.headCommitId;
-    metricsSummaries = [];
     const firstCompileStarted = createDeferred();
     const secondCompileStarted = createDeferred();
     const releaseFirstCompile = createDeferred();
@@ -1116,15 +1038,6 @@ describe('plugin-light-extension saveSource runtime compile', () => {
       ),
     });
     expect(compileLogs).toHaveLength(1);
-    expect(
-      metricsSummaries.filter(({ operation, result }) => operation === 'runtimeCompile' && result === 'success'),
-    ).toHaveLength(2);
-    expect(
-      metricsSummaries.filter(({ operation, result }) => operation === 'saveSource' && result === 'success'),
-    ).toHaveLength(1);
-    expect(
-      metricsSummaries.filter(({ operation, result }) => operation === 'saveSource' && result === 'outdated'),
-    ).toHaveLength(1);
   });
 
   it('rolls back a compile success audit when publish fails', async () => {
@@ -1139,16 +1052,9 @@ describe('plugin-light-extension saveSource runtime compile', () => {
       await publish(batch, transaction);
       throw new Error('forced compile publish rollback');
     });
-    const failingRuntime = new LightExtensionRuntimeCompileService(
-      app.db,
-      fileService,
-      entryService,
-      compilerBridge,
-      undefined,
-      {
-        publishCompiledEntries: publisher,
-      },
-    );
+    const failingRuntime = new LightExtensionRuntimeCompileService(app.db, fileService, entryService, compilerBridge, {
+      publishCompiledEntries: publisher,
+    });
 
     await expect(
       failingRuntime.saveSource({
@@ -1215,13 +1121,7 @@ describe('plugin-light-extension saveSource runtime compile', () => {
         throw new Error('forced reference refresh rollback');
       },
     );
-    const failingRuntime = new LightExtensionRuntimeCompileService(
-      app.db,
-      fileService,
-      entryService,
-      compilerBridge,
-      undefined,
-    );
+    const failingRuntime = new LightExtensionRuntimeCompileService(app.db, fileService, entryService, compilerBridge);
     failingRuntime.useReferenceService({ refreshReferencesForRepo });
 
     await expect(

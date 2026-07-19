@@ -11,7 +11,6 @@ import type { Database, Model, Transaction } from '@nocobase/database';
 import type {
   VscCommitRecord,
   VscFileChange,
-  VscFileMetricsCollector,
   VscPermissionAction,
   PreparedPush,
   VscRefName,
@@ -200,7 +199,6 @@ export class LightExtensionFileService {
       const repo = await this.repoService.getInternalRepo(input.repoId, ctx);
       assertRepoNotArchived(repo, 'write source');
       assertExpectedHead(input.expectedHeadCommitId, repo.headCommitId, repo.id);
-      const compileMetrics = ctx.compileMetrics;
       const vscPreparedPush = await this.runVsc(repo.id, () =>
         this.vscFileService.preparePush(
           {
@@ -226,27 +224,18 @@ export class LightExtensionFileService {
                 input.files,
                 entries.map((entry) => entry.path),
               ),
-            measureCandidateMaterialization: compileMetrics
-              ? (materialize) => compileMetrics.measureAsync('snapshotMaterialize', materialize)
-              : undefined,
           },
         ),
       );
-      recordPreparedCandidateSnapshot(ctx, vscPreparedPush.candidate.files);
-      const validateWorkspace = () =>
-        this.validator.validateWorkspace({
-          files: vscPreparedPush.candidate.files.map((file) => ({
-            path: file.path,
-            content: file.content,
-            blobHash: file.blobHash,
-            size: file.size,
-            language: file.language,
-          })),
-        });
-      const validation = ctx.compileMetrics
-        ? ctx.compileMetrics.measure('workspaceValidation', validateWorkspace)
-        : validateWorkspace();
-      ctx.compileMetrics?.set('entryCount', validation.entries.length);
+      const validation = this.validator.validateWorkspace({
+        files: vscPreparedPush.candidate.files.map((file) => ({
+          path: file.path,
+          content: file.content,
+          blobHash: file.blobHash,
+          size: file.size,
+          language: file.language,
+        })),
+      });
       if (hasErrorDiagnostic(validation.diagnostics)) {
         throw new LightExtensionError(
           'LIGHT_EXTENSION_VALIDATION_FAILED',
@@ -372,8 +361,6 @@ export class LightExtensionFileService {
         const repo = await this.repoService.lockInternalRepoForUpdate(input.repoId, { ...ctx, transaction });
         assertRepoNotArchived(repo, 'write source');
         assertExpectedHead(input.expectedHeadCommitId, repo.headCommitId, repo.id);
-        const compileMetrics = ctx.compileMetrics;
-
         const result = await this.runVsc(repo.id, () =>
           this.vscFileService.pushWithCandidate(
             {
@@ -400,28 +387,18 @@ export class LightExtensionFileService {
                   input.files,
                   entries.map((entry) => entry.path),
                 ),
-              measureCandidateMaterialization: compileMetrics
-                ? (materialize) => compileMetrics.measureAsync('snapshotMaterialize', materialize)
-                : undefined,
             },
           ),
         );
-        recordPreparedCandidateSnapshot(ctx, result.candidate.files);
-
-        const validateWorkspace = () =>
-          this.validator.validateWorkspace({
-            files: result.candidate.files.map((file) => ({
-              path: file.path,
-              content: file.content,
-              blobHash: file.blobHash,
-              size: file.size,
-              language: file.language,
-            })),
-          });
-        const validation = ctx.compileMetrics
-          ? ctx.compileMetrics.measure('workspaceValidation', validateWorkspace)
-          : validateWorkspace();
-        ctx.compileMetrics?.set('entryCount', validation.entries.length);
+        const validation = this.validator.validateWorkspace({
+          files: result.candidate.files.map((file) => ({
+            path: file.path,
+            content: file.content,
+            blobHash: file.blobHash,
+            size: file.size,
+            language: file.language,
+          })),
+        });
         if (hasErrorDiagnostic(validation.diagnostics)) {
           throw new LightExtensionError(
             'LIGHT_EXTENSION_VALIDATION_FAILED',
@@ -645,31 +622,26 @@ export class LightExtensionFileService {
     transaction: Transaction,
     aclAction: LightExtensionAclAction,
   ): Promise<LightExtensionPullResult> {
-    const pullSource = () =>
-      this.runVsc(repo.id, () =>
-        this.vscFileService.pull(
-          {
-            repoId: repo.vscRepoId,
-            ref: input.ref,
-            knownTreeHash: input.knownTreeHash,
-            includeContent: input.includeContent,
-            selectedPaths: input.selectedPaths,
-          },
-          this.createVscContext({
-            ctx,
-            transaction,
-            requestId: getRequestId(ctx),
-            repoId: repo.id,
-            aclAction,
-            reason: 'read light-extension source tree',
-            allowedActions: ['pull'],
-          }),
-        ),
-      );
-    const result = ctx.compileMetrics
-      ? await ctx.compileMetrics.measureAsync('snapshotMaterialize', pullSource)
-      : await pullSource();
-    recordMaterializedSnapshot(ctx, input.includeContent, result.files);
+    const result = await this.runVsc(repo.id, () =>
+      this.vscFileService.pull(
+        {
+          repoId: repo.vscRepoId,
+          ref: input.ref,
+          knownTreeHash: input.knownTreeHash,
+          includeContent: input.includeContent,
+          selectedPaths: input.selectedPaths,
+        },
+        this.createVscContext({
+          ctx,
+          transaction,
+          requestId: getRequestId(ctx),
+          repoId: repo.id,
+          aclAction,
+          reason: 'read light-extension source tree',
+          allowedActions: ['pull'],
+        }),
+      ),
+    );
 
     return {
       repo: stripInternalRepo(repo),
@@ -687,31 +659,26 @@ export class LightExtensionFileService {
     transaction: Transaction,
     aclAction: LightExtensionAclAction,
   ): Promise<LightExtensionPullResult> {
-    const pullSource = () =>
-      this.runVsc(repo.id, () =>
-        this.vscFileService.pullCommit(
-          {
-            repoId: repo.vscRepoId,
-            commitId: input.commitId,
-            knownTreeHash: input.knownTreeHash,
-            includeContent: input.includeContent,
-            selectedPaths: input.selectedPaths,
-          },
-          this.createVscContext({
-            ctx,
-            transaction,
-            requestId: getRequestId(ctx),
-            repoId: repo.id,
-            aclAction,
-            reason: 'read light-extension source commit tree',
-            allowedActions: ['pull'],
-          }),
-        ),
-      );
-    const result = ctx.compileMetrics
-      ? await ctx.compileMetrics.measureAsync('snapshotMaterialize', pullSource)
-      : await pullSource();
-    recordMaterializedSnapshot(ctx, input.includeContent, result.files);
+    const result = await this.runVsc(repo.id, () =>
+      this.vscFileService.pullCommit(
+        {
+          repoId: repo.vscRepoId,
+          commitId: input.commitId,
+          knownTreeHash: input.knownTreeHash,
+          includeContent: input.includeContent,
+          selectedPaths: input.selectedPaths,
+        },
+        this.createVscContext({
+          ctx,
+          transaction,
+          requestId: getRequestId(ctx),
+          repoId: repo.id,
+          aclAction,
+          reason: 'read light-extension source commit tree',
+          allowedActions: ['pull'],
+        }),
+      ),
+    );
 
     return {
       repo: stripInternalRepo(repo),
@@ -771,7 +738,6 @@ export class LightExtensionFileService {
     return {
       transaction: input.transaction,
       authorId: input.ctx.actorUserId || null,
-      metricsCollector: createVscMetricsCollector(input.ctx),
       request: this.permissionService.createInternalVscRequestContext({
         requestId: input.requestId,
         reason: input.reason,
@@ -864,42 +830,6 @@ export class LightExtensionFileService {
 
     return Boolean(repo);
   }
-}
-
-function createVscMetricsCollector(ctx: LightExtensionServiceContext): VscFileMetricsCollector | undefined {
-  if (!ctx.compileMetrics) {
-    return undefined;
-  }
-
-  return {
-    increment(counter, amount) {
-      ctx.compileMetrics?.increment(counter, amount);
-    },
-  };
-}
-
-function recordMaterializedSnapshot(
-  ctx: LightExtensionServiceContext,
-  includeContent: LightExtensionIncludeContentMode | undefined,
-  files: LightExtensionPulledFile[] | undefined,
-): void {
-  if (includeContent !== 'all' || !files) {
-    return;
-  }
-
-  recordPreparedCandidateSnapshot(ctx, files);
-}
-
-function recordPreparedCandidateSnapshot(
-  ctx: LightExtensionServiceContext,
-  files: readonly { readonly size: number }[],
-): void {
-  ctx.compileMetrics?.increment('snapshotMaterializationCount');
-  ctx.compileMetrics?.set('repoFileCount', files.length);
-  ctx.compileMetrics?.set(
-    'repoByteSize',
-    files.reduce((total, file) => total + (Number.isSafeInteger(file.size) && file.size >= 0 ? file.size : 0), 0),
-  );
 }
 
 function assertRepoNotArchived(repo: LightExtensionRepoInternalRecord, actionLabel: string) {

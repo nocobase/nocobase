@@ -118,7 +118,7 @@ describe('plugin-light-extension compile preview', () => {
     const repo = createRepo();
     const { db, entriesRepository, persistenceRepositories } = createDbStub([]);
     const fileService = createFileServiceStub(repo, validSalesKpiFiles());
-    const { service, metricsCollector } = createPreviewService(db, fileService);
+    const { service } = createPreviewService(db, fileService);
 
     const result = await service.compileWorkspacePreview(
       {
@@ -167,32 +167,13 @@ describe('plugin-light-extension compile preview', () => {
       expect(repository.update).not.toHaveBeenCalled();
       expect(repository.destroy).not.toHaveBeenCalled();
     }
-    expect(metricsCollector).toHaveBeenCalledTimes(1);
-    expect(metricsCollector).toHaveBeenCalledWith({
-      schemaVersion: 1,
-      operation: 'workspacePreview',
-      result: 'success',
-      durationsMs: expect.objectContaining({
-        total: expect.any(Number),
-        workspaceValidation: expect.any(Number),
-        compileEntries: expect.any(Number),
-      }),
-      counters: expect.objectContaining({
-        repoFileCount: 2,
-        entryCount: 1,
-        affectedEntryCount: 1,
-        compiledEntryCount: 1,
-        snapshotMaterializationCount: 1,
-      }),
-    });
-    expect(JSON.stringify(metricsCollector.mock.calls)).not.toMatch(/ler_sales|sales-kpi|src\/client|Unsaved preview/u);
   });
 
   it('rejects invalid settings visibility conditions before compiling an unsaved preview', async () => {
     const repo = createRepo();
     const { db } = createDbStub([]);
     const fileService = createFileServiceStub(repo, []);
-    const { service, metricsCollector } = createPreviewService(db, fileService);
+    const { service } = createPreviewService(db, fileService);
 
     const result = await service.compileWorkspacePreview({
       repoId: repo.id,
@@ -235,17 +216,6 @@ describe('plugin-light-extension compile preview', () => {
     });
     expect(result.artifact).toBeUndefined();
     expect(fileService.pull).not.toHaveBeenCalled();
-    expect(metricsCollector).toHaveBeenCalledTimes(1);
-    expect(metricsCollector).toHaveBeenCalledWith(
-      expect.objectContaining({
-        schemaVersion: 1,
-        operation: 'workspacePreview',
-        result: 'rejected',
-        counters: expect.objectContaining({
-          skippedEntryCount: 1,
-        }),
-      }),
-    );
   });
 
   it('compiles every entry in an unsaved workspace before save', async () => {
@@ -737,7 +707,6 @@ function createPreviewService(db: Database, fileService: LightExtensionFileServi
   const recordCompileEvent = vi.spyOn(auditService, 'recordCompileEvent').mockResolvedValue(undefined);
   const permissionService = new LightExtensionPermissionService(auditService);
   const bridge = new LightExtensionWorkspaceCompilerBridge(auditService, permissionService);
-  const metricsCollector = vi.fn();
   const service = new LightExtensionCompilePreviewService(
     db,
     auditService,
@@ -745,13 +714,11 @@ function createPreviewService(db: Database, fileService: LightExtensionFileServi
     permissionService,
     bridge,
     undefined,
-    metricsCollector,
   );
 
   return {
     service,
     recordCompileEvent,
-    metricsCollector,
   };
 }
 

@@ -23,12 +23,6 @@ import type {
   LightExtensionWorkspacePreviewResult,
 } from '../../shared/types';
 import { LightExtensionAuditService } from './LightExtensionAuditService';
-import {
-  classifyLightExtensionCompileMetricsError,
-  combineLightExtensionCompileMetricsRecorders,
-  LightExtensionCompileMetricsProbe,
-  type LightExtensionCompileMetricsCollector,
-} from './LightExtensionCompileMetrics';
 import { entryFromModel } from './LightExtensionEntryService';
 import { LightExtensionFileService } from './LightExtensionFileService';
 import { LightExtensionPermissionService } from './LightExtensionPermissionService';
@@ -69,7 +63,6 @@ export class LightExtensionCompilePreviewService {
     private readonly permissionService: LightExtensionPermissionService,
     private readonly compilerBridge: LightExtensionWorkspaceCompilerBridge,
     private readonly validator = new LightExtensionValidator(),
-    private readonly metricsCollector?: LightExtensionCompileMetricsCollector,
   ) {}
 
   async compilePreview(
@@ -182,25 +175,6 @@ export class LightExtensionCompilePreviewService {
     input: LightExtensionWorkspacePreviewInput,
     ctx: LightExtensionServiceContext = {},
   ): Promise<LightExtensionWorkspacePreviewResult> {
-    const probe = new LightExtensionCompileMetricsProbe('workspacePreview', this.metricsCollector);
-    const compileMetrics = combineLightExtensionCompileMetricsRecorders(ctx.compileMetrics, probe);
-    let result: 'success' | 'rejected' | 'failed' | 'outdated' = 'failed';
-    try {
-      const preview = await this.compileWorkspacePreviewWithMetrics(input, { ...ctx, compileMetrics });
-      result = preview.accepted ? 'success' : 'rejected';
-      return preview;
-    } catch (error) {
-      result = classifyLightExtensionCompileMetricsError(error);
-      throw error;
-    } finally {
-      await probe.finish(result);
-    }
-  }
-
-  private async compileWorkspacePreviewWithMetrics(
-    input: LightExtensionWorkspacePreviewInput,
-    ctx: LightExtensionServiceContext,
-  ): Promise<LightExtensionWorkspacePreviewResult> {
     const requestId = ctx.requestId || randomUUID();
     const previewContext = {
       ...ctx,
@@ -219,31 +193,15 @@ export class LightExtensionCompilePreviewService {
     }
 
     const previewFiles = input.files;
-    previewContext.compileMetrics?.set('repoFileCount', previewFiles.length);
-    previewContext.compileMetrics?.set(
-      'repoByteSize',
-      previewFiles.reduce((total, file) => total + Buffer.byteLength(file.content, 'utf8'), 0),
-    );
-    previewContext.compileMetrics?.increment('snapshotMaterializationCount');
-    const validation = previewContext.compileMetrics
-      ? previewContext.compileMetrics.measure('workspaceValidation', () =>
-          this.validator.validateWorkspace({
-            files: previewFiles.map((file) => ({ ...file })),
-          }),
-        )
-      : this.validator.validateWorkspace({
-          files: previewFiles.map((file) => ({ ...file })),
-        });
-    previewContext.compileMetrics?.set('entryCount', validation.entries.length);
+    const validation = this.validator.validateWorkspace({
+      files: previewFiles.map((file) => ({ ...file })),
+    });
     const targetKind = input.kind;
     const targetEntryPath = input.entryPath?.trim();
     if (!targetKind && !targetEntryPath) {
-      previewContext.compileMetrics?.set('affectedEntryCount', validation.entries.length);
       return this.compileWholeWorkspacePreview(input, validation, previewFiles, previewContext);
     }
     if (!targetKind || !targetEntryPath) {
-      previewContext.compileMetrics?.set('affectedEntryCount', 0);
-      previewContext.compileMetrics?.increment('skippedEntryCount');
       const diagnostics = [
         {
           code: 'light_extension_preview_target_incomplete',
@@ -279,10 +237,7 @@ export class LightExtensionCompilePreviewService {
           } satisfies LightExtensionDiagnostic,
         ];
     const validationDiagnostics = sortUniqueDiagnostics([...workspaceDiagnostics, ...entryDiagnostics]);
-    previewContext.compileMetrics?.set('affectedEntryCount', validationEntry ? 1 : 0);
-
     if (!validationEntry || hasErrorDiagnostic(validationDiagnostics)) {
-      previewContext.compileMetrics?.increment('skippedEntryCount');
       await this.recordCompileAuditBestEffort({
         repoId: input.repoId,
         entryId: input.entryId,
@@ -307,24 +262,19 @@ export class LightExtensionCompilePreviewService {
       };
     }
 
-    previewContext.compileMetrics?.increment('compiledEntryCount');
-    const compileEntry = () =>
-      this.compilerBridge.compileEntry(
-        {
-          repoId: input.repoId,
-          entryId: input.entryId,
-          operation: 'compilePreview',
-          kind: validationEntry.kind,
-          entryName: validationEntry.entryName,
-          entryPath: validationEntry.entryPath,
-          runtimeVersion: input.runtimeVersion,
-          files: getEntryCompileFiles(previewFiles, validationEntry),
-        },
-        previewContext,
-      );
-    const compiled = previewContext.compileMetrics
-      ? await previewContext.compileMetrics.measureAsync('compileEntries', compileEntry)
-      : await compileEntry();
+    const compiled = await this.compilerBridge.compileEntry(
+      {
+        repoId: input.repoId,
+        entryId: input.entryId,
+        operation: 'compilePreview',
+        kind: validationEntry.kind,
+        entryName: validationEntry.entryName,
+        entryPath: validationEntry.entryPath,
+        runtimeVersion: input.runtimeVersion,
+        files: getEntryCompileFiles(previewFiles, validationEntry),
+      },
+      previewContext,
+    );
     const diagnostics = sortUniqueDiagnostics([...validationDiagnostics, ...compiled.diagnostics]);
 
     return {
@@ -366,7 +316,6 @@ export class LightExtensionCompilePreviewService {
         (entry) => entry.kind === validationEntry.kind && entry.entryName === validationEntry.entryName,
       );
       if (hasErrorDiagnostic(validationDiagnostics)) {
-        ctx.compileMetrics?.increment('skippedEntryCount');
         entries.push({
           entryId,
           repoId: input.repoId,
@@ -382,25 +331,20 @@ export class LightExtensionCompilePreviewService {
         continue;
       }
 
-      ctx.compileMetrics?.increment('compiledEntryCount');
       const runtimeVersion = input.runtimeVersion || persistedEntry?.runtimeVersion || 'v2';
-      const compileEntry = () =>
-        this.compilerBridge.compileEntry(
-          {
-            repoId: input.repoId,
-            entryId,
-            operation: 'compilePreview',
-            kind: validationEntry.kind,
-            entryName: validationEntry.entryName,
-            entryPath: validationEntry.entryPath,
-            runtimeVersion,
-            files: getEntryCompileFiles(files, validationEntry),
-          },
-          ctx,
-        );
-      const compiled = ctx.compileMetrics
-        ? await ctx.compileMetrics.measureAsync('compileEntries', compileEntry)
-        : await compileEntry();
+      const compiled = await this.compilerBridge.compileEntry(
+        {
+          repoId: input.repoId,
+          entryId,
+          operation: 'compilePreview',
+          kind: validationEntry.kind,
+          entryName: validationEntry.entryName,
+          entryPath: validationEntry.entryPath,
+          runtimeVersion,
+          files: getEntryCompileFiles(files, validationEntry),
+        },
+        ctx,
+      );
       const diagnostics = sortUniqueDiagnostics([...validationDiagnostics, ...compiled.diagnostics]);
       const accepted = compiled.accepted && !hasErrorDiagnostic(diagnostics);
       entries.push({
