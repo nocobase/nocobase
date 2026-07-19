@@ -9,6 +9,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { Avatar, Badge, theme } from 'antd';
+import { useMobileLayout } from '@nocobase/client-v2';
 import { observer, useFlowContext, type FlowRuntimeContext } from '@nocobase/flow-engine';
 import { useLocation } from 'react-router-dom';
 import { useT } from '../../../locale';
@@ -26,6 +27,7 @@ export const ChatButton: React.FC = observer(() => {
   const t = useT();
   const { pathname } = useLocation();
   const isV1Page = ctx?.pageInfo?.version === 'v1';
+  const { isMobileLayout } = useMobileLayout();
   const { token } = theme.useToken();
   const { unreadCount: unreadConversationCount } = useChatConversationActions();
   const { unreadCount: unreadWorkflowTaskCount } = useWorkflowTasks();
@@ -71,7 +73,7 @@ export const ChatButton: React.FC = observer(() => {
     };
   }, [unreadCount]);
 
-  if (open || !aiEmployees?.length || isV1Page || !pathname.startsWith('/admin')) {
+  if (open || !aiEmployees?.length || isV1Page || isMobileLayout || !pathname.startsWith('/admin')) {
     return null;
   }
 

@@ -1,62 +1,68 @@
-# Uno a Uno
+---
+title: "Uno a uno"
+description: "Campo de relación uno a uno (O2O): dos entidades de tabla se corresponden entre sí, y se utiliza para almacenar por separado distintos aspectos de una entidad."
+keywords: "Uno a uno,O2O,HasOne,BelongsTo,campo de relación,NocoBase"
+---
 
-En la relación entre empleados y perfiles personales, cada empleado solo puede tener un registro de perfil personal, y cada registro de perfil personal solo puede corresponder a un empleado. En este caso, la relación entre el empleado y el perfil personal es uno a uno.
+# Uno a uno
 
-La clave foránea en una relación uno a uno puede colocarse tanto en la colección de origen como en la colección de destino. Si representa "tiene uno", la clave foránea es más apropiada en la colección de destino; si representa "pertenece a", entonces la clave foránea es más adecuada en la colección de origen.
+La relación entre los empleados y sus perfiles personales: cada empleado solo puede tener un registro de perfil personal, y cada registro de perfil personal solo puede corresponder a un empleado. En este caso, los empleados y los perfiles personales tienen una relación uno a uno.
 
-Por ejemplo, en el caso mencionado anteriormente, donde un empleado tiene solo un perfil personal y el perfil personal pertenece al empleado, es apropiado colocar la clave foránea en la colección de perfiles personales.
+En una relación uno a uno, la clave foránea puede ubicarse en la tabla de origen o en la tabla de destino. Si representa «tiene uno», es más adecuado colocar la clave foránea en la tabla de destino; si representa una «relación de pertenencia», es más adecuado colocarla en la tabla de origen.
 
-## Uno a Uno (Tiene Uno)
+En el ejemplo anterior, cada empleado solo tiene un perfil personal y cada perfil personal pertenece a un empleado, por lo que es más adecuado colocar esta clave foránea en la tabla de perfiles personales.
 
-Esto indica que un empleado tiene un registro de perfil personal.
+## Uno a uno (tiene uno)
+
+Indica que un empleado tiene un registro de perfil personal
 
 Relación ER
 
-![alt text](https://static-docs.nocobase.com/4359e128936bbd7c9ff51bcff1d646dd.png)
+![texto alternativo](https://static-docs.nocobase.com/4359e128936bbd7c9ff51bcff1d646dd.png)
 
-Configuración de Campo
+Configuración del campo
 
-![alt text](https://static-docs.nocobase.com/7665a87e094b4fb50c9426a108f87105.png)
+![texto alternativo](https://static-docs.nocobase.com/7665a87e094b4fb50c9426a108f87105.png)
 
-## Uno a Uno (Pertenece a)
+## Uno a uno (relación de pertenencia)
 
-Esto indica que un perfil personal pertenece a un empleado específico.
+Indica que un registro de perfil personal pertenece a un empleado
 
 Relación ER
 
 ![](https://static-docs.nocobase.com/31e7cc3e630220cf1e98753ca24ac72d.png)
 
-Configuración de Campo
+Configuración del campo
 
-![alt text](https://static-docs.nocobase.com/4f09eeb3c7717d61a349842da43c187c.png)
+![texto alternativo](https://static-docs.nocobase.com/4f09eeb3c7717d61a349842da43c187c.png)
 
-## Descripción de Parámetros
+## Descripción de los parámetros
 
-### Colección de origen
+### Source collection
 
-La colección de origen, es decir, la colección donde se encuentra el campo actual.
+Tabla de origen, es decir, la tabla en la que se encuentra el campo actual.
 
-### Colección de destino
+### Target collection
 
-La colección de destino, la colección con la que se establece la relación.
+Tabla de destino, es decir, la tabla con la que se establece la relación.
 
-### Clave foránea
+### Foreign key
 
-Se utiliza para establecer una relación entre dos colecciones. En una relación uno a uno, la clave foránea puede colocarse tanto en la colección de origen como en la colección de destino. Si representa "tiene uno", la clave foránea es más apropiada en la colección de destino; si representa "pertenece a", entonces la clave foránea es más adecuada en la colección de origen.
+Se utiliza para establecer la relación entre dos tablas. En una relación uno a uno, la clave foránea puede ubicarse en la tabla de origen o en la tabla de destino. Si representa «tiene uno», es más adecuado colocar la clave foránea en la tabla de destino; si representa una «relación de pertenencia», es más adecuado colocarla en la tabla de origen.
 
-### Clave de origen <- Clave foránea (Clave foránea en la colección de destino)
+### Source key <- Foreign key (clave foránea en la tabla de destino)
 
-El campo referenciado por la restricción de clave foránea debe ser único. Cuando la clave foránea se coloca en la colección de destino, indica "tiene uno".
+Campo al que hace referencia la restricción de clave foránea; debe ser único. Cuando la clave foránea se encuentra en la tabla de destino, representa «tiene uno».
 
-### Clave de destino <- Clave foránea (Clave foránea en la colección de origen)
+### Target key <- Foreign key (clave foránea en la tabla de origen)
 
-El campo referenciado por la restricción de clave foránea debe ser único. Cuando la clave foránea se coloca en la colección de origen, indica "pertenece a".
+Campo al que hace referencia la restricción de clave foránea; debe ser único. Cuando la clave foránea se encuentra en la tabla de origen, representa una «relación de pertenencia».
 
 ### ON DELETE
 
-ON DELETE se refiere a las reglas de acción para la referencia de clave foránea en la colección hija relacionada al eliminar registros de la colección padre. Es una opción que se define al establecer una restricción de clave foránea. Las opciones comunes de ON DELETE incluyen:
+ON DELETE se refiere a la regla de operación aplicada a las referencias de clave foránea de la tabla secundaria relacionada cuando se elimina un registro de la tabla principal. Es una opción que se utiliza al definir restricciones de clave foránea. Entre las opciones comunes de ON DELETE se incluyen:
 
-- CASCADE: Cuando se elimina un registro en la colección padre, se eliminan automáticamente todos los registros relacionados en la colección hija.
-- SET NULL: Cuando se elimina un registro en la colección padre, el valor de la clave foránea en la colección hija relacionada se establece en NULL.
-- RESTRICT: Opción predeterminada. Si se intenta eliminar un registro de la colección padre y existen registros relacionados en la colección hija, se rechaza la eliminación del registro padre.
-- NO ACTION: Similar a RESTRICT. Si existen registros relacionados en la colección hija, se rechaza la eliminación del registro de la colección padre.
+- CASCADE: al eliminar un registro de la tabla principal, se eliminan automáticamente todos los registros relacionados de la tabla secundaria.
+- SET NULL: al eliminar un registro de la tabla principal, el valor de la clave foránea relacionada en la tabla secundaria se establece en NULL.
+- RESTRICT: opción predeterminada. Si existen registros relacionados en la tabla secundaria al intentar eliminar un registro de la tabla principal, se rechaza la eliminación del registro de la tabla principal.
+- NO ACTION: similar a RESTRICT. Si existen registros relacionados en la tabla secundaria, se rechaza la eliminación del registro de la tabla principal.

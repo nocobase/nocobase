@@ -1,25 +1,25 @@
 ---
-title: "Field Lampiran"
-description: "Field lampiran, terhubung ke Collection file, menyimpan gambar, dokumen, dan file lainnya."
-keywords: "field lampiran,field-attachment,relasi file,gambar,dokumen,NocoBase"
+title: "Bidang lampiran"
+description: "Bidang lampiran, terkait dengan tabel file, untuk menyimpan gambar, dokumen, dan file lainnya."
+keywords: "bidang lampiran,field-attachment,relasi file,gambar,dokumen,NocoBase"
 ---
 
-# Field Lampiran
+# BIdang lampiran
 
-## Pengantar
+## Pendahuluan
 
-Field tipe "Lampiran" yang dibawakan sistem, digunakan untuk mendukung upload file oleh pengguna pada Collection custom.
+Sistem menyediakan tipe bidang bawaan "Lampiran" yang digunakan untuk mendukung pengguna mengunggah file di tabel data kustom.
 
-Field lampiran pada dasarnya adalah field relasi Many to Many, menunjuk ke Collection file bawaan sistem "Lampiran" (`attachments`). Setelah field lampiran dibuat pada Collection mana pun, akan otomatis dibuat tabel perantara Many to Many ke Collection lampiran. Metadata file yang diupload akan disimpan di Collection "Lampiran", dan informasi file yang dirujuk dalam Collection akan terhubung melalui tabel perantara ini.
+Di balik layar, bidang lampiran merupakan bidang relasi many-to-many yang mengarah ke tabel file bawaan sistem "Lampiran" (`attachments`). Setelah bidang lampiran dibuat pada tabel data mana pun, tabel perantara relasi many-to-many ke tabel lampiran akan dibuat secara otomatis. Metadata file yang diunggah akan disimpan dalam tabel "Lampiran", sedangkan informasi file yang dirujuk dalam tabel data akan dihubungkan melalui tabel perantara ini.
 
-## Konfigurasi Field
+## Konfigurasi bidang
 
 ![20240512180916](https://static-docs.nocobase.com/20251031000729.png)
 
-### Pembatasan Tipe MIME
+### Batasan tipe MIME
 
-Digunakan untuk membatasi tipe file yang dapat diupload, menggunakan sintaks [MIME](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types) untuk mendeskripsikan format. Contohnya: `image/*` mewakili file kategori gambar. Beberapa tipe dapat dipisahkan dengan koma, seperti: `image/*,application/pdf` yang berarti mengizinkan file tipe gambar dan PDF.
+Digunakan untuk membatasi tipe file yang diizinkan untuk diunggah, dengan menggunakan sintaks [MIME](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types) untuk mendeskripsikan formatnya. Contoh: `image/*` mewakili file gambar. Beberapa tipe dapat dipisahkan dengan koma dalam bahasa Inggris, misalnya: `image/*,application/pdf` berarti mengizinkan file bertipe gambar dan PDF.
 
-### Storage Engine
+### Mesin penyimpanan
 
-Pilih storage engine untuk menyimpan file yang diupload. Jika tidak diisi, akan menggunakan storage engine default sistem.
+Pilih mesin penyimpanan yang digunakan untuk menyimpan file yang diunggah. Jika dikosongkan, mesin penyimpanan default sistem akan digunakan.

@@ -2,35 +2,35 @@
 pkg: "@nocobase/plugin-field-signature"
 ---
 
-# Datentabellenfeld: Handschriftunterschrift
+# Datenquellenfeld: Handschriftliche Unterschrift
 
 ## Einführung
 
-Mit dem Feld für Handschriftunterschriften können Benutzer ihre Unterschrift mit Maus oder Touchscreen auf einer Zeichenfläche leisten. Nach dem Speichern wird das Unterschriftsbild in der ausgewählten **Datei-Datentabelle** abgelegt; dabei wird der Upload- und Speicherprozess des **Dateimanagers** wiederverwendet.
+Das Feld für handschriftliche Unterschriften ermöglicht es Benutzern, mit der Maus oder einem Touchscreen auf einer Zeichenfläche zu unterschreiben. Nach dem Speichern wird das Unterschriftsbild in die ausgewählte **Dateidatentabelle** geschrieben und verwendet den vom **Dateimanager** bereitgestellten Prozess für das Hochladen und Speichern von Dateien erneut.
 
 ## Installation
 
-1. Stellen Sie sicher, dass die aktuelle Umgebung **Professional Edition oder höher** ist und eine gültige Lizenz vorliegt.
-2. Öffnen Sie den **Plugin-Manager**, suchen Sie **Datentabellenfeld: Handschriftunterschrift** (`@nocobase/plugin-field-signature`) und aktivieren Sie es.
-3. Stellen Sie sicher, dass der **Dateimanager** (`@nocobase/plugin-file-manager`) aktiviert ist. Das Feld für Handschriftunterschriften benötigt diesen für die Datei-Datentabelle, den Upload und die Speicherung; ohne aktivierten Dateimanager kann das Unterschriftsbild nicht gespeichert werden.
+1. Stellen Sie sicher, dass die aktuelle Umgebung **Professional Edition oder höher** verwendet und die Lizenz gültig ist.
+2. Öffnen Sie den **Plugin-Manager**, suchen Sie **Datenquellenfeld: Handschriftliche Unterschrift** (`@nocobase/plugin-field-signature`) und aktivieren Sie es.
+3. Stellen Sie sicher, dass der **Dateimanager** (`@nocobase/plugin-file-manager`) aktiviert ist. Das Feld für handschriftliche Unterschriften ist auf die vom Dateimanager bereitgestellte Dateidatentabelle sowie dessen Funktionen zum Hochladen und Speichern angewiesen. Wenn der Dateimanager nicht aktiviert ist, können Unterschriftsbilder nicht gespeichert werden.
 
 ## Verwendung
 
 ### Feld hinzufügen
 
-In **Datenquelle** → Datentabelle auswählen → **Felder konfigurieren** → **Feld hinzufügen** → in der Gruppe Multimedia **Handschriftunterschrift** auswählen.
+Gehen Sie zu **Datenquellen** → Wählen Sie eine Datentabelle aus → **Felder konfigurieren** → **Feld hinzufügen** → Wählen Sie in der Gruppe „Multimedia“ die Option **Handschriftliche Unterschrift** aus.
 
 ### Feldkonfiguration
 
-- **Datei-Datentabelle**: Pflichtfeld; wählen Sie eine Datei-Datentabelle (z. B. `attachments`) aus, in der das Unterschriftsbild gespeichert wird.
-- Welche Speicherkonfiguration und Upload-Regeln tatsächlich verwendet werden, bestimmt die ausgewählte Datei-Datentabelle.
+- **Dateidatentabelle**: Erforderlich; wählen Sie eine Dateidatentabelle zum Speichern der Dateien aus (z. B. `attachments`). Das Unterschriftsbild wird dort gespeichert.
+- Die tatsächlich für das Unterschriftsbild verwendete Speicherkonfiguration und die Regeln für das Hochladen werden von der ausgewählten Dateidatentabelle selbst bestimmt.
 
-### Oberflächenkonfiguration
+### Schnittstellenkonfiguration
 
-- Nachdem Sie das Feld für Handschriftunterschriften zum Formular hinzugefügt haben, können Sie in der Oberflächenkonfiguration des Feldes die **Unterschrifteneinstellungen** anpassen, einschließlich Stiftfarbe, Hintergrundfarbe, Breite und Höhe der Zeichenfläche sowie Breite und Höhe der Vorschau (Thumbnail).
-- In schreibgeschützten Ansichten lassen sich Breite und Höhe der Vorschau ebenfalls anpassen, um die Anzeigegröße des Unterschriftsbildes zu steuern.
+- Nachdem Sie das Feld für handschriftliche Unterschriften zu einem Formular hinzugefügt haben, können Sie in der Schnittstellenkonfiguration des Feldes die **Unterschriftseinstellungen** anpassen. Dazu gehören die Strichfarbe, die Hintergrundfarbe, die Breite und Höhe der Unterschriftsfläche sowie die Breite und Höhe des Vorschaubilds.
+- In schreibgeschützten Ansichten können Sie außerdem die Breite und Höhe des Vorschaubilds der Unterschrift anpassen, um die Anzeiggröße des Unterschriftsbilds zu steuern.
+### Schnittstellenbedienung
 
-### Bedienung in der Oberfläche
-
-- Klicken Sie auf den Feldbereich, um die Zeichenfläche zu öffnen. Nach dem Unterschreiben bestätigen Sie, um das Bild hochzuladen und mit dem entsprechenden Dateieintrag zu verknüpfen.
-- Auf kleineren Bildschirmen kann eine Querformat-/Vollbild-Unterschriftsoberfläche verwendet werden, um das Unterschreiben zu erleichtern.
+- Klicken Sie auf den Feldbereich, um die Unterschriftsfläche zu öffnen. Nach dem Unterschreiben bestätigen Sie, um das Bild hochzuladen und mit dem entsprechenden Dateidatensatz zu verknüpfen.
+- Auf Geräten mit kleinem Bildschirm können Sie eine für Querformat oder Vollbild optimierte Unterschriftsoberfläche verwenden, um das Unterschreiben zu erleichtern.
+![20260709232226](https://static-docs.nocobase.com/20260709232226.png)

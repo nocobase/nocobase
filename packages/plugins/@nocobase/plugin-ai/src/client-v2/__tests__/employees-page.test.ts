@@ -10,6 +10,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   EMPLOYEE_PROMPT_VARIABLE_NAMESPACES,
+  buildEmployeeSubmitValues,
   createAIEmployee,
   deleteAIEmployee,
   isKnowledgeBaseEnabled,
@@ -138,6 +139,32 @@ describe('EmployeesPage request helpers', () => {
         skillSettings: {
           tools: [{ name: 'external_lookup', autoCall: true }],
         },
+      },
+    });
+  });
+
+  it('keeps model settings from all form values when submitting', () => {
+    expect(
+      buildEmployeeSubmitValues(
+        {
+          username: 'atlas',
+          nickname: 'Atlas',
+        },
+        {
+          username: 'atlas',
+          nickname: 'Atlas',
+          modelSettings: {
+            enabled: true,
+            models: [{ llmService: 'openai', model: 'gpt-4.1' }],
+          },
+        },
+      ),
+    ).toMatchObject({
+      username: 'atlas',
+      nickname: 'Atlas',
+      modelSettings: {
+        enabled: true,
+        models: [{ llmService: 'openai', model: 'gpt-4.1' }],
       },
     });
   });
