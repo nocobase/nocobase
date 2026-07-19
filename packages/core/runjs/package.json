@@ -60,7 +60,6 @@
     "generate:check": "yarn generate:completion-catalogs --check && yarn generate:dom-type-bridge --check && yarn generate:type-packs --check",
     "generate:completion-catalogs": "tsx scripts/generate-completion-catalogs.ts",
     "generate:dom-type-bridge": "tsx scripts/generate-dom-type-only-bridge.ts",
-    "generate:type-packs": "tsx scripts/generate-type-packs.ts",
-    "prebuild": "yarn generate"
+    "generate:type-packs": "tsx scripts/generate-type-packs.ts"
   }
 }

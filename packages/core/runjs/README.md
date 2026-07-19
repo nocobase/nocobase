@@ -41,7 +41,8 @@ yarn workspace @nocobase/runjs generate
 ```
 
 CI and pre-commit verification must use check mode. Completion and type-pack checks compare their committed manifests;
-the DOM check compares its committed bridge. Ignored build inputs are recreated by the build lifecycle:
+the DOM check compares its committed bridge. The build command ensures these artifacts once per process before building
+RunJS, client-v2, or the app; postinstall keeps fresh development checkouts bootstrapped:
 
 ```bash
 yarn workspace @nocobase/runjs generate:check

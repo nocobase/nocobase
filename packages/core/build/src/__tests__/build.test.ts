@@ -11,20 +11,38 @@ import type { Package } from '@lerna/package';
 import fs from 'fs-extra';
 import os from 'os';
 import path from 'path';
-import { afterEach, describe, expect, test } from 'vitest';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 
-import { buildPackages } from '../build';
+import { buildPackages, ensureRunJSGeneratedArtifacts } from '../build';
+import * as buildUtils from '../utils';
 
 const tempDirs: string[] = [];
 const originalArgv = [...process.argv];
 
 afterEach(async () => {
   process.argv = [...originalArgv];
+  vi.restoreAllMocks();
   await Promise.all(tempDirs.map((dir) => fs.remove(dir)));
   tempDirs.length = 0;
 });
 
 describe('buildPackages', () => {
+  test('generates RunJS artifacts at most once per build process', async () => {
+    const runScript = vi.spyOn(buildUtils, 'runScript').mockResolvedValue(undefined);
+
+    await Promise.all([
+      ensureRunJSGeneratedArtifacts(),
+      ensureRunJSGeneratedArtifacts(),
+      ensureRunJSGeneratedArtifacts(),
+    ]);
+
+    expect(runScript).toHaveBeenCalledTimes(1);
+    expect(runScript).toHaveBeenCalledWith(
+      ['workspace', '@nocobase/runjs', 'generate'],
+      expect.stringContaining('/nocobase'),
+    );
+  });
+
   test('runs a package prebuild script before building its source', async () => {
     const cwd = await fs.mkdtemp(path.join(os.tmpdir(), 'nocobase-build-prebuild-'));
     tempDirs.push(cwd);
