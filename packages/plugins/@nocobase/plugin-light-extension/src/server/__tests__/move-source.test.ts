@@ -189,6 +189,20 @@ describe('MoveSourceService', () => {
         entryPath: `${entryRoot}/sales-kpi/index.ts`,
         descriptorPath: `${entryRoot}/sales-kpi/entry.json`,
       };
+      const originSettingsSchema = {
+        type: 'object',
+        properties: {
+          title: { type: 'string', default: 'Welcome' },
+          showTimestamp: { type: 'boolean', default: true },
+        },
+      };
+      const getEntry = vi.fn(async () => ({
+        ...entry,
+        id: 'lee_origin',
+        repoId: 'ler_origin',
+        kind,
+        settingsSchema: originSettingsSchema,
+      }));
       const adapter = {
         kind: 'flowModel.step',
         assertCanRead: vi.fn(),
@@ -229,7 +243,7 @@ describe('MoveSourceService', () => {
             files: [],
           })),
         } as never,
-        { listEntries } as never,
+        { getEntry, listEntries } as never,
         { prepareSaveSource, publishPreparedSave } as never,
         { syncFlowModelReferencesForNodeTree: syncReferences } as never,
         () => ({ require: () => adapter }) as unknown as RunJSSourceAdapterRegistry,
@@ -244,6 +258,12 @@ describe('MoveSourceService', () => {
           entryPath: 'src/main.ts',
           version: 'v2',
           files: [{ path: 'src/main.ts', content: 'return 1;' }],
+          originBinding: {
+            type: 'light-extension-entry',
+            repoId: 'ler_origin',
+            entryId: 'lee_origin',
+            kind,
+          },
           destination: { type: 'existing', repoId: repo.id },
           entryName: 'sales-kpi',
           entryTitle: 'Sales KPI',
@@ -272,6 +292,8 @@ describe('MoveSourceService', () => {
       } else {
         expect(descriptor).not.toHaveProperty('category');
       }
+      expect(descriptor.settingsSchema).toEqual(originSettingsSchema);
+      expect(getEntry).toHaveBeenCalledWith('lee_origin', expect.anything());
       expect(writeExternalBinding).toHaveBeenCalledWith({
         locator,
         baseOwnerFingerprint: 'owner_before',

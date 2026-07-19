@@ -1605,6 +1605,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
           version: value.version || 'v2',
           readOnly: workspaceEditingDisabled || !workspace.permissions.canSave,
           sourceMetadata: props.sourceMetadata,
+          sourceBinding: value.sourceBinding,
           onExternalBindingPersisted: handleExternalBindingPersisted,
         }
       : null;

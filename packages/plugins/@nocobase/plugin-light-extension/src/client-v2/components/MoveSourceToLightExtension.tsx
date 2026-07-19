@@ -12,7 +12,11 @@ import type { RunJSStudioToolbarContext, RunJSStudioToolbarContribution } from '
 import { Button, Form, Input, Modal, Radio, Select, Tooltip, message } from 'antd';
 import React from 'react';
 
-import type { LightExtensionKind, LightExtensionRepoRecord } from '../../shared/types';
+import type {
+  LightExtensionKind,
+  LightExtensionMoveSourceOriginBinding,
+  LightExtensionRepoRecord,
+} from '../../shared/types';
 import {
   type ApiClientLike,
   listLightExtensionRepos,
@@ -139,6 +143,7 @@ export const MoveSourceToLightExtension: React.FC<{
         entryPath: context.entryPath,
         version: context.version,
         files: context.files.map((file) => ({ ...file })),
+        originBinding: resolveOriginBinding(context.sourceBinding, kind),
         destination:
           values.destinationType === 'existing'
             ? {
@@ -255,6 +260,32 @@ function isLightExtensionKind(value: unknown): value is LightExtensionKind {
     value === 'js-item' ||
     value === 'runjs'
   );
+}
+
+function resolveOriginBinding(
+  value: unknown,
+  kind: LightExtensionKind,
+): LightExtensionMoveSourceOriginBinding | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return undefined;
+  }
+  const binding = value as Record<string, unknown>;
+  if (
+    binding.type !== 'light-extension-entry' ||
+    typeof binding.repoId !== 'string' ||
+    !binding.repoId ||
+    typeof binding.entryId !== 'string' ||
+    !binding.entryId ||
+    binding.kind !== kind
+  ) {
+    return undefined;
+  }
+  return {
+    type: 'light-extension-entry',
+    repoId: binding.repoId,
+    entryId: binding.entryId,
+    kind,
+  };
 }
 
 function suggestDisplayName(context: RunJSStudioToolbarContext, kind: LightExtensionKind): string {

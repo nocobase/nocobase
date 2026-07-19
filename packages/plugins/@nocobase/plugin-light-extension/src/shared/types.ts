@@ -428,6 +428,11 @@ export type LightExtensionMoveSourceDestination =
       description?: string | null;
     };
 
+export type LightExtensionMoveSourceOriginBinding = Pick<
+  LightExtensionRuntimeSourceBinding,
+  'type' | 'repoId' | 'entryId' | 'kind'
+>;
+
 export interface LightExtensionMoveSourceInput {
   locator: RunJSSourceLocator;
   expectedOwnerFingerprint: string;
@@ -436,6 +441,7 @@ export interface LightExtensionMoveSourceInput {
   entryPath: string;
   version: string;
   files: LightExtensionMoveSourceWorkspaceFile[];
+  originBinding?: LightExtensionMoveSourceOriginBinding;
   destination: LightExtensionMoveSourceDestination;
   entryName: string;
   entryTitle?: string | null;

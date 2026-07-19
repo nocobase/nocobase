@@ -20,6 +20,7 @@ export interface RunJSStudioToolbarContext {
   version: string;
   readOnly: boolean;
   sourceMetadata?: Record<string, unknown>;
+  sourceBinding?: RunJSValue['sourceBinding'];
   onExternalBindingPersisted: (value: Pick<RunJSValue, 'sourceMode' | 'sourceBinding'>) => Promise<void>;
 }
 

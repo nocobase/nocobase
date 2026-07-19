@@ -429,18 +429,32 @@ describe('runJSStudioProvider', () => {
     const unregister = runJSStudioToolbarRegistry.register({
       key: 'test-source-metadata',
       component: ({ context }) => (
-        <span data-testid="toolbar-source-kind">{String(context.sourceMetadata?.lightExtensionKind || '')}</span>
+        <>
+          <span data-testid="toolbar-source-kind">{String(context.sourceMetadata?.lightExtensionKind || '')}</span>
+          <span data-testid="toolbar-source-entry">{String(context.sourceBinding?.entryId || '')}</span>
+        </>
       ),
     });
 
     try {
       renderEditor(vi.fn(), {
+        value: {
+          code: 'return 1;',
+          version: 'v2',
+          sourceBinding: {
+            type: 'light-extension-entry',
+            repoId: 'ler_origin',
+            entryId: 'lee_origin',
+            kind: 'js-field',
+          },
+        },
         sourceMetadata: {
           lightExtensionKind: 'js-field',
         },
       });
 
       expect(await screen.findByTestId('toolbar-source-kind')).toHaveTextContent('js-field');
+      expect(screen.getByTestId('toolbar-source-entry')).toHaveTextContent('lee_origin');
     } finally {
       unregister();
     }

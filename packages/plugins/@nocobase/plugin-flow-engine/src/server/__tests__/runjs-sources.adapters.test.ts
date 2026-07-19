@@ -9,7 +9,7 @@
 
 import { createMockServer, type MockServer } from '@nocobase/test';
 import PluginVscFileServer from '@nocobase/plugin-vsc-file';
-import type { RunJSSourceLocator } from '@nocobase/server';
+import type { RunJSSourceAdapterContext, RunJSSourceLocator } from '@nocobase/server';
 
 import FlowModelRepository from '../repository';
 import { createFlowModelRunJSSourceAdapters } from '../runjs-sources/flow-model-adapters';
@@ -131,6 +131,94 @@ describe('flow-engine RunJS source adapters', () => {
       },
     });
     expect(await app.db.getRepository('vscFileRepositories').count()).toBe(repositoriesBefore);
+  });
+
+  it('allows a light extension FlowModel step to be written only during the external-to-inline transition', async () => {
+    await repository.insertModel({
+      uid: 'external-to-inline-runjs-model',
+      title: 'External to inline RunJS model',
+      use: 'JSBlockModel',
+      stepParams: {
+        jsSettings: {
+          runJs: {
+            code: 'ctx.render("inline fallback");',
+            version: 'v2',
+            sourceMode: 'light-extension',
+            sourceBinding: {
+              type: 'light-extension-entry',
+              repoId: 'ler_external_to_inline',
+              entryId: 'lee_external_to_inline',
+            },
+            settings: { title: 'preserved' },
+          },
+        },
+      },
+    });
+
+    const locator: RunJSSourceLocator = {
+      kind: 'flowModel.step',
+      modelUid: 'external-to-inline-runjs-model',
+      flowKey: 'jsSettings',
+      stepKey: 'runJs',
+      paramPath: ['code'],
+    };
+    const adapter = createFlowModelRunJSSourceAdapters(app.db).find((item) => item.kind === locator.kind);
+    if (!adapter) {
+      throw new Error('FlowModel step source adapter is unavailable');
+    }
+
+    await app.db.sequelize.transaction(async (transaction) => {
+      const ctx: RunJSSourceAdapterContext = {
+        transaction,
+        can: () => ({}),
+        sourceTransition: 'external-to-inline',
+      };
+
+      await expect(adapter.assertCanRead({ locator, ctx })).rejects.toMatchObject({
+        code: 'RUNJS_SOURCE_READONLY',
+      });
+      await expect(adapter.assertCanWrite({ locator, ctx })).resolves.toBeUndefined();
+      const legacy = await adapter.readLegacy({ locator, ctx });
+      expect(legacy).toMatchObject({
+        code: 'ctx.render("inline fallback");',
+        version: 'v2',
+        metadata: { modelUse: 'JSBlockModel' },
+      });
+
+      await adapter.writeRuntime({
+        locator,
+        artifact: {
+          code: 'ctx.render("moved inline");',
+          version: 'v2',
+          diagnostics: [],
+          filesHash: 'external_to_inline_files_hash',
+          entryPath: 'src/client/index.tsx',
+          metadata: { repoId: 'runjs_external_to_inline' },
+        },
+        commitId: 'commit_external_to_inline',
+        baseOwnerFingerprint: legacy.ownerFingerprint,
+        ctx,
+      });
+    });
+
+    const updated = await repository.findModelById('external-to-inline-runjs-model');
+    expect(getAtPath(updated, ['stepParams', 'jsSettings', 'runJs'])).toMatchObject({
+      code: 'ctx.render("moved inline");',
+      version: 'v2',
+      sourceMode: 'light-extension',
+      sourceBinding: {
+        type: 'light-extension-entry',
+        repoId: 'ler_external_to_inline',
+        entryId: 'lee_external_to_inline',
+      },
+      settings: { title: 'preserved' },
+      sourceRef: {
+        type: 'vsc-file',
+        repoId: 'runjs_external_to_inline',
+        commitId: 'commit_external_to_inline',
+        entry: 'src/client/index.tsx',
+      },
+    });
   });
 
   it('writes external bindings for FlowModel step and nested RunJS values without removing inline fallback', async () => {

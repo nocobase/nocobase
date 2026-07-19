@@ -416,18 +416,20 @@ describe('MoveToInlineService', () => {
         return { ownerFingerprint: 'owner_runtime' };
       },
     );
+    const assertCanWrite = vi.fn(async () => undefined);
+    const readLegacy = vi.fn(async () => ({
+      code: 'ctx.render("old");',
+      version: 'v2',
+      label: 'JS page',
+      surfaceStyle: 'render' as const,
+      language: 'typescript' as const,
+      ownerFingerprint: 'owner_before',
+      metadata: { modelUse: 'JSPageModel' },
+    }));
     const adapter = {
       kind: 'flowModel.step',
-      assertCanWrite: vi.fn(async () => undefined),
-      readLegacy: vi.fn(async () => ({
-        code: 'ctx.render("old");',
-        version: 'v2',
-        label: 'JS page',
-        surfaceStyle: 'render',
-        language: 'typescript',
-        ownerFingerprint: 'owner_before',
-        metadata: { modelUse: 'JSPageModel' },
-      })),
+      assertCanWrite,
+      readLegacy,
       writeRuntime,
       getFingerprint: vi.fn(async () => 'owner_after'),
     };
@@ -567,10 +569,28 @@ describe('MoveToInlineService', () => {
     expect(getRepositoryForUpdate.mock.invocationCallOrder[0]).toBeLessThan(
       lockFlowModelRecord.mock.invocationCallOrder[0],
     );
+    expect(assertCanWrite).toHaveBeenCalledWith({
+      locator: pageLocator,
+      ctx: expect.objectContaining({
+        transaction,
+        sourceTransition: 'external-to-inline',
+      }),
+    });
+    expect(readLegacy).toHaveBeenCalledWith({
+      locator: pageLocator,
+      ctx: expect.objectContaining({
+        transaction,
+        sourceTransition: 'external-to-inline',
+      }),
+    });
     expect(writeRuntime).toHaveBeenCalledWith(
       expect.objectContaining({
         baseOwnerFingerprint: 'owner_before',
         commitId: 'runjs_new_commit',
+        ctx: expect.objectContaining({
+          transaction,
+          sourceTransition: 'external-to-inline',
+        }),
         artifact: expect.objectContaining({
           filesHash: result.filesHash,
           code: expect.stringContaining(`nocobase-runjs://bundle/${sourceId}.js`),

@@ -131,9 +131,26 @@ function normalizeMoveSourceInput(input: ResourceActionInput): LightExtensionMov
     entryPath: requireString(input, 'entryPath'),
     version: requireString(input, 'version'),
     files: requireArray(input, 'files', normalizeMoveSourceFile),
+    originBinding: normalizeMoveSourceOriginBinding(input.originBinding),
     destination: normalizeMoveSourceDestination(input.destination),
     entryName: requireString(input, 'entryName'),
     entryTitle: optionalNullableString(input, 'entryTitle'),
+  };
+}
+
+function normalizeMoveSourceOriginBinding(value: unknown): LightExtensionMoveSourceInput['originBinding'] | undefined {
+  if (typeof value === 'undefined') {
+    return undefined;
+  }
+  const binding = toRecord(value);
+  if (binding.type !== 'light-extension-entry') {
+    throw invalidInput('originBinding.type must be "light-extension-entry"');
+  }
+  return {
+    type: 'light-extension-entry',
+    repoId: requireString(binding, 'repoId', 'originBinding.repoId'),
+    entryId: requireString(binding, 'entryId', 'originBinding.entryId'),
+    kind: requireLightExtensionKind(binding, 'kind'),
   };
 }
 
