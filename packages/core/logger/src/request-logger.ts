@@ -8,9 +8,12 @@
  */
 
 import { Logger, LoggerOptions } from './logger';
-import { pick, omit } from 'lodash';
+import { pick } from 'lodash';
 
 const REQUEST_SOURCE_HEADER = 'x-request-source';
+const REDACTED_VALUE = '[REDACTED]';
+const SENSITIVE_KEY_PATTERN = /(password|token|authorization|credential|authref|privatekey|secret)/i;
+const URL_KEY_PATTERN = /^(url|originalurl|referer)$/i;
 
 const defaultRequestWhitelist = [
   'action',
@@ -24,12 +27,6 @@ const defaultRequestWhitelist = [
   'header.referer',
 ];
 const defaultResponseWhitelist = ['status'];
-const defaultActionBlackList = [
-  'params.values.password',
-  'params.values.confirmPassword',
-  'params.values.oldPassword',
-  'params.values.newPassword',
-];
 
 export interface RequestLoggerOptions extends LoggerOptions {
   skip?: (ctx?: any) => Promise<boolean>;
@@ -46,15 +43,17 @@ export const requestLogger = (appName: string, requestLogger: Logger, options?: 
     // ctx.reqId = reqId;
     ctx.logger = ctx.log = contextLogger;
     const startTime = Date.now();
+    const url = redactSensitiveQuery(ctx.url);
+    const action = redactSensitiveFields(ctx.action?.toJSON?.());
     const requestInfo = {
       method: ctx.method,
-      path: ctx.url,
+      path: url,
     };
     requestLogger.info({
-      message: `request ${ctx.method} ${ctx.url}`,
+      message: `request ${ctx.method} ${url}`,
       ...requestInfo,
-      req: pick(ctx.request.toJSON(), options?.requestWhitelist || defaultRequestWhitelist),
-      action: ctx.action?.toJSON?.(),
+      req: redactSensitiveFields(pick(ctx.request.toJSON(), options?.requestWhitelist || defaultRequestWhitelist)),
+      action,
       app: appName,
       ...(requestSource ? { requestSource } : {}),
       reqId,
@@ -70,10 +69,10 @@ export const requestLogger = (appName: string, requestLogger: Logger, options?: 
       const cost = Date.now() - startTime;
       const status = ctx.status;
       const info = {
-        message: `response ${ctx.url}`,
+        message: `response ${url}`,
         ...requestInfo,
         res: pick(ctx.response.toJSON(), options?.responseWhitelist || defaultResponseWhitelist),
-        action: omit(ctx.action?.toJSON?.(), defaultActionBlackList),
+        action,
         userId: ctx.auth?.user?.id,
         username: ctx.auth?.user?.username,
         status: ctx.status,
@@ -97,3 +96,70 @@ export const requestLogger = (appName: string, requestLogger: Logger, options?: 
     }
   };
 };
+
+function redactSensitiveFields(value: unknown, seen = new WeakSet<object>()): unknown {
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+  if (seen.has(value)) {
+    return REDACTED_VALUE;
+  }
+  seen.add(value);
+  if (Array.isArray(value)) {
+    const redacted = value.map((item) => redactSensitiveFields(item, seen));
+    seen.delete(value);
+    return redacted;
+  }
+
+  const redacted = Object.fromEntries(
+    Object.entries(value).map(([key, child]) => {
+      const normalizedKey = normalizeKey(key);
+      if (SENSITIVE_KEY_PATTERN.test(normalizedKey)) {
+        return [key, REDACTED_VALUE];
+      }
+      if (typeof child === 'string' && URL_KEY_PATTERN.test(normalizedKey)) {
+        return [key, redactSensitiveQuery(child)];
+      }
+      return [key, redactSensitiveFields(child, seen)];
+    }),
+  );
+  seen.delete(value);
+  return redacted;
+}
+
+function redactSensitiveQuery(url: unknown): unknown {
+  if (typeof url !== 'string') {
+    return url;
+  }
+  const queryStart = url.indexOf('?');
+  if (queryStart < 0) {
+    return url;
+  }
+  const fragmentStart = url.indexOf('#', queryStart);
+  const queryEnd = fragmentStart < 0 ? url.length : fragmentStart;
+  const query = url.slice(queryStart + 1, queryEnd);
+  const redactedQuery = query
+    .split('&')
+    .map((part) => {
+      const separator = part.indexOf('=');
+      const rawKey = separator < 0 ? part : part.slice(0, separator);
+      if (!SENSITIVE_KEY_PATTERN.test(normalizeKey(decodeQueryKey(rawKey)))) {
+        return part;
+      }
+      return `${rawKey}=${REDACTED_VALUE}`;
+    })
+    .join('&');
+  return `${url.slice(0, queryStart + 1)}${redactedQuery}${url.slice(queryEnd)}`;
+}
+
+function decodeQueryKey(key: string): string {
+  try {
+    return decodeURIComponent(key.replace(/\+/g, ' '));
+  } catch {
+    return key;
+  }
+}
+
+function normalizeKey(key: string): string {
+  return key.replace(/[^A-Za-z0-9]/g, '');
+}

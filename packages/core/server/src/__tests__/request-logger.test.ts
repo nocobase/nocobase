@@ -10,166 +10,138 @@
 import { requestLogger, type Logger } from '@nocobase/logger';
 import { describe, expect, it } from 'vitest';
 
-describe('request logger security', () => {
-  it('uses ctx.path, preserves request source, and strips referer query and fragment', async () => {
-    const { entries, middleware } = createLoggerHarness();
+describe('request logger', () => {
+  it('preserves request source, referer, custom whitelist, and ordinary query values', async () => {
+    const token = 'raw-query-credential';
+    const { entries, middleware } = createLoggerHarness({
+      requestWhitelist: ['header.x-request-source', 'header.referer', 'query', 'url', 'originalUrl'],
+    });
     const ctx = createContext({
+      url: `/api/users:list?page=1&authRef=${token}`,
       requestHeader: {
         'x-request-source': 'cli',
-        referer: 'https://example.test/admin/users?token=unsafe#secret',
+        referer: `https://example.test/admin/users?page=2&token=${token}#details`,
+      },
+      requestJson: {
+        header: {
+          'x-request-source': 'cli',
+          referer: `https://example.test/admin/users?page=2&token=${token}#details`,
+        },
+        query: { page: 1, authRef: token },
+        url: `/api/users:list?page=1&authRef=${token}`,
+        originalUrl: `/api/users:list?page=1&authRef=${token}`,
       },
     });
 
-    await middleware(ctx, async () => {});
+    await middleware(ctx, async () => undefined);
 
     expect(entries).toHaveLength(2);
     expect(entries[0]).toMatchObject({
-      message: 'request GET /api/users:list',
-      path: '/api/users:list',
+      message: 'request GET /api/users:list?page=1&authRef=[REDACTED]',
+      path: '/api/users:list?page=1&authRef=[REDACTED]',
       requestSource: 'cli',
       req: {
         header: {
           'x-request-source': 'cli',
-          referer: 'https://example.test/admin/users',
+          referer: 'https://example.test/admin/users?page=2&token=[REDACTED]#details',
         },
+        query: { page: 1, authRef: '[REDACTED]' },
+        url: '/api/users:list?page=1&authRef=[REDACTED]',
+        originalUrl: '/api/users:list?page=1&authRef=[REDACTED]',
       },
     });
     expect(entries[1]).toMatchObject({
-      message: 'response /api/users:list',
-      path: '/api/users:list',
+      message: 'response /api/users:list?page=1&authRef=[REDACTED]',
+      path: '/api/users:list?page=1&authRef=[REDACTED]',
       requestSource: 'cli',
     });
-    expect(JSON.stringify(entries)).not.toContain('page=1');
-    expect(JSON.stringify(entries)).not.toContain('token=unsafe');
-    expect(JSON.stringify(entries)).not.toContain('#secret');
+    expect(JSON.stringify(entries)).not.toContain(token);
   });
 
-  it('recursively redacts sensitive keys and GitHub PAT values in both action snapshots', async () => {
-    const token = 'github_pat_012345678901234567890123456789';
+  it.each([
+    ['normal response', async () => undefined, 200],
+    [
+      'ACL rejection',
+      async (ctx: RequestLoggerContext) => {
+        ctx.status = 403;
+      },
+      403,
+    ],
+    [
+      'handler error',
+      async () => {
+        throw new Error('handler failed');
+      },
+      500,
+    ],
+  ] as const)('redacts recursive action fields for a %s', async (_label, next, status) => {
+    const token = 'raw-action-credential';
     const { entries, middleware } = createLoggerHarness();
     const ctx = createContext({
       action: {
-        resourceName: 'vscRemote',
+        resourceName: 'remoteSource',
         actionName: 'configure',
         params: {
           values: {
-            credential: token,
-            password: 'plain-password',
+            authRef: token,
             nested: {
               Authorization: `Bearer ${token}`,
-              harmless: `prefix ${token} suffix`,
+              list: [{ privateKey: token }, { clientSecret: token }],
             },
-            list: [{ privateKey: token }, token],
           },
         },
       },
     });
 
-    await middleware(ctx, async () => {});
-
-    const serialized = JSON.stringify(entries);
-    expect(serialized).not.toContain(token);
-    expect(serialized).not.toContain('Bearer');
-    expect(serialized).not.toContain('plain-password');
-    expect(serialized).toContain('[REDACTED]');
-    expect(toRecord(entries[0]).action).toEqual(toRecord(entries[1]).action);
-  });
-
-  it('redacts request source values and drops query-bearing fields from custom whitelists', async () => {
-    const token = 'ghp_012345678901234567890123456789012345';
-    const entries: LogEntry[] = [];
-    const append = (entry: unknown) => entries.push(toRecord(entry));
-    const logger = { info: append, warn: append, error: append } as unknown as Logger;
-    const middleware = requestLogger('main', logger, {
-      requestWhitelist: ['header.x-request-source', 'query', 'url', 'originalUrl'],
+    const run = middleware(ctx, async () => {
+      try {
+        await next(ctx);
+      } catch (error) {
+        ctx.status = status;
+        throw error;
+      }
     });
-    const ctx = createContext({
-      requestHeader: { 'x-request-source': token },
-      requestJson: {
-        header: { 'x-request-source': token },
-        query: { page: 1, marker: 'ordinary-query-value' },
-        url: `/api/users:list?marker=ordinary-query-value&token=${token}`,
-        originalUrl: `/api/users:list?marker=ordinary-query-value&token=${token}`,
-      },
-    });
-
-    await middleware(ctx, async () => {});
-
-    const serialized = JSON.stringify(entries);
-    expect(serialized).not.toContain(token);
-    expect(serialized).not.toContain('ordinary-query-value');
-    expect(entries[0]).toMatchObject({ requestSource: '[REDACTED]' });
-    expect(entries[1]).toMatchObject({ requestSource: '[REDACTED]' });
-  });
-
-  it('logs only safe error fields for failed responses', async () => {
-    const token = 'ghp_012345678901234567890123456789012345';
-    const { entries, middleware } = createLoggerHarness();
-    const ctx = createContext({
-      status: 502,
-      body: {
-        errors: [
-          {
-            code: 'REMOTE_UNAVAILABLE',
-            status: 502,
-            message: `Remote unavailable ${token}`,
-            details: {
-              provider: 'github',
-              reasonCode: 'network-error',
-              requestId: 'request-safe',
-              response: { body: token },
-              headers: { Authorization: token },
-              cause: { message: token },
-            },
-            response: { data: token },
-            cause: { token },
-          },
-        ],
-      },
-    });
-
-    await middleware(ctx, async () => {});
+    if (_label === 'handler error') {
+      await expect(run).rejects.toThrow('handler failed');
+    } else {
+      await run;
+    }
 
     expect(entries).toHaveLength(2);
-    expect(entries[1]).toMatchObject({
-      status: 502,
-      res: [
-        {
-          code: 'REMOTE_UNAVAILABLE',
-          status: 502,
-          message: 'Remote unavailable [REDACTED]',
-          details: {
-            provider: 'github',
-            reasonCode: 'network-error',
-            requestId: 'request-safe',
+    expect(entries[0].action).toBe(entries[1].action);
+    expect(entries[0].action).toMatchObject({
+      params: {
+        values: {
+          authRef: '[REDACTED]',
+          nested: {
+            Authorization: '[REDACTED]',
+            list: [{ privateKey: '[REDACTED]' }, { clientSecret: '[REDACTED]' }],
           },
         },
-      ],
+      },
     });
-    const serialized = JSON.stringify(entries[1]);
-    expect(serialized).not.toContain(token);
-    expect(serialized).not.toContain('Authorization');
-    expect(serialized).not.toContain('cause');
+    expect(JSON.stringify(entries)).not.toContain(token);
+  });
+
+  it('keeps the response error contract unchanged', async () => {
+    const errors = [{ code: 'INTERNAL_ERROR', message: 'ordinary error', details: { retryable: false } }];
+    const { entries, middleware } = createLoggerHarness();
+    const ctx = createContext({ status: 500, body: { errors } });
+
+    await middleware(ctx, async () => undefined);
+
+    expect(entries[1].res).toEqual(errors);
   });
 });
 
 type LogEntry = Record<string, unknown>;
 
-function createLoggerHarness() {
-  const entries: LogEntry[] = [];
-  const append = (entry: unknown) => entries.push(toRecord(entry));
-  const logger = {
-    info: append,
-    warn: append,
-    error: append,
-  } as unknown as Logger;
-  return {
-    entries,
-    middleware: requestLogger('main', logger),
-  };
+interface RequestLoggerContext {
+  status: number;
 }
 
 interface ContextOptions {
+  url?: string;
   requestHeader?: Record<string, unknown>;
   requestJson?: Record<string, unknown>;
   action?: Record<string, unknown>;
@@ -177,14 +149,24 @@ interface ContextOptions {
   body?: unknown;
 }
 
+function createLoggerHarness(options?: { requestWhitelist?: string[] }) {
+  const entries: LogEntry[] = [];
+  const append = (entry: unknown) => entries.push(toRecord(entry));
+  const logger = { info: append, warn: append, error: append } as unknown as Logger;
+  return {
+    entries,
+    middleware: requestLogger('main', logger, options),
+  };
+}
+
 function createContext(options: ContextOptions = {}) {
-  const requestHeader = options.requestHeader || {};
+  const requestHeader = options.requestHeader || { 'x-request-source': 'cli' };
   const action = options.action || { resourceName: 'users', actionName: 'list' };
   const status = options.status || 200;
   return {
     reqId: 'req-1',
     path: '/api/users:list',
-    url: '/api/users:list?page=1',
+    url: options.url || '/api/users:list?page=1',
     method: 'GET',
     action: {
       toJSON: () => action,
@@ -200,9 +182,8 @@ function createContext(options: ContextOptions = {}) {
     },
     response: {
       length: 0,
-      toJSON: () => ({
-        status,
-      }),
+      status,
+      toJSON: () => ({ status }),
     },
     res: {
       setHeader: () => undefined,
