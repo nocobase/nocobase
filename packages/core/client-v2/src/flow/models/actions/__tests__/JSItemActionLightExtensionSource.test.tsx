@@ -11,8 +11,8 @@ import { App, ConfigProvider } from 'antd';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@nocobase/test/client';
-import { FlowEngine, FlowEngineProvider, FlowModelRenderer, type FlowSettingsContext } from '@nocobase/flow-engine';
-import { RunJSSourceResolverRegistry, type RunJSSourceSettingsDescriptor } from '../../../components/runjs-source';
+import { FlowEngine, FlowEngineProvider, FlowModelRenderer } from '@nocobase/flow-engine';
+import { RunJSSourceResolverRegistry } from '../../../components/runjs-source';
 import { assertJSItemLightExtensionSourceContract } from '../../utils/__tests__/jsItemLightExtensionSourceContract';
 import { JSItemActionModel } from '../JSItemActionModel';
 
@@ -22,23 +22,6 @@ const SOURCE_BINDING = {
   entryId: 'entry_open_message',
   entryPath: 'src/client/js-items/open-message/index.tsx',
   kind: 'js-item',
-};
-
-const SETTINGS_DESCRIPTOR: RunJSSourceSettingsDescriptor = {
-  entryId: 'entry_open_message',
-  settingsSchemaHash: 'schema_open_message',
-  defaults: {
-    successMessage: 'Opened',
-  },
-  schema: {
-    type: 'object',
-    properties: {
-      successMessage: {
-        type: 'string',
-        title: 'Success message',
-      },
-    },
-  },
 };
 
 function createJSItemAction(stepParams: Record<string, unknown>) {
@@ -92,36 +75,10 @@ describe('JSItemActionModel light extension source', () => {
       settings: {
         successMessage: 'Opened',
       },
-    });
-  });
-
-  it('generates runtime settings steps from the JS Item settings schema', async () => {
-    RunJSSourceResolverRegistry.registerResolver({
-      sourceMode: 'light-extension',
-      getSettingsDescriptor: vi.fn(async () => SETTINGS_DESCRIPTOR),
-      resolve: () => ({
-        code: 'ctx.render("open");',
-      }),
-    });
-    const { model } = createJSItemAction({
-      sourceMode: 'light-extension',
-      sourceBinding: SOURCE_BINDING,
-      settings: {
-        successMessage: 'Opened',
-      },
-    });
-
-    const steps = await model.getRuntimeFlowSettingSteps('jsSettings');
-    const successMessageStep = Object.values(steps || {}).find((step) => step.title === 'Success message');
-    successMessageStep?.beforeParamsSave?.(model.context as FlowSettingsContext<JSItemActionModel>, {
-      value: 'Opened customer',
-    });
-
-    expect(successMessageStep?.uiSchema?.value?.['x-component']).toBe('JSItemLightExtensionSettingsStepField');
-    expect(model.getStepParams('jsSettings', 'runJs')).toMatchObject({
-      settings: {
-        successMessage: 'Opened customer',
-      },
+      settingsComponent: 'JSItemLightExtensionSettingsStepField',
+      settingKey: 'successMessage',
+      settingTitle: 'Success message',
+      updatedValue: 'Opened customer',
     });
   });
 

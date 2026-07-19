@@ -384,6 +384,18 @@ void element; void button;
     expect(workers).toHaveLength(2);
   });
 
+  it('falls back to the main thread once when a worker cannot be constructed', async () => {
+    const workerFactory = vi.fn(() => {
+      throw new Error('module workers unavailable');
+    });
+    const session = createTypeScriptProjectSession({ workerFactory });
+    const code = 'ctx.logger.info("ready");';
+
+    expect(await session.getDiagnostics(project(code), code)).toEqual([]);
+    expect(await session.getDiagnostics(project(code), code)).toEqual([]);
+    expect(workerFactory).toHaveBeenCalledTimes(1);
+  });
+
   it('drops a stale document version even when the newer request is a different operation', async () => {
     const loading = deferred<RunJSTypeLibraryPack>();
     const registry = createRunJSTypeLibraryRegistry();

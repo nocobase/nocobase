@@ -33,6 +33,9 @@ import { obfuscate } from './utils/obfuscationResult';
 import { AutoInjectPublicPathPlugin } from './injectPublicPathPlugin';
 
 const validExts = ['.ts', '.tsx', '.js', '.jsx', '.mjs'];
+const pluginRspackCommercialLoader = fs.existsSync(path.resolve(__dirname, 'plugins/pluginRspackCommercialLoader.js'))
+  ? path.resolve(__dirname, 'plugins/pluginRspackCommercialLoader.js')
+  : path.resolve(__dirname, 'plugins/pluginRspackCommercialLoader.ts');
 const serverGlobalFiles: string[] = ['src/**', '!src/client/**', '!src/client-v2/**', ...globExcludeFiles];
 const sourceGlobalFiles: string[] = ['src/**/*.{ts,js,tsx,jsx,mjs}', '!src/**/__tests__', '!src/**/__benchmarks__'];
 
@@ -744,7 +747,7 @@ export async function buildPluginClient(
               },
             },
             {
-              loader: require.resolve('./plugins/pluginRspackCommercialLoader'),
+              loader: pluginRspackCommercialLoader,
               options: {
                 isCommercial,
               },
@@ -772,7 +775,7 @@ export async function buildPluginClient(
               },
             },
             {
-              loader: require.resolve('./plugins/pluginRspackCommercialLoader'),
+              loader: pluginRspackCommercialLoader,
               options: {
                 isCommercial,
               },

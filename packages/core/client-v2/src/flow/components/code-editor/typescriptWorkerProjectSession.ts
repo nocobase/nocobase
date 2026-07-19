@@ -48,6 +48,12 @@ type PendingRequest = {
   resolve(response: TypeScriptWorkerResponse): void;
 };
 
+class TypeScriptWorkerUnavailableError extends Error {
+  constructor(readonly cause: unknown) {
+    super(cause instanceof Error ? cause.message : String(cause));
+  }
+}
+
 type TypeScriptWorkerClientRequest = TypeScriptWorkerRequest extends infer Request
   ? Request extends TypeScriptWorkerRequest
     ? Omit<Request, 'protocolVersion' | 'requestId'>
@@ -62,10 +68,14 @@ type TypeScriptWorkerOperationRequest = Extract<
 export function resolveTypeScriptWorkerUrl(): string | URL {
   const overrideUrl = (globalThis as { __NOCOBASE_RUNJS_TYPESCRIPT_WORKER_URL__?: string })
     .__NOCOBASE_RUNJS_TYPESCRIPT_WORKER_URL__;
-  return overrideUrl || new URL('./typescriptProject.worker.ts', import.meta.url);
+  if (overrideUrl || process.env.NOCOBASE_CLIENT_MODULE_WORKER === 'false') return overrideUrl || '';
+  return new URL('./typescriptProject.worker.ts', import.meta.url);
 }
 
 function defaultWorkerFactory(): WorkerLike {
+  if (process.env.NOCOBASE_CLIENT_MODULE_WORKER === 'false') {
+    throw new Error('TypeScript module Worker is not available in this client build.');
+  }
   const overrideUrl = (globalThis as { __NOCOBASE_RUNJS_TYPESCRIPT_WORKER_URL__?: string })
     .__NOCOBASE_RUNJS_TYPESCRIPT_WORKER_URL__;
   if (overrideUrl) {
@@ -211,7 +221,12 @@ class TypeScriptWorkerClient {
 
   private ensureWorker(): WorkerLike {
     if (this.worker) return this.worker;
-    const worker = this.factory();
+    let worker: WorkerLike;
+    try {
+      worker = this.factory();
+    } catch (error: unknown) {
+      throw new TypeScriptWorkerUnavailableError(error);
+    }
     worker.addEventListener('message', (event) => this.onMessage(worker, event.data));
     worker.addEventListener('error', (event) => {
       if (this.worker === worker) this.reset(event.message || 'TypeScript worker crashed.');
@@ -272,8 +287,12 @@ export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScrip
   private latestRequestIds = new Map<'completion' | 'diagnostics' | 'hover', number>();
   private requestSequence = 0;
   private stateKey = '';
+  private workerUnavailable = false;
 
-  constructor(factory: TypeScriptWorkerFactory = defaultWorkerFactory) {
+  constructor(
+    factory: TypeScriptWorkerFactory = defaultWorkerFactory,
+    private readonly fallback?: CodeEditorTypeScriptProjectSession,
+  ) {
     this.client = new TypeScriptWorkerClient(factory);
   }
 
@@ -283,6 +302,9 @@ export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScrip
     currentFileContent?: string,
     explicit = false,
   ): Promise<CompletionResult | null> {
+    if (this.workerUnavailable) {
+      return (await this.fallback?.getCompletionResult(project, position, currentFileContent, explicit)) ?? null;
+    }
     const requestId = this.begin('completion');
     try {
       await this.sync(project, currentFileContent);
@@ -307,8 +329,14 @@ export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScrip
         validFor: explicit ? undefined : /^[$_\p{Letter}\p{Number}]*$/u,
       };
     } catch (error: unknown) {
-      this.report(project, error);
-      return null;
+      return (
+        (await this.useFallback(project, error))?.getCompletionResult(
+          project,
+          position,
+          currentFileContent,
+          explicit,
+        ) ?? null
+      );
     }
   }
 
@@ -316,6 +344,7 @@ export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScrip
     project: CodeEditorTypeScriptProject,
     currentFileContent?: string,
   ): Promise<CodeEditorTypeScriptDiagnostic[]> {
+    if (this.workerUnavailable) return (await this.fallback?.getDiagnostics(project, currentFileContent)) ?? [];
     const requestId = this.begin('diagnostics');
     try {
       await this.sync(project, currentFileContent);
@@ -332,12 +361,12 @@ export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScrip
       const ignoredCodes = new Set(project.ignoredDiagnosticCodes);
       return response.result.filter((diagnostic) => !ignoredCodes.has(diagnostic.code));
     } catch (error: unknown) {
-      this.report(project, error);
-      return [];
+      return (await this.useFallback(project, error))?.getDiagnostics(project, currentFileContent) ?? [];
     }
   }
 
   async getHover(project: CodeEditorTypeScriptProject, position: number, currentFileContent?: string) {
+    if (this.workerUnavailable) return (await this.fallback?.getHover(project, position, currentFileContent)) ?? null;
     const requestId = this.begin('hover');
     try {
       await this.sync(project, currentFileContent);
@@ -350,13 +379,12 @@ export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScrip
       if (!this.isCurrentResponse('hover', requestId, response) || response.kind !== 'hover-result') return null;
       return response.result;
     } catch (error: unknown) {
-      this.report(project, error);
-      return null;
+      return (await this.useFallback(project, error))?.getHover(project, position, currentFileContent) ?? null;
     }
   }
 
   getDebugState(): CodeEditorTypeScriptProjectDebugState {
-    return this.lastDebugState;
+    return this.workerUnavailable && this.fallback ? this.fallback.getDebugState() : this.lastDebugState;
   }
 
   getLastInternalError(): CodeEditorTypeScriptProjectInternalError | null {
@@ -366,14 +394,17 @@ export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScrip
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
-    this.client
-      .request({
-        documentVersion: this.documentVersion,
-        kind: 'dispose',
-        projectId: this.projectId,
-      })
-      .then(() => this.client.reset())
-      .catch(() => this.client.reset());
+    this.fallback?.dispose();
+    if (!this.workerUnavailable) {
+      this.client
+        .request({
+          documentVersion: this.documentVersion,
+          kind: 'dispose',
+          projectId: this.projectId,
+        })
+        .then(() => this.client.reset())
+        .catch(() => this.client.reset());
+    }
     this.lastDebugState = {
       ...this.lastDebugState,
       allFileNames: [],
@@ -429,7 +460,7 @@ export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScrip
       if (response.kind !== 'synced') throw new Error('TypeScript worker did not acknowledge project synchronization.');
       this.lastSnapshot = snapshot;
     } catch (error: unknown) {
-      if (force) throw error;
+      if (force || error instanceof TypeScriptWorkerUnavailableError) throw error;
       this.resetWorkerState('Rebuilding TypeScript worker after synchronization failure.');
       await this.sync(project, currentFileContent, true);
     }
@@ -444,7 +475,8 @@ export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScrip
       const response = await this.client.request(request);
       await this.refreshDebugState();
       return response;
-    } catch (_) {
+    } catch (error: unknown) {
+      if (error instanceof TypeScriptWorkerUnavailableError) throw error;
       this.resetWorkerState('Rebuilding TypeScript worker after failure.');
       await this.sync(project, currentFileContent, true);
       const recoveredRequest = { ...request, documentVersion: this.documentVersion };
@@ -486,9 +518,21 @@ export class WorkerBackedTypeScriptProjectSession implements CodeEditorTypeScrip
       // Error observers must not break editor requests.
     }
   }
+
+  private useFallback(
+    project: CodeEditorTypeScriptProject,
+    error: unknown,
+  ): CodeEditorTypeScriptProjectSession | undefined {
+    this.report(project, error);
+    if (!this.fallback) return;
+    this.workerUnavailable = true;
+    this.client.reset('TypeScript worker unavailable; using the main thread.');
+    return this.fallback;
+  }
 }
 
 export function canUseTypeScriptWorker(): boolean {
+  if (process.env.NOCOBASE_CLIENT_MODULE_WORKER === 'false') return false;
   const forced = (globalThis as { __NOCOBASE_RUNJS_TYPESCRIPT_WORKER__?: boolean })
     .__NOCOBASE_RUNJS_TYPESCRIPT_WORKER__;
   return (

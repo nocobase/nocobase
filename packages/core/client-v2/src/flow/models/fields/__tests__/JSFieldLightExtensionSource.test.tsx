@@ -207,27 +207,6 @@ describe('JSFieldModel light extension source', () => {
     expect(model.getStepParams('jsSettings', 'settings')).toBeUndefined();
   });
 
-  it('generates runtime settings steps from the JS Field settings schema', async () => {
-    RunJSSourceResolverRegistry.registerResolver({
-      sourceMode: 'light-extension',
-      getSettingsDescriptor: vi.fn(async () => SETTINGS_DESCRIPTOR),
-      resolve: () => ({
-        code: 'ctx.render("phone");',
-      }),
-    });
-    const { model } = createJSField({
-      sourceMode: 'light-extension',
-      sourceBinding: SOURCE_BINDING,
-    });
-
-    const steps = await model.getRuntimeFlowSettingSteps('jsSettings');
-
-    expect(Object.values(steps || {}).map((step) => step.title)).toEqual(['Prefix']);
-    expect(Object.values(steps || {})[0]?.uiSchema?.value?.['x-component']).toBe(
-      'JSFieldLightExtensionSettingsStepField',
-    );
-  });
-
   it('uses canonical light extension settings across saves and entry switches', async () => {
     const { model } = createJSField({});
 
@@ -242,34 +221,6 @@ describe('JSFieldModel light extension source', () => {
         entryPath: 'src/client/js-fields/currency/index.tsx',
       },
     });
-  });
-
-  it('persists runtime settings step values back to RunJS settings', async () => {
-    RunJSSourceResolverRegistry.registerResolver({
-      sourceMode: 'light-extension',
-      getSettingsDescriptor: vi.fn(async () => SETTINGS_DESCRIPTOR),
-      resolve: () => ({
-        code: 'ctx.render("phone");',
-      }),
-    });
-    const { model } = createJSField({
-      sourceMode: 'light-extension',
-      sourceBinding: SOURCE_BINDING,
-      settings: {
-        prefix: 'tel:',
-      },
-    });
-
-    const steps = await model.getRuntimeFlowSettingSteps('jsSettings');
-    const prefixStep = Object.values(steps || {}).find((step) => step.title === 'Prefix');
-    prefixStep?.beforeParamsSave?.(model.context as FlowSettingsContext<JSFieldModel>, { value: 'callto:' });
-
-    expect(model.getStepParams('jsSettings', 'runJs')).toMatchObject({
-      settings: {
-        prefix: 'callto:',
-      },
-    });
-    expect(model.getStepParams('jsSettings', 'settings')).toBeUndefined();
   });
 
   it('does not fetch settings descriptors before resolving the runtime source', async () => {

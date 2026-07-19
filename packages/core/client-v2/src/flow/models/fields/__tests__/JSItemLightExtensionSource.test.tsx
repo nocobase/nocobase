@@ -31,23 +31,6 @@ const NEXT_SOURCE_BINDING = {
   entryPath: 'src/client/js-items/open-message/index.tsx',
 };
 
-const SETTINGS_DESCRIPTOR: RunJSSourceSettingsDescriptor = {
-  entryId: 'entry_level_label',
-  settingsSchemaHash: 'schema_level_label',
-  defaults: {
-    vipColor: '#f5222d',
-  },
-  schema: {
-    type: 'object',
-    properties: {
-      vipColor: {
-        type: 'string',
-        title: 'VIP color',
-      },
-    },
-  },
-};
-
 function getEmptySettingsDescriptor(sourceBinding: Record<string, unknown>): RunJSSourceSettingsDescriptor {
   const entryId = String(sourceBinding.entryId);
   return {
@@ -115,31 +98,11 @@ describe('JSItemModel light extension source', () => {
       settings: {
         vipColor: '#f5222d',
       },
+      settingsComponent: 'JSItemLightExtensionSettingsStepField',
+      settingKey: 'vipColor',
+      settingTitle: 'VIP color',
+      updatedValue: '#1677ff',
     });
-  });
-
-  it('generates runtime settings steps from the JS Item settings schema', async () => {
-    RunJSSourceResolverRegistry.registerResolver({
-      sourceMode: 'light-extension',
-      getSettingsDescriptor: vi.fn(async () => SETTINGS_DESCRIPTOR),
-      resolve: () => ({
-        code: 'ctx.render("level");',
-      }),
-    });
-    const { model } = createJSItem({
-      sourceMode: 'light-extension',
-      sourceBinding: SOURCE_BINDING,
-      settings: {
-        vipColor: '#f5222d',
-      },
-    });
-
-    const steps = await model.getRuntimeFlowSettingSteps('jsSettings');
-
-    expect(Object.values(steps || {}).map((step) => step.title)).toEqual(['VIP color']);
-    expect(Object.values(steps || {})[0]?.uiSchema?.value?.['x-component']).toBe(
-      'JSItemLightExtensionSettingsStepField',
-    );
   });
 
   it('uses canonical light extension settings across saves and entry switches', async () => {

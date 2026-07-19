@@ -16,8 +16,12 @@ export async function assertJSItemLightExtensionSourceContract(options: {
   model: FlowModel;
   sourceBinding: Record<string, unknown>;
   settings: Record<string, unknown>;
+  settingsComponent: string;
+  settingKey: string;
+  settingTitle: string;
+  updatedValue: unknown;
 }) {
-  const { model, sourceBinding, settings } = options;
+  const { model, sourceBinding, settings, settingsComponent, settingKey, settingTitle, updatedValue } = options;
   const flow = model.getFlow('jsSettings');
   const sourceModeStep = flow?.steps?.sourceMode;
   const sourceBindingStep = flow?.steps?.sourceBinding;
@@ -32,7 +36,9 @@ export async function assertJSItemLightExtensionSourceContract(options: {
       settingsSchemaHash: 'test-schema',
       schema: {
         type: 'object',
-        properties: Object.fromEntries(Object.keys(settings).map((key) => [key, {}])),
+        properties: Object.fromEntries(
+          Object.keys(settings).map((key) => [key, { title: key === settingKey ? settingTitle : key }]),
+        ),
       },
       defaults: settings,
     }),
@@ -87,4 +93,18 @@ export async function assertJSItemLightExtensionSourceContract(options: {
     sourceBinding,
     settings,
   });
+
+  const runtimeSteps = await model.getRuntimeFlowSettingSteps('jsSettings');
+  const settingStep = Object.values(runtimeSteps || {}).find((step) => step.title === settingTitle);
+  settingStep?.beforeParamsSave?.(settingsContext, { value: updatedValue });
+
+  expect(settingStep?.uiSchema?.value?.['x-component']).toBe(settingsComponent);
+  expect(settingStep?.persistParams).toBe(false);
+  expect(model.getStepParams('jsSettings', 'runJs')).toMatchObject({
+    settings: {
+      ...settings,
+      [settingKey]: updatedValue,
+    },
+  });
+  expect(model.getStepParams('jsSettings', 'settings')).toBeUndefined();
 }

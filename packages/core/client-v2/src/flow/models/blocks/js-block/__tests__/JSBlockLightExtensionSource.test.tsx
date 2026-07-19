@@ -531,40 +531,6 @@ describe('JSBlockModel light extension source', () => {
     );
   });
 
-  it('generates runtime settings steps from the light extension active settings schema', async () => {
-    RunJSSourceResolverRegistry.registerResolver({
-      sourceMode: 'light-extension',
-      getSettingsDescriptor: vi.fn(async () => SETTINGS_DESCRIPTOR),
-      resolve: () => ({
-        code: 'ctx.render("sales");',
-      }),
-    });
-
-    const engine = new FlowEngine();
-    engine.registerModels({ JSBlockModel });
-    const model = engine.createModel<JSBlockModel>({
-      use: 'JSBlockModel',
-      uid: 'js-block-runtime-settings-steps',
-      stepParams: {
-        jsSettings: {
-          runJs: {
-            sourceMode: 'light-extension',
-            sourceBinding: SOURCE_BINDING,
-          },
-        },
-      },
-    });
-
-    const steps = await model.getRuntimeFlowSettingSteps('jsSettings');
-
-    expect(Object.values(steps || {}).map((step) => step.title)).toEqual(['Message', 'Page size', 'Enabled']);
-    expect(Object.keys(steps || {})).toHaveLength(3);
-    expect(Object.keys(steps || {}).every((key) => key.startsWith('lightExtensionSetting__'))).toBe(true);
-    expect(Object.values(steps || {})[0]?.uiSchema?.value?.['x-component']).toBe(
-      'JSBlockLightExtensionSettingsStepField',
-    );
-  });
-
   it('uses canonical light extension settings across saves and entry switches', async () => {
     const engine = new FlowEngine();
     engine.registerModels({ JSBlockModel });

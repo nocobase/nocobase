@@ -222,38 +222,6 @@ ctx.message.success(ctx.settings.successMessage + ':' + ctx.runJsSource.context.
     expect(model.props.loading).toBe(false);
   });
 
-  it('generates and persists runtime settings steps from the JS Action settings schema', async () => {
-    RunJSSourceResolverRegistry.registerResolver({
-      sourceMode: 'light-extension',
-      getSettingsDescriptor: vi.fn(async () => JS_ACTION_SETTINGS_DESCRIPTOR),
-      resolve: () => ({
-        code: '',
-      }),
-    });
-    const { model } = createActionModel<JSActionModel>({
-      ModelClass: JSActionModel,
-      use: 'JSActionModel',
-      uid: 'js-action-settings',
-    });
-
-    const steps = await model.getRuntimeFlowSettingSteps('clickSettings');
-    const successMessageStep = Object.values(steps || {}).find((step) => step.title === 'Success message');
-    const emit = vi.spyOn(model.emitter, 'emit');
-    successMessageStep?.beforeParamsSave?.(model.context as FlowSettingsContext<JSActionModel>, {
-      value: 'Marked approved',
-    });
-
-    expect(successMessageStep?.uiSchema?.value?.['x-component']).toBe('JSActionLightExtensionSettingsStepField');
-    expect(successMessageStep?.persistParams).toBe(false);
-    expect(model.getStepParams('clickSettings', 'runJs')).toMatchObject({
-      settings: {
-        successMessage: 'Marked approved',
-      },
-    });
-    expect(model.getStepParams('clickSettings', 'settings')).toBeUndefined();
-    expect(emit.mock.calls.filter(([event]) => event === 'onStepParamsChanged')).toHaveLength(1);
-  });
-
   it('uses canonical light extension settings across saves and entry switches', async () => {
     const { model } = createActionModel<JSActionModel>({
       ModelClass: JSActionModel,

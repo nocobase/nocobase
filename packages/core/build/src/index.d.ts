@@ -7,12 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { RsbuildConfig } from '@rsbuild/core'
-import { Options as TsupConfig } from 'tsup'
+import type { RsbuildConfig } from '@rsbuild/core';
+import { Options as TsupConfig } from 'tsup';
 
 export type PkgLog = (msg: string, ...args: any[]) => void;
 
 interface UserConfig {
+  client?: {
+    moduleWorker?: boolean;
+  };
   modifyTsupConfig?: (config: TsupConfig) => TsupConfig;
   modifyRsbuildConfig?: (config: RsbuildConfig) => RsbuildConfig;
   beforeBuild?: (log: PkgLog) => void | Promise<void>;

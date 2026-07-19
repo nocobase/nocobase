@@ -7,21 +7,24 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { rspack } from '@rspack/core';
 import fs from 'fs-extra';
 import os from 'os';
 import path from 'path';
-import { afterEach, describe, expect, test } from 'vitest';
+import { fileURLToPath, pathToFileURL } from 'url';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 
 import { buildClient } from '../buildClient';
 
 const tempDirs: string[] = [];
 
 afterEach(async () => {
+  vi.unstubAllGlobals();
   await Promise.all(tempDirs.map((dir) => fs.remove(dir)));
   tempDirs.length = 0;
 });
 
-async function createWorkerPackage() {
+async function createPackage(source: string) {
   const cwd = await fs.mkdtemp(path.join(os.tmpdir(), 'nocobase-build-client-'));
   tempDirs.push(cwd);
   await fs.outputJson(path.join(cwd, 'tsconfig.json'), {
@@ -33,25 +36,105 @@ async function createWorkerPackage() {
     },
     include: ['src'],
   });
-  await fs.outputFile(
-    path.join(cwd, 'src/index.ts'),
-    `export function createWorker() {
-  return new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' });
-}
-`,
-  );
-  await fs.outputFile(path.join(cwd, 'src/worker.ts'), `self.postMessage('worker-ready');\n`);
+  await fs.outputFile(path.join(cwd, 'src/index.ts'), source);
   await fs.outputFile(path.join(cwd, 'src/locale/en-US.ts'), `export default { ready: 'Ready' };\n`);
   return cwd;
 }
 
+async function bundleConsumer(entry: string, outDir: string, target: 'node' | 'web') {
+  await fs.outputFile(path.join(outDir, 'entry.js'), entry);
+  const compiler = rspack({
+    context: outDir,
+    entry: './entry.js',
+    mode: 'production',
+    output: {
+      chunkFilename: '[name].js',
+      filename: 'consumer.js',
+      library: { type: 'commonjs2' },
+      path: path.join(outDir, 'dist'),
+      publicPath: '/nocobase/',
+    },
+    target,
+  });
+  await new Promise<void>((resolve, reject) => {
+    compiler.run((error, stats) => {
+      compiler.close(() => {
+        if (error || stats?.hasErrors()) reject(error || new Error(stats?.toString({ all: false, errors: true })));
+        else resolve();
+      });
+    });
+  });
+  return path.join(outDir, 'dist/consumer.js');
+}
+
+async function bundleEsmConsumer(modulePath: string, outDir: string) {
+  const entry = path.join(outDir, 'entry.mjs');
+  await fs.outputFile(
+    entry,
+    `import { createProject } from ${JSON.stringify(modulePath)}; export { createProject };\n`,
+  );
+  const compiler = rspack({
+    context: outDir,
+    entry,
+    experiments: { outputModule: true },
+    externals: { [modulePath]: modulePath },
+    externalsType: 'module-import',
+    mode: 'production',
+    output: {
+      chunkFormat: 'module',
+      filename: 'consumer.mjs',
+      library: { type: 'module' },
+      module: true,
+      path: path.join(outDir, 'dist'),
+    },
+    target: 'web',
+  });
+  await new Promise<void>((resolve, reject) => {
+    compiler.run((error, stats) => {
+      compiler.close(() => {
+        if (error || stats?.hasErrors()) reject(error || new Error(stats?.toString({ all: false, errors: true })));
+        else resolve();
+      });
+    });
+  });
+  return path.join(outDir, 'dist/consumer.mjs');
+}
+
 describe('buildClient', () => {
-  test('emits module Worker chunks for ESM and CommonJS client libraries', async () => {
-    const cwd = await createWorkerPackage();
+  test('keeps the default client build single-chunk and consumable as CommonJS', async () => {
+    const cwd = await createPackage('export const value = 42;\n');
+
+    await buildClient(
+      cwd,
+      { modifyRsbuildConfig: (config) => config, modifyTsupConfig: (config) => config },
+      false,
+      () => {},
+    );
+
+    expect((await fs.readdir(path.join(cwd, 'es'))).filter((file) => file.endsWith('.mjs'))).toEqual(['index.mjs']);
+    expect((await fs.readdir(path.join(cwd, 'lib'))).filter((file) => file.endsWith('.js'))).toEqual(['index.js']);
+
+    const consumer = await bundleConsumer(
+      `module.exports = require(${JSON.stringify(path.join(cwd, 'lib/index.js'))}).value;\n`,
+      path.join(cwd, 'cjs-consumer'),
+      'node',
+    );
+    expect(require(consumer)).toBe(42);
+  });
+
+  test('emits an ESM module Worker while the CommonJS consumer uses the main-thread branch', async () => {
+    const cwd = await createPackage(`
+export function createProject() {
+  if (process.env.NOCOBASE_CLIENT_MODULE_WORKER === 'false') return 'main-thread';
+  return new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' });
+}
+`);
+    await fs.outputFile(path.join(cwd, 'src/worker.ts'), `self.postMessage('worker-ready');\n`);
 
     await buildClient(
       cwd,
       {
+        client: { moduleWorker: true },
         modifyRsbuildConfig: (config) => config,
         modifyTsupConfig: (config) => config,
       },
@@ -59,29 +142,27 @@ describe('buildClient', () => {
       () => {},
     );
 
-    await expect(fs.pathExists(path.join(cwd, 'es/index.mjs'))).resolves.toBe(true);
-    await expect(fs.pathExists(path.join(cwd, 'lib/index.js'))).resolves.toBe(true);
-    const esmChunks = (await fs.readdir(path.join(cwd, 'es'))).filter(
-      (file) => file.endsWith('.mjs') && file !== 'index.mjs',
+    const cjsConsumer = await bundleConsumer(
+      `module.exports = require(${JSON.stringify(path.join(cwd, 'lib/index.js'))}).createProject();\n`,
+      path.join(cwd, 'cjs-consumer'),
+      'node',
     );
-    const commonJsChunks = (await fs.readdir(path.join(cwd, 'lib'))).filter(
-      (file) => file.endsWith('.js') && file !== 'index.js',
+    expect(require(cjsConsumer)).toBe('main-thread');
+
+    const esmConsumer = await bundleEsmConsumer(path.join(cwd, 'es/index.mjs'), path.join(cwd, 'esm-consumer'));
+    const workerUrls: string[] = [];
+    vi.stubGlobal(
+      'Worker',
+      class {
+        constructor(url: string | URL) {
+          workerUrls.push(String(url));
+        }
+      },
     );
-    expect(esmChunks.length).toBeGreaterThan(0);
-    expect(commonJsChunks.length).toBeGreaterThan(0);
-    const esmEntry = await fs.readFile(path.join(cwd, 'es/index.mjs'), 'utf8');
-    const commonJsEntry = await fs.readFile(path.join(cwd, 'lib/index.js'), 'utf8');
-    expect(esmEntry).toMatch(
-      /new Worker\([\s\S]*?type:\s*["']module["']/u,
-    );
-    expect(commonJsEntry).toMatch(
-      /new Worker\([\s\S]*?Object\.assign\([\s\S]*?type:\s*["']module["'][\s\S]*?type:\s*["']module["']/u,
-    );
-    expect(commonJsEntry).toContain('import.meta.url');
-    expect(await Promise.all(commonJsChunks.map((file) => fs.readFile(path.join(cwd, 'lib', file), 'utf8')))).not.toEqual(
-      expect.arrayContaining([expect.stringContaining('require(')]),
-    );
-    expect(esmEntry).not.toContain('.p="/"');
-    expect(commonJsEntry).not.toContain('.p="/"');
+    const consumer = (await import(pathToFileURL(esmConsumer).href)) as { createProject(): unknown };
+    consumer.createProject();
+
+    expect(workerUrls).toHaveLength(1);
+    await expect(fs.pathExists(fileURLToPath(workerUrls[0]))).resolves.toBe(true);
   });
 });

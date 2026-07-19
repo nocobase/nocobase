@@ -1,0 +1,446 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import type { Database, Model } from '@nocobase/database';
+import { vi } from 'vitest';
+
+import type { LightExtensionRuntimeSourceBinding } from '../../shared/types';
+import { RuntimeResolveService } from '../services/RuntimeResolveService';
+
+describe('RuntimeResolveService', () => {
+  it('returns an immutable artifact pointer and merged settings without runtime code', async () => {
+    const { service, entriesRepository } = createRuntimeResolveService();
+
+    const result = await service.resolve(
+      {
+        sourceMode: 'light-extension',
+        sourceBinding: createSourceBinding(),
+        settings: {
+          region: 'EMEA',
+          nested: {
+            label: 'Revenue',
+          },
+        },
+      },
+      {
+        requestId: 'req_runtime_resolve',
+        actorUserId: '7',
+      },
+    );
+
+    expect(entriesRepository.findOne).toHaveBeenCalledWith(
+      expect.objectContaining({
+        filterByTk: 'lee_sales_kpi',
+      }),
+    );
+    expect(result).toMatchObject({
+      entryId: 'lee_sales_kpi',
+      entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+      artifactHash: 'a'.repeat(64),
+      artifactUrl: `/api/light-extension-runtime/artifacts/${'a'.repeat(64)}`,
+      runtimeCodeHash: 'runtime_hash_1',
+      version: 'v2',
+      settings: {
+        threshold: 5,
+        region: 'EMEA',
+        nested: {
+          enabled: true,
+          label: 'Revenue',
+        },
+      },
+      settingsHash: expect.stringMatching(/^[a-f0-9]{64}$/),
+    });
+    expect(result).not.toHaveProperty('code');
+    expect(result).not.toHaveProperty('sourceMap');
+  });
+
+  it('uses the configured API prefix for artifact URLs', async () => {
+    const { service } = createRuntimeResolveService({ apiBasePath: '/foo/api' });
+
+    const result = await service.resolve({
+      sourceMode: 'light-extension',
+      sourceBinding: createSourceBinding(),
+      settings: {},
+    });
+
+    expect(result.artifactUrl).toBe(`/foo/api/light-extension-runtime/artifacts/${'a'.repeat(64)}`);
+  });
+
+  it('shares immutable artifact pointers while keeping settings request-specific', async () => {
+    const { service } = createRuntimeResolveService({
+      settingsSchema: {
+        type: 'object',
+        properties: { label: { type: 'string', default: 'DEFAULT' } },
+      },
+    });
+    const sourceBinding = createSourceBinding();
+
+    const first = await service.resolve({ sourceMode: 'light-extension', sourceBinding, settings: { label: 'A' } });
+    const second = await service.resolve({ sourceMode: 'light-extension', sourceBinding, settings: { label: 'B' } });
+
+    expect(first).toMatchObject({ artifactHash: 'a'.repeat(64), settings: { label: 'A' } });
+    expect(second).toMatchObject({ artifactHash: 'a'.repeat(64), settings: { label: 'B' } });
+    expect(second).not.toHaveProperty('code');
+    expect(second).not.toHaveProperty('sourceMap');
+  });
+
+  it('rejects legacy failed entries instead of running their last successful artifact', async () => {
+    const { service } = createRuntimeResolveService({
+      entryHealthStatus: 'failed',
+      entryPath: 'src/client/js-blocks/sales-kpi-next/index.tsx',
+      artifactEntryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+    });
+
+    await expect(
+      service.resolve(
+        {
+          sourceMode: 'light-extension',
+          sourceBinding: createSourceBinding(),
+          settings: {},
+        },
+        {},
+      ),
+    ).rejects.toMatchObject({
+      code: 'LIGHT_EXTENSION_RUNTIME_UNAVAILABLE',
+      details: {
+        reasonCode: 'runtime_missing',
+      },
+    });
+  });
+
+  it('filters selectable entries whose runtime was compiled from a non-head commit', async () => {
+    const { service } = createRuntimeResolveService({
+      repoHeadCommitId: 'vsc_commit_2',
+    });
+
+    await expect(service.listSelectableEntries()).resolves.toEqual([]);
+  });
+
+  it('returns the schema hash independently from the defaults hash', async () => {
+    const { service, entriesRepository } = createRuntimeResolveService({ category: 'examples' });
+
+    await expect(service.listSelectableEntries()).resolves.toEqual([
+      expect.objectContaining({
+        category: 'examples',
+        settingsSchemaHash: 'schema_hash_1',
+        settingsDefaultsHash: 'defaults_hash_1',
+      }),
+    ]);
+    expect(entriesRepository.find).toHaveBeenCalledWith(
+      expect.objectContaining({
+        fields: expect.arrayContaining(['category']),
+      }),
+    );
+  });
+
+  it('keeps no-schema entries selectable when both settings hashes are null', async () => {
+    const { service } = createRuntimeResolveService({
+      settingsSchema: null,
+      settingsSchemaHash: null,
+      settingsDefaultsHash: null,
+    });
+
+    await expect(service.listSelectableEntries()).resolves.toEqual([
+      expect.objectContaining({
+        settingsSchema: null,
+        settingsSchemaHash: null,
+        settingsDefaultsHash: null,
+        runtimeAvailable: true,
+      }),
+    ]);
+  });
+
+  it('rejects runtime bindings whose identity does not match the entry current runtime', async () => {
+    const { service } = createRuntimeResolveService();
+
+    await expect(
+      service.resolve(
+        {
+          sourceMode: 'light-extension',
+          sourceBinding: createSourceBinding({ kind: 'js-field' }),
+          settings: {},
+        },
+        {},
+      ),
+    ).rejects.toMatchObject({
+      code: 'LIGHT_EXTENSION_BINDING_OUTDATED',
+      status: 409,
+      details: {
+        entryId: 'lee_sales_kpi',
+        mismatches: [
+          {
+            field: 'kind',
+            expected: 'js-field',
+            actual: 'js-block',
+          },
+        ],
+      },
+    });
+  });
+
+  it('blocks runtime code for unavailable repos, unhealthy entries, unsupported kinds, and missing artifacts', async () => {
+    const blockedCases = [
+      {
+        name: 'disabled repo',
+        repoLifecycleStatus: 'disabled',
+        reasonCode: 'repo_disabled',
+      },
+      {
+        name: 'archived repo',
+        repoLifecycleStatus: 'archived',
+        reasonCode: 'repo_archived',
+      },
+      {
+        name: 'missing entry',
+        entryHealthStatus: 'missing',
+        reasonCode: 'entry_missing',
+      },
+      {
+        name: 'unsupported persisted kind',
+        entryKind: 'legacy-kind',
+        sourceKind: 'legacy-kind',
+        reasonCode: 'kind_unsupported',
+      },
+      {
+        name: 'missing runtime',
+        runtimeArtifact: null,
+        compiledCommitId: null,
+        reasonCode: 'runtime_missing',
+      },
+      {
+        name: 'runtime compiled from a non-head commit',
+        repoHeadCommitId: 'vsc_commit_2',
+        reasonCode: 'runtime_missing',
+      },
+    ];
+
+    for (const blockedCase of blockedCases) {
+      const { service } = createRuntimeResolveService(blockedCase);
+
+      await expect(
+        service.resolve(
+          {
+            sourceMode: 'light-extension',
+            sourceBinding: createSourceBinding({
+              kind: blockedCase.sourceKind || 'js-block',
+            }),
+            settings: {},
+          },
+          {},
+        ),
+      ).rejects.toMatchObject({
+        code: 'LIGHT_EXTENSION_RUNTIME_UNAVAILABLE',
+        status: 409,
+        details: {
+          reasonCode: blockedCase.reasonCode,
+          entryId: 'lee_sales_kpi',
+        },
+      });
+    }
+  });
+
+  it('uses 422 for runtime resolve input contract failures before loading entries', async () => {
+    const { service, entriesRepository } = createRuntimeResolveService();
+
+    await expect(
+      service.resolve(
+        {
+          sourceMode: 'inline',
+          sourceBinding: createSourceBinding(),
+          settings: {},
+        } as never,
+        {},
+      ),
+    ).rejects.toMatchObject({
+      code: 'LIGHT_EXTENSION_INVALID_INPUT',
+      status: 422,
+      details: {
+        reasonCode: 'invalid_input',
+      },
+    });
+    expect(entriesRepository.findOne).not.toHaveBeenCalled();
+  });
+});
+
+function createRuntimeResolveService(
+  options: {
+    repoLifecycleStatus?: string;
+    entryHealthStatus?: string;
+    entryKind?: string;
+    sourceKind?: string;
+    runtimeArtifact?: Record<string, unknown> | null;
+    compiledCommitId?: string | null;
+    repoHeadCommitId?: string | null;
+    entryPath?: string;
+    artifactEntryPath?: string;
+    settingsSchema?: Record<string, unknown> | null;
+    settingsSchemaHash?: string | null;
+    settingsDefaultsHash?: string | null;
+    category?: string | null;
+    apiBasePath?: string;
+  } = {},
+) {
+  const entryRecord = createEntryRecord(options);
+  const reposRepository = {
+    findOne: vi.fn().mockResolvedValue(
+      createModel({
+        id: 'ler_sales',
+        lifecycleStatus: options.repoLifecycleStatus || 'enabled',
+        headCommitId: typeof options.repoHeadCommitId === 'undefined' ? 'vsc_commit_1' : options.repoHeadCommitId,
+      }),
+    ),
+  };
+  const entriesRepository = {
+    find: vi.fn().mockResolvedValue([createModel(entryRecord)]),
+    findOne: vi.fn().mockResolvedValue(createModel(entryRecord)),
+  };
+  const db = {
+    getRepository: (name: string) => {
+      if (name === 'lightExtensionRepos') {
+        return reposRepository;
+      }
+      if (name === 'lightExtensionEntries') {
+        return entriesRepository;
+      }
+      throw new Error(`Unexpected repository ${name}`);
+    },
+  } as unknown as Database;
+  const serviceOptions = typeof options.apiBasePath === 'string' ? { apiBasePath: options.apiBasePath } : {};
+  return {
+    service: new RuntimeResolveService(db, serviceOptions),
+    reposRepository,
+    entriesRepository,
+  };
+}
+
+function createSourceBinding(
+  input: Partial<LightExtensionRuntimeSourceBinding> = {},
+): LightExtensionRuntimeSourceBinding {
+  return {
+    type: 'light-extension-entry',
+    repoId: 'ler_sales',
+    entryId: 'lee_sales_kpi',
+    kind: 'js-block',
+    ...input,
+  };
+}
+
+function createEntryRecord(
+  input: {
+    entryHealthStatus?: string;
+    entryKind?: string;
+    runtimeArtifact?: Record<string, unknown> | null;
+    compiledCommitId?: string | null;
+    entryPath?: string;
+    artifactEntryPath?: string;
+    settingsSchema?: Record<string, unknown> | null;
+    settingsSchemaHash?: string | null;
+    settingsDefaultsHash?: string | null;
+  } = {},
+): Record<string, unknown> {
+  const kind = input.entryKind || 'js-block';
+  const entryPath = input.entryPath || 'src/client/js-blocks/sales-kpi/index.tsx';
+  const artifactEntryPath = input.artifactEntryPath || entryPath;
+  const runtimeArtifact =
+    typeof input.runtimeArtifact === 'undefined'
+      ? {
+          code: "const secret = 'runtime secret';\nctx.render(secret);\n",
+          sourceMap: '{"version":3}',
+          version: 'v2',
+          entryPath: artifactEntryPath,
+          filesHash: 'files_hash_1',
+          diagnostics: [],
+          metadata: {
+            runtimeContract: 'light-extension.current-runtime.v1',
+          },
+        }
+      : input.runtimeArtifact;
+
+  return {
+    id: 'lee_sales_kpi',
+    repoId: 'ler_sales',
+    target: 'client',
+    kind,
+    entryName: 'sales-kpi',
+    entryPath,
+    descriptorPath: 'src/client/js-blocks/sales-kpi/entry.json',
+    title: 'Sales KPI',
+    description: null,
+    category: typeof input.category === 'undefined' ? null : input.category,
+    icon: null,
+    tags: null,
+    sort: null,
+    settingsSchema:
+      typeof input.settingsSchema === 'undefined'
+        ? {
+            type: 'object',
+            required: ['threshold'],
+            properties: {
+              threshold: {
+                type: 'number',
+                default: 5,
+                minimum: 0,
+                maximum: 10,
+              },
+              region: {
+                type: 'string',
+                default: 'APAC',
+                enum: ['APAC', 'EMEA'],
+              },
+              contactEmail: {
+                type: 'string',
+                default: 'ops@example.com',
+                format: 'email',
+              },
+              nested: {
+                type: 'object',
+                properties: {
+                  enabled: {
+                    type: 'boolean',
+                    default: true,
+                  },
+                  label: {
+                    type: 'string',
+                    default: 'KPI',
+                  },
+                },
+              },
+            },
+          }
+        : input.settingsSchema,
+    settingsSchemaHash: typeof input.settingsSchemaHash === 'undefined' ? 'schema_hash_1' : input.settingsSchemaHash,
+    compiledCommitId: typeof input.compiledCommitId === 'undefined' ? 'vsc_commit_1' : input.compiledCommitId,
+    runtimeArtifact,
+    runtimeVersion: runtimeArtifact ? 'v2' : null,
+    surfaceStyle: runtimeArtifact ? 'render' : null,
+    runtimeCodeHash: runtimeArtifact ? 'runtime_hash_1' : null,
+    artifactHash: runtimeArtifact ? 'a'.repeat(64) : null,
+    filesHash: runtimeArtifact ? 'files_hash_1' : null,
+    settingsDefaultsHash: runtimeArtifact
+      ? typeof input.settingsDefaultsHash === 'undefined'
+        ? 'defaults_hash_1'
+        : input.settingsDefaultsHash
+      : null,
+    compiledAt: runtimeArtifact ? '2026-07-06T00:00:00.000Z' : null,
+    healthStatus: input.entryHealthStatus || 'ready',
+    diagnostics: [],
+    createdAt: null,
+    updatedAt: null,
+  };
+}
+
+function createModel(values: Record<string, unknown>): Model {
+  return {
+    get: (key: string) => values[key],
+    update: vi.fn(async (nextValues: Record<string, unknown>) => {
+      Object.assign(values, nextValues);
+      return createModel(values);
+    }),
+  } as unknown as Model;
+}

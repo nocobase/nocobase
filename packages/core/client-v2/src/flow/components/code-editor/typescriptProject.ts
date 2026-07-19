@@ -980,7 +980,7 @@ export function createTypeScriptProjectSession(options?: {
   workerFactory?: TypeScriptWorkerFactory;
 }): CodeEditorTypeScriptProjectSession {
   if (options?.workerFactory || canUseTypeScriptWorker()) {
-    return new WorkerBackedTypeScriptProjectSession(options?.workerFactory);
+    return new WorkerBackedTypeScriptProjectSession(options?.workerFactory, new TypeScriptProjectSession());
   }
   return new TypeScriptProjectSession();
 }
