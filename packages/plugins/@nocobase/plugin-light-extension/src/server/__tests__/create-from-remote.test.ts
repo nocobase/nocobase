@@ -13,6 +13,7 @@ import {
   RemoteSyncError,
   RemoteSyncRuntimeService,
   VscPermissionHookRegistry,
+  validateVscRemoteAuthRef,
 } from '@nocobase/plugin-vsc-file';
 import PluginVscFileServer from '@nocobase/plugin-vsc-file';
 import { createMockServer, type MockServer } from '@nocobase/test';
@@ -80,7 +81,9 @@ describe('LightExtensionCreateFromRemoteService', () => {
     });
     const registry = new RemoteSyncAdapterRegistry();
     registry.register(adapter);
-    validateCredential = vi.fn(async () => undefined);
+    validateCredential = vi.fn((authRef: unknown) =>
+      validateVscRemoteAuthRef(authRef, async (name) => ({ name, type: 'secret' })),
+    );
     runtime = new RemoteSyncRuntimeService(app.db, {
       adapterRegistry: registry,
       credentialResolver: { validate: validateCredential },

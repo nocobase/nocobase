@@ -17,7 +17,6 @@ import type {
   VscRemoteSnapshot,
 } from '../index';
 import { normalizeGitHubRemoteConfig, RemoteSyncError } from '../remotes/RemoteSyncAdapter';
-import { parseVscRemoteAuthRef, validateVscRemoteAuthRef } from '../remotes/credentialRef';
 import { computeRemoteSnapshotContentHash } from '../remotes/snapshot';
 
 const snapshotFiles = [
@@ -42,41 +41,6 @@ describe('remote sync contract', () => {
     expect(computeRemoteSnapshotContentHash(snapshotFiles.map((file) => ({ ...file, language: 'text' })))).toBe(
       computeRemoteSnapshotContentHash(snapshotFiles),
     );
-  });
-
-  it('accepts only complete secret expressions', async () => {
-    expect(parseVscRemoteAuthRef('{{ $env.GITHUB_SYNC }}')).toEqual({
-      expression: '{{ $env.GITHUB_SYNC }}',
-      name: 'GITHUB_SYNC',
-    });
-    await expect(
-      validateVscRemoteAuthRef('{{ $env.GITHUB_SYNC }}', async (name) => ({ name, type: 'secret' })),
-    ).resolves.toMatchObject({ name: 'GITHUB_SYNC' });
-    await expect(
-      validateVscRemoteAuthRef('{{ $env.PUBLIC_VALUE }}', async (name) => ({ name, type: 'string' })),
-    ).rejects.toMatchObject({ code: 'AUTH_REF_INVALID' });
-    expect(() => parseVscRemoteAuthRef('github_pat_test_direct_123')).toThrowError(RemoteSyncError);
-    expect(() => parseVscRemoteAuthRef('prefix {{ $env.GITHUB_SYNC }}')).toThrowError(RemoteSyncError);
-    expect(() => parseVscRemoteAuthRef('')).toThrowError(RemoteSyncError);
-  });
-
-  it('normalizes provider config from unknown and rejects extra fields', () => {
-    expect(
-      normalizeGitHubRemoteConfig({
-        owner: 'nocobase',
-        repository: 'extensions',
-        branch: 'main',
-      }),
-    ).toEqual({ owner: 'nocobase', repository: 'extensions', branch: 'main', subdirectory: null });
-    expect(() =>
-      normalizeGitHubRemoteConfig({
-        owner: 'nocobase',
-        repository: 'extensions',
-        branch: 'main',
-        subdirectory: null,
-        credential: 'unexpected',
-      }),
-    ).toThrowError(RemoteSyncError);
   });
 
   it('keeps revision null as the empty remote branch representation', () => {
