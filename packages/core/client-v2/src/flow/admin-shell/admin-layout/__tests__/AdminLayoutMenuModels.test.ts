@@ -32,15 +32,6 @@ const { navigateMock } = vi.hoisted(() => ({
   navigateMock: vi.fn(),
 }));
 
-vi.mock('../../../../application/CustomRouterContextProvider', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@nocobase/client/src/application/CustomRouterContextProvider')>();
-  return {
-    ...actual,
-    useNavigateNoUpdate: () => navigateMock,
-    useRouterBasename: () => '/apps/demo',
-  };
-});
-
 describe('AdminLayoutModel menu items', () => {
   let engine: FlowEngine;
   let modalConfirmMock: ReturnType<typeof vi.fn>;
@@ -707,7 +698,7 @@ describe('AdminLayoutModel menu items', () => {
         { engine },
         React.createElement(
           MemoryRouter,
-          { initialEntries: ['/admin/current-page'] },
+          { basename: '/apps/demo', initialEntries: ['/apps/demo/admin/current-page'] },
           React.createElement(AdminLayoutMenuItemRenderer, {
             renderType: 'item',
             item: {
@@ -828,7 +819,7 @@ describe('AdminLayoutModel menu items', () => {
         { engine },
         React.createElement(
           MemoryRouter,
-          { initialEntries: ['/admin/current-page'] },
+          { basename: '/apps/demo', initialEntries: ['/apps/demo/admin/current-page'] },
           React.createElement(AdminLayoutMenuItemRenderer, {
             renderType: 'group',
             item: {

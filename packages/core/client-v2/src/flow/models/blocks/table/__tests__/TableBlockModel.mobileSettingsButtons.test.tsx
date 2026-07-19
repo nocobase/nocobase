@@ -8,7 +8,6 @@
  */
 
 import { FlowEngine } from '@nocobase/flow-engine';
-import '@nocobase/client';
 import React from 'react';
 import { describe, expect, it } from 'vitest';
 import { TableBlockModel } from '../TableBlockModel';

@@ -17,6 +17,8 @@ import {
   JS_FIELD_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
   JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
   JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+  JS_PAGE_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
+  JS_PAGE_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
   RunJSEditorRegistry,
   RunJSSettingsDescriptorProviderRegistry,
   RunJSSourceResolverRegistry,
@@ -29,6 +31,7 @@ import {
   JSBlockLightExtensionSourceField,
   JSFieldLightExtensionSourceField,
   JSItemLightExtensionSourceField,
+  JSPageLightExtensionSourceField,
 } from '../client-v2/components/JSBlockLightExtensionSourceField';
 import { SettingsSingleField } from '../client-v2/components/SettingsAutoForm';
 import { createRunJSLightExtensionEditorProvider } from '../client-v2/components/RunJSLightExtensionEditorProvider';
@@ -77,6 +80,8 @@ function translate(app: LegacyApp | undefined, text: string) {
   return app?.i18n?.t(text, { ns: NAMESPACE }) || text;
 }
 
+let activeLightExtensionLegacyInstance: PluginLightExtensionClient | null = null;
+
 /**
  * Legacy admin-shell bridge.
  *
@@ -104,6 +109,11 @@ export class PluginLightExtensionClient {
   async afterAdd() {}
 
   async beforeLoad() {
+    activeLightExtensionLegacyInstance?.disposeRegistrations();
+    this.disposeRegistrations();
+  }
+
+  private disposeRegistrations() {
     this.unregisterRunJSEditor?.();
     this.unregisterRunJSEditor = undefined;
     this.unregisterRunJSResolver?.();
@@ -114,6 +124,9 @@ export class PluginLightExtensionClient {
     this.unregisterRunJSToolbar = undefined;
     this.unregisterModelMenus?.();
     this.unregisterModelMenus = undefined;
+    if (activeLightExtensionLegacyInstance === this) {
+      activeLightExtensionLegacyInstance = null;
+    }
   }
 
   async load() {
@@ -127,6 +140,8 @@ export class PluginLightExtensionClient {
         [JS_FIELD_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
         [JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSItemLightExtensionSourceField,
         [JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
+        [JS_PAGE_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSPageLightExtensionSourceField,
+        [JS_PAGE_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
       },
       { warnOnOverwrite: false },
     );
@@ -151,6 +166,7 @@ export class PluginLightExtensionClient {
       Component: LightExtensionListPage,
       aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
     });
+    activeLightExtensionLegacyInstance = this;
   }
 }
 

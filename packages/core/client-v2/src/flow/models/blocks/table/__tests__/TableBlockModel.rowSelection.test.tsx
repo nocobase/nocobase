@@ -9,7 +9,6 @@
 
 import { render, screen } from '@testing-library/react';
 import { FlowEngine } from '@nocobase/flow-engine';
-import '@nocobase/client';
 import React from 'react';
 import { describe, expect, it } from 'vitest';
 import { BulkDeleteActionModel } from '../../../actions/BulkDeleteActionModel';

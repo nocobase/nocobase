@@ -19,6 +19,8 @@ import {
   JS_FIELD_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
   JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
   JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+  JS_PAGE_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
+  JS_PAGE_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
   RunJSEditorRegistry,
   RunJSSettingsDescriptorProviderRegistry,
   RunJSSourceResolverRegistry,
@@ -28,6 +30,8 @@ import {
 } from '@nocobase/client-v2';
 import { runJSStudioToolbarRegistry } from '@nocobase/plugin-vsc-file/client-v2';
 
+import { JSPageLightExtensionSourceField } from '../../client-v2/components/JSBlockLightExtensionSourceField';
+import { SettingsSingleField } from '../../client-v2/components/SettingsAutoForm';
 import LightExtensionListPage from '../../client-v2/pages/LightExtensionListPage';
 import PluginLightExtensionClient from '..';
 
@@ -108,6 +112,9 @@ describe('plugin-light-extension legacy client boundary', () => {
       }),
       { warnOnOverwrite: false },
     );
+    const registeredComponents = registerComponents.mock.calls[0][0];
+    expect(registeredComponents[JS_PAGE_LIGHT_EXTENSION_FULL_SOURCE_FIELD]).toBe(JSPageLightExtensionSourceField);
+    expect(registeredComponents[JS_PAGE_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]).toBe(SettingsSingleField);
     await expect(plugin.beforeLoad()).resolves.toBeUndefined();
     expect(RunJSSourceResolverRegistry.getResolver('light-extension')).toBeNull();
     expect(RunJSSettingsDescriptorProviderRegistry.getProviders()).toHaveLength(0);
