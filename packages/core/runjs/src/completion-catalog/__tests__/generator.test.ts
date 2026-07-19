@@ -10,7 +10,9 @@
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import iconsPackage from '@ant-design/icons/package.json';
 import { createRsbuild } from '@rsbuild/core';
+import antdPackage from 'antd/package.json';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { runCompletionCatalogGeneratorCli } from '../../../scripts/generate-completion-catalogs';
@@ -40,7 +42,8 @@ describe('RunJS completion catalog generator', () => {
     const catalog = await collectRunJSCompletionCatalog(repositoryRoot, realDefinitions[0]);
     const names = new Set(catalog.entries.map((entry) => entry.name));
 
-    expect(catalog.version).toBe('5.24.2');
+    expect(catalog.version).toBe(antdPackage.version);
+    expect(names.size).toBe(catalog.entries.length);
     expect(names.has('Button')).toBe(true);
     expect(names.has('Table')).toBe(true);
     expect(names.has('message')).toBe(true);
@@ -56,8 +59,8 @@ describe('RunJS completion catalog generator', () => {
     const catalog = await collectRunJSCompletionCatalog(repositoryRoot, realDefinitions[1]);
     const plus = catalog.entries.find((entry) => entry.name === 'PlusOutlined');
 
-    expect(catalog.version).toBe('5.6.1');
-    expect(catalog.entries.length).toBeGreaterThan(800);
+    expect(catalog.version).toBe(iconsPackage.version);
+    expect(new Set(catalog.entries.map((entry) => entry.name)).size).toBe(catalog.entries.length);
     expect(plus).toMatchObject({ category: 'icon', group: 'P', packId: 'antd-icons/P' });
     expect(catalog.entries.some((entry) => entry.name === 'createFromIconfontCN')).toBe(true);
   });

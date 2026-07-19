@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-vsc-file",
-  "version": "2.2.0-beta.11",
+  "version": "2.2.0-beta.15",
   "main": "dist/server/index.js",
   "exports": {
     ".": {
@@ -28,8 +28,11 @@
     "./src/*": "./src/*"
   },
   "devDependencies": {
+    "@ant-design/icons": "^5.6.1",
+    "antd": "^5.24.2",
     "jszip": "^3.10.1",
-    "typescript": "^5.x"
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
   },
   "peerDependencies": {
     "@nocobase/actions": "2.x",

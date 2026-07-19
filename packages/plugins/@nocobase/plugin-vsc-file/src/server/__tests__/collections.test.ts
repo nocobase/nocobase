@@ -47,16 +47,31 @@ describe('vsc-file collections', () => {
       expect(db.getCollection(name)).toBeDefined();
     }
 
-    await expectIndex('vscFileRepositories', ['ownerType', 'ownerId', 'name'], true);
-    await expectIndex('vscFileTreeEntries', ['treeHash', 'pathHash'], true);
-    await expectIndex('vscFileTreeEntries', ['treeHash', 'pathLowerHash'], true);
-    await expectIndex('vscFileCommits', ['repoId', 'seq'], true);
-    await expectIndex('vscFileCommits', ['repoId', 'hash'], true);
-    await expectIndex('vscFileRefs', ['repoId', 'name'], true);
-    await expectIndex('vscFileRemotes', ['repoId', 'name'], true);
-    await expectIndex('vscFileSyncJobs', ['remoteId', 'remoteTargetVersion', 'idempotencyKey'], true);
-    await expectIndex('vscFileExternalCommitMaps', ['remoteId', 'remoteTargetVersion', 'localCommitId'], true);
-    await expectIndex('vscFileExternalCommitMaps', ['remoteId', 'remoteTargetVersion', 'remoteRevision'], true);
+    await expectIndex('vscFileRepositories', ['ownerType', 'ownerId', 'name'], true, 'vscr_owner_name_uq');
+    await expectIndex('vscFileTreeEntries', ['treeHash', 'pathHash'], true, 'vscte_path_uq');
+    await expectIndex('vscFileTreeEntries', ['treeHash', 'pathLowerHash'], true, 'vscte_lower_path_uq');
+    await expectIndex('vscFileCommits', ['repoId', 'seq'], true, 'vscc_repo_seq_uq');
+    await expectIndex('vscFileCommits', ['repoId', 'hash'], true, 'vscc_repo_hash_uq');
+    await expectIndex('vscFileRefs', ['repoId', 'name'], true, 'vscref_repo_name_uq');
+    await expectIndex('vscFileRemotes', ['repoId', 'name'], true, 'vscrem_repo_name_uq');
+    await expectIndex(
+      'vscFileSyncJobs',
+      ['remoteId', 'remoteTargetVersion', 'idempotencyKey'],
+      true,
+      'vscjob_remote_key_uq',
+    );
+    await expectIndex(
+      'vscFileExternalCommitMaps',
+      ['remoteId', 'remoteTargetVersion', 'localCommitId'],
+      true,
+      'vscmap_local_uq',
+    );
+    await expectIndex(
+      'vscFileExternalCommitMaps',
+      ['remoteId', 'remoteTargetVersion', 'remoteRevision'],
+      true,
+      'vscmap_remote_uq',
+    );
   });
 
   it('rejects duplicate repository owner/name tuples', async () => {
@@ -110,9 +125,10 @@ describe('vsc-file collections', () => {
     ).rejects.toBeInstanceOf(UniqueConstraintError);
   });
 
-  async function expectIndex(collectionName: string, fields: string[], unique: boolean) {
+  async function expectIndex(collectionName: string, fields: string[], unique: boolean, name: string) {
     const collection = db.getCollection(collectionName);
     const indexes = (await db.sequelize.getQueryInterface().showIndex(collection.getTableNameWithSchema())) as Array<{
+      name?: string;
       unique: boolean;
       fields: Array<{ attribute?: string; name?: string } | string>;
     }>;
@@ -126,7 +142,9 @@ describe('vsc-file collections', () => {
           return field.attribute || field.name;
         });
 
-        return index.unique === unique && fields.every((field, index) => attributes[index] === field);
+        return (
+          index.name === name && index.unique === unique && fields.every((field, index) => attributes[index] === field)
+        );
       }),
     ).toBe(true);
   }

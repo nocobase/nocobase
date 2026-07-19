@@ -17,7 +17,7 @@ import type {
   VscRemoteProvider,
 } from '../../shared/remote-sync-types';
 import { normalizeGitHubRemoteConfig, RemoteSyncError } from './RemoteSyncAdapter';
-import { parseVscRemoteAuthRef } from './credentialRef';
+import { serializeVscRemoteAuthRef, type VscRemoteAuthRef } from './credentialRef';
 
 const blockingJobStatuses = ['pending', 'running', 'finalize-pending'] as const;
 const credentialErrorCodes = new Set<RemoteSyncErrorCode>([
@@ -32,13 +32,13 @@ export interface CreateRemoteInput {
   name: string;
   provider: VscRemoteProvider;
   config: VscRemoteNormalizedConfig;
-  authRef: string | null;
+  authRef: VscRemoteAuthRef | null;
 }
 
 export interface UpdateRemoteTargetInput {
   provider: VscRemoteProvider;
   config: VscRemoteNormalizedConfig;
-  authRef: string | null;
+  authRef: VscRemoteAuthRef | null;
 }
 
 export interface RecordRemoteCheckInput {
@@ -65,14 +65,14 @@ export class RemoteStore {
     return this.withTransaction(transaction, async (currentTransaction) => {
       await this.lockRepository(input.repoId, currentTransaction);
       const config = validateNormalizedConfig(input.provider, input.config);
-      validateAuthRef(input.authRef);
+      const authRef = serializeNullableAuthRef(input.authRef);
       const record = await this.db.getRepository('vscFileRemotes').create({
         values: {
           repoId: input.repoId,
           name: input.name,
           provider: input.provider,
           config,
-          authRef: input.authRef,
+          authRef,
           status: 'active',
           version: 1,
           lastCheckedAt: null,
@@ -117,18 +117,18 @@ export class RemoteStore {
       const record = await this.lockRemote(remoteId, currentTransaction);
       const current = remoteFromRecord(record);
       const config = validateNormalizedConfig(input.provider, input.config);
-      validateAuthRef(input.authRef);
+      const authRef = serializeNullableAuthRef(input.authRef);
       const targetChanged = current.provider !== input.provider || !sameConfig(current.config, config);
 
       await this.assertNoBlockingJobs(remoteId, currentTransaction);
 
-      const authRefChanged = current.authRef !== input.authRef;
+      const authRefChanged = current.authRef !== authRef;
       const clearsCredentialError = authRefChanged && isCredentialError(current.lastErrorCode);
       await record.update(
         {
           provider: input.provider,
           config,
-          authRef: input.authRef,
+          authRef,
           status: 'active',
           version: targetChanged ? current.version + 1 : current.version,
           lastCheckedAt: targetChanged ? null : record.get('lastCheckedAt'),
@@ -144,21 +144,23 @@ export class RemoteStore {
 
   async rotateAuthRef(
     remoteId: string,
-    authRef: string | null,
+    authRef: VscRemoteAuthRef | null,
     transaction?: Transaction,
   ): Promise<VscFileRemoteRecord> {
     return this.withTransaction(transaction, async (currentTransaction) => {
       const record = await this.lockRemote(remoteId, currentTransaction);
       const current = remoteFromRecord(record);
-      validateAuthRef(authRef);
-      if (current.authRef !== authRef) {
+      const serializedAuthRef = serializeNullableAuthRef(authRef);
+      if (current.authRef !== serializedAuthRef) {
         await this.assertNoBlockingJobs(remoteId, currentTransaction);
       }
       await record.update(
         {
-          authRef,
+          authRef: serializedAuthRef,
           lastErrorCode:
-            current.authRef !== authRef && isCredentialError(current.lastErrorCode) ? null : current.lastErrorCode,
+            current.authRef !== serializedAuthRef && isCredentialError(current.lastErrorCode)
+              ? null
+              : current.lastErrorCode,
         },
         { transaction: currentTransaction },
       );
@@ -358,10 +360,8 @@ function assertNoSensitiveConfigKeys(value: unknown): void {
   }
 }
 
-function validateAuthRef(authRef: string | null): void {
-  if (authRef !== null) {
-    parseVscRemoteAuthRef(authRef);
-  }
+function serializeNullableAuthRef(authRef: VscRemoteAuthRef | null): string | null {
+  return authRef === null ? null : serializeVscRemoteAuthRef(authRef);
 }
 
 function sameConfig(left: VscRemoteNormalizedConfig, right: VscRemoteNormalizedConfig): boolean {

@@ -14,13 +14,16 @@ export default defineCollection({
   autoGenId: false,
   indexes: [
     {
+      name: 'vscrem_repo_name_uq',
       unique: true,
       fields: ['repoId', 'name'],
     },
     {
+      name: 'vscrem_status_idx',
       fields: ['repoId', 'status'],
     },
     {
+      name: 'vscrem_provider_idx',
       fields: ['provider'],
     },
   ],
@@ -48,11 +51,13 @@ export default defineCollection({
     {
       type: 'string',
       name: 'name',
+      length: 255,
       allowNull: false,
     },
     {
       type: 'string',
       name: 'provider',
+      length: 64,
       allowNull: false,
     },
     {
@@ -68,6 +73,7 @@ export default defineCollection({
     {
       type: 'string',
       name: 'status',
+      length: 32,
       allowNull: false,
       defaultValue: 'active',
     },

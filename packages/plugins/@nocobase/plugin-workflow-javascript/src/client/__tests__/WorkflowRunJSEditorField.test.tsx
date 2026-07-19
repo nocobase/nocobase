@@ -15,6 +15,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import ScriptInstruction from '../ScriptInstruction';
 import { WorkflowRunJSEditorField } from '../WorkflowRunJSEditorField';
+import { WorkflowScriptFieldset } from '../WorkflowScriptFieldset';
 
 vi.mock('../CodeEditor', () => ({
   default: ({
@@ -99,10 +100,10 @@ describe('WorkflowRunJSEditorField', () => {
     expect(screen.queryByLabelText('workflow-code-fallback')).toBeNull();
   });
 
-  it('registers the workflow content schema with the v1 wrapper instead of the v2 editor', () => {
+  it('loads the shared fieldset with the v1 editor adapter', async () => {
     const instruction = new ScriptInstruction();
+    const fieldset = await instruction.FieldsetLoader();
 
-    expect(instruction.fieldset.content['x-component']).toBe('WorkflowRunJSEditorField');
-    expect(instruction.components.WorkflowRunJSEditorField).toBeDefined();
+    expect(fieldset.default).toBe(WorkflowScriptFieldset);
   });
 });

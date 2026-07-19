@@ -18,6 +18,7 @@ import { ExternalCommitMapStore } from '../../remotes/ExternalCommitMapStore';
 import { RemoteSyncAdapterRegistry } from '../../remotes/RemoteSyncAdapterRegistry';
 import { RemoteStore } from '../../remotes/RemoteStore';
 import { SyncStatePlanner } from '../../remotes/SyncStatePlanner';
+import { validateVscRemoteAuthRef } from '../../remotes/credentialRef';
 import { DeterministicRemoteAdapter } from '../../remotes/testing/DeterministicRemoteAdapter';
 import { loadVscSnapshot } from '../../remotes/VscRemotePushService';
 
@@ -87,12 +88,19 @@ export async function createRemoteSyncAcceptanceFixture(
       if (!created.initialCommit) {
         throw new Error('Expected an initial VSC commit');
       }
+      const validatedAuthRef =
+        authRef === null
+          ? null
+          : await validateVscRemoteAuthRef(authRef, async (variableName) => ({
+              name: variableName,
+              type: 'secret',
+            }));
       const remote = await remoteStore.create({
         repoId: created.repository.id,
         name: 'origin',
         provider: 'github',
         config: acceptanceRemoteConfig,
-        authRef,
+        authRef: validatedAuthRef,
       });
       return { repoId: created.repository.id, commitId: created.initialCommit.id, remote };
     },

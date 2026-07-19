@@ -18,7 +18,7 @@ import React from 'react';
 import { usePluginTranslation } from '../locale';
 import CodeEditor from './CodeEditor';
 
-type WorkflowRunJSEditorFieldProps = {
+export type WorkflowRunJSEditorFieldProps = {
   value?: string;
   onChange?: (value: string) => void;
   disabled?: boolean;

@@ -4,7 +4,7 @@
   "displayName.zh-CN": "轻插件",
   "description": "Organize and reuse multi-file RunJS entries from light extension repositories.",
   "description.zh-CN": "组织并复用轻插件仓库中的多文件 RunJS Entry。",
-  "version": "2.2.0-beta.11",
+  "version": "2.2.0-beta.15",
   "license": "Apache-2.0",
   "main": "./dist/server/index.js",
   "exports": {
@@ -38,10 +38,10 @@
     "Developer tools"
   ],
   "dependencies": {
-    "@nocobase/light-extension-sdk": "2.2.0-beta.13",
+    "@nocobase/light-extension-sdk": "2.2.0-beta.15",
     "esbuild-wasm": "~0.27.0",
     "jszip": "^3.10.1",
-    "typescript": "^5.x"
+    "typescript": "5.1.3"
   },
   "devDependencies": {
     "@formily/core": "2.x",
@@ -57,9 +57,9 @@
     "@nocobase/client-v2": "2.x",
     "@nocobase/database": "2.x",
     "@nocobase/flow-engine": "2.x",
-    "@nocobase/plugin-vsc-file": "2.x",
+    "@nocobase/plugin-vsc-file": "2.2.0-beta.15",
     "@nocobase/resourcer": "2.x",
-    "@nocobase/runjs": "2.x",
+    "@nocobase/runjs": "2.2.0-beta.15",
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x",
     "@nocobase/utils": "2.x",

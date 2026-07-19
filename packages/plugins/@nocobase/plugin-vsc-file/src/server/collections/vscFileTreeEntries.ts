@@ -15,20 +15,25 @@ export default defineCollection({
   name: 'vscFileTreeEntries',
   indexes: [
     {
+      name: 'vscte_path_uq',
       unique: true,
       fields: ['treeHash', 'pathHash'],
     },
     {
+      name: 'vscte_lower_path_uq',
       unique: true,
       fields: ['treeHash', 'pathLowerHash'],
     },
     {
+      name: 'vscte_tree_idx',
       fields: ['treeHash'],
     },
     {
+      name: 'vscte_blob_idx',
       fields: ['blobHash'],
     },
     {
+      name: 'vscte_path_idx',
       fields: ['pathHash'],
     },
   ],

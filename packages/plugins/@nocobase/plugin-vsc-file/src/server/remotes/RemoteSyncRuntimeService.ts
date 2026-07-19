@@ -230,9 +230,7 @@ export class RemoteSyncRuntimeService implements RemoteSyncRuntime {
 
   async configureRemote(input: RemoteSyncConfigureInput): Promise<VscFileRemoteRecord> {
     let config = this.adapterRegistry.normalizeConfig(input.provider, input.config);
-    if (input.authRef !== null) {
-      await this.credentialResolver.validate(input.authRef);
-    }
+    const authRef = input.authRef === null ? null : await this.credentialResolver.validate(input.authRef);
     if (!config.branch) {
       const tested = await this.testTarget({
         provider: input.provider,
@@ -251,7 +249,7 @@ export class RemoteSyncRuntimeService implements RemoteSyncRuntime {
             {
               provider: input.provider,
               config,
-              authRef: input.authRef,
+              authRef,
             },
             transaction,
           )
@@ -261,7 +259,7 @@ export class RemoteSyncRuntimeService implements RemoteSyncRuntime {
               name: input.name,
               provider: input.provider,
               config,
-              authRef: input.authRef,
+              authRef,
             },
             transaction,
           );
@@ -325,6 +323,7 @@ export class RemoteSyncRuntimeService implements RemoteSyncRuntime {
     transaction: Transaction,
   ): Promise<RemoteSyncEstablishInitialBaselineResult> {
     const config = this.adapterRegistry.normalizeConfig(input.provider, input.config);
+    const authRef = input.authRef === null ? null : await this.credentialResolver.validate(input.authRef);
     const revision = requireInitialRemoteRevision(input.snapshot.revision);
     const contentHash = computeRemoteSnapshotContentHash(input.snapshot.files);
     if (contentHash !== input.snapshot.contentHash) {
@@ -362,7 +361,7 @@ export class RemoteSyncRuntimeService implements RemoteSyncRuntime {
         name: input.name,
         provider: input.provider,
         config,
-        authRef: input.authRef,
+        authRef,
       },
       transaction,
     );

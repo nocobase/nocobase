@@ -14,9 +14,11 @@ export default defineCollection({
   autoGenId: false,
   indexes: [
     {
+      name: 'vsccf_status_idx',
       fields: ['remoteId', 'remoteTargetVersion', 'status'],
     },
     {
+      name: 'vsccf_created_idx',
       fields: ['remoteId', 'remoteTargetVersion', 'createdAt'],
     },
   ],
@@ -49,6 +51,7 @@ export default defineCollection({
     {
       type: 'string',
       name: 'status',
+      length: 32,
       allowNull: false,
       defaultValue: 'open',
     },

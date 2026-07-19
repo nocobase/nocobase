@@ -16,16 +16,20 @@ export default defineCollection({
   timestamps: true,
   indexes: [
     {
+      name: 'le_ref_owner_uq',
       unique: true,
       fields: ['ownerLocatorHash', 'repoId', 'entryId'],
     },
     {
+      name: 'le_ref_status_idx',
       fields: ['repoId', 'entryId', 'resolvedStatus'],
     },
     {
+      name: 'le_ref_owner_kind_idx',
       fields: ['ownerKind'],
     },
     {
+      name: 'le_ref_kind_status_idx',
       fields: ['kind', 'resolvedStatus'],
     },
   ],
@@ -42,26 +46,10 @@ export default defineCollection({
       allowNull: false,
     },
     {
-      type: 'belongsTo',
-      name: 'repo',
-      target: 'lightExtensionRepos',
-      targetKey: 'id',
-      foreignKey: 'repoId',
-      constraints: true,
-      onDelete: 'RESTRICT',
-    },
-    {
       type: 'string',
       name: 'entryId',
+      length: 64,
       allowNull: false,
-    },
-    {
-      type: 'belongsTo',
-      name: 'entry',
-      target: 'lightExtensionEntries',
-      targetKey: 'id',
-      foreignKey: 'entryId',
-      constraints: false,
     },
     {
       type: 'string',
@@ -83,6 +71,7 @@ export default defineCollection({
     {
       type: 'string',
       name: 'ownerLocatorHash',
+      length: 128,
       allowNull: false,
     },
     {
@@ -96,6 +85,23 @@ export default defineCollection({
       name: 'resolvedStatus',
       allowNull: false,
       defaultValue: 'runtime_missing',
+    },
+    {
+      type: 'belongsTo',
+      name: 'repo',
+      target: 'lightExtensionRepos',
+      targetKey: 'id',
+      foreignKey: 'repoId',
+      constraints: true,
+      onDelete: 'RESTRICT',
+    },
+    {
+      type: 'belongsTo',
+      name: 'entry',
+      target: 'lightExtensionEntries',
+      targetKey: 'id',
+      foreignKey: 'entryId',
+      constraints: false,
     },
   ],
 });

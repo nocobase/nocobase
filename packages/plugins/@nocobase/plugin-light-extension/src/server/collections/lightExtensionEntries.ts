@@ -16,26 +16,33 @@ export default defineCollection({
   timestamps: true,
   indexes: [
     {
+      name: 'le_entry_name_uq',
       unique: true,
       fields: ['repoId', 'target', 'kind', 'entryName'],
     },
     {
+      name: 'le_entry_path_uq',
       unique: true,
       fields: ['repoId', 'target', 'kind', 'entryPath'],
     },
     {
+      name: 'le_entry_health_idx',
       fields: ['repoId', 'healthStatus'],
     },
     {
+      name: 'le_entry_commit_idx',
       fields: ['compiledCommitId'],
     },
     {
+      name: 'le_entry_code_idx',
       fields: ['runtimeCodeHash'],
     },
     {
+      name: 'le_entry_artifact_idx',
       fields: ['artifactHash'],
     },
     {
+      name: 'le_entry_input_idx',
       fields: ['compiledInputKey'],
     },
   ],
@@ -49,6 +56,7 @@ export default defineCollection({
     {
       type: 'string',
       name: 'repoId',
+      length: 64,
       allowNull: false,
     },
     {
@@ -62,22 +70,26 @@ export default defineCollection({
     {
       type: 'string',
       name: 'target',
+      length: 32,
       allowNull: false,
       defaultValue: 'client',
     },
     {
       type: 'string',
       name: 'kind',
+      length: 64,
       allowNull: false,
     },
     {
       type: 'string',
       name: 'entryName',
+      length: 512,
       allowNull: false,
     },
     {
       type: 'string',
       name: 'entryPath',
+      length: 512,
       allowNull: false,
     },
     {

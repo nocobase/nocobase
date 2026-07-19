@@ -24,7 +24,7 @@
     "@nocobase/test": "2.x"
   },
   "devDependencies": {
-    "@nocobase/plugin-vsc-file": "2.2.0-beta.11",
+    "@nocobase/plugin-vsc-file": "2.2.0-beta.15",
     "@codemirror/lang-javascript": "^6.2.2",
     "@codemirror/lint": "^6.8.3",
     "@codemirror/state": "^6.4.1",

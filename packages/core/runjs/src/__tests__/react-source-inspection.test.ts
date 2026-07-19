@@ -8,6 +8,7 @@
  */
 
 import reactPackage from 'react/package.json';
+import reactTypesPackage from '@types/react/package.json';
 
 import { inspectRunJSSourceWorkspace } from '../compiler';
 import { collectRunJSTypeDeclarationGraphSync } from '../type-packs/generator';
@@ -55,7 +56,7 @@ ctx.render(<Component unexpected={1} />);
     const graph = collectRunJSTypeDeclarationGraphSync(process.cwd(), 'react');
 
     expect(graph.sourcePackage).toBe('@types/react');
-    expect(graph.version).toBe('18.3.18');
+    expect(graph.version).toBe(reactTypesPackage.version);
     expect(graph.dependencyFiles.some((file) => file.path.endsWith('/@types/react/index.d.ts'))).toBe(true);
     expect(graph.dependencyFiles.some((file) => file.path.endsWith('/csstype/index.d.ts'))).toBe(true);
     expect(graph.version.split('.')[0]).toBe(reactPackage.version.split('.')[0]);

@@ -8,6 +8,7 @@
  */
 
 import reactDOMPackage from 'react-dom/package.json';
+import reactDOMTypesPackage from '@types/react-dom/package.json';
 
 import { inspectRunJSSourceWorkspace } from '../compiler';
 import { loadNodeRunJSTypeLibraryFiles } from '../compiler/node-type-library';
@@ -77,7 +78,7 @@ root.unmount('unexpected');
     ]);
     expect(new Set(allFiles.map((file) => file.path)).size).toBe(allFiles.length);
     expect(graph.sourcePackage).toBe('@types/react-dom');
-    expect(graph.version).toBe('18.3.5');
+    expect(graph.version).toBe(reactDOMTypesPackage.version);
     expect(graph.version.split('.')[0]).toBe(reactDOMPackage.version.split('.')[0]);
   });
 });

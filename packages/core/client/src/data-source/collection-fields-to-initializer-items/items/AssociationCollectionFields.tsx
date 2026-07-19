@@ -33,10 +33,9 @@ export const AssociationCollectionFields: FC<AssociationCollectionFieldsProps> =
   const children = associationFields
     .map((associationField) => {
       // 获取关联表
-      if (!associationField.target) return null;
-      const associationCollection = collectionManager.getCollection(associationField.target) as
-        | InheritanceCollectionMixin
-        | undefined;
+      const associationCollection = collectionManager.getCollection<InheritanceCollectionMixin>(
+        associationField.target!,
+      )!;
       if (!associationCollection) return null;
       // 获取父表
       const associationCollectionFields = associationCollection?.getAllFields();

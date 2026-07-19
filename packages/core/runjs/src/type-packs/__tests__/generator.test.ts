@@ -11,6 +11,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { createRsbuild } from '@rsbuild/core';
+import reactTypesPackage from '@types/react/package.json';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { runTypePackGeneratorCli } from '../../../scripts/generate-type-packs';
@@ -38,7 +39,7 @@ describe('RunJS type-pack generator', () => {
     const paths = graph.dependencyFiles.map((file) => file.path);
 
     expect(graph.sourcePackage).toBe('@types/react');
-    expect(graph.version).toBe('18.3.18');
+    expect(graph.version).toBe(reactTypesPackage.version);
     expect(paths).toContain('/node_modules/@types/react/index.d.ts');
     expect(paths).toContain('/node_modules/@types/react/global.d.ts');
     expect(paths).toContain('/node_modules/@types/prop-types/index.d.ts');

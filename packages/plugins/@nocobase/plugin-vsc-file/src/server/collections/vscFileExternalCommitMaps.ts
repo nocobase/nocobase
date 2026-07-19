@@ -15,14 +15,17 @@ export default defineCollection({
   updatedAt: false,
   indexes: [
     {
+      name: 'vscmap_local_uq',
       unique: true,
       fields: ['remoteId', 'remoteTargetVersion', 'localCommitId'],
     },
     {
+      name: 'vscmap_remote_uq',
       unique: true,
       fields: ['remoteId', 'remoteTargetVersion', 'remoteRevision'],
     },
     {
+      name: 'vscmap_created_idx',
       fields: ['remoteId', 'remoteTargetVersion', 'createdAt'],
     },
   ],
@@ -55,11 +58,13 @@ export default defineCollection({
     {
       type: 'string',
       name: 'localCommitId',
+      length: 64,
       allowNull: false,
     },
     {
       type: 'string',
       name: 'remoteRevision',
+      length: 255,
       allowNull: false,
     },
     {

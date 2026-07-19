@@ -20,21 +20,27 @@ export default defineCollection({
   updatedAt: false,
   indexes: [
     {
+      name: 'le_log_repo_idx',
       fields: ['repoId', 'createdAt'],
     },
     {
+      name: 'le_log_entry_idx',
       fields: ['entryId', 'createdAt'],
     },
     {
+      name: 'le_log_request_idx',
       fields: ['requestId'],
     },
     {
+      name: 'le_log_action_idx',
       fields: ['action', 'createdAt'],
     },
     {
+      name: 'le_log_repo_action_idx',
       fields: ['repoId', 'action', 'createdAt'],
     },
     {
+      name: 'le_log_resource_idx',
       fields: ['rawResourceAction'],
     },
   ],

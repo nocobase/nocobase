@@ -15,6 +15,7 @@ import { ConflictStore } from '../remotes/ConflictStore';
 import { ExternalCommitMapStore } from '../remotes/ExternalCommitMapStore';
 import { RemoteStore } from '../remotes/RemoteStore';
 import { SyncJobStore } from '../remotes/SyncJobStore';
+import { validateVscRemoteAuthRef, type VscRemoteAuthRef } from '../remotes/credentialRef';
 
 const normalizedConfig: VscRemoteNormalizedConfig = {
   owner: 'nocobase',
@@ -55,7 +56,7 @@ describe('vsc-file remote stores', () => {
         name: 'origin',
         provider: 'github',
         config: unsafeConfig,
-        authRef: '{{ $env.GITHUB_SYNC }}',
+        authRef: null,
       }),
     ).rejects.toMatchObject({ code: 'CONFIG_INVALID' });
 
@@ -70,19 +71,19 @@ describe('vsc-file remote stores', () => {
     expect(JSON.stringify(remote)).not.toMatch(/privateKey|credential|authorization|password|secret|token/i);
   });
 
-  it('stores a direct literal credential in authRef for later synchronization', async () => {
+  it('rejects a direct literal credential before persistence', async () => {
     const repoId = await createRepository('direct-credential');
     const store = new RemoteStore(db);
-    const remote = await store.create({
-      repoId,
-      name: 'origin',
-      provider: 'github',
-      config: normalizedConfig,
-      authRef: 'github_pat_test_direct_123',
-    });
-
-    expect(remote.authRef).toBe('github_pat_test_direct_123');
-    await expect(store.get(remote.id)).resolves.toMatchObject({ authRef: 'github_pat_test_direct_123' });
+    await expect(
+      store.create({
+        repoId,
+        name: 'origin',
+        provider: 'github',
+        config: normalizedConfig,
+        authRef: 'github_pat_test_direct_123' as unknown as VscRemoteAuthRef,
+      }),
+    ).rejects.toMatchObject({ code: 'AUTH_REF_INVALID' });
+    await expect(db.getRepository('vscFileRemotes').count()).resolves.toBe(0);
   });
 
   it('preserves mappings across auth rotation and isolates old target versions', async () => {
@@ -111,7 +112,7 @@ describe('vsc-file remote stores', () => {
     });
     await remoteStore.recordCheck(remote.id, { remoteTargetVersion: remote.version, lastErrorCode: 'AUTH_FAILED' });
 
-    const rotated = await remoteStore.rotateAuthRef(remote.id, '{{ $env.GITHUB_SYNC_ROTATED }}');
+    const rotated = await remoteStore.rotateAuthRef(remote.id, await validAuthRef('{{ $env.GITHUB_SYNC_ROTATED }}'));
     expect(rotated.version).toBe(1);
     expect(rotated.lastErrorCode).toBeNull();
     await expect(mapStore.findLatest(remote.id)).resolves.toMatchObject({ id: mapping.id });
@@ -119,7 +120,7 @@ describe('vsc-file remote stores', () => {
     const updated = await remoteStore.updateTarget(remote.id, {
       provider: 'github',
       config: { ...normalizedConfig, branch: 'next' },
-      authRef: rotated.authRef,
+      authRef: await validAuthRef(rotated.authRef),
     });
     expect(updated.version).toBe(2);
     await expect(mapStore.findLatest(remote.id)).resolves.toBeNull();
@@ -262,15 +263,17 @@ describe('vsc-file remote stores', () => {
       remoteStore.updateTarget(remote.id, {
         provider: 'github',
         config: { ...normalizedConfig, branch: 'next' },
-        authRef: remote.authRef,
+        authRef: await validAuthRef(remote.authRef),
       }),
     ).rejects.toMatchObject({ code: 'BUSY' });
-    await expect(remoteStore.rotateAuthRef(remote.id, '{{ $env.ROTATED }}')).rejects.toMatchObject({ code: 'BUSY' });
+    await expect(remoteStore.rotateAuthRef(remote.id, await validAuthRef('{{ $env.ROTATED }}'))).rejects.toMatchObject({
+      code: 'BUSY',
+    });
     await expect(
       remoteStore.updateTarget(remote.id, {
         provider: 'github',
         config: normalizedConfig,
-        authRef: '{{ $env.ROTATED }}',
+        authRef: await validAuthRef('{{ $env.ROTATED }}'),
       }),
     ).rejects.toMatchObject({ code: 'BUSY' });
     await expect(remoteStore.disconnect(remote.id)).rejects.toMatchObject({ code: 'BUSY' });
@@ -387,9 +390,13 @@ describe('vsc-file remote stores', () => {
         name: 'origin',
         provider: 'github',
         config: normalizedConfig,
-        authRef: '{{ $env.GITHUB_SYNC }}',
+        authRef: await validAuthRef('{{ $env.GITHUB_SYNC }}'),
       },
       transaction,
     );
+  }
+
+  async function validAuthRef(expression: string): Promise<VscRemoteAuthRef> {
+    return validateVscRemoteAuthRef(expression, async (name) => ({ name, type: 'secret' }));
   }
 });

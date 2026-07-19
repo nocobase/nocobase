@@ -14,16 +14,20 @@ export default defineCollection({
   autoGenId: false,
   indexes: [
     {
+      name: 'vscr_owner_name_uq',
       unique: true,
       fields: ['ownerType', 'ownerId', 'name'],
     },
     {
+      name: 'vscr_owner_idx',
       fields: ['ownerType', 'ownerId'],
     },
     {
+      name: 'vscr_head_idx',
       fields: ['headCommitId'],
     },
     {
+      name: 'vscr_status_idx',
       fields: ['status'],
     },
   ],
@@ -37,16 +41,19 @@ export default defineCollection({
     {
       type: 'string',
       name: 'ownerType',
+      length: 64,
       allowNull: false,
     },
     {
       type: 'string',
       name: 'ownerId',
+      length: 255,
       allowNull: false,
     },
     {
       type: 'string',
       name: 'name',
+      length: 255,
       allowNull: false,
     },
     {

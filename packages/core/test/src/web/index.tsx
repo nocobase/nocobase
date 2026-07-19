@@ -315,8 +315,8 @@ export const getReadPrettyAppComponentWithSchemaSettings = (options: GetAppCompo
   return App;
 };
 
-export function withSchema<P extends object>(Component: ComponentType<P>, name?: string) {
-  const ComponentValue = observer((props: P) => {
+export function withSchema(Component: ComponentType, name?: string) {
+  const ComponentValue = observer((props) => {
     const schema = useFieldSchema();
     const schemaValue = pick(schema.toJSON(), [
       'title',

@@ -155,14 +155,23 @@ export const AssociationOrCollectionProvider = (props: {
   allowNull?: boolean;
 }) => {
   const { collection, association, allowNull = false } = props;
-  if (association) {
-    return <AssociationProvider name={association}>{props.children}</AssociationProvider>;
-  }
+  const AssociationOrCollection = useMemo(() => {
+    if (association) {
+      return {
+        Component: AssociationProvider,
+        name: association,
+      };
+    }
+    return {
+      Component: SanitizedCollectionProvider,
+      name: collection,
+    };
+  }, [collection, association]);
 
   return (
-    <SanitizedCollectionProvider name={collection} allowNull={allowNull}>
+    <AssociationOrCollection.Component name={AssociationOrCollection.name as any} allowNull={allowNull}>
       {props.children}
-    </SanitizedCollectionProvider>
+    </AssociationOrCollection.Component>
   );
 };
 

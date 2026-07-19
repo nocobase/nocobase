@@ -14,16 +14,20 @@ export default defineCollection({
   autoGenId: false,
   indexes: [
     {
+      name: 'vscjob_remote_key_uq',
       unique: true,
       fields: ['remoteId', 'remoteTargetVersion', 'idempotencyKey'],
     },
     {
+      name: 'vscjob_remote_status_idx',
       fields: ['remoteId', 'status'],
     },
     {
+      name: 'vscjob_lease_idx',
       fields: ['status', 'leaseExpiresAt'],
     },
     {
+      name: 'vscjob_created_idx',
       fields: ['remoteId', 'remoteTargetVersion', 'createdAt'],
     },
   ],
@@ -61,6 +65,7 @@ export default defineCollection({
     {
       type: 'string',
       name: 'status',
+      length: 32,
       allowNull: false,
       defaultValue: 'pending',
     },
@@ -73,6 +78,7 @@ export default defineCollection({
     {
       type: 'string',
       name: 'idempotencyKey',
+      length: 255,
       allowNull: false,
     },
     {

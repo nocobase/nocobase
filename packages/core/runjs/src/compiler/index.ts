@@ -20,6 +20,7 @@ import {
   type PartialMessage,
   type Plugin,
 } from 'esbuild';
+import path from 'path';
 import ts from 'typescript';
 
 import {
@@ -54,7 +55,6 @@ import {
   resolveRunJSBuiltInModule,
   resolveRunJSWorkspaceImport,
   RUNJS_BUILTIN_MODULES,
-  runJSVirtualDirname,
   runJSVirtualExtname,
 } from './portable';
 
@@ -349,9 +349,7 @@ export class RunJSEntryCompilerSession {
     this.estimatedFileBytes = estimateContentFileBytes(files);
     if (!this.context) {
       try {
-        this.context = await this.esbuildContextFactory(
-          createRunJSBuildOptions(createRunJSWorkspacePlugin(this.pluginState)),
-        );
+        this.context = await this.esbuildContextFactory(createRunJSBuildOptions(this.pluginState));
         this.contextCreateCount += 1;
       } catch (error) {
         throw new RunJSCompilerSessionError('context', error);
@@ -563,7 +561,7 @@ async function buildRunJSBundle(
     runtimeDependencies: new RunJSRuntimeDependencyGraphCollector(),
   };
   try {
-    const result = await esbuild(createRunJSBuildOptions(createRunJSWorkspacePlugin(state)));
+    const result = await esbuild(createRunJSBuildOptions(state));
     return bundleOutputFromBuildResult(result, files, entryPath, entryAdaptation, sourceURL, state);
   } catch (error) {
     if (isEsbuildFailure(error)) {
@@ -573,9 +571,21 @@ async function buildRunJSBundle(
   }
 }
 
-function createRunJSBuildOptions(plugin: Plugin): BuildOptions {
+export function createRunJSCompilerPaths(
+  workingDirectory: string,
+  pathApi: Pick<typeof path, 'resolve'> = path,
+): Pick<BuildOptions, 'absWorkingDir' | 'outfile'> {
+  const absWorkingDir = pathApi.resolve(workingDirectory);
   return {
-    absWorkingDir: '/',
+    absWorkingDir,
+    outfile: pathApi.resolve(absWorkingDir, 'runjs-bundle.js'),
+  };
+}
+
+function createRunJSBuildOptions(state: RunJSWorkspacePluginState): BuildOptions {
+  const compilerPaths = createRunJSCompilerPaths(process.cwd());
+  return {
+    ...compilerPaths,
     banner: {
       js: buildRuntimeRequirePreamble(),
     },
@@ -588,9 +598,8 @@ function createRunJSBuildOptions(plugin: Plugin): BuildOptions {
     jsxFragment: 'ctx.React.Fragment',
     legalComments: 'none',
     logLevel: 'silent',
-    outfile: '/runjs-bundle.js',
     platform: 'neutral',
-    plugins: [plugin],
+    plugins: [createRunJSWorkspacePlugin(state, compilerPaths.absWorkingDir)],
     sourcemap: 'external',
     sourcesContent: true,
     target: 'es2020',
@@ -625,7 +634,7 @@ function bundleOutputFromBuildResult(
   };
 }
 
-function createRunJSWorkspacePlugin(state: RunJSWorkspacePluginState): Plugin {
+function createRunJSWorkspacePlugin(state: RunJSWorkspacePluginState, resolveDir: string): Plugin {
   return {
     name: 'nocobase-runjs-workspace',
     setup(build) {
@@ -650,7 +659,7 @@ function createRunJSWorkspacePlugin(state: RunJSWorkspacePluginState): Plugin {
           entryModuleSpecifier,
         )});\nreturn __runjs_entry__.default();`,
         loader: 'js',
-        resolveDir: '/',
+        resolveDir,
       }));
 
       build.onLoad({ filter: /.*/, namespace: sourceNamespace }, (args) => {
@@ -680,7 +689,7 @@ function createRunJSWorkspacePlugin(state: RunJSWorkspacePluginState): Plugin {
         return {
           contents: file.path === state.entryPath ? state.entryAdaptation.code : normalizeModuleSource(file),
           loader: loaderForPath(file.path),
-          resolveDir: `/${runJSVirtualDirname(file.path)}`,
+          resolveDir,
         };
       });
     },

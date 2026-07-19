@@ -8,7 +8,7 @@
   "main": "./dist/server/index.js",
   "license": "Apache-2.0",
   "devDependencies": {
-    "@nocobase/plugin-vsc-file": "2.2.0-beta.11",
+    "@nocobase/plugin-vsc-file": "2.2.0-beta.15",
     "antd": "5.x",
     "cronstrue": "^2.11.0",
     "koa-send": "^5.0.1",

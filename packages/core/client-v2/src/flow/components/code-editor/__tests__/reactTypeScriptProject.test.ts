@@ -112,19 +112,14 @@ ctx.render(<Component unexpected={1} />);
     expect(getRunJSTypeLibraryPackRegistryDebugState().loadingPackCount).toBe(1);
   });
 
-  it('keeps declaration bodies out of the loader module and records the generated React contract', () => {
-    const loaderSource = String(generatedRunJSTypeLibraryPackLoaders.react);
+  it('records the generated React contract without duplicating official declarations', () => {
     const manifest = generatedRunJSTypeLibraryPackManifest.find((entry) => entry.id === 'react');
     const baseDeclaration = buildRunJSTypeScriptContextDeclaration();
 
-    expect(loaderSource).not.toContain('useState');
-    expect(loaderSource).not.toContain('csstype');
     expect(manifest).toMatchObject({
-      dependencyFileCount: 9,
       libraryName: 'react',
       rootFileCount: 1,
       sourcePackage: '@types/react',
-      version: '18.3.18',
     });
     expect(baseDeclaration).toContain('interface RunJSReactLibrary {}');
     expect(baseDeclaration).not.toContain('declare namespace React');

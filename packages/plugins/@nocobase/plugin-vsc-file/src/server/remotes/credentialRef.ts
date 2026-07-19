@@ -10,9 +10,20 @@
 import { RemoteSyncError } from './RemoteSyncAdapter';
 
 const authRefPattern = /^\{\{ \$env\.([A-Za-z_][A-Za-z0-9_]*) \}\}$/;
-const MAX_LITERAL_CREDENTIAL_LENGTH = 255;
+const parsedAuthRefs = new WeakSet<object>();
+const validatedAuthRefs = new WeakSet<object>();
+declare const parsedAuthRefBrand: unique symbol;
+declare const validatedAuthRefBrand: unique symbol;
 
-export type VscRemoteAuthRef = { expression: string; name: string } | { expression: string; value: string };
+export interface ParsedVscRemoteAuthRef {
+  readonly expression: string;
+  readonly name: string;
+  readonly [parsedAuthRefBrand]: true;
+}
+
+export interface VscRemoteAuthRef extends ParsedVscRemoteAuthRef {
+  readonly [validatedAuthRefBrand]: true;
+}
 
 export interface VscRemoteAuthRefRecord {
   name: string;
@@ -21,25 +32,17 @@ export interface VscRemoteAuthRefRecord {
 
 export type VscRemoteAuthRefLookup = (name: string) => Promise<VscRemoteAuthRefRecord | null>;
 
-export function parseVscRemoteAuthRef(input: unknown): VscRemoteAuthRef {
+export function parseVscRemoteAuthRef(input: unknown): ParsedVscRemoteAuthRef {
   if (typeof input !== 'string') {
     throw invalidAuthRef();
   }
   const match = authRefPattern.exec(input);
-  if (match) {
-    return { expression: input, name: match[1] };
-  }
-  if (
-    !input ||
-    input.trim() !== input ||
-    input.length > MAX_LITERAL_CREDENTIAL_LENGTH ||
-    hasControlCharacter(input) ||
-    input.includes('{{') ||
-    input.includes('}}')
-  ) {
+  if (!match) {
     throw invalidAuthRef();
   }
-  return { expression: input, value: input };
+  const parsed = Object.freeze({ expression: input, name: match[1] }) as ParsedVscRemoteAuthRef;
+  parsedAuthRefs.add(parsed);
+  return parsed;
 }
 
 export async function validateVscRemoteAuthRef(
@@ -47,31 +50,23 @@ export async function validateVscRemoteAuthRef(
   lookup: VscRemoteAuthRefLookup,
 ): Promise<VscRemoteAuthRef> {
   const parsed = parseVscRemoteAuthRef(input);
-  if ('value' in parsed) {
-    return parsed;
-  }
   const record = await lookup(parsed.name);
   if (!record || record.name !== parsed.name || record.type !== 'secret') {
     throw new RemoteSyncError('AUTH_REF_INVALID', 'Remote authRef must reference a secret variable', {
       details: { reasonCode: 'secret-variable-required' },
     });
   }
-  return parsed;
+  validatedAuthRefs.add(parsed);
+  return parsed as VscRemoteAuthRef;
+}
+
+export function serializeVscRemoteAuthRef(authRef: VscRemoteAuthRef): string {
+  if (!parsedAuthRefs.has(authRef) || !validatedAuthRefs.has(authRef)) {
+    throw invalidAuthRef();
+  }
+  return authRef.expression;
 }
 
 function invalidAuthRef(): RemoteSyncError {
-  return new RemoteSyncError(
-    'AUTH_REF_INVALID',
-    'Remote authRef must be a complete environment expression or a non-empty literal credential',
-  );
-}
-
-function hasControlCharacter(value: string): boolean {
-  for (const character of value) {
-    const code = character.charCodeAt(0);
-    if (code <= 0x1f || code === 0x7f) {
-      return true;
-    }
-  }
-  return false;
+  return new RemoteSyncError('AUTH_REF_INVALID', 'Remote authRef must be a complete secret environment expression');
 }

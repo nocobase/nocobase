@@ -70,22 +70,16 @@ describe('plugin-light-extension initial source creation', () => {
       DEFAULT_LIGHT_EXTENSION_TEMPLATE_FILES.map((file) => file.path).sort(),
     );
     expect(historyResponse.body.data).toHaveLength(1);
-    expect(entriesResponse.body.data).toHaveLength(13);
+    expect(entriesResponse.body.data).toHaveLength(7);
     expect(entriesResponse.body.data).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ kind: 'js-block', entryName: 'welcome-card', healthStatus: 'ready' }),
-        expect.objectContaining({ kind: 'js-block', entryName: 'collection-summary', healthStatus: 'ready' }),
-        expect.objectContaining({ kind: 'js-block', entryName: 'collection-table', healthStatus: 'ready' }),
         expect.objectContaining({ kind: 'js-action', entryName: 'refresh-data', healthStatus: 'ready' }),
-        expect.objectContaining({ kind: 'js-action', entryName: 'confirm-action', healthStatus: 'ready' }),
         expect.objectContaining({ kind: 'js-field', entryName: 'status-tag', healthStatus: 'ready' }),
-        expect.objectContaining({ kind: 'js-field', entryName: 'editable-text', healthStatus: 'ready' }),
         expect.objectContaining({ kind: 'js-field', entryName: 'record-status-column', healthStatus: 'ready' }),
-        expect.objectContaining({ kind: 'js-field', entryName: 'record-summary-column', healthStatus: 'ready' }),
         expect.objectContaining({ kind: 'js-item', entryName: 'form-total-preview', healthStatus: 'ready' }),
-        expect.objectContaining({ kind: 'js-item', entryName: 'selection-tools', healthStatus: 'ready' }),
         expect.objectContaining({ kind: 'runjs', entryName: 'calculate-subtotal', healthStatus: 'ready' }),
-        expect.objectContaining({ kind: 'runjs', entryName: 'calculate-total-with-tax', healthStatus: 'ready' }),
+        expect.objectContaining({ kind: 'js-page', entryName: 'hello-page', healthStatus: 'ready' }),
       ]),
     );
     expect(entriesResponse.body.data.every((entry) => Boolean(entry.runtimeArtifact?.code))).toBe(true);

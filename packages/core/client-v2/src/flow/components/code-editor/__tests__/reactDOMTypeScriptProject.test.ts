@@ -110,7 +110,6 @@ root.unmount('unexpected');
       libraryName: 'react-dom',
       rootFileCount: 1,
       sourcePackage: '@types/react-dom',
-      version: '18.3.5',
     });
     expect(RUNJS_TYPESCRIPT_REACT_DOM_BRIDGE_DECLARATION).toContain("typeof import('react-dom/client')");
     expect(RUNJS_TYPESCRIPT_REACT_DOM_BRIDGE_DECLARATION).toContain('__nbRunjsInternalShim');

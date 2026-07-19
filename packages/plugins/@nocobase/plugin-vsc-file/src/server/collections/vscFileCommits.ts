@@ -14,20 +14,25 @@ export default defineCollection({
   autoGenId: false,
   indexes: [
     {
+      name: 'vscc_repo_seq_uq',
       unique: true,
       fields: ['repoId', 'seq'],
     },
     {
+      name: 'vscc_repo_hash_uq',
       unique: true,
       fields: ['repoId', 'hash'],
     },
     {
+      name: 'vscc_created_idx',
       fields: ['repoId', 'createdAt'],
     },
     {
+      name: 'vscc_parent_idx',
       fields: ['repoId', 'parentCommitId'],
     },
     {
+      name: 'vscc_tree_idx',
       fields: ['treeHash'],
     },
   ],
@@ -41,6 +46,7 @@ export default defineCollection({
     {
       type: 'string',
       name: 'repoId',
+      length: 64,
       allowNull: false,
     },
     {
@@ -57,6 +63,7 @@ export default defineCollection({
     {
       type: 'string',
       name: 'parentCommitId',
+      length: 64,
       allowNull: true,
     },
     {

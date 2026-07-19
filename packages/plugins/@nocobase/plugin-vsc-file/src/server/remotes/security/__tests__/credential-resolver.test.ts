@@ -35,17 +35,14 @@ describe('RemoteCredentialResolver', () => {
     await expect(resolver.resolve('{{ $env.GITHUB_PAT }}')).resolves.toBe('rotated-secret-value');
   });
 
-  it('validates and resolves a direct literal credential without Variables and secrets', async () => {
+  it('rejects a direct literal credential without reading Variables and secrets', async () => {
     const resolver = new RemoteCredentialResolver({
       db: createDatabase({}, false),
       environment: { getVariables: () => ({}) },
     });
 
-    await expect(resolver.validate('github_pat_test_direct_123')).resolves.toEqual({
-      expression: 'github_pat_test_direct_123',
-      value: 'github_pat_test_direct_123',
-    });
-    await expect(resolver.resolve('github_pat_test_direct_123')).resolves.toBe('github_pat_test_direct_123');
+    await expect(resolver.validate('github_pat_test_direct_123')).rejects.toMatchObject({ code: 'AUTH_REF_INVALID' });
+    await expect(resolver.resolve('github_pat_test_direct_123')).rejects.toMatchObject({ code: 'AUTH_REF_INVALID' });
   });
 
   it('allows an omitted optional credential but rejects an omitted required credential', async () => {

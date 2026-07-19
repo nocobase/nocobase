@@ -10,7 +10,7 @@
 import type { Database, Model } from '@nocobase/database';
 
 import { RemoteSyncError } from '../RemoteSyncAdapter';
-import { parseVscRemoteAuthRef, type VscRemoteAuthRef } from '../credentialRef';
+import { validateVscRemoteAuthRef, type VscRemoteAuthRef } from '../credentialRef';
 
 export type RemoteCredentialMode = 'required' | 'optional';
 
@@ -34,11 +34,7 @@ export class RemoteCredentialResolver {
   }
 
   async validate(authRef: unknown): Promise<VscRemoteAuthRef> {
-    const parsed = parseVscRemoteAuthRef(authRef);
-    if ('name' in parsed) {
-      await this.requireSecretRecord(parsed.name);
-    }
-    return parsed;
+    return validateVscRemoteAuthRef(authRef, async (name) => this.findVariableRecord(name));
   }
 
   async resolve(authRef: unknown, mode: RemoteCredentialMode = 'required'): Promise<string | null> {
@@ -49,11 +45,7 @@ export class RemoteCredentialResolver {
       throw credentialUnavailable('Remote credential is required', 'credential-required');
     }
 
-    const parsed = parseVscRemoteAuthRef(authRef);
-    if ('value' in parsed) {
-      return parsed.value;
-    }
-    await this.requireSecretRecord(parsed.name);
+    const parsed = await this.validate(authRef);
 
     let variables: unknown;
     try {
@@ -72,7 +64,7 @@ export class RemoteCredentialResolver {
     return value;
   }
 
-  private async requireSecretRecord(name: string): Promise<void> {
+  private async findVariableRecord(name: string): Promise<{ name: string; type: string } | null> {
     if (!this.db.hasCollection('environmentVariables')) {
       throw credentialUnavailable('Variables and secrets is unavailable', 'environment-variables-unavailable');
     }
@@ -94,12 +86,7 @@ export class RemoteCredentialResolver {
       throw credentialUnavailable('Variables and secrets is unavailable', 'environment-variables-unavailable');
     }
 
-    if (!record) {
-      throw credentialUnavailable(`Credential "${name}" is unavailable`, 'credential-record-missing');
-    }
-    if (record.get('name') !== name || record.get('type') !== 'secret') {
-      throw credentialUnavailable(`Credential "${name}" must reference a secret`, 'secret-variable-required');
-    }
+    return record ? { name: record.get('name') as string, type: record.get('type') as string } : null;
   }
 }
 

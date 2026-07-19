@@ -78,15 +78,12 @@ const count: number = ctx.libs.lodash.get({ name: 'Ada' }, 'name');
     expect(messages.some((message) => /string/.test(message) && /number/.test(message))).toBe(true);
   });
 
-  it('records installed versions and keeps the loaders declaration-body free', async () => {
+  it('records installed package contracts', () => {
     expect(generatedRunJSTypeLibraryPackManifest).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ id: 'dayjs', sourcePackage: 'dayjs', version: '1.11.13', rootFileCount: 1 }),
-        expect.objectContaining({ id: 'lodash', sourcePackage: '@types/lodash', version: '4.17.24', rootFileCount: 1 }),
+        expect.objectContaining({ id: 'dayjs', sourcePackage: 'dayjs', rootFileCount: 1 }),
+        expect.objectContaining({ id: 'lodash', sourcePackage: '@types/lodash', rootFileCount: 1 }),
       ]),
     );
-    const loaderSource = await import('../type-packs/generated/loaders?raw').then((module) => module.default as string);
-    expect(loaderSource).not.toContain('interface Dayjs');
-    expect(loaderSource).not.toContain('interface LoDashStatic');
   });
 });

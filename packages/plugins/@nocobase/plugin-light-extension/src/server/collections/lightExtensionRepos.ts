@@ -16,21 +16,26 @@ export default defineCollection({
   timestamps: true,
   indexes: [
     {
+      name: 'le_repo_name_uq',
       unique: true,
       fields: ['name'],
     },
     {
+      name: 'le_repo_normalized_uq',
       unique: true,
       fields: ['normalizedName'],
     },
     {
+      name: 'le_repo_vsc_uq',
       unique: true,
       fields: ['vscRepoId'],
     },
     {
+      name: 'le_repo_health_idx',
       fields: ['lifecycleStatus', 'healthStatus'],
     },
     {
+      name: 'le_repo_head_idx',
       fields: ['headCommitId'],
     },
   ],
@@ -44,6 +49,7 @@ export default defineCollection({
     {
       type: 'string',
       name: 'vscRepoId',
+      length: 64,
       allowNull: false,
     },
     {

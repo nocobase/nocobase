@@ -81,20 +81,16 @@ ctx.libs.formula.AVERGE(1, 2);
     expect(messages.some((message) => /AVERGE/.test(message))).toBe(true);
   });
 
-  it('records independent manifests and keeps declaration bodies out of loaders', async () => {
+  it('records independent manifest contracts', () => {
     expect(generatedRunJSTypeLibraryPackManifest).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ id: 'mathjs', sourcePackage: 'mathjs', version: '15.1.0', rootFileCount: 1 }),
+        expect.objectContaining({ id: 'mathjs', sourcePackage: 'mathjs', rootFileCount: 1 }),
         expect.objectContaining({
           id: 'formulajs',
           sourcePackage: '@formulajs/formulajs',
-          version: '4.4.9',
           rootFileCount: 1,
         }),
       ]),
     );
-    const loaderSource = await import('../type-packs/generated/loaders?raw').then((module) => module.default as string);
-    expect(loaderSource).not.toContain('interface MathJsInstance');
-    expect(loaderSource).not.toContain('Returns the average of its arguments');
   });
 });

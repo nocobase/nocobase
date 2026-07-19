@@ -175,6 +175,34 @@ describe('plugin-light-extension collections', () => {
     expect(entry.get('healthStatus')).toBe('missing');
   });
 
+  it('uses portable names and key sizes for entry and reference indexes', async () => {
+    await expectIndexNames('lightExtensionEntries', [
+      'le_entry_name_uq',
+      'le_entry_path_uq',
+      'le_entry_health_idx',
+      'le_entry_commit_idx',
+      'le_entry_code_idx',
+      'le_entry_artifact_idx',
+      'le_entry_input_idx',
+    ]);
+    await expectIndexNames('lightExtensionReferences', [
+      'le_ref_owner_uq',
+      'le_ref_status_idx',
+      'le_ref_owner_kind_idx',
+      'le_ref_kind_status_idx',
+    ]);
+
+    expect(indexUtf8Bytes('lightExtensionEntries', ['repoId', 'target', 'kind', 'entryName'])).toBeLessThanOrEqual(
+      3072,
+    );
+    expect(indexUtf8Bytes('lightExtensionEntries', ['repoId', 'target', 'kind', 'entryPath'])).toBeLessThanOrEqual(
+      3072,
+    );
+    expect(indexUtf8Bytes('lightExtensionReferences', ['ownerLocatorHash', 'repoId', 'entryId'])).toBeLessThanOrEqual(
+      3072,
+    );
+  });
+
   it('stores every derived reference resolvedStatus used by runtime/status APIs', async () => {
     for (const resolvedStatus of LIGHT_EXTENSION_REFERENCE_RESOLVED_STATUSES) {
       const repo = await app.db.getRepository('lightExtensionRepos').create({
@@ -234,6 +262,25 @@ describe('plugin-light-extension collections', () => {
     for (const fieldName of fieldNames) {
       expect(collection?.getField(fieldName), `${collectionName}.${fieldName}`).toBeTruthy();
     }
+  }
+
+  async function expectIndexNames(collectionName: string, expectedNames: string[]) {
+    const collection = app.db.getCollection(collectionName) as Collection;
+    const indexes = (await app.db.sequelize
+      .getQueryInterface()
+      .showIndex(collection.getTableNameWithSchema())) as Array<{ name?: string }>;
+    const names = indexes.flatMap((index) => (index.name ? [index.name] : []));
+
+    expect(names).toEqual(expect.arrayContaining(expectedNames));
+    expect(expectedNames.every((name) => name.length <= 63)).toBe(true);
+  }
+
+  function indexUtf8Bytes(collectionName: string, fieldNames: string[]): number {
+    const collection = app.db.getCollection(collectionName) as Collection;
+    return fieldNames.reduce((total, fieldName) => {
+      const options = collection.getField(fieldName)?.options as { length?: number } | undefined;
+      return total + (options?.length || 255) * 4;
+    }, 0);
   }
 
   async function findReferenceRepoForeignKey(app: MockServer): Promise<ConstraintDescription | undefined> {

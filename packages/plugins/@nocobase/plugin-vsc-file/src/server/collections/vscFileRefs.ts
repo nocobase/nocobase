@@ -14,13 +14,16 @@ export default defineCollection({
   autoGenId: false,
   indexes: [
     {
+      name: 'vscref_repo_name_uq',
       unique: true,
       fields: ['repoId', 'name'],
     },
     {
+      name: 'vscref_commit_idx',
       fields: ['commitId'],
     },
     {
+      name: 'vscref_type_idx',
       fields: ['type'],
     },
   ],
@@ -34,21 +37,25 @@ export default defineCollection({
     {
       type: 'string',
       name: 'repoId',
+      length: 64,
       allowNull: false,
     },
     {
       type: 'string',
       name: 'name',
+      length: 255,
       allowNull: false,
     },
     {
       type: 'string',
       name: 'type',
+      length: 32,
       allowNull: false,
     },
     {
       type: 'string',
       name: 'commitId',
+      length: 64,
       allowNull: true,
     },
   ],

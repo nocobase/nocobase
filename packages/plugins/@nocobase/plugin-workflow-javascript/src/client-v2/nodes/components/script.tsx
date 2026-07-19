@@ -12,7 +12,7 @@ import { Button, Checkbox, ConfigProvider, Form, Input, InputNumber, Space, them
 import { TypedVariableInput } from '@nocobase/client-v2';
 import { useWorkflowVariableOptions } from '@nocobase/plugin-workflow/client-v2';
 import { css } from '@emotion/css';
-import React, { useMemo } from 'react';
+import React, { type ComponentType, useMemo } from 'react';
 
 import CodeEditor from '../../components/CodeEditor';
 import { useT } from '../../locale';
@@ -53,7 +53,11 @@ function validateArgumentName(
   return Promise.resolve();
 }
 
-export function ScriptFieldset() {
+export interface ScriptFieldsetProps {
+  EditorComponent?: ComponentType<{ disabled?: boolean; value?: string; onChange?: (value: string) => void }>;
+}
+
+export function ScriptFieldset({ EditorComponent = CodeEditor }: ScriptFieldsetProps) {
   const t = useT();
   const { token } = theme.useToken();
   const { componentDisabled } = ConfigProvider.useConfig();
@@ -123,7 +127,7 @@ export function ScriptFieldset() {
         initialValue={SCRIPT_DEFAULT_CONFIG.content}
         extra={<ScriptDescription />}
       >
-        <CodeEditor disabled={disabled} />
+        <EditorComponent disabled={disabled} />
       </Form.Item>
 
       <Form.Item

@@ -49,7 +49,11 @@ describe('remote sync server recovery acceptance', () => {
     expect(fixture.adapter.getPublishCount()).toBe(1);
     const runtime = new RemoteSyncRuntimeService(fixture.db, {
       adapterRegistry: fixture.adapterRegistry,
-      credentialResolver: { validate: async () => ({ expression: '{{ $env.UNUSED }}', name: 'UNUSED' }) },
+      credentialResolver: {
+        validate: async () => {
+          throw new Error('Credential validation is not expected');
+        },
+      },
       permissionHooks: new VscPermissionHookRegistry(),
     });
     await expect(
