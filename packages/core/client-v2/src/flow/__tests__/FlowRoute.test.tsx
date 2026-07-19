@@ -116,6 +116,7 @@ describe('FlowRoute', () => {
         }),
       );
     });
+    expect(engine.context.deviceType).toBe('computer');
 
     rerender(
       <FlowEngineProvider engine={engine}>
