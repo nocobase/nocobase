@@ -14,7 +14,7 @@ import { defaultTreeAdapter, html, parse, serialize, type DefaultTreeAdapterType
 import path from 'path';
 import type { Readable } from 'stream';
 
-import { isLightExtensionError, LightExtensionError } from '../../shared/errors';
+import { LightExtensionError } from '../../shared/errors';
 import type { LightExtensionRepoRecord } from '../../shared/types';
 import { prepareClientAppArchive, type PreparedClientAppArchive } from './ClientAppArchive';
 import type { LightExtensionPermissionService } from './LightExtensionPermissionService';
@@ -47,10 +47,6 @@ export interface ClientAppAsset {
   size: number;
   mimeType?: string;
   stream: Readable;
-}
-
-export interface ClientAppOpenOptions {
-  expectedContentHash?: string;
 }
 
 export interface ClientAppStaticRequest {
@@ -88,11 +84,6 @@ export interface ClientAppServiceOptions {
 const CLIENT_APP_CACHE_CONTROL = 'no-cache';
 const CLIENT_APP_RUNTIME_SCRIPT_ATTRIBUTE = 'data-nocobase-client-app-runtime';
 const NOT_FOUND_BODY = Buffer.from('Not Found');
-
-interface StagedClientAppAsset {
-  relativePath: string;
-  storedFile: ClientAppStoredFile;
-}
 
 interface ClientAppRecords {
   app: Model;
@@ -135,30 +126,18 @@ export class ClientAppService {
     assertRepoAcceptsClientAppUpload(repo);
     const archive = await prepareClientAppArchive(input.zipPath);
     const assetSetId = `leas_${uid()}`;
-    const staged: StagedClientAppAsset[] = [];
     let published = false;
     try {
       await this.assertExpectedReplacementTarget(repo.id, input.expectedEntryId, archive);
-      for (const asset of archive.assets) {
-        const storedFile = await this.storage.store({
-          assetSetId,
-          relativePath: asset.relativePath,
-          filePath: asset.filePath,
-          byteSize: asset.byteSize,
-        });
-        staged.push({ relativePath: asset.relativePath, storedFile });
-      }
-      await this.persistStagedAssets(repo.id, assetSetId, staged);
+      const storedFiles = await this.storage.publish({ assetSetId, files: archive.assets });
+      await this.persistStagedAssets(repo.id, assetSetId, archive.assets, storedFiles);
       const result = await this.publishUpload(repo.id, assetSetId, archive, input.expectedEntryId);
       published = true;
       await this.cleanupAssetSetBestEffort(result.oldAssetSetId);
       return this.resolveClientApp(result.entryId);
     } finally {
       if (!published) {
-        await this.discardStagedAssetSetBestEffort(
-          assetSetId,
-          staged.map((asset) => asset.storedFile),
-        );
+        await this.discardStagedAssetSetBestEffort(assetSetId);
       }
       await archive.dispose().catch((error) => this.options.onCleanupError?.(error, assetSetId));
     }
@@ -170,11 +149,7 @@ export class ClientAppService {
     return appToDescriptor(records.app);
   }
 
-  async openClientAppAsset(
-    entryId: string,
-    relativePath: string,
-    options: ClientAppOpenOptions = {},
-  ): Promise<ClientAppAsset | null> {
+  async openClientAppAsset(entryId: string, relativePath: string): Promise<ClientAppAsset | null> {
     const normalizedPath = normalizeAssetPath(relativePath);
     return this.db.sequelize.transaction(
       {
@@ -183,56 +158,41 @@ export class ClientAppService {
       async (transaction) => {
         const records = await this.loadClientAppRecords(entryId, transaction, 'share');
         assertClientAppRecordsAvailable(records, entryId);
-        const clientAppContentHash = String(records.app.get('contentHash'));
-        if (options.expectedContentHash && options.expectedContentHash !== clientAppContentHash) {
-          throw new LightExtensionError(
-            'LIGHT_EXTENSION_SOURCE_OUTDATED',
-            `Client app "${entryId}" changed before its asset was opened`,
-            {
-              details: {
-                entryId,
-                expectedContentHash: options.expectedContentHash,
-                currentContentHash: clientAppContentHash,
-              },
-            },
-          );
-        }
-        const asset = await this.db.getRepository('lightExtensionClientAppAssets').findOne({
-          filter: {
-            assetSetId: records.app.get('assetSetId'),
-            relativePath: normalizedPath,
-          },
-          transaction,
-        });
-        if (!asset) {
-          return null;
-        }
-        const storedFile = storedFileFromModel(asset);
-        const opened = await this.storage.open(storedFile);
-        return {
-          relativePath: normalizedPath,
-          size: Number(asset.get('size')),
-          ...(storedFile.mimetype || opened.contentType ? { mimeType: storedFile.mimetype || opened.contentType } : {}),
-          stream: opened.stream,
-        };
+        return this.openAsset(String(records.app.get('assetSetId')), normalizedPath, transaction);
       },
     );
   }
 
   async serveClientAppAsset(input: ClientAppStaticRequest): Promise<ClientAppStaticResponse> {
     const request = normalizeStaticRequest(input);
-    for (let attempt = 0; attempt < 2; attempt += 1) {
-      const descriptor = await this.resolveClientApp(request.entryId);
-      try {
-        return await this.serveResolvedClientAppAsset(descriptor, request);
-      } catch (error) {
-        if (attempt === 0 && isLightExtensionError(error) && error.code === 'LIGHT_EXTENSION_SOURCE_OUTDATED') {
-          continue;
+    return this.db.sequelize.transaction(
+      {
+        isolationLevel: this.db.options.dialect === 'sqlite' ? undefined : Transaction.ISOLATION_LEVELS.READ_COMMITTED,
+      },
+      async (transaction) => {
+        const records = await this.loadClientAppRecords(request.entryId, transaction, 'share');
+        assertClientAppRecordsAvailable(records, request.entryId);
+        const descriptor = appToDescriptor(records.app);
+        const entryAssetPath = getClientAppEntryAssetPath(descriptor);
+        const requestedAssetPath = request.relativePath || entryAssetPath;
+        let asset = await this.openAsset(String(records.app.get('assetSetId')), requestedAssetPath, transaction);
+        let servesEntryHtml = requestedAssetPath === entryAssetPath;
+
+        if (
+          !asset &&
+          request.relativePath &&
+          isHtmlDocumentNavigation(request) &&
+          path.posix.extname(request.relativePath) === ''
+        ) {
+          asset = await this.openAsset(String(records.app.get('assetSetId')), entryAssetPath, transaction);
+          servesEntryHtml = true;
         }
-        throw error;
-      }
-    }
-    throw new LightExtensionError('LIGHT_EXTENSION_SOURCE_OUTDATED', 'Client app changed while serving its assets');
+        if (!asset) {
+          return notFoundStaticResponse(request.method);
+        }
+        return servesEntryHtml ? createEntryHtmlResponse(asset, request) : createStaticAssetResponse(asset, request);
+      },
+    );
   }
 
   async listSelectableClientApps(): Promise<ClientAppSummary[]> {
@@ -343,38 +303,18 @@ export class ClientAppService {
     }
   }
 
-  private async serveResolvedClientAppAsset(
-    descriptor: ClientAppDescriptor,
-    request: NormalizedClientAppStaticRequest,
-  ): Promise<ClientAppStaticResponse> {
-    const entryAssetPath = getClientAppEntryAssetPath(descriptor);
-    const requestedAssetPath = request.relativePath || entryAssetPath;
-    let asset = await this.openClientAppAsset(descriptor.entryId, requestedAssetPath, {
-      expectedContentHash: descriptor.contentHash,
-    });
-    let servesEntryHtml = requestedAssetPath === entryAssetPath;
-
-    if (
-      !asset &&
-      request.relativePath &&
-      isHtmlDocumentNavigation(request) &&
-      path.posix.extname(request.relativePath) === ''
-    ) {
-      asset = await this.openClientAppAsset(descriptor.entryId, entryAssetPath, {
-        expectedContentHash: descriptor.contentHash,
-      });
-      servesEntryHtml = true;
-    }
-    if (!asset) {
-      return notFoundStaticResponse(request.method);
-    }
-    return servesEntryHtml ? createEntryHtmlResponse(asset, request) : createStaticAssetResponse(asset, request);
-  }
-
-  private async persistStagedAssets(repoId: string, assetSetId: string, assets: StagedClientAppAsset[]): Promise<void> {
+  private async persistStagedAssets(
+    repoId: string,
+    assetSetId: string,
+    assets: PreparedClientAppArchive['assets'],
+    storedFiles: ClientAppStoredFile[],
+  ): Promise<void> {
     await this.db.getModel<Model>('lightExtensionClientAppAssets').bulkCreate(
-      assets.map((asset) => {
-        const { id: _id, ...storedFile } = asset.storedFile;
+      assets.map((asset, index) => {
+        const storedFile = storedFiles[index];
+        if (!storedFile) {
+          throw new Error(`Client app asset "${asset.relativePath}" was not published`);
+        }
         return {
           ...storedFile,
           repoId,
@@ -426,14 +366,9 @@ export class ClientAppService {
     });
   }
 
-  private async discardStagedAssetSetBestEffort(
-    assetSetId: string,
-    files: readonly ClientAppStoredFile[],
-  ): Promise<void> {
+  private async discardStagedAssetSetBestEffort(assetSetId: string): Promise<void> {
     try {
-      if (files.length) {
-        await this.storage.delete(dedupeStoredFiles(files));
-      }
+      await this.storage.delete(assetSetId);
       await this.db.getModel('lightExtensionClientAppAssets').destroy({ where: { assetSetId }, hooks: false });
     } catch (error) {
       this.options.onCleanupError?.(error, assetSetId);
@@ -445,11 +380,7 @@ export class ClientAppService {
       return;
     }
     try {
-      const models = await this.db.getRepository('lightExtensionClientAppAssets').find({ filter: { assetSetId } });
-      if (!models.length) {
-        return;
-      }
-      await this.storage.delete(dedupeStoredFiles(models.map(storedFileFromModel)));
+      await this.storage.delete(assetSetId);
       await this.db.getModel('lightExtensionClientAppAssets').destroy({ where: { assetSetId }, hooks: false });
     } catch (error) {
       this.options.onCleanupError?.(error, assetSetId);
@@ -510,6 +441,28 @@ export class ClientAppService {
       throw new LightExtensionError('LIGHT_EXTENSION_RUNTIME_UNAVAILABLE', `Client app "${entryId}" has no repository`);
     }
     return { app, repo };
+  }
+
+  private async openAsset(
+    assetSetId: string,
+    relativePath: string,
+    transaction: Transaction,
+  ): Promise<ClientAppAsset | null> {
+    const asset = await this.db.getRepository('lightExtensionClientAppAssets').findOne({
+      filter: { assetSetId, relativePath },
+      transaction,
+    });
+    if (!asset) {
+      return null;
+    }
+    const storedFile = storedFileFromModel(asset);
+    const opened = await this.storage.open(storedFile);
+    return {
+      relativePath,
+      size: Number(asset.get('size')),
+      ...(storedFile.mimetype || opened.contentType ? { mimeType: storedFile.mimetype || opened.contentType } : {}),
+      stream: opened.stream,
+    };
   }
 }
 
@@ -852,21 +805,13 @@ function appToDescriptor(app: Model): ClientAppDescriptor {
 }
 
 function storedFileFromModel(model: Model): ClientAppStoredFile {
-  const storageId = model.get('storageId');
-  if (typeof storageId !== 'string' && typeof storageId !== 'number') {
-    throw new LightExtensionError('LIGHT_EXTENSION_RUNTIME_UNAVAILABLE', 'Client app asset storage is unavailable');
-  }
   return {
-    id: model.get('id') as string | number,
     title: String(model.get('title') || ''),
     filename: String(model.get('filename')),
     ...(typeof model.get('extname') === 'string' ? { extname: model.get('extname') as string } : {}),
     size: Number(model.get('size')),
     ...(typeof model.get('mimetype') === 'string' ? { mimetype: model.get('mimetype') as string } : {}),
     path: String(model.get('path') || ''),
-    ...(typeof model.get('url') === 'string' ? { url: model.get('url') as string } : {}),
-    storageId,
-    ...(isRecord(model.get('meta')) ? { meta: model.get('meta') as Record<string, unknown> } : {}),
   };
 }
 
@@ -886,20 +831,4 @@ function normalizeDate(value: unknown): string | null {
     return value.toISOString();
   }
   return typeof value === 'string' && value ? value : null;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
-
-function dedupeStoredFiles(files: readonly ClientAppStoredFile[]): ClientAppStoredFile[] {
-  const seen = new Set<string>();
-  return files.filter((file) => {
-    const key = `${String(file.storageId)}\0${file.path}\0${file.filename}`;
-    if (seen.has(key)) {
-      return false;
-    }
-    seen.add(key);
-    return true;
-  });
 }

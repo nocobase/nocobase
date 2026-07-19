@@ -9,10 +9,12 @@
 
 import { DeleteOutlined, ReloadOutlined, UploadOutlined } from '@ant-design/icons';
 import { useACLRoleContext } from '@nocobase/client-v2';
+import { useFlowContext } from '@nocobase/flow-engine';
+import { useRequest } from 'ahooks';
 import { Alert, Button, Empty, Flex, Modal, Result, Space, Table, Typography, Upload } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { RcFile } from 'rc-upload/lib/interface';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { NAMESPACE } from '../../constants';
@@ -20,7 +22,12 @@ import type {
   LightExtensionClientAppDescriptor,
   LightExtensionClientAppReference,
 } from '../api/lightExtensionClientAppsRequests';
-import { LightExtensionClientAppHookError, useLightExtensionClientApps } from '../hooks/useLightExtensionClientApps';
+import {
+  deleteLightExtensionClientApp,
+  listLightExtensionClientApps,
+  uploadLightExtensionClientApp,
+} from '../api/lightExtensionClientAppsRequests';
+import type { ApiClientLike } from '../api/lightExtensionEntriesRequests';
 
 interface LightExtensionClientAppsPanelProps {
   repoId: string;
@@ -31,52 +38,31 @@ const ACTION_BUTTON_STYLE: React.CSSProperties = { height: 'auto', paddingInline
 export function LightExtensionClientAppsPanel({ repoId }: LightExtensionClientAppsPanelProps) {
   const { t } = useTranslation(NAMESPACE);
   const { parseAction } = useACLRoleContext();
-  const clientApps = useLightExtensionClientApps();
+  const { api } = useFlowContext() as { api: ApiClientLike };
   const canUpload = isAllowedAction(parseAction('lightExtensionClientApps:upload'));
   const canDelete = isAllowedAction(parseAction('lightExtensionClientApps:delete'));
-  const requestVersionRef = useRef(0);
-  const [apps, setApps] = useState<LightExtensionClientAppDescriptor[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<LightExtensionClientAppHookError>();
+  const {
+    data: apps = [],
+    loading,
+    error: loadError,
+    refresh: loadApps,
+    mutate: setApps,
+  } = useRequest(() => listLightExtensionClientApps(api, repoId), { refreshDeps: [repoId] });
+  const { loading: uploading, runAsync: uploadApp } = useRequest(
+    (file: File, expectedEntryId?: string) => uploadLightExtensionClientApp(api, repoId, file, expectedEntryId),
+    { manual: true },
+  );
+  const { loading: removing, runAsync: deleteApp } = useRequest(
+    (entryId: string) => deleteLightExtensionClientApp(api, entryId),
+    { manual: true },
+  );
   const [notice, setNotice] = useState<string>();
   const [uploadTarget, setUploadTarget] = useState<LightExtensionClientAppDescriptor | null>();
   const [uploadFile, setUploadFile] = useState<RcFile>();
   const [uploadError, setUploadError] = useState<string>();
-  const [uploading, setUploading] = useState(false);
   const [removeTarget, setRemoveTarget] = useState<LightExtensionClientAppDescriptor>();
   const [removeReferences, setRemoveReferences] = useState<LightExtensionClientAppReference[]>([]);
   const [removeError, setRemoveError] = useState<string>();
-  const [removing, setRemoving] = useState(false);
-
-  const loadApps = useCallback(async () => {
-    const requestVersion = requestVersionRef.current + 1;
-    requestVersionRef.current = requestVersion;
-    setLoading(true);
-    setLoadError(undefined);
-    try {
-      const nextApps = await clientApps.list(repoId);
-      if (requestVersionRef.current !== requestVersion) {
-        return;
-      }
-      setApps(nextApps);
-    } catch (error) {
-      if (requestVersionRef.current !== requestVersion) {
-        return;
-      }
-      setLoadError(toClientAppHookError(error, t('Failed to load light extension applications')));
-    } finally {
-      if (requestVersionRef.current === requestVersion) {
-        setLoading(false);
-      }
-    }
-  }, [clientApps, repoId, t]);
-
-  useEffect(() => {
-    loadApps();
-    return () => {
-      requestVersionRef.current += 1;
-    };
-  }, [loadApps]);
 
   const openUpload = useCallback((target: LightExtensionClientAppDescriptor | null) => {
     setUploadTarget(target);
@@ -112,11 +98,10 @@ export function LightExtensionClientAppsPanel({ repoId }: LightExtensionClientAp
       setUploadError(t('Select a ZIP file'));
       return;
     }
-    setUploading(true);
     setUploadError(undefined);
     try {
-      const updatedApp = await clientApps.upload(repoId, uploadFile, uploadTarget?.entryId);
-      setApps((current) => [updatedApp, ...current.filter((app) => app.entryId !== updatedApp.entryId)]);
+      const updatedApp = await uploadApp(uploadFile, uploadTarget?.entryId);
+      setApps((current = []) => [updatedApp, ...current.filter((app) => app.entryId !== updatedApp.entryId)]);
       setNotice(
         uploadTarget ? t('Light extension application files replaced') : t('Light extension application uploaded'),
       );
@@ -124,10 +109,8 @@ export function LightExtensionClientAppsPanel({ repoId }: LightExtensionClientAp
       setUploadFile(undefined);
     } catch (error) {
       setUploadError(getClientAppErrorMessage(error, t));
-    } finally {
-      setUploading(false);
     }
-  }, [clientApps, repoId, t, uploadFile, uploadTarget]);
+  }, [setApps, t, uploadApp, uploadFile, uploadTarget]);
 
   const closeRemove = useCallback(() => {
     if (removing) {
@@ -142,21 +125,18 @@ export function LightExtensionClientAppsPanel({ repoId }: LightExtensionClientAp
     if (!removeTarget) {
       return;
     }
-    setRemoving(true);
     setRemoveError(undefined);
     try {
-      await clientApps.delete(removeTarget.entryId);
-      setApps((current) => current.filter((app) => app.entryId !== removeTarget.entryId));
+      await deleteApp(removeTarget.entryId);
+      setApps((current = []) => current.filter((app) => app.entryId !== removeTarget.entryId));
       setRemoveTarget(undefined);
       setRemoveReferences([]);
       setNotice(t('Light extension application removed'));
     } catch (error) {
       setRemoveReferences(getErrorReferences(error));
       setRemoveError(getClientAppErrorMessage(error, t));
-    } finally {
-      setRemoving(false);
     }
-  }, [clientApps, removeTarget, t]);
+  }, [deleteApp, removeTarget, setApps, t]);
 
   const columns = useMemo<ColumnsType<LightExtensionClientAppDescriptor>>(
     () => [
@@ -246,7 +226,8 @@ export function LightExtensionClientAppsPanel({ repoId }: LightExtensionClientAp
   );
 
   if (loadError) {
-    const permissionDenied = loadError.code === 'LIGHT_EXTENSION_PERMISSION_DENIED' || loadError.status === 403;
+    const error = getClientAppError(loadError);
+    const permissionDenied = error.code === 'LIGHT_EXTENSION_PERMISSION_DENIED' || error.status === 403;
     return (
       <Result
         extra={
@@ -406,49 +387,70 @@ export function LightExtensionClientAppsPanel({ repoId }: LightExtensionClientAp
 }
 
 function getErrorReferences(error: unknown): LightExtensionClientAppReference[] {
-  if (!(error instanceof LightExtensionClientAppHookError)) {
-    return [];
-  }
-  const references = error.details?.references;
+  const references = getClientAppError(error).details?.references;
   return Array.isArray(references) ? references.filter(isClientAppReference) : [];
 }
 
 function isClientAppReference(value: unknown): value is LightExtensionClientAppReference {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+  const reference = toRecord(value);
+  return (
+    typeof reference?.entryId === 'string' &&
+    typeof reference.ownerKind === 'string' &&
+    typeof reference.ownerId === 'string'
+  );
 }
 
 function getClientAppErrorMessage(error: unknown, t: (key: string) => string): string {
-  if (!(error instanceof LightExtensionClientAppHookError)) {
-    return t('Light extension application request failed');
-  }
-  if (error.code === 'LIGHT_EXTENSION_PERMISSION_DENIED' || error.status === 403) {
+  const { code, status, details } = getClientAppError(error);
+  if (code === 'LIGHT_EXTENSION_PERMISSION_DENIED' || status === 403) {
     return t('You do not have permission to manage light extension applications');
   }
-  if (error.code === 'LIGHT_EXTENSION_REFERENCE_EXISTS') {
+  if (code === 'LIGHT_EXTENSION_REFERENCE_EXISTS') {
     return t('This application is used by a workspace and cannot be removed');
   }
-  if (error.status === 413 || error.details?.category === 'client-app-upload') {
+  if (status === 413 || details?.category === 'client-app-upload') {
     return t('The ZIP file exceeds the upload limit');
   }
-  if (error.details?.category === 'client-app-archive') {
+  if (details?.category === 'client-app-archive') {
     return t('The ZIP file is not a valid light extension application');
   }
-  if (error.details?.category === 'client-app-replacement') {
+  if (details?.category === 'client-app-replacement') {
     return t('The ZIP entry key does not match the application being replaced');
   }
-  if (error.code === 'LIGHT_EXTENSION_REPO_DISABLED' || error.code === 'LIGHT_EXTENSION_REPO_ARCHIVED') {
+  if (code === 'LIGHT_EXTENSION_REPO_DISABLED' || code === 'LIGHT_EXTENSION_REPO_ARCHIVED') {
     return t('Enable the repository before uploading an application');
   }
-  if (error.code === 'LIGHT_EXTENSION_INVALID_INPUT' || error.code === 'LIGHT_EXTENSION_VALIDATION_FAILED') {
+  if (code === 'LIGHT_EXTENSION_INVALID_INPUT' || code === 'LIGHT_EXTENSION_VALIDATION_FAILED') {
     return t('The ZIP file is not a valid light extension application');
   }
   return t('Light extension application request failed');
 }
 
-function toClientAppHookError(error: unknown, fallbackMessage: string): LightExtensionClientAppHookError {
-  return error instanceof LightExtensionClientAppHookError
-    ? error
-    : new LightExtensionClientAppHookError({ message: fallbackMessage });
+function getClientAppError(error: unknown): {
+  code?: string;
+  status?: number;
+  details?: Record<string, unknown>;
+} {
+  const response = toRecord(toRecord(error)?.response);
+  const responseData = toRecord(response?.data);
+  const errors = responseData?.errors;
+  const serverError = Array.isArray(errors) ? toRecord(errors[0]) : toRecord(responseData?.error);
+  return {
+    code: typeof serverError?.code === 'string' ? serverError.code : undefined,
+    status:
+      typeof serverError?.status === 'number'
+        ? serverError.status
+        : typeof response?.status === 'number'
+          ? response.status
+          : undefined,
+    details: toRecord(serverError?.details) || undefined,
+  };
+}
+
+function toRecord(value: unknown): Record<string, unknown> | null {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
 }
 
 function isZipFile(file: File): boolean {

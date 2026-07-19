@@ -9,13 +9,9 @@
 
 import { defineCollection } from '@nocobase/database';
 
-import { LIGHT_EXTENSION_CLIENT_APP_STORAGE_NAME } from '../../constants';
-
 export default defineCollection({
   name: 'lightExtensionClientAppAssets',
   dataCategory: 'system',
-  template: 'file',
-  storage: LIGHT_EXTENSION_CLIENT_APP_STORAGE_NAME,
   timestamps: true,
   indexes: [
     {
@@ -37,7 +33,7 @@ export default defineCollection({
     { type: 'string', name: 'mimetype' },
     { type: 'text', name: 'path', allowNull: false },
     { type: 'text', name: 'url' },
-    { type: 'belongsTo', name: 'storage', target: 'storages', foreignKey: 'storageId' },
+    { type: 'bigInt', name: 'storageId' },
     { type: 'jsonb', name: 'meta', defaultValue: {} },
   ],
 });

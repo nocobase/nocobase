@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { Database } from '@nocobase/database';
+import type { Database, Transaction } from '@nocobase/database';
 import { defaultTreeAdapter, parse, type DefaultTreeAdapterTypes } from 'parse5';
 import { Readable } from 'stream';
 
@@ -146,11 +146,7 @@ function createStaticFixture(files: Record<string, string | Buffer>) {
     updatedAt: null,
   };
   const openedPaths: string[] = [];
-  const openAsset = async (
-    _entryId: string,
-    relativePath: string,
-    _options?: { expectedContentHash?: string },
-  ): Promise<ClientAppAsset | null> => {
+  const openAsset = async (relativePath: string): Promise<ClientAppAsset | null> => {
     openedPaths.push(relativePath);
     const value = files[relativePath];
     if (typeof value === 'undefined') {
@@ -163,15 +159,84 @@ function createStaticFixture(files: Record<string, string | Buffer>) {
       stream: Readable.from(content),
     };
   };
+  const app = createModel(descriptor);
+  const repo = createModel({ id: 'repo-1', lifecycleStatus: 'enabled' });
+  const assets = new Map(
+    Object.entries(files).map(([relativePath, value]) => [
+      relativePath,
+      createModel({
+        relativePath,
+        title: pathBasename(relativePath),
+        filename: pathBasename(relativePath),
+        size: toBuffer(value).length,
+        path: `asset-set/${pathDirname(relativePath)}`,
+      }),
+    ]),
+  );
+  const db = {
+    options: { dialect: 'sqlite' },
+    sequelize: {
+      transaction: async <T>(_options: object, run: (transaction: Transaction) => Promise<T>): Promise<T> =>
+        run({ LOCK: { SHARE: 'SHARE' } } as Transaction),
+    },
+    getRepository: (name: string) => ({
+      findOne: async (options: { filterByTk?: string; filter?: { relativePath?: string } }) => {
+        if (name === 'lightExtensionClientApps') {
+          return options.filterByTk === descriptor.entryId ? app : null;
+        }
+        if (name === 'lightExtensionRepos') {
+          return options.filterByTk === descriptor.repoId ? repo : null;
+        }
+        if (options.filter?.relativePath) {
+          const asset = assets.get(options.filter.relativePath) || null;
+          if (!asset) {
+            openedPaths.push(options.filter.relativePath);
+          }
+          return asset;
+        }
+        return null;
+      },
+    }),
+    getModel: (name: string) => ({
+      findOne: async (options: { where?: { id?: string } }) =>
+        name === 'lightExtensionRepos' && options.where?.id === descriptor.repoId ? repo : null,
+    }),
+  } as unknown as Database;
+  const storage: ClientAppAssetStorage = {
+    publish: async () => [],
+    open: async (file) => {
+      const asset = await openAsset(joinStoredPath(file.path, file.filename));
+      if (!asset) {
+        throw new Error('Missing client app asset');
+      }
+      return { stream: asset.stream };
+    },
+    delete: async () => undefined,
+  };
   const service = new ClientAppService(
-    {} as Database,
+    db,
     {} as LightExtensionRepoService,
     {} as LightExtensionPermissionService,
-    {} as ClientAppAssetStorage,
+    storage,
   );
-  vi.spyOn(service, 'resolveClientApp').mockResolvedValue(descriptor);
-  vi.spyOn(service, 'openClientAppAsset').mockImplementation(openAsset);
   return { descriptor, openedPaths, openAsset, service };
+}
+
+function createModel(values: Record<string, unknown>) {
+  return { get: (name: string) => values[name] };
+}
+
+function pathBasename(value: string): string {
+  return value.split('/').at(-1) || value;
+}
+
+function pathDirname(value: string): string {
+  const segments = value.split('/').slice(0, -1);
+  return segments.length ? segments.join('/') : '';
+}
+
+function joinStoredPath(directory: string, filename: string): string {
+  return [...directory.split('/').slice(1), filename].filter(Boolean).join('/');
 }
 
 function findElements(node: DefaultTreeAdapterTypes.Node, tagName: string): DefaultTreeAdapterTypes.Element[] {

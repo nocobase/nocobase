@@ -145,7 +145,7 @@ describe('lightExtensionClientApps resource', () => {
     const resource = createLightExtensionClientAppsResource(service);
 
     const deleted = await runAction(resource.actions?.delete as HandlerType, {
-      action: { params: { filterByTk: 'entry-free' } },
+      action: { params: { values: { entryId: 'entry-free' } } },
     });
     expect(deleted.body).toEqual({ entryId: 'entry-free', deleted: true });
 

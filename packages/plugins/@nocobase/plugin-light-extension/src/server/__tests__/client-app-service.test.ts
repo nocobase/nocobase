@@ -17,8 +17,9 @@ import { Readable } from 'stream';
 import { ClientAppService } from '../services/ClientAppService';
 import {
   type ClientAppAssetStorage,
+  type ClientAppSourceFile,
   type ClientAppStoredFile,
-  FileManagerClientAppStorage,
+  LocalClientAppStorage,
 } from '../services/ClientAppStorage';
 import type { LightExtensionPermissionService } from '../services/LightExtensionPermissionService';
 import type { LightExtensionRepoService } from '../services/LightExtensionRepoService';
@@ -133,22 +134,27 @@ describe('ClientAppService', () => {
     await expect(service.listReferencesForRepo('repo-1', {} as Transaction)).resolves.toEqual([]);
   });
 
-  it('fails closed instead of using public File Manager storage', async () => {
-    const uploadFile = vi.fn();
-    const storage = new FileManagerClientAppStorage({
-      storagesCache: new Map([
-        [1, { id: 1, name: 'local', title: 'Public uploads', type: 'local', baseUrl: '/storage/uploads', options: {} }],
-      ]),
-      storageTypes: { get: vi.fn() },
-      uploadFile,
-      getFileStream: vi.fn(),
-      loadStorages: vi.fn(),
-    } as unknown as ConstructorParameters<typeof FileManagerClientAppStorage>[0]);
+  it('publishes and removes a complete local asset set', async () => {
+    const source = await fs.mkdtemp(path.join(os.tmpdir(), 'client-app-local-source-'));
+    const storageRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'client-app-local-storage-'));
+    temporaryRoots.push(source, storageRoot);
+    await fs.mkdir(path.join(source, 'assets'));
+    await fs.writeFile(path.join(source, 'index.html'), '<html>app</html>');
+    await fs.writeFile(path.join(source, 'assets', 'app.js'), 'window.app = true;');
+    const storage = new LocalClientAppStorage(storageRoot);
+    const files: ClientAppSourceFile[] = [
+      { relativePath: 'index.html', filePath: path.join(source, 'index.html'), byteSize: 16 },
+      { relativePath: 'assets/app.js', filePath: path.join(source, 'assets', 'app.js'), byteSize: 18 },
+    ];
 
-    await expect(
-      storage.store({ assetSetId: 'set-1', relativePath: 'index.html', filePath: 'unused', byteSize: 1 }),
-    ).rejects.toThrow(/unavailable/u);
-    expect(uploadFile).not.toHaveBeenCalled();
+    const stored = await storage.publish({ assetSetId: 'leas_test', files });
+    await expect(readStream((await storage.open(stored[1])).stream)).resolves.toEqual(
+      Buffer.from('window.app = true;'),
+    );
+    await expect(fs.stat(path.join(storageRoot, 'leas_test', 'index.html'))).resolves.toBeTruthy();
+
+    await storage.delete('leas_test');
+    await expect(fs.stat(path.join(storageRoot, 'leas_test'))).rejects.toMatchObject({ code: 'ENOENT' });
   });
 
   function createFixture(clientApps: Record<string, unknown>[] = [], lifecycleStatus = 'enabled') {
@@ -201,38 +207,37 @@ describe('ClientAppService', () => {
 class MemoryClientAppStorage implements ClientAppAssetStorage {
   private readonly objects = new Map<string, Buffer>();
 
-  async store(input: {
-    assetSetId: string;
-    relativePath: string;
-    filePath: string;
-    byteSize: number;
-  }): Promise<ClientAppStoredFile> {
-    const key = `${input.assetSetId}/${input.relativePath}`;
-    const extension = path.posix.extname(input.relativePath);
-    const storedFile: ClientAppStoredFile = {
-      title: path.posix.basename(input.relativePath, extension),
-      filename: path.posix.basename(input.relativePath),
-      size: input.byteSize,
-      ...(input.relativePath.endsWith('.png') ? { mimetype: 'image/png' } : {}),
-      path: path.posix.dirname(key),
-      storageId: 1,
-      meta: { key },
-    };
-    this.objects.set(String(storedFile.meta?.key), await fs.readFile(input.filePath));
-    return storedFile;
+  async publish(input: { assetSetId: string; files: readonly ClientAppSourceFile[] }): Promise<ClientAppStoredFile[]> {
+    return Promise.all(
+      input.files.map(async (file) => {
+        const key = `${input.assetSetId}/${file.relativePath}`;
+        const extension = path.posix.extname(file.relativePath);
+        const storedFile: ClientAppStoredFile = {
+          title: path.posix.basename(file.relativePath, extension),
+          filename: path.posix.basename(file.relativePath),
+          size: file.byteSize,
+          ...(file.relativePath.endsWith('.png') ? { mimetype: 'image/png' } : {}),
+          path: path.posix.dirname(key),
+        };
+        this.objects.set(key, await fs.readFile(file.filePath));
+        return storedFile;
+      }),
+    );
   }
 
   async open(file: ClientAppStoredFile) {
-    const content = this.objects.get(String(file.meta?.key));
+    const content = this.objects.get(path.posix.join(file.path, file.filename));
     if (!content) {
       throw new Error('Missing client app asset');
     }
     return { stream: Readable.from(content) };
   }
 
-  async delete(files: readonly ClientAppStoredFile[]) {
-    for (const file of files) {
-      this.objects.delete(String(file.meta?.key));
+  async delete(assetSetId: string) {
+    for (const key of this.objects.keys()) {
+      if (key.startsWith(`${assetSetId}/`)) {
+        this.objects.delete(key);
+      }
     }
   }
 

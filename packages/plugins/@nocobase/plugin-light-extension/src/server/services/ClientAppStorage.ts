@@ -7,312 +7,121 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { type Database, type Model, UniqueConstraintError } from '@nocobase/database';
-import type { AttachmentModel, PluginFileManagerServer, StorageModel } from '@nocobase/plugin-file-manager';
-import { createHash } from 'crypto';
-import { once } from 'events';
+import { storagePathJoin, uid } from '@nocobase/utils';
 import fs from 'fs/promises';
 import { lookup as lookupMimeType } from 'mime-types';
-import os from 'os';
 import path from 'path';
 import type { Readable } from 'stream';
+import { createReadStream } from 'fs';
 
-import { LIGHT_EXTENSION_CLIENT_APP_STORAGE_NAME } from '../../constants';
-
-export { LIGHT_EXTENSION_CLIENT_APP_STORAGE_NAME };
-export const LIGHT_EXTENSION_CLIENT_APP_STORAGE_BASE_URL = '/_internal/light-extension-client-app-assets';
-export const LIGHT_EXTENSION_CLIENT_APP_DOCUMENT_ROOT = 'storage/light-extension-client-app-assets';
+export interface ClientAppSourceFile {
+  relativePath: string;
+  filePath: string;
+  byteSize: number;
+}
 
 export interface ClientAppStoredFile {
-  id?: string | number;
   title: string;
   filename: string;
   extname?: string;
   size: number;
   mimetype?: string;
   path: string;
-  url?: string;
-  storageId: string | number;
-  meta?: Record<string, unknown>;
 }
 
 export interface ClientAppAssetStorage {
-  store(input: {
-    assetSetId: string;
-    relativePath: string;
-    filePath: string;
-    byteSize: number;
-  }): Promise<ClientAppStoredFile>;
+  publish(input: { assetSetId: string; files: readonly ClientAppSourceFile[] }): Promise<ClientAppStoredFile[]>;
   open(file: ClientAppStoredFile): Promise<{ stream: Readable; contentType?: string }>;
-  delete(files: readonly ClientAppStoredFile[]): Promise<void>;
+  delete(assetSetId: string): Promise<void>;
 }
 
-type PluginManagerLike = {
-  get?: (name: string) => unknown;
-  getPlugins?: () => Map<unknown, unknown>;
-};
+export class LocalClientAppStorage implements ClientAppAssetStorage {
+  constructor(private readonly root = storagePathJoin('light-extension-client-app-assets')) {}
 
-type FileManagerLike = Pick<
-  PluginFileManagerServer,
-  'getFileStream' | 'loadStorages' | 'storageTypes' | 'storagesCache' | 'uploadFile'
->;
-
-const FILE_MANAGER_PLUGIN_ALIASES = ['@nocobase/plugin-file-manager', 'file-manager', 'plugin-file-manager'];
-
-export class FileManagerClientAppStorage implements ClientAppAssetStorage {
-  constructor(
-    private readonly fileManager: FileManagerLike,
-    private readonly storageName = LIGHT_EXTENSION_CLIENT_APP_STORAGE_NAME,
-  ) {}
-
-  async store(input: {
-    assetSetId: string;
-    relativePath: string;
-    filePath: string;
-    byteSize: number;
-  }): Promise<ClientAppStoredFile> {
-    const expectedStorage = [...this.fileManager.storagesCache.values()].find(
-      (storage) => storage.name === this.storageName,
-    );
-    if (!expectedStorage?.id) {
-      throw new Error(`Client app storage "${this.storageName}" is unavailable`);
+  async publish(input: { assetSetId: string; files: readonly ClientAppSourceFile[] }): Promise<ClientAppStoredFile[]> {
+    assertAssetSetId(input.assetSetId);
+    if (!input.files.length) {
+      throw new Error('Client app asset set is empty');
     }
-    assertInternalStorageConfiguration(expectedStorage);
-    const sourceExtension = path.posix.extname(input.relativePath);
-    const physicalExtension = /^\.[A-Za-z0-9]{1,16}$/u.test(sourceExtension) ? sourceExtension.toLowerCase() : '.asset';
-    const physicalFilename = `${createHash('sha256').update(input.relativePath).digest('hex')}${physicalExtension}`;
-    const mimeType = lookupMimeType(input.relativePath);
-    const reservedFile: ClientAppStoredFile = {
-      title: path.posix.basename(input.relativePath, sourceExtension),
-      filename: physicalFilename,
-      extname: physicalExtension,
-      size: input.byteSize,
-      ...(mimeType ? { mimetype: mimeType } : {}),
-      path: input.assetSetId,
-      storageId: expectedStorage.id,
-    };
-    const uploadRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'nocobase-client-app-object-'));
-    let uploaded: unknown;
-    try {
-      const uploadPath = path.join(uploadRoot, reservedFile.filename);
-      await fs.copyFile(input.filePath, uploadPath);
-      uploaded = await this.fileManager.uploadFile({
-        storageName: this.storageName,
-        subPath: input.assetSetId,
-        filePath: uploadPath,
-      });
-    } finally {
-      await fs.rm(uploadRoot, { recursive: true, force: true }).catch(() => undefined);
-    }
-    let stored: ClientAppStoredFile;
-    try {
-      stored = toStoredFile(uploaded);
-    } catch (error) {
-      const cleanupRecord = toCleanupStoredFile(uploaded);
-      if (cleanupRecord) {
-        await this.delete([cleanupRecord]);
+
+    const sourceRoot = getSourceRoot(input.files[0]);
+    for (const file of input.files) {
+      if (path.resolve(sourceRoot, ...file.relativePath.split('/')) !== path.resolve(file.filePath)) {
+        throw new Error(`Client app asset "${file.relativePath}" is outside its source root`);
       }
+    }
+
+    await fs.mkdir(this.root, { recursive: true });
+    const destination = path.join(this.root, input.assetSetId);
+    const staging = path.join(this.root, `.${input.assetSetId}-${uid()}`);
+    try {
+      try {
+        await fs.rename(sourceRoot, staging);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'EXDEV') {
+          throw error;
+        }
+        await fs.cp(sourceRoot, staging, { recursive: true, errorOnExist: true, force: false });
+      }
+      await fs.rm(path.join(staging, 'entry.json'), { force: true });
+      await fs.rename(staging, destination);
+    } catch (error) {
+      await fs.rm(staging, { recursive: true, force: true }).catch(() => undefined);
       throw error;
     }
-    if (String(stored.storageId) !== String(reservedFile.storageId)) {
-      await this.delete([stored]);
-      throw new Error(`Client app storage "${this.storageName}" was not used`);
-    }
-    if (stored.filename !== reservedFile.filename || stored.path !== reservedFile.path) {
-      await this.delete([stored]);
-      throw new Error(`Client app storage "${this.storageName}" changed the reserved physical object location`);
-    }
-    return {
-      ...stored,
-      title: reservedFile.title,
-      ...(reservedFile.extname ? { extname: reservedFile.extname } : {}),
-      ...(reservedFile.mimetype ? { mimetype: reservedFile.mimetype } : {}),
-    };
+
+    return input.files.map((file) => toStoredFile(input.assetSetId, file));
   }
 
   async open(file: ClientAppStoredFile): Promise<{ stream: Readable; contentType?: string }> {
-    const opened = await this.fileManager.getFileStream(file as AttachmentModel);
-    if (isPendingFileStream(opened.stream)) {
-      await once(opened.stream, 'open');
-    }
-    return opened;
+    const filePath = resolveInside(this.root, file.path, file.filename);
+    await fs.access(filePath);
+    return {
+      stream: createReadStream(filePath),
+      ...(file.mimetype ? { contentType: file.mimetype } : {}),
+    };
   }
 
-  async delete(files: readonly ClientAppStoredFile[]): Promise<void> {
-    const grouped = new Map<string | number, ClientAppStoredFile[]>();
-    for (const file of files) {
-      const current = grouped.get(file.storageId) || [];
-      current.push(file);
-      grouped.set(file.storageId, current);
-    }
-
-    for (const [storageId, records] of grouped) {
-      const storage =
-        this.fileManager.storagesCache.get(storageId) ||
-        [...this.fileManager.storagesCache.values()].find((candidate) => String(candidate.id) === String(storageId));
-      if (!storage) {
-        throw new Error(`Client app storage ${String(storageId)} is unavailable`);
-      }
-      const StorageType = this.fileManager.storageTypes.get(storage.type);
-      if (!StorageType) {
-        throw new Error(`Client app storage type "${storage.type}" is unavailable`);
-      }
-      const [deleted, undeleted] = await new StorageType(storage).delete(records as AttachmentModel[]);
-      if (deleted !== records.length || undeleted.length) {
-        throw new Error('Failed to delete one or more client app assets');
-      }
-    }
+  async delete(assetSetId: string): Promise<void> {
+    assertAssetSetId(assetSetId);
+    await fs.rm(path.join(this.root, assetSetId), { recursive: true, force: true });
   }
 }
 
-export function findFileManagerPlugin(pm: PluginManagerLike | undefined): FileManagerLike | undefined {
-  for (const alias of FILE_MANAGER_PLUGIN_ALIASES) {
-    const plugin = pm?.get?.(alias);
-    if (isFileManagerLike(plugin)) {
-      return plugin;
-    }
+function getSourceRoot(file: ClientAppSourceFile): string {
+  let root = path.resolve(file.filePath);
+  for (const _segment of file.relativePath.split('/')) {
+    root = path.dirname(root);
   }
-
-  for (const plugin of pm?.getPlugins?.().values() || []) {
-    if (isFileManagerLike(plugin)) {
-      return plugin;
-    }
-  }
+  return root;
 }
 
-export async function ensureClientAppInternalStorage(
-  db: Database,
-  fileManager: FileManagerLike,
-): Promise<StorageModel> {
-  const repository = db.getRepository('storages');
-  const values = getInternalStorageValues();
-  let record = await repository.findOne({
-    filter: { name: LIGHT_EXTENSION_CLIENT_APP_STORAGE_NAME },
-  });
-  if (!record) {
-    try {
-      record = await repository.create({ values });
-    } catch (error) {
-      if (!(error instanceof UniqueConstraintError)) {
-        throw error;
-      }
-      record = await repository.findOne({ filter: { name: LIGHT_EXTENSION_CLIENT_APP_STORAGE_NAME } });
-      if (!record) {
-        throw error;
-      }
-    }
-  } else {
-    await record.update(values);
-  }
-
-  await fileManager.loadStorages();
-  return modelToStorage(record);
-}
-
-function isFileManagerLike(value: unknown): value is FileManagerLike {
-  if (!value || typeof value !== 'object') {
-    return false;
-  }
-  const candidate = value as Partial<FileManagerLike>;
-  return (
-    typeof candidate.uploadFile === 'function' &&
-    typeof candidate.getFileStream === 'function' &&
-    typeof candidate.loadStorages === 'function' &&
-    candidate.storagesCache instanceof Map &&
-    Boolean(candidate.storageTypes)
-  );
-}
-
-function toStoredFile(value: unknown): ClientAppStoredFile {
-  if (!value || typeof value !== 'object') {
-    throw new Error('File Manager returned an invalid client app asset');
-  }
-  const record = value as Record<string, unknown>;
-  if (
-    typeof record.filename !== 'string' ||
-    typeof record.path !== 'string' ||
-    (typeof record.storageId !== 'string' && typeof record.storageId !== 'number') ||
-    typeof record.size !== 'number'
-  ) {
-    throw new Error('File Manager returned incomplete client app asset metadata');
-  }
+function toStoredFile(assetSetId: string, file: ClientAppSourceFile): ClientAppStoredFile {
+  const extension = path.posix.extname(file.relativePath);
+  const directory = path.posix.dirname(file.relativePath);
+  const mimeType = lookupMimeType(file.relativePath);
   return {
-    title:
-      typeof record.title === 'string' ? record.title : path.basename(record.filename, path.extname(record.filename)),
-    filename: record.filename,
-    ...(typeof record.extname === 'string' ? { extname: record.extname } : {}),
-    size: record.size,
-    ...(typeof record.mimetype === 'string' ? { mimetype: record.mimetype } : {}),
-    path: record.path,
-    ...(typeof record.url === 'string' ? { url: record.url } : {}),
-    storageId: record.storageId,
-    ...(isRecord(record.meta) ? { meta: record.meta } : {}),
+    title: path.posix.basename(file.relativePath, extension),
+    filename: path.posix.basename(file.relativePath),
+    ...(extension ? { extname: extension } : {}),
+    size: file.byteSize,
+    ...(mimeType ? { mimetype: mimeType } : {}),
+    path: directory === '.' ? assetSetId : path.posix.join(assetSetId, directory),
   };
 }
 
-function toCleanupStoredFile(value: unknown): ClientAppStoredFile | null {
-  if (!value || typeof value !== 'object') {
-    return null;
+function resolveInside(root: string, ...segments: string[]): string {
+  const resolvedRoot = path.resolve(root);
+  const resolved = path.resolve(resolvedRoot, ...segments);
+  const relative = path.relative(resolvedRoot, resolved);
+  if (!relative || relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
+    throw new Error('Client app asset path is invalid');
   }
-  const record = value as Record<string, unknown>;
-  if (
-    typeof record.filename !== 'string' ||
-    typeof record.path !== 'string' ||
-    (typeof record.storageId !== 'string' && typeof record.storageId !== 'number')
-  ) {
-    return null;
+  return resolved;
+}
+
+function assertAssetSetId(value: string): void {
+  if (!/^leas_[A-Za-z0-9_-]+$/u.test(value)) {
+    throw new Error('Client app asset set ID is invalid');
   }
-  return {
-    title: '',
-    filename: record.filename,
-    size: typeof record.size === 'number' ? record.size : 0,
-    path: record.path,
-    storageId: record.storageId,
-  };
-}
-
-function modelToStorage(record: Model | StorageModel): StorageModel {
-  const value = typeof (record as Model).toJSON === 'function' ? (record as Model).toJSON() : record;
-  return value as StorageModel;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
-
-function getInternalStorageValues() {
-  return {
-    title: 'Light extension client app internal storage',
-    type: 'local',
-    name: LIGHT_EXTENSION_CLIENT_APP_STORAGE_NAME,
-    baseUrl: LIGHT_EXTENSION_CLIENT_APP_STORAGE_BASE_URL,
-    options: {
-      documentRoot: LIGHT_EXTENSION_CLIENT_APP_DOCUMENT_ROOT,
-    },
-    path: '',
-    renameMode: 'none',
-    default: false,
-    paranoid: false,
-    rules: {
-      size: 25 * 1024 * 1024,
-    },
-  };
-}
-
-function assertInternalStorageConfiguration(storage: StorageModel): void {
-  const expected = getInternalStorageValues();
-  if (
-    storage.type !== expected.type ||
-    storage.baseUrl !== expected.baseUrl ||
-    (storage.path || '') !== expected.path ||
-    storage.renameMode !== expected.renameMode ||
-    storage.default === true ||
-    storage.options?.documentRoot !== expected.options.documentRoot
-  ) {
-    throw new Error(`Client app storage "${storage.name}" is not configured as private internal storage`);
-  }
-}
-
-function isPendingFileStream(stream: Readable): stream is Readable & { pending: true } {
-  return 'pending' in stream && stream.pending === true;
 }

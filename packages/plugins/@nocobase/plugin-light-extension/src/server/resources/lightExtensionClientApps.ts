@@ -48,16 +48,13 @@ export function createLightExtensionClientAppsResource(clientAppService: ClientA
         if (!zipPath) {
           throw invalidInput('A client app ZIP file is required');
         }
+        const expectedEntryId = optionalString(request.body?.expectedEntryId);
         try {
           return await clientAppService.upload(
             {
-              repoId: requireRepoId(ctx, request?.body),
+              repoId: requireString(request.body?.repoId, 'repoId'),
               zipPath,
-              ...(optionalString(request?.body?.expectedEntryId)
-                ? {
-                    expectedEntryId: optionalString(request?.body?.expectedEntryId),
-                  }
-                : {}),
+              ...(expectedEntryId ? { expectedEntryId } : {}),
             },
             {
               ...getServiceContext(ctx),
@@ -68,9 +65,9 @@ export function createLightExtensionClientAppsResource(clientAppService: ClientA
           await fs.rm(zipPath, { force: true });
         }
       }),
-      list: createClientAppResourceAction((ctx) => clientAppService.listClientApps(requireRepoId(ctx))),
+      list: createClientAppResourceAction((ctx) => clientAppService.listClientApps(requireActionValue(ctx, 'repoId'))),
       delete: createClientAppResourceAction(async (ctx) => {
-        const entryId = requireEntryId(ctx);
+        const entryId = requireActionValue(ctx, 'entryId');
         await clientAppService.deleteClientApp(entryId);
         return { entryId, deleted: true };
       }),
@@ -152,16 +149,10 @@ function createClientAppResourceAction(run: (ctx: LightExtensionResourceContext)
   };
 }
 
-function requireRepoId(ctx: LightExtensionResourceContext, multipartBody?: Record<string, unknown>): string {
+function requireActionValue(ctx: LightExtensionResourceContext, field: string): string {
   const params = toRecord(ctx.action?.params);
   const values = toRecord(params.values);
-  return requireString(multipartBody?.repoId || values.repoId || params.repoId || params.filterByTk, 'repoId');
-}
-
-function requireEntryId(ctx: LightExtensionResourceContext): string {
-  const params = toRecord(ctx.action?.params);
-  const values = toRecord(params.values);
-  return requireString(values.entryId || params.entryId || params.filterByTk, 'entryId');
+  return requireString(values[field], field);
 }
 
 function requireString(value: unknown, field: string): string {

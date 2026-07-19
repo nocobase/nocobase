@@ -14,10 +14,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { LightExtensionClientAppDescriptor } from '../api/lightExtensionClientAppsRequests';
 import LightExtensionClientAppsPanel from '../components/LightExtensionClientAppsPanel';
-import {
-  LightExtensionClientAppHookError,
-  type UseLightExtensionClientAppsResult,
-} from '../hooks/useLightExtensionClientApps';
 
 const mocks = vi.hoisted(() => ({
   t: (key: string) => key,
@@ -35,6 +31,10 @@ vi.mock('@nocobase/client-v2', () => ({
   }),
 }));
 
+vi.mock('@nocobase/flow-engine', () => ({
+  useFlowContext: () => ({ api: {} }),
+}));
+
 vi.mock('react-i18next', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react-i18next')>();
   return {
@@ -43,11 +43,14 @@ vi.mock('react-i18next', async (importOriginal) => {
   };
 });
 
-vi.mock('../hooks/useLightExtensionClientApps', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../hooks/useLightExtensionClientApps')>();
+vi.mock('../api/lightExtensionClientAppsRequests', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../api/lightExtensionClientAppsRequests')>();
   return {
     ...actual,
-    useLightExtensionClientApps: () => mocks.api as unknown as UseLightExtensionClientAppsResult,
+    listLightExtensionClientApps: (_api: unknown, repoId: string) => mocks.api.list(repoId),
+    uploadLightExtensionClientApp: (_api: unknown, repoId: string, file: File, expectedEntryId?: string) =>
+      mocks.api.upload(repoId, file, expectedEntryId),
+    deleteLightExtensionClientApp: (_api: unknown, entryId: string) => mocks.api.delete(entryId),
   };
 });
 
@@ -103,11 +106,7 @@ describe('LightExtensionClientAppsPanel', () => {
 
   it('shows an accessible permission state without exposing the server message', async () => {
     mocks.api.list.mockRejectedValueOnce(
-      new LightExtensionClientAppHookError({
-        code: 'LIGHT_EXTENSION_PERMISSION_DENIED',
-        status: 403,
-        message: 'raw permission error',
-      }),
+      createRequestError('LIGHT_EXTENSION_PERMISSION_DENIED', 403, 'raw permission error'),
     );
     render(<LightExtensionClientAppsPanel repoId="ler_customer" />);
 
@@ -119,15 +118,8 @@ describe('LightExtensionClientAppsPanel', () => {
   it('checks references only when deletion is attempted', async () => {
     mocks.api.list.mockResolvedValueOnce([currentApp]);
     mocks.api.delete.mockRejectedValueOnce(
-      new LightExtensionClientAppHookError({
-        code: 'LIGHT_EXTENSION_REFERENCE_EXISTS',
-        status: 409,
-        message: 'referenced',
-        details: {
-          references: [
-            { entryId: currentApp.entryId, ownerKind: 'multiPortal.frontend', ownerId: 'workspace-customer' },
-          ],
-        },
+      createRequestError('LIGHT_EXTENSION_REFERENCE_EXISTS', 409, 'referenced', {
+        references: [{ entryId: currentApp.entryId, ownerKind: 'multiPortal.frontend', ownerId: 'workspace-customer' }],
       }),
     );
     render(<LightExtensionClientAppsPanel repoId="ler_customer" />);
@@ -139,3 +131,12 @@ describe('LightExtensionClientAppsPanel', () => {
     expect(mocks.api.delete).toHaveBeenCalledWith(currentApp.entryId);
   });
 });
+
+function createRequestError(code: string, status: number, message: string, details?: Record<string, unknown>) {
+  return {
+    response: {
+      status,
+      data: { errors: [{ code, status, message, details }] },
+    },
+  };
+}
