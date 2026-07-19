@@ -22,8 +22,14 @@ type WorkflowTasksPageMenuContext = {
 export class WorkflowTasksPageMenuModel extends BasePageMenuModel {
   render() {
     const context = this.context as WorkflowTasksPageMenuContext;
+    const parentRouteUid = this.parentId;
     const routeSchemaUid = context.currentRoute?.schemaUid;
-    const pageUid = typeof routeSchemaUid === 'string' && routeSchemaUid ? routeSchemaUid : this.uid;
+    const pageUid =
+      typeof parentRouteUid === 'string' && parentRouteUid
+        ? parentRouteUid
+        : typeof routeSchemaUid === 'string' && routeSchemaUid
+          ? routeSchemaUid
+          : this.uid;
 
     return (
       <WorkflowTasksPageMenuRouteProvider pageUid={pageUid}>

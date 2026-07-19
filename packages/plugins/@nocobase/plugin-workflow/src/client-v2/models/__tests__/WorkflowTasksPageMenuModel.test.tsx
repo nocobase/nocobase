@@ -20,6 +20,7 @@ vi.mock('@nocobase/client-v2', () => ({
     static define = holder.define;
 
     context: Record<string, unknown> = {};
+    parentId?: string;
     uid = 'workflow-menu-model';
   },
 }));
@@ -98,5 +99,17 @@ describe('WorkflowTasksPageMenuModel', () => {
     render(model.render() as React.ReactElement);
 
     expect(screen.getByTestId('page-menu-route-provider')).toHaveAttribute('data-page-uid', 'workflow-menu-model');
+  });
+
+  it('uses the parent route uid when the current route is temporarily unavailable', () => {
+    const model = new WorkflowTasksPageMenuModel();
+    model.parentId = 'workflow-menu-route';
+    model.context = {
+      currentRoute: { schemaUid: 'normal-page-route' },
+      isMobileLayout: false,
+    };
+    render(model.render() as React.ReactElement);
+
+    expect(screen.getByTestId('page-menu-route-provider')).toHaveAttribute('data-page-uid', 'workflow-menu-route');
   });
 });

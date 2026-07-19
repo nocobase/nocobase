@@ -7,10 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { createContext, useContext, useMemo } from 'react';
+import React, { createContext, useContext, useMemo, useRef } from 'react';
 import { UNSAFE_RouteContext, useLocation } from 'react-router-dom';
 import {
   buildWorkflowTasksPageMenuPath,
+  isWorkflowTasksPageMenuPathname,
   parseWorkflowTasksPageMenuRoute,
   type WorkflowTasksPageMenuRoute,
 } from '../client-v2/pages/workflowTasksPageMenuRoute';
@@ -36,7 +37,7 @@ export function useWorkflowTasksPageMenuRouteAdapter() {
 export function WorkflowTasksPageMenuRouteProvider(props: { children: React.ReactNode; pageUid: string }) {
   const { children, pageUid } = props;
   const location = useLocation();
-  const route = useMemo(
+  const parsedRoute = useMemo(
     () =>
       parseWorkflowTasksPageMenuRoute({
         pathname: location.pathname,
@@ -46,20 +47,30 @@ export function WorkflowTasksPageMenuRouteProvider(props: { children: React.Reac
       }),
     [location.hash, location.pathname, location.search, pageUid],
   );
+  const isPagePath = isWorkflowTasksPageMenuPathname(location.pathname, pageUid);
+  const activeRouteRef = useRef(parsedRoute);
+  if (isPagePath) {
+    activeRouteRef.current = parsedRoute;
+  }
+  const route = isPagePath ? parsedRoute : activeRouteRef.current;
   const value = useMemo<WorkflowTasksPageMenuRouteAdapter>(() => {
-    const buildPathname = (nextRoute: WorkflowTasksPageMenuRouteTarget) =>
-      buildWorkflowTasksPageMenuPath({
+    const buildPathname = (nextRoute: WorkflowTasksPageMenuRouteTarget) => {
+      if (!isPagePath) {
+        return location.pathname;
+      }
+      return buildWorkflowTasksPageMenuPath({
         pathname: location.pathname,
         pageUid,
         route: nextRoute,
       });
+    };
 
     return {
       route,
       buildPathname,
       buildPath: (nextRoute) => `${buildPathname(nextRoute)}${location.search}${location.hash}`,
     };
-  }, [location.hash, location.pathname, location.search, pageUid, route]);
+  }, [isPagePath, location.hash, location.pathname, location.search, pageUid, route]);
 
   return (
     <WorkflowTasksPageMenuRouteContext.Provider value={value}>{children}</WorkflowTasksPageMenuRouteContext.Provider>

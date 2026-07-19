@@ -44,9 +44,23 @@ function RelativePopupLink() {
   return <button onClick={() => navigate('./123')}>Open task</button>;
 }
 
+function NavigateToNormalPage() {
+  const navigate = useNavigate();
+  return (
+    <button onClick={() => navigate('/admin/normal-page', { state: { marker: 'normal-page' } })}>
+      Open normal page
+    </button>
+  );
+}
+
 function CurrentLocation() {
   const location = useLocation();
-  return <div data-testid="current-location">{location.pathname}</div>;
+  const state = location.state as { marker?: string } | null;
+  return (
+    <div data-state-marker={state?.marker} data-testid="current-location">
+      {location.pathname}
+    </div>
+  );
 }
 
 function PathlessFlowRouteContext({ children }: { children: React.ReactNode }) {
@@ -222,5 +236,31 @@ describe('workflow tasks page menu route adapter v1', () => {
     expect(router.state.location.pathname).toBe(
       '/admin/workflow-menu/tasktype/approval-apply/status/completed/popupid/123',
     );
+  });
+
+  it('keeps the last workflow route when the cached page becomes inactive', () => {
+    render(
+      <MemoryRouter initialEntries={['/admin/workflow-menu/tasktype/approval-apply/status/completed']}>
+        <Routes>
+          <Route
+            path="/admin/:name/*"
+            element={
+              <WorkflowTasksPageMenuRouteProvider pageUid="workflow-menu">
+                <NavigateToNormalPage />
+                <RouteStateProbe />
+                <CurrentLocation />
+              </WorkflowTasksPageMenuRouteProvider>
+            }
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open normal page' }));
+
+    expect(screen.getByTestId('current-location')).toHaveTextContent('/admin/normal-page');
+    expect(screen.getByTestId('current-location')).toHaveAttribute('data-state-marker', 'normal-page');
+    expect(screen.getByTestId('route-state')).toHaveAttribute('data-task-type', 'approval-apply');
+    expect(screen.getByTestId('route-state')).toHaveAttribute('data-status', 'completed');
   });
 });
