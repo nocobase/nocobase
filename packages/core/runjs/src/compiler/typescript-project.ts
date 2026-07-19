@@ -10,10 +10,15 @@
 import ts from 'typescript';
 import { posix as pathPosix } from 'path';
 
-import type { RunJSTypeDependencyContract, RunJSTypeDependencyEdge, RunJSUnresolvedDependency } from '..';
 import { RUNJS_TYPESCRIPT_ES_LIB_PATH } from '../typescript-environment';
 import { createRunJSTypeScriptCompilerOptions } from '../typescript-project';
-import { buildRunJSUnresolvedCandidatePaths, type RunJSTypeDependencyGraph } from './dependency-collector';
+import {
+  buildRunJSUnresolvedCandidatePaths,
+  type RunJSTypeDependencyContract,
+  type RunJSTypeDependencyEdge,
+  type RunJSTypeDependencyGraph,
+  type RunJSUnresolvedDependency,
+} from './dependency-collector';
 
 export interface RunJSTypeScriptProjectFile {
   path: string;

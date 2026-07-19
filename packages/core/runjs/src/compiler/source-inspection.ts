@@ -9,14 +9,7 @@
 
 import ts from 'typescript';
 
-import type {
-  RunJSCompileDiagnostic,
-  RunJSSourceAuthoringLegacyInfo,
-  RunJSSourceLocator,
-  RunJSSurfaceStyle,
-  RunJSTypeDependencyContract,
-  RunJSUnresolvedDependency,
-} from '..';
+import type { RunJSCompileDiagnostic, RunJSSourceAuthoringLegacyInfo, RunJSSourceLocator, RunJSSurfaceStyle } from '..';
 import { normalizePath, sha256Hex, stableSerialize } from '..';
 import {
   buildRunJSTypeScriptEnvironmentFiles,
@@ -32,7 +25,11 @@ import {
   loadNodeRunJSTypeLibraryFilesWithContracts,
   type NodeRunJSTypeLibraryRegistry,
 } from './node-type-library';
-import type { RunJSTypeDependencyGraph } from './dependency-collector';
+import type {
+  RunJSTypeDependencyContract,
+  RunJSTypeDependencyGraph,
+  RunJSUnresolvedDependency,
+} from './dependency-collector';
 import { RunJSTypeScriptProject, type RunJSTypeScriptProjectFile } from './typescript-project';
 
 export const RUNJS_COMPILER_ALLOWED_GLOBALS = new Set([

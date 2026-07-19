@@ -79,29 +79,6 @@ describe('plugin-light-extension workspace compiler bridge', () => {
         compilerSurfaceStyle: 'render',
       },
     });
-    expect(result.dependencyGraph).toMatchObject({
-      runtime: {
-        files: ['src/client/js-blocks/sales-kpi/index.tsx', 'src/client/js-blocks/sales-kpi/labels.ts'],
-        edges: [
-          {
-            importer: 'src/client/js-blocks/sales-kpi/index.tsx',
-            imported: 'src/client/js-blocks/sales-kpi/labels.ts',
-          },
-        ],
-      },
-      types: {
-        files: expect.arrayContaining([
-          'src/client/js-blocks/sales-kpi/index.tsx',
-          'src/client/js-blocks/sales-kpi/labels.ts',
-        ]),
-        contracts: expect.arrayContaining([
-          expect.objectContaining({ id: 'runjs:context', contentHash: expect.stringMatching(/^[a-f0-9]{64}$/u) }),
-          expect.objectContaining({ id: 'runjs:surface', version: 'render' }),
-          expect.objectContaining({ id: 'runjs:typescript-environment' }),
-        ]),
-      },
-      unresolved: [],
-    });
     const rendered: unknown[] = [];
     const React = { createElement: (type: unknown, props: unknown, child: unknown) => ({ type, props, child }) };
     await executeArtifact(result.artifact.code, {

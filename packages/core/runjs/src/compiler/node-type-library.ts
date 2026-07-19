@@ -9,7 +9,7 @@
 
 import path from 'node:path';
 
-import { sha256Hex, stableSerialize, type RunJSTypeDependencyContract } from '..';
+import { sha256Hex, stableSerialize } from '..';
 import {
   generatedRunJSAntdCompletionCatalog,
   generatedRunJSAntdIconsCompletionCatalog,
@@ -31,6 +31,7 @@ import { RUNJS_DAYJS_TYPE_LIBRARY_PACK_DEFINITION } from '../type-packs/dayjs';
 import { RUNJS_FORMULAJS_TYPE_LIBRARY_PACK_DEFINITION } from '../type-packs/formulajs';
 import { collectRunJSTypeDeclarationGraphSync, type RunJSTypeLibraryPackDefinition } from '../type-packs/generator';
 import { RUNJS_MATHJS_TYPE_LIBRARY_PACK_DEFINITION } from '../type-packs/mathjs';
+import type { RunJSTypeDependencyContract } from './dependency-collector';
 import {
   RUNJS_TYPESCRIPT_REACT_BRIDGE_DECLARATION,
   RUNJS_TYPESCRIPT_REACT_BRIDGE_PATH,

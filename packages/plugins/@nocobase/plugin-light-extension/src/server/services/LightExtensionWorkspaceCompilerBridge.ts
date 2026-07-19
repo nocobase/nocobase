@@ -9,11 +9,7 @@
 
 import type { Transaction } from '@nocobase/database';
 import { buildRunJSFilesHash, type RunJSCompileDiagnostic, type RunJSRuntimeArtifact } from '@nocobase/runjs';
-import {
-  compileRunJSSourceWorkspace,
-  type CompileRunJSSourceWorkspaceResult,
-  type RunJSResolvedDependencyGraph,
-} from '@nocobase/runjs/compiler';
+import { compileRunJSSourceWorkspace, type CompileRunJSSourceWorkspaceResult } from '@nocobase/runjs/compiler';
 import { randomUUID } from 'crypto';
 import { posix as pathPosix } from 'path';
 import ts from 'typescript';
@@ -64,7 +60,6 @@ export interface LightExtensionWorkspaceCompileResult {
   diagnostics: LightExtensionDiagnostic[];
   failureCode?: string;
   surface: LightExtensionAuthoringSurfaceSpec;
-  dependencyGraph?: RunJSResolvedDependencyGraph;
 }
 
 export interface LightExtensionPublishedRuntimeCompileAuditInput {
@@ -238,7 +233,6 @@ export class LightExtensionWorkspaceCompilerBridge {
       diagnostics,
       failureCode: compiled.failureCode,
       surface,
-      dependencyGraph: compiled.dependencyGraph,
     };
   }
 

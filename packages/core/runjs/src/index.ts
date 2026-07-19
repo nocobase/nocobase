@@ -12,7 +12,6 @@ import { posix as pathPosix } from 'path';
 
 export * from './typescript-library';
 export * from './typescript-library-usage';
-export * from './dependency-manifest';
 export * from './lodash-type-library';
 export * from './type-packs/dayjs';
 export * from './type-packs/antd';
